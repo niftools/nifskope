@@ -545,10 +545,10 @@ bool NifModel::load( const QModelIndex & parent, QDataStream & stream )
 		if ( item && evalCondition( child ) )
 		{
 			QString name = item->name();
-			QString type = getInternalType( item->type() );
-			QString dim1 = item->arr1();
+			int		type = getInternalType( item->type() );
+			QString	dim1 = item->arr1();
 			QString dim2 = item->arr2();
-			QString arg = item->arg();
+			QString arg  = item->arg();
 			
 			if ( item->type().isEmpty() )
 			{
@@ -600,78 +600,81 @@ bool NifModel::load( const QModelIndex & parent, QDataStream & stream )
 			{
 				load( child, stream );
 			}
-			else if ( type == "uint8" )
+			else switch ( type )
 			{
-				quint8 u8;
-				stream.readRawData( (char *) &u8, 1 );
-				item->setValue( u8 );
-			}
-			else if ( type == "uint16" )
-			{
-				quint16 u16;
-				stream.readRawData( (char *) &u16, 2 );
-				item->setValue( u16 );
-			}
-			else if ( type == "uint32" )
-			{
-				quint32 u32;
-				stream.readRawData( (char *) &u32, 4 );
-				item->setValue( u32 );
-			}
-			else if ( type == "int8" )
-			{
-				qint8 s8;
-				stream.readRawData( (char *) &s8, 1 );
-				item->setValue( s8 );
-			}
-			else if ( type == "int16" )
-			{
-				qint16 s16;
-				stream.readRawData( (char *) &s16, 2 );
-				item->setValue( s16 );
-			}
-			else if ( type == "int32" )
-			{
-				qint32 s32;
-				stream.readRawData( (char *) &s32, 4 );
-				item->setValue( s32 );
-			}
-			else if ( type == "float" )
-			{
-				float f32;
-				stream.readRawData( (char *) &f32, 4 );
-				item->setValue( f32 );
-			}
-			else if ( type == "color3f" )
-			{
-				float r, g, b;
-				stream.readRawData( (char *) &r, 4 );
-				stream.readRawData( (char *) &g, 4 );
-				stream.readRawData( (char *) &b, 4 );
-				item->setValue( QColor::fromRgbF( r, g, b ) );
-			}
-			else if ( type == "color4f" )
-			{
-				float r, g, b, a;
-				stream.readRawData( (char *) &r, 4 );
-				stream.readRawData( (char *) &g, 4 );
-				stream.readRawData( (char *) &b, 4 );
-				stream.readRawData( (char *) &a, 4 );
-				item->setValue( QColor::fromRgbF( r, g, b, a ) );
-			}
-			else if ( type == "string" )
-			{
-				int len;
-				stream.readRawData( (char *) &len, 4 );
-				if ( len > 4096 )
-					qWarning( "maximum string length exceeded" );
-				QByteArray string = stream.device()->read( len );
-				item->setValue( QString( string ) );
-			}
-			else
-			{
-				qCritical() << "encountered unknown type " << type << " during load of " << itemName( child ) << "(" << itemType( child ) << ")";
-				return false;
+				case it_uint8:
+				{
+					quint8 u8;
+					stream.readRawData( (char *) &u8, 1 );
+					item->setValue( u8 );
+				} break;
+				case it_uint16:
+				{
+					quint16 u16;
+					stream.readRawData( (char *) &u16, 2 );
+					item->setValue( u16 );
+				} break;
+				case it_uint32:
+				{
+					quint32 u32;
+					stream.readRawData( (char *) &u32, 4 );
+					item->setValue( u32 );
+				} break;
+				case it_int8:
+				{
+					qint8 s8;
+					stream.readRawData( (char *) &s8, 1 );
+					item->setValue( s8 );
+				} break;
+				case it_int16:
+				{
+					qint16 s16;
+					stream.readRawData( (char *) &s16, 2 );
+					item->setValue( s16 );
+				} break;
+				case it_int32:
+				{
+					qint32 s32;
+					stream.readRawData( (char *) &s32, 4 );
+					item->setValue( s32 );
+				} break;
+				case it_float:
+				{
+					float f32;
+					stream.readRawData( (char *) &f32, 4 );
+					item->setValue( f32 );
+				} break;
+				case it_color3f:
+				{
+					float r, g, b;
+					stream.readRawData( (char *) &r, 4 );
+					stream.readRawData( (char *) &g, 4 );
+					stream.readRawData( (char *) &b, 4 );
+					item->setValue( QColor::fromRgbF( r, g, b ) );
+				} break;
+				case it_color4f:
+				{
+					float r, g, b, a;
+					stream.readRawData( (char *) &r, 4 );
+					stream.readRawData( (char *) &g, 4 );
+					stream.readRawData( (char *) &b, 4 );
+					stream.readRawData( (char *) &a, 4 );
+					item->setValue( QColor::fromRgbF( r, g, b, a ) );
+				} break;
+				case it_string:
+				{
+					int len;
+					stream.readRawData( (char *) &len, 4 );
+					if ( len > 4096 )
+						qWarning( "maximum string length exceeded" );
+					QByteArray string = stream.device()->read( len );
+					item->setValue( QString( string ) );
+				} break;
+				default:
+				{
+					qCritical() << "encountered unknown type " << type << " during load of " << itemName( child ) << "(" << itemType( child ) << ")";
+					return false;
+				}
 			}
 		}
 	}
@@ -687,81 +690,86 @@ void NifModel::save( const QModelIndex & parent, QDataStream & stream )
 		QModelIndex child = index( row, 0, parent );
 		if ( evalCondition( child ) )
 		{
-			QString type = getInternalType( itemType( child ) );
+			int		 type  = getInternalType( itemType( child ) );
 			QVariant value = itemValue( child );
-			QString dim1 = itemArr1( child );
-			QString dim2 = itemArr2( child );
+			QString  dim1  = itemArr1( child );
+			QString  dim2  = itemArr2( child );
 			
 			if ( ! dim1.isEmpty() || ! dim2.isEmpty() || rowCount( child ) > 0 || itemType( child ).isEmpty() )
 			{
 				save( child, stream );
 			}
-			else if ( type == "uint8" )
+			else switch ( type )
 			{
-				quint8 u8 = (quint8) value.toInt();
-				stream.writeRawData( (char *) &u8, 1 );
+				case it_uint8:
+				{
+					quint8 u8 = (quint8) value.toInt();
+					stream.writeRawData( (char *) &u8, 1 );
+				} break;
+				case it_uint16:
+				{
+					quint16 u16 = (quint16) value.toInt();
+					stream.writeRawData( (char *) &u16, 2 );
+				} break;
+				case it_uint32:
+				{
+					quint32 u32 = (quint32) value.toInt();
+					stream.writeRawData( (char *) &u32, 4 );
+				} break;
+				case it_int8:
+				{
+					qint8 s8 = (qint8) value.toInt();
+					stream.writeRawData( (char *) &s8, 4 );
+				} break;
+				case it_int16:
+				{
+					qint16 s16 = (qint16) value.toInt();
+					stream.writeRawData( (char *) &s16, 4 );
+				} break;
+				case it_int32:
+				{
+					qint32 s32 = (qint32) value.toInt();
+					stream.writeRawData( (char *) &s32, 4 );
+				} break;
+				case it_float:
+				{
+					float f32 = value.toDouble();
+					stream.writeRawData( (char *) &f32, 4 );
+				} break;
+				case it_color3f:
+				{
+					QColor rgb = value.value<QColor>();
+					float r = rgb.redF();					
+					float g = rgb.greenF();					
+					float b = rgb.blueF();					
+					stream.writeRawData( (char *) &r, 4 );
+					stream.writeRawData( (char *) &g, 4 );
+					stream.writeRawData( (char *) &b, 4 );
+				} break;
+				case it_color4f:
+				{
+					QColor rgba = value.value<QColor>();
+					float r = rgba.redF();					
+					float g = rgba.greenF();					
+					float b = rgba.blueF();					
+					float a = rgba.alphaF();
+					stream.writeRawData( (char *) &r, 4 );
+					stream.writeRawData( (char *) &g, 4 );
+					stream.writeRawData( (char *) &b, 4 );
+					stream.writeRawData( (char *) &a, 4 );
+				} break;
+				case it_string:
+				{
+					QString string = value.toString();
+					int len = string.length();
+					stream.writeRawData( (char *) &len, 4 );
+					stream.writeRawData( (const char *) string.toAscii(), len );
+				} break;
+				default:
+				{
+					qCritical() << "encountered unknown type during save of " << itemName( child ) << "(" << itemType( child ) << ")";
+				}
 			}
-			else if ( type == "uint16" )
-			{
-				quint16 u16 = (quint16) value.toInt();
-				stream.writeRawData( (char *) &u16, 2 );
-			}
-			else if ( type == "uint32" )
-			{
-				quint32 u32 = (quint32) value.toInt();
-				stream.writeRawData( (char *) &u32, 4 );
-			}
-			else if ( type == "int8" )
-			{
-				qint8 s8 = (qint8) value.toInt();
-				stream.writeRawData( (char *) &s8, 4 );
-			}
-			else if ( type == "int16" )
-			{
-				qint16 s16 = (qint16) value.toInt();
-				stream.writeRawData( (char *) &s16, 4 );
-			}
-			else if ( type == "int32" )
-			{
-				qint32 s32 = (qint32) value.toInt();
-				stream.writeRawData( (char *) &s32, 4 );
-			}
-			else if ( type == "float" )
-			{
-				float f32 = value.toDouble();
-				stream.writeRawData( (char *) &f32, 4 );
-			}
-			else if ( type == "color3f" )
-			{
-				QColor rgb = value.value<QColor>();
-				float r = rgb.redF();					
-				float g = rgb.greenF();					
-				float b = rgb.blueF();					
-				stream.writeRawData( (char *) &r, 4 );
-				stream.writeRawData( (char *) &g, 4 );
-				stream.writeRawData( (char *) &b, 4 );
-			}
-			else if ( type == "color4f" )
-			{
-				QColor rgba = value.value<QColor>();
-				float r = rgba.redF();					
-				float g = rgba.greenF();					
-				float b = rgba.blueF();					
-				float a = rgba.alphaF();
-				stream.writeRawData( (char *) &r, 4 );
-				stream.writeRawData( (char *) &g, 4 );
-				stream.writeRawData( (char *) &b, 4 );
-				stream.writeRawData( (char *) &a, 4 );
-			}
-			else if ( type == "string" )
-			{
-				QString string = value.toString();
-				int len = string.length();
-				stream.writeRawData( (char *) &len, 4 );
-				stream.writeRawData( (const char *) string.toAscii(), len );
-			}
-			else
-				qCritical() << "encountered unknown type " << type << " during save of " << itemName( child ) << "(" << itemType( child ) << ")";
 		}
 	}
 }

@@ -21,7 +21,6 @@
 
 #include "nifmodel.h"
 
-GLuint texLoadRaw( QFile & f, int width, int height, int num_mipmaps, int bpp, quint32 rmask, quint32 gmask, quint32 bmask, quint32 amask, bool flipV, bool flipH );
 GLuint texLoadTGA( const QString & filename );
 GLuint texLoadDDS( const QString & filename, const QGLContext * context );
 
@@ -94,6 +93,7 @@ GLView::~GLView()
 {
 	makeCurrent();
 	glDeleteLists(nif, 1);
+	flushTextureCache();
 }
 
 void GLView::setNif( NifModel * nif )
@@ -242,13 +242,9 @@ void GLView::paintGL()
 
 	if ( doCompile )
 	{
-		foreach ( GLuint t, textures )
-			deleteTexture( t );
-		textures.clear();
-		
 		doCompile = false;
 		updated = false;
-
+		
 		if ( ! nif )	nif = glGenLists( 1 );
 		glNewList( nif, GL_COMPILE );
 		
@@ -364,45 +360,6 @@ static void compileMatrix( NifModel * model, const QModelIndex & idx )
 	}
 	
 	glMultMatrixf( matrix );
-}
-
-GLuint GLView::compileTexture( QString filename )
-{
-	QStringList list = texfolder.split( ";" );
-	QDir dir;
-	for ( int c = 0; c < list.count(); c++ )
-	{
-		dir.setPath( list[c] );
-		if ( dir.exists( filename ) )
-			break;
-		if ( dir.exists( "../" + filename ) )
-		{
-			dir.cd( ".." );
-			break;
-		}
-	}
-	
-	if ( ! dir.exists( filename ) )
-	{
-		qDebug() << "compileTexture( " << filename << " ) : texture not found";
-		return 0;
-	}
-	
-	if ( filename.toLower().endsWith( ".dds" ) )
-		return texLoadDDS( dir.filePath( filename ), context() );
-	else if ( filename.toLower().endsWith( ".tga" ) )
-		return texLoadTGA( dir.filePath( filename ) );
-	else
-	{
-		QImage image;
-		if ( image.load( dir.filePath( filename ) ) )
-			return bindTexture( image );
-		else
-		{
-			qDebug( "compileTexture( %s ) : could not load image", str( dir.filePath( filename ) ) );
-			return 0;
-		}
-	}
 }
 
 bool GLView::compileNode( int b, bool alphatoggle )
@@ -530,10 +487,7 @@ bool GLView::compileNode( int b, bool alphatoggle )
 			int data = model->getInt( child, "data" );
 			QModelIndex tridata = model->getBlock( data );
 			if ( alphatoggle != tri_alpha )
-			{
-				qDebug() << "     skipping due to alpha toggle";
 				continue;
-			}
 			if ( ! tridata.isValid() )
 			{
 				qDebug() << "     data block not found";
@@ -585,7 +539,7 @@ bool GLView::compileNode( int b, bool alphatoggle )
 				GLuint tex_id = compileTexture( tex_file );
 				if ( tex_id != 0 )
 				{
-					textures.append( tex_id );
+					glBindTexture( GL_TEXTURE_2D, tex_id );
 					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter );
 					glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
@@ -727,303 +681,5 @@ void GLView::advanceGears()
 }
 
 
-
-
-/*
- *  load a raw texture
- */
-
-GLuint texLoadRaw( QFile & f, int width, int height, int num_mipmaps, int bpp, quint32 rmask, quint32 gmask, quint32 bmask, quint32 amask, bool flipV, bool flipH )
-{
-	if ( bpp != 32 && bpp != 24 )
-	{	// check image depth; argb masks are ignored; asuming standard a8g8b8r8 or r8g8b8 format
-		qDebug( "texLoadRaw() : unsupported image depth %i", bpp );
-		return 0;
-	}
-	
-	GLuint tx_id;
-	glGenTextures(1, &tx_id);
-	glBindTexture(GL_TEXTURE_2D, tx_id);
-//	glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( num_mipmaps > 1 ? GL_FALSE : GL_TRUE ) );
-	
-	
-	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-	glPixelStorei( GL_UNPACK_SWAP_BYTES, GL_FALSE );
-	
-	int bytespp = ( bpp == 32 ? 4 : 3 );
-	
-	quint8 * data = (quint8 *) malloc( width * 4 );
-	quint8 * pixl = (quint8 *) malloc( width * height * 4 );
-	
-	int w = width;
-	int h = height;
-	
-	//flipH = !flipH;
-	//flipV = !flipV;
-	//qDebug( "bpp %i  flip %i %i", bpp, flipH, flipV );
-	
-	for ( int m = 0; m < num_mipmaps; m++ )
-	{
-		if ( w == 0 ) w = 1;
-		if ( h == 0 ) h = 1;
-		//qDebug( "w %i h %i m %i", w, h, m );
-		for ( int y = 0; y < h; y++ )
-		{
-			f.read( (char *) data, w * ( bpp == 32 ? 4 : 3 ) );
-			
-			const quint8 * src = data;
-			quint8 * dst = ( pixl + bytespp * ( w * ( flipV ? h - y - 1 : y ) + ( flipH ? w - 1 : 0 ) ) );
-			const quint32 subito = ( flipH ? 2 * bytespp : 0 );
-			if ( bpp == 32 )
-			{
-				quint8 b, g, r;
-				for ( int x = 0; x < w; x++ )
-				{
-					b = *src++;
-					g = *src++;
-					r = *src++;
-					*dst++ = r;
-					*dst++ = g;
-					*dst++ = b;
-					*dst++ = *src++;
-					dst -= subito;
-				}
-			}
-			else
-			{
-				quint8 b, g, r;
-				for ( int x = 0; x < w; x++ )
-				{
-					b = *src++;
-					g = *src++;
-					r = *src++;
-					*dst++ = r;
-					*dst++ = g;
-					*dst++ = b;
-					dst -= subito;
-				}
-			}
-		}
-		glTexImage2D( GL_TEXTURE_2D, m, bytespp, w, h, 0, ( bpp == 32 ? GL_RGBA : GL_RGB ), GL_UNSIGNED_BYTE, pixl );
-		w /= 2;
-		h /= 2;
-	}
-	
-	free( data );
-	free( pixl );
-	
-	return tx_id;
-}
-
-#define DDPF_FOURCC                0x00000004
-
-// DDS format structure
-struct DDSFormat {
-    quint32 dwSize;
-    quint32 dwFlags;
-    quint32 dwHeight;
-    quint32 dwWidth;
-    quint32 dwLinearSize;
-    quint32 dummy1;
-    quint32 dwMipMapCount;
-    quint32 dummy2[11];
-    struct {
-	quint32 dwSize;
-	quint32 dwFlags;
-	quint32 dwFourCC;
-	quint32 dwBPP;
-	quint32 dwRMask;
-	quint32 dwGMask;
-	quint32 dwBMask;
-	quint32 dwAMask;
-    } ddsPixelFormat;
-};
-
-// compressed texture pixel formats
-#define FOURCC_DXT1  0x31545844
-#define FOURCC_DXT2  0x32545844
-#define FOURCC_DXT3  0x33545844
-#define FOURCC_DXT4  0x34545844
-#define FOURCC_DXT5  0x35545844
-
-#ifndef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
-#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
-#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
-#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
-#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
-#endif
-
-#ifndef APIENTRY
-# define APIENTRY
-#endif
-typedef void (APIENTRY *pfn_glCompressedTexImage2D) ( GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid * );
-static pfn_glCompressedTexImage2D qt_glCompressedTexImage2D = 0;
-
-/*
- *  load a (compressed) dds texture
- */
- 
-GLuint texLoadDDS( const QString & filename, const QGLContext * context )
-{
-	//qDebug( "DDS" );
-	if ( !qt_glCompressedTexImage2D )
-	{
-		QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
-		if (!extensions.contains("GL_ARB_texture_compression"))
-		{
-			qDebug( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
-			return 0;
-		}
-		if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
-		{
-			qDebug( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
-			return 0;
-		}
-		qt_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2D");
-	}
-	if ( !qt_glCompressedTexImage2D )
-	{
-		qDebug( "glCompressedTexImage2D not found" );
-		return 0;
-	}
-	
-	QFile f( filename );
-	if ( ! f.open( QIODevice::ReadOnly ) )
-	{
-		qDebug( "texLoadDDS() : cannot open %s", (const char *) filename.toAscii() );
-		return 0;
-	}
-	
-	char tag[4];
-	f.read(&tag[0], 4);
-	if (strncmp(tag,"DDS ", 4) != 0)
-	{
-		qWarning("texLoadDDS(): not a DDS file");
-		return 0;
-	}
-	
-	DDSFormat ddsHeader;
-	f.read((char *) &ddsHeader, sizeof(DDSFormat));
-	
-	int blockSize = 16;
-	GLenum format;
-
-	if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
-	{
-		switch(ddsHeader.ddsPixelFormat.dwFourCC)
-		{
-			case FOURCC_DXT1:
-				format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-				blockSize = 8;
-				break;
-			case FOURCC_DXT3:
-				format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-				break;
-			case FOURCC_DXT5:
-				format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				break;
-			default:
-				qWarning("texLoadDDS(): DDS image compression not supported");
-				return 0;
-		}
-	}
-	else
-	{
-		/*
-		qDebug( "UNCOMPRESSED DDS" );
-		qDebug( "BPP %i", ddsHeader.ddsPixelFormat.dwBPP );
-		qDebug( "R %08X", ddsHeader.ddsPixelFormat.dwRMask );
-		qDebug( "G %08X", ddsHeader.ddsPixelFormat.dwGMask );
-		qDebug( "B %08X", ddsHeader.ddsPixelFormat.dwBMask );
-		qDebug( "A %08X", ddsHeader.ddsPixelFormat.dwAMask );
-		*/
-		return texLoadRaw( f, ddsHeader.dwWidth, ddsHeader.dwHeight,
-			ddsHeader.dwMipMapCount, ddsHeader.ddsPixelFormat.dwBPP,
-			ddsHeader.ddsPixelFormat.dwRMask, ddsHeader.ddsPixelFormat.dwGMask,
-			ddsHeader.ddsPixelFormat.dwBMask, ddsHeader.ddsPixelFormat.dwAMask,
-			false, false );
-	}
-	
-	f.seek(ddsHeader.dwSize + 4);
-	
-	GLuint tx_id;
-	glGenTextures(1, &tx_id);
-	glBindTexture(GL_TEXTURE_2D, tx_id);
-//	glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( ddsHeader.dwMipMapCount <= 1 ? GL_TRUE : GL_FALSE ) );
-	
-	//qDebug( "w %i h %i m %i", ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
-	
-	GLubyte * pixels = (GLubyte *) malloc(((ddsHeader.dwWidth+3)/4) * ((ddsHeader.dwHeight+3)/4) * blockSize);
-	int w, h, s;
-	int m = ddsHeader.dwMipMapCount;
-	if ( m == 0 ) m = 1;
-	for(int i = 0; i < m; ++i)
-	{
-		w = ddsHeader.dwWidth >> i;
-		h = ddsHeader.dwHeight >> i;
-		if (w == 0) w = 1;
-		if (h == 0) h = 1;
-		s = ((w+3)/4) * ((h+3)/4) * blockSize;
-		f.read( (char *) pixels, s );
-		qt_glCompressedTexImage2D( GL_TEXTURE_2D, i, format, w, h, 0, s, pixels );
-	}
-	
-	f.close();
-	
-	free(pixels);
-	
-	return tx_id;
-}
-
-#define TGA_COLOR		2
-#define TGA_COLOR_RLE	10
-
-/*
- *  load a tga texture
- */
- 
-GLuint texLoadTGA( const QString & filename )
-{
-	QFile f( filename );
-	if ( ! f.open( QIODevice::ReadOnly ) )
-	{
-		qDebug( "texLoadTGA() : could not open file %s", (const char *) filename.toAscii() );
-		return 0;
-	}
-	
-	// read in tga header
-	quint8 hdr[18];
-	qint64 readBytes = f.read((char *)hdr, 18);
-	if ( readBytes != 18 )
-		return 0;
-	if ( hdr[0] ) f.read( hdr[0] );
-	
-	int depth = hdr[16];
-	int alphaValue  = hdr[17] & 15;
-	bool flipV = hdr[17] & 32;
-	bool flipH = hdr[17] & 16;
-	int width = hdr[12] + 256 * hdr[13];
-	int height = hdr[14] + 256 * hdr[15];
-
-	// check format and call texLoadRaw
-	if ( ( depth == 32 && alphaValue == 8 ) || ( depth == 24 && alphaValue == 0 ) )
-	{
-		switch( hdr[2] )
-		{
-		case TGA_COLOR: 
-			if ( depth == 32 && alphaValue == 8 )
-				return texLoadRaw( f, width, height, 1, depth, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000, flipV, flipH );
-			else if ( depth == 24 && alphaValue == 0 )
-				return texLoadRaw( f, width, height, 1, depth, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000, flipV, flipH );
-			break;
-		case TGA_COLOR_RLE:
-			qDebug( "texLoadTGA() : rle compression not supported yet" );
-			return 0;
-		}
-	}
-	
-	qDebug( "texLoadTGA() : unsupported image format ( bpp % i, alpha % i, format % i )", depth, alphaValue, hdr[2] );
-	return 0;
-}
 
 #endif

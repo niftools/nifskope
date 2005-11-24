@@ -22,10 +22,12 @@
 
 #define err( X ) { errorStr = X; return false; }
 
-QMap<QString,NifBasicType*>	NifModel::types;
-QMap<QString,NifBlock*>		NifModel::compounds;
-QMap<QString,NifBlock*>		NifModel::ancestors;
-QMap<QString,NifBlock*>		NifModel::blocks;
+QStringList						NifModel::internalTypes;
+
+QHash<QString,NifBasicType*>	NifModel::types;
+QHash<QString,NifBlock*>		NifModel::compounds;
+QHash<QString,NifBlock*>		NifModel::ancestors;
+QHash<QString,NifBlock*>		NifModel::blocks;
 
 QStringList					NifModel::uncondTypes;
 
@@ -36,13 +38,11 @@ public:
 	{
 		depth = 0;
 		elements << "niflotoxml" << "type" << "compound" << "ancestor" << "niblock" << "add" << "inherit";
-		internalTypes << "uint8" << "uint16" << "uint32" << "int8" << "int16" << "int32" << "float" << "string" << "color3f" << "color4f";
 	}
 	
 	int depth;
 	int stack[10];
 	QStringList elements;
-	QStringList internalTypes;
 	QString errorStr;
 	
 	NifBasicType	* typ;
@@ -61,24 +61,23 @@ public:
 		return stack[--depth];
 	}
 	
-	QVariant convertToType( const QString & vstring, const QString & type )
+	QVariant convertToType( const QString & vstring, int type )
 	{
-		int typ = internalTypes.indexOf( type );
-		switch ( typ )
+		switch ( type )
 		{
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-			case 4:
-			case 5:
+			case NifModel::it_uint8:
+			case NifModel::it_uint16:
+			case NifModel::it_uint32:
+			case NifModel::it_int8:
+			case NifModel::it_int16:
+			case NifModel::it_int32:
 				return vstring.toInt();
-			case 6:
+			case NifModel::it_float:
 				return vstring.toDouble();
-			case 7:
+			case NifModel::it_string:
 				return vstring;
-			case 8:
-			case 9:
+			case NifModel::it_color3f:
+			case NifModel::it_color4f:
 				return QColor( vstring );
 			default:
 				errorStr = "can't convert unknown internal type " + type;
@@ -108,13 +107,17 @@ public:
 				switch ( x )
 				{
 					case 1:
-						if ( ! typ ) typ = new NifBasicType;
-						typ->id = list.value( "name" ).toLower();
-						typ->type = list.value( "type" ).toLower();
-						typ->display = list.value( "display" ).toLower();
-						typ->value = convertToType( list.value( "value" ), typ->type );
-						typ->ver1 = NifModel::version2number( list.value( "ver1" ) );
-						typ->ver2 = NifModel::version2number( list.value( "ver2" ) );
+						{
+							int intTyp = NifModel::internalTypes.indexOf( list.value( "type" ) );
+							if ( intTyp < 0 )	err( "type declaration must name a valid internal type" );
+							if ( ! typ ) typ = new NifBasicType;
+							typ->id = list.value( "name" ).toLower();
+							typ->internalType = intTyp;
+							typ->display = list.value( "display" ).toLower();
+							typ->value = convertToType( list.value( "value" ), typ->internalType );
+							typ->ver1 = NifModel::version2number( list.value( "ver1" ) );
+							typ->ver2 = NifModel::version2number( list.value( "ver2" ) );
+						}
 						break;
 					case 2:
 					case 3:
@@ -172,7 +175,7 @@ public:
 			case 1:
 				if ( typ )
 				{
-					if ( ! ( typ->id.isEmpty() || typ->type.isEmpty() ) )
+					if ( ! typ->id.isEmpty() )
 					{
 						NifModel::types.insertMulti( typ->id, typ );
 						typ = 0;
@@ -300,6 +303,13 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	qDeleteAll( ancestors );	ancestors.clear();
 	qDeleteAll( blocks );		blocks.clear();
 	
+	internalTypes.clear();
+	internalTypes
+		<< "uint8" << "uint16" << "uint32"
+		<< "int8" << "int16" << "int32"
+		<< "float" << "string"
+		<< "color3f" << "color4f";
+	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
 		return QString( "error: couldn't open xml description file: " + filename );
@@ -401,6 +411,8 @@ void NifModel::insertType( const NifData & data, const QModelIndex & idx, int )
 		QString arg = "(" + data.arg + ")";
 		foreach ( NifData d, compound->types )
 		{
+			if ( d.arr1.contains( "(arg)" ) ) d.arr1 = d.arr1.replace( d.arr1.indexOf( "(arg)" ), 5, arg );
+			if ( d.arr2.contains( "(arg)" ) ) d.arr2 = d.arr2.replace( d.arr2.indexOf( "(arg)" ), 5, arg );
 			if ( d.cond.contains( "(arg)" ) ) d.cond = d.cond.replace( d.cond.indexOf( "(arg)" ), 5, arg );
 			insertType( d, idy );
 		}

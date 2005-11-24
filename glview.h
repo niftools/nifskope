@@ -21,7 +21,12 @@ class NifModel;
 #ifdef QT_OPENGL_LIB
 
 #include <QGLWidget>
+#include <QCache>
+#include <QDateTime>
+#include <QFile>
 #include <QStack>
+
+class GLTex;
 
 class GLView : public QGLWidget
 {
@@ -57,6 +62,7 @@ public slots:
 	void setLighting( bool );
 	
 	void setTextureFolder( const QString & );
+	void flushTextureCache();
 
 signals: 
 	void xRotationChanged(int angle);
@@ -85,7 +91,6 @@ private:
 	GLuint compileTexture( QString filename );
 
 	GLuint nif;
-	QList<GLuint> textures;
 	
 	GLuint click_tex;
 	
@@ -109,7 +114,24 @@ private:
 	bool lightsOn;
 	
 	QStack<int> nodestack;
+	QCache<QString,GLTex> textures;
 };
+
+class GLTex
+{
+public:
+	static GLTex * create( const QString & filepath, const QGLContext * context );
+	
+	~GLTex();
+
+	GLuint		id;
+	QString		filepath;
+	QDateTime	loaded;
+	
+protected:
+	GLTex();
+};
+
 
 #else
 class GLView {};

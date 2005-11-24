@@ -18,6 +18,7 @@
 
 #include <QAbstractItemModel>
 
+#include <QHash>
 #include <QDataStream>
 #include <QStringList>
 
@@ -68,7 +69,7 @@ class NifBasicType
 {
 public:
 	QString				id;
-	QString				type;
+	int					internalType;
 	QString				display;
 	QVariant			value;
 	QString				text;
@@ -172,7 +173,7 @@ public:
 	static bool isUnconditional( const QString & type );
 	
 	// this returns the internal type of a basic type
-	QString getInternalType( const QString & name ) const;
+	int getInternalType( const QString & name ) const;
 	// this return the display hint of a basic type
 	QString getDisplayHint( const QString & name ) const;
 	// this return the description of a basic type
@@ -219,11 +220,20 @@ protected:
 	quint32		version;
 	QByteArray	version_string;
 	
+	// internal types every basic type drops down to one of these
+	enum {
+		it_uint8 = 0, it_uint16 = 1, it_uint32 = 2,
+		it_int8 = 3, it_int16 = 4, it_int32 = 5,
+		it_float = 6, it_string = 7,
+		it_color3f = 8, it_color4f = 9
+	};
+	static QStringList internalTypes;
+	
 	//
-	static QMap<QString,NifBasicType*>	types;
-	static QMap<QString,NifBlock*>		compounds;
-	static QMap<QString,NifBlock*>		ancestors;
-	static QMap<QString,NifBlock*>		blocks;
+	static QHash<QString,NifBasicType*>	types;
+	static QHash<QString,NifBlock*>		compounds;
+	static QHash<QString,NifBlock*>		ancestors;
+	static QHash<QString,NifBlock*>		blocks;
 	
 	static QStringList uncondTypes;
 	
@@ -261,11 +271,11 @@ inline bool NifModel::isUnconditional( const QString & name )
 	return uncondTypes.contains( name );
 }
 
-inline QString NifModel::getInternalType( const QString & name ) const
+inline int NifModel::getInternalType( const QString & name ) const
 {
 	NifBasicType * type = getType( name );
-	if ( type )		return type->type;
-	else			return QString();
+	if ( type )		return type->internalType;
+	else			return -1;
 }
 
 inline QString NifModel::getDisplayHint( const QString & name ) const
