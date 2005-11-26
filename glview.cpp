@@ -76,17 +76,18 @@ GLView::GLView()
 	nif = 0;
 	xRot = yRot = zRot = 0;
 	zoom = 1000;
+	zInc = 1;
 	
 	updated = false;
 	doCompile = false;
 	
 	lightsOn = true;
+	drawaxis = true;
 	
 	model = 0;
 
-	QTimer *timer = new QTimer(this);
+	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(advanceGears()));
-	//timer->start(20);
 }
 
 GLView::~GLView()
@@ -122,6 +123,20 @@ void GLView::setLighting( bool l )
 {
 	lightsOn = l;
 	updateGL();
+}
+
+void GLView::setDrawAxis( bool a )
+{
+	drawaxis = a;
+	updateGL();
+}
+
+void GLView::setRotate( bool r )
+{
+	if ( r )
+		timer->start(25);
+	else
+		timer->stop();
 }
 
 void GLView::setXRotation(int angle)
@@ -184,6 +199,12 @@ void GLView::setZoom( int z )
 	}
 }
 
+void GLView::advanceGears()
+{
+	setZRotation( zRot + zInc );
+	updateGL();
+}
+
 void GLView::dataChanged()
 {
 	updated = true;
@@ -217,6 +238,9 @@ void GLView::initializeGL()
 
 void GLView::paintGL()
 {
+	if ( ! isVisible() )
+		return;
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	int x = qMax( width(), height() );
@@ -278,21 +302,63 @@ void GLView::paintGL()
 	}
 
 	glLoadIdentity();
-	glTranslated( - xTrans / 40.0, - yTrans / 40.0, - zoom / 10.0);
+	glTranslated( xTrans / 40.0, - yTrans / 40.0, - zoom / 10.0);
 	glRotated(xRot / 16.0, 1.0, 0.0, 0.0);
 	glRotated(yRot / 16.0, 0.0, 1.0, 0.0);
 	glRotated(zRot / 16.0, 0.0, 0.0, 1.0);
 	
 	if ( nif ) glCallList(nif);
 	
+	glDisable( GL_LIGHTING );
+	glDisable( GL_TEXTURE_2D );
+
+	if ( drawaxis )
+	{
+		glBegin( GL_LINES );
+		glColor3f( 1.0, 0.0, 0.0 );
+		glVertex3f( - 1000.0, 0, 0 );
+		glVertex3f( + 1000.0, 0, 0 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0, + 20,    0 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0, - 20,    0 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0,    0, + 20 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0,    0, - 20 );
+		glColor3f( 0.0, 1.0, 0.0 );
+		glVertex3f( 0, - 1000.0, 0 );
+		glVertex3f( 0, + 1000.0, 0 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f( + 20, +  950.0,    0 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f( - 20, +  950.0,    0 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f(    0, +  950.0, + 20 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f(    0, +  950.0, - 20 );
+		glColor3f( 0.0, 0.0, 1.0 );
+		glVertex3f( 0, 0, - 1000.0 );
+		glVertex3f( 0, 0, + 1000.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f(    0, + 20, +  950.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f(    0, - 20, +  950.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f( + 20,    0, +  950.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f( - 20,    0, +  950.0 );
+		glEnd();
+	}
+	
+	glDisable( GL_DEPTH_TEST );
+
 	glLoadIdentity();
 	if ( updated )
 	{
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho (0.0, width(), 0.0, height(), -1.0, 1.0);
-		glDisable( GL_DEPTH_TEST );
-		glDisable( GL_LIGHTING );
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glEnable( GL_TEXTURE_2D );
@@ -303,7 +369,7 @@ void GLView::paintGL()
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-		glColor3f( 0.5, 0.5, 0.5 );
+		glColor4f( 0.5, 0.5, 0.5, 0.0 );
 		glBegin( GL_QUADS );
 		glTexCoord2d( 0.0, 0.0 );		glVertex2d( 0.0, 0.0 );
 		glTexCoord2d( 1.0, 0.0 );		glVertex2d( 255.0, 0.0 );
@@ -311,22 +377,15 @@ void GLView::paintGL()
 		glTexCoord2d( 0.0, 1.0 );		glVertex2d( 0.0, 31.0 );
 		glEnd();
 	}
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << "GL ERROR : " << (const char *) gluErrorString( err );
 }
 
 void GLView::resizeGL(int width, int height)
 {
 	glViewport(0, 0, width, height);
-	
-	int x = qMax( width, height );
-	
-	float fx = (float) width / x;
-	float fy = (float) height / x;
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glFrustum(-fx, +fx, -fy, fy, 5.0, 100000.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 }
 
 static void compileMatrix( NifModel * model, const QModelIndex & idx )
@@ -349,7 +408,7 @@ static void compileMatrix( NifModel * model, const QModelIndex & idx )
 	matrix[ 13 ] = model->getFloat( translation, "y" );
 	matrix[ 14 ] = model->getFloat( translation, "z" );
 
-	matrix[15] = 1.0;
+	matrix[ 15 ] = 1.0;
 	
 	GLfloat scale = model->getFloat( idx, "scale" );
 	if ( scale != 1.0 )
@@ -385,20 +444,19 @@ bool GLView::compileNode( int b, bool alphatoggle )
 	compileMatrix( model, idx );
 	
 	QModelIndex children = model->getIndex( idx, "children" );
-	if ( ! children.isValid() )
+	QModelIndex childlinks = model->getIndex( children, "indices" );
+	if ( ! ( children.isValid() && childlinks.isValid() ) )
 	{
-		qDebug() << "compileNode( " << idx.row() << " ) : children link list not found";
+		qWarning() << "compileNode( " << b << " ) : children link list not found";
 		return has_alpha;
 	}
-	QModelIndex childlinks = model->getIndex( children, "indices" );
-	if ( ! childlinks.isValid() ) return has_alpha;
 	for ( int c = 0; c < model->rowCount( childlinks ); c++ )
 	{
 		int r = model->itemValue( childlinks.child( c, 0 ) ).toInt();
 		QModelIndex child = model->getBlock( r );
 		if ( ! child.isValid() )
 		{
-			qDebug() << "bock " << r << " not found";
+			qWarning() << "block " << r << " not found";
 			continue;
 		}
 		if ( model->itemName( child ) == "NiNode" || model->itemName( child ) == "NiLODNode" )
@@ -490,18 +548,18 @@ bool GLView::compileNode( int b, bool alphatoggle )
 				continue;
 			if ( ! tridata.isValid() )
 			{
-				qDebug() << "     data block not found";
+				qWarning() << model->itemName( child ) << "(" << r << ") data block (" << data << ") not found";
 				continue;
 			}
 			if ( model->itemName( tridata ) != "NiTriShapeData" && model->itemName( tridata ) != "NiTriStripsData" )
 			{
-				qDebug() << "     data block is not of type NiTriShapeData and not of type NiTriStripsData";
+				qWarning() << model->itemName( child ) << "(" << r << ") data block (" << data << ") type mismatch";
 				continue;
 			}
 			QModelIndex vertices = model->getIndex( tridata, "vertices" );
 			if ( ! vertices.isValid() )
 			{
-				qDebug() << "     data block contains no vertices";
+				qWarning() << model->itemName( tridata ) << "(" << data << ") contains no vertices";
 				continue;
 			}
 			QVector<GLfloat> verts;
@@ -590,34 +648,41 @@ bool GLView::compileNode( int b, bool alphatoggle )
 					}
 				}
 				else
-				{
-					qDebug() << "    triangle array not found";
-				}
+					qWarning() << model->itemName( tridata ) << "(" << data << ") triangle array not found";
 				glEnd();
 			}
 			else
 			{
 				QModelIndex points = model->getIndex( tridata, "points" );
-				for ( int r = 0; r < model->rowCount( points ); r++ )
+				if ( points.isValid() )
 				{
-					glBegin( GL_TRIANGLE_STRIP );
-					QModelIndex strip = points.child( r, 0 );
-					for ( int s = 0; s < model->rowCount( strip ); s++ )
+					for ( int r = 0; r < model->rowCount( points ); r++ )
 					{
-						int v1 = model->itemValue( strip.child( s, 0 ) ).toInt();
-						if ( norms.count() > v1*3 ) glNormal3f( norms[v1*3+0], norms[v1*3+1], norms[v1*3+2] );
-						if ( uvs.count() > v1*2 ) glTexCoord2f( uvs[v1*2+0], uvs[v1*2+1] );
-						if ( colors.count() > v1 ) { QColor c = colors[v1]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-						glVertex3f( verts[v1*3+0], verts[v1*3+1], verts[v1*3+2] );
+						glBegin( GL_TRIANGLE_STRIP );
+						QModelIndex strip = points.child( r, 0 );
+						for ( int s = 0; s < model->rowCount( strip ); s++ )
+						{
+							int v1 = model->itemValue( strip.child( s, 0 ) ).toInt();
+							if ( norms.count() > v1*3 ) glNormal3f( norms[v1*3+0], norms[v1*3+1], norms[v1*3+2] );
+							if ( uvs.count() > v1*2 ) glTexCoord2f( uvs[v1*2+0], uvs[v1*2+1] );
+							if ( colors.count() > v1 ) { QColor c = colors[v1]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
+							glVertex3f( verts[v1*3+0], verts[v1*3+1], verts[v1*3+2] );
+						}
+						glEnd();
 					}
-					glEnd();
 				}
+				else
+					qWarning() << model->itemName( tridata ) << "(" << data << ") 'points' array not found";
 			}
 			glPopMatrix();
 		}
 	}
 	glPopMatrix();
 	nodestack.pop();
+
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << "GL ERROR : " << (const char *) gluErrorString( err );
 	return has_alpha;
 }
 
@@ -672,12 +737,6 @@ void GLView::wheelEvent( QWheelEvent * event )
 	{
 		setZoom( zoom - zoom / 8 );
 	}
-}
-
-void GLView::advanceGears()
-{
-	setZRotation( zRot + 1 );
-	updateGL();
 }
 
 

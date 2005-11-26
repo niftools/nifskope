@@ -1,3 +1,18 @@
+/****************************************************************************
+**
+** nifscope: a tool for analyzing and editing NetImmerse files (.nif & .kf)
+**
+** This file may be used under the terms of the GNU General Public
+** License version 2.0 as published by the Free Software Foundation
+** and appearing in the file LICENSE.GPL included in the packaging of
+** this file.
+**
+** This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+** WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+**
+****************************************************************************/
+
+
 #ifdef QT_OPENGL_LIB
 
 #include "glview.h"
@@ -47,7 +62,7 @@ GLuint GLView::compileTexture( QString filename )
 	
 	if ( ! dir.exists( filename ) )
 	{
-		qDebug() << "texture " << filename << " not found";
+		qWarning() << "texture " << filename << " not found";
 		return 0;
 	}
 	
@@ -79,8 +94,7 @@ void uncompressRLE( quint8 * data, int w, int h, int bpp, quint8 * pixel )
 			{
 				for ( int b = 0; b < bytespp; b++ )
 					*pixel++ = px[b];
-				c++;
-			} while ( rl-- > 0 );
+			} while ( rl-- > 0 && ++c < w*h );
 		}
 		else
 		{
@@ -89,8 +103,7 @@ void uncompressRLE( quint8 * data, int w, int h, int bpp, quint8 * pixel )
 			{
 				for ( int b = 0; b < bytespp; b++ )
 					*pixel++ = *data++;
-				c++;
-			} while ( rl-- > 0 );
+			} while ( rl-- > 0 && ++c < w*h );
 		}
 	}
 }
@@ -243,26 +256,26 @@ GLuint texLoadDDS( const QString & filename, const QGLContext * context )
 		QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
 		if (!extensions.contains("GL_ARB_texture_compression"))
 		{
-			qDebug( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
+			qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
 			return 0;
 		}
 		if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
 		{
-			qDebug( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
+			qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
 			return 0;
 		}
 		qt_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2D");
 	}
 	if ( !qt_glCompressedTexImage2D )
 	{
-		qDebug( "glCompressedTexImage2D not found" );
+		qWarning( "glCompressedTexImage2D not found" );
 		return 0;
 	}
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 	{
-		qDebug( "texLoadDDS() : cannot open %s", (const char *) filename.toAscii() );
+		qWarning() << "texLoadDDS( " << filename << " ) : cannot open";
 		return 0;
 	}
 	
@@ -270,7 +283,7 @@ GLuint texLoadDDS( const QString & filename, const QGLContext * context )
 	f.read(&tag[0], 4);
 	if (strncmp(tag,"DDS ", 4) != 0)
 	{
-		qWarning("texLoadDDS(): not a DDS file");
+		qWarning() << "texLoadDDS( " << filename << " ) : not a DDS file";
 		return 0;
 	}
 	
@@ -298,7 +311,7 @@ GLuint texLoadDDS( const QString & filename, const QGLContext * context )
 				format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				break;
 			default:
-				qWarning("texLoadDDS(): DDS image compression not supported");
+				qWarning() << "texLoadDDS( " << filename << " ) : DDS image compression type not supported";
 				return 0;
 		}
 	}
@@ -406,7 +419,7 @@ GLuint texLoadTGA( const QString & filename )
 		}
 	}
 	
-	qDebug( "texLoadTGA() : unsupported image format ( bpp %i, alpha %i, format %i )", depth, alphaValue, hdr[2] );
+	qWarning( "texLoadTGA() : unsupported image format ( bpp %i, alpha %i, format %i )", depth, alphaValue, hdr[2] );
 	return 0;
 }
 
@@ -425,7 +438,7 @@ GLuint texLoadBMP( const QString & filename )
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 	{
-		qDebug( "texLoadBMP() : could not open file %s", (const char *) filename.toAscii() );
+		qWarning() << "texLoadBMP( " << filename << " ) : could not open file";
 		return 0;
 	}
 	
@@ -437,7 +450,7 @@ GLuint texLoadBMP( const QString & filename )
 	
 	if (strncmp((char*)hdr,"BM", 2) != 0)
 	{
-		qWarning("texLoadBMP(): not a BMP file");
+		qWarning() << "texLoadBMP( " << filename << " ) : not a BMP file";
 		return 0;
 	}
 	
@@ -457,7 +470,7 @@ GLuint texLoadBMP( const QString & filename )
 	
 	if ( bpp != 24 || compression != 0 || offset != 54 )
 	{
-		qDebug() << "texLoadBMP( " << filename << " ) : image format not supported";
+		qWarning() << "texLoadBMP( " << filename << " ) : image format not supported";
 		return 0;
 	}
 	
@@ -488,7 +501,7 @@ GLTex * GLTex::create( const QString & filepath, const QGLContext * context )
 		id = texLoadBMP( filepath );
 	else
 	{
-		qDebug() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
+		qWarning() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
 		return 0;
 	}
 	

@@ -25,6 +25,7 @@ class NifModel;
 #include <QDateTime>
 #include <QFile>
 #include <QStack>
+#include <QTimer>
 
 class GLTex;
 
@@ -41,6 +42,8 @@ public:
 	int zRotation() const { return zRot; }
 	
 	bool lighting() const { return lightsOn; }
+	bool drawAxis() const { return drawaxis; }
+	bool rotate() const { return timer->isActive(); }
 	
 	QString textureFolder() const { return texfolder; }
 	
@@ -59,6 +62,9 @@ public slots:
 	void setXTrans( int );
 	void setYTrans( int );
 	
+	void setRotate( bool );
+	
+	void setDrawAxis( bool );
 	void setLighting( bool );
 	
 	void setTextureFolder( const QString & );
@@ -99,6 +105,8 @@ private:
 	int zRot;
 	int zoom;
 	
+	int zInc;
+	
 	int xTrans;
 	int yTrans;
 	
@@ -112,9 +120,12 @@ private:
 	QString texfolder;
 	
 	bool lightsOn;
+	bool drawaxis;
 	
 	QStack<int> nodestack;
 	QCache<QString,GLTex> textures;
+	
+	QTimer * timer;
 };
 
 class GLTex
