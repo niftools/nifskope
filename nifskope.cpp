@@ -171,10 +171,9 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		optGL->setChecked( ogl->isVisibleTo( this ) );
 		optGL->setEnabled( ogl->isValid() );
 		connect( optGL, SIGNAL( toggled( bool ) ), ogl, SLOT( setVisible( bool ) ) );
-		
 		optGL->setLayout( new QVBoxLayout );
-		optGL->layout()->addWidget( new QLabel( "texture folder" ) );
 		
+		optGL->layout()->addWidget( new QLabel( "texture folder" ) );
 		QLineEdit * optTexdir = new QLineEdit;
 		optGL->layout()->addWidget( optTexdir );
 		connect( optTexdir, SIGNAL( textChanged( const QString & ) ), ogl, SLOT( setTextureFolder( const QString & ) ) );
@@ -186,6 +185,18 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		optLights->setChecked( settings.value( "enable lighting", true ).toBool() );
 		connect( optLights, SIGNAL( toggled( bool ) ), ogl, SLOT( setLighting( bool ) ) );
 		ogl->setLighting( optLights->isChecked() );
+		
+		QCheckBox * optAxis = new QCheckBox( "draw axis" );
+		optGL->layout()->addWidget( optAxis );
+		optAxis->setChecked( settings.value( "draw axis", true ).toBool() );
+		connect( optAxis, SIGNAL( toggled( bool ) ), ogl, SLOT( setDrawAxis( bool ) ) );
+		ogl->setDrawAxis( optAxis->isChecked() );
+		
+		QCheckBox * optRotate = new QCheckBox( "rotate" );
+		optGL->layout()->addWidget( optRotate );
+		optRotate->setChecked( settings.value( "rotate", true ).toBool() );
+		connect( optRotate, SIGNAL( toggled( bool ) ), ogl, SLOT( setRotate( bool ) ) );
+		ogl->setRotate( optAxis->isChecked() );
 #endif
 		
 		QGroupBox * optMisc = new QGroupBox;
@@ -224,6 +235,15 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	// last but not least: set up a custom delegate to provide edit functionality
 	tree->setItemDelegate( model->createDelegate() );
 	
+	// fetch context menu signals from model views
+	list->setContextMenuPolicy( Qt::CustomContextMenu );
+	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+			this, SLOT( contextMenu( const QPoint & ) ) );
+	tree->setContextMenuPolicy( Qt::CustomContextMenu );
+	connect( tree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+			this, SLOT( contextMenu( const QPoint & ) ) );
+	
+	// load in the model
 	load();
 }
 
@@ -233,11 +253,83 @@ NifSkope::~NifSkope()
 		saveOptions();
 }
 
+void NifSkope::contextMenu( const QPoint & pos )
+{
+	QModelIndex idx;
+	QPoint p = pos;
+	if ( sender() == tree )
+	{
+		idx = tree->indexAt( pos );
+		p = tree->mapToGlobal( pos );
+	}
+	else if ( sender() == list )
+	{
+		idx = list->indexAt( pos );
+		p = list->mapToGlobal( pos );
+	}
+	
+	QMenu * menu = new QMenu( this );
+	
+	{
+		QMenu * m = new QMenu( "insert Block" );
+		QStringList ids = model->allNiBlocks();
+		ids.sort();
+		foreach( QString x, ids )
+			m->addAction( x );
+		menu->addMenu( m );
+	}
+	
+	if ( model->getBlockNumber( idx ) >= 0 )
+	{
+		menu->addAction( "remove Block" );
+	}
+	else
+	{
+		menu->addSeparator();
+		menu->addAction( "update Header" );
+	}
+	
+	if ( ! model->itemArr1( idx ).isEmpty() )
+	{
+		menu->addSeparator();
+		QAction * a = menu->addAction( "update Array" );
+		a->setEnabled( model->evalCondition( idx, true ) );
+	}
+
+	QAction * a = menu->exec( p );
+	if ( a ) 
+	{
+		if ( a->text() == "update Header" )
+		{
+			model->updateHeader();
+		}
+		else if ( a->text() == "update Array" )
+		{
+			model->updateArray( idx );
+		}
+		else if ( a->text() == "remove Block" )
+		{
+			model->removeNiBlock( model->getBlockNumber( idx ) );
+			model->updateHeader();
+		}
+		else
+		{
+			model->insertNiBlock( a->text(), model->getBlockNumber( idx ) );
+			model->updateHeader();
+		}
+	}
+	delete menu;
+}
+
 void NifSkope::about()
 {
 	QMessageBox::about( this, "About NifSkope",
-	"NifSkope is a simple low level tool for editing NetImmerse '.nif' files.<br><br>"
-	"Because it uses the Qt libraries it is free software. You should have received"
+	"NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files."
+	"<br><br>"
+	"NifSkope is based on the file format data base of the NifTools sourceforge group."
+	"Visit our site at http://niftools.sourceforge.net for more information."
+	"<br><br>"
+	"Because NifSkope uses the Qt libraries it is free software. You should have received"
 	" a copy of the GPL and the source code all together in one package.<br>");
 }
 
@@ -252,6 +344,8 @@ void NifSkope::saveOptions()
 	settings.setValue( "show opengl", ogl->isVisibleTo( this ) );
 	settings.setValue( "texture folder", ogl->textureFolder() );
 	settings.setValue( "enable lighting", ogl->lighting() );
+	settings.setValue( "draw axis", ogl->drawAxis() );
+	settings.setValue( "rotate", ogl->rotate() );
 #endif
 	settings.setValue( "hide condition zero", conditionZero->isChecked() );
 	settings.setValue( "auto save settings", autoSettings->isChecked() );
@@ -298,16 +392,16 @@ void NifSkope::updateConditionZero()
 
 void NifSkope::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 {
-	if ( ! idx.isValid() || ! xdi.isValid() )
+	if ( ! conditionZero->isChecked() )
+		return;
+	
+	if ( ! ( idx.isValid() && xdi.isValid() ) )
 	{
 		showHideRows( QModelIndex() );
 		return;
 	}
 	
 	QModelIndex block = idx;
-	
-	if ( block.isValid() && ( block.row() != 0 || block.column() != 0 ) )
-		block = block.sibling( 0, 0 );
 	
 	while ( block.parent().isValid() )
 		block = block.parent();

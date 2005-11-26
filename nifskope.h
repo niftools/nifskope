@@ -17,6 +17,7 @@
 #define NIFSKOPE_H
 
 #include <QLineEdit>
+#include <QMenu>
 #include <QWidget>
 
 
@@ -52,21 +53,22 @@ protected slots:
 	void updateConditionZero();
 	
 	void dataChanged( const QModelIndex &, const QModelIndex & );
+	void contextMenu( const QPoint & pos );
 	
 protected:
 	void showHideRows( QModelIndex );
 	
-public:
-	QLineEdit * lineLoad;
-	QLineEdit * lineSave;
-	
-	Popup * popOpts;
-
+private:
 	NifModel * model;
 	
 	QListView * list;
 	QTreeView * tree;
 	GLView * ogl;
+	
+	Popup * popOpts;
+
+	QLineEdit * lineLoad;
+	QLineEdit * lineSave;
 	
 	QCheckBox * conditionZero;
 	QCheckBox * autoSettings;

@@ -119,19 +119,53 @@ public:
 	static QString parseXmlDescription( const QString & filename );
 	
 
+	// this updates the header infos ( num blocks etc. )
+	void updateHeader();
+	// this updates an array ( append or remove items )
+	void updateArray( const QModelIndex & array, bool fast = false );
+	
+	
 	// insert or append ( row == -1 ) a new NiBlock
-	void insertNiBlock( const QString & identifier, int row = -1 );
+	void insertNiBlock( const QString & identifier, int row = -1, bool fast = false );
+	// remove a block from the list
+	void removeNiBlock( int blocknum );
+	// returns the block number
+	int getBlockNumber( const QModelIndex & ) const;
+	// get the NiBlock at index x ( optional: check if it is of type name )
+	QModelIndex getBlock( int x, const QString & name = QString() ) const;
+	// get the number of NiBlocks
+	int getBlockCount() const;
+	
+	// returns a list with all known NiXXX ids
+	static QStringList allNiBlocks();
+	// is name a NiBlock identifier?
+	static bool isNiBlock( const QString & name );
+
+
 	// insert abstract ancestor block
 	void inherit( const QString & identifier, const QModelIndex & idx, int row = -1 );
-	// insert or append a type
+	// is name an ancestor identifier?
+	static bool isAncestor( const QString & name );
+	
+	
+	// insert or append a basic or compound type
 	void insertType( const NifData & data, const QModelIndex & idx, int row = -1 );
+	// is it a basic or compound type?
+	static bool isCompound( const QString & name );
+	static bool isBasicType( const QString & name );
+	// this returns true if type is a basic or compound type and has no conditional attributes
+	static bool isUnconditional( const QString & type );
+		
+	// this returns the internal type of a basic type
+	int getInternalType( const QString & name ) const;
+	// this returns the display hint of a basic type
+	QString getDisplayHint( const QString & name ) const;
+	// this returns the description of a basic type
+	QString getTypeDescription( const QString & name ) const;
+	// this returns the default value of a basic type
+	QVariant getTypeValue( const QString & name ) const;
 	
-	// create a tree branch
-	QModelIndex insertBranch( NifData data, const QModelIndex & parent, int row = -1 );
-	// create a tree leaf
-	void insertLeaf( const NifData & data, const QModelIndex & parent, int row = -1 );
 	
-
 	// get item attributes
 	QString  itemName( const QModelIndex & index ) const;
 	QString  itemType( const QModelIndex & index ) const;
@@ -143,42 +177,25 @@ public:
 	quint32  itemVer1( const QModelIndex & index ) const;
 	quint32  itemVer2( const QModelIndex & index ) const;
 	
-	// get the NiBlock at index x ( optional: check if it is of type name )
-	QModelIndex getBlock( int x, const QString & name = QString() ) const;
-	
+	// set item attributes
+	void setItemValue( const QModelIndex & index, const QVariant & v );
+
 	// find an item named name and return the coresponding value as a QVariant
 	QVariant getValue( const QModelIndex & parent, const QString & name ) const;
+	// same as getValue but converts the QVariant data to the requested type
+	int getInt( const QModelIndex & parent, const QString & nameornumber ) const;
+	float getFloat( const QModelIndex & parent, const QString & nameornumber ) const;
+	
+	// sets a named attribute to value
+	bool setValue( const QModelIndex & index, const QString & name, const QVariant & v );
 	
 	// find a branch by name
 	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;
 	
-	// get value functions
-	int getInt( const QModelIndex & parent, const QString & nameornumber ) const;
-	float getFloat( const QModelIndex & parent, const QString & nameornumber ) const;
-	
 	// evaluate condition and version
-	bool evalCondition( const QModelIndex & idx ) const;
+	bool evalCondition( const QModelIndex & idx, bool chkParents = false ) const;
 
 
-	// returns a list with all known NiXXX ids
-	static QStringList allNiBlocks();
-
-	// what type is it?
-	static bool isNiBlock( const QString & name );
-	static bool isAncestor( const QString & name );
-	static bool isCompound( const QString & name );
-	static bool isBasicType( const QString & name );
-
-	// this returns true if type is a basic or compound type and has no conditional attributes
-	static bool isUnconditional( const QString & type );
-	
-	// this returns the internal type of a basic type
-	int getInternalType( const QString & name ) const;
-	// this return the display hint of a basic type
-	QString getDisplayHint( const QString & name ) const;
-	// this return the description of a basic type
-	QString getTypeDescription( const QString & name ) const;
-	
 	// version conversion
 	static QString version2string( quint32 );
 	static quint32 version2number( const QString & );	
@@ -206,6 +223,11 @@ public:
 	static QAbstractItemDelegate * createDelegate();
 
 protected:
+	// create a tree branch
+	QModelIndex insertBranch( NifData data, const QModelIndex & parent, int row = -1 );
+	// create a tree leaf
+	void insertLeaf( const NifData & data, const QModelIndex & parent, int row = -1 );
+	
 	// recursive load and save a branch
 	bool load( const QModelIndex & parent, QDataStream & stream );
 	void save( const QModelIndex & parent, QDataStream & stream );
@@ -220,7 +242,7 @@ protected:
 	quint32		version;
 	QByteArray	version_string;
 	
-	// internal types every basic type drops down to one of these
+	// internal types: every basic type drops down to one of these
 	enum {
 		it_uint8 = 0, it_uint16 = 1, it_uint32 = 2,
 		it_int8 = 3, it_int16 = 4, it_int32 = 5,
@@ -292,14 +314,11 @@ inline QString NifModel::getTypeDescription( const QString & name ) const
 	else			return QString();
 }
 
-inline QModelIndex NifModel::getBlock( int x, const QString & name ) const
+inline QVariant NifModel::getTypeValue( const QString & name ) const
 {
-	x += 1; //the first block is the NiHeader
-	QModelIndex idx = index( x, 0 );
-	if ( ! name.isEmpty() )
-		return ( itemName( idx ) == name ? idx : QModelIndex() );
-	else
-		return idx;
+	NifBasicType * type = getType( name );
+	if ( type )		return type->value;
+	else			return QVariant();
 }
 
 #endif
