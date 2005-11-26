@@ -275,17 +275,17 @@ inline bool NifModel::isNiBlock( const QString & name )
 
 inline bool NifModel::isAncestor( const QString & name )
 {
-	return blocks.contains( name );
+	return ancestors.contains( name );
 }
 
 inline bool NifModel::isCompound( const QString & name )
 {
-	return blocks.contains( name );
+	return compounds.contains( name );
 }
 
 inline bool NifModel::isBasicType( const QString & name )
 {
-	return blocks.contains( name );
+	return types.contains( name );
 }
 
 inline bool NifModel::isUnconditional( const QString & name )

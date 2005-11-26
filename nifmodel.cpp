@@ -695,6 +695,17 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				default:		return QVariant();
 			}
 		}
+		case Qt::DecorationRole:
+		{
+			switch ( column )
+			{
+				case NameCol:
+					if ( itemType( index ) == "NiBlock" )
+						return QString::number( getBlockNumber( index ) );
+				default:
+					return QVariant();
+			}
+		}
 		case Qt::EditRole:
 		{
 			switch ( column )
@@ -746,7 +757,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 			item->setName( value.toString() );
 			break;
 		case NifModel::TypeCol:
-			item->setValue( value.toString() );
+			item->setType( value.toString() );
 			break;
 		case NifModel::ValueCol:
 			item->setValue( value );

@@ -233,7 +233,16 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	grid->addWidget( tool, 2, 3 );
 	
 	// last but not least: set up a custom delegate to provide edit functionality
+	list->setItemDelegate( model->createDelegate() );
 	tree->setItemDelegate( model->createDelegate() );
+	
+	// tweak some display settings
+	QFontMetrics m( list->font() );
+	list->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
+	//list->setAlternatingRowColors( true );
+	tree->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
+	tree->setUniformRowHeights( true );
+	//tree->setAlternatingRowColors( true );
 	
 	// fetch context menu signals from model views
 	list->setContextMenuPolicy( Qt::CustomContextMenu );
