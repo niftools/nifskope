@@ -30,6 +30,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QSplitter>
+#include <QTextEdit>
 #include <QToolButton>
 
 #include <QListView>
@@ -84,6 +85,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	// variable split layout
 	QSplitter * split = new QSplitter;
 	grid->addWidget( split, 1, 0, 1, 4 );
+	grid->setRowStretch( 1, 4 );
 
 	// this view shows the block list
 	list = new QListView;
@@ -108,7 +110,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	// open gl
 	ogl = new GLView;
 	ogl->setNif( model );	
-	split->addWidget( ogl );	
+	split->addWidget( ogl );
 	ogl->setVisible( settings.value( "show opengl", true ).toBool() );
 #else
 	ogl = 0;
@@ -251,15 +253,37 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	tree->setContextMenuPolicy( Qt::CustomContextMenu );
 	connect( tree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 			this, SLOT( contextMenu( const QPoint & ) ) );
-	
-	// load in the model
-	load();
+			
+	// messages
+	msgroup = new QGroupBox( "messages" );
+	grid->addWidget( msgroup, 3, 0, 1, 4 );
+	msgroup->setLayout( new QHBoxLayout );
+	msgroup->setVisible( false );
+	msgroup->setCheckable( true );
+	msgroup->setChecked( msgroup->isVisibleTo( this ) );
+	connect( msgroup, SIGNAL( toggled( bool ) ), this, SLOT( toggleMessages() ) );
+	msgview = new QTextEdit;
+	msgview->setReadOnly( true );
+	msgroup->layout()->addWidget( msgview );
+	connect( msgroup, SIGNAL( toggled( bool ) ), msgview, SLOT( clear() ) );
 }
 
 NifSkope::~NifSkope()
 {
 	if ( autoSettings->isChecked() )
 		saveOptions();
+}
+
+void NifSkope::about()
+{
+	QMessageBox::about( this, "About NifSkope",
+	"NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files."
+	"<br><br>"
+	"NifSkope is based on the NifTool's file format data base."
+	"For more informations visit our site at http://niftools.sourceforge.net"
+	"<br><br>"
+	"Because NifSkope uses the Qt libraries it is free software. You should have received"
+	" a copy of the GPL and the source code all together in one package.<br>");
 }
 
 void NifSkope::contextMenu( const QPoint & pos )
@@ -328,18 +352,6 @@ void NifSkope::contextMenu( const QPoint & pos )
 		}
 	}
 	delete menu;
-}
-
-void NifSkope::about()
-{
-	QMessageBox::about( this, "About NifSkope",
-	"NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files."
-	"<br><br>"
-	"NifSkope is based on the file format data base of the NifTools sourceforge group."
-	"Visit our site at http://niftools.sourceforge.net for more information."
-	"<br><br>"
-	"Because NifSkope uses the Qt libraries it is free software. You should have received"
-	" a copy of the GPL and the source code all together in one package.<br>");
 }
 
 void NifSkope::saveOptions()
@@ -471,6 +483,47 @@ void NifSkope::saveBrowse()
 	}
 }
 
+void NifSkope::addMessage( const QString & msg )
+{
+	msgroup->setChecked( true );
+	msgview->append( msg );
+//	msgview->ensureCursorVisible( true );
+}
+
+void NifSkope::toggleMessages()
+{
+	QTimer::singleShot( 0, this, SLOT( delayedToggleMessages() ) );
+}
+
+void NifSkope::delayedToggleMessages()
+{
+	msgroup->setVisible( msgroup->isChecked() );
+}
+
+NifSkope * msgtarget = 0;
+
+#include <stdio.h>
+
+void myMessageOutput(QtMsgType type, const char *msg)
+{
+	switch (type)
+	{
+		case QtDebugMsg:
+			fprintf(stderr, "%s\n", msg);
+			break;
+		case QtWarningMsg:
+		case QtCriticalMsg:
+			if ( msgtarget )
+			{
+				msgtarget->addMessage( msg );
+				break;
+			}
+		case QtFatalMsg:
+			QMessageBox::critical( 0, "Fatal Error", msg );
+			abort();
+	}
+}
+
 
 int main( int argc, char * argv[] )
 {
@@ -489,6 +542,13 @@ int main( int argc, char * argv[] )
 	NifSkope edit;
 	edit.show();
 	
+	msgtarget = &edit;
+    qInstallMsgHandler(myMessageOutput);
+
+	edit.load();
+
 	// start the event loop
-	return app.exec();
+	int r = app.exec();
+	qInstallMsgHandler( 0 );
+	return r;
 }

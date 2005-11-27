@@ -25,10 +25,13 @@ class NifModel;
 class GLView;
 class Popup;
  
-class QCheckBox;
 class QListView;
 class QTreeView;
 class QModelIndex;
+
+class QCheckBox;
+class QGroupBox;
+class QTextEdit;
 
 class NifSkope : public QWidget
 {
@@ -48,12 +51,17 @@ public slots:
 	
 	void about();
 	
+	void addMessage( const QString & );
+	
 protected slots:
 	void selectRoot();
 	void updateConditionZero();
 	
 	void dataChanged( const QModelIndex &, const QModelIndex & );
 	void contextMenu( const QPoint & pos );
+	
+	void toggleMessages();
+	void delayedToggleMessages();
 	
 protected:
 	void showHideRows( QModelIndex );
@@ -72,6 +80,9 @@ private:
 	
 	QCheckBox * conditionZero;
 	QCheckBox * autoSettings;
+	
+	QGroupBox * msgroup;
+	QTextEdit * msgview;
 };
 
 
