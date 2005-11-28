@@ -36,8 +36,10 @@ public:
 	{
 		depth = 0;
 		elements << "niflotoxml" << "type" << "compound" << "ancestor" << "niblock" << "add" << "inherit";
+		typ = 0;
+		blk = 0;
 	}
-	
+
 	int depth;
 	int stack[10];
 	QStringList elements;
@@ -159,7 +161,6 @@ public:
 				err( "error unhandled tag " + name + " in " + elements.value( current() ) );
 				break;
 		}
-		
 		return true;
 	}
 	
@@ -215,7 +216,7 @@ public:
 	
 	bool characters( const QString & s )
 	{
-		if ( current() == 1 && typ )	typ->text = s.trimmed();
+		//if ( current() == 1 && typ )	typ->text = s.trimmed();
 		return true;
 	}
 	
@@ -312,12 +313,12 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
 		return QString( "error: couldn't open xml description file: " + filename );
 	
+	NifXmlHandler handler;
 	QXmlSimpleReader reader;
-	QXmlInputSource * source = new QXmlInputSource( &f );
-	NifXmlHandler * handler = new NifXmlHandler();
-	reader.setContentHandler( handler );
-	reader.setErrorHandler( handler );
+	reader.setContentHandler( &handler );
+	reader.setErrorHandler( &handler );
+	QXmlInputSource source( &f );
 	reader.parse( source );
-	return handler->errorString();
+	return handler.errorString();
 }
 

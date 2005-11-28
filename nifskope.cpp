@@ -20,6 +20,7 @@
 #include <QByteArray>
 #include <QCheckBox>
 #include <QDataStream>
+#include <QDebug>
 #include <QDesktopWidget>
 #include <QFile>
 #include <QFileDialog>
@@ -31,6 +32,7 @@
 #include <QSettings>
 #include <QSplitter>
 #include <QTextEdit>
+#include <QTimer>
 #include <QToolButton>
 
 #include <QListView>
@@ -446,7 +448,9 @@ void NifSkope::load()
 #endif
 		updateConditionZero();
 		f.close();
-	}	
+	}
+	else
+		qWarning() << "could not open file " << lineLoad->text();
 }
 
 void NifSkope::save()
@@ -459,6 +463,8 @@ void NifSkope::save()
 		model->save( stream );
 		f.close();
 	}
+	else
+		qWarning() << "could not write file " << lineSave->text();
 }
 
 void NifSkope::loadBrowse()
@@ -502,14 +508,11 @@ void NifSkope::delayedToggleMessages()
 
 NifSkope * msgtarget = 0;
 
-#include <stdio.h>
-
 void myMessageOutput(QtMsgType type, const char *msg)
 {
 	switch (type)
 	{
 		case QtDebugMsg:
-			fprintf(stderr, "%s\n", msg);
 			break;
 		case QtWarningMsg:
 		case QtCriticalMsg:
@@ -531,7 +534,8 @@ int main( int argc, char * argv[] )
 	QApplication app( argc, argv );
 	
 	// read in XML fileformat description
-	QString result = NifModel::parseXmlDescription( QDir( app.applicationDirPath() ).filePath( "NifSkope.xml" ) );
+	QDir dir( app.applicationDirPath() );
+	QString result = NifModel::parseXmlDescription( dir.filePath( "NifSkope.xml" ) );
 	if ( ! result.isEmpty() )
 	{
 		QMessageBox::critical( 0, "NifSkope", result );
@@ -543,12 +547,8 @@ int main( int argc, char * argv[] )
 	edit.show();
 	
 	msgtarget = &edit;
-    qInstallMsgHandler(myMessageOutput);
-
-	edit.load();
+	qInstallMsgHandler(myMessageOutput);
 
 	// start the event loop
-	int r = app.exec();
-	qInstallMsgHandler( 0 );
-	return r;
+	return app.exec();
 }
