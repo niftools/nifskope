@@ -101,7 +101,7 @@ public:
 	
 	inline void setName( const QString & name )	{	itemData.name = name;	}
 	inline void setType( const QString & type )	{	itemData.type = type;	}
-	inline	void setValue( const QVariant & v )	{	itemData.value = v;		}
+	inline void setValue( const QVariant & v )	{	itemData.value = v;		}
 	inline void setArg( const QString & arg )		{	itemData.arg = arg;		}
 	inline void setArr1( const QString & arr1 )	{	itemData.arr1 = arr1;	}
 	inline void setArr2( const QString & arr2 )	{	itemData.arr2 = arr2;	}
@@ -368,13 +368,11 @@ void NifModel::inherit( const QString & identifier, const QModelIndex & idx, int
 void NifModel::insertType( const NifData & data, const QModelIndex & idx, int )
 {
 	if ( ! data.arr1.isEmpty() )
-	{	// recursive array construction
+	{
 		QModelIndex idy = insertBranch( data, idx );
 		
 		if ( evalCondition( idy ) )
-		{
 			updateArray( idy, true );
-		}
 		return;
 	}
 
@@ -660,6 +658,15 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 
 	int column = index.column();
 	
+	if ( column == ValueCol && item->parent() == root && item->type() == "NiBlock" )
+	{
+		QModelIndex buddy = getIndex( index, "name" );
+		if ( buddy.isValid() )
+			item = static_cast<NifItem*>( buddy.internalPointer() );
+		if ( ! item )
+			return QVariant();
+	}
+	
 	switch ( role )
 	{
 		case Qt::DisplayRole:
@@ -670,6 +677,8 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				case TypeCol:	return item->type();
 				case ValueCol:
 				{
+					if ( ! item->value().isValid() )
+						return QVariant();
 					QString displayHint = getDisplayHint( item->type() );
 					if ( displayHint == "float" )
 						return QString::number( item->value().toDouble(), 'f', 4 );
@@ -682,8 +691,27 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 					else if ( displayHint == "bin" )
 						return QString::number( item->value().toInt(), 2 ).prepend( "0b" );
 					else if ( displayHint == "link" )
-						if ( item->value().toInt() == -1 )
-							return QString( "none" );						
+					{
+						int lnk = item->value().toInt();
+						if ( lnk == -1 )
+							return QString( "none" );
+						else
+						{
+							QModelIndex block = getBlock( lnk );
+							if ( block.isValid() )
+							{
+								QModelIndex block_name = getIndex( block, "name" );
+								if ( block_name.isValid() && ! itemValue( block_name ).toString().isEmpty() )
+									return QString( "%1 (%2)" ).arg( lnk ).arg( itemValue( block_name ).toString() );
+								else
+									return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
+							}
+							else
+							{
+								return QString( "%1 <invalid>" ).arg( lnk );
+							}
+						}
+					}
 					return item->value();
 				}
 				case ArgCol:	return item->arg();
@@ -750,6 +778,15 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	
 	if ( ! ( index.isValid() && item && role == Qt::EditRole ) )
 		return false;
+	
+	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" )
+	{
+		QModelIndex buddy = getIndex( index, "name" );
+		if ( buddy.isValid() )
+			item = static_cast<NifItem*>( buddy.internalPointer() );
+		if ( ! item )
+			return false;
+	}
 	
 	switch ( index.column() )
 	{
