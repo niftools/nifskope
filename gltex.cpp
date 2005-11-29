@@ -94,7 +94,7 @@ void uncompressRLE( quint8 * data, int w, int h, int bpp, quint8 * pixel )
 			{
 				for ( int b = 0; b < bytespp; b++ )
 					*pixel++ = px[b];
-			} while ( rl-- > 0 && ++c < w*h );
+			} while ( ++c < w*h && rl-- > 0  );
 		}
 		else
 		{
@@ -103,7 +103,7 @@ void uncompressRLE( quint8 * data, int w, int h, int bpp, quint8 * pixel )
 			{
 				for ( int b = 0; b < bytespp; b++ )
 					*pixel++ = *data++;
-			} while ( rl-- > 0 && ++c < w*h );
+			} while (  ++c < w*h && rl-- > 0 );
 		}
 	}
 }
