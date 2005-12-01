@@ -27,6 +27,10 @@ class NifModel;
 #include <QStack>
 #include <QTimer>
 
+#include "nifmodel.h"
+
+#include "glmath.h"
+
 class GLTex;
 
 class GLView : public QGLWidget
@@ -53,7 +57,7 @@ public:
 public slots:
 	void setNif( NifModel * );
 
-	void compile();
+	void compile( bool center );
 
 	void setXRotation(int angle);
 	void setYRotation(int angle);
@@ -112,6 +116,7 @@ private:
 	
 	bool updated;
 	bool doCompile;
+	bool doCenter;
 	
 	QPoint lastPos;
 	
@@ -123,6 +128,11 @@ private:
 	bool drawaxis;
 	
 	QStack<int> nodestack;
+	QStack<Matrix> matrixstack;
+	QHash<int,Matrix> worldtrans;
+	
+	Vector boundMin, boundMax;
+	
 	QCache<QString,GLTex> textures;
 	
 	QTimer * timer;

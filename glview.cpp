@@ -19,10 +19,10 @@
 
 #include <QtOpenGL>
 
+#include <math.h>
+
 #include "nifmodel.h"
 
-GLuint texLoadTGA( const QString & filename );
-GLuint texLoadDDS( const QString & filename, const QGLContext * context );
 
 /* XPM */
 static char * click_xpm[] = {
@@ -79,7 +79,7 @@ GLView::GLView()
 	zInc = 1;
 	
 	updated = false;
-	doCompile = false;
+	doCompile = doCenter = false;
 	
 	lightsOn = true;
 	drawaxis = true;
@@ -103,9 +103,9 @@ void GLView::setNif( NifModel * nif )
 	{
 		disconnect( model, SIGNAL( dataChanged( const QModelIndex & , const QModelIndex & ) ),
 			this, SLOT( dataChanged() ) );
+		updated = true;
 	}
 	model = nif;
-	updated = true;
 	if ( model )
 	{
 		connect( model, SIGNAL( dataChanged( const QModelIndex & , const QModelIndex & ) ),
@@ -211,12 +211,12 @@ void GLView::dataChanged()
 	updateGL();
 }
 
-void GLView::compile()
+void GLView::compile( bool center )
 {
 	doCompile = true;
+	doCenter = center;
 	updateGL();
 }
-
 
 void GLView::initializeGL()
 {
@@ -240,6 +240,8 @@ void GLView::paintGL()
 {
 	if ( ! isVisible() )
 		return;
+	
+	makeCurrent();
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -273,6 +275,13 @@ void GLView::paintGL()
 		glNewList( nif, GL_COMPILE );
 		
 		nodestack.clear();
+		worldtrans.clear();
+		
+		if ( doCenter )
+		{
+			boundMin = Vector();
+			boundMax = Vector();
+		}
 		
 		if ( model )
 		{
@@ -300,9 +309,22 @@ void GLView::paintGL()
 		}
 		glEndList();
 	}
-
+	
+	if ( doCenter )
+	{
+		doCenter = false;
+		double max = 0;
+		for ( int c = 0; c < 3; c++ )
+			max = qMax( max, qMax( fabs( boundMin[ c ] ), fabs( boundMax[ c ] ) ) );
+		zoom = (int) ( max * 40 );
+		xTrans = 0;
+		yTrans = (int) ( boundMin[3] - boundMax[3] ) * 20;
+		xRot = - 90*16;
+		yRot = 0;
+	}
+	
 	glLoadIdentity();
-	glTranslated( xTrans / 40.0, - yTrans / 40.0, - zoom / 10.0);
+	glTranslated( xTrans / 20.0, - yTrans / 20.0, - zoom / 10.0);
 	glRotated(xRot / 16.0, 1.0, 0.0, 0.0);
 	glRotated(yRot / 16.0, 0.0, 1.0, 0.0);
 	glRotated(zRot / 16.0, 0.0, 0.0, 1.0);
@@ -349,6 +371,32 @@ void GLView::paintGL()
 		glVertex3f(    0,    0, + 1000.0 );
 		glVertex3f( - 20,    0, +  950.0 );
 		glEnd();
+		
+		glColor3f( 1.0, 0.0, 1.0 );
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
+		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glEnd();
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glEnd();
+		glBegin( GL_LINES );
+		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
+		glEnd();
 	}
 	
 	glDisable( GL_DEPTH_TEST );
@@ -369,7 +417,7 @@ void GLView::paintGL()
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-		glColor4f( 0.5, 0.5, 0.5, 0.0 );
+		glColor4f( 0.5, 0.5, 0.5, 1.0 );
 		glBegin( GL_QUADS );
 		glTexCoord2d( 0.0, 0.0 );		glVertex2d( 0.0, 0.0 );
 		glTexCoord2d( 1.0, 0.0 );		glVertex2d( 255.0, 0.0 );
@@ -385,69 +433,44 @@ void GLView::paintGL()
 
 void GLView::resizeGL(int width, int height)
 {
+	makeCurrent();
 	glViewport(0, 0, width, height);
 }
 
-static void compileMatrix( NifModel * model, const QModelIndex & idx )
-{
-	if ( !idx.isValid() ) return;
-
-	GLfloat matrix[16];
-	for ( int i = 0; i < 16; i++ )
-		matrix[ i ] = 0.0;
-	
-	QModelIndex rotation = model->getIndex( idx, "rotation" );
-	if ( rotation.isValid() && model->rowCount( rotation ) == 9 )
-	{
-		for ( int r = 0; r < 9; r++ )
-			matrix[ r%3*4 + r/3 ] = model->itemValue( model->index( r, 0, rotation ) ).toDouble();
-	}
-	
-	QModelIndex translation = model->getIndex( idx, "translation" );
-	matrix[ 12 ] = model->getFloat( translation, "x" );
-	matrix[ 13 ] = model->getFloat( translation, "y" );
-	matrix[ 14 ] = model->getFloat( translation, "z" );
-
-	matrix[ 15 ] = 1.0;
-	
-	GLfloat scale = model->getFloat( idx, "scale" );
-	if ( scale != 1.0 )
-	{
-		matrix[  0 ] *= scale;
-		matrix[  5 ] *= scale;
-		matrix[ 10 ] *= scale;
-	}
-	
-	glMultMatrixf( matrix );
-}
-
-bool GLView::compileNode( int b, bool alphatoggle )
+bool GLView::compileNode( int blockNumber, bool alphatoggle )
 {
 	bool has_alpha = false;
 	
-	QModelIndex idx = model->getBlock( b );
+	QModelIndex idx = model->getBlock( blockNumber );
 	if ( !idx.isValid() ) return has_alpha;
 	
 	if ( ( model->getInt( idx, "flags" ) & 1 ) != 0 )	return has_alpha;
 	
-	if ( nodestack.contains( b ) )
+	if ( nodestack.contains( blockNumber ) )
 	{
-		qWarning( "infinite recursive node construct detected ( %d -> %d )", nodestack.top(), b );
+		qWarning( "infinite recursive node construct detected ( %d -> %d )", nodestack.top(), blockNumber );
 		return has_alpha;
 	}
 	
-	nodestack.push( b );
+	QString idnt;
+	while ( idnt.length() < nodestack.count()*2 )
+		idnt += "  ";
 	
-	qDebug() << "compile " << model->itemName( idx ) << " (" << b << ")";
+	qDebug() << idnt << "compile " << model->itemName( idx ) << " (" << blockNumber << ") " << model->itemValue( model->getIndex( idx, "name" ) ).toString();
+
+	nodestack.push( blockNumber );
+	matrixstack.push( Matrix( model, idx ) );
 	
-	glPushMatrix();
-	compileMatrix( model, idx );
-	
+	Matrix matrix;
+	foreach ( Matrix m, matrixstack )
+		matrix = matrix * m;
+	worldtrans[blockNumber] = matrix;
+
 	QModelIndex children = model->getIndex( idx, "children" );
 	QModelIndex childlinks = model->getIndex( children, "indices" );
 	if ( ! ( children.isValid() && childlinks.isValid() ) )
 	{
-		qWarning() << "compileNode( " << b << " ) : children link list not found";
+		qWarning() << "compileNode( " << blockNumber << " ) : children link list not found";
 		return has_alpha;
 	}
 	for ( int c = 0; c < model->rowCount( childlinks ); c++ )
@@ -465,7 +488,7 @@ bool GLView::compileNode( int b, bool alphatoggle )
 		}
 		else if ( model->itemName( child ) == "NiTriShape" || model->itemName( child ) == "NiTriStrips" )
 		{
-			qDebug() << "   compile " << model->itemName( child ) << " (" << r << ")";
+			qDebug() << idnt << "   compile " << model->itemName( child ) << " (" << r << ")";
 			
 			if ( model->getInt( child, "flags" ) & 1 )
 			{
@@ -562,34 +585,24 @@ bool GLView::compileNode( int b, bool alphatoggle )
 				qWarning() << model->itemName( tridata ) << "(" << data << ") contains no vertices";
 				continue;
 			}
-			QVector<GLfloat> verts;
+			QVector<Vector> verts;
 			for ( int r = 0; r < model->rowCount( vertices ); r++ )
 			{
-				QModelIndex vector = model->index( r, 0, vertices );
-				verts.append( model->getFloat( vector, "x" ) );
-				verts.append( model->getFloat( vector, "y" ) );
-				verts.append( model->getFloat( vector, "z" ) );
+				verts.append( Vector( model, model->index( r, 0, vertices ) ) );
 			}
 			QModelIndex normals = model->getIndex( tridata, "normals" );
-			QVector<GLfloat> norms;
+			QVector<Vector> norms;
 			if ( normals.isValid() )
 			{
 				for ( int r = 0; r < model->rowCount( normals ); r++ )
-				{
-					QModelIndex vector = model->index( r, 0, normals );
-					norms.append( model->getFloat( vector, "x" ) );
-					norms.append( model->getFloat( vector, "y" ) );
-					norms.append( model->getFloat( vector, "z" ) );
-				}
+					norms.append( Vector( model, model->index( r, 0, normals ) ) );
 			}
 			QModelIndex vertexcolors = model->getIndex( tridata, "vertex colors" );
 			QVector<QColor> colors;
 			if ( vertexcolors.isValid() )
 			{
 				for ( int r = 0; r < model->rowCount( vertexcolors ); r++ )
-				{
 					colors.append( model->itemValue( vertexcolors.child( r, 0 ) ).value<QColor>() );
-				}
 			}
 			QVector<GLfloat> uvs;
 			if ( ! tex_file.isEmpty()  )
@@ -616,8 +629,82 @@ bool GLView::compileNode( int b, bool alphatoggle )
 				}
 			}
 			
+			int skin = model->getInt( child, "skin instance" );
+			QModelIndex skininst = model->getBlock( skin, "NiSkinInstance" );
+			QModelIndex skindata;
+			if ( skininst.isValid() )
+			{
+				int sdat = model->getInt( skininst, "data" );
+				skindata = model->getBlock( sdat, "NiSkinData" );
+			}
+			
 			glPushMatrix();
-			compileMatrix( model, child );
+			if ( skininst.isValid() && skindata.isValid() )
+			{
+				QVector<int> bones;
+				QModelIndex idxBones = model->getIndex( model->getIndex( skininst, "bones" ), "bones" );
+				for ( int b = 0; b < model->rowCount( idxBones ); b++ )
+					bones.append( model->itemValue( model->index( b, 0, idxBones ) ).toInt() );
+				idxBones = model->getIndex( skindata, "bone list" );
+				if ( idxBones.isValid() )
+				{
+					QVector<Vector> wverts( verts.count() );
+					
+					for ( int b = 0; b < model->rowCount( idxBones ) && b < bones.count(); b++ )
+					{
+						Matrix m1 = worldtrans.value( bones.value( b ) ) * Matrix( model, model->index( b, 0, idxBones ) );
+						QModelIndex idxWeights = model->getIndex( model->index( b, 0, idxBones ), "vertex weights" );
+						if ( idxWeights.isValid() )
+						{
+							for ( int w = 0; w < model->rowCount( idxWeights ); w++ )
+							{
+								int v = model->getInt( model->index( w, 0, idxWeights ), "index" );
+								wverts[ v ] += m1 * verts.value( v ) * model->getFloat( model->index( w, 0, idxWeights ), "weight" );
+							}
+						}
+						else
+							qDebug() << "weight list not found";
+					}
+					
+					verts = wverts;
+					
+					if ( doCenter )
+					{
+						foreach ( Vector v, verts )
+						{
+							for ( int i = 0; i < 3; i++ )
+							{
+								if ( v[i] < boundMin[i] )	boundMin[i] = v[i];
+								if ( v[i] > boundMax[i] )	boundMax[i] = v[i];
+							}
+						}
+					}
+					
+				}
+				else
+					qDebug() << "bone list not found";
+			}
+			else
+			{
+				Matrix m1 = worldtrans.value( nodestack.top() ) * Matrix( model, child );
+				
+				if ( doCenter )
+				{
+					foreach ( Vector v, verts )
+					{
+						Vector w = m1 * v;
+						qDebug() << v[0] << v[1] << v[2] << w[0] << w[1] << w[2];
+						for ( int i = 0; i < 3; i++ )
+						{
+							if ( w[i] < boundMin[i] )	boundMin[i] = w[i];
+							if ( w[i] > boundMax[i] )	boundMax[i] = w[i];
+						}
+					}
+				}
+				
+				m1.glMultMatrix();
+			}
+			
 			if ( model->itemName( tridata ) == "NiTriShapeData" )
 			{
 				glBegin( GL_TRIANGLES );
@@ -630,20 +717,20 @@ bool GLView::compileNode( int b, bool alphatoggle )
 						int v1 = model->getInt( triangle, "v1" );
 						int v2 = model->getInt( triangle, "v2" );
 						int v3 = model->getInt( triangle, "v3" );
-						if ( verts.count() > v1*3 && verts.count() > v2*3 && verts.count() > v3*3 )
+						if ( verts.count() > v1 && verts.count() > v2 && verts.count() > v3 )
 						{
-							if ( norms.count() > v1*3 ) glNormal3f( norms[v1*3+0], norms[v1*3+1], norms[v1*3+2] );
+							if ( norms.count() > v1 ) norms[v1].glNormal();
 							if ( uvs.count() > v1*2 ) glTexCoord2f( uvs[v1*2+0], uvs[v1*2+1] );
 							if ( colors.count() > v1 ) { QColor c = colors[v1]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							glVertex3f( verts[v1*3+0], verts[v1*3+1], verts[v1*3+2] );
-							if ( norms.count() > v2*3 ) glNormal3f( norms[v2*3+0], norms[v2*3+1], norms[v2*3+2] );
+							verts[v1].glVertex();
+							if ( norms.count() > v2 ) norms[v2].glNormal();
 							if ( uvs.count() > v2*2 ) glTexCoord2f( uvs[v2*2+0], uvs[v2*2+1] );
 							if ( colors.count() > v2 ) { QColor c = colors[v2]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							glVertex3f( verts[v2*3+0], verts[v2*3+1], verts[v2*3+2] );
-							if ( norms.count() > v3*3 ) glNormal3f( norms[v3*3+0], norms[v3*3+1], norms[v3*3+2] );
+							verts[v2].glVertex();
+							if ( norms.count() > v3 ) norms[v3].glNormal();
 							if ( uvs.count() > v3*2 ) glTexCoord2f( uvs[v3*2+0], uvs[v3*2+1] );
 							if ( colors.count() > v3 ) { QColor c = colors[v3]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							glVertex3f( verts[v3*3+0], verts[v3*3+1], verts[v3*3+2] );
+							verts[v3].glVertex();
 						}
 					}
 				}
@@ -663,10 +750,10 @@ bool GLView::compileNode( int b, bool alphatoggle )
 						for ( int s = 0; s < model->rowCount( strip ); s++ )
 						{
 							int v1 = model->itemValue( strip.child( s, 0 ) ).toInt();
-							if ( norms.count() > v1*3 ) glNormal3f( norms[v1*3+0], norms[v1*3+1], norms[v1*3+2] );
+							if ( norms.count() > v1 ) norms[v1].glNormal();
 							if ( uvs.count() > v1*2 ) glTexCoord2f( uvs[v1*2+0], uvs[v1*2+1] );
 							if ( colors.count() > v1 ) { QColor c = colors[v1]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							glVertex3f( verts[v1*3+0], verts[v1*3+1], verts[v1*3+2] );
+							verts[v1].glVertex();
 						}
 						glEnd();
 					}
@@ -677,7 +764,8 @@ bool GLView::compileNode( int b, bool alphatoggle )
 			glPopMatrix();
 		}
 	}
-	glPopMatrix();
+
+	matrixstack.pop();
 	nodestack.pop();
 
 	GLenum err;
@@ -724,7 +812,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 
 void GLView::mouseDoubleClickEvent( QMouseEvent * )
 {
-	compile();
+	compile( false );
 }
 
 void GLView::wheelEvent( QWheelEvent * event )
