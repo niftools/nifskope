@@ -177,6 +177,9 @@ public:
 	quint32  itemVer1( const QModelIndex & index ) const;
 	quint32  itemVer2( const QModelIndex & index ) const;
 	
+	// this returns a block number if the index is a valid link
+	qint32   itemLink( const QModelIndex & index ) const;
+	
 	// set item attributes
 	void setItemValue( const QModelIndex & index, const QVariant & v );
 

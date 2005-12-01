@@ -348,11 +348,11 @@ void NifModel::inherit( const QString & identifier, const QModelIndex & idx, int
 	NifBlock * ancestor = ancestors.value( identifier );
 	if ( ancestor )
 	{
-		QModelIndex idy = insertBranch( NifData( identifier ), idx, at );
+		//QModelIndex idy = insertBranch( NifData( identifier ), idx, at );
 		foreach ( QString a, ancestor->ancestors )
-			inherit( a, idy );
+			inherit( a, idx );
 		foreach ( NifData data, ancestor->types )
-			insertType( data, idy );
+			insertType( data, idx );
 	}
 	else
 	{
@@ -461,6 +461,13 @@ quint32 NifModel::itemVer2( const QModelIndex & index ) const
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item ) )	return 0;
 	return item->ver2();
+}
+
+qint32 NifModel::itemLink( const QModelIndex & index ) const
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item ) )	return -1;
+	return ( getDisplayHint( item->type() ) == "link" && item->value().isValid() ? item->value().toInt() : -1 );
 }
 
 void NifModel::setItemValue( const QModelIndex & index, const QVariant & var )
@@ -1071,6 +1078,8 @@ bool NifModel::load( const QModelIndex & parent, QDataStream & stream )
 					if ( len > 4096 )
 						qWarning( "maximum string length exceeded" );
 					QByteArray string = stream.device()->read( len );
+					string.replace( "\r", "\\r" );
+					string.replace( "\n", "\\n" );
 					item->setValue( QString( string ) );
 				} break;
 				default:
@@ -1163,10 +1172,12 @@ void NifModel::save( const QModelIndex & parent, QDataStream & stream )
 				} break;
 				case it_string:
 				{
-					QString string = value.toString();
+					QByteArray string = value.toString().toAscii();
+					string.replace( "\\r", "\r" );
+					string.replace( "\\n", "\n" );
 					int len = string.length();
 					stream.writeRawData( (char *) &len, 4 );
-					stream.writeRawData( (const char *) string.toAscii(), len );
+					stream.writeRawData( (const char *) string, len );
 				} break;
 				default:
 				{
