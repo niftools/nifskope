@@ -200,7 +200,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		optGL->layout()->addWidget( optRotate );
 		optRotate->setChecked( settings.value( "rotate", true ).toBool() );
 		connect( optRotate, SIGNAL( toggled( bool ) ), ogl, SLOT( setRotate( bool ) ) );
-		ogl->setRotate( optAxis->isChecked() );
+		ogl->setRotate( optRotate->isChecked() );
 #endif
 		
 		QGroupBox * optMisc = new QGroupBox;
@@ -305,6 +305,13 @@ void NifSkope::contextMenu( const QPoint & pos )
 	
 	QMenu * menu = new QMenu( this );
 	
+	int link = model->itemLink( idx );
+	{
+		QAction * a = menu->addAction( "follow Link" );
+		a->setEnabled( link >= 0 );
+		menu->addSeparator();
+	}
+
 	{
 		QMenu * m = new QMenu( "insert Block" );
 		QStringList ids = model->allNiBlocks();
@@ -330,11 +337,25 @@ void NifSkope::contextMenu( const QPoint & pos )
 		QAction * a = menu->addAction( "update Array" );
 		a->setEnabled( model->evalCondition( idx, true ) );
 	}
-
+	
 	QAction * a = menu->exec( p );
 	if ( a ) 
 	{
-		if ( a->text() == "update Header" )
+		if ( a->text() == "follow Link" )
+		{
+			QModelIndex target = model->getBlock( link );
+			if ( list->isVisible() )
+			{
+				list->setCurrentIndex( target );
+				tree->setRootIndex( target );
+			}
+			else
+			{
+				tree->setCurrentIndex( target );
+				tree->expand( target );
+			}
+		}
+		else if ( a->text() == "update Header" )
 		{
 			model->updateHeader();
 		}
@@ -444,7 +465,7 @@ void NifSkope::load()
 		QDataStream stream( &f );
 		model->load( stream );
 #ifdef QT_OPENGL_LIB
-		if ( ogl && ogl->isValid() ) ogl->compile();
+		if ( ogl && ogl->isValid() ) ogl->compile( true );
 #endif
 		updateConditionZero();
 		f.close();
