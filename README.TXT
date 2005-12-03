@@ -20,22 +20,30 @@
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif .kf)
 
 
-This is release candidate number 1 of nifskope.
+This is version 0.2 of NifSkope.
 
 It should read and write every Nif up to version 10.x.x.x.
 
 
-Installation (windows)
-----------------------
+changes since 0.1:
 
-1) get Qt4 from http://www.trolltech.com/download/qt/windows.html
-2) double click nifskope.exe!
+  - display block hirarchy
+
+  - multi lined strings fixed (line breaks converted to and from "\r\n")
+  - display abstract ancestors inline
+  - display block names at top level
+  - display link target name/type
+  - follow link (available through context menu)
+
+  - fixed compressed tga textures (made with the gimp)
+  - proper display of skinned meshes
+  - center model on load
 
 
-Compilation
------------
+If you want to compile NifSkope from source:
 
 1) install the Qt4 sources from http://www.trolltech.com/download/qt (if you don't have them yet)
+2) download the nifskope source from http://niftools.sourceforge.net
 3) edit nifskope.pro to suit your needs
 4) start QT Command Prompt (windows) or open up a shell (linux)
 5) cd to nifskope's directory

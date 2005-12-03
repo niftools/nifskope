@@ -17,6 +17,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QButtonGroup>
 #include <QByteArray>
 #include <QCheckBox>
 #include <QDataStream>
@@ -25,10 +26,12 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLayout>
 #include <QMenu>
 #include <QMessageBox>
+#include <QRadioButton>
 #include <QSettings>
 #include <QSplitter>
 #include <QTextEdit>
@@ -39,6 +42,7 @@
 #include <QTreeView>
 
 #include "nifmodel.h"
+#include "nifproxy.h"
 
 #include "glview.h"
 #include "popup.h"
@@ -56,6 +60,8 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	model = new NifModel( this );
 	connect( model, SIGNAL( dataChanged( const QModelIndex & , const QModelIndex & ) ),
 			this, SLOT( dataChanged( const QModelIndex &, const QModelIndex & ) ) );
+	proxy = new NifProxyModel( this );
+	proxy->setModel( model );
 	
 	// application specific settings
 	QSettings settings( "NifTools", "NifSkope" );
@@ -85,35 +91,39 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	grid->addWidget( tool, 0, 3 );
 	
 	// variable split layout
-	QSplitter * split = new QSplitter;
+	split = new QSplitter;
 	grid->addWidget( split, 1, 0, 1, 4 );
 	grid->setRowStretch( 1, 4 );
 
 	// this view shows the block list
-	list = new QListView;
+	list = new QTreeView;
 	split->addWidget( list );
 	QFont font = list->font();
 	font.setPointSize( font.pointSize() + 3 );
 	list->setFont( font );
-	list->setModel( model );
-	list->setVisible( settings.value( "show list", true ).toBool() );
+	list->setModel( proxy );
+	list->setColumnHidden( NifModel::TypeCol, true );
+	list->setColumnHidden( NifModel::ArgCol, true );
+	list->setColumnHidden( NifModel::Arr1Col, true );
+	list->setColumnHidden( NifModel::Arr2Col, true );
+	list->setColumnHidden( NifModel::CondCol, true );
+	list->setColumnHidden( NifModel::Ver1Col, true );
+	list->setColumnHidden( NifModel::Ver2Col, true );
 	
 	// this view shows the whole tree or the block details
 	tree = new QTreeView;
 	split->addWidget( tree );
 	tree->setFont( font );
 	tree->setModel( model );
-	tree->setVisible( settings.value( "show tree", true ).toBool() );
 	
 	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
-			tree, SLOT( setRootIndex( const QModelIndex & ) ) );
+			this, SLOT( selectRoot( const QModelIndex & ) ) );
 
 #ifdef QT_OPENGL_LIB
 	// open gl
 	ogl = new GLView;
 	ogl->setNif( model );	
 	split->addWidget( ogl );
-	ogl->setVisible( settings.value( "show opengl", true ).toBool() );
 #else
 	ogl = 0;
 #endif
@@ -138,6 +148,11 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
 	grid->addWidget( tool, 2, 2 );
 	
+	//split->restoreState( settings.value( "split sizes" ).toByteArray() );
+	list->setVisible( settings.value( "show list", true ).toBool() );
+	tree->setVisible( settings.value( "show tree", true ).toBool() );
+	if ( ogl ) ogl->setVisible( settings.value( "show opengl", true ).toBool() );
+
 	// options
 	popOpts = new Popup( "Options", this );
 	{
@@ -149,7 +164,22 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		optList->setCheckable( true );
 		optList->setChecked( list->isVisibleTo( this ) );
 		connect( optList, SIGNAL( toggled( bool ) ), list, SLOT( setVisible( bool ) ) );
-		connect( optList, SIGNAL( toggled( bool ) ), this, SLOT( selectRoot() ) );
+		connect( optList, SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
+		optList->setLayout( new QVBoxLayout );
+
+		listMode = new QButtonGroup( this );
+		connect( listMode, SIGNAL( buttonClicked( QAbstractButton * ) ), this, SLOT( setListMode( QAbstractButton * ) ) );
+		
+		QRadioButton * checkMode = new QRadioButton( "list" );
+		optList->layout()->addWidget( checkMode );
+		checkMode->setChecked( settings.value( "list mode", "hirarchy" ).toString() == checkMode->text() );
+		listMode->addButton( checkMode );
+		checkMode = new QRadioButton( "hirarchy" );
+		optList->layout()->addWidget( checkMode );
+		checkMode->setChecked( settings.value( "list mode", "hirarchy" ).toString() == checkMode->text() );
+		listMode->addButton( checkMode );
+		
+		setListMode( listMode->checkedButton() );
 		
 		QGroupBox * optTree = new QGroupBox( "Detailed Tree View" );
 		popOpts->layout()->addWidget( optTree );
@@ -158,6 +188,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		optTree->setChecked( tree->isVisibleTo( this ) );
 		connect( optTree, SIGNAL( toggled( bool ) ), tree, SLOT( setVisible( bool ) ) );
 		optTree->setLayout( new QVBoxLayout );
+		
 		conditionZero = new QCheckBox( "hide condition zero" );
 		//conditionZero->setChecked( settings.value( "hide condition zero", true ).toBool() );
 		connect( conditionZero, SIGNAL( toggled( bool ) ), this, SLOT( updateConditionZero() ) );
@@ -243,10 +274,29 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	// tweak some display settings
 	QFontMetrics m( list->font() );
 	list->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
-	//list->setAlternatingRowColors( true );
+	list->setUniformRowHeights( true );
+	list->setAlternatingRowColors( false );
+	list->header()->setStretchLastSection( true );
+	settings.beginReadArray( "list header" );
+	for ( int c = 0; c < list->header()->count(); c++ )
+	{
+		settings.setArrayIndex( c );
+		int s = settings.value( "size", -1 ).toInt();
+		if ( s >= 0 ) list->header()->resizeSection( c, s );
+	}
+	settings.endArray();
 	tree->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
 	tree->setUniformRowHeights( true );
-	//tree->setAlternatingRowColors( true );
+	tree->setAlternatingRowColors( false );
+	tree->header()->setStretchLastSection( false );
+	settings.beginReadArray( "tree header" );
+	for ( int c = 0; c < tree->header()->count(); c++ )
+	{
+		settings.setArrayIndex( c );
+		int s = settings.value( "size", -1 ).toInt();
+		if ( s >= 0 ) tree->header()->resizeSection( c, s );
+	}
+	settings.endArray();
 	
 	// fetch context menu signals from model views
 	list->setContextMenuPolicy( Qt::CustomContextMenu );
@@ -268,12 +318,50 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	msgview->setReadOnly( true );
 	msgroup->layout()->addWidget( msgview );
 	connect( msgroup, SIGNAL( toggled( bool ) ), msgview, SLOT( clear() ) );
+	
+	QRect geo = settings.value( "window geometry", QRect() ).value<QRect>();
+	if ( geo.isValid() )	setGeometry( geo );
 }
 
 NifSkope::~NifSkope()
 {
 	if ( autoSettings->isChecked() )
 		saveOptions();
+}
+
+void NifSkope::saveOptions()
+{
+	QSettings settings( "NifTools", "NifSkope" );
+	settings.setValue( "last load", lineLoad->text() );
+	settings.setValue( "last save", lineSave->text() );
+	settings.setValue( "show list", list->isVisibleTo( this ) );
+	settings.setValue(	"list mode", ( listMode->checkedButton() ? listMode->checkedButton()->text() : "list" ) );
+	settings.beginWriteArray( "list header" );
+	for ( int c = 0; c < list->header()->count(); c++ )
+	{
+		settings.setArrayIndex( c );
+		settings.setValue( "size", list->header()->sectionSize( c ) );
+	}
+	settings.endArray();
+	settings.setValue( "show tree", tree->isVisibleTo( this ) );
+	settings.setValue( "hide condition zero", conditionZero->isChecked() );
+	settings.beginWriteArray( "tree header" );
+	for ( int c = 0; c < tree->header()->count(); c++ )
+	{
+		settings.setArrayIndex( c );
+		settings.setValue( "size", tree->header()->sectionSize( c ) );
+	}
+	settings.endArray();
+#ifdef QT_OPENGL_LIB
+	settings.setValue( "show opengl", ogl->isVisibleTo( this ) );
+	settings.setValue( "texture folder", ogl->textureFolder() );
+	settings.setValue( "enable lighting", ogl->lighting() );
+	settings.setValue( "draw axis", ogl->drawAxis() );
+	settings.setValue( "rotate", ogl->rotate() );
+#endif
+	settings.setValue( "auto save settings", autoSettings->isChecked() );
+	settings.setValue( "window geometry", normalGeometry() );
+	//settings.setValue( "split sizes", split->saveState() );
 }
 
 void NifSkope::about()
@@ -302,6 +390,9 @@ void NifSkope::contextMenu( const QPoint & pos )
 		idx = list->indexAt( pos );
 		p = list->mapToGlobal( pos );
 	}
+	
+	if ( idx.model() == proxy )
+		idx = proxy->mapTo( idx );
 	
 	QMenu * menu = new QMenu( this );
 	
@@ -346,7 +437,18 @@ void NifSkope::contextMenu( const QPoint & pos )
 			QModelIndex target = model->getBlock( link );
 			if ( list->isVisible() )
 			{
-				list->setCurrentIndex( target );
+				if ( list->model() == proxy )
+				{
+					QModelIndex pidx = proxy->mapFrom( target, list->currentIndex() );
+					list->setCurrentIndex( pidx );
+					while ( pidx.isValid() )
+					{
+						list->expand( pidx );
+						pidx = pidx.parent();
+					}
+				}
+				else
+					list->setCurrentIndex( target );
 				tree->setRootIndex( target );
 			}
 			else
@@ -377,27 +479,44 @@ void NifSkope::contextMenu( const QPoint & pos )
 	delete menu;
 }
 
-void NifSkope::saveOptions()
-{
-	QSettings settings( "NifTools", "NifSkope" );
-	settings.setValue( "last load", lineLoad->text() );
-	settings.setValue( "last save", lineSave->text() );
-	settings.setValue( "show list", list->isVisibleTo( this ) );
-	settings.setValue( "show tree", tree->isVisibleTo( this ) );
-#ifdef QT_OPENGL_LIB
-	settings.setValue( "show opengl", ogl->isVisibleTo( this ) );
-	settings.setValue( "texture folder", ogl->textureFolder() );
-	settings.setValue( "enable lighting", ogl->lighting() );
-	settings.setValue( "draw axis", ogl->drawAxis() );
-	settings.setValue( "rotate", ogl->rotate() );
-#endif
-	settings.setValue( "hide condition zero", conditionZero->isChecked() );
-	settings.setValue( "auto save settings", autoSettings->isChecked() );
-}
-
-void NifSkope::selectRoot()
+void NifSkope::clearRoot()
 {
 	tree->setRootIndex( QModelIndex() );
+}
+
+void NifSkope::selectRoot( const QModelIndex & index )
+{
+	if ( ! index.isValid() ) return;
+	if ( index.model() == proxy )
+		tree->setRootIndex( proxy->mapTo( index ) );
+	else if ( index.model() == model )
+		tree->setRootIndex( index );
+}
+
+void NifSkope::setListMode( QAbstractButton * b )
+{
+	QModelIndex idx = list->currentIndex();
+	if ( b->text() == "list" )
+	{
+		list->setModel( model );
+		list->setItemsExpandable( false );
+		list->setRootIsDecorated( false );
+		list->setCurrentIndex( proxy->mapTo( idx ) );
+	}
+	else
+	{
+		proxy->reset();
+		list->setModel( proxy );
+		list->setItemsExpandable( true );
+		list->setRootIsDecorated( true );
+		QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
+		list->setCurrentIndex( pidx );
+		while ( pidx.isValid() )
+		{
+			list->expand( pidx );
+			pidx = pidx.parent();
+		}
+	}
 }
 
 void NifSkope::showHideRows( QModelIndex parent )
@@ -405,7 +524,8 @@ void NifSkope::showHideRows( QModelIndex parent )
 #ifndef HIDEZEROCOND
 	return;
 #endif
-
+	bool treeVis = tree->isVisibleTo( tree->parentWidget() );
+	if ( treeVis ) tree->setVisible( false );
 	//qDebug( "showHideRows( %s )", str( model->itemName( parent ) ) );
 	for ( int c = 0; c < model->rowCount( parent ); c++ )
 	{
@@ -427,6 +547,7 @@ void NifSkope::showHideRows( QModelIndex parent )
 			}
 		}
 	}
+	if ( treeVis ) tree->setVisible( true );
 }
 
 void NifSkope::updateConditionZero()

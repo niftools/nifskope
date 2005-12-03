@@ -22,6 +22,7 @@
 
 
 class NifModel;
+class NifProxyModel;
 class GLView;
 class Popup;
  
@@ -29,8 +30,11 @@ class QListView;
 class QTreeView;
 class QModelIndex;
 
+class QAbstractButton;
+class QButtonGroup;
 class QCheckBox;
 class QGroupBox;
+class QSplitter;
 class QTextEdit;
 
 class NifSkope : public QWidget
@@ -54,7 +58,11 @@ public slots:
 	void addMessage( const QString & );
 	
 protected slots:
-	void selectRoot();
+	void clearRoot();
+	void selectRoot( const QModelIndex & );
+	
+	void setListMode( QAbstractButton * );
+	
 	void updateConditionZero();
 	
 	void dataChanged( const QModelIndex &, const QModelIndex & );
@@ -68,8 +76,9 @@ protected:
 	
 private:
 	NifModel * model;
+	NifProxyModel * proxy;
 	
-	QListView * list;
+	QTreeView * list;
 	QTreeView * tree;
 	GLView * ogl;
 	
@@ -78,11 +87,15 @@ private:
 	QLineEdit * lineLoad;
 	QLineEdit * lineSave;
 	
+	QButtonGroup * listMode;
+	
 	QCheckBox * conditionZero;
 	QCheckBox * autoSettings;
 	
 	QGroupBox * msgroup;
 	QTextEdit * msgview;
+	
+	QSplitter * split;
 };
 
 

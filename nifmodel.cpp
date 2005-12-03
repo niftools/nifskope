@@ -157,17 +157,20 @@ void NifModel::clear()
 
 
 /*
- *  extra logic
+ *  header functions
  */
+
+QModelIndex NifModel::getHeader() const
+{
+	QModelIndex header = index( 0, 0 );
+	if ( itemName( header ) != "NiHeader" )
+		return QModelIndex();
+	return header;
+}
 
 void NifModel::updateHeader()
 {
-	QModelIndex header = index( 0, 0 );
-	if ( ! header.isValid() || itemName( header ) != "NiHeader" )
-	{
-		qDebug( "header not found" );
-		return;
-	}
+	QModelIndex header = getHeader();
 	
 	setValue( header, "version", version );
 	setValue( header, "num blocks", getBlockCount() );
@@ -201,6 +204,11 @@ void NifModel::updateHeader()
 			setItemValue( idxBlockTypeIndices.child( r, 0 ), blocktypeindices.value( r ) );
 	}
 }
+
+
+/*
+ *  array functions
+ */
 
 void NifModel::updateArray( const QModelIndex & array, bool fast )
 {
@@ -360,6 +368,18 @@ void NifModel::inherit( const QString & identifier, const QModelIndex & idx, int
 	}
 }
 
+bool NifModel::inherits( const QString & name, const QString & aunty )
+{
+	NifBlock * type = blocks.value( name );
+	if ( ! type ) type = ancestors.value( name );
+	if ( ! type ) return false;
+	foreach ( QString a, type->ancestors )
+	{
+		if ( a == aunty || inherits( a, aunty ) ) return true;
+	}
+	return false;
+}
+
 
 /*
  *  basic and compound type functions
@@ -468,6 +488,15 @@ qint32 NifModel::itemLink( const QModelIndex & index ) const
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item ) )	return -1;
 	return ( getDisplayHint( item->type() ) == "link" && item->value().isValid() ? item->value().toInt() : -1 );
+}
+
+bool NifModel::isLink( const QModelIndex & index, bool * isChildLink ) const
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item ) )	return false;
+	if ( isChildLink )
+		*isChildLink = ( item->type() == "link" );
+	return ( getDisplayHint( item->type() ) == "link" );
 }
 
 void NifModel::setItemValue( const QModelIndex & index, const QVariant & var )
@@ -697,7 +726,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 						return QString::number( item->value().toInt(), 16 ).prepend( "0x" );
 					else if ( displayHint == "bin" )
 						return QString::number( item->value().toInt(), 2 ).prepend( "0b" );
-					else if ( displayHint == "link" )
+					else if ( displayHint == "link" && item->value().isValid() )
 					{
 						int lnk = item->value().toInt();
 						if ( lnk == -1 )
@@ -783,7 +812,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	
-	if ( ! ( index.isValid() && item && role == Qt::EditRole ) )
+	if ( ! ( index.isValid() && item && role == Qt::EditRole && index.model() == this ) )
 		return false;
 	
 	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" )
@@ -926,7 +955,7 @@ bool NifModel::load( QDataStream & stream )
 		
 		if ( isNiBlock( blktyp ) )
 		{
-			qDebug() << "insert block " << c << " : " << blktyp;
+			//qDebug() << "loading block " << c << " : " << blktyp;
 			insertNiBlock( blktyp, -1, true );
 			if ( ! load( getBlock( c ), stream ) ) 
 			{

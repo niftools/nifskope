@@ -119,8 +119,11 @@ public:
 	static QString parseXmlDescription( const QString & filename );
 	
 
+	// returns the model index of the NiHeader
+	QModelIndex getHeader() const;
 	// this updates the header infos ( num blocks etc. )
 	void updateHeader();
+	
 	// this updates an array ( append or remove items )
 	void updateArray( const QModelIndex & array, bool fast = false );
 	
@@ -146,6 +149,8 @@ public:
 	void inherit( const QString & identifier, const QModelIndex & idx, int row = -1 );
 	// is name an ancestor identifier?
 	static bool isAncestor( const QString & name );
+	// returns true if name inherits ancestor
+	static bool inherits( const QString & name, const QString & ancestor );
 	
 	
 	// insert or append a basic or compound type
@@ -178,7 +183,9 @@ public:
 	quint32  itemVer2( const QModelIndex & index ) const;
 	
 	// this returns a block number if the index is a valid link
-	qint32   itemLink( const QModelIndex & index ) const;
+	qint32	itemLink( const QModelIndex & index ) const;
+	// is it a child or parent link?
+	bool	isLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
 	
 	// set item attributes
 	void setItemValue( const QModelIndex & index, const QVariant & v );

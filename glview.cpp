@@ -279,8 +279,8 @@ void GLView::paintGL()
 		
 		if ( doCenter )
 		{
-			boundMin = Vector();
-			boundMax = Vector();
+			boundMin = Vector( +1000000000, +1000000000, +1000000000 );
+			boundMax = Vector( -1000000000, -1000000000, -1000000000 );
 		}
 		
 		if ( model )
@@ -289,7 +289,7 @@ void GLView::paintGL()
 			glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 			for ( int r = 1; r < model->rowCount( QModelIndex() ); r++ )
 			{
-				if ( model->itemName( model->index( r, 0 ) ) == "NiNode" )
+				if ( model->inherits( model->itemName( model->index( r, 0 ) ), "AParentNode" ) )
 				{
 					// first pass: only opaque objects
 					glDepthMask( GL_TRUE );
@@ -456,7 +456,7 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 	while ( idnt.length() < nodestack.count()*2 )
 		idnt += "  ";
 	
-	qDebug() << idnt << "compile " << model->itemName( idx ) << " (" << blockNumber << ") " << model->itemValue( model->getIndex( idx, "name" ) ).toString();
+	//qDebug() << idnt << "compile " << model->itemName( idx ) << " (" << blockNumber << ") " << model->itemValue( model->getIndex( idx, "name" ) ).toString();
 
 	nodestack.push( blockNumber );
 	matrixstack.push( Matrix( model, idx ) );
@@ -482,17 +482,17 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 			qWarning() << "block " << r << " not found";
 			continue;
 		}
-		if ( model->itemName( child ) == "NiNode" || model->itemName( child ) == "NiLODNode" )
+		if ( model->inherits( model->itemName( child ), "AParentNode" ) )
 		{
 			has_alpha |= compileNode( r, alphatoggle );
 		}
 		else if ( model->itemName( child ) == "NiTriShape" || model->itemName( child ) == "NiTriStrips" )
 		{
-			qDebug() << idnt << "   compile " << model->itemName( child ) << " (" << r << ")";
+			//qDebug() << idnt << "   compile " << model->itemName( child ) << " (" << r << ")";
 			
 			if ( model->getInt( child, "flags" ) & 1 )
 			{
-				qDebug() << "      shape is hidden";
+				//qDebug() << "      shape is hidden";
 				continue;
 			}
 			
@@ -693,7 +693,6 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 					foreach ( Vector v, verts )
 					{
 						Vector w = m1 * v;
-						qDebug() << v[0] << v[1] << v[2] << w[0] << w[1] << w[2];
 						for ( int i = 0; i < 3; i++ )
 						{
 							if ( w[i] < boundMin[i] )	boundMin[i] = w[i];
