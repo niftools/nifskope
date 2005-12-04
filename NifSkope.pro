@@ -1,11 +1,16 @@
-TARGET = NifSkope
-
 TEMPLATE = app
-
-SOURCES += *.cpp
-HEADERS += *.h
+LANGUAGE = C++
+TARGET   = NifSkope
 
 CONFIG += qt release warn_on
-QT += XML OpenGL
+QT += xml opengl
 
 DESTDIR = $$PWD
+
+HEADERS   += *.h
+SOURCES   += *.cpp
+#RESOURCES += *.qrc
+
+win32 {
+    RC_FILE = icon.rc
+}

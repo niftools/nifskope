@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/res">
+   <file>NifSkope.xml</file>
+</qresource>
+</RCC>

@@ -574,6 +574,12 @@ void NifSkope::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 	showHideRows( block );
 }
 
+void NifSkope::load( const QString & filepath )
+{
+	lineLoad->setText( filepath );
+	QTimer::singleShot( 0, this, SLOT( load() ) );
+}
+
 void NifSkope::load()
 {
 	// open file
@@ -612,7 +618,7 @@ void NifSkope::save()
 void NifSkope::loadBrowse()
 {
 	// file select
-	QString fn = QFileDialog::getOpenFileName( this, "Choose a file to open", lineLoad->text(), "NIFs (*.nif *.NIF)");
+	QString fn = QFileDialog::getOpenFileName( this, "Choose a file to open", lineLoad->text(), "NIFs (*.nif *.kf *.kfa)");
 	if ( !fn.isEmpty() )
 	{
 		lineLoad->setText( fn );
@@ -623,7 +629,7 @@ void NifSkope::loadBrowse()
 void NifSkope::saveBrowse()
 {
 	// file select
-	QString fn = QFileDialog::getSaveFileName( this, "Choose a file to save", lineSave->text(), "NIFs (*.nif *.NIF)");
+	QString fn = QFileDialog::getSaveFileName( this, "Choose a file to save", lineSave->text(), "NIFs (*.nif *.kf *.kfa)");
 	if ( !fn.isEmpty() )
 	{
 		lineSave->setText( fn );
@@ -676,8 +682,7 @@ int main( int argc, char * argv[] )
 	QApplication app( argc, argv );
 	
 	// read in XML fileformat description
-	QDir dir( app.applicationDirPath() );
-	QString result = NifModel::parseXmlDescription( dir.filePath( "NifSkope.xml" ) );
+	QString result = NifModel::parseXmlDescription( QDir( app.applicationDirPath() ).filePath( "NifSkope.xml" ) );
 	if ( ! result.isEmpty() )
 	{
 		QMessageBox::critical( 0, "NifSkope", result );
@@ -690,6 +695,9 @@ int main( int argc, char * argv[] )
 	
 	msgtarget = &edit;
 	qInstallMsgHandler(myMessageOutput);
+
+    if (app.argc() > 1)
+        edit.load(QString(app.argv()[app.argc() - 1]));
 
 	// start the event loop
 	return app.exec();

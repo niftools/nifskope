@@ -311,7 +311,11 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return QString( "error: couldn't open xml description file: " + filename );
+	{
+		f.setFileName( ":/res/NifSkope.xml" );
+		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
+			return QString( "error: couldn't open xml description file: " + filename );
+	}
 	
 	NifXmlHandler handler;
 	QXmlSimpleReader reader;
