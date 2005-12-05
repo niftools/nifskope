@@ -721,11 +721,11 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 					else if ( displayHint == "dec" )
 						return QString::number( item->value().toInt(), 10 );
 					else if ( displayHint == "bool" )
-						return ( item->value().toInt() != 0 ? "yes" : "no" );
+						return ( item->value().toUInt() != 0 ? "yes" : "no" );
 					else if ( displayHint == "hex" )
-						return QString::number( item->value().toInt(), 16 ).prepend( "0x" );
+						return QString::number( item->value().toUInt(), 16 ).prepend( "0x" );
 					else if ( displayHint == "bin" )
-						return QString::number( item->value().toInt(), 2 ).prepend( "0b" );
+						return QString::number( item->value().toUInt(), 2 ).prepend( "0b" );
 					else if ( displayHint == "link" && item->value().isValid() )
 					{
 						int lnk = item->value().toInt();
@@ -999,7 +999,8 @@ bool NifModel::save( QDataStream & stream )
 				stream.writeRawData( (const char *) string.toAscii(), len );
 			}
 		}
-		save( index( c, 0, QModelIndex() ), stream );
+		if ( !save( index( c, 0, QModelIndex() ), stream ) )
+			return false;
 	}
 	int foot1 = 1;
 	stream.writeRawData( (char *) &foot1, 4 );
@@ -1113,7 +1114,7 @@ bool NifModel::load( const QModelIndex & parent, QDataStream & stream )
 				} break;
 				default:
 				{
-					qCritical() << "encountered unknown type " << type << " during load of " << itemName( child ) << "(" << itemType( child ) << ")";
+					qCritical() << itemName( getBlock( getBlockNumber( parent ) ) ) << "(" << getBlockNumber( parent ) << ")" << itemName( child ) << "unknown type" << itemType( child );
 					return false;
 				}
 			}
@@ -1122,7 +1123,7 @@ bool NifModel::load( const QModelIndex & parent, QDataStream & stream )
 	return true;
 }
 
-void NifModel::save( const QModelIndex & parent, QDataStream & stream )
+bool NifModel::save( const QModelIndex & parent, QDataStream & stream )
 {
 	int numrows = rowCount( parent );
 	//qDebug( "save branch %s (%i)",str( data( parent.sibling( parent.row(), NameCol ) ).toString() ), numrows );
@@ -1136,25 +1137,38 @@ void NifModel::save( const QModelIndex & parent, QDataStream & stream )
 			QString  dim1  = itemArr1( child );
 			QString  dim2  = itemArr2( child );
 			
-			if ( ! dim1.isEmpty() || ! dim2.isEmpty() || rowCount( child ) > 0 || itemType( child ).isEmpty() )
+			bool isChildLink;
+			if ( isLink( child, &isChildLink ) )
 			{
-				save( child, stream );
+				if ( ! isChildLink && value.toInt() < 0 )
+					qWarning() << itemName( getBlock( getBlockNumber( parent ) ) ) << "(" << getBlockNumber( parent ) << ")" << itemName( child ) << "unassigned parent link";
+				else if ( value.toInt() >= getBlockCount() )
+					qWarning() << itemName( getBlock( getBlockNumber( parent ) ) ) << "(" << getBlockNumber( parent ) << ")" << itemName( child ) << "invalid link";
+			}
+			
+			if ( ! dim1.isEmpty() || ! dim2.isEmpty() || rowCount( child ) > 0 )// || itemType( child ).isEmpty() )
+			{
+				if ( ! dim1.isEmpty() && rowCount( child ) != getInt( parent, dim1 ) )
+					qWarning() << itemName( getBlock( getBlockNumber( parent ) ) ) << "(" << getBlockNumber( parent ) << ")" << itemName( child ) << "array size mismatch";
+				
+				if ( !save( child, stream ) )
+					return false;
 			}
 			else switch ( type )
 			{
 				case it_uint8:
 				{
-					quint8 u8 = (quint8) value.toInt();
+					quint8 u8 = (quint8) value.toUInt();
 					stream.writeRawData( (char *) &u8, 1 );
 				} break;
 				case it_uint16:
 				{
-					quint16 u16 = (quint16) value.toInt();
+					quint16 u16 = (quint16) value.toUInt();
 					stream.writeRawData( (char *) &u16, 2 );
 				} break;
 				case it_uint32:
 				{
-					quint32 u32 = (quint32) value.toInt();
+					quint32 u32 = (quint32) value.toUInt();
 					stream.writeRawData( (char *) &u32, 4 );
 				} break;
 				case it_int8:
@@ -1210,11 +1224,13 @@ void NifModel::save( const QModelIndex & parent, QDataStream & stream )
 				} break;
 				default:
 				{
-					qCritical() << "encountered unknown type during save of " << itemName( child ) << "(" << itemType( child ) << ")";
+					qCritical() << itemName( getBlock( getBlockNumber( parent ) ) ) << "(" << getBlockNumber( parent ) << ")" << itemName( child ) << "unknown type" << itemType( child );
+					return false;
 				}
 			}
 		}
 	}
+	return true;
 }
 
 QModelIndex NifModel::getIndex( const QModelIndex & parent, const QString & name ) const

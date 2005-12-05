@@ -240,7 +240,7 @@ protected:
 	
 	// recursive load and save a branch
 	bool load( const QModelIndex & parent, QDataStream & stream );
-	void save( const QModelIndex & parent, QDataStream & stream );
+	bool save( const QModelIndex & parent, QDataStream & stream );
 	
 	// find basic type with matching name and version
 	NifBasicType * getType( const QString & name ) const;
