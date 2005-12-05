@@ -45,6 +45,7 @@ public:
 	int yRotation() const { return yRot; }
 	int zRotation() const { return zRot; }
 	
+	bool texturing() const { return texturesOn; }
 	bool lighting() const { return lightsOn; }
 	bool drawAxis() const { return drawaxis; }
 	bool rotate() const { return timer->isActive(); }
@@ -70,6 +71,7 @@ public slots:
 	
 	void setDrawAxis( bool );
 	void setLighting( bool );
+	void setTexturing( bool );
 	
 	void setTextureFolder( const QString & );
 	void flushTextureCache();
@@ -97,6 +99,7 @@ private slots:
 private:
 	void normalizeAngle(int *angle);
 	
+	void updateWorldTrans( int b );
 	bool compileNode( int b, bool alphatoggle );
 	GLuint compileTexture( QString filename );
 
@@ -124,6 +127,7 @@ private:
 	
 	QString texfolder;
 	
+	bool texturesOn;
 	bool lightsOn;
 	bool drawaxis;
 	

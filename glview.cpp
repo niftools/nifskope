@@ -81,6 +81,7 @@ GLView::GLView()
 	updated = false;
 	doCompile = doCenter = false;
 	
+	texturesOn = true;
 	lightsOn = true;
 	drawaxis = true;
 	
@@ -117,6 +118,12 @@ void GLView::setTextureFolder( const QString & tf )
 {
 	texfolder = tf;
 	updated = true;
+}
+
+void GLView::setTexturing( bool t )
+{
+	texturesOn = t;
+	compile( false );
 }
 
 void GLView::setLighting( bool l )
@@ -226,11 +233,13 @@ void GLView::initializeGL()
 	qglClearColor( palette().color( QPalette::Active, QPalette::Background ) );
 
 	static const GLfloat L0position[4] = { 5.0f, 5.0f, 10.0f, 1.0f };
-	static const GLfloat L0ambient[4] = { 0.7f, 0.7f, 0.7f, 1.0f };
-	static const GLfloat L0diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
+	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
 	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
 	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
 	glEnable( GL_LIGHT0 );
 	
 	glShadeModel( GL_SMOOTH );
@@ -274,9 +283,6 @@ void GLView::paintGL()
 		if ( ! nif )	nif = glGenLists( 1 );
 		glNewList( nif, GL_COMPILE );
 		
-		nodestack.clear();
-		worldtrans.clear();
-		
 		if ( doCenter )
 		{
 			boundMin = Vector( +1000000000, +1000000000, +1000000000 );
@@ -285,18 +291,23 @@ void GLView::paintGL()
 		
 		if ( model )
 		{
-			glDisable(GL_COLOR_MATERIAL);
-			glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 			for ( int r = 1; r < model->rowCount( QModelIndex() ); r++ )
 			{
 				if ( model->inherits( model->itemName( model->index( r, 0 ) ), "AParentNode" ) )
 				{
+					nodestack.clear();
+					matrixstack.clear();
+					worldtrans.clear();					
+					updateWorldTrans( r-1 );
+					
 					// first pass: only opaque objects
+					nodestack.clear();
 					glDepthMask( GL_TRUE );
 					glDisable( GL_BLEND );
 					if ( compileNode( r-1, false ) )
 					{
 						// second pass: only alpha enabled objects
+						nodestack.clear();
 						glDepthMask( GL_FALSE );
 						glEnable( GL_BLEND );
 						compileNode( r-1, true );
@@ -333,6 +344,7 @@ void GLView::paintGL()
 	
 	glDisable( GL_LIGHTING );
 	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_COLOR_MATERIAL );
 
 	if ( drawaxis )
 	{
@@ -400,6 +412,8 @@ void GLView::paintGL()
 	}
 	
 	glDisable( GL_DEPTH_TEST );
+	glDisable( GL_CULL_FACE );
+	glEnable( GL_TEXTURE_2D );
 
 	glLoadIdentity();
 	if ( updated )
@@ -409,7 +423,6 @@ void GLView::paintGL()
 		glOrtho (0.0, width(), 0.0, height(), -1.0, 1.0);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glEnable( GL_TEXTURE_2D );
 		if ( ! click_tex )
 			click_tex = bindTexture( QImage( click_xpm ) );
 		else
@@ -437,6 +450,44 @@ void GLView::resizeGL(int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+void GLView::updateWorldTrans( int blockNumber )
+{
+	//qDebug() << nodestack.count() << matrixstack.count() << "updateWorldTrans" << blockNumber;
+	QModelIndex idx = model->getBlock( blockNumber );
+
+	if ( nodestack.contains( blockNumber ) || ! idx.isValid() )
+		return;
+	
+	nodestack.push( blockNumber );
+	matrixstack.push( Matrix( model, idx ) );
+	
+	Matrix matrix;
+	foreach ( Matrix m, matrixstack )
+		matrix = matrix * m;
+	worldtrans[blockNumber] = matrix;
+
+	QModelIndex children = model->getIndex( idx, "children" );
+	QModelIndex childlinks = model->getIndex( children, "indices" );
+	if ( ! ( children.isValid() && childlinks.isValid() ) )
+	{
+		nodestack.pop();
+		matrixstack.pop();
+		return;
+	}
+	
+	for ( int c = 0; c < model->rowCount( childlinks ); c++ )
+	{
+		int r = model->itemValue( childlinks.child( c, 0 ) ).toInt();
+		QModelIndex child = model->getBlock( r );
+		if ( child.isValid() && model->inherits( model->itemName( child ), "AParentNode" ) )
+		{
+			updateWorldTrans( r );
+		}
+	}
+	matrixstack.pop();
+	nodestack.pop();
+}
+
 bool GLView::compileNode( int blockNumber, bool alphatoggle )
 {
 	bool has_alpha = false;
@@ -452,25 +503,16 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 		return has_alpha;
 	}
 	
-	QString idnt;
-	while ( idnt.length() < nodestack.count()*2 )
-		idnt += "  ";
-	
-	//qDebug() << idnt << "compile " << model->itemName( idx ) << " (" << blockNumber << ") " << model->itemValue( model->getIndex( idx, "name" ) ).toString();
+	//qDebug() << "compile " << model->itemName( idx ) << " (" << blockNumber << ") " << model->itemValue( model->getIndex( idx, "name" ) ).toString();
 
 	nodestack.push( blockNumber );
-	matrixstack.push( Matrix( model, idx ) );
-	
-	Matrix matrix;
-	foreach ( Matrix m, matrixstack )
-		matrix = matrix * m;
-	worldtrans[blockNumber] = matrix;
 
 	QModelIndex children = model->getIndex( idx, "children" );
 	QModelIndex childlinks = model->getIndex( children, "indices" );
 	if ( ! ( children.isValid() && childlinks.isValid() ) )
 	{
 		qWarning() << "compileNode( " << blockNumber << " ) : children link list not found";
+		nodestack.pop();
 		return has_alpha;
 	}
 	for ( int c = 0; c < model->rowCount( childlinks ); c++ )
@@ -501,6 +543,7 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 			GLenum	tex_filter = GL_LINEAR;
 			
 			bool tri_alpha = false;
+			bool tri_specular = false;
 			
 			QModelIndex properties = model->getIndex( child, "properties" );
 			QModelIndex proplinks = model->getIndex( properties, "indices" );
@@ -512,24 +555,27 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 				QString propname = model->itemName( property );
 				if ( propname == "NiMaterialProperty" )
 				{
+					glEnable( GL_COLOR_MATERIAL );
+					glColorMaterial(GL_FRONT, GL_AMBIENT);
+					
 					QColor ambient = model->getValue( property, "ambient color" ).value<QColor>();
 					QColor diffuse = model->getValue( property, "diffuse color" ).value<QColor>();
 					QColor specular = model->getValue( property, "specular color" ).value<QColor>();
 					
 					GLfloat shininess = model->getFloat( property, "glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
-					glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+					glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 					GLfloat alpha = model->getFloat( property, "alpha" );
 					
 					GLfloat ambientColor[4] = { ambient.redF(), ambient.greenF(), ambient.blueF() , alpha };
-					glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambientColor);
+					glMaterialfv(GL_FRONT, GL_AMBIENT, ambientColor);
 					GLfloat diffuseColor[4] = { diffuse.redF(), diffuse.greenF(), diffuse.blueF() , alpha };
-					glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseColor);
+					glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseColor);
 					GLfloat specularColor[4] = { specular.redF(), specular.greenF(), specular.blueF() , alpha };
-					glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specularColor);
+					glMaterialfv(GL_FRONT, GL_SPECULAR, specularColor);
 					
-					glColor4f( diffuse.redF(), diffuse.greenF(), diffuse.blueF(), alpha );
+					glColor4f( ambient.redF(), ambient.greenF(), ambient.blueF(), alpha );
 				}
-				else if ( propname == "NiTexturingProperty" )
+				else if ( propname == "NiTexturingProperty" && texturesOn )
 				{
 					QModelIndex basetex = model->getIndex( property, "base texture" );
 					QModelIndex basetexdata = model->getIndex( basetex, "texture data" );
@@ -563,6 +609,16 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 					// default blend function
 					glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 				}
+				else if ( propname == "NiSpecularProperty" )
+				{
+					tri_specular = true;
+				}
+			}
+
+			if ( ! tri_specular )
+			{
+				GLfloat specularColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+				glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specularColor);
 			}
 			
 			int data = model->getInt( child, "data" );
@@ -605,7 +661,7 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 					colors.append( model->itemValue( vertexcolors.child( r, 0 ) ).value<QColor>() );
 			}
 			QVector<GLfloat> uvs;
-			if ( ! tex_file.isEmpty()  )
+			if ( ! tex_file.isEmpty() )
 			{
 				GLuint tex_id = compileTexture( tex_file );
 				if ( tex_id != 0 )
@@ -652,6 +708,7 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 					
 					for ( int b = 0; b < model->rowCount( idxBones ) && b < bones.count(); b++ )
 					{
+						//if ( ! worldtrans.contains( bones.value( b ) ) ) qWarning() << "no matrix for bone " << b;
 						Matrix m1 = worldtrans.value( bones.value( b ) ) * Matrix( model, model->index( b, 0, idxBones ) );
 						QModelIndex idxWeights = model->getIndex( model->index( b, 0, idxBones ), "vertex weights" );
 						if ( idxWeights.isValid() )
@@ -702,6 +759,17 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 				}
 				
 				m1.glMultMatrix();
+			}
+			
+			if ( uvs.count() )
+				glEnable( GL_TEXTURE_2D );
+			else
+				glDisable( GL_TEXTURE_2D );
+				
+			if ( colors.count() )
+			{
+				glEnable( GL_COLOR_MATERIAL );
+				glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 			}
 			
 			if ( model->itemName( tridata ) == "NiTriShapeData" )
@@ -764,7 +832,6 @@ bool GLView::compileNode( int blockNumber, bool alphatoggle )
 		}
 	}
 
-	matrixstack.pop();
 	nodestack.pop();
 
 	GLenum err;
