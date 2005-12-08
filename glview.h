@@ -16,8 +16,6 @@
 #ifndef GLVIEW
 #define GLVIEW
 
-class NifModel;
-
 #ifdef QT_OPENGL_LIB
 
 #include <QGLWidget>
@@ -31,7 +29,7 @@ class NifModel;
 
 #include "glmath.h"
 
-class GLTex;
+class Scene;
 
 class GLView : public QGLWidget
 {
@@ -45,12 +43,13 @@ public:
 	int yRotation() const { return yRot; }
 	int zRotation() const { return zRot; }
 	
-	bool texturing() const { return texturesOn; }
+	bool texturing() const;
+	bool blending() const;
 	bool lighting() const { return lightsOn; }
 	bool drawAxis() const { return drawaxis; }
 	bool rotate() const { return timer->isActive(); }
 	
-	QString textureFolder() const { return texfolder; }
+	QString textureFolder() const;
 	
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	QSize sizeHint() const { return QSize( 400, 400 ); }
@@ -72,21 +71,23 @@ public slots:
 	void setDrawAxis( bool );
 	void setLighting( bool );
 	void setTexturing( bool );
+	void setBlending( bool );
 	
 	void setTextureFolder( const QString & );
-	void flushTextureCache();
 
 signals: 
 	void xRotationChanged(int angle);
 	void yRotationChanged(int angle);
 	void zRotationChanged(int angle);
 	void zoomChanged( int zoom );
+	void clicked( const QModelIndex & );
 
 protected:
 	void initializeGL();
 	void paintGL();
 	void resizeGL(int width, int height);
 	void mousePressEvent(QMouseEvent *event);
+	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseDoubleClickEvent( QMouseEvent * );
 	void mouseMoveEvent(QMouseEvent *event);
 	void wheelEvent( QWheelEvent * event );
@@ -98,12 +99,6 @@ private slots:
 
 private:
 	void normalizeAngle(int *angle);
-	
-	void updateWorldTrans( int b );
-	bool compileNode( int b, bool alphatoggle );
-	GLuint compileTexture( QString filename );
-
-	GLuint nif;
 	
 	GLuint click_tex;
 	
@@ -122,41 +117,19 @@ private:
 	bool doCenter;
 	
 	QPoint lastPos;
+	QPoint pressPos;
 	
 	NifModel * model;
 	
-	QString texfolder;
+	Scene * scene;
 	
-	bool texturesOn;
 	bool lightsOn;
-	bool drawaxis;
-	
-	QStack<int> nodestack;
-	QStack<Matrix> matrixstack;
-	QHash<int,Matrix> worldtrans;
-	
+	bool drawaxis;	
+
 	Vector boundMin, boundMax;
-	
-	QCache<QString,GLTex> textures;
 	
 	QTimer * timer;
 };
-
-class GLTex
-{
-public:
-	static GLTex * create( const QString & filepath, const QGLContext * context );
-	
-	~GLTex();
-
-	GLuint		id;
-	QString		filepath;
-	QDateTime	loaded;
-	
-protected:
-	GLTex();
-};
-
 
 #else
 class GLView {};

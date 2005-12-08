@@ -61,18 +61,11 @@ public slots:
 protected slots:
 	void xDataChanged( const QModelIndex &, const QModelIndex & );
 	
-	void xRowsInserted( const QModelIndex &, int, int );
-	void xRowsRemoved( const QModelIndex &, int, int );
-
+	void xLinksChanged();
+	
 protected:
 	void updateRoot( bool fast );
 	void updateItem( NifProxyItem * item, bool fast );
-	
-	void updateLinks( int block );
-	void updateLinks( int block, const QModelIndex & index );
-	
-	QHash< int, QList<int> > childLinks;
-	QHash< int, QList<int> > parentLinks;
 	
 	NifModel * nif;
 	

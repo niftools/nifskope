@@ -7,9 +7,29 @@ QT += xml opengl
 
 DESTDIR = $$PWD
 
-HEADERS   += *.h
-SOURCES   += *.cpp
-#RESOURCES += *.qrc
+HEADERS += \
+glmath.h \
+glscene.h \
+glview.h \
+nifmodel.h \
+nifproxy.h \
+nifskope.h \
+nifview.h \
+popup.h
+
+SOURCES += \
+glscene.cpp \
+gltex.cpp \
+glview.cpp \
+nifdelegate.cpp \
+nifmodel.cpp \
+nifproxy.cpp \
+nifskope.cpp \
+nifview.cpp \
+nifxml.cpp \
+popup.cpp
+
+RESOURCES += nifskope.qrc
 
 win32 {
     RC_FILE = icon.rc

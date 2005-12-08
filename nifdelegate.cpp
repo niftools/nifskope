@@ -96,7 +96,7 @@ public:
 									const QRect &rect, const QString &text) const
 	{
 		QPen pen = painter->pen();
-		painter->setPen(option.palette.color(option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled, QPalette::Text));
+		painter->setPen(option.palette.color(option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled, ( option.showDecorationSelected && (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::Text)) );
 		QFont font = painter->font();
 		painter->setFont(option.font);
 		painter->drawText(rect, option.displayAlignment, text);

@@ -19,7 +19,8 @@
 #include <QAbstractItemModel>
 
 #include <QHash>
-#include <QDataStream>
+#include <QIODevice>
+#include <QStack>
 #include <QStringList>
 
 class QAbstractItemDelegate;
@@ -112,8 +113,8 @@ public:
 	void clear();
 	
 	// load and save model data
-	bool load( QDataStream & stream );
-	bool save( QDataStream & stream );
+	bool load( QIODevice & device );
+	bool save( QIODevice & device );
 	
 	// call this once with the nif description xml file as argument
 	static QString parseXmlDescription( const QString & filename );
@@ -124,6 +125,7 @@ public:
 	// this updates the header infos ( num blocks etc. )
 	void updateHeader();
 	
+	int getArraySize( const QModelIndex & array ) const;
 	// this updates an array ( append or remove items )
 	void updateArray( const QModelIndex & array, bool fast = false );
 	
@@ -143,6 +145,12 @@ public:
 	static QStringList allNiBlocks();
 	// is name a NiBlock identifier?
 	static bool isNiBlock( const QString & name );
+	
+	
+	// return the root blocks
+	QList<int> getRootLinks() const;
+	QList<int> getChildLinks( int block ) const;
+	QList<int> getParentLinks( int block ) const;
 
 
 	// insert abstract ancestor block
@@ -227,10 +235,26 @@ public:
 	Qt::ItemFlags flags( const QModelIndex & index ) const
 	{
 		if ( !index.isValid() ) return Qt::ItemIsEnabled;
-		return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+		switch( index.column() )
+		{
+			case TypeCol:
+				return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+			case ValueCol:
+				if ( itemArr1( index ).isEmpty() )
+					return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+				else
+					return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+			default:
+				return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+		}
 	}
 	
+	void reset();
+	
 	static QAbstractItemDelegate * createDelegate();
+	
+signals:
+	void linksChanged();
 
 protected:
 	// create a tree branch
@@ -239,8 +263,8 @@ protected:
 	void insertLeaf( const NifData & data, const QModelIndex & parent, int row = -1 );
 	
 	// recursive load and save a branch
-	bool load( const QModelIndex & parent, QDataStream & stream );
-	bool save( const QModelIndex & parent, QDataStream & stream );
+	bool load( const QModelIndex & parent, QIODevice & device );
+	bool save( const QModelIndex & parent, QIODevice & device );
 	
 	// find basic type with matching name and version
 	NifBasicType * getType( const QString & name ) const;
@@ -268,6 +292,15 @@ protected:
 	static QHash<QString,NifBlock*>		blocks;
 	
 	static QStringList uncondTypes;
+	
+	QHash< int, QList<int> > childLinks;
+	QHash< int, QList<int> > parentLinks;
+	QList<int> rootLinks;
+	
+	void updateRootLinks();
+	void checkLinks( int block, QStack<int> & parents );
+	void updateLinks( int block = -1 );
+	void updateLinks( int block, const QModelIndex & );
 	
 	friend class NifXmlHandler;
 }; // class NifModel
@@ -329,6 +362,21 @@ inline QVariant NifModel::getTypeValue( const QString & name ) const
 	NifBasicType * type = getType( name );
 	if ( type )		return type->value;
 	else			return QVariant();
+}
+
+inline QList<int> NifModel::getRootLinks() const
+{
+	return rootLinks;
+}
+
+inline QList<int> NifModel::getChildLinks( int block ) const
+{
+	return childLinks.value( block );
+}
+
+inline QList<int> NifModel::getParentLinks( int block ) const
+{
+	return parentLinks.value( block );
 }
 
 #endif

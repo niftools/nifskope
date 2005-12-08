@@ -162,16 +162,6 @@ public:
 		}
 	}
 	
-	void checkAssigned( QVector<bool> & assigned )
-	{
-		foreach ( NifProxyItem * item, childItems )
-		{
-			assigned[ item->block() ] = true;
-			if ( item->childCount() > 0 )
-				item->checkAssigned( assigned );
-		}
-	}
-	
 	int blockNumber;
 	NifProxyItem * parentItem;
 	QList<NifProxyItem*> childItems;
@@ -195,32 +185,15 @@ QAbstractItemModel * NifProxyModel::model() const
 
 void NifProxyModel::setModel( QAbstractItemModel * model )
 {
-	//qDebug() << "proxy set model";
     if ( nif )
 	{
         disconnect(nif, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
                    this, SLOT(xDataChanged(QModelIndex,QModelIndex)));
         disconnect(nif, SIGNAL(headerDataChanged(Orientation,int,int)),
                    this, SIGNAL(headerDataChanged(Orientation,int,int)));
-
-        //disconnect(nif, SIGNAL(rowsAboutToBeInserted(QModelIndex,int,int)),
-        //           this, SLOT(xRowsAboutToBeInserted(QModelIndex,int,int)));
-        disconnect(nif, SIGNAL(rowsInserted(QModelIndex,int,int)),
-                   this, SLOT(xRowsInserted(QModelIndex,int,int)));
-        //disconnect(nif, SIGNAL(rowsAboutToBeRemoved(QModelIndex,int,int)),
-        //           this, SIGNAL(rowsAboutToBeRemoved(QModelIndex,int,int)));
-        disconnect(nif, SIGNAL(rowsRemoved(QModelIndex,int,int)),
-                   this, SLOT(xRowsRemoved(QModelIndex,int,int)));
-		/*
-        disconnect(nif, SIGNAL(columnsAboutToBeInserted(QModelIndex,int,int)),
-                   this, SIGNAL(columnsAboutToBeInserted(QModelIndex,int,int)));
-        disconnect(nif, SIGNAL(columnsInserted(QModelIndex,int,int)),
-                   this, SIGNAL(columnsInserted(QModelIndex,int,int)));
-        disconnect(nif, SIGNAL(columnsAboutToBeRemoved(QModelIndex,int,int)),
-                   this, SIGNAL(columnsAboutToBeRemoved(QModelIndex,int,int)));
-        disconnect(nif, SIGNAL(columnsRemoved(QModelIndex,int,int)),
-                   this, SIGNAL(columnsRemoved(QModelIndex,int,int)));
-		*/
+		
+		disconnect( nif, SIGNAL( linksChanged() ),	this, SLOT( xLinksChanged() ) );
+		
         disconnect(nif, SIGNAL(modelReset()), this, SLOT(reset()));
         disconnect(nif, SIGNAL(layoutChanged()), this, SIGNAL(layoutChanged()));
     }
@@ -233,25 +206,9 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
                    this, SLOT(xDataChanged(QModelIndex,QModelIndex)));
         connect(nif, SIGNAL(headerDataChanged(Orientation,int,int)),
                    this, SIGNAL(headerDataChanged(Orientation,int,int)));
-
-        //connect(nif, SIGNAL(rowsAboutToBeInserted(QModelIndex,int,int)),
-        //        this, SLOT(xRowsAboutToBeInserted(QModelIndex,int,int)));
-        connect(nif, SIGNAL(rowsInserted(QModelIndex,int,int)),
-                this, SLOT(xRowsInserted(QModelIndex,int,int)));
-        //connect(nif, SIGNAL(rowsAboutToBeRemoved(QModelIndex,int,int)),
-        //        this, SIGNAL(rowsAboutToBeRemoved(QModelIndex,int,int)));
-        connect(nif, SIGNAL(rowsRemoved(QModelIndex,int,int)),
-                this, SLOT(xRowsRemoved(QModelIndex,int,int)));
-		/*
-        connect(nif, SIGNAL(columnsAboutToBeInserted(QModelIndex,int,int)),
-                this, SIGNAL(columnsAboutToBeInserted(QModelIndex,int,int)));
-        connect(nif, SIGNAL(columnsInserted(QModelIndex,int,int)),
-                this, SIGNAL(columnsInserted(QModelIndex,int,int)));
-        connect(nif, SIGNAL(columnsAboutToBeRemoved(QModelIndex,int,int)),
-                this, SIGNAL(columnsAboutToBeRemoved(QModelIndex,int,int)));
-        connect(nif, SIGNAL(columnsRemoved(QModelIndex,int,int)),
-                this, SIGNAL(columnsRemoved(QModelIndex,int,int)));
-		*/
+		
+		connect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
+		
         connect(nif, SIGNAL(modelReset()), this, SLOT(reset()));
         connect(nif, SIGNAL(layoutChanged()), this, SIGNAL(layoutChanged()));
     }
@@ -263,55 +220,8 @@ void NifProxyModel::reset()
 {
 	//qDebug() << "proxy reset";
 	root->killChildren();
-	updateLinks( -1 );
 	updateRoot( true );
 	QAbstractItemModel::reset();
-}
-
-void NifProxyModel::updateLinks( int block )
-{
-	//qDebug() << "update links" << block;
-	if ( block >= 0 )
-	{
-		childLinks[ block ].clear();
-		parentLinks[ block ].clear();
-		updateLinks( block, nif->getBlock( block ) );
-	}
-	else
-	{
-		childLinks.clear();
-		parentLinks.clear();
-		for ( int c = 0; nif && c < nif->getBlockCount(); c++ )
-			updateLinks( c );
-	}
-}
-
-void NifProxyModel::updateLinks( int block, const QModelIndex & parent )
-{
-	if ( ! parent.isValid() )	return;
-	//qDebug() << "update links" << block << nif->itemName( parent );
-	for ( int r = 0; r < nif->rowCount( parent ); r++ )
-	{
-		QModelIndex idx( parent.child( r, 0 ) );
-		bool isChildLink;
-		bool isLink = nif->isLink( idx, &isChildLink );
-		if ( nif->rowCount( idx ) > 0 && ( isLink || nif->itemArr1( idx ).isEmpty() ) )
-		{
-			updateLinks( block, idx );
-		}
-		else if ( isLink )
-		{
-			int l = nif->itemLink( idx );
-			if ( l >= 0 )
-			{
-				//qDebug() << nif->itemName( parent ) << nif->itemName( idx ) << l << isChildLink;
-				if ( isChildLink )
-					childLinks[block].append( l );
-				else
-					parentLinks[block].append( l );
-			}
-		}
-	}
 }
 
 void NifProxyModel::updateRoot( bool fast )
@@ -328,55 +238,28 @@ void NifProxyModel::updateRoot( bool fast )
 	}
 	
 	//qDebug() << "proxy update top level";
-	
-	for ( int c = 0; c < nif->getBlockCount(); c++ )
+
+	foreach ( NifProxyItem * item, root->childItems )
 	{
-		bool isTopLevel = true;
-		for ( int d = 0; d < nif->getBlockCount(); d++ )
+		if ( ! nif->getRootLinks().contains( item->block() ) )
 		{
-			if ( c != d && childLinks[ d ].contains( c ) )
-			{
-				isTopLevel = false;
-				break;
-			}
-		}
-		NifProxyItem * item = root->getLink( c );
-		if ( isTopLevel )
-		{
-			if ( ! item )
-			{
-				int at = root->childCount();
-				if ( ! fast )	beginInsertRows( QModelIndex(), at, at );
-				item = root->addLink( c );
-				if ( ! fast )	endInsertRows();
-			}
-			updateItem( item, fast );
-		}
-		else if ( item )
-		{
-			int at = root->rowLink( c );
+			int at = root->rowLink( item->block() );
 			if ( ! fast ) beginRemoveRows( QModelIndex(), at, at );
-			root->delLink( c );
+			root->delLink( item->block() );
 			if ( ! fast ) endRemoveRows();
 		}
 	}
 	
-	QVector<bool> assigned( nif->getBlockCount(), false );
-	while ( true )
+	foreach ( int l, nif->getRootLinks() )
 	{
-		root->checkAssigned( assigned );
-		int c = assigned.indexOf( false );
-		if ( c >= 0 )
+		NifProxyItem * item = root->getLink( l );
+		if ( ! item )
 		{
-			//if ( c == 0 )	qWarning() << "no root block found";
-			int at = root->childCount();
-			if ( ! fast )	beginInsertRows( QModelIndex(), at, at );
-			NifProxyItem * item = root->addLink( c );
+			if ( ! fast )	beginInsertRows( QModelIndex(), root->childCount(), root->childCount() );
+			item = root->addLink( l );
 			if ( ! fast )	endInsertRows();
-			updateItem( item, fast );
 		}
-		else
-			break;
+		updateItem( item, fast );
 	}
 }
 
@@ -390,7 +273,17 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 	
 	QList<int> parents( item->parentBlocks() );
 	
-	foreach ( int l, childLinks[item->block()] )
+	foreach( int l, item->childBlocks() )
+	{
+		if ( ! ( nif->getChildLinks( item->block() ).contains( l ) || nif->getParentLinks( item->block() ).contains( l ) ) )
+		{
+			int at = item->rowLink( l );
+			if ( ! fast ) beginRemoveRows( index, at, at );
+			item->delLink( l );
+			if ( ! fast ) endRemoveRows();
+		}
+	}
+	foreach ( int l, nif->getChildLinks(item->block()) )
 	{
 		NifProxyItem * child = item->getLink( l );
 		if ( ! child )
@@ -401,11 +294,13 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 			if ( ! fast )	endInsertRows();
 		}
 		if ( ! parents.contains( child->block() ) )
+		{
 			updateItem( child, fast );
+		}
 		else
 			qWarning() << "infinite recursing link construct detected" << item->block() << "->" << child->block();
 	}
-	foreach ( int l, parentLinks[ item->block() ] )
+	foreach ( int l, nif->getParentLinks( item->block() ) )
 	{
 		if ( ! item->getLink( l ) )
 		{
@@ -413,19 +308,6 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 			if ( ! fast )	beginInsertRows( index, at, at );
 			item->addLink( l );
 			if ( ! fast )	endInsertRows();
-		}
-	}
-	if ( ! fast )
-	{
-		foreach( int l, item->childBlocks() )
-		{
-			if ( ! ( childLinks[ item->block() ].contains( l ) || parentLinks[ item->block() ].contains( l ) ) )
-			{
-				int at = item->rowLink( l );
-				beginRemoveRows( index, at, at );
-				item->delLink( l );
-				endRemoveRows();
-			}
 		}
 	}
 }
@@ -586,42 +468,12 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 	
 	//qDebug() << "proxy dataChanged";
 	
-	if ( nif->isLink( begin ) )
-	{
-		updateLinks( nif->getBlockNumber( begin ) );
-		updateRoot( false );
-		return;
-	}
-	
 	QList<QModelIndex> indices = mapFrom( begin );
 	foreach ( QModelIndex idx, indices )
 		emit dataChanged( idx, idx );
 }
 
-void NifProxyModel::xRowsInserted( const QModelIndex & index, int, int )
+void NifProxyModel::xLinksChanged()
 {
-	int block = nif->getBlockNumber( index );
-	if ( block >= 0 )
-	{
-		updateLinks( block );
-		updateRoot( false );
-	}
-	else
-	{
-		reset();
-	}
-}
-
-void NifProxyModel::xRowsRemoved( const QModelIndex & index, int, int )
-{
-	int block = nif->getBlockNumber( index );
-	if ( block >= 0 )
-	{
-		updateLinks( block );
-		updateRoot( false );
-	}
-	else
-	{
-		reset();
-	}
+	updateRoot( false );
 }

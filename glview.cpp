@@ -23,6 +23,8 @@
 
 #include "nifmodel.h"
 
+#include "glscene.h"
+
 
 /* XPM */
 static char * click_xpm[] = {
@@ -73,7 +75,6 @@ static char * click_xpm[] = {
 GLView::GLView()
 	: QGLWidget()
 {
-	nif = 0;
 	xRot = yRot = zRot = 0;
 	zoom = 1000;
 	zInc = 1;
@@ -81,11 +82,12 @@ GLView::GLView()
 	updated = false;
 	doCompile = doCenter = false;
 	
-	texturesOn = true;
 	lightsOn = true;
 	drawaxis = true;
 	
 	model = 0;
+	
+	scene = new Scene( context() );
 
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(advanceGears()));
@@ -94,36 +96,266 @@ GLView::GLView()
 GLView::~GLView()
 {
 	makeCurrent();
-	glDeleteLists(nif, 1);
-	flushTextureCache();
+	delete scene;
+}
+
+void GLView::initializeGL()
+{
+	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
+	//qDebug( (const char *) glGetString(GL_EXTENSIONS) );
+
+	qglClearColor( palette().color( QPalette::Active, QPalette::Background ) );
+
+	static const GLfloat L0position[4] = { 5.0f, 5.0f, 10.0f, 1.0f };
+	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
+	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
+	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
+	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
+	glEnable( GL_LIGHT0 );
+	
+	glShadeModel( GL_SMOOTH );
+}
+
+void GLView::paintGL()
+{
+	if ( ! isVisible() )	return;
+	
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_TRUE );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	
+	// setup projection mode
+
+	int x = qMin( width(), height() );
+	
+	float fx = (float) width() / x;
+	float fy = (float) height() / x;
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glFrustum(-fx, +fx, -fy, fy, 5.0, 100000.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	// update the model
+	
+	if ( doCompile )
+	{
+		doCompile = false;
+		updated = false;
+		
+		scene->make( model );
+	}
+	
+	// center the model
+
+	if ( doCenter )
+	{
+		scene->boundaries( boundMin, boundMax );
+		
+		double max = 0;
+		for ( int c = 0; c < 3; c++ )
+			max = qMax( max, qMax( fabs( boundMin[ c ] ), fabs( boundMax[ c ] ) ) );
+		zoom = (int) ( max * 40 );
+		xTrans = 0;
+		yTrans = (int) ( ( boundMin[2] + 0.5 * ( boundMax[2] - boundMin[2] ) ) * 20 );
+		xRot = - 90*16;
+		yRot = 0;
+		
+		doCenter = false;
+	}
+	
+	// calculate the view transform matrix
+	
+	Matrix viewTrans = Matrix::trans( xTrans / 20.0, - yTrans / 20.0, - zoom / 10.0 ) * Matrix::rotX( xRot / 16.0 / 180.0 * 3.14 )
+				* Matrix::rotY( yRot / 16.0 / 180 * 3.14 ) * Matrix::rotZ( zRot / 16.0 / 180.0 * 3.14 );
+	
+	// draw the axis
+	
+	if ( drawaxis )
+	{
+		glDisable( GL_BLEND );
+		glDisable( GL_LIGHTING );
+		glDisable( GL_COLOR_MATERIAL );
+		glEnable( GL_DEPTH_TEST );
+		glDepthMask( GL_TRUE );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_NORMALIZE );
+		
+		viewTrans.glLoadMatrix();
+		
+		glBegin( GL_LINES );
+		glColor3f( 1.0, 0.0, 0.0 );
+		glVertex3f( - 1000.0, 0, 0 );
+		glVertex3f( + 1000.0, 0, 0 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0, + 20,    0 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0, - 20,    0 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0,    0, + 20 );
+		glVertex3f( + 1000.0,    0,    0 );
+		glVertex3f( +  950.0,    0, - 20 );
+		glColor3f( 0.0, 1.0, 0.0 );
+		glVertex3f( 0, - 1000.0, 0 );
+		glVertex3f( 0, + 1000.0, 0 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f( + 20, +  950.0,    0 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f( - 20, +  950.0,    0 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f(    0, +  950.0, + 20 );
+		glVertex3f(    0, + 1000.0,    0 );
+		glVertex3f(    0, +  950.0, - 20 );
+		glColor3f( 0.0, 0.0, 1.0 );
+		glVertex3f( 0, 0, - 1000.0 );
+		glVertex3f( 0, 0, + 1000.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f(    0, + 20, +  950.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f(    0, - 20, +  950.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f( + 20,    0, +  950.0 );
+		glVertex3f(    0,    0, + 1000.0 );
+		glVertex3f( - 20,    0, +  950.0 );
+		glEnd();
+		
+		glColor3f( 1.0, 0.0, 1.0 );
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
+		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glEnd();
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glEnd();
+		glBegin( GL_LINES );
+		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
+		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
+		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
+		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
+		glEnd();
+	}
+	
+	// draw the model
+
+	if ( lightsOn )
+		glEnable( GL_LIGHTING );
+	else
+		glDisable( GL_LIGHTING );
+	
+	scene->draw( viewTrans );
+	
+	// draw the double click pixmap
+	
+	if ( updated )
+	{
+		glDisable( GL_DEPTH_TEST );
+		glDisable( GL_CULL_FACE );
+		glDisable( GL_NORMALIZE );
+		glDisable( GL_LIGHTING );
+		glEnable( GL_TEXTURE_2D );
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		glDisable( GL_COLOR_MATERIAL );
+		
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho (0.0, width(), 0.0, height(), -1.0, 1.0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		
+		if ( ! click_tex )
+			click_tex = bindTexture( QImage( click_xpm ) );
+		else
+			glBindTexture( GL_TEXTURE_2D, click_tex );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		
+		glColor4f( 1.0, 1.0, 1.0, 1.0 );
+		glBegin( GL_QUADS );
+		glTexCoord2d( 0.0, 0.0 );		glVertex2d( 0.0, 0.0 );
+		glTexCoord2d( 1.0, 0.0 );		glVertex2d( 255.0, 0.0 );
+		glTexCoord2d( 1.0, 1.0 );		glVertex2d( 255.0, 31.0 );
+		glTexCoord2d( 0.0, 1.0 );		glVertex2d( 0.0, 31.0 );
+		glEnd();
+	}
+	
+	// check for errors
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << "GL ERROR : " << (const char *) gluErrorString( err );
+}
+
+void GLView::resizeGL(int width, int height)
+{
+	glViewport(0, 0, width, height);
 }
 
 void GLView::setNif( NifModel * nif )
 {
 	if ( model )
 	{
-		disconnect( model, SIGNAL( dataChanged( const QModelIndex & , const QModelIndex & ) ),
-			this, SLOT( dataChanged() ) );
-		updated = true;
+		disconnect( model, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( dataChanged() ) );
+		disconnect( model, SIGNAL( linksChanged() ), this, SLOT( dataChanged() ) );
+		disconnect( model, SIGNAL( modelReset() ), this, SLOT( dataChanged() ) );
 	}
 	model = nif;
 	if ( model )
 	{
-		connect( model, SIGNAL( dataChanged( const QModelIndex & , const QModelIndex & ) ),
-			this, SLOT( dataChanged() ) );
+		connect( model, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( dataChanged() ) );
+		connect( model, SIGNAL( linksChanged() ), this, SLOT( dataChanged() ) );
+		connect( model, SIGNAL( modelReset() ), this, SLOT( dataChanged() ) );
 	}
+	updated = true;
 }
 
 void GLView::setTextureFolder( const QString & tf )
 {
-	texfolder = tf;
+	scene->texfolder = tf;
 	updated = true;
+}
+
+QString GLView::textureFolder() const
+{
+	return scene->texfolder;
 }
 
 void GLView::setTexturing( bool t )
 {
-	texturesOn = t;
-	compile( false );
+	scene->texturing = t;
+	updateGL();
+}
+
+bool GLView::texturing() const
+{
+	return scene->texturing;
+}
+
+void GLView::setBlending( bool b )
+{
+	scene->blending = b;
+	updateGL();
+}
+
+bool GLView::blending() const
+{
+	return scene->blending;
 }
 
 void GLView::setLighting( bool l )
@@ -137,6 +369,7 @@ void GLView::setDrawAxis( bool a )
 	drawaxis = a;
 	updateGL();
 }
+
 
 void GLView::setRotate( bool r )
 {
@@ -225,621 +458,6 @@ void GLView::compile( bool center )
 	updateGL();
 }
 
-void GLView::initializeGL()
-{
-	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
-	//qDebug( (const char *) glGetString(GL_EXTENSIONS) );
-
-	qglClearColor( palette().color( QPalette::Active, QPalette::Background ) );
-
-	static const GLfloat L0position[4] = { 5.0f, 5.0f, 10.0f, 1.0f };
-	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
-	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
-	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
-	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
-	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
-	glEnable( GL_LIGHT0 );
-	
-	glShadeModel( GL_SMOOTH );
-}
-
-void GLView::paintGL()
-{
-	if ( ! isVisible() )
-		return;
-	
-	makeCurrent();
-	
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	int x = qMax( width(), height() );
-	
-	float fx = (float) width() / x;
-	float fy = (float) height() / x;
-	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glFrustum(-fx, +fx, -fy, fy, 5.0, 100000.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	if ( lightsOn )
-		glEnable( GL_LIGHTING );
-	else
-		glDisable( GL_LIGHTING );
-	
-	glEnable( GL_DEPTH_TEST );
-	glEnable( GL_NORMALIZE );
-	glEnable( GL_CULL_FACE );
-	glEnable( GL_TEXTURE_2D );
-
-	if ( doCompile )
-	{
-		doCompile = false;
-		updated = false;
-		
-		if ( ! nif )	nif = glGenLists( 1 );
-		glNewList( nif, GL_COMPILE );
-		
-		if ( doCenter )
-		{
-			boundMin = Vector( +1000000000, +1000000000, +1000000000 );
-			boundMax = Vector( -1000000000, -1000000000, -1000000000 );
-		}
-		
-		if ( model )
-		{
-			for ( int r = 1; r < model->rowCount( QModelIndex() ); r++ )
-			{
-				if ( model->inherits( model->itemName( model->index( r, 0 ) ), "AParentNode" ) )
-				{
-					nodestack.clear();
-					matrixstack.clear();
-					worldtrans.clear();					
-					updateWorldTrans( r-1 );
-					
-					// first pass: only opaque objects
-					nodestack.clear();
-					glDepthMask( GL_TRUE );
-					glDisable( GL_BLEND );
-					if ( compileNode( r-1, false ) )
-					{
-						// second pass: only alpha enabled objects
-						nodestack.clear();
-						glDepthMask( GL_FALSE );
-						glEnable( GL_BLEND );
-						compileNode( r-1, true );
-					}
-					break;
-				}
-			}
-			glDepthMask( GL_TRUE );
-			glDisable( GL_BLEND );
-		}
-		glEndList();
-	}
-	
-	if ( doCenter )
-	{
-		doCenter = false;
-		double max = 0;
-		for ( int c = 0; c < 3; c++ )
-			max = qMax( max, qMax( fabs( boundMin[ c ] ), fabs( boundMax[ c ] ) ) );
-		zoom = (int) ( max * 40 );
-		xTrans = 0;
-		yTrans = (int) ( boundMin[3] - boundMax[3] ) * 20;
-		xRot = - 90*16;
-		yRot = 0;
-	}
-	
-	glLoadIdentity();
-	glTranslated( xTrans / 20.0, - yTrans / 20.0, - zoom / 10.0);
-	glRotated(xRot / 16.0, 1.0, 0.0, 0.0);
-	glRotated(yRot / 16.0, 0.0, 1.0, 0.0);
-	glRotated(zRot / 16.0, 0.0, 0.0, 1.0);
-	
-	if ( nif ) glCallList(nif);
-	
-	glDisable( GL_LIGHTING );
-	glDisable( GL_TEXTURE_2D );
-	glDisable( GL_COLOR_MATERIAL );
-
-	if ( drawaxis )
-	{
-		glBegin( GL_LINES );
-		glColor3f( 1.0, 0.0, 0.0 );
-		glVertex3f( - 1000.0, 0, 0 );
-		glVertex3f( + 1000.0, 0, 0 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0, + 20,    0 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0, - 20,    0 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0,    0, + 20 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0,    0, - 20 );
-		glColor3f( 0.0, 1.0, 0.0 );
-		glVertex3f( 0, - 1000.0, 0 );
-		glVertex3f( 0, + 1000.0, 0 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f( + 20, +  950.0,    0 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f( - 20, +  950.0,    0 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f(    0, +  950.0, + 20 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f(    0, +  950.0, - 20 );
-		glColor3f( 0.0, 0.0, 1.0 );
-		glVertex3f( 0, 0, - 1000.0 );
-		glVertex3f( 0, 0, + 1000.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f(    0, + 20, +  950.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f(    0, - 20, +  950.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f( + 20,    0, +  950.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f( - 20,    0, +  950.0 );
-		glEnd();
-		
-		glColor3f( 1.0, 0.0, 1.0 );
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
-		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
-		glEnd();
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
-		glEnd();
-		glBegin( GL_LINES );
-		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
-		glEnd();
-	}
-	
-	glDisable( GL_DEPTH_TEST );
-	glDisable( GL_CULL_FACE );
-	glEnable( GL_TEXTURE_2D );
-
-	glLoadIdentity();
-	if ( updated )
-	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho (0.0, width(), 0.0, height(), -1.0, 1.0);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		if ( ! click_tex )
-			click_tex = bindTexture( QImage( click_xpm ) );
-		else
-			glBindTexture( GL_TEXTURE_2D, click_tex );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-		glColor4f( 0.5, 0.5, 0.5, 1.0 );
-		glBegin( GL_QUADS );
-		glTexCoord2d( 0.0, 0.0 );		glVertex2d( 0.0, 0.0 );
-		glTexCoord2d( 1.0, 0.0 );		glVertex2d( 255.0, 0.0 );
-		glTexCoord2d( 1.0, 1.0 );		glVertex2d( 255.0, 31.0 );
-		glTexCoord2d( 0.0, 1.0 );		glVertex2d( 0.0, 31.0 );
-		glEnd();
-	}
-	
-	GLenum err;
-	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR : " << (const char *) gluErrorString( err );
-}
-
-void GLView::resizeGL(int width, int height)
-{
-	makeCurrent();
-	glViewport(0, 0, width, height);
-}
-
-void GLView::updateWorldTrans( int blockNumber )
-{
-	//qDebug() << nodestack.count() << matrixstack.count() << "updateWorldTrans" << blockNumber;
-	QModelIndex idx = model->getBlock( blockNumber );
-
-	if ( nodestack.contains( blockNumber ) || ! idx.isValid() )
-		return;
-	
-	nodestack.push( blockNumber );
-	matrixstack.push( Matrix( model, idx ) );
-	
-	Matrix matrix;
-	foreach ( Matrix m, matrixstack )
-		matrix = matrix * m;
-	worldtrans[blockNumber] = matrix;
-
-	QModelIndex children = model->getIndex( idx, "children" );
-	QModelIndex childlinks = model->getIndex( children, "indices" );
-	if ( ! ( children.isValid() && childlinks.isValid() ) )
-	{
-		nodestack.pop();
-		matrixstack.pop();
-		return;
-	}
-	
-	for ( int c = 0; c < model->rowCount( childlinks ); c++ )
-	{
-		int r = model->itemValue( childlinks.child( c, 0 ) ).toInt();
-		QModelIndex child = model->getBlock( r );
-		if ( child.isValid() && model->inherits( model->itemName( child ), "AParentNode" ) )
-		{
-			updateWorldTrans( r );
-		}
-	}
-	matrixstack.pop();
-	nodestack.pop();
-}
-
-bool GLView::compileNode( int blockNumber, bool alphatoggle )
-{
-	bool has_alpha = false;
-	
-	QModelIndex idx = model->getBlock( blockNumber );
-	if ( !idx.isValid() ) return has_alpha;
-	
-	if ( ( model->getInt( idx, "flags" ) & 1 ) != 0 )	return has_alpha;
-	
-	if ( nodestack.contains( blockNumber ) )
-	{
-		qWarning( "infinite recursive node construct detected ( %d -> %d )", nodestack.top(), blockNumber );
-		return has_alpha;
-	}
-	
-	//qDebug() << "compile " << model->itemName( idx ) << " (" << blockNumber << ") " << model->itemValue( model->getIndex( idx, "name" ) ).toString();
-
-	nodestack.push( blockNumber );
-
-	QModelIndex children = model->getIndex( idx, "children" );
-	QModelIndex childlinks = model->getIndex( children, "indices" );
-	if ( ! ( children.isValid() && childlinks.isValid() ) )
-	{
-		qWarning() << "compileNode( " << blockNumber << " ) : children link list not found";
-		nodestack.pop();
-		return has_alpha;
-	}
-	for ( int c = 0; c < model->rowCount( childlinks ); c++ )
-	{
-		int r = model->itemValue( childlinks.child( c, 0 ) ).toInt();
-		QModelIndex child = model->getBlock( r );
-		if ( ! child.isValid() )
-		{
-			qWarning() << "block " << r << " not found";
-			continue;
-		}
-		if ( model->inherits( model->itemName( child ), "AParentNode" ) )
-		{
-			has_alpha |= compileNode( r, alphatoggle );
-		}
-		else if ( model->itemName( child ) == "NiTriShape" || model->itemName( child ) == "NiTriStrips" )
-		{
-			//qDebug() << idnt << "   compile " << model->itemName( child ) << " (" << r << ")";
-			
-			if ( model->getInt( child, "flags" ) & 1 )
-			{
-				//qDebug() << "      shape is hidden";
-				continue;
-			}
-			
-			QString	tex_file;
-			int		tex_set = 0;
-			GLenum	tex_filter = GL_LINEAR;
-			
-			bool tri_alpha = false;
-			bool tri_specular = false;
-			
-			QModelIndex properties = model->getIndex( child, "properties" );
-			QModelIndex proplinks = model->getIndex( properties, "indices" );
-			for ( int p = 0; p < model->rowCount( proplinks ); p++ )
-			{
-				int prop = model->itemValue( proplinks.child( p, 0 ) ).toInt();
-				
-				QModelIndex property = model->getBlock( prop );
-				QString propname = model->itemName( property );
-				if ( propname == "NiMaterialProperty" )
-				{
-					glEnable( GL_COLOR_MATERIAL );
-					glColorMaterial(GL_FRONT, GL_AMBIENT);
-					
-					QColor ambient = model->getValue( property, "ambient color" ).value<QColor>();
-					QColor diffuse = model->getValue( property, "diffuse color" ).value<QColor>();
-					QColor specular = model->getValue( property, "specular color" ).value<QColor>();
-					
-					GLfloat shininess = model->getFloat( property, "glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
-					glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-					GLfloat alpha = model->getFloat( property, "alpha" );
-					
-					GLfloat ambientColor[4] = { ambient.redF(), ambient.greenF(), ambient.blueF() , alpha };
-					glMaterialfv(GL_FRONT, GL_AMBIENT, ambientColor);
-					GLfloat diffuseColor[4] = { diffuse.redF(), diffuse.greenF(), diffuse.blueF() , alpha };
-					glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseColor);
-					GLfloat specularColor[4] = { specular.redF(), specular.greenF(), specular.blueF() , alpha };
-					glMaterialfv(GL_FRONT, GL_SPECULAR, specularColor);
-					
-					glColor4f( ambient.redF(), ambient.greenF(), ambient.blueF(), alpha );
-				}
-				else if ( propname == "NiTexturingProperty" && texturesOn )
-				{
-					QModelIndex basetex = model->getIndex( property, "base texture" );
-					QModelIndex basetexdata = model->getIndex( basetex, "texture data" );
-					int src = model->getInt( basetexdata, "source" );
-					QModelIndex sourcetexture = model->getBlock( src, "NiSourceTexture" );
-					if ( sourcetexture.isValid() )
-					{
-						QModelIndex source = model->getIndex( sourcetexture, "texture source" );
-						tex_file = model->getValue( source, "file name" ).toString();
-					}
-					switch ( model->getInt( basetexdata, "filter mode" ) )
-					{
-						case 0:		tex_filter = GL_NEAREST;	break;
-						case 1:		tex_filter = GL_LINEAR;		break;
-						default:
-							tex_filter = GL_NEAREST;
-							break;
-						/*
-						case 2:		tex_filter = GL_NEAREST_MIPMAP_NEAREST;		break;
-						case 3:		tex_filter = GL_LINEAR_MIPMAP_NEAREST;		break;
-						case 4:		tex_filter = GL_NEAREST_MIPMAP_LINEAR;		break;
-						case 5:		tex_filter = GL_LINEAR_MIPMAP_LINEAR;		break;
-						*/
-					}
-					tex_set = model->getInt( basetexdata, "texture set" );
-				}
-				else if ( propname == "NiAlphaProperty" )
-				{
-					tri_alpha = true;
-					has_alpha = true;
-					// default blend function
-					glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-				}
-				else if ( propname == "NiSpecularProperty" )
-				{
-					tri_specular = true;
-				}
-			}
-
-			if ( ! tri_specular )
-			{
-				GLfloat specularColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-				glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specularColor);
-			}
-			
-			int data = model->getInt( child, "data" );
-			QModelIndex tridata = model->getBlock( data );
-			if ( alphatoggle != tri_alpha )
-				continue;
-			if ( ! tridata.isValid() )
-			{
-				qWarning() << model->itemName( child ) << "(" << r << ") data block (" << data << ") not found";
-				continue;
-			}
-			if ( model->itemName( tridata ) != "NiTriShapeData" && model->itemName( tridata ) != "NiTriStripsData" )
-			{
-				qWarning() << model->itemName( child ) << "(" << r << ") data block (" << data << ") type mismatch";
-				continue;
-			}
-			QModelIndex vertices = model->getIndex( tridata, "vertices" );
-			if ( ! vertices.isValid() )
-			{
-				qWarning() << model->itemName( tridata ) << "(" << data << ") contains no vertices";
-				continue;
-			}
-			QVector<Vector> verts;
-			for ( int r = 0; r < model->rowCount( vertices ); r++ )
-			{
-				verts.append( Vector( model, model->index( r, 0, vertices ) ) );
-			}
-			QModelIndex normals = model->getIndex( tridata, "normals" );
-			QVector<Vector> norms;
-			if ( normals.isValid() )
-			{
-				for ( int r = 0; r < model->rowCount( normals ); r++ )
-					norms.append( Vector( model, model->index( r, 0, normals ) ) );
-			}
-			QModelIndex vertexcolors = model->getIndex( tridata, "vertex colors" );
-			QVector<QColor> colors;
-			if ( vertexcolors.isValid() )
-			{
-				for ( int r = 0; r < model->rowCount( vertexcolors ); r++ )
-					colors.append( model->itemValue( vertexcolors.child( r, 0 ) ).value<QColor>() );
-			}
-			QVector<GLfloat> uvs;
-			if ( ! tex_file.isEmpty() )
-			{
-				GLuint tex_id = compileTexture( tex_file );
-				if ( tex_id != 0 )
-				{
-					glBindTexture( GL_TEXTURE_2D, tex_id );
-					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter );
-					glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-					
-					QModelIndex uvcoord = model->getIndex( tridata, "uv sets" );
-					QModelIndex uvcoordset = model->index( tex_set, 0, uvcoord );
-					if ( uvcoord.isValid() && uvcoordset.isValid() )
-					{
-						for ( int r = 0; r < model->rowCount( uvcoordset ); r++ )
-						{
-							QModelIndex uv = model->index( r, 0, uvcoordset );
-							uvs.append( model->getFloat( uv, "u" ) );
-							uvs.append( model->getFloat( uv, "v" ) );
-						}
-					}
-				}
-			}
-			
-			int skin = model->getInt( child, "skin instance" );
-			QModelIndex skininst = model->getBlock( skin, "NiSkinInstance" );
-			QModelIndex skindata;
-			if ( skininst.isValid() )
-			{
-				int sdat = model->getInt( skininst, "data" );
-				skindata = model->getBlock( sdat, "NiSkinData" );
-			}
-			
-			glPushMatrix();
-			if ( skininst.isValid() && skindata.isValid() )
-			{
-				QVector<int> bones;
-				QModelIndex idxBones = model->getIndex( model->getIndex( skininst, "bones" ), "bones" );
-				for ( int b = 0; b < model->rowCount( idxBones ); b++ )
-					bones.append( model->itemValue( model->index( b, 0, idxBones ) ).toInt() );
-				idxBones = model->getIndex( skindata, "bone list" );
-				if ( idxBones.isValid() )
-				{
-					QVector<Vector> wverts( verts.count() );
-					
-					for ( int b = 0; b < model->rowCount( idxBones ) && b < bones.count(); b++ )
-					{
-						//if ( ! worldtrans.contains( bones.value( b ) ) ) qWarning() << "no matrix for bone " << b;
-						Matrix m1 = worldtrans.value( bones.value( b ) ) * Matrix( model, model->index( b, 0, idxBones ) );
-						QModelIndex idxWeights = model->getIndex( model->index( b, 0, idxBones ), "vertex weights" );
-						if ( idxWeights.isValid() )
-						{
-							for ( int w = 0; w < model->rowCount( idxWeights ); w++ )
-							{
-								int v = model->getInt( model->index( w, 0, idxWeights ), "index" );
-								wverts[ v ] += m1 * verts.value( v ) * model->getFloat( model->index( w, 0, idxWeights ), "weight" );
-							}
-						}
-						else
-							qDebug() << "weight list not found";
-					}
-					
-					verts = wverts;
-					
-					if ( doCenter )
-					{
-						foreach ( Vector v, verts )
-						{
-							for ( int i = 0; i < 3; i++ )
-							{
-								if ( v[i] < boundMin[i] )	boundMin[i] = v[i];
-								if ( v[i] > boundMax[i] )	boundMax[i] = v[i];
-							}
-						}
-					}
-					
-				}
-				else
-					qDebug() << "bone list not found";
-			}
-			else
-			{
-				Matrix m1 = worldtrans.value( nodestack.top() ) * Matrix( model, child );
-				
-				if ( doCenter )
-				{
-					foreach ( Vector v, verts )
-					{
-						Vector w = m1 * v;
-						for ( int i = 0; i < 3; i++ )
-						{
-							if ( w[i] < boundMin[i] )	boundMin[i] = w[i];
-							if ( w[i] > boundMax[i] )	boundMax[i] = w[i];
-						}
-					}
-				}
-				
-				m1.glMultMatrix();
-			}
-			
-			if ( uvs.count() )
-				glEnable( GL_TEXTURE_2D );
-			else
-				glDisable( GL_TEXTURE_2D );
-				
-			if ( colors.count() )
-			{
-				glEnable( GL_COLOR_MATERIAL );
-				glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-			}
-			
-			if ( model->itemName( tridata ) == "NiTriShapeData" )
-			{
-				glBegin( GL_TRIANGLES );
-				QModelIndex triangles = model->getIndex( tridata, "triangles" );
-				if ( triangles.isValid() )
-				{
-					for ( int r = 0; r < model->rowCount( triangles ); r++ )
-					{
-						QModelIndex triangle = model->index( r, 0, triangles );
-						int v1 = model->getInt( triangle, "v1" );
-						int v2 = model->getInt( triangle, "v2" );
-						int v3 = model->getInt( triangle, "v3" );
-						if ( verts.count() > v1 && verts.count() > v2 && verts.count() > v3 )
-						{
-							if ( norms.count() > v1 ) norms[v1].glNormal();
-							if ( uvs.count() > v1*2 ) glTexCoord2f( uvs[v1*2+0], uvs[v1*2+1] );
-							if ( colors.count() > v1 ) { QColor c = colors[v1]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							verts[v1].glVertex();
-							if ( norms.count() > v2 ) norms[v2].glNormal();
-							if ( uvs.count() > v2*2 ) glTexCoord2f( uvs[v2*2+0], uvs[v2*2+1] );
-							if ( colors.count() > v2 ) { QColor c = colors[v2]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							verts[v2].glVertex();
-							if ( norms.count() > v3 ) norms[v3].glNormal();
-							if ( uvs.count() > v3*2 ) glTexCoord2f( uvs[v3*2+0], uvs[v3*2+1] );
-							if ( colors.count() > v3 ) { QColor c = colors[v3]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							verts[v3].glVertex();
-						}
-					}
-				}
-				else
-					qWarning() << model->itemName( tridata ) << "(" << data << ") triangle array not found";
-				glEnd();
-			}
-			else
-			{
-				QModelIndex points = model->getIndex( tridata, "points" );
-				if ( points.isValid() )
-				{
-					for ( int r = 0; r < model->rowCount( points ); r++ )
-					{
-						glBegin( GL_TRIANGLE_STRIP );
-						QModelIndex strip = points.child( r, 0 );
-						for ( int s = 0; s < model->rowCount( strip ); s++ )
-						{
-							int v1 = model->itemValue( strip.child( s, 0 ) ).toInt();
-							if ( norms.count() > v1 ) norms[v1].glNormal();
-							if ( uvs.count() > v1*2 ) glTexCoord2f( uvs[v1*2+0], uvs[v1*2+1] );
-							if ( colors.count() > v1 ) { QColor c = colors[v1]; glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() ); }
-							verts[v1].glVertex();
-						}
-						glEnd();
-					}
-				}
-				else
-					qWarning() << model->itemName( tridata ) << "(" << data << ") 'points' array not found";
-			}
-			glPopMatrix();
-		}
-	}
-
-	nodestack.pop();
-
-	GLenum err;
-	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR : " << (const char *) gluErrorString( err );
-	return has_alpha;
-}
-
 void GLView::normalizeAngle(int *angle)
 {
 	while (*angle < 0)
@@ -851,6 +469,59 @@ void GLView::normalizeAngle(int *angle)
 void GLView::mousePressEvent(QMouseEvent *event)
 {
 	lastPos = event->pos();
+	pressPos = event->pos();
+}
+
+void GLView::mouseReleaseEvent( QMouseEvent *event )
+{
+	QPoint relPos = event->pos();
+	if ( ! ( model && ( pressPos - relPos ).manhattanLength() <= 3 ) )
+		return;
+	
+	makeCurrent();
+
+	GLuint	buffer[512];
+	GLint	hits;
+	
+	GLint	viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	
+	glSelectBuffer( 512, buffer );
+
+	glRenderMode( GL_SELECT );	
+	glInitNames();
+	glPushName( 0 );
+
+	glMatrixMode( GL_PROJECTION );
+	glLoadIdentity();
+	gluPickMatrix( (GLdouble) pressPos.x(), (GLdouble) (viewport[3]-pressPos.y()), 1.0f, 1.0f, viewport);
+
+	int x = qMin( width(), height() );	
+	float fx = (float) width() / x;
+	float fy = (float) height() / x;
+	glFrustum(-fx, +fx, -fy, fy, 5.0, 100000.0);
+	
+	glMatrixMode(GL_MODELVIEW);
+
+	Matrix viewTrans = Matrix::trans( xTrans / 20.0, - yTrans / 20.0, - zoom / 10.0 ) * Matrix::rotX( xRot / 16.0 / 180.0 * 3.14 )
+				* Matrix::rotY( yRot / 16.0 / 180 * 3.14 ) * Matrix::rotZ( zRot / 16.0 / 180.0 * 3.14 );
+	scene->draw( viewTrans );
+	
+	hits = glRenderMode( GL_RENDER );
+	if ( hits > 0 )
+	{
+		int	choose = buffer[3];
+		int	depth = buffer[1];
+		for (int loop = 1; loop < hits; loop++)
+		{
+			if (buffer[loop*4+1] < GLuint(depth))
+			{
+				choose = buffer[loop*4+3];
+				depth = buffer[loop*4+1];
+			}       
+		}
+		emit clicked( model->getBlock( choose ) );
+	}
 }
 
 void GLView::mouseMoveEvent(QMouseEvent *event)

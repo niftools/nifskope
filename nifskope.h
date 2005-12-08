@@ -23,11 +23,11 @@
 
 class NifModel;
 class NifProxyModel;
+class NifTreeView;
+
 class GLView;
 class Popup;
  
-class QListView;
-class QTreeView;
 class QModelIndex;
 
 class QAbstractButton;
@@ -45,6 +45,8 @@ public:
 	~NifSkope();
 	
 public slots:
+	void load( const QString & filepath );
+	
 	void load();
 	void save();
 	
@@ -59,11 +61,9 @@ public slots:
 	
 protected slots:
 	void clearRoot();
-	void selectRoot( const QModelIndex & );
+	void select( const QModelIndex & );
 	
 	void setListMode( QAbstractButton * );
-	
-	void updateConditionZero();
 	
 	void dataChanged( const QModelIndex &, const QModelIndex & );
 	void contextMenu( const QPoint & pos );
@@ -71,15 +71,12 @@ protected slots:
 	void toggleMessages();
 	void delayedToggleMessages();
 	
-protected:
-	void showHideRows( QModelIndex );
-	
 private:
 	NifModel * model;
 	NifProxyModel * proxy;
 	
-	QTreeView * list;
-	QTreeView * tree;
+	NifTreeView * list;
+	NifTreeView * tree;
 	GLView * ogl;
 	
 	Popup * popOpts;

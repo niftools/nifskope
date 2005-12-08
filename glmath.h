@@ -1,6 +1,12 @@
 #ifndef GLMATH_H
 #define GLMATH_H
 
+#include <QtOpenGL>
+
+#include "nifmodel.h"
+
+#include "math.h"
+
 class Vector
 {
 public:
@@ -16,9 +22,14 @@ public:
 	}
 	Vector( NifModel * model, const QModelIndex & index )
 	{
-		xyz[0] = model->getFloat( index, "x" );
-		xyz[1] = model->getFloat( index, "y" );
-		xyz[2] = model->getFloat( index, "z" );
+		if ( index.isValid() )
+		{
+			xyz[0] = model->getFloat( index, "x" );
+			xyz[1] = model->getFloat( index, "y" );
+			xyz[2] = model->getFloat( index, "z" );
+		}
+		else
+			xyz[ 0 ] = xyz[ 1 ] = xyz[ 2 ] = 0.0;
 	}
 	Vector( const Vector & v )
 	{
@@ -63,6 +74,32 @@ public:
 		glNormal3f( xyz[0], xyz[1], xyz[2] );
 	}
 	
+	GLfloat length() const
+	{
+		return sqrt( xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2] );
+	}
+	
+	void normalize()
+	{
+		float m = length();
+		if ( m > 0.0F )
+			m = 1.0F / m;
+		else
+			m = 0.0F;
+		xyz[0] *= m;
+		xyz[1] *= m;
+		xyz[2] *= m;
+	}
+	
+	static Vector min( const Vector & v1, const Vector & v2 )
+	{
+		return Vector( qMin( v1.xyz[0], v2.xyz[0] ), qMin( v1.xyz[1], v2.xyz[1] ), qMin( v1.xyz[2], v2.xyz[2] ) );
+	}
+	static Vector max( const Vector & v1, const Vector & v2 )
+	{
+		return Vector( qMax( v1.xyz[0], v2.xyz[0] ), qMax( v1.xyz[1], v2.xyz[1] ), qMax( v1.xyz[2], v2.xyz[2] ) );
+	}
+	
 protected:
 	GLfloat xyz[3];
 };
@@ -92,9 +129,12 @@ public:
 		}
 		
 		QModelIndex translation = model->getIndex( index, "translation" );
-		m[3][0] = model->getFloat( translation, "x" );
-		m[3][1] = model->getFloat( translation, "y" );
-		m[3][2] = model->getFloat( translation, "z" );
+		if ( translation.isValid() )
+		{
+			m[3][0] = model->getFloat( translation, "x" );
+			m[3][1] = model->getFloat( translation, "y" );
+			m[3][2] = model->getFloat( translation, "z" );
+		}
 		
 		GLfloat scale = model->getFloat( index, "scale" );
 		if ( scale != 1.0 )
@@ -116,11 +156,11 @@ public:
 	}
 	Matrix operator*( const Matrix & m2 ) const
 	{
-		Matrix r;
-		for ( int i = 0; i < 4; i++ )
-			for ( int j = 0; j < 4; j++ )
-				r.m[i][j] = m2.m[i][0]*m[0][j] + m2.m[i][1]*m[1][j] + m2.m[i][2]*m[2][j] + m2.m[i][3]*m[3][j];
-		return r;
+		Matrix m3;
+		for ( int r = 0; r < 4; r++ )
+			for ( int c = 0; c < 4; c++ )
+				m3.m[c][r] = m[0][r]*m2.m[c][0] + m[1][r]*m2.m[c][1] + m[2][r]*m2.m[c][2] + m[3][r]*m2.m[c][3];
+		return m3;
 	}
 	Vector operator*( const Vector & v ) const
 	{
@@ -129,12 +169,68 @@ public:
 			m[0][1]*v[0] + m[1][1]*v[1] + m[2][1]*v[2] + m[3][1],
 			m[0][2]*v[0] + m[1][2]*v[1] + m[2][2]*v[2] + m[3][2] );
 	}
+	Matrix operator+( const Vector & v ) const
+	{
+		Matrix r = *this;
+		r.m[3][0] += v[0];
+		r.m[3][1] += v[1];
+		r.m[3][2] += v[2];
+		return r;
+	}
 	
 	inline void glMultMatrix() const
 	{
 		glMultMatrixf( m[0] );
 	}
-
+	
+	inline void glLoadMatrix() const
+	{
+		glLoadMatrixf( m[0] );
+	}
+	
+	void clearTrans()
+	{
+		m[3][0] = 0.0;
+		m[3][1] = 0.0;
+		m[3][2] = 0.0;
+	}
+	
+	static Matrix trans( GLfloat x, GLfloat y, GLfloat z )
+	{
+		Matrix r;
+		r.m[3][0] = x;
+		r.m[3][1] = y;
+		r.m[3][2] = z;
+		return r;
+	}
+	
+	static Matrix rotX( GLfloat x )
+	{
+		GLfloat sinX = sin( x );
+		GLfloat cosX = cos( x );
+		Matrix m;
+		m.m[1][1] =  cosX;	m.m[2][1] = -sinX;
+		m.m[1][2] =  sinX;	m.m[2][2] =  cosX;
+		return m;
+	}
+	static Matrix rotY( GLfloat y )
+	{
+		GLfloat sinY = sin( y );
+		GLfloat cosY = cos( y );
+		Matrix m;
+		m.m[0][0] =  cosY;	m.m[2][0] =  sinY;
+		m.m[0][2] = -sinY;	m.m[2][2] =  cosY;
+		return m;
+	}
+	static Matrix rotZ( GLfloat z )
+	{
+		GLfloat sinZ = sin( z );
+		GLfloat cosZ = cos( z );
+		Matrix m;
+		m.m[0][0] =  cosZ;	m.m[1][0] = -sinZ;
+		m.m[0][1] =  sinZ;	m.m[1][1] =  cosZ;
+		return m;
+	}
 protected:
 	GLfloat m[4][4];	
 };

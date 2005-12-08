@@ -15,31 +15,34 @@
 
 #ifdef QT_OPENGL_LIB
 
-#include "glview.h"
-
 #include <QtOpenGL>
 
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 
-void GLView::flushTextureCache()
-{
-	makeCurrent();
-	textures.clear();
-}
+#include "glscene.h"
 
-GLuint GLView::compileTexture( QString filename )
+GLuint Scene::bindTexture( const QString & filename )
 {
 	GLTex * tex = textures.object( filename );
 	if ( tex )
 	{	// check if texture is in cache
-		QFileInfo file( tex->filepath );
-		if ( file.exists() )
+		if ( tex->readOnly )
 		{
-			if ( file.lastModified() < tex->loaded )
+			glBindTexture(GL_TEXTURE_2D, tex->id);
+			return tex->id;
+		}
+		else
+		{
+			QFileInfo file( tex->filepath );
+			if ( file.exists() )
 			{
-				return tex->id;
+				if ( file.lastModified() < tex->loaded )
+				{
+					glBindTexture(GL_TEXTURE_2D, tex->id);
+					return tex->id;
+				}
 			}
 		}
 		textures.remove( filename );
@@ -66,7 +69,7 @@ GLuint GLView::compileTexture( QString filename )
 		return 0;
 	}
 	
-	tex = GLTex::create( dir.filePath( filename ), context() );
+	tex = GLTex::create( dir.filePath( filename ), context );
 	if ( tex )
 	{
 		textures.insert( filename, tex );
@@ -511,6 +514,7 @@ GLTex * GLTex::create( const QString & filepath, const QGLContext * context )
 		tex->id = id;
 		tex->filepath = filepath;
 		tex->loaded = QDateTime::currentDateTime();
+		tex->readOnly = !QFileInfo( filepath ).isWritable();
 		return tex;
 	}
 	

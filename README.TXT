@@ -29,11 +29,11 @@ changes since 0.1:
 
   - display block hirarchy
 
-  - multi lined strings fixed (line breaks converted to and from "\r\n")
   - display abstract ancestors inline
   - display block names at top level
   - display link target name/type
   - follow link (available through context menu)
+  - multi lined strings fixed (line breaks converted to and from "\r\n")
 
   - fixed compressed tga textures (made with the gimp)
   - proper display of skinned meshes
