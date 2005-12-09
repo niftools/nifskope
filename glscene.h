@@ -32,7 +32,12 @@ public:
 class Color
 {
 public:
-	Color() { rgba[ 0 ] = rgba[ 1 ] = rgba[ 2 ] = rgba[ 3 ] = 0.0; }
+	Color()
+	{ rgba[ 0 ] = rgba[ 1 ] = rgba[ 2 ] = rgba[ 3 ] = 0.0; }
+	
+	Color( GLfloat r, GLfloat g, GLfloat b, GLfloat a )
+	{ rgba[ 0 ] = r; rgba[ 1 ] = g; rgba[ 2 ] = b; rgba[ 3 ] = a; }
+	
 	Color( const QColor & );
 	
 	inline void glColor() const
@@ -120,6 +125,7 @@ public:
 	
 	QString texFile;
 	GLenum texFilter;
+	GLint texWrapS, texWrapT;
 	int texSet;
 	
 	bool alphaEnable;
@@ -174,6 +180,7 @@ public:
 	void make( NifModel * nif, int blockNumber );
 	
 	void draw( const Matrix & matrix );
+	void drawAgain();
 	
 	void boundaries( Vector & min, Vector & max );
 	

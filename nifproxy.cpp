@@ -230,9 +230,9 @@ void NifProxyModel::updateRoot( bool fast )
 	{
 		if ( root->childCount() > 0 )
 		{
-			beginRemoveRows( QModelIndex(), 0, root->childCount() - 1 );
+			if ( ! fast ) beginRemoveRows( QModelIndex(), 0, root->childCount() - 1 );
 			root->killChildren();
-			endRemoveRows();
+			if ( ! fast ) endRemoveRows();
 		}
 		return;
 	}
@@ -265,10 +265,6 @@ void NifProxyModel::updateRoot( bool fast )
 
 void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 {
-	//qDebug() << "proxy update item" << item->block();
-	//if ( item->block() == -1 )
-	//	return;
-
 	QModelIndex index( createIndex( item->row(), 0, item ) );
 	
 	QList<int> parents( item->parentBlocks() );
@@ -316,7 +312,7 @@ int NifProxyModel::rowCount( const QModelIndex & parent ) const
 {
 	NifProxyItem * parentItem;
 	
-	if ( ! parent.isValid() )
+	if ( ! ( parent.isValid() && parent.model() == this ) )
 		parentItem = root;
 	else
 		parentItem = static_cast<NifProxyItem*>( parent.internalPointer() );
@@ -328,7 +324,7 @@ QModelIndex NifProxyModel::index( int row, int column, const QModelIndex & paren
 {
 	NifProxyItem * parentItem;
 	
-	if ( ! parent.isValid() )
+	if ( ! ( parent.isValid() && parent.model() == this ) )
 		parentItem = root;
 	else
 		parentItem = static_cast<NifProxyItem*>( parent.internalPointer() );
@@ -342,7 +338,7 @@ QModelIndex NifProxyModel::index( int row, int column, const QModelIndex & paren
 
 QModelIndex NifProxyModel::parent( const QModelIndex & child ) const
 {
-	if ( ! child.isValid() )
+	if ( ! ( child.isValid() && child.model() == this ) )
 		return QModelIndex();
 	
 	NifProxyItem * childItem = static_cast<NifProxyItem*>( child.internalPointer() );
@@ -364,11 +360,7 @@ QModelIndex NifProxyModel::mapTo( const QModelIndex & idx ) const
 	}
 	NifProxyItem * item = static_cast<NifProxyItem*>( idx.internalPointer() );
 	if ( ! item )	return QModelIndex();
-	QModelIndex nifidx;
-	if ( item->block() == -2 )
-		nifidx = nif->getHeader();
-	else
-		nifidx = nif->getBlock( item->block() );
+	QModelIndex nifidx = nif->getBlock( item->block() );
 	if ( nifidx.isValid() ) nifidx = nifidx.sibling( nifidx.row(), idx.column() );
 	return nifidx;
 }
@@ -383,7 +375,6 @@ QModelIndex NifProxyModel::mapFrom( const QModelIndex & idx, const QModelIndex &
 	}
 	int blockNumber = nif->getBlockNumber( idx );
 	if ( blockNumber < 0 ) return QModelIndex();
-	qDebug() << "proxy map from" << blockNumber;
 	NifProxyItem * item = root;
 	if ( ref.isValid() )
 	{
@@ -418,9 +409,8 @@ QList<QModelIndex> NifProxyModel::mapFrom( const QModelIndex & idx ) const
 	QList<NifProxyItem*> items;
 	root->findAllItems( blockNumber, items );
 	foreach( NifProxyItem * item, items )
-	{
 		indices.append( createIndex( item->row(), idx.column(), item ) );
-	}
+	
 	return indices;
 }
 

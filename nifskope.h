@@ -65,7 +65,6 @@ protected slots:
 	
 	void setListMode( QAbstractButton * );
 	
-	void dataChanged( const QModelIndex &, const QModelIndex & );
 	void contextMenu( const QPoint & pos );
 	
 	void toggleMessages();

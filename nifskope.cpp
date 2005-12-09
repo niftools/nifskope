@@ -82,8 +82,8 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 {
 	// create a new model
 	model = new NifModel( this );
-	connect( model, SIGNAL( dataChanged( const QModelIndex & , const QModelIndex & ) ),
-			this, SLOT( dataChanged( const QModelIndex &, const QModelIndex & ) ) );
+	
+	// create a new hirarchical proxy model
 	proxy = new NifProxyModel( this );
 	proxy->setModel( model );
 	
@@ -95,24 +95,15 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	setLayout( grid );
 	
 	// load action
-	QAction * aLoad = new QAction( "load", this );
-	connect( aLoad, SIGNAL( triggered() ), this, SLOT( load() ) );
-	
-	// load button
 	QToolButton * tool = new QToolButton;
-	tool->setDefaultAction( aLoad );
+	tool->setDefaultAction( new QAction( "load", this ) );
+	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );
 	grid->addWidget( tool, 0, 0 );
-	
+
 	// the name of the file to load
 	lineLoad = new QLineEdit( settings.value( "last load", QString( "" ) ).toString() );
 	grid->addWidget( lineLoad, 0, 1, 1, 2 );
 	connect( lineLoad, SIGNAL( returnPressed() ), this, SLOT( load() ) );
-	
-	// file selector
-	tool = new QToolButton;
-	tool->setDefaultAction( new QAction( "browse", this ) );
-	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );
-	grid->addWidget( tool, 0, 3 );
 	
 	// variable split layout
 	split = new QSplitter;
@@ -125,12 +116,14 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	QFont font = list->font();
 	font.setPointSize( font.pointSize() + 3 );
 	list->setFont( font );
+	list->setVisible( settings.value( "show list", true ).toBool() );
 	
 	// this view shows the whole tree or the block details
 	tree = new NifTreeView;
 	split->addWidget( tree );
 	tree->setFont( font );
 	tree->setModel( model );
+	tree->setVisible( settings.value( "show tree", true ).toBool() );
 	
 	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
 			this, SLOT( select( const QModelIndex & ) ) );
@@ -138,6 +131,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 #ifdef QT_OPENGL_LIB
 	// open gl
 	ogl = new GLView;
+	ogl->setVisible( settings.value( "show opengl", true ).toBool() );
 	ogl->setNif( model );	
 	split->addWidget( ogl );
 	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
@@ -146,31 +140,16 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	ogl = 0;
 #endif
 
-	// save action
-	QAction * aSave = new QAction( "save", this );
-	connect( aSave, SIGNAL( triggered() ), this, SLOT( save() ) );
-	
 	// save button
-	tool = new QToolButton;
-	tool->setDefaultAction( aSave );
-	grid->addWidget( tool, 2, 0 );
+	grid->addWidget( (tool = new QToolButton), 2, 0 );
+	tool->setDefaultAction( new QAction( "save", this ) );
+	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
 
 	// name of the file to write to
 	lineSave = new QLineEdit( settings.value( "last save", "" ).toString() );
 	grid->addWidget( lineSave, 2, 1 );
 	connect( lineSave, SIGNAL( returnPressed() ), this, SLOT( save() ) );
 	
-	// a file select button
-	tool = new QToolButton;
-	tool->setDefaultAction( new QAction( "browse", this ) );
-	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
-	grid->addWidget( tool, 2, 2 );
-	
-	//split->restoreState( settings.value( "split sizes" ).toByteArray() );
-	list->setVisible( settings.value( "show list", true ).toBool() );
-	tree->setVisible( settings.value( "show tree", true ).toBool() );
-	if ( ogl ) ogl->setVisible( settings.value( "show opengl", true ).toBool() );
-
 	// options
 	popOpts = new Popup( "Options", this );
 	{
@@ -263,6 +242,8 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		optRotate->setChecked( settings.value( "rotate", true ).toBool() );
 		connect( optRotate, SIGNAL( toggled( bool ) ), ogl, SLOT( setRotate( bool ) ) );
 		ogl->setRotate( optRotate->isChecked() );
+		
+		ogl->compile();
 #endif
 		
 		QGroupBox * optMisc = new QGroupBox;
@@ -296,7 +277,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	}
 	tool = new QToolButton;
 	tool->setDefaultAction( popOpts->popupAction() );
-	grid->addWidget( tool, 2, 3 );
+	grid->addWidget( tool, 2, 2 );
 	
 	// last but not least: set up a custom delegate to provide edit functionality
 	list->setItemDelegate( model->createDelegate() );
@@ -307,6 +288,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	list->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
 	list->header()->setStretchLastSection( false );
 	restoreHeader( "list sizes", settings, list->header() );
+	
 	list->setColumnHidden( NifModel::TypeCol, true );
 	list->setColumnHidden( NifModel::ArgCol, true );
 	list->setColumnHidden( NifModel::Arr1Col, true );
@@ -314,7 +296,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	list->setColumnHidden( NifModel::CondCol, true );
 	list->setColumnHidden( NifModel::Ver1Col, true );
 	list->setColumnHidden( NifModel::Ver2Col, true );
-
+	
 	tree->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
 	tree->header()->setStretchLastSection( false );
 	restoreHeader( "tree sizes", settings, tree->header() );
@@ -338,6 +320,8 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	msgroup->layout()->addWidget( msgview );
 	connect( msgroup, SIGNAL( toggled( bool ) ), msgview, SLOT( clear() ) );
 	
+	//split->restoreState( settings.value( "split sizes" ).toByteArray() );
+
 	QRect geo = settings.value( "window geometry", QRect() ).value<QRect>();
 	if ( geo.isValid() )	setGeometry( geo );
 }
@@ -458,20 +442,15 @@ void NifSkope::contextMenu( const QPoint & pos )
 				if ( list->model() == proxy )
 				{
 					QModelIndex pidx = proxy->mapFrom( target, list->currentIndex() );
-					list->setCurrentIndex( pidx );
-					while ( pidx.isValid() )
-					{
-						list->expand( pidx );
-						pidx = pidx.parent();
-					}
+					list->setCurrentIndexExpanded( pidx );
 				}
 				else
-					list->setCurrentIndex( target );
+					list->setCurrentIndexExpanded( target );
 				tree->setRootIndex( target );
 			}
 			else
 			{
-				tree->setCurrentIndex( target );
+				tree->setCurrentIndexExpanded( target );
 				tree->expand( target );
 			}
 		}
@@ -498,7 +477,7 @@ void NifSkope::contextMenu( const QPoint & pos )
 		}
 		else
 		{
-			model->insertNiBlock( a->text(), model->getBlockNumber( idx ) );
+			model->insertNiBlock( a->text(), model->getBlockNumber( idx )+1 );
 			model->updateHeader();
 		}
 	}
@@ -507,7 +486,10 @@ void NifSkope::contextMenu( const QPoint & pos )
 
 void NifSkope::clearRoot()
 {
+	QModelIndex index = tree->currentIndex();
+	if ( ! index.isValid() ) index = tree->rootIndex();
 	tree->setRootIndex( QModelIndex() );
+	tree->setCurrentIndexExpanded( index );
 }
 
 void NifSkope::select( const QModelIndex & index )
@@ -515,30 +497,27 @@ void NifSkope::select( const QModelIndex & index )
 	if ( ! index.isValid() ) return;
 	if ( sender() == list )
 	{
+		QModelIndex root = index;
 		if ( index.model() == proxy )
-			tree->setRootIndex( proxy->mapTo( index ) );
-		else if ( index.model() == model )
-			tree->setRootIndex( index );
+			root = proxy->mapTo( index );
+		if ( root.isValid() && root.column() != 0 )
+			root = root.sibling( root.row(), 0 );
+		tree->setRootIndex( root );
 	}
 	else if ( sender() == ogl )
 	{
 		if ( list->model() == proxy )
 		{
 			QModelIndex pidx = proxy->mapFrom( index, QModelIndex() );
-			list->setCurrentIndex( pidx );
-			while ( pidx.isValid() )
-			{
-				list->expand( pidx );
-				pidx = pidx.parent();
-			}
+			list->setCurrentIndexExpanded( pidx );
 		}
 		else if ( list->model() == model )
-			list->setCurrentIndex( index );
+			list->setCurrentIndexExpanded( index );
 		
 		if ( list->isVisible() )
 			tree->setRootIndex( index );
 		else
-			tree->setCurrentIndex( index );
+			tree->setCurrentIndexExpanded( index );
 	}
 }
 
@@ -552,32 +531,20 @@ void NifSkope::setListMode( QAbstractButton * b )
 			list->setModel( model );
 			list->setItemsExpandable( false );
 			list->setRootIsDecorated( false );
-			list->setCurrentIndex( proxy->mapTo( idx ) );
+			list->setCurrentIndexExpanded( proxy->mapTo( idx ) );
 		}
 	}
 	else
 	{
-		proxy->reset();
 		if ( list->model() != proxy )
 		{
 			list->setModel( proxy );
 			list->setItemsExpandable( true );
 			list->setRootIsDecorated( true );
 			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
-			list->setCurrentIndex( pidx );
-			while ( pidx.isValid() )
-			{
-				list->expand( pidx );
-				pidx = pidx.parent();
-			}
+			list->setCurrentIndexExpanded( pidx );
 		}
 	}
-}
-
-void NifSkope::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
-{
-	if ( conditionZero->isChecked() )
-		tree->doItemsLayout();
 }
 
 void NifSkope::load( const QString & filepath )

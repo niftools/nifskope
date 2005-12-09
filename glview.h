@@ -54,10 +54,10 @@ public:
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
+	void compile( bool center = false );
+
 public slots:
 	void setNif( NifModel * );
-
-	void compile( bool center );
 
 	void setXRotation(int angle);
 	void setYRotation(int angle);
@@ -66,12 +66,11 @@ public slots:
 	void setXTrans( int );
 	void setYTrans( int );
 	
-	void setRotate( bool );
-	
+	void setBlending( bool );
 	void setDrawAxis( bool );
 	void setLighting( bool );
+	void setRotate( bool );
 	void setTexturing( bool );
-	void setBlending( bool );
 	
 	void setTextureFolder( const QString & );
 

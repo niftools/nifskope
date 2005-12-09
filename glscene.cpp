@@ -49,38 +49,38 @@ Mesh::Mesh( NifModel * nif, const QModelIndex & index, Scene * s, int parent ) :
 	localTrans = Matrix( nif, index );
 	localCenter = Vector( nif, nif->getIndex( index, "center" ) );
 	
-	QModelIndex properties = nif->getIndex( index, "properties" );
-	if ( properties.isValid() )
+	foreach( int link, nif->getChildLinks( meshId ) )
 	{
-		QModelIndex proplinks = nif->getIndex( properties, "indices" );
-		if ( proplinks.isValid() )
+		QModelIndex block = nif->getBlock( link );
+		if ( ! block.isValid() ) continue;
+		QString name = nif->itemName( block );
+		if ( nif->inherits( name, "AProperty" ) )
 		{
-			for ( int p = 0; p < nif->rowCount( proplinks ); p++ )
-			{
-				int prop = nif->itemValue( proplinks.child( p, 0 ) ).toInt();
-				QModelIndex property = nif->getBlock( prop );
-				if ( property.isValid() )
-					setProperty( nif, property );
-			}
+			setProperty( nif, block );
+		}
+		else if ( nif->inherits( name, "AShapeData" ) )
+		{
+			setData( nif, block );
+		}
+		else if ( name == "NiSkinInstance" )
+		{
+			setSkinInstance( nif, block );
 		}
 	}
 	
-	int data = nif->getInt( index, "data" );
-	QModelIndex tridata = nif->getBlock( data );
-	if ( tridata.isValid() )
+	if ( ! alphaEnable )
 	{
-		setData( nif, tridata );
+		alpha = 1.0;
+		ambient[3] = alpha;
+		diffuse[3] = alpha;
+		specular[3] = alpha;
+		emissive[3] = alpha;
 	}
-	else
+	
+	if ( ! specularEnable )
 	{
-		qWarning() << nif->itemName( index ) << "(" << nif->getBlockNumber( index ) << ") data block (" << data << ") not found";
-		return;
+		specular = Color( 0, 0, 0, alpha );
 	}
-
-	int skin = nif->getInt( index, "skin instance" );
-	QModelIndex skininst = nif->getBlock( skin, "NiSkinInstance" );
-	if ( skininst.isValid() )
-		setSkinInstance( nif, skininst );	
 }
 
 void Mesh::init()
@@ -91,6 +91,7 @@ void Mesh::init()
 	alpha = 1.0;
 	texSet = 0;
 	texFilter = GL_LINEAR;
+	texWrapS = texWrapT = GL_REPEAT;
 	alphaEnable = false;
 	alphaSrc = GL_SRC_ALPHA;
 	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
@@ -185,6 +186,8 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 		
 		shininess = nif->getFloat( property, "glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
 		alpha = nif->getFloat( property, "alpha" );
+		if ( alpha < 0.0 ) alpha = 0.0;
+		if ( alpha > 1.0 ) alpha = 1.0;
 		ambient[3] = alpha;
 		diffuse[3] = alpha;
 		specular[3] = alpha;
@@ -215,6 +218,13 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 			case 4:		texFilter = GL_NEAREST_MIPMAP_LINEAR;		break;
 			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
 			*/
+		}
+		switch ( nif->getInt( basetexdata, "clamp mode" ) )
+		{
+			case 0:		texWrapS = GL_CLAMP;	texWrapT = GL_CLAMP;	break;
+			case 1:		texWrapS = GL_CLAMP;	texWrapT = GL_REPEAT;	break;
+			case 2:		texWrapS = GL_REPEAT;	texWrapT = GL_CLAMP;	break;
+			default:	texWrapS = GL_REPEAT;	texWrapT = GL_REPEAT;	break;
 		}
 		texSet = nif->getInt( basetexdata, "texture set" );
 	}
@@ -392,16 +402,11 @@ void Mesh::draw()
 	// setup material colors
 	
 	glEnable( GL_COLOR_MATERIAL );
-
+	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 	ambient.glMaterial( GL_FRONT, GL_AMBIENT );
 	diffuse.glMaterial( GL_FRONT, GL_DIFFUSE );
-	//emissive.glMaterial( GL_FRONT, GL_EMISIVE );
-	
-	if ( specularEnable )
-		specular.glMaterial( GL_FRONT, GL_SPECULAR );
-	else
-		Color().glMaterial( GL_FRONT, GL_SPECULAR );
-	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+	emissive.glMaterial( GL_FRONT, GL_EMISSION );
+	specular.glMaterial( GL_FRONT, GL_SPECULAR );
 	
 	if ( colors.count() )
 	{	 // color material is controlled by NiVertexColorProperty using the default for now
@@ -420,6 +425,8 @@ void Mesh::draw()
 		glEnable( GL_TEXTURE_2D );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texFilter );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texWrapS );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texWrapT );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 	}
 	else
@@ -685,6 +692,18 @@ void Scene::draw( const Matrix & matrix )
 		mesh->transform( matrix );
 
 	qStableSort( meshes.begin(), meshes.end(), compareMeshes );
+	
+	foreach ( Mesh * mesh, meshes )
+		mesh->draw();
+
+	glPopMatrix();
+}
+
+void Scene::drawAgain()
+{	
+	glPushMatrix();
+	glEnable( GL_CULL_FACE );
+	glEnable( GL_DEPTH_TEST );
 	
 	foreach ( Mesh * mesh, meshes )
 		mesh->draw();

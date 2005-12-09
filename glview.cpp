@@ -89,6 +89,8 @@ GLView::GLView()
 	
 	scene = new Scene( context() );
 
+	click_tex = 0;
+	
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(advanceGears()));
 }
@@ -110,18 +112,27 @@ void GLView::initializeGL()
 	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
 	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	static const GLfloat L0emissive[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
 	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
 	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
 	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
+	glLightfv( GL_LIGHT0, GL_EMISSION, L0emissive );
 	glEnable( GL_LIGHT0 );
 	
 	glShadeModel( GL_SMOOTH );
+
+	click_tex = bindTexture( QImage( click_xpm ) );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 }
 
 void GLView::paintGL()
 {
 	if ( ! isVisible() )	return;
+	
+	makeCurrent();
 	
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
@@ -261,7 +272,7 @@ void GLView::paintGL()
 	
 	// draw the double click pixmap
 	
-	if ( updated )
+	if ( updated && click_tex )
 	{
 		glDisable( GL_DEPTH_TEST );
 		glDisable( GL_CULL_FACE );
@@ -278,14 +289,7 @@ void GLView::paintGL()
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		
-		if ( ! click_tex )
-			click_tex = bindTexture( QImage( click_xpm ) );
-		else
-			glBindTexture( GL_TEXTURE_2D, click_tex );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-		
+		glBindTexture( GL_TEXTURE_2D, click_tex );
 		glColor4f( 1.0, 1.0, 1.0, 1.0 );
 		glBegin( GL_QUADS );
 		glTexCoord2d( 0.0, 0.0 );		glVertex2d( 0.0, 0.0 );
@@ -503,9 +507,7 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	
 	glMatrixMode(GL_MODELVIEW);
 
-	Matrix viewTrans = Matrix::trans( xTrans / 20.0, - yTrans / 20.0, - zoom / 10.0 ) * Matrix::rotX( xRot / 16.0 / 180.0 * 3.14 )
-				* Matrix::rotY( yRot / 16.0 / 180 * 3.14 ) * Matrix::rotZ( zRot / 16.0 / 180.0 * 3.14 );
-	scene->draw( viewTrans );
+	scene->drawAgain();
 	
 	hits = glRenderMode( GL_RENDER );
 	if ( hits > 0 )
