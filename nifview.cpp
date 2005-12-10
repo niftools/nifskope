@@ -63,16 +63,19 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 
 void NifTreeView::setCurrentIndexExpanded( const QModelIndex & index )
 {
-	if ( ! index.isValid() )
-		setCurrentIndex( index );
-	
-	if ( index.model() != model() )	return;
-	
-	QModelIndex idx = index;
-	while ( idx.isValid() )
+	if ( itemsExpandable() )
 	{
-		expand( idx );
-		idx = idx.parent();
+		if ( ! index.isValid() )
+			setCurrentIndex( index );
+		
+		if ( index.model() != model() )	return;
+		
+		QModelIndex idx = index;
+		while ( idx.isValid() )
+		{
+			expand( idx );
+			idx = idx.parent();
+		}
 	}
 	
 	setCurrentIndex( index );
@@ -103,7 +106,7 @@ bool NifTreeView::isRowHidden( int r, const QModelIndex & index ) const
 
 void NifTreeView::setAllExpanded( const QModelIndex & index, bool e )
 {
-	if ( ! ( model() && index.model() == model() ) )	return;
+	if ( ! model() )	return;
 	for ( int r = 0; r < model()->rowCount( index ); r++ )
 	{
 		QModelIndex child = model()->index( r, 0, index );

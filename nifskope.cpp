@@ -140,7 +140,7 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	split->addWidget( tree );
 	tree->setFont( font );
 	tree->setModel( model );
-	tree->setVisible( settings.value( "show tree", true ).toBool() );
+	tree->setVisible( settings.value( "show tree", false ).toBool() );
 	
 	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
 			this, SLOT( select( const QModelIndex & ) ) );
@@ -380,7 +380,7 @@ void NifSkope::about()
 	"<p>NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files.</p>"
 	"<p>NifSkope is based on the NifTool's file format data base. "
 	"For more informations visit our site at http://niftools.sourceforge.net</p>"
-	"<p>Because NifSkope uses the Qt libraries it is free software (GPL). The source"
+	"<p>Because NifSkope uses the Qt libraries it is free software. The source"
 	" is available for download at our home site on sourceforge.net</p>";
 
     QMessageBox mb( "About NifSkope", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
