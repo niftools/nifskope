@@ -42,6 +42,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glscene.h"
 
+#define ZOOM_MIN 20
+#define ZOOM_MAX 100000
+
+#define CLIP_NEAR 1.0
+#define CLIP_FAR  +10000.0
 
 /* XPM */
 static char * click_xpm[] = {
@@ -149,24 +154,9 @@ void GLView::paintGL()
 {
 	if ( ! isVisible() )	return;
 	
-	makeCurrent();
-	
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	
-	// setup projection mode
-
-	int x = qMin( width(), height() );
-	
-	float fx = (float) width() / x;
-	float fy = (float) height() / x;
-	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glFrustum(-fx, +fx, -fy, fy, 5.0, 100000.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 	
 	// update the model
 	
@@ -187,7 +177,9 @@ void GLView::paintGL()
 		double max = 0;
 		for ( int c = 0; c < 3; c++ )
 			max = qMax( max, qMax( fabs( boundMin[ c ] ), fabs( boundMax[ c ] ) ) );
-		zoom = (int) ( max * 40 );
+		zoom = (int) ( max * 20 );
+		if ( zoom < ZOOM_MIN ) zoom = ZOOM_MIN;
+		if ( zoom > ZOOM_MAX ) zoom = ZOOM_MAX;
 		xTrans = 0;
 		yTrans = (int) ( ( boundMin[2] + 0.5 * ( boundMax[2] - boundMin[2] ) ) * 20 );
 		xRot = - 90*16;
@@ -195,6 +187,19 @@ void GLView::paintGL()
 		
 		doCenter = false;
 	}
+	
+	// setup projection mode
+
+	int x = qMin( width(), height() );
+	
+	float fx = (float) width() / x;
+	float fy = (float) height() / x;
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glFrustum(-fx, +fx, -fy, +fy, CLIP_NEAR, CLIP_FAR+zoom );
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 	
 	// calculate the view transform matrix
 	
@@ -450,7 +455,7 @@ void GLView::setYTrans( int y )
 
 void GLView::setZoom( int z )
 {
-	if ( z <= 10 || z >= 100000 )
+	if ( z <= ZOOM_MIN || z >= ZOOM_MAX )
 		return;
 	if ( z != zoom )
 	{
@@ -517,10 +522,10 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	glLoadIdentity();
 	gluPickMatrix( (GLdouble) pressPos.x(), (GLdouble) (viewport[3]-pressPos.y()), 1.0f, 1.0f, viewport);
 
-	int x = qMin( width(), height() );	
+	int x = qMin( width(), height() );
 	float fx = (float) width() / x;
 	float fy = (float) height() / x;
-	glFrustum(-fx, +fx, -fy, fy, 5.0, 100000.0);
+	glFrustum(-fx, +fx, -fy, +fy, CLIP_NEAR, CLIP_FAR+zoom );
 	
 	glMatrixMode(GL_MODELVIEW);
 

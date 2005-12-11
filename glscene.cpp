@@ -355,11 +355,9 @@ void Mesh::transform( const Matrix & trans )
 	{
 		transVerts.resize( verts.count() );
 		transVerts.fill( Vector() );
-		if ( alphaEnable )
-		{
-			transNorms.resize( norms.count() );
-			transNorms.fill( Vector() );
-		}
+		transNorms.resize( norms.count() );
+		transNorms.fill( Vector() );
+		
 		foreach ( BoneWeights bw, weights )
 		{
 			Node * bone = scene->nodes.value( bw.bone );
@@ -374,21 +372,17 @@ void Mesh::transform( const Matrix & trans )
 			{
 				if ( transVerts.count() > vw.vertex )
 					transVerts[ vw.vertex ] += matrix * verts[ vw.vertex ] * vw.weight;
-				if ( alphaEnable && transNorms.count() > vw.vertex )
+				if ( transNorms.count() > vw.vertex )
 					transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
 			}
 		}
+		for ( int n = 0; n < transNorms.count(); n++ )
+			transNorms[n].normalize();
+		
 		if ( alphaEnable )
-		{
 			glmatrix = Matrix();
-			for ( int n = 0; n < transNorms.count(); n++ )
-				transNorms[n].normalize();
-		}
 		else
-		{
 			glmatrix = trans;
-			transNorms = norms;
-		}
 	}
 	else
 	{
@@ -498,7 +492,6 @@ void Mesh::draw()
 		if ( list )
 		{
 			glCallList( list );
-			glPopMatrix();
 			return;
 		}
 		list = glGenLists( 1 );
@@ -635,69 +628,67 @@ void Scene::make( NifModel * nif, int blockNumber )
 {
 	QModelIndex idx = nif->getBlock( blockNumber );
 
-	if ( ! ( idx.isValid() && nif->inherits( nif->itemName( idx ), "AParentNode" ) ) )
+	if ( ! idx.isValid() )
 		return;
 	
-	if ( nodestack.contains( blockNumber ) )
+	if ( nif->inherits( nif->itemName( idx ), "AParentNode" ) )
 	{
-		qWarning( "infinite recursive node construct detected ( %d -> %d )", nodestack.top(), blockNumber );
-		return;
-	}
-	
-	if ( nodes.contains( blockNumber ) )
-	{
-		qWarning( "node %d is referrenced multiple times ( %d )", blockNumber, nodestack.top() );
-		return;
-	}
-	
-	if ( nif->getInt( idx, "flags" ) & 1 )
-		return;
-
-	Node * node = new Node;
-	node->localTrans = Matrix( nif, idx );
-	
-	nodestack.push( blockNumber );
-	matrixstack.push( node->localTrans );
-	
-	foreach ( Matrix m, matrixstack )
-		node->worldTrans = node->worldTrans * m;
-	
-	nodes.insert( blockNumber, node );
-	
-	//qDebug() << "compile " << nif->itemName( idx ) << " (" << blockNumber << ") " << nif->itemValue( nif->getIndex( idx, "name" ) ).toString();
-	
-	QModelIndex children = nif->getIndex( idx, "children" );
-	QModelIndex childlinks = nif->getIndex( children, "indices" );
-	if ( ! ( children.isValid() && childlinks.isValid() ) )
-	{
-		qWarning() << "compileNode( " << blockNumber << " ) : children link list not found";
-		return;
-	}
-
-	for ( int c = 0; c < nif->rowCount( childlinks ); c++ )
-	{
-		int r = nif->itemValue( childlinks.child( c, 0 ) ).toInt();
-		QModelIndex child = nif->getBlock( r );
-		if ( ! child.isValid() )
+		if ( nodestack.contains( blockNumber ) )
 		{
-			qWarning() << "block " << r << " not found";
-			continue;
+			qWarning( "infinite recursive node construct detected ( %d -> %d )", nodestack.top(), blockNumber );
+			return;
 		}
-		if ( nif->inherits( nif->itemName( child ), "AParentNode" ) )
+		
+		if ( nodes.contains( blockNumber ) )
 		{
+			qWarning( "node %d is referrenced multiple times ( %d )", blockNumber, nodestack.top() );
+			return;
+		}
+		
+		if ( nif->getInt( idx, "flags" ) & 1 )
+			return;
+		
+		Node * node = new Node;
+		node->localTrans = Matrix( nif, idx );
+		
+		nodestack.push( blockNumber );
+		matrixstack.push( node->localTrans );
+		
+		foreach ( Matrix m, matrixstack )
+			node->worldTrans = node->worldTrans * m;
+		
+		nodes.insert( blockNumber, node );
+		
+		//qDebug() << "compile " << nif->itemName( idx ) << " (" << blockNumber << ") " << nif->itemValue( nif->getIndex( idx, "name" ) ).toString();
+		
+		QModelIndex children = nif->getIndex( idx, "children" );
+		QModelIndex childlinks = nif->getIndex( children, "indices" );
+		if ( ! ( children.isValid() && childlinks.isValid() ) )
+		{
+			qWarning() << "compileNode( " << blockNumber << " ) : children link list not found";
+			return;
+		}
+		
+		for ( int c = 0; c < nif->rowCount( childlinks ); c++ )
+		{
+			int r = nif->itemValue( childlinks.child( c, 0 ) ).toInt();
+			QModelIndex child = nif->getBlock( r );
+			if ( ! child.isValid() )
+			{
+				qWarning() << "block " << r << " not found";
+				continue;
+			}
 			make( nif, r );
 		}
-		else if ( nif->itemName( child ) == "NiTriShape" || nif->itemName( child ) == "NiTriStrips" )
-		{
-			if ( nif->getInt( child, "flags" ) & 1 )	continue;
-			meshes.append( new Mesh( nif, child, this, nodestack.top() ) );
-		}
+		
+		matrixstack.pop();
+		nodestack.pop();
 	}
-
-	matrixstack.pop();
-	nodestack.pop();
-
-	return;
+	else if ( nif->itemName( idx ) == "NiTriShape" || nif->itemName( idx ) == "NiTriStrips" )
+	{
+		if ( nif->getInt( idx, "flags" ) & 1 )	return;
+		meshes.append( new Mesh( nif, idx, this, ( nodestack.count() ? nodestack.top() : -1 ) ) );
+	}
 }
 
 bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 )
