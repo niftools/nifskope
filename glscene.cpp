@@ -60,9 +60,131 @@ Color::Color( const QColor & c )
 	rgba[ 3 ] = c.alphaF();
 }
 
-Mesh::Mesh( Scene * s ) : scene( s )
+BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
 {
-	init();
+	matrix = Matrix( nif, index );
+	bone = b;
+	
+	QModelIndex idxWeights = nif->getIndex( index, "vertex weights" );
+	if ( idxWeights.isValid() )
+	{
+		for ( int c = 0; c < nif->rowCount( idxWeights ); c++ )
+		{
+			QModelIndex idx = idxWeights.child( c, 0 );
+			weights.append( VertexWeight( nif->getInt( idx, "index" ), nif->getFloat( idx, "weight" ) ) );
+		}
+	}
+	else
+		qWarning() << nif->getBlockNumber( index ) << "vertex weights not found";
+}
+
+/*
+ *	Node
+ */
+
+Node::Node( Scene * s, Node * p ) : scene( s ), parent( p )
+{
+	nodeId = 0;
+	hidden = false;
+	
+	depthProp = false;
+	depthTest = true;
+	depthMask = true;
+}
+
+void Node::init( NifModel * nif, const QModelIndex & index )
+{
+	nodeId = nif->getBlockNumber( index );
+
+	hidden = nif->getInt( index, "flags" ) & 1;
+
+	local = Matrix( nif, index );
+	
+	if ( parent )
+		world = parent->world * local;
+	else
+		world = local;
+
+	foreach( int link, nif->getChildLinks( nodeId ) )
+	{
+		QModelIndex block = nif->getBlock( link );
+		if ( ! block.isValid() ) continue;
+		QString name = nif->itemName( block );
+		
+		if ( nif->inherits( name, "AProperty" ) )
+			setProperty( nif, block );
+		else if ( nif->inherits( name, "AController" ) )
+			setController( nif, block );
+		else
+			setSpecial( nif, block );
+	}
+}
+
+void Node::setController( NifModel * nif, const QModelIndex & )
+{
+}
+
+void Node::setProperty( NifModel * nif, const QModelIndex & property )
+{
+	QString propname = nif->itemName( property );
+	if ( propname == "NiZBufferProperty" )
+	{
+		int flags = nif->getInt( property, "flags" );
+		depthTest = flags & 1;
+		depthMask = flags & 2;
+	}
+}
+
+void Node::setSpecial( NifModel * nif, const QModelIndex & )
+{
+}
+
+const Matrix & Node::worldTrans() const
+{
+	return world;
+}
+
+bool Node::isHidden() const
+{
+	if ( hidden )
+		return true;
+	if ( parent )
+		return parent->isHidden();
+	else
+		return false;
+}
+
+void Node::depthBuffer( bool & test, bool & mask )
+{
+	if ( depthProp || ! parent )
+	{
+		test = depthTest;
+		mask = depthMask;
+		return;
+	}
+	parent->depthBuffer( test, mask );
+}
+
+/*
+ *  Mesh
+ */
+
+
+Mesh::Mesh( Scene * s, Node * p ) : Node( s, p )
+{
+	shininess = 33.0;
+	alpha = 1.0;
+	texSet = 0;
+	texFilter = GL_LINEAR;
+	texWrapS = texWrapT = GL_REPEAT;
+	alphaEnable = false;
+	alphaSrc = GL_SRC_ALPHA;
+	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
+	specularEnable = false;
+
+	useList = true;
+	list = 0;
+	
 }
 
 Mesh::~Mesh()
@@ -71,34 +193,11 @@ Mesh::~Mesh()
 		glDeleteLists( list, 1 );
 }
 
-Mesh::Mesh( NifModel * nif, const QModelIndex & index, Scene * s, int parent ) : scene( s )
+void Mesh::init( NifModel * nif, const QModelIndex & index )
 {
-	init();
+	Node::init( nif, index );
 	
-	parentNode = parent;
-	meshId = nif->getBlockNumber( index );
-	
-	localTrans = Matrix( nif, index );
 	localCenter = Vector( nif, nif->getIndex( index, "center" ) );
-	
-	foreach( int link, nif->getChildLinks( meshId ) )
-	{
-		QModelIndex block = nif->getBlock( link );
-		if ( ! block.isValid() ) continue;
-		QString name = nif->itemName( block );
-		if ( nif->inherits( name, "AProperty" ) )
-		{
-			setProperty( nif, block );
-		}
-		else if ( nif->inherits( name, "AShapeData" ) )
-		{
-			setData( nif, block );
-		}
-		else if ( name == "NiSkinInstance" )
-		{
-			setSkinInstance( nif, block );
-		}
-	}
 	
 	if ( ! alphaEnable )
 	{
@@ -115,95 +214,112 @@ Mesh::Mesh( NifModel * nif, const QModelIndex & index, Scene * s, int parent ) :
 	}
 }
 
-void Mesh::init()
+void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 {
-	parentNode = 0;
-	meshId = 0;
-	shininess = 33.0;
-	alpha = 1.0;
-	texSet = 0;
-	texFilter = GL_LINEAR;
-	texWrapS = texWrapT = GL_REPEAT;
-	alphaEnable = false;
-	alphaSrc = GL_SRC_ALPHA;
-	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
-	specularEnable = false;
-
-	useList = true;
-	list = 0;
-}
-
-void Mesh::setData( NifModel * nif, const QModelIndex & tridata )
-{
-	verts.clear();
-	norms.clear();
-	colors.clear();
-	uvs.clear();
-	triangles.clear();
-	tristrips.clear();
-	
-	if ( nif->itemName( tridata ) != "NiTriShapeData" && nif->itemName( tridata ) != "NiTriStripsData" )
+	QString name = nif->itemName( special );
+	if ( name == "NiTriShapeData" || name == "NiTriStripsData" )
 	{
-		qWarning() << "data block (" << nif->getBlockNumber( tridata ) << ") type mismatch";
-		return;
-	}
-	
-	QModelIndex vertices = nif->getIndex( tridata, "vertices" );
-	if ( vertices.isValid() )
-	{
-		for ( int r = 0; r < nif->rowCount( vertices ); r++ )
-			verts.append( Vector( nif, nif->index( r, 0, vertices ) ) );
-	}
-	
-	QModelIndex normals = nif->getIndex( tridata, "normals" );
-	if ( normals.isValid() )
-	{
-		for ( int r = 0; r < nif->rowCount( normals ); r++ )
-			norms.append( Vector( nif, nif->index( r, 0, normals ) ) );
-	}
-	QModelIndex vertexcolors = nif->getIndex( tridata, "vertex colors" );
-	if ( vertexcolors.isValid() )
-	{
-		for ( int r = 0; r < nif->rowCount( vertexcolors ); r++ )
-			colors.append( Color( nif->itemValue( vertexcolors.child( r, 0 ) ).value<QColor>() ) );
-	}
-	QModelIndex uvcoord = nif->getIndex( tridata, "uv sets" );
-	if ( uvcoord.isValid() )
-	{
-		QModelIndex uvcoordset = nif->index( texSet, 0, uvcoord );
-		if ( uvcoordset.isValid() )
+		verts.clear();
+		norms.clear();
+		colors.clear();
+		uvs.clear();
+		triangles.clear();
+		tristrips.clear();
+		
+		QModelIndex vertices = nif->getIndex( special, "vertices" );
+		if ( vertices.isValid() )
 		{
-			for ( int r = 0; r < nif->rowCount( uvcoordset ); r++ )
+			for ( int r = 0; r < nif->rowCount( vertices ); r++ )
+				verts.append( Vector( nif, nif->index( r, 0, vertices ) ) );
+		}
+		
+		QModelIndex normals = nif->getIndex( special, "normals" );
+		if ( normals.isValid() )
+		{
+			for ( int r = 0; r < nif->rowCount( normals ); r++ )
+				norms.append( Vector( nif, nif->index( r, 0, normals ) ) );
+		}
+		QModelIndex vertexcolors = nif->getIndex( special, "vertex colors" );
+		if ( vertexcolors.isValid() )
+		{
+			for ( int r = 0; r < nif->rowCount( vertexcolors ); r++ )
+				colors.append( Color( nif->itemValue( vertexcolors.child( r, 0 ) ).value<QColor>() ) );
+		}
+		QModelIndex uvcoord = nif->getIndex( special, "uv sets" );
+		if ( uvcoord.isValid() )
+		{
+			QModelIndex uvcoordset = nif->index( texSet, 0, uvcoord );
+			if ( uvcoordset.isValid() )
 			{
-				QModelIndex uv = nif->index( r, 0, uvcoordset );
-				uvs.append( nif->getFloat( uv, "u" ) );
-				uvs.append( nif->getFloat( uv, "v" ) );
+				for ( int r = 0; r < nif->rowCount( uvcoordset ); r++ )
+				{
+					QModelIndex uv = nif->index( r, 0, uvcoordset );
+					uvs.append( nif->getFloat( uv, "u" ) );
+					uvs.append( nif->getFloat( uv, "v" ) );
+				}
 			}
 		}
-	}
-
-	if ( nif->itemName( tridata ) == "NiTriShapeData" )
-	{
-		QModelIndex idxTriangles = nif->getIndex( tridata, "triangles" );
-		if ( idxTriangles.isValid() )
+		
+		if ( nif->itemName( special ) == "NiTriShapeData" )
 		{
-			for ( int r = 0; r < nif->rowCount( idxTriangles ); r++ )
-				triangles.append( Triangle( nif, idxTriangles.child( r, 0 ) ) );
+			QModelIndex idxTriangles = nif->getIndex( special, "triangles" );
+			if ( idxTriangles.isValid() )
+			{
+				for ( int r = 0; r < nif->rowCount( idxTriangles ); r++ )
+					triangles.append( Triangle( nif, idxTriangles.child( r, 0 ) ) );
+			}
+			else
+				qWarning() << nif->itemName( special ) << "(" << nif->getBlockNumber( special ) << ") triangle array not found";
 		}
 		else
-			qWarning() << nif->itemName( tridata ) << "(" << nif->getBlockNumber( tridata ) << ") triangle array not found";
+		{
+			QModelIndex points = nif->getIndex( special, "points" );
+			if ( points.isValid() )
+			{
+				for ( int r = 0; r < nif->rowCount( points ); r++ )
+					tristrips.append( Tristrip( nif, points.child( r, 0 ) ) );
+			}
+			else
+				qWarning() << nif->itemName( special ) << "(" << nif->getBlockNumber( special ) << ") 'points' array not found";
+		}
+	}
+	else if ( name == "NiSkinInstance" )
+	{
+		weights.clear();
+		
+		int sdat = nif->getInt( special, "data" );
+		QModelIndex skindata = nif->getBlock( sdat, "NiSkinData" );
+		if ( ! skindata.isValid() )
+		{
+			qWarning() << "niskindata not found";
+			return;
+		}
+		
+		QVector<int> bones;
+		QModelIndex idxBones = nif->getIndex( nif->getIndex( special, "bones" ), "bones" );
+		if ( ! idxBones.isValid() )
+		{
+			qWarning() << "bones array not found";
+			return;
+		}
+		
+		for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
+			bones.append( nif->itemValue( nif->index( b, 0, idxBones ) ).toInt() );
+		
+		idxBones = nif->getIndex( skindata, "bone list" );
+		if ( ! idxBones.isValid() )
+		{
+			qWarning() << "bone list not found";
+			return;
+		}
+		
+		for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ )
+		{
+			weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ] ) );
+		}
 	}
 	else
-	{
-		QModelIndex points = nif->getIndex( tridata, "points" );
-		if ( points.isValid() )
-		{
-			for ( int r = 0; r < nif->rowCount( points ); r++ )
-				tristrips.append( Tristrip( nif, points.child( r, 0 ) ) );
-		}
-		else
-			qWarning() << nif->itemName( tridata ) << "(" << nif->getBlockNumber( tridata ) << ") 'points' array not found";
-	}
+		Node::setSpecial( nif, special );
 }
 
 void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
@@ -271,60 +387,8 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 	{
 		specularEnable = true;
 	}
-}
-
-BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
-{
-	matrix = Matrix( nif, index );
-	bone = b;
-	
-	QModelIndex idxWeights = nif->getIndex( index, "vertex weights" );
-	if ( idxWeights.isValid() )
-	{
-		for ( int c = 0; c < nif->rowCount( idxWeights ); c++ )
-		{
-			QModelIndex idx = idxWeights.child( c, 0 );
-			weights.append( VertexWeight( nif->getInt( idx, "index" ), nif->getFloat( idx, "weight" ) ) );
-		}
-	}
 	else
-		qWarning() << nif->getBlockNumber( index ) << "vertex weights not found";
-}
-
-void Mesh::setSkinInstance( NifModel * nif, const QModelIndex & skininst )
-{
-	weights.clear();
-	
-	int sdat = nif->getInt( skininst, "data" );
-	QModelIndex skindata = nif->getBlock( sdat, "NiSkinData" );
-	if ( ! skindata.isValid() )
-	{
-		qWarning() << "niskindata not found";
-		return;
-	}
-
-	QVector<int> bones;
-	QModelIndex idxBones = nif->getIndex( nif->getIndex( skininst, "bones" ), "bones" );
-	if ( ! idxBones.isValid() )
-	{
-		qWarning() << "bones array not found";
-		return;
-	}
-	
-	for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
-		bones.append( nif->itemValue( nif->index( b, 0, idxBones ) ).toInt() );
-	
-	idxBones = nif->getIndex( skindata, "bone list" );
-	if ( ! idxBones.isValid() )
-	{
-		qWarning() << "bone list not found";
-		return;
-	}
-	
-	for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ )
-	{
-		weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ] ) );
-	}
+		Node::setProperty( nif, property );
 }
 
 bool compareTriangles( const Triangle & tri1, const Triangle & tri2 )
@@ -334,11 +398,7 @@ bool compareTriangles( const Triangle & tri1, const Triangle & tri2 )
 
 void Mesh::transform( const Matrix & trans )
 {
-	Node * node = scene->nodes.value( parentNode );
-	if ( node )
-		sceneTrans = trans * node->worldTrans * localTrans;
-	else
-		sceneTrans = trans * localTrans;
+	Matrix sceneTrans = trans * world;
 	
 	sceneCenter = sceneTrans * localCenter;
 	
@@ -361,7 +421,7 @@ void Mesh::transform( const Matrix & trans )
 		foreach ( BoneWeights bw, weights )
 		{
 			Node * bone = scene->nodes.value( bw.bone );
-			Matrix matrix = ( bone ? bone->worldTrans * bw.matrix : bw.matrix );
+			Matrix matrix = ( bone ? bone->worldTrans() * bw.matrix : bw.matrix );
 			if ( alphaEnable )
 				matrix = trans * matrix;
 			
@@ -421,9 +481,12 @@ void Mesh::transform( const Matrix & trans )
 	}
 }
 
-void Mesh::draw()
+void Mesh::draw( bool selected )
 {
-	glLoadName( meshId );
+	if ( isHidden() )
+		return;
+	
+	glLoadName( nodeId );
 	
 	// setup material colors
 	
@@ -459,12 +522,26 @@ void Mesh::draw()
 	{
 		glDisable( GL_TEXTURE_2D );
 	}
+	
+	// setup z buffer
+	
+	bool dTest, dMask;
+	depthBuffer( dTest, dMask );
+	if ( dTest )
+	{
+		glEnable( GL_DEPTH_TEST );
+		glDepthMask( dMask ? GL_TRUE : GL_FALSE );
+	}
+	else
+	{
+		glDisable( GL_DEPTH_TEST );
+	}
+	glDepthFunc( GL_LEQUAL );
 
 	// setup alpha blending
 
 	if ( alphaEnable && scene->blending )
 	{
-		glDepthMask( GL_FALSE );
 		glEnable( GL_BLEND );
 		glBlendFunc( alphaSrc, alphaDst );
 	}
@@ -486,7 +563,7 @@ void Mesh::draw()
 	glmatrix.glLoadMatrix();
 
 	// check display list
-	
+	/*
 	if ( useList )
 	{
 		if ( list )
@@ -497,7 +574,7 @@ void Mesh::draw()
 		list = glGenLists( 1 );
 		glNewList( list, GL_COMPILE_AND_EXECUTE );
 	}
-	
+	*/
 	// render the triangles
 	
 	if ( triangles.count() > 0 )
@@ -539,8 +616,46 @@ void Mesh::draw()
 		glEnd();
 	}
 	
-	if ( useList )
-		glEndList();
+	//if ( useList )
+	//	glEndList();
+
+	if ( selected )
+	{
+		glPushAttrib( GL_LIGHTING_BIT );
+		glEnable( GL_DEPTH_TEST );
+		glDepthMask( GL_TRUE );
+		glDepthFunc( GL_LEQUAL );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_NORMALIZE );
+		glDisable( GL_LIGHTING );
+		glDisable( GL_COLOR_MATERIAL );
+		glColor4f( 0.0, 1.0, 0.0, 1.0 );
+		
+		foreach ( Triangle tri, triangles )
+		{
+			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
+			{
+				glBegin( GL_LINE_STRIP );
+				transVerts[tri.v1].glVertex();
+				transVerts[tri.v2].glVertex();
+				transVerts[tri.v3].glVertex();
+				transVerts[tri.v1].glVertex();
+				glEnd();
+			}
+		}
+		
+		foreach ( Tristrip strip, tristrips )
+		{
+			glBegin( GL_LINE_STRIP );
+			foreach ( int v, strip.vertices )
+			{
+				transVerts[v].glVertex();
+			}
+			glEnd();
+		}
+		
+		glPopAttrib();
+	}
 }
 
 void Mesh::boundaries( Vector & min, Vector & max )
@@ -555,7 +670,7 @@ void Mesh::boundaries( Vector & min, Vector & max )
 		foreach ( BoneWeights bw, weights )
 		{
 			Node * bone = scene->nodes.value( bw.bone );
-			Matrix matrix = ( bone ? bone->worldTrans * bw.matrix : bw.matrix );
+			Matrix matrix = ( bone ? bone->worldTrans() * bw.matrix : bw.matrix );
 			
 			foreach ( VertexWeight vw, bw.weights )
 			{
@@ -566,11 +681,7 @@ void Mesh::boundaries( Vector & min, Vector & max )
 	}
 	else
 	{
-		Node * node = scene->nodes.value( parentNode );
-		Matrix matrix;
-		if ( node )
-			matrix = node->worldTrans;
-		matrix = matrix * localTrans;
+		Matrix matrix = worldTrans();
 		for ( int v = 0; v < boundVerts.count(); v++ )
 			boundVerts[v] = matrix * boundVerts[v];
 	}
@@ -588,6 +699,8 @@ Scene::Scene( const QGLContext * context )
 	
 	texturing = true;
 	blending = true;
+	highlight = true;
+	currentNode = 0;
 }
 
 Scene::~Scene()
@@ -601,7 +714,7 @@ void Scene::clear()
 	qDeleteAll( nodes ); nodes.clear();
 	qDeleteAll( meshes ); meshes.clear();
 	nodestack.clear();
-	matrixstack.clear();
+	texInitPhase = true;
 }
 
 void Scene::make( NifModel * nif )
@@ -629,8 +742,13 @@ void Scene::make( NifModel * nif, int blockNumber )
 	QModelIndex idx = nif->getBlock( blockNumber );
 
 	if ( ! idx.isValid() )
+	{
+		qWarning() << "block " << blockNumber << " not found";
 		return;
+	}
 	
+	Node * parent = ( nodestack.count() ? nodes.value( nodestack.top() ) : 0 );
+
 	if ( nif->inherits( nif->itemName( idx ), "AParentNode" ) )
 	{
 		if ( nodestack.contains( blockNumber ) )
@@ -645,49 +763,23 @@ void Scene::make( NifModel * nif, int blockNumber )
 			return;
 		}
 		
-		if ( nif->getInt( idx, "flags" ) & 1 )
-			return;
-		
-		Node * node = new Node;
-		node->localTrans = Matrix( nif, idx );
-		
-		nodestack.push( blockNumber );
-		matrixstack.push( node->localTrans );
-		
-		foreach ( Matrix m, matrixstack )
-			node->worldTrans = node->worldTrans * m;
+		Node * node = new Node( this, parent );
+		node->init( nif, idx );
 		
 		nodes.insert( blockNumber, node );
 		
-		//qDebug() << "compile " << nif->itemName( idx ) << " (" << blockNumber << ") " << nif->itemValue( nif->getIndex( idx, "name" ) ).toString();
+		nodestack.push( blockNumber );
 		
-		QModelIndex children = nif->getIndex( idx, "children" );
-		QModelIndex childlinks = nif->getIndex( children, "indices" );
-		if ( ! ( children.isValid() && childlinks.isValid() ) )
-		{
-			qWarning() << "compileNode( " << blockNumber << " ) : children link list not found";
-			return;
-		}
+		foreach ( int link, nif->getChildLinks( blockNumber ) )
+			make( nif, link );
 		
-		for ( int c = 0; c < nif->rowCount( childlinks ); c++ )
-		{
-			int r = nif->itemValue( childlinks.child( c, 0 ) ).toInt();
-			QModelIndex child = nif->getBlock( r );
-			if ( ! child.isValid() )
-			{
-				qWarning() << "block " << r << " not found";
-				continue;
-			}
-			make( nif, r );
-		}
-		
-		matrixstack.pop();
 		nodestack.pop();
 	}
 	else if ( nif->itemName( idx ) == "NiTriShape" || nif->itemName( idx ) == "NiTriStrips" )
 	{
-		if ( nif->getInt( idx, "flags" ) & 1 )	return;
-		meshes.append( new Mesh( nif, idx, this, ( nodestack.count() ? nodestack.top() : -1 ) ) );
+		Mesh * mesh = new Mesh( this, parent );
+		mesh->init( nif, idx );
+		meshes.append( mesh );
 	}
 }
 
@@ -707,29 +799,22 @@ bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 )
 
 void Scene::draw( const Matrix & matrix )
 {	
-	glPushMatrix();
-	glEnable( GL_CULL_FACE );
-	glEnable( GL_DEPTH_TEST ); // depth test is actually controlled by NiZBufferProperty using the default for now
-	
 	foreach ( Mesh * mesh, meshes )
 		mesh->transform( matrix );
 
 	qStableSort( meshes.begin(), meshes.end(), compareMeshes );
 	
-	foreach ( Mesh * mesh, meshes )
-		mesh->draw();
-
-	glPopMatrix();
+	drawAgain();
+	texInitPhase = false;
 }
 
 void Scene::drawAgain()
 {	
 	glPushMatrix();
 	glEnable( GL_CULL_FACE );
-	glEnable( GL_DEPTH_TEST );
 	
 	foreach ( Mesh * mesh, meshes )
-		mesh->draw();
+		mesh->draw( highlight && mesh->id() == currentNode );
 
 	glPopMatrix();
 }

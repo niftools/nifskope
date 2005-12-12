@@ -82,7 +82,8 @@ GLuint Scene::bindTexture( const QString & filename )
 	
 	if ( ! dir.exists( filename ) )
 	{
-		qWarning() << "texture " << filename << " not found";
+		if ( texInitPhase )
+			qWarning() << "texture " << filename << " not found";
 		return 0;
 	}
 	
@@ -96,7 +97,7 @@ GLuint Scene::bindTexture( const QString & filename )
 		return 0;
 }
 
-void uncompressRLE( quint8 * data, int w, int h, int bpp, quint8 * pixel )
+void uncompressRLE( const quint8 * data, int w, int h, int bpp, quint8 * pixel )
 {
 	int bytespp = bpp / 8;
 	
@@ -128,7 +129,7 @@ void uncompressRLE( quint8 * data, int w, int h, int bpp, quint8 * pixel )
 	}
 }
 
-void convertToRGBA( quint8 * data, int w, int h, int bytespp, const quint32 mask[], bool flipV, bool flipH, quint8 * pixl )
+void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint32 mask[], bool flipV, bool flipH, quint8 * pixl )
 {
 	memset( pixl, 0, w * h * 4 );
 

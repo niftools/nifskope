@@ -35,41 +35,49 @@ public:
 	{
 		operator=( v );
 	}
-	void operator=( const Vector & v )
+	Vector & operator=( const Vector & v )
 	{
 		xyz[0] = v.xyz[0];
 		xyz[1] = v.xyz[1];
 		xyz[2] = v.xyz[2];
+		return *this;
 	}
-	void operator+=( const Vector & v )
+	Vector & operator+=( const Vector & v )
 	{
 		xyz[0] += v[0];
 		xyz[1] += v[1];
 		xyz[2] += v[2];
+		return *this;
+	}
+	Vector & operator*=( GLfloat s )
+	{
+		xyz[ 0 ] *= s;
+		xyz[ 1 ] *= s;
+		xyz[ 2 ] *= s;
+		return *this;
 	}
 	Vector operator*( GLfloat s )
 	{
-		Vector v;
-		v.xyz[ 0 ] = xyz[ 0 ] * s;
-		v.xyz[ 1 ] = xyz[ 1 ] * s;
-		v.xyz[ 2 ] = xyz[ 2 ] * s;
-		return v;
+		Vector v( *this );
+		return v *= s;
 	}
 	
-	inline GLfloat & operator[]( int i )
+	GLfloat & operator[]( unsigned int i )
 	{
+		if ( i >= 3 ) qDebug( "vector index out of bounds" );
 		return xyz[i];
 	}
-	inline const GLfloat & operator[]( int i ) const
+	const GLfloat & operator[]( unsigned int i ) const
 	{
+		if ( i >= 3 ) qDebug( "vector index out of bounds" );
 		return xyz[i];
 	}
 	
-	inline void glVertex() const
+	void glVertex() const
 	{
 		glVertex3f( xyz[0], xyz[1], xyz[2] );
 	}
-	inline void glNormal() const
+	void glNormal() const
 	{
 		glNormal3f( xyz[0], xyz[1], xyz[2] );
 	}
@@ -148,11 +156,12 @@ public:
 	{
 		operator=( m2 );
 	}
-	void operator=( const Matrix & m2 )
+	Matrix & operator=( const Matrix & m2 )
 	{
 		for ( int r = 0; r < 4; r++ )
 			for ( int c = 0; c < 4; c++ )
 				m[r][c] = m2.m[r][c];
+		return *this;
 	}
 	Matrix operator*( const Matrix & m2 ) const
 	{
@@ -169,13 +178,17 @@ public:
 			m[0][1]*v[0] + m[1][1]*v[1] + m[2][1]*v[2] + m[3][1],
 			m[0][2]*v[0] + m[1][2]*v[1] + m[2][2]*v[2] + m[3][2] );
 	}
+	Matrix & operator+=( const Vector & v )
+	{
+		m[3][0] += v[0];
+		m[3][1] += v[1];
+		m[3][2] += v[2];
+		return *this;
+	}
 	Matrix operator+( const Vector & v ) const
 	{
-		Matrix r = *this;
-		r.m[3][0] += v[0];
-		r.m[3][1] += v[1];
-		r.m[3][2] += v[2];
-		return r;
+		Matrix m( *this );
+		return ( m += v );
 	}
 	
 	inline void glMultMatrix() const
@@ -203,7 +216,6 @@ public:
 		r.m[3][2] = z;
 		return r;
 	}
-	
 	static Matrix rotX( GLfloat x )
 	{
 		GLfloat sinX = sin( x );

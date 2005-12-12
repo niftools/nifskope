@@ -65,6 +65,7 @@ public:
 	bool lighting() const { return lightsOn; }
 	bool drawAxis() const { return drawaxis; }
 	bool rotate() const { return timer->isActive(); }
+	bool highlight() const;
 	
 	QString textureFolder() const;
 	
@@ -88,8 +89,11 @@ public slots:
 	void setLighting( bool );
 	void setRotate( bool );
 	void setTexturing( bool );
+	void setHighlight( bool );
 	
 	void setTextureFolder( const QString & );
+	
+	void setCurrentIndex( const QModelIndex & );
 
 signals: 
 	void xRotationChanged(int angle);

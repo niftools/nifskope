@@ -135,6 +135,9 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	list->setFont( font );
 	list->setVisible( settings.value( "show list", true ).toBool() );
 	
+	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
+			this, SLOT( select( const QModelIndex & ) ) );
+
 	// this view shows the whole tree or the block details
 	tree = new NifTreeView;
 	split->addWidget( tree );
@@ -142,9 +145,9 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 	tree->setModel( model );
 	tree->setVisible( settings.value( "show tree", false ).toBool() );
 	
-	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
-			this, SLOT( select( const QModelIndex & ) ) );
-
+	connect( tree, SIGNAL( clicked( const QModelIndex & ) ),
+		this, SLOT( select( const QModelIndex & ) ) );
+	
 #ifdef QT_OPENGL_LIB
 	// open gl
 	ogl = new GLView;
@@ -241,11 +244,17 @@ NifSkope::NifSkope() : QWidget(), popOpts( 0 )
 		ogl->setLighting( optLights->isChecked() );
 		
 		QCheckBox * optAlpha = new QCheckBox( "blending" );
-		optLights->setToolTip( "toggle alpha blending" );
+		optAlpha->setToolTip( "toggle alpha blending" );
 		optGL->layout()->addWidget( optAlpha );
 		optAlpha->setChecked( settings.value( "enable blending", true ).toBool() );
 		connect( optAlpha, SIGNAL( toggled( bool ) ), ogl, SLOT( setBlending( bool ) ) );
 		ogl->setBlending( optAlpha->isChecked() );
+		
+		QCheckBox * optHighlight = new QCheckBox( "highlight selected mesh" );
+		optGL->layout()->addWidget( optHighlight );
+		optHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
+		connect( optHighlight, SIGNAL( toggled( bool ) ), ogl, SLOT( setHighlight( bool ) ) );
+		ogl->setHighlight( optHighlight->isChecked() );
 		
 		QCheckBox * optAxis = new QCheckBox( "draw axis" );
 		optGL->layout()->addWidget( optAxis );
@@ -366,6 +375,7 @@ void NifSkope::saveOptions()
 	settings.setValue( "enable textures", ogl->texturing() );
 	settings.setValue( "enable lighting", ogl->lighting() );
 	settings.setValue( "enable blending", ogl->blending() );
+	settings.setValue( "highlight meshes", ogl->highlight() );
 	settings.setValue( "draw axis", ogl->drawAxis() );
 	settings.setValue( "rotate", ogl->rotate() );
 #endif
@@ -520,6 +530,10 @@ void NifSkope::select( const QModelIndex & index )
 		if ( root.isValid() && root.column() != 0 )
 			root = root.sibling( root.row(), 0 );
 		tree->setRootIndex( root );
+#ifdef QT_OPENGL_LIB
+		if ( ogl )
+			ogl->setCurrentIndex( root );
+#endif
 	}
 	else if ( sender() == ogl )
 	{
@@ -535,6 +549,13 @@ void NifSkope::select( const QModelIndex & index )
 			tree->setRootIndex( index );
 		else
 			tree->setCurrentIndexExpanded( index );
+	}
+	else if ( sender() == tree )
+	{
+#ifdef QT_OPENGL_LIB
+		if ( ogl )
+			ogl->setCurrentIndex( index );
+#endif
 	}
 }
 

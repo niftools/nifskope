@@ -152,7 +152,7 @@ void GLView::initializeGL()
 
 void GLView::paintGL()
 {
-	if ( ! isVisible() )	return;
+	if ( ! ( isVisible() && height() ) )	return;
 	
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
@@ -190,14 +190,9 @@ void GLView::paintGL()
 	
 	// setup projection mode
 
-	int x = qMin( width(), height() );
-	
-	float fx = (float) width() / x;
-	float fy = (float) height() / x;
-	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glFrustum(-fx, +fx, -fy, +fy, CLIP_NEAR, CLIP_FAR+zoom );
+	gluPerspective( 45.0, (GLdouble) width() / (GLdouble) height(), CLIP_NEAR, CLIP_FAR+zoom );
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
@@ -215,6 +210,7 @@ void GLView::paintGL()
 		glDisable( GL_COLOR_MATERIAL );
 		glEnable( GL_DEPTH_TEST );
 		glDepthMask( GL_TRUE );
+		glDepthFunc( GL_LESS );
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
 		
@@ -351,6 +347,15 @@ void GLView::setNif( NifModel * nif )
 	updated = true;
 }
 
+void GLView::setCurrentIndex( const QModelIndex & index )
+{
+	if ( ! ( model && index.model() == model ) )
+		return;
+	
+	scene->currentNode = model->getBlockNumber( index );
+	updateGL();
+}
+
 void GLView::setTextureFolder( const QString & tf )
 {
 	scene->texfolder = tf;
@@ -382,6 +387,17 @@ void GLView::setBlending( bool b )
 bool GLView::blending() const
 {
 	return scene->blending;
+}
+
+void GLView::setHighlight( bool h )
+{
+	scene->highlight = h;
+	updateGL();
+}
+
+bool GLView::highlight() const
+{
+	return scene->highlight;
 }
 
 void GLView::setLighting( bool l )
@@ -500,8 +516,7 @@ void GLView::mousePressEvent(QMouseEvent *event)
 
 void GLView::mouseReleaseEvent( QMouseEvent *event )
 {
-	QPoint relPos = event->pos();
-	if ( ! ( model && ( pressPos - relPos ).manhattanLength() <= 3 ) )
+	if ( ! ( isVisible() && height() && model && ( pressPos - event->pos() ).manhattanLength() <= 3 ) )
 		return;
 	
 	makeCurrent();
@@ -510,7 +525,7 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	GLint	hits;
 	
 	GLint	viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
+	glGetIntegerv( GL_VIEWPORT, viewport );
 	
 	glSelectBuffer( 512, buffer );
 
@@ -521,12 +536,7 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity();
 	gluPickMatrix( (GLdouble) pressPos.x(), (GLdouble) (viewport[3]-pressPos.y()), 1.0f, 1.0f, viewport);
-
-	int x = qMin( width(), height() );
-	float fx = (float) width() / x;
-	float fy = (float) height() / x;
-	glFrustum(-fx, +fx, -fy, +fy, CLIP_NEAR, CLIP_FAR+zoom );
-	
+	gluPerspective( 45.0, (GLdouble) width() / (GLdouble) height(), CLIP_NEAR, CLIP_FAR+zoom );
 	glMatrixMode(GL_MODELVIEW);
 
 	scene->drawAgain();
@@ -545,6 +555,8 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 			}       
 		}
 		emit clicked( model->getBlock( choose ) );
+		scene->currentNode = choose;
+		updateGL();
 	}
 }
 

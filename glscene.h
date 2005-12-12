@@ -113,37 +113,63 @@ public:
 	QVector<VertexWeight> weights;
 };
 
-class Mesh
+class Node
 {
 public:
-	Mesh( Scene * s );
-	Mesh( NifModel * nif, const QModelIndex & index, Scene * s, int parent );
+	Node( Scene * scene, Node * parent );
+	virtual ~Node() {}
+	
+	virtual void init( NifModel * nif, const QModelIndex & block );
+	
+	virtual const Matrix & worldTrans() const;
+	
+	bool isHidden() const;
+	
+	int id() const { return nodeId; }
+	
+	void depthBuffer( bool & test, bool & mask );
+	
+protected:
+	virtual void setController( NifModel * nif, const QModelIndex & controller );
+	virtual void setProperty( NifModel * nif, const QModelIndex & property );
+	virtual void setSpecial( NifModel * nif, const QModelIndex & special );
+
+	Scene * scene;
+	Node * parent;
+	
+	int nodeId;
+	
+	Matrix local;
+	Matrix world;
+
+	bool hidden;
+	
+	bool depthProp;
+	bool depthTest;
+	bool depthMask;
+};
+
+class Mesh : public Node
+{
+public:
+	Mesh( Scene * s, Node * parent );
 	~Mesh();
 	
-	void init();
-	
-	void setData( NifModel * nif, const QModelIndex & tridata );
+	void init( NifModel * nif, const QModelIndex & block );
+	void setSpecial( NifModel * nif, const QModelIndex & special );
 	void setProperty( NifModel * nif, const QModelIndex & property );
-	void setSkinInstance( NifModel * nif, const QModelIndex & skininst );
 	
-	void draw();
+	void draw( bool selected );
 	
 	void transform( const Matrix & trans );
 
 	void boundaries( Vector & min, Vector & max );
-
-	Matrix localTrans;
-	Matrix sceneTrans;
+	
 	Matrix glmatrix;
 	
 	Vector localCenter;
 	Vector sceneCenter;
 	
-	Scene * scene;
-	
-	int parentNode;
-	int meshId;
-
 	bool useList;
 	GLuint list;
 	
@@ -173,15 +199,6 @@ public:
 
 	QVector<Vector> transVerts;
 	QVector<Vector> transNorms;
-};
-
-class Node
-{
-public:
-	Node() {}
-	
-	Matrix localTrans;
-	Matrix worldTrans;
 };
 
 class GLTex
@@ -222,13 +239,17 @@ public:
 	QHash<int,Node*> nodes;
 	
 	QStack<int> nodestack;
-	QStack<Matrix> matrixstack;
 
 	bool texturing;
 	QString texfolder;
 	QCache<QString,GLTex> textures;
 	
 	bool blending;
+	
+	bool highlight;
+	int currentNode;
+	
+	bool texInitPhase;
 	
 	const QGLContext * context;
 };
