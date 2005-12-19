@@ -5,7 +5,7 @@ TARGET   = NifSkope
 CONFIG += qt release warn_on
 QT += xml opengl
 
-DESTDIR = $$PWD
+DESTDIR = ./
 
 HEADERS += \
 glmath.h \

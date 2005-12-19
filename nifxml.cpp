@@ -44,8 +44,6 @@ QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::ancestors;
 QHash<QString,NifBlock*>		NifModel::blocks;
 
-QStringList					NifModel::uncondTypes;
-
 class NifXmlHandler : public QXmlDefaultHandler
 {
 public:
@@ -154,16 +152,18 @@ public:
 				if ( ! ( x == 5 || x == 6 ) )	err( "only add and inherit tags allowed in " + elements.value( x ) + " declaration" );
 				if ( x == 5 )
 				{
-					NifData		data;
-					data.name	= list.value( "name" ).toLower();
-					data.type	= list.value( "type" ).toLower();
-					data.arg	= list.value( "arg" ).toLower();
-					data.arr1	= list.value( "arr1" ).toLower();
-					data.arr2	= list.value( "arr2" ).toLower();
-					data.cond	= list.value( "cond" ).toLower();
-					data.ver1	= NifModel::version2number( list.value( "ver1" ) );
-					data.ver2	= NifModel::version2number( list.value( "ver2" ) );
-					if ( data.name.isEmpty() || data.type.isEmpty() ) err( "add needs at least name and type attributes" );
+					NifData		data(
+						list.value( "name" ).toLower().toAscii(),
+						list.value( "type" ).toLower().toAscii(),
+						QVariant(),
+						list.value( "arg" ).toLower().toAscii(),
+						list.value( "arr1" ).toLower().toAscii(),
+						list.value( "arr2" ).toLower().toAscii(),
+						list.value( "cond" ).toLower().toAscii(),
+						NifModel::version2number( list.value( "ver1" ) ),
+						NifModel::version2number( list.value( "ver2" ) )
+					);
+					if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
 					if ( blk )	blk->types.append( data );
 				}
 				else if ( x == 6 )
@@ -239,25 +239,19 @@ public:
 	
 	bool endDocument()
 	{	// make a rough check of the maps
-		NifModel::uncondTypes = NifModel::types.keys();
-
 		foreach ( QString key, NifModel::compounds.keys() )
 		{
 			NifBlock * c = NifModel::compounds.value( key );
-			bool nocond = true;
 			foreach ( NifData data, c->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type ) || NifModel::types.contains( data.type ) ) )
-					err( "compound type " + key + " referes to unknown type " + data.type );
-				if ( data.type == key )
+				if ( ! ( NifModel::compounds.contains( data.type() ) || NifModel::types.contains( data.type() ) ) )
+					err( "compound type " + key + " referes to unknown type " + data.type() );
+				if ( data.type() == key )
 					err( "compound type " + key + " contains itself" );
-				if ( data.ver1 != 0 || data.ver2 != 0 || ! data.cond.isEmpty() )
-					nocond = false;
 			}
-			if ( nocond )		NifModel::uncondTypes << key;
 			for ( QList<NifData>::iterator it = c->types.begin(); it != c->types.end(); ++it )
-				if ( NifModel::types.contains( it->type ) )
-					if ( ! it->value.isValid() ) it->value = NifModel::types.value( it->type )->value;
+				if ( NifModel::types.contains( it->type() ) )
+					if ( ! it->value().isValid() ) it->setValue( NifModel::types.value( it->type() )->value );
 		}
 		
 		foreach ( QString key, NifModel::ancestors.keys() )
@@ -272,12 +266,12 @@ public:
 			}
 			foreach ( NifData data, blk->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type ) || NifModel::types.contains( data.type ) ) )
-					err( "ancestor block " + key + " referes to unknown type " + data.type );
+				if ( ! ( NifModel::compounds.contains( data.type() ) || NifModel::types.contains( data.type() ) ) )
+					err( "ancestor block " + key + " referes to unknown type " + data.type() );
 			}
 			for ( QList<NifData>::iterator it = blk->types.begin(); it != blk->types.end(); ++it )
-				if ( NifModel::types.contains( it->type ) )
-					if ( ! it->value.isValid() ) it->value = NifModel::types.value( it->type )->value;
+				if ( NifModel::types.contains( it->type() ) )
+					if ( ! it->value().isValid() ) it->setValue( NifModel::types.value( it->type() )->value );
 		}
 		
 		foreach ( QString key, NifModel::blocks.keys() )
@@ -290,12 +284,12 @@ public:
 			}
 			foreach ( NifData data, blk->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type ) || NifModel::types.contains( data.type ) ) )
-					err( "compound type " + key + " referres to unknown type " + data.type );
+				if ( ! ( NifModel::compounds.contains( data.type() ) || NifModel::types.contains( data.type() ) ) )
+					err( "compound type " + key + " referres to unknown type " + data.type() );
 			}
 			for ( QList<NifData>::iterator it = blk->types.begin(); it != blk->types.end(); ++it )
-				if ( NifModel::types.contains( it->type ) )
-					if ( ! it->value.isValid() ) it->value = NifModel::types.value( it->type )->value;
+				if ( NifModel::types.contains( it->type() ) )
+					if ( ! it->value().isValid() ) it->setValue( NifModel::types.value( it->type() )->value );
 		}
 		return true;
 	}
