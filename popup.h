@@ -33,6 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef POPUP_H
 #define POPUP_H
 
+#include <QAction>
+#include <QColor>
+#include <QCheckBox>
 #include <QFrame>
 
 class Popup : public QFrame
@@ -62,5 +65,44 @@ private:
 	QAction	*	aPopup;
 };
 
+class ColorWheel : public QWidget
+{
+	Q_OBJECT
+public:
+	static QColor choose( const QColor & color, QWidget * parent );
+	
+	ColorWheel( QWidget * parent = 0 );
+	
+	Q_PROPERTY( QColor color READ getColor WRITE setColor STORED false );
+	
+	QColor getColor() const;
+	
+	QSize sizeHint() const;
+	QSize minimumSizeHint() const;
+	
+	int heightForWidth( int width ) const;
+
+signals:
+	void sigColor( const QColor & );
+	
+public slots:
+	void setColor( const QColor & );
+	
+protected:
+	void paintEvent( QPaintEvent * e );
+	void mousePressEvent( QMouseEvent * e );
+	void mouseMoveEvent( QMouseEvent * e );
+
+	void setColor( int x, int y );
+
+private:
+	double H, S, V;
+	
+	enum {
+		Nope, Circle, Triangle
+	} pressed;
+};
+
+QStringList selectMultipleDirs( const QString & title, const QStringList & def, QWidget * parent );
 
 #endif

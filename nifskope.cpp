@@ -39,16 +39,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCheckBox>
 #include <QDebug>
 #include <QDesktopWidget>
+#include <QDockWidget>
 #include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLayout>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
 #include <QRadioButton>
 #include <QSettings>
+#include <QSlider>
 #include <QSplitter>
 #include <QTextEdit>
 #include <QTimer>
@@ -64,14 +67,205 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glview.h"
 #include "popup.h"
 
-void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
+/*
+ * main GUI window
+ */
+
+NifSkope::NifSkope() : QMainWindow()
 {
-	QByteArray b;
-	QDataStream d( &b, QIODevice::WriteOnly );
-	d << header->count();
-	for ( int c = 0; c < header->count(); c++ )
-		d << header->sectionSize( c );
-	settings.setValue( name, b );
+	// create a new model
+	model = new NifModel( this );
+	
+	// create a new hirarchical proxy model
+	proxy = new NifProxyModel( this );
+	proxy->setModel( model );
+
+
+	// this view shows the block list
+	list = new NifTreeView;
+	list->setModel( proxy );
+	list->setItemDelegate( model->createDelegate() );
+
+	QFont font = list->font();
+	font.setPointSize( font.pointSize() + 3 );
+	list->setFont( font );
+	QFontMetrics metrics( list->font() );
+	list->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	list->header()->setStretchLastSection( false );
+	
+	list->setColumnHidden( NifModel::TypeCol, true );
+	list->setColumnHidden( NifModel::ArgCol, true );
+	list->setColumnHidden( NifModel::Arr1Col, true );
+	list->setColumnHidden( NifModel::Arr2Col, true );
+	list->setColumnHidden( NifModel::CondCol, true );
+	list->setColumnHidden( NifModel::Ver1Col, true );
+	list->setColumnHidden( NifModel::Ver2Col, true );
+	
+	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
+		this, SLOT( select( const QModelIndex & ) ) );
+	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+		this, SLOT( contextMenu( const QPoint & ) ) );
+	
+
+	// this view shows the whole nif file or the block details
+	tree = new NifTreeView;
+	tree->setModel( model );
+	tree->setItemDelegate( model->createDelegate() );
+
+	tree->setFont( font );
+	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	tree->header()->setStretchLastSection( false );
+
+	connect( tree, SIGNAL( clicked( const QModelIndex & ) ),
+		this, SLOT( select( const QModelIndex & ) ) );
+	connect( tree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+		this, SLOT( contextMenu( const QPoint & ) ) );
+
+
+	// open gl
+	setCentralWidget( ogl = new GLView );
+	ogl->setNif( model );
+	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
+			this, SLOT( select( const QModelIndex & ) ) );
+
+
+	// actions
+
+	aLoad = new QAction( "load", this );
+	connect( aLoad, SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );	
+	aSave = new QAction( "save", this );
+	connect( aSave, SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
+	aWindow = new QAction( "new window", this );
+	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
+	aQuit = new QAction( "quit", this );
+	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
+	
+	aCondition = new QAction( "hide condition zero", this );
+	aCondition->setToolTip( "checking this option makes the tree view better readable by displaying<br>only the rows where the condition is true and version matches the file version" );
+	aCondition->setCheckable( true );
+	aCondition->setChecked( tree->evalConditions() );
+	connect( aCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
+
+	aList = new QAction( "list", this );
+	aList->setCheckable( true );
+	aList->setChecked( list->model() == model );
+
+	aHirarchy = new QAction( "hirarchy", this );
+	aHirarchy->setCheckable( true );
+	aHirarchy->setChecked( list->model() == proxy );
+	
+	gListMode = new QActionGroup( this );
+	connect( gListMode, SIGNAL( triggered( QAction * ) ), this, SLOT( setListMode() ) );
+	gListMode->addAction( aList );
+	gListMode->addAction( aHirarchy );
+	gListMode->setExclusive( true );
+	
+	aNifSkope = new QAction( "about NifSkope", this );
+	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
+	
+	aAboutQt = new QAction( "about Qt", this );
+	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
+
+
+	// dock widgets
+	
+	dList = new QDockWidget( "File Block List" );
+	dList->setObjectName( "ListDock" );
+	dList->setWidget( list );
+	
+	dTree = new QDockWidget( "Detailed Tree View" );
+	dTree->setObjectName( "TreeDock" );
+	dTree->setWidget( tree );	
+
+	addDockWidget( Qt::LeftDockWidgetArea, dList );
+	addDockWidget( Qt::BottomDockWidgetArea, dTree );
+
+
+	// tool bar
+	
+	tool = new QToolBar( "load & save" );
+	tool->setObjectName( "toolbar" );
+	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	
+	tool->addAction( aLoad );
+	tool->addWidget( lineLoad = new QLineEdit );
+	connect( lineLoad, SIGNAL( returnPressed() ), this, SLOT( load() ) );
+	
+	tool->addWidget( lineSave = new QLineEdit );
+	connect( lineSave, SIGNAL( returnPressed() ), this, SLOT( save() ) );
+	
+	tool->addAction( aSave );	
+	
+	addToolBar( Qt::TopToolBarArea, tool );
+	
+	
+	// animation tool bar
+	
+	tAnim = new QToolBar( "animation" );
+	tAnim->setObjectName( "AnimTool" );
+	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	
+	foreach ( QAction * a, ogl->animActions() )
+		tAnim->addAction( a );
+	
+	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim->toggleViewAction(), SLOT( setChecked( bool ) ) );
+	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
+	connect( tAnim->toggleViewAction(), SIGNAL( toggled( bool ) ), ogl->aAnimate, SLOT( setChecked( bool ) ) );
+	
+	sldTime = new QSlider;
+	sldTime->setOrientation( Qt::Horizontal );
+	tAnim->addWidget( sldTime );
+	connect( ogl, SIGNAL( sigFrame( int, int, int ) ), this, SLOT( setFrame( int, int, int ) ) );
+	connect( sldTime, SIGNAL( valueChanged( int ) ), ogl, SLOT( sltFrame( int ) ) );
+	
+	addToolBar( Qt::TopToolBarArea, tAnim );
+	
+	// menu
+
+	QMenu * mFile = new QMenu( "&File" );
+	mFile->addAction( aLoad );
+	mFile->addAction( aSave );
+	mFile->addSeparator();
+	mFile->addAction( aWindow );
+	mFile->addSeparator();
+	mFile->addAction( aQuit );
+	
+	QMenu * mView = new QMenu( "&View" );
+	mView->addAction( dTree->toggleViewAction() );
+	mView->addAction( dList->toggleViewAction() );
+	mView->addSeparator();
+	mView->addAction( tool->toggleViewAction() );
+	mView->addAction( tAnim->toggleViewAction() );
+	
+	QMenu * mOpts = new QMenu( "&Options" );
+	foreach ( QAction * a, ogl->actions() )
+		mOpts->addAction( a );
+	mOpts->addSeparator();
+	mOpts->addAction( aHirarchy );
+	mOpts->addAction( aList );
+	mOpts->addSeparator();
+	mOpts->addAction( aCondition );
+	
+	QMenu * mAbout = new QMenu( "&About" );
+	mAbout->addAction( aNifSkope );
+	mAbout->addAction( aAboutQt );
+	
+	menuBar()->addMenu( mFile );
+	menuBar()->addMenu( mView );
+	menuBar()->addMenu( mOpts );
+	menuBar()->addMenu( mAbout );
+}
+
+void NifSkope::setFrame( int f, int mn, int mx )
+{
+	sldTime->setRange( mn, mx );
+	sldTime->setValue( f );
+}
+
+NifSkope::~NifSkope()
+{
+	QSettings settings( "NifTools", "NifSkope" );
+	save( settings );
 }
 
 void restoreHeader( const QString & name, QSettings & settings, QHeaderView * header )
@@ -91,297 +285,50 @@ void restoreHeader( const QString & name, QSettings & settings, QHeaderView * he
 	}
 }
 
-/*
- * main GUI window
- */
-
-NifSkope::NifSkope() : QWidget(), popOpts( 0 )
+void NifSkope::restore( QSettings & settings )
 {
-	// create a new model
-	model = new NifModel( this );
-	
-	// create a new hirarchical proxy model
-	proxy = new NifProxyModel( this );
-	proxy->setModel( model );
-	
-	// application specific settings
-	QSettings settings( "NifTools", "NifSkope" );
-	
-	// layout widgets in a grid
-	QGridLayout * grid = new QGridLayout;
-	setLayout( grid );
-	
-	// load action
-	QToolButton * tool = new QToolButton;
-	tool->setDefaultAction( new QAction( "load", this ) );
-	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );
-	grid->addWidget( tool, 0, 0 );
+	lineLoad->setText( settings.value( "last load", QString( "" ) ).toString() );
+	lineSave->setText( settings.value( "last save", QString( "" ) ).toString() );
 
-	// the name of the file to load
-	lineLoad = new QLineEdit( settings.value( "last load", QString( "" ) ).toString() );
-	grid->addWidget( lineLoad, 0, 1, 1, 2 );
-	connect( lineLoad, SIGNAL( returnPressed() ), this, SLOT( load() ) );
-	
-	// variable split layout
-	split = new QSplitter;
-	grid->addWidget( split, 1, 0, 1, 4 );
-	grid->setRowStretch( 1, 4 );
-
-	// this view shows the block list
-	list = new NifTreeView;
-	split->addWidget( list );
-	QFont font = list->font();
-	font.setPointSize( font.pointSize() + 3 );
-	list->setFont( font );
-	list->setVisible( settings.value( "show list", true ).toBool() );
-	
-	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
-			this, SLOT( select( const QModelIndex & ) ) );
-
-	// this view shows the whole tree or the block details
-	tree = new NifTreeView;
-	split->addWidget( tree );
-	tree->setFont( font );
-	tree->setModel( model );
-	tree->setVisible( settings.value( "show tree", false ).toBool() );
-	
-	connect( tree, SIGNAL( clicked( const QModelIndex & ) ),
-		this, SLOT( select( const QModelIndex & ) ) );
-	
-#ifdef QT_OPENGL_LIB
-	// open gl
-	ogl = new GLView;
-	ogl->setVisible( settings.value( "show opengl", true ).toBool() );
-	ogl->setNif( model );	
-	split->addWidget( ogl );
-	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
-			this, SLOT( select( const QModelIndex & ) ) );
-#else
-	ogl = 0;
-#endif
-
-	// save button
-	grid->addWidget( (tool = new QToolButton), 2, 0 );
-	tool->setDefaultAction( new QAction( "save", this ) );
-	connect( tool->defaultAction(), SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
-
-	// name of the file to write to
-	lineSave = new QLineEdit( settings.value( "last save", "" ).toString() );
-	grid->addWidget( lineSave, 2, 1 );
-	connect( lineSave, SIGNAL( returnPressed() ), this, SLOT( save() ) );
-	
-	// options
-	popOpts = new Popup( "Options", this );
-	{
-		popOpts->setLayout( new QVBoxLayout );
-		
-		QGroupBox * optList = new QGroupBox( "File Block List" );
-		popOpts->layout()->addWidget( optList );
-		optList->setFlat( true );
-		optList->setCheckable( true );
-		optList->setChecked( list->isVisibleTo( this ) );
-		connect( optList, SIGNAL( toggled( bool ) ), list, SLOT( setVisible( bool ) ) );
-		connect( optList, SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
-		optList->setLayout( new QVBoxLayout );
-
-		listMode = new QButtonGroup( this );
-		connect( listMode, SIGNAL( buttonClicked( QAbstractButton * ) ), this, SLOT( setListMode( QAbstractButton * ) ) );
-		
-		QRadioButton * checkMode = new QRadioButton( "list" );
-		optList->layout()->addWidget( checkMode );
-		checkMode->setChecked( settings.value( "list mode", "hirarchy" ).toString() == checkMode->text() );
-		listMode->addButton( checkMode );
-		checkMode = new QRadioButton( "hirarchy" );
-		optList->layout()->addWidget( checkMode );
-		checkMode->setChecked( settings.value( "list mode", "hirarchy" ).toString() == checkMode->text() );
-		listMode->addButton( checkMode );
-		
-		setListMode( listMode->checkedButton() );
-		
-		QGroupBox * optTree = new QGroupBox( "Detailed Tree View" );
-		popOpts->layout()->addWidget( optTree );
-		optTree->setFlat( true );
-		optTree->setCheckable( true );
-		optTree->setChecked( tree->isVisibleTo( this ) );
-		connect( optTree, SIGNAL( toggled( bool ) ), tree, SLOT( setVisible( bool ) ) );
-		optTree->setLayout( new QVBoxLayout );
-		
-		conditionZero = new QCheckBox( "hide condition zero" );
-		conditionZero->setChecked( settings.value( "hide condition zero", true ).toBool() );
-		connect( conditionZero, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
-		optTree->layout()->addWidget( conditionZero );
-		conditionZero->setToolTip( "checking this option makes the tree view better readable by displaying<br>only the rows where the condition and version is true" );
-		tree->setEvalConditions( conditionZero->isChecked() );
-		
-#ifdef QT_OPENGL_LIB
-		QGroupBox * optGL = new QGroupBox( "OpenGL Preview" );
-		popOpts->layout()->addWidget( optGL );
-		optGL->setFlat( true );
-		optGL->setCheckable( true );
-		optGL->setChecked( ogl->isVisibleTo( this ) );
-		optGL->setEnabled( ogl->isValid() );
-		connect( optGL, SIGNAL( toggled( bool ) ), ogl, SLOT( setVisible( bool ) ) );
-		optGL->setLayout( new QVBoxLayout );
-		
-		QCheckBox * optTextures = new QCheckBox( "textures" );
-		optTextures->setToolTip( "enable texturing" );
-		optGL->layout()->addWidget( optTextures );
-		optTextures->setChecked( settings.value( "enable textures", true ).toBool() );
-		connect( optTextures, SIGNAL( toggled( bool ) ), ogl, SLOT( setTexturing( bool ) ) );
-		ogl->setTexturing( optTextures->isChecked() );
-		
-		QLineEdit * optTexdir = new QLineEdit;
-		optGL->layout()->addWidget( optTexdir );
-		connect( optTexdir, SIGNAL( textChanged( const QString & ) ), ogl, SLOT( setTextureFolder( const QString & ) ) );
-		optTexdir->setText( settings.value( "texture folder" ).toString() );
-		optTexdir->setToolTip( "put in your texture folders here<br>if you have more than one seperate them with semicolons" );
-		
-		QCheckBox * optLights = new QCheckBox( "lighting" );
-		optLights->setToolTip( "toggle lighting on or off" );
-		optGL->layout()->addWidget( optLights );
-		optLights->setChecked( settings.value( "enable lighting", true ).toBool() );
-		connect( optLights, SIGNAL( toggled( bool ) ), ogl, SLOT( setLighting( bool ) ) );
-		ogl->setLighting( optLights->isChecked() );
-		
-		QCheckBox * optAlpha = new QCheckBox( "blending" );
-		optAlpha->setToolTip( "toggle alpha blending" );
-		optGL->layout()->addWidget( optAlpha );
-		optAlpha->setChecked( settings.value( "enable blending", true ).toBool() );
-		connect( optAlpha, SIGNAL( toggled( bool ) ), ogl, SLOT( setBlending( bool ) ) );
-		ogl->setBlending( optAlpha->isChecked() );
-		
-		QCheckBox * optHighlight = new QCheckBox( "highlight selected mesh" );
-		optGL->layout()->addWidget( optHighlight );
-		optHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
-		connect( optHighlight, SIGNAL( toggled( bool ) ), ogl, SLOT( setHighlight( bool ) ) );
-		ogl->setHighlight( optHighlight->isChecked() );
-		
-		QCheckBox * optAxis = new QCheckBox( "draw axis" );
-		optGL->layout()->addWidget( optAxis );
-		optAxis->setChecked( settings.value( "draw axis", true ).toBool() );
-		connect( optAxis, SIGNAL( toggled( bool ) ), ogl, SLOT( setDrawAxis( bool ) ) );
-		ogl->setDrawAxis( optAxis->isChecked() );
-		
-		QCheckBox * optRotate = new QCheckBox( "rotate" );
-		optRotate->setToolTip( "slowly rotate the object around the z axis" );
-		optGL->layout()->addWidget( optRotate );
-		optRotate->setChecked( settings.value( "rotate", true ).toBool() );
-		connect( optRotate, SIGNAL( toggled( bool ) ), ogl, SLOT( setRotate( bool ) ) );
-		ogl->setRotate( optRotate->isChecked() );
-		
-		ogl->compile();
-#endif
-		
-		QGroupBox * optMisc = new QGroupBox;
-		popOpts->layout()->addWidget( optMisc );
-		optMisc->setFlat( true );
-		QGridLayout * optGrid = new QGridLayout;
-		optMisc->setLayout( optGrid );
-		
-		autoSettings = new QCheckBox( "save settings on exit" );
-		autoSettings->setChecked( settings.value( "auto save settings", false ).toBool() );
-		optGrid->addWidget( autoSettings, 0, 0, 1, 3 );
-		
-		QAction * aboutNifSkope = new QAction( "about nifskope", this );
-		connect( aboutNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
-		tool = new QToolButton;
-		tool->setDefaultAction( aboutNifSkope );
-		optGrid->addWidget( tool, 1, 0 );
-		
-		QAction * saveOpts = new QAction( "save options", this );
-		connect( saveOpts, SIGNAL( triggered() ), this, SLOT( saveOptions() ) );
-		tool = new QToolButton;
-		tool->setDefaultAction( saveOpts );
-		optGrid->addWidget( tool, 1, 1 );
-		
-		QAction * about = new QAction( "about qt", this );
-		connect( about, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
-		tool = new QToolButton;
-		tool->setDefaultAction( about );
-		optGrid->addWidget( tool, 1, 2 );
-		
-	}
-	tool = new QToolButton;
-	tool->setDefaultAction( popOpts->popupAction() );
-	grid->addWidget( tool, 2, 2 );
-	
-	// last but not least: set up a custom delegate to provide edit functionality
-	list->setItemDelegate( model->createDelegate() );
-	tree->setItemDelegate( model->createDelegate() );
-	
-	// tweak some display settings
-	QFontMetrics m( list->font() );
-	list->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
-	list->header()->setStretchLastSection( false );
 	restoreHeader( "list sizes", settings, list->header() );
-	
-	list->setColumnHidden( NifModel::TypeCol, true );
-	list->setColumnHidden( NifModel::ArgCol, true );
-	list->setColumnHidden( NifModel::Arr1Col, true );
-	list->setColumnHidden( NifModel::Arr2Col, true );
-	list->setColumnHidden( NifModel::CondCol, true );
-	list->setColumnHidden( NifModel::Ver1Col, true );
-	list->setColumnHidden( NifModel::Ver2Col, true );
-	
-	tree->setIconSize( QSize( m.width( "000" ), m.lineSpacing() ) );
-	tree->header()->setStretchLastSection( false );
+	if ( settings.value( "list mode", "hirarchy" ).toString() == "list" )
+		aList->setChecked( true );
+	else
+		aHirarchy->setChecked( true );
+	setListMode();
+
+	aCondition->setChecked( settings.value( "hide condition zero", true ).toBool() );
 	restoreHeader( "tree sizes", settings, tree->header() );
-	
-	// fetch context menu signals from model views
-	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-			this, SLOT( contextMenu( const QPoint & ) ) );
-	connect( tree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-			this, SLOT( contextMenu( const QPoint & ) ) );
-			
-	// messages
-	msgroup = new QGroupBox( "messages" );
-	grid->addWidget( msgroup, 3, 0, 1, 4 );
-	msgroup->setLayout( new QHBoxLayout );
-	msgroup->setVisible( false );
-	msgroup->setCheckable( true );
-	msgroup->setChecked( msgroup->isVisibleTo( this ) );
-	connect( msgroup, SIGNAL( toggled( bool ) ), this, SLOT( toggleMessages() ) );
-	msgview = new QTextEdit;
-	msgview->setReadOnly( true );
-	msgroup->layout()->addWidget( msgview );
-	connect( msgroup, SIGNAL( toggled( bool ) ), msgview, SLOT( clear() ) );
-	
-	//split->restoreState( settings.value( "split sizes" ).toByteArray() );
 
-	QRect geo = settings.value( "window geometry", QRect() ).value<QRect>();
-	if ( geo.isValid() )	setGeometry( geo );
+	ogl->restore( settings );	
+
+	restoreState( settings.value( "window state" ).toByteArray(), 0x041 );
 }
 
-NifSkope::~NifSkope()
+void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
 {
-	if ( autoSettings->isChecked() )
-		saveOptions();
+	QByteArray b;
+	QDataStream d( &b, QIODevice::WriteOnly );
+	d << header->count();
+	for ( int c = 0; c < header->count(); c++ )
+		d << header->sectionSize( c );
+	settings.setValue( name, b );
 }
 
-void NifSkope::saveOptions()
+void NifSkope::save( QSettings & settings ) const
 {
-	QSettings settings( "NifTools", "NifSkope" );
+	settings.setValue( "window state", saveState( 0x041 ) );
+
 	settings.setValue( "last load", lineLoad->text() );
 	settings.setValue( "last save", lineSave->text() );
-	settings.setValue( "show list", list->isVisibleTo( this ) );
-	settings.setValue(	"list mode", ( listMode->checkedButton() ? listMode->checkedButton()->text() : "list" ) );
+	
+	settings.setValue(	"list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
 	saveHeader( "list sizes", settings, list->header() );
-	settings.setValue( "show tree", tree->isVisibleTo( this ) );
-	settings.setValue( "hide condition zero", conditionZero->isChecked() );
+
+	settings.setValue( "hide condition zero", aCondition->isChecked() );
 	saveHeader( "tree sizes", settings, tree->header() );
-#ifdef QT_OPENGL_LIB
-	settings.setValue( "show opengl", ogl->isVisibleTo( this ) );
-	settings.setValue( "texture folder", ogl->textureFolder() );
-	settings.setValue( "enable textures", ogl->texturing() );
-	settings.setValue( "enable lighting", ogl->lighting() );
-	settings.setValue( "enable blending", ogl->blending() );
-	settings.setValue( "highlight meshes", ogl->highlight() );
-	settings.setValue( "draw axis", ogl->drawAxis() );
-	settings.setValue( "rotate", ogl->rotate() );
-#endif
-	settings.setValue( "auto save settings", autoSettings->isChecked() );
-	settings.setValue( "window geometry", normalGeometry() );
-	//settings.setValue( "split sizes", split->saveState() );
+
+	ogl->save( settings );
 }
 
 void NifSkope::about()
@@ -396,6 +343,31 @@ void NifSkope::about()
     QMessageBox mb( "About NifSkope", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
+}
+
+void NifSkope::setCurrentBlock( const QModelIndex & index )
+{
+	QModelIndex block = index;
+	if ( block.model() == proxy )
+		block = proxy->mapTo( index );
+	
+	if ( list->isVisible() )
+	{
+		if ( list->model() == proxy )
+		{
+			QModelIndex pidx = proxy->mapFrom( block, list->currentIndex() );
+			list->setCurrentIndexExpanded( pidx );
+		}
+		else
+			list->setCurrentIndexExpanded( block );
+		tree->setRootIndex( block );
+	}
+	else
+	{
+		tree->setCurrentIndexExpanded( block );
+	}
+	
+	ogl->setCurrentIndex( block );
 }
 
 void NifSkope::contextMenu( const QPoint & pos )
@@ -458,28 +430,54 @@ void NifSkope::contextMenu( const QPoint & pos )
 		menu->addAction( "collapse all" );
 	}
 	
+	if ( idx.isValid() && model->isCompound( model->itemType( idx ) ) )
+	{
+		menu->addSeparator();
+		menu->addAction( "copy" );
+		const QMimeData * mime = QApplication::clipboard()->mimeData();
+		if ( mime )
+		{
+			foreach ( QString form, mime->formats() )
+			{
+				if ( form.startsWith( "nifskope/compound/" ) )
+				{
+					QString type = form.right( form.length() - 18 );
+					if ( type == model->itemType( idx ) )
+					{
+						menu->addAction( "paste" );
+					}
+				}
+			}
+		}
+	}
+	
+	if ( idx.isValid() && model->itemType( idx ) == "NiBlock" && model->isNiBlock( model->itemName( idx ) ) )
+	{
+		menu->addSeparator();
+		menu->addAction( "copy" );
+		const QMimeData * mime = QApplication::clipboard()->mimeData();
+		if ( mime )
+		{
+			foreach ( QString form, mime->formats() )
+			{
+				if ( form.startsWith( "nifskope/niblock/" ) )
+				{
+					QString name = form.right( form.length() - 17 );
+					if ( name == model->itemName( idx ) )
+					{
+						menu->addAction( "paste" );
+					}
+				}
+			}
+		}
+	}
+	
 	QAction * a = menu->exec( p );
 	if ( a ) 
 	{
 		if ( a->text() == "follow Link" )
 		{
-			QModelIndex target = model->getBlock( link );
-			if ( list->isVisible() )
-			{
-				if ( list->model() == proxy )
-				{
-					QModelIndex pidx = proxy->mapFrom( target, list->currentIndex() );
-					list->setCurrentIndexExpanded( pidx );
-				}
-				else
-					list->setCurrentIndexExpanded( target );
-				tree->setRootIndex( target );
-			}
-			else
-			{
-				tree->setCurrentIndexExpanded( target );
-				tree->expand( target );
-			}
+			setCurrentBlock( model->getBlock( link ) );
 		}
 		else if ( a->text() == "update Header" )
 		{
@@ -502,6 +500,58 @@ void NifSkope::contextMenu( const QPoint & pos )
 			model->removeNiBlock( model->getBlockNumber( idx ) );
 			model->updateHeader();
 		}
+		else if ( a->text() == "copy" )
+		{
+			QByteArray data;
+			QBuffer buffer( & data );
+			if ( buffer.open( QIODevice::WriteOnly ) && model->save( buffer, idx ) )
+			{
+				QMimeData * mime = new QMimeData;
+				if ( model->isCompound( model->itemType( idx ) ) )
+					mime->setData( QString( "nifskope/compound/%1" ).arg( model->itemType( idx ) ), data );
+				else
+					mime->setData( QString( "nifskope/niblock/%1" ).arg( model->itemName( idx ) ), data );
+				QApplication::clipboard()->setMimeData( mime );
+			}
+		}
+		else if ( a->text() == "paste" )
+		{
+			const QMimeData * mime = QApplication::clipboard()->mimeData();
+			if ( mime )
+			{
+				foreach ( QString form, mime->formats() )
+				{
+					if ( form.startsWith( "nifskope/compound/" ) )
+					{
+						QString type = form.right( form.length() - 18 );
+						if ( type == model->itemType( idx ) )
+						{
+							QByteArray data = mime->data( form );
+							QBuffer buffer( & data );
+							if ( buffer.open( QIODevice::ReadOnly ) )
+							{
+								model->load( buffer, idx );
+							}
+						}
+						break;
+					}
+					else if ( form.startsWith( "nifskope/niblock/" ) )
+					{
+						QString name = form.right( form.length() - 17 );
+						if ( name == model->itemName( idx ) && model->itemType( idx ) == "NiBlock" )
+						{
+							QByteArray data = mime->data( form );
+							QBuffer buffer( & data );
+							if ( buffer.open( QIODevice::ReadOnly ) )
+							{
+								model->load( buffer, idx );
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
 		else
 		{
 			model->insertNiBlock( a->text(), model->getBlockNumber( idx )+1 );
@@ -522,6 +572,7 @@ void NifSkope::clearRoot()
 void NifSkope::select( const QModelIndex & index )
 {
 	if ( ! index.isValid() ) return;
+	
 	if ( sender() == list )
 	{
 		QModelIndex root = index;
@@ -530,10 +581,7 @@ void NifSkope::select( const QModelIndex & index )
 		if ( root.isValid() && root.column() != 0 )
 			root = root.sibling( root.row(), 0 );
 		tree->setRootIndex( root );
-#ifdef QT_OPENGL_LIB
-		if ( ogl )
-			ogl->setCurrentIndex( root );
-#endif
+		ogl->setCurrentIndex( root );
 	}
 	else if ( sender() == ogl )
 	{
@@ -552,17 +600,15 @@ void NifSkope::select( const QModelIndex & index )
 	}
 	else if ( sender() == tree )
 	{
-#ifdef QT_OPENGL_LIB
-		if ( ogl )
-			ogl->setCurrentIndex( index );
-#endif
+		ogl->setCurrentIndex( index );
 	}
 }
 
-void NifSkope::setListMode( QAbstractButton * b )
+void NifSkope::setListMode()
 {
 	QModelIndex idx = list->currentIndex();
-	if ( b->text() == "list" )
+	QAction * a = gListMode->checkedAction();
+	if ( !a || a == aList )
 	{
 		if ( list->model() != model )
 		{
@@ -595,15 +641,19 @@ void NifSkope::load()
 {
 	// open file
 	if ( lineLoad->text().isEmpty() )
+	{
+		model->clear();
+		ogl->compile( true );
 		return;
+	}
 	
 	QFile f( lineLoad->text() );
 	if ( f.open( QIODevice::ReadOnly ) )
 	{
+		setEnabled( false );
 		model->load( f );
-#ifdef QT_OPENGL_LIB
-		if ( ogl && ogl->isValid() ) ogl->compile( true );
-#endif
+		setEnabled( true );
+		ogl->compile( true );
 		f.close();
 	}
 	else
@@ -616,7 +666,9 @@ void NifSkope::save()
 	QFile f( lineSave->text() );
 	if ( f.open( QIODevice::WriteOnly ) )
 	{
+		setEnabled( false );
 		model->save( f );
+		setEnabled( true );
 		f.close();
 	}
 	else
@@ -645,24 +697,23 @@ void NifSkope::saveBrowse()
 	}
 }
 
-void NifSkope::addMessage( const QString & msg )
+void NifSkope::sltWindow()
 {
-	msgroup->setChecked( true );
-	msgview->append( msg );
-//	msgview->ensureCursorVisible( true );
+	createWindow();
 }
 
-void NifSkope::toggleMessages()
+NifSkope * NifSkope::createWindow()
 {
-	QTimer::singleShot( 0, this, SLOT( delayedToggleMessages() ) );
+	NifSkope * skope = new NifSkope;
+	skope->setAttribute( Qt::WA_DeleteOnClose );
+	QSettings settings( "NifTools", "NifSkope" );
+	skope->restore( settings );
+	skope->resize( skope->sizeHint() );
+	skope->show();
+	return skope;
 }
 
-void NifSkope::delayedToggleMessages()
-{
-	msgroup->setVisible( msgroup->isChecked() );
-}
-
-NifSkope * msgtarget = 0;
+QTextEdit * msgtarget = 0;
 
 void myMessageOutput(QtMsgType type, const char *msg)
 {
@@ -672,17 +723,24 @@ void myMessageOutput(QtMsgType type, const char *msg)
 			break;
 		case QtWarningMsg:
 		case QtCriticalMsg:
-			if ( msgtarget )
+			if ( ! msgtarget )
 			{
-				msgtarget->addMessage( msg );
-				break;
+				msgtarget = new QTextEdit;
+				msgtarget->setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
 			}
+			if ( ! msgtarget->isVisible() )
+			{
+				msgtarget->clear();
+				msgtarget->show();
+			}
+			
+			msgtarget->append( msg );
+			break;
 		case QtFatalMsg:
 			QMessageBox::critical( 0, "Fatal Error", msg );
 			abort();
 	}
 }
-
 
 int main( int argc, char * argv[] )
 {
@@ -697,15 +755,12 @@ int main( int argc, char * argv[] )
 		return -1;
 	}
 	
-	// set up the GUI
-	NifSkope edit;
-	edit.show();
-	
-	msgtarget = &edit;
 	qInstallMsgHandler(myMessageOutput);
+	
+	NifSkope * skope = NifSkope::createWindow();
 
     if (app.argc() > 1)
-        edit.load(QString(app.argv()[app.argc() - 1]));
+        skope->load(QString(app.argv()[app.argc() - 1]));
 
 	// start the event loop
 	return app.exec();

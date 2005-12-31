@@ -39,6 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QStringList						NifModel::internalTypes;
 
+QList<quint32>					NifModel::supportedVersions;
+
 QHash<QString,NifBasicType*>	NifModel::types;
 QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::ancestors;
@@ -50,7 +52,7 @@ public:
 	NifXmlHandler()
 	{
 		depth = 0;
-		elements << "niflotoxml" << "type" << "compound" << "ancestor" << "niblock" << "add" << "inherit";
+		elements << "niflotoxml" << "type" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "version";
 		typ = 0;
 		blk = 0;
 	}
@@ -117,7 +119,7 @@ public:
 		switch ( current() )
 		{
 			case 0:
-				if ( ! ( x >= 1 && x <= 4 ) )	err( "expected type, compound, ancestor or niblock  got " + name + " instead" );
+				if ( ! ( x == 7 || ( x >= 1 && x <= 4 ) ) )	err( "expected type, compound, ancestor, niblock or version got " + name + " instead" );
 				push( x );
 				switch ( x )
 				{
@@ -233,7 +235,20 @@ public:
 	
 	bool characters( const QString & s )
 	{
-		//if ( current() == 1 && typ )	typ->text = s.trimmed();
+		switch ( current() )
+		{
+			case 1:
+				if ( typ )	typ->text = s.trimmed();
+				break;
+			case 7:
+			{
+				int v = NifModel::version2number( s.trimmed() );
+				if ( v != 0 )
+					NifModel::supportedVersions.append( v );
+				else
+					err( "invalid version string " + s );
+			}	break;
+		}
 		return true;
 	}
 	
@@ -319,6 +334,8 @@ QString NifModel::parseXmlDescription( const QString & filename )
 		<< "int8" << "int16" << "int32"
 		<< "float" << "string"
 		<< "color3f" << "color4f";
+	
+	supportedVersions.clear();
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )

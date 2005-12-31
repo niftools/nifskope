@@ -38,10 +38,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif .kf)
 
 
-This is version 0.3 of NifSkope.
+This is version 0.4 of NifSkope.
 
 It should read and write every Nif up to version 10.x.x.x.
 
+
+changes since 0.3:
+
+  - switched to Qt 4.1
+  - new main window layout
+  - multiple main windows
+  - copy/paste blocks and compounds
+  - keyframe animations
+  - draw bones/nodes
+  - draw hidden meshes
+  - increased loading speed by 80%
+  - reduced memory consumption by 33%
+  - nif version check on load
 
 
 changes since 0.2:
@@ -52,6 +65,8 @@ changes since 0.2:
   - improved alpha blending
   - improved material colors and lighting
   - fixed performance issue with textures on cdrom
+
+  - application icon by Shon
 
   - changed source code license to BSD
 

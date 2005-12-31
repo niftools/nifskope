@@ -50,6 +50,9 @@ public:
 	bool evalConditions() const { return EvalConditions; }
     bool isRowHidden(int row, const QModelIndex &parent) const;
 	
+	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
+	QSize sizeHint() const { return QSize( 400, 400 ); }
+
 public slots:	
 	void setCurrentIndexExpanded( const QModelIndex & index );
 

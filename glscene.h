@@ -72,6 +72,14 @@ public:
 	
 	Color( const QColor & );
 	
+	Color operator*( const Color & m ) const
+	{
+		Color r = *this;
+		for ( int c = 0; c < 4; c++ )
+			r.rgba[c] *= m.rgba[c];
+		return r;
+	}
+	
 	inline void glColor() const
 	{
 		glColor4fv( rgba );
@@ -108,26 +116,76 @@ public:
 	BoneWeights() { bone = 0; }
 	BoneWeights( NifModel * nif, const QModelIndex & index, int b );
 	
-	Matrix matrix;
+	Transform trans;
 	int bone;
 	QVector<VertexWeight> weights;
+};
+
+typedef union
+{
+	quint16 bits;
+	
+	struct Node
+	{
+		bool hidden : 1;
+	} node;
+
+	struct Controller
+	{
+		bool unknown : 1;
+		enum
+		{
+			Cyclic = 0, Reverse = 1, Constant = 2
+		} extrapolation : 2;
+		bool active : 1;
+	} controller;
+	
+} Flags;
+	
+
+class Controller
+{
+public:
+	Controller( NifModel * nif, const QModelIndex & index );
+	virtual ~Controller() {}
+	
+	float start;
+	float stop;
+	float phase;
+	float frequency;
+	
+	Flags flags;
+	
+	virtual void update( float time ) = 0;
+	
+protected:
+	float ctrlTime( float time ) const;
+	
+	static void timeIndex( float time, const QVector<float> & times, int & i, int & j, float & x );
 };
 
 class Node
 {
 public:
 	Node( Scene * scene, Node * parent );
-	virtual ~Node() {}
+	virtual ~Node() { qDeleteAll( controllers ); }
 	
 	virtual void init( NifModel * nif, const QModelIndex & block );
 	
-	virtual const Matrix & worldTrans() const;
+	virtual const Transform & worldTrans();
+	virtual Transform localTransFrom( int parentNode );
+	
+	virtual void transform();
+	virtual void draw( bool selected );
 	
 	bool isHidden() const;
 	
 	int id() const { return nodeId; }
 	
 	void depthBuffer( bool & test, bool & mask );
+	
+	virtual void boundaries( Vector & min, Vector & max );
+	virtual void timeBounds( float & start, float & stop );
 	
 protected:
 	virtual void setController( NifModel * nif, const QModelIndex & controller );
@@ -139,39 +197,44 @@ protected:
 	
 	int nodeId;
 	
-	Matrix local;
-	Matrix world;
+	Transform local;
+	Transform localOrig;
 
-	bool hidden;
+	Flags flags;
 	
 	bool depthProp;
 	bool depthTest;
 	bool depthMask;
+	
+	QList<Controller*> controllers;
+	
+	friend class KeyframeController;
+
+private:
+	bool		worldDirty;
+	Transform	world;
 };
 
 class Mesh : public Node
 {
 public:
 	Mesh( Scene * s, Node * parent );
-	~Mesh();
 	
 	void init( NifModel * nif, const QModelIndex & block );
-	void setSpecial( NifModel * nif, const QModelIndex & special );
-	void setProperty( NifModel * nif, const QModelIndex & property );
+	
+	void transform();
 	
 	void draw( bool selected );
 	
-	void transform( const Matrix & trans );
-
 	void boundaries( Vector & min, Vector & max );
 	
-	Matrix glmatrix;
+protected:	
+	void setSpecial( NifModel * nif, const QModelIndex & special );
+	void setProperty( NifModel * nif, const QModelIndex & property );
+	void setController( NifModel * nif, const QModelIndex & controller );
 	
 	Vector localCenter;
 	Vector sceneCenter;
-	
-	bool useList;
-	GLuint list;
 	
 	QVector<Vector> verts;
 	QVector<Vector> norms;
@@ -192,13 +255,18 @@ public:
 	
 	bool specularEnable;
 	
+	int skelRoot;
+	Transform skelTrans;
 	QVector<BoneWeights> weights;
 	
 	QVector<Triangle> triangles;
 	QVector<Tristrip> tristrips;
-
+	
 	QVector<Vector> transVerts;
 	QVector<Vector> transNorms;
+	
+	friend bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 );
+	friend class AlphaController;
 };
 
 class GLTex
@@ -226,19 +294,21 @@ public:
 
 	void clear();
 	void make( NifModel * nif );
-	void make( NifModel * nif, int blockNumber );
+	void make( NifModel * nif, int blockNumber, QStack<int> & nodestack );
 	
-	void draw( const Matrix & matrix );
-	void drawAgain();
-	
-	void boundaries( Vector & min, Vector & max );
+	void transform( const Transform & trans, float time = 0.0 );
+	void draw();
 	
 	GLuint bindTexture( const QString & );
 
 	QList<Mesh*> meshes;
 	QHash<int,Node*> nodes;
 	
-	QStack<int> nodestack;
+	Transform view;
+	
+	bool animate;
+	
+	float time;
 
 	bool texturing;
 	QString texfolder;
@@ -251,7 +321,67 @@ public:
 	
 	bool texInitPhase;
 	
+	bool drawNodes;
+	bool drawHidden;
+	
 	const QGLContext * context;
+	
+	Vector boundMin, boundMax, boundCenter, boundRadius;
+	float timeMin, timeMax;
+};
+
+
+class NodeController : public Controller
+{
+public:
+	NodeController( Node * node, NifModel * nif, const QModelIndex & index )
+		: Controller( nif, index ), target( node ) {}
+protected:
+	Node * target;
+};
+
+class MeshController : public Controller
+{
+public:
+	MeshController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
+		: Controller( nif, index ), target( mesh ) {}
+protected:
+	Mesh * target;
+};
+
+class KeyframeController : public NodeController
+{
+public:
+	KeyframeController( Node * node, NifModel * nif, const QModelIndex & index );
+	
+	void update( float time );
+	
+protected:
+	QVector<float> transTime;
+	QVector<Vector> transData;
+	int transIndex;
+	
+	QVector<float> rotTime;
+	QVector<Quat> rotData;
+	int rotIndex;
+	
+	QVector<float> scaleTime;
+	QVector<float> scaleData;
+	int scaleIndex;
+};
+
+class AlphaController : public MeshController
+{
+public:
+	AlphaController( Mesh * mesh, NifModel * nif, const QModelIndex & index );
+	
+	void update( float time );
+
+protected:
+	QVector<float> alphaTime;
+	QVector<float> alphaData;
+	
+	int alphaIndex;
 };
 
 #endif

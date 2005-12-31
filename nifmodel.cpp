@@ -32,12 +32,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
+#include <QApplication>
 #include <QByteArray>
 #include <QColor>
 #include <QDebug>
+#include <QProgressDialog>
 #include <QTime>
 
-class NifItem// : public NifData
+#include <qendian.h>
+
+class NifItem
 {
 public:
 	NifItem( NifItem * parent )
@@ -777,6 +781,16 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 							}
 						}
 					}
+					/*
+					else if ( displayHint == "color" )
+					{
+						QColor c = item->value().value<QColor>();
+						QString s = "R " + QString::number( c.redF(), 'f', 2 ) + " G " + QString::number( c.greenF(), 'f', 2 ) + " B " + QString::number( c.blueF(), 'f', 2 );
+						if ( getInternalType( item->type() ) == it_color4f )
+							s += " A " + QString::number( c.alphaF(), 'f', 2 );
+						return s;
+					}
+					*/
 					return item->value();
 				}
 				case ArgCol:	return item->arg();
@@ -966,7 +980,15 @@ bool NifModel::load( QIODevice & device )
 	device.read( (char *) &version, 4 );
 	qDebug( "version %08X", version );
 	device.seek( device.pos() - 4 );
-
+	
+	// verify version number
+	if ( ! supportedVersions.contains( version ) )
+	{
+		qCritical() << "version" << version2string( version ) << "is not supported yet";
+		clear();
+		return false;
+	}
+	
 	// read header
 	if ( !load( getHeaderItem(), device ) )
 	{
@@ -979,14 +1001,28 @@ bool NifModel::load( QIODevice & device )
 	
 	int numblocks = getInt( header, "num blocks" );
 	qDebug( "numblocks %i", numblocks );
-	
-	QTime bench = QTime::currentTime();
-	
+
+	qApp->processEvents();
+
+	QProgressDialog prog;
+	prog.setLabelText( "loading nif..." );
+	prog.setRange( 0, numblocks );
+	prog.setValue( 0 );
+	prog.setMinimumDuration( 2100 );
+
 	// read in the NiBlocks
 	try
 	{
 		for ( int c = 0; c < numblocks; c++ )
 		{
+			prog.setValue( c + 1 );
+			qApp->processEvents();
+			if ( prog.wasCanceled() )
+			{
+				clear();
+				return false;
+			}
+
 			if ( device.atEnd() )
 				throw QString( "unexpected EOF during load" );
 			
@@ -1023,7 +1059,6 @@ bool NifModel::load( QIODevice & device )
 	{
 		qCritical() << (const char *) err.toAscii();
 	}
-	qDebug() << "load time" << bench.msecsTo( QTime::currentTime() );
 	reset(); // notify model views that a significant change to the data structure has occurded
 	return true;
 }
@@ -1033,8 +1068,21 @@ bool NifModel::save( QIODevice & device )
 	// write magic version string
 	device.write( version_string );
 	
+	qApp->processEvents();
+
+	QProgressDialog prog;
+	prog.setLabelText( "saving nif..." );
+	prog.setRange( 0, rowCount( QModelIndex() ) );
+	prog.setValue( 0 );
+	prog.setMinimumDuration( 2100 );
+
 	for ( int c = 0; c < rowCount( QModelIndex() ); c++ )
 	{
+		prog.setValue( c + 1 );
+		qApp->processEvents();
+		if ( prog.wasCanceled() )
+			return false;
+		
 		qDebug() << "saving block" << c << ":" << itemName( index( c, 0 ) );
 		if ( itemType( index( c, 0 ) ) == "NiBlock" )
 		{
@@ -1064,7 +1112,27 @@ bool NifModel::save( QIODevice & device )
 	return true;
 }
 
-bool NifModel::load( NifItem * parent, QIODevice & device )
+bool NifModel::load( QIODevice & device, const QModelIndex & index )
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( item && index.isValid() && index.model() == this )
+	{
+		load( item, device, false );
+		updateLinks();
+		emit linksChanged();
+		return true;
+	}
+	reset();
+	return false;
+}
+
+bool NifModel::save( QIODevice & device, const QModelIndex & index )
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	return ( item && index.isValid() && index.model() == this && save( item, device ) );
+}
+
+bool NifModel::load( NifItem * parent, QIODevice & device, bool fast )
 {
 	if ( ! parent ) return false;
 	
@@ -1077,13 +1145,13 @@ bool NifModel::load( NifItem * parent, QIODevice & device )
 		{
 			if ( ! child->arr1().isEmpty() )
 			{
-				updateArray( child, true );
+				updateArray( child, fast );
 				if ( !load( child, device ) )
 					return false;
 			}
 			else if ( child->childCount() > 0 )
 			{
-				if ( !load( child, device ) )
+				if ( !load( child, device, fast ) )
 					return false;
 			}
 			else switch ( getInternalType( child->type() ) )
@@ -1098,13 +1166,13 @@ bool NifModel::load( NifItem * parent, QIODevice & device )
 				{
 					quint16 u16;
 					device.read( (char *) &u16, 2 );
-					child->setValue( u16 );
+					child->setValue( qFromLittleEndian( u16 ) );
 				} break;
 				case it_uint32:
 				{
 					quint32 u32;
 					device.read( (char *) &u32, 4 );
-					child->setValue( u32 );
+					child->setValue( qFromLittleEndian( u32 ) );
 				} break;
 				case it_int8:
 				{
@@ -1116,13 +1184,13 @@ bool NifModel::load( NifItem * parent, QIODevice & device )
 				{
 					qint16 s16;
 					device.read( (char *) &s16, 2 );
-					child->setValue( s16 );
+					child->setValue( qFromLittleEndian( s16 ) );
 				} break;
 				case it_int32:
 				{
 					qint32 s32;
 					device.read( (char *) &s32, 4 );
-					child->setValue( s32 );
+					child->setValue( qFromLittleEndian( s32 ) );
 				} break;
 				case it_float:
 				{
@@ -1151,9 +1219,9 @@ bool NifModel::load( NifItem * parent, QIODevice & device )
 				{
 					int len;
 					device.read( (char *) &len, 4 );
-					if ( len > 4096 )
+					if ( qFromLittleEndian( len ) > 4096 )
 						qWarning( "maximum string length exceeded" );
-					QByteArray string = device.read( len );
+					QByteArray string = device.read( qFromLittleEndian( len ) );
 					string.replace( "\r", "\\r" );
 					string.replace( "\n", "\\n" );
 					child->setValue( QString( string ) );
@@ -1207,12 +1275,12 @@ bool NifModel::save( NifItem * parent, QIODevice & device )
 				} break;
 				case it_uint16:
 				{
-					quint16 u16 = (quint16) child->value().toUInt();
+					quint16 u16 = qToLittleEndian( (quint16) child->value().toUInt() );
 					device.write( (char *) &u16, 2 );
 				} break;
 				case it_uint32:
 				{
-					quint32 u32 = (quint32) child->value().toUInt();
+					quint32 u32 = qToLittleEndian( (quint32) child->value().toUInt() );
 					device.write( (char *) &u32, 4 );
 				} break;
 				case it_int8:
@@ -1222,12 +1290,12 @@ bool NifModel::save( NifItem * parent, QIODevice & device )
 				} break;
 				case it_int16:
 				{
-					qint16 s16 = (qint16) child->value().toInt();
+					qint16 s16 = qToLittleEndian( (qint16) child->value().toInt() );
 					device.write( (char *) &s16, 4 );
 				} break;
 				case it_int32:
 				{
-					qint32 s32 = (qint32) child->value().toInt();
+					qint32 s32 = qToLittleEndian( (qint32) child->value().toInt() );
 					device.write( (char *) &s32, 4 );
 				} break;
 				case it_float:
@@ -1262,9 +1330,9 @@ bool NifModel::save( NifItem * parent, QIODevice & device )
 					QByteArray string = child->value().toString().toAscii();
 					string.replace( "\\r", "\r" );
 					string.replace( "\\n", "\n" );
-					int len = string.length();
+					int len = qToLittleEndian( string.length() );
 					device.write( (char *) &len, 4 );
-					device.write( (const char *) string, len );
+					device.write( (const char *) string, string.length() );
 				} break;
 				default:
 				{

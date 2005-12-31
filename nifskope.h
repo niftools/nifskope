@@ -33,9 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFSKOPE_H
 #define NIFSKOPE_H
 
-#include <QLineEdit>
-#include <QMenu>
-#include <QWidget>
+#include <QMainWindow>
 
 
 class NifModel;
@@ -47,19 +45,24 @@ class Popup;
  
 class QModelIndex;
 
-class QAbstractButton;
-class QButtonGroup;
-class QCheckBox;
-class QGroupBox;
-class QSplitter;
+class QAction;
+class QActionGroup;
+class QLineEdit;
+class QSettings;
+class QSlider;
 class QTextEdit;
 
-class NifSkope : public QWidget
+class NifSkope : public QMainWindow
 {
 Q_OBJECT
 public:
 	NifSkope();
 	~NifSkope();
+	
+	static NifSkope * createWindow();
+	
+	void save( QSettings & settings ) const;
+	void restore( QSettings & settings );
 	
 public slots:
 	void load( const QString & filepath );
@@ -70,24 +73,27 @@ public slots:
 	void loadBrowse();
 	void saveBrowse();
 	
-	void saveOptions();
+	void sltWindow();
 	
 	void about();
-	
-	void addMessage( const QString & );
 	
 protected slots:
 	void clearRoot();
 	void select( const QModelIndex & );
+	void setCurrentBlock( const QModelIndex & );
 	
-	void setListMode( QAbstractButton * );
+	void setListMode();
 	
 	void contextMenu( const QPoint & pos );
 	
-	void toggleMessages();
-	void delayedToggleMessages();
+	void setFrame( int, int, int );
 	
 private:
+	void initActions();
+	void initDockWidgets();
+	void initToolBars();
+	void initMenu();
+	
 	NifModel * model;
 	NifProxyModel * proxy;
 	
@@ -95,20 +101,30 @@ private:
 	NifTreeView * tree;
 	GLView * ogl;
 	
-	Popup * popOpts;
-
 	QLineEdit * lineLoad;
 	QLineEdit * lineSave;
 	
-	QButtonGroup * listMode;
+	QDockWidget * dList;
+	QDockWidget * dTree;
 	
-	QCheckBox * conditionZero;
-	QCheckBox * autoSettings;
+	QToolBar * tool;
 	
-	QGroupBox * msgroup;
-	QTextEdit * msgview;
+	QAction * aLoad;
+	QAction * aSave;
+	QAction * aWindow;
+	QAction * aQuit;
+
+	QAction * aCondition;
 	
-	QSplitter * split;
+	QActionGroup * gListMode;
+	QAction * aList;
+	QAction * aHirarchy;
+	
+	QAction * aNifSkope;
+	QAction * aAboutQt;
+
+	QToolBar * tAnim;
+	QSlider * sldTime;
 };
 
 

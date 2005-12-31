@@ -42,11 +42,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glscene.h"
 
-#define ZOOM_MIN 20
-#define ZOOM_MAX 100000
+#include "popup.h"
 
-#define CLIP_NEAR 1.0
-#define CLIP_FAR  +10000.0
+#include <QTimer>
 
 /* XPM */
 static char * click_xpm[] = {
@@ -94,27 +92,104 @@ static char * click_xpm[] = {
 "                                                                                                                                                                                           (!3                                                                  ",
 "                                                                                                                                                                                                                                                                "};
 
+#define FPS 35
+
 GLView::GLView()
 	: QGLWidget()
 {
+	setFocusPolicy( Qt::ClickFocus );
+	
 	xRot = yRot = zRot = 0;
-	zoom = 1000;
+	zoom = 1.0;
 	zInc = 1;
 	
 	updated = false;
-	doCompile = doCenter = false;
-	
-	lightsOn = true;
-	drawaxis = true;
+	doCenter = false;
 	
 	model = 0;
+	
+	time = 0.0;
+	lastTime = QTime::currentTime();
 	
 	scene = new Scene( context() );
 
 	click_tex = 0;
 	
 	timer = new QTimer(this);
-	connect(timer, SIGNAL(timeout()), this, SLOT(advanceGears()));
+	connect( timer, SIGNAL( timeout() ), this, SLOT( advanceGears() ) );
+	
+	aTexturing = new QAction( "texturing", this );
+	aTexturing->setToolTip( "enable texturing" );
+	aTexturing->setCheckable( true );
+	aTexturing->setChecked( true );
+	connect( aTexturing, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aTexturing );
+	
+	aBlending = new QAction( "blending", this );
+	aBlending->setToolTip( "enable alpha blending" );
+	aBlending->setCheckable( true );
+	aBlending->setChecked( true );
+	connect( aBlending, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aBlending );
+	
+	aLighting = new QAction( "lighting", this );
+	aLighting->setToolTip( "enable lighting" );
+	aLighting->setCheckable( true );
+	aLighting->setChecked( true );
+	connect( aLighting, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aLighting );
+	
+	aDrawAxis = new QAction( "draw axis", this );
+	aDrawAxis->setToolTip( "draw xyz-Axis" );
+	aDrawAxis->setCheckable( true );
+	aDrawAxis->setChecked( true );
+	connect( aDrawAxis, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aDrawAxis );
+	
+	aDrawNodes = new QAction( "draw nodes", this );
+	aDrawNodes->setToolTip( "draw bones/nodes" );
+	aDrawNodes->setCheckable( true );
+	aDrawNodes->setChecked( true );
+	connect( aDrawNodes, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aDrawNodes );
+	
+	aDrawHidden = new QAction( "show hidden", this );
+	aDrawHidden->setToolTip( "if checked nodes and meshes are allways displayed<br>wether they are hidden ( flags & 1 ) or not" );
+	aDrawHidden->setCheckable( true );
+	aDrawHidden->setChecked( false );
+	connect( aDrawHidden, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aDrawHidden );
+	
+	aHighlight = new QAction( "highlight selected", this );
+	aHighlight->setToolTip( "highlight selected meshes and nodes" );
+	aHighlight->setCheckable( true );
+	aHighlight->setChecked( true );
+	connect( aHighlight, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aHighlight );
+	
+	aRotate = new QAction( "rotate", this );
+	aRotate->setToolTip( "slowly rotate the object around the z axis" );
+	aRotate->setCheckable( true );
+	aRotate->setChecked( true );
+	connect( aRotate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aRotate );
+	
+	aAnimate = new QAction( "animation", this );
+	aAnimate->setToolTip( "enables evaluation of animation controllers" );
+	aAnimate->setCheckable( true );
+	aAnimate->setChecked( true );
+	connect( aAnimate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aAnimate );
+
+	aAnimPlay = new QAction( "play", this );
+	aAnimPlay->setCheckable( true );
+	aAnimPlay->setChecked( true );
+	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+
+	aTexFolder = new QAction( "set texture folder", this );
+	aTexFolder->setToolTip( "tell me where your textures are" );
+	connect( aTexFolder, SIGNAL( triggered() ), this, SLOT( selectTexFolder() ) );
+	addAction( aTexFolder );
 }
 
 GLView::~GLView()
@@ -134,20 +209,68 @@ void GLView::initializeGL()
 	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
 	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static const GLfloat L0emissive[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
 	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
 	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
 	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
-	glLightfv( GL_LIGHT0, GL_EMISSION, L0emissive );
 	glEnable( GL_LIGHT0 );
 	
 	glShadeModel( GL_SMOOTH );
+	glEnable( GL_POINT_SMOOTH );
+	glEnable( GL_LINE_SMOOTH );
 
 	click_tex = bindTexture( QImage( click_xpm ) );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+	// check for errors
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
+}
+
+void GLView::glPerspective( int x, int y )
+{
+	GLdouble r = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) );
+	if ( r > radius )
+		radius = r;
+
+	GLint	viewport[4];
+	glGetIntegerv( GL_VIEWPORT, viewport );
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	if ( x >= 0 && y >= 0 )
+		gluPickMatrix( (GLdouble) x, (GLdouble) (viewport[3]-y), 5.0f, 5.0f, viewport);
+	gluPerspective( 45.0 / zoom, (GLdouble) viewport[2] / (GLdouble) viewport[3], 1.0 * radius, 8.0 * radius );
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glTranslatef( xTrans / 20.0, yTrans / 20.0, -4.0 * radius );
+}
+
+void GLView::glOrtho()
+{
+	GLint	viewport[4];
+	glGetIntegerv( GL_VIEWPORT, viewport );
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	::glOrtho (0.0, viewport[2], 0.0, viewport[3], -1.0, 1.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+void GLView::compile( bool center )
+{
+	updated = false;
+	scene->make( model );
+	time = scene->timeMin;
+	emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin * FPS ), (int) ( scene->timeMax * FPS ) );
+	
+	doCenter = center;
+	updateGL();
 }
 
 void GLView::paintGL()
@@ -158,135 +281,125 @@ void GLView::paintGL()
 	glDepthMask( GL_TRUE );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	
-	// update the model
-	
-	if ( doCompile )
-	{
-		doCompile = false;
-		updated = false;
-		
-		scene->make( model );
-	}
-	
 	// center the model
-
+	
 	if ( doCenter )
 	{
-		scene->boundaries( boundMin, boundMax );
-		
-		double max = 0;
-		for ( int c = 0; c < 3; c++ )
-			max = qMax( max, qMax( fabs( boundMin[ c ] ), fabs( boundMax[ c ] ) ) );
-		zoom = (int) ( max * 20 );
-		if ( zoom < ZOOM_MIN ) zoom = ZOOM_MIN;
-		if ( zoom > ZOOM_MAX ) zoom = ZOOM_MAX;
 		xTrans = 0;
-		yTrans = (int) ( ( boundMin[2] + 0.5 * ( boundMax[2] - boundMin[2] ) ) * 20 );
+		yTrans = - scene->boundCenter[1];
+		
 		xRot = - 90*16;
 		yRot = 0;
 		
+		zoom = 1.0;
+		
 		doCenter = false;
+		
+		radius = 0.0;
 	}
+	
+	// transform the scene
+	
+	Transform viewTrans;
+	viewTrans.rotation = Matrix::rotX( xRot / 16.0 / 180.0 * 3.14 ) * Matrix::rotY( yRot / 16.0 / 180 * 3.14 ) * Matrix::rotZ( zRot / 16.0 / 180.0 * 3.14 );
+	
+	scene->transform( viewTrans, time );
 	
 	// setup projection mode
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective( 45.0, (GLdouble) width() / (GLdouble) height(), CLIP_NEAR, CLIP_FAR+zoom );
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	
-	// calculate the view transform matrix
-	
-	Matrix viewTrans = Matrix::trans( xTrans / 20.0, - yTrans / 20.0, - zoom / 10.0 ) * Matrix::rotX( xRot / 16.0 / 180.0 * 3.14 )
-				* Matrix::rotY( yRot / 16.0 / 180 * 3.14 ) * Matrix::rotZ( zRot / 16.0 / 180.0 * 3.14 );
+	glPerspective();
 	
 	// draw the axis
 	
-	if ( drawaxis )
+	if ( aDrawAxis->isChecked() )
 	{
 		glDisable( GL_BLEND );
 		glDisable( GL_LIGHTING );
 		glDisable( GL_COLOR_MATERIAL );
 		glEnable( GL_DEPTH_TEST );
 		glDepthMask( GL_TRUE );
-		glDepthFunc( GL_LESS );
+		glDepthFunc( GL_ALWAYS );
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
+		glLineWidth( 1.2 );
 		
-		viewTrans.glLoadMatrix();
+		glPushMatrix();
+		viewTrans.glMultMatrix();
 		
+		GLfloat arrow = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) ) * 2.1;
 		glBegin( GL_LINES );
 		glColor3f( 1.0, 0.0, 0.0 );
-		glVertex3f( - 1000.0, 0, 0 );
-		glVertex3f( + 1000.0, 0, 0 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0, + 20,    0 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0, - 20,    0 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0,    0, + 20 );
-		glVertex3f( + 1000.0,    0,    0 );
-		glVertex3f( +  950.0,    0, - 20 );
+		glVertex3f( - arrow, 0, 0 );
+		glVertex3f( + arrow, 0, 0 );
+		glVertex3f( + arrow,    0,    0 );
+		glVertex3f( + arrow-10, + 10,    0 );
+		glVertex3f( + arrow,    0,    0 );
+		glVertex3f( + arrow-10, - 10,    0 );
+		glVertex3f( + arrow,    0,    0 );
+		glVertex3f( + arrow-10,    0, + 10 );
+		glVertex3f( + arrow,    0,    0 );
+		glVertex3f( + arrow-10,    0, - 10 );
 		glColor3f( 0.0, 1.0, 0.0 );
-		glVertex3f( 0, - 1000.0, 0 );
-		glVertex3f( 0, + 1000.0, 0 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f( + 20, +  950.0,    0 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f( - 20, +  950.0,    0 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f(    0, +  950.0, + 20 );
-		glVertex3f(    0, + 1000.0,    0 );
-		glVertex3f(    0, +  950.0, - 20 );
+		glVertex3f( 0, - arrow, 0 );
+		glVertex3f( 0, + arrow, 0 );
+		glVertex3f(    0, + arrow,    0 );
+		glVertex3f( + 10, + arrow-10,    0 );
+		glVertex3f(    0, + arrow,    0 );
+		glVertex3f( - 10, + arrow-10,    0 );
+		glVertex3f(    0, + arrow,    0 );
+		glVertex3f(    0, + arrow-10, + 10 );
+		glVertex3f(    0, + arrow,    0 );
+		glVertex3f(    0, + arrow-10, - 10 );
 		glColor3f( 0.0, 0.0, 1.0 );
-		glVertex3f( 0, 0, - 1000.0 );
-		glVertex3f( 0, 0, + 1000.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f(    0, + 20, +  950.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f(    0, - 20, +  950.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f( + 20,    0, +  950.0 );
-		glVertex3f(    0,    0, + 1000.0 );
-		glVertex3f( - 20,    0, +  950.0 );
+		glVertex3f( 0, 0, - arrow );
+		glVertex3f( 0, 0, + arrow );
+		glVertex3f(    0,    0, + arrow );
+		glVertex3f(    0, + 10, + arrow-10 );
+		glVertex3f(    0,    0, + arrow );
+		glVertex3f(    0, - 10, + arrow-10 );
+		glVertex3f(    0,    0, + arrow );
+		glVertex3f( + 10,    0, + arrow-10 );
+		glVertex3f(    0,    0, + arrow );
+		glVertex3f( - 10,    0, + arrow-10 );
 		glEnd();
-		
+		glPopMatrix();
+		/*
 		glColor3f( 1.0, 0.0, 1.0 );
 		glBegin( GL_LINE_STRIP );
-		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
-		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMin[2] );
 		glEnd();
 		glBegin( GL_LINE_STRIP );
-		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMin[2] );
 		glEnd();
 		glBegin( GL_LINES );
-		glVertex3f( boundMin[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMin[2] );
-		glVertex3f( boundMin[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMax[1], boundMax[2] );
-		glVertex3f( boundMin[0], boundMin[1], boundMax[2] );
-		glVertex3f( boundMax[0], boundMin[1], boundMax[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMin[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMax[2] );
+		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMax[2] );
 		glEnd();
+		*/
 	}
 	
 	// draw the model
 
-	if ( lightsOn )
+	if ( aLighting->isChecked() )
 		glEnable( GL_LIGHTING );
 	else
 		glDisable( GL_LIGHTING );
 	
-	scene->draw( viewTrans );
+	scene->draw();
 	
 	// draw the double click pixmap
 	
@@ -301,11 +414,7 @@ void GLView::paintGL()
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		glDisable( GL_COLOR_MATERIAL );
 		
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho (0.0, width(), 0.0, height(), -1.0, 1.0);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
+		glOrtho();
 		
 		glBindTexture( GL_TEXTURE_2D, click_tex );
 		glColor4f( 1.0, 1.0, 1.0, 1.0 );
@@ -321,12 +430,48 @@ void GLView::paintGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR : " << (const char *) gluErrorString( err );
+		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+}
+
+int GLView::pickGL( int x, int y )
+{
+	if ( ! ( isVisible() && height() ) )
+		return -1;
+	
+	makeCurrent();
+
+	GLuint	buffer[512];
+	glSelectBuffer( 512, buffer );
+
+	glRenderMode( GL_SELECT );	
+	glInitNames();
+	glPushName( 0 );
+	
+	glPerspective( pressPos.x(), pressPos.y() );
+
+	scene->draw();
+	
+	GLint hits = glRenderMode( GL_RENDER );
+	if ( hits > 0 )
+	{
+		int	choose = buffer[3];
+		int	depth = buffer[1];
+		for (int loop = 1; loop < hits; loop++)
+		{
+			if (buffer[loop*4+1] < GLuint(depth))
+			{
+				choose = buffer[loop*4+3];
+				depth = buffer[loop*4+1];
+			}       
+		}
+		return choose;
+	}
+	return -1;
 }
 
 void GLView::resizeGL(int width, int height)
 {
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, width, height );
 }
 
 void GLView::setNif( NifModel * nif )
@@ -356,6 +501,18 @@ void GLView::setCurrentIndex( const QModelIndex & index )
 	updateGL();
 }
 
+void GLView::sltFrame( int f )
+{
+	time = (float) f / FPS;
+	updateGL();
+}
+
+void GLView::selectTexFolder()
+{
+	//QString tf = QFileDialog::getExistingDirectory( this, "select texture folder", textureFolder() );
+	setTextureFolder( selectMultipleDirs( "select texture folders", textureFolder().split( ";" ), this ).join( ";" ) );
+}
+
 void GLView::setTextureFolder( const QString & tf )
 {
 	scene->texfolder = tf;
@@ -367,136 +524,88 @@ QString GLView::textureFolder() const
 	return scene->texfolder;
 }
 
-void GLView::setTexturing( bool t )
+void GLView::save( QSettings & settings )
 {
-	scene->texturing = t;
-	updateGL();
+	//settings.beginGroup( "OpenGL" );
+	settings.setValue( "texture folder", scene->texfolder );
+	settings.setValue( "enable textures", aTexturing->isChecked() );
+	settings.setValue( "enable lighting", aLighting->isChecked() );
+	settings.setValue( "enable blending", aBlending->isChecked() );
+	settings.setValue( "highlight meshes", aHighlight->isChecked() );
+	settings.setValue( "draw axis", aDrawAxis->isChecked() );
+	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
+	settings.setValue( "draw hidden", aDrawHidden->isChecked() );
+	settings.setValue( "rotate", aRotate->isChecked() );
+	settings.setValue( "enable animations", aAnimate->isChecked() );
+	settings.setValue( "play animation", aAnimPlay->isChecked() );
+	//settings.endGroup();
 }
 
-bool GLView::texturing() const
+void GLView::restore( QSettings & settings )
 {
-	return scene->texturing;
+	//settings.beginGroup( "OpenGL" );
+	scene->texfolder = settings.value( "texture folder" ).toString();
+	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
+	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
+	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
+	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
+	aDrawAxis->setChecked( settings.value( "draw axis", true ).toBool() );
+	aDrawNodes->setChecked( settings.value( "draw nodes", true ).toBool() );
+	aDrawHidden->setChecked( settings.value( "draw hidden", true ).toBool() );
+	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
+	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
+	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
+	checkActions();
+	//settings.endGroup();
 }
 
-void GLView::setBlending( bool b )
+void GLView::checkActions()
 {
-	scene->blending = b;
-	updateGL();
-}
-
-bool GLView::blending() const
-{
-	return scene->blending;
-}
-
-void GLView::setHighlight( bool h )
-{
-	scene->highlight = h;
-	updateGL();
-}
-
-bool GLView::highlight() const
-{
-	return scene->highlight;
-}
-
-void GLView::setLighting( bool l )
-{
-	lightsOn = l;
-	updateGL();
-}
-
-void GLView::setDrawAxis( bool a )
-{
-	drawaxis = a;
-	updateGL();
-}
-
-
-void GLView::setRotate( bool r )
-{
-	if ( r )
-		timer->start(25);
+	scene->texturing = aTexturing->isChecked();
+	scene->blending = aBlending->isChecked();
+	scene->highlight = aHighlight->isChecked();
+	scene->drawNodes = aDrawNodes->isChecked();
+	scene->drawHidden = aDrawHidden->isChecked();
+	scene->animate = aAnimate->isChecked();
+	lastTime = QTime::currentTime();
+	if ( aRotate->isChecked() || ( aAnimate->isChecked() && aAnimPlay->isChecked() ) )
+	{
+		timer->start( 1000 / FPS );
+	}
 	else
+	{
 		timer->stop();
-}
-
-void GLView::setXRotation(int angle)
-{
-	normalizeAngle(&angle);
-	if (angle != xRot) {
-		xRot = angle;
-		emit xRotationChanged(angle);
-		updateGL();
-	}
-}
-
-void GLView::setYRotation(int angle)
-{
-	normalizeAngle(&angle);
-	if (angle != yRot) {
-		yRot = angle;
-		emit yRotationChanged(angle);
-		updateGL();
-	}
-}
-
-void GLView::setZRotation(int angle)
-{
-	normalizeAngle(&angle);
-	if (angle != zRot) {
-		zRot = angle;
-		emit zRotationChanged(angle);
-		updateGL();
-	}
-}
-
-void GLView::setXTrans( int x )
-{
-	if ( x != xTrans )
-	{
-		xTrans = x;
-		updateGL();
-	}
-}
-
-void GLView::setYTrans( int y )
-{
-	if ( y != yTrans )
-	{
-		yTrans = y;
-		updateGL();
-	}
-}
-
-void GLView::setZoom( int z )
-{
-	if ( z <= ZOOM_MIN || z >= ZOOM_MAX )
-		return;
-	if ( z != zoom )
-	{
-		zoom = z;
-		emit zoomChanged( zoom );
 		updateGL();
 	}
 }
 
 void GLView::advanceGears()
 {
-	setZRotation( zRot + zInc );
+	QTime t = QTime::currentTime();
+	
+	if ( aAnimate->isChecked() && aAnimPlay->isChecked() )
+	{
+		time += fabs( t.msecsTo( lastTime ) / 1000.0 );
+
+		if ( time > scene->timeMax )
+			time = scene->timeMin;
+		
+		emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin * FPS ), (int) ( scene->timeMax * FPS ) );
+	}
+	
+	lastTime = t;
+	
+	if ( aRotate->isChecked() )
+	{
+		zRot += zInc;
+		normalizeAngle( &zRot );
+	}
 	updateGL();
 }
 
 void GLView::dataChanged()
 {
 	updated = true;
-	updateGL();
-}
-
-void GLView::compile( bool center )
-{
-	doCompile = true;
-	doCenter = center;
 	updateGL();
 }
 
@@ -519,43 +628,11 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	if ( ! ( isVisible() && height() && model && ( pressPos - event->pos() ).manhattanLength() <= 3 ) )
 		return;
 	
-	makeCurrent();
-
-	GLuint	buffer[512];
-	GLint	hits;
-	
-	GLint	viewport[4];
-	glGetIntegerv( GL_VIEWPORT, viewport );
-	
-	glSelectBuffer( 512, buffer );
-
-	glRenderMode( GL_SELECT );	
-	glInitNames();
-	glPushName( 0 );
-
-	glMatrixMode( GL_PROJECTION );
-	glLoadIdentity();
-	gluPickMatrix( (GLdouble) pressPos.x(), (GLdouble) (viewport[3]-pressPos.y()), 1.0f, 1.0f, viewport);
-	gluPerspective( 45.0, (GLdouble) width() / (GLdouble) height(), CLIP_NEAR, CLIP_FAR+zoom );
-	glMatrixMode(GL_MODELVIEW);
-
-	scene->drawAgain();
-	
-	hits = glRenderMode( GL_RENDER );
-	if ( hits > 0 )
+	int pick = pickGL( event->x(), event->y() );
+	if ( pick >= 0 )
 	{
-		int	choose = buffer[3];
-		int	depth = buffer[1];
-		for (int loop = 1; loop < hits; loop++)
-		{
-			if (buffer[loop*4+1] < GLuint(depth))
-			{
-				choose = buffer[loop*4+3];
-				depth = buffer[loop*4+1];
-			}       
-		}
-		emit clicked( model->getBlock( choose ) );
-		scene->currentNode = choose;
+		emit clicked( model->getBlock( pick ) );
+		scene->currentNode = pick;
 		updateGL();
 	}
 }
@@ -567,18 +644,23 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 
 	if (event->buttons() & Qt::LeftButton)
 	{
-		setXRotation(xRot + 8 * dy);
-		setYRotation(yRot + 8 * dx);
+		xRot += 8 * dy;
+		yRot += 8 * dx;
+		normalizeAngle( &xRot );
+		normalizeAngle( &yRot );
+		updateGL();
 	}
 	else if (event->buttons() & Qt::RightButton)
 	{
-		setZoom( zoom + 8 * dy );
-		setZRotation(zRot + 8 * dx);
+		zRot += 8 * dx;
+		normalizeAngle( &zRot );
+		updateGL();
 	}
 	else if ( event->buttons() & Qt::MidButton)
 	{
-		setXTrans( xTrans + dx * 5 );
-		setYTrans( yTrans + dy * 5 );
+		xTrans += dx * 5;
+		yTrans += dy * 5;
+		updateGL();
 	}
 	lastPos = event->pos();
 }
@@ -590,16 +672,17 @@ void GLView::mouseDoubleClickEvent( QMouseEvent * )
 
 void GLView::wheelEvent( QWheelEvent * event )
 {
-	if ( event->delta() > 0 )
-	{
-		setZoom( zoom + zoom / 8 );
-	}
-	else if ( event->delta() < 0 )
-	{
-		setZoom( zoom - zoom / 8 );
-	}
+	zoom = zoom * ( event->delta() > 0 ? 0.9 : 1.1 );
+	if ( zoom < 0.25 ) zoom = 0.25;
+	if ( zoom > 1000 ) zoom = 1000;
+	updateGL();
 }
 
-
+QList<QAction*> GLView::animActions() const
+{
+	QList<QAction*> actions;
+	actions << aAnimPlay;
+	return actions;
+}
 
 #endif

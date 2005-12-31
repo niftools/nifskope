@@ -62,7 +62,7 @@ Color::Color( const QColor & c )
 
 BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
 {
-	matrix = Matrix( nif, index );
+	trans = Transform( nif, index );
 	bone = b;
 	
 	QModelIndex idxWeights = nif->getIndex( index, "vertex weights" );
@@ -78,14 +78,229 @@ BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
 		qWarning() << nif->getBlockNumber( index ) << "vertex weights not found";
 }
 
+
+/*
+ *  Controller
+ */
+
+
+Controller::Controller( NifModel * nif, const QModelIndex & index )
+{
+	start = nif->getFloat( index, "start time" );
+	stop = nif->getFloat( index, "stop time" );
+	phase = nif->getFloat( index, "phase" );
+	frequency = nif->getFloat( index, "frequency" );
+	flags.bits = nif->getInt( index, "flags" );
+}
+
+float Controller::ctrlTime( float time ) const
+{
+	time = frequency * time + phase;
+	
+	if ( time >= start && time <= stop )
+		return time;
+	
+	switch ( flags.controller.extrapolation )
+	{
+		case Flags::Controller::Cyclic:
+			{
+				float delta = stop - start;
+				if ( delta <= 0 )
+					return start;
+				
+				float x = ( time - start ) / delta;
+				float y = ( x - floor( x ) ) * delta;
+				
+				return start + y;
+			}
+		case Flags::Controller::Reverse:
+			{
+				float delta = stop - start;
+				if ( delta <= 0 )
+					return start;
+				
+				float x = ( time - start ) / ( delta * 2 );
+				float y = ( x - floor( x ) ) * delta;
+				if ( y * 2 < delta )
+					return start + y;
+				else
+					return stop - y;
+			}
+		case Flags::Controller::Constant:
+		default:
+			if ( time < start )
+				return start;
+			if ( time > stop )
+				return stop;
+			return time;
+	}
+}
+
+void Controller::timeIndex( float time, const QVector<float> & times, int & i, int & j, float & x )
+{
+	if ( time <= times.first() )
+	{
+		i = j = 0;
+		x = 0.0;
+		return;
+	}
+	if ( time >= times.last() )
+	{
+		i = j = times.count() -1;
+		x = 0.0;
+		return;
+	}
+	
+	if ( i < 0 || i >= times.count() )
+		i = 0;
+	
+	if ( time > times[ i ] )
+	{
+		j = i + 1;
+		while ( time >= times[ j ] )
+			i = j++;
+        x = ( time - times[ i ] ) / ( times[ j ] - times[ i ] );
+	}
+	else if ( time < times[ i ] )
+	{
+		j = i - 1;
+		while ( time <= times[ j ] )
+			i = j--;
+		x = ( time - times[ i ] ) / ( times[ j ] - times[ i ] );
+	}
+	else
+	{
+		j = i;
+		x = 0.0;
+	}
+}
+
+KeyframeController::KeyframeController( Node * node, NifModel * nif, const QModelIndex & index )
+	: NodeController( node, nif, index )
+{
+	transIndex = rotIndex = 0;
+	
+	int dataLink = nif->getInt( index, "data" );
+	QModelIndex data = nif->getBlock( dataLink, "NiKeyframeData" );
+	if ( data.isValid() )
+	{
+		QModelIndex trans = nif->getIndex( data, "translations" );
+		int count = nif->rowCount( trans );
+		if ( trans.isValid() && count > 0 )
+		{
+			transTime.resize( count );
+			transData.resize( count );
+			for ( int r = 0; r < count; r++ )
+			{
+				transTime[ r ] = nif->getFloat( trans.child( r, 0 ), "time" );
+				transData[ r ] = Vector( nif, nif->getIndex( trans.child( r, 0 ), "pos" ) );
+			}
+		}
+		QModelIndex rot = nif->getIndex( data, "rotations" );
+		count = nif->rowCount( rot );
+		if ( rot.isValid() && count > 0 )
+		{
+			rotTime.resize( count );
+			rotData.resize( count );
+			for ( int r = 0; r < count; r++ )
+			{
+				rotTime[ r ] = nif->getFloat( rot.child( r, 0 ), "time" );
+				rotData[ r ] = Quat( nif, nif->getIndex( rot.child( r, 0 ), "quat" ) );
+			}
+		}
+		QModelIndex scale = nif->getIndex( data, "scales" );
+		count = nif->rowCount( scale );
+		if ( scale.isValid() && count > 0 )
+		{
+			scaleTime.resize( count );
+			scaleData.resize( count );
+			for ( int r = 0; r < count; r++ )
+			{
+				scaleTime[ r ] = nif->getFloat( scale.child( r, 0 ), "time" );
+				scaleData[ r ] = nif->getFloat( scale.child( r, 0 ), "value" );
+			}
+		}
+	}
+}
+
+void KeyframeController::update( float time )
+{
+	if ( ! flags.controller.active )
+		return;
+
+	time = ctrlTime( time );
+
+	int next;
+	float x;
+	
+	if ( transTime.count() )
+	{
+		timeIndex( time, transTime, transIndex, next, x );
+		target->local.translation = transData[ transIndex ] * ( 1.0 - x ) + transData[ next ] * x;
+	}
+	if ( rotTime.count() )
+	{
+		timeIndex( time, rotTime, rotIndex, next, x );
+		target->local.rotation = Quat::interpolate( rotData[ rotIndex ], rotData[ next ], x );
+	}
+	if ( scaleTime.count() )
+	{
+		timeIndex( time, scaleTime, scaleIndex, next, x );
+		target->local.scale = scaleData[ scaleIndex ] * ( 1.0 - x ) + scaleData[ next ] * x;
+	}
+}
+
+AlphaController::AlphaController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
+	: MeshController( mesh, nif, index )
+{
+	alphaIndex = 0;
+	
+	int dataLink = nif->getInt( index, "data" );
+	QModelIndex data = nif->getBlock( dataLink, "NiFloatData" );
+	if ( data.isValid() )
+	{
+		QModelIndex floats = nif->getIndex( data, "keys" );
+		int count = nif->rowCount( floats );
+		if ( floats.isValid() && count > 0 )
+		{
+			alphaTime.resize( count );
+			alphaData.resize( count );
+			for ( int r = 0; r < count; r++ )
+			{
+				alphaTime[ r ] = nif->getFloat( floats.child( r, 0 ), "time" );
+				alphaData[ r ] = nif->getFloat( floats.child( r, 0 ), "value" );
+			}
+		}
+	}
+}
+
+void AlphaController::update( float time )
+{
+	if ( ! ( flags.controller.active && target->alphaEnable ) )
+		return;
+	
+	time = ctrlTime( time );
+	
+	int next;
+	float x;
+	
+	if ( alphaTime.count() )
+	{
+		timeIndex( time, alphaTime, alphaIndex, next, x );
+		target->alpha = alphaData[ alphaIndex ] * ( 1.0 - x ) + alphaData[ next ] * x;
+	}
+}
+
+
 /*
  *	Node
  */
 
+
 Node::Node( Scene * s, Node * p ) : scene( s ), parent( p )
 {
 	nodeId = 0;
-	hidden = false;
+	flags.bits = 0;
 	
 	depthProp = false;
 	depthTest = true;
@@ -96,15 +311,11 @@ void Node::init( NifModel * nif, const QModelIndex & index )
 {
 	nodeId = nif->getBlockNumber( index );
 
-	hidden = nif->getInt( index, "flags" ) & 1;
+	flags.bits = nif->getInt( index, "flags" ) & 1;
 
-	local = Matrix( nif, index );
+	local = localOrig = Transform( nif, index );
+	worldDirty = true;
 	
-	if ( parent )
-		world = parent->world * local;
-	else
-		world = local;
-
 	foreach( int link, nif->getChildLinks( nodeId ) )
 	{
 		QModelIndex block = nif->getBlock( link );
@@ -120,8 +331,10 @@ void Node::init( NifModel * nif, const QModelIndex & index )
 	}
 }
 
-void Node::setController( NifModel * nif, const QModelIndex & )
+void Node::setController( NifModel * nif, const QModelIndex & index )
 {
+	if ( nif->itemName( index ) == "NiKeyframeController" )
+		controllers.append( new KeyframeController( this, nif, index ) );
 }
 
 void Node::setProperty( NifModel * nif, const QModelIndex & property )
@@ -139,19 +352,39 @@ void Node::setSpecial( NifModel * nif, const QModelIndex & )
 {
 }
 
-const Matrix & Node::worldTrans() const
+const Transform & Node::worldTrans()
 {
+	if ( worldDirty )
+	{
+		if ( parent )
+			world = parent->worldTrans() * local;
+		else
+			world = local;
+		worldDirty = false;
+	}
 	return world;
+}
+
+Transform Node::localTransFrom( int root )
+{
+	Transform trans;
+	Node * node = this;
+	while ( node && node->nodeId != root )
+	{
+		trans = node->local * trans;
+		node = node->parent;
+	}
+	if ( node )
+		return trans;
+	else
+		return Transform();
 }
 
 bool Node::isHidden() const
 {
-	if ( hidden )
-		return true;
-	if ( parent )
-		return parent->isHidden();
-	else
-		return false;
+	if ( flags.node.hidden || ! parent )
+		return flags.node.hidden;
+	return parent->isHidden();
 }
 
 void Node::depthBuffer( bool & test, bool & mask )
@@ -164,6 +397,78 @@ void Node::depthBuffer( bool & test, bool & mask )
 	}
 	parent->depthBuffer( test, mask );
 }
+
+void Node::transform()
+{
+	local = localOrig;
+	
+	worldDirty = true;
+	
+	if ( scene->animate )
+		foreach ( Controller * controller, controllers )
+			controller->update( scene->time );
+}
+
+void Node::boundaries( Vector & min, Vector & max )
+{
+	min = max = worldTrans() * Vector( 0.0, 0.0, 0.0 );
+}
+
+void Node::timeBounds( float & tmin, float & tmax )
+{
+	if ( controllers.isEmpty() )
+		return;
+	
+	float mn = controllers.first()->start;
+	float mx = controllers.first()->stop;
+	foreach ( Controller * c, controllers )
+	{
+		mn = qMin( mn, c->start );
+		mx = qMax( mx, c->stop );
+	}
+	tmin = qMin( tmin, mn );
+	tmax = qMax( tmax, mx );
+}
+
+void Node::draw( bool selected )
+{
+	if ( isHidden() )
+		return;
+	
+	glLoadName( nodeId );
+	
+	glPushAttrib( GL_LIGHTING_BIT );
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_TRUE );
+	glDepthFunc( GL_ALWAYS );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	if ( selected )
+		Color( QColor( "steelblue" ).light( 180 ) ).glColor();
+	else
+		Color( QColor( "steelblue" ).dark( 110 ) ).glColor();
+	glPointSize( 8.5 );
+	glLineWidth( 2.5 );
+
+	Vector a = scene->view * worldTrans() * Vector();
+	Vector b;
+	if ( parent )
+		b = scene->view * parent->worldTrans() * b;
+	
+	glBegin( GL_POINTS );
+	a.glVertex();
+	glEnd();
+
+	glBegin( GL_LINES );
+	a.glVertex();
+	b.glVertex();
+	glEnd();
+	
+	glPopAttrib();
+}
+
 
 /*
  *  Mesh
@@ -181,16 +486,6 @@ Mesh::Mesh( Scene * s, Node * p ) : Node( s, p )
 	alphaSrc = GL_SRC_ALPHA;
 	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
 	specularEnable = false;
-
-	useList = true;
-	list = 0;
-	
-}
-
-Mesh::~Mesh()
-{
-	if ( list )
-		glDeleteLists( list, 1 );
 }
 
 void Mesh::init( NifModel * nif, const QModelIndex & index )
@@ -202,10 +497,6 @@ void Mesh::init( NifModel * nif, const QModelIndex & index )
 	if ( ! alphaEnable )
 	{
 		alpha = 1.0;
-		ambient[3] = alpha;
-		diffuse[3] = alpha;
-		specular[3] = alpha;
-		emissive[3] = alpha;
 	}
 	
 	if ( ! specularEnable )
@@ -295,6 +586,9 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 			return;
 		}
 		
+		skelRoot = nif->getInt( special, "skeleton root" );
+		skelTrans = Transform( nif, skindata );
+		
 		QVector<int> bones;
 		QModelIndex idxBones = nif->getIndex( nif->getIndex( special, "bones" ), "bones" );
 		if ( ! idxBones.isValid() )
@@ -336,10 +630,13 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 		alpha = nif->getFloat( property, "alpha" );
 		if ( alpha < 0.0 ) alpha = 0.0;
 		if ( alpha > 1.0 ) alpha = 1.0;
-		ambient[3] = alpha;
-		diffuse[3] = alpha;
-		specular[3] = alpha;
-		emissive[3] = alpha;
+		
+		foreach( int link, nif->getChildLinks( nif->getBlockNumber( property ) ) )
+		{
+			QModelIndex block = nif->getBlock( link );
+			if ( block.isValid() && nif->inherits( nif->itemName( block ), "AController" ) )
+				setController( nif, block );
+		}
 	}
 	else if ( propname == "NiTexturingProperty" )
 	{
@@ -381,7 +678,6 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 		alphaEnable = true;
 		alphaSrc = GL_SRC_ALPHA; // using default blend mode
 		alphaDst = GL_ONE_MINUS_SRC_ALPHA;
-		useList = false;
 	}
 	else if ( propname == "NiSpecularProperty" )
 	{
@@ -391,25 +687,26 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 		Node::setProperty( nif, property );
 }
 
+void Mesh::setController( NifModel * nif, const QModelIndex & controller )
+{
+	if ( nif->itemName( controller ) == "NiAlphaController" )
+		controllers.append( new AlphaController( this, nif, controller ) );
+	else
+		Node::setController( nif, controller );
+}
+
 bool compareTriangles( const Triangle & tri1, const Triangle & tri2 )
 {
 	return ( tri1.depth < tri2.depth );
 }
 
-void Mesh::transform( const Matrix & trans )
+void Mesh::transform()
 {
-	Matrix sceneTrans = trans * world;
+	Node::transform();
+	
+	Transform sceneTrans = scene->view * worldTrans();
 	
 	sceneCenter = sceneTrans * localCenter;
-	
-	if ( useList && transVerts.count() )
-	{
-		if ( weights.count() )
-			glmatrix = trans;
-		else
-			glmatrix = sceneTrans;
-		return;
-	}
 	
 	if ( weights.count() )
 	{
@@ -421,52 +718,35 @@ void Mesh::transform( const Matrix & trans )
 		foreach ( BoneWeights bw, weights )
 		{
 			Node * bone = scene->nodes.value( bw.bone );
-			Matrix matrix = ( bone ? bone->worldTrans() * bw.matrix : bw.matrix );
-			if ( alphaEnable )
-				matrix = trans * matrix;
+			Transform trans = sceneTrans * skelTrans;
+			if ( bone )
+				trans = trans * bone->localTransFrom( skelRoot );
+			trans = trans * bw.trans;
 			
-			Matrix natrix = matrix;
-			natrix.clearTrans();
-			
+			Matrix natrix = trans.rotation;
 			foreach ( VertexWeight vw, bw.weights )
 			{
 				if ( transVerts.count() > vw.vertex )
-					transVerts[ vw.vertex ] += matrix * verts[ vw.vertex ] * vw.weight;
+					transVerts[ vw.vertex ] += trans * verts[ vw.vertex ] * vw.weight;
 				if ( transNorms.count() > vw.vertex )
 					transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
 			}
 		}
 		for ( int n = 0; n < transNorms.count(); n++ )
 			transNorms[n].normalize();
-		
-		if ( alphaEnable )
-			glmatrix = Matrix();
-		else
-			glmatrix = trans;
 	}
 	else
 	{
-		if ( alphaEnable )
+		transVerts.resize( verts.count() );
+		for ( int v = 0; v < verts.count(); v++ )
+			transVerts[v] = sceneTrans * verts[v];
+		
+		transNorms.resize( norms.count() );
+		Matrix natrix = sceneTrans.rotation;
+		for ( int n = 0; n < norms.count(); n++ )
 		{
-			transVerts.resize( verts.count() );
-			for ( int v = 0; v < verts.count(); v++ )
-				transVerts[v] = sceneTrans * verts[v];
-			
-			transNorms.resize( norms.count() );
-			Matrix natrix = sceneTrans;
-			natrix.clearTrans();
-			for ( int n = 0; n < norms.count(); n++ )
-			{
-				transNorms[n] = natrix * norms[n];
-				transNorms[n].normalize();
-			}
-			glmatrix = Matrix();
-		}
-		else
-		{
-			transVerts = verts;
-			transNorms = norms;
-			glmatrix = sceneTrans;
+			transNorms[n] = natrix * norms[n];
+			transNorms[n].normalize();
 		}
 	}
 	
@@ -481,32 +761,51 @@ void Mesh::transform( const Matrix & trans )
 	}
 }
 
+void Mesh::boundaries( Vector & min, Vector & max )
+{
+	if ( transVerts.count() )
+	{
+		min = max = transVerts[ 0 ];
+		
+		foreach ( Vector v, transVerts )
+		{
+			for ( int c = 0; c < 3; c++ )
+			{
+				min[ c ] = qMin( min[ c ], v[ c ] );
+				max[ c ] = qMax( max[ c ], v[ c ] );
+			}
+		}
+	}
+}
+
 void Mesh::draw( bool selected )
 {
-	if ( isHidden() )
+	if ( isHidden() && ! scene->drawHidden )
 		return;
 	
 	glLoadName( nodeId );
 	
 	// setup material colors
 	
-	glEnable( GL_COLOR_MATERIAL );
-	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-	ambient.glMaterial( GL_FRONT, GL_AMBIENT );
-	diffuse.glMaterial( GL_FRONT, GL_DIFFUSE );
-	emissive.glMaterial( GL_FRONT, GL_EMISSION );
-	specular.glMaterial( GL_FRONT, GL_SPECULAR );
-	
 	if ( colors.count() )
-	{	 // color material is controlled by NiVertexColorProperty using the default for now
+	{
+		glEnable( GL_COLOR_MATERIAL );
 		glColorMaterial( GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
 	}
 	else
 	{
-		glColorMaterial( GL_FRONT, GL_AMBIENT );
-		ambient.glColor();
+		glDisable( GL_COLOR_MATERIAL );
 	}
+
+	Color blend( 1.0, 1.0, 1.0, alpha );
 	
+	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+	( ambient * blend ).glMaterial( GL_FRONT, GL_AMBIENT );
+	( diffuse * blend ).glMaterial( GL_FRONT, GL_DIFFUSE );
+	( emissive * blend ).glMaterial( GL_FRONT, GL_EMISSION );
+	( specular * blend ).glMaterial( GL_FRONT, GL_SPECULAR );
+	glColor4f( 1.0, 1.0, 1.0, 1.0 );
+
 	// setup texturing
 	
 	if ( ! texFile.isEmpty() && scene->texturing && uvs.count() && scene->bindTexture( texFile ) )
@@ -547,7 +846,6 @@ void Mesh::draw( bool selected )
 	}
 	else
 	{
-		glDepthMask( GL_TRUE );
 		glDisable( GL_BLEND );
 	}
 	
@@ -558,23 +856,6 @@ void Mesh::draw( bool selected )
 	else
 		glDisable( GL_NORMALIZE );
 	
-	// load matrix
-	
-	glmatrix.glLoadMatrix();
-
-	// check display list
-	/*
-	if ( useList )
-	{
-		if ( list )
-		{
-			glCallList( list );
-			return;
-		}
-		list = glGenLists( 1 );
-		glNewList( list, GL_COMPILE_AND_EXECUTE );
-	}
-	*/
 	// render the triangles
 	
 	if ( triangles.count() > 0 )
@@ -586,15 +867,15 @@ void Mesh::draw( bool selected )
 			{
 				if ( transNorms.count() > tri.v1 ) transNorms[tri.v1].glNormal();
 				if ( uvs.count() > tri.v1*2 ) glTexCoord2f( uvs[tri.v1*2+0], uvs[tri.v1*2+1] );
-				if ( colors.count() > tri.v1 ) colors[tri.v1].glColor();
+				if ( colors.count() > tri.v1 ) ( colors[tri.v1] * blend ).glColor();
 				transVerts[tri.v1].glVertex();
 				if ( transNorms.count() > tri.v2 ) transNorms[tri.v2].glNormal();
 				if ( uvs.count() > tri.v2*2 ) glTexCoord2f( uvs[tri.v2*2+0], uvs[tri.v2*2+1] );
-				if ( colors.count() > tri.v2 ) colors[tri.v2].glColor();
+				if ( colors.count() > tri.v2 ) ( colors[tri.v2] * blend ).glColor();
 				transVerts[tri.v2].glVertex();
 				if ( transNorms.count() > tri.v3 ) transNorms[tri.v3].glNormal();
 				if ( uvs.count() > tri.v3*2 ) glTexCoord2f( uvs[tri.v3*2+0], uvs[tri.v3*2+1] );
-				if ( colors.count() > tri.v3 ) colors[tri.v3].glColor();
+				if ( colors.count() > tri.v3 ) ( colors[tri.v3] * blend ).glColor();
 				transVerts[tri.v3].glVertex();
 			}
 		}
@@ -610,15 +891,14 @@ void Mesh::draw( bool selected )
 		{
 			if ( transNorms.count() > v ) transNorms[v].glNormal();
 			if ( uvs.count() > v*2 ) glTexCoord2f( uvs[v*2+0], uvs[v*2+1] );
-			if ( colors.count() > v ) colors[v].glColor();
-			transVerts[v].glVertex();
+			if ( colors.count() > v ) ( colors[v] * blend ).glColor();
+			if ( transVerts.count() > v ) transVerts[v].glVertex();
 		}
 		glEnd();
 	}
 	
-	//if ( useList )
-	//	glEndList();
-
+	// draw green mesh outline if selected
+	
 	if ( selected )
 	{
 		glPushAttrib( GL_LIGHTING_BIT );
@@ -630,6 +910,7 @@ void Mesh::draw( bool selected )
 		glDisable( GL_LIGHTING );
 		glDisable( GL_COLOR_MATERIAL );
 		glColor4f( 0.0, 1.0, 0.0, 1.0 );
+		glLineWidth( 2.0 );
 		
 		foreach ( Triangle tri, triangles )
 		{
@@ -649,7 +930,8 @@ void Mesh::draw( bool selected )
 			glBegin( GL_LINE_STRIP );
 			foreach ( int v, strip.vertices )
 			{
-				transVerts[v].glVertex();
+				if ( transVerts.count() > v )
+					transVerts[v].glVertex();
 			}
 			glEnd();
 		}
@@ -658,40 +940,11 @@ void Mesh::draw( bool selected )
 	}
 }
 
-void Mesh::boundaries( Vector & min, Vector & max )
-{
-	min = Vector( +1000000000, +1000000000, +1000000000 );
-	max = Vector( -1000000000, -1000000000, -1000000000 );
 
-	QVector<Vector> boundVerts = verts;
-	if ( weights.count() )
-	{
-		boundVerts.fill( Vector() );
-		foreach ( BoneWeights bw, weights )
-		{
-			Node * bone = scene->nodes.value( bw.bone );
-			Matrix matrix = ( bone ? bone->worldTrans() * bw.matrix : bw.matrix );
-			
-			foreach ( VertexWeight vw, bw.weights )
-			{
-				if ( boundVerts.count() > vw.vertex )
-					boundVerts[ vw.vertex ] += matrix * verts[ vw.vertex ] * vw.weight;
-			}
-		}
-	}
-	else
-	{
-		Matrix matrix = worldTrans();
-		for ( int v = 0; v < boundVerts.count(); v++ )
-			boundVerts[v] = matrix * boundVerts[v];
-	}
-	
-	foreach ( Vector v, boundVerts )
-	{
-		min = Vector::min( min, v );
-		max = Vector::max( max, v );
-	}
-}
+/*
+ *  Scene
+ */
+
 
 Scene::Scene( const QGLContext * context )
 {
@@ -700,7 +953,12 @@ Scene::Scene( const QGLContext * context )
 	texturing = true;
 	blending = true;
 	highlight = true;
+	drawNodes = true;
+	drawHidden = false;
 	currentNode = 0;
+	animate = true;
+	
+	time = 0.0;
 }
 
 Scene::~Scene()
@@ -713,8 +971,10 @@ void Scene::clear()
 {
 	qDeleteAll( nodes ); nodes.clear();
 	qDeleteAll( meshes ); meshes.clear();
-	nodestack.clear();
 	texInitPhase = true;
+	boundMin = boundMax = boundCenter = Vector( 0.0, 0.0, 0.0 );
+	boundRadius = Vector( 1.0, 1.0, 1.0 );
+	timeMin = timeMax = 0.0;
 }
 
 void Scene::make( NifModel * nif )
@@ -722,7 +982,20 @@ void Scene::make( NifModel * nif )
 	clear();
 	if ( ! nif ) return;
 	foreach ( int link, nif->getRootLinks() )
-		make( nif, link );
+	{
+		QStack<int> nodestack;
+		make( nif, link, nodestack );
+	}
+
+	if ( ! ( nodes.isEmpty() && meshes.isEmpty() ) )
+	{
+		timeMin = +1000000000; timeMax = -1000000000;
+		foreach ( Node * node, nodes )
+			node->timeBounds( timeMin, timeMax );
+		foreach ( Mesh * mesh, meshes )
+			mesh->timeBounds( timeMin, timeMax );
+	}
+	
 	/*
 	int v = 0;
 	int t = 0;
@@ -737,7 +1010,7 @@ void Scene::make( NifModel * nif )
 	*/
 }
 
-void Scene::make( NifModel * nif, int blockNumber )
+void Scene::make( NifModel * nif, int blockNumber, QStack<int> & nodestack )
 {
 	QModelIndex idx = nif->getBlock( blockNumber );
 
@@ -771,7 +1044,7 @@ void Scene::make( NifModel * nif, int blockNumber )
 		nodestack.push( blockNumber );
 		
 		foreach ( int link, nif->getChildLinks( blockNumber ) )
-			make( nif, link );
+			make( nif, link, nodestack );
 		
 		nodestack.pop();
 	}
@@ -797,47 +1070,56 @@ bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 )
 		return mesh2->alphaEnable;
 }
 
-void Scene::draw( const Matrix & matrix )
-{	
-	foreach ( Mesh * mesh, meshes )
-		mesh->transform( matrix );
-
-	qStableSort( meshes.begin(), meshes.end(), compareMeshes );
+void Scene::transform( const Transform & trans, float time )
+{
+	view = trans;
+	this->time = time;
 	
-	drawAgain();
-	texInitPhase = false;
+	foreach ( Node * node, nodes )
+		node->transform();
+	foreach ( Mesh * mesh, meshes )
+		mesh->transform();
+	
+	qStableSort( meshes.begin(), meshes.end(), compareMeshes );
+
+	if ( ! ( nodes.isEmpty() && meshes.isEmpty() ) )
+	{
+		boundMin = Vector( +1000000000, +1000000000, +1000000000 );
+		boundMax = Vector( -1000000000, -1000000000, -1000000000 );
+		foreach ( Node * node, nodes )
+		{
+			Vector min, max;
+			node->boundaries( min, max );
+			boundMin = Vector::min( boundMin, min );
+			boundMax = Vector::max( boundMax, max );
+		}
+		foreach ( Mesh * mesh, meshes )
+		{
+			Vector min, max;
+			mesh->boundaries( min, max );
+			boundMin = Vector::min( boundMin, min );
+			boundMax = Vector::max( boundMax, max );
+		}
+		for ( int c = 0; c < 3; c++ )
+		{
+			boundRadius[c] = ( boundMax[c] - boundMin[c] ) / 2;
+			boundCenter[c] = boundMin[c] + boundRadius[c];
+		}
+	}
 }
 
-void Scene::drawAgain()
+void Scene::draw()
 {	
-	glPushMatrix();
 	glEnable( GL_CULL_FACE );
 	
 	foreach ( Mesh * mesh, meshes )
 		mesh->draw( highlight && mesh->id() == currentNode );
 
-	glPopMatrix();
-}
-
-void Scene::boundaries( Vector & min, Vector & max )
-{
-	if ( meshes.count() )
-	{
-		min = Vector( +1000000000, +1000000000, +1000000000 );
-		max = Vector( -1000000000, -1000000000, -1000000000 );
-		Vector mmin, mmax;
-		foreach ( Mesh * mesh, meshes )
-		{
-			mesh->boundaries( mmin, mmax );
-			min = Vector::min( min, mmin );
-			max = Vector::max( max, mmax );
-		}
-	}
-	else
-	{
-		min = Vector();
-		max = Vector();
-	}
+	if ( drawNodes )
+		foreach ( Node * node, nodes )
+			node->draw( highlight && node->id() == currentNode );
+	
+	texInitPhase = false;
 }
 
 #endif

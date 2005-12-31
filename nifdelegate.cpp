@@ -34,61 +34,138 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QItemDelegate>
 
-#include <QPainter>
+#include "popup.h"
 
+#include <QAction>
 #include <QComboBox>
+#include <QEvent>
+#include <QFrame>
 #include <QLabel>
+#include <QLayout>
 #include <QLineEdit>
+#include <QMouseEvent>
+#include <QPainter>
 #include <QSpinBox>
+#include <QToolButton>
+
+/* XPM */
+static const char * const hsv42_xpm[] = {
+"32 32 43 1",
+" 	c None",
+".	c #3200FF","+	c #0024FF","@	c #7600FF","#	c #0045FF","$	c #A000FF",
+"%	c #FF0704","&	c #015AFF","*	c #FF0031","=	c #FF0058","-	c #FF0074",
+";	c #FF0086",">	c #006DFF",",	c #D700FF","'	c #FF00A3",")	c #FF00C5",
+"!	c #FC00DE","~	c #FC00FA","{	c #0086FF","]	c #FF3700","^	c #00A7FF",
+"/	c #FF6000","(	c #00C3FF","_	c #00FF32",":	c #00DDFF","<	c #FF8D00",
+"[	c #00FF55","}	c #23FF00","|	c #00FF72","1	c #00FF88","2	c #00FFA0",
+"3	c #00FFBB","4	c #00FFD7","5	c #00F9F8","6	c #FFA900","7	c #60FF00",
+"8	c #83FF00","9	c #FFC200","0	c #A3FF00","a	c #FFD800","b	c #C0FF00",
+"c	c #FBF100","d	c #E6FF00",
+"            7778800b            ",
+"         }}}}778800bbdd         ",
+"       }}}}}}777800bbddcc       ",
+"      }}}}}7}778800bdddcca      ",
+"     __}}}}}}77880bbddccca9     ",
+"    [___}}}}}}7780bbddcaa996    ",
+"   [[[___}}}}77880bddccaa9666   ",
+"  ||[[[___}}}}7780bddca9966<<   ",
+"  |1|[[[__}}}}7880bdcca966<<</  ",
+" 211|||[[__}}}}78bdcca966<</<// ",
+" 22211||[[[}}}778bdca96<<<///// ",
+" 3222121||[__}}70bda96<<</////] ",
+"3333322211|[__}78dc96<////]]]]]]",
+"444433332221|_}70d9<<///]]]]]]]%",
+"4444444433322|[}ba<//]]]]]]%%%%%",
+"555555454544442[c/]%%%%%%%%%%%%%",
+"5555555555:5::({!=*%%%%%%%%%%%%%",
+":5:5:::::(((^{&.$);-==******%*%%",
+":::::((((^^{>&+.@~)';-===*******",
+":(((((^^^{{>#+..@,~)';;-====*=* ",
+" (^^^^^{{>>#+..@@,~!)'';;--==== ",
+" ^^^^{{{>&##+...$$,~!)'';;---== ",
+" ^^{{{>>&##....@@$,,~!))'';;--  ",
+"  {{>>>&#++....@$$,,~~!)'''';;  ",
+"  {>>&&##++....@@$,,~~!!))'''   ",
+"   >&&##++.....@@$$,,~~!)))''   ",
+"    &#+++......@@$$,,~~~!)))    ",
+"     #+++.....@@@$$$,,~~!!!     ",
+"      ++.......@$$$,,,~~~!      ",
+"        ......@@@$$$$,,~        ",
+"         ......@@$$,,,          ",
+"            .@@@@$$             "};
 
 class NifDelegate : public QItemDelegate
 {
+	QIcon icon;
 public:
-	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
-	{	// this was riped from the QItemDelegate example
-		Q_ASSERT(index.isValid());
-		const QAbstractItemModel *model = index.model();
-		Q_ASSERT(model);
+	NifDelegate() : QItemDelegate(), icon( hsv42_xpm )	{}
+	
+	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index )
+	{
+		Q_ASSERT( event );
+		Q_ASSERT( model );
 		
-		QStyleOptionViewItem opt = option;
-		
-		QString text = model->data(index, Qt::DisplayRole).toString();
-		QRect textRect(0, 0, opt.fontMetrics.width(text), opt.fontMetrics.lineSpacing());
-		
-		// decoration is a string
-		QString deco = model->data(index, Qt::DecorationRole).toString();
-		QRect decoRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
-		
-		QRect checkRect;
-		/*
-		bool isChecked = true;
-		if ( index.column() == NifModel::CondCol )
+		if ( event->type() == QEvent::MouseButtonRelease && model->flags( index ) & Qt::ItemIsEditable
+			&& model->data( index, Qt::EditRole ).type() == QVariant::Color )
 		{
-			const NifModel * nif = qobject_cast<const NifModel*>( index.model() );
-			isChecked = nif->evalCondition( index );
-			checkRect = check(opt, opt.rect, isChecked );
-		}
-		*/
-		
-		doLayout(opt, &checkRect, &decoRect, &textRect, false);
-		
-		// draw the background color
-		if (option.showDecorationSelected && (option.state & QStyle::State_Selected)) {
-			QPalette::ColorGroup cg = option.state & QStyle::State_Enabled
-									  ? QPalette::Normal : QPalette::Disabled;
-			painter->fillRect(option.rect, option.palette.brush(cg, QPalette::Highlight));
-		} else {
-			QVariant value = model->data(index, Qt::BackgroundColorRole);
-			if (value.isValid() && qvariant_cast<QColor>(value).isValid())
-				painter->fillRect(option.rect, qvariant_cast<QColor>(value));
+			int m = qMin( option.rect.width(), option.rect.height() );
+			QRect iconRect( option.rect.x(), option.rect.y(), m, m );
+			if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
+				return model->setData( index, ColorWheel::choose( model->data( index, Qt::EditRole ).value<QColor>(), 0 ), Qt::EditRole );
+			else
+				return true;
 		}
 		
-		// draw the item
-		//if ( index.column() == NifModel::CondCol )
-		//	drawCheck(painter, opt, checkRect, isChecked ? Qt::Checked : Qt::Unchecked );
-		drawDeco(painter, opt, decoRect, deco);
-		drawDisplay(painter, opt, textRect, text);
-		drawFocus(painter, opt, textRect);
+		return QItemDelegate::editorEvent( event, model, option, index );
+	}
+	
+	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
+	{
+		const QAbstractItemModel *model = index.model();
+		if ( ! model ) return;
+		
+		QVariant data = model->data( index, Qt::DisplayRole );
+		
+		if ( data.type() == QVariant::Color )
+		{
+			painter->fillRect( option.rect, data.value<QColor>() );
+			if ( model->flags( index ) & Qt::ItemIsEditable )
+			{
+				int m = qMin( option.rect.width(), option.rect.height() );
+				icon.paint( painter, QRect( option.rect.x(), option.rect.y(), m, m ), Qt::AlignCenter );
+			}
+			drawFocus( painter, option, option.rect );
+		}
+		else
+		{
+			QStyleOptionViewItem opt = option;
+			
+			QString text = data.toString();
+			QRect textRect(0, 0, opt.fontMetrics.width(text), opt.fontMetrics.lineSpacing());
+			
+			// decoration is a string
+			QString deco = model->data(index, Qt::DecorationRole).toString();
+			QRect decoRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
+			
+			QRect dummy;
+			doLayout(opt, &dummy, &decoRect, &textRect, false);
+			
+			// draw the background color
+			if (option.showDecorationSelected && (option.state & QStyle::State_Selected)) {
+				QPalette::ColorGroup cg = option.state & QStyle::State_Enabled
+										  ? QPalette::Normal : QPalette::Disabled;
+				painter->fillRect(option.rect, option.palette.brush(cg, QPalette::Highlight));
+			} else {
+				QVariant value = model->data(index, Qt::BackgroundColorRole);
+				if (value.isValid() && qvariant_cast<QColor>(value).isValid())
+					painter->fillRect(option.rect, qvariant_cast<QColor>(value));
+			}
+			
+			// draw the item
+			drawDeco(painter, opt, decoRect, deco);
+			drawDisplay(painter, opt, textRect, text);
+			drawFocus(painter, opt, textRect);
+		}
 	}
 
 	QSize sizeHint(const QStyleOptionViewItem &option,
@@ -173,6 +250,9 @@ public:
 			} break;
 			case QVariant::Pixmap:
 				w = new QLabel(parent);
+				break;
+			case QVariant::Color:
+				w = 0;
 				break;
 			case QVariant::String:
 			default:

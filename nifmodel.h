@@ -146,6 +146,9 @@ public:
 	bool load( QIODevice & device );
 	bool save( QIODevice & device );
 	
+	bool load( QIODevice & device, const QModelIndex & );
+	bool save( QIODevice & device, const QModelIndex & );
+	
 
 	// returns the model index of the NiHeader
 	QModelIndex getHeader() const;
@@ -305,7 +308,7 @@ protected:
 	qint32		itemLink( NifItem * item ) const;
 	int			getBlockNumber( NifItem * item ) const;
 	
-	bool		load( NifItem * parent, QIODevice & device );
+	bool		load( NifItem * parent, QIODevice & device, bool fast = true );
 	bool		save( NifItem * parent, QIODevice & device );
 	
 	// find basic type with matching name and version
@@ -335,6 +338,8 @@ protected:
 		it_color3f = 8, it_color4f = 9
 	};
 	static QStringList internalTypes;
+	
+	static QList<quint32>					supportedVersions;
 	
 	//
 	static QHash<QString,NifBasicType*>	types;

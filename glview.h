@@ -33,20 +33,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLVIEW
 #define GLVIEW
 
-#ifdef QT_OPENGL_LIB
-
 #include <QGLWidget>
 #include <QCache>
 #include <QDateTime>
 #include <QFile>
 #include <QStack>
-#include <QTimer>
 
 #include "nifmodel.h"
 
 #include "glmath.h"
 
 class Scene;
+
+class QTimer;
 
 class GLView : public QGLWidget
 {
@@ -60,12 +59,8 @@ public:
 	int yRotation() const { return yRot; }
 	int zRotation() const { return zRot; }
 	
-	bool texturing() const;
-	bool blending() const;
-	bool lighting() const { return lightsOn; }
-	bool drawAxis() const { return drawaxis; }
-	bool rotate() const { return timer->isActive(); }
 	bool highlight() const;
+	bool drawNodes() const;
 	
 	QString textureFolder() const;
 	
@@ -74,48 +69,59 @@ public:
 
 	void compile( bool center = false );
 
+	QAction * aTexturing;
+	QAction * aBlending;
+	QAction * aLighting;
+	QAction * aDrawAxis;
+	QAction * aDrawNodes;
+	QAction * aDrawHidden;
+	QAction * aHighlight;
+	QAction * aRotate;
+	QAction * aTexFolder;
+	
+	QAction * aAnimate;
+	QAction * aAnimPlay;
+	
+	QList<QAction*> animActions() const;
+	
+	void	save( QSettings & );
+	void	restore( QSettings & );
+
 public slots:
 	void setNif( NifModel * );
 
-	void setXRotation(int angle);
-	void setYRotation(int angle);
-	void setZRotation(int angle);
-	void setZoom( int zoom );
-	void setXTrans( int );
-	void setYTrans( int );
-	
-	void setBlending( bool );
-	void setDrawAxis( bool );
-	void setLighting( bool );
-	void setRotate( bool );
-	void setTexturing( bool );
-	void setHighlight( bool );
-	
 	void setTextureFolder( const QString & );
 	
 	void setCurrentIndex( const QModelIndex & );
 
-signals: 
-	void xRotationChanged(int angle);
-	void yRotationChanged(int angle);
-	void zRotationChanged(int angle);
-	void zoomChanged( int zoom );
-	void clicked( const QModelIndex & );
+	void sltFrame( int );
 
+	void selectTexFolder();
+	
+signals: 
+	void clicked( const QModelIndex & );
+	
+	void sigFrame( int f, int mn, int mx );
+	
 protected:
 	void initializeGL();
 	void paintGL();
+	int  pickGL( int x, int y );
 	void resizeGL(int width, int height);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseDoubleClickEvent( QMouseEvent * );
 	void mouseMoveEvent(QMouseEvent *event);
 	void wheelEvent( QWheelEvent * event );
+	void glPerspective( int x = -1, int y = -1 );
+	void glOrtho();
 
 private slots:
 	void advanceGears();
 	
 	void dataChanged();
+	
+	void checkActions();
 
 private:
 	void normalizeAngle(int *angle);
@@ -125,15 +131,16 @@ private:
 	int xRot;
 	int yRot;
 	int zRot;
-	int zoom;
+
+	GLdouble zoom;
+	GLdouble xTrans;
+	GLdouble yTrans;
+	
+	GLdouble radius;
 	
 	int zInc;
 	
-	int xTrans;
-	int yTrans;
-	
 	bool updated;
-	bool doCompile;
 	bool doCenter;
 	
 	QPoint lastPos;
@@ -143,17 +150,10 @@ private:
 	
 	Scene * scene;
 	
-	bool lightsOn;
-	bool drawaxis;	
-
-	Vector boundMin, boundMax;
-	
 	QTimer * timer;
+	
+	float time;
+	QTime lastTime;
 };
-
-#else
-class GLView {};
-#endif
-
 
 #endif
