@@ -335,7 +335,8 @@ protected:
 		it_uint8 = 0, it_uint16 = 1, it_uint32 = 2,
 		it_int8 = 3, it_int16 = 4, it_int32 = 5,
 		it_float = 6, it_string = 7,
-		it_color3f = 8, it_color4f = 9
+		it_color3f = 8, it_color4f = 9,
+		it_vector = 10, it_quat = 11, it_matrix = 12
 	};
 	static QStringList internalTypes;
 	

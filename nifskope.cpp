@@ -651,9 +651,15 @@ void NifSkope::load()
 	if ( f.open( QIODevice::ReadOnly ) )
 	{
 		setEnabled( false );
+		bool a = ogl->aAnimate->isChecked();
+		bool r = ogl->aRotate->isChecked();
+		ogl->aAnimate->setChecked( false );
+		ogl->aRotate->setChecked( false );
 		model->load( f );
 		setEnabled( true );
 		ogl->compile( true );
+		ogl->aAnimate->setChecked( a );
+		ogl->aRotate->setChecked( r );
 		f.close();
 	}
 	else

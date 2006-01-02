@@ -40,76 +40,163 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glscene.h"
 
-GLuint Scene::bindTexture( const QString & filename )
+#ifndef APIENTRY
+# define APIENTRY
+#endif
+typedef void (APIENTRY *pfn_glCompressedTexImage2D) ( GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid * );
+static pfn_glCompressedTexImage2D _glCompressedTexImage2D = 0;
+
+void GLTex::initialize( const QGLContext * context )
 {
+	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
+	
+	if ( !_glCompressedTexImage2D )
+	{
+		if (!extensions.contains("GL_ARB_texture_compression"))
+			qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
+		if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
+			qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
+		
+		_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2D");
+		if ( !_glCompressedTexImage2D )
+			_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2DARB");
+	}
+	if ( !_glCompressedTexImage2D )
+		qWarning( "glCompressedTexImage2D not found" );
+}
+
+GLTex::GLTex()
+{
+	id = 0;
+}
+
+GLTex::~GLTex()
+{
+	release();
+}
+
+void GLTex::release()
+{
+	if ( id )
+		glDeleteTextures( 1, &id );
+	id = 0;
+}
+
+
+GLuint texLoadBMP( const QString & filepath );
+GLuint texLoadDDS( const QString & filepath );
+GLuint texLoadTGA( const QString & filepath );
+
+
+GLuint Scene::bindTexture( const QString & fn )
+{
+	QString filename = fn;
+	if ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
+		filename = filename.right( filename.length() - 1 );
+	
+	// check if texture is in cache
 	GLTex * tex = textures.object( filename );
-	if ( tex )
-	{	// check if texture is in cache
+	
+	if ( tex && tex->id )
+	{	// texture is cached
+		glBindTexture(GL_TEXTURE_2D, tex->id);
+		return tex->id;
+		/*
 		if ( tex->readOnly )
-		{
+		{	// if texture is readonly we don't need to check if it was updated
 			glBindTexture(GL_TEXTURE_2D, tex->id);
 			return tex->id;
 		}
 		else
 		{
 			QFileInfo file( tex->filepath );
-			if ( file.exists() )
-			{
-				if ( file.lastModified() < tex->loaded )
-				{
-					glBindTexture(GL_TEXTURE_2D, tex->id);
-					return tex->id;
-				}
+			if ( file.exists() && file.lastModified() < tex->loaded )
+			{	// texture is still valid
+				glBindTexture(GL_TEXTURE_2D, tex->id);
+				return tex->id;
 			}
 		}
-		textures.remove( filename );
+		// the texture was modified
+		tex->release();
+		*/
 	}
-
-	// attempt to find the texture in one of the folders
-	QStringList list = texfolder.split( ";" );
-	QDir dir;
-	for ( int c = 0; c < list.count(); c++ )
-	{
-		dir.setPath( list[c] );
-		if ( dir.exists( filename ) )
-			break;
-		if ( dir.exists( "../" + filename ) )
-		{
-			dir.cd( ".." );
-			break;
-		}
-	}
-	
-	if ( ! dir.exists( filename ) )
-	{
-		if ( texInitPhase )
-			qWarning() << "texture " << filename << " not found";
+	else if ( tex )
+	{	// texture is negative cached
 		return 0;
-	}
-	
-	tex = GLTex::create( dir.filePath( filename ), context );
-	if ( tex )
-	{
-		textures.insert( filename, tex );
-		return tex->id;
 	}
 	else
+	{	// insert texture into cache
+		tex = new GLTex;
+		textures.insert( filename, tex );
+	}
+	
+	if ( tex->filepath.isEmpty() || ! QFile::exists( tex->filepath ) )
+	{
+		// attempt to find the texture in one of the folders
+		QDir dir;
+		foreach ( QString folder, texfolders )
+		{
+			dir.setPath( folder );
+			if ( dir.exists( filename ) )
+				break;
+			if ( dir.exists( "../" + filename ) )
+			{
+				dir.cd( ".." );
+				break;
+			}
+		}
+		if ( ! dir.exists( filename ) )
+		{
+			tex->filepath = QString();
+			qWarning() << "texture " << filename << " not found";
+			return 0;
+		}
+		
+		tex->filepath = dir.filePath( filename ).toLower();
+		tex->readOnly = !QFileInfo( tex->filepath ).isWritable();
+	}
+
+	tex->loaded = QDateTime::currentDateTime();
+
+	if ( tex->filepath.endsWith( ".dds" ) )
+		tex->id = texLoadDDS( tex->filepath );
+	else if ( tex->filepath.endsWith( ".tga" ) )
+		tex->id = texLoadTGA( tex->filepath );
+	else if ( tex->filepath.endsWith( ".bmp" ) )
+		tex->id = texLoadBMP( tex->filepath );
+	else
+	{
+		qWarning() << "could not load texture " << tex->filepath << " (valid image formats are DDS TGA and BMP)";
 		return 0;
+	}
+	
+	return tex->id;
 }
 
-void uncompressRLE( const quint8 * data, int w, int h, int bpp, quint8 * pixel )
+bool isPowerOfTwo( unsigned int x )
+{
+	while ( ! ( x == 0 || x & 1 ) )
+		x = x >> 1;
+	return ( x == 1 );
+}
+
+bool uncompressRLE( QFile & f, int w, int h, int bpp, quint8 * pixel )
 {
 	int bytespp = bpp / 8;
 	
 	int c = 0;
+	quint8 rl;
 	while ( c < w * h )
 	{
-		quint8 rl = *data++;
+		if ( !f.getChar( (char *) &rl ) )
+			return false;
+		
 		if ( rl & 0x80 )
 		{
 			quint8 px[4];
 			for ( int b = 0; b < bytespp; b++ )
-				px[b] = *data++;
+				if ( ! f.getChar( (char *) &px[b] ) )
+					return false;
 			rl &= 0x7f;
 			do
 			{
@@ -123,10 +210,12 @@ void uncompressRLE( const quint8 * data, int w, int h, int bpp, quint8 * pixel )
 			do
 			{
 				for ( int b = 0; b < bytespp; b++ )
-					*pixel++ = *data++;
+					if ( ! f.getChar( (char *) pixel++ ) )
+						return false;
 			} while (  ++c < w*h && rl-- > 0 );
 		}
 	}
+	return true;
 }
 
 void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint32 mask[], bool flipV, bool flipH, quint8 * pixl )
@@ -173,7 +262,7 @@ GLuint texLoadRaw( QFile & f, int width, int height, int num_mipmaps, int bpp, i
 {
 	if ( bpp != 32 && bpp != 24 )
 	{	// check image depth
-		qDebug( "texLoadRaw() : unsupported image depth %i", bpp );
+		qWarning( "texLoadRaw() : unsupported image depth %i", bpp );
 		return 0;
 	}
 	
@@ -197,14 +286,14 @@ GLuint texLoadRaw( QFile & f, int width, int height, int num_mipmaps, int bpp, i
 		if ( w == 0 ) w = 1;
 		if ( h == 0 ) h = 1;
 		
-		f.read( (char *) data1, w * h * bytespp );
-		
 		if ( rle )
 		{
-			uncompressRLE( data1, w, h, bpp, data2 );
-			quint8 * xchg = data2;
-			data2 = data1;
-			data1 = xchg;
+			if ( ! uncompressRLE( f, w, h, bpp, data1 ) )
+				qWarning() << "texLoadRaw() : unexpected EOF";
+		}
+		else if ( f.read( (char *) data1, w * h * bytespp ) != w * h * bytespp )
+		{
+			qWarning() << "texLoadRaw() : unexpected EOF";
 		}
 		
 		convertToRGBA( data1, w, h, bytespp, mask, flipV, flipH, data2 );
@@ -259,61 +348,40 @@ struct DDSFormat {
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
 #endif
 
-#ifndef APIENTRY
-# define APIENTRY
-#endif
-typedef void (APIENTRY *pfn_glCompressedTexImage2D) ( GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid * );
-static pfn_glCompressedTexImage2D qt_glCompressedTexImage2D = 0;
-
 /*
  *  load a (compressed) dds texture
  */
  
-GLuint texLoadDDS( const QString & filename, const QGLContext * context )
+GLuint texLoadDDS( const QString & filename )
 {
 	//qDebug( "DDS" );
-	if ( !qt_glCompressedTexImage2D )
-	{
-		QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
-		if (!extensions.contains("GL_ARB_texture_compression"))
-		{
-			qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
-			return 0;
-		}
-		if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
-		{
-			qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
-			return 0;
-		}
-		qt_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2D");
-	}
-	if ( !qt_glCompressedTexImage2D )
-	{
-		qWarning( "glCompressedTexImage2D not found" );
-		return 0;
-	}
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 	{
-		qWarning() << "texLoadDDS( " << filename << " ) : cannot open";
+		qWarning() << "texLoadDDS( " << filename << " ) : could not open file";
 		return 0;
 	}
 	
 	char tag[4];
 	f.read(&tag[0], 4);
-	if (strncmp(tag,"DDS ", 4) != 0)
+	DDSFormat ddsHeader;
+
+	if ( strncmp(tag,"DDS ", 4) != 0 || f.read((char *) &ddsHeader, sizeof(DDSFormat)) != sizeof( DDSFormat ) )
 	{
 		qWarning() << "texLoadDDS( " << filename << " ) : not a DDS file";
 		return 0;
 	}
 	
-	DDSFormat ddsHeader;
-	f.read((char *) &ddsHeader, sizeof(DDSFormat));
-	
 	if ( !( ddsHeader.dwFlags & DDSD_MIPMAPCOUNT ) )
 		ddsHeader.dwMipMapCount = 1;
 	
+	if ( ! ( isPowerOfTwo( ddsHeader.dwWidth ) && isPowerOfTwo( ddsHeader.dwHeight ) ) )
+	{
+		qWarning() << "texLoadDDS( " << filename << " ) : image dimensions must be power of two";
+		return 0;
+	}
+
 	int blockSize = 16;
 	GLenum format;
 
@@ -352,6 +420,12 @@ GLuint texLoadDDS( const QString & filename, const QGLContext * context )
 			&ddsHeader.ddsPixelFormat.dwRMask );
 	}
 	
+	if ( !_glCompressedTexImage2D )
+	{
+		qWarning() << "texLoadDDS( " << filename << " ) : DDS image compression not supported by your open gl implementation";
+		return 0;
+	}
+	
 	f.seek(ddsHeader.dwSize + 4);
 	
 	GLuint tx_id;
@@ -362,17 +436,22 @@ GLuint texLoadDDS( const QString & filename, const QGLContext * context )
 	//qDebug( "w %i h %i m %i", ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
 	
 	GLubyte * pixels = (GLubyte *) malloc(((ddsHeader.dwWidth+3)/4) * ((ddsHeader.dwHeight+3)/4) * blockSize);
-	int w, h, s;
-	int m = ddsHeader.dwMipMapCount;
-	for(int i = 0; i < m; ++i)
+	unsigned int w, h, s;
+	unsigned int m = ddsHeader.dwMipMapCount;
+	for(unsigned int i = 0; i < m; ++i)
 	{
 		w = ddsHeader.dwWidth >> i;
 		h = ddsHeader.dwHeight >> i;
 		if (w == 0) w = 1;
 		if (h == 0) h = 1;
 		s = ((w+3)/4) * ((h+3)/4) * blockSize;
-		f.read( (char *) pixels, s );
-		qt_glCompressedTexImage2D( GL_TEXTURE_2D, i, format, w, h, 0, s, pixels );
+		if ( f.read( (char *) pixels, s ) != s )
+		{
+			qWarning() << "texLoadDDS( " << filename << " ) : unexpected EOF";
+			free( pixels );
+			return tx_id;
+		}
+		_glCompressedTexImage2D( GL_TEXTURE_2D, i, format, w, h, 0, s, pixels );
 	}
 	
 	f.close();
@@ -394,7 +473,7 @@ GLuint texLoadTGA( const QString & filename )
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 	{
-		qDebug( "texLoadTGA() : could not open file %s", (const char *) filename.toAscii() );
+		qWarning() << "texLoadTGA(" << filename << ") : could not open file";
 		return 0;
 	}
 	
@@ -402,7 +481,10 @@ GLuint texLoadTGA( const QString & filename )
 	quint8 hdr[18];
 	qint64 readBytes = f.read((char *)hdr, 18);
 	if ( readBytes != 18 )
+	{
+		qWarning() << "texLoadTGA(" << filename << ") : unexpected EOF";
 		return 0;
+	}
 	if ( hdr[0] ) f.read( hdr[0] );
 	
 	/*
@@ -410,14 +492,20 @@ GLuint texLoadTGA( const QString & filename )
 	qDebug( "depth %i", hdr[16] );
 	qDebug( "alpha %02X", hdr[17] );
 	*/
-	int depth = hdr[16];
-	int alphaValue  = hdr[17] & 15;
+	unsigned int depth = hdr[16];
+	unsigned int alphaValue  = hdr[17] & 15;
 	bool flipV = ! ( hdr[17] & 32 );
 	bool flipH = hdr[17] & 16;
-	int width = hdr[12] + 256 * hdr[13];
-	int height = hdr[14] + 256 * hdr[15];
+	unsigned int width = hdr[12] + 256 * hdr[13];
+	unsigned int height = hdr[14] + 256 * hdr[15];
 	
 	//qDebug() << "TGA flip V " << flipV << " H " << flipH;
+
+	if ( ! ( isPowerOfTwo( width ) && isPowerOfTwo( height ) ) )
+	{
+		qWarning() << "texLoadTGA( " << filename << " ) : image dimensions must be power of two";
+		return 0;
+	}
 
 	// check format and call texLoadRaw
 	if ( ( depth == 32 && alphaValue == 8 ) || ( depth == 24 && alphaValue == 0 ) )
@@ -440,7 +528,7 @@ GLuint texLoadTGA( const QString & filename )
 		}
 	}
 	
-	qWarning( "texLoadTGA() : unsupported image format ( bpp %i, alpha %i, format %i )", depth, alphaValue, hdr[2] );
+	qWarning() << "texLoadTGA(" << filename << ") : image sub format not supported";
 	return 0;
 }
 
@@ -466,10 +554,8 @@ GLuint texLoadBMP( const QString & filename )
 	// read in tga header
 	quint8 hdr[54];
 	qint64 readBytes = f.read((char *)hdr, 54);
-	if ( readBytes != 54 )
-		return 0;
 	
-	if (strncmp((char*)hdr,"BM", 2) != 0)
+	if ( readBytes != 54 || strncmp((char*)hdr,"BM", 2) != 0)
 	{
 		qWarning() << "texLoadBMP( " << filename << " ) : not a BMP file";
 		return 0;
@@ -483,60 +569,26 @@ GLuint texLoadBMP( const QString & filename )
 	qDebug( "ofs  %i", get32( &hdr[10] ) );
 	*/
 	
-	int width = get32( &hdr[18] );
-	int height = get32( &hdr[22] );
-	int bpp = get16( &hdr[28] );
-	int compression = get32( &hdr[30] );
-	int offset = get32( &hdr[10] );
+	unsigned int width = get32( &hdr[18] );
+	unsigned int height = get32( &hdr[22] );
+	unsigned int bpp = get16( &hdr[28] );
+	unsigned int compression = get32( &hdr[30] );
+	unsigned int offset = get32( &hdr[10] );
 	
+	if ( ! ( isPowerOfTwo( width ) && isPowerOfTwo( height ) ) )
+	{
+		qWarning() << "texLoadBMP( " << filename << " ) : image dimensions must be power of two";
+		return 0;
+	}
+
 	if ( bpp != 24 || compression != 0 || offset != 54 )
 	{
-		qWarning() << "texLoadBMP( " << filename << " ) : image format not supported";
+		qWarning() << "texLoadBMP( " << filename << " ) : image sub format not supported";
 		return 0;
 	}
 	
 	static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
 	return texLoadRaw( f, width, height, 1, bpp, 3, BMP_RGBA_MASK, true );
-}
-
-
-GLTex::GLTex()
-{
-	id = 0;
-}
-
-GLTex::~GLTex()
-{
-	if ( id )		glDeleteTextures( 1, &id );
-}
-	
-GLTex * GLTex::create( const QString & filepath, const QGLContext * context )
-{
-	GLuint id = 0;
-	
-	if ( filepath.toLower().endsWith( ".dds" ) )
-		id = texLoadDDS( filepath, context );
-	else if ( filepath.toLower().endsWith( ".tga" ) )
-		id = texLoadTGA( filepath );
-	else if ( filepath.toLower().endsWith( ".bmp" ) )
-		id = texLoadBMP( filepath );
-	else
-	{
-		qWarning() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
-		return 0;
-	}
-	
-	if ( id )
-	{
-		GLTex * tex = new GLTex;
-		tex->id = id;
-		tex->filepath = filepath;
-		tex->loaded = QDateTime::currentDateTime();
-		tex->readOnly = !QFileInfo( filepath ).isWritable();
-		return tex;
-	}
-	
-	return 0;
 }
 
 #endif

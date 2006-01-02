@@ -272,24 +272,25 @@ protected:
 class GLTex
 {
 public:
-	static GLTex * create( const QString & filepath, const QGLContext * context );
-	
+	GLTex();
 	~GLTex();
+	
+	void release();
+
+	static void initialize( const QGLContext * context );
+	
 
 	GLuint		id;
 	QString		filepath;
 	bool		readOnly;
 	QDateTime	loaded;
-	
-protected:
-	GLTex();
 };
 
 
 class Scene
 {
 public:
-	Scene( const QGLContext * context );
+	Scene();
 	~Scene();
 
 	void clear();
@@ -311,7 +312,7 @@ public:
 	float time;
 
 	bool texturing;
-	QString texfolder;
+	QStringList texfolders;
 	QCache<QString,GLTex> textures;
 	
 	bool blending;
@@ -319,12 +320,8 @@ public:
 	bool highlight;
 	int currentNode;
 	
-	bool texInitPhase;
-	
 	bool drawNodes;
 	bool drawHidden;
-	
-	const QGLContext * context;
 	
 	Vector boundMin, boundMax, boundCenter, boundRadius;
 	float timeMin, timeMax;

@@ -31,9 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
+#include "niftypes.h"
 
 #include <QItemDelegate>
 
+#include "nifdelegate.h"
 #include "popup.h"
 
 #include <QAction>
@@ -204,63 +206,58 @@ public:
 	{
 		if (!index.isValid())
 			return 0;
-		QVariant::Type type = index.model()->data(index, Qt::EditRole).type();
+		QVariant v = index.model()->data(index, Qt::EditRole);
 		
 		QWidget * w = 0;
-		
-		switch (type)
+		if ( v.canConvert<Vector>() )
+			w = new VectorEdit( parent );
+		else if ( v.canConvert<Quat>() || v.canConvert<Matrix>() )
+			w = new RotationEdit( parent );
+		else
 		{
-			case QVariant::Bool:
+			switch ( v.type() )
 			{
-				QComboBox *cb = new QComboBox(parent);
-				cb->setFrame(false);
-				cb->addItem("False");
-				cb->addItem("True");
-				w = cb;
-			} break;
-			case QVariant::UInt:
-			{
-				QSpinBox *sb = new QSpinBox(parent);
-				sb->setFrame(false);
-				sb->setMaximum(INT_MAX);
-				w = sb;
-			} break;
-			case QVariant::Int:
-			{
-				QSpinBox *sb = new QSpinBox(parent);
-				sb->setFrame(false);
-				sb->setMinimum(INT_MIN);
-				sb->setMaximum(INT_MAX);
-				w = sb;
-			} break;
-			case QVariant::Double:
-			{
-				QDoubleSpinBox *sb = new QDoubleSpinBox(parent);
-				sb->setFrame(false);
-				sb->setDecimals( 4 );
-				sb->setRange( - 100000000, + 100000000 );
-				w = sb;
-			} break;
-			case QVariant::StringList:
-			{
-				QComboBox *cb = new QComboBox(parent);
-				cb->setFrame(false);
-				cb->setEditable( true );
-				w = cb;
-			} break;
-			case QVariant::Pixmap:
-				w = new QLabel(parent);
-				break;
-			case QVariant::Color:
-				w = 0;
-				break;
-			case QVariant::String:
-			default:
-			{
-				// the default editor is a lineedit
-				QLineEdit *le = new QLineEdit(parent);
-				le->setFrame(false);
-				w = le;
+				case QVariant::Bool:
+				{
+					QComboBox *cb = new QComboBox(parent);
+					cb->setFrame(false);
+					cb->addItem("False");
+					cb->addItem("True");
+					w = cb;
+				}	break;
+				case QVariant::UInt:
+				{
+					QSpinBox *sb = new QSpinBox(parent);
+					sb->setFrame(false);
+					sb->setMaximum(INT_MAX);
+					w = sb;
+				}	break;
+				case QVariant::Int:
+				{
+					QSpinBox *sb = new QSpinBox(parent);
+					sb->setFrame(false);
+					sb->setMinimum(INT_MIN);
+					sb->setMaximum(INT_MAX);
+					w = sb;
+				}	break;
+				case QVariant::Double:
+				{
+					QDoubleSpinBox *sb = new QDoubleSpinBox(parent);
+					sb->setFrame(false);
+					sb->setDecimals( 4 );
+					sb->setRange( - 100000000, + 100000000 );
+					w = sb;
+				}	break;
+				case QVariant::String:
+				{
+					QLineEdit *le = new QLineEdit(parent);
+					le->setFrame(false);
+					w = le;
+				}	break;
+				case QVariant::Color:
+				default:
+					w = 0;
+					break;
 			}
 		}
 		if ( w ) w->installEventFilter(const_cast<NifDelegate *>(this));
@@ -270,7 +267,7 @@ public:
 	void setEditorData(QWidget *editor, const QModelIndex &index) const
 	{
 		QVariant	v = index.model()->data( index, Qt::EditRole );
-		QByteArray	n = valuePropertyName( v.type() );
+		QByteArray	n = valuePropertyName( v );
 		if ( !n.isEmpty() )
 			editor->setProperty(n, v);
 	}
@@ -279,33 +276,33 @@ public:
 						const QModelIndex &index) const
 	{
 		Q_ASSERT(model);
-		QByteArray n = valuePropertyName( model->data(index, Qt::EditRole).type() );
+		QByteArray n = valuePropertyName( model->data(index, Qt::EditRole) );
 		if ( !n.isEmpty() )
 			model->setData( index, editor->property( n ), Qt::EditRole );
 	}
 	
-	QByteArray valuePropertyName( QVariant::Type type ) const
+	QByteArray valuePropertyName( const QVariant & v ) const
 	{
-		switch (type)
+		if ( v.canConvert<Vector>() )
+			return "vector";
+		else if ( v.canConvert<Quat>() )
+			return "quat";
+		else if ( v.canConvert<Matrix>() )
+			return "matrix";
+		else
 		{
-			case QVariant::Bool:
-				return "currentItem";
-			case QVariant::UInt:
-			case QVariant::Int:
-			case QVariant::Double:
-				return "value";
-			case QVariant::Date:
-				return "date";
-			case QVariant::Time:
-				return "time";
-			case QVariant::DateTime:
-				return "dateTime";
-			case QVariant::StringList:
-				return "contents";
-			case QVariant::String:
-			default:
-				// the default editor is a lineedit
-				return "text";
+			switch ( v.type() )
+			{
+				case QVariant::Bool:
+					return "currentItem";
+				case QVariant::UInt:
+				case QVariant::Int:
+				case QVariant::Double:
+					return "value";
+				case QVariant::String:
+				default:
+					return "text";
+			}
 		}
 	}
 };
@@ -313,4 +310,92 @@ public:
 QAbstractItemDelegate * NifModel::createDelegate()
 {
 	return new NifDelegate;
+}
+
+
+VectorEdit::VectorEdit( QWidget * parent ) : QWidget( parent )
+{
+	QHBoxLayout * lay = new QHBoxLayout;
+	lay->setMargin( 0 );
+	setLayout( lay );
+	
+	lay->addWidget( x = new QDoubleSpinBox );
+	//x->setFrame(false);
+	x->setDecimals( 4 );
+	x->setRange( - 100000000, + 100000000 );
+	x->setPrefix( "X " );
+	lay->addWidget( y = new QDoubleSpinBox );
+	//y->setFrame(false);
+	y->setDecimals( 4 );
+	y->setRange( - 100000000, + 100000000 );
+	y->setPrefix( "Y " );
+	lay->addWidget( z = new QDoubleSpinBox );
+	//z->setFrame(false);
+	z->setDecimals( 4 );
+	z->setRange( - 100000000, + 100000000 );
+	z->setPrefix( "Z " );
+}
+
+void VectorEdit::setVector( const Vector & v )
+{
+	x->setValue( v[0] );
+	y->setValue( v[1] );
+	z->setValue( v[2] );
+}
+
+Vector VectorEdit::getVector() const
+{
+	return Vector( x->value(), y->value(), z->value() );
+}
+
+RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent )
+{
+	QHBoxLayout * lay = new QHBoxLayout;
+	lay->setMargin( 0 );
+	setLayout( lay );
+	
+	lay->addWidget( y = new QDoubleSpinBox );
+	//y->setFrame(false);
+	y->setDecimals( 1 );
+	y->setRange( - 360, + 360 );
+	y->setPrefix( "Y " );
+	lay->addWidget( p = new QDoubleSpinBox );
+	//p->setFrame(false);
+	p->setDecimals( 1 );
+	p->setRange( - 360, + 360 );
+	p->setPrefix( "P " );
+	lay->addWidget( r = new QDoubleSpinBox );
+	//r->setFrame(false);
+	r->setDecimals( 1 );
+	r->setRange( - 360, + 360 );
+	r->setPrefix( "R " );
+}
+
+void RotationEdit::setMatrix( const Matrix & m )
+{
+	float Y, P, R;
+	m.toEuler( Y, P, R );
+	y->setValue( Y / PI * 180 );
+	p->setValue( P / PI * 180 );
+	r->setValue( R / PI * 180 );
+}
+
+void RotationEdit::setQuat( const Quat & q )
+{
+	Matrix m; m = q;
+	float Y, P, R;
+	m.toEuler( Y, P, R );
+	y->setValue( Y / PI * 180 );
+	p->setValue( P / PI * 180 );
+	r->setValue( R / PI * 180 );
+}
+
+Matrix RotationEdit::getMatrix() const
+{
+	return Matrix::fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
+}
+
+Quat RotationEdit::getQuat() const
+{
+	return Matrix::fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI ).toQuat();
 }

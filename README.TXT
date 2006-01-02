@@ -49,12 +49,12 @@ changes since 0.3:
   - new main window layout
   - multiple main windows
   - copy/paste blocks and compounds
-  - keyframe animations
   - draw bones/nodes
+  - keyframe animations
   - draw hidden meshes
-  - increased loading speed by 80%
-  - reduced memory consumption by 33%
   - nif version check on load
+  - fixed various texture issues
+  - vector, matrix, quat are now internal types
 
 
 changes since 0.2:

@@ -36,6 +36,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
+void glVertex( const Vector & v )
+{
+	glVertex3f( v[0], v[1], v[2] );
+}
+void glNormal( const Vector & v )
+{
+	glNormal3f( v[0], v[1], v[2] );
+}
+void glTranslate( const Vector & v )
+{
+	glTranslatef( v[0], v[1], v[2] );
+}
+	
+
 Triangle::Triangle( NifModel * nif, const QModelIndex & triangle )
 {
 	if ( !triangle.isValid() )		{	v1 = v2 = v3 = 0; return;	}
@@ -193,7 +207,7 @@ KeyframeController::KeyframeController( Node * node, NifModel * nif, const QMode
 			for ( int r = 0; r < count; r++ )
 			{
 				transTime[ r ] = nif->getFloat( trans.child( r, 0 ), "time" );
-				transData[ r ] = Vector( nif, nif->getIndex( trans.child( r, 0 ), "pos" ) );
+				transData[ r ] = nif->itemValue( nif->getIndex( trans.child( r, 0 ), "pos" ) );
 			}
 		}
 		QModelIndex rot = nif->getIndex( data, "rotations" );
@@ -205,7 +219,7 @@ KeyframeController::KeyframeController( Node * node, NifModel * nif, const QMode
 			for ( int r = 0; r < count; r++ )
 			{
 				rotTime[ r ] = nif->getFloat( rot.child( r, 0 ), "time" );
-				rotData[ r ] = Quat( nif, nif->getIndex( rot.child( r, 0 ), "quat" ) );
+				rotData[ r ] = nif->itemValue( nif->getIndex( rot.child( r, 0 ), "quat" ) );
 			}
 		}
 		QModelIndex scale = nif->getIndex( data, "scales" );
@@ -458,12 +472,12 @@ void Node::draw( bool selected )
 		b = scene->view * parent->worldTrans() * b;
 	
 	glBegin( GL_POINTS );
-	a.glVertex();
+	glVertex( a );
 	glEnd();
 
 	glBegin( GL_LINES );
-	a.glVertex();
-	b.glVertex();
+	glVertex( a );
+	glVertex( b );
 	glEnd();
 	
 	glPopAttrib();
@@ -492,8 +506,6 @@ void Mesh::init( NifModel * nif, const QModelIndex & index )
 {
 	Node::init( nif, index );
 	
-	localCenter = Vector( nif, nif->getIndex( index, "center" ) );
-	
 	if ( ! alphaEnable )
 	{
 		alpha = 1.0;
@@ -517,18 +529,20 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 		triangles.clear();
 		tristrips.clear();
 		
+		localCenter = nif->itemValue( nif->getIndex( special, "center" ) );
+		
 		QModelIndex vertices = nif->getIndex( special, "vertices" );
 		if ( vertices.isValid() )
 		{
 			for ( int r = 0; r < nif->rowCount( vertices ); r++ )
-				verts.append( Vector( nif, nif->index( r, 0, vertices ) ) );
+				verts.append( nif->itemValue( nif->index( r, 0, vertices ) ) );
 		}
 		
 		QModelIndex normals = nif->getIndex( special, "normals" );
 		if ( normals.isValid() )
 		{
 			for ( int r = 0; r < nif->rowCount( normals ); r++ )
-				norms.append( Vector( nif, nif->index( r, 0, normals ) ) );
+				norms.append( nif->itemValue( nif->index( r, 0, normals ) ) );
 		}
 		QModelIndex vertexcolors = nif->getIndex( special, "vertex colors" );
 		if ( vertexcolors.isValid() )
@@ -865,18 +879,18 @@ void Mesh::draw( bool selected )
 		{
 			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
 			{
-				if ( transNorms.count() > tri.v1 ) transNorms[tri.v1].glNormal();
+				if ( transNorms.count() > tri.v1 ) glNormal( transNorms[tri.v1] );
 				if ( uvs.count() > tri.v1*2 ) glTexCoord2f( uvs[tri.v1*2+0], uvs[tri.v1*2+1] );
 				if ( colors.count() > tri.v1 ) ( colors[tri.v1] * blend ).glColor();
-				transVerts[tri.v1].glVertex();
-				if ( transNorms.count() > tri.v2 ) transNorms[tri.v2].glNormal();
+				glVertex( transVerts[tri.v1] );
+				if ( transNorms.count() > tri.v2 ) glNormal( transNorms[tri.v2] );
 				if ( uvs.count() > tri.v2*2 ) glTexCoord2f( uvs[tri.v2*2+0], uvs[tri.v2*2+1] );
 				if ( colors.count() > tri.v2 ) ( colors[tri.v2] * blend ).glColor();
-				transVerts[tri.v2].glVertex();
-				if ( transNorms.count() > tri.v3 ) transNorms[tri.v3].glNormal();
+				glVertex( transVerts[tri.v2] );
+				if ( transNorms.count() > tri.v3 ) glNormal( transNorms[tri.v3] );
 				if ( uvs.count() > tri.v3*2 ) glTexCoord2f( uvs[tri.v3*2+0], uvs[tri.v3*2+1] );
 				if ( colors.count() > tri.v3 ) ( colors[tri.v3] * blend ).glColor();
-				transVerts[tri.v3].glVertex();
+				glVertex( transVerts[tri.v3] );
 			}
 		}
 		glEnd();
@@ -889,10 +903,10 @@ void Mesh::draw( bool selected )
 		glBegin( GL_TRIANGLE_STRIP );
 		foreach ( int v, strip.vertices )
 		{
-			if ( transNorms.count() > v ) transNorms[v].glNormal();
+			if ( transNorms.count() > v ) glNormal( transNorms[v] );
 			if ( uvs.count() > v*2 ) glTexCoord2f( uvs[v*2+0], uvs[v*2+1] );
 			if ( colors.count() > v ) ( colors[v] * blend ).glColor();
-			if ( transVerts.count() > v ) transVerts[v].glVertex();
+			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}
 		glEnd();
 	}
@@ -917,10 +931,10 @@ void Mesh::draw( bool selected )
 			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
 			{
 				glBegin( GL_LINE_STRIP );
-				transVerts[tri.v1].glVertex();
-				transVerts[tri.v2].glVertex();
-				transVerts[tri.v3].glVertex();
-				transVerts[tri.v1].glVertex();
+				glVertex( transVerts[tri.v1] );
+				glVertex( transVerts[tri.v2] );
+				glVertex( transVerts[tri.v3] );
+				glVertex( transVerts[tri.v1] );
 				glEnd();
 			}
 		}
@@ -931,7 +945,7 @@ void Mesh::draw( bool selected )
 			foreach ( int v, strip.vertices )
 			{
 				if ( transVerts.count() > v )
-					transVerts[v].glVertex();
+					glVertex( transVerts[v] );
 			}
 			glEnd();
 		}
@@ -946,10 +960,8 @@ void Mesh::draw( bool selected )
  */
 
 
-Scene::Scene( const QGLContext * context )
+Scene::Scene()
 {
-	this->context = context;
-	
 	texturing = true;
 	blending = true;
 	highlight = true;
@@ -958,7 +970,7 @@ Scene::Scene( const QGLContext * context )
 	currentNode = 0;
 	animate = true;
 	
-	time = 0.0;
+	time = timeMin = timeMax = 0.0;
 }
 
 Scene::~Scene()
@@ -971,7 +983,7 @@ void Scene::clear()
 {
 	qDeleteAll( nodes ); nodes.clear();
 	qDeleteAll( meshes ); meshes.clear();
-	texInitPhase = true;
+	textures.clear();
 	boundMin = boundMax = boundCenter = Vector( 0.0, 0.0, 0.0 );
 	boundRadius = Vector( 1.0, 1.0, 1.0 );
 	timeMin = timeMax = 0.0;
@@ -1118,8 +1130,6 @@ void Scene::draw()
 	if ( drawNodes )
 		foreach ( Node * node, nodes )
 			node->draw( highlight && node->id() == currentNode );
-	
-	texInitPhase = false;
 }
 
 #endif

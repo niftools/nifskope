@@ -12,6 +12,7 @@ HEADERS += \
 glmath.h \
 glscene.h \
 glview.h \
+nifdelegate.h \
 nifmodel.h \
 nifproxy.h \
 nifskope.h \

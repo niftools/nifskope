@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
+#include "niftypes.h"
 
 #include <QtXml>
 #include <QColor>
@@ -45,6 +46,9 @@ QHash<QString,NifBasicType*>	NifModel::types;
 QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::ancestors;
 QHash<QString,NifBlock*>		NifModel::blocks;
+
+const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
+const float Matrix::identity[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
 
 class NifXmlHandler : public QXmlDefaultHandler
 {
@@ -96,6 +100,12 @@ public:
 			case NifModel::it_color3f:
 			case NifModel::it_color4f:
 				return QColor( vstring );
+			case NifModel::it_vector:
+				return Vector();
+			case NifModel::it_quat:
+				return Quat();
+			case NifModel::it_matrix:
+				return Matrix();
 			default:
 				errorStr = "can't convert unknown internal type " + type;
 				return QVariant();
@@ -333,7 +343,8 @@ QString NifModel::parseXmlDescription( const QString & filename )
 		<< "uint8" << "uint16" << "uint32"
 		<< "int8" << "int16" << "int32"
 		<< "float" << "string"
-		<< "color3f" << "color4f";
+		<< "color3f" << "color4f"
+		<< "vector" << "quat" << "matrix";
 	
 	supportedVersions.clear();
 	

@@ -111,7 +111,7 @@ GLView::GLView()
 	time = 0.0;
 	lastTime = QTime::currentTime();
 	
-	scene = new Scene( context() );
+	scene = new Scene();
 
 	click_tex = 0;
 	
@@ -200,9 +200,8 @@ GLView::~GLView()
 
 void GLView::initializeGL()
 {
-	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
-	//qDebug( (const char *) glGetString(GL_EXTENSIONS) );
-
+	GLTex::initialize( context() );
+	
 	qglClearColor( palette().color( QPalette::Active, QPalette::Background ) );
 
 	static const GLfloat L0position[4] = { 5.0f, 5.0f, 10.0f, 1.0f };
@@ -301,7 +300,7 @@ void GLView::paintGL()
 	// transform the scene
 	
 	Transform viewTrans;
-	viewTrans.rotation = Matrix::rotX( xRot / 16.0 / 180.0 * 3.14 ) * Matrix::rotY( yRot / 16.0 / 180 * 3.14 ) * Matrix::rotZ( zRot / 16.0 / 180.0 * 3.14 );
+	viewTrans.rotation = Matrix::fromEuler( xRot / 16.0 / 180 * PI, yRot / 16.0 / 180 * PI, zRot / 16.0 / 180 * PI );
 	
 	scene->transform( viewTrans, time );
 	
@@ -326,41 +325,42 @@ void GLView::paintGL()
 		glPushMatrix();
 		viewTrans.glMultMatrix();
 		
-		GLfloat arrow = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) ) * 2.1;
+		GLfloat axis = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) ) * 2.1;
+		GLfloat arrow = axis / 10.0;
 		glBegin( GL_LINES );
 		glColor3f( 1.0, 0.0, 0.0 );
-		glVertex3f( - arrow, 0, 0 );
-		glVertex3f( + arrow, 0, 0 );
-		glVertex3f( + arrow,    0,    0 );
-		glVertex3f( + arrow-10, + 10,    0 );
-		glVertex3f( + arrow,    0,    0 );
-		glVertex3f( + arrow-10, - 10,    0 );
-		glVertex3f( + arrow,    0,    0 );
-		glVertex3f( + arrow-10,    0, + 10 );
-		glVertex3f( + arrow,    0,    0 );
-		glVertex3f( + arrow-10,    0, - 10 );
+		glVertex3f( - axis, 0, 0 );
+		glVertex3f( + axis, 0, 0 );
+		glVertex3f( + axis, 0, 0 );
+		glVertex3f( + axis - arrow, + arrow, 0 );
+		glVertex3f( + axis, 0, 0 );
+		glVertex3f( + axis - arrow, - arrow, 0 );
+		glVertex3f( + axis, 0, 0 );
+		glVertex3f( + axis - arrow, 0, + arrow );
+		glVertex3f( + axis, 0, 0 );
+		glVertex3f( + axis - arrow, 0, - arrow );
 		glColor3f( 0.0, 1.0, 0.0 );
-		glVertex3f( 0, - arrow, 0 );
-		glVertex3f( 0, + arrow, 0 );
-		glVertex3f(    0, + arrow,    0 );
-		glVertex3f( + 10, + arrow-10,    0 );
-		glVertex3f(    0, + arrow,    0 );
-		glVertex3f( - 10, + arrow-10,    0 );
-		glVertex3f(    0, + arrow,    0 );
-		glVertex3f(    0, + arrow-10, + 10 );
-		glVertex3f(    0, + arrow,    0 );
-		glVertex3f(    0, + arrow-10, - 10 );
+		glVertex3f( 0, - axis, 0 );
+		glVertex3f( 0, + axis, 0 );
+		glVertex3f( 0, + axis, 0 );
+		glVertex3f( + arrow, + axis - arrow, 0 );
+		glVertex3f( 0, + axis, 0 );
+		glVertex3f( - arrow, + axis - arrow, 0 );
+		glVertex3f( 0, + axis, 0 );
+		glVertex3f( 0, + axis - arrow, + arrow );
+		glVertex3f( 0, + axis, 0 );
+		glVertex3f( 0, + axis - arrow, - arrow );
 		glColor3f( 0.0, 0.0, 1.0 );
-		glVertex3f( 0, 0, - arrow );
-		glVertex3f( 0, 0, + arrow );
-		glVertex3f(    0,    0, + arrow );
-		glVertex3f(    0, + 10, + arrow-10 );
-		glVertex3f(    0,    0, + arrow );
-		glVertex3f(    0, - 10, + arrow-10 );
-		glVertex3f(    0,    0, + arrow );
-		glVertex3f( + 10,    0, + arrow-10 );
-		glVertex3f(    0,    0, + arrow );
-		glVertex3f( - 10,    0, + arrow-10 );
+		glVertex3f( 0, 0, - axis );
+		glVertex3f( 0, 0, + axis );
+		glVertex3f( 0, 0, + axis );
+		glVertex3f( 0, + arrow, + axis - arrow );
+		glVertex3f( 0, 0, + axis );
+		glVertex3f( 0, - arrow, + axis - arrow );
+		glVertex3f( 0, 0, + axis );
+		glVertex3f( + arrow, 0, + axis - arrow );
+		glVertex3f( 0, 0, + axis );
+		glVertex3f( - arrow, 0, + axis - arrow );
 		glEnd();
 		glPopMatrix();
 		/*
@@ -510,24 +510,24 @@ void GLView::sltFrame( int f )
 void GLView::selectTexFolder()
 {
 	//QString tf = QFileDialog::getExistingDirectory( this, "select texture folder", textureFolder() );
-	setTextureFolder( selectMultipleDirs( "select texture folders", textureFolder().split( ";" ), this ).join( ";" ) );
+	setTextureFolder( selectMultipleDirs( "select texture folders", scene->texfolders, this ).join( ";" ) );
 }
 
 void GLView::setTextureFolder( const QString & tf )
 {
-	scene->texfolder = tf;
+	scene->texfolders = tf.split( ";" );
 	updated = true;
 }
 
 QString GLView::textureFolder() const
 {
-	return scene->texfolder;
+	return scene->texfolders.join( ";" );
 }
 
 void GLView::save( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	settings.setValue( "texture folder", scene->texfolder );
+	settings.setValue( "texture folder", scene->texfolders.join( ";" ) );
 	settings.setValue( "enable textures", aTexturing->isChecked() );
 	settings.setValue( "enable lighting", aLighting->isChecked() );
 	settings.setValue( "enable blending", aBlending->isChecked() );
@@ -544,7 +544,7 @@ void GLView::save( QSettings & settings )
 void GLView::restore( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	scene->texfolder = settings.value( "texture folder" ).toString();
+	scene->texfolders = settings.value( "texture folder" ).toString().split( ";" );
 	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
 	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
 	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );

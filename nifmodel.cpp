@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
+#include "niftypes.h"
 
 #include <QApplication>
 #include <QByteArray>
@@ -781,16 +782,30 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 							}
 						}
 					}
-					/*
-					else if ( displayHint == "color" )
+					else if ( displayHint == "vector" )
 					{
-						QColor c = item->value().value<QColor>();
-						QString s = "R " + QString::number( c.redF(), 'f', 2 ) + " G " + QString::number( c.greenF(), 'f', 2 ) + " B " + QString::number( c.blueF(), 'f', 2 );
-						if ( getInternalType( item->type() ) == it_color4f )
-							s += " A " + QString::number( c.alphaF(), 'f', 2 );
-						return s;
+						Vector v = item->value().value<Vector>();
+						return QString( "X %1 Y %2 Z %3" ).arg( v[0], 0, 'f', 3 ).arg( v[1], 0, 'f', 3 ).arg( v[2], 0, 'f', 3 );
 					}
-					*/
+					else if ( displayHint == "matrix" )
+					{
+						Matrix m = item->value().value<Matrix>();
+						float x, y, z;
+						if ( m.toEuler( x, y, z ) )
+							return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+						else
+							return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+					}
+					else if ( displayHint == "quat" )
+					{
+						Matrix m;
+						m = item->value().value<Quat>();
+						float x, y, z;
+						if ( m.toEuler( x, y, z ) )
+							return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+						else
+							return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+					}
 					return item->value();
 				}
 				case ArgCol:	return item->arg();
@@ -832,10 +847,23 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 		case Qt::ToolTipRole:
 		{
 			QString tip;
-			if ( column == TypeCol )
+			switch ( column )
 			{
-				tip = getTypeDescription( item->type() );
-				if ( ! tip.isEmpty() ) return tip;
+				case TypeCol:
+				{
+					tip = getTypeDescription( item->type() );
+					if ( ! tip.isEmpty() ) return tip;
+				}	break;
+				case ValueCol:
+				{
+					QString displayHint = getDisplayHint( item->type() );
+					if ( displayHint == "matrix" )
+						return item->value().value<Matrix>().toHtml();
+					else if ( displayHint == "quat" )
+						return item->value().value<Quat>().toHtml();
+				}	break;
+				default:
+					break;
 			}
 			return QVariant();
 		}
@@ -1009,6 +1037,8 @@ bool NifModel::load( QIODevice & device )
 	prog.setRange( 0, numblocks );
 	prog.setValue( 0 );
 	prog.setMinimumDuration( 2100 );
+	
+	//QTime t = QTime::currentTime();
 
 	// read in the NiBlocks
 	try
@@ -1017,6 +1047,7 @@ bool NifModel::load( QIODevice & device )
 		{
 			prog.setValue( c + 1 );
 			qApp->processEvents();
+			
 			if ( prog.wasCanceled() )
 			{
 				clear();
@@ -1059,6 +1090,7 @@ bool NifModel::load( QIODevice & device )
 	{
 		qCritical() << (const char *) err.toAscii();
 	}
+	//qWarning() << t.msecsTo( QTime::currentTime() );
 	reset(); // notify model views that a significant change to the data structure has occurded
 	return true;
 }
@@ -1226,6 +1258,18 @@ bool NifModel::load( NifItem * parent, QIODevice & device, bool fast )
 					string.replace( "\n", "\\n" );
 					child->setValue( QString( string ) );
 				} break;
+				case it_vector:
+				{
+					child->setValue( Vector( device ) );
+				}	break;
+				case it_quat:
+				{
+					child->setValue( Quat( device ) );
+				}	break;
+				case it_matrix:
+				{
+					child->setValue( Matrix( device ) );
+				}	break;
 				default:
 				{
 					qCritical() << "block" << getBlockNumber( parent ) << child->name() << "unknown type" << child->name();
@@ -1334,6 +1378,18 @@ bool NifModel::save( NifItem * parent, QIODevice & device )
 					device.write( (char *) &len, 4 );
 					device.write( (const char *) string, string.length() );
 				} break;
+				case it_vector:
+				{
+					child->value().value<Vector>().write( device );
+				}	break;
+				case it_quat:
+				{
+					child->value().value<Quat>().write( device );
+				}	break;
+				case it_matrix:
+				{
+					child->value().value<Matrix>().write( device );
+				}	break;
 				default:
 				{
 					qCritical() << "block" << getBlockNumber( parent ) << child->name() << "unknown type" << child->type();
@@ -1647,5 +1703,3 @@ bool NifModel::evalCondition( const QModelIndex & index, bool chkParents ) const
 		return evalCondition( item, chkParents );
 	return false;
 }
-
-
