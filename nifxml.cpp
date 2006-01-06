@@ -38,7 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define err( X ) { errorStr = X; return false; }
 
-QStringList						NifModel::internalTypes;
+QHash<QString,int>				NifModel::internalTypes;
+QHash<QString,int>				NifModel::displayHints;
 
 QList<quint32>					NifModel::supportedVersions;
 
@@ -135,12 +136,16 @@ public:
 				{
 					case 1:
 						{
-							int intTyp = NifModel::internalTypes.indexOf( list.value( "type" ) );
-							if ( intTyp < 0 )	err( "type declaration must name a valid internal type" );
+							if ( ! NifModel::internalTypes.contains( list.value( "type" ) ) )	err( "type declaration must name a valid internal type" );
+							
+							QString disp = list.value( "display" );
+							if ( disp.isEmpty() )	disp = list.value( "type" );
+							if ( ! NifModel::displayHints.contains( disp ) ) err( "type declaration must name a valid display hint" );
+							
 							if ( ! typ ) typ = new NifBasicType;
 							typ->id = list.value( "name" ).toLower();
-							typ->internalType = intTyp;
-							typ->display = list.value( "display" ).toLower();
+							typ->internalType = NifModel::internalTypes[ list.value( "type" ) ];
+							typ->display = NifModel::displayHints[ disp ];
 							typ->value = convertToType( list.value( "value" ), typ->internalType );
 							typ->ver1 = NifModel::version2number( list.value( "ver1" ) );
 							typ->ver2 = NifModel::version2number( list.value( "ver2" ) );
@@ -339,12 +344,41 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	qDeleteAll( blocks );		blocks.clear();
 	
 	internalTypes.clear();
-	internalTypes
-		<< "uint8" << "uint16" << "uint32"
-		<< "int8" << "int16" << "int32"
-		<< "float" << "string"
-		<< "color3f" << "color4f"
-		<< "vector" << "quat" << "matrix";
+	internalTypes.insert( "uint8", it_uint8 );
+	internalTypes.insert( "uint16", it_uint16 );
+	internalTypes.insert( "uint32", it_uint32 );
+	internalTypes.insert( "int8", it_int8 );
+	internalTypes.insert( "int16", it_int16 );
+	internalTypes.insert( "int32", it_int32 );
+	internalTypes.insert( "float", it_float );
+	internalTypes.insert( "string", it_string );
+	internalTypes.insert( "color3f", it_color3f );
+	internalTypes.insert( "color4f", it_color4f );
+	internalTypes.insert( "vector", it_vector );
+	internalTypes.insert( "quat", it_quat );
+	internalTypes.insert( "matrix", it_matrix );
+	
+	displayHints.clear();
+	displayHints.insert( "uint8", dh_dec );
+	displayHints.insert( "uint16", dh_dec );
+	displayHints.insert( "uint16", dh_dec );
+	displayHints.insert( "int8", dh_dec );
+	displayHints.insert( "int16", dh_dec );
+	displayHints.insert( "int32", dh_dec );
+	displayHints.insert( "float", dh_float );
+	displayHints.insert( "string", dh_string );
+	displayHints.insert( "color", dh_color );
+	displayHints.insert( "color3f", dh_color );
+	displayHints.insert( "color4f", dh_color );
+	displayHints.insert( "vector", dh_vector );
+	displayHints.insert( "quat", dh_quat );
+	displayHints.insert( "matrix", dh_matrix );
+	displayHints.insert( "dec", dh_dec );
+	displayHints.insert( "hex", dh_hex );
+	displayHints.insert( "bin", dh_bin );
+	displayHints.insert( "bool", dh_bool );
+	displayHints.insert( "float", dh_float );
+	displayHints.insert( "link", dh_link );
 	
 	supportedVersions.clear();
 	

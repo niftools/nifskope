@@ -406,6 +406,8 @@ int NifModel::getBlockNumber( NifItem * item ) const
 
 QModelIndex NifModel::getBlock( int x, const QString & name ) const
 {
+	if ( x < 0 )
+		return QModelIndex();
 	x += 1; //the first block is the NiHeader
 	QModelIndex idx = index( x, 0 );
 	if ( ! name.isEmpty() )
@@ -416,6 +418,7 @@ QModelIndex NifModel::getBlock( int x, const QString & name ) const
 
 NifItem * NifModel::getBlockItem( int x ) const
 {
+	if ( x < 0 )	return 0;
 	return root->child( x+1 );
 }
 
@@ -568,7 +571,7 @@ quint32 NifModel::itemVer2( const QModelIndex & index ) const
 
 qint32 NifModel::itemLink( NifItem * item ) const
 {
-	return ( getDisplayHint( item->type() ) == "link" && item->value().isValid() ? item->value().toInt() : -1 );
+	return ( getDisplayHint( item->type() ) == dh_link && item->value().isValid() ? item->value().toInt() : -1 );
 }
 
 qint32 NifModel::itemLink( const QModelIndex & index ) const
@@ -582,7 +585,7 @@ bool NifModel::itemIsLink( NifItem * item, bool * isChildLink ) const
 {
 	if ( isChildLink )
 		*isChildLink = ( item->type() == "link" );
-	return ( getDisplayHint( item->type() ) == "link" );
+	return ( getDisplayHint( item->type() ) == dh_link );
 }
 
 bool NifModel::itemIsLink( const QModelIndex & index, bool * isChildLink ) const
@@ -749,62 +752,69 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				{
 					if ( ! item->value().isValid() )
 						return QVariant();
-					QString displayHint = getDisplayHint( item->type() );
-					if ( displayHint == "float" )
-						return QString::number( item->value().toDouble(), 'f', 4 );
-					else if ( displayHint == "dec" )
-						return QString::number( item->value().toInt(), 10 );
-					else if ( displayHint == "bool" )
-						return ( item->value().toUInt() != 0 ? "yes" : "no" );
-					else if ( displayHint == "hex" )
-						return QString::number( item->value().toUInt(), 16 ).prepend( "0x" );
-					else if ( displayHint == "bin" )
-						return QString::number( item->value().toUInt(), 2 ).prepend( "0b" );
-					else if ( displayHint == "link" && item->value().isValid() )
+					int displayHint = getDisplayHint( item->type() );
+					switch ( displayHint )
 					{
-						int lnk = item->value().toInt();
-						if ( lnk == -1 )
-							return QString( "none" );
-						else
-						{
-							QModelIndex block = getBlock( lnk );
-							if ( block.isValid() )
+						case dh_dec:
+							return QString::number( item->value().toInt(), 10 );
+						case dh_float:
+							return QString::number( item->value().toDouble(), 'f', 4 );
+						case dh_bool:
+							return ( item->value().toUInt() != 0 ? "yes" : "no" );
+						case dh_hex:
+							return QString::number( item->value().toUInt(), 16 ).prepend( "0x" );
+						case dh_bin:
+							return QString::number( item->value().toUInt(), 2 ).prepend( "0b" );
+						case dh_string:
+							return item->value().toString();
+						case dh_link:
+							if ( item->value().isValid() )
 							{
-								QModelIndex block_name = getIndex( block, "name" );
-								if ( block_name.isValid() && ! itemValue( block_name ).toString().isEmpty() )
-									return QString( "%1 (%2)" ).arg( lnk ).arg( itemValue( block_name ).toString() );
+								int lnk = item->value().toInt();
+								if ( lnk >= 0 )
+								{
+									QModelIndex block = getBlock( lnk );
+									if ( block.isValid() )
+									{
+										QModelIndex block_name = getIndex( block, "name" );
+										if ( block_name.isValid() && ! itemValue( block_name ).toString().isEmpty() )
+											return QString( "%1 (%2)" ).arg( lnk ).arg( itemValue( block_name ).toString() );
+										else
+											return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
+									}
+									else
+									{
+										return QString( "%1 <invalid>" ).arg( lnk );
+									}
+								}
 								else
-									return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
+									return QString( "none" );
 							}
+							break;
+						case dh_vector:
+						{
+							Vector v = item->value().value<Vector>();
+							return QString( "X %1 Y %2 Z %3" ).arg( v[0], 0, 'f', 3 ).arg( v[1], 0, 'f', 3 ).arg( v[2], 0, 'f', 3 );
+						}	break;
+						case dh_matrix:
+						{
+							Matrix m = item->value().value<Matrix>();
+							float x, y, z;
+							if ( m.toEuler( x, y, z ) )
+								return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
 							else
-							{
-								return QString( "%1 <invalid>" ).arg( lnk );
-							}
-						}
-					}
-					else if ( displayHint == "vector" )
-					{
-						Vector v = item->value().value<Vector>();
-						return QString( "X %1 Y %2 Z %3" ).arg( v[0], 0, 'f', 3 ).arg( v[1], 0, 'f', 3 ).arg( v[2], 0, 'f', 3 );
-					}
-					else if ( displayHint == "matrix" )
-					{
-						Matrix m = item->value().value<Matrix>();
-						float x, y, z;
-						if ( m.toEuler( x, y, z ) )
-							return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-						else
-							return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-					}
-					else if ( displayHint == "quat" )
-					{
-						Matrix m;
-						m = item->value().value<Quat>();
-						float x, y, z;
-						if ( m.toEuler( x, y, z ) )
-							return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-						else
-							return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+								return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+						}	break;
+						case dh_quat:
+						{
+							Matrix m;
+							m = item->value().value<Quat>();
+							float x, y, z;
+							if ( m.toEuler( x, y, z ) )
+								return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+							else
+								return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+						}	break;
 					}
 					return item->value();
 				}
@@ -856,11 +866,13 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				}	break;
 				case ValueCol:
 				{
-					QString displayHint = getDisplayHint( item->type() );
-					if ( displayHint == "matrix" )
-						return item->value().value<Matrix>().toHtml();
-					else if ( displayHint == "quat" )
-						return item->value().value<Quat>().toHtml();
+					switch ( getDisplayHint( item->type() ) )
+					{
+						case dh_matrix:
+							return item->value().value<Matrix>().toHtml();
+						case dh_quat:
+							return item->value().value<Quat>().toHtml();
+					}
 				}	break;
 				default:
 					break;
@@ -869,7 +881,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 		}
 		case Qt::BackgroundColorRole:
 		{
-			if ( column == ValueCol && ( getDisplayHint( item->type() ) == "color" ) )
+			if ( column == ValueCol && ( getDisplayHint( item->type() ) == dh_color ) )
 				return qvariant_cast<QColor>( item->value() );
 			else
 				return QVariant();

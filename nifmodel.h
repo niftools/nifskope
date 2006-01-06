@@ -111,7 +111,7 @@ struct NifBasicType
 {
 	QString				id;
 	int					internalType;
-	QString				display;
+	int					display;
 	QVariant			value;
 	QString				text;
 	quint32				ver1;
@@ -316,7 +316,7 @@ protected:
 	// this returns the internal type of a basic type
 	int getInternalType( const QString & name ) const;
 	// this returns the display hint of a basic type
-	QString getDisplayHint( const QString & name ) const;
+	int getDisplayHint( const QString & name ) const;
 	// this returns the description of a basic type
 	QString getTypeDescription( const QString & name ) const;
 	// this returns the default value of a basic type
@@ -331,14 +331,23 @@ protected:
 	QByteArray	version_string;
 	
 	// internal types: every basic type drops down to one of these
-	enum {
+	enum
+	{
 		it_uint8 = 0, it_uint16 = 1, it_uint32 = 2,
 		it_int8 = 3, it_int16 = 4, it_int32 = 5,
 		it_float = 6, it_string = 7,
 		it_color3f = 8, it_color4f = 9,
 		it_vector = 10, it_quat = 11, it_matrix = 12
 	};
-	static QStringList internalTypes;
+	static QHash<QString,int> internalTypes;
+	
+	// display hints
+	enum
+	{
+			dh_dec = 0, dh_hex = 1, dh_bin = 2, dh_bool = 3, dh_float = 4, dh_string = 5, dh_link = 6,
+			dh_color = 7, dh_vector = 8, dh_quat = 9, dh_matrix = 10
+	};
+	static QHash<QString,int> displayHints;
 	
 	static QList<quint32>					supportedVersions;
 	
@@ -393,11 +402,11 @@ inline int NifModel::getInternalType( const QString & name ) const
 	else			return -1;
 }
 
-inline QString NifModel::getDisplayHint( const QString & name ) const
+inline int NifModel::getDisplayHint( const QString & name ) const
 {
 	NifBasicType * type = getType( name );
 	if ( type )		return type->display;
-	else			return QString();
+	else			return -1;
 }
 
 inline QString NifModel::getTypeDescription( const QString & name ) const
