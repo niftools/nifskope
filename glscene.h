@@ -198,7 +198,6 @@ protected:
 	int nodeId;
 	
 	Transform local;
-	Transform localOrig;
 
 	Flags flags;
 	
@@ -209,6 +208,7 @@ protected:
 	QList<Controller*> controllers;
 	
 	friend class KeyframeController;
+	friend class VisibilityController;
 
 private:
 	bool		worldDirty;
@@ -247,6 +247,7 @@ protected:
 	QString texFile;
 	GLenum texFilter;
 	GLint texWrapS, texWrapT;
+	GLfloat texOffsetS, texOffsetT;
 	int texSet;
 	
 	bool alphaEnable;
@@ -266,8 +267,11 @@ protected:
 	QVector<Vector> transNorms;
 	
 	friend bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 );
+	
 	friend class AlphaController;
 	friend class MorphController;
+	friend class TexFlipController;
+	friend class TexCoordController;
 };
 
 class GLTex
@@ -329,6 +333,7 @@ public:
 };
 
 
+
 class NodeController : public Controller
 {
 public:
@@ -368,6 +373,19 @@ protected:
 	int scaleIndex;
 };
 
+class VisibilityController : public NodeController
+{
+public:
+	VisibilityController( Node * node, NifModel * nif, const QModelIndex & index );
+	
+	void update( float time );
+	
+protected:
+	QVector<float>	visTime;
+	QVector<bool>	visData;
+	int				visIndex;
+};
+
 class AlphaController : public MeshController
 {
 public:
@@ -400,6 +418,37 @@ public:
 	
 protected:
 	QVector<MorphKey*>	morph;
+};
+
+class TexFlipController : public MeshController
+{
+public:
+	TexFlipController( Mesh * mesh, NifModel * nif, const QModelIndex & index );
+	
+	void update( float time );
+
+protected:
+	QVector<float>		flipTime;
+	QVector<QString>	flipData;
+	int					flipIndex;
+	int					flipSlot;
+};
+
+class TexCoordController : public MeshController
+{
+	struct CoordKey
+	{
+		QVector<float>	times;
+		QVector<float>	value;
+		int				index;
+	};
+public:
+	TexCoordController( Mesh * mesh, NifModel * nif, const QModelIndex & index );
+	
+	void update( float time );
+	
+protected:
+	CoordKey	coord[2];
 };
 
 #endif

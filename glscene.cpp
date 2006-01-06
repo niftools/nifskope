@@ -264,6 +264,49 @@ void KeyframeController::update( float time )
 	}
 }
 
+VisibilityController::VisibilityController( Node * node, NifModel * nif, const QModelIndex & index )
+	: NodeController( node, nif, index )
+{
+	visIndex = 0;
+	
+	int dataLink = nif->getInt( index, "data" );
+	QModelIndex iData = nif->getBlock( dataLink, "NiVisData" );
+	if ( iData.isValid() )
+	{
+		QModelIndex iKeys = nif->getIndex( iData, "keys" );
+		if ( iKeys.isValid() )
+		{
+			int count = nif->rowCount( iKeys );
+			visTime.resize( count );
+			visData.resize( count );
+			for ( int r = 0; r < count; r++ )
+			{
+				visTime[ r ] = nif->getFloat( iKeys.child( r, 0 ), "time" );
+				visData[ r ] = nif->getInt( iKeys.child( r, 0 ), "is visible" );
+			}
+		}
+	}
+	else
+		qWarning() << "NiVisData not found";
+}
+
+void VisibilityController::update( float time )
+{
+	if ( ! flags.controller.active )
+		return;
+
+	time = ctrlTime( time );
+	
+	int next;
+	float x;
+	
+	if ( visTime.count() )
+	{
+		timeIndex( time, visTime, visIndex, next, x );
+		target->flags.node.hidden = ! visData[ visIndex ];
+	}
+}
+
 AlphaController::AlphaController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
 	: MeshController( mesh, nif, index )
 {
@@ -384,6 +427,106 @@ void MorphController::update( float time )
 	}
 }
 
+TexFlipController::TexFlipController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
+	: MeshController( mesh, nif, index )
+{
+	flipIndex = 0;
+	flipSlot = nif->getInt( index, "texture slot" );
+	
+	float delta = nif->getFloat( index, "delta" );
+	
+	QModelIndex iSources = nif->getIndex( index, "sources" );
+	if ( iSources.isValid() )
+	{
+		QModelIndex iIndices = nif->getIndex( iSources, "indices" );
+		if ( iIndices.isValid() )
+		{
+			int count = nif->rowCount( iIndices );
+			flipTime.resize( count );
+			flipData.resize( count );
+			for ( int r = 0; r < count; r++ )
+			{
+				flipTime[r] = r * delta;
+				QModelIndex iSource = nif->getBlock( nif->itemValue( iIndices.child( r, 0 ) ).toInt(), "NiSourceTexture" );
+				if ( iSource.isValid() )
+				{
+					QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
+					if ( iTexSource.isValid() )
+					{
+						flipData[r] = nif->getValue( iTexSource, "file name" ).toString();
+					}
+				}
+			}
+		}
+	}
+}
+
+void TexFlipController::update( float time )
+{
+	if ( ! flags.controller.active )
+		return;
+	
+	int next;
+	float x;
+	
+	if ( flipTime.count() > 0 && flipSlot == 0 )
+	{
+		timeIndex( time, flipTime, flipIndex, next, x );
+		target->texFile = flipData[flipIndex];
+	}
+}
+
+TexCoordController::TexCoordController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
+	: MeshController( mesh, nif, index )
+{
+	QModelIndex iData = nif->getBlock( nif->getInt( index, "data" ), "NiUVData" );
+	
+	QModelIndex iGroups = nif->getIndex( iData, "uv groups" );
+	if ( iGroups.isValid() && nif->rowCount( iGroups ) >= 2 )
+	{
+		for ( int r = 0; r < 2; r++ )
+		{
+			QModelIndex iKeys = nif->getIndex( iGroups.child( r, 0 ), "uv keys" );
+			if ( iKeys.isValid() )
+			{
+				int count = nif->rowCount( iKeys );
+				coord[r].times.resize( count );
+				coord[r].value.resize( count );
+				coord[r].index = 0;
+				for ( int c = 0; c < count; c++ )
+				{
+					coord[r].times[c] = nif->getFloat( iKeys.child( c, 0 ), "time" );
+					coord[r].value[c] = nif->getFloat( iKeys.child( c, 0 ), "value" );
+				}
+			}
+			else
+				qWarning() << "UV keys not found";
+		}
+	}
+	else
+		qWarning() << "UV Groups not found";
+}
+
+void TexCoordController::update( float time )
+{
+	if ( ! flags.controller.active )
+		return;
+	
+	int next;
+	float x;
+	
+	if ( coord[0].times.count() > 0 )
+	{
+		timeIndex( time, coord[0].times, coord[0].index, next, x );
+		target->texOffsetS = coord[0].value[coord[0].index] * ( 1.0 - x ) + coord[0].value[next] * x;
+	}
+	if ( coord[1].times.count() > 0 )
+	{
+		timeIndex( time, coord[1].times, coord[1].index, next, x );
+		target->texOffsetT = coord[1].value[coord[1].index] * ( 1.0 - x ) + coord[1].value[next] * x;
+	}
+}
+
 /*
  *	Node
  */
@@ -405,7 +548,7 @@ void Node::init( NifModel * nif, const QModelIndex & index )
 
 	flags.bits = nif->getInt( index, "flags" ) & 1;
 
-	local = localOrig = Transform( nif, index );
+	local = Transform( nif, index );
 	worldDirty = true;
 	
 	foreach( int link, nif->getChildLinks( nodeId ) )
@@ -417,7 +560,14 @@ void Node::init( NifModel * nif, const QModelIndex & index )
 		if ( nif->inherits( name, "AProperty" ) )
 			setProperty( nif, block );
 		else if ( nif->inherits( name, "AController" ) )
-			setController( nif, block );
+		{
+			do
+			{
+				setController( nif, block );
+				block = nif->getBlock( nif->getInt( block, "next controller" ) );
+			}
+			while ( block.isValid() && nif->inherits( nif->itemName( block ), "AController" ) );
+		}
 		else
 			setSpecial( nif, block );
 	}
@@ -427,6 +577,8 @@ void Node::setController( NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->itemName( index ) == "NiKeyframeController" )
 		controllers.append( new KeyframeController( this, nif, index ) );
+	else if ( nif->itemName( index ) == "NiVisController" )
+		controllers.append( new VisibilityController( this, nif, index ) );
 }
 
 void Node::setProperty( NifModel * nif, const QModelIndex & property )
@@ -492,8 +644,6 @@ void Node::depthBuffer( bool & test, bool & mask )
 
 void Node::transform()
 {
-	local = localOrig;
-	
 	worldDirty = true;
 	
 	if ( scene->animate )
@@ -574,6 +724,7 @@ Mesh::Mesh( Scene * s, Node * p ) : Node( s, p )
 	texSet = 0;
 	texFilter = GL_LINEAR;
 	texWrapS = texWrapT = GL_REPEAT;
+	texOffsetS = texOffsetT = 0.0;
 	alphaEnable = false;
 	alphaSrc = GL_SRC_ALPHA;
 	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
@@ -737,13 +888,6 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 		QModelIndex basetexdata = nif->getIndex( basetex, "texture data" );
 		if ( ! basetexdata.isValid() )	return;
 		
-		int src = nif->getInt( basetexdata, "source" );
-		QModelIndex sourcetexture = nif->getBlock( src, "NiSourceTexture" );
-		if ( ! sourcetexture.isValid() ) return;
-
-		QModelIndex source = nif->getIndex( sourcetexture, "texture source" );
-		texFile = nif->getValue( source, "file name" ).toString();
-
 		switch ( nif->getInt( basetexdata, "filter mode" ) )
 		{
 			case 0:		texFilter = GL_NEAREST;		break;
@@ -764,6 +908,21 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 			default:	texWrapS = GL_REPEAT;	texWrapT = GL_REPEAT;	break;
 		}
 		texSet = nif->getInt( basetexdata, "texture set" );
+		
+		QModelIndex iSource = nif->getBlock( nif->getInt( basetexdata, "source" ), "NiSourceTexture" );
+		if ( iSource.isValid() )
+		{
+			QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
+			if ( iTexSource.isValid() )
+				texFile = nif->getValue( iTexSource, "file name" ).toString();
+		}
+		
+		foreach( int link, nif->getChildLinks( nif->getBlockNumber( property ) ) )
+		{
+			QModelIndex block = nif->getBlock( link );
+			if ( block.isValid() && nif->inherits( nif->itemName( block ), "AController" ) )
+				setController( nif, block );
+		}
 	}
 	else if ( propname == "NiAlphaProperty" )
 	{
@@ -785,6 +944,10 @@ void Mesh::setController( NifModel * nif, const QModelIndex & controller )
 		controllers.append( new AlphaController( this, nif, controller ) );
 	else if ( nif->itemName( controller ) == "NiGeomMorpherController" )
 		controllers.append( new MorphController( this, nif, controller ) );
+	else if ( nif->itemName( controller ) == "NiFlipController" )
+		controllers.append( new TexFlipController( this, nif, controller ) );
+	else if ( nif->itemName( controller ) == "NiUVController" )
+		controllers.append( new TexCoordController( this, nif, controller ) );
 	else
 		Node::setController( nif, controller );
 }
@@ -960,15 +1123,15 @@ void Mesh::draw( bool selected )
 			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
 			{
 				if ( transNorms.count() > tri.v1 ) glNormal( transNorms[tri.v1] );
-				if ( uvs.count() > tri.v1*2 ) glTexCoord2f( uvs[tri.v1*2+0], uvs[tri.v1*2+1] );
+				if ( uvs.count() > tri.v1*2 ) glTexCoord2f( uvs[tri.v1*2+0] + texOffsetS, uvs[tri.v1*2+1] + texOffsetT );
 				if ( colors.count() > tri.v1 ) ( colors[tri.v1] * blend ).glColor();
 				glVertex( transVerts[tri.v1] );
 				if ( transNorms.count() > tri.v2 ) glNormal( transNorms[tri.v2] );
-				if ( uvs.count() > tri.v2*2 ) glTexCoord2f( uvs[tri.v2*2+0], uvs[tri.v2*2+1] );
+				if ( uvs.count() > tri.v2*2 ) glTexCoord2f( uvs[tri.v2*2+0] + texOffsetS, uvs[tri.v2*2+1] + texOffsetT );
 				if ( colors.count() > tri.v2 ) ( colors[tri.v2] * blend ).glColor();
 				glVertex( transVerts[tri.v2] );
 				if ( transNorms.count() > tri.v3 ) glNormal( transNorms[tri.v3] );
-				if ( uvs.count() > tri.v3*2 ) glTexCoord2f( uvs[tri.v3*2+0], uvs[tri.v3*2+1] );
+				if ( uvs.count() > tri.v3*2 ) glTexCoord2f( uvs[tri.v3*2+0] + texOffsetS, uvs[tri.v3*2+1] + texOffsetT );
 				if ( colors.count() > tri.v3 ) ( colors[tri.v3] * blend ).glColor();
 				glVertex( transVerts[tri.v3] );
 			}
@@ -984,7 +1147,7 @@ void Mesh::draw( bool selected )
 		foreach ( int v, strip.vertices )
 		{
 			if ( transNorms.count() > v ) glNormal( transNorms[v] );
-			if ( uvs.count() > v*2 ) glTexCoord2f( uvs[v*2+0], uvs[v*2+1] );
+			if ( uvs.count() > v*2 ) glTexCoord2f( uvs[v*2+0] + texOffsetS, uvs[v*2+1] + texOffsetT );
 			if ( colors.count() > v ) ( colors[v] * blend ).glColor();
 			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}
