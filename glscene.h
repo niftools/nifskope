@@ -267,6 +267,7 @@ protected:
 	
 	friend bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 );
 	friend class AlphaController;
+	friend class MorphController;
 };
 
 class GLTex
@@ -379,6 +380,26 @@ protected:
 	QVector<float> alphaData;
 	
 	int alphaIndex;
+};
+
+class MorphController : public MeshController
+{
+	struct MorphKey
+	{
+		QVector<float> times;
+		QVector<float> value;
+		QVector<Vector> verts;
+		int index;
+	};
+	
+public:
+	MorphController( Mesh * mesh, NifModel * nif, const QModelIndex & index );
+	~MorphController();
+	
+	void update( float time );
+	
+protected:
+	QVector<MorphKey*>	morph;
 };
 
 #endif

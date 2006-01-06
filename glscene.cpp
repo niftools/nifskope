@@ -305,6 +305,84 @@ void AlphaController::update( float time )
 	}
 }
 
+MorphController::MorphController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
+	: MeshController( mesh, nif, index )
+{
+	int dataLink = nif->getInt( index, "data" );
+	QModelIndex data = nif->getBlock( dataLink, "NiMorphData" );
+	if ( data.isValid() )
+	{
+		QModelIndex midx = nif->getIndex( data, "morphs" );
+		if ( midx.isValid() )
+		{
+			for ( int r = 0; r < nif->rowCount( midx ); r++ )
+			{
+				QModelIndex iKey = midx.child( r, 0 );
+				
+				MorphKey * key = new MorphKey;
+				key->index = 0;
+				
+				QModelIndex value = nif->getIndex( iKey, "frames" );
+				
+				if ( value.isValid() )
+				{
+					int count = nif->rowCount( value );
+					key->times.resize( count );
+					key->value.resize( count );
+					for ( int v = 0; v < count; v++ )
+					{
+						key->times[ v ] = nif->getFloat( value.child( v, 0 ), "time" );
+						key->value[ v ] = nif->getFloat( value.child( v, 0 ), "value" );
+					}
+				}
+				
+				QModelIndex verts = nif->getIndex( iKey, "vectors" );
+				if ( verts.isValid() )
+				{
+					int count = nif->rowCount( verts );
+					key->verts.resize( count );
+					for ( int v = 0; v < count; v++ )
+						key->verts[ v ] = nif->itemValue( verts.child( v, 0 ) );
+				}
+				
+				morph.append( key );
+			}
+		}
+	}
+}
+
+MorphController::~MorphController()
+{
+	qDeleteAll( morph );
+}
+
+void MorphController::update( float time )
+{
+	if ( ! ( flags.controller.active && morph.count() > 1 ) )
+		return;
+	
+	time = ctrlTime( time );
+	
+	int next;
+	float x;
+	
+	if ( target->verts.count() != morph[0]->verts.count() )
+		return;
+	
+	target->verts = morph[0]->verts;
+	
+	for ( int i = 1; i < morph.count(); i++ )
+	{
+		MorphKey * key = morph[i];
+		timeIndex( time, key->times, key->index, next, x );
+		float value = key->value[ key->index ] * ( 1.0 - x ) + key->value[ next ] * x;
+		if ( value != 0 && target->verts.count() == key->verts.count() )
+		{
+			for ( int v = 0; v < target->verts.count(); v++ )
+				target->verts[v] += key->verts[v] * value;
+		}
+	}
+}
 
 /*
  *	Node
@@ -705,6 +783,8 @@ void Mesh::setController( NifModel * nif, const QModelIndex & controller )
 {
 	if ( nif->itemName( controller ) == "NiAlphaController" )
 		controllers.append( new AlphaController( this, nif, controller ) );
+	else if ( nif->itemName( controller ) == "NiGeomMorpherController" )
+		controllers.append( new MorphController( this, nif, controller ) );
 	else
 		Node::setController( nif, controller );
 }
