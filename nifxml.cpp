@@ -38,12 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define err( X ) { errorStr = X; return false; }
 
-QHash<QString,int>				NifModel::internalTypes;
-QHash<QString,int>				NifModel::displayHints;
-
 QList<quint32>					NifModel::supportedVersions;
 
-QHash<QString,NifBasicType*>	NifModel::types;
 QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::ancestors;
 QHash<QString,NifBlock*>		NifModel::blocks;
@@ -57,7 +53,7 @@ public:
 	NifXmlHandler()
 	{
 		depth = 0;
-		elements << "niflotoxml" << "type" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "version";
+		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "alias";
 		typ = 0;
 		blk = 0;
 	}
@@ -83,36 +79,6 @@ public:
 		return stack[--depth];
 	}
 	
-	QVariant convertToType( const QString & vstring, int type )
-	{
-		switch ( type )
-		{
-			case NifModel::it_uint8:
-			case NifModel::it_uint16:
-			case NifModel::it_uint32:
-			case NifModel::it_int8:
-			case NifModel::it_int16:
-			case NifModel::it_int32:
-				return vstring.toInt();
-			case NifModel::it_float:
-				return vstring.toDouble();
-			case NifModel::it_string:
-				return vstring;
-			case NifModel::it_color3f:
-			case NifModel::it_color4f:
-				return QColor( vstring );
-			case NifModel::it_vector:
-				return Vector();
-			case NifModel::it_quat:
-				return Quat();
-			case NifModel::it_matrix:
-				return Matrix();
-			default:
-				errorStr = "can't convert unknown internal type " + type;
-				return QVariant();
-		}
-	}
-	
 	bool startElement( const QString &, const QString &, const QString & name, const QXmlAttributes & list )
 	{
 		if ( depth >= 8 )	err( "error maximum nesting level exceeded" );
@@ -130,37 +96,31 @@ public:
 		switch ( current() )
 		{
 			case 0:
-				if ( ! ( x == 7 || ( x >= 1 && x <= 4 ) ) )	err( "expected type, compound, ancestor, niblock or version got " + name + " instead" );
+				if ( ! ( x == 7 || ( x >= 1 && x <= 4 ) ) )	err( "expected compound, ancestor, niblock, alias or version got " + name + " instead" );
 				push( x );
 				switch ( x )
 				{
-					case 1:
-						{
-							if ( ! NifModel::internalTypes.contains( list.value( "type" ) ) )	err( "type declaration must name a valid internal type" );
-							
-							QString disp = list.value( "display" );
-							if ( disp.isEmpty() )	disp = list.value( "type" );
-							if ( ! NifModel::displayHints.contains( disp ) ) err( "type declaration must name a valid display hint" );
-							
-							if ( ! typ ) typ = new NifBasicType;
-							typ->id = list.value( "name" ).toLower();
-							typ->internalType = NifModel::internalTypes[ list.value( "type" ) ];
-							typ->display = NifModel::displayHints[ disp ];
-							typ->value = convertToType( list.value( "value" ), typ->internalType );
-							typ->ver1 = NifModel::version2number( list.value( "ver1" ) );
-							typ->ver2 = NifModel::version2number( list.value( "ver2" ) );
-						}
-						break;
 					case 2:
 					case 3:
 					case 4:
+						if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
+							err( "compound " + list.value( "name" ) + " is allready registered as internal type" );
 						if ( ! blk ) blk = new NifBlock;
 						blk->id = list.value( "name" );
 						break;
+					case 7:
+					{
+						QString alias = list.value( "name" );
+						QString type = list.value( "type" );
+						if ( alias.isEmpty() || type.isEmpty() )
+							err( "alias definition must have a name and a type" );
+						if ( ! NifValue::registerAlias( alias, type ) )
+							err( "failed to register alias " + alias + " for type " + type );
+					}	break;
 				}
 				break;
 			case 1:
-				err( "types only contain a description" );
+				err( "version tag must not contain any sub tags" );
 				break;
 			case 2:
 				if ( x != 5 )	err( "only add tags allowed in compound type declaration" );
@@ -170,13 +130,13 @@ public:
 				if ( x == 5 )
 				{
 					NifData		data(
-						list.value( "name" ).toLower().toAscii(),
-						list.value( "type" ).toLower().toAscii(),
-						QVariant(),
-						list.value( "arg" ).toLower().toAscii(),
-						list.value( "arr1" ).toLower().toAscii(),
-						list.value( "arr2" ).toLower().toAscii(),
-						list.value( "cond" ).toLower().toAscii(),
+						list.value( "name" ).toLower(),
+						list.value( "type" ).toLower(),
+						NifValue( NifValue::type( list.value( "type" ) ) ),
+						list.value( "arg" ).toLower(),
+						list.value( "arr1" ).toLower(),
+						list.value( "arr2" ).toLower(),
+						list.value( "cond" ).toLower(),
 						NifModel::version2number( list.value( "ver1" ) ),
 						NifModel::version2number( list.value( "ver2" ) )
 					);
@@ -205,22 +165,6 @@ public:
 		if ( pop() != x )		err( "mismatching end element tag for element " + elements.value( current() ) );
 		switch ( x )
 		{
-			case 1:
-				if ( typ )
-				{
-					if ( ! typ->id.isEmpty() )
-					{
-						NifModel::types.insertMulti( typ->id, typ );
-						typ = 0;
-					}
-					else
-					{
-						delete typ;
-						typ = 0;
-						err( "invalid type declaration: specify at least name and type" );
-					}
-				}
-				break;
 			case 2:
 			case 3:
 			case 4:
@@ -253,9 +197,6 @@ public:
 		switch ( current() )
 		{
 			case 1:
-				if ( typ )	typ->text = s.trimmed();
-				break;
-			case 7:
 			{
 				int v = NifModel::version2number( s.trimmed() );
 				if ( v != 0 )
@@ -274,14 +215,11 @@ public:
 			NifBlock * c = NifModel::compounds.value( key );
 			foreach ( NifData data, c->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type() ) || NifModel::types.contains( data.type() ) ) )
+				if ( ! ( NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone ) )
 					err( "compound type " + key + " referes to unknown type " + data.type() );
 				if ( data.type() == key )
 					err( "compound type " + key + " contains itself" );
 			}
-			for ( QList<NifData>::iterator it = c->types.begin(); it != c->types.end(); ++it )
-				if ( NifModel::types.contains( it->type() ) )
-					if ( ! it->value().isValid() ) it->setValue( NifModel::types.value( it->type() )->value );
 		}
 		
 		foreach ( QString key, NifModel::ancestors.keys() )
@@ -296,12 +234,9 @@ public:
 			}
 			foreach ( NifData data, blk->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type() ) || NifModel::types.contains( data.type() ) ) )
+				if ( ! ( NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone ) )
 					err( "ancestor block " + key + " referes to unknown type " + data.type() );
 			}
-			for ( QList<NifData>::iterator it = blk->types.begin(); it != blk->types.end(); ++it )
-				if ( NifModel::types.contains( it->type() ) )
-					if ( ! it->value().isValid() ) it->setValue( NifModel::types.value( it->type() )->value );
 		}
 		
 		foreach ( QString key, NifModel::blocks.keys() )
@@ -314,12 +249,9 @@ public:
 			}
 			foreach ( NifData data, blk->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type() ) || NifModel::types.contains( data.type() ) ) )
+				if ( ! ( NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone ) )
 					err( "compound type " + key + " referres to unknown type " + data.type() );
 			}
-			for ( QList<NifData>::iterator it = blk->types.begin(); it != blk->types.end(); ++it )
-				if ( NifModel::types.contains( it->type() ) )
-					if ( ! it->value().isValid() ) it->setValue( NifModel::types.value( it->type() )->value );
 		}
 		return true;
 	}
@@ -338,54 +270,18 @@ public:
 
 QString NifModel::parseXmlDescription( const QString & filename )
 {
-	qDeleteAll( types );		types.clear();
 	qDeleteAll( compounds );	compounds.clear();
 	qDeleteAll( ancestors );	ancestors.clear();
 	qDeleteAll( blocks );		blocks.clear();
 	
-	internalTypes.clear();
-	internalTypes.insert( "uint8", it_uint8 );
-	internalTypes.insert( "uint16", it_uint16 );
-	internalTypes.insert( "uint32", it_uint32 );
-	internalTypes.insert( "int8", it_int8 );
-	internalTypes.insert( "int16", it_int16 );
-	internalTypes.insert( "int32", it_int32 );
-	internalTypes.insert( "float", it_float );
-	internalTypes.insert( "string", it_string );
-	internalTypes.insert( "color3f", it_color3f );
-	internalTypes.insert( "color4f", it_color4f );
-	internalTypes.insert( "vector", it_vector );
-	internalTypes.insert( "quat", it_quat );
-	internalTypes.insert( "matrix", it_matrix );
-	
-	displayHints.clear();
-	displayHints.insert( "uint8", dh_dec );
-	displayHints.insert( "uint16", dh_dec );
-	displayHints.insert( "uint16", dh_dec );
-	displayHints.insert( "int8", dh_dec );
-	displayHints.insert( "int16", dh_dec );
-	displayHints.insert( "int32", dh_dec );
-	displayHints.insert( "float", dh_float );
-	displayHints.insert( "string", dh_string );
-	displayHints.insert( "color", dh_color );
-	displayHints.insert( "color3f", dh_color );
-	displayHints.insert( "color4f", dh_color );
-	displayHints.insert( "vector", dh_vector );
-	displayHints.insert( "quat", dh_quat );
-	displayHints.insert( "matrix", dh_matrix );
-	displayHints.insert( "dec", dh_dec );
-	displayHints.insert( "hex", dh_hex );
-	displayHints.insert( "bin", dh_bin );
-	displayHints.insert( "bool", dh_bool );
-	displayHints.insert( "float", dh_float );
-	displayHints.insert( "link", dh_link );
-	
 	supportedVersions.clear();
+	
+	NifValue::initialize();
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
 	{
-		f.setFileName( ":/res/NifSkope.xml" );
+		f.setFileName( ":/res/nif.xml" );
 		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
 			return QString( "error: couldn't open xml description file: " + filename );
 	}

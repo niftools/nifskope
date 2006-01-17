@@ -67,7 +67,7 @@ public:
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
-	void compile( bool center = false );
+	void center();
 
 	QAction * aTexturing;
 	QAction * aBlending;
@@ -119,14 +119,14 @@ protected:
 private slots:
 	void advanceGears();
 	
-	void dataChanged();
+	void modelChanged();
+	void modelDestroyed();
+	void dataChanged( const QModelIndex &, const QModelIndex & );
 	
 	void checkActions();
 
 private:
 	void normalizeAngle(int *angle);
-	
-	GLuint click_tex;
 	
 	int xRot;
 	int yRot;
@@ -140,7 +140,7 @@ private:
 	
 	int zInc;
 	
-	bool updated;
+	bool doCompile;
 	bool doCenter;
 	
 	QPoint lastPos;

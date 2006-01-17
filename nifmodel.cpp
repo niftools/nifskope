@@ -42,130 +42,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <qendian.h>
 
-class NifItem
-{
-public:
-	NifItem( NifItem * parent )
-		: parentItem( parent ) {}
-	
-	NifItem( const NifData & data, NifItem * parent )
-		: itemData( data ), parentItem( parent ) {}
-	
-	~NifItem()
-	{
-		qDeleteAll( childItems );
-	}
-
-	NifItem * parent() const
-	{
-		return parentItem;
-	}
-	
-	int row() const
-	{
-		if ( parentItem )
-			return parentItem->childItems.indexOf( const_cast<NifItem*>(this) );
-		return 0;
-	}
-
-	void prepareInsert( int e )
-	{
-		childItems.reserve( childItems.count() + e );
-	}
-	
-	NifItem * insertChild( const NifData & data, int at = -1 )
-	{
-		NifItem * item = new NifItem( data, this );
-		if ( at < 0 || at > childItems.count() )
-			childItems.append( item );
-		else
-			childItems.insert( at, item );
-		return item;
-	}
-	
-	void removeChild( int row )
-	{
-		NifItem * item = child( row );
-		if ( item )
-		{
-			childItems.remove( row );
-			delete item;
-		}
-	}
-	
-	void removeChildren( int row, int count )
-	{
-		for ( int c = row; c < row + count; c++ )
-		{
-			NifItem * item = childItems.value( c );
-			if ( item ) delete item;
-		}
-		childItems.remove( row, count );
-	}
-	
-	NifItem * child( int row )
-	{
-		return childItems.value( row );
-	}
-	
-	NifItem * child( const QString & name )
-	{
-		foreach ( NifItem * child, childItems )
-			if ( child->name() == name )
-				return child;
-		return 0;
-	}
-
-	int childCount()
-	{
-		return childItems.count();
-	}
-	
-	void killChildren()
-	{
-		qDeleteAll( childItems );
-		childItems.clear();
-	}
-
-	inline QString  name() const	{	return itemData.name();	}
-	inline QString  type() const	{	return itemData.type();	}
-	inline QVariant value() const	{	return itemData.value();	}
-	inline QString  arg() const	{	return itemData.arg();		}
-	inline QString  arr1() const	{	return itemData.arr1();	}
-	inline QString  arr2() const	{	return itemData.arr2();	}
-	inline QString  cond() const	{	return itemData.cond();	}
-	inline quint32  ver1() const	{	return itemData.ver1();	}
-	inline quint32  ver2() const	{	return itemData.ver2();	}
-	
-	inline void setName( const QString & name )	{	itemData.setName( name );	}
-	inline void setType( const QString & type )	{	itemData.setType( type );	}
-	inline void setValue( const QVariant & v )	{	itemData.setValue( v );		}
-	inline void setArg( const QString & arg )		{	itemData.setArg( arg );		}
-	inline void setArr1( const QString & arr1 )	{	itemData.setArr1( arr1 );	}
-	inline void setArr2( const QString & arr2 )	{	itemData.setArr2( arr2 );	}
-	inline void setCond( const QString & cond )	{	itemData.setCond( cond );	}
-	inline void setVer1( int v1 )					{	itemData.setVer1( v1 );		}
-	inline void setVer2( int v2 )					{	itemData.setVer2( v2 );		}
-	
-	inline bool evalVersion( quint32 v )
-	{
-		return ( ( ver1() == 0 || ver1() <= v ) && ( ver2() == 0 || v <= ver2() ) );
-	}
-
-private:
-	NifData itemData;
-	NifItem * parentItem;
-	QVector<NifItem*> childItems;
-};
-
-QString inBrakets( const QString & x )
-{
-	for ( int c = 0; c < x.length(); c++ )
-		if ( ! x[c].isNumber() )
-			return QString( "(%1)" ).arg( x );
-	return x;
-}
- 
 
 NifModel::NifModel( QObject * parent ) : QAbstractItemModel( parent )
 {
@@ -208,39 +84,43 @@ NifItem * NifModel::getHeaderItem() const
 
 void NifModel::updateHeader()
 {
-	QModelIndex header = getHeader();
+	NifItem * header = getHeaderItem();
 	
-	setValue( header, "version", version );
-	setValue( header, "num blocks", getBlockCount() );
+	NifItem * item;
 	
-	QModelIndex idxBlockTypes = getIndex( header, "block types" );
-	QModelIndex idxBlockTypeIndices = getIndex( header, "block type index" );
-	if ( idxBlockTypes.isValid() && idxBlockTypeIndices.isValid() )
+	item = getItem( header, "version" );
+	if ( item ) item->value().setCount( version );
+	
+	item = getItem( header, "num blocks" );
+	if ( item ) item->value().setCount( getBlockCount() );
+	
+	NifItem * idxBlockTypes = getItem( header, "block types" );
+	NifItem * idxBlockTypeIndices = getItem( header, "block type index" );
+	if ( idxBlockTypes && idxBlockTypeIndices )
 	{
 		QStringList blocktypes;
 		QList<int>	blocktypeindices;
-		for ( int r = 0; r < rowCount(); r++ )
-		for ( int r = 0; r < rowCount(); r++ )
+	
+		for ( int r = 1; r < root->childCount(); r++ )
 		{
-			QModelIndex block = index( r, 0 );
-			if ( itemType( block ) == "NiBlock" )
-			{
-				QString name = itemName( block );
-				if ( ! blocktypes.contains( name ) )
-					blocktypes.append( name );
-				blocktypeindices.append( blocktypes.indexOf( name ) );
-			}
+			NifItem * block = root->child( r );
+
+			if ( ! blocktypes.contains( block->name() ) )
+				blocktypes.append( block->name() );
+			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
 		}
-		setValue( header, "num block types", blocktypes.count() );
 		
-		updateArray( idxBlockTypes );
-		updateArray( idxBlockTypeIndices );
+		item = getItem( header, "num block types" );
+		if ( item ) item->value().setCount( blocktypes.count() );
 		
-		for ( int r = 0; r < rowCount( idxBlockTypes ); r++ )
-			setItemValue( idxBlockTypes.child( r, 0 ), blocktypes.value( r ) );
+		updateArray( idxBlockTypes, false );
+		updateArray( idxBlockTypeIndices, false );
 		
-		for ( int r = 0; r < rowCount( idxBlockTypeIndices ); r++ )
-			setItemValue( idxBlockTypeIndices.child( r, 0 ), blocktypeindices.value( r ) );
+		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
+			idxBlockTypes->child( r )->value().set<QString>( blocktypes.value( r ) );
+		
+		for ( int r = 0; r < idxBlockTypeIndices->childCount(); r++ )
+			idxBlockTypeIndices->child( r )->value().setCount( blocktypeindices.value( r ) );
 	}
 }
 
@@ -270,12 +150,12 @@ int NifModel::getArraySize( NifItem * array ) const
 		}
 		
 		if ( dim1->childCount() == 0 )
-			d1 = dim1->value().toInt();
+			d1 = dim1->value().toCount();
 		else
 		{
 			NifItem * item = dim1->child( array->row() );
 			if ( item )
-				d1 = item->value().toInt();
+				d1 = item->value().toCount();
 			else
 				qCritical() << "failed to get array size for array " << array->name();
 		}
@@ -285,26 +165,33 @@ int NifModel::getArraySize( NifItem * array ) const
 		qWarning() << "invalid array size for array" << array->name();
 		d1 = 0;
 	}
-	if ( d1 > 1024 * 1024 * 8 )
-	{
-		qWarning() << "array" << array->name() << "much too large";
-		d1 = 1024 * 1024 * 8;
-	}
 	return d1;
 }
 
-void NifModel::updateArray( NifItem * array, bool fast )
+QString inBrakets( const QString & x )
+{
+	for ( int c = 0; c < x.length(); c++ )
+		if ( ! x[c].isNumber() )
+			return QString( "(%1)" ).arg( x );
+	return x;
+}
+
+bool NifModel::updateArray( NifItem * array, bool fast )
 {
 	if ( array->arr1().isEmpty() )
-		return;
+		return false;
 	
 	int d1 = getArraySize( array );
-	if ( d1 < 0 )	return;
+	if ( d1 > 1024 * 1024 * 8 )
+	{
+		qWarning() << "array" << array->name() << "much too large";
+		return false;
+	}
 
 	int rows = array->childCount();
 	if ( d1 > rows )
 	{
-		NifData data( array->name(), array->type(), getTypeValue( array->type() ), inBrakets( array->arg() ), inBrakets( array->arr2() ), QString(), QString(), 0, 0 );
+		NifData data( array->name(), array->type(), NifValue( NifValue::type( array->type() ) ), inBrakets( array->arg() ), inBrakets( array->arr2() ), QString(), QString(), 0, 0 );
 		
 		if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), rows, d1-1 );
 		array->prepareInsert( d1 - rows );
@@ -318,19 +205,20 @@ void NifModel::updateArray( NifItem * array, bool fast )
 		array->removeChildren( d1, rows - d1 );
 		if ( ! fast )	endRemoveRows();
 	}
-	if ( !fast && d1 != rows && itemIsLink( array ) )
+	if ( !fast && d1 != rows && ( isCompound( array->type() ) || NifValue::isLink( NifValue::type( array->type() ) ) ) )
 	{
 		updateLinks();
 		emit linksChanged();
 	}
+	return true;
 }
 
-void NifModel::updateArray( const QModelIndex & array, bool fast )
+bool NifModel::updateArray( const QModelIndex & array, bool fast )
 {
 	NifItem * item = static_cast<NifItem*>( array.internalPointer() );
 	if ( ! ( array.isValid() && item && array.model() == this ) )
-		return;
-	updateArray( item, fast );
+		return false;
+	return updateArray( item, fast );
 }
 
 /*
@@ -391,6 +279,14 @@ int NifModel::getBlockNumber( const QModelIndex & idx ) const
 		return block->row() - 1;
 	else
 		return -1;
+}
+
+QModelIndex NifModel::getBlock( const QModelIndex & idx ) const
+{
+	QModelIndex block = idx;
+	while ( block.isValid() && block.parent().isValid() )
+		block = block.parent();
+	return block;
 }
 
 int NifModel::getBlockNumber( NifItem * item ) const
@@ -520,10 +416,10 @@ QString NifModel::itemType( const QModelIndex & index ) const
 	return item->type();
 }
 
-QVariant NifModel::itemValue( const QModelIndex & index ) const
+NifValue NifModel::itemValue( const QModelIndex & index ) const
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-	if ( ! ( index.isValid() && item && index.model() == this ) )	return QVariant();
+	if ( ! ( index.isValid() && item && index.model() == this ) )	return NifValue();
 	return item->value();
 }
 
@@ -571,7 +467,7 @@ quint32 NifModel::itemVer2( const QModelIndex & index ) const
 
 qint32 NifModel::itemLink( NifItem * item ) const
 {
-	return ( getDisplayHint( item->type() ) == dh_link && item->value().isValid() ? item->value().toInt() : -1 );
+	return item->value().toLink();
 }
 
 qint32 NifModel::itemLink( const QModelIndex & index ) const
@@ -584,8 +480,8 @@ qint32 NifModel::itemLink( const QModelIndex & index ) const
 bool NifModel::itemIsLink( NifItem * item, bool * isChildLink ) const
 {
 	if ( isChildLink )
-		*isChildLink = ( item->type() == "link" );
-	return ( getDisplayHint( item->type() ) == dh_link );
+		*isChildLink = ( item->value().type() == NifValue::tLink );
+	return item->value().isLink();
 }
 
 bool NifModel::itemIsLink( const QModelIndex & index, bool * isChildLink ) const
@@ -595,11 +491,11 @@ bool NifModel::itemIsLink( const QModelIndex & index, bool * isChildLink ) const
 	return itemIsLink( item, isChildLink );
 }
 
-void NifModel::setItemValue( const QModelIndex & index, const QVariant & var )
+void NifModel::setItemValue( const QModelIndex & index, const NifValue & val )
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item && index.model() == this ) )	return;
-	item->setValue( var );
+	item->value() = val;
 	emit dataChanged( index.sibling( index.row(), ValueCol ), index.sibling( index.row(), ValueCol ) );
 	if ( itemIsLink( index ) )
 	{
@@ -608,28 +504,28 @@ void NifModel::setItemValue( const QModelIndex & index, const QVariant & var )
 	}
 }
 
-bool NifModel::setValue( const QModelIndex & parent, const QString & name, const QVariant & var )
+bool NifModel::setValue( const QModelIndex & parent, const QString & name, const NifValue & val )
 {
 	if ( ! parent.isValid() )
 	{
-		qWarning( "setValue( %s ) reached top level", str( name ) );
+		qWarning() << "setValue(" << name << ") reached top level";
 		return false;
 	}
 	
 	if ( name.startsWith( "(" ) && name.endsWith( ")" ) )
-		return setValue( parent.parent(), name.mid( 1, name.length() - 2 ).trimmed(), var );
+		return setValue( parent.parent(), name.mid( 1, name.length() - 2 ).trimmed(), val );
 	
 	for ( int c = 0; c < rowCount( parent ); c++ )
 	{
 		QModelIndex child = parent.child( c, 0 );
 		if ( itemName( child ) == name && evalCondition( child ) )
 		{
-			setItemValue( child, var );
+			setItemValue( child, val );
 			return true;
 		}
 		if ( rowCount( child ) > 0 && itemArr1( child ).isEmpty() )
 		{
-			if ( setValue( child, name, var ) ) return true;
+			if ( setValue( child, name, val ) ) return true;
 		}
 	}
 	
@@ -750,73 +646,30 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				case TypeCol:	return item->type();
 				case ValueCol:
 				{
-					if ( ! item->value().isValid() )
-						return QVariant();
-					int displayHint = getDisplayHint( item->type() );
-					switch ( displayHint )
+					if ( item->value().isLink() )
 					{
-						case dh_dec:
-							return QString::number( item->value().toInt(), 10 );
-						case dh_float:
-							return QString::number( item->value().toDouble(), 'f', 4 );
-						case dh_bool:
-							return ( item->value().toUInt() != 0 ? "yes" : "no" );
-						case dh_hex:
-							return QString::number( item->value().toUInt(), 16 ).prepend( "0x" );
-						case dh_bin:
-							return QString::number( item->value().toUInt(), 2 ).prepend( "0b" );
-						case dh_string:
-							return item->value().toString();
-						case dh_link:
-							if ( item->value().isValid() )
+						int lnk = item->value().toLink();
+						if ( lnk >= 0 )
+						{
+							QModelIndex block = getBlock( lnk );
+							if ( block.isValid() )
 							{
-								int lnk = item->value().toInt();
-								if ( lnk >= 0 )
-								{
-									QModelIndex block = getBlock( lnk );
-									if ( block.isValid() )
-									{
-										QModelIndex block_name = getIndex( block, "name" );
-										if ( block_name.isValid() && ! itemValue( block_name ).toString().isEmpty() )
-											return QString( "%1 (%2)" ).arg( lnk ).arg( itemValue( block_name ).toString() );
-										else
-											return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
-									}
-									else
-									{
-										return QString( "%1 <invalid>" ).arg( lnk );
-									}
-								}
+								QModelIndex block_name = getIndex( block, "name" );
+								if ( block_name.isValid() && ! itemValue( block_name ).toString().isEmpty() )
+									return QString( "%1 (%2)" ).arg( lnk ).arg( itemValue( block_name ).toString() );
 								else
-									return QString( "none" );
+									return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
 							}
-							break;
-						case dh_vector:
-						{
-							Vector v = item->value().value<Vector>();
-							return QString( "X %1 Y %2 Z %3" ).arg( v[0], 0, 'f', 3 ).arg( v[1], 0, 'f', 3 ).arg( v[2], 0, 'f', 3 );
-						}	break;
-						case dh_matrix:
-						{
-							Matrix m = item->value().value<Matrix>();
-							float x, y, z;
-							if ( m.toEuler( x, y, z ) )
-								return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
 							else
-								return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-						}	break;
-						case dh_quat:
-						{
-							Matrix m;
-							m = item->value().value<Quat>();
-							float x, y, z;
-							if ( m.toEuler( x, y, z ) )
-								return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-							else
-								return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-						}	break;
+							{
+								return QString( "%1 <invalid>" ).arg( lnk );
+							}
+						}
+						else
+							return QString( "none" );
 					}
-					return item->value();
+					else
+						return item->value().toVariant();
 				}
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
@@ -859,32 +712,22 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 			QString tip;
 			switch ( column )
 			{
-				case TypeCol:
-				{
-					tip = getTypeDescription( item->type() );
-					if ( ! tip.isEmpty() ) return tip;
-				}	break;
 				case ValueCol:
 				{
-					switch ( getDisplayHint( item->type() ) )
+					switch ( item->value().type() )
 					{
-						case dh_matrix:
-							return item->value().value<Matrix>().toHtml();
-						case dh_quat:
-							return item->value().value<Quat>().toHtml();
+						case NifValue::tMatrix:
+							return item->value().get<Matrix>().toHtml();
+						case NifValue::tQuat:
+							return item->value().get<Quat>().toHtml();
+						default:
+							break;
 					}
 				}	break;
 				default:
 					break;
 			}
 			return QVariant();
-		}
-		case Qt::BackgroundColorRole:
-		{
-			if ( column == ValueCol && ( getDisplayHint( item->type() ) == dh_color ) )
-				return qvariant_cast<QColor>( item->value() );
-			else
-				return QVariant();
 		}
 		default:
 			return QVariant();
@@ -923,7 +766,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 			item->setType( value.toString() );
 			break;
 		case NifModel::ValueCol:
-			item->setValue( value );
+			item->value().fromVariant( value );
 			if ( itemIsLink( index ) )
 			{
 				updateLinks();
@@ -995,7 +838,7 @@ bool NifModel::load( QIODevice & device )
 {
 	// reset model
 	clear();
-
+	
 	{	// read magic version string
 		version_string.clear();
 		int c = 0;
@@ -1029,8 +872,10 @@ bool NifModel::load( QIODevice & device )
 		return false;
 	}
 	
+	NifStream stream( version, &device );
+
 	// read header
-	if ( !load( getHeaderItem(), device ) )
+	if ( !load( getHeaderItem(), stream, true ) )
 	{
 		qCritical() << "failed to load file header (version" << version << ")";
 		clear();
@@ -1041,7 +886,7 @@ bool NifModel::load( QIODevice & device )
 	
 	int numblocks = getInt( header, "num blocks" );
 	qDebug( "numblocks %i", numblocks );
-
+	
 	qApp->processEvents();
 
 	QProgressDialog prog;
@@ -1075,7 +920,7 @@ bool NifModel::load( QIODevice & device )
 			{
 				if ( version < 0x0a020000 )		device.read( 4 );
 				
-				int blktypidx = itemValue( index( c, 0, getIndex( header, "block type index" ) ) ).toInt();
+				int blktypidx = itemValue( index( c, 0, getIndex( header, "block type index" ) ) ).toCount();
 				blktyp = itemValue( index( blktypidx, 0, getIndex( header, "block types" ) ) ).toString();
 			}
 			else
@@ -1091,7 +936,7 @@ bool NifModel::load( QIODevice & device )
 			{
 				qDebug() << "loading block" << c << ":" << blktyp;
 				insertNiBlock( blktyp, -1, true );
-				if ( ! load( root->child( c+1 ), device ) ) 
+				if ( ! load( root->child( c+1 ), stream, true ) ) 
 					throw QString( "failed to load block number %1 (%2)" ).arg( c ).arg( blktyp );
 			}
 			else
@@ -1102,13 +947,15 @@ bool NifModel::load( QIODevice & device )
 	{
 		qCritical() << (const char *) err.toAscii();
 	}
-	//qWarning() << t.msecsTo( QTime::currentTime() );
+	//qDebug() << t.msecsTo( QTime::currentTime() );
 	reset(); // notify model views that a significant change to the data structure has occurded
 	return true;
 }
 
 bool NifModel::save( QIODevice & device )
 {
+	NifStream stream( version, &device );
+	
 	// write magic version string
 	device.write( version_string );
 	
@@ -1146,7 +993,7 @@ bool NifModel::save( QIODevice & device )
 				device.write( (const char *) string.toAscii(), len );
 			}
 		}
-		if ( !save( root->child( c ), device ) )
+		if ( !save( root->child( c ), stream ) )
 			return false;
 	}
 	int foot1 = 1;
@@ -1161,7 +1008,8 @@ bool NifModel::load( QIODevice & device, const QModelIndex & index )
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( item && index.isValid() && index.model() == this )
 	{
-		load( item, device, false );
+		NifStream stream( version, &device );
+		load( item, stream, false );
 		updateLinks();
 		emit linksChanged();
 		return true;
@@ -1172,11 +1020,12 @@ bool NifModel::load( QIODevice & device, const QModelIndex & index )
 
 bool NifModel::save( QIODevice & device, const QModelIndex & index )
 {
+	NifStream stream( version, &device );
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-	return ( item && index.isValid() && index.model() == this && save( item, device ) );
+	return ( item && index.isValid() && index.model() == this && save( item, stream ) );
 }
 
-bool NifModel::load( NifItem * parent, QIODevice & device, bool fast )
+bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
 {
 	if ( ! parent ) return false;
 	
@@ -1189,111 +1038,29 @@ bool NifModel::load( NifItem * parent, QIODevice & device, bool fast )
 		{
 			if ( ! child->arr1().isEmpty() )
 			{
-				updateArray( child, fast );
-				if ( !load( child, device ) )
+				if ( ! updateArray( child, fast ) )
+					return false;
+				
+				if ( !load( child, stream, fast ) )
 					return false;
 			}
 			else if ( child->childCount() > 0 )
 			{
-				if ( !load( child, device, fast ) )
+				if ( !load( child, stream, fast ) )
 					return false;
 			}
-			else switch ( getInternalType( child->type() ) )
+			else
 			{
-				case it_uint8:
-				{
-					quint8 u8;
-					device.read( (char *) &u8, 1 );
-					child->setValue( u8 );
-				} break;
-				case it_uint16:
-				{
-					quint16 u16;
-					device.read( (char *) &u16, 2 );
-					child->setValue( qFromLittleEndian( u16 ) );
-				} break;
-				case it_uint32:
-				{
-					quint32 u32;
-					device.read( (char *) &u32, 4 );
-					child->setValue( qFromLittleEndian( u32 ) );
-				} break;
-				case it_int8:
-				{
-					qint8 s8;
-					device.read( (char *) &s8, 1 );
-					child->setValue( s8 );
-				} break;
-				case it_int16:
-				{
-					qint16 s16;
-					device.read( (char *) &s16, 2 );
-					child->setValue( qFromLittleEndian( s16 ) );
-				} break;
-				case it_int32:
-				{
-					qint32 s32;
-					device.read( (char *) &s32, 4 );
-					child->setValue( qFromLittleEndian( s32 ) );
-				} break;
-				case it_float:
-				{
-					float f32;
-					device.read( (char *) &f32, 4 );
-					child->setValue( f32 );
-				} break;
-				case it_color3f:
-				{
-					float r, g, b;
-					device.read( (char *) &r, 4 );
-					device.read( (char *) &g, 4 );
-					device.read( (char *) &b, 4 );
-					child->setValue( QColor::fromRgbF( r, g, b ) );
-				} break;
-				case it_color4f:
-				{
-					float r, g, b, a;
-					device.read( (char *) &r, 4 );
-					device.read( (char *) &g, 4 );
-					device.read( (char *) &b, 4 );
-					device.read( (char *) &a, 4 );
-					child->setValue( QColor::fromRgbF( r, g, b, a ) );
-				} break;
-				case it_string:
-				{
-					int len;
-					device.read( (char *) &len, 4 );
-					if ( qFromLittleEndian( len ) > 4096 )
-						qWarning( "maximum string length exceeded" );
-					QByteArray string = device.read( qFromLittleEndian( len ) );
-					string.replace( "\r", "\\r" );
-					string.replace( "\n", "\\n" );
-					child->setValue( QString( string ) );
-				} break;
-				case it_vector:
-				{
-					child->setValue( Vector( device ) );
-				}	break;
-				case it_quat:
-				{
-					child->setValue( Quat( device ) );
-				}	break;
-				case it_matrix:
-				{
-					child->setValue( Matrix( device ) );
-				}	break;
-				default:
-				{
-					qCritical() << "block" << getBlockNumber( parent ) << child->name() << "unknown type" << child->name();
+				if ( ! stream.read( child->value() ) )
 					return false;
-				}
+				//qDebug() << "  loaded item" << child->name() << child->value().type() << child->value().toQString();
 			}
 		}
 	}
 	return true;
 }
 
-bool NifModel::save( NifItem * parent, QIODevice & device )
+bool NifModel::save( NifItem * parent, NifStream & stream )
 {
 	if ( ! parent ) return false;
 	
@@ -1308,9 +1075,9 @@ bool NifModel::save( NifItem * parent, QIODevice & device )
 			bool isChildLink;
 			if ( itemIsLink( child, &isChildLink ) )
 			{
-				if ( ! isChildLink && child->value().toInt() < 0 )
+				if ( ! isChildLink && child->value().toLink() < 0 )
 					qWarning() << "block" << getBlockNumber( parent ) << child->name() << "unassigned parent link";
-				else if ( child->value().toInt() >= getBlockCount() )
+				else if ( child->value().toLink() >= getBlockCount() )
 					qWarning() << "block" << getBlockNumber( parent ) << child->name() << "invalid link";
 			}
 			
@@ -1319,122 +1086,23 @@ bool NifModel::save( NifItem * parent, QIODevice & device )
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
 					qWarning() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch";
 				
-				if ( !save( child, device ) )
+				if ( !save( child, stream ) )
 					return false;
 			}
-			else switch ( getInternalType( child->type() ) )
+			else
 			{
-				case it_uint8:
-				{
-					quint8 u8 = (quint8) child->value().toUInt();
-					device.write( (char *) &u8, 1 );
-				} break;
-				case it_uint16:
-				{
-					quint16 u16 = qToLittleEndian( (quint16) child->value().toUInt() );
-					device.write( (char *) &u16, 2 );
-				} break;
-				case it_uint32:
-				{
-					quint32 u32 = qToLittleEndian( (quint32) child->value().toUInt() );
-					device.write( (char *) &u32, 4 );
-				} break;
-				case it_int8:
-				{
-					qint8 s8 = (qint8) child->value().toInt();
-					device.write( (char *) &s8, 4 );
-				} break;
-				case it_int16:
-				{
-					qint16 s16 = qToLittleEndian( (qint16) child->value().toInt() );
-					device.write( (char *) &s16, 4 );
-				} break;
-				case it_int32:
-				{
-					qint32 s32 = qToLittleEndian( (qint32) child->value().toInt() );
-					device.write( (char *) &s32, 4 );
-				} break;
-				case it_float:
-				{
-					float f32 = child->value().toDouble();
-					device.write( (char *) &f32, 4 );
-				} break;
-				case it_color3f:
-				{
-					QColor rgb = child->value().value<QColor>();
-					float r = rgb.redF();					
-					float g = rgb.greenF();					
-					float b = rgb.blueF();					
-					device.write( (char *) &r, 4 );
-					device.write( (char *) &g, 4 );
-					device.write( (char *) &b, 4 );
-				} break;
-				case it_color4f:
-				{
-					QColor rgba = child->value().value<QColor>();
-					float r = rgba.redF();					
-					float g = rgba.greenF();					
-					float b = rgba.blueF();					
-					float a = rgba.alphaF();
-					device.write( (char *) &r, 4 );
-					device.write( (char *) &g, 4 );
-					device.write( (char *) &b, 4 );
-					device.write( (char *) &a, 4 );
-				} break;
-				case it_string:
-				{
-					QByteArray string = child->value().toString().toAscii();
-					string.replace( "\\r", "\r" );
-					string.replace( "\\n", "\n" );
-					int len = qToLittleEndian( string.length() );
-					device.write( (char *) &len, 4 );
-					device.write( (const char *) string, string.length() );
-				} break;
-				case it_vector:
-				{
-					child->value().value<Vector>().write( device );
-				}	break;
-				case it_quat:
-				{
-					child->value().value<Quat>().write( device );
-				}	break;
-				case it_matrix:
-				{
-					child->value().value<Matrix>().write( device );
-				}	break;
-				default:
-				{
-					qCritical() << "block" << getBlockNumber( parent ) << child->name() << "unknown type" << child->type();
+				if ( ! stream.write( child->value() ) )
 					return false;
-				}
 			}
 		}
 	}
 	return true;
 }
 
-NifBasicType * NifModel::getType( const QString & name ) const
-{
-	int c = types.count( name );
-	if ( c == 1 )
-		return types.value( name );
-	else if ( c > 1 )
-	{
-		QList<NifBasicType*> tlst = types.values( name );
-		foreach ( NifBasicType * typ, tlst )
-		{
-			if ( ( typ->ver1 == 0 || version >= typ->ver1 ) && ( typ->ver2 == 0 || version <= typ->ver2 ) )
-				return typ;
-		}
-	}
-	
-	return 0;
-}
-
 NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, int at )
 {
 	NifItem * item = parentItem->insertChild( data, at );
-	item->setValue( QVariant() );
+	item->value().changeType( NifValue::tNone );
 	return item;
 }
 
@@ -1495,12 +1163,11 @@ void NifModel::updateLinks( int block, NifItem * parent )
 		
 		if ( child->childCount() > 0 )
 		{
-			if ( islink || child->arr1().isEmpty() )
-				updateLinks( block, child );
+			updateLinks( block, child );
 		}
 		else if ( islink )
 		{
-			int l = child->value().toInt();
+			int l = child->value().toLink();
 			if ( l >= 0 && child->arr1().isEmpty() )
 			{
 				if ( ischild )
@@ -1549,9 +1216,9 @@ void NifModel::adjustLinks( NifItem * parent, int block, int delta )
 		if ( l >= 0 && ( ( delta != 0 && l >= block ) || l == block ) )
 		{
 			if ( delta == 0 )
-				parent->setValue( -1 );
+				parent->value().setLink( -1 );
 			else
-				parent->setValue( l + delta );
+				parent->value().setLink( l + delta );
 		}
 	}
 }
@@ -1571,12 +1238,9 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 		
 		if ( child->name() == name && evalCondition( child ) )
 			return child;
-		//if ( child->childCount() > 0 && child->arr1().isEmpty() )
-		//{
-		//	NifItem * i = getItem( child, name );
-		//	if ( i ) return i;
-		//}
 	}
+	
+	//qDebug() << "item" << name << "not found";
 	return 0;
 }
 
@@ -1593,24 +1257,6 @@ QModelIndex NifModel::getIndex( const QModelIndex & parent, const QString & name
 		return QModelIndex();
 }
 
-QVariant NifModel::getValue( NifItem * parent, const QString & name ) const
-{
-	NifItem * item = getItem( parent, name );
-	if ( item )
-		return item->value();
-	else
-		return QVariant();
-}
-
-QVariant NifModel::getValue( const QModelIndex & parent, const QString & name ) const
-{
-	NifItem * parentItem = static_cast<NifItem*>( parent.internalPointer() );
-	if ( ! ( parent.isValid() && parentItem && parent.model() == this ) )
-		return QVariant();
-	
-	return getValue( parentItem, name );
-}
-
 int NifModel::getInt( NifItem * parent, const QString & nameornumber ) const
 {
 	if ( nameornumber.isEmpty() )
@@ -1620,10 +1266,12 @@ int NifModel::getInt( NifItem * parent, const QString & nameornumber ) const
 	int i = nameornumber.toInt( &ok );
 	if ( ok )	return i;
 	
-	QVariant v = getValue( parent, nameornumber );
-	if ( ! v.canConvert( QVariant::Int ) )
-		qWarning( "failed to get int for %s ('%s','%s')", str( nameornumber ), str( v.toString() ), v.typeName() );
-	return v.toInt();
+	NifItem * item = getItem( parent, nameornumber );
+	if ( item )
+		return item->value().toCount();
+
+	qWarning() << "failed to get int for" << nameornumber;
+	return 0;
 }
 
 int NifModel::getInt( const QModelIndex & parent, const QString & nameornumber ) const
@@ -1635,19 +1283,18 @@ int NifModel::getInt( const QModelIndex & parent, const QString & nameornumber )
 	return getInt( parentItem, nameornumber );
 }
 
-float NifModel::getFloat( const QModelIndex & parent, const QString & nameornumber ) const
+int NifModel::getLink( const QModelIndex & parent, const QString & name ) const
 {
-	if ( nameornumber.isEmpty() )
-		return 0;
+	NifItem * parentItem = static_cast<NifItem*>( parent.internalPointer() );
+	if ( ! ( parent.isValid() && parentItem && parent.model() == this ) )
+		return -1;
 	
-	bool ok;
-	double d = nameornumber.toDouble( &ok );
-	if ( ok )	return d;
+	NifItem * item = getItem( parentItem, name );
+	if ( item )
+		return item->value().toLink();
 	
-	QVariant v = getValue( parent, nameornumber );
-	if ( ! v.canConvert( QVariant::Double ) )
-		qWarning( "failed to get float value for %s ('%s','%s')", str( nameornumber ), str( v.toString() ), v.typeName() );
-	return v.toDouble();
+	qWarning() << "failed to get link value for" << name;
+	return -1;
 }
 
 bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
@@ -1688,7 +1335,7 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 	
 	if ( c >= num_exp )
 	{
-		qCritical( "could not eval condition '%s'", str( cond ) );
+		qCritical() << "could not eval condition" << cond;
 		return false;
 	}
 	

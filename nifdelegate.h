@@ -39,18 +39,46 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class QDoubleSpinBox;
 
+class ValueEdit : public QWidget
+{
+	Q_OBJECT
+public:
+	ValueEdit( QWidget * parent = 0 );
+	
+	Q_PROPERTY( NifValue value READ getValue WRITE setValue );
+	
+	NifValue getValue() const;
+	
+	static bool canEdit( NifValue::Type t );
+
+public slots:
+	void setValue( const NifValue & v );
+	
+protected:
+	void resizeEditor();
+	void resizeEvent( QResizeEvent * e );
+
+private:
+	NifValue::Type typ;
+	
+	QWidget * edit;
+};
+
 class VectorEdit : public QWidget
 {
 	Q_OBJECT
 public:
 	VectorEdit( QWidget * parent = 0 );
 	
-	Q_PROPERTY( Vector vector READ getVector WRITE setVector STORED false );
+	Q_PROPERTY( Vector3 vector3 READ getVector3 WRITE setVector3 STORED false );
+	Q_PROPERTY( Vector2 vector2 READ getVector2 WRITE setVector2 STORED false );
 	
-	Vector getVector() const;
+	Vector3 getVector3() const;
+	Vector2 getVector2() const;
 
 public slots:
-	void setVector( const Vector & );
+	void setVector3( const Vector3 & );
+	void setVector2( const Vector2 & );
 
 private:
 	QDoubleSpinBox * x;

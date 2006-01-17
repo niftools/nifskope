@@ -35,13 +35,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   NifSkope
  ==========
  
-NifSkope is a tool for analyzing and editing NetImmerse files (.nif .kf)
+NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.4 of NifSkope.
+This is version 0.5 of NifSkope.
 
-It should read and write every Nif up to version 10.x.x.x.
+It should read and write every Nif up to version 10.2.0.0.
 
+
+changes since 0.4:
+  - more animation controllers: flip, morph, vis, uv
+  - NiPixelData textures are now displayed too
+  - open gl 3d view is now in sync with the nif model:
+      changes to the data structure show up immediately
+      (no more double click to update)
+  - some internal changes:
+      NifValue replaces QVariant
+      NifValue uses hardcoded streaming class
 
 changes since 0.3:
 

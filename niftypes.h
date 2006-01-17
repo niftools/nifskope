@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFTYPES_H
 #define NIFTYPES_H
 
+#include <QColor>
 #include <QIODevice>
 #include <QVariant>
 
@@ -46,71 +47,120 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #endif
 
-class Vector
+class Vector2
 {
 public:
-	Vector()
+	Vector2()
+	{
+		xy[0] = xy[1] = 0.0;
+	}
+	Vector2( float x, float y )
+	{
+		xy[0] = x; xy[1] = y;
+	}
+	Vector2 & operator+=( const Vector2 & v )
+	{
+		xy[0] += v.xy[0];
+		xy[1] += v.xy[1];
+		return *this;
+	}
+	Vector2 operator+( const Vector2 & v )
+	{
+		Vector2 w( *this );
+		return ( w += v );
+	}
+	Vector2 & operator-=( const Vector2 & v )
+	{
+		xy[0] -= v.xy[0];
+		xy[1] -= v.xy[1];
+		return *this;
+	}
+	Vector2 operator-( const Vector2 & v )
+	{
+		Vector2 w( *this );
+		return ( w -= v );
+	}
+	Vector2 & operator*=( float s )
+	{
+		xy[0] *= s;
+		xy[1] *= s;
+		return *this;
+	}
+	Vector2 operator*( float s )
+	{
+		Vector2 w( *this );
+		return ( w *= s );
+	}
+	
+	float & operator[]( unsigned int i )
+	{
+		Q_ASSERT( i < 2 );
+		return xy[i];
+	}
+	const float & operator[]( unsigned int i ) const
+	{
+		Q_ASSERT( i < 2 );
+		return xy[i];
+	}
+	
+	const float * data() const
+	{
+		return xy;
+	}
+	
+protected:
+	float	xy[2];
+	
+	friend class NifStream;
+};
+
+class Vector3
+{
+public:
+	Vector3()
 	{
 		xyz[ 0 ] = xyz[ 1 ] = xyz[ 2 ] = 0.0;
 	}
-	Vector( float x, float y, float z )
+	Vector3( float x, float y, float z )
 	{
 		xyz[0] = x;
 		xyz[1] = y;
 		xyz[2] = z;
 	}
-	Vector( QIODevice & device )
-	{
-		read( device );
-	}
-	Vector( const QVariant & v )
-	{
-		if ( ! v.canConvert<Vector>() )
-			qWarning( "Vector::Vector( QVariant )" );
-		operator=( v.value<Vector>() );
-	}
-	void read( QIODevice & device )
-	{
-		device.read( (char *) xyz, 12 );
-	}
-	void write( QIODevice & device )
-	{
-		device.write( (char *) xyz, 12 );
-	}
-	Vector & operator+=( const Vector & v )
+	Vector3 & operator+=( const Vector3 & v )
 	{
 		xyz[0] += v.xyz[0];
 		xyz[1] += v.xyz[1];
 		xyz[2] += v.xyz[2];
 		return *this;
 	}
-	Vector & operator-=( const Vector & v )
+	Vector3 & operator-=( const Vector3 & v )
 	{
 		xyz[0] -= v.xyz[0];
 		xyz[1] -= v.xyz[1];
 		xyz[2] -= v.xyz[2];
 		return *this;
 	}
-	Vector & operator*=( float s )
+	Vector3 & operator*=( float s )
 	{
 		xyz[ 0 ] *= s;
 		xyz[ 1 ] *= s;
 		xyz[ 2 ] *= s;
 		return *this;
 	}
-	Vector operator+( Vector v )
+	Vector3 operator+( Vector3 v )
 	{
-		Vector w( *this );
+		Vector3 w( *this );
 		return w += v;
 	}
-	Vector operator-( Vector v )
+	Vector3 operator-( Vector3 v )
 	{
-		Vector w( *this );
+		Vector3 w( *this );
 		return w -= v;
 	}
-	Vector operator*( float s ) const
+	Vector3 operator*( float s ) const
 	{
-		Vector v( *this );
+		Vector3 v( *this );
 		return v *= s;
 	}
 	
@@ -142,29 +192,21 @@ public:
 		xyz[2] *= m;
 	}
 	
-	static Vector min( const Vector & v1, const Vector & v2 )
+	static Vector3 min( const Vector3 & v1, const Vector3 & v2 )
 	{
-		return Vector( qMin( v1.xyz[0], v2.xyz[0] ), qMin( v1.xyz[1], v2.xyz[1] ), qMin( v1.xyz[2], v2.xyz[2] ) );
+		return Vector3( qMin( v1.xyz[0], v2.xyz[0] ), qMin( v1.xyz[1], v2.xyz[1] ), qMin( v1.xyz[2], v2.xyz[2] ) );
 	}
-	static Vector max( const Vector & v1, const Vector & v2 )
+	static Vector3 max( const Vector3 & v1, const Vector3 & v2 )
 	{
-		return Vector( qMax( v1.xyz[0], v2.xyz[0] ), qMax( v1.xyz[1], v2.xyz[1] ), qMax( v1.xyz[2], v2.xyz[2] ) );
-	}
-	
-	operator QVariant () const
-	{
-		QVariant v;
-		v.setValue( *this );
-		return v;
+		return Vector3( qMax( v1.xyz[0], v2.xyz[0] ), qMax( v1.xyz[1], v2.xyz[1] ), qMax( v1.xyz[2], v2.xyz[2] ) );
 	}
 	
-	operator QString () const
-	{
-		return QString( "x %1 y %2 z %3" ).arg( xyz[0] ).arg( xyz[1] ).arg( xyz[2] );
-	}
+	const float * data() const { return xyz; }
 	
 protected:
 	float xyz[3];
+	
+	friend class NifStream;
 };
 
 class Quat
@@ -173,24 +215,6 @@ public:
 	Quat()
 	{
 		memcpy( wxyz, identity, 16 );
-	}
-	Quat( const QVariant & v )
-	{
-		if ( ! v.canConvert<Quat>() )
-			qWarning( "Quat::Quat( QVariant )" );
-		operator=( v.value<Quat>() );
-	}
-	Quat( QIODevice & device )
-	{
-		read( device );
-	}
-	void read( QIODevice & device )
-	{
-		device.read( (char *) wxyz, 16 );
-	}
-	void write( QIODevice & device )
-	{
-		device.write( (char *) wxyz, 16 );
 	}
 	float & operator[]( unsigned int i )
 	{
@@ -228,28 +252,7 @@ public:
 	{
 		return q1[0]*q2[0]+q1[1]*q2[1]+q1[2]*q2[2]+q1[3]*q2[3];
 	}
-	static Quat interpolate( const Quat & q1, const Quat & q2, float x )
-	{
-		float a = acos( dotproduct( q1, q2 ) );
-		
-		if ( fabs( a ) >= 0.00005 )
-		{
-			float i = 1.0 / sin( a );
-			float y = 1.0 - x;
-			float f1 = sin( y * a ) * i;
-			float f2 = sin( x * a ) * i;
-			return q1*f1 + q2*f2;
-		}
-		else
-			return q1;
-	}
-	operator QVariant() const
-	{
-		QVariant v;
-		v.setValue( *this );
-		return v;
-	}
-	
+
 	QString toHtml() const
 	{
 		return QString( "W %1<br>X %2<br>Y %3<br>Z %4" ).arg( wxyz[0], 0, 'f', 4 ).arg( wxyz[1], 0, 'f', 4 ).arg( wxyz[2], 0, 'f', 4 ).arg( wxyz[3], 0, 'f', 4 );
@@ -258,6 +261,8 @@ public:
 protected:
 	float	wxyz[4];
 	static const float identity[4];
+	
+	friend class NifStream;
 };
 
 class Matrix
@@ -267,30 +272,6 @@ public:
 	{
 		memcpy( m, identity, 36 );
 	}
-	Matrix( const QVariant & v )
-	{
-		if ( ! v.canConvert<Matrix>() )
-			qWarning( "Matrix::Matrix( QVariant )" );
-		operator=( v.value<Matrix>() );
-	}
-	Matrix( QIODevice & device )
-	{
-		read( device );
-	}
-	void read( QIODevice & device )
-	{
-		device.read( (char *) m, 36 );
-	}
-	void write( QIODevice & device )
-	{
-		device.write( (char *) m, 36 );
-	}
-	Matrix & operator=( const QVariant & v )
-	{
-		if ( ! v.canConvert<Matrix>() )
-			qWarning( "Matrix::Matrix( QVariant )" );
-		return operator=( v.value<Matrix>() );
-	}
 	Matrix operator*( const Matrix & m2 ) const
 	{
 		Matrix m3;
@@ -299,9 +280,9 @@ public:
 				m3.m[r][c] = m[r][0]*m2.m[0][c] + m[r][1]*m2.m[1][c] + m[r][2]*m2.m[2][c];
 		return m3;
 	}
-	Vector operator*( const Vector & v ) const
+	Vector3 operator*( const Vector3 & v ) const
 	{
-		return Vector(
+		return Vector3(
 			m[0][0]*v[0] + m[0][1]*v[1] + m[0][2]*v[2],
 			m[1][0]*v[0] + m[1][1]*v[1] + m[1][2]*v[2],
 			m[2][0]*v[0] + m[2][1]*v[1] + m[2][2]*v[2] );
@@ -317,147 +298,291 @@ public:
 		return m[c][d];
 	}
 	
-	Matrix & operator=( const Quat & q )
-	{
-		float fTx  = ((float)2.0)*q[1];
-		float fTy  = ((float)2.0)*q[2];
-		float fTz  = ((float)2.0)*q[3];
-		float fTwx = fTx*q[0];
-		float fTwy = fTy*q[0];
-		float fTwz = fTz*q[0];
-		float fTxx = fTx*q[1];
-		float fTxy = fTy*q[1];
-		float fTxz = fTz*q[1];
-		float fTyy = fTy*q[2];
-		float fTyz = fTz*q[2];
-		float fTzz = fTz*q[3];
-		
-		m[0][0] = (float)1.0-(fTyy+fTzz);
-		m[0][1] = fTxy-fTwz;
-		m[0][2] = fTxz+fTwy;
-		m[1][0] = fTxy+fTwz;
-		m[1][1] = (float)1.0-(fTxx+fTzz);
-		m[1][2] = fTyz-fTwx;
-		m[2][0] = fTxz-fTwy;
-		m[2][1] = fTyz+fTwx;
-		m[2][2] = (float)1.0-(fTxx+fTyy);
-		return *this;
-	}
+	void fromQuat( const Quat & q );
+	Quat toQuat() const;
 	
-	Quat toQuat() const
-	{
-		Quat q;
-		
-		float trace = m[0][0] + m[1][1] + m[2][2];
-		float root;
-		
-		if (trace > 0.0)
-		{
-			root = sqrt( trace + 1.0 );
-			q[0] = root / 2.0;
-			root = 0.5 / root;
-			q[1] = ( m[2][1] - m[1][2] ) * root;
-			q[2] = ( m[0][2] - m[2][0] ) * root;
-			q[3] = ( m[1][0] - m[0][1] ) * root;
-		}
-		else
-		{
-			int i = ( m[1][1] > m[0][0] ? 1 : 0 );
-			if ( m[2][2] > m[i][i] )
-				i = 2;
-			const int next[3] = { 1, 2, 0 };
-			int j = next[i];
-			int k = next[j];
+	void fromEuler( float x, float y, float z );
+	bool toEuler( float & x, float & y, float & z ) const;
 	
-			root = sqrt( m[i][i] - m[j][j] - m[k][k] + 1.0 );
-			q[i+1] = root / 2;
-			root = 0.5 / root;
-			q[0]   = ( m[k][j] - m[j][k] ) * root;
-			q[j+1] = ( m[j][i] + m[i][j] ) * root;
-			q[k+1] = ( m[k][i] + m[i][k] ) * root;
-		}
-		return q;
-	}
-	
-	static Matrix fromEuler( float x, float y, float z )
-	{
-		x = x;
-		y = y;
-		z = z;
-		
-		float sinX = sin( x );
-		float cosX = cos( x );
-		float sinY = sin( y );
-		float cosY = cos( y );
-		float sinZ = sin( z );
-		float cosZ = cos( z );
-		
-		Matrix m;
-		m( 0, 0 ) = cosY * cosZ;
-		m( 0, 1 ) = - cosY * sinZ;
-		m( 0, 2 ) = sinY;
-		m( 1, 0 ) = sinX * sinY * cosZ + sinZ * cosX;
-		m( 1, 1 ) = cosX * cosZ - sinX * sinY * sinZ;
-		m( 1, 2 ) = - sinX * cosY;
-		m( 2, 0 ) = sinX * sinZ - cosX * sinY * cosZ;
-		m( 2, 1 ) = cosX * sinY * sinZ + sinX * cosZ;
-		m( 2, 2 ) = cosX * cosY;
-		return m;
-	}
-	
-	bool toEuler( float & x, float & y, float & z ) const
-	{
-		if ( m[0][2] < 1.0 )
-		{
-			if ( m[0][2] > - 1.0 )
-			{
-				x = atan2( - m[1][2], m[2][2] );
-				y = asin( m[0][2] );
-				z = atan2( - m[0][1], m[0][0] );
-				return true;
-			}
-			else
-			{
-				x = - atan2( - m[1][0], m[1][1] );
-				y = - PI / 2;
-				z = 0.0;
-				return false;
-			}
-		}
-		else
-		{
-			x = atan2( m[1][0], m[1][1] );
-			y = PI / 2;
-			z = 0.0;
-			return false;
-		}
-	}
-	
-	QString toHtml() const
-	{
-		return QString( "<table>" )
-			+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" ).arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 ).arg( m[0][2], 0, 'f', 4 )
-			+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" ).arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 ).arg( m[1][2], 0, 'f', 4 )
-			+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" ).arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 ).arg( m[2][2], 0, 'f', 4 )
-			+ QString( "</table>" );
-	}
-	
-	operator QVariant() const
-	{
-		QVariant v;
-		v.setValue( *this );
-		return v;
-	}
-	
+	QString toHtml() const;
+
 protected:
 	float m[3][3];
 	static const float identity[9];
+	
+	friend class NifStream;
+};
+
+class Color3 : public QColor
+{
+public:
+	Color3() { rgb[0] = rgb[1] = rgb[2] = 0; }
+	explicit Color3( const QColor & c ) { fromQColor( c ); }
+	
+	float & operator[]( unsigned int i )
+	{
+		Q_ASSERT( i < 3 );
+		return rgb[i];
+	}
+	
+	const float & operator[]( unsigned int i ) const
+	{
+		Q_ASSERT( i < 3 );
+		return rgb[i];
+	}
+	
+	float red() const { return rgb[0]; }
+	float green() const { return rgb[1]; }
+	float blue() const { return rgb[2]; }
+	
+	void setRed( float r ) { rgb[0] = r; }
+	void setGreen( float g ) { rgb[1] = g; }
+	void setBlue( float b ) { rgb[2] = b; }
+	
+	void setRGB( float r, float g, float b ) { rgb[0] = r; rgb[1] = g; rgb[2] = b; }
+	
+	QColor toQColor() const
+	{
+		return QColor::fromRgbF( rgb[0], rgb[1], rgb[2] );
+	}
+	
+	void fromQColor( const QColor & c )
+	{
+		rgb[0] = c.redF();
+		rgb[1] = c.greenF();
+		rgb[2] = c.blueF();
+	}
+	
+	const float * data() const { return rgb; }
+	
+protected:
+	float rgb[3];
+	
+	friend class NifStream;
+};
+
+class Color4 : public QColor
+{
+public:
+	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3]; }
+	Color4( const Color3 & c, float alpha = 1.0 ) { rgba[0] = c[0]; rgba[1] = c[1]; rgba[2] = c[2]; rgba[3] = alpha; }
+	explicit Color4( const QColor & c ) { fromQColor( c ); }
+	
+	float & operator[]( unsigned int i )
+	{
+		Q_ASSERT( i < 4 );
+		return rgba[ i ];
+	}
+	
+	const float & operator[]( unsigned int i ) const
+	{
+		Q_ASSERT( i < 4 );
+		return rgba[ i ];
+	}
+	
+	float red() const { return rgba[0]; }
+	float green() const { return rgba[1]; }
+	float blue() const { return rgba[2]; }
+	float alpha() const { return rgba[3]; }
+	
+	void setRed( float r ) { rgba[0] = r; }
+	void setGreen( float g ) { rgba[1] = g; }
+	void setBlue( float b ) { rgba[2] = b; }
+	void setAlpha( float a ) { rgba[3] = a; }
+	
+	void setRGBA( float r, float g, float b, float a ) { rgba[ 0 ] = r; rgba[ 1 ] = g; rgba[ 2 ] = b; rgba[ 3 ] = a; }
+
+	QColor toQColor() const
+	{
+		return QColor::fromRgbF( rgba[0], rgba[1], rgba[2], rgba[3] );
+	}
+	
+	void fromQColor( const QColor & c )
+	{
+		rgba[0] = c.redF();
+		rgba[1] = c.greenF();
+		rgba[2] = c.blueF();
+		rgba[3] = c.alphaF();
+	}
+	
+	const float * data() const { return rgba; }
+	
+	Color4 blend( float alpha ) const
+	{
+		Color4 c( *this );
+		c.setAlpha( c.alpha() * alpha );
+		return c;
+	}
+
+protected:
+	float rgba[4];
+	
+	friend class NifStream;
+};
+
+class NifValue
+{
+public:
+	enum Type
+	{
+		tBool = 0,
+		tByte = 1,
+		tWord = 2,
+		tInt = 3,
+		tLink = 4,
+		tParent = 5,
+		tFloat = 6,
+		tString = 7,
+		tColor3 = 8,
+		tColor4 = 9,
+		tVector3 = 10,
+		tQuat = 11,
+		tMatrix = 12,
+		tVector2 = 13,
+		tByteArray = 14,
+		
+		tNone = 0xff
+	};
+	
+	static void initialize();
+	static Type type( const QString & typId );
+	static bool registerAlias( const QString & alias, const QString & internal );
+	
+	NifValue() { typ = tNone; }
+	NifValue( Type t );
+	NifValue( const NifValue & other );
+	
+	~NifValue();
+	
+	void clear();
+	void changeType( Type );
+	
+	void operator=( const NifValue & other );
+	//bool operator==( const NifValue & other );
+	//bool operator!=( const NifValue & other ) { return ! ( *this == other ); }
+	
+	Type type() const { return typ; }
+	
+	static bool isValid( Type t ) { return t != tNone; }
+	static bool isLink( Type t ) { return t == tLink || t == tParent; }
+	
+	bool isValid() const { return typ != tNone; }
+	bool isColor() const { return typ == tColor3 || typ == tColor4; }
+	bool isCount() const { return typ >= tBool && typ <= tInt; }
+	bool isFloat() const { return typ == tFloat; }
+	bool isLink() const { return typ == tLink || typ == tParent; }
+	bool isMatrix() const { return typ == tMatrix; }
+	bool isQuat() const { return typ == tQuat; }
+	bool isString() const { return typ == tString; }
+	bool isVector3() const { return typ == tVector3; }
+	bool isVector2() const { return typ == tVector2; }
+	bool isByteArray() const { return typ == tByteArray; }
+	
+	QColor toColor() const;
+	quint32 toCount() const;
+	float toFloat() const;
+	qint32 toLink() const;
+	QString toString() const;
+	QVariant toVariant() const;
+	
+	operator QVariant () const	{ return toVariant(); }
+	
+	bool setCount( int );
+	bool setFloat( float );
+	bool setLink( int );
+	
+	bool fromString( const QString & );
+	bool fromVariant( const QVariant & );
+	
+	template <typename T> T get() const;
+	template <typename T> bool set( const T & x );
+
+protected:
+	Type typ;
+	
+	union Value
+	{
+		quint8	u08;
+		quint16 u16;
+		quint32 u32;
+		qint32	i32;
+		float	f32;
+		void *	data;
+	} val;
+	
+	template <typename T> T getType( Type t ) const;
+	template <typename T> bool setType( Type t, T v );
+	
+	static QHash<QString,Type>	typeMap;
+	
+	friend class NifStream;
+};
+
+inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
+inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
+inline qint32 NifValue::toLink() const { if ( isLink() ) return val.i32; else return -1; }
+
+inline bool NifValue::setCount( int c ) { if ( isCount() ) { val.u32 = c; return true; } else return false; }
+inline bool NifValue::setFloat( float f ) { if ( isFloat() ) { val.f32 = f; return true; } else return false; }
+inline bool NifValue::setLink( int l ) { if ( isLink() ) { val.i32 = l; return true; } else return false; }
+
+template <typename T> inline T NifValue::getType( Type t ) const
+{
+	if ( typ == t )
+		return *static_cast<T*>( val.data );
+	else
+		return T();
+}
+
+template <typename T> inline bool NifValue::setType( Type t, T v )
+{
+	if ( typ == t )
+	{
+		*static_cast<T*>( val.data ) = v;
+		return true;
+	}
+	return false;
+}
+
+template <> inline bool NifValue::get() const { return toCount(); }
+template <> inline int NifValue::get() const { return toCount(); }
+template <> inline float NifValue::get() const { return toFloat(); }
+template <> inline QColor NifValue::get() const { return toColor(); }
+template <> inline QVariant NifValue::get() const { return toVariant(); }
+
+template <> inline Matrix NifValue::get() const { return getType<Matrix>( tMatrix ); }
+template <> inline Quat NifValue::get() const { return getType<Quat>( tQuat ); }
+template <> inline Vector3 NifValue::get() const { return getType<Vector3>( tVector3 ); }
+template <> inline Vector2 NifValue::get() const { return getType<Vector2>( tVector2 ); }
+template <> inline Color3 NifValue::get() const { return getType<Color3>( tColor3 ); }
+template <> inline Color4 NifValue::get() const { return getType<Color4>( tColor4 ); }
+template <> inline QString NifValue::get() const { return getType<QString>( tString ); }
+template <> inline QByteArray NifValue::get() const { return getType<QByteArray>( tByteArray ); }
+
+
+template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
+template <> inline bool NifValue::set( const Quat & x ) { return setType( tQuat, x ); }
+template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVector3, x ); }
+template <> inline bool NifValue::set( const Vector2 & x ) { return setType( tVector2, x ); }
+template <> inline bool NifValue::set( const Color3 & x ) { return setType( tColor3, x ); }
+template <> inline bool NifValue::set( const Color4 & x ) { return setType( tColor4, x ); }
+template <> inline bool NifValue::set( const QString & x ) { return setType( tString, x ); }
+template <> inline bool NifValue::set( const QByteArray & x ) { return setType( tByteArray, x ); }
+
+class NifStream
+{
+public:
+	NifStream( quint32 v, QIODevice * d ) : version( v ), device( d ) {}
+	
+	bool read( NifValue & );
+	bool write( const NifValue & );
+
+private:
+	quint32 version;
+	QIODevice * device;
 };
 
 
-Q_DECLARE_METATYPE( Vector )
-Q_DECLARE_METATYPE( Quat )
-Q_DECLARE_METATYPE( Matrix )
-
+Q_DECLARE_METATYPE( NifValue );
 
 #endif

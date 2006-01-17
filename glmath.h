@@ -10,11 +10,11 @@
 class Transform
 {
 public:
-	Transform( NifModel * nif, const QModelIndex & transform )
+	Transform( const NifModel * nif, const QModelIndex & transform )
 	{
-		rotation = nif->itemValue( nif->getIndex( transform, "rotation" ) );
-		translation = nif->itemValue( nif->getIndex( transform, "translation" ) );
-		scale = nif->getFloat( transform, "scale" );
+		rotation = nif->get<Matrix>( transform, "rotation" );
+		translation = nif->get<Vector3>( transform, "translation" );
+		scale = nif->get<float>( transform, "scale" );
 	}
 	
 	Transform()
@@ -31,7 +31,7 @@ public:
 		return t;
 	}
 	
-	Vector operator*( const Vector & v ) const
+	Vector3 operator*( const Vector3 & v ) const
 	{
 		return rotation * v * scale + translation;
 	}
@@ -79,7 +79,7 @@ public:
 	}
 
 	Matrix rotation;
-	Vector translation;
+	Vector3 translation;
 	GLfloat scale;
 };
 

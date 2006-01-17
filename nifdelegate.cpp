@@ -108,14 +108,21 @@ public:
 		Q_ASSERT( model );
 		
 		if ( event->type() == QEvent::MouseButtonRelease && model->flags( index ) & Qt::ItemIsEditable
-			&& model->data( index, Qt::EditRole ).type() == QVariant::Color )
+			&& model->data( index, Qt::EditRole ).value<NifValue>().isColor() )
 		{
+			NifValue val = model->data( index, Qt::EditRole ).value<NifValue>();
+			
 			int m = qMin( option.rect.width(), option.rect.height() );
 			QRect iconRect( option.rect.x(), option.rect.y(), m, m );
-			if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
-				return model->setData( index, ColorWheel::choose( model->data( index, Qt::EditRole ).value<QColor>(), 0 ), Qt::EditRole );
-			else
+			if ( ! iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
 				return true;
+			
+			if ( val.type() == NifValue::tColor3 )
+				val.set<Color3>( Color3( ColorWheel::choose( val.toColor(), 0 ) ) );
+			else if ( val.type() == NifValue::tColor4 )
+				val.set<Color4>( Color4( ColorWheel::choose( val.toColor(), 0 ) ) );
+			
+			return model->setData( index, val.toVariant(), Qt::EditRole );
 		}
 		
 		return QItemDelegate::editorEvent( event, model, option, index );
@@ -127,47 +134,58 @@ public:
 		if ( ! model ) return;
 		
 		QVariant data = model->data( index, Qt::DisplayRole );
+		QString text;
 		
-		if ( data.type() == QVariant::Color )
+		if ( data.canConvert<NifValue>() )
 		{
-			painter->fillRect( option.rect, data.value<QColor>() );
-			if ( model->flags( index ) & Qt::ItemIsEditable )
+			NifValue val = data.value<NifValue>();
+			
+			if ( val.isColor() )
 			{
-				int m = qMin( option.rect.width(), option.rect.height() );
-				icon.paint( painter, QRect( option.rect.x(), option.rect.y(), m, m ), Qt::AlignCenter );
+				painter->fillRect( option.rect, val.toColor() );
+				if ( model->flags( index ) & Qt::ItemIsEditable )
+				{
+					int m = qMin( option.rect.width(), option.rect.height() );
+					icon.paint( painter, QRect( option.rect.x(), option.rect.y(), m, m ), Qt::AlignCenter );
+				}
+				drawFocus( painter, option, option.rect );
+				return;
 			}
-			drawFocus( painter, option, option.rect );
+			
+			text = val.toString();
 		}
 		else
-		{
-			QStyleOptionViewItem opt = option;
-			
-			QString text = data.toString();
-			QRect textRect(0, 0, opt.fontMetrics.width(text), opt.fontMetrics.lineSpacing());
-			
-			// decoration is a string
-			QString deco = model->data(index, Qt::DecorationRole).toString();
-			QRect decoRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
-			
-			QRect dummy;
-			doLayout(opt, &dummy, &decoRect, &textRect, false);
-			
-			// draw the background color
-			if (option.showDecorationSelected && (option.state & QStyle::State_Selected)) {
-				QPalette::ColorGroup cg = option.state & QStyle::State_Enabled
-										  ? QPalette::Normal : QPalette::Disabled;
-				painter->fillRect(option.rect, option.palette.brush(cg, QPalette::Highlight));
-			} else {
-				QVariant value = model->data(index, Qt::BackgroundColorRole);
-				if (value.isValid() && qvariant_cast<QColor>(value).isValid())
-					painter->fillRect(option.rect, qvariant_cast<QColor>(value));
-			}
-			
-			// draw the item
-			drawDeco(painter, opt, decoRect, deco);
-			drawDisplay(painter, opt, textRect, text);
-			drawFocus(painter, opt, textRect);
-		}
+			text = data.toString();
+		
+		QStyleOptionViewItem opt = option;
+		
+		QRect textRect(0, 0, opt.fontMetrics.width(text), opt.fontMetrics.lineSpacing());
+		
+		// decoration is a string
+		QString deco = model->data(index, Qt::DecorationRole).toString();
+		QRect decoRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
+		
+		QRect dummy;
+		doLayout(opt, &dummy, &decoRect, &textRect, false);
+		
+		QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
+		
+		if ( option.state & QStyle::State_Selected )
+			painter->fillRect( option.rect, option.palette.brush( cg, QPalette::Highlight ) );
+		
+		painter->save();
+		painter->setPen( opt.palette.color( cg, opt.state & QStyle::State_Selected ? QPalette::HighlightedText : QPalette::Text ) );
+		painter->setFont( opt.font );
+		
+		qt_format_text( opt.font, decoRect, opt.displayAlignment, deco, 0, 0, 0, 0, painter );
+		
+		if ( painter->fontMetrics().width( text ) > textRect.width() )
+			text = elidedText( opt.fontMetrics, textRect.width(), opt.textElideMode, text );
+		qt_format_text( opt.font, textRect, opt.displayAlignment, text, 0, 0, 0, 0, painter );
+		
+		drawFocus(painter, opt, textRect);
+		
+		painter->restore();
 	}
 
 	QSize sizeHint(const QStyleOptionViewItem &option,
@@ -185,124 +203,65 @@ public:
 		QRect checkRect;
 		doLayout(option, &checkRect, &decoRect, &textRect, true);
 		
-		return (decoRect|textRect).size();
+		return ( decoRect | textRect ).size();
 	}
 
-	void drawDeco(QPainter *painter, const QStyleOptionViewItem &option,
-									const QRect &rect, const QString &text) const
+	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const
 	{
-		QPen pen = painter->pen();
-		painter->setPen(option.palette.color(option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled, ( option.showDecorationSelected && (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::Text)) );
-		QFont font = painter->font();
-		painter->setFont(option.font);
-		painter->drawText(rect, option.displayAlignment, text);
-		painter->setFont(font);
-		painter->setPen(pen);	
-	}
-	
-	QWidget * createEditor(QWidget *parent,
-										 const QStyleOptionViewItem &,
-										 const QModelIndex &index) const
-	{
-		if (!index.isValid())
+		if ( ! index.isValid() )
 			return 0;
-		QVariant v = index.model()->data(index, Qt::EditRole);
 		
+		QVariant v = index.model()->data(index, Qt::EditRole);
 		QWidget * w = 0;
-		if ( v.canConvert<Vector>() )
-			w = new VectorEdit( parent );
-		else if ( v.canConvert<Quat>() || v.canConvert<Matrix>() )
-			w = new RotationEdit( parent );
-		else
+		
+		if ( v.canConvert<NifValue>() )
 		{
-			switch ( v.type() )
-			{
-				case QVariant::Bool:
-				{
-					QComboBox *cb = new QComboBox(parent);
-					cb->setFrame(false);
-					cb->addItem("False");
-					cb->addItem("True");
-					w = cb;
-				}	break;
-				case QVariant::UInt:
-				{
-					QSpinBox *sb = new QSpinBox(parent);
-					sb->setFrame(false);
-					sb->setMaximum(INT_MAX);
-					w = sb;
-				}	break;
-				case QVariant::Int:
-				{
-					QSpinBox *sb = new QSpinBox(parent);
-					sb->setFrame(false);
-					sb->setMinimum(INT_MIN);
-					sb->setMaximum(INT_MAX);
-					w = sb;
-				}	break;
-				case QVariant::Double:
-				{
-					QDoubleSpinBox *sb = new QDoubleSpinBox(parent);
-					sb->setFrame(false);
-					sb->setDecimals( 4 );
-					sb->setRange( - 100000000, + 100000000 );
-					w = sb;
-				}	break;
-				case QVariant::String:
-				{
-					QLineEdit *le = new QLineEdit(parent);
-					le->setFrame(false);
-					w = le;
-				}	break;
-				case QVariant::Color:
-				default:
-					w = 0;
-					break;
-			}
+			NifValue nv = v.value<NifValue>();
+			if ( ValueEdit::canEdit( nv.type() ) )
+				w = new ValueEdit( parent );
 		}
-		if ( w ) w->installEventFilter(const_cast<NifDelegate *>(this));
+		else if ( v.type() == QVariant::String )
+		{
+			QLineEdit *le = new QLineEdit(parent);
+			le->setFrame(false);
+			w = le;
+		}
+		if ( w ) w->installEventFilter( const_cast<NifDelegate *>( this ) );
 		return w;
 	}
 	
 	void setEditorData(QWidget *editor, const QModelIndex &index) const
 	{
+		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
+		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
 		QVariant	v = index.model()->data( index, Qt::EditRole );
-		QByteArray	n = valuePropertyName( v );
-		if ( !n.isEmpty() )
-			editor->setProperty(n, v);
+		
+		if ( v.canConvert<NifValue>() && vedit )
+		{
+			vedit->setValue( v.value<NifValue>() );
+		}
+		else if ( ledit )
+		{
+			ledit->setText( v.toString() );
+		}
 	}
 	
 	void setModelData(QWidget *editor, QAbstractItemModel *model,
 						const QModelIndex &index) const
 	{
 		Q_ASSERT(model);
-		QByteArray n = valuePropertyName( model->data(index, Qt::EditRole) );
-		if ( !n.isEmpty() )
-			model->setData( index, editor->property( n ), Qt::EditRole );
-	}
-	
-	QByteArray valuePropertyName( const QVariant & v ) const
-	{
-		if ( v.canConvert<Vector>() )
-			return "vector";
-		else if ( v.canConvert<Quat>() )
-			return "quat";
-		else if ( v.canConvert<Matrix>() )
-			return "matrix";
-		else
+		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
+		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
+		QVariant v;
+		if ( vedit )
 		{
-			switch ( v.type() )
-			{
-				case QVariant::Bool:
-					return "currentItem";
-				case QVariant::UInt:
-				case QVariant::Int:
-				case QVariant::Double:
-					return "value";
-				case QVariant::String:
-				default:
-					return "text";
-			}
+			v.setValue( vedit->getValue() );
+			model->setData( index, v, Qt::EditRole );
+		}
+		else if ( ledit )
+		{
+			v.setValue( ledit->text() );
+			model->setData( index, v, Qt::EditRole );
 		}
 	}
 };
@@ -310,6 +269,172 @@ public:
 QAbstractItemDelegate * NifModel::createDelegate()
 {
 	return new NifDelegate;
+}
+
+ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNone ), edit( 0 )
+{
+}
+
+bool ValueEdit::canEdit( NifValue::Type t )
+{
+	return ( t == NifValue::tBool || t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt
+		|| t == NifValue::tLink || t == NifValue::tParent || t == NifValue::tFloat || t == NifValue::tString
+		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat );
+}
+
+void ValueEdit::setValue( const NifValue & v )
+{
+	typ = v.type();
+	
+	if ( edit )
+		delete edit;
+	
+	switch ( typ )
+	{
+		case NifValue::tBool:
+		{
+			QComboBox * cb = new QComboBox( this );
+			cb->setFrame(false);
+			cb->addItem("no");
+			cb->addItem("yes");
+			cb->setCurrentIndex( v.toCount() ? 1 : 0 );
+			edit = cb;
+		}	break;
+		case NifValue::tByte:
+		{
+			QSpinBox * be = new QSpinBox( this );
+			be->setFrame(false);
+			be->setRange( 0, 0xff );
+			be->setValue( v.toCount() );
+			edit = be;
+		}	break;
+		case NifValue::tWord:
+		{	
+			QSpinBox * we = new QSpinBox( this );
+			we->setFrame(false);
+			we->setRange( 0, 0xffff );
+			we->setValue( v.toCount() );
+			edit = we;
+		}	break;
+		case NifValue::tInt:
+		{	
+			QSpinBox * ie = new QSpinBox( this );
+			ie->setFrame(false);
+			ie->setRange( 0, INT_MAX );
+			ie->setValue( v.toCount() );
+			edit = ie;
+		}	break;
+		case NifValue::tLink:
+		case NifValue::tParent:
+		{	
+			QSpinBox * le = new QSpinBox( this );
+			le->setFrame(false);
+			le->setRange( -1, 0xffff );
+			le->setValue( v.toLink() );
+			edit = le;
+		}	break;
+		case NifValue::tFloat:
+		{	
+			QDoubleSpinBox * fe = new QDoubleSpinBox( this );
+			fe->setFrame(false);
+			fe->setRange( -1e10, +1e10 );
+			fe->setDecimals( 4 );
+			fe->setValue( v.toFloat() );
+			edit = fe;
+		}	break;
+		case NifValue::tString:
+		{	
+			QLineEdit * le = new QLineEdit( this );
+			le->setText( v.toString() );
+			edit = le;
+		}	break;
+		case NifValue::tVector3:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector3( v.get<Vector3>() );
+			edit = ve;
+		}	break;
+		case NifValue::tVector2:
+		{	
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector2( v.get<Vector2>() );
+			edit = ve;
+		}	break;
+		case NifValue::tMatrix:
+		{	
+			RotationEdit * re = new RotationEdit( this );
+			re->setMatrix( v.get<Matrix>() );
+			edit = re;
+		}	break;
+		case NifValue::tQuat:
+		{
+			RotationEdit * re = new RotationEdit( this );
+			re->setQuat( v.get<Quat>() );
+			edit = re;
+		}	break;
+		default:
+			edit = 0;
+			break;
+	}
+	
+	resizeEditor();
+}
+
+NifValue ValueEdit::getValue() const
+{
+	NifValue val( typ );
+	
+	switch ( typ )
+	{
+		case NifValue::tBool:
+			val.setCount( qobject_cast<QComboBox*>( edit )->currentIndex() );
+			break;
+		case NifValue::tByte:
+		case NifValue::tWord:
+		case NifValue::tInt:
+			val.setCount( qobject_cast<QSpinBox*>( edit )->value() );
+			break;
+		case NifValue::tLink:
+		case NifValue::tParent:
+			val.setLink( qobject_cast<QSpinBox*>( edit )->value() );
+			break;
+		case NifValue::tFloat:
+			val.setFloat( qobject_cast<QDoubleSpinBox*>( edit )->value() );
+			break;
+		case NifValue::tString:
+			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
+			break;
+		case NifValue::tVector3:
+			val.set<Vector3>( qobject_cast<VectorEdit*>( edit )->getVector3() );
+			break;
+		case NifValue::tVector2:
+			val.set<Vector2>( qobject_cast<VectorEdit*>( edit )->getVector2() );
+			break;
+		case NifValue::tMatrix:
+			val.set<Matrix>( qobject_cast<RotationEdit*>( edit )->getMatrix() );
+			break;
+		case NifValue::tQuat:
+			val.set<Quat>( qobject_cast<RotationEdit*>( edit )->getQuat() );
+			break;
+		default:
+			break;
+	}
+	
+	return val;
+}
+
+void ValueEdit::resizeEditor()
+{
+	if ( edit )
+	{
+		edit->move( QPoint( 0, 0 ) );
+		edit->resize( size() );
+	}
+}
+
+void ValueEdit::resizeEvent( QResizeEvent * )
+{
+	resizeEditor();
 }
 
 
@@ -336,16 +461,28 @@ VectorEdit::VectorEdit( QWidget * parent ) : QWidget( parent )
 	z->setPrefix( "Z " );
 }
 
-void VectorEdit::setVector( const Vector & v )
+void VectorEdit::setVector3( const Vector3 & v )
 {
 	x->setValue( v[0] );
 	y->setValue( v[1] );
-	z->setValue( v[2] );
+	z->setValue( v[2] ); z->setShown( true );
 }
 
-Vector VectorEdit::getVector() const
+void VectorEdit::setVector2( const Vector2 & v )
 {
-	return Vector( x->value(), y->value(), z->value() );
+	x->setValue( v[0] );
+	y->setValue( v[1] );
+	z->setValue( 0.0 ); z->setHidden( true );
+}
+
+Vector3 VectorEdit::getVector3() const
+{
+	return Vector3( x->value(), y->value(), z->value() );
+}
+
+Vector2 VectorEdit::getVector2() const
+{
+	return Vector2( x->value(), y->value() );
 }
 
 RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent )
@@ -382,7 +519,7 @@ void RotationEdit::setMatrix( const Matrix & m )
 
 void RotationEdit::setQuat( const Quat & q )
 {
-	Matrix m; m = q;
+	Matrix m; m.fromQuat( q );
 	float Y, P, R;
 	m.toEuler( Y, P, R );
 	y->setValue( Y / PI * 180 );
@@ -392,10 +529,49 @@ void RotationEdit::setQuat( const Quat & q )
 
 Matrix RotationEdit::getMatrix() const
 {
-	return Matrix::fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
+	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
+	return m;
 }
 
 Quat RotationEdit::getQuat() const
 {
-	return Matrix::fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI ).toQuat();
+	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
+	return m.toQuat();
 }
+
+		/*
+			switch ( v.type() )
+			{
+				case QVariant::UInt:
+				{
+					QSpinBox *sb = new QSpinBox(parent);
+					sb->setFrame(false);
+					sb->setMaximum(INT_MAX);
+					w = sb;
+				}	break;
+				case QVariant::Int:
+				{
+					QSpinBox *sb = new QSpinBox(parent);
+					sb->setFrame(false);
+					sb->setMinimum(INT_MIN);
+					sb->setMaximum(INT_MAX);
+					w = sb;
+				}	break;
+				case QVariant::Double:
+				{
+					QDoubleSpinBox *sb = new QDoubleSpinBox(parent);
+					sb->setFrame(false);
+					sb->setDecimals( 4 );
+					sb->setRange( - 100000000, + 100000000 );
+					w = sb;
+				}	break;
+				case QVariant::String:
+				{
+				}	break;
+				case QVariant::Color:
+				default:
+					w = 0;
+					break;
+			}
+		}
+		*/

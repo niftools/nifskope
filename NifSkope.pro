@@ -9,6 +9,7 @@ QT += xml opengl
 DESTDIR = ./
 
 HEADERS += \
+glcontroller.h \
 glmath.h \
 glscene.h \
 glview.h \
@@ -16,10 +17,12 @@ nifdelegate.h \
 nifmodel.h \
 nifproxy.h \
 nifskope.h \
+niftypes.h \
 nifview.h \
 popup.h
 
 SOURCES += \
+glcontroller.cpp \
 glscene.cpp \
 gltex.cpp \
 glview.cpp \
@@ -27,6 +30,7 @@ nifdelegate.cpp \
 nifmodel.cpp \
 nifproxy.cpp \
 nifskope.cpp \
+niftypes.cpp \
 nifview.cpp \
 nifxml.cpp \
 popup.cpp

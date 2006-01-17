@@ -172,6 +172,7 @@ NifSkope::NifSkope() : QMainWindow()
 	dList = new QDockWidget( "File Block List" );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
+	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
 	dTree = new QDockWidget( "Detailed Tree View" );
 	dTree->setObjectName( "TreeDock" );
@@ -643,7 +644,6 @@ void NifSkope::load()
 	if ( lineLoad->text().isEmpty() )
 	{
 		model->clear();
-		ogl->compile( true );
 		return;
 	}
 	
@@ -656,11 +656,11 @@ void NifSkope::load()
 		ogl->aAnimate->setChecked( false );
 		ogl->aRotate->setChecked( false );
 		model->load( f );
-		setEnabled( true );
-		ogl->compile( true );
 		ogl->aAnimate->setChecked( a );
 		ogl->aRotate->setChecked( r );
+		ogl->center();
 		f.close();
+		setEnabled( true );
 	}
 	else
 		qWarning() << "could not open file " << lineLoad->text();
@@ -754,7 +754,7 @@ int main( int argc, char * argv[] )
 	QApplication app( argc, argv );
 	
 	// read in XML fileformat description
-	QString result = NifModel::parseXmlDescription( QDir( app.applicationDirPath() ).filePath( "NifSkope.xml" ) );
+	QString result = NifModel::parseXmlDescription( QDir( app.applicationDirPath() ).filePath( "nif.xml" ) );
 	if ( ! result.isEmpty() )
 	{
 		QMessageBox::critical( 0, "NifSkope", result );

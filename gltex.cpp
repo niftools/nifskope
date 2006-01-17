@@ -65,11 +65,6 @@ void GLTex::initialize( const QGLContext * context )
 		qWarning( "glCompressedTexImage2D not found" );
 }
 
-GLTex::GLTex()
-{
-	id = 0;
-}
-
 GLTex::~GLTex()
 {
 	release();
@@ -86,91 +81,119 @@ void GLTex::release()
 GLuint texLoadBMP( const QString & filepath );
 GLuint texLoadDDS( const QString & filepath );
 GLuint texLoadTGA( const QString & filepath );
+GLuint texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
 
 
-GLuint Scene::bindTexture( const QString & fn )
+bool Scene::bindTexture( const QModelIndex & index )
 {
-	QString filename = fn;
-	if ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
-		filename = filename.right( filename.length() - 1 );
+	if ( ! index.isValid() )
+		return false;
 	
-	// check if texture is in cache
-	GLTex * tex = textures.object( filename );
-	
-	if ( tex && tex->id )
-	{	// texture is cached
-		glBindTexture(GL_TEXTURE_2D, tex->id);
-		return tex->id;
-		/*
-		if ( tex->readOnly )
-		{	// if texture is readonly we don't need to check if it was updated
-			glBindTexture(GL_TEXTURE_2D, tex->id);
-			return tex->id;
-		}
-		else
-		{
-			QFileInfo file( tex->filepath );
-			if ( file.exists() && file.lastModified() < tex->loaded )
-			{	// texture is still valid
-				glBindTexture(GL_TEXTURE_2D, tex->id);
-				return tex->id;
-			}
-		}
-		// the texture was modified
-		tex->release();
-		*/
-	}
-	else if ( tex )
-	{	// texture is negative cached
-		return 0;
-	}
-	else
-	{	// insert texture into cache
-		tex = new GLTex;
-		textures.insert( filename, tex );
-	}
-	
-	if ( tex->filepath.isEmpty() || ! QFile::exists( tex->filepath ) )
+	foreach ( GLTex * tex, textures )
 	{
-		// attempt to find the texture in one of the folders
-		QDir dir;
-		foreach ( QString folder, texfolders )
+		if ( tex->iSource == index )
 		{
-			dir.setPath( folder );
-			if ( dir.exists( filename ) )
-				break;
-			if ( dir.exists( "../" + filename ) )
+			if ( tex->id )
 			{
-				dir.cd( ".." );
-				break;
+				glBindTexture( GL_TEXTURE_2D, tex->id );
+				return true;
 			}
+			return false;
 		}
-		if ( ! dir.exists( filename ) )
-		{
-			tex->filepath = QString();
-			qWarning() << "texture " << filename << " not found";
-			return 0;
-		}
-		
-		tex->filepath = dir.filePath( filename ).toLower();
-		tex->readOnly = !QFileInfo( tex->filepath ).isWritable();
-	}
-
-	tex->loaded = QDateTime::currentDateTime();
-
-	if ( tex->filepath.endsWith( ".dds" ) )
-		tex->id = texLoadDDS( tex->filepath );
-	else if ( tex->filepath.endsWith( ".tga" ) )
-		tex->id = texLoadTGA( tex->filepath );
-	else if ( tex->filepath.endsWith( ".bmp" ) )
-		tex->id = texLoadBMP( tex->filepath );
-	else
-	{
-		qWarning() << "could not load texture " << tex->filepath << " (valid image formats are DDS TGA and BMP)";
-		return 0;
 	}
 	
-	return tex->id;
+	GLTex * tex = new GLTex( index, this );
+	textures.append( tex );
+	
+	if ( tex->id )
+	{
+		glBindTexture( GL_TEXTURE_2D, tex->id );
+		return true;
+	}
+	
+	return false;
+}
+
+GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( index )
+{
+	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
+	if ( iSource.isValid() && nif )
+	{
+		QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
+		if ( iTexSource.isValid() )
+		{
+			external = nif->get<bool>( iTexSource, "use external" );
+			if ( external )
+			{
+				QString filename = nif->get<QString>( iTexSource, "file name" ).toLower();
+				
+				if ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
+					filename = filename.right( filename.length() - 1 );
+				
+				// attempt to find the texture in one of the folders
+				QDir dir;
+				foreach ( QString folder, scene->texfolders )
+				{
+					dir.setPath( folder );
+					if ( dir.exists( filename ) )
+						break;
+					if ( dir.exists( "../" + filename ) )
+					{
+						dir.cd( ".." );
+						break;
+					}
+				}
+				
+				if ( dir.exists( filename ) )
+				{
+					filepath = dir.filePath( filename );
+					readOnly = !QFileInfo( filepath ).isWritable();
+					loaded = QDateTime::currentDateTime();
+					
+					if ( filepath.endsWith( ".dds" ) )
+						id = texLoadDDS( filepath );
+					else if ( filepath.endsWith( ".tga" ) )
+						id = texLoadTGA( filepath );
+					else if ( filepath.endsWith( ".bmp" ) )
+						id = texLoadBMP( filepath );
+					else
+						qWarning() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
+				}
+				else
+					qWarning() << "texture" << filename << "not found";
+			}
+			else
+			{		// internal texture
+				iPixelData = nif->getBlock( nif->getLink( iTexSource, "pixel data" ), "NiPixelData" );
+				if ( iPixelData.isValid() )
+				{
+					quint32 masks[4];
+					static const char * maskNames[4] = { "red mask", "green mask", "blue mask", "alpha mask" };
+					for ( int c = 0; c < 4; c++ )
+						masks[c] = nif->get<int>( iPixelData, maskNames[c] );
+					qint32 bitspp = nif->get<int>( iPixelData, "bits per pixel" );
+					qint32 bytespp = nif->get<int>( iPixelData, "bytes per pixel" );
+					qint32 mipmaps = nif->get<int>( iPixelData, "num mipmaps" );
+					
+					QModelIndex iMipmaps = nif->getIndex( iPixelData, "mipmaps" );
+					if ( iMipmaps.isValid() && nif->rowCount( iMipmaps ) >= 1 )
+					{
+						qint32 width = nif->get<int>( iMipmaps.child( 0, 0 ), "width" );
+						qint32 height = nif->get<int>( iMipmaps.child( 0, 0 ), "height" );
+						qint32 offset = nif->get<int>( iMipmaps.child( 0, 0 ), "offset" );
+						
+						QByteArray pixels = nif->get<QByteArray>( iPixelData, "pixel data" );
+						QBuffer buffer( &pixels );
+						if ( buffer.open( QIODevice::ReadOnly ) )
+						{
+							buffer.seek( offset );
+							id = texLoadRaw( buffer, width, height, 1, bitspp, bytespp, masks );
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 bool isPowerOfTwo( unsigned int x )
@@ -180,7 +203,7 @@ bool isPowerOfTwo( unsigned int x )
 	return ( x == 1 );
 }
 
-bool uncompressRLE( QFile & f, int w, int h, int bpp, quint8 * pixel )
+bool uncompressRLE( QIODevice & f, int w, int h, int bpp, quint8 * pixel )
 {
 	int bytespp = bpp / 8;
 	
@@ -258,7 +281,7 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 	}
 }
 
-GLuint texLoadRaw( QFile & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV = false, bool flipH = false, bool rle = false)
+GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV, bool flipH, bool rle )
 {
 	if ( bpp != 32 && bpp != 24 )
 	{	// check image depth

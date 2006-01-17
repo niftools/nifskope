@@ -33,48 +33,58 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef QT_OPENGL_LIB
 
 #include "glscene.h"
+#include "glcontroller.h"
 
 #include "nifmodel.h"
 
-void glVertex( const Vector & v )
+inline void glVertex( const Vector3 & v )
 {
-	glVertex3f( v[0], v[1], v[2] );
+	glVertex3fv( v.data() );
 }
-void glNormal( const Vector & v )
-{
-	glNormal3f( v[0], v[1], v[2] );
-}
-void glTranslate( const Vector & v )
-{
-	glTranslatef( v[0], v[1], v[2] );
-}
-	
 
-Triangle::Triangle( NifModel * nif, const QModelIndex & triangle )
+inline void glNormal( const Vector3 & v )
+{
+	glNormal3fv( v.data() );
+}
+
+inline void glTexCoord( const Vector2 & v )
+{
+	glTexCoord2fv( v.data() );
+}
+
+inline void glColor( const Color3 & c )
+{
+	glColor3fv( c.data() );
+}
+
+inline void glColor( const Color4 & c )
+{
+	glColor4fv( c.data() );
+}
+
+inline void glMaterial( GLenum x, GLenum y, const Color4 & c )
+{
+	glMaterialfv( x, y, c.data() );
+}
+
+
+Triangle::Triangle( const NifModel * nif, const QModelIndex & triangle )
 {
 	if ( !triangle.isValid() )		{	v1 = v2 = v3 = 0; return;	}
-	v1 = nif->getInt( triangle, "v1" );
-	v2 = nif->getInt( triangle, "v2" );
-	v3 = nif->getInt( triangle, "v3" );
+	v1 = nif->get<int>( triangle, "v1" );
+	v2 = nif->get<int>( triangle, "v2" );
+	v3 = nif->get<int>( triangle, "v3" );
 }
 
-Tristrip::Tristrip( NifModel * nif, const QModelIndex & tristrip )
+Tristrip::Tristrip( const NifModel * nif, const QModelIndex & tristrip )
 {
 	if ( ! tristrip.isValid() ) return;
 	
 	for ( int s = 0; s < nif->rowCount( tristrip ); s++ )
-		vertices.append( nif->itemValue( tristrip.child( s, 0 ) ).toInt() );
+		vertices.append( nif->itemData<int>( tristrip.child( s, 0 ) ) );
 }
 
-Color::Color( const QColor & c )
-{
-	rgba[ 0 ] = c.redF();
-	rgba[ 1 ] = c.greenF();
-	rgba[ 2 ] = c.blueF();
-	rgba[ 3 ] = c.alphaF();
-}
-
-BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
+BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {
 	trans = Transform( nif, index );
 	bone = b;
@@ -85,7 +95,7 @@ BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
 		for ( int c = 0; c < nif->rowCount( idxWeights ); c++ )
 		{
 			QModelIndex idx = idxWeights.child( c, 0 );
-			weights.append( VertexWeight( nif->getInt( idx, "index" ), nif->getFloat( idx, "weight" ) ) );
+			weights.append( VertexWeight( nif->get<int>( idx, "index" ), nif->get<float>( idx, "weight" ) ) );
 		}
 	}
 	else
@@ -94,437 +104,55 @@ BoneWeights::BoneWeights( NifModel * nif, const QModelIndex & index, int b )
 
 
 /*
- *  Controller
+ *  Controllable
  */
-
-
-Controller::Controller( NifModel * nif, const QModelIndex & index )
+ 
+Controllable::Controllable( Scene * s, const QModelIndex & i ) : scene( s ), iBlock( i )
 {
-	start = nif->getFloat( index, "start time" );
-	stop = nif->getFloat( index, "stop time" );
-	phase = nif->getFloat( index, "phase" );
-	frequency = nif->getFloat( index, "frequency" );
-	flags.bits = nif->getInt( index, "flags" );
 }
 
-float Controller::ctrlTime( float time ) const
+Controllable::~Controllable()
 {
-	time = frequency * time + phase;
-	
-	if ( time >= start && time <= stop )
-		return time;
-	
-	switch ( flags.controller.extrapolation )
-	{
-		case Flags::Controller::Cyclic:
-			{
-				float delta = stop - start;
-				if ( delta <= 0 )
-					return start;
-				
-				float x = ( time - start ) / delta;
-				float y = ( x - floor( x ) ) * delta;
-				
-				return start + y;
-			}
-		case Flags::Controller::Reverse:
-			{
-				float delta = stop - start;
-				if ( delta <= 0 )
-					return start;
-				
-				float x = ( time - start ) / ( delta * 2 );
-				float y = ( x - floor( x ) ) * delta;
-				if ( y * 2 < delta )
-					return start + y;
-				else
-					return stop - y;
-			}
-		case Flags::Controller::Constant:
-		default:
-			if ( time < start )
-				return start;
-			if ( time > stop )
-				return stop;
-			return time;
-	}
+	qDeleteAll( controllers );
 }
 
-void Controller::timeIndex( float time, const QVector<float> & times, int & i, int & j, float & x )
+void Controllable::clear()
 {
-	if ( time <= times.first() )
-	{
-		i = j = 0;
-		x = 0.0;
-		return;
-	}
-	if ( time >= times.last() )
-	{
-		i = j = times.count() -1;
-		x = 0.0;
-		return;
-	}
-	
-	if ( i < 0 || i >= times.count() )
-		i = 0;
-	
-	if ( time > times[ i ] )
-	{
-		j = i + 1;
-		while ( time >= times[ j ] )
-			i = j++;
-        x = ( time - times[ i ] ) / ( times[ j ] - times[ i ] );
-	}
-	else if ( time < times[ i ] )
-	{
-		j = i - 1;
-		while ( time <= times[ j ] )
-			i = j--;
-		x = ( time - times[ i ] ) / ( times[ j ] - times[ i ] );
-	}
-	else
-	{
-		j = i;
-		x = 0.0;
-	}
+	qDeleteAll( controllers );
+	controllers.clear();
 }
 
-KeyframeController::KeyframeController( Node * node, NifModel * nif, const QModelIndex & index )
-	: NodeController( node, nif, index )
+bool Controllable::update( const QModelIndex & i )
 {
-	transIndex = rotIndex = 0;
-	
-	int dataLink = nif->getInt( index, "data" );
-	QModelIndex data = nif->getBlock( dataLink, "NiKeyframeData" );
-	if ( data.isValid() )
-	{
-		QModelIndex trans = nif->getIndex( data, "translations" );
-		int count = nif->rowCount( trans );
-		if ( trans.isValid() && count > 0 )
-		{
-			transTime.resize( count );
-			transData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				transTime[ r ] = nif->getFloat( trans.child( r, 0 ), "time" );
-				transData[ r ] = nif->itemValue( nif->getIndex( trans.child( r, 0 ), "pos" ) );
-			}
-		}
-		QModelIndex rot = nif->getIndex( data, "rotations" );
-		count = nif->rowCount( rot );
-		if ( rot.isValid() && count > 0 )
-		{
-			rotTime.resize( count );
-			rotData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				rotTime[ r ] = nif->getFloat( rot.child( r, 0 ), "time" );
-				rotData[ r ] = nif->itemValue( nif->getIndex( rot.child( r, 0 ), "quat" ) );
-			}
-		}
-		QModelIndex scale = nif->getIndex( data, "scales" );
-		count = nif->rowCount( scale );
-		if ( scale.isValid() && count > 0 )
-		{
-			scaleTime.resize( count );
-			scaleData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				scaleTime[ r ] = nif->getFloat( scale.child( r, 0 ), "time" );
-				scaleData[ r ] = nif->getFloat( scale.child( r, 0 ), "value" );
-			}
-		}
-	}
+	if ( iBlock == i || ! iBlock.isValid() )
+		return true;
+	foreach ( Controller * ctrl, controllers )
+		if ( ctrl->update( i ) )
+			return true;
+	return false;
 }
 
-void KeyframeController::update( float time )
+void Controllable::transform()
 {
-	if ( ! flags.controller.active )
-		return;
-
-	time = ctrlTime( time );
-
-	int next;
-	float x;
-	
-	if ( transTime.count() )
-	{
-		timeIndex( time, transTime, transIndex, next, x );
-		target->local.translation = transData[ transIndex ] * ( 1.0 - x ) + transData[ next ] * x;
-	}
-	if ( rotTime.count() )
-	{
-		timeIndex( time, rotTime, rotIndex, next, x );
-		target->local.rotation = Quat::interpolate( rotData[ rotIndex ], rotData[ next ], x );
-	}
-	if ( scaleTime.count() )
-	{
-		timeIndex( time, scaleTime, scaleIndex, next, x );
-		target->local.scale = scaleData[ scaleIndex ] * ( 1.0 - x ) + scaleData[ next ] * x;
-	}
+	if ( scene->animate )
+		foreach ( Controller * controller, controllers )
+			controller->update( scene->time );
 }
 
-VisibilityController::VisibilityController( Node * node, NifModel * nif, const QModelIndex & index )
-	: NodeController( node, nif, index )
+void Controllable::timeBounds( float & tmin, float & tmax )
 {
-	visIndex = 0;
-	
-	int dataLink = nif->getInt( index, "data" );
-	QModelIndex iData = nif->getBlock( dataLink, "NiVisData" );
-	if ( iData.isValid() )
-	{
-		QModelIndex iKeys = nif->getIndex( iData, "keys" );
-		if ( iKeys.isValid() )
-		{
-			int count = nif->rowCount( iKeys );
-			visTime.resize( count );
-			visData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				visTime[ r ] = nif->getFloat( iKeys.child( r, 0 ), "time" );
-				visData[ r ] = nif->getInt( iKeys.child( r, 0 ), "is visible" );
-			}
-		}
-	}
-	else
-		qWarning() << "NiVisData not found";
-}
-
-void VisibilityController::update( float time )
-{
-	if ( ! flags.controller.active )
-		return;
-
-	time = ctrlTime( time );
-	
-	int next;
-	float x;
-	
-	if ( visTime.count() )
-	{
-		timeIndex( time, visTime, visIndex, next, x );
-		target->flags.node.hidden = ! visData[ visIndex ];
-	}
-}
-
-AlphaController::AlphaController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
-	: MeshController( mesh, nif, index )
-{
-	alphaIndex = 0;
-	
-	int dataLink = nif->getInt( index, "data" );
-	QModelIndex data = nif->getBlock( dataLink, "NiFloatData" );
-	if ( data.isValid() )
-	{
-		QModelIndex floats = nif->getIndex( data, "keys" );
-		int count = nif->rowCount( floats );
-		if ( floats.isValid() && count > 0 )
-		{
-			alphaTime.resize( count );
-			alphaData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				alphaTime[ r ] = nif->getFloat( floats.child( r, 0 ), "time" );
-				alphaData[ r ] = nif->getFloat( floats.child( r, 0 ), "value" );
-			}
-		}
-	}
-}
-
-void AlphaController::update( float time )
-{
-	if ( ! ( flags.controller.active && target->alphaEnable ) )
+	if ( controllers.isEmpty() )
 		return;
 	
-	time = ctrlTime( time );
-	
-	int next;
-	float x;
-	
-	if ( alphaTime.count() )
+	float mn = controllers.first()->start;
+	float mx = controllers.first()->stop;
+	foreach ( Controller * c, controllers )
 	{
-		timeIndex( time, alphaTime, alphaIndex, next, x );
-		target->alpha = alphaData[ alphaIndex ] * ( 1.0 - x ) + alphaData[ next ] * x;
+		mn = qMin( mn, c->start );
+		mx = qMax( mx, c->stop );
 	}
-}
-
-MorphController::MorphController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
-	: MeshController( mesh, nif, index )
-{
-	int dataLink = nif->getInt( index, "data" );
-	QModelIndex data = nif->getBlock( dataLink, "NiMorphData" );
-	if ( data.isValid() )
-	{
-		QModelIndex midx = nif->getIndex( data, "morphs" );
-		if ( midx.isValid() )
-		{
-			for ( int r = 0; r < nif->rowCount( midx ); r++ )
-			{
-				QModelIndex iKey = midx.child( r, 0 );
-				
-				MorphKey * key = new MorphKey;
-				key->index = 0;
-				
-				QModelIndex value = nif->getIndex( iKey, "frames" );
-				
-				if ( value.isValid() )
-				{
-					int count = nif->rowCount( value );
-					key->times.resize( count );
-					key->value.resize( count );
-					for ( int v = 0; v < count; v++ )
-					{
-						key->times[ v ] = nif->getFloat( value.child( v, 0 ), "time" );
-						key->value[ v ] = nif->getFloat( value.child( v, 0 ), "value" );
-					}
-				}
-				
-				QModelIndex verts = nif->getIndex( iKey, "vectors" );
-				if ( verts.isValid() )
-				{
-					int count = nif->rowCount( verts );
-					key->verts.resize( count );
-					for ( int v = 0; v < count; v++ )
-						key->verts[ v ] = nif->itemValue( verts.child( v, 0 ) );
-				}
-				
-				morph.append( key );
-			}
-		}
-	}
-}
-
-MorphController::~MorphController()
-{
-	qDeleteAll( morph );
-}
-
-void MorphController::update( float time )
-{
-	if ( ! ( flags.controller.active && morph.count() > 1 ) )
-		return;
-	
-	time = ctrlTime( time );
-	
-	int next;
-	float x;
-	
-	if ( target->verts.count() != morph[0]->verts.count() )
-		return;
-	
-	target->verts = morph[0]->verts;
-	
-	for ( int i = 1; i < morph.count(); i++ )
-	{
-		MorphKey * key = morph[i];
-		timeIndex( time, key->times, key->index, next, x );
-		float value = key->value[ key->index ] * ( 1.0 - x ) + key->value[ next ] * x;
-		if ( value != 0 && target->verts.count() == key->verts.count() )
-		{
-			for ( int v = 0; v < target->verts.count(); v++ )
-				target->verts[v] += key->verts[v] * value;
-		}
-	}
-}
-
-TexFlipController::TexFlipController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
-	: MeshController( mesh, nif, index )
-{
-	flipIndex = 0;
-	flipSlot = nif->getInt( index, "texture slot" );
-	
-	float delta = nif->getFloat( index, "delta" );
-	
-	QModelIndex iSources = nif->getIndex( index, "sources" );
-	if ( iSources.isValid() )
-	{
-		QModelIndex iIndices = nif->getIndex( iSources, "indices" );
-		if ( iIndices.isValid() )
-		{
-			int count = nif->rowCount( iIndices );
-			flipTime.resize( count );
-			flipData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				flipTime[r] = r * delta;
-				QModelIndex iSource = nif->getBlock( nif->itemValue( iIndices.child( r, 0 ) ).toInt(), "NiSourceTexture" );
-				if ( iSource.isValid() )
-				{
-					QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
-					if ( iTexSource.isValid() )
-					{
-						flipData[r] = nif->getValue( iTexSource, "file name" ).toString();
-					}
-				}
-			}
-		}
-	}
-}
-
-void TexFlipController::update( float time )
-{
-	if ( ! flags.controller.active )
-		return;
-	
-	int next;
-	float x;
-	
-	if ( flipTime.count() > 0 && flipSlot == 0 )
-	{
-		timeIndex( time, flipTime, flipIndex, next, x );
-		target->texFile = flipData[flipIndex];
-	}
-}
-
-TexCoordController::TexCoordController( Mesh * mesh, NifModel * nif, const QModelIndex & index )
-	: MeshController( mesh, nif, index )
-{
-	QModelIndex iData = nif->getBlock( nif->getInt( index, "data" ), "NiUVData" );
-	
-	QModelIndex iGroups = nif->getIndex( iData, "uv groups" );
-	if ( iGroups.isValid() && nif->rowCount( iGroups ) >= 2 )
-	{
-		for ( int r = 0; r < 2; r++ )
-		{
-			QModelIndex iKeys = nif->getIndex( iGroups.child( r, 0 ), "uv keys" );
-			if ( iKeys.isValid() )
-			{
-				int count = nif->rowCount( iKeys );
-				coord[r].times.resize( count );
-				coord[r].value.resize( count );
-				coord[r].index = 0;
-				for ( int c = 0; c < count; c++ )
-				{
-					coord[r].times[c] = nif->getFloat( iKeys.child( c, 0 ), "time" );
-					coord[r].value[c] = nif->getFloat( iKeys.child( c, 0 ), "value" );
-				}
-			}
-			else
-				qWarning() << "UV keys not found";
-		}
-	}
-	else
-		qWarning() << "UV Groups not found";
-}
-
-void TexCoordController::update( float time )
-{
-	if ( ! flags.controller.active )
-		return;
-	
-	int next;
-	float x;
-	
-	if ( coord[0].times.count() > 0 )
-	{
-		timeIndex( time, coord[0].times, coord[0].index, next, x );
-		target->texOffsetS = coord[0].value[coord[0].index] * ( 1.0 - x ) + coord[0].value[next] * x;
-	}
-	if ( coord[1].times.count() > 0 )
-	{
-		timeIndex( time, coord[1].times, coord[1].index, next, x );
-		target->texOffsetT = coord[1].value[coord[1].index] * ( 1.0 - x ) + coord[1].value[next] * x;
-	}
+	tmin = qMin( tmin, mn );
+	tmax = qMax( tmax, mx );
 }
 
 /*
@@ -532,7 +160,7 @@ void TexCoordController::update( float time )
  */
 
 
-Node::Node( Scene * s, Node * p ) : scene( s ), parent( p )
+Node::Node( Scene * s, Node * p, const QModelIndex & index ) : Controllable( s, index ), parent( p )
 {
 	nodeId = 0;
 	flags.bits = 0;
@@ -542,38 +170,77 @@ Node::Node( Scene * s, Node * p ) : scene( s ), parent( p )
 	depthMask = true;
 }
 
-void Node::init( NifModel * nif, const QModelIndex & index )
+void Node::clear()
 {
-	nodeId = nif->getBlockNumber( index );
+	Controllable::clear();
+	
+	blocks.clear();
 
-	flags.bits = nif->getInt( index, "flags" ) & 1;
+	nodeId = 0;
+	flags.bits = 0;
+	
+	depthProp = false;
+	depthTest = true;
+	depthMask = true;
+}
 
-	local = Transform( nif, index );
+bool Node::make()
+{
+	clear();
+	
+	if ( ! iBlock.isValid() )
+		return false;
+	
+	const NifModel * nif = static_cast<const NifModel*>( iBlock.model() );
+	
+	if ( ! nif )
+		return false;
+	
+	nodeId = nif->getBlockNumber( iBlock );
+
+	flags.bits = nif->getInt( iBlock, "flags" ) & 1;
+
+	local = Transform( nif, iBlock );
 	worldDirty = true;
 	
 	foreach( int link, nif->getChildLinks( nodeId ) )
 	{
-		QModelIndex block = nif->getBlock( link );
-		if ( ! block.isValid() ) continue;
-		QString name = nif->itemName( block );
+		QModelIndex iChild = nif->getBlock( link );
+		if ( ! iChild.isValid() ) continue;
+		QString name = nif->itemName( iChild );
 		
 		if ( nif->inherits( name, "AProperty" ) )
-			setProperty( nif, block );
+			setProperty( nif, iChild );
 		else if ( nif->inherits( name, "AController" ) )
 		{
 			do
 			{
-				setController( nif, block );
-				block = nif->getBlock( nif->getInt( block, "next controller" ) );
+				setController( nif, iChild );
+				iChild = nif->getBlock( nif->getInt( iChild, "next controller" ) );
 			}
-			while ( block.isValid() && nif->inherits( nif->itemName( block ), "AController" ) );
+			while ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "AController" ) );
 		}
 		else
-			setSpecial( nif, block );
+			setSpecial( nif, iChild );
 	}
+	return true;
 }
 
-void Node::setController( NifModel * nif, const QModelIndex & index )
+bool Node::update( const QModelIndex & index )
+{
+	if ( Controllable::update( index ) )
+		return true;
+	
+	foreach ( QPersistentModelIndex idx, blocks )
+	{
+		if ( idx == index || ! idx.isValid() )
+			return true;
+	}
+	
+	return false;
+}
+
+void Node::setController( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->itemName( index ) == "NiKeyframeController" )
 		controllers.append( new KeyframeController( this, nif, index ) );
@@ -581,18 +248,19 @@ void Node::setController( NifModel * nif, const QModelIndex & index )
 		controllers.append( new VisibilityController( this, nif, index ) );
 }
 
-void Node::setProperty( NifModel * nif, const QModelIndex & property )
+void Node::setProperty( const NifModel * nif, const QModelIndex & property )
 {
 	QString propname = nif->itemName( property );
 	if ( propname == "NiZBufferProperty" )
 	{
+		blocks.append( QPersistentModelIndex( property ) );
 		int flags = nif->getInt( property, "flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
 	}
 }
 
-void Node::setSpecial( NifModel * nif, const QModelIndex & )
+void Node::setSpecial( const NifModel * nif, const QModelIndex & )
 {
 }
 
@@ -644,37 +312,18 @@ void Node::depthBuffer( bool & test, bool & mask )
 
 void Node::transform()
 {
+	Controllable::transform();
 	worldDirty = true;
-	
-	if ( scene->animate )
-		foreach ( Controller * controller, controllers )
-			controller->update( scene->time );
 }
 
-void Node::boundaries( Vector & min, Vector & max )
+void Node::boundaries( Vector3 & min, Vector3 & max )
 {
-	min = max = worldTrans() * Vector( 0.0, 0.0, 0.0 );
-}
-
-void Node::timeBounds( float & tmin, float & tmax )
-{
-	if ( controllers.isEmpty() )
-		return;
-	
-	float mn = controllers.first()->start;
-	float mx = controllers.first()->stop;
-	foreach ( Controller * c, controllers )
-	{
-		mn = qMin( mn, c->start );
-		mx = qMax( mx, c->stop );
-	}
-	tmin = qMin( tmin, mn );
-	tmax = qMax( tmax, mx );
+	min = max = worldTrans() * Vector3( 0.0, 0.0, 0.0 );
 }
 
 void Node::draw( bool selected )
 {
-	if ( isHidden() )
+	if ( isHidden() && ! scene->drawHidden )
 		return;
 	
 	glLoadName( nodeId );
@@ -688,14 +337,14 @@ void Node::draw( bool selected )
 	glDisable( GL_LIGHTING );
 	glDisable( GL_COLOR_MATERIAL );
 	if ( selected )
-		Color( QColor( "steelblue" ).light( 180 ) ).glColor();
+		glColor( Color4( QColor( "steelblue" ).light( 180 ) ) );
 	else
-		Color( QColor( "steelblue" ).dark( 110 ) ).glColor();
+		glColor( Color4( QColor( "steelblue" ).dark( 110 ) ) );
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 
-	Vector a = scene->view * worldTrans() * Vector();
-	Vector b;
+	Vector3 a = scene->view * worldTrans() * Vector3();
+	Vector3 b;
 	if ( parent )
 		b = scene->view * parent->worldTrans() * b;
 	
@@ -717,40 +366,65 @@ void Node::draw( bool selected )
  */
 
 
-Mesh::Mesh( Scene * s, Node * p ) : Node( s, p )
+Mesh::Mesh( Scene * s, Node * p, const QModelIndex & i ) : Node( s, p, i )
 {
 	shininess = 33.0;
 	alpha = 1.0;
 	texSet = 0;
 	texFilter = GL_LINEAR;
 	texWrapS = texWrapT = GL_REPEAT;
-	texOffsetS = texOffsetT = 0.0;
+	texOffset[0] = texOffset[1] = 0.0;
 	alphaEnable = false;
 	alphaSrc = GL_SRC_ALPHA;
 	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
 	specularEnable = false;
 }
 
-void Mesh::init( NifModel * nif, const QModelIndex & index )
+void Mesh::clear()
 {
-	Node::init( nif, index );
+	Node::clear();
+
+	shininess = 33.0;
+	alpha = 1.0;
+	texSet = 0;
+	texFilter = GL_LINEAR;
+	texWrapS = texWrapT = GL_REPEAT;
+	texOffset[0] = texOffset[1] = 0.0;
+	alphaEnable = false;
+	alphaSrc = GL_SRC_ALPHA;
+	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
+	specularEnable = false;
 	
-	if ( ! alphaEnable )
-	{
-		alpha = 1.0;
-	}
+	verts.clear();
+	norms.clear();
+	colors.clear();
+	uvs.clear();
+	triangles.clear();
+	tristrips.clear();
+	transVerts.clear();
+	transNorms.clear();
+}
+
+bool Mesh::make()
+{
+	bool b = Node::make();
 	
 	if ( ! specularEnable )
 	{
-		specular = Color( 0, 0, 0, alpha );
+		specular = Color4();
+		specular.setAlpha( alpha );
 	}
+	
+	return b;
 }
 
-void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
+void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 {
 	QString name = nif->itemName( special );
 	if ( name == "NiTriShapeData" || name == "NiTriStripsData" )
 	{
+		blocks.append( QPersistentModelIndex( special ) );
+		
 		verts.clear();
 		norms.clear();
 		colors.clear();
@@ -758,40 +432,30 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 		triangles.clear();
 		tristrips.clear();
 		
-		localCenter = nif->itemValue( nif->getIndex( special, "center" ) );
+		localCenter = nif->get<Vector3>( special, "center" );
 		
 		QModelIndex vertices = nif->getIndex( special, "vertices" );
 		if ( vertices.isValid() )
-		{
 			for ( int r = 0; r < nif->rowCount( vertices ); r++ )
-				verts.append( nif->itemValue( nif->index( r, 0, vertices ) ) );
-		}
+				verts.append( nif->itemData<Vector3>( nif->index( r, 0, vertices ) ) );
 		
 		QModelIndex normals = nif->getIndex( special, "normals" );
 		if ( normals.isValid() )
-		{
 			for ( int r = 0; r < nif->rowCount( normals ); r++ )
-				norms.append( nif->itemValue( nif->index( r, 0, normals ) ) );
-		}
+				norms.append( nif->itemData<Vector3>( nif->index( r, 0, normals ) ) );
+		
 		QModelIndex vertexcolors = nif->getIndex( special, "vertex colors" );
 		if ( vertexcolors.isValid() )
-		{
 			for ( int r = 0; r < nif->rowCount( vertexcolors ); r++ )
-				colors.append( Color( nif->itemValue( vertexcolors.child( r, 0 ) ).value<QColor>() ) );
-		}
+				colors.append( nif->itemData<Color4>( vertexcolors.child( r, 0 ) ) );
+		
 		QModelIndex uvcoord = nif->getIndex( special, "uv sets" );
 		if ( uvcoord.isValid() )
 		{
 			QModelIndex uvcoordset = nif->index( texSet, 0, uvcoord );
 			if ( uvcoordset.isValid() )
-			{
 				for ( int r = 0; r < nif->rowCount( uvcoordset ); r++ )
-				{
-					QModelIndex uv = nif->index( r, 0, uvcoordset );
-					uvs.append( nif->getFloat( uv, "u" ) );
-					uvs.append( nif->getFloat( uv, "v" ) );
-				}
-			}
+					uvs.append( nif->itemData<Vector2>( uvcoordset.child( r, 0 ) ) );
 		}
 		
 		if ( nif->itemName( special ) == "NiTriShapeData" )
@@ -819,9 +483,11 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 	}
 	else if ( name == "NiSkinInstance" )
 	{
+		blocks.append( QPersistentModelIndex( special ) );
+		
 		weights.clear();
 		
-		int sdat = nif->getInt( special, "data" );
+		int sdat = nif->getLink( special, "data" );
 		QModelIndex skindata = nif->getBlock( sdat, "NiSkinData" );
 		if ( ! skindata.isValid() )
 		{
@@ -829,7 +495,7 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 			return;
 		}
 		
-		skelRoot = nif->getInt( special, "skeleton root" );
+		skelRoot = nif->getLink( special, "skeleton root" );
 		skelTrans = Transform( nif, skindata );
 		
 		QVector<int> bones;
@@ -841,7 +507,7 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 		}
 		
 		for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
-			bones.append( nif->itemValue( nif->index( b, 0, idxBones ) ).toInt() );
+			bones.append( nif->itemValue( nif->index( b, 0, idxBones ) ).toLink() );
 		
 		idxBones = nif->getIndex( skindata, "bone list" );
 		if ( ! idxBones.isValid() )
@@ -859,20 +525,23 @@ void Mesh::setSpecial( NifModel * nif, const QModelIndex & special )
 		Node::setSpecial( nif, special );
 }
 
-void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
+void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 {
 	QString propname = nif->itemName( property );
 	if ( propname == "NiMaterialProperty" )
 	{
-		ambient = Color( nif->getValue( property, "ambient color" ).value<QColor>() );
-		diffuse = Color( nif->getValue( property, "diffuse color" ).value<QColor>() );
-		specular = Color( nif->getValue( property, "specular color" ).value<QColor>() );
-		emissive = Color( nif->getValue( property, "emissive color" ).value<QColor>() );
+		blocks.append( QPersistentModelIndex( property ) );
 		
-		shininess = nif->getFloat( property, "glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
-		alpha = nif->getFloat( property, "alpha" );
+		alpha = nif->get<float>( property, "alpha" );
 		if ( alpha < 0.0 ) alpha = 0.0;
 		if ( alpha > 1.0 ) alpha = 1.0;
+
+		ambient = Color4( nif->get<Color3>( property, "ambient color" ) );
+		diffuse = Color4( nif->get<Color3>( property, "diffuse color" ) );
+		specular = Color4( nif->get<Color3>( property, "specular color" ) );
+		emissive = Color4( nif->get<Color3>( property, "emissive color" ) );
+		
+		shininess = nif->get<float>( property, "glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
 		
 		foreach( int link, nif->getChildLinks( nif->getBlockNumber( property ) ) )
 		{
@@ -883,12 +552,14 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 	}
 	else if ( propname == "NiTexturingProperty" )
 	{
+		blocks.append( QPersistentModelIndex( property ) );
+		
 		QModelIndex basetex = nif->getIndex( property, "base texture" );
 		if ( ! basetex.isValid() )	return;
 		QModelIndex basetexdata = nif->getIndex( basetex, "texture data" );
 		if ( ! basetexdata.isValid() )	return;
 		
-		switch ( nif->getInt( basetexdata, "filter mode" ) )
+		switch ( nif->get<int>( basetexdata, "filter mode" ) )
 		{
 			case 0:		texFilter = GL_NEAREST;		break;
 			case 1:		texFilter = GL_LINEAR;		break;
@@ -900,22 +571,16 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
 			*/
 		}
-		switch ( nif->getInt( basetexdata, "clamp mode" ) )
+		switch ( nif->get<int>( basetexdata, "clamp mode" ) )
 		{
 			case 0:		texWrapS = GL_CLAMP;	texWrapT = GL_CLAMP;	break;
 			case 1:		texWrapS = GL_CLAMP;	texWrapT = GL_REPEAT;	break;
 			case 2:		texWrapS = GL_REPEAT;	texWrapT = GL_CLAMP;	break;
 			default:	texWrapS = GL_REPEAT;	texWrapT = GL_REPEAT;	break;
 		}
-		texSet = nif->getInt( basetexdata, "texture set" );
+		texSet = nif->get<int>( basetexdata, "texture set" );
 		
-		QModelIndex iSource = nif->getBlock( nif->getInt( basetexdata, "source" ), "NiSourceTexture" );
-		if ( iSource.isValid() )
-		{
-			QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
-			if ( iTexSource.isValid() )
-				texFile = nif->getValue( iTexSource, "file name" ).toString();
-		}
+		iBaseTex = nif->getBlock( nif->getLink( basetexdata, "source" ), "NiSourceTexture" );
 		
 		foreach( int link, nif->getChildLinks( nif->getBlockNumber( property ) ) )
 		{
@@ -926,19 +591,23 @@ void Mesh::setProperty( NifModel * nif, const QModelIndex & property )
 	}
 	else if ( propname == "NiAlphaProperty" )
 	{
+		blocks.append( QPersistentModelIndex( property ) );
+		
 		alphaEnable = true;
 		alphaSrc = GL_SRC_ALPHA; // using default blend mode
 		alphaDst = GL_ONE_MINUS_SRC_ALPHA;
 	}
 	else if ( propname == "NiSpecularProperty" )
 	{
+		blocks.append( QPersistentModelIndex( property ) );
+		
 		specularEnable = true;
 	}
 	else
 		Node::setProperty( nif, property );
 }
 
-void Mesh::setController( NifModel * nif, const QModelIndex & controller )
+void Mesh::setController( const NifModel * nif, const QModelIndex & controller )
 {
 	if ( nif->itemName( controller ) == "NiAlphaController" )
 		controllers.append( new AlphaController( this, nif, controller ) );
@@ -968,9 +637,9 @@ void Mesh::transform()
 	if ( weights.count() )
 	{
 		transVerts.resize( verts.count() );
-		transVerts.fill( Vector() );
+		transVerts.fill( Vector3() );
 		transNorms.resize( norms.count() );
-		transNorms.fill( Vector() );
+		transNorms.fill( Vector3() );
 		
 		foreach ( BoneWeights bw, weights )
 		{
@@ -1018,13 +687,13 @@ void Mesh::transform()
 	}
 }
 
-void Mesh::boundaries( Vector & min, Vector & max )
+void Mesh::boundaries( Vector3 & min, Vector3 & max )
 {
 	if ( transVerts.count() )
 	{
 		min = max = transVerts[ 0 ];
 		
-		foreach ( Vector v, transVerts )
+		foreach ( Vector3 v, transVerts )
 		{
 			for ( int c = 0; c < 3; c++ )
 			{
@@ -1054,18 +723,16 @@ void Mesh::draw( bool selected )
 		glDisable( GL_COLOR_MATERIAL );
 	}
 
-	Color blend( 1.0, 1.0, 1.0, alpha );
-	
-	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-	( ambient * blend ).glMaterial( GL_FRONT, GL_AMBIENT );
-	( diffuse * blend ).glMaterial( GL_FRONT, GL_DIFFUSE );
-	( emissive * blend ).glMaterial( GL_FRONT, GL_EMISSION );
-	( specular * blend ).glMaterial( GL_FRONT, GL_SPECULAR );
+	glMaterialf(GL_FRONT, GL_SHININESS, shininess );
+	glMaterial( GL_FRONT, GL_AMBIENT, ambient.blend( alpha ) );
+	glMaterial( GL_FRONT, GL_DIFFUSE, diffuse.blend( alpha ) );
+	glMaterial( GL_FRONT, GL_EMISSION, emissive.blend( alpha ) );
+	glMaterial( GL_FRONT, GL_SPECULAR, specular.blend( alpha ) );
 	glColor4f( 1.0, 1.0, 1.0, 1.0 );
 
 	// setup texturing
 	
-	if ( ! texFile.isEmpty() && scene->texturing && uvs.count() && scene->bindTexture( texFile ) )
+	if ( scene->texturing && uvs.count() && scene->bindTexture( iBaseTex ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -1123,16 +790,16 @@ void Mesh::draw( bool selected )
 			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
 			{
 				if ( transNorms.count() > tri.v1 ) glNormal( transNorms[tri.v1] );
-				if ( uvs.count() > tri.v1*2 ) glTexCoord2f( uvs[tri.v1*2+0] + texOffsetS, uvs[tri.v1*2+1] + texOffsetT );
-				if ( colors.count() > tri.v1 ) ( colors[tri.v1] * blend ).glColor();
+				if ( uvs.count() > tri.v1 ) glTexCoord( uvs[tri.v1] + texOffset );
+				if ( colors.count() > tri.v1 ) glColor( colors[tri.v1].blend( alpha ) );
 				glVertex( transVerts[tri.v1] );
 				if ( transNorms.count() > tri.v2 ) glNormal( transNorms[tri.v2] );
-				if ( uvs.count() > tri.v2*2 ) glTexCoord2f( uvs[tri.v2*2+0] + texOffsetS, uvs[tri.v2*2+1] + texOffsetT );
-				if ( colors.count() > tri.v2 ) ( colors[tri.v2] * blend ).glColor();
+				if ( uvs.count() > tri.v2 ) glTexCoord( uvs[tri.v2] + texOffset );
+				if ( colors.count() > tri.v2 ) glColor( colors[tri.v2].blend( alpha ) );
 				glVertex( transVerts[tri.v2] );
 				if ( transNorms.count() > tri.v3 ) glNormal( transNorms[tri.v3] );
-				if ( uvs.count() > tri.v3*2 ) glTexCoord2f( uvs[tri.v3*2+0] + texOffsetS, uvs[tri.v3*2+1] + texOffsetT );
-				if ( colors.count() > tri.v3 ) ( colors[tri.v3] * blend ).glColor();
+				if ( uvs.count() > tri.v3 ) glTexCoord( uvs[tri.v3] + texOffset );
+				if ( colors.count() > tri.v3 ) glColor( colors[tri.v3].blend( alpha ) );
 				glVertex( transVerts[tri.v3] );
 			}
 		}
@@ -1147,8 +814,8 @@ void Mesh::draw( bool selected )
 		foreach ( int v, strip.vertices )
 		{
 			if ( transNorms.count() > v ) glNormal( transNorms[v] );
-			if ( uvs.count() > v*2 ) glTexCoord2f( uvs[v*2+0] + texOffsetS, uvs[v*2+1] + texOffsetT );
-			if ( colors.count() > v ) ( colors[v] * blend ).glColor();
+			if ( uvs.count() > v ) glTexCoord( uvs[v] + texOffset );
+			if ( colors.count() > v ) glColor( colors[v].blend( alpha ) );
 			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}
 		glEnd();
@@ -1219,17 +886,38 @@ Scene::Scene()
 Scene::~Scene()
 {
 	clear();
-	textures.clear();
 }
 
 void Scene::clear()
 {
 	qDeleteAll( nodes ); nodes.clear();
 	qDeleteAll( meshes ); meshes.clear();
-	textures.clear();
-	boundMin = boundMax = boundCenter = Vector( 0.0, 0.0, 0.0 );
-	boundRadius = Vector( 1.0, 1.0, 1.0 );
+	qDeleteAll( textures ); textures.clear();
+	boundMin = boundMax = boundCenter = Vector3( 0.0, 0.0, 0.0 );
+	boundRadius = Vector3( 1.0, 1.0, 1.0 );
 	timeMin = timeMax = 0.0;
+}
+
+void Scene::update( const NifModel * nif, const QModelIndex & index )
+{
+	QModelIndex block = nif->getBlock( index );
+	
+	foreach ( Node * node, nodes )
+		if ( node->update( block ) )
+			node->make();
+	foreach ( Mesh * mesh, meshes )
+		if ( mesh->update( block ) )
+			mesh->make();
+	
+	QList<GLTex*> rem;
+	foreach ( GLTex * tex, textures )
+		if ( tex->iSource == block || tex->iPixelData == block )
+			rem.append( tex );
+	foreach ( GLTex * tex, rem )
+	{
+		textures.removeAll( tex );
+		delete tex;
+	}
 }
 
 void Scene::make( NifModel * nif )
@@ -1291,8 +979,8 @@ void Scene::make( NifModel * nif, int blockNumber, QStack<int> & nodestack )
 			return;
 		}
 		
-		Node * node = new Node( this, parent );
-		node->init( nif, idx );
+		Node * node = new Node( this, parent, idx );
+		node->make();
 		
 		nodes.insert( blockNumber, node );
 		
@@ -1305,8 +993,8 @@ void Scene::make( NifModel * nif, int blockNumber, QStack<int> & nodestack )
 	}
 	else if ( nif->itemName( idx ) == "NiTriShape" || nif->itemName( idx ) == "NiTriStrips" )
 	{
-		Mesh * mesh = new Mesh( this, parent );
-		mesh->init( nif, idx );
+		Mesh * mesh = new Mesh( this, parent, idx );
+		mesh->make();
 		meshes.append( mesh );
 	}
 }
@@ -1339,21 +1027,21 @@ void Scene::transform( const Transform & trans, float time )
 
 	if ( ! ( nodes.isEmpty() && meshes.isEmpty() ) )
 	{
-		boundMin = Vector( +1000000000, +1000000000, +1000000000 );
-		boundMax = Vector( -1000000000, -1000000000, -1000000000 );
+		boundMin = Vector3( +1000000000, +1000000000, +1000000000 );
+		boundMax = Vector3( -1000000000, -1000000000, -1000000000 );
 		foreach ( Node * node, nodes )
 		{
-			Vector min, max;
+			Vector3 min, max;
 			node->boundaries( min, max );
-			boundMin = Vector::min( boundMin, min );
-			boundMax = Vector::max( boundMax, max );
+			boundMin = Vector3::min( boundMin, min );
+			boundMax = Vector3::max( boundMax, max );
 		}
 		foreach ( Mesh * mesh, meshes )
 		{
-			Vector min, max;
+			Vector3 min, max;
 			mesh->boundaries( min, max );
-			boundMin = Vector::min( boundMin, min );
-			boundMax = Vector::max( boundMax, max );
+			boundMin = Vector3::min( boundMin, min );
+			boundMax = Vector3::max( boundMax, max );
 		}
 		for ( int c = 0; c < 3; c++ )
 		{

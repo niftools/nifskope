@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class QAbstractItemDelegate;
 
-#define str( X ) ( (const char *) X.toAscii() )
+#include "niftypes.h"
 
 class NifSharedData : public QSharedData
 {
@@ -71,8 +71,8 @@ class NifSharedData : public QSharedData
 class NifData
 {
 public:
-	NifData( const QString & name, const QString & type, const QVariant & value, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2 )
-		: d( new NifSharedData( name, type, arg, arr1, arr2, cond, ver1, ver2 ) ), val( value ) {}
+	NifData( const QString & name, const QString & type, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2 )
+		: d( new NifSharedData( name, type, arg, arr1, arr2, cond, ver1, ver2 ) ), value( val ) {}
 	
 	NifData( const QString & name, const QString & type = QString() )
 		: d( new NifSharedData( name, type ) ) {}
@@ -80,9 +80,6 @@ public:
 	NifData()
 		: d( new NifSharedData() ) {}
 	
-	inline const QVariant & value() const			{ return val; }
-	inline void setValue( const QVariant & v )	{ val = v; }
-
 	inline const QString & name() const	{ return d->name; }
 	inline const QString & type() const	{ return d->type; }
 	inline const QString & arg() const	{ return d->arg; }
@@ -103,16 +100,16 @@ public:
 
 protected:
 	QSharedDataPointer<NifSharedData> d;
-	
-	QVariant val;
+
+public:
+	NifValue value;
 };
 
 struct NifBasicType
 {
 	QString				id;
-	int					internalType;
+	NifValue			value;
 	int					display;
-	QVariant			value;
 	QString				text;
 	quint32				ver1;
 	quint32				ver2;
@@ -126,7 +123,123 @@ struct NifBlock
 };
 
 
-class NifItem;
+class NifItem
+{
+public:
+	NifItem( NifItem * parent )
+		: parentItem( parent ) {}
+	
+	NifItem( const NifData & data, NifItem * parent )
+		: itemData( data ), parentItem( parent ) {}
+	
+	~NifItem()
+	{
+		qDeleteAll( childItems );
+	}
+
+	NifItem * parent() const
+	{
+		return parentItem;
+	}
+	
+	int row() const
+	{
+		if ( parentItem )
+			return parentItem->childItems.indexOf( const_cast<NifItem*>(this) );
+		return 0;
+	}
+
+	void prepareInsert( int e )
+	{
+		childItems.reserve( childItems.count() + e );
+	}
+	
+	NifItem * insertChild( const NifData & data, int at = -1 )
+	{
+		NifItem * item = new NifItem( data, this );
+		if ( at < 0 || at > childItems.count() )
+			childItems.append( item );
+		else
+			childItems.insert( at, item );
+		return item;
+	}
+	
+	void removeChild( int row )
+	{
+		NifItem * item = child( row );
+		if ( item )
+		{
+			childItems.remove( row );
+			delete item;
+		}
+	}
+	
+	void removeChildren( int row, int count )
+	{
+		for ( int c = row; c < row + count; c++ )
+		{
+			NifItem * item = childItems.value( c );
+			if ( item ) delete item;
+		}
+		childItems.remove( row, count );
+	}
+	
+	NifItem * child( int row )
+	{
+		return childItems.value( row );
+	}
+	
+	NifItem * child( const QString & name )
+	{
+		foreach ( NifItem * child, childItems )
+			if ( child->name() == name )
+				return child;
+		return 0;
+	}
+
+	int childCount()
+	{
+		return childItems.count();
+	}
+	
+	void killChildren()
+	{
+		qDeleteAll( childItems );
+		childItems.clear();
+	}
+
+	inline const NifValue & value() const	{ return itemData.value; }
+	inline NifValue & value()	{ return itemData.value; }
+
+	inline QString  name() const	{	return itemData.name();	}
+	inline QString  type() const	{	return itemData.type();	}
+	inline QString  arg() const	{	return itemData.arg();		}
+	inline QString  arr1() const	{	return itemData.arr1();	}
+	inline QString  arr2() const	{	return itemData.arr2();	}
+	inline QString  cond() const	{	return itemData.cond();	}
+	inline quint32  ver1() const	{	return itemData.ver1();	}
+	inline quint32  ver2() const	{	return itemData.ver2();	}
+	
+	inline void setName( const QString & name )	{	itemData.setName( name );	}
+	inline void setType( const QString & type )	{	itemData.setType( type );	}
+	inline void setArg( const QString & arg )		{	itemData.setArg( arg );		}
+	inline void setArr1( const QString & arr1 )	{	itemData.setArr1( arr1 );	}
+	inline void setArr2( const QString & arr2 )	{	itemData.setArr2( arr2 );	}
+	inline void setCond( const QString & cond )	{	itemData.setCond( cond );	}
+	inline void setVer1( int v1 )					{	itemData.setVer1( v1 );		}
+	inline void setVer2( int v2 )					{	itemData.setVer2( v2 );		}
+	
+	inline bool evalVersion( quint32 v )
+	{
+		return ( ( ver1() == 0 || ver1() <= v ) && ( ver2() == 0 || v <= ver2() ) );
+	}
+
+private:
+	NifData itemData;
+	NifItem * parentItem;
+	QVector<NifItem*> childItems;
+};
+
 
 class NifModel : public QAbstractItemModel
 {
@@ -162,6 +275,8 @@ public:
 	void removeNiBlock( int blocknum );
 	// returns the block number
 	int getBlockNumber( const QModelIndex & ) const;
+	// returns the parent block
+	QModelIndex getBlock( const QModelIndex & ) const;
 	// get the NiBlock at index x ( optional: check if it is of type name )
 	QModelIndex getBlock( int x, const QString & name = QString() ) const;
 	// get the number of NiBlocks
@@ -181,29 +296,26 @@ public:
 
 
 	// this updates an array ( append or remove items )
-	void updateArray( const QModelIndex & array, bool fast = false );
+	bool updateArray( const QModelIndex & array, bool fast = false );
 	
 	
+	// is it a compound type?
+	static bool isCompound( const QString & name );
 	// is name an ancestor identifier?
 	static bool isAncestor( const QString & name );
 	// returns true if name inherits ancestor
 	static bool inherits( const QString & name, const QString & ancestor );
 	
 	
-	// is it a basic or compound type?
-	static bool isCompound( const QString & name );
-	static bool isBasicType( const QString & name );
-	
-	
 	// set item value
-	void setItemValue( const QModelIndex & index, const QVariant & v );
+	void setItemValue( const QModelIndex & index, const NifValue & v );
 	// sets a named attribute to value
-	bool setValue( const QModelIndex & index, const QString & name, const QVariant & v );
+	bool setValue( const QModelIndex & index, const QString & name, const NifValue & v );
 	
 	// get item attributes
 	QString  itemName( const QModelIndex & index ) const;
 	QString  itemType( const QModelIndex & index ) const;
-	QVariant itemValue( const QModelIndex & index ) const;
+	NifValue itemValue( const QModelIndex & index ) const;
 	QString  itemArg( const QModelIndex & index ) const;
 	QString  itemArr1( const QModelIndex & index ) const;
 	QString  itemArr2( const QModelIndex & index ) const;
@@ -211,12 +323,14 @@ public:
 	quint32  itemVer1( const QModelIndex & index ) const;
 	quint32  itemVer2( const QModelIndex & index ) const;
 	
-	// find an item named name and return the coresponding value as a QVariant
-	QVariant getValue( const QModelIndex & parent, const QString & name ) const;
-	// same as getValue but converts the QVariant data to the requested type
-	int getInt( const QModelIndex & parent, const QString & nameornumber ) const;
-	float getFloat( const QModelIndex & parent, const QString & nameornumber ) const;
+	template <typename T> T itemData( const QModelIndex & index ) const;
 	
+	// find an item named name and return the coresponding value
+	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
+	// same as getValue but converts the data to the requested type
+	int getInt( const QModelIndex & parent, const QString & nameornumber ) const;
+	int getLink( const QModelIndex & parent, const QString & name ) const;
+
 	// is it a child or parent link?
 	bool	itemIsLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
 	// this returns a block number if the index is a valid link
@@ -291,16 +405,15 @@ protected:
 	void		insertType( NifItem * parent, const NifData & data, int row = -1 );
 	NifItem *	insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	void		updateArray( NifItem * array, bool fast );
+	bool		updateArray( NifItem * array, bool fast );
 	int			getArraySize( NifItem * array ) const;
 
 	NifItem *	getHeaderItem() const;
 	NifItem *	getBlockItem( int x ) const;
 	NifItem *	getItem( NifItem * parent, const QString & name ) const;
 
-	QVariant	getValue( NifItem * parent, const QString & name ) const;
+	template <typename T>	T get( NifItem * parent, const QString & name ) const;
 	int			getInt( NifItem * parent, const QString & nameornumber ) const;
-	float		getFloat( NifItem * parent, const QString & nameornumber ) const;
 	
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
 
@@ -308,20 +421,8 @@ protected:
 	qint32		itemLink( NifItem * item ) const;
 	int			getBlockNumber( NifItem * item ) const;
 	
-	bool		load( NifItem * parent, QIODevice & device, bool fast = true );
-	bool		save( NifItem * parent, QIODevice & device );
-	
-	// find basic type with matching name and version
-	NifBasicType * getType( const QString & name ) const;
-	// this returns the internal type of a basic type
-	int getInternalType( const QString & name ) const;
-	// this returns the display hint of a basic type
-	int getDisplayHint( const QString & name ) const;
-	// this returns the description of a basic type
-	QString getTypeDescription( const QString & name ) const;
-	// this returns the default value of a basic type
-	QVariant getTypeValue( const QString & name ) const;
-	
+	bool		load( NifItem * parent, NifStream & stream, bool fast = true );
+	bool		save( NifItem * parent, NifStream & stream );
 	
 	// root item
 	NifItem *	root;
@@ -330,29 +431,9 @@ protected:
 	quint32		version;
 	QByteArray	version_string;
 	
-	// internal types: every basic type drops down to one of these
-	enum
-	{
-		it_uint8 = 0, it_uint16 = 1, it_uint32 = 2,
-		it_int8 = 3, it_int16 = 4, it_int32 = 5,
-		it_float = 6, it_string = 7,
-		it_color3f = 8, it_color4f = 9,
-		it_vector = 10, it_quat = 11, it_matrix = 12
-	};
-	static QHash<QString,int> internalTypes;
-	
-	// display hints
-	enum
-	{
-			dh_dec = 0, dh_hex = 1, dh_bin = 2, dh_bool = 3, dh_float = 4, dh_string = 5, dh_link = 6,
-			dh_color = 7, dh_vector = 8, dh_quat = 9, dh_matrix = 10
-	};
-	static QHash<QString,int> displayHints;
-	
 	static QList<quint32>					supportedVersions;
 	
 	//
-	static QHash<QString,NifBasicType*>	types;
 	static QHash<QString,NifBlock*>		compounds;
 	static QHash<QString,NifBlock*>		ancestors;
 	static QHash<QString,NifBlock*>		blocks;
@@ -390,39 +471,6 @@ inline bool NifModel::isCompound( const QString & name )
 	return compounds.contains( name );
 }
 
-inline bool NifModel::isBasicType( const QString & name )
-{
-	return types.contains( name );
-}
-
-inline int NifModel::getInternalType( const QString & name ) const
-{
-	NifBasicType * type = getType( name );
-	if ( type )		return type->internalType;
-	else			return -1;
-}
-
-inline int NifModel::getDisplayHint( const QString & name ) const
-{
-	NifBasicType * type = getType( name );
-	if ( type )		return type->display;
-	else			return -1;
-}
-
-inline QString NifModel::getTypeDescription( const QString & name ) const
-{
-	NifBasicType * type = getType( name );
-	if ( type )		return type->text;
-	else			return QString();
-}
-
-inline QVariant NifModel::getTypeValue( const QString & name ) const
-{
-	NifBasicType * type = getType( name );
-	if ( type )		return type->value;
-	else			return QVariant();
-}
-
 inline QList<int> NifModel::getRootLinks() const
 {
 	return rootLinks;
@@ -437,5 +485,37 @@ inline QList<int> NifModel::getParentLinks( int block ) const
 {
 	return parentLinks.value( block );
 }
+
+template <typename T> inline T NifModel::get( NifItem * parent, const QString & name ) const
+{
+	NifItem * item = getItem( parent, name );
+	if ( item )
+		return item->value().get<T>();
+	else
+		return T();
+}
+
+template <typename T> inline T NifModel::get( const QModelIndex & parent, const QString & name ) const
+{
+	NifItem * parentItem = static_cast<NifItem*>( parent.internalPointer() );
+	if ( ! ( parent.isValid() && parentItem && parent.model() == this ) )
+		return T();
+	
+	NifItem * item = getItem( parentItem, name );
+	if ( item )
+		return item->value().get<T>();
+	else
+		return T();
+}
+
+template <typename T> inline T NifModel::itemData( const QModelIndex & index ) const
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item && index.model() == this ) )
+		return T();
+	
+	return item->value().get<T>();
+}
+
 
 #endif
