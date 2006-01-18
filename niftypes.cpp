@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "niftypes.h"
+#include "nifmodel.h"
 
 #include <QHash>
 
@@ -171,8 +172,8 @@ void NifValue::initialize()
 	typeMap.insert( "byte", NifValue::tByte );
 	typeMap.insert( "word", NifValue::tWord );
 	typeMap.insert( "short", NifValue::tWord );
-	typeMap.insert( "flags", NifValue::tWord );
 	typeMap.insert( "int", NifValue::tInt );
+	typeMap.insert( "flags", NifValue::tFlags );
 	typeMap.insert( "link", NifValue::tLink );
 	typeMap.insert( "parent", NifValue::tParent );
 	typeMap.insert( "float", NifValue::tFloat );
@@ -185,6 +186,7 @@ void NifValue::initialize()
 	typeMap.insert( "matrix33", NifValue::tMatrix );
 	typeMap.insert( "vector2", NifValue::tVector2 );
 	typeMap.insert( "bytearray", NifValue::tByteArray );
+	typeMap.insert( "version", NifValue::tVersion );
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -387,6 +389,10 @@ bool NifValue::fromString( const QString & s )
 		case tInt:
 			val.u32 = s.toUInt( &ok );
 			return ok;
+		case tFlags:
+			val.u32 = 0;
+			val.u16 = s.toUInt( &ok, 2 );
+			return ok;
 		case tLink:
 		case tParent:
 			val.i32 = s.toInt( &ok );
@@ -403,6 +409,9 @@ bool NifValue::fromString( const QString & s )
 		case tColor4:
 			static_cast<Color4*>( val.data )->fromQColor( QColor( s ) );
 			return true;
+		case tVersion:
+			val.u32 = NifModel::version2number( s );
+			return val.u32 != 0;
 		case tByteArray:
 		case tVector2:
 		case tVector3:
@@ -424,6 +433,8 @@ QString NifValue::toString() const
 		case tWord:
 		case tInt:
 			return QString::number( val.u32 );
+		case tFlags:
+			return QString::number( val.u16, 2 );
 		case tLink:
 		case tParent:
 			return QString::number( val.i32 );
@@ -471,10 +482,9 @@ QString NifValue::toString() const
 				return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
 		}
 		case tByteArray:
-		{
-			QByteArray * array = static_cast<QByteArray*>( val.data );
-			return QString( "%1 bytes" ).arg( array->count() );
-		}
+			return QString( "%1 bytes" ).arg( static_cast<QByteArray*>( val.data )->count() );
+		case tVersion:
+			return NifModel::version2string( val.u32 );
 		default:
 			return QString();
 	}
@@ -505,9 +515,11 @@ bool NifStream::read( NifValue & val )
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u08, 1 ) == 1;
 		case NifValue::tWord:
+		case NifValue::tFlags:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
+		case NifValue::tVersion:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tParent:
@@ -562,8 +574,10 @@ bool NifStream::write( const NifValue & val )
 		case NifValue::tByte:
 			return device->write( (char *) &val.val.u08, 1 ) == 1;
 		case NifValue::tWord:
+		case NifValue::tFlags:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
+		case NifValue::tVersion:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tParent:
@@ -605,29 +619,3 @@ bool NifStream::write( const NifValue & val )
 	}
 	return false;
 }
-
-/*
-bool NifValue::operator==( const NifValue & other )
-{
-	if ( other.typ != typ )
-		return false;
-	
-	switch ( typ )
-	{
-		case tString:
-			return *static_cast<QString*>( val.data ) == *static_cast<QString*>( other.val.data );
-		case tColor3:
-			return *static_cast<Color3*>( val.data ) == *static_cast<Color3*>( other.val.data );
-		case tColor4:
-			return *static_cast<Color4*>( val.data ) == *static_cast<Color4*>( other.val.data );
-		case tVector:
-			return *static_cast<Vector3*>( val.data ) == *static_cast<Vector3*>( other.val.data );
-		case tMatrix:
-			return *static_cast<Matrix*>( val.data ) == *static_cast<Matrix*>( other.val.data );
-		case tQuat:
-			return *static_cast<Quat*>( val.data ) == *static_cast<Quat*>( other.val.data );
-		default:
-			return val == other.val;
-	}
-}
-*/

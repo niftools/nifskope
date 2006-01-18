@@ -118,7 +118,7 @@ private:
 	
 	QActionGroup * gListMode;
 	QAction * aList;
-	QAction * aHirarchy;
+	QAction * aHierarchy;
 	
 	QAction * aNifSkope;
 	QAction * aAboutQt;

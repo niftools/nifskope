@@ -67,75 +67,75 @@ GLView::GLView()
 	timer = new QTimer(this);
 	connect( timer, SIGNAL( timeout() ), this, SLOT( advanceGears() ) );
 	
-	aTexturing = new QAction( "texturing", this );
+	aTexturing = new QAction( "&Texturing", this );
 	aTexturing->setToolTip( "enable texturing" );
 	aTexturing->setCheckable( true );
 	aTexturing->setChecked( true );
 	connect( aTexturing, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aTexturing );
 	
-	aBlending = new QAction( "blending", this );
+	aBlending = new QAction( "&Blending", this );
 	aBlending->setToolTip( "enable alpha blending" );
 	aBlending->setCheckable( true );
 	aBlending->setChecked( true );
 	connect( aBlending, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aBlending );
 	
-	aLighting = new QAction( "lighting", this );
+	aLighting = new QAction( "&Lighting", this );
 	aLighting->setToolTip( "enable lighting" );
 	aLighting->setCheckable( true );
 	aLighting->setChecked( true );
 	connect( aLighting, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aLighting );
 	
-	aDrawAxis = new QAction( "draw axis", this );
-	aDrawAxis->setToolTip( "draw xyz-Axis" );
+	aDrawAxis = new QAction( "&Draw Axes", this );
+	aDrawAxis->setToolTip( "draw xyz-Axes" );
 	aDrawAxis->setCheckable( true );
 	aDrawAxis->setChecked( true );
 	connect( aDrawAxis, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawAxis );
 	
-	aDrawNodes = new QAction( "draw nodes", this );
+	aDrawNodes = new QAction( "Draw &Nodes", this );
 	aDrawNodes->setToolTip( "draw bones/nodes" );
 	aDrawNodes->setCheckable( true );
 	aDrawNodes->setChecked( true );
 	connect( aDrawNodes, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawNodes );
 	
-	aDrawHidden = new QAction( "show hidden", this );
+	aDrawHidden = new QAction( "&Show Hidden", this );
 	aDrawHidden->setToolTip( "if checked nodes and meshes are allways displayed<br>wether they are hidden ( flags & 1 ) or not" );
 	aDrawHidden->setCheckable( true );
 	aDrawHidden->setChecked( false );
 	connect( aDrawHidden, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawHidden );
 	
-	aHighlight = new QAction( "highlight selected", this );
+	aHighlight = new QAction( "&Highlight Selected", this );
 	aHighlight->setToolTip( "highlight selected meshes and nodes" );
 	aHighlight->setCheckable( true );
 	aHighlight->setChecked( true );
 	connect( aHighlight, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aHighlight );
 	
-	aRotate = new QAction( "rotate", this );
+	aRotate = new QAction( "&Rotate", this );
 	aRotate->setToolTip( "slowly rotate the object around the z axis" );
 	aRotate->setCheckable( true );
 	aRotate->setChecked( true );
 	connect( aRotate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aRotate );
 	
-	aAnimate = new QAction( "animation", this );
+	aAnimate = new QAction( "&Animations", this );
 	aAnimate->setToolTip( "enables evaluation of animation controllers" );
 	aAnimate->setCheckable( true );
 	aAnimate->setChecked( true );
 	connect( aAnimate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aAnimate );
 
-	aAnimPlay = new QAction( "play", this );
+	aAnimPlay = new QAction( "&Play", this );
 	aAnimPlay->setCheckable( true );
 	aAnimPlay->setChecked( true );
 	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 
-	aTexFolder = new QAction( "set texture folder", this );
+	aTexFolder = new QAction( "Set Texture &Folder", this );
 	aTexFolder->setToolTip( "tell me where your textures are" );
 	connect( aTexFolder, SIGNAL( triggered() ), this, SLOT( selectTexFolder() ) );
 	addAction( aTexFolder );
@@ -224,6 +224,8 @@ void GLView::paintGL()
 	if ( doCompile )
 	{
 		scene->make( model );
+		scene->transform( Transform(), scene->timeMin );
+		axis = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) ) * 1.4;
 		if ( time < scene->timeMin || time > scene->timeMax )
 		{
 			time = scene->timeMin;
@@ -269,7 +271,7 @@ void GLView::paintGL()
 		glDisable( GL_COLOR_MATERIAL );
 		glEnable( GL_DEPTH_TEST );
 		glDepthMask( GL_TRUE );
-		glDepthFunc( GL_ALWAYS );
+		glDepthFunc( GL_LESS );
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
 		glLineWidth( 1.2 );
@@ -277,8 +279,7 @@ void GLView::paintGL()
 		glPushMatrix();
 		viewTrans.glMultMatrix();
 		
-		GLfloat axis = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) ) * 2.1;
-		GLfloat arrow = axis / 10.0;
+		GLfloat arrow = axis / 12.0;
 		glBegin( GL_LINES );
 		glColor3f( 1.0, 0.0, 0.0 );
 		glVertex3f( - axis, 0, 0 );
@@ -548,14 +549,12 @@ void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 
 void GLView::modelChanged()
 {
-	qDebug( "model make triggered" );
 	doCompile = true;
 	update();
 }
 
 void GLView::modelDestroyed()
 {
-	qDebug( "destroyed" );
 	setNif( 0 );
 }
 

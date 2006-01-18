@@ -37,11 +37,11 @@ Controller::Controller( const NifModel * nif, const QModelIndex & index )
 {
 	iBlock = index;
 	
-	start = nif->get<float>( index, "start time" );
-	stop = nif->get<float>( index, "stop time" );
-	phase = nif->get<float>( index, "phase" );
-	frequency = nif->get<float>( index, "frequency" );
-	flags.bits = nif->get<int>( index, "flags" );
+	start = nif->get<float>( index, "Start Time" );
+	stop = nif->get<float>( index, "Stop Time" );
+	phase = nif->get<float>( index, "Phase" );
+	frequency = nif->get<float>( index, "Frequency" );
+	flags.bits = nif->get<int>( index, "Flags" );
 }
 
 bool Controller::update( const QModelIndex & index )
@@ -97,13 +97,13 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 	int count;
 	if ( array.isValid() && ( count = nif->rowCount( array ) ) > 0 )
 	{
-		if ( time <= nif->get<float>( array.child( 0, 0 ), "time" ) )
+		if ( time <= nif->get<float>( array.child( 0, 0 ), "Time" ) )
 		{
 			i = j = 0;
 			x = 0.0;
 			return true;
 		}
-		if ( time >= nif->get<float>( array.child( count - 1, 0 ), "time" ) )
+		if ( time >= nif->get<float>( array.child( count - 1, 0 ), "Time" ) )
 		{
 			i = j = count - 1;
 			x = 0.0;
@@ -113,12 +113,12 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 		if ( i < 0 || i >= count )
 			i = 0;
 		
-		float tI = nif->get<float>( array.child( i, 0 ), "time" );
+		float tI = nif->get<float>( array.child( i, 0 ), "Time" );
 		if ( time > tI )
 		{
 			j = i + 1;
 			float tJ;
-			while ( time >= ( tJ = nif->get<float>( array.child( j, 0 ), "time" ) ) )
+			while ( time >= ( tJ = nif->get<float>( array.child( j, 0 ), "Time" ) ) )
 			{
 				i = j++;
 				tI = tJ;
@@ -130,7 +130,7 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 		{
 			j = i - 1;
 			float tJ;
-			while ( time <= ( tJ = nif->get<float>( array.child( j, 0 ), "time" ) ) )
+			while ( time <= ( tJ = nif->get<float>( array.child( j, 0 ), "Time" ) ) )
 			{
 				i = j--;
 				tI = tJ;
@@ -149,45 +149,6 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 		return false;
 }
 
-void Controller::timeIndex( float time, const QVector<float> & times, int & i, int & j, float & x )
-{
-	if ( time <= times.first() )
-	{
-		i = j = 0;
-		x = 0.0;
-		return;
-	}
-	if ( time >= times.last() )
-	{
-		i = j = times.count() -1;
-		x = 0.0;
-		return;
-	}
-	
-	if ( i < 0 || i >= times.count() )
-		i = 0;
-	
-	if ( time > times[ i ] )
-	{
-		j = i + 1;
-		while ( time >= times[ j ] )
-			i = j++;
-        x = ( time - times[ i ] ) / ( times[ j ] - times[ i ] );
-	}
-	else if ( time < times[ i ] )
-	{
-		j = i - 1;
-		while ( time <= times[ j ] )
-			i = j--;
-		x = ( time - times[ i ] ) / ( times[ j ] - times[ i ] );
-	}
-	else
-	{
-		j = i;
-		x = 0.0;
-	}
-}
-
 template <> bool Controller::interpolate( float & value, const QModelIndex & array, float time, int type, int & last )
 {
 	int next;
@@ -196,13 +157,13 @@ template <> bool Controller::interpolate( float & value, const QModelIndex & arr
 	
 	if ( nif && timeIndex( time, nif, array, last, next, x ) )
 	{
-		float v1 = nif->get<float>( array.child( last, 0 ), "value" );
-		float v2 = nif->get<float>( array.child( next, 0 ), "value" );
-			
+		float v1 = nif->get<float>( array.child( last, 0 ), "Value" );
+		float v2 = nif->get<float>( array.child( next, 0 ), "Value" );
+		/*
 		if ( type == 2 )
 		{
-			float t1 = nif->get<float>( array.child( last, 0 ), "forward" );
-			float t2 = nif->get<float>( array.child( next, 0 ), "backward" );
+			float t1 = nif->get<float>( array.child( last, 0 ), "Forward" );
+			float t2 = nif->get<float>( array.child( next, 0 ), "Backward" );
 			
 			float x2 = x * x;
 			float x3 = x2 * x;
@@ -210,7 +171,8 @@ template <> bool Controller::interpolate( float & value, const QModelIndex & arr
 			value = ( 2 * x3 - 3 * x2 + 1 ) * v1 + ( - 2 * x3 + 3 * x2 ) * v2 + ( x3 - 2 * x2 + x ) * t1 + ( x3 - x2 ) * t2;
 		}
 		else
-			value = v1 + ( v2 - v1 ) * x;
+		*/
+		value = v1 + ( v2 - v1 ) * x;
 		
 		return true;
 	}
@@ -226,13 +188,13 @@ template <> bool Controller::interpolate( Vector3 & value, const QModelIndex & a
 	
 	if ( nif && timeIndex( time, nif, array, last, next, x ) )
 	{
-		Vector3 v1 = nif->get<Vector3>( array.child( last, 0 ), "pos" );
-		Vector3 v2 = nif->get<Vector3>( array.child( next, 0 ), "pos" );
-		
+		Vector3 v1 = nif->get<Vector3>( array.child( last, 0 ), "Pos" );
+		Vector3 v2 = nif->get<Vector3>( array.child( next, 0 ), "Pos" );
+		/*
 		if ( type == 2 )
 		{
-			Vector3 t1 = nif->get<Vector3>( array.child( last, 0 ), "forward" );
-			Vector3 t2 = nif->get<Vector3>( array.child( next, 0 ), "backward" );
+			Vector3 t1 = nif->get<Vector3>( array.child( last, 0 ), "Forward" );
+			Vector3 t2 = nif->get<Vector3>( array.child( next, 0 ), "Backward" );
 			
 			float x2 = x * x;
 			float x3 = x2 * x;
@@ -240,7 +202,8 @@ template <> bool Controller::interpolate( Vector3 & value, const QModelIndex & a
 			value = v1 * ( 2 * x3 - 3 * x2 + 1 ) + v2 * ( - 2 * x3 + 3 * x2 ) + t1 * ( x3 - 2 * x2 + x ) + t2 * ( x3 - x2 );
 		}
 		else
-			value = v1 + ( v2 - v1 ) * x;
+		*/
+		value = v1 + ( v2 - v1 ) * x;
 		
 		return true;
 	}
@@ -256,8 +219,8 @@ template <> bool Controller::interpolate( Quat & value, const QModelIndex & arra
 	
 	if ( nif && timeIndex( time, nif, array, last, next, x ) )
 	{
-		Quat v1 = nif->get<Quat>( array.child( last, 0 ), "quat" );
-		Quat v2 = nif->get<Quat>( array.child( next, 0 ), "quat" );
+		Quat v1 = nif->get<Quat>( array.child( last, 0 ), "Quat" );
+		Quat v2 = nif->get<Quat>( array.child( next, 0 ), "Quat" );
 		
 		float a = acos( Quat::dotproduct( v1, v2 ) );
 		
@@ -279,17 +242,17 @@ template <> bool Controller::interpolate( Quat & value, const QModelIndex & arra
 KeyframeController::KeyframeController( Node * node, const NifModel * nif, const QModelIndex & index )
 	: NodeController( node, nif, index )
 {
-	iData = nif->getBlock( nif->getLink( index, "data" ), "NiKeyframeData" );
+	iData = nif->getBlock( nif->getLink( index, "Data" ), "NiKeyframeData" );
 	
 	if ( iData.isValid() )
 	{
-		iTrans = nif->getIndex( iData, "translations" );
-		iRotate = nif->getIndex( iData, "rotations" );
-		iScale = nif->getIndex( iData, "scales" );
+		iTrans = nif->getIndex( iData, "Translations" );
+		iRotate = nif->getIndex( iData, "Rotations" );
+		iScale = nif->getIndex( iData, "Scales" );
 		
-		tTrans = nif->get<int>( iData, "translation type" );
-		tRotate = nif->get<int>( iData, "rotation type" );
-		tScale = nif->get<int>( iData, "scale type" );
+		tTrans = nif->get<int>( iData, "Translation Type" );
+		tRotate = nif->get<int>( iData, "Rotation Type" );
+		tScale = nif->get<int>( iData, "Scale Type" );
 	}
 	
 	lTrans = lRotate = lScale = 0;
@@ -322,7 +285,7 @@ VisibilityController::VisibilityController( Node * node, const NifModel * nif, c
 {
 	visLast = 0;
 	
-	iData = nif->getBlock( nif->getLink( index, "data" ), "NiVisData" );
+	iData = nif->getBlock( nif->getLink( index, "Data" ), "NiVisData" );
 }
 
 void VisibilityController::update( float time )
@@ -339,9 +302,9 @@ void VisibilityController::update( float time )
 		int next;
 		float x;
 		
-		array = nif->getIndex( iData, "keys" );
+		array = nif->getIndex( iData, "Keys" );
 		if ( timeIndex( time, nif, array, visLast, next, x ) )
-			target->flags.node.hidden = ! nif->get<int>( array.child( visLast, 0 ), "is visible" );
+			target->flags.node.hidden = ! nif->get<int>( array.child( visLast, 0 ), "Is Visible" );
 	}
 }
 
@@ -355,12 +318,12 @@ bool VisibilityController::update( const QModelIndex & index )
 AlphaController::AlphaController( Mesh * mesh, const NifModel * nif, const QModelIndex & index )
 	: MeshController( mesh, nif, index )
 {
-	iData = nif->getBlock( nif->getLink( index, "data" ), "NiFloatData" );
+	iData = nif->getBlock( nif->getLink( index, "Data" ), "NiFloatData" );
 	
 	if ( iData.isValid() )
 	{
-		iAlpha = nif->getIndex( iData, "keys" );
-		tAlpha = nif->get<int>( iData, "key type" );
+		iAlpha = nif->getIndex( iData, "Keys" );
+		tAlpha = nif->get<int>( iData, "Key Type" );
 	}
 
 	lAlpha = 0;	
@@ -389,11 +352,11 @@ bool AlphaController::update( const QModelIndex & index )
 MorphController::MorphController( Mesh * mesh, const NifModel * nif, const QModelIndex & index )
 	: MeshController( mesh, nif, index )
 {
-	int dataLink = nif->getLink( index, "data" );
+	int dataLink = nif->getLink( index, "Data" );
 	iData = nif->getBlock( dataLink, "NiMorphData" );
 	if ( iData.isValid() )
 	{
-		QModelIndex midx = nif->getIndex( iData, "morphs" );
+		QModelIndex midx = nif->getIndex( iData, "Morphs" );
 		if ( midx.isValid() )
 		{
 			for ( int r = 0; r < nif->rowCount( midx ); r++ )
@@ -402,10 +365,10 @@ MorphController::MorphController( Mesh * mesh, const NifModel * nif, const QMode
 				
 				MorphKey * key = new MorphKey;
 				key->index = 0;
-				key->keyType = nif->get<int>( iKey, "key type" );
-				key->iFrames = nif->getIndex( iKey, "frames" );
+				key->keyType = nif->get<int>( iKey, "Key Type" );
+				key->iFrames = nif->getIndex( iKey, "Frames" );
 				
-				QModelIndex verts = nif->getIndex( iKey, "vectors" );
+				QModelIndex verts = nif->getIndex( iKey, "Vectors" );
 				if ( verts.isValid() )
 				{
 					int count = nif->rowCount( verts );
@@ -467,67 +430,42 @@ bool MorphController::update( const QModelIndex & index )
 TexFlipController::TexFlipController( Mesh * mesh, const NifModel * nif, const QModelIndex & index )
 	: MeshController( mesh, nif, index )
 {
-	flipIndex = 0;
-	flipSlot = nif->get<int>( index, "texture slot" );
+	flipDelta = nif->get<float>( index, "Delta" );
+	flipSlot = nif->get<int>( index, "Texture Slot" );
 	
-	float delta = nif->get<float>( index, "delta" );
-	
-	QModelIndex iSources = nif->getIndex( index, "sources" );
+	iSources = nif->getIndex( index, "Sources" );
 	if ( iSources.isValid() )
-	{
-		QModelIndex iIndices = nif->getIndex( iSources, "indices" );
-		if ( iIndices.isValid() )
-		{
-			int count = nif->rowCount( iIndices );
-			flipTime.resize( count );
-			flipData.resize( count );
-			for ( int r = 0; r < count; r++ )
-			{
-				flipTime[r] = r * delta;
-				QModelIndex iSource = nif->getBlock( nif->itemValue( iIndices.child( r, 0 ) ).toLink(), "NiSourceTexture" );
-				if ( iSource.isValid() )
-				{
-					QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
-					if ( iTexSource.isValid() )
-					{
-						flipData[r] = nif->get<QString>( iTexSource, "file name" );
-					}
-				}
-			}
-		}
-	}
+		iSources = nif->getIndex( iSources, "Indices" );
 }
 
 void TexFlipController::update( float time )
 {
-	if ( ! flags.controller.active )
+	const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
+	if ( ! ( flags.controller.active && iSources.isValid() && nif && flipDelta > 0 && flipSlot == 0 ) )
 		return;
-	
-	int next;
-	float x;
-	
-	if ( flipTime.count() > 0 && flipSlot == 0 )
-	{
-		timeIndex( time, flipTime, flipIndex, next, x );
-//		target->texFile = flipData[flipIndex];
-	}
+
+	int m = nif->rowCount( iSources );
+	if ( m == 0 )	return;
+	int r = ( (int) ( ctrlTime( time ) / flipDelta ) ) % m;
+
+	target->iBaseTex = nif->getBlock( nif->itemValue( iSources.child( r, 0 ) ).toLink(), "NiSourceTexture" );
 }
 
 TexCoordController::TexCoordController( Mesh * mesh, const NifModel * nif, const QModelIndex & index )
 	: MeshController( mesh, nif, index )
 {
-	iData = nif->getBlock( nif->getLink( index, "data" ), "NiUVData" );
+	iData = nif->getBlock( nif->getLink( index, "Data" ), "NiUVData" );
 
 	if ( iData.isValid() )
 	{
-		QModelIndex iGroups = nif->getIndex( iData, "uv groups" );
+		QModelIndex iGroups = nif->getIndex( iData, "UV Groups" );
 		if ( iGroups.isValid() && nif->rowCount( iGroups ) >= 2 )
 		{
-			tS = nif->get<int>( iGroups.child( 0, 0 ), "key type" );
-			tT = nif->get<int>( iGroups.child( 1, 0 ), "key type" );
+			tS = nif->get<int>( iGroups.child( 0, 0 ), "Key Type" );
+			tT = nif->get<int>( iGroups.child( 1, 0 ), "Key Type" );
 			
-			iS = nif->getIndex( iGroups.child( 0, 0 ), "uv keys" );
-			iT = nif->getIndex( iGroups.child( 1, 0 ), "uv keys" );
+			iS = nif->getIndex( iGroups.child( 0, 0 ), "UV Keys" );
+			iT = nif->getIndex( iGroups.child( 1, 0 ), "UV Keys" );
 		}
 	}
 

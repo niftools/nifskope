@@ -137,6 +137,7 @@ private:
 	GLdouble yTrans;
 	
 	GLdouble radius;
+	GLdouble axis;
 	
 	int zInc;
 	

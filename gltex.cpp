@@ -119,13 +119,13 @@ GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( ind
 	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
 	if ( iSource.isValid() && nif )
 	{
-		QModelIndex iTexSource = nif->getIndex( iSource, "texture source" );
+		QModelIndex iTexSource = nif->getIndex( iSource, "Texture Source" );
 		if ( iTexSource.isValid() )
 		{
-			external = nif->get<bool>( iTexSource, "use external" );
+			external = nif->get<bool>( iTexSource, "Use External" );
 			if ( external )
 			{
-				QString filename = nif->get<QString>( iTexSource, "file name" ).toLower();
+				QString filename = nif->get<QString>( iTexSource, "File Name" ).toLower();
 				
 				if ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
 					filename = filename.right( filename.length() - 1 );
@@ -164,25 +164,25 @@ GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( ind
 			}
 			else
 			{		// internal texture
-				iPixelData = nif->getBlock( nif->getLink( iTexSource, "pixel data" ), "NiPixelData" );
+				iPixelData = nif->getBlock( nif->getLink( iTexSource, "Pixel Data" ), "NiPixelData" );
 				if ( iPixelData.isValid() )
 				{
 					quint32 masks[4];
-					static const char * maskNames[4] = { "red mask", "green mask", "blue mask", "alpha mask" };
+					static const char * maskNames[4] = { "Red Mask", "Green Mask", "Blue Mask", "Alpha Mask" };
 					for ( int c = 0; c < 4; c++ )
 						masks[c] = nif->get<int>( iPixelData, maskNames[c] );
-					qint32 bitspp = nif->get<int>( iPixelData, "bits per pixel" );
-					qint32 bytespp = nif->get<int>( iPixelData, "bytes per pixel" );
-					qint32 mipmaps = nif->get<int>( iPixelData, "num mipmaps" );
+					qint32 bitspp = nif->get<int>( iPixelData, "Bits Per Pixel" );
+					qint32 bytespp = nif->get<int>( iPixelData, "Bytes Per Pixel" );
+					qint32 mipmaps = nif->get<int>( iPixelData, "Num Mipmaps" );
 					
-					QModelIndex iMipmaps = nif->getIndex( iPixelData, "mipmaps" );
+					QModelIndex iMipmaps = nif->getIndex( iPixelData, "Mipmaps" );
 					if ( iMipmaps.isValid() && nif->rowCount( iMipmaps ) >= 1 )
 					{
-						qint32 width = nif->get<int>( iMipmaps.child( 0, 0 ), "width" );
-						qint32 height = nif->get<int>( iMipmaps.child( 0, 0 ), "height" );
-						qint32 offset = nif->get<int>( iMipmaps.child( 0, 0 ), "offset" );
+						qint32 width = nif->get<int>( iMipmaps.child( 0, 0 ), "Width" );
+						qint32 height = nif->get<int>( iMipmaps.child( 0, 0 ), "Height" );
+						qint32 offset = nif->get<int>( iMipmaps.child( 0, 0 ), "Offset" );
 						
-						QByteArray pixels = nif->get<QByteArray>( iPixelData, "pixel data" );
+						QByteArray pixels = nif->get<QByteArray>( iPixelData, "Pixel Data" );
 						QBuffer buffer( &pixels );
 						if ( buffer.open( QIODevice::ReadOnly ) )
 						{

@@ -180,10 +180,10 @@ public:
 	void update( float time );
 
 protected:
-	QVector<float>		flipTime;
-	QVector<QString>	flipData;
-	int					flipIndex;
-	int					flipSlot;
+	float	flipDelta;
+	int		flipSlot;
+	
+	QPersistentModelIndex iSources;
 };
 
 class TexCoordController : public MeshController

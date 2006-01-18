@@ -89,13 +89,13 @@ BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b
 	trans = Transform( nif, index );
 	bone = b;
 	
-	QModelIndex idxWeights = nif->getIndex( index, "vertex weights" );
+	QModelIndex idxWeights = nif->getIndex( index, "Vertex Weights" );
 	if ( idxWeights.isValid() )
 	{
 		for ( int c = 0; c < nif->rowCount( idxWeights ); c++ )
 		{
 			QModelIndex idx = idxWeights.child( c, 0 );
-			weights.append( VertexWeight( nif->get<int>( idx, "index" ), nif->get<float>( idx, "weight" ) ) );
+			weights.append( VertexWeight( nif->get<int>( idx, "Index" ), nif->get<float>( idx, "Weight" ) ) );
 		}
 	}
 	else
@@ -198,7 +198,7 @@ bool Node::make()
 	
 	nodeId = nif->getBlockNumber( iBlock );
 
-	flags.bits = nif->getInt( iBlock, "flags" ) & 1;
+	flags.bits = nif->getInt( iBlock, "Flags" ) & 1;
 
 	local = Transform( nif, iBlock );
 	worldDirty = true;
@@ -216,7 +216,7 @@ bool Node::make()
 			do
 			{
 				setController( nif, iChild );
-				iChild = nif->getBlock( nif->getInt( iChild, "next controller" ) );
+				iChild = nif->getBlock( nif->getInt( iChild, "Next Controller" ) );
 			}
 			while ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "AController" ) );
 		}
@@ -254,7 +254,7 @@ void Node::setProperty( const NifModel * nif, const QModelIndex & property )
 	if ( propname == "NiZBufferProperty" )
 	{
 		blocks.append( QPersistentModelIndex( property ) );
-		int flags = nif->getInt( property, "flags" );
+		int flags = nif->getInt( property, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
 	}
@@ -432,24 +432,24 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 		triangles.clear();
 		tristrips.clear();
 		
-		localCenter = nif->get<Vector3>( special, "center" );
+		localCenter = nif->get<Vector3>( special, "Center" );
 		
-		QModelIndex vertices = nif->getIndex( special, "vertices" );
+		QModelIndex vertices = nif->getIndex( special, "Vertices" );
 		if ( vertices.isValid() )
 			for ( int r = 0; r < nif->rowCount( vertices ); r++ )
 				verts.append( nif->itemData<Vector3>( nif->index( r, 0, vertices ) ) );
 		
-		QModelIndex normals = nif->getIndex( special, "normals" );
+		QModelIndex normals = nif->getIndex( special, "Normals" );
 		if ( normals.isValid() )
 			for ( int r = 0; r < nif->rowCount( normals ); r++ )
 				norms.append( nif->itemData<Vector3>( nif->index( r, 0, normals ) ) );
 		
-		QModelIndex vertexcolors = nif->getIndex( special, "vertex colors" );
+		QModelIndex vertexcolors = nif->getIndex( special, "Vertex Colors" );
 		if ( vertexcolors.isValid() )
 			for ( int r = 0; r < nif->rowCount( vertexcolors ); r++ )
 				colors.append( nif->itemData<Color4>( vertexcolors.child( r, 0 ) ) );
 		
-		QModelIndex uvcoord = nif->getIndex( special, "uv sets" );
+		QModelIndex uvcoord = nif->getIndex( special, "UV Sets" );
 		if ( uvcoord.isValid() )
 		{
 			QModelIndex uvcoordset = nif->index( texSet, 0, uvcoord );
@@ -460,7 +460,7 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 		
 		if ( nif->itemName( special ) == "NiTriShapeData" )
 		{
-			QModelIndex idxTriangles = nif->getIndex( special, "triangles" );
+			QModelIndex idxTriangles = nif->getIndex( special, "Triangles" );
 			if ( idxTriangles.isValid() )
 			{
 				for ( int r = 0; r < nif->rowCount( idxTriangles ); r++ )
@@ -471,7 +471,7 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 		}
 		else
 		{
-			QModelIndex points = nif->getIndex( special, "points" );
+			QModelIndex points = nif->getIndex( special, "Points" );
 			if ( points.isValid() )
 			{
 				for ( int r = 0; r < nif->rowCount( points ); r++ )
@@ -487,7 +487,7 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 		
 		weights.clear();
 		
-		int sdat = nif->getLink( special, "data" );
+		int sdat = nif->getLink( special, "Data" );
 		QModelIndex skindata = nif->getBlock( sdat, "NiSkinData" );
 		if ( ! skindata.isValid() )
 		{
@@ -495,11 +495,11 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 			return;
 		}
 		
-		skelRoot = nif->getLink( special, "skeleton root" );
+		skelRoot = nif->getLink( special, "Skeleton Root" );
 		skelTrans = Transform( nif, skindata );
 		
 		QVector<int> bones;
-		QModelIndex idxBones = nif->getIndex( nif->getIndex( special, "bones" ), "bones" );
+		QModelIndex idxBones = nif->getIndex( nif->getIndex( special, "Bones" ), "Bones" );
 		if ( ! idxBones.isValid() )
 		{
 			qWarning() << "bones array not found";
@@ -509,7 +509,7 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 		for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
 			bones.append( nif->itemValue( nif->index( b, 0, idxBones ) ).toLink() );
 		
-		idxBones = nif->getIndex( skindata, "bone list" );
+		idxBones = nif->getIndex( skindata, "Bone List" );
 		if ( ! idxBones.isValid() )
 		{
 			qWarning() << "bone list not found";
@@ -532,16 +532,16 @@ void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 	{
 		blocks.append( QPersistentModelIndex( property ) );
 		
-		alpha = nif->get<float>( property, "alpha" );
+		alpha = nif->get<float>( property, "Alpha" );
 		if ( alpha < 0.0 ) alpha = 0.0;
 		if ( alpha > 1.0 ) alpha = 1.0;
 
-		ambient = Color4( nif->get<Color3>( property, "ambient color" ) );
-		diffuse = Color4( nif->get<Color3>( property, "diffuse color" ) );
-		specular = Color4( nif->get<Color3>( property, "specular color" ) );
-		emissive = Color4( nif->get<Color3>( property, "emissive color" ) );
+		ambient = Color4( nif->get<Color3>( property, "Ambient Color" ) );
+		diffuse = Color4( nif->get<Color3>( property, "Diffuse Color" ) );
+		specular = Color4( nif->get<Color3>( property, "Specular Color" ) );
+		emissive = Color4( nif->get<Color3>( property, "Emissive Color" ) );
 		
-		shininess = nif->get<float>( property, "glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
+		shininess = nif->get<float>( property, "Glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
 		
 		foreach( int link, nif->getChildLinks( nif->getBlockNumber( property ) ) )
 		{
@@ -554,12 +554,12 @@ void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 	{
 		blocks.append( QPersistentModelIndex( property ) );
 		
-		QModelIndex basetex = nif->getIndex( property, "base texture" );
+		QModelIndex basetex = nif->getIndex( property, "Base Texture" );
 		if ( ! basetex.isValid() )	return;
-		QModelIndex basetexdata = nif->getIndex( basetex, "texture data" );
+		QModelIndex basetexdata = nif->getIndex( basetex, "Texture Data" );
 		if ( ! basetexdata.isValid() )	return;
 		
-		switch ( nif->get<int>( basetexdata, "filter mode" ) )
+		switch ( nif->get<int>( basetexdata, "Filter Mode" ) )
 		{
 			case 0:		texFilter = GL_NEAREST;		break;
 			case 1:		texFilter = GL_LINEAR;		break;
@@ -571,16 +571,16 @@ void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
 			*/
 		}
-		switch ( nif->get<int>( basetexdata, "clamp mode" ) )
+		switch ( nif->get<int>( basetexdata, "Clamp Mode" ) )
 		{
 			case 0:		texWrapS = GL_CLAMP;	texWrapT = GL_CLAMP;	break;
 			case 1:		texWrapS = GL_CLAMP;	texWrapT = GL_REPEAT;	break;
 			case 2:		texWrapS = GL_REPEAT;	texWrapT = GL_CLAMP;	break;
 			default:	texWrapS = GL_REPEAT;	texWrapT = GL_REPEAT;	break;
 		}
-		texSet = nif->get<int>( basetexdata, "texture set" );
+		texSet = nif->get<int>( basetexdata, "Texture Set" );
 		
-		iBaseTex = nif->getBlock( nif->getLink( basetexdata, "source" ), "NiSourceTexture" );
+		iBaseTex = nif->getBlock( nif->getLink( basetexdata, "Source" ), "NiSourceTexture" );
 		
 		foreach( int link, nif->getChildLinks( nif->getBlockNumber( property ) ) )
 		{

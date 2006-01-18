@@ -88,14 +88,14 @@ void NifModel::updateHeader()
 	
 	NifItem * item;
 	
-	item = getItem( header, "version" );
+	item = getItem( header, "Version" );
 	if ( item ) item->value().setCount( version );
 	
-	item = getItem( header, "num blocks" );
+	item = getItem( header, "Num Blocks" );
 	if ( item ) item->value().setCount( getBlockCount() );
 	
-	NifItem * idxBlockTypes = getItem( header, "block types" );
-	NifItem * idxBlockTypeIndices = getItem( header, "block type index" );
+	NifItem * idxBlockTypes = getItem( header, "Block Types" );
+	NifItem * idxBlockTypeIndices = getItem( header, "Block Type Index" );
 	if ( idxBlockTypes && idxBlockTypeIndices )
 	{
 		QStringList blocktypes;
@@ -110,7 +110,7 @@ void NifModel::updateHeader()
 			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
 		}
 		
-		item = getItem( header, "num block types" );
+		item = getItem( header, "Num Block Types" );
 		if ( item ) item->value().setCount( blocktypes.count() );
 		
 		updateArray( idxBlockTypes, false );
@@ -383,9 +383,9 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		{
 			foreach ( NifData d, compound->types )
 			{
-				if ( d.arr1().contains( "(arg)" ) ) { QString x = d.arr1(); x.replace( x.indexOf( "(arg)" ), 5, arg ); d.setArr1( x ); }
-				if ( d.arr2().contains( "(arg)" ) ) { QString x = d.arr2(); x.replace( x.indexOf( "(arg)" ), 5, arg ); d.setArr2( x ); }
-				if ( d.cond().contains( "(arg)" ) ) { QString x = d.cond(); x.replace( x.indexOf( "(arg)" ), 5, arg ); d.setCond( x ); }
+				if ( d.arr1().contains( "(ARG)" ) ) { QString x = d.arr1(); x.replace( x.indexOf( "(ARG)" ), 5, arg ); d.setArr1( x ); }
+				if ( d.arr2().contains( "(ARG)" ) ) { QString x = d.arr2(); x.replace( x.indexOf( "(ARG)" ), 5, arg ); d.setArr2( x ); }
+				if ( d.cond().contains( "(ARG)" ) ) { QString x = d.cond(); x.replace( x.indexOf( "(ARG)" ), 5, arg ); d.setCond( x ); }
 				insertType( branch, d );
 			}
 		}
@@ -627,9 +627,9 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 	{
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" )
-			buddy = getIndex( getIndex( index, "texture source" ), "file name" );
+			buddy = getIndex( getIndex( index, "Texture Source" ), "File Name" );
 		else
-			buddy = getIndex( index, "name" );
+			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
 			buddy = buddy.sibling( buddy.row(), index.column() );
 		if ( buddy.isValid() )
@@ -654,7 +654,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 							QModelIndex block = getBlock( lnk );
 							if ( block.isValid() )
 							{
-								QModelIndex block_name = getIndex( block, "name" );
+								QModelIndex block_name = getIndex( block, "Name" );
 								if ( block_name.isValid() && ! itemValue( block_name ).toString().isEmpty() )
 									return QString( "%1 (%2)" ).arg( lnk ).arg( itemValue( block_name ).toString() );
 								else
@@ -666,7 +666,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 							}
 						}
 						else
-							return QString( "none" );
+							return QString( "None" );
 					}
 					else
 						return item->value().toVariant();
@@ -745,9 +745,9 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	{
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" )
-			buddy = getIndex( getIndex( index, "texture source" ), "file name" );
+			buddy = getIndex( getIndex( index, "Texture Source" ), "File Name" );
 		else
-			buddy = getIndex( index, "name" );
+			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
 			buddy = buddy.sibling( buddy.row(), index.column() );
 		if ( buddy.isValid() )
@@ -884,7 +884,7 @@ bool NifModel::load( QIODevice & device )
 	
 	QModelIndex header = index( 0, 0 );
 	
-	int numblocks = getInt( header, "num blocks" );
+	int numblocks = getInt( header, "Num Blocks" );
 	qDebug( "numblocks %i", numblocks );
 	
 	qApp->processEvents();
@@ -920,8 +920,8 @@ bool NifModel::load( QIODevice & device )
 			{
 				if ( version < 0x0a020000 )		device.read( 4 );
 				
-				int blktypidx = itemValue( index( c, 0, getIndex( header, "block type index" ) ) ).toCount();
-				blktyp = itemValue( index( blktypidx, 0, getIndex( header, "block types" ) ) ).toString();
+				int blktypidx = itemValue( index( c, 0, getIndex( header, "Block Type Index" ) ) ).toCount();
+				blktyp = itemValue( index( blktypidx, 0, getIndex( header, "Block Types" ) ) ).toString();
 			}
 			else
 			{

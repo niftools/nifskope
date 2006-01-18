@@ -277,7 +277,7 @@ ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNo
 
 bool ValueEdit::canEdit( NifValue::Type t )
 {
-	return ( t == NifValue::tBool || t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt
+	return ( t == NifValue::tBool || t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tParent || t == NifValue::tFloat || t == NifValue::tString
 		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat );
 }
@@ -309,6 +309,7 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = be;
 		}	break;
 		case NifValue::tWord:
+		case NifValue::tFlags:
 		{	
 			QSpinBox * we = new QSpinBox( this );
 			we->setFrame(false);
@@ -391,6 +392,7 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tByte:
 		case NifValue::tWord:
+		case NifValue::tFlags:
 		case NifValue::tInt:
 			val.setCount( qobject_cast<QSpinBox*>( edit )->value() );
 			break;
@@ -538,40 +540,3 @@ Quat RotationEdit::getQuat() const
 	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
 	return m.toQuat();
 }
-
-		/*
-			switch ( v.type() )
-			{
-				case QVariant::UInt:
-				{
-					QSpinBox *sb = new QSpinBox(parent);
-					sb->setFrame(false);
-					sb->setMaximum(INT_MAX);
-					w = sb;
-				}	break;
-				case QVariant::Int:
-				{
-					QSpinBox *sb = new QSpinBox(parent);
-					sb->setFrame(false);
-					sb->setMinimum(INT_MIN);
-					sb->setMaximum(INT_MAX);
-					w = sb;
-				}	break;
-				case QVariant::Double:
-				{
-					QDoubleSpinBox *sb = new QDoubleSpinBox(parent);
-					sb->setFrame(false);
-					sb->setDecimals( 4 );
-					sb->setRange( - 100000000, + 100000000 );
-					w = sb;
-				}	break;
-				case QVariant::String:
-				{
-				}	break;
-				case QVariant::Color:
-				default:
-					w = 0;
-					break;
-			}
-		}
-		*/

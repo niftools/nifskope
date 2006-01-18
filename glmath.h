@@ -12,9 +12,9 @@ class Transform
 public:
 	Transform( const NifModel * nif, const QModelIndex & transform )
 	{
-		rotation = nif->get<Matrix>( transform, "rotation" );
-		translation = nif->get<Vector3>( transform, "translation" );
-		scale = nif->get<float>( transform, "scale" );
+		rotation = nif->get<Matrix>( transform, "Rotation" );
+		translation = nif->get<Vector3>( transform, "Translation" );
+		scale = nif->get<float>( transform, "Scale" );
 	}
 	
 	Transform()

@@ -76,7 +76,7 @@ NifSkope::NifSkope() : QMainWindow()
 	// create a new model
 	model = new NifModel( this );
 	
-	// create a new hirarchical proxy model
+	// create a new hierarchical proxy model
 	proxy = new NifProxyModel( this );
 	proxy->setModel( model );
 
@@ -131,39 +131,39 @@ NifSkope::NifSkope() : QMainWindow()
 
 	// actions
 
-	aLoad = new QAction( "load", this );
+	aLoad = new QAction( "&Load", this );
 	connect( aLoad, SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );	
-	aSave = new QAction( "save", this );
+	aSave = new QAction( "&Save", this );
 	connect( aSave, SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
-	aWindow = new QAction( "new window", this );
+	aWindow = new QAction( "&New Window", this );
 	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
-	aQuit = new QAction( "quit", this );
+	aQuit = new QAction( "&Quit", this );
 	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 	
-	aCondition = new QAction( "hide condition zero", this );
+	aCondition = new QAction( "Hide Condition Zero", this );
 	aCondition->setToolTip( "checking this option makes the tree view better readable by displaying<br>only the rows where the condition is true and version matches the file version" );
 	aCondition->setCheckable( true );
 	aCondition->setChecked( tree->evalConditions() );
 	connect( aCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
 
-	aList = new QAction( "list", this );
+	aList = new QAction( "List", this );
 	aList->setCheckable( true );
 	aList->setChecked( list->model() == model );
 
-	aHirarchy = new QAction( "hirarchy", this );
-	aHirarchy->setCheckable( true );
-	aHirarchy->setChecked( list->model() == proxy );
+	aHierarchy = new QAction( "Hierarchy", this );
+	aHierarchy->setCheckable( true );
+	aHierarchy->setChecked( list->model() == proxy );
 	
 	gListMode = new QActionGroup( this );
 	connect( gListMode, SIGNAL( triggered( QAction * ) ), this, SLOT( setListMode() ) );
 	gListMode->addAction( aList );
-	gListMode->addAction( aHirarchy );
+	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
 	
-	aNifSkope = new QAction( "about NifSkope", this );
+	aNifSkope = new QAction( "About &NifSkope", this );
 	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
 	
-	aAboutQt = new QAction( "about Qt", this );
+	aAboutQt = new QAction( "About &Qt", this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
 
 
@@ -184,7 +184,7 @@ NifSkope::NifSkope() : QMainWindow()
 
 	// tool bar
 	
-	tool = new QToolBar( "load & save" );
+	tool = new QToolBar( "Load & Save" );
 	tool->setObjectName( "toolbar" );
 	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	
@@ -202,7 +202,7 @@ NifSkope::NifSkope() : QMainWindow()
 	
 	// animation tool bar
 	
-	tAnim = new QToolBar( "animation" );
+	tAnim = new QToolBar( "Animation" );
 	tAnim->setObjectName( "AnimTool" );
 	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	
@@ -242,7 +242,7 @@ NifSkope::NifSkope() : QMainWindow()
 	foreach ( QAction * a, ogl->actions() )
 		mOpts->addAction( a );
 	mOpts->addSeparator();
-	mOpts->addAction( aHirarchy );
+	mOpts->addAction( aHierarchy );
 	mOpts->addAction( aList );
 	mOpts->addSeparator();
 	mOpts->addAction( aCondition );
@@ -295,7 +295,7 @@ void NifSkope::restore( QSettings & settings )
 	if ( settings.value( "list mode", "hirarchy" ).toString() == "list" )
 		aList->setChecked( true );
 	else
-		aHirarchy->setChecked( true );
+		aHierarchy->setChecked( true );
 	setListMode();
 
 	aCondition->setChecked( settings.value( "hide condition zero", true ).toBool() );
@@ -393,13 +393,13 @@ void NifSkope::contextMenu( const QPoint & pos )
 	
 	int link = model->itemLink( idx );
 	{
-		QAction * a = menu->addAction( "follow Link" );
+		QAction * a = menu->addAction( "Follow Link" );
 		a->setEnabled( link >= 0 );
 		menu->addSeparator();
 	}
 
 	{
-		QMenu * m = new QMenu( "insert Block" );
+		QMenu * m = new QMenu( "Insert Block" );
 		QStringList ids = model->allNiBlocks();
 		ids.sort();
 		foreach( QString x, ids )
@@ -409,32 +409,32 @@ void NifSkope::contextMenu( const QPoint & pos )
 	
 	if ( model->getBlockNumber( idx ) >= 0 )
 	{
-		menu->addAction( "remove Block" );
+		menu->addAction( "Remove Block" );
 	}
 	else
 	{
 		menu->addSeparator();
-		menu->addAction( "update Header" );
+		menu->addAction( "Update Header" );
 	}
 	
 	if ( ! model->itemArr1( idx ).isEmpty() )
 	{
 		menu->addSeparator();
-		QAction * a = menu->addAction( "update Array" );
+		QAction * a = menu->addAction( "Update Array" );
 		a->setEnabled( model->evalCondition( idx, true ) );
 	}
 	
 	if ( sender() == list && list->model() == proxy )
 	{
 		menu->addSeparator();
-		menu->addAction( "expand all" );
-		menu->addAction( "collapse all" );
+		menu->addAction( "Expand All" );
+		menu->addAction( "Collapse All" );
 	}
 	
 	if ( idx.isValid() && model->isCompound( model->itemType( idx ) ) )
 	{
 		menu->addSeparator();
-		menu->addAction( "copy" );
+		menu->addAction( "Copy" );
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 		{
@@ -445,7 +445,7 @@ void NifSkope::contextMenu( const QPoint & pos )
 					QString type = form.right( form.length() - 18 );
 					if ( type == model->itemType( idx ) )
 					{
-						menu->addAction( "paste" );
+						menu->addAction( "Paste" );
 					}
 				}
 			}
@@ -455,7 +455,7 @@ void NifSkope::contextMenu( const QPoint & pos )
 	if ( idx.isValid() && model->itemType( idx ) == "NiBlock" && model->isNiBlock( model->itemName( idx ) ) )
 	{
 		menu->addSeparator();
-		menu->addAction( "copy" );
+		menu->addAction( "Copy" );
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 		{
@@ -466,7 +466,7 @@ void NifSkope::contextMenu( const QPoint & pos )
 					QString name = form.right( form.length() - 17 );
 					if ( name == model->itemName( idx ) )
 					{
-						menu->addAction( "paste" );
+						menu->addAction( "Paste" );
 					}
 				}
 			}
@@ -476,32 +476,32 @@ void NifSkope::contextMenu( const QPoint & pos )
 	QAction * a = menu->exec( p );
 	if ( a ) 
 	{
-		if ( a->text() == "follow Link" )
+		if ( a->text() == "Follow Link" )
 		{
 			setCurrentBlock( model->getBlock( link ) );
 		}
-		else if ( a->text() == "update Header" )
+		else if ( a->text() == "Update Header" )
 		{
 			model->updateHeader();
 		}
-		else if ( a->text() == "update Array" )
+		else if ( a->text() == "Update Array" )
 		{
 			model->updateArray( idx );
 		}
-		else if ( a->text() == "expand all" )
+		else if ( a->text() == "Expand All" )
 		{
 			list->setAllExpanded( QModelIndex(), true );
 		}
-		else if ( a->text() == "collapse all" )
+		else if ( a->text() == "Collapse All" )
 		{
 			list->setAllExpanded( QModelIndex(), false );
 		}
-		else if ( a->text() == "remove Block" )
+		else if ( a->text() == "Remove Block" )
 		{
 			model->removeNiBlock( model->getBlockNumber( idx ) );
 			model->updateHeader();
 		}
-		else if ( a->text() == "copy" )
+		else if ( a->text() == "Copy" )
 		{
 			QByteArray data;
 			QBuffer buffer( & data );
@@ -515,7 +515,7 @@ void NifSkope::contextMenu( const QPoint & pos )
 				QApplication::clipboard()->setMimeData( mime );
 			}
 		}
-		else if ( a->text() == "paste" )
+		else if ( a->text() == "Paste" )
 		{
 			const QMimeData * mime = QApplication::clipboard()->mimeData();
 			if ( mime )

@@ -313,7 +313,7 @@ protected:
 	friend class NifStream;
 };
 
-class Color3 : public QColor
+class Color3
 {
 public:
 	Color3() { rgb[0] = rgb[1] = rgb[2] = 0; }
@@ -361,7 +361,7 @@ protected:
 	friend class NifStream;
 };
 
-class Color4 : public QColor
+class Color4
 {
 public:
 	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3]; }
@@ -428,18 +428,20 @@ public:
 		tBool = 0,
 		tByte = 1,
 		tWord = 2,
-		tInt = 3,
-		tLink = 4,
-		tParent = 5,
-		tFloat = 6,
-		tString = 7,
-		tColor3 = 8,
-		tColor4 = 9,
-		tVector3 = 10,
-		tQuat = 11,
-		tMatrix = 12,
-		tVector2 = 13,
-		tByteArray = 14,
+		tFlags = 3,
+		tInt = 4,
+		tLink = 5,
+		tParent = 6,
+		tFloat = 7,
+		tString = 8,
+		tColor3 = 9,
+		tColor4 = 10,
+		tVector3 = 11,
+		tQuat = 12,
+		tMatrix = 13,
+		tVector2 = 14,
+		tByteArray = 15,
+		tVersion = 16,
 		
 		tNone = 0xff
 	};
@@ -458,8 +460,6 @@ public:
 	void changeType( Type );
 	
 	void operator=( const NifValue & other );
-	//bool operator==( const NifValue & other );
-	//bool operator!=( const NifValue & other ) { return ! ( *this == other ); }
 	
 	Type type() const { return typ; }
 	
@@ -469,6 +469,7 @@ public:
 	bool isValid() const { return typ != tNone; }
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
 	bool isCount() const { return typ >= tBool && typ <= tInt; }
+	bool isFlags() const { return typ == tFlags; }
 	bool isFloat() const { return typ == tFloat; }
 	bool isLink() const { return typ == tLink || typ == tParent; }
 	bool isMatrix() const { return typ == tMatrix; }
@@ -477,19 +478,22 @@ public:
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
 	bool isByteArray() const { return typ == tByteArray; }
+	bool isVersion() const { return typ == tVersion; }
 	
 	QColor toColor() const;
 	quint32 toCount() const;
 	float toFloat() const;
 	qint32 toLink() const;
+	quint32 toVersion() const;
 	QString toString() const;
 	QVariant toVariant() const;
 	
 	operator QVariant () const	{ return toVariant(); }
 	
-	bool setCount( int );
+	bool setCount( quint32 );
 	bool setFloat( float );
 	bool setLink( int );
+	bool setVersion( quint32 );
 	
 	bool fromString( const QString & );
 	bool fromVariant( const QVariant & );
@@ -521,10 +525,12 @@ protected:
 inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
 inline qint32 NifValue::toLink() const { if ( isLink() ) return val.i32; else return -1; }
+inline quint32 NifValue::toVersion() const { if ( isVersion() ) return val.u32; else return 0; }
 
-inline bool NifValue::setCount( int c ) { if ( isCount() ) { val.u32 = c; return true; } else return false; }
+inline bool NifValue::setCount( quint32 c ) { if ( isCount() ) { val.u32 = c; return true; } else return false; }
 inline bool NifValue::setFloat( float f ) { if ( isFloat() ) { val.f32 = f; return true; } else return false; }
 inline bool NifValue::setLink( int l ) { if ( isLink() ) { val.i32 = l; return true; } else return false; }
+inline bool NifValue::setVersion( quint32 v ) { if ( isVersion() ) { val.u32 = v; return true; } else return false; }
 
 template <typename T> inline T NifValue::getType( Type t ) const
 {

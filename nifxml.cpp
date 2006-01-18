@@ -130,13 +130,13 @@ public:
 				if ( x == 5 )
 				{
 					NifData		data(
-						list.value( "name" ).toLower(),
-						list.value( "type" ).toLower(),
+						list.value( "name" ),
+						list.value( "type" ),
 						NifValue( NifValue::type( list.value( "type" ) ) ),
-						list.value( "arg" ).toLower(),
-						list.value( "arr1" ).toLower(),
-						list.value( "arr2" ).toLower(),
-						list.value( "cond" ).toLower(),
+						list.value( "arg" ),
+						list.value( "arr1" ),
+						list.value( "arr2" ),
+						list.value( "cond" ),
 						NifModel::version2number( list.value( "ver1" ) ),
 						NifModel::version2number( list.value( "ver2" ) )
 					);
