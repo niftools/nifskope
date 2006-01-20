@@ -491,17 +491,23 @@ bool NifModel::itemIsLink( const QModelIndex & index, bool * isChildLink ) const
 	return itemIsLink( item, isChildLink );
 }
 
-void NifModel::setItemValue( const QModelIndex & index, const NifValue & val )
+bool NifModel::setItemValue( NifItem * item, const NifValue & val )
 {
-	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-	if ( ! ( index.isValid() && item && index.model() == this ) )	return;
 	item->value() = val;
-	emit dataChanged( index.sibling( index.row(), ValueCol ), index.sibling( index.row(), ValueCol ) );
-	if ( itemIsLink( index ) )
+	emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+	if ( itemIsLink( item ) )
 	{
 		updateLinks();
 		emit linksChanged();
 	}
+	return true;
+}
+
+bool NifModel::setItemValue( const QModelIndex & index, const NifValue & val )
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item && index.model() == this ) )	return false;
+	return setItemValue( item, val );
 }
 
 bool NifModel::setValue( const QModelIndex & parent, const QString & name, const NifValue & val )

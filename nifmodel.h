@@ -308,9 +308,11 @@ public:
 	
 	
 	// set item value
-	void setItemValue( const QModelIndex & index, const NifValue & v );
+	bool setItemValue( const QModelIndex & index, const NifValue & v );
 	// sets a named attribute to value
 	bool setValue( const QModelIndex & index, const QString & name, const NifValue & v );
+	
+	template <typename T> bool setItemData( const QModelIndex & index, const T & d );
 	
 	// get item attributes
 	QString  itemName( const QModelIndex & index ) const;
@@ -327,6 +329,8 @@ public:
 	
 	// find an item named name and return the coresponding value
 	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
+	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
+	
 	// same as getValue but converts the data to the requested type
 	int getInt( const QModelIndex & parent, const QString & nameornumber ) const;
 	int getLink( const QModelIndex & parent, const QString & name ) const;
@@ -414,6 +418,12 @@ protected:
 
 	template <typename T>	T get( NifItem * parent, const QString & name ) const;
 	int			getInt( NifItem * parent, const QString & nameornumber ) const;
+	
+	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
+	template <typename T> bool setItemData( NifItem * item, const T & d );
+	bool setItemValue( NifItem * item, const NifValue & v );
+	bool setItemValue( NifItem * parent, const QString & name, const NifValue & v );
+	
 	
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
 
@@ -508,6 +518,28 @@ template <typename T> inline T NifModel::get( const QModelIndex & parent, const 
 		return T();
 }
 
+template <typename T> inline bool NifModel::set( NifItem * parent, const QString & name, const T & d )
+{
+	NifItem * item = getItem( parent, name );
+	if ( item )
+		return setItemData( item, d );
+	else
+		return false;
+}
+
+template <typename T> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const T & d )
+{
+	NifItem * parentItem = static_cast<NifItem*>( parent.internalPointer() );
+	if ( ! ( parent.isValid() && parentItem && parent.model() == this ) )
+		return false;
+	
+	NifItem * item = getItem( parentItem, name );
+	if ( item )
+		return setItemData( item, d );
+	else
+		return false;
+}
+
 template <typename T> inline T NifModel::itemData( const QModelIndex & index ) const
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
@@ -517,5 +549,23 @@ template <typename T> inline T NifModel::itemData( const QModelIndex & index ) c
 	return item->value().get<T>();
 }
 
+template <typename T> inline bool NifModel::setItemData( NifItem * item, const T & d )
+{
+	bool r = item->value().set( d );
+	emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+	if ( itemIsLink( item ) )
+	{
+		updateLinks();
+		emit linksChanged();
+	}
+	return r;
+}
+
+template <typename T> inline bool NifModel::setItemData( const QModelIndex & index, const T & d )
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item && index.model() == this ) )	return false;
+	return setItemData( index, d );
+}
 
 #endif

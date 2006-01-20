@@ -77,6 +77,8 @@ public slots:
 	
 	void about();
 	
+	void sltToolSkel();
+	
 protected slots:
 	void clearRoot();
 	void select( const QModelIndex & );
@@ -122,6 +124,8 @@ private:
 	
 	QAction * aNifSkope;
 	QAction * aAboutQt;
+	
+	QAction * aToolSkel;
 
 	QToolBar * tAnim;
 	QSlider * sldTime;

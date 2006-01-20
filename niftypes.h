@@ -565,7 +565,7 @@ template <> inline Color4 NifValue::get() const { return getType<Color4>( tColor
 template <> inline QString NifValue::get() const { return getType<QString>( tString ); }
 template <> inline QByteArray NifValue::get() const { return getType<QByteArray>( tByteArray ); }
 
-
+template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
 template <> inline bool NifValue::set( const Quat & x ) { return setType( tQuat, x ); }
 template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVector3, x ); }

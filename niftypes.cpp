@@ -543,6 +543,7 @@ bool NifStream::read( NifValue & val )
 			if ( string.count() != len ) return false;
 			string.replace( "\r", "\\r" );
 			string.replace( "\n", "\\n" );
+			//string.replace( "\0", "\\0" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
 		case NifValue::tColor3:
@@ -597,6 +598,7 @@ bool NifStream::write( const NifValue & val )
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
+			//string.replace( "\\0", "\0" );
 			int len = string.length();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;

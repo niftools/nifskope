@@ -563,13 +563,11 @@ void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 		{
 			case 0:		texFilter = GL_NEAREST;		break;
 			case 1:		texFilter = GL_LINEAR;		break;
-			default:	texFilter = GL_NEAREST;		break;
-			/*
 			case 2:		texFilter = GL_NEAREST_MIPMAP_NEAREST;		break;
 			case 3:		texFilter = GL_LINEAR_MIPMAP_NEAREST;		break;
 			case 4:		texFilter = GL_NEAREST_MIPMAP_LINEAR;		break;
 			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
-			*/
+			default:	texFilter = GL_NEAREST;		break;
 		}
 		switch ( nif->get<int>( basetexdata, "Clamp Mode" ) )
 		{
@@ -732,7 +730,7 @@ void Mesh::draw( bool selected )
 
 	// setup texturing
 	
-	if ( scene->texturing && uvs.count() && scene->bindTexture( iBaseTex ) )
+	if ( scene->texturing && uvs.count() && scene->bindTexture( iBaseTex, texFilter ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );

@@ -40,41 +40,39 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glscene.h"
 
+#include <GL/glext.h>
+
 #ifndef APIENTRY
 # define APIENTRY
 #endif
 typedef void (APIENTRY *pfn_glCompressedTexImage2D) ( GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid * );
 static pfn_glCompressedTexImage2D _glCompressedTexImage2D = 0;
 
+static bool ext_compression = false;
+static bool ext_mipmapping = false;
+
 void GLTex::initialize( const QGLContext * context )
 {
 	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
+	//foreach ( QString e, extensions.split( " " ) )
+	//	qWarning() << e;
 	
-	if ( !_glCompressedTexImage2D )
-	{
-		if (!extensions.contains("GL_ARB_texture_compression"))
-			qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
-		if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
-			qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
-		
-		_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2D");
-		if ( !_glCompressedTexImage2D )
-			_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress("glCompressedTexImage2DARB");
-	}
-	if ( !_glCompressedTexImage2D )
-		qWarning( "glCompressedTexImage2D not found" );
-}
+	if ( ! extensions.contains( "GL_ARB_texture_compression" ) )
+		qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
+	if ( ! extensions.contains( "GL_EXT_texture_compression_s3tc" ) )
+		qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
+	
+	_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress( "glCompressedTexImage2D" );
+	if ( ! _glCompressedTexImage2D )
+		_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress( "glCompressedTexImage2DARB" );
 
-GLTex::~GLTex()
-{
-	release();
-}
+	ext_compression = _glCompressedTexImage2D;
+	if ( ! ext_compression )
+		qWarning( "texture compression not supported" );
 
-void GLTex::release()
-{
-	if ( id )
-		glDeleteTextures( 1, &id );
-	id = 0;
+	ext_mipmapping = extensions.contains( "GL_SGIS_generate_mipmap" );
+	if ( ext_mipmapping )
+		glHint( GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST );
 }
 
 
@@ -84,7 +82,7 @@ GLuint texLoadTGA( const QString & filepath );
 GLuint texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
 
 
-bool Scene::bindTexture( const QModelIndex & index )
+bool Scene::bindTexture( const QModelIndex & index, GLenum filter )
 {
 	if ( ! index.isValid() )
 		return false;
@@ -173,7 +171,6 @@ GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( ind
 						masks[c] = nif->get<int>( iPixelData, maskNames[c] );
 					qint32 bitspp = nif->get<int>( iPixelData, "Bits Per Pixel" );
 					qint32 bytespp = nif->get<int>( iPixelData, "Bytes Per Pixel" );
-					qint32 mipmaps = nif->get<int>( iPixelData, "Num Mipmaps" );
 					
 					QModelIndex iMipmaps = nif->getIndex( iPixelData, "Mipmaps" );
 					if ( iMipmaps.isValid() && nif->rowCount( iMipmaps ) >= 1 )
@@ -182,12 +179,29 @@ GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( ind
 						qint32 height = nif->get<int>( iMipmaps.child( 0, 0 ), "Height" );
 						qint32 offset = nif->get<int>( iMipmaps.child( 0, 0 ), "Offset" );
 						
+						qint32 mipmaps = 1;
+						qint32 w = width;
+						qint32 h = height;
+						qint32 o = offset;
+						for ( int c = 1; c < nif->rowCount( iMipmaps ); c++ )
+						{
+							o += w * h * bytespp;
+							if ( w > 1 ) w /= 2;
+							if ( h > 1 ) h /= 2;
+							if ( o == nif->get<int>( iMipmaps.child( c, 0 ), "Offset" )
+								&& w == nif->get<int>( iMipmaps.child( c, 0 ), "Width" )
+								&& h == nif->get<int>( iMipmaps.child( c, 0 ), "Height" ) )
+								mipmaps++;
+							else
+								break;
+						}
+						
 						QByteArray pixels = nif->get<QByteArray>( iPixelData, "Pixel Data" );
 						QBuffer buffer( &pixels );
 						if ( buffer.open( QIODevice::ReadOnly ) )
 						{
 							buffer.seek( offset );
-							id = texLoadRaw( buffer, width, height, 1, bitspp, bytespp, masks );
+							id = texLoadRaw( buffer, width, height, mipmaps, bitspp, bytespp, masks );
 						}
 					}
 				}
@@ -196,11 +210,68 @@ GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( ind
 	}
 }
 
+GLTex::~GLTex()
+{
+	release();
+}
+
+void GLTex::release()
+{
+	if ( id )
+		glDeleteTextures( 1, &id );
+	id = 0;
+}
+
 bool isPowerOfTwo( unsigned int x )
 {
 	while ( ! ( x == 0 || x & 1 ) )
 		x = x >> 1;
 	return ( x == 1 );
+}
+
+void generateMipMaps( int w, int h )
+{
+	if ( ( w < 1 || h < 1 ) || ( w == 1 && h == 1 ) )
+		return;
+	
+	int m = 0;
+
+	quint8 * data = (quint8 *) malloc( w * h * 4 );
+	glGetTexImage( GL_TEXTURE_2D, m, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	
+	do
+	{
+		const quint8 * src = data;
+		quint8 * dst = data;
+		
+		quint32 xo = ( w > 1 ? 1*4 : 0 );
+		quint32 yo = ( h > 1 ? w*4 : 0 );
+		
+		w /= 2;
+		h /= 2;
+		
+		if ( w == 0 ) w = 1;
+		if ( h == 0 ) h = 1;
+		
+		for ( int y = 0; y < h; y++ )
+		{
+			for ( int x = 0; x < w; x++ )
+			{
+				for ( int b = 0; b < 4; b++ )
+				{
+					*dst++ = ( *(src) + *(src+xo) + *(src+yo) + *(src+xo+yo) ) / 4;
+					src++;
+				}
+				src += 4;
+			}
+			src += yo;
+		}
+		
+		glTexImage2D( GL_TEXTURE_2D, ++m, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	}
+	while ( w > 1 || h > 1 );
+	
+	free( data );
 }
 
 bool uncompressRLE( QIODevice & f, int w, int h, int bpp, quint8 * pixel )
@@ -225,17 +296,18 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bpp, quint8 * pixel )
 			{
 				for ( int b = 0; b < bytespp; b++ )
 					*pixel++ = px[b];
-			} while ( ++c < w*h && rl-- > 0  );
+			}
+			while ( ++c < w*h && rl-- > 0  );
 		}
 		else
 		{
-			rl &= 0x7f;
 			do
 			{
 				for ( int b = 0; b < bytespp; b++ )
 					if ( ! f.getChar( (char *) pixel++ ) )
 						return false;
-			} while (  ++c < w*h && rl-- > 0 );
+			}
+			while (  ++c < w*h && rl-- > 0 );
 		}
 	}
 	return true;
@@ -292,7 +364,8 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 	GLuint tx_id;
 	glGenTextures(1, &tx_id);
 	glBindTexture(GL_TEXTURE_2D, tx_id);
-//	glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( num_mipmaps > 1 ? GL_FALSE : GL_TRUE ) );
+	if ( ext_mipmapping )
+		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( num_mipmaps <= 1 ? GL_TRUE : GL_FALSE ) );
 	
 	
 	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
@@ -321,13 +394,16 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 		
 		convertToRGBA( data1, w, h, bytespp, mask, flipV, flipH, data2 );
 		
-		glTexImage2D( GL_TEXTURE_2D, m, bpp / 8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2 );
+		glTexImage2D( GL_TEXTURE_2D, m, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2 );
 		w /= 2;
 		h /= 2;
 	}
 	
 	free( data2 );
 	free( data1 );
+	
+	if ( num_mipmaps == 1 && ! ext_mipmapping )
+		generateMipMaps( width, height );
 	
 	return tx_id;
 }
@@ -364,13 +440,6 @@ struct DDSFormat {
 #define FOURCC_DXT4  0x34545844
 #define FOURCC_DXT5  0x35545844
 
-#ifndef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
-#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
-#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
-#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
-#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
-#endif
-
 /*
  *  load a (compressed) dds texture
  */
@@ -405,9 +474,11 @@ GLuint texLoadDDS( const QString & filename )
 		return 0;
 	}
 
-	int blockSize = 16;
+	int blockSize;
 	GLenum format;
 
+	f.seek(ddsHeader.dwSize + 4);
+	
 	if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
 	{
 		switch(ddsHeader.ddsPixelFormat.dwFourCC)
@@ -418,9 +489,11 @@ GLuint texLoadDDS( const QString & filename )
 				break;
 			case FOURCC_DXT3:
 				format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				blockSize = 16;
 				break;
 			case FOURCC_DXT5:
 				format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				blockSize = 16;
 				break;
 			default:
 				qWarning() << "texLoadDDS( " << filename << " ) : DDS image compression type not supported";
@@ -429,15 +502,6 @@ GLuint texLoadDDS( const QString & filename )
 	}
 	else
 	{
-		/*
-		qDebug( "UNCOMPRESSED DDS" );
-		qDebug( "SIZE %i,%i,%i", ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
-		qDebug( "BPP %i", ddsHeader.ddsPixelFormat.dwBPP );
-		qDebug( "R %08X", ddsHeader.ddsPixelFormat.dwRMask );
-		qDebug( "G %08X", ddsHeader.ddsPixelFormat.dwGMask );
-		qDebug( "B %08X", ddsHeader.ddsPixelFormat.dwBMask );
-		qDebug( "A %08X", ddsHeader.ddsPixelFormat.dwAMask );
-		*/
 		return texLoadRaw( f, ddsHeader.dwWidth, ddsHeader.dwHeight,
 			ddsHeader.dwMipMapCount, ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
 			&ddsHeader.ddsPixelFormat.dwRMask );
@@ -445,28 +509,24 @@ GLuint texLoadDDS( const QString & filename )
 	
 	if ( !_glCompressedTexImage2D )
 	{
-		qWarning() << "texLoadDDS( " << filename << " ) : DDS image compression not supported by your open gl implementation";
+		qDebug() << "texLoadDDS( " << filename << " ) : DDS image compression not supported by your open gl implementation";
 		return 0;
 	}
-	
-	f.seek(ddsHeader.dwSize + 4);
 	
 	GLuint tx_id;
 	glGenTextures(1, &tx_id);
 	glBindTexture(GL_TEXTURE_2D, tx_id);
-//	glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( ddsHeader.dwMipMapCount <= 1 ? GL_TRUE : GL_FALSE ) );
-	
-	//qDebug( "w %i h %i m %i", ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
+	if ( ext_mipmapping )
+		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( ddsHeader.dwMipMapCount <= 1 ? GL_TRUE : GL_FALSE ) );
 	
 	GLubyte * pixels = (GLubyte *) malloc(((ddsHeader.dwWidth+3)/4) * ((ddsHeader.dwHeight+3)/4) * blockSize);
 	unsigned int w, h, s;
-	unsigned int m = ddsHeader.dwMipMapCount;
-	for(unsigned int i = 0; i < m; ++i)
+	for(unsigned int i = 0; i < ddsHeader.dwMipMapCount; ++i)
 	{
 		w = ddsHeader.dwWidth >> i;
 		h = ddsHeader.dwHeight >> i;
-		if (w == 0) w = 1;
-		if (h == 0) h = 1;
+		if ( w == 0 ) w = 1;
+		if ( h == 0 ) h = 1;
 		s = ((w+3)/4) * ((h+3)/4) * blockSize;
 		if ( f.read( (char *) pixels, s ) != s )
 		{
@@ -480,6 +540,9 @@ GLuint texLoadDDS( const QString & filename )
 	f.close();
 	
 	free(pixels);
+
+	if ( ddsHeader.dwMipMapCount == 1 && ! ext_mipmapping )
+		generateMipMaps( ddsHeader.dwWidth, ddsHeader.dwHeight );
 	
 	return tx_id;
 }

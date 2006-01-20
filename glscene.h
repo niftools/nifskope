@@ -267,7 +267,7 @@ public:
 	void transform( const Transform & trans, float time = 0.0 );
 	void draw();
 	
-	bool bindTexture( const QModelIndex & );
+	bool bindTexture( const QModelIndex &, GLenum filer );
 
 	QList<Mesh*> meshes;
 	QHash<int,Node*> nodes;

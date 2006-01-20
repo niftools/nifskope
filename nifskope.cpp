@@ -165,6 +165,9 @@ NifSkope::NifSkope() : QMainWindow()
 	
 	aAboutQt = new QAction( "About &Qt", this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
+	
+	aToolSkel = new QAction( "Skeleton", this );
+	connect( aToolSkel, SIGNAL( triggered() ), this, SLOT( sltToolSkel() ) );
 
 
 	// dock widgets
@@ -247,6 +250,9 @@ NifSkope::NifSkope() : QMainWindow()
 	mOpts->addSeparator();
 	mOpts->addAction( aCondition );
 	
+	QMenu * mTools = new QMenu( "&Tools" );
+	mTools->addAction( aToolSkel );
+	
 	QMenu * mAbout = new QMenu( "&About" );
 	mAbout->addAction( aNifSkope );
 	mAbout->addAction( aAboutQt );
@@ -254,6 +260,7 @@ NifSkope::NifSkope() : QMainWindow()
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
 	menuBar()->addMenu( mOpts );
+	menuBar()->addMenu( mTools );
 	menuBar()->addMenu( mAbout );
 }
 
@@ -770,4 +777,166 @@ int main( int argc, char * argv[] )
 
 	// start the event loop
 	return app.exec();
+}
+
+QDataStream & operator<<( QDataStream & ds, const Transform & tf )
+{
+	for ( int c = 0; c < 3; c++ )
+		ds << tf.translation[c];
+	for ( int c = 0; c < 3; c++ )
+		for ( int d = 0; d < 3; d++ )
+			ds << tf.rotation(c,d);
+	ds << tf.scale;
+	return ds;
+}
+
+QDataStream & operator>>( QDataStream & ds, Transform & tf )
+{
+	for ( int c = 0; c < 3; c++ )
+		ds >> tf.translation[c];
+	for ( int c = 0; c < 3; c++ )
+		for ( int d = 0; d < 3; d++ )
+			ds >> tf.rotation(c,d);
+	ds >> tf.scale;
+	return ds;
+}
+
+void NifSkope::sltToolSkel()
+{
+	QMap<QString, Transform> bones;
+	QMap<QString, Transform> skins;
+//#define SKEL_SAVE
+#define SKEL_RESTORE
+#ifdef SKEL_SAVE
+	for ( int b = 0; b < model->getBlockCount(); b++ )
+	{
+		QModelIndex iBlock = model->getBlock( b );
+		QString blockType = model->itemName( iBlock );
+		
+		if ( blockType == "NiNode" && model->get<QString>( iBlock, "Name" ).startsWith( "Bip01" ) )
+		{
+			qWarning() << b << model->get<QString>( iBlock, "Name" );
+			bones.insert( model->get<QString>( iBlock, "Name" ), Transform( model, iBlock ) );
+		}
+		else if ( blockType == "NiSkinInstance" )
+		{
+			qWarning() << b << blockType;
+			
+			QModelIndex iBones = model->getIndex( iBlock, "Bones" );
+			if ( iBones.isValid() )
+				iBones = model->getIndex( iBones, "Bones" );
+			
+			QList<QString> names;
+			if ( iBones.isValid() )
+			{
+				for ( int r = 0; r < model->rowCount( iBones ); r++ )
+				{
+					QModelIndex iBone = model->getBlock( model->itemValue( iBones.child( r, 0 ) ).toLink(), "NiNode" );
+					if ( iBone.isValid() )
+						names.append( model->get<QString>( iBone, "Name" ) );
+					else
+						names.append( "" );
+				}
+			}
+			
+			QModelIndex iData = model->getBlock( model->getLink( iBlock, "Data" ), "NiSkinData" );
+			if ( iData.isValid() )
+			{
+				qWarning() << b << blockType;
+				
+				QModelIndex iBones = model->getIndex( iData, "Bone List" );
+				if ( iBones.isValid() )
+				{
+					for ( int r = 0; r < model->rowCount( iBones ); r++ )
+					{
+						QString name = names.value( r );
+						if ( ! name.isEmpty() )
+						{
+							skins.insert( name, Transform( model, iBones.child( r, 0 ) ) );
+						}
+					}
+				}
+			}
+		}
+	}
+	QFile f( "f:\\nif\\skel.dat" );
+	if ( f.open( QIODevice::WriteOnly ) )
+	{
+		QDataStream ds( &f );
+		ds << bones;
+		ds << skins;
+		f.close();
+	}
+#endif
+#ifdef SKEL_RESTORE
+	QFile f( "f:\\nif\\skel.dat" );
+	if ( f.open( QIODevice::ReadOnly ) )
+	{
+		QDataStream ds( &f );
+		ds >> bones >> skins;
+		f.close();
+		qWarning() << bones.count() << skins.count();
+	}
+	
+	for ( int b = 0; b < model->getBlockCount(); b++ )
+	{
+		QModelIndex iBlock = model->getBlock( b );
+		QString blockType = model->itemName( iBlock );
+		
+		if ( blockType == "NiNode" )
+		{
+			QString name = model->get<QString>( iBlock, "Name" );
+			if ( bones.contains( name ) )
+			{
+				qWarning() << b << name;
+				model->set( iBlock, "Rotation", bones[name].rotation );
+				model->set( iBlock, "Translation", bones[name].translation );
+				model->set( iBlock, "Scale", bones[name].scale );
+			}
+		}
+		else if ( blockType == "NiSkinInstance" )
+		{
+			qWarning() << b << blockType;
+			
+			QModelIndex iBones = model->getIndex( iBlock, "Bones" );
+			if ( iBones.isValid() )
+				iBones = model->getIndex( iBones, "Bones" );
+			
+			QList<QString> names;
+			if ( iBones.isValid() )
+			{
+				for ( int r = 0; r < model->rowCount( iBones ); r++ )
+				{
+					QModelIndex iBone = model->getBlock( model->itemValue( iBones.child( r, 0 ) ).toLink(), "NiNode" );
+					if ( iBone.isValid() )
+						names.append( model->get<QString>( iBone, "Name" ) );
+					else
+						names.append( "" );
+				}
+			}
+			
+			QModelIndex iData = model->getBlock( model->getLink( iBlock, "Data" ), "NiSkinData" );
+			if ( iData.isValid() )
+			{
+				qWarning() << model->getBlockNumber( iData ) << model->itemName( iData );
+				
+				QModelIndex iBones = model->getIndex( iData, "Bone List" );
+				if ( iBones.isValid() )
+				{
+					for ( int r = 0; r < model->rowCount( iBones ); r++ )
+					{
+						QString name = names.value( r );
+						if ( skins.contains( name ) )
+						{
+							model->set( iBones.child( r, 0 ), "Rotation", skins[name].rotation );
+							model->set( iBones.child( r, 0 ), "Translation", skins[name].translation );
+							model->set( iBones.child( r, 0 ), "Scale", skins[name].scale );
+						}
+					}
+				}
+			}
+		}
+	}
+	model->reset();
+#endif
 }
