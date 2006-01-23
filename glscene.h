@@ -41,17 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Scene;
 
-class Triangle
-{
-public:
-	Triangle()
-	{ v1 = v2 = v3 = 0; depth = 0.0; }
-	Triangle( const NifModel * nif, const QModelIndex & );
-	
-	int v1, v2, v3;
-	GLfloat depth;
-};
-
 class Tristrip
 {
 public:
@@ -217,6 +206,8 @@ protected:
 	QVector<Triangle> triangles;
 	QVector<Tristrip> tristrips;
 	
+	QVector< QPair< int, float > > triOrder;
+	
 	QVector<Vector3> transVerts;
 	QVector<Vector3> transNorms;
 	
@@ -231,7 +222,7 @@ protected:
 class GLTex
 {
 public:
-	GLTex( const QModelIndex &, class Scene * );
+	GLTex( const QModelIndex & );
 	~GLTex();
 	
 	void release();
@@ -249,6 +240,8 @@ public:
 	QDateTime	loaded;
 
 	QPersistentModelIndex iPixelData;
+
+	static QStringList texfolders;
 };
 
 
@@ -267,7 +260,7 @@ public:
 	void transform( const Transform & trans, float time = 0.0 );
 	void draw();
 	
-	bool bindTexture( const QModelIndex &, GLenum filer );
+	bool bindTexture( const QModelIndex & );
 
 	QList<Mesh*> meshes;
 	QHash<int,Node*> nodes;
@@ -279,7 +272,6 @@ public:
 	float time;
 
 	bool texturing;
-	QStringList texfolders;
 	QList<GLTex*> textures;
 	
 	bool blending;

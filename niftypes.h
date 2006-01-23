@@ -313,6 +313,58 @@ protected:
 	friend class NifStream;
 };
 
+class Triangle
+{
+public:
+	Triangle() { v[0] = v[1] = v[2] = 0; }
+	
+	quint16 & operator[]( unsigned int i )
+	{
+		Q_ASSERT( i < 3 );
+		return v[i];
+	}
+	const quint16 & operator[]( unsigned int i ) const
+	{
+		Q_ASSERT( i < 3 );
+		return v[i];
+	}
+	void set( quint16 a, quint16 b, quint16 c )
+	{
+		v[0] = a; v[1] = b; v[2] = c;
+	}
+	inline quint16 v1() const { return v[0]; }
+	inline quint16 v2() const { return v[1]; }
+	inline quint16 v3() const { return v[2]; }
+	
+	Triangle operator+( quint16 d )
+	{
+		Triangle t( *this );
+		t.v[0] += d;
+		t.v[1] += d;
+		t.v[2] += d;
+		return t;
+	}
+
+	int edge( quint32 v0, quint32 v1 ) const
+	{
+				if ( ( v[0] == v0 && v[1] == v1 ) || ( v[0] == v1 && v[1] == v0 ) ) return 0;
+		else	if ( ( v[1] == v0 && v[2] == v1 ) || ( v[1] == v1 && v[2] == v0 ) ) return 1;
+		else	if ( ( v[0] == v0 && v[2] == v1 ) || ( v[0] == v1 && v[2] == v0 ) ) return 2;
+		return -1;
+	}
+	int opposite( quint32 v0, quint32 v1 ) const
+	{
+				if ( ( v[0] == v0 && v[1] == v1 ) || ( v[0] == v1 && v[1] == v0 ) ) return v[2];
+		else	if ( ( v[1] == v0 && v[2] == v1 ) || ( v[1] == v1 && v[2] == v0 ) ) return v[0];
+		else	if ( ( v[0] == v0 && v[2] == v1 ) || ( v[0] == v1 && v[2] == v0 ) ) return v[1];
+		return -1;
+	}
+	
+protected:
+	quint16 v[3];
+	friend class NifStream;
+};
+
 class Color3
 {
 public:
@@ -442,6 +494,7 @@ public:
 		tVector2 = 14,
 		tByteArray = 15,
 		tVersion = 16,
+		tTriangle = 17,
 		
 		tNone = 0xff
 	};
@@ -479,6 +532,7 @@ public:
 	bool isVector2() const { return typ == tVector2; }
 	bool isByteArray() const { return typ == tByteArray; }
 	bool isVersion() const { return typ == tVersion; }
+	bool isTriangle() const { return typ == tTriangle; }
 	
 	QColor toColor() const;
 	quint32 toCount() const;
@@ -564,7 +618,9 @@ template <> inline Color3 NifValue::get() const { return getType<Color3>( tColor
 template <> inline Color4 NifValue::get() const { return getType<Color4>( tColor4 ); }
 template <> inline QString NifValue::get() const { return getType<QString>( tString ); }
 template <> inline QByteArray NifValue::get() const { return getType<QByteArray>( tByteArray ); }
+template <> inline Triangle NifValue::get() const { return getType<Triangle>( tTriangle ); }
 
+template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
 template <> inline bool NifValue::set( const Quat & x ) { return setType( tQuat, x ); }
@@ -574,6 +630,7 @@ template <> inline bool NifValue::set( const Color3 & x ) { return setType( tCol
 template <> inline bool NifValue::set( const Color4 & x ) { return setType( tColor4, x ); }
 template <> inline bool NifValue::set( const QString & x ) { return setType( tString, x ); }
 template <> inline bool NifValue::set( const QByteArray & x ) { return setType( tByteArray, x ); }
+template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
 
 class NifStream
 {

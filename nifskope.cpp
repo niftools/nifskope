@@ -49,10 +49,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
-#include <QRadioButton>
 #include <QSettings>
 #include <QSlider>
-#include <QSplitter>
 #include <QTextEdit>
 #include <QTimer>
 #include <QToolButton>
@@ -66,6 +64,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glview.h"
 #include "popup.h"
+#include "spellbook.h"
 
 /*
  * main GUI window
@@ -250,9 +249,6 @@ NifSkope::NifSkope() : QMainWindow()
 	mOpts->addSeparator();
 	mOpts->addAction( aCondition );
 	
-	QMenu * mTools = new QMenu( "&Tools" );
-	mTools->addAction( aToolSkel );
-	
 	QMenu * mAbout = new QMenu( "&About" );
 	mAbout->addAction( aNifSkope );
 	mAbout->addAction( aAboutQt );
@@ -260,7 +256,7 @@ NifSkope::NifSkope() : QMainWindow()
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
 	menuBar()->addMenu( mOpts );
-	menuBar()->addMenu( mTools );
+	menuBar()->addMenu( new SpellBook( model, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) ) );
 	menuBar()->addMenu( mAbout );
 }
 
@@ -353,31 +349,6 @@ void NifSkope::about()
     mb.exec();
 }
 
-void NifSkope::setCurrentBlock( const QModelIndex & index )
-{
-	QModelIndex block = index;
-	if ( block.model() == proxy )
-		block = proxy->mapTo( index );
-	
-	if ( list->isVisible() )
-	{
-		if ( list->model() == proxy )
-		{
-			QModelIndex pidx = proxy->mapFrom( block, list->currentIndex() );
-			list->setCurrentIndexExpanded( pidx );
-		}
-		else
-			list->setCurrentIndexExpanded( block );
-		tree->setRootIndex( block );
-	}
-	else
-	{
-		tree->setCurrentIndexExpanded( block );
-	}
-	
-	ogl->setCurrentIndex( block );
-}
-
 void NifSkope::contextMenu( const QPoint & pos )
 {
 	QModelIndex idx;
@@ -396,177 +367,8 @@ void NifSkope::contextMenu( const QPoint & pos )
 	if ( idx.model() == proxy )
 		idx = proxy->mapTo( idx );
 	
-	QMenu * menu = new QMenu( this );
-	
-	int link = model->itemLink( idx );
-	{
-		QAction * a = menu->addAction( "Follow Link" );
-		a->setEnabled( link >= 0 );
-		menu->addSeparator();
-	}
-
-	{
-		QMenu * m = new QMenu( "Insert Block" );
-		QStringList ids = model->allNiBlocks();
-		ids.sort();
-		foreach( QString x, ids )
-			m->addAction( x );
-		menu->addMenu( m );
-	}
-	
-	if ( model->getBlockNumber( idx ) >= 0 )
-	{
-		menu->addAction( "Remove Block" );
-	}
-	else
-	{
-		menu->addSeparator();
-		menu->addAction( "Update Header" );
-	}
-	
-	if ( ! model->itemArr1( idx ).isEmpty() )
-	{
-		menu->addSeparator();
-		QAction * a = menu->addAction( "Update Array" );
-		a->setEnabled( model->evalCondition( idx, true ) );
-	}
-	
-	if ( sender() == list && list->model() == proxy )
-	{
-		menu->addSeparator();
-		menu->addAction( "Expand All" );
-		menu->addAction( "Collapse All" );
-	}
-	
-	if ( idx.isValid() && model->isCompound( model->itemType( idx ) ) )
-	{
-		menu->addSeparator();
-		menu->addAction( "Copy" );
-		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime )
-		{
-			foreach ( QString form, mime->formats() )
-			{
-				if ( form.startsWith( "nifskope/compound/" ) )
-				{
-					QString type = form.right( form.length() - 18 );
-					if ( type == model->itemType( idx ) )
-					{
-						menu->addAction( "Paste" );
-					}
-				}
-			}
-		}
-	}
-	
-	if ( idx.isValid() && model->itemType( idx ) == "NiBlock" && model->isNiBlock( model->itemName( idx ) ) )
-	{
-		menu->addSeparator();
-		menu->addAction( "Copy" );
-		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime )
-		{
-			foreach ( QString form, mime->formats() )
-			{
-				if ( form.startsWith( "nifskope/niblock/" ) )
-				{
-					QString name = form.right( form.length() - 17 );
-					if ( name == model->itemName( idx ) )
-					{
-						menu->addAction( "Paste" );
-					}
-				}
-			}
-		}
-	}
-	
-	QAction * a = menu->exec( p );
-	if ( a ) 
-	{
-		if ( a->text() == "Follow Link" )
-		{
-			setCurrentBlock( model->getBlock( link ) );
-		}
-		else if ( a->text() == "Update Header" )
-		{
-			model->updateHeader();
-		}
-		else if ( a->text() == "Update Array" )
-		{
-			model->updateArray( idx );
-		}
-		else if ( a->text() == "Expand All" )
-		{
-			list->setAllExpanded( QModelIndex(), true );
-		}
-		else if ( a->text() == "Collapse All" )
-		{
-			list->setAllExpanded( QModelIndex(), false );
-		}
-		else if ( a->text() == "Remove Block" )
-		{
-			model->removeNiBlock( model->getBlockNumber( idx ) );
-			model->updateHeader();
-		}
-		else if ( a->text() == "Copy" )
-		{
-			QByteArray data;
-			QBuffer buffer( & data );
-			if ( buffer.open( QIODevice::WriteOnly ) && model->save( buffer, idx ) )
-			{
-				QMimeData * mime = new QMimeData;
-				if ( model->isCompound( model->itemType( idx ) ) )
-					mime->setData( QString( "nifskope/compound/%1" ).arg( model->itemType( idx ) ), data );
-				else
-					mime->setData( QString( "nifskope/niblock/%1" ).arg( model->itemName( idx ) ), data );
-				QApplication::clipboard()->setMimeData( mime );
-			}
-		}
-		else if ( a->text() == "Paste" )
-		{
-			const QMimeData * mime = QApplication::clipboard()->mimeData();
-			if ( mime )
-			{
-				foreach ( QString form, mime->formats() )
-				{
-					if ( form.startsWith( "nifskope/compound/" ) )
-					{
-						QString type = form.right( form.length() - 18 );
-						if ( type == model->itemType( idx ) )
-						{
-							QByteArray data = mime->data( form );
-							QBuffer buffer( & data );
-							if ( buffer.open( QIODevice::ReadOnly ) )
-							{
-								model->load( buffer, idx );
-							}
-						}
-						break;
-					}
-					else if ( form.startsWith( "nifskope/niblock/" ) )
-					{
-						QString name = form.right( form.length() - 17 );
-						if ( name == model->itemName( idx ) && model->itemType( idx ) == "NiBlock" )
-						{
-							QByteArray data = mime->data( form );
-							QBuffer buffer( & data );
-							if ( buffer.open( QIODevice::ReadOnly ) )
-							{
-								model->load( buffer, idx );
-							}
-						}
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			model->insertNiBlock( a->text(), model->getBlockNumber( idx )+1 );
-			model->updateHeader();
-		}
-	}
-	delete menu;
+	SpellBook book( model, idx, this, SLOT( select( const QModelIndex & ) ) );
+	book.exec( p );
 }
 
 void NifSkope::clearRoot()
@@ -579,36 +381,45 @@ void NifSkope::clearRoot()
 
 void NifSkope::select( const QModelIndex & index )
 {
-	if ( ! index.isValid() ) return;
+	QModelIndex idx = index;
 	
-	if ( sender() == list )
+	if ( idx.model() == proxy )
+		idx = proxy->mapTo( index );
+	
+	if ( ! idx.isValid() || idx.model() != model ) return;
+	
+	if ( sender() != ogl )
 	{
-		QModelIndex root = index;
-		if ( index.model() == proxy )
-			root = proxy->mapTo( index );
-		if ( root.isValid() && root.column() != 0 )
-			root = root.sibling( root.row(), 0 );
-		tree->setRootIndex( root );
-		ogl->setCurrentIndex( root );
+		ogl->setCurrentIndex( idx );
 	}
-	else if ( sender() == ogl )
+
+	if ( sender() != list )
 	{
 		if ( list->model() == proxy )
 		{
-			QModelIndex pidx = proxy->mapFrom( index, QModelIndex() );
+			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() ); //list->currentIndex() );
 			list->setCurrentIndexExpanded( pidx );
 		}
 		else if ( list->model() == model )
-			list->setCurrentIndexExpanded( index );
-		
-		if ( list->isVisible() )
-			tree->setRootIndex( index );
-		else
-			tree->setCurrentIndexExpanded( index );
+		{
+			list->setCurrentIndexExpanded( idx );
+		}
 	}
-	else if ( sender() == tree )
+	
+	if ( sender() != tree )
 	{
-		ogl->setCurrentIndex( index );
+		if ( dList->isVisible() )
+		{
+			QModelIndex tidx = idx;
+			while ( tidx.parent().isValid() )
+				tidx = tidx.parent();
+			tree->setRootIndex( tidx );
+		}
+		else
+		{
+			tree->setRootIndex( QModelIndex() );
+			tree->setCurrentIndexExpanded( idx );
+		}
 	}
 }
 
@@ -779,164 +590,7 @@ int main( int argc, char * argv[] )
 	return app.exec();
 }
 
-QDataStream & operator<<( QDataStream & ds, const Transform & tf )
-{
-	for ( int c = 0; c < 3; c++ )
-		ds << tf.translation[c];
-	for ( int c = 0; c < 3; c++ )
-		for ( int d = 0; d < 3; d++ )
-			ds << tf.rotation(c,d);
-	ds << tf.scale;
-	return ds;
-}
-
-QDataStream & operator>>( QDataStream & ds, Transform & tf )
-{
-	for ( int c = 0; c < 3; c++ )
-		ds >> tf.translation[c];
-	for ( int c = 0; c < 3; c++ )
-		for ( int d = 0; d < 3; d++ )
-			ds >> tf.rotation(c,d);
-	ds >> tf.scale;
-	return ds;
-}
-
 void NifSkope::sltToolSkel()
+
 {
-	QMap<QString, Transform> bones;
-	QMap<QString, Transform> skins;
-//#define SKEL_SAVE
-#define SKEL_RESTORE
-#ifdef SKEL_SAVE
-	for ( int b = 0; b < model->getBlockCount(); b++ )
-	{
-		QModelIndex iBlock = model->getBlock( b );
-		QString blockType = model->itemName( iBlock );
-		
-		if ( blockType == "NiNode" && model->get<QString>( iBlock, "Name" ).startsWith( "Bip01" ) )
-		{
-			qWarning() << b << model->get<QString>( iBlock, "Name" );
-			bones.insert( model->get<QString>( iBlock, "Name" ), Transform( model, iBlock ) );
-		}
-		else if ( blockType == "NiSkinInstance" )
-		{
-			qWarning() << b << blockType;
-			
-			QModelIndex iBones = model->getIndex( iBlock, "Bones" );
-			if ( iBones.isValid() )
-				iBones = model->getIndex( iBones, "Bones" );
-			
-			QList<QString> names;
-			if ( iBones.isValid() )
-			{
-				for ( int r = 0; r < model->rowCount( iBones ); r++ )
-				{
-					QModelIndex iBone = model->getBlock( model->itemValue( iBones.child( r, 0 ) ).toLink(), "NiNode" );
-					if ( iBone.isValid() )
-						names.append( model->get<QString>( iBone, "Name" ) );
-					else
-						names.append( "" );
-				}
-			}
-			
-			QModelIndex iData = model->getBlock( model->getLink( iBlock, "Data" ), "NiSkinData" );
-			if ( iData.isValid() )
-			{
-				qWarning() << b << blockType;
-				
-				QModelIndex iBones = model->getIndex( iData, "Bone List" );
-				if ( iBones.isValid() )
-				{
-					for ( int r = 0; r < model->rowCount( iBones ); r++ )
-					{
-						QString name = names.value( r );
-						if ( ! name.isEmpty() )
-						{
-							skins.insert( name, Transform( model, iBones.child( r, 0 ) ) );
-						}
-					}
-				}
-			}
-		}
-	}
-	QFile f( "f:\\nif\\skel.dat" );
-	if ( f.open( QIODevice::WriteOnly ) )
-	{
-		QDataStream ds( &f );
-		ds << bones;
-		ds << skins;
-		f.close();
-	}
-#endif
-#ifdef SKEL_RESTORE
-	QFile f( "f:\\nif\\skel.dat" );
-	if ( f.open( QIODevice::ReadOnly ) )
-	{
-		QDataStream ds( &f );
-		ds >> bones >> skins;
-		f.close();
-		qWarning() << bones.count() << skins.count();
-	}
-	
-	for ( int b = 0; b < model->getBlockCount(); b++ )
-	{
-		QModelIndex iBlock = model->getBlock( b );
-		QString blockType = model->itemName( iBlock );
-		
-		if ( blockType == "NiNode" )
-		{
-			QString name = model->get<QString>( iBlock, "Name" );
-			if ( bones.contains( name ) )
-			{
-				qWarning() << b << name;
-				model->set( iBlock, "Rotation", bones[name].rotation );
-				model->set( iBlock, "Translation", bones[name].translation );
-				model->set( iBlock, "Scale", bones[name].scale );
-			}
-		}
-		else if ( blockType == "NiSkinInstance" )
-		{
-			qWarning() << b << blockType;
-			
-			QModelIndex iBones = model->getIndex( iBlock, "Bones" );
-			if ( iBones.isValid() )
-				iBones = model->getIndex( iBones, "Bones" );
-			
-			QList<QString> names;
-			if ( iBones.isValid() )
-			{
-				for ( int r = 0; r < model->rowCount( iBones ); r++ )
-				{
-					QModelIndex iBone = model->getBlock( model->itemValue( iBones.child( r, 0 ) ).toLink(), "NiNode" );
-					if ( iBone.isValid() )
-						names.append( model->get<QString>( iBone, "Name" ) );
-					else
-						names.append( "" );
-				}
-			}
-			
-			QModelIndex iData = model->getBlock( model->getLink( iBlock, "Data" ), "NiSkinData" );
-			if ( iData.isValid() )
-			{
-				qWarning() << model->getBlockNumber( iData ) << model->itemName( iData );
-				
-				QModelIndex iBones = model->getIndex( iData, "Bone List" );
-				if ( iBones.isValid() )
-				{
-					for ( int r = 0; r < model->rowCount( iBones ); r++ )
-					{
-						QString name = names.value( r );
-						if ( skins.contains( name ) )
-						{
-							model->set( iBones.child( r, 0 ), "Rotation", skins[name].rotation );
-							model->set( iBones.child( r, 0 ), "Translation", skins[name].translation );
-							model->set( iBones.child( r, 0 ), "Scale", skins[name].scale );
-						}
-					}
-				}
-			}
-		}
-	}
-	model->reset();
-#endif
 }

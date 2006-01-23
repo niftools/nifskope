@@ -68,14 +68,6 @@ inline void glMaterial( GLenum x, GLenum y, const Color4 & c )
 }
 
 
-Triangle::Triangle( const NifModel * nif, const QModelIndex & triangle )
-{
-	if ( !triangle.isValid() )		{	v1 = v2 = v3 = 0; return;	}
-	v1 = nif->get<int>( triangle, "v1" );
-	v2 = nif->get<int>( triangle, "v2" );
-	v3 = nif->get<int>( triangle, "v3" );
-}
-
 Tristrip::Tristrip( const NifModel * nif, const QModelIndex & tristrip )
 {
 	if ( ! tristrip.isValid() ) return;
@@ -198,7 +190,7 @@ bool Node::make()
 	
 	nodeId = nif->getBlockNumber( iBlock );
 
-	flags.bits = nif->getInt( iBlock, "Flags" ) & 1;
+	flags.bits = nif->get<int>( iBlock, "Flags" ) & 1;
 
 	local = Transform( nif, iBlock );
 	worldDirty = true;
@@ -216,7 +208,7 @@ bool Node::make()
 			do
 			{
 				setController( nif, iChild );
-				iChild = nif->getBlock( nif->getInt( iChild, "Next Controller" ) );
+				iChild = nif->getBlock( nif->getLink( iChild, "Next Controller" ) );
 			}
 			while ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "AController" ) );
 		}
@@ -254,7 +246,7 @@ void Node::setProperty( const NifModel * nif, const QModelIndex & property )
 	if ( propname == "NiZBufferProperty" )
 	{
 		blocks.append( QPersistentModelIndex( property ) );
-		int flags = nif->getInt( property, "Flags" );
+		int flags = nif->get<int>( property, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
 	}
@@ -464,7 +456,7 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 			if ( idxTriangles.isValid() )
 			{
 				for ( int r = 0; r < nif->rowCount( idxTriangles ); r++ )
-					triangles.append( Triangle( nif, idxTriangles.child( r, 0 ) ) );
+					triangles.append( nif->itemData<Triangle>( idxTriangles.child( r, 0 ) ) );
 			}
 			else
 				qWarning() << nif->itemName( special ) << "(" << nif->getBlockNumber( special ) << ") triangle array not found";
@@ -619,9 +611,9 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & controller )
 		Node::setController( nif, controller );
 }
 
-bool compareTriangles( const Triangle & tri1, const Triangle & tri2 )
+bool compareTriangles( const QPair< int, float > & tri1, const QPair< int, float > & tri2 )
 {
-	return ( tri1.depth < tri2.depth );
+	return ( tri1.second < tri2.second );
 }
 
 void Mesh::transform()
@@ -676,13 +668,19 @@ void Mesh::transform()
 	
 	if ( alphaEnable )
 	{
-		for ( int t = 0; t < triangles.count(); t++ )
+		triOrder.resize( triangles.count() );
+		int t = 0;
+		foreach ( Triangle tri, triangles )
 		{
-			Triangle tri = triangles[t];
-			triangles[t].depth = transVerts[tri.v1][2] + transVerts[tri.v2][2] + transVerts[tri.v3][2];
+			QPair< int, float > tp;
+			tp.first = t;
+			tp.second = transVerts[tri.v1()][2] + transVerts[tri.v2()][2] + transVerts[tri.v3()][2];
+			triOrder[t++] = tp;
 		}
-		qStableSort( triangles.begin(), triangles.end(), compareTriangles );
+		qStableSort( triOrder.begin(), triOrder.end(), compareTriangles );
 	}
+	else
+		triOrder.resize( 0 );
 }
 
 void Mesh::boundaries( Vector3 & min, Vector3 & max )
@@ -730,7 +728,7 @@ void Mesh::draw( bool selected )
 
 	// setup texturing
 	
-	if ( scene->texturing && uvs.count() && scene->bindTexture( iBaseTex, texFilter ) )
+	if ( scene->texturing && uvs.count() && scene->bindTexture( iBaseTex ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -783,22 +781,24 @@ void Mesh::draw( bool selected )
 	if ( triangles.count() > 0 )
 	{
 		glBegin( GL_TRIANGLES );
-		foreach ( Triangle tri, triangles )
+		for ( int t = 0; t < triangles.count(); t++ )
 		{
-			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
+			const Triangle & tri = ( triOrder.count() ? triangles[ triOrder[ t ].first ] : triangles[ t ] );
+			
+			if ( transVerts.count() > tri.v1() && transVerts.count() > tri.v2() && transVerts.count() > tri.v3() )
 			{
-				if ( transNorms.count() > tri.v1 ) glNormal( transNorms[tri.v1] );
-				if ( uvs.count() > tri.v1 ) glTexCoord( uvs[tri.v1] + texOffset );
-				if ( colors.count() > tri.v1 ) glColor( colors[tri.v1].blend( alpha ) );
-				glVertex( transVerts[tri.v1] );
-				if ( transNorms.count() > tri.v2 ) glNormal( transNorms[tri.v2] );
-				if ( uvs.count() > tri.v2 ) glTexCoord( uvs[tri.v2] + texOffset );
-				if ( colors.count() > tri.v2 ) glColor( colors[tri.v2].blend( alpha ) );
-				glVertex( transVerts[tri.v2] );
-				if ( transNorms.count() > tri.v3 ) glNormal( transNorms[tri.v3] );
-				if ( uvs.count() > tri.v3 ) glTexCoord( uvs[tri.v3] + texOffset );
-				if ( colors.count() > tri.v3 ) glColor( colors[tri.v3].blend( alpha ) );
-				glVertex( transVerts[tri.v3] );
+				if ( transNorms.count() > tri.v1() ) glNormal( transNorms[tri.v1()] );
+				if ( uvs.count() > tri.v1() ) glTexCoord( uvs[tri.v1()] + texOffset );
+				if ( colors.count() > tri.v1() ) glColor( colors[tri.v1()].blend( alpha ) );
+				glVertex( transVerts[tri.v1()] );
+				if ( transNorms.count() > tri.v2() ) glNormal( transNorms[tri.v2()] );
+				if ( uvs.count() > tri.v2() ) glTexCoord( uvs[tri.v2()] + texOffset );
+				if ( colors.count() > tri.v2() ) glColor( colors[tri.v2()].blend( alpha ) );
+				glVertex( transVerts[tri.v2()] );
+				if ( transNorms.count() > tri.v3() ) glNormal( transNorms[tri.v3()] );
+				if ( uvs.count() > tri.v3() ) glTexCoord( uvs[tri.v3()] + texOffset );
+				if ( colors.count() > tri.v3() ) glColor( colors[tri.v3()].blend( alpha ) );
+				glVertex( transVerts[tri.v3()] );
 			}
 		}
 		glEnd();
@@ -836,13 +836,13 @@ void Mesh::draw( bool selected )
 		
 		foreach ( Triangle tri, triangles )
 		{
-			if ( transVerts.count() > tri.v1 && transVerts.count() > tri.v2 && transVerts.count() > tri.v3 )
+			if ( transVerts.count() > tri.v1() && transVerts.count() > tri.v2() && transVerts.count() > tri.v3() )
 			{
 				glBegin( GL_LINE_STRIP );
-				glVertex( transVerts[tri.v1] );
-				glVertex( transVerts[tri.v2] );
-				glVertex( transVerts[tri.v3] );
-				glVertex( transVerts[tri.v1] );
+				glVertex( transVerts[tri.v1()] );
+				glVertex( transVerts[tri.v2()] );
+				glVertex( transVerts[tri.v3()] );
+				glVertex( transVerts[tri.v1()] );
 				glEnd();
 			}
 		}

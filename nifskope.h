@@ -82,7 +82,6 @@ public slots:
 protected slots:
 	void clearRoot();
 	void select( const QModelIndex & );
-	void setCurrentBlock( const QModelIndex & );
 	
 	void setListMode();
 	

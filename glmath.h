@@ -22,6 +22,13 @@ public:
 		scale = 1.0;
 	}
 	
+	void writeBack( NifModel * nif, const QModelIndex & transform )
+	{
+		nif->set<Matrix>( transform, "Rotation", rotation );
+		nif->set<Vector3>( transform, "Translation", translation );
+		nif->set<float>( transform, "Scale", scale );
+	}
+	
 	Transform operator*( const Transform & m ) const
 	{
 		Transform t;

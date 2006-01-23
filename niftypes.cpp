@@ -187,6 +187,7 @@ void NifValue::initialize()
 	typeMap.insert( "vector2", NifValue::tVector2 );
 	typeMap.insert( "bytearray", NifValue::tByteArray );
 	typeMap.insert( "version", NifValue::tVersion );
+	typeMap.insert( "triangle", NifValue::tTriangle );
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -257,6 +258,9 @@ void NifValue::clear()
 		case tByteArray:
 			delete static_cast<QByteArray*>( val.data );
 			break;
+		case tTriangle:
+			delete static_cast<Triangle*>( val.data );
+			break;
 		default:
 			break;
 	}
@@ -302,6 +306,9 @@ void NifValue::changeType( Type t )
 		case tByteArray:
 			val.data = new QByteArray();
 			return;
+		case tTriangle:
+			val.data = new Triangle();
+			return;
 		default:
 			val.u32 = 0;
 			return;
@@ -338,6 +345,9 @@ void NifValue::operator=( const NifValue & other )
 			return;
 		case tByteArray:
 			*static_cast<QByteArray*>( val.data ) = *static_cast<QByteArray*>( other.val.data );
+			return;
+		case tTriangle:
+			*static_cast<Triangle*>( val.data ) = *static_cast<Triangle*>( other.val.data );
 			return;
 		default:
 			val = other.val;
@@ -417,6 +427,7 @@ bool NifValue::fromString( const QString & s )
 		case tVector3:
 		case tQuat:
 		case tMatrix:
+		case tTriangle:
 		case tNone:
 			return false;
 	}
@@ -485,6 +496,11 @@ QString NifValue::toString() const
 			return QString( "%1 bytes" ).arg( static_cast<QByteArray*>( val.data )->count() );
 		case tVersion:
 			return NifModel::version2string( val.u32 );
+		case tTriangle:
+		{
+			Triangle * tri = static_cast<Triangle*>( val.data );
+			return QString( "V1 %1 V2 %2 V3 %3" ).arg( tri->v1() ).arg( tri->v2() ).arg( tri->v3() );
+		}
 		default:
 			return QString();
 	}
@@ -528,6 +544,8 @@ bool NifStream::read( NifValue & val )
 			return device->read( (char *) &val.val.f32, 4 ) == 4;
 		case NifValue::tVector3:
 			return device->read( (char *) static_cast<Vector3*>( val.val.data )->xyz, 12 ) == 12;
+		case NifValue::tTriangle:
+			return device->read( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
 		case NifValue::tQuat:
 			return device->read( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
 		case NifValue::tMatrix:
@@ -587,6 +605,8 @@ bool NifStream::write( const NifValue & val )
 			return device->write( (char *) &val.val.f32, 4 ) == 4;
 		case NifValue::tVector3:
 			return device->write( (char *) static_cast<Vector3*>( val.val.data )->xyz, 12 ) == 12;
+		case NifValue::tTriangle:
+			return device->write( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
 		case NifValue::tQuat:
 			return device->write( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
 		case NifValue::tMatrix:

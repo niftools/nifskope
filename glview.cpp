@@ -238,21 +238,12 @@ void GLView::paintGL()
 		doCompile = false;
 	}
 	
-	// center the model
+	// reset rotation
 	
 	if ( doCenter )
 	{
-		xTrans = 0;
-		yTrans = - scene->boundCenter[1];
-		
 		xRot = - 90*16;
 		yRot = 0;
-		
-		zoom = 1.0;
-		
-		doCenter = false;
-		
-		radius = 0.0;
 	}
 	
 	// transform the scene
@@ -261,6 +252,20 @@ void GLView::paintGL()
 	viewTrans.rotation.fromEuler( xRot / 16.0 / 180 * PI, yRot / 16.0 / 180 * PI, zRot / 16.0 / 180 * PI );
 	
 	scene->transform( viewTrans, time );
+	
+	// center the model
+	
+	if ( doCenter )
+	{
+		xTrans = 0;
+		yTrans = - scene->boundCenter[1] * 20;
+		
+		zoom = 1.0;
+		
+		doCenter = false;
+		
+		radius = 0.0;
+	}
 	
 	// setup projection mode
 
@@ -446,25 +451,25 @@ void GLView::sltFrame( int f )
 void GLView::selectTexFolder()
 {
 	//QString tf = QFileDialog::getExistingDirectory( this, "select texture folder", textureFolder() );
-	setTextureFolder( selectMultipleDirs( "select texture folders", scene->texfolders, this ).join( ";" ) );
+	setTextureFolder( selectMultipleDirs( "select texture folders", GLTex::texfolders, this ).join( ";" ) );
 }
 
 void GLView::setTextureFolder( const QString & tf )
 {
-	scene->texfolders = tf.split( ";" );
+	GLTex::texfolders = tf.split( ";" );
 	doCompile = true;
 	update();
 }
 
 QString GLView::textureFolder() const
 {
-	return scene->texfolders.join( ";" );
+	return GLTex::texfolders.join( ";" );
 }
 
 void GLView::save( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	settings.setValue( "texture folder", scene->texfolders.join( ";" ) );
+	settings.setValue( "texture folder", GLTex::texfolders.join( ";" ) );
 	settings.setValue( "enable textures", aTexturing->isChecked() );
 	settings.setValue( "enable lighting", aLighting->isChecked() );
 	settings.setValue( "enable blending", aBlending->isChecked() );
@@ -481,14 +486,14 @@ void GLView::save( QSettings & settings )
 void GLView::restore( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	scene->texfolders = settings.value( "texture folder" ).toString().split( ";" );
+	GLTex::texfolders = settings.value( "texture folder" ).toString().split( ";" );
 	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
 	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
 	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
 	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
-	aDrawAxis->setChecked( settings.value( "draw axis", true ).toBool() );
-	aDrawNodes->setChecked( settings.value( "draw nodes", true ).toBool() );
-	aDrawHidden->setChecked( settings.value( "draw hidden", true ).toBool() );
+	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );
+	aDrawNodes->setChecked( settings.value( "draw nodes", false ).toBool() );
+	aDrawHidden->setChecked( settings.value( "draw hidden", false ).toBool() );
 	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
@@ -621,6 +626,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 void GLView::mouseDoubleClickEvent( QMouseEvent * )
 {
 	doCompile = true;
+	doCenter = true;
 	update();
 }
 

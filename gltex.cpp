@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <GL/glext.h>
 
+QStringList GLTex::texfolders;
+
 #ifndef APIENTRY
 # define APIENTRY
 #endif
@@ -82,7 +84,7 @@ GLuint texLoadTGA( const QString & filepath );
 GLuint texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
 
 
-bool Scene::bindTexture( const QModelIndex & index, GLenum filter )
+bool Scene::bindTexture( const QModelIndex & index )
 {
 	if ( ! index.isValid() )
 		return false;
@@ -100,7 +102,7 @@ bool Scene::bindTexture( const QModelIndex & index, GLenum filter )
 		}
 	}
 	
-	GLTex * tex = new GLTex( index, this );
+	GLTex * tex = new GLTex( index );
 	textures.append( tex );
 	
 	if ( tex->id )
@@ -112,7 +114,7 @@ bool Scene::bindTexture( const QModelIndex & index, GLenum filter )
 	return false;
 }
 
-GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( index )
+GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
 {
 	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
 	if ( iSource.isValid() && nif )
@@ -130,7 +132,7 @@ GLTex::GLTex( const QModelIndex & index, Scene * scene ) : id( 0 ), iSource( ind
 				
 				// attempt to find the texture in one of the folders
 				QDir dir;
-				foreach ( QString folder, scene->texfolders )
+				foreach ( QString folder, texfolders )
 				{
 					dir.setPath( folder );
 					if ( dir.exists( filename ) )
@@ -259,10 +261,9 @@ void generateMipMaps( int w, int h )
 			{
 				for ( int b = 0; b < 4; b++ )
 				{
-					*dst++ = ( *(src) + *(src+xo) + *(src+yo) + *(src+xo+yo) ) / 4;
-					src++;
+					*dst++ = ( *(src+xo) + *(src+yo) + *(src+xo+yo) + *src++ ) / 4;
 				}
-				src += 4;
+				src += xo;
 			}
 			src += yo;
 		}

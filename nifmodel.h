@@ -262,7 +262,8 @@ public:
 	bool load( QIODevice & device, const QModelIndex & );
 	bool save( QIODevice & device, const QModelIndex & );
 	
-
+	QString getVersion() const { return version2string( version ); }
+	
 	// returns the model index of the NiHeader
 	QModelIndex getHeader() const;
 	// this updates the header infos ( num blocks etc. )
@@ -270,7 +271,7 @@ public:
 	
 
 	// insert or append ( row == -1 ) a new NiBlock
-	void insertNiBlock( const QString & identifier, int row = -1, bool fast = false );
+	QModelIndex insertNiBlock( const QString & identifier, int row = -1, bool fast = false );
 	// remove a block from the list
 	void removeNiBlock( int blocknum );
 	// returns the block number
@@ -293,7 +294,18 @@ public:
 	// return the list of block links
 	QList<int> getChildLinks( int block ) const;
 	QList<int> getParentLinks( int block ) const;
+	// return the parent block number or none (-1) if there is no parent or if there are more than one parents
+	int getParent( int block ) const;
 
+	int getLink( const QModelIndex & parent, const QString & name ) const;
+	bool setLink( const QModelIndex & parent, const QString & name, qint32 l );
+	bool setLink( const QModelIndex & index, qint32 l );
+
+	// is it a child or parent link?
+	bool	itemIsLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
+	// this returns a block number if the index is a valid link
+	qint32	itemLink( const QModelIndex & index ) const;
+	
 
 	// this updates an array ( append or remove items )
 	bool updateArray( const QModelIndex & array, bool fast = false );
@@ -330,15 +342,6 @@ public:
 	// find an item named name and return the coresponding value
 	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
 	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-	
-	// same as getValue but converts the data to the requested type
-	int getInt( const QModelIndex & parent, const QString & nameornumber ) const;
-	int getLink( const QModelIndex & parent, const QString & name ) const;
-
-	// is it a child or parent link?
-	bool	itemIsLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
-	// this returns a block number if the index is a valid link
-	qint32	itemLink( const QModelIndex & index ) const;
 	
 
 	// find a branch by name
@@ -551,21 +554,20 @@ template <typename T> inline T NifModel::itemData( const QModelIndex & index ) c
 
 template <typename T> inline bool NifModel::setItemData( NifItem * item, const T & d )
 {
-	bool r = item->value().set( d );
-	emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
-	if ( itemIsLink( item ) )
+	if ( item->value().set( d ) )
 	{
-		updateLinks();
-		emit linksChanged();
+		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+		return true;
 	}
-	return r;
+	else
+		return false;
 }
 
 template <typename T> inline bool NifModel::setItemData( const QModelIndex & index, const T & d )
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item && index.model() == this ) )	return false;
-	return setItemData( index, d );
+	return setItemData( item, d );
 }
 
 #endif
