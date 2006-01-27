@@ -35,11 +35,53 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
-#include "glmath.h"
-
 #include "nifmodel.h"
 
 class Scene;
+
+class Transform
+{
+public:
+	Transform( const NifModel * nif, const QModelIndex & transform )
+	{
+		rotation = nif->get<Matrix>( transform, "Rotation" );
+		translation = nif->get<Vector3>( transform, "Translation" );
+		scale = nif->get<float>( transform, "Scale" );
+	}
+	
+	Transform()
+	{
+		scale = 1.0;
+	}
+	
+	void writeBack( NifModel * nif, const QModelIndex & transform ) const
+	{
+		nif->set<Matrix>( transform, "Rotation", rotation );
+		nif->set<Vector3>( transform, "Translation", translation );
+		nif->set<float>( transform, "Scale", scale );
+	}
+	
+	Transform operator*( const Transform & m ) const
+	{
+		Transform t;
+		t.translation = rotation * m.translation + translation * m.scale;
+		t.rotation = rotation * m.rotation;
+		t.scale = m.scale * scale;
+		return t;
+	}
+	
+	Vector3 operator*( const Vector3 & v ) const
+	{
+		return rotation * v * scale + translation;
+	}
+	
+	void glMultMatrix() const;
+	void glLoadMatrix() const;
+
+	Matrix rotation;
+	Vector3 translation;
+	GLfloat scale;
+};
 
 class Tristrip
 {
@@ -229,6 +271,10 @@ public:
 
 	static void initialize( const QGLContext * context );
 	
+	static QString findFile( const QString & file );
+	
+	bool exportFile( const QString & file );
+
 	GLuint		id;
 
 	QPersistentModelIndex iSource;
@@ -242,6 +288,9 @@ public:
 	QPersistentModelIndex iPixelData;
 
 	static QStringList texfolders;
+
+private:
+	static QIcon * icon;
 };
 
 

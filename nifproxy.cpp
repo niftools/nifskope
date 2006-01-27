@@ -150,22 +150,22 @@ public:
 		return blocks;
 	}
 	
-	NifProxyItem * findItem( int b )
+	NifProxyItem * findItem( int b, bool scanParents = true )
 	{
 		if ( blockNumber == b )	return this;
-		NifProxyItem * item = this;
-		while ( ( item = item->parentItem ) )
-			if ( item->blockNumber == b ) return item;
-		foreach ( item, childItems )
+		
+		foreach ( NifProxyItem * child, childItems )
 		{
-			if ( item->blockNumber == b )
-				return item;
-		}
-		foreach ( item, childItems )
-		{
-			NifProxyItem * x = item->findItem( b );
+			NifProxyItem * x = child->findItem( b, false );
 			if ( x ) return x;
 		}
+		
+		if ( parentItem && scanParents )
+		{
+			NifProxyItem * x = parentItem->findItem( b, true );
+			if ( x )	return x;
+		}
+		
 		return 0;
 	}
 	

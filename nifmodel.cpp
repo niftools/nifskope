@@ -59,9 +59,11 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "header" ) );
 	version = 0x04000002;
-	version_string = "NetImmerse File Format, Version 4.0.0.2\n";
 	reset();
-	updateHeader();
+	NifItem * item = getItem( getHeaderItem(), "Version" );
+	if ( item ) item->value().setFileVersion( version );
+	item = getItem( getHeaderItem(), "Header String" );
+	if ( item ) item->value().set<QString>( "NetImmerse File Format, Version 4.0.0.2" );
 }
 
 
@@ -86,7 +88,6 @@ void NifModel::updateHeader()
 {
 	NifItem * header = getHeaderItem();
 	
-	set<int>( header, "Version", version );
 	set<int>( header, "Num Blocks", getBlockCount() );
 	
 	NifItem * idxBlockTypes = getItem( header, "Block Types" );
@@ -288,7 +289,12 @@ int NifModel::getBlockNumber( const QModelIndex & idx ) const
 		return -1;
 }
 
-QModelIndex NifModel::getBlock( const QModelIndex & idx ) const
+QModelIndex NifModel::getBlock( const QModelIndex & idx, const QString & id ) const
+{
+	return getBlock( getBlockNumber( idx ), id );
+}
+
+QModelIndex NifModel::getBlockOrHeader( const QModelIndex & idx ) const
 {
 	QModelIndex block = idx;
 	while ( block.isValid() && block.parent().isValid() )
@@ -362,6 +368,15 @@ bool NifModel::inherits( const QString & name, const QString & aunty )
 		if ( a == aunty || inherits( a, aunty ) ) return true;
 	}
 	return false;
+}
+
+bool NifModel::inherits( const QModelIndex & index, const QString & aunty )
+{
+	QModelIndex block = getBlock( index );
+	if ( block.isValid() )
+		return inherits( itemName( block ), aunty );
+	else
+		return false;
 }
 
 
@@ -626,13 +641,13 @@ int NifModel::rowCount( const QModelIndex & parent ) const
 	return ( parentItem ? parentItem->childCount() : 0 );
 }
 
-QVariant NifModel::data( const QModelIndex & index, int role ) const
+QVariant NifModel::data( const QModelIndex & idx, int role ) const
 {
-	if ( ! ( index.isValid() && index.model() == this ) )
-		return QVariant();
-
+	QModelIndex index = buddy( idx );
+	
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-	if ( ! item ) return QVariant();
+	if ( ! ( index.isValid() && item && index.model() == this ) )
+		return QVariant();
 	
 	int column = index.column();
 	
@@ -648,7 +663,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 		if ( buddy.isValid() )
 			return data( buddy, role );
 	}
-	
+
 	switch ( role )
 	{
 		case Qt::DisplayRole:
@@ -710,7 +725,7 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 			{
 				case NameCol:	return item->name();
 				case TypeCol:	return item->type();
-				case ValueCol:	return item->value();
+				case ValueCol:	return item->value().toVariant();
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
 				case Arr2Col:	return item->arr2();
@@ -740,8 +755,24 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 				default:
 					break;
 			}
-			return QVariant();
-		}
+		}	return QVariant();
+		case Qt::BackgroundColorRole:
+		{
+			if ( column == ValueCol && item->value().isColor() )
+			{
+				return item->value().toColor();
+			}
+		}	return QVariant();
+		case Qt::UserRole:
+		{
+			if ( column == ValueCol )
+			{
+				if ( item->value().isColor() )
+					return "Color/Choose";
+				else if ( item->name() == "File Name" )
+					return "Texture/Choose";
+			}
+		}	return QVariant();
 		default:
 			return QVariant();
 	}
@@ -749,11 +780,11 @@ QVariant NifModel::data( const QModelIndex & index, int role ) const
 
 bool NifModel::setData( const QModelIndex & index, const QVariant & value, int role )
 {
-	if ( ! ( index.isValid() && role == Qt::EditRole && index.model() == this ) )
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && role == Qt::EditRole && index.model() == this && item ) )
 		return false;
 	
-	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-	if ( ! item )	return false;
+	// buddy lookup
 	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" )
 	{
 		QModelIndex buddy;
@@ -764,12 +795,9 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		if ( buddy.isValid() )
 			buddy = buddy.sibling( buddy.row(), index.column() );
 		if ( buddy.isValid() )
-		{
-			bool ret = setData( buddy, value, role );
-			emit dataChanged( index, index );
-			return ret;
-		}
+			return setData( buddy, value, role );
 	}
+	
 	switch ( index.column() )
 	{
 		case NifModel::NameCol:
@@ -807,7 +835,31 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		default:
 			return false;
 	}
+
+	// reverse buddy lookup (perhaps I'd better think of a way how to make the mapping of values to the block level more efficient)
+	if ( index.column() == ValueCol )
+	{
+		if ( item->name() == "File Name" )
+		{
+			NifItem * parent = item->parent();
+			if ( parent && parent->name() == "Texture Source" )
+			{
+				parent = parent->parent();
+				if ( parent && parent->type() == "NiBlock" && parent->name() == "NiSourceTexture" )
+					emit dataChanged( createIndex( parent->row(), ValueCol, parent ), createIndex( parent->row(), ValueCol, parent ) );
+			}
+		}
+		else if ( item->name() == "Name" )
+		{
+			NifItem * parent = item->parent();
+			if ( parent && parent->type() == "NiBlock" )
+				emit dataChanged( createIndex( parent->row(), ValueCol, parent ), createIndex( parent->row(), ValueCol, parent ) );
+		}
+	}
+
+	// update original index
 	emit dataChanged( index, index );
+
 	return true;
 }
 
@@ -852,15 +904,16 @@ bool NifModel::load( QIODevice & device )
 	// reset model
 	clear();
 	
+	quint64 filepos = device.pos();
+	
+	QByteArray version_string;
+	
 	{	// read magic version string
 		version_string.clear();
 		int c = 0;
 		char chr = 0;
-		while ( c < 80 && chr != '\n' )
-		{
-			device.read( & chr, 1 );
+		while ( c++ < 80 && device.getChar( &chr ) && chr != '\n' )
 			version_string.append( chr );
-		}
 	}
 	
 	// verify magic id
@@ -875,7 +928,6 @@ bool NifModel::load( QIODevice & device )
 	// read version number
 	device.read( (char *) &version, 4 );
 	qDebug( "version %08X", version );
-	device.seek( device.pos() - 4 );
 	
 	// verify version number
 	if ( ! supportedVersions.contains( version ) )
@@ -885,6 +937,8 @@ bool NifModel::load( QIODevice & device )
 		return false;
 	}
 	
+	// now start reading from the beginning of the file
+	device.seek( filepos );
 	NifStream stream( version, &device );
 
 	// read header
@@ -959,6 +1013,8 @@ bool NifModel::load( QIODevice & device )
 	catch ( QString err )
 	{
 		qCritical() << (const char *) err.toAscii();
+		reset();
+		return false;
 	}
 	//qDebug() << t.msecsTo( QTime::currentTime() );
 	reset(); // notify model views that a significant change to the data structure has occurded
@@ -968,9 +1024,6 @@ bool NifModel::load( QIODevice & device )
 bool NifModel::save( QIODevice & device )
 {
 	NifStream stream( version, &device );
-	
-	// write magic version string
-	device.write( version_string );
 	
 	qApp->processEvents();
 
@@ -1007,7 +1060,10 @@ bool NifModel::save( QIODevice & device )
 			}
 		}
 		if ( !save( root->child( c ), stream ) )
+		{
+			qCritical() << "failed to write block" << itemName( index( c, 0 ) ) << "(" << c-1 << ")";
 			return false;
+		}
 	}
 	
 	int rcnt = rootLinks.count();
@@ -1299,7 +1355,6 @@ int NifModel::getLink( const QModelIndex & parent, const QString & name ) const
 	if ( item )
 		return item->value().toLink();
 	
-	qWarning() << "failed to get link value for" << name;
 	return -1;
 }
 
@@ -1363,8 +1418,8 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 	
 	QString left, right;
 	
-	static const char * const exp[] = { "!=", "==" };
-	static const int num_exp = 2;
+	static const char * const exp[] = { "!=", "==", ">=", "<=", "<", ">" };
+	static const int num_exp = 6;
 	
 	int c;
 	for ( c = 0; c < num_exp; c++ )
@@ -1387,17 +1442,18 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 	int l = getInt( item->parent(), left );
 	int r = getInt( item->parent(), right );
 	
-	if ( c == 0 )
+	switch ( c )
 	{
-		//qDebug( "evalCondition '%s' (%i) != '%s' (%i) : %i", str( left ), l, str( right ), r, l != r );
-		return l != r;
+		case 0: return l != r;
+		case 1: return l == r;
+		case 2: return l >= r;
+		case 3: return l <= r;
+		case 4: return l > r;
+		case 5: return l < r;
+		default:
+			qCritical() << "could not eval condition" << cond;
+			return false;
 	}
-	else
-	{
-		//qDebug( "evalCondition '%s' (%i) == '%s' (%i) : %i", str( left ), l, str( right ), r, l == r );
-		return l == r;
-	}
-	
 }
 
 bool NifModel::evalCondition( const QModelIndex & index, bool chkParents ) const

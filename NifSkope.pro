@@ -10,7 +10,6 @@ DESTDIR = ./
 
 HEADERS += \
 glcontroller.h \
-glmath.h \
 glscene.h \
 glview.h \
 nifdelegate.h \
@@ -19,7 +18,8 @@ nifproxy.h \
 nifskope.h \
 niftypes.h \
 nifview.h \
-popup.h
+spellbook.h \
+spells/*.h
 
 SOURCES += \
 glcontroller.cpp \
@@ -33,7 +33,8 @@ nifskope.cpp \
 niftypes.cpp \
 nifview.cpp \
 nifxml.cpp \
-popup.cpp
+spellbook.cpp \
+spells/*.cpp
 
 RESOURCES += nifskope.qrc
 

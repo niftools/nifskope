@@ -48,11 +48,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLayout>
 #include <QLineEdit>
 #include <QMenu>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QSettings>
 #include <QSlider>
 #include <QTextEdit>
 #include <QTimer>
+#include <QToolBar>
 #include <QToolButton>
 
 #include <QListView>
@@ -63,7 +65,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifview.h"
 
 #include "glview.h"
-#include "popup.h"
 #include "spellbook.h"
 
 /*
@@ -126,6 +127,8 @@ NifSkope::NifSkope() : QMainWindow()
 	ogl->setNif( model );
 	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
 			this, SLOT( select( const QModelIndex & ) ) );
+	connect( ogl, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+		this, SLOT( contextMenu( const QPoint & ) ) );
 
 
 	// actions
@@ -171,12 +174,12 @@ NifSkope::NifSkope() : QMainWindow()
 
 	// dock widgets
 	
-	dList = new QDockWidget( "File Block List" );
+	dList = new QDockWidget( "Block List" );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
 	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
-	dTree = new QDockWidget( "Detailed Tree View" );
+	dTree = new QDockWidget( "Block Details" );
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
 
@@ -363,6 +366,11 @@ void NifSkope::contextMenu( const QPoint & pos )
 		idx = list->indexAt( pos );
 		p = list->mapToGlobal( pos );
 	}
+	else if ( sender() == ogl )
+	{
+		idx = ogl->indexAt( pos );
+		p = ogl->mapToGlobal( pos );
+	}
 	
 	if ( idx.model() == proxy )
 		idx = proxy->mapTo( idx );
@@ -390,19 +398,19 @@ void NifSkope::select( const QModelIndex & index )
 	
 	if ( sender() != ogl )
 	{
-		ogl->setCurrentIndex( idx );
+		ogl->setCurrentIndex( model->getBlock( idx ) );
 	}
 
 	if ( sender() != list )
 	{
 		if ( list->model() == proxy )
 		{
-			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() ); //list->currentIndex() );
+			QModelIndex pidx = proxy->mapFrom( model->getBlock( idx ), list->currentIndex() );
 			list->setCurrentIndexExpanded( pidx );
 		}
 		else if ( list->model() == model )
 		{
-			list->setCurrentIndexExpanded( idx );
+			list->setCurrentIndex( model->getBlockOrHeader( idx ) );
 		}
 	}
 	
@@ -410,15 +418,15 @@ void NifSkope::select( const QModelIndex & index )
 	{
 		if ( dList->isVisible() )
 		{
-			QModelIndex tidx = idx;
-			while ( tidx.parent().isValid() )
-				tidx = tidx.parent();
-			tree->setRootIndex( tidx );
+			QModelIndex root = model->getBlockOrHeader( idx );
+			if ( tree->rootIndex() != root )
+				tree->setRootIndex( root );
 		}
 		else
 		{
-			tree->setRootIndex( QModelIndex() );
-			tree->setCurrentIndexExpanded( idx );
+			if ( tree->rootIndex() != QModelIndex() )
+				tree->setRootIndex( QModelIndex() );
+			tree->setCurrentIndexExpanded( model->getBlock( idx ) );
 		}
 	}
 }

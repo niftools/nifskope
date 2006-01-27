@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "glscene.h"
-#include "popup.h"
+#include "spellbook.h"
 
 #define FPS 35
 
@@ -49,6 +49,7 @@ GLView::GLView()
 	: QGLWidget()
 {
 	setFocusPolicy( Qt::ClickFocus );
+	//setContextMenuPolicy( Qt::CustomContextMenu );
 	
 	xRot = yRot = zRot = 0;
 	zoom = 1.0;
@@ -370,10 +371,10 @@ void GLView::paintGL()
 		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 }
 
-int GLView::pickGL( int x, int y )
+QModelIndex GLView::indexAt( const QPoint & pos )
 {
-	if ( ! ( isVisible() && height() ) )
-		return -1;
+	if ( ! ( model && isVisible() && height() ) )
+		return QModelIndex();
 	
 	makeCurrent();
 
@@ -401,9 +402,9 @@ int GLView::pickGL( int x, int y )
 				depth = buffer[loop*4+1];
 			}       
 		}
-		return choose;
+		return model->getBlock( choose );
 	}
-	return -1;
+	return QModelIndex();
 }
 
 void GLView::resizeGL(int width, int height)
@@ -450,8 +451,10 @@ void GLView::sltFrame( int f )
 
 void GLView::selectTexFolder()
 {
-	//QString tf = QFileDialog::getExistingDirectory( this, "select texture folder", textureFolder() );
-	setTextureFolder( selectMultipleDirs( "select texture folders", GLTex::texfolders, this ).join( ";" ) );
+	if ( ! model ) return;
+	Spell * spell = SpellBook::lookup( "Texture/Folders" );
+	if ( spell && spell->isApplicable( model, QModelIndex() ) )
+		spell->cast( model, QModelIndex() );
 }
 
 void GLView::setTextureFolder( const QString & tf )
@@ -554,6 +557,8 @@ void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 		modelChanged();
 	else
 		scene->update( model, idx );
+	
+	update();
 }
 
 void GLView::modelChanged()
@@ -583,14 +588,14 @@ void GLView::mousePressEvent(QMouseEvent *event)
 
 void GLView::mouseReleaseEvent( QMouseEvent *event )
 {
-	if ( ! ( isVisible() && height() && model && ( pressPos - event->pos() ).manhattanLength() <= 3 ) )
+	if ( ! ( model && ( pressPos - event->pos() ).manhattanLength() <= 3 ) )
 		return;
 	
-	int pick = pickGL( event->x(), event->y() );
-	if ( pick >= 0 )
+	QModelIndex idx = indexAt( event->pos() );
+	scene->currentNode = model->getBlockNumber( idx );
+	if ( idx.isValid() )
 	{
-		emit clicked( model->getBlock( pick ) );
-		scene->currentNode = pick;
+		emit clicked( idx );
 		update();
 	}
 }
@@ -617,7 +622,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	else if ( event->buttons() & Qt::MidButton)
 	{
 		xTrans += dx * 5;
-		yTrans += dy * 5;
+		yTrans -= dy * 5;
 		update();
 	}
 	lastPos = event->pos();

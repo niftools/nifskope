@@ -32,23 +32,39 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spellbook.h"
 
-#include <QDebug>
+#include <QCache>
+#include <QDir>
 
-QList<Spell*> SpellBook::spells;
-QList<SpellBook*> SpellBook::books;
+QList<Spell*> & SpellBook::spells()
+{	// construct-on-first-use wrapper
+	static QList<Spell*> * _spells = new QList<Spell*>();
+	return *_spells;
+}
+
+QList<SpellBook*> & SpellBook::books()
+{
+	static QList<SpellBook*> * _books = new QList<SpellBook*>();
+	return *_books;
+}
+
+QMultiHash<QString,Spell*> & SpellBook::hash()
+{
+	static QMultiHash<QString,Spell*> * _hash = new QMultiHash<QString,Spell*>();
+	return *_hash;
+}
 
 SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * receiver, const char * member ) : QMenu(), Nif( 0 )
 {
 	setTitle( "Spells" );
 	
 	// register this book in the library
-	books.append( this );
+	books().append( this );
 
 	// attach this book to the specified nif
 	sltNif( nif );
 	
 	// fill in the known spells
-	foreach ( Spell * spell, spells )
+	foreach ( Spell * spell, spells() )
 		newSpellRegistered( spell );
 	
 	// set the current index
@@ -62,7 +78,7 @@ SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * recei
 
 SpellBook::~SpellBook()
 {
-	books.removeAll( this );
+	books().removeAll( this );
 }
 
 void SpellBook::sltSpellTriggered( QAction * action )
@@ -96,10 +112,11 @@ void SpellBook::checkActions( const QModelIndex & index, QMenu * menu, const QSt
 		{
 			checkActions( index, action->menu(), action->menu()->title() );
 			menuEnable |= action->menu()->isEnabled();
+			action->setVisible( action->menu()->isEnabled() );
 		}
 		else
 		{
-			foreach ( Spell * spell, spells )
+			foreach ( Spell * spell, spells() )
 			{
 				if ( action->text() == spell->name() && page == spell->page() )
 				{
@@ -118,7 +135,7 @@ void SpellBook::newSpellRegistered( Spell * spell )
 {
 	if ( spell->page().isEmpty() )
 	{
-		Map.insert( addAction( spell->name() ), spell );
+		Map.insert( addAction( spell->icon(), spell->name() ), spell );
 	}
 	else
 	{
@@ -136,19 +153,49 @@ void SpellBook::newSpellRegistered( Spell * spell )
 			menu = new QMenu( spell->page() );
 			addMenu( menu );
 		}
-		Map.insert( menu->addAction( spell->name() ), spell );
+		Map.insert( menu->addAction( spell->icon(), spell->name() ), spell );
 	}
 }
 
 void SpellBook::registerSpell( Spell * spell )
 {
-	spells.append( spell );
-	foreach ( SpellBook * book, books )
+	spells().append( spell );
+	hash().insertMulti( spell->name(), spell );
+	
+	foreach ( SpellBook * book, books() )
 	{
 		book->newSpellRegistered( spell );
 	}
 }
 
-#include "spells.cpp"
-#include "spellstrip.cpp"
+Spell * SpellBook::lookup( const QString & id )
+{
+	if ( id.isEmpty() )
+		return 0;
+	
+	QString page;
+	QString name = id;
+	
+	if ( id.contains( "/" ) )
+	{
+		QStringList split = id.split( "/" );
+		page = split.value( 0 );
+		name = split.value( 1 );
+	}
+	
+	foreach ( Spell * spell, hash().values( name ) )
+	{
+		if ( spell->page() == page )
+			return spell;
+	}
+	
+	return 0;
+}
 
+QAction * SpellBook::exec( const QPoint & pos, QAction * act )
+{
+	if ( isEnabled() )
+		return QMenu::exec( pos, act );
+	else
+		return 0;
+}

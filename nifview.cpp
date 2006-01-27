@@ -63,14 +63,15 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 
 void NifTreeView::setCurrentIndexExpanded( const QModelIndex & index )
 {
+	if ( ! index.isValid() || index.model() != model() )
+	{
+		setCurrentIndex( QModelIndex() );
+		return;
+	}
+	
 	if ( itemsExpandable() )
 	{
-		if ( ! index.isValid() )
-			setCurrentIndex( index );
-		
-		if ( index.model() != model() )	return;
-		
-		QModelIndex idx = index;
+		QModelIndex idx = index.parent();
 		while ( idx.isValid() )
 		{
 			expand( idx );

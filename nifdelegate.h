@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QWidget>
 
+class QSpinBox;
 class QDoubleSpinBox;
 
 class ValueEdit : public QWidget
@@ -106,6 +107,25 @@ private:
 	QDoubleSpinBox * y;
 	QDoubleSpinBox * p;
 	QDoubleSpinBox * r;
+};
+
+class TriangleEdit : public QWidget
+{
+	Q_OBJECT
+public:
+	TriangleEdit( QWidget * parent = 0 );
+	
+	Q_PROPERTY( Triangle triangle READ getTriangle WRITE setTriangle STORED false );
+	
+	Triangle getTriangle() const;
+	
+public slots:
+	void setTriangle( const Triangle & );
+
+private:
+	QSpinBox * v1;
+	QSpinBox * v2;
+	QSpinBox * v3;
 };
 
 #endif

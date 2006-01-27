@@ -41,10 +41,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
-#include "glmath.h"
-
 class Scene;
 
+class QSettings;
 class QTimer;
 
 class GLView : public QGLWidget
@@ -54,6 +53,8 @@ class GLView : public QGLWidget
 public:
 	GLView();
 	~GLView();
+	
+	QModelIndex indexAt( const QPoint & p );
 	
 	int xRotation() const { return xRot; }
 	int yRotation() const { return yRot; }

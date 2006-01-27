@@ -148,12 +148,12 @@ public:
 		xyz[ 2 ] *= s;
 		return *this;
 	}
-	Vector3 operator+( Vector3 v )
+	Vector3 operator+( Vector3 v ) const
 	{
 		Vector3 w( *this );
 		return w += v;
 	}
-	Vector3 operator-( Vector3 v )
+	Vector3 operator-( Vector3 v ) const
 	{
 		Vector3 w( *this );
 		return w -= v;
@@ -298,6 +298,8 @@ public:
 		return m[c][d];
 	}
 	
+	Matrix inverted() const;
+	
 	void fromQuat( const Quat & q );
 	Quat toQuat() const;
 	
@@ -317,6 +319,7 @@ class Triangle
 {
 public:
 	Triangle() { v[0] = v[1] = v[2] = 0; }
+	Triangle( quint16 a, quint16 b, quint16 c ) { set( a, b, c ); }
 	
 	quint16 & operator[]( unsigned int i )
 	{
@@ -492,9 +495,10 @@ public:
 		tQuat = 12,
 		tMatrix = 13,
 		tVector2 = 14,
-		tByteArray = 15,
-		tVersion = 16,
-		tTriangle = 17,
+		tTriangle = 15,
+		tByteArray = 16,
+		tFileVersion = 17,
+		tHeaderString = 18,
 		
 		tNone = 0xff
 	};
@@ -527,27 +531,26 @@ public:
 	bool isLink() const { return typ == tLink || typ == tParent; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isQuat() const { return typ == tQuat; }
-	bool isString() const { return typ == tString; }
+	bool isString() const { return typ == tString || typ == tHeaderString; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
-	bool isByteArray() const { return typ == tByteArray; }
-	bool isVersion() const { return typ == tVersion; }
 	bool isTriangle() const { return typ == tTriangle; }
+	bool isByteArray() const { return typ == tByteArray; }
+	bool isFileVersion() const { return typ == tFileVersion; }
 	
 	QColor toColor() const;
 	quint32 toCount() const;
 	float toFloat() const;
 	qint32 toLink() const;
-	quint32 toVersion() const;
+	quint32 toFileVersion() const;
+
 	QString toString() const;
 	QVariant toVariant() const;
-	
-	operator QVariant () const	{ return toVariant(); }
 	
 	bool setCount( quint32 );
 	bool setFloat( float );
 	bool setLink( int );
-	bool setVersion( quint32 );
+	bool setFileVersion( quint32 );
 	
 	bool fromString( const QString & );
 	bool fromVariant( const QVariant & );
@@ -579,12 +582,12 @@ protected:
 inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
 inline qint32 NifValue::toLink() const { if ( isLink() ) return val.i32; else return -1; }
-inline quint32 NifValue::toVersion() const { if ( isVersion() ) return val.u32; else return 0; }
+inline quint32 NifValue::toFileVersion() const { if ( isFileVersion() ) return val.u32; else return 0; }
 
 inline bool NifValue::setCount( quint32 c ) { if ( isCount() ) { val.u32 = c; return true; } else return false; }
 inline bool NifValue::setFloat( float f ) { if ( isFloat() ) { val.f32 = f; return true; } else return false; }
 inline bool NifValue::setLink( int l ) { if ( isLink() ) { val.i32 = l; return true; } else return false; }
-inline bool NifValue::setVersion( quint32 v ) { if ( isVersion() ) { val.u32 = v; return true; } else return false; }
+inline bool NifValue::setFileVersion( quint32 v ) { if ( isFileVersion() ) { val.u32 = v; return true; } else return false; }
 
 template <typename T> inline T NifValue::getType( Type t ) const
 {
@@ -628,7 +631,7 @@ template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVe
 template <> inline bool NifValue::set( const Vector2 & x ) { return setType( tVector2, x ); }
 template <> inline bool NifValue::set( const Color3 & x ) { return setType( tColor3, x ); }
 template <> inline bool NifValue::set( const Color4 & x ) { return setType( tColor4, x ); }
-template <> inline bool NifValue::set( const QString & x ) { return setType( tString, x ); }
+template <> inline bool NifValue::set( const QString & x ) { return setType( tString, x ) || setType( tHeaderString, x ); }
 template <> inline bool NifValue::set( const QByteArray & x ) { return setType( tByteArray, x ); }
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
 

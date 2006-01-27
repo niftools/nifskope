@@ -32,14 +32,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "niftypes.h"
+#include "nifproxy.h"
 
 #include <QItemDelegate>
 
 #include "nifdelegate.h"
-#include "popup.h"
+#include "spellbook.h"
 
 #include <QAction>
 #include <QComboBox>
+#include <QDebug>
 #include <QEvent>
 #include <QFrame>
 #include <QLabel>
@@ -50,82 +52,48 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSpinBox>
 #include <QToolButton>
 
-/* XPM */
-static const char * const hsv42_xpm[] = {
-"32 32 43 1",
-" 	c None",
-".	c #3200FF","+	c #0024FF","@	c #7600FF","#	c #0045FF","$	c #A000FF",
-"%	c #FF0704","&	c #015AFF","*	c #FF0031","=	c #FF0058","-	c #FF0074",
-";	c #FF0086",">	c #006DFF",",	c #D700FF","'	c #FF00A3",")	c #FF00C5",
-"!	c #FC00DE","~	c #FC00FA","{	c #0086FF","]	c #FF3700","^	c #00A7FF",
-"/	c #FF6000","(	c #00C3FF","_	c #00FF32",":	c #00DDFF","<	c #FF8D00",
-"[	c #00FF55","}	c #23FF00","|	c #00FF72","1	c #00FF88","2	c #00FFA0",
-"3	c #00FFBB","4	c #00FFD7","5	c #00F9F8","6	c #FFA900","7	c #60FF00",
-"8	c #83FF00","9	c #FFC200","0	c #A3FF00","a	c #FFD800","b	c #C0FF00",
-"c	c #FBF100","d	c #E6FF00",
-"            7778800b            ",
-"         }}}}778800bbdd         ",
-"       }}}}}}777800bbddcc       ",
-"      }}}}}7}778800bdddcca      ",
-"     __}}}}}}77880bbddccca9     ",
-"    [___}}}}}}7780bbddcaa996    ",
-"   [[[___}}}}77880bddccaa9666   ",
-"  ||[[[___}}}}7780bddca9966<<   ",
-"  |1|[[[__}}}}7880bdcca966<<</  ",
-" 211|||[[__}}}}78bdcca966<</<// ",
-" 22211||[[[}}}778bdca96<<<///// ",
-" 3222121||[__}}70bda96<<</////] ",
-"3333322211|[__}78dc96<////]]]]]]",
-"444433332221|_}70d9<<///]]]]]]]%",
-"4444444433322|[}ba<//]]]]]]%%%%%",
-"555555454544442[c/]%%%%%%%%%%%%%",
-"5555555555:5::({!=*%%%%%%%%%%%%%",
-":5:5:::::(((^{&.$);-==******%*%%",
-":::::((((^^{>&+.@~)';-===*******",
-":(((((^^^{{>#+..@,~)';;-====*=* ",
-" (^^^^^{{>>#+..@@,~!)'';;--==== ",
-" ^^^^{{{>&##+...$$,~!)'';;---== ",
-" ^^{{{>>&##....@@$,,~!))'';;--  ",
-"  {{>>>&#++....@$$,,~~!)'''';;  ",
-"  {>>&&##++....@@$,,~~!!))'''   ",
-"   >&&##++.....@@$$,,~~!)))''   ",
-"    &#+++......@@$$,,~~~!)))    ",
-"     #+++.....@@@$$$,,~~!!!     ",
-"      ++.......@$$$,,,~~~!      ",
-"        ......@@@$$$$,,~        ",
-"         ......@@$$,,,          ",
-"            .@@@@$$             "};
-
 class NifDelegate : public QItemDelegate
 {
-	QIcon icon;
 public:
-	NifDelegate() : QItemDelegate(), icon( hsv42_xpm )	{}
+	NifDelegate() : QItemDelegate() {}
 	
 	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index )
 	{
 		Q_ASSERT( event );
 		Q_ASSERT( model );
 		
-		if ( event->type() == QEvent::MouseButtonRelease && model->flags( index ) & Qt::ItemIsEditable
-			&& model->data( index, Qt::EditRole ).value<NifValue>().isColor() )
+		if ( event->type() == QEvent::MouseButtonRelease && static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
 		{
-			NifValue val = model->data( index, Qt::EditRole ).value<NifValue>();
-			
-			int m = qMin( option.rect.width(), option.rect.height() );
-			QRect iconRect( option.rect.x(), option.rect.y(), m, m );
-			if ( ! iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
-				return true;
-			
-			if ( val.type() == NifValue::tColor3 )
-				val.set<Color3>( Color3( ColorWheel::choose( val.toColor(), 0 ) ) );
-			else if ( val.type() == NifValue::tColor4 )
-				val.set<Color4>( Color4( ColorWheel::choose( val.toColor(), 0 ) ) );
-			
-			return model->setData( index, val.toVariant(), Qt::EditRole );
+			Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
+			if ( spell && ! spell->icon().isNull() )
+			{
+				int m = qMin( option.rect.width(), option.rect.height() );
+				QRect iconRect( option.rect.x(), option.rect.y(), m, m );
+				if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
+				{
+					NifModel * nif = 0;
+					QModelIndex buddy = index;
+					
+					if ( model->inherits( "NifModel" ) )
+					{
+						nif = static_cast<NifModel *>( model );
+					}
+					else if ( model->inherits( "NifProxyModel" ) )
+					{
+						NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
+						nif = static_cast<NifModel *>( proxy->model() );
+						buddy = proxy->mapTo( index );
+					}
+					
+					if ( nif && spell->isApplicable( nif, buddy ) )
+						spell->cast( nif, buddy );
+					
+					//return true;
+				}
+			}
 		}
 		
-		return QItemDelegate::editorEvent( event, model, option, index );
+		return false;
 	}
 	
 	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
@@ -134,50 +102,57 @@ public:
 		if ( ! model ) return;
 		
 		QVariant data = model->data( index, Qt::DisplayRole );
+		
 		QString text;
+		QString deco = model->data(index, Qt::DecorationRole).toString();
 		
 		if ( data.canConvert<NifValue>() )
-		{
-			NifValue val = data.value<NifValue>();
-			
-			if ( val.isColor() )
-			{
-				painter->fillRect( option.rect, val.toColor() );
-				if ( model->flags( index ) & Qt::ItemIsEditable )
-				{
-					int m = qMin( option.rect.width(), option.rect.height() );
-					icon.paint( painter, QRect( option.rect.x(), option.rect.y(), m, m ), Qt::AlignCenter );
-				}
-				drawFocus( painter, option, option.rect );
-				return;
-			}
-			
-			text = val.toString();
-		}
+			text = data.value<NifValue>().toString();
 		else
 			text = data.toString();
+		
+		QString user = model->data( index, Qt::UserRole ).toString();
+		QIcon icon;
+		
+		if ( ! user.isEmpty() )
+		{
+			Spell * spell = SpellBook::lookup( user );
+			if ( spell ) icon = spell->icon();
+		}
 		
 		QStyleOptionViewItem opt = option;
 		
 		QRect textRect(0, 0, opt.fontMetrics.width(text), opt.fontMetrics.lineSpacing());
 		
-		// decoration is a string
-		QString deco = model->data(index, Qt::DecorationRole).toString();
-		QRect decoRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
+		QRect decoRect;
+		
+		if ( ! icon.isNull() )
+		{
+			int m = qMin( option.rect.width(), option.rect.height() );
+			decoRect = QRect( option.rect.x(), option.rect.y(), m, m );
+		}
+		else if ( ! deco.isEmpty() )
+			decoRect = QRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
 		
 		QRect dummy;
-		doLayout(opt, &dummy, &decoRect, &textRect, false);
+		doLayout( opt, &dummy, &decoRect, &textRect, false );
 		
 		QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
 		
-		if ( option.state & QStyle::State_Selected )
+		QVariant color = model->data( index, Qt::BackgroundColorRole );
+		if ( color.canConvert<QColor>() )
+			painter->fillRect( option.rect, color.value<QColor>() );
+		else if ( option.state & QStyle::State_Selected )
 			painter->fillRect( option.rect, option.palette.brush( cg, QPalette::Highlight ) );
 		
 		painter->save();
 		painter->setPen( opt.palette.color( cg, opt.state & QStyle::State_Selected ? QPalette::HighlightedText : QPalette::Text ) );
 		painter->setFont( opt.font );
 		
-		qt_format_text( opt.font, decoRect, opt.displayAlignment, deco, 0, 0, 0, 0, painter );
+		if ( ! icon.isNull() )
+			icon.paint( painter, decoRect );
+		else if ( ! deco.isEmpty() )
+			qt_format_text( opt.font, decoRect, opt.displayAlignment, deco, 0, 0, 0, 0, painter );
 		
 		if ( painter->fontMetrics().width( text ) > textRect.width() )
 			text = elidedText( opt.fontMetrics, textRect.width(), opt.textElideMode, text );
@@ -188,8 +163,7 @@ public:
 		painter->restore();
 	}
 
-	QSize sizeHint(const QStyleOptionViewItem &option,
-								  const QModelIndex &index) const
+	QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 	{
 		Q_ASSERT(index.isValid());
 		const QAbstractItemModel *model = index.model();
@@ -246,8 +220,7 @@ public:
 		}
 	}
 	
-	void setModelData(QWidget *editor, QAbstractItemModel *model,
-						const QModelIndex &index) const
+	void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
 	{
 		Q_ASSERT(model);
 		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
@@ -273,13 +246,15 @@ QAbstractItemDelegate * NifModel::createDelegate()
 
 ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNone ), edit( 0 )
 {
+	setAutoFillBackground( true );
 }
 
 bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return ( t == NifValue::tBool || t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tParent || t == NifValue::tFloat || t == NifValue::tString
-		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat );
+		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat
+		|| t == NifValue::tTriangle );
 }
 
 void ValueEdit::setValue( const NifValue & v )
@@ -373,6 +348,12 @@ void ValueEdit::setValue( const NifValue & v )
 			re->setQuat( v.get<Quat>() );
 			edit = re;
 		}	break;
+		case NifValue::tTriangle:
+		{
+			TriangleEdit * te = new TriangleEdit( this );
+			te->setTriangle( v.get<Triangle>() );
+			edit = te;
+		}	break;
 		default:
 			edit = 0;
 			break;
@@ -417,6 +398,9 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tQuat:
 			val.set<Quat>( qobject_cast<RotationEdit*>( edit )->getQuat() );
+			break;
+		case NifValue::tTriangle:
+			val.set<Triangle>( qobject_cast<TriangleEdit*>( edit )->getTriangle() );
 			break;
 		default:
 			break;
@@ -540,3 +524,31 @@ Quat RotationEdit::getQuat() const
 	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
 	return m.toQuat();
 }
+
+TriangleEdit::TriangleEdit( QWidget * parent ) : QWidget( parent )
+{
+	QHBoxLayout * lay = new QHBoxLayout;
+	lay->setMargin( 0 );
+	setLayout( lay );
+	
+	lay->addWidget( v1 = new QSpinBox );
+	v1->setRange( 0, + 0xffff );
+	lay->addWidget( v2 = new QSpinBox );
+	v2->setRange( 0, + 0xffff );
+	lay->addWidget( v3 = new QSpinBox );
+	v3->setRange( 0, + 0xffff );
+}
+
+void TriangleEdit::setTriangle( const Triangle & t )
+{
+	v1->setValue( t[0] );
+	v2->setValue( t[1] );
+	v3->setValue( t[2] );
+}
+
+
+Triangle TriangleEdit::getTriangle() const
+{
+	return Triangle( v1->value(), v2->value(), v3->value() );
+}
+

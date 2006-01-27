@@ -38,10 +38,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.5 of NifSkope.
+This is version 0.6 of NifSkope.
 
-It should read and write every Nif up to version 10.2.0.0.
+It should read and write every Nif up to version 20.0.0.4
 
+changes since 0.5:
+  - new flexible context menu system (spells)
+  - texture spells ( choose + pack + export )
+  - strippify spell converts NiTriShape to NiTriStrip
+  - gl view now uses filtered mipmaps
+  - various fixes and adjustments
 
 changes since 0.4:
   - more animation controllers: flip, morph, vis, uv

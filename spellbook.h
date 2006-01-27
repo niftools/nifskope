@@ -48,6 +48,7 @@ public:
 	virtual QString name() const = 0;
 	virtual QString page() const { return QString(); }
 	virtual QString hint() const { return QString(); }
+	virtual QIcon icon() const { return QIcon(); }
 
 	virtual bool isApplicable( NifModel * nif, const QModelIndex & index ) = 0;
 	
@@ -61,7 +62,11 @@ public:
 	SpellBook( NifModel * nif, const QModelIndex & index = QModelIndex(), QObject * receiver = 0, const char * member = 0 );
 	~SpellBook();
 	
+	QAction * exec( const QPoint & pos, QAction * act = 0 );
+	
 	static void registerSpell( Spell * spell );
+	
+	static Spell * lookup( const QString & id );
 	
 public slots:
 	void sltNif( NifModel * nif );
@@ -83,8 +88,9 @@ protected:
 	void checkActions( const QModelIndex & index, QMenu * menu, const QString & page );
 	
 private:
-	static QList<Spell*> spells;
-	static QList<SpellBook*> books;
+	static QList<Spell*> & spells();
+	static QList<SpellBook*> & books();
+	static QMultiHash<QString, Spell*> & hash();
 };
 
 class Librarian

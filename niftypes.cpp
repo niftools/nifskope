@@ -148,6 +148,33 @@ bool Matrix::toEuler( float & x, float & y, float & z ) const
 	}
 }
 
+
+Matrix Matrix::inverted () const
+{
+    Matrix i;
+
+    i(0,0) = m[1][1]*m[2][2] - m[1][2]*m[2][1];
+    i(0,1) = m[0][2]*m[2][1] - m[0][1]*m[2][2];
+    i(0,2) = m[0][1]*m[1][2] - m[0][2]*m[1][1];
+    i(1,0) = m[1][2]*m[2][0] - m[1][0]*m[2][2];
+    i(1,1) = m[0][0]*m[2][2] - m[0][2]*m[2][0];
+    i(1,2) = m[0][2]*m[1][0] - m[0][0]*m[1][2];
+    i(2,0) = m[1][0]*m[2][1] - m[1][1]*m[2][0];
+    i(2,1) = m[0][1]*m[2][0] - m[0][0]*m[2][1];
+    i(2,2) = m[0][0]*m[1][1] - m[0][1]*m[1][0];
+
+    float d = m[0][0]*i(0,0) + m[0][1]*i(1,0) + m[0][2]*i(2,0);
+
+    if ( fabs( d ) <= 0.0 )
+        return Matrix();
+
+	for ( int x = 0; x < 3; x++ )
+		for ( int y = 0; y < 3; y++ )
+			i(x,y) /= d;
+	
+    return i;
+}
+
 QString Matrix::toHtml() const
 {
 	return QString( "<table>" )
@@ -185,9 +212,10 @@ void NifValue::initialize()
 	typeMap.insert( "quaternion", NifValue::tQuat );
 	typeMap.insert( "matrix33", NifValue::tMatrix );
 	typeMap.insert( "vector2", NifValue::tVector2 );
-	typeMap.insert( "bytearray", NifValue::tByteArray );
-	typeMap.insert( "version", NifValue::tVersion );
 	typeMap.insert( "triangle", NifValue::tTriangle );
+	typeMap.insert( "bytearray", NifValue::tByteArray );
+	typeMap.insert( "fileversion", NifValue::tFileVersion );
+	typeMap.insert( "headerstring", NifValue::tHeaderString );
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -234,15 +262,6 @@ void NifValue::clear()
 {
 	switch ( typ )
 	{
-		case tString:
-			delete static_cast<QString*>( val.data );
-			break;
-		case tColor3:
-			delete static_cast<Color3*>( val.data );
-			break;
-		case tColor4:
-			delete static_cast<Color4*>( val.data );
-			break;
 		case tVector3:
 			delete static_cast<Vector3*>( val.data );
 			break;
@@ -260,6 +279,16 @@ void NifValue::clear()
 			break;
 		case tTriangle:
 			delete static_cast<Triangle*>( val.data );
+			break;
+		case tString:
+		case tHeaderString:
+			delete static_cast<QString*>( val.data );
+			break;
+		case tColor3:
+			delete static_cast<Color3*>( val.data );
+			break;
+		case tColor4:
+			delete static_cast<Color4*>( val.data );
 			break;
 		default:
 			break;
@@ -294,7 +323,11 @@ void NifValue::changeType( Type t )
 		case tVector2:
 			val.data = new Vector2();
 			return;
+		case tTriangle:
+			val.data = new Triangle();
+			return;
 		case tString:
+		case tHeaderString:
 			val.data = new QString();
 			return;
 		case tColor3:
@@ -305,9 +338,6 @@ void NifValue::changeType( Type t )
 			return;
 		case tByteArray:
 			val.data = new QByteArray();
-			return;
-		case tTriangle:
-			val.data = new Triangle();
 			return;
 		default:
 			val.u32 = 0;
@@ -335,6 +365,7 @@ void NifValue::operator=( const NifValue & other )
 			*static_cast<Vector2*>( val.data ) = *static_cast<Vector2*>( other.val.data );
 			return;
 		case tString:
+		case tHeaderString:
 			*static_cast<QString*>( val.data ) = *static_cast<QString*>( other.val.data );
 			return;
 		case tColor3:
@@ -368,6 +399,10 @@ bool NifValue::fromVariant( const QVariant & var )
 	{
 		operator=( var.value<NifValue>() );
 		return true;
+	}
+	else if ( var.type() == QVariant::String )
+	{
+		return set<QString>( var.toString() );
 	}
 	return false;
 }
@@ -411,6 +446,7 @@ bool NifValue::fromString( const QString & s )
 			val.f32 = s.toDouble( &ok );
 			return ok;
 		case tString:
+		case tHeaderString:
 			*static_cast<QString*>( val.data ) = s;
 			return true;
 		case tColor3:
@@ -419,7 +455,7 @@ bool NifValue::fromString( const QString & s )
 		case tColor4:
 			static_cast<Color4*>( val.data )->fromQColor( QColor( s ) );
 			return true;
-		case tVersion:
+		case tFileVersion:
 			val.u32 = NifModel::version2number( s );
 			return val.u32 != 0;
 		case tByteArray:
@@ -452,6 +488,7 @@ QString NifValue::toString() const
 		case tFloat:
 			return QString::number( val.f32, 'f', 4 );
 		case tString:
+		case tHeaderString:
 			return *static_cast<QString*>( val.data );
 		case tColor3:
 		{
@@ -494,12 +531,12 @@ QString NifValue::toString() const
 		}
 		case tByteArray:
 			return QString( "%1 bytes" ).arg( static_cast<QByteArray*>( val.data )->count() );
-		case tVersion:
+		case tFileVersion:
 			return NifModel::version2string( val.u32 );
 		case tTriangle:
 		{
 			Triangle * tri = static_cast<Triangle*>( val.data );
-			return QString( "V1 %1 V2 %2 V3 %3" ).arg( tri->v1() ).arg( tri->v2() ).arg( tri->v3() );
+			return QString( "%1 %2 %3" ).arg( tri->v1() ).arg( tri->v2() ).arg( tri->v3() );
 		}
 		default:
 			return QString();
@@ -535,7 +572,7 @@ bool NifStream::read( NifValue & val )
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
-		case NifValue::tVersion:
+		case NifValue::tFileVersion:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tParent:
@@ -552,22 +589,48 @@ bool NifStream::read( NifValue & val )
 			return device->read( (char *) static_cast<Matrix*>( val.val.data )->m, 36 ) == 36;
 		case NifValue::tVector2:
 			return device->read( (char *) static_cast<Vector2*>( val.val.data )->xy, 8 ) == 8;
+		case NifValue::tColor3:
+			return device->read( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
+		case NifValue::tColor4:
+			return device->read( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
 		case NifValue::tString:
 		{
 			int len;
 			device->read( (char *) &len, 4 );
 			if ( len > 4096 )	qWarning( "maximum string length exceeded" );
 			QByteArray string = device->read( len );
-			if ( string.count() != len ) return false;
+			if ( string.size() != len ) return false;
+			
+			int i = 0;
+			while ( i < string.size() )
+			{
+				if ( string[i] == '\0' )
+				{
+					qWarning( "%d", i );
+					string.resize( string.size() + 1 );
+					for ( int x = string.size() - 1; x > i; x-- )
+						string[ x ] = string[ x - 1 ];
+					string[i++] = '\\';
+					string[i++] = '0';
+				}
+				else
+					i++;
+			}
+			
 			string.replace( "\r", "\\r" );
 			string.replace( "\n", "\\n" );
-			//string.replace( "\0", "\\0" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
-		case NifValue::tColor3:
-			return device->read( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
-		case NifValue::tColor4:
-			return device->read( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
+		case NifValue::tHeaderString:
+		{
+			QByteArray string;
+			int c = 0;
+			char chr = 0;
+			while ( c++ < 80 && device->getChar( &chr ) && chr != '\n' )
+				string.append( chr );
+			if ( c >= 80 ) return false;
+			*static_cast<QString*>( val.val.data ) = QString( string );
+		}	return true;
 		case NifValue::tByteArray:
 		{
 			int len;
@@ -596,7 +659,7 @@ bool NifStream::write( const NifValue & val )
 		case NifValue::tFlags:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
-		case NifValue::tVersion:
+		case NifValue::tFileVersion:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tParent:
@@ -613,21 +676,42 @@ bool NifStream::write( const NifValue & val )
 			return device->write( (char *) static_cast<Matrix*>( val.val.data )->m, 36 ) == 36;
 		case NifValue::tVector2:
 			return device->write( (char *) static_cast<Vector2*>( val.val.data )->xy, 8 ) == 8;
+		case NifValue::tColor3:
+			return device->write( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
+		case NifValue::tColor4:
+			return device->write( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
 		case NifValue::tString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
-			//string.replace( "\\0", "\0" );
-			int len = string.length();
+			
+			int i = 0;
+			while ( i < string.size() )
+			{
+				if ( string[i] == '\\' && string[i+1] == '0' )
+				{
+					string[i++] = '\0';
+					for ( int x = i; x < string.size() - 1; x++ )
+						string[x] = string[x+1];
+					string.resize( string.size() - 1 );
+				}
+				else
+					i++;
+			}
+			
+			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
-			return device->write( (const char *) string, string.length() ) == string.length();
+			return device->write( (const char *) string, string.size() ) == string.size();
 		}
-		case NifValue::tColor3:
-			return device->write( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
-		case NifValue::tColor4:
-			return device->write( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
+		case NifValue::tHeaderString:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			if ( device->write( (const char *) string, string.length() ) != string.length() )
+				return false;
+			return ( device->write( "\n", 1 ) == 1 );
+		}
 		case NifValue::tByteArray:
 		{
 			QByteArray * array = static_cast<QByteArray*>( val.val.data );

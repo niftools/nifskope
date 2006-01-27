@@ -67,6 +67,47 @@ inline void glMaterial( GLenum x, GLenum y, const Color4 & c )
 	glMaterialfv( x, y, c.data() );
 }
 
+void Transform::glMultMatrix() const
+{
+	GLfloat f[16];
+	for ( int c = 0; c < 3; c++ )
+	{
+		for ( int d = 0; d < 3; d++ )
+			f[ c*4 + d ] = rotation( d, c );
+		f[ 3*4 + c ] = translation[ c ];
+	}
+	f[  0 ] *= scale;
+	f[  5 ] *= scale;
+	f[ 10 ] *= scale;
+	
+	f[  3 ] = 0.0;
+	f[  7 ] = 0.0;
+	f[ 11 ] = 0.0;
+	f[ 15 ] = 1.0;
+	
+	glMultMatrixf( f );
+}
+
+void Transform::glLoadMatrix() const
+{
+	GLfloat f[16];
+	for ( int c = 0; c < 3; c++ )
+	{
+		for ( int d = 0; d < 3; d++ )
+			f[ c*4 + d ] = rotation( d, c );
+		f[ 3*4 + c ] = translation[ c ];
+	}
+	f[  0 ] *= scale;
+	f[  5 ] *= scale;
+	f[ 10 ] *= scale;
+	
+	f[  3 ] = 0.0;
+	f[  7 ] = 0.0;
+	f[ 11 ] = 0.0;
+	f[ 15 ] = 1.0;
+	
+	glLoadMatrixf( f );
+}
 
 Tristrip::Tristrip( const NifModel * nif, const QModelIndex & tristrip )
 {
@@ -442,6 +483,8 @@ void Mesh::setSpecial( const NifModel * nif, const QModelIndex & special )
 				colors.append( nif->itemData<Color4>( vertexcolors.child( r, 0 ) ) );
 		
 		QModelIndex uvcoord = nif->getIndex( special, "UV Sets" );
+		if ( ! uvcoord.isValid() )
+			uvcoord = nif->getIndex( special, "UV Sets 2" );
 		if ( uvcoord.isValid() )
 		{
 			QModelIndex uvcoordset = nif->index( texSet, 0, uvcoord );
@@ -831,8 +874,10 @@ void Mesh::draw( bool selected )
 		glDisable( GL_NORMALIZE );
 		glDisable( GL_LIGHTING );
 		glDisable( GL_COLOR_MATERIAL );
-		glColor4f( 0.0, 1.0, 0.0, 1.0 );
-		glLineWidth( 2.0 );
+		glColor4f( 0.0, 1.0, 0.0, 0.5 );
+		glLineWidth( 1.2 );
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		
 		foreach ( Triangle tri, triangles )
 		{
@@ -847,8 +892,15 @@ void Mesh::draw( bool selected )
 			}
 		}
 		
+		static const GLfloat stripcolor[6][4] = {
+			{ 0, 1, 0, .5 }, { 0, 1, 1, .5 },
+			{ 0, 0, 1, .5 }, { 1, 0, 1, .5 },
+			{ 1, 0, 0, .5 }, { 1, 1, 0, .5 } };
+		int c = 0;
 		foreach ( Tristrip strip, tristrips )
 		{
+			glColor4fv( stripcolor[c] );
+			if ( ++c >= 6 ) c = 0;
 			glBegin( GL_LINE_STRIP );
 			foreach ( int v, strip.vertices )
 			{

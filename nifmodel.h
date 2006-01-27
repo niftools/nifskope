@@ -276,8 +276,10 @@ public:
 	void removeNiBlock( int blocknum );
 	// returns the block number
 	int getBlockNumber( const QModelIndex & ) const;
-	// returns the parent block
-	QModelIndex getBlock( const QModelIndex & ) const;
+	// returns the parent block ( optional: check if it is of type name )
+	QModelIndex getBlock( const QModelIndex &, const QString & name = QString() ) const;
+	// returns the parent block/header
+	QModelIndex getBlockOrHeader( const QModelIndex & ) const;
 	// get the NiBlock at index x ( optional: check if it is of type name )
 	QModelIndex getBlock( int x, const QString & name = QString() ) const;
 	// get the number of NiBlocks
@@ -317,6 +319,8 @@ public:
 	static bool isAncestor( const QString & name );
 	// returns true if name inherits ancestor
 	static bool inherits( const QString & name, const QString & ancestor );
+	// returns true if the block containing index inherits ancestor
+	bool inherits( const QModelIndex & index, const QString & ancestor );
 	
 	
 	// set item value
@@ -442,9 +446,8 @@ protected:
 
 	// nif file version
 	quint32		version;
-	QByteArray	version_string;
 	
-	static QList<quint32>					supportedVersions;
+	static QList<quint32>		supportedVersions;
 	
 	//
 	static QHash<QString,NifBlock*>		compounds;

@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QDebug>
 #include <QDir>
+#include <QFileDialog>
 #include <QFileInfo>
 
 #include "glscene.h"
@@ -125,28 +126,10 @@ GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
 			external = nif->get<bool>( iTexSource, "Use External" );
 			if ( external )
 			{
-				QString filename = nif->get<QString>( iTexSource, "File Name" ).toLower();
+				filepath = findFile( nif->get<QString>( iTexSource, "File Name" ) );
 				
-				if ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
-					filename = filename.right( filename.length() - 1 );
-				
-				// attempt to find the texture in one of the folders
-				QDir dir;
-				foreach ( QString folder, texfolders )
+				if ( QFile::exists( filepath ) )
 				{
-					dir.setPath( folder );
-					if ( dir.exists( filename ) )
-						break;
-					if ( dir.exists( "../" + filename ) )
-					{
-						dir.cd( ".." );
-						break;
-					}
-				}
-				
-				if ( dir.exists( filename ) )
-				{
-					filepath = dir.filePath( filename );
 					readOnly = !QFileInfo( filepath ).isWritable();
 					loaded = QDateTime::currentDateTime();
 					
@@ -160,7 +143,7 @@ GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
 						qWarning() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
 				}
 				else
-					qWarning() << "texture" << filename << "not found";
+					qWarning() << "texture" << filepath << "not found";
 			}
 			else
 			{		// internal texture
@@ -222,6 +205,31 @@ void GLTex::release()
 	if ( id )
 		glDeleteTextures( 1, &id );
 	id = 0;
+}
+
+QString GLTex::findFile( const QString & file )
+{
+	if ( file.isEmpty() )
+		return QString();
+	
+	QString filename = file.toLower();
+	
+	while ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
+		filename.remove( 0, 1 );
+	
+	// attempt to find the texture in one of the folders
+	QDir dir;
+	foreach ( QString folder, texfolders )
+	{
+		dir.setPath( folder );
+		if ( dir.exists( filename ) )
+			return dir.filePath( filename );
+		
+		if ( filename.startsWith( "textures" ) && dir.exists( "../" + filename ) )
+			return dir.filePath( "../" + filename );
+	}
+	
+	return filename;
 }
 
 bool isPowerOfTwo( unsigned int x )
@@ -676,6 +684,76 @@ GLuint texLoadBMP( const QString & filename )
 	
 	static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
 	return texLoadRaw( f, width, height, 1, bpp, 3, BMP_RGBA_MASK, true );
+}
+
+bool GLTex::exportFile( const QString & name )
+{
+	if ( ! id )
+		return false;
+	
+	QString filename = name;
+	if ( ! filename.toLower().endsWith( ".tga" ) )
+		filename.append( ".tga" );
+
+	glBindTexture( GL_TEXTURE_2D, id );
+	
+	GLint w, h;
+	
+	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w );
+	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h );
+	
+	quint32 s = w * h * 4;
+	
+	quint8 * pixl = (quint8 *) malloc( s );
+	quint8 * data = (quint8 *) malloc( s );
+
+	glPixelStorei( GL_PACK_ALIGNMENT, 1 );
+	glPixelStorei( GL_PACK_SWAP_BYTES, GL_FALSE );
+	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixl );
+	
+	static const quint32 TGA_RGBA_MASK_INV[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
+	convertToRGBA( pixl, w, h, 4, TGA_RGBA_MASK_INV, true, false, data );
+	
+	free( pixl );
+	
+	QFile f( filename );
+	if ( ! f.open( QIODevice::WriteOnly ) )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		free( data );
+		return false;
+	}
+	
+	// write out tga header
+	quint8 hdr[18];
+	for ( int o = 0; o < 18; o++ ) hdr[o] = 0;
+
+	hdr[02] = TGA_COLOR;
+	hdr[12] = w % 256;
+	hdr[13] = w / 256;
+	hdr[14] = h % 256;
+	hdr[15] = h / 256;
+	hdr[16] = 32;
+	hdr[17] = 8;
+	
+	qint64 writeBytes = f.write( (char *) hdr, 18 );
+	if ( writeBytes != 18 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		free( data );
+		return false;
+	}
+	
+	writeBytes = f.write( (char *) data, s );
+	if ( writeBytes != s )
+	{
+		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		free( data );
+		return false;
+	}
+	
+	free( data );
+	return true;
 }
 
 #endif
