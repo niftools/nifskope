@@ -407,9 +407,11 @@ Mesh::Mesh( Scene * s, Node * p, const QModelIndex & i ) : Node( s, p, i )
 	texFilter = GL_LINEAR;
 	texWrapS = texWrapT = GL_REPEAT;
 	texOffset[0] = texOffset[1] = 0.0;
-	alphaEnable = false;
+	alphaBlend = alphaTest = false;
 	alphaSrc = GL_SRC_ALPHA;
 	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
+	alphaFunc = GL_GREATER;
+	alphaThreshold = 0;
 	specularEnable = false;
 }
 
@@ -423,9 +425,11 @@ void Mesh::clear()
 	texFilter = GL_LINEAR;
 	texWrapS = texWrapT = GL_REPEAT;
 	texOffset[0] = texOffset[1] = 0.0;
-	alphaEnable = false;
+	alphaBlend = alphaTest = false;
 	alphaSrc = GL_SRC_ALPHA;
 	alphaDst = GL_ONE_MINUS_SRC_ALPHA;
+	alphaFunc = GL_GREATER;
+	alphaThreshold = 0.0;
 	specularEnable = false;
 	
 	verts.clear();
@@ -626,9 +630,27 @@ void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 	{
 		blocks.append( QPersistentModelIndex( property ) );
 		
-		alphaEnable = true;
-		alphaSrc = GL_SRC_ALPHA; // using default blend mode
-		alphaDst = GL_ONE_MINUS_SRC_ALPHA;
+		unsigned short flags = nif->get<int>( property, "Flags" );
+		
+		alphaBlend = flags & 1;
+		
+		static const GLenum blendMap[16] = {
+			GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
+			GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA_SATURATE, GL_ONE,
+			GL_ONE, GL_ONE, GL_ONE, GL_ONE
+		};
+		
+		alphaSrc = blendMap[ ( flags >> 1 ) & 0x0f ];
+		alphaDst = blendMap[ ( flags >> 5 ) & 0x0f ];
+		
+		static const GLenum testMap[8] = {
+			GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
+		};
+		
+		alphaTest = flags & ( 1 << 9 );
+		alphaFunc = testMap[ ( flags >> 10 ) & 0x7 ];
+		alphaThreshold = nif->get<int>( property, "Threshold" ) / 255.0;
 	}
 	else if ( propname == "NiSpecularProperty" )
 	{
@@ -709,7 +731,7 @@ void Mesh::transform()
 		}
 	}
 	
-	if ( alphaEnable )
+	if ( alphaBlend )
 	{
 		triOrder.resize( triangles.count() );
 		int t = 0;
@@ -802,7 +824,7 @@ void Mesh::draw( bool selected )
 
 	// setup alpha blending
 
-	if ( alphaEnable && scene->blending )
+	if ( alphaBlend && scene->blending )
 	{
 		glEnable( GL_BLEND );
 		glBlendFunc( alphaSrc, alphaDst );
@@ -810,8 +832,19 @@ void Mesh::draw( bool selected )
 	else
 	{
 		glDisable( GL_BLEND );
+		glDisable( GL_ALPHA_TEST );
 	}
 	
+	// setup alpha testing
+	
+	if ( alphaTest && scene->blending )
+	{
+		glEnable( GL_ALPHA_TEST );
+		glAlphaFunc( alphaFunc, alphaThreshold );
+	}
+	else
+		glDisable( GL_ALPHA_TEST );
+
 	// normalize
 	
 	if ( transNorms.count() > 0 )
@@ -1054,13 +1087,13 @@ bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 )
 	// opaque meshes first (sorted from front to rear)
 	// then alpha enabled meshes (sorted from rear to front)
 	
-	if ( mesh1->alphaEnable == mesh2->alphaEnable )
-		if ( mesh1->alphaEnable )
+	if ( mesh1->alphaBlend == mesh2->alphaBlend )
+		if ( mesh1->alphaBlend )
 			return ( mesh1->sceneCenter[2] < mesh2->sceneCenter[2] );
 		else
 			return ( mesh1->sceneCenter[2] > mesh2->sceneCenter[2] );
 	else
-		return mesh2->alphaEnable;
+		return mesh2->alphaBlend;
 }
 
 void Scene::transform( const Transform & trans, float time )

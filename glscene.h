@@ -235,9 +235,9 @@ protected:
 	Vector2 texOffset;
 	int texSet;
 	
-	bool alphaEnable;
-	GLenum alphaSrc;
-	GLenum alphaDst;
+	bool alphaBlend, alphaTest;
+	GLenum alphaSrc, alphaDst, alphaFunc;
+	GLfloat alphaThreshold;
 	
 	bool specularEnable;
 	
