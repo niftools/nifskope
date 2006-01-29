@@ -61,6 +61,14 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
 }
 
+void NifTreeView::setRootIndex( const QModelIndex & index )
+{
+	QModelIndex root = index;
+	if ( root.isValid() && root.column() != 0 )
+		root = root.sibling( root.row(), 0 );
+	QTreeView::setRootIndex( root );
+}
+
 void NifTreeView::setCurrentIndexExpanded( const QModelIndex & index )
 {
 	if ( ! index.isValid() || index.model() != model() )
@@ -135,6 +143,10 @@ void NifTreeView::drawBranches( QPainter * painter, const QRect & rect, const QM
 void NifTreeView::updateConditions()
 {
 	if ( EvalConditions )
+	{
+		if ( isIndexHidden( currentIndex() ) )
+			setCurrentIndex( QModelIndex() );
 		doItemsLayout();
+	}
 }
 

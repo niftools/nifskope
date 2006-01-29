@@ -53,7 +53,8 @@ public:
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
-public slots:	
+public slots:
+	void setRootIndex( const QModelIndex & index );
 	void setCurrentIndexExpanded( const QModelIndex & index );
 
 	void setEvalConditions( bool );
