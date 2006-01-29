@@ -58,6 +58,7 @@ void NifModel::clear()
 {
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "header" ) );
+	insertType( root, NifData( "NiFooter", "footer" ) );
 	version = 0x04000002;
 	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
@@ -66,6 +67,38 @@ void NifModel::clear()
 	if ( item ) item->value().set<QString>( "NetImmerse File Format, Version 4.0.0.2" );
 }
 
+/*
+ *  footer functions
+ */
+ 
+NifItem * NifModel::getFooterItem() const
+{
+	return root->child( root->childCount() - 1 );
+}
+
+QModelIndex NifModel::getFooter() const
+{
+	NifItem * footer = getFooterItem();
+	if ( footer )
+		return createIndex( footer->row(), 0, footer );
+	else
+		return QModelIndex();
+}
+
+void NifModel::updateFooter()
+{
+
+	NifItem * footer = getFooterItem();
+	if ( ! footer ) return;
+	NifItem * roots = getItem( footer, "Roots" );
+	if ( ! roots ) return;
+	set<int>( roots, "Num Indices", rootLinks.count() );
+	NifItem * rootlinks = getItem( roots, "Indices" );
+	if ( ! rootlinks ) return;
+	updateArray( rootlinks, false );
+	for ( int r = 0; r < rootlinks->childCount(); r++ )
+		rootlinks->child( r )->value().setLink( rootLinks.value( r ) );
+}
 
 /*
  *  header functions
@@ -96,11 +129,11 @@ void NifModel::updateHeader()
 	{
 		QStringList blocktypes;
 		QList<int>	blocktypeindices;
-	
-		for ( int r = 1; r < root->childCount(); r++ )
+		
+		for ( int r = 1; r < root->childCount() - 1; r++ )
 		{
 			NifItem * block = root->child( r );
-
+			
 			if ( ! blocktypes.contains( block->name() ) )
 				blocktypes.append( block->name() );
 			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
@@ -112,10 +145,10 @@ void NifModel::updateHeader()
 		updateArray( idxBlockTypeIndices, false );
 		
 		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
-			idxBlockTypes->child( r )->value().set<QString>( blocktypes.value( r ) );
+			setItemData<QString>( idxBlockTypes->child( r ), blocktypes.value( r ) );
 		
 		for ( int r = 0; r < idxBlockTypeIndices->childCount(); r++ )
-			idxBlockTypeIndices->child( r )->value().setCount( blocktypeindices.value( r ) );
+			setItemData<int>( idxBlockTypeIndices->child( r ), blocktypeindices.value( r ) );
 	}
 }
 
@@ -230,9 +263,12 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 		if ( at >= 0 )
 			adjustLinks( root, at, 1 );
 		
-		if ( at >= 0 ) at++;
+		if ( at >= 0 )
+			at++;
+		else
+			at = getBlockCount() + 1;
 		
-		if ( ! fast ) beginInsertRows( QModelIndex(), ( at >= 0 ? at : rowCount() ), ( at >= 0 ? at : rowCount() ) );
+		if ( ! fast ) beginInsertRows( QModelIndex(), at, at );
 		NifItem * branch = insertBranch( root, NifData( identifier, "NiBlock" ), at );
 		if ( ! fast ) endInsertRows();
 		
@@ -248,6 +284,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 		{
 			updateHeader();
 			updateLinks();
+			updateFooter();
 			emit linksChanged();
 		}
 		return createIndex( branch->row(), 0, branch );
@@ -271,6 +308,7 @@ void NifModel::removeNiBlock( int blocknum )
 	endRemoveRows();
 	updateHeader();
 	updateLinks();
+	updateFooter();
 	emit linksChanged();
 }
 
@@ -283,10 +321,12 @@ int NifModel::getBlockNumber( const QModelIndex & idx ) const
 	while ( block && block->parent() != root )
 		block = block->parent();
 	
-	if ( block )
-		return block->row() - 1;
-	else
+	if ( ! block )
 		return -1;
+	
+	int num = block->row() - 1;
+	if ( num >= getBlockCount() )	num = -1;
+	return num;
 }
 
 QModelIndex NifModel::getBlock( const QModelIndex & idx, const QString & id ) const
@@ -302,20 +342,22 @@ QModelIndex NifModel::getBlockOrHeader( const QModelIndex & idx ) const
 	return block;
 }
 
-int NifModel::getBlockNumber( NifItem * item ) const
+int NifModel::getBlockNumber( NifItem * block ) const
 {
-	while ( item && item->parent() != root )
-		item = item->parent();
+	while ( block && block->parent() != root )
+		block = block->parent();
 	
-	if ( item )
-		return item->row() - 1;
-	else
+	if ( ! block )
 		return -1;
+	
+	int num = block->row() - 1;
+	if ( num >= getBlockCount() )	num = -1;
+	return num;
 }
 
 QModelIndex NifModel::getBlock( int x, const QString & name ) const
 {
-	if ( x < 0 )
+	if ( x < 0 || x >= getBlockCount() )
 		return QModelIndex();
 	x += 1; //the first block is the NiHeader
 	QModelIndex idx = index( x, 0 );
@@ -327,13 +369,13 @@ QModelIndex NifModel::getBlock( int x, const QString & name ) const
 
 NifItem * NifModel::getBlockItem( int x ) const
 {
-	if ( x < 0 )	return 0;
+	if ( x < 0 || x >= getBlockCount() )	return 0;
 	return root->child( x+1 );
 }
 
 int NifModel::getBlockCount() const
 {
-	return rowCount() - 1;
+	return rowCount() - 2;
 }
 
 
@@ -535,10 +577,7 @@ bool NifModel::setItemValue( const QModelIndex & index, const NifValue & val )
 bool NifModel::setValue( const QModelIndex & parent, const QString & name, const NifValue & val )
 {
 	if ( ! parent.isValid() )
-	{
-		qWarning() << "setValue(" << name << ") reached top level";
 		return false;
-	}
 	
 	if ( name.startsWith( "(" ) && name.endsWith( ")" ) )
 		return setValue( parent.parent(), name.mid( 1, name.length() - 2 ).trimmed(), val );
@@ -942,14 +981,12 @@ bool NifModel::load( QIODevice & device )
 	NifStream stream( version, &device );
 
 	// read header
-	if ( !load( getHeaderItem(), stream, true ) )
+	NifItem * header = getHeaderItem();
+	if ( !header || !load( header, stream, true ) )
 	{
 		qCritical() << "failed to load file header (version" << version << ")";
-		clear();
 		return false;
 	}
-	
-	QModelIndex header = index( 0, 0 );
 	
 	int numblocks = get<int>( header, "Num Blocks" );
 	qDebug( "numblocks %i", numblocks );
@@ -987,8 +1024,8 @@ bool NifModel::load( QIODevice & device )
 			{
 				if ( version < 0x0a020000 )		device.read( 4 );
 				
-				int blktypidx = itemValue( index( c, 0, getIndex( header, "Block Type Index" ) ) ).toCount();
-				blktyp = itemValue( index( blktypidx, 0, getIndex( header, "Block Types" ) ) ).toString();
+				int blktypidx = itemValue( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) ).toCount();
+				blktyp = itemValue( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) ).toString();
 			}
 			else
 			{
@@ -1009,6 +1046,8 @@ bool NifModel::load( QIODevice & device )
 			else
 				throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 		}
+		if ( !load( getFooterItem(), stream, true ) )
+			throw QString( "failed to load file footer" );
 	}
 	catch ( QString err )
 	{
@@ -1065,12 +1104,6 @@ bool NifModel::save( QIODevice & device )
 			return false;
 		}
 	}
-	
-	int rcnt = rootLinks.count();
-	device.write( (char *) &rcnt, 4 );
-	foreach ( int rlnk, rootLinks )
-		device.write( (char *) &rlnk, 4 );
-	
 	return true;
 }
 

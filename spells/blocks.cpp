@@ -21,7 +21,9 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QMenu menu;
-		foreach ( QString id, nif->allNiBlocks() )
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		foreach ( QString id, ids )
 			menu.addAction( id );
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
@@ -47,7 +49,9 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QMenu menu;
-		foreach ( QString id, nif->allNiBlocks() )
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		foreach ( QString id, ids )
 			if ( nif->inherits( id, "AProperty" ) )
 				menu.addAction( id );
 		

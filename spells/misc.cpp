@@ -40,6 +40,26 @@ public:
 
 REGISTER_SPELL( spUpdateHeader )
 
+class spUpdateFooter : public Spell
+{
+public:
+	QString name() const { return "Update"; }
+	QString page() const { return "Footer"; }
+	
+	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	{
+		return ( nif->getFooter() == nif->getBlockOrHeader( index ) );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		nif->updateFooter();
+		return index;
+	}
+};
+
+REGISTER_SPELL( spUpdateFooter )
+
 class spFollowLink : public Spell
 {
 public:
