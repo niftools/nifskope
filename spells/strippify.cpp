@@ -18,6 +18,7 @@ QList< QVector<quint16> > strippify( QVector<Triangle> triangles )
 	unsigned short numGroups = 0;
 	
 	SetStitchStrips( false );
+	//SetCacheSize( 64 );
 	GenerateStrips( data, triangles.count()*3, &groups, &numGroups );
 	free( data );
 	
@@ -79,9 +80,35 @@ class spStrippify : public Spell
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif->getVersion().startsWith( "4." )
-		&& QMessageBox::warning( 0, "Strippify", "It seems there is an issue that prevents Morrowind from loadind strippified meshes.<br>Give it a try anyway?", "Yes", "No" ) != 0 )
-			return index;
+		if ( nif->getVersion().startsWith( "4." ) )
+		{
+			bool hasCollisionNode = false;
+			for ( int b = 0; b < nif->getBlockCount(); b++ )
+			{
+				QModelIndex iBlock = nif->getBlock( b, "RootCollisionNode" );
+				if ( iBlock.isValid() )
+				{
+					hasCollisionNode = true;
+					break;
+				}
+			}
+			if ( ! hasCollisionNode )
+			{
+				QMessageBox::information( 0, "Strippify", "Cannot strippify nifs without collision nodes!" );
+				return index;
+			}
+			int parent = nif->getParent( nif->getBlockNumber( index ) );
+			while ( parent >= 0 )
+			{
+				QModelIndex iParent = nif->getBlock( parent, "NiNode" );
+				if ( ! iParent.isValid() )
+				{
+					QMessageBox::information( 0, "Strippify", "Only nodes parented to normal NiNodes can be strippified!" );
+					return index;
+				}
+				parent = nif->getParent( parent );
+			}
+		}
 		
 		QPersistentModelIndex idx = index;
 		QPersistentModelIndex iData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriShapeData" );
