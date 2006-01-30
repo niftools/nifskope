@@ -160,7 +160,95 @@ public:
 	}
 };
 
-REGISTER_SPELL( spChooseTexture );
+REGISTER_SPELL( spChooseTexture )
+
+class spAddBaseMap : public Spell
+{
+public:
+	QString name() const { return "Add Base Texture"; }
+	QString page() const { return "Texture"; }
+	
+	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Base Texture" ), "Is Used" ) == 0 ); 
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		if ( ! block.isValid() )	return index;
+		if ( nif->get<int>( block, "Texture Count" ) < 7 )
+			nif->set<int>( block, "Texture Count", 7 );
+		QModelIndex iGlow = nif->getIndex( block, "Base Texture" );
+		if ( ! iGlow.isValid() )	return index;
+		nif->set<int>( iGlow, "Is Used", 1 );
+		QPersistentModelIndex iTexDesc = nif->getIndex( iGlow, "Texture Data" );
+		if ( ! iTexDesc.isValid() ) return index;
+		
+		nif->set<int>( iTexDesc, "Clamp Mode", 3 );
+		nif->set<int>( iTexDesc, "Filter Mode", 3 );
+		nif->set<int>( iTexDesc, "PS2 K", 65461 );
+		nif->set<int>( iTexDesc, "Unknown1", 257 );
+		
+		QModelIndex iSrcTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( block ) + 1 );
+		nif->setLink( iTexDesc, "Source", nif->getBlockNumber( iSrcTex ) );
+		
+		nif->set<int>( iSrcTex, "Pixel Layout", 5 );
+		nif->set<int>( iSrcTex, "Use Mipmaps", 2 );
+		nif->set<int>( iSrcTex, "Alpha Format", 3 );
+		nif->set<int>( iSrcTex, "Unknown Byte", 1 );
+		nif->set<int>( nif->getIndex( iSrcTex, "Texture Source" ), "Use External", 1 );
+		
+		return iSrcTex;
+	}
+};
+
+REGISTER_SPELL( spAddBaseMap )
+
+class spAddGlowMap : public Spell
+{
+public:
+	QString name() const { return "Add Glow Map"; }
+	QString page() const { return "Texture"; }
+	
+	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Glow Texture" ), "Is Used" ) == 0 ); 
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		if ( ! block.isValid() )	return index;
+		if ( nif->get<int>( block, "Texture Count" ) < 7 )
+			nif->set<int>( block, "Texture Count", 7 );
+		QModelIndex iGlow = nif->getIndex( block, "Glow Texture" );
+		if ( ! iGlow.isValid() )	return index;
+		nif->set<int>( iGlow, "Is Used", 1 );
+		QPersistentModelIndex iTexDesc = nif->getIndex( iGlow, "Texture Data" );
+		if ( ! iTexDesc.isValid() ) return index;
+		
+		nif->set<int>( iTexDesc, "Clamp Mode", 3 );
+		nif->set<int>( iTexDesc, "Filter Mode", 3 );
+		nif->set<int>( iTexDesc, "PS2 K", 65461 );
+		nif->set<int>( iTexDesc, "Unknown1", 257 );
+		
+		QModelIndex iSrcTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( block ) + 1 );
+		nif->setLink( iTexDesc, "Source", nif->getBlockNumber( iSrcTex ) );
+		
+		nif->set<int>( iSrcTex, "Pixel Layout", 5 );
+		nif->set<int>( iSrcTex, "Use Mipmaps", 2 );
+		nif->set<int>( iSrcTex, "Alpha Format", 3 );
+		nif->set<int>( iSrcTex, "Unknown Byte", 1 );
+		nif->set<int>( nif->getIndex( iSrcTex, "Texture Source" ), "Use External", 1 );
+		
+		return iSrcTex;
+	}
+};
+
+REGISTER_SPELL( spAddGlowMap )
 
 class spPackTexture : public Spell
 {
