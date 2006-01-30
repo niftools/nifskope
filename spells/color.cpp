@@ -23,9 +23,9 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		if ( nif->itemValue( index ).type() == NifValue::tColor3 )
-			nif->setItemData<Color3>( index, Color3( ColorWheel::choose( nif->itemData<Color3>( index ).toQColor() ) ) );
+			nif->setItemData<Color3>( index, ColorWheel::choose( nif->itemData<Color3>( index ) ) );
 		else if ( nif->itemValue( index ).type() == NifValue::tColor4 )
-			nif->setItemData<Color4>( index, Color4( ColorWheel::choose( nif->itemData<Color4>( index ).toQColor() ) ) );
+			nif->setItemData<Color4>( index, ColorWheel::choose( nif->itemData<Color4>( index ) ) );
 		return index;
 	}
 };
@@ -263,25 +263,101 @@ void ColorWheel::setColor( int x, int y )
 	}
 }
 
-QColor ColorWheel::choose( const QColor & c, QWidget * parent )
+AlphaSlider::AlphaSlider( QWidget * parent )
+	: QSlider( parent )
+{
+	setRange( 0, 255 );
+	setValue( 255 );
+}
+
+QSize AlphaSlider::sizeHint() const
+{
+	return QSlider::sizeHint() * 1.4;
+}
+
+void AlphaSlider::setColor( const QColor & c )
+{
+	color0 = c;
+	color1 = c;
+	color0.setAlphaF( 0.0 );
+	color1.setAlphaF( 1.0 );
+	
+	update();
+}
+
+void AlphaSlider::paintEvent( QPaintEvent * e )
+{
+	int w2 = width() / 2;
+	int h2 = height() / 2;
+	
+	QPoint points[2];
+	if ( orientation() == Qt::Vertical )
+	{
+		points[0] = QPoint( w2, height() );
+		points[1] = QPoint( w2, 0 );
+	}
+	else
+	{
+		points[0] = QPoint( 0, h2 );
+		points[1] = QPoint( width(), h2 );
+	}
+	
+	QLinearGradient agrad = QLinearGradient( points[0], points[1] );
+	agrad.setColorAt( 0.0, color0 );
+	agrad.setColorAt( 1.0, color1 );
+	
+	QPainter p;
+	p.begin( this );
+	p.fillRect( rect(), agrad );
+	p.end();
+	
+	QSlider::paintEvent( e );
+}
+
+QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent )
 {
 	QDialog dlg( parent );
 	dlg.setWindowTitle( "Choose a Color" );
 	QGridLayout * grid = new QGridLayout;
 	dlg.setLayout( grid );
+	
 	ColorWheel * hsv = new ColorWheel;
 	hsv->setColor( c );
 	grid->addWidget( hsv, 0, 0, 1, 2 );
+	
+	AlphaSlider * alpha = new AlphaSlider;
+	alpha->setColor( c );
+	alpha->setValue( c.alpha() );
+	alpha->setOrientation( Qt::Vertical );
+	alpha->setVisible( alphaEnable );
+	grid->addWidget( alpha, 0, 2 );
+	connect( hsv, SIGNAL( sigColor( const QColor & ) ), alpha, SLOT( setColor( const QColor & ) ) );
+	
+	QHBoxLayout * hbox = new QHBoxLayout;
+	grid->addLayout( hbox, 1, 0, 1, 3 );
 	QPushButton * ok = new QPushButton( "ok" );
-	grid->addWidget( ok, 1, 0 );
+	hbox->addWidget( ok );
 	QPushButton * cancel = new QPushButton( "cancel" );
-	grid->addWidget( cancel, 1, 1 );
+	hbox->addWidget( cancel );
 	connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
 	connect( cancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+	
 	if ( dlg.exec() == QDialog::Accepted )
-		return hsv->getColor();
+	{
+		QColor color = hsv->getColor();
+		color.setAlphaF( alpha->value() / 255.0 );
+		return color;
+	}
 	else
 		return c;
 }
 
+Color3 ColorWheel::choose( const Color3 & c, QWidget * parent )
+{
+	return Color3( choose( c.toQColor(), false, parent ) );
+}
 
+Color4 ColorWheel::choose( const Color4 & c, QWidget * parent )
+{
+	return Color4( choose( c.toQColor(), true, parent ) );
+}

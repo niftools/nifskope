@@ -2,13 +2,18 @@
 #define SPELL_COLOR_H
 
 #include <QColor>
+#include <QSlider>
 #include <QWidget>
+
+#include "../niftypes.h"
 
 class ColorWheel : public QWidget
 {
 	Q_OBJECT
 public:
-	static QColor choose( const QColor & color, QWidget * parent = 0 );
+	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = 0 );
+	static Color3 choose( const Color3 & color, QWidget * parent = 0 );
+	static Color4 choose( const Color4 & color, QWidget * parent = 0 );
 	
 	static QIcon getIcon();
 	
@@ -46,5 +51,22 @@ private:
 	static QIcon * icon;
 };
 
+class AlphaSlider : public QSlider
+{
+	Q_OBJECT
+public:
+	AlphaSlider( QWidget * parent = 0 );
+	
+	QSize sizeHint() const;
+	
+public slots:
+	void setColor( const QColor & c );
+	
+protected:
+	void paintEvent( QPaintEvent * e );
+	
+	QColor color0;
+	QColor color1;
+};
 
 #endif
