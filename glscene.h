@@ -194,10 +194,6 @@ protected:
 	
 	friend class KeyframeController;
 	friend class VisibilityController;
-
-private:
-	bool		worldDirty;
-	Transform	world;
 };
 
 class Mesh : public Node
@@ -313,6 +309,8 @@ public:
 
 	QList<Mesh*> meshes;
 	QHash<int,Node*> nodes;
+	
+	QHash<int,Transform> worldTrans;
 	
 	Transform view;
 	

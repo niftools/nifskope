@@ -234,7 +234,6 @@ bool Node::make()
 	flags.bits = nif->get<int>( iBlock, "Flags" ) & 1;
 
 	local = Transform( nif, iBlock );
-	worldDirty = true;
 	
 	foreach( int link, nif->getChildLinks( nodeId ) )
 	{
@@ -299,15 +298,15 @@ void Node::setSpecial( const NifModel * nif, const QModelIndex & )
 
 const Transform & Node::worldTrans()
 {
-	if ( worldDirty )
-	{
-		if ( parent )
-			world = parent->worldTrans() * local;
-		else
-			world = local;
-		worldDirty = false;
-	}
-	return world;
+	if ( scene->worldTrans.contains( nodeId ) )
+		return scene->worldTrans[ nodeId ];
+
+	Transform t = local;
+	if ( parent )
+		t = parent->worldTrans() * t;
+	
+	scene->worldTrans.insert( nodeId, t );
+	return scene->worldTrans[ nodeId ];
 }
 
 Transform Node::localTransFrom( int root )
@@ -319,10 +318,7 @@ Transform Node::localTransFrom( int root )
 		trans = node->local * trans;
 		node = node->parent;
 	}
-	if ( node )
-		return trans;
-	else
-		return Transform();
+	return trans;
 }
 
 bool Node::isHidden() const
@@ -346,7 +342,6 @@ void Node::depthBuffer( bool & test, bool & mask )
 void Node::transform()
 {
 	Controllable::transform();
-	worldDirty = true;
 }
 
 void Node::boundaries( Vector3 & min, Vector3 & max )
@@ -606,7 +601,7 @@ void Mesh::setProperty( const NifModel * nif, const QModelIndex & property )
 			case 3:		texFilter = GL_LINEAR_MIPMAP_NEAREST;		break;
 			case 4:		texFilter = GL_NEAREST_MIPMAP_LINEAR;		break;
 			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
-			default:	texFilter = GL_NEAREST;		break;
+			default:	texFilter = GL_LINEAR;		break;
 		}
 		switch ( nif->get<int>( basetexdata, "Clamp Mode" ) )
 		{
@@ -696,12 +691,15 @@ void Mesh::transform()
 		transNorms.resize( norms.count() );
 		transNorms.fill( Vector3() );
 		
+		Transform root = scene->view * localTransFrom( skelRoot );
+		
 		foreach ( BoneWeights bw, weights )
 		{
 			Node * bone = scene->nodes.value( bw.bone );
-			Transform trans = sceneTrans * skelTrans;
+			Transform trans = root;
 			if ( bone )
-				trans = trans * bone->localTransFrom( skelRoot );
+				trans = trans * bone->worldTrans();
+			
 			trans = trans * bw.trans;
 			
 			Matrix natrix = trans.rotation;
@@ -908,7 +906,7 @@ void Mesh::draw( bool selected )
 		glDisable( GL_LIGHTING );
 		glDisable( GL_COLOR_MATERIAL );
 		glColor4f( 0.0, 1.0, 0.0, 0.5 );
-		glLineWidth( 1.2 );
+		glLineWidth( 1.0 );
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		
@@ -1100,6 +1098,8 @@ void Scene::transform( const Transform & trans, float time )
 {
 	view = trans;
 	this->time = time;
+	
+	worldTrans.clear();
 	
 	foreach ( Node * node, nodes )
 		node->transform();
