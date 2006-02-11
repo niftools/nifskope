@@ -30,60 +30,44 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLCONTROLLER_H
-#define GLCONTROLLER_H
+#ifndef GLTEX_H
+#define GLTEX_H
+
+#include <QtOpenGL>
 
 #include "nifmodel.h"
 
-#include <QPointer>
-
-class Scene;
-class Node;
-
-class Controller
+class GLTex
 {
-	typedef union
-	{
-		quint16 bits;
-		
-		struct Controller
-		{
-			bool unknown : 1;
-			enum
-			{
-				Cyclic = 0, Reverse = 1, Constant = 2
-			} extrapolation : 2;
-			bool active : 1;
-		} controller;
-		
-	} ControllerFlags;
-	
 public:
-	Controller( const QModelIndex & index );
-	virtual ~Controller() {}
+	GLTex( const QModelIndex &, const QString & additionalFolders = QString()  );
+	~GLTex();
 	
-	float start;
-	float stop;
-	float phase;
-	float frequency;
+	void release();
+
+	bool isValid() const;
+	void invalidate();
+
+	static void initialize( const QGLContext * context );
 	
-	ControllerFlags flags;
+	static QString findFile( const QString & file, const QString & additionalFolders = QString() );
 	
-	virtual void update( float time ) = 0;
+	bool exportFile( const QString & file );
 	
-	virtual void update( const NifModel * nif, const QModelIndex & index );
+	GLuint		id;
+
+	QPersistentModelIndex iSource;
 	
-	QModelIndex index() const { return iBlock; }
+	bool		external;
 	
-	float ctrlTime( float time ) const;
-	
-	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
-	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
-	
-protected:
-	QPersistentModelIndex iBlock;
+	QString		filepath;
+	bool		readOnly;
+	QDateTime	loaded;
+
+	QPersistentModelIndex iPixelData;
+
+	static QStringList texfolders;
 };
 
+
 #endif
-
-

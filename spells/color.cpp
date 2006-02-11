@@ -14,8 +14,9 @@ public:
 	QString name() const { return "Choose"; }
 	QString page() const { return "Color"; }
 	QIcon icon() const { return ColorWheel::getIcon(); }
+	bool instant() const { return true; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return nif->itemValue( index ).isColor();
 	}
@@ -23,9 +24,9 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		if ( nif->itemValue( index ).type() == NifValue::tColor3 )
-			nif->setItemData<Color3>( index, ColorWheel::choose( nif->itemData<Color3>( index ) ) );
+			nif->set<Color3>( index, ColorWheel::choose( nif->get<Color3>( index ) ) );
 		else if ( nif->itemValue( index ).type() == NifValue::tColor4 )
-			nif->setItemData<Color4>( index, ColorWheel::choose( nif->itemData<Color4>( index ) ) );
+			nif->set<Color4>( index, ColorWheel::choose( nif->get<Color4>( index ) ) );
 		return index;
 	}
 };

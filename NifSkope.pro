@@ -9,8 +9,16 @@ QT += xml opengl
 DESTDIR = ./
 
 HEADERS += \
+glcontrolable.h \
 glcontroller.h \
+gllight.h \
+glmesh.h \
+glnode.h \
+glparticles.h \
+glproperty.h \
 glscene.h \
+gltex.h \
+gltransform.h \
 glview.h \
 nifdelegate.h \
 nifmodel.h \
@@ -23,8 +31,14 @@ spells/*.h
 
 SOURCES += \
 glcontroller.cpp \
+gllight.cpp \
+glmesh.cpp \
+glnode.cpp \
+glparticles.cpp \
+glproperty.cpp \
 glscene.cpp \
 gltex.cpp \
+gltransform.cpp \
 glview.cpp \
 nifdelegate.cpp \
 nifmodel.cpp \

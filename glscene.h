@@ -37,258 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
-class Scene;
-
-class Transform
-{
-public:
-	Transform( const NifModel * nif, const QModelIndex & transform )
-	{
-		rotation = nif->get<Matrix>( transform, "Rotation" );
-		translation = nif->get<Vector3>( transform, "Translation" );
-		scale = nif->get<float>( transform, "Scale" );
-	}
-	
-	Transform()
-	{
-		scale = 1.0;
-	}
-	
-	void writeBack( NifModel * nif, const QModelIndex & transform ) const
-	{
-		nif->set<Matrix>( transform, "Rotation", rotation );
-		nif->set<Vector3>( transform, "Translation", translation );
-		nif->set<float>( transform, "Scale", scale );
-	}
-	
-	Transform operator*( const Transform & m ) const
-	{
-		Transform t;
-		t.translation = rotation * m.translation + translation * m.scale;
-		t.rotation = rotation * m.rotation;
-		t.scale = m.scale * scale;
-		return t;
-	}
-	
-	Vector3 operator*( const Vector3 & v ) const
-	{
-		return rotation * v * scale + translation;
-	}
-	
-	void glMultMatrix() const;
-	void glLoadMatrix() const;
-
-	Matrix rotation;
-	Vector3 translation;
-	GLfloat scale;
-};
-
-class Tristrip
-{
-public:
-	Tristrip() {}
-	Tristrip( const NifModel * nif, const QModelIndex & );
-	
-	QVector<int>	vertices;
-};
-
-class VertexWeight
-{
-public:
-	VertexWeight()
-	{ vertex = 0; weight = 0.0; }
-	VertexWeight( int v, GLfloat w )
-	{ vertex = v; weight = w; }
-	
-	int vertex;
-	GLfloat weight;
-};
-
-class BoneWeights
-{
-public:
-	BoneWeights() { bone = 0; }
-	BoneWeights( const NifModel * nif, const QModelIndex & index, int b );
-	
-	Transform trans;
-	int bone;
-	QVector<VertexWeight> weights;
-};
-
-class Controller;
-
-class Controllable
-{
-public:
-	Controllable( Scene * Scene, const QModelIndex & index );
-	virtual ~Controllable();
-	
-	virtual void clear();
-	virtual bool update( const QModelIndex & index );
-	
-	virtual void transform();
-	
-	virtual void timeBounds( float & start, float & stop );
-
-protected:
-	Scene * scene;
-	
-	QPersistentModelIndex iBlock;
-
-	QList<Controller*> controllers;
-};
-
-typedef union
-{
-	quint16 bits;
-	
-	struct Node
-	{
-		bool hidden : 1;
-	} node;
-
-} NodeFlags;
-
-class Node : public Controllable
-{
-public:
-	Node( Scene * scene, Node * parent, const QModelIndex & block );
-	
-	virtual void clear();
-	virtual bool make();
-	virtual bool update( const QModelIndex & block );
-	
-	virtual const Transform & worldTrans();
-	virtual Transform localTransFrom( int parentNode );
-	
-	virtual void transform();
-	virtual void draw( bool selected );
-	
-	bool isHidden() const;
-	
-	int id() const { return nodeId; }
-	
-	void depthBuffer( bool & test, bool & mask );
-	
-	virtual void boundaries( Vector3 & min, Vector3 & max );
-	
-protected:
-	virtual void setController( const NifModel * nif, const QModelIndex & controller );
-	virtual void setProperty( const NifModel * nif, const QModelIndex & property );
-	virtual void setSpecial( const NifModel * nif, const QModelIndex & special );
-
-	Node * parent;
-	
-	QPersistentModelIndex block;
-	QList<QPersistentModelIndex> blocks;
-	
-	int nodeId;
-	
-	Transform local;
-
-	NodeFlags flags;
-	
-	bool depthProp;
-	bool depthTest;
-	bool depthMask;
-	
-	friend class KeyframeController;
-	friend class VisibilityController;
-};
-
-class Mesh : public Node
-{
-public:
-	Mesh( Scene * s, Node * parent, const QModelIndex & block );
-	
-	void clear();
-	bool make();
-	
-	void transform();
-	void draw( bool selected );
-	
-	void boundaries( Vector3 & min, Vector3 & max );
-	
-protected:	
-	void setSpecial( const NifModel * nif, const QModelIndex & special );
-	void setProperty( const NifModel * nif, const QModelIndex & property );
-	void setController( const NifModel * nif, const QModelIndex & controller );
-	
-	Vector3 localCenter;
-	Vector3 sceneCenter;
-	
-	QVector<Vector3> verts;
-	QVector<Vector3> norms;
-	QVector<Color4>  colors;
-	QVector<Vector2> uvs;
-	
-	Color4 ambient, diffuse, specular, emissive;
-	GLfloat shininess, alpha;
-	
-	QPersistentModelIndex iBaseTex;
-	GLenum texFilter;
-	GLint texWrapS, texWrapT;
-	Vector2 texOffset;
-	int texSet;
-	
-	bool alphaBlend, alphaTest;
-	GLenum alphaSrc, alphaDst, alphaFunc;
-	GLfloat alphaThreshold;
-	
-	bool specularEnable;
-	
-	int skelRoot;
-	Transform skelTrans;
-	QVector<BoneWeights> weights;
-	
-	QVector<Triangle> triangles;
-	QVector<Tristrip> tristrips;
-	
-	QVector< QPair< int, float > > triOrder;
-	
-	QVector<Vector3> transVerts;
-	QVector<Vector3> transNorms;
-	
-	friend bool compareMeshes( const Mesh * mesh1, const Mesh * mesh2 );
-	
-	friend class AlphaController;
-	friend class MorphController;
-	friend class TexFlipController;
-	friend class TexCoordController;
-};
-
-class GLTex
-{
-public:
-	GLTex( const QModelIndex & );
-	~GLTex();
-	
-	void release();
-
-	static void initialize( const QGLContext * context );
-	
-	static QString findFile( const QString & file );
-	
-	bool exportFile( const QString & file );
-
-	GLuint		id;
-
-	QPersistentModelIndex iSource;
-	
-	bool		external;
-	
-	QString		filepath;
-	bool		readOnly;
-	QDateTime	loaded;
-
-	QPersistentModelIndex iPixelData;
-
-	static QStringList texfolders;
-
-private:
-	static QIcon * icon;
-};
-
+#include "glnode.h"
+#include "glproperty.h"
+#include "gltransform.h"
+#include "gltex.h"
 
 class Scene
 {
@@ -296,21 +48,29 @@ public:
 	Scene();
 	~Scene();
 
-	void clear();
-	void make( NifModel * nif );
+	void clear( bool flushTextures = true );
+	void make( NifModel * nif, bool flushTextures = false );
 	void make( NifModel * nif, int blockNumber, QStack<int> & nodestack );
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
 	void transform( const Transform & trans, float time = 0.0 );
-	void draw();
+	void drawShapes();
+	void drawNodes();
 	
 	bool bindTexture( const QModelIndex & );
-
-	QList<Mesh*> meshes;
-	QHash<int,Node*> nodes;
+	void setupLights( Node * node );
 	
-	QHash<int,Transform> worldTrans;
+	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
+	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
+
+	NodeList nodes;
+	PropertyList properties;
+	NodeList lights;
+
+	NodeList roots;
+
+	mutable QHash<int,Transform> worldTrans;
 	
 	Transform view;
 	
@@ -321,16 +81,44 @@ public:
 	bool texturing;
 	QList<GLTex*> textures;
 	
+	QString nifFolder;
+	
 	bool blending;
+	bool lighting;
 	
 	bool highlight;
 	int currentNode;
 	
-	bool drawNodes;
 	bool drawHidden;
 	
 	Vector3 boundMin, boundMax, boundCenter, boundRadius;
 	float timeMin, timeMax;
 };
+
+inline void glVertex( const Vector3 & v )
+{
+	glVertex3fv( v.data() );
+}
+
+inline void glNormal( const Vector3 & v )
+{
+	glNormal3fv( v.data() );
+}
+
+inline void glTexCoord( const Vector2 & v )
+{
+	glTexCoord2fv( v.data() );
+}
+
+inline void glColor( const Color3 & c )
+{
+	glColor3fv( c.data() );
+}
+
+inline void glColor( const Color4 & c )
+{
+	glColor4fv( c.data() );
+}
+
 
 #endif

@@ -208,6 +208,11 @@ public:
 		return true;
 	}
 	
+	bool checkType( const NifData & data )
+	{
+		return NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "(ARG)";
+	}
+	
 	bool endDocument()
 	{	// make a rough check of the maps
 		foreach ( QString key, NifModel::compounds.keys() )
@@ -215,7 +220,7 @@ public:
 			NifBlock * c = NifModel::compounds.value( key );
 			foreach ( NifData data, c->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone ) )
+				if ( ! checkType( data ) )
 					err( "compound type " + key + " referes to unknown type " + data.type() );
 				if ( data.type() == key )
 					err( "compound type " + key + " contains itself" );
@@ -234,7 +239,7 @@ public:
 			}
 			foreach ( NifData data, blk->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone ) )
+				if ( ! checkType( data ) )
 					err( "ancestor block " + key + " referes to unknown type " + data.type() );
 			}
 		}
@@ -249,8 +254,8 @@ public:
 			}
 			foreach ( NifData data, blk->types )
 			{
-				if ( ! ( NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone ) )
-					err( "compound type " + key + " referres to unknown type " + data.type() );
+				if ( ! checkType( data ) )
+					err( "niblock " + key + " referres to unknown type " + data.type() );
 			}
 		}
 		return true;

@@ -30,60 +30,30 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLCONTROLLER_H
-#define GLCONTROLLER_H
+#ifndef GLLIGHT_H
+#define GLLIGHT_H
 
-#include "nifmodel.h"
+#include "glnode.h"
 
-#include <QPointer>
-
-class Scene;
-class Node;
-
-class Controller
+class Light : public Node
 {
-	typedef union
-	{
-		quint16 bits;
-		
-		struct Controller
-		{
-			bool unknown : 1;
-			enum
-			{
-				Cyclic = 0, Reverse = 1, Constant = 2
-			} extrapolation : 2;
-			bool active : 1;
-		} controller;
-		
-	} ControllerFlags;
-	
 public:
-	Controller( const QModelIndex & index );
-	virtual ~Controller() {}
+	Light( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 	
-	float start;
-	float stop;
-	float phase;
-	float frequency;
+	void update( const NifModel * nif, const QModelIndex & b );
 	
-	ControllerFlags flags;
-	
-	virtual void update( float time ) = 0;
-	
-	virtual void update( const NifModel * nif, const QModelIndex & index );
-	
-	QModelIndex index() const { return iBlock; }
-	
-	float ctrlTime( float time ) const;
-	
-	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
-	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
+	void on( int n );
+	static void off( int n );
 	
 protected:
-	QPersistentModelIndex iBlock;
+	GLfloat dimmer;
+	Color4 ambient, diffuse, specular;
+	
+	bool spot, directional;
+	
+	GLfloat constant, linear, quadratic;
+	GLfloat exponent, cutoff;
 };
 
+
 #endif
-
-

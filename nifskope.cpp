@@ -56,6 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QUrl>
 
 #include <QListView>
 #include <QTreeView>
@@ -476,6 +477,8 @@ void NifSkope::load()
 	QFile f( lineLoad->text() );
 	if ( f.open( QIODevice::ReadOnly ) )
 	{
+		ogl->setNifFolder( lineLoad->text().left( qMax( lineLoad->text().lastIndexOf( "\\" ), lineLoad->text().lastIndexOf( "/" ) ) ) );
+		
 		setEnabled( false );
 		bool a = ogl->aAnimate->isChecked();
 		bool r = ogl->aRotate->isChecked();
@@ -540,7 +543,6 @@ NifSkope * NifSkope::createWindow()
 	skope->setAttribute( Qt::WA_DeleteOnClose );
 	QSettings settings( "NifTools", "NifSkope" );
 	skope->restore( settings );
-	skope->resize( skope->sizeHint() );
 	skope->show();
 	return skope;
 }
@@ -590,15 +592,10 @@ int main( int argc, char * argv[] )
 	qInstallMsgHandler(myMessageOutput);
 	
 	NifSkope * skope = NifSkope::createWindow();
-
+	
     if (app.argc() > 1)
         skope->load(QString(app.argv()[app.argc() - 1]));
 
 	// start the event loop
 	return app.exec();
-}
-
-void NifSkope::sltToolSkel()
-
-{
 }

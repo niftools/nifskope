@@ -53,6 +53,12 @@ QMultiHash<QString,Spell*> & SpellBook::hash()
 	return *_hash;
 }
 
+QList<Spell*> & SpellBook::instants()
+{
+	static QList<Spell*> * _instants = new QList<Spell*>();
+	return *_instants;
+}
+
 SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * receiver, const char * member ) : QMenu(), Nif( 0 )
 {
 	setTitle( "Spells" );
@@ -162,6 +168,9 @@ void SpellBook::registerSpell( Spell * spell )
 	spells().append( spell );
 	hash().insertMulti( spell->name(), spell );
 	
+	if ( spell->instant() )
+		instants().append( spell );
+	
 	foreach ( SpellBook * book, books() )
 	{
 		book->newSpellRegistered( spell );
@@ -189,6 +198,16 @@ Spell * SpellBook::lookup( const QString & id )
 			return spell;
 	}
 	
+	return 0;
+}
+
+Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
+{
+	foreach ( Spell * spell, instants() )
+	{
+		if ( spell->isApplicable( nif, index ) )
+			return spell;
+	}
 	return 0;
 }
 

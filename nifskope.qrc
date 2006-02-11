@@ -2,5 +2,6 @@
 <qresource prefix="/res">
    <file>nif.xml</file>
    <file>nifskope.png</file>
+   <file>spells/skel.dat</file>
 </qresource>
 </RCC>

@@ -6,7 +6,7 @@ public:
 	QString name() const { return "Update"; }
 	QString page() const { return "Array"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ! nif->itemArr1( index ).isEmpty();
 	}
@@ -26,7 +26,7 @@ public:
 	QString name() const { return "Update"; }
 	QString page() const { return "Header"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getHeader() == nif->getBlockOrHeader( index ) );
 	}
@@ -46,7 +46,7 @@ public:
 	QString name() const { return "Update"; }
 	QString page() const { return "Footer"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getFooter() == nif->getBlockOrHeader( index ) );
 	}
@@ -65,7 +65,7 @@ class spFollowLink : public Spell
 public:
 	QString name() const { return "Follow Link"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return nif->itemIsLink( index ) && nif->itemLink( index ) >= 0;
 	}

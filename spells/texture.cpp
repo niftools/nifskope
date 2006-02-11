@@ -1,6 +1,6 @@
 
 #include "../spellbook.h"
-#include "../glscene.h"
+#include "../gltex.h"
 
 #include <QGLPixelBuffer>
 
@@ -106,6 +106,8 @@ static char * tex42_xpm[] = {
 "                                       d  d                                     ",
 "                                                                                "};
 
+QIcon * tex42_xpm_icon = 0;
+
 class spChooseTexture : public Spell
 {
 public:
@@ -113,13 +115,16 @@ public:
 	QString page() const { return "Texture"; }
 	QIcon icon() const
 	{
-		return QIcon( tex42_xpm );
+		if ( ! tex42_xpm_icon ) tex42_xpm_icon = new QIcon( tex42_xpm );
+		return *tex42_xpm_icon;
 	}
+	bool instant() const { return true; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex index = nif->getBlock( idx );
-		return ( nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture" );
+		return ( nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture"
+			&& ( index == idx || nif->itemName( idx ) == "File Name" ) );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
@@ -168,7 +173,7 @@ public:
 	QString name() const { return "Add Base Texture"; }
 	QString page() const { return "Texture"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Base Texture" ), "Is Used" ) == 0 ); 
@@ -212,7 +217,7 @@ public:
 	QString name() const { return "Add Glow Map"; }
 	QString page() const { return "Texture"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Glow Texture" ), "Is Used" ) == 0 ); 
@@ -256,7 +261,7 @@ public:
 	QString name() const { return "Pack"; }
 	QString page() const { return "Texture"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex index = nif->getBlock( idx );
 		if ( ! ( QGLPixelBuffer::hasOpenGLPbuffers() && nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture" ) )
@@ -369,7 +374,7 @@ public:
 					static const int unknownPixeldataBytes[8] = { 129, 8, 130, 32, 0, 65, 12, 0 };
 					for ( int r = 0; r < 8 && r < nif->rowCount( iUnknown ); r++ )
 					{
-						nif->setItemData<int>( iUnknown.child( r, 0 ), unknownPixeldataBytes[r] );
+						nif->set<int>( iUnknown.child( r, 0 ), unknownPixeldataBytes[r] );
 					}
 				}
 				
@@ -381,6 +386,7 @@ public:
 					nif->setLink( iTexSrc, "Pixel Data", blockNum+1 );
 				}
 			}
+			delete tex;
 			return iSourceTexture;
 		}
 		delete tex;
@@ -396,7 +402,7 @@ public:
 	QString name() const { return "Export"; }
 	QString page() const { return "Texture"; }
 
-	bool isApplicable( NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex index = nif->getBlock( idx );
 		if ( ! ( QGLPixelBuffer::hasOpenGLPbuffers() && nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture" ) )
@@ -433,7 +439,7 @@ public:
 	QString name() const { return "Folders"; }
 	QString page() const { return "Texture"; }
 	
-	bool isApplicable( NifModel *, const QModelIndex & index )
+	bool isApplicable( const NifModel *, const QModelIndex & index )
 	{
 		return ! index.isValid();
 	}
@@ -499,3 +505,76 @@ public:
 };
 
 REGISTER_SPELL( spTextureFolders )
+
+class spFlipTexCoords : public Spell
+{
+public:
+	QString name() const { return "Flip UV"; }
+	QString page() const { return "Texture"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->itemType( index ) == "texcoord";
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QMenu menu;
+		static const char * const flipCmds[3] = { "S = 1.0 - S", "T = 1.0 - T", "S <=> T" };
+		for ( int c = 0; c < 3; c++ )
+			menu.addAction( flipCmds[c] );
+		QAction * act = menu.exec( QCursor::pos() );
+		for ( int c = 0; c < 3; c++ )
+			if ( act->text() == flipCmds[c] )
+				flip( nif, index, c );
+		return index;
+	}
+
+	void flip( NifModel * nif, const QModelIndex & index, int f )
+	{
+		if ( nif->isArray( index ) )
+		{
+			QModelIndex idx = index.child( 0, 0 );
+			if ( idx.isValid() )
+			{
+				if ( nif->isArray( idx ) )
+					flip( nif, idx, f );
+				else
+				{
+					QVector<Vector2> tc = nif->getArray<Vector2>( index );
+					for ( int c = 0; c < tc.count(); c++ )
+						flip( tc[c], f );
+					nif->setArray<Vector2>( index, tc );
+				}
+			}
+		}
+		else
+		{
+			Vector2 v = nif->get<Vector2>( index );
+			flip( v, f );
+			nif->set<Vector2>( index, v );
+		}
+	}
+
+	void flip( Vector2 & v, int f )
+	{
+		switch ( f )
+		{
+			case 0:
+				v[0] = 1.0 - v[0];
+				break;
+			case 1:
+				v[1] = 1.0 - v[1];
+				break;
+			default:
+				{
+					float x = v[0];
+					v[0] = v[1];
+					v[1] = x;
+				}	break;
+		}
+	}
+	
+};
+
+REGISTER_SPELL( spFlipTexCoords )

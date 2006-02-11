@@ -30,60 +30,82 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLCONTROLLER_H
-#define GLCONTROLLER_H
+#ifndef GLTRANSFORM_H
+#define GLTRANSFORM_H
 
-#include "nifmodel.h"
+#include "niftypes.h"
 
-#include <QPointer>
+#include <QVector>
 
-class Scene;
-class Node;
+class NifModel;
+class QModelIndex;
+class QDataStream;
 
-class Controller
+class Transform
 {
-	typedef union
-	{
-		quint16 bits;
-		
-		struct Controller
-		{
-			bool unknown : 1;
-			enum
-			{
-				Cyclic = 0, Reverse = 1, Constant = 2
-			} extrapolation : 2;
-			bool active : 1;
-		} controller;
-		
-	} ControllerFlags;
-	
 public:
-	Controller( const QModelIndex & index );
-	virtual ~Controller() {}
+	Transform( const NifModel * nif, const QModelIndex & transform );
+	Transform()	{ scale = 1.0; }
 	
-	float start;
-	float stop;
-	float phase;
-	float frequency;
+	static bool canConstruct( const NifModel * nif, const QModelIndex & parent );
 	
-	ControllerFlags flags;
+	void writeBack( NifModel * nif, const QModelIndex & transform ) const;
 	
-	virtual void update( float time ) = 0;
+	Transform operator*( const Transform & m ) const
+	{
+		Transform t;
+		t.translation = rotation * m.translation + translation * m.scale;
+		t.rotation = rotation * m.rotation;
+		t.scale = m.scale * scale;
+		return t;
+	}
 	
-	virtual void update( const NifModel * nif, const QModelIndex & index );
+	Vector3 operator*( const Vector3 & v ) const
+	{
+		return rotation * v * scale + translation;
+	}
 	
-	QModelIndex index() const { return iBlock; }
+	void glMultMatrix() const;
+	void glLoadMatrix() const;
+
+	Matrix rotation;
+	Vector3 translation;
+	float scale;
+
+	friend QDataStream & operator<<( QDataStream & ds, const Transform & t );
+	friend QDataStream & operator>>( QDataStream & ds, Transform & t );
+};
+
+class Tristrip
+{
+public:
+	Tristrip() {}
+	Tristrip( const NifModel * nif, const QModelIndex & );
 	
-	float ctrlTime( float time ) const;
+	QVector<int>	vertices;
+};
+
+class VertexWeight
+{
+public:
+	VertexWeight()
+	{ vertex = 0; weight = 0.0; }
+	VertexWeight( int v, float w )
+	{ vertex = v; weight = w; }
 	
-	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
-	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
+	int vertex;
+	float weight;
+};
+
+class BoneWeights
+{
+public:
+	BoneWeights() { bone = 0; }
+	BoneWeights( const NifModel * nif, const QModelIndex & index, int b );
 	
-protected:
-	QPersistentModelIndex iBlock;
+	Transform trans;
+	int bone;
+	QVector<VertexWeight> weights;
 };
 
 #endif
-
-

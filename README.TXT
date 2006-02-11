@@ -44,7 +44,7 @@ It should read and write every Nif up to version 20.0.0.4
 
 changes since 0.5:
   - new flexible context menu system (spells)
-  - texture spells ( choose + pack + export )
+  - texture spells ( choose + pack + export + add glow/base map )
   - strippify spell converts NiTriShape to NiTriStrip
   - gl view now uses filtered mipmaps
   - various fixes and adjustments

@@ -373,6 +373,7 @@ class Color3
 public:
 	Color3() { rgb[0] = rgb[1] = rgb[2] = 0; }
 	explicit Color3( const QColor & c ) { fromQColor( c ); }
+	Color3( float r, float g, float b ) { setRGB( r, g, b ); }
 	
 	float & operator[]( unsigned int i )
 	{
@@ -384,6 +385,15 @@ public:
 	{
 		Q_ASSERT( i < 3 );
 		return rgb[i];
+	}
+	
+	Color3 operator*( float x ) const
+	{
+		Color3 c( *this );
+		c.rgb[0] *= x;
+		c.rgb[1] *= x;
+		c.rgb[2] *= x;
+		return c;
 	}
 	
 	float red() const { return rgb[0]; }
@@ -422,6 +432,7 @@ public:
 	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3]; }
 	Color4( const Color3 & c, float alpha = 1.0 ) { rgba[0] = c[0]; rgba[1] = c[1]; rgba[2] = c[2]; rgba[3] = alpha; }
 	explicit Color4( const QColor & c ) { fromQColor( c ); }
+	Color4( float r, float g, float b, float a ) { setRGBA( r, g, b, a ); }
 	
 	float & operator[]( unsigned int i )
 	{
@@ -433,6 +444,42 @@ public:
 	{
 		Q_ASSERT( i < 4 );
 		return rgba[ i ];
+	}
+	
+	Color4 operator*( float x ) const
+	{
+		Color4 c( *this );
+		c.rgba[0] *= x;
+		c.rgba[1] *= x;
+		c.rgba[2] *= x;
+		c.rgba[3] *= x;
+		return c;
+	}
+	
+	Color4 & operator+=( const Color4 & o )
+	{
+		for ( int x = 0; x < 4; x++ )
+			rgba[x] += o.rgba[x];
+		return *this;
+	}
+	
+	Color4 & operator-=( const Color4 & o )
+	{
+		for ( int x = 0; x < 4; x++ )
+			rgba[x] -= o.rgba[x];
+		return *this;
+	}
+	
+	Color4 operator+( const Color4 & o ) const
+	{
+		Color4 c( *this );
+		return ( c += o );
+	}
+	
+	Color4 operator-( const Color4 & o ) const
+	{
+		Color4 c( *this );
+		return ( c -= o );
 	}
 	
 	float red() const { return rgba[0]; }
@@ -503,6 +550,8 @@ public:
 		tNone = 0xff
 	};
 	
+	template <typename T> static Type typeId();
+	
 	static void initialize();
 	static Type type( const QString & typId );
 	static bool registerAlias( const QString & alias, const QString & internal );
@@ -555,6 +604,7 @@ public:
 	bool fromString( const QString & );
 	bool fromVariant( const QVariant & );
 	
+	template <typename T> bool ask( T * t = 0 ) const;
 	template <typename T> T get() const;
 	template <typename T> bool set( const T & x );
 
@@ -623,6 +673,7 @@ template <> inline QString NifValue::get() const { return getType<QString>( tStr
 template <> inline QByteArray NifValue::get() const { return getType<QByteArray>( tByteArray ); }
 template <> inline Triangle NifValue::get() const { return getType<Triangle>( tTriangle ); }
 
+template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
@@ -634,6 +685,19 @@ template <> inline bool NifValue::set( const Color4 & x ) { return setType( tCol
 template <> inline bool NifValue::set( const QString & x ) { return setType( tString, x ) || setType( tHeaderString, x ); }
 template <> inline bool NifValue::set( const QByteArray & x ) { return setType( tByteArray, x ); }
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
+
+template <> inline bool NifValue::ask( bool * ) const { return isCount(); }
+template <> inline bool NifValue::ask( int * ) const { return isCount(); }
+template <> inline bool NifValue::ask( float * ) const { return isFloat(); }
+template <> inline bool NifValue::ask( Matrix * ) const { return type() == tMatrix; }
+template <> inline bool NifValue::ask( Quat * ) const { return type() == tQuat; }
+template <> inline bool NifValue::ask( Vector3 * ) const { return type() == tVector3; }
+template <> inline bool NifValue::ask( Vector2 * ) const { return type() == tVector2; }
+template <> inline bool NifValue::ask( Color3 * ) const { return type() == tColor3; }
+template <> inline bool NifValue::ask( Color4 * ) const { return type() == tColor4; }
+template <> inline bool NifValue::ask( QString * ) const { return type() == tString; }
+template <> inline bool NifValue::ask( QByteArray * ) const { return type() == tByteArray; }
+template <> inline bool NifValue::ask( Triangle * ) const { return type() == tTriangle; }
 
 class NifStream
 {

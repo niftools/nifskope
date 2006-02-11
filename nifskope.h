@@ -77,8 +77,6 @@ public slots:
 	
 	void about();
 	
-	void sltToolSkel();
-	
 protected slots:
 	void clearRoot();
 	void select( const QModelIndex & );

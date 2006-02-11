@@ -30,60 +30,58 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLCONTROLLER_H
-#define GLCONTROLLER_H
+#ifndef GLMESH_H
+#define GLMESH_H
 
-#include "nifmodel.h"
+#include "glnode.h"
 
-#include <QPointer>
-
-class Scene;
-class Node;
-
-class Controller
+class Mesh : public Node
 {
-	typedef union
-	{
-		quint16 bits;
-		
-		struct Controller
-		{
-			bool unknown : 1;
-			enum
-			{
-				Cyclic = 0, Reverse = 1, Constant = 2
-			} extrapolation : 2;
-			bool active : 1;
-		} controller;
-		
-	} ControllerFlags;
-	
 public:
-	Controller( const QModelIndex & index );
-	virtual ~Controller() {}
+	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 	
-	float start;
-	float stop;
-	float phase;
-	float frequency;
+	void clear();
+	void update( const NifModel * nif, const QModelIndex & );
 	
-	ControllerFlags flags;
+	void transform();
+	void transformShapes();
 	
-	virtual void update( float time ) = 0;
+	void drawShapes( NodeList * draw2nd = 0 );
 	
-	virtual void update( const NifModel * nif, const QModelIndex & index );
+	void boundaries( Vector3 & min, Vector3 & max );
 	
-	QModelIndex index() const { return iBlock; }
+	Vector3 center() const;
 	
-	float ctrlTime( float time ) const;
+protected:	
+	void setController( const NifModel * nif, const QModelIndex & controller );
 	
-	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
-	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
+	QPersistentModelIndex iData, iSkin, iSkinData;
+	bool upData, upSkin;
 	
-protected:
-	QPersistentModelIndex iBlock;
+	Vector3 localCenter;
+	Vector3 sceneCenter;
+	
+	QVector<Vector3> verts;
+	QVector<Vector3> norms;
+	QVector<Color4>  colors;
+	QVector<Vector2> uvs;
+	
+	Vector2 texOffset;
+	
+	int skelRoot;
+	Transform skelTrans;
+	QVector<BoneWeights> weights;
+	
+	QVector<Triangle> triangles;
+	QVector<Tristrip> tristrips;
+	
+	QVector< QPair< int, float > > triOrder;
+	
+	QVector<Vector3> transVerts;
+	QVector<Vector3> transNorms;
+	
+	friend class MorphController;
+	friend class TexCoordController;
 };
 
 #endif
-
-

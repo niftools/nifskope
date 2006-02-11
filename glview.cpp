@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "glscene.h"
+#include "gltex.h"
 #include "spellbook.h"
 
 #define FPS 35
@@ -154,16 +155,6 @@ void GLView::initializeGL()
 	
 	qglClearColor( palette().color( QPalette::Active, QPalette::Background ) );
 
-	static const GLfloat L0position[4] = { 5.0f, 5.0f, 10.0f, 1.0f };
-	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
-	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
-	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
-	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
-	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
-	glEnable( GL_LIGHT0 );
-	
 	glShadeModel( GL_SMOOTH );
 	glEnable( GL_POINT_SMOOTH );
 	glEnable( GL_LINE_SMOOTH );
@@ -219,6 +210,8 @@ void GLView::center()
 void GLView::paintGL()
 {
 	if ( ! ( isVisible() && height() ) )	return;
+	
+	qglClearColor( QColor( 20, 20, 30 ) );
 	
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
@@ -276,6 +269,7 @@ void GLView::paintGL()
 	
 	if ( aDrawAxis->isChecked() )
 	{
+		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
 		glDisable( GL_LIGHTING );
 		glDisable( GL_COLOR_MATERIAL );
@@ -357,12 +351,10 @@ void GLView::paintGL()
 	
 	// draw the model
 
-	if ( aLighting->isChecked() )
-		glEnable( GL_LIGHTING );
-	else
-		glDisable( GL_LIGHTING );
+	scene->drawShapes();
 	
-	scene->draw();
+	if ( aDrawNodes->isChecked() )
+		scene->drawNodes();
 	
 	// check for errors
 	
@@ -378,32 +370,58 @@ QModelIndex GLView::indexAt( const QPoint & pos )
 	
 	makeCurrent();
 
+	glPerspective( pressPos.x(), pressPos.y() );
+
 	GLuint	buffer[512];
 	glSelectBuffer( 512, buffer );
 
+	if ( aDrawNodes->isChecked() )
+	{
+		glRenderMode( GL_SELECT );	
+		glInitNames();
+		glPushName( 0 );
+		
+		scene->drawNodes();
+		
+		GLint hits = glRenderMode( GL_RENDER );
+		if ( hits > 0 )
+		{
+			int	choose = buffer[ 3 ];
+			int	depth = buffer[ 1 ];
+			for ( int loop = 1; loop < hits; loop++ )
+			{
+				if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
+				{
+					choose = buffer[ loop * 4 + 3 ];
+					depth = buffer[ loop * 4 + 1 ];
+				}       
+			}
+			return model->getBlock( choose );
+		}
+	}
+	
 	glRenderMode( GL_SELECT );	
 	glInitNames();
 	glPushName( 0 );
 	
-	glPerspective( pressPos.x(), pressPos.y() );
-
-	scene->draw();
+	scene->drawShapes();
 	
 	GLint hits = glRenderMode( GL_RENDER );
 	if ( hits > 0 )
 	{
-		int	choose = buffer[3];
-		int	depth = buffer[1];
-		for (int loop = 1; loop < hits; loop++)
+		int	choose = buffer[ 3 ];
+		int	depth = buffer[ 1 ];
+		for ( int loop = 1; loop < hits; loop++ )
 		{
-			if (buffer[loop*4+1] < GLuint(depth))
+			if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
 			{
-				choose = buffer[loop*4+3];
-				depth = buffer[loop*4+1];
+				choose = buffer[ loop * 4 + 3];
+				depth = buffer[ loop * 4 + 1];
 			}       
 		}
 		return model->getBlock( choose );
 	}
+	
 	return QModelIndex();
 }
 
@@ -418,16 +436,13 @@ void GLView::setNif( NifModel * nif )
 	
 	if ( model )
 	{
-		disconnect( model, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( dataChanged( const QModelIndex &, const QModelIndex & ) ) );
-		disconnect( model, SIGNAL( linksChanged() ), this, SLOT( modelChanged() ) );
-		disconnect( model, SIGNAL( modelReset() ), this, SLOT( modelChanged() ) );
-		disconnect( model, SIGNAL( destroyed() ), this, SLOT( modelDestroyed() ) );
+		disconnect( model );
 	}
 	model = nif;
 	if ( model )
 	{
 		connect( model, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( dataChanged( const QModelIndex &, const QModelIndex & ) ) );
-		connect( model, SIGNAL( linksChanged() ), this, SLOT( modelChanged() ) );
+		connect( model, SIGNAL( linksChanged() ), this, SLOT( modelLinked() ) );
 		connect( model, SIGNAL( modelReset() ), this, SLOT( modelChanged() ) );
 		connect( model, SIGNAL( destroyed() ), this, SLOT( modelDestroyed() ) );
 	}
@@ -461,6 +476,12 @@ void GLView::setTextureFolder( const QString & tf )
 {
 	GLTex::texfolders = tf.split( ";" );
 	doCompile = true;
+	update();
+}
+
+void GLView::setNifFolder( const QString & f )
+{
+	scene->nifFolder = f;
 	update();
 }
 
@@ -508,8 +529,8 @@ void GLView::checkActions()
 {
 	scene->texturing = aTexturing->isChecked();
 	scene->blending = aBlending->isChecked();
+	scene->lighting = aLighting->isChecked();
 	scene->highlight = aHighlight->isChecked();
-	scene->drawNodes = aDrawNodes->isChecked();
 	scene->drawHidden = aDrawHidden->isChecked();
 	scene->animate = aAnimate->isChecked();
 	lastTime = QTime::currentTime();
@@ -548,22 +569,71 @@ void GLView::advanceGears()
 	update();
 }
 
+QModelIndex parent( QModelIndex ix, QModelIndex xi )
+{
+	ix = ix.sibling( ix.row(), 0 );
+	xi = xi.sibling( xi.row(), 0 );
+	
+	while ( ix.isValid() )
+	{
+		QModelIndex x = xi;
+		while ( x.isValid() )
+		{
+			if ( ix == x ) return ix;
+			x = x.parent();
+		}
+		ix = ix.parent();
+	}
+	return QModelIndex();
+}
+
+void print( NifModel * nif, QModelIndex ix )
+{
+	QString s;
+	while ( ix.isValid() )
+	{
+		if ( ! s.isEmpty() ) s.prepend( "/" );
+		s.prepend( nif->itemName( ix ) );
+		ix = ix.parent();
+	}
+	qWarning() << s;
+}
+
 void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 {
 	if ( doCompile )
 		return;
 	
-	if ( idx != xdi )
-		modelChanged();
-	else
-		scene->update( model, idx );
+	QModelIndex ix = idx;
 	
-	update();
+	if ( idx == xdi )
+	{
+		if ( idx.column() != 0 )
+			ix = idx.sibling( idx.row(), 0 );
+	}
+	else
+	{
+		ix = ::parent( idx, xdi );
+	}
+	
+	if ( ix.isValid() )
+	{
+		scene->update( model, idx );
+		update();
+	}
+	else
+		modelChanged();
 }
 
 void GLView::modelChanged()
 {
 	doCompile = true;
+	update();
+}
+
+void GLView::modelLinked()
+{
+	doCompile = true; //scene->update( model, QModelIndex() );
 	update();
 }
 
@@ -621,8 +691,9 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if ( event->buttons() & Qt::MidButton)
 	{
-		xTrans += dx * 5;
-		yTrans -= dy * 5;
+		float d = radius / ( qMax( width(), height() ) + 1 ) * 20;
+		xTrans += dx * d;
+		yTrans -= dy * d;
 		update();
 	}
 	lastPos = event->pos();

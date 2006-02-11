@@ -13,7 +13,7 @@ public:
 	QString name() const { return "Insert"; }
 	QString page() const { return "Block"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( ! index.isValid() || ! index.parent().isValid() );
 	}
@@ -41,7 +41,7 @@ public:
 	QString name() const { return "Add Property"; }
 	QString page() const { return "Block"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "ANode" );
 	}
@@ -89,7 +89,7 @@ public:
 	QString name() const { return "Remove"; }
 	QString page() const { return "Block"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->itemType( index ) == "NiBlock" && nif->getBlockNumber( index ) >= 0 );
 	}
@@ -109,7 +109,7 @@ public:
 	QString name() const { return "Copy"; }
 	QString page() const { return "Block"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->itemType( index ) == "NiBlock" && nif->isNiBlock( nif->itemName( index ) ) );
 	}
@@ -136,7 +136,7 @@ public:
 	QString name() const { return "Paste"; }
 	QString page() const { return "Block"; }
 	
-	QString blockType( const QString & format, NifModel * nif )
+	QString blockType( const QString & format, const NifModel * nif )
 	{
 		QStringList split = format.split( "/" );
 		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock"
@@ -145,12 +145,12 @@ public:
 		return QString();
 	}
 	
-	bool acceptFormat( const QString & format, NifModel * nif )
+	bool acceptFormat( const QString & format, const NifModel * nif )
 	{
 		return ! blockType( format, nif ).isEmpty();
 	}
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
@@ -185,4 +185,59 @@ public:
 };
 
 REGISTER_SPELL( spPasteBlock )
+
+class spPasteOverBlock : public Spell
+{
+public:
+	QString name() const { return "Paste Over"; }
+	QString page() const { return "Block"; }
+	
+	QString blockType( const QString & format, const NifModel * nif )
+	{
+		QStringList split = format.split( "/" );
+		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock"
+		&& split.value( 2 ) == nif->getVersion() && nif->isNiBlock( split.value( 3 ) ) )
+			return split.value( 3 );
+		return QString();
+	}
+	
+	bool acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
+	{
+		return nif->itemType( block ) == "NiBlock" && blockType( format, nif ) == nif->itemName( block );
+	}
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		const QMimeData * mime = QApplication::clipboard()->mimeData();
+		if ( mime )
+			foreach ( QString form, mime->formats() )
+				if ( acceptFormat( form, nif, index ) )
+					return true;
+		return false;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		const QMimeData * mime = QApplication::clipboard()->mimeData();
+		if ( mime )
+		{
+			foreach ( QString form, mime->formats() )
+			{
+				if ( acceptFormat( form, nif, index ) )
+				{
+					QByteArray data = mime->data( form );
+					QBuffer buffer( & data );
+					if ( buffer.open( QIODevice::ReadOnly ) )
+					{
+						nif->load( buffer, index );
+						return index;
+					}
+				}
+			}
+		}
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spPasteOverBlock )
 

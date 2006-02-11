@@ -62,7 +62,7 @@ public:
 		Q_ASSERT( event );
 		Q_ASSERT( model );
 		
-		if ( event->type() == QEvent::MouseButtonRelease && static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
+		if ( ( event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease ) && static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
 		{
 			Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
 			if ( spell && ! spell->icon().isNull() )
@@ -71,24 +71,26 @@ public:
 				QRect iconRect( option.rect.x(), option.rect.y(), m, m );
 				if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
 				{
-					NifModel * nif = 0;
-					QModelIndex buddy = index;
-					
-					if ( model->inherits( "NifModel" ) )
+					if ( event->type() == QEvent::MouseButtonRelease )
 					{
-						nif = static_cast<NifModel *>( model );
+						NifModel * nif = 0;
+						QModelIndex buddy = index;
+						
+						if ( model->inherits( "NifModel" ) )
+						{
+							nif = static_cast<NifModel *>( model );
+						}
+						else if ( model->inherits( "NifProxyModel" ) )
+						{
+							NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
+							nif = static_cast<NifModel *>( proxy->model() );
+							buddy = proxy->mapTo( index );
+						}
+						
+						if ( nif && spell->isApplicable( nif, buddy ) )
+							spell->cast( nif, buddy );
 					}
-					else if ( model->inherits( "NifProxyModel" ) )
-					{
-						NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
-						nif = static_cast<NifModel *>( proxy->model() );
-						buddy = proxy->mapTo( index );
-					}
-					
-					if ( nif && spell->isApplicable( nif, buddy ) )
-						spell->cast( nif, buddy );
-					
-					//return true;
+					return true;
 				}
 			}
 		}

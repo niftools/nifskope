@@ -1,6 +1,11 @@
 #include "../spellbook.h"
 
-#include "../glscene.h"
+#include "../gltransform.h"
+
+#include <QApplication>
+#include <QBuffer>
+#include <QClipboard>
+#include <QMimeData>
 
 class spApplyTransformation : public Spell
 {
@@ -8,7 +13,7 @@ public:
 	QString name() const { return "Apply"; }
 	QString page() const { return "Transform"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->itemType( index ) == "NiBlock" && nif->getLink( index, "Controller" ) == -1 && nif->getLink( index, "Skin Instance" ) == -1 &&
 			( ( nif->inherits( nif->itemName( index ), "AParentNode" ) && nif->get<int>( index, "Flags" ) & 8 )
@@ -52,22 +57,26 @@ public:
 				QModelIndex iVertices = nif->getIndex( iData, "Vertices" );
 				if ( iVertices.isValid() )
 				{
+					QVector<Vector3> a = nif->getArray<Vector3>( iVertices );
 					for ( int v = 0; v < nif->rowCount( iVertices ); v++ )
-						nif->setItemData<Vector3>( iVertices.child( v, 0 ), t * nif->itemData<Vector3>( iVertices.child( v, 0 ) ) );
+						a[v] = t * a[v];
+					nif->setArray<Vector3>( iVertices, a );
 					
 					QModelIndex iNormals = nif->getIndex( iData, "Normals" );
 					if ( iNormals.isValid() )
 					{
+						a = nif->getArray<Vector3>( iNormals );
 						for ( int n = 0; n < nif->rowCount( iNormals ); n++ )
-							nif->setItemData<Vector3>( iNormals.child( n, 0 ), t.rotation * nif->itemData<Vector3>( iNormals.child( n, 0 ) ) );
+							a[n] = t.rotation * a[n];
+						nif->setArray<Vector3>( iNormals, a );
 					}
 				}
 				QModelIndex iCenter = nif->getIndex( iData, "Center" );
 				if ( iCenter.isValid() )
-					nif->setItemData<Vector3>( iCenter, t.rotation * nif->itemData<Vector3>( iCenter ) + t.translation );
+					nif->set<Vector3>( iCenter, t.rotation * nif->get<Vector3>( iCenter ) + t.translation );
 				QModelIndex iRadius = nif->getIndex( iData, "Radius" );
 				if ( iRadius.isValid() )
-					nif->setItemData<float>( iRadius, t.scale * nif->itemData<float>( iRadius ) );
+					nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
 				t = Transform();
 				t.writeBack( nif, index );
 			}
@@ -84,9 +93,9 @@ public:
 	QString name() const { return "Clear"; }
 	QString page() const { return "Transform"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemType( index ) == "NiBlock" && nif->inherits( nif->itemName( index ), "ANode" ) );
+		return Transform::canConstruct( nif, index );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -98,3 +107,78 @@ public:
 };
 
 REGISTER_SPELL( spClearTransformation )
+
+class spCopyTransformation : public Spell
+{
+public:
+	QString name() const { return "Copy"; }
+	QString page() const { return "Transform"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return Transform::canConstruct( nif, index );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QByteArray data;
+		QBuffer buffer( & data );
+		if ( buffer.open( QIODevice::WriteOnly ) )
+		{
+			QDataStream ds( &buffer );
+			ds << Transform( nif, index );
+			
+			QMimeData * mime = new QMimeData;
+			mime->setData( QString( "nifskope/transform" ), data );
+			QApplication::clipboard()->setMimeData( mime );
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spCopyTransformation )
+
+class spPasteTransformation : public Spell
+{
+public:
+	QString name() const { return "Paste"; }
+	QString page() const { return "Transform"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		const QMimeData * mime = QApplication::clipboard()->mimeData();
+		if ( Transform::canConstruct( nif, index ) && mime )
+			foreach ( QString form, mime->formats() )
+				if ( form == "nifskope/transform" )
+					return true;
+		
+		return false;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		const QMimeData * mime = QApplication::clipboard()->mimeData();
+		if ( mime )
+		{
+			foreach ( QString form, mime->formats() )
+			{
+				if ( form == "nifskope/transform" )
+				{
+					QByteArray data = mime->data( form );
+					QBuffer buffer( & data );
+					if ( buffer.open( QIODevice::ReadOnly ) )
+					{
+						QDataStream ds( &buffer );
+						Transform t;
+						ds >> t;
+						t.writeBack( nif, index );
+						return index;
+					}
+				}
+			}
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spPasteTransformation )

@@ -116,8 +116,13 @@ public:
 	qint32	itemLink( const QModelIndex & index ) const;
 	
 
+	bool isArray( const QModelIndex & array ) const;
 	// this updates an array ( append or remove items )
 	bool updateArray( const QModelIndex & array, bool fast = false );
+	// read an array
+	template <typename T> QVector<T> getArray( const QModelIndex & iArray ) const;
+	// write an array
+	template <typename T> void setArray( const QModelIndex & iArray, const QVector<T> & array );
 	
 	
 	// is it a compound type?
@@ -127,15 +132,20 @@ public:
 	// returns true if name inherits ancestor
 	static bool inherits( const QString & name, const QString & ancestor );
 	// returns true if the block containing index inherits ancestor
-	bool inherits( const QModelIndex & index, const QString & ancestor );
+	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
 	
+	
+	template <typename T> T get( const QModelIndex & index ) const;
+	template <typename T> bool set( const QModelIndex & index, const T & d );	
+	
+	// find an item named name and return the coresponding value
+	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
+	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
 	
 	// set item value
 	bool setItemValue( const QModelIndex & index, const NifValue & v );
 	// sets a named attribute to value
 	bool setValue( const QModelIndex & index, const QString & name, const NifValue & v );
-	
-	template <typename T> bool setItemData( const QModelIndex & index, const T & d );
 	
 	// get item attributes
 	QString  itemName( const QModelIndex & index ) const;
@@ -148,16 +158,12 @@ public:
 	quint32  itemVer1( const QModelIndex & index ) const;
 	quint32  itemVer2( const QModelIndex & index ) const;
 	
-	template <typename T> T itemData( const QModelIndex & index ) const;
-	
-	// find an item named name and return the coresponding value
-	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
-	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-	
 
 	// find a branch by name
 	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;
 	
+	// evaluate version
+	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
 	// evaluate condition and version
 	bool evalCondition( const QModelIndex & idx, bool chkParents = false ) const;
 
@@ -231,15 +237,16 @@ protected:
 	NifItem *	getBlockItem( int x ) const;
 	NifItem *	getItem( NifItem * parent, const QString & name ) const;
 
-	template <typename T>	T get( NifItem * parent, const QString & name ) const;
-	int			getInt( NifItem * parent, const QString & nameornumber ) const;
+	template <typename T> T get( NifItem * parent, const QString & name ) const;
+	template <typename T> T get( NifItem * item ) const;
 	
 	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
-	template <typename T> bool setItemData( NifItem * item, const T & d );
+	template <typename T> bool set( NifItem * item, const T & d );
 	bool setItemValue( NifItem * item, const NifValue & v );
 	bool setItemValue( NifItem * parent, const QString & name, const NifValue & v );
 	
 	
+	bool		evalVersion( NifItem * item, bool chkParents = false ) const;
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
 
 	bool		itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
@@ -336,7 +343,7 @@ template <typename T> inline bool NifModel::set( NifItem * parent, const QString
 {
 	NifItem * item = getItem( parent, name );
 	if ( item )
-		return setItemData( item, d );
+		return set( item, d );
 	else
 		return false;
 }
@@ -349,12 +356,17 @@ template <typename T> inline bool NifModel::set( const QModelIndex & parent, con
 	
 	NifItem * item = getItem( parentItem, name );
 	if ( item )
-		return setItemData( item, d );
+		return set( item, d );
 	else
 		return false;
 }
 
-template <typename T> inline T NifModel::itemData( const QModelIndex & index ) const
+template <typename T> inline T NifModel::get( NifItem * item ) const
+{
+	return item->value().get<T>();
+}
+
+template <typename T> inline T NifModel::get( const QModelIndex & index ) const
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item && index.model() == this ) )
@@ -363,7 +375,7 @@ template <typename T> inline T NifModel::itemData( const QModelIndex & index ) c
 	return item->value().get<T>();
 }
 
-template <typename T> inline bool NifModel::setItemData( NifItem * item, const T & d )
+template <typename T> inline bool NifModel::set( NifItem * item, const T & d )
 {
 	if ( item->value().set( d ) )
 	{
@@ -374,11 +386,31 @@ template <typename T> inline bool NifModel::setItemData( NifItem * item, const T
 		return false;
 }
 
-template <typename T> inline bool NifModel::setItemData( const QModelIndex & index, const T & d )
+template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & d )
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item && index.model() == this ) )	return false;
-	return setItemData( item, d );
+	return set( item, d );
+}
+
+template <typename T> inline QVector<T> NifModel::getArray( const QModelIndex & iArray ) const
+{
+	NifItem * item = static_cast<NifItem*>( iArray.internalPointer() );
+	if ( isArray( iArray ) && item && iArray.model() == this )
+		return item->getArray<T>();
+	return QVector<T>();
+}
+
+template <typename T> inline void NifModel::setArray( const QModelIndex & iArray, const QVector<T> & array )
+{
+	NifItem * item = static_cast<NifItem*>( iArray.internalPointer() );
+	if ( isArray( iArray ) && item && iArray.model() == this )
+	{
+		item->setArray<T>( array );
+		int x = item->childCount() - 1;
+		if ( x >= 0 )
+			emit dataChanged( createIndex( 0, ValueCol, item->child( 0 ) ), createIndex( x, ValueCol, item->child( x ) ) );
+	}
 }
 
 #endif

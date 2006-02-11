@@ -1,35 +1,11 @@
 #include "../spellbook.h"
 
-#include "../glscene.h"
+#include "../gltransform.h"
 
-#include <QBuffer>
 #include <QDebug>
+#include <QFile>
 
 #define SKEL_DAT ":/res/spells/skel.dat"
-
-QDataStream & operator<<( QDataStream & ds, const Transform & t )
-{
-	for ( int x = 0; x < 3; x++ )
-	{
-		for ( int y = 0; y < 3; y++ )
-			ds << t.rotation( x, y );
-		ds << t.translation[ x ];
-	}
-	ds << t.scale;
-	return ds;
-}
-
-QDataStream & operator>>( QDataStream & ds, Transform & t )
-{
-	for ( int x = 0; x < 3; x++ )
-	{
-		for ( int y = 0; y < 3; y++ )
-			ds >> t.rotation( x, y );
-		ds >> t.translation[ x ];
-	}
-	ds >> t.scale;
-	return ds;
-}
 
 QDebug operator<<( QDebug dbg, const Vector3 & v )
 {
@@ -44,7 +20,7 @@ public:
 	QString name() const { return "Fix Bip01"; }
 	QString page() const { return "Skeleton"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" ); //&& QFile::exists( SKEL_DAT ) );
 	}
@@ -203,7 +179,7 @@ public:
 	QString name() const { return "Scan Bip01"; }
 	QString page() const { return "Skeleton"; }
 	
-	bool isApplicable( NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" );
 	}

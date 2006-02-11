@@ -92,6 +92,7 @@ public slots:
 	void setNif( NifModel * );
 
 	void setTextureFolder( const QString & );
+	void setNifFolder( const QString & );
 	
 	void setCurrentIndex( const QModelIndex & );
 
@@ -121,6 +122,7 @@ private slots:
 	void advanceGears();
 	
 	void modelChanged();
+	void modelLinked();
 	void modelDestroyed();
 	void dataChanged( const QModelIndex &, const QModelIndex & );
 	

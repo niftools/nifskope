@@ -30,60 +30,39 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLCONTROLLER_H
-#define GLCONTROLLER_H
+#ifndef GLCONTROLABLE_H
+#define GLCONTROLABLE_H
 
 #include "nifmodel.h"
 
-#include <QPointer>
+class Controller;
 
 class Scene;
-class Node;
 
-class Controller
+class Controllable : public QObject
 {
-	typedef union
-	{
-		quint16 bits;
-		
-		struct Controller
-		{
-			bool unknown : 1;
-			enum
-			{
-				Cyclic = 0, Reverse = 1, Constant = 2
-			} extrapolation : 2;
-			bool active : 1;
-		} controller;
-		
-	} ControllerFlags;
-	
 public:
-	Controller( const QModelIndex & index );
-	virtual ~Controller() {}
-	
-	float start;
-	float stop;
-	float phase;
-	float frequency;
-	
-	ControllerFlags flags;
-	
-	virtual void update( float time ) = 0;
-	
-	virtual void update( const NifModel * nif, const QModelIndex & index );
+	Controllable( Scene * Scene, const QModelIndex & index );
+	virtual ~Controllable();
 	
 	QModelIndex index() const { return iBlock; }
+	virtual bool isValid() const { return iBlock.isValid(); }
 	
-	float ctrlTime( float time ) const;
+	virtual void clear();
+	virtual void update( const NifModel * nif, const QModelIndex & index );
 	
-	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
-	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
+	virtual void transform();
+	
+	virtual void timeBounds( float & start, float & stop );
 	
 protected:
+	virtual void setController( const NifModel * nif, const QModelIndex & iController ) {}
+
+	Scene * scene;
+	
 	QPersistentModelIndex iBlock;
+
+	QList<Controller*> controllers;
 };
 
 #endif
-
-

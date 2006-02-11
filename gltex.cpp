@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileInfo>
 
 #include "glscene.h"
+#include "gltex.h"
 
 #include <GL/glext.h>
 
@@ -96,14 +97,28 @@ bool Scene::bindTexture( const QModelIndex & index )
 		{
 			if ( tex->id )
 			{
+				if ( tex->external )
+				{
+					QFileInfo info( tex->filepath );
+					if ( tex->loaded < info.lastModified() && info.lastModified().secsTo( QDateTime::currentDateTime() ) > 2 )
+					{
+						if ( info.isWritable() )
+						{
+							tex->invalidate();
+							break;
+						}
+					}
+				}
+				
 				glBindTexture( GL_TEXTURE_2D, tex->id );
 				return true;
 			}
-			return false;
+			else
+				return false;
 		}
 	}
 	
-	GLTex * tex = new GLTex( index );
+	GLTex * tex = new GLTex( index, nifFolder );
 	textures.append( tex );
 	
 	if ( tex->id )
@@ -115,18 +130,19 @@ bool Scene::bindTexture( const QModelIndex & index )
 	return false;
 }
 
-GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
+GLTex::GLTex( const QModelIndex & index, const QString & additionalFolders ) : id( 0 ), iSource( index )
 {
 	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
 	if ( iSource.isValid() && nif )
 	{
+		//qWarning() << "tex" << nif->getBlockNumber( index );
 		QModelIndex iTexSource = nif->getIndex( iSource, "Texture Source" );
 		if ( iTexSource.isValid() )
 		{
 			external = nif->get<bool>( iTexSource, "Use External" );
 			if ( external )
 			{
-				filepath = findFile( nif->get<QString>( iTexSource, "File Name" ) );
+				filepath = findFile( nif->get<QString>( iTexSource, "File Name" ), additionalFolders );
 				
 				if ( QFile::exists( filepath ) )
 				{
@@ -207,7 +223,22 @@ void GLTex::release()
 	id = 0;
 }
 
-QString GLTex::findFile( const QString & file )
+bool GLTex::isValid() const
+{
+	if ( ! iSource.isValid() )
+		return false;
+	if ( ! external && ! iPixelData.isValid() )
+		return false;
+	return true;
+}
+
+void GLTex::invalidate()
+{
+	iSource = QModelIndex();
+	iPixelData = QModelIndex();
+}
+
+QString GLTex::findFile( const QString & file, const QString & additionalFolders )
 {
 	if ( file.isEmpty() )
 		return QString();
@@ -219,7 +250,7 @@ QString GLTex::findFile( const QString & file )
 	
 	// attempt to find the texture in one of the folders
 	QDir dir;
-	foreach ( QString folder, texfolders )
+	foreach ( QString folder, additionalFolders.split( ";" ) + texfolders )
 	{
 		dir.setPath( folder );
 		if ( dir.exists( filename ) )
@@ -239,13 +270,21 @@ bool isPowerOfTwo( unsigned int x )
 	return ( x == 1 );
 }
 
-void generateMipMaps( int w, int h )
+/*
+too bad: mipmaps aren't very well supported by my opengl driver
+
+void generateMipMaps( int m )
 {
-	if ( ( w < 1 || h < 1 ) || ( w == 1 && h == 1 ) )
+	GLint w = 0, h = 0;
+	
+	glGetTexLevelParameteriv( GL_TEXTURE_2D, m, GL_TEXTURE_WIDTH, &w );
+	glGetTexLevelParameteriv( GL_TEXTURE_2D, m, GL_TEXTURE_HEIGHT, &h );
+	
+	qWarning() << m << w << h;
+
+	if ( w <= 1 && h <= 1 )
 		return;
 	
-	int m = 0;
-
 	quint8 * data = (quint8 *) malloc( w * h * 4 );
 	glGetTexImage( GL_TEXTURE_2D, m, GL_RGBA, GL_UNSIGNED_BYTE, data );
 	
@@ -277,29 +316,33 @@ void generateMipMaps( int w, int h )
 		}
 		
 		glTexImage2D( GL_TEXTURE_2D, ++m, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+		
+		qWarning() << m << w << h;
 	}
 	while ( w > 1 || h > 1 );
 	
 	free( data );
 }
+*/
 
 bool uncompressRLE( QIODevice & f, int w, int h, int bpp, quint8 * pixel )
 {
+	QByteArray data = f.readAll();
+	
 	int bytespp = bpp / 8;
 	
 	int c = 0;
+	int o = 0;
+	
 	quint8 rl;
 	while ( c < w * h )
 	{
-		if ( !f.getChar( (char *) &rl ) )
-			return false;
-		
+		rl = data[o++];
 		if ( rl & 0x80 )
 		{
 			quint8 px[4];
 			for ( int b = 0; b < bytespp; b++ )
-				if ( ! f.getChar( (char *) &px[b] ) )
-					return false;
+				px[b] = data[o++];
 			rl &= 0x7f;
 			do
 			{
@@ -313,11 +356,11 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bpp, quint8 * pixel )
 			do
 			{
 				for ( int b = 0; b < bytespp; b++ )
-					if ( ! f.getChar( (char *) pixel++ ) )
-						return false;
+					*pixel++ = data[o++];
 			}
 			while (  ++c < w*h && rl-- > 0 );
 		}
+		if ( o >= data.count() ) return false;
 	}
 	return true;
 }
@@ -373,9 +416,6 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 	GLuint tx_id;
 	glGenTextures(1, &tx_id);
 	glBindTexture(GL_TEXTURE_2D, tx_id);
-	if ( ext_mipmapping )
-		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( num_mipmaps <= 1 ? GL_TRUE : GL_FALSE ) );
-	
 	
 	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 	glPixelStorei( GL_UNPACK_SWAP_BYTES, GL_FALSE );
@@ -385,8 +425,9 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 	
 	int w = width;
 	int h = height;
+	int m = 0;
 	
-	for ( int m = 0; m < num_mipmaps; m++ )
+	//do
 	{
 		if ( w == 0 ) w = 1;
 		if ( h == 0 ) h = 1;
@@ -403,16 +444,21 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 		
 		convertToRGBA( data1, w, h, bytespp, mask, flipV, flipH, data2 );
 		
-		glTexImage2D( GL_TEXTURE_2D, m, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2 );
+		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2 );
+		
+		//if ( w == 1 && h == 1 )
+		//	break;
+		
 		w /= 2;
 		h /= 2;
 	}
+	//while ( m < num_mipmaps );
 	
 	free( data2 );
 	free( data1 );
 	
-	if ( num_mipmaps == 1 && ! ext_mipmapping )
-		generateMipMaps( width, height );
+	//if ( w > 1 || h > 1 )
+	//	generateMipMaps( m-1 );
 	
 	return tx_id;
 }
@@ -525,34 +571,39 @@ GLuint texLoadDDS( const QString & filename )
 	GLuint tx_id;
 	glGenTextures(1, &tx_id);
 	glBindTexture(GL_TEXTURE_2D, tx_id);
-	if ( ext_mipmapping )
-		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, ( ddsHeader.dwMipMapCount <= 1 ? GL_TRUE : GL_FALSE ) );
 	
 	GLubyte * pixels = (GLubyte *) malloc(((ddsHeader.dwWidth+3)/4) * ((ddsHeader.dwHeight+3)/4) * blockSize);
-	unsigned int w, h, s;
-	for(unsigned int i = 0; i < ddsHeader.dwMipMapCount; ++i)
+	unsigned int w = ddsHeader.dwWidth, h = ddsHeader.dwHeight, s;
+	unsigned int m = 0;
+	
+	//do
 	{
-		w = ddsHeader.dwWidth >> i;
-		h = ddsHeader.dwHeight >> i;
 		if ( w == 0 ) w = 1;
 		if ( h == 0 ) h = 1;
+		
 		s = ((w+3)/4) * ((h+3)/4) * blockSize;
+		
 		if ( f.read( (char *) pixels, s ) != s )
 		{
 			qWarning() << "texLoadDDS( " << filename << " ) : unexpected EOF";
 			free( pixels );
 			return tx_id;
 		}
-		_glCompressedTexImage2D( GL_TEXTURE_2D, i, format, w, h, 0, s, pixels );
+		
+		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, format, w, h, 0, s, pixels );
+		
+		//if ( w == 1 && h == 1 )
+		//	break;
+		
+		w /= 2;
+		h /= 2;
 	}
+	//while ( m < ddsHeader.dwMipMapCount );
 	
 	f.close();
 	
-	free(pixels);
+	free( pixels );
 
-	if ( ddsHeader.dwMipMapCount == 1 && ! ext_mipmapping )
-		generateMipMaps( ddsHeader.dwWidth, ddsHeader.dwHeight );
-	
 	return tx_id;
 }
 
@@ -588,7 +639,7 @@ GLuint texLoadTGA( const QString & filename )
 	qDebug( "alpha %02X", hdr[17] );
 	*/
 	unsigned int depth = hdr[16];
-	unsigned int alphaValue  = hdr[17] & 15;
+	//unsigned int alphaDepth  = hdr[17] & 15;
 	bool flipV = ! ( hdr[17] & 32 );
 	bool flipH = hdr[17] & 16;
 	unsigned int width = hdr[12] + 256 * hdr[13];
@@ -603,24 +654,21 @@ GLuint texLoadTGA( const QString & filename )
 	}
 
 	// check format and call texLoadRaw
-	if ( ( depth == 32 && alphaValue == 8 ) || ( depth == 24 && alphaValue == 0 ) )
+	switch( hdr[2] )
 	{
-		switch( hdr[2] )
+	case TGA_COLOR: 
+	case TGA_COLOR_RLE:
+		if ( depth == 32 ) // && alphaDepth == 8 )
 		{
-		case TGA_COLOR: 
-		case TGA_COLOR_RLE:
-			if ( depth == 32 && alphaValue == 8 )
-			{
-				static const quint32 TGA_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
-				return texLoadRaw( f, width, height, 1, 32, 4, TGA_RGBA_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
-			}
-			else if ( depth == 24 && alphaValue == 0 )
-			{
-				static const quint32 TGA_RGB_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
-				return texLoadRaw( f, width, height, 1, 24, 3, TGA_RGB_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
-			}
-			break;
+			static const quint32 TGA_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
+			return texLoadRaw( f, width, height, 1, 32, 4, TGA_RGBA_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
 		}
+		else if ( depth == 24 ) // && alphaDepth == 0 )
+		{
+			static const quint32 TGA_RGB_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
+			return texLoadRaw( f, width, height, 1, 24, 3, TGA_RGB_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
+		}
+		break;
 	}
 	
 	qWarning() << "texLoadTGA(" << filename << ") : image sub format not supported";
