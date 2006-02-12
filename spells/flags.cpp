@@ -103,16 +103,24 @@ public:
 	
 	enum FlagType
 	{
-		Alpha, Node, Controller, None
+		Alpha, Controller, Node, Shape, ZBuffer, None
 	};
 	
 	FlagType queryType( const NifModel * nif, const QModelIndex & index ) const
 	{
-		if ( nif->itemValue( index ).type() == NifValue::tFlags )
+		if ( nif->itemValue( index ).type() == NifValue::tFlags && nif->itemType( index.parent() ) == "NiBlock" )
 		{
 			QString name = nif->itemName( index.parent() );
 			if ( name == "NiAlphaProperty" )
 				return Alpha;
+			else if ( nif->inherits( name, "AController" ) )
+				return Controller;
+			else if ( name == "NiNode" )
+				return Node;
+			else if ( name == "NiTriShape" || name == "NiTriStrips" )
+				return Shape;
+			else if ( name == "NiZBufferProperty" )
+				return ZBuffer;
 		}
 		return None;
 	}
@@ -129,6 +137,18 @@ public:
 			case Alpha:
 				alphaFlags( nif, index );
 				break;
+			case Controller:
+				controllerFlags( nif, index );
+				break;
+			case Node:
+				nodeFlags( nif, index );
+				break;
+			case Shape:
+				shapeFlags( nif, index );
+				break;
+			case ZBuffer:
+				zbufferFlags( nif, index );
+				break;
 			default:
 				break;
 		}
@@ -138,66 +158,37 @@ public:
 	void alphaFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if ( ! flags ) flags = 237;
+		if ( ! flags ) flags = 14573;
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
 		
 		static const char * blendModes[11] = {
 			"One", "Zero", "Src Color", "Inv Src Color", "Dst Color", "Inv Dst Color", "Src Alpha", "Inv Src Alpha",
 			"Dst Alpha", "Inv Dst Alpha", "Src Alpha Saturate"
 		};
 		static const char * testModes[8] = {
-			"Always", "Less", "Equal", "Less or Equal", "Greater", "Not Equal", "Less or Equal", "Never"
+			"Always", "Less", "Equal", "Less or Equal", "Greater", "Not Equal", "Greater or Equal", "Never"
 		};
 		
-		QDialog dlg;
-		QVBoxLayout * vbox = new QVBoxLayout;
-		dlg.setLayout( vbox );
-		
-		QCheckBox * chkBlend = new QCheckBox( "Enable Blending" );
-		vbox->addWidget( chkBlend );
+		QCheckBox * chkBlend = dlgCheck( vbox, "Enable Blending" );
 		chkBlend->setChecked( flags & 1 );
 		
-		vbox->addWidget( new QLabel( "Source Blend Mode" ) );
-		
-		QComboBox * cmbSrc = new QComboBox;
-		vbox->addWidget( cmbSrc );
-		for ( int c = 0; c < 11; c++ )
-			cmbSrc->addItem( blendModes[c] );
+		QComboBox * cmbSrc = dlgCombo( vbox, "source Blend Mode", blendModes, 11, chkBlend );
 		cmbSrc->setCurrentIndex( flags >> 1 & 0x0f );
-		QObject::connect( chkBlend, SIGNAL( toggled( bool ) ), cmbSrc, SLOT( setEnabled( bool ) ) );
-		cmbSrc->setEnabled( chkBlend->isChecked() );
 		
-		vbox->addWidget( new QLabel( "Destination Blend Mode" ) );
-		
-		QComboBox * cmbDst = new QComboBox;
-		vbox->addWidget( cmbDst );
-		for ( int c = 0; c < 11; c++ )
-			cmbDst->addItem( blendModes[c] );
+		QComboBox * cmbDst = dlgCombo( vbox, "Destination Blend Mode", blendModes, 11, chkBlend );
 		cmbDst->setCurrentIndex( flags >> 5 & 0x0f );
-		QObject::connect( chkBlend, SIGNAL( toggled( bool ) ), cmbDst, SLOT( setEnabled( bool ) ) );
-		cmbDst->setEnabled( chkBlend->isChecked() );
 		
-		QCheckBox * chkTest = new QCheckBox( "Enable Testing" );
-		vbox->addWidget( chkTest );
+		QCheckBox * chkTest = dlgCheck( vbox, "Enable Testing" );
 		chkTest->setChecked( flags & ( 1 << 9 ) );
 		
-		vbox->addWidget( new QLabel( "Alpha Test Function" ) );
-		
-		QComboBox * cmbTest = new QComboBox;
-		vbox->addWidget( cmbTest );
-		for ( int c = 0; c < 8; c++ )
-			cmbTest->addItem( testModes[c] );
+		QComboBox * cmbTest = dlgCombo( vbox, "Alpha Test Function", testModes, 8, chkTest );
 		cmbTest->setCurrentIndex( flags >> 10 & 0x07 );
-		QObject::connect( chkTest, SIGNAL( toggled( bool ) ), cmbTest, SLOT( setEnabled( bool ) ) );
-		cmbTest->setEnabled( chkTest->isChecked() );
 		
-		vbox->addWidget( new QLabel( "Alpha Test Threshold" ) );
-		
-		QSpinBox * spnTest = new QSpinBox;
-		vbox->addWidget( spnTest );
-		spnTest->setRange( 0, 0xff );
+		QSpinBox * spnTest = dlgSpin( vbox, "Alpha Test Threshold", 0x00, 0xff, chkTest );
 		spnTest->setValue( nif->get<int>( nif->getBlock( index ), "Threshold" ) );
-		QObject::connect( chkTest, SIGNAL( toggled( bool ) ), spnTest, SLOT( setEnabled( bool ) ) );
-		spnTest->setEnabled( chkTest->isChecked() );
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -218,6 +209,150 @@ public:
 			}
 			nif->set<int>( index, flags );
 		}
+	}
+	
+	void nodeFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		if ( ! flags ) flags = 8;
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
+		chkHidden->setChecked( flags & 1 );
+		
+		QCheckBox * chkSkin = dlgCheck( vbox, "Skin Influence" );
+		chkSkin->setChecked( ! ( flags & 8 ) );
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 1 : 0 );
+			flags = flags & 0xfff7 | ( chkSkin->isChecked() ? 0 : 8 );
+			nif->set<int>( index, flags );
+		}
+	}
+	
+	void controllerFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		if ( ! flags ) flags = 8;
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkActive = dlgCheck( vbox, "Active" );
+		chkActive->setChecked( flags & 8 );
+		
+		static const char * loopModes[3] = { "Cycle", "Reverse", "Clamp" };
+		
+		QComboBox * cmbLoop = dlgCombo( vbox, "Loop Mode", loopModes, 3 );
+		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = 0;
+			flags |= ( chkActive->isChecked() ? 8 : 0 );
+			flags |= cmbLoop->currentIndex() << 1;
+			nif->set<int>( index, flags );
+		}
+	}
+	
+	void shapeFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
+		chkHidden->setChecked( flags & 0x01 );
+		
+		QCheckBox * chkShadow = dlgCheck( vbox, "Shadow" );
+		chkShadow->setChecked( flags & 0x40 );
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 0x01 : 0 );
+			flags = flags & 0xffbf | ( chkShadow->isChecked() ? 0x40 : 0 );
+			nif->set<int>( index, flags );
+		}
+	}
+	
+	void zbufferFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		if ( ! flags ) flags = 8;
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkEnable = dlgCheck( vbox, "Enable Z Buffer" );
+		chkEnable->setChecked( flags & 1 );
+		
+		QCheckBox * chkROnly = dlgCheck( vbox, "Z Buffer Read Only" );
+		chkROnly->setChecked( ! ( flags & 2 ) );
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = 0;
+			flags |= ( chkEnable->isChecked() ? 1 : 0 );
+			flags |= ( chkROnly->isChecked() ? 0 : 2 );
+			nif->set<int>( index, flags );
+		}
+	}
+	
+	QCheckBox * dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = 0 )
+	{
+		QCheckBox * box = new QCheckBox( name );
+		vbox->addWidget( box );
+		if ( chk )
+		{
+			QObject::connect( chk, SIGNAL( toggled( bool ) ), box, SLOT( setEnabled( bool ) ) );
+			box->setEnabled( chk->isChecked() );
+		}
+		return box;
+	}
+	
+	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, const char * items[], int numitems, QCheckBox * chk = 0 )
+	{
+		vbox->addWidget( new QLabel( name ) );
+		QComboBox * cmb = new QComboBox;
+		vbox->addWidget( cmb );
+		for ( int c = 0; c < numitems; c++ )
+			cmb->addItem( items[c] );
+		if ( chk )
+		{
+			QObject::connect( chk, SIGNAL( toggled( bool ) ), cmb, SLOT( setEnabled( bool ) ) );
+			cmb->setEnabled( chk->isChecked() );
+		}
+		return cmb;
+	}
+	
+	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = 0 )
+	{
+		vbox->addWidget( new QLabel( name ) );
+		QSpinBox * spn = new QSpinBox;
+		vbox->addWidget( spn );
+		spn->setRange( min, max );
+		if ( chk )
+		{
+			QObject::connect( chk, SIGNAL( toggled( bool ) ), spn, SLOT( setEnabled( bool ) ) );
+			spn->setEnabled( chk->isChecked() );
+		}
+		return spn;
 	}
 	
 	void dlgButtons( QDialog * dlg, QVBoxLayout * vbox )
