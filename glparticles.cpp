@@ -65,6 +65,14 @@ class ParticleController : public Controller
 		Particle() : lifetime( 0 ), lifespan( 0 ) {}
 	};
 	QVector<Particle> list;
+	struct Gravity
+	{
+		float	force;
+		int type;
+		Vector3	position;
+		Vector3	direction;
+	};
+	QVector<Gravity> grav;
 	
 	QPointer<Particles> target;
 	
@@ -143,6 +151,7 @@ public:
 			}
 			
 			iExtras.clear();
+			grav.clear();
 			iColorKeys = QModelIndex();
 			QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Extra" ) );
 			while ( iExtra.isValid() )
@@ -158,6 +167,15 @@ public:
 				else if ( name == "NiParticleColorModifier" )
 				{
 					iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Keys" );
+				}
+				else if ( name == "NiGravity" )
+				{
+					Gravity g;
+					g.force = nif->get<float>( iExtra, "Force" );
+					g.type = nif->get<int>( iExtra, "Type" );
+					g.position = nif->get<Vector3>( iExtra, "Position" );
+					g.direction = nif->get<Vector3>( iExtra, "Direction" );
+					grav.append( g );
 				}
 				
 				iExtra = nif->getBlock( nif->getLink( iExtra, "Next Modifier" ) );
@@ -230,7 +248,8 @@ public:
 	
 	void startParticle( Particle & p )
 	{
-		p.position = target->worldTrans().translation - emitNode->worldTrans().translation + random( emitRadius * 2 ) - emitRadius;
+		p.position = random( emitRadius * 2 ) - emitRadius;
+		p.position += emitNode->worldTrans().translation - target->worldTrans().translation;
 		
 		float i = inc + random( incRnd );
 		float d = dec + random( decRnd );
@@ -239,13 +258,9 @@ public:
 		
 		Matrix m; m.fromEuler( 0, 0, rand() & 1 ? d : -d );
 		p.velocity = m * p.velocity;
-		/*
-		if ( rand() & 1 )
-			p.velocity[0] = - p.velocity[0];
-		if ( rand() & 1 )
-			p.velocity[1] = - p.velocity[1];
-		*/
-		p.velocity = emitNode->worldTrans().rotation * target->worldTrans().rotation.inverted() * p.velocity * ( spd + random( spdRnd ) );
+		
+		p.velocity = p.velocity * ( spd + random( spdRnd ) );
+		p.velocity = target->worldTrans().rotation.inverted() * emitNode->worldTrans().rotation * p.velocity;
 		
 		p.lifetime = 0;
 		p.lifespan = ttl + random( ttlRnd );
@@ -254,6 +269,15 @@ public:
 	
 	void moveParticle( Particle & p, float deltaTime )
 	{
+		foreach ( Gravity g, grav )
+		{
+			switch ( g.type )
+			{
+				case 0:
+					p.velocity += g.direction * g.force * deltaTime;
+					break;
+			}
+		}
 		p.position += p.velocity * deltaTime;
 	}
 	
