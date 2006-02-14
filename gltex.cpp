@@ -248,16 +248,38 @@ QString GLTex::findFile( const QString & file, const QString & additionalFolders
 	while ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
 		filename.remove( 0, 1 );
 	
+	QStringList extensions;
+	extensions << ".tga" << ".dds" << ".bmp";
+	bool replaceExt = false;
+	foreach ( QString ext, extensions )
+		if ( filename.endsWith( ext ) )
+		{
+			extensions.removeAll( ext );
+			extensions.prepend( ext );
+			filename = filename.left( filename.length() - ext.length() );
+			replaceExt = true;
+			break;
+		}
+	
 	// attempt to find the texture in one of the folders
 	QDir dir;
-	foreach ( QString folder, additionalFolders.split( ";" ) + texfolders )
+	foreach ( QString ext, extensions )
 	{
-		dir.setPath( folder );
-		if ( dir.exists( filename ) )
-			return dir.filePath( filename );
-		
-		if ( filename.startsWith( "textures" ) && dir.exists( "../" + filename ) )
-			return dir.filePath( "../" + filename );
+		if ( replaceExt )
+			filename += ext;
+		foreach ( QString folder, additionalFolders.split( ";" ) + texfolders )
+		{
+			dir.setPath( folder );
+			if ( dir.exists( filename ) )
+				return dir.filePath( filename );
+			
+			if ( filename.startsWith( "textures" ) && dir.exists( "../" + filename ) )
+				return dir.filePath( "../" + filename );
+		}
+		if ( replaceExt )
+			filename = filename.left( filename.length() - ext.length() );
+		else
+			break;
 	}
 	
 	return filename;
