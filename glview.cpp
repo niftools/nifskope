@@ -479,12 +479,6 @@ void GLView::setTextureFolder( const QString & tf )
 	update();
 }
 
-void GLView::setNifFolder( const QString & f )
-{
-	scene->nifFolder = f;
-	update();
-}
-
 QString GLView::textureFolder() const
 {
 	return GLTex::texfolders.join( ";" );

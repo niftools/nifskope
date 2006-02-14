@@ -118,7 +118,7 @@ bool Scene::bindTexture( const QModelIndex & index )
 		}
 	}
 	
-	GLTex * tex = new GLTex( index, nifFolder );
+	GLTex * tex = new GLTex( index );
 	textures.append( tex );
 	
 	if ( tex->id )
@@ -130,7 +130,7 @@ bool Scene::bindTexture( const QModelIndex & index )
 	return false;
 }
 
-GLTex::GLTex( const QModelIndex & index, const QString & additionalFolders ) : id( 0 ), iSource( index )
+GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
 {
 	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
 	if ( iSource.isValid() && nif )
@@ -142,7 +142,7 @@ GLTex::GLTex( const QModelIndex & index, const QString & additionalFolders ) : i
 			external = nif->get<bool>( iTexSource, "Use External" );
 			if ( external )
 			{
-				filepath = findFile( nif->get<QString>( iTexSource, "File Name" ), additionalFolders );
+				filepath = findFile( nif->get<QString>( iTexSource, "File Name" ), nif->getFolder() );
 				
 				if ( QFile::exists( filepath ) )
 				{
@@ -325,11 +325,9 @@ void generateMipMaps( int m )
 }
 */
 
-bool uncompressRLE( QIODevice & f, int w, int h, int bpp, quint8 * pixel )
+bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 {
 	QByteArray data = f.readAll();
-	
-	int bytespp = bpp / 8;
 	
 	int c = 0;
 	int o = 0;
@@ -407,9 +405,15 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 
 GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV, bool flipH, bool rle )
 {
-	if ( bpp != 32 && bpp != 24 )
+	if ( bytespp * 8 != bpp )
+	{
+		qWarning() << "texLoadRaw() : unsupported image depth" << bpp << "/" << bytespp;
+		return 0;
+	}
+	
+	if ( bpp > 32 || bpp < 8 )
 	{	// check image depth
-		qWarning( "texLoadRaw() : unsupported image depth %i", bpp );
+		qWarning() << "texLoadRaw() : unsupported image depth" << bpp;
 		return 0;
 	}
 	
@@ -434,7 +438,7 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 		
 		if ( rle )
 		{
-			if ( ! uncompressRLE( f, w, h, bpp, data1 ) )
+			if ( ! uncompressRLE( f, w, h, bytespp, data1 ) )
 				qWarning() << "texLoadRaw() : unexpected EOF";
 		}
 		else if ( f.read( (char *) data1, w * h * bytespp ) != w * h * bytespp )
@@ -612,7 +616,9 @@ GLuint texLoadDDS( const QString & filename )
  */
  
 #define TGA_COLOR		2
+#define TGA_GREY		3
 #define TGA_COLOR_RLE	10
+#define TGA_GREY_RLE	11
 
 GLuint texLoadTGA( const QString & filename )
 {
@@ -656,7 +662,20 @@ GLuint texLoadTGA( const QString & filename )
 	// check format and call texLoadRaw
 	switch( hdr[2] )
 	{
-	case TGA_COLOR: 
+	case TGA_GREY:
+	case TGA_GREY_RLE:
+		if ( depth == 8 )
+		{
+			static const quint32 TGA_L_MASK[4] = { 0xff, 0xff, 0xff, 0x00 };
+			return texLoadRaw( f, width, height, 1, 8, 1, TGA_L_MASK, flipV, flipH, hdr[2] == TGA_GREY_RLE );
+		}
+		else if ( depth == 16 )
+		{
+			static const quint32 TGA_LA_MASK[4] = { 0x00ff, 0x00ff, 0x00ff, 0xff00 };
+			return texLoadRaw( f, width, height, 1, 16, 2, TGA_LA_MASK, flipV, flipH, hdr[2] == TGA_GREY_RLE );
+		}
+		break;
+	case TGA_COLOR:
 	case TGA_COLOR_RLE:
 		if ( depth == 32 ) // && alphaDepth == 8 )
 		{
@@ -671,7 +690,7 @@ GLuint texLoadTGA( const QString & filename )
 		break;
 	}
 	
-	qWarning() << "texLoadTGA(" << filename << ") : image sub format not supported";
+	qWarning() << "texLoadTGA(" << filename << ") : image sub format not supported" << hdr[2] << depth;
 	return 0;
 }
 

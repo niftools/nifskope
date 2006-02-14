@@ -92,7 +92,6 @@ public slots:
 	void setNif( NifModel * );
 
 	void setTextureFolder( const QString & );
-	void setNifFolder( const QString & );
 	
 	void setCurrentIndex( const QModelIndex & );
 

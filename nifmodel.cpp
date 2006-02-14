@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QByteArray>
 #include <QColor>
 #include <QDebug>
+#include <QFile>
 #include <QProgressDialog>
 #include <QTime>
 
@@ -58,6 +59,7 @@ NifModel::~NifModel()
 
 void NifModel::clear()
 {
+	folder = QString();
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "header" ) );
 	insertType( root, NifData( "NiFooter", "footer" ) );
@@ -381,6 +383,19 @@ QModelIndex NifModel::getBlock( int x, const QString & name ) const
 		return ( itemName( idx ) == name ? idx : QModelIndex() );
 	else
 		return idx;
+}
+
+bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) const
+{
+	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
+	if ( index.isValid() && item && item->parent() == root && getBlockNumber( item ) >= 0 )
+	{
+		if ( name.isEmpty() )
+			return true;
+		else
+			return item->name() == name;
+	}
+	return false;
 }
 
 NifItem * NifModel::getBlockItem( int x ) const
@@ -965,6 +980,21 @@ void NifModel::reset()
 /*
  *  load and save
  */
+ 
+ bool NifModel::load( const QString & filename )
+ {
+	QFile f( filename );
+	bool x  = f.open( QIODevice::ReadOnly ) && load( f );
+	if ( x )
+		folder = filename.left( qMax( filename.lastIndexOf( "\\" ), filename.lastIndexOf( "/" ) ) );
+	return x;
+}
+
+bool NifModel::save( const QString & filename ) const
+{
+	QFile f( filename );
+	return f.open( QIODevice::WriteOnly ) && save( f );
+}
 
 bool NifModel::load( QIODevice & device )
 {
@@ -1088,7 +1118,7 @@ bool NifModel::load( QIODevice & device )
 	return true;
 }
 
-bool NifModel::save( QIODevice & device )
+bool NifModel::save( QIODevice & device ) const
 {
 	NifStream stream( version, &device );
 	
@@ -1151,7 +1181,7 @@ bool NifModel::load( QIODevice & device, const QModelIndex & index )
 	return false;
 }
 
-bool NifModel::save( QIODevice & device, const QModelIndex & index )
+bool NifModel::save( QIODevice & device, const QModelIndex & index ) const
 {
 	NifStream stream( version, &device );
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
@@ -1194,7 +1224,7 @@ bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
 	return true;
 }
 
-bool NifModel::save( NifItem * parent, NifStream & stream )
+bool NifModel::save( NifItem * parent, NifStream & stream ) const
 {
 	if ( ! parent ) return false;
 	

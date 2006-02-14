@@ -59,12 +59,21 @@ public:
 	// clear model data
 	void clear();
 	
-	// load and save model data
+	// load and save to and from file
+	bool load( const QString & filename );
+	bool save( const QString & filename ) const;
+	
+	// generic load and save to and from QIODevice
 	bool load( QIODevice & device );
-	bool save( QIODevice & device );
+	bool save( QIODevice & device ) const;
 	
 	bool load( QIODevice & device, const QModelIndex & );
-	bool save( QIODevice & device, const QModelIndex & );
+	bool save( QIODevice & device, const QModelIndex & ) const;
+	
+	// if the model was loaded from a file getFolder returns the directory
+	// can be used to resolve external resources
+	QString getFolder() const { return folder; }
+	
 	
 	QString getVersion() const { return version2string( version ); }
 	
@@ -91,7 +100,8 @@ public:
 	QModelIndex getBlock( int x, const QString & name = QString() ) const;
 	// get the number of NiBlocks
 	int getBlockCount() const;
-	
+	// returns true if the index is a niblock ( optional: check if it is the specified type of block )
+	bool isNiBlock( const QModelIndex & index, const QString & name = QString() ) const;
 	// returns a list with all known NiXXX ids
 	static QStringList allNiBlocks();
 	// is name a NiBlock identifier?
@@ -254,7 +264,7 @@ protected:
 	int			getBlockNumber( NifItem * item ) const;
 	
 	bool		load( NifItem * parent, NifStream & stream, bool fast = true );
-	bool		save( NifItem * parent, NifStream & stream );
+	bool		save( NifItem * parent, NifStream & stream ) const;
 	
 	// root item
 	NifItem *	root;
@@ -263,6 +273,8 @@ protected:
 	quint32		version;
 	
 	static QList<quint32>		supportedVersions;
+	
+	QString folder;
 	
 	//
 	static QHash<QString,NifBlock*>		compounds;

@@ -113,18 +113,18 @@ class spChooseTexture : public Spell
 public:
 	QString name() const { return "Choose"; }
 	QString page() const { return "Texture"; }
+	bool instant() const { return true; }
 	QIcon icon() const
 	{
 		if ( ! tex42_xpm_icon ) tex42_xpm_icon = new QIcon( tex42_xpm );
 		return *tex42_xpm_icon;
 	}
-	bool instant() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex index = nif->getBlock( idx );
 		return ( nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture"
-			&& ( index == idx || nif->itemName( idx ) == "File Name" ) );
+			&& ( index == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
@@ -133,7 +133,7 @@ public:
 		QModelIndex iTex = nif->getIndex( index, "Texture Source" );
 		if ( iTex.isValid() )
 		{
-			QString file = GLTex::findFile( nif->get<QString>( iTex, "File Name" ) );
+			QString file = GLTex::findFile( nif->get<QString>( iTex, "File Name" ), nif->getFolder() );
 			
 			file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
 			

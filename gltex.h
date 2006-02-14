@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class GLTex
 {
 public:
-	GLTex( const QModelIndex &, const QString & additionalFolders = QString()  );
+	GLTex( const QModelIndex &  );
 	~GLTex();
 	
 	void release();

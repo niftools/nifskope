@@ -81,8 +81,6 @@ public:
 	bool texturing;
 	QList<GLTex*> textures;
 	
-	QString nifFolder;
-	
 	bool blending;
 	bool lighting;
 	
