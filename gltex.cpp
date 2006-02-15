@@ -397,9 +397,9 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 		{
 			quint32 msk = mask[ a ];
 			int rshift = 0;
-			while ( msk != 0 && msk & 0xffffff00 )		{	msk = msk >> 1;	rshift++;	}
+			while ( msk != 0 && ( msk & 0xffffff00 ) ) { msk = msk >> 1; rshift++; }
 			int lshift = rgbashift[ a ];
-			while ( msk != 0 && ( msk & 0x80 == 0 ) )	{	msk = msk << 1;	lshift++;	}
+			while ( msk != 0 && ( ( msk & 0x80 ) == 0 ) )	{ msk = msk << 1; lshift++; }
 			msk = mask[ a ];
 			
 			const quint8 * src = data;
@@ -407,11 +407,23 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 			for ( int y = 0; y < h; y++ )
 			{
 				quint32 * dst = (quint32 *) ( pixl + 4 * ( w * ( flipV ? h - y - 1 : y ) + ( flipH ? w - 1 : 0 ) ) );
-				for ( int x = 0; x < w; x++ )
+				if ( rshift == lshift )
 				{
-					*dst |= ( *( (const quint32 *) src ) & msk ) >> rshift << lshift;
-					dst += inc;
-					src += bytespp;
+					for ( int x = 0; x < w; x++ )
+					{
+						*dst |= *( (const quint32 *) src ) & msk;
+						dst += inc;
+						src += bytespp;
+					}
+				}
+				else
+				{
+					for ( int x = 0; x < w; x++ )
+					{
+						*dst |= ( *( (const quint32 *) src ) & msk ) >> rshift << lshift;
+						dst += inc;
+						src += bytespp;
+					}
 				}
 			}
 		}
@@ -521,85 +533,42 @@ struct DDSFormat {
 #define FOURCC_DXT4  0x34545844
 #define FOURCC_DXT5  0x35545844
 
-/*
- *  load a (compressed) dds texture
- */
- 
-GLuint texLoadDDS( const QString & filename )
+GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
 {
-	//qDebug( "DDS" );
+	int blockSize = 8;
+	GLenum glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 	
-	QFile f( filename );
-	if ( ! f.open( QIODevice::ReadOnly ) )
+	switch( compression )
 	{
-		qWarning() << "texLoadDDS( " << filename << " ) : could not open file";
-		return 0;
-	}
-	
-	char tag[4];
-	f.read(&tag[0], 4);
-	DDSFormat ddsHeader;
-
-	if ( strncmp(tag,"DDS ", 4) != 0 || f.read((char *) &ddsHeader, sizeof(DDSFormat)) != sizeof( DDSFormat ) )
-	{
-		qWarning() << "texLoadDDS( " << filename << " ) : not a DDS file";
-		return 0;
-	}
-	
-	if ( !( ddsHeader.dwFlags & DDSD_MIPMAPCOUNT ) )
-		ddsHeader.dwMipMapCount = 1;
-	
-	if ( ! ( isPowerOfTwo( ddsHeader.dwWidth ) && isPowerOfTwo( ddsHeader.dwHeight ) ) )
-	{
-		qWarning() << "texLoadDDS( " << filename << " ) : image dimensions must be power of two";
-		return 0;
-	}
-
-	int blockSize;
-	GLenum format;
-
-	f.seek(ddsHeader.dwSize + 4);
-	
-	if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
-	{
-		switch(ddsHeader.ddsPixelFormat.dwFourCC)
-		{
-			case FOURCC_DXT1:
-				format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-				blockSize = 8;
-				break;
-			case FOURCC_DXT3:
-				format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-				blockSize = 16;
-				break;
-			case FOURCC_DXT5:
-				format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				blockSize = 16;
-				break;
-			default:
-				qWarning() << "texLoadDDS( " << filename << " ) : DDS image compression type not supported";
-				return 0;
-		}
-	}
-	else
-	{
-		return texLoadRaw( f, ddsHeader.dwWidth, ddsHeader.dwHeight,
-			ddsHeader.dwMipMapCount, ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
-			&ddsHeader.ddsPixelFormat.dwRMask );
+		case FOURCC_DXT1:
+			glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			blockSize = 8;
+			break;
+		case FOURCC_DXT3:
+			glFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			blockSize = 16;
+			break;
+		case FOURCC_DXT5:
+			glFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			blockSize = 16;
+			break;
+		default:
+			qWarning() << "texLoadDXT(" << f.fileName() << ") : unsupported DXT compression type";
+			return 0;
 	}
 	
 	if ( !_glCompressedTexImage2D )
 	{
-		qDebug() << "texLoadDDS( " << filename << " ) : DDS image compression not supported by your open gl implementation";
+		qDebug() << "texLoadDXT(" << f.fileName() << ") : DXT image compression not supported by your open gl implementation";
 		return 0;
 	}
 	
 	GLuint tx_id;
-	glGenTextures(1, &tx_id);
-	glBindTexture(GL_TEXTURE_2D, tx_id);
+	glGenTextures( 1, &tx_id );
+	glBindTexture( GL_TEXTURE_2D, tx_id );
 	
-	GLubyte * pixels = (GLubyte *) malloc(((ddsHeader.dwWidth+3)/4) * ((ddsHeader.dwHeight+3)/4) * blockSize);
-	unsigned int w = ddsHeader.dwWidth, h = ddsHeader.dwHeight, s;
+	GLubyte * pixels = (GLubyte *) malloc( ( ( width + 3 ) / 4 ) * ( ( height + 3 ) / 4 ) * blockSize );
+	unsigned int w = width, h = height, s;
 	unsigned int m = 0;
 	
 	//do
@@ -611,12 +580,12 @@ GLuint texLoadDDS( const QString & filename )
 		
 		if ( f.read( (char *) pixels, s ) != s )
 		{
-			qWarning() << "texLoadDDS( " << filename << " ) : unexpected EOF";
+			qWarning() << "texLoadDXT(" << f.fileName() << ") : unexpected EOF";
 			free( pixels );
 			return tx_id;
 		}
 		
-		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, format, w, h, 0, s, pixels );
+		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
 		
 		//if ( w == 1 && h == 1 )
 		//	break;
@@ -624,13 +593,55 @@ GLuint texLoadDDS( const QString & filename )
 		w /= 2;
 		h /= 2;
 	}
-	//while ( m < ddsHeader.dwMipMapCount );
+	//while ( m < mipmaps );
 	
-	f.close();
-	
-	free( pixels );
-
 	return tx_id;
+}
+
+/*
+ *  load a (compressed) dds texture
+ */
+ 
+GLuint texLoadDDS( const QString & filename )
+{
+	QFile f( filename );
+	if ( ! f.open( QIODevice::ReadOnly ) )
+	{
+		qWarning() << "texLoadDDS(" << filename << ") : could not open file";
+		return 0;
+	}
+	
+	char tag[4];
+	f.read(&tag[0], 4);
+	DDSFormat ddsHeader;
+
+	if ( strncmp( tag,"DDS ", 4 ) != 0 || f.read((char *) &ddsHeader, sizeof(DDSFormat)) != sizeof( DDSFormat ) )
+	{
+		qWarning() << "texLoadDDS(" << filename << ") : not a DDS file";
+		return 0;
+	}
+	
+	if ( !( ddsHeader.dwFlags & DDSD_MIPMAPCOUNT ) )
+		ddsHeader.dwMipMapCount = 1;
+	
+	if ( ! ( isPowerOfTwo( ddsHeader.dwWidth ) && isPowerOfTwo( ddsHeader.dwHeight ) ) )
+	{
+		qWarning() << "texLoadDDS(" << filename << ") : image dimensions must be power of two";
+		return 0;
+	}
+
+	f.seek(ddsHeader.dwSize + 4);
+	
+	if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
+	{
+		return texLoadDXT( f, ddsHeader.ddsPixelFormat.dwFourCC, ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
+	}
+	else
+	{
+		return texLoadRaw( f, ddsHeader.dwWidth, ddsHeader.dwHeight,
+			ddsHeader.dwMipMapCount, ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
+			&ddsHeader.ddsPixelFormat.dwRMask );
+	}
 }
 
 /*
@@ -661,11 +672,6 @@ GLuint texLoadTGA( const QString & filename )
 	}
 	if ( hdr[0] ) f.read( hdr[0] );
 	
-	/*
-	qDebug( "xy origin %i %i", hdr[8] + 256 * hdr[9], hdr[10] + 256 * hdr[11] );
-	qDebug( "depth %i", hdr[16] );
-	qDebug( "alpha %02X", hdr[17] );
-	*/
 	unsigned int depth = hdr[16];
 	//unsigned int alphaDepth  = hdr[17] & 15;
 	bool flipV = ! ( hdr[17] & 32 );
@@ -673,11 +679,9 @@ GLuint texLoadTGA( const QString & filename )
 	unsigned int width = hdr[12] + 256 * hdr[13];
 	unsigned int height = hdr[14] + 256 * hdr[15];
 	
-	//qDebug() << "TGA flip V " << flipV << " H " << flipH;
-
 	if ( ! ( isPowerOfTwo( width ) && isPowerOfTwo( height ) ) )
 	{
-		qWarning() << "texLoadTGA( " << filename << " ) : image dimensions must be power of two";
+		qWarning() << "texLoadTGA(" << filename << ") : image dimensions must be power of two";
 		return 0;
 	}
 
@@ -699,12 +703,12 @@ GLuint texLoadTGA( const QString & filename )
 		break;
 	case TGA_COLOR:
 	case TGA_COLOR_RLE:
-		if ( depth == 32 ) // && alphaDepth == 8 )
+		if ( depth == 32 )
 		{
 			static const quint32 TGA_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
 			return texLoadRaw( f, width, height, 1, 32, 4, TGA_RGBA_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
 		}
-		else if ( depth == 24 ) // && alphaDepth == 0 )
+		else if ( depth == 24 )
 		{
 			static const quint32 TGA_RGB_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
 			return texLoadRaw( f, width, height, 1, 24, 3, TGA_RGB_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
@@ -731,27 +735,19 @@ GLuint texLoadBMP( const QString & filename )
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 	{
-		qWarning() << "texLoadBMP( " << filename << " ) : could not open file";
+		qWarning() << "texLoadBMP(" << filename << ") : could not open file";
 		return 0;
 	}
 	
-	// read in tga header
+	// read in bmp header
 	quint8 hdr[54];
 	qint64 readBytes = f.read((char *)hdr, 54);
 	
 	if ( readBytes != 54 || strncmp((char*)hdr,"BM", 2) != 0)
 	{
-		qWarning() << "texLoadBMP( " << filename << " ) : not a BMP file";
+		qWarning() << "texLoadBMP(" << filename << ") : not a BMP file";
 		return 0;
 	}
-	
-	/*
-	qDebug( "size %i,%i", get32( &hdr[18] ), get32( &hdr[22] ) );
-	qDebug( "plns %i", get16( &hdr[26] ) );
-	qDebug( "bpp  %i", get16( &hdr[28] ) );
-	qDebug( "cmpr %i", get32( &hdr[30] ) );
-	qDebug( "ofs  %i", get32( &hdr[10] ) );
-	*/
 	
 	unsigned int width = get32( &hdr[18] );
 	unsigned int height = get32( &hdr[22] );
@@ -759,20 +755,38 @@ GLuint texLoadBMP( const QString & filename )
 	unsigned int compression = get32( &hdr[30] );
 	unsigned int offset = get32( &hdr[10] );
 	
+	f.seek( offset );
+	
 	if ( ! ( isPowerOfTwo( width ) && isPowerOfTwo( height ) ) )
 	{
-		qWarning() << "texLoadBMP( " << filename << " ) : image dimensions must be power of two";
+		qWarning() << "texLoadBMP(" << filename << ") : image dimensions must be power of two";
 		return 0;
 	}
 
-	if ( bpp != 24 || compression != 0 || offset != 54 )
+	switch ( compression )
 	{
-		qWarning() << "texLoadBMP( " << filename << " ) : image sub format not supported";
-		return 0;
+		case 0:
+			if ( bpp == 24 )
+			{
+				static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
+				return texLoadRaw( f, width, height, 1, bpp, 3, BMP_RGBA_MASK, true );
+			}
+			break;
+		case FOURCC_DXT5:
+		case FOURCC_DXT3:
+		case FOURCC_DXT1:
+			return texLoadDXT( f, compression, width, height, 1, true );
 	}
-	
-	static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
-	return texLoadRaw( f, width, height, 1, bpp, 3, BMP_RGBA_MASK, true );
+
+	qWarning() << "texLoadBMP(" << filename << ") : image sub format not supported";
+	/*
+	qWarning( "size %i,%i", width, height );
+	qWarning( "plns %i", get16( &hdr[26] ) );
+	qWarning( "bpp  %i", bpp );
+	qWarning( "cmpr %08x", compression );
+	qWarning( "ofs  %i", offset );
+	*/
+	return 0;
 }
 
 bool GLTex::exportFile( const QString & name )
