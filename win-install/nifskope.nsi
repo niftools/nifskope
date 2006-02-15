@@ -113,7 +113,7 @@ NoBackup:
   
     WriteRegStr HKCR "NetImmerseFile" "" "NetImmerse/Gamebryo File"
     WriteRegStr HKCR "NetImmerseFile\shell" "" "open"
-    WriteRegStr HKCR "NetImmerseFile\DefaultIcon" "" "$INSTDIR\nif.ico"
+    WriteRegStr HKCR "NetImmerseFile\DefaultIcon" "" "$INSTDIR\nif_file.ico"
 
 Skip: ; make sure we write the correct install path to NifSkope, so we must write these
   WriteRegStr HKCR "NetImmerseFile\shell\open\command" "" '$INSTDIR\NifSkope.exe "%1"'
@@ -126,7 +126,7 @@ Skip: ; make sure we write the correct install path to NifSkope, so we must writ
   File ..\mingwm10.dll
   File ..\README.TXT
   File Copyright.txt
-  File nif.ico
+  File nif_file.ico
 
   ; Install shortcuts
   CreateDirectory "$SMPROGRAMS\NifTools\NifSkope\"
