@@ -99,20 +99,43 @@ Section
   ; Cleanup
   ; Nothing here yet...
 
+  ; associate NIF files with NifSkope
+  ReadRegStr $1 HKCR ".nif" ""
+  StrCmp $1 "" NoBackup ; not yet defined, no need to backup
+  StrCmp $1 "NetImmerseFile" NoBackup ; our definition, no need to backup
+
+    WriteRegStr HKCR ".nif" "backup_val" $1
+
+NoBackup:
+  WriteRegStr HKCR ".nif" "" "NetImmerseFile"
+  ReadRegStr $0 HKCR "NetImmerseFile" ""
+  StrCmp $0 "" 0 "Skip" ; if our association is already defined, skip it
+  
+    WriteRegStr HKCR "NetImmerseFile" "" "NetImmerse/Gamebryo File"
+    WriteRegStr HKCR "NetImmerseFile\shell" "" "open"
+    WriteRegStr HKCR "NetImmerseFile\DefaultIcon" "" "$INSTDIR\nif.ico"
+
+Skip: ; make sure we write the correct install path to NifSkope, so we must write these
+  WriteRegStr HKCR "NetImmerseFile\shell\open\command" "" '$INSTDIR\NifSkope.exe "%1"'
+  WriteRegStr HKCR "NetImmerseFile\shell\edit" "" "Edit NIF File"
+  WriteRegStr HKCR "NetImmerseFile\shell\edit\command" "" '$INSTDIR\NifSkope.exe "%1"'
+
   ; Install NifSkope
   SetOutPath $INSTDIR
-  File ..\nifskope.exe
+  File ..\NifSkope.exe
   File ..\mingwm10.dll
   File ..\README.TXT
   File Copyright.txt
+  File nif.ico
 
   ; Install shortcuts
   CreateDirectory "$SMPROGRAMS\NifTools\NifSkope\"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\NifSkope.lnk" "$INSTDIR\NifSkope.exe"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Readme.lnk" "$INSTDIR\README.TXT"
-  CreateShortCut "$SMPROGRAMS\NifTools\Blender NIF Scripts\Support.lnk" "http://niftools.sourceforge.net/forum/viewforum.php?f=6"
-  CreateShortCut "$SMPROGRAMS\NifTools\Blender NIF Scripts\Development.lnk" "http://niftools.sourceforge.net/forum/viewforum.php?f=4"
-  CreateShortCut "$SMPROGRAMS\NifTools\Blender NIF Scripts\Copyright.lnk" "$INSTDIR\Copyright.txt"
-  CreateShortCut "$SMPROGRAMS\NifTools\Blender NIF Scripts\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Support.lnk" "http://niftools.sourceforge.net/forum/viewforum.php?f=6"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Development.lnk" "http://niftools.sourceforge.net/forum/viewforum.php?f=4"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Copyright.lnk" "$INSTDIR\Copyright.txt"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
   ; Write the installation path into the registry
   WriteRegStr HKLM SOFTWARE\NifSkope "Install_Dir" "$INSTDIR"
@@ -126,6 +149,24 @@ SectionEnd
 Section "Uninstall"
   SetShellVarContext all
   SetAutoClose false
+
+  ; restore file association
+  ReadRegStr $1 HKCR ".nif" ""
+  StrCmp $1 "NetImmerseFile" 0 NoOwn ; only do this if we own it
+
+    ReadRegStr $1 HKCR ".nif" "backup_val"
+    StrCmp $1 "" 0 Restore ; if backup="" then delete the whole key
+
+      DeleteRegKey HKCR ".nif"
+
+    Goto NoOwn
+
+Restore:
+      WriteRegStr HKCR ".nif" "" $1
+      DeleteRegValue HKCR ".nif" "backup_val"
+      DeleteRegKey HKCR "NetImmerseFile" ;Delete key with association settings
+
+NoOwn:
 
   ; remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NifSkope"
