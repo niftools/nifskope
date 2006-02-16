@@ -96,9 +96,32 @@ Section
 
   SetShellVarContext all
 
-  ; Cleanup
-  ; Nothing here yet...
+  ; Cleanup: silently uninstall old MSI versions of NifSkope
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{7C67EDD6-1CAB-469E-9B64-EA03099D68BD}" "Publisher"
+  StrCmp $0 "NifTools" 0 +3
+  DetailPrint "Uninstalling NifSkope 0.3.2"
+  ExecWait '"$SYSDIR\msiexec.exe" /x {7C67EDD6-1CAB-469E-9B64-EA03099D68BD} /q'
 
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{58AFAC5C-972B-41D3-909F-EF9278BC6F60}" "Publisher"
+  StrCmp $0 "NifTools" 0 +3
+  DetailPrint "Uninstalling NifSkope 0.4"
+  ExecWait '"$SYSDIR\msiexec.exe" /x {58AFAC5C-972B-41D3-909F-EF9278BC6F60} /q'
+  
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{6ADE1E2F-E0A8-4717-B114-6BBD94766221}" "Publisher"
+  StrCmp $0 "NifTools" 0 +3
+  DetailPrint "Uninstalling NifSkope 0.4.1"
+  ExecWait '"$SYSDIR\msiexec.exe" /x {6ADE1E2F-E0A8-4717-B114-6BBD94766221} /q'
+  
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{D7FC69CC-3835-466B-AB29-110A3554368B}" "Publisher"
+  StrCmp $0 "NifTools" 0 +3
+  DetailPrint "Uninstalling NifSkope 0.5"
+  ExecWait '"$SYSDIR\msiexec.exe" /x {D7FC69CC-3835-466B-AB29-110A3554368B} /q'
+
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{7F33BC54-4874-4C61-9AA1-C642E9622035}" "Publisher"
+  StrCmp $0 "NifTools" 0 +3
+  DetailPrint "Uninstalling NifSkope 0.6"
+  ExecWait '"$SYSDIR\msiexec.exe" /x {7F33BC54-4874-4C61-9AA1-C642E9622035} /q'
+  
   ; associate NIF files with NifSkope
   ReadRegStr $1 HKCR ".nif" ""
   StrCmp $1 "" NoBackup ; not yet defined, no need to backup
@@ -109,7 +132,7 @@ Section
 NoBackup:
   WriteRegStr HKCR ".nif" "" "NetImmerseFile"
   ReadRegStr $0 HKCR "NetImmerseFile" ""
-  StrCmp $0 "" 0 "Skip" ; if our association is already defined, skip it
+  StrCmp $0 "" 0 Skip ; if our association is already defined, skip it
   
     WriteRegStr HKCR "NetImmerseFile" "" "NetImmerse/Gamebryo File"
     WriteRegStr HKCR "NetImmerseFile\shell" "" "open"
