@@ -97,17 +97,17 @@ Section
   SetShellVarContext all
 
   ; Cleanup: silently uninstall old MSI versions of NifSkope
-  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{7C67EDD6-1CAB-469E-9B64-EA03099D68BD}" "Publisher"
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{7C67EDD6-1CAB-469E-9B64-EA03099D68BD}" "Contact"
   StrCmp $0 "NifTools" 0 +3
   DetailPrint "Uninstalling NifSkope 0.3.2"
   ExecWait '"$SYSDIR\msiexec.exe" /x {7C67EDD6-1CAB-469E-9B64-EA03099D68BD} /q'
 
-  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{58AFAC5C-972B-41D3-909F-EF9278BC6F60}" "Publisher"
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{58AFAC5C-972B-41D3-909F-EF9278BC6F60}" "Contact"
   StrCmp $0 "NifTools" 0 +3
   DetailPrint "Uninstalling NifSkope 0.4"
   ExecWait '"$SYSDIR\msiexec.exe" /x {58AFAC5C-972B-41D3-909F-EF9278BC6F60} /q'
   
-  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{6ADE1E2F-E0A8-4717-B114-6BBD94766221}" "Publisher"
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\{6ADE1E2F-E0A8-4717-B114-6BBD94766221}" "Contact"
   StrCmp $0 "NifTools" 0 +3
   DetailPrint "Uninstalling NifSkope 0.4.1"
   ExecWait '"$SYSDIR\msiexec.exe" /x {6ADE1E2F-E0A8-4717-B114-6BBD94766221} /q'
