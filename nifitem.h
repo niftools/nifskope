@@ -39,8 +39,8 @@ class NifSharedData : public QSharedData
 {
 	friend class NifData;
 	
-	NifSharedData( const QString & n, const QString & t, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2 )
-		: QSharedData(), name( n ), type( t ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ) {}
+	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2 )
+		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ) {}
 
 	NifSharedData( const QString & n, const QString & t )
 		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ) {}
@@ -50,6 +50,7 @@ class NifSharedData : public QSharedData
 	
 	QString  name;
 	QString  type;
+	QString  temp;
 	QString  arg;
 	QString  arr1;
 	QString  arr2;
@@ -61,8 +62,8 @@ class NifSharedData : public QSharedData
 class NifData
 {
 public:
-	NifData( const QString & name, const QString & type, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2 )
-		: d( new NifSharedData( name, type, arg, arr1, arr2, cond, ver1, ver2 ) ), value( val ) {}
+	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2 )
+		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2 ) ), value( val ) {}
 	
 	NifData( const QString & name, const QString & type = QString() )
 		: d( new NifSharedData( name, type ) ) {}
@@ -72,6 +73,7 @@ public:
 	
 	inline const QString & name() const	{ return d->name; }
 	inline const QString & type() const	{ return d->type; }
+	inline const QString & temp() const	{ return d->temp; }
 	inline const QString & arg() const	{ return d->arg; }
 	inline const QString & arr1() const	{ return d->arr1; }
 	inline const QString & arr2() const	{ return d->arr2; }
@@ -81,6 +83,7 @@ public:
 	
 	void setName( const QString & name )	{ d->name = name; }
 	void setType( const QString & type )	{ d->type = type; }
+	void setTemp( const QString & temp )	{ d->temp = temp; }
 	void setArg( const QString & arg )		{ d->arg = arg; }
 	void setArr1( const QString & arr1 )	{ d->arr1 = arr1; }
 	void setArr2( const QString & arr2 )	{ d->arr2 = arr2; }
@@ -95,15 +98,6 @@ public:
 	NifValue value;
 };
 
-struct NifBasicType
-{
-	QString				id;
-	NifValue			value;
-	int					display;
-	QString				text;
-	quint32				ver1;
-	quint32				ver2;
-};
 
 struct NifBlock
 {
@@ -203,6 +197,7 @@ public:
 
 	inline QString  name() const	{	return itemData.name();	}
 	inline QString  type() const	{	return itemData.type();	}
+	inline QString  temp() const	{	return itemData.temp();	}
 	inline QString  arg() const	{	return itemData.arg();		}
 	inline QString  arr1() const	{	return itemData.arr1();	}
 	inline QString  arr2() const	{	return itemData.arr2();	}
@@ -212,6 +207,7 @@ public:
 	
 	inline void setName( const QString & name )	{	itemData.setName( name );	}
 	inline void setType( const QString & type )	{	itemData.setType( type );	}
+	inline void setTemp( const QString & temp )	{	itemData.setTemp( temp );	}
 	inline void setArg( const QString & arg )		{	itemData.setArg( arg );		}
 	inline void setArr1( const QString & arr1 )	{	itemData.setArr1( arr1 );	}
 	inline void setArr2( const QString & arr2 )	{	itemData.setArr2( arr2 );	}

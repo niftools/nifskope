@@ -54,7 +54,6 @@ public:
 	{
 		depth = 0;
 		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "alias";
-		typ = 0;
 		blk = 0;
 	}
 
@@ -63,7 +62,6 @@ public:
 	QStringList elements;
 	QString errorStr;
 	
-	NifBasicType	* typ;
 	NifBlock		* blk;
 	
 	int current() const
@@ -132,6 +130,7 @@ public:
 					NifData		data(
 						list.value( "name" ),
 						list.value( "type" ),
+						list.value( "template" ),
 						NifValue( NifValue::type( list.value( "type" ) ) ),
 						list.value( "arg" ),
 						list.value( "arr1" ),
@@ -210,7 +209,12 @@ public:
 	
 	bool checkType( const NifData & data )
 	{
-		return NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "(ARG)";
+		return NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "(TEMPLATE)";
+	}
+	
+	bool checkTemp( const NifData & data )
+	{
+		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "(TEMPLATE)";
 	}
 	
 	bool endDocument()
@@ -222,6 +226,8 @@ public:
 			{
 				if ( ! checkType( data ) )
 					err( "compound type " + key + " referes to unknown type " + data.type() );
+				if ( ! checkTemp( data ) )
+					err( "compound type " + key + " referes to unknown template type " + data.temp() );
 				if ( data.type() == key )
 					err( "compound type " + key + " contains itself" );
 			}
@@ -241,6 +247,8 @@ public:
 			{
 				if ( ! checkType( data ) )
 					err( "ancestor block " + key + " referes to unknown type " + data.type() );
+				if ( ! checkTemp( data ) )
+					err( "ancestor block " + key + " referes to unknown template type " + data.temp() );
 			}
 		}
 		
@@ -256,6 +264,8 @@ public:
 			{
 				if ( ! checkType( data ) )
 					err( "niblock " + key + " referres to unknown type " + data.type() );
+				if ( ! checkTemp( data ) )
+					err( "niblock " + key + " referes to unknown template type " + data.temp() );
 			}
 		}
 		return true;
