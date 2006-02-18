@@ -148,6 +148,7 @@ Skip: ; make sure we write the correct install path to NifSkope, so we must writ
   File ..\NifSkope.exe
   File ..\mingwm10.dll
   File ..\README.TXT
+  File ..\nif.xml
   File Copyright.txt
   File nif_file.ico
 
