@@ -192,6 +192,24 @@ public:
 		xyz[2] *= m;
 	}
 	
+	static float dotproduct( const Vector3 & v1, const Vector3 & v2 )
+	{
+		return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
+	}
+	
+	static float angle( const Vector3 & v1, const Vector3 & v2 )
+	{
+		float dot = dotproduct( v1, v2 );
+		if ( dot > 1.0 )
+			return 0.0;
+		else if ( dot < - 1.0 )
+			return PI;
+		else if ( dot == 0.0 )
+			return PI/2;
+		else
+			return acos( dot );
+	}
+	
 	static Vector3 min( const Vector3 & v1, const Vector3 & v2 )
 	{
 		return Vector3( qMin( v1.xyz[0], v2.xyz[0] ), qMin( v1.xyz[1], v2.xyz[1] ), qMin( v1.xyz[2], v2.xyz[2] ) );
@@ -202,6 +220,11 @@ public:
 	}
 	
 	const float * data() const { return xyz; }
+	
+	QString toHtml() const
+	{
+		return QString( "X %1 Y %2 Z %3<br>length %4" ).arg( xyz[0] ).arg( xyz[1] ).arg( xyz[2] ).arg( length() );
+	}
 	
 protected:
 	float xyz[3];
@@ -348,21 +371,6 @@ public:
 		return t;
 	}
 
-	int edge( quint32 v0, quint32 v1 ) const
-	{
-				if ( ( v[0] == v0 && v[1] == v1 ) || ( v[0] == v1 && v[1] == v0 ) ) return 0;
-		else	if ( ( v[1] == v0 && v[2] == v1 ) || ( v[1] == v1 && v[2] == v0 ) ) return 1;
-		else	if ( ( v[0] == v0 && v[2] == v1 ) || ( v[0] == v1 && v[2] == v0 ) ) return 2;
-		return -1;
-	}
-	int opposite( quint32 v0, quint32 v1 ) const
-	{
-				if ( ( v[0] == v0 && v[1] == v1 ) || ( v[0] == v1 && v[1] == v0 ) ) return v[2];
-		else	if ( ( v[1] == v0 && v[2] == v1 ) || ( v[1] == v1 && v[2] == v0 ) ) return v[0];
-		else	if ( ( v[0] == v0 && v[2] == v1 ) || ( v[0] == v1 && v[2] == v0 ) ) return v[1];
-		return -1;
-	}
-	
 protected:
 	quint16 v[3];
 	friend class NifStream;
@@ -371,7 +379,7 @@ protected:
 class Color3
 {
 public:
-	Color3() { rgb[0] = rgb[1] = rgb[2] = 0; }
+	Color3() { rgb[0] = rgb[1] = rgb[2] = 1.0; }
 	explicit Color3( const QColor & c ) { fromQColor( c ); }
 	Color3( float r, float g, float b ) { setRGB( r, g, b ); }
 	
@@ -429,7 +437,7 @@ protected:
 class Color4
 {
 public:
-	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3]; }
+	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
 	Color4( const Color3 & c, float alpha = 1.0 ) { rgba[0] = c[0]; rgba[1] = c[1]; rgba[2] = c[2]; rgba[3] = alpha; }
 	explicit Color4( const QColor & c ) { fromQColor( c ); }
 	Color4( float r, float g, float b, float a ) { setRGBA( r, g, b, a ); }
@@ -536,16 +544,17 @@ public:
 		tParent = 6,
 		tFloat = 7,
 		tString = 8,
-		tColor3 = 9,
-		tColor4 = 10,
-		tVector3 = 11,
-		tQuat = 12,
-		tMatrix = 13,
-		tVector2 = 14,
-		tTriangle = 15,
-		tByteArray = 16,
-		tFileVersion = 17,
-		tHeaderString = 18,
+		tFilePath = 9,
+		tColor3 = 10,
+		tColor4 = 11,
+		tVector3 = 12,
+		tQuat = 13,
+		tMatrix = 14,
+		tVector2 = 15,
+		tTriangle = 16,
+		tByteArray = 17,
+		tFileVersion = 18,
+		tHeaderString = 19,
 		
 		tNone = 0xff
 	};
@@ -580,7 +589,7 @@ public:
 	bool isLink() const { return typ == tLink || typ == tParent; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isQuat() const { return typ == tQuat; }
-	bool isString() const { return typ == tString || typ == tHeaderString; }
+	bool isString() const { return typ == tString || typ == tHeaderString || typ == tFilePath; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
 	bool isTriangle() const { return typ == tTriangle; }
@@ -669,9 +678,15 @@ template <> inline Vector3 NifValue::get() const { return getType<Vector3>( tVec
 template <> inline Vector2 NifValue::get() const { return getType<Vector2>( tVector2 ); }
 template <> inline Color3 NifValue::get() const { return getType<Color3>( tColor3 ); }
 template <> inline Color4 NifValue::get() const { return getType<Color4>( tColor4 ); }
-template <> inline QString NifValue::get() const { return getType<QString>( tString ); }
 template <> inline QByteArray NifValue::get() const { return getType<QByteArray>( tByteArray ); }
 template <> inline Triangle NifValue::get() const { return getType<Triangle>( tTriangle ); }
+template <> inline QString NifValue::get() const
+{
+	if ( isString() )
+		return *static_cast<QString*>( val.data );
+	else
+		return QString();
+}
 
 template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
@@ -682,9 +697,17 @@ template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVe
 template <> inline bool NifValue::set( const Vector2 & x ) { return setType( tVector2, x ); }
 template <> inline bool NifValue::set( const Color3 & x ) { return setType( tColor3, x ); }
 template <> inline bool NifValue::set( const Color4 & x ) { return setType( tColor4, x ); }
-template <> inline bool NifValue::set( const QString & x ) { return setType( tString, x ) || setType( tHeaderString, x ); }
 template <> inline bool NifValue::set( const QByteArray & x ) { return setType( tByteArray, x ); }
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
+template <> inline bool NifValue::set( const QString & x )
+{
+	if ( isString() )
+	{
+		*static_cast<QString*>( val.data ) = x;
+		return true;
+	}
+	return false;
+}
 
 template <> inline bool NifValue::ask( bool * ) const { return isCount(); }
 template <> inline bool NifValue::ask( int * ) const { return isCount(); }
@@ -695,9 +718,9 @@ template <> inline bool NifValue::ask( Vector3 * ) const { return type() == tVec
 template <> inline bool NifValue::ask( Vector2 * ) const { return type() == tVector2; }
 template <> inline bool NifValue::ask( Color3 * ) const { return type() == tColor3; }
 template <> inline bool NifValue::ask( Color4 * ) const { return type() == tColor4; }
-template <> inline bool NifValue::ask( QString * ) const { return type() == tString; }
 template <> inline bool NifValue::ask( QByteArray * ) const { return type() == tByteArray; }
 template <> inline bool NifValue::ask( Triangle * ) const { return type() == tTriangle; }
+template <> inline bool NifValue::ask( QString * ) const { return isString(); }
 
 class NifStream
 {

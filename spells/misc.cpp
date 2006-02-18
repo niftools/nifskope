@@ -8,7 +8,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ! nif->itemArr1( index ).isEmpty();
+		return nif->isArray( index );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -67,12 +67,12 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemIsLink( index ) && nif->itemLink( index ) >= 0;
+		return nif->isLink( index ) && nif->getLink( index ) >= 0;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex idx = nif->getBlock( nif->itemLink( index ) );
+		QModelIndex idx = nif->getBlock( nif->getLink( index ) );
 		if ( idx.isValid() )
 			return idx;
 		else

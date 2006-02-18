@@ -164,6 +164,8 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 		alphaTest = flags & ( 1 << 9 );
 		alphaFunc = testMap[ ( flags >> 10 ) & 0x7 ];
 		alphaThreshold = nif->get<int>( iBlock, "Threshold" ) / 255.0;
+		
+		alphaSort = ( flags & 0x2000 ) == 0;
 	}
 }
 
@@ -175,12 +177,7 @@ void glProperty( AlphaProperty * p )
 		glBlendFunc( p->alphaSrc, p->alphaDst );
 	}
 	else
-	{
 		glDisable( GL_BLEND );
-		glDisable( GL_ALPHA_TEST );
-	}
-	
-	// setup alpha testing
 	
 	if ( p && p->alphaTest && p->scene->blending )
 	{
@@ -200,6 +197,10 @@ void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 		int flags = nif->get<int>( iBlock, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
+		static const GLenum depthMap[8] = {
+			GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
+		};
+		depthFunc = depthMap[ ( flags >> 2 ) & 0x07 ];
 	}
 }
 
@@ -208,7 +209,10 @@ void glProperty( ZBufferProperty * p )
 	if ( p ) 
 	{
 		if ( p->depthTest )
+		{
 			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( p->depthFunc );
+		}
 		else
 			glDisable( GL_DEPTH_TEST );
 		
@@ -217,6 +221,8 @@ void glProperty( ZBufferProperty * p )
 	else
 	{
 		glEnable( GL_DEPTH_TEST );
+		glDepthFunc( GL_LESS );
+
 		glDepthMask( GL_TRUE );
 	}
 	
@@ -276,7 +282,7 @@ public:
 		if ( m == 0 )	return;
 		int r = ( (int) ( ctrlTime( time ) / flipDelta ) ) % m;
 		
-		target->iBaseTex = nif->getBlock( nif->itemValue( iSources.child( r, 0 ) ).toLink(), "NiSourceTexture" );
+		target->iBaseTex = nif->getBlock( nif->getLink( iSources.child( r, 0 ) ), "NiSourceTexture" );
 	}
 
 	void update( const NifModel * nif, const QModelIndex & index )
@@ -343,7 +349,7 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
 		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
 		
-		shininess = nif->get<float>( index, "Glossiness" ) * 1.28; // range 0 ~ 128 (nif 0~100)
+		shininess = nif->get<float>( index, "Glossiness" );
 	}
 }
 
@@ -373,7 +379,7 @@ public:
 		if ( ( iBlock.isValid() && iBlock == index ) || ( iData.isValid() && iData == index ) )
 		{
 			iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiFloatData" );
-			iAlpha = nif->getIndex( iData, "Keys" );
+			iAlpha = nif->getIndex( iData, "Data" );
 		}
 	}
 

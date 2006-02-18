@@ -100,7 +100,7 @@ public:
 					
 					MorphKey * key = new MorphKey;
 					key->index = 0;
-					key->iFrames = nif->getIndex( iKey, "Keys" );
+					key->iFrames = nif->getIndex( iKey, "Frames" );
 					key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
 					
 					morph.append( key );
@@ -141,7 +141,7 @@ public:
 		if ( ( iBlock.isValid() && iBlock == index ) || ( iData.isValid() && iData == index ) )
 		{
 			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiUVData" );
-			iKeys = nif->getIndex( iData, "Keys" );
+			iKeys = nif->getIndex( iData, "UV Groups" );
 		}
 	}
 	
@@ -309,7 +309,7 @@ void Mesh::transform()
 		QModelIndex idxBones = nif->getIndex( nif->getIndex( iSkin, "Bones" ), "Bones" );
 		if ( idxBones.isValid() )
 			for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
-				bones.append( nif->itemValue( nif->index( b, 0, idxBones ) ).toLink() );
+				bones.append( nif->getLink( nif->index( b, 0, idxBones ) ) );
 		
 		idxBones = nif->getIndex( iSkinData, "Bone List" );
 		if ( idxBones.isValid() )
@@ -377,7 +377,8 @@ void Mesh::transformShapes()
 		}
 	}
 
-	if ( findProperty<AlphaProperty>() )
+	AlphaProperty * ap = findProperty<AlphaProperty>();
+	if ( ap && ap->blend() && ap->sort() )
 	{
 		triOrder.resize( triangles.count() );
 		int t = 0;
@@ -388,7 +389,7 @@ void Mesh::transformShapes()
 			tp.second = transVerts.value( tri.v1() )[2] + transVerts.value( tri.v2() )[2] + transVerts.value( tri.v3() )[2];
 			triOrder[t++] = tp;
 		}
-		qStableSort( triOrder.begin(), triOrder.end(), compareTriangles );
+		qSort( triOrder.begin(), triOrder.end(), compareTriangles );
 	}
 	else
 		triOrder.resize( 0 );

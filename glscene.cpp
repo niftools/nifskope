@@ -260,7 +260,7 @@ void Scene::setupLights( Node * node )
 		
 		if ( lights.list().isEmpty() )
 		{
-			static const GLfloat L0position[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
 			static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
 			static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 			static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };

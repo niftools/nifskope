@@ -102,6 +102,7 @@ public:
 	
 	Node * findParent( int id ) const;
 	Node * findChild( int id ) const;
+	Node * parentNode() const { return parent; }
 	
 	virtual void boundaries( Vector3 & min, Vector3 & max );
 	

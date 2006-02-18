@@ -112,11 +112,12 @@ public:
 	
 	bool blend() const { return alphaBlend; }
 	bool test() const { return alphaTest; }
+	bool sort() const { return alphaSort; }
 	
 	friend void glProperty( AlphaProperty * );
 
 protected:
-	bool alphaBlend, alphaTest;
+	bool alphaBlend, alphaTest, alphaSort;
 	GLenum alphaSrc, alphaDst, alphaFunc;
 	GLfloat alphaThreshold;	
 };
@@ -141,6 +142,7 @@ public:
 protected:
 	bool depthTest;
 	bool depthMask;
+	GLenum depthFunc;
 };
 
 template <> inline Property::Type Property::getType<ZBufferProperty>()

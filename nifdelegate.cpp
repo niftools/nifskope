@@ -62,39 +62,60 @@ public:
 		Q_ASSERT( event );
 		Q_ASSERT( model );
 		
-		if ( ( event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease ) && static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
+		switch ( event->type() )
 		{
-			Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
-			if ( spell && ! spell->icon().isNull() )
-			{
-				int m = qMin( option.rect.width(), option.rect.height() );
-				QRect iconRect( option.rect.x(), option.rect.y(), m, m );
-				if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
+			case QEvent::MouseButtonPress:
+			case QEvent::MouseButtonRelease:
+				if ( static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
 				{
-					if ( event->type() == QEvent::MouseButtonRelease )
+					Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
+					if ( spell && ! spell->icon().isNull() )
 					{
-						NifModel * nif = 0;
-						QModelIndex buddy = index;
-						
-						if ( model->inherits( "NifModel" ) )
+						int m = qMin( option.rect.width(), option.rect.height() );
+						QRect iconRect( option.rect.x(), option.rect.y(), m, m );
+						if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
 						{
-							nif = static_cast<NifModel *>( model );
+							if ( event->type() == QEvent::MouseButtonRelease )
+							{
+								NifModel * nif = 0;
+								QModelIndex buddy = index;
+								
+								if ( model->inherits( "NifModel" ) )
+								{
+									nif = static_cast<NifModel *>( model );
+								}
+								else if ( model->inherits( "NifProxyModel" ) )
+								{
+									NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
+									nif = static_cast<NifModel *>( proxy->model() );
+									buddy = proxy->mapTo( index );
+								}
+								
+								if ( nif && spell->isApplicable( nif, buddy ) )
+									spell->cast( nif, buddy );
+							}
+							return true;
 						}
-						else if ( model->inherits( "NifProxyModel" ) )
-						{
-							NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
-							nif = static_cast<NifModel *>( proxy->model() );
-							buddy = proxy->mapTo( index );
-						}
-						
-						if ( nif && spell->isApplicable( nif, buddy ) )
-							spell->cast( nif, buddy );
 					}
-					return true;
-				}
-			}
+				}	break;
+			case QEvent::MouseButtonDblClick:
+				if ( static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
+				{
+					QVariant v = model->data( index, Qt::EditRole );
+					if ( v.canConvert<NifValue>() )
+					{
+						NifValue nv = v.value<NifValue>();
+						if ( nv.type() == NifValue::tBool )
+						{
+							nv.set<int>( ! nv.get<int>() );
+							model->setData( index, nv.toVariant(), Qt::EditRole );
+							return true;
+						}
+					}
+				}	break;
+			default:
+				break;
 		}
-		
 		return false;
 	}
 	
@@ -154,11 +175,11 @@ public:
 		if ( ! icon.isNull() )
 			icon.paint( painter, decoRect );
 		else if ( ! deco.isEmpty() )
-			qt_format_text( opt.font, decoRect, opt.displayAlignment, deco, 0, 0, 0, 0, painter );
+			painter->drawText( decoRect, opt.displayAlignment, deco );
 		
 		if ( painter->fontMetrics().width( text ) > textRect.width() )
 			text = elidedText( opt.fontMetrics, textRect.width(), opt.textElideMode, text );
-		qt_format_text( opt.font, textRect, opt.displayAlignment, text, 0, 0, 0, 0, painter );
+		painter->drawText( textRect, opt.displayAlignment, text );
 		
 		drawFocus(painter, opt, textRect);
 		
@@ -253,10 +274,10 @@ ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNo
 
 bool ValueEdit::canEdit( NifValue::Type t )
 {
-	return ( t == NifValue::tBool || t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
+	return ( t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tParent || t == NifValue::tFloat || t == NifValue::tString
 		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat
-		|| t == NifValue::tTriangle );
+		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString );
 }
 
 void ValueEdit::setValue( const NifValue & v )
@@ -268,15 +289,6 @@ void ValueEdit::setValue( const NifValue & v )
 	
 	switch ( typ )
 	{
-		case NifValue::tBool:
-		{
-			QComboBox * cb = new QComboBox( this );
-			cb->setFrame(false);
-			cb->addItem("no");
-			cb->addItem("yes");
-			cb->setCurrentIndex( v.toCount() ? 1 : 0 );
-			edit = cb;
-		}	break;
 		case NifValue::tByte:
 		{
 			QSpinBox * be = new QSpinBox( this );
@@ -321,6 +333,8 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = fe;
 		}	break;
 		case NifValue::tString:
+		case NifValue::tFilePath:
+		case NifValue::tHeaderString:
 		{	
 			QLineEdit * le = new QLineEdit( this );
 			le->setText( v.toString() );
@@ -370,9 +384,6 @@ NifValue ValueEdit::getValue() const
 	
 	switch ( typ )
 	{
-		case NifValue::tBool:
-			val.setCount( qobject_cast<QComboBox*>( edit )->currentIndex() );
-			break;
 		case NifValue::tByte:
 		case NifValue::tWord:
 		case NifValue::tFlags:
@@ -387,6 +398,8 @@ NifValue ValueEdit::getValue() const
 			val.setFloat( qobject_cast<QDoubleSpinBox*>( edit )->value() );
 			break;
 		case NifValue::tString:
+		case NifValue::tFilePath:
+		case NifValue::tHeaderString:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
 			break;
 		case NifValue::tVector3:
@@ -437,30 +450,44 @@ VectorEdit::VectorEdit( QWidget * parent ) : QWidget( parent )
 	x->setDecimals( 4 );
 	x->setRange( - 100000000, + 100000000 );
 	x->setPrefix( "X " );
+	connect( x, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( y = new QDoubleSpinBox );
 	//y->setFrame(false);
 	y->setDecimals( 4 );
 	y->setRange( - 100000000, + 100000000 );
 	y->setPrefix( "Y " );
+	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( z = new QDoubleSpinBox );
 	//z->setFrame(false);
 	z->setDecimals( 4 );
 	z->setRange( - 100000000, + 100000000 );
 	z->setPrefix( "Z " );
+	connect( z, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	
+	setting = false;
 }
 
 void VectorEdit::setVector3( const Vector3 & v )
 {
+	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
 	z->setValue( v[2] ); z->setShown( true );
+	setting = false;
 }
 
 void VectorEdit::setVector2( const Vector2 & v )
 {
+	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
 	z->setValue( 0.0 ); z->setHidden( true );
+	setting = false;
+}
+
+void VectorEdit::sltChanged()
+{
+	if ( ! setting ) emit sigEdited();
 }
 
 Vector3 VectorEdit::getVector3() const
@@ -484,35 +511,44 @@ RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent )
 	y->setDecimals( 1 );
 	y->setRange( - 360, + 360 );
 	y->setPrefix( "Y " );
+	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( p = new QDoubleSpinBox );
 	//p->setFrame(false);
 	p->setDecimals( 1 );
 	p->setRange( - 360, + 360 );
 	p->setPrefix( "P " );
+	connect( p, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( r = new QDoubleSpinBox );
 	//r->setFrame(false);
 	r->setDecimals( 1 );
 	r->setRange( - 360, + 360 );
 	r->setPrefix( "R " );
+	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	
+	setting = false;
 }
 
 void RotationEdit::setMatrix( const Matrix & m )
 {
+	setting = true;
 	float Y, P, R;
 	m.toEuler( Y, P, R );
 	y->setValue( Y / PI * 180 );
 	p->setValue( P / PI * 180 );
 	r->setValue( R / PI * 180 );
+	setting = false;
 }
 
 void RotationEdit::setQuat( const Quat & q )
 {
+	setting = true;
 	Matrix m; m.fromQuat( q );
 	float Y, P, R;
 	m.toEuler( Y, P, R );
 	y->setValue( Y / PI * 180 );
 	p->setValue( P / PI * 180 );
 	r->setValue( R / PI * 180 );
+	setting = false;
 }
 
 Matrix RotationEdit::getMatrix() const
@@ -525,6 +561,11 @@ Quat RotationEdit::getQuat() const
 {
 	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
 	return m.toQuat();
+}
+
+void RotationEdit::sltChanged()
+{
+	if ( ! setting ) emit sigEdited();
 }
 
 TriangleEdit::TriangleEdit( QWidget * parent ) : QWidget( parent )

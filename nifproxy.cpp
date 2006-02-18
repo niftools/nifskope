@@ -467,17 +467,40 @@ QVariant NifProxyModel::headerData( int section, Qt::Orientation orient, int rol
  
 void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex & end )
 {
-	if ( begin != end )
+	if ( begin == end )
 	{
-		reset();
+		QList<QModelIndex> indices = mapFrom( begin );
+		foreach ( QModelIndex idx, indices )
+			emit dataChanged( idx, idx );
 		return;
 	}
+	else if ( begin.parent() == end.parent() )
+	{
+		if ( begin.row() == end.row() )
+		{
+			int m = qMax( begin.column(), end.column() );
+			for ( int c = qMin( begin.column(), end.column() ); c < m; c++ )
+			{
+				QList<QModelIndex> indices = mapFrom( begin.sibling( begin.row(), c ) );
+				foreach ( QModelIndex idx, indices )
+					emit dataChanged( idx, idx );
+			}
+			return;
+		}
+		else if ( begin.column() == end.column() )
+		{
+			int m = qMax( begin.row() , end.row() );
+			for ( int r = qMin( begin.row(), end.row() ); r < m; r++ )
+			{
+				QList<QModelIndex> indices = mapFrom( begin.sibling( r, begin.column() ) );
+				foreach ( QModelIndex idx, indices )
+					emit dataChanged( idx, idx );
+			}
+			return;
+		}
+	}
 	
-	//qDebug() << "proxy dataChanged";
-	
-	QList<QModelIndex> indices = mapFrom( begin );
-	foreach ( QModelIndex idx, indices )
-		emit dataChanged( idx, idx );
+	reset();
 }
 
 void NifProxyModel::xLinksChanged()

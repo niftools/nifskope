@@ -139,9 +139,12 @@ public:
 			
 			if ( !file.isEmpty() )
 			{
-				foreach ( QString base, GLTex::texfolders )
+				QStringList folders = GLTex::texfolders;
+				if ( ! nif->getFolder().isEmpty() )
+					folders.append( nif->getFolder() );
+				foreach ( QString base, folders )
 				{
-					if ( file.toLower().startsWith( base.toLower() ) )
+					if ( file.toLower().replace( "/", "\\" ).startsWith( base.toLower().replace( "/", "\\" ) ) )
 					{
 						int pos = 0;
 						if ( nif->getVersion() == "4.0.0.2" && ( pos = base.toLower().indexOf( "data files" ) ) >= 0 )
@@ -185,10 +188,10 @@ public:
 		if ( ! block.isValid() )	return index;
 		if ( nif->get<int>( block, "Texture Count" ) < 7 )
 			nif->set<int>( block, "Texture Count", 7 );
-		QModelIndex iGlow = nif->getIndex( block, "Base Texture" );
-		if ( ! iGlow.isValid() )	return index;
-		nif->set<int>( iGlow, "Is Used", 1 );
-		QPersistentModelIndex iTexDesc = nif->getIndex( iGlow, "Texture Data" );
+		QModelIndex iBase = nif->getIndex( block, "Base Texture" );
+		if ( ! iBase.isValid() )	return index;
+		nif->set<int>( iBase, "Is Used", 1 );
+		QPersistentModelIndex iTexDesc = nif->getIndex( iBase, "Texture Data" );
 		if ( ! iTexDesc.isValid() ) return index;
 		
 		nif->set<int>( iTexDesc, "Clamp Mode", 3 );
@@ -495,7 +498,10 @@ public:
 			QStringList lst;
 			foreach ( QModelIndex idx, view->selectionModel()->selectedIndexes() )
 			{
-				lst << model->filePath( idx );
+				if ( idx.column() == 0 )
+				{
+					lst << model->filePath( idx );
+				}
 			}
 			return lst;
 		}

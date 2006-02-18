@@ -77,14 +77,22 @@ public:
 	Vector3 getVector3() const;
 	Vector2 getVector2() const;
 
+signals:
+	void sigEdited();
+
 public slots:
 	void setVector3( const Vector3 & );
 	void setVector2( const Vector2 & );
+
+protected slots:
+	void sltChanged();
 
 private:
 	QDoubleSpinBox * x;
 	QDoubleSpinBox * y;
 	QDoubleSpinBox * z;
+	
+	bool setting;
 };
 
 class RotationEdit : public QWidget
@@ -98,15 +106,23 @@ public:
 	
 	Matrix getMatrix() const;
 	Quat getQuat() const;
+
+signals:
+	void sigEdited();
 	
 public slots:
 	void setMatrix( const Matrix & );
 	void setQuat( const Quat & );
 
+protected slots:
+	void sltChanged();
+
 private:
 	QDoubleSpinBox * y;
 	QDoubleSpinBox * p;
 	QDoubleSpinBox * r;
+	
+	bool setting;
 };
 
 class TriangleEdit : public QWidget

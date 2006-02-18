@@ -168,9 +168,9 @@ float Controller::ctrlTime( float time ) const
 				if ( delta <= 0 )
 					return start;
 				
-				float x = ( time - start ) / ( delta * 2 );
+				float x = ( time - start ) / delta;
 				float y = ( x - floor( x ) ) * delta;
-				if ( y * 2 < delta )
+				if ( ( (int) fabs( floor( x ) ) ) & 1 == 0 )
 					return start + y;
 				else
 					return stop - y;
@@ -247,7 +247,7 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 	if ( nif && array.isValid() )
 	{
-		QModelIndex frames = nif->getIndex( array, "Frames" );
+		QModelIndex frames = nif->getIndex( array, "Keys" );
 		int next;
 		float x;
 		if ( Controller::timeIndex( time, nif, frames, last, next, x ) )
@@ -255,7 +255,7 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 			T v1 = nif->get<T>( frames.child( last, 0 ), "Value" );
 			T v2 = nif->get<T>( frames.child( next, 0 ), "Value" );
 			
-			switch ( nif->get<int>( array, "Type" ) )
+			switch ( nif->get<int>( array, "Key Type" ) )
 			{
 				/*
 				case 2:
@@ -302,7 +302,7 @@ template <> bool Controller::interpolate( bool & value, const QModelIndex & arra
 	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 	if ( nif && array.isValid() )
 	{
-		QModelIndex frames = nif->getIndex( array, "Frames" );
+		QModelIndex frames = nif->getIndex( array, "Keys" );
 		if ( timeIndex( time, nif, frames, last, next, x ) )
 		{
 			value = nif->get<int>( frames.child( last, 0 ), "Value" );
@@ -319,7 +319,7 @@ template <> bool Controller::interpolate( Quat & value, const QModelIndex & arra
 	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 	if ( nif && array.isValid() )
 	{
-		QModelIndex frames = nif->getIndex( array, "Frames" );
+		QModelIndex frames = nif->getIndex( array, "Keys" );
 		if ( timeIndex( time, nif, frames, last, next, x ) )
 		{
 			Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );

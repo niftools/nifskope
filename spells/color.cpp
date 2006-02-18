@@ -18,14 +18,14 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemValue( index ).isColor();
+		return nif->getValue( index ).isColor();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif->itemValue( index ).type() == NifValue::tColor3 )
+		if ( nif->getValue( index ).type() == NifValue::tColor3 )
 			nif->set<Color3>( index, ColorWheel::choose( nif->get<Color3>( index ) ) );
-		else if ( nif->itemValue( index ).type() == NifValue::tColor4 )
+		else if ( nif->getValue( index ).type() == NifValue::tColor4 )
 			nif->set<Color4>( index, ColorWheel::choose( nif->get<Color4>( index ) ) );
 		return index;
 	}
@@ -103,18 +103,28 @@ QColor ColorWheel::getColor() const
 
 void ColorWheel::setColor( const QColor & c )
 {
-	H = c.hueF();
+	double h = c.hueF();
 	S = c.saturationF();
 	V = c.valueF();
-	if ( H >= 1.0 || H < 0.0 ) H = 0.0;
+	if ( h >= 1.0 || h < 0.0 ) h = 0.0;
 	if ( S > 1.0 || S < 0.0 ) S = 1.0;
 	if ( V > 1.0 || S < 0.0 ) V = 1.0;
+	if ( h != 0.0 ) H = h;
 	update();
+	emit sigColor( c );
 }
 
 QSize ColorWheel::sizeHint() const
 {
-	return QSize( 250, 250 );
+	if ( sHint.isValid() )
+		return sHint;
+	else
+		return QSize( 250, 250 );
+}
+
+void ColorWheel::setSizeHint( const QSize & s )
+{
+	sHint = s;
 }
 
 QSize ColorWheel::minimumSizeHint() const
@@ -215,7 +225,7 @@ void ColorWheel::mousePressEvent( QMouseEvent * e )
 	
 	if ( d > s )
 		pressed = Nope;
-	if ( d > c )
+	else if ( d > c )
 		pressed = Circle;
 	else
 		pressed = Triangle;
@@ -237,6 +247,7 @@ void ColorWheel::setColor( int x, int y )
 		if ( l.dx() > 0 )	H = 1.0 - H;
 		update();
 		emit sigColor( getColor() );
+		emit sigColorEdited( getColor() );
 	}
 	else if ( pressed == Triangle )
 	{
@@ -261,6 +272,7 @@ void ColorWheel::setColor( int x, int y )
 			S = 1.0;
 		update();
 		emit sigColor( getColor() );
+		emit sigColorEdited( getColor() );
 	}
 }
 

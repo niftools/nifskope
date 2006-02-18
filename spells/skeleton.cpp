@@ -138,7 +138,7 @@ public:
 		if ( iNames.isValid() )
 			for ( int n = 0; n < nif->rowCount( iNames ); n++ )
 			{
-				QModelIndex iBone = nif->getBlock( nif->itemLink( iNames.child( n, 0 ) ), "NiNode" );
+				QModelIndex iBone = nif->getBlock( nif->getLink( iNames.child( n, 0 ) ), "NiNode" );
 				if ( iBone.isValid() )
 					names.append( nif->get<QString>( iBone, "Name" ) );
 				else

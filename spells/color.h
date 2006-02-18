@@ -26,10 +26,13 @@ public:
 	QSize sizeHint() const;
 	QSize minimumSizeHint() const;
 	
+	void setSizeHint( const QSize & s );
+	
 	int heightForWidth( int width ) const;
 
 signals:
 	void sigColor( const QColor & );
+	void sigColorEdited( const QColor & );
 	
 public slots:
 	void setColor( const QColor & );
@@ -47,6 +50,8 @@ private:
 	enum {
 		Nope, Circle, Triangle
 	} pressed;
+	
+	QSize sHint;
 
 	static QIcon * icon;
 };

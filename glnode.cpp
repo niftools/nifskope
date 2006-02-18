@@ -108,7 +108,7 @@ public:
 			iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiVisData" );
 			if ( ! iData.isValid() )
 				iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiBoolData" );
-			iKeys = nif->getIndex( iData, "Keys" );
+			iKeys = nif->getIndex( iData, "Data" );
 		}
 	}
 	
@@ -251,33 +251,40 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 	Controllable::update( nif, index );
 	
 	if ( ! iBlock.isValid() )
+	{
+		clear();
 		return;
+	}
 	
 	nodeId = nif->getBlockNumber( iBlock );
 
 	if ( iBlock == index )
 	{
-		flags.bits = nif->get<int>( iBlock, "Flags" ) & 1;
+		flags.bits = nif->get<int>( iBlock, "Flags" );
 		local = Transform( nif, iBlock );
 	}
 	
 	if ( iBlock == index || ! index.isValid() )
 	{
 		PropertyList newProps;
-		NodeList newNodes;
-		
-		foreach( int link, nif->getChildLinks( nodeId ) )
+		QModelIndex iProperties = nif->getIndex( nif->getIndex( iBlock, "Properties" ), "Indices" );
+		if ( iProperties.isValid() )
 		{
-			QModelIndex iChild = nif->getBlock( link );
-			if ( ! iChild.isValid() ) continue;
-			QString name = nif->itemName( iChild );
-			
-			if ( nif->inherits( name, "AProperty" ) )
+			for ( int p = 0; p < nif->rowCount( iProperties ); p++ )
 			{
-				newProps.add( scene->getProperty( nif, iChild ) );
+				QModelIndex iProp = nif->getBlock( nif->getLink( iProperties.child( p, 0 ) ) );
+				newProps.add( scene->getProperty( nif, iProp ) );
 			}
-			else if ( nif->inherits( name, "ANode" ) )
+		}
+		properties = newProps;
+		
+		NodeList newNodes;
+		QModelIndex iChildren = nif->getIndex( nif->getIndex( iBlock, "Children" ), "Indices" );
+		if ( iChildren.isValid() )
+		{
+			for ( int c = 0; c < nif->rowCount( iChildren ); c++ )
 			{
+				QModelIndex iChild = nif->getBlock( nif->getLink( iChildren.child( c, 0 ) ) );
 				Node * node = scene->getNode( nif, iChild );
 				if ( node && ( ! node->parent || node->parent == this ) )
 				{
@@ -286,7 +293,6 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 				}
 			}
 		}
-		properties = newProps;
 		children = newNodes;
 	}
 }
@@ -398,10 +404,13 @@ void Node::draw( NodeList * draw2nd )
 	glDisable( GL_NORMALIZE );
 	glDisable( GL_LIGHTING );
 	glDisable( GL_COLOR_MATERIAL );
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
+	
 	if ( scene->highlight && scene->currentNode == nodeId )
-		glColor( Color4( QColor( "steelblue" ).light( 180 ) ) );
+		glColor( Color4( 0.3, 0.4, 1.0, 0.8 ) );
 	else
-		glColor( Color4( QColor( "steelblue" ).dark( 110 ) ) );
+		glColor( Color4( 0.2, 0.2, 0.7, 0.5 ) );
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 	

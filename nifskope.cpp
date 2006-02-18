@@ -474,40 +474,26 @@ void NifSkope::load()
 		return;
 	}
 	
-	QFile f( lineLoad->text() );
-	if ( f.open( QIODevice::ReadOnly ) )
-	{
-		ogl->setNifFolder( lineLoad->text().left( qMax( lineLoad->text().lastIndexOf( "\\" ), lineLoad->text().lastIndexOf( "/" ) ) ) );
-		
-		setEnabled( false );
-		bool a = ogl->aAnimate->isChecked();
-		bool r = ogl->aRotate->isChecked();
-		ogl->aAnimate->setChecked( false );
-		ogl->aRotate->setChecked( false );
-		model->load( f );
-		ogl->aAnimate->setChecked( a );
-		ogl->aRotate->setChecked( r );
-		ogl->center();
-		f.close();
-		setEnabled( true );
-	}
-	else
-		qWarning() << "could not open file " << lineLoad->text();
+	setEnabled( false );
+	bool a = ogl->aAnimate->isChecked();
+	bool r = ogl->aRotate->isChecked();
+	ogl->aAnimate->setChecked( false );
+	ogl->aRotate->setChecked( false );
+	if ( ! model->load( lineLoad->text() ) )
+		qWarning() << "failed to load nif from file " << lineLoad->text();
+	ogl->aAnimate->setChecked( a );
+	ogl->aRotate->setChecked( r );
+	ogl->center();
+	setEnabled( true );
 }
 
 void NifSkope::save()
 {
 	// write to file
-	QFile f( lineSave->text() );
-	if ( f.open( QIODevice::WriteOnly ) )
-	{
-		setEnabled( false );
-		model->save( f );
-		setEnabled( true );
-		f.close();
-	}
-	else
+	setEnabled( false );
+	if ( ! model->save( lineSave->text() ) )
 		qWarning() << "could not write file " << lineSave->text();
+	setEnabled( true );
 }
 
 void NifSkope::loadBrowse()

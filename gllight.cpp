@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "gllight.h"
+#include "glscene.h"
 
 /*
  *  Light
@@ -67,16 +68,22 @@ void Light::update( const NifModel * nif, const QModelIndex & index )
 	}
 }
 
+Vector3 Light::direction() const
+{
+	return worldTrans().rotation * Vector3( 1, 0, 0 );
+}
+
 static const GLenum light_enum[8] = { GL_LIGHT0, GL_LIGHT1, GL_LIGHT2, GL_LIGHT3, GL_LIGHT4, GL_LIGHT5, GL_LIGHT6, GL_LIGHT7 };
 
 void Light::on( int n )
 {
 	GLenum e = light_enum[ n ];
 	
-	Vector3 pos = worldTrans().translation;
-	Vector3 dir = worldTrans().rotation * Vector3( 1, 0, 0 );
+	Vector3 pos = scene->view * worldTrans().translation;
+	
 	if ( directional )
 	{
+		Vector3 dir = scene->view.rotation * worldTrans().rotation * Vector3( -1, 0, 0 );
 		GLfloat pos4[4] = { dir[0], dir[1], dir[2], 0.0 };
 		glLightfv( e, GL_POSITION, pos4 );
 	}
@@ -89,7 +96,7 @@ void Light::on( int n )
 	glLightfv( e, GL_AMBIENT, ( ambient * dimmer ).data() );
 	glLightfv( e, GL_DIFFUSE, ( diffuse * dimmer ).data() );
 	glLightfv( e, GL_SPECULAR, ( specular * dimmer ).data() );
-	glLightfv( e, GL_SPOT_DIRECTION, dir.data() );
+	glLightfv( e, GL_SPOT_DIRECTION, ( scene->view.rotation * direction() ).data() );
 	glLightf( e, GL_CONSTANT_ATTENUATION, constant );
 	glLightf( e, GL_LINEAR_ATTENUATION, linear );
 	glLightf( e, GL_QUADRATIC_ATTENUATION, quadratic );
@@ -105,3 +112,38 @@ void Light::off( int n )
 	glDisable( e );
 }
 
+void Light::draw( NodeList * draw2nd = 0 )
+{
+	Node::draw( draw2nd );
+	
+	if ( isHidden() && ! scene->drawHidden )
+		return;
+	
+	glLoadName( nodeId );
+	
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_TRUE );
+	glDepthFunc( GL_ALWAYS );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
+	
+	if ( scene->highlight && scene->currentNode == nodeId )
+		glColor( Color4( 0.8, 0.8, 0.3, 0.8 ) );
+	else
+		glColor( Color4( 0.6, 0.6, 0.1, 0.5 ) );
+	
+	glPointSize( 8.5 );
+	glLineWidth( 2.5 );
+	
+	Vector3 a = scene->view * worldTrans().translation;
+	Vector3 b = scene->view * ( worldTrans().translation + direction() * 10 );
+	
+	glBegin( GL_LINES );
+	glVertex( a );
+	glVertex( b );
+	glEnd();
+}

@@ -45,6 +45,10 @@ public:
 	void on( int n );
 	static void off( int n );
 	
+	Vector3 direction() const;
+	
+	void draw( NodeList * draw2nd );
+	
 protected:
 	GLfloat dimmer;
 	Color4 ambient, diffuse, specular;

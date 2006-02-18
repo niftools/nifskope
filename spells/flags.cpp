@@ -91,24 +91,32 @@ QIcon * flag42_xpm_icon = 0;
 class spEditFlags : public Spell
 {
 public:
-	QString name() const { return "Edit"; }
-	QString page() const { return "Flags"; }
+	QString name() const { return "Flags"; }
+	QString page() const { return ""; }
+	bool instant() const { return true; }
 	QIcon icon() const
 	{
-		if ( ! flag42_xpm_icon )
-			flag42_xpm_icon = new QIcon( flag42_xpm );
+		if ( ! flag42_xpm_icon ) flag42_xpm_icon = new QIcon( flag42_xpm );
 		return *flag42_xpm_icon;
 	}
-	bool instant() const { return true; }
 	
 	enum FlagType
 	{
 		Alpha, Controller, Node, Shape, ZBuffer, None
 	};
 	
+	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
+	{
+		if ( nif->getValue( index ).type() == NifValue::tFlags && nif->itemType( index.parent() ) == "NiBlock" )
+			return index;
+		if ( nif->itemType( index ) == "NiBlock" )
+			return nif->getIndex( index, "Flags" );
+		return QModelIndex();
+	}
+	
 	FlagType queryType( const NifModel * nif, const QModelIndex & index ) const
 	{
-		if ( nif->itemValue( index ).type() == NifValue::tFlags && nif->itemType( index.parent() ) == "NiBlock" )
+		if ( nif->getValue( index ).type() == NifValue::tFlags )
 		{
 			QString name = nif->itemName( index.parent() );
 			if ( name == "NiAlphaProperty" )
@@ -127,27 +135,29 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return queryType( nif, index ) != None;
+		return queryType( nif, getFlagIndex( nif, index ) ) != None;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		switch ( queryType( nif, index ) )
+		QModelIndex iFlags = getFlagIndex( nif, index );
+		
+		switch ( queryType( nif, iFlags ) )
 		{
 			case Alpha:
-				alphaFlags( nif, index );
+				alphaFlags( nif, iFlags );
 				break;
 			case Controller:
-				controllerFlags( nif, index );
+				controllerFlags( nif, iFlags );
 				break;
 			case Node:
-				nodeFlags( nif, index );
+				nodeFlags( nif, iFlags );
 				break;
 			case Shape:
-				shapeFlags( nif, index );
+				shapeFlags( nif, iFlags );
 				break;
 			case ZBuffer:
-				zbufferFlags( nif, index );
+				zbufferFlags( nif, iFlags );
 				break;
 			default:
 				break;
@@ -175,7 +185,7 @@ public:
 		QCheckBox * chkBlend = dlgCheck( vbox, "Enable Blending" );
 		chkBlend->setChecked( flags & 1 );
 		
-		QComboBox * cmbSrc = dlgCombo( vbox, "source Blend Mode", blendModes, 11, chkBlend );
+		QComboBox * cmbSrc = dlgCombo( vbox, "Source Blend Mode", blendModes, 11, chkBlend );
 		cmbSrc->setCurrentIndex( flags >> 1 & 0x0f );
 		
 		QComboBox * cmbDst = dlgCombo( vbox, "Destination Blend Mode", blendModes, 11, chkBlend );
@@ -190,23 +200,31 @@ public:
 		QSpinBox * spnTest = dlgSpin( vbox, "Alpha Test Threshold", 0x00, 0xff, chkTest );
 		spnTest->setValue( nif->get<int>( nif->getBlock( index ), "Threshold" ) );
 		
+		QCheckBox * chkSort = dlgCheck( vbox, "Sort Triangles" );
+		chkSort->setChecked( ( flags & 0x2000 ) == 0 );
+		
 		dlgButtons( &dlg, vbox );
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
 			flags = 0;
+			
 			if ( chkBlend->isChecked() )
 			{
 				flags |= 1;
 				flags |= cmbSrc->currentIndex() << 1;
 				flags |= cmbDst->currentIndex() << 5;
 			}
+			
 			if ( chkTest->isChecked() )
 			{
 				flags |= 1 << 9;
 				flags |= cmbTest->currentIndex() << 10;
 				nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
 			}
+			
+			flags |= chkSort->isChecked() ? 0 : 0x2000;
+			
 			nif->set<int>( index, flags );
 		}
 	}
@@ -223,6 +241,11 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
 		chkHidden->setChecked( flags & 1 );
 		
+		static const char * collisionModes[4] = { "None", "Triangles", "Bounding Box", "Continue" };
+		
+		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", collisionModes, 4 );
+		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
+		
 		QCheckBox * chkSkin = dlgCheck( vbox, "Skin Influence" );
 		chkSkin->setChecked( ! ( flags & 8 ) );
 		
@@ -231,6 +254,7 @@ public:
 		if ( dlg.exec() == QDialog::Accepted )
 		{
 			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 1 : 0 );
+			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1 );
 			flags = flags & 0xfff7 | ( chkSkin->isChecked() ? 0 : 8 );
 			nif->set<int>( index, flags );
 		}
@@ -275,6 +299,11 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
 		chkHidden->setChecked( flags & 0x01 );
 		
+		static const char * collisionModes[4] = { "None", "Triangles", "Bounding Box", "Continue" };
+		
+		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", collisionModes, 4 );
+		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
+		
 		QCheckBox * chkShadow = dlgCheck( vbox, "Shadow" );
 		chkShadow->setChecked( flags & 0x40 );
 		
@@ -283,6 +312,7 @@ public:
 		if ( dlg.exec() == QDialog::Accepted )
 		{
 			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 0x01 : 0 );
+			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1 );
 			flags = flags & 0xffbf | ( chkShadow->isChecked() ? 0x40 : 0 );
 			nif->set<int>( index, flags );
 		}
@@ -301,15 +331,22 @@ public:
 		chkEnable->setChecked( flags & 1 );
 		
 		QCheckBox * chkROnly = dlgCheck( vbox, "Z Buffer Read Only" );
-		chkROnly->setChecked( ! ( flags & 2 ) );
+		chkROnly->setChecked( ( flags & 2 ) == 0 );
+		
+		static const char * depthModes[8] = {
+			"Always", "Less", "Equal", "Less or Equal", "Greater", "Not Equal", "Greater or Equal", "Never"
+		};
+		
+		QComboBox * cmbFunc = dlgCombo( vbox, "Z Buffer Test Function", depthModes, 8, chkEnable );
+		cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
 		
 		dlgButtons( &dlg, vbox );
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = 0;
-			flags |= ( chkEnable->isChecked() ? 1 : 0 );
-			flags |= ( chkROnly->isChecked() ? 0 : 2 );
+			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
+			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
+			flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
 			nif->set<int>( index, flags );
 		}
 	}

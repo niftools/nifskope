@@ -35,11 +35,27 @@ public:
 
 REGISTER_SPELL( spInsertBlock )
 
-class spInsertProperty : public Spell
+void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+{
+	QModelIndex iLinkGroup = nif->getIndex( iParent, array );
+	if ( iLinkGroup.isValid() )
+	{
+		QModelIndex iIndices = nif->getIndex( iLinkGroup, "Indices" );
+		if ( iLinkGroup.isValid() )
+		{
+			int numlinks = nif->get<int>( iLinkGroup, "Num Indices" );
+			nif->set<int>( iLinkGroup, "Num Indices", numlinks + 1 );
+			nif->updateArray( iIndices );
+			nif->setLink( iIndices.child( numlinks, 0 ), link );
+		}
+	}
+}
+
+class spAttachProperty : public Spell
 {
 public:
-	QString name() const { return "Add Property"; }
-	QString page() const { return "Block"; }
+	QString name() const { return "Attach Property"; }
+	QString page() const { return "Node"; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -60,20 +76,7 @@ public:
 		{
 			QPersistentModelIndex iParent = index;
 			QModelIndex iProperty = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
-			
-			QModelIndex iProperties = nif->getIndex( iParent, "Properties" );
-			if ( iProperties.isValid() )
-			{
-				QModelIndex iIndices = nif->getIndex( iProperties, "Indices" );
-				if ( iIndices.isValid() )
-				{
-					int numlinks = nif->get<int>( iProperties, "Num Indices" );
-					nif->set<int>( iProperties, "Num Indices", numlinks + 1 );
-					nif->updateArray( iIndices );
-					nif->setLink( iIndices.child( numlinks, 0 ), nif->getBlockNumber( iProperty ) );
-				}
-			}
-			
+			addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) );
 			return iProperty;
 		}
 		else
@@ -81,7 +84,46 @@ public:
 	}
 };
 
-REGISTER_SPELL( spInsertProperty )
+REGISTER_SPELL( spAttachProperty )
+
+class spAttachLight : public Spell
+{
+public:
+	QString name() const { return "Attach Light"; }
+	QString page() const { return "Node"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "AParentNode" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QMenu menu;
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		foreach ( QString id, ids )
+			if ( nif->inherits( id, "ALight" ) )
+				menu.addAction( id );
+		
+		QAction * act = menu.exec( QCursor::pos() );
+		if ( act )
+		{
+			QPersistentModelIndex iParent = index;
+			QModelIndex iLight = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+			addLink( nif, iParent, "Children", nif->getBlockNumber( iLight ) );
+			addLink( nif, iParent, "Effects", nif->getBlockNumber( iLight ) );
+			nif->set<float>( iLight, "Dimmer", 1.0 );
+			nif->set<float>( iLight, "Constant Attenuation", 1.0 );
+			nif->set<float>( iLight, "Cutoff Angle", 45.0 );
+			return iLight;
+		}
+		else
+			return index;
+	}
+};
+
+REGISTER_SPELL( spAttachLight )
 
 class spRemoveBlock : public Spell
 {

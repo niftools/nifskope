@@ -166,7 +166,7 @@ public:
 				}
 				else if ( name == "NiParticleColorModifier" )
 				{
-					iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Keys" );
+					iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
 				}
 				else if ( name == "NiGravity" )
 				{
@@ -249,7 +249,7 @@ public:
 	void startParticle( Particle & p )
 	{
 		p.position = random( emitRadius * 2 ) - emitRadius;
-		p.position += emitNode->worldTrans().translation - target->worldTrans().translation;
+		p.position += target->worldTrans().rotation.inverted() * ( emitNode->worldTrans().translation - target->worldTrans().translation );
 		
 		float i = inc + random( incRnd );
 		float d = dec + random( decRnd );

@@ -60,12 +60,12 @@ void GLTex::initialize( const QGLContext * context )
 	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
 	//foreach ( QString e, extensions.split( " " ) )
 	//	qWarning() << e;
-	
+	/*
 	if ( ! extensions.contains( "GL_ARB_texture_compression" ) )
 		qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
 	if ( ! extensions.contains( "GL_EXT_texture_compression_s3tc" ) )
 		qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
-	
+	*/
 	_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress( "glCompressedTexImage2D" );
 	if ( ! _glCompressedTexImage2D )
 		_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress( "glCompressedTexImage2DARB" );
@@ -225,11 +225,7 @@ void GLTex::release()
 
 bool GLTex::isValid() const
 {
-	if ( ! iSource.isValid() )
-		return false;
-	if ( ! external && ! iPixelData.isValid() )
-		return false;
-	return true;
+	return ( iSource.isValid() && ( external || iPixelData.isValid() ) );
 }
 
 void GLTex::invalidate()
@@ -282,7 +278,10 @@ QString GLTex::findFile( const QString & file, const QString & additionalFolders
 			break;
 	}
 	
-	return filename;
+	if ( replaceExt )
+		return filename + extensions.value( 0 );
+	else
+		return filename;
 }
 
 bool isPowerOfTwo( unsigned int x )
@@ -427,7 +426,7 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 				}
 			}
 		}
-		else
+		else if ( a == 3 )
 		{
 			quint32 * dst = (quint32 *) pixl;
 			quint32 x = 0xff << rgbashift[ a ];
