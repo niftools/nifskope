@@ -79,6 +79,7 @@ public:
 	QAction * aHighlight;
 	QAction * aRotate;
 	QAction * aTexFolder;
+	QAction * aBgColor;
 	
 	QAction * aAnimate;
 	QAction * aAnimPlay;
@@ -92,12 +93,12 @@ public slots:
 	void setNif( NifModel * );
 
 	void setTextureFolder( const QString & );
-	
 	void setCurrentIndex( const QModelIndex & );
 
 	void sltFrame( int );
 
 	void selectTexFolder();
+	void selectBgColor();
 	
 signals: 
 	void clicked( const QModelIndex & );
@@ -157,6 +158,8 @@ private:
 	
 	float time;
 	QTime lastTime;
+	
+	QColor bgcolor;
 };
 
 #endif

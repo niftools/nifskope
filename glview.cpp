@@ -42,7 +42,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "glscene.h"
 #include "gltex.h"
+
 #include "spellbook.h"
+#include "spells/color.h"
 
 #define FPS 35
 
@@ -141,6 +143,10 @@ GLView::GLView()
 	aTexFolder->setToolTip( "tell me where your textures are" );
 	connect( aTexFolder, SIGNAL( triggered() ), this, SLOT( selectTexFolder() ) );
 	addAction( aTexFolder );
+	
+	aBgColor = new QAction( "Set Background Color", this );
+	connect( aBgColor, SIGNAL( triggered() ), this, SLOT( selectBgColor() ) );
+	addAction( aBgColor );
 }
 
 GLView::~GLView()
@@ -153,7 +159,7 @@ void GLView::initializeGL()
 {
 	GLTex::initialize( context() );
 	
-	qglClearColor( palette().color( QPalette::Active, QPalette::Background ) );
+	qglClearColor( bgcolor );
 
 	glShadeModel( GL_SMOOTH );
 	glEnable( GL_POINT_SMOOTH );
@@ -211,7 +217,7 @@ void GLView::paintGL()
 {
 	if ( ! ( isVisible() && height() ) )	return;
 	
-	qglClearColor( QColor( 20, 20, 30 ) );
+	qglClearColor( bgcolor );
 	
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
@@ -472,6 +478,12 @@ void GLView::selectTexFolder()
 		spell->cast( model, QModelIndex() );
 }
 
+void GLView::selectBgColor()
+{
+	bgcolor = ColorWheel::choose( bgcolor, false, this );
+	update();
+}
+
 void GLView::setTextureFolder( const QString & tf )
 {
 	GLTex::texfolders = tf.split( ";" );
@@ -498,6 +510,7 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "rotate", aRotate->isChecked() );
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
+	settings.setValue( "bg color", bgcolor );
 	//settings.endGroup();
 }
 
@@ -515,6 +528,7 @@ void GLView::restore( QSettings & settings )
 	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
+	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
 	checkActions();
 	//settings.endGroup();
 }
