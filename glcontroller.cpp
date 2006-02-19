@@ -48,6 +48,8 @@ Controllable::~Controllable()
 
 void Controllable::clear()
 {
+	name = QString();
+	
 	qDeleteAll( controllers );
 	controllers.clear();
 }
@@ -70,7 +72,9 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 	}
 
 	if ( iBlock == i || x )
-	{	// sync the list of attached controllers
+	{	
+		name = nif->get<QString>( iBlock, "Name" );
+		// sync the list of attached controllers
 		QList<Controller*> rem( controllers );
 		QModelIndex iCtrl = nif->getBlock( nif->getLink( iBlock, "Controller" ) );
 		while ( iCtrl.isValid() && nif->inherits( iCtrl, "AController" ) )

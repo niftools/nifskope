@@ -366,9 +366,7 @@ Node * Node::findChild( int id ) const
 
 bool Node::isHidden() const
 {
-	if ( flags.node.hidden || ! parent )
-		return flags.node.hidden;
-	return parent->isHidden();
+	return ( flags.node.hidden || name == "collidee" || name == "collision" || ( parent && parent->isHidden() ) );
 }
 
 void Node::transform()

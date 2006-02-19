@@ -63,6 +63,8 @@ protected:
 	QPersistentModelIndex iBlock;
 
 	QList<Controller*> controllers;
+	
+	QString name;
 };
 
 #endif
