@@ -83,8 +83,8 @@ LangString DESC_SecCopyUI ${LANG_ENGLISH} "Copy all required files to the applic
 OutFile "nifskope_${VERSION}-windows.exe"
 InstallDir "$PROGRAMFILES\NifTools\NifSkope"
 BrandingText "http://niftools.sourceforge.net/"
-Icon "../icon.ico"
-UninstallIcon "../icon.ico" ; TODO create uninstall icon
+Icon "inst.ico"
+UninstallIcon "inst.ico"
 ShowInstDetails show
 ShowUninstDetails show
 
