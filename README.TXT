@@ -38,9 +38,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.6 of NifSkope.
+This is version 0.7 of NifSkope.
 
 It should read and write every Nif up to version 20.0.0.4
+
+
+changes since 0.6:
+  - lights
+  - particles (80% of the old particle systems from morrowind)
+  - xml: template types + optimized conditions
+  - fixed texturing again:
+    - NIF folder is now searched for textures too
+    - smart cache flush control (reloads textures if needed)
+    - fixed RGBA32 TGAs which have their alphaBitCnt set to zero
+    - fixed TGA RLE decompression (was much too slow)
+    - added support for TGA L8 and LA16 (greyscale)
+    - fixed bit stuffed DDS formats (RGBA 5551 565 4444 ...)
+    - alternative extension test (nifs from mournhold and solstheim)
+    - fixed tex folder deselect
+    - fixed filenames containing \r\n\0
 
 changes since 0.5:
   - new flexible context menu system (spells)
