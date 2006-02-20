@@ -50,6 +50,7 @@ class QActionGroup;
 class QLineEdit;
 class QSettings;
 class QSlider;
+class QSpinBox;
 class QTextEdit;
 
 class NifSkope : public QMainWindow
@@ -86,6 +87,7 @@ protected slots:
 	void contextMenu( const QPoint & pos );
 	
 	void setFrame( int, int, int );
+	void setMaxDistance( int );
 	
 private:
 	void initActions();
@@ -126,6 +128,10 @@ private:
 
 	QToolBar * tAnim;
 	QSlider * sldTime;
+	
+	QToolBar * tLOD;
+	QSlider * sldDistance;
+	QSpinBox * spnMaxDistance;
 };
 
 

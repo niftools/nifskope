@@ -96,6 +96,7 @@ public slots:
 	void setCurrentIndex( const QModelIndex & );
 
 	void sltFrame( int );
+	void sltDistance( int );
 
 	void selectTexFolder();
 	void selectBgColor();

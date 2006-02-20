@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontroller.h"
 #include "glnode.h"
+#include "glnodeswitch.h"
 #include "gllight.h"
 #include "glmesh.h"
 #include "glparticles.h"
@@ -49,7 +50,7 @@ Scene::Scene()
 	currentNode = 0;
 	animate = true;
 	
-	time = timeMin = timeMax = 0.0;
+	time = timeMin = timeMax = distance = 0.0;
 }
 
 Scene::~Scene()
@@ -146,7 +147,10 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	
 	if ( nif->inherits( iNode, "AParentNode" ) )
 	{
-		node = new Node( this, iNode );
+		if ( nif->itemName( iNode ) == "NiLODNode" )
+			node = new LODNode( this, iNode );
+		else
+			node = new Node( this, iNode );
 	}
 	else if ( nif->itemName( iNode ) == "NiTriShape" || nif->itemName( iNode ) == "NiTriStrips" )
 	{

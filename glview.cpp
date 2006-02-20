@@ -470,6 +470,12 @@ void GLView::sltFrame( int f )
 	update();
 }
 
+void GLView::sltDistance( int d )
+{
+	scene->distance = d;
+	update();
+}
+
 void GLView::selectTexFolder()
 {
 	if ( ! model ) return;

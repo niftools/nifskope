@@ -30,94 +30,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLSCENE_H
-#define GLSCENE_H
-
-#include <QtOpenGL>
-
-#include "nifmodel.h"
+#ifndef GLNODESWITCH_H
+#define GLNODESWITCH_H
 
 #include "glnode.h"
-#include "glproperty.h"
-#include "gltransform.h"
-#include "gltex.h"
 
-class Scene
+class LODNode : public Node
 {
 public:
-	Scene();
-	~Scene();
-
-	void clear( bool flushTextures = true );
-	void make( NifModel * nif, bool flushTextures = false );
-	void make( NifModel * nif, int blockNumber, QStack<int> & nodestack );
+	LODNode( Scene * scene, const QModelIndex & block );
 	
-	void update( const NifModel * nif, const QModelIndex & index );
+	void clear();
+	void update( const NifModel * nif, const QModelIndex & block );
 	
-	void transform( const Transform & trans, float time = 0.0 );
-	void drawShapes();
-	void drawNodes();
+	void transform();
 	
-	bool bindTexture( const QModelIndex & );
-	void setupLights( Node * node );
-	
-	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
-	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
-
-	NodeList nodes;
-	PropertyList properties;
-	NodeList lights;
-
-	NodeList roots;
-
-	mutable QHash<int,Transform> worldTrans;
-	
-	Transform view;
-	
-	bool animate;
-	
-	float time;
-	float distance; // distance used for LOD switches
-
-	bool texturing;
-	QList<GLTex*> textures;
-	
-	bool blending;
-	bool lighting;
-	
-	bool highlight;
-	int currentNode;
-	
-	bool drawHidden;
-	
-	Vector3 boundMin, boundMax, boundCenter, boundRadius;
-	float timeMin, timeMax;
+protected:
+	QList< QPair<float,float> > ranges;
+	QPersistentModelIndex iData;
 };
-
-inline void glVertex( const Vector3 & v )
-{
-	glVertex3fv( v.data() );
-}
-
-inline void glNormal( const Vector3 & v )
-{
-	glNormal3fv( v.data() );
-}
-
-inline void glTexCoord( const Vector2 & v )
-{
-	glTexCoord2fv( v.data() );
-}
-
-inline void glColor( const Color3 & c )
-{
-	glColor3fv( c.data() );
-}
-
-inline void glColor( const Color4 & c )
-{
-	glColor4fv( c.data() );
-}
-
 
 #endif

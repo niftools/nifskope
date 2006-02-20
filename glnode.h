@@ -127,6 +127,7 @@ protected:
 	friend class KeyframeController;
 	friend class VisibilityController;
 	friend class NodeList;
+	friend class LODNode;
 };
 
 template <typename T> inline T * Node::findProperty() const

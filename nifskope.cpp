@@ -52,6 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMessageBox>
 #include <QSettings>
 #include <QSlider>
+#include <QSpinBox>
 #include <QTextEdit>
 #include <QTimer>
 #include <QToolBar>
@@ -227,6 +228,29 @@ NifSkope::NifSkope() : QMainWindow()
 	
 	addToolBar( Qt::TopToolBarArea, tAnim );
 	
+	// LOD tool bar
+	
+	tLOD = new QToolBar( "LOD distance" );
+	tLOD->setObjectName( "LODtool" );
+	tLOD->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	
+	tLOD->addWidget( new QLabel( "LOD" ) );
+	
+	sldDistance = new QSlider;
+	sldDistance->setOrientation( Qt::Horizontal );
+	sldDistance->setRange( 0, 10000 );
+	tLOD->addWidget( sldDistance );
+	connect( sldDistance, SIGNAL( valueChanged( int ) ), ogl, SLOT( sltDistance( int ) ) );
+	
+	spnMaxDistance = new QSpinBox;
+	spnMaxDistance->setRange( 0, 4000000 );
+	spnMaxDistance->setValue( 10000 );
+	spnMaxDistance->setPrefix( "max " );
+	tLOD->addWidget( spnMaxDistance );
+	connect( spnMaxDistance, SIGNAL( valueChanged( int ) ), this, SLOT( setMaxDistance( int ) ) );
+	
+	addToolBar( Qt::TopToolBarArea, tLOD );
+	
 	// menu
 
 	QMenu * mFile = new QMenu( "&File" );
@@ -243,6 +267,7 @@ NifSkope::NifSkope() : QMainWindow()
 	mView->addSeparator();
 	mView->addAction( tool->toggleViewAction() );
 	mView->addAction( tAnim->toggleViewAction() );
+	mView->addAction( tLOD->toggleViewAction() );
 	
 	QMenu * mOpts = new QMenu( "&Options" );
 	foreach ( QAction * a, ogl->actions() )
@@ -268,6 +293,11 @@ void NifSkope::setFrame( int f, int mn, int mx )
 {
 	sldTime->setRange( mn, mx );
 	sldTime->setValue( f );
+}
+
+void NifSkope::setMaxDistance( int max )
+{
+	sldDistance->setMaximum( max );
 }
 
 NifSkope::~NifSkope()

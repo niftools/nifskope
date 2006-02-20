@@ -14,6 +14,7 @@ glcontroller.h \
 gllight.h \
 glmesh.h \
 glnode.h \
+glnodeswitch.h \
 glparticles.h \
 glproperty.h \
 glscene.h \
@@ -34,6 +35,7 @@ glcontroller.cpp \
 gllight.cpp \
 glmesh.cpp \
 glnode.cpp \
+glnodeswitch.cpp \
 glparticles.cpp \
 glproperty.cpp \
 glscene.cpp \
