@@ -197,10 +197,15 @@ void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 		int flags = nif->get<int>( iBlock, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
-		static const GLenum depthMap[8] = {
-			GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
-		};
-		depthFunc = depthMap[ ( flags >> 2 ) & 0x07 ];
+		if ( nif->checkVersion( 0x20000004, 0 ) )
+		{
+			static const GLenum depthMap[8] = {
+				GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
+			};
+			depthFunc = depthMap[ ( flags >> 2 ) & 0x07 ];
+		}
+		else
+			depthFunc = GL_LESS;
 	}
 }
 

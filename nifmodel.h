@@ -175,15 +175,17 @@ public:
 	// find a branch by name
 	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;
 	
-	// evaluate version
-	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
 	// evaluate condition and version
 	bool evalCondition( const QModelIndex & idx, bool chkParents = false ) const;
+	// evaluate version
+	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
 
+	// check wether the current nif file version lies in the range since~until
+	bool checkVersion( quint32 since, quint32 until ) const;
 
 	// version conversion
 	static QString version2string( quint32 );
-	static quint32 version2number( const QString & );	
+	static quint32 version2number( const QString & );
 	
 	
 	// QAbstractModel interface
@@ -435,6 +437,11 @@ template <typename T> inline void NifModel::setArray( const QModelIndex & iArray
 template <typename T> inline void NifModel::setArray( const QModelIndex & iParent, const QString & name, const QVector<T> & array )
 {
 	setArray<T>( getIndex( iParent, name ), array );
+}
+
+inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
+{
+	return ( ( since == 0 || since <= version ) && ( until == 0 || version <= until ) );
 }
 
 #endif

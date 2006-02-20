@@ -168,7 +168,7 @@ public:
 	void alphaFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if ( ! flags ) flags = 14573;
+		if ( ! flags ) flags = 0x18ed;
 		
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -207,23 +207,23 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = 0;
-			
+			flags = flags & 0xfffe;
 			if ( chkBlend->isChecked() )
 			{
 				flags |= 1;
-				flags |= cmbSrc->currentIndex() << 1;
-				flags |= cmbDst->currentIndex() << 5;
+				flags = flags & 0xffe1 | cmbSrc->currentIndex() << 1;
+				flags = flags & 0xfe1f | cmbDst->currentIndex() << 5;
 			}
 			
+			flags = flags & 0xfdff;
 			if ( chkTest->isChecked() )
 			{
-				flags |= 1 << 9;
-				flags |= cmbTest->currentIndex() << 10;
+				flags |= 0x0200;
+				flags = flags & 0xe3ff | ( cmbTest->currentIndex() << 10 );
 				nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
 			}
 			
-			flags |= chkSort->isChecked() ? 0 : 0x2000;
+			flags = flags & 0xdfff | ( chkSort->isChecked() ? 0 : 0x2000 );
 			
 			nif->set<int>( index, flags );
 		}
@@ -281,9 +281,8 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = 0;
-			flags |= ( chkActive->isChecked() ? 8 : 0 );
-			flags |= cmbLoop->currentIndex() << 1;
+			flags = flags & 0xfff7 | ( chkActive->isChecked() ? 8 : 0 );
+			flags = flags & 0xfff9 | cmbLoop->currentIndex() << 1;
 			nif->set<int>( index, flags );
 		}
 	}
@@ -304,8 +303,12 @@ public:
 		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", collisionModes, 4 );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 		
-		QCheckBox * chkShadow = dlgCheck( vbox, "Shadow" );
-		chkShadow->setChecked( flags & 0x40 );
+		QCheckBox * chkShadow = 0;
+		if ( nif->checkVersion( 0x04000020, 0x04000020 ) )
+		{
+			dlgCheck( vbox, "Shadow" );
+			chkShadow->setChecked( flags & 0x40 );
+		}
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -313,7 +316,8 @@ public:
 		{
 			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 0x01 : 0 );
 			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1 );
-			flags = flags & 0xffbf | ( chkShadow->isChecked() ? 0x40 : 0 );
+			if ( chkShadow )
+				flags = flags & 0xffbf | ( chkShadow->isChecked() ? 0x40 : 0 );
 			nif->set<int>( index, flags );
 		}
 	}
@@ -337,8 +341,12 @@ public:
 			"Always", "Less", "Equal", "Less or Equal", "Greater", "Not Equal", "Greater or Equal", "Never"
 		};
 		
-		QComboBox * cmbFunc = dlgCombo( vbox, "Z Buffer Test Function", depthModes, 8, chkEnable );
-		cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
+		QComboBox * cmbFunc = 0;
+		if ( nif->checkVersion( 0x20000004, 0 ) )
+		{
+			cmbFunc = dlgCombo( vbox, "Z Buffer Test Function", depthModes, 8, chkEnable );
+			cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
+		}
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -346,7 +354,8 @@ public:
 		{
 			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
 			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
-			flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
+			if ( cmbFunc )
+				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
 			nif->set<int>( index, flags );
 		}
 	}
