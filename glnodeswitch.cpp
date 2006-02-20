@@ -89,3 +89,25 @@ void LODNode::transform()
 		c++;
 	}
 }
+
+BillboardNode::BillboardNode( Scene * scene, const QModelIndex & iBlock )
+	: Node( scene, iBlock )
+{
+}
+
+const Transform & BillboardNode::viewTrans() const
+{
+	if ( scene->viewTrans.contains( nodeId ) )
+		return scene->viewTrans[ nodeId ];
+	
+	Transform t;
+	if ( parent )
+		t = parent->viewTrans() * local;
+	else
+		t = scene->view * worldTrans();
+	
+	t.rotation = t.rotation.inverted() * t.rotation;
+	
+	scene->viewTrans.insert( nodeId, t );
+	return scene->viewTrans[ nodeId ];
+}

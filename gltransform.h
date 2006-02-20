@@ -51,14 +51,7 @@ public:
 	
 	void writeBack( NifModel * nif, const QModelIndex & transform ) const;
 	
-	Transform operator*( const Transform & m ) const
-	{
-		Transform t;
-		t.translation = rotation * m.translation + translation * m.scale;
-		t.rotation = rotation * m.rotation;
-		t.scale = m.scale * scale;
-		return t;
-	}
+	friend Transform operator*( const Transform & t1, const Transform & t2 );
 	
 	Vector3 operator*( const Vector3 & v ) const
 	{

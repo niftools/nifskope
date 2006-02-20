@@ -313,6 +313,21 @@ void Node::setController( const NifModel * nif, const QModelIndex & iController 
 	}
 }
 
+const Transform & Node::viewTrans() const
+{
+	if ( scene->viewTrans.contains( nodeId ) )
+		return scene->viewTrans[ nodeId ];
+	
+	Transform t;
+	if ( parent )
+		t = parent->viewTrans() * local;
+	else
+		t = scene->view * worldTrans();
+	
+	scene->viewTrans.insert( nodeId, t );
+	return scene->viewTrans[ nodeId ];
+}
+
 const Transform & Node::worldTrans() const
 {
 	if ( scene->worldTrans.contains( nodeId ) )
@@ -412,10 +427,10 @@ void Node::draw( NodeList * draw2nd )
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 	
-	Vector3 a = ( scene->view * worldTrans() ).translation;
+	Vector3 a = viewTrans().translation;
 	Vector3 b;
 	if ( parent )
-		b = ( scene->view * parent->worldTrans() ).translation;
+		b = parent->viewTrans().translation;
 	
 	glBegin( GL_POINTS );
 	glVertex( a );

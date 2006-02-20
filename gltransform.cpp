@@ -39,7 +39,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*
  *  Transform
  */
- 
+
+Transform operator*( const Transform & t1, const Transform & t2 )
+{
+	Transform t;
+	t.rotation = t1.rotation * t2.rotation;
+	t.translation = t1.translation /* t1.scale */ + t1.rotation * t2.translation;
+	t.scale = t1.scale * t2.scale;
+	return t;
+}
+
 bool Transform::canConstruct( const NifModel * nif, const QModelIndex & parent )
 {
 	return nif && parent.isValid() && nif->getIndex( parent, "Rotation" ).isValid()

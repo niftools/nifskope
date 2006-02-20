@@ -68,22 +68,17 @@ void Light::update( const NifModel * nif, const QModelIndex & index )
 	}
 }
 
-Vector3 Light::direction() const
-{
-	return worldTrans().rotation * Vector3( 1, 0, 0 );
-}
-
 static const GLenum light_enum[8] = { GL_LIGHT0, GL_LIGHT1, GL_LIGHT2, GL_LIGHT3, GL_LIGHT4, GL_LIGHT5, GL_LIGHT6, GL_LIGHT7 };
 
 void Light::on( int n )
 {
 	GLenum e = light_enum[ n ];
 	
-	Vector3 pos = scene->view * worldTrans().translation;
+	Vector3 pos = viewTrans().translation;
 	
 	if ( directional )
 	{
-		Vector3 dir = scene->view.rotation * worldTrans().rotation * Vector3( -1, 0, 0 );
+		Vector3 dir = viewTrans().rotation * Vector3( -1, 0, 0 );
 		GLfloat pos4[4] = { dir[0], dir[1], dir[2], 0.0 };
 		glLightfv( e, GL_POSITION, pos4 );
 	}
@@ -96,7 +91,7 @@ void Light::on( int n )
 	glLightfv( e, GL_AMBIENT, ( ambient * dimmer ).data() );
 	glLightfv( e, GL_DIFFUSE, ( diffuse * dimmer ).data() );
 	glLightfv( e, GL_SPECULAR, ( specular * dimmer ).data() );
-	glLightfv( e, GL_SPOT_DIRECTION, ( scene->view.rotation * direction() ).data() );
+	glLightfv( e, GL_SPOT_DIRECTION, ( viewTrans().rotation * Vector3( 1, 0, 0 ) ).data() );
 	glLightf( e, GL_CONSTANT_ATTENUATION, constant );
 	glLightf( e, GL_LINEAR_ATTENUATION, linear );
 	glLightf( e, GL_QUADRATIC_ATTENUATION, quadratic );
@@ -139,8 +134,8 @@ void Light::draw( NodeList * draw2nd = 0 )
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 	
-	Vector3 a = scene->view * worldTrans().translation;
-	Vector3 b = scene->view * ( worldTrans().translation + direction() * 10 );
+	Vector3 a = viewTrans().translation;
+	Vector3 b = viewTrans() * Vector3( 10, 0, 0 );
 	
 	glBegin( GL_LINES );
 	glVertex( a );

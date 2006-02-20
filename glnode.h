@@ -90,6 +90,7 @@ public:
 	virtual void draw( NodeList * draw2nd = 0 );
 	virtual void drawShapes( NodeList * draw2nd = 0 );
 	
+	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;
 	virtual const Transform & localTrans() const { return local; }
 	virtual Transform localTransFrom( int parentNode ) const;

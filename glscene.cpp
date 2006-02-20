@@ -149,6 +149,8 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	{
 		if ( nif->itemName( iNode ) == "NiLODNode" )
 			node = new LODNode( this, iNode );
+		else if ( nif->itemName( iNode ) == "NiBillboardNode" )
+			node = new BillboardNode( this, iNode );
 		else
 			node = new Node( this, iNode );
 	}
@@ -194,6 +196,7 @@ void Scene::transform( const Transform & trans, float time )
 	this->time = time;
 	
 	worldTrans.clear();
+	viewTrans.clear();
 	
 	foreach ( Property * prop, properties.list() )
 		prop->transform();

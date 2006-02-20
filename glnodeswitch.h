@@ -50,4 +50,12 @@ protected:
 	QPersistentModelIndex iData;
 };
 
+class BillboardNode : public Node
+{
+public:
+	BillboardNode( Scene * scene, const QModelIndex & block );
+	
+	virtual const Transform & viewTrans() const;
+};
+
 #endif

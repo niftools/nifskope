@@ -329,9 +329,7 @@ void Mesh::transformShapes()
 {
 	Node::transformShapes();
 	
-	Transform sceneTrans = scene->view * worldTrans();
-	
-	sceneCenter = sceneTrans * localCenter;
+	sceneCenter = viewTrans() * localCenter;
 	
 	if ( weights.count() )
 	{
@@ -343,12 +341,12 @@ void Mesh::transformShapes()
 		Node * root = findParent( skelRoot );
 		foreach ( BoneWeights bw, weights )
 		{
-			Transform trans = sceneTrans * skelTrans;
+			Transform trans = viewTrans() * skelTrans;
 			if ( root )
 			{
 				Node * bone = root->findChild( bw.bone );
 				if ( bone ) trans = scene->view * bone->worldTrans() * bw.trans; //trans * bone->localTransFrom( skelRoot ) * bw.trans;
-			}
+			}	// FIXME
 			
 			Matrix natrix = trans.rotation;
 			foreach ( VertexWeight vw, bw.weights )
@@ -365,11 +363,12 @@ void Mesh::transformShapes()
 	else
 	{
 		transVerts.resize( verts.count() );
+		Transform vtrans = viewTrans();
 		for ( int v = 0; v < verts.count(); v++ )
-			transVerts[v] = sceneTrans * verts[v];
+			transVerts[v] = vtrans * verts[v];
 		
 		transNorms.resize( norms.count() );
-		Matrix natrix = sceneTrans.rotation;
+		Matrix natrix = viewTrans().rotation;
 		for ( int n = 0; n < norms.count(); n++ )
 		{
 			transNorms[n] = natrix * norms[n];

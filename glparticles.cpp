@@ -382,13 +382,13 @@ void Particles::transformShapes()
 {
 	Node::transformShapes();
 	
-	Transform sceneTrans = scene->view * worldTrans();
+	Transform vtrans = viewTrans();
 	
-	sceneCenter = sceneTrans * localCenter;
+	sceneCenter = vtrans * localCenter;
 	
 	transVerts.resize( verts.count() );
 	for ( int v = 0; v < verts.count(); v++ )
-		transVerts[v] = sceneTrans * verts[v];
+		transVerts[v] = vtrans * verts[v];
 }
 	
 void Particles::boundaries( Vector3 & min, Vector3 & max )

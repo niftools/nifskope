@@ -71,6 +71,7 @@ public:
 	NodeList roots;
 
 	mutable QHash<int,Transform> worldTrans;
+	mutable QHash<int,Transform> viewTrans;
 	
 	Transform view;
 	
