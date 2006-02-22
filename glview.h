@@ -40,9 +40,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStack>
 
 #include "nifmodel.h"
+#include "gltransform.h"
 
 class Scene;
 
+class QActionGroup;
 class QSettings;
 class QTimer;
 
@@ -56,9 +58,14 @@ public:
 	
 	QModelIndex indexAt( const QPoint & p );
 	
-	int xRotation() const { return xRot; }
-	int yRotation() const { return yRot; }
-	int zRotation() const { return zRot; }
+	void move( float, float, float );
+	void setPosition( float, float, float );
+	
+	void rotate( float, float, float );
+	void setRotation( float, float, float );
+	
+	void zoom( float );
+	void setZoom( float );
 	
 	bool highlight() const;
 	bool drawNodes() const;
@@ -69,7 +76,20 @@ public:
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
 	void center();
+	
+	QActionGroup * grpView;
+	
+	QAction * aViewWalk;
+	QAction * aViewTop;
+	QAction * aViewFront;
+	QAction * aViewSide;
+	QAction * aViewPerspective;
 
+	QAction * aAnimate;
+	QAction * aAnimPlay;
+	
+	QActionGroup * grpSettings;
+	
 	QAction * aTexturing;
 	QAction * aBlending;
 	QAction * aLighting;
@@ -78,13 +98,9 @@ public:
 	QAction * aDrawHidden;
 	QAction * aHighlight;
 	QAction * aRotate;
+	
 	QAction * aTexFolder;
 	QAction * aBgColor;
-	
-	QAction * aAnimate;
-	QAction * aAnimPlay;
-	
-	QList<QAction*> animActions() const;
 	
 	void	save( QSettings & );
 	void	restore( QSettings & );
@@ -110,15 +126,19 @@ protected:
 	void initializeGL();
 	void paintGL();
 	int  pickGL( int x, int y );
-	void resizeGL(int width, int height);
-	void mousePressEvent(QMouseEvent *event);
-	void mouseReleaseEvent(QMouseEvent *event);
-	void mouseDoubleClickEvent( QMouseEvent * );
-	void mouseMoveEvent(QMouseEvent *event);
-	void wheelEvent( QWheelEvent * event );
-	void glPerspective( int x = -1, int y = -1 );
-	void glOrtho();
+	void resizeGL( int width, int height );
+	void glProjection( int x = -1, int y = -1 );
 
+	
+	void mousePressEvent( QMouseEvent * );
+	void mouseReleaseEvent( QMouseEvent * );
+	void mouseDoubleClickEvent( QMouseEvent * );
+	void mouseMoveEvent( QMouseEvent * );
+	void wheelEvent( QWheelEvent * );
+	void keyPressEvent( QKeyEvent * );
+	void keyReleaseEvent( QKeyEvent * );
+	void focusOutEvent( QFocusEvent * );
+	
 private slots:
 	void advanceGears();
 	
@@ -128,20 +148,20 @@ private slots:
 	void dataChanged( const QModelIndex &, const QModelIndex & );
 	
 	void checkActions();
+	void viewAction( QAction * );
 
 private:
-	void normalizeAngle(int *angle);
-	
-	int xRot;
-	int yRot;
-	int zRot;
+	QAction * checkedViewAction() const;
+	void uncheckViewAction();
 
-	GLdouble zoom;
-	GLdouble xTrans;
-	GLdouble yTrans;
+	Vector3 Pos;
+	Vector3 Rot;
 	
-	GLdouble radius;
+	GLdouble Zoom;
+	
 	GLdouble axis;
+	
+	Transform viewTrans;
 	
 	int zInc;
 	
@@ -161,6 +181,10 @@ private:
 	QTime lastTime;
 	
 	QColor bgcolor;
+	
+	QHash<int,bool> kbd;
+	Vector3 mouseMov;
+	Vector3 mouseRot;
 };
 
 #endif

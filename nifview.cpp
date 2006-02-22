@@ -39,7 +39,7 @@ NifTreeView::NifTreeView() : QTreeView()
 	nif = 0;
 	EvalConditions = false;
 	
-	setUniformRowHeights( true );
+	setUniformRowHeights( false );
 	setAlternatingRowColors( true );
 	setContextMenuPolicy( Qt::CustomContextMenu );
 }

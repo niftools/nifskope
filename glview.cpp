@@ -30,12 +30,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifdef QT_OPENGL_LIB
-
 #include "glview.h"
 
 #include <QtOpenGL>
+#include <QActionGroup>
 #include <QTimer>
+
 
 #include <math.h>
 
@@ -48,14 +48,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define FPS 35
 
+#define FOV 45.0
+
+#define MOV_SPD 50
+#define ROT_SPD 45
+
+#define ZOOM_MIN 1.0
+#define ZOOM_MAX 1000.0
+
 GLView::GLView()
 	: QGLWidget()
 {
 	setFocusPolicy( Qt::ClickFocus );
 	//setContextMenuPolicy( Qt::CustomContextMenu );
 	
-	xRot = yRot = zRot = 0;
-	zoom = 1.0;
+	Zoom = 1.0;
 	zInc = 1;
 	
 	doCenter = false;
@@ -69,7 +76,46 @@ GLView::GLView()
 	scene = new Scene();
 
 	timer = new QTimer(this);
+	timer->setInterval( 1000 / FPS );
+	timer->start();
 	connect( timer, SIGNAL( timeout() ), this, SLOT( advanceGears() ) );
+	
+	
+	grpView = new QActionGroup( this );
+	grpView->setExclusive( false );
+	connect( grpView, SIGNAL( triggered( QAction * ) ), this, SLOT( viewAction( QAction * ) ) );
+	
+	aViewTop = new QAction( "Top", grpView );
+	aViewTop->setToolTip( "View from above" );
+	aViewTop->setCheckable( true );
+	aViewTop->setShortcut( Qt::Key_F5 );
+	grpView->addAction( aViewTop );
+	
+	aViewFront = new QAction( "Front", grpView );
+	aViewFront->setToolTip( "View from the front" );
+	aViewFront->setCheckable( true );
+	aViewFront->setChecked( true );
+	aViewFront->setShortcut( Qt::Key_F6 );
+	grpView->addAction( aViewFront );
+	
+	aViewSide = new QAction( "Side", grpView );
+	aViewSide->setToolTip( "View from the side" );
+	aViewSide->setCheckable( true );
+	aViewSide->setShortcut( Qt::Key_F7 );
+	grpView->addAction( aViewSide );
+	
+	aViewWalk = new QAction( "Walk", grpView );
+	aViewWalk->setToolTip( "Enable walk mode" );
+	aViewWalk->setCheckable( true );
+	aViewWalk->setShortcut( Qt::Key_F8 );
+	grpView->addAction( aViewWalk );
+	
+	aViewPerspective = new QAction( "Perspective", grpView );
+	aViewPerspective->setToolTip( "Perspective View Transformation or Orthogonal View Transformation" );
+	aViewPerspective->setCheckable( true );
+	aViewPerspective->setShortcut( Qt::Key_F9 );
+	grpView->addAction( aViewPerspective );
+	
 	
 	aTexturing = new QAction( "&Texturing", this );
 	aTexturing->setToolTip( "enable texturing" );
@@ -176,33 +222,34 @@ void GLView::initializeGL()
 		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
 }
 
-void GLView::glPerspective( int x, int y )
+void GLView::glProjection( int x, int y )
 {
-	GLdouble r = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) );
-	if ( r > radius )
-		radius = r;
-
 	GLint	viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
+	GLdouble aspect = (GLdouble) viewport[2] / (GLdouble) viewport[3];
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	if ( x >= 0 && y >= 0 )
+	{
 		gluPickMatrix( (GLdouble) x, (GLdouble) (viewport[3]-y), 5.0f, 5.0f, viewport);
-	gluPerspective( 45.0 / zoom, (GLdouble) viewport[2] / (GLdouble) viewport[3], 1.0 * radius, 8.0 * radius );
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glTranslatef( xTrans / 20.0, yTrans / 20.0, -4.0 * radius );
-}
-
-void GLView::glOrtho()
-{
-	GLint	viewport[4];
-	glGetIntegerv( GL_VIEWPORT, viewport );
+	}
 	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	::glOrtho (0.0, viewport[2], 0.0, viewport[3], -1.0, 1.0);
+	GLdouble fr = 54321;
+	
+	if ( aViewPerspective->isChecked() || aViewWalk->isChecked() )
+	{
+		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * 1.0;
+		GLdouble w2 = h2 * aspect;
+		glFrustum( - w2, + w2, - h2, + h2, 1.0, fr );
+		//gluPerspective( FOV / Zoom, aspect, nr, fr );
+	}
+	else
+	{
+		GLdouble h2 = scene->boundRadius() / Zoom * 2; // FIXME
+		GLdouble w2 = h2 * aspect;
+		glOrtho( - w2, + w2, - h2, + h2, 0.0, fr );
+	}
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -228,12 +275,12 @@ void GLView::paintGL()
 	if ( doCompile )
 	{
 		scene->make( model );
-		scene->transform( Transform(), scene->timeMin );
-		axis = qMax( scene->boundRadius[0], qMax( scene->boundRadius[1], scene->boundRadius[2] ) ) * 1.4;
-		if ( time < scene->timeMin || time > scene->timeMax )
+		scene->transform( Transform(), scene->timeMin() );
+		axis = scene->boundRadius() * 1.4;
+		if ( time < scene->timeMin() || time > scene->timeMax() )
 		{
-			time = scene->timeMin;
-			emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin * FPS ), (int) ( scene->timeMax * FPS ) );
+			time = scene->timeMin();
+			emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin() * FPS ), (int) ( scene->timeMax() * FPS ) );
 		}
 		doCompile = false;
 	}
@@ -242,14 +289,17 @@ void GLView::paintGL()
 	
 	if ( doCenter )
 	{
-		xRot = - 90*16;
-		yRot = 0;
+		viewAction( checkedViewAction() );
 	}
 	
 	// transform the scene
 	
 	Transform viewTrans;
-	viewTrans.rotation.fromEuler( xRot / 16.0 / 180 * PI, yRot / 16.0 / 180 * PI, zRot / 16.0 / 180 * PI );
+	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
+	if ( aViewWalk->isChecked() )
+		viewTrans.translation = viewTrans.rotation * Pos;
+	else
+		viewTrans.translation = Pos;
 	
 	scene->transform( viewTrans, time );
 	
@@ -257,19 +307,14 @@ void GLView::paintGL()
 	
 	if ( doCenter )
 	{
-		xTrans = 0;
-		yTrans = - scene->boundCenter[1] * 20;
-		
-		zoom = 1.0;
+		Zoom = 1.0;
 		
 		doCenter = false;
-		
-		radius = 0.0;
 	}
 	
 	// setup projection mode
 
-	glPerspective();
+	glProjection();
 	
 	// draw the axis
 	
@@ -325,32 +370,35 @@ void GLView::paintGL()
 		glVertex3f( 0, 0, + axis );
 		glVertex3f( - arrow, 0, + axis - arrow );
 		glEnd();
+		
 		glPopMatrix();
 		/*
+		Vector3 mn = scene->boundMin();
+		Vector3 mx = scene->boundMax();
 		glColor3f( 1.0, 0.0, 1.0 );
 		glBegin( GL_LINE_STRIP );
-		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMin[2] );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mn[2] );
 		glEnd();
 		glBegin( GL_LINE_STRIP );
-		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMin[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
 		glEnd();
 		glBegin( GL_LINES );
-		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMin[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMax[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMax[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMin[0], scene->boundMin[1], scene->boundMax[2] );
-		glVertex3f( scene->boundMax[0], scene->boundMin[1], scene->boundMax[2] );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mx[2] );
+		glVertex3f( mx[0], mx[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mx[2] );
 		glEnd();
 		*/
 	}
@@ -376,7 +424,7 @@ QModelIndex GLView::indexAt( const QPoint & pos )
 	
 	makeCurrent();
 
-	glPerspective( pressPos.x(), pressPos.y() );
+	glProjection( pressPos.x(), pressPos.y() );
 
 	GLuint	buffer[512];
 	glSelectBuffer( 512, buffer );
@@ -502,41 +550,76 @@ QString GLView::textureFolder() const
 	return GLTex::texfolders.join( ";" );
 }
 
-void GLView::save( QSettings & settings )
+void GLView::viewAction( QAction * act )
 {
-	//settings.beginGroup( "OpenGL" );
-	settings.setValue( "texture folder", GLTex::texfolders.join( ";" ) );
-	settings.setValue( "enable textures", aTexturing->isChecked() );
-	settings.setValue( "enable lighting", aLighting->isChecked() );
-	settings.setValue( "enable blending", aBlending->isChecked() );
-	settings.setValue( "highlight meshes", aHighlight->isChecked() );
-	settings.setValue( "draw axis", aDrawAxis->isChecked() );
-	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
-	settings.setValue( "draw hidden", aDrawHidden->isChecked() );
-	settings.setValue( "rotate", aRotate->isChecked() );
-	settings.setValue( "enable animations", aAnimate->isChecked() );
-	settings.setValue( "play animation", aAnimPlay->isChecked() );
-	settings.setValue( "bg color", bgcolor );
-	//settings.endGroup();
+	if ( act == aViewWalk )
+	{
+		setRotation( -90, 0, 0 );
+		setPosition( 0, 0, 0 );
+		setZoom( 1.0 );
+		aViewWalk->setChecked( true );
+		aViewTop->setChecked( false );
+		aViewFront->setChecked( false );
+		aViewSide->setChecked( false );
+		aRotate->setChecked( false );
+	}
+	else if ( act == aViewPerspective )
+	{
+	}
+	else if ( act == aViewTop )
+	{
+		setRotation( 0, 0, 0 );
+		setPosition( 0, 0, -4.0 * scene->boundRadius() );
+		aViewWalk->setChecked( false );
+		aViewTop->setChecked( true );
+		aViewFront->setChecked( false );
+		aViewSide->setChecked( false );
+	}
+	else if ( act == aViewFront )
+	{
+		setRotation( - 90, 0, 0 );
+		setPosition( 0, 0, -4.0 * scene->boundRadius() );
+		aViewWalk->setChecked( false );
+		aViewTop->setChecked( false );
+		aViewFront->setChecked( true );
+		aViewSide->setChecked( false );
+	}
+	else if ( act == aViewSide )
+	{
+		setRotation( - 90, 0, 90 );
+		setPosition( 0, 0, -4.0 * scene->boundRadius() );
+		aViewWalk->setChecked( false );
+		aViewTop->setChecked( false );
+		aViewFront->setChecked( false );
+		aViewSide->setChecked( true );
+	}
+	else
+	{
+		if ( ! aViewWalk->isChecked() )
+			setPosition( 0, 0, -4.0 * scene->boundRadius() );
+	}
+	update();
 }
 
-void GLView::restore( QSettings & settings )
+QAction * GLView::checkedViewAction() const
 {
-	//settings.beginGroup( "OpenGL" );
-	GLTex::texfolders = settings.value( "texture folder" ).toString().split( ";" );
-	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
-	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
-	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
-	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
-	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );
-	aDrawNodes->setChecked( settings.value( "draw nodes", false ).toBool() );
-	aDrawHidden->setChecked( settings.value( "draw hidden", false ).toBool() );
-	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
-	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
-	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
-	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
-	checkActions();
-	//settings.endGroup();
+	if ( aViewTop->isChecked() )
+		return aViewTop;
+	else if ( aViewFront->isChecked() )
+		return aViewFront;
+	else if ( aViewSide->isChecked() )
+		return aViewSide;
+	else if ( aViewWalk->isChecked() )
+		return aViewWalk;
+	else
+		return 0;
+}
+
+void GLView::uncheckViewAction()
+{
+	QAction * act = checkedViewAction();
+	if ( act && act != aViewWalk )
+		act->setChecked( false );
 }
 
 void GLView::checkActions()
@@ -548,39 +631,58 @@ void GLView::checkActions()
 	scene->drawHidden = aDrawHidden->isChecked();
 	scene->animate = aAnimate->isChecked();
 	lastTime = QTime::currentTime();
-	if ( aRotate->isChecked() || ( aAnimate->isChecked() && aAnimPlay->isChecked() ) )
-	{
-		timer->start( 1000 / FPS );
-	}
-	else
-	{
-		timer->stop();
-		update();
-	}
 }
 
 void GLView::advanceGears()
 {
 	QTime t = QTime::currentTime();
+	float dT = lastTime.msecsTo( t ) / 1000.0;
+	if ( dT < 0 )	dT = 0;
+	if ( dT > 1.0 )	dT = 1.0;
+	lastTime = t;
+	
+	if ( ! isVisible() )
+		return;
 	
 	if ( aAnimate->isChecked() && aAnimPlay->isChecked() )
 	{
-		time += fabs( t.msecsTo( lastTime ) / 1000.0 );
-
-		if ( time > scene->timeMax )
-			time = scene->timeMin;
+		time += dT;
+		if ( time > scene->timeMax() )
+			time = scene->timeMin();
 		
-		emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin * FPS ), (int) ( scene->timeMax * FPS ) );
+		emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin() * FPS ), (int) ( scene->timeMax() * FPS ) );
+		update();
 	}
-	
-	lastTime = t;
 	
 	if ( aRotate->isChecked() )
 	{
-		zRot += zInc;
-		normalizeAngle( &zRot );
+		rotate( 0, 0, 3 * dT );
 	}
-	update();
+	
+	if ( kbd[ Qt::Key_Up ] )		rotate( - ROT_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_Down ] )		rotate( + ROT_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_Left ] )		rotate( 0, 0, - ROT_SPD * dT );
+	if ( kbd[ Qt::Key_Right ] )	rotate( 0, 0, + ROT_SPD * dT );
+	if ( kbd[ Qt::Key_A ] )		move( + MOV_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_D ] )		move( - MOV_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_W ] )		move( 0, 0, + MOV_SPD * dT );
+	if ( kbd[ Qt::Key_S ] )		move( 0, 0, - MOV_SPD * dT );
+	if ( kbd[ Qt::Key_F ] )		move( 0, + MOV_SPD * dT, 0 );
+	if ( kbd[ Qt::Key_R ] )		move( 0, - MOV_SPD * dT, 0 );
+	if ( kbd[ Qt::Key_PageUp ] )	zoom( 1.1 );
+	if ( kbd[ Qt::Key_PageDown ] )	zoom( 0.9 );
+	
+	if ( mouseMov[0] != 0 || mouseMov[1] != 0 || mouseMov[2] != 0 )
+	{
+		move( mouseMov[0], mouseMov[1], mouseMov[2] );
+		mouseMov = Vector3();
+	}
+	
+	if ( mouseRot[0] != 0 || mouseRot[1] != 0 || mouseRot[2] != 0 )
+	{
+		rotate( mouseRot[0], mouseRot[1], mouseRot[2] );
+		mouseRot = Vector3();
+	}
 }
 
 QModelIndex parent( QModelIndex ix, QModelIndex xi )
@@ -599,18 +701,6 @@ QModelIndex parent( QModelIndex ix, QModelIndex xi )
 		ix = ix.parent();
 	}
 	return QModelIndex();
-}
-
-void print( NifModel * nif, QModelIndex ix )
-{
-	QString s;
-	while ( ix.isValid() )
-	{
-		if ( ! s.isEmpty() ) s.prepend( "/" );
-		s.prepend( nif->itemName( ix ) );
-		ix = ix.parent();
-	}
-	qWarning() << s;
 }
 
 void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
@@ -656,12 +746,57 @@ void GLView::modelDestroyed()
 	setNif( 0 );
 }
 
-void GLView::normalizeAngle(int *angle)
+void GLView::keyPressEvent( QKeyEvent * event )
 {
-	while (*angle < 0)
-		*angle += 360 * 16;
-	while (*angle > 360 * 16)
-		*angle -= 360 * 16;
+	switch ( event->key() )
+	{
+		case Qt::Key_Up:
+		case Qt::Key_Down:
+		case Qt::Key_Left:
+		case Qt::Key_Right:
+		case Qt::Key_PageUp:
+		case Qt::Key_PageDown:
+		case Qt::Key_A:
+		case Qt::Key_D:
+		case Qt::Key_W:
+		case Qt::Key_S:
+		case Qt::Key_R:
+		case Qt::Key_F:
+			kbd[ event->key() ] = true;
+			break;
+		default:
+			event->ignore();
+			break;
+	}
+}
+
+void GLView::keyReleaseEvent( QKeyEvent * event )
+{
+	switch ( event->key() )
+	{
+		case Qt::Key_Up:
+		case Qt::Key_Down:
+		case Qt::Key_Left:
+		case Qt::Key_Right:
+		case Qt::Key_PageUp:
+		case Qt::Key_PageDown:
+		case Qt::Key_A:
+		case Qt::Key_D:
+		case Qt::Key_W:
+		case Qt::Key_S:
+		case Qt::Key_R:
+		case Qt::Key_F:
+			kbd[ event->key() ] = false;
+			break;
+		default:
+			event->ignore();
+			break;
+	}
+}
+
+void GLView::focusOutEvent( QFocusEvent * )
+{
+	kbd.clear();
 }
 
 void GLView::mousePressEvent(QMouseEvent *event)
@@ -691,24 +826,12 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 
 	if (event->buttons() & Qt::LeftButton)
 	{
-		xRot += 8 * dy;
-		yRot += 8 * dx;
-		normalizeAngle( &xRot );
-		normalizeAngle( &yRot );
-		update();
-	}
-	else if (event->buttons() & Qt::RightButton)
-	{
-		zRot += 8 * dx;
-		normalizeAngle( &zRot );
-		update();
+		mouseRot += Vector3( dy * .5, 0, dx * .5 );
 	}
 	else if ( event->buttons() & Qt::MidButton)
 	{
-		float d = radius / ( qMax( width(), height() ) + 1 ) * 20;
-		xTrans += dx * d;
-		yTrans -= dy * d;
-		update();
+		float d = scene->boundRadius() / ( qMax( width(), height() ) + 1 );
+		mouseMov += Vector3( dx * d, - dy * d, 0 );
 	}
 	lastPos = event->pos();
 }
@@ -716,23 +839,96 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 void GLView::mouseDoubleClickEvent( QMouseEvent * )
 {
 	doCompile = true;
-	doCenter = true;
+	if ( ! aViewWalk->isChecked() )
+		doCenter = true;
 	update();
 }
 
 void GLView::wheelEvent( QWheelEvent * event )
 {
-	zoom = zoom * ( event->delta() > 0 ? 0.9 : 1.1 );
-	if ( zoom < 0.25 ) zoom = 0.25;
-	if ( zoom > 1000 ) zoom = 1000;
+	zoom( event->delta() > 0 ? 0.9 : 1.1 );
+}
+
+void GLView::save( QSettings & settings )
+{
+	//settings.beginGroup( "OpenGL" );
+	settings.setValue( "texture folder", GLTex::texfolders.join( ";" ) );
+	settings.setValue( "enable textures", aTexturing->isChecked() );
+	settings.setValue( "enable lighting", aLighting->isChecked() );
+	settings.setValue( "enable blending", aBlending->isChecked() );
+	settings.setValue( "highlight meshes", aHighlight->isChecked() );
+	settings.setValue( "draw axis", aDrawAxis->isChecked() );
+	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
+	settings.setValue( "draw hidden", aDrawHidden->isChecked() );
+	settings.setValue( "rotate", aRotate->isChecked() );
+	settings.setValue( "enable animations", aAnimate->isChecked() );
+	settings.setValue( "play animation", aAnimPlay->isChecked() );
+	settings.setValue( "bg color", bgcolor );
+	
+	settings.setValue( "perspective", aViewPerspective->isChecked() );
+	//settings.endGroup();
+}
+
+void GLView::restore( QSettings & settings )
+{
+	//settings.beginGroup( "OpenGL" );
+	GLTex::texfolders = settings.value( "texture folder" ).toString().split( ";" );
+	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
+	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
+	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
+	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
+	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );
+	aDrawNodes->setChecked( settings.value( "draw nodes", false ).toBool() );
+	aDrawHidden->setChecked( settings.value( "draw hidden", false ).toBool() );
+	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
+	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
+	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
+	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
+	
+	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
+	
+	checkActions();
+	//settings.endGroup();
+}
+
+void GLView::move( float x, float y, float z )
+{
+	if ( aViewWalk->isChecked() )
+		Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
+	else
+		Pos += Vector3( x, y, z );
 	update();
 }
 
-QList<QAction*> GLView::animActions() const
+void GLView::rotate( float x, float y, float z )
 {
-	QList<QAction*> actions;
-	actions << aAnimPlay;
-	return actions;
+	Rot += Vector3( x, y, z );
+	uncheckViewAction();
+	update();
 }
 
-#endif
+void GLView::zoom( float z )
+{
+	Zoom *= z;
+	if ( Zoom < ZOOM_MIN ) Zoom = ZOOM_MIN;
+	if ( Zoom > ZOOM_MAX ) Zoom = ZOOM_MAX;
+	update();
+}
+
+void GLView::setPosition( float x, float y, float z )
+{
+	Pos = Vector3( x, y, z );
+	update();
+}
+
+void GLView::setRotation( float x, float y, float z )
+{
+	Rot = Vector3( x, y, z );
+	update();
+}
+
+void GLView::setZoom( float z )
+{
+	Zoom = z;
+	update();
+}

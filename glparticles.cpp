@@ -399,11 +399,8 @@ void Particles::boundaries( Vector3 & min, Vector3 & max )
 		
 		foreach ( Vector3 v, transVerts )
 		{
-			for ( int c = 0; c < 3; c++ )
-			{
-				min[ c ] = qMin( min[ c ], v[ c ] );
-				max[ c ] = qMax( max[ c ], v[ c ] );
-			}
+			min.boundMin( v );
+			max.boundMax( v );
 		}
 	}
 }

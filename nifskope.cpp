@@ -179,11 +179,13 @@ NifSkope::NifSkope() : QMainWindow()
 	dList = new QDockWidget( "Block List" );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
+	dList->toggleViewAction()->setShortcut( Qt::Key_F1 );
 	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
 	dTree = new QDockWidget( "Block Details" );
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
+	dTree->toggleViewAction()->setShortcut( Qt::Key_F2 );
 
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
@@ -213,8 +215,7 @@ NifSkope::NifSkope() : QMainWindow()
 	tAnim->setObjectName( "AnimTool" );
 	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	
-	foreach ( QAction * a, ogl->animActions() )
-		tAnim->addAction( a );
+	tAnim->addAction( ogl->aAnimPlay );
 	
 	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim->toggleViewAction(), SLOT( setChecked( bool ) ) );
 	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
@@ -262,21 +263,27 @@ NifSkope::NifSkope() : QMainWindow()
 	mFile->addAction( aQuit );
 	
 	QMenu * mView = new QMenu( "&View" );
-	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dList->toggleViewAction() );
+	mView->addAction( dTree->toggleViewAction() );
 	mView->addSeparator();
 	mView->addAction( tool->toggleViewAction() );
 	mView->addAction( tAnim->toggleViewAction() );
 	mView->addAction( tLOD->toggleViewAction() );
+	mView->addSeparator();
+	QMenu * mViewList = new QMenu( "&Block List Options" );
+	mView->addMenu( mViewList );
+	mViewList->addAction( aHierarchy );
+	mViewList->addAction( aList );
+	QMenu * mViewTree = new QMenu( "&Block Detail Options" );
+	mView->addMenu( mViewTree );
+	mViewTree->addAction( aCondition );
 	
-	QMenu * mOpts = new QMenu( "&Options" );
-	foreach ( QAction * a, ogl->actions() )
+	QMenu * mOpts = new QMenu( "&Render" );
+	foreach ( QAction * a, ogl->grpView->actions() )
 		mOpts->addAction( a );
 	mOpts->addSeparator();
-	mOpts->addAction( aHierarchy );
-	mOpts->addAction( aList );
-	mOpts->addSeparator();
-	mOpts->addAction( aCondition );
+	foreach ( QAction * a, ogl->actions() )
+		mOpts->addAction( a );
 	
 	QMenu * mAbout = new QMenu( "&About" );
 	mAbout->addAction( aNifSkope );

@@ -210,13 +210,17 @@ public:
 			return acos( dot );
 	}
 	
-	static Vector3 min( const Vector3 & v1, const Vector3 & v2 )
+	void boundMin( const Vector3 & v )
 	{
-		return Vector3( qMin( v1.xyz[0], v2.xyz[0] ), qMin( v1.xyz[1], v2.xyz[1] ), qMin( v1.xyz[2], v2.xyz[2] ) );
+		if ( v[0] < xyz[0] ) xyz[0] = v[0];
+		if ( v[1] < xyz[1] ) xyz[1] = v[1];
+		if ( v[2] < xyz[2] ) xyz[2] = v[2];
 	}
-	static Vector3 max( const Vector3 & v1, const Vector3 & v2 )
+	void boundMax( const Vector3 & v )
 	{
-		return Vector3( qMax( v1.xyz[0], v2.xyz[0] ), qMax( v1.xyz[1], v2.xyz[1] ), qMax( v1.xyz[2], v2.xyz[2] ) );
+		if ( v[0] > xyz[0] ) xyz[0] = v[0];
+		if ( v[1] > xyz[1] ) xyz[1] = v[1];
+		if ( v[2] > xyz[2] ) xyz[2] = v[2];
 	}
 	
 	const float * data() const { return xyz; }
@@ -328,6 +332,12 @@ public:
 	
 	void fromEuler( float x, float y, float z );
 	bool toEuler( float & x, float & y, float & z ) const;
+	
+	static Matrix euler( float x, float y, float z )
+	{
+		Matrix m; m.fromEuler( x, y, z );
+		return m;
+	}
 	
 	QString toHtml() const;
 

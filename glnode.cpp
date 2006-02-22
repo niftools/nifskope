@@ -381,7 +381,12 @@ Node * Node::findChild( int id ) const
 
 bool Node::isHidden() const
 {
-	return ( flags.node.hidden || name == "collidee" || name == "shadowcaster" || ( parent && parent->isHidden() ) );
+	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
+		return true;
+	
+	QString n = name.simplified();
+	
+	return ( n == "collidee" || n == "shadowcaster" || n == "!LoD_cullme" );
 }
 
 void Node::transform()
@@ -400,7 +405,7 @@ void Node::transformShapes()
 
 void Node::boundaries( Vector3 & min, Vector3 & max )
 {
-	min = max = worldTrans() * Vector3( 0.0, 0.0, 0.0 );
+	min = max = viewTrans() * Vector3( 0.0, 0.0, 0.0 );
 }
 
 void Node::draw( NodeList * draw2nd )
@@ -428,7 +433,7 @@ void Node::draw( NodeList * draw2nd )
 	glLineWidth( 2.5 );
 	
 	Vector3 a = viewTrans().translation;
-	Vector3 b;
+	Vector3 b = a;
 	if ( parent )
 		b = parent->viewTrans().translation;
 	

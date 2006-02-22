@@ -329,6 +329,9 @@ void Mesh::transformShapes()
 {
 	Node::transformShapes();
 	
+	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
+	transformRigid = ! ( ( alphaprop && alphaprop->sort() ) || weights.count() );
+	
 	sceneCenter = viewTrans() * localCenter;
 	
 	if ( weights.count() )
@@ -345,7 +348,7 @@ void Mesh::transformShapes()
 			if ( root )
 			{
 				Node * bone = root->findChild( bw.bone );
-				if ( bone ) trans = scene->view * bone->worldTrans() * bw.trans; //trans * bone->localTransFrom( skelRoot ) * bw.trans;
+				if ( bone ) trans = bone->viewTrans() * bw.trans; //trans * bone->localTransFrom( skelRoot ) * bw.trans;
 			}	// FIXME
 			
 			Matrix natrix = trans.rotation;
@@ -360,7 +363,7 @@ void Mesh::transformShapes()
 		for ( int n = 0; n < transNorms.count(); n++ )
 			transNorms[n].normalize();
 	}
-	else
+	else if ( ! transformRigid )
 	{
 		transVerts.resize( verts.count() );
 		Transform vtrans = viewTrans();
@@ -372,12 +375,15 @@ void Mesh::transformShapes()
 		for ( int n = 0; n < norms.count(); n++ )
 		{
 			transNorms[n] = natrix * norms[n];
-			transNorms[n].normalize();
 		}
 	}
+	else
+	{
+		transVerts = verts;
+		transNorms = norms;
+	}
 
-	AlphaProperty * ap = findProperty<AlphaProperty>();
-	if ( ap && ap->blend() && ap->sort() )
+	if ( alphaprop && alphaprop->sort() )
 	{
 		triOrder.resize( triangles.count() );
 		int t = 0;
@@ -391,21 +397,32 @@ void Mesh::transformShapes()
 		qSort( triOrder.begin(), triOrder.end(), compareTriangles );
 	}
 	else
-		triOrder.resize( 0 );
+		triOrder.clear();
 }
 
 void Mesh::boundaries( Vector3 & min, Vector3 & max )
 {
 	if ( transVerts.count() )
 	{
-		min = max = transVerts[ 0 ];
-		
-		foreach ( Vector3 v, transVerts )
+		if ( transformRigid )
 		{
-			for ( int c = 0; c < 3; c++ )
+			Transform vt = viewTrans();
+			min = max = vt * transVerts[ 0 ];
+			
+			foreach ( Vector3 v, transVerts )
 			{
-				min[ c ] = qMin( min[ c ], v[ c ] );
-				max[ c ] = qMax( max[ c ], v[ c ] );
+				min.boundMin( vt * v );
+				max.boundMax( vt * v );
+			}
+		}
+		else
+		{
+			min = max = transVerts[ 0 ];
+			
+			foreach ( Vector3 v, transVerts )
+			{
+				min.boundMin( v );
+				max.boundMax( v );
 			}
 		}
 	}
@@ -477,6 +494,14 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glEnable( GL_NORMALIZE );
 	else
 		glDisable( GL_NORMALIZE );
+	
+	// rigid mesh? then pass the transformation on to the gl layer
+	
+	if ( transformRigid )
+	{
+		glPushMatrix();
+		viewTrans().glLoadMatrix();
+	}
 	
 	// render the triangles
 	
@@ -571,4 +596,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		
 		glPopAttrib();
 	}
+	
+	if ( transformRigid )
+		glPopMatrix();
 }

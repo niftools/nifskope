@@ -91,9 +91,28 @@ public:
 	
 	bool drawHidden;
 	
-	Vector3 boundMin, boundMax, boundCenter, boundRadius;
-	float timeMin, timeMax;
+	Vector3 boundMin() const;
+	Vector3 boundMax() const;
+	Vector3 boundCenter() const;
+	Vector3 boundExtend() const;
+	float	boundRadius() const;
+	
+	float	timeMin() const;
+	float	timeMax() const;
+
+protected:
+	void updateBoundaries() const;
+	void updateTimeBounds() const;
+	
+	mutable bool sceneBoundsValid, timeBoundsValid;
+	mutable Vector3 bMin, bMax, bCenter, bRadius;
+	mutable float tMin, tMax;
 };
+
+inline void glTranslate( const Vector3 & v )
+{
+	glTranslatef( v[0], v[1], v[2] );
+}
 
 inline void glVertex( const Vector3 & v )
 {

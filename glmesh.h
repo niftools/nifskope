@@ -80,6 +80,8 @@ protected:
 	QVector<Vector3> transVerts;
 	QVector<Vector3> transNorms;
 	
+	bool transformRigid;
+	
 	friend class MorphController;
 	friend class TexCoordController;
 };

@@ -44,7 +44,7 @@ Transform operator*( const Transform & t1, const Transform & t2 )
 {
 	Transform t;
 	t.rotation = t1.rotation * t2.rotation;
-	t.translation = t1.translation /* t1.scale */ + t1.rotation * t2.translation;
+	t.translation = t1.translation + t1.rotation * t2.translation * t1.scale;
 	t.scale = t1.scale * t2.scale;
 	return t;
 }
@@ -70,45 +70,31 @@ void Transform::writeBack( NifModel * nif, const QModelIndex & transform ) const
 	nif->set<float>( transform, "Scale", scale );
 }
 
-void Transform::glMultMatrix() const
+void makeGLmatrix( const Transform & t, GLfloat f[] )
 {
-	GLfloat f[16];
 	for ( int c = 0; c < 3; c++ )
 	{
 		for ( int d = 0; d < 3; d++ )
-			f[ c*4 + d ] = rotation( d, c );
-		f[ 3*4 + c ] = translation[ c ];
+			f[ c*4 + d ] = t.rotation( d, c ) * t.scale;
+		f[ 3*4 + c ] = t.translation[ c ];
 	}
-	f[  0 ] *= scale;
-	f[  5 ] *= scale;
-	f[ 10 ] *= scale;
-	
 	f[  3 ] = 0.0;
 	f[  7 ] = 0.0;
 	f[ 11 ] = 0.0;
 	f[ 15 ] = 1.0;
-	
+}
+
+void Transform::glMultMatrix() const
+{
+	GLfloat f[16];
+	makeGLmatrix( *this, f );
 	glMultMatrixf( f );
 }
 
 void Transform::glLoadMatrix() const
 {
 	GLfloat f[16];
-	for ( int c = 0; c < 3; c++ )
-	{
-		for ( int d = 0; d < 3; d++ )
-			f[ c*4 + d ] = rotation( d, c );
-		f[ 3*4 + c ] = translation[ c ];
-	}
-	f[  0 ] *= scale;
-	f[  5 ] *= scale;
-	f[ 10 ] *= scale;
-	
-	f[  3 ] = 0.0;
-	f[  7 ] = 0.0;
-	f[ 11 ] = 0.0;
-	f[ 15 ] = 1.0;
-	
+	makeGLmatrix( *this, f );
 	glLoadMatrixf( f );
 }
 
