@@ -135,7 +135,7 @@ void Light::draw( NodeList * draw2nd = 0 )
 	glLineWidth( 2.5 );
 	
 	Vector3 a = viewTrans().translation;
-	Vector3 b = viewTrans() * Vector3( 10, 0, 0 );
+	Vector3 b = a + viewTrans().rotation * Vector3( 10, 0, 0 );
 	
 	glBegin( GL_LINES );
 	glVertex( a );
