@@ -80,7 +80,7 @@ LangString DESC_SecCopyUI ${LANG_ENGLISH} "Copy all required files to the applic
 ;--------------------------------
 ; Data
 
-OutFile "nifskope_${VERSION}-windows.exe"
+OutFile "nifskope-${VERSION}-windows.exe"
 InstallDir "$PROGRAMFILES\NifTools\NifSkope"
 BrandingText "http://niftools.sourceforge.net/"
 Icon "inst.ico"
