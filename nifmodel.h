@@ -70,6 +70,8 @@ public:
 	bool load( QIODevice & device, const QModelIndex & );
 	bool save( QIODevice & device, const QModelIndex & ) const;
 	
+	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32,qint32> & map );
+	
 	// if the model was loaded from a file getFolder returns the directory
 	// can be used to resolve external resources
 	QString getFolder() const { return folder; }
@@ -293,7 +295,8 @@ protected:
 	void updateLinks( int block, NifItem * parent );
 	void checkLinks( int block, QStack<int> & parents );
 	void adjustLinks( NifItem * parent, int block, int delta );
-	
+	void mapLinks( NifItem * parent, const QMap<qint32,qint32> & map );
+		
 	friend class NifXmlHandler;
 }; // class NifModel
 

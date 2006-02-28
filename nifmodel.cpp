@@ -1178,11 +1178,28 @@ bool NifModel::load( QIODevice & device, const QModelIndex & index )
 	if ( item && index.isValid() && index.model() == this )
 	{
 		NifStream stream( version, &device );
-		load( item, stream, false );
+		bool ok = load( item, stream, false );
 		updateLinks();
 		updateFooter();
 		emit linksChanged();
-		return true;
+		return ok;
+	}
+	reset();
+	return false;
+}
+
+bool NifModel::loadAndMapLinks( QIODevice & device, const QModelIndex & index, const QMap<qint32,qint32> & map )
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( item && index.isValid() && index.model() == this )
+	{
+		NifStream stream( version, & device );
+		bool ok = load( item, stream, false );
+		mapLinks( item, map );
+		updateLinks();
+		updateFooter();
+		emit linksChanged();
+		return ok;
 	}
 	reset();
 	return false;
@@ -1390,6 +1407,28 @@ void NifModel::adjustLinks( NifItem * parent, int block, int delta )
 				parent->value().setLink( -1 );
 			else
 				parent->value().setLink( l + delta );
+		}
+	}
+}
+
+void NifModel::mapLinks( NifItem * parent, const QMap<qint32,qint32> & map )
+{
+	if ( ! parent ) return;
+	
+	if ( parent->childCount() > 0 )
+	{
+		for ( int c = 0; c < parent->childCount(); c++ )
+			mapLinks( parent->child( c ), map );
+	}
+	else
+	{
+		int l = parent->value().toLink();
+		if ( l >= 0 )
+		{
+			if ( map.contains( l ) )
+				parent->value().setLink( map[ l ] );
+			else
+				qWarning() << "mapLinks: failed to map link" << l;
 		}
 	}
 }
