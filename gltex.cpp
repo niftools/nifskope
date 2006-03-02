@@ -532,6 +532,177 @@ struct DDSFormat {
 #define FOURCC_DXT4  0x34545844
 #define FOURCC_DXT5  0x35545844
 
+// thanks nvidia for providing the source code to flip dxt images
+
+typedef struct
+{
+	unsigned short col0, col1;
+	unsigned char row[4];
+} DXTColorBlock_t;
+
+typedef struct
+{
+	unsigned short row[4];
+} DXT3AlphaBlock_t;
+
+typedef struct
+{
+	unsigned char alpha0, alpha1;
+	unsigned char row[6];
+} DXT5AlphaBlock_t;
+
+void SwapMem(void *byte1, void *byte2, int size)
+{
+	unsigned char *tmp=(unsigned char *)malloc(sizeof(unsigned char)*size);
+	memcpy(tmp, byte1, size);
+	memcpy(byte1, byte2, size);
+	memcpy(byte2, tmp, size);
+	free(tmp);
+}
+
+inline void SwapChar( unsigned char * x, unsigned char * y )
+{
+	unsigned char z = *x;
+	*x = *y;
+	*y = z;
+}
+
+inline void SwapShort( unsigned short * x, unsigned short * y )
+{
+	unsigned short z = *x;
+	*x = *y;
+	*y = z;
+}
+
+void flipDXT1Blocks(DXTColorBlock_t *Block, int NumBlocks)
+{
+	int i;
+	DXTColorBlock_t *ColorBlock=Block;
+	for(i=0;i<NumBlocks;i++)
+	{
+		SwapChar( &ColorBlock->row[0], &ColorBlock->row[3] );
+		SwapChar( &ColorBlock->row[1], &ColorBlock->row[2] );
+		ColorBlock++;
+	}
+}
+
+void flipDXT3Blocks(DXTColorBlock_t *Block, int NumBlocks)
+{
+	int i;
+	DXTColorBlock_t *ColorBlock=Block;
+	DXT3AlphaBlock_t *AlphaBlock;
+	for(i=0;i<NumBlocks;i++)
+	{
+		AlphaBlock=(DXT3AlphaBlock_t *)ColorBlock;
+		SwapShort( &AlphaBlock->row[0], &AlphaBlock->row[3] );
+		SwapShort( &AlphaBlock->row[1], &AlphaBlock->row[2] );
+		ColorBlock++;
+		SwapChar( &ColorBlock->row[0], &ColorBlock->row[3] );
+		SwapChar( &ColorBlock->row[1], &ColorBlock->row[2] );
+		ColorBlock++;
+	}
+}
+
+void flipDXT5Alpha(DXT5AlphaBlock_t *Block)
+{
+	unsigned long *Bits, Bits0=0, Bits1=0;
+
+	memcpy(&Bits0, &Block->row[0], sizeof(unsigned char)*3);
+	memcpy(&Bits1, &Block->row[3], sizeof(unsigned char)*3);
+
+	Bits=((unsigned long *)&(Block->row[0]));
+	*Bits&=0xff000000;
+	*Bits|=(unsigned char)(Bits1>>12)&0x00000007;
+	*Bits|=(unsigned char)((Bits1>>15)&0x00000007)<<3;
+	*Bits|=(unsigned char)((Bits1>>18)&0x00000007)<<6;
+	*Bits|=(unsigned char)((Bits1>>21)&0x00000007)<<9;
+	*Bits|=(unsigned char)(Bits1&0x00000007)<<12;
+	*Bits|=(unsigned char)((Bits1>>3)&0x00000007)<<15;
+	*Bits|=(unsigned char)((Bits1>>6)&0x00000007)<<18;
+	*Bits|=(unsigned char)((Bits1>>9)&0x00000007)<<21;
+
+	Bits=((unsigned long *)&(Block->row[3]));
+	*Bits&=0xff000000;
+	*Bits|=(unsigned char)(Bits0>>12)&0x00000007;
+	*Bits|=(unsigned char)((Bits0>>15)&0x00000007)<<3;
+	*Bits|=(unsigned char)((Bits0>>18)&0x00000007)<<6;
+	*Bits|=(unsigned char)((Bits0>>21)&0x00000007)<<9;
+	*Bits|=(unsigned char)(Bits0&0x00000007)<<12;
+	*Bits|=(unsigned char)((Bits0>>3)&0x00000007)<<15;
+	*Bits|=(unsigned char)((Bits0>>6)&0x00000007)<<18;
+	*Bits|=(unsigned char)((Bits0>>9)&0x00000007)<<21;
+}
+
+void flipDXT5Blocks(DXTColorBlock_t *Block, int NumBlocks)
+{
+	DXTColorBlock_t *ColorBlock=Block;
+	DXT5AlphaBlock_t *AlphaBlock;
+	int i;
+
+	for(i=0;i<NumBlocks;i++)
+	{
+		AlphaBlock=(DXT5AlphaBlock_t *)ColorBlock;
+
+		flipDXT5Alpha(AlphaBlock);
+		ColorBlock++;
+
+		SwapChar( &ColorBlock->row[0], &ColorBlock->row[3] );
+		SwapChar( &ColorBlock->row[1], &ColorBlock->row[2] );
+		ColorBlock++;
+	}
+}
+
+void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
+{
+	int linesize, j;
+
+	DXTColorBlock_t *top;
+	DXTColorBlock_t *bottom;
+	int xblocks=width/4;
+	int yblocks=height/4;
+
+	switch ( glFormat)
+	{
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: 
+			linesize=xblocks*8;
+			for(j=0;j<(yblocks>>1);j++)
+			{
+				top=(DXTColorBlock_t *)(image+j*linesize);
+				bottom=(DXTColorBlock_t *)(image+(((yblocks-j)-1)*linesize));
+				flipDXT1Blocks(top, xblocks);
+				flipDXT1Blocks(bottom, xblocks);
+				SwapMem(bottom, top, linesize);
+			}
+			break;
+
+		case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+			linesize=xblocks*16;
+			for(j=0;j<(yblocks>>1);j++)
+			{
+				top=(DXTColorBlock_t *)(image+j*linesize);
+				bottom=(DXTColorBlock_t *)(image+(((yblocks-j)-1)*linesize));
+				flipDXT3Blocks(top, xblocks);
+				flipDXT3Blocks(bottom, xblocks);
+				SwapMem(bottom, top, linesize);
+			}
+			break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			linesize=xblocks*16;
+			for(j=0;j<(yblocks>>1);j++)
+			{
+				top=(DXTColorBlock_t *)(image+j*linesize);
+				bottom=(DXTColorBlock_t *)(image+(((yblocks-j)-1)*linesize));
+				flipDXT5Blocks(top, xblocks);
+				flipDXT5Blocks(bottom, xblocks);
+				SwapMem(bottom, top, linesize);
+			}
+			break;
+		default:
+			return;
+	}
+}
+
+
 GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
 {
 	int blockSize = 8;
@@ -583,6 +754,9 @@ GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height
 			free( pixels );
 			return tx_id;
 		}
+		
+		if ( flipV )
+			flipDXT( glFormat, w, h, pixels );
 		
 		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
 		
