@@ -384,9 +384,7 @@ bool Node::isHidden() const
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 	
-	QString n = name.simplified();
-	
-	return ( n == "collidee" || n == "shadowcaster" || n == "!LoD_cullme" );
+	return ( name.contains( "collidee" ) || name.contains( "shadowcaster" ) || name.contains( "!LoD_cullme" ) || name.contains( "footprint" ) );
 }
 
 void Node::transform()
