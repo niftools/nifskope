@@ -42,14 +42,12 @@ class Property : public Controllable
 protected:
 	enum Type
 	{
-		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe
+		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe, VertexColor
 	};
 	
-	Type typ;
+	Property( Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), ref( 0 ) {}
 	
-	Property( Type t, Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), typ( t ), ref( 0 ) {}
-	
-	template <typename T> static Type getType();
+	virtual Type type() const = 0;
 	
 	int ref;
 	
@@ -59,14 +57,17 @@ public:
 
 	static Property * create( Scene * scene, const NifModel * nif, const QModelIndex & index );
 
+	template <typename T> static Type _type();
 	template <typename T> T * cast()
 	{
-		if ( typ == getType<T>() )
+		if ( type() == _type<T>() )
 			return static_cast<T*>( this );
 		else
 			return 0;
 	}
 };
+
+#define REGISTER_PROPERTY( CLASSNAME, TYPENAME ) template <> inline Property::Type Property::_type< CLASSNAME >() { return Property::TYPENAME; }
 
 class PropertyList
 {
@@ -106,7 +107,9 @@ template <typename T> inline T * PropertyList::get() const
 class AlphaProperty : public Property
 {
 public:
-	AlphaProperty( Scene * scene, const QModelIndex & index ) : Property( Alpha, scene, index ) {}
+	AlphaProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Alpha; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -122,15 +125,14 @@ protected:
 	GLfloat alphaThreshold;	
 };
 
-template <> inline Property::Type Property::getType<AlphaProperty>()
-{
-	return Property::Alpha;
-}
+REGISTER_PROPERTY( AlphaProperty, Alpha )
 
 class ZBufferProperty : public Property
 {
 public:
-	ZBufferProperty( Scene * scene, const QModelIndex & index ) : Property( ZBuffer, scene, index ) {}
+	ZBufferProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return ZBuffer; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -145,15 +147,15 @@ protected:
 	GLenum depthFunc;
 };
 
-template <> inline Property::Type Property::getType<ZBufferProperty>()
-{
-	return Property::ZBuffer;
-}
+REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
+
 
 class TexturingProperty : public Property
 {
 public:
-	TexturingProperty( Scene * scene, const QModelIndex & index ) : Property( Texturing, scene, index ) {}
+	TexturingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Texturing; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -172,15 +174,15 @@ protected:
 	friend class TexFlipController;
 };
 
-template <> inline Property::Type Property::getType<TexturingProperty>()
-{
-	return Property::Texturing;
-}
+REGISTER_PROPERTY( TexturingProperty, Texturing )
+
 
 class MaterialProperty : public Property
 {
 public:
-	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( Material, scene, index ) {}
+	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Material; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -197,15 +199,15 @@ protected:
 	friend class AlphaController;
 };
 
-template <> inline Property::Type Property::getType<MaterialProperty>()
-{
-	return Property::Material;
-}
+REGISTER_PROPERTY( MaterialProperty, Material )
+
 
 class SpecularProperty : public Property
 {
 public:
-	SpecularProperty( Scene * scene, const QModelIndex & index ) : Property( Specular, scene, index ) {}
+	SpecularProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Specular; }
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
@@ -215,15 +217,15 @@ protected:
 	bool spec;
 };
 
-template <> inline Property::Type Property::getType<SpecularProperty>()
-{
-	return Property::Specular;
-}
+REGISTER_PROPERTY( SpecularProperty, Specular )
+
 
 class WireframeProperty : public Property
 {
 public:
-	WireframeProperty( Scene * scene, const QModelIndex & index ) : Property( Wireframe, scene, index ) {}
+	WireframeProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Wireframe; }
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
@@ -233,9 +235,25 @@ protected:
 	bool wire;
 };
 
-template <> inline Property::Type Property::getType<WireframeProperty>()
+REGISTER_PROPERTY( WireframeProperty, Wireframe )
+
+
+class VertexColorProperty : public Property
 {
-	return Property::Wireframe;
-}
+public:
+	VertexColorProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return VertexColor; }
+	
+	void update( const NifModel * nif, const QModelIndex & index );
+	
+	friend void glProperty( VertexColorProperty * );
+
+protected:
+	int	lightmode;
+	int	vertexmode;
+};
+
+REGISTER_PROPERTY( VertexColorProperty, VertexColor )
 
 #endif

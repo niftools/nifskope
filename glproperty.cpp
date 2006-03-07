@@ -53,6 +53,8 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 			property = new SpecularProperty( scene, index );
 		else if ( name == "NiWireframeProperty" )
 			property = new WireframeProperty( scene, index );
+		else if ( name == "NiVertexColorProperty" )
+			property = new VertexColorProperty( scene, index );
 	}
 	
 	if ( property )
@@ -475,5 +477,41 @@ void glProperty( WireframeProperty * p )
 	else
 	{
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+	}
+}
+
+void VertexColorProperty::update( const NifModel * nif, const QModelIndex & block )
+{
+	Property::update( nif, block );
+	if ( iBlock.isValid() && iBlock == block )
+	{
+		vertexmode = nif->get<int>( iBlock, "Vertex Mode" );
+		// 0 : source ignore
+		// 1 : source emissive
+		// 2 : source ambient + diffuse
+		lightmode = nif->get<int>( iBlock, "Lighting Mode" );
+		// 0 : emissive
+		// 1 : emissive + ambient + diffuse
+	}
+}
+
+void glProperty( VertexColorProperty * p )
+{
+	if ( p )
+	{
+		switch ( p->vertexmode )
+		{
+			case 1:
+				glColorMaterial( GL_FRONT_AND_BACK, GL_EMISSION );
+				break;
+			case 2:
+			default:
+				glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+				break;
+		}
+	}
+	else
+	{
+		glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
 	}
 }

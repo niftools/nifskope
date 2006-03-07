@@ -159,6 +159,14 @@ protected:
  *  Mesh
  */
 
+Mesh::Tristrip::Tristrip( const NifModel * nif, const QModelIndex & tristrip )
+{
+	if ( ! tristrip.isValid() ) return;
+	
+	for ( int s = 0; s < nif->rowCount( tristrip ); s++ )
+		vertices.append( nif->get<int>( tristrip.child( s, 0 ) ) );
+}
+
 
 void Mesh::clear()
 {
@@ -171,11 +179,13 @@ void Mesh::clear()
 	verts.clear();
 	norms.clear();
 	colors.clear();
-	uvs.clear();
+	coords.clear();
 	triangles.clear();
 	tristrips.clear();
 	transVerts.clear();
 	transNorms.clear();
+	transColors.clear();
+	transCoords.clear();
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
@@ -268,9 +278,9 @@ void Mesh::transform()
 		QModelIndex uvcoord = nif->getIndex( iData, "UV Sets" );
 		if ( ! uvcoord.isValid() ) uvcoord = nif->getIndex( iData, "UV Sets 2" );
 		if ( uvcoord.isValid() )
-			uvs = nif->getArray<Vector2>( uvcoord.child( 0, 0 ) );
+			coords = nif->getArray<Vector2>( uvcoord.child( 0, 0 ) );
 		else
-			uvs.clear();
+			coords.clear();
 		
 		if ( nif->itemName( iData ) == "NiTriShapeData" )
 		{
@@ -398,6 +408,26 @@ void Mesh::transformShapes()
 	}
 	else
 		triOrder.clear();
+	
+	MaterialProperty * matprop = findProperty<MaterialProperty>();
+	if ( matprop && matprop->alphaValue() != 1.0 )
+	{
+		float a = matprop->alphaValue();
+		transColors.resize( colors.count() );
+		for ( int c = 0; c < colors.count(); c++ )
+			transColors[c] = colors[c].blend( a );
+	}
+	else
+		transColors = colors;
+	
+	if ( texOffset[0] != 0.0 || texOffset[1] != 0.0 )
+	{
+		transCoords.resize( coords.count() );
+		for ( int c = 0; c < coords.count(); c++ )
+			transCoords[c] += texOffset;
+	}
+	else
+		transCoords = coords;
 }
 
 void Mesh::boundaries( Vector3 & min, Vector3 & max )
@@ -456,10 +486,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	// setup vertex colors
 	
-	if ( colors.count() )
+	if ( transColors.count() >= transVerts.count() )
 	{
 		glEnable( GL_COLOR_MATERIAL );
-		glColorMaterial( GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
+		glProperty( findProperty< VertexColorProperty >() );
 		glColor4f( 1.0, 1.0, 1.0, 1.0 );
 	}
 	else
@@ -470,10 +500,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	// setup material 
 	
-	MaterialProperty * mprop = findProperty< MaterialProperty >();
-	glProperty( mprop );
-	GLfloat alpha = ( mprop ? mprop->alphaValue() : 1.0 );
-
+	glProperty( findProperty< MaterialProperty >() );
 	glProperty( findProperty< SpecularProperty >() );
 
 	// setup texturing
@@ -490,7 +517,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 
 	// normalize
 	
-	if ( transNorms.count() > 0 )
+	if ( transNorms.count() >= transVerts.count() )
 		glEnable( GL_NORMALIZE );
 	else
 		glDisable( GL_NORMALIZE );
@@ -502,9 +529,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glPushMatrix();
 		viewTrans().glLoadMatrix();
 	}
-	
+
 	// render the triangles
-	
+
 	if ( triangles.count() > 0 )
 	{
 		glBegin( GL_TRIANGLES );
@@ -515,22 +542,22 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			if ( transVerts.count() > tri.v1() && transVerts.count() > tri.v2() && transVerts.count() > tri.v3() )
 			{
 				if ( transNorms.count() > tri.v1() ) glNormal( transNorms[tri.v1()] );
-				if ( uvs.count() > tri.v1() ) glTexCoord( uvs[tri.v1()] + texOffset );
-				if ( colors.count() > tri.v1() ) glColor( colors[tri.v1()].blend( alpha ) );
+				if ( transCoords.count() > tri.v1() ) glTexCoord( transCoords[tri.v1()] );
+				if ( transColors.count() > tri.v1() ) glColor( transColors[tri.v1()] );
 				glVertex( transVerts[tri.v1()] );
 				if ( transNorms.count() > tri.v2() ) glNormal( transNorms[tri.v2()] );
-				if ( uvs.count() > tri.v2() ) glTexCoord( uvs[tri.v2()] + texOffset );
-				if ( colors.count() > tri.v2() ) glColor( colors[tri.v2()].blend( alpha ) );
+				if ( transCoords.count() > tri.v2() ) glTexCoord( transCoords[tri.v2()] );
+				if ( transColors.count() > tri.v2() ) glColor( transColors[tri.v2()] );
 				glVertex( transVerts[tri.v2()] );
 				if ( transNorms.count() > tri.v3() ) glNormal( transNorms[tri.v3()] );
-				if ( uvs.count() > tri.v3() ) glTexCoord( uvs[tri.v3()] + texOffset );
-				if ( colors.count() > tri.v3() ) glColor( colors[tri.v3()].blend( alpha ) );
+				if ( transCoords.count() > tri.v3() ) glTexCoord( transCoords[tri.v3()] );
+				if ( transColors.count() > tri.v3() ) glColor( transColors[tri.v3()] );
 				glVertex( transVerts[tri.v3()] );
 			}
 		}
 		glEnd();
 	}
-	
+
 	// render the tristrips
 	
 	foreach ( Tristrip strip, tristrips )
@@ -539,8 +566,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		foreach ( int v, strip.vertices )
 		{
 			if ( transNorms.count() > v ) glNormal( transNorms[v] );
-			if ( uvs.count() > v ) glTexCoord( uvs[v] + texOffset );
-			if ( colors.count() > v ) glColor( colors[v].blend( alpha ) );
+			if ( transCoords.count() > v ) glTexCoord( transCoords[v] );
+			if ( transColors.count() > v ) glColor( transColors[v] );
 			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}
 		glEnd();
@@ -562,6 +589,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glLineWidth( 1.0 );
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+		if ( glIsEnabled( GL_COLOR_ARRAY ) )
+			glDisableClientState( GL_COLOR_ARRAY );
 		
 		foreach ( Triangle tri, triangles )
 		{
@@ -585,13 +615,15 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		{
 			glColor4fv( stripcolor[c] );
 			if ( ++c >= 6 ) c = 0;
-			glBegin( GL_LINE_STRIP );
-			foreach ( int v, strip.vertices )
+			
+			glBegin( GL_TRIANGLE_STRIP );
+			foreach ( quint16 v, strip.vertices )
 			{
 				if ( transVerts.count() > v )
 					glVertex( transVerts[v] );
 			}
 			glEnd();
+			
 		}
 		
 		glPopAttrib();

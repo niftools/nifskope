@@ -435,7 +435,7 @@ void Particles::drawShapes( NodeList * draw2nd )
 	if ( colors.count() )
 	{
 		glEnable( GL_COLOR_MATERIAL );
-		glColorMaterial( GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
+		glProperty( findProperty< VertexColorProperty >() );
 		glColor4f( 1.0, 1.0, 1.0, 1.0 );
 	}
 	else
