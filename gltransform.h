@@ -69,15 +69,6 @@ public:
 	friend QDataStream & operator>>( QDataStream & ds, Transform & t );
 };
 
-class Tristrip
-{
-public:
-	Tristrip() {}
-	Tristrip( const NifModel * nif, const QModelIndex & );
-	
-	QVector<int>	vertices;
-};
-
 class VertexWeight
 {
 public:

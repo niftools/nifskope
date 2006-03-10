@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDateTime>
 #include <QFile>
 #include <QStack>
+#include <QQueue>
 
 #include "nifmodel.h"
 #include "gltransform.h"
@@ -60,6 +61,9 @@ public:
 	
 	void move( float, float, float );
 	void setPosition( float, float, float );
+	void setPosition( Vector3 );
+	
+	void setDistance( float );
 	
 	void rotate( float, float, float );
 	void setRotation( float, float, float );
@@ -98,6 +102,7 @@ public:
 	QAction * aDrawHidden;
 	QAction * aHighlight;
 	QAction * aRotate;
+	QAction * aBenchmark;
 	
 	QAction * aTexFolder;
 	QAction * aBgColor;
@@ -156,6 +161,7 @@ private:
 
 	Vector3 Pos;
 	Vector3 Rot;
+	float	Dist;
 	
 	GLdouble Zoom;
 	
@@ -185,6 +191,10 @@ private:
 	QHash<int,bool> kbd;
 	Vector3 mouseMov;
 	Vector3 mouseRot;
+	
+	int		fpscnt;
+	float	fpsact;
+	float	fpsacc;
 };
 
 #endif

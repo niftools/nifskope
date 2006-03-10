@@ -106,7 +106,7 @@ const Transform & BillboardNode::viewTrans() const
 	else
 		t = scene->view * worldTrans();
 	
-	t.rotation = t.rotation.inverted() * t.rotation;
+	t.rotation = Matrix();
 	
 	scene->viewTrans.insert( nodeId, t );
 	return scene->viewTrans[ nodeId ];

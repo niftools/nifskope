@@ -48,18 +48,13 @@ public:
 	
 	void drawShapes( NodeList * draw2nd = 0 );
 	
-	void boundaries( Vector3 & min, Vector3 & max );
-	
-	Vector3 center() const;
+	BoundSphere bounds() const;
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	
 	QPersistentModelIndex iData;
 	bool upData;
-	
-	Vector3 localCenter;
-	Vector3 sceneCenter;
 	
 	QVector<Vector3> verts;
 	QVector<Color4> colors;

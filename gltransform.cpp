@@ -123,14 +123,6 @@ QDataStream & operator>>( QDataStream & ds, Transform & t )
 }
 
 
-Tristrip::Tristrip( const NifModel * nif, const QModelIndex & tristrip )
-{
-	if ( ! tristrip.isValid() ) return;
-	
-	for ( int s = 0; s < nif->rowCount( tristrip ); s++ )
-		vertices.append( nif->get<int>( tristrip.child( s, 0 ) ) );
-}
-
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {
 	trans = Transform( nif, index );

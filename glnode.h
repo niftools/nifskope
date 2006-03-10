@@ -101,11 +101,14 @@ public:
 	
 	int id() const { return nodeId; }
 	
-	Node * findParent( int id ) const;
-	Node * findChild( int id ) const;
-	Node * parentNode() const { return parent; }
+	Node	* findParent( int id ) const;
+	Node	* findChild( int id ) const;
+	Node	* parentNode() const { return parent; }
+	void	makeParent( Node * parent );
 	
-	virtual void boundaries( Vector3 & min, Vector3 & max );
+	virtual class BoundSphere bounds() const;
+	//Vector3 center() const { return bounds().center(); }
+	//float radius() const { return bounds().radius; }
 	
 	template <typename T> T * findProperty() const;
 	
@@ -138,6 +141,25 @@ template <typename T> inline T * Node::findProperty() const
 	if ( parent ) return parent->findProperty<T>();
 	return 0;
 }
+
+class BoundSphere
+{
+public:
+	BoundSphere();
+	BoundSphere( const BoundSphere & );
+	BoundSphere( const Vector3 & center, float radius );
+	BoundSphere( const QVector<Vector3> & vertices );
+	
+	Vector3	center;
+	float	radius;
+	
+	BoundSphere & operator=( const BoundSphere & );
+	BoundSphere & operator|=( const BoundSphere & );
+	
+	BoundSphere operator|( const BoundSphere & o );
+	
+	friend BoundSphere operator*( const Transform & t, const BoundSphere & s );
+};
 
 #endif
 

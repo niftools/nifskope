@@ -46,7 +46,8 @@ Scene::Scene()
 	texturing = true;
 	blending = true;
 	highlight = true;
-	drawHidden = false;
+	showHidden = false;
+	showNodes = false;
 	currentNode = 0;
 	animate = true;
 	
@@ -112,7 +113,11 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 			if ( iBlock.isValid() )
 			{
 				Node * node = getNode( nif, iBlock );
-				if ( node ) roots.add( node );
+				if ( node )
+				{
+					node->makeParent( 0 );
+					roots.add( node );
+				}
 			}
 		}
 	}
@@ -211,10 +216,15 @@ void Scene::transform( const Transform & trans, float time )
 	}
 }
 
+void Scene::draw()
+{
+	drawShapes();
+	if ( showNodes )
+		drawNodes();
+}
+
 void Scene::drawShapes()
 {	
-	glEnable( GL_CULL_FACE );
-	
 	NodeList draw2nd;
 
 	foreach ( Node * node, roots.list() )
@@ -271,63 +281,19 @@ void Scene::setupLights( Node * node )
 	}
 }
 
-void Scene::updateBoundaries() const
+BoundSphere Scene::bounds() const
 {
-	if ( ! nodes.list().isEmpty() )
+	if ( ! sceneBoundsValid )
 	{
-		nodes.list().first()->boundaries( bMin, bMax );
+		bndSphere = BoundSphere();
 		foreach ( Node * node, nodes.list() )
 		{
-			Vector3 mn, mx;
-			node->boundaries( mn, mx );
-			bMin.boundMin( mn );
-			bMax.boundMax( mx );
+			if ( node->isVisible() )
+				bndSphere |= node->bounds();
 		}
-		for ( int c = 0; c < 3; c++ )
-		{
-			bRadius[c] = ( bMax[c] - bMin[c] ) / 2;
-			bCenter[c] = bMin[c] + bRadius[c];
-		}
+		sceneBoundsValid = true;
 	}
-	else
-		bMin = bMax = bCenter = bRadius = Vector3();
-	
-	sceneBoundsValid = true;
-}
-
-Vector3 Scene::boundMin() const
-{
-	if ( ! sceneBoundsValid )
-		updateBoundaries();
-	return bMin;
-}
-
-Vector3 Scene::boundMax() const
-{
-	if ( ! sceneBoundsValid )
-		updateBoundaries();
-	return bMax;
-}
-
-Vector3 Scene::boundCenter() const
-{
-	if ( ! sceneBoundsValid )
-		updateBoundaries();
-	return bCenter;
-}
-
-Vector3 Scene::boundExtend() const
-{
-	if ( ! sceneBoundsValid )
-		updateBoundaries();
-	return bRadius;
-}
-
-float Scene::boundRadius() const
-{
-	if ( ! sceneBoundsValid )
-		updateBoundaries();
-	return qMax( bRadius[0], qMax( bRadius[1], bRadius[2] ) );
+	return bndSphere;
 }
 
 void Scene::updateTimeBounds() const

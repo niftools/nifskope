@@ -55,6 +55,7 @@ public:
 	void update( const NifModel * nif, const QModelIndex & index );
 	
 	void transform( const Transform & trans, float time = 0.0 );
+	void draw();
 	void drawShapes();
 	void drawNodes();
 	
@@ -89,24 +90,20 @@ public:
 	bool highlight;
 	int currentNode;
 	
-	bool drawHidden;
+	bool showHidden;
+	bool showNodes;
 	
-	Vector3 boundMin() const;
-	Vector3 boundMax() const;
-	Vector3 boundCenter() const;
-	Vector3 boundExtend() const;
-	float	boundRadius() const;
+	BoundSphere bounds() const;
 	
 	float	timeMin() const;
 	float	timeMax() const;
 
 protected:
-	void updateBoundaries() const;
-	void updateTimeBounds() const;
-	
 	mutable bool sceneBoundsValid, timeBoundsValid;
-	mutable Vector3 bMin, bMax, bCenter, bRadius;
+	mutable BoundSphere bndSphere;
 	mutable float tMin, tMax;
+
+	void updateTimeBounds() const;
 };
 
 inline void glTranslate( const Vector3 & v )
@@ -137,6 +134,11 @@ inline void glColor( const Color3 & c )
 inline void glColor( const Color4 & c )
 {
 	glColor4fv( c.data() );
+}
+
+inline void glMaterial( GLenum x, GLenum y, const Color4 & c )
+{
+	glMaterialfv( x, y, c.data() );
 }
 
 

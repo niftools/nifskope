@@ -37,6 +37,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Mesh : public Node
 {
+	class Tristrip
+	{
+	public:
+		Tristrip() {}
+		Tristrip( const NifModel * nif, const QModelIndex & );
+		QVector<quint16> vertices;
+	};
 public:
 	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 	
@@ -48,9 +55,7 @@ public:
 	
 	void drawShapes( NodeList * draw2nd = 0 );
 	
-	void boundaries( Vector3 & min, Vector3 & max );
-	
-	Vector3 center() const;
+	BoundSphere bounds() const;
 	
 protected:	
 	void setController( const NifModel * nif, const QModelIndex & controller );
@@ -58,13 +63,15 @@ protected:
 	QPersistentModelIndex iData, iSkin, iSkinData;
 	bool upData, upSkin;
 	
-	Vector3 localCenter;
-	Vector3 sceneCenter;
-	
 	QVector<Vector3> verts;
 	QVector<Vector3> norms;
 	QVector<Color4>  colors;
-	QVector<Vector2> uvs;
+	QVector<Vector2> coords;
+	
+	QVector<Vector3> transVerts;
+	QVector<Vector3> transNorms;
+	QVector<Color4> transColors;
+	QVector<Vector2> transCoords;
 	
 	Vector2 texOffset;
 	
@@ -77,10 +84,10 @@ protected:
 	
 	QVector< QPair< int, float > > triOrder;
 	
-	QVector<Vector3> transVerts;
-	QVector<Vector3> transNorms;
-	
 	bool transformRigid;
+	
+	mutable BoundSphere bndSphere;
+	mutable bool upBounds;
 	
 	friend class MorphController;
 	friend class TexCoordController;

@@ -78,6 +78,8 @@ public:
 				}
 			}
 		}
+		
+		target->upBounds = true;
 	}
 	
 	
@@ -231,6 +233,8 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 			}
 		}
 	}
+	
+	upBounds |= upData;
 }
 
 void Mesh::setController( const NifModel * nif, const QModelIndex & iController )
@@ -268,8 +272,6 @@ void Mesh::transform()
 	if ( upData )
 	{
 		upData = false;
-		
-		localCenter = nif->get<Vector3>( iData, "Center" );
 		
 		verts = nif->getArray<Vector3>( nif->getIndex( iData, "Vertices" ) );
 		norms = nif->getArray<Vector3>( nif->getIndex( iData, "Normals" ) );
@@ -342,8 +344,6 @@ void Mesh::transformShapes()
 	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
 	transformRigid = ! ( ( alphaprop && alphaprop->sort() ) || weights.count() );
 	
-	sceneCenter = viewTrans() * localCenter;
-	
 	if ( weights.count() )
 	{
 		transVerts.resize( verts.count() );
@@ -372,6 +372,8 @@ void Mesh::transformShapes()
 		}
 		for ( int n = 0; n < transNorms.count(); n++ )
 			transNorms[n].normalize();
+		
+		upBounds = true;
 	}
 	else if ( ! transformRigid )
 	{
@@ -430,49 +432,22 @@ void Mesh::transformShapes()
 		transCoords = coords;
 }
 
-void Mesh::boundaries( Vector3 & min, Vector3 & max )
+BoundSphere Mesh::bounds() const
 {
-	if ( transVerts.count() )
+	if ( upBounds )
 	{
-		if ( transformRigid )
-		{
-			Transform vt = viewTrans();
-			min = max = vt * transVerts[ 0 ];
-			
-			foreach ( Vector3 v, transVerts )
-			{
-				min.boundMin( vt * v );
-				max.boundMax( vt * v );
-			}
-		}
-		else
-		{
-			min = max = transVerts[ 0 ];
-			
-			foreach ( Vector3 v, transVerts )
-			{
-				min.boundMin( v );
-				max.boundMax( v );
-			}
-		}
+		upBounds = false;
+		bndSphere = worldTrans() * BoundSphere( verts );
 	}
-}
-
-Vector3 Mesh::center() const
-{
-	return sceneCenter;
+	return bndSphere | Node::bounds();
 }
 
 void Mesh::drawShapes( NodeList * draw2nd )
 {
-	if ( isHidden() && ! scene->drawHidden )
+	if ( isHidden() )
 		return;
 	
 	glLoadName( nodeId );
-	
-	// setup lighting
-	
-	scene->setupLights( this );
 	
 	// setup alpha blending
 	
@@ -484,25 +459,22 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	}
 	glProperty( aprop );
 	
+	// setup lighting
+	
+	scene->setupLights( this );
+	
+	// setup material
+	
+	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
+
 	// setup vertex colors
 	
 	if ( transColors.count() >= transVerts.count() )
-	{
-		glEnable( GL_COLOR_MATERIAL );
 		glProperty( findProperty< VertexColorProperty >() );
-		glColor4f( 1.0, 1.0, 1.0, 1.0 );
-	}
 	else
-	{
 		glDisable( GL_COLOR_MATERIAL );
-		glColor4f( 1.0, 1.0, 1.0, 1.0 );
-	}
+	glColor( Color4() );
 	
-	// setup material 
-	
-	glProperty( findProperty< MaterialProperty >() );
-	glProperty( findProperty< SpecularProperty >() );
-
 	// setup texturing
 	
 	glProperty( findProperty< TexturingProperty >() );
@@ -510,6 +482,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	// setup z buffer
 	
 	glProperty( findProperty< ZBufferProperty >() );
+	
+	// setup stencil
+	
+	glProperty( findProperty< StencilProperty >() );
 	
 	// wireframe ?
 	
@@ -567,7 +543,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		{
 			if ( transNorms.count() > v ) glNormal( transNorms[v] );
 			if ( transCoords.count() > v ) glTexCoord( transCoords[v] );
-			if ( transColors.count() > v ) glColor( transColors[v] );
+			//if ( transColors.count() > v ) glColor( transColors[v] );
 			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}
 		glEnd();
@@ -577,21 +553,18 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	if ( scene->highlight && scene->currentNode == nodeId )
 	{
-		glPushAttrib( GL_LIGHTING_BIT );
+		glDisable( GL_LIGHTING );
+		glDisable( GL_COLOR_MATERIAL );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_NORMALIZE );
 		glEnable( GL_DEPTH_TEST );
 		glDepthMask( GL_TRUE );
 		glDepthFunc( GL_LEQUAL );
-		glDisable( GL_TEXTURE_2D );
-		glDisable( GL_NORMALIZE );
-		glDisable( GL_LIGHTING );
-		glDisable( GL_COLOR_MATERIAL );
-		glColor4f( 0.0, 1.0, 0.0, 0.5 );
 		glLineWidth( 1.0 );
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-		if ( glIsEnabled( GL_COLOR_ARRAY ) )
-			glDisableClientState( GL_COLOR_ARRAY );
+		
+		glColor( Color4( 0.0, 1.0, 0.0, 0.5 ) );
 		
 		foreach ( Triangle tri, triangles )
 		{
@@ -616,7 +589,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			glColor4fv( stripcolor[c] );
 			if ( ++c >= 6 ) c = 0;
 			
-			glBegin( GL_TRIANGLE_STRIP );
+			glBegin( GL_LINE_STRIP );
 			foreach ( quint16 v, strip.vertices )
 			{
 				if ( transVerts.count() > v )
@@ -626,7 +599,45 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			
 		}
 		
-		glPopAttrib();
+		BoundSphere bs = bounds();
+		if ( transformRigid )
+			glPopMatrix();
+		bs = scene->view * bs;
+		
+		Vector3 mn = bs.center;
+		Vector3 mx = bs.center;
+		for ( int i = 0; i < 3; i++ )
+		{
+			mn[i] -= bs.radius;
+			mx[i] += bs.radius;
+		}
+		
+		glColor3f( 1.0, 0.0, 1.0 );
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glEnd();
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glEnd();
+		glBegin( GL_LINES );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mx[2] );
+		glVertex3f( mx[0], mx[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mx[2] );
+		glEnd();
+		return;
 	}
 	
 	if ( transformRigid )

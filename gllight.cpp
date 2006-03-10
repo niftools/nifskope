@@ -111,7 +111,7 @@ void Light::draw( NodeList * draw2nd = 0 )
 {
 	Node::draw( draw2nd );
 	
-	if ( isHidden() && ! scene->drawHidden )
+	if ( isHidden() )
 		return;
 	
 	glLoadName( nodeId );

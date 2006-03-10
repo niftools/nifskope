@@ -55,6 +55,8 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 			property = new WireframeProperty( scene, index );
 		else if ( name == "NiVertexColorProperty" )
 			property = new VertexColorProperty( scene, index );
+		else if ( name == "NiStencilProperty" )
+			property = new StencilProperty( scene, index );
 	}
 	
 	if ( property )
@@ -199,15 +201,15 @@ void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 		int flags = nif->get<int>( iBlock, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
-		if ( nif->checkVersion( 0x20000004, 0 ) )
+		if ( nif->checkVersion( 0x10000001, 0 ) )
 		{
 			static const GLenum depthMap[8] = {
 				GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
 			};
-			depthFunc = depthMap[ ( flags >> 2 ) & 0x07 ];
+			depthFunc = depthMap[ nif->get<int>( iBlock, "Function" ) & 0x07 ];
 		}
 		else
-			depthFunc = GL_LESS;
+			depthFunc = GL_LEQUAL;
 	}
 }
 
@@ -229,11 +231,9 @@ void glProperty( ZBufferProperty * p )
 	{
 		glEnable( GL_DEPTH_TEST );
 		glDepthFunc( GL_LESS );
-
 		glDepthMask( GL_TRUE );
+		glDepthFunc( GL_LEQUAL );
 	}
-	
-	glDepthFunc( GL_LEQUAL );
 }
 
 void TexturingProperty::update( const NifModel * nif, const QModelIndex & property )
@@ -252,7 +252,7 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 			case 0:		texFilter = GL_NEAREST;		break;
 			case 1:		texFilter = GL_LINEAR;		break;
 			default:	texFilter = GL_LINEAR;		break;
-			/* poor ati driver cannot mipmap dds faces
+			/*
 			case 2:		texFilter = GL_NEAREST_MIPMAP_NEAREST;		break;
 			case 3:		texFilter = GL_LINEAR_MIPMAP_NEAREST;		break;
 			case 4:		texFilter = GL_NEAREST_MIPMAP_LINEAR;		break;
@@ -409,30 +409,34 @@ void MaterialProperty::setController( const NifModel * nif, const QModelIndex & 
 	}
 }
 
-inline void glMaterial( GLenum x, GLenum y, const Color4 & c )
-{
-	glMaterialfv( x, y, c.data() );
-}
-
-void glProperty( MaterialProperty * p )
+void glProperty( MaterialProperty * p, SpecularProperty * s )
 {
 	if ( p )
 	{
-		glMaterialf(GL_FRONT, GL_SHININESS, p->shininess );
-		glMaterial( GL_FRONT, GL_AMBIENT, p->ambient.blend( p->alpha ) );
-		glMaterial( GL_FRONT, GL_DIFFUSE, p->diffuse.blend( p->alpha ) );
-		glMaterial( GL_FRONT, GL_EMISSION, p->emissive.blend( p->alpha ) );
-		glMaterial( GL_FRONT, GL_SPECULAR, p->specular.blend( p->alpha ) );
+		glMaterial( GL_FRONT_AND_BACK, GL_AMBIENT, p->ambient.blend( p->alpha ) );
+		glMaterial( GL_FRONT_AND_BACK, GL_DIFFUSE, p->diffuse.blend( p->alpha ) );
+		glMaterial( GL_FRONT_AND_BACK, GL_EMISSION, p->emissive.blend( p->alpha ) );
+		
+		if ( s && s->spec )
+		{
+			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, p->shininess );
+			glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, p->specular.blend( p->alpha ) );
+		}
+		else
+		{
+			glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 0.0 );
+			glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, Color4( 0.0, 0.0, 0.0, p->alpha ) );
+		}
 	}
 	else
 	{
 		Color4 a( 0.4, 0.4, 0.4, 1.0 );
 		Color4 d( 0.8, 0.8, 0.8, 1.0 );
 		Color4 s( 1.0, 1.0, 1.0, 1.0 );
-		glMaterialf( GL_FRONT, GL_SHININESS, 33.0 );
-		glMaterial( GL_FRONT, GL_AMBIENT, a );
-		glMaterial( GL_FRONT, GL_DIFFUSE, d );
-		glMaterial( GL_FRONT, GL_SPECULAR, s );
+		glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 33.0 );
+		glMaterial( GL_FRONT_AND_BACK, GL_AMBIENT, a );
+		glMaterial( GL_FRONT_AND_BACK, GL_DIFFUSE, d );
+		glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, s );
 	}
 }
 
@@ -442,19 +446,6 @@ void SpecularProperty::update( const NifModel * nif, const QModelIndex & block )
 	if ( iBlock.isValid() && iBlock == block )
 	{
 		spec = nif->get<int>( iBlock, "Flags" ) != 0;
-	}
-}
-
-void glProperty( SpecularProperty * p )
-{
-	if ( p && p->spec )
-	{
-		return;
-	}
-	else
-	{
-		glMaterialf( GL_FRONT, GL_SHININESS, 0.0 );
-		glMaterial( GL_FRONT, GL_SPECULAR, Color4( 0.0, 0.0, 0.0, 1.0 ) );
 	}
 }
 
@@ -492,6 +483,21 @@ void VertexColorProperty::update( const NifModel * nif, const QModelIndex & bloc
 		lightmode = nif->get<int>( iBlock, "Lighting Mode" );
 		// 0 : emissive
 		// 1 : emissive + ambient + diffuse
+
+/*
+vertex_mode 0
+lighting_mode 0 : all black ?
+lighting_mode 1 : material color (vertex color ignored)
+
+vertex_mode 1
+lighting_mode 0 : only vertex lighting (disable lighting?)
+lighting_mode 1 : almost the same but the dark shadows dissapear when switching to bright light
+
+vertex_mode 2
+lighting_mode 0 : all black ?
+lighting_mode 1 : the same as no property (additiv?)
+*/
+
 	}
 }
 
@@ -501,17 +507,68 @@ void glProperty( VertexColorProperty * p )
 	{
 		switch ( p->vertexmode )
 		{
+			case 0:
+				glDisable( GL_COLOR_MATERIAL );
+				return;
 			case 1:
+				glEnable( GL_COLOR_MATERIAL );
 				glColorMaterial( GL_FRONT_AND_BACK, GL_EMISSION );
-				break;
+				return;
 			case 2:
 			default:
+				glEnable( GL_COLOR_MATERIAL );
 				glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
-				break;
+				return;
 		}
 	}
 	else
 	{
+		glEnable( GL_COLOR_MATERIAL );
 		glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+	}
+}
+
+void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
+{
+	Property::update( nif, block );
+	if ( iBlock.isValid() && iBlock == block )
+	{
+		//static const GLenum functions[8] = { GL_NEVER, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_ALWAYS };
+		//static const GLenum operations[8] = { GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT, GL_KEEP, GL_KEEP };
+		
+		// ! glFrontFace( GL_CCW )
+		switch ( nif->get<int>( iBlock, "Cull Mode" ) )
+		{
+			case 2:
+				cullEnable = true;
+				cullMode = GL_FRONT;
+				break;
+			case 3:
+				cullEnable = false;
+				cullMode = GL_BACK;
+				break;
+			case 1:
+			default:
+				cullEnable = true;
+				cullMode = GL_BACK;
+				break;
+		}
+	}
+}
+
+void glProperty( StencilProperty * p )
+{
+	if ( p )
+	{
+		if ( p->cullEnable )
+			glEnable( GL_CULL_FACE );
+		else
+			glDisable( GL_CULL_FACE );
+		glCullFace( p->cullMode );
+	}
+	else
+	{
+		glEnable( GL_CULL_FACE );
+		glCullFace( GL_BACK );
 	}
 }

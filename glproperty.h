@@ -42,7 +42,7 @@ class Property : public Controllable
 protected:
 	enum Type
 	{
-		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe, VertexColor
+		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe, VertexColor, Stencil
 	};
 	
 	Property( Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), ref( 0 ) {}
@@ -186,7 +186,7 @@ public:
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
-	friend void glProperty( MaterialProperty * );
+	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 	
 	GLfloat alphaValue() const { return alpha; }
 	
@@ -211,7 +211,7 @@ public:
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
-	friend void glProperty( SpecularProperty * );
+	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 	
 protected:
 	bool spec;
@@ -255,5 +255,33 @@ protected:
 };
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
+
+class StencilProperty : public Property
+{
+public:
+	StencilProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Stencil; }
+	
+	void update( const NifModel * nif, const QModelIndex & index );
+	
+	friend void glProperty( StencilProperty * );
+
+protected:
+	bool	stencil;
+	
+	GLenum	func;
+	GLint	ref;
+	GLuint	mask;
+	
+	GLenum	failop;
+	GLenum	zfailop;
+	GLenum	zpassop;
+	
+	bool	cullEnable;
+	GLenum	cullMode;
+};
+
+REGISTER_PROPERTY( StencilProperty, Stencil )
 
 #endif

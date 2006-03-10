@@ -46,11 +46,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spellbook.h"
 #include "spells/color.h"
 
-#define FPS 35
+#define FPS 25
 
 #define FOV 45.0
 
-#define MOV_SPD 50
+#define MOV_SPD 150
 #define ROT_SPD 45
 
 #define ZOOM_MIN 1.0
@@ -72,6 +72,10 @@ GLView::GLView()
 	
 	time = 0.0;
 	lastTime = QTime::currentTime();
+	
+	fpsact = 0.0;
+	fpsacc = 0.0;
+	fpscnt = 0;
 	
 	scene = new Scene();
 
@@ -184,6 +188,13 @@ GLView::GLView()
 	aAnimPlay->setCheckable( true );
 	aAnimPlay->setChecked( true );
 	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	
+	aBenchmark = new QAction( "Benchmark FPS", this );
+	aBenchmark->setCheckable( true );
+	aBenchmark->setChecked( false );
+	aBenchmark->setVisible( false );
+	connect( aBenchmark, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aBenchmark );
 
 	aTexFolder = new QAction( "Set Texture &Folder", this );
 	aTexFolder->setToolTip( "tell me where your textures are" );
@@ -224,6 +235,8 @@ void GLView::initializeGL()
 
 void GLView::glProjection( int x, int y )
 {
+	// check for errors
+	
 	GLint	viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 	GLdouble aspect = (GLdouble) viewport[2] / (GLdouble) viewport[3];
@@ -235,20 +248,26 @@ void GLView::glProjection( int x, int y )
 		gluPickMatrix( (GLdouble) x, (GLdouble) (viewport[3]-y), 5.0f, 5.0f, viewport);
 	}
 	
-	GLdouble fr = 54321;
+	BoundSphere bs = scene->view * scene->bounds();
+	if ( aDrawAxis->isChecked() )
+		bs |= BoundSphere( scene->view * Vector3(), axis );
+	
+	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
+	GLdouble fr = fabs( bs.center[2] ) + bs.radius * 1.2;
+	
+	//qWarning() << nr << fr;
 	
 	if ( aViewPerspective->isChecked() || aViewWalk->isChecked() )
 	{
 		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * 1.0;
 		GLdouble w2 = h2 * aspect;
-		glFrustum( - w2, + w2, - h2, + h2, 1.0, fr );
-		//gluPerspective( FOV / Zoom, aspect, nr, fr );
+		glFrustum( - w2, + w2, - h2, + h2, nr > 1.0 ? 1.0 : 1.0, fr > 2.0 ? fr : 2.0 );
 	}
 	else
 	{
-		GLdouble h2 = scene->boundRadius() / Zoom * 2; // FIXME
+		GLdouble h2 = axis / Zoom * 2;
 		GLdouble w2 = h2 * aspect;
-		glOrtho( - w2, + w2, - h2, + h2, 0.0, fr );
+		glOrtho( - w2, + w2, - h2, + h2, nr > 0.0 ? nr : 0.0, fr > 1.0 ? fr : 1.0 );
 	}
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -276,7 +295,9 @@ void GLView::paintGL()
 	{
 		scene->make( model );
 		scene->transform( Transform(), scene->timeMin() );
-		axis = scene->boundRadius() * 1.4;
+		axis = scene->bounds().radius * 1.4;
+		if ( axis == 0 ) axis = 1;
+		
 		if ( time < scene->timeMin() || time > scene->timeMax() )
 		{
 			time = scene->timeMin();
@@ -296,10 +317,9 @@ void GLView::paintGL()
 	
 	Transform viewTrans;
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
-	if ( aViewWalk->isChecked() )
-		viewTrans.translation = viewTrans.rotation * Pos;
-	else
-		viewTrans.translation = Pos;
+	viewTrans.translation = viewTrans.rotation * Pos;
+	if ( ! aViewWalk->isChecked() )
+		viewTrans.translation[2] -= Dist;
 	
 	scene->transform( viewTrans, time );
 	
@@ -372,9 +392,17 @@ void GLView::paintGL()
 		glEnd();
 		
 		glPopMatrix();
-		/*
-		Vector3 mn = scene->boundMin();
-		Vector3 mx = scene->boundMax();
+		
+		BoundSphere bs = viewTrans * scene->bounds();
+		
+		Vector3 mn = bs.center;
+		Vector3 mx = bs.center;
+		for ( int i = 0; i < 3; i++ )
+		{
+			mn[i] -= bs.radius;
+			mx[i] += bs.radius;
+		}
+		
 		glColor3f( 1.0, 0.0, 1.0 );
 		glBegin( GL_LINE_STRIP );
 		glVertex3f( mn[0], mn[1], mn[2] );
@@ -400,21 +428,49 @@ void GLView::paintGL()
 		glVertex3f( mn[0], mn[1], mx[2] );
 		glVertex3f( mx[0], mn[1], mx[2] );
 		glEnd();
-		*/
 	}
 	
 	// draw the model
 
-	scene->drawShapes();
+	scene->draw();
 	
-	if ( aDrawNodes->isChecked() )
-		scene->drawNodes();
+	// draw fps counter
 	
+	if ( fpsacc > 1.0 && fpscnt )
+	{
+		fpsacc /= fpscnt;
+		if ( fpsacc > 0.0001 )
+			fpsact = 1.0 / fpsacc;
+		else
+			fpsact = 10000;
+		fpsacc = 0;
+		fpscnt = 0;
+	}
+
+	if ( aBenchmark->isChecked() )
+	{
+		glDisable( GL_ALPHA_TEST );
+		glDisable( GL_BLEND );
+		glDisable( GL_LIGHTING );
+		glDisable( GL_COLOR_MATERIAL );
+		glEnable( GL_DEPTH_TEST );
+		glDepthMask( GL_TRUE );
+		glDepthFunc( GL_LESS );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_NORMALIZE );
+		glLineWidth( 1.2 );
+		glColor3f( 1.0, 1.0, 0.5 );
+		
+		int ls = QFontMetrics( font() ).lineSpacing();
+		renderText( 0, 1 * ls, QString( "FPS %1" ).arg( int( fpsact ) ), font() );
+		//renderText( 0, 2 * ls, QString( "SWAP %2" ).arg( fTime ), font() );
+	}
+
 	// check for errors
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+		qWarning() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 }
 
 QModelIndex GLView::indexAt( const QPoint & pos )
@@ -552,10 +608,16 @@ QString GLView::textureFolder() const
 
 void GLView::viewAction( QAction * act )
 {
+	BoundSphere bs = scene->bounds();
+	if ( aDrawAxis->isChecked() )
+		bs |= BoundSphere( Vector3(), axis );
+	
+	if ( bs.radius < 1 ) bs.radius = 1;
+	
 	if ( act == aViewWalk )
 	{
 		setRotation( -90, 0, 0 );
-		setPosition( 0, 0, 0 );
+		setPosition( Vector3() - scene->bounds().center );
 		setZoom( 1.0 );
 		aViewWalk->setChecked( true );
 		aViewTop->setChecked( false );
@@ -563,13 +625,17 @@ void GLView::viewAction( QAction * act )
 		aViewSide->setChecked( false );
 		aRotate->setChecked( false );
 	}
-	else if ( act == aViewPerspective )
+
+	if ( ! act )
 	{
+		act = checkedViewAction();
 	}
-	else if ( act == aViewTop )
+	
+	if ( act == aViewTop )
 	{
 		setRotation( 0, 0, 0 );
-		setPosition( 0, 0, -4.0 * scene->boundRadius() );
+		setPosition( Vector3() - bs.center );
+		setDistance( 2 * bs.radius );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( true );
 		aViewFront->setChecked( false );
@@ -578,7 +644,8 @@ void GLView::viewAction( QAction * act )
 	else if ( act == aViewFront )
 	{
 		setRotation( - 90, 0, 0 );
-		setPosition( 0, 0, -4.0 * scene->boundRadius() );
+		setPosition( Vector3() - bs.center );
+		setDistance( 2 * bs.radius );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( true );
@@ -587,7 +654,8 @@ void GLView::viewAction( QAction * act )
 	else if ( act == aViewSide )
 	{
 		setRotation( - 90, 0, 90 );
-		setPosition( 0, 0, -4.0 * scene->boundRadius() );
+		setPosition( Vector3() - bs.center );
+		setDistance( 2 * bs.radius );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
@@ -595,8 +663,6 @@ void GLView::viewAction( QAction * act )
 	}
 	else
 	{
-		if ( ! aViewWalk->isChecked() )
-			setPosition( 0, 0, -4.0 * scene->boundRadius() );
 	}
 	update();
 }
@@ -628,15 +694,29 @@ void GLView::checkActions()
 	scene->blending = aBlending->isChecked();
 	scene->lighting = aLighting->isChecked();
 	scene->highlight = aHighlight->isChecked();
-	scene->drawHidden = aDrawHidden->isChecked();
+	scene->showHidden = aDrawHidden->isChecked();
+	scene->showNodes = aDrawNodes->isChecked();
 	scene->animate = aAnimate->isChecked();
 	lastTime = QTime::currentTime();
+	
+	if ( aBenchmark->isChecked() )
+		timer->setInterval( 0 );
+	else
+		timer->setInterval( 1000 / FPS );
 }
 
 void GLView::advanceGears()
 {
 	QTime t = QTime::currentTime();
 	float dT = lastTime.msecsTo( t ) / 1000.0;
+	
+	if ( aBenchmark->isChecked() )
+	{
+		fpsacc += dT;
+		fpscnt++;
+		update();
+	}
+	
 	if ( dT < 0 )	dT = 0;
 	if ( dT > 1.0 )	dT = 1.0;
 	lastTime = t;
@@ -815,8 +895,8 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	if ( idx.isValid() )
 	{
 		emit clicked( idx );
-		update();
 	}
+	update();
 }
 
 void GLView::mouseMoveEvent(QMouseEvent *event)
@@ -830,7 +910,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if ( event->buttons() & Qt::MidButton)
 	{
-		float d = scene->boundRadius() / ( qMax( width(), height() ) + 1 );
+		float d = axis / ( qMax( width(), height() ) + 1 );
 		mouseMov += Vector3( dx * d, - dy * d, 0 );
 	}
 	lastPos = event->pos();
@@ -921,6 +1001,12 @@ void GLView::setPosition( float x, float y, float z )
 	update();
 }
 
+void GLView::setPosition( Vector3 v )
+{
+	Pos = v;
+	update();
+}
+
 void GLView::setRotation( float x, float y, float z )
 {
 	Rot = Vector3( x, y, z );
@@ -930,5 +1016,11 @@ void GLView::setRotation( float x, float y, float z )
 void GLView::setZoom( float z )
 {
 	Zoom = z;
+	update();
+}
+
+void GLView::setDistance( float x )
+{
+	Dist = x;
 	update();
 }

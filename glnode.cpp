@@ -278,23 +278,32 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 		}
 		properties = newProps;
 		
-		NodeList newNodes;
+		children.clear();
 		QModelIndex iChildren = nif->getIndex( nif->getIndex( iBlock, "Children" ), "Indices" );
+		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( iBlock ) );
 		if ( iChildren.isValid() )
 		{
 			for ( int c = 0; c < nif->rowCount( iChildren ); c++ )
 			{
-				QModelIndex iChild = nif->getBlock( nif->getLink( iChildren.child( c, 0 ) ) );
+				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
+				QModelIndex iChild = nif->getBlock( link );
 				Node * node = scene->getNode( nif, iChild );
-				if ( node && ( ! node->parent || node->parent == this ) )
+				if ( node && lChildren.contains( link ) )
 				{
-					newNodes.add( node );
-					node->parent = this;
+					node->makeParent( this );
 				}
 			}
 		}
-		children = newNodes;
 	}
+}
+
+void Node::makeParent( Node * newParent )
+{
+	if ( parent )
+		parent->children.del( this );
+	parent = newParent;
+	if ( parent )
+		parent->children.add( this );
 }
 
 void Node::setController( const NifModel * nif, const QModelIndex & iController )
@@ -381,6 +390,9 @@ Node * Node::findChild( int id ) const
 
 bool Node::isHidden() const
 {
+	if ( scene->showHidden )
+		return false;
+	
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 	
@@ -401,14 +413,9 @@ void Node::transformShapes()
 		node->transformShapes();
 }
 
-void Node::boundaries( Vector3 & min, Vector3 & max )
-{
-	min = max = viewTrans() * Vector3( 0.0, 0.0, 0.0 );
-}
-
 void Node::draw( NodeList * draw2nd )
 {
-	if ( isHidden() && ! scene->drawHidden )
+	if ( isHidden() )
 		return;
 	
 	glLoadName( nodeId );
@@ -452,7 +459,7 @@ void Node::draw( NodeList * draw2nd )
 
 void Node::drawShapes( NodeList * draw2nd )
 {
-	if ( isHidden() && ! scene->drawHidden )
+	if ( isHidden() )
 		return;
 	
 	foreach ( Node * node, children.list() )
@@ -461,3 +468,88 @@ void Node::drawShapes( NodeList * draw2nd )
 	}
 }
 
+BoundSphere Node::bounds() const
+{
+	if ( scene->showNodes )
+		return BoundSphere( worldTrans().translation, 1 );
+	else
+		return BoundSphere();
+}
+
+BoundSphere::BoundSphere()
+{
+	radius	= 0;
+}
+
+BoundSphere::BoundSphere( const Vector3 & c, float r )
+{
+	center	= c;
+	radius	= r;
+}
+
+BoundSphere::BoundSphere( const BoundSphere & other )
+{
+	operator=( other );
+}
+
+BoundSphere::BoundSphere( const QVector<Vector3> & verts )
+{
+	if ( verts.isEmpty() )
+	{
+		center	= Vector3();
+		radius	= 0;
+	}
+	else
+	{
+		center	= Vector3();
+		foreach ( Vector3 v, verts )
+		{
+			center += v;
+		}
+		center /= verts.count();
+		
+		radius	= 0.1;
+		foreach ( Vector3 v, verts )
+		{
+			float d = ( center - v ).length();
+			if ( d > radius )
+				radius = d;
+		}
+	}
+}
+
+BoundSphere & BoundSphere::operator=( const BoundSphere & other )
+{
+	center	= other.center;
+	radius	= other.radius;
+	return *this;
+}
+
+BoundSphere & BoundSphere::operator|=( const BoundSphere & other )
+{
+	if ( other.radius <= 0 )
+		return *this;
+	if ( radius <= 0 )
+		return operator=( other );
+	
+	if ( other.radius > radius )
+		radius = other.radius;
+	radius += ( center - other.center ).length() / 2;
+	center = ( center + other.center ) / 2;
+	return *this;
+}
+
+BoundSphere BoundSphere::operator|( const BoundSphere & other )
+{
+	BoundSphere b( *this );
+	b |= other;
+	return b;
+}
+
+BoundSphere operator*( const Transform & t, const BoundSphere & sphere )
+{
+	BoundSphere bs( sphere );
+	bs.center = t * bs.center;
+	bs.radius *= fabs( t.scale );
+	return bs;
+}

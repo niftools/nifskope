@@ -365,8 +365,6 @@ void Particles::transform()
 	{
 		upData = false;
 		
-		localCenter = nif->get<Vector3>( iData, "Center" );
-		
 		verts = nif->getArray<Vector3>( nif->getIndex( iData, "Vertices" ) );
 		colors = nif->getArray<Color4>( nif->getIndex( iData, "Vertex Colors" ) );
 		sizes = nif->getArray<float>( nif->getIndex( iData, "Sizes" ) );
@@ -384,35 +382,21 @@ void Particles::transformShapes()
 	
 	Transform vtrans = viewTrans();
 	
-	sceneCenter = vtrans * localCenter;
-	
 	transVerts.resize( verts.count() );
 	for ( int v = 0; v < verts.count(); v++ )
 		transVerts[v] = vtrans * verts[v];
 }
 	
-void Particles::boundaries( Vector3 & min, Vector3 & max )
+BoundSphere Particles::bounds() const
 {
-	if ( transVerts.count() )
-	{
-		min = max = transVerts[ 0 ];
-		
-		foreach ( Vector3 v, transVerts )
-		{
-			min.boundMin( v );
-			max.boundMax( v );
-		}
-	}
-}
-
-Vector3 Particles::center() const
-{
-	return sceneCenter;
+	BoundSphere sphere( verts );
+	sphere.radius += size;
+	return worldTrans() * sphere;
 }
 
 void Particles::drawShapes( NodeList * draw2nd )
 {
-	if ( isHidden() && ! scene->drawHidden )
+	if ( isHidden() )
 		return;
 	
 	glLoadName( nodeId );
@@ -431,25 +415,17 @@ void Particles::drawShapes( NodeList * draw2nd )
 	}
 	glProperty( aprop );
 	
+	// setup material
+	
+	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
+
 	// setup vertex colors
-	if ( colors.count() )
-	{
-		glEnable( GL_COLOR_MATERIAL );
+	
+	if ( colors.count() >= transVerts.count() )
 		glProperty( findProperty< VertexColorProperty >() );
-		glColor4f( 1.0, 1.0, 1.0, 1.0 );
-	}
 	else
-	{
 		glDisable( GL_COLOR_MATERIAL );
-		glColor4f( 1.0, 1.0, 1.0, 1.0 );
-	}
 	
-	// setup material 
-	
-	glProperty( findProperty< MaterialProperty >() );
-
-	glProperty( findProperty< SpecularProperty >() );
-
 	// setup texturing
 	
 	glProperty( findProperty< TexturingProperty >() );
