@@ -96,7 +96,7 @@ public:
 	virtual Transform localTransFrom( int parentNode ) const;
 	virtual Vector3 center() const;
 	
-	bool isHidden() const;
+	virtual bool isHidden() const;
 	bool isVisible() const { return ! isHidden(); }
 	
 	int id() const { return nodeId; }

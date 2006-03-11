@@ -55,6 +55,8 @@ public:
 	
 	void drawShapes( NodeList * draw2nd = 0 );
 	
+	bool isHidden() const;
+	
 	BoundSphere bounds() const;
 	
 protected:	

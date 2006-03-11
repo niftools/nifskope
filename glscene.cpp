@@ -48,6 +48,7 @@ Scene::Scene()
 	highlight = true;
 	showHidden = false;
 	showNodes = false;
+	onlyTextured = false;
 	currentNode = 0;
 	animate = true;
 	
@@ -158,7 +159,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 		node = new Light( this, iNode );
 		lights.add( node );
 	}
-	else if ( nif->inherits( iNode, "AParticleNode" ) )
+	else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
 	{
 		node = new Particles( this, iNode );
 	}

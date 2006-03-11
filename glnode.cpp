@@ -399,7 +399,7 @@ bool Node::isHidden() const
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 	
-	return ( name.contains( "collidee" ) || name.contains( "shadowcaster" ) || name.contains( "!LoD_cullme" ) || name.contains( "footprint" ) );
+	return ! scene->expCull.isEmpty() && name.contains( scene->expCull );
 }
 
 void Node::transform()

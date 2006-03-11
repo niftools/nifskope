@@ -106,6 +106,9 @@ public:
 	
 	QAction * aTexFolder;
 	QAction * aBgColor;
+
+	QAction * aOnlyTextured;
+	QAction * aCullExp;
 	
 	void	save( QSettings & );
 	void	restore( QSettings & );
@@ -121,6 +124,7 @@ public slots:
 
 	void selectTexFolder();
 	void selectBgColor();
+	void adjustCullExp();
 	
 signals: 
 	void clicked( const QModelIndex & );

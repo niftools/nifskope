@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLSCENE_H
 
 #include <QtOpenGL>
+#include <QRegExp>
 
 #include "nifmodel.h"
 
@@ -92,6 +93,9 @@ public:
 	
 	bool showHidden;
 	bool showNodes;
+	
+	QRegExp expCull;
+	bool onlyTextured; // if true only textured meshes will be visible
 	
 	BoundSphere bounds() const;
 	

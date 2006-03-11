@@ -255,6 +255,11 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 		Node::setController( nif, iController );
 }
 
+bool Mesh::isHidden() const
+{
+	return ( Node::isHidden() || ( ! scene->showHidden && scene->onlyTextured && ! properties.get< TexturingProperty >() ) );
+}
+
 bool compareTriangles( const QPair< int, float > & tri1, const QPair< int, float > & tri2 )
 {
 	return ( tri1.second < tri2.second );
@@ -437,9 +442,9 @@ BoundSphere Mesh::bounds() const
 	if ( upBounds )
 	{
 		upBounds = false;
-		bndSphere = worldTrans() * BoundSphere( verts );
+		bndSphere = BoundSphere( verts );
 	}
-	return bndSphere | Node::bounds();
+	return worldTrans() * bndSphere | Node::bounds();
 }
 
 void Mesh::drawShapes( NodeList * draw2nd )
@@ -457,45 +462,12 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		draw2nd->add( this );
 		return;
 	}
-	glProperty( aprop );
 	
-	// setup lighting
+	setupRenderState();
 	
-	scene->setupLights( this );
-	
-	// setup material
-	
-	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
-
-	// setup vertex colors
-	
-	if ( transColors.count() >= transVerts.count() )
-		glProperty( findProperty< VertexColorProperty >() );
-	else
+	if ( transColors.count() < transVerts.count() )
 		glDisable( GL_COLOR_MATERIAL );
-	glColor( Color4() );
-	
-	// setup texturing
-	
-	glProperty( findProperty< TexturingProperty >() );
-	
-	// setup z buffer
-	
-	glProperty( findProperty< ZBufferProperty >() );
-	
-	// setup stencil
-	
-	glProperty( findProperty< StencilProperty >() );
-	
-	// wireframe ?
-	
-	glProperty( findProperty< WireframeProperty >() );
-
-	// normalize
-	
-	if ( transNorms.count() >= transVerts.count() )
-		glEnable( GL_NORMALIZE );
-	else
+	if ( transNorms.count() < transVerts.count() )
 		glDisable( GL_NORMALIZE );
 	
 	// rigid mesh? then pass the transformation on to the gl layer

@@ -163,6 +163,13 @@ GLView::GLView()
 	connect( aDrawHidden, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawHidden );
 	
+	aOnlyTextured = new QAction( "&Hide non textured", this );
+	aOnlyTextured->setToolTip( "This options selects wether meshes without textures will be visible or not" );
+	aOnlyTextured->setCheckable( true );
+	aOnlyTextured->setChecked( false );
+	connect( aOnlyTextured, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aOnlyTextured );
+	
 	aHighlight = new QAction( "&Highlight Selected", this );
 	aHighlight->setToolTip( "highlight selected meshes and nodes" );
 	aHighlight->setCheckable( true );
@@ -196,14 +203,18 @@ GLView::GLView()
 	connect( aBenchmark, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aBenchmark );
 
-	aTexFolder = new QAction( "Set Texture &Folder", this );
+	aTexFolder = new QAction( "Set Texture &Folder...", this );
 	aTexFolder->setToolTip( "tell me where your textures are" );
 	connect( aTexFolder, SIGNAL( triggered() ), this, SLOT( selectTexFolder() ) );
 	addAction( aTexFolder );
 	
-	aBgColor = new QAction( "Set Background Color", this );
+	aBgColor = new QAction( "Set Background Color...", this );
 	connect( aBgColor, SIGNAL( triggered() ), this, SLOT( selectBgColor() ) );
 	addAction( aBgColor );
+	
+	aCullExp = new QAction( "Cull Nodes by Name...", this );
+	connect( aCullExp, SIGNAL( triggered() ), this, SLOT( adjustCullExp() ) );
+	addAction( aCullExp );
 }
 
 GLView::~GLView()
@@ -606,6 +617,15 @@ QString GLView::textureFolder() const
 	return GLTex::texfolders.join( ";" );
 }
 
+void GLView::adjustCullExp()
+{
+	bool ok;
+	QString exp = QInputDialog::getText( this, "Cull Nodes by Name", "Enter a regular expression: All nodes which names are matching this expression will be hidden unless show hidden is enabled", QLineEdit::Normal, scene->expCull.pattern(), &ok );
+	if ( ok )
+		scene->expCull = QRegExp( exp );
+	update();
+}
+
 void GLView::viewAction( QAction * act )
 {
 	BoundSphere bs = scene->bounds();
@@ -686,23 +706,6 @@ void GLView::uncheckViewAction()
 	QAction * act = checkedViewAction();
 	if ( act && act != aViewWalk )
 		act->setChecked( false );
-}
-
-void GLView::checkActions()
-{
-	scene->texturing = aTexturing->isChecked();
-	scene->blending = aBlending->isChecked();
-	scene->lighting = aLighting->isChecked();
-	scene->highlight = aHighlight->isChecked();
-	scene->showHidden = aDrawHidden->isChecked();
-	scene->showNodes = aDrawNodes->isChecked();
-	scene->animate = aAnimate->isChecked();
-	lastTime = QTime::currentTime();
-	
-	if ( aBenchmark->isChecked() )
-		timer->setInterval( 0 );
-	else
-		timer->setInterval( 1000 / FPS );
 }
 
 void GLView::advanceGears()
@@ -929,6 +932,25 @@ void GLView::wheelEvent( QWheelEvent * event )
 	zoom( event->delta() > 0 ? 0.9 : 1.1 );
 }
 
+void GLView::checkActions()
+{
+	scene->texturing = aTexturing->isChecked();
+	scene->blending = aBlending->isChecked();
+	scene->lighting = aLighting->isChecked();
+	scene->highlight = aHighlight->isChecked();
+	scene->showHidden = aDrawHidden->isChecked();
+	scene->showNodes = aDrawNodes->isChecked();
+	scene->animate = aAnimate->isChecked();
+	scene->onlyTextured = aOnlyTextured->isChecked();
+	
+	lastTime = QTime::currentTime();
+	
+	if ( aBenchmark->isChecked() )
+		timer->setInterval( 0 );
+	else
+		timer->setInterval( 1000 / FPS );
+}
+
 void GLView::save( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
@@ -944,6 +966,8 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
 	settings.setValue( "bg color", bgcolor );
+	settings.setValue( "cull nodes by name", scene->expCull );
+	settings.setValue( "draw only textured meshes", scene->onlyTextured );
 	
 	settings.setValue( "perspective", aViewPerspective->isChecked() );
 	//settings.endGroup();
@@ -964,6 +988,10 @@ void GLView::restore( QSettings & settings )
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
 	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
+	scene->expCull = settings.value( "cull nodes by name", QRegExp(
+		"^collidee|^shadowcaster|^\\!LoD_cullme|^footprint"
+	) ).value<QRegExp>();
+	aOnlyTextured->setChecked( settings.value( "draw only textured meshes", false ).toBool() );
 	
 	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
 	
