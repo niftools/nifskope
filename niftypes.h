@@ -607,7 +607,7 @@ public:
 		tFlags = 3,
 		tInt = 4,
 		tLink = 5,
-		tParent = 6,
+		tUpLink = 6,
 		tFloat = 7,
 		tString = 8,
 		tFilePath = 9,
@@ -645,14 +645,14 @@ public:
 	Type type() const { return typ; }
 	
 	static bool isValid( Type t ) { return t != tNone; }
-	static bool isLink( Type t ) { return t == tLink || t == tParent; }
+	static bool isLink( Type t ) { return t == tLink || t == tUpLink; }
 	
 	bool isValid() const { return typ != tNone; }
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
 	bool isCount() const { return typ >= tBool && typ <= tInt; }
 	bool isFlags() const { return typ == tFlags; }
 	bool isFloat() const { return typ == tFloat; }
-	bool isLink() const { return typ == tLink || typ == tParent; }
+	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isQuat() const { return typ == tQuat; }
 	bool isString() const { return typ == tString || typ == tHeaderString || typ == tFilePath; }

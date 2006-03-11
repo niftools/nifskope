@@ -202,7 +202,7 @@ void NifValue::initialize()
 	typeMap.insert( "int", NifValue::tInt );
 	typeMap.insert( "flags", NifValue::tFlags );
 	typeMap.insert( "link", NifValue::tLink );
-	typeMap.insert( "parent", NifValue::tParent );
+	typeMap.insert( "uplink", NifValue::tUpLink );
 	typeMap.insert( "float", NifValue::tFloat );
 	typeMap.insert( "string", NifValue::tString );
 	typeMap.insert( "filepath", NifValue::tFilePath );
@@ -310,7 +310,7 @@ void NifValue::changeType( Type t )
 	switch ( ( typ = t ) )
 	{
 		case tLink:
-		case tParent:
+		case tUpLink:
 			val.i32 = -1;
 			return;
 		case tVector3:
@@ -443,7 +443,7 @@ bool NifValue::fromString( const QString & s )
 			val.u16 = s.toUInt( &ok, 2 );
 			return ok;
 		case tLink:
-		case tParent:
+		case tUpLink:
 			val.i32 = s.toInt( &ok );
 			return ok;
 		case tFloat:
@@ -488,7 +488,7 @@ QString NifValue::toString() const
 		case tFlags:
 			return QString::number( val.u16, 2 );
 		case tLink:
-		case tParent:
+		case tUpLink:
 			return QString::number( val.i32 );
 		case tFloat:
 			return QString::number( val.f32, 'f', 4 );
@@ -581,7 +581,7 @@ bool NifStream::read( NifValue & val )
 		case NifValue::tFileVersion:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
-		case NifValue::tParent:
+		case NifValue::tUpLink:
 			return device->read( (char *) &val.val.i32, 4 ) == 4;
 		case NifValue::tFloat:
 			return device->read( (char *) &val.val.f32, 4 ) == 4;
@@ -676,7 +676,7 @@ bool NifStream::write( const NifValue & val )
 		case NifValue::tFileVersion:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
-		case NifValue::tParent:
+		case NifValue::tUpLink:
 			return device->write( (char *) &val.val.i32, 4 ) == 4;
 		case NifValue::tFloat:
 			return device->write( (char *) &val.val.f32, 4 ) == 4;

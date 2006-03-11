@@ -275,7 +275,7 @@ ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNo
 bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return ( t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
-		|| t == NifValue::tLink || t == NifValue::tParent || t == NifValue::tFloat || t == NifValue::tString
+		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tString
 		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat
 		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString );
 }
@@ -315,7 +315,7 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = ie;
 		}	break;
 		case NifValue::tLink:
-		case NifValue::tParent:
+		case NifValue::tUpLink:
 		{	
 			QSpinBox * le = new QSpinBox( this );
 			le->setFrame(false);
@@ -391,7 +391,7 @@ NifValue ValueEdit::getValue() const
 			val.setCount( qobject_cast<QSpinBox*>( edit )->value() );
 			break;
 		case NifValue::tLink:
-		case NifValue::tParent:
+		case NifValue::tUpLink:
 			val.setLink( qobject_cast<QSpinBox*>( edit )->value() );
 			break;
 		case NifValue::tFloat:
