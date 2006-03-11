@@ -335,12 +335,13 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 				QModelIndex subkeys = nif->getIndex( nif->getIndex( array, "Keys Sub" ).child( 0, 0 ), "Sub Keys" );
 				if ( subkeys.isValid() )
 				{
-					float x = 0, y = 0, z = 0;
+					float r[3];
 					for ( int s = 0; s < 3 && s < nif->rowCount( subkeys ); s++ )
 					{
-						interpolate( x, subkeys.child( s, 0 ), time, last );
+						r[s] = 0;
+						interpolate( r[s], subkeys.child( s, 0 ), time, last );
 					}
-					value.fromEuler( x, y, z );
+					value.fromEuler( r[0], r[1], r[2] );
 					return true;
 				}
 			}	break;
