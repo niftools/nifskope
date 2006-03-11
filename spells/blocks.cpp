@@ -20,11 +20,28 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
-		ids.sort();
+		
+		QMap< QChar, QMenu *> map;
+		QMenu * rest = new QMenu( "*" );
 		foreach ( QString id, ids )
-			menu.addAction( id );
+		{
+			if ( id.startsWith( "Ni" ) )
+			{
+				QChar x = id[2];
+				if ( ! map.contains( x.toUpper() ) )
+					map.insert( x.toUpper(), new QMenu( x ) );
+				map[ x ]->addAction( id );
+			}
+			else
+				rest->addAction( id );
+		}
+
+		QMenu menu;
+		foreach ( QMenu * m, map )
+			menu.addMenu( m );
+		menu.addMenu( rest );
+		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
 			return nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
@@ -85,6 +102,41 @@ public:
 };
 
 REGISTER_SPELL( spAttachProperty )
+
+class spAttachNode : public Spell
+{
+public:
+	QString name() const { return "Attach Node"; }
+	QString page() const { return "Node"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "ANode" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QMenu menu;
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		foreach ( QString id, ids )
+			if ( nif->inherits( id, "ANode" ) && ! nif->inherits( id, "ALight" ) )
+				menu.addAction( id );
+		
+		QAction * act = menu.exec( QCursor::pos() );
+		if ( act )
+		{
+			QPersistentModelIndex iParent = index;
+			QModelIndex iNode = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+			addLink( nif, iParent, "Children", nif->getBlockNumber( iNode ) );
+			return iNode;
+		}
+		else
+			return index;
+	}
+};
+
+REGISTER_SPELL( spAttachNode )
 
 class spAttachLight : public Spell
 {
@@ -344,10 +396,6 @@ public:
 					qWarning() << "failed to save block" << block << nif->itemName( nif->getBlock( block ) );
 					return index;
 				}
-				else
-				{
-					qWarning() << "copy block" << block << nif->itemName( nif->getBlock( block ) );
-				}
 			}
 			QMimeData * mime = new QMimeData;
 			mime->setData( QString( "nifskope/nibranch/%1" ).arg( nif->getVersion() ), data );
@@ -361,10 +409,6 @@ public:
 		if ( ! blocks.contains( block ) ) blocks.append( block );
 		foreach ( qint32 link, nif->getChildLinks( block ) )
 			populateBlocks( blocks, nif, link );
-	}
-	
-	void populateParentMap( QMap<qint32,QString> & map, QList<qint32> blocks, NifModel * nif, qint32 block )
-	{
 	}
 };
 
