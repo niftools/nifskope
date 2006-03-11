@@ -91,6 +91,17 @@ public:
 		Vector2 w( *this );
 		return ( w *= s );
 	}
+	Vector2 & operator/=( float s )
+	{
+		xy[0] /= s;
+		xy[1] /= s;
+		return *this;
+	}
+	Vector2 operator/( float s )
+	{
+		Vector2 w( *this );
+		return ( w /= s );
+	}
 	
 	float & operator[]( unsigned int i )
 	{
@@ -148,6 +159,13 @@ public:
 		xyz[ 2 ] *= s;
 		return *this;
 	}
+	Vector3 & operator/=( float s )
+	{
+		xyz[ 0 ] /= s;
+		xyz[ 1 ] /= s;
+		xyz[ 2 ] /= s;
+		return *this;
+	}
 	Vector3 operator+( Vector3 v ) const
 	{
 		Vector3 w( *this );
@@ -162,6 +180,11 @@ public:
 	{
 		Vector3 v( *this );
 		return v *= s;
+	}
+	Vector3 operator/( float s ) const
+	{
+		Vector3 v( *this );
+		return v /= s;
 	}
 	
 	float & operator[]( unsigned int i )
@@ -386,6 +409,13 @@ protected:
 	friend class NifStream;
 };
 
+inline float clamp01( float a )
+{
+	if ( a < 0 )	return 0;
+	if ( a > 1 )	return 1;
+	return a;
+}
+
 class Color3
 {
 public:
@@ -414,6 +444,32 @@ public:
 		return c;
 	}
 	
+	Color3 & operator+=( const Color3 & o )
+	{
+		for ( int x = 0; x < 3; x++ )
+			rgb[x] += o.rgb[x];
+		return *this;
+	}
+	
+	Color3 & operator-=( const Color3 & o )
+	{
+		for ( int x = 0; x < 3; x++ )
+			rgb[x] -= o.rgb[x];
+		return *this;
+	}
+	
+	Color3 operator+( const Color3 & o ) const
+	{
+		Color3 c( *this );
+		return ( c += o );
+	}
+	
+	Color3 operator-( const Color3 & o ) const
+	{
+		Color3 c( *this );
+		return ( c -= o );
+	}
+	
 	float red() const { return rgb[0]; }
 	float green() const { return rgb[1]; }
 	float blue() const { return rgb[2]; }
@@ -426,7 +482,7 @@ public:
 	
 	QColor toQColor() const
 	{
-		return QColor::fromRgbF( rgb[0], rgb[1], rgb[2] );
+		return QColor::fromRgbF( clamp01( rgb[0] ), clamp01( rgb[1] ), clamp01( rgb[2] ) );
 	}
 	
 	void fromQColor( const QColor & c )
@@ -514,7 +570,7 @@ public:
 
 	QColor toQColor() const
 	{
-		return QColor::fromRgbF( rgba[0], rgba[1], rgba[2], rgba[3] );
+		return QColor::fromRgbF( clamp01( rgba[0] ), clamp01( rgba[1] ), clamp01( rgba[2] ), clamp01( rgba[3] ) );
 	}
 	
 	void fromQColor( const QColor & c )

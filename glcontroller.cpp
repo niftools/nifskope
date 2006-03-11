@@ -299,6 +299,11 @@ template <> bool Controller::interpolate( Color4 & value, const QModelIndex & ar
 	return ::interpolate( value, array, time, last );
 }
 
+template <> bool Controller::interpolate( Color3 & value, const QModelIndex & array, float time, int & last )
+{
+	return ::interpolate( value, array, time, last );
+}
+
 template <> bool Controller::interpolate( bool & value, const QModelIndex & array, float time, int & last )
 {
 	int next;
@@ -316,32 +321,49 @@ template <> bool Controller::interpolate( bool & value, const QModelIndex & arra
 	return false;
 }
 
-template <> bool Controller::interpolate( Quat & value, const QModelIndex & array, float time, int & last )
+template <> bool Controller::interpolate( Matrix & value, const QModelIndex & array, float time, int & last )
 {
 	int next;
 	float x;
 	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 	if ( nif && array.isValid() )
 	{
-		QModelIndex frames = nif->getIndex( array, "Keys" );
-		if ( timeIndex( time, nif, frames, last, next, x ) )
+		switch ( nif->get<int>( array, "Key Type" ) )
 		{
-			Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );
-			Quat v2 = nif->get<Quat>( frames.child( next, 0 ), "Value" );
-			
-			float a = acos( Quat::dotproduct( v1, v2 ) );
-			
-			if ( fabs( a ) >= 0.00005 )
+			case 4:
 			{
-				float i = 1.0 / sin( a );
-				value = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
-			}
-			else
-				value = v1;
-			
-			return true;
+				QModelIndex subkeys = nif->getIndex( nif->getIndex( array, "Keys Sub" ).child( 0, 0 ), "Sub Keys" );
+				if ( subkeys.isValid() )
+				{
+					float x = 0, y = 0, z = 0;
+					for ( int s = 0; s < 3 && s < nif->rowCount( subkeys ); s++ )
+					{
+						interpolate( x, subkeys.child( s, 0 ), time, last );
+					}
+					value.fromEuler( x, y, z );
+					return true;
+				}
+			}	break;
+			default:
+			{
+				QModelIndex frames = nif->getIndex( array, "Keys" );
+				if ( timeIndex( time, nif, frames, last, next, x ) )
+				{
+					Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );
+					Quat v2 = nif->get<Quat>( frames.child( next, 0 ), "Value" );
+					
+					float a = acos( Quat::dotproduct( v1, v2 ) );
+					
+					if ( fabs( a ) >= 0.00005 )
+					{
+						float i = 1.0 / sin( a );
+						v1 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
+					}
+					value.fromQuat( v1 );
+					return true;
+				}
+			}	break;
 		}
 	}
-	
 	return false;
 }

@@ -34,10 +34,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glcontroller.h"
 #include "glscene.h"
 
-class KeyframeController : public Controller
+class TransformController : public Controller
 {
 public:
-	KeyframeController( Node * node, const QModelIndex & index )
+	TransformController( Node * node, const QModelIndex & index )
 		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 ) {}
 	
 	void update( float time )
@@ -47,10 +47,7 @@ public:
 		
 		time = ctrlTime( time );
 		
-		Quat q;
-		if ( interpolate( q, iRotate, time, lRotate ) )
-			target->local.rotation.fromQuat( q );
-		
+		interpolate( target->local.rotation, iRotate, time, lRotate );
 		interpolate( target->local.translation, iTrans, time, lTrans );
 		interpolate( target->local.scale, iScale, time, lScale );
 	}
@@ -59,9 +56,10 @@ public:
 	{
 		Controller::update( nif, index );
 		
-		if ( ( iBlock.isValid() && iBlock == index ) || ( iData.isValid() && iData == index ) )
+		if ( ( iBlock.isValid() && iBlock == index ) || ( iInterpolator.isValid() && iInterpolator == index ) || ( iData.isValid() && iData == index ) )
 		{
-			iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiKeyframeData" );
+			iInterpolator = nif->getBlock( nif->getLink( iBlock, "Interpolator" ), "NiTransformInterpolator" );
+			iData = nif->getBlock( nif->getLink( iInterpolator.isValid() ? iInterpolator : iBlock, "Data" ) );
 			
 			iTrans = nif->getIndex( iData, "Translations" );
 			iRotate = nif->getIndex( iData, "Rotations" );
@@ -70,6 +68,7 @@ public:
 	}
 	
 protected:
+	QPersistentModelIndex iInterpolator;
 	QPersistentModelIndex iData;
 	
 	QPointer<Node> target;
@@ -286,11 +285,14 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 			for ( int c = 0; c < nif->rowCount( iChildren ); c++ )
 			{
 				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
-				QModelIndex iChild = nif->getBlock( link );
-				Node * node = scene->getNode( nif, iChild );
-				if ( node && lChildren.contains( link ) )
+				if ( lChildren.contains( link ) )
 				{
-					node->makeParent( this );
+					QModelIndex iChild = nif->getBlock( link );
+					Node * node = scene->getNode( nif, iChild );
+					if ( node )
+					{
+						node->makeParent( this );
+					}
 				}
 			}
 		}
@@ -308,13 +310,14 @@ void Node::makeParent( Node * newParent )
 
 void Node::setController( const NifModel * nif, const QModelIndex & iController )
 {
-	if ( nif->itemName( iController ) == "NiKeyframeController" )
+	QString cname = nif->itemName( iController );
+	if ( cname == "NiKeyframeController" || cname == "NiTransformController" )
 	{
-		Controller * ctrl = new KeyframeController( this, iController );
+		Controller * ctrl = new TransformController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
-	else if ( nif->itemName( iController ) == "NiVisController" )
+	else if ( cname == "NiVisController" )
 	{
 		Controller * ctrl = new VisibilityController( this, iController );
 		ctrl->update( nif, iController );
@@ -468,6 +471,46 @@ void Node::drawShapes( NodeList * draw2nd )
 	}
 }
 
+void Node::setupRenderState()
+{
+	// setup lighting
+	
+	scene->setupLights( this );
+	
+	// setup blending
+	
+	glProperty( findProperty< AlphaProperty >() );
+	
+	// setup material
+	
+	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
+
+	// setup vertex colors
+	
+	glProperty( findProperty< VertexColorProperty >() );
+	
+	// setup texturing
+	
+	glProperty( findProperty< TexturingProperty >() );
+	
+	// setup z buffer
+	
+	glProperty( findProperty< ZBufferProperty >() );
+	
+	// setup stencil
+	
+	glProperty( findProperty< StencilProperty >() );
+	
+	// wireframe ?
+	
+	glProperty( findProperty< WireframeProperty >() );
+
+	// normalize
+	
+	glEnable( GL_NORMALIZE );
+}
+
+
 BoundSphere Node::bounds() const
 {
 	if ( scene->showNodes )
@@ -532,9 +575,16 @@ BoundSphere & BoundSphere::operator|=( const BoundSphere & other )
 	if ( radius <= 0 )
 		return operator=( other );
 	
+	float d = ( center - other.center ).length();
+	
+	if ( radius > d + other.radius )
+		return * this;
+	if ( other.radius > d + radius )
+		return operator=( other );
+	
 	if ( other.radius > radius )
 		radius = other.radius;
-	radius += ( center - other.center ).length() / 2;
+	radius += d / 2;
 	center = ( center + other.center ) / 2;
 	return *this;
 }

@@ -112,6 +112,8 @@ public:
 	
 	template <typename T> T * findProperty() const;
 	
+	void setupRenderState();
+	
 protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & controller );
 
@@ -128,7 +130,7 @@ protected:
 
 	NodeFlags flags;
 	
-	friend class KeyframeController;
+	friend class TransformController;
 	friend class VisibilityController;
 	friend class NodeList;
 	friend class LODNode;
