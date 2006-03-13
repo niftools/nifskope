@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFSKOPE_H
 
 #include <QMainWindow>
+#include <QProgressDialog>
 
 
 class NifModel;
@@ -52,6 +53,8 @@ class QSettings;
 class QSlider;
 class QSpinBox;
 class QTextEdit;
+
+#include "message.h"
 
 class NifSkope : public QMainWindow
 {
@@ -74,6 +77,9 @@ public slots:
 	void loadBrowse();
 	void saveBrowse();
 	
+	void loadXML();
+	void reload();
+	
 	void sltWindow();
 	
 	void about();
@@ -88,6 +94,8 @@ protected slots:
 	
 	void setFrame( int, int, int );
 	void setMaxDistance( int );
+	
+	void dispatchMessage( const Message & msg );
 	
 private:
 	void initActions();
@@ -112,6 +120,8 @@ private:
 	
 	QAction * aLoad;
 	QAction * aSave;
+	QAction * aLoadXML;
+	QAction * aReload;
 	QAction * aWindow;
 	QAction * aQuit;
 
@@ -134,5 +144,14 @@ private:
 	QSpinBox * spnMaxDistance;
 };
 
+class ProgDlg : public QProgressDialog
+{
+	Q_OBJECT
+public:
+	ProgDlg() {}
+
+public slots:
+	void sltProgress( int, int );
+};
 
 #endif

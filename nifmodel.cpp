@@ -35,16 +35,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spellbook.h"
 
-#include <QApplication>
 #include <QByteArray>
 #include <QColor>
-#include <QDebug>
 #include <QFile>
-#include <QProgressDialog>
 #include <QTime>
 
 #include <qendian.h>
-
 
 NifModel::NifModel( QObject * parent ) : QAbstractItemModel( parent )
 {
@@ -181,7 +177,7 @@ int NifModel::getArraySize( NifItem * array ) const
 		NifItem * dim1 = getItem( parent, array->arr1() );
 		if ( ! dim1 )
 		{
-			qCritical() << "failed to get array size for array" << array->name();
+			emit sigMessage( Message() << "failed to get array size for array" << array->name() );
 			return 0;
 		}
 		
@@ -193,12 +189,12 @@ int NifModel::getArraySize( NifItem * array ) const
 			if ( item )
 				d1 = item->value().toCount();
 			else
-				qCritical() << "failed to get array size for array " << array->name();
+				emit sigMessage( Message() << "failed to get array size for array " << array->name() );
 		}
 	}
 	if ( d1 < 0 )
 	{
-		qWarning() << "invalid array size for array" << array->name();
+		emit sigMessage( Message() << "invalid array size for array" << array->name() );
 		d1 = 0;
 	}
 	return d1;
@@ -229,7 +225,7 @@ bool NifModel::updateArray( NifItem * array, bool fast )
 	int d1 = getArraySize( array );
 	if ( d1 > 1024 * 1024 * 8 )
 	{
-		qWarning() << "array" << array->name() << "much too large";
+		emit sigMessage( Message() << "array" << array->name() << "much too large" );
 		return false;
 	}
 
@@ -315,7 +311,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 	}
 	else
 	{
-		qCritical() << "unknown block " << identifier;
+		emit sigMessage( Message() << "unknown block " << identifier );
 		return QModelIndex();
 	}
 }
@@ -433,7 +429,7 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 	}
 	else
 	{
-		qCritical() << "unknown ancestor " << identifier;
+		emit sigMessage( Message() << "unknown ancestor " << identifier );
 	}
 }
 
@@ -665,8 +661,6 @@ quint32 NifModel::version2number( const QString & s )
 	{
 		bool ok;
 		quint32 i = s.toUInt( &ok );
-		if ( ! ok )
-			qDebug() << "version2number( " << s << " ) : conversion failed";
 		return ( i == 0xffffffff ? 0 : i );
 	}
 	quint32 v = 0;
@@ -826,10 +820,26 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				{
 					switch ( item->value().type() )
 					{
+						case NifValue::tWord:
+							{
+								quint16 s = item->value().toCount();
+								return QString( "dec: %1<br>hex: 0x%2" ).arg( s ).arg( s, 4, 16, QChar( '0' ) );
+							}
+						case NifValue::tBool:
+						case NifValue::tInt:
+							{
+								quint32 i = item->value().toCount();
+								return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
+							}
 						case NifValue::tFloat:
 							{
 								float f = item->value().toFloat();
 								return QString( "float: %1<br>data: 0x%2" ).arg( f ).arg( *( (unsigned int*) &f ), 8, 16, QChar( '0' ) );
+							}
+						case NifValue::tFlags:
+							{
+								quint16 f = item->value().toCount();
+								return QString( "dec: %1<br>hex: 0x%2<br>bin: 0b%3" ).arg( f ).arg( f, 4, 16, QChar( '0' ) ).arg( f, 16, 2, QChar( '0' ) );
 							}
 						case NifValue::tVector3:
 							return item->value().get<Vector3>().toHtml();
@@ -837,6 +847,16 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return item->value().get<Matrix>().toHtml();
 						case NifValue::tQuat:
 							return item->value().get<Quat>().toHtml();
+						case NifValue::tColor3:
+							{
+								Color4 c = item->value().get<Color3>();
+								return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
+							}
+						case NifValue::tColor4:
+							{
+								Color4 c = item->value().get<Color4>();
+								return QString( "R %1<br>G %2<br>B %3<br>A %4" ).arg( c[0] ).arg( c[1] ).arg( c[2] ).arg( c[3] );
+							}
 						default:
 							break;
 					}
@@ -1021,7 +1041,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	
 	// verify magic id
-	qDebug() << version_string;
+	emit sigMessage( DbgMsg() << version_string );
 	if ( ! ( version_string.startsWith( "NetImmerse File Format" ) || version_string.startsWith( "Gamebryo" ) ) )
 	{
 		qCritical( "this is not a NIF" );
@@ -1036,7 +1056,7 @@ bool NifModel::load( QIODevice & device )
 	// verify version number
 	if ( ! supportedVersions.contains( version ) )
 	{
-		qCritical() << "version" << version2string( version ) << "is not supported yet";
+		emit sigMessage( Message() << "version" << version2string( version ) << "is not supported yet" );
 		clear();
 		return false;
 	}
@@ -1049,37 +1069,23 @@ bool NifModel::load( QIODevice & device )
 	NifItem * header = getHeaderItem();
 	if ( !header || !load( header, stream, true ) )
 	{
-		qCritical() << "failed to load file header (version" << version << ")";
+		emit sigMessage( Message() << "failed to load file header (version" << version << ")" );
 		return false;
 	}
 	
 	int numblocks = get<int>( header, "Num Blocks" );
 	qDebug( "numblocks %i", numblocks );
 	
-	qApp->processEvents();
-
-	QProgressDialog prog;
-	prog.setLabelText( "loading nif..." );
-	prog.setRange( 0, numblocks );
-	prog.setValue( 0 );
-	prog.setMinimumDuration( 2100 );
-	
-	//QTime t = QTime::currentTime();
+	emit sigProgress( 0, numblocks );
+	QTime t = QTime::currentTime();
 
 	// read in the NiBlocks
 	try
 	{
 		for ( int c = 0; c < numblocks; c++ )
 		{
-			prog.setValue( c + 1 );
-			qApp->processEvents();
+			emit sigProgress( c + 1, numblocks );
 			
-			if ( prog.wasCanceled() )
-			{
-				clear();
-				return false;
-			}
-
 			if ( device.atEnd() )
 				throw QString( "unexpected EOF during load" );
 			
@@ -1103,10 +1109,10 @@ bool NifModel::load( QIODevice & device )
 			
 			if ( isNiBlock( blktyp ) )
 			{
-				qDebug() << "loading block" << c << ":" << blktyp;
+				emit sigMessage( DbgMsg() << "loading block" << c << ":" << blktyp );
 				insertNiBlock( blktyp, -1, true );
 				if ( ! load( root->child( c+1 ), stream, true ) ) 
-					throw QString( "failed to load block number %1 (%2)" ).arg( c ).arg( blktyp );
+					throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
 			}
 			else
 				throw QString( "encountered unknown block (%1)" ).arg( blktyp );
@@ -1116,11 +1122,11 @@ bool NifModel::load( QIODevice & device )
 	}
 	catch ( QString err )
 	{
-		qCritical() << (const char *) err.toAscii();
+		emit sigMessage( Message() << (const char *) err.toAscii() );
 		reset();
 		return false;
 	}
-	//qWarning() << t.msecsTo( QTime::currentTime() );
+	//emit sigMessage( Message() << t.msecsTo( QTime::currentTime() ) );
 	reset(); // notify model views that a significant change to the data structure has occurded
 	return true;
 }
@@ -1128,23 +1134,14 @@ bool NifModel::load( QIODevice & device )
 bool NifModel::save( QIODevice & device ) const
 {
 	NifStream stream( version, &device );
+
+	emit sigProgress( 0, rowCount( QModelIndex() ) );
 	
-	qApp->processEvents();
-
-	QProgressDialog prog;
-	prog.setLabelText( "saving nif..." );
-	prog.setRange( 0, rowCount( QModelIndex() ) );
-	prog.setValue( 0 );
-	prog.setMinimumDuration( 2100 );
-
 	for ( int c = 0; c < rowCount( QModelIndex() ); c++ )
 	{
-		prog.setValue( c + 1 );
-		qApp->processEvents();
-		if ( prog.wasCanceled() )
-			return false;
+		emit sigProgress( c+1, rowCount( QModelIndex() ) );
 		
-		qDebug() << "saving block" << c << ":" << itemName( index( c, 0 ) );
+		emit sigMessage( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
 		if ( itemType( index( c, 0 ) ) == "NiBlock" )
 		{
 			if ( version > 0x0a000000 )
@@ -1165,7 +1162,7 @@ bool NifModel::save( QIODevice & device ) const
 		}
 		if ( !save( root->child( c ), stream ) )
 		{
-			qCritical() << "failed to write block" << itemName( index( c, 0 ) ) << "(" << c-1 << ")";
+			emit sigMessage( Message() << "failed to write block" << itemName( index( c, 0 ) ) << "(" << c-1 << ")" );
 			return false;
 		}
 	}
@@ -1216,8 +1213,6 @@ bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
 {
 	if ( ! parent ) return false;
 	
-	//qDebug() << "loading branch" << parent->name();
-	
 	for ( int row = 0; row < parent->childCount(); row++ )
 	{
 		NifItem * child = parent->child( row );
@@ -1241,7 +1236,6 @@ bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
 			{
 				if ( ! stream.read( child->value() ) )
 					return false;
-				//qDebug() << "  loaded item" << child->name() << child->value().type() << child->value().toQString();
 			}
 		}
 	}
@@ -1251,8 +1245,6 @@ bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
 bool NifModel::save( NifItem * parent, NifStream & stream ) const
 {
 	if ( ! parent ) return false;
-	
-	//qDebug() << "saving branch" << parent->name();
 	
 	for ( int row = 0; row < parent->childCount(); row++ )
 	{
@@ -1264,15 +1256,15 @@ bool NifModel::save( NifItem * parent, NifStream & stream ) const
 			if ( itemIsLink( child, &isChildLink ) )
 			{
 				if ( ! isChildLink && child->value().toLink() < 0 )
-					qWarning() << "block" << getBlockNumber( parent ) << child->name() << "unassigned parent link";
+					emit sigMessage( Message() << "block" << getBlockNumber( parent ) << child->name() << "unassigned up link" );
 				else if ( child->value().toLink() >= getBlockCount() )
-					qWarning() << "block" << getBlockNumber( parent ) << child->name() << "invalid link";
+					emit sigMessage( Message() << "block" << getBlockNumber( parent ) << child->name() << "invalid link" );
 			}
 			
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					qWarning() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch";
+					emit sigMessage( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
 				
 				if ( !save( child, stream ) )
 					return false;
@@ -1378,7 +1370,7 @@ void NifModel::checkLinks( int block, QStack<int> & parents )
 	{
 		if ( parents.contains( child ) )
 		{
-			qWarning() << "infinite recursive link construct detected" << block << "->" << child;
+			emit sigMessage( Message() << "infinite recursive link construct detected" << block << "->" << child );
 			childLinks[block].removeAll( child );
 		}
 		else
@@ -1428,7 +1420,10 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32,qint32> & map )
 			if ( map.contains( l ) )
 				parent->value().setLink( map[ l ] );
 			else
-				qWarning() << "mapLinks: failed to map link" << l;
+			{
+				parent->value().setLink( -1 );
+				emit sigMessage( Message() << "mapLinks: failed to map link" << l );
+			}
 		}
 	}
 }
@@ -1436,8 +1431,6 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32,qint32> & map )
 NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 {
 	if ( ! item || item == root )		return 0;
-	
-	//qDebug() << "getItem(" << item->name() << ", " << name << ")";
 	
 	if ( name.startsWith( "(" ) && name.endsWith( ")" ) )
 		return getItem( item->parent(), name.mid( 1, name.length() - 2 ).trimmed() );
@@ -1450,7 +1443,6 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 			return child;
 	}
 	
-	//qDebug() << "item" << name << "not found";
 	return 0;
 }
 
@@ -1559,8 +1551,6 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 	if ( cond.isEmpty() )
 		return true;
 	
-	//qDebug( "evalCondition( '%s' )", str( cond ) );
-	
 	QString left, right;
 	
 	static const char * const exp[] = { "!=", "==", ">=", "<=", "<", ">" };
@@ -1580,8 +1570,8 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 	
 	if ( c >= num_exp )
 	{
-		qCritical() << "could not eval condition" << cond;
-		return false;
+		left = cond.trimmed();
+		c = 0;
 	}
 
 	int l = 0;
@@ -1598,10 +1588,7 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 			if ( i )
 				l = i->value().toCount();
 			else
-			{
-				//qWarning() << "could not eval left expression" << cond;
 				return false;
-			}
 		}
 	}
 	
@@ -1614,10 +1601,7 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 			if ( i )
 				r = i->value().toCount();
 			else
-			{
-				//qWarning() << "could not eval right expresion" << cond;
 				return false;
-			}
 		}
 	}
 	
@@ -1629,9 +1613,7 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 		case 3: return l <= r;
 		case 4: return l > r;
 		case 5: return l < r;
-		default:
-			qCritical() << "could not eval condition" << cond;
-			return false;
+		default: return false;
 	}
 }
 

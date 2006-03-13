@@ -128,8 +128,9 @@ public:
 	}
 	bool doShape( NifModel * nif, const QModelIndex & index, const Transform & tparent, const TransMap & world, const TransMap & bones )
 	{
+		QModelIndex iShapeData = nif->getBlock( nif->getLink( index, "Data" ) );
 		QModelIndex iSkinInstance = nif->getBlock( nif->getLink( index, "Skin Instance" ), "NiSkinInstance" );
-		if ( ! iSkinInstance.isValid() )
+		if ( ! iSkinInstance.isValid() || ! iShapeData.isValid() )
 			return false;
 		QStringList names;
 		QModelIndex iNames = nif->getIndex( iSkinInstance, "Bones" );
@@ -166,6 +167,9 @@ public:
 			
 			t.writeBack( nif, iBone );
 		}
+		
+		Vector3 center = nif->get<Vector3>( iShapeData, "Center" );
+		nif->set<Vector3>( iShapeData, "Center", tparent * center );
 		return true;
 	}
 };

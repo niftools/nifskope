@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFITEM_H
 
 #include <QSharedData>
+#include <QVector>
 
 class NifSharedData : public QSharedData
 {

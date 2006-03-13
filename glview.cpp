@@ -272,13 +272,13 @@ void GLView::glProjection( int x, int y )
 	{
 		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * 1.0;
 		GLdouble w2 = h2 * aspect;
-		glFrustum( - w2, + w2, - h2, + h2, nr > 1.0 ? 1.0 : 1.0, fr > 2.0 ? fr : 2.0 );
+		glFrustum( - w2, + w2, - h2, + h2, 1.0, fr > 2.0 ? fr : 2.0 );
 	}
 	else
 	{
 		GLdouble h2 = axis / Zoom * 2;
 		GLdouble w2 = h2 * aspect;
-		glOrtho( - w2, + w2, - h2, + h2, nr > 0.0 ? nr : 0.0, fr > 1.0 ? fr : 1.0 );
+		glOrtho( - w2, + w2, - h2, + h2, nr, fr > 1.0 ? fr : 1.0 );
 	}
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -579,6 +579,68 @@ void GLView::setCurrentIndex( const QModelIndex & index )
 	update();
 }
 
+QModelIndex parent( QModelIndex ix, QModelIndex xi )
+{
+	ix = ix.sibling( ix.row(), 0 );
+	xi = xi.sibling( xi.row(), 0 );
+	
+	while ( ix.isValid() )
+	{
+		QModelIndex x = xi;
+		while ( x.isValid() )
+		{
+			if ( ix == x ) return ix;
+			x = x.parent();
+		}
+		ix = ix.parent();
+	}
+	return QModelIndex();
+}
+
+void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
+{
+	if ( doCompile )
+		return;
+	
+	QModelIndex ix = idx;
+	
+	if ( idx == xdi )
+	{
+		if ( idx.column() != 0 )
+			ix = idx.sibling( idx.row(), 0 );
+	}
+	else
+	{
+		ix = ::parent( idx, xdi );
+	}
+	
+	if ( ix.isValid() )
+	{
+		scene->update( model, idx );
+		update();
+	}
+	else
+		modelChanged();
+}
+
+void GLView::modelChanged()
+{
+	doCompile = true;
+	update();
+}
+
+void GLView::modelLinked()
+{
+	doCompile = true; //scene->update( model, QModelIndex() );
+	update();
+}
+
+void GLView::modelDestroyed()
+{
+	setNif( 0 );
+}
+
+
 void GLView::sltFrame( int f )
 {
 	time = (float) f / FPS;
@@ -590,6 +652,7 @@ void GLView::sltDistance( int d )
 	scene->distance = d;
 	update();
 }
+
 
 void GLView::selectTexFolder()
 {
@@ -626,6 +689,7 @@ void GLView::adjustCullExp()
 	update();
 }
 
+
 void GLView::viewAction( QAction * act )
 {
 	BoundSphere bs = scene->bounds();
@@ -633,6 +697,7 @@ void GLView::viewAction( QAction * act )
 		bs |= BoundSphere( Vector3(), axis );
 	
 	if ( bs.radius < 1 ) bs.radius = 1;
+	setDistance( 2 * bs.radius );
 	
 	if ( act == aViewWalk )
 	{
@@ -655,7 +720,6 @@ void GLView::viewAction( QAction * act )
 	{
 		setRotation( 0, 0, 0 );
 		setPosition( Vector3() - bs.center );
-		setDistance( 2 * bs.radius );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( true );
 		aViewFront->setChecked( false );
@@ -665,7 +729,6 @@ void GLView::viewAction( QAction * act )
 	{
 		setRotation( - 90, 0, 0 );
 		setPosition( Vector3() - bs.center );
-		setDistance( 2 * bs.radius );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( true );
@@ -675,14 +738,10 @@ void GLView::viewAction( QAction * act )
 	{
 		setRotation( - 90, 0, 90 );
 		setPosition( Vector3() - bs.center );
-		setDistance( 2 * bs.radius );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
 		aViewSide->setChecked( true );
-	}
-	else
-	{
 	}
 	update();
 }
@@ -766,67 +825,6 @@ void GLView::advanceGears()
 		rotate( mouseRot[0], mouseRot[1], mouseRot[2] );
 		mouseRot = Vector3();
 	}
-}
-
-QModelIndex parent( QModelIndex ix, QModelIndex xi )
-{
-	ix = ix.sibling( ix.row(), 0 );
-	xi = xi.sibling( xi.row(), 0 );
-	
-	while ( ix.isValid() )
-	{
-		QModelIndex x = xi;
-		while ( x.isValid() )
-		{
-			if ( ix == x ) return ix;
-			x = x.parent();
-		}
-		ix = ix.parent();
-	}
-	return QModelIndex();
-}
-
-void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
-{
-	if ( doCompile )
-		return;
-	
-	QModelIndex ix = idx;
-	
-	if ( idx == xdi )
-	{
-		if ( idx.column() != 0 )
-			ix = idx.sibling( idx.row(), 0 );
-	}
-	else
-	{
-		ix = ::parent( idx, xdi );
-	}
-	
-	if ( ix.isValid() )
-	{
-		scene->update( model, idx );
-		update();
-	}
-	else
-		modelChanged();
-}
-
-void GLView::modelChanged()
-{
-	doCompile = true;
-	update();
-}
-
-void GLView::modelLinked()
-{
-	doCompile = true; //scene->update( model, QModelIndex() );
-	update();
-}
-
-void GLView::modelDestroyed()
-{
-	setNif( 0 );
 }
 
 void GLView::keyPressEvent( QKeyEvent * event )
@@ -1001,10 +999,10 @@ void GLView::restore( QSettings & settings )
 
 void GLView::move( float x, float y, float z )
 {
-	if ( aViewWalk->isChecked() )
+	//if ( aViewWalk->isChecked() )
 		Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
-	else
-		Pos += Vector3( x, y, z );
+	//else
+	//	Pos += Vector3( x, y, z );
 	update();
 }
 

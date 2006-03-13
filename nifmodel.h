@@ -45,6 +45,8 @@ class QAbstractItemDelegate;
 #include "niftypes.h"
 #include "nifitem.h"
 
+#include "message.h"
+
 class NifModel : public QAbstractItemModel
 {
 Q_OBJECT
@@ -239,6 +241,9 @@ public:
 	};
 	
 signals:
+	void sigMessage( const Message & msg ) const;
+	void sigProgress( int c, int m ) const;
+	
 	void linksChanged();
 
 protected:

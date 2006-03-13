@@ -171,6 +171,8 @@ class spStrippify : public Spell
 			copyValue<Vector3>( nif, iStripData, iData, "Center" );
 			copyValue<float>( nif, iStripData, iData, "Radius" );
 			
+			nif->set<int>( iStripData, "Has Points", 1 );
+			
 			QModelIndex iLengths = nif->getIndex( iStripData, "Strip Lengths" );
 			QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
 			
@@ -178,7 +180,6 @@ class spStrippify : public Spell
 			{
 				nif->set<int>( iStripData, "Num Strips", strips.count() );
 				nif->updateArray( iLengths );
-				nif->set<int>( iStripData, "Has Points", 1 );
 				nif->updateArray( iPoints );
 				int x = 0;
 				int z = 0;

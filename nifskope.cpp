@@ -77,6 +77,7 @@ NifSkope::NifSkope() : QMainWindow()
 {
 	// create a new model
 	model = new NifModel( this );
+	connect( model, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
 	
 	// create a new hierarchical proxy model
 	proxy = new NifProxyModel( this );
@@ -139,6 +140,11 @@ NifSkope::NifSkope() : QMainWindow()
 	connect( aLoad, SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );	
 	aSave = new QAction( "&Save", this );
 	connect( aSave, SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
+	aLoadXML = new QAction( "Reload &XML", this );
+	connect( aLoadXML, SIGNAL( triggered() ), this, SLOT( loadXML() ) );
+	aReload = new QAction( "&Reload XML + Nif", this );
+	aReload->setShortcut( Qt::ALT + Qt::Key_X );
+	connect( aReload, SIGNAL( triggered() ), this, SLOT( reload() ) );
 	aWindow = new QAction( "&New Window", this );
 	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
 	aQuit = new QAction( "&Quit", this );
@@ -260,15 +266,14 @@ NifSkope::NifSkope() : QMainWindow()
 	mFile->addSeparator();
 	mFile->addAction( aWindow );
 	mFile->addSeparator();
+	mFile->addAction( aLoadXML );
+	mFile->addAction( aReload );
+	mFile->addSeparator();
 	mFile->addAction( aQuit );
 	
 	QMenu * mView = new QMenu( "&View" );
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
-	mView->addSeparator();
-	mView->addAction( tool->toggleViewAction() );
-	mView->addAction( tAnim->toggleViewAction() );
-	mView->addAction( tLOD->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mViewList = new QMenu( "&Block List Options" );
 	mView->addMenu( mViewList );
@@ -277,6 +282,12 @@ NifSkope::NifSkope() : QMainWindow()
 	QMenu * mViewTree = new QMenu( "&Block Detail Options" );
 	mView->addMenu( mViewTree );
 	mViewTree->addAction( aCondition );
+	mView->addSeparator();
+	QMenu * mTools = new QMenu( "&Toolbars" );
+	mView->addMenu( mTools );
+	mTools->addAction( tool->toggleViewAction() );
+	mTools->addAction( tAnim->toggleViewAction() );
+	mTools->addAction( tLOD->toggleViewAction() );
 	
 	QMenu * mOpts = new QMenu( "&Render" );
 	foreach ( QAction * a, ogl->grpView->actions() )
@@ -459,12 +470,13 @@ void NifSkope::select( const QModelIndex & index )
 			QModelIndex root = model->getBlockOrHeader( idx );
 			if ( tree->rootIndex() != root )
 				tree->setRootIndex( root );
+			tree->setCurrentIndexExpanded( idx.sibling( idx.row(), 0 ) );
 		}
 		else
 		{
 			if ( tree->rootIndex() != QModelIndex() )
 				tree->setRootIndex( QModelIndex() );
-			tree->setCurrentIndexExpanded( model->getBlock( idx ) );
+			tree->setCurrentIndexExpanded( idx.sibling( idx.row(), 0 ) );
 		}
 	}
 }
@@ -516,12 +528,28 @@ void NifSkope::load()
 	bool r = ogl->aRotate->isChecked();
 	ogl->aAnimate->setChecked( false );
 	ogl->aRotate->setChecked( false );
+	
+	ProgDlg prog;
+	prog.setLabelText( "loading nif..." );
+	prog.setRange( 0, 1 );
+	prog.setValue( 0 );
+	prog.setMinimumDuration( 2100 );
+	connect( model, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
+	
 	if ( ! model->load( lineLoad->text() ) )
 		qWarning() << "failed to load nif from file " << lineLoad->text();
+	
 	ogl->aAnimate->setChecked( a );
 	ogl->aRotate->setChecked( r );
 	ogl->center();
 	setEnabled( true );
+}
+
+void ProgDlg::sltProgress( int x, int y )
+{
+	setRange( 0, y );
+	setValue( x );
+	qApp->processEvents();
 }
 
 void NifSkope::save()
@@ -570,6 +598,46 @@ NifSkope * NifSkope::createWindow()
 	return skope;
 }
 
+void NifSkope::loadXML()
+{
+	QString result = NifModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "nif.xml" ) );
+	if ( ! result.isEmpty() )
+	{
+		QMessageBox::critical( 0, "NifSkope", result );
+	}
+}
+
+void NifSkope::reload()
+{
+	QString result = NifModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "nif.xml" ) );
+	if ( ! result.isEmpty() )
+	{
+		QMessageBox::critical( 0, "NifSkope", result );
+	}
+	else
+		load();
+}
+
+void NifSkope::dispatchMessage( const Message & msg )
+{
+	switch ( msg.type() )
+	{
+		case QtCriticalMsg:
+			qCritical( msg );
+			break;
+		case QtFatalMsg:
+			qFatal( msg );
+			break;
+		case QtWarningMsg:
+			qWarning( msg );
+			break;
+		case QtDebugMsg:
+		default:
+			qDebug( msg );
+			break;
+	}
+}
+
 QTextEdit * msgtarget = 0;
 
 void myMessageOutput(QtMsgType type, const char *msg)
@@ -604,20 +672,15 @@ int main( int argc, char * argv[] )
 	// set up the QtApplication
 	QApplication app( argc, argv );
 	
-	// read in XML fileformat description
-	QString result = NifModel::parseXmlDescription( QDir( app.applicationDirPath() ).filePath( "nif.xml" ) );
-	if ( ! result.isEmpty() )
-	{
-		QMessageBox::critical( 0, "NifSkope", result );
-		return -1;
-	}
+	qRegisterMetaType<Message>( "Message" );
 	
 	qInstallMsgHandler(myMessageOutput);
 	
 	NifSkope * skope = NifSkope::createWindow();
+	skope->loadXML();
 	
-    if (app.argc() > 1)
-        skope->load(QString(app.argv()[app.argc() - 1]));
+    if ( app.argc() > 1 )
+        skope->load( QString( app.argv()[ app.argc() - 1 ] ) );
 
 	// start the event loop
 	return app.exec();

@@ -21,6 +21,7 @@ glscene.h \
 gltex.h \
 gltransform.h \
 glview.h \
+message.h \
 nifdelegate.h \
 nifmodel.h \
 nifproxy.h \
@@ -42,6 +43,7 @@ glscene.cpp \
 gltex.cpp \
 gltransform.cpp \
 glview.cpp \
+message.cpp \
 nifdelegate.cpp \
 nifmodel.cpp \
 nifproxy.cpp \
