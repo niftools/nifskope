@@ -391,7 +391,7 @@ BoundSphere Particles::bounds() const
 {
 	BoundSphere sphere( verts );
 	sphere.radius += size;
-	return worldTrans() * sphere;
+	return worldTrans() * sphere | Node::bounds();
 }
 
 void Particles::drawShapes( NodeList * draw2nd )
@@ -399,45 +399,17 @@ void Particles::drawShapes( NodeList * draw2nd )
 	if ( isHidden() )
 		return;
 	
-	glLoadName( nodeId );
-	
-	// setup lighting
-	
-	scene->setupLights( this );
-	
-	// setup alpha blending
-	
 	AlphaProperty * aprop = findProperty< AlphaProperty >();
 	if ( aprop && aprop->blend() && scene->blending && draw2nd )
 	{
 		draw2nd->add( this );
 		return;
 	}
-	glProperty( aprop );
-	
-	// setup material
-	
-	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
 
-	// setup vertex colors
+	glLoadName( nodeId );
 	
-	if ( colors.count() >= transVerts.count() )
-		glProperty( findProperty< VertexColorProperty >() );
-	else
-		glDisable( GL_COLOR_MATERIAL );
+	setupRenderState( colors.count() >= transVerts.count() );
 	
-	// setup texturing
-	
-	glProperty( findProperty< TexturingProperty >() );
-	
-	// setup z buffer
-	
-	glProperty( findProperty< ZBufferProperty >() );
-	
-	// wireframe
-	
-	glProperty( findProperty< WireframeProperty >() );
-
 	// normalize
 	
 	glEnable( GL_NORMALIZE );
@@ -472,4 +444,3 @@ void Particles::drawShapes( NodeList * draw2nd )
 		p++;
 	}
 }
-

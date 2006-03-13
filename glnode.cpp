@@ -471,7 +471,7 @@ void Node::drawShapes( NodeList * draw2nd )
 	}
 }
 
-void Node::setupRenderState()
+void Node::setupRenderState( bool vertexcolors )
 {
 	// setup lighting
 	
@@ -481,14 +481,14 @@ void Node::setupRenderState()
 	
 	glProperty( findProperty< AlphaProperty >() );
 	
+	// setup vertex colors
+	
+	glProperty( findProperty< VertexColorProperty >(), vertexcolors );
+	
 	// setup material
 	
 	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
 
-	// setup vertex colors
-	
-	glProperty( findProperty< VertexColorProperty >() );
-	
 	// setup texturing
 	
 	glProperty( findProperty< TexturingProperty >() );

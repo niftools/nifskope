@@ -247,7 +247,7 @@ public:
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
-	friend void glProperty( VertexColorProperty * );
+	friend void glProperty( VertexColorProperty *, bool vertexcolors );
 
 protected:
 	int	lightmode;

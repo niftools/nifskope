@@ -112,7 +112,7 @@ public:
 	
 	template <typename T> T * findProperty() const;
 	
-	void setupRenderState();
+	void setupRenderState( bool vertexcolors );
 	
 protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & controller );

@@ -463,10 +463,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		return;
 	}
 	
-	setupRenderState();
+	setupRenderState( transColors.count() >= transVerts.count() );
 	
-	if ( transColors.count() < transVerts.count() )
-		glDisable( GL_COLOR_MATERIAL );
 	if ( transNorms.count() < transVerts.count() )
 		glDisable( GL_NORMALIZE );
 	

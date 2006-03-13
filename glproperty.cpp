@@ -501,14 +501,22 @@ lighting_mode 1 : the same as no property (additiv?)
 	}
 }
 
-void glProperty( VertexColorProperty * p )
+void glProperty( VertexColorProperty * p, bool vertexcolors )
 {
+	if ( ! vertexcolors )
+	{
+		glDisable( GL_COLOR_MATERIAL );
+		glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
+		return;
+	}
+	
 	if ( p )
 	{
 		switch ( p->vertexmode )
 		{
 			case 0:
 				glDisable( GL_COLOR_MATERIAL );
+				glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
 				return;
 			case 1:
 				glEnable( GL_COLOR_MATERIAL );
@@ -537,7 +545,7 @@ void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 		//static const GLenum operations[8] = { GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT, GL_KEEP, GL_KEEP };
 		
 		// ! glFrontFace( GL_CCW )
-		switch ( nif->get<int>( iBlock, "Cull Mode" ) )
+		switch ( nif->get<int>( iBlock, "Draw Mode" ) )
 		{
 			case 2:
 				cullEnable = true;
