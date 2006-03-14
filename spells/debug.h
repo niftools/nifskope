@@ -7,6 +7,7 @@
 #include <QQueue>
 #include <QProgressBar>
 #include <QDateTime>
+#include <QWaitCondition>
 
 #include "../message.h"
 
@@ -21,46 +22,43 @@ class QSpinBox;
 class QTextEdit;
 class QVBoxLayout;
 
-class NifModel;
+class FileQueue
+{
+public:
+	FileQueue() {}
+
+	QString dequeue();
+	
+	bool isEmpty() { return count() == 0; }
+	int count();
+	
+	void init( const QString & directory, bool recursive );
+	void clear();
+
+protected:
+	QQueue<QString> make( const QString & directory, bool recursive );
+
+	QMutex mutex;
+	QQueue<QString> queue;
+};
 
 class TestThread : public QThread
 {
 	Q_OBJECT
 public:
-	TestThread( QObject * o );
+	TestThread( QObject * o, FileQueue * q );
 	~TestThread();
 	
-	QString filepath;
-	
-	QString result;
-
 signals:
 	void sigStart( const QString & file );
-	void sigProgress( int, int );
+	void sigReady( const QString & result );
 	
 protected:
 	void run();
 	
-	NifModel * nif;
-	
-};
+	FileQueue * queue;
 
-class ThreadBox : public QWidget
-{
-	Q_OBJECT
-public:
-	ThreadBox( TestThread * thread, QLayout * parentLayout );
-	
-	QSize sizeHint() const;
-	
-public slots:
-	void sltProgress( int, int );
-	
-protected:
-	QLabel * label;
-	QProgressBar * prog;
-	
-	void resizeEvent( QResizeEvent * e );
+	QMutex quit;
 };
 
 class TestShredder : public QWidget
@@ -70,21 +68,6 @@ public:
 	TestShredder();
 	~TestShredder();
 	
-public slots:
-	void setThreadNumber( int );
-	void setThreadsVisible( bool );
-	
-protected:
-	QLineEdit	* directory;
-	QCheckBox * chkRecursive;
-	QProgressBar * progMain;
-	QPushButton * btRun;
-	QTextEdit * text;
-	QVBoxLayout * threadLayout;
-	QGroupBox * threadGroup;
-	QSpinBox * threadNumber;
-	QCheckBox * threadsVisible;
-	
 protected slots:
 	void browse();
 	void run();
@@ -93,16 +76,18 @@ protected slots:
 	void threadStarted();
 	void threadFinished();
 	
-protected:
-	QQueue<QString> queue;
+	void renumberThreads( int );
 
-	struct ThreadStruct
-	{
-		TestThread * thread;
-		ThreadBox * box;
-	};
+protected:
+	QLineEdit	* directory;
+	QCheckBox	* recursive;
+	QTextEdit	* text;
+	QProgressBar * progress;
+	QPushButton * btRun;
 	
-	QList<ThreadStruct> threads;
+	FileQueue queue;
+
+	QList<TestThread*> threads;
 	
 	QDateTime time;
 };

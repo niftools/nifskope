@@ -25,8 +25,8 @@
 class spThreadLoad : public Spell
 {
 public:
-	QString name() const { return "Thread Load"; }
-	QString page() const { return "Debug"; }
+	QString name() const { return "XML Checker"; }
+	QString page() const { return ""; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -50,20 +50,25 @@ TestShredder::TestShredder()
 	directory = new QLineEdit( this );
 	directory->setText( "f:\\nif" );
 	
-	chkRecursive = new QCheckBox( "Recursive", this );
-	chkRecursive->setChecked( true );
-	chkRecursive->setToolTip( "Recurse into sub directories" );
+	recursive = new QCheckBox( "Recursive", this );
+	recursive->setChecked( true );
+	recursive->setToolTip( "Recurse into sub directories" );
 	
-	QAction * aBrowse = new QAction( "browse", this );
+	QAction * aBrowse = new QAction( "Dir", this );
 	connect( aBrowse, SIGNAL( triggered() ), this, SLOT( browse() ) );
-	
 	QToolButton * btBrowse = new QToolButton( this );
 	btBrowse->setDefaultAction( aBrowse );
+	
+	QSpinBox * count = new QSpinBox();
+	count->setRange( 1, 8 );
+	count->setValue( NUM_THREADS );
+	count->setPrefix( "threads " );
+	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
 	
 	text = new QTextEdit( this );
 	text->setHidden( false );
 	
-	progMain = new QProgressBar( this );
+	progress = new QProgressBar( this );
 	
 	btRun = new QPushButton( "run", this );
 	btRun->setCheckable( true );
@@ -75,42 +80,25 @@ TestShredder::TestShredder()
 	QPushButton * btClose = new QPushButton( "Close", this );
 	connect( btClose, SIGNAL( clicked() ), this, SLOT( close() ) );
 	
-	threadGroup = new QGroupBox( "Threads", this );
-	
-	threadNumber = new QSpinBox();
-	threadNumber->setRange( 1, 8 );
-	connect( threadNumber, SIGNAL( valueChanged( int ) ), this, SLOT( setThreadNumber( int ) ) );
-	
-	threadsVisible = new QCheckBox( "show threads" );
-	threadsVisible->setChecked( true );
-	connect( threadsVisible, SIGNAL( toggled( bool ) ), this, SLOT( setThreadsVisible( bool ) ) );
-	
 	QVBoxLayout * lay = new QVBoxLayout();
 	setLayout( lay );
 	
 	QHBoxLayout * hbox = new QHBoxLayout();
 	lay->addLayout( hbox );
-	hbox->addWidget( new QLabel( "Dir" ) );
-	hbox->addWidget( directory );
 	hbox->addWidget( btBrowse );
-	hbox->addWidget( chkRecursive );
+	hbox->addWidget( directory );
+	hbox->addWidget( recursive );
+	hbox->addWidget( count );
 	
 	lay->addWidget( text );
-	lay->addWidget( progMain );
-	lay->addWidget( threadGroup );
+	lay->addWidget( progress );
 
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( btRun );
 	hbox->addWidget( btXML );
 	hbox->addWidget( btClose );
 	
-	threadGroup->setLayout( threadLayout = new QVBoxLayout() );
-	threadLayout->addLayout( hbox = new QHBoxLayout() );
-	hbox->addWidget( new QLabel( "Thread Count" ) );
-	hbox->addWidget( threadNumber );
-	hbox->addWidget( threadsVisible );
-
-	setThreadNumber( NUM_THREADS );
+	renumberThreads( count->value() );
 }
 
 TestShredder::~TestShredder()
@@ -122,72 +110,31 @@ void TestShredder::xml()
 {
 	btRun->setChecked( false );
 	queue.clear();
-	foreach ( ThreadStruct thread, threads )
-		thread.thread->wait();
+	foreach ( TestThread * thread, threads )
+		thread->wait();
 	NifModel::loadXML();
 }
 
-void TestShredder::setThreadNumber( int num )
+void TestShredder::renumberThreads( int num )
 {
-	threadNumber->setValue( num );
 	while ( threads.count() < num )
 	{
-		ThreadStruct thread;
-		
-		thread.thread = new TestThread( this );
-		connect( thread.thread, SIGNAL( started() ), this, SLOT( threadStarted() ) );
-		connect( thread.thread, SIGNAL( finished() ), this, SLOT( threadFinished() ) );
-		
-		thread.box = new ThreadBox( thread.thread, threadLayout );
-		thread.box->setVisible( threadsVisible->isChecked() );
-		
+		TestThread * thread = new TestThread( this, &queue );
+		connect( thread, SIGNAL( sigStart( const QString & ) ), this, SLOT( threadStarted() ) );
+		connect( thread, SIGNAL( sigReady( const QString & ) ), text, SLOT( append( const QString & ) ) );
+		connect( thread, SIGNAL( finished() ), this, SLOT( threadFinished() ) );
 		threads.append( thread );
 		
-		if ( ! queue.isEmpty() && btRun->isChecked() )
+		if ( btRun->isChecked() )
 		{
-			thread.thread->filepath = queue.dequeue();
-			thread.thread->start();
+			thread->start();
 		}
 	}
 	while ( threads.count() > num )
 	{
-		if ( threads.isEmpty() )
-			return;
-		
-		ThreadStruct thread = threads.takeLast();
-		if ( thread.box )
-			delete thread.box;
-		delete thread.thread;
+		TestThread * thread = threads.takeLast();
+		delete thread;
 	}
-}
-
-void TestShredder::setThreadsVisible( bool x )
-{
-	threadsVisible->setChecked( x );
-	foreach ( ThreadStruct thread, threads )
-	{
-		thread.box->setVisible( x );
-	}
-}
-
-QQueue<QString> makeQueue( const QString & dname, bool recursive )
-{
-	QQueue<QString> queue;
-	
-	QDir dir( dname );
-	if ( recursive )
-	{
-		dir.setFilter( QDir::Dirs );
-		foreach ( QString d, dir.entryList() )
-			if ( d != "." && d != ".." )
-				queue += makeQueue( dir.filePath( d ), true );
-	}
-	
-	dir.setFilter( QDir::Files );
-	dir.setNameFilters( QStringList() << "*.nif" << "*.NIF" << "*.kf" << "*.KF" << "*.kfa" << "*.KFA" );
-	foreach ( QString f, dir.entryList() )
-		queue.enqueue( dir.filePath( f ) );
-	return queue;
 }
 
 void TestShredder::run()
@@ -197,49 +144,39 @@ void TestShredder::run()
 	if ( ! btRun->isChecked() )
 		return;
 	
-	foreach ( ThreadStruct thread, threads )
-		thread.thread->wait();
+	foreach ( TestThread * thread, threads )
+		thread->wait();
 	
 	text->clear();
 	
-	queue = makeQueue( directory->text(), chkRecursive->isChecked() );
+	queue.init( directory->text(), recursive->isChecked() );
 	
 	time = QDateTime::currentDateTime();
 
-	progMain->setRange( 0, queue.count() );
-	progMain->setValue( 0 );
+	progress->setRange( 0, queue.count() );
+	progress->setValue( 0 );
 	
-	foreach ( ThreadStruct thread, threads )
+	foreach ( TestThread * thread, threads )
 	{
-		if ( ! queue.isEmpty() )
-		{
-			thread.thread->filepath = queue.dequeue();
-			thread.thread->start();
-		}
+		thread->start();
 	}
 }
 
 void TestShredder::threadStarted()
 {
-	progMain->setValue( progMain->maximum() - queue.count() );
+	progress->setValue( progress->maximum() - queue.count() );
 }
 
 void TestShredder::threadFinished()
 {
-	Q_ASSERT( sender() );
-	TestThread * thread = qobject_cast<TestThread*>( sender() );
-	if ( thread && ! thread->result.isEmpty() )
-		text->append( thread->result );
-
 	if ( queue.isEmpty() )
 	{
-		//text->append( QString( "<br>run time %1 [s]<br>" ).arg( time.secsTo( QDateTime::currentDateTime() ) ) );
+		foreach ( TestThread * thread, threads )
+			if ( thread->isRunning() )
+				return;
+		
 		btRun->setChecked( false );
-	}
-	else if ( thread )
-	{
-		thread->filepath = queue.dequeue();
-		thread->start();
+		text->append( QString::number( time.secsTo( QDateTime::currentDateTime() ) ) );
 	}
 }
 
@@ -253,70 +190,102 @@ void TestShredder::browse()
 }
 
 /*
+ *  File Queue
+ */
+ 
+QQueue<QString> FileQueue::make( const QString & dname, bool recursive )
+{
+	QQueue<QString> queue;
+	
+	QDir dir( dname );
+	if ( recursive )
+	{
+		dir.setFilter( QDir::Dirs );
+		foreach ( QString d, dir.entryList() )
+			if ( d != "." && d != ".." )
+				queue += make( dir.filePath( d ), true );
+	}
+	
+	dir.setFilter( QDir::Files );
+	dir.setNameFilters( QStringList() << "*.nif" << "*.NIF" << "*.kf" << "*.KF" << "*.kfa" << "*.KFA" );
+	foreach ( QString f, dir.entryList() )
+		queue.enqueue( dir.filePath( f ) );
+	
+	return queue;
+}
+
+void FileQueue::init( const QString & dname, bool recursive )
+{
+	QQueue<QString> queue = make( dname, recursive );
+	
+	mutex.lock();
+	this->queue = queue;
+	mutex.unlock();
+}
+
+QString FileQueue::dequeue()
+{
+	QMutexLocker lock( & mutex );
+	if ( queue.isEmpty() )
+		return QString();
+	else
+		return queue.dequeue();
+}
+
+int FileQueue::count()
+{
+	QMutexLocker lock( & mutex );
+	return queue.count();
+}
+
+void FileQueue::clear()
+{
+	QMutexLocker lock( & mutex );
+	queue.clear();
+}
+
+/*
  *  Thread
  */
 
-TestThread::TestThread( QObject * o )
-	: QThread( o )
+TestThread::TestThread( QObject * o, FileQueue * q )
+	: QThread( o ), queue( q )
 {
-	nif = new NifModel( this );
-	nif->setMessageMode( NifModel::CollectMessages );
-	connect( nif, SIGNAL( sigProgress( int, int ) ), this, SIGNAL( sigProgress( int, int ) ) );
 }
 
 TestThread::~TestThread()
 {
-	wait();
+	if ( isRunning() )
+	{
+		quit.lock();
+		wait();
+	}
 }
 
 void TestThread::run()
 {
-	emit sigStart( filepath );
-	nif->load( filepath );
-	result = QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( nif->getVersion() );
-	foreach ( Message msg, nif->getMessages() )
+	NifModel nif;
+
+	QString filepath = queue->dequeue();
+	while ( ! filepath.isEmpty() )
 	{
-		if ( msg.type() != QtDebugMsg )
+		emit sigStart( filepath );
+		nif.load( filepath );
+		
+		QString result = QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( nif.getVersion() );
+		foreach ( Message msg, nif.getMessages() )
 		{
-			result += msg + "<br>";
+			if ( msg.type() != QtDebugMsg )
+				result += msg + "<br>";
 		}
+		emit sigReady( result );
+		
+		if ( quit.tryLock() )
+			quit.unlock();
+		else
+			break;
+		
+		filepath = queue->dequeue();
 	}
 }
 
-/*
- *  Thread Box
- */
- 
-ThreadBox::ThreadBox( TestThread * thread, QLayout * parentLayout )
-{
-	prog = new QProgressBar( this );
-	label = new QLabel( this );
-
-	parentLayout->addWidget( this );
-	//label->setVisible( true );
-	//prog->setVisible( true );
-	//setVisible( true );
-
-	connect( thread, SIGNAL( sigStart( const QString & ) ), label, SLOT( setText( const QString & ) ) );
-	connect( thread, SIGNAL( sigProgress( int, int ) ), this, SLOT( sltProgress( int, int ) ) );
-}
-
-QSize ThreadBox::sizeHint() const
-{
-	QSize sl = label->sizeHint();
-	QSize sp = prog->sizeHint();
-	
-	return QSize( sl.width() + sp.width(), qMax( sl.height(), sp.height() ) );
-}
-
-void ThreadBox::resizeEvent( QResizeEvent * )
-{
-	label->setGeometry( 0, 0, width() / 2, height() );
-	prog->setGeometry( width() / 2, 0, width() / 2, height() );
-}
-
-void ThreadBox::sltProgress( int x, int y )
-{
-	prog->setRange( 0, y );
-	prog->setValue( x );
-}
