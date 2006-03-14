@@ -341,7 +341,7 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 						r[s] = 0;
 						interpolate( r[s], subkeys.child( s, 0 ), time, last );
 					}
-					value.fromEuler( r[0], r[1], r[2] );
+					value = Matrix::euler( 0, 0, r[2] ) * Matrix::euler( 0, r[1], 0 ) * Matrix::euler( r[0], 0, 0 );
 					return true;
 				}
 			}	break;
