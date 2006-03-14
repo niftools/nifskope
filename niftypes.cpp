@@ -35,6 +35,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QHash>
 
+const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
+const float Matrix::identity[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+
 void Matrix::fromQuat( const Quat & q )
 {
 	float fTx  = ((float)2.0)*q[1];
@@ -603,7 +606,7 @@ bool NifStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 4096 )	qWarning( "maximum string length exceeded" );
+			if ( len > 4096 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			
@@ -630,7 +633,7 @@ bool NifStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 4096 )	qWarning( "maximum string length exceeded" );
+			if ( len > 4096 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			*static_cast<QString*>( val.val.data ) = QString( string );

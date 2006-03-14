@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QIODevice>
 #include <QStack>
 #include <QStringList>
+#include <QReadWriteLock>
 
 class QAbstractItemDelegate;
 
@@ -54,8 +55,8 @@ public:
 	NifModel( QObject * parent = 0 );
 	~NifModel();
 	
-	// call this once with the nif description xml file as argument
-	static QString parseXmlDescription( const QString & filename );
+	// call this once on startup to load the XML descriptions
+	static bool loadXML();
 
 	
 	// clear model data
@@ -191,6 +192,8 @@ public:
 	static QString version2string( quint32 );
 	static quint32 version2number( const QString & );
 	
+	static bool isVersionSupported( quint32 );
+	
 	
 	// QAbstractModel interface
 	
@@ -240,6 +243,14 @@ public:
 		Ver2Col  = 8
 	};
 	
+	enum MsgMode
+	{
+		EmitMessages, CollectMessages
+	};
+	
+	void setMessageMode( MsgMode m ) { msgMode = m; }
+	QList<Message> getMessages() const { QList<Message> lst = messages; messages.clear(); return lst; }
+	
 signals:
 	void sigMessage( const Message & msg ) const;
 	void sigProgress( int c, int m ) const;
@@ -283,14 +294,12 @@ protected:
 	// nif file version
 	quint32		version;
 	
-	static QList<quint32>		supportedVersions;
-	
 	QString folder;
 	
-	//
-	static QHash<QString,NifBlock*>		compounds;
-	static QHash<QString,NifBlock*>		ancestors;
-	static QHash<QString,NifBlock*>		blocks;
+	MsgMode msgMode;
+	mutable QList<Message> messages;
+	
+	void msg( const Message & m ) const;
 	
 	QHash< int, QList<int> >	childLinks;
 	QHash< int, QList<int> >	parentLinks;
@@ -301,29 +310,60 @@ protected:
 	void checkLinks( int block, QStack<int> & parents );
 	void adjustLinks( NifItem * parent, int block, int delta );
 	void mapLinks( NifItem * parent, const QMap<qint32,qint32> & map );
-		
+	
+	// XML structures
+	static QReadWriteLock XMLlock;
+	
+	static QList<quint32>		supportedVersions;
+	
+	static QHash<QString,NifBlock*>		compounds;
+	static QHash<QString,NifBlock*>		ancestors;
+	static QHash<QString,NifBlock*>		blocks;
+	
+	static QString parseXmlDescription( const QString & filename );
+
 	friend class NifXmlHandler;
 }; // class NifModel
 
 
 inline QStringList NifModel::allNiBlocks()
 {
-	return blocks.keys();
+	XMLlock.lockForRead();
+	QStringList lst = blocks.keys();
+	XMLlock.unlock();
+	return lst;
 }
 
 inline bool NifModel::isNiBlock( const QString & name )
 {
-	return blocks.contains( name );
+	XMLlock.lockForRead();
+	bool x = blocks.contains( name );
+	XMLlock.unlock();
+	return x;
 }
 
 inline bool NifModel::isAncestor( const QString & name )
 {
-	return ancestors.contains( name );
+	XMLlock.lockForRead();
+	bool x = ancestors.contains( name );
+	XMLlock.unlock();
+	return x;
 }
 
 inline bool NifModel::isCompound( const QString & name )
 {
-	return compounds.contains( name );
+	XMLlock.lockForRead();
+	bool x = compounds.contains( name );
+	XMLlock.unlock();
+	return x;
+}
+
+inline bool NifModel::isVersionSupported( quint32 v )
+{
+	XMLlock.lockForRead();
+	bool x = supportedVersions.contains( v );
+	XMLlock.unlock();
+	return x;
 }
 
 inline QList<int> NifModel::getRootLinks() const

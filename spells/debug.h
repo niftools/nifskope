@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QQueue>
 #include <QProgressBar>
+#include <QDateTime>
 
 #include "../message.h"
 
@@ -37,9 +38,6 @@ signals:
 	void sigStart( const QString & file );
 	void sigProgress( int, int );
 	
-protected slots:
-	void sltMessage( const Message & msg );
-	
 protected:
 	void run();
 	
@@ -47,14 +45,22 @@ protected:
 	
 };
 
-class ProgBar : public QProgressBar
+class ThreadBox : public QWidget
 {
 	Q_OBJECT
 public:
-	ProgBar() {}
+	ThreadBox( TestThread * thread, QLayout * parentLayout );
+	
+	QSize sizeHint() const;
 	
 public slots:
 	void sltProgress( int, int );
+	
+protected:
+	QLabel * label;
+	QProgressBar * prog;
+	
+	void resizeEvent( QResizeEvent * e );
 };
 
 class TestShredder : public QWidget
@@ -66,6 +72,7 @@ public:
 	
 public slots:
 	void setThreadNumber( int );
+	void setThreadsVisible( bool );
 	
 protected:
 	QLineEdit	* directory;
@@ -76,29 +83,28 @@ protected:
 	QVBoxLayout * threadLayout;
 	QGroupBox * threadGroup;
 	QSpinBox * threadNumber;
+	QCheckBox * threadsVisible;
 	
 protected slots:
 	void browse();
 	void run();
+	void xml();
 	
 	void threadStarted();
 	void threadFinished();
 	
 protected:
-	void addThread();
-	void delThread();
-	
 	QQueue<QString> queue;
 
 	struct ThreadStruct
 	{
 		TestThread * thread;
-		QHBoxLayout * layout;
-		QLabel * label;
-		ProgBar * progbar;
+		ThreadBox * box;
 	};
 	
-	QList<ThreadStruct> threads;	
+	QList<ThreadStruct> threads;
+	
+	QDateTime time;
 };
 
 #endif

@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.7.1 of NifSkope.
+This is version 0.7.2 of NifSkope.
 
 It should read and write every Nif up to version 20.0.0.4
 
@@ -48,7 +48,12 @@ changes since 0.7:
   - LOD switching
   - Model walk (walk around the nifs using the wasd key combo)
   - Perspective / Orthographic projection in normal view mode
-  - shadowcaster and collidee nodes are now hidden (daoc compability)
+  - improved vertex color lighting
+  - improved boundary scan
+  - hide non textured meshes (daoc compability)
+  - hide nodes by name
+  - new debug spell: thread load
+
 
 changes since 0.6:
   - lights

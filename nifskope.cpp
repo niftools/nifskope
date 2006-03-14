@@ -600,22 +600,15 @@ NifSkope * NifSkope::createWindow()
 
 void NifSkope::loadXML()
 {
-	QString result = NifModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "nif.xml" ) );
-	if ( ! result.isEmpty() )
-	{
-		QMessageBox::critical( 0, "NifSkope", result );
-	}
+	NifModel::loadXML();
 }
 
 void NifSkope::reload()
 {
-	QString result = NifModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "nif.xml" ) );
-	if ( ! result.isEmpty() )
+	if ( NifModel::loadXML() )
 	{
-		QMessageBox::critical( 0, "NifSkope", result );
-	}
-	else
 		load();
+	}
 }
 
 void NifSkope::dispatchMessage( const Message & msg )
@@ -676,8 +669,9 @@ int main( int argc, char * argv[] )
 	
 	qInstallMsgHandler(myMessageOutput);
 	
+	NifModel::loadXML();
+	
 	NifSkope * skope = NifSkope::createWindow();
-	skope->loadXML();
 	
     if ( app.argc() > 1 )
         skope->load( QString( app.argv()[ app.argc() - 1 ] ) );

@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NifModel::NifModel( QObject * parent ) : QAbstractItemModel( parent )
 {
+	msgMode = EmitMessages;
 	root = new NifItem( 0 );
 	clear();
 }
@@ -51,6 +52,19 @@ NifModel::NifModel( QObject * parent ) : QAbstractItemModel( parent )
 NifModel::~NifModel()
 {
 	delete root;
+}
+
+void NifModel::msg( const Message & m ) const
+{
+	switch ( msgMode )
+	{
+		case EmitMessages:
+			emit sigMessage( m );
+			return;
+		case CollectMessages:
+			messages.append( m );
+			return;
+	}
 }
 
 void NifModel::clear()
@@ -177,7 +191,7 @@ int NifModel::getArraySize( NifItem * array ) const
 		NifItem * dim1 = getItem( parent, array->arr1() );
 		if ( ! dim1 )
 		{
-			emit sigMessage( Message() << "failed to get array size for array" << array->name() );
+			msg( Message() << "failed to get array size for array" << array->name() );
 			return 0;
 		}
 		
@@ -189,12 +203,12 @@ int NifModel::getArraySize( NifItem * array ) const
 			if ( item )
 				d1 = item->value().toCount();
 			else
-				emit sigMessage( Message() << "failed to get array size for array " << array->name() );
+				msg( Message() << "failed to get array size for array " << array->name() );
 		}
 	}
 	if ( d1 < 0 )
 	{
-		emit sigMessage( Message() << "invalid array size for array" << array->name() );
+		msg( Message() << "invalid array size for array" << array->name() );
 		d1 = 0;
 	}
 	return d1;
@@ -225,7 +239,7 @@ bool NifModel::updateArray( NifItem * array, bool fast )
 	int d1 = getArraySize( array );
 	if ( d1 > 1024 * 1024 * 8 )
 	{
-		emit sigMessage( Message() << "array" << array->name() << "much too large" );
+		msg( Message() << "array" << array->name() << "much too large" );
 		return false;
 	}
 
@@ -275,6 +289,7 @@ bool NifModel::updateArray( const QModelIndex & array )
 
 QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fast )
 {
+	XMLlock.lockForRead();
 	NifBlock * block = blocks.value( identifier );
 	if ( block )
 	{
@@ -307,11 +322,13 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 			updateFooter();
 			emit linksChanged();
 		}
+		XMLlock.unlock();
 		return createIndex( branch->row(), 0, branch );
 	}
 	else
 	{
-		emit sigMessage( Message() << "unknown block " << identifier );
+		msg( Message() << "unknown block " << identifier );
+		XMLlock.unlock();
 		return QModelIndex();
 	}
 }
@@ -418,6 +435,7 @@ int NifModel::getBlockCount() const
 
 void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int at )
 {
+	XMLlock.lockForRead();
 	NifBlock * ancestor = ancestors.value( identifier );
 	if ( ancestor )
 	{
@@ -429,20 +447,31 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 	}
 	else
 	{
-		emit sigMessage( Message() << "unknown ancestor " << identifier );
+		msg( Message() << "unknown ancestor " << identifier );
 	}
+	XMLlock.unlock();
 }
 
 bool NifModel::inherits( const QString & name, const QString & aunty )
 {
+	XMLlock.lockForRead();
 	NifBlock * type = blocks.value( name );
 	if ( ! type ) type = ancestors.value( name );
-	if ( ! type ) return false;
-	foreach ( QString a, type->ancestors )
+	
+	bool res = false;
+	if ( type )
 	{
-		if ( a == aunty || inherits( a, aunty ) ) return true;
+		foreach ( QString a, type->ancestors )
+		{
+			if ( a == aunty || inherits( a, aunty ) )
+			{
+				res = true;
+				break;
+			}
+		}
 	}
-	return false;
+	XMLlock.unlock();
+	return res;
 }
 
 bool NifModel::inherits( const QModelIndex & index, const QString & aunty ) const
@@ -470,6 +499,7 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		return;
 	}
 
+	XMLlock.lockForRead();
 	NifBlock * compound = compounds.value( data.type() );
 	if ( compound )
 	{
@@ -508,6 +538,7 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 	}
 	else
 		parent->insertChild( data, at );
+	XMLlock.unlock();
 }
 
 
@@ -1041,7 +1072,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	
 	// verify magic id
-	emit sigMessage( DbgMsg() << version_string );
+	msg( DbgMsg() << version_string );
 	if ( ! ( version_string.startsWith( "NetImmerse File Format" ) || version_string.startsWith( "Gamebryo" ) ) )
 	{
 		qCritical( "this is not a NIF" );
@@ -1054,9 +1085,9 @@ bool NifModel::load( QIODevice & device )
 	qDebug( "version %08X", version );
 	
 	// verify version number
-	if ( ! supportedVersions.contains( version ) )
+	if ( ! isVersionSupported( version ) )
 	{
-		emit sigMessage( Message() << "version" << version2string( version ) << "is not supported yet" );
+		msg( Message() << "version" << version2string( version ) << "is not supported yet" );
 		clear();
 		return false;
 	}
@@ -1069,7 +1100,7 @@ bool NifModel::load( QIODevice & device )
 	NifItem * header = getHeaderItem();
 	if ( !header || !load( header, stream, true ) )
 	{
-		emit sigMessage( Message() << "failed to load file header (version" << version << ")" );
+		msg( Message() << "failed to load file header (version" << version << ")" );
 		return false;
 	}
 	
@@ -1109,7 +1140,7 @@ bool NifModel::load( QIODevice & device )
 			
 			if ( isNiBlock( blktyp ) )
 			{
-				emit sigMessage( DbgMsg() << "loading block" << c << ":" << blktyp );
+				msg( DbgMsg() << "loading block" << c << ":" << blktyp );
 				insertNiBlock( blktyp, -1, true );
 				if ( ! load( root->child( c+1 ), stream, true ) ) 
 					throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
@@ -1122,11 +1153,11 @@ bool NifModel::load( QIODevice & device )
 	}
 	catch ( QString err )
 	{
-		emit sigMessage( Message() << (const char *) err.toAscii() );
+		msg( Message() << err );
 		reset();
 		return false;
 	}
-	//emit sigMessage( Message() << t.msecsTo( QTime::currentTime() ) );
+	//msg( Message() << t.msecsTo( QTime::currentTime() ) );
 	reset(); // notify model views that a significant change to the data structure has occurded
 	return true;
 }
@@ -1141,7 +1172,7 @@ bool NifModel::save( QIODevice & device ) const
 	{
 		emit sigProgress( c+1, rowCount( QModelIndex() ) );
 		
-		emit sigMessage( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
+		msg( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
 		if ( itemType( index( c, 0 ) ) == "NiBlock" )
 		{
 			if ( version > 0x0a000000 )
@@ -1162,7 +1193,7 @@ bool NifModel::save( QIODevice & device ) const
 		}
 		if ( !save( root->child( c ), stream ) )
 		{
-			emit sigMessage( Message() << "failed to write block" << itemName( index( c, 0 ) ) << "(" << c-1 << ")" );
+			msg( Message() << "failed to write block" << itemName( index( c, 0 ) ) << "(" << c-1 << ")" );
 			return false;
 		}
 	}
@@ -1256,15 +1287,15 @@ bool NifModel::save( NifItem * parent, NifStream & stream ) const
 			if ( itemIsLink( child, &isChildLink ) )
 			{
 				if ( ! isChildLink && child->value().toLink() < 0 )
-					emit sigMessage( Message() << "block" << getBlockNumber( parent ) << child->name() << "unassigned up link" );
+					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "unassigned up link" );
 				else if ( child->value().toLink() >= getBlockCount() )
-					emit sigMessage( Message() << "block" << getBlockNumber( parent ) << child->name() << "invalid link" );
+					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "invalid link" );
 			}
 			
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					emit sigMessage( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
 				
 				if ( !save( child, stream ) )
 					return false;
@@ -1370,7 +1401,7 @@ void NifModel::checkLinks( int block, QStack<int> & parents )
 	{
 		if ( parents.contains( child ) )
 		{
-			emit sigMessage( Message() << "infinite recursive link construct detected" << block << "->" << child );
+			msg( Message() << "infinite recursive link construct detected" << block << "->" << child );
 			childLinks[block].removeAll( child );
 		}
 		else
@@ -1422,7 +1453,7 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32,qint32> & map )
 			else
 			{
 				parent->value().setLink( -1 );
-				emit sigMessage( Message() << "mapLinks: failed to map link" << l );
+				msg( Message() << "mapLinks: failed to map link" << l );
 			}
 		}
 	}

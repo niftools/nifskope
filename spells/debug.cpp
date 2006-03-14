@@ -22,10 +22,10 @@
 
 #define NUM_THREADS 2
 
-class spTestLoad : public Spell
+class spThreadLoad : public Spell
 {
 public:
-	QString name() const { return "Test Load"; }
+	QString name() const { return "Thread Load"; }
 	QString page() const { return "Debug"; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -42,7 +42,7 @@ public:
 	}
 };
 
-REGISTER_SPELL( spTestLoad )
+REGISTER_SPELL( spThreadLoad )
 
 TestShredder::TestShredder()
 	: QWidget()
@@ -69,6 +69,9 @@ TestShredder::TestShredder()
 	btRun->setCheckable( true );
 	connect( btRun, SIGNAL( clicked() ), this, SLOT( run() ) );
 	
+	QPushButton * btXML = new QPushButton( "Reload XML", this );
+	connect( btXML, SIGNAL( clicked() ), this, SLOT( xml() ) );
+	
 	QPushButton * btClose = new QPushButton( "Close", this );
 	connect( btClose, SIGNAL( clicked() ), this, SLOT( close() ) );
 	
@@ -77,6 +80,10 @@ TestShredder::TestShredder()
 	threadNumber = new QSpinBox();
 	threadNumber->setRange( 1, 8 );
 	connect( threadNumber, SIGNAL( valueChanged( int ) ), this, SLOT( setThreadNumber( int ) ) );
+	
+	threadsVisible = new QCheckBox( "show threads" );
+	threadsVisible->setChecked( true );
+	connect( threadsVisible, SIGNAL( toggled( bool ) ), this, SLOT( setThreadsVisible( bool ) ) );
 	
 	QVBoxLayout * lay = new QVBoxLayout();
 	setLayout( lay );
@@ -94,12 +101,14 @@ TestShredder::TestShredder()
 
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( btRun );
+	hbox->addWidget( btXML );
 	hbox->addWidget( btClose );
 	
 	threadGroup->setLayout( threadLayout = new QVBoxLayout() );
 	threadLayout->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( new QLabel( "Thread Count" ) );
 	hbox->addWidget( threadNumber );
+	hbox->addWidget( threadsVisible );
 
 	setThreadNumber( NUM_THREADS );
 }
@@ -109,6 +118,15 @@ TestShredder::~TestShredder()
 	queue.clear();
 }
 
+void TestShredder::xml()
+{
+	btRun->setChecked( false );
+	queue.clear();
+	foreach ( ThreadStruct thread, threads )
+		thread.thread->wait();
+	NifModel::loadXML();
+}
+
 void TestShredder::setThreadNumber( int num )
 {
 	threadNumber->setValue( num );
@@ -116,21 +134,12 @@ void TestShredder::setThreadNumber( int num )
 	{
 		ThreadStruct thread;
 		
-		thread.label = new QLabel();
-		thread.progbar = new ProgBar();
-		thread.layout = new QHBoxLayout();
-		thread.layout->addWidget( thread.label, 1 );
-		thread.layout->addWidget( thread.progbar, 1 );
-		threadLayout->addLayout( thread.layout );
-		thread.label->setVisible( true );
-		thread.progbar->setVisible( true );
-		
 		thread.thread = new TestThread( this );
-		connect( thread.thread, SIGNAL( sigStart( const QString & ) ), thread.label, SLOT( setText( const QString & ) ) );
-		connect( thread.thread, SIGNAL( sigProgress( int, int ) ), thread.progbar, SLOT( sltProgress( int, int ) ) );
-		
 		connect( thread.thread, SIGNAL( started() ), this, SLOT( threadStarted() ) );
 		connect( thread.thread, SIGNAL( finished() ), this, SLOT( threadFinished() ) );
+		
+		thread.box = new ThreadBox( thread.thread, threadLayout );
+		thread.box->setVisible( threadsVisible->isChecked() );
 		
 		threads.append( thread );
 		
@@ -146,10 +155,18 @@ void TestShredder::setThreadNumber( int num )
 			return;
 		
 		ThreadStruct thread = threads.takeLast();
-		delete thread.label;
-		delete thread.progbar;
-		delete thread.layout;
+		if ( thread.box )
+			delete thread.box;
 		delete thread.thread;
+	}
+}
+
+void TestShredder::setThreadsVisible( bool x )
+{
+	threadsVisible->setChecked( x );
+	foreach ( ThreadStruct thread, threads )
+	{
+		thread.box->setVisible( x );
 	}
 }
 
@@ -186,6 +203,8 @@ void TestShredder::run()
 	text->clear();
 	
 	queue = makeQueue( directory->text(), chkRecursive->isChecked() );
+	
+	time = QDateTime::currentDateTime();
 
 	progMain->setRange( 0, queue.count() );
 	progMain->setValue( 0 );
@@ -214,6 +233,7 @@ void TestShredder::threadFinished()
 
 	if ( queue.isEmpty() )
 	{
+		//text->append( QString( "<br>run time %1 [s]<br>" ).arg( time.secsTo( QDateTime::currentDateTime() ) ) );
 		btRun->setChecked( false );
 	}
 	else if ( thread )
@@ -240,8 +260,8 @@ TestThread::TestThread( QObject * o )
 	: QThread( o )
 {
 	nif = new NifModel( this );
+	nif->setMessageMode( NifModel::CollectMessages );
 	connect( nif, SIGNAL( sigProgress( int, int ) ), this, SIGNAL( sigProgress( int, int ) ) );
-	connect( nif, SIGNAL( sigMessage( const Message & ) ), this, SLOT( sltMessage( const Message & ) ) );
 }
 
 TestThread::~TestThread()
@@ -252,21 +272,51 @@ TestThread::~TestThread()
 void TestThread::run()
 {
 	emit sigStart( filepath );
-	result.clear();
 	nif->load( filepath );
-	result.prepend( QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( nif->getVersion() ) );
-}
-
-void TestThread::sltMessage( const Message & msg )
-{
-	if ( msg.type() != QtDebugMsg )
+	result = QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( nif->getVersion() );
+	foreach ( Message msg, nif->getMessages() )
 	{
-		result += msg + "<br>";
+		if ( msg.type() != QtDebugMsg )
+		{
+			result += msg + "<br>";
+		}
 	}
 }
 
-void ProgBar::sltProgress( int x, int y )
+/*
+ *  Thread Box
+ */
+ 
+ThreadBox::ThreadBox( TestThread * thread, QLayout * parentLayout )
 {
-	setRange( 0, y );
-	setValue( x );
+	prog = new QProgressBar( this );
+	label = new QLabel( this );
+
+	parentLayout->addWidget( this );
+	//label->setVisible( true );
+	//prog->setVisible( true );
+	//setVisible( true );
+
+	connect( thread, SIGNAL( sigStart( const QString & ) ), label, SLOT( setText( const QString & ) ) );
+	connect( thread, SIGNAL( sigProgress( int, int ) ), this, SLOT( sltProgress( int, int ) ) );
+}
+
+QSize ThreadBox::sizeHint() const
+{
+	QSize sl = label->sizeHint();
+	QSize sp = prog->sizeHint();
+	
+	return QSize( sl.width() + sp.width(), qMax( sl.height(), sp.height() ) );
+}
+
+void ThreadBox::resizeEvent( QResizeEvent * )
+{
+	label->setGeometry( 0, 0, width() / 2, height() );
+	prog->setGeometry( width() / 2, 0, width() / 2, height() );
+}
+
+void ThreadBox::sltProgress( int x, int y )
+{
+	prog->setRange( 0, y );
+	prog->setValue( x );
 }

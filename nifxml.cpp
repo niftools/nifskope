@@ -34,18 +34,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 
 #include <QtXml>
-#include <QColor>
+#include <QApplication>
+#include <QMessageBox>
 
 #define err( X ) { errorStr = X; return false; }
+
+QReadWriteLock					NifModel::XMLlock;
 
 QList<quint32>					NifModel::supportedVersions;
 
 QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::ancestors;
 QHash<QString,NifBlock*>		NifModel::blocks;
-
-const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
-const float Matrix::identity[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
 
 class NifXmlHandler : public QXmlDefaultHandler
 {
@@ -283,8 +283,21 @@ public:
 	}
 };
 
+bool NifModel::loadXML()
+{
+	QString result = NifModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "nif.xml" ) );
+	if ( ! result.isEmpty() )
+	{
+		QMessageBox::critical( 0, "NifSkope", result );
+		return false;
+	}
+	return true;
+}
+
 QString NifModel::parseXmlDescription( const QString & filename )
 {
+	XMLlock.lockForWrite();
+	
 	qDeleteAll( compounds );	compounds.clear();
 	qDeleteAll( ancestors );	ancestors.clear();
 	qDeleteAll( blocks );		blocks.clear();
@@ -298,7 +311,10 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	{
 		f.setFileName( ":/res/nif.xml" );
 		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
+		{
+			XMLlock.unlock();
 			return QString( "error: couldn't open xml description file: " + filename );
+		}
 	}
 	
 	NifXmlHandler handler;
@@ -307,6 +323,18 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	reader.setErrorHandler( &handler );
 	QXmlInputSource source( &f );
 	reader.parse( source );
+	
+	if ( ! handler.errorString().isEmpty() )
+	{
+		qDeleteAll( compounds );	compounds.clear();
+		qDeleteAll( ancestors );	ancestors.clear();
+		qDeleteAll( blocks );		blocks.clear();
+		
+		supportedVersions.clear();
+	}
+	
+	XMLlock.unlock();
+	
 	return handler.errorString();
 }
 
