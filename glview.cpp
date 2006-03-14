@@ -716,10 +716,12 @@ void GLView::viewAction( QAction * act )
 		act = checkedViewAction();
 	}
 	
+	if ( act != aViewWalk )
+		setPosition( Vector3() - bs.center );
+	
 	if ( act == aViewTop )
 	{
 		setRotation( 0, 0, 0 );
-		setPosition( Vector3() - bs.center );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( true );
 		aViewFront->setChecked( false );
@@ -728,7 +730,6 @@ void GLView::viewAction( QAction * act )
 	else if ( act == aViewFront )
 	{
 		setRotation( - 90, 0, 0 );
-		setPosition( Vector3() - bs.center );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( true );
@@ -737,7 +738,6 @@ void GLView::viewAction( QAction * act )
 	else if ( act == aViewSide )
 	{
 		setRotation( - 90, 0, 90 );
-		setPosition( Vector3() - bs.center );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
