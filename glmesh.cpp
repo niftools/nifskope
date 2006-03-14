@@ -513,7 +513,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		{
 			if ( transNorms.count() > v ) glNormal( transNorms[v] );
 			if ( transCoords.count() > v ) glTexCoord( transCoords[v] );
-			//if ( transColors.count() > v ) glColor( transColors[v] );
+			if ( transColors.count() > v ) glColor( transColors[v] );
 			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}
 		glEnd();
