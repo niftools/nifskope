@@ -259,12 +259,14 @@ TestThread::~TestThread()
 	{
 		quit.lock();
 		wait();
+		quit.unlock();
 	}
 }
 
 void TestThread::run()
 {
 	NifModel nif;
+	nif.setMessageMode( NifModel::CollectMessages );
 
 	QString filepath = queue->dequeue();
 	while ( ! filepath.isEmpty() )
