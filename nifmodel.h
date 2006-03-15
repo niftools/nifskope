@@ -269,6 +269,7 @@ protected:
 	NifItem *   getFooterItem() const;
 	NifItem *	getBlockItem( int x ) const;
 	NifItem *	getItem( NifItem * parent, const QString & name ) const;
+	NifItem *	getItemX( NifItem * item, const QString & name ) const; // find upwards
 
 	template <typename T> T get( NifItem * parent, const QString & name ) const;
 	template <typename T> T get( NifItem * item ) const;

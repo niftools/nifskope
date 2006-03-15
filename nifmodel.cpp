@@ -781,7 +781,27 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case TypeCol:	return item->type();
 				case ValueCol:
 				{
-					if ( item->value().isLink() )
+					if ( item->value().type() == NifValue::tStringOffset )
+					{
+						int ofs = item->value().get<int>();
+						if ( ofs == 0xffff )
+							return QString( "<empty>" );
+						NifItem * palette = getItemX( item, "String Palette" );
+						int link = ( palette ? palette->value().toLink() : -1 );
+						if ( ( palette = getBlockItem( link ) ) && ( palette = getItem( palette, "Palette" ) ) )
+						{
+							QByteArray bytes = palette->value().get<QByteArray>();
+							if ( ofs < bytes.count() )
+								return QString( & bytes.data()[ofs] );
+							else
+								return QString( "<offset invalid>" );
+						}
+						else
+						{
+							return QString( "<palette not found>" );
+						}
+					}
+					else if ( item->value().isLink() )
 					{
 						int lnk = item->value().toLink();
 						if ( lnk >= 0 )
@@ -1153,7 +1173,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	catch ( QString err )
 	{
-		msg( Message() << err );
+		msg( Message() << err.toAscii().constData() );
 		reset();
 		return false;
 	}
@@ -1475,6 +1495,22 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 	}
 	
 	return 0;
+}
+
+NifItem * NifModel::getItemX( NifItem * item, const QString & name ) const
+{
+	if ( ! item || ! item->parent() )	return 0;
+	
+	NifItem * parent = item->parent();
+	for ( int c = item->row() - 1; c >= 0; c-- )
+	{
+		NifItem * child = parent->child( c );
+		
+		if ( child && child->name() == name && evalCondition( child ) )
+			return child;
+	}
+	
+	return getItemX( parent, name );
 }
 
 QModelIndex NifModel::getIndex( const QModelIndex & parent, const QString & name ) const

@@ -220,6 +220,8 @@ void NifValue::initialize()
 	typeMap.insert( "bytearray", NifValue::tByteArray );
 	typeMap.insert( "fileversion", NifValue::tFileVersion );
 	typeMap.insert( "headerstring", NifValue::tHeaderString );
+	typeMap.insert( "stringpalette", NifValue::tStringPalette );
+	typeMap.insert( "stringoffset", NifValue::tStringOffset );
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -279,6 +281,7 @@ void NifValue::clear()
 			delete static_cast<Quat*>( val.data );
 			break;
 		case tByteArray:
+		case tStringPalette:
 			delete static_cast<QByteArray*>( val.data );
 			break;
 		case tTriangle:
@@ -343,6 +346,7 @@ void NifValue::changeType( Type t )
 			val.data = new Color4();
 			return;
 		case tByteArray:
+		case tStringPalette:
 			val.data = new QByteArray();
 			return;
 		default:
@@ -382,6 +386,7 @@ void NifValue::operator=( const NifValue & other )
 			*static_cast<Color4*>( val.data ) = *static_cast<Color4*>( other.val.data );
 			return;
 		case tByteArray:
+		case tStringPalette:
 			*static_cast<QByteArray*>( val.data ) = *static_cast<QByteArray*>( other.val.data );
 			return;
 		case tTriangle:
@@ -435,6 +440,7 @@ bool NifValue::fromString( const QString & s )
 			val.u08 = s.toUInt( &ok );
 			return ok;
 		case tWord:
+		case tStringOffset:
 			val.u32 = 0;
 			val.u16 = s.toUInt( &ok );
 			return ok;
@@ -467,6 +473,7 @@ bool NifValue::fromString( const QString & s )
 			val.u32 = NifModel::version2number( s );
 			return val.u32 != 0;
 		case tByteArray:
+		case tStringPalette:
 		case tVector2:
 		case tVector3:
 		case tQuat:
@@ -486,6 +493,7 @@ QString NifValue::toString() const
 			return ( val.u32 ? "yes" : "no" );
 		case tByte:
 		case tWord:
+		case tStringOffset:
 		case tInt:
 			return QString::number( val.u32 );
 		case tFlags:
@@ -539,6 +547,7 @@ QString NifValue::toString() const
 				return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
 		}
 		case tByteArray:
+		case tStringPalette:
 			return QString( "%1 bytes" ).arg( static_cast<QByteArray*>( val.data )->count() );
 		case tFileVersion:
 			return NifModel::version2string( val.u32 );
@@ -578,6 +587,7 @@ bool NifStream::read( NifValue & val )
 			return device->read( (char *) &val.val.u08, 1 ) == 1;
 		case NifValue::tWord:
 		case NifValue::tFlags:
+		case NifValue::tStringOffset:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
@@ -655,6 +665,15 @@ bool NifStream::read( NifValue & val )
 			*static_cast<QByteArray*>( val.val.data ) = device->read( len );
 			return static_cast<QByteArray*>( val.val.data )->count() == len;
 		}
+		case NifValue::tStringPalette:
+		{
+			int len;
+			device->read( (char *) &len, 4 );
+			if ( len > 0xffff || len < 0 )	return false;
+			*static_cast<QByteArray*>( val.val.data ) = device->read( len );
+			device->read( (char *) &len, 4 );
+			return true;
+		}
 		case NifValue::tNone:
 			return true;
 	}
@@ -674,6 +693,7 @@ bool NifStream::write( const NifValue & val )
 			return device->write( (char *) &val.val.u08, 1 ) == 1;
 		case NifValue::tWord:
 		case NifValue::tFlags:
+		case NifValue::tStringOffset:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
 		case NifValue::tFileVersion:
@@ -744,6 +764,16 @@ bool NifStream::write( const NifValue & val )
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
 			return device->write( *array ) == len;
+		}
+		case NifValue::tStringPalette:
+		{
+			QByteArray * array = static_cast<QByteArray*>( val.val.data );
+			int len = array->count();
+			if ( device->write( (char *) &len, 4 ) != 4 )
+				return false;
+			if ( device->write( *array ) != len )
+				return false;
+			return device->write( (char *) &len, 4 ) == 4;
 		}
 		case NifValue::tNone:
 			return true;
