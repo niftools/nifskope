@@ -102,7 +102,7 @@ public:
 	
 	enum FlagType
 	{
-		Alpha, Controller, Node, Shape, ZBuffer, None
+		Alpha, Controller, Node, Shape, VertexColor, ZBuffer, None
 	};
 	
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
@@ -127,6 +127,8 @@ public:
 				return Node;
 			else if ( name == "NiTriShape" || name == "NiTriStrips" )
 				return Shape;
+			else if ( name == "NiVertexColorProperty" )
+				return VertexColor;
 			else if ( name == "NiZBufferProperty" )
 				return ZBuffer;
 		}
@@ -155,6 +157,9 @@ public:
 				break;
 			case Shape:
 				shapeFlags( nif, iFlags );
+				break;
+			case VertexColor:
+				vcolFlags( nif, iFlags );
 				break;
 			case ZBuffer:
 				zbufferFlags( nif, iFlags );
@@ -319,6 +324,33 @@ public:
 			if ( chkShadow )
 				flags = flags & 0xffbf | ( chkShadow->isChecked() ? 0x40 : 0 );
 			nif->set<int>( index, flags );
+		}
+	}
+	
+	void vcolFlags( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iBlock = nif->getBlock( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		static const char * vertexModes[3] = { "Ignore", "Emissive", "Ambient Diffuse" };
+		
+		QComboBox * cmbVertex = dlgCombo( vbox, "Vertex Mode", vertexModes, 3 );
+		cmbVertex->setCurrentIndex( nif->get<int>( iBlock, "Vertex Mode" ) );
+		
+		static const char * lightModes[2] = { "Emissive", "Ambient Diffuse Emissive" };
+		
+		QComboBox * cmbLight = dlgCombo( vbox, "Lighting Mode", lightModes, 2 );
+		cmbLight->setCurrentIndex( nif->get<int>( iBlock, "Lighting Mode" ) );
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			nif->set<int>( iBlock, "Vertex Mode", cmbVertex->currentIndex() );
+			nif->set<int>( iBlock, "Lighting Mode", cmbLight->currentIndex() );
 		}
 	}
 	
