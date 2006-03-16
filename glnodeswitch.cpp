@@ -60,12 +60,16 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 			switch ( nif->get<int>( iLOD, "LOD Type" ) )
 			{
 				case 0:
+					center = nif->get<Vector3>( iLOD, "LOD Center" );
 					iLevels = nif->getIndex( iLOD, "LOD Levels" );
 					break;
 				case 1:
 					iData = nif->getBlock( nif->getLink( iLOD, "Range Data" ), "NiRangeLODData" );
 					if ( iData.isValid() )
+					{
+						center = nif->get<Vector3>( iLOD, "LOD Center" );
 						iLevels = nif->getIndex( iData, "LOD Levels" );
+					}
 					break;
 			}
 			if ( iLevels.isValid() )
@@ -78,13 +82,15 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 void LODNode::transform()
 {
 	Node::transform();
+	
+	float distance = ( viewTrans() * center ).length();
 
 	int c = 0;
 	foreach ( Node * child, children.list() )
 	{
 		if ( c < ranges.count() )
 		{
-			child->flags.node.hidden = ! ( ranges[c].first <= scene->distance && scene->distance < ranges[c].second );
+			child->flags.node.hidden = ! ( ranges[c].first <= distance && distance < ranges[c].second );
 		}
 		c++;
 	}

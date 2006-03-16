@@ -48,6 +48,8 @@ public:
 protected:
 	QList< QPair<float,float> > ranges;
 	QPersistentModelIndex iData;
+	
+	Vector3 center;
 };
 
 class BillboardNode : public Node

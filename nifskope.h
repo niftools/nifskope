@@ -93,7 +93,6 @@ protected slots:
 	void contextMenu( const QPoint & pos );
 	
 	void setFrame( int, int, int );
-	void setMaxDistance( int );
 	
 	void dispatchMessage( const Message & msg );
 	
@@ -138,10 +137,6 @@ private:
 
 	QToolBar * tAnim;
 	QSlider * sldTime;
-	
-	QToolBar * tLOD;
-	QSlider * sldDistance;
-	QSpinBox * spnMaxDistance;
 };
 
 class ProgDlg : public QProgressDialog

@@ -52,7 +52,7 @@ Scene::Scene()
 	currentNode = 0;
 	animate = true;
 	
-	time = distance = 0.0;
+	time = 0.0;
 	sceneBoundsValid = timeBoundsValid = false;
 }
 

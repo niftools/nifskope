@@ -235,29 +235,6 @@ NifSkope::NifSkope() : QMainWindow()
 	
 	addToolBar( Qt::TopToolBarArea, tAnim );
 	
-	// LOD tool bar
-	
-	tLOD = new QToolBar( "LOD distance" );
-	tLOD->setObjectName( "LODtool" );
-	tLOD->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-	
-	tLOD->addWidget( new QLabel( "LOD" ) );
-	
-	sldDistance = new QSlider;
-	sldDistance->setOrientation( Qt::Horizontal );
-	sldDistance->setRange( 0, 10000 );
-	tLOD->addWidget( sldDistance );
-	connect( sldDistance, SIGNAL( valueChanged( int ) ), ogl, SLOT( sltDistance( int ) ) );
-	
-	spnMaxDistance = new QSpinBox;
-	spnMaxDistance->setRange( 0, 4000000 );
-	spnMaxDistance->setValue( 10000 );
-	spnMaxDistance->setPrefix( "max " );
-	tLOD->addWidget( spnMaxDistance );
-	connect( spnMaxDistance, SIGNAL( valueChanged( int ) ), this, SLOT( setMaxDistance( int ) ) );
-	
-	addToolBar( Qt::TopToolBarArea, tLOD );
-	
 	// menu
 
 	QMenu * mFile = new QMenu( "&File" );
@@ -287,7 +264,6 @@ NifSkope::NifSkope() : QMainWindow()
 	mView->addMenu( mTools );
 	mTools->addAction( tool->toggleViewAction() );
 	mTools->addAction( tAnim->toggleViewAction() );
-	mTools->addAction( tLOD->toggleViewAction() );
 	
 	QMenu * mOpts = new QMenu( "&Render" );
 	foreach ( QAction * a, ogl->grpView->actions() )
@@ -311,11 +287,6 @@ void NifSkope::setFrame( int f, int mn, int mx )
 {
 	sldTime->setRange( mn, mx );
 	sldTime->setValue( f );
-}
-
-void NifSkope::setMaxDistance( int max )
-{
-	sldDistance->setMaximum( max );
 }
 
 NifSkope::~NifSkope()
@@ -358,7 +329,7 @@ void NifSkope::restore( QSettings & settings )
 
 	ogl->restore( settings );	
 
-	restoreState( settings.value( "window state" ).toByteArray(), 0x041 );
+	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
 }
 
 void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
@@ -373,7 +344,7 @@ void saveHeader( const QString & name, QSettings & settings, QHeaderView * heade
 
 void NifSkope::save( QSettings & settings ) const
 {
-	settings.setValue( "window state", saveState( 0x041 ) );
+	settings.setValue( "window state", saveState( 0x073 ) );
 
 	settings.setValue( "last load", lineLoad->text() );
 	settings.setValue( "last save", lineSave->text() );

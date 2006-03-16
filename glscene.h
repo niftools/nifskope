@@ -80,7 +80,6 @@ public:
 	bool animate;
 	
 	float time;
-	float distance; // distance used for LOD switches
 
 	bool texturing;
 	QList<GLTex*> textures;

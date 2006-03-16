@@ -276,7 +276,7 @@ void GLView::glProjection( int x, int y )
 	}
 	else
 	{
-		GLdouble h2 = axis / Zoom * 2;
+		GLdouble h2 = axis / Zoom;
 		GLdouble w2 = h2 * aspect;
 		glOrtho( - w2, + w2, - h2, + h2, nr, fr > 1.0 ? fr : 1.0 );
 	}
@@ -647,13 +647,6 @@ void GLView::sltFrame( int f )
 	update();
 }
 
-void GLView::sltDistance( int d )
-{
-	scene->distance = d;
-	update();
-}
-
-
 void GLView::selectTexFolder()
 {
 	if ( ! model ) return;
@@ -683,7 +676,7 @@ QString GLView::textureFolder() const
 void GLView::adjustCullExp()
 {
 	bool ok;
-	QString exp = QInputDialog::getText( this, "Cull Nodes by Name", "Enter a regular expression: All nodes which names are matching this expression will be hidden unless show hidden is enabled", QLineEdit::Normal, scene->expCull.pattern(), &ok );
+	QString exp = QInputDialog::getText( this, "Cull Nodes by Name", "Enter a regular expression:", QLineEdit::Normal, scene->expCull.pattern(), &ok );
 	if ( ok )
 		scene->expCull = QRegExp( exp );
 	update();
@@ -811,6 +804,8 @@ void GLView::advanceGears()
 	if ( kbd[ Qt::Key_S ] )		move( 0, 0, - MOV_SPD * dT );
 	if ( kbd[ Qt::Key_F ] )		move( 0, + MOV_SPD * dT, 0 );
 	if ( kbd[ Qt::Key_R ] )		move( 0, - MOV_SPD * dT, 0 );
+	if ( kbd[ Qt::Key_Q ] )		setDistance( Dist * 0.9 );
+	if ( kbd[ Qt::Key_E ] )		setDistance( Dist * 1.1 );
 	if ( kbd[ Qt::Key_PageUp ] )	zoom( 1.1 );
 	if ( kbd[ Qt::Key_PageDown ] )	zoom( 0.9 );
 	
@@ -843,6 +838,8 @@ void GLView::keyPressEvent( QKeyEvent * event )
 		case Qt::Key_S:
 		case Qt::Key_R:
 		case Qt::Key_F:
+		case Qt::Key_Q:
+		case Qt::Key_E:
 			kbd[ event->key() ] = true;
 			break;
 		default:
@@ -867,6 +864,8 @@ void GLView::keyReleaseEvent( QKeyEvent * event )
 		case Qt::Key_S:
 		case Qt::Key_R:
 		case Qt::Key_F:
+		case Qt::Key_Q:
+		case Qt::Key_E:
 			kbd[ event->key() ] = false;
 			break;
 		default:
@@ -927,7 +926,10 @@ void GLView::mouseDoubleClickEvent( QMouseEvent * )
 
 void GLView::wheelEvent( QWheelEvent * event )
 {
-	zoom( event->delta() > 0 ? 0.9 : 1.1 );
+	if ( aViewWalk->isChecked() )
+		mouseMov += Vector3( 0, 0, event->delta() );
+	else
+		setDistance( Dist * ( event->delta() > 0 ? 1.2 : 0.8 ) );
 }
 
 void GLView::checkActions()
