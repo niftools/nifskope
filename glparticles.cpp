@@ -76,7 +76,7 @@ class ParticleController : public Controller
 	
 	QPointer<Particles> target;
 	
-	float emitStart, emitStop, emitRate, emitLast, emitAccu;
+	float emitStart, emitStop, emitRate, emitLast, emitAccu, emitMax;
 	QPointer<Node> emitNode;
 	Vector3 emitRadius;
 	
@@ -134,6 +134,7 @@ public:
 			QModelIndex iParticles = nif->getIndex( iBlock, "Particles" );
 			if ( iParticles.isValid() )
 			{
+				emitMax = nif->get<int>( iParticles, "Num Particles" );
 				int active = nif->get<int>( iParticles, "Num Valid" );
 				iParticles = nif->getIndex( iParticles, "Particles" );
 				if ( iParticles.isValid() )
@@ -148,6 +149,11 @@ public:
 						particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
 					}
 				}
+			}
+			
+			if ( ( nif->get<int>( iBlock, "Emit Flags" ) & 1 ) == 0 )
+			{
+				emitRate = emitMax / ( ttl + ttlRnd / 2 );
 			}
 			
 			iExtras.clear();
@@ -201,7 +207,8 @@ public:
 			if ( p.lifetime < p.lifespan && p.vertex < target->verts.count() )
 			{
 				p.position = target->verts[ p.vertex ];
-				moveParticle( p, deltaTime );
+				for ( int i = 0; i < 4; i++ )
+					moveParticle( p, deltaTime/4 );
 				p.lasttime = localtime;
 				n++;
 			}
@@ -274,8 +281,14 @@ public:
 			switch ( g.type )
 			{
 				case 0:
-					p.velocity += g.direction * g.force * deltaTime;
+					p.velocity += g.direction * ( g.force * deltaTime );
 					break;
+				case 1:
+				{
+					Vector3 dir = ( g.position - p.position );
+					dir.normalize();
+					p.velocity += dir * ( g.force * deltaTime );
+				}	break;
 			}
 		}
 		p.position += p.velocity * deltaTime;
