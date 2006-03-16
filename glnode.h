@@ -160,6 +160,9 @@ public:
 	
 	BoundSphere operator|( const BoundSphere & o );
 	
+	BoundSphere & apply( const Transform & t );
+	BoundSphere & applyInv( const Transform & t );
+	
 	friend BoundSphere operator*( const Transform & t, const BoundSphere & s );
 };
 

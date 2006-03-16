@@ -514,14 +514,14 @@ void Node::setupRenderState( bool vertexcolors )
 BoundSphere Node::bounds() const
 {
 	if ( scene->showNodes )
-		return BoundSphere( worldTrans().translation, 1 );
+		return BoundSphere( worldTrans().translation, 0 );
 	else
 		return BoundSphere();
 }
 
 BoundSphere::BoundSphere()
 {
-	radius	= 0;
+	radius	= -1;
 }
 
 BoundSphere::BoundSphere( const Vector3 & c, float r )
@@ -540,7 +540,7 @@ BoundSphere::BoundSphere( const QVector<Vector3> & verts )
 	if ( verts.isEmpty() )
 	{
 		center	= Vector3();
-		radius	= 0;
+		radius	= -1;
 	}
 	else
 	{
@@ -551,41 +551,42 @@ BoundSphere::BoundSphere( const QVector<Vector3> & verts )
 		}
 		center /= verts.count();
 		
-		radius	= 0.1;
+		radius	= 0;
 		foreach ( Vector3 v, verts )
 		{
-			float d = ( center - v ).length();
+			float d = ( center - v ).squaredLength();
 			if ( d > radius )
 				radius = d;
 		}
+		radius = sqrt( radius );
 	}
 }
 
-BoundSphere & BoundSphere::operator=( const BoundSphere & other )
+BoundSphere & BoundSphere::operator=( const BoundSphere & o )
 {
-	center	= other.center;
-	radius	= other.radius;
+	center	= o.center;
+	radius	= o.radius;
 	return *this;
 }
 
-BoundSphere & BoundSphere::operator|=( const BoundSphere & other )
+BoundSphere & BoundSphere::operator|=( const BoundSphere & o )
 {
-	if ( other.radius <= 0 )
+	if ( o.radius < 0 )
 		return *this;
-	if ( radius <= 0 )
-		return operator=( other );
+	if ( radius < 0 )
+		return operator=( o );
 	
-	float d = ( center - other.center ).length();
+	float d = ( center - o.center ).length();
 	
-	if ( radius > d + other.radius )
+	if ( radius >= d + o.radius )
 		return * this;
-	if ( other.radius > d + radius )
-		return operator=( other );
+	if ( o.radius >= d + radius )
+		return operator=( o );
 	
-	if ( other.radius > radius )
-		radius = other.radius;
+	if ( o.radius > radius ) radius = o.radius;
 	radius += d / 2;
-	center = ( center + other.center ) / 2;
+	center = ( center + o.center ) / 2;
+	
 	return *this;
 }
 
@@ -596,10 +597,23 @@ BoundSphere BoundSphere::operator|( const BoundSphere & other )
 	return b;
 }
 
+BoundSphere & BoundSphere::apply( const Transform & t )
+{
+	center = t * center;
+	radius *= fabs( t.scale );
+	return *this;
+}
+
+BoundSphere & BoundSphere::applyInv( const Transform & t )
+{
+	center = t.rotation.inverted() * ( center - t.translation ) / t.scale;
+	radius /= fabs( t.scale );
+	return *this;
+}
+
 BoundSphere operator*( const Transform & t, const BoundSphere & sphere )
 {
 	BoundSphere bs( sphere );
-	bs.center = t * bs.center;
-	bs.radius *= fabs( t.scale );
-	return bs;
+	return bs.apply( t );
 }
+

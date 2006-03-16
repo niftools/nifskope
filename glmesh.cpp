@@ -378,7 +378,9 @@ void Mesh::transformShapes()
 		for ( int n = 0; n < transNorms.count(); n++ )
 			transNorms[n].normalize();
 		
-		upBounds = true;
+		bndSphere = BoundSphere( transVerts );
+		bndSphere.applyInv( viewTrans() );
+		upBounds = false;
 	}
 	else if ( ! transformRigid )
 	{
