@@ -1,6 +1,6 @@
 #include "spellbook.h"
 
-#include "NvTriStrip/NvTriStrip.h"
+#include "../NvTriStrip/NvTriStrip.h"
 
 #include <QMessageBox>
 
@@ -309,10 +309,3 @@ class spTriangulate : public Spell
 };
 
 REGISTER_SPELL( spTriangulate )
-
-#include "NVTriStrip/NvTriStripObjects.h"
-#include "NVTriStrip/VertexCache.h"
-
-#include "NVTriStrip/NVTriStrip.cpp"
-#include "NVTriStrip/NvTriStripObjects.cpp"
-#include "NVTriStrip/VertexCache.cpp"

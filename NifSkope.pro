@@ -9,6 +9,7 @@ QT += xml opengl
 DESTDIR = ./
 
 HEADERS += \
+widgets\*.h \
 glcontrolable.h \
 glcontroller.h \
 gllight.h \
@@ -32,6 +33,7 @@ spellbook.h \
 spells/*.h
 
 SOURCES += \
+widgets\*.cpp \
 glcontroller.cpp \
 gllight.cpp \
 glmesh.cpp \
@@ -52,7 +54,8 @@ niftypes.cpp \
 nifview.cpp \
 nifxml.cpp \
 spellbook.cpp \
-spells/*.cpp
+spells/*.cpp \
+NvTriStrip/*.cpp
 
 RESOURCES += nifskope.qrc
 
