@@ -547,8 +547,18 @@ QString NifValue::toString() const
 				return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
 		}
 		case tByteArray:
-		case tStringPalette:
 			return QString( "%1 bytes" ).arg( static_cast<QByteArray*>( val.data )->count() );
+		case tStringPalette:
+		{
+			QByteArray * array = static_cast<QByteArray*>( val.data );
+			QString s;
+			while ( s.length() < array->count() )
+			{
+				s += & array->data()[s.length()];
+				s += QChar( '|' );
+			}
+			return s;
+		}
 		case tFileVersion:
 			return NifModel::version2string( val.u32 );
 		case tTriangle:
@@ -616,25 +626,9 @@ bool NifStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 4096 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
-			
-			int i = 0;
-			while ( i < string.size() )
-			{
-				if ( string[i] == '\0' )
-				{
-					string.resize( string.size() + 1 );
-					for ( int x = string.size() - 1; x > i; x-- )
-						string[ x ] = string[ x - 1 ];
-					string[i++] = '\\';
-					string[i++] = '0';
-				}
-				else
-					i++;
-			}
-			
 			string.replace( "\r", "\\r" );
 			string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
@@ -643,7 +637,7 @@ bool NifStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 4096 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			*static_cast<QString*>( val.val.data ) = QString( string );
@@ -662,6 +656,7 @@ bool NifStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
+			if ( len < 0 )	return false;
 			*static_cast<QByteArray*>( val.val.data ) = device->read( len );
 			return static_cast<QByteArray*>( val.val.data )->count() == len;
 		}
@@ -722,21 +717,6 @@ bool NifStream::write( const NifValue & val )
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
-			
-			int i = 0;
-			while ( i < string.size() )
-			{
-				if ( string[i] == '\\' && string[i+1] == '0' )
-				{
-					string[i++] = '\0';
-					for ( int x = i; x < string.size() - 1; x++ )
-						string[x] = string[x+1];
-					string.resize( string.size() - 1 );
-				}
-				else
-					i++;
-			}
-			
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
