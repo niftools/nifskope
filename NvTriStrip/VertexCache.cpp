@@ -12,7 +12,7 @@ VertexCache::VertexCache(int size)
 {
   numEntries = size;
 
-  entries = new unsigned short[numEntries];
+  entries = new int[numEntries];
 
   for(int i = 0; i < numEntries; i++)
     entries[i] = -1;

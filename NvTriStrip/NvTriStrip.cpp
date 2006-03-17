@@ -98,7 +98,7 @@ void Cleanup(NvStripInfoVec& tempStrips, NvFaceInfoVec& tempFaces)
 	}
 
 	//delete faces
-	for(i = 0; i < tempFaces.size(); i++)
+	for(int i = 0; i < tempFaces.size(); i++)
 	{
 		delete tempFaces[i];
 		tempFaces[i] = NULL;
@@ -257,7 +257,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 
 		//do strips
 		unsigned int indexCtr = 0;
-		for(i = 0; i < tempStrips.size(); i++)
+		for(int i = 0; i < tempStrips.size(); i++)
 		{
 			for(int j = 0; j < tempStrips[i]->m_faces.size(); j++)
 			{
@@ -277,7 +277,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 		}
 
 		//do lists
-		for(i = 0; i < tempFaces.size(); i++)
+		for(int i = 0; i < tempFaces.size(); i++)
 		{			
 			primGroupArray[0].indices[indexCtr++] = tempFaces[i]->m_v0;
 			primGroupArray[0].indices[indexCtr++] = tempFaces[i]->m_v1;
@@ -308,7 +308,8 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 			if(!bStitchStrips)
 			{
 				//if we've got multiple strips, we need to figure out the correct length
-				for(int i = startingLoc; i < stripIndices.size(); i++)
+				int i;
+				for(i = startingLoc; i < stripIndices.size(); i++)
 				{
 					if(stripIndices[i] == -1)
 						break;
@@ -363,7 +364,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 			in_bins[in_indices[i] % NUMBINS].push_back(faceInfo);
 		}
 		
-		for (i = 0; i < *numGroups; ++i)
+		for (int i = 0; i < *numGroups; ++i)
 		{
 			switch ((*primGroups)[i].type)
 			{

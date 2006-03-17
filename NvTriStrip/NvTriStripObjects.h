@@ -238,7 +238,7 @@ protected:
 	
 	// let our strip info classes and the other classes get
 	// to these protected stripificaton methods if they want
-	friend NvStripInfo;
+	friend class NvStripInfo;
 };
 
 #endif
