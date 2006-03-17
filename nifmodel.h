@@ -208,22 +208,7 @@ public:
 	
 	QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const;
 	
-	Qt::ItemFlags flags( const QModelIndex & index ) const
-	{
-		if ( !index.isValid() ) return Qt::ItemIsEnabled;
-		switch( index.column() )
-		{
-			case TypeCol:
-				return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-			case ValueCol:
-				if ( itemArr1( index ).isEmpty() )
-					return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
-				else
-					return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-			default:
-				return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
-		}
-	}
+	Qt::ItemFlags flags( const QModelIndex & index ) const;
 	
 	void reset();
 	

@@ -1048,6 +1048,26 @@ QVariant NifModel::headerData( int section, Qt::Orientation orientation, int rol
 	}
 }
 
+Qt::ItemFlags NifModel::flags( const QModelIndex & index ) const
+{
+	if ( !index.isValid() ) return Qt::ItemIsEnabled;
+	Qt::ItemFlags flags = Qt::ItemIsSelectable;
+	if ( evalCondition( index, true ) )
+		flags |= Qt::ItemIsEnabled;
+	switch( index.column() )
+	{
+		case TypeCol:
+			return flags;
+		case ValueCol:
+			if ( itemArr1( index ).isEmpty() )
+				return flags | Qt::ItemIsEditable;
+			else
+				return flags;
+		default:
+			return flags | Qt::ItemIsEditable;
+	}
+}
+
 void NifModel::reset()
 {
 	updateLinks();
