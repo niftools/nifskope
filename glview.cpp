@@ -270,15 +270,17 @@ void GLView::glProjection( int x, int y )
 	
 	if ( aViewPerspective->isChecked() || aViewWalk->isChecked() )
 	{
-		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * 1.0;
+		if ( nr < 1.0 ) nr = 1.0;
+		if ( fr < 2.0 ) fr = 2.0;
+		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * nr;
 		GLdouble w2 = h2 * aspect;
-		glFrustum( - w2, + w2, - h2, + h2, 1.0, fr > 2.0 ? fr : 2.0 );
+		glFrustum( - w2, + w2, - h2, + h2, nr, fr );
 	}
 	else
 	{
 		GLdouble h2 = axis / Zoom;
 		GLdouble w2 = h2 * aspect;
-		glOrtho( - w2, + w2, - h2, + h2, nr, fr > 1.0 ? fr : 1.0 );
+		glOrtho( - w2, + w2, - h2, + h2, nr, fr );
 	}
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
