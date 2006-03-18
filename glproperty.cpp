@@ -251,14 +251,11 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 		{
 			case 0:		texFilter = GL_NEAREST;		break;
 			case 1:		texFilter = GL_LINEAR;		break;
-			default:	texFilter = GL_LINEAR;		break;
-			/*
 			case 2:		texFilter = GL_NEAREST_MIPMAP_NEAREST;		break;
 			case 3:		texFilter = GL_LINEAR_MIPMAP_NEAREST;		break;
 			case 4:		texFilter = GL_NEAREST_MIPMAP_LINEAR;		break;
 			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
 			default:	texFilter = GL_LINEAR;		break;
-			*/
 		}
 		switch ( nif->get<int>( basetexdata, "Clamp Mode" ) )
 		{
@@ -326,11 +323,12 @@ void TexturingProperty::setController( const NifModel * nif, const QModelIndex &
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && p->scene->texturing && p->scene->bindTexture( p->iBaseTex ) )
+	GLTex * tex;
+	if ( p && p->scene->texturing && ( tex = p->scene->bindTexture( p->iBaseTex ) ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, p->texFilter );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, p->texWrapS );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, p->texWrapT );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );

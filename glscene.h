@@ -60,7 +60,7 @@ public:
 	void drawShapes();
 	void drawNodes();
 	
-	bool bindTexture( const QModelIndex & );
+	GLTex * bindTexture( const QModelIndex & );
 	void setupLights( Node * node );
 	
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );

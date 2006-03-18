@@ -80,13 +80,13 @@ void GLTex::initialize( const QGLContext * context )
 }
 
 
-GLuint texLoadBMP( const QString & filepath );
-GLuint texLoadDDS( const QString & filepath );
-GLuint texLoadTGA( const QString & filepath );
-GLuint texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
+int texLoadBMP( const QString & filepath );
+int texLoadDDS( const QString & filepath );
+int texLoadTGA( const QString & filepath );
+int texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
 
 
-bool Scene::bindTexture( const QModelIndex & index )
+GLTex * Scene::bindTexture( const QModelIndex & index )
 {
 	if ( ! index.isValid() )
 		return false;
@@ -95,7 +95,7 @@ bool Scene::bindTexture( const QModelIndex & index )
 	{
 		if ( tex->iSource == index )
 		{
-			if ( tex->id )
+			if ( tex->id && tex->mipmaps )
 			{
 				if ( tex->external )
 				{
@@ -111,26 +111,26 @@ bool Scene::bindTexture( const QModelIndex & index )
 				}
 				
 				glBindTexture( GL_TEXTURE_2D, tex->id );
-				return true;
+				return tex;
 			}
 			else
-				return false;
+				return 0;
 		}
 	}
 	
 	GLTex * tex = new GLTex( index );
 	textures.append( tex );
 	
-	if ( tex->id )
+	if ( tex->id && tex->mipmaps )
 	{
 		glBindTexture( GL_TEXTURE_2D, tex->id );
-		return true;
+		return tex;
 	}
 	
-	return false;
+	return 0;
 }
 
-GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
+GLTex::GLTex( const QModelIndex & index ) : id( 0 ), mipmaps( 0 ), iSource( index )
 {
 	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
 	if ( iSource.isValid() && nif )
@@ -149,12 +149,15 @@ GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
 					readOnly = !QFileInfo( filepath ).isWritable();
 					loaded = QDateTime::currentDateTime();
 					
+					glGenTextures( 1, &id );
+					glBindTexture( GL_TEXTURE_2D, id );
+					
 					if ( filepath.endsWith( ".dds" ) )
-						id = texLoadDDS( filepath );
+						mipmaps = texLoadDDS( filepath );
 					else if ( filepath.endsWith( ".tga" ) )
-						id = texLoadTGA( filepath );
+						mipmaps = texLoadTGA( filepath );
 					else if ( filepath.endsWith( ".bmp" ) )
-						id = texLoadBMP( filepath );
+						mipmaps = texLoadBMP( filepath );
 					else
 						qWarning() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
 				}
@@ -202,7 +205,9 @@ GLTex::GLTex( const QModelIndex & index ) : id( 0 ), iSource( index )
 						if ( buffer.open( QIODevice::ReadOnly ) )
 						{
 							buffer.seek( offset );
-							id = texLoadRaw( buffer, width, height, mipmaps, bitspp, bytespp, masks );
+							glGenTextures( 1, &id );
+							glBindTexture( GL_TEXTURE_2D, id );
+							this->mipmaps = texLoadRaw( buffer, width, height, mipmaps, bitspp, bytespp, masks );
 						}
 					}
 				}
@@ -291,25 +296,19 @@ bool isPowerOfTwo( unsigned int x )
 	return ( x == 1 );
 }
 
-/*
-too bad: mipmaps aren't very well supported by my opengl driver
-
-void generateMipMaps( int m )
+int generateMipMaps( int m )
 {
 	GLint w = 0, h = 0;
 	
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, m, GL_TEXTURE_WIDTH, &w );
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, m, GL_TEXTURE_HEIGHT, &h );
+	glGetTexLevelParameteriv( GL_TEXTURE_2D, m-1, GL_TEXTURE_WIDTH, &w );
+	glGetTexLevelParameteriv( GL_TEXTURE_2D, m-1, GL_TEXTURE_HEIGHT, &h );
 	
-	qWarning() << m << w << h;
+	//qWarning() << m-1 << w << h;
 
-	if ( w <= 1 && h <= 1 )
-		return;
-	
 	quint8 * data = (quint8 *) malloc( w * h * 4 );
-	glGetTexImage( GL_TEXTURE_2D, m, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	glGetTexImage( GL_TEXTURE_2D, m-1, GL_RGBA, GL_UNSIGNED_BYTE, data );
 	
-	do
+	while ( w > 1 || h > 1 )
 	{
 		const quint8 * src = data;
 		quint8 * dst = data;
@@ -322,6 +321,8 @@ void generateMipMaps( int m )
 		
 		if ( w == 0 ) w = 1;
 		if ( h == 0 ) h = 1;
+		
+		//qWarning() << m << w << h;
 		
 		for ( int y = 0; y < h; y++ )
 		{
@@ -336,15 +337,13 @@ void generateMipMaps( int m )
 			src += yo;
 		}
 		
-		glTexImage2D( GL_TEXTURE_2D, ++m, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		
-		qWarning() << m << w << h;
+		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 	}
-	while ( w > 1 || h > 1 );
 	
 	free( data );
+	
+	return m;
 }
-*/
 
 bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 {
@@ -436,7 +435,7 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 	}
 }
 
-GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV, bool flipH, bool rle )
+int texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV, bool flipH, bool rle )
 {
 	if ( bytespp * 8 != bpp )
 	{
@@ -450,10 +449,6 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 		return 0;
 	}
 	
-	GLuint tx_id;
-	glGenTextures(1, &tx_id);
-	glBindTexture(GL_TEXTURE_2D, tx_id);
-	
 	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 	glPixelStorei( GL_UNPACK_SWAP_BYTES, GL_FALSE );
 	
@@ -464,40 +459,47 @@ GLuint texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bp
 	int h = height;
 	int m = 0;
 	
-	//do
+	while ( m < num_mipmaps )
 	{
+		w = width >> m;
+		h = height >> m;
+		
 		if ( w == 0 ) w = 1;
 		if ( h == 0 ) h = 1;
 		
 		if ( rle )
 		{
 			if ( ! uncompressRLE( f, w, h, bytespp, data1 ) )
+			{
 				qWarning() << "texLoadRaw() : unexpected EOF";
+				free( data2 );
+				free( data1 );
+				return ( m ? 1 : 0 );
+			}
 		}
 		else if ( f.read( (char *) data1, w * h * bytespp ) != w * h * bytespp )
 		{
 			qWarning() << "texLoadRaw() : unexpected EOF";
+			free( data2 );
+			free( data1 );
+			return ( m ? 1 : 0 );
 		}
 		
 		convertToRGBA( data1, w, h, bytespp, mask, flipV, flipH, data2 );
 		
 		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2 );
 		
-		//if ( w == 1 && h == 1 )
-		//	break;
-		
-		w /= 2;
-		h /= 2;
+		if ( w == 1 && h == 1 )
+			break;
 	}
-	//while ( m < num_mipmaps );
 	
 	free( data2 );
 	free( data1 );
 	
-	//if ( w > 1 || h > 1 )
-	//	generateMipMaps( m-1 );
+	if ( w > 1 || h > 1 )
+		m = generateMipMaps( m );
 	
-	return tx_id;
+	return m;
 }
 
 #define DDSD_MIPMAPCOUNT           0x00020000
@@ -703,7 +705,7 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 }
 
 
-GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
+int texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
 {
 	int blockSize = 8;
 	GLenum glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -733,16 +735,15 @@ GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height
 		return 0;
 	}
 	
-	GLuint tx_id;
-	glGenTextures( 1, &tx_id );
-	glBindTexture( GL_TEXTURE_2D, tx_id );
-	
 	GLubyte * pixels = (GLubyte *) malloc( ( ( width + 3 ) / 4 ) * ( ( height + 3 ) / 4 ) * blockSize );
 	unsigned int w = width, h = height, s;
 	unsigned int m = 0;
 	
-	//do
+	while ( m < mipmaps )
 	{
+		w = width >> m;
+		h = height >> m;
+		
 		if ( w == 0 ) w = 1;
 		if ( h == 0 ) h = 1;
 		
@@ -752,7 +753,7 @@ GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height
 		{
 			qWarning() << "texLoadDXT(" << f.fileName() << ") : unexpected EOF";
 			free( pixels );
-			return tx_id;
+			return ( m ? 1 : 0 );
 		}
 		
 		if ( flipV )
@@ -760,22 +761,21 @@ GLuint texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height
 		
 		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
 		
-		//if ( w == 1 && h == 1 )
-		//	break;
-		
-		w /= 2;
-		h /= 2;
+		if ( w == 1 && h == 1 )
+			break;
 	}
-	//while ( m < mipmaps );
 	
-	return tx_id;
+	if ( w > 1 || h > 1 )
+		return 1;
+	else
+		return m;
 }
 
 /*
  *  load a (compressed) dds texture
  */
  
-GLuint texLoadDDS( const QString & filename )
+int texLoadDDS( const QString & filename )
 {
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
@@ -826,7 +826,7 @@ GLuint texLoadDDS( const QString & filename )
 #define TGA_COLOR_RLE	10
 #define TGA_GREY_RLE	11
 
-GLuint texLoadTGA( const QString & filename )
+int texLoadTGA( const QString & filename )
 {
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )
@@ -903,7 +903,7 @@ quint16 get16( quint8 * x )
 	return *( (quint16 *) x );
 }
 
-GLuint texLoadBMP( const QString & filename )
+int texLoadBMP( const QString & filename )
 {
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly ) )

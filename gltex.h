@@ -55,6 +55,7 @@ public:
 	bool exportFile( const QString & file );
 	
 	GLuint		id;
+	int		mipmaps;
 
 	QPersistentModelIndex iSource;
 	
