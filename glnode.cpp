@@ -47,33 +47,25 @@ public:
 		
 		time = ctrlTime( time );
 		
-		interpolate( target->local.rotation, iRotate, time, lRotate );
-		interpolate( target->local.translation, iTrans, time, lTrans );
-		interpolate( target->local.scale, iScale, time, lScale );
+		interpolate( target->local.rotation, iRotations, time, lRotate );
+		interpolate( target->local.translation, iTranslations, time, lTrans );
+		interpolate( target->local.scale, iScales, time, lScale );
 	}
 	
-	void update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index )
 	{
-		Controller::update( nif, index );
-		
-		if ( ( iBlock.isValid() && iBlock == index ) || ( iInterpolator.isValid() && iInterpolator == index ) || ( iData.isValid() && iData == index ) )
+		if ( Controller::update( nif, index ) )
 		{
-			iInterpolator = nif->getBlock( nif->getLink( iBlock, "Interpolator" ), "NiTransformInterpolator" );
-			iData = nif->getBlock( nif->getLink( iInterpolator.isValid() ? iInterpolator : iBlock, "Data" ) );
-			
-			iTrans = nif->getIndex( iData, "Translations" );
-			iRotate = nif->getIndex( iData, "Rotations" );
-			iScale = nif->getIndex( iData, "Scales" );
+			iTranslations = nif->getIndex( iData, "Translations" );
+			iRotations = nif->getIndex( iData, "Rotations" );
+			iScales = nif->getIndex( iData, "Scales" );
 		}
 	}
 	
 protected:
-	QPersistentModelIndex iInterpolator;
-	QPersistentModelIndex iData;
-	
 	QPointer<Node> target;
 	
-	QPersistentModelIndex iTrans, iRotate, iScale;
+	QPersistentModelIndex iTranslations, iRotations, iScales;
 	
 	int lTrans, lRotate, lScale;
 };
@@ -98,23 +90,19 @@ public:
 		}
 	}
 	
-	void update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index )
 	{
-		Controller::update( nif, index );
-		
-		if ( iBlock.isValid() && iBlock == index )
+		if ( Controller::update( nif, index ) )
 		{
-			iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiVisData" );
-			if ( ! iData.isValid() )
-				iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiBoolData" );
 			iKeys = nif->getIndex( iData, "Data" );
+			return true;
 		}
+		return false;
 	}
 	
 protected:
 	QPointer<Node> target;
 	
-	QPersistentModelIndex iData;
 	QPersistentModelIndex iKeys;
 	
 	int	visLast;

@@ -289,17 +289,17 @@ public:
 		target->iBaseTex = nif->getBlock( nif->getLink( iSources.child( r, 0 ) ), "NiSourceTexture" );
 	}
 
-	void update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index )
 	{
-		Controller::update( nif, index );
-		
-		if ( iBlock.isValid() && iBlock == index )
+		if ( Controller::update( nif, index ) )
 		{
 			flipDelta = nif->get<float>( index, "Delta" );
 			flipSlot = nif->get<int>( index, "Texture Slot" );
 			
 			iSources = nif->getIndex( nif->getIndex( index, "Sources" ), "Indices" );
+			return true;
 		}
+		return false;
 	}
 	
 protected:
@@ -377,21 +377,19 @@ public:
 			target->alpha = 1;
 	}
 	
-	void update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index )
 	{
-		Controller::update( nif, index );
-		
-		if ( ( iBlock.isValid() && iBlock == index ) || ( iData.isValid() && iData == index ) )
+		if ( Controller::update( nif, index ) )
 		{
-			iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiFloatData" );
 			iAlpha = nif->getIndex( iData, "Data" );
+			return true;
 		}
+		return false;
 	}
 
 protected:
 	QPointer<MaterialProperty> target;
 	
-	QPersistentModelIndex iData;
 	QPersistentModelIndex iAlpha;
 	
 	int lAlpha;

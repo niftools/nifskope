@@ -134,7 +134,7 @@ Controller::Controller( const QModelIndex & index ) : iBlock( index )
 {
 }
 
-void Controller::update( const NifModel * nif, const QModelIndex & index )
+bool Controller::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( iBlock.isValid() && iBlock == index )
 	{
@@ -143,7 +143,20 @@ void Controller::update( const NifModel * nif, const QModelIndex & index )
 		phase = nif->get<float>( index, "Phase" );
 		frequency = nif->get<float>( index, "Frequency" );
 		flags.bits = nif->get<int>( index, "Flags" );
+		
+		iInterpolator = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
+		if ( iInterpolator.isValid() )
+			iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
+		else
+			iData = nif->getBlock( nif->getLink( iBlock, "Data" ) );
 	}
+	
+	if ( iInterpolator.isValid() && iInterpolator == index )
+	{
+		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
+	}
+	
+	return ( index.isValid() && index == iBlock || index == iInterpolator || index == iData );
 }
 
 float Controller::ctrlTime( float time ) const

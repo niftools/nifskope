@@ -82,14 +82,10 @@ public:
 		target->upBounds = true;
 	}
 	
-	
-	void update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index )
 	{
-		Controller::update( nif, index );
-		if ( ( iBlock.isValid() && iBlock == index ) || ( iData.isValid() && iData == index ) )
+		if ( Controller::update( nif, index ) )
 		{
-			iData = nif->getBlock( nif->getLink( iBlock, "Data" ), "NiMorphData" );
-			
 			qDeleteAll( morph );
 			morph.clear();
 			
@@ -108,52 +104,14 @@ public:
 					morph.append( key );
 				}
 			}
+			return true;
 		}
+		return false;
 	}
 
 protected:
 	QPointer<Mesh> target;
-	
-	QPersistentModelIndex iData;
-	
 	QVector<MorphKey*>	morph;
-};
-
-
-class TexCoordController : public Controller
-{
-public:
-	TexCoordController( Mesh * mesh, const QModelIndex & index )
-		: Controller( index ), target( mesh ), lS( 0 ), lT( 0 ) {}
-	
-	void update( float time )
-	{
-		if ( ! ( flags.controller.active && target ) )
-			return;
-		
-		time = ctrlTime( time );
-		
-		interpolate( target->texOffset[0], iKeys.child( 0, 0 ), time, lS );
-		interpolate( target->texOffset[1], iKeys.child( 1, 0 ), time, lT );
-	}
-	
-	void update( const NifModel * nif, const QModelIndex & index )
-	{
-		Controller::update( nif, index );
-		if ( ( iBlock.isValid() && iBlock == index ) || ( iData.isValid() && iData == index ) )
-		{
-			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiUVData" );
-			iKeys = nif->getIndex( iData, "UV Groups" );
-		}
-	}
-	
-protected:
-	QPointer<Mesh> target;
-	
-	QPersistentModelIndex iData;
-	QPersistentModelIndex iKeys;
-	
-	int lS, lT;
 };
 
 
@@ -187,7 +145,6 @@ void Mesh::clear()
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
-	transCoords.clear();
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
@@ -242,12 +199,6 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 	if ( nif->itemName( iController ) == "NiGeomMorpherController" )
 	{
 		Controller * ctrl = new MorphController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
-	}
-	else if ( nif->itemName( iController ) == "NiUVController" )
-	{
-		Controller * ctrl = new TexCoordController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}

@@ -99,11 +99,12 @@ public:
 	ParticleController( Particles * particles, const QModelIndex & index )
 		: Controller( index ), target( particles ) {}
 	
-	void update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index )
 	{
-		Controller::update( nif, index );
+		if ( ! target )
+			return false;
 		
-		if ( iBlock.isValid() && ( iBlock == index || iExtras.contains( index ) ) && target )
+		if ( Controller::update( nif, index ) || ( index.isValid() && iExtras.contains( index ) ) )
 		{
 			emitNode = target->scene->getNode( nif, nif->getBlock( nif->getLink( iBlock, "Emitter" ) ) );
 			emitStart = nif->get<float>( iBlock, "Emit Start Time" );
@@ -186,7 +187,9 @@ public:
 				
 				iExtra = nif->getBlock( nif->getLink( iExtra, "Next Modifier" ) );
 			}
+			return true;
 		}
+		return false;
 	}
 	
 	void update( float time )
