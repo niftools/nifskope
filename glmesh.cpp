@@ -119,15 +119,6 @@ protected:
  *  Mesh
  */
 
-Mesh::Tristrip::Tristrip( const NifModel * nif, const QModelIndex & tristrip )
-{
-	if ( ! tristrip.isValid() ) return;
-	
-	for ( int s = 0; s < nif->rowCount( tristrip ); s++ )
-		vertices.append( nif->get<int>( tristrip.child( s, 0 ) ) );
-}
-
-
 void Mesh::clear()
 {
 	Node::clear();
@@ -241,7 +232,7 @@ void Mesh::transform()
 		{
 			for ( int r = 0; r < nif->rowCount( uvcoord ); r++ )
 			{
-				TexCoordArray tc = nif->getArray<Vector2>( uvcoord.child( 0, 0 ) );
+				QVector<Vector2> tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
 				if ( tc.count() < verts.count() ) tc.clear();
 				coords.append( tc );
 			}
@@ -258,7 +249,7 @@ void Mesh::transform()
 			if ( points.isValid() )
 			{
 				for ( int r = 0; r < nif->rowCount( points ); r++ )
-					tristrips.append( Tristrip( nif, points.child( r, 0 ) ) );
+					tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
 			}
 			else
 				qWarning() << nif->itemName( iData ) << "(" << nif->getBlockNumber( iData ) << ") 'points' array not found";
@@ -414,9 +405,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		return;
 	}
 	
-	setupRenderState( transColors.count() >= transVerts.count() );
+	setupRenderState( transColors.count() );
 	
-	if ( transNorms.count() < transVerts.count() )
+	if ( ! transNorms.count() )
 		glDisable( GL_NORMALIZE );
 	
 	// rigid mesh? then pass the transformation on to the gl layer
@@ -426,51 +417,80 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glPushMatrix();
 		viewTrans().glLoadMatrix();
 	}
+	
+	// setup array pointers
 
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glVertexPointer( 3, GL_FLOAT, 0, transVerts.data() );
+	
+	if ( transNorms.count() )
+	{
+		glEnableClientState( GL_NORMAL_ARRAY );
+		glNormalPointer( GL_FLOAT, 0, transNorms.data() );
+	}
+	
+	if ( transColors.count() )
+	{
+		glEnableClientState( GL_COLOR_ARRAY );
+		glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
+	}
+	
+	// setup multitexturing
+	
+	TexturingProperty * texprop = findProperty< TexturingProperty >();
+	if ( texprop )
+	{
+		int stage = 0;
+		
+		if ( texprop->bind( 0, coords, stage ) )
+		{	// base
+			stage++;
+		}
+		
+		if ( texprop->bind( 1, coords, stage ) )
+		{	// dark
+			stage++;
+		}
+		
+		if ( texprop->bind( 2, coords, stage ) )
+		{	// detail
+			stage++;
+		}
+	/*
+	if ( bind( 4, texcoords, stage ) )
+	{	// glow
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+		glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD );
+		glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
+		glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
+		glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
+		glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+		glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
+		glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
+		glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
+		glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
+		glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
+		stage++;
+	}
+	*/
+	}
+	
 	// render the triangles
 
-	QVector<Vector2> texco = coords.value( 0 );
-
-	if ( triangles.count() > 0 )
-	{
-		glBegin( GL_TRIANGLES );
-		for ( int t = 0; t < triangles.count(); t++ )
-		{
-			const Triangle & tri = ( triOrder.count() ? triangles[ triOrder[ t ].first ] : triangles[ t ] );
-			
-			if ( transVerts.count() > tri.v1() && transVerts.count() > tri.v2() && transVerts.count() > tri.v3() )
-			{
-				if ( transNorms.count() ) glNormal( transNorms[tri.v1()] );
-				if ( texco.count() ) glTexCoord( texco[tri.v1()] );
-				if ( transColors.count()  ) glColor( transColors[tri.v1()] );
-				glVertex( transVerts[tri.v1()] );
-				if ( transNorms.count()  ) glNormal( transNorms[tri.v2()] );
-				if ( texco.count()  ) glTexCoord( texco[tri.v2()] );
-				if ( transColors.count() ) glColor( transColors[tri.v2()] );
-				glVertex( transVerts[tri.v2()] );
-				if ( transNorms.count() ) glNormal( transNorms[tri.v3()] );
-				if ( texco.count() ) glTexCoord( texco[tri.v3()] );
-				if ( transColors.count() ) glColor( transColors[tri.v3()] );
-				glVertex( transVerts[tri.v3()] );
-			}
-		}
-		glEnd();
-	}
-
+	if ( triangles.count() )
+		glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.data() );
+	
 	// render the tristrips
 	
-	foreach ( Tristrip strip, tristrips )
-	{
-		glBegin( GL_TRIANGLE_STRIP );
-		foreach ( int v, strip.vertices )
-		{
-			if ( transNorms.count() > v ) glNormal( transNorms[v] );
-			if ( texco.count() > v ) glTexCoord( texco[v] );
-			if ( transColors.count() > v ) glColor( transColors[v] );
-			if ( transVerts.count() > v ) glVertex( transVerts[v] );
-		}
-		glEnd();
-	}
+	for ( int s = 0; s < tristrips.count(); s++ )
+		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
+	
+	resetTextureUnits();
+
+	glDisableClientState( GL_VERTEX_ARRAY );
+	glDisableClientState( GL_NORMAL_ARRAY );
+	glDisableClientState( GL_COLOR_ARRAY );
+	
 	
 	// draw green mesh outline if selected
 	
@@ -507,13 +527,13 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			{ 0, 0, 1, .5 }, { 1, 0, 1, .5 },
 			{ 1, 0, 0, .5 }, { 1, 1, 0, .5 } };
 		int c = 0;
-		foreach ( Tristrip strip, tristrips )
+		foreach ( QVector<quint16> strip, tristrips )
 		{
 			glColor4fv( stripcolor[c] );
 			if ( ++c >= 6 ) c = 0;
 			
 			glBegin( GL_LINE_STRIP );
-			foreach ( quint16 v, strip.vertices )
+			foreach ( quint16 v, strip )
 			{
 				if ( transVerts.count() > v )
 					glVertex( transVerts[v] );

@@ -407,26 +407,9 @@ void TexturingProperty::setController( const NifModel * nif, const QModelIndex &
 
 void glProperty( TexturingProperty * p )
 {
-	GLTex * tex;
-	if ( p && p->scene->texturing && ( tex = p->scene->bindTexture( p->textures[0].iSource ) ) )
+	if ( p && p->scene->texturing && p->bind( 0 ) )
 	{
 		glEnable( GL_TEXTURE_2D );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, p->textures[0].wrapS );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, p->textures[0].wrapT );
-		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-		glMatrixMode( GL_TEXTURE );
-		glLoadIdentity();
-		if ( p->textures[0].hasTransform )
-		{
-			glTranslatef( - p->textures[0].center[0], - p->textures[0].center[1], 0 );
-			glRotatef( p->textures[0].rotation, 0, 0, 1 );
-			glTranslatef( p->textures[0].center[0], p->textures[0].center[1], 0 );
-			glScalef( p->textures[0].tiling[0], p->textures[0].tiling[1], 1 );
-			glTranslatef( p->textures[0].translation[0], p->textures[0].translation[1], 0 );
-		}
-		glMatrixMode( GL_MODELVIEW );
 	}
 	else
 	{

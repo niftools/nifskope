@@ -37,13 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Mesh : public Node
 {
-	class Tristrip
-	{
-	public:
-		Tristrip() {}
-		Tristrip( const NifModel * nif, const QModelIndex & );
-		QVector<quint16> vertices;
-	};
 public:
 	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 	
@@ -69,8 +62,6 @@ protected:
 	QVector<Vector3> norms;
 	QVector<Color4>  colors;
 	
-	typedef QVector<Vector2> TexCoordArray;
-	
 	QList< QVector<Vector2> > coords;
 	
 	QVector<Vector3> transVerts;
@@ -82,7 +73,7 @@ protected:
 	QVector<BoneWeights> weights;
 	
 	QVector<Triangle> triangles;
-	QVector<Tristrip> tristrips;
+	QList< QVector<quint16> > tristrips;
 	
 	QVector< QPair< int, float > > triOrder;
 	

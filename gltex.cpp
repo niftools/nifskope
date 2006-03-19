@@ -49,11 +49,12 @@ QStringList GLTex::texfolders;
 #ifndef APIENTRY
 # define APIENTRY
 #endif
-typedef void (APIENTRY *pfn_glCompressedTexImage2D) ( GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid * );
-static pfn_glCompressedTexImage2D _glCompressedTexImage2D = 0;
 
-static bool ext_compression = false;
-static bool ext_mipmapping = false;
+static PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB       = 0;
+static PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB = 0;
+static PFNGLCOMPRESSEDTEXIMAGE2DPROC   glCompressedTexImage2D   = 0;
+
+static int num_texture_units = 0;
 
 void GLTex::initialize( const QGLContext * context )
 {
@@ -66,25 +67,29 @@ void GLTex::initialize( const QGLContext * context )
 	if ( ! extensions.contains( "GL_EXT_texture_compression_s3tc" ) )
 		qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
 	*/
-	_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress( "glCompressedTexImage2D" );
-	if ( ! _glCompressedTexImage2D )
-		_glCompressedTexImage2D = (pfn_glCompressedTexImage2D) context->getProcAddress( "glCompressedTexImage2DARB" );
+	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2D" );
+	if ( ! glCompressedTexImage2D )
+		glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2DARB" );
 
-	ext_compression = _glCompressedTexImage2D;
-	if ( ! ext_compression )
+	if ( ! glCompressedTexImage2D )
 		qWarning( "texture compression not supported" );
-
-	ext_mipmapping = extensions.contains( "GL_SGIS_generate_mipmap" );
-	if ( ext_mipmapping )
-		glHint( GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST );
+	
+	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) context->getProcAddress( "glActiveTextureARB" );
+	glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) context->getProcAddress( "glClientActiveTextureARB" );
+	
+	if ( ! glActiveTextureARB || ! glClientActiveTextureARB )
+	{
+		qWarning( "multitexturing not supported" );
+		num_texture_units = 1;
+	}
+	else
+	{
+		glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
+		if ( num_texture_units < 1 )
+			num_texture_units = 1;
+		//qWarning() << "texture units" << num_texture_units;
+	}
 }
-
-
-int texLoadBMP( const QString & filepath );
-int texLoadDDS( const QString & filepath );
-int texLoadTGA( const QString & filepath );
-int texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
-
 
 GLTex * Scene::bindTexture( const QModelIndex & index )
 {
@@ -129,6 +134,100 @@ GLTex * Scene::bindTexture( const QModelIndex & index )
 	
 	return 0;
 }
+
+bool TexturingProperty::bind( int id )
+{
+	GLTex * tex;
+	if ( id >= 0 && id <= 7 && ( tex = scene->bindTexture( textures[id].iSource ) ) )
+	{
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textures[id].wrapT );
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		if ( textures[id].hasTransform )
+		{
+			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
+			glRotatef( textures[id].rotation, 0, 0, 1 );
+			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
+			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
+			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );
+		}
+		glMatrixMode( GL_MODELVIEW );
+		return true;
+	}
+	else
+		return false;
+}
+
+bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
+{
+	return s >= 0 && s < texcoords.count() && texcoords[s].count();
+}
+
+bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords )
+{
+	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) )
+	{
+		glEnable( GL_TEXTURE_2D );
+		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ textures[id].coordset ].data() );
+		return true;
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
+		return false;
+	}
+}
+
+bool activateStage( int stage )
+{
+	if ( num_texture_units <= 1 )
+		return ( stage == 0 );
+	
+	if ( stage < num_texture_units )
+	{
+		glActiveTextureARB( GL_TEXTURE0_ARB + stage );
+		glClientActiveTextureARB( GL_TEXTURE0_ARB + stage );	
+		return true;
+	}
+	else
+		return false;
+}
+
+bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords, int stage )
+{
+	return ( activateStage( stage ) && bind( id, texcoords ) );
+}
+
+void resetTextureUnits()
+{
+	if ( num_texture_units <= 1 )
+	{
+		glDisable( GL_TEXTURE_2D );
+		return;
+	}
+	
+	for ( int x = num_texture_units-1; x >= 0; x-- )
+	{
+		glActiveTextureARB( GL_TEXTURE0_ARB + x );
+		glDisable( GL_TEXTURE_2D );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		glMatrixMode( GL_MODELVIEW );
+		glClientActiveTextureARB( GL_TEXTURE0_ARB + x );
+		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	}
+}
+
+
+int texLoadBMP( const QString & filepath );
+int texLoadDDS( const QString & filepath );
+int texLoadTGA( const QString & filepath );
+int texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
 
 GLTex::GLTex( const QModelIndex & index ) : id( 0 ), mipmaps( 0 ), iSource( index )
 {
@@ -729,7 +828,7 @@ int texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, q
 			return 0;
 	}
 	
-	if ( !_glCompressedTexImage2D )
+	if ( !glCompressedTexImage2D )
 	{
 		qDebug() << "texLoadDXT(" << f.fileName() << ") : DXT image compression not supported by your open gl implementation";
 		return 0;
@@ -759,7 +858,7 @@ int texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, q
 		if ( flipV )
 			flipDXT( glFormat, w, h, pixels );
 		
-		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
+		glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
 		
 		if ( w == 1 && h == 1 )
 			break;

@@ -175,6 +175,10 @@ public:
 	
 	friend void glProperty( TexturingProperty * );
 	
+	bool bind( int id );
+	bool bind( int id, const QList< QVector<Vector2> > & texcoords );
+	bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
+	
 	//int baseSet() const { return baseTexSet; }
 
 protected:

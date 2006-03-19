@@ -83,15 +83,26 @@ void LODNode::transform()
 {
 	Node::transform();
 	
+	if ( children.list().isEmpty() )
+		return;
+		
+	if ( ranges.isEmpty() )
+	{
+		foreach ( Node * child, children.list() )
+			child->flags.node.hidden = true;
+		children.list().first()->flags.node.hidden = false;
+		return;
+	}
+	
 	float distance = ( viewTrans() * center ).length();
 
 	int c = 0;
 	foreach ( Node * child, children.list() )
 	{
 		if ( c < ranges.count() )
-		{
 			child->flags.node.hidden = ! ( ranges[c].first <= distance && distance < ranges[c].second );
-		}
+		else
+			child->flags.node.hidden = true;
 		c++;
 	}
 }

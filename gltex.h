@@ -70,5 +70,6 @@ public:
 	static QStringList texfolders;
 };
 
+void resetTextureUnits();	
 
 #endif
