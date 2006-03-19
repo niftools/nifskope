@@ -152,6 +152,20 @@ REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
 
 class TexturingProperty : public Property
 {
+	struct TexDesc
+	{
+		QPersistentModelIndex iSource;
+		GLenum filter;
+		GLint wrapS, wrapT;
+		int coordset;
+		
+		bool hasTransform;
+		
+		Vector2 translation;
+		Vector2 tiling;
+		float	rotation;
+		Vector2 center;
+	};
 public:
 	TexturingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
@@ -161,17 +175,15 @@ public:
 	
 	friend void glProperty( TexturingProperty * );
 	
-	int baseSet() const { return baseTexSet; }
+	//int baseSet() const { return baseTexSet; }
 
 protected:
-	QPersistentModelIndex iBaseTex;
-	GLenum texFilter;
-	GLint texWrapS, texWrapT;
-	int baseTexSet;
+	TexDesc	textures[8];
 
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	
 	friend class TexFlipController;
+	friend class TexTransController;
 };
 
 REGISTER_PROPERTY( TexturingProperty, Texturing )

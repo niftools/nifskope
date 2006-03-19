@@ -242,31 +242,55 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 	
 	if ( iBlock.isValid() && iBlock == property )
 	{
-		QModelIndex basetex = nif->getIndex( property, "Base Texture" );
-		if ( ! basetex.isValid() )	return;
-		QModelIndex basetexdata = nif->getIndex( basetex, "Texture Data" );
-		if ( ! basetexdata.isValid() )	return;
-		
-		switch ( nif->get<int>( basetexdata, "Filter Mode" ) )
+		static const char * texnames[8] = { "Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Texture", "Decal0 Texture", "Decal1 Texture" };
+		for ( int t = 0; t < 8; t++ )
 		{
-			case 0:		texFilter = GL_NEAREST;		break;
-			case 1:		texFilter = GL_LINEAR;		break;
-			case 2:		texFilter = GL_NEAREST_MIPMAP_NEAREST;		break;
-			case 3:		texFilter = GL_LINEAR_MIPMAP_NEAREST;		break;
-			case 4:		texFilter = GL_NEAREST_MIPMAP_LINEAR;		break;
-			case 5:		texFilter = GL_LINEAR_MIPMAP_LINEAR;		break;
-			default:	texFilter = GL_LINEAR;		break;
+			QModelIndex iTex = nif->getIndex( property, texnames[t] );
+			if ( iTex.isValid() )
+				iTex = nif->getIndex( iTex, "Texture Data" );
+			if ( iTex.isValid() )
+			{
+				textures[t].iSource = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
+				textures[t].coordset = nif->get<int>( iTex, "Texture Set" );
+				switch ( nif->get<int>( iTex, "Filter Mode" ) )
+				{
+					case 0:		textures[t].filter = GL_NEAREST;		break;
+					case 1:		textures[t].filter = GL_LINEAR;		break;
+					case 2:		textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;		break;
+					case 3:		textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;		break;
+					case 4:		textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;		break;
+					case 5:		textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;		break;
+					default:	textures[t].filter = GL_LINEAR;		break;
+				}
+				switch ( nif->get<int>( iTex, "Clamp Mode" ) )
+				{
+					case 0:		textures[t].wrapS = GL_CLAMP;	textures[t].wrapT = GL_CLAMP;	break;
+					case 1:		textures[t].wrapS = GL_CLAMP;	textures[t].wrapT = GL_REPEAT;	break;
+					case 2:		textures[t].wrapS = GL_REPEAT;	textures[t].wrapT = GL_CLAMP;	break;
+					default:	textures[t].wrapS = GL_REPEAT;	textures[t].wrapT = GL_REPEAT;	break;
+				}
+				
+				textures[t].hasTransform = nif->get<int>( iTex, "Has Texture Transform" );
+				if ( textures[t].hasTransform )
+				{
+					textures[t].translation = nif->get<Vector2>( iTex, "Translation" );
+					textures[t].tiling = nif->get<Vector2>( iTex, "Tiling" );
+					textures[t].rotation = nif->get<float>( iTex, "W Rotation" );
+					textures[t].center = nif->get<Vector2>( iTex, "Center Offset" );
+				}
+				else
+				{
+					textures[t].translation = Vector2();
+					textures[t].tiling = Vector2( 1.0, 1.0 );
+					textures[t].rotation = 0.0;
+					textures[t].center = Vector2( 0.5, 0.5 );
+				}
+			}
+			else
+			{
+				textures[t].iSource = QModelIndex();
+			}
 		}
-		switch ( nif->get<int>( basetexdata, "Clamp Mode" ) )
-		{
-			case 0:		texWrapS = GL_CLAMP;	texWrapT = GL_CLAMP;	break;
-			case 1:		texWrapS = GL_CLAMP;	texWrapT = GL_REPEAT;	break;
-			case 2:		texWrapS = GL_REPEAT;	texWrapT = GL_CLAMP;	break;
-			default:	texWrapS = GL_REPEAT;	texWrapT = GL_REPEAT;	break;
-		}
-		
-		baseTexSet = nif->get<int>( basetexdata, "Texture Set" );
-		iBaseTex = nif->getBlock( nif->getLink( basetexdata, "Source" ), "NiSourceTexture" );
 	}
 }
 
@@ -286,7 +310,7 @@ public:
 		if ( m == 0 )	return;
 		int r = ( (int) ( ctrlTime( time ) / flipDelta ) ) % m;
 		
-		target->iBaseTex = nif->getBlock( nif->getLink( iSources.child( r, 0 ) ), "NiSourceTexture" );
+		target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( r, 0 ) ), "NiSourceTexture" );
 	}
 
 	bool update( const NifModel * nif, const QModelIndex & index )
@@ -311,6 +335,60 @@ protected:
 	QPersistentModelIndex iSources;
 };
 
+class TexTransController : public Controller
+{
+public:
+	TexTransController( TexturingProperty * prop, const QModelIndex & index )
+		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 ) {}
+	
+	void update( float time )
+	{
+		if ( ! ( target && flags.controller.active ) )
+			return;
+		
+		TexturingProperty::TexDesc * tex = & target->textures[ texSlot & 7 ];
+		
+		float val;
+		if ( interpolate( val, iValues, ctrlTime( time ), lX ) )
+		{
+			switch ( texOP )
+			{
+				case 0:
+					tex->translation[0] = val;
+					break;
+				case 1:
+					tex->translation[1] = val;
+					break;
+				default:
+					tex->rotation = val;
+					break;
+			}
+		}
+	}
+
+	bool update( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( Controller::update( nif, index ) )
+		{
+			iValues = nif->getIndex( iData, "Data" );
+			texSlot = nif->get<int>( index, "Texture Slot" );
+			texOP = nif->get<int>( index, "Operation" );
+			return true;
+		}
+		return false;
+	}
+	
+protected:
+	QPointer<TexturingProperty> target;
+	
+	QPersistentModelIndex iValues;
+	
+	int		texSlot;
+	int		texOP;
+	
+	int		lX;
+};
+
 void TexturingProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
 	if ( nif->itemName( iController ) == "NiFlipController" )
@@ -319,19 +397,36 @@ void TexturingProperty::setController( const NifModel * nif, const QModelIndex &
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
+	else if ( nif->itemName( iController ) == "NiTextureTransformController" )
+	{
+		Controller * ctrl = new TexTransController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
 }
 
 void glProperty( TexturingProperty * p )
 {
 	GLTex * tex;
-	if ( p && p->scene->texturing && ( tex = p->scene->bindTexture( p->iBaseTex ) ) )
+	if ( p && p->scene->texturing && ( tex = p->scene->bindTexture( p->textures[0].iSource ) ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, p->texWrapS );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, p->texWrapT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, p->textures[0].wrapS );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, p->textures[0].wrapT );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		if ( p->textures[0].hasTransform )
+		{
+			glTranslatef( - p->textures[0].center[0], - p->textures[0].center[1], 0 );
+			glRotatef( p->textures[0].rotation, 0, 0, 1 );
+			glTranslatef( p->textures[0].center[0], p->textures[0].center[1], 0 );
+			glScalef( p->textures[0].tiling[0], p->textures[0].tiling[1], 1 );
+			glTranslatef( p->textures[0].translation[0], p->textures[0].translation[1], 0 );
+		}
+		glMatrixMode( GL_MODELVIEW );
 	}
 	else
 	{
@@ -386,7 +481,7 @@ public:
 		}
 		return false;
 	}
-
+	
 protected:
 	QPointer<MaterialProperty> target;
 	
@@ -508,22 +603,30 @@ void glProperty( VertexColorProperty * p, bool vertexcolors )
 	
 	if ( p )
 	{
-		switch ( p->vertexmode )
+		//if ( p->lightmode )
 		{
-			case 0:
-				glDisable( GL_COLOR_MATERIAL );
-				glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
-				return;
-			case 1:
-				glEnable( GL_COLOR_MATERIAL );
-				glColorMaterial( GL_FRONT_AND_BACK, GL_EMISSION );
-				return;
-			case 2:
-			default:
-				glEnable( GL_COLOR_MATERIAL );
-				glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
-				return;
+			switch ( p->vertexmode )
+			{
+				case 0:
+					glDisable( GL_COLOR_MATERIAL );
+					glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
+					return;
+				case 1:
+					glEnable( GL_COLOR_MATERIAL );
+					glColorMaterial( GL_FRONT_AND_BACK, GL_EMISSION );
+					return;
+				case 2:
+				default:
+					glEnable( GL_COLOR_MATERIAL );
+					glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+					return;
+			}
 		}
+		//else
+		//{
+		//	glDisable( GL_LIGHTING );
+		//	glDisable( GL_COLOR_MATERIAL );
+		//}
 	}
 	else
 	{

@@ -59,7 +59,9 @@ public:
 			iTranslations = nif->getIndex( iData, "Translations" );
 			iRotations = nif->getIndex( iData, "Rotations" );
 			iScales = nif->getIndex( iData, "Scales" );
+			return true;
 		}
+		return false;
 	}
 	
 protected:

@@ -68,14 +68,14 @@ protected:
 	QVector<Vector3> verts;
 	QVector<Vector3> norms;
 	QVector<Color4>  colors;
-	QVector<Vector2> coords;
+	
+	typedef QVector<Vector2> TexCoordArray;
+	
+	QList< QVector<Vector2> > coords;
 	
 	QVector<Vector3> transVerts;
 	QVector<Vector3> transNorms;
 	QVector<Color4> transColors;
-	QVector<Vector2> transCoords;
-	
-	Vector2 texOffset;
 	
 	int skelRoot;
 	Transform skelTrans;
@@ -92,7 +92,6 @@ protected:
 	mutable bool upBounds;
 	
 	friend class MorphController;
-	friend class TexCoordController;
 };
 
 #endif

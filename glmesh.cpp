@@ -132,8 +132,6 @@ void Mesh::clear()
 {
 	Node::clear();
 
-	texOffset = Vector2();
-	
 	iData = iSkin = iSkinData = QModelIndex();
 	
 	verts.clear();
@@ -233,12 +231,21 @@ void Mesh::transform()
 		norms = nif->getArray<Vector3>( nif->getIndex( iData, "Normals" ) );
 		colors = nif->getArray<Color4>( nif->getIndex( iData, "Vertex Colors" ) );
 		
+		if ( norms.count() < verts.count() ) norms.clear();
+		if ( colors.count() < verts.count() ) colors.clear();
+		
+		coords.clear();
 		QModelIndex uvcoord = nif->getIndex( iData, "UV Sets" );
 		if ( ! uvcoord.isValid() ) uvcoord = nif->getIndex( iData, "UV Sets 2" );
 		if ( uvcoord.isValid() )
-			coords = nif->getArray<Vector2>( uvcoord.child( 0, 0 ) );
-		else
-			coords.clear();
+		{
+			for ( int r = 0; r < nif->rowCount( uvcoord ); r++ )
+			{
+				TexCoordArray tc = nif->getArray<Vector2>( uvcoord.child( 0, 0 ) );
+				if ( tc.count() < verts.count() ) tc.clear();
+				coords.append( tc );
+			}
+		}
 		
 		if ( nif->itemName( iData ) == "NiTriShapeData" )
 		{
@@ -379,15 +386,6 @@ void Mesh::transformShapes()
 	}
 	else
 		transColors = colors;
-	
-	if ( texOffset[0] != 0.0 || texOffset[1] != 0.0 )
-	{
-		transCoords.resize( coords.count() );
-		for ( int c = 0; c < coords.count(); c++ )
-			transCoords[c] += texOffset;
-	}
-	else
-		transCoords = coords;
 }
 
 BoundSphere Mesh::bounds() const
@@ -431,6 +429,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 
 	// render the triangles
 
+	QVector<Vector2> texco = coords.value( 0 );
+
 	if ( triangles.count() > 0 )
 	{
 		glBegin( GL_TRIANGLES );
@@ -440,17 +440,17 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			
 			if ( transVerts.count() > tri.v1() && transVerts.count() > tri.v2() && transVerts.count() > tri.v3() )
 			{
-				if ( transNorms.count() > tri.v1() ) glNormal( transNorms[tri.v1()] );
-				if ( transCoords.count() > tri.v1() ) glTexCoord( transCoords[tri.v1()] );
-				if ( transColors.count() > tri.v1() ) glColor( transColors[tri.v1()] );
+				if ( transNorms.count() ) glNormal( transNorms[tri.v1()] );
+				if ( texco.count() ) glTexCoord( texco[tri.v1()] );
+				if ( transColors.count()  ) glColor( transColors[tri.v1()] );
 				glVertex( transVerts[tri.v1()] );
-				if ( transNorms.count() > tri.v2() ) glNormal( transNorms[tri.v2()] );
-				if ( transCoords.count() > tri.v2() ) glTexCoord( transCoords[tri.v2()] );
-				if ( transColors.count() > tri.v2() ) glColor( transColors[tri.v2()] );
+				if ( transNorms.count()  ) glNormal( transNorms[tri.v2()] );
+				if ( texco.count()  ) glTexCoord( texco[tri.v2()] );
+				if ( transColors.count() ) glColor( transColors[tri.v2()] );
 				glVertex( transVerts[tri.v2()] );
-				if ( transNorms.count() > tri.v3() ) glNormal( transNorms[tri.v3()] );
-				if ( transCoords.count() > tri.v3() ) glTexCoord( transCoords[tri.v3()] );
-				if ( transColors.count() > tri.v3() ) glColor( transColors[tri.v3()] );
+				if ( transNorms.count() ) glNormal( transNorms[tri.v3()] );
+				if ( texco.count() ) glTexCoord( texco[tri.v3()] );
+				if ( transColors.count() ) glColor( transColors[tri.v3()] );
 				glVertex( transVerts[tri.v3()] );
 			}
 		}
@@ -465,7 +465,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		foreach ( int v, strip.vertices )
 		{
 			if ( transNorms.count() > v ) glNormal( transNorms[v] );
-			if ( transCoords.count() > v ) glTexCoord( transCoords[v] );
+			if ( texco.count() > v ) glTexCoord( texco[v] );
 			if ( transColors.count() > v ) glColor( transColors[v] );
 			if ( transVerts.count() > v ) glVertex( transVerts[v] );
 		}

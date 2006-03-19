@@ -71,18 +71,33 @@ public:
 	
 	virtual void update( float time ) = 0;
 	
-	virtual void update( const NifModel * nif, const QModelIndex & index );
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
 	
 	QModelIndex index() const { return iBlock; }
 	
 	float ctrlTime( float time ) const;
 	
+	template <typename T> static bool interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex );
 	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
 	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
 	
 protected:
 	QPersistentModelIndex iBlock;
+	QPersistentModelIndex iInterpolator;
+	QPersistentModelIndex iData;
 };
+
+template <typename T> bool Controller::interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex )
+{
+	const NifModel * nif = static_cast<const NifModel *>( data.model() );
+	if ( nif && data.isValid() )
+	{
+		QModelIndex array = nif->getIndex( data, arrayid );
+		return interpolate( value, array, time, lastindex );
+	}
+	else
+		return false;
+}
 
 #endif
 
