@@ -23,7 +23,6 @@ gltex.h \
 gltransform.h \
 glview.h \
 message.h \
-nifdelegate.h \
 nifmodel.h \
 nifproxy.h \
 nifskope.h \

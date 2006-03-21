@@ -92,8 +92,6 @@ protected slots:
 	
 	void contextMenu( const QPoint & pos );
 	
-	void setFrame( int, int, int );
-	
 	void dispatchMessage( const Message & msg );
 	
 private:
@@ -136,7 +134,6 @@ private:
 	QAction * aToolSkel;
 
 	QToolBar * tAnim;
-	QSlider * sldTime;
 };
 
 class ProgDlg : public QProgressDialog

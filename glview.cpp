@@ -44,13 +44,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltex.h"
 
 #include "spellbook.h"
-#include "spells/color.h"
+#include "widgets/colorwheel.h"
 
 #define FPS 25
 
 #define FOV 45.0
 
-#define MOV_SPD 150
+#define MOV_SPD 350
 #define ROT_SPD 45
 
 #define ZOOM_MIN 1.0
@@ -196,9 +196,13 @@ GLView::GLView()
 	aAnimPlay->setChecked( true );
 	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	
+	aAnimLoop = new QAction( "&Loop", this );
+	aAnimLoop->setCheckable( true );
+	aAnimLoop->setChecked( true );
+	
 	aBenchmark = new QAction( "Benchmark FPS", this );
 	aBenchmark->setCheckable( true );
-	aBenchmark->setChecked( false );
+	aBenchmark->setChecked( true );
 	aBenchmark->setVisible( false );
 	connect( aBenchmark, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aBenchmark );
@@ -278,7 +282,7 @@ void GLView::glProjection( int x, int y )
 	}
 	else
 	{
-		GLdouble h2 = axis / Zoom;
+		GLdouble h2 = Dist / Zoom;
 		GLdouble w2 = h2 * aspect;
 		glOrtho( - w2, + w2, - h2, + h2, nr, fr );
 	}
@@ -312,18 +316,17 @@ void GLView::paintGL()
 		if ( axis == 0 ) axis = 1;
 		
 		if ( time < scene->timeMin() || time > scene->timeMax() )
-		{
 			time = scene->timeMin();
-			emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin() * FPS ), (int) ( scene->timeMax() * FPS ) );
-		}
+		emit sigTime( time, scene->timeMin(), scene->timeMax() );
 		doCompile = false;
 	}
 	
-	// reset rotation
+	// center the model
 	
 	if ( doCenter )
 	{
 		viewAction( checkedViewAction() );
+		doCenter = false;
 	}
 	
 	// transform the scene
@@ -332,18 +335,9 @@ void GLView::paintGL()
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
 	viewTrans.translation = viewTrans.rotation * Pos;
 	if ( ! aViewWalk->isChecked() )
-		viewTrans.translation[2] -= Dist;
+		viewTrans.translation[2] -= Dist * 2;
 	
 	scene->transform( viewTrans, time );
-	
-	// center the model
-	
-	if ( doCenter )
-	{
-		Zoom = 1.0;
-		
-		doCenter = false;
-	}
 	
 	// setup projection mode
 
@@ -643,9 +637,9 @@ void GLView::modelDestroyed()
 }
 
 
-void GLView::sltFrame( int f )
+void GLView::sltTime( float t )
 {
-	time = (float) f / FPS;
+	time = t;
 	update();
 }
 
@@ -692,7 +686,8 @@ void GLView::viewAction( QAction * act )
 		bs |= BoundSphere( Vector3(), axis );
 	
 	if ( bs.radius < 1 ) bs.radius = 1;
-	setDistance( 2 * bs.radius );
+	setDistance( bs.radius );
+	setZoom( 1.0 );
 	
 	if ( act == aViewWalk )
 	{
@@ -784,10 +779,10 @@ void GLView::advanceGears()
 	if ( aAnimate->isChecked() && aAnimPlay->isChecked() )
 	{
 		time += dT;
-		if ( time > scene->timeMax() )
+		if ( aAnimLoop->isChecked() && time > scene->timeMax() )
 			time = scene->timeMin();
 		
-		emit sigFrame( (int) ( time * FPS ), (int) ( scene->timeMin() * FPS ), (int) ( scene->timeMax() * FPS ) );
+		emit sigTime( time, scene->timeMin(), scene->timeMax() );
 		update();
 	}
 	
@@ -967,6 +962,7 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "rotate", aRotate->isChecked() );
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
+	settings.setValue( "loop animation", aAnimLoop->isChecked() );
 	settings.setValue( "bg color", bgcolor );
 	settings.setValue( "cull nodes by name", scene->expCull );
 	settings.setValue( "draw only textured meshes", scene->onlyTextured );
@@ -989,6 +985,7 @@ void GLView::restore( QSettings & settings )
 	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
+	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );
 	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
 	scene->expCull = settings.value( "cull nodes by name", QRegExp(
 		"^collidee|^shadowcaster|^\\!LoD_cullme|^footprint"

@@ -582,13 +582,13 @@ QColor NifValue::toColor() const
 }
 
 
-bool NifStream::read( NifValue & val )
+bool NifIStream::read( NifValue & val )
 {
 	switch ( val.type() )
 	{
 		case NifValue::tBool:
 			val.val.u32 = 0;
-			if ( version <= 0x04000002 )
+			if ( nif->getVersionNumber() <= 0x04000002 )
 				return device->read( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->read( (char *) &val.val.u08, 1 ) == 1;
@@ -601,7 +601,6 @@ bool NifStream::read( NifValue & val )
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
-		case NifValue::tFileVersion:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tUpLink:
@@ -642,16 +641,6 @@ bool NifStream::read( NifValue & val )
 			if ( string.size() != len ) return false;
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
-		case NifValue::tHeaderString:
-		{
-			QByteArray string;
-			int c = 0;
-			char chr = 0;
-			while ( c++ < 80 && device->getChar( &chr ) && chr != '\n' )
-				string.append( chr );
-			if ( c >= 80 ) return false;
-			*static_cast<QString*>( val.val.data ) = QString( string );
-		}	return true;
 		case NifValue::tByteArray:
 		{
 			int len;
@@ -669,18 +658,34 @@ bool NifStream::read( NifValue & val )
 			device->read( (char *) &len, 4 );
 			return true;
 		}
+		case NifValue::tHeaderString:
+		{
+			QByteArray string;
+			int c = 0;
+			char chr = 0;
+			while ( c++ < 80 && device->getChar( &chr ) && chr != '\n' )
+				string.append( chr );
+			if ( c >= 80 ) return false;
+			*static_cast<QString*>( val.val.data ) = QString( string );
+			return nif->setHeaderString( QString( string ) );
+		}
+		case NifValue::tFileVersion:
+		{
+			if ( device->read( (char *) &val.val.u32, 4 ) != 4 )	return false;
+			return nif->setVersion( val.val.u32 );
+		}
 		case NifValue::tNone:
 			return true;
 	}
 	return false;
 }
 
-bool NifStream::write( const NifValue & val )
+bool NifOStream::write( const NifValue & val )
 {
 	switch ( val.type() )
 	{
 		case NifValue::tBool:
-			if ( version <= 0x04000002 )
+			if ( nif->getVersionNumber() <= 0x04000002 )
 				return device->write( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->write( (char *) &val.val.u08, 1 ) == 1;

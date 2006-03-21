@@ -91,6 +91,7 @@ public:
 
 	QAction * aAnimate;
 	QAction * aAnimPlay;
+	QAction * aAnimLoop;
 	
 	QActionGroup * grpSettings;
 	
@@ -119,7 +120,7 @@ public slots:
 	void setTextureFolder( const QString & );
 	void setCurrentIndex( const QModelIndex & );
 
-	void sltFrame( int );
+	void sltTime( float );
 
 	void selectTexFolder();
 	void selectBgColor();
@@ -128,7 +129,7 @@ public slots:
 signals: 
 	void clicked( const QModelIndex & );
 	
-	void sigFrame( int f, int mn, int mx );
+	void sigTime( float t, float mn, float mx );
 	
 protected:
 	void initializeGL();

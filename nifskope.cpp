@@ -69,6 +69,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glview.h"
 #include "spellbook.h"
 
+#include "widgets/floatslider.h"
+
 /*
  * main GUI window
  */
@@ -227,11 +229,12 @@ NifSkope::NifSkope() : QMainWindow()
 	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
 	connect( tAnim->toggleViewAction(), SIGNAL( toggled( bool ) ), ogl->aAnimate, SLOT( setChecked( bool ) ) );
 	
-	sldTime = new QSlider;
-	sldTime->setOrientation( Qt::Horizontal );
+	FloatSlider * sldTime = new FloatSlider( Qt::Horizontal );
 	tAnim->addWidget( sldTime );
-	connect( ogl, SIGNAL( sigFrame( int, int, int ) ), this, SLOT( setFrame( int, int, int ) ) );
-	connect( sldTime, SIGNAL( valueChanged( int ) ), ogl, SLOT( sltFrame( int ) ) );
+	connect( ogl, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
+	connect( sldTime, SIGNAL( valueChanged( float ) ), ogl, SLOT( sltTime( float ) ) );
+	
+	tAnim->addAction( ogl->aAnimLoop );
 	
 	addToolBar( Qt::TopToolBarArea, tAnim );
 	
@@ -281,12 +284,6 @@ NifSkope::NifSkope() : QMainWindow()
 	menuBar()->addMenu( mOpts );
 	menuBar()->addMenu( new SpellBook( model, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) ) );
 	menuBar()->addMenu( mAbout );
-}
-
-void NifSkope::setFrame( int f, int mn, int mx )
-{
-	sldTime->setRange( mn, mx );
-	sldTime->setValue( f );
 }
 
 NifSkope::~NifSkope()

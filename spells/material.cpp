@@ -1,14 +1,6 @@
 #include "../spellbook.h"
 
-#include "material.h"
-#include "color.h"
-
-#include <QGroupBox>
-#include <QLayout>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QSlider>
-#include <QTimer>
+#include "../widgets/nifeditors.h"
 
 /* XPM */
 static char * mat42_xpm[] = {
@@ -111,147 +103,23 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		MaterialEdit * me = new MaterialEdit( nif, nif->getBlock( index ) );
-		me->setAttribute( Qt::WA_DeleteOnClose );
+		QModelIndex iMaterial = nif->getBlock( index );
+		NifBlockEditor * me = new NifBlockEditor( nif, iMaterial );
+		
+		me->pushLayout( new QHBoxLayout );
+		me->add( new NifColorEdit( nif, nif->getIndex( iMaterial, "Ambient Color" ) ) );
+		me->add( new NifColorEdit( nif, nif->getIndex( iMaterial, "Diffuse Color" ) ) );
+		me->popLayout();
+		me->pushLayout( new QHBoxLayout );
+		me->add( new NifColorEdit( nif, nif->getIndex( iMaterial, "Specular Color" ) ) );
+		me->add( new NifColorEdit( nif, nif->getIndex( iMaterial, "Emissive Color" ) ) );
+		me->popLayout();
+		me->add( new NifFloatSlider( nif, nif->getIndex( iMaterial, "Alpha" ), 0.0, 1.0 ) );
+		me->add( new NifFloatSlider( nif, nif->getIndex( iMaterial, "Glossiness" ), 0.0, 100.0 ) );
 		me->show();
+		
 		return index;
 	}
 };
 
 REGISTER_SPELL( spMaterialEdit )
-
-static const char * colorName[4] = { "Ambient Color", "Diffuse Color", "Specular Color", "Emissive Color" };
-static const char * valueName[2] = { "Alpha", "Glossiness" };
-static const float valueMax[2] = { 1.0, 128.0 };
-
-MaterialEdit::MaterialEdit( NifModel * n, const QModelIndex & i )
-	: QDialog(), nif( n ), iMaterial( i )
-{
-	connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-		this, SLOT( nifDataChanged( const QModelIndex &, const QModelIndex & ) ) );
-	connect( nif, SIGNAL( modelReset() ), this, SLOT( sltReset() ) );
-	connect( nif, SIGNAL( destroyed() ), this, SLOT( nifDestroyed() ) );
-	
-	QVBoxLayout * vbox = new QVBoxLayout;
-	setLayout( vbox );
-	
-	{
-		matName = new QLineEdit;
-		connect( matName, SIGNAL( textEdited( const QString & ) ), this, SLOT( sltApply() ) );
-		
-		QGroupBox * group = new QGroupBox( "Name" );
-		QVBoxLayout * lay = new QVBoxLayout;
-		group->setLayout( lay );
-		lay->addWidget( matName );
-		
-		vbox->addWidget( group );
-	}
-	
-	QGridLayout * grid = new QGridLayout;
-	vbox->addLayout( grid );
-	
-	for ( int i = 0; i < 4; i++ )
-	{
-		color[i] = new ColorWheel;
-		color[i]->setSizeHint( QSize( 140, 140 ) );
-		connect( color[i], SIGNAL( sigColorEdited( const QColor & ) ), this, SLOT( sltApply() ) );
-		
-		QGroupBox * group = new QGroupBox( colorName[i] );
-		QVBoxLayout * lay = new QVBoxLayout;
-		group->setLayout( lay );
-		lay->addWidget( color[i] );
-		
-		grid->addWidget( group, i / 2, i % 2 );
-	}
-	
-	for ( int i = 0; i < 2; i++ )
-	{
-		value[i] = new QSlider;
-		value[i]->setRange( 0, int( valueMax[i] * 1000 ) );
-		value[i]->setOrientation( Qt::Horizontal );
-		connect( value[i], SIGNAL( sliderMoved( int ) ), this, SLOT( sltApply() ) );
-		
-		QGroupBox * grp = new QGroupBox( valueName[i] );
-		QVBoxLayout * lay = new QVBoxLayout;
-		grp->setLayout( lay );
-		lay->addWidget( value[i] );
-		vbox->addWidget( grp );
-	}
-	
-	QPushButton * btAccept = new QPushButton( "Accept" );
-	connect( btAccept, SIGNAL( clicked() ), this, SLOT( accept() ) );
-	vbox->addWidget( btAccept );
-	
-	timer = new QTimer( this );
-	connect( timer, SIGNAL( timeout() ), this, SLOT( sltReset() ) );
-	timer->setInterval( 0 );
-	timer->setSingleShot( true );
-	timer->start();
-}
-
-void MaterialEdit::sltReset()
-{
-	if ( nif && iMaterial.isValid() )
-	{
-		setWindowTitle( "Material - " + nif->get<QString>( iMaterial, "Name" ) );
-		
-		matName->setText( nif->get<QString>( iMaterial, "Name" ) );
-		
-		for ( int i = 0; i < 4; i++ )
-			color[i]->setColor( nif->get<Color3>( iMaterial, colorName[i] ).toQColor() );
-		
-		for ( int i = 0; i < 2; i++ )
-			value[i]->setValue( int( nif->get<float>( iMaterial, valueName[i] ) * 1000 ) );
-	}
-	else
-		reject();
-}
-
-void MaterialEdit::sltApply()
-{
-	if ( nif && iMaterial.isValid() )
-	{
-		QColor ctmp[4];
-		for ( int i = 0; i < 4; i++ )
-			ctmp[i] = color[i]->getColor();
-		
-		float v[2];
-		for ( int i = 0; i < 2; i++ )
-			v[i] = value[i]->value() / 1000.0;
-		
-		QModelIndex iName = nif->getIndex( iMaterial, "Name" );
-		if ( iName.isValid() )
-		{
-			iName = iName.sibling( iName.row(), NifModel::ValueCol );
-			nif->setData( iName, matName->text() );
-		}
-		
-		for ( int i = 0; i < 4; i++ )
-			nif->set<Color3>( iMaterial, colorName[i], Color3( ctmp[i] ) );
-		
-		for ( int i = 0; i < 2; i++ )
-			nif->set<float>( iMaterial, valueName[i], v[i] );
-	}
-	else
-		reject();
-}
-
-void MaterialEdit::nifDataChanged( const QModelIndex & i, const QModelIndex & j )
-{
-	if ( nif && iMaterial.isValid() )
-	{
-		if ( nif->getBlock( i ) == iMaterial || nif->getBlock( j ) == iMaterial )
-		{
-			if ( ! timer->isActive() )
-				timer->start();
-		}
-	}
-	else
-		reject();
-}
-
-void MaterialEdit::nifDestroyed()
-{
-	nif = 0;
-	reject();
-}

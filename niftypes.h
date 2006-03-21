@@ -122,7 +122,8 @@ public:
 protected:
 	float	xy[2];
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 class Vector3
@@ -261,7 +262,8 @@ public:
 protected:
 	float xyz[3];
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 class Quat
@@ -317,7 +319,8 @@ protected:
 	float	wxyz[4];
 	static const float identity[4];
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 class Matrix
@@ -373,7 +376,8 @@ protected:
 	float m[3][3];
 	static const float identity[9];
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 class Triangle
@@ -411,7 +415,8 @@ public:
 
 protected:
 	quint16 v[3];
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 inline float clamp01( float a )
@@ -502,7 +507,8 @@ public:
 protected:
 	float rgb[3];
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 class Color4
@@ -598,7 +604,8 @@ public:
 protected:
 	float rgba[4];
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 class NifValue
@@ -708,7 +715,8 @@ protected:
 	
 	static QHash<QString,Type>	typeMap;
 	
-	friend class NifStream;
+	friend class NifIStream;
+	friend class NifOStream;
 };
 
 inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
@@ -740,7 +748,10 @@ template <typename T> inline bool NifValue::setType( Type t, T v )
 }
 
 template <> inline bool NifValue::get() const { return toCount(); }
-template <> inline int NifValue::get() const { return toCount(); }
+template <> inline qint32 NifValue::get() const { return toCount(); }
+template <> inline quint32 NifValue::get() const { return toCount(); }
+template <> inline quint16 NifValue::get() const { return toCount(); }
+template <> inline quint8 NifValue::get() const { return toCount(); }
 template <> inline float NifValue::get() const { return toFloat(); }
 template <> inline QColor NifValue::get() const { return toColor(); }
 template <> inline QVariant NifValue::get() const { return toVariant(); }
@@ -809,16 +820,30 @@ template <> inline bool NifValue::ask( Triangle * ) const { return type() == tTr
 template <> inline bool NifValue::ask( QString * ) const { return isString(); }
 template <> inline bool NifValue::ask( QByteArray * ) const { return isByteArray(); }
 
-class NifStream
+class NifModel;
+
+class NifIStream
 {
 public:
-	NifStream( quint32 v, QIODevice * d ) : version( v ), device( d ) {}
+	NifIStream( NifModel * n, QIODevice * d ) : nif( n ), device( d ) {}
 	
 	bool read( NifValue & );
 	bool write( const NifValue & );
 
 private:
-	quint32 version;
+	NifModel * nif;
+	QIODevice * device;
+};
+
+class NifOStream
+{
+public:
+	NifOStream( const NifModel * n, QIODevice * d ) : nif( n ), device( d ) {}
+	
+	bool write( const NifValue & );
+
+private:
+	const NifModel * nif;
 	QIODevice * device;
 };
 

@@ -359,8 +359,14 @@ public:
 				case 1:
 					tex->translation[1] = val;
 					break;
-				default:
+				case 2:
 					tex->rotation = val;
+					break;
+				case 3:
+					tex->tiling[0] = val;
+					break;
+				case 4:
+					tex->tiling[1] = val;
 					break;
 			}
 		}

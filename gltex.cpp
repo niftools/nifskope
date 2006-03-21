@@ -93,8 +93,8 @@ void GLTex::initialize( const QGLContext * context )
 
 GLTex * Scene::bindTexture( const QModelIndex & index )
 {
-	if ( ! index.isValid() )
-		return false;
+	if ( ! texturing || ! index.isValid() )
+		return 0;
 	
 	foreach ( GLTex * tex, textures )
 	{

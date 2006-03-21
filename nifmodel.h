@@ -81,6 +81,7 @@ public:
 	
 	
 	QString getVersion() const { return version2string( version ); }
+	quint32 getVersionNumber() const { return version; }
 	
 	// returns the model index of the NiHeader
 	QModelIndex getHeader() const;
@@ -271,8 +272,11 @@ protected:
 	bool		itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
 	int			getBlockNumber( NifItem * item ) const;
 	
-	bool		load( NifItem * parent, NifStream & stream, bool fast = true );
-	bool		save( NifItem * parent, NifStream & stream ) const;
+	bool		load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool		save( NifItem * parent, NifOStream & stream ) const;
+	
+	bool		setHeaderString( const QString & );
+	bool		setVersion( quint32 );
 	
 	// root item
 	NifItem *	root;
@@ -309,6 +313,9 @@ protected:
 	static QString parseXmlDescription( const QString & filename );
 
 	friend class NifXmlHandler;
+	
+	friend class NifIStream;
+	friend class NifOStream;
 }; // class NifModel
 
 

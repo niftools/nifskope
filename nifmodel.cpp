@@ -40,8 +40,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QTime>
 
-#include <qendian.h>
-
 NifModel::NifModel( QObject * parent ) : QAbstractItemModel( parent )
 {
 	msgMode = EmitMessages;
@@ -1078,13 +1076,35 @@ void NifModel::reset()
 /*
  *  load and save
  */
+
+bool NifModel::setHeaderString( const QString & s )
+{
+ 	msg( DbgMsg() << s );
+	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) ) )
+	{
+		msg( Message() << "this is not a NIF" );
+		return false;
+	}
+	return true;
+}
+
+bool NifModel::setVersion( quint32 v )
+{
+	// verify version number
+	if ( ! isVersionSupported( version ) )
+	{
+		msg( Message() << "version" << version2string( version ) << "is not supported yet" );
+		return false;
+	}
+	version = v;
+	return true;
+}
  
- bool NifModel::load( const QString & filename )
- {
+bool NifModel::load( const QString & filename )
+{
 	QFile f( filename );
-	bool x  = f.open( QIODevice::ReadOnly ) && load( f );
-	if ( x )
-		folder = filename.left( qMax( filename.lastIndexOf( "\\" ), filename.lastIndexOf( "/" ) ) );
+	bool x = f.open( QIODevice::ReadOnly ) && load( f );
+	folder = filename.left( qMax( filename.lastIndexOf( "\\" ), filename.lastIndexOf( "/" ) ) );
 	return x;
 }
 
@@ -1096,45 +1116,9 @@ bool NifModel::save( const QString & filename ) const
 
 bool NifModel::load( QIODevice & device )
 {
-	// reset model
 	clear();
 	
-	quint64 filepos = device.pos();
-	
-	QByteArray version_string;
-	
-	{	// read magic version string
-		version_string.clear();
-		int c = 0;
-		char chr = 0;
-		while ( c++ < 80 && device.getChar( &chr ) && chr != '\n' )
-			version_string.append( chr );
-	}
-	
-	// verify magic id
-	msg( DbgMsg() << version_string );
-	if ( ! ( version_string.startsWith( "NetImmerse File Format" ) || version_string.startsWith( "Gamebryo" ) ) )
-	{
-		qCritical( "this is not a NIF" );
-		clear();
-		return false;
-	}
-	
-	// read version number
-	device.read( (char *) &version, 4 );
-	qDebug( "version %08X", version );
-	
-	// verify version number
-	if ( ! isVersionSupported( version ) )
-	{
-		msg( Message() << "version" << version2string( version ) << "is not supported yet" );
-		clear();
-		return false;
-	}
-	
-	// now start reading from the beginning of the file
-	device.seek( filepos );
-	NifStream stream( version, &device );
+	NifIStream stream( this, &device );
 
 	// read header
 	NifItem * header = getHeaderItem();
@@ -1204,7 +1188,7 @@ bool NifModel::load( QIODevice & device )
 
 bool NifModel::save( QIODevice & device ) const
 {
-	NifStream stream( version, &device );
+	NifOStream stream( this, &device );
 
 	emit sigProgress( 0, rowCount( QModelIndex() ) );
 	
@@ -1245,7 +1229,7 @@ bool NifModel::load( QIODevice & device, const QModelIndex & index )
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( item && index.isValid() && index.model() == this )
 	{
-		NifStream stream( version, &device );
+		NifIStream stream( this, &device );
 		bool ok = load( item, stream, false );
 		updateLinks();
 		updateFooter();
@@ -1261,7 +1245,7 @@ bool NifModel::loadAndMapLinks( QIODevice & device, const QModelIndex & index, c
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( item && index.isValid() && index.model() == this )
 	{
-		NifStream stream( version, & device );
+		NifIStream stream( this, & device );
 		bool ok = load( item, stream, false );
 		mapLinks( item, map );
 		updateLinks();
@@ -1275,12 +1259,12 @@ bool NifModel::loadAndMapLinks( QIODevice & device, const QModelIndex & index, c
 
 bool NifModel::save( QIODevice & device, const QModelIndex & index ) const
 {
-	NifStream stream( version, &device );
+	NifOStream stream( this, &device );
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	return ( item && index.isValid() && index.model() == this && save( item, stream ) );
 }
 
-bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
+bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 {
 	if ( ! parent ) return false;
 	
@@ -1313,7 +1297,7 @@ bool NifModel::load( NifItem * parent, NifStream & stream, bool fast )
 	return true;
 }
 
-bool NifModel::save( NifItem * parent, NifStream & stream ) const
+bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 {
 	if ( ! parent ) return false;
 	
