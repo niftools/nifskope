@@ -242,7 +242,7 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 	
 	if ( iBlock.isValid() && iBlock == property )
 	{
-		static const char * texnames[8] = { "Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Texture", "Decal0 Texture", "Decal1 Texture" };
+		static const char * texnames[8] = { "Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Map Texture", "Decal 0 Texture", "Decal Texture 1" };
 		for ( int t = 0; t < 8; t++ )
 		{
 			QModelIndex iTex = nif->getIndex( property, texnames[t] );

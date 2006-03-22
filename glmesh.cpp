@@ -506,7 +506,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			
 			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0 );
 		}
-		/*
+		
 		if ( texprop->bind( 6, coords, stage ) )
 		{	// decal 0
 			stage++;
@@ -526,7 +526,27 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			
 			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
 		}
-		*/
+		
+		if ( texprop->bind( 7, coords, stage ) )
+		{	// decal 1
+			stage++;
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_ALPHA );
+			
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
+			
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+		}
+		
 		if ( texprop->bind( 4, coords, stage ) )
 		{	// glow
 			stage++;
