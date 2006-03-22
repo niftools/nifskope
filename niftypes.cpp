@@ -581,6 +581,10 @@ QColor NifValue::toColor() const
 		return QColor();
 }
 
+void NifOStream::init()
+{
+	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
+}
 
 bool NifIStream::read( NifValue & val )
 {
@@ -588,7 +592,7 @@ bool NifIStream::read( NifValue & val )
 	{
 		case NifValue::tBool:
 			val.val.u32 = 0;
-			if ( nif->getVersionNumber() <= 0x04000002 )
+			if ( bool32bit )
 				return device->read( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->read( (char *) &val.val.u08, 1 ) == 1;
@@ -667,12 +671,16 @@ bool NifIStream::read( NifValue & val )
 				string.append( chr );
 			if ( c >= 80 ) return false;
 			*static_cast<QString*>( val.val.data ) = QString( string );
-			return nif->setHeaderString( QString( string ) );
+			bool x = model->setHeaderString( QString( string ) );
+			init();
+			return x;
 		}
 		case NifValue::tFileVersion:
 		{
 			if ( device->read( (char *) &val.val.u32, 4 ) != 4 )	return false;
-			return nif->setVersion( val.val.u32 );
+			bool x = model->setVersion( val.val.u32 );
+			init();
+			return x;
 		}
 		case NifValue::tNone:
 			return true;
@@ -680,12 +688,17 @@ bool NifIStream::read( NifValue & val )
 	return false;
 }
 
+void NifIStream::init()
+{
+	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
+}
+
 bool NifOStream::write( const NifValue & val )
 {
 	switch ( val.type() )
 	{
 		case NifValue::tBool:
-			if ( nif->getVersionNumber() <= 0x04000002 )
+			if ( bool32bit )
 				return device->write( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->write( (char *) &val.val.u08, 1 ) == 1;

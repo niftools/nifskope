@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifview.h"
 
-#include "nifmodel.h"
+#include "basemodel.h"
 
 NifTreeView::NifTreeView() : QTreeView()
 {
@@ -53,7 +53,7 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 	if ( nif && EvalConditions )
 		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
 
-	nif = qobject_cast<NifModel*>( model );
+	nif = qobject_cast<BaseModel*>( model );
 	
 	QTreeView::setModel( model );
 	

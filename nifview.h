@@ -35,8 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QTreeView>
 
-class NifModel;
-
 class NifTreeView : public QTreeView
 {
 	Q_OBJECT
@@ -69,7 +67,7 @@ protected:
 	
 	bool EvalConditions;
 	
-	NifModel * nif;
+	class BaseModel * nif;
 };
 
 

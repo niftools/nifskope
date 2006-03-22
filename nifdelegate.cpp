@@ -31,8 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
-#include "niftypes.h"
 #include "nifproxy.h"
+#include "kfmmodel.h"
 
 #include <QItemDelegate>
 
@@ -255,6 +255,11 @@ public:
 };
 
 QAbstractItemDelegate * NifModel::createDelegate()
+{
+	return new NifDelegate;
+}
+
+QAbstractItemDelegate * KfmModel::createDelegate()
 {
 	return new NifDelegate;
 }

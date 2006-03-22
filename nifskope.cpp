@@ -62,6 +62,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 #include <QTreeView>
 
+#include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
 #include "nifview.h"
@@ -77,19 +78,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NifSkope::NifSkope() : QMainWindow()
 {
-	// create a new model
-	model = new NifModel( this );
-	connect( model, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
+	// create a new nif
+	nif = new NifModel( this );
+	connect( nif, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
 	
-	// create a new hierarchical proxy model
+	// create a new hierarchical proxy nif
 	proxy = new NifProxyModel( this );
-	proxy->setModel( model );
+	proxy->setModel( nif );
 
-
+	// create a new kfm model
+	kfm = new KfmModel( this );
+	connect( kfm, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
+	
+	
 	// this view shows the block list
 	list = new NifTreeView;
 	list->setModel( proxy );
-	list->setItemDelegate( model->createDelegate() );
+	list->setItemDelegate( nif->createDelegate() );
 
 	QFont font = list->font();
 	font.setPointSize( font.pointSize() + 3 );
@@ -114,8 +119,8 @@ NifSkope::NifSkope() : QMainWindow()
 
 	// this view shows the whole nif file or the block details
 	tree = new NifTreeView;
-	tree->setModel( model );
-	tree->setItemDelegate( model->createDelegate() );
+	tree->setModel( nif );
+	tree->setItemDelegate( nif->createDelegate() );
 
 	tree->setFont( font );
 	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
@@ -127,9 +132,22 @@ NifSkope::NifSkope() : QMainWindow()
 		this, SLOT( contextMenu( const QPoint & ) ) );
 
 
+	// this view shows the whole kfm file
+	kfmtree = new NifTreeView;
+	kfmtree->setModel( kfm );
+	kfmtree->setItemDelegate( kfm->createDelegate() );
+
+	kfmtree->setFont( font );
+	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	kfmtree->header()->setStretchLastSection( false );
+
+	connect( kfmtree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+		this, SLOT( contextMenu( const QPoint & ) ) );
+
+
 	// open gl
 	setCentralWidget( ogl = new GLView );
-	ogl->setNif( model );
+	ogl->setNif( nif );
 	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
 			this, SLOT( select( const QModelIndex & ) ) );
 	connect( ogl, SIGNAL( customContextMenuRequested( const QPoint & ) ),
@@ -160,7 +178,7 @@ NifSkope::NifSkope() : QMainWindow()
 
 	aList = new QAction( "List", this );
 	aList->setCheckable( true );
-	aList->setChecked( list->model() == model );
+	aList->setChecked( list->model() == nif );
 
 	aHierarchy = new QAction( "Hierarchy", this );
 	aHierarchy->setCheckable( true );
@@ -194,9 +212,19 @@ NifSkope::NifSkope() : QMainWindow()
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
 	dTree->toggleViewAction()->setShortcut( Qt::Key_F2 );
+	dTree->toggleViewAction()->setChecked( false );
+	dTree->setVisible( false );
+
+	dKfm = new QDockWidget( "KFM" );
+	dKfm->setObjectName( "KfmDock" );
+	dKfm->setWidget( kfmtree );	
+	dKfm->toggleViewAction()->setShortcut( Qt::Key_F3 );
+	dKfm->toggleViewAction()->setChecked( false );
+	dKfm->setVisible( false );
 
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
+	addDockWidget( Qt::RightDockWidgetArea, dKfm );
 
 
 	// tool bar
@@ -254,6 +282,7 @@ NifSkope::NifSkope() : QMainWindow()
 	QMenu * mView = new QMenu( "&View" );
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
+	mView->addAction( dKfm->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mViewList = new QMenu( "&Block List Options" );
 	mView->addMenu( mViewList );
@@ -282,7 +311,7 @@ NifSkope::NifSkope() : QMainWindow()
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
 	menuBar()->addMenu( mOpts );
-	menuBar()->addMenu( new SpellBook( model, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) ) );
+	menuBar()->addMenu( new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) ) );
 	menuBar()->addMenu( mAbout );
 }
 
@@ -323,6 +352,8 @@ void NifSkope::restore( QSettings & settings )
 
 	aCondition->setChecked( settings.value( "hide condition zero", true ).toBool() );
 	restoreHeader( "tree sizes", settings, tree->header() );
+	
+	restoreHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->restore( settings );	
 
@@ -351,6 +382,8 @@ void NifSkope::save( QSettings & settings ) const
 
 	settings.setValue( "hide condition zero", aCondition->isChecked() );
 	saveHeader( "tree sizes", settings, tree->header() );
+	
+	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );
 }
@@ -388,11 +421,13 @@ void NifSkope::contextMenu( const QPoint & pos )
 		idx = ogl->indexAt( pos );
 		p = ogl->mapToGlobal( pos );
 	}
+	else
+		return;
 	
 	if ( idx.model() == proxy )
 		idx = proxy->mapTo( idx );
 	
-	SpellBook book( model, idx, this, SLOT( select( const QModelIndex & ) ) );
+	SpellBook book( nif, idx, this, SLOT( select( const QModelIndex & ) ) );
 	book.exec( p );
 }
 
@@ -411,23 +446,23 @@ void NifSkope::select( const QModelIndex & index )
 	if ( idx.model() == proxy )
 		idx = proxy->mapTo( index );
 	
-	if ( ! idx.isValid() || idx.model() != model ) return;
+	if ( ! idx.isValid() || idx.model() != nif ) return;
 	
 	if ( sender() != ogl )
 	{
-		ogl->setCurrentIndex( model->getBlock( idx ) );
+		ogl->setCurrentIndex( nif->getBlock( idx ) );
 	}
 
 	if ( sender() != list )
 	{
 		if ( list->model() == proxy )
 		{
-			QModelIndex pidx = proxy->mapFrom( model->getBlock( idx ), list->currentIndex() );
+			QModelIndex pidx = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
 			list->setCurrentIndexExpanded( pidx );
 		}
-		else if ( list->model() == model )
+		else if ( list->model() == nif )
 		{
-			list->setCurrentIndex( model->getBlockOrHeader( idx ) );
+			list->setCurrentIndex( nif->getBlockOrHeader( idx ) );
 		}
 	}
 	
@@ -435,7 +470,7 @@ void NifSkope::select( const QModelIndex & index )
 	{
 		if ( dList->isVisible() )
 		{
-			QModelIndex root = model->getBlockOrHeader( idx );
+			QModelIndex root = nif->getBlockOrHeader( idx );
 			if ( tree->rootIndex() != root )
 				tree->setRootIndex( root );
 			tree->setCurrentIndexExpanded( idx.sibling( idx.row(), 0 ) );
@@ -455,9 +490,9 @@ void NifSkope::setListMode()
 	QAction * a = gListMode->checkedAction();
 	if ( !a || a == aList )
 	{
-		if ( list->model() != model )
+		if ( list->model() != nif )
 		{
-			list->setModel( model );
+			list->setModel( nif );
 			list->setItemsExpandable( false );
 			list->setRootIsDecorated( false );
 			list->setCurrentIndexExpanded( proxy->mapTo( idx ) );
@@ -487,7 +522,12 @@ void NifSkope::load()
 	// open file
 	if ( lineLoad->text().isEmpty() )
 	{
-		model->clear();
+		nif->clear();
+		return;
+	}
+	if ( lineLoad->text().endsWith( ".KFM" ) )
+	{
+		loadKfm();
 		return;
 	}
 	
@@ -502,15 +542,21 @@ void NifSkope::load()
 	prog.setRange( 0, 1 );
 	prog.setValue( 0 );
 	prog.setMinimumDuration( 2100 );
-	connect( model, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
+	connect( nif, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
 	
-	if ( ! model->load( lineLoad->text() ) )
+	if ( ! nif->loadFromFile( lineLoad->text() ) )
 		qWarning() << "failed to load nif from file " << lineLoad->text();
 	
 	ogl->aAnimate->setChecked( a );
 	ogl->aRotate->setChecked( r );
 	ogl->center();
 	setEnabled( true );
+}
+
+void NifSkope::loadKfm()
+{
+	if ( ! kfm->loadFromFile( lineLoad->text() ) )
+		qWarning() << "failed to load kfm from file" << lineLoad->text();
 }
 
 void ProgDlg::sltProgress( int x, int y )
@@ -524,7 +570,7 @@ void NifSkope::save()
 {
 	// write to file
 	setEnabled( false );
-	if ( ! model->save( lineSave->text() ) )
+	if ( ! nif->saveToFile( lineSave->text() ) )
 		qWarning() << "could not write file " << lineSave->text();
 	setEnabled( true );
 }
@@ -569,6 +615,7 @@ NifSkope * NifSkope::createWindow()
 void NifSkope::loadXML()
 {
 	NifModel::loadXML();
+	KfmModel::loadXML();
 }
 
 void NifSkope::reload()
@@ -638,6 +685,7 @@ int main( int argc, char * argv[] )
 	qInstallMsgHandler(myMessageOutput);
 	
 	NifModel::loadXML();
+	KfmModel::loadXML();
 	
 	NifSkope * skope = NifSkope::createWindow();
 	

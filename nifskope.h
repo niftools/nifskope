@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class NifModel;
 class NifProxyModel;
+class KfmModel;
 class NifTreeView;
 
 class GLView;
@@ -74,6 +75,8 @@ public slots:
 	void load();
 	void save();
 	
+	void loadKfm();
+	
 	void loadBrowse();
 	void saveBrowse();
 	
@@ -100,11 +103,14 @@ private:
 	void initToolBars();
 	void initMenu();
 	
-	NifModel * model;
+	NifModel * nif;
 	NifProxyModel * proxy;
+	KfmModel * kfm;
 	
 	NifTreeView * list;
 	NifTreeView * tree;
+	NifTreeView * kfmtree;
+	
 	GLView * ogl;
 	
 	QLineEdit * lineLoad;
@@ -112,6 +118,7 @@ private:
 	
 	QDockWidget * dList;
 	QDockWidget * dTree;
+	QDockWidget * dKfm;
 	
 	QToolBar * tool;
 	

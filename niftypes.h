@@ -820,31 +820,38 @@ template <> inline bool NifValue::ask( Triangle * ) const { return type() == tTr
 template <> inline bool NifValue::ask( QString * ) const { return isString(); }
 template <> inline bool NifValue::ask( QByteArray * ) const { return isByteArray(); }
 
-class NifModel;
+class BaseModel;
 
 class NifIStream
 {
 public:
-	NifIStream( NifModel * n, QIODevice * d ) : nif( n ), device( d ) {}
+	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d ) { init(); }
 	
 	bool read( NifValue & );
-	bool write( const NifValue & );
 
 private:
-	NifModel * nif;
+	BaseModel * model;
 	QIODevice * device;
+	
+	void init();
+	
+	bool bool32bit;
 };
 
 class NifOStream
 {
 public:
-	NifOStream( const NifModel * n, QIODevice * d ) : nif( n ), device( d ) {}
+	NifOStream( const BaseModel * n, QIODevice * d ) : model( n ), device( d ) { init(); }
 	
 	bool write( const NifValue & );
 
 private:
-	const NifModel * nif;
+	const BaseModel * model;
 	QIODevice * device;
+	
+	void init();
+	
+	bool bool32bit;
 };
 
 

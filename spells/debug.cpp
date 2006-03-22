@@ -1,5 +1,7 @@
 #include "../spellbook.h"
 
+#include "../kfmmodel.h"
+
 #include "debug.h"
 
 #include <QAction>
@@ -113,6 +115,7 @@ void TestShredder::xml()
 	foreach ( TestThread * thread, threads )
 		thread->wait();
 	NifModel::loadXML();
+	KfmModel::loadXML();
 }
 
 void TestShredder::renumberThreads( int num )
@@ -189,6 +192,16 @@ void TestShredder::browse()
 	}
 }
 
+void TestShredder::closeEvent( QCloseEvent * e )
+{
+	foreach ( TestThread * thread, threads )
+		if ( thread->isRunning() )
+		{
+			e->ignore();
+			queue.clear();
+		}
+}
+
 /*
  *  File Queue
  */
@@ -207,7 +220,7 @@ QQueue<QString> FileQueue::make( const QString & dname, bool recursive )
 	}
 	
 	dir.setFilter( QDir::Files );
-	dir.setNameFilters( QStringList() << "*.nif" << "*.NIF" << "*.kf" << "*.KF" << "*.kfa" << "*.KFA" );
+	dir.setNameFilters( QStringList() << "*.kfm" << "*.KFM" << "*.nif" << "*.NIF" << "*.kf" << "*.KF" << "*.kfa" << "*.KFA" );
 	foreach ( QString f, dir.entryList() )
 		queue.enqueue( dir.filePath( f ) );
 	
@@ -266,16 +279,23 @@ TestThread::~TestThread()
 void TestThread::run()
 {
 	NifModel nif;
-	nif.setMessageMode( NifModel::CollectMessages );
+	nif.setMessageMode( BaseModel::CollectMessages );
+	KfmModel kfm;
+	kfm.setMessageMode( BaseModel::CollectMessages );
 
 	QString filepath = queue->dequeue();
 	while ( ! filepath.isEmpty() )
 	{
 		emit sigStart( filepath );
-		nif.load( filepath );
 		
-		QString result = QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( nif.getVersion() );
-		foreach ( Message msg, nif.getMessages() )
+		BaseModel * model = & nif;
+		if ( filepath.endsWith( ".KFM", Qt::CaseInsensitive ) )
+			model = & kfm;
+		
+		model->loadFromFile( filepath );
+		
+		QString result = QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( model->getVersion() );
+		foreach ( Message msg, model->getMessages() )
 		{
 			if ( msg.type() != QtDebugMsg )
 				result += msg + "<br>";

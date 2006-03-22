@@ -202,8 +202,8 @@ GLView::GLView()
 	
 	aBenchmark = new QAction( "Benchmark FPS", this );
 	aBenchmark->setCheckable( true );
-	aBenchmark->setChecked( true );
-	aBenchmark->setVisible( false );
+	aBenchmark->setChecked( false );
+	aBenchmark->setVisible( true );
 	connect( aBenchmark, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aBenchmark );
 
@@ -477,7 +477,7 @@ void GLView::paintGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qWarning() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 }
 
 QModelIndex GLView::indexAt( const QPoint & pos )

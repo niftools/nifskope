@@ -2,14 +2,16 @@ TEMPLATE = app
 LANGUAGE = C++
 TARGET   = NifSkope
 
-CONFIG += qt release warn_on
+CONFIG += qt release thread warn_on
 QT += xml opengl
 #LIBS += -lmingw32 -lqtmain
 
 DESTDIR = ./
 
 HEADERS += \
-widgets\*.h \
+basemodel.h \
+kfmmodel.h \
+nifmodel.h \
 glcontrolable.h \
 glcontroller.h \
 gllight.h \
@@ -23,16 +25,20 @@ gltex.h \
 gltransform.h \
 glview.h \
 message.h \
-nifmodel.h \
 nifproxy.h \
 nifskope.h \
 niftypes.h \
 nifview.h \
 spellbook.h \
+widgets/*.h \
 spells/*.h
 
 SOURCES += \
-widgets\*.cpp \
+basemodel.cpp \
+kfmmodel.cpp \
+kfmxml.cpp \
+nifmodel.cpp \
+nifxml.cpp \
 glcontroller.cpp \
 gllight.cpp \
 glmesh.cpp \
@@ -46,13 +52,12 @@ gltransform.cpp \
 glview.cpp \
 message.cpp \
 nifdelegate.cpp \
-nifmodel.cpp \
 nifproxy.cpp \
 nifskope.cpp \
 niftypes.cpp \
 nifview.cpp \
-nifxml.cpp \
 spellbook.cpp \
+widgets/*.cpp \
 spells/*.cpp \
 NvTriStrip/*.cpp
 

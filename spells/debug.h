@@ -79,6 +79,8 @@ protected slots:
 	void renumberThreads( int );
 
 protected:
+	void	closeEvent( QCloseEvent * );
+	
 	QLineEdit	* directory;
 	QCheckBox	* recursive;
 	QTextEdit	* text;
