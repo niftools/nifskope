@@ -525,7 +525,7 @@ void NifSkope::load()
 		nif->clear();
 		return;
 	}
-	if ( lineLoad->text().endsWith( ".KFM" ) )
+	if ( lineLoad->text().endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
 		loadKfm();
 		return;
@@ -578,7 +578,7 @@ void NifSkope::save()
 void NifSkope::loadBrowse()
 {
 	// file select
-	QString fn = QFileDialog::getOpenFileName( this, "Choose a file to open", lineLoad->text(), "NIFs (*.nif *.kf *.kfa)");
+	QString fn = QFileDialog::getOpenFileName( this, "Choose a file to open", lineLoad->text(), "NIFs (*.nif *.kf *.kfa *.kfm)");
 	if ( !fn.isEmpty() )
 	{
 		lineLoad->setText( fn );
