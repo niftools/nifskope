@@ -75,8 +75,6 @@ public slots:
 	void load();
 	void save();
 	
-	void loadKfm();
-	
 	void loadBrowse();
 	void saveBrowse();
 	

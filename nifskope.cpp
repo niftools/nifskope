@@ -519,44 +519,47 @@ void NifSkope::load( const QString & filepath )
 
 void NifSkope::load()
 {
-	// open file
-	if ( lineLoad->text().isEmpty() )
+	setEnabled( false );
+
+	QString nifname = lineLoad->text();
+	
+	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
-		nif->clear();
-		return;
-	}
-	if ( lineLoad->text().endsWith( ".KFM", Qt::CaseInsensitive ) )
-	{
-		loadKfm();
-		return;
+		if ( ! kfm->loadFromFile( nifname ) )
+			qWarning() << "failed to load kfm from file" << nifname;
+		nifname = kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" );
+		if ( ! nifname.isEmpty() )
+			nifname.prepend( kfm->getFolder() + "/" );
 	}
 	
-	setEnabled( false );
 	bool a = ogl->aAnimate->isChecked();
 	bool r = ogl->aRotate->isChecked();
 	ogl->aAnimate->setChecked( false );
 	ogl->aRotate->setChecked( false );
 	
-	ProgDlg prog;
-	prog.setLabelText( "loading nif..." );
-	prog.setRange( 0, 1 );
-	prog.setValue( 0 );
-	prog.setMinimumDuration( 2100 );
-	connect( nif, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
-	
-	if ( ! nif->loadFromFile( lineLoad->text() ) )
-		qWarning() << "failed to load nif from file " << lineLoad->text();
+	if ( nifname.isEmpty() )
+	{
+		nif->clear();
+	}
+	else
+	{
+		ProgDlg prog;
+		prog.setLabelText( "loading nif..." );
+		prog.setRange( 0, 1 );
+		prog.setValue( 0 );
+		prog.setMinimumDuration( 2100 );
+		connect( nif, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
+		
+		if ( ! nif->loadFromFile( nifname ) )
+			qWarning() << "failed to load nif from file " << nifname;
+		
+	}
 	
 	ogl->aAnimate->setChecked( a );
 	ogl->aRotate->setChecked( r );
 	ogl->center();
+	
 	setEnabled( true );
-}
-
-void NifSkope::loadKfm()
-{
-	if ( ! kfm->loadFromFile( lineLoad->text() ) )
-		qWarning() << "failed to load kfm from file" << lineLoad->text();
 }
 
 void ProgDlg::sltProgress( int x, int y )
@@ -570,8 +573,19 @@ void NifSkope::save()
 {
 	// write to file
 	setEnabled( false );
-	if ( ! nif->saveToFile( lineSave->text() ) )
-		qWarning() << "could not write file " << lineSave->text();
+	
+	QString nifname = lineSave->text();
+	
+	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
+	{
+		if ( ! kfm->saveToFile( nifname ) )
+			qWarning() << "failed to write kfm file" << nifname;
+	}
+	else
+	{
+		if ( ! nif->saveToFile( nifname ) )
+			qWarning() << "failed to write nif file " << nifname;
+	}
 	setEnabled( true );
 }
 

@@ -58,6 +58,8 @@ public:
 	// is it a compound type?
 	static bool isCompound( const QString & name );
 	
+	QModelIndex getKFMroot() const;
+	
 	// is this version supported ?
 	static bool isVersionSupported( quint32 );
 	

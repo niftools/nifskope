@@ -37,6 +37,14 @@ KfmModel::KfmModel( QObject * parent ) : BaseModel( parent )
 	clear();
 }
 
+QModelIndex KfmModel::getKFMroot() const
+{
+	if ( kfmroot )
+		return createIndex( 0, 0, kfmroot );
+	else
+		return QModelIndex();
+}
+
 QString KfmModel::version2string( quint32 v )
 {
 	if ( v == 0 )	return QString();
