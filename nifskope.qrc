@@ -1,6 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/res">
    <file>nif.xml</file>
+   <file>kfm.xml</file>
    <file>nifskope.png</file>
    <file>spells/skel.dat</file>
 </qresource>
