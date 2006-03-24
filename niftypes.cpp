@@ -208,6 +208,7 @@ void NifValue::initialize()
 	typeMap.insert( "uplink", NifValue::tUpLink );
 	typeMap.insert( "float", NifValue::tFloat );
 	typeMap.insert( "string", NifValue::tString );
+	typeMap.insert( "shortstring", NifValue::tShortString );
 	typeMap.insert( "filepath", NifValue::tFilePath );
 	typeMap.insert( "color3", NifValue::tColor3 );
 	typeMap.insert( "color4", NifValue::tColor4 );
@@ -288,6 +289,7 @@ void NifValue::clear()
 			delete static_cast<Triangle*>( val.data );
 			break;
 		case tString:
+		case tShortString:
 		case tFilePath:
 		case tHeaderString:
 			delete static_cast<QString*>( val.data );
@@ -335,6 +337,7 @@ void NifValue::changeType( Type t )
 			val.data = new Triangle();
 			return;
 		case tString:
+		case tShortString:
 		case tFilePath:
 		case tHeaderString:
 			val.data = new QString();
@@ -375,6 +378,7 @@ void NifValue::operator=( const NifValue & other )
 			*static_cast<Vector2*>( val.data ) = *static_cast<Vector2*>( other.val.data );
 			return;
 		case tString:
+		case tShortString:
 		case tFilePath:
 		case tHeaderString:
 			*static_cast<QString*>( val.data ) = *static_cast<QString*>( other.val.data );
@@ -459,6 +463,7 @@ bool NifValue::fromString( const QString & s )
 			val.f32 = s.toDouble( &ok );
 			return ok;
 		case tString:
+		case tShortString:
 		case tFilePath:
 		case tHeaderString:
 			*static_cast<QString*>( val.data ) = s;
@@ -504,6 +509,7 @@ QString NifValue::toString() const
 		case tFloat:
 			return QString::number( val.f32, 'f', 4 );
 		case tString:
+		case tShortString:
 		case tFilePath:
 		case tHeaderString:
 			return *static_cast<QString*>( val.data );
@@ -636,6 +642,16 @@ bool NifIStream::read( NifValue & val )
 			string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
+		case NifValue::tShortString:
+		{
+			unsigned char len;
+			device->read( (char *) &len, 1 );
+			QByteArray string = device->read( len );
+			if ( string.size() != len ) return false;
+			string.replace( "\r", "\\r" );
+			string.replace( "\n", "\\n" );
+			*static_cast<QString*>( val.val.data ) = QString( string );
+		}	return true;
 		case NifValue::tFilePath:
 		{
 			int len;
@@ -739,6 +755,16 @@ bool NifOStream::write( const NifValue & val )
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
 			return device->write( (const char *) string, string.size() ) == string.size();
+		}
+		case NifValue::tShortString:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			string.replace( "\\r", "\r" );
+			string.replace( "\\n", "\n" );
+			unsigned char len = ( string.size() < 255 ? string.size() : 255 );
+			if ( device->write( (char *) &len, 1 ) != 1 )
+				return false;
+			return device->write( (const char *) string, len ) == len;
 		}
 		case NifValue::tFilePath:
 		{
