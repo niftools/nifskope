@@ -601,6 +601,75 @@ int texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, 
 	return m;
 }
 
+int texLoadPal( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 colormap[], bool flipV, bool flipH, bool rle )
+{
+	if ( bpp != 8 || bytespp != 1 )
+	{
+		qWarning() << "texLoadPal() : unsupported image depth" << bpp << "/" << bytespp;
+		return 0;
+	}
+	
+	glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
+	glPixelStorei( GL_UNPACK_SWAP_BYTES, GL_FALSE );
+	
+	quint8 * data = (quint8 *) malloc( width * height * 1 );
+	quint8 * pixl = (quint8 *) malloc( width * height * 4 );
+	
+	int w = width;
+	int h = height;
+	int m = 0;
+	
+	while ( m < num_mipmaps )
+	{
+		w = width >> m;
+		h = height >> m;
+		
+		if ( w == 0 ) w = 1;
+		if ( h == 0 ) h = 1;
+		
+		if ( rle )
+		{
+			if ( ! uncompressRLE( f, w, h, bytespp, data ) )
+			{
+				qWarning() << "texLoadPal() : unexpected EOF";
+				free( pixl );
+				free( data );
+				return ( m ? 1 : 0 );
+			}
+		}
+		else if ( f.read( (char *) data, w * h * bytespp ) != w * h * bytespp )
+		{
+			qWarning() << "texLoadPal() : unexpected EOF";
+			free( pixl );
+			free( data );
+			return ( m ? 1 : 0 );
+		}
+		
+		quint8 * src = data;
+		for ( int y = 0; y < h; y++ )
+		{
+			quint32 * dst = (quint32 *) ( pixl + 4 * ( w * ( flipV ? h - y - 1 : y ) + ( flipH ? w - 1 : 0 ) ) );
+			for ( int x = 0; x < w; x++ )
+			{
+				*dst++ = colormap[*src++];
+			}
+		}
+		
+		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixl );
+		
+		if ( w == 1 && h == 1 )
+			break;
+	}
+	
+	free( pixl );
+	free( data );
+	
+	if ( w > 1 || h > 1 )
+		m = generateMipMaps( m );
+	
+	return m;
+}
+
 #define DDSD_MIPMAPCOUNT           0x00020000
 #define DDPF_FOURCC                0x00000004
 
@@ -919,9 +988,11 @@ int texLoadDDS( const QString & filename )
 /*
  *  load a tga texture
  */
- 
+
+#define TGA_COLORMAP	1
 #define TGA_COLOR		2
 #define TGA_GREY		3
+#define TGA_COLORMAP_RLE 9
 #define TGA_COLOR_RLE	10
 #define TGA_GREY_RLE	11
 
@@ -944,22 +1015,73 @@ int texLoadTGA( const QString & filename )
 	}
 	if ( hdr[0] ) f.read( hdr[0] );
 	
-	unsigned int depth = hdr[16];
-	//unsigned int alphaDepth  = hdr[17] & 15;
+	quint8 depth = hdr[16];
+	//quint8 alphaDepth  = hdr[17] & 15;
 	bool flipV = ! ( hdr[17] & 32 );
 	bool flipH = hdr[17] & 16;
-	unsigned int width = hdr[12] + 256 * hdr[13];
-	unsigned int height = hdr[14] + 256 * hdr[15];
+	quint16 width = hdr[12] + 256 * hdr[13];
+	quint16 height = hdr[14] + 256 * hdr[15];
 	
 	if ( ! ( isPowerOfTwo( width ) && isPowerOfTwo( height ) ) )
 	{
 		qWarning() << "texLoadTGA(" << filename << ") : image dimensions must be power of two";
 		return 0;
 	}
+	
+	quint32 colormap[256];
+	
+	if ( hdr[1] )
+	{	// color map present
+		quint16 offset = hdr[3] + 256 * hdr[4];
+		quint16 length = hdr[5] + 256 * hdr[6];
+		quint8 bits = hdr[7];
+		quint8 bytes = bits / 8;
+		
+		//qWarning() << "COLORMAP" << "offset" << offset << "length" << length << "bits" << bits << "depth" << depth;
+		
+		if ( bits != 32 && bits != 24 )
+		{
+			qWarning() << "texLoadTGA(" << filename << ") : image sub format not supported" << hdr[2] << depth << bits;
+			return 0;
+		}
+		
+		quint32 cnt = offset;
+		quint32 col;
+		while ( length-- )
+		{
+			col = 0;
+			if ( f.read( (char *) &col, bytes ) != bytes )
+			{
+				qWarning() << "texLoadTGA(" << filename << ") : unexpected EOF";
+				return 0;
+			}
+			
+			if ( cnt < 256 )
+			{
+				switch ( bits )
+				{
+					case 24:
+						colormap[cnt] = ( ( col & 0x00ff0000 ) >> 16 ) | ( col & 0x0000ff00 ) | ( ( col & 0xff ) << 16 ) | 0xff000000;
+						break;
+					case 32:
+						colormap[cnt] = ( ( col & 0x00ff0000 ) >> 16 ) | ( col & 0xff00ff00 ) | ( ( col & 0xff ) << 16 );
+						break;
+				}
+			}
+			cnt++;
+		}
+	}
 
-	// check format and call texLoadRaw
+	// check format and call texLoadPal / texLoadRaw
 	switch( hdr[2] )
 	{
+	case TGA_COLORMAP:
+	case TGA_COLORMAP_RLE:
+		if ( depth == 8 && hdr[1] )
+		{
+			return texLoadPal( f, width, height, 1, depth, depth/8, colormap, flipV, flipH, hdr[2] == TGA_COLORMAP_RLE );
+		}
+		break;
 	case TGA_GREY:
 	case TGA_GREY_RLE:
 		if ( depth == 8 )
@@ -987,7 +1109,6 @@ int texLoadTGA( const QString & filename )
 		}
 		break;
 	}
-	
 	qWarning() << "texLoadTGA(" << filename << ") : image sub format not supported" << hdr[2] << depth;
 	return 0;
 }
