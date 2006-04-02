@@ -50,9 +50,9 @@ QStringList GLTex::texfolders;
 # define APIENTRY
 #endif
 
-static PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB       = 0;
-static PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB = 0;
-static PFNGLCOMPRESSEDTEXIMAGE2DPROC   glCompressedTexImage2D   = 0;
+static PFNGLACTIVETEXTUREARBPROC       _glActiveTextureARB       = 0;
+static PFNGLCLIENTACTIVETEXTUREARBPROC _glClientActiveTextureARB = 0;
+static PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D   = 0;
 
 static int num_texture_units = 0;
 
@@ -67,17 +67,17 @@ void GLTex::initialize( const QGLContext * context )
 	if ( ! extensions.contains( "GL_EXT_texture_compression_s3tc" ) )
 		qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
 	*/
-	glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2D" );
-	if ( ! glCompressedTexImage2D )
-		glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2DARB" );
+	_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2D" );
+	if ( ! _glCompressedTexImage2D )
+		_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2DARB" );
 
-	if ( ! glCompressedTexImage2D )
+	if ( ! _glCompressedTexImage2D )
 		qWarning( "texture compression not supported" );
 	
-	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) context->getProcAddress( "glActiveTextureARB" );
-	glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) context->getProcAddress( "glClientActiveTextureARB" );
+	_glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) context->getProcAddress( "glActiveTextureARB" );
+	_glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) context->getProcAddress( "glClientActiveTextureARB" );
 	
-	if ( ! glActiveTextureARB || ! glClientActiveTextureARB )
+	if ( ! _glActiveTextureARB || ! _glClientActiveTextureARB )
 	{
 		qWarning( "multitexturing not supported" );
 		num_texture_units = 1;
@@ -190,8 +190,8 @@ bool activateStage( int stage )
 	
 	if ( stage < num_texture_units )
 	{
-		glActiveTextureARB( GL_TEXTURE0_ARB + stage );
-		glClientActiveTextureARB( GL_TEXTURE0_ARB + stage );	
+		_glActiveTextureARB( GL_TEXTURE0_ARB + stage );
+		_glClientActiveTextureARB( GL_TEXTURE0_ARB + stage );	
 		return true;
 	}
 	else
@@ -213,12 +213,12 @@ void resetTextureUnits()
 	
 	for ( int x = num_texture_units-1; x >= 0; x-- )
 	{
-		glActiveTextureARB( GL_TEXTURE0_ARB + x );
+		_glActiveTextureARB( GL_TEXTURE0_ARB + x );
 		glDisable( GL_TEXTURE_2D );
 		glMatrixMode( GL_TEXTURE );
 		glLoadIdentity();
 		glMatrixMode( GL_MODELVIEW );
-		glClientActiveTextureARB( GL_TEXTURE0_ARB + x );
+		_glClientActiveTextureARB( GL_TEXTURE0_ARB + x );
 		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	}
 }
@@ -897,7 +897,7 @@ int texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, q
 			return 0;
 	}
 	
-	if ( !glCompressedTexImage2D )
+	if ( !_glCompressedTexImage2D )
 	{
 		qDebug() << "texLoadDXT(" << f.fileName() << ") : DXT image compression not supported by your open gl implementation";
 		return 0;
@@ -927,7 +927,7 @@ int texLoadDXT( QFile & f, quint32 compression, quint32 width, quint32 height, q
 		if ( flipV )
 			flipDXT( glFormat, w, h, pixels );
 		
-		glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
+		_glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
 		
 		if ( w == 1 && h == 1 )
 			break;
