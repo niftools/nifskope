@@ -287,6 +287,12 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 					value = ( 2 * x3 - 3 * x2 + 1 ) * v1 + ( - 2 * x3 + 3 * x2 ) * v2 + ( x3 - 2 * x2 + x ) * t1 + ( x3 - x2 ) * t2;
 				}	return true;
 				*/
+				case 5:
+					if ( x < 0.5 )
+						value = v1;
+					else
+						value = v2;
+					return true;
 				default:
 					value = v1 + ( v2 - v1 ) * x;
 					return true;

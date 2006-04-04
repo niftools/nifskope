@@ -303,20 +303,24 @@ public:
 	void update( float time )
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
-		if ( ! ( target && flags.controller.active && iSources.isValid() && nif && flipDelta > 0 && flipSlot == 0 ) )
+		if ( ! ( target && flags.controller.active && iSources.isValid() && nif ) )
 			return;
 		
-		int m = nif->rowCount( iSources );
-		if ( m == 0 )	return;
-		int r = ( (int) ( ctrlTime( time ) / flipDelta ) ) % m;
+		float r = 0;
 		
-		target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( r, 0 ) ), "NiSourceTexture" );
+		if ( iValues.isValid() )
+			interpolate( r, iValues, ctrlTime( time ), flipLast );
+		else if ( flipDelta > 0 )
+			r = ctrlTime( time ) / flipDelta;
+		
+		target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiSourceTexture" );
 	}
 
 	bool update( const NifModel * nif, const QModelIndex & index )
 	{
 		if ( Controller::update( nif, index ) )
 		{
+			iValues = nif->getIndex( iData, "Data" );
 			flipDelta = nif->get<float>( index, "Delta" );
 			flipSlot = nif->get<int>( index, "Texture Slot" );
 			
@@ -332,6 +336,9 @@ protected:
 	float	flipDelta;
 	int		flipSlot;
 	
+	int		flipLast;
+	
+	QPersistentModelIndex iValues;
 	QPersistentModelIndex iSources;
 };
 
