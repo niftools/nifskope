@@ -17,6 +17,7 @@
 #include <QLineEdit>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSettings>
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QToolButton>
@@ -49,11 +50,14 @@ REGISTER_SPELL( spThreadLoad )
 TestShredder::TestShredder()
 	: QWidget()
 {
+	QSettings settings( "NifTools", "NifSkope" );
+	settings.beginGroup( "XML Checker" );
+
 	directory = new QLineEdit( this );
-	directory->setText( "f:\\nif" );
+	directory->setText( settings.value( "Directory" ).toString() );
 	
 	recursive = new QCheckBox( "Recursive", this );
-	recursive->setChecked( true );
+	recursive->setChecked( settings.value( "Recursive", true ).toBool() );
 	recursive->setToolTip( "Recurse into sub directories" );
 	
 	QAction * aBrowse = new QAction( "Dir", this );
@@ -61,9 +65,9 @@ TestShredder::TestShredder()
 	QToolButton * btBrowse = new QToolButton( this );
 	btBrowse->setDefaultAction( aBrowse );
 	
-	QSpinBox * count = new QSpinBox();
+	count = new QSpinBox();
 	count->setRange( 1, 8 );
-	count->setValue( NUM_THREADS );
+	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
 	count->setPrefix( "threads " );
 	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
 	
@@ -105,6 +109,13 @@ TestShredder::TestShredder()
 
 TestShredder::~TestShredder()
 {
+	QSettings settings( "NifTools", "NifSkope" );
+	settings.beginGroup( "XML Checker" );
+	
+	settings.setValue( "Directory", directory->text() );
+	settings.setValue( "Recursive", recursive->isChecked() );
+	settings.setValue( "Threads", count->value() );
+
 	queue.clear();
 }
 
@@ -185,7 +196,7 @@ void TestShredder::threadFinished()
 
 void TestShredder::browse()
 {
-	QString d = QFileDialog::getExistingDirectory( this, "Choose a folder" );
+	QString d = QFileDialog::getExistingDirectory( this, "Choose a folder", directory->text() );
 	if ( ! d.isEmpty() )
 	{
 		directory->setText( d );

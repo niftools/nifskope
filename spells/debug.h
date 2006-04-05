@@ -83,6 +83,7 @@ protected:
 	
 	QLineEdit	* directory;
 	QCheckBox	* recursive;
+	QSpinBox	* count;
 	QTextEdit	* text;
 	QProgressBar * progress;
 	QPushButton * btRun;

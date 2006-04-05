@@ -685,14 +685,26 @@ class spTextureTemplate : public Spell
 		lay->addWidget( new QLabel( "File" ), 3, 0 );
 		QLineEdit * file = new QLineEdit;
 		lay->addWidget( file, 3, 1 );
-		file->setText( "g:\\temp.tga" );
 		
 		QPushButton * ok = new QPushButton( "Ok" );
 		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
 		lay->addWidget( ok, 4, 0, 1, 2 );
 		
+		QSettings settings( "NifTools", "NifSkope" );
+		settings.beginGroup( "spells" );
+		settings.beginGroup( page() );
+		settings.beginGroup( name() );
+		
+		wrap->setCurrentIndex( settings.value( "Wrap Mode", 0 ).toInt() );
+		size->setCurrentIndex( settings.value( "Image Size", 2 ).toInt() );
+		file->setText( settings.value( "File Name", "" ).toString() );
+		
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
+		
+		settings.setValue( "Wrap Mode", wrap->currentIndex() );
+		settings.setValue( "Image Size", size->currentIndex() );
+		settings.setValue( "File Name", file->text() );
 		
 		// get the selected coord set
 		QModelIndex iSet = iUVs.child( set->currentIndex(), 0 );
