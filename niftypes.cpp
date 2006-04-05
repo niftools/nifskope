@@ -223,6 +223,7 @@ void NifValue::initialize()
 	typeMap.insert( "headerstring", NifValue::tHeaderString );
 	typeMap.insert( "stringpalette", NifValue::tStringPalette );
 	typeMap.insert( "stringoffset", NifValue::tStringOffset );
+	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -445,6 +446,7 @@ bool NifValue::fromString( const QString & s )
 			return ok;
 		case tWord:
 		case tStringOffset:
+		case tBlockTypeIndex:
 			val.u32 = 0;
 			val.u16 = s.toUInt( &ok );
 			return ok;
@@ -499,6 +501,7 @@ QString NifValue::toString() const
 		case tByte:
 		case tWord:
 		case tStringOffset:
+		case tBlockTypeIndex:
 		case tInt:
 			return QString::number( val.u32 );
 		case tFlags:
@@ -608,6 +611,7 @@ bool NifIStream::read( NifValue & val )
 		case NifValue::tWord:
 		case NifValue::tFlags:
 		case NifValue::tStringOffset:
+		case NifValue::tBlockTypeIndex:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
@@ -723,6 +727,7 @@ bool NifOStream::write( const NifValue & val )
 		case NifValue::tWord:
 		case NifValue::tFlags:
 		case NifValue::tStringOffset:
+		case NifValue::tBlockTypeIndex:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tInt:
 		case NifValue::tFileVersion:

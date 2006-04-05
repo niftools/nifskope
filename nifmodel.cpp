@@ -586,6 +586,16 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return QString( "<palette not found>" );
 						}
 					}
+					else if ( item->value().type() == NifValue::tBlockTypeIndex )
+					{
+						int idx = item->value().get<int>();
+						NifItem * blocktypes = getItemX( item, "Block Types" );
+						NifItem * blocktyp = ( blocktypes ? blocktypes->child( idx ) : 0 );
+						if ( blocktyp )
+							return QString( "%2 [%1]").arg( idx ).arg( blocktyp->value().get<QString>() );
+						else
+							return QString( "%1 - <index invalid>" ).arg( idx );
+					}
 					else if ( item->value().isLink() )
 					{
 						int lnk = item->value().toLink();
@@ -652,6 +662,13 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			QString tip;
 			switch ( column )
 			{
+				case NameCol:
+				{
+					if ( item->parent() && ! item->parent()->arr1().isEmpty() )
+					{
+						return QString( "array index: %1" ).arg( item->row() );
+					}
+				}	break;
 				case ValueCol:
 				{
 					switch ( item->value().type() )
