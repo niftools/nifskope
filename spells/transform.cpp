@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QBuffer>
 #include <QClipboard>
+#include <QMessageBox>
 #include <QMimeData>
 
 class spApplyTransformation : public Spell

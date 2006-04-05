@@ -4,10 +4,14 @@
 
 #include <QGLPixelBuffer>
 
+#include <QComboBox>
 #include <QDialog>
 #include <QDirModel>
+#include <QImage>
 #include <QLayout>
+#include <QLineEdit>
 #include <QMessageBox>
+#include <QPainter>
 #include <QPushButton>
 #include <QTreeView>
 
@@ -611,3 +615,177 @@ public:
 };
 
 REGISTER_SPELL( spFlipTexCoords )
+
+#define clamp01f( X ) ( X > 1 ? 1 : X < 0 ? 0 : X )
+#define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
+
+class spTextureTemplate : public Spell
+{
+	QString name() const { return "Export Template"; }
+	QString page() const { return "Texture"; }
+	
+	QModelIndex getData( const NifModel * nif, const QModelIndex & index ) const
+	{
+		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+			return nif->getBlock( nif->getLink( index, "Data" ) );
+		else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
+			return index;
+		return QModelIndex();
+	}
+	
+	QModelIndex getUV( const NifModel * nif, const QModelIndex & index ) const
+	{
+		QModelIndex iData = getData( nif, index );
+		
+		if ( iData.isValid() )
+		{
+			QModelIndex iUVs = nif->getIndex( iData, "UV Sets" );
+			if ( ! iUVs.isValid() )
+				iUVs = nif->getIndex( iData, "UV Sets 2" );
+			return iUVs;
+		}
+		return QModelIndex();
+	}
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iUVs = getUV( nif, index );
+		return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iUVs = getUV( nif, index );
+		if ( nif->rowCount( iUVs ) <= 0 )
+			return index;
+		
+		// fire up a dialog to set the user parameters
+		QDialog dlg;
+		QGridLayout * lay = new QGridLayout;
+		dlg.setLayout( lay );
+		
+		lay->addWidget( new QLabel( "Coord Set" ), 0, 0 );
+		QComboBox * set = new QComboBox;
+		lay->addWidget( set, 0, 1 );
+		for ( int i = 0; i < nif->rowCount( iUVs ); i++ )
+			set->addItem( QString( "set %1" ).arg( i ) );
+		
+		lay->addWidget( new QLabel( "Wrap Mode" ), 1, 0 );
+		QComboBox * wrap = new QComboBox;
+		lay->addWidget( wrap, 1, 1 );
+		wrap->addItem( "wrap" );
+		wrap->addItem( "clamp" );
+		
+		lay->addWidget( new QLabel( "Size" ), 2, 0 );
+		QComboBox * size = new QComboBox;
+		lay->addWidget( size, 2, 1 );
+		for ( int i = 6; i < 12; i++ )
+			size->addItem( QString::number( 2 << i ) );
+		
+		lay->addWidget( new QLabel( "File" ), 3, 0 );
+		QLineEdit * file = new QLineEdit;
+		lay->addWidget( file, 3, 1 );
+		file->setText( "g:\\temp.tga" );
+		
+		QPushButton * ok = new QPushButton( "Ok" );
+		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		lay->addWidget( ok, 4, 0, 1, 2 );
+		
+		if ( dlg.exec() != QDialog::Accepted )
+			return index;
+		
+		// get the selected coord set
+		QModelIndex iSet = iUVs.child( set->currentIndex(), 0 );
+		
+		QVector<Vector2> uv = nif->getArray<Vector2>( iSet );
+		QVector<Triangle> tri;
+		
+		// get the triangles
+		QModelIndex iData = getData( nif, index );
+		QModelIndex iPoints = nif->getIndex( iData, "Points" );
+		if ( iPoints.isValid() )
+		{
+			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+			{
+				QVector<quint16> p = nif->getArray<quint16>( iPoints.child( r, 0 ) );
+				quint16 a = p.value( 0 );
+				quint16 b = p.value( 1 );
+				bool flip = false;
+				for ( int x = 2; x < p.count(); x++ )
+				{
+					quint16 c = p[x];
+					if ( a != b && b != c && c != a )
+						if ( flip )
+							tri.append( Triangle( a, c, b ) );
+						else
+							tri.append( Triangle( a, b, c ) );
+					a = b;
+					b = c;
+					flip = ! flip;
+				}
+			}
+		}
+		else
+		{
+			tri = nif->getArray<Triangle>( nif->getIndex( getData( nif, index ), "Triangles" ) );
+		}
+		
+		// render the template image
+		quint16 s = size->currentText().toInt();
+		
+		QImage img( s, s, QImage::Format_RGB32 );
+		QPainter pntr( &img );
+		
+		pntr.fillRect( img.rect(), QColor( 0xff, 0xff, 0xff ) );
+		pntr.scale( s, s );
+		pntr.setPen( QColor( 0x10, 0x20, 0x30 ) );
+		
+		bool clamp = wrap->currentIndex() == 1;
+		
+		foreach ( Triangle t, tri )
+		{
+			Vector2 v2[3];
+			for ( int i = 0; i < 3; i++ )
+			{
+				v2[i] = uv.value( t[i] );
+				if ( clamp )
+				{
+					v2[i][0] = clamp01f( v2[i][0] );
+					v2[i][1] = clamp01f( v2[i][1] );
+				}
+				else
+				{
+					v2[i][0] = wrap01f( v2[i][0] );
+					v2[i][1] = wrap01f( v2[i][1] );
+				}
+			}
+			
+			pntr.drawLine( QPointF( v2[0][0], v2[0][1] ), QPointF( v2[1][0], v2[1][1] ) );
+			pntr.drawLine( QPointF( v2[1][0], v2[1][1] ), QPointF( v2[2][0], v2[2][1] ) );
+			pntr.drawLine( QPointF( v2[2][0], v2[2][1] ), QPointF( v2[0][0], v2[0][1] ) );
+		}
+		
+		// write the file
+		QString filename = file->text();
+		if ( ! filename.toLower().endsWith( ".tga" ) )
+			filename.append( ".tga" );
+		
+		quint8 hdr[18];
+		for ( int o = 0; o < 18; o++ ) hdr[o] = 0;
+		hdr[02] = 2;
+		hdr[12] = s % 256;
+		hdr[13] = s / 256;
+		hdr[14] = s % 256;
+		hdr[15] = s / 256;
+		hdr[16] = 32;
+		hdr[17] = 32; // flipV
+		
+		QFile f( filename );
+		if ( ! f.open( QIODevice::WriteOnly ) || f.write( (char *) hdr, 18 ) != 18 || f.write( (char *) img.bits(), s * s * 4 ) != s * s * 4 )
+			qWarning() << "exportTemplate(" << filename << ") : could not write file";
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spTextureTemplate )
