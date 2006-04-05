@@ -7,6 +7,7 @@
 #include <QDialog>
 #include <QDirModel>
 #include <QLayout>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QTreeView>
 
@@ -296,6 +297,11 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
 	{
+		if ( nif->getVersionNumber() >= 0x14000000 && QMessageBox::question( 0, "Pack Texture", "Dunno how to pack textures for version 20.x.x.x", "Try Anyway", "Ok" ) != 0 )
+			return idx;
+		
+		qWarning( "%x", nif->getVersionNumber() );
+		
 		QModelIndex index = nif->getBlock( idx );
 		
 		QGLPixelBuffer gl( QSize( 32, 32 ) );

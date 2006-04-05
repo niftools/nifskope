@@ -4,8 +4,8 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QCursor>
+#include <QMessageBox>
 #include <QMimeData>
-
 
 class spInsertBlock : public Spell
 {
@@ -420,10 +420,13 @@ public:
 	QString name() const { return "Paste Branch"; }
 	QString page() const { return "Block"; }
 	
-	bool acceptFormat( const QString & format, const NifModel * nif )
+	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
 		QStringList split = format.split( "/" );
-		return ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" && split.value( 2 ) == nif->getVersion() );
+		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
+			return split.value( 2 );
+		else
+			return QString();
 	}
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -431,7 +434,7 @@ public:
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 			foreach ( QString form, mime->formats() )
-				if ( acceptFormat( form, nif ) )
+				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
 					return true;
 		return false;
 	}
@@ -443,7 +446,8 @@ public:
 		{
 			foreach ( QString form, mime->formats() )
 			{
-				if ( acceptFormat( form, nif ) )
+				QString v = acceptFormat( form, nif );
+				if ( ! v.isEmpty() && ( v == nif->getVersion() || QMessageBox::question( 0, "Paste Branch", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( v ), "Continue", "Cancel" ) == 0 ) )
 				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( & data );

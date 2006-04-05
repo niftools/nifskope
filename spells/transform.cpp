@@ -15,13 +15,16 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemType( index ) == "NiBlock" && nif->getLink( index, "Controller" ) == -1 && nif->getLink( index, "Skin Instance" ) == -1 &&
-			( ( nif->inherits( nif->itemName( index ), "AParentNode" ) && nif->get<int>( index, "Flags" ) & 8 )
-				|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" ) );
+		return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "AParentNode" )
+				|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
+		if ( ( nif->getLink( index, "Controller" ) != -1 || nif->getLink( index, "Skin Instance" ) != -1 ) )
+			if ( QMessageBox::question( 0, "Apply Transformation", "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it.", "Try anyway", "Cancel" ) != 0 )
+				return index;
+		
 		if ( nif->inherits( nif->itemName( index ), "AParentNode" ) )
 		{
 			Transform tp( nif, index );

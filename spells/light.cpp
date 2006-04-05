@@ -63,11 +63,6 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		
-		//LightEdit * le = new LightEdit( nif, nif->getBlock( index ) );
-		//le->setAttribute( Qt::WA_DeleteOnClose );
-		//le->show();
-		
 		QModelIndex iLight = nif->getBlock( index );
 		
 		NifBlockEditor * le = new NifBlockEditor( nif, iLight );
