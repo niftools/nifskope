@@ -546,8 +546,8 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 	
 	QString left, right;
 	
-	static const char * const exp[] = { "!=", "==", ">=", "<=", "<", ">" };
-	static const int num_exp = 6;
+	static const char * const exp[] = { "!=", "==", ">=", "<=", "<", ">", "&" };
+	static const int num_exp = 7;
 	
 	int c;
 	for ( c = 0; c < num_exp; c++ )
@@ -606,6 +606,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 		case 3: return l <= r;
 		case 4: return l > r;
 		case 5: return l < r;
+		case 6: return l & r;
 		default: return false;
 	}
 }
