@@ -616,7 +616,6 @@ public:
 
 REGISTER_SPELL( spFlipTexCoords )
 
-#define clamp01f( X ) ( X > 1 ? 1 : X < 0 ? 0 : X )
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
 class spTextureTemplate : public Spell
@@ -752,7 +751,7 @@ class spTextureTemplate : public Spell
 		pntr.scale( s, s );
 		pntr.setPen( QColor( 0x10, 0x20, 0x30 ) );
 		
-		bool clamp = wrap->currentIndex() == 1;
+		bool wrp = wrap->currentIndex() == 0;
 		
 		foreach ( Triangle t, tri )
 		{
@@ -760,12 +759,7 @@ class spTextureTemplate : public Spell
 			for ( int i = 0; i < 3; i++ )
 			{
 				v2[i] = uv.value( t[i] );
-				if ( clamp )
-				{
-					v2[i][0] = clamp01f( v2[i][0] );
-					v2[i][1] = clamp01f( v2[i][1] );
-				}
-				else
+				if ( wrp )
 				{
 					v2[i][0] = wrap01f( v2[i][0] );
 					v2[i][1] = wrap01f( v2[i][1] );
