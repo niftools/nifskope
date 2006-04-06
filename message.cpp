@@ -8,6 +8,7 @@ inline void space( QString & s )
 
 template <> Message & Message::operator<<( const char * x )
 {
+	space( s );
 	s += x;
 	return *this;
 }

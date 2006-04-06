@@ -850,9 +850,9 @@ bool NifModel::setHeaderString( const QString & s )
 bool NifModel::setVersion( quint32 v )
 {
 	// verify version number
-	if ( ! isVersionSupported( version ) )
+	if ( ! isVersionSupported( v ) )
 	{
-		msg( Message() << "version" << version2string( version ) << "is not supported yet" );
+		msg( Message() << "version" << version2string( v ) << "is not supported yet" );
 		return false;
 	}
 	version = v;
