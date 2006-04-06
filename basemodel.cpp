@@ -86,24 +86,78 @@ int BaseModel::getArraySize( NifItem * array ) const
 	int d1 = array->arr1().toInt( &ok );
 	if ( ! ok )
 	{
-		NifItem * dim1 = getItem( parent, array->arr1() );
-		if ( ! dim1 )
+		QString left, right;
+		QString arr1 = array->arr1();
+		
+		static const char * const exp[] = { "|", "&" };
+		static const int num_exp = 2;
+		
+		int c;
+		for ( c = 0; c < num_exp; c++ )
 		{
-			msg( Message() << "failed to get array size for array" << array->name() );
-			return 0;
+			int p = arr1.indexOf( exp[c] );
+			if ( p > 0 )
+			{
+				left = arr1.left( p ).trimmed();
+				right = arr1.right( arr1.length() - p - 2 ).trimmed();
+				break;
+			}
 		}
 		
-		if ( dim1->childCount() == 0 )
-			d1 = dim1->value().toCount();
-		else
+		if ( c >= num_exp )
 		{
-			NifItem * item = dim1->child( array->row() );
-			if ( item )
-				d1 = item->value().toCount();
-			else
+			left = arr1.trimmed();
+			c = 0;
+		}
+	
+		int r = 0; // d1 is left
+		
+		bool ok;
+		
+		if ( ! left.isEmpty() )
+		{
+			d1 = left.toInt( &ok );
+			if ( ! ok )
+			{
+				NifItem * dim1 = getItem( parent, left );
+				if ( ! dim1 )
+				{
+					msg( Message() << "failed to get array size for array" << array->name() );
+					return 0;
+				}
+		
+				if ( dim1->childCount() == 0 )
+					d1 = dim1->value().toCount();
+				else
+				{
+					NifItem * item = dim1->child( array->row() );
+					if ( item )
+						d1 = item->value().toCount();
+					else {
+						msg( Message() << "failed to get array size for array " << array->name() );
+						return 0;
+					};
+				}
+			}
+		}
+		
+		if ( ! right.isEmpty() )
+		{
+			r = right.toInt( &ok );
+			if ( ! ok )
+			{
 				msg( Message() << "failed to get array size for array " << array->name() );
+				return 0;
+			}
+		}
+		
+		switch ( c )
+		{
+			case 0: d1 |= r; break;
+			case 1: d1 &= r; break;
 		}
 	}
+	
 	if ( d1 < 0 )
 	{
 		msg( Message() << "invalid array size for array" << array->name() );
