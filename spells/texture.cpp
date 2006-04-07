@@ -2,6 +2,8 @@
 #include "../spellbook.h"
 #include "../gltex.h"
 
+#include "../widgets/fileselect.h"
+
 #include <QGLPixelBuffer>
 
 #include <QComboBox>
@@ -663,27 +665,27 @@ class spTextureTemplate : public Spell
 		QGridLayout * lay = new QGridLayout;
 		dlg.setLayout( lay );
 		
-		lay->addWidget( new QLabel( "Coord Set" ), 0, 0 );
-		QComboBox * set = new QComboBox;
-		lay->addWidget( set, 0, 1 );
-		for ( int i = 0; i < nif->rowCount( iUVs ); i++ )
-			set->addItem( QString( "set %1" ).arg( i ) );
+		FileSelector * file = new FileSelector( FileSelector::SaveFile, "File", QBoxLayout::RightToLeft );
+		file->setFilter( "*.tga" );
+		lay->addWidget( file, 0, 0, 1, 2 );
 		
-		lay->addWidget( new QLabel( "Wrap Mode" ), 1, 0 );
-		QComboBox * wrap = new QComboBox;
-		lay->addWidget( wrap, 1, 1 );
-		wrap->addItem( "wrap" );
-		wrap->addItem( "clamp" );
-		
-		lay->addWidget( new QLabel( "Size" ), 2, 0 );
+		lay->addWidget( new QLabel( "Size" ), 1, 0 );
 		QComboBox * size = new QComboBox;
-		lay->addWidget( size, 2, 1 );
+		lay->addWidget( size, 1, 1 );
 		for ( int i = 6; i < 12; i++ )
 			size->addItem( QString::number( 2 << i ) );
 		
-		lay->addWidget( new QLabel( "File" ), 3, 0 );
-		QLineEdit * file = new QLineEdit;
-		lay->addWidget( file, 3, 1 );
+		lay->addWidget( new QLabel( "Coord Set" ), 2, 0 );
+		QComboBox * set = new QComboBox;
+		lay->addWidget( set, 2, 1 );
+		for ( int i = 0; i < nif->rowCount( iUVs ); i++ )
+			set->addItem( QString( "set %1" ).arg( i ) );
+		
+		lay->addWidget( new QLabel( "Wrap Mode" ), 3, 0 );
+		QComboBox * wrap = new QComboBox;
+		lay->addWidget( wrap, 3, 1 );
+		wrap->addItem( "wrap" );
+		wrap->addItem( "clamp" );
 		
 		QPushButton * ok = new QPushButton( "Ok" );
 		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
@@ -773,7 +775,7 @@ class spTextureTemplate : public Spell
 		
 		// write the file
 		QString filename = file->text();
-		if ( ! filename.toLower().endsWith( ".tga" ) )
+		if ( ! filename.endsWith( ".tga", Qt::CaseInsensitive ) )
 			filename.append( ".tga" );
 		
 		quint8 hdr[18];

@@ -174,6 +174,11 @@ bool BaseModel::updateArray( const QModelIndex & array )
 	return updateArrayItem( item, false );
 }
 
+bool BaseModel::updateArray( const QModelIndex & parent, const QString & name )
+{
+	return updateArray( getIndex( parent, name ) );
+}
+
 /*
  *  item value functions
  */

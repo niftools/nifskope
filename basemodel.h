@@ -70,6 +70,7 @@ public:
 	bool isArray( const QModelIndex & array ) const;
 	// this updates an array ( append or remove items )
 	bool updateArray( const QModelIndex & array );
+	bool updateArray( const QModelIndex & parent, const QString & name );
 	// read an array
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray ) const;
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray, const QString & name ) const;

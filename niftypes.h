@@ -782,6 +782,9 @@ template <> inline QByteArray NifValue::get() const
 
 template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
+template <> inline bool NifValue::set( const quint32 & i ) { return setCount( i ); }
+template <> inline bool NifValue::set( const quint16 & i ) { return setCount( i ); }
+template <> inline bool NifValue::set( const quint8 & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
 template <> inline bool NifValue::set( const Quat & x ) { return setType( tQuat, x ); }
