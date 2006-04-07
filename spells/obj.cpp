@@ -203,47 +203,49 @@ public:
 				for ( int i = 1; i < t.count(); i++ )
 					points.append( Point( t[i] ) );
 				
-				if ( points.count() < 3 )
-					continue;
-				
-				//if ( points.count() > 3 )
-				//{
-				//	qWarning() << "please triangulate your mesh before import";
-				//	return iBlock;
-				//}
-				
-				Triangle tri;
-				for ( int i = 0; i < 3; i++ )
+				if ( points.count() > 4 )
 				{
-					if ( indices.contains( points[ i ] ) )
-					{
-						tri[ i ] = indices[ points[ i ] ];
-					}
-					else
-					{
-						if ( index == 0xffff )
-						{
-							qWarning() << "obj contains too many vertices";
-							return iBlock;
-						}
-						
-						verts.append( overts.value( points[ i ].v() ) );
-						norms.append( onorms.value( points[ i ].n() ) );
-						texco.append( otexco.value( points[ i ].t() ) );
-						
-						indices.insert( points[ i ], index );
-						tri[ i ] = index++;
-					}
+					qWarning() << "please triangulate your mesh before import";
+					return iBlock;
 				}
 				
-				triangles.append( tri );
+				for ( int j = 0; j < points.count() - 2; j++ )
+				{
+					Triangle tri;
+					for ( int i = 0; i < 3; i++ )
+					{
+						int k = i == 0 ? 0 : i+j;
+						
+						if ( indices.contains( points[ k ] ) )
+						{
+							tri[ i ] = indices[ points[ k ] ];
+						}
+						else
+						{
+							if ( index == 0xffff )
+							{
+								qWarning() << "obj contains too many vertices";
+								return iBlock;
+							}
+							
+							verts.append( overts.value( points[ k ].v() ) );
+							norms.append( onorms.value( points[ k ].n() ) );
+							texco.append( otexco.value( points[ k ].t() ) );
+							
+							indices.insert( points[ k ], index );
+							tri[ i ] = index++;
+						}
+					}
+					
+					triangles.append( tri );
+				}
 			}
 		}
 		
 		file.close();
 		
-		qWarning() << ".obj verts" << overts.count() << "norms" << onorms.count() << "texco" << otexco.count();
-		qWarning() << ".nif verts/norms/texco" << verts.count() << "triangles" << triangles.count();
+		//qWarning() << ".obj verts" << overts.count() << "norms" << onorms.count() << "texco" << otexco.count();
+		//qWarning() << ".nif verts/norms/texco" << verts.count() << "triangles" << triangles.count();
 		
 		QModelIndex iData = spObjExport::getShapeData( nif, iBlock );
 		nif->set<int>( iData, "Num Vertices", indices.count() );
@@ -281,8 +283,6 @@ public:
 		if ( nif->itemName( iData ) == "NiTriStripsData" )
 		{
 			QList< QVector< quint16 > > strips = strippify( triangles );
-			
-			qWarning() << strips.count();
 			
 			nif->set<int>( iData, "Num Strips", strips.count() );
 			nif->set<int>( iData, "Has Points", 1 );

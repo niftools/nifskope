@@ -40,9 +40,12 @@ NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 This is version 0.8.1 of NifSkope.
 
-It should read and write every Nif up to version 20.0.0.4 and most
-Nifs of version 20.0.0.5 (Oblivion).
+It should read and write every Nif up to version 20.0.0.5.
 
+changes since 0.8:
+  - XML updated
+  - create texture templates
+  - .OBJ import/export
 
 changes since 0.7:
   - Billboards

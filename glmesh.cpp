@@ -247,6 +247,7 @@ void Mesh::transform()
 		}
 		else if ( nif->itemName( iData ) == "NiTriStripsData" )
 		{
+			tristrips.clear();
 			QModelIndex points = nif->getIndex( iData, "Points" );
 			if ( points.isValid() )
 			{
