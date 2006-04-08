@@ -766,7 +766,8 @@ bool NifOStream::write( const NifValue & val )
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
-			unsigned char len = ( string.size() < 255 ? string.size() : 255 );
+			if ( string.size() > 254 )	string.resize( 254 );
+			unsigned char len = string.size() + 1;
 			if ( device->write( (char *) &len, 1 ) != 1 )
 				return false;
 			return device->write( (const char *) string, len ) == len;
