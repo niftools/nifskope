@@ -48,7 +48,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 	return ( t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tString
 		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat
-		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString );
+		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString );
 }
 
 void ValueEdit::setValue( const NifValue & v )
@@ -106,6 +106,7 @@ void ValueEdit::setValue( const NifValue & v )
 		case NifValue::tString:
 		case NifValue::tFilePath:
 		case NifValue::tHeaderString:
+		case NifValue::tShortString:
 		{	
 			QLineEdit * le = new QLineEdit( this );
 			le->setText( v.toString() );
@@ -171,6 +172,7 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tString:
 		case NifValue::tFilePath:
 		case NifValue::tHeaderString:
+		case NifValue::tShortString:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
 			break;
 		case NifValue::tVector3:
