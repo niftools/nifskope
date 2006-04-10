@@ -522,3 +522,40 @@ public:
 
 REGISTER_SPELL( spPasteBranch )
 
+class spRemoveBranch : public Spell
+{
+public:
+	QString name() const { return "Remove Branch"; }
+	QString page() const { return "Block"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & iBlock )
+	{
+		int ix = nif->getBlockNumber( iBlock );
+		return ( ix >= 0 && ( nif->getRootLinks().contains( ix ) || nif->getParent( ix ) >= 0 ) );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QPersistentModelIndex iBlock = index;
+		removeChildren( nif, iBlock );
+		nif->removeNiBlock( nif->getBlockNumber( iBlock ) );
+		return QModelIndex();
+	}
+	
+	void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
+	{
+		QList<QPersistentModelIndex> iChildren;
+		foreach ( quint32 link, nif->getChildLinks( nif->getBlockNumber( iBlock ) ) )
+			iChildren.append( nif->getBlock( link ) );
+		
+		foreach ( QPersistentModelIndex iChild, iChildren )
+			if ( iChild.isValid() )
+				removeChildren( nif, iChild );
+		
+		foreach ( QPersistentModelIndex iChild, iChildren )
+			if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
+				nif->removeNiBlock( nif->getBlockNumber( iChild ) );
+	}
+};
+
+REGISTER_SPELL( spRemoveBranch )
