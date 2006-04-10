@@ -33,6 +33,7 @@ public:
 		QString fname = QFileDialog::getSaveFileName( 0, "Choose a .OBJ file for export", settings.value( "File Name" ).toString(), "*.obj" );
 		if ( fname.isEmpty() )
 			return index;
+		
 		if ( ! fname.endsWith( ".obj", Qt::CaseInsensitive ) )
 			fname.append( ".obj" );
 		
@@ -59,7 +60,7 @@ public:
 		
 		QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
 		foreach( Vector2 t, texco )
-			s << "vt " << t[0] << " " << t[1] << "\r\n";
+			s << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
 		
 		// copy normals
 		
@@ -74,25 +75,10 @@ public:
 		QModelIndex iPoints = nif->getIndex( iData, "Points" );
 		if ( iPoints.isValid() )
 		{
+			QList< QVector<quint16> > strips;
 			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-			{
-				QVector<quint16> p = nif->getArray<quint16>( iPoints.child( r, 0 ) );
-				quint16 a = p.value( 0 );
-				quint16 b = p.value( 1 );
-				bool flip = false;
-				for ( int x = 2; x < p.count(); x++ )
-				{
-					quint16 c = p[x];
-					if ( a != b && b != c && c != a )
-						if ( flip )
-							tris.append( Triangle( a, c, b ) );
-						else
-							tris.append( Triangle( a, b, c ) );
-					a = b;
-					b = c;
-					flip = ! flip;
-				}
-			}
+				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+			tris = triangulate( strips );
 		}
 		else
 		{
@@ -165,9 +151,9 @@ public:
 		QVector<Vector2> otexco;
 		QHash<Point,quint16> indices;
 		
-		QVector<Vector3> verts( indices.count() );
-		QVector<Vector3> norms( indices.count() );
-		QVector<Vector2> texco( indices.count() );
+		QVector<Vector3> verts;
+		QVector<Vector3> norms;
+		QVector<Vector2> texco;
 		
 		QVector<Triangle> triangles;
 		
@@ -185,7 +171,7 @@ public:
 			}
 			else if ( t.value( 0 ) == "vt" )
 			{
-				otexco.append( Vector2( t.value( 1 ).toDouble(), t.value( 2 ).toDouble() ) );
+				otexco.append( Vector2( t.value( 1 ).toDouble(), 1.0 - t.value( 2 ).toDouble() ) );
 			}
 			else if ( t.value( 0 ) == "vn" )
 			{
@@ -201,7 +187,7 @@ public:
 				
 				QList<Point> points;
 				for ( int i = 1; i < t.count(); i++ )
-					points.append( Point( t[i] ) );
+					points.append( Point( t[i], overts.count(), otexco.count(), onorms.count() ) );
 				
 				if ( points.count() > 4 )
 				{
@@ -326,12 +312,26 @@ public:
 	class Point
 	{
 	public:
-		Point( const QString & s )
+		Point( const QString & s, int vi, int ti, int ni )
 		{
 			QStringList l = s.split( "/" );
-			v() = l.value( 0 ).toInt() - 1;
-			t() = l.value( 1 ).toInt() - 1;
-			n() = l.value( 2 ).toInt() - 1;
+			int x = l.value( 0 ).toInt();
+			if ( x < 0 )
+				v() = vi + x;
+			else
+				v() = x - 1;
+			
+			x = l.value( 1 ).toInt();
+			if ( x < 0 )
+				t() = ti + x;
+			else
+				t() = x - 1;
+			
+			x = l.value( 2 ).toInt();
+			if ( x < 0 )
+				n() = ni + x;
+			else
+				n() = x - 1;
 		}
 		
 		union
