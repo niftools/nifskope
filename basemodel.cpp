@@ -246,6 +246,13 @@ quint32 BaseModel::itemVer2( const QModelIndex & index ) const
 	return item->ver2();
 }
 
+QString BaseModel::itemText( const QModelIndex & index ) const
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item && index.model() == this ) )	return QString();
+	return item->text();
+}
+
 
 bool BaseModel::setValue( const QModelIndex & index, const NifValue & val )
 {

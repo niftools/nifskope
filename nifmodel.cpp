@@ -268,7 +268,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 			at = getBlockCount() + 1;
 		
 		if ( ! fast ) beginInsertRows( QModelIndex(), at, at );
-		NifItem * branch = insertBranch( root, NifData( identifier, "NiBlock" ), at );
+		NifItem * branch = insertBranch( root, NifData( identifier, "NiBlock", block->text ), at );
 		if ( ! fast ) endInsertRows();
 		
 		foreach ( QString a, block->ancestors )
@@ -668,6 +668,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					{
 						return QString( "array index: %1" ).arg( item->row() );
 					}
+					else
+						return item->text();
 				}	break;
 				case ValueCol:
 				{

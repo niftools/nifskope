@@ -46,6 +46,9 @@ class NifSharedData : public QSharedData
 	NifSharedData( const QString & n, const QString & t )
 		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ) {}
 	
+	NifSharedData( const QString & n, const QString & t, const QString & txt )
+		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), text( txt ) {}
+	
 	NifSharedData()
 		: QSharedData(), ver1( 0 ), ver2( 0 ) {}
 	
@@ -58,6 +61,7 @@ class NifSharedData : public QSharedData
 	QString  cond;
 	quint32  ver1;
 	quint32  ver2;
+	QString  text;
 };
 
 class NifData
@@ -66,8 +70,8 @@ public:
 	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2 )
 		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2 ) ), value( val ) {}
 	
-	NifData( const QString & name, const QString & type = QString() )
-		: d( new NifSharedData( name, type ) ) {}
+	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
+		: d( new NifSharedData( name, type, text ) ) {}
 	
 	NifData()
 		: d( new NifSharedData() ) {}
@@ -81,6 +85,7 @@ public:
 	inline const QString & cond() const	{ return d->cond; }
 	inline quint32 ver1() const			{ return d->ver1; }
 	inline quint32 ver2() const			{ return d->ver2; }
+	inline const QString & text() const	{ return d->text; }
 	
 	void setName( const QString & name )	{ d->name = name; }
 	void setType( const QString & type )	{ d->type = type; }
@@ -91,6 +96,7 @@ public:
 	void setCond( const QString & cond )	{ d->cond = cond; }
 	void setVer1( quint32 ver1 )			{ d->ver1 = ver1; }
 	void setVer2( quint32 ver2 )			{ d->ver2 = ver2; }
+	void setText( const QString & text )	{ d->text = text; }
 
 protected:
 	QSharedDataPointer<NifSharedData> d;
@@ -103,6 +109,7 @@ public:
 struct NifBlock
 {
 	QString				id;
+	QString				text;
 	QList<QString>		ancestors;
 	QList<NifData>		types;
 };
@@ -205,6 +212,7 @@ public:
 	inline QString  cond() const	{	return itemData.cond();	}
 	inline quint32  ver1() const	{	return itemData.ver1();	}
 	inline quint32  ver2() const	{	return itemData.ver2();	}
+	inline QString  text() const	{	return itemData.text();	}
 	
 	inline void setName( const QString & name )	{	itemData.setName( name );	}
 	inline void setType( const QString & type )	{	itemData.setType( type );	}
@@ -215,6 +223,7 @@ public:
 	inline void setCond( const QString & cond )	{	itemData.setCond( cond );	}
 	inline void setVer1( int v1 )					{	itemData.setVer1( v1 );		}
 	inline void setVer2( int v2 )					{	itemData.setVer2( v2 );		}
+	inline void setText( const QString & text )	{	itemData.setText( text );	}
 	
 	inline bool evalVersion( quint32 v )
 	{

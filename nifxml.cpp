@@ -63,6 +63,7 @@ public:
 	QString errorStr;
 	
 	NifBlock		* blk;
+	NifData data;
 	
 	int current() const
 	{
@@ -127,7 +128,7 @@ public:
 				if ( ! ( x == 5 || x == 6 ) )	err( "only add and inherit tags allowed in " + elements.value( x ) + " declaration" );
 				if ( x == 5 )
 				{
-					NifData		data(
+					data = NifData(
 						list.value( "name" ),
 						list.value( "type" ),
 						list.value( "template" ),
@@ -140,7 +141,6 @@ public:
 						NifModel::version2number( list.value( "ver2" ) )
 					);
 					if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
-					if ( blk )	blk->types.append( data );
 				}
 				else if ( x == 6 )
 				{
@@ -187,6 +187,9 @@ public:
 					}
 				}
 				break;
+			case 5:
+				if ( blk )	blk->types.append( data );
+				break;
 		}
 		return true;
 	}
@@ -203,6 +206,14 @@ public:
 				else
 					err( "invalid version string " + s );
 			}	break;
+			case 2:
+			case 3:
+			case 4:
+				if ( blk )
+					blk->text += s.trimmed();
+			case 5:
+				data.setText( data.text() + s.trimmed() );
+				break;
 		}
 		return true;
 	}
