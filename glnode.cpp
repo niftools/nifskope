@@ -233,6 +233,8 @@ void Node::clear()
 	
 	children.clear();
 	properties.clear();
+	
+	hvkobj = QModelIndex();
 }
 
 void Node::update( const NifModel * nif, const QModelIndex & index )
@@ -286,6 +288,8 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 				}
 			}
 		}
+		
+		hvkobj = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 	}
 }
 
@@ -447,6 +451,148 @@ void Node::draw( NodeList * draw2nd )
 	foreach ( Node * node, children.list() )
 	{
 		node->draw( draw2nd );
+	}
+	
+	const NifModel * nif = static_cast<const NifModel *>( hvkobj.model() );
+	if ( hvkobj.isValid() && nif )
+		drawHvkObj( nif, hvkobj );
+}
+
+
+void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
+{
+	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
+	
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_FALSE );
+	glDepthFunc( GL_LEQUAL );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	glEnable( GL_BLEND );
+	glDisable( GL_ALPHA_TEST );
+	glPointSize( 4.5 );
+	glLineWidth( 1.0 );
+	
+	static const float colors[8][3] = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 }, { 1.0, 1.0, 1.0 }, { 0.5, 0.5, 1.0 }, { 1.0, 0.8, 0.0 }, { 1.0, 0.8, 0.4 }, { 0.0, 1.0, 1.0 } };
+	
+	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	glColor3fv( colors[ nif->get<int>( iBody, "Flags" ) & 7 ] );
+
+	glPushMatrix();
+	
+	viewTrans().glLoadMatrix();
+	float s = nif->get<float>( iBody, "Inv Scale" );
+	if ( s != 0 )
+	{
+		s = 1.0 / s;
+		glScalef( s, s, s );
+	}
+	
+	Transform t;
+	t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
+	t.translation = nif->get<Vector3>( iBody, "Translation" );
+	t.glMultMatrix();
+	
+	//nif->get<Matrix4>( iBody, "Matrix" ).glMultMatrix();
+	
+	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ) );
+	
+	glPopMatrix();
+}
+
+void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
+{
+	if ( ! nif || ! iShape.isValid() )
+		return;
+	
+	//qWarning() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
+	
+	QString name = nif->itemName( iShape );
+	if ( name == "bhkListShape" )
+	{
+		QModelIndex iShapes = nif->getIndex( iShape, "Sub Shapes" );
+		if ( iShapes.isValid() )
+		{
+			iShapes = nif->getIndex( iShapes, "Indices" );
+			for ( int r = 0; r < nif->rowCount( iShapes ); r++ )
+			{
+				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ) );
+			}
+		}
+	}
+	else if ( name == "bhkTransformShape" || name == "bhkConvexTransformShape" )
+	{
+		glPushMatrix();
+		nif->get<Matrix4>( iShape, "Transform" ).glMultMatrix();
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Sub Shape" ) ) );
+		glPopMatrix();
+	}
+	else if ( name == "bhkBoxShape" )
+	{
+	glLoadName( nif->getBlockNumber( iShape ) );
+		Vector3 mn;
+		Vector3 mx = nif->get<Vector3>( iShape, "Unknown Vector" );
+		mn -= mx;
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glEnd();
+		glBegin( GL_LINE_STRIP );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glEnd();
+		glBegin( GL_LINES );
+		glVertex3f( mn[0], mn[1], mn[2] );
+		glVertex3f( mx[0], mn[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mn[2] );
+		glVertex3f( mx[0], mx[1], mn[2] );
+		glVertex3f( mn[0], mx[1], mx[2] );
+		glVertex3f( mx[0], mx[1], mx[2] );
+		glVertex3f( mn[0], mn[1], mx[2] );
+		glVertex3f( mx[0], mn[1], mx[2] );
+		glEnd();
+	}
+	else if ( name == "bhkCapsuleShape" )
+	{
+	glLoadName( nif->getBlockNumber( iShape ) );
+		Vector3 a = nif->get<Vector3>( iShape, "Unknown Vector 1" );
+		Vector3 b = nif->get<Vector3>( iShape, "Unknown Vector 2" );
+		glBegin( GL_LINES );
+		glVertex( a );
+		glVertex( b );
+		glEnd();
+	}
+	else if ( name == "bhkConvexVerticesShape" )
+	{
+	glLoadName( nif->getBlockNumber( iShape ) );
+	glDepthMask( GL_TRUE );
+	glDepthFunc( GL_ALWAYS );
+		QVector< Vector4 > verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 1" );
+		glBegin( GL_POINTS );
+		foreach ( Vector4 v, verts )
+		{
+			Vector3 v3( v[0], v[1], v[2] );
+			glVertex( v3*8.0 );
+		}
+		glEnd();
+		verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 2" );
+		glBegin( GL_POINTS );
+		foreach ( Vector4 v, verts )
+		{
+			Vector3 v3( v[0], v[1], v[2] );
+			glVertex( v3*8.0 );
+		}
+		glEnd();
+	glDepthMask( GL_FALSE );
+	glDepthFunc( GL_LEQUAL );
 	}
 }
 

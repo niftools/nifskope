@@ -55,6 +55,14 @@ bool Transform::canConstruct( const NifModel * nif, const QModelIndex & parent )
 		&& nif->getIndex( parent, "Translation" ).isValid()
 		&& nif->getIndex( parent, "Scale" ).isValid();
 }
+
+Transform::Transform( const Matrix4 & m4 )
+{
+	// TODO
+	rotation = m4.rotation();
+	translation = m4.translation();
+	scale = 1.0;
+}
  
 Transform::Transform( const NifModel * nif, const QModelIndex & transform )
 {
@@ -70,32 +78,48 @@ void Transform::writeBack( NifModel * nif, const QModelIndex & transform ) const
 	nif->set<float>( transform, "Scale", scale );
 }
 
-void makeGLmatrix( const Transform & t, GLfloat f[] )
+QString Transform::toString() const
 {
+	float x, y, z;
+	rotation.toEuler( x, y, z );
+	return QString( "TRANS( %1, %2, %3 ) ROT( %4, %5, %6 ) SCALE( %7 )" ).arg( translation[0] ).arg( translation[1] ).arg( translation[2] ).arg( x ).arg( y ).arg( z ).arg( scale );
+}
+
+Matrix4 Transform::toMatrix4() const
+{
+	Matrix4 m;
+	
 	for ( int c = 0; c < 3; c++ )
 	{
 		for ( int d = 0; d < 3; d++ )
-			f[ c*4 + d ] = t.rotation( d, c ) * t.scale;
-		f[ 3*4 + c ] = t.translation[ c ];
+			m( c, d ) = rotation( d, c ) * scale;
+		m( 3, c ) = translation[ c ];
 	}
-	f[  3 ] = 0.0;
-	f[  7 ] = 0.0;
-	f[ 11 ] = 0.0;
-	f[ 15 ] = 1.0;
+	m( 0, 3 ) = 0.0;
+	m( 1, 3 ) = 0.0;
+	m( 2, 3 ) = 0.0;
+	m( 3, 3 ) = scale;
+	return m;
 }
 
 void Transform::glMultMatrix() const
 {
-	GLfloat f[16];
-	makeGLmatrix( *this, f );
-	glMultMatrixf( f );
+	toMatrix4().glMultMatrix();
 }
 
 void Transform::glLoadMatrix() const
 {
-	GLfloat f[16];
-	makeGLmatrix( *this, f );
-	glLoadMatrixf( f );
+	toMatrix4().glLoadMatrix();
+}
+
+void Matrix4::glMultMatrix() const
+{
+	glMultMatrixf( &m[0][0] );
+}
+
+void Matrix4::glLoadMatrix() const
+{
+	glLoadMatrixf( &m[0][0] );
 }
 
 QDataStream & operator<<( QDataStream & ds, const Transform & t )

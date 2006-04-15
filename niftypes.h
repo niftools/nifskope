@@ -266,6 +266,139 @@ protected:
 	friend class NifOStream;
 };
 
+class Vector4
+{
+public:
+	Vector4()
+	{
+		xyzw[ 0 ] = xyzw[ 1 ] = xyzw[ 2 ] = xyzw[ 3 ] = 0.0;
+	}
+	Vector4( float x, float y, float z, float w )
+	{
+		xyzw[ 0 ] = x;
+		xyzw[ 1 ] = y;
+		xyzw[ 2 ] = z;
+		xyzw[ 3 ] = w;
+	}
+	Vector4 & operator+=( const Vector4 & v )
+	{
+		xyzw[0] += v.xyzw[0];
+		xyzw[1] += v.xyzw[1];
+		xyzw[2] += v.xyzw[2];
+		xyzw[3] += v.xyzw[3];
+		return *this;
+	}
+	Vector4 & operator-=( const Vector4 & v )
+	{
+		xyzw[0] -= v.xyzw[0];
+		xyzw[1] -= v.xyzw[1];
+		xyzw[2] -= v.xyzw[2];
+		xyzw[3] -= v.xyzw[3];
+		return *this;
+	}
+	Vector4 & operator*=( float s )
+	{
+		xyzw[ 0 ] *= s;
+		xyzw[ 1 ] *= s;
+		xyzw[ 2 ] *= s;
+		xyzw[ 3 ] *= s;
+		return *this;
+	}
+	Vector4 & operator/=( float s )
+	{
+		xyzw[ 0 ] /= s;
+		xyzw[ 1 ] /= s;
+		xyzw[ 2 ] /= s;
+		xyzw[ 3 ] /= s;
+		return *this;
+	}
+	Vector4 operator+( Vector4 v ) const
+	{
+		Vector4 w( *this );
+		return w += v;
+	}
+	Vector4 operator-( Vector4 v ) const
+	{
+		Vector4 w( *this );
+		return w -= v;
+	}
+	Vector4 operator*( float s ) const
+	{
+		Vector4 v( *this );
+		return v *= s;
+	}
+	Vector4 operator/( float s ) const
+	{
+		Vector4 v( *this );
+		return v /= s;
+	}
+	
+	float & operator[]( unsigned int i )
+	{
+		Q_ASSERT( i < 4 );
+		return xyzw[i];
+	}
+	const float & operator[]( unsigned int i ) const
+	{
+		Q_ASSERT( i < 4 );
+		return xyzw[i];
+	}
+	
+	float length() const
+	{
+		return sqrt( xyzw[0]*xyzw[0] + xyzw[1]*xyzw[1] + xyzw[2]*xyzw[2] + xyzw[3]*xyzw[3] );
+	}
+	
+	float squaredLength() const
+	{
+		return xyzw[0]*xyzw[0] + xyzw[1]*xyzw[1] + xyzw[2]*xyzw[2] + xyzw[3]*xyzw[3];
+	}
+	
+	void normalize()
+	{
+		float m = length();
+		if ( m > 0.0F )
+			m = 1.0F / m;
+		else
+			m = 0.0F;
+		xyzw[0] *= m;
+		xyzw[1] *= m;
+		xyzw[2] *= m;
+		xyzw[3] *= m;
+	}
+	
+	static float dotproduct( const Vector4 & v1, const Vector4 & v2 )
+	{
+		return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]+v1[3]*v2[3];
+	}
+	
+	static float angle( const Vector4 & v1, const Vector4 & v2 )
+	{
+		float dot = dotproduct( v1, v2 );
+		if ( dot > 1.0 )
+			return 0.0;
+		else if ( dot < - 1.0 )
+			return PI;
+		else if ( dot == 0.0 )
+			return PI/2;
+		else
+			return acos( dot );
+	}
+	
+	const float * data() const { return xyzw; }
+	
+	QString toHtml() const
+	{
+		return QString( "X %1 Y %2 Z %3 W %4<br>length %5" ).arg( xyzw[0] ).arg( xyzw[1] ).arg( xyzw[2] ).arg( xyzw[3] ).arg( length() );
+	}
+	
+protected:
+	float xyzw[4];
+	
+	friend class NifIStream;
+	friend class NifOStream;
+};
+
 class Quat
 {
 public:
@@ -375,6 +508,59 @@ public:
 protected:
 	float m[3][3];
 	static const float identity[9];
+	
+	friend class NifIStream;
+	friend class NifOStream;
+};
+
+class Matrix4
+{
+public:
+	Matrix4()
+	{
+		memcpy( m, identity, 64 );
+	}
+	Matrix4 operator*( const Matrix4 & m2 ) const
+	{
+		Matrix4 m3;
+		for ( int r = 0; r < 4; r++ )
+			for ( int c = 0; c < 4; c++ )
+				m3.m[r][c] = m[r][0]*m2.m[0][c] + m[r][1]*m2.m[1][c] + m[r][2]*m2.m[2][c] + m[r][3]*m2.m[3][c];
+		return m3;
+	}
+	Vector3 operator*( const Vector3 & v ) const
+	{
+		return Vector3(
+			m[0][0]*v[0] + m[0][1]*v[1] + m[0][2]*v[2] + m[0][3],
+			m[1][0]*v[0] + m[1][1]*v[1] + m[1][2]*v[2] + m[1][3],
+			m[2][0]*v[0] + m[2][1]*v[1] + m[2][2]*v[2] + m[2][3] );
+	}
+	float & operator()( unsigned int c, unsigned int d )
+	{
+		Q_ASSERT( c < 4 && d < 4 );
+		return m[c][d];
+	}
+	float operator()( unsigned int c, unsigned int d ) const
+	{
+		Q_ASSERT( c < 4 && d < 4 );
+		return m[c][d];
+	}
+	
+	Matrix rotation() const;
+	Vector3 translation() const;
+	
+	void glMultMatrix() const;
+	void glLoadMatrix() const;
+	
+	//Matrix44 inverted() const;
+	
+	QString toHtml() const;
+	
+	float * data() { return (float *) m; }
+
+protected:
+	float m[4][4];
+	static const float identity[16];
 	
 	friend class NifIStream;
 	friend class NifOStream;
@@ -631,12 +817,14 @@ public:
 		tVector3 = 15,
 		tQuat = 16,
 		tMatrix = 17,
-		tVector2 = 18,
-		tTriangle = 19,
-		tFileVersion = 20,
-		tHeaderString = 21,
-		tByteArray = 22,
-		tStringPalette = 23,
+		tMatrix4 = 18,
+		tVector2 = 19,
+		tVector4 = 20,
+		tTriangle = 21,
+		tFileVersion = 22,
+		tHeaderString = 23,
+		tByteArray = 24,
+		tStringPalette = 25,
 		
 		tNone = 0xff
 	};
@@ -670,8 +858,10 @@ public:
 	bool isFloat() const { return typ == tFloat; }
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	bool isMatrix() const { return typ == tMatrix; }
+	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat; }
 	bool isString() const { return typ == tString || typ == tHeaderString || typ == tFilePath || typ == tShortString; }
+	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
 	bool isTriangle() const { return typ == tTriangle; }
@@ -759,7 +949,9 @@ template <> inline QColor NifValue::get() const { return toColor(); }
 template <> inline QVariant NifValue::get() const { return toVariant(); }
 
 template <> inline Matrix NifValue::get() const { return getType<Matrix>( tMatrix ); }
+template <> inline Matrix4 NifValue::get() const { return getType<Matrix4>( tMatrix4 ); }
 template <> inline Quat NifValue::get() const { return getType<Quat>( tQuat ); }
+template <> inline Vector4 NifValue::get() const { return getType<Vector4>( tVector4 ); }
 template <> inline Vector3 NifValue::get() const { return getType<Vector3>( tVector3 ); }
 template <> inline Vector2 NifValue::get() const { return getType<Vector2>( tVector2 ); }
 template <> inline Color3 NifValue::get() const { return getType<Color3>( tColor3 ); }
@@ -787,7 +979,9 @@ template <> inline bool NifValue::set( const quint16 & i ) { return setCount( i 
 template <> inline bool NifValue::set( const quint8 & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
+template <> inline bool NifValue::set( const Matrix4 & x ) { return setType( tMatrix4, x ); }
 template <> inline bool NifValue::set( const Quat & x ) { return setType( tQuat, x ); }
+template <> inline bool NifValue::set( const Vector4 & x ) { return setType( tVector4, x ); }
 template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVector3, x ); }
 template <> inline bool NifValue::set( const Vector2 & x ) { return setType( tVector2, x ); }
 template <> inline bool NifValue::set( const Color3 & x ) { return setType( tColor3, x ); }
@@ -816,7 +1010,9 @@ template <> inline bool NifValue::ask( bool * ) const { return isCount(); }
 template <> inline bool NifValue::ask( int * ) const { return isCount(); }
 template <> inline bool NifValue::ask( float * ) const { return isFloat(); }
 template <> inline bool NifValue::ask( Matrix * ) const { return type() == tMatrix; }
+template <> inline bool NifValue::ask( Matrix4 * ) const { return type() == tMatrix4; }
 template <> inline bool NifValue::ask( Quat * ) const { return type() == tQuat; }
+template <> inline bool NifValue::ask( Vector4 * ) const { return type() == tVector4; }
 template <> inline bool NifValue::ask( Vector3 * ) const { return type() == tVector3; }
 template <> inline bool NifValue::ask( Vector2 * ) const { return type() == tVector2; }
 template <> inline bool NifValue::ask( Color3 * ) const { return type() == tColor3; }

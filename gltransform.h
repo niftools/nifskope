@@ -44,6 +44,7 @@ class QDataStream;
 class Transform
 {
 public:
+	Transform( const Matrix4 & m4 );
 	Transform( const NifModel * nif, const QModelIndex & transform );
 	Transform()	{ scale = 1.0; }
 	
@@ -58,6 +59,8 @@ public:
 		return rotation * v * scale + translation;
 	}
 	
+	Matrix4 toMatrix4() const;
+	
 	void glMultMatrix() const;
 	void glLoadMatrix() const;
 
@@ -67,6 +70,8 @@ public:
 
 	friend QDataStream & operator<<( QDataStream & ds, const Transform & t );
 	friend QDataStream & operator>>( QDataStream & ds, Transform & t );
+	
+	QString toString() const;
 };
 
 class VertexWeight

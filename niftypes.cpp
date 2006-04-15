@@ -33,10 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 #include "nifmodel.h"
 
+#include "gltransform.h"
+
 #include <QHash>
 
 const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
 const float Matrix::identity[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+const float Matrix4::identity[16] = { 1.0, 0.0, 0.0, 0.0,  0.0, 1.0, 0.0, 0.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0 };
 
 void Matrix::fromQuat( const Quat & q )
 {
@@ -101,10 +104,6 @@ Quat Matrix::toQuat() const
 
 void Matrix::fromEuler( float x, float y, float z )
 {
-	x = x;
-	y = y;
-	z = z;
-	
 	float sinX = sin( x );
 	float cosX = cos( x );
 	float sinY = sin( y );
@@ -187,6 +186,29 @@ QString Matrix::toHtml() const
 		+ QString( "</table>" );
 }
 
+QString Matrix4::toHtml() const
+{
+	return QString( "<table>" )
+		+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 ).arg( m[0][2], 0, 'f', 4 ).arg( m[0][3], 0, 'f', 4 )
+		+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 ).arg( m[1][2], 0, 'f', 4 ).arg( m[1][3], 0, 'f', 4 )
+		+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 ).arg( m[2][2], 0, 'f', 4 ).arg( m[2][3], 0, 'f', 4 )
+		+ QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[3][0], 0, 'f', 4 ).arg( m[3][1], 0, 'f', 4 ).arg( m[3][2], 0, 'f', 4 ).arg( m[3][3], 0, 'f', 4 )
+		+ QString( "</table>" );
+}
+
+Matrix Matrix4::rotation() const
+{
+	Matrix m3;
+	for ( int i = 0; i < 3; i++ )
+		for ( int j = 0; j < 3; j++ )
+			m3( j, i ) = m[ i ][ j ];
+	return m3;
+}
+
+Vector3 Matrix4::translation() const
+{
+	return Vector3( m[ 3 ][ 0 ], m[ 3 ][ 1 ], m[ 3 ][ 2 ] );
+}
 
 /*
  *  NifValue
@@ -212,10 +234,12 @@ void NifValue::initialize()
 	typeMap.insert( "filepath", NifValue::tFilePath );
 	typeMap.insert( "color3", NifValue::tColor3 );
 	typeMap.insert( "color4", NifValue::tColor4 );
+	typeMap.insert( "vector4", NifValue::tVector4 );
 	typeMap.insert( "vector3", NifValue::tVector3 );
 	typeMap.insert( "quat", NifValue::tQuat );
 	typeMap.insert( "quaternion", NifValue::tQuat );
 	typeMap.insert( "matrix33", NifValue::tMatrix );
+	typeMap.insert( "matrix44", NifValue::tMatrix4 );
 	typeMap.insert( "vector2", NifValue::tVector2 );
 	typeMap.insert( "triangle", NifValue::tTriangle );
 	typeMap.insert( "bytearray", NifValue::tByteArray );
@@ -270,6 +294,9 @@ void NifValue::clear()
 {
 	switch ( typ )
 	{
+		case tVector4:
+			delete static_cast<Vector3*>( val.data );
+			break;
 		case tVector3:
 			delete static_cast<Vector3*>( val.data );
 			break;
@@ -278,6 +305,9 @@ void NifValue::clear()
 			break;
 		case tMatrix:
 			delete static_cast<Matrix*>( val.data );
+			break;
+		case tMatrix4:
+			delete static_cast<Matrix4*>( val.data );
 			break;
 		case tQuat:
 			delete static_cast<Quat*>( val.data );
@@ -324,9 +354,15 @@ void NifValue::changeType( Type t )
 			return;
 		case tVector3:
 			val.data = new Vector3();
+			break;
+		case tVector4:
+			val.data = new Vector4();
 			return;
 		case tMatrix:
 			val.data = new Matrix();
+			return;
+		case tMatrix4:
+			val.data = new Matrix4();
 			return;
 		case tQuat:
 			val.data = new Quat();
@@ -369,8 +405,14 @@ void NifValue::operator=( const NifValue & other )
 		case tVector3:
 			*static_cast<Vector3*>( val.data ) = *static_cast<Vector3*>( other.val.data );
 			return;
+		case tVector4:
+			*static_cast<Vector4*>( val.data ) = *static_cast<Vector4*>( other.val.data );
+			return;
 		case tMatrix:
 			*static_cast<Matrix*>( val.data ) = *static_cast<Matrix*>( other.val.data );
+			return;
+		case tMatrix4:
+			*static_cast<Matrix4*>( val.data ) = *static_cast<Matrix4*>( other.val.data );
 			return;
 		case tQuat:
 			*static_cast<Quat*>( val.data ) = *static_cast<Quat*>( other.val.data );
@@ -482,9 +524,11 @@ bool NifValue::fromString( const QString & s )
 		case tByteArray:
 		case tStringPalette:
 		case tVector2:
+		case tVector4:
 		case tVector3:
 		case tQuat:
 		case tMatrix:
+		case tMatrix4:
 		case tTriangle:
 		case tNone:
 			return false;
@@ -536,6 +580,11 @@ QString NifValue::toString() const
 			Vector3 * v = static_cast<Vector3*>( val.data );
 			return QString( "X %1 Y %2 Z %3" ).arg( (*v)[0], 0, 'f', 3 ).arg( (*v)[1], 0, 'f', 3 ).arg( (*v)[2], 0, 'f', 3 );
 		}
+		case tVector4:
+		{
+			Vector4 * v = static_cast<Vector4*>( val.data );
+			return QString( "X %1 Y %2 Z %3 W %4" ).arg( (*v)[0], 0, 'f', 3 ).arg( (*v)[1], 0, 'f', 3 ).arg( (*v)[2], 0, 'f', 3 ).arg( (*v)[3], 0, 'f', 3 );
+		}
 		case tMatrix:
 		{
 			Matrix * m = static_cast<Matrix*>( val.data );
@@ -544,6 +593,12 @@ QString NifValue::toString() const
 				return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
 			else
 				return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+		}
+		case tMatrix4:
+		{
+			Matrix4 * m = static_cast<Matrix4*>( val.data );
+			Transform t( *m );
+			return t.toString();
 		}
 		case tQuat:
 		{
@@ -623,12 +678,16 @@ bool NifIStream::read( NifValue & val )
 			return device->read( (char *) &val.val.f32, 4 ) == 4;
 		case NifValue::tVector3:
 			return device->read( (char *) static_cast<Vector3*>( val.val.data )->xyz, 12 ) == 12;
+		case NifValue::tVector4:
+			return device->read( (char *) static_cast<Vector4*>( val.val.data )->xyzw, 16 ) == 16;
 		case NifValue::tTriangle:
 			return device->read( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
 		case NifValue::tQuat:
 			return device->read( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
 		case NifValue::tMatrix:
 			return device->read( (char *) static_cast<Matrix*>( val.val.data )->m, 36 ) == 36;
+		case NifValue::tMatrix4:
+			return device->read( (char *) static_cast<Matrix4*>( val.val.data )->m, 64 ) == 64;
 		case NifValue::tVector2:
 			return device->read( (char *) static_cast<Vector2*>( val.val.data )->xy, 8 ) == 8;
 		case NifValue::tColor3:
@@ -739,12 +798,16 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) &val.val.f32, 4 ) == 4;
 		case NifValue::tVector3:
 			return device->write( (char *) static_cast<Vector3*>( val.val.data )->xyz, 12 ) == 12;
+		case NifValue::tVector4:
+			return device->write( (char *) static_cast<Vector4*>( val.val.data )->xyzw, 16 ) == 16;
 		case NifValue::tTriangle:
 			return device->write( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
 		case NifValue::tQuat:
 			return device->write( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
 		case NifValue::tMatrix:
 			return device->write( (char *) static_cast<Matrix*>( val.val.data )->m, 36 ) == 36;
+		case NifValue::tMatrix4:
+			return device->write( (char *) static_cast<Matrix4*>( val.val.data )->m, 64 ) == 64;
 		case NifValue::tVector2:
 			return device->write( (char *) static_cast<Vector2*>( val.val.data )->xy, 8 ) == 8;
 		case NifValue::tColor3:
