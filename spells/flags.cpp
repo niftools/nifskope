@@ -173,7 +173,7 @@ public:
 	void alphaFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if ( ! flags ) flags = 0x18ed;
+		if ( ! flags ) flags = 0xed;
 		
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -210,6 +210,13 @@ public:
 		
 		dlgButtons( &dlg, vbox );
 		
+		if ( nif->getVersion() == "20.0.0.5" )
+		{
+			chkTest->setDisabled( true );
+			cmbTest->setDisabled( true );
+			spnTest->setDisabled( true );
+		}
+		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
 			flags = flags & 0xfffe;
@@ -220,7 +227,7 @@ public:
 				flags = flags & 0xfe1f | cmbDst->currentIndex() << 5;
 			}
 			
-			flags = flags & 0xfdff;
+			flags = flags & 0xe1ff;
 			if ( chkTest->isChecked() )
 			{
 				flags |= 0x0200;

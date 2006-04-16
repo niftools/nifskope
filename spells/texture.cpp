@@ -3,6 +3,7 @@
 #include "../gltex.h"
 
 #include "../widgets/fileselect.h"
+#include "../NvTriStrip/qtwrapper.h"
 
 #include <QGLPixelBuffer>
 
@@ -197,10 +198,11 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 	QModelIndex iSrcTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( iTexProp ) + 1 );
 	nif->setLink( iTexDesc, "Source", nif->getBlockNumber( iSrcTex ) );
 	
-	nif->set<int>( iSrcTex, "Pixel Layout", 5 );
+	nif->set<int>( iSrcTex, "Pixel Layout", ( nif->getVersion() == "20.0.0.5" && name == "Base Texture" ? 6 : 5 ) );
 	nif->set<int>( iSrcTex, "Use Mipmaps", 2 );
 	nif->set<int>( iSrcTex, "Alpha Format", 3 );
 	nif->set<int>( iSrcTex, "Unknown Byte", 1 );
+	nif->set<int>( iSrcTex, "Unknown Byte 2", 1 );
 	nif->set<int>( nif->getIndex( iSrcTex, "Texture Source" ), "Use External", 1 );
 	
 	return iSrcTex;
@@ -718,25 +720,10 @@ class spTextureTemplate : public Spell
 		QModelIndex iPoints = nif->getIndex( iData, "Points" );
 		if ( iPoints.isValid() )
 		{
+			QList< QVector< quint16 > > strips;
 			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-			{
-				QVector<quint16> p = nif->getArray<quint16>( iPoints.child( r, 0 ) );
-				quint16 a = p.value( 0 );
-				quint16 b = p.value( 1 );
-				bool flip = false;
-				for ( int x = 2; x < p.count(); x++ )
-				{
-					quint16 c = p[x];
-					if ( a != b && b != c && c != a )
-						if ( flip )
-							tri.append( Triangle( a, c, b ) );
-						else
-							tri.append( Triangle( a, b, c ) );
-					a = b;
-					b = c;
-					flip = ! flip;
-				}
-			}
+				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+			tri = triangulate( strips );
 		}
 		else
 		{
