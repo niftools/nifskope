@@ -549,7 +549,7 @@ public:
 			iChildren.append( nif->getBlock( link ) );
 		
 		foreach ( QPersistentModelIndex iChild, iChildren )
-			if ( iChild.isValid() )
+			if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
 				removeChildren( nif, iChild );
 		
 		foreach ( QPersistentModelIndex iChild, iChildren )
