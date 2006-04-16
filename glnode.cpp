@@ -483,12 +483,8 @@ void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
 	glPushMatrix();
 	
 	viewTrans().glLoadMatrix();
-	float s = nif->get<float>( iBody, "Inv Scale" );
-	if ( s != 0 )
-	{
-		s = 1.0 / s;
-		glScalef( s, s, s );
-	}
+	float s = 7;
+	glScalef( s, s, s );
 	
 	Transform t;
 	t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
@@ -500,6 +496,102 @@ void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ) );
 	
 	glPopMatrix();
+}
+
+void drawSphere( Vector3 c, float r, int sd1 = 8, int sd2 = 8 )
+{
+	glBegin( GL_POINTS );
+	glVertex( c );
+	glEnd();
+	
+	for ( int j = -sd1; j <= sd1; j++ )
+	{
+		float f = PI * float( j ) / float( sd1 );
+		Vector3 cj = c + Vector3( 0, 0, r * cos( f ) );
+		float rj = r * sin( f );
+		
+		glBegin( GL_LINE_STRIP );
+		for ( int i = 0; i <= sd2*2; i++ )
+			glVertex( Vector3( sin( PI / sd2 * i ), cos( PI / sd2 * i ), 0 ) * rj + cj );
+		glEnd();
+	}
+	for ( int j = -sd1; j <= sd1; j++ )
+	{
+		float f = PI * float( j ) / float( sd1 );
+		Vector3 cj = c + Vector3( 0, r * cos( f ), 0 );
+		float rj = r * sin( f );
+		
+		glBegin( GL_LINE_STRIP );
+		for ( int i = 0; i <= sd2*2; i++ )
+			glVertex( Vector3( sin( PI / sd2 * i ), 0, cos( PI / sd2 * i ) ) * rj + cj );
+		glEnd();
+	}
+	for ( int j = -sd1; j <= sd1; j++ )
+	{
+		float f = PI * float( j ) / float( sd1 );
+		Vector3 cj = c + Vector3( r * cos( f ), 0, 0 );
+		float rj = r * sin( f );
+		
+		glBegin( GL_LINE_STRIP );
+		for ( int i = 0; i <= sd2*2; i++ )
+			glVertex( Vector3( 0, sin( PI / sd2 * i ), cos( PI / sd2 * i ) ) * rj + cj );
+		glEnd();
+	}
+}
+
+void drawCapsule( Vector3 a, Vector3 b, float r, int sd1 = 5, int sd2 = 5 )
+{
+	Vector3 d = b - a;
+	if ( d.length() < 0.001 )
+	{
+		drawSphere( a, r );
+		return;
+	}
+	
+	Vector3 n = d;
+	n.normalize();
+	
+	Vector3 x( n[1], n[2], n[0] );
+	Vector3 y = Vector3::crossproduct( n, x );
+	x = Vector3::crossproduct( n, y );
+	
+	x *= r;
+	y *= r;
+	
+	glBegin( GL_LINE_STRIP );
+	for ( int i = 0; i <= sd2*2; i++ )
+		glVertex( a + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	glEnd();
+	glBegin( GL_LINE_STRIP );
+	for ( int i = 0; i <= sd2*2; i++ )
+		glVertex( a + d/2 + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	glEnd();
+	glBegin( GL_LINE_STRIP );
+	for ( int i = 0; i <= sd2*2; i++ )
+		glVertex( b + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	glEnd();
+	glBegin( GL_LINES );
+	for ( int i = 0; i <= sd2*2; i++ )
+	{
+		glVertex( a + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+		glVertex( b + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	}
+	glEnd();
+	for ( int j = 0; j <= sd1; j++ )
+	{
+		float f = PI * float( j ) / float( sd1 * 2 );
+		Vector3 dj = n * r * cos( f );
+		float rj = sin( f );
+		
+		glBegin( GL_LINE_STRIP );
+		for ( int i = 0; i <= sd2*2; i++ )
+			glVertex( a - dj + x * sin( PI / sd2 * i ) * rj + y * cos( PI / sd2 * i ) * rj );
+		glEnd();
+		glBegin( GL_LINE_STRIP );
+		for ( int i = 0; i <= sd2*2; i++ )
+			glVertex( b + dj + x * sin( PI / sd2 * i ) * rj + y * cos( PI / sd2 * i ) * rj );
+		glEnd();
+	}
 }
 
 void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
@@ -565,10 +657,13 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 	glLoadName( nif->getBlockNumber( iShape ) );
 		Vector3 a = nif->get<Vector3>( iShape, "Unknown Vector 1" );
 		Vector3 b = nif->get<Vector3>( iShape, "Unknown Vector 2" );
+		float r = nif->get<float>( iShape, "Radius" );
 		glBegin( GL_LINES );
 		glVertex( a );
 		glVertex( b );
 		glEnd();
+		
+		drawCapsule( a, b, r );
 	}
 	else if ( name == "bhkConvexVerticesShape" )
 	{
