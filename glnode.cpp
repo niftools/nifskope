@@ -482,7 +482,16 @@ void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
 
 	glPushMatrix();
 	
-	viewTrans().glLoadMatrix();
+	if ( nif->itemName( iBody ) == "bhkRigidBodyT" )
+		viewTrans().glLoadMatrix(); // inherits parent transform
+	else if ( nif->itemName( iBody ) == "bhkRigidBody" )
+		scene->view.glLoadMatrix(); // does not inherit parent transform
+	else
+	{
+		scene->view.glLoadMatrix();
+		qDebug() << "body type" << nif->itemName( iBody );
+	}
+	
 	float s = 7;
 	glScalef( s, s, s );
 	
@@ -491,55 +500,81 @@ void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
 	t.translation = nif->get<Vector3>( iBody, "Translation" );
 	t.glMultMatrix();
 	
-	//nif->get<Matrix4>( iBody, "Matrix" ).glMultMatrix();
-	
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ) );
 	
 	glPopMatrix();
 }
 
-void drawSphere( Vector3 c, float r, int sd1 = 8, int sd2 = 8 )
+void drawBox( Vector3 a, Vector3 b )
+{
+	glBegin( GL_LINE_STRIP );
+	glVertex3f( a[0], a[1], a[2] );
+	glVertex3f( a[0], b[1], a[2] );
+	glVertex3f( a[0], b[1], b[2] );
+	glVertex3f( a[0], a[1], b[2] );
+	glVertex3f( a[0], a[1], a[2] );
+	glEnd();
+	glBegin( GL_LINE_STRIP );
+	glVertex3f( b[0], a[1], a[2] );
+	glVertex3f( b[0], b[1], a[2] );
+	glVertex3f( b[0], b[1], b[2] );
+	glVertex3f( b[0], a[1], b[2] );
+	glVertex3f( b[0], a[1], a[2] );
+	glEnd();
+	glBegin( GL_LINES );
+	glVertex3f( a[0], a[1], a[2] );
+	glVertex3f( b[0], a[1], a[2] );
+	glVertex3f( a[0], b[1], a[2] );
+	glVertex3f( b[0], b[1], a[2] );
+	glVertex3f( a[0], b[1], b[2] );
+	glVertex3f( b[0], b[1], b[2] );
+	glVertex3f( a[0], a[1], b[2] );
+	glVertex3f( b[0], a[1], b[2] );
+	glEnd();
+}
+
+void drawSphere( Vector3 c, float r, int sd = 8 )
 {
 	glBegin( GL_POINTS );
 	glVertex( c );
 	glEnd();
 	
-	for ( int j = -sd1; j <= sd1; j++ )
+	for ( int j = -sd; j <= sd; j++ )
 	{
-		float f = PI * float( j ) / float( sd1 );
+		float f = PI * float( j ) / float( sd );
 		Vector3 cj = c + Vector3( 0, 0, r * cos( f ) );
 		float rj = r * sin( f );
 		
 		glBegin( GL_LINE_STRIP );
-		for ( int i = 0; i <= sd2*2; i++ )
-			glVertex( Vector3( sin( PI / sd2 * i ), cos( PI / sd2 * i ), 0 ) * rj + cj );
+		for ( int i = 0; i <= sd*2; i++ )
+			glVertex( Vector3( sin( PI / sd * i ), cos( PI / sd * i ), 0 ) * rj + cj );
 		glEnd();
 	}
-	for ( int j = -sd1; j <= sd1; j++ )
+	for ( int j = -sd; j <= sd; j++ )
 	{
-		float f = PI * float( j ) / float( sd1 );
+		float f = PI * float( j ) / float( sd );
 		Vector3 cj = c + Vector3( 0, r * cos( f ), 0 );
 		float rj = r * sin( f );
 		
 		glBegin( GL_LINE_STRIP );
-		for ( int i = 0; i <= sd2*2; i++ )
-			glVertex( Vector3( sin( PI / sd2 * i ), 0, cos( PI / sd2 * i ) ) * rj + cj );
+		for ( int i = 0; i <= sd*2; i++ )
+			glVertex( Vector3( sin( PI / sd * i ), 0, cos( PI / sd * i ) ) * rj + cj );
 		glEnd();
 	}
-	for ( int j = -sd1; j <= sd1; j++ )
+	for ( int j = -sd; j <= sd; j++ )
 	{
-		float f = PI * float( j ) / float( sd1 );
+		float f = PI * float( j ) / float( sd );
 		Vector3 cj = c + Vector3( r * cos( f ), 0, 0 );
 		float rj = r * sin( f );
 		
 		glBegin( GL_LINE_STRIP );
-		for ( int i = 0; i <= sd2*2; i++ )
-			glVertex( Vector3( 0, sin( PI / sd2 * i ), cos( PI / sd2 * i ) ) * rj + cj );
+		for ( int i = 0; i <= sd*2; i++ )
+			glVertex( Vector3( 0, sin( PI / sd * i ), cos( PI / sd * i ) ) * rj + cj );
 		glEnd();
 	}
 }
 
-void drawCapsule( Vector3 a, Vector3 b, float r, int sd1 = 5, int sd2 = 5 )
+void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 )
 {
 	Vector3 d = b - a;
 	if ( d.length() < 0.001 )
@@ -559,37 +594,37 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd1 = 5, int sd2 = 5 )
 	y *= r;
 	
 	glBegin( GL_LINE_STRIP );
-	for ( int i = 0; i <= sd2*2; i++ )
-		glVertex( a + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	for ( int i = 0; i <= sd*2; i++ )
+		glVertex( a + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
 	glEnd();
 	glBegin( GL_LINE_STRIP );
-	for ( int i = 0; i <= sd2*2; i++ )
-		glVertex( a + d/2 + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	for ( int i = 0; i <= sd*2; i++ )
+		glVertex( a + d/2 + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
 	glEnd();
 	glBegin( GL_LINE_STRIP );
-	for ( int i = 0; i <= sd2*2; i++ )
-		glVertex( b + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+	for ( int i = 0; i <= sd*2; i++ )
+		glVertex( b + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
 	glEnd();
 	glBegin( GL_LINES );
-	for ( int i = 0; i <= sd2*2; i++ )
+	for ( int i = 0; i <= sd*2; i++ )
 	{
-		glVertex( a + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
-		glVertex( b + x * sin( PI / sd2 * i ) + y * cos( PI / sd2 * i ) );
+		glVertex( a + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
+		glVertex( b + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
 	}
 	glEnd();
-	for ( int j = 0; j <= sd1; j++ )
+	for ( int j = 0; j <= sd; j++ )
 	{
-		float f = PI * float( j ) / float( sd1 * 2 );
+		float f = PI * float( j ) / float( sd * 2 );
 		Vector3 dj = n * r * cos( f );
 		float rj = sin( f );
 		
 		glBegin( GL_LINE_STRIP );
-		for ( int i = 0; i <= sd2*2; i++ )
-			glVertex( a - dj + x * sin( PI / sd2 * i ) * rj + y * cos( PI / sd2 * i ) * rj );
+		for ( int i = 0; i <= sd*2; i++ )
+			glVertex( a - dj + x * sin( PI / sd * i ) * rj + y * cos( PI / sd * i ) * rj );
 		glEnd();
 		glBegin( GL_LINE_STRIP );
-		for ( int i = 0; i <= sd2*2; i++ )
-			glVertex( b + dj + x * sin( PI / sd2 * i ) * rj + y * cos( PI / sd2 * i ) * rj );
+		for ( int i = 0; i <= sd*2; i++ )
+			glVertex( b + dj + x * sin( PI / sd * i ) * rj + y * cos( PI / sd * i ) * rj );
 		glEnd();
 	}
 }
@@ -621,49 +656,21 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Sub Shape" ) ) );
 		glPopMatrix();
 	}
+	else if ( name == "bhkSphereShape" )
+	{
+		glLoadName( nif->getBlockNumber( iShape ) );
+		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) );
+	}
 	else if ( name == "bhkBoxShape" )
 	{
-	glLoadName( nif->getBlockNumber( iShape ) );
-		Vector3 mn;
-		Vector3 mx = nif->get<Vector3>( iShape, "Unknown Vector" );
-		mn -= mx;
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glEnd();
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glEnd();
-		glBegin( GL_LINES );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mx[2] );
-		glVertex3f( mx[0], mx[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mx[2] );
-		glEnd();
+		glLoadName( nif->getBlockNumber( iShape ) );
+		Vector3 v = nif->get<Vector3>( iShape, "Unknown Vector" );
+		drawBox( v, - v );
 	}
 	else if ( name == "bhkCapsuleShape" )
 	{
-	glLoadName( nif->getBlockNumber( iShape ) );
-		Vector3 a = nif->get<Vector3>( iShape, "Unknown Vector 1" );
-		Vector3 b = nif->get<Vector3>( iShape, "Unknown Vector 2" );
-		float r = nif->get<float>( iShape, "Radius" );
-		glBegin( GL_LINES );
-		glVertex( a );
-		glVertex( b );
-		glEnd();
-		
-		drawCapsule( a, b, r );
+		glLoadName( nif->getBlockNumber( iShape ) );
+		drawCapsule( nif->get<Vector3>( iShape, "Unknown Vector 1" ), nif->get<Vector3>( iShape, "Unknown Vector 2" ), nif->get<float>( iShape, "Radius" ) );
 	}
 	else if ( name == "bhkConvexVerticesShape" )
 	{
@@ -675,7 +682,7 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 		foreach ( Vector4 v, verts )
 		{
 			Vector3 v3( v[0], v[1], v[2] );
-			glVertex( v3*8.0 );
+			glVertex( v3 );
 		}
 		glEnd();
 		verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 2" );
@@ -683,7 +690,7 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 		foreach ( Vector4 v, verts )
 		{
 			Vector3 v3( v[0], v[1], v[2] );
-			glVertex( v3*8.0 );
+			glVertex( v3 * v[3] );
 		}
 		glEnd();
 	glDepthMask( GL_FALSE );
