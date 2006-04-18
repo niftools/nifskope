@@ -64,7 +64,7 @@ public:
 		xy[1] += v.xy[1];
 		return *this;
 	}
-	Vector2 operator+( const Vector2 & v )
+	Vector2 operator+( const Vector2 & v ) const
 	{
 		Vector2 w( *this );
 		return ( w += v );
@@ -75,10 +75,14 @@ public:
 		xy[1] -= v.xy[1];
 		return *this;
 	}
-	Vector2 operator-( const Vector2 & v )
+	Vector2 operator-( const Vector2 & v ) const
 	{
 		Vector2 w( *this );
 		return ( w -= v );
+	}
+	Vector2 operator-() const
+	{
+		return Vector2() - *this;
 	}
 	Vector2 & operator*=( float s )
 	{
@@ -86,7 +90,7 @@ public:
 		xy[1] *= s;
 		return *this;
 	}
-	Vector2 operator*( float s )
+	Vector2 operator*( float s ) const
 	{
 		Vector2 w( *this );
 		return ( w *= s );
@@ -97,7 +101,7 @@ public:
 		xy[1] /= s;
 		return *this;
 	}
-	Vector2 operator/( float s )
+	Vector2 operator/( float s ) const
 	{
 		Vector2 w( *this );
 		return ( w /= s );
@@ -177,6 +181,10 @@ public:
 		Vector3 w( *this );
 		return w -= v;
 	}
+	Vector3 operator-() const
+	{
+		return Vector3() - *this;
+	}
 	Vector3 operator*( float s ) const
 	{
 		Vector3 v( *this );
@@ -212,8 +220,8 @@ public:
 	void normalize()
 	{
 		float m = length();
-		if ( m > 0.0F )
-			m = 1.0F / m;
+		if ( m > 0.0 )
+			m = 1.0 / m;
 		else
 			m = 0.0F;
 		xyz[0] *= m;
@@ -326,6 +334,10 @@ public:
 		Vector4 w( *this );
 		return w -= v;
 	}
+	Vector4 operator-() const
+	{
+		return Vector4() - *this;
+	}
 	Vector4 operator*( float s ) const
 	{
 		Vector4 v( *this );
@@ -361,8 +373,8 @@ public:
 	void normalize()
 	{
 		float m = length();
-		if ( m > 0.0F )
-			m = 1.0F / m;
+		if ( m > 0.0 )
+			m = 1.0 / m;
 		else
 			m = 0.0F;
 		xyzw[0] *= m;
@@ -820,15 +832,16 @@ public:
 		tColor4 = 14,
 		tVector3 = 15,
 		tQuat = 16,
-		tMatrix = 17,
-		tMatrix4 = 18,
-		tVector2 = 19,
-		tVector4 = 20,
-		tTriangle = 21,
-		tFileVersion = 22,
-		tHeaderString = 23,
-		tByteArray = 24,
-		tStringPalette = 25,
+		tQuatXYZW = 17,
+		tMatrix = 18,
+		tMatrix4 = 19,
+		tVector2 = 20,
+		tVector4 = 21,
+		tTriangle = 22,
+		tFileVersion = 23,
+		tHeaderString = 24,
+		tByteArray = 25,
+		tStringPalette = 26,
 		
 		tNone = 0xff
 	};
@@ -863,7 +876,7 @@ public:
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
-	bool isQuat() const { return typ == tQuat; }
+	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
 	bool isString() const { return typ == tString || typ == tHeaderString || typ == tFilePath || typ == tShortString; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
@@ -954,7 +967,6 @@ template <> inline QVariant NifValue::get() const { return toVariant(); }
 
 template <> inline Matrix NifValue::get() const { return getType<Matrix>( tMatrix ); }
 template <> inline Matrix4 NifValue::get() const { return getType<Matrix4>( tMatrix4 ); }
-template <> inline Quat NifValue::get() const { return getType<Quat>( tQuat ); }
 template <> inline Vector4 NifValue::get() const { return getType<Vector4>( tVector4 ); }
 template <> inline Vector3 NifValue::get() const { return getType<Vector3>( tVector3 ); }
 template <> inline Vector2 NifValue::get() const { return getType<Vector2>( tVector2 ); }
@@ -975,6 +987,13 @@ template <> inline QByteArray NifValue::get() const
 	else
 		return QByteArray();
 }
+template <> inline Quat NifValue::get() const
+{
+	if ( isQuat() )
+		return *static_cast<Quat*>( val.data );
+	else
+		return Quat();
+}
 
 template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
@@ -984,7 +1003,6 @@ template <> inline bool NifValue::set( const quint8 & i ) { return setCount( i )
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
 template <> inline bool NifValue::set( const Matrix4 & x ) { return setType( tMatrix4, x ); }
-template <> inline bool NifValue::set( const Quat & x ) { return setType( tQuat, x ); }
 template <> inline bool NifValue::set( const Vector4 & x ) { return setType( tVector4, x ); }
 template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVector3, x ); }
 template <> inline bool NifValue::set( const Vector2 & x ) { return setType( tVector2, x ); }
@@ -1009,13 +1027,22 @@ template <> inline bool NifValue::set( const QByteArray & x )
 	}
 	return false;
 }
+template <> inline bool NifValue::set( const Quat & x )
+{
+	if ( isQuat() )
+	{
+		*static_cast<Quat*>( val.data ) = x;
+		return true;
+	}
+	return false;
+}
 
 template <> inline bool NifValue::ask( bool * ) const { return isCount(); }
 template <> inline bool NifValue::ask( int * ) const { return isCount(); }
 template <> inline bool NifValue::ask( float * ) const { return isFloat(); }
 template <> inline bool NifValue::ask( Matrix * ) const { return type() == tMatrix; }
 template <> inline bool NifValue::ask( Matrix4 * ) const { return type() == tMatrix4; }
-template <> inline bool NifValue::ask( Quat * ) const { return type() == tQuat; }
+template <> inline bool NifValue::ask( Quat * ) const { return isQuat(); }
 template <> inline bool NifValue::ask( Vector4 * ) const { return type() == tVector4; }
 template <> inline bool NifValue::ask( Vector3 * ) const { return type() == tVector3; }
 template <> inline bool NifValue::ask( Vector2 * ) const { return type() == tVector2; }

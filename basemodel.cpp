@@ -399,6 +399,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 						case NifValue::tMatrix:
 							return item->value().get<Matrix>().toHtml();
 						case NifValue::tQuat:
+						case NifValue::tQuatXYZW:
 							return item->value().get<Quat>().toHtml();
 						case NifValue::tColor3:
 							{

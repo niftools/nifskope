@@ -328,7 +328,7 @@ void NifRotationEdit::updateData( NifModel * nif )
 	NifValue val = nif->getValue( index );
 	if ( val.type() == NifValue::tMatrix )
 		rotation->setMatrix( val.get<Matrix>() );
-	else if ( val.type() == NifValue::tQuat )
+	else if ( val.type() == NifValue::tQuat || val.type() == NifValue::tQuatXYZW )
 		rotation->setQuat( val.get<Quat>() );
 }
 
@@ -337,6 +337,6 @@ void NifRotationEdit::applyData( NifModel * nif )
 	NifValue::Type type = nif->getValue( index ).type();
 	if ( type == NifValue::tMatrix )
 		nif->set<Matrix>( index, rotation->getMatrix() );
-	else if ( type == NifValue::tQuat )
+	else if ( type == NifValue::tQuat || type == NifValue::tQuatXYZW )
 		nif->set<Quat>( index, rotation->getQuat() );
 }

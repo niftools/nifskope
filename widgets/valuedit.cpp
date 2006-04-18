@@ -47,7 +47,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return ( t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tString
-		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat
+		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
 		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString );
 }
 
@@ -131,6 +131,7 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = re;
 		}	break;
 		case NifValue::tQuat:
+		case NifValue::tQuatXYZW:
 		{
 			RotationEdit * re = new RotationEdit( this );
 			re->setQuat( v.get<Quat>() );
@@ -185,6 +186,7 @@ NifValue ValueEdit::getValue() const
 			val.set<Matrix>( qobject_cast<RotationEdit*>( edit )->getMatrix() );
 			break;
 		case NifValue::tQuat:
+		case NifValue::tQuatXYZW:
 			val.set<Quat>( qobject_cast<RotationEdit*>( edit )->getQuat() );
 			break;
 		case NifValue::tTriangle:

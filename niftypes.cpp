@@ -238,6 +238,8 @@ void NifValue::initialize()
 	typeMap.insert( "vector3", NifValue::tVector3 );
 	typeMap.insert( "quat", NifValue::tQuat );
 	typeMap.insert( "quaternion", NifValue::tQuat );
+	typeMap.insert( "quaternion_wxyz", NifValue::tQuat );
+	typeMap.insert( "quaternion_xyzw", NifValue::tQuatXYZW );
 	typeMap.insert( "matrix33", NifValue::tMatrix );
 	typeMap.insert( "matrix44", NifValue::tMatrix4 );
 	typeMap.insert( "vector2", NifValue::tVector2 );
@@ -310,6 +312,7 @@ void NifValue::clear()
 			delete static_cast<Matrix4*>( val.data );
 			break;
 		case tQuat:
+		case tQuatXYZW:
 			delete static_cast<Quat*>( val.data );
 			break;
 		case tByteArray:
@@ -365,6 +368,7 @@ void NifValue::changeType( Type t )
 			val.data = new Matrix4();
 			return;
 		case tQuat:
+		case tQuatXYZW:
 			val.data = new Quat();
 			return;
 		case tVector2:
@@ -415,6 +419,7 @@ void NifValue::operator=( const NifValue & other )
 			*static_cast<Matrix4*>( val.data ) = *static_cast<Matrix4*>( other.val.data );
 			return;
 		case tQuat:
+		case tQuatXYZW:
 			*static_cast<Quat*>( val.data ) = *static_cast<Quat*>( other.val.data );
 			return;
 		case tVector2:
@@ -527,6 +532,7 @@ bool NifValue::fromString( const QString & s )
 		case tVector4:
 		case tVector3:
 		case tQuat:
+		case tQuatXYZW:
 		case tMatrix:
 		case tMatrix4:
 		case tTriangle:
@@ -601,6 +607,7 @@ QString NifValue::toString() const
 			return t.toString();
 		}
 		case tQuat:
+		case tQuatXYZW:
 		{
 			Matrix m;
 			m.fromQuat( *static_cast<Quat*>( val.data ) );
@@ -684,6 +691,11 @@ bool NifIStream::read( NifValue & val )
 			return device->read( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
 		case NifValue::tQuat:
 			return device->read( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
+		case NifValue::tQuatXYZW:
+		{
+			Quat * q = static_cast<Quat*>( val.val.data );
+			return device->read( (char *) &q->wxyz[1], 12 ) == 12 && device->read( (char *) q->wxyz, 4 ) == 4;
+		}
 		case NifValue::tMatrix:
 			return device->read( (char *) static_cast<Matrix*>( val.val.data )->m, 36 ) == 36;
 		case NifValue::tMatrix4:
@@ -804,6 +816,11 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
 		case NifValue::tQuat:
 			return device->write( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
+		case NifValue::tQuatXYZW:
+		{
+			Quat * q = static_cast<Quat*>( val.val.data );
+			return device->write( (char *) &q->wxyz[1], 12 ) == 12 && device->write( (char *) q->wxyz, 4 ) == 4;
+		}
 		case NifValue::tMatrix:
 			return device->write( (char *) static_cast<Matrix*>( val.val.data )->m, 36 ) == 36;
 		case NifValue::tMatrix4:
