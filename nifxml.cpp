@@ -53,7 +53,7 @@ public:
 	NifXmlHandler()
 	{
 		depth = 0;
-		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "alias";
+		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "basic";
 		blk = 0;
 	}
 
@@ -95,31 +95,39 @@ public:
 		switch ( current() )
 		{
 			case 0:
-				if ( ! ( x == 7 || ( x >= 1 && x <= 4 ) ) )	err( "expected compound, ancestor, niblock, alias or version got " + name + " instead" );
+				if ( ! ( x == 7 || ( x >= 1 && x <= 4 ) ) )	err( "expected compound, ancestor, niblock, basic or version got " + name + " instead" );
 				push( x );
 				switch ( x )
 				{
 					case 2:
 					case 3:
 					case 4:
-						if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
-							err( "compound " + list.value( "name" ) + " is allready registered as internal type" );
-						if ( ! blk ) blk = new NifBlock;
-						blk->id = list.value( "name" );
+						if ( ! list.value("nifskopetype").isEmpty() ) {
+							QString alias = list.value( "name" );
+							QString type = list.value( "nifskopetype" );
+							if ( alias != type )
+								if ( ! NifValue::registerAlias( alias, type ) )
+									err( "failed to register alias " + alias + " for type " + type );
+						} else {
+							if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
+								err( "compound " + list.value( "name" ) + " is already registered as internal type" );
+							if ( ! blk ) blk = new NifBlock;
+							blk->id = list.value( "name" );
+						};
 						break;
 					case 7:
-					{
 						QString alias = list.value( "name" );
-						QString type = list.value( "type" );
+						QString type = list.value( "nifskopetype" );
 						if ( alias.isEmpty() || type.isEmpty() )
-							err( "alias definition must have a name and a type" );
-						if ( ! NifValue::registerAlias( alias, type ) )
-							err( "failed to register alias " + alias + " for type " + type );
-					}	break;
+							err( "basic definition must have a name and a nifskopetype" );
+						if ( alias != type )
+							if ( ! NifValue::registerAlias( alias, type ) )
+								err( "failed to register alias " + alias + " for type " + type );
+						break;
 				}
 				break;
 			case 1:
-				err( "version tag must not contain any sub tags" );
+				//err( "version tag must not contain any sub tags" );
 				break;
 			case 2:
 				if ( x != 5 )	err( "only add tags allowed in compound type declaration" );
