@@ -53,7 +53,7 @@ public:
 	NifXmlHandler()
 	{
 		depth = 0;
-		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "basic";
+		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "basic" << "interface";
 		blk = 0;
 	}
 
@@ -133,7 +133,7 @@ public:
 				if ( x != 5 )	err( "only add tags allowed in compound type declaration" );
 			case 3:
 			case 4:
-				if ( ! ( x == 5 || x == 6 ) )	err( "only add and inherit tags allowed in " + elements.value( x ) + " declaration" );
+				if ( ! ( x == 5 || x == 6 || x == 8) )	err( "only add, inherit, and interface tags allowed in " + elements.value( x ) + " declaration" );
 				if ( x == 5 )
 				{
 					data = NifData(
@@ -155,6 +155,12 @@ public:
 					QString n = list.value( "name" );
 					if ( n.isEmpty() )	err( "inherit needs name attribute" );
 					if ( blk ) blk->ancestors.append( n );
+				}
+				else if ( x == 8 )
+				{
+					QString n = list.value( "name" );
+					if ( n.isEmpty() )	err( "interface needs name attribute" );
+					// NifSkope doesn't do anything with that
 				}
 				push( x );
 				break;
