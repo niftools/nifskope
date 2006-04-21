@@ -7,6 +7,7 @@
 #include <QQueue>
 #include <QProgressBar>
 #include <QDateTime>
+#include <QTextEdit>
 #include <QWaitCondition>
 
 #include "../message.h"
@@ -49,6 +50,8 @@ public:
 	TestThread( QObject * o, FileQueue * q );
 	~TestThread();
 	
+	QString blockMatch;
+
 signals:
 	void sigStart( const QString & file );
 	void sigReady( const QString & result );
@@ -57,8 +60,24 @@ protected:
 	void run();
 	
 	FileQueue * queue;
-
+	
 	QMutex quit;
+};
+
+class Browser : public QTextEdit
+{
+	Q_OBJECT
+public:
+	Browser();
+
+signals:
+	void sigAnchorClicked( const QString & );
+	
+protected:
+	void mousePressEvent( QMouseEvent * );
+	void mouseReleaseEvent( QMouseEvent * );
+	
+	QPoint pressPos;
 };
 
 class TestShredder : public QWidget
@@ -70,6 +89,7 @@ public:
 	
 protected slots:
 	void browse();
+	void chooseBlock();
 	void run();
 	void xml();
 	
@@ -77,14 +97,17 @@ protected slots:
 	void threadFinished();
 	
 	void renumberThreads( int );
+	
+	void sltOpenNif( const QString & );
 
 protected:
 	void	closeEvent( QCloseEvent * );
 	
 	QLineEdit	* directory;
+	QLineEdit	* blockMatch;
 	QCheckBox	* recursive;
 	QSpinBox	* count;
-	QTextEdit	* text;
+	Browser		* text;
 	QProgressBar * progress;
 	QPushButton * btRun;
 	

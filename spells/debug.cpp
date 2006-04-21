@@ -1,6 +1,7 @@
 #include "../spellbook.h"
 
 #include "../kfmmodel.h"
+#include "../nifskope.h"
 
 #include "debug.h"
 
@@ -15,11 +16,12 @@
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
+#include <QMenu>
+#include <QMouseEvent>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSettings>
 #include <QSpinBox>
-#include <QTextEdit>
 #include <QToolButton>
 #include <QQueue>
 
@@ -53,6 +55,11 @@ TestShredder::TestShredder()
 	QSettings settings( "NifTools", "NifSkope" );
 	settings.beginGroup( "XML Checker" );
 
+	QAction * aBrowse = new QAction( "Dir", this );
+	connect( aBrowse, SIGNAL( triggered() ), this, SLOT( browse() ) );
+	QToolButton * btBrowse = new QToolButton( this );
+	btBrowse->setDefaultAction( aBrowse );
+	
 	directory = new QLineEdit( this );
 	directory->setText( settings.value( "Directory" ).toString() );
 	
@@ -60,10 +67,12 @@ TestShredder::TestShredder()
 	recursive->setChecked( settings.value( "Recursive", true ).toBool() );
 	recursive->setToolTip( "Recurse into sub directories" );
 	
-	QAction * aBrowse = new QAction( "Dir", this );
-	connect( aBrowse, SIGNAL( triggered() ), this, SLOT( browse() ) );
-	QToolButton * btBrowse = new QToolButton( this );
-	btBrowse->setDefaultAction( aBrowse );
+	QAction * aChoose = new QAction( "Block Match", this );
+	connect( aChoose, SIGNAL( triggered() ), this, SLOT( chooseBlock() ) );
+	QToolButton * btChoose = new QToolButton( this );
+	btChoose->setDefaultAction( aChoose );
+	
+	blockMatch = new QLineEdit( this );
 	
 	count = new QSpinBox();
 	count->setRange( 1, 8 );
@@ -71,8 +80,10 @@ TestShredder::TestShredder()
 	count->setPrefix( "threads " );
 	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
 	
-	text = new QTextEdit( this );
+	text = new Browser();
 	text->setHidden( false );
+	text->setReadOnly( true );
+	connect( text, SIGNAL( sigAnchorClicked( const QString & ) ), this, SLOT( sltOpenNif( const QString & ) ) );
 	
 	progress = new QProgressBar( this );
 	
@@ -94,6 +105,10 @@ TestShredder::TestShredder()
 	hbox->addWidget( btBrowse );
 	hbox->addWidget( directory );
 	hbox->addWidget( recursive );
+	
+	lay->addLayout( hbox = new QHBoxLayout() );
+	hbox->addWidget( btChoose );
+	hbox->addWidget( blockMatch );
 	hbox->addWidget( count );
 	
 	lay->addWidget( text );
@@ -139,6 +154,8 @@ void TestShredder::renumberThreads( int num )
 		connect( thread, SIGNAL( finished() ), this, SLOT( threadFinished() ) );
 		threads.append( thread );
 		
+		thread->blockMatch = blockMatch->text();
+		
 		if ( btRun->isChecked() )
 		{
 			thread->start();
@@ -172,6 +189,7 @@ void TestShredder::run()
 	
 	foreach ( TestThread * thread, threads )
 	{
+		thread->blockMatch = blockMatch->text();
 		thread->start();
 	}
 }
@@ -203,6 +221,33 @@ void TestShredder::browse()
 	}
 }
 
+void TestShredder::chooseBlock()
+{
+	QStringList ids = NifModel::allNiBlocks();
+	ids.sort();
+	
+	QMap< QChar, QMenu *> map;
+	foreach ( QString id, ids )
+	{
+		QChar x;
+		if ( id.startsWith( "Ni" ) )
+			x = id[ 2 ].toUpper();
+		else
+			x = '*';
+		if ( ! map.contains( x ) )
+			map.insert( x, new QMenu( x ) );
+		map[ x ]->addAction( id );
+	}
+
+	QMenu menu;
+	foreach ( QMenu * m, map )
+		menu.addMenu( m );
+	
+	QAction * act = menu.exec( QCursor::pos() );
+	if ( act )
+		blockMatch->setText( act->text() );
+}
+
 void TestShredder::closeEvent( QCloseEvent * e )
 {
 	foreach ( TestThread * thread, threads )
@@ -211,6 +256,11 @@ void TestShredder::closeEvent( QCloseEvent * e )
 			e->ignore();
 			queue.clear();
 		}
+}
+
+void TestShredder::sltOpenNif( const QString & fname )
+{
+	NifSkope::createWindow( fname );
 }
 
 /*
@@ -300,18 +350,22 @@ void TestThread::run()
 		emit sigStart( filepath );
 		
 		BaseModel * model = & nif;
+		
 		if ( filepath.endsWith( ".KFM", Qt::CaseInsensitive ) )
 			model = & kfm;
 		
-		model->loadFromFile( filepath );
-		
-		QString result = QString( "<b>%1</b> (%2)<br>" ).arg( filepath ).arg( model->getVersion() );
-		foreach ( Message msg, model->getMessages() )
+		if ( blockMatch.isEmpty() || ( model == &nif && NifModel::checkForBlock( filepath, blockMatch ) ) )
 		{
-			if ( msg.type() != QtDebugMsg )
-				result += msg + "<br>";
+			model->loadFromFile( filepath );
+			
+			QString result = QString( "<a href=\"%1\">%2</a> (%3)<br>" ).arg(filepath).arg( filepath ).arg( model->getVersion() );
+			foreach ( Message msg, model->getMessages() )
+			{
+				if ( msg.type() != QtDebugMsg )
+					result += msg + "<br>";
+			}
+			emit sigReady( result );
 		}
-		emit sigReady( result );
 		
 		if ( quit.tryLock() )
 			quit.unlock();
@@ -322,3 +376,26 @@ void TestThread::run()
 	}
 }
 
+
+// Browser
+
+Browser::Browser()
+{
+}
+
+void Browser::mousePressEvent( QMouseEvent * e )
+{
+	pressPos = e->pos();
+	QTextEdit::mousePressEvent( e );
+}
+
+void Browser::mouseReleaseEvent( QMouseEvent * e )
+{
+	if ( ( pressPos - e->pos() ).manhattanLength() < QApplication::startDragDistance() )
+	{
+		QString anchor = anchorAt( e->pos() );
+		if ( ! anchor.isEmpty() )
+			emit sigAnchorClicked( anchor );
+	}
+	QTextEdit::mouseReleaseEvent( e );
+}

@@ -863,7 +863,7 @@ bool NifModel::setVersion( quint32 v )
 	version = v;
 	return true;
 }
- 
+
 bool NifModel::load( QIODevice & device )
 {
 	clear();
@@ -1007,6 +1007,36 @@ bool NifModel::loadAndMapLinks( QIODevice & device, const QModelIndex & index, c
 	return false;
 }
 
+bool NifModel::loadHeaderOnly( const QString & fname )
+{
+	clear();
+	
+	QFile f( fname );
+	if ( ! f.open( QIODevice::ReadOnly ) )
+	{
+		msg( Message() << "failed to open file" << fname );
+		return false;
+	}
+	
+	NifIStream stream( this, &f );
+	
+	// read header
+	NifItem * header = getHeaderItem();
+	if ( !header || !load( header, stream, true ) )
+	{
+		msg( Message() << "failed to load file header (version" << version << ")" );
+		return false;
+	}
+	
+	return true;
+}
+
+bool NifModel::checkForBlock( const QString & filepath, const QString & blockId )
+{
+	NifModel nif;
+	return nif.loadHeaderOnly( filepath ) && nif.getArray<QString>( nif.getHeader(), "Block Types" ).contains( blockId );
+}
+ 
 bool NifModel::save( QIODevice & device, const QModelIndex & index ) const
 {
 	NifOStream stream( this, &device );

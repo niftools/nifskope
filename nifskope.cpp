@@ -616,13 +616,15 @@ void NifSkope::sltWindow()
 	createWindow();
 }
 
-NifSkope * NifSkope::createWindow()
+NifSkope * NifSkope::createWindow( const QString & fname )
 {
 	NifSkope * skope = new NifSkope;
 	skope->setAttribute( Qt::WA_DeleteOnClose );
 	QSettings settings( "NifTools", "NifSkope" );
 	skope->restore( settings );
 	skope->show();
+	if ( ! fname.isEmpty() )
+		skope->load( fname );
 	return skope;
 }
 

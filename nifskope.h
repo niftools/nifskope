@@ -64,7 +64,7 @@ public:
 	NifSkope();
 	~NifSkope();
 	
-	static NifSkope * createWindow();
+	static NifSkope * createWindow( const QString & fname = QString() );
 	
 	void save( QSettings & settings ) const;
 	void restore( QSettings & settings );

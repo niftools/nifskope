@@ -60,6 +60,10 @@ public:
 	bool save( QIODevice & device, const QModelIndex & ) const;
 	
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32,qint32> & map );
+	bool loadHeaderOnly( const QString & fname );
+	
+	// checks if the nif pointed to by filepath contains the  specified block id
+	static bool checkForBlock( const QString & filepath, const QString & blockId );
 	
 	// returns the model index of the NiHeader
 	QModelIndex getHeader() const;
