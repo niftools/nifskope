@@ -60,7 +60,7 @@ public:
 	void drawShapes();
 	void drawNodes();
 	
-	GLTex * bindTexture( const QModelIndex & );
+	GLTex * bindTexture( const QModelIndex &, bool normal );
 	void setupLights( Node * node );
 	
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
@@ -86,6 +86,7 @@ public:
 	
 	bool blending;
 	bool lighting;
+	bool bumping;
 	
 	bool highlight;
 	int currentNode;
@@ -115,6 +116,11 @@ inline void glTranslate( const Vector3 & v )
 }
 
 inline void glVertex( const Vector3 & v )
+{
+	glVertex3fv( v.data() );
+}
+
+inline void glVertex( const Vector4 & v )
 {
 	glVertex3fv( v.data() );
 }

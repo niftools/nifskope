@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glcontroller.h"
 #include "glscene.h"
 
+#include "NvTriStrip/qtwrapper.h"
+
 class TransformController : public Controller
 {
 public:
@@ -459,6 +461,49 @@ void Node::draw( NodeList * draw2nd )
 }
 
 
+void drawAxes( Vector3 c, float axis )
+{
+	glPushMatrix();
+	glTranslate( c );
+	GLfloat arrow = axis / 12.0;
+	glBegin( GL_LINES );
+	glColor3f( 1.0, 0.0, 0.0 );
+	glVertex3f( - axis, 0, 0 );
+	glVertex3f( + axis, 0, 0 );
+	glVertex3f( + axis, 0, 0 );
+	glVertex3f( + axis - arrow, + arrow, 0 );
+	glVertex3f( + axis, 0, 0 );
+	glVertex3f( + axis - arrow, - arrow, 0 );
+	glVertex3f( + axis, 0, 0 );
+	glVertex3f( + axis - arrow, 0, + arrow );
+	glVertex3f( + axis, 0, 0 );
+	glVertex3f( + axis - arrow, 0, - arrow );
+	glColor3f( 0.0, 1.0, 0.0 );
+	glVertex3f( 0, - axis, 0 );
+	glVertex3f( 0, + axis, 0 );
+	glVertex3f( 0, + axis, 0 );
+	glVertex3f( + arrow, + axis - arrow, 0 );
+	glVertex3f( 0, + axis, 0 );
+	glVertex3f( - arrow, + axis - arrow, 0 );
+	glVertex3f( 0, + axis, 0 );
+	glVertex3f( 0, + axis - arrow, + arrow );
+	glVertex3f( 0, + axis, 0 );
+	glVertex3f( 0, + axis - arrow, - arrow );
+	glColor3f( 0.0, 0.0, 1.0 );
+	glVertex3f( 0, 0, - axis );
+	glVertex3f( 0, 0, + axis );
+	glVertex3f( 0, 0, + axis );
+	glVertex3f( 0, + arrow, + axis - arrow );
+	glVertex3f( 0, 0, + axis );
+	glVertex3f( 0, - arrow, + axis - arrow );
+	glVertex3f( 0, 0, + axis );
+	glVertex3f( + arrow, 0, + axis - arrow );
+	glVertex3f( 0, 0, + axis );
+	glVertex3f( - arrow, 0, + axis - arrow );
+	glEnd();
+	glPopMatrix();
+}
+
 void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
 {
 	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
@@ -482,25 +527,29 @@ void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
 
 	glPushMatrix();
 	
+	viewTrans().glLoadMatrix();
+	
 	if ( nif->itemName( iBody ) == "bhkRigidBodyT" )
-		viewTrans().glLoadMatrix(); // inherits parent transform
-	else if ( nif->itemName( iBody ) == "bhkRigidBody" )
-		scene->view.glLoadMatrix(); // does not inherit parent transform
-	else
 	{
-		scene->view.glLoadMatrix();
-		qDebug() << "body type" << nif->itemName( iBody );
+		Transform t;
+		t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
+		t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
+		t.glMultMatrix();
 	}
 	
 	float s = 7;
 	glScalef( s, s, s );
 	
-	Transform t;
-	t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-	t.translation = nif->get<Vector3>( iBody, "Translation" );
-	t.glMultMatrix();
+	glDisable( GL_CULL_FACE );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 	
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ) );
+	
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+	glEnable( GL_CULL_FACE );
+	
+	glLoadName( nif->getBlockNumber( iBody ) );
+	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );
 	
 	glPopMatrix();
 }
@@ -672,19 +721,50 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 		glLoadName( nif->getBlockNumber( iShape ) );
 		drawCapsule( nif->get<Vector3>( iShape, "Unknown Vector 1" ), nif->get<Vector3>( iShape, "Unknown Vector 2" ), nif->get<float>( iShape, "Radius" ) );
 	}
+	else if ( name == "bhkNiTriStripsShape" )
+	{
+		float s = 1 / 7.0;
+		glScalef( s, s, s );
+		
+		glLoadName( nif->getBlockNumber( iShape ) );
+		
+		QModelIndex iStrips = nif->getIndex( nif->getIndex( iShape, "Strips" ), "Indices" );
+		for ( int r = 0; r < nif->rowCount( iStrips ); r++ )
+		{
+			QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
+			if ( iStripData.isValid() )
+			{
+				QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
+				
+				QList< QVector<quint16> > strips;
+				QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
+				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+					strips += nif->getArray<quint16>( iPoints.child( r, 0 ) );
+				
+				glBegin( GL_TRIANGLES );
+				foreach ( Triangle t, triangulate( strips ) )
+				{
+					glVertex( verts.value( t[0] ) );
+					glVertex( verts.value( t[1] ) );
+					glVertex( verts.value( t[2] ) );
+				}
+				glEnd();
+			}
+		}
+	}
 	else if ( name == "bhkConvexVerticesShape" )
 	{
-	glLoadName( nif->getBlockNumber( iShape ) );
-	glDepthMask( GL_TRUE );
-	glDepthFunc( GL_ALWAYS );
+		glLoadName( nif->getBlockNumber( iShape ) );
 		QVector< Vector4 > verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 1" );
-		glBegin( GL_POINTS );
-		foreach ( Vector4 v, verts )
+		glBegin( GL_TRIANGLES );
+		for ( int v = 0; v < verts.count() - 2; v++ )
 		{
-			Vector3 v3( v[0], v[1], v[2] );
-			glVertex( v3 );
+			glVertex( verts[v] );
+			glVertex( verts[v+1] );
+			glVertex( verts[v+2] );
 		}
 		glEnd();
+		/* face normals ?
 		verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 2" );
 		glBegin( GL_POINTS );
 		foreach ( Vector4 v, verts )
@@ -693,8 +773,7 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 			glVertex( v3 * v[3] );
 		}
 		glEnd();
-	glDepthMask( GL_FALSE );
-	glDepthFunc( GL_LEQUAL );
+		*/
 	}
 }
 
