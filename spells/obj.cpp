@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QSettings>
 #include <QTextStream>
 
@@ -16,11 +17,16 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return getShapeData( nif, index ).isValid();
+		return getShapeData( nif, index ).isValid() && getShape( nif, index ).isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
+		if ( nif->getLink( getShape( nif, index ), "Skin Instance" ) >= 0 && QMessageBox::warning( 0, "Object Export",
+			"The mesh selected for export is setup for skinning but the .obj file format does not support skinning with vertex weights."
+			"<br><br>Do you want to try it anyway?",
+            "&Continue", "&Cancel", QString(), 0, 1 ) ) return index;
+		
 		QModelIndex iData = getShapeData( nif, index );
 		
 		QSettings settings( "NifTools", "NifSkope" );
@@ -99,14 +105,18 @@ public:
 		
 		return index;
 	}
+	
+	static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+			return index;
+		else
+			return QModelIndex();
+	}
 
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
-			return nif->getBlock( nif->getLink( index, "Data" ) );
-		else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
-			return index;
-		return QModelIndex();
+		return nif->getBlock( nif->getLink( getShape( nif, index ), "Data" ) );
 	}
 	
 };
@@ -121,11 +131,16 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return spObjExport::getShapeData( nif, index ).isValid();
+		return spObjExport::getShapeData( nif, index ).isValid() && spObjExport::getShape( nif, index ).isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
 	{
+		if ( nif->getLink( spObjExport::getShape( nif, iBlock ), "Skin Instance" ) >= 0 && QMessageBox::warning( 0, "Object Import",
+			"The mesh selected for import is setup for skinning but the .obj file format does not support skinning with vertex weights."
+			"<br><br>Do you want to try it anyway?",
+            "&Continue", "&Cancel", QString(), 0, 1 ) ) return iBlock;
+		
 		// read the file
 		
 		QSettings settings( "NifTools", "NifSkope" );
