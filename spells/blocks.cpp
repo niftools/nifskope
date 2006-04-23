@@ -21,6 +21,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QStringList ids = nif->allNiBlocks();
+		ids.sort();
 		
 		QMap< QChar, QMenu *> map;
 		QMenu * rest = new QMenu( "*" );
@@ -215,7 +216,7 @@ public:
 		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) )
 		{
 			QMimeData * mime = new QMimeData;
-			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->getVersion() ).arg( nif->itemName( index ) ), data );
+			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->itemName( index ) ).arg( nif->getVersion() ), data );
 			QApplication::clipboard()->setMimeData( mime );
 		}
 		return index;
@@ -230,18 +231,17 @@ public:
 	QString name() const { return "Paste"; }
 	QString page() const { return "Block"; }
 	
-	QString blockType( const QString & format, const NifModel * nif )
+	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
 		QStringList split = format.split( "/" );
-		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock"
-		&& split.value( 2 ) == nif->getVersion() && nif->isNiBlock( split.value( 3 ) ) )
+		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock" && nif->isNiBlock( split.value( 2 ) ) )
 			return split.value( 3 );
 		return QString();
 	}
 	
-	bool acceptFormat( const QString & format, const NifModel * nif )
+	QString blockType( const QString & format )
 	{
-		return ! blockType( format, nif ).isEmpty();
+		return format.split( "/" ).value( 2 );
 	}
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -249,7 +249,7 @@ public:
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 			foreach ( QString form, mime->formats() )
-				if ( acceptFormat( form, nif ) )
+				if ( ! acceptFormat( form, nif ).isEmpty() )
 					return true;
 		return false;
 	}
@@ -261,13 +261,14 @@ public:
 		{
 			foreach ( QString form, mime->formats() )
 			{
-				if ( acceptFormat( form, nif ) )
+				QString version = acceptFormat( form, nif );
+				if ( ! version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, "Paste Block", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), "Continue", "Cancel" ) == 0 ))
 				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( & data );
 					if ( buffer.open( QIODevice::ReadOnly ) )
 					{
-						QModelIndex block = nif->insertNiBlock( blockType( form, nif ), nif->getBlockNumber( index ) + 1 );
+						QModelIndex block = nif->insertNiBlock( blockType( form ), nif->getBlockNumber( index ) + 1 );
 						nif->load( buffer, block );
 						return block;
 					}
@@ -286,18 +287,12 @@ public:
 	QString name() const { return "Paste Over"; }
 	QString page() const { return "Block"; }
 	
-	QString blockType( const QString & format, const NifModel * nif )
+	QString acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
 	{
 		QStringList split = format.split( "/" );
-		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock"
-		&& split.value( 2 ) == nif->getVersion() && nif->isNiBlock( split.value( 3 ) ) )
+		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock" && nif->isNiBlock( block, split.value( 2 ) ) )
 			return split.value( 3 );
 		return QString();
-	}
-	
-	bool acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
-	{
-		return nif->itemType( block ) == "NiBlock" && blockType( format, nif ) == nif->itemName( block );
 	}
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -305,7 +300,7 @@ public:
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 			foreach ( QString form, mime->formats() )
-				if ( acceptFormat( form, nif, index ) )
+				if ( ! acceptFormat( form, nif, index ).isEmpty() )
 					return true;
 		return false;
 	}
@@ -317,7 +312,8 @@ public:
 		{
 			foreach ( QString form, mime->formats() )
 			{
-				if ( acceptFormat( form, nif, index ) )
+				QString version = acceptFormat( form, nif, index );
+				if ( ! version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, "Paste Over", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), "Continue", "Cancel" ) == 0 ))
 				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( & data );
