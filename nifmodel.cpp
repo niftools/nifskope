@@ -768,6 +768,8 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	{
 		case NifModel::NameCol:
 			item->setName( value.toString() );
+			if ( item->parent() && item->parent() == root )
+				updateHeader();
 			break;
 		case NifModel::TypeCol:
 			item->setType( value.toString() );
