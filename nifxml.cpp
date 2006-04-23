@@ -148,6 +148,9 @@ public:
 						NifModel::version2number( list.value( "ver1" ) ),
 						NifModel::version2number( list.value( "ver2" ) )
 					);
+					QString defval = list.value( "default" );
+					if ( ! defval.isEmpty() )
+						data.value.fromString( defval );
 					if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
 				}
 				else if ( x == 6 )

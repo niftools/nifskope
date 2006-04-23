@@ -107,6 +107,11 @@ public:
 		return ( w /= s );
 	}
 	
+	bool operator==( const Vector2 & v ) const
+	{
+		return xy[0] == v.xy[0] && xy[1] == v.xy[1];
+	}
+	
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 2 );
@@ -194,6 +199,11 @@ public:
 	{
 		Vector3 v( *this );
 		return v /= s;
+	}
+	
+	bool operator==( const Vector3 & v ) const
+	{
+		return xyz[0] == v.xyz[0] && xyz[1] == v.xyz[1] && xyz[2] == v.xyz[2];
 	}
 	
 	float & operator[]( unsigned int i )
@@ -347,6 +357,11 @@ public:
 	{
 		Vector4 v( *this );
 		return v /= s;
+	}
+	
+	bool operator==( const Vector4 & v ) const
+	{
+		return xyzw[0] == v.xyzw[0] && xyzw[1] == v.xyzw[1] && xyzw[2] == v.xyzw[2] && xyzw[3] == v.xyzw[3];
 	}
 	
 	float & operator[]( unsigned int i )

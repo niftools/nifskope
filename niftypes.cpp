@@ -492,6 +492,7 @@ bool NifValue::fromString( const QString & s )
 			val.u08 = s.toUInt( &ok );
 			return ok;
 		case tWord:
+		case tFlags:
 		case tStringOffset:
 		case tBlockTypeIndex:
 			val.u32 = 0;
@@ -499,10 +500,6 @@ bool NifValue::fromString( const QString & s )
 			return ok;
 		case tInt:
 			val.u32 = s.toUInt( &ok );
-			return ok;
-		case tFlags:
-			val.u32 = 0;
-			val.u16 = s.toUInt( &ok, 2 );
 			return ok;
 		case tLink:
 		case tUpLink:
@@ -550,12 +547,11 @@ QString NifValue::toString() const
 			return ( val.u32 ? "yes" : "no" );
 		case tByte:
 		case tWord:
+		case tFlags:
 		case tStringOffset:
 		case tBlockTypeIndex:
 		case tInt:
 			return QString::number( val.u32 );
-		case tFlags:
-			return QString::number( val.u16, 2 );
 		case tLink:
 		case tUpLink:
 			return QString::number( val.i32 );
