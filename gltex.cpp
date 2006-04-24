@@ -91,7 +91,7 @@ void GLTex::initialize( const QGLContext * context )
 	}
 }
 
-GLTex * Scene::bindTexture( const QModelIndex & index, bool normal )
+GLTex * Scene::bindTexture( const QModelIndex & index )
 {
 	if ( ! texturing || ! index.isValid() )
 		return 0;
@@ -367,14 +367,11 @@ QString GLTex::findFile( const QString & file, const QString & additionalFolders
 	{
 		if ( replaceExt )
 			filename += ext;
-		foreach ( QString folder, additionalFolders.split( ";" ) + texfolders )
+		foreach ( QString folder, texfolders + additionalFolders.split( ";" ) )
 		{
 			dir.setPath( folder );
 			if ( dir.exists( filename ) )
 				return dir.filePath( filename );
-			
-			if ( filename.startsWith( "textures" ) && dir.exists( "../" + filename ) )
-				return dir.filePath( "../" + filename );
 		}
 		if ( replaceExt )
 			filename = filename.left( filename.length() - ext.length() );
