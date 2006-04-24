@@ -89,9 +89,7 @@ public:
 	
 	virtual void draw( NodeList * draw2nd = 0 );
 	virtual void drawShapes( NodeList * draw2nd = 0 );
-	
-	void drawHvkObj( const NifModel *, const QModelIndex & );
-	void drawHvkShape( const NifModel *, const QModelIndex & );
+	virtual void drawHavok();
 	
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;
@@ -126,8 +124,6 @@ protected:
 
 	NodeList children;
 	PropertyList properties;
-	
-	QPersistentModelIndex hvkobj;
 	
 	int nodeId;
 	

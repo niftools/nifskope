@@ -59,8 +59,9 @@ public:
 	void draw();
 	void drawShapes();
 	void drawNodes();
+	void drawHavok();
 	
-	GLTex * bindTexture( const QModelIndex &, bool normal );
+	GLTex * bindTexture( const QModelIndex & );
 	void setupLights( Node * node );
 	
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
@@ -86,13 +87,13 @@ public:
 	
 	bool blending;
 	bool lighting;
-	bool bumping;
 	
 	bool highlight;
 	int currentNode;
 	
 	bool showHidden;
 	bool showNodes;
+	bool showHavok;
 	
 	QRegExp expCull;
 	bool onlyTextured; // if true only textured meshes will be visible

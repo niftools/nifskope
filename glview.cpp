@@ -156,6 +156,13 @@ GLView::GLView()
 	connect( aDrawNodes, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawNodes );
 	
+	aDrawHavok = new QAction( "Draw Havok", this );
+	aDrawHavok->setToolTip( "draw the havok shapes" );
+	aDrawHavok->setCheckable( true );
+	aDrawHavok->setChecked( false );
+	connect( aDrawHavok, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aDrawHavok );
+	
 	aDrawHidden = new QAction( "&Show Hidden", this );
 	aDrawHidden->setToolTip( "if checked nodes and meshes are allways displayed<br>wether they are hidden ( flags & 1 ) or not" );
 	aDrawHidden->setCheckable( true );
@@ -399,7 +406,7 @@ void GLView::paintGL()
 		glEnd();
 		
 		glPopMatrix();
-		
+		/*
 		BoundSphere bs = viewTrans * scene->bounds();
 		
 		Vector3 mn = bs.center;
@@ -435,6 +442,7 @@ void GLView::paintGL()
 		glVertex3f( mn[0], mn[1], mx[2] );
 		glVertex3f( mx[0], mn[1], mx[2] );
 		glEnd();
+		*/
 	}
 	
 	// draw the model
@@ -492,6 +500,31 @@ QModelIndex GLView::indexAt( const QPoint & pos )
 	GLuint	buffer[512];
 	glSelectBuffer( 512, buffer );
 
+	if ( aDrawHavok->isChecked() )
+	{
+		glRenderMode( GL_SELECT );	
+		glInitNames();
+		glPushName( 0 );
+		
+		scene->drawHavok();
+		
+		GLint hits = glRenderMode( GL_RENDER );
+		if ( hits > 0 )
+		{
+			int	choose = buffer[ 3 ];
+			int	depth = buffer[ 1 ];
+			for ( int loop = 1; loop < hits; loop++ )
+			{
+				if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
+				{
+					choose = buffer[ loop * 4 + 3 ];
+					depth = buffer[ loop * 4 + 1 ];
+				}       
+			}
+			return model->getBlock( choose );
+		}
+	}
+	
 	if ( aDrawNodes->isChecked() )
 	{
 		glRenderMode( GL_SELECT );	
@@ -934,6 +967,7 @@ void GLView::checkActions()
 	scene->texturing = aTexturing->isChecked();
 	scene->blending = aBlending->isChecked();
 	scene->lighting = aLighting->isChecked();
+	scene->showHavok = aDrawHavok->isChecked();
 	scene->highlight = aHighlight->isChecked();
 	scene->showHidden = aDrawHidden->isChecked();
 	scene->showNodes = aDrawNodes->isChecked();
@@ -946,6 +980,8 @@ void GLView::checkActions()
 		timer->setInterval( 0 );
 	else
 		timer->setInterval( 1000 / FPS );
+	
+	update();
 }
 
 void GLView::save( QSettings & settings )
@@ -955,6 +991,7 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "enable textures", aTexturing->isChecked() );
 	settings.setValue( "enable lighting", aLighting->isChecked() );
 	settings.setValue( "enable blending", aBlending->isChecked() );
+	settings.setValue( "draw havok", aDrawHavok->isChecked() );
 	settings.setValue( "highlight meshes", aHighlight->isChecked() );
 	settings.setValue( "draw axis", aDrawAxis->isChecked() );
 	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
@@ -977,6 +1014,7 @@ void GLView::restore( QSettings & settings )
 	GLTex::texfolders = settings.value( "texture folder" ).toString().split( ";" );
 	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
 	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
+	aDrawHavok->setChecked( settings.value( "draw havok", true ).toBool() );
 	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
 	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
 	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );

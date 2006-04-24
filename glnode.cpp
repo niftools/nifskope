@@ -235,8 +235,6 @@ void Node::clear()
 	
 	children.clear();
 	properties.clear();
-	
-	hvkobj = QModelIndex();
 }
 
 void Node::update( const NifModel * nif, const QModelIndex & index )
@@ -290,8 +288,6 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 				}
 			}
 		}
-		
-		hvkobj = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 	}
 }
 
@@ -451,13 +447,7 @@ void Node::draw( NodeList * draw2nd )
 	glEnd();
 	
 	foreach ( Node * node, children.list() )
-	{
 		node->draw( draw2nd );
-	}
-	
-	const NifModel * nif = static_cast<const NifModel *>( hvkobj.model() );
-	if ( hvkobj.isValid() && nif )
-		drawHvkObj( nif, hvkobj );
 }
 
 
@@ -501,56 +491,6 @@ void drawAxes( Vector3 c, float axis )
 	glVertex3f( 0, 0, + axis );
 	glVertex3f( - arrow, 0, + axis - arrow );
 	glEnd();
-	glPopMatrix();
-}
-
-void Node::drawHvkObj( const NifModel * nif, const QModelIndex & iObject )
-{
-	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
-	
-	glEnable( GL_DEPTH_TEST );
-	glDepthMask( GL_FALSE );
-	glDepthFunc( GL_LEQUAL );
-	glDisable( GL_TEXTURE_2D );
-	glDisable( GL_NORMALIZE );
-	glDisable( GL_LIGHTING );
-	glDisable( GL_COLOR_MATERIAL );
-	glEnable( GL_BLEND );
-	glDisable( GL_ALPHA_TEST );
-	glPointSize( 4.5 );
-	glLineWidth( 1.0 );
-	
-	static const float colors[8][3] = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 }, { 1.0, 1.0, 1.0 }, { 0.5, 0.5, 1.0 }, { 1.0, 0.8, 0.0 }, { 1.0, 0.8, 0.4 }, { 0.0, 1.0, 1.0 } };
-	
-	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
-	glColor3fv( colors[ nif->get<int>( iBody, "Flags" ) & 7 ] );
-
-	glPushMatrix();
-	
-	viewTrans().glLoadMatrix();
-	
-	if ( nif->itemName( iBody ) == "bhkRigidBodyT" )
-	{
-		Transform t;
-		t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-		t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
-		t.glMultMatrix();
-	}
-	
-	float s = 7;
-	glScalef( s, s, s );
-	
-	glDisable( GL_CULL_FACE );
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-	
-	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ) );
-	
-	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-	glEnable( GL_CULL_FACE );
-	
-	glLoadName( nif->getBlockNumber( iBody ) );
-	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );
-	
 	glPopMatrix();
 }
 
@@ -678,10 +618,12 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 )
 	}
 }
 
-void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
+void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack )
 {
-	if ( ! nif || ! iShape.isValid() )
+	if ( ! nif || ! iShape.isValid() || stack.contains( iShape ) )
 		return;
+	
+	stack.push( iShape );
 	
 	//qWarning() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 	
@@ -694,7 +636,7 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 			iShapes = nif->getIndex( iShapes, "Indices" );
 			for ( int r = 0; r < nif->rowCount( iShapes ); r++ )
 			{
-				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ) );
+				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack );
 			}
 		}
 	}
@@ -702,7 +644,7 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 	{
 		glPushMatrix();
 		nif->get<Matrix4>( iShape, "Transform" ).glMultMatrix();
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Sub Shape" ) ) );
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Sub Shape" ) ), stack );
 		glPopMatrix();
 	}
 	else if ( name == "bhkSphereShape" )
@@ -775,6 +717,71 @@ void Node::drawHvkShape( const NifModel * nif, const QModelIndex & iShape )
 		glEnd();
 		*/
 	}
+	
+	stack.pop();
+}
+
+void Node::drawHavok()
+{
+	foreach ( Node * node, children.list() )
+		node->drawHavok();
+	
+	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
+	if ( ! ( iBlock.isValid() && nif ) )
+		return;
+	
+	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
+	if ( !iObject.isValid() )
+		return;
+
+	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
+	
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_FALSE );
+	glDepthFunc( GL_LEQUAL );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	glDisable( GL_ALPHA_TEST );
+	glPointSize( 4.5 );
+	glLineWidth( 1.0 );
+	
+	static const float colors[8][3] = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 }, { 1.0, 1.0, 1.0 }, { 0.5, 0.5, 1.0 }, { 1.0, 0.8, 0.0 }, { 1.0, 0.8, 0.4 }, { 0.0, 1.0, 1.0 } };
+	
+	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	glColor3fv( colors[ nif->get<int>( iBody, "Flags" ) & 7 ] );
+
+	glPushMatrix();
+	
+	viewTrans().glLoadMatrix();
+	
+	if ( nif->itemName( iBody ) == "bhkRigidBodyT" )
+	{
+		Transform t;
+		t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
+		t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
+		t.glMultMatrix();
+	}
+	
+	float s = 7;
+	glScalef( s, s, s );
+	
+	glDisable( GL_CULL_FACE );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	
+	QStack<QModelIndex> shapeStack;
+	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack );
+	
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+	glEnable( GL_CULL_FACE );
+	
+	glLoadName( nif->getBlockNumber( iBody ) );
+	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );
+	
+	glPopMatrix();
 }
 
 void Node::drawShapes( NodeList * draw2nd )

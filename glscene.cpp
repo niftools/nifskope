@@ -222,6 +222,8 @@ void Scene::draw()
 	drawShapes();
 	if ( showNodes )
 		drawNodes();
+	if ( showHavok )
+		drawHavok();
 }
 
 void Scene::drawShapes()
@@ -241,6 +243,12 @@ void Scene::drawNodes()
 {
 	foreach ( Node * node, roots.list() )
 		node->draw( 0 );
+}
+
+void Scene::drawHavok()
+{
+	foreach ( Node * node, roots.list() )
+		node->drawHavok();
 }
 
 void Scene::setupLights( Node * node )
