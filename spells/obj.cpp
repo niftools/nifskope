@@ -9,11 +9,106 @@
 #include <QSettings>
 #include <QTextStream>
 
-class spObjExport : public Spell
+void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int & ofs )
+{
+	QString name = nif->get<QString>( iShape, "Name" );
+	QString matn = name, texfn;
+	
+	Color3 mata, matd, mats;
+	float matt = 1.0, matg = 33.0;
+	
+	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) )
+	{
+		QModelIndex iProp = nif->getBlock( link );
+		if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) )
+		{
+			mata = nif->get<Color3>( iProp, "Ambient Color" );
+			matd = nif->get<Color3>( iProp, "Diffuse Color" );
+			mats = nif->get<Color3>( iProp, "Specular Color" );
+			matt = nif->get<float>( iProp, "Alpha" );
+			matg = nif->get<float>( iProp, "Glossiness" );
+			matn = nif->get<QString>( iProp, "Name" );
+		}
+		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
+		{
+			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( nif->getIndex( iProp, "Base Texture" ), "Texture Data" ), "Source" ), "NiSourceTexture" );
+			texfn = nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" );
+		}
+	}
+	
+	if ( ! texfn.isEmpty() )
+		matn += ":" + texfn;
+	
+	mtl << "\r\n";
+	mtl << "newmtl " << matn << "\r\n";
+	mtl << "Ka " << mata[0] << " "  << mata[1] << " "  << mata[2] << "\r\n";
+	mtl << "Kd " << matd[0] << " "  << matd[1] << " "  << matd[2] << "\r\n";
+	mtl << "Ks " << mats[0] << " "  << mats[1] << " " << mats[2] << "\r\n";
+	mtl << "d " << matt << "\r\n";
+	mtl << "Ns " << matg << "\r\n";
+	if ( ! texfn.isEmpty() )
+		mtl << "map_Kd " << texfn << "\r\n\r\n";
+	
+	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
+	
+	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	
+	// copy vertices
+	
+	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+	foreach ( Vector3 v, verts )
+		obj << "v " << v[0] << " " << v[1] << " " << v[2] << "\r\n";
+	
+	// copy texcoords
+	
+	QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
+	if ( ! iUV.isValid() )
+		iUV = nif->getIndex( iData, "UV Sets 2" );
+	
+	QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
+	foreach( Vector2 t, texco )
+		obj << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
+	
+	// copy normals
+	
+	QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+	foreach ( Vector3 n, norms )
+		obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+	
+	// get the triangles
+	
+	QVector<Triangle> tris;
+	
+	QModelIndex iPoints = nif->getIndex( iData, "Points" );
+	if ( iPoints.isValid() )
+	{
+		QList< QVector<quint16> > strips;
+		for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+			strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+		tris = triangulate( strips );
+	}
+	else
+	{
+		tris = nif->getArray<Triangle>( iData, "Triangles" );
+	}
+	
+	// write the triangles
+	
+	foreach ( Triangle t, tris )
+	{
+		obj << "f " << ofs + t[0] << "/" << ofs + t[0] << "/" << ofs + t[0]
+			<< " " << ofs + t[1] << "/" << ofs + t[1] << "/" << ofs + t[1]
+			<< " " << ofs + t[2] << "/" << ofs + t[2] << "/" << ofs + t[2] << "\r\n";
+	}
+	
+	ofs += verts.count();
+}
+
+class spObjExportMesh : public Spell
 {
 public:
-	QString name() const { return "Export .OBJ"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return "Export Mesh"; }
+	QString page() const { return ".OBJ"; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -24,10 +119,8 @@ public:
 	{
 		if ( nif->getLink( getShape( nif, index ), "Skin Instance" ) >= 0 && QMessageBox::warning( 0, "Object Export",
 			"The mesh selected for export is setup for skinning but the .obj file format does not support skinning with vertex weights."
-			"<br><br>Do you want to try it anyway?",
+			"<br><br>Do you want to go on anyway?",
             "&Continue", "&Cancel", QString(), 0, 1 ) ) return index;
-		
-		QModelIndex iData = getShapeData( nif, index );
 		
 		QSettings settings( "NifTools", "NifSkope" );
 		settings.beginGroup( "spells" );
@@ -40,68 +133,37 @@ public:
 		if ( fname.isEmpty() )
 			return index;
 		
-		if ( ! fname.endsWith( ".obj", Qt::CaseInsensitive ) )
-			fname.append( ".obj" );
+		if ( fname.endsWith( ".obj", Qt::CaseInsensitive ) )
+			fname = fname.left( fname.length() - 4 );
 		
-		QFile file( fname );
-		if ( ! file.open( QIODevice::WriteOnly ) )
+		QFile fobj( fname + ".obj" );
+		if ( ! fobj.open( QIODevice::WriteOnly ) )
 		{
-			qWarning() << "could not open " << file.fileName() << " for write access";
+			qWarning() << "could not open " << fobj.fileName() << " for write access";
 			return index;
 		}
 		
-		QTextStream s( &file );
-		
-		// copy vertices
-		
-		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-		foreach ( Vector3 v, verts )
-			s << "v " << v[0] << " " << v[1] << " " << v[2] << "\r\n";
-		
-		// copy texcoords
-		
-		QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
-		if ( ! iUV.isValid() )
-			iUV = nif->getIndex( iData, "UV Sets 2" );
-		
-		QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
-		foreach( Vector2 t, texco )
-			s << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
-		
-		// copy normals
-		
-		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
-		foreach ( Vector3 n, norms )
-			s << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
-		
-		// get the triangles
-		
-		QVector<Triangle> tris;
-		
-		QModelIndex iPoints = nif->getIndex( iData, "Points" );
-		if ( iPoints.isValid() )
+		QFile fmtl( fname + ".mtl" );
+		if ( ! fmtl.open( QIODevice::WriteOnly ) )
 		{
-			QList< QVector<quint16> > strips;
-			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
-			tris = triangulate( strips );
-		}
-		else
-		{
-			tris = nif->getArray<Triangle>( iData, "Triangles" );
+			qWarning() << "could not open " << fmtl.fileName() << " for write access";
+			return index;
 		}
 		
-		// write the triangles
+		fname = fmtl.fileName();
+		int i = fname.lastIndexOf( "/" );
+		if ( i >= 0 )
+			fname = fname.remove( 0, i+1 );
 		
-		foreach ( Triangle t, tris )
-			s << "f " << t[0]+1 << "/" << t[0]+1 << "/" << t[0]+1
-				<< " " << t[1]+1 << "/" << t[1]+1 << "/" << t[1]+1
-				<< " " << t[2]+1 << "/" << t[2]+1 << "/" << t[2]+1 << "\r\n";
+		QTextStream sobj( &fobj );
+		QTextStream smtl( &fmtl );
 		
-		// done
+		sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
 		
-		file.close();
-		settings.setValue( "File Name", file.fileName() );
+		int ofs = 1;
+		writeShape( nif, getShape( nif, index ), sobj, smtl, ofs );
+		
+		settings.setValue( "File Name", fobj.fileName() );
 		
 		return index;
 	}
@@ -121,7 +183,74 @@ public:
 	
 };
 
-REGISTER_SPELL( spObjExport )
+REGISTER_SPELL( spObjExportMesh )
+
+class spObjExportMulti : public Spell
+{
+public:
+	QString name() const { return "Export All Shapes"; }
+	QString page() const { return ".OBJ"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif && ! index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QSettings settings( "NifTools", "NifSkope" );
+		settings.beginGroup( "spells" );
+		settings.beginGroup( page() );
+		settings.beginGroup( name() );
+		
+		// target file setup
+		
+		QString fname = QFileDialog::getSaveFileName( 0, "Choose a .OBJ file for export", settings.value( "File Name" ).toString(), "*.obj" );
+		if ( fname.isEmpty() )
+			return index;
+		
+		while ( fname.endsWith( ".obj", Qt::CaseInsensitive ) )
+			fname = fname.left( fname.length() - 4 );
+		
+		QFile fobj( fname + ".obj" );
+		if ( ! fobj.open( QIODevice::WriteOnly ) )
+		{
+			qWarning() << "could not open " << fobj.fileName() << " for write access";
+			return index;
+		}
+		
+		QFile fmtl( fname + ".mtl" );
+		if ( ! fmtl.open( QIODevice::WriteOnly ) )
+		{
+			qWarning() << "could not open " << fmtl.fileName() << " for write access";
+			return index;
+		}
+		
+		fname = fmtl.fileName();
+		int i = fname.lastIndexOf( "/" );
+		if ( i >= 0 )
+			fname = fname.remove( 0, i+1 );
+		
+		QTextStream sobj( &fobj );
+		QTextStream smtl( &fmtl );
+		
+		sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
+		
+		int ofs = 1;
+		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		{
+			QModelIndex iBlock = nif->getBlock( n );
+			if ( nif->isNiBlock( iBlock, "NiTriShape" ) || nif->isNiBlock( iBlock, "NiTriStrips" ) )
+				writeShape( nif, iBlock, sobj, smtl, ofs );
+		}
+		
+		settings.setValue( "File Name", fobj.fileName() );
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spObjExportMulti )
 
 class spObjImport : public Spell
 {
@@ -131,12 +260,12 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return spObjExport::getShapeData( nif, index ).isValid() && spObjExport::getShape( nif, index ).isValid();
+		return spObjExportMesh::getShapeData( nif, index ).isValid() && spObjExportMesh::getShape( nif, index ).isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
 	{
-		if ( nif->getLink( spObjExport::getShape( nif, iBlock ), "Skin Instance" ) >= 0 && QMessageBox::warning( 0, "Object Import",
+		if ( nif->getLink( spObjExportMesh::getShape( nif, iBlock ), "Skin Instance" ) >= 0 && QMessageBox::warning( 0, "Object Import",
 			"The mesh selected for import is setup for skinning but the .obj file format does not support skinning with vertex weights."
 			"<br><br>Do you want to try it anyway?",
             "&Continue", "&Cancel", QString(), 0, 1 ) ) return iBlock;
@@ -248,7 +377,7 @@ public:
 		//qWarning() << ".obj verts" << overts.count() << "norms" << onorms.count() << "texco" << otexco.count();
 		//qWarning() << ".nif verts/norms/texco" << verts.count() << "triangles" << triangles.count();
 		
-		QModelIndex iData = spObjExport::getShapeData( nif, iBlock );
+		QModelIndex iData = spObjExportMesh::getShapeData( nif, iBlock );
 		nif->set<int>( iData, "Num Vertices", indices.count() );
 		nif->set<int>( iData, "Has Vertices", 1 );
 		nif->updateArray( iData, "Vertices" );
