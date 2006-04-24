@@ -136,11 +136,20 @@ public:
 				if ( ! ( x == 5 || x == 6 || x == 8) )	err( "only add, inherit, and interface tags allowed in " + elements.value( x ) + " declaration" );
 				if ( x == 5 )
 				{
+					// ns type optimizers come here
+					// we really shouldn't be doing this
+					// but it will work for now until we find a better solution
+					QString type = list.value( "type" );
+					if ( type == "keyarray" ) type = "ns keyarray";
+					else if ( type == "keyvecarray" ) type = "ns keyvecarray";
+					else if ( type == "keyvecarraytyp" ) type = "ns keyvecarraytyp";
+					else if ( type == "keyrotarray" ) type = "ns keyrotarray";
+					// now allocate
 					data = NifData(
 						list.value( "name" ),
-						list.value( "type" ),
+						type,
 						list.value( "template" ),
-						NifValue( NifValue::type( list.value( "type" ) ) ),
+						NifValue( NifValue::type( type ) ),
 						list.value( "arg" ),
 						list.value( "arr1" ),
 						list.value( "arr2" ),
