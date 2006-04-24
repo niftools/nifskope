@@ -91,6 +91,8 @@ public:
 			qDeleteAll( morph );
 			morph.clear();
 			
+			QModelIndex iInterpolators = nif->getIndex( nif->getIndex( iBlock, "Interpolators" ), "Indices" );
+			
 			QModelIndex midx = nif->getIndex( iData, "Morphs" );
 			if ( midx.isValid() )
 			{
@@ -101,6 +103,10 @@ public:
 					MorphKey * key = new MorphKey;
 					key->index = 0;
 					key->iFrames = nif->getIndex( iKey, "Frames" );
+					if ( ! key->iFrames.isValid() && iInterpolators.isValid() )
+					{
+						key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+					}
 					key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
 					
 					morph.append( key );
@@ -290,7 +296,7 @@ void Mesh::transform()
 			}
 		}
 	}
-
+	
 	Node::transform();
 }
 
@@ -598,6 +604,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glLineWidth( 1.0 );
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		glDisable( GL_ALPHA_TEST );
 		
 		glColor( Color4( 0.0, 1.0, 0.0, 0.5 ) );
 		
@@ -624,19 +631,33 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			glColor4fv( stripcolor[c] );
 			if ( ++c >= 6 ) c = 0;
 			
-			glBegin( GL_LINE_STRIP );
-			foreach ( quint16 v, strip )
+			quint16 a = strip.value( 0 );
+			quint16 b = strip.value( 1 );
+			
+			for ( int v = 2; v < strip.count(); v++ )
 			{
-				if ( transVerts.count() > v )
-					glVertex( transVerts[v] );
+				quint16 c = strip[v];
+				
+				if ( a != b && b != c && c != a )
+				{
+					glBegin( GL_LINE_STRIP );
+					glVertex( transVerts[a] );
+					glVertex( transVerts[b] );
+					glVertex( transVerts[c] );
+					glVertex( transVerts[a] );
+					glEnd();
+				}
+				
+				a = b;
+				b = c;
 			}
-			glEnd();
 			
 		}
-		
-		BoundSphere bs = bounds();
+		/*
 		if ( transformRigid )
 			glPopMatrix();
+		
+		BoundSphere bs = bounds();
 		bs = scene->view * bs;
 		
 		Vector3 mn = bs.center;
@@ -646,7 +667,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			mn[i] -= bs.radius;
 			mx[i] += bs.radius;
 		}
-		
 		glColor3f( 1.0, 0.0, 1.0 );
 		glBegin( GL_LINE_STRIP );
 		glVertex3f( mn[0], mn[1], mn[2] );
@@ -673,6 +693,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glVertex3f( mx[0], mn[1], mx[2] );
 		glEnd();
 		return;
+		*/
 	}
 	
 	if ( transformRigid )
