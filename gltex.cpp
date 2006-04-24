@@ -138,7 +138,7 @@ GLTex * Scene::bindTexture( const QModelIndex & index )
 bool TexturingProperty::bind( int id )
 {
 	GLTex * tex;
-	if ( id >= 0 && id <= 7 && ( tex = scene->bindTexture( textures[id].iSource, true ) ) )
+	if ( id >= 0 && id <= 7 && ( tex = scene->bindTexture( textures[id].iSource ) ) )
 	{
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
