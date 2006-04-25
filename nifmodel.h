@@ -94,6 +94,9 @@ public:
 	// is name a NiBlock identifier?
 	static bool isNiBlock( const QString & name );
 	
+	// removes an item from the model
+	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
+	
 	// return the root blocks
 	QList<int> getRootLinks() const;
 	// return the list of block links
@@ -136,6 +139,8 @@ public:
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
 	void reset();
+	
+	bool removeRows( int row, int count, const QModelIndex & parent );
 	
 	static QAbstractItemDelegate * createDelegate();
 

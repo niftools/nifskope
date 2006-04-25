@@ -136,8 +136,6 @@ void NifModel::updateFooter()
 QModelIndex NifModel::getHeader() const
 {
 	QModelIndex header = index( 0, 0 );
-	if ( itemType( header ) != "header" )
-		return QModelIndex();
 	return header;
 }
 
@@ -451,6 +449,13 @@ bool NifModel::inherits( const QModelIndex & index, const QString & aunty ) cons
 /*
  *  basic and compound type functions
  */
+ 
+void NifModel::insertType( const QModelIndex & parent, const NifData & data, int at )
+{
+	NifItem * item = static_cast<NifItem *>( parent.internalPointer() );
+	if ( parent.isValid() && item && item != root )
+		insertType( item, data, at );
+}
 
 void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 {
@@ -836,6 +841,34 @@ void NifModel::reset()
 {
 	updateLinks();
 	BaseModel::reset();
+}
+
+bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
+{
+	NifItem * item = static_cast<NifItem*>( parent.internalPointer() );
+	if ( ! ( parent.isValid() && parent.model() == this && item ) )
+		return false;
+	
+	if ( row >= 0 && row+count < item->childCount() )
+	{
+		bool link = false;
+		for ( int r = row; r < row + count; r++ )
+			link |= itemIsLink( item->child( r ) );
+		
+		beginRemoveRows( parent, row, row+count );
+		item->removeChildren( row, count );
+		endRemoveRows();
+		
+		if ( link )
+		{
+			updateLinks();
+			updateFooter();
+			emit linksChanged();
+		}
+		return true;
+	}
+	else
+		return false;
 }
 
 
