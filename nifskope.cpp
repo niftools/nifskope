@@ -170,12 +170,6 @@ NifSkope::NifSkope() : QMainWindow()
 	aQuit = new QAction( "&Quit", this );
 	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 	
-	aCondition = new QAction( "Hide Condition Zero", this );
-	aCondition->setToolTip( "checking this option makes the tree view better readable by displaying<br>only the rows where the condition is true and version matches the file version" );
-	aCondition->setCheckable( true );
-	aCondition->setChecked( tree->evalConditions() );
-	connect( aCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
-
 	aList = new QAction( "List", this );
 	aList->setCheckable( true );
 	aList->setChecked( list->model() == nif );
@@ -288,9 +282,6 @@ NifSkope::NifSkope() : QMainWindow()
 	mView->addMenu( mViewList );
 	mViewList->addAction( aHierarchy );
 	mViewList->addAction( aList );
-	QMenu * mViewTree = new QMenu( "&Block Detail Options" );
-	mView->addMenu( mViewTree );
-	mViewTree->addAction( aCondition );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( "&Toolbars" );
 	mView->addMenu( mTools );
@@ -350,7 +341,6 @@ void NifSkope::restore( QSettings & settings )
 		aHierarchy->setChecked( true );
 	setListMode();
 
-	aCondition->setChecked( settings.value( "hide condition zero", true ).toBool() );
 	restoreHeader( "tree sizes", settings, tree->header() );
 	
 	restoreHeader( "kfmtree sizes", settings, kfmtree->header() );
@@ -380,7 +370,6 @@ void NifSkope::save( QSettings & settings ) const
 	settings.setValue(	"list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
 	saveHeader( "list sizes", settings, list->header() );
 
-	settings.setValue( "hide condition zero", aCondition->isChecked() );
 	saveHeader( "tree sizes", settings, tree->header() );
 	
 	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
@@ -509,6 +498,13 @@ void NifSkope::setListMode()
 			list->setCurrentIndexExpanded( pidx );
 		}
 	}
+	list->setColumnHidden( NifModel::TypeCol, true );
+	list->setColumnHidden( NifModel::ArgCol, true );
+	list->setColumnHidden( NifModel::Arr1Col, true );
+	list->setColumnHidden( NifModel::Arr2Col, true );
+	list->setColumnHidden( NifModel::CondCol, true );
+	list->setColumnHidden( NifModel::Ver1Col, true );
+	list->setColumnHidden( NifModel::Ver2Col, true );
 }
 
 void NifSkope::load( const QString & filepath )
@@ -540,6 +536,7 @@ void NifSkope::load()
 	if ( nifname.isEmpty() )
 	{
 		nif->clear();
+		setWindowTitle( "NifSkope" );
 	}
 	else
 	{
@@ -553,6 +550,7 @@ void NifSkope::load()
 		if ( ! nif->loadFromFile( nifname ) )
 			qWarning() << "failed to load nif from file " << nifname;
 		
+		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
 	}
 	
 	ogl->aAnimate->setChecked( a );
