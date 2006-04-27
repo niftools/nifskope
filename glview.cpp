@@ -655,6 +655,7 @@ void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 void GLView::modelChanged()
 {
 	doCompile = true;
+	doCenter = true;
 	update();
 }
 
