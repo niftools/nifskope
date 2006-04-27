@@ -87,8 +87,8 @@ void NifModel::clear()
 {
 	folder = QString();
 	root->killChildren();
-	insertType( root, NifData( "NiHeader", "header" ) );
-	insertType( root, NifData( "NiFooter", "footer" ) );
+	insertType( root, NifData( "NiHeader", "Header" ) );
+	insertType( root, NifData( "NiFooter", "Footer" ) );
 	version = 0x04000002;
 	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
