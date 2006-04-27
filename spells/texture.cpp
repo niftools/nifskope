@@ -555,7 +555,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "texcoord";
+		return nif->itemType( index ).toLower() == "texcoord";
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
