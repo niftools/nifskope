@@ -89,12 +89,14 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
-	version = 0x04000002;
+	version = version2number( "20.0.0.5" );
 	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
 	if ( item ) item->value().setFileVersion( version );
-	item = getItem( getHeaderItem(), "Header String" );
-	if ( item ) item->value().set<QString>( "NetImmerse File Format, Version 4.0.0.2" );
+	
+	set<QString>( getHeaderItem(), "Header String", "Gamebryo File Format, Version 20.0.0.5" );
+	set<int>( getHeaderItem(), "User Version", 11 );
+	set<int>( getHeaderItem(), "Unknown Int 3", 11 );
 }
 
 /*
