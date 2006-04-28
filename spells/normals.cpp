@@ -14,16 +14,24 @@ public:
 	QString name() const { return "Make Normals"; }
 	QString page() const { return "Mesh"; }
 	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
-		return ( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
-			|| ( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) );
+		QModelIndex iData = index;
+		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+			iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		if ( nif->isNiBlock( iData, "NiTriShapeData" ) || nif->isNiBlock( iData, "NiTriStripsData" ) )
+			return iData;
+		else return QModelIndex();
 	}
 	
-	QModelIndex cast( NifModel * nif, const QModelIndex & iShape )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+		return getShapeData( nif, index ).isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = getShapeData( nif, index );
 		
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		QVector<Triangle> triangles;
@@ -63,7 +71,7 @@ public:
 		nif->updateArray( iData, "Normals" );
 		nif->setArray<Vector3>( iData, "Normals", norms );
 		
-		return iShape;
+		return index;
 	}
 };
 
@@ -77,20 +85,18 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
-		return nif->get<int>( iData, "Has Normals" ) && ( ( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
-			|| ( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) );
+		return spFaceNormals::getShapeData( nif, index ).isValid();
 	}
 	
-	QModelIndex cast( NifModel * nif, const QModelIndex & iShape )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
 		
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
 		
 		if ( verts.isEmpty() || verts.count() != norms.count() )
-			return iShape;
+			return index;
 		
 		QDialog dlg;
 		dlg.setWindowTitle( "Smooth Normals" );
@@ -127,35 +133,36 @@ public:
 		grid->addWidget( btCancel, 2, 1 );
 		
 		if ( dlg.exec() != QDialog::Accepted )
-			return iShape;
+			return index;
 		
 		
 		float maxa = angle->value() / 180 * PI;
 		float maxd = dist->value();
 		
+		QVector<Vector3> snorms( norms );
+		
 		for ( int i = 0; i < verts.count(); i++ )
 		{
 			const Vector3 & a = verts[i];
-			Vector3 & an = norms[i];
+			Vector3 an = norms[i];
 			for ( int j = i+1; j < verts.count(); j++ )
 			{
 				const Vector3 & b = verts[j];
 				if ( ( a - b ).squaredLength() < maxd )
 				{
-					Vector3 & bn = norms[j];
+					Vector3 bn = norms[j];
 					if ( Vector3::angle( an, bn ) < maxa )
-					{
-						Vector3 n = an + bn;
-						n.normalize();
-						an = bn = n;
-					}
+						snorms[i] = snorms[j] = an + bn;
 				}
 			}
 		}
 		
-		nif->setArray<Vector3>( iData, "Normals", norms );
+		for ( int i = 0; i < verts.count(); i++ )
+			snorms[i].normalize();
 		
-		return iShape;
+		nif->setArray<Vector3>( iData, "Normals", snorms );
+		
+		return index;
 	}
 };
 

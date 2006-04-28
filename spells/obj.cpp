@@ -2,6 +2,8 @@
 
 #include "../NvTriStrip/qtwrapper.h"
 
+#include "../gltransform.h"
+
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
@@ -9,7 +11,7 @@
 #include <QSettings>
 #include <QTextStream>
 
-void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int & ofs )
+void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
 {
 	QString name = nif->get<QString>( iShape, "Name" );
 	QString matn = name, texfn;
@@ -59,7 +61,10 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 	
 	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 	foreach ( Vector3 v, verts )
+	{
+		v = t * v;
 		obj << "v " << v[0] << " " << v[1] << " " << v[2] << "\r\n";
+	}
 	
 	// copy texcoords
 	
@@ -75,7 +80,10 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 	
 	QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
 	foreach ( Vector3 n, norms )
+	{
+		n = t.rotation * n;
 		obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+	}
 	
 	// get the triangles
 	
@@ -104,6 +112,19 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 	}
 	
 	ofs += verts.count();
+}
+
+void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
+{
+	t = t * Transform( nif, iNode );
+	foreach ( int l, nif->getChildLinks( nif->getBlockNumber( iNode ) ) )
+	{
+		QModelIndex iChild = nif->getBlock( l );
+		if ( nif->inherits( iChild, "AParentNode" ) )
+			writeParent( nif, iChild, obj, mtl, ofs, t );
+		else if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
+			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
+	}
 }
 
 class spObjExportMesh : public Spell
@@ -163,7 +184,7 @@ public:
 		sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
 		
 		int ofs = 1;
-		writeShape( nif, getShape( nif, index ), sobj, smtl, ofs );
+		writeShape( nif, getShape( nif, index ), sobj, smtl, ofs, Transform() );
 		
 		settings.setValue( "File Name", fobj.fileName() );
 		
@@ -239,11 +260,13 @@ public:
 		sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
 		
 		int ofs = 1;
-		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		foreach ( int l, nif->getRootLinks() )
 		{
-			QModelIndex iBlock = nif->getBlock( n );
-			if ( nif->isNiBlock( iBlock, "NiTriShape" ) || nif->isNiBlock( iBlock, "NiTriStrips" ) )
-				writeShape( nif, iBlock, sobj, smtl, ofs );
+			QModelIndex iBlock = nif->getBlock( l );
+			if ( nif->inherits( iBlock, "AParentNode" ) )
+				writeParent( nif, iBlock, sobj, smtl, ofs, Transform() );
+			else if ( nif->isNiBlock( iBlock, "NiTriShape" ) || nif->isNiBlock( iBlock, "NiTriStrips" ) )
+				writeShape( nif, iBlock, sobj, smtl, ofs, Transform() );
 		}
 		
 		settings.setValue( "File Name", fobj.fileName() );
@@ -399,8 +422,6 @@ public:
 		{
 			it.next();
 			
-			qWarning() << it.key() << it.value()->count();
-			
 			if ( ! it.value()->count() )
 				continue;
 			
@@ -420,6 +441,7 @@ public:
 				nif->set<Color3>( iMaterial, "Ambient Color", mtl.Ka );
 				nif->set<Color3>( iMaterial, "Diffuse Color", mtl.Kd );
 				nif->set<Color3>( iMaterial, "Specular Color", mtl.Ks );
+				nif->set<Color3>( iMaterial, "Emissive Color", Color3( 0, 0, 0 ) );
 				nif->set<float>( iMaterial, "Alpha", mtl.d );
 				nif->set<float>( iMaterial, "Glossiness", mtl.Ns );
 				
@@ -624,7 +646,7 @@ public:
 				nif->setLink( iBody, "Shape", nif->getBlockNumber( iShape ) );
 				nif->set<int>( iBody, "Flags", 1 );
 				nif->set<int>( iBody, "Flags 2", 1 );
-				nif->set<float>( iBody, "Mass", 10.0 );
+				nif->set<float>( iBody, "Mass", 0.0 );
 				nif->set<float>( iBody, "Unknown Float 0", 0.1 );
 				nif->set<float>( iBody, "Unknown Float 1", 0.1 );
 				nif->set<float>( iBody, "Friction", 0.3 );
@@ -632,11 +654,11 @@ public:
 				nif->set<float>( iBody, "Unknown Float 2", 250.0 );
 				nif->set<float>( iBody, "Unknown Float 3", 31.4159 );
 				nif->set<float>( iBody, "Unknown Float 4", 0.15 );
-				nif->setArray<int>( iBody, "Unknown Bytes 5", QVector<int>() << 4 << 3 << 3 << 2 );
+				nif->setArray<int>( iBody, "Unknown Bytes 5", QVector<int>() << 7 << 1 << 1 << 1 );
 				
 				QPersistentModelIndex iObject = nif->insertNiBlock( "bhkCollisionObject" );
 				nif->setLink( iObject, "Parent", nif->getBlockNumber( iNode ) );
-				nif->set<int>( iObject, "Unknown Short", 41 );
+				nif->set<int>( iObject, "Unknown Short", 1 );
 				nif->setLink( iObject, "Body", nif->getBlockNumber( iBody ) );
 				
 				nif->setLink( iNode, "Collision Data", nif->getBlockNumber( iObject ) );
