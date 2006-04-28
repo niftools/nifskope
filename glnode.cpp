@@ -698,12 +698,14 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	{
 		glLoadName( nif->getBlockNumber( iShape ) );
 		QVector< Vector4 > verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 1" );
-		glBegin( GL_TRIANGLES );
-		for ( int v = 0; v < verts.count() - 2; v++ )
+		glBegin( GL_LINES );
+		for ( int i = 1; i < verts.count(); i++ )
 		{
-			glVertex( verts[v] );
-			glVertex( verts[v+1] );
-			glVertex( verts[v+2] );
+			for ( int j = 0; j < i; j++ )
+			{
+				glVertex( verts[i] );
+				glVertex( verts[j] );
+			}
 		}
 		glEnd();
 		/* face normals ?
@@ -716,6 +718,34 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		}
 		glEnd();
 		*/
+	}
+	else if ( name == "bhkMoppBvTreeShape" )
+	{
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack );
+	}
+	else if ( name == "bhkPackedNiTriStripsShape" )
+	{
+		glLoadName( nif->getBlockNumber( iShape ) );
+		
+		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+		if ( iData.isValid() )
+		{
+			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+			QModelIndex iTris = nif->getIndex( iData, "Triangles" );
+			for ( int t = 0; t < nif->rowCount( iTris ); t++ )
+			{
+				Triangle tri = nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" );
+				if ( tri[0] != tri[1] || tri[1] != tri[2] || tri[2] != tri[0] )
+				{
+					glBegin( GL_LINE_STRIP );
+					glVertex( verts.value( tri[0] ) );
+					glVertex( verts.value( tri[1] ) );
+					glVertex( verts.value( tri[2] ) );
+					glVertex( verts.value( tri[0] ) );
+					glEnd();
+				}
+			}
+		}
 	}
 	
 	stack.pop();
