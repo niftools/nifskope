@@ -47,7 +47,8 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return ( t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tString
-		|| t == NifValue::tVector3 || t == NifValue::tVector2 || t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
+		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
+		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
 		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString );
 }
 
@@ -111,6 +112,12 @@ void ValueEdit::setValue( const NifValue & v )
 			QLineEdit * le = new QLineEdit( this );
 			le->setText( v.toString() );
 			edit = le;
+		}	break;
+		case NifValue::tVector4:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector4( v.get<Vector4>() );
+			edit = ve;
 		}	break;
 		case NifValue::tVector3:
 		{
@@ -176,6 +183,9 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tShortString:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
 			break;
+		case NifValue::tVector4:
+			val.set<Vector4>( qobject_cast<VectorEdit*>( edit )->getVector4() );
+			break;
 		case NifValue::tVector3:
 			val.set<Vector3>( qobject_cast<VectorEdit*>( edit )->getVector3() );
 			break;
@@ -238,7 +248,23 @@ VectorEdit::VectorEdit( QWidget * parent ) : QWidget( parent )
 	z->setRange( - 100000000, + 100000000 );
 	z->setPrefix( "Z " );
 	connect( z, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	lay->addWidget( w = new QDoubleSpinBox );
+	//z->setFrame(false);
+	w->setDecimals( 4 );
+	w->setRange( - 100000000, + 100000000 );
+	w->setPrefix( "W " );
+	connect( w, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
+	setting = false;
+}
+
+void VectorEdit::setVector4( const Vector4 & v )
+{
+	setting = true;
+	x->setValue( v[0] );
+	y->setValue( v[1] );
+	z->setValue( v[2] ); z->setShown( true );
+	w->setValue( v[3] ); w->setShown( true );
 	setting = false;
 }
 
@@ -248,6 +274,7 @@ void VectorEdit::setVector3( const Vector3 & v )
 	x->setValue( v[0] );
 	y->setValue( v[1] );
 	z->setValue( v[2] ); z->setShown( true );
+	w->setValue( 0.0 ); w->setHidden( true );
 	setting = false;
 }
 
@@ -257,12 +284,18 @@ void VectorEdit::setVector2( const Vector2 & v )
 	x->setValue( v[0] );
 	y->setValue( v[1] );
 	z->setValue( 0.0 ); z->setHidden( true );
+	w->setValue( 0.0 ); w->setHidden( true );
 	setting = false;
 }
 
 void VectorEdit::sltChanged()
 {
 	if ( ! setting ) emit sigEdited();
+}
+
+Vector4 VectorEdit::getVector4() const
+{
+	return Vector4( x->value(), y->value(), z->value(), w->value() );
 }
 
 Vector3 VectorEdit::getVector3() const

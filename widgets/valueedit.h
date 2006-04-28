@@ -71,9 +71,11 @@ class VectorEdit : public QWidget
 public:
 	VectorEdit( QWidget * parent = 0 );
 	
+	Q_PROPERTY( Vector4 Vector4 READ getVector4 WRITE setVector4 STORED false );
 	Q_PROPERTY( Vector3 vector3 READ getVector3 WRITE setVector3 STORED false );
 	Q_PROPERTY( Vector2 vector2 READ getVector2 WRITE setVector2 STORED false );
 	
+	Vector4 getVector4() const;
 	Vector3 getVector3() const;
 	Vector2 getVector2() const;
 
@@ -81,6 +83,7 @@ signals:
 	void sigEdited();
 
 public slots:
+	void setVector4( const Vector4 & );
 	void setVector3( const Vector3 & );
 	void setVector2( const Vector2 & );
 
@@ -91,6 +94,7 @@ private:
 	QDoubleSpinBox * x;
 	QDoubleSpinBox * y;
 	QDoubleSpinBox * z;
+	QDoubleSpinBox * w;
 	
 	bool setting;
 };
