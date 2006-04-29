@@ -90,7 +90,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "linkgroup";
+		return nif->itemType( index ).toLower() == "linkgroup";
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iLinkGroup )
@@ -117,7 +117,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "linkgroup";
+		return nif->itemType( index ).toLower() == "linkgroup";
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iLinkGroup )

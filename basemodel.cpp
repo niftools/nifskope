@@ -89,8 +89,8 @@ int BaseModel::getArraySize( NifItem * array ) const
 		QString left, right;
 		QString arr1 = array->arr1();
 		
-		static const char * const exp[] = { "|", "&" };
-		static const int num_exp = 2;
+		static const char * const exp[] = { "|", "&", "/" };
+		static const int num_exp = 3;
 		
 		int c;
 		for ( c = 0; c < num_exp; c++ )
@@ -155,6 +155,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 		{
 			case 0: d1 |= r; break;
 			case 1: d1 &= r; break;
+			case 2: d1 /= r; break;
 		}
 	}
 	

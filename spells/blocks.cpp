@@ -112,7 +112,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "ANode" );
+		return nif->isNiBlock( index ) && nif->inherits( index, "AParentNode" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -147,7 +147,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "AParentNode" );
+		return nif->isNiBlock( index ) && nif->inherits( index, "AParentNode" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -178,6 +178,42 @@ public:
 
 REGISTER_SPELL( spAttachLight )
 
+
+class spAttachExtraData : public Spell
+{
+public:
+	QString name() const { return "Attach Extra Data"; }
+	QString page() const { return "Node"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index ) && nif->inherits( index, "ANode" ) && nif->checkVersion( 0x0a000100, 0 );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QMenu menu;
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		foreach ( QString id, ids )
+			if ( nif->inherits( id, "AExtraData" ) || id == "BSXFlags" )
+				menu.addAction( id );
+		QAction * act = menu.exec( QCursor::pos() );
+		if ( act )
+		{
+			QPersistentModelIndex iParent = index;
+			QModelIndex iExtra = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+			addLink( nif, iParent, "Extra Data List", nif->getBlockNumber( iExtra ) );
+			return iExtra;
+		}
+		else
+			return index;
+	}
+};
+
+REGISTER_SPELL( spAttachExtraData )
+
+
 class spRemoveBlock : public Spell
 {
 public:
@@ -186,7 +222,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemType( index ) == "NiBlock" && nif->getBlockNumber( index ) >= 0 );
+		return nif->isNiBlock( index ) && nif->getBlockNumber( index ) >= 0;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -206,7 +242,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemType( index ) == "NiBlock" && nif->isNiBlock( nif->itemName( index ) ) );
+		return nif->isNiBlock( index );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -341,7 +377,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemType( index ) == "NiBlock" && nif->isNiBlock( nif->itemName( index ) ) );
+		return nif->isNiBlock( index );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -527,7 +563,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & iBlock )
 	{
 		int ix = nif->getBlockNumber( iBlock );
-		return ( ix >= 0 && ( nif->getRootLinks().contains( ix ) || nif->getParent( ix ) >= 0 ) );
+		return ( nif->isNiBlock( iBlock ) && ix >= 0 && ( nif->getRootLinks().contains( ix ) || nif->getParent( ix ) >= 0 ) );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )

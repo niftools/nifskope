@@ -38,14 +38,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.8.1 of NifSkope.
-
+This is version 0.8.2 of NifSkope.
 It should read and write every Nif up to version 20.0.0.5.
+
+
+changes since 0.8.1:
+  - multi shape .obj export/import
+  - remove branch spell
+  - make normals and smooth normals spells
+  - added an option to show the havok shapes
+  - tool tip descriptions for all blocks and items
+
 
 changes since 0.8:
   - XML updated
   - create texture templates
   - .OBJ import/export
+
 
 changes since 0.7:
   - Billboards
@@ -135,13 +144,14 @@ changes since 0.1:
 
 
 
-If you want to compile NifSkope from source:
+Recompiling NifSkope from source:
 
-1) install the Qt4 sources from http://www.trolltech.com/download/qt (if you don't have them yet)
-2) download the nifskope source from http://niftools.sourceforge.net
+1) download and install the Qt4 sources from http://www.trolltech.com/download/qt
+2) download the nifskope source via SVN from https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope
 3) edit nifskope.pro to suit your needs
 4) start QT Command Prompt (windows) or open up a shell (linux)
 5) cd to nifskope's directory
 6) qmake
 7) make
 8) nifskope
+

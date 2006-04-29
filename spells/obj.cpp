@@ -11,52 +11,8 @@
 #include <QSettings>
 #include <QTextStream>
 
-void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
+void writeData( const NifModel * nif, const QModelIndex & iData, QTextStream & obj, int & ofs, Transform t )
 {
-	QString name = nif->get<QString>( iShape, "Name" );
-	QString matn = name, texfn;
-	
-	Color3 mata, matd, mats;
-	float matt = 1.0, matg = 33.0;
-	
-	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) )
-	{
-		QModelIndex iProp = nif->getBlock( link );
-		if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) )
-		{
-			mata = nif->get<Color3>( iProp, "Ambient Color" );
-			matd = nif->get<Color3>( iProp, "Diffuse Color" );
-			mats = nif->get<Color3>( iProp, "Specular Color" );
-			matt = nif->get<float>( iProp, "Alpha" );
-			matg = nif->get<float>( iProp, "Glossiness" );
-			//matn = nif->get<QString>( iProp, "Name" );
-		}
-		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
-		{
-			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( nif->getIndex( iProp, "Base Texture" ), "Texture Data" ), "Source" ), "NiSourceTexture" );
-			texfn = nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" );
-		}
-	}
-	
-	//if ( ! texfn.isEmpty() )
-	//	matn += ":" + texfn;
-	
-	matn = QString( "Material.%1" ).arg( ofs, 6, 16, QChar( '0' ) );
-	
-	mtl << "\r\n";
-	mtl << "newmtl " << matn << "\r\n";
-	mtl << "Ka " << mata[0] << " "  << mata[1] << " "  << mata[2] << "\r\n";
-	mtl << "Kd " << matd[0] << " "  << matd[1] << " "  << matd[2] << "\r\n";
-	mtl << "Ks " << mats[0] << " "  << mats[1] << " " << mats[2] << "\r\n";
-	mtl << "d " << matt << "\r\n";
-	mtl << "Ns " << matg << "\r\n";
-	if ( ! texfn.isEmpty() )
-		mtl << "map_Kd " << texfn << "\r\n\r\n";
-	
-	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
-	
-	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
-	
 	// copy vertices
 	
 	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
@@ -112,6 +68,53 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 	}
 	
 	ofs += verts.count();
+}
+
+void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
+{
+	QString name = nif->get<QString>( iShape, "Name" );
+	QString matn = name, texfn;
+	
+	Color3 mata, matd, mats;
+	float matt = 1.0, matg = 33.0;
+	
+	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) )
+	{
+		QModelIndex iProp = nif->getBlock( link );
+		if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) )
+		{
+			mata = nif->get<Color3>( iProp, "Ambient Color" );
+			matd = nif->get<Color3>( iProp, "Diffuse Color" );
+			mats = nif->get<Color3>( iProp, "Specular Color" );
+			matt = nif->get<float>( iProp, "Alpha" );
+			matg = nif->get<float>( iProp, "Glossiness" );
+			//matn = nif->get<QString>( iProp, "Name" );
+		}
+		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
+		{
+			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( nif->getIndex( iProp, "Base Texture" ), "Texture Data" ), "Source" ), "NiSourceTexture" );
+			texfn = nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" );
+		}
+	}
+	
+	//if ( ! texfn.isEmpty() )
+	//	matn += ":" + texfn;
+	
+	matn = QString( "Material.%1" ).arg( ofs, 6, 16, QChar( '0' ) );
+	
+	mtl << "\r\n";
+	mtl << "newmtl " << matn << "\r\n";
+	mtl << "Ka " << mata[0] << " "  << mata[1] << " "  << mata[2] << "\r\n";
+	mtl << "Kd " << matd[0] << " "  << matd[1] << " "  << matd[2] << "\r\n";
+	mtl << "Ks " << mats[0] << " "  << mats[1] << " " << mats[2] << "\r\n";
+	mtl << "d " << matt << "\r\n";
+	mtl << "Ns " << matg << "\r\n";
+	if ( ! texfn.isEmpty() )
+		mtl << "map_Kd " << texfn << "\r\n\r\n";
+	
+	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
+	
+	writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
 }
 
 void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
@@ -745,8 +748,8 @@ REGISTER_SPELL( spObjImportMulti )
 class spObjImport : public Spell
 {
 public:
-	QString name() const { return "Import .OBJ"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return "Import Mesh"; }
+	QString page() const { return ".OBJ"; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
