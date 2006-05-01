@@ -2,6 +2,8 @@
 
 #include "../gltransform.h"
 
+#include "../NvTriStrip/qtwrapper.h"
+
 #include <QDebug>
 #include <QFile>
 
@@ -219,3 +221,176 @@ public:
 };
 
 //REGISTER_SPELL( spScanSkeleton )
+
+
+class spSkinPartition : public Spell
+{
+public:
+	QString name() const { return "Make Skin Partition"; }
+	QString page() const { return "Mesh"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & iShape )
+	{
+		if ( nif->checkVersion( 0x0a020000, 0 ) && nif->isNiBlock( iShape, "NiTriShape" ) )
+		{
+			QModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
+			if ( iSkinInst.isValid() )
+			{
+				return nif->getBlock( nif->getLink( iSkinInst, "Data" ), "NiSkinData" ).isValid();
+			}
+		}
+		return false;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	{
+		QPersistentModelIndex iShape = iBlock;
+		QPersistentModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriShapeData" );
+		QPersistentModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
+		QPersistentModelIndex iSkinData = nif->getBlock( nif->getLink( iSkinInst, "Data" ), "NiSkinData" );
+		QModelIndex iSkinPart = nif->getBlock( nif->getLink( iSkinInst, "Skin Partition" ), "NiSkinPartition" );
+		if ( ! iSkinPart.isValid() )
+		{
+			iSkinPart = nif->insertNiBlock( "NiSkinPartition", nif->getBlockNumber( iSkinData ) + 1 );
+			nif->setLink( iSkinInst, "Skin Partition", nif->getBlockNumber( iSkinPart ) );
+		}
+		
+		// read in the weights from NiSkinData
+		
+		typedef QPair<int,float> boneweight;
+		
+		QVector< QList< boneweight > > weights( nif->get<int>( iData, "Num Vertices" ) );
+		
+		QModelIndex iBoneList = nif->getIndex( iSkinData, "Bone List" );
+		int numBones = nif->rowCount( iBoneList );
+		for ( int bone = 0; bone < numBones; bone++ )
+		{
+			QModelIndex iVertexWeights = nif->getIndex( iBoneList.child( bone, 0 ), "Vertex Weights" );
+			for ( int r = 0; r < nif->rowCount( iVertexWeights ); r++ )
+			{
+				int vertex = nif->get<int>( iVertexWeights.child( r, 0 ), "Index" );
+				float weight = nif->get<float>( iVertexWeights.child( r, 0 ), "Weight" );
+				if ( vertex >= weights.count() )
+				{
+					qWarning() << "bad NiSkinData - vertex count does not match";
+					return QModelIndex();
+				}
+				weights[vertex].append( boneweight( bone, weight ) );
+			}
+		}
+		
+		// count min and max bones per vertex
+		
+		int minBones, maxBones;
+		minBones = maxBones = weights.value( 0 ).count();
+		int x = 0;
+		foreach ( QList< boneweight > list, weights )
+		{
+			if ( list.count() < minBones )
+				minBones = list.count();
+			if ( list.count() > maxBones )
+				maxBones = list.count();
+			if ( list.count() > 4 )
+				qWarning() << x;
+			x++;
+		}
+		
+		if ( minBones <= 0 )
+		{
+			qWarning() << "bad NiSkinData - vertex count does not match";
+			return QModelIndex();
+		}
+		
+		qWarning() << "max bones per vertex" << maxBones;
+		if ( maxBones != 4 )
+		{
+			maxBones = 4;
+			qWarning() << "adjusting bones per vertex to" << maxBones;
+		}
+		
+		// strippify the triangles
+		
+		QVector<Triangle> triangles = nif->getArray<Triangle>( iData, "Triangles" );
+		QList< QVector<quint16> > strips = strippify( triangles );
+		int numTriangles = 0;
+		foreach ( QVector<quint16> strip, strips )
+			numTriangles += strip.count() - 2;
+		
+		// start writing NiSkinPartition
+		
+		nif->set<int>( iSkinPart, "Num Skin Partition Blocks", 1 );
+		nif->updateArray( iSkinPart, "Skin Partition Blocks" );
+		QModelIndex iPart = nif->getIndex( iSkinPart, "Skin Partition Blocks" ).child( 0, 0 );
+		
+		nif->set<int>( iPart, "Num Vertices", weights.count() );
+		nif->set<int>( iPart, "Num Triangles", numTriangles );
+		nif->set<int>( iPart, "Num Bones", numBones );
+		nif->set<int>( iPart, "Num Strips", strips.count() );
+		nif->set<int>( iPart, "Num Weights Per Vertex", maxBones );
+		
+		// fill in bone map
+		
+		QModelIndex iBoneMap = nif->getIndex( iPart, "Bones" );
+		nif->updateArray( iBoneMap );
+		for ( int bone = 0; bone < nif->rowCount( iBoneMap ); bone++ )
+			nif->set<int>( iBoneMap.child( bone, 0 ), bone );
+		
+		// skip vertex map
+		
+		nif->set<int>( iPart, "Has Vertex Map", 0 );
+		//QModelIndex iVertexMap = nif->getIndex( iPart, "Vertex Map" );
+		//nif->updateArray( iVertexMap );
+		//for ( int vertex = 0; vertex < nif->rowCount( iVertexMap ); vertex++ )
+		//	nif->set<int>( iVertexMap.child( vertex, 0 ), vertex );
+		
+		// fill in vertex weights
+		
+		nif->set<int>( iPart, "Has Vertex Weights", 1 );
+		QModelIndex iVWeights = nif->getIndex( iPart, "Vertex Weights" );
+		nif->updateArray( iVWeights );
+		for ( int v = 0; v < nif->rowCount( iVWeights ); v++ )
+		{
+			QModelIndex iVertex = iVWeights.child( v, 0 );
+			nif->updateArray( iVertex );
+			QList< boneweight > list = weights.value( v );
+			for ( int b = 0; b < maxBones; b++ )
+				nif->set<float>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].second : 0.0 );
+		}
+		
+		// write the strips
+		
+		nif->set<int>( iPart, "Has Strips", 1 );
+		QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
+		nif->updateArray( iStripLengths );
+		for ( int s = 0; s < nif->rowCount( iStripLengths ); s++ )
+			nif->set<int>( iStripLengths.child( s, 0 ), strips.value( s ).count() );
+		
+		QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
+		nif->updateArray( iStrips );
+		for ( int s = 0; s < nif->rowCount( iStrips ); s++ )
+		{
+			nif->updateArray( iStrips.child( s, 0 ) );
+			nif->setArray<quint16>( iStrips.child( s, 0 ), strips.value( s ) );
+		}
+		
+		// fill in vertex bones
+		
+		nif->set<int>( iPart, "Has Bone Indices", 1 );
+		QModelIndex iVBones = nif->getIndex( iPart, "Bone Indices" );
+		nif->updateArray( iVBones );
+		for ( int v = 0; v < nif->rowCount( iVBones ); v++ )
+		{
+			QModelIndex iVertex = iVBones.child( v, 0 );
+			nif->updateArray( iVertex );
+			QList< boneweight > list = weights.value( v );
+			for ( int b = 0; b < maxBones; b++ )
+				nif->set<int>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].first : 0 );
+		}
+		
+		// done
+		
+		return iShape;
+	}
+};
+
+REGISTER_SPELL( spSkinPartition )
