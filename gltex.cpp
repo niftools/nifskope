@@ -372,11 +372,6 @@ QString GLTex::findFile( const QString & file, const QString & additionalFolders
 			dir.setPath( folder );
 			if ( dir.exists( filename ) )
 				return dir.filePath( filename );
-			if ( ( folder.right(8).toLower() == "textures" ) && ( filename.left(8).toLower() == "textures" ) ) {
-				dir.setPath( folder.left(folder.length() - 8) );
-				if ( dir.exists( filename ) )
-					return dir.filePath( filename );
-			}
 		}
 		if ( replaceExt )
 			filename = filename.left( filename.length() - ext.length() );
