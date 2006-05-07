@@ -1,6 +1,6 @@
 
 #include "../spellbook.h"
-#include "../gltex.h"
+#include "../gl/gltex.h"
 
 #include "../widgets/fileselect.h"
 #include "../NvTriStrip/qtwrapper.h"

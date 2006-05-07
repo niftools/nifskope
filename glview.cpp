@@ -40,8 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 
 #include "nifmodel.h"
-#include "glscene.h"
-#include "gltex.h"
+#include "gl/glscene.h"
+#include "gl/gltex.h"
 
 #include "spellbook.h"
 #include "widgets/colorwheel.h"
@@ -368,81 +368,9 @@ void GLView::paintGL()
 		glPushMatrix();
 		glMultMatrix( viewTrans );
 		
-		GLfloat arrow = axis / 12.0;
-		glBegin( GL_LINES );
-		glColor3f( 1.0, 0.0, 0.0 );
-		glVertex3f( - axis, 0, 0 );
-		glVertex3f( + axis, 0, 0 );
-		glVertex3f( + axis, 0, 0 );
-		glVertex3f( + axis - arrow, + arrow, 0 );
-		glVertex3f( + axis, 0, 0 );
-		glVertex3f( + axis - arrow, - arrow, 0 );
-		glVertex3f( + axis, 0, 0 );
-		glVertex3f( + axis - arrow, 0, + arrow );
-		glVertex3f( + axis, 0, 0 );
-		glVertex3f( + axis - arrow, 0, - arrow );
-		glColor3f( 0.0, 1.0, 0.0 );
-		glVertex3f( 0, - axis, 0 );
-		glVertex3f( 0, + axis, 0 );
-		glVertex3f( 0, + axis, 0 );
-		glVertex3f( + arrow, + axis - arrow, 0 );
-		glVertex3f( 0, + axis, 0 );
-		glVertex3f( - arrow, + axis - arrow, 0 );
-		glVertex3f( 0, + axis, 0 );
-		glVertex3f( 0, + axis - arrow, + arrow );
-		glVertex3f( 0, + axis, 0 );
-		glVertex3f( 0, + axis - arrow, - arrow );
-		glColor3f( 0.0, 0.0, 1.0 );
-		glVertex3f( 0, 0, - axis );
-		glVertex3f( 0, 0, + axis );
-		glVertex3f( 0, 0, + axis );
-		glVertex3f( 0, + arrow, + axis - arrow );
-		glVertex3f( 0, 0, + axis );
-		glVertex3f( 0, - arrow, + axis - arrow );
-		glVertex3f( 0, 0, + axis );
-		glVertex3f( + arrow, 0, + axis - arrow );
-		glVertex3f( 0, 0, + axis );
-		glVertex3f( - arrow, 0, + axis - arrow );
-		glEnd();
+		drawAxes( Vector3(), axis );
 		
 		glPopMatrix();
-		/*
-		BoundSphere bs = viewTrans * scene->bounds();
-		
-		Vector3 mn = bs.center;
-		Vector3 mx = bs.center;
-		for ( int i = 0; i < 3; i++ )
-		{
-			mn[i] -= bs.radius;
-			mx[i] += bs.radius;
-		}
-		
-		glColor3f( 1.0, 0.0, 1.0 );
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glEnd();
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glEnd();
-		glBegin( GL_LINES );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mx[2] );
-		glVertex3f( mx[0], mx[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mx[2] );
-		glEnd();
-		*/
 	}
 	
 	// draw the model
@@ -1039,10 +967,7 @@ void GLView::restore( QSettings & settings )
 
 void GLView::move( float x, float y, float z )
 {
-	//if ( aViewWalk->isChecked() )
-		Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
-	//else
-	//	Pos += Vector3( x, y, z );
+	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
 	update();
 }
 

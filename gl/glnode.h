@@ -144,6 +144,31 @@ template <typename T> inline T * Node::findProperty() const
 	return 0;
 }
 
+class LODNode : public Node
+{
+public:
+	LODNode( Scene * scene, const QModelIndex & block );
+	
+	void clear();
+	void update( const NifModel * nif, const QModelIndex & block );
+	
+	void transform();
+	
+protected:
+	QList< QPair<float,float> > ranges;
+	QPersistentModelIndex iData;
+	
+	Vector3 center;
+};
+
+class BillboardNode : public Node
+{
+public:
+	BillboardNode( Scene * scene, const QModelIndex & block );
+	
+	virtual const Transform & viewTrans() const;
+};
+
 #endif
 
 

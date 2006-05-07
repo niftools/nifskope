@@ -164,4 +164,20 @@ protected:
 	class RotationEdit * rotation;
 };
 
+class NifMatrix4Edit : public NifEditBox
+{
+public:
+	NifMatrix4Edit( NifModel * nif, const QModelIndex & index );
+	
+	void updateData( NifModel * );
+	void applyData( NifModel * );
+	
+protected:
+	class VectorEdit * translation;
+	class RotationEdit * rotation;
+	class VectorEdit * scale;
+	
+	bool setting;
+};
+
 #endif

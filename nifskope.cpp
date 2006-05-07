@@ -439,7 +439,7 @@ void NifSkope::select( const QModelIndex & index )
 	
 	if ( sender() != ogl )
 	{
-		ogl->setCurrentIndex( nif->getBlock( idx ) );
+		ogl->setCurrentIndex( idx );
 	}
 
 	if ( sender() != list )

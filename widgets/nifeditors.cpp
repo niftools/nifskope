@@ -340,3 +340,57 @@ void NifRotationEdit::applyData( NifModel * nif )
 	else if ( type == NifValue::tQuat || type == NifValue::tQuatXYZW )
 		nif->set<Quat>( index, rotation->getQuat() );
 }
+
+NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
+	: NifEditBox( nif, index ), setting( false )
+{
+	QBoxLayout * vbox = new QVBoxLayout;
+	setLayout( vbox );
+	
+	QGroupBox * group = new QGroupBox;
+	vbox->addWidget( group );
+	group->setTitle( "Translation" );
+	group->setLayout( new QHBoxLayout );
+	group->layout()->addWidget( translation = new VectorEdit() );
+	connect( translation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	
+	group = new QGroupBox;
+	vbox->addWidget( group );
+	group->setTitle( "Rotation" );
+	group->setLayout( new QHBoxLayout );
+	group->layout()->addWidget( rotation = new RotationEdit() );
+	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	
+	group = new QGroupBox;
+	vbox->addWidget( group );
+	group->setTitle( "Scale" );
+	group->setLayout( new QHBoxLayout );
+	group->layout()->addWidget( scale = new VectorEdit() );
+	connect( scale, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+}
+
+void NifMatrix4Edit::updateData( NifModel * nif )
+{
+	if ( setting )
+		return;
+	Matrix4 mtx = nif->get<Matrix4>( index );
+	
+	Vector3 t, s;
+	Matrix r;
+	
+	mtx.decompose( t, r, s );
+	
+	translation->setVector3( t );
+	rotation->setMatrix( r );
+	scale->setVector3( s );
+}
+
+void NifMatrix4Edit::applyData( NifModel * nif )
+{
+	setting = true;
+	Matrix4 mtx;
+	mtx.compose( translation->getVector3(), rotation->getMatrix(), scale->getVector3() );
+	nif->set<Matrix4>( index, mtx );
+	setting = false;
+}
+

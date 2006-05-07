@@ -2,7 +2,7 @@
 
 #include "../NvTriStrip/qtwrapper.h"
 
-#include "../gltransform.h"
+#include "../gl/gltex.h"
 
 #include <QDebug>
 #include <QFile>
@@ -11,7 +11,7 @@
 #include <QSettings>
 #include <QTextStream>
 
-void writeData( const NifModel * nif, const QModelIndex & iData, QTextStream & obj, int & ofs, Transform t )
+void writeData( const NifModel * nif, const QModelIndex & iData, QTextStream & obj, int ofs[1], Transform t )
 {
 	// copy vertices
 	
@@ -62,15 +62,28 @@ void writeData( const NifModel * nif, const QModelIndex & iData, QTextStream & o
 	
 	foreach ( Triangle t, tris )
 	{
-		obj << "f " << ofs + t[0] << "/" << ofs + t[0] << "/" << ofs + t[0]
-			<< " " << ofs + t[1] << "/" << ofs + t[1] << "/" << ofs + t[1]
-			<< " " << ofs + t[2] << "/" << ofs + t[2] << "/" << ofs + t[2] << "\r\n";
+		obj << "f";
+		for ( int p = 0; p < 3; p++ )
+		{
+			obj << " " << ofs[0] + t[p];
+			if ( norms.count() )
+				if ( texco.count() )
+					obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
+				else
+					obj << "//" << ofs[2] + t[p];
+			else
+				if ( texco.count() )
+					obj << "/" << ofs[1] + t[p];
+		}
+		obj << "\r\n";
 	}
 	
-	ofs += verts.count();
+	ofs[0] += verts.count();
+	ofs[1] += texco.count();
+	ofs[2] += norms.count();
 }
 
-void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
+void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
 {
 	QString name = nif->get<QString>( iShape, "Name" );
 	QString matn = name, texfn;
@@ -93,14 +106,14 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
 		{
 			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( nif->getIndex( iProp, "Base Texture" ), "Texture Data" ), "Source" ), "NiSourceTexture" );
-			texfn = nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" );
+			texfn = GLTex::findFile( nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" ), nif->getFolder() );
 		}
 	}
 	
 	//if ( ! texfn.isEmpty() )
 	//	matn += ":" + texfn;
 	
-	matn = QString( "Material.%1" ).arg( ofs, 6, 16, QChar( '0' ) );
+	matn = QString( "Material.%1" ).arg( ofs[0], 6, 16, QChar( '0' ) );
 	
 	mtl << "\r\n";
 	mtl << "newmtl " << matn << "\r\n";
@@ -117,7 +130,7 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 	writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
 }
 
-void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int & ofs, Transform t )
+void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
 {
 	t = t * Transform( nif, iNode );
 	foreach ( int l, nif->getChildLinks( nif->getBlockNumber( iNode ) ) )
@@ -127,6 +140,65 @@ void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream &
 			writeParent( nif, iChild, obj, mtl, ofs, t );
 		else if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
+		else if ( nif->inherits( iChild, "ACollisionObject" ) )
+		{
+			QModelIndex iBody = nif->getBlock( nif->getLink( iChild, "Body" ) );
+			if ( iBody.isValid() )
+			{
+				Transform bt;
+				bt.scale = 7;
+				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) )
+				{
+					bt.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
+					bt.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
+				}
+				QModelIndex iShape = nif->getBlock( nif->getLink( iBody, "Shape" ) );
+				if ( nif->isNiBlock( iShape, "bhkMoppBvTreeShape" ) )
+				{
+					iShape = nif->getBlock( nif->getLink( iShape, "Shape" ) );
+					if ( nif->isNiBlock( iShape, "bhkPackedNiTriStripsShape" ) )
+					{
+						QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+						if ( nif->isNiBlock( iData, "hkPackedNiTriStripsData" ) )
+						{
+							bt = t * bt;
+							obj << "\r\n# bhkPackedNiTriStripsShape\r\n\r\ng collision\r\n" << "usemtl collision\r\n\r\n";
+							QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+							foreach ( Vector3 v, verts )
+							{
+								v = bt * v;
+								obj << "v " << v[0] << " " << v[1] << " " << v[2] << "\r\n";
+							}
+							
+							QModelIndex iTris = nif->getIndex( iData, "Triangles" );
+							bool flip = false;
+							for ( int t = 0; t < nif->rowCount( iTris ); t++ )
+							{
+								Vector3 n = nif->get<Vector3>( iTris.child( t, 0 ), "Normal" );
+								n = bt.rotation * n;
+								obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+								Triangle tri = nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" );
+								if ( tri[0] != tri[1] || tri[1] != tri[2] || tri[2] != tri[0] )
+									obj << "f"
+										<< " " << tri[0] + ofs[0] << "//" << ofs[2]
+										<< " " << tri[ flip ? 2 : 1 ] + ofs[0] << "//" << ofs[2]
+										<< " " << tri[ flip ? 1 : 2 ] + ofs[0] << "//" << ofs[2]
+										<< "\r\n";
+								flip = ! flip;
+								ofs[2]++;
+							}
+							ofs[0] += verts.count();
+						}
+					}
+				}
+				else if ( nif->isNiBlock( iShape, "bhkNiTriStripsShape" ) )
+				{
+					bt.scale = 1;
+					obj << "\r\n# bhkNiTriStripsShape\r\n\r\ng collision\r\n" << "usemtl collision\r\n\r\n";
+					writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t * bt );
+				}
+			}
+		}
 	}
 }
 
@@ -186,7 +258,7 @@ public:
 		
 		sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
 		
-		int ofs = 1;
+		int ofs[3] = { 1, 1, 1 };
 		writeShape( nif, getShape( nif, index ), sobj, smtl, ofs, Transform() );
 		
 		settings.setValue( "File Name", fobj.fileName() );
@@ -262,7 +334,7 @@ public:
 		
 		sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
 		
-		int ofs = 1;
+		int ofs[3] = { 1, 1, 1 };
 		foreach ( int l, nif->getRootLinks() )
 		{
 			QModelIndex iBlock = nif->getBlock( l );
@@ -361,6 +433,10 @@ public:
 			else if ( t.value( 0 ) == "usemtl" )
 			{
 				usemtl = t.value( 1 );
+				if ( usemtl.contains( "_" ) )
+				{
+					usemtl = usemtl.left( usemtl.indexOf( "_" ) );
+				}
 				
 				mfaces = ofaces.value( usemtl );
 				if ( ! mfaces )

@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontroller.h"
 #include "glnode.h"
-#include "glnodeswitch.h"
 #include "gllight.h"
 #include "glmesh.h"
 #include "glparticles.h"
