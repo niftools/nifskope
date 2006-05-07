@@ -366,7 +366,7 @@ void GLView::paintGL()
 		glLineWidth( 1.2 );
 		
 		glPushMatrix();
-		viewTrans.glMultMatrix();
+		glMultMatrix( viewTrans );
 		
 		GLfloat arrow = axis / 12.0;
 		glBegin( GL_LINES );

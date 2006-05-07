@@ -33,8 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 #include "nifmodel.h"
 
-#include "gltransform.h"
-
 #include <QHash>
 
 const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
@@ -196,18 +194,103 @@ QString Matrix4::toHtml() const
 		+ QString( "</table>" );
 }
 
-Matrix Matrix4::rotation() const
+void Matrix4::decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const
 {
-	Matrix m3;
+	trans = Vector3( m[ 3 ][ 0 ], m[ 3 ][ 1 ], m[ 3 ][ 2 ] );
+	
+	Matrix rotT;
+	
+	for ( int i = 0; i < 3; i++ )
+	{
+		for ( int j = 0; j < 3; j++ )
+		{
+			rot( j, i ) = m[ i ][ j ];
+			rotT( i, j ) = m[ i ][ j ];
+		}
+	}
+	
+	Matrix mtx = rot * rotT;
+	
+	scale = Vector3( sqrt( mtx( 0, 0 ) ), sqrt( mtx( 1, 1 ) ), sqrt( mtx( 2, 2 ) ) );
+	
 	for ( int i = 0; i < 3; i++ )
 		for ( int j = 0; j < 3; j++ )
-			m3( j, i ) = m[ i ][ j ];
-	return m3;
+			rot( i, j ) /= scale[ i ];
 }
 
-Vector3 Matrix4::translation() const
+void Matrix4::compose( const Vector3 & trans, const Matrix & rot, const Vector3 & scale )
 {
-	return Vector3( m[ 3 ][ 0 ], m[ 3 ][ 1 ], m[ 3 ][ 2 ] );
+	m[0][3] = 0.0;
+	m[1][3] = 0.0;
+	m[2][3] = 0.0;
+	m[3][3] = 1.0;
+
+	m[3][0] = trans[0];
+	m[3][1] = trans[1];
+	m[3][2] = trans[2];
+	
+	for ( int i = 0; i < 3; i++ )
+		for ( int j = 0; j < 3; j++ )
+			m[ i ][ j ] = rot( j, i ) * scale[ j ];
+}
+
+/*
+ *  Transform
+ */
+
+Transform operator*( const Transform & t1, const Transform & t2 )
+{
+	Transform t;
+	t.rotation = t1.rotation * t2.rotation;
+	t.translation = t1.translation + t1.rotation * t2.translation * t1.scale;
+	t.scale = t1.scale * t2.scale;
+	return t;
+}
+
+bool Transform::canConstruct( const NifModel * nif, const QModelIndex & parent )
+{
+	return nif && parent.isValid() && nif->getIndex( parent, "Rotation" ).isValid()
+		&& nif->getIndex( parent, "Translation" ).isValid()
+		&& nif->getIndex( parent, "Scale" ).isValid();
+}
+
+
+Transform::Transform( const NifModel * nif, const QModelIndex & transform )
+{
+	rotation = nif->get<Matrix>( transform, "Rotation" );
+	translation = nif->get<Vector3>( transform, "Translation" );
+	scale = nif->get<float>( transform, "Scale" );
+}
+
+void Transform::writeBack( NifModel * nif, const QModelIndex & transform ) const
+{
+	nif->set<Matrix>( transform, "Rotation", rotation );
+	nif->set<Vector3>( transform, "Translation", translation );
+	nif->set<float>( transform, "Scale", scale );
+}
+
+QString Transform::toString() const
+{
+	float x, y, z;
+	rotation.toEuler( x, y, z );
+	return QString( "TRANS( %1, %2, %3 ) ROT( %4, %5, %6 ) SCALE( %7 )" ).arg( translation[0] ).arg( translation[1] ).arg( translation[2] ).arg( x ).arg( y ).arg( z ).arg( scale );
+}
+
+Matrix4 Transform::toMatrix4() const
+{
+	Matrix4 m;
+	
+	for ( int c = 0; c < 3; c++ )
+	{
+		for ( int d = 0; d < 3; d++ )
+			m( c, d ) = rotation( d, c ) * scale;
+		m( 3, c ) = translation[ c ];
+	}
+	m( 0, 3 ) = 0.0;
+	m( 1, 3 ) = 0.0;
+	m( 2, 3 ) = 0.0;
+	m( 3, 3 ) = 1.0;
+	return m;
 }
 
 /*
@@ -599,8 +682,14 @@ QString NifValue::toString() const
 		case tMatrix4:
 		{
 			Matrix4 * m = static_cast<Matrix4*>( val.data );
-			Transform t( *m );
-			return t.toString();
+			Matrix r; Vector3 t, s;
+			m->decompose( t, r, s );
+			float xr, yr, zr;
+			r.toEuler( xr, yr, zr );
+			xr *= 180 / PI;
+			yr *= 180 / PI;
+			zr *= 180 / PI;
+			return QString( "Trans( X %1 Y %2 Z %3 ) Rot( Y %4 P %5 R %6 ) Scale( X %7 Y %8 Z %9 )" ).arg( t[0], 0, 'f', 3 ).arg( t[1], 0, 'f', 3 ).arg( t[2], 0, 'f', 3 ).arg( xr, 0, 'f', 3 ).arg( yr, 0, 'f', 3 ).arg( zr, 0, 'f', 3 ).arg( s[0], 0, 'f', 3 ).arg( s[1], 0, 'f', 3 ).arg( s[2], 0, 'f', 3 );
 		}
 		case tQuat:
 		case tQuatXYZW:

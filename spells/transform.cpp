@@ -1,6 +1,6 @@
 #include "../spellbook.h"
 
-#include "../gltransform.h"
+#include "../widgets/nifeditors.h"
 
 #include <QApplication>
 #include <QBuffer>
@@ -186,3 +186,24 @@ public:
 };
 
 REGISTER_SPELL( spPasteTransformation )
+
+class spEditMatrix4 : public Spell
+{
+	QString name() const { return "Edit Matrix"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->getValue( index ).type() == NifValue::tMatrix4;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
+		edit->add( new NifMatrix4Edit( nif, index ) );
+		edit->show();
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spEditMatrix4 )

@@ -22,7 +22,7 @@ glparticles.h \
 glproperty.h \
 glscene.h \
 gltex.h \
-gltransform.h \
+gltools.h \
 glview.h \
 message.h \
 nifproxy.h \
@@ -48,7 +48,7 @@ glparticles.cpp \
 glproperty.cpp \
 glscene.cpp \
 gltex.cpp \
-gltransform.cpp \
+gltools.cpp \
 glview.cpp \
 message.cpp \
 nifdelegate.cpp \

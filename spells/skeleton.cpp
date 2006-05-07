@@ -1,6 +1,6 @@
 #include "../spellbook.h"
 
-#include "../gltransform.h"
+#include "../gltools.h"
 
 #include "../NvTriStrip/qtwrapper.h"
 

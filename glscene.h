@@ -40,8 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glnode.h"
 #include "glproperty.h"
-#include "gltransform.h"
 #include "gltex.h"
+#include "gltools.h"
 
 class Scene
 {
@@ -110,46 +110,5 @@ protected:
 
 	void updateTimeBounds() const;
 };
-
-inline void glTranslate( const Vector3 & v )
-{
-	glTranslatef( v[0], v[1], v[2] );
-}
-
-inline void glVertex( const Vector3 & v )
-{
-	glVertex3fv( v.data() );
-}
-
-inline void glVertex( const Vector4 & v )
-{
-	glVertex3fv( v.data() );
-}
-
-inline void glNormal( const Vector3 & v )
-{
-	glNormal3fv( v.data() );
-}
-
-inline void glTexCoord( const Vector2 & v )
-{
-	glTexCoord2fv( v.data() );
-}
-
-inline void glColor( const Color3 & c )
-{
-	glColor3fv( c.data() );
-}
-
-inline void glColor( const Color4 & c )
-{
-	glColor4fv( c.data() );
-}
-
-inline void glMaterial( GLenum x, GLenum y, const Color4 & c )
-{
-	glMaterialfv( x, y, c.data() );
-}
-
 
 #endif

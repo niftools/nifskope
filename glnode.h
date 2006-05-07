@@ -35,7 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontrolable.h"
 #include "glproperty.h"
-#include "gltransform.h"
 
 class Node;
 
@@ -144,28 +143,6 @@ template <typename T> inline T * Node::findProperty() const
 	if ( parent ) return parent->findProperty<T>();
 	return 0;
 }
-
-class BoundSphere
-{
-public:
-	BoundSphere();
-	BoundSphere( const BoundSphere & );
-	BoundSphere( const Vector3 & center, float radius );
-	BoundSphere( const QVector<Vector3> & vertices );
-	
-	Vector3	center;
-	float	radius;
-	
-	BoundSphere & operator=( const BoundSphere & );
-	BoundSphere & operator|=( const BoundSphere & );
-	
-	BoundSphere operator|( const BoundSphere & o );
-	
-	BoundSphere & apply( const Transform & t );
-	BoundSphere & applyInv( const Transform & t );
-	
-	friend BoundSphere operator*( const Transform & t, const BoundSphere & s );
-};
 
 #endif
 

@@ -47,6 +47,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #endif
 
+class NifModel;
+class QModelIndex;
+class QDataStream;
+
 class Vector2
 {
 public:
@@ -579,15 +583,16 @@ public:
 	
 	Matrix rotation() const;
 	Vector3 translation() const;
+	Vector3 scale() const;
 	
-	void glMultMatrix() const;
-	void glLoadMatrix() const;
+	void decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const;
+	void compose( const Vector3 & trans, const Matrix & rot, const Vector3 & scale );
 	
 	//Matrix44 inverted() const;
 	
 	QString toHtml() const;
 	
-	float * data() { return (float *) m; }
+	const float * data() const { return (float *) m; }
 
 protected:
 	float m[4][4];
@@ -595,6 +600,35 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+};
+
+class Transform
+{
+public:
+	Transform( const NifModel * nif, const QModelIndex & transform );
+	Transform()	{ scale = 1.0; }
+	
+	static bool canConstruct( const NifModel * nif, const QModelIndex & parent );
+	
+	void writeBack( NifModel * nif, const QModelIndex & transform ) const;
+	
+	friend Transform operator*( const Transform & t1, const Transform & t2 );
+	
+	Vector3 operator*( const Vector3 & v ) const
+	{
+		return rotation * v * scale + translation;
+	}
+	
+	Matrix4 toMatrix4() const;
+	
+	Matrix rotation;
+	Vector3 translation;
+	float scale;
+
+	friend QDataStream & operator<<( QDataStream & ds, const Transform & t );
+	friend QDataStream & operator>>( QDataStream & ds, Transform & t );
+	
+	QString toString() const;
 };
 
 class Triangle

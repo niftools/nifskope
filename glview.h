@@ -41,7 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QQueue>
 
 #include "nifmodel.h"
-#include "gltransform.h"
 
 class Scene;
 

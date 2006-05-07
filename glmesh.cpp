@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "glcontroller.h"
 #include "glscene.h"
+#include "gltools.h"
 
 #include <GL/glext.h>
 
@@ -427,7 +428,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if ( transformRigid )
 	{
 		glPushMatrix();
-		viewTrans().glLoadMatrix();
+		glLoadMatrix( viewTrans() );
 	}
 	
 	// setup array pointers
