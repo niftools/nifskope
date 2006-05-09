@@ -484,7 +484,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		GLTex::texfolders = selectMultipleDirs( "select texture folders", GLTex::texfolders );
+		GLTex::texfolders = selectMultipleDirs( "Select texture folders", GLTex::texfolders );
 		nif->reset();
 		return index;
 	}

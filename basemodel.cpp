@@ -99,7 +99,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 			if ( p > 0 )
 			{
 				left = arr1.left( p ).trimmed();
-				right = arr1.right( arr1.length() - p - 2 ).trimmed();
+				right = arr1.right( arr1.length() - p - strlen( exp[c] ) ).trimmed();
 				break;
 			}
 		}
@@ -614,7 +614,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 	
 	QString left, right;
 	
-	static const char * const exp[] = { "!=", "==", ">=", "<=", "<", ">", "&" };
+	static const char * const exp[] = { "!=", "==", ">=", "<=", ">", "<", "&" };
 	static const int num_exp = 7;
 	
 	int c;
@@ -624,7 +624,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 		if ( p > 0 )
 		{
 			left = cond.left( p ).trimmed();
-			right = cond.right( cond.length() - p - 2 ).trimmed();
+			right = cond.right( cond.length() - p - strlen( exp[c] ) ).trimmed();
 			break;
 		}
 	}

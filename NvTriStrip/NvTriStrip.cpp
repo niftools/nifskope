@@ -85,9 +85,9 @@ void SetMinStripSize(const unsigned int _minStripSize)
 void Cleanup(NvStripInfoVec& tempStrips, NvFaceInfoVec& tempFaces)
 {
 	//delete strips
-	for(int i = 0; i < tempStrips.size(); i++)
+	for(size_t i = 0; i < tempStrips.size(); i++)
 	{
-		for(int j = 0; j < tempStrips[i]->m_faces.size(); j++)
+		for(size_t j = 0; j < tempStrips[i]->m_faces.size(); j++)
 		{
 			delete tempStrips[i]->m_faces[j];
 			tempStrips[i]->m_faces[j] = NULL;
@@ -98,7 +98,7 @@ void Cleanup(NvStripInfoVec& tempStrips, NvFaceInfoVec& tempFaces)
 	}
 
 	//delete faces
-	for(int i = 0; i < tempFaces.size(); i++)
+	for(size_t i = 0; i < tempFaces.size(); i++)
 	{
 		delete tempFaces[i];
 		tempFaces[i] = NULL;
@@ -151,7 +151,7 @@ bool TestTriangle(const unsigned short v0, const unsigned short v1, const unsign
 	//hash this triangle
 	bool isLegit = false;
 	int ctr = v0 % NUMBINS;
-	for (int k = 0; k < in_bins[ctr].size(); ++k)
+	for (size_t k = 0; k < in_bins[ctr].size(); ++k)
 	{
 		//check triangles in this bin
 		if (SameTriangle(in_bins[ctr][k].m_v0, in_bins[ctr][k].m_v1, in_bins[ctr][k].m_v2, 
@@ -164,7 +164,7 @@ bool TestTriangle(const unsigned short v0, const unsigned short v1, const unsign
 	if (!isLegit)
 	{
 		ctr = v1 % NUMBINS;
-		for (int k = 0; k < in_bins[ctr].size(); ++k)
+		for (size_t k = 0; k < in_bins[ctr].size(); ++k)
 		{
 			//check triangles in this bin
 			if (SameTriangle(in_bins[ctr][k].m_v0, in_bins[ctr][k].m_v1, in_bins[ctr][k].m_v2, 
@@ -178,7 +178,7 @@ bool TestTriangle(const unsigned short v0, const unsigned short v1, const unsign
 		if (!isLegit)
 		{
 			ctr = v2 % NUMBINS;
-			for (int k = 0; k < in_bins[ctr].size(); ++k)
+			for (size_t k = 0; k < in_bins[ctr].size(); ++k)
 			{
 				//check triangles in this bin
 				if (SameTriangle(in_bins[ctr][k].m_v0, in_bins[ctr][k].m_v1, in_bins[ctr][k].m_v2, 
@@ -214,7 +214,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 	tempIndices.resize(in_numIndices);
 	unsigned short maxIndex = 0;
 	unsigned short minIndex = 0xFFFF;
-	for(int i = 0; i < in_numIndices; i++)
+	for(size_t i = 0; i < in_numIndices; i++)
 	{
 		tempIndices[i] = in_indices[i];
 		if (in_indices[i] > maxIndex)
@@ -243,7 +243,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 
 		//count the total number of indices
 		unsigned int numIndices = 0;
-		for(int i = 0; i < tempStrips.size(); i++)
+		for(size_t i = 0; i < tempStrips.size(); i++)
 		{
 			numIndices += tempStrips[i]->m_faces.size() * 3;
 		}
@@ -257,9 +257,9 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 
 		//do strips
 		unsigned int indexCtr = 0;
-		for(int i = 0; i < tempStrips.size(); i++)
+		for(size_t i = 0; i < tempStrips.size(); i++)
 		{
-			for(int j = 0; j < tempStrips[i]->m_faces.size(); j++)
+			for(size_t j = 0; j < tempStrips[i]->m_faces.size(); j++)
 			{
 				//degenerates are of no use with lists
 				if(!NvStripifier::IsDegenerate(tempStrips[i]->m_faces[j]))
@@ -277,7 +277,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 		}
 
 		//do lists
-		for(int i = 0; i < tempFaces.size(); i++)
+		for(size_t i = 0; i < tempFaces.size(); i++)
 		{			
 			primGroupArray[0].indices[indexCtr++] = tempFaces[i]->m_v0;
 			primGroupArray[0].indices[indexCtr++] = tempFaces[i]->m_v1;
@@ -301,14 +301,14 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 		
 		//first, the strips
 		int startingLoc = 0;
-		for(int stripCtr = 0; stripCtr < numSeparateStrips; stripCtr++)
+		for(size_t stripCtr = 0; stripCtr < numSeparateStrips; stripCtr++)
 		{
 			int stripLength = 0;
 
 			if(!bStitchStrips)
 			{
 				//if we've got multiple strips, we need to figure out the correct length
-				int i;
+				size_t i;
 				for(i = startingLoc; i < stripIndices.size(); i++)
 				{
 					if(stripIndices[i] == -1)
@@ -341,7 +341,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 			primGroupArray[faceGroupLoc].indices    = new unsigned short[tempFaces.size() * 3];
 			primGroupArray[faceGroupLoc].numIndices = tempFaces.size() * 3;
 			int indexCtr = 0;
-			for(int i = 0; i < tempFaces.size(); i++)
+			for(size_t i = 0; i < tempFaces.size(); i++)
 			{
 				primGroupArray[faceGroupLoc].indices[indexCtr++] = tempFaces[i]->m_v0;
 				primGroupArray[faceGroupLoc].indices[indexCtr++] = tempFaces[i]->m_v1;
@@ -358,7 +358,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 		std::vector<NvFaceInfo> in_bins[NUMBINS];
 		
 		//hash input indices on first index
-		for (int i = 0; i < in_numIndices; i += 3)
+		for (size_t i = 0; i < in_numIndices; i += 3)
 		{
 			NvFaceInfo faceInfo(in_indices[i], in_indices[i + 1], in_indices[i + 2]);
 			in_bins[in_indices[i] % NUMBINS].push_back(faceInfo);
@@ -370,7 +370,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 			{
 				case PT_LIST:
 				{
-					for (int j = 0; j < (*primGroups)[i].numIndices; j += 3)
+					for (size_t j = 0; j < (*primGroups)[i].numIndices; j += 3)
 					{
 						unsigned short v0 = (*primGroups)[i].indices[j];
 						unsigned short v1 = (*primGroups)[i].indices[j + 1];
@@ -391,9 +391,9 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 
 				case PT_STRIP:
 				{
-					int brokenCtr = 0;
+					//int brokenCtr = 0;
 					bool flip = false;
-					for (int j = 2; j < (*primGroups)[i].numIndices; ++j)
+					for (size_t j = 2; j < (*primGroups)[i].numIndices; ++j)
 					{
 						unsigned short v0 = (*primGroups)[i].indices[j - 2];
 						unsigned short v1 = (*primGroups)[i].indices[j - 1];
@@ -475,7 +475,7 @@ void RemapIndices(const PrimitiveGroup* in_primGroups, const unsigned short numG
 		(*remappedGroups)[i].numIndices = numIndices;
 		(*remappedGroups)[i].indices    = new unsigned short[numIndices];
 
-		for(int j = 0; j < numIndices; j++)
+		for(size_t j = 0; j < numIndices; j++)
 		{
 			int cachedIndex = indexCache[in_primGroups[i].indices[j]];
 			if(cachedIndex == -1) //we haven't seen this index before
