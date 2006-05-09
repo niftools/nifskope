@@ -48,3 +48,9 @@ template <> Message & Message::operator<<( double x )
 	return *this;
 }
 
+template <> Message & Message::operator<<( float x )
+{
+	space( s );
+	s += QString::number( x );
+	return *this;
+}
