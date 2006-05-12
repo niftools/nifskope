@@ -114,6 +114,8 @@ public:
 	
 	void setupRenderState( bool vertexcolors );
 	
+	virtual QString textStats();
+	
 protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & controller );
 

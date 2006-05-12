@@ -332,3 +332,15 @@ float Scene::timeMax() const
 		updateTimeBounds();
 	return tMax;
 }
+
+QString Scene::textStats()
+{
+	foreach ( Node * node, nodes.list() )
+	{
+		if ( node->id() == currentNode )
+		{
+			return node->textStats();
+		}
+	}
+	return QString();
+}

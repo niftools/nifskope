@@ -61,6 +61,8 @@ public:
 	void drawNodes();
 	void drawHavok();
 	
+	QString textStats();
+	
 	GLTex * bindTexture( const QModelIndex & );
 	void setupLights( Node * node );
 	
@@ -90,6 +92,7 @@ public:
 	
 	bool highlight;
 	int currentNode;
+	QColor hlcolor;
 	
 	bool showHidden;
 	bool showNodes;

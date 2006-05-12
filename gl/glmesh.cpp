@@ -607,7 +607,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		glDisable( GL_ALPHA_TEST );
 		
-		glColor( Color4( 0.0, 1.0, 0.0, 0.5 ) );
+		glColor( Color3( scene->hlcolor ) );
 		
 		foreach ( Triangle tri, triangles )
 		{
@@ -622,15 +622,15 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			}
 		}
 		
-		static const GLfloat stripcolor[6][4] = {
-			{ 0, 1, 0, .5 }, { 0, 1, 1, .5 },
-			{ 0, 0, 1, .5 }, { 1, 0, 1, .5 },
-			{ 1, 0, 0, .5 }, { 1, 1, 0, .5 } };
-		int c = 0;
+		//static const GLfloat stripcolor[6][4] = {
+		//	{ 0, 1, 0, .5 }, { 0, 1, 1, .5 },
+		//	{ 0, 0, 1, .5 }, { 1, 0, 1, .5 },
+		//	{ 1, 0, 0, .5 }, { 1, 1, 0, .5 } };
+		//int c = 0;
 		foreach ( QVector<quint16> strip, tristrips )
 		{
-			glColor4fv( stripcolor[c] );
-			if ( ++c >= 6 ) c = 0;
+			//glColor4fv( stripcolor[c] );
+			//if ( ++c >= 6 ) c = 0;
 			
 			quint16 a = strip.value( 0 );
 			quint16 b = strip.value( 1 );
@@ -654,47 +654,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			}
 			
 		}
-		/*
-		if ( transformRigid )
-			glPopMatrix();
-		
-		BoundSphere bs = bounds();
-		bs = scene->view * bs;
-		
-		Vector3 mn = bs.center;
-		Vector3 mx = bs.center;
-		for ( int i = 0; i < 3; i++ )
-		{
-			mn[i] -= bs.radius;
-			mx[i] += bs.radius;
-		}
-		glColor3f( 1.0, 0.0, 1.0 );
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glEnd();
-		glBegin( GL_LINE_STRIP );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glEnd();
-		glBegin( GL_LINES );
-		glVertex3f( mn[0], mn[1], mn[2] );
-		glVertex3f( mx[0], mn[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mn[2] );
-		glVertex3f( mx[0], mx[1], mn[2] );
-		glVertex3f( mn[0], mx[1], mx[2] );
-		glVertex3f( mx[0], mx[1], mx[2] );
-		glVertex3f( mn[0], mn[1], mx[2] );
-		glVertex3f( mx[0], mn[1], mx[2] );
-		glEnd();
-		return;
-		*/
 	}
 	
 	if ( transformRigid )

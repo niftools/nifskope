@@ -101,12 +101,14 @@ public:
 	QAction * aDrawNodes;
 	QAction * aDrawHavok;
 	QAction * aDrawHidden;
+	QAction * aDrawStats;
 	QAction * aHighlight;
 	QAction * aRotate;
 	QAction * aBenchmark;
 	
 	QAction * aTexFolder;
 	QAction * aBgColor;
+	QAction * aHlColor;
 
 	QAction * aOnlyTextured;
 	QAction * aCullExp;
@@ -124,6 +126,7 @@ public slots:
 
 	void selectTexFolder();
 	void selectBgColor();
+	void selectHlColor();
 	void adjustCullExp();
 	
 signals: 

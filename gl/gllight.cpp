@@ -127,9 +127,9 @@ void Light::draw( NodeList * draw2nd = 0 )
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 	
 	if ( scene->highlight && scene->currentNode == nodeId )
-		glColor( Color4( 0.8, 0.8, 0.3, 0.8 ) );
+		glColor( Color3( scene->hlcolor ) );
 	else
-		glColor( Color4( 0.6, 0.6, 0.1, 0.5 ) );
+		glColor( Color4( scene->hlcolor ).blend( 0.3 ) );
 	
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );

@@ -426,9 +426,9 @@ void Node::draw( NodeList * draw2nd )
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 	
 	if ( scene->highlight && scene->currentNode == nodeId )
-		glColor( Color4( 0.3, 0.4, 1.0, 0.8 ) );
+		glColor( Color3( scene->hlcolor ) );
 	else
-		glColor( Color4( 0.2, 0.2, 0.7, 0.5 ) );
+		glColor( Color4( scene->hlcolor ).blend( 0.3 ) );
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 	
@@ -697,6 +697,24 @@ void Node::setupRenderState( bool vertexcolors )
 }
 
 
+QString trans2string( Transform t )
+{
+	float xr, yr, zr;
+	t.rotation.toEuler( xr, yr, zr );
+	return	QString( "translation  X %1, Y %2, Z %3\n" ).arg( t.translation[0] ).arg( t.translation[1] ).arg( t.translation[2] )
+		+	QString( "rotation     Y %1, P %2, R %3  " ).arg( xr * 180 / PI ).arg( yr * 180 / PI ).arg( zr * 180 / PI )
+		+	QString( "( (%1, %2, %3), " ).arg( t.rotation( 0, 0 ) ).arg( t.rotation( 0, 1 ) ).arg( t.rotation( 0, 2 ) )
+		+	QString( "(%1, %2, %3), " ).arg( t.rotation( 1, 0 ) ).arg( t.rotation( 1, 1 ) ).arg( t.rotation( 1, 2 ) )
+		+	QString( "(%1, %2, %3) )\n" ).arg( t.rotation( 2, 0 ) ).arg( t.rotation( 2, 1 ) ).arg( t.rotation( 2, 2 ) )
+		+	QString( "scale        %1\n" ).arg( t.scale );
+}
+
+QString Node::textStats()
+{
+	return QString( "%1\n\nglobal\n%2\nlocal\n%3\n" ).arg( name ).arg( trans2string( worldTrans() ) ).arg( trans2string( localTrans() ) );
+}
+
+
 BoundSphere Node::bounds() const
 {
 	if ( scene->showNodes )
@@ -704,6 +722,7 @@ BoundSphere Node::bounds() const
 	else
 		return BoundSphere();
 }
+
 
 LODNode::LODNode( Scene * scene, const QModelIndex & iBlock )
 	: Node( scene, iBlock )
@@ -778,6 +797,7 @@ void LODNode::transform()
 		c++;
 	}
 }
+
 
 BillboardNode::BillboardNode( Scene * scene, const QModelIndex & iBlock )
 	: Node( scene, iBlock )

@@ -170,6 +170,13 @@ GLView::GLView()
 	connect( aDrawHidden, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawHidden );
 	
+	aDrawStats = new QAction( "&Show Stats", this );
+	aDrawStats->setToolTip( "display some statistics about the selected node" );
+	aDrawStats->setCheckable( true );
+	aDrawStats->setChecked( false );
+	connect( aDrawStats, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aDrawStats );
+	
 	aOnlyTextured = new QAction( "&Hide non textured", this );
 	aOnlyTextured->setToolTip( "This options selects wether meshes without textures will be visible or not" );
 	aOnlyTextured->setCheckable( true );
@@ -222,6 +229,10 @@ GLView::GLView()
 	aBgColor = new QAction( "Set Background Color...", this );
 	connect( aBgColor, SIGNAL( triggered() ), this, SLOT( selectBgColor() ) );
 	addAction( aBgColor );
+	
+	aHlColor = new QAction( "Set Highlight Color...", this );
+	connect( aHlColor, SIGNAL( triggered() ), this, SLOT( selectHlColor() ) );
+	addAction( aHlColor );
 	
 	aCullExp = new QAction( "Cull Nodes by Name...", this );
 	connect( aCullExp, SIGNAL( triggered() ), this, SLOT( adjustCullExp() ) );
@@ -390,7 +401,7 @@ void GLView::paintGL()
 		fpscnt = 0;
 	}
 
-	if ( aBenchmark->isChecked() )
+	if ( aBenchmark->isChecked() || aDrawStats->isChecked() )
 	{
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
@@ -402,11 +413,24 @@ void GLView::paintGL()
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
 		glLineWidth( 1.2 );
-		glColor3f( 1.0, 1.0, 0.5 );
+		glColor( Color3( scene->hlcolor ) );
 		
 		int ls = QFontMetrics( font() ).lineSpacing();
-		renderText( 0, 1 * ls, QString( "FPS %1" ).arg( int( fpsact ) ), font() );
-		//renderText( 0, 2 * ls, QString( "SWAP %2" ).arg( fTime ), font() );
+		int y = 1;
+		
+		if ( aBenchmark->isChecked() )
+		{
+			renderText( 0, y++ * ls, QString( "FPS %1" ).arg( int( fpsact ) ), font() );
+			y++;
+		}
+		
+		if ( aDrawStats->isChecked() )
+		{
+			QString stats = scene->textStats();
+			QStringList lines = stats.split( "\n" );
+			foreach ( QString line, lines )
+				renderText( 0, y++ * ls, line, font() );
+		}
 	}
 
 	// check for errors
@@ -616,6 +640,12 @@ void GLView::selectTexFolder()
 void GLView::selectBgColor()
 {
 	bgcolor = ColorWheel::choose( bgcolor, false, this );
+	update();
+}
+
+void GLView::selectHlColor()
+{
+	scene->hlcolor = ColorWheel::choose( scene->hlcolor, false, this );
 	update();
 }
 
@@ -925,11 +955,13 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "draw axis", aDrawAxis->isChecked() );
 	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
 	settings.setValue( "draw hidden", aDrawHidden->isChecked() );
+	settings.setValue( "draw stats", aDrawStats->isChecked() );
 	settings.setValue( "rotate", aRotate->isChecked() );
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
 	settings.setValue( "loop animation", aAnimLoop->isChecked() );
 	settings.setValue( "bg color", bgcolor );
+	settings.setValue( "hl color", scene->hlcolor );
 	settings.setValue( "cull nodes by name", scene->expCull );
 	settings.setValue( "draw only textured meshes", scene->onlyTextured );
 	
@@ -949,11 +981,13 @@ void GLView::restore( QSettings & settings )
 	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );
 	aDrawNodes->setChecked( settings.value( "draw nodes", false ).toBool() );
 	aDrawHidden->setChecked( settings.value( "draw hidden", false ).toBool() );
+	aDrawStats->setChecked( settings.value( "draw stats", false ).toBool() );
 	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
 	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );
 	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
+	scene->hlcolor = settings.value( "hl color", QColor::fromRgbF( 0.0, 1.0, 0.0 ) ).value<QColor>();
 	scene->expCull = settings.value( "cull nodes by name", QRegExp(
 		"^collidee|^shadowcaster|^\\!LoD_cullme|^footprint"
 	) ).value<QRegExp>();
