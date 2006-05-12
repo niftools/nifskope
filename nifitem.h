@@ -156,6 +156,27 @@ public:
 		return item;
 	}
 	
+	int insertChild( NifItem * child, int at = -1 )
+	{
+		child->parentItem = this;
+		if ( at < 0 || at > childItems.count() )
+			childItems.append( child );
+		else
+			childItems.insert( at, child );
+		return child->row();
+	}
+	
+	NifItem * takeChild( int row )
+	{
+		NifItem * item = child( row );
+		if ( item )
+		{
+			childItems.remove( row );
+			item->parentItem = 0;
+		}
+		return item;
+	}
+	
 	void removeChild( int row )
 	{
 		NifItem * item = child( row );

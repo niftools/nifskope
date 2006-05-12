@@ -591,3 +591,45 @@ public:
 };
 
 REGISTER_SPELL( spRemoveBranch )
+
+class spMoveBlockUp : public Spell
+{
+public:
+	QString name() const { return "Move Up"; }
+	QString page() const { return "Block"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index ) && nif->getBlockNumber( index ) > 0;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	{
+		int ix = nif->getBlockNumber( iBlock );
+		nif->moveNiBlock( ix, ix - 1 );
+		return nif->getBlock( ix - 1 );
+	}
+};
+
+REGISTER_SPELL( spMoveBlockUp )
+
+class spMoveBlockDown : public Spell
+{
+public:
+	QString name() const { return "Move Down"; }
+	QString page() const { return "Block"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index ) && nif->getBlockNumber( index ) < nif->getBlockCount() - 1;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	{
+		int ix = nif->getBlockNumber( iBlock );
+		nif->moveNiBlock( ix, ix + 1 );
+		return nif->getBlock( ix + 1 );
+	}
+};
+
+REGISTER_SPELL( spMoveBlockDown )

@@ -313,6 +313,40 @@ void NifModel::removeNiBlock( int blocknum )
 	emit linksChanged();
 }
 
+void NifModel::moveNiBlock( int src, int dst )
+{
+	if ( src < 0 || src >= getBlockCount() )
+		return;
+	
+	beginRemoveRows( QModelIndex(), src+1, src+1 );
+	NifItem * block = root->takeChild( src+1 );
+	endRemoveRows();
+	
+	if ( dst >= 0 )
+		dst++;
+	
+	beginInsertRows( QModelIndex(), dst, dst );
+	dst = root->insertChild( block, dst ) - 1;
+	endInsertRows();
+	
+	QMap<qint32,qint32> map;
+	if ( src < dst )
+		for ( int l = src; l <= dst; l++ )
+			map.insert( l, l-1 );
+	else
+		for ( int l = dst; l <= src; l++ )
+			map.insert( l, l+1 );
+	
+	map.insert( src, dst );
+	
+	mapLinks( root, map );
+	
+	updateLinks();
+	updateHeader();
+	updateFooter();
+	emit linksChanged();
+}
+
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
 {
 	if ( ! ( idx.isValid() && idx.model() == this ) )
@@ -1291,11 +1325,6 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32,qint32> & map )
 		{
 			if ( map.contains( l ) )
 				parent->value().setLink( map[ l ] );
-			else
-			{
-				parent->value().setLink( -1 );
-				msg( Message() << "mapLinks: failed to map link" << l );
-			}
 		}
 	}
 }
