@@ -8,6 +8,80 @@
 #include <QMessageBox>
 #include <QMimeData>
 
+/* XPM */
+static char * transform_xpm[] = {
+"64 64 6 1",
+" 	c None",
+".	c #1800FF",
+"+	c #FF0301",
+"@	c #C46EBC",
+"#	c #0DFF00",
+"$	c #2BFFAC",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                           .....                                ",
+"                            ....                                ",
+"                            ....                                ",
+"                           ......                               ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                    ##           ",
+"     +                      ...                  ####           ",
+"    ++++                    ...                 #####           ",
+"     +++++                  ...                #######          ",
+"      +++++                 ...              #######            ",
+"        +++++               ...             #####               ",
+"          +++++             ...           #####                 ",
+"           +++++            ...          #####                  ",
+"             +++++          ...        #####                    ",
+"               +++++        ...       #####                     ",
+"                +++++       ...      ####                       ",
+"                  +++++     ...    #####                        ",
+"                    +++++   ...   ####                          ",
+"                     ++++++ ... #####                           ",
+"                       +++++...#####                            ",
+"                         +++...###                              ",
+"                          ++...+#                               ",
+"                           #...++                               ",
+"                         ###...++++                             ",
+"                        ####...++++++                           ",
+"                      ##### ...  +++++                          ",
+"                     ####   ...    +++++                        ",
+"                   #####    ...     ++++++                      ",
+"                  #####     ...       +++++                     ",
+"                #####       ...         +++++                   ",
+"               #####        ...          ++++++                 ",
+"              ####          ...            +++++                ",
+"            #####           ...              +++++              ",
+"           ####             ...               ++++++            ",
+"         #####              ...                 +++++  +        ",
+"        #####               ...                   +++++++       ",
+"      #####                 ...                    +++++++      ",
+"     #####                  ...                      +++++      ",
+"    ####                    ...                      ++++       ",
+"    ###                     ...                        +        ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                            ...                                 ",
+"                             ..                                 ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                "};
+
 class spApplyTransformation : public Spell
 {
 public:
@@ -186,6 +260,38 @@ public:
 };
 
 REGISTER_SPELL( spPasteTransformation )
+
+QIcon * transform_xpm_icon = 0;
+
+class spEditTransformation : public Spell
+{
+public:
+	QString name() const { return "Edit"; }
+	QString page() const { return "Transform"; }
+	QIcon icon() const
+	{
+		if ( ! transform_xpm_icon )
+			transform_xpm_icon = new QIcon( transform_xpm );
+		return *transform_xpm_icon;
+	}
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return Transform::canConstruct( nif, index );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
+		edit->add( new NifVectorEdit( nif, nif->getIndex( index, "Translation" ) ) );
+		edit->add( new NifRotationEdit( nif, nif->getIndex( index, "Rotation" ) ) );
+		edit->add( new NifFloatEdit( nif, nif->getIndex( index, "Scale" ) ) );
+		edit->show();
+		return index;
+	}
+};
+
+REGISTER_SPELL( spEditTransformation )
 
 class spEditMatrix4 : public Spell
 {
