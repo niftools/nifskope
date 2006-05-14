@@ -346,6 +346,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return ver2str( item->ver1() );
 				case Ver2Col:	return ver2str( item->ver2() );
+				case TempCol:	return item->temp();
 				default:		return QVariant();
 			}
 		}
@@ -494,6 +495,7 @@ QVariant BaseModel::headerData( int section, Qt::Orientation orientation, int ro
 				case CondCol:		return "Condition";
 				case Ver1Col:		return "since";
 				case Ver2Col:		return "until";
+				case TempCol:		return "Template";
 				default:			return QVariant();
 			}
 		default:
@@ -645,7 +647,16 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 		l = left.toInt( &ok );
 		if ( ! ok )
 		{
-			NifItem * i = getItem( item->parent(), left );
+			NifItem * i = item;
+			
+			while ( left == "(ARG)" )
+			{
+				if ( ! i->parent() )	return false;
+				i = i->parent();
+				left = i->arg();
+			}
+			
+			i = getItem( i->parent(), left );
 			if ( i )
 				l = i->value().toCount();
 			else

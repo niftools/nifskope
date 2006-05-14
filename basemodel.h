@@ -123,7 +123,7 @@ public:
 	QModelIndex parent( const QModelIndex & index ) const;
 
 	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
-	int columnCount( const QModelIndex & parent = QModelIndex() ) const { return 9; }
+	int columnCount( const QModelIndex & parent = QModelIndex() ) const { return 10; }
 	
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
@@ -144,7 +144,8 @@ public:
 		Arr2Col  = 5,
 		CondCol  = 6,
 		Ver1Col  = 7,
-		Ver2Col  = 8
+		Ver2Col  = 8,
+		TempCol  = 9
 	};
 	
 	enum MsgMode

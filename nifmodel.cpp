@@ -510,39 +510,33 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 	{
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
-		if ( ! data.arg().isEmpty() || ! data.temp().isEmpty() )
-		{
-			QString arg = inBrakets( data.arg() );
-			QString tmp = data.temp();
-			if ( tmp == "(TEMPLATE)" )
-			{
-				NifItem * tItem = branch;
-				while ( tmp == "(TEMPLATE)" && tItem->parent() )
-				{
-					tItem = tItem->parent();
-					tmp = tItem->temp();
-				}
-			}
-			foreach ( NifData d, compound->types )
-			{
-				if ( d.type() == "(TEMPLATE)" )
-				{
-					d.setType( tmp );
-					d.value.changeType( NifValue::type( tmp ) );
-				}
-				if ( d.arg() == "(ARG)" )	d.setArg( data.arg() );
-				if ( d.arr1() == "(ARG)" ) d.setArr1( arg );
-				if ( d.arr2() == "(ARG)" ) d.setArr2( arg );
-				if ( d.cond().contains( "(ARG)" ) ) { QString x = d.cond(); x.replace( x.indexOf( "(ARG)" ), 5, arg ); d.setCond( x ); }
-				insertType( branch, d );
-			}
-		}
-		else
-			foreach ( NifData d, compound->types )
-				insertType( branch, d );
+		foreach ( NifData d, compound->types )
+			insertType( branch, d );
 	}
 	else
-		parent->insertChild( data, at );
+	{
+		if ( data.type() == "(TEMPLATE)" || data.temp() == "(TEMPLATE)" )
+		{
+			QString tmp = parent->temp();
+			NifItem * tItem = parent;
+			while ( tmp == "(TEMPLATE)" && tItem->parent() )
+			{
+				tItem = tItem->parent();
+				tmp = tItem->temp();
+			}
+			NifData d( data );
+			if ( d.type() == "(TEMPLATE)" )
+			{
+				d.value.changeType( NifValue::type( tmp ) );
+				d.setType( tmp );
+			}
+			if ( d.temp() == "(TEMPLATE)" )
+				d.setTemp( tmp );
+			insertType( parent, d, at );
+		}
+		else
+			parent->insertChild( data, at );
+	}
 	XMLlock.unlock();
 }
 
@@ -668,6 +662,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return version2string( item->ver1() );
 				case Ver2Col:	return version2string( item->ver2() );
+				case TempCol:	return item->temp();
 				default:		return QVariant();
 			}
 		}

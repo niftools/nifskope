@@ -50,58 +50,80 @@ QHash<QString,NifBlock*>		NifModel::blocks;
 class NifXmlHandler : public QXmlDefaultHandler
 {
 public:
+	enum Tag
+	{
+		tagNone = 0,
+		tagFile,
+		tagVersion,
+		tagCompound,
+		tagAncestor,
+		tagBlock,
+		tagAdd,
+		tagInherit,
+		tagBasic,
+		tagInterface
+	};
+	
 	NifXmlHandler()
 	{
 		depth = 0;
-		elements << "niflotoxml" << "version" << "compound" << "ancestor" << "niblock" << "add" << "inherit" << "basic" << "interface";
+		tags.insert( "niflotoxml", tagFile );
+		tags.insert( "version", tagVersion );
+		tags.insert( "compound", tagCompound );
+		tags.insert( "ancestor", tagAncestor );
+		tags.insert( "niblock", tagBlock );
+		tags.insert( "add", tagAdd );
+		tags.insert( "inherit", tagInherit );
+		tags.insert( "basic", tagBasic );
+		tags.insert( "interface", tagInterface );
 		blk = 0;
 	}
 
 	int depth;
-	int stack[10];
-	QStringList elements;
+	Tag stack[10];
+	QHash<QString, Tag> tags;
 	QString errorStr;
 	
 	NifBlock		* blk;
 	NifData data;
 	
-	int current() const
+	Tag current() const
 	{
 		return stack[depth-1];
 	}
-	void push( int x )
+	void push( Tag x )
 	{
 		stack[depth++] = x;
 	}
-	int pop()
+	Tag pop()
 	{
 		return stack[--depth];
 	}
 	
-	bool startElement( const QString &, const QString &, const QString & name, const QXmlAttributes & list )
+	bool startElement( const QString &, const QString &, const QString & tagid, const QXmlAttributes & list )
 	{
 		if ( depth >= 8 )	err( "error maximum nesting level exceeded" );
 		
-		int x = elements.indexOf( name );
-		if ( x < 0 )	err( "error unknown element '" + name + "'" );
+		Tag x = tags.value( tagid );
+		if ( x == tagNone )	err( "error unknown element '" + tagid + "'" );
 		
 		if ( depth == 0 )
 		{
-			if ( x != 0 )	err( "this is not a niflotoxml file" );
+			if ( x != tagFile )	err( "this is not a niflotoxml file" );
 			push( x );
 			return true;
 		}
 		
 		switch ( current() )
 		{
-			case 0:
-				if ( ! ( x == 7 || ( x >= 1 && x <= 4 ) ) )	err( "expected compound, ancestor, niblock, basic or version got " + name + " instead" );
+			case tagFile:
 				push( x );
 				switch ( x )
 				{
-					case 2:
-					case 3:
-					case 4:
+					case tagCompound:
+					case tagAncestor:
+					case tagBlock:
+					{
 						if ( ! list.value("nifskopetype").isEmpty() ) {
 							QString alias = list.value( "name" );
 							QString type = list.value( "nifskopetype" );
@@ -114,8 +136,9 @@ public:
 							if ( ! blk ) blk = new NifBlock;
 							blk->id = list.value( "name" );
 						};
-						break;
-					case 7:
+					}	break;
+					case tagBasic:
+					{
 						QString alias = list.value( "name" );
 						QString type = list.value( "nifskopetype" );
 						if ( alias.isEmpty() || type.isEmpty() )
@@ -123,85 +146,101 @@ public:
 						if ( alias != type )
 							if ( ! NifValue::registerAlias( alias, type ) )
 								err( "failed to register alias " + alias + " for type " + type );
+					}	break;
+					case tagVersion:
 						break;
-				}
-				break;
-			case 1:
+					default:
+						err( "expected compound, ancestor, niblock, basic or version got " + tagid + " instead" );
+				}	break;
+			case tagVersion:
 				//err( "version tag must not contain any sub tags" );
 				break;
-			case 2:
-				if ( x != 5 )	err( "only add tags allowed in compound type declaration" );
-			case 3:
-			case 4:
-				if ( ! ( x == 5 || x == 6 || x == 8) )	err( "only add, inherit, and interface tags allowed in " + elements.value( x ) + " declaration" );
-				if ( x == 5 )
-				{
-					// ns type optimizers come here
-					// we really shouldn't be doing this
-					// but it will work for now until we find a better solution
-					QString type = list.value( "type" );
-					if ( type == "keyarray" ) type = "ns keyarray";
-					else if ( type == "keyvecarray" ) type = "ns keyvecarray";
-					else if ( type == "keyvecarraytyp" ) type = "ns keyvecarraytyp";
-					else if ( type == "keyrotarray" ) type = "ns keyrotarray";
-					// now allocate
-					data = NifData(
-						list.value( "name" ),
-						type,
-						list.value( "template" ),
-						NifValue( NifValue::type( type ) ),
-						list.value( "arg" ),
-						list.value( "arr1" ),
-						list.value( "arr2" ),
-						list.value( "cond" ),
-						NifModel::version2number( list.value( "ver1" ) ),
-						NifModel::version2number( list.value( "ver2" ) )
-					);
-					QString defval = list.value( "default" );
-					if ( ! defval.isEmpty() )
-						data.value.fromString( defval );
-					if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
-				}
-				else if ( x == 6 )
-				{
-					QString n = list.value( "name" );
-					if ( n.isEmpty() )	err( "inherit needs name attribute" );
-					if ( blk ) blk->ancestors.append( n );
-				}
-				else if ( x == 8 )
-				{
-					QString n = list.value( "name" );
-					if ( n.isEmpty() )	err( "interface needs name attribute" );
-					// NifSkope doesn't do anything with that
-				}
+			case tagCompound:
+				if ( x != tagAdd )	err( "only add tags allowed in compound type declaration" );
+			case tagAncestor:
+			case tagBlock:
 				push( x );
-				break;
+				switch ( x )
+				{
+					case tagAdd:
+					{
+						// ns type optimizers come here
+						// we really shouldn't be doing this
+						// but it will work for now until we find a better solution
+						QString type = list.value( "type" );
+						
+						if ( type == "KeyArray" ) type = "ns keyarray";
+						else if ( type == "VectorKeyArray" ) type = "ns keyvecarray";
+						else if ( type == "TypedVectorKeyArray" ) type = "ns keyvecarraytyp";
+						else if ( type == "RotationKeyArray" ) type = "ns keyrotarray";
+						
+						// now allocate
+						data = NifData(
+							list.value( "name" ),
+							type,
+							list.value( "template" ),
+							NifValue( NifValue::type( type ) ),
+							list.value( "arg" ),
+							list.value( "arr1" ),
+							list.value( "arr2" ),
+							list.value( "cond" ),
+							NifModel::version2number( list.value( "ver1" ) ),
+							NifModel::version2number( list.value( "ver2" ) )
+						);
+						QString defval = list.value( "default" );
+						if ( ! defval.isEmpty() )
+							data.value.fromString( defval );
+						if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
+					}	break;
+					case tagInherit:
+					{
+						QString n = list.value( "name" );
+						if ( n.isEmpty() )	err( "inherit needs name attribute" );
+						if ( blk ) blk->ancestors.append( n );
+					}	break;
+					case tagInterface:
+					{
+						QString n = list.value( "name" );
+						if ( n.isEmpty() )	err( "interface needs name attribute" );
+						// NifSkope doesn't do anything with that
+					}	break;
+					default:
+						err( "only add, inherit, and interface tags allowed in " + tagid + " declaration" );
+				}	break;
 			default:
-				err( "error unhandled tag " + name + " in " + elements.value( current() ) );
+				err( "error unhandled tag " + tagid );
 				break;
 		}
 		return true;
 	}
 	
-	bool endElement( const QString &, const QString &, const QString & name )
+	bool endElement( const QString &, const QString &, const QString & tagid )
 	{
-		if ( depth <= 0 )		err( "mismatching end element tag for element " + name );
-		int x = elements.indexOf( name );
-		if ( pop() != x )		err( "mismatching end element tag for element " + elements.value( current() ) );
+		if ( depth <= 0 )		err( "mismatching end element tag for element " + tagid );
+		Tag x = tags.value( tagid );
+		if ( pop() != x )		err( "mismatching end element tag for element " + tagid );
 		switch ( x )
 		{
-			case 2:
-			case 3:
-			case 4:
+			case tagCompound:
+			case tagAncestor:
+			case tagBlock:
 				if ( blk )
 				{
 					if ( ! blk->id.isEmpty() )
 					{
 						switch ( x )
 						{
-							case 2: NifModel::compounds.insert( blk->id, blk );	break;
-							case 3: NifModel::ancestors.insert( blk->id, blk );	break;
-							case 4: NifModel::blocks.insert( blk->id, blk );		break;
+							case tagCompound:
+								NifModel::compounds.insert( blk->id, blk );
+								break;
+							case tagAncestor:
+								NifModel::ancestors.insert( blk->id, blk );
+								break;
+							case tagBlock:
+								NifModel::blocks.insert( blk->id, blk );
+								break;
+							default:
+								break;
 						}
 						blk = 0;
 					}
@@ -209,12 +248,14 @@ public:
 					{
 						delete blk;
 						blk = 0;
-						err( "invalid " + elements.value( x ) + " declaration: name is empty" );
+						err( "invalid " + tagid + " declaration: name is empty" );
 					}
 				}
 				break;
-			case 5:
+			case tagAdd:
 				if ( blk )	blk->types.append( data );
+				break;
+			default:
 				break;
 		}
 		return true;
@@ -224,7 +265,7 @@ public:
 	{
 		switch ( current() )
 		{
-			case 1:
+			case tagVersion:
 			{
 				int v = NifModel::version2number( s.trimmed() );
 				if ( v != 0 )
@@ -232,13 +273,15 @@ public:
 				else
 					err( "invalid version string " + s );
 			}	break;
-			case 2:
-			case 3:
-			case 4:
+			case tagCompound:
+			case tagAncestor:
+			case tagBlock:
 				if ( blk )
 					blk->text += s.trimmed();
-			case 5:
+			case tagAdd:
 				data.setText( data.text() + s.trimmed() );
+				break;
+			default:
 				break;
 		}
 		return true;
@@ -251,7 +294,7 @@ public:
 	
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "(TEMPLATE)";
+		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "(TEMPLATE)" || NifModel::ancestors.contains( data.temp() );
 	}
 	
 	bool endDocument()
