@@ -181,6 +181,39 @@ void NifModel::updateHeader()
 	}
 }
 
+/*
+ *  search and find
+ */
+
+NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
+{
+	if ( name.startsWith( "HEADER/" ) )
+		return getItem( getHeaderItem(), name.right( name.length() - 7 ) );
+	
+	if ( ! item || item == root )		return 0;
+	
+	int slash = name.indexOf( "/" );
+	if ( slash > 0 )
+	{
+		QString left = name.left( slash );
+		QString right = name.right( name.length() - slash - 1 );
+		
+		if ( left == ".." )
+			return getItem( item->parent(), right );
+		else
+			return getItem( getItem( item, left ), right );
+	}
+	
+	for ( int c = 0; c < item->childCount(); c++ )
+	{
+		NifItem * child = item->child( c );
+		
+		if ( child->name() == name && evalCondition( child ) )
+			return child;
+	}
+	
+	return 0;
+}
 
 /*
  *  array functions
@@ -190,16 +223,7 @@ QString inBrakets( const QString & x )
 {
 	for ( int c = 0; c < x.length(); c++ )
 		if ( ! x[c].isNumber() )
-			return QString( "(%1)" ).arg( x );
-	return x;
-}
-
-QString removeBrakets( QString x )
-{
-	while ( x.startsWith( "(" ) )
-		x = x.right( x.length() - 1 );
-	while ( x.endsWith( ")" ) )
-		x = x.left( x.length() - 1 );
+			return QString( "../" ) + x;
 	return x;
 }
 

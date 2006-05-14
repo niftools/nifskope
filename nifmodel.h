@@ -159,6 +159,7 @@ protected:
 	NifItem *	getHeaderItem() const;
 	NifItem *	getFooterItem() const;
 	NifItem *	getBlockItem( int ) const;
+	NifItem *	getItem( NifItem * parent, const QString & name ) const;
 
 	bool		load( NifItem * parent, NifIStream & stream, bool fast = true );
 	bool		save( NifItem * parent, NifOStream & stream ) const;

@@ -164,7 +164,7 @@ protected:
 	virtual bool		updateArrayItem( NifItem * array, bool fast ) = 0;
 	int			getArraySize( NifItem * array ) const;
 
-	NifItem *	getItem( NifItem * parent, const QString & name ) const;
+	virtual NifItem *	getItem( NifItem * parent, const QString & name ) const;
 	NifItem *	getItemX( NifItem * item, const QString & name ) const; // find upwards
 
 	template <typename T> T get( NifItem * parent, const QString & name ) const;

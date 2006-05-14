@@ -89,7 +89,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 		QString left, right;
 		QString arr1 = array->arr1();
 		
-		static const char * const exp[] = { "|", "&", "/" };
+		static const char * const exp[] = { " | ", " & ", " / " };
 		static const int num_exp = 3;
 		
 		int c;
@@ -119,7 +119,16 @@ int BaseModel::getArraySize( NifItem * array ) const
 			d1 = left.toInt( &ok );
 			if ( ! ok )
 			{
-				NifItem * dim1 = getItem( parent, left );
+				NifItem * dim1 = parent;
+				
+				while ( left == "(ARG)" )
+				{
+					if ( ! dim1->parent() )	return 0;
+					left = dim1->arg();
+					dim1 = dim1->parent();
+				}
+				
+				dim1 = getItem( dim1, left );
 				if ( ! dim1 )
 				{
 					msg( Message() << "failed to get array size for array" << array->name() );
@@ -544,13 +553,22 @@ bool BaseModel::saveToFile( const QString & filename ) const
 /*
  *  searching
  */
-
+ 
 NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 {
 	if ( ! item || item == root )		return 0;
 	
-	if ( name.startsWith( "(" ) && name.endsWith( ")" ) )
-		return getItem( item->parent(), name.mid( 1, name.length() - 2 ).trimmed() );
+	int slash = name.indexOf( "/" );
+	if ( slash > 0 )
+	{
+		QString left = name.left( slash );
+		QString right = name.right( name.length() - slash - 1 );
+		
+		if ( left == ".." )
+			return getItem( item->parent(), right );
+		else
+			return getItem( getItem( item, left ), right );
+	}
 	
 	for ( int c = 0; c < item->childCount(); c++ )
 	{
