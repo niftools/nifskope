@@ -196,7 +196,6 @@ protected:
 	static QList<quint32>		supportedVersions;
 	
 	static QHash<QString,NifBlock*>		compounds;
-	static QHash<QString,NifBlock*>		ancestors;
 	static QHash<QString,NifBlock*>		blocks;
 	
 	static QString parseXmlDescription( const QString & filename );
@@ -208,7 +207,10 @@ protected:
 inline QStringList NifModel::allNiBlocks()
 {
 	XMLlock.lockForRead();
-	QStringList lst = blocks.keys();
+	QStringList lst;
+	foreach ( NifBlock * blk, blocks )
+		if ( ! blk->abstract )
+			lst.append( blk->id );
 	XMLlock.unlock();
 	return lst;
 }
@@ -216,7 +218,8 @@ inline QStringList NifModel::allNiBlocks()
 inline bool NifModel::isNiBlock( const QString & name )
 {
 	XMLlock.lockForRead();
-	bool x = blocks.contains( name );
+	NifBlock * blk = blocks.value( name );
+	bool x = blk && ! blk->abstract;
 	XMLlock.unlock();
 	return x;
 }
@@ -224,7 +227,8 @@ inline bool NifModel::isNiBlock( const QString & name )
 inline bool NifModel::isAncestor( const QString & name )
 {
 	XMLlock.lockForRead();
-	bool x = ancestors.contains( name );
+	NifBlock * blk = blocks.value( name );
+	bool x = blk && blk->abstract;
 	XMLlock.unlock();
 	return x;
 }

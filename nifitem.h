@@ -108,10 +108,11 @@ public:
 
 struct NifBlock
 {
-	QString				id;
-	QString				text;
-	QList<QString>		ancestors;
-	QList<NifData>		types;
+	QString id;
+	QString ancestor;
+	QString text;
+	bool abstract;
+	QList<NifData> types;
 };
 
 

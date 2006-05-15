@@ -44,7 +44,6 @@ QReadWriteLock					NifModel::XMLlock;
 QList<quint32>					NifModel::supportedVersions;
 
 QHash<QString,NifBlock*>		NifModel::compounds;
-QHash<QString,NifBlock*>		NifModel::ancestors;
 QHash<QString,NifBlock*>		NifModel::blocks;
 
 class NifXmlHandler : public QXmlDefaultHandler
@@ -124,17 +123,29 @@ public:
 					case tagAncestor:
 					case tagBlock:
 					{
-						if ( ! list.value("nifskopetype").isEmpty() ) {
+						if ( ! list.value("nifskopetype").isEmpty() )
+						{
 							QString alias = list.value( "name" );
 							QString type = list.value( "nifskopetype" );
 							if ( alias != type )
 								if ( ! NifValue::registerAlias( alias, type ) )
 									err( "failed to register alias " + alias + " for type " + type );
-						} else {
-							if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
+						}
+						else
+						{
+							if ( x == tagCompound && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
 								err( "compound " + list.value( "name" ) + " is already registered as internal type" );
+							
+							QString id = list.value( "name" );
+							if ( id.isEmpty() )
+								err( "compound, ancestor and niblocks must have a name" );
+							
+							if ( NifModel::compounds.contains( id ) || NifModel::blocks.contains( id ) )
+								err( "multiple declarations of " + id );
+							
 							if ( ! blk ) blk = new NifBlock;
 							blk->id = list.value( "name" );
+							blk->abstract = x == tagAncestor;
 						};
 					}	break;
 					case tagBasic:
@@ -196,7 +207,14 @@ public:
 					{
 						QString n = list.value( "name" );
 						if ( n.isEmpty() )	err( "inherit needs name attribute" );
-						if ( blk ) blk->ancestors.append( n );
+						if ( ! NifModel::blocks.contains( n ) ) err( "forward declaration of block id " + n );
+						if ( blk )
+						{
+							if ( blk->ancestor.isEmpty() )
+								blk->ancestor = n;
+							else
+								err( "allowed is only one inherit tag per block" );
+						}
 					}	break;
 					case tagInterface:
 					{
@@ -226,30 +244,25 @@ public:
 			case tagBlock:
 				if ( blk )
 				{
-					if ( ! blk->id.isEmpty() )
-					{
-						switch ( x )
-						{
-							case tagCompound:
-								NifModel::compounds.insert( blk->id, blk );
-								break;
-							case tagAncestor:
-								NifModel::ancestors.insert( blk->id, blk );
-								break;
-							case tagBlock:
-								NifModel::blocks.insert( blk->id, blk );
-								break;
-							default:
-								break;
-						}
-						blk = 0;
-					}
-					else
+					if ( blk->id.isEmpty() )
 					{
 						delete blk;
 						blk = 0;
 						err( "invalid " + tagid + " declaration: name is empty" );
 					}
+					switch ( x )
+					{
+						case tagCompound:
+							NifModel::compounds.insert( blk->id, blk );
+							break;
+						case tagAncestor:
+						case tagBlock:
+							NifModel::blocks.insert( blk->id, blk );
+							break;
+						default:
+							break;
+					}
+					blk = 0;
 				}
 				break;
 			case tagAdd:
@@ -294,7 +307,7 @@ public:
 	
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "(TEMPLATE)" || NifModel::ancestors.contains( data.temp() );
+		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "(TEMPLATE)" || NifModel::blocks.contains( data.temp() );
 	}
 	
 	bool endDocument()
@@ -313,33 +326,13 @@ public:
 			}
 		}
 		
-		foreach ( QString key, NifModel::ancestors.keys() )
-		{
-			NifBlock * blk = NifModel::ancestors.value( key );
-			foreach ( QString a, blk->ancestors )
-			{
-				if ( ! NifModel::ancestors.contains( a ) )
-					err( "ancestor block " + key + " inherits unknown ancestor " + a );
-				if ( a == key )
-					err( "ancestor block " + key + " inherits itself" );
-			}
-			foreach ( NifData data, blk->types )
-			{
-				if ( ! checkType( data ) )
-					err( "ancestor block " + key + " referes to unknown type " + data.type() );
-				if ( ! checkTemp( data ) )
-					err( "ancestor block " + key + " referes to unknown template type " + data.temp() );
-			}
-		}
-		
 		foreach ( QString key, NifModel::blocks.keys() )
 		{
 			NifBlock * blk = NifModel::blocks.value( key );
-			foreach ( QString a, blk->ancestors )
-			{
-				if ( ! NifModel::ancestors.contains( a ) )
-					err( "niblock " + key + " inherits unknown ancestor " + a );
-			}
+			if ( ! blk->ancestor.isEmpty() && ! NifModel::blocks.contains( blk->ancestor ) )
+				err( "niblock " + key + " inherits unknown ancestor " + blk->ancestor );
+			if ( blk->ancestor == key )
+				err( "niblock " + key + " inherits itself" );
 			foreach ( NifData data, blk->types )
 			{
 				if ( ! checkType( data ) )
@@ -348,6 +341,7 @@ public:
 					err( "niblock " + key + " referes to unknown template type " + data.temp() );
 			}
 		}
+		
 		return true;
 	}
 	
@@ -379,7 +373,6 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	XMLlock.lockForWrite();
 	
 	qDeleteAll( compounds );	compounds.clear();
-	qDeleteAll( ancestors );	ancestors.clear();
 	qDeleteAll( blocks );		blocks.clear();
 	
 	supportedVersions.clear();
@@ -407,7 +400,6 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	if ( ! handler.errorString().isEmpty() )
 	{
 		qDeleteAll( compounds );	compounds.clear();
-		qDeleteAll( ancestors );	ancestors.clear();
 		qDeleteAll( blocks );		blocks.clear();
 		
 		supportedVersions.clear();

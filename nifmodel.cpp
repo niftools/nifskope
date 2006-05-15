@@ -295,8 +295,8 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 		NifItem * branch = insertBranch( root, NifData( identifier, "NiBlock", block->text ), at );
 		if ( ! fast ) endInsertRows();
 		
-		foreach ( QString a, block->ancestors )
-			insertAncestor( branch, a );
+		if ( ! block->ancestor.isEmpty() )
+			insertAncestor( branch, block->ancestor );
 		
 		branch->prepareInsert( block->types.count() );
 		
@@ -458,11 +458,11 @@ int NifModel::getBlockCount() const
 void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int at )
 {
 	XMLlock.lockForRead();
-	NifBlock * ancestor = ancestors.value( identifier );
+	NifBlock * ancestor = blocks.value( identifier );
 	if ( ancestor )
 	{
-		foreach ( QString a, ancestor->ancestors )
-			insertAncestor( parent, a );
+		if ( ! ancestor->ancestor.isEmpty() )
+			insertAncestor( parent, ancestor->ancestor );
 		parent->prepareInsert( ancestor->types.count() );
 		foreach ( NifData data, ancestor->types )
 			insertType( parent, data );
@@ -478,22 +478,10 @@ bool NifModel::inherits( const QString & name, const QString & aunty )
 {
 	XMLlock.lockForRead();
 	NifBlock * type = blocks.value( name );
-	if ( ! type ) type = ancestors.value( name );
-	
-	bool res = false;
-	if ( type )
-	{
-		foreach ( QString a, type->ancestors )
-		{
-			if ( a == aunty || inherits( a, aunty ) )
-			{
-				res = true;
-				break;
-			}
-		}
-	}
+	if ( type && ( type->ancestor == aunty || inherits( type->ancestor, aunty ) ) )
+		return true;
 	XMLlock.unlock();
-	return res;
+	return false;
 }
 
 bool NifModel::inherits( const QModelIndex & index, const QString & aunty ) const
