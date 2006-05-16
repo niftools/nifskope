@@ -477,6 +477,7 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 bool NifModel::inherits( const QString & name, const QString & aunty )
 {
 	XMLlock.lockForRead();
+    if ( name == aunty ) return true;
 	NifBlock * type = blocks.value( name );
 	if ( type && ( type->ancestor == aunty || inherits( type->ancestor, aunty ) ) )
 		return true;
