@@ -90,7 +90,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "AParentNode" )
+		return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "NiNode" )
 				|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" );
 	}
 	
@@ -100,14 +100,14 @@ public:
 			if ( QMessageBox::question( 0, "Apply Transformation", "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it.", "Try anyway", "Cancel" ) != 0 )
 				return index;
 		
-		if ( nif->inherits( nif->itemName( index ), "AParentNode" ) )
+		if ( nif->inherits( nif->itemName( index ), "NiNode" ) )
 		{
 			Transform tp( nif, index );
 			bool ok = false;
 			foreach ( int l, nif->getChildLinks( nif->getBlockNumber( index ) ) )
 			{
 				QModelIndex iChild = nif->getBlock( l );
-				if ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "ANode" ) )
+				if ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "NiAVObject" ) )
 				{
 					Transform tc( nif, iChild );
 					tc = tp * tc;

@@ -63,7 +63,7 @@ public:
 					{
 						doNodes( nif, iChild, Transform(), world, bones );
 					}
-					else if ( nif->inherits( iChild, "AShape" ) )
+					else if ( nif->inherits( iChild, "NiTriBasedGeom" ) )
 					{
 						doShape( nif, iChild, Transform(), world, bones );
 					}
@@ -113,7 +113,7 @@ public:
 					{
 						hasSkinnedChildren |= doNodes( nif, iChild, tparent * tlocal, world, bones );
 					}
-					else if ( nif->inherits( iChild, "AShape" ) )
+					else if ( nif->inherits( iChild, "NiTriBasedGeom" ) )
 					{
 						hasSkinnedChildren |= doShape( nif, iChild, tparent * tlocal, world, bones );
 					}

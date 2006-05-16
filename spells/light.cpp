@@ -58,7 +58,7 @@ public:
 	{
 		QModelIndex iBlock = nif->getBlock( index );
 		QModelIndex sibling = index.sibling( index.row(), 0 );
-		return index.isValid() && nif->inherits( iBlock, "ALight" ) && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
+		return index.isValid() && nif->inherits( iBlock, "NiLight" ) && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )

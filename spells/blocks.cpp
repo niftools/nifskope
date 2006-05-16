@@ -77,7 +77,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "ANode" );
+		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "NiAVObject" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -86,7 +86,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "AProperty" ) )
+			if ( nif->inherits( id, "NiProperty" ) )
 				menu.addAction( id );
 		
 		QAction * act = menu.exec( QCursor::pos() );
@@ -112,7 +112,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->isNiBlock( index ) && nif->inherits( index, "AParentNode" );
+		return nif->isNiBlock( index ) && nif->inherits( index, "NiNode" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -121,7 +121,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "ANode" ) && ! nif->inherits( id, "ALight" ) )
+			if ( nif->inherits( id, "NiAVObject" ) && ! nif->inherits( id, "NiLight" ) )
 				menu.addAction( id );
 		
 		QAction * act = menu.exec( QCursor::pos() );
@@ -147,7 +147,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->isNiBlock( index ) && nif->inherits( index, "AParentNode" );
+		return nif->isNiBlock( index ) && nif->inherits( index, "NiNode" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -156,7 +156,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "ALight" ) )
+			if ( nif->inherits( id, "NiLight" ) )
 				menu.addAction( id );
 		
 		QAction * act = menu.exec( QCursor::pos() );
@@ -187,7 +187,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->isNiBlock( index ) && nif->inherits( index, "ANode" ) && nif->checkVersion( 0x0a000100, 0 );
+		return nif->isNiBlock( index ) && nif->inherits( index, "NiAVObject" ) && nif->checkVersion( 0x0a000100, 0 );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -196,7 +196,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "AExtraData" ) || id == "BSXFlags" )
+			if ( nif->inherits( id, "NiExtraData" ) || id == "BSXFlags" )
 				menu.addAction( id );
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )

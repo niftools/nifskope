@@ -140,7 +140,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	Node * node = nodes.get( iNode );
 	if ( node ) return node;
 	
-	if ( nif->inherits( iNode, "AParentNode" ) )
+	if ( nif->inherits( iNode, "NiNode" ) )
 	{
 		if ( nif->itemName( iNode ) == "NiLODNode" )
 			node = new LODNode( this, iNode );
@@ -153,12 +153,13 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	{
 		node = new Mesh( this, iNode );
 	}
-	else if ( nif->inherits( iNode, "ALight" ) )
+	else if ( nif->inherits( iNode, "NiLight" ) )
 	{
 		node = new Light( this, iNode );
 		lights.add( node );
 	}
-	else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
+	//else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
+	else if ( nif->inherits( iNode, "NiParticles" ) ) // ... where did AParticleSystem go?
 	{
 		node = new Particles( this, iNode );
 	}

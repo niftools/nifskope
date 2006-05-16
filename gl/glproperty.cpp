@@ -38,7 +38,7 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 {
 	Property * property = 0;
 	
-	if ( nif->inherits( index, "AProperty" ) )
+	if ( nif->inherits( index, "NiProperty" ) )
 	{
 		QString name = nif->itemName( index );
 		if ( name == "NiAlphaProperty" )

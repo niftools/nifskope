@@ -121,7 +121,7 @@ public:
 			QString name = nif->itemName( index.parent() );
 			if ( name == "NiAlphaProperty" )
 				return Alpha;
-			else if ( nif->inherits( name, "AController" ) )
+			else if ( nif->inherits( name, "NiTimeController" ) )
 				return Controller;
 			else if ( name == "NiNode" )
 				return Node;

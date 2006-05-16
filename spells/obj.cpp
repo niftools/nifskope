@@ -136,11 +136,11 @@ void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream &
 	foreach ( int l, nif->getChildLinks( nif->getBlockNumber( iNode ) ) )
 	{
 		QModelIndex iChild = nif->getBlock( l );
-		if ( nif->inherits( iChild, "AParentNode" ) )
+		if ( nif->inherits( iChild, "NiNode" ) )
 			writeParent( nif, iChild, obj, mtl, ofs, t );
 		else if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
-		else if ( nif->inherits( iChild, "ACollisionObject" ) )
+		else if ( nif->inherits( iChild, "NiCollisionObject" ) )
 		{
 			QModelIndex iBody = nif->getBlock( nif->getLink( iChild, "Body" ) );
 			if ( iBody.isValid() )
@@ -338,7 +338,7 @@ public:
 		foreach ( int l, nif->getRootLinks() )
 		{
 			QModelIndex iBlock = nif->getBlock( l );
-			if ( nif->inherits( iBlock, "AParentNode" ) )
+			if ( nif->inherits( iBlock, "NiNode" ) )
 				writeParent( nif, iBlock, sobj, smtl, ofs, Transform() );
 			else if ( nif->isNiBlock( iBlock, "NiTriShape" ) || nif->isNiBlock( iBlock, "NiTriStrips" ) )
 				writeShape( nif, iBlock, sobj, smtl, ofs, Transform() );
