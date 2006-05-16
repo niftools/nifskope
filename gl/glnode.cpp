@@ -476,7 +476,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	{
 		glPushMatrix();
 		glMultMatrix( nif->get<Matrix4>( iShape, "Transform" ) );
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Sub Shape" ) ), stack );
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack );
 		glPopMatrix();
 	}
 	else if ( name == "bhkSphereShape" )
