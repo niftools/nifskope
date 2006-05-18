@@ -52,6 +52,23 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString );
 }
 
+class UIntSpinBox : public QSpinBox
+{
+public:
+	UIntSpinBox( QWidget * parent ) : QSpinBox( parent ) { setRange( INT_MIN, INT_MAX ); }
+
+protected:
+	QString textFromValue( int i ) const
+	{
+		return QString::number( (unsigned int) i );
+	}
+	
+	int valueFromText( const QString & text ) const
+	{
+		return text.toUInt();
+	}
+};
+
 void ValueEdit::setValue( const NifValue & v )
 {
 	typ = v.type();
@@ -80,9 +97,8 @@ void ValueEdit::setValue( const NifValue & v )
 		}	break;
 		case NifValue::tInt:
 		{	
-			QSpinBox * ie = new QSpinBox( this );
+			QSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame(false);
-			ie->setRange( 0, INT_MAX );
 			ie->setValue( v.toCount() );
 			edit = ie;
 		}	break;
