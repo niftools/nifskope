@@ -1,0 +1,16 @@
+
+comment normal+parallax mapping, vertex colors -> emissive
+
+check NiTexturingProperty/Apply Mode == 4
+check NiTriBasedGeom/Shader/Has Shader == 0
+
+checkgroup begin
+	check TriBasedGeomData/Has Vertex Colors != 0
+	check NiVertexColorProperty/Vertex Mode == 1
+	check NiVertexColorProperty/Lighting Mode == 1
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+
+shaders lighting.frag ob_normalmap.vert ob_parallax_vcol_e.frag

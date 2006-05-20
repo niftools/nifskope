@@ -1,0 +1,20 @@
+
+comment normal+parallax mapping, vertex colors -> ambient&diffuse
+
+check NiTexturingProperty/Apply Mode == 4
+check NiTriBasedGeom/Shader/Has Shader == 0
+
+check TriBasedGeomData/Has Vertex Colors != 0
+
+checkgroup begin or
+	check not NiVertexColorProperty
+	checkgroup begin
+		check NiVertexColorProperty/Vertex Mode == 2
+		check NiVertexColorProperty/Lighting Mode == 1
+	checkgroup end
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+
+shaders lighting.frag ob_normalmap.vert ob_parallax_vcol_ad.frag

@@ -153,23 +153,23 @@ Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : i
 	}
 }
 
-QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QList<QModelIndex> & iBlocks, QString x ) const
+QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QList<QModelIndex> & iBlocks, QString blkid ) const
 {
-	QModelIndex iBlock;
-	int pos = x.indexOf( "/" );
+	QString childid;
+	int pos = blkid.indexOf( "/" );
 	if ( pos > 0 )
 	{
-		QString blkid = x.left( pos );
-		x = x.remove( 0, pos + 1 );
-		foreach ( QModelIndex iBlock, iBlocks )
+		childid = blkid.right( blkid.length() - pos - 1 );
+		blkid = blkid.left( pos );
+	}
+	foreach ( QModelIndex iBlock, iBlocks )
+	{
+		if ( nif->inherits( iBlock, blkid ) )
 		{
-			if ( nif->inherits( iBlock, blkid ) )
-			{
-				if ( x.isEmpty() )
-					return iBlock;
-				else
-					return nif->getIndex( iBlock, x );
-			}
+			if ( childid.isEmpty() )
+				return iBlock;
+			else
+				return nif->getIndex( iBlock, childid );
 		}
 	}
 	return QModelIndex();
@@ -502,7 +502,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	int texunit = 0;
 	
 	GLint uniBaseMap = _glGetUniformLocationARB( prog->id, "BaseMap" );
-	//qWarning() << "uniBaseMap" << uniBaseMap;
 	
 	if ( uniBaseMap >= 0 )
 	{
@@ -513,7 +512,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	}
 	
 	GLint uniNormalMap = _glGetUniformLocationARB( prog->id, "NormalMap" );
-	//qWarning() << "uniNormalMap" << uniNormalMap;
 	
 	if ( uniNormalMap >= 0 )
 	{
@@ -572,7 +570,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	// setup vertex colors
 	
-	glProperty( props.get< VertexColorProperty >(), glIsEnabled( GL_COLOR_ARRAY ) );
+	//glProperty( props.get< VertexColorProperty >(), glIsEnabled( GL_COLOR_ARRAY ) );
 	
 	// setup material
 	

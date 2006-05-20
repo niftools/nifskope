@@ -1,0 +1,18 @@
+
+comment normal+parallax mapping, no vertex colors
+
+check NiTexturingProperty/Apply Mode == 4
+check NiTriBasedGeom/Shader/Has Shader == 0
+
+checkgroup begin or
+	check TriBasedGeomData/Has Vertex Colors == 0
+	checkgroup begin
+		check NiVertexColorProperty/Vertex Mode == 0
+		check NiVertexColorProperty/Lighting Mode == 1
+	checkgroup end
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+
+shaders lighting.frag ob_normalmap.vert ob_parallax.frag
