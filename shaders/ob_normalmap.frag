@@ -1,27 +1,31 @@
 uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
 
-//varying vec4 Color;
+varying vec3 LightDir;
+varying vec3 HalfVector;
+//varying vec3 ViewDir;
 
-vec4 emissive( vec4 e_color );
-vec4 ambient( vec4 a_color );
-vec4 diffuse( vec4 d_color, vec3 normal );
-vec4 specular( vec4 s_color, vec3 normal );
+varying vec4 ColorEA;
+varying vec4 ColorD;
 
 void main( void )
 {
+	vec4 color = min( ColorEA, 1.0 );
+
 	vec4 normal = texture2D( NormalMap, gl_TexCoord[0].st );
-	normal.xyz = normal.xyz * 2.0 - 1.0;
+	normal.rgb = normal.rgb * 2.0 - 1.0;
 	
-	vec4 col =
-		emissive( gl_FrontMaterial.emission ) +
-		ambient( gl_FrontMaterial.ambient ) +
-		diffuse( gl_FrontMaterial.diffuse, normal.xyz ) +
-		specular( normal.a * gl_FrontMaterial.shininess * gl_FrontMaterial.specular, normal.xyz );
+	float NdotL = max( dot( normal.rgb, normalize( LightDir ) ), 0.0 );
 	
-	col = clamp( col, 0.0, 1.0 );
+	if ( NdotL > 0.0 )
+	{
+		color += ColorD * NdotL;
+		color = min( color, 1.0 );
+		float NdotHV = max( dot( normal.rgb, normalize( HalfVector ) ), 0.0 );
+		color += normal.a * gl_FrontMaterial.specular * gl_LightSource[0].specular * pow( NdotHV, gl_FrontMaterial.shininess );
+	}
 	
-	col *= texture2D( BaseMap, gl_TexCoord[0].st );
+	color *= texture2D( BaseMap, gl_TexCoord[0].st );
 	
-	gl_FragColor = col;
+	gl_FragColor = color;
 }

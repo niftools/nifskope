@@ -17,4 +17,4 @@ checkgroup end
 texcoords 0 base
 texcoords 1 tangents
 
-shaders lighting.frag ob_normalmap.vert ob_normalmap_vcol_ad.frag
+shaders ob_vcolors_ad.vert ob_normalmap.frag
