@@ -40,23 +40,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Property : public Controllable
 {
 protected:
-	enum Type
-	{
-		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe, VertexColor, Stencil
-	};
-	
 	Property( Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), ref( 0 ) {}
-	
-	virtual Type type() const = 0;
 	
 	int ref;
 	
 	friend class PropertyList;
 	
 public:
-
 	static Property * create( Scene * scene, const NifModel * nif, const QModelIndex & index );
 
+	enum Type
+	{
+		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe, VertexColor, Stencil
+	};
+	
+	virtual Type type() const = 0;
+	
 	template <typename T> static Type _type();
 	template <typename T> T * cast()
 	{
@@ -78,9 +77,12 @@ public:
 	
 	void add( Property * );
 	void del( Property * );
+	bool contains( Property * ) const;
 	
 	Property * get( const QModelIndex & idx ) const;
+	
 	template <typename T> T * get() const;
+	template <typename T> bool contains() const;
 	
 	void validate();
 	
@@ -88,21 +90,28 @@ public:
 	
 	PropertyList & operator=( const PropertyList & other );
 	
-	const QList<Property*> & list() const { return properties; }
+	QList<Property*> list() const { return properties.values(); }
+	
+	void merge( const PropertyList & list );
 	
 protected:
-	QList<Property*> properties;
+	QMultiHash<Property::Type, Property*> properties;
 };
 
 template <typename T> inline T * PropertyList::get() const
 {
-	foreach ( Property * p, properties )
-	{
-		T * t = p->cast<T>();
-		if ( t )	return t;
-	}
-	return 0;
+	Property * p = properties.value( Property::_type<T>() );
+	if ( p )
+		return p->cast<T>();
+	else
+		return 0;
 }
+
+template <typename T> inline bool PropertyList::contains() const
+{
+	return properties.contains( Property::_type<T>() );
+}
+
 
 class AlphaProperty : public Property
 {
@@ -126,6 +135,7 @@ protected:
 };
 
 REGISTER_PROPERTY( AlphaProperty, Alpha )
+
 
 class ZBufferProperty : public Property
 {
@@ -175,12 +185,16 @@ public:
 	
 	friend void glProperty( TexturingProperty * );
 	
-	bool bind( int id );
+	bool bind( int id, const QString & fname = QString() );
+	
 	bool bind( int id, const QList< QVector<Vector2> > & texcoords );
 	bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
 	
-	//int baseSet() const { return baseTexSet; }
-
+	QString fileName( int id ) const;
+	int coordSet( int id ) const;
+	
+	static int getId( const QString & id );
+	
 protected:
 	TexDesc	textures[8];
 
@@ -271,6 +285,7 @@ protected:
 };
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
+
 
 class StencilProperty : public Property
 {

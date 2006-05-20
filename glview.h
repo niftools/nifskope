@@ -97,6 +97,7 @@ public:
 	QAction * aTexturing;
 	QAction * aBlending;
 	QAction * aLighting;
+	QAction * aShading;
 	QAction * aDrawAxis;
 	QAction * aDrawNodes;
 	QAction * aDrawHavok;
@@ -113,6 +114,8 @@ public:
 	QAction * aOnlyTextured;
 	QAction * aCullExp;
 	
+	QAction * aUpdateShaders;
+	
 	void	save( QSettings & );
 	void	restore( QSettings & );
 
@@ -128,6 +131,8 @@ public slots:
 	void selectBgColor();
 	void selectHlColor();
 	void adjustCullExp();
+	
+	void updateShaders();
 	
 signals: 
 	void clicked( const QModelIndex & );

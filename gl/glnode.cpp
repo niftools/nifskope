@@ -258,7 +258,7 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 	if ( iBlock == index || ! index.isValid() )
 	{
 		PropertyList newProps;
-		QModelIndex iProperties = nif->getIndex( nif->getIndex( iBlock, "Properties" ), "Indices" );
+		QModelIndex iProperties = nif->getIndex( iBlock, "Properties/Indices" );
 		if ( iProperties.isValid() )
 		{
 			for ( int p = 0; p < nif->rowCount( iProperties ); p++ )
@@ -270,7 +270,7 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 		properties = newProps;
 		
 		children.clear();
-		QModelIndex iChildren = nif->getIndex( nif->getIndex( iBlock, "Children" ), "Indices" );
+		QModelIndex iChildren = nif->getIndex( iBlock, "Children/Indices" );
 		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( iBlock ) );
 		if ( iChildren.isValid() )
 		{
@@ -315,6 +315,13 @@ void Node::setController( const NifModel * nif, const QModelIndex & iController 
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
+}
+
+void Node::activeProperties( PropertyList & list ) const
+{
+	list.merge( properties );
+	if ( parent )
+		parent->activeProperties( list );
 }
 
 const Transform & Node::viewTrans() const
@@ -614,7 +621,7 @@ void Node::drawHavok()
 	static const float colors[8][3] = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 }, { 1.0, 1.0, 1.0 }, { 0.5, 0.5, 1.0 }, { 1.0, 0.8, 0.0 }, { 1.0, 0.8, 0.4 }, { 0.0, 1.0, 1.0 } };
 	
 	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
-	glColor3fv( colors[ nif->get<int>( iBody, "Flags" ) & 7 ] );
+	glColor3fv( colors[ nif->get<int>( iBody, "Layer" ) & 7 ] );
 
 	glPushMatrix();
 	
@@ -696,20 +703,21 @@ void Node::setupRenderState( bool vertexcolors )
 	glEnable( GL_NORMALIZE );
 }
 
+#define Farg( X ) arg( X, 0, 'f', 5 )
 
 QString trans2string( Transform t )
 {
 	float xr, yr, zr;
 	t.rotation.toEuler( xr, yr, zr );
-	return	QString( "translation  X %1, Y %2, Z %3\n" ).arg( t.translation[0] ).arg( t.translation[1] ).arg( t.translation[2] )
-		+	QString( "rotation     Y %1, P %2, R %3  " ).arg( xr * 180 / PI ).arg( yr * 180 / PI ).arg( zr * 180 / PI )
-		+	QString( "( (%1, %2, %3), " ).arg( t.rotation( 0, 0 ) ).arg( t.rotation( 0, 1 ) ).arg( t.rotation( 0, 2 ) )
-		+	QString( "(%1, %2, %3), " ).arg( t.rotation( 1, 0 ) ).arg( t.rotation( 1, 1 ) ).arg( t.rotation( 1, 2 ) )
-		+	QString( "(%1, %2, %3) )\n" ).arg( t.rotation( 2, 0 ) ).arg( t.rotation( 2, 1 ) ).arg( t.rotation( 2, 2 ) )
-		+	QString( "scale        %1\n" ).arg( t.scale );
+	return	QString( "translation  X %1, Y %2, Z %3\n" ).Farg( t.translation[0] ).Farg( t.translation[1] ).Farg( t.translation[2] )
+		+	QString( "rotation     Y %1, P %2, R %3  " ).Farg( xr * 180 / PI ).Farg( yr * 180 / PI ).Farg( zr * 180 / PI )
+		+	QString( "( (%1, %2, %3), " ).Farg( t.rotation( 0, 0 ) ).Farg( t.rotation( 0, 1 ) ).Farg( t.rotation( 0, 2 ) )
+		+	QString( "(%1, %2, %3), " ).Farg( t.rotation( 1, 0 ) ).Farg( t.rotation( 1, 1 ) ).Farg( t.rotation( 1, 2 ) )
+		+	QString( "(%1, %2, %3) )\n" ).Farg( t.rotation( 2, 0 ) ).Farg( t.rotation( 2, 1 ) ).Farg( t.rotation( 2, 2 ) )
+		+	QString( "scale        %1\n" ).Farg( t.scale );
 }
 
-QString Node::textStats()
+QString Node::textStats() const
 {
 	return QString( "%1\n\nglobal\n%2\nlocal\n%3\n" ).arg( name ).arg( trans2string( worldTrans() ) ).arg( trans2string( localTrans() ) );
 }

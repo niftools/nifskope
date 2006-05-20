@@ -35,41 +35,43 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
-#include "nifmodel.h"
-
-class GLTex
+class TexCache
 {
+	struct Tex
+	{
+		QString filename;
+		QString filepath;
+		GLuint id;
+		GLuint mipmaps;
+		QDateTime loaded;
+		bool used;
+	};
+	
 public:
-	GLTex( const QModelIndex &  );
-	~GLTex();
+	TexCache() {}
+	~TexCache() { flush(); }
 	
-	void release();
-
-	bool isValid() const;
-	void invalidate();
-
-	static void initialize( const QGLContext * context );
+	int bind( const QString & fname );
 	
-	static QString findFile( const QString & file, const QString & additionalFolders = QString() );
+	void flush();
+	void purgeUnused();
+	void clearUsedState();
 	
-	bool exportFile( const QString & file );
+	static QString find( const QString & file, const QString & additionalFolders = QString() );
 	
-	GLuint		id;
-	int		mipmaps;
-
-	QPersistentModelIndex iSource;
-	
-	bool		external;
-	
-	QString		filepath;
-	bool		readOnly;
-	QDateTime	loaded;
-
-	QPersistentModelIndex iPixelData;
-
 	static QStringList texfolders;
+	
+	QString nifFolder;
+	
+protected:
+	void load( Tex * tx );
+	
+	QHash<QString,Tex*>	textures;
 };
 
+void initializeTextureUnits( const QGLContext * );	
+
+bool activateTextureUnit( int x );
 void resetTextureUnits();	
 
 #endif

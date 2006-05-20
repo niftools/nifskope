@@ -110,6 +110,7 @@ NifSkope::NifSkope() : QMainWindow()
 	list->setColumnHidden( NifModel::CondCol, true );
 	list->setColumnHidden( NifModel::Ver1Col, true );
 	list->setColumnHidden( NifModel::Ver2Col, true );
+	list->setColumnHidden( NifModel::TempCol, true );
 	
 	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
@@ -505,6 +506,7 @@ void NifSkope::setListMode()
 	list->setColumnHidden( NifModel::CondCol, true );
 	list->setColumnHidden( NifModel::Ver1Col, true );
 	list->setColumnHidden( NifModel::Ver2Col, true );
+	list->setColumnHidden( NifModel::TempCol, true );
 }
 
 void NifSkope::load( const QString & filepath )

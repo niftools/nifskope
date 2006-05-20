@@ -106,7 +106,7 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
 		{
 			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( nif->getIndex( iProp, "Base Texture" ), "Texture Data" ), "Source" ), "NiSourceTexture" );
-			texfn = GLTex::findFile( nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" ), nif->getFolder() );
+			texfn = TexCache::find( nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" ), nif->getFolder() );
 		}
 	}
 	

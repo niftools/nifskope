@@ -88,7 +88,8 @@ public:
 		foreach ( QString id, ids )
 			if ( nif->inherits( id, "NiProperty" ) )
 				menu.addAction( id );
-		
+		if ( menu.actions().isEmpty() )
+			return index;
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
 		{
@@ -187,7 +188,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->isNiBlock( index ) && nif->inherits( index, "NiAVObject" ) && nif->checkVersion( 0x0a000100, 0 );
+		return nif->isNiBlock( index ) && nif->inherits( index, "NiObjectNET" ) && nif->checkVersion( 0x0a000100, 0 );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )

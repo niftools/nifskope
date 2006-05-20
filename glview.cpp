@@ -121,6 +121,14 @@ GLView::GLView()
 	grpView->addAction( aViewPerspective );
 	
 	
+	aShading = new QAction( "&Enable Shaders", this );
+	aShading->setToolTip( "enable shading" );
+	aShading->setCheckable( true );
+	aShading->setChecked( true );
+	aShading->setShortcut( Qt::Key_F12 );
+	connect( aShading, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aShading );
+	
 	aTexturing = new QAction( "&Texturing", this );
 	aTexturing->setToolTip( "enable texturing" );
 	aTexturing->setCheckable( true );
@@ -237,6 +245,11 @@ GLView::GLView()
 	aCullExp = new QAction( "Cull Nodes by Name...", this );
 	connect( aCullExp, SIGNAL( triggered() ), this, SLOT( adjustCullExp() ) );
 	addAction( aCullExp );
+	
+	aUpdateShaders = new QAction( "Update Shaders", this );
+	aUpdateShaders->setShortcut( Qt::ALT+Qt::Key_Y );
+	connect( aUpdateShaders, SIGNAL( triggered() ), this, SLOT( updateShaders() ) );
+	addAction( aUpdateShaders );
 }
 
 GLView::~GLView()
@@ -247,23 +260,44 @@ GLView::~GLView()
 
 void GLView::initializeGL()
 {
-	GLTex::initialize( context() );
+	initializeTextureUnits( context() );
 	
 	qglClearColor( bgcolor );
 
 	glShadeModel( GL_SMOOTH );
-	glEnable( GL_POINT_SMOOTH );
-	glEnable( GL_LINE_SMOOTH );
-	glEnable( GL_POLYGON_SMOOTH );
-	glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
-	glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
-	glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
+	//glEnable( GL_POINT_SMOOTH );
+	//glEnable( GL_LINE_SMOOTH );
+	//glEnable( GL_POLYGON_SMOOTH );
+	//glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
+	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
+	//glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
+	
+	scene->initialize( context() );
 
+	static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
+	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
+	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
+	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
+	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
+	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
+	glEnable( GL_LIGHT0 );
+	glEnable( GL_LIGHTING );
+	
 	// check for errors
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
 		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
+}
+
+void GLView::updateShaders()
+{
+	makeCurrent();
+	scene->renderer.updateShaders();
+	update();
 }
 
 void GLView::glProjection( int x, int y )
@@ -401,6 +435,12 @@ void GLView::paintGL()
 		fpscnt = 0;
 	}
 
+	// check for errors
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+
 	if ( aBenchmark->isChecked() || aDrawStats->isChecked() )
 	{
 		glDisable( GL_ALPHA_TEST );
@@ -432,12 +472,6 @@ void GLView::paintGL()
 				renderText( 0, y++ * ls, line, font() );
 		}
 	}
-
-	// check for errors
-	
-	GLenum err;
-	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 }
 
 QModelIndex GLView::indexAt( const QPoint & pos )
@@ -651,14 +685,14 @@ void GLView::selectHlColor()
 
 void GLView::setTextureFolder( const QString & tf )
 {
-	GLTex::texfolders = tf.split( ";" );
+	TexCache::texfolders = tf.split( ";" );
 	doCompile = true;
 	update();
 }
 
 QString GLView::textureFolder() const
 {
-	return GLTex::texfolders.join( ";" );
+	return TexCache::texfolders.join( ";" );
 }
 
 void GLView::adjustCullExp()
@@ -926,6 +960,7 @@ void GLView::checkActions()
 	scene->texturing = aTexturing->isChecked();
 	scene->blending = aBlending->isChecked();
 	scene->lighting = aLighting->isChecked();
+	scene->shading = aShading->isChecked();
 	scene->showHavok = aDrawHavok->isChecked();
 	scene->highlight = aHighlight->isChecked();
 	scene->showHidden = aDrawHidden->isChecked();
@@ -946,10 +981,11 @@ void GLView::checkActions()
 void GLView::save( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	settings.setValue( "texture folder", GLTex::texfolders.join( ";" ) );
+	settings.setValue( "texture folder", TexCache::texfolders.join( ";" ) );
 	settings.setValue( "enable textures", aTexturing->isChecked() );
 	settings.setValue( "enable lighting", aLighting->isChecked() );
 	settings.setValue( "enable blending", aBlending->isChecked() );
+	settings.setValue( "enable shading", aShading->isChecked() );
 	settings.setValue( "draw havok", aDrawHavok->isChecked() );
 	settings.setValue( "highlight meshes", aHighlight->isChecked() );
 	settings.setValue( "draw axis", aDrawAxis->isChecked() );
@@ -972,9 +1008,10 @@ void GLView::save( QSettings & settings )
 void GLView::restore( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	GLTex::texfolders = settings.value( "texture folder" ).toString().split( ";" );
+	TexCache::texfolders = settings.value( "texture folder" ).toString().split( ";" );
 	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
 	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
+	aShading->setChecked( settings.value( "enable shading", true ).toBool() );
 	aDrawHavok->setChecked( settings.value( "draw havok", true ).toBool() );
 	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
 	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );

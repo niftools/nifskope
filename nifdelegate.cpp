@@ -200,7 +200,7 @@ public:
 		if ( ! index.isValid() )
 			return 0;
 		
-		QVariant v = index.model()->data(index, Qt::EditRole);
+		QVariant v = index.data( Qt::EditRole );
 		QWidget * w = 0;
 		
 		if ( v.canConvert<NifValue>() )
@@ -223,7 +223,7 @@ public:
 	{
 		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
 		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
-		QVariant	v = index.model()->data( index, Qt::EditRole );
+		QVariant	v = index.data( Qt::EditRole );
 		
 		if ( v.canConvert<NifValue>() && vedit )
 		{

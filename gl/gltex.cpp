@@ -44,11 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <GL/glext.h>
 
-QStringList GLTex::texfolders;
-
-#ifndef APIENTRY
-# define APIENTRY
-#endif
+QStringList TexCache::texfolders;
 
 static PFNGLACTIVETEXTUREARBPROC       _glActiveTextureARB       = 0;
 static PFNGLCLIENTACTIVETEXTUREARBPROC _glClientActiveTextureARB = 0;
@@ -56,7 +52,7 @@ static PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D   = 0;
 
 static int num_texture_units = 0;
 
-void GLTex::initialize( const QGLContext * context )
+void initializeTextureUnits( const QGLContext * context )
 {
 	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
 	//foreach ( QString e, extensions.split( " " ) )
@@ -89,300 +85,6 @@ void GLTex::initialize( const QGLContext * context )
 			num_texture_units = 1;
 		//qWarning() << "texture units" << num_texture_units;
 	}
-}
-
-GLTex * Scene::bindTexture( const QModelIndex & index )
-{
-	if ( ! texturing || ! index.isValid() )
-		return 0;
-	
-	foreach ( GLTex * tex, textures )
-	{
-		if ( tex->iSource == index )
-		{
-			if ( tex->id && tex->mipmaps )
-			{
-				if ( tex->external )
-				{
-					QFileInfo info( tex->filepath );
-					if ( tex->loaded < info.lastModified() && info.lastModified().secsTo( QDateTime::currentDateTime() ) > 2 )
-					{
-						if ( info.isWritable() )
-						{
-							tex->invalidate();
-							break;
-						}
-					}
-				}
-				
-				glBindTexture( GL_TEXTURE_2D, tex->id );
-				return tex;
-			}
-			else
-				return 0;
-		}
-	}
-	
-	GLTex * tex = new GLTex( index );
-	textures.append( tex );
-	
-	if ( tex->id && tex->mipmaps )
-	{
-		glBindTexture( GL_TEXTURE_2D, tex->id );
-		return tex;
-	}
-	
-	return 0;
-}
-
-bool TexturingProperty::bind( int id )
-{
-	GLTex * tex;
-	if ( id >= 0 && id <= 7 && ( tex = scene->bindTexture( textures[id].iSource ) ) )
-	{
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textures[id].wrapT );
-		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-		glMatrixMode( GL_TEXTURE );
-		glLoadIdentity();
-		if ( textures[id].hasTransform )
-		{
-			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
-			glRotatef( textures[id].rotation, 0, 0, 1 );
-			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
-			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
-			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );
-		}
-		glMatrixMode( GL_MODELVIEW );
-		return true;
-	}
-	else
-		return false;
-}
-
-bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
-{
-	return s >= 0 && s < texcoords.count() && texcoords[s].count();
-}
-
-bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords )
-{
-	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) )
-	{
-		glEnable( GL_TEXTURE_2D );
-		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ textures[id].coordset ].data() );
-		return true;
-	}
-	else
-	{
-		glDisable( GL_TEXTURE_2D );
-		return false;
-	}
-}
-
-bool activateStage( int stage )
-{
-	if ( num_texture_units <= 1 )
-		return ( stage == 0 );
-	
-	if ( stage < num_texture_units )
-	{
-		_glActiveTextureARB( GL_TEXTURE0_ARB + stage );
-		_glClientActiveTextureARB( GL_TEXTURE0_ARB + stage );	
-		return true;
-	}
-	else
-		return false;
-}
-
-bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords, int stage )
-{
-	return ( activateStage( stage ) && bind( id, texcoords ) );
-}
-
-void resetTextureUnits()
-{
-	if ( num_texture_units <= 1 )
-	{
-		glDisable( GL_TEXTURE_2D );
-		return;
-	}
-	
-	for ( int x = num_texture_units-1; x >= 0; x-- )
-	{
-		_glActiveTextureARB( GL_TEXTURE0_ARB + x );
-		glDisable( GL_TEXTURE_2D );
-		glMatrixMode( GL_TEXTURE );
-		glLoadIdentity();
-		glMatrixMode( GL_MODELVIEW );
-		_glClientActiveTextureARB( GL_TEXTURE0_ARB + x );
-		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-	}
-}
-
-
-int texLoadBMP( const QString & filepath );
-int texLoadDDS( const QString & filepath );
-int texLoadTGA( const QString & filepath );
-int texLoadRaw( QIODevice & dev, int w, int h, int m, int bitspp, int bytespp, const quint32 masks[], bool flipH = false, bool flipV = false, bool rle = false );
-
-GLTex::GLTex( const QModelIndex & index ) : id( 0 ), mipmaps( 0 ), iSource( index )
-{
-	const NifModel * nif = static_cast<const NifModel *>( iSource.model() );
-	if ( iSource.isValid() && nif )
-	{
-		//qWarning() << "tex" << nif->getBlockNumber( index );
-		QModelIndex iTexSource = nif->getIndex( iSource, "Texture Source" );
-		if ( iTexSource.isValid() )
-		{
-			external = nif->get<bool>( iTexSource, "Use External" );
-			if ( external )
-			{
-				filepath = findFile( nif->get<QString>( iTexSource, "File Name" ), nif->getFolder() );
-				
-				if ( QFile::exists( filepath ) )
-				{
-					readOnly = !QFileInfo( filepath ).isWritable();
-					loaded = QDateTime::currentDateTime();
-					
-					glGenTextures( 1, &id );
-					glBindTexture( GL_TEXTURE_2D, id );
-					
-					if ( filepath.endsWith( ".dds" ) )
-						mipmaps = texLoadDDS( filepath );
-					else if ( filepath.endsWith( ".tga" ) )
-						mipmaps = texLoadTGA( filepath );
-					else if ( filepath.endsWith( ".bmp" ) )
-						mipmaps = texLoadBMP( filepath );
-					else
-						qWarning() << "could not load texture " << filepath << " (valid image formats are DDS TGA and BMP)";
-				}
-				else
-					qWarning() << "texture" << filepath << "not found";
-			}
-			else
-			{		// internal texture
-				iPixelData = nif->getBlock( nif->getLink( iTexSource, "Pixel Data" ), "NiPixelData" );
-				if ( iPixelData.isValid() )
-				{
-					quint32 masks[4];
-					static const char * maskNames[4] = { "Red Mask", "Green Mask", "Blue Mask", "Alpha Mask" };
-					for ( int c = 0; c < 4; c++ )
-						masks[c] = nif->get<int>( iPixelData, maskNames[c] );
-					qint32 bitspp = nif->get<int>( iPixelData, "Bits Per Pixel" );
-					qint32 bytespp = nif->get<int>( iPixelData, "Bytes Per Pixel" );
-					
-					QModelIndex iMipmaps = nif->getIndex( iPixelData, "Mipmaps" );
-					if ( iMipmaps.isValid() && nif->rowCount( iMipmaps ) >= 1 )
-					{
-						qint32 width = nif->get<int>( iMipmaps.child( 0, 0 ), "Width" );
-						qint32 height = nif->get<int>( iMipmaps.child( 0, 0 ), "Height" );
-						qint32 offset = nif->get<int>( iMipmaps.child( 0, 0 ), "Offset" );
-						
-						qint32 mipmaps = 1;
-						qint32 w = width;
-						qint32 h = height;
-						qint32 o = offset;
-						for ( int c = 1; c < nif->rowCount( iMipmaps ); c++ )
-						{
-							o += w * h * bytespp;
-							if ( w > 1 ) w /= 2;
-							if ( h > 1 ) h /= 2;
-							if ( o == nif->get<int>( iMipmaps.child( c, 0 ), "Offset" )
-								&& w == nif->get<int>( iMipmaps.child( c, 0 ), "Width" )
-								&& h == nif->get<int>( iMipmaps.child( c, 0 ), "Height" ) )
-								mipmaps++;
-							else
-								break;
-						}
-						
-						QByteArray pixels = nif->get<QByteArray>( iPixelData, "Pixel Data" );
-						QBuffer buffer( &pixels );
-						if ( buffer.open( QIODevice::ReadOnly ) )
-						{
-							buffer.seek( offset );
-							glGenTextures( 1, &id );
-							glBindTexture( GL_TEXTURE_2D, id );
-							this->mipmaps = texLoadRaw( buffer, width, height, mipmaps, bitspp, bytespp, masks );
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-GLTex::~GLTex()
-{
-	release();
-}
-
-void GLTex::release()
-{
-	if ( id )
-		glDeleteTextures( 1, &id );
-	id = 0;
-}
-
-bool GLTex::isValid() const
-{
-	return ( iSource.isValid() && ( external || iPixelData.isValid() ) );
-}
-
-void GLTex::invalidate()
-{
-	iSource = QModelIndex();
-	iPixelData = QModelIndex();
-}
-
-QString GLTex::findFile( const QString & file, const QString & additionalFolders )
-{
-	if ( file.isEmpty() )
-		return QString();
-	
-	QString filename = file.toLower();
-	
-	while ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
-		filename.remove( 0, 1 );
-	
-	QStringList extensions;
-	extensions << ".tga" << ".dds" << ".bmp";
-	bool replaceExt = false;
-	foreach ( QString ext, extensions )
-		if ( filename.endsWith( ext ) )
-		{
-			extensions.removeAll( ext );
-			extensions.prepend( ext );
-			filename = filename.left( filename.length() - ext.length() );
-			replaceExt = true;
-			break;
-		}
-	
-	// attempt to find the texture in one of the folders
-	QDir dir;
-	foreach ( QString ext, extensions )
-	{
-		if ( replaceExt )
-			filename += ext;
-		foreach ( QString folder, texfolders + additionalFolders.split( ";" ) )
-		{
-			dir.setPath( folder );
-			if ( dir.exists( filename ) )
-				return dir.filePath( filename );
-		}
-		if ( replaceExt )
-			filename = filename.left( filename.length() - ext.length() );
-		else
-			break;
-	}
-	
-	if ( replaceExt )
-		return filename + extensions.value( 0 );
-	else
-		return filename;
 }
 
 bool isPowerOfTwo( unsigned int x )
@@ -531,7 +233,7 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 	}
 }
 
-int texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV, bool flipH, bool rle )
+int texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV = false, bool flipH = false, bool rle = false )
 {
 	if ( bytespp * 8 != bpp )
 	{
@@ -1179,74 +881,221 @@ int texLoadBMP( const QString & filename )
 	return 0;
 }
 
-bool GLTex::exportFile( const QString & name )
+
+
+int TexCache::bind( const QString & fname )
 {
-	if ( ! id )
-		return false;
-	
-	QString filename = name;
-	if ( ! filename.toLower().endsWith( ".tga" ) )
-		filename.append( ".tga" );
-
-	glBindTexture( GL_TEXTURE_2D, id );
-	
-	GLint w, h;
-	
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w );
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h );
-	
-	quint32 s = w * h * 4;
-	
-	quint8 * pixl = (quint8 *) malloc( s );
-	quint8 * data = (quint8 *) malloc( s );
-
-	glPixelStorei( GL_PACK_ALIGNMENT, 1 );
-	glPixelStorei( GL_PACK_SWAP_BYTES, GL_FALSE );
-	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixl );
-	
-	static const quint32 TGA_RGBA_MASK_INV[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
-	convertToRGBA( pixl, w, h, 4, TGA_RGBA_MASK_INV, true, false, data );
-	
-	free( pixl );
-	
-	QFile f( filename );
-	if ( ! f.open( QIODevice::WriteOnly ) )
+	Tex * tx = textures.value( fname );
+	if ( ! tx )
 	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
-		free( data );
-		return false;
+		tx = new Tex;
+		tx->filename = fname;
+		tx->id = 0;
+		tx->mipmaps = 0;
+		
+		textures.insert( tx->filename, tx );
 	}
 	
-	// write out tga header
-	quint8 hdr[18];
-	for ( int o = 0; o < 18; o++ ) hdr[o] = 0;
+	if ( tx->filepath.isEmpty() || ! QFile::exists( tx->filepath ) )
+		tx->filepath = find( tx->filename, nifFolder );
+	
+	if ( ! tx->id || ( QFile::exists( tx->filepath ) && tx->loaded.secsTo( QFileInfo( tx->filepath ).lastModified() ) > 2 ) )
+		load( tx );
+	
+	glBindTexture( GL_TEXTURE_2D, tx->id );
+	
+	tx->used = true;
+	return tx->mipmaps;
+}
 
-	hdr[02] = TGA_COLOR;
-	hdr[12] = w % 256;
-	hdr[13] = w / 256;
-	hdr[14] = h % 256;
-	hdr[15] = h / 256;
-	hdr[16] = 32;
-	hdr[17] = 8;
+void TexCache::load( Tex * tx )
+{
+	if ( ! tx->id )
+		glGenTextures( 1, &tx->id );
+	tx->mipmaps = 0;
 	
-	qint64 writeBytes = f.write( (char *) hdr, 18 );
-	if ( writeBytes != 18 )
+	glBindTexture( GL_TEXTURE_2D, tx->id );
+	
+	if ( ! QFile::exists( tx->filepath ) )
+		return;
+	
+	if ( tx->filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
+		tx->mipmaps = texLoadDDS( tx->filepath );
+	else if ( tx->filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
+		tx->mipmaps = texLoadTGA( tx->filepath );
+	else if ( tx->filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
+		tx->mipmaps = texLoadBMP( tx->filepath );
+	
+	tx->loaded = QDateTime::currentDateTime();
+}
+
+void TexCache::flush()
+{
+	foreach ( Tex * tx, textures )
 	{
-		qWarning() << "exportTexture(" << filename << ") : failed to write file";
-		free( data );
-		return false;
+		if ( tx->id )
+			glDeleteTextures( 1, &tx->id );
+	}
+	qDeleteAll( textures );
+	textures.clear();
+}
+
+void TexCache::purgeUnused()
+{
+	QMutableHashIterator<QString, Tex *> it( textures );
+	while ( it.hasNext() )
+	{
+		it.next();
+		if ( !it.value()->used )
+		{
+			Tex * tx = it.value();
+			it.remove();
+			if ( tx->id )
+				glDeleteTextures( 1, &tx->id );
+			delete tx;
+		}
+	}
+}
+
+void TexCache::clearUsedState()
+{
+	foreach ( Tex * tx, textures )
+		tx->used = false;
+}
+
+QString TexCache::find( const QString & file, const QString & additionalFolders )
+{
+	if ( file.isEmpty() )
+		return QString();
+	
+	QString filename = file.toLower();
+	
+	while ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
+		filename.remove( 0, 1 );
+	
+	QStringList extensions;
+	extensions << ".tga" << ".dds" << ".bmp";
+	bool replaceExt = false;
+	foreach ( QString ext, extensions )
+		if ( filename.endsWith( ext ) )
+		{
+			extensions.removeAll( ext );
+			extensions.prepend( ext );
+			filename = filename.left( filename.length() - ext.length() );
+			replaceExt = true;
+			break;
+		}
+	
+	// attempt to find the texture in one of the folders
+	QDir dir;
+	foreach ( QString ext, extensions )
+	{
+		if ( replaceExt )
+			filename += ext;
+		foreach ( QString folder, texfolders + additionalFolders.split( ";" ) )
+		{
+			dir.setPath( folder );
+			if ( dir.exists( filename ) )
+				return dir.filePath( filename );
+		}
+		if ( replaceExt )
+			filename = filename.left( filename.length() - ext.length() );
+		else
+			break;
 	}
 	
-	writeBytes = f.write( (char *) data, s );
-	if ( writeBytes != s )
+	if ( replaceExt )
+		return filename + extensions.value( 0 );
+	else
+		return filename;
+}
+
+bool TexturingProperty::bind( int id, const QString & fname )
+{
+	GLuint mipmaps = 0;
+	if ( id >= 0 && id <= 7 && ( mipmaps = scene->bindTexture( fname.isEmpty() ? fileName( id ) : fname ) ) )
 	{
-		qWarning() << "exportTexture(" << filename << ") : failed to write file";
-		free( data );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textures[id].wrapT );
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		if ( textures[id].hasTransform )
+		{
+			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
+			glRotatef( textures[id].rotation, 0, 0, 1 );
+			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
+			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
+			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );
+		}
+		glMatrixMode( GL_MODELVIEW );
+		return true;
+	}
+	else
+		return false;
+}
+
+bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
+{
+	return s >= 0 && s < texcoords.count() && texcoords[s].count();
+}
+
+bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords )
+{
+	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) )
+	{
+		glEnable( GL_TEXTURE_2D );
+		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ textures[id].coordset ].data() );
+		return true;
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
 		return false;
 	}
+}
+
+bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords, int stage )
+{
+	return ( activateTextureUnit( stage ) && bind( id, texcoords ) );
+}
+
+bool activateTextureUnit( int stage )
+{
+	if ( num_texture_units <= 1 )
+		return ( stage == 0 );
 	
-	free( data );
-	return true;
+	if ( stage < num_texture_units )
+	{
+		_glActiveTextureARB( GL_TEXTURE0_ARB + stage );
+		_glClientActiveTextureARB( GL_TEXTURE0_ARB + stage );	
+		return true;
+	}
+	else
+		return false;
+}
+
+void resetTextureUnits()
+{
+	if ( num_texture_units <= 1 )
+	{
+		glDisable( GL_TEXTURE_2D );
+		return;
+	}
+	
+	for ( int x = num_texture_units-1; x >= 0; x-- )
+	{
+		_glActiveTextureARB( GL_TEXTURE0_ARB + x );
+		glDisable( GL_TEXTURE_2D );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		glMatrixMode( GL_MODELVIEW );
+		_glClientActiveTextureARB( GL_TEXTURE0_ARB + x );
+		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	}
 }
 
 #endif

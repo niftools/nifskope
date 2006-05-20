@@ -43,11 +43,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltex.h"
 #include "gltools.h"
 
+#include "renderer.h"
+
 class Scene
 {
 public:
 	Scene();
 	~Scene();
+	
+	void initialize( const QGLContext * cx ) { renderer.initialize( cx ); renderer.updateShaders(); }
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );
@@ -63,11 +67,13 @@ public:
 	
 	QString textStats();
 	
-	GLTex * bindTexture( const QModelIndex & );
+	int bindTexture( const QString & fname );
 	void setupLights( Node * node );
 	
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
+	
+	Renderer renderer;
 
 	NodeList nodes;
 	PropertyList properties;
@@ -85,10 +91,11 @@ public:
 	float time;
 
 	bool texturing;
-	QList<GLTex*> textures;
+	TexCache textures;
 	
 	bool blending;
 	bool lighting;
+	bool shading;
 	
 	bool highlight;
 	int currentNode;

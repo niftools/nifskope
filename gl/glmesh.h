@@ -53,21 +53,25 @@ public:
 	
 	BoundSphere bounds() const;
 	
+	QString textStats() const;
+	
 protected:	
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	
-	QPersistentModelIndex iData, iSkin, iSkinData;
+	QPersistentModelIndex iData, iSkin, iSkinData, iTangentData;
 	bool upData, upSkin;
 	
 	QVector<Vector3> verts;
 	QVector<Vector3> norms;
 	QVector<Color4>  colors;
+	QVector<Vector3> tangents;
 	
 	QList< QVector<Vector2> > coords;
 	
 	QVector<Vector3> transVerts;
 	QVector<Vector3> transNorms;
 	QVector<Color4> transColors;
+	QVector<Vector3> transTangents;
 	
 	int skelRoot;
 	Transform skelTrans;
@@ -83,7 +87,10 @@ protected:
 	mutable BoundSphere bndSphere;
 	mutable bool upBounds;
 	
+	QString shader;
+	
 	friend class MorphController;
+	friend class Renderer;
 };
 
 #endif

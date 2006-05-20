@@ -57,7 +57,6 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-	qDeleteAll( textures ); textures.clear();
 }
 
 void Scene::clear( bool flushTextures )
@@ -67,9 +66,8 @@ void Scene::clear( bool flushTextures )
 	lights.clear();
 	roots.clear();
 	
-	if ( flushTextures )
-		foreach ( GLTex * tex, textures )
-			tex->invalidate();
+	//if ( flushTextures )
+		textures.flush();
 
 	sceneBoundsValid = timeBoundsValid = false;
 }
@@ -90,10 +88,6 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 		
 		foreach ( Node * node, nodes.list() )
 			node->update( nif, block );
-		
-		foreach ( GLTex * tex, textures )
-			if ( tex->iSource == block || tex->iPixelData == block )
-				tex->invalidate();
 	}
 	else
 	{
@@ -129,6 +123,7 @@ void Scene::make( NifModel * nif, bool flushTextures )
 {
 	clear( flushTextures );
 	if ( ! nif ) return;
+	textures.nifFolder = nif->getFolder();
 	update( nif, QModelIndex() );
 }
 
@@ -204,17 +199,7 @@ void Scene::transform( const Transform & trans, float time )
 
 	sceneBoundsValid = false;
 
-	QList<GLTex*> rem;
-	foreach ( GLTex * tex, textures )
-	{
-		if ( ! tex->isValid() )
-			rem.append( tex );
-	}
-	foreach ( GLTex * tex, rem )
-	{
-		textures.removeAll( tex );
-		delete tex;
-	}
+	// TODO: purge unused textures
 }
 
 void Scene::draw()
@@ -253,6 +238,7 @@ void Scene::drawHavok()
 
 void Scene::setupLights( Node * node )
 {
+	/*
 	glEnable( GL_LIGHTING );
 	
 	if ( lights.list().isEmpty() || ! lighting )
@@ -288,6 +274,7 @@ void Scene::setupLights( Node * node )
 		for ( int n = 0; n < 8; n++ )
 			slights[n].first->on( n++ );
 	}
+	*/
 }
 
 BoundSphere Scene::bounds() const
@@ -345,3 +332,12 @@ QString Scene::textStats()
 	}
 	return QString();
 }
+
+int Scene::bindTexture( const QString & fname )
+{
+	if ( ! texturing || fname.isEmpty() )
+		return 0;
+	
+	return textures.bind( fname );
+}
+

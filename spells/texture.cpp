@@ -141,13 +141,13 @@ public:
 		QModelIndex iTex = nif->getIndex( index, "Texture Source" );
 		if ( iTex.isValid() )
 		{
-			QString file = GLTex::findFile( nif->get<QString>( iTex, "File Name" ), nif->getFolder() );
+			QString file = TexCache::find( nif->get<QString>( iTex, "File Name" ), nif->getFolder() );
 			
 			file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
 			
 			if ( !file.isEmpty() )
 			{
-				QStringList folders = GLTex::texfolders;
+				QStringList folders = TexCache::texfolders;
 				if ( ! nif->getFolder().isEmpty() )
 					folders.append( nif->getFolder() );
 				foreach ( QString base, folders )
@@ -288,189 +288,6 @@ public:
 
 REGISTER_SPELL( spAddGlowMap )
 
-class spPackTexture : public Spell
-{
-public:
-	QString name() const { return "Pack"; }
-	QString page() const { return "Texture"; }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
-	{
-		QModelIndex index = nif->getBlock( idx );
-		if ( ! ( QGLPixelBuffer::hasOpenGLPbuffers() && nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture" ) )
-			return false;
-		QModelIndex iTex = nif->getIndex( index, "Texture Source" );
-		return ( iTex.isValid() && nif->get<int>( iTex, "Use External" ) == 1 );
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
-	{
-		if ( nif->getVersionNumber() >= 0x14000000 && QMessageBox::question( 0, "Pack Texture", "Dunno how to pack textures for version 20.x.x.x", "Try Anyway", "Ok" ) != 0 )
-			return idx;
-		
-		qWarning( "%x", nif->getVersionNumber() );
-		
-		QModelIndex index = nif->getBlock( idx );
-		
-		QGLPixelBuffer gl( QSize( 32, 32 ) );
-		gl.makeCurrent();
-		
-		GLTex * tex = new GLTex( index );
-		
-		if ( tex->id )
-		{
-			glBindTexture( GL_TEXTURE_2D, tex->id );
-			
-			GLint w, h;
-			
-			glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w );
-			glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h );
-			
-			quint32 s = w * h * 4;
-			quint32 o = 0;
-			
-			QByteArray data;
-			data.resize( s );
-			glPixelStorei( GL_PACK_ALIGNMENT, 1 );
-			glPixelStorei( GL_PACK_SWAP_BYTES, GL_FALSE );
-			glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data() );
-			
-			QList<QSize> sizes;
-			QList<quint32> offsets;
-			
-			sizes.append( QSize( w, h ) );
-			offsets.append( o );
-			
-			while ( w != 1 || h != 1 )
-			{
-				o = s;
-				w /= 2; if ( w == 0 ) w = 1;
-				h /= 2; if ( h == 0 ) h = 1;
-				s += w*h*4;
-				sizes.append( QSize( w, h ) );
-				offsets.append( o );
-			}
-			
-			data.resize( s );
-			
-			for ( int i = 1; i < sizes.count(); i++ )
-			{
-				const quint8 * src = (const quint8 * ) data.data() + offsets[ i-1 ];
-				quint8 * dst = (quint8 *) data.data() + offsets[ i ];
-				
-				w = sizes[ i ].width();
-				h = sizes[ i ].height();
-				
-				quint32 xo = ( sizes[ i-1 ].width() > 1 ? 4 : 0 );
-				quint32 yo = ( sizes[ i-1 ].height() > 1 ? sizes[ i-1 ].width() * 4 : 0 );
-				
-				for ( int y = 0; y < h; y++ )
-				{
-					for ( int x = 0; x < w; x++ )
-					{
-						for ( int b = 0; b < 4; b++ )
-						{
-							*dst++ = ( *(src+xo) + *(src+yo) + *(src+xo+yo) + *src++ ) / 4;
-						}
-						src += xo;
-					}
-					src += yo;
-				}
-			}
-			
-			int blockNum = nif->getBlockNumber( index );
-			nif->insertNiBlock( "NiPixelData", blockNum+1 );
-			
-			QPersistentModelIndex iSourceTexture = nif->getBlock( blockNum, "NiSourceTexture" );
-			QModelIndex iPixelData = nif->getBlock( blockNum+1, "NiPixelData" );
-			if ( iSourceTexture.isValid() && iPixelData.isValid() )
-			{
-				nif->set<int>( iPixelData, "Pixel Format", 1 );
-				nif->set<int>( iPixelData, "Red Mask", 0x000000ff );
-				nif->set<int>( iPixelData, "Green Mask", 0x0000ff00 );
-				nif->set<int>( iPixelData, "Blue Mask", 0x00ff0000 );
-				nif->set<int>( iPixelData, "Alpha Mask", 0xff000000 );
-				nif->set<int>( iPixelData, "Bits Per Pixel", 32 );
-				nif->set<int>( iPixelData, "Bytes Per Pixel", 4 );
-				nif->set<int>( iPixelData, "Num Mipmaps", sizes.count() );
-				QModelIndex iMipMaps = nif->getIndex( iPixelData, "Mipmaps" );
-				if ( iMipMaps.isValid() )
-				{
-					nif->updateArray( iMipMaps );
-					for ( int m = 0; m < sizes.count() && m < nif->rowCount( iMipMaps ); m++ )
-					{
-						nif->set<int>( iMipMaps.child( m, 0 ), "Width", sizes[m].width() );
-						nif->set<int>( iMipMaps.child( m, 0 ), "Height", sizes[m].height() );
-						nif->set<int>( iMipMaps.child( m, 0 ), "Offset", offsets[m] );
-					}
-				}
-				nif->set<QByteArray>( iPixelData, "Pixel Data", data );
-				
-				QModelIndex iUnknown = nif->getIndex( iPixelData, "Unknown 8 Bytes" );
-				if ( iUnknown.isValid() )
-				{
-					static const int unknownPixeldataBytes[8] = { 129, 8, 130, 32, 0, 65, 12, 0 };
-					for ( int r = 0; r < 8 && r < nif->rowCount( iUnknown ); r++ )
-					{
-						nif->set<int>( iUnknown.child( r, 0 ), unknownPixeldataBytes[r] );
-					}
-				}
-				
-				QModelIndex iTexSrc = nif->getIndex( iSourceTexture, "Texture Source" );
-				if ( iTexSrc.isValid() )
-				{
-					nif->set<int>( iTexSrc, "Use External", 0 );
-					nif->set<int>( iTexSrc, "Unknown Byte", 1 );
-					nif->setLink( iTexSrc, "Pixel Data", blockNum+1 );
-				}
-			}
-			delete tex;
-			return iSourceTexture;
-		}
-		delete tex;
-		return QModelIndex();
-	}
-};
-
-REGISTER_SPELL( spPackTexture )
-
-class spExportTexture : public Spell
-{
-public:
-	QString name() const { return "Export"; }
-	QString page() const { return "Texture"; }
-
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
-	{
-		QModelIndex index = nif->getBlock( idx );
-		if ( ! ( QGLPixelBuffer::hasOpenGLPbuffers() && nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture" ) )
-			return false;
-		return true;
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
-	{
-		QModelIndex index = nif->getBlock( idx );
-		
-		QGLPixelBuffer gl( QSize( 32, 32 ) );
-		gl.makeCurrent();
-		
-		GLTex * tex = new GLTex( index );
-		
-		if ( tex->id )
-		{
-			QString filename = QFileDialog::getSaveFileName( 0, "Export texture", QString(), "*.TGA" );
-			if ( ! filename.isEmpty() )
-				tex->exportFile( filename );
-		}
-		
-		delete tex;
-		return index;
-	}
-};
-
-REGISTER_SPELL( spExportTexture )
-
 class spTextureFolders : public Spell
 {
 public:
@@ -484,7 +301,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		GLTex::texfolders = selectMultipleDirs( "Select texture folders", GLTex::texfolders );
+		TexCache::texfolders = selectMultipleDirs( "Select texture folders", TexCache::texfolders );
 		nif->reset();
 		return index;
 	}

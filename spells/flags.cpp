@@ -210,13 +210,6 @@ public:
 		
 		dlgButtons( &dlg, vbox );
 		
-		if ( nif->getVersion() == "20.0.0.5" )
-		{
-			chkTest->setDisabled( true );
-			cmbTest->setDisabled( true );
-			spnTest->setDisabled( true );
-		}
-		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
 			flags = flags & 0xfffe;

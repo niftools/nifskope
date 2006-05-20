@@ -107,14 +107,13 @@ public:
 	void	makeParent( Node * parent );
 	
 	virtual class BoundSphere bounds() const;
-	//Vector3 center() const { return bounds().center(); }
-	//float radius() const { return bounds().radius; }
 	
 	template <typename T> T * findProperty() const;
+	void activeProperties( PropertyList & list ) const;
 	
 	void setupRenderState( bool vertexcolors );
 	
-	virtual QString textStats();
+	virtual QString textStats() const;
 	
 protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & controller );

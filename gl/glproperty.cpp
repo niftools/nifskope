@@ -38,26 +38,22 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 {
 	Property * property = 0;
 	
-	if ( nif->inherits( index, "NiProperty" ) )
-	{
-		QString name = nif->itemName( index );
-		if ( name == "NiAlphaProperty" )
-			property = new AlphaProperty( scene, index );
-		else if ( name == "NiZBufferProperty" )
-			property = new ZBufferProperty( scene, index );
-		else if ( name == "NiTexturingProperty" )
-			property = new TexturingProperty( scene, index );
-		else if ( name == "NiMaterialProperty" )
-			property = new MaterialProperty( scene, index );
-		else if ( name == "NiSpecularProperty" )
-			property = new SpecularProperty( scene, index );
-		else if ( name == "NiWireframeProperty" )
-			property = new WireframeProperty( scene, index );
-		else if ( name == "NiVertexColorProperty" )
-			property = new VertexColorProperty( scene, index );
-		else if ( name == "NiStencilProperty" )
-			property = new StencilProperty( scene, index );
-	}
+	if ( nif->isNiBlock( index, "NiAlphaProperty" ) )
+		property = new AlphaProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiZBufferProperty" ) )
+		property = new ZBufferProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiTexturingProperty" ) )
+		property = new TexturingProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiMaterialProperty" ) )
+		property = new MaterialProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiSpecularProperty" ) )
+		property = new SpecularProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiWireframeProperty" ) )
+		property = new WireframeProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiVertexColorProperty" ) )
+		property = new VertexColorProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiStencilProperty" ) )
+		property = new StencilProperty( scene, index );
 	
 	if ( property )
 		property->update( nif, index );
@@ -82,46 +78,59 @@ PropertyList::~PropertyList()
 void PropertyList::clear()
 {
 	foreach( Property * p, properties )
-		del( p );
+		if ( --p->ref <= 0 )
+			delete p;
+	properties.clear();
 }
 
 PropertyList & PropertyList::operator=( const PropertyList & other )
 {
 	clear();
-	foreach ( Property * p, other.list() )
+	foreach ( Property * p, other.properties )
 		add( p );
 	return *this;
 }
 
+bool PropertyList::contains( Property * p ) const
+{
+	if ( ! p )	return false;
+	QList<Property *> props = properties.values( p->type() );
+	return props.contains( p );
+}
+
 void PropertyList::add( Property * p )
 {
-	if ( p && ! properties.contains( p ) )
+	if ( p && ! contains( p ) )
 	{
 		++ p->ref;
-		properties.append( p );
+		properties.insert( p->type(), p );
 	}
 }
 
 void PropertyList::del( Property * p )
 {
-	if ( properties.contains( p ) )
+	if ( ! p )	return;
+	
+    QHash<Property::Type, Property*>::iterator i = properties.find( p->type() );
+    while ( i != properties.end() && i.key() == p->type() )
 	{
-		int cnt = properties.removeAll( p );
-		
-		if ( p->ref <= cnt )
+        if ( i.value() == p )
 		{
-			delete p;
+			i = properties.erase( i );
+			if ( --p->ref <= 0 )
+				delete p;
 		}
 		else
-			p->ref -= cnt;
-	}
+			++i;
+    }
 }
 
 Property * PropertyList::get( const QModelIndex & index ) const
 {
+	if ( ! index.isValid() )	return 0;
 	foreach ( Property * p, properties )
 	{
-		if ( p->index().isValid() && p->index() == index )
+		if ( p->index() == index )
 			return p;
 	}
 	return 0;
@@ -131,14 +140,17 @@ void PropertyList::validate()
 {
 	QList<Property *> rem;
 	foreach ( Property * p, properties )
-	{
 		if ( ! p->isValid() )
 			rem.append( p );
-	}
 	foreach ( Property * p, rem )
-	{
 		del( p );
-	}
+}
+
+void PropertyList::merge( const PropertyList & other )
+{
+	foreach ( Property * p, other.properties )
+		if ( ! properties.contains( p->type() ) )
+			add( p );
 }
 
 void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
@@ -294,6 +306,27 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 	}
 }
 
+QString TexturingProperty::fileName( int id ) const
+{
+	if ( id >= 0 && id <= 7 )
+	{
+		QModelIndex iSource = textures[ id ].iSource;
+		const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
+		if ( nif && iSource.isValid() )
+			return nif->get<QString>( iSource, "Texture Source/File Name" );
+	}
+	return QString();
+}
+
+int TexturingProperty::coordSet( int id ) const
+{
+	if ( id >= 0 && id <= 7 )
+	{
+		return textures[id].coordset;
+	}
+	return -1;
+}
+
 class TexFlipController : public Controller
 {
 public:
@@ -321,10 +354,10 @@ public:
 		if ( Controller::update( nif, index ) )
 		{
 			iValues = nif->getIndex( iData, "Data" );
-			flipDelta = nif->get<float>( index, "Delta" );
-			flipSlot = nif->get<int>( index, "Texture Slot" );
+			flipDelta = nif->get<float>( iBlock, "Delta" );
+			flipSlot = nif->get<int>( iBlock, "Texture Slot" );
 			
-			iSources = nif->getIndex( nif->getIndex( index, "Sources" ), "Indices" );
+			iSources = nif->getIndex( nif->getIndex( iBlock, "Sources" ), "Indices" );
 			return true;
 		}
 		return false;
@@ -384,8 +417,8 @@ public:
 		if ( Controller::update( nif, index ) )
 		{
 			iValues = nif->getIndex( iData, "Data" );
-			texSlot = nif->get<int>( index, "Texture Slot" );
-			texOP = nif->get<int>( index, "Operation" );
+			texSlot = nif->get<int>( iBlock, "Texture Slot" );
+			texOP = nif->get<int>( iBlock, "Operation" );
 			return true;
 		}
 		return false;
@@ -416,6 +449,26 @@ void TexturingProperty::setController( const NifModel * nif, const QModelIndex &
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
+}
+
+int TexturingProperty::getId( const QString & texname )
+{
+	static QHash<QString, int> hash;
+	if ( hash.isEmpty() )
+	{
+		hash.insert( "base", 0 );
+		hash.insert( "dark", 1 );
+		hash.insert( "detail", 2 );
+		hash.insert( "gloss", 3 );
+		hash.insert( "glow", 4 );
+		hash.insert( "bumpmap", 5 );
+		hash.insert( "decal0", 6 );
+		hash.insert( "decal1", 7 );
+	}
+	if ( hash.contains( texname ) )
+		return hash[ texname ];
+	else
+		return -1;
 }
 
 void glProperty( TexturingProperty * p )
@@ -570,26 +623,13 @@ void VertexColorProperty::update( const NifModel * nif, const QModelIndex & bloc
 		lightmode = nif->get<int>( iBlock, "Lighting Mode" );
 		// 0 : emissive
 		// 1 : emissive + ambient + diffuse
-
-/*
-vertex_mode 0
-lighting_mode 0 : all black ?
-lighting_mode 1 : material color (vertex color ignored)
-
-vertex_mode 1
-lighting_mode 0 : only vertex lighting (disable lighting?)
-lighting_mode 1 : almost the same but the dark shadows dissapear when switching to bright light
-
-vertex_mode 2
-lighting_mode 0 : all black ?
-lighting_mode 1 : the same as no property (additiv?)
-*/
-
 	}
 }
 
 void glProperty( VertexColorProperty * p, bool vertexcolors )
 {
+	// FIXME
+	
 	if ( ! vertexcolors )
 	{
 		glDisable( GL_COLOR_MATERIAL );

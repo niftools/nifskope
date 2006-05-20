@@ -132,27 +132,29 @@ void Mesh::clear()
 {
 	Node::clear();
 
-	iData = iSkin = iSkinData = QModelIndex();
+	iData = iSkin = iSkinData = iTangentData = QModelIndex();
 	
 	verts.clear();
 	norms.clear();
 	colors.clear();
 	coords.clear();
+	tangents.clear();
 	triangles.clear();
 	tristrips.clear();
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
+	transTangents.clear();
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
 {
 	Node::update( nif, index );
 	
-	if ( ! iBlock.isValid() )
+	if ( ! iBlock.isValid() || ! index.isValid() )
 		return;
 	
-	upData |= ( iData == index );
+	upData |= ( iData == index ) || ( iTangentData == index );
 	upSkin |= ( iSkin == index );
 	upSkin |= ( iSkinData == index );
 	
@@ -227,9 +229,10 @@ void Mesh::transform()
 	{
 		upData = false;
 		
-		verts = nif->getArray<Vector3>( nif->getIndex( iData, "Vertices" ) );
-		norms = nif->getArray<Vector3>( nif->getIndex( iData, "Normals" ) );
-		colors = nif->getArray<Color4>( nif->getIndex( iData, "Vertex Colors" ) );
+		verts = nif->getArray<Vector3>( iData, "Vertices" );
+		norms = nif->getArray<Vector3>( iData, "Normals" );
+		colors = nif->getArray<Color4>( iData, "Vertex Colors" );
+		tangents.clear();
 		
 		if ( norms.count() < verts.count() ) norms.clear();
 		if ( colors.count() < verts.count() ) colors.clear();
@@ -249,7 +252,7 @@ void Mesh::transform()
 		
 		if ( nif->itemName( iData ) == "NiTriShapeData" )
 		{
-			triangles = nif->getArray<Triangle>( nif->getIndex( iData, "Triangles" ) );
+			triangles = nif->getArray<Triangle>( iData, "Triangles" );
 			tristrips.clear();
 		}
 		else if ( nif->itemName( iData ) == "NiTriStripsData" )
@@ -270,6 +273,27 @@ void Mesh::transform()
 			triangles.clear();
 			tristrips.clear();
 		}
+		
+		QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List/Indices" );
+		if ( iExtraData.isValid() )
+		{
+			for ( int e = 0; e < nif->rowCount( iExtraData ); e++ )
+			{
+				QModelIndex iExtra = nif->getBlock( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
+				if ( nif->get<QString>( iExtra, "Name" ) == "Tangent space (binormal & tangent vectors)" )
+				{
+					iTangentData = iExtra;
+					QByteArray data = nif->get<QByteArray>( iExtra, "Binary Data" );
+					if ( data.count() == verts.count() * 4 * 3 * 2 )
+					{
+						tangents.resize( verts.count() );
+						Vector3 * t = (Vector3 *) data.data();
+						for ( int c = 0; c < verts.count(); c++ )
+							tangents[c] = *t++;
+					}
+				}
+			}
+		}	
 	}
 	
 	if ( upSkin )
@@ -317,6 +341,8 @@ void Mesh::transformShapes()
 		transVerts.fill( Vector3() );
 		transNorms.resize( norms.count() );
 		transNorms.fill( Vector3() );
+		transTangents.resize( tangents.count() );
+		transTangents.fill( Vector3() );
 		
 		Node * root = findParent( skelRoot );
 		foreach ( BoneWeights bw, weights )
@@ -325,7 +351,7 @@ void Mesh::transformShapes()
 			if ( root )
 			{
 				Node * bone = root->findChild( bw.bone );
-				if ( bone ) trans = bone->viewTrans() * bw.trans; //trans * bone->localTransFrom( skelRoot ) * bw.trans;
+				if ( bone ) trans = /*bone->viewTrans() * bw.trans; */ trans * bone->localTransFrom( skelRoot ) * bw.trans;
 			}	// FIXME
 			
 			Matrix natrix = trans.rotation;
@@ -335,10 +361,14 @@ void Mesh::transformShapes()
 					transVerts[ vw.vertex ] += trans * verts[ vw.vertex ] * vw.weight;
 				if ( transNorms.count() > vw.vertex )
 					transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
+				if ( transTangents.count() > vw.vertex )
+					transTangents[ vw.vertex ] += natrix * tangents[ vw.vertex ] * vw.weight;
 			}
 		}
 		for ( int n = 0; n < transNorms.count(); n++ )
 			transNorms[n].normalize();
+		for ( int t = 0; t < transTangents.count(); t++ )
+			transTangents[t].normalize();
 		
 		bndSphere = BoundSphere( transVerts );
 		bndSphere.applyInv( viewTrans() );
@@ -354,16 +384,18 @@ void Mesh::transformShapes()
 		transNorms.resize( norms.count() );
 		Matrix natrix = viewTrans().rotation;
 		for ( int n = 0; n < norms.count(); n++ )
-		{
 			transNorms[n] = natrix * norms[n];
-		}
+		transTangents.resize( tangents.count() );
+		for ( int t = 0; t < tangents.count(); t++ )
+			transTangents[t] = natrix * tangents[t];
 	}
 	else
 	{
 		transVerts = verts;
 		transNorms = norms;
+		transTangents = tangents;
 	}
-
+	
 	if ( alphaprop && alphaprop->sort() )
 	{
 		triOrder.resize( triangles.count() );
@@ -409,7 +441,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	glLoadName( nodeId );
 	
-	// setup alpha blending
+	// draw transparent meshes during second run
 	
 	AlphaProperty * aprop = findProperty< AlphaProperty >();
 	if ( aprop && aprop->blend() && scene->blending && draw2nd )
@@ -417,11 +449,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		draw2nd->add( this );
 		return;
 	}
-	
-	setupRenderState( transColors.count() );
-	
-	if ( ! transNorms.count() )
-		glDisable( GL_NORMALIZE );
 	
 	// rigid mesh? then pass the transformation on to the gl layer
 	
@@ -447,132 +474,12 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glEnableClientState( GL_COLOR_ARRAY );
 		glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
 	}
+	else
+		glColor( Color3( 1.0, 0.2, 1.0 ) );
 	
-	// setup multitexturing
 	
-	TexturingProperty * texprop = findProperty< TexturingProperty >();
-	if ( texprop )
-	{
-		int stage = 0;
-		
-		if ( texprop->bind( 1, coords, stage ) )
-		{	// dark
-			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
-		}
-		
-		if ( texprop->bind( 0, coords, stage ) )
-		{	// base
-			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
-		}
-		
-		if ( texprop->bind( 2, coords, stage ) )
-		{	// detail
-			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0 );
-		}
-		
-		if ( texprop->bind( 6, coords, stage ) )
-		{	// decal 0
-			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
-		}
-		
-		if ( texprop->bind( 7, coords, stage ) )
-		{	// decal 1
-			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
-		}
-		
-		if ( texprop->bind( 4, coords, stage ) )
-		{	// glow
-			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
-		}
-	}
+	shader = scene->renderer.setupProgram( this, shader );
+	
 	
 	// render the triangles
 
@@ -584,7 +491,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	for ( int s = 0; s < tristrips.count(); s++ )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
 	
-	resetTextureUnits();
+	scene->renderer.stopProgram();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_NORMAL_ARRAY );
@@ -658,4 +565,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	if ( transformRigid )
 		glPopMatrix();
+}
+
+QString Mesh::textStats() const
+{
+	return Node::textStats() + QString( "\nshader: %1\n" ).arg( shader );
 }
