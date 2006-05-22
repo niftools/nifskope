@@ -161,6 +161,9 @@ NifSkope::NifSkope() : QMainWindow()
 	connect( aLoad, SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );	
 	aSave = new QAction( "&Save", this );
 	connect( aSave, SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
+	aSanitize = new QAction( "&Auto Sanitize before Save", this );
+	aSanitize->setCheckable( true );
+	aSanitize->setChecked( true );
 	aLoadXML = new QAction( "Reload &XML", this );
 	connect( aLoadXML, SIGNAL( triggered() ), this, SLOT( loadXML() ) );
 	aReload = new QAction( "&Reload XML + Nif", this );
@@ -267,6 +270,8 @@ NifSkope::NifSkope() : QMainWindow()
 	mFile->addAction( aLoad );
 	mFile->addAction( aSave );
 	mFile->addSeparator();
+	mFile->addAction( aSanitize );
+	mFile->addSeparator();
 	mFile->addAction( aWindow );
 	mFile->addSeparator();
 	mFile->addAction( aLoadXML );
@@ -349,6 +354,8 @@ void NifSkope::restore( QSettings & settings )
 	ogl->restore( settings );	
 
 	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
+	
+	aSanitize->setChecked( settings.value( "auto sanitize", true ).toBool() );
 }
 
 void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
@@ -376,6 +383,8 @@ void NifSkope::save( QSettings & settings ) const
 	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );
+	
+	settings.setValue( "auto sanitize", aSanitize->isChecked() );
 }
 
 void NifSkope::about()
@@ -583,8 +592,15 @@ void NifSkope::save()
 	}
 	else
 	{
+		if ( aSanitize->isChecked() )
+		{
+			QModelIndex idx = SpellBook::sanitize( nif );
+			if ( idx.isValid() )
+				select( idx );
+		}
 		if ( ! nif->saveToFile( nifname ) )
 			qWarning() << "failed to write nif file " << nifname;
+		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
 	}
 	setEnabled( true );
 }

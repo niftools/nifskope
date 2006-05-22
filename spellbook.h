@@ -50,6 +50,7 @@ public:
 	virtual QString hint() const { return QString(); }
 	virtual QIcon icon() const { return QIcon(); }
 	virtual bool instant() const { return false; }
+	virtual bool sanity() const { return false; }
 
 	virtual bool isApplicable( const NifModel * nif, const QModelIndex & index ) = 0;
 	
@@ -70,10 +71,14 @@ public:
 	static Spell * lookup( const QString & id );
 	static Spell * instant( const NifModel * nif, const QModelIndex & index );
 	
+	static QModelIndex sanitize( NifModel * nif );
+	
 public slots:
 	void sltNif( NifModel * nif );
 	
 	void sltIndex( const QModelIndex & index );
+	
+	void checkActions();
 	
 signals:
 	void sigIndex( const QModelIndex & index );
@@ -87,13 +92,14 @@ protected:
 	QMap<QAction*,Spell*> Map;
 	
 	void newSpellRegistered( Spell * spell );
-	void checkActions( const QModelIndex & index, QMenu * menu, const QString & page );
+	void checkActions( QMenu * menu, const QString & page );
 	
 private:
 	static QList<Spell*> & spells();
 	static QList<SpellBook*> & books();
 	static QMultiHash<QString, Spell*> & hash();
 	static QList<Spell*> & instants();
+	static QList<Spell*> & sanitizers();
 };
 
 class Librarian

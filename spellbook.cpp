@@ -59,6 +59,12 @@ QList<Spell*> & SpellBook::instants()
 	return *_instants;
 }
 
+QList<Spell*> & SpellBook::sanitizers()
+{
+	static QList<Spell*> * _sanitizers = new QList<Spell*>();
+	return *_sanitizers;
+}
+
 SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * receiver, const char * member ) : QMenu(), Nif( 0 )
 {
 	setTitle( "Spells" );
@@ -96,8 +102,12 @@ void SpellBook::sltSpellTriggered( QAction * action )
 
 void SpellBook::sltNif( NifModel * nif )
 {
+	if ( nif )
+		disconnect( nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
 	Nif = nif;
 	Index = QModelIndex();
+	if ( nif )
+		connect( nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
 }
 
 void SpellBook::sltIndex( const QModelIndex & index )
@@ -106,17 +116,22 @@ void SpellBook::sltIndex( const QModelIndex & index )
 		Index = index;
 	else
 		Index = QModelIndex();
-	checkActions( index, this, QString() );
+	checkActions();
 }
 
-void SpellBook::checkActions( const QModelIndex & index, QMenu * menu, const QString & page )
+void SpellBook::checkActions()
+{
+	checkActions( this, QString() );
+}
+
+void SpellBook::checkActions( QMenu * menu, const QString & page )
 {
 	bool menuEnable = false;
 	foreach ( QAction * action, menu->actions() )
 	{
 		if ( action->menu() )
 		{
-			checkActions( index, action->menu(), action->menu()->title() );
+			checkActions( action->menu(), action->menu()->title() );
 			menuEnable |= action->menu()->isEnabled();
 			action->setVisible( action->menu()->isEnabled() );
 		}
@@ -126,7 +141,7 @@ void SpellBook::checkActions( const QModelIndex & index, QMenu * menu, const QSt
 			{
 				if ( action->text() == spell->name() && page == spell->page() )
 				{
-					bool actionEnable = Nif && spell->isApplicable( Nif, index );
+					bool actionEnable = Nif && spell->isApplicable( Nif, Index );
 					action->setVisible( actionEnable );
 					action->setEnabled( actionEnable );
 					menuEnable |= actionEnable;
@@ -170,6 +185,8 @@ void SpellBook::registerSpell( Spell * spell )
 	
 	if ( spell->instant() )
 		instants().append( spell );
+	if ( spell->sanity() )
+		sanitizers().append( spell );
 	
 	foreach ( SpellBook * book, books() )
 	{
@@ -209,6 +226,20 @@ Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
 			return spell;
 	}
 	return 0;
+}
+
+QModelIndex SpellBook::sanitize( NifModel * nif )
+{
+	foreach ( Spell * spell, sanitizers() )
+	{
+		if ( spell->isApplicable( nif, QModelIndex() ) )
+		{
+			QModelIndex idx = spell->cast( nif, QModelIndex() );
+			if ( idx.isValid() )
+				return idx;
+		}
+	}
+	return QModelIndex();
 }
 
 QAction * SpellBook::exec( const QPoint & pos, QAction * act )

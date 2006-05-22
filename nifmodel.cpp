@@ -1165,16 +1165,6 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 		NifItem * child = parent->child( row );
 		if ( evalCondition( child ) )
 		{
-			
-			bool isChildLink;
-			if ( itemIsLink( child, &isChildLink ) )
-			{
-				if ( ! isChildLink && child->value().toLink() < 0 )
-					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "unassigned up link" );
-				else if ( child->value().toLink() >= getBlockCount() )
-					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "invalid link" );
-			}
-			
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )

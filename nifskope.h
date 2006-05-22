@@ -122,6 +122,7 @@ private:
 	
 	QAction * aLoad;
 	QAction * aSave;
+	QAction * aSanitize;
 	QAction * aLoadXML;
 	QAction * aReload;
 	QAction * aWindow;
