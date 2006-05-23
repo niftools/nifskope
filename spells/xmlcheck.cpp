@@ -356,10 +356,16 @@ void TestThread::run()
 		
 		if ( blockMatch.isEmpty() || ( model == &nif && NifModel::checkForBlock( filepath, blockMatch ) ) )
 		{
-			model->loadFromFile( filepath );
+			bool loaded = model->loadFromFile( filepath );
 			
 			QString result = QString( "<a href=\"%1\">%2</a> (%3)<br>" ).arg(filepath).arg( filepath ).arg( model->getVersion() );
-			foreach ( Message msg, model->getMessages() )
+			QList<Message> messages = model->getMessages();
+			
+			if ( loaded && model == & nif )
+				for ( int b = 0; b < nif.getBlockCount(); b++ )
+					messages += checkLinks( &nif, nif.getBlock( b ) );
+			
+			foreach ( Message msg, messages )
 			{
 				if ( msg.type() != QtDebugMsg )
 					result += msg + "<br>";
@@ -373,9 +379,53 @@ void TestThread::run()
 			break;
 		
 		filepath = queue->dequeue();
-	}
+	}	
 }
 
+QString linkId( QModelIndex idx )
+{
+	QString id = QString( "%1 (%2)" ).arg( idx.data().toString() ).arg( idx.sibling( idx.row(), NifModel::TempCol ).data().toString() );
+	while ( idx.parent().isValid() )
+	{
+		idx = idx.parent();
+		id.prepend( QString( "%1/" ).arg( idx.data().toString() ) );
+	}
+	return id;
+}
+
+QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex & iParent )
+{
+	QList<Message> messages;
+	for ( int r = 0; r < nif->rowCount( iParent ); r++ )
+	{
+		QModelIndex idx = iParent.child( r, 0 );
+		bool child;
+		if ( nif->isLink( idx, &child ) )
+		{
+			qint32 l = nif->getLink( idx );
+			if ( l < 0 )
+			{
+				if ( ! child )
+					messages.append( Message() << "unassigned parent link" << linkId( idx ) );
+			}
+			else if ( l >= nif->getBlockCount() )
+				messages.append( Message() << "invalid link" << linkId( idx ) );
+			else
+			{
+				QString tmplt = idx.sibling( idx.row(), NifModel::TempCol ).data( Qt::DisplayRole ).toString();
+				if ( ! tmplt.isEmpty() )
+				{
+					QModelIndex iBlock = nif->getBlock( l );
+					if ( ! nif->inherits( iBlock, tmplt ) )
+						messages.append( Message() << "link" << linkId( idx ) << "points to wrong block type" << iBlock.data().toString() );
+				}
+			}
+		}
+		if ( nif->rowCount( idx ) > 0 )
+			messages += checkLinks( nif, idx );
+	}
+	return messages;
+}
 
 // Browser
 

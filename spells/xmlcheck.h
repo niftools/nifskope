@@ -59,6 +59,8 @@ signals:
 protected:
 	void run();
 	
+	QList<Message> checkLinks( const class NifModel * nif, const class QModelIndex & iParent );
+	
 	FileQueue * queue;
 	
 	QMutex quit;
