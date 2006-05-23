@@ -667,7 +667,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return QString( "None" );
 					}
 					else
-						return item->value().toVariant();
+						return item->value().toString();
 				}
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();

@@ -44,6 +44,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMouseEvent>
 #include <QPainter>
 
+extern void qt_format_text(const QFont& font, const QRectF &_r,
+                           int tf, const QString& str, QRectF *brect,
+                           int tabstops, int* tabarray, int tabarraylen,
+                           QPainter* painter);
+
 class NifDelegate : public QItemDelegate
 {
 public:
@@ -113,22 +118,11 @@ public:
 	
 	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 	{
-		const QAbstractItemModel *model = index.model();
-		if ( ! model ) return;
+		QString text = index.data( Qt::DisplayRole ).toString();
+		QString deco = index.data( Qt::DecorationRole ).toString();
 		
-		QVariant data = model->data( index, Qt::DisplayRole );
-		
-		QString text;
-		QString deco = model->data(index, Qt::DecorationRole).toString();
-		
-		if ( data.canConvert<NifValue>() )
-			text = data.value<NifValue>().toString();
-		else
-			text = data.toString();
-		
-		QString user = model->data( index, Qt::UserRole ).toString();
+		QString user = index.data( Qt::UserRole ).toString();
 		QIcon icon;
-		
 		if ( ! user.isEmpty() )
 		{
 			Spell * spell = SpellBook::lookup( user );
@@ -137,15 +131,11 @@ public:
 		
 		QStyleOptionViewItem opt = option;
 		
-		QRect textRect(0, 0, opt.fontMetrics.width(text), opt.fontMetrics.lineSpacing());
+		QRect textRect( 0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing() * (text.count(QLatin1Char('\n')) + 1) );
 		
 		QRect decoRect;
-		
 		if ( ! icon.isNull() )
-		{
-			int m = qMin( option.rect.width(), option.rect.height() );
-			decoRect = QRect( option.rect.x(), option.rect.y(), m, m );
-		}
+			decoRect = QRect( option.rect.x(), option.rect.y(), opt.fontMetrics.lineSpacing(), opt.fontMetrics.lineSpacing() );
 		else if ( ! deco.isEmpty() )
 			decoRect = QRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
 		
@@ -154,7 +144,7 @@ public:
 		
 		QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
 		
-		QVariant color = model->data( index, Qt::BackgroundColorRole );
+		QVariant color = index.data( Qt::BackgroundColorRole );
 		if ( color.canConvert<QColor>() )
 			painter->fillRect( option.rect, color.value<QColor>() );
 		else if ( option.state & QStyle::State_Selected )
@@ -169,26 +159,22 @@ public:
 		else if ( ! deco.isEmpty() )
 			painter->drawText( decoRect, opt.displayAlignment, deco );
 		
-		if ( painter->fontMetrics().width( text ) > textRect.width() )
-			text = elidedText( opt.fontMetrics, textRect.width(), opt.textElideMode, text );
-		painter->drawText( textRect, opt.displayAlignment, text );
-		
-		drawFocus(painter, opt, textRect);
+		if ( ! text.isEmpty() )
+		{
+			drawDisplay( painter, opt, textRect, text );
+			drawFocus( painter, opt, textRect );
+		}
 		
 		painter->restore();
 	}
 
 	QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 	{
-		Q_ASSERT(index.isValid());
-		const QAbstractItemModel *model = index.model();
-		Q_ASSERT(model);
+		QString text = index.data( Qt::DisplayRole ).toString();
+		QString deco = index.data( Qt::DecorationRole ).toString();
 		
-		QString deco = model->data( index, Qt::DecorationRole ).toString();
-		QString text = model->data( index, Qt::DisplayRole ).toString();
-		
-		QRect decoRect(0, 0, option.fontMetrics.width(deco), option.fontMetrics.lineSpacing());
-		QRect textRect(0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing());
+		QRect decoRect( 0, 0, option.fontMetrics.width(deco), option.fontMetrics.lineSpacing() );
+		QRect textRect( 0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing() * (text.count(QLatin1Char('\n')) + 1) );
 		QRect checkRect;
 		doLayout(option, &checkRect, &decoRect, &textRect, true);
 		

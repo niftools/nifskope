@@ -348,7 +348,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 			{
 				case NameCol:	return item->name();
 				case TypeCol:	return item->type();
-				case ValueCol:	return item->value().toVariant();
+				case ValueCol:	return item->value().toString();
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
 				case Arr2Col:	return item->arr2();

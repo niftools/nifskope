@@ -313,6 +313,7 @@ void NifValue::initialize()
 	typeMap.insert( "uplink", NifValue::tUpLink );
 	typeMap.insert( "float", NifValue::tFloat );
 	typeMap.insert( "string", NifValue::tString );
+	typeMap.insert( "text", NifValue::tText );
 	typeMap.insert( "shortstring", NifValue::tShortString );
 	typeMap.insert( "filepath", NifValue::tFilePath );
 	typeMap.insert( "color3", NifValue::tColor3 );
@@ -406,6 +407,7 @@ void NifValue::clear()
 			delete static_cast<Triangle*>( val.data );
 			break;
 		case tString:
+		case tText:
 		case tShortString:
 		case tFilePath:
 		case tHeaderString:
@@ -461,6 +463,7 @@ void NifValue::changeType( Type t )
 			val.data = new Triangle();
 			return;
 		case tString:
+		case tText:
 		case tShortString:
 		case tFilePath:
 		case tHeaderString:
@@ -509,6 +512,7 @@ void NifValue::operator=( const NifValue & other )
 			*static_cast<Vector2*>( val.data ) = *static_cast<Vector2*>( other.val.data );
 			return;
 		case tString:
+		case tText:
 		case tShortString:
 		case tFilePath:
 		case tHeaderString:
@@ -592,6 +596,7 @@ bool NifValue::fromString( const QString & s )
 			val.f32 = s.toDouble( &ok );
 			return ok;
 		case tString:
+		case tText:
 		case tShortString:
 		case tFilePath:
 		case tHeaderString:
@@ -641,6 +646,7 @@ QString NifValue::toString() const
 		case tFloat:
 			return QString::number( val.f32, 'f', 4 );
 		case tString:
+		case tText:
 		case tShortString:
 		case tFilePath:
 		case tHeaderString:
@@ -802,6 +808,15 @@ bool NifIStream::read( NifValue & val )
 			string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
+		case NifValue::tText:
+		{
+			int len;
+			device->read( (char *) &len, 4 );
+			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+			QByteArray string = device->read( len );
+			if ( string.size() != len ) return false;
+			*static_cast<QString*>( val.val.data ) = QString( string );
+		}	return true;
 		case NifValue::tShortString:
 		{
 			unsigned char len;
@@ -921,6 +936,14 @@ bool NifOStream::write( const NifValue & val )
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
+			int len = string.size();
+			if ( device->write( (char *) &len, 4 ) != 4 )
+				return false;
+			return device->write( (const char *) string, string.size() ) == string.size();
+		}
+		case NifValue::tText:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;

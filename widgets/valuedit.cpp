@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLayout>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QTextEdit>
 
 ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNone ), edit( 0 )
 {
@@ -45,11 +46,12 @@ ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNo
 
 bool ValueEdit::canEdit( NifValue::Type t )
 {
-	return ( t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
-		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tString
+	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
+		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
+		|| t == NifValue::tString || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString 
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
-		|| t == NifValue::tTriangle || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString );
+		|| t == NifValue::tTriangle;
 }
 
 class UIntSpinBox : public QSpinBox
@@ -129,6 +131,12 @@ void ValueEdit::setValue( const NifValue & v )
 			le->setText( v.toString() );
 			edit = le;
 		}	break;
+		case NifValue::tText:
+		{
+			QTextEdit * te = new QTextEdit( this );
+			te->setPlainText( v.toString() );
+			edit = te;
+		}	break;
 		case NifValue::tVector4:
 		{
 			VectorEdit * ve = new VectorEdit( this );
@@ -198,6 +206,9 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tHeaderString:
 		case NifValue::tShortString:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
+			break;
+		case NifValue::tText:
+			val.fromString( qobject_cast<QTextEdit*>( edit )->toPlainText() );
 			break;
 		case NifValue::tVector4:
 			val.set<Vector4>( qobject_cast<VectorEdit*>( edit )->getVector4() );

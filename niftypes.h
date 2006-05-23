@@ -875,22 +875,23 @@ public:
 		tUpLink = 8,
 		tFloat = 9,
 		tString = 10,
-		tShortString = 11,
-		tFilePath = 12,
-		tColor3 = 13,
-		tColor4 = 14,
-		tVector3 = 15,
-		tQuat = 16,
-		tQuatXYZW = 17,
-		tMatrix = 18,
-		tMatrix4 = 19,
-		tVector2 = 20,
-		tVector4 = 21,
-		tTriangle = 22,
-		tFileVersion = 23,
-		tHeaderString = 24,
-		tByteArray = 25,
-		tStringPalette = 26,
+		tText = 11,
+		tShortString = 12,
+		tFilePath = 13,
+		tHeaderString = 14,
+		tColor3 = 15,
+		tColor4 = 16,
+		tVector3 = 17,
+		tQuat = 18,
+		tQuatXYZW = 19,
+		tMatrix = 20,
+		tMatrix4 = 21,
+		tVector2 = 22,
+		tVector4 = 23,
+		tTriangle = 24,
+		tFileVersion = 25,
+		tByteArray = 26,
+		tStringPalette = 27,
 		
 		tNone = 0xff
 	};
@@ -926,7 +927,7 @@ public:
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
-	bool isString() const { return typ == tString || typ == tHeaderString || typ == tFilePath || typ == tShortString; }
+	bool isString() const { return typ >= tString && typ <= tHeaderString; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
