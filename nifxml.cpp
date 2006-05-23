@@ -55,7 +55,6 @@ public:
 		tagFile,
 		tagVersion,
 		tagCompound,
-		tagAncestor,
 		tagBlock,
 		tagAdd,
 		tagInherit,
@@ -69,7 +68,6 @@ public:
 		tags.insert( "niflotoxml", tagFile );
 		tags.insert( "version", tagVersion );
 		tags.insert( "compound", tagCompound );
-		tags.insert( "ancestor", tagAncestor );
 		tags.insert( "niblock", tagBlock );
 		tags.insert( "add", tagAdd );
 		tags.insert( "inherit", tagInherit );
@@ -120,7 +118,6 @@ public:
 				switch ( x )
 				{
 					case tagCompound:
-					case tagAncestor:
 					case tagBlock:
 					{
 						if ( ! list.value("nifskopetype").isEmpty() )
@@ -145,7 +142,7 @@ public:
 							
 							if ( ! blk ) blk = new NifBlock;
 							blk->id = list.value( "name" );
-							blk->abstract = x == tagAncestor;
+							blk->abstract = ( list.value( "abstract" ) == "1" );
 						};
 					}	break;
 					case tagBasic:
@@ -168,7 +165,6 @@ public:
 				break;
 			case tagCompound:
 				if ( x != tagAdd )	err( "only add tags allowed in compound type declaration" );
-			case tagAncestor:
 			case tagBlock:
 				push( x );
 				switch ( x )
@@ -240,7 +236,6 @@ public:
 		switch ( x )
 		{
 			case tagCompound:
-			case tagAncestor:
 			case tagBlock:
 				if ( blk )
 				{
@@ -255,7 +250,6 @@ public:
 						case tagCompound:
 							NifModel::compounds.insert( blk->id, blk );
 							break;
-						case tagAncestor:
 						case tagBlock:
 							NifModel::blocks.insert( blk->id, blk );
 							break;
@@ -287,7 +281,6 @@ public:
 					err( "invalid version string " + s );
 			}	break;
 			case tagCompound:
-			case tagAncestor:
 			case tagBlock:
 				if ( blk )
 					blk->text += s.trimmed();
@@ -370,7 +363,8 @@ bool NifModel::loadXML()
 
 QString NifModel::parseXmlDescription( const QString & filename )
 {
-	XMLlock.lockForWrite();
+	if ( ! XMLlock.tryLockForWrite() )
+		return QString( "internal error: xml is locked" );
 	
 	qDeleteAll( compounds );	compounds.clear();
 	qDeleteAll( blocks );		blocks.clear();
