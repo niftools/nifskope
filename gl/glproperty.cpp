@@ -557,7 +557,7 @@ void glProperty( MaterialProperty * p, SpecularProperty * s )
 		glMaterial( GL_FRONT_AND_BACK, GL_DIFFUSE, p->diffuse.blend( p->alpha ) );
 		glMaterial( GL_FRONT_AND_BACK, GL_EMISSION, p->emissive.blend( p->alpha ) );
 		
-		if ( s && s->spec )
+		if ( ! s || s->spec )
 		{
 			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, p->shininess );
 			glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, p->specular.blend( p->alpha ) );
