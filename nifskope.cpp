@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QDesktopWidget>
 #include <QDockWidget>
+#include <QFontDialog>
 #include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
@@ -96,22 +97,6 @@ NifSkope::NifSkope() : QMainWindow()
 	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate() );
 
-	QFont font = list->font();
-	font.setPointSize( font.pointSize() + 3 );
-	list->setFont( font );
-	QFontMetrics metrics( list->font() );
-	list->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
-	list->header()->setStretchLastSection( false );
-	
-	list->setColumnHidden( NifModel::TypeCol, true );
-	list->setColumnHidden( NifModel::ArgCol, true );
-	list->setColumnHidden( NifModel::Arr1Col, true );
-	list->setColumnHidden( NifModel::Arr2Col, true );
-	list->setColumnHidden( NifModel::CondCol, true );
-	list->setColumnHidden( NifModel::Ver1Col, true );
-	list->setColumnHidden( NifModel::Ver2Col, true );
-	list->setColumnHidden( NifModel::TempCol, true );
-	
 	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
 	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
@@ -122,9 +107,6 @@ NifSkope::NifSkope() : QMainWindow()
 	tree = new NifTreeView;
 	tree->setModel( nif );
 	tree->setItemDelegate( nif->createDelegate() );
-
-	tree->setFont( font );
-	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	tree->header()->setStretchLastSection( false );
 
 	connect( tree, SIGNAL( clicked( const QModelIndex & ) ),
@@ -137,9 +119,6 @@ NifSkope::NifSkope() : QMainWindow()
 	kfmtree = new NifTreeView;
 	kfmtree->setModel( kfm );
 	kfmtree->setItemDelegate( kfm->createDelegate() );
-
-	kfmtree->setFont( font );
-	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	kfmtree->header()->setStretchLastSection( false );
 
 	connect( kfmtree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
@@ -188,15 +167,15 @@ NifSkope::NifSkope() : QMainWindow()
 	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
 	
+	aSelectFont = new QAction( "Select Font ...", this );
+	connect( aSelectFont, SIGNAL( triggered() ), this, SLOT( sltSelectFont() ) );
+	
 	aNifSkope = new QAction( "About &NifSkope", this );
 	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
 	
 	aAboutQt = new QAction( "About &Qt", this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
 	
-	aToolSkel = new QAction( "Skeleton", this );
-	connect( aToolSkel, SIGNAL( triggered() ), this, SLOT( sltToolSkel() ) );
-
 
 	// dock widgets
 	
@@ -284,15 +263,16 @@ NifSkope::NifSkope() : QMainWindow()
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
 	mView->addSeparator();
-	QMenu * mViewList = new QMenu( "&Block List Options" );
-	mView->addMenu( mViewList );
-	mViewList->addAction( aHierarchy );
-	mViewList->addAction( aList );
-	mView->addSeparator();
 	QMenu * mTools = new QMenu( "&Toolbars" );
 	mView->addMenu( mTools );
 	mTools->addAction( tool->toggleViewAction() );
 	mTools->addAction( tAnim->toggleViewAction() );
+	mView->addSeparator();
+	QMenu * mViewList = new QMenu( "&Block List Options" );
+	mView->addMenu( mViewList );
+	mViewList->addAction( aHierarchy );
+	mViewList->addAction( aList );
+	mView->addAction( aSelectFont );
 	
 	QMenu * mOpts = new QMenu( "&Render" );
 	foreach ( QAction * a, ogl->grpView->actions() )
@@ -339,7 +319,8 @@ void NifSkope::restore( QSettings & settings )
 {
 	lineLoad->setText( settings.value( "last load", QString( "" ) ).toString() );
 	lineSave->setText( settings.value( "last save", QString( "" ) ).toString() );
-
+	aSanitize->setChecked( settings.value( "auto sanitize", true ).toBool() );
+	
 	restoreHeader( "list sizes", settings, list->header() );
 	if ( settings.value( "list mode", "hirarchy" ).toString() == "list" )
 		aList->setChecked( true );
@@ -355,7 +336,9 @@ void NifSkope::restore( QSettings & settings )
 
 	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
 	
-	aSanitize->setChecked( settings.value( "auto sanitize", true ).toBool() );
+	QVariant fontVar = settings.value( "viewFont" );
+	if ( fontVar.canConvert<QFont>() )
+		setViewFont( fontVar.value<QFont>() );
 }
 
 void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
@@ -374,6 +357,7 @@ void NifSkope::save( QSettings & settings ) const
 
 	settings.setValue( "last load", lineLoad->text() );
 	settings.setValue( "last save", lineSave->text() );
+	settings.setValue( "auto sanitize", aSanitize->isChecked() );
 	
 	settings.setValue(	"list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
 	saveHeader( "list sizes", settings, list->header() );
@@ -383,8 +367,6 @@ void NifSkope::save( QSettings & settings ) const
 	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );
-	
-	settings.setValue( "auto sanitize", aSanitize->isChecked() );
 }
 
 void NifSkope::about()
@@ -495,6 +477,14 @@ void NifSkope::setListMode()
 			list->setItemsExpandable( false );
 			list->setRootIsDecorated( false );
 			list->setCurrentIndexExpanded( proxy->mapTo( idx ) );
+			list->setColumnHidden( NifModel::TypeCol, true );
+			list->setColumnHidden( NifModel::ArgCol, true );
+			list->setColumnHidden( NifModel::Arr1Col, true );
+			list->setColumnHidden( NifModel::Arr2Col, true );
+			list->setColumnHidden( NifModel::CondCol, true );
+			list->setColumnHidden( NifModel::Ver1Col, true );
+			list->setColumnHidden( NifModel::Ver2Col, true );
+			list->setColumnHidden( NifModel::TempCol, true );
 		}
 	}
 	else
@@ -508,14 +498,6 @@ void NifSkope::setListMode()
 			list->setCurrentIndexExpanded( pidx );
 		}
 	}
-	list->setColumnHidden( NifModel::TypeCol, true );
-	list->setColumnHidden( NifModel::ArgCol, true );
-	list->setColumnHidden( NifModel::Arr1Col, true );
-	list->setColumnHidden( NifModel::Arr2Col, true );
-	list->setColumnHidden( NifModel::CondCol, true );
-	list->setColumnHidden( NifModel::Ver1Col, true );
-	list->setColumnHidden( NifModel::Ver2Col, true );
-	list->setColumnHidden( NifModel::TempCol, true );
 }
 
 void NifSkope::load( const QString & filepath )
@@ -656,6 +638,28 @@ void NifSkope::reload()
 	{
 		load();
 	}
+}
+
+void NifSkope::sltSelectFont()
+{
+	bool ok;
+	QFont fnt = QFontDialog::getFont( & ok, list->font(), this );
+	if ( ! ok )
+		return;
+	setViewFont( fnt );
+	QSettings settings( "NifTools", "NifSkope" );
+	settings.setValue( "viewFont", fnt );
+}
+
+void NifSkope::setViewFont( const QFont & font )
+{
+	list->setFont( font );
+	QFontMetrics metrics( list->font() );
+	list->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	tree->setFont( font );
+	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	kfmtree->setFont( font );
+	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 }
 
 void NifSkope::dispatchMessage( const Message & msg )

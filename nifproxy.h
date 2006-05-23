@@ -56,7 +56,7 @@ public:
 	
 	Qt::ItemFlags flags( const QModelIndex & index ) const;
 	
-	int columnCount( const QModelIndex & index ) const;
+	int columnCount( const QModelIndex & index ) const { return 2; }
 	int rowCount( const QModelIndex & index ) const;
 	
 	bool hasChildren( const QModelIndex & index ) const
@@ -69,17 +69,19 @@ public:
 
 	QModelIndex mapTo( const QModelIndex & index ) const;
 	QModelIndex mapFrom( const QModelIndex & index, const QModelIndex & ref ) const;
-	QList<QModelIndex> mapFrom( const QModelIndex & index ) const;
 
 public slots:
 	void reset();
 	
 protected slots:
 	void xDataChanged( const QModelIndex &, const QModelIndex & );
+	void xHeaderDataChanged( Qt::Orientation, int, int );
 	
 	void xLinksChanged();
 	
 protected:
+	QList<QModelIndex> mapFrom( const QModelIndex & index ) const;
+	
 	void updateRoot( bool fast );
 	void updateItem( NifProxyItem * item, bool fast );
 	

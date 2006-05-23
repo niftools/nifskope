@@ -91,6 +91,8 @@ protected slots:
 	
 	void setListMode();
 	
+	void sltSelectFont();
+	
 	void contextMenu( const QPoint & pos );
 	
 	void dispatchMessage( const Message & msg );
@@ -100,6 +102,8 @@ private:
 	void initDockWidgets();
 	void initToolBars();
 	void initMenu();
+	
+	void setViewFont( const QFont & );
 	
 	NifModel * nif;
 	NifProxyModel * proxy;
@@ -133,6 +137,8 @@ private:
 	QActionGroup * gListMode;
 	QAction * aList;
 	QAction * aHierarchy;
+	
+	QAction * aSelectFont;
 	
 	QAction * aNifSkope;
 	QAction * aAboutQt;

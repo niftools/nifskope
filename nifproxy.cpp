@@ -204,10 +204,10 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
 {
     if ( nif )
 	{
-        disconnect(nif, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-                   this, SLOT(xDataChanged(QModelIndex,QModelIndex)));
-        disconnect(nif, SIGNAL(headerDataChanged(Orientation,int,int)),
-                   this, SIGNAL(headerDataChanged(Orientation,int,int)));
+        disconnect(nif, SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)),
+                   this, SLOT(xDataChanged(const QModelIndex &,const QModelIndex &)));
+        disconnect(nif, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+                   this, SLOT(xHeaderDataChanged(Qt::Orientation,int,int)));
 		
 		disconnect( nif, SIGNAL( linksChanged() ),	this, SLOT( xLinksChanged() ) );
 		
@@ -219,10 +219,10 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
 
     if ( nif )
 	{
-        connect(nif, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-                   this, SLOT(xDataChanged(QModelIndex,QModelIndex)));
-        connect(nif, SIGNAL(headerDataChanged(Orientation,int,int)),
-                   this, SIGNAL(headerDataChanged(Orientation,int,int)));
+        connect(nif, SIGNAL(dataChanged( const QModelIndex &, const QModelIndex & )),
+                   this, SLOT(xDataChanged( const QModelIndex &, const QModelIndex & )));
+        connect(nif, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+                   this, SLOT(xHeaderDataChanged(Qt::Orientation,int,int)));
 		
 		connect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
 		
@@ -378,7 +378,7 @@ QModelIndex NifProxyModel::mapTo( const QModelIndex & idx ) const
 	NifProxyItem * item = static_cast<NifProxyItem*>( idx.internalPointer() );
 	if ( ! item )	return QModelIndex();
 	QModelIndex nifidx = nif->getBlock( item->block() );
-	if ( nifidx.isValid() ) nifidx = nifidx.sibling( nifidx.row(), idx.column() );
+	if ( nifidx.isValid() ) nifidx = nifidx.sibling( nifidx.row(), ( idx.column() ? NifModel::ValueCol : NifModel::NameCol ) );
 	return nifidx;
 }
 
@@ -402,7 +402,7 @@ QModelIndex NifProxyModel::mapFrom( const QModelIndex & idx, const QModelIndex &
 	}
 	item = item->findItem( blockNumber );
 	if ( item )
-		return createIndex( item->row(), idx.column(), item );
+		return createIndex( item->row(), 0, item );
 	return QModelIndex();
 }
 
@@ -410,7 +410,7 @@ QList<QModelIndex> NifProxyModel::mapFrom( const QModelIndex & idx ) const
 {
 	QList<QModelIndex> indices;
 	
-	if ( !( nif && idx.isValid() ) ) return indices;
+	if ( !( nif && idx.isValid() && ( idx.column() == NifModel::NameCol || idx.column() == NifModel::ValueCol ) ) ) return indices;
 	if ( idx.model() != nif )
 	{
 		qDebug() << "NifProxyModel::mapFrom() plural called with wrong model";
@@ -421,12 +421,12 @@ QList<QModelIndex> NifProxyModel::mapFrom( const QModelIndex & idx ) const
 	
 	int blockNumber = nif->getBlockNumber( idx );
 	if ( blockNumber < 0 )
-		return indices; // FIXME header
+		return indices;
 	
 	QList<NifProxyItem*> items;
 	root->findAllItems( blockNumber, items );
 	foreach( NifProxyItem * item, items )
-		indices.append( createIndex( item->row(), idx.column(), item ) );
+		indices.append( createIndex( item->row(), idx.column() != NifModel::NameCol ? 1 : 0, item ) );
 	
 	return indices;
 }
@@ -435,12 +435,6 @@ Qt::ItemFlags NifProxyModel::flags( const QModelIndex & index ) const
 {
 	if ( !nif ) return 0;
 	return nif->flags( mapTo( index ) );
-}
-
-int NifProxyModel::columnCount( const QModelIndex & index ) const
-{
-	if ( !nif ) return 0;
-	return nif->columnCount( mapTo( index ) );
 }
 
 QVariant NifProxyModel::data( const QModelIndex & index, int role ) const
@@ -457,13 +451,18 @@ bool NifProxyModel::setData( const QModelIndex & index, const QVariant & v, int 
 
 QVariant NifProxyModel::headerData( int section, Qt::Orientation orient, int role ) const
 {
-	if ( !nif ) return QVariant();
-	return nif->headerData( section, orient, role );
+	if ( !nif || section < 0 || section > 1 ) return QVariant();
+	return nif->headerData( ( section ? NifModel::ValueCol : NifModel::NameCol ), orient, role );
 }
 
 /*
  *  proxy slots
  */
+
+void NifProxyModel::xHeaderDataChanged( Qt::Orientation o, int a, int b )
+{
+	emit headerDataChanged( o, 0, 1 );
+}
  
 void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex & end )
 {
