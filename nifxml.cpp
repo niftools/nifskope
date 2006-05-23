@@ -363,8 +363,7 @@ bool NifModel::loadXML()
 
 QString NifModel::parseXmlDescription( const QString & filename )
 {
-	if ( ! XMLlock.tryLockForWrite() )
-		return QString( "internal error: xml is locked" );
+	QWriteLocker lck( &XMLlock );
 	
 	qDeleteAll( compounds );	compounds.clear();
 	qDeleteAll( blocks );		blocks.clear();
@@ -378,10 +377,7 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	{
 		f.setFileName( ":/res/nif.xml" );
 		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		{
-			XMLlock.unlock();
 			return QString( "error: couldn't open xml description file: " + filename );
-		}
 	}
 	
 	NifXmlHandler handler;
@@ -398,8 +394,6 @@ QString NifModel::parseXmlDescription( const QString & filename )
 		
 		supportedVersions.clear();
 	}
-	
-	XMLlock.unlock();
 	
 	return handler.errorString();
 }

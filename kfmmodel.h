@@ -114,18 +114,14 @@ protected:
 
 inline bool KfmModel::isCompound( const QString & name )
 {
-	XMLlock.lockForRead();
-	bool x = compounds.contains( name );
-	XMLlock.unlock();
-	return x;
+	QReadLocker lck( &XMLlock );
+	return compounds.contains( name );
 }
 
 inline bool KfmModel::isVersionSupported( quint32 v )
 {
-	XMLlock.lockForRead();
-	bool x = supportedVersions.contains( v );
-	XMLlock.unlock();
-	return x;
+	QReadLocker lck( &XMLlock );
+	return supportedVersions.contains( v );
 }
 
 #endif

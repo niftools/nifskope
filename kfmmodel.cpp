@@ -163,7 +163,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		return;
 	}
 
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	NifBlock * compound = compounds.value( data.type() );
 	if ( compound )
 	{
@@ -202,7 +202,6 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 	}
 	else
 		parent->insertChild( data, at );
-	XMLlock.unlock();
 }
 
 

@@ -277,7 +277,7 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 
 QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fast )
 {
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	NifBlock * block = blocks.value( identifier );
 	if ( block )
 	{
@@ -310,13 +310,11 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 			updateFooter();
 			emit linksChanged();
 		}
-		XMLlock.unlock();
 		return createIndex( branch->row(), 0, branch );
 	}
 	else
 	{
 		msg( Message() << "unknown block " << identifier );
-		XMLlock.unlock();
 		return QModelIndex();
 	}
 }
@@ -457,7 +455,7 @@ int NifModel::getBlockCount() const
 
 void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int at )
 {
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	NifBlock * ancestor = blocks.value( identifier );
 	if ( ancestor )
 	{
@@ -468,20 +466,16 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 			insertType( parent, data );
 	}
 	else
-	{
 		msg( Message() << "unknown ancestor " << identifier );
-	}
-	XMLlock.unlock();
 }
 
 bool NifModel::inherits( const QString & name, const QString & aunty )
 {
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
     if ( name == aunty ) return true;
 	NifBlock * type = blocks.value( name );
 	if ( type && ( type->ancestor == aunty || inherits( type->ancestor, aunty ) ) )
 		return true;
-	XMLlock.unlock();
 	return false;
 }
 
@@ -517,7 +511,7 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		return;
 	}
 
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	NifBlock * compound = compounds.value( data.type() );
 	if ( compound )
 	{
@@ -550,7 +544,6 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		else
 			parent->insertChild( data, at );
 	}
-	XMLlock.unlock();
 }
 
 

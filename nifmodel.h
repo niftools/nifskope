@@ -206,47 +206,38 @@ protected:
 
 inline QStringList NifModel::allNiBlocks()
 {
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	QStringList lst;
 	foreach ( NifBlock * blk, blocks )
 		if ( ! blk->abstract )
 			lst.append( blk->id );
-	XMLlock.unlock();
 	return lst;
 }
 
 inline bool NifModel::isNiBlock( const QString & name )
 {
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	NifBlock * blk = blocks.value( name );
-	bool x = blk && ! blk->abstract;
-	XMLlock.unlock();
-	return x;
+	return blk && ! blk->abstract;
 }
 
 inline bool NifModel::isAncestor( const QString & name )
 {
-	XMLlock.lockForRead();
+	QReadLocker lck( &XMLlock );
 	NifBlock * blk = blocks.value( name );
-	bool x = blk && blk->abstract;
-	XMLlock.unlock();
-	return x;
+	return blk && blk->abstract;
 }
 
 inline bool NifModel::isCompound( const QString & name )
 {
-	XMLlock.lockForRead();
-	bool x = compounds.contains( name );
-	XMLlock.unlock();
-	return x;
+	QReadLocker lck( &XMLlock );
+	return compounds.contains( name );
 }
 
 inline bool NifModel::isVersionSupported( quint32 v )
 {
-	XMLlock.lockForRead();
-	bool x = supportedVersions.contains( v );
-	XMLlock.unlock();
-	return x;
+	QReadLocker lck( &XMLlock );
+	return supportedVersions.contains( v );
 }
 
 inline QList<int> NifModel::getRootLinks() const

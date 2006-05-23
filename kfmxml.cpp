@@ -234,7 +234,7 @@ bool KfmModel::loadXML()
 
 QString KfmModel::parseXmlDescription( const QString & filename )
 {
-	XMLlock.lockForWrite();
+	QWriteLocker lck( &XMLlock );
 	
 	qDeleteAll( compounds );	compounds.clear();
 	supportedVersions.clear();
@@ -244,10 +244,7 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 	{
 		f.setFileName( ":/res/kfm.xml" );
 		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		{
-			XMLlock.unlock();
 			return QString( "error: couldn't open xml description file: " + filename );
-		}
 	}
 	
 	KfmXmlHandler handler;
@@ -262,8 +259,6 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 		qDeleteAll( compounds );	compounds.clear();
 		supportedVersions.clear();
 	}
-	
-	XMLlock.unlock();
 	
 	return handler.errorString();
 }
