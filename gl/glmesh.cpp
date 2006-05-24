@@ -92,7 +92,7 @@ public:
 			qDeleteAll( morph );
 			morph.clear();
 			
-			QModelIndex iInterpolators = nif->getIndex( nif->getIndex( iBlock, "Interpolators" ), "Indices" );
+			QModelIndex iInterpolators = nif->getIndex( iBlock, "Interpolators" );
 			
 			QModelIndex midx = nif->getIndex( iData, "Morphs" );
 			if ( midx.isValid() )
@@ -274,7 +274,7 @@ void Mesh::transform()
 			tristrips.clear();
 		}
 		
-		QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List/Indices" );
+		QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
 		if ( iExtraData.isValid() )
 		{
 			for ( int e = 0; e < nif->rowCount( iExtraData ); e++ )

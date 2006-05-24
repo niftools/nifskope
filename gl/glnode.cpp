@@ -258,7 +258,7 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 	if ( iBlock == index || ! index.isValid() )
 	{
 		PropertyList newProps;
-		QModelIndex iProperties = nif->getIndex( iBlock, "Properties/Indices" );
+		QModelIndex iProperties = nif->getIndex( iBlock, "Properties" );
 		if ( iProperties.isValid() )
 		{
 			for ( int p = 0; p < nif->rowCount( iProperties ); p++ )
@@ -270,7 +270,7 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 		properties = newProps;
 		
 		children.clear();
-		QModelIndex iChildren = nif->getIndex( iBlock, "Children/Indices" );
+		QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
 		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( iBlock ) );
 		if ( iChildren.isValid() )
 		{
@@ -472,7 +472,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		QModelIndex iShapes = nif->getIndex( iShape, "Sub Shapes" );
 		if ( iShapes.isValid() )
 		{
-			iShapes = nif->getIndex( iShapes, "Indices" );
 			for ( int r = 0; r < nif->rowCount( iShapes ); r++ )
 			{
 				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack );
@@ -509,7 +508,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		
 		glLoadName( nif->getBlockNumber( iShape ) );
 		
-		QModelIndex iStrips = nif->getIndex( nif->getIndex( iShape, "Strips" ), "Indices" );
+		QModelIndex iStrips = nif->getIndex( iShape, "Strips" );
 		for ( int r = 0; r < nif->rowCount( iStrips ); r++ )
 		{
 			QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
@@ -600,7 +599,9 @@ void Node::drawHavok()
 		return;
 	
 	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
-	if ( !iObject.isValid() )
+	if ( ! iObject.isValid() )
+		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+	if ( ! iObject.isValid() )
 		return;
 
 	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
@@ -638,14 +639,8 @@ void Node::drawHavok()
 	float s = 7;
 	glScalef( s, s, s );
 	
-	glDisable( GL_CULL_FACE );
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-	
 	QStack<QModelIndex> shapeStack;
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack );
-	
-	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-	glEnable( GL_CULL_FACE );
 	
 	glLoadName( nif->getBlockNumber( iBody ) );
 	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );

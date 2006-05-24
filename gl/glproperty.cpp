@@ -259,8 +259,6 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 		{
 			QModelIndex iTex = nif->getIndex( property, texnames[t] );
 			if ( iTex.isValid() )
-				iTex = nif->getIndex( iTex, "Texture Data" );
-			if ( iTex.isValid() )
 			{
 				textures[t].iSource = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
 				textures[t].coordset = nif->get<int>( iTex, "Texture Set" );
@@ -313,7 +311,7 @@ QString TexturingProperty::fileName( int id ) const
 		QModelIndex iSource = textures[ id ].iSource;
 		const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
 		if ( nif && iSource.isValid() )
-			return nif->get<QString>( iSource, "Texture Source/File Name" );
+			return nif->get<QString>( iSource, "File Name" );
 	}
 	return QString();
 }
@@ -357,7 +355,7 @@ public:
 			flipDelta = nif->get<float>( iBlock, "Delta" );
 			flipSlot = nif->get<int>( iBlock, "Texture Slot" );
 			
-			iSources = nif->getIndex( nif->getIndex( iBlock, "Sources" ), "Indices" );
+			iSources = nif->getIndex( iBlock, "Sources" );
 			return true;
 		}
 		return false;

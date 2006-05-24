@@ -571,6 +571,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// setup vertex colors
 	
 	//glProperty( props.get< VertexColorProperty >(), glIsEnabled( GL_COLOR_ARRAY ) );
+	glDisable( GL_COLOR_MATERIAL );
 	
 	// setup material
 	
