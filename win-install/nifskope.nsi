@@ -35,7 +35,7 @@
 
 !include "MUI.nsh"
 
-!define VERSION "0.8.2"
+!define VERSION "0.8.5"
 
 Name "NifSkope ${VERSION}"
 
@@ -174,6 +174,10 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\kfm.xml
   File Copyright.txt
   File nif_file.ico
+
+  ; Install shaders
+  SetOutPath $INSTDIR\shaders
+  File ..\shaders\*.*
 
   ; Install shortcuts
   CreateDirectory "$SMPROGRAMS\NifTools\NifSkope\"
