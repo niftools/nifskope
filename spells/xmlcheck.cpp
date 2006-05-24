@@ -1,9 +1,9 @@
+#include "xmlcheck.h"
+
 #include "../spellbook.h"
 
 #include "../kfmmodel.h"
 #include "../nifskope.h"
-
-#include "debug.h"
 
 #include <QAction>
 #include <QApplication>
