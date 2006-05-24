@@ -123,12 +123,10 @@ void NifModel::updateFooter()
 	if ( ! footer ) return;
 	NifItem * roots = getItem( footer, "Roots" );
 	if ( ! roots ) return;
-	set<int>( roots, "Num Indices", rootLinks.count() );
-	NifItem * rootlinks = getItem( roots, "Indices" );
-	if ( ! rootlinks ) return;
-	updateArrayItem( rootlinks, false );
-	for ( int r = 0; r < rootlinks->childCount(); r++ )
-		rootlinks->child( r )->value().setLink( rootLinks.value( r ) );
+	set<int>( footer, "Num Roots", rootLinks.count() );
+	updateArrayItem( roots, false );
+	for ( int r = 0; r < roots->childCount(); r++ )
+		roots->child( r )->value().setLink( rootLinks.value( r ) );
 }
 
 /*
@@ -461,6 +459,7 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 	{
 		if ( ! ancestor->ancestor.isEmpty() )
 			insertAncestor( parent, ancestor->ancestor );
+		//parent->insertChild( NifData( identifier, "Abstract" ) );
 		parent->prepareInsert( ancestor->types.count() );
 		foreach ( NifData data, ancestor->types )
 			insertType( parent, data );
@@ -588,7 +587,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 	{
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" )
-			buddy = getIndex( getIndex( index, "Texture Source" ), "File Name" );
+			buddy = getIndex( index, "File Name" );
 		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
@@ -711,7 +710,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						return QString( "array index: %1" ).arg( item->row() );
 					}
 					else
-						return item->text();
+						return QString( "<p>%1</p>" ).arg( item->text() ); // enforce rich text tooltips
 				}	break;
 				case ValueCol:
 				{
@@ -797,7 +796,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	{
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" )
-			buddy = getIndex( getIndex( index, "Texture Source" ), "File Name" );
+			buddy = getIndex( index, "File Name" );
 		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
