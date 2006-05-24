@@ -55,17 +55,14 @@ REGISTER_SPELL( spInsertBlock )
 
 void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
 {
-	QModelIndex iLinkGroup = nif->getIndex( iParent, array );
-	if ( iLinkGroup.isValid() )
+	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
+	QModelIndex iArray = nif->getIndex( iParent, array );
+	if ( iSize.isValid() && iArray.isValid() )
 	{
-		QModelIndex iIndices = nif->getIndex( iLinkGroup, "Indices" );
-		if ( iLinkGroup.isValid() )
-		{
-			int numlinks = nif->get<int>( iLinkGroup, "Num Indices" );
-			nif->set<int>( iLinkGroup, "Num Indices", numlinks + 1 );
-			nif->updateArray( iIndices );
-			nif->setLink( iIndices.child( numlinks, 0 ), link );
-		}
+		int numlinks = nif->get<int>( iSize );
+		nif->set<int>( iSize, numlinks + 1 );
+		nif->updateArray( iArray );
+		nif->setLink( iArray.child( numlinks, 0 ), link );
 	}
 }
 
@@ -167,9 +164,6 @@ public:
 			QModelIndex iLight = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 			addLink( nif, iParent, "Children", nif->getBlockNumber( iLight ) );
 			addLink( nif, iParent, "Effects", nif->getBlockNumber( iLight ) );
-			nif->set<float>( iLight, "Dimmer", 1.0 );
-			nif->set<float>( iLight, "Constant Attenuation", 1.0 );
-			nif->set<float>( iLight, "Cutoff Angle", 45.0 );
 			return iLight;
 		}
 		else
@@ -197,7 +191,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "NiExtraData" ) || id == "BSXFlags" )
+			if ( nif->inherits( id, "NiExtraData" ) )
 				menu.addAction( id );
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )

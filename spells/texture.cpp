@@ -130,49 +130,44 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
-		QModelIndex index = nif->getBlock( idx );
-		return ( nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiSourceTexture"
-			&& ( index == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) );
+		QModelIndex iBlock = nif->getBlock( idx );
+		return ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
 	{
-		QModelIndex index = nif->getBlock( idx );
-		QModelIndex iTex = nif->getIndex( index, "Texture Source" );
-		if ( iTex.isValid() )
+		QModelIndex iSource = nif->getBlock( idx );
+		QString file = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
+		
+		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
+		
+		if ( !file.isEmpty() )
 		{
-			QString file = TexCache::find( nif->get<QString>( iTex, "File Name" ), nif->getFolder() );
-			
-			file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
-			
-			if ( !file.isEmpty() )
+			QStringList folders = TexCache::texfolders;
+			if ( ! nif->getFolder().isEmpty() )
+				folders.append( nif->getFolder() );
+			foreach ( QString base, folders )
 			{
-				QStringList folders = TexCache::texfolders;
-				if ( ! nif->getFolder().isEmpty() )
-					folders.append( nif->getFolder() );
-				foreach ( QString base, folders )
+				if ( file.toLower().replace( "/", "\\" ).startsWith( base.toLower().replace( "/", "\\" ) ) )
 				{
-					if ( file.toLower().replace( "/", "\\" ).startsWith( base.toLower().replace( "/", "\\" ) ) )
-					{
-						int pos = 0;
-						if ( nif->getVersion() == "4.0.0.2" && ( pos = base.toLower().indexOf( "data files" ) ) >= 0 )
-							base = base.left( pos + 10 );
-						file.remove( 0, base.length() );
-						break;
-					}
+					int pos = 0;
+					if ( nif->getVersion() == "4.0.0.2" && ( pos = base.toLower().indexOf( "data files" ) ) >= 0 )
+						base = base.left( pos + 10 );
+					file.remove( 0, base.length() );
+					break;
 				}
-				if ( file.startsWith( "/" ) || file.startsWith( "\\" ) )
-					file.remove( 0, 1 );
 			}
-			
-			if ( ! file.isEmpty() )
-			{
-				nif->set<int>( iTex, "Use External", 1 );
-				QModelIndex iFile = nif->getIndex( iTex, "File Name" );
-				nif->setData( iFile.sibling( iFile.row(), NifModel::ValueCol ), file );
-			}
+			if ( file.startsWith( "/" ) || file.startsWith( "\\" ) )
+				file.remove( 0, 1 );
 		}
-		return index;
+		
+		if ( ! file.isEmpty() )
+		{
+			nif->set<int>( iSource, "Use External", 1 );
+			QModelIndex iFile = nif->getIndex( iSource, "File Name" );
+			nif->setData( iFile.sibling( iFile.row(), NifModel::ValueCol ), file );
+		}
+		return idx;
 	}
 };
 
@@ -184,26 +179,25 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 	if ( ! iTexProp.isValid() )	return index;
 	if ( nif->get<int>( iTexProp, "Texture Count" ) < 7 )
 		nif->set<int>( iTexProp, "Texture Count", 7 );
-	QModelIndex iTex = nif->getIndex( iTexProp, name );
-	if ( ! iTex.isValid() )	return index;
-	nif->set<int>( iTex, "Is Used", 1 );
-	QPersistentModelIndex iTexDesc = nif->getIndex( iTex, "Texture Data" );
-	if ( ! iTexDesc.isValid() ) return index;
+		
+	nif->set<int>( iTexProp, QString( "Has %1" ).arg( name ), 1 );
+	QPersistentModelIndex iTex = nif->getIndex( iTexProp, name );
+	if ( ! iTex.isValid() ) return index;
 	
-	nif->set<int>( iTexDesc, "Clamp Mode", 3 );
-	nif->set<int>( iTexDesc, "Filter Mode", 3 );
-	nif->set<int>( iTexDesc, "PS2 K", 65461 );
-	nif->set<int>( iTexDesc, "Unknown1", 257 );
+	nif->set<int>( iTex, "Clamp Mode", 3 );
+	nif->set<int>( iTex, "Filter Mode", 3 );
+	nif->set<int>( iTex, "PS2 K", 65461 );
+	nif->set<int>( iTex, "Unknown1", 257 );
 	
 	QModelIndex iSrcTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( iTexProp ) + 1 );
-	nif->setLink( iTexDesc, "Source", nif->getBlockNumber( iSrcTex ) );
+	nif->setLink( iTex, "Source", nif->getBlockNumber( iSrcTex ) );
 	
 	nif->set<int>( iSrcTex, "Pixel Layout", ( nif->getVersion() == "20.0.0.5" && name == "Base Texture" ? 6 : 5 ) );
 	nif->set<int>( iSrcTex, "Use Mipmaps", 2 );
 	nif->set<int>( iSrcTex, "Alpha Format", 3 );
 	nif->set<int>( iSrcTex, "Unknown Byte", 1 );
 	nif->set<int>( iSrcTex, "Unknown Byte 2", 1 );
-	nif->set<int>( nif->getIndex( iSrcTex, "Texture Source" ), "Use External", 1 );
+	nif->set<int>( iSrcTex, "Use External", 1 );
 	
 	return iSrcTex;
 }
@@ -217,7 +211,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Base Texture" ), "Is Used" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Base Texture" ) == 0 ); 
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -237,7 +231,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Dark Texture" ), "Is Used" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Dark Texture" ) == 0 ); 
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -257,7 +251,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Detail Texture" ), "Is Used" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Detail Texture" ) == 0 ); 
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -277,7 +271,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( nif->getIndex( block, "Glow Texture" ), "Is Used" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Glow Texture" ) == 0 ); 
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )

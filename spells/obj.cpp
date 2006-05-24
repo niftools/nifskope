@@ -723,17 +723,6 @@ public:
 				
 				QPersistentModelIndex iBody = nif->insertNiBlock( "bhkRigidBody" );
 				nif->setLink( iBody, "Shape", nif->getBlockNumber( iShape ) );
-				nif->set<int>( iBody, "Flags", 1 );
-				nif->set<int>( iBody, "Flags 2", 1 );
-				nif->set<float>( iBody, "Mass", 0.0 );
-				nif->set<float>( iBody, "Unknown Float 0", 0.1 );
-				nif->set<float>( iBody, "Unknown Float 1", 0.1 );
-				nif->set<float>( iBody, "Friction", 0.3 );
-				nif->set<float>( iBody, "Elasticity", 0.3 );
-				nif->set<float>( iBody, "Unknown Float 2", 250.0 );
-				nif->set<float>( iBody, "Unknown Float 3", 31.4159 );
-				nif->set<float>( iBody, "Unknown Float 4", 0.15 );
-				nif->setArray<int>( iBody, "Unknown Bytes 5", QVector<int>() << 7 << 1 << 1 << 1 );
 				
 				QPersistentModelIndex iObject = nif->insertNiBlock( "bhkCollisionObject" );
 				nif->setLink( iObject, "Parent", nif->getBlockNumber( iNode ) );
@@ -810,11 +799,12 @@ public:
 
 	void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 link )
 	{
-		QModelIndex iLinkGroup = nif->getIndex( iBlock, name );
-		int numIndices = nif->get<int>( iLinkGroup, "Num Indices" );
-		nif->set<int>( iLinkGroup, "Num Indices", numIndices + 1 );
-		nif->updateArray( iLinkGroup, "Indices" );
-		nif->setLink( nif->getIndex( iLinkGroup, "Indices" ).child( numIndices, 0 ), link );
+		QModelIndex iArray = nif->getIndex( iBlock, name );
+		QModelIndex iSize = nif->getIndex( iBlock, QString( "Num %1" ).arg( name ) );
+		int numIndices = nif->get<int>( iSize );
+		nif->set<int>( iSize, numIndices + 1 );
+		nif->updateArray( iArray );
+		nif->setLink( iArray.child( numIndices, 0 ), link );
 	}
 };
 
