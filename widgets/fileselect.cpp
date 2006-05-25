@@ -51,7 +51,7 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	
 	QAction * action = new QAction( this );
 	action->setText( buttonText );
-	connect( action, SIGNAL( activated() ), this, SLOT( browse() ) );
+	connect( action, SIGNAL( triggered() ), this, SLOT( browse() ) );
 	
 	button = new QToolButton;
 	button->setDefaultAction( action );
