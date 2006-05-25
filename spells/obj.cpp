@@ -433,10 +433,8 @@ public:
 			else if ( t.value( 0 ) == "usemtl" )
 			{
 				usemtl = t.value( 1 );
-				if ( usemtl.contains( "_" ) )
-				{
-					usemtl = usemtl.left( usemtl.indexOf( "_" ) );
-				}
+				//if ( usemtl.contains( "_" ) )
+				//	usemtl = usemtl.left( usemtl.indexOf( "_" ) );
 				
 				mfaces = ofaces.value( usemtl );
 				if ( ! mfaces )
