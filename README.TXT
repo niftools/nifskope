@@ -38,8 +38,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.8.2 of NifSkope.
-It should read and write every Nif up to version 20.0.0.5.
+This is version 0.8.5 of NifSkope.
+It should read and write every Nif from version 4.0.0.2 up to version 20.0.0.5.
+
+
+changes since 0.8.2:
+  - two oblivion style shaders displaying normal and parallax mapping
+  - automatically reorders the children link arrays for oblivion (trishapes first, ninodes last)
+  - new spell: Mesh/Make Skin Partition
+  - many cosmetic changes in nif.xml
 
 
 changes since 0.8.1:
