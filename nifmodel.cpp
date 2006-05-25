@@ -609,7 +609,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
-						if ( ofs == 0xffff )
+						if ( ofs < 0 )
 							return QString( "<empty>" );
 						NifItem * palette = getItemX( item, "String Palette" );
 						int link = ( palette ? palette->value().toLink() : -1 );
@@ -737,6 +737,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 								quint16 f = item->value().toCount();
 								return QString( "dec: %1<br>hex: 0x%2<br>bin: 0b%3" ).arg( f ).arg( f, 4, 16, QChar( '0' ) ).arg( f, 16, 2, QChar( '0' ) );
 							}
+						case NifValue::tStringOffset:
+							return QString( "0x%1" ).arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 						case NifValue::tVector3:
 							return item->value().get<Vector3>().toHtml();
 						case NifValue::tMatrix:

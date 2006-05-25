@@ -763,10 +763,10 @@ bool NifIStream::read( NifValue & val )
 			return device->read( (char *) &val.val.u08, 1 ) == 1;
 		case NifValue::tWord:
 		case NifValue::tFlags:
-		case NifValue::tStringOffset:
 		case NifValue::tBlockTypeIndex:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
+		case NifValue::tStringOffset:
 		case NifValue::tInt:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
@@ -897,9 +897,9 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) &val.val.u08, 1 ) == 1;
 		case NifValue::tWord:
 		case NifValue::tFlags:
-		case NifValue::tStringOffset:
 		case NifValue::tBlockTypeIndex:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
+		case NifValue::tStringOffset:
 		case NifValue::tInt:
 		case NifValue::tFileVersion:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
