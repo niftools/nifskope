@@ -272,7 +272,7 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 			T v1 = nif->get<T>( frames.child( last, 0 ), "Value" );
 			T v2 = nif->get<T>( frames.child( next, 0 ), "Value" );
 			
-			switch ( nif->get<int>( array, "Key Type" ) )
+			switch ( nif->get<int>( array, "Interpolation" ) )
 			{
 				/*
 				case 2:
@@ -347,7 +347,7 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 	if ( nif && array.isValid() )
 	{
-		switch ( nif->get<int>( array, "Key Type" ) )
+		switch ( nif->get<int>( array, "Interpolation" ) )
 		{
 			case 4:
 			{

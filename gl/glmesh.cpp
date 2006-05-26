@@ -62,6 +62,9 @@ public:
 		
 		time = ctrlTime( time );
 		
+		if ( target->verts.count() != morph[0]->verts.count() )
+			return;
+		
 		target->verts = morph[0]->verts;
 		
 		float x;
@@ -95,23 +98,16 @@ public:
 			QModelIndex iInterpolators = nif->getIndex( iBlock, "Interpolators" );
 			
 			QModelIndex midx = nif->getIndex( iData, "Morphs" );
-			if ( midx.isValid() )
+			for ( int r = 0; r < nif->rowCount( midx ); r++ )
 			{
-				for ( int r = 0; r < nif->rowCount( midx ); r++ )
-				{
-					QModelIndex iKey = midx.child( r, 0 );
-					
-					MorphKey * key = new MorphKey;
-					key->index = 0;
-					key->iFrames = nif->getIndex( iKey, "Frames" );
-					if ( ! key->iFrames.isValid() && iInterpolators.isValid() )
-					{
-						key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
-					}
-					key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
-					
-					morph.append( key );
-				}
+				QModelIndex iKey = midx.child( r, 0 );
+				
+				MorphKey * key = new MorphKey;
+				key->index = 0;
+				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
+				
+				morph.append( key );
 			}
 			return true;
 		}
