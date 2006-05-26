@@ -217,7 +217,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
  *  array functions
  */
  
-QString inBrakets( const QString & x )
+QString parentPrefix( const QString & x )
 {
 	for ( int c = 0; c < x.length(); c++ )
 		if ( ! x[c].isNumber() )
@@ -240,7 +240,7 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	int rows = array->childCount();
 	if ( d1 > rows )
 	{
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), inBrakets( array->arg() ), inBrakets( array->arr2() ), QString(), QString(), 0, 0 );
+		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
 		
 		if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), rows, d1-1 );
 		array->prepareInsert( d1 - rows );
