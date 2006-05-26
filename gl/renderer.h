@@ -126,7 +126,8 @@ public:
 	Renderer();
 	~Renderer();
 	
-	void initialize( const QGLContext * );
+	static bool initialize( const QGLContext * );
+	static bool hasShaderSupport();
 	
 	void updateShaders();
 	void releaseShaders();

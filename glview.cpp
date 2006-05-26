@@ -126,7 +126,7 @@ GLView::GLView()
 	aShading->setCheckable( true );
 	aShading->setChecked( true );
 	aShading->setShortcut( Qt::Key_F12 );
-	connect( aShading, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	connect( aShading, SIGNAL( toggled( bool ) ), this, SLOT( updateShaders() ) );
 	addAction( aShading );
 	
 	aTexturing = new QAction( "&Texturing", this );
@@ -142,13 +142,6 @@ GLView::GLView()
 	aBlending->setChecked( true );
 	connect( aBlending, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aBlending );
-	
-	aLighting = new QAction( "&Lighting", this );
-	aLighting->setToolTip( "enable lighting" );
-	aLighting->setCheckable( true );
-	aLighting->setChecked( true );
-	connect( aLighting, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aLighting );
 	
 	aDrawAxis = new QAction( "&Draw Axes", this );
 	aDrawAxis->setToolTip( "draw xyz-Axes" );
@@ -245,11 +238,6 @@ GLView::GLView()
 	aCullExp = new QAction( "Cull Nodes by Name...", this );
 	connect( aCullExp, SIGNAL( triggered() ), this, SLOT( adjustCullExp() ) );
 	addAction( aCullExp );
-	
-	aUpdateShaders = new QAction( "Update Shaders", this );
-	aUpdateShaders->setShortcut( Qt::ALT+Qt::Key_Y );
-	connect( aUpdateShaders, SIGNAL( triggered() ), this, SLOT( updateShaders() ) );
-	addAction( aUpdateShaders );
 }
 
 GLView::~GLView()
@@ -265,14 +253,14 @@ void GLView::initializeGL()
 	qglClearColor( bgcolor );
 
 	glShadeModel( GL_SMOOTH );
-	//glEnable( GL_POINT_SMOOTH );
-	//glEnable( GL_LINE_SMOOTH );
-	//glEnable( GL_POLYGON_SMOOTH );
-	//glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
-	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
-	//glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
 	
-	scene->initialize( context() );
+	if ( ! scene->renderer.initialize( context() ) )
+	{
+		aShading->setChecked( false );
+		aShading->setDisabled( true );
+	}
+	else
+		scene->renderer.updateShaders();
 
 	static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
 	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
@@ -297,6 +285,7 @@ void GLView::updateShaders()
 {
 	makeCurrent();
 	scene->renderer.updateShaders();
+	scene->shading = aShading->isChecked();
 	update();
 }
 
@@ -439,7 +428,7 @@ void GLView::paintGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+		qWarning() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 
 	if ( aBenchmark->isChecked() || aDrawStats->isChecked() )
 	{
@@ -959,8 +948,6 @@ void GLView::checkActions()
 {
 	scene->texturing = aTexturing->isChecked();
 	scene->blending = aBlending->isChecked();
-	scene->lighting = aLighting->isChecked();
-	scene->shading = aShading->isChecked();
 	scene->showHavok = aDrawHavok->isChecked();
 	scene->highlight = aHighlight->isChecked();
 	scene->showHidden = aDrawHidden->isChecked();
@@ -983,7 +970,6 @@ void GLView::save( QSettings & settings )
 	//settings.beginGroup( "OpenGL" );
 	settings.setValue( "texture folder", TexCache::texfolders.join( ";" ) );
 	settings.setValue( "enable textures", aTexturing->isChecked() );
-	settings.setValue( "enable lighting", aLighting->isChecked() );
 	settings.setValue( "enable blending", aBlending->isChecked() );
 	settings.setValue( "enable shading", aShading->isChecked() );
 	settings.setValue( "draw havok", aDrawHavok->isChecked() );
@@ -1010,8 +996,7 @@ void GLView::restore( QSettings & settings )
 	//settings.beginGroup( "OpenGL" );
 	TexCache::texfolders = settings.value( "texture folder" ).toString().split( ";" );
 	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
-	aLighting->setChecked( settings.value( "enable lighting", true ).toBool() );
-	aShading->setChecked( settings.value( "enable shading", true ).toBool() );
+	aShading->setChecked( settings.value( "enable shading", true ).toBool() && aShading->isEnabled() );
 	aDrawHavok->setChecked( settings.value( "draw havok", true ).toBool() );
 	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
 	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );

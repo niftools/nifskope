@@ -45,13 +45,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 #include "glproperty.h"
 
-#define GLERR( X ) \
-{ \
-	GLenum err; \
-	while ( ( err = glGetError() ) != GL_NO_ERROR ) \
-		qWarning() << "GL ERROR (" << X << "): " << (const char *) gluErrorString( err ); \
-}
-
 // GL_ARB_shader_objects
 PFNGLCREATEPROGRAMOBJECTARBPROC  _glCreateProgramObjectARB  = NULL;
 PFNGLDELETEOBJECTARBPROC         _glDeleteObjectARB         = NULL;
@@ -70,10 +63,10 @@ PFNGLUNIFORM1IARBPROC            _glUniform1iARB            = NULL;
 bool shader_initialized = false;
 bool shader_ready = false;
 
-void Renderer::initialize( const QGLContext * cx )
+bool Renderer::initialize( const QGLContext * cx )
 {
 	if ( shader_initialized )
-		return;
+		return shader_ready;
 	
 	shader_initialized = true;
 	
@@ -82,8 +75,7 @@ void Renderer::initialize( const QGLContext * cx )
 	if ( ! extensions.contains( "GL_ARB_shading_language_100" ) || ! extensions.contains( "GL_ARB_shader_objects" )
 		|| ! extensions.contains( "GL_ARB_vertex_shader" ) || ! extensions.contains( "GL_ARB_fragment_shader" ) )
 	{
-		qWarning() << "OpenGL shader extensions not supported";
-		return;
+		return false;
 	}
 
 	_glCreateProgramObjectARB  = (PFNGLCREATEPROGRAMOBJECTARBPROC) cx->getProcAddress("glCreateProgramObjectARB");
@@ -106,11 +98,16 @@ void Renderer::initialize( const QGLContext * cx )
 		!_glLinkProgramARB || !_glGetUniformLocationARB || !_glUniform4fARB ||
 		!_glUniform1iARB )
 	{
-		qWarning() << "One or more GL_ARB_shader_objects functions were not found";
-		return;
+		return false;
 	}
 
 	shader_ready = true;
+	return true;
+}
+
+bool Renderer::hasShaderSupport()
+{
+	return shader_ready;
 }
 
 QHash<Renderer::ConditionSingle::Type, QString> Renderer::ConditionSingle::compStrs;
@@ -400,6 +397,9 @@ Renderer::~Renderer()
 
 void Renderer::updateShaders()
 {
+	if ( ! shader_ready )
+		return;
+	
 	releaseShaders();
 	
 	QDir dir( QApplication::applicationDirPath() );
@@ -432,6 +432,9 @@ void Renderer::updateShaders()
 
 void Renderer::releaseShaders()
 {
+	if ( ! shader_ready )
+		return;
+	
 	qDeleteAll( programs );
 	programs.clear();
 	qDeleteAll( shaders );
@@ -440,22 +443,20 @@ void Renderer::releaseShaders()
 
 QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 {
-	GLERR( "setup" )
-	
 	PropertyList props;
 	mesh->activeProperties( props );
-	
-	QList<QModelIndex> iBlocks;
-	iBlocks << mesh->index();
-	iBlocks << mesh->iData;
-	foreach ( Property * p, props.list() )
-		iBlocks.append( p->index() );
 	
 	if ( ! shader_ready || ! mesh->scene->shading )
 	{
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );
 	}
+	
+	QList<QModelIndex> iBlocks;
+	iBlocks << mesh->index();
+	iBlocks << mesh->iData;
+	foreach ( Property * p, props.list() )
+		iBlocks.append( p->index() );
 	
 	if ( ! hint.isEmpty() )
 	{
@@ -496,8 +497,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// texturing
 	
 	TexturingProperty * texprop = props.get< TexturingProperty >();
-	
-	GLERR( 0 )
 	
 	int texunit = 0;
 	
@@ -589,33 +588,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	glProperty( props.get< WireframeProperty >() );
 
-	/*
-	GLERR( 1 )
-	glDisable( GL_BLEND );
-	glDisable( GL_ALPHA_TEST );
-
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc( GL_LEQUAL );
-	glDepthMask( GL_FALSE );
-	
-	Color4 a( 0.4, 0.4, 0.4, 1.0 );
-	Color4 d( 0.8, 0.8, 0.8, 1.0 );
-	Color4 s( 1.0, 1.0, 1.0, 1.0 );
-	glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 33.0 );
-	glMaterial( GL_FRONT_AND_BACK, GL_AMBIENT, a );
-	glMaterial( GL_FRONT_AND_BACK, GL_DIFFUSE, d );
-	glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, s );
-
-	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-
-	glDisable( GL_COLOR_MATERIAL );
-	glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
-
-	glEnable( GL_CULL_FACE );
-	glCullFace( GL_BACK );
-	*/
-	GLERR( "prog" )
-	
 	return true;
 }
 
@@ -785,7 +757,5 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
 		}
 	}
-	
-	GLERR( "fixed" )
 }
 

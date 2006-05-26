@@ -96,7 +96,6 @@ public:
 	
 	QAction * aTexturing;
 	QAction * aBlending;
-	QAction * aLighting;
 	QAction * aShading;
 	QAction * aDrawAxis;
 	QAction * aDrawNodes;
@@ -113,8 +112,6 @@ public:
 
 	QAction * aOnlyTextured;
 	QAction * aCullExp;
-	
-	QAction * aUpdateShaders;
 	
 	void	save( QSettings & );
 	void	restore( QSettings & );
