@@ -317,7 +317,7 @@ public:
 			
 			nif->set<int>( iPart, "Num Vertices", weights.count() );
 			nif->set<int>( iPart, "Num Triangles", numTriangles );
-			nif->set<int>( iPart, "Num Bones", numBones );
+			nif->set<int>( iPart, "Num Bones", qMax( numBones, maxBones ) );
 			nif->set<int>( iPart, "Num Strips", strips.count() );
 			nif->set<int>( iPart, "Num Weights Per Vertex", maxBones );
 			
@@ -326,7 +326,7 @@ public:
 			QModelIndex iBoneMap = nif->getIndex( iPart, "Bones" );
 			nif->updateArray( iBoneMap );
 			for ( int bone = 0; bone < nif->rowCount( iBoneMap ); bone++ )
-				nif->set<int>( iBoneMap.child( bone, 0 ), bone );
+				nif->set<int>( iBoneMap.child( bone, 0 ), bone < numBones ? bone : 0 );
 			
 			// skip vertex map
 			
