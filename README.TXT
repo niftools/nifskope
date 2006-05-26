@@ -38,8 +38,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.8.5 of NifSkope.
-It should read and write every Nif from version 4.0.0.2 up to version 20.0.0.5.
+This is version 0.8.6 of NifSkope.
+
+
+changes since 0.8.5:
+  - fixed compability with older graphic cards
+  - fixed animation controllers
+  - fixed triangle sorting
+  - fixed an issue with Make Skin Partion on meshes with less than four bones
 
 
 changes since 0.8.2:
