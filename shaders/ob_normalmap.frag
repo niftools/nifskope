@@ -10,7 +10,7 @@ varying vec4 ColorD;
 
 void main( void )
 {
-	vec4 color = min( ColorEA, 1.0 );
+	vec4 color = ColorEA;
 
 	vec4 normal = texture2D( NormalMap, gl_TexCoord[0].st );
 	normal.rgb = normal.rgb * 2.0 - 1.0;
@@ -20,11 +20,11 @@ void main( void )
 	if ( NdotL > 0.0 )
 	{
 		color += ColorD * NdotL;
-		color = min( color, 1.0 );
 		float NdotHV = max( dot( normal.rgb, normalize( HalfVector ) ), 0.0 );
 		color += normal.a * gl_FrontMaterial.specular * gl_LightSource[0].specular * pow( NdotHV, gl_FrontMaterial.shininess );
 	}
 	
+	color = min( color, 1.0 );
 	color *= texture2D( BaseMap, gl_TexCoord[0].st );
 	
 	gl_FragColor = color;
