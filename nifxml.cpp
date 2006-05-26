@@ -135,7 +135,7 @@ public:
 							
 							QString id = list.value( "name" );
 							if ( id.isEmpty() )
-								err( "compound, ancestor and niblocks must have a name" );
+								err( "compound and niblocks must have a name" );
 							
 							if ( NifModel::compounds.contains( id ) || NifModel::blocks.contains( id ) )
 								err( "multiple declarations of " + id );
@@ -143,6 +143,16 @@ public:
 							if ( ! blk ) blk = new NifBlock;
 							blk->id = list.value( "name" );
 							blk->abstract = ( list.value( "abstract" ) == "1" );
+							
+							if ( x == tagBlock )
+							{
+								blk->ancestor = list.value( "inherit" );
+								if ( ! blk->ancestor.isEmpty() )
+								{
+									if ( ! NifModel::blocks.contains( blk->ancestor ) )
+										err( "forward declaration of block id " + blk->ancestor );
+								}
+							}
 						};
 					}	break;
 					case tagBasic:
@@ -203,7 +213,8 @@ public:
 					{
 						QString n = list.value( "name" );
 						if ( n.isEmpty() )	err( "inherit needs name attribute" );
-						if ( ! NifModel::blocks.contains( n ) ) err( "forward declaration of block id " + n );
+						if ( ! NifModel::blocks.contains( n ) )
+							err( "forward declaration of block id " + n );
 						if ( blk )
 						{
 							if ( blk->ancestor.isEmpty() )
