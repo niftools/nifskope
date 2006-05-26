@@ -137,6 +137,7 @@ void Mesh::clear()
 	tangents.clear();
 	triangles.clear();
 	tristrips.clear();
+	sortedTriangles.clear();
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
@@ -328,11 +329,12 @@ void Mesh::transformShapes()
 	
 	Node::transformShapes();
 	
-	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
-	transformRigid = ! ( ( alphaprop && alphaprop->sort() ) || weights.count() );
+	transformRigid = true;
 	
 	if ( weights.count() )
 	{
+		transformRigid = false;
+		
 		transVerts.resize( verts.count() );
 		transVerts.fill( Vector3() );
 		transNorms.resize( norms.count() );
@@ -370,21 +372,6 @@ void Mesh::transformShapes()
 		bndSphere.applyInv( viewTrans() );
 		upBounds = false;
 	}
-	else if ( ! transformRigid )
-	{
-		transVerts.resize( verts.count() );
-		Transform vtrans = viewTrans();
-		for ( int v = 0; v < verts.count(); v++ )
-			transVerts[v] = vtrans * verts[v];
-		
-		transNorms.resize( norms.count() );
-		Matrix natrix = viewTrans().rotation;
-		for ( int n = 0; n < norms.count(); n++ )
-			transNorms[n] = natrix * norms[n];
-		transTangents.resize( tangents.count() );
-		for ( int t = 0; t < tangents.count(); t++ )
-			transTangents[t] = natrix * tangents[t];
-	}
 	else
 	{
 		transVerts = verts;
@@ -392,21 +379,40 @@ void Mesh::transformShapes()
 		transTangents = tangents;
 	}
 	
+	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
+	
 	if ( alphaprop && alphaprop->sort() )
 	{
-		triOrder.resize( triangles.count() );
-		int t = 0;
-		foreach ( Triangle tri, triangles )
+		QVector< QPair< int, float > > triOrder( triangles.count() );
+		if ( transformRigid )
 		{
-			QPair< int, float > tp;
-			tp.first = t;
-			tp.second = transVerts.value( tri.v1() )[2] + transVerts.value( tri.v2() )[2] + transVerts.value( tri.v3() )[2];
-			triOrder[t++] = tp;
+			Transform vt = viewTrans();
+			Vector3 ref = vt.rotation.inverted() * ( Vector3() - vt.translation ) / vt.scale;
+			int t = 0;
+			foreach ( Triangle tri, triangles )
+			{
+				triOrder[t] = QPair<int, float>( t, 0 - ( ref - verts.value( tri.v1() ) ).squaredLength() - ( ref - verts.value( tri.v2() ) ).squaredLength() - ( ref - verts.value( tri.v1() ) ).squaredLength() );
+				t++;
+			}
+		}
+		else
+		{
+			int t = 0;
+			foreach ( Triangle tri, triangles )
+			{
+				QPair< int, float > tp;
+				tp.first = t;
+				tp.second = transVerts.value( tri.v1() )[2] + transVerts.value( tri.v2() )[2] + transVerts.value( tri.v3() )[2];
+				triOrder[t++] = tp;
+			}
 		}
 		qSort( triOrder.begin(), triOrder.end(), compareTriangles );
+		sortedTriangles.resize( triangles.count() );
+		for ( int t = 0; t < triangles.count(); t++ )
+			sortedTriangles[t] = triangles[ triOrder[t].first ];
 	}
 	else
-		triOrder.clear();
+		sortedTriangles = triangles;
 	
 	MaterialProperty * matprop = findProperty<MaterialProperty>();
 	if ( matprop && matprop->alphaValue() != 1.0 )
@@ -479,8 +485,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	// render the triangles
 
-	if ( triangles.count() )
-		glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.data() );
+	if ( sortedTriangles.count() )
+		glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.data() );
 	
 	// render the tristrips
 	

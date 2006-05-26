@@ -79,8 +79,7 @@ protected:
 	
 	QVector<Triangle> triangles;
 	QList< QVector<quint16> > tristrips;
-	
-	QVector< QPair< int, float > > triOrder;
+	QVector<Triangle> sortedTriangles;
 	
 	bool transformRigid;
 	
