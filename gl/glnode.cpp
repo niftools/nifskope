@@ -60,6 +60,8 @@ public:
 		{
 			iTranslations = nif->getIndex( iData, "Translations" );
 			iRotations = nif->getIndex( iData, "Rotations" );
+			if ( ! iRotations.isValid() )
+				iRotations = iData;
 			iScales = nif->getIndex( iData, "Scales" );
 			return true;
 		}

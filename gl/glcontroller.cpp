@@ -347,11 +347,11 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 	const NifModel * nif = static_cast<const NifModel *>( array.model() );
 	if ( nif && array.isValid() )
 	{
-		switch ( nif->get<int>( array, "Interpolation" ) )
+		switch ( nif->get<int>( array, "Rotation Type" ) )
 		{
 			case 4:
 			{
-				QModelIndex subkeys = nif->getIndex( nif->getIndex( array, "Keys Sub" ).child( 0, 0 ), "Sub Keys" );
+				QModelIndex subkeys = nif->getIndex( array, "XYZ Rotations" );
 				if ( subkeys.isValid() )
 				{
 					float r[3];
@@ -366,7 +366,7 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 			}	break;
 			default:
 			{
-				QModelIndex frames = nif->getIndex( array, "Keys" );
+				QModelIndex frames = nif->getIndex( array, "Quaternion Keys" );
 				if ( timeIndex( time, nif, frames, last, next, x ) )
 				{
 					Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );
