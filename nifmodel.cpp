@@ -521,22 +521,22 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 	}
 	else
 	{
-		if ( data.type() == "(TEMPLATE)" || data.temp() == "(TEMPLATE)" )
+		if ( data.type() == "TEMPLATE" || data.temp() == "TEMPLATE" )
 		{
 			QString tmp = parent->temp();
 			NifItem * tItem = parent;
-			while ( tmp == "(TEMPLATE)" && tItem->parent() )
+			while ( tmp == "TEMPLATE" && tItem->parent() )
 			{
 				tItem = tItem->parent();
 				tmp = tItem->temp();
 			}
 			NifData d( data );
-			if ( d.type() == "(TEMPLATE)" )
+			if ( d.type() == "TEMPLATE" )
 			{
 				d.value.changeType( NifValue::type( tmp ) );
 				d.setType( tmp );
 			}
-			if ( d.temp() == "(TEMPLATE)" )
+			if ( d.temp() == "TEMPLATE" )
 				d.setTemp( tmp );
 			insertType( parent, d, at );
 		}

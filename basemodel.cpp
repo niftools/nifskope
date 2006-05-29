@@ -121,7 +121,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 			{
 				NifItem * dim1 = parent;
 				
-				while ( left == "(ARG)" )
+				while ( left == "ARG" )
 				{
 					if ( ! dim1->parent() )	return 0;
 					left = dim1->arg();
@@ -667,7 +667,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 		{
 			NifItem * i = item;
 			
-			while ( left == "(ARG)" )
+			while ( left == "ARG" )
 			{
 				if ( ! i->parent() )	return false;
 				i = i->parent();
