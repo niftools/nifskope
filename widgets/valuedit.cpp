@@ -50,6 +50,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
 		|| t == NifValue::tString || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString 
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
+		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
 		|| t == NifValue::tTriangle;
 }
@@ -137,6 +138,18 @@ void ValueEdit::setValue( const NifValue & v )
 			te->setPlainText( v.toString() );
 			edit = te;
 		}	break;
+		case NifValue::tColor4:
+		{
+			ColorEdit * ce = new ColorEdit( this );
+			ce->setColor4( v.get<Color4>() );
+			edit = ce;
+		}	break;
+		case NifValue::tColor3:
+		{
+			ColorEdit * ce = new ColorEdit( this );
+			ce->setColor3( v.get<Color3>() );
+			edit = ce;
+		}	break;
 		case NifValue::tVector4:
 		{
 			VectorEdit * ve = new VectorEdit( this );
@@ -210,6 +223,12 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tText:
 			val.fromString( qobject_cast<QTextEdit*>( edit )->toPlainText() );
 			break;
+		case NifValue::tColor4:
+			val.set<Color4>( qobject_cast<ColorEdit*>( edit )->getColor4() );
+			break;
+		case NifValue::tColor3:
+			val.set<Color3>( qobject_cast<ColorEdit*>( edit )->getColor3() );
+			break;
 		case NifValue::tVector4:
 			val.set<Vector4>( qobject_cast<VectorEdit*>( edit )->getVector4() );
 			break;
@@ -248,6 +267,76 @@ void ValueEdit::resizeEditor()
 void ValueEdit::resizeEvent( QResizeEvent * )
 {
 	resizeEditor();
+}
+
+
+ColorEdit::ColorEdit( QWidget * parent ) : QWidget( parent )
+{
+	QHBoxLayout * lay = new QHBoxLayout;
+	lay->setMargin( 0 );
+	setLayout( lay );
+	
+	lay->addWidget( r = new QDoubleSpinBox );
+	r->setDecimals( 3 );
+	r->setRange( 0, 1 );
+	r->setSingleStep( 0.01 );
+	r->setPrefix( "R " );
+	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	lay->addWidget( g = new QDoubleSpinBox );
+	g->setDecimals( 3 );
+	g->setRange( 0, 1 );
+	g->setSingleStep( 0.01 );
+	g->setPrefix( "G " );
+	connect( g, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	lay->addWidget( b = new QDoubleSpinBox );
+	b->setDecimals( 3 );
+	b->setRange( 0, 1 );
+	b->setSingleStep( 0.01 );
+	b->setPrefix( "B " );
+	connect( b, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	lay->addWidget( a = new QDoubleSpinBox );
+	a->setDecimals( 3 );
+	a->setRange( 0, 1 );
+	a->setSingleStep( 0.01 );
+	a->setPrefix( "A " );
+	connect( a, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	
+	setting = false;
+}
+
+void ColorEdit::setColor4( const Color4 & v )
+{
+	setting = true;
+	r->setValue( v[0] );
+	g->setValue( v[1] );
+	b->setValue( v[2] );
+	a->setValue( v[3] ); a->setShown( true );
+	setting = false;
+}
+
+void ColorEdit::setColor3( const Color3 & v )
+{
+	setting = true;
+	r->setValue( v[0] );
+	g->setValue( v[1] );
+	b->setValue( v[2] );
+	a->setValue( 1.0 ); a->setHidden( true );
+	setting = false;
+}
+
+void ColorEdit::sltChanged()
+{
+	if ( ! setting ) emit sigEdited();
+}
+
+Color4 ColorEdit::getColor4() const
+{
+	return Color4( r->value(), g->value(), b->value(), a->value() );
+}
+
+Color3 ColorEdit::getColor3() const
+{
+	return Color3( r->value(), g->value(), b->value() );
 }
 
 
