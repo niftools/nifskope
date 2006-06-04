@@ -64,6 +64,7 @@ public:
 	void drawShapes();
 	void drawNodes();
 	void drawHavok();
+	void drawFurn();
 	
 	QString textStats();
 	
@@ -104,6 +105,7 @@ public:
 	bool showHidden;
 	bool showNodes;
 	bool showHavok;
+	bool	showFurn;
 	
 	QRegExp expCull;
 	bool onlyTextured; // if true only textured meshes will be visible

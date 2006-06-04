@@ -163,6 +163,13 @@ GLView::GLView()
 	aDrawHavok->setChecked( false );
 	connect( aDrawHavok, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aDrawHavok );
+
+	aDrawFurn = new QAction( "Draw Furniture", this );
+	aDrawFurn->setToolTip( "draw the furniture markers" );
+	aDrawFurn->setCheckable( true );
+	aDrawFurn->setChecked( false );
+	connect( aDrawFurn, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	addAction( aDrawFurn );
 	
 	aDrawHidden = new QAction( "&Show Hidden", this );
 	aDrawHidden->setToolTip( "if checked nodes and meshes are allways displayed<br>wether they are hidden ( flags & 1 ) or not" );
@@ -949,6 +956,7 @@ void GLView::checkActions()
 	scene->texturing = aTexturing->isChecked();
 	scene->blending = aBlending->isChecked();
 	scene->showHavok = aDrawHavok->isChecked();
+	scene->showFurn = aDrawFurn->isChecked();
 	scene->highlight = aHighlight->isChecked();
 	scene->showHidden = aDrawHidden->isChecked();
 	scene->showNodes = aDrawNodes->isChecked();
@@ -973,6 +981,7 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "enable blending", aBlending->isChecked() );
 	settings.setValue( "enable shading", aShading->isChecked() );
 	settings.setValue( "draw havok", aDrawHavok->isChecked() );
+	settings.setValue( "draw furniture", aDrawFurn->isChecked() );
 	settings.setValue( "highlight meshes", aHighlight->isChecked() );
 	settings.setValue( "draw axis", aDrawAxis->isChecked() );
 	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
@@ -998,6 +1007,7 @@ void GLView::restore( QSettings & settings )
 	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
 	aShading->setChecked( settings.value( "enable shading", true ).toBool() && aShading->isEnabled() );
 	aDrawHavok->setChecked( settings.value( "draw havok", true ).toBool() );
+	aDrawFurn->setChecked( settings.value( "draw furniture", true ).toBool() );
 	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
 	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
 	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );

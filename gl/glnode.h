@@ -89,6 +89,7 @@ public:
 	virtual void draw( NodeList * draw2nd = 0 );
 	virtual void drawShapes( NodeList * draw2nd = 0 );
 	virtual void drawHavok();
+	virtual void drawFurn();
 	
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;

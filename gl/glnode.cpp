@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "NvTriStrip/qtwrapper.h"
 
+#include "FurnitureMarkers.h"
+
 class TransformController : public Controller
 {
 public:
@@ -495,13 +497,13 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	else if ( name == "bhkBoxShape" )
 	{
 		glLoadName( nif->getBlockNumber( iShape ) );
-		Vector3 v = nif->get<Vector3>( iShape, "Unknown Vector" );
+		Vector3 v = nif->get<Vector3>( iShape, "Dimensions" );
 		drawBox( v, - v );
 	}
 	else if ( name == "bhkCapsuleShape" )
 	{
 		glLoadName( nif->getBlockNumber( iShape ) );
-		drawCapsule( nif->get<Vector3>( iShape, "Unknown Vector 1" ), nif->get<Vector3>( iShape, "Unknown Vector 2" ), nif->get<float>( iShape, "Radius" ) );
+		drawCapsule( nif->get<Vector3>( iShape, "First Point" ), nif->get<Vector3>( iShape, "Second Point" ), nif->get<float>( iShape, "Radius" ) );
 	}
 	else if ( name == "bhkNiTriStripsShape" )
 	{
@@ -602,9 +604,10 @@ void Node::drawHavok()
 	
 	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 	if ( ! iObject.isValid() )
-		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );				
 	if ( ! iObject.isValid() )
 		return;
+
 
 	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
 	
@@ -647,6 +650,159 @@ void Node::drawHavok()
 	glLoadName( nif->getBlockNumber( iBody ) );
 	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );
 	
+	glPopMatrix();
+}
+
+void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
+{
+	QString name = nif->itemName( iPosition );
+	Vector3 offs = nif->get<Vector3>( iPosition, "Offset" );
+	quint16 orient = nif->get<quint16>( iPosition, "Orientation" );
+	quint8 ref1 = nif->get<quint8>( iPosition, "Position Ref 1" );
+	quint8 ref2 = nif->get<quint8>( iPosition, "Position Ref 2" );
+
+	if (ref1 != ref2)
+	{
+		qWarning() << "Position Ref 1 and 2 are not equal!";
+		return;
+	}
+
+	Vector3 flip(1, 1, 1);
+	const FurnitureMarker *mark;
+	switch ( ref1 )
+	{
+		case 1:
+			mark = &FurnitureMarker01;
+			break;
+
+		case 2:
+			flip[0] = -1;
+			mark = &FurnitureMarker01;
+			break;
+			
+		case 3:
+			mark = &FurnitureMarker03;
+			break;
+
+		case 4:
+			mark = &FurnitureMarker04;
+			break;
+
+		case 11:
+			mark = &FurnitureMarker11;
+			break;
+
+		case 12:
+			flip[0] = -1;
+			mark = &FurnitureMarker11;
+			break;
+			
+		case 13:
+			mark = &FurnitureMarker13;
+			break;
+
+		case 14:
+			mark = &FurnitureMarker14;
+			break;
+
+		default:
+			qWarning() << "Unknown furniture marker " << ref1 << "!";
+			return;
+	}
+
+	float roll;	
+	switch (orient)	
+	{
+		case 1570:
+			roll = -90 / 180.0f * M_PI;
+			break;
+		case	3141:
+			roll = M_PI;
+			break;
+			
+		case 4712:
+			roll = 90.0f / 180.0f * M_PI;
+			break;
+			
+		case 0:
+		case 6283:
+			roll = 0;
+			break;
+		
+		default:
+			qWarning() << "Unknown orientation " << orient << "!";
+			roll = 0;
+			break;
+	}
+	
+	glPushMatrix();
+
+	Transform t;
+	t.rotation.fromEuler( 0, 0, roll );
+	t.translation = offs;
+	glMultMatrix( t );
+	
+	glScale(flip);
+
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glVertexPointer( 3, GL_FLOAT, 0, mark->verts );
+
+	glDrawElements( GL_TRIANGLES, mark->nf * 3, GL_UNSIGNED_SHORT, mark->faces );
+
+	glDisableClientState( GL_VERTEX_ARRAY );
+		
+	glPopMatrix();
+}
+
+void Node::drawFurn()
+{
+	foreach ( Node * node, children.list() )
+		node->drawFurn();
+
+	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
+	if ( ! ( iBlock.isValid() && nif ) )
+		return;
+
+	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
+
+	if ( !iExtraDataList.isValid() )
+		return;
+
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_FALSE );
+	glDepthFunc( GL_LEQUAL );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	glDisable( GL_CULL_FACE );
+	glDisable( GL_ALPHA_TEST );
+	
+	glLineWidth( 1.0 );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	
+	glPushMatrix();
+	
+	glLoadMatrix( viewTrans() );
+		
+	for ( int p = 0; p < nif->rowCount( iExtraDataList ); p++ )
+	{
+		QModelIndex iExtraData = nif->getBlock( nif->getLink( iExtraDataList.child( p, 0 ) ) );
+		QString name = nif->itemName( iExtraData );
+		if (name != "BSFurnitureMarker")
+			continue;
+	
+		QModelIndex iPositions = nif->getIndex( iExtraData, "Positions" );		
+		if ( !iPositions.isValid() )
+			break;
+			
+		for ( int j = 0; j < nif->rowCount( iPositions ); j++ )
+		{
+			QModelIndex iPosition = iPositions.child( j, 0 );
+			drawFurnitureMarker( nif, iPosition );		
+		}
+	}
+
 	glPopMatrix();
 }
 

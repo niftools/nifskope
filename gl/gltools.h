@@ -92,6 +92,11 @@ inline void glTranslate( const Vector3 & v )
 	glTranslatef( v[0], v[1], v[2] );
 }
 
+inline void glScale( const Vector3 & v )
+{
+	glScalef( v[0], v[1], v[2] );
+}
+
 inline void glVertex( const Vector3 & v )
 {
 	glVertex3fv( v.data() );

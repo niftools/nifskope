@@ -100,6 +100,7 @@ public:
 	QAction * aDrawAxis;
 	QAction * aDrawNodes;
 	QAction * aDrawHavok;
+	QAction * aDrawFurn;
 	QAction * aDrawHidden;
 	QAction * aDrawStats;
 	QAction * aHighlight;
