@@ -77,6 +77,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * main GUI window
  */
 
+void NifSkope::about()
+{
+	QString text =
+	"<p>NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files.</p>"
+	"<p>NifSkope is based on the NifTool's file format data base. "
+	"For more informations visit our site at http://niftools.sourceforge.net</p>"
+	"<p>Because NifSkope uses the Qt libraries it is free software. "
+	"The source is available via SVN at https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope</p>";
+
+    QMessageBox mb( "About NifSkope 0.8.7", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
+    mb.exec();
+}
+
 NifSkope::NifSkope() : QMainWindow()
 {
 	// create a new nif
@@ -367,20 +381,6 @@ void NifSkope::save( QSettings & settings ) const
 	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );
-}
-
-void NifSkope::about()
-{
-	QString text =
-	"<p>NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files.</p>"
-	"<p>NifSkope is based on the NifTool's file format data base. "
-	"For more informations visit our site at http://niftools.sourceforge.net</p>"
-	"<p>Because NifSkope uses the Qt libraries it is free software. The source"
-	" is available for download at our home site on sourceforge.net</p>";
-
-    QMessageBox mb( "About NifSkope", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
-    mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
-    mb.exec();
 }
 
 void NifSkope::contextMenu( const QPoint & pos )
