@@ -282,14 +282,12 @@ public:
 			
 			int minBones, maxBones;
 			minBones = maxBones = weights.value( 0 ).count();
-			int x = 0;
 			foreach ( QList< boneweight > list, weights )
 			{
 				if ( list.count() < minBones )
 					minBones = list.count();
 				if ( list.count() > maxBones )
 					maxBones = list.count();
-				x++;
 			}
 			
 			if ( minBones <= 0 )
@@ -328,13 +326,13 @@ public:
 			for ( int bone = 0; bone < nif->rowCount( iBoneMap ); bone++ )
 				nif->set<int>( iBoneMap.child( bone, 0 ), bone < numBones ? bone : 0 );
 			
-			// skip vertex map
+			// vertex map (not needed i thought, but nvidia cards seem to rely on it)
 			
-			nif->set<int>( iPart, "Has Vertex Map", 0 );
-			//QModelIndex iVertexMap = nif->getIndex( iPart, "Vertex Map" );
-			//nif->updateArray( iVertexMap );
-			//for ( int vertex = 0; vertex < nif->rowCount( iVertexMap ); vertex++ )
-			//	nif->set<int>( iVertexMap.child( vertex, 0 ), vertex );
+			nif->set<int>( iPart, "Has Vertex Map", 1 );
+			QModelIndex iVertexMap = nif->getIndex( iPart, "Vertex Map" );
+			nif->updateArray( iVertexMap );
+			for ( int vertex = 0; vertex < nif->rowCount( iVertexMap ); vertex++ )
+				nif->set<int>( iVertexMap.child( vertex, 0 ), vertex );
 			
 			// fill in vertex weights
 			
