@@ -5,7 +5,7 @@ check NiTexturingProperty/Apply Mode == 4
 check NiTriBasedGeom/Has Shader == 0
 
 checkgroup begin
-	check TriBasedGeomData/Has Vertex Colors != 0
+	check NiTriBasedGeomData/Has Vertex Colors != 0
 	check NiVertexColorProperty/Vertex Mode == 1
 	check NiVertexColorProperty/Lighting Mode == 1
 checkgroup end

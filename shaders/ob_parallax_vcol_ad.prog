@@ -4,7 +4,7 @@ comment normal+parallax mapping, vertex colors -> ambient&diffuse
 check NiTexturingProperty/Apply Mode == 4
 check NiTriBasedGeom/Has Shader == 0
 
-check TriBasedGeomData/Has Vertex Colors != 0
+check NiTriBasedGeomData/Has Vertex Colors != 0
 
 checkgroup begin or
 	check not NiVertexColorProperty
