@@ -470,6 +470,36 @@ void GLView::paintGL()
 	}
 }
 
+typedef void (Scene::*DrawFunc)(void);
+	
+int indexAt( GLuint *buffer, NifModel *model, Scene *scene, DrawFunc drawFunc )
+{
+	glRenderMode( GL_SELECT );	
+	glInitNames();
+	glPushName( 0 );
+		
+	(scene->*drawFunc)();
+		
+	GLint hits = glRenderMode( GL_RENDER );
+	if ( hits > 0 )
+	{
+		int	choose = buffer[ 3 ];
+		int	depth = buffer[ 1 ];
+		for ( int loop = 1; loop < hits; loop++ )
+		{
+			if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
+			{
+				choose = buffer[ loop * 4 + 3 ];
+				depth = buffer[ loop * 4 + 1 ];
+			}       
+		}
+		return choose;
+	}
+	
+	return -1;
+}
+
+
 QModelIndex GLView::indexAt( const QPoint & pos )
 {
 	if ( ! ( model && isVisible() && height() ) )
@@ -482,78 +512,35 @@ QModelIndex GLView::indexAt( const QPoint & pos )
 	GLuint	buffer[512];
 	glSelectBuffer( 512, buffer );
 
+	int choose;
 	if ( aDrawHavok->isChecked() )
-	{
-		glRenderMode( GL_SELECT );	
-		glInitNames();
-		glPushName( 0 );
-		
-		scene->drawHavok();
-		
-		GLint hits = glRenderMode( GL_RENDER );
-		if ( hits > 0 )
-		{
-			int	choose = buffer[ 3 ];
-			int	depth = buffer[ 1 ];
-			for ( int loop = 1; loop < hits; loop++ )
-			{
-				if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
-				{
-					choose = buffer[ loop * 4 + 3 ];
-					depth = buffer[ loop * 4 + 1 ];
-				}       
-			}
+	{	
+		choose = ::indexAt( buffer, model, scene, &Scene::drawHavok ); 
+		if ( choose != -1 )
 			return model->getBlock( choose );
+	}
+	
+	if ( aDrawFurn->isChecked() )
+	{		
+		choose = ::indexAt( buffer, model, scene, &Scene::drawFurn ); 
+		if ( choose != -1 )
+		{
+			QModelIndex parent = model->index( 3, 0, model->getBlock( choose&0x0ffff ) );
+			return model->index( choose>>16, 0, parent );
 		}
 	}
 	
 	if ( aDrawNodes->isChecked() )
 	{
-		glRenderMode( GL_SELECT );	
-		glInitNames();
-		glPushName( 0 );
-		
-		scene->drawNodes();
-		
-		GLint hits = glRenderMode( GL_RENDER );
-		if ( hits > 0 )
-		{
-			int	choose = buffer[ 3 ];
-			int	depth = buffer[ 1 ];
-			for ( int loop = 1; loop < hits; loop++ )
-			{
-				if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
-				{
-					choose = buffer[ loop * 4 + 3 ];
-					depth = buffer[ loop * 4 + 1 ];
-				}       
-			}
+		choose = ::indexAt( buffer, model, scene, &Scene::drawNodes ); 
+		if ( choose != -1 )
 			return model->getBlock( choose );
-		}
 	}
-	
-	glRenderMode( GL_SELECT );	
-	glInitNames();
-	glPushName( 0 );
-	
-	scene->drawShapes();
-	
-	GLint hits = glRenderMode( GL_RENDER );
-	if ( hits > 0 )
-	{
-		int	choose = buffer[ 3 ];
-		int	depth = buffer[ 1 ];
-		for ( int loop = 1; loop < hits; loop++ )
-		{
-			if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
-			{
-				choose = buffer[ loop * 4 + 3];
-				depth = buffer[ loop * 4 + 1];
-			}       
-		}
+
+	choose = ::indexAt( buffer, model, scene, &Scene::drawShapes );
+	if ( choose != -1 )
 		return model->getBlock( choose );
-	}
-	
+		
 	return QModelIndex();
 }
 
