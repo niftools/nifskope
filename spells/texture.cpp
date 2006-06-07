@@ -595,3 +595,92 @@ class spTextureTemplate : public Spell
 };
 
 REGISTER_SPELL( spTextureTemplate )
+
+class spMultiApplyMode : public Spell
+{
+	
+public:
+
+	QString name() const { return "Multi Apply Mode"; }
+	QString page() const { return "Texture"; } 
+
+  	bool isApplicable( const NifModel * nif, const QModelIndex &index )
+  	{
+     	return nif->checkVersion( 0x14000005, 0x14000005 ) && index.isValid();
+	}
+
+  	QModelIndex cast( NifModel *nif, const QModelIndex &index )
+  	{
+  		QStringList modes;
+  		modes << "Replace" <<  "Decal" << "Modulate" << "Hilight" << "Hilight2";
+
+		QDialog dlg;
+		dlg.resize( 300, 60 );
+		QComboBox *cbRep = new QComboBox( &dlg );
+		QComboBox *cbBy = new QComboBox( &dlg );
+		QPushButton *btnOk = new QPushButton( "OK", &dlg );
+		QPushButton *btnCancel = new QPushButton( "Cancel", &dlg );
+		cbRep->addItems( modes );
+		cbRep->setCurrentIndex( 2 );
+		cbBy->addItems( modes );
+		cbBy->setCurrentIndex( 2 );
+		
+		QGridLayout *layout;
+		layout = new QGridLayout;
+		layout->setSpacing( 20 );
+		layout->addWidget( new QLabel( "Replace", &dlg ), 0, 0, Qt::AlignBottom );
+		layout->addWidget( new QLabel( "By", &dlg ), 0, 1, Qt::AlignBottom );
+		layout->addWidget( cbRep, 1, 0, Qt::AlignTop );
+		layout->addWidget( cbBy, 1, 1, Qt::AlignTop );
+		layout->addWidget( btnOk, 2, 0 );
+		layout->addWidget( btnCancel, 2, 1 );
+		dlg.setLayout( layout );		
+		
+		QObject::connect( btnOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( btnCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		
+		if ( dlg.exec() != QDialog::Accepted )
+			return QModelIndex();
+		
+		replaceApplyMode( nif, index, cbRep->currentIndex(), cbBy->currentIndex() );
+
+    		return QModelIndex();
+	}
+	
+	void 	replaceApplyMode( NifModel *nif, const QModelIndex &index, int rep, int by )
+	{	
+		if ( !index.isValid() )
+			return;
+					
+    		if ( nif->inherits( index, "NiTexturingProperty" ) &&
+     		nif->get<int>( index, "Apply Mode" ) == rep )
+       		nif->set<int>( index, "Apply Mode", by );
+		
+		QModelIndex iChildren = nif->getIndex( index, "Children" );
+		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( index ) );
+		if ( iChildren.isValid() )
+		{
+			for ( int c = 0; c < nif->rowCount( iChildren ); c++ )
+			{
+				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
+				if ( lChildren.contains( link ) )
+				{
+					QModelIndex iChild = nif->getBlock( link );
+					replaceApplyMode( nif, iChild, rep, by );
+				}
+			}
+		}
+
+		QModelIndex iProperties = nif->getIndex( index, "Properties" );
+		if ( iProperties.isValid() )
+		{
+			for ( int p = 0; p < nif->rowCount( iProperties ); p++ )
+			{
+				QModelIndex iProp = nif->getBlock( nif->getLink( iProperties.child( p, 0 ) ) );
+				replaceApplyMode( nif, iProp, rep, by );
+			}
+		}
+	}
+};
+
+REGISTER_SPELL( spMultiApplyMode )
