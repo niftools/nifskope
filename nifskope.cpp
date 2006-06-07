@@ -691,6 +691,9 @@ void myMessageOutput(QtMsgType type, const char *msg)
 		case QtDebugMsg:
 			break;
 		case QtWarningMsg:
+			// workaround for Qt 4.1.3
+			if ( QString( "QEventDispatcherUNIX::unregisterTimer: invalid argument" ) == msg )
+				return;
 		case QtCriticalMsg:
 			if ( ! msgtarget )
 			{
