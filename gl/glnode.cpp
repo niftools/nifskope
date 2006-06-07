@@ -661,9 +661,9 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 	quint8 ref1 = nif->get<quint8>( iPosition, "Position Ref 1" );
 	quint8 ref2 = nif->get<quint8>( iPosition, "Position Ref 2" );
 
-	if (ref1 != ref2)
+	if ( ref1 != ref2 )
 	{
-		qWarning() << "Position Ref 1 and 2 are not equal!";
+		qDebug() << "Position Ref 1 and 2 are not equal!";
 		return;
 	}
 
@@ -706,12 +706,12 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 			break;
 
 		default:
-			qWarning() << "Unknown furniture marker " << ref1 << "!";
+			qDebug() << "Unknown furniture marker " << ref1 << "!";
 			return;
 	}
 
 	float roll;	
-	switch (orient)	
+	switch ( orient )	
 	{
 		case 1570:
 			roll = -90 / 180.0f * M_PI;
@@ -730,10 +730,14 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 			break;
 		
 		default:
-			qWarning() << "Unknown orientation " << orient << "!";
+			qDebug() << "Unknown orientation " << orient << "!";
 			roll = 0;
 			break;
 	}
+
+
+	glLoadName( ( nif->getBlockNumber( iPosition )&0x0ffff ) | 
+	            ( (iPosition.row()&0x0ffff ) << 16) );
 	
 	glPushMatrix();
 
@@ -777,6 +781,7 @@ void Node::drawFurn()
 	glDisable( GL_COLOR_MATERIAL );
 	glDisable( GL_CULL_FACE );
 	glDisable( GL_ALPHA_TEST );
+	glColor4f( 1, 1, 1, 1 );
 	
 	glLineWidth( 1.0 );
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
