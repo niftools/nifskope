@@ -363,7 +363,13 @@ public:
 
 bool NifModel::loadXML()
 {
-	QString result = NifModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "nif.xml" ) );
+	QDir dir( QApplication::applicationDirPath() );
+	QString fname;
+	if ( dir.exists( "../docsys/nif.xml" ) )
+		fname = dir.filePath( "../docsys/nif.xml" );
+	else
+		fname = dir.filePath( "nif.xml" );
+	QString result = NifModel::parseXmlDescription( fname );
 	if ( ! result.isEmpty() )
 	{
 		QMessageBox::critical( 0, "NifSkope", result );
@@ -385,11 +391,7 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-	{
-		f.setFileName( ":/res/nif.xml" );
-		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-			return QString( "error: couldn't open xml description file: " + filename );
-	}
+		return QString( "error: couldn't open xml description file: " + filename );
 	
 	NifXmlHandler handler;
 	QXmlSimpleReader reader;

@@ -241,11 +241,7 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-	{
-		f.setFileName( ":/res/kfm.xml" );
-		if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-			return QString( "error: couldn't open xml description file: " + filename );
-	}
+		return QString( "error: couldn't open xml description file: " + filename );
 	
 	KfmXmlHandler handler;
 	QXmlSimpleReader reader;
