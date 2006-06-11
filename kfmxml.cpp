@@ -223,7 +223,13 @@ public:
 
 bool KfmModel::loadXML()
 {
-	QString result = KfmModel::parseXmlDescription( QDir( QApplication::applicationDirPath() ).filePath( "kfm.xml" ) );
+	QDir dir( QApplication::applicationDirPath() );
+	QString fname;
+	if ( dir.exists( "../docsys/kfm.xml" ) )
+		fname = dir.filePath( "../docsys/kfm.xml" );
+	else
+		fname = dir.filePath( "kfm.xml" );
+	QString result = KfmModel::parseXmlDescription( fname );
 	if ( ! result.isEmpty() )
 	{
 		QMessageBox::critical( 0, "NifSkope", result );
