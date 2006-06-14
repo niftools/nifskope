@@ -554,6 +554,7 @@ class spRemoveBranch : public Spell
 public:
 	QString name() const { return "Remove Branch"; }
 	QString page() const { return "Block"; }
+	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Delete ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & iBlock )
 	{
@@ -592,6 +593,7 @@ class spMoveBlockUp : public Spell
 public:
 	QString name() const { return "Move Up"; }
 	QString page() const { return "Block"; }
+	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Up ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -613,6 +615,7 @@ class spMoveBlockDown : public Spell
 public:
 	QString name() const { return "Move Down"; }
 	QString page() const { return "Block"; }
+	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Down ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

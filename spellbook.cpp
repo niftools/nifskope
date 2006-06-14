@@ -174,7 +174,9 @@ void SpellBook::newSpellRegistered( Spell * spell )
 			menu = new QMenu( spell->page() );
 			addMenu( menu );
 		}
-		Map.insert( menu->addAction( spell->icon(), spell->name() ), spell );
+		QAction * act = menu->addAction( spell->icon(), spell->name() );
+		act->setShortcut( spell->hotkey() );
+		Map.insert( act, spell );
 	}
 }
 
@@ -215,6 +217,16 @@ Spell * SpellBook::lookup( const QString & id )
 			return spell;
 	}
 	
+	return 0;
+}
+
+Spell * SpellBook::lookup( const QKeySequence & hotkey )
+{
+	if ( hotkey.isEmpty() )
+		return 0;
+	foreach ( Spell * spell, spells() )
+		if ( spell->hotkey() == hotkey )
+			return spell;
 	return 0;
 }
 

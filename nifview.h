@@ -62,6 +62,7 @@ protected slots:
 
 protected:
     void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const;
+	void keyPressEvent( QKeyEvent * e );
 
 	QStyleOptionViewItem viewOptions() const;
 	

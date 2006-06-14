@@ -51,6 +51,7 @@ public:
 	virtual QIcon icon() const { return QIcon(); }
 	virtual bool instant() const { return false; }
 	virtual bool sanity() const { return false; }
+	virtual QKeySequence hotkey() const { return QKeySequence(); }
 
 	virtual bool isApplicable( const NifModel * nif, const QModelIndex & index ) = 0;
 	
@@ -69,6 +70,7 @@ public:
 	static void registerSpell( Spell * spell );
 	
 	static Spell * lookup( const QString & id );
+	static Spell * lookup( const QKeySequence & hotkey );
 	static Spell * instant( const NifModel * nif, const QModelIndex & index );
 	
 	static QModelIndex sanitize( NifModel * nif );

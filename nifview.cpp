@@ -33,6 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifview.h"
 
 #include "basemodel.h"
+#include "nifproxy.h"
+#include "spellbook.h"
+
+#include <QKeyEvent>
 
 NifTreeView::NifTreeView() : QTreeView()
 {
@@ -150,3 +154,39 @@ void NifTreeView::updateConditions()
 	}
 }
 
+void NifTreeView::keyPressEvent( QKeyEvent * e )
+{
+	Spell * spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
+	
+	if ( spell )
+	{
+		NifModel * nif = 0;
+		NifProxyModel * proxy = 0;
+		
+		QPersistentModelIndex oldidx;
+		
+		if ( model()->inherits( "NifModel" ) )
+		{
+			nif = static_cast<NifModel *>( model() );
+			oldidx = currentIndex();
+		}
+		else if ( model()->inherits( "NifProxyModel" ) )
+		{
+			proxy = static_cast<NifProxyModel*>( model() );
+			nif = static_cast<NifModel *>( proxy->model() );
+			oldidx = proxy->mapTo( currentIndex() );
+		}
+		
+		if ( nif && spell->isApplicable( nif, oldidx ) )
+		{
+			QModelIndex newidx = spell->cast( nif, oldidx );
+			if ( proxy )
+				newidx = proxy->mapFrom( newidx, oldidx );
+			emit clicked( newidx );
+            selectionModel()->setCurrentIndex( newidx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows );
+			return;
+		}
+	}
+	
+	QTreeView::keyPressEvent( e );
+}
