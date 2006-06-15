@@ -58,8 +58,7 @@ public:
 		tagBlock,
 		tagAdd,
 		tagInherit,
-		tagBasic,
-		tagInterface
+		tagBasic
 	};
 	
 	NifXmlHandler()
@@ -72,7 +71,6 @@ public:
 		tags.insert( "add", tagAdd );
 		tags.insert( "inherit", tagInherit );
 		tags.insert( "basic", tagBasic );
-		tags.insert( "interface", tagInterface );
 		blk = 0;
 	}
 
@@ -207,6 +205,15 @@ public:
 						QString defval = list.value( "default" );
 						if ( ! defval.isEmpty() )
 							data.value.fromString( defval );
+						QString userver = list.value( "userver" );
+						if ( ! userver.isEmpty() )
+						{
+							QString cond = data.cond();
+							if ( ! cond.isEmpty() )
+								cond += " && ";
+							cond += "HEADER/User Version == " + userver;
+							data.setCond( cond );
+						}
 						if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
 					}	break;
 					case tagInherit:
@@ -222,12 +229,6 @@ public:
 							else
 								err( "allowed is only one inherit tag per block" );
 						}
-					}	break;
-					case tagInterface:
-					{
-						QString n = list.value( "name" );
-						if ( n.isEmpty() )	err( "interface needs name attribute" );
-						// NifSkope doesn't do anything with that
 					}	break;
 					default:
 						err( "only add, inherit, and interface tags allowed in " + tagid + " declaration" );
