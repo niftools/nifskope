@@ -632,6 +632,24 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 	if ( cond.isEmpty() )
 		return true;
 	
+	if ( cond.contains( "&&" ) )
+	{
+		foreach ( QString c, cond.split( "&&" ) )
+		{
+			c = c.trimmed();
+			if ( c.startsWith( "(" ) && c.endsWith( ")" ) )
+				c = c.mid( 1, c.length() - 2 ).trimmed();
+			if ( ! evalConditionHelper( item, c ) )
+				return false;
+		}
+		return true;
+	}
+	
+	return evalConditionHelper( item, cond );
+}
+
+bool BaseModel::evalConditionHelper( NifItem * item, const QString & cond ) const
+{	
 	QString left, right;
 	
 	static const char * const exp[] = { "!=", "==", ">=", "<=", ">", "<", "&" };
@@ -678,7 +696,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 			if ( i )
 				l = i->value().toCount();
 			else
-				return false;
+				l = 0;
 		}
 	}
 	
@@ -691,7 +709,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 			if ( i )
 				r = i->value().toCount();
 			else
-				return false;
+				r = 0;
 		}
 	}
 	

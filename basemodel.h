@@ -177,6 +177,7 @@ protected:
 	
 	virtual bool		evalVersion( NifItem * item, bool chkParents = false ) const = 0;
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
+	bool		evalConditionHelper( NifItem * item, const QString & cond ) const;
 	
 	virtual QString ver2str( quint32 ) const = 0;
 	virtual quint32 str2ver( QString ) const = 0;
