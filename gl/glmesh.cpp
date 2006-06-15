@@ -303,10 +303,10 @@ void Mesh::transform()
 		skelTrans = Transform( nif, iSkinData );
 		
 		QVector<int> bones;
-		QModelIndex idxBones = nif->getIndex( nif->getIndex( iSkin, "Bones" ), "Bones" );
+		QModelIndex idxBones = nif->getIndex( iSkin, "Bones" );
 		if ( idxBones.isValid() )
 			for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
-				bones.append( nif->getLink( nif->index( b, 0, idxBones ) ) );
+				bones.append( nif->getLink( idxBones.child( b, 0 ) ) );
 		
 		idxBones = nif->getIndex( iSkinData, "Bone List" );
 		if ( idxBones.isValid() )
@@ -343,14 +343,13 @@ void Mesh::transformShapes()
 		transTangents.fill( Vector3() );
 		
 		Node * root = findParent( skelRoot );
+		int x = 0;
 		foreach ( BoneWeights bw, weights )
 		{
 			Transform trans = viewTrans() * skelTrans;
-			if ( root )
-			{
-				Node * bone = root->findChild( bw.bone );
-				if ( bone ) trans = /*bone->viewTrans() * bw.trans; */ trans * bone->localTransFrom( skelRoot ) * bw.trans;
-			}	// FIXME
+			Node * bone = root ? root->findChild( bw.bone ) : 0;
+			if ( bone ) trans = trans * bone->localTransFrom( skelRoot ) * bw.trans;
+			if ( bone ) weights[x++].tcenter = bone->viewTrans() * bw.center; else x++;
 			
 			Matrix natrix = trans.rotation;
 			foreach ( VertexWeight vw, bw.weights )
@@ -530,6 +529,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 				glEnd();
 			}
 		}
+		
+		//foreach ( BoneWeights bw, weights )
+		//	drawSphere( bw.tcenter, bw.radius );
 		
 		//static const GLfloat stripcolor[6][4] = {
 		//	{ 0, 1, 0, .5 }, { 0, 1, 1, .5 },

@@ -152,6 +152,8 @@ public:
 		xyz[1] = y;
 		xyz[2] = z;
 	}
+	explicit Vector3( const class Vector4 & );
+	
 	Vector3 & operator+=( const Vector3 & v )
 	{
 		xyz[0] += v.xyz[0];
@@ -433,6 +435,13 @@ protected:
 	friend class NifIStream;
 	friend class NifOStream;
 };
+
+inline Vector3::Vector3( const Vector4 & v4 )
+{
+	xyz[0] = v4[0];
+	xyz[1] = v4[1];
+	xyz[2] = v4[2];
+}
 
 class Quat
 {

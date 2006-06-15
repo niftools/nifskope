@@ -188,6 +188,7 @@ void Scene::transform( const Transform & trans, float time )
 	
 	worldTrans.clear();
 	viewTrans.clear();
+	bhkBodyTrans.clear();
 	
 	foreach ( Property * prop, properties.list() )
 		prop->transform();

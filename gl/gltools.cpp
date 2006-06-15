@@ -64,6 +64,8 @@ QDataStream & operator>>( QDataStream & ds, Transform & t )
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {
 	trans = Transform( nif, index );
+	center = nif->get<Vector3>( index, "Center" );
+	radius = nif->get<float>( index, "Radius" );
 	bone = b;
 	
 	QModelIndex idxWeights = nif->getIndex( index, "Vertex Weights" );
@@ -259,12 +261,44 @@ void drawBox( Vector3 a, Vector3 b )
 	glEnd();
 }
 
+void drawCircle( Vector3 c, Vector3 n, float r, int sd )
+{
+	Vector3 x = Vector3::crossproduct( n, Vector3( n[1], n[2], n[0] ) );
+	Vector3 y = Vector3::crossproduct( n, x );
+	drawArc( c, x * r, y * r, - PI, + PI, sd );
+}
+
+void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd )
+{
+	glBegin( GL_LINE_STRIP );
+	for ( int j = 0; j <= sd; j++ )
+	{
+		float f = ( ax - an ) * float( j ) / float( sd ) + an;
+		
+		glVertex( c + x * sin( f ) + y * cos( f ) );
+	}
+	glEnd();
+}
+
+void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, int sd )
+{
+	bool cull = glIsEnabled( GL_CULL_FACE );
+	glDisable( GL_CULL_FACE );
+	glBegin( GL_QUAD_STRIP );
+	for ( int j = 0; j <= sd; j++ )
+	{
+		float f = ( ax - an ) * float( j ) / float( sd ) + an;
+		
+		glVertex( c + x * sin( f ) + y * cos( f ) + n );
+		glVertex( c + x * sin( f ) + y * cos( f ) - n );
+	}
+	glEnd();
+	if ( cull )
+		glEnable( GL_CULL_FACE );
+}
+
 void drawSphere( Vector3 c, float r, int sd )
 {
-	glBegin( GL_POINTS );
-	glVertex( c );
-	glEnd();
-	
 	for ( int j = -sd; j <= sd; j++ )
 	{
 		float f = PI * float( j ) / float( sd );
@@ -321,15 +355,7 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd )
 	
 	glBegin( GL_LINE_STRIP );
 	for ( int i = 0; i <= sd*2; i++ )
-		glVertex( a + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
-	glEnd();
-	glBegin( GL_LINE_STRIP );
-	for ( int i = 0; i <= sd*2; i++ )
 		glVertex( a + d/2 + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
-	glEnd();
-	glBegin( GL_LINE_STRIP );
-	for ( int i = 0; i <= sd*2; i++ )
-		glVertex( b + x * sin( PI / sd * i ) + y * cos( PI / sd * i ) );
 	glEnd();
 	glBegin( GL_LINES );
 	for ( int i = 0; i <= sd*2; i++ )
@@ -353,5 +379,16 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd )
 			glVertex( b + dj + x * sin( PI / sd * i ) * rj + y * cos( PI / sd * i ) * rj );
 		glEnd();
 	}
+}
+
+void drawDashLine( Vector3 a, Vector3 b, int sd )
+{
+	Vector3 d = ( b - a ) / float( sd );
+	glBegin( GL_LINES );
+	for ( int c = 0; c <= sd; c++ )
+	{
+		glVertex( a + d * c );
+	}
+	glEnd();
 }
 

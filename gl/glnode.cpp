@@ -409,6 +409,31 @@ void Node::transform()
 {
 	Controllable::transform();
 
+	// if there's a rigid body attached, then calculate and cache the body's transform
+	// (need this later in the drawing stage for the constraints)
+	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
+	if ( iBlock.isValid() && nif )
+	{
+		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
+		if ( ! iObject.isValid() )
+			iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+		if ( iObject.isValid() )
+		{
+			QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+			if ( iBody.isValid() )
+			{
+				Transform t;
+				t.scale = 7;
+				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) )
+				{
+					t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
+					t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
+				}
+				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), viewTrans() * t );
+			}
+		}
+	}
+	
 	foreach ( Node * node, children.list() )
 		node->transform();
 }
@@ -512,7 +537,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		
 		glLoadName( nif->getBlockNumber( iShape ) );
 		
-		QModelIndex iStrips = nif->getIndex( iShape, "Strips" );
+		QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
 		for ( int r = 0; r < nif->rowCount( iStrips ); r++ )
 		{
 			QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
@@ -525,6 +550,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
 					strips += nif->getArray<quint16>( iPoints.child( r, 0 ) );
 				
+				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 				glBegin( GL_TRIANGLES );
 				foreach ( Triangle t, triangulate( strips ) )
 				{
@@ -533,6 +559,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					glVertex( verts.value( t[2] ) );
 				}
 				glEnd();
+				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 			}
 		}
 	}
@@ -593,6 +620,97 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	stack.pop();
 }
 
+void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
+{
+	if ( ! ( nif && iConstraint.isValid() && scene ) )
+		return;
+	
+	QList<Transform> tBodies;
+	QModelIndex iBodies = nif->getIndex( iConstraint, "Bodies" );
+	for ( int r = 0; r < nif->rowCount( iBodies ); r++ )
+	{
+		qint32 l = nif->getLink( iBodies.child( r, 0 ) );
+		if ( ! scene->bhkBodyTrans.contains( l ) )
+			return;
+		else
+			tBodies.append( scene->bhkBodyTrans.value( l ) );
+	}
+	
+	if ( tBodies.count() != 2 )
+		return;
+	
+	glLoadName( nif->getBlockNumber( iConstraint ) );
+	glPushMatrix();
+	
+	QString name = nif->itemName( iConstraint );
+	if ( name == "bhkLimitedHingeConstraint" )
+	{
+		glDisable( GL_DEPTH_TEST );
+		
+		//glDepthFunc( GL_LEQUAL );
+		
+		QModelIndex iHinge = nif->getIndex( iConstraint, "Limited Hinge" );
+		
+		const Vector3 pivotA = Vector3( nif->get<Vector4>( iHinge, "Pivot A" ) );
+		const Vector3 pivotB = Vector3( nif->get<Vector4>( iHinge, "Pivot B" ) );
+		
+		const Vector3 axleA( nif->get<Vector4>( iHinge, "Axle A ?" ) );
+		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2AxleInA1" ) );
+		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2AxleInA2" ) );
+		
+		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
+		const Vector3 axleB2( nif->get<Vector4>( iHinge, "Unknown Vector" ) );
+		
+		const float minAngle = nif->get<float>( iHinge, "Min Angle" );
+		const float maxAngle = nif->get<float>( iHinge, "Max Angle" );
+		
+		glLoadMatrix( tBodies.value( 0 ) );
+		glColor( Color3( 0.8, 0.6, 0.0 ) );
+		
+		glBegin( GL_POINTS );
+		glVertex( pivotA );
+		glEnd();
+		
+		glBegin( GL_LINES );
+		glVertex( pivotA );
+		glVertex( pivotA + axleA );
+		glVertex( pivotA );
+		glVertex( pivotA + axleA1 );
+		//glVertex( pivotA );
+		//glVertex( pivotA + axleA2 );
+		glEnd();
+		drawDashLine( pivotA, pivotA + axleA2 );
+		
+		drawCircle( pivotA, axleA, 1.0 );
+		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle );
+		
+		glLoadMatrix( tBodies.value( 1 ) );
+		glColor( Color3( 0.6, 0.8, 0.0 ) );
+		
+		glBegin( GL_POINTS );
+		glVertex( pivotB );
+		glEnd();
+		
+		glBegin( GL_LINES );
+		glVertex( pivotB );
+		glVertex( pivotB + axleB );
+		glVertex( pivotB );
+		glVertex( pivotB + axleB2 );
+		//glVertex( pivotB );
+		//glVertex( pivotB + Vector3::crossproduct( Vector3( nif->get<Vector4>( iHinge, "Axle B" ) ), Vector3( nif->get<Vector4>( iHinge, "Unknown Vector" ) ) ) );
+		glEnd();
+		
+		
+		drawCircle( pivotB, axleB, 1.0 );
+		drawSolidArc( pivotB, axleB / 6, axleB2, Vector3::crossproduct( axleB2, axleB ), minAngle, maxAngle );
+	}
+	else if ( name == "bhkRagdollConstraint" )
+	{
+	}
+	
+	glPopMatrix();
+}
+
 void Node::drawHavok()
 {
 	foreach ( Node * node, children.list() )
@@ -607,7 +725,12 @@ void Node::drawHavok()
 		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );				
 	if ( ! iObject.isValid() )
 		return;
-
+	
+	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
+	
+	glPushMatrix();
+	glLoadMatrix( scene->bhkBodyTrans.value( nif->getBlockNumber( iBody ) ) );
+	
 
 	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
 	
@@ -626,24 +749,8 @@ void Node::drawHavok()
 	
 	static const float colors[8][3] = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 }, { 1.0, 1.0, 1.0 }, { 0.5, 0.5, 1.0 }, { 1.0, 0.8, 0.0 }, { 1.0, 0.8, 0.4 }, { 0.0, 1.0, 1.0 } };
 	
-	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
 	glColor3fv( colors[ nif->get<int>( iBody, "Layer" ) & 7 ] );
 
-	glPushMatrix();
-	
-	glLoadMatrix( viewTrans() );
-	
-	if ( nif->itemName( iBody ) == "bhkRigidBodyT" )
-	{
-		Transform t;
-		t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-		t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
-		glMultMatrix( t );
-	}
-	
-	float s = 7;
-	glScalef( s, s, s );
-	
 	QStack<QModelIndex> shapeStack;
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack );
 	
@@ -651,6 +758,14 @@ void Node::drawHavok()
 	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );
 	
 	glPopMatrix();
+	
+	QModelIndex iConstraints = nif->getIndex( iBody, "Constraints" );
+	for ( int r = 0; r < nif->rowCount( iConstraints ); r++ )
+	{
+		QModelIndex iConstraint = nif->getBlock( nif->getLink( iConstraints.child( r, 0 ) ) );
+		if ( nif->inherits( iConstraint, "AbhkConstraint" ) )
+			drawHvkConstraint( nif, iConstraint, scene );
+	}
 }
 
 void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
@@ -738,6 +853,8 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 
 	glLoadName( ( nif->getBlockNumber( iPosition )&0x0ffff ) | 
 	            ( (iPosition.row()&0x0ffff ) << 16) );
+	
+	glLoadName( nif->getBlockNumber( iPosition ) );
 	
 	glPushMatrix();
 

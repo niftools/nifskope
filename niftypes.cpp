@@ -808,15 +808,6 @@ bool NifIStream::read( NifValue & val )
 			string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
-		case NifValue::tText:
-		{
-			int len;
-			device->read( (char *) &len, 4 );
-			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
-			QByteArray string = device->read( len );
-			if ( string.size() != len ) return false;
-			*static_cast<QString*>( val.val.data ) = QString( string );
-		}	return true;
 		case NifValue::tShortString:
 		{
 			unsigned char len;
@@ -827,6 +818,7 @@ bool NifIStream::read( NifValue & val )
 			string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
+		case NifValue::tText:
 		case NifValue::tFilePath:
 		{
 			int len;
@@ -941,14 +933,6 @@ bool NifOStream::write( const NifValue & val )
 				return false;
 			return device->write( (const char *) string, string.size() ) == string.size();
 		}
-		case NifValue::tText:
-		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
-			int len = string.size();
-			if ( device->write( (char *) &len, 4 ) != 4 )
-				return false;
-			return device->write( (const char *) string, string.size() ) == string.size();
-		}
 		case NifValue::tShortString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
@@ -960,6 +944,7 @@ bool NifOStream::write( const NifValue & val )
 				return false;
 			return device->write( (const char *) string, len ) == len;
 		}
+		case NifValue::tText:
 		case NifValue::tFilePath:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();

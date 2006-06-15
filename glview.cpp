@@ -298,8 +298,6 @@ void GLView::updateShaders()
 
 void GLView::glProjection( int x, int y )
 {
-	// check for errors
-	
 	GLint	viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 	GLdouble aspect = (GLdouble) viewport[2] / (GLdouble) viewport[3];
@@ -435,7 +433,7 @@ void GLView::paintGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qWarning() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 
 	if ( aBenchmark->isChecked() || aDrawStats->isChecked() )
 	{

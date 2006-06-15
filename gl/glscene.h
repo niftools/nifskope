@@ -84,6 +84,7 @@ public:
 
 	mutable QHash<int,Transform> worldTrans;
 	mutable QHash<int,Transform> viewTrans;
+	mutable QHash<int,Transform> bhkBodyTrans;
 	
 	Transform view;
 	
