@@ -105,8 +105,8 @@ void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream &
 		}
 		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
 		{
-			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( nif->getIndex( iProp, "Base Texture" ), "Texture Data" ), "Source" ), "NiSourceTexture" );
-			texfn = TexCache::find( nif->get<QString>( nif->getIndex( iSource, "Texture Source" ), "File Name" ), nif->getFolder() );
+			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
+			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
 	}
 	
@@ -171,21 +171,25 @@ void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream &
 							}
 							
 							QModelIndex iTris = nif->getIndex( iData, "Triangles" );
-							bool flip = false;
 							for ( int t = 0; t < nif->rowCount( iTris ); t++ )
 							{
-								Vector3 n = nif->get<Vector3>( iTris.child( t, 0 ), "Normal" );
-								n = bt.rotation * n;
-								obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
 								Triangle tri = nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" );
-								if ( tri[0] != tri[1] || tri[1] != tri[2] || tri[2] != tri[0] )
-									obj << "f"
-										<< " " << tri[0] + ofs[0] << "//" << ofs[2]
-										<< " " << tri[ flip ? 2 : 1 ] + ofs[0] << "//" << ofs[2]
-										<< " " << tri[ flip ? 1 : 2 ] + ofs[0] << "//" << ofs[2]
-										<< "\r\n";
-								flip = ! flip;
-								ofs[2]++;
+								Vector3 n = nif->get<Vector3>( iTris.child( t, 0 ), "Normal" );
+								
+								Vector3 a = verts.value( tri[0] );
+								Vector3 b = verts.value( tri[1] );
+								Vector3 c = verts.value( tri[2] );
+								
+								Vector3 fn = Vector3::crossproduct( b - a, c - a );
+								fn.normalize();
+								
+								bool flip = Vector3::dotproduct( n, fn ) < 0;
+								
+								obj << "f"
+									<< " " << tri[0] + ofs[0]
+									<< " " << tri[ flip ? 2 : 1 ] + ofs[0]
+									<< " " << tri[ flip ? 1 : 2 ] + ofs[0]
+									<< "\r\n";
 							}
 							ofs[0] += verts.count();
 						}
@@ -195,7 +199,9 @@ void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream &
 				{
 					bt.scale = 1;
 					obj << "\r\n# bhkNiTriStripsShape\r\n\r\ng collision\r\n" << "usemtl collision\r\n\r\n";
-					writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t * bt );
+					QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
+					for ( int r = 0; r < nif->rowCount( iStrips ); r++ )
+						writeData( nif, nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" ), obj, ofs, t * bt );
 				}
 			}
 		}
@@ -526,20 +532,16 @@ public:
 				
 				if ( ! mtl.map_Kd.isEmpty() )
 				{
-					QPersistentModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 					
-					nif->set<int>( iTexProp, "Apply Mode", 2 );
-					nif->set<int>( iTexProp, "Texture Count", 7 );
-					
+					nif->set<int>( iTexProp, "Has Base Texture", 1 );
 					QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
-					nif->set<int>( iBaseMap, "Is Used", 1 );
-					QPersistentModelIndex iTexData = nif->getIndex( iBaseMap, "Texture Data" );
-					nif->set<int>( iTexData, "Clamp Mode", 3 );
-					nif->set<int>( iTexData, "Filter Mode", 2 );
+					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
+					nif->set<int>( iBaseMap, "Filter Mode", 2 );
 					
 					QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
-					nif->setLink( iTexData, "Source", nif->getBlockNumber( iTexSource ) );
+					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
 					
 					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
 					nif->set<int>( iTexSource, "Use Mipmaps", 2 );
@@ -547,7 +549,6 @@ public:
 					nif->set<int>( iTexSource, "Unknown Byte", 1 );
 					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
 					
-					iTexSource = nif->getIndex( iTexSource, "Texture Source" );
 					nif->set<int>( iTexSource, "Use External", 1 );
 					nif->set<QString>( iTexSource, "File Name", mtl.map_Kd );
 				}
@@ -714,7 +715,7 @@ public:
 				nif->setArray<float>( iShape, "Unknown Floats 1", QVector<float>() << 0.1 << 0.0 );
 				nif->setArray<int>( iShape, "Unknown Ints 1",  QVector<int>() << 0 << 0 << 0 << 0 << 1 );
 				nif->setArray<float>( iShape, "Unknown Floats 2", QVector<float>() << 1.0 << 1.0 << 1.0 );
-				addLink( nif, iShape, "Strips", nif->getBlockNumber( iData ) );
+				addLink( nif, iShape, "Strips Data", nif->getBlockNumber( iData ) );
 				nif->set<int>( iShape, "Num Unknown Ints 3", 1 );
 				nif->updateArray( iShape, "Unknown Ints 3" );
 				nif->setArray<int>( iShape, "Unknown Ints 3", QVector<int>() << 1 );
@@ -727,7 +728,7 @@ public:
 				nif->set<int>( iObject, "Unknown Short", 1 );
 				nif->setLink( iObject, "Body", nif->getBlockNumber( iBody ) );
 				
-				nif->setLink( iNode, "Collision Data", nif->getBlockNumber( iObject ) );
+				nif->setLink( iNode, "Collision Object", nif->getBlockNumber( iObject ) );
 			}
 		}
 		
