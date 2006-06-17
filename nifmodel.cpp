@@ -367,6 +367,56 @@ void NifModel::moveNiBlock( int src, int dst )
 	emit linksChanged();
 }
 
+void NifModel::reorderBlocks( const QVector<qint32> & order )
+{
+	if ( getBlockCount() <= 1 )
+		return;
+	
+	if ( order.count() != getBlockCount() )
+	{
+		msg( Message() << "NifModel::reorderBlocks() - invalid argument" );
+		return;
+	}
+	
+	QMap<qint32,qint32> linkMap;
+	QMap<qint32,qint32> blockMap;
+	
+	for ( qint32 n = 0; n < order.count(); n++ )
+	{
+		if ( blockMap.contains( order[n] ) || order[n] < 0 || order[n] >= getBlockCount() )
+		{
+			msg( Message() << "NifModel::reorderBlocks() - invalid argument" );
+			return;
+		}
+		blockMap.insert( order[n], n );
+		if ( order[n] != n )
+			linkMap.insert( n, order[n] );
+	}
+	
+	if ( linkMap.isEmpty() )
+		return;
+	
+	// take all the blocks
+	beginRemoveRows( QModelIndex(), 1, root->childCount() - 2 );
+	QList<NifItem*> temp;
+	for ( qint32 n = 0; n < order.count(); n++ )
+		temp.append( root->takeChild( 1 ) );
+	endRemoveRows();
+	
+	// then insert them again in the new order
+	beginInsertRows( QModelIndex(), 1, temp.count() ); 
+	foreach ( qint32 n, blockMap )
+		root->insertChild( temp[ n ], root->childCount()-1 );
+	endInsertRows();
+	
+	mapLinks( root, linkMap );
+	updateLinks();
+	emit linksChanged();
+	
+	updateHeader();
+	updateFooter();
+}
+
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
 {
 	if ( ! ( idx.isValid() && idx.model() == this ) )

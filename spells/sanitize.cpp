@@ -75,6 +75,106 @@ public:
 
 REGISTER_SPELL( spSanitizeLinkArrays20000005 )
 
+
+class spSanitizeHavokBlockOrder : public Spell
+{
+public:
+	QString name() const { return "Reorder Havok Blocks"; }
+	QString page() const { return "Sanitize"; }
+	bool sanity() const { return true; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->checkVersion( 0x14000005, 0x14000005 ) && ! index.isValid();
+	}
+	
+	struct wrap
+	{
+		qint32 blocknr;
+		QList<qint32> parents;
+		QList<qint32> children;
+	};
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		// wrap blocks for sorting
+		QVector<wrap> sortwrapper( nif->getBlockCount() );
+		for ( qint32 n = 0; n < nif->getBlockCount(); n++ )
+		{
+			sortwrapper[n].blocknr = n;
+			if ( isImportantHvkBlock( nif, nif->getBlock( n ) ) )
+			{
+				QStack<qint32> stack;
+				stack.push( n );
+				setup( nif, stack, sortwrapper );
+			}
+		}
+		
+		// brute force sorting
+		QVector<wrap>::iterator i, j;
+		i = sortwrapper.begin();
+		while ( i != sortwrapper.end() )
+		{
+			j = i + 1;
+			while ( j != sortwrapper.end() )
+			{
+				if ( compareBlocks( *j, *i ) )
+				{
+					qSwap( *j, *i );
+					break;
+				}
+				++j;
+			}
+			if ( j == sortwrapper.end() )
+				++i;
+		}
+		
+		// extract the new block order
+		QVector<qint32> order( sortwrapper.count() );
+		for ( qint32 n = 0; n < sortwrapper.count(); n++ )
+			order[ sortwrapper[ n ].blocknr ] = n;
+		
+		// reorder the blocks
+		nif->reorderBlocks( order );
+		
+		return QModelIndex();
+	}
+
+	static bool isImportantHvkBlock( const NifModel * nif, const QModelIndex & iBlock )
+	{
+		return nif->inherits( iBlock, "bhkShape" ) || nif->inherits( iBlock, "NiCollisionObject" );
+	}
+	
+	static void setup( const NifModel * nif, QStack<qint32> & stack, QVector<wrap> & sortwrapper )
+	{
+		foreach ( qint32 link, nif->getChildLinks( stack.top() ) )
+		{
+			if ( isImportantHvkBlock( nif, nif->getBlock( link ) ) )
+			{
+				foreach ( qint32 x, stack )
+				{
+					if ( ! sortwrapper[ link ].parents.contains( x ) )
+						sortwrapper[ link ].parents.append( x );
+					if ( ! sortwrapper[ x ].children.contains( link ) )
+						sortwrapper[ x ].children.append( link );
+				}
+				
+				stack.push( link );
+				setup( nif, stack, sortwrapper );
+				stack.pop();
+			}
+		}
+	}
+
+	static bool compareBlocks( const wrap & a, const wrap & b )
+	{
+		return a.parents.contains( b.blocknr ) || b.children.contains( a.blocknr );
+	}
+};
+
+REGISTER_SPELL( spSanitizeHavokBlockOrder )
+
+
 class spSanityCheckLinks : public Spell
 {
 public:

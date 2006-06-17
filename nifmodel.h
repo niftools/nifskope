@@ -95,6 +95,8 @@ public:
 	static QStringList allNiBlocks();
 	// is name a NiBlock identifier?
 	static bool isNiBlock( const QString & name );
+	// reorders the blocks according to a list of new block numbers
+	void reorderBlocks( const QVector<qint32> & order );
 	
 	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
 	
