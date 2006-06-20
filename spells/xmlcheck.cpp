@@ -67,6 +67,18 @@ TestShredder::TestShredder()
 	recursive->setChecked( settings.value( "Recursive", true ).toBool() );
 	recursive->setToolTip( "Recurse into sub directories" );
 	
+	chkNif = new QCheckBox( "*.nif", this );
+	chkNif->setChecked( settings.value( "check nif", true ).toBool() );
+	chkNif->setToolTip( "Check .nif files" );
+	
+	chkKf = new QCheckBox( "*.kf(a)", this );
+	chkKf->setChecked( settings.value( "check kf", true ).toBool() );
+	chkKf->setToolTip( "Check .kf files" );
+	
+	chkKfm = new QCheckBox( "*.kfm", this );
+	chkKfm->setChecked( settings.value( "check kfm", true ).toBool() );
+	chkKfm->setToolTip( "Check .kfm files" );
+	
 	QAction * aChoose = new QAction( "Block Match", this );
 	connect( aChoose, SIGNAL( triggered() ), this, SLOT( chooseBlock() ) );
 	QToolButton * btChoose = new QToolButton( this );
@@ -105,6 +117,9 @@ TestShredder::TestShredder()
 	hbox->addWidget( btBrowse );
 	hbox->addWidget( directory );
 	hbox->addWidget( recursive );
+	hbox->addWidget( chkNif );
+	hbox->addWidget( chkKf );
+	hbox->addWidget( chkKfm );
 	
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( btChoose );
@@ -129,6 +144,9 @@ TestShredder::~TestShredder()
 	
 	settings.setValue( "Directory", directory->text() );
 	settings.setValue( "Recursive", recursive->isChecked() );
+	settings.setValue( "check nif", chkNif->isChecked() );
+	settings.setValue( "check kf", chkKf->isChecked() );
+	settings.setValue( "check kfm", chkKfm->isChecked() );
 	settings.setValue( "Threads", count->value() );
 
 	queue.clear();
@@ -180,7 +198,15 @@ void TestShredder::run()
 	
 	text->clear();
 	
-	queue.init( directory->text(), recursive->isChecked() );
+	QStringList extensions;
+	if ( chkNif->isChecked() )
+		extensions << "*.nif";
+	if ( chkKf->isChecked() )
+		extensions << "*.kf" << "*.kfa";
+	if ( chkKfm->isChecked() )
+		extensions << "*.kfm";
+	
+	queue.init( directory->text(), extensions, recursive->isChecked() );
 	
 	time = QDateTime::currentDateTime();
 
@@ -267,7 +293,7 @@ void TestShredder::sltOpenNif( const QString & fname )
  *  File Queue
  */
  
-QQueue<QString> FileQueue::make( const QString & dname, bool recursive )
+QQueue<QString> FileQueue::make( const QString & dname, const QStringList & extensions, bool recursive )
 {
 	QQueue<QString> queue;
 	
@@ -277,20 +303,20 @@ QQueue<QString> FileQueue::make( const QString & dname, bool recursive )
 		dir.setFilter( QDir::Dirs );
 		foreach ( QString d, dir.entryList() )
 			if ( d != "." && d != ".." )
-				queue += make( dir.filePath( d ), true );
+				queue += make( dir.filePath( d ), extensions, true );
 	}
 	
 	dir.setFilter( QDir::Files );
-	dir.setNameFilters( QStringList() << "*.kfm" << "*.KFM" << "*.nif" << "*.NIF" << "*.kf" << "*.KF" << "*.kfa" << "*.KFA" );
+	dir.setNameFilters( extensions );
 	foreach ( QString f, dir.entryList() )
 		queue.enqueue( dir.filePath( f ) );
 	
 	return queue;
 }
 
-void FileQueue::init( const QString & dname, bool recursive )
+void FileQueue::init( const QString & dname, const QStringList & extensions, bool recursive )
 {
-	QQueue<QString> queue = make( dname, recursive );
+	QQueue<QString> queue = make( dname, extensions, recursive );
 	
 	mutex.lock();
 	this->queue = queue;

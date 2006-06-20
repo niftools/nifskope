@@ -102,12 +102,12 @@ void SpellBook::sltSpellTriggered( QAction * action )
 
 void SpellBook::sltNif( NifModel * nif )
 {
-	if ( nif )
-		disconnect( nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
+	if ( Nif )
+		disconnect( Nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
 	Nif = nif;
 	Index = QModelIndex();
-	if ( nif )
-		connect( nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
+	if ( Nif )
+		connect( Nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
 }
 
 void SpellBook::sltIndex( const QModelIndex & index )

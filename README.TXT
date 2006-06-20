@@ -38,8 +38,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.8.7 of NifSkope.
+This is version 0.8.8 of NifSkope.
 
+
+changes since 0.8.7:
+  - havok blocks will be ordered automatically
+  - some hot keys for the spells
+  - fixed obj import/export (textures,collision meshes)
+  - new spell allows editing of string offsets
+  - new spell for removing blocks by id
+  - new spell to upload morph frames
+  
 
 changes since 0.8.6:
   - gundalf contributed a new feature: oblivion furniture animation markers

@@ -35,7 +35,7 @@
 
 !include "MUI.nsh"
 
-!define VERSION "0.8.7"
+!define VERSION "0.8.8"
 
 Name "NifSkope ${VERSION}"
 
@@ -170,8 +170,8 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\NifSkope.exe
   File ..\mingwm10.dll
   File ..\README.TXT
-  File ..\nif.xml
-  File ..\kfm.xml
+  File ..\..\docsys\nif.xml
+  File ..\..\docsys\kfm.xml
   File Copyright.txt
   File nif_file.ico
 

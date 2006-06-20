@@ -22,6 +22,8 @@ class spTangentSpace : public Spell
 	{
 		QPersistentModelIndex iShape = iBlock;
 		
+		bool isSkinned = nif->getLink( iShape, "Skin Instance" ) >= 0;
+		
 		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 		
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
@@ -56,6 +58,8 @@ class spTangentSpace : public Spell
 		QVector<Vector3> bin( verts.count() );
 		
 		int dups = 0;
+		
+		QMultiHash<int,int> vmap;
 		
 		for ( int t = 0; t < triangles.count(); t++ )
 		{	// for each triangle caculate the texture flow direction
@@ -95,19 +99,37 @@ class spTangentSpace : public Spell
 			for ( int j = 0; j < 3; j++ )
 			{	// store flow direction and duplicate vertices if nescessarry
 				int i = tri[j];
-				if ( tan[i] == Vector3() )
-					tan[i] = tdir;
-				else if ( ! matches( tan[i], tdir, TOLERANCE ) )
+				
+				QList<int> indices = vmap.values( i );
+				if ( indices.isEmpty() )
 				{
-					tri[j] = verts.count();
-					verts.append( verts[i] );
-					norms.append( norms[i] );
-					texco.append( texco[i] );
-					if ( vxcol.count() )
-						vxcol.append( vxcol[i] );
-					tan.append( tdir );
-					bin.append( Vector3() );
-					dups++;
+					tan[i] = tdir;
+					vmap.insert( i, i );
+				}
+				else if ( ! isSkinned )
+				{	// dunno exactly, let's skip the duplication if it's a skinned mesh and hope for the best
+					int x;
+					for ( x = 0; x < indices.count(); x++ )
+					{
+						if ( matches( tan[indices[x]], tdir, TOLERANCE ) )
+						{
+							tri[j] = indices[x];
+							break;
+						}
+					}
+					if ( x >= indices.count() )
+					{
+						vmap.insert( i, verts.count() );
+						tri[j] = verts.count();
+						verts.append( verts[i] );
+						norms.append( norms[i] );
+						texco.append( texco[i] );
+						if ( vxcol.count() )
+							vxcol.append( vxcol[i] );
+						tan.append( tdir );
+						bin.append( Vector3() );
+						dups++;
+					}
 				}
 			}
 		}

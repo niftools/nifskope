@@ -86,7 +86,7 @@ void NifSkope::about()
 	"<p>Because NifSkope uses the Qt libraries it is free software. "
 	"The source is available via SVN at https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope</p>";
 
-    QMessageBox mb( "About NifSkope 0.8.7", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( "About NifSkope 0.8.8", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }

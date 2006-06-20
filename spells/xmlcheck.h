@@ -33,11 +33,11 @@ public:
 	bool isEmpty() { return count() == 0; }
 	int count();
 	
-	void init( const QString & directory, bool recursive );
+	void init( const QString & directory, const QStringList & extensions, bool recursive );
 	void clear();
 
 protected:
-	QQueue<QString> make( const QString & directory, bool recursive );
+	QQueue<QString> make( const QString & directory, const QStringList & extensions, bool recursive );
 
 	QMutex mutex;
 	QQueue<QString> queue;
@@ -108,6 +108,7 @@ protected:
 	QLineEdit	* directory;
 	QLineEdit	* blockMatch;
 	QCheckBox	* recursive;
+	QCheckBox	* chkNif, * chkKf, * chkKfm;
 	QSpinBox	* count;
 	Browser		* text;
 	QProgressBar * progress;
