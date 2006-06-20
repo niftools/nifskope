@@ -4,8 +4,11 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QCursor>
+#include <QDebug>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QSettings>
 
 class spInsertBlock : public Spell
 {
@@ -362,7 +365,6 @@ public:
 
 REGISTER_SPELL( spPasteOverBlock )
 
-#include <QDebug>
 
 class spCopyBranch : public Spell
 {
@@ -588,6 +590,7 @@ public:
 
 REGISTER_SPELL( spRemoveBranch )
 
+
 class spMoveBlockUp : public Spell
 {
 public:
@@ -631,3 +634,49 @@ public:
 };
 
 REGISTER_SPELL( spMoveBlockDown )
+
+
+class spRemoveBlocksById : public Spell
+{
+public:
+	QString name() const { return "Remove By Id"; }
+	QString page() const { return "Block"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ! index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		QSettings settings( "NifTools", "NifSkope" );
+		settings.beginGroup( "spells" );
+		settings.beginGroup( page() );
+		settings.beginGroup( name() );
+		
+		bool ok = true;
+		QString match = QInputDialog::getText( 0, "Remove Blocks by Id", "Enter a regular expression:", QLineEdit::Normal,
+			settings.value( "match expression", "^BS|^NiBS|^bhk|^hk" ).toString(), & ok );
+		
+		if ( ! ok )
+			return QModelIndex();
+		
+		settings.setValue( "match expression", match );
+		
+		QRegExp exp( match );
+		
+		int n = 0;
+		while ( n < nif->getBlockCount() )
+		{
+			QModelIndex iBlock = nif->getBlock( n );
+			if ( nif->itemName( iBlock ).indexOf( exp ) >= 0 )
+				nif->removeNiBlock( n );
+			else
+				n++;
+		}
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spRemoveBlocksById )
