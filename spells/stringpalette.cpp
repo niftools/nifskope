@@ -8,11 +8,64 @@
 #include <QListWidget>
 #include <QPushButton>
 
+/* XPM */
+static char * txt_xpm[] = {
+"32 32 36 1",
+" 	c None",
+".	c #FFFFFF","+	c #000000","@	c #BDBDBD","#	c #717171","$	c #252525",
+"%	c #4F4F4F","&	c #A9A9A9","*	c #A8A8A8","=	c #555555","-	c #EAEAEA",
+";	c #151515",">	c #131313",",	c #D0D0D0","'	c #AAAAAA",")	c #080808",
+"!	c #ABABAB","~	c #565656","{	c #D1D1D1","]	c #4D4D4D","^	c #4E4E4E",
+"/	c #FDFDFD","(	c #A4A4A4","_	c #0A0A0A",":	c #A5A5A5","<	c #050505",
+"[	c #C4C4C4","}	c #E9E9E9","|	c #D5D5D5","1	c #141414","2	c #3E3E3E",
+"3	c #DDDDDD","4	c #424242","5	c #070707","6	c #040404","7	c #202020",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+" ...........          ....      ",
+" .+++++++++.         .@#$.      ",
+" .+++++++++.         .+++.      ",
+" ....+++..............+++...    ",
+"    .+++.   %++&.*++=++++++.    ",
+"    .+++.  .-;+>,>+;-++++++.    ",
+"    .+++.   .'++)++!..+++...    ",
+"    .+++.    .=+++~. .+++.      ",
+"    .+++.    .{+++{. .+++.      ",
+"    .+++.    .]+++^. .+++/      ",
+"    .+++.   .(++_++:..<++[..    ",
+"    .+++.  .}>+;|;+1}.2++++.    ",
+"    .+++.   ^++'.'++%.34567.    ",
+"    .....  .................    ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                ",
+"                                "};
+
+QIcon * txt_xpm_icon = 0;
+
 class spEditStringOffset : public Spell
 {
 public:
 	QString name() const { return "Edit String Offset"; }
 	QString page() const { return ""; }
+	QIcon icon() const
+	{
+		if ( ! txt_xpm_icon )
+			txt_xpm_icon = new QIcon( txt_xpm );
+		return *txt_xpm_icon;
+	}
+	bool instant() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -36,9 +89,11 @@ public:
 		
 		QLineEdit * le = new QLineEdit( & dlg );
 		le->setText( string );
+		le->setFocus();
 		
 		QObject::connect( lw, SIGNAL( currentTextChanged( const QString & ) ), le, SLOT( setText( const QString & ) ) );
 		QObject::connect( lw, SIGNAL( itemActivated( QListWidgetItem * ) ), & dlg, SLOT( accept() ) );
+		QObject::connect( le, SIGNAL( returnPressed() ), & dlg, SLOT( accept() ) );
 		
 		QPushButton * bo = new QPushButton( "Ok", & dlg );
 		QObject::connect( bo, SIGNAL( clicked() ), & dlg, SLOT( accept() ) );

@@ -63,36 +63,32 @@ public:
 		{
 			case QEvent::MouseButtonPress:
 			case QEvent::MouseButtonRelease:
-				if ( static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
+				if ( static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton 
+					&& decoRect( option ).contains( static_cast<QMouseEvent*>(event)->pos() ) )
 				{
 					Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
 					if ( spell && ! spell->icon().isNull() )
 					{
-						int m = qMin( option.rect.width(), option.rect.height() );
-						QRect iconRect( option.rect.x(), option.rect.y(), m, m );
-						if ( iconRect.contains( static_cast<QMouseEvent*>(event)->pos() ) )
+						if ( event->type() == QEvent::MouseButtonRelease )
 						{
-							if ( event->type() == QEvent::MouseButtonRelease )
+							NifModel * nif = 0;
+							QModelIndex buddy = index;
+							
+							if ( model->inherits( "NifModel" ) )
 							{
-								NifModel * nif = 0;
-								QModelIndex buddy = index;
-								
-								if ( model->inherits( "NifModel" ) )
-								{
-									nif = static_cast<NifModel *>( model );
-								}
-								else if ( model->inherits( "NifProxyModel" ) )
-								{
-									NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
-									nif = static_cast<NifModel *>( proxy->model() );
-									buddy = proxy->mapTo( index );
-								}
-								
-								if ( nif && spell->isApplicable( nif, buddy ) )
-									spell->cast( nif, buddy );
+								nif = static_cast<NifModel *>( model );
 							}
-							return true;
+							else if ( model->inherits( "NifProxyModel" ) )
+							{
+								NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
+								nif = static_cast<NifModel *>( proxy->model() );
+								buddy = proxy->mapTo( index );
+							}
+							
+							if ( nif && spell->isApplicable( nif, buddy ) )
+								spell->cast( nif, buddy );
 						}
+						return true;
 					}
 				}	break;
 			case QEvent::MouseButtonDblClick:
@@ -131,16 +127,14 @@ public:
 		
 		QStyleOptionViewItem opt = option;
 		
-		QRect textRect( 0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing() * (text.count(QLatin1Char('\n')) + 1) );
+		QRect tRect = opt.rect;
+		QRect dRect;
 		
-		QRect decoRect;
-		if ( ! icon.isNull() )
-			decoRect = QRect( option.rect.x(), option.rect.y(), opt.fontMetrics.lineSpacing(), opt.fontMetrics.lineSpacing() );
-		else if ( ! deco.isEmpty() )
-			decoRect = QRect(0, 0, opt.fontMetrics.width(deco), opt.fontMetrics.lineSpacing());
-		
-		QRect dummy;
-		doLayout( opt, &dummy, &decoRect, &textRect, false );
+		if ( ! icon.isNull() || ! deco.isEmpty() )
+		{
+			dRect = decoRect( opt );
+			tRect = textRect( opt );
+		}
 		
 		QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
 		
@@ -155,14 +149,14 @@ public:
 		painter->setFont( opt.font );
 		
 		if ( ! icon.isNull() )
-			icon.paint( painter, decoRect );
+			icon.paint( painter, dRect );
 		else if ( ! deco.isEmpty() )
-			painter->drawText( decoRect, opt.displayAlignment, deco );
+			painter->drawText( dRect, opt.decorationAlignment, deco );
 		
 		if ( ! text.isEmpty() )
 		{
-			drawDisplay( painter, opt, textRect, text );
-			drawFocus( painter, opt, textRect );
+			drawDisplay( painter, opt, tRect, text );
+			drawFocus( painter, opt, tRect );
 		}
 		
 		painter->restore();
@@ -171,14 +165,8 @@ public:
 	QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 	{
 		QString text = index.data( Qt::DisplayRole ).toString();
-		QString deco = index.data( Qt::DecorationRole ).toString();
-		
-		QRect decoRect( 0, 0, option.fontMetrics.width(deco), option.fontMetrics.lineSpacing() );
 		QRect textRect( 0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing() * (text.count(QLatin1Char('\n')) + 1) );
-		QRect checkRect;
-		doLayout(option, &checkRect, &decoRect, &textRect, true);
-		
-		return ( decoRect | textRect ).size();
+		return textRect.size();
 	}
 
 	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const
@@ -238,6 +226,18 @@ public:
 			model->setData( index, v, Qt::EditRole );
 		}
 	}
+
+	QRect decoRect( const QStyleOptionViewItem & opt ) const
+	{
+		// allways upper left
+		return QRect( opt.rect.topLeft(), opt.decorationSize );
+	}
+	
+	QRect textRect( const QStyleOptionViewItem & opt ) const
+	{
+		return QRect( QPoint( opt.rect.x() + opt.decorationSize.width(), opt.rect.y() ), QSize( opt.rect.width() - opt.decorationSize.width(), opt.rect.height() ) );
+	}
+	
 };
 
 QAbstractItemDelegate * NifModel::createDelegate()
