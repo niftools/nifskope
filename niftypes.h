@@ -260,9 +260,9 @@ public:
 		if ( dot > 1.0 )
 			return 0.0;
 		else if ( dot < - 1.0 )
-			return PI;
+			return (float)PI;
 		else if ( dot == 0.0 )
-			return PI/2;
+			return (float)(PI/2);
 		else
 			return acos( dot );
 	}
@@ -415,11 +415,11 @@ public:
 		if ( dot > 1.0 )
 			return 0.0;
 		else if ( dot < - 1.0 )
-			return PI;
+			return (float)PI;
 		else if ( dot == 0.0 )
-			return PI/2;
+			return (float)PI/2;
 		else
-			return acos( dot );
+			return (float)acos( dot );
 	}
 	
 	const float * data() const { return xyzw; }
@@ -901,7 +901,9 @@ public:
 		tFileVersion = 25,
 		tByteArray = 26,
 		tStringPalette = 27,
-		
+      tShort = 28,
+      tUInt = 29,
+
 		tNone = 0xff
 	};
 	
@@ -929,7 +931,7 @@ public:
 	
 	bool isValid() const { return typ != tNone; }
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
-	bool isCount() const { return typ >= tBool && typ <= tInt; }
+	bool isCount() const { return (typ >= tBool && typ <= tInt) || (typ >= tShort && typ <= tUInt); }
 	bool isFlags() const { return typ == tFlags; }
 	bool isFloat() const { return typ == tFloat; }
 	bool isLink() const { return typ == tLink || typ == tUpLink; }

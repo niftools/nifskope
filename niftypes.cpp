@@ -306,7 +306,7 @@ void NifValue::initialize()
 	typeMap.insert( "bool", NifValue::tBool );
 	typeMap.insert( "byte", NifValue::tByte );
 	typeMap.insert( "word", NifValue::tWord );
-	typeMap.insert( "short", NifValue::tWord );
+   typeMap.insert( "short", NifValue::tShort );
 	typeMap.insert( "int", NifValue::tInt );
 	typeMap.insert( "flags", NifValue::tFlags );
 	typeMap.insert( "link", NifValue::tLink );
@@ -334,6 +334,8 @@ void NifValue::initialize()
 	typeMap.insert( "stringpalette", NifValue::tStringPalette );
 	typeMap.insert( "stringoffset", NifValue::tStringOffset );
 	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
+	typeMap.insert( "ushort", NifValue::tWord );
+   typeMap.insert( "uint", NifValue::tUInt );
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -582,10 +584,12 @@ bool NifValue::fromString( const QString & s )
 		case tFlags:
 		case tStringOffset:
 		case tBlockTypeIndex:
+      case tShort:
 			val.u32 = 0;
 			val.u16 = s.toUInt( &ok );
 			return ok;
 		case tInt:
+      case tUInt:
 			val.u32 = s.toUInt( &ok );
 			return ok;
 		case tLink:
@@ -638,8 +642,12 @@ QString NifValue::toString() const
 		case tFlags:
 		case tStringOffset:
 		case tBlockTypeIndex:
-		case tInt:
+		case tUInt:
 			return QString::number( val.u32 );
+      case tShort:
+         return QString::number( (short)val.u16 );
+      case tInt:
+         return QString::number( (int)val.u32 );
 		case tLink:
 		case tUpLink:
 			return QString::number( val.i32 );
@@ -758,16 +766,18 @@ bool NifIStream::read( NifValue & val )
 				return device->read( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->read( (char *) &val.val.u08, 1 ) == 1;
-		case NifValue::tByte:
+      case NifValue::tByte:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u08, 1 ) == 1;
-		case NifValue::tWord:
+      case NifValue::tWord:
+      case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tStringOffset:
 		case NifValue::tInt:
+      case NifValue::tUInt:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tUpLink:
@@ -885,14 +895,16 @@ bool NifOStream::write( const NifValue & val )
 				return device->write( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->write( (char *) &val.val.u08, 1 ) == 1;
-		case NifValue::tByte:
+      case NifValue::tByte:
 			return device->write( (char *) &val.val.u08, 1 ) == 1;
-		case NifValue::tWord:
+      case NifValue::tWord:
+      case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tStringOffset:
-		case NifValue::tInt:
+      case NifValue::tInt:
+      case NifValue::tUInt:
 		case NifValue::tFileVersion:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
