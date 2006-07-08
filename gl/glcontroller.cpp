@@ -187,7 +187,7 @@ float Controller::ctrlTime( float time ) const
 				
 				float x = ( time - start ) / delta;
 				float y = ( x - floor( x ) ) * delta;
-				if ( ( (int) fabs( floor( x ) ) ) & 1 == 0 )
+				if ( ( ( (int) fabs( floor( x ) ) ) & 1 ) == 0 )
 					return start + y;
 				else
 					return stop - y;
@@ -386,4 +386,236 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 		}
 	}
 	return false;
+}
+
+
+/*********************************************************************
+Simple b-spline curve algorithm
+
+Copyright 1994 by Keith Vertanen (vertankd@cda.mrs.umn.edu)
+
+Released to the public domain (your mileage may vary)
+
+Found at: Programmers Heaven (www.programmersheaven.com/zone3/cat415/6660.htm)
+Modified by: Theo 
+- reformat and convert doubles to floats
+- removed point structure in favor of arbitrary sized float array
+**********************************************************************/
+
+/*! Used to enable static arrays to be members of vectors */
+template<typename T>
+struct qarray {
+   qarray(const QModelIndex & array, uint off=0) : array_(array), off_(off) {
+      nif_ = static_cast<const NifModel *>( array_.model() );
+   }
+   qarray(const qarray& other, uint off=0) : nif_(other.nif_), array_(other.array_), off_(other.off_+off) {}
+
+   T operator[]( uint index ) const {
+      return nif_->get<T>( array_.child(index + off_, 0) );
+   }
+   const NifModel * nif_;
+   const QModelIndex & array_;
+   uint off_;
+};
+
+template<typename T>
+struct SplineTraits
+{
+   // Zero data
+   static T& Init(T& v) { v = T(); return v; }
+
+   // Number of control points used
+   static int CountOf() { return (sizeof(T)/sizeof(float)); }
+
+   // Compute point from short array and mult/bias
+   static T& Compute(T& v, qarray<short>& c, float mult) {
+      float *vf = (float*)&v; // assume default data is a vector of floats. specialize if necessary.
+      for (int i=0; i<CountOf(); ++i)
+         vf[i] = vf[i] + (float(c[i]) / float(SHRT_MAX)) * mult;
+      return v;
+   }
+   static T& Adjust(T& v, float mult, float bias) {
+      float *vf = (float*)&v; // assume default data is a vector of floats. specialize if necessary.
+      for (int i=0; i<CountOf(); ++i)
+         vf[i] = vf[i] * mult + bias;
+      return v;
+   }
+};
+
+template<> struct SplineTraits<Quat>
+{
+   static Quat& Init(Quat& v) { 
+      v = Quat(); v[0] = 0.0f; return v; 
+   }
+   static int CountOf() { return 4;}
+   static Quat& Compute(Quat& v, qarray<short>& c, float mult) {
+      for (int i=0; i<CountOf(); ++i)
+         v[i] = v[i] + (float(c[i]) / float(SHRT_MAX)) * mult;
+      return v;
+   }
+   static Quat& Adjust(Quat& v, float mult, float bias) {
+      for (int i=0; i<CountOf(); ++i)
+         v[i] = v[i] * mult + bias;
+      return v;
+   }
+};
+
+// calculate the blending value
+static float blend(int k, int t, int *u, float v)  
+{
+   float value;
+   if (t==1) {			// base case for the recursion
+      value = ((u[k]<=v) && (v<u[k+1])) ? 1.0f : 0.0f;
+   } else {
+      if ((u[k+t-1]==u[k]) && (u[k+t]==u[k+1]))  // check for divide by zero
+         value = 0;
+      else if (u[k+t-1]==u[k]) // if a term's denominator is zero,use just the other
+         value = (u[k+t] - v) / (u[k+t] - u[k+1]) * blend(k+1, t-1, u, v);
+      else if (u[k+t]==u[k+1])
+         value = (v - u[k]) / (u[k+t-1] - u[k]) * blend(k, t-1, u, v);
+      else
+         value = (v - u[k]) / (u[k+t-1] - u[k]) * blend(k, t-1, u, v) +
+            (u[k+t] - v) / (u[k+t] - u[k+1]) * blend(k+1, t-1, u, v);
+   }
+   return value;
+}
+
+// figure out the knots
+static void compute_intervals(int *u, int n, int t)
+{
+   for (int j=0; j<=n+t; j++) {
+      if (j<t)  u[j]=0;
+      else if ((t<=j) && (j<=n))  u[j]=j-t+1;
+      else if (j>n) u[j]=n-t+2;  // if n-t=-2 then we're screwed, everything goes to 0
+   }
+}
+
+template <typename T>
+static void compute_point(int *u, int n, int t, float v, qarray<short>& control, T& output, float mult, float bias)
+{
+   // initialize the variables that will hold our output
+   int l = SplineTraits<T>::CountOf();
+   SplineTraits<T>::Init(output);
+   for (int k=0; k<=n; k++) {
+      qarray<short> qa(control, k*l);
+      SplineTraits<T>::Compute(output, qa, blend(k,t,u,v));
+   }
+   SplineTraits<T>::Adjust(output, mult, bias);
+}
+
+template <typename T> 
+bool bsplineinterpolate( T & value, int degree, float interval, uint nctrl, const QModelIndex & array, ushort off, float mult, float bias )
+{
+   if (off == USHRT_MAX)
+      return false;
+
+   qarray<short> subArray(array, off);
+   int t = degree+1;
+   int n = nctrl-1;
+   int l = SplineTraits<T>::CountOf();
+   if (interval >= float(nctrl-degree))
+   {
+      SplineTraits<T>::Init(value);
+      qarray<short> sa(subArray, n*l);
+      SplineTraits<T>::Compute(value, sa, 1.0f);
+      SplineTraits<T>::Adjust(value, mult, bias);
+   }
+   else
+   {
+      int *u = new int[n+t+1];
+      compute_intervals(u, n, t);
+      compute_point(u, n, t, interval, subArray, value, mult, bias);
+      delete [] u;
+   }
+   return true;
+}
+
+Interpolator::Interpolator(Controller *owner) : parent(owner) {}
+
+bool Interpolator::update( const NifModel * nif, const QModelIndex & index )
+{
+   return true;
+}
+QPersistentModelIndex Interpolator::GetControllerData()
+{
+   return parent->iData;
+}
+
+TransformInterpolator::TransformInterpolator(Controller *owner) : Interpolator(owner), lTrans( 0 ), lRotate( 0 ), lScale( 0 ) 
+{}
+
+bool TransformInterpolator::update( const NifModel * nif, const QModelIndex & index )
+{
+   if ( Interpolator::update( nif, index ) )
+   {
+      QPersistentModelIndex iData = GetControllerData();
+
+      iTranslations = nif->getIndex( iData, "Translations" );
+      iRotations = nif->getIndex( iData, "Rotations" );
+      if ( ! iRotations.isValid() )
+         iRotations = iData;
+      iScales = nif->getIndex( iData, "Scales" );
+      return true;
+   }
+   return false;
+}
+
+bool TransformInterpolator::updateTransform(Transform& tm, float time)
+{
+   parent->interpolate(tm.rotation, iRotations, time, lRotate);
+   ::interpolate(tm.translation, iTranslations, time, lTrans);
+   ::interpolate(tm.scale, iScales, time, lScale);
+   return true;
+}
+
+
+BSplineTransformInterpolator::BSplineTransformInterpolator(Controller *owner) : 
+   TransformInterpolator(owner) , lTransOff( USHRT_MAX ), lRotateOff( USHRT_MAX ), lScaleOff( USHRT_MAX )
+      , nCtrl(0), degree(3)
+{
+}
+
+bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelIndex & index )
+{
+   if ( Interpolator::update( nif, index ) )
+   {
+      start = nif->get<float>( index, "Start Time");
+      stop = nif->get<float>( index, "Stop Time");
+
+      iSpline = nif->getBlock( nif->getLink( index, "Spline Data" ) );
+      iBasis = nif->getBlock( nif->getLink( index, "Basis Data") );
+
+      if (iSpline.isValid())
+         iControl = nif->getIndex( iSpline, "Control Points");
+      if (iBasis.isValid())
+          nCtrl = nif->get<uint>( iBasis, "Num Control Pt" );
+
+      lTrans = nif->getIndex( index, "Translation");
+      lRotate = nif->getIndex( index, "Rotation");
+      lScale = nif->getIndex( index, "Scale");
+
+      lTransOff = nif->get<ushort>( index, "Translate Offset");
+      lRotateOff = nif->get<ushort>( index, "Rotate Offset");
+      lScaleOff = nif->get<ushort>( index, "Scale Offset");
+      lTransMult = nif->get<float>( index, "Translate Multiplier");
+      lRotateMult = nif->get<float>( index, "Rotation Multiplier");
+      lScaleMult = nif->get<float>( index, "Scale Multiplier");
+      lTransBias = nif->get<float>( index, "Translate Bias");
+      lRotateBias = nif->get<float>( index, "Rotation Bias");
+      lScaleBias = nif->get<float>( index, "Scale Bias");
+
+      return true;
+   }
+   return false;
+}
+
+bool BSplineTransformInterpolator::updateTransform(Transform& transform, float time)
+{
+   float interval = ((time-start)/(stop-start)) * float(nCtrl-degree);
+   Quat q = transform.rotation.toQuat();
+   if (::bsplineinterpolate<Quat>( q, degree, interval, nCtrl, iControl, lRotateOff, lRotateMult, lRotateBias ))
+      transform.rotation.fromQuat(q);
+   ::bsplineinterpolate<Vector3>( transform.translation, degree, interval, nCtrl, iControl, lTransOff, lTransMult, lTransBias );
+   ::bsplineinterpolate<float>( transform.scale, degree, interval, nCtrl, iControl, lScaleOff, lScaleMult, lScaleBias );
+   return true;
 }
