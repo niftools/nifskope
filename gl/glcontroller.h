@@ -39,6 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Scene;
 class Node;
+class Controller;
+class Interpolator;
 
 class Controller
 {
@@ -82,6 +84,8 @@ public:
 	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
 	
 protected:
+   friend class Interpolator;
+
 	QPersistentModelIndex iBlock;
 	QPersistentModelIndex iInterpolator;
 	QPersistentModelIndex iData;
@@ -98,6 +102,51 @@ template <typename T> bool Controller::interpolate( T & value, const QModelIndex
 	else
 		return false;
 }
+
+class Interpolator : public QObject
+{
+public:
+   Interpolator(Controller *owner);
+
+   virtual bool update( const NifModel * nif, const QModelIndex & index );
+
+protected:
+   QPersistentModelIndex& GetControllerData();
+   Controller *parent;
+};
+
+class TransformInterpolator : public Interpolator
+{
+public:
+   TransformInterpolator(Controller *owner);
+
+   virtual bool update( const NifModel * nif, const QModelIndex & index );
+   virtual bool updateTransform(Transform& tm, float time);
+
+protected:
+   QPersistentModelIndex iTranslations, iRotations, iScales;
+   int lTrans, lRotate, lScale;
+};
+
+class BSplineTransformInterpolator : public TransformInterpolator
+{
+public:
+   BSplineTransformInterpolator( Controller *owner );
+
+   virtual bool update( const NifModel * nif, const QModelIndex & index );
+   virtual bool updateTransform(Transform& tm, float time);
+
+protected:
+   float start, stop;
+   QPersistentModelIndex iControl, iSpline, iBasis;
+   QPersistentModelIndex lTrans, lRotate, lScale;
+   ushort lTransOff, lRotateOff, lScaleOff;
+   float lTransMult, lRotateMult, lScaleMult;
+   float lTransBias, lRotateBias, lScaleBias;
+   uint nCtrl;
+   int degree;
+};
+
 
 #endif
 

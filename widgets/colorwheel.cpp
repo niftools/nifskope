@@ -221,8 +221,8 @@ void ColorWheel::paintEvent( QPaintEvent * e )
 
 void ColorWheel::mousePressEvent( QMouseEvent * e )
 {
-	int dx = abs( e->x() - width() / 2 );
-	int dy = abs( e->y() - height() / 2 );
+	double dx = abs( e->x() - width() / 2 );
+	double dy = abs( e->y() - height() / 2 );
 	double d = sqrt( dx*dx + dy*dy );
 	
 	double s = qMin( width(), height() ) / 2;

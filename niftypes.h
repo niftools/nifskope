@@ -1020,6 +1020,7 @@ template <typename T> inline bool NifValue::setType( Type t, T v )
 template <> inline bool NifValue::get() const { return toCount(); }
 template <> inline qint32 NifValue::get() const { return toCount(); }
 template <> inline quint32 NifValue::get() const { return toCount(); }
+template <> inline qint16 NifValue::get() const { return toCount(); }
 template <> inline quint16 NifValue::get() const { return toCount(); }
 template <> inline quint8 NifValue::get() const { return toCount(); }
 template <> inline float NifValue::get() const { return toFloat(); }
@@ -1059,6 +1060,7 @@ template <> inline Quat NifValue::get() const
 template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const quint32 & i ) { return setCount( i ); }
+template <> inline bool NifValue::set( const qint16 & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const quint16 & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const quint8 & i ) { return setCount( i ); }
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
@@ -1100,6 +1102,7 @@ template <> inline bool NifValue::set( const Quat & x )
 
 template <> inline bool NifValue::ask( bool * ) const { return isCount(); }
 template <> inline bool NifValue::ask( int * ) const { return isCount(); }
+template <> inline bool NifValue::ask( short * ) const { return isCount(); }
 template <> inline bool NifValue::ask( float * ) const { return isFloat(); }
 template <> inline bool NifValue::ask( Matrix * ) const { return type() == tMatrix; }
 template <> inline bool NifValue::ask( Matrix4 * ) const { return type() == tMatrix4; }

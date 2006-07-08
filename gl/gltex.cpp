@@ -970,7 +970,7 @@ QString TexCache::find( const QString & file, const QString & additionalFolders 
 	
 	QString filename = file.toLower();
 	
-	while ( filename.startsWith( "/" ) or filename.startsWith( "\\" ) )
+	while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
 		filename.remove( 0, 1 );
 	
 	QStringList extensions;

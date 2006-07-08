@@ -42,7 +42,7 @@ class TransformController : public Controller
 {
 public:
 	TransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 ) {}
+		: Controller( index ), target( node ){}
 	
 	void update( float time )
 	{
@@ -50,21 +50,36 @@ public:
 			return;
 		
 		time = ctrlTime( time );
-		
-		interpolate( target->local.rotation, iRotations, time, lRotate );
-		interpolate( target->local.translation, iTranslations, time, lTrans );
-		interpolate( target->local.scale, iScales, time, lScale );
+
+      if (!interpolator.isNull())
+      {
+         interpolator->updateTransform(target->local, time);
+      }
 	}
 	
 	bool update( const NifModel * nif, const QModelIndex & index )
 	{
+      QPersistentModelIndex iLocalInterpolator = iInterpolator;
 		if ( Controller::update( nif, index ) )
 		{
-			iTranslations = nif->getIndex( iData, "Translations" );
-			iRotations = nif->getIndex( iData, "Rotations" );
-			if ( ! iRotations.isValid() )
-				iRotations = iData;
-			iScales = nif->getIndex( iData, "Scales" );
+         if (iLocalInterpolator != iInterpolator)
+         {
+            QString iname = nif->itemName( iInterpolator );
+            if ( iname == "NiBSplineCompTransformInterpolator" )
+            {
+               interpolator = new BSplineTransformInterpolator(this);
+            }
+            else // if ( iname == "NiTransformInterpolator" )
+            {
+               interpolator = new TransformInterpolator(this);
+            }
+         }
+         if (!interpolator.isNull())
+         {
+            QModelIndex iInterpBlock = nif->getBlock(iInterpolator);
+            if (iInterpBlock.isValid())
+               interpolator->update(nif, iInterpBlock);
+         }
 			return true;
 		}
 		return false;
@@ -72,10 +87,7 @@ public:
 	
 protected:
 	QPointer<Node> target;
-	
-	QPersistentModelIndex iTranslations, iRotations, iScales;
-	
-	int lTrans, lRotate, lScale;
+   QPointer<TransformInterpolator> interpolator;
 };
 
 class VisibilityController : public Controller
@@ -996,7 +1008,6 @@ QString Node::textStats() const
 {
 	return QString( "%1\n\nglobal\n%2\nlocal\n%3\n" ).arg( name ).arg( trans2string( worldTrans() ) ).arg( trans2string( localTrans() ) );
 }
-
 
 BoundSphere Node::bounds() const
 {
