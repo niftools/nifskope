@@ -46,9 +46,6 @@ public:
 	
 	void update( float time )
 	{
-      QString s = QString("Node::update(%1, %2, %3, %4)\n").arg((const ulong)this).arg(time).arg(flags.controller.active).arg((ulong)(Node*)target);
-      OutputDebugString( (const WCHAR*)s.utf16() );
-
 		if ( ! ( flags.controller.active && target ) )
 			return;
 		
@@ -77,11 +74,22 @@ public:
                interpolator = new TransformInterpolator(this);
             }
          }
+         if (interpolator.isNull())
+         {
+            interpolator = new TransformInterpolator(this);
+         }
          if (!interpolator.isNull())
          {
-            QModelIndex iInterpBlock = nif->getBlock(iInterpolator);
-            if (iInterpBlock.isValid())
-               interpolator->update(nif, iInterpBlock);
+            if (iInterpolator.isValid())
+            {
+               QModelIndex iInterpBlock = nif->getBlock(iInterpolator);
+               if (iInterpBlock.isValid())
+                  interpolator->update(nif, iInterpBlock);
+            }
+            else
+            {
+               interpolator->update(nif, iBlock);
+            }
          }
 			return true;
 		}
