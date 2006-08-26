@@ -72,8 +72,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glview.h"
 #include "spellbook.h"
 
-#include "widgets/floatslider.h"
-
 /*
  * main GUI window
  */
@@ -219,7 +217,7 @@ NifSkope::NifSkope() : QMainWindow()
 	addDockWidget( Qt::RightDockWidgetArea, dKfm );
 
 
-	// tool bar
+	// tool bars
 	
 	tool = new QToolBar( "Load & Save" );
 	tool->setObjectName( "toolbar" );
@@ -236,27 +234,9 @@ NifSkope::NifSkope() : QMainWindow()
 	
 	addToolBar( Qt::TopToolBarArea, tool );
 	
+	foreach ( QToolBar * tb, ogl->toolbars() )
+		addToolBar( Qt::TopToolBarArea, tb );
 	
-	// animation tool bar
-	
-	tAnim = new QToolBar( "Animation" );
-	tAnim->setObjectName( "AnimTool" );
-	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-	
-	tAnim->addAction( ogl->aAnimPlay );
-	
-	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim->toggleViewAction(), SLOT( setChecked( bool ) ) );
-	connect( ogl->aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
-	connect( tAnim->toggleViewAction(), SIGNAL( toggled( bool ) ), ogl->aAnimate, SLOT( setChecked( bool ) ) );
-	
-	FloatSlider * sldTime = new FloatSlider( Qt::Horizontal );
-	tAnim->addWidget( sldTime );
-	connect( ogl, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
-	connect( sldTime, SIGNAL( valueChanged( float ) ), ogl, SLOT( sltTime( float ) ) );
-	
-	tAnim->addAction( ogl->aAnimLoop );
-	
-	addToolBar( Qt::TopToolBarArea, tAnim );
 	
 	// menu
 
@@ -280,8 +260,12 @@ NifSkope::NifSkope() : QMainWindow()
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( "&Toolbars" );
 	mView->addMenu( mTools );
-	mTools->addAction( tool->toggleViewAction() );
-	mTools->addAction( tAnim->toggleViewAction() );
+	foreach ( QObject * o, children() )
+	{
+		QToolBar * tb = qobject_cast<QToolBar*>( o );
+		if ( tb )
+			mTools->addAction( tb->toggleViewAction() );
+	}
 	mView->addSeparator();
 	QMenu * mViewList = new QMenu( "&Block List Options" );
 	mView->addMenu( mViewList );

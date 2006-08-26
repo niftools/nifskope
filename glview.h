@@ -45,7 +45,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Scene;
 
 class QActionGroup;
+class QComboBox;
 class QSettings;
+class QToolBar;
 class QTimer;
 
 class GLView : public QGLWidget
@@ -79,6 +81,8 @@ public:
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
 	void center();
+	
+	QList<QToolBar*> toolbars() const;
 	
 	QActionGroup * grpView;
 	
@@ -114,6 +118,9 @@ public:
 	QAction * aOnlyTextured;
 	QAction * aCullExp;
 	
+	QToolBar * tAnim;
+	QComboBox * animGroups;
+	
 	void	save( QSettings & );
 	void	restore( QSettings & );
 
@@ -124,6 +131,7 @@ public slots:
 	void setCurrentIndex( const QModelIndex & );
 
 	void sltTime( float );
+	void sltSequence( const QString & );
 
 	void selectTexFolder();
 	void selectBgColor();

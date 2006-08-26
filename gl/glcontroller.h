@@ -71,11 +71,17 @@ public:
 	
 	ControllerFlags flags;
 	
+	virtual void setSequence( const QString & seqname );
+	
 	virtual void update( float time ) = 0;
 	
 	virtual bool update( const NifModel * nif, const QModelIndex & index );
 	
+	virtual void setInterpolator( const QModelIndex & iInterpolator );
+	
 	QModelIndex index() const { return iBlock; }
+	
+	virtual QString typeId() const;
 	
 	float ctrlTime( float time ) const;
 	

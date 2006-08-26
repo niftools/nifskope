@@ -51,7 +51,7 @@ public:
 	Scene();
 	~Scene();
 	
-	void initialize( const QGLContext * cx ) { renderer.initialize( cx ); renderer.updateShaders(); }
+	void updateShaders() { renderer.updateShaders(); }
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );
@@ -66,10 +66,11 @@ public:
 	void drawHavok();
 	void drawFurn();
 	
+	void setSequence( const QString & seqname );
+	
 	QString textStats();
 	
 	int bindTexture( const QString & fname );
-	void setupLights( Node * node );
 	
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
@@ -78,7 +79,6 @@ public:
 
 	NodeList nodes;
 	PropertyList properties;
-	NodeList lights;
 
 	NodeList roots;
 
@@ -92,6 +92,9 @@ public:
 	
 	float time;
 
+	QString animGroup;
+	QStringList animGroups;
+	
 	bool texturing;
 	TexCache textures;
 	

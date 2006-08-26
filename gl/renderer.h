@@ -42,6 +42,20 @@ class PropertyList;
 
 class Renderer
 {
+public:
+	Renderer();
+	~Renderer();
+	
+	static bool initialize( const QGLContext * );
+	static bool hasShaderSupport();
+	
+	void updateShaders();
+	void releaseShaders();
+	
+	QString setupProgram( Mesh *, const QString & hint = QString() );
+	void stopProgram();
+	
+protected:
 	class Condition
 	{
 	public:
@@ -120,29 +134,15 @@ class Renderer
 		
 		ConditionGroup conditions;
 		QMap<int, QString> texcoords;
-	};
-	
-public:
-	Renderer();
-	~Renderer();
-	
-	static bool initialize( const QGLContext * );
-	static bool hasShaderSupport();
-	
-	void updateShaders();
-	void releaseShaders();
-	
-	QString setupProgram( Mesh *, const QString & hint = QString() );
-	void stopProgram();
-	
-protected:
-	bool setupProgram( Program *, Mesh *, const PropertyList &, const QList<QModelIndex> & iBlocks );
-	void setupFixedFunction( Mesh *, const PropertyList & );
-	
+	};	
+
 	QMap<QString, Shader *> shaders;
 	QMap<QString, Program *> programs;
 	
 	friend class Program;
+
+	bool setupProgram( Program *, Mesh *, const PropertyList &, const QList<QModelIndex> & iBlocks );
+	void setupFixedFunction( Mesh *, const PropertyList & );	
 };
 
 template <typename T> inline bool Renderer::ConditionSingle::compare( T a, T b ) const

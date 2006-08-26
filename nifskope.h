@@ -145,10 +145,6 @@ private:
 	
 	QAction * aNifSkope;
 	QAction * aAboutQt;
-	
-	QAction * aToolSkel;
-
-	QToolBar * tAnim;
 };
 
 class IPCsocket : public QObject

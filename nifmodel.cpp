@@ -475,10 +475,10 @@ QModelIndex NifModel::getBlock( int x, const QString & name ) const
 		return QModelIndex();
 	x += 1; //the first block is the NiHeader
 	QModelIndex idx = index( x, 0 );
-	if ( ! name.isEmpty() )
-		return ( itemName( idx ) == name ? idx : QModelIndex() );
-	else
+	if ( inherits( idx, name ) )
 		return idx;
+	else
+		return QModelIndex();
 }
 
 bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) const
@@ -535,13 +535,12 @@ bool NifModel::inherits( const QString & name, const QString & aunty )
 	return false;
 }
 
-bool NifModel::inherits( const QModelIndex & index, const QString & aunty ) const
+bool NifModel::inherits( const QModelIndex & idx, const QString & aunty ) const
 {
-	QModelIndex block = getBlock( index );
-	if ( block.isValid() )
-		return inherits( itemName( block ), aunty );
-	else
+	int x = getBlockNumber( idx );
+	if ( x < 0 )
 		return false;
+	return inherits( itemName( index( x+1, 0 ) ), aunty );
 }
 
 

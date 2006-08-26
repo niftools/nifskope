@@ -104,6 +104,7 @@ public:
 	
 	Node	* findParent( int id ) const;
 	Node	* findChild( int id ) const;
+	Node	* findChild( const QString & name ) const;
 	Node	* parentNode() const { return parent; }
 	void	makeParent( Node * parent );
 	
@@ -111,8 +112,6 @@ public:
 	
 	template <typename T> T * findProperty() const;
 	void activeProperties( PropertyList & list ) const;
-	
-	void setupRenderState( bool vertexcolors );
 	
 	virtual QString textStats() const;
 	
@@ -134,6 +133,8 @@ protected:
 	
 	friend class KeyframeController;
 	friend class TransformController;
+	friend class ControllerManager;
+	friend class MultiTargetTransformController;
 	friend class VisibilityController;
 	friend class NodeList;
 	friend class LODNode;

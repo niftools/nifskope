@@ -50,55 +50,266 @@ public:
 			return;
 		
 		time = ctrlTime( time );
-
-      if (!interpolator.isNull())
-      {
-         interpolator->updateTransform(target->local, time);
-      }
+		
+		if ( interpolator )
+		{
+			interpolator->updateTransform(target->local, time);
+		}
 	}
 	
-	bool update( const NifModel * nif, const QModelIndex & index )
+	void setInterpolator( const QModelIndex & iBlock )
 	{
-      QPersistentModelIndex iLocalInterpolator = iInterpolator;
-		if ( Controller::update( nif, index ) )
+		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
+		if ( nif && iBlock.isValid() )
 		{
-         if (iLocalInterpolator != iInterpolator)
-         {
-            QString iname = nif->itemName( iInterpolator );
-            if ( iname == "NiBSplineCompTransformInterpolator" )
-            {
-               interpolator = new BSplineTransformInterpolator(this);
-            }
-            else // if ( iname == "NiTransformInterpolator" )
-            {
-               interpolator = new TransformInterpolator(this);
-            }
-         }
-         if (interpolator.isNull())
-         {
-            interpolator = new TransformInterpolator(this);
-         }
-         if (!interpolator.isNull())
-         {
-            if (iInterpolator.isValid())
-            {
-               QModelIndex iInterpBlock = nif->getBlock(iInterpolator);
-               if (iInterpBlock.isValid())
-                  interpolator->update(nif, iInterpBlock);
-            }
-            else
-            {
-               interpolator->update(nif, iBlock);
-            }
-         }
-			return true;
+			if ( interpolator )
+			{
+				delete interpolator;
+				interpolator = 0;
+			}
+			
+			if ( nif->isNiBlock( iBlock, "NiBSplineCompTransformInterpolator" ) )
+			{
+				iInterpolator = iBlock;
+				interpolator = new BSplineTransformInterpolator(this);
+			}
+			else if ( nif->isNiBlock( iBlock, "NiTransformInterpolator" ) )
+			{
+				iInterpolator = iBlock;
+				interpolator = new TransformInterpolator(this);
+			}
+			
+			if ( interpolator )
+			{
+				interpolator->update( nif, iInterpolator );
+			}
 		}
-		return false;
 	}
 	
 protected:
 	QPointer<Node> target;
    QPointer<TransformInterpolator> interpolator;
+};
+
+class MultiTargetTransformController : public Controller
+{
+	typedef QPair< QPointer<Node>, QPointer<TransformInterpolator> > TransformTarget;
+	
+public:
+	MultiTargetTransformController( Node * node, const QModelIndex & index )
+		: Controller( index ), target( node ) {}
+	
+	void update( float time )
+	{
+		if ( ! ( flags.controller.active && target ) )
+			return;
+		
+		time = ctrlTime( time );
+		
+		foreach ( TransformTarget tt, extraTargets )
+		{
+			if ( tt.first && tt.second )
+			{
+				tt.second->updateTransform( tt.first->local, time );
+			}
+		}
+	}
+	
+	bool update( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( Controller::update( nif, index ) )
+		{
+			if ( target )
+			{
+				Scene * scene = target->scene;
+				extraTargets.clear();
+				
+				QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
+				foreach ( qint32 l, lTargets )
+				{
+					Node * node = scene->getNode( nif, nif->getBlock( l ) );
+					if ( node )
+					{
+						extraTargets.append( TransformTarget( node, 0 ) );
+					}
+				}
+				
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	bool setInterpolator( Node * node, const QModelIndex & iInterpolator )
+	{
+		const NifModel * nif = static_cast<const NifModel *>( iInterpolator.model() );
+		if ( ! nif || ! iInterpolator.isValid() )
+			return false;
+		QMutableListIterator<TransformTarget> it( extraTargets );
+		while ( it.hasNext() )
+		{
+			it.next();
+			if ( it.value().first == node )
+			{
+				if ( it.value().second )
+				{
+					delete it.value().second;
+					it.value().second = 0;
+				}
+				
+				if ( nif->isNiBlock( iInterpolator, "NiBSplineCompTransformInterpolator" ) )
+				{
+					it.value().second = new BSplineTransformInterpolator( this );
+				}
+				else if ( nif->isNiBlock( iInterpolator, "NiTransformInterpolator" ) )
+				{
+					it.value().second = new TransformInterpolator( this );
+				}
+				
+				if ( it.value().second )
+				{
+					it.value().second->update( nif, iInterpolator );
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+protected:
+	QPointer<Node> target;
+	QList< TransformTarget > extraTargets;
+};
+
+class ControllerManager : public Controller
+{
+public:
+	ControllerManager( Node * node, const QModelIndex & index )
+		: Controller( index ), target( node ) {}
+	
+	void update( float ) {}
+	
+	bool update( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( Controller::update( nif, index ) )
+		{
+			if ( target )
+			{
+				Scene * scene = target->scene;
+				QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
+				foreach ( qint32 l, lSequences )
+				{
+					QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
+					if ( iSeq.isValid() )
+					{
+						QString name = nif->get<QString>( iSeq, "Name" );
+						if ( ! scene->animGroups.contains( name ) )
+							scene->animGroups.append( name );
+					}
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	void setSequence( const QString & seqname )
+	{
+		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
+		if ( target && iBlock.isValid() && nif )
+		{
+			MultiTargetTransformController * multiTargetTransformer = 0;
+			foreach ( Controller * c, target->controllers )
+			{
+				if ( c->typeId() == "NiMultiTargetTransformController" )
+				{
+					multiTargetTransformer = static_cast<MultiTargetTransformController*>( c );
+					break;
+				}
+			}
+			
+			QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
+			foreach ( qint32 l, lSequences )
+			{
+				QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
+				if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname )
+				{
+					start = nif->get<float>( iSeq, "Start Time" );
+					stop = nif->get<float>( iSeq, "Stop Time" );
+					phase = nif->get<float>( iSeq, "Phase" );
+					frequency = nif->get<float>( iSeq, "Frequency" );
+					
+					QModelIndex iCtrlBlcks = nif->getIndex( iSeq, "Controlled Blocks" );
+					for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ )
+					{
+						QModelIndex iCB = iCtrlBlcks.child( r, 0 );
+						
+						QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
+						
+						QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
+						QString nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						idx = nif->getIndex( iCB, "Property Type Offset" );
+						QString proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						idx = nif->getIndex( iCB, "Controller Type Offset" );
+						QString ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						
+						Node * node = target->findChild( nodename );
+						if ( ! node )
+							continue;
+						
+						if ( ctrltype == "NiTransformController" && multiTargetTransformer )
+						{
+							if ( multiTargetTransformer->setInterpolator( node, iInterpolator ) )
+							{
+								multiTargetTransformer->start = start;
+								multiTargetTransformer->stop = stop;
+								multiTargetTransformer->phase = phase;
+								multiTargetTransformer->frequency = frequency;
+								continue;
+							}
+						}
+						
+						Controllable * controllable = node;
+						if ( proptype != "<empty>" && ! proptype.isEmpty() )
+						{
+							// TODO: find the right property
+							continue;
+						}
+						
+						Controller * ctrl = 0;
+						foreach ( Controller * c, controllable->controllers )
+						{
+							if ( c->typeId() == ctrltype )
+							{
+								if ( ctrl == 0 )
+								{
+									ctrl = c;
+								}
+								else
+								{
+									ctrl = 0;
+									// TODO: eval var1 + var2 offset to determine which controller is targeted
+									break;
+								}
+							}
+						}
+						if ( ctrl )
+						{
+							ctrl->start = start;
+							ctrl->stop = stop;
+							ctrl->phase = phase;
+							ctrl->frequency = frequency;
+							
+							ctrl->setInterpolator( iInterpolator );
+						}
+					}
+				}
+			}
+		}
+	}
+
+protected:
+	QPointer<Node> target;
 };
 
 class KeyframeController : public Controller
@@ -369,6 +580,18 @@ void Node::setController( const NifModel * nif, const QModelIndex & iController 
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
+	else if ( cname == "NiMultiTargetTransformController" )
+	{
+		Controller * ctrl = new MultiTargetTransformController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+	else if ( cname == "NiControllerManager" )
+	{
+		Controller * ctrl = new ControllerManager( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
 	else if ( cname == "NiKeyframeController" )
 	{
 		Controller * ctrl = new KeyframeController( this, iController );
@@ -452,6 +675,20 @@ Node * Node::findChild( int id ) const
 		child = child->findChild( id );
 		if ( child )
 			return child;
+	}
+	return 0;
+}
+
+Node * Node::findChild( const QString & name ) const
+{
+	if ( this->name == name )
+		return const_cast<Node*>( this );
+	
+	foreach ( Node * child, children.list() )
+	{
+		Node * n = child->findChild( name );
+		if ( n )
+			return n;
 	}
 	return 0;
 }
@@ -983,45 +1220,6 @@ void Node::drawShapes( NodeList * draw2nd )
 	{
 		node->drawShapes( draw2nd );
 	}
-}
-
-void Node::setupRenderState( bool vertexcolors )
-{
-	// setup lighting
-	
-	scene->setupLights( this );
-	
-	// setup blending
-	
-	glProperty( findProperty< AlphaProperty >() );
-	
-	// setup vertex colors
-	
-	glProperty( findProperty< VertexColorProperty >(), vertexcolors );
-	
-	// setup material
-	
-	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
-
-	// setup texturing
-	
-	glProperty( findProperty< TexturingProperty >() );
-	
-	// setup z buffer
-	
-	glProperty( findProperty< ZBufferProperty >() );
-	
-	// setup stencil
-	
-	glProperty( findProperty< StencilProperty >() );
-	
-	// wireframe ?
-	
-	glProperty( findProperty< WireframeProperty >() );
-
-	// normalize
-	
-	glEnable( GL_NORMALIZE );
 }
 
 #define Farg( X ) arg( X, 0, 'f', 5 )

@@ -55,6 +55,8 @@ public:
 	
 	virtual void timeBounds( float & start, float & stop );
 	
+	void setSequence( const QString & seqname );
+	
 protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & iController ) {}
 
@@ -65,6 +67,8 @@ protected:
 	QList<Controller*> controllers;
 	
 	QString name;
+
+	friend class ControllerManager;
 };
 
 #endif

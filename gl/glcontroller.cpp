@@ -125,6 +125,12 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 	tmax = qMax( tmax, mx );
 }
 
+void Controllable::setSequence( const QString & seqname )
+{
+	foreach ( Controller * ctrl, controllers )
+		ctrl->setSequence( seqname );
+}
+
 
 /*
  *  Controller
@@ -132,6 +138,26 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 
 Controller::Controller( const QModelIndex & index ) : iBlock( index )
 {
+}
+
+QString Controller::typeId() const
+{
+	if ( iBlock.isValid() )
+		return iBlock.data( Qt::DisplayRole ).toString();
+	return QString();
+}
+
+void Controller::setSequence( const QString & seqname )
+{
+}
+
+void Controller::setInterpolator( const QModelIndex & index )
+{
+	iInterpolator = index;
+	
+	const NifModel * nif = static_cast<const NifModel *>( index.model() );
+	if ( nif )
+		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
 }
 
 bool Controller::update( const NifModel * nif, const QModelIndex & index )
@@ -144,11 +170,17 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 		frequency = nif->get<float>( index, "Frequency" );
 		flags.bits = nif->get<int>( index, "Flags" );
 		
-		iInterpolator = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
-		if ( iInterpolator.isValid() )
-			iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
+		QModelIndex idx = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
+		if ( idx.isValid() )
+		{
+			setInterpolator( idx );
+		}
 		else
-			iData = nif->getBlock( nif->getLink( iBlock, "Data" ) );
+		{
+			idx = nif->getBlock( nif->getLink( iBlock, "Data" ) );
+			if ( idx.isValid() )
+				iData = idx;
+		}
 	}
 	
 	if ( iInterpolator.isValid() && iInterpolator == index )
@@ -546,26 +578,24 @@ TransformInterpolator::TransformInterpolator(Controller *owner) : Interpolator(o
 
 bool TransformInterpolator::update( const NifModel * nif, const QModelIndex & index )
 {
-   if ( Interpolator::update( nif, index ) )
-   {
-      QPersistentModelIndex iData = GetControllerData();
-
-      iTranslations = nif->getIndex( iData, "Translations" );
-      iRotations = nif->getIndex( iData, "Rotations" );
-      if ( ! iRotations.isValid() )
-         iRotations = iData;
-      iScales = nif->getIndex( iData, "Scales" );
-      return true;
-   }
-   return false;
+	if ( Interpolator::update( nif, index ) )
+	{
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTransformData" );
+		iTranslations = nif->getIndex( iData, "Translations" );
+		iRotations = nif->getIndex( iData, "Rotations" );
+		if ( ! iRotations.isValid() ) iRotations = iData;
+		iScales = nif->getIndex( iData, "Scales" );
+		return true;
+	}
+	return false;
 }
 
 bool TransformInterpolator::updateTransform(Transform& tm, float time)
 {
-   parent->interpolate(tm.rotation, iRotations, time, lRotate);
-   ::interpolate(tm.translation, iTranslations, time, lTrans);
-   ::interpolate(tm.scale, iScales, time, lScale);
-   return true;
+	Controller::interpolate( tm.rotation, iRotations, time, lRotate );
+	Controller::interpolate( tm.translation, iTranslations, time, lTrans );
+	Controller::interpolate( tm.scale, iScales, time, lScale );
+	return true;
 }
 
 

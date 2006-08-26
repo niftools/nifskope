@@ -63,8 +63,9 @@ void Scene::clear( bool flushTextures )
 {
 	nodes.clear();
 	properties.clear();
-	lights.clear();
 	roots.clear();
+	
+	animGroups.clear();
 	
 	//if ( flushTextures )
 		textures.flush();
@@ -93,7 +94,6 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 	{
 		properties.validate();
 		nodes.validate();
-		lights.validate();
 		
 		foreach ( Node * n, nodes.list() )
 			n->update( nif, QModelIndex() );
@@ -148,11 +148,6 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	{
 		node = new Mesh( this, iNode );
 	}
-	else if ( nif->inherits( iNode, "NiLight" ) )
-	{
-		node = new Light( this, iNode );
-		lights.add( node );
-	}
 	//else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
 	else if ( nif->inherits( iNode, "NiParticles" ) ) // ... where did AParticleSystem go?
 	{
@@ -161,8 +156,8 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 
 	if ( node )
 	{
-		node->update( nif, iNode );
 		nodes.add( node );
+		node->update( nif, iNode );
 	}
 
 	return node;
@@ -176,9 +171,14 @@ Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iProper
 	return prop;
 }
 
-bool compareLights( const QPair< Light *, float > l1, const QPair< Light *, float > l2 )
+void Scene::setSequence( const QString & seqname )
 {
-	return l1.second < l2.second;
+	foreach ( Node * node, nodes.list() )
+		node->setSequence( seqname );
+	foreach ( Property * prop, properties.list() )
+		prop->setSequence( seqname );
+	
+	timeBoundsValid = false;
 }
 
 void Scene::transform( const Transform & trans, float time )
@@ -243,47 +243,6 @@ void Scene::drawFurn()
 {
 	foreach ( Node * node, roots.list() )
 		node->drawFurn();
-}
-
-void Scene::setupLights( Node * node )
-{
-	/*
-	glEnable( GL_LIGHTING );
-	
-	if ( lights.list().isEmpty() || ! lighting )
-	{
-		static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
-		static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
-		static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-		static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		glLightfv( GL_LIGHT0, GL_POSITION, L0position );
-		glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
-		glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
-		glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
-		glEnable( GL_LIGHT0 );
-		int n = 1; while ( n < 8 ) Light::off( n++ );
-	}
-	else if ( lights.list().count() <= 8 )
-	{
-		int c = 0;
-		foreach ( Node * n, lights.list() )
-			static_cast<Light*>( n )->on( c++ );
-		while ( c < 8 )
-			Light::off( c++ );
-	}
-	else
-	{
-		QList< QPair< Light *, float > > slights;
-		foreach ( Node * n, lights.list() )
-		{
-			Light * l = static_cast<Light*>( n );
-			slights.append( QPair< Light *, float >( l, ( l->worldTrans().translation - node->worldTrans().translation ).length() ) );
-		}
-		qStableSort( slights.begin(), slights.end(), compareLights );
-		for ( int n = 0; n < 8; n++ )
-			slights[n].first->on( n++ );
-	}
-	*/
 }
 
 BoundSphere Scene::bounds() const

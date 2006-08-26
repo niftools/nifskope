@@ -34,7 +34,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 #include <QActionGroup>
+#include <QComboBox>
 #include <QTimer>
+#include <QToolBar>
+#include <QToolButton>
 
 
 #include <math.h>
@@ -45,6 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spellbook.h"
 #include "widgets/colorwheel.h"
+#include "widgets/floatslider.h"
 
 #define FPS 25
 
@@ -245,6 +249,30 @@ GLView::GLView()
 	aCullExp = new QAction( "Cull Nodes by Name...", this );
 	connect( aCullExp, SIGNAL( triggered() ), this, SLOT( adjustCullExp() ) );
 	addAction( aCullExp );
+
+
+	// animation tool bar
+	
+	tAnim = new QToolBar( "Animation" );
+	tAnim->setObjectName( "AnimTool" );
+	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	
+	connect( aAnimate, SIGNAL( toggled( bool ) ), tAnim->toggleViewAction(), SLOT( setChecked( bool ) ) );
+	connect( aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
+	connect( tAnim->toggleViewAction(), SIGNAL( toggled( bool ) ), aAnimate, SLOT( setChecked( bool ) ) );
+	
+	tAnim->addAction( aAnimPlay );
+	
+	FloatSlider * sldTime = new FloatSlider( Qt::Horizontal );
+	connect( this, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
+	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );
+	tAnim->addWidget( sldTime );
+	
+	animGroups = new QComboBox();
+	connect( animGroups, SIGNAL( activated( const QString & ) ), this, SLOT( sltSequence( const QString & ) ) );
+	tAnim->addWidget( animGroups );
+	
+	tAnim->addAction( aAnimLoop );
 }
 
 GLView::~GLView()
@@ -252,6 +280,24 @@ GLView::~GLView()
 	makeCurrent();
 	delete scene;
 }
+
+QList<QToolBar*> GLView::toolbars() const
+{
+	return QList<QToolBar*>() << tAnim;
+}
+
+void GLView::updateShaders()
+{
+	makeCurrent();
+	scene->updateShaders();
+	scene->shading = aShading->isChecked();
+	update();
+}
+
+
+/*
+ *  OpenGL stuff
+ */
 
 void GLView::initializeGL()
 {
@@ -261,13 +307,13 @@ void GLView::initializeGL()
 
 	glShadeModel( GL_SMOOTH );
 	
-	if ( ! scene->renderer.initialize( context() ) )
+	if ( ! Renderer::initialize( context() ) )
 	{
 		aShading->setChecked( false );
 		aShading->setDisabled( true );
 	}
 	else
-		scene->renderer.updateShaders();
+		scene->updateShaders();
 
 	static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
 	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
@@ -286,14 +332,6 @@ void GLView::initializeGL()
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
 		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
-}
-
-void GLView::updateShaders()
-{
-	makeCurrent();
-	scene->renderer.updateShaders();
-	scene->shading = aShading->isChecked();
-	update();
 }
 
 void GLView::glProjection( int x, int y )
@@ -344,7 +382,8 @@ void GLView::center()
 
 void GLView::paintGL()
 {
-	if ( ! ( isVisible() && height() ) )	return;
+	if ( ! ( isVisible() && height() && width() ) )
+		return;
 	
 	qglClearColor( bgcolor );
 	
@@ -364,6 +403,11 @@ void GLView::paintGL()
 		if ( time < scene->timeMin() || time > scene->timeMax() )
 			time = scene->timeMin();
 		emit sigTime( time, scene->timeMin(), scene->timeMax() );
+		
+		animGroups->clear();
+		animGroups->addItems( scene->animGroups );
+		animGroups->setEditText( scene->animGroup );
+		
 		doCompile = false;
 	}
 	
@@ -497,7 +541,6 @@ int indexAt( GLuint *buffer, NifModel *model, Scene *scene, DrawFunc drawFunc )
 	return -1;
 }
 
-
 QModelIndex GLView::indexAt( const QPoint & pos )
 {
 	if ( ! ( model && isVisible() && height() ) )
@@ -547,10 +590,13 @@ void GLView::resizeGL(int width, int height)
 	glViewport(0, 0, width, height );
 }
 
+
+/*
+ *  NifModel stuff
+ */
+ 
 void GLView::setNif( NifModel * nif )
 {
-	scene->clear();
-	
 	if ( model )
 	{
 		disconnect( model );
@@ -641,6 +687,14 @@ void GLView::modelDestroyed()
 void GLView::sltTime( float t )
 {
 	time = t;
+	update();
+}
+
+void GLView::sltSequence( const QString & seqname )
+{
+	scene->setSequence( seqname );
+	time = scene->timeMin();
+	emit sigTime( time, scene->timeMin(), scene->timeMax() );
 	update();
 }
 

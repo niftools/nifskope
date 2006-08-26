@@ -424,8 +424,34 @@ void Particles::drawShapes( NodeList * draw2nd )
 
 	glLoadName( nodeId );
 	
-	setupRenderState( colors.count() >= transVerts.count() );
+	// setup blending
 	
+	glProperty( findProperty< AlphaProperty >() );
+	
+	// setup vertex colors
+	
+	glProperty( findProperty< VertexColorProperty >(), ( colors.count() >= transVerts.count() ) );
+	
+	// setup material
+	
+	glProperty( findProperty< MaterialProperty >(), findProperty< SpecularProperty >() );
+
+	// setup texturing
+	
+	glProperty( findProperty< TexturingProperty >() );
+	
+	// setup z buffer
+	
+	glProperty( findProperty< ZBufferProperty >() );
+	
+	// setup stencil
+	
+	glProperty( findProperty< StencilProperty >() );
+	
+	// wireframe ?
+	
+	glProperty( findProperty< WireframeProperty >() );
+
 	// normalize
 	
 	glEnable( GL_NORMALIZE );
