@@ -3,7 +3,7 @@ LANGUAGE = C++
 TARGET   = NifSkope
 
 CONFIG += qt release thread warn_on
-QT += xml opengl
+QT += xml opengl network
 #LIBS += -lmingw32 -lqtmain
 
 DESTDIR = ./

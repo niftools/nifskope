@@ -58,6 +58,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QUdpSocket>
 #include <QUrl>
 
 #include <QListView>
@@ -714,6 +715,67 @@ void myMessageOutput(QtMsgType type, const char *msg)
 	}
 }
 
+
+/*
+ *  IPC socket
+ */
+
+bool IPCsocket::nifskope( const QString & cmd )
+{
+	QUdpSocket * udp = new QUdpSocket();
+	
+	if ( udp->bind( QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT, QUdpSocket::DontShareAddress ) )
+	{
+		new IPCsocket( udp );
+		udp->writeDatagram( (const char *) cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
+		return true;
+	}
+	else
+	{
+		udp->writeDatagram( (const char *) cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
+		delete udp;
+		return false;
+	}
+}
+
+IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
+{
+	QObject::connect( socket, SIGNAL( readyRead() ), this, SLOT( processDatagram() ) );
+}
+
+IPCsocket::~IPCsocket()
+{
+	delete socket;
+}
+
+void IPCsocket::processDatagram()
+{
+	while ( socket->hasPendingDatagrams() )
+	{
+		QByteArray data;
+		data.resize( socket->pendingDatagramSize() );
+		QHostAddress host;
+		quint16 port = 0;
+		
+		socket->readDatagram( data.data(), data.size(), &host, &port );
+		if ( host == QHostAddress( QHostAddress::LocalHost ) && ( data.size() % sizeof( QChar ) ) == 0 )
+		{
+			QString cmd;
+			cmd.setUnicode( (QChar *) data.data(), data.size() / sizeof( QChar ) );
+			if ( cmd.startsWith( "NifSkope::open" ) )
+			{
+				cmd.remove( 0, 15 );
+				NifSkope::createWindow( cmd );
+			}
+		}
+	}
+}
+
+
+/*
+ *  main
+ */
+
 int main( int argc, char * argv[] )
 {
 	// set up the QtApplication
@@ -721,16 +783,18 @@ int main( int argc, char * argv[] )
 	
 	qRegisterMetaType<Message>( "Message" );
 	
-	qInstallMsgHandler(myMessageOutput);
+	qInstallMsgHandler( myMessageOutput );
 	
 	NifModel::loadXML();
 	KfmModel::loadXML();
 	
-	NifSkope * skope = NifSkope::createWindow();
-	
+	QString fname;
     if ( app.argc() > 1 )
-        skope->load( QString( app.argv()[ app.argc() - 1 ] ) );
-
-	// start the event loop
-	return app.exec();
+        fname = QString( app.argv()[ app.argc() - 1 ] );
+	
+	if ( IPCsocket::nifskope( QString( "NifSkope::open %1" ).arg( fname ) ) )
+		// start the event loop
+		return app.exec();
+	else
+		return 0;
 }

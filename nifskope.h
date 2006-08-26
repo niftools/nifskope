@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMainWindow>
 #include <QProgressDialog>
 
+#define NIFSKOPE_IPC_PORT 12583
 
 class NifModel;
 class NifProxyModel;
@@ -54,6 +55,8 @@ class QSettings;
 class QSlider;
 class QSpinBox;
 class QTextEdit;
+
+class QUdpSocket;
 
 #include "message.h"
 
@@ -146,6 +149,22 @@ private:
 	QAction * aToolSkel;
 
 	QToolBar * tAnim;
+};
+
+class IPCsocket : public QObject
+{
+	Q_OBJECT
+public:
+	static bool nifskope( const QString & );
+
+protected slots:
+	void processDatagram();
+	
+protected:
+	IPCsocket( QUdpSocket * );
+	~IPCsocket();
+	
+	QUdpSocket * socket;
 };
 
 class ProgDlg : public QProgressDialog
