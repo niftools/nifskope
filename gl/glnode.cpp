@@ -101,6 +101,46 @@ protected:
    QPointer<TransformInterpolator> interpolator;
 };
 
+class KeyframeController : public Controller
+{
+public:
+	KeyframeController( Node * node, const QModelIndex & index )
+		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 ) {}
+	
+	void update( float time )
+	{
+		if ( ! ( flags.controller.active && target ) )
+			return;
+		
+		time = ctrlTime( time );
+		
+		interpolate( target->local.rotation, iRotations, time, lRotate );
+		interpolate( target->local.translation, iTranslations, time, lTrans );
+		interpolate( target->local.scale, iScales, time, lScale );
+	}
+	
+	bool update( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( Controller::update( nif, index ) )
+		{
+			iTranslations = nif->getIndex( iData, "Translations" );
+			iRotations = nif->getIndex( iData, "Rotations" );
+			if ( ! iRotations.isValid() )
+				iRotations = iData;
+			iScales = nif->getIndex( iData, "Scales" );
+			return true;
+		}
+		return false;
+	}
+	
+protected:
+	QPointer<Node> target;
+	
+	QPersistentModelIndex iTranslations, iRotations, iScales;
+	
+	int lTrans, lRotate, lScale;
+};
+
 class VisibilityController : public Controller
 {
 public:
@@ -285,15 +325,8 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 	if ( iBlock == index || ! index.isValid() )
 	{
 		PropertyList newProps;
-		QModelIndex iProperties = nif->getIndex( iBlock, "Properties" );
-		if ( iProperties.isValid() )
-		{
-			for ( int p = 0; p < nif->rowCount( iProperties ); p++ )
-			{
-				QModelIndex iProp = nif->getBlock( nif->getLink( iProperties.child( p, 0 ) ) );
-				newProps.add( scene->getProperty( nif, iProp ) );
-			}
-		}
+		foreach ( qint32 l, nif->getLinkArray( iBlock, "Properties" ) )
+			newProps.add( scene->getProperty( nif, nif->getBlock( l ) ) );
 		properties = newProps;
 		
 		children.clear();
@@ -330,9 +363,15 @@ void Node::makeParent( Node * newParent )
 void Node::setController( const NifModel * nif, const QModelIndex & iController )
 {
 	QString cname = nif->itemName( iController );
-	if ( cname == "NiKeyframeController" || cname == "NiTransformController" )
+	if ( cname == "NiTransformController" )
 	{
 		Controller * ctrl = new TransformController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+	else if ( cname == "NiKeyframeController" )
+	{
+		Controller * ctrl = new KeyframeController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
@@ -541,6 +580,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	{
 		glLoadName( nif->getBlockNumber( iShape ) );
 		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) );
+	}
+	else if ( name == "bhkMultiSphereShape" )
+	{
+		glLoadName( nif->getBlockNumber( iShape ) );
+		QModelIndex iSpheres = nif->getIndex( iShape, "Spheres" );
+		for ( int r = 0; r < nif->rowCount( iSpheres ); r++ )
+		{
+			drawSphere( nif->get<Vector3>( iSpheres.child( r, 0 ), "Center" ), nif->get<float>( iSpheres.child( r, 0 ), "Radius" ) );
+		}
 	}
 	else if ( name == "bhkBoxShape" )
 	{
@@ -782,10 +830,9 @@ void Node::drawHavok()
 	
 	glPopMatrix();
 	
-	QModelIndex iConstraints = nif->getIndex( iBody, "Constraints" );
-	for ( int r = 0; r < nif->rowCount( iConstraints ); r++ )
+	foreach ( qint32 l, nif->getLinkArray( iBody, "Constraints" ) )
 	{
-		QModelIndex iConstraint = nif->getBlock( nif->getLink( iConstraints.child( r, 0 ) ) );
+		QModelIndex iConstraint = nif->getBlock( l );
 		if ( nif->inherits( iConstraint, "AbhkConstraint" ) )
 			drawHvkConstraint( nif, iConstraint, scene );
 	}
@@ -847,32 +894,8 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 			qDebug() << "Unknown furniture marker " << ref1 << "!";
 			return;
 	}
-
-	float roll;	
-	switch ( orient )	
-	{
-		case 1570:
-			roll = -90 / 180.0f * M_PI;
-			break;
-		case	3141:
-			roll = M_PI;
-			break;
-			
-		case 4712:
-			roll = 90.0f / 180.0f * M_PI;
-			break;
-			
-		case 0:
-		case 6283:
-			roll = 0;
-			break;
-		
-		default:
-			qDebug() << "Unknown orientation " << orient << "!";
-			roll = 0;
-			break;
-	}
-
+	
+	float roll = float( orient ) / 6284.0 * 2.0 * (-M_PI);
 
 	glLoadName( ( nif->getBlockNumber( iPosition )&0x0ffff ) | 
 	            ( (iPosition.row()&0x0ffff ) << 16) );

@@ -207,6 +207,14 @@ QString BaseModel::itemType( const QModelIndex & index ) const
 	return item->type();
 }
 
+QString BaseModel::itemTmplt( const QModelIndex & index ) const
+{
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item && index.model() == this ) )	return QString();
+	return item->temp();
+}
+
+
 NifValue BaseModel::getValue( const QModelIndex & index ) const
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );

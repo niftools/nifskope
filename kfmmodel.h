@@ -48,6 +48,9 @@ public:
 	// call this once on startup to load the XML descriptions
 	static bool loadXML();
 
+	// when creating kfmmodels from outside the main thread better protect them with a QReadLocker
+	static QReadWriteLock XMLlock;
+	
 	// clear model data
 	void clear();
 	
@@ -100,8 +103,6 @@ protected:
 	NifItem	* kfmroot;
 	
 	// XML structures
-	static QReadWriteLock XMLlock;
-	
 	static QList<quint32>		supportedVersions;
 	
 	static QHash<QString,NifBlock*>		compounds;
@@ -114,13 +115,11 @@ protected:
 
 inline bool KfmModel::isCompound( const QString & name )
 {
-	QReadLocker lck( &XMLlock );
 	return compounds.contains( name );
 }
 
 inline bool KfmModel::isVersionSupported( quint32 v )
 {
-	QReadLocker lck( &XMLlock );
 	return supportedVersions.contains( v );
 }
 

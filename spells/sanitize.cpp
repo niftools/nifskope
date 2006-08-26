@@ -54,7 +54,7 @@ public:
 			QModelIndex iProperties = nif->getIndex( iBlock, "Properties" );
 			if ( iNumProperties.isValid() && iProperties.isValid() )
 			{
-				QList<qint32> links;
+				QVector<qint32> links;
 				for ( int r = 0; r < nif->rowCount( iProperties ); r++ )
 				{
 					qint32 l = nif->getLink( iProperties.child( r, 0 ) );
@@ -62,10 +62,9 @@ public:
 				}
 				if ( links.count() < nif->rowCount( iProperties ) )
 				{
-					for ( int r = 0; r < links.count(); r++ )
-						nif->setLink( iProperties.child( r, 0 ), links[r] );
 					nif->set<int>( iNumProperties, links.count() );
 					nif->updateArray( iProperties );
+					nif->setLinkArray( iProperties, links );
 				}
 			}
 		}
@@ -142,7 +141,7 @@ public:
 
 	static bool isImportantHvkBlock( const NifModel * nif, const QModelIndex & iBlock )
 	{
-		return nif->inherits( iBlock, "bhkShape" ) || nif->inherits( iBlock, "NiCollisionObject" );
+		return nif->inherits( iBlock, "bhkShape" ) || nif->inherits( iBlock, "NiCollisionObject" ) || nif->inherits( iBlock, "NiTriBasedGeomData" );
 	}
 	
 	static void setup( const NifModel * nif, QStack<qint32> & stack, QVector<wrap> & sortwrapper )

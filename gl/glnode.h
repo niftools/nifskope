@@ -132,6 +132,7 @@ protected:
 
 	NodeFlags flags;
 	
+	friend class KeyframeController;
 	friend class TransformController;
 	friend class VisibilityController;
 	friend class NodeList;

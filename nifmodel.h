@@ -49,6 +49,9 @@ public:
 	// call this once on startup to load the XML descriptions
 	static bool loadXML();
 
+	// when creating NifModels from outside the main thread protect them with a QReadLocker (see the XML check spell for an example)
+	static QReadWriteLock XMLlock;
+	
 	// clear model data
 	void clear();
 	
@@ -113,9 +116,15 @@ public:
 	// this returns a block number if the index is a valid link
 	qint32 getLink( const QModelIndex & index ) const;
 	int getLink( const QModelIndex & parent, const QString & name ) const;
-	bool setLink( const QModelIndex & parent, const QString & name, qint32 l );
+	QVector<qint32> getLinkArray( const QModelIndex & array ) const;
+	QVector<qint32> getLinkArray( const QModelIndex & parent, const QString & name ) const;
 	bool setLink( const QModelIndex & index, qint32 l );
-
+	bool setLink( const QModelIndex & parent, const QString & name, qint32 l );
+	bool setLinkArray( const QModelIndex & array, const QVector<qint32> & links );
+	bool setLinkArray( const QModelIndex & parent, const QString & name, const QVector<qint32> & links );
+	
+	void mapLinks( const QMap<qint32,qint32> & map );
+	
 	// is it a compound type?
 	static bool isCompound( const QString & name );
 	// is name an ancestor identifier?
@@ -193,8 +202,6 @@ protected:
 	void mapLinks( NifItem * parent, const QMap<qint32,qint32> & map );
 	
 	// XML structures
-	static QReadWriteLock XMLlock;
-	
 	static QList<quint32>		supportedVersions;
 	
 	static QHash<QString,NifBlock*>		compounds;
@@ -208,7 +215,6 @@ protected:
 
 inline QStringList NifModel::allNiBlocks()
 {
-	QReadLocker lck( &XMLlock );
 	QStringList lst;
 	foreach ( NifBlock * blk, blocks )
 		if ( ! blk->abstract )
@@ -218,27 +224,23 @@ inline QStringList NifModel::allNiBlocks()
 
 inline bool NifModel::isNiBlock( const QString & name )
 {
-	QReadLocker lck( &XMLlock );
 	NifBlock * blk = blocks.value( name );
 	return blk && ! blk->abstract;
 }
 
 inline bool NifModel::isAncestor( const QString & name )
 {
-	QReadLocker lck( &XMLlock );
 	NifBlock * blk = blocks.value( name );
 	return blk && blk->abstract;
 }
 
 inline bool NifModel::isCompound( const QString & name )
 {
-	QReadLocker lck( &XMLlock );
 	return compounds.contains( name );
 }
 
 inline bool NifModel::isVersionSupported( quint32 v )
 {
-	QReadLocker lck( &XMLlock );
 	return supportedVersions.contains( v );
 }
 

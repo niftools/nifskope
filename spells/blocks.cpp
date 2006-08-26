@@ -460,6 +460,8 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
+		if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
+			return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 			foreach ( QString form, mime->formats() )
@@ -515,6 +517,8 @@ public:
 							}
 						}
 						
+						QModelIndex iRoot;
+						
 						for ( int c = 0; c < count; c++ )
 						{
 							QString type;
@@ -523,8 +527,28 @@ public:
 							QModelIndex block = nif->insertNiBlock( type, -1 );
 							if ( ! nif->loadAndMapLinks( buffer, block, blockMap ) )
 								return index;
+							if ( c == 0 )
+								iRoot = block;
 						}
-						return QModelIndex();
+						
+						if ( nif->isLink( index ) && nif->inherits( iRoot, nif->itemTmplt( index ) ) )
+						{
+							nif->setLink( index, nif->getBlockNumber( iRoot ) );
+						}
+						if ( nif->inherits( index, "NiNode" ) && nif->inherits( iRoot, "NiAVObject" ) )
+						{
+							addLink( nif, index, "Children", nif->getBlockNumber( iRoot ) );
+						}
+						else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iRoot, "NiProperty" ) )
+						{
+							addLink( nif, index, "Properties", nif->getBlockNumber( iRoot ) );
+						}
+						else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iRoot, "NiExtraData" ) )
+						{
+							addLink( nif, index, "Extra Data List", nif->getBlockNumber( iRoot ) );
+						}
+						
+						return iRoot;
 					}
 				}
 			}

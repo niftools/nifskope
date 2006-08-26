@@ -154,10 +154,10 @@ TestShredder::~TestShredder()
 
 void TestShredder::xml()
 {
-	btRun->setChecked( false );
-	queue.clear();
-	foreach ( TestThread * thread, threads )
-		thread->wait();
+	//btRun->setChecked( false );
+	//queue.clear();
+	//foreach ( TestThread * thread, threads )
+	//	thread->wait();
 	NifModel::loadXML();
 	KfmModel::loadXML();
 }
@@ -376,27 +376,35 @@ void TestThread::run()
 		emit sigStart( filepath );
 		
 		BaseModel * model = & nif;
+		QReadWriteLock * lock = &nif.XMLlock;
 		
 		if ( filepath.endsWith( ".KFM", Qt::CaseInsensitive ) )
-			model = & kfm;
-		
-		if ( blockMatch.isEmpty() || ( model == &nif && NifModel::checkForBlock( filepath, blockMatch ) ) )
 		{
-			bool loaded = model->loadFromFile( filepath );
+			model = & kfm;
+			lock = & kfm.XMLlock;
+		}
+		
+		{	// lock the XML lock
+			QReadLocker lck( lock );
 			
-			QString result = QString( "<a href=\"%1\">%2</a> (%3)<br>" ).arg(filepath).arg( filepath ).arg( model->getVersion() );
-			QList<Message> messages = model->getMessages();
-			
-			if ( loaded && model == & nif )
-				for ( int b = 0; b < nif.getBlockCount(); b++ )
-					messages += checkLinks( &nif, nif.getBlock( b ) );
-			
-			foreach ( Message msg, messages )
+			if ( blockMatch.isEmpty() || ( model == &nif && NifModel::checkForBlock( filepath, blockMatch ) ) )
 			{
-				if ( msg.type() != QtDebugMsg )
-					result += msg + "<br>";
+				bool loaded = model->loadFromFile( filepath );
+				
+				QString result = QString( "<a href=\"%1\">%2</a> (%3)<br>" ).arg(filepath).arg( filepath ).arg( model->getVersion() );
+				QList<Message> messages = model->getMessages();
+				
+				if ( loaded && model == & nif )
+					for ( int b = 0; b < nif.getBlockCount(); b++ )
+						messages += checkLinks( &nif, nif.getBlock( b ) );
+				
+				foreach ( Message msg, messages )
+				{
+					if ( msg.type() != QtDebugMsg )
+						result += msg + "<br>";
+				}
+				emit sigReady( result );
 			}
-			emit sigReady( result );
 		}
 		
 		if ( quit.tryLock() )

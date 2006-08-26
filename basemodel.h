@@ -104,6 +104,7 @@ public:
 	quint32  itemVer1( const QModelIndex & index ) const;
 	quint32  itemVer2( const QModelIndex & index ) const;
 	QString  itemText( const QModelIndex & index ) const;
+	QString  itemTmplt( const QModelIndex & index ) const;
 
 	// find a branch by name
 	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;

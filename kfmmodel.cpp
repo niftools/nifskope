@@ -99,20 +99,11 @@ void KfmModel::clear()
  *  array functions
  */
  
-inline QString inBrakets( const QString & x )
+inline QString parentPrefix( const QString & x )
 {
 	for ( int c = 0; c < x.length(); c++ )
 		if ( ! x[c].isNumber() )
-			return QString( "(%1)" ).arg( x );
-	return x;
-}
-
-inline QString removeBrakets( QString x )
-{
-	while ( x.startsWith( "(" ) )
-		x = x.right( x.length() - 1 );
-	while ( x.endsWith( ")" ) )
-		x = x.left( x.length() - 1 );
+			return QString( "../" ) + x;
 	return x;
 }
 
@@ -131,7 +122,7 @@ bool KfmModel::updateArrayItem( NifItem * array, bool fast )
 	int rows = array->childCount();
 	if ( d1 > rows )
 	{
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), inBrakets( array->arg() ), inBrakets( array->arr2() ), QString(), QString(), 0, 0 );
+		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
 		
 		if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), rows, d1-1 );
 		array->prepareInsert( d1 - rows );
@@ -163,7 +154,6 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		return;
 	}
 
-	QReadLocker lck( &XMLlock );
 	NifBlock * compound = compounds.value( data.type() );
 	if ( compound )
 	{
@@ -171,7 +161,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		branch->prepareInsert( compound->types.count() );
 		if ( ! data.arg().isEmpty() || ! data.temp().isEmpty() )
 		{
-			QString arg = inBrakets( data.arg() );
+			QString arg = parentPrefix( data.arg() );
 			QString tmp = data.temp();
 			if ( tmp == "TEMPLATE" )
 			{

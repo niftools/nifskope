@@ -275,7 +275,6 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 
 QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fast )
 {
-	QReadLocker lck( &XMLlock );
 	NifBlock * block = blocks.value( identifier );
 	if ( block )
 	{
@@ -417,6 +416,16 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 	updateFooter();
 }
 
+void NifModel::mapLinks( const QMap<qint32,qint32> & map )
+{
+	mapLinks( root, map );
+	updateLinks();
+	emit linksChanged();
+	
+	updateHeader();
+	updateFooter();
+}
+
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
 {
 	if ( ! ( idx.isValid() && idx.model() == this ) )
@@ -503,7 +512,6 @@ int NifModel::getBlockCount() const
 
 void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int at )
 {
-	QReadLocker lck( &XMLlock );
 	NifBlock * ancestor = blocks.value( identifier );
 	if ( ancestor )
 	{
@@ -520,7 +528,6 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 
 bool NifModel::inherits( const QString & name, const QString & aunty )
 {
-	QReadLocker lck( &XMLlock );
     if ( name == aunty ) return true;
 	NifBlock * type = blocks.value( name );
 	if ( type && ( type->ancestor == aunty || inherits( type->ancestor, aunty ) ) )
@@ -560,7 +567,6 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		return;
 	}
 
-	QReadLocker lck( &XMLlock );
 	NifBlock * compound = compounds.value( data.type() );
 	if ( compound )
 	{
@@ -1391,6 +1397,33 @@ qint32 NifModel::getLink( const QModelIndex & parent, const QString & name ) con
 	return -1;
 }
 
+QVector<qint32> NifModel::getLinkArray( const QModelIndex & iArray ) const
+{
+	QVector<qint32> links;
+	NifItem * item = static_cast<NifItem*>( iArray.internalPointer() );
+	if ( isArray( iArray ) && item && iArray.model() == this )
+	{
+		for ( int c = 0; c < item->childCount(); c++ )
+		{
+			if ( itemIsLink( item->child( c ) ) )
+			{
+				links.append( item->child( c )->value().toLink() );
+			}
+			else
+			{
+				links.clear();
+				break;
+			}
+		}
+	}
+	return links;
+}
+
+QVector<qint32> NifModel::getLinkArray( const QModelIndex & parent, const QString & name ) const
+{
+	return getLinkArray( getIndex( parent, name ) );
+}
+
 bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32 l )
 {
 	NifItem * parentItem = static_cast<NifItem*>( parent.internalPointer() );
@@ -1400,6 +1433,7 @@ bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32
 	NifItem * item = getItem( parentItem, name );
 	if ( item && item->value().setLink( l ) )
 	{
+		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
 		NifItem * parent = item;
 		while ( parent->parent() && parent->parent() != root )
 			parent = parent->parent();
@@ -1423,22 +1457,53 @@ bool NifModel::setLink( const QModelIndex & index, qint32 l )
 
 	if ( item && item->value().setLink( l ) )
 	{
-		if ( itemIsLink( item ) )
+		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+		NifItem * parent = item;
+		while ( parent->parent() && parent->parent() != root )
+			parent = parent->parent();
+		if ( parent != getFooterItem() )
 		{
-			NifItem * parent = item;
-			while ( parent->parent() && parent->parent() != root )
-				parent = parent->parent();
-			if ( parent != getFooterItem() )
-			{
-				updateLinks();
-				updateFooter();
-				emit linksChanged();
-			}
+			updateLinks();
+			updateFooter();
+			emit linksChanged();
 		}
 		return true;
 	}
 	else
 		return false;
+}
+
+bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qint32> & links )
+{
+	NifItem * item = static_cast<NifItem*>( iArray.internalPointer() );
+	if ( isArray( iArray ) && item && iArray.model() == this )
+	{
+		bool ret = true;
+		for ( int c = 0; c < item->childCount() && c < links.count(); c++ )
+		{
+			ret &= item->child( c )->value().setLink( links[c] );
+		}
+		ret &= item->childCount() == links.count();
+		int x = item->childCount() - 1;
+		if ( x >= 0 )
+			emit dataChanged( createIndex( 0, ValueCol, item->child( 0 ) ), createIndex( x, ValueCol, item->child( x ) ) );
+		NifItem * parent = item;
+		while ( parent->parent() && parent->parent() != root )
+			parent = parent->parent();
+		if ( parent != getFooterItem() )
+		{
+			updateLinks();
+			updateFooter();
+			emit linksChanged();
+		}
+		return ret;
+	}
+	return false;
+}
+
+bool NifModel::setLinkArray( const QModelIndex & parent, const QString & name, const QVector<qint32> & links )
+{
+	return setLinkArray( getIndex( parent, name ), links );
 }
 
 bool NifModel::isLink( const QModelIndex & index, bool * isChildLink ) const

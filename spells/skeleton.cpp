@@ -391,3 +391,78 @@ public:
 };
 
 REGISTER_SPELL( spSkinPartition )
+
+
+class spFixBoneBounds : public Spell
+{
+public:
+	QString name() const { return "Fix Bone Bounds"; }
+	QString page() const { return "Skeleton"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index, "NiSkinData" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & iSkinData )
+	{
+		QModelIndex iSkinInstance = nif->getBlock( nif->getParent( nif->getBlockNumber( iSkinData ) ), "NiSkinInstance" );
+		QModelIndex iMesh = nif->getBlock( nif->getParent( nif->getBlockNumber( iSkinInstance ) ) );
+		QModelIndex iMeshData = nif->getBlock( nif->getLink( iMesh, "Data" ) );
+		int skelRoot = nif->getLink( iSkinInstance, "Skeleton Root" );
+		if ( ! nif->inherits( iMeshData, "NiTriBasedGeomData" ) || skelRoot < 0 || skelRoot != nif->getParent( nif->getBlockNumber( iMesh ) ) )
+			return iSkinData;
+		
+		Transform meshTrans( nif, iMesh );
+		
+		QVector<Transform> boneTrans;
+		QModelIndex iBoneMap = nif->getIndex( iSkinInstance, "Bones" );
+		for ( int n = 0; n < nif->rowCount( iBoneMap ); n++ )
+		{
+			QModelIndex iBone = nif->getBlock( nif->getLink( iBoneMap.child( n, 0 ) ), "NiNode" );
+			if ( skelRoot != nif->getParent( nif->getBlockNumber( iBone ) ) )
+				return iSkinData;
+			boneTrans.append( Transform( nif, iBone ) );
+		}
+		
+		QVector<Vector3> verts = nif->getArray<Vector3>( iMeshData, "Vertices" );
+		
+		QModelIndex iBoneDataList = nif->getIndex( iSkinData, "Bone List" );
+		for ( int b = 0; b < nif->rowCount( iBoneDataList ); b++ )
+		{
+			Vector3 center;
+			float radius = 0;
+			
+			QModelIndex iWeightList = nif->getIndex( iBoneDataList.child( b, 0 ), "Vertex Weights" );
+			for ( int w = 0; w < nif->rowCount( iWeightList ); w++ )
+			{
+				int v = nif->get<int>( iWeightList.child( w, 0 ), "Index" );
+				center += verts.value( v );
+			}
+			
+			if ( nif->rowCount( iWeightList ) > 0 )
+				center /= nif->rowCount( iWeightList );
+			
+			for ( int w = 0; w < nif->rowCount( iWeightList ); w++ )
+			{
+				int v = nif->get<int>( iWeightList.child( w, 0 ), "Index" );
+				float r = ( center - verts.value( v ) ).length();
+				if ( r > radius )
+					radius = r;
+			}
+			
+			center = meshTrans * center;
+			
+			Transform bt( boneTrans[b] );
+			center = bt.rotation.inverted() * ( center - bt.translation ) / bt.scale;
+			
+			nif->set<Vector3>( iBoneDataList.child( b, 0 ), "Center", center );
+			nif->set<float>( iBoneDataList.child( b, 0 ), "Radius", radius );
+		}
+		
+		return iSkinData;
+	}
+	
+};
+
+// REGISTER_SPELL( spFixBoneBounds )
