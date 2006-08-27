@@ -125,6 +125,14 @@ void Scene::make( NifModel * nif, bool flushTextures )
 	if ( ! nif ) return;
 	textures.nifFolder = nif->getFolder();
 	update( nif, QModelIndex() );
+	if ( ! animGroups.contains( animGroup ) )
+	{
+		if ( animGroups.isEmpty() )
+			animGroup = QString();
+		else
+			animGroup = animGroups.first();
+	}
+	setSequence( animGroup );
 }
 
 Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
@@ -173,6 +181,8 @@ Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iProper
 
 void Scene::setSequence( const QString & seqname )
 {
+	animGroup = seqname;
+	
 	foreach ( Node * node, nodes.list() )
 		node->setSequence( seqname );
 	foreach ( Property * prop, properties.list() )

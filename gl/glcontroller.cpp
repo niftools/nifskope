@@ -54,6 +54,29 @@ void Controllable::clear()
 	controllers.clear();
 }
 
+Controller * Controllable::findController( const QString & ctrltype, const QString & var1, const QString & var2 )
+{
+	Controller * ctrl = 0;
+	foreach ( Controller * c, controllers )
+	{
+		if ( c->typeId() == ctrltype )
+		{
+			if ( ctrl == 0 )
+			{
+				ctrl = c;
+			}
+			else
+			{
+				ctrl = 0;
+				// TODO: eval var1 + var2 offset to determine which controller is targeted
+				break;
+			}
+		}
+	}
+	return ctrl;
+}
+
+
 void Controllable::update( const NifModel * nif, const QModelIndex & i )
 {
 	if ( ! iBlock.isValid() )

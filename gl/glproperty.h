@@ -55,6 +55,7 @@ public:
 	};
 	
 	virtual Type type() const = 0;
+	virtual QString typeId() const = 0;
 	
 	template <typename T> static Type _type();
 	template <typename T> T * cast()
@@ -119,6 +120,7 @@ public:
 	AlphaProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return Alpha; }
+	QString typeId() const { return "NiAlphaProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -143,6 +145,7 @@ public:
 	ZBufferProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return ZBuffer; }
+	QString typeId() const { return "NiZBufferProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -180,6 +183,7 @@ public:
 	TexturingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return Texturing; }
+	QString typeId() const { return "NiTexturingProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -213,6 +217,7 @@ public:
 	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return Material; }
+	QString typeId() const { return "NiMaterialProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & block );
 	
@@ -227,6 +232,7 @@ protected:
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	
 	friend class AlphaController;
+	friend class MaterialColorController;
 };
 
 REGISTER_PROPERTY( MaterialProperty, Material )
@@ -238,7 +244,8 @@ public:
 	SpecularProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return Specular; }
-	
+	QString typeId() const { return "NiSpecularProperty"; }
+
 	void update( const NifModel * nif, const QModelIndex & index );
 	
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
@@ -256,6 +263,7 @@ public:
 	WireframeProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return Wireframe; }
+	QString typeId() const { return "NiWireframeProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
@@ -274,6 +282,7 @@ public:
 	VertexColorProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return VertexColor; }
+	QString typeId() const { return "NiVertexColorProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	
@@ -293,6 +302,7 @@ public:
 	StencilProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 	
 	Type type() const { return Stencil; }
+	QString typeId() const { return "NiStencilProperty"; }
 	
 	void update( const NifModel * nif, const QModelIndex & index );
 	

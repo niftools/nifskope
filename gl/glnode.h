@@ -113,6 +113,8 @@ public:
 	template <typename T> T * findProperty() const;
 	void activeProperties( PropertyList & list ) const;
 	
+	Controller * findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 );
+
 	virtual QString textStats() const;
 	
 protected:

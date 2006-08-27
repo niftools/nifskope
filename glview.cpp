@@ -226,6 +226,10 @@ GLView::GLView()
 	aAnimLoop->setCheckable( true );
 	aAnimLoop->setChecked( true );
 	
+	aAnimSwitch = new QAction( "&Switch", this );
+	aAnimSwitch->setCheckable( true );
+	aAnimSwitch->setChecked( true );
+	
 	aBenchmark = new QAction( "Benchmark FPS", this );
 	aBenchmark->setCheckable( true );
 	aBenchmark->setChecked( false );
@@ -268,11 +272,14 @@ GLView::GLView()
 	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );
 	tAnim->addWidget( sldTime );
 	
+	tAnim->addAction( aAnimLoop );
+
 	animGroups = new QComboBox();
+	animGroups->setMinimumWidth( 100 );
 	connect( animGroups, SIGNAL( activated( const QString & ) ), this, SLOT( sltSequence( const QString & ) ) );
 	tAnim->addWidget( animGroups );
-	
-	tAnim->addAction( aAnimLoop );
+
+	tAnim->addAction( aAnimSwitch );
 }
 
 GLView::~GLView()
@@ -406,7 +413,7 @@ void GLView::paintGL()
 		
 		animGroups->clear();
 		animGroups->addItems( scene->animGroups );
-		animGroups->setEditText( scene->animGroup );
+		animGroups->setCurrentIndex( scene->animGroups.indexOf( scene->animGroup ) );
 		
 		doCompile = false;
 	}
@@ -692,6 +699,7 @@ void GLView::sltTime( float t )
 
 void GLView::sltSequence( const QString & seqname )
 {
+	animGroups->setCurrentIndex( scene->animGroups.indexOf( seqname ) );
 	scene->setSequence( seqname );
 	time = scene->timeMin();
 	emit sigTime( time, scene->timeMin(), scene->timeMax() );
@@ -840,8 +848,20 @@ void GLView::advanceGears()
 	if ( aAnimate->isChecked() && aAnimPlay->isChecked() )
 	{
 		time += dT;
-		if ( aAnimLoop->isChecked() && time > scene->timeMax() )
-			time = scene->timeMin();
+		if ( time > scene->timeMax() )
+		{
+			if ( aAnimSwitch->isChecked() && ! scene->animGroups.isEmpty() )
+			{
+				int ix = scene->animGroups.indexOf( scene->animGroup );
+				if ( ++ix >= scene->animGroups.count() )
+					ix -= scene->animGroups.count();
+				sltSequence( scene->animGroups.value( ix ) );
+			}
+			else if ( aAnimLoop->isChecked() )
+			{
+				time = scene->timeMin();
+			}
+		}
 		
 		emit sigTime( time, scene->timeMin(), scene->timeMax() );
 		update();
@@ -1030,6 +1050,7 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
 	settings.setValue( "loop animation", aAnimLoop->isChecked() );
+	settings.setValue( "switch animation", aAnimSwitch->isChecked() );
 	settings.setValue( "bg color", bgcolor );
 	settings.setValue( "hl color", scene->hlcolor );
 	settings.setValue( "cull nodes by name", scene->expCull );
@@ -1057,6 +1078,7 @@ void GLView::restore( QSettings & settings )
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
 	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );
+	aAnimSwitch->setChecked( settings.value( "switch animation", true ).toBool() );
 	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
 	scene->hlcolor = settings.value( "hl color", QColor::fromRgbF( 0.0, 1.0, 0.0 ) ).value<QColor>();
 	scene->expCull = settings.value( "cull nodes by name", QRegExp(

@@ -95,6 +95,7 @@ public:
 	QAction * aAnimate;
 	QAction * aAnimPlay;
 	QAction * aAnimLoop;
+	QAction * aAnimSwitch;
 	
 	QActionGroup * grpSettings;
 	

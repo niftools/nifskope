@@ -339,8 +339,8 @@ public:
 		
 		float r = 0;
 		
-		if ( iValues.isValid() )
-			interpolate( r, iValues, ctrlTime( time ), flipLast );
+		if ( iData.isValid() )
+			interpolate( r, iData, "Data", ctrlTime( time ), flipLast );
 		else if ( flipDelta > 0 )
 			r = ctrlTime( time ) / flipDelta;
 		
@@ -351,7 +351,6 @@ public:
 	{
 		if ( Controller::update( nif, index ) )
 		{
-			iValues = nif->getIndex( iData, "Data" );
 			flipDelta = nif->get<float>( iBlock, "Delta" );
 			flipSlot = nif->get<int>( iBlock, "Texture Slot" );
 			
@@ -369,7 +368,6 @@ protected:
 	
 	int		flipLast;
 	
-	QPersistentModelIndex iValues;
 	QPersistentModelIndex iSources;
 };
 
@@ -387,7 +385,7 @@ public:
 		TexturingProperty::TexDesc * tex = & target->textures[ texSlot & 7 ];
 		
 		float val;
-		if ( interpolate( val, iValues, ctrlTime( time ), lX ) )
+		if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) )
 		{
 			switch ( texOP )
 			{
@@ -414,7 +412,6 @@ public:
 	{
 		if ( Controller::update( nif, index ) )
 		{
-			iValues = nif->getIndex( iData, "Data" );
 			texSlot = nif->get<int>( iBlock, "Texture Slot" );
 			texOP = nif->get<int>( iBlock, "Operation" );
 			return true;
@@ -424,8 +421,6 @@ public:
 	
 protected:
 	QPointer<TexturingProperty> target;
-	
-	QPersistentModelIndex iValues;
 	
 	int		texSlot;
 	int		texOP;
@@ -511,7 +506,7 @@ public:
 		if ( ! ( flags.controller.active && target ) )
 			return;
 		
-		interpolate( target->alpha, iAlpha, ctrlTime( time ), lAlpha );
+		interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
 		
 		if ( target->alpha < 0 )
 			target->alpha = 0;
@@ -519,11 +514,50 @@ public:
 			target->alpha = 1;
 	}
 	
+protected:
+	QPointer<MaterialProperty> target;
+	
+	int lAlpha;
+};
+
+class MaterialColorController : public Controller
+{
+public:
+	MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
+		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient ) {}
+	
+	void update( float time )
+	{
+		if ( ! ( flags.controller.active && target ) )
+			return;
+		
+		Vector3 v3;
+		interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
+		
+		Color3 color( v3 );
+		
+		switch ( tColor )
+		{
+			case tAmbient:
+				target->ambient = color;
+				break;
+			case tDiffuse:
+				target->diffuse = color;
+				break;
+			case tSpecular:
+				target->specular = color;
+				break;
+			case tSelfIllum:
+				target->emissive = color;
+				break;
+		}
+	}
+
 	bool update( const NifModel * nif, const QModelIndex & index )
 	{
 		if ( Controller::update( nif, index ) )
 		{
-			iAlpha = nif->getIndex( iData, "Data" );
+			tColor = nif->get<int>( iBlock, "Target Color" );
 			return true;
 		}
 		return false;
@@ -532,9 +566,16 @@ public:
 protected:
 	QPointer<MaterialProperty> target;
 	
-	QPersistentModelIndex iAlpha;
+	int lColor;
+	int tColor;
 	
-	int lAlpha;
+	enum {
+		tAmbient = 0,
+		tDiffuse = 1,
+		tSpecular = 2,
+		tSelfIllum = 3
+	};
+	
 };
 
 void MaterialProperty::setController( const NifModel * nif, const QModelIndex & iController )
@@ -542,6 +583,12 @@ void MaterialProperty::setController( const NifModel * nif, const QModelIndex & 
 	if ( nif->itemName( iController ) == "NiAlphaController" )
 	{
 		Controller * ctrl = new AlphaController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+	else if ( nif->itemName( iController ) == "NiMaterialColorController" )
+	{
+		Controller * ctrl = new MaterialColorController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}

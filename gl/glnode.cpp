@@ -88,7 +88,7 @@ public:
 	
 protected:
 	QPointer<Node> target;
-   QPointer<TransformInterpolator> interpolator;
+	QPointer<TransformInterpolator> interpolator;
 };
 
 class MultiTargetTransformController : public Controller
@@ -137,6 +137,12 @@ public:
 			}
 			return true;
 		}
+		
+		foreach ( TransformTarget tt, extraTargets )
+		{
+			// TODO: update the interpolators
+		}
+		
 		return false;
 	}
 	
@@ -252,6 +258,10 @@ public:
 						QString proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
 						idx = nif->getIndex( iCB, "Controller Type Offset" );
 						QString ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						idx = nif->getIndex( iCB, "Variable Offset 1" );
+						QString var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						idx = nif->getIndex( iCB, "Variable Offset 2" );
+						QString var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
 						
 						Node * node = target->findChild( nodename );
 						if ( ! node )
@@ -269,30 +279,7 @@ public:
 							}
 						}
 						
-						Controllable * controllable = node;
-						if ( proptype != "<empty>" && ! proptype.isEmpty() )
-						{
-							// TODO: find the right property
-							continue;
-						}
-						
-						Controller * ctrl = 0;
-						foreach ( Controller * c, controllable->controllers )
-						{
-							if ( c->typeId() == ctrltype )
-							{
-								if ( ctrl == 0 )
-								{
-									ctrl = c;
-								}
-								else
-								{
-									ctrl = 0;
-									// TODO: eval var1 + var2 offset to determine which controller is targeted
-									break;
-								}
-							}
-						}
+						Controller * ctrl = node->findController( proptype, ctrltype, var1, var2 );
 						if ( ctrl )
 						{
 							ctrl->start = start;
@@ -513,6 +500,23 @@ void Node::clear()
 	
 	children.clear();
 	properties.clear();
+}
+
+Controller * Node::findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 )
+{
+	if ( proptype != "<empty>" && ! proptype.isEmpty() )
+	{
+		foreach ( Property * prp, properties.list() )
+		{
+			if ( prp->typeId() == proptype )
+			{
+				return prp->findController( ctrltype, var1, var2 );
+			}
+		}
+		return 0;
+	}
+	
+	return Controllable::findController( ctrltype, var1, var2 );
 }
 
 void Node::update( const NifModel * nif, const QModelIndex & index )

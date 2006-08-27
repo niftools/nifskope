@@ -690,8 +690,9 @@ class Color3
 {
 public:
 	Color3() { rgb[0] = rgb[1] = rgb[2] = 1.0; }
-	explicit Color3( const QColor & c ) { fromQColor( c ); }
 	Color3( float r, float g, float b ) { setRGB( r, g, b ); }
+	explicit Color3( const QColor & c ) { fromQColor( c ); }
+	explicit Color3( const Vector3 & v ) { fromVector3( v ); }
 	
 	float & operator[]( unsigned int i )
 	{
@@ -760,6 +761,13 @@ public:
 		rgb[0] = c.redF();
 		rgb[1] = c.greenF();
 		rgb[2] = c.blueF();
+	}
+	
+	void fromVector3( const Vector3 & v )
+	{
+		rgb[0] = v[0];
+		rgb[1] = v[1];
+		rgb[2] = v[2];
 	}
 	
 	const float * data() const { return rgb; }
