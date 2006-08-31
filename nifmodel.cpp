@@ -366,6 +366,41 @@ void NifModel::moveNiBlock( int src, int dst )
 	emit linksChanged();
 }
 
+QMap<qint32,qint32> NifModel::moveAllNiBlocks( NifModel * targetnif )
+{
+	int bcnt = getBlockCount();
+	
+	QMap<qint32,qint32> map;
+	
+	beginRemoveRows( QModelIndex(), 1, bcnt );
+	targetnif->beginInsertRows( QModelIndex(), targetnif->getBlockCount(), targetnif->getBlockCount() + bcnt - 1 );
+	
+	for ( int i = 0; i < bcnt; i++ )
+	{
+		map.insert( i, targetnif->root->insertChild( root->takeChild( 1 ), targetnif->root->childCount() - 1 ) - 1 );
+	}
+	
+	endRemoveRows();
+	targetnif->endInsertRows();
+	
+	for ( int i = 0; i < bcnt; i++ )
+	{
+		targetnif->mapLinks( targetnif->root->child( targetnif->getBlockCount() - i ), map );
+	}
+	
+	updateLinks();
+	updateHeader();
+	updateFooter();
+	emit linksChanged();
+	
+	targetnif->updateLinks();
+	targetnif->updateHeader();
+	targetnif->updateFooter();
+	emit targetnif->linksChanged();
+	
+	return map;
+}
+
 void NifModel::reorderBlocks( const QVector<qint32> & order )
 {
 	if ( getBlockCount() <= 1 )

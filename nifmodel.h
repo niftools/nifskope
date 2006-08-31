@@ -100,6 +100,8 @@ public:
 	static bool isNiBlock( const QString & name );
 	// reorders the blocks according to a list of new block numbers
 	void reorderBlocks( const QVector<qint32> & order );
+	// moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
+	QMap<qint32,qint32> moveAllNiBlocks( NifModel * targetnif );
 	
 	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
 	
