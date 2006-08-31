@@ -1,11 +1,17 @@
 #include "../spellbook.h"
 
+#include "skeleton.h"
+
 #include "../gl/gltools.h"
 
 #include "../NvTriStrip/qtwrapper.h"
 
 #include <QFile>
+#include <QGridLayout>
+#include <QLabel>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QSpinBox>
 
 #define SKEL_DAT ":/res/spells/skel.dat"
 
@@ -242,8 +248,23 @@ public:
 		return false;
 	}
 	
+	typedef QPair<int,float> boneweight;
+	
+	typedef struct {
+		QList<int> bones;
+		QVector<Triangle> triangles;
+	} Partition;
+	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
 	{
+		SkinPartitionDialog dlg;
+		
+		if ( dlg.exec() != QDialog::Accepted )
+			return iBlock;
+		
+		int maxBonesPerPartition = dlg.maxBonesPerPartition();
+		int maxBonesPerVertex = dlg.maxBonesPerVertex();
+		
 		QPersistentModelIndex iShape = iBlock;
 		try
 		{
@@ -258,8 +279,6 @@ public:
 			}
 			
 			// read in the weights from NiSkinData
-			
-			typedef QPair<int,float> boneweight;
 			
 			QVector< QList< boneweight > > weights( nif->get<int>( iData, "Num Vertices" ) );
 			
@@ -294,88 +313,180 @@ public:
 				throw QString( "bad NiSkinData - some vertices have no weights at all" );
 			
 			// official skin partitions have 4 weights per vertex. let's make sure we do the same
-			if ( maxBones <= 4 )
-				maxBones = 4;
+			if ( maxBones <= maxBonesPerVertex )
+				maxBones = maxBonesPerVertex;
 			else
 				throw QString( "Too many bones per vertex.<br>Consider reskinning the mesh with not more than four weights per vertex." );
 			
-			// strippify the triangles
+			// split the triangles into partitions
 			
-			QVector<Triangle> triangles = nif->getArray<Triangle>( iData, "Triangles" );
-			QList< QVector<quint16> > strips = strippify( triangles );
-			int numTriangles = 0;
-			foreach ( QVector<quint16> strip, strips )
-				numTriangles += strip.count() - 2;
+			QList<Triangle> triangles = nif->getArray<Triangle>( iData, "Triangles" ).toList();
+			
+			QList<Partition> parts;
+			
+			while ( ! triangles.isEmpty() )
+			{
+				Partition part;
+				
+				QMutableListIterator<Triangle> it( triangles );
+				while ( it.hasNext() )
+				{
+					Triangle & tri = it.next();
+					
+					QList<int> tribones;
+					for ( int c = 0; c < 3; c++ )
+					{
+						foreach ( boneweight bw, weights[tri[c]] )
+						{
+							if ( ! tribones.contains( bw.first ) )
+								tribones.append( bw.first );
+						}
+					}
+					
+					if ( part.bones.isEmpty() || containsBones( part.bones, tribones ) )
+					{
+						part.bones = mergeBones( part.bones, tribones );
+						part.triangles.append( tri );
+						it.remove();
+					}
+				}
+				
+				parts.append( part );
+			}
+			
+			//qWarning() << parts.count() << "small partitions";
+			
+			// merge partitions
+			
+			bool merged;
+			do
+			{
+				merged = false;
+				for ( int p1 = 0; p1 < parts.count() && ! merged; p1++ )
+				{
+					for ( int p2 = p1+1; p2 < parts.count() && ! merged; p2++ )
+					{
+						QList<int> mergedBones = mergeBones( parts[p1].bones, parts[p2].bones );
+						if ( mergedBones.count() < maxBonesPerPartition )
+						{
+							parts[p1].bones = mergedBones;
+							parts[p1].triangles << parts[p2].triangles;
+							parts.removeAt( p2 );
+							merged = true;
+						}
+					}
+				}
+			}
+			while ( merged );
+			
+			//qWarning() << parts.count() << "partitions";
 			
 			// start writing NiSkinPartition
 			
-			nif->set<int>( iSkinPart, "Num Skin Partition Blocks", 1 );
+			nif->set<int>( iSkinPart, "Num Skin Partition Blocks", parts.count() );
 			nif->updateArray( iSkinPart, "Skin Partition Blocks" );
-			QModelIndex iPart = nif->getIndex( iSkinPart, "Skin Partition Blocks" ).child( 0, 0 );
 			
-			nif->set<int>( iPart, "Num Vertices", weights.count() );
-			nif->set<int>( iPart, "Num Triangles", numTriangles );
-			nif->set<int>( iPart, "Num Bones", qMax( numBones, maxBones ) );
-			nif->set<int>( iPart, "Num Strips", strips.count() );
-			nif->set<int>( iPart, "Num Weights Per Vertex", maxBones );
-			
-			// fill in bone map
-			
-			QModelIndex iBoneMap = nif->getIndex( iPart, "Bones" );
-			nif->updateArray( iBoneMap );
-			for ( int bone = 0; bone < nif->rowCount( iBoneMap ); bone++ )
-				nif->set<int>( iBoneMap.child( bone, 0 ), bone < numBones ? bone : 0 );
-			
-			// vertex map (not needed i thought, but nvidia cards seem to rely on it)
-			
-			nif->set<int>( iPart, "Has Vertex Map", 1 );
-			QModelIndex iVertexMap = nif->getIndex( iPart, "Vertex Map" );
-			nif->updateArray( iVertexMap );
-			for ( int vertex = 0; vertex < nif->rowCount( iVertexMap ); vertex++ )
-				nif->set<int>( iVertexMap.child( vertex, 0 ), vertex );
-			
-			// fill in vertex weights
-			
-			nif->set<int>( iPart, "Has Vertex Weights", 1 );
-			QModelIndex iVWeights = nif->getIndex( iPart, "Vertex Weights" );
-			nif->updateArray( iVWeights );
-			for ( int v = 0; v < nif->rowCount( iVWeights ); v++ )
+			for ( int p = 0; p < parts.count(); p++ )
 			{
-				QModelIndex iVertex = iVWeights.child( v, 0 );
-				nif->updateArray( iVertex );
-				QList< boneweight > list = weights.value( v );
-				for ( int b = 0; b < maxBones; b++ )
-					nif->set<float>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].second : 0.0 );
-			}
-			
-			// write the strips
-			
-			nif->set<int>( iPart, "Has Strips", 1 );
-			QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
-			nif->updateArray( iStripLengths );
-			for ( int s = 0; s < nif->rowCount( iStripLengths ); s++ )
-				nif->set<int>( iStripLengths.child( s, 0 ), strips.value( s ).count() );
-			
-			QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
-			nif->updateArray( iStrips );
-			for ( int s = 0; s < nif->rowCount( iStrips ); s++ )
-			{
-				nif->updateArray( iStrips.child( s, 0 ) );
-				nif->setArray<quint16>( iStrips.child( s, 0 ), strips.value( s ) );
-			}
-			
-			// fill in vertex bones
-			
-			nif->set<int>( iPart, "Has Bone Indices", 1 );
-			QModelIndex iVBones = nif->getIndex( iPart, "Bone Indices" );
-			nif->updateArray( iVBones );
-			for ( int v = 0; v < nif->rowCount( iVBones ); v++ )
-			{
-				QModelIndex iVertex = iVBones.child( v, 0 );
-				nif->updateArray( iVertex );
-				QList< boneweight > list = weights.value( v );
-				for ( int b = 0; b < maxBones; b++ )
-					nif->set<int>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].first : 0 );
+				QModelIndex iPart = nif->getIndex( iSkinPart, "Skin Partition Blocks" ).child( p, 0 );
+				
+				QList<int> bones = parts[p].bones;
+				qSort( bones );
+				
+				QVector<Triangle> triangles = parts[p].triangles;
+				
+				QVector<int> vertices;
+				foreach ( Triangle tri, triangles )
+				{
+					for ( int t = 0; t < 3; t++ )
+					{
+						if ( ! vertices.contains( tri[t] ) )
+							vertices.append( tri[t] );
+					}
+				}
+				qSort( vertices );
+				
+				// map the vertices
+				
+				for ( int tri = 0; tri < triangles.count(); tri++ )
+				{
+					for ( int t = 0; t < 3; t++ )
+					{
+						triangles[tri][t] = vertices.indexOf( triangles[tri][t] );
+					}
+				}
+				
+				// strippify the triangles
+				
+				QList< QVector<quint16> > strips = strippify( triangles );
+				int numTriangles = 0;
+				foreach ( QVector<quint16> strip, strips )
+					numTriangles += strip.count() - 2;
+				
+				// fill in counts
+				
+				nif->set<int>( iPart, "Num Vertices", vertices.count() );
+				nif->set<int>( iPart, "Num Triangles", numTriangles );
+				nif->set<int>( iPart, "Num Bones", bones.count() );
+				nif->set<int>( iPart, "Num Strips", strips.count() );
+				nif->set<int>( iPart, "Num Weights Per Vertex", maxBones );
+				
+				// fill in bone map
+				
+				QModelIndex iBoneMap = nif->getIndex( iPart, "Bones" );
+				nif->updateArray( iBoneMap );
+				nif->setArray<int>( iBoneMap, bones.toVector() );
+				
+				// fill in vertex map
+				
+				nif->set<int>( iPart, "Has Vertex Map", 1 );
+				QModelIndex iVertexMap = nif->getIndex( iPart, "Vertex Map" );
+				nif->updateArray( iVertexMap );
+				nif->setArray<int>( iVertexMap, vertices );
+				
+				// fill in vertex weights
+				
+				nif->set<int>( iPart, "Has Vertex Weights", 1 );
+				QModelIndex iVWeights = nif->getIndex( iPart, "Vertex Weights" );
+				nif->updateArray( iVWeights );
+				for ( int v = 0; v < nif->rowCount( iVWeights ); v++ )
+				{
+					QModelIndex iVertex = iVWeights.child( v, 0 );
+					nif->updateArray( iVertex );
+					QList< boneweight > list = weights.value( vertices[v] );
+					for ( int b = 0; b < maxBones; b++ )
+						nif->set<float>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].second : 0.0 );
+				}
+				
+				// write the strips
+				
+				nif->set<int>( iPart, "Has Strips", 1 );
+				QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
+				nif->updateArray( iStripLengths );
+				for ( int s = 0; s < nif->rowCount( iStripLengths ); s++ )
+					nif->set<int>( iStripLengths.child( s, 0 ), strips.value( s ).count() );
+				
+				QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
+				nif->updateArray( iStrips );
+				for ( int s = 0; s < nif->rowCount( iStrips ); s++ )
+				{
+					nif->updateArray( iStrips.child( s, 0 ) );
+					nif->setArray<quint16>( iStrips.child( s, 0 ), strips.value( s ) );
+				}
+				
+				// fill in vertex bones
+				
+				nif->set<int>( iPart, "Has Bone Indices", 1 );
+				QModelIndex iVBones = nif->getIndex( iPart, "Bone Indices" );
+				nif->updateArray( iVBones );
+				for ( int v = 0; v < nif->rowCount( iVBones ); v++ )
+				{
+					QModelIndex iVertex = iVBones.child( v, 0 );
+					nif->updateArray( iVertex );
+					QList< boneweight > list = weights.value( vertices[v] );
+					for ( int b = 0; b < maxBones; b++ )
+						nif->set<int>( iVertex.child( b, 0 ), list.count() > b ? bones.indexOf( list[ b ].first ) : 0 );
+				}
 			}
 			
 			// done
@@ -384,13 +495,95 @@ public:
 		}
 		catch ( QString err )
 		{
-			QMessageBox::warning( 0, "NifSkope", err );
+			if ( ! err.isEmpty() )
+				QMessageBox::warning( 0, "NifSkope", err );
 			return iShape;
 		}
+	}
+	
+	static QList<int> mergeBones( QList<int> a, QList<int> b )
+	{
+		foreach ( int c, b )
+		{
+			if ( ! a.contains( c ) )
+			{
+				a.append( c );
+			}
+		}
+		return a;
+	}
+	
+	static bool containsBones( QList<int> a, QList<int> b )
+	{
+		foreach ( int c, b )
+		{
+			if ( ! a.contains( c ) )
+				return false;
+		}
+		return true;
 	}
 };
 
 REGISTER_SPELL( spSkinPartition )
+
+
+SkinPartitionDialog::SkinPartitionDialog() : QDialog()
+{
+	spnVert = new QSpinBox( this );
+	spnVert->setMinimum( 1 );
+	spnVert->setMaximum( 8 );
+	spnVert->setValue( 4 );
+	connect( spnVert, SIGNAL( valueChanged( int ) ), this, SLOT( changed() ) );
+	
+	spnPart = new QSpinBox( this );
+	spnPart->setMinimum( 3*4 );
+	spnPart->setMaximum( 40 );
+	spnPart->setValue( 20 );
+	
+	QLabel * labVert = new QLabel( this );
+	labVert->setText(
+	"<b>Number of Bones per Vertex</b><br>"
+	"Hint: Most games use 4 bones per vertex"
+	);
+	
+	QLabel * labPart = new QLabel( this );
+	labPart->setText(
+	"<b>Number of Bones per Partition</b><br>"
+	"Hint: 20 is a good choice<br>"
+	"Note: this value must not be less than 3 * Bones per Vertex"
+	);
+	
+	QPushButton * btOk = new QPushButton( this );
+	btOk->setText( "Ok" );
+	connect( btOk, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	
+	QPushButton * btCancel = new QPushButton( this );
+	btCancel->setText( "Cancel" );
+	connect( btCancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	
+	QGridLayout * grid = new QGridLayout( this );
+	grid->addWidget( labVert, 0, 0 );
+	grid->addWidget( labPart, 1, 0 );
+	grid->addWidget( spnVert, 0, 1 );
+	grid->addWidget( spnPart, 1, 1 );
+	grid->addWidget( btOk, 2, 0 );
+	grid->addWidget( btCancel, 2, 1 );
+}
+
+void SkinPartitionDialog::changed()
+{
+	spnPart->setMinimum( spnVert->value() * 3 );
+}
+
+int SkinPartitionDialog::maxBonesPerVertex()
+{
+	return spnVert->value();
+}
+
+int SkinPartitionDialog::maxBonesPerPartition()
+{
+	return spnPart->value();
+}
 
 
 class spFixBoneBounds : public Spell
@@ -430,6 +623,9 @@ public:
 		QModelIndex iBoneDataList = nif->getIndex( iSkinData, "Bone List" );
 		for ( int b = 0; b < nif->rowCount( iBoneDataList ); b++ )
 		{
+			Vector3 mn;
+			Vector3 mx;
+			
 			Vector3 center;
 			float radius = 0;
 			
@@ -437,27 +633,30 @@ public:
 			for ( int w = 0; w < nif->rowCount( iWeightList ); w++ )
 			{
 				int v = nif->get<int>( iWeightList.child( w, 0 ), "Index" );
-				center += verts.value( v );
+				if ( w == 0 )
+				{
+					mn = verts.value( v );
+					mx = verts.value( v );
+				}
+				else
+				{
+					mn.boundMin( verts.value( v ) );
+					mx.boundMax( verts.value( v ) );
+				}
 			}
 			
-			if ( nif->rowCount( iWeightList ) > 0 )
-				center /= nif->rowCount( iWeightList );
-			
-			for ( int w = 0; w < nif->rowCount( iWeightList ); w++ )
-			{
-				int v = nif->get<int>( iWeightList.child( w, 0 ), "Index" );
-				float r = ( center - verts.value( v ) ).length();
-				if ( r > radius )
-					radius = r;
-			}
-			
-			center = meshTrans * center;
+			mn = meshTrans * mn;
+			mx = meshTrans * mx;
 			
 			Transform bt( boneTrans[b] );
-			center = bt.rotation.inverted() * ( center - bt.translation ) / bt.scale;
+			mn = bt.rotation.inverted() * ( mn - bt.translation ) / bt.scale;
+			mx = bt.rotation.inverted() * ( mx - bt.translation ) / bt.scale;
 			
-			nif->set<Vector3>( iBoneDataList.child( b, 0 ), "Center", center );
-			nif->set<float>( iBoneDataList.child( b, 0 ), "Radius", radius );
+			center = ( mn + mx ) / 2;
+			radius = qMax( ( mn - center ).length(), ( mx - center ).length() );
+			
+			nif->set<Vector3>( iBoneDataList.child( b, 0 ), "Bounding Sphere Offset", center );
+			nif->set<float>( iBoneDataList.child( b, 0 ), "Bounding Sphere Radius", radius );
 		}
 		
 		return iSkinData;
@@ -465,4 +664,4 @@ public:
 	
 };
 
-// REGISTER_SPELL( spFixBoneBounds )
+REGISTER_SPELL( spFixBoneBounds )
