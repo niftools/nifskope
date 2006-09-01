@@ -257,14 +257,6 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
 	{
-		SkinPartitionDialog dlg;
-		
-		if ( dlg.exec() != QDialog::Accepted )
-			return iBlock;
-		
-		int maxBonesPerPartition = dlg.maxBonesPerPartition();
-		int maxBonesPerVertex = dlg.maxBonesPerVertex();
-		
 		QPersistentModelIndex iShape = iBlock;
 		try
 		{
@@ -272,11 +264,6 @@ public:
 			QPersistentModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 			QPersistentModelIndex iSkinData = nif->getBlock( nif->getLink( iSkinInst, "Data" ), "NiSkinData" );
 			QModelIndex iSkinPart = nif->getBlock( nif->getLink( iSkinInst, "Skin Partition" ), "NiSkinPartition" );
-			if ( ! iSkinPart.isValid() )
-			{
-				iSkinPart = nif->insertNiBlock( "NiSkinPartition", nif->getBlockNumber( iSkinData ) + 1 );
-				nif->setLink( iSkinInst, "Skin Partition", nif->getBlockNumber( iSkinPart ) );
-			}
 			
 			// read in the weights from NiSkinData
 			
@@ -312,11 +299,58 @@ public:
 			if ( minBones <= 0 )
 				throw QString( "bad NiSkinData - some vertices have no weights at all" );
 			
-			// official skin partitions have 4 weights per vertex. let's make sure we do the same
+			// query max bones per vertex/partition
+			
+			SkinPartitionDialog dlg( maxBones );
+			
+			if ( dlg.exec() != QDialog::Accepted )
+				return iBlock;
+			
+			int maxBonesPerPartition = dlg.maxBonesPerPartition();
+			int maxBonesPerVertex = dlg.maxBonesPerVertex();
+			
+			// reduce vertex influences if necessary
+			
 			if ( maxBones <= maxBonesPerVertex )
+			{
 				maxBones = maxBonesPerVertex;
+			}
 			else
-				throw QString( "Too many bones per vertex.<br>Consider reskinning the mesh with not more than four weights per vertex." );
+			{
+				QMutableVectorIterator< QList< boneweight > > it( weights );
+				int c = 0;
+				while ( it.hasNext() )
+				{
+					QList< boneweight > & lst = it.next();
+					
+					if ( lst.count() > maxBonesPerVertex )
+						c++;
+					
+					while ( lst.count() > maxBonesPerVertex )
+					{
+						int j = 0;
+						float weight = 1.0;
+						for ( int i = 0; i < lst.count(); i++ )
+						{
+							if ( lst[i].second < weight )
+								j = i;
+						}
+						lst.removeAt( j );
+					}
+					
+					float totalWeight = 0;
+					foreach ( boneweight bw, lst )
+					{
+						totalWeight += bw.second;
+					}
+					
+					for ( int b = 0; b < lst.count(); b++ )
+					{	// normalize
+						lst[b].second /= totalWeight;
+					}
+				}
+				qWarning() << "reduced" << c << "vertices to" << maxBonesPerVertex << "bone influences (maximum number of bones per vertex was" << maxBones << ")";
+			}
 			
 			// split the triangles into partitions
 			
@@ -341,6 +375,11 @@ public:
 							if ( ! tribones.contains( bw.first ) )
 								tribones.append( bw.first );
 						}
+					}
+					
+					if ( tribones.count() > maxBonesPerPartition )
+					{
+						throw QString( "ohno! triangles with more than %1 bones detected - bailing out..." ).arg( maxBonesPerPartition );
 					}
 					
 					if ( part.bones.isEmpty() || containsBones( part.bones, tribones ) )
@@ -380,6 +419,14 @@ public:
 			while ( merged );
 			
 			//qWarning() << parts.count() << "partitions";
+			
+			// create the NiSkinPartition if it doesn't exist yet
+			
+			if ( ! iSkinPart.isValid() )
+			{
+				iSkinPart = nif->insertNiBlock( "NiSkinPartition", nif->getBlockNumber( iSkinData ) + 1 );
+				nif->setLink( iSkinInst, "Skin Partition", nif->getBlockNumber( iSkinPart ) );
+			}
 			
 			// start writing NiSkinPartition
 			
@@ -527,7 +574,7 @@ public:
 REGISTER_SPELL( spSkinPartition )
 
 
-SkinPartitionDialog::SkinPartitionDialog() : QDialog()
+SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 {
 	spnVert = new QSpinBox( this );
 	spnVert->setMinimum( 1 );
@@ -536,21 +583,24 @@ SkinPartitionDialog::SkinPartitionDialog() : QDialog()
 	connect( spnVert, SIGNAL( valueChanged( int ) ), this, SLOT( changed() ) );
 	
 	spnPart = new QSpinBox( this );
-	spnPart->setMinimum( 3*4 );
+	spnPart->setMinimum( 4 );
 	spnPart->setMaximum( 40 );
 	spnPart->setValue( 20 );
 	
 	QLabel * labVert = new QLabel( this );
 	labVert->setText(
 	"<b>Number of Bones per Vertex</b><br>"
-	"Hint: Most games use 4 bones per vertex"
+	"Hint: Most games use 4 bones per vertex<br>"
+	"Note: If the mesh contains vertices which are<br>"
+	"influenced by more than x bones the number of<br>"
+	"influences will be reduced for these vertices<br>"
 	);
 	
 	QLabel * labPart = new QLabel( this );
 	labPart->setText(
 	"<b>Number of Bones per Partition</b><br>"
-	"Hint: 20 is a good choice<br>"
-	"Note: this value must not be less than 3 * Bones per Vertex"
+	"Hint: Oblivion uses 20 bones pp<br>"
+	"CivIV uses 4??"
 	);
 	
 	QPushButton * btOk = new QPushButton( this );
@@ -572,7 +622,7 @@ SkinPartitionDialog::SkinPartitionDialog() : QDialog()
 
 void SkinPartitionDialog::changed()
 {
-	spnPart->setMinimum( spnVert->value() * 3 );
+	spnPart->setMinimum( spnVert->value() );
 }
 
 int SkinPartitionDialog::maxBonesPerVertex()

@@ -9,7 +9,7 @@ class SkinPartitionDialog : public QDialog
 {
 	Q_OBJECT
 public:
-	SkinPartitionDialog();
+	SkinPartitionDialog( int maxInfluences );
 	
 	int maxBonesPerPartition();
 	int maxBonesPerVertex();
@@ -20,6 +20,8 @@ protected slots:
 protected:
 	QSpinBox * spnPart;
 	QSpinBox * spnVert;
+	
+	int maxInfluences;
 };
 
 #endif
