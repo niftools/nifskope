@@ -101,11 +101,17 @@ public:
 		for ( qint32 n = 0; n < nif->getBlockCount(); n++ )
 		{
 			sortwrapper[n].blocknr = n;
-			if ( isImportantHvkBlock( nif, nif->getBlock( n ) ) )
+			if ( isHvkBlock( nif, nif->getBlock( n ) ) )
 			{
 				QStack<qint32> stack;
 				stack.push( n );
 				setup( nif, stack, sortwrapper );
+			}
+			else if ( nif->inherits( nif->getBlock( n ), "AbhkConstraint" ) )
+			{
+				QStack<qint32> stack;
+				stack.push( n );
+				setupConstraint( nif, stack, sortwrapper );
 			}
 		}
 		
@@ -139,7 +145,7 @@ public:
 		return QModelIndex();
 	}
 
-	static bool isImportantHvkBlock( const NifModel * nif, const QModelIndex & iBlock )
+	static bool isHvkBlock( const NifModel * nif, const QModelIndex & iBlock )
 	{
 		return nif->inherits( iBlock, "bhkShape" ) || nif->inherits( iBlock, "NiCollisionObject" ) || nif->inherits( iBlock, "NiTriBasedGeomData" );
 	}
@@ -148,7 +154,7 @@ public:
 	{
 		foreach ( qint32 link, nif->getChildLinks( stack.top() ) )
 		{
-			if ( isImportantHvkBlock( nif, nif->getBlock( link ) ) )
+			if ( isHvkBlock( nif, nif->getBlock( link ) ) )
 			{
 				foreach ( qint32 x, stack )
 				{
@@ -161,6 +167,23 @@ public:
 				stack.push( link );
 				setup( nif, stack, sortwrapper );
 				stack.pop();
+			}
+		}
+	}
+	
+	static void setupConstraint( const NifModel * nif, QStack<qint32> & stack, QVector<wrap> & sortwrapper )
+	{
+		foreach ( qint32 link, nif->getParentLinks( stack.top() ) )
+		{
+			if ( isHvkBlock( nif, nif->getBlock( link ) ) )
+			{
+				foreach ( qint32 x, stack )
+				{
+					if ( ! sortwrapper[ link ].parents.contains( x ) )
+						sortwrapper[ link ].parents.append( x );
+					if ( ! sortwrapper[ x ].children.contains( link ) )
+						sortwrapper[ x ].children.append( link );
+				}
 			}
 		}
 	}
