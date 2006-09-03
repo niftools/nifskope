@@ -1207,6 +1207,19 @@ bool NifModel::save( QIODevice & device, const QModelIndex & index ) const
 	return ( item && index.isValid() && index.model() == this && save( item, stream ) );
 }
 
+int NifModel::fileOffset( const QModelIndex & index ) const
+{
+	NifSStream stream( this );
+	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
+	if ( item && index.isValid() && index.model() == this )
+	{
+		int ofs = 0;
+		if ( fileOffset( root, item, stream, ofs ) )
+			return ofs;
+	}
+	return -1;
+}
+
 bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 {
 	if ( ! parent ) return false;
@@ -1265,6 +1278,30 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 		}
 	}
 	return true;
+}
+
+bool NifModel::fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const
+{
+	for ( int row = 0; row < parent->childCount(); row++ )
+	{
+		NifItem * child = parent->child( row );
+		if ( child == target )
+			return true;
+		
+		if ( evalCondition( child ) )
+		{
+			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
+			{
+				if ( fileOffset( child, target, stream, ofs ) )
+					return true;
+			}
+			else
+			{
+				ofs += stream.size( child->value() );
+			}
+		}
+	}
+	return false;
 }
 
 NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, int at )

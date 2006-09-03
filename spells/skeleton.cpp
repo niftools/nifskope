@@ -329,7 +329,7 @@ public:
 					while ( lst.count() > maxBonesPerVertex )
 					{
 						int j = 0;
-						float weight = 1.0;
+						float weight = lst.first().second;
 						for ( int i = 0; i < lst.count(); i++ )
 						{
 							if ( lst[i].second < weight )

@@ -81,3 +81,23 @@ public:
 };
 
 REGISTER_SPELL( spFollowLink )
+
+class spFileOffset : public Spell
+{
+public:
+	QString name() const { return "File Offset"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif && index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		int ofs = nif->fileOffset( index );
+		qWarning( QString( "estimated file offset is %1 (0x%2)" ).arg( ofs ).arg( ofs, 0, 16 ).toAscii() );
+		return index;
+	}
+};
+
+REGISTER_SPELL( spFileOffset )

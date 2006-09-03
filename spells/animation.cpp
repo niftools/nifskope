@@ -117,6 +117,8 @@ public:
 			nif->set<int>( iCtrlManager, "Num Controller Sequences", numSeq+1 );
 			nif->updateArray( iCtrlManager, "Controller Sequences" );
 			nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq );
+			iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
+			nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ) );
 			
 			return iRoot;
 		}
@@ -247,3 +249,18 @@ public:
 };
 
 REGISTER_SPELL( spAttachKf )
+
+class spConvertQuatsToEulers : public Spell
+{
+public:
+	QString name() const { return "Convert Quat- to ZYX-Rotations"; }
+	QString page() const { return "Animation"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iBlock = nif->getBlock( index, "NiKeyframeData" );
+		return iBlock.isValid() && nif->get<int>( iBlock, "Rotation Type" ) != 4;
+	}
+	
+	
+};

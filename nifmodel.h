@@ -65,6 +65,9 @@ public:
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32,qint32> & map );
 	bool loadHeaderOnly( const QString & fname );
 	
+	// this returns the the estimated file offset of the model index
+	int fileOffset( const QModelIndex & ) const;
+	
 	// checks if the nif pointed to by filepath contains the  specified block id
 	static bool checkForBlock( const QString & filepath, const QString & blockId );
 	
@@ -176,6 +179,7 @@ protected:
 
 	bool		load( NifItem * parent, NifIStream & stream, bool fast = true );
 	bool		save( NifItem * parent, NifOStream & stream ) const;
+	bool		fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
 	
 	bool		setItemValue( NifItem * item, const NifValue & v );
 	

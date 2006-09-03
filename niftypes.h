@@ -450,6 +450,14 @@ public:
 	{
 		memcpy( wxyz, identity, 16 );
 	}
+	Quat( float w, float x, float y, float z )
+	{
+		wxyz[0] = w;
+		wxyz[1] = x;
+		wxyz[2] = y;
+		wxyz[3] = z;
+	}
+	
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 4 );
@@ -995,6 +1003,7 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+	friend class NifSStream;
 };
 
 inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
@@ -1152,6 +1161,21 @@ public:
 private:
 	const BaseModel * model;
 	QIODevice * device;
+	
+	void init();
+	
+	bool bool32bit;
+};
+
+class NifSStream
+{
+public:
+	NifSStream( const BaseModel * n ) : model( n ) { init(); }
+	
+	int size( const NifValue & );
+	
+private:
+	const BaseModel * model;
 	
 	void init();
 	

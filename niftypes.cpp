@@ -995,3 +995,94 @@ bool NifOStream::write( const NifValue & val )
 	}
 	return false;
 }
+
+void NifSStream::init()
+{
+	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
+}
+
+int NifSStream::size( const NifValue & val )
+{
+	switch ( val.type() )
+	{
+		case NifValue::tBool:
+			if ( bool32bit )
+				return 4;
+			else
+				return 1;
+      case NifValue::tByte:
+			return 1;
+		case NifValue::tWord:
+		case NifValue::tShort:
+		case NifValue::tFlags:
+		case NifValue::tBlockTypeIndex:
+			return 2;
+		case NifValue::tStringOffset:
+		case NifValue::tInt:
+		case NifValue::tUInt:
+		case NifValue::tFileVersion:
+		case NifValue::tLink:
+		case NifValue::tUpLink:
+		case NifValue::tFloat:
+			return 4;
+		case NifValue::tVector3:
+			return 12;
+		case NifValue::tVector4:
+			return 16;
+		case NifValue::tTriangle:
+			return 6;
+		case NifValue::tQuat:
+		case NifValue::tQuatXYZW:
+			return 16;
+		case NifValue::tMatrix:
+			return 36;
+		case NifValue::tMatrix4:
+			return 64;
+		case NifValue::tVector2:
+			return 8;
+		case NifValue::tColor3:
+			return 12;
+		case NifValue::tColor4:
+			return 16;
+		case NifValue::tString:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			string.replace( "\\r", "\r" );
+			string.replace( "\\n", "\n" );
+			return 4 + string.size();
+		}
+		case NifValue::tShortString:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			string.replace( "\\r", "\r" );
+			string.replace( "\\n", "\n" );
+			if ( string.size() > 254 )	string.resize( 254 );
+			return 1 + string.size() + 1;
+		}
+		case NifValue::tText:
+		case NifValue::tFilePath:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			return 4 + string.size();
+		}
+		case NifValue::tHeaderString:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			return string.length() + 1;
+		}
+		case NifValue::tByteArray:
+		{
+			QByteArray * array = static_cast<QByteArray*>( val.val.data );
+			return 4 + array->count();
+		}
+		case NifValue::tStringPalette:
+		{
+			QByteArray * array = static_cast<QByteArray*>( val.val.data );
+			return 4 + array->count() + 4;
+		}
+		case NifValue::tNone:
+			return 0;
+	}
+	return 0;
+}
+
