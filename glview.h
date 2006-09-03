@@ -90,6 +90,7 @@ public:
 	QAction * aViewTop;
 	QAction * aViewFront;
 	QAction * aViewSide;
+	QAction * aViewFlip;
 	QAction * aViewPerspective;
 
 	QAction * aAnimate;

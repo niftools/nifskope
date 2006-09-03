@@ -38,9 +38,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.8.8 of NifSkope.
+This is version 0.9 of NifSkope.
 
 
+changes since 0.8.8:
+  - now plays embedded animation sequences (good examples are the doors and some traps from oblivion)
+  - thanks to tapzn for implementing bspline animation interpolators
+  - new spell: attach .kf
+    this spell takes an external animation sequence and attaches it to the nif
+	this way it's now possible to view the creature and character animations in NifSkope
+  - fixed havok sorter: now sorts constraints and bhkNiTriStripsShape too
+  - updated the skin partitioner: now automatically reduces vertex influences and splits large partitions into smaller parts
+	don't know if it's compatible with civ4 yet but it will do creature skins from oblivion
+  - some small tweaks:
+    paste branch now automatically parents ninode branches to the selected ninode
+	ipc over udp ensures that new NifSkope windows are allways opened in the same application instance
+	   (this makes the 'new window' workaround obsolete when copying and pasting between nifs on windows platform)
+	   note that this works by opening a local udp server socket. communication on this socket is
+	   limited to local host only. so it shouldn't be a security issue.
+ 
+  
 changes since 0.8.7:
   - havok blocks will be ordered automatically
   - some hot keys for the spells

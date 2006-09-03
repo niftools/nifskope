@@ -118,6 +118,12 @@ GLView::GLView()
 	aViewWalk->setShortcut( Qt::Key_F8 );
 	grpView->addAction( aViewWalk );
 	
+	aViewFlip = new QAction( "Flip", grpView );
+	aViewFlip->setToolTip( "Flip View from Front to Back, Top to Bottom, Side to Other Side" );
+	aViewFlip->setCheckable( true );
+	aViewFlip->setShortcut( Qt::Key_F10 );
+	grpView->addAction( aViewFlip );
+	
 	aViewPerspective = new QAction( "Perspective", grpView );
 	aViewPerspective->setToolTip( "Perspective View Transformation or Orthogonal View Transformation" );
 	aViewPerspective->setCheckable( true );
@@ -770,7 +776,7 @@ void GLView::viewAction( QAction * act )
 		aRotate->setChecked( false );
 	}
 
-	if ( ! act )
+	if ( ! act || act == aViewFlip )
 	{
 		act = checkedViewAction();
 	}
@@ -780,7 +786,10 @@ void GLView::viewAction( QAction * act )
 	
 	if ( act == aViewTop )
 	{
-		setRotation( 0, 0, 0 );
+		if ( aViewFlip->isChecked() )
+			setRotation( 180, 0, 0 );
+		else
+			setRotation( 0, 0, 0 );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( true );
 		aViewFront->setChecked( false );
@@ -788,7 +797,10 @@ void GLView::viewAction( QAction * act )
 	}
 	else if ( act == aViewFront )
 	{
-		setRotation( - 90, 0, 0 );
+		if ( aViewFlip->isChecked() )
+			setRotation( -90, 0, 180 );
+		else
+			setRotation( -90, 0, 0 );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( true );
@@ -796,7 +808,10 @@ void GLView::viewAction( QAction * act )
 	}
 	else if ( act == aViewSide )
 	{
-		setRotation( - 90, 0, 90 );
+		if ( aViewFlip->isChecked() )
+			setRotation( - 90, 0, - 90 );
+		else
+			setRotation( - 90, 0, 90 );
 		aViewWalk->setChecked( false );
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
