@@ -481,6 +481,9 @@ void NifValue::changeType( Type t )
 		case tStringPalette:
 			val.data = new QByteArray();
 			return;
+		case tStringOffset:
+			val.u32 = 0xffffffff;
+			return;
 		default:
 			val.u32 = 0;
 			return;
@@ -584,12 +587,12 @@ bool NifValue::fromString( const QString & s )
 		case tFlags:
 		case tStringOffset:
 		case tBlockTypeIndex:
-      case tShort:
+		case tShort:
 			val.u32 = 0;
 			val.u16 = s.toUInt( &ok );
 			return ok;
 		case tInt:
-      case tUInt:
+		case tUInt:
 			val.u32 = s.toUInt( &ok );
 			return ok;
 		case tLink:

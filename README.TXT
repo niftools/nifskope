@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9 of NifSkope.
+This is version 0.9.1 of NifSkope.
 
 
 changes since 0.8.8:
@@ -49,7 +49,6 @@ changes since 0.8.8:
 	this way it's now possible to view the creature and character animations in NifSkope
   - fixed havok sorter: now sorts constraints and bhkNiTriStripsShape too
   - updated the skin partitioner: now automatically reduces vertex influences and splits large partitions into smaller parts
-	don't know if it's compatible with civ4 yet but it will do creature skins from oblivion
   - some small tweaks:
     paste branch now automatically parents ninode branches to the selected ninode
 	ipc over udp ensures that new NifSkope windows are allways opened in the same application instance
