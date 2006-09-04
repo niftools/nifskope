@@ -60,8 +60,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
 
-GLView::GLView()
-	: QGLWidget()
+GLView::GLView( const QGLFormat & format )
+	: QGLWidget( format )
 {
 	setFocusPolicy( Qt::ClickFocus );
 	//setContextMenuPolicy( Qt::CustomContextMenu );
@@ -130,6 +130,13 @@ GLView::GLView()
 	aViewPerspective->setShortcut( Qt::Key_F9 );
 	grpView->addAction( aViewPerspective );
 	
+	
+	aAntiAliasing = new QAction( "&Anti Aliasing", this );
+	aAntiAliasing->setToolTip( "enable anti aliasing if available" );
+	aAntiAliasing->setCheckable( true );
+	aAntiAliasing->setChecked( format.sampleBuffers() );
+	connect( aAntiAliasing, SIGNAL( toggled( bool ) ), this, SLOT( changeAntiAliasing( bool ) ) );
+	addAction( aAntiAliasing );
 	
 	aShading = new QAction( "&Enable Shaders", this );
 	aShading->setToolTip( "enable shading" );
@@ -305,6 +312,22 @@ void GLView::updateShaders()
 	scene->updateShaders();
 	scene->shading = aShading->isChecked();
 	update();
+}
+
+void GLView::changeAntiAliasing( bool a )
+{
+	QSettings settings( "NifTools", "NifSkope" );
+	settings.setValue( "enable anti aliasing", a );
+	
+	QMessageBox::information( this, "NifSkope", "You'll need to restart NifSkope for this setting to take effect." );
+}
+
+GLView * GLView::create()
+{
+	QSettings settings( "NifTools", "NifSkope" );
+	QGLFormat fmt;
+	fmt.setSampleBuffers( settings.value( "enable anti aliasing", true ).toBool() );
+	return new GLView( fmt );
 }
 
 

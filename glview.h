@@ -55,7 +55,9 @@ class GLView : public QGLWidget
 	Q_OBJECT
 
 public:
-	GLView();
+	static GLView * create();
+	
+	GLView( const QGLFormat & format );
 	~GLView();
 	
 	QModelIndex indexAt( const QPoint & p );
@@ -113,6 +115,8 @@ public:
 	QAction * aRotate;
 	QAction * aBenchmark;
 	
+	QAction * aAntiAliasing;
+	
 	QAction * aTexFolder;
 	QAction * aBgColor;
 	QAction * aHlColor;
@@ -153,7 +157,6 @@ protected:
 	int  pickGL( int x, int y );
 	void resizeGL( int width, int height );
 	void glProjection( int x = -1, int y = -1 );
-
 	
 	void mousePressEvent( QMouseEvent * );
 	void mouseReleaseEvent( QMouseEvent * );
@@ -174,6 +177,8 @@ private slots:
 	
 	void checkActions();
 	void viewAction( QAction * );
+
+	void changeAntiAliasing( bool );
 
 private:
 	QAction * checkedViewAction() const;

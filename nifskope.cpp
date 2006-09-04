@@ -139,7 +139,7 @@ NifSkope::NifSkope() : QMainWindow()
 
 
 	// open gl
-	setCentralWidget( ogl = new GLView );
+	setCentralWidget( ogl = GLView::create() );
 	ogl->setNif( nif );
 	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
 			this, SLOT( select( const QModelIndex & ) ) );
