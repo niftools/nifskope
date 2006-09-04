@@ -82,6 +82,47 @@ BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b
 }
 
 
+SkinPartition::SkinPartition( const NifModel * nif, const QModelIndex & index )
+{
+	numWeightsPerVertex = nif->get<int>( index, "Num Weights Per Vertex" );
+	
+	vertexMap = nif->getArray<int>( index, "Vertex Map" );
+	
+	if ( vertexMap.isEmpty() )
+	{
+		vertexMap.resize( nif->get<int>( index, "Num Vertices" ) );
+		for ( int x = 0; x < vertexMap.count(); x++ )
+			vertexMap[x] = x;
+	}
+	
+	boneMap = nif->getArray<int>( index, "Bones" );
+	
+	QModelIndex iWeights = nif->getIndex( index, "Vertex Weights" );
+	QModelIndex iBoneIndices = nif->getIndex( index, "Bone Indices" );
+	
+	weights.resize( vertexMap.count() * numWeightsPerVertex );
+	
+	for ( int v = 0; v < vertexMap.count(); v++ )
+	{
+		for ( int w = 0; w < numWeightsPerVertex; w++ )
+		{
+			QModelIndex iw = iWeights.child( v, 0 ).child( w, 0 );
+			QModelIndex ib = iBoneIndices.child( v, 0 ).child( w, 0 );
+			
+			weights[ v * numWeightsPerVertex + w ].first = ( ib.isValid() ? nif->get<int>( ib ) : 0 );
+			weights[ v * numWeightsPerVertex + w ].second = ( iw.isValid() ? nif->get<float>( iw ) : 0 );
+		}
+	}
+	
+	QModelIndex iStrips = nif->getIndex( index, "Strips" );
+	for ( int s = 0; s < nif->rowCount( iStrips ); s++ )
+	{
+		tristrips << nif->getArray<quint16>( iStrips.child( s, 0 ) );
+	}
+	
+	triangles = nif->getArray<Triangle>( index, "Triangles" );
+}
+
 /*
  *  Bound Sphere
  */

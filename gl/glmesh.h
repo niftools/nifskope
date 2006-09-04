@@ -58,7 +58,7 @@ public:
 protected:	
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	
-	QPersistentModelIndex iData, iSkin, iSkinData, iTangentData;
+	QPersistentModelIndex iData, iSkin, iSkinData, iSkinPart, iTangentData;
 	bool upData, upSkin;
 	
 	QVector<Vector3> verts;
@@ -75,7 +75,9 @@ protected:
 	
 	int skelRoot;
 	Transform skelTrans;
+	QVector<int> bones;
 	QVector<BoneWeights> weights;
+	QVector<SkinPartition> partitions;
 	
 	QVector<Triangle> triangles;
 	QList< QVector<quint16> > tristrips;

@@ -84,6 +84,22 @@ public:
 	QVector<VertexWeight> weights;
 };
 
+class SkinPartition
+{
+public:
+	SkinPartition() { numWeightsPerVertex = 0; }
+	SkinPartition( const NifModel * nif, const QModelIndex & index );
+	
+	QVector<int> boneMap;
+	QVector<int> vertexMap;
+	
+	int numWeightsPerVertex;
+	QVector< QPair< int, float > > weights;
+	
+	QVector< Triangle > triangles;
+	QList< QVector< quint16 > > tristrips;
+};
+
 void drawAxes( Vector3 c, float axis );
 void drawBox( Vector3 a, Vector3 b );
 void drawCircle( Vector3 c, Vector3 n, float r, int sd = 16 );

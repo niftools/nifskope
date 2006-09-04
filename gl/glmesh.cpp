@@ -128,7 +128,7 @@ void Mesh::clear()
 {
 	Node::clear();
 
-	iData = iSkin = iSkinData = iTangentData = QModelIndex();
+	iData = iSkin = iSkinData = iSkinPart = iTangentData = QModelIndex();
 	
 	verts.clear();
 	norms.clear();
@@ -137,6 +137,8 @@ void Mesh::clear()
 	tangents.clear();
 	triangles.clear();
 	tristrips.clear();
+	weights.clear();
+	partitions.clear();
 	sortedTriangles.clear();
 	transVerts.clear();
 	transNorms.clear();
@@ -154,6 +156,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	upData |= ( iData == index ) || ( iTangentData == index );
 	upSkin |= ( iSkin == index );
 	upSkin |= ( iSkinData == index );
+	upSkin |= ( iSkinPart == index );
 	
 	if ( iBlock == index )
 	{
@@ -296,25 +299,32 @@ void Mesh::transform()
 	if ( upSkin )
 	{
 		upSkin = false;
+		weights.clear();		
+		partitions.clear();
 		
 		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), "NiSkinData" );
 		
 		skelRoot = nif->getLink( iSkin, "Skeleton Root" );
 		skelTrans = Transform( nif, iSkinData );
 		
-		QVector<int> bones;
-		QModelIndex idxBones = nif->getIndex( iSkin, "Bones" );
-		if ( idxBones.isValid() )
-			for ( int b = 0; b < nif->rowCount( idxBones ); b++ )
-				bones.append( nif->getLink( idxBones.child( b, 0 ) ) );
+		bones = nif->getLinkArray( iSkin, "Bones" );
 		
-		idxBones = nif->getIndex( iSkinData, "Bone List" );
+		QModelIndex idxBones = nif->getIndex( iSkinData, "Bone List" );
 		if ( idxBones.isValid() )
 		{
-			weights.clear();		
 			for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ )
 			{
 				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ] ) );
+			}
+		}
+		
+		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+		if ( iSkinPart.isValid() )
+		{
+			QModelIndex idx = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+			for ( int i = 0; i < nif->rowCount( idx ) && idx.isValid(); i++ )
+			{
+				partitions.append( SkinPartition( nif, idx.child( i, 0 ) ) );
 			}
 		}
 	}
@@ -343,25 +353,64 @@ void Mesh::transformShapes()
 		transTangents.fill( Vector3() );
 		
 		Node * root = findParent( skelRoot );
-		int x = 0;
-		foreach ( BoneWeights bw, weights )
+		
+		if ( partitions.count() )
 		{
-			Transform trans = viewTrans() * skelTrans;
-			Node * bone = root ? root->findChild( bw.bone ) : 0;
-			if ( bone ) trans = trans * bone->localTransFrom( skelRoot ) * bw.trans;
-			if ( bone ) weights[x++].tcenter = bone->viewTrans() * bw.center; else x++;
-			
-			Matrix natrix = trans.rotation;
-			foreach ( VertexWeight vw, bw.weights )
+			foreach ( SkinPartition part, partitions )
 			{
-				if ( transVerts.count() > vw.vertex )
-					transVerts[ vw.vertex ] += trans * verts[ vw.vertex ] * vw.weight;
-				if ( transNorms.count() > vw.vertex )
-					transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
-				if ( transTangents.count() > vw.vertex )
-					transTangents[ vw.vertex ] += natrix * tangents[ vw.vertex ] * vw.weight;
+				QVector<Transform> boneTrans( part.boneMap.count() );
+				for ( int t = 0; t < boneTrans.count(); t++ )
+				{
+					Node * bone = root ? root->findChild( bones.value( part.boneMap[t] ) ) : 0;
+					boneTrans[ t ] = viewTrans() * skelTrans;
+					if ( bone ) boneTrans[ t ] = boneTrans[ t ] * bone->localTransFrom( skelRoot ) * weights.value( part.boneMap[t] ).trans;
+					//if ( bone ) boneTrans[ t ] = bone->viewTrans() * weights.value( part.boneMap[t] ).trans;
+				}
+				
+				for ( int v = 0; v < part.vertexMap.count(); v++ )
+				{
+					int vindex = part.vertexMap[ v ];
+					if ( transVerts[vindex] == Vector3() )
+					{
+						for ( int w = 0; w < part.numWeightsPerVertex; w++ )
+						{
+							QPair< int, float > weight = part.weights[ v * part.numWeightsPerVertex + w ];
+							Transform trans = boneTrans.value( weight.first );
+							
+							if ( verts.count() > vindex )
+								transVerts[vindex] += trans * verts[ vindex ] * weight.second;
+							if ( norms.count() > vindex )
+								transNorms[vindex] += trans.rotation * norms[ vindex ] * weight.second;
+							if ( tangents.count() > vindex )
+								transTangents[vindex] += trans.rotation * tangents[ vindex ] * weight.second;
+						}
+					}
+				}
 			}
 		}
+		else
+		{
+			int x = 0;
+			foreach ( BoneWeights bw, weights )
+			{
+				Transform trans = viewTrans() * skelTrans;
+				Node * bone = root ? root->findChild( bw.bone ) : 0;
+				if ( bone ) trans = trans * bone->localTransFrom( skelRoot ) * bw.trans;
+				if ( bone ) weights[x++].tcenter = bone->viewTrans() * bw.center; else x++;
+				
+				Matrix natrix = trans.rotation;
+				foreach ( VertexWeight vw, bw.weights )
+				{
+					if ( transVerts.count() > vw.vertex )
+						transVerts[ vw.vertex ] += trans * verts[ vw.vertex ] * vw.weight;
+					if ( transNorms.count() > vw.vertex )
+						transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
+					if ( transTangents.count() > vw.vertex )
+						transTangents[ vw.vertex ] += natrix * tangents[ vw.vertex ] * vw.weight;
+				}
+			}
+		}
+		
 		for ( int n = 0; n < transNorms.count(); n++ )
 			transNorms[n].normalize();
 		for ( int t = 0; t < transTangents.count(); t++ )
