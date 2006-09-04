@@ -350,9 +350,128 @@ public:
 			
 			maxBones = maxBonesPerVertex;
 			
-			// split the triangles into partitions
+			// reduces bone weights so that the triangles fit into the partitions
 			
 			QList<Triangle> triangles = nif->getArray<Triangle>( iData, "Triangles" ).toList();
+			
+			QMap< int, int > match;
+			bool doMatch = true;
+			
+			QList<int> tribones;
+			
+			int cnt = 0;
+			
+			foreach ( Triangle tri, triangles )
+			{
+				do
+				{
+					tribones.clear();
+					for ( int c = 0; c < 3; c++ )
+					{
+						foreach ( boneweight bw, weights[tri[c]] )
+						{
+							if ( ! tribones.contains( bw.first ) )
+								tribones.append( bw.first );
+						}
+					}
+					
+					if ( tribones.count() > maxBonesPerPartition )
+					{
+						// sum up the weights for each bone
+						// bones with weight == 1 can't be removed
+						
+						QMap<int,float> sum;
+						QList<int> nono;
+						
+						for ( int t = 0; t < 3; t++ )
+						{
+							if ( weights[tri[t]].count() == 1 )
+								nono.append( weights[tri[t]].first().first );
+							
+							foreach ( boneweight bw, weights[ tri[t] ] )
+								sum[ bw.first ] += bw.second;
+						}
+						
+						// select the bone to remove
+						
+						float minWeight = 5.0;
+						int minBone = -1;
+						
+						foreach ( int b, sum.keys() )
+						{
+							if ( ! nono.contains( b ) && sum[b] < minWeight )
+							{
+								minWeight = sum[b];
+								minBone = b;
+							}
+						}
+						
+						if ( minBone < 0 )	// this shouldn't never happen
+							throw QString( "internal error 0x01" );
+						
+						// do a vertex match detect
+						
+						if ( doMatch )
+						{
+							QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+							for ( int a = 0; a < verts.count(); a++ )
+							{
+								match.insertMulti( a, a );
+								for ( int b = a + 1; b < verts.count(); b++ )
+								{
+									if ( verts[a] == verts[b] && weights[a] == weights[b] )
+									{
+										match.insertMulti( a, b );
+										match.insertMulti( b, a );
+									}
+								}
+							}
+						}
+						
+						// now remove that bone from all vertices of this triangle and from all matching vertices too
+						
+						for ( int t = 0; t < 3; t++ )
+						{
+							bool rem = false;
+							foreach ( int v, match.values( tri[t] ) )
+							{
+								QList< boneweight > & bws = weights[ v ];
+								QMutableListIterator< boneweight > it( bws );
+								while ( it.hasNext() )
+								{
+									boneweight & bw = it.next();
+									if ( bw.first == minBone )
+									{
+										it.remove();
+										rem = true;
+									}
+								}
+								
+								float totalWeight = 0;
+								foreach ( boneweight bw, bws )
+								{
+									totalWeight += bw.second;
+								}
+								
+								if ( totalWeight == 0 )
+									throw QString( "internal error 0x02" );
+								
+								for ( int b = 0; b < bws.count(); b++ )
+								{	// normalize
+									bws[b].second /= totalWeight;
+								}
+							}
+							if ( rem )
+								cnt++;
+						}
+					}
+				} while ( tribones.count() > maxBonesPerPartition );
+			}
+			
+			if ( cnt > 0 )
+				qWarning() << "removed" << cnt << "bone influences";
+			
+			// split the triangles into partitions
 			
 			QList<Partition> parts;
 			
@@ -373,11 +492,6 @@ public:
 							if ( ! tribones.contains( bw.first ) )
 								tribones.append( bw.first );
 						}
-					}
-					
-					if ( tribones.count() > maxBonesPerPartition )
-					{
-						throw QString( "ohno! triangles with more than %1 bones detected - bailing out..." ).arg( maxBonesPerPartition );
 					}
 					
 					if ( part.bones.isEmpty() || containsBones( part.bones, tribones ) )
@@ -598,7 +712,10 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	labPart->setText(
 	"<b>Number of Bones per Partition</b><br>"
 	"Hint: Oblivion uses 20 bones pp<br>"
-	"CivIV uses 4??"
+	"CivIV (non shader meshes) 4 bones pp<br>"
+	"CivIV (shader enabled meshes) 20 bones pp<br>"
+	"Note: To fit the triangles into the partitions<br>"
+	"some bone influences may be removed again."
 	);
 	
 	QPushButton * btOk = new QPushButton( this );
