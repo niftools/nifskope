@@ -311,11 +311,7 @@ public:
 			
 			// reduce vertex influences if necessary
 			
-			if ( maxBones <= maxBonesPerVertex )
-			{
-				maxBones = maxBonesPerVertex;
-			}
-			else
+			if ( maxBones > maxBonesPerVertex )
 			{
 				QMutableVectorIterator< QList< boneweight > > it( weights );
 				int c = 0;
@@ -351,6 +347,8 @@ public:
 				}
 				qWarning() << "reduced" << c << "vertices to" << maxBonesPerVertex << "bone influences (maximum number of bones per vertex was" << maxBones << ")";
 			}
+			
+			maxBones = maxBonesPerVertex;
 			
 			// split the triangles into partitions
 			
