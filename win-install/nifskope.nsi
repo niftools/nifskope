@@ -35,7 +35,7 @@
 
 !include "MUI.nsh"
 
-!define VERSION "0.9.1"
+!define VERSION "0.9.2"
 
 Name "NifSkope ${VERSION}"
 

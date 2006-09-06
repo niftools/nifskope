@@ -38,8 +38,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9.1 of NifSkope.
+This is version 0.9.2 of NifSkope.
 
+
+changes since 0.9.1:
+  - texture paths are now converted to windows notation
+    because otherwise Oblivion doesn't find textures located within .bsa archives
+  - stripifier now outputs single strips
+    because CivIV draws only the first strip
+	
 
 changes since 0.8.8:
   - now plays embedded animation sequences (good examples are the doors and some traps from oblivion)
