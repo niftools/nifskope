@@ -165,7 +165,7 @@ public:
 		{
 			nif->set<int>( iSource, "Use External", 1 );
 			QModelIndex iFile = nif->getIndex( iSource, "File Name" );
-			nif->setData( iFile.sibling( iFile.row(), NifModel::ValueCol ), file );
+			nif->setData( iFile.sibling( iFile.row(), NifModel::ValueCol ), file.replace( "/", "\\" ) );
 		}
 		return idx;
 	}
