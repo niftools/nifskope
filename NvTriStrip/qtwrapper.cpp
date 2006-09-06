@@ -15,7 +15,7 @@ QList< QVector<quint16> > strippify( QVector<Triangle> triangles )
 	PrimitiveGroup * groups = 0;
 	unsigned short numGroups = 0;
 	
-	SetStitchStrips( false );
+	SetStitchStrips( true );
 	//SetCacheSize( 64 );
 	GenerateStrips( data, triangles.count()*3, &groups, &numGroups );
 	free( data );
