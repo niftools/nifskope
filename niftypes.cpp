@@ -298,15 +298,18 @@ Matrix4 Transform::toMatrix4() const
  */
 
 QHash<QString,NifValue::Type>	NifValue::typeMap;
+QHash<QString,QString>         NifValue::typeTxt;
+QHash<QString,QHash<quint32, QPair<QString,QString> > >	NifValue::enumMap;
 
 void NifValue::initialize()
 {
 	typeMap.clear();
+	typeTxt.clear();
 	
 	typeMap.insert( "bool", NifValue::tBool );
 	typeMap.insert( "byte", NifValue::tByte );
 	typeMap.insert( "word", NifValue::tWord );
-   typeMap.insert( "short", NifValue::tShort );
+	typeMap.insert( "short", NifValue::tShort );
 	typeMap.insert( "int", NifValue::tInt );
 	typeMap.insert( "flags", NifValue::tFlags );
 	typeMap.insert( "link", NifValue::tLink );
@@ -335,7 +338,9 @@ void NifValue::initialize()
 	typeMap.insert( "stringoffset", NifValue::tStringOffset );
 	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
 	typeMap.insert( "ushort", NifValue::tWord );
-   typeMap.insert( "uint", NifValue::tUInt );
+	typeMap.insert( "uint", NifValue::tUInt );
+	
+	enumMap.clear();
 }
 
 NifValue::Type NifValue::type( const QString & id )
@@ -347,6 +352,36 @@ NifValue::Type NifValue::type( const QString & id )
 		return typeMap[id];
 	
 	return tNone;
+}
+
+void NifValue::setTypeDescription( const QString & typId, const QString & txt )
+{
+	typeTxt[typId] = QString( txt ).replace( "\n", "<br>" );
+}
+
+QString NifValue::typeDescription( const QString & typId )
+{
+	QString txt = QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId ).arg( typeTxt.value( typId ) );
+	
+	if ( enumMap.contains( typId ) )
+	{
+		txt += "<p><table><tr><td><table>";
+		QHashIterator< quint32, QPair< QString, QString > > it( enumMap[ typId ] );
+		int cnt = 0;
+		while ( it.hasNext() )
+		{
+			if ( cnt++ > 30 )
+			{
+				cnt = 0;
+				txt += "</table></td><td><table>";
+			}
+			it.next();
+			txt += QString( "<tr><td>%2</td><td>%1</td><td>%3</td></tr>" ).arg( it.value().first ).arg( it.key() ).arg( it.value().second );
+		}
+		txt += "</table></td></tr></table></p>";
+	}
+	
+	return txt;
 }
 
 bool NifValue::registerAlias( const QString & alias, const QString & original )
@@ -362,6 +397,28 @@ bool NifValue::registerAlias( const QString & alias, const QString & original )
 	
 	return false;
 }
+
+bool NifValue::registerEnumOption( const QString & eid, const QString & oid, quint32 oval, const QString & otxt )
+{
+	QHash< quint32, QPair< QString, QString > > & e = enumMap[eid];
+	
+	if ( e.contains( oval ) )
+		return false;
+	
+	e[oval] = QPair<QString,QString>( oid, otxt );
+	return true;
+}
+
+QString NifValue::enumOptionName( const QString & eid, quint32 val )
+{
+	return enumMap.value( eid ).value( val ).first;
+}
+
+QString NifValue::enumOptionText( const QString & eid, quint32 val )
+{
+	return enumMap.value( eid ).value( val ).second;
+}
+
 	
 NifValue::NifValue( Type t ) : typ( tNone )
 {

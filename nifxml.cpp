@@ -57,20 +57,22 @@ public:
 		tagCompound,
 		tagBlock,
 		tagAdd,
-		tagInherit,
-		tagBasic
+		tagBasic,
+		tagEnum,
+		tagOption
 	};
 	
 	NifXmlHandler()
 	{
 		depth = 0;
-		tags.insert( "niflotoxml", tagFile );
+		tags.insert( "niftoolsxml", tagFile );
 		tags.insert( "version", tagVersion );
 		tags.insert( "compound", tagCompound );
-		tags.insert( "niblock", tagBlock );
+		tags.insert( "niobject", tagBlock );
 		tags.insert( "add", tagAdd );
-		tags.insert( "inherit", tagInherit );
 		tags.insert( "basic", tagBasic );
+		tags.insert( "enum", tagEnum );
+		tags.insert( "option", tagOption );
 		blk = 0;
 	}
 
@@ -78,6 +80,13 @@ public:
 	Tag stack[10];
 	QHash<QString, Tag> tags;
 	QString errorStr;
+	
+	QString typId;
+	QString typTxt;
+	
+	QString optId;
+	QString optVal;
+	QString optTxt;
 	
 	NifBlock		* blk;
 	NifData data;
@@ -104,7 +113,7 @@ public:
 		
 		if ( depth == 0 )
 		{
-			if ( x != tagFile )	err( "this is not a niflotoxml file" );
+			if ( x != tagFile )	err( "this is not a niftoolsxml file" );
 			push( x );
 			return true;
 		}
@@ -125,6 +134,8 @@ public:
 							if ( alias != type )
 								if ( ! NifValue::registerAlias( alias, type ) )
 									err( "failed to register alias " + alias + " for type " + type );
+							typId = alias;
+							typTxt = QString();
 						}
 						else
 						{
@@ -162,11 +173,23 @@ public:
 						if ( alias != type )
 							if ( ! NifValue::registerAlias( alias, type ) )
 								err( "failed to register alias " + alias + " for type " + type );
+						typId = alias;
+						typTxt = QString();
+					}	break;
+					case tagEnum:
+					{
+						typId = list.value( "name" );
+						typTxt = QString();
+						QString storage = list.value( "storage" );
+						if ( typId.isEmpty() || storage.isEmpty() )
+							err( "enum definition must have a name and a known storage type" );
+						if ( ! NifValue::registerAlias( typId, storage ) )
+							err( "failed to register alias " + storage + " for enum type " + typId );
 					}	break;
 					case tagVersion:
 						break;
 					default:
-						err( "expected compound, ancestor, niblock, basic or version got " + tagid + " instead" );
+						err( "expected basic, enum, compound, niobject or version got " + tagid + " instead" );
 				}	break;
 			case tagVersion:
 				//err( "version tag must not contain any sub tags" );
@@ -216,22 +239,27 @@ public:
 						}
 						if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
 					}	break;
-					case tagInherit:
-					{
-						QString n = list.value( "name" );
-						if ( n.isEmpty() )	err( "inherit needs name attribute" );
-						if ( ! NifModel::blocks.contains( n ) )
-							err( "forward declaration of block id " + n );
-						if ( blk )
-						{
-							if ( blk->ancestor.isEmpty() )
-								blk->ancestor = n;
-							else
-								err( "allowed is only one inherit tag per block" );
-						}
-					}	break;
 					default:
-						err( "only add, inherit, and interface tags allowed in " + tagid + " declaration" );
+						err( "only add tags allowed in block declaration" );
+				}	break;
+			case tagEnum:
+				push( x );
+				switch ( x )
+				{
+					case tagOption:
+						optId = list.value( "name" );
+						optVal = list.value( "value" );
+						optTxt = QString();
+						
+						if ( optId.isEmpty() || optVal.isEmpty() )
+							err( "option defintion must have a name and a value" );
+						bool ok;
+						optVal.toInt( &ok );
+						if ( ! ok )
+							err( "option value error (only integers please)" );
+						break;
+					default:
+						err( "only option tags allowed in enum declaration" );
 				}	break;
 			default:
 				err( "error unhandled tag " + tagid );
@@ -248,6 +276,10 @@ public:
 		switch ( x )
 		{
 			case tagCompound:
+				if ( blk && ! blk->id.isEmpty() && ! blk->text.isEmpty() )
+					NifValue::setTypeDescription( blk->id, blk->text );
+				else if ( !typId.isEmpty() && ! typTxt.isEmpty() )
+					NifValue::setTypeDescription( typId, typTxt );
 			case tagBlock:
 				if ( blk )
 				{
@@ -274,6 +306,13 @@ public:
 			case tagAdd:
 				if ( blk )	blk->types.append( data );
 				break;
+			case tagOption:
+				if ( ! NifValue::registerEnumOption( typId, optId, optVal.toInt(), optTxt ) )
+					err( "failed to register enum option" );
+				break;
+			case tagBasic:
+			case tagEnum:
+				NifValue::setTypeDescription( typId, typTxt );
 			default:
 				break;
 		}
@@ -296,8 +335,18 @@ public:
 			case tagBlock:
 				if ( blk )
 					blk->text += s.trimmed();
+				else
+					typTxt += s.trimmed();
+				break;
 			case tagAdd:
 				data.setText( data.text() + s.trimmed() );
+				break;
+			case tagBasic:
+			case tagEnum:
+				typTxt += s.trimmed();
+				break;
+			case tagOption:
+				optTxt += s.trimmed();
 				break;
 			default:
 				break;
@@ -335,15 +384,15 @@ public:
 		{
 			NifBlock * blk = NifModel::blocks.value( key );
 			if ( ! blk->ancestor.isEmpty() && ! NifModel::blocks.contains( blk->ancestor ) )
-				err( "niblock " + key + " inherits unknown ancestor " + blk->ancestor );
+				err( "niobject " + key + " inherits unknown ancestor " + blk->ancestor );
 			if ( blk->ancestor == key )
-				err( "niblock " + key + " inherits itself" );
+				err( "niobject " + key + " inherits itself" );
 			foreach ( NifData data, blk->types )
 			{
 				if ( ! checkType( data ) )
-					err( "niblock " + key + " referres to unknown type " + data.type() );
+					err( "niobject " + key + " referres to unknown type " + data.type() );
 				if ( ! checkTemp( data ) )
-					err( "niblock " + key + " referes to unknown template type " + data.temp() );
+					err( "niobject " + key + " referes to unknown template type " + data.temp() );
 			}
 		}
 		

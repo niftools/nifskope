@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QColor>
 #include <QIODevice>
+#include <QPair>
 #include <QVariant>
 
 #include "math.h"
@@ -917,8 +918,8 @@ public:
 		tFileVersion = 25,
 		tByteArray = 26,
 		tStringPalette = 27,
-      tShort = 28,
-      tUInt = 29,
+		tShort = 28,
+		tUInt = 29,
 
 		tNone = 0xff
 	};
@@ -926,8 +927,16 @@ public:
 	template <typename T> static Type typeId();
 	
 	static void initialize();
+	
 	static Type type( const QString & typId );
+	static QString typeDescription( const QString & typId );
+	static void setTypeDescription( const QString & typId, const QString & txt );
+	
 	static bool registerAlias( const QString & alias, const QString & internal );
+	
+	static bool registerEnumOption( const QString & eid, const QString & oid, quint32 oval, const QString & otxt );
+	static QString enumOptionName( const QString & eid, quint32 oval );
+	static QString enumOptionText( const QString & eid, quint32 oval );
 	
 	NifValue() { typ = tNone; }
 	NifValue( Type t );
@@ -1000,6 +1009,8 @@ protected:
 	template <typename T> bool setType( Type t, T v );
 	
 	static QHash<QString,Type>	typeMap;
+	static QHash<QString, QHash<quint32, QPair<QString, QString> > > enumMap;
+	static QHash<QString, QString> typeTxt;
 	
 	friend class NifIStream;
 	friend class NifOStream;

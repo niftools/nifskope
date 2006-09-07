@@ -748,6 +748,14 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						else
 							return QString( "None" );
 					}
+					else if ( item->value().isCount() )
+					{
+						QString optId = NifValue::enumOptionName( item->type(), item->value().toCount() );
+						if ( optId.isEmpty() )
+							return item->value().toString();
+						else
+							return QString( "%1 (%2)" ).arg( item->value().toString() ).arg( optId );
+					}
 					else
 						return item->value().toString();
 				}
@@ -802,6 +810,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					else
 						return QString( "<p>%1</p>" ).arg( item->text() ); // enforce rich text tooltips
 				}	break;
+				case TypeCol:
+					return NifValue::typeDescription( item->type() );
 				case ValueCol:
 				{
 					switch ( item->value().type() )
@@ -813,6 +823,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							}
 						case NifValue::tBool:
 						case NifValue::tInt:
+						case NifValue::tUInt:
 							{
 								quint32 i = item->value().toCount();
 								return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
