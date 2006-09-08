@@ -966,12 +966,12 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 pivotA = Vector3( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB = Vector3( nif->get<Vector4>( iHinge, "Pivot B" ) );
 		
-		const Vector3 axleA( nif->get<Vector4>( iHinge, "Axle A ?" ) );
+		const Vector3 axleA( nif->get<Vector4>( iHinge, "Axle A" ) );
 		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2AxleInA1" ) );
 		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2AxleInA2" ) );
 		
 		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
-		const Vector3 axleB2( nif->get<Vector4>( iHinge, "Unknown Vector" ) );
+		const Vector3 axleB2( nif->get<Vector4>( iHinge, "Perp2AxleInB2" ) );
 		
 		const float minAngle = nif->get<float>( iHinge, "Min Angle" );
 		const float maxAngle = nif->get<float>( iHinge, "Max Angle" );
