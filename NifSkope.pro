@@ -9,6 +9,8 @@ QT += xml opengl network
 DESTDIR = ./
 
 HEADERS += \
+niftypes.h \
+nifvalue.h \
 basemodel.h \
 kfmmodel.h \
 nifmodel.h \
@@ -16,7 +18,6 @@ glview.h \
 message.h \
 nifproxy.h \
 nifskope.h \
-niftypes.h \
 nifview.h \
 spellbook.h \
 gl/*.h \
@@ -24,6 +25,8 @@ widgets/*.h \
 spells/*.h
 
 SOURCES += \
+niftypes.cpp \
+nifvalue.cpp \
 basemodel.cpp \
 kfmmodel.cpp \
 kfmxml.cpp \
@@ -34,7 +37,6 @@ message.cpp \
 nifdelegate.cpp \
 nifproxy.cpp \
 nifskope.cpp \
-niftypes.cpp \
 nifview.cpp \
 spellbook.cpp \
 gl/*.cpp \

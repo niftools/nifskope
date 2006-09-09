@@ -754,7 +754,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						if ( optId.isEmpty() )
 							return item->value().toString();
 						else
-							return QString( "%1 (%2)" ).arg( item->value().toString() ).arg( optId );
+							return QString( "%1" ).arg( optId );
 					}
 					else
 						return item->value().toString();

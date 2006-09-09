@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VALUEEDIT_H
 #define VALUEEDIT_H
 
-#include "niftypes.h"
+#include "nifvalue.h"
 
 #include <QWidget>
 

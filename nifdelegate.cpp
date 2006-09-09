@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "widgets/valueedit.h"
 
+#include <QComboBox>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
@@ -180,7 +181,13 @@ public:
 		if ( v.canConvert<NifValue>() )
 		{
 			NifValue nv = v.value<NifValue>();
-			if ( ValueEdit::canEdit( nv.type() ) )
+			if ( nv.isCount() && index.column() == NifModel::ValueCol && ! NifValue::enumOptions( index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString() ).isEmpty() )
+			{
+				QComboBox * c = new QComboBox( parent );
+				w = c;
+				c->setEditable( true );
+			}
+			else if ( ValueEdit::canEdit( nv.type() ) )
 				w = new ValueEdit( parent );
 		}
 		else if ( v.type() == QVariant::String )
@@ -196,12 +203,25 @@ public:
 	void setEditorData(QWidget *editor, const QModelIndex &index) const
 	{
 		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
+		QComboBox * cedit = qobject_cast<QComboBox*>( editor );
 		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
 		QVariant	v = index.data( Qt::EditRole );
 		
-		if ( v.canConvert<NifValue>() && vedit )
+		if ( vedit && v.canConvert<NifValue>() )
 		{
 			vedit->setValue( v.value<NifValue>() );
+		}
+		else if ( cedit && v.canConvert<NifValue>() && v.value<NifValue>().isCount() )
+		{
+			cedit->clear();
+			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString();
+			QStringList o = NifValue::enumOptions( t );
+			cedit->addItems( o );
+			QString x = NifValue::enumOptionName( t, v.value<NifValue>().toCount() );
+			if ( ! x.isEmpty() )
+				cedit->setCurrentIndex( o.indexOf( x ) );
+			else
+				cedit->setEditText( QString::number( v.value<NifValue>().toCount() ) );
 		}
 		else if ( ledit )
 		{
@@ -213,12 +233,29 @@ public:
 	{
 		Q_ASSERT(model);
 		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
+		QComboBox * cedit = qobject_cast<QComboBox*>( editor );
 		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
 		QVariant v;
 		if ( vedit )
 		{
 			v.setValue( vedit->getValue() );
 			model->setData( index, v, Qt::EditRole );
+		}
+		else if ( cedit )
+		{
+			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString();
+			QVariant v = index.data( Qt::EditRole );
+			bool ok;
+			quint32 x = NifValue::enumOptionValue( t, cedit->currentText(), &ok );
+			if ( ! ok )
+				x = cedit->currentText().toUInt();
+			if ( v.canConvert<NifValue>() )
+			{
+				NifValue nv = v.value<NifValue>();
+				nv.setCount( x );
+				v.setValue( nv );
+				model->setData( index, v, Qt::EditRole );
+			}
 		}
 		else if ( ledit )
 		{

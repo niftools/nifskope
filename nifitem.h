@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFITEM_H
 #define NIFITEM_H
 
+#include "nifvalue.h"
+
 #include <QSharedData>
 #include <QVector>
 
