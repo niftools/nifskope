@@ -187,7 +187,13 @@ public:
 							err( "failed to register alias " + storage + " for enum type " + typId );
 					}	break;
 					case tagVersion:
-						break;
+					{
+						int v = NifModel::version2number( list.value( "num" ).trimmed() );
+						if ( v != 0 && ! list.value( "num" ).isEmpty() )
+							NifModel::supportedVersions.append( v );
+						else
+							err( "invalid version tag" );
+					}	break;
 					default:
 						err( "expected basic, enum, compound, niobject or version got " + tagid + " instead" );
 				}	break;
@@ -324,13 +330,7 @@ public:
 		switch ( current() )
 		{
 			case tagVersion:
-			{
-				int v = NifModel::version2number( s.trimmed() );
-				if ( v != 0 )
-					NifModel::supportedVersions.append( v );
-				else
-					err( "invalid version string " + s );
-			}	break;
+				break;
 			case tagCompound:
 			case tagBlock:
 				if ( blk )
