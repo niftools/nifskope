@@ -548,36 +548,44 @@ void GLView::paintGL()
 	}
 }
 
+bool compareHits( const QPair< GLuint, GLuint > & a, const QPair< GLuint, GLuint > & b )
+{
+	if ( a.second < b.second )
+		return true;
+	else
+		return false;
+}
+
 typedef void (Scene::*DrawFunc)(void);
 	
-int indexAt( GLuint *buffer, NifModel *model, Scene *scene, DrawFunc drawFunc )
+int indexAt( GLuint *buffer, NifModel *model, Scene *scene, QList<DrawFunc> drawFunc, int cycle )
 {
 	glRenderMode( GL_SELECT );	
 	glInitNames();
 	glPushName( 0 );
-		
-	(scene->*drawFunc)();
+	
+	foreach ( DrawFunc df, drawFunc )
+		(scene->*df)();
 		
 	GLint hits = glRenderMode( GL_RENDER );
 	if ( hits > 0 )
 	{
-		int	choose = buffer[ 3 ];
-		int	depth = buffer[ 1 ];
-		for ( int loop = 1; loop < hits; loop++ )
+		QList< QPair< GLuint, GLuint > > hitList;
+		
+		for ( int l = 0; l < hits; l++ )
 		{
-			if ( buffer[ loop * 4 + 1 ] < GLuint( depth ) )
-			{
-				choose = buffer[ loop * 4 + 3 ];
-				depth = buffer[ loop * 4 + 1 ];
-			}       
+			hitList << QPair< GLuint, GLuint >( buffer[ l * 4 + 3 ], buffer[ l * 4 + 1 ] );
 		}
-		return choose;
+		
+		qSort( hitList.begin(), hitList.end(), compareHits );
+		
+		return hitList.value( cycle % hits ).first;
 	}
 	
 	return -1;
 }
 
-QModelIndex GLView::indexAt( const QPoint & pos )
+QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 {
 	if ( ! ( model && isVisible() && height() ) )
 		return QModelIndex();
@@ -590,16 +598,9 @@ QModelIndex GLView::indexAt( const QPoint & pos )
 	glSelectBuffer( 512, buffer );
 
 	int choose;
-	if ( aDrawHavok->isChecked() )
-	{	
-		choose = ::indexAt( buffer, model, scene, &Scene::drawHavok ); 
-		if ( choose != -1 )
-			return model->getBlock( choose );
-	}
-	
 	if ( aDrawFurn->isChecked() )
 	{		
-		choose = ::indexAt( buffer, model, scene, &Scene::drawFurn ); 
+		choose = ::indexAt( buffer, model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle ); 
 		if ( choose != -1 )
 		{
 			QModelIndex parent = model->index( 3, 0, model->getBlock( choose&0x0ffff ) );
@@ -607,17 +608,18 @@ QModelIndex GLView::indexAt( const QPoint & pos )
 		}
 	}
 	
+	QList<DrawFunc> df;
+	
+	if ( aDrawHavok->isChecked() )
+		df << &Scene::drawHavok;
 	if ( aDrawNodes->isChecked() )
-	{
-		choose = ::indexAt( buffer, model, scene, &Scene::drawNodes ); 
-		if ( choose != -1 )
-			return model->getBlock( choose );
-	}
-
-	choose = ::indexAt( buffer, model, scene, &Scene::drawShapes );
+		df << &Scene::drawNodes;
+	df << &Scene::drawShapes;
+	
+	choose = ::indexAt( buffer, model, scene, df, cycle ); 
 	if ( choose != -1 )
 		return model->getBlock( choose );
-		
+	
 	return QModelIndex();
 }
 
@@ -958,6 +960,12 @@ void GLView::keyPressEvent( QKeyEvent * event )
 		case Qt::Key_E:
 			kbd[ event->key() ] = true;
 			break;
+		case Qt::Key_Escape:
+			doCompile = true;
+			if ( ! aViewWalk->isChecked() )
+				doCenter = true;
+			update();
+			break;
 		default:
 			event->ignore();
 			break;
@@ -998,6 +1006,12 @@ void GLView::focusOutEvent( QFocusEvent * )
 void GLView::mousePressEvent(QMouseEvent *event)
 {
 	lastPos = event->pos();
+	
+	if ( ( pressPos - event->pos() ).manhattanLength() <= 3 )
+		cycleSelect++;
+	else
+		cycleSelect = 0;
+	
 	pressPos = event->pos();
 }
 
@@ -1006,7 +1020,7 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 	if ( ! ( model && ( pressPos - event->pos() ).manhattanLength() <= 3 ) )
 		return;
 	
-	QModelIndex idx = indexAt( event->pos() );
+	QModelIndex idx = indexAt( event->pos(), cycleSelect );
 	scene->currentNode = model->getBlockNumber( idx );
 	if ( idx.isValid() )
 	{
@@ -1034,10 +1048,12 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 
 void GLView::mouseDoubleClickEvent( QMouseEvent * )
 {
+	/*
 	doCompile = true;
 	if ( ! aViewWalk->isChecked() )
 		doCenter = true;
 	update();
+	*/
 }
 
 void GLView::wheelEvent( QWheelEvent * event )

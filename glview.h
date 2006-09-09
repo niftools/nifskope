@@ -60,7 +60,7 @@ public:
 	GLView( const QGLFormat & format );
 	~GLView();
 	
-	QModelIndex indexAt( const QPoint & p );
+	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 	
 	void move( float, float, float );
 	void setPosition( float, float, float );
@@ -201,6 +201,8 @@ private:
 	
 	QPoint lastPos;
 	QPoint pressPos;
+	
+	int cycleSelect;
 	
 	NifModel * model;
 	
