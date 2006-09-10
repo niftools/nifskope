@@ -190,3 +190,9 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 	
 	QTreeView::keyPressEvent( e );
 }
+
+void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex & last )
+{
+	QTreeView::currentChanged( current, last );
+	emit sigCurrentIndexChanged( currentIndex() );
+}

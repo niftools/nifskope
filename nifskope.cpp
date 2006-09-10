@@ -67,7 +67,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
-#include "nifview.h"
+#include "widgets/nifview.h"
 
 #include "glview.h"
 #include "spellbook.h"
@@ -85,7 +85,7 @@ void NifSkope::about()
 	"<p>Because NifSkope uses the Qt libraries it is free software. "
 	"The source is available via SVN at https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope</p>";
 
-    QMessageBox mb( "About NifSkope 0.9.2", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( "About NifSkope 0.9.3", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }
@@ -110,7 +110,7 @@ NifSkope::NifSkope() : QMainWindow()
 	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate() );
 
-	connect( list, SIGNAL( clicked( const QModelIndex & ) ),
+	connect( list, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
 	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 		this, SLOT( contextMenu( const QPoint & ) ) );

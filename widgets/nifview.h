@@ -50,6 +50,9 @@ public:
 	
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	QSize sizeHint() const { return QSize( 400, 400 ); }
+	
+signals:
+	void sigCurrentIndexChanged( const QModelIndex & );
 
 public slots:
 	void setRootIndex( const QModelIndex & index );
@@ -59,6 +62,7 @@ public slots:
 	
 protected slots:
 	void updateConditions();
+	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
 
 protected:
     void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const;

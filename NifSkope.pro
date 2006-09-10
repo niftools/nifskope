@@ -18,7 +18,6 @@ glview.h \
 message.h \
 nifproxy.h \
 nifskope.h \
-nifview.h \
 spellbook.h \
 gl/*.h \
 widgets/*.h \
@@ -37,7 +36,6 @@ message.cpp \
 nifdelegate.cpp \
 nifproxy.cpp \
 nifskope.cpp \
-nifview.cpp \
 spellbook.cpp \
 gl/*.cpp \
 widgets/*.cpp \

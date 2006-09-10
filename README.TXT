@@ -38,7 +38,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9.2 of NifSkope.
+This is version 0.9.3 of NifSkope.
+
+
+changes since 0.9.2:
+  - for enumerated values (eg: havok material) nifskope now displays the option name instead of an integer value
+    also the type column's tooltip now displays the type's description and all the available options
+  - the version tag syntax in the xml description was slighty changed to be more intuitive
+  - clicking in the 3d view now cycles through the items below the mouse
 
 
 changes since 0.9.1:
