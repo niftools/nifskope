@@ -146,7 +146,7 @@ protected:
    float start, stop;
    QPersistentModelIndex iControl, iSpline, iBasis;
    QPersistentModelIndex lTrans, lRotate, lScale;
-   ushort lTransOff, lRotateOff, lScaleOff;
+   uint lTransOff, lRotateOff, lScaleOff;
    float lTransMult, lRotateMult, lScaleMult;
    float lTransBias, lRotateBias, lScaleBias;
    uint nCtrl;

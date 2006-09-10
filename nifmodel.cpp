@@ -678,13 +678,26 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" )
 			buddy = getIndex( index, "File Name" );
-		else
+      else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
 			buddy = buddy.sibling( buddy.row(), index.column() );
 		if ( buddy.isValid() )
 			return data( buddy, role );
-	}
+	} 
+   else if ( column == ValueCol && item->parent() != root && item->type() == "ControllerLink")
+   {
+      QModelIndex buddy;
+      if ( item->name() == "Controlled Blocks" )
+      {
+         buddy = getIndex( index, "Node Name Offset" );
+         if ( buddy.isValid() )
+            buddy = buddy.sibling( buddy.row(), index.column() );
+         if ( buddy.isValid() )
+            return data( buddy, role );
+      }
+   }
+
 
 	switch ( role )
 	{

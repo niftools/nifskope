@@ -559,7 +559,7 @@ static void compute_point(int *u, int n, int t, float v, qarray<short>& control,
 }
 
 template <typename T> 
-bool bsplineinterpolate( T & value, int degree, float interval, uint nctrl, const QModelIndex & array, ushort off, float mult, float bias )
+bool bsplineinterpolate( T & value, int degree, float interval, uint nctrl, const QModelIndex & array, uint off, float mult, float bias )
 {
    if (off == USHRT_MAX)
       return false;
@@ -647,9 +647,9 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
       lRotate = nif->getIndex( index, "Rotation");
       lScale = nif->getIndex( index, "Scale");
 
-      lTransOff = nif->get<ushort>( index, "Translate Offset");
-      lRotateOff = nif->get<ushort>( index, "Rotate Offset");
-      lScaleOff = nif->get<ushort>( index, "Scale Offset");
+      lTransOff = nif->get<uint>( index, "Translate Offset");
+      lRotateOff = nif->get<uint>( index, "Rotate Offset");
+      lScaleOff = nif->get<uint>( index, "Scale Offset");
       lTransMult = nif->get<float>( index, "Translate Multiplier");
       lRotateMult = nif->get<float>( index, "Rotation Multiplier");
       lScaleMult = nif->get<float>( index, "Scale Multiplier");
