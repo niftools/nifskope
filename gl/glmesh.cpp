@@ -104,7 +104,10 @@ public:
 				
 				MorphKey * key = new MorphKey;
 				key->index = 0;
-				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				if ( iInterpolators.isValid() )
+					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				else
+					key->iFrames = iKey;
 				key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
 				
 				morph.append( key );
