@@ -151,7 +151,7 @@ public:
 				}
 				QModelIndex iCenter = nif->getIndex( iData, "Center" );
 				if ( iCenter.isValid() )
-					nif->set<Vector3>( iCenter, t.rotation * nif->get<Vector3>( iCenter ) + t.translation );
+					nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
 				QModelIndex iRadius = nif->getIndex( iData, "Radius" );
 				if ( iRadius.isValid() )
 					nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
