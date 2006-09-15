@@ -245,7 +245,7 @@ public:
 				}
 				else
 				{
-					QString tmplt = idx.sibling( idx.row(), NifModel::TempCol ).data( Qt::DisplayRole ).toString();
+					QString tmplt = nif->itemTmplt( idx );
 					if ( ! tmplt.isEmpty() )
 					{
 						QModelIndex iBlock = nif->getBlock( l );

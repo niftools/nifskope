@@ -416,13 +416,13 @@ void TestThread::run()
 	}	
 }
 
-QString linkId( QModelIndex idx )
+static QString linkId( const NifModel * nif, QModelIndex idx )
 {
-	QString id = QString( "%1 (%2)" ).arg( idx.data().toString() ).arg( idx.sibling( idx.row(), NifModel::TempCol ).data().toString() );
+	QString id = QString( "%1 (%2)" ).arg( nif->itemName( idx ) ).arg( nif->itemTmplt( idx ) );
 	while ( idx.parent().isValid() )
 	{
 		idx = idx.parent();
-		id.prepend( QString( "%1/" ).arg( idx.data().toString() ) );
+		id.prepend( QString( "%1/" ).arg( nif->itemName( idx ) ) );
 	}
 	return id;
 }
@@ -440,18 +440,18 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 			if ( l < 0 )
 			{
 				if ( ! child )
-					messages.append( Message() << "unassigned parent link" << linkId( idx ) );
+					messages.append( Message() << "unassigned parent link" << linkId( nif, idx ) );
 			}
 			else if ( l >= nif->getBlockCount() )
-				messages.append( Message() << "invalid link" << linkId( idx ) );
+				messages.append( Message() << "invalid link" << linkId( nif, idx ) );
 			else
 			{
-				QString tmplt = idx.sibling( idx.row(), NifModel::TempCol ).data( Qt::DisplayRole ).toString();
+				QString tmplt = nif->itemTmplt( idx );
 				if ( ! tmplt.isEmpty() )
 				{
 					QModelIndex iBlock = nif->getBlock( l );
 					if ( ! nif->inherits( iBlock, tmplt ) )
-						messages.append( Message() << "link" << linkId( idx ) << "points to wrong block type" << iBlock.data().toString() );
+						messages.append( Message() << "link" << linkId( nif, idx ) << "points to wrong block type" << nif->itemName( iBlock ) );
 				}
 			}
 		}

@@ -706,7 +706,20 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			switch ( column )
 			{
 				case NameCol:	return item->name();
-				case TypeCol:	return item->type();
+				case TypeCol:
+				{
+					if ( isCompound( item->type() ) && ! item->temp().isEmpty() )
+					{
+						NifItem * i = item;
+						while ( i && i->temp() == "TEMPLATE" )
+							i = i->parent();
+						return QString( "%1<%2>" ).arg( item->type() ).arg( i ? i->temp() : QString() );
+					}
+					else
+					{
+						return item->type();
+					}
+				}	break;
 				case ValueCol:
 				{
 					if ( item->value().type() == NifValue::tStringOffset )
@@ -778,7 +791,6 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return version2string( item->ver1() );
 				case Ver2Col:	return version2string( item->ver2() );
-				case TempCol:	return item->temp();
 				default:		return QVariant();
 			}
 		}

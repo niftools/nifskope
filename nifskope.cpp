@@ -469,7 +469,6 @@ void NifSkope::setListMode()
 			list->setColumnHidden( NifModel::CondCol, true );
 			list->setColumnHidden( NifModel::Ver1Col, true );
 			list->setColumnHidden( NifModel::Ver2Col, true );
-			list->setColumnHidden( NifModel::TempCol, true );
 		}
 	}
 	else
@@ -675,6 +674,7 @@ void myMessageOutput(QtMsgType type, const char *msg)
 	switch (type)
 	{
 		case QtDebugMsg:
+			printf( "%s\n", msg );
 			break;
 		case QtWarningMsg:
 			// workaround for Qt 4.1.3
