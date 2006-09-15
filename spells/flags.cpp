@@ -102,7 +102,7 @@ public:
 	
 	enum FlagType
 	{
-		Alpha, Controller, Node, Shape, VertexColor, ZBuffer, None
+		Alpha, Controller, Node, RigidBody, Shape, ZBuffer, None
 	};
 	
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
@@ -111,12 +111,19 @@ public:
 			return index;
 		if ( nif->itemType( index ) == "NiBlock" )
 			return nif->getIndex( index, "Flags" );
+		if ( nif->inherits( nif->getBlock( index ), "bhkRigidBody" ) )
+		{
+			QModelIndex iFlags = nif->getIndex( nif->getBlock( index ), "Col Filter" );
+			iFlags = iFlags.sibling( iFlags.row(), NifModel::ValueCol );
+			if ( index == iFlags )
+				return iFlags;
+		}
 		return QModelIndex();
 	}
 	
 	FlagType queryType( const NifModel * nif, const QModelIndex & index ) const
 	{
-		if ( nif->getValue( index ).type() == NifValue::tFlags )
+		if ( nif->getValue( index ).isCount() )
 		{
 			QString name = nif->itemName( index.parent() );
 			if ( name == "NiAlphaProperty" )
@@ -125,10 +132,10 @@ public:
 				return Controller;
 			else if ( name == "NiNode" )
 				return Node;
+			else if ( name == "bhkRigidBody" || name == "bhkRigidBodyT" )
+				return RigidBody;
 			else if ( name == "NiTriShape" || name == "NiTriStrips" )
 				return Shape;
-			else if ( name == "NiVertexColorProperty" )
-				return VertexColor;
 			else if ( name == "NiZBufferProperty" )
 				return ZBuffer;
 		}
@@ -155,11 +162,11 @@ public:
 			case Node:
 				nodeFlags( nif, iFlags );
 				break;
+			case RigidBody:
+				bodyFlags( nif, iFlags );
+				break;
 			case Shape:
 				shapeFlags( nif, iFlags );
-				break;
-			case VertexColor:
-				vcolFlags( nif, iFlags );
 				break;
 			case ZBuffer:
 				zbufferFlags( nif, iFlags );
@@ -179,27 +186,25 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
-		static const char * blendModes[11] = {
-			"One", "Zero", "Src Color", "Inv Src Color", "Dst Color", "Inv Dst Color", "Src Alpha", "Inv Src Alpha",
-			"Dst Alpha", "Inv Dst Alpha", "Src Alpha Saturate"
-		};
-		static const char * testModes[8] = {
-			"Always", "Less", "Equal", "Less or Equal", "Greater", "Not Equal", "Greater or Equal", "Never"
-		};
+		QStringList blendModes = QStringList() <<
+			"One" << "Zero" << "Src Color" << "Inv Src Color" << "Dst Color" << "Inv Dst Color" << "Src Alpha" << "Inv Src Alpha" <<
+			"Dst Alpha" << "Inv Dst Alpha" << "Src Alpha Saturate";
+		QStringList testModes = QStringList() <<
+			"Always" << "Less" << "Equal" << "Less or Equal" << "Greater" << "Not Equal" << "Greater or Equal" << "Never";
 		
 		QCheckBox * chkBlend = dlgCheck( vbox, "Enable Blending" );
 		chkBlend->setChecked( flags & 1 );
 		
-		QComboBox * cmbSrc = dlgCombo( vbox, "Source Blend Mode", blendModes, 11, chkBlend );
+		QComboBox * cmbSrc = dlgCombo( vbox, "Source Blend Mode", blendModes, chkBlend );
 		cmbSrc->setCurrentIndex( flags >> 1 & 0x0f );
 		
-		QComboBox * cmbDst = dlgCombo( vbox, "Destination Blend Mode", blendModes, 11, chkBlend );
+		QComboBox * cmbDst = dlgCombo( vbox, "Destination Blend Mode", blendModes, chkBlend );
 		cmbDst->setCurrentIndex( flags >> 5 & 0x0f );
 		
 		QCheckBox * chkTest = dlgCheck( vbox, "Enable Testing" );
 		chkTest->setChecked( flags & ( 1 << 9 ) );
 		
-		QComboBox * cmbTest = dlgCombo( vbox, "Alpha Test Function", testModes, 8, chkTest );
+		QComboBox * cmbTest = dlgCombo( vbox, "Alpha Test Function", testModes, chkTest );
 		cmbTest->setCurrentIndex( flags >> 10 & 0x07 );
 		
 		QSpinBox * spnTest = dlgSpin( vbox, "Alpha Test Threshold", 0x00, 0xff, chkTest );
@@ -237,7 +242,6 @@ public:
 	void nodeFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if ( ! flags ) flags = 8;
 		
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -246,9 +250,7 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
 		chkHidden->setChecked( flags & 1 );
 		
-		static const char * collisionModes[4] = { "None", "Triangles", "Bounding Box", "Continue" };
-		
-		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", collisionModes, 4 );
+		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", QStringList() << "None" << "Triangles" << "Bounding Box" << "Continue" );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 		
 		QCheckBox * chkSkin = dlgCheck( vbox, "Skin Influence" );
@@ -268,7 +270,6 @@ public:
 	void controllerFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if ( ! flags ) flags = 8;
 		
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -277,9 +278,7 @@ public:
 		QCheckBox * chkActive = dlgCheck( vbox, "Active" );
 		chkActive->setChecked( flags & 8 );
 		
-		static const char * loopModes[3] = { "Cycle", "Reverse", "Clamp" };
-		
-		QComboBox * cmbLoop = dlgCombo( vbox, "Loop Mode", loopModes, 3 );
+		QComboBox * cmbLoop = dlgCombo( vbox, "Loop Mode", QStringList() << "Cycle" << "Reverse" << "Clamp" );
 		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
 		
 		dlgButtons( &dlg, vbox );
@@ -289,6 +288,36 @@ public:
 			flags = flags & 0xfff7 | ( chkActive->isChecked() ? 8 : 0 );
 			flags = flags & 0xfff9 | cmbLoop->currentIndex() << 1;
 			nif->set<int>( index, flags );
+		}
+	}
+	
+	void bodyFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout( &dlg );
+		
+		QCheckBox * chkLinked = dlgCheck( vbox, "Linked" );
+		chkLinked->setChecked( flags & 0x80 );
+		QCheckBox * chkNoCol  = dlgCheck( vbox, "No Collision" );
+		chkNoCol->setChecked( flags & 0x40 );
+		QCheckBox * chkScaled = dlgCheck( vbox, "Scaled" );
+		chkScaled->setChecked( flags & 0x20 );
+		
+		QSpinBox * spnPartNo = dlgSpin( vbox, "Part Number", 0, 0x1f, chkLinked );
+		spnPartNo->setValue( flags & 0x1f );
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = flags & 0x7f | ( chkLinked->isChecked() ? 0x80 : 0 );
+			flags = flags & 0xbf | ( chkNoCol->isChecked() ? 0x40 : 0 );
+			flags = flags & 0xdf | ( chkScaled->isChecked() ? 0x20 : 0 );
+			flags = flags & 0xe0 | ( chkLinked->isChecked() ? spnPartNo->value() : 0 );
+			nif->set<int>( index, flags );
+			nif->set<int>( index.parent(), "Col Filter Copy", flags );
 		}
 	}
 	
@@ -303,15 +332,13 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
 		chkHidden->setChecked( flags & 0x01 );
 		
-		static const char * collisionModes[4] = { "None", "Triangles", "Bounding Box", "Continue" };
-		
-		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", collisionModes, 4 );
+		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", QStringList() << "None" << "Triangles" << "Bounding Box" << "Continue" );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 		
 		QCheckBox * chkShadow = 0;
-		if ( nif->checkVersion( 0x04000020, 0x04000020 ) )
+		if ( nif->checkVersion( 0x04000002, 0x04000002 ) )
 		{
-			dlgCheck( vbox, "Shadow" );
+			chkShadow = dlgCheck( vbox, "Shadow" );
 			chkShadow->setChecked( flags & 0x40 );
 		}
 		
@@ -327,37 +354,9 @@ public:
 		}
 	}
 	
-	void vcolFlags( NifModel * nif, const QModelIndex & index )
-	{
-		QModelIndex iBlock = nif->getBlock( index );
-		
-		QDialog dlg;
-		QVBoxLayout * vbox = new QVBoxLayout;
-		dlg.setLayout( vbox );
-		
-		static const char * vertexModes[3] = { "Ignore", "Emissive", "Ambient Diffuse" };
-		
-		QComboBox * cmbVertex = dlgCombo( vbox, "Vertex Mode", vertexModes, 3 );
-		cmbVertex->setCurrentIndex( nif->get<int>( iBlock, "Vertex Mode" ) );
-		
-		static const char * lightModes[2] = { "Emissive", "Ambient Diffuse Emissive" };
-		
-		QComboBox * cmbLight = dlgCombo( vbox, "Lighting Mode", lightModes, 2 );
-		cmbLight->setCurrentIndex( nif->get<int>( iBlock, "Lighting Mode" ) );
-		
-		dlgButtons( &dlg, vbox );
-		
-		if ( dlg.exec() == QDialog::Accepted )
-		{
-			nif->set<int>( iBlock, "Vertex Mode", cmbVertex->currentIndex() );
-			nif->set<int>( iBlock, "Lighting Mode", cmbLight->currentIndex() );
-		}
-	}
-	
 	void zbufferFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if ( ! flags ) flags = 8;
 		
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -369,16 +368,11 @@ public:
 		QCheckBox * chkROnly = dlgCheck( vbox, "Z Buffer Read Only" );
 		chkROnly->setChecked( ( flags & 2 ) == 0 );
 		
-		static const char * depthModes[8] = {
-			"Always", "Less", "Equal", "Less or Equal", "Greater", "Not Equal", "Greater or Equal", "Never"
-		};
-		
-		QComboBox * cmbFunc = 0;
-		if ( nif->checkVersion( 0x20000004, 0 ) )
-		{
-			cmbFunc = dlgCombo( vbox, "Z Buffer Test Function", depthModes, 8, chkEnable );
+		QComboBox * cmbFunc = dlgCombo( vbox, "Z Buffer Test Function", QStringList() << "Always" << "Less" << "Equal" << "Less or Equal" << "Greater" << "Not Equal" << "Greater or Equal" << "Never", chkEnable );
+		if ( nif->checkVersion( 0x04010012, 0 ) )
+			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Function" ) );
+		else
 			cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
-		}
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -386,7 +380,9 @@ public:
 		{
 			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
 			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
-			if ( cmbFunc )
+			if ( nif->checkVersion( 0x04010012, 0 ) )
+				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
+			else
 				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
 			nif->set<int>( index, flags );
 		}
@@ -404,13 +400,12 @@ public:
 		return box;
 	}
 	
-	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, const char * items[], int numitems, QCheckBox * chk = 0 )
+	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = 0 )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QComboBox * cmb = new QComboBox;
 		vbox->addWidget( cmb );
-		for ( int c = 0; c < numitems; c++ )
-			cmb->addItem( items[c] );
+		cmb->addItems( items );
 		if ( chk )
 		{
 			QObject::connect( chk, SIGNAL( toggled( bool ) ), cmb, SLOT( setEnabled( bool ) ) );
