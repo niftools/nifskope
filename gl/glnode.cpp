@@ -1272,31 +1272,21 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 	if ( ( iBlock.isValid() && index == iBlock ) || ( iData.isValid() && index == iData ) )
 	{
 		ranges.clear();
-		iData = QModelIndex();
-		
-		QModelIndex iLOD = nif->getIndex( iBlock, "LOD Info" );
-		if ( iLOD.isValid() )
+		iData = nif->getBlock( nif->getLink( iBlock, "Range Data" ), "NiRangeLODData" );
+		QModelIndex iLevels;
+		if ( iData.isValid() )
 		{
-			QModelIndex iLevels;
-			switch ( nif->get<int>( iLOD, "LOD Type" ) )
-			{
-				case 0:
-					center = nif->get<Vector3>( iLOD, "LOD Center" );
-					iLevels = nif->getIndex( iLOD, "LOD Levels" );
-					break;
-				case 1:
-					iData = nif->getBlock( nif->getLink( iLOD, "Range Data" ), "NiRangeLODData" );
-					if ( iData.isValid() )
-					{
-						center = nif->get<Vector3>( iLOD, "LOD Center" );
-						iLevels = nif->getIndex( iData, "LOD Levels" );
-					}
-					break;
-			}
-			if ( iLevels.isValid() )
-				for ( int r = 0; r < nif->rowCount( iLevels ); r++ )
-					ranges.append( qMakePair<float,float>( nif->get<float>( iLevels.child( r, 0 ), "Near" ), nif->get<float>( iLevels.child( r, 0 ), "Far" ) ) );
+			center = nif->get<Vector3>( iData, "LOD Center" );
+			iLevels = nif->getIndex( iData, "LOD Levels" );
 		}
+		else
+		{
+			center = nif->get<Vector3>( iBlock, "LOD Center" );
+			iLevels = nif->getIndex( iBlock, "LOD Levels" );
+		}
+		if ( iLevels.isValid() )
+			for ( int r = 0; r < nif->rowCount( iLevels ); r++ )
+				ranges.append( qMakePair<float,float>( nif->get<float>( iLevels.child( r, 0 ), "Near Extent" ), nif->get<float>( iLevels.child( r, 0 ), "Far Extent" ) ) );
 	}
 }
 
