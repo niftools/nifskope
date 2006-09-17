@@ -65,6 +65,7 @@ protected:
 	QVector<Vector3> norms;
 	QVector<Color4>  colors;
 	QVector<Vector3> tangents;
+	QVector<Vector3> binormals;
 	
 	QList< QVector<Vector2> > coords;
 	
@@ -72,6 +73,7 @@ protected:
 	QVector<Vector3> transNorms;
 	QVector<Color4> transColors;
 	QVector<Vector3> transTangents;
+	QVector<Vector3> transBinormals;
 	
 	int skelRoot;
 	Transform skelTrans;

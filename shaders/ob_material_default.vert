@@ -22,7 +22,7 @@ void main( void )
 	
 	normal = gl_NormalMatrix * gl_Normal;
 	tangent = gl_NormalMatrix * gl_MultiTexCoord1.xyz;
-	binormal = cross( normal, tangent );
+	binormal = gl_NormalMatrix * gl_MultiTexCoord2.xyz;
 	
 	ViewDir = tspace( ( gl_ModelViewMatrix * gl_Vertex ).xyz );
 	LightDir = tspace( gl_LightSource[0].position.xyz ); // light 0 is directional

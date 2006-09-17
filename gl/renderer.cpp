@@ -352,7 +352,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 				QString id = list.value( 1 ).toLower();
 				if ( ! ok || id.isEmpty() )
 					throw QString( "malformed texcoord tag" );
-				if ( id != "tangents" && TexturingProperty::getId( id ) < 0 )
+				if ( id != "tangents" && id != "binormals" && TexturingProperty::getId( id ) < 0 )
 					throw QString( "texcoord tag referres to unknown texture id '%1'" ).arg( id );
 				if ( texcoords.contains( unit ) )
 					throw QString( "texture unit %1 is assigned twiced" ).arg( unit );
@@ -542,6 +542,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				return false;
 			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.data() );
+		}
+		else if ( itx.value() == "binormals" )
+		{
+			if ( ! mesh->transBinormals.count() )
+				return false;
+			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBinormals.data() );
 		}
 		else
 		{

@@ -1272,7 +1272,7 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 	if ( ( iBlock.isValid() && index == iBlock ) || ( iData.isValid() && index == iData ) )
 	{
 		ranges.clear();
-		iData = nif->getBlock( nif->getLink( iBlock, "Range Data" ), "NiRangeLODData" );
+		iData = nif->getBlock( nif->getLink( iBlock, "LOD Level Data" ), "NiRangeLODData" );
 		QModelIndex iLevels;
 		if ( iData.isValid() )
 		{

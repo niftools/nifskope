@@ -138,6 +138,7 @@ void Mesh::clear()
 	colors.clear();
 	coords.clear();
 	tangents.clear();
+	binormals.clear();
 	triangles.clear();
 	tristrips.clear();
 	weights.clear();
@@ -147,6 +148,7 @@ void Mesh::clear()
 	transNorms.clear();
 	transColors.clear();
 	transTangents.clear();
+	transBinormals.clear();
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
@@ -236,6 +238,7 @@ void Mesh::transform()
 		norms = nif->getArray<Vector3>( iData, "Normals" );
 		colors = nif->getArray<Color4>( iData, "Vertex Colors" );
 		tangents.clear();
+		binormals.clear();
 		
 		if ( norms.count() < verts.count() ) norms.clear();
 		if ( colors.count() < verts.count() ) colors.clear();
@@ -290,9 +293,12 @@ void Mesh::transform()
 					if ( data.count() == verts.count() * 4 * 3 * 2 )
 					{
 						tangents.resize( verts.count() );
+						binormals.resize( verts.count() );
 						Vector3 * t = (Vector3 *) data.data();
 						for ( int c = 0; c < verts.count(); c++ )
 							tangents[c] = *t++;
+						for ( int c = 0; c < verts.count(); c++ )
+							binormals[c] = *t++;
 					}
 				}
 			}
@@ -354,6 +360,8 @@ void Mesh::transformShapes()
 		transNorms.fill( Vector3() );
 		transTangents.resize( tangents.count() );
 		transTangents.fill( Vector3() );
+		transBinormals.resize( binormals.count() );
+		transBinormals.fill( Vector3() );
 		
 		Node * root = findParent( skelRoot );
 		
@@ -386,6 +394,8 @@ void Mesh::transformShapes()
 								transNorms[vindex] += trans.rotation * norms[ vindex ] * weight.second;
 							if ( tangents.count() > vindex )
 								transTangents[vindex] += trans.rotation * tangents[ vindex ] * weight.second;
+							if ( binormals.count() > vindex )
+								transBinormals[vindex] += trans.rotation * binormals[ vindex ] * weight.second;
 						}
 					}
 				}
@@ -410,6 +420,8 @@ void Mesh::transformShapes()
 						transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
 					if ( transTangents.count() > vw.vertex )
 						transTangents[ vw.vertex ] += natrix * tangents[ vw.vertex ] * vw.weight;
+					if ( transBinormals.count() > vw.vertex )
+						transBinormals[ vw.vertex ] += natrix * binormals[ vw.vertex ] * vw.weight;
 				}
 			}
 		}
@@ -418,6 +430,8 @@ void Mesh::transformShapes()
 			transNorms[n].normalize();
 		for ( int t = 0; t < transTangents.count(); t++ )
 			transTangents[t].normalize();
+		for ( int t = 0; t < transBinormals.count(); t++ )
+			transBinormals[t].normalize();
 		
 		bndSphere = BoundSphere( transVerts );
 		bndSphere.applyInv( viewTrans() );
@@ -428,6 +442,7 @@ void Mesh::transformShapes()
 		transVerts = verts;
 		transNorms = norms;
 		transTangents = tangents;
+		transBinormals = binormals;
 	}
 	
 	AlphaProperty * alphaprop = findProperty<AlphaProperty>();

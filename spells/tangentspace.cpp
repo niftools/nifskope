@@ -6,6 +6,11 @@
 
 #define TOLERANCE ( PI * 1 / 180 )
 
+static QDebug operator<<( QDebug dbg, const Vector3 & v )
+{
+	return dbg << QString( "( %1, %2, %3 )" ).arg( v[0], 0, 'f', 1 ).arg( v[1], 0, 'f', 1 ).arg( v[2], 0, 'f', 1 ).toAscii().data();
+}
+
 class spTangentSpace : public Spell
 {
 	QString name() const { return "Update Tangent Space"; }
@@ -63,6 +68,8 @@ class spTangentSpace : public Spell
 		
 		for ( int t = 0; t < triangles.count(); t++ )
 		{	// for each triangle caculate the texture flow direction
+			//qDebug() << "triangle" << t;
+			
 			Triangle & tri = triangles[t];
 			
 			int i1 = tri[0];
@@ -77,33 +84,56 @@ class spTangentSpace : public Spell
 			const Vector2 & w2 = texco[i2];
 			const Vector2 & w3 = texco[i3];
 			
-			float x1 = v2[0] - v1[0];
-			float x2 = v3[0] - v1[0];
-			float y1 = v2[1] - v1[1];
-			float y2 = v3[1] - v1[1];
-			float z1 = v2[2] - v1[2];
-			float z2 = v3[2] - v1[2];
+			Vector3 v2v1 = v2 - v1;
+			Vector3 v3v1 = v3 - v1;
 			
-			float s1 = w2[0] - w1[0];
-			float s2 = w3[0] - w1[0];
-			float t1 = w2[1] - w1[1];
-			float t2 = w3[1] - w1[1];
+			Vector2 w2w1 = w2 - w1;
+			Vector2 w3w1 = w3 - w1;
 			
-			if ( fabs( s1 * t2 - s2 * t1 ) <= 10e-5 )
-				continue;
+			float r = w2w1[0] * w3w1[1] - w3w1[0] * w2w1[1];
 			
-			float r = 1.0 / ( s1 * t2 - s2 * t1 );
-			Vector3 sdir( ( t2 * x1 - t1 * x2 ) * r, ( t2 * y1 - t1 * y2 ) * r, ( t2 * z1 - t1 * z2 ) * r );
-			Vector3 tdir( ( s1 * x2 - s2 * x1 ) * r, ( s1 * y2 - s2 * y1 ) * r, ( s1 * z2 - s2 * z1 ) * r );
+			if ( fabs( r ) <= 10e-5 )	continue;
 			
+			r = 1.0 / r;
+			
+			Vector3 sdir( 
+				( w3w1[1] * v2v1[0] - w2w1[1] * v3v1[0] ) * r,
+				( w3w1[1] * v2v1[1] - w2w1[1] * v3v1[1] ) * r,
+				( w3w1[1] * v2v1[2] - w2w1[1] * v3v1[2] ) * r
+			);
+			
+			Vector3 tdir( 
+				( w2w1[0] * v3v1[0] - w3w1[0] * v2v1[0] ) * r,
+				( w2w1[0] * v3v1[1] - w3w1[0] * v2v1[1] ) * r,
+				( w2w1[0] * v3v1[2] - w3w1[0] * v2v1[2] ) * r
+			);
+			
+			sdir.normalize();
+			tdir.normalize();
+			
+			//qDebug() << sdir << tdir;
+			
+			for ( int j = 0; j < 3; j++ )
+			{	// no duplication, just smoothing
+				int i = tri[j];
+				
+				tan[i] += tdir;
+				bin[i] += sdir;
+			}
+			
+			/*
 			for ( int j = 0; j < 3; j++ )
 			{	// store flow direction and duplicate vertices if nescessarry
 				int i = tri[j];
+				
+				tan[i] += tdir;
+				bin[i] += sdir;
 				
 				QList<int> indices = vmap.values( i );
 				if ( indices.isEmpty() )
 				{
 					tan[i] = tdir;
+					bin[i] = sdir;
 					vmap.insert( i, i );
 				}
 				else if ( ! isSkinned )
@@ -111,7 +141,7 @@ class spTangentSpace : public Spell
 					int x;
 					for ( x = 0; x < indices.count(); x++ )
 					{
-						if ( matches( tan[indices[x]], tdir, TOLERANCE ) )
+						if ( matches( tan[indices[x]], tdir, TOLERANCE ) && matches( bin[indices[x]], sdir, TOLERANCE ) )
 						{
 							tri[j] = indices[x];
 							break;
@@ -127,11 +157,12 @@ class spTangentSpace : public Spell
 						if ( vxcol.count() )
 							vxcol.append( vxcol[i] );
 						tan.append( tdir );
-						bin.append( Vector3() );
+						bin.append( sdir );
 						dups++;
 					}
 				}
 			}
+			*/
 		}
 		
 		for ( int i = 0; i < verts.count(); i++ )
@@ -141,17 +172,25 @@ class spTangentSpace : public Spell
 			Vector3 & t = tan[i];
 			Vector3 & b = bin[i];
 			
-			if ( t == Vector3() )
+			//qDebug() << n << t << b;
+			
+			if ( t == Vector3() || b == Vector3() )
 			{
 				t[0] = n[1]; t[1] = n[2]; t[2] = n[0];
+				b = Vector3::crossproduct( n, t );
 			}
 			
-			t = ( t - n * Vector3::dotproduct( n, t ) );
-			t.normalize();
-			b = ( Vector3::crossproduct( n, t ) );
+			else
+			{
+				t = ( t - n * Vector3::dotproduct( n, t ) );
+				t.normalize();
+				//b = Vector3::crossproduct( n, t );
+				b = ( b - n * Vector3::dotproduct( n, b ) );
+				b.normalize();
+			}
 			
-			//qWarning() << QString( "tan[%1] %2 %3 %4" ).arg( i ).arg( t[0], 0, 'f', 4 ).arg( t[1], 0, 'f', 4 ).arg( t[2], 0, 'f', 4 );
-			//qWarning() << QString( "bin[%1] %2 %3 %4" ).arg( i ).arg( b[0], 0, 'f', 4 ).arg( b[1], 0, 'f', 4 ).arg( b[2], 0, 'f', 4 );
+			//qDebug() << n << t << b;
+			//qDebug() << "";
 		}
 		
 		if ( dups != 0 )
@@ -229,19 +268,12 @@ class spTangentSpace : public Spell
 		}
 		
 		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *) tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *) bin.data(), bin.count() * sizeof( Vector3 ) ) );
-		/*
-		nif->set<int>( iTSpace, "Size", 24 * verts.count() );
-		nif->updateArray( iTSpace, "Tangents" );
-		nif->setArray<Vector3>( iTSpace, "Tangents", tan );
-		nif->updateArray( iTSpace, "Binormals" );
-		nif->setArray<Vector3>( iTSpace, "Binormals", bin );
-		*/
 		return iShape;
 	}
 	
 	bool matches( const Vector3 & a, const Vector3 & b, float tolerance )
 	{
-		return Vector3::angle( a, b ) < tolerance; //fabs( a[0] - b[0] ) < tolerance && fabs( a[1] - b[1] ) < tolerance && fabs( a[2] - b[2] ) < tolerance;
+		return Vector3::angle( a, b ) < tolerance;
 	}
 };
 
