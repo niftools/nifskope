@@ -479,28 +479,75 @@ public:
 			{
 				Partition part;
 				
-				QMutableListIterator<Triangle> it( triangles );
-				while ( it.hasNext() )
+				QHash<int,bool> usedVerts;
+				
+				bool addtriangles;
+				do
 				{
-					Triangle & tri = it.next();
-					
-					QList<int> tribones;
-					for ( int c = 0; c < 3; c++ )
+					QMutableListIterator<Triangle> it( triangles );
+					while ( it.hasNext() )
 					{
-						foreach ( boneweight bw, weights[tri[c]] )
+						Triangle & tri = it.next();
+						
+						QList<int> tribones;
+						for ( int c = 0; c < 3; c++ )
 						{
-							if ( ! tribones.contains( bw.first ) )
-								tribones.append( bw.first );
+							foreach ( boneweight bw, weights[tri[c]] )
+							{
+								if ( ! tribones.contains( bw.first ) )
+									tribones.append( bw.first );
+							}
+						}
+						
+						if ( part.bones.isEmpty() || containsBones( part.bones, tribones ) )
+						{
+							part.bones = mergeBones( part.bones, tribones );
+							part.triangles.append( tri );
+							usedVerts[ tri[0] ] = true;
+							usedVerts[ tri[1] ] = true;
+							usedVerts[ tri[2] ] = true;
+							it.remove();
 						}
 					}
 					
-					if ( part.bones.isEmpty() || containsBones( part.bones, tribones ) )
-					{
-						part.bones = mergeBones( part.bones, tribones );
-						part.triangles.append( tri );
-						it.remove();
+					addtriangles = false;
+					
+					if ( part.bones.count() < maxBonesPerPartition )
+					{	// if we have room left in the partition then add an adjacent triangle
+						it.toFront();
+						while ( it.hasNext() )
+						{
+							Triangle & tri = it.next();
+							
+							if ( usedVerts.contains( tri[0] ) || usedVerts.contains( tri[1] ) || usedVerts.contains( tri[2] ) )
+							{
+								QList<int> tribones;
+								for ( int c = 0; c < 3; c++ )
+								{
+									foreach ( boneweight bw, weights[tri[c]] )
+									{
+										if ( ! tribones.contains( bw.first ) )
+											tribones.append( bw.first );
+									}
+								}
+								
+								tribones = mergeBones( part.bones, tribones );
+								if ( tribones.count() <= maxBonesPerPartition )
+								{
+									part.bones = tribones;
+									part.triangles.append( tri );
+									usedVerts[ tri[0] ] = true;
+									usedVerts[ tri[1] ] = true;
+									usedVerts[ tri[2] ] = true;
+									it.remove();
+									addtriangles = true;
+									//break;
+								}
+							}
+						}
 					}
 				}
+				while ( addtriangles );
 				
 				parts.append( part );
 			}
@@ -515,15 +562,18 @@ public:
 				merged = false;
 				for ( int p1 = 0; p1 < parts.count() && ! merged; p1++ )
 				{
-					for ( int p2 = p1+1; p2 < parts.count() && ! merged; p2++ )
+					if ( parts[p1].bones.count() < maxBonesPerPartition )
 					{
-						QList<int> mergedBones = mergeBones( parts[p1].bones, parts[p2].bones );
-						if ( mergedBones.count() < maxBonesPerPartition )
+						for ( int p2 = p1+1; p2 < parts.count() && ! merged; p2++ )
 						{
-							parts[p1].bones = mergedBones;
-							parts[p1].triangles << parts[p2].triangles;
-							parts.removeAt( p2 );
-							merged = true;
+							QList<int> mergedBones = mergeBones( parts[p1].bones, parts[p2].bones );
+							if ( mergedBones.count() <= maxBonesPerPartition )
+							{
+								parts[p1].bones = mergedBones;
+								parts[p1].triangles << parts[p2].triangles;
+								parts.removeAt( p2 );
+								merged = true;
+							}
 						}
 					}
 				}
@@ -697,7 +747,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnPart = new QSpinBox( this );
 	spnPart->setMinimum( 4 );
 	spnPart->setMaximum( 40 );
-	spnPart->setValue( 20 );
+	spnPart->setValue( 18 );
 	
 	QLabel * labVert = new QLabel( this );
 	labVert->setText(
@@ -711,9 +761,9 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	QLabel * labPart = new QLabel( this );
 	labPart->setText(
 	"<b>Number of Bones per Partition</b><br>"
-	"Hint: Oblivion uses 20 bones pp<br>"
+	"Hint: Oblivion uses 18 bones pp<br>"
 	"CivIV (non shader meshes) 4 bones pp<br>"
-	"CivIV (shader enabled meshes) 20 bones pp<br>"
+	"CivIV (shader enabled meshes) 18 bones pp<br>"
 	"Note: To fit the triangles into the partitions<br>"
 	"some bone influences may be removed again."
 	);
