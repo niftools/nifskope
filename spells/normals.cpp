@@ -11,12 +11,12 @@
 class spFaceNormals : public Spell
 {
 public:
-	QString name() const { return "Make Normals"; }
+	QString name() const { return "Face Normals"; }
 	QString page() const { return "Mesh"; }
 	
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iData = index;
+		QModelIndex iData = nif->getBlock( index );
 		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
 			iData = nif->getBlock( nif->getLink( index, "Data" ) );
 		if ( nif->isNiBlock( iData, "NiTriShapeData" ) || nif->isNiBlock( iData, "NiTriStripsData" ) )
@@ -152,7 +152,10 @@ public:
 				{
 					Vector3 bn = norms[j];
 					if ( Vector3::angle( an, bn ) < maxa )
-						snorms[i] = snorms[j] = an + bn;
+					{
+						snorms[i] += bn;
+						snorms[j] += an;
+					}
 				}
 			}
 		}
@@ -166,4 +169,36 @@ public:
 	}
 };
 
-REGISTER_SPELL( spSmoothNormals );
+REGISTER_SPELL( spSmoothNormals )
+
+class spNormalize : public Spell
+{
+public:
+	QString name() const { return "Normalize"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ( nif->getValue( index ).type() == NifValue::tVector3 )
+			|| ( nif->isArray( index ) && nif->getValue( index.child( 0, 0 ) ).type() == NifValue::tVector3 );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		if ( nif->isArray( index ) )
+		{
+			QVector<Vector3> norms = nif->getArray<Vector3>( index );
+			for ( int n = 0; n < norms.count(); n++ )
+				norms[n].normalize();
+			nif->setArray<Vector3>( index, norms );
+		}
+		else
+		{
+			Vector3 n = nif->get<Vector3>( index );
+			n.normalize();
+			nif->set<Vector3>( index, n );
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spNormalize )
