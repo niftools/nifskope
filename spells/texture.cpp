@@ -358,79 +358,6 @@ public:
 
 REGISTER_SPELL( spTextureFolders )
 
-class spFlipTexCoords : public Spell
-{
-public:
-	QString name() const { return "Flip UV"; }
-	QString page() const { return "Texture"; }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return nif->itemType( index ).toLower() == "texcoord";
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		QMenu menu;
-		static const char * const flipCmds[3] = { "S = 1.0 - S", "T = 1.0 - T", "S <=> T" };
-		for ( int c = 0; c < 3; c++ )
-			menu.addAction( flipCmds[c] );
-		QAction * act = menu.exec( QCursor::pos() );
-		for ( int c = 0; c < 3; c++ )
-			if ( act->text() == flipCmds[c] )
-				flip( nif, index, c );
-		return index;
-	}
-
-	void flip( NifModel * nif, const QModelIndex & index, int f )
-	{
-		if ( nif->isArray( index ) )
-		{
-			QModelIndex idx = index.child( 0, 0 );
-			if ( idx.isValid() )
-			{
-				if ( nif->isArray( idx ) )
-					flip( nif, idx, f );
-				else
-				{
-					QVector<Vector2> tc = nif->getArray<Vector2>( index );
-					for ( int c = 0; c < tc.count(); c++ )
-						flip( tc[c], f );
-					nif->setArray<Vector2>( index, tc );
-				}
-			}
-		}
-		else
-		{
-			Vector2 v = nif->get<Vector2>( index );
-			flip( v, f );
-			nif->set<Vector2>( index, v );
-		}
-	}
-
-	void flip( Vector2 & v, int f )
-	{
-		switch ( f )
-		{
-			case 0:
-				v[0] = 1.0 - v[0];
-				break;
-			case 1:
-				v[1] = 1.0 - v[1];
-				break;
-			default:
-				{
-					float x = v[0];
-					v[0] = v[1];
-					v[1] = x;
-				}	break;
-		}
-	}
-	
-};
-
-REGISTER_SPELL( spFlipTexCoords )
-
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
 class spTextureTemplate : public Spell
@@ -606,7 +533,7 @@ public:
 
   	bool isApplicable( const NifModel * nif, const QModelIndex &index )
   	{
-     	return nif->checkVersion( 0x14000005, 0x14000005 ) && index.isValid();
+     	return nif->checkVersion( 0x14000005, 0x14000005 ) && index.isValid() && nif->isNiBlock( index );
 	}
 
   	QModelIndex cast( NifModel *nif, const QModelIndex &index )
