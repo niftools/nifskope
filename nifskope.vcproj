@@ -37,6 +37,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="$(SolutionDir)"
+				RuntimeLibrary="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -49,6 +50,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="Qt3Support4.lib QtAssistantClient.lib QtCore4.lib QtDesigner4.lib QtDesignerComponents4.lib QtGui4.lib qtmain.lib QtNetwork4.lib QtOpenGL4.lib QtSql4.lib QtSvg4.lib QtTest4.lib QtUiTools.lib QtXml4.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -99,6 +101,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="$(SolutionDir)"
+				RuntimeLibrary="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -111,6 +114,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="Qt3Support4.lib QtAssistantClient.lib QtCore4.lib QtDesigner4.lib QtDesignerComponents4.lib QtGui4.lib qtmain.lib QtNetwork4.lib QtOpenGL4.lib QtSql4.lib QtSvg4.lib QtTest4.lib QtUiTools.lib QtXml4.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

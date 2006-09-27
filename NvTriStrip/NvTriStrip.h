@@ -5,7 +5,7 @@
 #define NULL 0
 #endif
 
-#pragma comment(lib, "nvtristrip")
+//#pragma comment(lib, "nvtristrip")
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Public interface for stripifier

@@ -60,6 +60,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932385
+#endif 
+
 GLView::GLView( const QGLFormat & format )
 	: QGLWidget( format )
 {
