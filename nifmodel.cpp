@@ -58,17 +58,21 @@ QString NifModel::version2string( quint32 v )
 quint32 NifModel::version2number( const QString & s )
 {
 	if ( s.isEmpty() )	return 0;
-	QStringList l = s.split( "." );
-	if ( l.count() != 4 )
+	
+	if ( s.contains( "." ) )
+	{
+		QStringList l = s.split( "." );
+		quint32 v = 0;
+		for ( int i = 0; i < 4 && i < l.count(); i++ )
+			v += l[i].toInt( 0, 10 ) << ( (3-i) * 8 );
+		return v;
+	}
+	else
 	{
 		bool ok;
 		quint32 i = s.toUInt( &ok );
 		return ( i == 0xffffffff ? 0 : i );
 	}
-	quint32 v = 0;
-	for ( int i = 0; i < 4; i++ )
-		v += l[i].toInt( 0, 10 ) << ( (3-i) * 8 );
-	return v;
 }
 
 bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
@@ -1048,19 +1052,39 @@ bool NifModel::setHeaderString( const QString & s )
 		msg( Message() << "this is not a NIF" );
 		return false;
 	}
-	return true;
-}
-
-bool NifModel::setVersion( quint32 v )
-{
-	// verify version number
-	if ( ! isVersionSupported( v ) )
+	
+	int p = s.indexOf( "Version", 0, Qt::CaseInsensitive );
+	if ( p >= 0 )
 	{
-		msg( Message() << "version" << version2string( v ) << "is not supported yet" );
+		QString v = s;
+		
+		v.remove( 0, p + 8 );
+		
+		for ( int i = 0; i < v.length(); i++ )
+		{
+			if ( v[i].isDigit() || v[i] == QChar( '.' ) )
+				continue;
+			else
+			{
+				v = v.left( i );
+			}
+		}
+		
+		version = version2number( v );
+		
+		if ( ! isVersionSupported( version ) )
+		{
+			msg( Message() << "version" << version2string( version ) << "(" << v << ")" << "is not supported yet" );
+			return false;
+		}
+		
+		return true;
+	}
+	else
+	{
+		msg( Message() << "invalid header string" );
 		return false;
 	}
-	version = v;
-	return true;
 }
 
 bool NifModel::load( QIODevice & device )
@@ -1082,47 +1106,101 @@ bool NifModel::load( QIODevice & device )
 	
 	emit sigProgress( 0, numblocks );
 	QTime t = QTime::currentTime();
-
-	// read in the NiBlocks
+	
 	try
 	{
-		for ( int c = 0; c < numblocks; c++ )
+		if ( version >= 0x0303000d )
 		{
-			emit sigProgress( c + 1, numblocks );
-			
-			if ( device.atEnd() )
-				throw QString( "unexpected EOF during load" );
-			
-			QString blktyp;
-			
-			if ( version > 0x0a000000 )
+			// read in the NiBlocks
+			for ( int c = 0; c < numblocks; c++ )
 			{
-				if ( version < 0x0a020000 )		device.read( 4 );
+				emit sigProgress( c + 1, numblocks );
 				
-				int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
-				blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+				if ( device.atEnd() )
+					throw QString( "unexpected EOF during load" );
+				
+				QString blktyp;
+				
+				if ( version >= 0x0a000000 )
+				{
+					if ( version < 0x0a020000 )		device.read( 4 );
+					
+					// block types are stored in the header for versions above 10.x.x.x
+					int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
+					blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+				}
+				else
+				{
+					int len;
+					device.read( (char *) &len, 4 );
+					if ( len < 2 || len > 80 )
+						throw QString( "next block does not start with a NiString" );
+					blktyp = device.read( len );
+				}
+				
+				if ( isNiBlock( blktyp ) )
+				{
+					msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+					insertNiBlock( blktyp, -1, true );
+					if ( ! load( root->child( c+1 ), stream, true ) ) 
+						throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+				}
+				else
+					throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 			}
-			else
+			
+			// read in the footer
+			if ( !load( getFooterItem(), stream, true ) )
+				throw QString( "failed to load file footer" );
+		}
+		else
+		{	// versions below 3.3.0.13
+			QMap<qint32,qint32> linkMap;
+			
+			for ( qint32 c = 0; true; c++ )
 			{
+				emit sigProgress( c + 1, 0 );
+				
+				if ( device.atEnd() )
+					throw QString( "unexpected EOF during load" );
+				
 				int len;
 				device.read( (char *) &len, 4 );
-				if ( len < 2 || len > 80 )
-					throw QString( "next block starts not with a NiString" );
-				blktyp = device.read( len );
+				if ( len < 0 || len > 80 )
+					throw QString( "next block does not start with a NiString" );
+				
+				QString blktyp = device.read( len );
+				
+				if ( blktyp == "End Of File" )
+				{
+					break;
+				}
+				else if ( blktyp == "Top Level Object" )
+				{
+					device.read( (char *) &len, 4 );
+					if ( len < 0 || len > 80 )
+						throw QString( "next block does not start with a NiString" );
+					blktyp = device.read( len );
+				}
+				
+				qint32 p;
+				device.read( (char *) &p, 4 );
+				p -= 1;
+				if ( p != c )
+					linkMap.insert( p, c );
+				
+				if ( isNiBlock( blktyp ) )
+				{
+					msg( Message() << "loading block" << c << ":" << blktyp );
+					insertNiBlock( blktyp, -1, true );
+					if ( ! load( root->child( c+1 ), stream, true ) ) 
+						throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+				}
+				else
+					throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 			}
-			
-			if ( isNiBlock( blktyp ) )
-			{
-				msg( DbgMsg() << "loading block" << c << ":" << blktyp );
-				insertNiBlock( blktyp, -1, true );
-				if ( ! load( root->child( c+1 ), stream, true ) ) 
-					throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
-			}
-			else
-				throw QString( "encountered unknown block (%1)" ).arg( blktyp );
+			mapLinks( linkMap );
 		}
-		if ( !load( getFooterItem(), stream, true ) )
-			throw QString( "failed to load file footer" );
 	}
 	catch ( QString err )
 	{
@@ -1137,6 +1215,12 @@ bool NifModel::load( QIODevice & device )
 
 bool NifModel::save( QIODevice & device ) const
 {
+	if ( ! checkVersion( 0x04000000, 0 ) )
+	{
+		msg( Message() << "saving not supported yet for nif versions below 4.0" );
+		return false;
+	}
+	
 	NifOStream stream( this, &device );
 
 	emit sigProgress( 0, rowCount( QModelIndex() ) );
@@ -1233,7 +1317,15 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 bool NifModel::checkForBlock( const QString & filepath, const QString & blockId )
 {
 	NifModel nif;
-	return nif.loadHeaderOnly( filepath ) && nif.getArray<QString>( nif.getHeader(), "Block Types" ).contains( blockId );
+	if ( nif.loadHeaderOnly( filepath ) )
+	{
+		foreach ( QString s, nif.getArray<QString>( nif.getHeader(), "Block Types" ) )
+		{
+			if ( inherits( s, blockId ) )
+				return true;
+		}
+	}
+	return false;
 }
  
 bool NifModel::save( QIODevice & device, const QModelIndex & index ) const

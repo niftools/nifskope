@@ -187,7 +187,6 @@ protected:
 	int			getBlockNumber( NifItem * item ) const;
 	
 	bool		setHeaderString( const QString & );
-	bool		setVersion( quint32 );
 	
 	QString		ver2str( quint32 v ) const { return version2string( v ); }
 	quint32		str2ver( QString s ) const { return version2number( s ); }

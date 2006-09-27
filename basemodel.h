@@ -183,7 +183,6 @@ protected:
 	virtual quint32 str2ver( QString ) const = 0;
 
 	virtual bool setHeaderString( const QString & ) = 0;
-	virtual bool setVersion( quint32 ) = 0;
 	
 	// root item
 	NifItem *	root;

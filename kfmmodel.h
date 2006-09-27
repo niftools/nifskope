@@ -90,7 +90,6 @@ protected:
 	bool		setItemValue( NifItem * item, const NifValue & v );
 	
 	bool		setHeaderString( const QString & );
-	bool		setVersion( quint32 );
 	
 	bool		evalVersion( NifItem * item, bool chkParents = false ) const;
 

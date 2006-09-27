@@ -233,11 +233,6 @@ bool KfmModel::setHeaderString( const QString & s )
 	}
 }
 
-bool KfmModel::setVersion( quint32 v )
-{
-	return false;
-}
- 
 bool KfmModel::load( QIODevice & device )
 {
 	clear();

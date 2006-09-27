@@ -62,21 +62,22 @@ public:
 		tShortString = 12,
 		tFilePath = 13,
 		tHeaderString = 14,
-		tColor3 = 15,
-		tColor4 = 16,
-		tVector3 = 17,
-		tQuat = 18,
-		tQuatXYZW = 19,
-		tMatrix = 20,
-		tMatrix4 = 21,
-		tVector2 = 22,
-		tVector4 = 23,
-		tTriangle = 24,
-		tFileVersion = 25,
-		tByteArray = 26,
-		tStringPalette = 27,
-		tShort = 28,
-		tUInt = 29,
+		tLineString = 15,
+		tColor3 = 16,
+		tColor4 = 17,
+		tVector3 = 18,
+		tQuat = 19,
+		tQuatXYZW = 20,
+		tMatrix = 21,
+		tMatrix4 = 22,
+		tVector2 = 23,
+		tVector4 = 24,
+		tTriangle = 25,
+		tFileVersion = 26,
+		tByteArray = 27,
+		tStringPalette = 28,
+		tShort = 29,
+		tUInt = 30,
 
 		tNone = 0xff
 	};
@@ -122,7 +123,7 @@ public:
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
-	bool isString() const { return typ >= tString && typ <= tHeaderString; }
+	bool isString() const { return typ >= tString && typ <= tLineString; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
@@ -319,6 +320,7 @@ private:
 	void init();
 	
 	bool bool32bit;
+	bool linkAdjust;
 };
 
 class NifOStream
@@ -335,6 +337,7 @@ private:
 	void init();
 	
 	bool bool32bit;
+	bool linkAdjust;
 };
 
 class NifSStream
