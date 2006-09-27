@@ -86,6 +86,9 @@ TestShredder::TestShredder()
 	
 	blockMatch = new QLineEdit( this );
 	
+	repErr = new QCheckBox( "report errors only", this );
+	repErr->setChecked( settings.value( "report errors only", true ).toBool() );
+	
 	count = new QSpinBox();
 	count->setRange( 1, 8 );
 	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
@@ -124,6 +127,7 @@ TestShredder::TestShredder()
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( btChoose );
 	hbox->addWidget( blockMatch );
+	hbox->addWidget( repErr );
 	hbox->addWidget( count );
 	
 	lay->addWidget( text );
@@ -147,6 +151,7 @@ TestShredder::~TestShredder()
 	settings.setValue( "check nif", chkNif->isChecked() );
 	settings.setValue( "check kf", chkKf->isChecked() );
 	settings.setValue( "check kfm", chkKfm->isChecked() );
+	settings.setValue( "report errors only", repErr->isChecked() );
 	settings.setValue( "Threads", count->value() );
 
 	queue.clear();
@@ -173,6 +178,7 @@ void TestShredder::renumberThreads( int num )
 		threads.append( thread );
 		
 		thread->blockMatch = blockMatch->text();
+		thread->reportAll = ! repErr->isChecked();
 		
 		if ( btRun->isChecked() )
 		{
@@ -216,6 +222,7 @@ void TestShredder::run()
 	foreach ( TestThread * thread, threads )
 	{
 		thread->blockMatch = blockMatch->text();
+		thread->reportAll = ! repErr->isChecked();
 		thread->start();
 	}
 }
@@ -351,6 +358,7 @@ void FileQueue::clear()
 TestThread::TestThread( QObject * o, FileQueue * q )
 	: QThread( o ), queue( q )
 {
+	reportAll = true;
 }
 
 TestThread::~TestThread()
@@ -384,6 +392,8 @@ void TestThread::run()
 			lock = & kfm.XMLlock;
 		}
 		
+		bool kf = ( filepath.endsWith( ".KF", Qt::CaseInsensitive ) || filepath.endsWith( ".KFA", Qt::CaseInsensitive ) );
+		
 		{	// lock the XML lock
 			QReadLocker lck( lock );
 			
@@ -396,14 +406,20 @@ void TestThread::run()
 				
 				if ( loaded && model == & nif )
 					for ( int b = 0; b < nif.getBlockCount(); b++ )
-						messages += checkLinks( &nif, nif.getBlock( b ) );
+						messages += checkLinks( &nif, nif.getBlock( b ), kf );
+				
+				bool rep = reportAll;
 				
 				foreach ( Message msg, messages )
 				{
 					if ( msg.type() != QtDebugMsg )
+					{
 						result += msg + "<br>";
+						rep |= true;
+					}
 				}
-				emit sigReady( result );
+				if ( rep )
+					emit sigReady( result );
 			}
 		}
 		
@@ -427,7 +443,7 @@ static QString linkId( const NifModel * nif, QModelIndex idx )
 	return id;
 }
 
-QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex & iParent )
+QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex & iParent, bool kf )
 {
 	QList<Message> messages;
 	for ( int r = 0; r < nif->rowCount( iParent ); r++ )
@@ -439,7 +455,7 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 			qint32 l = nif->getLink( idx );
 			if ( l < 0 )
 			{
-				if ( ! child )
+				if ( ! child && ! kf )
 					messages.append( Message() << "unassigned parent link" << linkId( nif, idx ) );
 			}
 			else if ( l >= nif->getBlockCount() )
@@ -456,7 +472,7 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 			}
 		}
 		if ( nif->rowCount( idx ) > 0 )
-			messages += checkLinks( nif, idx );
+			messages += checkLinks( nif, idx, kf );
 	}
 	return messages;
 }

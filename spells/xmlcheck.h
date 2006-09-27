@@ -51,6 +51,7 @@ public:
 	~TestThread();
 	
 	QString blockMatch;
+	bool reportAll;
 
 signals:
 	void sigStart( const QString & file );
@@ -59,7 +60,7 @@ signals:
 protected:
 	void run();
 	
-	QList<Message> checkLinks( const class NifModel * nif, const class QModelIndex & iParent );
+	QList<Message> checkLinks( const class NifModel * nif, const class QModelIndex & iParent, bool kf );
 	
 	FileQueue * queue;
 	
@@ -109,6 +110,7 @@ protected:
 	QLineEdit	* blockMatch;
 	QCheckBox	* recursive;
 	QCheckBox	* chkNif, * chkKf, * chkKfm;
+	QCheckBox   * repErr;
 	QSpinBox	* count;
 	Browser		* text;
 	QProgressBar * progress;
