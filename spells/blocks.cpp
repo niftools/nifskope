@@ -10,6 +10,54 @@
 #include <QMimeData>
 #include <QSettings>
 
+
+static void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+{
+	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
+	QModelIndex iArray = nif->getIndex( iParent, array );
+	if ( iSize.isValid() && iArray.isValid() )
+	{
+		int numlinks = nif->get<int>( iSize );
+		nif->set<int>( iSize, numlinks + 1 );
+		nif->updateArray( iArray );
+		nif->setLink( iArray.child( numlinks, 0 ), link );
+	}
+}
+
+static void delLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+{
+	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
+	QModelIndex iArray = nif->getIndex( iParent, array );
+	QList<qint32> links = nif->getLinkArray( iArray ).toList();
+	if ( iSize.isValid() && iArray.isValid() && links.contains( link ) )
+	{
+		links.removeAll( link );
+		nif->set<int>( iSize, links.count() );
+		nif->updateArray( iArray );
+		nif->setLinkArray( iArray, links.toVector() );
+	}
+}
+
+static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
+{
+	if ( nif->isLink( index ) && nif->inherits( iBlock, nif->itemTmplt( index ) ) )
+	{
+		nif->setLink( index, nif->getBlockNumber( iBlock ) );
+	}
+	if ( nif->inherits( index, "NiNode" ) && nif->inherits( iBlock, "NiAVObject" ) )
+	{
+		addLink( nif, index, "Children", nif->getBlockNumber( iBlock ) );
+	}
+	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiProperty" ) )
+	{
+		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
+	}
+	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiExtraData" ) )
+	{
+		addLink( nif, index, "Extra Data List", nif->getBlockNumber( iBlock ) );
+	}
+}
+
 class spInsertBlock : public Spell
 {
 public:
@@ -26,25 +74,28 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		
-		QMap< QChar, QMenu *> map;
-		QMenu * rest = new QMenu( "*" );
+		QMap< QString, QMenu *> map;
 		foreach ( QString id, ids )
 		{
+			QString x( "*" );
+			
 			if ( id.startsWith( "Ni" ) )
-			{
-				QChar x = id[2];
-				if ( ! map.contains( x.toUpper() ) )
-					map.insert( x.toUpper(), new QMenu( x ) );
-				map[ x ]->addAction( id );
-			}
-			else
-				rest->addAction( id );
+				x = id.mid( 2, 1 );
+			if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
+				x = "bhk";
+			if ( id.startsWith( "BS" ) )
+				x = "BS";
+			
+			x = x.toUpper();
+			
+			if ( ! map.contains( x ) )
+				map[ x ] = new QMenu( x );
+			map[ x ]->addAction( id );
 		}
 
 		QMenu menu;
 		foreach ( QMenu * m, map )
 			menu.addMenu( m );
-		menu.addMenu( rest );
 		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
@@ -56,18 +107,6 @@ public:
 
 REGISTER_SPELL( spInsertBlock )
 
-void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
-{
-	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
-	QModelIndex iArray = nif->getIndex( iParent, array );
-	if ( iSize.isValid() && iArray.isValid() )
-	{
-		int numlinks = nif->get<int>( iSize );
-		nif->set<int>( iSize, numlinks + 1 );
-		nif->updateArray( iArray );
-		nif->setLink( iArray.child( numlinks, 0 ), link );
-	}
-}
 
 class spAttachProperty : public Spell
 {
@@ -105,6 +144,7 @@ public:
 
 REGISTER_SPELL( spAttachProperty )
 
+
 class spAttachNode : public Spell
 {
 public:
@@ -139,6 +179,7 @@ public:
 };
 
 REGISTER_SPELL( spAttachNode )
+
 
 class spAttachLight : public Spell
 {
@@ -232,6 +273,7 @@ public:
 
 REGISTER_SPELL( spRemoveBlock )
 
+
 class spCopyBlock : public Spell
 {
 public:
@@ -258,6 +300,7 @@ public:
 };
 
 REGISTER_SPELL( spCopyBlock )
+
 
 class spPasteBlock : public Spell
 {
@@ -302,8 +345,9 @@ public:
 					QBuffer buffer( & data );
 					if ( buffer.open( QIODevice::ReadOnly ) )
 					{
-						QModelIndex block = nif->insertNiBlock( blockType( form ), nif->getBlockNumber( index ) + 1 );
+						QModelIndex block = nif->insertNiBlock( blockType( form ), nif->getBlockCount() );
 						nif->load( buffer, block );
+						blockLink( nif, index, block );
 						return block;
 					}
 				}
@@ -314,6 +358,7 @@ public:
 };
 
 REGISTER_SPELL( spPasteBlock )
+
 
 class spPasteOverBlock : public Spell
 {
@@ -443,6 +488,7 @@ public:
 
 REGISTER_SPELL( spCopyBranch )
 
+
 class spPasteBranch : public Spell
 {
 public:
@@ -531,22 +577,7 @@ public:
 								iRoot = block;
 						}
 						
-						if ( nif->isLink( index ) && nif->inherits( iRoot, nif->itemTmplt( index ) ) )
-						{
-							nif->setLink( index, nif->getBlockNumber( iRoot ) );
-						}
-						if ( nif->inherits( index, "NiNode" ) && nif->inherits( iRoot, "NiAVObject" ) )
-						{
-							addLink( nif, index, "Children", nif->getBlockNumber( iRoot ) );
-						}
-						else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iRoot, "NiProperty" ) )
-						{
-							addLink( nif, index, "Properties", nif->getBlockNumber( iRoot ) );
-						}
-						else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iRoot, "NiExtraData" ) )
-						{
-							addLink( nif, index, "Extra Data List", nif->getBlockNumber( iRoot ) );
-						}
+						blockLink( nif, index, iRoot );
 						
 						return iRoot;
 					}
@@ -574,6 +605,7 @@ public:
 };
 
 REGISTER_SPELL( spPasteBranch )
+
 
 class spRemoveBranch : public Spell
 {
@@ -615,6 +647,57 @@ public:
 REGISTER_SPELL( spRemoveBranch )
 
 
+class spFlattenBranch : public Spell
+{
+public:
+	QString name() const { return "Flatten Branch"; }
+	QString page() const { return "Block"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ), "NiNode" );
+		return nif->inherits( index, "NiNode" ) && iParent.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & iNode )
+	{
+		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iNode ) ), "NiNode" );
+		doNode( nif, iNode, iParent, Transform() );
+		return iNode;
+	}
+	
+	void doNode( NifModel * nif, const QModelIndex & iNode, const QModelIndex & iParent, Transform tp )
+	{
+		if ( ! nif->inherits( iNode, "NiNode" ) )
+			return;
+		
+		Transform t = tp * Transform( nif, iNode );
+		
+		QList<qint32> links;
+		
+		foreach ( qint32 l, nif->getLinkArray( iNode, "Children" ) )
+		{
+			QModelIndex iChild = nif->getBlock( l );
+			if ( nif->getParent( nif->getBlockNumber( iChild ) ) == nif->getBlockNumber( iNode ) )
+			{
+				Transform tc = t * Transform( nif, iChild );
+				tc.writeBack( nif, iChild );
+				addLink( nif, iParent, "Children", l );
+				delLink( nif, iNode, "Children", l );
+				links.append( l );
+			}
+		}
+		
+		foreach ( qint32 l, links )
+		{
+			doNode( nif, nif->getBlock( l, "NiNode" ), iParent, tp );
+		}
+	}
+};
+
+REGISTER_SPELL( spFlattenBranch )
+
+
 class spMoveBlockUp : public Spell
 {
 public:
@@ -636,6 +719,7 @@ public:
 };
 
 REGISTER_SPELL( spMoveBlockUp )
+
 
 class spMoveBlockDown : public Spell
 {
@@ -704,3 +788,4 @@ public:
 };
 
 REGISTER_SPELL( spRemoveBlocksById )
+
