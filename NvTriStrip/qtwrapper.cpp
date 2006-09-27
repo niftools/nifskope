@@ -2,7 +2,7 @@
 
 #include "NvTriStrip.h"
 
-QList< QVector<quint16> > strippify( QVector<Triangle> triangles )
+QList< QVector<quint16> > strippify( QVector<Triangle> triangles, bool stitch )
 {
 	unsigned short * data = (unsigned short *) malloc( triangles.count() * 3 * sizeof( unsigned short ) );
 	for ( int t = 0; t < triangles.count(); t++ )
@@ -15,7 +15,7 @@ QList< QVector<quint16> > strippify( QVector<Triangle> triangles )
 	PrimitiveGroup * groups = 0;
 	unsigned short numGroups = 0;
 	
-	SetStitchStrips( true );
+	SetStitchStrips( stitch );
 	//SetCacheSize( 64 );
 	GenerateStrips( data, triangles.count()*3, &groups, &numGroups );
 	free( data );
