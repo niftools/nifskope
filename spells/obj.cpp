@@ -684,7 +684,8 @@ public:
 				}
 				nif->set<float>( iData, "Radius", radius );
 				
-				QList< QVector< quint16 > > strips = strippify( triangles );
+				// do not stitch, because it looks better in the cs
+				QList< QVector< quint16 > > strips = strippify( triangles, false );
 				
 				nif->set<int>( iData, "Num Strips", strips.count() );
 				nif->set<int>( iData, "Has Points", 1 );
@@ -714,11 +715,11 @@ public:
 				
 				nif->setArray<float>( iShape, "Unknown Floats 1", QVector<float>() << 0.1 << 0.0 );
 				nif->setArray<int>( iShape, "Unknown Ints 1",  QVector<int>() << 0 << 0 << 0 << 0 << 1 );
-				nif->setArray<float>( iShape, "Unknown Floats 2", QVector<float>() << 1.0 << 1.0 << 1.0 );
+				nif->set<Vector3>( iShape, "Scale", Vector3( 1.0, 1.0, 1.0 ) );
 				addLink( nif, iShape, "Strips Data", nif->getBlockNumber( iData ) );
-				nif->set<int>( iShape, "Num Unknown Ints 3", 1 );
-				nif->updateArray( iShape, "Unknown Ints 3" );
-				nif->setArray<int>( iShape, "Unknown Ints 3", QVector<int>() << 1 );
+				nif->set<int>( iShape, "Num Unknown Ints 2", 1 );
+				nif->updateArray( iShape, "Unknown Ints 2" );
+				nif->setArray<int>( iShape, "Unknown Ints 2", QVector<int>() << 1 );
 				
 				QPersistentModelIndex iBody = nif->insertNiBlock( "bhkRigidBody" );
 				nif->setLink( iBody, "Shape", nif->getBlockNumber( iShape ) );
