@@ -52,8 +52,9 @@ extern void qt_format_text(const QFont& font, const QRectF &_r,
 
 class NifDelegate : public QItemDelegate
 {
+	SpellBook * book;
 public:
-	NifDelegate() : QItemDelegate() {}
+	NifDelegate( SpellBook * sb = 0) : QItemDelegate(), book( sb ) {}
 	
 	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index )
 	{
@@ -87,7 +88,12 @@ public:
 							}
 							
 							if ( nif && spell->isApplicable( nif, buddy ) )
-								spell->cast( nif, buddy );
+							{
+								if ( book )
+									book->cast( nif, buddy, spell );
+								else
+									spell->cast( nif, buddy );
+							}
 						}
 						return true;
 					}
@@ -277,9 +283,9 @@ public:
 	
 };
 
-QAbstractItemDelegate * NifModel::createDelegate()
+QAbstractItemDelegate * NifModel::createDelegate( SpellBook * book )
 {
-	return new NifDelegate;
+	return new NifDelegate( book );
 }
 
 QAbstractItemDelegate * KfmModel::createDelegate()

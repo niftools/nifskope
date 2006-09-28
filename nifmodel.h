@@ -160,7 +160,7 @@ public:
 	// removes an item from the model
 	bool removeRows( int row, int count, const QModelIndex & parent );
 	
-	static QAbstractItemDelegate * createDelegate();
+	static QAbstractItemDelegate * createDelegate( class SpellBook * );
 
 signals:
 	void linksChanged();

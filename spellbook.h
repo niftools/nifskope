@@ -80,6 +80,8 @@ public slots:
 	
 	void sltIndex( const QModelIndex & index );
 	
+	void cast( NifModel * nif, const QModelIndex & index, Spell * spell );
+	
 	void checkActions();
 	
 signals:

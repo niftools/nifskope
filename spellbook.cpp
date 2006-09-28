@@ -93,11 +93,16 @@ SpellBook::~SpellBook()
 	books().removeAll( this );
 }
 
+void SpellBook::cast( NifModel * nif, const QModelIndex & index, Spell * spell )
+{
+	if ( spell && spell->isApplicable( nif, index ) )
+		emit sigIndex( spell->cast( nif, index ) );
+}
+
 void SpellBook::sltSpellTriggered( QAction * action )
 {
 	Spell * spell = Map.value( action );
-	if ( spell && spell->isApplicable( Nif, Index ) )
-		emit sigIndex( spell->cast( Nif, Index ) );
+	cast( Nif, Index, spell );
 }
 
 void SpellBook::sltNif( NifModel * nif )

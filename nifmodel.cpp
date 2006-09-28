@@ -221,7 +221,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
  *  array functions
  */
  
-QString parentPrefix( const QString & x )
+static QString parentPrefix( const QString & x )
 {
 	for ( int c = 0; c < x.length(); c++ )
 		if ( ! x[c].isNumber() )

@@ -69,6 +69,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifproxy.h"
 #include "widgets/nifview.h"
 
+#include "gl/options.h"
+
 #include "glview.h"
 #include "spellbook.h"
 
@@ -92,6 +94,8 @@ void NifSkope::about()
 
 NifSkope::NifSkope() : QMainWindow()
 {
+	SpellBook * book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
+	
 	// create a new nif
 	nif = new NifModel( this );
 	connect( nif, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
@@ -108,7 +112,7 @@ NifSkope::NifSkope() : QMainWindow()
 	// this view shows the block list
 	list = new NifTreeView;
 	list->setModel( proxy );
-	list->setItemDelegate( nif->createDelegate() );
+	list->setItemDelegate( nif->createDelegate( book ) );
 
 	connect( list, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
@@ -119,10 +123,10 @@ NifSkope::NifSkope() : QMainWindow()
 	// this view shows the whole nif file or the block details
 	tree = new NifTreeView;
 	tree->setModel( nif );
-	tree->setItemDelegate( nif->createDelegate() );
+	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->header()->setStretchLastSection( false );
 
-	connect( tree, SIGNAL( clicked( const QModelIndex & ) ),
+	connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
 	connect( tree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 		this, SLOT( contextMenu( const QPoint & ) ) );
@@ -277,7 +281,7 @@ NifSkope::NifSkope() : QMainWindow()
 	foreach ( QAction * a, ogl->grpView->actions() )
 		mOpts->addAction( a );
 	mOpts->addSeparator();
-	foreach ( QAction * a, ogl->actions() )
+	foreach ( QAction * a, GLOptions::actions() )
 		mOpts->addAction( a );
 	
 	QMenu * mAbout = new QMenu( "&About" );
@@ -287,8 +291,10 @@ NifSkope::NifSkope() : QMainWindow()
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
 	menuBar()->addMenu( mOpts );
-	menuBar()->addMenu( new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) ) );
+	menuBar()->addMenu( book );
 	menuBar()->addMenu( mAbout );
+	
+	selecting = false;
 }
 
 NifSkope::~NifSkope()
@@ -407,12 +413,17 @@ void NifSkope::clearRoot()
 
 void NifSkope::select( const QModelIndex & index )
 {
+	if ( selecting )
+		return;
+	
 	QModelIndex idx = index;
 	
 	if ( idx.model() == proxy )
 		idx = proxy->mapTo( index );
 	
 	if ( ! idx.isValid() || idx.model() != nif ) return;
+	
+	selecting = true;
 	
 	if ( sender() != ogl )
 	{
@@ -448,6 +459,7 @@ void NifSkope::select( const QModelIndex & index )
 			tree->setCurrentIndexExpanded( idx.sibling( idx.row(), 0 ) );
 		}
 	}
+	selecting = false;
 }
 
 void NifSkope::setListMode()
@@ -506,9 +518,7 @@ void NifSkope::load()
 	}
 	
 	bool a = ogl->aAnimate->isChecked();
-	bool r = ogl->aRotate->isChecked();
 	ogl->aAnimate->setChecked( false );
-	ogl->aRotate->setChecked( false );
 	
 	if ( nifname.isEmpty() )
 	{
@@ -531,7 +541,6 @@ void NifSkope::load()
 	}
 	
 	ogl->aAnimate->setChecked( a );
-	ogl->aRotate->setChecked( r );
 	ogl->center();
 	
 	setEnabled( true );
@@ -775,7 +784,7 @@ int main( int argc, char * argv[] )
 	
 	QString fname;
     if ( app.argc() > 1 )
-        fname = QString( app.argv()[ app.argc() - 1 ] );
+        fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
 	
 	if ( IPCsocket::nifskope( QString( "NifSkope::open %1" ).arg( fname ) ) )
 		// start the event loop

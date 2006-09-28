@@ -118,6 +118,8 @@ private:
 	
 	GLView * ogl;
 	
+	bool selecting;
+	
 	QLineEdit * lineLoad;
 	QLineEdit * lineSave;
 	

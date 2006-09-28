@@ -99,7 +99,7 @@ void KfmModel::clear()
  *  array functions
  */
  
-inline QString parentPrefix( const QString & x )
+static QString parentPrefix( const QString & x )
 {
 	for ( int c = 0; c < x.length(); c++ )
 		if ( ! x[c].isNumber() )
