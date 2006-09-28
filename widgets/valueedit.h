@@ -37,8 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QWidget>
 
-class QSpinBox;
 class QDoubleSpinBox;
+class QLabel;
+class QSpinBox;
 
 class ValueEdit : public QWidget
 {
@@ -96,6 +97,8 @@ private:
 	QDoubleSpinBox * z;
 	QDoubleSpinBox * w;
 	
+	QLabel * wl, * zl;
+	
 	bool setting;
 };
 
@@ -123,6 +126,7 @@ protected slots:
 
 private:
 	QDoubleSpinBox * r, * g, * b, * a;
+	QLabel * al;
 	bool setting;
 };
 

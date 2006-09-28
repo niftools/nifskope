@@ -48,13 +48,19 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-		|| t == NifValue::tString || t == NifValue::tFilePath || t == NifValue::tHeaderString || t == NifValue::tShortString 
+		|| t == NifValue::tString || t == NifValue::tFilePath || t == NifValue::tLineString || t == NifValue::tShortString 
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
 		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt 
       ;
 }
+
+class CenterLabel : public QLabel
+{
+public:
+	CenterLabel( const QString & txt ) : QLabel( txt ) { setAlignment( Qt::AlignCenter ); }
+};
 
 class UIntSpinBox : public QSpinBox
 {
@@ -142,7 +148,7 @@ void ValueEdit::setValue( const NifValue & v )
 		}	break;
 		case NifValue::tString:
 		case NifValue::tFilePath:
-		case NifValue::tHeaderString:
+		case NifValue::tLineString:
 		case NifValue::tShortString:
 		{	
 			QLineEdit * le = new QLineEdit( this );
@@ -210,20 +216,22 @@ void ValueEdit::setValue( const NifValue & v )
 	}
 	
 	resizeEditor();
+	
+	setFocusProxy( edit );
 }
 
 NifValue ValueEdit::getValue() const
 {
 	NifValue val( typ );
 	
-	switch ( typ )
+	if ( edit ) switch ( typ )
 	{
 		case NifValue::tByte:
-      case NifValue::tWord:
-      case NifValue::tShort:
+		case NifValue::tWord:
+		case NifValue::tShort:
 		case NifValue::tFlags:
-      case NifValue::tInt:
-      case NifValue::tUInt:
+		case NifValue::tInt:
+		case NifValue::tUInt:
 			val.setCount( qobject_cast<QSpinBox*>( edit )->value() );
 			break;
 		case NifValue::tLink:
@@ -235,7 +243,7 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tString:
 		case NifValue::tFilePath:
-		case NifValue::tHeaderString:
+		case NifValue::tLineString:
 		case NifValue::tShortString:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
 			break;
@@ -293,34 +301,36 @@ ColorEdit::ColorEdit( QWidget * parent ) : QWidget( parent )
 {
 	QHBoxLayout * lay = new QHBoxLayout;
 	lay->setMargin( 0 );
+	lay->setSpacing( 0 );
 	setLayout( lay );
 	
-	lay->addWidget( r = new QDoubleSpinBox );
+	lay->addWidget( new CenterLabel( "R" ), 1 );
+	lay->addWidget( r = new QDoubleSpinBox, 5 );
 	r->setDecimals( 3 );
 	r->setRange( 0, 1 );
 	r->setSingleStep( 0.01 );
-	r->setPrefix( "R " );
 	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( g = new QDoubleSpinBox );
+	lay->addWidget( new CenterLabel( "G" ), 1 );
+	lay->addWidget( g = new QDoubleSpinBox, 5 );
 	g->setDecimals( 3 );
 	g->setRange( 0, 1 );
 	g->setSingleStep( 0.01 );
-	g->setPrefix( "G " );
 	connect( g, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( b = new QDoubleSpinBox );
+	lay->addWidget( new CenterLabel( "B" ), 1 );
+	lay->addWidget( b = new QDoubleSpinBox, 5 );
 	b->setDecimals( 3 );
 	b->setRange( 0, 1 );
 	b->setSingleStep( 0.01 );
-	b->setPrefix( "B " );
 	connect( b, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( a = new QDoubleSpinBox );
+	lay->addWidget( al = new CenterLabel( "A" ), 1 );
+	lay->addWidget( a = new QDoubleSpinBox, 5 );
 	a->setDecimals( 3 );
 	a->setRange( 0, 1 );
 	a->setSingleStep( 0.01 );
-	a->setPrefix( "A " );
 	connect( a, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
 	setting = false;
+	setFocusProxy( r );
 }
 
 void ColorEdit::setColor4( const Color4 & v )
@@ -329,7 +339,7 @@ void ColorEdit::setColor4( const Color4 & v )
 	r->setValue( v[0] );
 	g->setValue( v[1] );
 	b->setValue( v[2] );
-	a->setValue( v[3] ); a->setShown( true );
+	a->setValue( v[3] ); a->setShown( true ); al->setShown( true );
 	setting = false;
 }
 
@@ -339,7 +349,7 @@ void ColorEdit::setColor3( const Color3 & v )
 	r->setValue( v[0] );
 	g->setValue( v[1] );
 	b->setValue( v[2] );
-	a->setValue( 1.0 ); a->setHidden( true );
+	a->setValue( 1.0 ); a->setHidden( true ); al->setHidden( true );
 	setting = false;
 }
 
@@ -361,36 +371,42 @@ Color3 ColorEdit::getColor3() const
 
 VectorEdit::VectorEdit( QWidget * parent ) : QWidget( parent )
 {
-	QHBoxLayout * lay = new QHBoxLayout;
+	QHBoxLayout * lay = new QHBoxLayout( this );
 	lay->setMargin( 0 );
-	setLayout( lay );
+	lay->setSpacing( 0 );
 	
-	lay->addWidget( x = new QDoubleSpinBox );
-	//x->setFrame(false);
+	CenterLabel * xl, * yl;
+	
+	lay->addWidget( xl = new CenterLabel( "X" ), 1 );
+	lay->addWidget( x = new QDoubleSpinBox, 5 );
 	x->setDecimals( 4 );
 	x->setRange( - 100000000, + 100000000 );
-	x->setPrefix( "X " );
 	connect( x, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( y = new QDoubleSpinBox );
-	//y->setFrame(false);
+	lay->addWidget( yl = new CenterLabel( "Y" ), 1 );
+	lay->addWidget( y = new QDoubleSpinBox, 5 );
 	y->setDecimals( 4 );
 	y->setRange( - 100000000, + 100000000 );
-	y->setPrefix( "Y " );
 	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( z = new QDoubleSpinBox );
-	//z->setFrame(false);
+	lay->addWidget( zl = new CenterLabel( "Z" ), 1 );
+	lay->addWidget( z = new QDoubleSpinBox, 5 );
 	z->setDecimals( 4 );
 	z->setRange( - 100000000, + 100000000 );
-	z->setPrefix( "Z " );
 	connect( z, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( w = new QDoubleSpinBox );
-	//z->setFrame(false);
+	lay->addWidget( wl = new CenterLabel( "W" ), 1 );
+	lay->addWidget( w = new QDoubleSpinBox, 5 );
 	w->setDecimals( 4 );
 	w->setRange( - 100000000, + 100000000 );
-	w->setPrefix( "W " );
 	connect( w, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
+	/*
+	xl->setBuddy( x );
+	yl->setBuddy( y );
+	zl->setBuddy( z );
+	wl->setBuddy( w );
+	*/
+	
 	setting = false;
+	setFocusProxy( x );
 }
 
 void VectorEdit::setVector4( const Vector4 & v )
@@ -398,8 +414,8 @@ void VectorEdit::setVector4( const Vector4 & v )
 	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
-	z->setValue( v[2] ); z->setShown( true );
-	w->setValue( v[3] ); w->setShown( true );
+	z->setValue( v[2] ); z->setShown( true ); zl->setShown( true );
+	w->setValue( v[3] ); w->setShown( true ); wl->setShown( true );
 	setting = false;
 }
 
@@ -408,8 +424,8 @@ void VectorEdit::setVector3( const Vector3 & v )
 	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
-	z->setValue( v[2] ); z->setShown( true );
-	w->setValue( 0.0 ); w->setHidden( true );
+	z->setValue( v[2] ); z->setShown( true ); zl->setShown( true );
+	w->setValue( 0.0 ); w->setHidden( true ); wl->setHidden( true );
 	setting = false;
 }
 
@@ -418,8 +434,8 @@ void VectorEdit::setVector2( const Vector2 & v )
 	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
-	z->setValue( 0.0 ); z->setHidden( true );
-	w->setValue( 0.0 ); w->setHidden( true );
+	z->setValue( 0.0 ); z->setHidden( true ); zl->setHidden( true );
+	w->setValue( 0.0 ); w->setHidden( true ); wl->setHidden( true );
 	setting = false;
 }
 
@@ -445,30 +461,28 @@ Vector2 VectorEdit::getVector2() const
 
 RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent )
 {
-	QHBoxLayout * lay = new QHBoxLayout;
+	QHBoxLayout * lay = new QHBoxLayout( this );
 	lay->setMargin( 0 );
-	setLayout( lay );
-	
-	lay->addWidget( y = new QDoubleSpinBox );
-	//y->setFrame(false);
+	lay->setSpacing( 0 );
+
+	lay->addWidget( new CenterLabel( "Y" ), 1 );
+	lay->addWidget( y = new QDoubleSpinBox, 5 );
 	y->setDecimals( 1 );
 	y->setRange( - 360, + 360 );
-	y->setPrefix( "Y " );
 	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( p = new QDoubleSpinBox );
-	//p->setFrame(false);
+	lay->addWidget( new CenterLabel( "P" ), 1 );
+	lay->addWidget( p = new QDoubleSpinBox, 5 );
 	p->setDecimals( 1 );
 	p->setRange( - 360, + 360 );
-	p->setPrefix( "P " );
 	connect( p, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( r = new QDoubleSpinBox );
-	//r->setFrame(false);
+	lay->addWidget( new CenterLabel( "R" ), 1 );
+	lay->addWidget( r = new QDoubleSpinBox, 5 );
 	r->setDecimals( 1 );
 	r->setRange( - 360, + 360 );
-	r->setPrefix( "R " );
 	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
 	setting = false;
+	setFocusProxy( y );
 }
 
 void RotationEdit::setMatrix( const Matrix & m )
@@ -513,9 +527,9 @@ void RotationEdit::sltChanged()
 
 TriangleEdit::TriangleEdit( QWidget * parent ) : QWidget( parent )
 {
-	QHBoxLayout * lay = new QHBoxLayout;
+	QHBoxLayout * lay = new QHBoxLayout( this );
 	lay->setMargin( 0 );
-	setLayout( lay );
+	lay->setSpacing( 0 );
 	
 	lay->addWidget( v1 = new QSpinBox );
 	v1->setRange( 0, + 0xffff );
@@ -523,6 +537,8 @@ TriangleEdit::TriangleEdit( QWidget * parent ) : QWidget( parent )
 	v2->setRange( 0, + 0xffff );
 	lay->addWidget( v3 = new QSpinBox );
 	v3->setRange( 0, + 0xffff );
+	
+	setFocusProxy( v1 );
 }
 
 void TriangleEdit::setTriangle( const Triangle & t )
