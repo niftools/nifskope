@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "glscene.h"
 #include "glproperty.h"
+#include "options.h"
 
 // GL_ARB_shader_objects
 PFNGLCREATEPROGRAMOBJECTARBPROC  _glCreateProgramObjectARB  = NULL;
@@ -446,7 +447,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	PropertyList props;
 	mesh->activeProperties( props );
 	
-	if ( ! shader_ready || ! mesh->scene->shading )
+	if ( ! shader_ready || ! GLOptions::shaders() )
 	{
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );

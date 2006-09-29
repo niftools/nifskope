@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glnode.h"
 #include "glcontroller.h"
 #include "glscene.h"
+#include "options.h"
 
 #include "NvTriStrip/qtwrapper.h"
 
@@ -703,13 +704,13 @@ Node * Node::findChild( const QString & name ) const
 
 bool Node::isHidden() const
 {
-	if ( scene->showHidden )
+	if ( GLOptions::drawHidden() )
 		return false;
 	
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 	
-	return ! scene->expCull.isEmpty() && name.contains( scene->expCull );
+	return ! GLOptions::cullExpression().isEmpty() && name.contains( GLOptions::cullExpression() );
 }
 
 void Node::transform()
@@ -768,10 +769,10 @@ void Node::draw( NodeList * draw2nd )
 	glEnable( GL_BLEND );
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 	
-	if ( scene->highlight && scene->currentNode == nodeId )
-		glColor( Color3( scene->hlcolor ) );
+	if ( scene->currentBlock == iBlock )
+		glHighlightColor();
 	else
-		glColor( Color4( scene->hlcolor ).blend( 0.3 ) );
+		glNormalColor();
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 	
@@ -1251,7 +1252,7 @@ QString Node::textStats() const
 
 BoundSphere Node::bounds() const
 {
-	if ( scene->showNodes )
+	if ( GLOptions::drawNodes() )
 		return BoundSphere( worldTrans().translation, 0 );
 	else
 		return BoundSphere();

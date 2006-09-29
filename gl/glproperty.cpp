@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "glcontroller.h"
 #include "glscene.h"
+#include "options.h"
 
 Property * Property::create( Scene * scene, const NifModel * nif, const QModelIndex & index )
 {
@@ -187,7 +188,7 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 
 void glProperty( AlphaProperty * p )
 {
-	if ( p && p->alphaBlend && p->scene->blending )
+	if ( p && p->alphaBlend && GLOptions::blending() )
 	{
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
@@ -195,7 +196,7 @@ void glProperty( AlphaProperty * p )
 	else
 		glDisable( GL_BLEND );
 	
-	if ( p && p->alphaTest && p->scene->blending )
+	if ( p && p->alphaTest && GLOptions::blending() )
 	{
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
@@ -261,7 +262,7 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 			if ( iTex.isValid() )
 			{
 				textures[t].iSource = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
-				textures[t].coordset = nif->get<int>( iTex, "Texture Set" );
+				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
 				switch ( nif->get<int>( iTex, "Filter Mode" ) )
 				{
 					case 0:		textures[t].filter = GL_NEAREST;		break;
@@ -466,7 +467,7 @@ int TexturingProperty::getId( const QString & texname )
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && p->scene->texturing && p->bind( 0 ) )
+	if ( p && GLOptions::texturing() && p->bind( 0 ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 	}

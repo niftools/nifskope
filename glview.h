@@ -100,30 +100,6 @@ public:
 	QAction * aAnimLoop;
 	QAction * aAnimSwitch;
 	
-	QActionGroup * grpSettings;
-	
-	QAction * aTexturing;
-	QAction * aBlending;
-	QAction * aShading;
-	QAction * aDrawAxis;
-	QAction * aDrawNodes;
-	QAction * aDrawHavok;
-	QAction * aDrawFurn;
-	QAction * aDrawHidden;
-	QAction * aDrawStats;
-	QAction * aHighlight;
-	QAction * aRotate;
-	QAction * aBenchmark;
-	
-	QAction * aAntiAliasing;
-	
-	QAction * aTexFolder;
-	QAction * aBgColor;
-	QAction * aHlColor;
-
-	QAction * aOnlyTextured;
-	QAction * aCullExp;
-	
 	QToolBar * tAnim;
 	QComboBox * animGroups;
 	
@@ -139,11 +115,6 @@ public slots:
 	void sltTime( float );
 	void sltSequence( const QString & );
 
-	void selectTexFolder();
-	void selectBgColor();
-	void selectHlColor();
-	void adjustCullExp();
-	
 	void updateShaders();
 	
 signals: 
@@ -178,8 +149,6 @@ private slots:
 	void checkActions();
 	void viewAction( QAction * );
 
-	void changeAntiAliasing( bool );
-
 private:
 	QAction * checkedViewAction() const;
 	void uncheckViewAction();
@@ -212,8 +181,6 @@ private:
 	
 	float time;
 	QTime lastTime;
-	
-	QColor bgcolor;
 	
 	QHash<int,bool> kbd;
 	Vector3 mouseMov;

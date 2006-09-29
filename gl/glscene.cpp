@@ -34,25 +34,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontroller.h"
 #include "glnode.h"
-#include "gllight.h"
 #include "glmesh.h"
 #include "glparticles.h"
 #include "gltex.h"
+#include "options.h"
 
 
 Scene::Scene()
 {
-	texturing = true;
-	blending = true;
-	highlight = true;
-	showHidden = false;
-	showNodes = false;
-	onlyTextured = false;
-	currentNode = 0;
+	currentBlock = currentIndex = QModelIndex();
 	animate = true;
 	
 	time = 0.0;
-	sceneBoundsValid = timeBoundsValid = false;
+	sceneBoundsValid = timeBoundsValid = false;	
 }
 
 Scene::~Scene()
@@ -216,25 +210,33 @@ void Scene::transform( const Transform & trans, float time )
 void Scene::draw()
 {
 	drawShapes();
-	if ( showNodes )
+	if ( GLOptions::drawNodes() )
 		drawNodes();
-	if ( showHavok )
+	if ( GLOptions::drawHavok() )
 		drawHavok();
-	if ( showFurn )
+	if ( GLOptions::drawFurn() )
 		drawFurn();
 }
 
 void Scene::drawShapes()
-{	
-	NodeList draw2nd;
-
-	foreach ( Node * node, roots.list() )
-		node->drawShapes( &draw2nd );
-	
-	draw2nd.sort();
-
-	foreach ( Node * node, draw2nd.list() )
-		node->drawShapes();
+{
+	if ( GLOptions::blending() )
+	{
+		NodeList draw2nd;
+		
+		foreach ( Node * node, roots.list() )
+			node->drawShapes( &draw2nd );
+		
+		draw2nd.sort();
+		
+		foreach ( Node * node, draw2nd.list() )
+			node->drawShapes();
+	}
+	else
+	{
+		foreach ( Node * node, roots.list() )
+			node->drawShapes();
+	}
 }
 
 void Scene::drawNodes()
@@ -303,7 +305,7 @@ QString Scene::textStats()
 {
 	foreach ( Node * node, nodes.list() )
 	{
-		if ( node->id() == currentNode )
+		if ( node->index() == currentBlock )
 		{
 			return node->textStats();
 		}
@@ -313,7 +315,7 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( ! texturing || fname.isEmpty() )
+	if ( ! GLOptions::texturing() || fname.isEmpty() )
 		return 0;
 	
 	return textures.bind( fname );

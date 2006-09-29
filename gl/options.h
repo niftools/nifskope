@@ -30,32 +30,92 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLLIGHT_H
-#define GLLIGHT_H
+#ifndef GLOPTIONS_H
+#define GLOPTIONS_H
 
-#include "glnode.h"
+#include <QObject>
 
-class Light : public Node
+class QAction;
+class QColor;
+class QCheckBox;
+class QDialog;
+class QLineEdit;
+class QTimer;
+
+class ColorWheel;
+
+class GLOptions : public QObject
 {
+	Q_OBJECT
 public:
-	Light( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
+	static GLOptions * get();
+	static QList<QAction*> actions();
 	
-	void update( const NifModel * nif, const QModelIndex & b );
+	static bool antialias();
+	static bool texturing();
+	static bool shaders();
 	
-	void on( int n );
-	static void off( int n );
+	static bool blending() { return true; }
 	
-	void draw( NodeList * draw2nd );
+	static QColor bgColor();
+	static QColor nlColor();
+	static QColor hlColor();
+	
+	static QRegExp cullExpression();
+	static bool onlyTextured();
+	
+	static bool drawAxes();
+	static bool drawNodes();
+	static bool drawHavok();
+	static bool drawFurn();
+	static bool drawHidden();
+	static bool drawStats();
+	
+	static bool benchmark();
+
+signals:
+	void sigChanged();
+
+public slots:
+	void save();
 	
 protected:
-	GLfloat dimmer;
-	Color4 ambient, diffuse, specular;
+	GLOptions();
+	~GLOptions();
 	
-	bool spot, directional;
+	QAction * aDrawAxes;
+	QAction * aDrawNodes;
+	QAction * aDrawHavok;
+	QAction * aDrawFurn;
+	QAction * aDrawHidden;
+	QAction * aDrawStats;
 	
-	GLfloat constant, linear, quadratic;
-	GLfloat exponent, cutoff;
+	QAction * aSettings;
+	
+	QDialog * dialog;
+	
+	enum {
+		colorBack = 0,
+		colorNorm = 1,
+		colorHigh = 2
+	};
+	
+	ColorWheel * colors[3];
+	
+	QCheckBox * AntiAlias;
+	QCheckBox * Textures;
+	QCheckBox * Shaders;
+	
+	QCheckBox * CullByID;
+	QLineEdit * CullExpr;
+	
+	QCheckBox * CullNoTex;
+	
+	QTimer * tSave;
 };
+
+#define glNormalColor() glColor( Color3( GLOptions::nlColor() ) )
+#define glHighlightColor() glColor( Color3( GLOptions::hlColor() ) )
 
 
 #endif

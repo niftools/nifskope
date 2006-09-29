@@ -94,6 +94,16 @@ ColorWheel::ColorWheel( QWidget * parent ) : QWidget( parent )
 	H = 0.0; S = 0.0; V = 1.0;
 }
 
+ColorWheel::ColorWheel( const QColor & c, QWidget * parent ) : QWidget( parent )
+{
+	H = c.hueF();
+	S = c.saturationF();
+	V = c.valueF();
+	if ( H >= 1.0 || H < 0.0 ) H = 0.0;
+	if ( S > 1.0 || S < 0.0 ) S = 1.0;
+	if ( V > 1.0 || S < 0.0 ) V = 1.0;
+}
+
 QIcon ColorWheel::getIcon()
 {
 	if ( ! icon )

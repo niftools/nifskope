@@ -95,24 +95,10 @@ public:
 	QString animGroup;
 	QStringList animGroups;
 	
-	bool texturing;
 	TexCache textures;
 	
-	bool blending;
-	bool lighting;
-	bool shading;
-	
-	bool highlight;
-	int currentNode;
-	QColor hlcolor;
-	
-	bool showHidden;
-	bool showNodes;
-	bool showHavok;
-	bool	showFurn;
-	
-	QRegExp expCull;
-	bool onlyTextured; // if true only textured meshes will be visible
+	QPersistentModelIndex currentBlock;
+	QPersistentModelIndex currentIndex;
 	
 	BoundSphere bounds() const;
 	

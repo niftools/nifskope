@@ -50,6 +50,7 @@ public:
 	static QIcon getIcon();
 	
 	ColorWheel( QWidget * parent = 0 );
+	ColorWheel( const QColor & c, QWidget * parent = 0 );
 	
 	Q_PROPERTY( QColor color READ getColor WRITE setColor STORED false );
 	

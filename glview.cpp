@@ -45,9 +45,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "gl/glscene.h"
 #include "gl/gltex.h"
+#include "gl/options.h"
 
-#include "spellbook.h"
-#include "widgets/colorwheel.h"
 #include "widgets/floatslider.h"
 
 #define FPS 25
@@ -134,99 +133,6 @@ GLView::GLView( const QGLFormat & format )
 	aViewPerspective->setShortcut( Qt::Key_F9 );
 	grpView->addAction( aViewPerspective );
 	
-	
-	aAntiAliasing = new QAction( "&Anti Aliasing", this );
-	aAntiAliasing->setToolTip( "enable anti aliasing if available" );
-	aAntiAliasing->setCheckable( true );
-	aAntiAliasing->setChecked( format.sampleBuffers() );
-	connect( aAntiAliasing, SIGNAL( toggled( bool ) ), this, SLOT( changeAntiAliasing( bool ) ) );
-	addAction( aAntiAliasing );
-	
-	aShading = new QAction( "&Enable Shaders", this );
-	aShading->setToolTip( "enable shading" );
-	aShading->setCheckable( true );
-	aShading->setChecked( true );
-	aShading->setShortcut( Qt::Key_F12 );
-	connect( aShading, SIGNAL( toggled( bool ) ), this, SLOT( updateShaders() ) );
-	addAction( aShading );
-	
-	aTexturing = new QAction( "&Texturing", this );
-	aTexturing->setToolTip( "enable texturing" );
-	aTexturing->setCheckable( true );
-	aTexturing->setChecked( true );
-	connect( aTexturing, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aTexturing );
-	
-	aBlending = new QAction( "&Blending", this );
-	aBlending->setToolTip( "enable alpha blending" );
-	aBlending->setCheckable( true );
-	aBlending->setChecked( true );
-	connect( aBlending, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aBlending );
-	
-	aDrawAxis = new QAction( "&Draw Axes", this );
-	aDrawAxis->setToolTip( "draw xyz-Axes" );
-	aDrawAxis->setCheckable( true );
-	aDrawAxis->setChecked( true );
-	connect( aDrawAxis, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aDrawAxis );
-	
-	aDrawNodes = new QAction( "Draw &Nodes", this );
-	aDrawNodes->setToolTip( "draw bones/nodes" );
-	aDrawNodes->setCheckable( true );
-	aDrawNodes->setChecked( true );
-	connect( aDrawNodes, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aDrawNodes );
-	
-	aDrawHavok = new QAction( "Draw Havok", this );
-	aDrawHavok->setToolTip( "draw the havok shapes" );
-	aDrawHavok->setCheckable( true );
-	aDrawHavok->setChecked( false );
-	connect( aDrawHavok, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aDrawHavok );
-
-	aDrawFurn = new QAction( "Draw Furniture", this );
-	aDrawFurn->setToolTip( "draw the furniture markers" );
-	aDrawFurn->setCheckable( true );
-	aDrawFurn->setChecked( false );
-	connect( aDrawFurn, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aDrawFurn );
-	
-	aDrawHidden = new QAction( "&Show Hidden", this );
-	aDrawHidden->setToolTip( "if checked nodes and meshes are allways displayed<br>wether they are hidden ( flags & 1 ) or not" );
-	aDrawHidden->setCheckable( true );
-	aDrawHidden->setChecked( false );
-	connect( aDrawHidden, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aDrawHidden );
-	
-	aDrawStats = new QAction( "&Show Stats", this );
-	aDrawStats->setToolTip( "display some statistics about the selected node" );
-	aDrawStats->setCheckable( true );
-	aDrawStats->setChecked( false );
-	connect( aDrawStats, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aDrawStats );
-	
-	aOnlyTextured = new QAction( "&Hide non textured", this );
-	aOnlyTextured->setToolTip( "This options selects wether meshes without textures will be visible or not" );
-	aOnlyTextured->setCheckable( true );
-	aOnlyTextured->setChecked( false );
-	connect( aOnlyTextured, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aOnlyTextured );
-	
-	aHighlight = new QAction( "&Highlight Selected", this );
-	aHighlight->setToolTip( "highlight selected meshes and nodes" );
-	aHighlight->setCheckable( true );
-	aHighlight->setChecked( true );
-	connect( aHighlight, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aHighlight );
-	
-	aRotate = new QAction( "&Rotate", this );
-	aRotate->setToolTip( "slowly rotate the object around the z axis" );
-	aRotate->setCheckable( true );
-	aRotate->setChecked( true );
-	connect( aRotate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aRotate );
-	
 	aAnimate = new QAction( "&Animations", this );
 	aAnimate->setToolTip( "enables evaluation of animation controllers" );
 	aAnimate->setCheckable( true );
@@ -247,31 +153,6 @@ GLView::GLView( const QGLFormat & format )
 	aAnimSwitch->setCheckable( true );
 	aAnimSwitch->setChecked( true );
 	
-	aBenchmark = new QAction( "Benchmark FPS", this );
-	aBenchmark->setCheckable( true );
-	aBenchmark->setChecked( false );
-	aBenchmark->setVisible( true );
-	connect( aBenchmark, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
-	addAction( aBenchmark );
-
-	aTexFolder = new QAction( "Set Texture &Folder...", this );
-	aTexFolder->setToolTip( "tell me where your textures are" );
-	connect( aTexFolder, SIGNAL( triggered() ), this, SLOT( selectTexFolder() ) );
-	addAction( aTexFolder );
-	
-	aBgColor = new QAction( "Set Background Color...", this );
-	connect( aBgColor, SIGNAL( triggered() ), this, SLOT( selectBgColor() ) );
-	addAction( aBgColor );
-	
-	aHlColor = new QAction( "Set Highlight Color...", this );
-	connect( aHlColor, SIGNAL( triggered() ), this, SLOT( selectHlColor() ) );
-	addAction( aHlColor );
-	
-	aCullExp = new QAction( "Cull Nodes by Name...", this );
-	connect( aCullExp, SIGNAL( triggered() ), this, SLOT( adjustCullExp() ) );
-	addAction( aCullExp );
-
-
 	// animation tool bar
 	
 	tAnim = new QToolBar( "Animation" );
@@ -297,6 +178,8 @@ GLView::GLView( const QGLFormat & format )
 	tAnim->addWidget( animGroups );
 
 	tAnim->addAction( aAnimSwitch );
+	
+	connect( GLOptions::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
 }
 
 GLView::~GLView()
@@ -314,23 +197,14 @@ void GLView::updateShaders()
 {
 	makeCurrent();
 	scene->updateShaders();
-	scene->shading = aShading->isChecked();
 	update();
-}
-
-void GLView::changeAntiAliasing( bool a )
-{
-	QSettings settings( "NifTools", "NifSkope" );
-	settings.setValue( "enable anti aliasing", a );
-	
-	QMessageBox::information( this, "NifSkope", "You'll need to restart NifSkope for this setting to take effect." );
 }
 
 GLView * GLView::create()
 {
 	QSettings settings( "NifTools", "NifSkope" );
 	QGLFormat fmt;
-	fmt.setSampleBuffers( settings.value( "enable anti aliasing", true ).toBool() );
+	fmt.setSampleBuffers( GLOptions::antialias() );
 	return new GLView( fmt );
 }
 
@@ -343,17 +217,17 @@ void GLView::initializeGL()
 {
 	initializeTextureUnits( context() );
 	
-	qglClearColor( bgcolor );
-
 	glShadeModel( GL_SMOOTH );
 	
 	if ( ! Renderer::initialize( context() ) )
 	{
+		/*
 		aShading->setChecked( false );
 		aShading->setDisabled( true );
+		*/
 	}
 	else
-		scene->updateShaders();
+		updateShaders();
 
 	static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
 	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
@@ -388,7 +262,7 @@ void GLView::glProjection( int x, int y )
 	}
 	
 	BoundSphere bs = scene->view * scene->bounds();
-	if ( aDrawAxis->isChecked() )
+	if ( GLOptions::drawAxes() )
 		bs |= BoundSphere( scene->view * Vector3(), axis );
 	
 	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
@@ -425,7 +299,7 @@ void GLView::paintGL()
 	if ( ! ( isVisible() && height() && width() ) )
 		return;
 	
-	qglClearColor( bgcolor );
+	qglClearColor( GLOptions::bgColor() );
 	
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
@@ -475,7 +349,7 @@ void GLView::paintGL()
 	
 	// draw the axis
 	
-	if ( aDrawAxis->isChecked() )
+	if ( GLOptions::drawAxes() )
 	{
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
@@ -519,7 +393,7 @@ void GLView::paintGL()
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
 		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 
-	if ( aBenchmark->isChecked() || aDrawStats->isChecked() )
+	if ( GLOptions::benchmark() || GLOptions::drawStats() )
 	{
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
@@ -531,18 +405,18 @@ void GLView::paintGL()
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
 		glLineWidth( 1.2 );
-		glColor( Color3( scene->hlcolor ) );
+		glNormalColor();
 		
 		int ls = QFontMetrics( font() ).lineSpacing();
 		int y = 1;
 		
-		if ( aBenchmark->isChecked() )
+		if ( GLOptions::benchmark() )
 		{
 			renderText( 0, y++ * ls, QString( "FPS %1" ).arg( int( fpsact ) ), font() );
 			y++;
 		}
 		
-		if ( aDrawStats->isChecked() )
+		if ( GLOptions::drawStats() )
 		{
 			QString stats = scene->textStats();
 			QStringList lines = stats.split( "\n" );
@@ -602,7 +476,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	glSelectBuffer( 512, buffer );
 
 	int choose;
-	if ( aDrawFurn->isChecked() )
+	if ( GLOptions::drawFurn() )
 	{		
 		choose = ::indexAt( buffer, model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle ); 
 		if ( choose != -1 )
@@ -614,9 +488,9 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	
 	QList<DrawFunc> df;
 	
-	if ( aDrawHavok->isChecked() )
+	if ( GLOptions::drawHavok() )
 		df << &Scene::drawHavok;
-	if ( aDrawNodes->isChecked() )
+	if ( GLOptions::drawNodes() )
 		df << &Scene::drawNodes;
 	df << &Scene::drawShapes;
 	
@@ -659,7 +533,9 @@ void GLView::setCurrentIndex( const QModelIndex & index )
 	if ( ! ( model && index.model() == model ) )
 		return;
 	
-	scene->currentNode = model->getBlockNumber( index );
+	scene->currentBlock = model->getBlock( index );
+	scene->currentIndex = index.sibling( index.row(), 0 );
+	
 	update();
 }
 
@@ -741,26 +617,6 @@ void GLView::sltSequence( const QString & seqname )
 	update();
 }
 
-void GLView::selectTexFolder()
-{
-	if ( ! model ) return;
-	Spell * spell = SpellBook::lookup( "Texture/Folders" );
-	if ( spell && spell->isApplicable( model, QModelIndex() ) )
-		spell->cast( model, QModelIndex() );
-}
-
-void GLView::selectBgColor()
-{
-	bgcolor = ColorWheel::choose( bgcolor, false, this );
-	update();
-}
-
-void GLView::selectHlColor()
-{
-	scene->hlcolor = ColorWheel::choose( scene->hlcolor, false, this );
-	update();
-}
-
 void GLView::setTextureFolder( const QString & tf )
 {
 	TexCache::texfolders = tf.split( ";" );
@@ -773,20 +629,12 @@ QString GLView::textureFolder() const
 	return TexCache::texfolders.join( ";" );
 }
 
-void GLView::adjustCullExp()
-{
-	bool ok;
-	QString exp = QInputDialog::getText( this, "Cull Nodes by Name", "Enter a regular expression:", QLineEdit::Normal, scene->expCull.pattern(), &ok );
-	if ( ok )
-		scene->expCull = QRegExp( exp );
-	update();
-}
 
 
 void GLView::viewAction( QAction * act )
 {
 	BoundSphere bs = scene->bounds();
-	if ( aDrawAxis->isChecked() )
+	if ( GLOptions::drawAxes() )
 		bs |= BoundSphere( Vector3(), axis );
 	
 	if ( bs.radius < 1 ) bs.radius = 1;
@@ -802,7 +650,6 @@ void GLView::viewAction( QAction * act )
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
 		aViewSide->setChecked( false );
-		aRotate->setChecked( false );
 	}
 
 	if ( ! act || act == aViewFlip )
@@ -875,7 +722,7 @@ void GLView::advanceGears()
 	QTime t = QTime::currentTime();
 	float dT = lastTime.msecsTo( t ) / 1000.0;
 	
-	if ( aBenchmark->isChecked() )
+	if ( GLOptions::benchmark() )
 	{
 		fpsacc += dT;
 		fpscnt++;
@@ -909,11 +756,6 @@ void GLView::advanceGears()
 		
 		emit sigTime( time, scene->timeMin(), scene->timeMax() );
 		update();
-	}
-	
-	if ( aRotate->isChecked() )
-	{
-		rotate( 0, 0, 3 * dT );
 	}
 	
 	if ( kbd[ Qt::Key_Up ] )		rotate( - ROT_SPD * dT, 0, 0 );
@@ -1025,7 +867,8 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 		return;
 	
 	QModelIndex idx = indexAt( event->pos(), cycleSelect );
-	scene->currentNode = model->getBlockNumber( idx );
+	scene->currentBlock = model->getBlock( idx );
+	scene->currentIndex = idx.sibling( idx.row(), 0 );
 	if ( idx.isValid() )
 	{
 		emit clicked( idx );
@@ -1065,24 +908,16 @@ void GLView::wheelEvent( QWheelEvent * event )
 	if ( aViewWalk->isChecked() )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
-		setDistance( Dist * ( event->delta() > 0 ? 1.2 : 0.8 ) );
+		setDistance( Dist * ( event->delta() < 0 ? 1.2 : 0.8 ) );
 }
 
 void GLView::checkActions()
 {
-	scene->texturing = aTexturing->isChecked();
-	scene->blending = aBlending->isChecked();
-	scene->showHavok = aDrawHavok->isChecked();
-	scene->showFurn = aDrawFurn->isChecked();
-	scene->highlight = aHighlight->isChecked();
-	scene->showHidden = aDrawHidden->isChecked();
-	scene->showNodes = aDrawNodes->isChecked();
 	scene->animate = aAnimate->isChecked();
-	scene->onlyTextured = aOnlyTextured->isChecked();
 	
 	lastTime = QTime::currentTime();
 	
-	if ( aBenchmark->isChecked() )
+	if ( GLOptions::benchmark() )
 		timer->setInterval( 0 );
 	else
 		timer->setInterval( 1000 / FPS );
@@ -1094,26 +929,10 @@ void GLView::save( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
 	settings.setValue( "texture folder", TexCache::texfolders.join( ";" ) );
-	settings.setValue( "enable textures", aTexturing->isChecked() );
-	settings.setValue( "enable blending", aBlending->isChecked() );
-	settings.setValue( "enable shading", aShading->isChecked() );
-	settings.setValue( "draw havok", aDrawHavok->isChecked() );
-	settings.setValue( "draw furniture", aDrawFurn->isChecked() );
-	settings.setValue( "highlight meshes", aHighlight->isChecked() );
-	settings.setValue( "draw axis", aDrawAxis->isChecked() );
-	settings.setValue( "draw nodes", aDrawNodes->isChecked() );
-	settings.setValue( "draw hidden", aDrawHidden->isChecked() );
-	settings.setValue( "draw stats", aDrawStats->isChecked() );
-	settings.setValue( "rotate", aRotate->isChecked() );
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
 	settings.setValue( "loop animation", aAnimLoop->isChecked() );
 	settings.setValue( "switch animation", aAnimSwitch->isChecked() );
-	settings.setValue( "bg color", bgcolor );
-	settings.setValue( "hl color", scene->hlcolor );
-	settings.setValue( "cull nodes by name", scene->expCull );
-	settings.setValue( "draw only textured meshes", scene->onlyTextured );
-	
 	settings.setValue( "perspective", aViewPerspective->isChecked() );
 	//settings.endGroup();
 }
@@ -1122,28 +941,10 @@ void GLView::restore( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
 	TexCache::texfolders = settings.value( "texture folder" ).toString().split( ";" );
-	aTexturing->setChecked( settings.value( "enable textures", true ).toBool() );
-	aShading->setChecked( settings.value( "enable shading", true ).toBool() && aShading->isEnabled() );
-	aDrawHavok->setChecked( settings.value( "draw havok", true ).toBool() );
-	aDrawFurn->setChecked( settings.value( "draw furniture", true ).toBool() );
-	aBlending->setChecked( settings.value( "enable blending", true ).toBool() );
-	aHighlight->setChecked( settings.value( "highlight meshes", true ).toBool() );
-	aDrawAxis->setChecked( settings.value( "draw axis", false ).toBool() );
-	aDrawNodes->setChecked( settings.value( "draw nodes", false ).toBool() );
-	aDrawHidden->setChecked( settings.value( "draw hidden", false ).toBool() );
-	aDrawStats->setChecked( settings.value( "draw stats", false ).toBool() );
-	aRotate->setChecked( settings.value( "rotate", true ).toBool() );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
 	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );
 	aAnimSwitch->setChecked( settings.value( "switch animation", true ).toBool() );
-	bgcolor = settings.value( "bg color", palette().color( QPalette::Active, QPalette::Background ) ).value<QColor>();
-	scene->hlcolor = settings.value( "hl color", QColor::fromRgbF( 0.0, 1.0, 0.0 ) ).value<QColor>();
-	scene->expCull = settings.value( "cull nodes by name", QRegExp(
-		"^collidee|^shadowcaster|^\\!LoD_cullme|^footprint"
-	) ).value<QRegExp>();
-	aOnlyTextured->setChecked( settings.value( "draw only textured meshes", false ).toBool() );
-	
 	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
 	
 	checkActions();

@@ -416,7 +416,7 @@ void Particles::drawShapes( NodeList * draw2nd )
 		return;
 	
 	AlphaProperty * aprop = findProperty< AlphaProperty >();
-	if ( aprop && aprop->blend() && scene->blending && draw2nd )
+	if ( aprop && aprop->blend() && draw2nd )
 	{
 		draw2nd->add( this );
 		return;
