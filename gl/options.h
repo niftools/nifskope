@@ -43,6 +43,7 @@ class QLineEdit;
 class QTimer;
 
 class ColorWheel;
+class GroupBox;
 
 class GLOptions : public QObject
 {
@@ -72,7 +73,13 @@ public:
 	static bool drawStats();
 	
 	static bool benchmark();
+	
+	typedef enum {
+		ZAxis, YAxis, XAxis
+	} Axis;
 
+	static Axis upAxis();
+	
 signals:
 	void sigChanged();
 
@@ -92,7 +99,7 @@ protected:
 	
 	QAction * aSettings;
 	
-	QDialog * dialog;
+	GroupBox * dialog;
 	
 	enum {
 		colorBack = 0,
@@ -100,16 +107,21 @@ protected:
 		colorHigh = 2
 	};
 	
+	
 	ColorWheel * colors[3];
 	
 	QCheckBox * AntiAlias;
 	QCheckBox * Textures;
 	QCheckBox * Shaders;
 	
+	QCheckBox * CullNoTex;
 	QCheckBox * CullByID;
 	QLineEdit * CullExpr;
 	
-	QCheckBox * CullNoTex;
+	QCheckBox * AxisX;
+	QCheckBox * AxisY;
+	QCheckBox * AxisZ;
+	
 	
 	QTimer * tSave;
 };

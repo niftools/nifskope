@@ -94,11 +94,11 @@ void NifSkope::about()
 
 NifSkope::NifSkope() : QMainWindow()
 {
-	SpellBook * book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
-	
 	// create a new nif
 	nif = new NifModel( this );
 	connect( nif, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
+	
+	SpellBook * book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
 	
 	// create a new hierarchical proxy nif
 	proxy = new NifProxyModel( this );

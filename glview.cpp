@@ -335,8 +335,24 @@ void GLView::paintGL()
 	
 	// transform the scene
 	
+	Matrix ap;
+	
+	if ( GLOptions::upAxis() == GLOptions::YAxis )
+	{
+		ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
+		ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
+		ap( 2, 0 ) = 0; ap( 2, 1 ) = 1; ap( 2, 2 ) = 0;
+	}
+	else if ( GLOptions::upAxis() == GLOptions::XAxis )
+	{
+		ap( 0, 0 ) = 0; ap( 0, 1 ) = 1; ap( 0, 2 ) = 0;
+		ap( 1, 0 ) = 0; ap( 1, 1 ) = 0; ap( 1, 2 ) = 1;
+		ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
+	}
+	
 	Transform viewTrans;
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
+	viewTrans.rotation = viewTrans.rotation * ap;
 	viewTrans.translation = viewTrans.rotation * Pos;
 	if ( ! aViewWalk->isChecked() )
 		viewTrans.translation[2] -= Dist * 2;

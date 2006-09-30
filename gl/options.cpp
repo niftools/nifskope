@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "options.h"
 
 #include <QAction>
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QColor>
 #include <QDialog>
@@ -40,9 +41,50 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLayout>
 #include <QLineEdit>
 #include <QSettings>
+#include <QStack>
 #include <QTimer>
 
 #include "widgets/colorwheel.h"
+
+class GroupBox : public QGroupBox
+{
+	QStack<QBoxLayout*> lay;
+public:
+	GroupBox( const QString & title, Qt::Orientation o ) : QGroupBox( title )
+	{
+		lay.push( new QBoxLayout( o2d( o ), this ) );
+	}
+	
+	void addWidget( QWidget * widget, int stretch = 0, Qt::Alignment alignment = 0 )
+	{
+		lay.top()->addWidget( widget, stretch, alignment );
+	}
+	
+	void pushLayout( Qt::Orientation o )
+	{
+		QBoxLayout * l = new QBoxLayout( o2d( o ) );
+		lay.top()->addLayout( l );
+		lay.push( l );
+	}
+	
+	void popLayout()
+	{
+		if ( lay.count() > 1 )
+			lay.pop();
+	}
+	
+	QBoxLayout::Direction o2d( Qt::Orientation o )
+	{
+		switch ( o )
+		{
+			case Qt::Vertical:
+				return QBoxLayout::TopToBottom;
+			case Qt::Horizontal:
+			default:
+				return QBoxLayout::LeftToRight;
+		}
+	}
+};
 
 GLOptions * GLOptions::get()
 {
@@ -98,71 +140,110 @@ GLOptions::GLOptions()
 	connect( aDrawStats, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	
 	
-	dialog = new QDialog();
+	dialog = new GroupBox( "", Qt::Vertical );
 	dialog->setWindowTitle(  "Render Settings"  );
 	
 	aSettings = new QAction( "&Settings...", this );
 	aSettings->setToolTip( "show the advanced settings dialog" );
 	connect( aSettings, SIGNAL( triggered() ), dialog, SLOT( show() ) );
 	
-	QVBoxLayout * lay = new QVBoxLayout( dialog );
+	GroupBox * grp;
 	
-	QHBoxLayout * hlay = new QHBoxLayout;
-	lay->addLayout( hlay );
+	dialog->pushLayout( Qt::Horizontal );
 	
-	QStringList colorNames( QStringList() << "Background" << "Foreground" << "Highlight" );
-	QList<QColor> colorDefaults( QList<QColor>() << QColor::fromRgb( 0, 0, 0 ) << QColor::fromRgb( 255, 255, 255 ) << QColor::fromRgb( 255, 255, 0 ) );
-	for ( int c = 0; c < 3; c++ )
-	{
-		QGroupBox * grp = new QGroupBox( colorNames.value( c ) );
-		hlay->addWidget( grp );
-		QVBoxLayout * lay = new QVBoxLayout( grp );
-		ColorWheel * wheel = new ColorWheel( cfg.value( colorNames[c], colorDefaults.value( c ) ).value<QColor>() );
-		wheel->setSizeHint( QSize( 105, 105 ) );
-		connect( wheel, SIGNAL( sigColorEdited( const QColor & ) ), this, SIGNAL( sigChanged() ) );
-		lay->addWidget( wheel );
-		colors[ c ] = wheel;
-	}
+	
+	dialog->addWidget( grp = new GroupBox( "Render", Qt::Vertical ) );
 
 	AntiAlias = new QCheckBox( "&Anti Aliasing" );
 	AntiAlias->setToolTip( "Enable anti aliasing if available.<br>You'll need to restart NifSkope for this setting to take effect." );
 	AntiAlias->setChecked( cfg.value( "Anti Aliasing", true ).toBool() );
 	connect( AntiAlias, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
-	lay->addWidget( AntiAlias );
+	grp->addWidget( AntiAlias );
 	
 	Textures = new QCheckBox( "&Textures" );
 	Textures->setToolTip( "Enable textures" );
 	Textures->setChecked( cfg.value( "Texturing", true ).toBool() );
 	connect( Textures, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
-	lay->addWidget( Textures );
+	grp->addWidget( Textures );
 	
 	Shaders = new QCheckBox( "&Shaders" );
 	Shaders->setToolTip( "Enable Shaders" );
 	Shaders->setChecked( cfg.value( "Enable Shaders", true ).toBool() );
 	connect( Shaders, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
-	lay->addWidget( Shaders );
+	grp->addWidget( Shaders );
 	
-	lay->addLayout( hlay = new QHBoxLayout );
 	
+	dialog->addWidget( grp = new GroupBox( "Up Axis", Qt::Vertical ) );
+	
+	grp->addWidget( AxisX = new QCheckBox( "X" ) );
+	grp->addWidget( AxisY = new QCheckBox( "Y" ) );
+	grp->addWidget( AxisZ = new QCheckBox( "Z" ) );
+	
+	
+	QButtonGroup * btgrp = new QButtonGroup( this );
+	btgrp->addButton( AxisX );
+	btgrp->addButton( AxisY );
+	btgrp->addButton( AxisZ );
+	btgrp->setExclusive( true );
+	
+	QString upax = cfg.value( "Up Axis", "Z" ).toString();
+	if ( upax == "X" )
+		AxisX->setChecked( true );
+	else if ( upax == "Y" )
+		AxisY->setChecked( true );
+	else
+		AxisZ->setChecked( true );
+		
+	connect( AxisX, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	connect( AxisY, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	connect( AxisZ, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	
+	dialog->popLayout();
+	
+
+	dialog->addWidget( grp = new GroupBox( "Culling", Qt::Vertical ) );
+	
+	CullNoTex = new QCheckBox( "Cull &Non Textured" );
+	CullNoTex->setToolTip( "Hide all meshes without textures" );
+	CullNoTex->setChecked( cfg.value( "Cull Non Textured", false ).toBool() );
+	connect( CullNoTex, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	grp->addWidget( CullNoTex );
+	
+	grp->pushLayout( Qt::Horizontal );
 	CullByID = new QCheckBox( "&Cull Nodes by Name" );
 	CullByID->setToolTip( "Enabling this option hides some special nodes and meshes" );
 	CullByID->setChecked( cfg.value( "Cull Nodes By Name", false ).toBool() );
 	connect( CullByID, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
-	hlay->addWidget( CullByID );
+	grp->addWidget( CullByID );
 	
 	CullExpr = new QLineEdit( cfg.value( "Cull Expression", "^collidee|^shadowcaster|^\\!LoD_cullme|^footprint" ).toString() );
 	CullExpr->setToolTip( "Enter a regular expression. Nodes which names match the expression will be hidden" );
 	CullExpr->setEnabled( CullByID->isChecked() );
 	connect( CullExpr, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
 	connect( CullByID, SIGNAL( toggled( bool ) ), CullExpr, SLOT( setEnabled( bool ) ) );
-	hlay->addWidget( CullExpr );
+	grp->addWidget( CullExpr );
+	grp->popLayout();
 	
-	CullNoTex = new QCheckBox( "Cull &Non Textured" );
-	CullNoTex->setToolTip( "Hide all meshes without textures" );
-	CullNoTex->setChecked( cfg.value( "Cull Non Textured", false ).toBool() );
-	connect( CullNoTex, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
-	lay->addWidget( CullNoTex );
 	
+	dialog->addWidget( grp = new GroupBox( "Colors", Qt::Horizontal ) );
+	
+	QStringList colorNames( QStringList() << "Background" << "Foreground" << "Highlight" );
+	QList<QColor> colorDefaults( QList<QColor>() << QColor::fromRgb( 0, 0, 0 ) << QColor::fromRgb( 255, 255, 255 ) << QColor::fromRgb( 255, 255, 0 ) );
+	for ( int c = 0; c < 3; c++ )
+	{
+		GroupBox * g = new GroupBox( colorNames.value( c ), Qt::Vertical );
+		grp->addWidget( g );
+		ColorWheel * wheel = new ColorWheel( cfg.value( colorNames[c], colorDefaults.value( c ) ).value<QColor>() );
+		g->addWidget( wheel );
+		wheel->setSizeHint( QSize( 105, 105 ) );
+		connect( wheel, SIGNAL( sigColorEdited( const QColor & ) ), this, SIGNAL( sigChanged() ) );
+		colors[ c ] = wheel;
+	}
+	
+	dialog->popLayout();
+	dialog->popLayout();
+	
+
 	tSave = new QTimer( this );
 	tSave->setInterval( 5000 );
 	tSave->setSingleShot( true );
@@ -198,11 +279,18 @@ void GLOptions::save()
 	cfg.setValue( "Anti Aliasing", antialias() );
 	cfg.setValue( "Texturing", texturing() );
 	cfg.setValue( "Enable Shaders", shaders() );
+	
 	cfg.setValue( "Cull Nodes By Name", CullByID->isChecked() );
 	cfg.setValue( "Cull Expression", CullExpr->text() );
 	cfg.setValue( "Cull Non Textured", onlyTextured() );
+	
+	cfg.setValue( "Up Axis", AxisX->isChecked() ? "X" : AxisY->isChecked() ? "Y" : "Z" );
 }
 
+GLOptions::Axis GLOptions::upAxis()
+{
+	return get()->AxisX->isChecked() ? XAxis : get()->AxisY->isChecked() ? YAxis : ZAxis;
+}
 
 bool GLOptions::antialias()
 {
