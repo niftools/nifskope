@@ -40,6 +40,8 @@ class QColor;
 class QCheckBox;
 class QDialog;
 class QLineEdit;
+class QRadioButton;
+class QSpinBox;
 class QTimer;
 
 class ColorWheel;
@@ -80,15 +82,28 @@ public:
 
 	static Axis upAxis();
 	
+	static QColor ambient();
+	static QColor diffuse();
+	static QColor specular();
+	
+	static bool lightFrontal();
+	static int lightDeclination();
+	static int lightPlanarAngle();
+	
 signals:
 	void sigChanged();
 
 public slots:
 	void save();
 	
+protected slots:
+	void activateLightPreset( int );
+	
 protected:
 	GLOptions();
 	~GLOptions();
+	
+	bool eventFilter( QObject * o, QEvent * e );
 	
 	QAction * aDrawAxes;
 	QAction * aDrawNodes;
@@ -101,13 +116,6 @@ protected:
 	
 	GroupBox * dialog;
 	
-	enum {
-		colorBack = 0,
-		colorNorm = 1,
-		colorHigh = 2
-	};
-	
-	
 	ColorWheel * colors[3];
 	
 	QCheckBox * AntiAlias;
@@ -118,9 +126,15 @@ protected:
 	QCheckBox * CullByID;
 	QLineEdit * CullExpr;
 	
-	QCheckBox * AxisX;
-	QCheckBox * AxisY;
-	QCheckBox * AxisZ;
+	QRadioButton * AxisX;
+	QRadioButton * AxisY;
+	QRadioButton * AxisZ;
+	
+	ColorWheel * LightColor[3];
+	
+	QCheckBox * LightFrontal;
+	QSpinBox * LightDeclination;
+	QSpinBox * LightPlanarAngle;
 	
 	
 	QTimer * tSave;

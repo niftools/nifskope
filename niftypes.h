@@ -306,6 +306,13 @@ public:
 		xyzw[ 2 ] = z;
 		xyzw[ 3 ] = w;
 	}
+	explicit Vector4( const Vector3 & v3, float w = 0.0 )
+	{
+		xyzw[0] = v3[0];
+		xyzw[1] = v3[1];
+		xyzw[2] = v3[2];
+		xyzw[3] = w;
+	}
 	Vector4 & operator+=( const Vector4 & v )
 	{
 		xyzw[0] += v.xyzw[0];

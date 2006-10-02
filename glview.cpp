@@ -202,7 +202,6 @@ void GLView::updateShaders()
 
 GLView * GLView::create()
 {
-	QSettings settings( "NifTools", "NifSkope" );
 	QGLFormat fmt;
 	fmt.setSampleBuffers( GLOptions::antialias() );
 	return new GLView( fmt );
@@ -229,18 +228,6 @@ void GLView::initializeGL()
 	else
 		updateShaders();
 
-	static const GLfloat L0position[4] = { 0.0, 0.0, 1.0, 0.0f };
-	static const GLfloat L0ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
-	static const GLfloat L0diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	static const GLfloat L0specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glLightfv( GL_LIGHT0, GL_POSITION, L0position );
-	glLightfv( GL_LIGHT0, GL_AMBIENT, L0ambient );
-	glLightfv( GL_LIGHT0, GL_DIFFUSE, L0diffuse );
-	glLightfv( GL_LIGHT0, GL_SPECULAR, L0specular );
-	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
-	glEnable( GL_LIGHT0 );
-	glEnable( GL_LIGHTING );
-	
 	// check for errors
 	
 	GLenum err;
@@ -385,6 +372,25 @@ void GLView::paintGL()
 		
 		glPopMatrix();
 	}
+	
+	// setup light
+	
+	Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
+	if ( ! GLOptions::lightFrontal() )
+	{
+		float decl = GLOptions::lightDeclination() / 180.0 * PI;
+		Vector3 v( sin( decl ), 0, cos( decl ) );
+		Matrix m; m.fromEuler( 0, 0, GLOptions::lightPlanarAngle() / 180.0 * PI );
+		v = m * v;
+		lightDir = Vector4( viewTrans.rotation * v, 0.0 );
+	}
+	glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
+	glLightfv( GL_LIGHT0, GL_AMBIENT, Color4( GLOptions::ambient() ).data() );
+	glLightfv( GL_LIGHT0, GL_DIFFUSE, Color4( GLOptions::diffuse() ).data() );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, Color4( GLOptions::specular() ).data() );
+	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
+	glEnable( GL_LIGHT0 );
+	glEnable( GL_LIGHTING );
 	
 	// draw the model
 
