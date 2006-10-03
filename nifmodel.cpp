@@ -1215,12 +1215,6 @@ bool NifModel::load( QIODevice & device )
 
 bool NifModel::save( QIODevice & device ) const
 {
-	if ( ! checkVersion( 0x04000000, 0 ) )
-	{
-		msg( Message() << "saving not supported yet for nif versions below 4.0" );
-		return false;
-	}
-	
 	NifOStream stream( this, &device );
 
 	emit sigProgress( 0, rowCount( QModelIndex() ) );
@@ -1242,10 +1236,26 @@ bool NifModel::save( QIODevice & device ) const
 			}
 			else
 			{
+				if ( version < 0x0303000d )
+				{
+					if ( rootLinks.contains( c - 1 ) )
+					{
+						QString string = "Top Level Object";
+						int len = string.length();
+						device.write( (char *) &len, 4 );
+						device.write( (const char *) string.toAscii(), len );
+					}
+				}
+				
 				QString string = itemName( index( c, 0 ) );
 				int len = string.length();
 				device.write( (char *) &len, 4 );
 				device.write( (const char *) string.toAscii(), len );
+				
+				if ( version < 0x0303000d )
+				{
+					device.write( (char *) &c, 4 );
+				}
 			}
 		}
 		if ( !save( root->child( c ), stream ) )
@@ -1254,6 +1264,15 @@ bool NifModel::save( QIODevice & device ) const
 			return false;
 		}
 	}
+	
+	if ( version < 0x0303000d )
+	{
+		QString string = "End Of File";
+		int len = string.length();
+		device.write( (char *) &len, 4 );
+		device.write( (const char *) string.toAscii(), len );
+	}
+	
 	return true;
 }
 
