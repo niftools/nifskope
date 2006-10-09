@@ -46,6 +46,7 @@ class Scene;
 
 class QActionGroup;
 class QComboBox;
+class QMenu;
 class QSettings;
 class QToolBar;
 class QTimer;
@@ -77,13 +78,12 @@ public:
 	bool highlight() const;
 	bool drawNodes() const;
 	
-	QString textureFolder() const;
-	
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
 	void center();
 	
+	QMenu * createMenu() const;
 	QList<QToolBar*> toolbars() const;
 	
 	QActionGroup * grpView;
@@ -109,7 +109,6 @@ public:
 public slots:
 	void setNif( NifModel * );
 
-	void setTextureFolder( const QString & );
 	void setCurrentIndex( const QModelIndex & );
 
 	void sltTime( float );
@@ -124,11 +123,11 @@ signals:
 	
 protected:
 	void initializeGL();
-	void paintGL();
 	int  pickGL( int x, int y );
 	void resizeGL( int width, int height );
 	void glProjection( int x = -1, int y = -1 );
 	
+	void paintEvent( QPaintEvent * );
 	void mousePressEvent( QMouseEvent * );
 	void mouseReleaseEvent( QMouseEvent * );
 	void mouseDoubleClickEvent( QMouseEvent * );
@@ -189,6 +188,8 @@ private:
 	int		fpscnt;
 	float	fpsact;
 	float	fpsacc;
+	
+	class TexCache * textures;
 };
 
 #endif

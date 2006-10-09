@@ -48,6 +48,7 @@ public:
 	void transformShapes();
 	
 	void drawShapes( NodeList * draw2nd = 0 );
+	void drawSelection() const;
 	
 	bool isHidden() const;
 	

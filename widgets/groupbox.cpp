@@ -30,63 +30,54 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef COLORWHEEL_H
-#define COLORWHEEL_COLOR_H
+#include "groupbox.h"
 
-#include <QColor>
-#include <QSlider>
-#include <QWidget>
-
-#include "../niftypes.h"
-
-class ColorWheel : public QWidget
+GroupBox::GroupBox( const QString & title, Qt::Orientation o ) : QGroupBox( title )
 {
-	Q_OBJECT
-public:
-	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = 0 );
-	static Color3 choose( const Color3 & color, QWidget * parent = 0 );
-	static Color4 choose( const Color4 & color, QWidget * parent = 0 );
-	
-	static QIcon getIcon();
-	
-	ColorWheel( QWidget * parent = 0 );
-	ColorWheel( const QColor & c, QWidget * parent = 0 );
-	
-	Q_PROPERTY( QColor color READ getColor WRITE setColor NOTIFY sigColor USER true )
-	
-	QColor getColor() const;
-	
-	QSize sizeHint() const;
-	QSize minimumSizeHint() const;
-	
-	void setSizeHint( const QSize & s );
-	
-	int heightForWidth( int width ) const;
+	lay.push( new QBoxLayout( o2d( o ), this ) );
+}
 
-signals:
-	void sigColor( const QColor & );
-	void sigColorEdited( const QColor & );
+GroupBox::~GroupBox()
+{
+}
 	
-public slots:
-	void setColor( const QColor & );
+void GroupBox::addWidget( QWidget * widget, int stretch, Qt::Alignment alignment )
+{
+	lay.top()->addWidget( widget, stretch, alignment );
+}
 	
-protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
+QWidget * GroupBox::pushLayout( const QString & name, Qt::Orientation o, int stretch, Qt::Alignment alignment )
+{
+	QGroupBox * grp = new QGroupBox( name );
+	lay.top()->addWidget( grp, stretch, alignment );
+	QBoxLayout * l = new QBoxLayout( o2d( o ) );
+	grp->setLayout( l );
+	lay.push( l );
+	return grp;
+}
 
-	void setColor( int x, int y );
+void GroupBox::pushLayout( Qt::Orientation o, int stretch )
+{
+	QBoxLayout * l = new QBoxLayout( o2d( o ) );
+	lay.top()->addLayout( l, stretch );
+	lay.push( l );
+}
 
-private:
-	double H, S, V;
-	
-	enum {
-		Nope, Circle, Triangle
-	} pressed;
-	
-	QSize sHint;
+void GroupBox::popLayout()
+{
+	if ( lay.count() > 1 )
+		lay.pop();
+}
 
-	static QIcon * icon;
-};
+QBoxLayout::Direction GroupBox::o2d( Qt::Orientation o )
+{
+	switch ( o )
+	{
+		case Qt::Vertical:
+			return QBoxLayout::TopToBottom;
+		case Qt::Horizontal:
+		default:
+			return QBoxLayout::LeftToRight;
+	}
+}
 
-#endif

@@ -37,7 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QBoxLayout>
 
 class QLineEdit;
-class QToolButton;
+class QAction;
+class QDirModel;
+class QCompleter;
 
 class FileSelector : public QWidget
 {
@@ -50,11 +52,13 @@ public:
 	
 	FileSelector( Modes mode, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
 	
+    Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
+	
 	QString text() const { return file(); }
 	QString file() const;
 	
-	void setFilter( const QString & f ) { fltr = f; }
-	QString filter() const { return fltr; }
+	void setFilter( const QStringList & f );
+	QStringList filter() const;
 	
 	Modes mode() const { return Mode; }
 	void setMode( Modes m ) { Mode = m; }
@@ -73,9 +77,10 @@ protected slots:
 	
 protected:
 	QLineEdit * line;
-	QToolButton * button;
+	QAction   * action;
 	
-	QString fltr;
+	QDirModel * dirmdl;
+	QCompleter * completer;
 	
 	Modes Mode;
 };

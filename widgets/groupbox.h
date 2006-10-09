@@ -30,63 +30,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef COLORWHEEL_H
-#define COLORWHEEL_COLOR_H
+#ifndef GROUPBOX_H
+#define GROUPBOX_H
 
-#include <QColor>
-#include <QSlider>
-#include <QWidget>
+#include <QBoxLayout>
+#include <QGroupBox>
+#include <QStack>
 
-#include "../niftypes.h"
-
-class ColorWheel : public QWidget
+class GroupBox : public QGroupBox
 {
-	Q_OBJECT
+	QStack<QBoxLayout*> lay;
 public:
-	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = 0 );
-	static Color3 choose( const Color3 & color, QWidget * parent = 0 );
-	static Color4 choose( const Color4 & color, QWidget * parent = 0 );
+	GroupBox( const QString & title, Qt::Orientation o );
+	~GroupBox();
 	
-	static QIcon getIcon();
+	void addWidget( QWidget * widget, int stretch = 0, Qt::Alignment alignment = 0 );
 	
-	ColorWheel( QWidget * parent = 0 );
-	ColorWheel( const QColor & c, QWidget * parent = 0 );
+	QWidget * pushLayout( const QString & name, Qt::Orientation o, int stretch = 0, Qt::Alignment alignment = 0 );
+	void pushLayout( Qt::Orientation o, int stretch = 0 );
 	
-	Q_PROPERTY( QColor color READ getColor WRITE setColor NOTIFY sigColor USER true )
+	void popLayout();
 	
-	QColor getColor() const;
-	
-	QSize sizeHint() const;
-	QSize minimumSizeHint() const;
-	
-	void setSizeHint( const QSize & s );
-	
-	int heightForWidth( int width ) const;
-
-signals:
-	void sigColor( const QColor & );
-	void sigColorEdited( const QColor & );
-	
-public slots:
-	void setColor( const QColor & );
-	
-protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
-
-	void setColor( int x, int y );
-
-private:
-	double H, S, V;
-	
-	enum {
-		Nope, Circle, Triangle
-	} pressed;
-	
-	QSize sHint;
-
-	static QIcon * icon;
+	static QBoxLayout::Direction o2d( Qt::Orientation o );
 };
 
 #endif

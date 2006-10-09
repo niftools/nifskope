@@ -40,11 +40,14 @@ class QColor;
 class QCheckBox;
 class QDialog;
 class QLineEdit;
+class QListView;
 class QRadioButton;
 class QSpinBox;
+class QStringListModel;
 class QTimer;
 
 class ColorWheel;
+class FileSelector;
 class GroupBox;
 
 class GLOptions : public QObject
@@ -53,6 +56,9 @@ class GLOptions : public QObject
 public:
 	static GLOptions * get();
 	static QList<QAction*> actions();
+	
+	static QStringList textureFolders();
+	static bool textureAlternatives();
 	
 	static bool antialias();
 	static bool texturing();
@@ -97,6 +103,7 @@ public slots:
 	void save();
 	
 protected slots:
+	void textureFolderAction( int );
 	void activateLightPreset( int );
 	
 protected:
@@ -115,6 +122,11 @@ protected:
 	QAction * aSettings;
 	
 	GroupBox * dialog;
+	
+	QStringListModel * TexFolderModel;
+	QListView * TexFolderView;
+	FileSelector * TexFolderSelect;
+	QCheckBox * TexAlternatives;
 	
 	ColorWheel * colors[3];
 	

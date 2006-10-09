@@ -524,7 +524,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if ( transformRigid )
 	{
 		glPushMatrix();
-		glLoadMatrix( viewTrans() );
+		glMultMatrix( viewTrans() );
 	}
 	
 	// setup array pointers
@@ -566,123 +566,178 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	glDisableClientState( GL_NORMAL_ARRAY );
 	glDisableClientState( GL_COLOR_ARRAY );
 	
+	if ( transformRigid )
+		glPopMatrix();
+}
+
+void Mesh::drawSelection() const
+{
+	if ( isHidden() || ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart ) )
+		return;
 	
-	// draw green mesh outline if selected
-	
-	if ( scene->currentBlock == iBlock || scene->currentBlock == iData || scene->currentBlock == iSkinPart )
+	if ( transformRigid )
 	{
-		glDisable( GL_LIGHTING );
-		glDisable( GL_COLOR_MATERIAL );
-		glDisable( GL_TEXTURE_2D );
-		glDisable( GL_NORMALIZE );
-		glEnable( GL_DEPTH_TEST );
-		glDepthMask( GL_TRUE );
-		glDisable( GL_BLEND );
-		glDisable( GL_ALPHA_TEST );
+		glPushMatrix();
+		glMultMatrix( viewTrans() );
+	}
+	
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_FALSE );
+	glDisable( GL_BLEND );
+	glDisable( GL_ALPHA_TEST );
+	
+	glLineWidth( 1.0 );
+	glPointSize( 3.5 );
+	
+	QString n;
+	int i = -1;
+	
+	if ( scene->currentBlock == iBlock )
+	{
+		n = "Faces";
+	}
+	else if ( scene->currentBlock == iData || scene->currentBlock == iSkinPart )
+	{
+		n = scene->currentIndex.data( Qt::DisplayRole ).toString();
 		
-		glLineWidth( 1.0 );
-		glPointSize( 3.5 );
-		
-		QString n;
-		int i = -1;
-		
-		if ( scene->currentBlock == iBlock )
+		QModelIndex iParent = scene->currentIndex.parent();
+		if ( iParent.isValid() && iParent != iData )
 		{
-			n = "Faces";
+			n = iParent.data( Qt::DisplayRole ).toString();
+			i = scene->currentIndex.row();
 		}
-		else if ( scene->currentBlock == iData || scene->currentBlock == iSkinPart )
+	}
+	
+	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+		glBegin( GL_POINTS );
+		for ( int j = 0; j < transVerts.count(); j++ )
+			glVertex( transVerts.value( j ) );
+		glEnd();
+		if ( i >= 0 )
 		{
-			n = scene->currentIndex.data( Qt::DisplayRole ).toString();
-			
-			QModelIndex iParent = scene->currentIndex.parent();
-			if ( iParent.isValid() && iParent != iData )
-			{
-				n = iParent.data( Qt::DisplayRole ).toString();
-				i = scene->currentIndex.row();
-			}
-		}
-		
-		if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
-		{
-			glDepthFunc( GL_LEQUAL );
-			glNormalColor();
+			glDepthFunc( GL_ALWAYS );
+			glHighlightColor();
 			glBegin( GL_POINTS );
-			for ( int j = 0; j < transVerts.count(); j++ )
-				glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( i ) );
 			glEnd();
-			if ( i >= 0 )
-			{
-				glDepthFunc( GL_ALWAYS );
-				glHighlightColor();
-				glBegin( GL_POINTS );
-				glVertex( transVerts.value( i ) );
-				glEnd();
-			}
 		}
-		if ( n == "Normals" )
+	}
+	if ( n == "Normals" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+		glBegin( GL_LINES );
+		
+		float normalScale = bounds().radius / 20;
+		if ( normalScale < 0.1 ) normalScale = 0.1;
+		
+		for ( int j = 0; j < transVerts.count() && j < transNorms.count(); j++ )
 		{
-			glDepthFunc( GL_LEQUAL );
-			glNormalColor();
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) + transNorms.value( j ) * normalScale );
+		}
+		glEnd();
+		
+		if ( i >= 0 )
+		{
+			glDepthFunc( GL_ALWAYS );
+			glHighlightColor();
 			glBegin( GL_LINES );
-			
-			float normalScale = bounds().radius / 20;
-			if ( normalScale < 0.1 ) normalScale = 0.1;
-			
-			for ( int j = 0; j < transVerts.count() && j < transNorms.count(); j++ )
-			{
-				glVertex( transVerts.value( j ) );
-				glVertex( transVerts.value( j ) + transNorms.value( j ) * normalScale );
-			}
+			glVertex( transVerts.value( i ) );
+			glVertex( transVerts.value( i ) + transNorms.value( i ) * normalScale );
 			glEnd();
+		}
+	}
+	if ( n == "Faces" || n == "Triangles" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+		foreach ( Triangle tri, triangles )
+		{
+			glBegin( GL_LINE_STRIP );
+			glVertex( transVerts.value( tri.v1() ) );
+			glVertex( transVerts.value( tri.v2() ) );
+			glVertex( transVerts.value( tri.v3() ) );
+			glVertex( transVerts.value( tri.v1() ) );
+			glEnd();
+		}
+		if ( i >= 0 )
+		{
+			glDepthFunc( GL_ALWAYS );
+			glHighlightColor();
+			Triangle tri = triangles.value( i );
+			glBegin( GL_LINE_STRIP );
+			glVertex( transVerts.value( tri.v1() ) );
+			glVertex( transVerts.value( tri.v2() ) );
+			glVertex( transVerts.value( tri.v3() ) );
+			glVertex( transVerts.value( tri.v1() ) );
+			glEnd();
+		}
+	}
+	if ( n == "Faces" || n == "Strips" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+		foreach ( QVector<quint16> strip, tristrips )
+		{
+			quint16 a = strip.value( 0 );
+			quint16 b = strip.value( 1 );
 			
-			if ( i >= 0 )
+			for ( int v = 2; v < strip.count(); v++ )
 			{
-				glDepthFunc( GL_ALWAYS );
-				glHighlightColor();
-				glBegin( GL_LINES );
-				glVertex( transVerts.value( i ) );
-				glVertex( transVerts.value( i ) + transNorms.value( i ) * normalScale );
-				glEnd();
+				quint16 c = strip[v];
+				
+				if ( a != b && b != c && c != a )
+				{
+					glBegin( GL_LINE_STRIP );
+					glVertex( transVerts.value( a ) );
+					glVertex( transVerts.value( b ) );
+					glVertex( transVerts.value( c ) );
+					glVertex( transVerts.value( a ) );
+					glEnd();
+				}
+				
+				a = b;
+				b = c;
 			}
 		}
-		if ( n == "Faces" || n == "Triangles" )
+	}
+	if ( n == "Skin Partition Blocks" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		for ( int c = 0; c < partitions.count(); c++ )
 		{
-			glDepthFunc( GL_LEQUAL );
-			glNormalColor();
-			foreach ( Triangle tri, triangles )
-			{
-				glBegin( GL_LINE_STRIP );
-				glVertex( transVerts.value( tri.v1() ) );
-				glVertex( transVerts.value( tri.v2() ) );
-				glVertex( transVerts.value( tri.v3() ) );
-				glVertex( transVerts.value( tri.v1() ) );
-				glEnd();
-			}
-			if ( i >= 0 )
-			{
-				glDepthFunc( GL_ALWAYS );
+			if ( c == i )
 				glHighlightColor();
-				Triangle tri = triangles.value( i );
+			else
+				glNormalColor();
+				
+			QVector<int> vmap = partitions[c].vertexMap;
+			
+			foreach ( Triangle tri, partitions[c].triangles )
+			{
 				glBegin( GL_LINE_STRIP );
-				glVertex( transVerts.value( tri.v1() ) );
-				glVertex( transVerts.value( tri.v2() ) );
-				glVertex( transVerts.value( tri.v3() ) );
-				glVertex( transVerts.value( tri.v1() ) );
+				glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
+				glVertex( transVerts.value( vmap.value( tri.v2() ) ) );
+				glVertex( transVerts.value( vmap.value( tri.v3() ) ) );
+				glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
 				glEnd();
 			}
-		}
-		if ( n == "Faces" || n == "Strips" )
-		{
-			glDepthFunc( GL_LEQUAL );
-			glNormalColor();
-			foreach ( QVector<quint16> strip, tristrips )
+			foreach ( QVector<quint16> strip, partitions[c].tristrips )
 			{
-				quint16 a = strip.value( 0 );
-				quint16 b = strip.value( 1 );
+				quint16 a = vmap.value( strip.value( 0 ) );
+				quint16 b = vmap.value( strip.value( 1 ) );
 				
 				for ( int v = 2; v < strip.count(); v++ )
 				{
-					quint16 c = strip[v];
+					quint16 c = vmap.value( strip[v] );
 					
 					if ( a != b && b != c && c != a )
 					{
@@ -699,55 +754,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 				}
 			}
 		}
-		if ( n == "Skin Partition Blocks" )
-		{
-			glDepthFunc( GL_LEQUAL );
-			for ( int c = 0; c < partitions.count(); c++ )
-			{
-				if ( c == i )
-					glHighlightColor();
-				else
-					glNormalColor();
-					
-				QVector<int> vmap = partitions[c].vertexMap;
-				
-				foreach ( Triangle tri, partitions[c].triangles )
-				{
-					glBegin( GL_LINE_STRIP );
-					glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
-					glVertex( transVerts.value( vmap.value( tri.v2() ) ) );
-					glVertex( transVerts.value( vmap.value( tri.v3() ) ) );
-					glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
-					glEnd();
-				}
-				foreach ( QVector<quint16> strip, partitions[c].tristrips )
-				{
-					quint16 a = vmap.value( strip.value( 0 ) );
-					quint16 b = vmap.value( strip.value( 1 ) );
-					
-					for ( int v = 2; v < strip.count(); v++ )
-					{
-						quint16 c = vmap.value( strip[v] );
-						
-						if ( a != b && b != c && c != a )
-						{
-							glBegin( GL_LINE_STRIP );
-							glVertex( transVerts.value( a ) );
-							glVertex( transVerts.value( b ) );
-							glVertex( transVerts.value( c ) );
-							glVertex( transVerts.value( a ) );
-							glEnd();
-						}
-						
-						a = b;
-						b = c;
-					}
-				}
-			}
-		}
-		
-		//foreach ( BoneWeights bw, weights )
-		//	drawSphere( bw.tcenter, bw.radius );
 	}
 	
 	if ( transformRigid )

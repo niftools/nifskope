@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "fileselect.h"
 
 #include <QAction>
+#include <QCompleter>
+#include <QDirModel>
 #include <QFileDialog>
 #include <QLayout>
 #include <QLineEdit>
@@ -49,15 +51,34 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	connect( line, SIGNAL( textEdited( const QString & ) ), this, SIGNAL( sigEdited( const QString & ) ) );
 	connect( line, SIGNAL( returnPressed() ), this, SLOT( activate() ) );
 	
-	QAction * action = new QAction( this );
+	action = new QAction( this );
 	action->setText( buttonText );
 	connect( action, SIGNAL( triggered() ), this, SLOT( browse() ) );
+	addAction( action );
 	
-	button = new QToolButton;
+	QToolButton * button = new QToolButton;
 	button->setDefaultAction( action );
 	
 	lay->addWidget( line );
 	lay->addWidget( button );
+	
+	line->setCompleter( completer = new QCompleter( dirmdl = new QDirModel( this ), this ) );
+	switch ( Mode )
+	{
+		case LoadFile:
+			dirmdl->setFilter( QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+			break;
+		case SaveFile:
+			dirmdl->setFilter( QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+			break;
+		case Folder:
+			dirmdl->setFilter( QDir::AllDirs | QDir::NoDotAndDotDot );
+			break;
+	}
+	dirmdl->setSorting( QDir::DirsFirst | QDir::Name );
+	dirmdl->setLazyChildCount( true );
+	
+	setFocusProxy( line );
 }
 
 QString FileSelector::file() const
@@ -75,6 +96,16 @@ void FileSelector::setText( const QString & x )
 	setFile( x );
 }
 
+void FileSelector::setFilter( const QStringList & fltr )
+{
+	dirmdl->setNameFilters( fltr );
+}
+
+QStringList FileSelector::filter() const
+{
+	return dirmdl->nameFilters();
+}
+
 void FileSelector::browse()
 {
 	QString x;
@@ -85,21 +116,38 @@ void FileSelector::browse()
 			x = QFileDialog::getExistingDirectory( this, "Choose a folder", file() );
 			break;
 		case LoadFile:
-			x = QFileDialog::getOpenFileName( this, "Choose a file", file(), fltr );
+			x = QFileDialog::getOpenFileName( this, "Choose a file", file(), dirmdl->nameFilters().join( ";" ) );
 			break;
 		case SaveFile:
-			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), fltr );
+			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), dirmdl->nameFilters().join( ";" ) );
 			break;
 	}
 	
 	if ( ! x.isEmpty() )
 	{
 		line->setText( x );
-		emit sigActivated( x );
+		activate();
 	}
 }
 
 void FileSelector::activate()
 {
+	QFileInfo inf( file() );
+	
+	switch ( Mode )
+	{
+		case LoadFile:
+			if ( ! inf.isFile() )
+				return;
+			break;
+		case SaveFile:
+			if ( inf.isDir() )
+				return;
+			break;
+		case Folder:
+			if ( ! inf.isDir() )
+				return;
+			break;
+	}
 	emit sigActivated( file() );
 }

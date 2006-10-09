@@ -141,28 +141,9 @@ public:
 		
 		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
 		
-		if ( !file.isEmpty() )
-		{
-			QStringList folders = TexCache::texfolders;
-			if ( ! nif->getFolder().isEmpty() )
-				folders.append( nif->getFolder() );
-			foreach ( QString base, folders )
-			{
-				if ( file.toLower().replace( "/", "\\" ).startsWith( base.toLower().replace( "/", "\\" ) ) )
-				{
-					int pos = 0;
-					if ( nif->getVersion() == "4.0.0.2" && ( pos = base.toLower().indexOf( "data files" ) ) >= 0 )
-						base = base.left( pos + 10 );
-					file.remove( 0, base.length() );
-					break;
-				}
-			}
-			if ( file.startsWith( "/" ) || file.startsWith( "\\" ) )
-				file.remove( 0, 1 );
-		}
-		
 		if ( ! file.isEmpty() )
 		{
+			file = TexCache::stripPath( file, nif->getFolder() );
 			nif->set<int>( iSource, "Use External", 1 );
 			QModelIndex iFile = nif->getIndex( iSource, "File Name" );
 			nif->setData( iFile.sibling( iFile.row(), NifModel::ValueCol ), file.replace( "/", "\\" ) );
@@ -282,82 +263,6 @@ public:
 
 REGISTER_SPELL( spAddGlowMap )
 
-class spTextureFolders : public Spell
-{
-public:
-	QString name() const { return "Folders"; }
-	QString page() const { return "Texture"; }
-	
-	bool isApplicable( const NifModel *, const QModelIndex & index )
-	{
-		return ! index.isValid();
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		TexCache::texfolders = selectMultipleDirs( "Select texture folders", TexCache::texfolders );
-		nif->reset();
-		return index;
-	}
-	
-	QStringList selectMultipleDirs( const QString & title, const QStringList & def, QWidget * parent = 0 )
-	{
-		QDialog dlg( parent );
-		dlg.setWindowTitle( title );
-		
-		QGridLayout * grid = new QGridLayout;
-		dlg.setLayout( grid );
-		
-		QDirModel * model = new QDirModel( QStringList(), QDir::Dirs, QDir::Name, &dlg );
-		QTreeView * view = new QTreeView;
-		view->setModel( model );
-		view->setSelectionMode( QAbstractItemView::MultiSelection );
-		view->setColumnHidden( 1, true );
-		view->setColumnHidden( 2, true );
-		view->setColumnHidden( 3, true );
-		
-		foreach ( QString d, def )
-		{
-			QModelIndex idx = model->index( d );
-			if ( idx.isValid() )
-			{
-				view->selectionModel()->select( idx, QItemSelectionModel::Select );
-				while ( idx.parent().isValid() )
-				{
-					idx = idx.parent();
-					view->expand( idx );
-				}
-			}
-		}
-		
-		grid->addWidget( view, 0, 0, 1, 2 );
-		
-		QPushButton * ok = new QPushButton( "ok" );
-		grid->addWidget( ok, 1, 0 );
-		QPushButton * cancel = new QPushButton( "cancel" );
-		grid->addWidget( cancel, 1, 1 );
-		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-		QObject::connect( cancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
-		
-		if ( dlg.exec() == QDialog::Accepted )
-		{
-			QStringList lst;
-			foreach ( QModelIndex idx, view->selectionModel()->selectedIndexes() )
-			{
-				if ( idx.column() == 0 )
-				{
-					lst << model->filePath( idx );
-				}
-			}
-			return lst;
-		}
-		else
-			return def;
-	}
-};
-
-REGISTER_SPELL( spTextureFolders )
-
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
 class spTextureTemplate : public Spell
@@ -406,7 +311,7 @@ class spTextureTemplate : public Spell
 		dlg.setLayout( lay );
 		
 		FileSelector * file = new FileSelector( FileSelector::SaveFile, "File", QBoxLayout::RightToLeft );
-		file->setFilter( "*.tga" );
+		file->setFilter( QStringList() << "*.tga" );
 		lay->addWidget( file, 0, 0, 1, 2 );
 		
 		lay->addWidget( new QLabel( "Size" ), 1, 0 );

@@ -44,13 +44,12 @@ class KfmModel;
 class NifTreeView;
 
 class GLView;
-class Popup;
+class FileSelector;
  
 class QModelIndex;
 
 class QAction;
 class QActionGroup;
-class QLineEdit;
 class QSettings;
 class QSlider;
 class QSpinBox;
@@ -78,9 +77,6 @@ public slots:
 	void load();
 	void save();
 	
-	void loadBrowse();
-	void saveBrowse();
-	
 	void loadXML();
 	void reload();
 	
@@ -99,6 +95,9 @@ protected slots:
 	void contextMenu( const QPoint & pos );
 	
 	void dispatchMessage( const Message & msg );
+	
+protected:
+	void closeEvent( QCloseEvent * e );
 	
 private:
 	void initActions();
@@ -120,8 +119,8 @@ private:
 	
 	bool selecting;
 	
-	QLineEdit * lineLoad;
-	QLineEdit * lineSave;
+	FileSelector * lineLoad;
+	FileSelector * lineSave;
 	
 	QDockWidget * dList;
 	QDockWidget * dTree;
@@ -129,8 +128,6 @@ private:
 	
 	QToolBar * tool;
 	
-	QAction * aLoad;
-	QAction * aSave;
 	QAction * aSanitize;
 	QAction * aLoadXML;
 	QAction * aReload;
@@ -154,6 +151,9 @@ class IPCsocket : public QObject
 	Q_OBJECT
 public:
 	static bool nifskope( const QString & );
+
+public slots:
+	void openNif( const QUrl & );
 
 protected slots:
 	void processDatagram();

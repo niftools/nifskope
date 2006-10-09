@@ -34,26 +34,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAction>
 #include <QApplication>
-#include <QButtonGroup>
 #include <QByteArray>
-#include <QCheckBox>
 #include <QDebug>
-#include <QDesktopWidget>
+#include <QDesktopServices>
+#include <QDir>
 #include <QDockWidget>
 #include <QFontDialog>
 #include <QFile>
-#include <QFileDialog>
-#include <QGroupBox>
 #include <QHeaderView>
-#include <QLabel>
-#include <QLayout>
-#include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QSettings>
-#include <QSlider>
-#include <QSpinBox>
 #include <QTextEdit>
 #include <QTimer>
 #include <QToolBar>
@@ -69,10 +61,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifproxy.h"
 #include "widgets/nifview.h"
 
-#include "gl/options.h"
-
 #include "glview.h"
 #include "spellbook.h"
+#include "widgets/fileselect.h"
 
 /*
  * main GUI window
@@ -153,10 +144,6 @@ NifSkope::NifSkope() : QMainWindow()
 
 	// actions
 
-	aLoad = new QAction( "&Load", this );
-	connect( aLoad, SIGNAL( triggered() ), this, SLOT( loadBrowse() ) );	
-	aSave = new QAction( "&Save", this );
-	connect( aSave, SIGNAL( triggered() ), this, SLOT( saveBrowse() ) );
 	aSanitize = new QAction( "&Auto Sanitize before Save", this );
 	aSanitize->setCheckable( true );
 	aSanitize->setChecked( true );
@@ -227,14 +214,14 @@ NifSkope::NifSkope() : QMainWindow()
 	tool->setObjectName( "toolbar" );
 	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	
-	tool->addAction( aLoad );
-	tool->addWidget( lineLoad = new QLineEdit );
-	connect( lineLoad, SIGNAL( returnPressed() ), this, SLOT( load() ) );
+	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" );
+	tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, "&Load", QBoxLayout::RightToLeft ) );
+	lineLoad->setFilter( fileExtensions );
+	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
 	
-	tool->addWidget( lineSave = new QLineEdit );
-	connect( lineSave, SIGNAL( returnPressed() ), this, SLOT( save() ) );
-	
-	tool->addAction( aSave );	
+	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, "&Save", QBoxLayout::LeftToRight ) );
+	lineSave->setFilter( fileExtensions );
+	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 	
 	addToolBar( Qt::TopToolBarArea, tool );
 	
@@ -245,8 +232,8 @@ NifSkope::NifSkope() : QMainWindow()
 	// menu
 
 	QMenu * mFile = new QMenu( "&File" );
-	mFile->addAction( aLoad );
-	mFile->addAction( aSave );
+	mFile->addActions( lineLoad->actions() );
+	mFile->addActions( lineSave->actions() );
 	mFile->addSeparator();
 	mFile->addAction( aSanitize );
 	mFile->addSeparator();
@@ -277,20 +264,13 @@ NifSkope::NifSkope() : QMainWindow()
 	mViewList->addAction( aList );
 	mView->addAction( aSelectFont );
 	
-	QMenu * mOpts = new QMenu( "&Render" );
-	foreach ( QAction * a, ogl->grpView->actions() )
-		mOpts->addAction( a );
-	mOpts->addSeparator();
-	foreach ( QAction * a, GLOptions::actions() )
-		mOpts->addAction( a );
-	
 	QMenu * mAbout = new QMenu( "&About" );
 	mAbout->addAction( aNifSkope );
 	mAbout->addAction( aAboutQt );
 	
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
-	menuBar()->addMenu( mOpts );
+	menuBar()->addMenu( ogl->createMenu() );
 	menuBar()->addMenu( book );
 	menuBar()->addMenu( mAbout );
 	
@@ -299,8 +279,14 @@ NifSkope::NifSkope() : QMainWindow()
 
 NifSkope::~NifSkope()
 {
+}
+
+void NifSkope::closeEvent( QCloseEvent * e )
+{
 	QSettings settings( "NifTools", "NifSkope" );
 	save( settings );
+	
+	QMainWindow::closeEvent( e );
 }
 
 void restoreHeader( const QString & name, QSettings & settings, QHeaderView * header )
@@ -340,6 +326,7 @@ void NifSkope::restore( QSettings & settings )
 	ogl->restore( settings );	
 
 	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
+	restoreGeometry( settings.value("window geometry").toByteArray() );
 	
 	QVariant fontVar = settings.value( "viewFont" );
 	if ( fontVar.canConvert<QFont>() )
@@ -359,6 +346,7 @@ void saveHeader( const QString & name, QSettings & settings, QHeaderView * heade
 void NifSkope::save( QSettings & settings ) const
 {
 	settings.setValue( "window state", saveState( 0x073 ) );
+	settings.setValue( "window geometry", saveGeometry() );
 
 	settings.setValue( "last load", lineLoad->text() );
 	settings.setValue( "last save", lineSave->text() );
@@ -580,28 +568,6 @@ void NifSkope::save()
 	setEnabled( true );
 }
 
-void NifSkope::loadBrowse()
-{
-	// file select
-	QString fn = QFileDialog::getOpenFileName( this, "Choose a file to open", lineLoad->text(), "NIFs (*.nif *.kf *.kfa *.kfm)");
-	if ( !fn.isEmpty() )
-	{
-		lineLoad->setText( fn );
-		load();
-	}
-}
-
-void NifSkope::saveBrowse()
-{
-	// file select
-	QString fn = QFileDialog::getSaveFileName( this, "Choose a file to save", lineSave->text(), "NIFs (*.nif *.kf *.kfa)");
-	if ( !fn.isEmpty() )
-	{
-		lineSave->setText( fn );
-		save();
-	}
-}
-
 void NifSkope::sltWindow()
 {
 	createWindow();
@@ -720,7 +686,8 @@ bool IPCsocket::nifskope( const QString & cmd )
 	
 	if ( udp->bind( QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT, QUdpSocket::DontShareAddress ) )
 	{
-		new IPCsocket( udp );
+		IPCsocket * ipc = new IPCsocket( udp );
+		QDesktopServices::setUrlHandler( "nif", ipc, "openNif" );
 		udp->writeDatagram( (const char *) cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
 		return true;
 	}
@@ -742,6 +709,11 @@ IPCsocket::~IPCsocket()
 	delete socket;
 }
 
+void IPCsocket::openNif( const QUrl & url )
+{
+	NifSkope::createWindow( url.toString( url.scheme() == "nif" ? QUrl::RemoveScheme : QUrl::None ) );
+}
+
 void IPCsocket::processDatagram()
 {
 	while ( socket->hasPendingDatagrams() )
@@ -759,7 +731,7 @@ void IPCsocket::processDatagram()
 			if ( cmd.startsWith( "NifSkope::open" ) )
 			{
 				cmd.remove( 0, 15 );
-				NifSkope::createWindow( cmd );
+				openNif( cmd );
 			}
 		}
 	}

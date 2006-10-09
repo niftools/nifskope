@@ -86,10 +86,11 @@ public:
 	virtual void transform();
 	virtual void transformShapes();
 	
-	virtual void draw( NodeList * draw2nd = 0 );
+	virtual void draw();
 	virtual void drawShapes( NodeList * draw2nd = 0 );
 	virtual void drawHavok();
 	virtual void drawFurn();
+	virtual void drawSelection() const;
 	
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;

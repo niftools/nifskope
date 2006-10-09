@@ -752,7 +752,7 @@ void Node::transformShapes()
 		node->transformShapes();
 }
 
-void Node::draw( NodeList * draw2nd )
+void Node::draw()
 {
 	if ( isHidden() )
 		return;
@@ -760,19 +760,26 @@ void Node::draw( NodeList * draw2nd )
 	glLoadName( nodeId );
 	
 	glEnable( GL_DEPTH_TEST );
-	glDepthMask( GL_TRUE );
-	glDepthFunc( GL_ALWAYS );
+	glDepthMask( GL_FALSE );
 	glDisable( GL_TEXTURE_2D );
 	glDisable( GL_NORMALIZE );
 	glDisable( GL_LIGHTING );
 	glDisable( GL_COLOR_MATERIAL );
-	glEnable( GL_BLEND );
+	glDisable( GL_BLEND );
+	glDisable( GL_ALPHA_TEST );
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 	
 	if ( scene->currentBlock == iBlock )
+	{
+		glDepthFunc( GL_ALWAYS );
 		glHighlightColor();
+	}
 	else
+	{
+		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
+	}
+	
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
 	
@@ -791,7 +798,11 @@ void Node::draw( NodeList * draw2nd )
 	glEnd();
 	
 	foreach ( Node * node, children.list() )
-		node->draw( draw2nd );
+		node->draw();
+}
+
+void Node::drawSelection() const
+{
 }
 
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack )
@@ -1143,10 +1154,7 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 	
 	float roll = float( orient ) / 6284.0 * 2.0 * (-M_PI);
 
-	glLoadName( ( nif->getBlockNumber( iPosition )&0x0ffff ) | 
-	            ( (iPosition.row()&0x0ffff ) << 16) );
-	
-	glLoadName( nif->getBlockNumber( iPosition ) );
+	glLoadName( ( nif->getBlockNumber( iPosition ) & 0xffff ) | ( ( iPosition.row() & 0xffff ) << 16 ) );
 	
 	glPushMatrix();
 
@@ -1163,7 +1171,7 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 	glDrawElements( GL_TRIANGLES, mark->nf * 3, GL_UNSIGNED_SHORT, mark->faces );
 
 	glDisableClientState( GL_VERTEX_ARRAY );
-		
+	
 	glPopMatrix();
 }
 
@@ -1189,6 +1197,7 @@ void Node::drawFurn()
 	glDisable( GL_LIGHTING );
 	glDisable( GL_COLOR_MATERIAL );
 	glDisable( GL_CULL_FACE );
+	glDisable( GL_BLEND );
 	glDisable( GL_ALPHA_TEST );
 	glColor4f( 1, 1, 1, 1 );
 	
@@ -1197,22 +1206,27 @@ void Node::drawFurn()
 	
 	glPushMatrix();
 	
-	glLoadMatrix( viewTrans() );
-		
+	glMultMatrix( viewTrans() );
+	
 	for ( int p = 0; p < nif->rowCount( iExtraDataList ); p++ )
 	{
-		QModelIndex iExtraData = nif->getBlock( nif->getLink( iExtraDataList.child( p, 0 ) ) );
-		QString name = nif->itemName( iExtraData );
-		if (name != "BSFurnitureMarker")
+		QModelIndex iFurnMark = nif->getBlock( nif->getLink( iExtraDataList.child( p, 0 ) ), "BSFurnitureMarker" );
+		if ( ! iFurnMark.isValid() )
 			continue;
 	
-		QModelIndex iPositions = nif->getIndex( iExtraData, "Positions" );		
+		QModelIndex iPositions = nif->getIndex( iFurnMark, "Positions" );		
 		if ( !iPositions.isValid() )
 			break;
 			
 		for ( int j = 0; j < nif->rowCount( iPositions ); j++ )
 		{
 			QModelIndex iPosition = iPositions.child( j, 0 );
+			
+			if ( scene->currentIndex == iPosition )
+				glHighlightColor();
+			else
+				glNormalColor();
+			
 			drawFurnitureMarker( nif, iPosition );		
 		}
 	}

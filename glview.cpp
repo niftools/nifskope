@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtOpenGL>
 #include <QActionGroup>
 #include <QComboBox>
+#include <QMenu>
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
@@ -67,6 +68,7 @@ GLView::GLView( const QGLFormat & format )
 	: QGLWidget( format )
 {
 	setFocusPolicy( Qt::ClickFocus );
+	setAttribute( Qt::WA_NoSystemBackground );
 	//setContextMenuPolicy( Qt::CustomContextMenu );
 	
 	Zoom = 1.0;
@@ -84,7 +86,10 @@ GLView::GLView( const QGLFormat & format )
 	fpsacc = 0.0;
 	fpscnt = 0;
 	
-	scene = new Scene();
+	textures = new TexCache( this );
+	
+	scene = new Scene( textures );
+	connect( textures, SIGNAL( sigRefresh() ), this, SLOT( update() ) );
 
 	timer = new QTimer(this);
 	timer->setInterval( 1000 / FPS );
@@ -184,13 +189,24 @@ GLView::GLView( const QGLFormat & format )
 
 GLView::~GLView()
 {
-	makeCurrent();
 	delete scene;
 }
 
 QList<QToolBar*> GLView::toolbars() const
 {
 	return QList<QToolBar*>() << tAnim;
+}
+
+QMenu * GLView::createMenu() const
+{
+	QMenu * m = new QMenu( "&Render" );
+	foreach ( QAction * a, grpView->actions() )
+		m->addAction( a );
+	m->addSeparator();
+	m->addActions( GLOptions::actions() );
+	//m->addActions( textures->actions() );
+	return m;
+	
 }
 
 void GLView::updateShaders()
@@ -215,8 +231,6 @@ GLView * GLView::create()
 void GLView::initializeGL()
 {
 	initializeTextureUnits( context() );
-	
-	glShadeModel( GL_SMOOTH );
 	
 	if ( ! Renderer::initialize( context() ) )
 	{
@@ -281,21 +295,30 @@ void GLView::center()
 	update();
 }
 
-void GLView::paintGL()
+void GLView::paintEvent( QPaintEvent * event )
 {
-	if ( ! ( isVisible() && height() && width() ) )
-		return;
+	QPainter painter;
+	painter.begin( this );
+	painter.setRenderHint( QPainter::TextAntialiasing );
 	
+	// save gl state for later use by qpainter
+	
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+
+	glViewport( 0, 0, width(), height() );
 	qglClearColor( GLOptions::bgColor() );
-	
-	glEnable( GL_DEPTH_TEST );
-	glDepthMask( GL_TRUE );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glShadeModel( GL_SMOOTH );
 	
 	// compile the model
 	
 	if ( doCompile )
 	{
+		textures->setNifFolder( model->getFolder() );
 		scene->make( model );
 		scene->transform( Transform(), scene->timeMin() );
 		axis = scene->bounds().radius * 1.4;
@@ -365,12 +388,9 @@ void GLView::paintGL()
 		glDisable( GL_NORMALIZE );
 		glLineWidth( 1.2 );
 		
-		glPushMatrix();
-		glMultMatrix( viewTrans );
+		glLoadMatrix( viewTrans );
 		
 		drawAxes( Vector3(), axis );
-		
-		glPopMatrix();
 	}
 	
 	// setup light
@@ -394,9 +414,24 @@ void GLView::paintGL()
 	
 	// draw the model
 
+	glLoadIdentity();
 	scene->draw();
 	
-	// draw fps counter
+	// restore gl state
+	
+	glPopAttrib();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	
+	// check for errors
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+	
+	// update fps counter
 	
 	if ( fpsacc > 1.0 && fpscnt )
 	{
@@ -408,33 +443,19 @@ void GLView::paintGL()
 		fpsacc = 0;
 		fpscnt = 0;
 	}
-
-	// check for errors
 	
-	GLenum err;
-	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+	// draw text on top using QPainter
 
 	if ( GLOptions::benchmark() || GLOptions::drawStats() )
 	{
-		glDisable( GL_ALPHA_TEST );
-		glDisable( GL_BLEND );
-		glDisable( GL_LIGHTING );
-		glDisable( GL_COLOR_MATERIAL );
-		glEnable( GL_DEPTH_TEST );
-		glDepthMask( GL_TRUE );
-		glDepthFunc( GL_LESS );
-		glDisable( GL_TEXTURE_2D );
-		glDisable( GL_NORMALIZE );
-		glLineWidth( 1.2 );
-		glNormalColor();
-		
 		int ls = QFontMetrics( font() ).lineSpacing();
 		int y = 1;
 		
+		painter.setPen( GLOptions::hlColor() );
+		
 		if ( GLOptions::benchmark() )
 		{
-			renderText( 0, y++ * ls, QString( "FPS %1" ).arg( int( fpsact ) ), font() );
+			painter.drawText( 10, y++ * ls, QString( "FPS %1" ).arg( int( fpsact ) ) );
 			y++;
 		}
 		
@@ -443,9 +464,11 @@ void GLView::paintGL()
 			QString stats = scene->textStats();
 			QStringList lines = stats.split( "\n" );
 			foreach ( QString line, lines )
-				renderText( 0, y++ * ls, line, font() );
+				painter.drawText( 10, y++ * ls, line );
 		}
 	}
+	
+	painter.end();
 }
 
 bool compareHits( const QPair< GLuint, GLuint > & a, const QPair< GLuint, GLuint > & b )
@@ -496,7 +519,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	GLuint	buffer[512];
 	glSelectBuffer( 512, buffer );
-
+	
 	int choose;
 	if ( GLOptions::drawFurn() )
 	{		
@@ -637,18 +660,6 @@ void GLView::sltSequence( const QString & seqname )
 	time = scene->timeMin();
 	emit sigTime( time, scene->timeMin(), scene->timeMax() );
 	update();
-}
-
-void GLView::setTextureFolder( const QString & tf )
-{
-	TexCache::texfolders = tf.split( ";" );
-	doCompile = true;
-	update();
-}
-
-QString GLView::textureFolder() const
-{
-	return TexCache::texfolders.join( ";" );
 }
 
 
@@ -950,7 +961,6 @@ void GLView::checkActions()
 void GLView::save( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	settings.setValue( "texture folder", TexCache::texfolders.join( ";" ) );
 	settings.setValue( "enable animations", aAnimate->isChecked() );
 	settings.setValue( "play animation", aAnimPlay->isChecked() );
 	settings.setValue( "loop animation", aAnimLoop->isChecked() );
@@ -962,7 +972,6 @@ void GLView::save( QSettings & settings )
 void GLView::restore( QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
-	TexCache::texfolders = settings.value( "texture folder" ).toString().split( ";" );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
 	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );

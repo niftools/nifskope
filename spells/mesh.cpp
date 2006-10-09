@@ -146,7 +146,7 @@ public:
 		
 		if ( cnt > 0 )
 		{
-			qWarning() << "removed" << cnt << "triangles";
+			qWarning() << cnt << "triangles removed";
 			nif->set<int>( iData, "Num Triangles", tris.count() );
 			nif->set<int>( iData, "Num Triangle Points", tris.count() * 3 );
 			nif->updateArray( iData, "Triangles" );
@@ -158,3 +158,41 @@ public:
 
 REGISTER_SPELL( spPruneRedundantTriangles )
 
+
+class spUpdateCenterRadius : public Spell
+{
+public:
+	QString name() const { return "Update Center/Radius"; }
+	QString page() const { return "Mesh"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->getBlock( index, "NiGeometryData" ).isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = nif->getBlock( index );
+		
+		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+		if ( ! verts.count() )
+			return index;
+		
+		Vector3 center;
+		foreach ( Vector3 v, verts )
+			center += v;
+		center /= verts.count();
+		float radius = 0;
+		float d;
+		foreach ( Vector3 v, verts )
+			if ( ( d = ( center - v ).length() ) > radius )
+				radius = d;
+		
+		nif->set<Vector3>( iData, "Center", center );
+		nif->set<float>( iData, "Radius", radius );
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spUpdateCenterRadius );

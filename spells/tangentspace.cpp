@@ -13,6 +13,7 @@ static QDebug operator<<( QDebug dbg, const Vector3 & v )
 
 class spTangentSpace : public Spell
 {
+public:
 	QString name() const { return "Update Tangent Space"; }
 	QString page() const { return "Mesh"; }
 	

@@ -3,7 +3,8 @@
 #include "../spellbook.h"
 
 #include "../kfmmodel.h"
-#include "../nifskope.h"
+
+#include "../widgets/fileselect.h"
 
 #include <QAction>
 #include <QApplication>
@@ -11,7 +12,6 @@
 #include <QCloseEvent>
 #include <QDebug>
 #include <QDir>
-#include <QFileDialog>
 #include <QGroupBox>
 #include <QLabel>
 #include <QLayout>
@@ -22,6 +22,7 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QSpinBox>
+#include <QTextBrowser>
 #include <QToolButton>
 #include <QQueue>
 
@@ -55,12 +56,7 @@ TestShredder::TestShredder()
 	QSettings settings( "NifTools", "NifSkope" );
 	settings.beginGroup( "XML Checker" );
 
-	QAction * aBrowse = new QAction( "Dir", this );
-	connect( aBrowse, SIGNAL( triggered() ), this, SLOT( browse() ) );
-	QToolButton * btBrowse = new QToolButton( this );
-	btBrowse->setDefaultAction( aBrowse );
-	
-	directory = new QLineEdit( this );
+	directory = new FileSelector( FileSelector::Folder, "Dir", QBoxLayout::RightToLeft );
 	directory->setText( settings.value( "Directory" ).toString() );
 	
 	recursive = new QCheckBox( "Recursive", this );
@@ -95,12 +91,15 @@ TestShredder::TestShredder()
 	count->setPrefix( "threads " );
 	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
 	
-	text = new Browser();
+	text = new QTextBrowser();
 	text->setHidden( false );
 	text->setReadOnly( true );
-	connect( text, SIGNAL( sigAnchorClicked( const QString & ) ), this, SLOT( sltOpenNif( const QString & ) ) );
+	text->setOpenExternalLinks( true );
 	
 	progress = new QProgressBar( this );
+	
+	label = new QLabel( this );
+	label->setHidden( true );
 	
 	btRun = new QPushButton( "run", this );
 	btRun->setCheckable( true );
@@ -117,7 +116,6 @@ TestShredder::TestShredder()
 	
 	QHBoxLayout * hbox = new QHBoxLayout();
 	lay->addLayout( hbox );
-	hbox->addWidget( btBrowse );
 	hbox->addWidget( directory );
 	hbox->addWidget( recursive );
 	hbox->addWidget( chkNif );
@@ -131,7 +129,10 @@ TestShredder::TestShredder()
 	hbox->addWidget( count );
 	
 	lay->addWidget( text );
-	lay->addWidget( progress );
+	
+	lay->addLayout( hbox = new QHBoxLayout() );
+	hbox->addWidget( progress );
+	hbox->addWidget( label );
 
 	lay->addLayout( hbox = new QHBoxLayout() );
 	hbox->addWidget( btRun );
@@ -194,6 +195,7 @@ void TestShredder::renumberThreads( int num )
 
 void TestShredder::run()
 {
+	progress->setMaximum( progress->maximum() - queue.count() );
 	queue.clear();
 	
 	if ( ! btRun->isChecked() )
@@ -203,6 +205,7 @@ void TestShredder::run()
 		thread->wait();
 	
 	text->clear();
+	label->setHidden( true );
 	
 	QStringList extensions;
 	if ( chkNif->isChecked() )
@@ -241,16 +244,9 @@ void TestShredder::threadFinished()
 				return;
 		
 		btRun->setChecked( false );
-		text->append( QString::number( time.secsTo( QDateTime::currentDateTime() ) ) );
-	}
-}
-
-void TestShredder::browse()
-{
-	QString d = QFileDialog::getExistingDirectory( this, "Choose a folder", directory->text() );
-	if ( ! d.isEmpty() )
-	{
-		directory->setText( d );
+		
+		label->setText( QString( "%1 files in %2 seconds" ).arg( progress->maximum() ).arg( time.secsTo( QDateTime::currentDateTime() ) ) );
+		label->setVisible( true );
 	}
 }
 
@@ -289,11 +285,6 @@ void TestShredder::closeEvent( QCloseEvent * e )
 			e->ignore();
 			queue.clear();
 		}
-}
-
-void TestShredder::sltOpenNif( const QString & fname )
-{
-	NifSkope::createWindow( fname );
 }
 
 /*
@@ -401,7 +392,7 @@ void TestThread::run()
 			{
 				bool loaded = model->loadFromFile( filepath );
 				
-				QString result = QString( "<a href=\"%1\">%2</a> (%3)<br>" ).arg(filepath).arg( filepath ).arg( model->getVersion() );
+				QString result = QString( "<a href=\"nif:%1\">%1</a> (%2)" ).arg( filepath ).arg( model->getVersion() );
 				QList<Message> messages = model->getMessages();
 				
 				if ( loaded && model == & nif )
@@ -414,7 +405,7 @@ void TestThread::run()
 				{
 					if ( msg.type() != QtDebugMsg )
 					{
-						result += msg + "<br>";
+						result += "<br>" + msg;
 						rep |= true;
 					}
 				}
@@ -475,27 +466,4 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 			messages += checkLinks( nif, idx, kf );
 	}
 	return messages;
-}
-
-// Browser
-
-Browser::Browser()
-{
-}
-
-void Browser::mousePressEvent( QMouseEvent * e )
-{
-	pressPos = e->pos();
-	QTextEdit::mousePressEvent( e );
-}
-
-void Browser::mouseReleaseEvent( QMouseEvent * e )
-{
-	if ( ( pressPos - e->pos() ).manhattanLength() < QApplication::startDragDistance() )
-	{
-		QString anchor = anchorAt( e->pos() );
-		if ( ! anchor.isEmpty() )
-			emit sigAnchorClicked( anchor );
-	}
-	QTextEdit::mouseReleaseEvent( e );
 }

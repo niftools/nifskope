@@ -35,38 +35,53 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
-class TexCache
+class QAction;
+class QFileSystemWatcher;
+
+class GroupBox;
+
+class TexCache : public QObject
 {
+	Q_OBJECT
+
 	struct Tex
 	{
 		QString filename;
 		QString filepath;
-		GLuint id;
-		GLuint mipmaps;
-		QDateTime loaded;
-		bool used;
+		GLuint	id;
+		GLuint	width, height, mipmaps;
+		bool	reload;
+		QString format;
+		QString status;
+		
+		void load();
 	};
 	
 public:
-	TexCache() {}
-	~TexCache() { flush(); }
+	TexCache( QObject * parent = 0 );
+	~TexCache();
 	
 	int bind( const QString & fname );
 	
+	static QString find( const QString & file, const QString & nifFolder );
+	static QString stripPath( const QString & file, const QString & nifFolder );
+	
+signals:
+	void sigRefresh();
+
+public slots:
 	void flush();
-	void purgeUnused();
-	void clearUsedState();
 	
-	static QString find( const QString & file, const QString & additionalFolders = QString() );
+	void setNifFolder( const QString & );
 	
-	static QStringList texfolders;
-	
-	QString nifFolder;
+protected slots:
+	void fileChanged( const QString & filepath );
 	
 protected:
-	void load( Tex * tx );
-	
 	QHash<QString,Tex*>	textures;
+	QFileSystemWatcher * watcher;
+	
+	QString nifFolder;
 };
 
 void initializeTextureUnits( const QGLContext * );	

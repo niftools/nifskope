@@ -5,9 +5,7 @@
 #include <QThread>
 #include <QMutex>
 #include <QQueue>
-#include <QProgressBar>
 #include <QDateTime>
-#include <QTextEdit>
 #include <QWaitCondition>
 
 #include "../message.h"
@@ -20,8 +18,10 @@ class QLineEdit;
 class QProgressBar;
 class QPushButton;
 class QSpinBox;
-class QTextEdit;
+class QTextBrowser;
 class QVBoxLayout;
+
+class FileSelector;
 
 class FileQueue
 {
@@ -67,22 +67,6 @@ protected:
 	QMutex quit;
 };
 
-class Browser : public QTextEdit
-{
-	Q_OBJECT
-public:
-	Browser();
-
-signals:
-	void sigAnchorClicked( const QString & );
-	
-protected:
-	void mousePressEvent( QMouseEvent * );
-	void mouseReleaseEvent( QMouseEvent * );
-	
-	QPoint pressPos;
-};
-
 class TestShredder : public QWidget
 {
 	Q_OBJECT
@@ -91,7 +75,6 @@ public:
 	~TestShredder();
 	
 protected slots:
-	void browse();
 	void chooseBlock();
 	void run();
 	void xml();
@@ -101,20 +84,19 @@ protected slots:
 	
 	void renumberThreads( int );
 	
-	void sltOpenNif( const QString & );
-
 protected:
 	void	closeEvent( QCloseEvent * );
 	
-	QLineEdit	* directory;
-	QLineEdit	* blockMatch;
-	QCheckBox	* recursive;
-	QCheckBox	* chkNif, * chkKf, * chkKfm;
-	QCheckBox   * repErr;
-	QSpinBox	* count;
-	Browser		* text;
+	FileSelector * directory;
+	QLineEdit    * blockMatch;
+	QCheckBox    * recursive;
+	QCheckBox    * chkNif, * chkKf, * chkKfm;
+	QCheckBox    * repErr;
+	QSpinBox     * count;
+	QTextBrowser * text;
 	QProgressBar * progress;
-	QPushButton * btRun;
+	QLabel       * label;
+	QPushButton  * btRun;
 	
 	FileQueue queue;
 

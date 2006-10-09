@@ -36,82 +36,31 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QColor>
+#include <QDataWidgetMapper>
 #include <QDialog>
 #include <QEvent>
-#include <QGroupBox>
 #include <QLabel>
-#include <QLayout>
 #include <QLineEdit>
+#include <QListView>
 #include <QPushButton>
 #include <QRadioButton>
 #include <QSettings>
 #include <QSpinBox>
-#include <QStack>
+#include <QStringListModel>
 #include <QTimer>
 
 #include "widgets/colorwheel.h"
+#include "widgets/fileselect.h"
+#include "widgets/groupbox.h"
 
-class GroupBox : public QGroupBox
+class SmallListView : public QListView
 {
-	QStack<QBoxLayout*> lay;
 public:
-	GroupBox( const QString & title, Qt::Orientation o ) : QGroupBox( title )
-	{
-		lay.push( new QBoxLayout( o2d( o ), this ) );
-	}
-	
-	void addWidget( QWidget * widget, int stretch = 0, Qt::Alignment alignment = 0 )
-	{
-		lay.top()->addWidget( widget, stretch, alignment );
-	}
-	
-	QWidget * pushLayout( const QString & name, Qt::Orientation o, int stretch = 0, Qt::Alignment alignment = 0 )
-	{
-		QGroupBox * grp = new QGroupBox( name );
-		lay.top()->addWidget( grp, stretch, alignment );
-		QBoxLayout * l = new QBoxLayout( o2d( o ) );
-		grp->setLayout( l );
-		lay.push( l );
-		return grp;
-	}
-	
-	void pushLayout( Qt::Orientation o )
-	{
-		QBoxLayout * l = new QBoxLayout( o2d( o ) );
-		lay.top()->addLayout( l );
-		lay.push( l );
-	}
-	
-	void popLayout()
-	{
-		if ( lay.count() > 1 )
-			lay.pop();
-	}
-	
-	QBoxLayout::Direction o2d( Qt::Orientation o )
-	{
-		switch ( o )
-		{
-			case Qt::Vertical:
-				return QBoxLayout::TopToBottom;
-			case Qt::Horizontal:
-			default:
-				return QBoxLayout::LeftToRight;
-		}
-	}
+	QSize sizeHint() const { return minimumSizeHint(); }
 };
 
-GLOptions * GLOptions::get()
-{
-	static GLOptions * options = new GLOptions();
-	return options;
-}
+static QStringListModel texfoldermdl;
 
-QList<QAction*> GLOptions::actions()
-{
-	GLOptions * opts = get();
-	return QList<QAction*>() << opts->aDrawAxes << opts->aDrawNodes << opts->aDrawHavok << opts->aDrawFurn << opts->aDrawHidden << opts->aDrawStats << opts->aSettings;
-}
 
 GLOptions::GLOptions()
 {
@@ -165,9 +114,49 @@ GLOptions::GLOptions()
 	connect( aSettings, SIGNAL( triggered() ), dialog, SLOT( show() ) );
 	
 	
+	dialog->pushLayout( "Texture Folders", Qt::Vertical );
+	
+	
+	dialog->pushLayout( Qt::Horizontal );
+	
+	QButtonGroup * tfactgrp = new QButtonGroup( this );
+	connect( tfactgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAction( int ) ) );
+	int tfaid = 0;
+	foreach ( QString tfaname, QStringList() << "Add Folder" << "Remove Folder" << "Move Up" )
+	{
+		QPushButton * bt = new QPushButton( tfaname );
+		tfactgrp->addButton( bt, tfaid++ );
+		dialog->addWidget( bt );
+	}
+	
+	dialog->addWidget( TexAlternatives = new QCheckBox( "&Look for alternatives" ) );
+	TexAlternatives->setToolTip( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" );
+	TexAlternatives->setChecked( cfg.value( "Texture Alternatives", true ).toBool() );
+	connect( TexAlternatives, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	
+	dialog->popLayout();
+	
+	TexFolderModel = new QStringListModel( this );
+	TexFolderModel->setStringList( cfg.value( "Texture Folders" ).toStringList() );
+	
+	TexFolderView = new SmallListView;
+	dialog->addWidget( TexFolderView, 0 );
+	TexFolderView->setModel( TexFolderModel );
+	
+	TexFolderSelect = new FileSelector( FileSelector::Folder, "Folder" );
+	dialog->addWidget( TexFolderSelect );
+	
+	QDataWidgetMapper * TexFolderMapper = new QDataWidgetMapper( this );
+	TexFolderMapper->setModel( TexFolderModel );
+	TexFolderMapper->addMapping( TexFolderSelect, 0 );
+	TexFolderMapper->toFirst();
+	
+	
+	dialog->popLayout();
 	dialog->pushLayout( Qt::Horizontal );
 	dialog->pushLayout( "Render", Qt::Vertical );
-
+	
+	
 	dialog->addWidget( AntiAlias = new QCheckBox( "&Anti Aliasing" ) );
 	AntiAlias->setToolTip( "Enable anti aliasing if available.<br>You'll need to restart NifSkope for this setting to take effect." );
 	AntiAlias->setChecked( cfg.value( "Anti Aliasing", true ).toBool() );
@@ -205,7 +194,7 @@ GLOptions::GLOptions()
 		AxisY->setChecked( true );
 	else
 		AxisZ->setChecked( true );
-		
+	
 	connect( AxisX, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	connect( AxisY, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	connect( AxisZ, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
@@ -257,7 +246,7 @@ GLOptions::GLOptions()
 	dialog->pushLayout( Qt::Horizontal );
 	
 	dialog->addWidget( LightFrontal = new QCheckBox( "Frontal" ), 0 );
-	LightFrontal->setToolTip( "Light will remain fixed at the camera location." );
+	LightFrontal->setToolTip( "Lock light to camera position" );
 	LightFrontal->setChecked( cfg.value( "Frontal", true ).toBool() );
 	connect( LightFrontal, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	
@@ -303,6 +292,7 @@ GLOptions::GLOptions()
 	dialog->popLayout();
 	dialog->pushLayout( "Colors", Qt::Horizontal );
 	
+	
 	QStringList colorNames( QStringList() << "Background" << "Foreground" << "Highlight" );
 	QList<QColor> colorDefaults( QList<QColor>() << QColor::fromRgb( 0, 0, 0 ) << QColor::fromRgb( 255, 255, 255 ) << QColor::fromRgb( 255, 255, 0 ) );
 	for ( int c = 0; c < 3; c++ )
@@ -319,6 +309,7 @@ GLOptions::GLOptions()
 
 	dialog->popLayout();
 	
+	
 	tSave = new QTimer( this );
 	tSave->setInterval( 5000 );
 	tSave->setSingleShot( true );
@@ -330,6 +321,18 @@ GLOptions::~GLOptions()
 {
 	if ( tSave->isActive() )
 		save();
+}
+
+GLOptions * GLOptions::get()
+{
+	static GLOptions * options = new GLOptions();
+	return options;
+}
+
+QList<QAction*> GLOptions::actions()
+{
+	GLOptions * opts = get();
+	return QList<QAction*>() << opts->aDrawAxes << opts->aDrawNodes << opts->aDrawHavok << opts->aDrawFurn << opts->aDrawHidden << opts->aDrawStats << opts->aSettings;
 }
 
 bool GLOptions::eventFilter( QObject * o, QEvent * e )
@@ -347,6 +350,9 @@ void GLOptions::save()
 	
 	QSettings cfg( "NifTools", "NifSkope" );
 	cfg.beginGroup( "Render Settings" );
+	
+	cfg.setValue( "Texture Folders", textureFolders() );
+	cfg.setValue( "Texture Alternatives", textureAlternatives() );
 	
 	cfg.setValue( "Draw Axes", drawAxes() );
 	cfg.setValue( "Draw Nodes", drawNodes() );
@@ -379,6 +385,35 @@ void GLOptions::save()
 	cfg.endGroup();
 }
 
+void GLOptions::textureFolderAction( int id )
+{
+	QModelIndex idx = TexFolderView->currentIndex();
+	switch ( id )
+	{
+		case 0:
+			TexFolderModel->insertRow( 0, QModelIndex() );
+			TexFolderModel->setData( TexFolderModel->index( 0, 0, QModelIndex() ), "Choose a folder", Qt::EditRole );
+			TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+			break;
+		case 1:
+			if ( idx.isValid() )
+			{
+				TexFolderModel->removeRow( idx.row(), QModelIndex() );
+			}
+			break;
+		case 2:
+			if ( idx.isValid() && idx.row() > 0 )
+			{
+				QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
+				QVariant v = TexFolderModel->data( idx, Qt::EditRole );
+				TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
+				TexFolderModel->setData( xdi, v, Qt::EditRole );
+				TexFolderView->setCurrentIndex( xdi );
+			}
+			break;
+	}
+}
+
 void GLOptions::activateLightPreset( int id )
 {
 	switch ( id )
@@ -399,6 +434,16 @@ void GLOptions::activateLightPreset( int id )
 	emit sigChanged();
 }
 
+
+QStringList GLOptions::textureFolders()
+{
+	return get()->TexFolderModel->stringList();
+}
+
+bool GLOptions::textureAlternatives()
+{
+	return get()->TexAlternatives->isChecked();
+}
 
 GLOptions::Axis GLOptions::upAxis()
 {

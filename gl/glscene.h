@@ -48,7 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Scene
 {
 public:
-	Scene();
+	Scene( TexCache * texcache );
 	~Scene();
 	
 	void updateShaders() { renderer.updateShaders(); }
@@ -60,11 +60,13 @@ public:
 	void update( const NifModel * nif, const QModelIndex & index );
 	
 	void transform( const Transform & trans, float time = 0.0 );
+
 	void draw();
 	void drawShapes();
 	void drawNodes();
 	void drawHavok();
 	void drawFurn();
+	void drawSelection() const;
 	
 	void setSequence( const QString & seqname );
 	
@@ -95,7 +97,7 @@ public:
 	QString animGroup;
 	QStringList animGroups;
 	
-	TexCache textures;
+	TexCache * textures;
 	
 	QPersistentModelIndex currentBlock;
 	QPersistentModelIndex currentIndex;

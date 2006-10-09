@@ -156,13 +156,22 @@ public:
 		
 		foreach ( NifProxyItem * child, childItems )
 		{
+			if ( child->blockNumber == b )
+				return child;
+		}
+		
+		foreach ( NifProxyItem * child, childItems )
+		{
 			NifProxyItem * x = child->findItem( b, false );
 			if ( x ) return x;
 		}
 		
 		if ( parentItem && scanParents )
 		{
-			NifProxyItem * x = parentItem->findItem( b, true );
+			NifProxyItem * root = parentItem;
+			while ( root && root->parentItem )
+				root = root->parentItem;
+			NifProxyItem * x = root->findItem( b, true );
 			if ( x )	return x;
 		}
 		

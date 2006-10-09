@@ -30,63 +30,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef COLORWHEEL_H
-#define COLORWHEEL_COLOR_H
+#ifndef GLTEXLOADERS_H
+#define GLTEXLOADERS_H
 
-#include <QColor>
-#include <QSlider>
-#include <QWidget>
+// loads a texture pointed to by filepath
+// returns true on success
+// throws a QString otherwise
+// format, width, height and mipmaps will be filled with infos about the loaded texture
 
-#include "../niftypes.h"
+extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
 
-class ColorWheel : public QWidget
-{
-	Q_OBJECT
-public:
-	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = 0 );
-	static Color3 choose( const Color3 & color, QWidget * parent = 0 );
-	static Color4 choose( const Color4 & color, QWidget * parent = 0 );
-	
-	static QIcon getIcon();
-	
-	ColorWheel( QWidget * parent = 0 );
-	ColorWheel( const QColor & c, QWidget * parent = 0 );
-	
-	Q_PROPERTY( QColor color READ getColor WRITE setColor NOTIFY sigColor USER true )
-	
-	QColor getColor() const;
-	
-	QSize sizeHint() const;
-	QSize minimumSizeHint() const;
-	
-	void setSizeHint( const QSize & s );
-	
-	int heightForWidth( int width ) const;
-
-signals:
-	void sigColor( const QColor & );
-	void sigColorEdited( const QColor & );
-	
-public slots:
-	void setColor( const QColor & );
-	
-protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
-
-	void setColor( int x, int y );
-
-private:
-	double H, S, V;
-	
-	enum {
-		Nope, Circle, Triangle
-	} pressed;
-	
-	QSize sHint;
-
-	static QIcon * icon;
-};
 
 #endif

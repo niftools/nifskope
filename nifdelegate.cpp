@@ -143,7 +143,8 @@ public:
 			tRect = textRect( opt );
 		}
 		
-		QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
+		opt.state |= QStyle::State_Active;
+		QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
 		
 		QVariant color = index.data( Qt::BackgroundColorRole );
 		if ( color.canConvert<QColor>() )

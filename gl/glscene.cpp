@@ -40,13 +40,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "options.h"
 
 
-Scene::Scene()
+Scene::Scene( TexCache * texcache )
 {
 	currentBlock = currentIndex = QModelIndex();
 	animate = true;
 	
 	time = 0.0;
 	sceneBoundsValid = timeBoundsValid = false;	
+	
+	textures = texcache;
 }
 
 Scene::~Scene()
@@ -62,7 +64,7 @@ void Scene::clear( bool flushTextures )
 	animGroups.clear();
 	
 	//if ( flushTextures )
-		textures.flush();
+		textures->flush();
 
 	sceneBoundsValid = timeBoundsValid = false;
 }
@@ -117,7 +119,6 @@ void Scene::make( NifModel * nif, bool flushTextures )
 {
 	clear( flushTextures );
 	if ( ! nif ) return;
-	textures.nifFolder = nif->getFolder();
 	update( nif, QModelIndex() );
 	if ( ! animGroups.contains( animGroup ) )
 	{
@@ -210,12 +211,15 @@ void Scene::transform( const Transform & trans, float time )
 void Scene::draw()
 {
 	drawShapes();
+	
 	if ( GLOptions::drawNodes() )
 		drawNodes();
 	if ( GLOptions::drawHavok() )
 		drawHavok();
 	if ( GLOptions::drawFurn() )
 		drawFurn();
+	
+	drawSelection();
 }
 
 void Scene::drawShapes()
@@ -242,7 +246,7 @@ void Scene::drawShapes()
 void Scene::drawNodes()
 {
 	foreach ( Node * node, roots.list() )
-		node->draw( 0 );
+		node->draw();
 }
 
 void Scene::drawHavok()
@@ -255,6 +259,12 @@ void Scene::drawFurn()
 {
 	foreach ( Node * node, roots.list() )
 		node->drawFurn();
+}
+
+void Scene::drawSelection() const
+{
+	foreach ( Node * node, nodes.list() )
+		node->drawSelection();
 }
 
 BoundSphere Scene::bounds() const
@@ -318,6 +328,6 @@ int Scene::bindTexture( const QString & fname )
 	if ( ! GLOptions::texturing() || fname.isEmpty() )
 		return 0;
 	
-	return textures.bind( fname );
+	return textures->bind( fname );
 }
 
