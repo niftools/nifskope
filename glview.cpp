@@ -184,6 +184,7 @@ GLView::GLView( const QGLFormat & format )
 
 	tAnim->addAction( aAnimSwitch );
 	
+	connect( GLOptions::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
 	connect( GLOptions::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
 }
 
@@ -297,6 +298,8 @@ void GLView::center()
 
 void GLView::paintEvent( QPaintEvent * event )
 {
+	makeCurrent();
+	
 	QPainter painter;
 	painter.begin( this );
 	painter.setRenderHint( QPainter::TextAntialiasing );
@@ -373,6 +376,8 @@ void GLView::paintEvent( QPaintEvent * event )
 
 	glProjection();
 	
+	glLoadIdentity();
+	
 	// draw the axis
 	
 	if ( GLOptions::drawAxes() )
@@ -388,9 +393,12 @@ void GLView::paintEvent( QPaintEvent * event )
 		glDisable( GL_NORMALIZE );
 		glLineWidth( 1.2 );
 		
+		glPushMatrix();
 		glLoadMatrix( viewTrans );
 		
 		drawAxes( Vector3(), axis );
+		
+		glPopMatrix();
 	}
 	
 	// setup light
@@ -414,7 +422,6 @@ void GLView::paintEvent( QPaintEvent * event )
 	
 	// draw the model
 
-	glLoadIdentity();
 	scene->draw();
 	
 	// restore gl state
@@ -469,6 +476,8 @@ void GLView::paintEvent( QPaintEvent * event )
 	}
 	
 	painter.end();
+	
+	glFlush();
 }
 
 bool compareHits( const QPair< GLuint, GLuint > & a, const QPair< GLuint, GLuint > & b )
@@ -515,6 +524,13 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	
 	makeCurrent();
 
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+
+	glViewport( 0, 0, width(), height() );
 	glProjection( pressPos.x(), pressPos.y() );
 
 	GLuint	buffer[512];
@@ -526,6 +542,12 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 		choose = ::indexAt( buffer, model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle ); 
 		if ( choose != -1 )
 		{
+			glPopAttrib();
+			glMatrixMode(GL_MODELVIEW);
+			glPopMatrix();
+			glMatrixMode(GL_PROJECTION);
+			glPopMatrix();
+			
 			QModelIndex parent = model->index( 3, 0, model->getBlock( choose&0x0ffff ) );
 			return model->index( choose>>16, 0, parent );
 		}
@@ -540,6 +562,13 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	df << &Scene::drawShapes;
 	
 	choose = ::indexAt( buffer, model, scene, df, cycle ); 
+
+	glPopAttrib();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	
 	if ( choose != -1 )
 		return model->getBlock( choose );
 	
