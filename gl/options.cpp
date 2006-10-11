@@ -37,11 +37,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCheckBox>
 #include <QColor>
 #include <QDataWidgetMapper>
+#include <QDebug>
 #include <QDialog>
+#include <QDir>
 #include <QEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListView>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QRadioButton>
 #include <QSettings>
@@ -59,11 +62,21 @@ public:
 	QSize sizeHint() const { return minimumSizeHint(); }
 };
 
-static QStringListModel texfoldermdl;
-
-
 GLOptions::GLOptions()
 {
+	tSave = new QTimer( this );
+	tSave->setInterval( 5000 );
+	tSave->setSingleShot( true );
+	connect( this, SIGNAL( sigChanged() ), tSave, SLOT( start() ) );
+	connect( tSave, SIGNAL( timeout() ), this, SLOT( save() ) );
+	
+	tEmit = new QTimer( this );
+	tEmit->setInterval( 500 );
+	tEmit->setSingleShot( true );
+	connect( tEmit, SIGNAL( timeout() ), this, SIGNAL( sigChanged() ) );
+	connect( this, SIGNAL( sigChanged() ), tEmit, SLOT( stop() ) );
+	
+	
 	QSettings cfg( "NifTools", "NifSkope" );
 	cfg.beginGroup( "Render Settings" );
 	
@@ -122,12 +135,47 @@ GLOptions::GLOptions()
 	QButtonGroup * tfactgrp = new QButtonGroup( this );
 	connect( tfactgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAction( int ) ) );
 	int tfaid = 0;
-	foreach ( QString tfaname, QStringList() << "Add Folder" << "Remove Folder" << "Move Up" )
+	QStringList texactnames( QStringList() << "Add Folder" << "Remove Folder" << "Move Up" );
+#ifdef Q_OS_WIN32
+	texactnames << "Oblivion" << "Morrowind" << "Civilization IV";
+#endif
+	foreach ( QString tfaname, texactnames  )
 	{
 		QPushButton * bt = new QPushButton( tfaname );
+		TexFolderButtons[tfaid] = bt;
 		tfactgrp->addButton( bt, tfaid++ );
 		dialog->addWidget( bt );
 	}
+	
+	dialog->popLayout();
+	
+	TexFolderModel = new QStringListModel( this );
+	TexFolderModel->setStringList( cfg.value( "Texture Folders" ).toStringList() );
+	connect( TexFolderModel, SIGNAL( rowsInserted( const QModelIndex &, int, int ) ), tEmit, SLOT( start() ) );
+	connect( TexFolderModel, SIGNAL( rowsRemoved( const QModelIndex &, int, int ) ), tEmit, SLOT( start() ) );
+	connect( TexFolderModel, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), tEmit, SLOT( start() ) );
+	
+	TexFolderView = new SmallListView;
+	dialog->addWidget( TexFolderView, 0 );
+	TexFolderView->setModel( TexFolderModel );
+	TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+	
+	dialog->pushLayout( Qt::Horizontal );
+	
+	TexFolderSelect = new FileSelector( FileSelector::Folder, "Folder", QBoxLayout::RightToLeft );
+	dialog->addWidget( TexFolderSelect );
+	
+	QDataWidgetMapper * TexFolderMapper = new QDataWidgetMapper( this );
+	TexFolderMapper->setModel( TexFolderModel );
+	TexFolderMapper->addMapping( TexFolderSelect, 0 );
+	TexFolderMapper->setCurrentModelIndex( TexFolderView->currentIndex() );
+	connect( TexFolderView->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
+		TexFolderMapper, SLOT( setCurrentModelIndex( const QModelIndex & ) ) );
+	connect( TexFolderSelect, SIGNAL( sigActivated( const QString & ) ), TexFolderMapper, SLOT( submit() ) );
+	
+	connect( TexFolderView->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
+		this, SLOT( textureFolderIndex() ) );
+	textureFolderIndex();
 	
 	dialog->addWidget( TexAlternatives = new QCheckBox( "&Look for alternatives" ) );
 	TexAlternatives->setToolTip( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" );
@@ -135,23 +183,6 @@ GLOptions::GLOptions()
 	connect( TexAlternatives, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	
 	dialog->popLayout();
-	
-	TexFolderModel = new QStringListModel( this );
-	TexFolderModel->setStringList( cfg.value( "Texture Folders" ).toStringList() );
-	
-	TexFolderView = new SmallListView;
-	dialog->addWidget( TexFolderView, 0 );
-	TexFolderView->setModel( TexFolderModel );
-	
-	TexFolderSelect = new FileSelector( FileSelector::Folder, "Folder" );
-	dialog->addWidget( TexFolderSelect );
-	
-	QDataWidgetMapper * TexFolderMapper = new QDataWidgetMapper( this );
-	TexFolderMapper->setModel( TexFolderModel );
-	TexFolderMapper->addMapping( TexFolderSelect, 0 );
-	TexFolderMapper->toFirst();
-	
-	
 	dialog->popLayout();
 	dialog->pushLayout( Qt::Horizontal );
 	dialog->pushLayout( "Render", Qt::Vertical );
@@ -308,13 +339,6 @@ GLOptions::GLOptions()
 	}
 
 	dialog->popLayout();
-	
-	
-	tSave = new QTimer( this );
-	tSave->setInterval( 5000 );
-	tSave->setSingleShot( true );
-	connect( this, SIGNAL( sigChanged() ), tSave, SLOT( start() ) );
-	connect( tSave, SIGNAL( timeout() ), this, SLOT( save() ) );
 }
 
 GLOptions::~GLOptions()
@@ -349,6 +373,18 @@ void GLOptions::save()
 	tSave->stop();
 	
 	QSettings cfg( "NifTools", "NifSkope" );
+
+	// remove obsolete keys
+	foreach ( QString key, QStringList()
+		<< "texture folder"	<< "bg color" << "cull nodes by name" << "draw axis" << "draw furniture"
+		<< "draw havok" << "draw hidden" << "draw nodes" << "draw only textured meshes" << "draw stats"
+		<< "enable blending" << "enable shading" << "enable textures" << "highlight meshes" << "hl color"
+		<< "rotate" )
+	{
+		if ( cfg.contains( key ) )
+			cfg.remove( key );
+	}
+
 	cfg.beginGroup( "Render Settings" );
 	
 	cfg.setValue( "Texture Folders", textureFolders() );
@@ -382,6 +418,7 @@ void GLOptions::save()
 	cfg.setValue( "Frontal", lightFrontal() );
 	cfg.setValue( "Declination", lightDeclination() );
 	cfg.setValue( "Planar Angle", lightPlanarAngle() );
+	
 	cfg.endGroup();
 }
 
@@ -391,19 +428,20 @@ void GLOptions::textureFolderAction( int id )
 	switch ( id )
 	{
 		case 0:
+			// add folder
 			TexFolderModel->insertRow( 0, QModelIndex() );
 			TexFolderModel->setData( TexFolderModel->index( 0, 0, QModelIndex() ), "Choose a folder", Qt::EditRole );
 			TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
 			break;
 		case 1:
 			if ( idx.isValid() )
-			{
+			{	// remove folder
 				TexFolderModel->removeRow( idx.row(), QModelIndex() );
 			}
 			break;
 		case 2:
 			if ( idx.isValid() && idx.row() > 0 )
-			{
+			{	// move up
 				QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
 				QVariant v = TexFolderModel->data( idx, Qt::EditRole );
 				TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
@@ -411,7 +449,51 @@ void GLOptions::textureFolderAction( int id )
 				TexFolderView->setCurrentIndex( xdi );
 			}
 			break;
+#ifdef Q_OS_WIN32
+		case 3:
+			{	// Oblivion
+				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
+				QDir dir( reg.value( "Installed Path" ).toString() );
+				if ( dir.exists() && dir.cd( "Data" ) )
+				{
+					TexFolderModel->setStringList( QStringList() << dir.path() );
+					TexAlternatives->setChecked( false );
+					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+					if ( ! dir.cd( "Textures" ) )
+						QMessageBox::information( dialog, "NifSkope",
+							"<p>The texture folder was not found.</p>"
+							"<p>This may be because you haven't extracted the archive files yet.<br>"
+							"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a> it is explained how to do that.</p>" );
+				}
+				else
+				{
+					QMessageBox::information( dialog, "NifSkope", "Oblivion's Data folder could not be found" );
+				}
+			}
+			break;
+		case 4:
+			{
+				QMessageBox::information( dialog, "NifSkope", "Morrowind's Texture folder could not be found" );
+			}
+			break;
+		case 5:
+			{	// CIV IV
+				TexFolderModel->setStringList( QStringList() << "$NIFDIR" );
+				TexAlternatives->setChecked( false );
+				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+			}
+			break;
+#endif
 	}
+}
+
+void GLOptions::textureFolderIndex()
+{
+	QModelIndex idx = TexFolderView->currentIndex();
+	TexFolderSelect->setEnabled( idx.isValid() );
+	TexFolderButtons[0]->setEnabled( true );
+	TexFolderButtons[1]->setEnabled( idx.isValid() );
+	TexFolderButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
 }
 
 void GLOptions::activateLightPreset( int id )
