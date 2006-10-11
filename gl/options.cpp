@@ -154,6 +154,7 @@ GLOptions::GLOptions()
 	connect( TexFolderModel, SIGNAL( rowsInserted( const QModelIndex &, int, int ) ), tEmit, SLOT( start() ) );
 	connect( TexFolderModel, SIGNAL( rowsRemoved( const QModelIndex &, int, int ) ), tEmit, SLOT( start() ) );
 	connect( TexFolderModel, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), tEmit, SLOT( start() ) );
+	connect( TexFolderModel, SIGNAL( modelReset() ), tEmit, SLOT( start() ) );
 	
 	TexFolderView = new SmallListView;
 	dialog->addWidget( TexFolderView, 0 );
@@ -473,7 +474,22 @@ void GLOptions::textureFolderAction( int id )
 			break;
 		case 4:
 			{
-				QMessageBox::information( dialog, "NifSkope", "Morrowind's Texture folder could not be found" );
+				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
+				QDir dir( reg.value( "Installed Path" ).toString() );
+				if ( dir.exists() && dir.cd( "Data Files" ) && dir.cd( "Textures" ) )
+				{
+					QStringList list;
+					list.append( dir.path() );
+					dir.cdUp();
+					list.prepend( dir.path() );
+					TexFolderModel->setStringList( list );
+					TexAlternatives->setChecked( true );
+					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+				}
+				else
+				{
+					QMessageBox::information( dialog, "NifSkope", "Morrowind's Texture folder could not be found" );
+				}
 			}
 			break;
 		case 5:
