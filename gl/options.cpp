@@ -128,18 +128,29 @@ GLOptions::GLOptions()
 	
 	
 	dialog->pushLayout( "Texture Folders", Qt::Vertical );
+	dialog->pushLayout( Qt::Horizontal );
 	
+#ifdef Q_OS_WIN32
+	dialog->pushLayout( "Auto Detect", Qt::Vertical );
+	QButtonGroup * tfgamegrp = new QButtonGroup( this );
+	connect( tfgamegrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAutoDetect( int ) ) );
+	int gameid = 0;
+	foreach( QString game, QStringList() << "Oblivion" << "Morrowind" << "Civilization IV" << "Freedom Force" )
+	{
+		QPushButton * bt = new QPushButton( game );
+		tfgamegrp->addButton( bt, gameid++ );
+		dialog->addWidget( bt );
+	}
+	dialog->popLayout();
+#endif
 	
+	dialog->pushLayout( "Custom", Qt::Vertical );
 	dialog->pushLayout( Qt::Horizontal );
 	
 	QButtonGroup * tfactgrp = new QButtonGroup( this );
 	connect( tfactgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAction( int ) ) );
 	int tfaid = 0;
-	QStringList texactnames( QStringList() << "Add Folder" << "Remove Folder" << "Move Up" );
-#ifdef Q_OS_WIN32
-	texactnames << "Oblivion" << "Morrowind" << "Civilization IV";
-#endif
-	foreach ( QString tfaname, texactnames  )
+	foreach ( QString tfaname, QStringList() << "Add Folder" << "Remove Folder" << "Move Up" )
 	{
 		QPushButton * bt = new QPushButton( tfaname );
 		TexFolderButtons[tfaid] = bt;
@@ -175,14 +186,16 @@ GLOptions::GLOptions()
 	connect( TexFolderSelect, SIGNAL( sigActivated( const QString & ) ), TexFolderMapper, SLOT( submit() ) );
 	
 	connect( TexFolderView->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
-		this, SLOT( textureFolderIndex() ) );
-	textureFolderIndex();
+		this, SLOT( textureFolderIndex( const QModelIndex & ) ) );
+	textureFolderIndex( TexFolderView->currentIndex() );
 	
 	dialog->addWidget( TexAlternatives = new QCheckBox( "&Look for alternatives" ) );
 	TexAlternatives->setToolTip( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" );
 	TexAlternatives->setChecked( cfg.value( "Texture Alternatives", true ).toBool() );
 	connect( TexAlternatives, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	
+	dialog->popLayout();
+	dialog->popLayout();
 	dialog->popLayout();
 	dialog->popLayout();
 	dialog->pushLayout( Qt::Horizontal );
@@ -423,6 +436,82 @@ void GLOptions::save()
 	cfg.endGroup();
 }
 
+void GLOptions::textureFolderAutoDetect( int game )
+{
+#ifdef Q_OS_WIN32
+	switch ( game )
+	{
+		case 0:
+			{	// Oblivion
+				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
+				QDir dir( reg.value( "Installed Path" ).toString() );
+				if ( dir.exists() && dir.cd( "Data" ) )
+				{
+					TexFolderModel->setStringList( QStringList() << dir.path() );
+					TexAlternatives->setChecked( false );
+					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+					if ( ! dir.cd( "Textures" ) )
+						QMessageBox::information( dialog, "NifSkope",
+							"<p>The texture folder was not found.</p>"
+							"<p>This may be because you haven't extracted the archive files yet.<br>"
+							"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" );
+				}
+				else
+				{
+					QMessageBox::information( dialog, "NifSkope", "Oblivion's Data folder could not be found" );
+				}
+			}	break;
+		case 1:
+			{
+				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
+				QDir dir( reg.value( "Installed Path" ).toString() );
+				if ( dir.exists() && dir.cd( "Data Files" ) && dir.cd( "Textures" ) )
+				{
+					QStringList list;
+					list.append( dir.path() );
+					dir.cdUp();
+					list.prepend( dir.path() );
+					TexFolderModel->setStringList( list );
+					TexAlternatives->setChecked( true );
+					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+				}
+				else
+				{
+					QMessageBox::information( dialog, "NifSkope", "Morrowind's Texture folder could not be found" );
+				}
+			}	break;
+		case 2:
+			{	// CIV IV
+				QStringList list;
+				list.append( "$NIFDIR" );
+				TexFolderModel->setStringList( list );
+				TexAlternatives->setChecked( false );
+				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+			}	break;
+		case 3:
+			{	// Freedom Force
+				QStringList list;
+				list.append( "$NIFDIR\\textures" );
+				{
+					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force", QSettings::NativeFormat );
+					QDir dir( reg.value( "InstallDir" ).toString() );
+					if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) )
+						list.append( dir.path() );
+				}
+				{
+					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo", QSettings::NativeFormat );
+					QDir dir( reg.value( "InstallDir" ).toString() );
+					if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) )
+						list.append( dir.path() );
+				}
+				TexFolderModel->setStringList( list );
+				TexAlternatives->setChecked( false );
+				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+			}	break;
+	}
+#endif
+}
+
 void GLOptions::textureFolderAction( int id )
 {
 	QModelIndex idx = TexFolderView->currentIndex();
@@ -450,62 +539,11 @@ void GLOptions::textureFolderAction( int id )
 				TexFolderView->setCurrentIndex( xdi );
 			}
 			break;
-#ifdef Q_OS_WIN32
-		case 3:
-			{	// Oblivion
-				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
-				QDir dir( reg.value( "Installed Path" ).toString() );
-				if ( dir.exists() && dir.cd( "Data" ) )
-				{
-					TexFolderModel->setStringList( QStringList() << dir.path() );
-					TexAlternatives->setChecked( false );
-					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-					if ( ! dir.cd( "Textures" ) )
-						QMessageBox::information( dialog, "NifSkope",
-							"<p>The texture folder was not found.</p>"
-							"<p>This may be because you haven't extracted the archive files yet.<br>"
-							"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a> it is explained how to do that.</p>" );
-				}
-				else
-				{
-					QMessageBox::information( dialog, "NifSkope", "Oblivion's Data folder could not be found" );
-				}
-			}
-			break;
-		case 4:
-			{
-				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
-				QDir dir( reg.value( "Installed Path" ).toString() );
-				if ( dir.exists() && dir.cd( "Data Files" ) && dir.cd( "Textures" ) )
-				{
-					QStringList list;
-					list.append( dir.path() );
-					dir.cdUp();
-					list.prepend( dir.path() );
-					TexFolderModel->setStringList( list );
-					TexAlternatives->setChecked( true );
-					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-				}
-				else
-				{
-					QMessageBox::information( dialog, "NifSkope", "Morrowind's Texture folder could not be found" );
-				}
-			}
-			break;
-		case 5:
-			{	// CIV IV
-				TexFolderModel->setStringList( QStringList() << "$NIFDIR" );
-				TexAlternatives->setChecked( false );
-				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-			}
-			break;
-#endif
 	}
 }
 
-void GLOptions::textureFolderIndex()
+void GLOptions::textureFolderIndex( const QModelIndex & idx )
 {
-	QModelIndex idx = TexFolderView->currentIndex();
 	TexFolderSelect->setEnabled( idx.isValid() );
 	TexFolderButtons[0]->setEnabled( true );
 	TexFolderButtons[1]->setEnabled( idx.isValid() );

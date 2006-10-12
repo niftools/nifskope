@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QObject>
 
+class QAbstractButton;
 class QAction;
 class QColor;
 class QCheckBox;
@@ -42,7 +43,6 @@ class QDialog;
 class QLineEdit;
 class QListView;
 class QModelIndex;
-class QPushButton;
 class QRadioButton;
 class QSpinBox;
 class QStringListModel;
@@ -106,7 +106,8 @@ public slots:
 	
 protected slots:
 	void textureFolderAction( int );
-	void textureFolderIndex();
+	void textureFolderIndex( const QModelIndex & );
+	void textureFolderAutoDetect( int game );
 	void activateLightPreset( int );
 	
 protected:
@@ -130,7 +131,7 @@ protected:
 	QListView * TexFolderView;
 	FileSelector * TexFolderSelect;
 	QCheckBox * TexAlternatives;
-	QPushButton * TexFolderButtons[6];
+	QAbstractButton * TexFolderButtons[3];
 	
 	ColorWheel * colors[3];
 	
