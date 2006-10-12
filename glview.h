@@ -55,11 +55,11 @@ class GLView : public QGLWidget
 {
 	Q_OBJECT
 
+	GLView( const QGLFormat & format, const QGLWidget * shareWidget = 0 );
+	~GLView();
+	
 public:
 	static GLView * create();
-	
-	GLView( const QGLFormat & format );
-	~GLView();
 	
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 	
