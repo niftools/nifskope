@@ -462,7 +462,7 @@ void GLOptions::textureFolderAutoDetect( int game )
 				}
 			}	break;
 		case 1:
-			{
+			{	// Morrowind
 				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
 				QDir dir( reg.value( "Installed Path" ).toString() );
 				if ( dir.exists() && dir.cd( "Data Files" ) && dir.cd( "Textures" ) )
@@ -484,6 +484,10 @@ void GLOptions::textureFolderAutoDetect( int game )
 			{	// CIV IV
 				QStringList list;
 				list.append( "$NIFDIR" );
+				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4", QSettings::NativeFormat );
+				QDir dir( reg.value( "INSTALLDIR" ).toString() );
+				if ( dir.exists() && dir.cd( "Assets/Art/shared" ) )
+					list.append( dir.path() );
 				TexFolderModel->setStringList( list );
 				TexAlternatives->setChecked( false );
 				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
