@@ -194,7 +194,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( target && flags.controller.active ) )
+		if ( ! ( target && active ) )
 			return;
 		
 		localtime = ctrlTime( time );

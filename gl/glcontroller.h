@@ -44,22 +44,6 @@ class Interpolator;
 
 class Controller
 {
-	typedef union
-	{
-		quint16 bits;
-		
-		struct Controller
-		{
-			bool unknown : 1;
-			enum
-			{
-				Cyclic = 0, Reverse = 1, Constant = 2
-			} extrapolation : 2;
-			bool active : 1;
-		} controller;
-		
-	} ControllerFlags;
-	
 public:
 	Controller( const QModelIndex & index );
 	virtual ~Controller() {}
@@ -69,7 +53,11 @@ public:
 	float phase;
 	float frequency;
 	
-	ControllerFlags flags;
+	enum Extrapolation {
+		Cyclic = 0, Reverse = 1, Constant = 2
+	} extrapolation;
+	
+	bool active;
 	
 	virtual void setSequence( const QString & seqname );
 	

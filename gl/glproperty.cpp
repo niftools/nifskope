@@ -335,7 +335,7 @@ public:
 	void update( float time )
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
-		if ( ! ( target && flags.controller.active && iSources.isValid() && nif ) )
+		if ( ! ( target && active && iSources.isValid() && nif ) )
 			return;
 		
 		float r = 0;
@@ -380,7 +380,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( target && flags.controller.active ) )
+		if ( ! ( target && active ) )
 			return;
 		
 		TexturingProperty::TexDesc * tex = & target->textures[ texSlot & 7 ];
@@ -504,7 +504,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( flags.controller.active && target ) )
+		if ( ! ( active && target ) )
 			return;
 		
 		interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
@@ -529,7 +529,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( flags.controller.active && target ) )
+		if ( ! ( active && target ) )
 			return;
 		
 		Vector3 v3;

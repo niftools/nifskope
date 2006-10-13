@@ -191,7 +191,10 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 		stop = nif->get<float>( index, "Stop Time" );
 		phase = nif->get<float>( index, "Phase" );
 		frequency = nif->get<float>( index, "Frequency" );
-		flags.bits = nif->get<int>( index, "Flags" );
+		
+		int flags = nif->get<int>( index, "Flags" );
+		active = flags & 0x08;
+		extrapolation = (Extrapolation) ( ( flags & 0x06 ) >> 1 );
 		
 		QModelIndex idx = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
 		if ( idx.isValid() )
@@ -221,9 +224,9 @@ float Controller::ctrlTime( float time ) const
 	if ( time >= start && time <= stop )
 		return time;
 	
-	switch ( flags.controller.extrapolation )
+	switch ( extrapolation )
 	{
-		case ControllerFlags::Controller::Cyclic:
+		case Cyclic:
 			{
 				float delta = stop - start;
 				if ( delta <= 0 )
@@ -234,7 +237,7 @@ float Controller::ctrlTime( float time ) const
 				
 				return start + y;
 			}
-		case ControllerFlags::Controller::Reverse:
+		case Reverse:
 			{
 				float delta = stop - start;
 				if ( delta <= 0 )
@@ -247,7 +250,7 @@ float Controller::ctrlTime( float time ) const
 				else
 					return stop - y;
 			}
-		case ControllerFlags::Controller::Constant:
+		case Constant:
 		default:
 			if ( time < start )
 				return start;

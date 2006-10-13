@@ -51,7 +51,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( flags.controller.active && target ) )
+		if ( ! ( active && target ) )
 			return;
 		
 		time = ctrlTime( time );
@@ -106,7 +106,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( flags.controller.active && target ) )
+		if ( ! ( active && target ) )
 			return;
 		
 		time = ctrlTime( time );
@@ -312,7 +312,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( flags.controller.active && target ) )
+		if ( ! ( active && target ) )
 			return;
 		
 		time = ctrlTime( time );
@@ -352,7 +352,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( flags.controller.active && target ) )
+		if ( ! ( active && target ) )
 			return;
 		
 		time = ctrlTime( time );

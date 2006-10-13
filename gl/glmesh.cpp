@@ -58,7 +58,7 @@ public:
 	
 	void update( float time )
 	{
-		if ( ! ( target && iData.isValid() && flags.controller.active && morph.count() > 1 ) )
+		if ( ! ( target && iData.isValid() && active && morph.count() > 1 ) )
 			return;
 		
 		time = ctrlTime( time );
