@@ -38,10 +38,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileDialog>
 #include <QLayout>
 #include <QLineEdit>
+#include <QThread>
+#include <QTimer>
 #include <QToolButton>
 
+class DirThread : public QThread
+{
+public:
+	DirThread( QObject * parent = 0 ) : QThread( parent ) {}
+	void run()
+	{
+		foreach ( QFileInfo inf, QDir::drives() )
+		{
+			QDir dir( inf.fileName() );
+			dir.count();
+		}
+	}
+};
+
 FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir )
-	: QWidget(), Mode( mode )
+	: QWidget(), Mode( mode ), dirmdl( 0 ), completer( 0 )
 {
 	QBoxLayout * lay = new QBoxLayout( dir );
 	lay->setMargin( 0 );
@@ -62,23 +78,34 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	lay->addWidget( line );
 	lay->addWidget( button );
 	
-	line->setCompleter( completer = new QCompleter( dirmdl = new QDirModel( this ), this ) );
+	setFocusProxy( line );
+	
+	QThread * thread = new DirThread( this );
+	connect( thread, SIGNAL( finished() ), this, SLOT( setModel() ), Qt::QueuedConnection );
+	QTimer::singleShot( 0, thread, SLOT( start() ) );
+}
+
+void FileSelector::setModel()
+{
+	QDir::Filters fm;
+	
 	switch ( Mode )
 	{
 		case LoadFile:
-			dirmdl->setFilter( QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+			fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
 			break;
 		case SaveFile:
-			dirmdl->setFilter( QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+			fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
 			break;
 		case Folder:
-			dirmdl->setFilter( QDir::AllDirs | QDir::NoDotAndDotDot );
+			fm = QDir::AllDirs | QDir::NoDotAndDotDot;
 			break;
 	}
-	dirmdl->setSorting( QDir::DirsFirst | QDir::Name );
-	dirmdl->setLazyChildCount( true );
 	
-	setFocusProxy( line );
+	dirmdl = new QDirModel( fltr, fm, QDir::DirsFirst | QDir::Name, this );
+	dirmdl->setLazyChildCount( true );
+
+	line->setCompleter( completer = new QCompleter( dirmdl, this ) );
 }
 
 QString FileSelector::file() const
@@ -98,12 +125,14 @@ void FileSelector::setText( const QString & x )
 
 void FileSelector::setFilter( const QStringList & fltr )
 {
-	dirmdl->setNameFilters( fltr );
+	this->fltr = fltr;
+	if ( dirmdl )
+		dirmdl->setNameFilters( fltr );
 }
 
 QStringList FileSelector::filter() const
 {
-	return dirmdl->nameFilters();
+	return fltr;
 }
 
 void FileSelector::browse()
@@ -116,10 +145,10 @@ void FileSelector::browse()
 			x = QFileDialog::getExistingDirectory( this, "Choose a folder", file() );
 			break;
 		case LoadFile:
-			x = QFileDialog::getOpenFileName( this, "Choose a file", file(), dirmdl->nameFilters().join( ";" ) );
+			x = QFileDialog::getOpenFileName( this, "Choose a file", file(), fltr.join( ";" ) );
 			break;
 		case SaveFile:
-			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), dirmdl->nameFilters().join( ";" ) );
+			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), fltr.join( ";" ) );
 			break;
 	}
 	

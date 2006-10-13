@@ -36,10 +36,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QWidget>
 #include <QBoxLayout>
 
-class QLineEdit;
 class QAction;
-class QDirModel;
 class QCompleter;
+class QDirModel;
+class QLineEdit;
 
 class FileSelector : public QWidget
 {
@@ -74,15 +74,17 @@ public slots:
 protected slots:
 	void browse();
 	void activate();
+	void setModel();
 	
 protected:
+	Modes Mode;
+
 	QLineEdit * line;
 	QAction   * action;
 	
 	QDirModel * dirmdl;
 	QCompleter * completer;
-	
-	Modes Mode;
+	QStringList fltr;
 };
 
 #endif
