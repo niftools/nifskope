@@ -34,27 +34,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAction>
 #include <QCompleter>
+#include <QContextMenuEvent>
 #include <QDirModel>
 #include <QFileDialog>
 #include <QLayout>
 #include <QLineEdit>
+#include <QMenu>
+#include <QSettings>
 #include <QThread>
 #include <QTimer>
 #include <QToolButton>
 
-class DirThread : public QThread
+CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of Filenames", parent )
 {
-public:
-	DirThread( QObject * parent = 0 ) : QThread( parent ) {}
-	void run()
-	{
-		foreach ( QFileInfo inf, QDir::drives() )
-		{
-			QDir dir( inf.fileName() );
-			dir.count();
-		}
-	}
-};
+	QSettings cfg( "NifTools", "NifSkope" );
+	setCheckable( true );
+	setChecked( cfg.value( "completion of file names", false ).toBool() );
+
+	connect( this, SIGNAL( toggled( bool ) ), this, SLOT( sltToggled( bool ) ) );
+}
+
+CompletionAction::~CompletionAction()
+{
+}
+
+void CompletionAction::sltToggled( bool )
+{
+	QSettings cfg( "NifTools", "NifSkope" );
+	cfg.setValue( "completion of file names", isChecked() );
+}
 
 FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir )
 	: QWidget(), Mode( mode ), dirmdl( 0 ), completer( 0 )
@@ -80,32 +88,49 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	
 	setFocusProxy( line );
 	
-	QThread * thread = new DirThread( this );
-	connect( thread, SIGNAL( finished() ), this, SLOT( setModel() ), Qt::QueuedConnection );
-	QTimer::singleShot( 0, thread, SLOT( start() ) );
+	line->installEventFilter( this );
+	
+	connect( completionAction(), SIGNAL( toggled( bool ) ), this, SLOT( setCompletionEnabled( bool ) ) );
+	setCompletionEnabled( completionAction()->isChecked() );
 }
 
-void FileSelector::setModel()
+QAction * FileSelector::completionAction()
 {
-	QDir::Filters fm;
-	
-	switch ( Mode )
-	{
-		case LoadFile:
-			fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
-			break;
-		case SaveFile:
-			fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
-			break;
-		case Folder:
-			fm = QDir::AllDirs | QDir::NoDotAndDotDot;
-			break;
-	}
-	
-	dirmdl = new QDirModel( fltr, fm, QDir::DirsFirst | QDir::Name, this );
-	dirmdl->setLazyChildCount( true );
+	static QAction * action = new CompletionAction;
+	return action;
+}
 
-	line->setCompleter( completer = new QCompleter( dirmdl, this ) );
+void FileSelector::setCompletionEnabled( bool x )
+{
+	if ( x && ! dirmdl )
+	{
+		QDir::Filters fm;
+		
+		switch ( Mode )
+		{
+			case LoadFile:
+				fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
+				break;
+			case SaveFile:
+				fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
+				break;
+			case Folder:
+				fm = QDir::AllDirs | QDir::NoDotAndDotDot;
+				break;
+		}
+		
+		dirmdl = new QDirModel( fltr, fm, QDir::DirsFirst | QDir::Name, this );
+		dirmdl->setLazyChildCount( true );
+		line->setCompleter( completer = new QCompleter( dirmdl, this ) );
+	}
+	else if ( ! x && dirmdl )
+	{
+		line->setCompleter( 0 );
+		delete completer;
+		completer = 0;
+		delete dirmdl;
+		dirmdl = 0;
+	}
 }
 
 QString FileSelector::file() const
@@ -179,4 +204,21 @@ void FileSelector::activate()
 			break;
 	}
 	emit sigActivated( file() );
+}
+
+bool FileSelector::eventFilter( QObject * o, QEvent * e )
+{
+	if ( o == line && e->type() == QEvent::ContextMenu )
+	{
+		QContextMenuEvent * event = static_cast<QContextMenuEvent*>( e );
+		
+		QMenu * menu = line->createStandardContextMenu();
+		menu->addSeparator();
+		menu->addAction( completionAction() );
+		menu->exec(event->globalPos());
+		delete menu;
+		return true;
+	}
+	
+	return QWidget::eventFilter( o, e );
 }

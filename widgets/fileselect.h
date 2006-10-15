@@ -33,10 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FILESELECT_H
 #define FILESELECT_h
 
+#include <QAction>
 #include <QWidget>
 #include <QBoxLayout>
 
-class QAction;
 class QCompleter;
 class QDirModel;
 class QLineEdit;
@@ -71,12 +71,17 @@ public slots:
 	void setText( const QString & );
 	void setFile( const QString & );
 	
+	void setCompletionEnabled( bool );
+	
 protected slots:
 	void browse();
 	void activate();
-	void setModel();
 	
 protected:
+	bool eventFilter( QObject * o, QEvent * e );
+	
+	QAction * completionAction();
+	
 	Modes Mode;
 
 	QLineEdit * line;
@@ -85,6 +90,17 @@ protected:
 	QDirModel * dirmdl;
 	QCompleter * completer;
 	QStringList fltr;
+};
+
+class CompletionAction : public QAction
+{
+	Q_OBJECT
+public:
+	CompletionAction( QObject * parent = 0 );
+	~CompletionAction();
+	
+protected slots:
+	void sltToggled( bool );
 };
 
 #endif
