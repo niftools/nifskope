@@ -433,3 +433,28 @@ void drawDashLine( Vector3 a, Vector3 b, int sd )
 	glEnd();
 }
 
+void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals )
+{
+	glBegin( GL_LINES );
+	for ( int i = 1; i < vertices.count(); i++ )
+	{
+		for ( int j = 0; j < i; j++ )
+		{
+			glVertex( vertices[i] );
+			glVertex( vertices[j] );
+		}
+	}
+	/*
+	Vector3 c;
+	foreach ( Vector4 v, vertices )
+		c += Vector3( v );
+	if ( vertices.count() )
+		c /= vertices.count();
+	foreach ( Vector4 n, normals )
+	{
+		glVertex( c + Vector3( n ) * ( n[3] ) );
+		glVertex( c + Vector3( n ) * ( - 1 + n[3] ) );
+	}
+	*/
+	glEnd();
+}

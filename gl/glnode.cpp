@@ -894,27 +894,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	else if ( name == "bhkConvexVerticesShape" )
 	{
 		glLoadName( nif->getBlockNumber( iShape ) );
-		QVector< Vector4 > verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 1" );
-		glBegin( GL_LINES );
-		for ( int i = 1; i < verts.count(); i++ )
-		{
-			for ( int j = 0; j < i; j++ )
-			{
-				glVertex( verts[i] );
-				glVertex( verts[j] );
-			}
-		}
-		glEnd();
-		/* face normals ?
-		verts = nif->getArray<Vector4>( iShape, "Unknown Vectors 2" );
-		glBegin( GL_POINTS );
-		foreach ( Vector4 v, verts )
-		{
-			Vector3 v3( v[0], v[1], v[2] );
-			glVertex( v3 * v[3] );
-		}
-		glEnd();
-		*/
+		drawConvexHull( nif->getArray<Vector4>( iShape, "Vertices" ), nif->getArray<Vector4>( iShape, "Normals" ) );
 	}
 	else if ( name == "bhkMoppBvTreeShape" )
 	{
