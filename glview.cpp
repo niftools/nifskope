@@ -64,13 +64,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define M_PI 3.1415926535897932385
 #endif 
 
-static QList<QPointer<GLView> > views;
+GLView * GLView::create()
+{
+	static QList< QPointer<GLView> > views;
+	
+	QGLWidget * share = 0;
+	foreach ( QPointer<GLView> v, views )
+		if ( v ) share = v;
+	
+	QGLFormat fmt;
+	if ( share )
+		fmt = share->format();
+	else
+		fmt.setSampleBuffers( GLOptions::antialias() );
+	
+	views.append( QPointer<GLView>( new GLView( fmt, share ) ) );
+	
+	return views.last();
+}
 
 GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	: QGLWidget( format, 0, shareWidget )
 {
-	views.append( QPointer<GLView>( this ) );
-	
 	setFocusPolicy( Qt::ClickFocus );
 	setAttribute( Qt::WA_NoSystemBackground );
 	//setContextMenuPolicy( Qt::CustomContextMenu );
@@ -219,18 +234,6 @@ void GLView::updateShaders()
 	makeCurrent();
 	scene->updateShaders();
 	update();
-}
-
-GLView * GLView::create()
-{
-	QGLWidget * share = 0;
-	foreach ( QPointer<GLView> v, views )
-		if ( v ) share = v;
-	
-	QGLFormat fmt;
-	fmt.setSampleBuffers( GLOptions::antialias() );
-	
-	return new GLView( fmt, share );
 }
 
 

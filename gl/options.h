@@ -48,6 +48,7 @@ class QSpinBox;
 class QStringListModel;
 class QTimer;
 
+class AlphaSlider;
 class ColorWheel;
 class FileSelector;
 class GroupBox;
@@ -134,6 +135,7 @@ protected:
 	QAbstractButton * TexFolderButtons[3];
 	
 	ColorWheel * colors[3];
+	AlphaSlider * alpha[3];
 	
 	QCheckBox * AntiAlias;
 	QCheckBox * Textures;
@@ -157,8 +159,8 @@ protected:
 	QTimer * tSave, * tEmit;
 };
 
-#define glNormalColor() glColor( Color3( GLOptions::nlColor() ) )
-#define glHighlightColor() glColor( Color3( GLOptions::hlColor() ) )
+#define glNormalColor() glColor( Color4( GLOptions::nlColor() ) )
+#define glHighlightColor() glColor( Color4( GLOptions::hlColor() ) )
 
 
 #endif

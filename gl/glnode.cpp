@@ -760,25 +760,17 @@ void Node::draw()
 	glLoadName( nodeId );
 	
 	glEnable( GL_DEPTH_TEST );
-	glDepthMask( GL_FALSE );
+	glDepthFunc( GL_LEQUAL );
+	glDepthMask( GL_TRUE );
 	glDisable( GL_TEXTURE_2D );
 	glDisable( GL_NORMALIZE );
 	glDisable( GL_LIGHTING );
 	glDisable( GL_COLOR_MATERIAL );
-	glDisable( GL_BLEND );
+	glEnable( GL_BLEND );
 	glDisable( GL_ALPHA_TEST );
-	glBlendFunc( GL_SRC_ALPHA, GL_ONE );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	
-	if ( scene->currentBlock == iBlock )
-	{
-		glDepthFunc( GL_ALWAYS );
-		glHighlightColor();
-	}
-	else
-	{
-		glDepthFunc( GL_LEQUAL );
-		glNormalColor();
-	}
+	glNormalColor();
 	
 	glPointSize( 8.5 );
 	glLineWidth( 2.5 );
@@ -803,6 +795,40 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
+	if ( scene->currentBlock != iBlock )
+		return;
+	
+	glLoadName( nodeId );
+	
+	glEnable( GL_DEPTH_TEST );
+	glDepthFunc( GL_ALWAYS );
+	glDepthMask( GL_TRUE );
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_NORMALIZE );
+	glDisable( GL_LIGHTING );
+	glDisable( GL_COLOR_MATERIAL );
+	glEnable( GL_BLEND );
+	glDisable( GL_ALPHA_TEST );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	
+	glHighlightColor();
+
+	glPointSize( 8.5 );
+	glLineWidth( 2.5 );
+	
+	Vector3 a = viewTrans().translation;
+	Vector3 b = a;
+	if ( parent )
+		b = parent->viewTrans().translation;
+	
+	glBegin( GL_POINTS );
+	glVertex( a );
+	glEnd();
+	
+	glBegin( GL_LINES );
+	glVertex( a );
+	glVertex( b );
+	glEnd();	
 }
 
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack )

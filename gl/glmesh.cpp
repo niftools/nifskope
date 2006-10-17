@@ -587,7 +587,8 @@ void Mesh::drawSelection() const
 	glDisable( GL_NORMALIZE );
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_FALSE );
-	glDisable( GL_BLEND );
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_ALPHA_TEST );
 	
 	glLineWidth( 1.0 );

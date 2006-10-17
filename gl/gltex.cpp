@@ -51,18 +51,14 @@ PFNGLCLIENTACTIVETEXTUREARBPROC _glClientActiveTextureARB = 0;
 PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D   = 0;
 
 int num_texture_units = 0;
+float max_anisotropy = 0;
 
 void initializeTextureUnits( const QGLContext * context )
 {
 	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
 	//foreach ( QString e, extensions.split( " " ) )
 	//	qWarning() << e;
-	/*
-	if ( ! extensions.contains( "GL_ARB_texture_compression" ) )
-		qWarning( "need OpenGL extension GL_ARB_texture_compression for DDS textures" );
-	if ( ! extensions.contains( "GL_EXT_texture_compression_s3tc" ) )
-		qWarning( "need OpenGL extension GL_EXT_texture_compression_s3tc for DDS textures" );
-	*/
+	
 	_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2D" );
 	if ( ! _glCompressedTexImage2D )
 		_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2DARB" );
@@ -84,6 +80,12 @@ void initializeTextureUnits( const QGLContext * context )
 		if ( num_texture_units < 1 )
 			num_texture_units = 1;
 		//qWarning() << "texture units" << num_texture_units;
+	}
+	
+	if ( extensions.contains( "GL_EXT_texture_filter_anisotropic" ) )
+	{
+		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, & max_anisotropy );
+		//qWarning() << "maximum anisotropy" << max_anisotropy;
 	}
 }
 
@@ -311,6 +313,13 @@ bool TexturingProperty::bind( int id, const QString & fname )
 	GLuint mipmaps = 0;
 	if ( id >= 0 && id <= 7 && ( mipmaps = scene->bindTexture( fname.isEmpty() ? fileName( id ) : fname ) ) )
 	{
+		if ( max_anisotropy > 0 )
+		{
+			if ( GLOptions::antialias() )
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
+			else
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0 );
+		}
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );

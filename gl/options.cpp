@@ -54,6 +54,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "widgets/colorwheel.h"
 #include "widgets/fileselect.h"
+#include "widgets/floatslider.h"
 #include "widgets/groupbox.h"
 
 class SmallListView : public QListView
@@ -203,7 +204,7 @@ GLOptions::GLOptions()
 	
 	
 	dialog->addWidget( AntiAlias = new QCheckBox( "&Anti Aliasing" ) );
-	AntiAlias->setToolTip( "Enable anti aliasing if available.<br>You'll need to restart NifSkope for this setting to take effect." );
+	AntiAlias->setToolTip( "Enable anti aliasing and anisotropic texture filtering if available.<br>You'll need to restart NifSkope for this setting to take effect.<br>" );
 	AntiAlias->setChecked( cfg.value( "Anti Aliasing", true ).toBool() );
 	connect( AntiAlias, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	
@@ -342,13 +343,26 @@ GLOptions::GLOptions()
 	QList<QColor> colorDefaults( QList<QColor>() << QColor::fromRgb( 0, 0, 0 ) << QColor::fromRgb( 255, 255, 255 ) << QColor::fromRgb( 255, 255, 0 ) );
 	for ( int c = 0; c < 3; c++ )
 	{
+		dialog->pushLayout( colorNames[c], Qt::Horizontal );
+		
 		ColorWheel * wheel = new ColorWheel( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>() );
 		wheel->setSizeHint( QSize( 105, 105 ) );
 		connect( wheel, SIGNAL( sigColorEdited( const QColor & ) ), this, SIGNAL( sigChanged() ) );
 		colors[ c ] = wheel;
-		
-		dialog->pushLayout( colorNames[c], Qt::Vertical );
 		dialog->addWidget( wheel );
+		
+		if ( c != 0 )
+		{
+			alpha[ c ] = new AlphaSlider( Qt::Vertical );
+			alpha[ c ]->setValue( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>().alphaF() );
+			alpha[ c ]->setColor( wheel->getColor() );
+			connect( alpha[ c ], SIGNAL( valueChanged( float ) ), this, SIGNAL( sigChanged() ) );
+			connect( wheel, SIGNAL( sigColor( const QColor & ) ), alpha[ c ], SLOT( setColor( const QColor & ) ) );
+			dialog->addWidget( alpha[ c ] );
+		}
+		else
+			alpha[ c ] = 0;
+		
 		dialog->popLayout();
 	}
 
@@ -649,12 +663,16 @@ QColor GLOptions::bgColor()
 
 QColor GLOptions::nlColor()
 {
-	return get()->colors[ 1 ]->getColor();
+	QColor c = get()->colors[ 1 ]->getColor();
+	c.setAlphaF( get()->alpha[ 1 ]->value() );
+	return c;
 }
 
 QColor GLOptions::hlColor()
 {
-	return get()->colors[ 2 ]->getColor();
+	QColor c = get()->colors[ 2 ]->getColor();
+	c.setAlphaF( get()->alpha[ 2 ]->value() );
+	return c;
 }
 
 
