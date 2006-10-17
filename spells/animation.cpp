@@ -48,7 +48,7 @@ public:
 				
 				if ( ! iRoot.isValid() )
 					iRoot = ir;
-				else
+				else if ( iRoot != ir )
 					throw QString( "the animation root nodes differ; bailing out..." );
 			}
 			
