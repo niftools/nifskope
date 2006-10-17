@@ -32,93 +32,93 @@ public:
 			if ( ! kf.load( kffile ) )
 				throw QString( "failed to load .kf from file %1" ).arg( kfname );
 			
-			if ( kf.getRootLinks().count() != 1 )
-				throw QString( "this is not a normal .kf file; there should be only one root block" );
-			
-			QModelIndex iSeq;
+			QPersistentModelIndex iRoot;
 			
 			foreach ( qint32 l, kf.getRootLinks() )
 			{
-				QModelIndex idx = kf.getBlock( l, "NiControllerSequence" );
-				if ( idx.isValid() )
-				{
-					iSeq = idx;
-					break;
-				}
+				QModelIndex iSeq = kf.getBlock( l, "NiControllerSequence" );
+				if ( ! iSeq.isValid() )
+					throw QString( "this is not a normal .kf file; there should be only NiControllerSequences as root blocks" );
+				
+				QString rootName = kf.get<QString>( iSeq, "Target Name" );
+				QModelIndex ir = findRootTarget( nif, rootName );
+				
+				if ( ! ir.isValid() )
+					throw QString( "couldn't find the animation's root node (%1)" ).arg( rootName );
+				
+				if ( ! iRoot.isValid() )
+					iRoot = ir;
+				else
+					throw QString( "the animation root nodes differ; bailing out..." );
 			}
 			
-			if ( ! iSeq.isValid() )
-				throw QString( "found no NiControllerSequence in the .kf file" );
+			QPersistentModelIndex iMultiTransformer = findController( nif, iRoot, "NiMultiTargetTransformController" );
+			QPersistentModelIndex iCtrlManager = findController( nif, iRoot, "NiControllerManager" );
 			
-			QString rootName = kf.get<QString>( iSeq, "Target Name" );
-			QPersistentModelIndex iRoot = findRootTarget( nif, rootName );
-			if ( ! iRoot.isValid() )
-				throw QString( "couldn't find the animation's root node (%1)" ).arg( rootName );
-			
+			QList<qint32> seqLinks = kf.getRootLinks();
 			QStringList missingNodes;
-			QList< QPersistentModelIndex > controlledNodes;
 			
-			QModelIndex iCtrlBlcks = kf.getIndex( iSeq, "Controlled Blocks" );
-			for ( int r = 0; r < kf.rowCount( iCtrlBlcks ); r++ )
+			foreach ( qint32 lSeq, kf.getRootLinks() )
 			{
-				QModelIndex iNodeName = kf.getIndex( iCtrlBlcks.child( r, 0 ), "Node Name Offset" );
-				QString nodeName = iNodeName.sibling( iNodeName.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+				QModelIndex iSeq = kf.getBlock( lSeq, "NiControllerSequence" );
 				
-				QModelIndex iCtrlNode = findChildNode( nif, iRoot, nodeName );
-				if ( iCtrlNode.isValid() )
+				QList< QPersistentModelIndex > controlledNodes;
+				
+				QModelIndex iCtrlBlcks = kf.getIndex( iSeq, "Controlled Blocks" );
+				for ( int r = 0; r < kf.rowCount( iCtrlBlcks ); r++ )
 				{
-					if ( ! controlledNodes.contains( iCtrlNode ) )
-						controlledNodes.append( iCtrlNode );
+					QModelIndex iNodeName = kf.getIndex( iCtrlBlcks.child( r, 0 ), "Node Name Offset" );
+					QString nodeName = iNodeName.sibling( iNodeName.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+					
+					QModelIndex iCtrlNode = findChildNode( nif, iRoot, nodeName );
+					if ( iCtrlNode.isValid() )
+					{
+						if ( ! controlledNodes.contains( iCtrlNode ) )
+							controlledNodes.append( iCtrlNode );
+					}
+					else
+					{
+						if ( ! missingNodes.contains( nodeName ) )
+							missingNodes << nodeName;
+					}
 				}
-				else
+				
+				if ( ! iMultiTransformer.isValid() )
+					iMultiTransformer = attachController( nif, iRoot, "NiMultiTargetTransformController" );
+				if ( ! iCtrlManager.isValid() )
+					iCtrlManager = attachController( nif, iRoot, "NiControllerManager" );
+				
+				setLinkArray( nif, iMultiTransformer, "Extra Targets", controlledNodes );
+				
+				QPersistentModelIndex iObjPalette = nif->getBlock( nif->getLink( iCtrlManager, "Object Palette" ), "NiDefaultAVObjectPalette" );
+				if ( ! iObjPalette.isValid() )
 				{
-					if ( ! missingNodes.contains( nodeName ) )
-						missingNodes << nodeName;
+					iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1 );
+					nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ) );
 				}
+				
+				setNameLinkArray( nif, iObjPalette, "Objs", controlledNodes );
+			}
+			
+			QMap<qint32,qint32> map = kf.moveAllNiBlocks( nif );
+			
+			foreach ( qint32 lSeq, seqLinks )
+			{
+				qint32 nSeq = map.value( lSeq );
+				int numSeq = nif->get<int>( iCtrlManager, "Num Controller Sequences" );
+				nif->set<int>( iCtrlManager, "Num Controller Sequences", numSeq+1 );
+				nif->updateArray( iCtrlManager, "Controller Sequences" );
+				nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq );
+				QModelIndex iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
+				nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ) );
 			}
 			
 			if ( ! missingNodes.isEmpty() )
 			{
-				qWarning() << "The following nodes were not found in the nif:";
+				qWarning() << "The following controlled nodes were not found in the nif:";
 				foreach ( QString nn, missingNodes )
 					qWarning() << nn;
 			}
-			
-			if ( controlledNodes.isEmpty() )
-			{
-				throw QString( "actually none of the nodes were found in the nif" );
-			}
-			
-			QPersistentModelIndex iMultiTransformer = findController( nif, iRoot, "NiMultiTargetTransformController" );
-			if ( ! iMultiTransformer.isValid() )
-				iMultiTransformer = attachController( nif, iRoot, "NiMultiTargetTransformController" );
-			
-			setLinkArray( nif, iMultiTransformer, "Extra Targets", controlledNodes );
-			
-			QPersistentModelIndex iCtrlManager = findController( nif, iRoot, "NiControllerManager" );
-			if ( ! iCtrlManager.isValid() )
-				iCtrlManager = attachController( nif, iRoot, "NiControllerManager" );
-			
-			QPersistentModelIndex iObjPalette = nif->getBlock( nif->getLink( iCtrlManager, "Object Palette" ), "NiDefaultAVObjectPalette" );
-			if ( ! iObjPalette.isValid() )
-			{
-				iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1 );
-				nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ) );
-			}
-			
-			setNameLinkArray( nif, iObjPalette, "Objs", controlledNodes );
-			
-			qint32 lSeq = kf.getBlockNumber( iSeq );
-			
-			QMap<qint32,qint32> map = kf.moveAllNiBlocks( nif );
-			
-			qint32 nSeq = map.value( lSeq );
-			int numSeq = nif->get<int>( iCtrlManager, "Num Controller Sequences" );
-			nif->set<int>( iCtrlManager, "Num Controller Sequences", numSeq+1 );
-			nif->updateArray( iCtrlManager, "Controller Sequences" );
-			nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq );
-			iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
-			nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ) );
 			
 			return iRoot;
 		}
