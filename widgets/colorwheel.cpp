@@ -33,11 +33,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "colorwheel.h"
 #include "floatslider.h"
 
+#include <QContextMenuEvent>
 #include <QDialog>
+#include <QIcon>
 #include <QLayout>
 #include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
+#include <QMenu>
 #include <QMouseEvent>
+
+#include "../niftypes.h"
 
 /* XPM */
 static const char * const hsv42_xpm[] = {
@@ -231,6 +237,9 @@ void ColorWheel::paintEvent( QPaintEvent * e )
 
 void ColorWheel::mousePressEvent( QMouseEvent * e )
 {
+	if ( e->button() != Qt::LeftButton )
+		return;
+	
 	double dx = abs( e->x() - width() / 2 );
 	double dy = abs( e->y() - height() / 2 );
 	double d = sqrt( dx*dx + dy*dy );
@@ -250,7 +259,34 @@ void ColorWheel::mousePressEvent( QMouseEvent * e )
 
 void ColorWheel::mouseMoveEvent( QMouseEvent * e )
 {
-	setColor( e->x(), e->y() );
+	if ( e->buttons() & Qt::LeftButton )
+		setColor( e->x(), e->y() );
+}
+
+void ColorWheel::contextMenuEvent( QContextMenuEvent * e )
+{
+	QMenu * menu = new QMenu( this );
+	
+	foreach ( QString name, QColor::colorNames() )
+	{
+		QAction * act = new QAction( menu );
+		act->setText( name );
+		QPixmap pix( 16, 16 );
+		QPainter paint( &pix );
+		paint.setBrush( QColor( name ) );
+		paint.setPen( Qt::black );
+		paint.drawRect( pix.rect().adjusted( 0, 0, -1, -1 ) );
+		act->setIcon( QIcon( pix ) );
+		menu->addAction( act );
+	}
+	
+	if ( QAction * act = menu->exec( e->globalPos() ) )
+	{
+		setColor( QColor( act->text() ) );
+		emit sigColorEdited( getColor() );
+	}
+	
+	delete menu;
 }
 
 void ColorWheel::setColor( int x, int y )

@@ -37,7 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSlider>
 #include <QWidget>
 
-#include "../niftypes.h"
+class Color3;
+class Color4;
 
 class ColorWheel : public QWidget
 {
@@ -74,6 +75,7 @@ protected:
 	void paintEvent( QPaintEvent * e );
 	void mousePressEvent( QMouseEvent * e );
 	void mouseMoveEvent( QMouseEvent * e );
+	void contextMenuEvent( QContextMenuEvent * e );
 
 	void setColor( int x, int y );
 
