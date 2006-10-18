@@ -154,6 +154,8 @@ public:
 
 public slots:
 	void openNif( const QUrl & );
+	
+	void execCommand( QString cmd );
 
 protected slots:
 	void processDatagram();

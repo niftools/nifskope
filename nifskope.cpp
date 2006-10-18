@@ -72,13 +72,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void NifSkope::about()
 {
 	QString text =
-	"<p>NifSkope is a simple low level tool for analyzing NetImmerse '.nif' files.</p>"
+	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
 	"<p>NifSkope is based on the NifTool's file format data base. "
-	"For more informations visit our site at http://niftools.sourceforge.net</p>"
-	"<p>Because NifSkope uses the Qt libraries it is free software. "
-	"The source is available via SVN at https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope</p>";
+	"For more informations visit our site at <a href='http://www.niftools.org'>www.niftools.org</a></p>"
+	"<p>Because NifSkope was build using the Qt GUI toolkit it is free software. "
+	"The source is available via SVN on <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>sourceforge</a></p>";
 
-    QMessageBox mb( "About NifSkope 0.9.3", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( "About NifSkope 0.9.4", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }
@@ -312,12 +312,12 @@ void NifSkope::restore( QSettings & settings )
 	lineSave->setText( settings.value( "last save", QString( "" ) ).toString() );
 	aSanitize->setChecked( settings.value( "auto sanitize", true ).toBool() );
 	
-	restoreHeader( "list sizes", settings, list->header() );
 	if ( settings.value( "list mode", "hirarchy" ).toString() == "list" )
 		aList->setChecked( true );
 	else
 		aHierarchy->setChecked( true );
 	setListMode();
+	restoreHeader( "list sizes", settings, list->header() );
 
 	restoreHeader( "tree sizes", settings, tree->header() );
 	
@@ -458,6 +458,9 @@ void NifSkope::setListMode()
 	{
 		if ( list->model() != nif )
 		{
+			QHeaderView * head = list->header();
+			int s0 = head->sectionSize( head->logicalIndex( 0 ) );
+			int s1 = head->sectionSize( head->logicalIndex( 1 ) );
 			list->setModel( nif );
 			list->setItemsExpandable( false );
 			list->setRootIsDecorated( false );
@@ -469,17 +472,24 @@ void NifSkope::setListMode()
 			list->setColumnHidden( NifModel::CondCol, true );
 			list->setColumnHidden( NifModel::Ver1Col, true );
 			list->setColumnHidden( NifModel::Ver2Col, true );
+			head->resizeSection( 0, s0 );
+			head->resizeSection( 1, s1 );
 		}
 	}
 	else
 	{
 		if ( list->model() != proxy )
 		{
+			QHeaderView * head = list->header();
+			int s0 = head->sectionSize( head->logicalIndex( 0 ) );
+			int s1 = head->sectionSize( head->logicalIndex( 1 ) );
 			list->setModel( proxy );
 			list->setItemsExpandable( true );
 			list->setRootIsDecorated( true );
 			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
 			list->setCurrentIndexExpanded( pidx );
+			head->resizeSection( 0, s0 );
+			head->resizeSection( 1, s1 );
 		}
 	}
 }
@@ -688,7 +698,7 @@ bool IPCsocket::nifskope( const QString & cmd )
 	{
 		IPCsocket * ipc = new IPCsocket( udp );
 		QDesktopServices::setUrlHandler( "nif", ipc, "openNif" );
-		udp->writeDatagram( (const char *) cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
+		ipc->execCommand( cmd );
 		return true;
 	}
 	else
@@ -709,11 +719,6 @@ IPCsocket::~IPCsocket()
 	delete socket;
 }
 
-void IPCsocket::openNif( const QUrl & url )
-{
-	NifSkope::createWindow( url.toString( url.scheme() == "nif" ? QUrl::RemoveScheme : QUrl::None ) );
-}
-
 void IPCsocket::processDatagram()
 {
 	while ( socket->hasPendingDatagrams() )
@@ -728,13 +733,23 @@ void IPCsocket::processDatagram()
 		{
 			QString cmd;
 			cmd.setUnicode( (QChar *) data.data(), data.size() / sizeof( QChar ) );
-			if ( cmd.startsWith( "NifSkope::open" ) )
-			{
-				cmd.remove( 0, 15 );
-				openNif( cmd );
-			}
+			execCommand( cmd );
 		}
 	}
+}
+
+void IPCsocket::execCommand( QString cmd )
+{
+	if ( cmd.startsWith( "NifSkope::open" ) )
+	{
+		cmd.remove( 0, 15 );
+		openNif( cmd );
+	}
+}
+
+void IPCsocket::openNif( const QUrl & url )
+{
+	NifSkope::createWindow( url.toString( url.scheme() == "nif" ? QUrl::RemoveScheme : QUrl::None ) );
 }
 
 
@@ -750,6 +765,13 @@ int main( int argc, char * argv[] )
 	qRegisterMetaType<Message>( "Message" );
 	
 	qInstallMsgHandler( myMessageOutput );
+	
+	QFile style( QDir( QApplication::applicationDirPath() ).filePath( "style.qss" ) );
+	if ( style.open( QFile::ReadOnly ) )
+	{
+		app.setStyleSheet( style.readAll() );
+		style.close();
+	}
 	
 	NifModel::loadXML();
 	KfmModel::loadXML();
