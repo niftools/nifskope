@@ -237,7 +237,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & iShape )
 	{
-		if ( nif->checkVersion( 0x0a020000, 0 ) && nif->isNiBlock( iShape, "NiTriShape" ) )
+		if ( nif->isNiBlock( iShape, "NiTriShape" ) )
 		{
 			QModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 			if ( iSkinInst.isValid() )
@@ -264,6 +264,8 @@ public:
 			QPersistentModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 			QPersistentModelIndex iSkinData = nif->getBlock( nif->getLink( iSkinInst, "Data" ), "NiSkinData" );
 			QModelIndex iSkinPart = nif->getBlock( nif->getLink( iSkinInst, "Skin Partition" ), "NiSkinPartition" );
+			if ( ! iSkinPart.isValid() )
+				iSkinPart = nif->getBlock( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
 			
 			// read in the weights from NiSkinData
 			
@@ -588,6 +590,7 @@ public:
 			{
 				iSkinPart = nif->insertNiBlock( "NiSkinPartition", nif->getBlockNumber( iSkinData ) + 1 );
 				nif->setLink( iSkinInst, "Skin Partition", nif->getBlockNumber( iSkinPart ) );
+				nif->setLink( iSkinData, "Skin Partition", nif->getBlockNumber( iSkinPart ) );
 			}
 			
 			// start writing NiSkinPartition
