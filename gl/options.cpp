@@ -510,6 +510,13 @@ void GLOptions::textureFolderAutoDetect( int game )
 			{	// Freedom Force
 				QStringList list;
 				list.append( "$NIFDIR\\textures" );
+				list.append( "$NIFDIR\\skins\\standard" );
+				{
+					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR", QSettings::NativeFormat );
+					QDir dir( reg.value( "InstallDir" ).toString() );
+					if ( dir.exists() && dir.cd( "/Data/Art/library/area_specific/_textures" ) )
+						list.append( dir.path() );
+				}
 				{
 					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force", QSettings::NativeFormat );
 					QDir dir( reg.value( "InstallDir" ).toString() );
