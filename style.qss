@@ -1,0 +1,25 @@
+QToolTip
+{
+	opacity: 213;
+	color: steelblue;
+	border: 1px solid steelblue;
+	border-radius: 5px;
+	padding: 4px;
+	background: ghostwhite;
+}
+
+QTreeView
+{
+	background: azure;
+	alternate-background-color: cornsilk;
+	selection-background-color: royalblue;
+	selection-color: snow;
+	color: black;
+}
+
+QTreeView:disabled
+{
+	background: gainsboro;
+	alternate-background-color: gainsboro;
+	color: slategray;
+}
