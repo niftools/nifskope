@@ -759,13 +759,17 @@ void IPCsocket::openNif( const QUrl & url )
 
 int main( int argc, char * argv[] )
 {
-	// set up the QtApplication
+	// set up the Qt Application
 	QApplication app( argc, argv );
+	app.setOrganizationName( "NifTools" );
+	app.setApplicationName( "NifSkope" );
+	app.setOrganizationDomain( "niftools.org" );
 	
+	// install message handler
 	qRegisterMetaType<Message>( "Message" );
-	
 	qInstallMsgHandler( myMessageOutput );
 	
+	// if there is a style sheet present then load it
 	QFile style( QDir( QApplication::applicationDirPath() ).filePath( "style.qss" ) );
 	if ( style.open( QFile::ReadOnly ) )
 	{

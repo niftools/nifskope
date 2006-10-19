@@ -145,17 +145,26 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewWalk->setShortcut( Qt::Key_F8 );
 	grpView->addAction( aViewWalk );
 	
-	aViewFlip = new QAction( "Flip", grpView );
+	aViewUser = new QAction( "User", grpView );
+	aViewUser->setToolTip( "Restore the view as it was when Save User View was activated" );
+	aViewUser->setCheckable( true );
+	aViewUser->setShortcut( Qt::Key_F9 );
+	grpView->addAction( aViewUser );
+	
+	aViewFlip = new QAction( "Flip", this );
 	aViewFlip->setToolTip( "Flip View from Front to Back, Top to Bottom, Side to Other Side" );
 	aViewFlip->setCheckable( true );
-	aViewFlip->setShortcut( Qt::Key_F10 );
-	grpView->addAction( aViewFlip );
+	aViewFlip->setShortcut( Qt::Key_F11 );
 	
-	aViewPerspective = new QAction( "Perspective", grpView );
+	aViewPerspective = new QAction( "Perspective", this );
 	aViewPerspective->setToolTip( "Perspective View Transformation or Orthogonal View Transformation" );
 	aViewPerspective->setCheckable( true );
-	aViewPerspective->setShortcut( Qt::Key_F9 );
-	grpView->addAction( aViewPerspective );
+	aViewPerspective->setShortcut( Qt::Key_F10 );
+	
+	aViewUserSave = new QAction( "Save User View", this );
+	aViewUserSave->setToolTip( "Save current view rotation, position and distance" );
+	aViewUserSave->setShortcut( Qt::CTRL + Qt::Key_F9 );
+	connect( aViewUserSave, SIGNAL( triggered() ), this, SLOT( sltSaveUserView() ) );
 	
 	aAnimate = new QAction( "&Animations", this );
 	aAnimate->setToolTip( "enables evaluation of animation controllers" );
@@ -220,13 +229,18 @@ QList<QToolBar*> GLView::toolbars() const
 QMenu * GLView::createMenu() const
 {
 	QMenu * m = new QMenu( "&Render" );
-	foreach ( QAction * a, grpView->actions() )
-		m->addAction( a );
+	m->addAction( aViewTop );
+	m->addAction( aViewFront );
+	m->addAction( aViewSide );
+	m->addAction( aViewWalk );
+	m->addAction( aViewUser );
+	m->addSeparator();
+	m->addAction( aViewFlip );
+	m->addAction( aViewPerspective );
+	m->addAction( aViewUserSave );
 	m->addSeparator();
 	m->addActions( GLOptions::actions() );
-	//m->addActions( textures->actions() );
 	return m;
-	
 }
 
 void GLView::updateShaders()
@@ -245,14 +259,7 @@ void GLView::initializeGL()
 {
 	initializeTextureUnits( context() );
 	
-	if ( ! Renderer::initialize( context() ) )
-	{
-		/*
-		aShading->setChecked( false );
-		aShading->setDisabled( true );
-		*/
-	}
-	else
+	if ( Renderer::initialize( context() ) )
 		updateShaders();
 
 	// check for errors
@@ -722,6 +729,7 @@ void GLView::viewAction( QAction * act )
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
 		aViewSide->setChecked( false );
+		aViewUser->setChecked( false );
 	}
 
 	if ( ! act || act == aViewFlip )
@@ -742,6 +750,7 @@ void GLView::viewAction( QAction * act )
 		aViewTop->setChecked( true );
 		aViewFront->setChecked( false );
 		aViewSide->setChecked( false );
+		aViewUser->setChecked( false );
 	}
 	else if ( act == aViewFront )
 	{
@@ -753,6 +762,7 @@ void GLView::viewAction( QAction * act )
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( true );
 		aViewSide->setChecked( false );
+		aViewUser->setChecked( false );
 	}
 	else if ( act == aViewSide )
 	{
@@ -764,8 +774,38 @@ void GLView::viewAction( QAction * act )
 		aViewTop->setChecked( false );
 		aViewFront->setChecked( false );
 		aViewSide->setChecked( true );
+		aViewUser->setChecked( false );
+	}
+	else if ( act == aViewUser )
+	{
+		QSettings cfg;
+		cfg.beginGroup( "GLView" );
+		cfg.beginGroup( "User View" );
+		setRotation( cfg.value( "RotX" ).toDouble(), cfg.value( "RotY" ).toDouble(), cfg.value( "RotZ" ).toDouble() );
+		setPosition( cfg.value( "PosX" ).toDouble(), cfg.value( "PosY" ).toDouble(), cfg.value( "PosZ" ).toDouble() );
+		setDistance( cfg.value( "Dist" ).toDouble() );
+		aViewWalk->setChecked( false );
+		aViewTop->setChecked( false );
+		aViewFront->setChecked( false );
+		aViewSide->setChecked( false );
+		aViewUser->setChecked( true );
 	}
 	update();
+}
+
+void GLView::sltSaveUserView()
+{
+	QSettings cfg;
+	cfg.beginGroup( "GLView" );
+	cfg.beginGroup( "User View" );
+	cfg.setValue( "RotX", Rot[0] );
+	cfg.setValue( "RotY", Rot[1] );
+	cfg.setValue( "RotZ", Rot[2] );
+	cfg.setValue( "PosX", Pos[0] );
+	cfg.setValue( "PosY", Pos[1] );
+	cfg.setValue( "PosZ", Pos[2] );
+	cfg.setValue( "Dist", Dist );
+	viewAction( aViewUser );
 }
 
 QAction * GLView::checkedViewAction() const
@@ -778,6 +818,8 @@ QAction * GLView::checkedViewAction() const
 		return aViewSide;
 	else if ( aViewWalk->isChecked() )
 		return aViewWalk;
+	else if ( aViewUser->isChecked() )
+		return aViewUser;
 	else
 		return 0;
 }
@@ -962,6 +1004,10 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 		float d = axis / ( qMax( width(), height() ) + 1 );
 		mouseMov += Vector3( dx * d, - dy * d, 0 );
 	}
+	else if ( event->buttons() & Qt::RightButton )
+	{
+		setDistance( Dist + dy * ( axis / ( qMax( width(), height() ) + 1 ) ) );
+	}
 	lastPos = event->pos();
 }
 
@@ -1005,6 +1051,8 @@ void GLView::save( QSettings & settings )
 	settings.setValue( "loop animation", aAnimLoop->isChecked() );
 	settings.setValue( "switch animation", aAnimSwitch->isChecked() );
 	settings.setValue( "perspective", aViewPerspective->isChecked() );
+	if ( checkedViewAction() )
+		settings.setValue( "view action", checkedViewAction()->text() );
 	//settings.endGroup();
 }
 
@@ -1016,8 +1064,11 @@ void GLView::restore( QSettings & settings )
 	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );
 	aAnimSwitch->setChecked( settings.value( "switch animation", true ).toBool() );
 	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
-	
 	checkActions();
+	QString viewAct = settings.value( "view action", "Front" ).toString();
+	foreach ( QAction * act, grpView->actions() )
+		if ( act->text() == viewAct )
+			viewAction( act );
 	//settings.endGroup();
 }
 

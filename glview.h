@@ -94,6 +94,8 @@ public:
 	QAction * aViewSide;
 	QAction * aViewFlip;
 	QAction * aViewPerspective;
+	QAction * aViewUser;
+	QAction * aViewUserSave;
 
 	QAction * aAnimate;
 	QAction * aAnimPlay;
@@ -115,6 +117,8 @@ public slots:
 	void sltSequence( const QString & );
 
 	void updateShaders();
+	
+	void sltSaveUserView();
 	
 signals: 
 	void clicked( const QModelIndex & );
