@@ -2,7 +2,6 @@
 
 #include "../NvTriStrip/qtwrapper.h"
 
-#include <QMessageBox>
 
 template <typename T> void copyArray( NifModel * nif, const QModelIndex & iDst, const QModelIndex & iSrc )
 {
@@ -23,6 +22,7 @@ template <typename T> void copyValue( NifModel * nif, const QModelIndex & iDst, 
 	nif->set<T>( iDst, name, nif->get<T>( iSrc, name ) );
 }
 
+
 class spStrippify : public Spell
 {
 	QString name() const { return "Strippify"; }
@@ -30,7 +30,7 @@ class spStrippify : public Spell
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( ! nif->getVersion().startsWith( "4." ) ) && nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiTriShape";
+		return nif->checkVersion( 0x0a000000, 0 ) && nif->isNiBlock( index, "NiTriShape" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -140,6 +140,7 @@ class spStrippify : public Spell
 
 REGISTER_SPELL( spStrippify )
 
+
 class spTriangulate : public Spell
 {
 	QString name() const { return "Triangulate"; }
@@ -147,7 +148,7 @@ class spTriangulate : public Spell
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemType( index ) == "NiBlock" && nif->itemName( index ) == "NiTriStrips" );
+		return nif->isNiBlock( index, "NiTriStrips" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -237,3 +238,138 @@ class spTriangulate : public Spell
 };
 
 REGISTER_SPELL( spTriangulate )
+
+
+class spStichStrips : public Spell
+{
+public:
+	QString name() const { return "Stich Strips"; }
+	QString page() const { return "Mesh"; }
+	
+	static QModelIndex getStripsData( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( nif->isNiBlock( index, "NiTriStrips" ) )
+			return nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );
+		else
+			return nif->getBlock( index, "NiTriStripsData" );
+	}
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = getStripsData( nif, index );
+		return iData.isValid() && nif->get<int>( iData, "Num Strips" ) > 1;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = getStripsData( nif, index );
+		QModelIndex iLength = nif->getIndex( iData, "Strip Lengths" );
+		QModelIndex iPoints = nif->getIndex( iData, "Points" );
+		if ( ! ( iLength.isValid() && iPoints.isValid() ) )
+			return index;
+		
+		QList< QVector<quint16> > strips;
+		for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+			strips += nif->getArray<quint16>( iPoints.child( r, 0 ) );
+		
+		if ( strips.isEmpty() )
+			return index;
+		
+		QVector<quint16> strip = strips.first();
+		strips.pop_front();
+		
+		foreach ( QVector<quint16> s, strips )
+		{	// TODO: optimize this
+			if ( strip.count() & 1 )
+				strip << strip.last() << s.first() << s.first() << s;
+			else
+				strip << strip.last() << s.first() << s;
+		}
+		
+		nif->set<int>( iData, "Num Strips", 1 );
+		nif->updateArray( iLength );
+		nif->set<int>( iLength.child( 0, 0 ), strip.size() );
+		nif->updateArray( iPoints );
+		nif->updateArray( iPoints.child( 0, 0 ) );
+		nif->setArray<quint16>( iPoints.child( 0, 0 ), strip );
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spStichStrips )
+
+
+class spUnstichStrips : public Spell
+{
+public:
+	QString name() const { return "Unstich Strips"; }
+	QString page() const { return "Mesh"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = spStichStrips::getStripsData( nif, index );
+		return iData.isValid() && nif->get<int>( iData, "Num Strips" ) == 1;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = spStichStrips::getStripsData( nif, index );
+		QModelIndex iLength = nif->getIndex( iData, "Strip Lengths" );
+		QModelIndex iPoints = nif->getIndex( iData, "Points" );
+		if ( ! ( iLength.isValid() && iPoints.isValid() ) )
+			return index;
+		
+		QVector< quint16 > strip = nif->getArray<quint16>( iPoints.child( 0, 0 ) );
+		if ( strip.size() <= 3 ) return index;
+		
+		QList< QVector< quint16 > > strips;
+		QVector< quint16 > scratch;
+		
+		quint16 a = strip[0];
+		quint16 b = strip[1];
+		bool flip = false;
+		for ( int s = 2; s < strip.size(); s++ )
+		{
+			quint16 c = strip[s];
+			
+			if ( a != b && b != c && c != a )
+			{
+				if ( scratch.isEmpty() )
+				{
+					if ( flip )
+						scratch << a << a << b;
+					else
+						scratch << a << b;
+				}
+				scratch << c;
+			}
+			else if ( ! scratch.isEmpty() )
+			{
+				strips << scratch;
+				scratch.clear();
+			}
+			
+			a = b;
+			b = c;
+			flip = ! flip;
+		}
+		if ( ! scratch.isEmpty() )
+			strips << scratch;
+		
+		nif->set<int>( iData, "Num Strips", strips.size() );
+		nif->updateArray( iLength );
+		nif->updateArray( iPoints );
+		for ( int r = 0; r < strips.count(); r++ )
+		{
+			nif->set<int>( iLength.child( r, 0 ), strips[r].size() );
+			nif->updateArray( iPoints.child( r, 0 ) );
+			nif->setArray<quint16>( iPoints.child( r, 0 ), strips[r] );
+		}
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spUnstichStrips )
+
