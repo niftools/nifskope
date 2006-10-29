@@ -531,6 +531,41 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		_glUniform1iARB( uniNormalMap, texunit++ );
 	}
 	
+	GLint uniGlowMap = _glGetUniformLocationARB( prog->id, "GlowMap" );
+	
+	if ( uniGlowMap >= 0 )
+	{
+		QString fname = texprop->fileName( 0 );
+		if ( fname.isEmpty() )
+			return false;
+		
+		int pos = fname.indexOf( "_" );
+		if ( pos >= 0 )
+			fname = fname.left( pos ) + "_g.dds";
+		else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+			fname = fname.insert( pos, "_g" );
+		
+		if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
+			return false;
+		
+		_glUniform1iARB( uniGlowMap, texunit++ );
+	}
+	else
+	{
+		QString fname = texprop->fileName( 0 );
+		if ( ! fname.isEmpty() )
+		{
+			int pos = fname.indexOf( "_" );
+			if ( pos >= 0 )
+				fname = fname.left( pos ) + "_g.dds";
+			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+				fname = fname.insert( pos, "_g" );
+			
+			if ( activateTextureUnit( texunit ) && texprop->bind( 0, fname ) )
+				return false;
+		}
+	}
+	
 	QMapIterator<int, QString> itx( prog->texcoords );
 	while ( itx.hasNext() )
 	{

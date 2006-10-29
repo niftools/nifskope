@@ -1,0 +1,11 @@
+
+comment normal + glow mapping, vertex colors -> ignore, material emissive color -> ignore
+
+check NiTexturingProperty/Apply Mode == 2
+check NiTriBasedGeom/Has Shader == 0
+
+texcoords 0 base
+texcoords 1 tangents
+texcoords 2 binormals
+
+shaders ob_glowmap.vert ob_normalglowmap.frag

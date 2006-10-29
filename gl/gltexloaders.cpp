@@ -601,6 +601,12 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 	{
 		texformat += " (RAW)";
 		
+		if ( ddsHeader.ddsPixelFormat.dwRMask != 0 && ddsHeader.ddsPixelFormat.dwGMask == 0 && ddsHeader.ddsPixelFormat.dwBMask == 0 )
+		{	// fixup greyscale
+			ddsHeader.ddsPixelFormat.dwGMask = ddsHeader.ddsPixelFormat.dwRMask;
+			ddsHeader.ddsPixelFormat.dwBMask = ddsHeader.ddsPixelFormat.dwRMask;
+		}
+		
 		return texLoadRaw( f, ddsHeader.dwWidth, ddsHeader.dwHeight,
 			ddsHeader.dwMipMapCount, ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
 			&ddsHeader.ddsPixelFormat.dwRMask );

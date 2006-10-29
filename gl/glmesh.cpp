@@ -572,6 +572,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 
 void Mesh::drawSelection() const
 {
+	Node::drawSelection();
+	
 	if ( isHidden() || ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart ) )
 		return;
 	
@@ -597,7 +599,7 @@ void Mesh::drawSelection() const
 	QString n;
 	int i = -1;
 	
-	if ( scene->currentBlock == iBlock )
+	if ( scene->currentBlock == iBlock || scene->currentIndex == iData )
 	{
 		n = "Faces";
 	}

@@ -264,7 +264,7 @@ int TexCache::bind( const QString & fname )
 	
 	if ( ! tx->id || tx->reload )
 	{
-		if ( QFile::exists( tx->filepath ) )
+		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() )
 			watcher->addPath( tx->filepath );
 		tx->load();
 	}
