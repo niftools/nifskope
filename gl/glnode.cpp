@@ -899,19 +899,31 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			{
 				QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
 				
-				QList< QVector<quint16> > strips;
-				QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
-				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-					strips += nif->getArray<quint16>( iPoints.child( r, 0 ) );
-				
 				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 				glBegin( GL_TRIANGLES );
-				foreach ( Triangle t, triangulate( strips ) )
-				{
-					glVertex( verts.value( t[0] ) );
-					glVertex( verts.value( t[1] ) );
-					glVertex( verts.value( t[2] ) );
+				
+				QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
+				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+				{	// draw the strips like they appear in the tescs
+					// (use the unstich strips spell to avoid the spider web effect)
+					QVector<quint16> strip = nif->getArray<quint16>( iPoints.child( r, 0 ) );
+					if ( strip.count() >= 3 )
+					{
+						quint16 a = strip[0];
+						quint16 b = strip[1];
+						
+						for ( int x = 2; x < strip.size(); x++ )
+						{
+							quint16 c = strip[x];
+							glVertex( verts.value( a ) );
+							glVertex( verts.value( b ) );
+							glVertex( verts.value( c ) );
+							a = b;
+							b = c;
+						}
+					}
 				}
+				
 				glEnd();
 				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 			}
