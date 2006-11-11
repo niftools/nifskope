@@ -63,9 +63,9 @@ public:
 		QVector<Vector3> tan( verts.count() );
 		QVector<Vector3> bin( verts.count() );
 		
-		int dups = 0;
-		
 		QMultiHash<int,int> vmap;
+		
+		int skptricnt = 0;
 		
 		for ( int t = 0; t < triangles.count(); t++ )
 		{	// for each triangle caculate the texture flow direction
@@ -93,9 +93,18 @@ public:
 			
 			float r = w2w1[0] * w3w1[1] - w3w1[0] * w2w1[1];
 			
-			if ( fabs( r ) <= 10e-5 )	continue;
+			/*
+			if ( fabs( r ) <= 10e-10 )
+			{
+				//if ( skptricnt++ < 3 )
+				//	qWarning() << t;
+				continue;
+			}
 			
 			r = 1.0 / r;
+			*/
+			// this seems to produces better results
+			r = ( r >= 0 ? +1 : -1 );
 			
 			Vector3 sdir( 
 				( w3w1[1] * v2v1[0] - w2w1[1] * v3v1[0] ) * r,
@@ -115,56 +124,17 @@ public:
 			//qDebug() << sdir << tdir;
 			
 			for ( int j = 0; j < 3; j++ )
-			{	// no duplication, just smoothing
+			{
 				int i = tri[j];
 				
 				tan[i] += tdir;
 				bin[i] += sdir;
 			}
-			
-			/*
-			for ( int j = 0; j < 3; j++ )
-			{	// store flow direction and duplicate vertices if nescessarry
-				int i = tri[j];
-				
-				tan[i] += tdir;
-				bin[i] += sdir;
-				
-				QList<int> indices = vmap.values( i );
-				if ( indices.isEmpty() )
-				{
-					tan[i] = tdir;
-					bin[i] = sdir;
-					vmap.insert( i, i );
-				}
-				else if ( ! isSkinned )
-				{	// dunno exactly, let's skip the duplication if it's a skinned mesh and hope for the best
-					int x;
-					for ( x = 0; x < indices.count(); x++ )
-					{
-						if ( matches( tan[indices[x]], tdir, TOLERANCE ) && matches( bin[indices[x]], sdir, TOLERANCE ) )
-						{
-							tri[j] = indices[x];
-							break;
-						}
-					}
-					if ( x >= indices.count() )
-					{
-						vmap.insert( i, verts.count() );
-						tri[j] = verts.count();
-						verts.append( verts[i] );
-						norms.append( norms[i] );
-						texco.append( texco[i] );
-						if ( vxcol.count() )
-							vxcol.append( vxcol[i] );
-						tan.append( tdir );
-						bin.append( sdir );
-						dups++;
-					}
-				}
-			}
-			*/
 		}
+		
+		//qWarning() << "skipped triangles" << skptricnt;
+		
+		int cnt = 0;
 		
 		for ( int i = 0; i < verts.count(); i++ )
 		{	// for each vertex calculate tangent and binormal
@@ -179,13 +149,16 @@ public:
 			{
 				t[0] = n[1]; t[1] = n[2]; t[2] = n[0];
 				b = Vector3::crossproduct( n, t );
+				//if ( cnt++ < 3 )
+				//	qWarning() << i;
 			}
-			
 			else
 			{
+				t.normalize();
 				t = ( t - n * Vector3::dotproduct( n, t ) );
 				t.normalize();
 				//b = Vector3::crossproduct( n, t );
+				b.normalize();
 				b = ( b - n * Vector3::dotproduct( n, b ) );
 				b.normalize();
 			}
@@ -194,52 +167,7 @@ public:
 			//qDebug() << "";
 		}
 		
-		if ( dups != 0 )
-		{
-			qWarning() << "duplicated" << dups << "vertices";
-			
-			// write back data arrays
-			nif->set<int>( iData, "Num Vertices", verts.count() );
-			nif->updateArray( iData, "Vertices" );
-			nif->setArray<Vector3>( iData, "Vertices", verts );
-			nif->updateArray( iData, "Normals" );
-			nif->setArray<Vector3>( iData, "Normals", norms );
-			nif->updateArray( iTexCo );
-			nif->setArray<Vector2>( iTexCo, texco );
-			nif->updateArray( iData, "Vertex Colors" );
-			nif->setArray<Color4>( iData, "Vertex Colors", vxcol );
-			
-			if ( iPoints.isValid() )
-			{
-				QList< QVector< quint16 > > strips = strippify( triangles );
-				nif->set<int>( iData, "Num Strips", strips.count() );
-				nif->set<int>( iData, "Has Points", 1 );
-				
-				QModelIndex iLengths = nif->getIndex( iData, "Strip Lengths" );
-				
-				if ( iLengths.isValid() )
-				{
-					nif->updateArray( iLengths );
-					nif->updateArray( iPoints );
-					int x = 0;
-					int z = 0;
-					foreach ( QVector<quint16> strip, strips )
-					{
-						nif->set<int>( iLengths.child( x, 0 ), strip.count() );
-						QModelIndex iStrip = iPoints.child( x, 0 );
-						nif->updateArray( iStrip );
-						nif->setArray<quint16>( iStrip, strip );
-						x++;
-						z += strip.count() - 2;
-					}
-					nif->set<int>( iData, "Num Triangles", z );
-				}
-			}
-			else
-			{
-				nif->setArray<Triangle>( iData, "Triangles", triangles );
-			}
-		}
+		//qWarning() << "unassigned vertices" << cnt;
 		
 		// update or create the tangent space extra data
         
@@ -270,11 +198,6 @@ public:
 		
 		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *) tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *) bin.data(), bin.count() * sizeof( Vector3 ) ) );
 		return iShape;
-	}
-	
-	bool matches( const Vector3 & a, const Vector3 & b, float tolerance )
-	{
-		return Vector3::angle( a, b ) < tolerance;
 	}
 };
 
