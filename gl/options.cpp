@@ -384,7 +384,16 @@ GLOptions * GLOptions::get()
 QList<QAction*> GLOptions::actions()
 {
 	GLOptions * opts = get();
-	return QList<QAction*>() << opts->aDrawAxes << opts->aDrawNodes << opts->aDrawHavok << opts->aDrawFurn << opts->aDrawHidden << opts->aDrawStats << opts->aSettings;
+	return QList<QAction*>()
+		<< opts->aDrawAxes
+		<< opts->aDrawNodes
+		<< opts->aDrawHavok
+		<< opts->aDrawFurn
+		<< opts->aDrawHidden
+#ifdef USE_GL_QPAINTER
+		<< opts->aDrawStats
+#endif
+		<< opts->aSettings;
 }
 
 bool GLOptions::eventFilter( QObject * o, QEvent * e )

@@ -130,8 +130,13 @@ protected:
 	int  pickGL( int x, int y );
 	void resizeGL( int width, int height );
 	void glProjection( int x = -1, int y = -1 );
-	
+
+#ifdef USE_GL_QPAINTER
 	void paintEvent( QPaintEvent * );
+#else
+	void paintGL();
+#endif
+	
 	void mousePressEvent( QMouseEvent * );
 	void mouseReleaseEvent( QMouseEvent * );
 	void mouseDoubleClickEvent( QMouseEvent * );

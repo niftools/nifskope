@@ -315,6 +315,7 @@ void GLView::center()
 	update();
 }
 
+#ifdef USE_GL_QPAINTER
 void GLView::paintEvent( QPaintEvent * event )
 {
 	makeCurrent();
@@ -322,7 +323,10 @@ void GLView::paintEvent( QPaintEvent * event )
 	QPainter painter;
 	painter.begin( this );
 	painter.setRenderHint( QPainter::TextAntialiasing );
-	
+#else
+void GLView::paintGL()
+{
+#endif
 	// save gl state for later use by qpainter
 	
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -470,6 +474,7 @@ void GLView::paintEvent( QPaintEvent * event )
 		fpscnt = 0;
 	}
 	
+#ifdef USE_GL_QPAINTER
 	// draw text on top using QPainter
 
 	if ( GLOptions::benchmark() || GLOptions::drawStats() )
@@ -495,6 +500,7 @@ void GLView::paintEvent( QPaintEvent * event )
 	}
 	
 	painter.end();
+#endif
 }
 
 bool compareHits( const QPair< GLuint, GLuint > & a, const QPair< GLuint, GLuint > & b )

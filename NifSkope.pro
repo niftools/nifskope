@@ -6,6 +6,8 @@ CONFIG += qt release thread warn_on
 QT += xml opengl network
 #LIBS += -lmingw32 -lqtmain
 
+#DEFINES += USE_GL_QPAINTER
+
 DESTDIR = ./
 
 HEADERS += \
