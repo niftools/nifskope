@@ -47,7 +47,7 @@ class ValueEdit : public QWidget
 public:
 	ValueEdit( QWidget * parent = 0 );
 	
-	Q_PROPERTY( NifValue value READ getValue WRITE setValue );
+	Q_PROPERTY( NifValue value READ getValue WRITE setValue USER true );
 	
 	NifValue getValue() const;
 	
@@ -151,11 +151,19 @@ public slots:
 
 protected slots:
 	void sltChanged();
+	
+	void switchMode();
+	void setupMode();
 
 private:
-	QDoubleSpinBox * y;
-	QDoubleSpinBox * p;
-	QDoubleSpinBox * r;
+	enum {
+		mEuler, mAxis
+	} mode;
+	
+	QLabel * l[4];
+	QDoubleSpinBox * v[4];
+	
+	QAction * actMode;
 	
 	bool setting;
 };

@@ -32,12 +32,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "valueedit.h"
 
+#include <QAction>
 #include <QFrame>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QTextEdit>
+#include <QToolButton>
 
 ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNone ), edit( 0 )
 {
@@ -60,6 +62,7 @@ class CenterLabel : public QLabel
 {
 public:
 	CenterLabel( const QString & txt ) : QLabel( txt ) { setAlignment( Qt::AlignCenter ); }
+	CenterLabel() : QLabel() { setAlignment( Qt::AlignCenter ); }
 };
 
 class UIntSpinBox : public QSpinBox
@@ -459,71 +462,186 @@ Vector2 VectorEdit::getVector2() const
 	return Vector2( x->value(), y->value() );
 }
 
-RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent )
+
+RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent ), mode( mEuler ), setting( false )
 {
+	actMode = new QAction( this );
+	connect( actMode, SIGNAL( triggered() ), this, SLOT( switchMode() ) );
+	QToolButton * btMode = new QToolButton( this );
+	btMode->setDefaultAction( actMode );
+	
 	QHBoxLayout * lay = new QHBoxLayout( this );
 	lay->setMargin( 0 );
 	lay->setSpacing( 0 );
-
-	lay->addWidget( new CenterLabel( "Y" ), 1 );
-	lay->addWidget( y = new QDoubleSpinBox, 5 );
-	y->setDecimals( 1 );
-	y->setRange( - 360, + 360 );
-	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( new CenterLabel( "P" ), 1 );
-	lay->addWidget( p = new QDoubleSpinBox, 5 );
-	p->setDecimals( 1 );
-	p->setRange( - 360, + 360 );
-	connect( p, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
-	lay->addWidget( new CenterLabel( "R" ), 1 );
-	lay->addWidget( r = new QDoubleSpinBox, 5 );
-	r->setDecimals( 1 );
-	r->setRange( - 360, + 360 );
-	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
-	setting = false;
-	setFocusProxy( y );
+	lay->addWidget( btMode, 2 );
+
+	for ( int x = 0; x < 4; x++ )
+	{
+		lay->addWidget( l[x] = new CenterLabel, 1 );
+		lay->addWidget( v[x] = new QDoubleSpinBox, 5 );
+		connect( v[x], SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	}
+	
+	setFocusProxy( v[0] );
+	
+	setupMode();
+}
+
+void RotationEdit::switchMode()
+{
+	Matrix m = getMatrix();
+	
+	if ( mode == mAxis )
+		mode = mEuler;
+	else
+		mode = mAxis;
+		
+	setupMode();
+	
+	switch ( mode )
+	{
+		case mEuler:
+			{
+				float Y, P, R;
+				m.toEuler( Y, P, R );
+				v[0]->setValue( Y / PI * 180 );
+				v[1]->setValue( P / PI * 180 );
+				v[2]->setValue( R / PI * 180 );
+			}	break;
+		case mAxis:
+			{
+				Vector3 axis; float angle;
+				m.toQuat().toAxisAngle( axis, angle );
+				v[0]->setValue( angle / PI * 180 );
+				for ( int x = 0; x < 3; x++ )
+					v[x+1]->setValue( axis[x] );
+			}	break;
+	}
+}
+
+void RotationEdit::setupMode()
+{
+	switch ( mode )
+	{
+		case mEuler:
+			{
+				actMode->setText( "Euler" );
+				QStringList labs( QStringList() << "Y" << "P" << "R" );
+				for ( int x = 0; x < 4; x++ )
+				{
+					l[x]->setText( labs.value( x ) );
+					v[x]->setDecimals( 1 );
+					v[x]->setRange( - 360, + 360 );
+					v[x]->setSingleStep( 1 );
+					l[x]->setHidden( x == 3 );
+					v[x]->setHidden( x == 3 );
+				}
+			}	break;
+		case mAxis:
+			{
+				actMode->setText( "Axis" );
+				QStringList labs( QStringList() << "A" << "X" << "Y" << "Z" );
+				for ( int x = 0; x < 4; x++ )
+				{
+					l[x]->setText( labs.value( x ) );
+					if ( x == 0 )
+					{
+						v[x]->setDecimals( 1 );
+						v[x]->setRange( - 360, + 360 );
+						v[x]->setSingleStep( 1 );
+					}
+					else
+					{
+						v[x]->setDecimals( 5 );
+						v[x]->setRange( - 1.0, + 1.0 );
+						v[x]->setSingleStep( 0.1 );
+					}
+					l[x]->setHidden( false );
+					v[x]->setHidden( false );
+				}
+			}	break;
+	}
 }
 
 void RotationEdit::setMatrix( const Matrix & m )
 {
 	setting = true;
+	
+	mode = mEuler;
+	setupMode();
+	
 	float Y, P, R;
 	m.toEuler( Y, P, R );
-	y->setValue( Y / PI * 180 );
-	p->setValue( P / PI * 180 );
-	r->setValue( R / PI * 180 );
+	
+	v[0]->setValue( Y / PI * 180 );
+	v[1]->setValue( P / PI * 180 );
+	v[2]->setValue( R / PI * 180 );
+	
 	setting = false;
 }
 
 void RotationEdit::setQuat( const Quat & q )
 {
 	setting = true;
-	Matrix m; m.fromQuat( q );
-	float Y, P, R;
-	m.toEuler( Y, P, R );
-	y->setValue( Y / PI * 180 );
-	p->setValue( P / PI * 180 );
-	r->setValue( R / PI * 180 );
+	
+	mode = mAxis;
+	setupMode();
+	
+	Vector3 axis; float angle;
+	q.toAxisAngle( axis, angle );
+	v[0]->setValue( angle / PI * 180 );
+	for ( int x = 0; x < 3; x++ )
+		v[x+1]->setValue( axis[x] );
+	
 	setting = false;
 }
 
 Matrix RotationEdit::getMatrix() const
 {
-	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
-	return m;
+	switch ( mode )
+	{
+		case mEuler:
+			{
+				Matrix m; m.fromEuler( v[0]->value() / 180 * PI, v[1]->value() / 180 * PI, v[2]->value() / 180 * PI );
+				return m;
+			};
+		case mAxis:
+			{
+				Quat q;
+				q.fromAxisAngle( Vector3( v[1]->value(), v[2]->value(), v[3]->value() ), v[0]->value() / 180 * PI );
+				Matrix m;
+				m.fromQuat( q );
+				return m;
+			};
+	}
+	return Matrix();
 }
 
 Quat RotationEdit::getQuat() const
 {
-	Matrix m; m.fromEuler( y->value() / 180 * PI, p->value() / 180 * PI, r->value() / 180 * PI );
-	return m.toQuat();
+	switch ( mode )
+	{
+		case mEuler:
+			{
+				Matrix m; m.fromEuler( v[0]->value() / 180 * PI, v[1]->value() / 180 * PI, v[2]->value() / 180 * PI );
+				return m.toQuat();
+			}
+		case mAxis:
+			{
+				Quat q;
+				q.fromAxisAngle( Vector3( v[1]->value(), v[2]->value(), v[3]->value() ), v[0]->value() / 180 * PI );
+				return q;
+			}
+	}
+	return Quat();
 }
 
 void RotationEdit::sltChanged()
 {
 	if ( ! setting ) emit sigEdited();
 }
+
 
 TriangleEdit::TriangleEdit( QWidget * parent ) : QWidget( parent )
 {

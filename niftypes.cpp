@@ -232,6 +232,35 @@ void Matrix4::compose( const Vector3 & trans, const Matrix & rot, const Vector3 
 			m[ i ][ j ] = rot( j, i ) * scale[ j ];
 }
 
+void Quat::fromAxisAngle( Vector3 axis, float angle )
+{
+	axis.normalize();
+    float s = sin( angle / 2 );
+    wxyz[0] = cos( angle / 2 );
+    wxyz[1] = s * axis[0];
+    wxyz[2] = s * axis[1];
+    wxyz[3] = s * axis[2];
+}
+
+void Quat::toAxisAngle( Vector3 & axis, float & angle ) const
+{
+    float squaredLength = wxyz[1]*wxyz[1] + wxyz[2]*wxyz[2] + wxyz[3]*wxyz[3];
+
+    if ( squaredLength > 0.0 )
+    {
+        angle = acos( wxyz[0] ) * 2.0;
+        axis[0] = wxyz[1];
+        axis[1] = wxyz[2];
+        axis[2] = wxyz[3];
+		axis /= sqrt( squaredLength );
+    }
+    else
+    {
+		axis = Vector3( 1, 0, 0 );
+		angle = 0;
+    }
+}
+
 /*
  *  Transform
  */

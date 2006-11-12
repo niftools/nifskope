@@ -499,6 +499,9 @@ public:
 	{
 		return q1[0]*q2[0]+q1[1]*q2[1]+q1[2]*q2[2]+q1[3]*q2[3];
 	}
+	
+	void fromAxisAngle( Vector3 axis, float angle );
+	void toAxisAngle( Vector3 & axis, float & angle ) const;
 
 	QString toHtml() const
 	{
@@ -677,6 +680,8 @@ public:
 	inline quint16 v2() const { return v[1]; }
 	inline quint16 v3() const { return v[2]; }
 	
+	void flip() { quint16 x = v[0]; v[0] = v[1]; v[1] = x; }
+	
 	Triangle operator+( quint16 d )
 	{
 		Triangle t( *this );
@@ -846,6 +851,11 @@ public:
 	{
 		Color4 c( *this );
 		return ( c -= o );
+	}
+	
+	bool operator==( const Color4 & c ) const
+	{
+		return rgba[0] == c.rgba[0] && rgba[1] == c.rgba[1] && rgba[2] == c.rgba[2] && rgba[3] == c.rgba[3];
 	}
 	
 	float red() const { return rgba[0]; }
