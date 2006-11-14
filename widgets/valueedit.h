@@ -157,7 +157,7 @@ protected slots:
 
 private:
 	enum {
-		mEuler, mAxis
+		mAuto, mEuler, mAxis
 	} mode;
 	
 	QLabel * l[4];

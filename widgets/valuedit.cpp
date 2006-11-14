@@ -463,7 +463,7 @@ Vector2 VectorEdit::getVector2() const
 }
 
 
-RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent ), mode( mEuler ), setting( false )
+RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent ), mode( mAuto ), setting( false )
 {
 	actMode = new QAction( this );
 	connect( actMode, SIGNAL( triggered() ), this, SLOT( switchMode() ) );
@@ -499,31 +499,14 @@ void RotationEdit::switchMode()
 		
 	setupMode();
 	
-	switch ( mode )
-	{
-		case mEuler:
-			{
-				float Y, P, R;
-				m.toEuler( Y, P, R );
-				v[0]->setValue( Y / PI * 180 );
-				v[1]->setValue( P / PI * 180 );
-				v[2]->setValue( R / PI * 180 );
-			}	break;
-		case mAxis:
-			{
-				Vector3 axis; float angle;
-				m.toQuat().toAxisAngle( axis, angle );
-				v[0]->setValue( angle / PI * 180 );
-				for ( int x = 0; x < 3; x++ )
-					v[x+1]->setValue( axis[x] );
-			}	break;
-	}
+	setMatrix( m );
 }
 
 void RotationEdit::setupMode()
 {
 	switch ( mode )
 	{
+		case mAuto:
 		case mEuler:
 			{
 				actMode->setText( "Euler" );
@@ -568,15 +551,32 @@ void RotationEdit::setMatrix( const Matrix & m )
 {
 	setting = true;
 	
-	mode = mEuler;
-	setupMode();
+	if ( mode == mAuto )
+	{
+		mode = mEuler;
+		setupMode();
+	}
 	
-	float Y, P, R;
-	m.toEuler( Y, P, R );
-	
-	v[0]->setValue( Y / PI * 180 );
-	v[1]->setValue( P / PI * 180 );
-	v[2]->setValue( R / PI * 180 );
+	switch ( mode )
+	{
+		case mAuto:
+		case mEuler:
+			{
+				float Y, P, R;
+				m.toEuler( Y, P, R );
+				v[0]->setValue( Y / PI * 180 );
+				v[1]->setValue( P / PI * 180 );
+				v[2]->setValue( R / PI * 180 );
+			}	break;
+		case mAxis:
+			{
+				Vector3 axis; float angle;
+				m.toQuat().toAxisAngle( axis, angle );
+				v[0]->setValue( angle / PI * 180 );
+				for ( int x = 0; x < 3; x++ )
+					v[x+1]->setValue( axis[x] );
+			}	break;
+	}
 	
 	setting = false;
 }
@@ -585,14 +585,14 @@ void RotationEdit::setQuat( const Quat & q )
 {
 	setting = true;
 	
-	mode = mAxis;
-	setupMode();
+	if ( mode == mAuto )
+	{
+		mode = mAxis;
+		setupMode();
+	}
 	
-	Vector3 axis; float angle;
-	q.toAxisAngle( axis, angle );
-	v[0]->setValue( angle / PI * 180 );
-	for ( int x = 0; x < 3; x++ )
-		v[x+1]->setValue( axis[x] );
+	Matrix m; m.fromQuat( q );
+	setMatrix( m );
 	
 	setting = false;
 }
@@ -601,6 +601,7 @@ Matrix RotationEdit::getMatrix() const
 {
 	switch ( mode )
 	{
+		case mAuto:
 		case mEuler:
 			{
 				Matrix m; m.fromEuler( v[0]->value() / 180 * PI, v[1]->value() / 180 * PI, v[2]->value() / 180 * PI );
@@ -622,6 +623,7 @@ Quat RotationEdit::getQuat() const
 {
 	switch ( mode )
 	{
+		case mAuto:
 		case mEuler:
 			{
 				Matrix m; m.fromEuler( v[0]->value() / 180 * PI, v[1]->value() / 180 * PI, v[2]->value() / 180 * PI );

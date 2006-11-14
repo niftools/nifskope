@@ -73,12 +73,13 @@ void NifSkope::about()
 {
 	QString text =
 	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
-	"<p>NifSkope is based on the NifTool's file format data base. "
+	"<p>NifSkope is based on NifTool's file format data base. "
 	"For more informations visit our site at <a href='http://www.niftools.org'>www.niftools.org</a></p>"
 	"<p>Because NifSkope was build using the Qt GUI toolkit it is free software. "
-	"The source is available via SVN on <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>sourceforge</a></p>";
+	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
+	" on <a href='http://sourceforge.net'>sourceforge</a></p>";
 
-    QMessageBox mb( "About NifSkope 0.9.4", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( "About NifSkope 0.9.5", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }
@@ -104,18 +105,19 @@ NifSkope::NifSkope() : QMainWindow()
 	list = new NifTreeView;
 	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate( book ) );
+	list->installEventFilter( this );
 
 	connect( list, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
 	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 		this, SLOT( contextMenu( const QPoint & ) ) );
-	
 
 	// this view shows the whole nif file or the block details
 	tree = new NifTreeView;
 	tree->setModel( nif );
 	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->header()->setStretchLastSection( false );
+	tree->installEventFilter( this );
 
 	connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
 		this, SLOT( select( const QModelIndex & ) ) );
@@ -128,9 +130,20 @@ NifSkope::NifSkope() : QMainWindow()
 	kfmtree->setModel( kfm );
 	kfmtree->setItemDelegate( kfm->createDelegate() );
 	kfmtree->header()->setStretchLastSection( false );
+	kfmtree->installEventFilter( this );
 
 	connect( kfmtree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 		this, SLOT( contextMenu( const QPoint & ) ) );
+
+
+#ifdef EDIT_ON_ACTIVATE
+	connect( list, SIGNAL( activated( const QModelIndex & ) ),
+		list, SLOT( edit( const QModelIndex & ) ) );
+	connect( tree, SIGNAL( activated( const QModelIndex & ) ),
+		tree, SLOT( edit( const QModelIndex & ) ) );
+	connect( kfmtree, SIGNAL( activated( const QModelIndex & ) ),
+		kfmtree, SLOT( edit( const QModelIndex & ) ) );
+#endif
 
 
 	// open gl
@@ -632,6 +645,25 @@ void NifSkope::setViewFont( const QFont & font )
 	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 }
 
+bool NifSkope::eventFilter( QObject * o, QEvent * e )
+{
+	if ( e->type() == QEvent::Polish )
+	{
+		QTimer::singleShot( 0, this, SLOT( overrideViewFont() ) );
+	}
+	return QMainWindow::eventFilter( o, e );
+}
+
+void NifSkope::overrideViewFont()
+{
+	QSettings settings;
+	QVariant var = settings.value( "viewFont" );
+	if ( var.canConvert<QFont>() )
+	{
+		setViewFont( var.value<QFont>() );
+	}
+}
+
 void NifSkope::dispatchMessage( const Message & msg )
 {
 	switch ( msg.type() )
@@ -757,6 +789,12 @@ void IPCsocket::openNif( const QUrl & url )
  *  main
  */
 
+
+#ifdef FSENGINE
+#include "fsengine/fsengine.h"
+#endif
+
+
 int main( int argc, char * argv[] )
 {
 	// set up the Qt Application
@@ -767,7 +805,9 @@ int main( int argc, char * argv[] )
 	
 	// install message handler
 	qRegisterMetaType<Message>( "Message" );
+#ifndef NO_MESSAGEHANDLER
 	qInstallMsgHandler( myMessageOutput );
+#endif
 	
 	// if there is a style sheet present then load it
 	QFile style( QDir( QApplication::applicationDirPath() ).filePath( "style.qss" ) );
@@ -779,6 +819,13 @@ int main( int argc, char * argv[] )
 	
 	NifModel::loadXML();
 	KfmModel::loadXML();
+	
+#ifdef FSENGINE
+	FSOverlayHandler overlayHandler;
+	
+	FSArchiveHandler * bsa1 = FSArchiveHandler::openArchive( "f:\\data\\oblivion - meshes.bsa" );
+	FSArchiveHandler * bsa2 = FSArchiveHandler::openArchive( "f:\\data\\oblivion - textures - compressed.bsa" );
+#endif
 	
 	QString fname;
     if ( app.argc() > 1 )

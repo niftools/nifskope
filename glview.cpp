@@ -155,11 +155,13 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewFlip->setToolTip( "Flip View from Front to Back, Top to Bottom, Side to Other Side" );
 	aViewFlip->setCheckable( true );
 	aViewFlip->setShortcut( Qt::Key_F11 );
+	grpView->addAction( aViewFlip );
 	
 	aViewPerspective = new QAction( "Perspective", this );
 	aViewPerspective->setToolTip( "Perspective View Transformation or Orthogonal View Transformation" );
 	aViewPerspective->setCheckable( true );
 	aViewPerspective->setShortcut( Qt::Key_F10 );
+	grpView->addAction( aViewPerspective );
 	
 	aViewUserSave = new QAction( "Save User View", this );
 	aViewUserSave->setToolTip( "Save current view rotation, position and distance" );

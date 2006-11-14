@@ -96,8 +96,11 @@ protected slots:
 	
 	void dispatchMessage( const Message & msg );
 	
+	void overrideViewFont();
+	
 protected:
 	void closeEvent( QCloseEvent * e );
+	bool eventFilter( QObject * o, QEvent * e );
 	
 private:
 	void initActions();

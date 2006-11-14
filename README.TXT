@@ -38,7 +38,38 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9.3 of NifSkope.
+This is version 0.9.5 of NifSkope.
+
+
+changes since 0.9.4:
+  - oblivion glow map shaders
+  - anisotropic texture filtering (check the antialias checkbox in the render settings dialog)
+  - fixed another issue with update tangent space, should look better now
+  - the havok strips are now drawn like they appear in the tescs
+    if you encounter the spider web effect use the new unstich strips spell on the NiTriStripsData block
+  - the skin partition spell now also accepts nifs below 20.x.x.x
+  - added an option to save and restore the 3d view's rotation, position and distance
+  - rotations can now also be edited as axis angle pairs
+  - added a widget style sheet (style.qss)
+    if you want you can customize the look and feel of NifSkope through this style sheet
+  - fixed an issue with the ipc socket
+    NifSkope should open now at least one window regardless of any personal firewall settings
+
+
+changes since 0.9.3:
+  - support for nifs below version 4 (StarTrek: Bridge Commander)
+  - comprehensive render settings dialog
+  - texture folder auto setup
+  - highlighting of individual vertices, normals, triangles, etc.
+  - added a spell to combine equal properties and another spell to make the properties unique again
+  - improved skin partitioning
+  - fixed calculation and rendering of binormals, under some circumstances the direction of the binormals was flipped
+    if you encounter this problem updating the tangent space again should solve it
+  - fixed flag spell
+  - fixed LOD switching
+  - fixed Morrowind morph animations
+  - template column integrated into type column
+  - switched to Qt 4.2
 
 
 changes since 0.9.2:

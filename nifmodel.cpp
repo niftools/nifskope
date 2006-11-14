@@ -845,7 +845,13 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				{
 					switch ( item->value().type() )
 					{
+						case NifValue::tByte:
+							{
+								quint8 b = item->value().toCount();
+								return QString( "dec: %1<br>hex: 0x%2" ).arg( b ).arg( b, 2, 16, QChar( '0' ) );
+							}
 						case NifValue::tWord:
+						case NifValue::tShort:
 							{
 								quint16 s = item->value().toCount();
 								return QString( "dec: %1<br>hex: 0x%2" ).arg( s ).arg( s, 4, 16, QChar( '0' ) );

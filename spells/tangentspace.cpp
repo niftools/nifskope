@@ -28,8 +28,6 @@ public:
 	{
 		QPersistentModelIndex iShape = iBlock;
 		
-		bool isSkinned = nif->getLink( iShape, "Skin Instance" ) >= 0;
-		
 		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 		
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
@@ -157,9 +155,12 @@ public:
 				t.normalize();
 				t = ( t - n * Vector3::dotproduct( n, t ) );
 				t.normalize();
+				
 				//b = Vector3::crossproduct( n, t );
+				
 				b.normalize();
 				b = ( b - n * Vector3::dotproduct( n, b ) );
+				b = ( b - t * Vector3::dotproduct( t, b ) );
 				b.normalize();
 			}
 			

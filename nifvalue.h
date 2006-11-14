@@ -356,6 +356,6 @@ private:
 };
 
 
-Q_DECLARE_METATYPE( NifValue );
+Q_DECLARE_METATYPE( NifValue )
 
 #endif
