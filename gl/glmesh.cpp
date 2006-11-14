@@ -574,7 +574,11 @@ void Mesh::drawSelection() const
 {
 	Node::drawSelection();
 	
-	if ( isHidden() || ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart ) )
+	if ( isHidden() )
+		return;
+	
+	if ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart
+			&& ( ! iTangentData.isValid() || scene->currentBlock != iTangentData ) )
 		return;
 	
 	if ( transformRigid )
@@ -614,6 +618,10 @@ void Mesh::drawSelection() const
 			i = scene->currentIndex.row();
 		}
 	}
+	else if ( scene->currentBlock == iTangentData )
+	{
+		n = "TSpace";
+	}
 	
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
 	{
@@ -632,20 +640,33 @@ void Mesh::drawSelection() const
 			glEnd();
 		}
 	}
-	if ( n == "Normals" )
+	if ( n == "Normals" || n == "TSpace" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
-		glBegin( GL_LINES );
 		
 		float normalScale = bounds().radius / 20;
 		if ( normalScale < 0.1 ) normalScale = 0.1;
+		
+		glBegin( GL_LINES );
 		
 		for ( int j = 0; j < transVerts.count() && j < transNorms.count(); j++ )
 		{
 			glVertex( transVerts.value( j ) );
 			glVertex( transVerts.value( j ) + transNorms.value( j ) * normalScale );
 		}
+		
+		if ( n == "TSpace" )
+		{
+			for ( int j = 0; j < transVerts.count() && j < transTangents.count() && j < transBinormals.count(); j++ )
+			{
+				glVertex( transVerts.value( j ) );
+				glVertex( transVerts.value( j ) + transTangents.value( j ) * normalScale );
+				glVertex( transVerts.value( j ) );
+				glVertex( transVerts.value( j ) + transBinormals.value( j ) * normalScale );
+			}
+		}
+		
 		glEnd();
 		
 		if ( i >= 0 )
