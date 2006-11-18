@@ -121,6 +121,7 @@ private:
 	GLView * ogl;
 	
 	bool selecting;
+	bool initialShowEvent;
 	
 	FileSelector * lineLoad;
 	FileSelector * lineSave;

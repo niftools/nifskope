@@ -84,7 +84,8 @@ void NifSkope::about()
     mb.exec();
 }
 
-NifSkope::NifSkope() : QMainWindow()
+NifSkope::NifSkope()
+	: QMainWindow(), selecting( false ), initialShowEvent( true )
 {
 	// create a new nif
 	nif = new NifModel( this );
@@ -286,8 +287,6 @@ NifSkope::NifSkope() : QMainWindow()
 	menuBar()->addMenu( ogl->createMenu() );
 	menuBar()->addMenu( book );
 	menuBar()->addMenu( mAbout );
-	
-	selecting = false;
 }
 
 NifSkope::~NifSkope()
@@ -321,6 +320,9 @@ void restoreHeader( const QString & name, QSettings & settings, QHeaderView * he
 
 void NifSkope::restore( QSettings & settings )
 {
+	restoreGeometry( settings.value( "window geometry" ).toByteArray() );
+	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
+	
 	lineLoad->setText( settings.value( "last load", QString( "" ) ).toString() );
 	lineSave->setText( settings.value( "last save", QString( "" ) ).toString() );
 	aSanitize->setChecked( settings.value( "auto sanitize", true ).toBool() );
@@ -330,17 +332,13 @@ void NifSkope::restore( QSettings & settings )
 	else
 		aHierarchy->setChecked( true );
 	setListMode();
-	restoreHeader( "list sizes", settings, list->header() );
-
-	restoreHeader( "tree sizes", settings, tree->header() );
 	
+	restoreHeader( "list sizes", settings, list->header() );
+	restoreHeader( "tree sizes", settings, tree->header() );
 	restoreHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->restore( settings );	
 
-	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
-	restoreGeometry( settings.value("window geometry").toByteArray() );
-	
 	QVariant fontVar = settings.value( "viewFont" );
 	if ( fontVar.canConvert<QFont>() )
 		setViewFont( fontVar.value<QFont>() );
@@ -650,6 +648,15 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	if ( e->type() == QEvent::Polish )
 	{
 		QTimer::singleShot( 0, this, SLOT( overrideViewFont() ) );
+	}
+	else if ( e->type() == QEvent::Show )
+	{
+		if ( initialShowEvent )
+		{
+			initialShowEvent = false;
+			QSettings settings;
+			restoreGeometry( settings.value( "window geometry" ).toByteArray() );
+		}
 	}
 	return QMainWindow::eventFilter( o, e );
 }
