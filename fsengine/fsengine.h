@@ -30,79 +30,72 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef FILESELECT_H
-#define FILESELECT_h
 
-#include <QAction>
-#include <QWidget>
-#include <QBoxLayout>
+#ifndef ARCHIVEENGINE_H
+#define ARCHIVEENGINE_H
 
-class QCompleter;
-class QDirModel;
-class QLineEdit;
 
-class FileSelector : public QWidget
+#include <QAbstractFileEngine>
+#include <QAbstractFileEngineHandler>
+#include <QSharedData>
+
+
+class FSOverlayHandler : public QAbstractFileEngineHandler
 {
-	Q_OBJECT
 public:
-	enum Modes
-	{
-		LoadFile, SaveFile, Folder
-	};
-	
-	FileSelector( Modes mode, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
-	
-    Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
-	
-	QString text() const { return file(); }
-	QString file() const;
-	
-	void setFilter( const QStringList & f );
-	QStringList filter() const;
-	
-	Modes mode() const { return Mode; }
-	void setMode( Modes m ) { Mode = m; }
+	QAbstractFileEngine * create( const QString & fileName ) const;
+};
 
-signals:
-	void sigEdited( const QString & );
-	void sigActivated( const QString & );
 
-public slots:
-	void setText( const QString & );
-	void setFile( const QString & );
+class FSArchiveHandler : public QAbstractFileEngineHandler
+{
+public:
+	static FSArchiveHandler * openArchive( const QString & );
 	
-	void replaceText( const QString & );
+public:
+	FSArchiveHandler( class FSArchiveFile * a );
+	~FSArchiveHandler();
 	
-	void setCompletionEnabled( bool );
-	
-protected slots:
-	void browse();
-	void activate();
-	
+	QAbstractFileEngine * create( const QString & filename ) const;
+
 protected:
-	bool eventFilter( QObject * o, QEvent * e );
-	
-	QAction * completionAction();
-	
-	Modes Mode;
-
-	QLineEdit * line;
-	QAction   * action;
-	
-	QDirModel * dirmdl;
-	QCompleter * completer;
-	QStringList fltr;
+	class FSArchiveFile * archive;
 };
 
-class CompletionAction : public QAction
+
+class FSArchiveFile
 {
-	Q_OBJECT
 public:
-	CompletionAction( QObject * parent = 0 );
-	~CompletionAction();
+	FSArchiveFile() : ref( 0 ) {}
+	virtual ~FSArchiveFile() {}
 	
-protected slots:
-	void sltToggled( bool );
+	virtual bool open() = 0;
+	virtual void close() = 0;
+	
+	virtual QString base() const = 0;
+	virtual QString name() const = 0;
+	virtual QString path() const = 0;
+	
+	virtual bool stripBasePath( QString & ) const = 0;
+	
+	virtual bool hasFolder( const QString & ) const = 0;
+	virtual QStringList entryList( const QString &, QDir::Filters ) const = 0;
+	
+	virtual bool hasFile( const QString & ) const = 0;
+	virtual qint64 fileSize( const QString & ) const = 0;
+	virtual bool fileContents( const QString &, QByteArray & ) = 0;	
+
+	virtual uint ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const = 0;
+	virtual QString owner( const QString &, QAbstractFileEngine::FileOwner type ) const = 0;
+	virtual QDateTime fileTime( const QString &, QAbstractFileEngine::FileTime type ) const = 0;
+
+protected:
+	QAtomic ref;
+	
+	friend class FSArchiveHandler;
+	friend class FSArchiveEngine;
 };
+
+
 
 #endif

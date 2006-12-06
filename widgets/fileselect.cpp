@@ -148,6 +148,15 @@ void FileSelector::setText( const QString & x )
 	setFile( x );
 }
 
+void FileSelector::replaceText( const QString & x )
+{
+	line->setCompleter( 0 );
+	line->selectAll();
+	line->del();
+	line->insert( x );
+	line->setCompleter( completer );
+}
+
 void FileSelector::setFilter( const QStringList & fltr )
 {
 	this->fltr = fltr;

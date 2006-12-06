@@ -30,79 +30,64 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef FILESELECT_H
-#define FILESELECT_h
 
-#include <QAction>
-#include <QWidget>
-#include <QBoxLayout>
+#ifndef FSMANAGER_H
+#define FSMANAGER_H
 
-class QCompleter;
-class QDirModel;
-class QLineEdit;
 
-class FileSelector : public QWidget
+#include <QDialog>
+#include <QObject>
+#include <QMap>
+
+
+class FSOverlayHandler;
+class FSArchiveHandler;
+
+
+class FSManager : public QObject
 {
 	Q_OBJECT
 public:
-	enum Modes
-	{
-		LoadFile, SaveFile, Folder
-	};
-	
-	FileSelector( Modes mode, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
-	
-    Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
-	
-	QString text() const { return file(); }
-	QString file() const;
-	
-	void setFilter( const QStringList & f );
-	QStringList filter() const;
-	
-	Modes mode() const { return Mode; }
-	void setMode( Modes m ) { Mode = m; }
-
-signals:
-	void sigEdited( const QString & );
-	void sigActivated( const QString & );
+	FSManager( QObject * parent );
+	~FSManager();
 
 public slots:
-	void setText( const QString & );
-	void setFile( const QString & );
-	
-	void replaceText( const QString & );
-	
-	void setCompletionEnabled( bool );
-	
-protected slots:
-	void browse();
-	void activate();
+	void selectArchives();
 	
 protected:
-	bool eventFilter( QObject * o, QEvent * e );
+	FSOverlayHandler * overlay;
+	QMap<QString, FSArchiveHandler *> archives;
+	bool automatic;
 	
-	QAction * completionAction();
+	static QStringList autodetectArchives();
 	
-	Modes Mode;
-
-	QLineEdit * line;
-	QAction   * action;
-	
-	QDirModel * dirmdl;
-	QCompleter * completer;
-	QStringList fltr;
+	friend class FSSelector;
 };
 
-class CompletionAction : public QAction
+
+class FSSelector : public QDialog
 {
 	Q_OBJECT
 public:
-	CompletionAction( QObject * parent = 0 );
-	~CompletionAction();
+	FSSelector( FSManager * m );
+	~FSSelector();
 	
 protected slots:
-	void sltToggled( bool );
+	void sltAuto( bool );
+	void sltAdd();
+	void sltDel();
+	
+protected:
+	FSManager * manager;
+	
+	class QStringListModel * model;
+	class QListView * view;
+	
+	class QCheckBox * chkAuto;
+	class QPushButton * btAdd;
+	class QPushButton * btDel;
 };
 
+
 #endif
+

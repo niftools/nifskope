@@ -65,6 +65,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 
+
+#ifdef FSENGINE
+
+#include "fsengine/fsmanager.h"
+
+FSManager * fsmanager = 0;
+
+#endif
+
+
 /*
  * main GUI window
  */
@@ -193,6 +203,18 @@ NifSkope::NifSkope()
 	
 	aAboutQt = new QAction( "About &Qt", this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
+
+#ifdef FSENGINE
+	if ( fsmanager )
+	{
+		aResources = new QAction( "Resource Files", this );
+		connect( aResources, SIGNAL( triggered() ), fsmanager, SLOT( selectArchives() ) );
+	}
+	else
+	{
+		aResources = 0;
+	}
+#endif
 	
 
 	// dock widgets
@@ -233,6 +255,17 @@ NifSkope::NifSkope()
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
 	
+	QAction * actCopyFileName = new QAction( "<", this );
+	connect( actCopyFileName, SIGNAL( triggered() ), this, SLOT( copyFileNameSaveLoad() ) );
+	QToolButton * btCopyFileName = new QToolButton( this );
+	btCopyFileName->setDefaultAction( actCopyFileName );
+	tool->addWidget( btCopyFileName );
+	actCopyFileName = new QAction( ">", this );
+	connect( actCopyFileName, SIGNAL( triggered() ), this, SLOT( copyFileNameLoadSave() ) );
+	btCopyFileName = new QToolButton( this );
+	btCopyFileName->setDefaultAction( actCopyFileName );
+	tool->addWidget( btCopyFileName );
+	
 	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, "&Save", QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
@@ -255,6 +288,13 @@ NifSkope::NifSkope()
 	mFile->addSeparator();
 	mFile->addAction( aLoadXML );
 	mFile->addAction( aReload );
+#ifdef FSENGINE
+	if ( aResources )
+	{
+		mFile->addSeparator();
+		mFile->addAction( aResources );
+	}
+#endif
 	mFile->addSeparator();
 	mFile->addAction( aQuit );
 	
@@ -589,6 +629,16 @@ void NifSkope::save()
 	setEnabled( true );
 }
 
+void NifSkope::copyFileNameLoadSave()
+{
+	lineSave->replaceText( lineLoad->text() );
+}
+
+void NifSkope::copyFileNameSaveLoad()
+{
+	lineLoad->replaceText( lineSave->text() );
+}
+
 void NifSkope::sltWindow()
 {
 	createWindow();
@@ -751,6 +801,11 @@ bool IPCsocket::nifskope( const QString & cmd )
 IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
 {
 	QObject::connect( socket, SIGNAL( readyRead() ), this, SLOT( processDatagram() ) );
+
+#ifdef FSENGINE
+	if ( ! fsmanager )
+		fsmanager = new FSManager( this );
+#endif
 }
 
 IPCsocket::~IPCsocket()
@@ -796,12 +851,6 @@ void IPCsocket::openNif( const QUrl & url )
  *  main
  */
 
-
-#ifdef FSENGINE
-#include "fsengine/fsengine.h"
-#endif
-
-
 int main( int argc, char * argv[] )
 {
 	// set up the Qt Application
@@ -826,13 +875,6 @@ int main( int argc, char * argv[] )
 	
 	NifModel::loadXML();
 	KfmModel::loadXML();
-	
-#ifdef FSENGINE
-	FSOverlayHandler overlayHandler;
-	
-	FSArchiveHandler * bsa1 = FSArchiveHandler::openArchive( "f:\\data\\oblivion - meshes.bsa" );
-	FSArchiveHandler * bsa2 = FSArchiveHandler::openArchive( "f:\\data\\oblivion - textures - compressed.bsa" );
-#endif
 	
 	QString fname;
     if ( app.argc() > 1 )

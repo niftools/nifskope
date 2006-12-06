@@ -98,6 +98,9 @@ protected slots:
 	
 	void overrideViewFont();
 	
+	void copyFileNameLoadSave();
+	void copyFileNameSaveLoad();
+	
 protected:
 	void closeEvent( QCloseEvent * e );
 	bool eventFilter( QObject * o, QEvent * e );
@@ -138,7 +141,9 @@ private:
 	QAction * aWindow;
 	QAction * aQuit;
 
-	QAction * aCondition;
+#ifdef FSENGINE
+	QAction * aResources;
+#endif
 	
 	QActionGroup * gListMode;
 	QAction * aList;

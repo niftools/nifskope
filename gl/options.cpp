@@ -470,14 +470,23 @@ void GLOptions::textureFolderAutoDetect( int game )
 				QDir dir( reg.value( "Installed Path" ).toString() );
 				if ( dir.exists() && dir.cd( "Data" ) )
 				{
-					TexFolderModel->setStringList( QStringList() << dir.path() );
+					QStringList list( QStringList() << dir.path() );
+					
+					dir.setNameFilters( QStringList() << "*.bsa" );
+					dir.setFilter( QDir::Dirs );
+					foreach ( QString dn, dir.entryList() )
+						list << dir.filePath( dn );
+					
+					TexFolderModel->setStringList( list );
 					TexAlternatives->setChecked( false );
 					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+#ifndef FSENGINE
 					if ( ! dir.cd( "Textures" ) )
 						QMessageBox::information( dialog, "NifSkope",
 							"<p>The texture folder was not found.</p>"
 							"<p>This may be because you haven't extracted the archive files yet.<br>"
 							"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" );
+#endif
 				}
 				else
 				{
@@ -488,12 +497,17 @@ void GLOptions::textureFolderAutoDetect( int game )
 			{	// Morrowind
 				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
 				QDir dir( reg.value( "Installed Path" ).toString() );
-				if ( dir.exists() && dir.cd( "Data Files" ) && dir.cd( "Textures" ) )
+				if ( dir.exists() && dir.cd( "Data Files" ) )
 				{
 					QStringList list;
 					list.append( dir.path() );
-					dir.cdUp();
-					list.prepend( dir.path() );
+					list.append( dir.path() + "/Textures" );
+					
+					dir.setNameFilters( QStringList() << "*.bsa" );
+					dir.setFilter( QDir::Dirs );
+					foreach ( QString dn, dir.entryList() )
+						list << dir.filePath( dn ) << dir.filePath( dn ) + "/Textures";
+					
 					TexFolderModel->setStringList( list );
 					TexAlternatives->setChecked( true );
 					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
