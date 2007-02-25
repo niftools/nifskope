@@ -25,10 +25,14 @@ public:
 		static const char * const flipCmds[3] = { "S = 1.0 - S", "T = 1.0 - T", "S <=> T" };
 		for ( int c = 0; c < 3; c++ )
 			menu.addAction( flipCmds[c] );
+
 		QAction * act = menu.exec( QCursor::pos() );
-		for ( int c = 0; c < 3; c++ )
-			if ( act->text() == flipCmds[c] )
-				flip( nif, idx, c );
+		if ( act ) {
+			for ( int c = 0; c < 3; c++ )
+				if ( act->text() == flipCmds[c] )
+					flip( nif, idx, c );
+		}
+
 		return index;
 	}
 
