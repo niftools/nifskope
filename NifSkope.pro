@@ -4,7 +4,10 @@ TARGET   = NifSkope
 
 QT += xml opengl network
 
-CONFIG += qt release thread warn_on
+CONFIG += qt static release thread warn_on
+
+// useful for MSVC2005
+CONFIG += embed_manifest_exe
 
 #CONFIG += fsengine
 
@@ -64,7 +67,7 @@ win32 {
 }
 
 win32:console {
-	LIBS += -lmingw32 -lqtmain
+	LIBS += -lqtmain
 }
 
 console {

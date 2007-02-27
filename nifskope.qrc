@@ -1,6 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/res">
-   <file>nifskope.png</file>
-   <file>spells/skel.dat</file>
+	<file>nifskope.png</file>
+	<file>spells/skel.dat</file>
+	<file alias="ArrowLeft">resources/arrow_left.png</file>
+	<file alias="ArrowRight">resources/arrow_right.png</file>
 </qresource>
 </RCC>

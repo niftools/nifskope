@@ -46,6 +46,7 @@ NifTreeView::NifTreeView() : QTreeView()
 	setUniformRowHeights( false );
 	setAlternatingRowColors( true );
 	setContextMenuPolicy( Qt::CustomContextMenu );
+	setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
 }
 
 NifTreeView::~NifTreeView()

@@ -31,15 +31,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #ifndef FILESELECT_H
-#define FILESELECT_h
+#define FILESELECT_H
 
 #include <QAction>
-#include <QWidget>
 #include <QBoxLayout>
+#include <QLineEdit>
+#include <QWidget>
 
 class QCompleter;
 class QDirModel;
-class QLineEdit;
 
 class FileSelector : public QWidget
 {
@@ -48,6 +48,11 @@ public:
 	enum Modes
 	{
 		LoadFile, SaveFile, Folder
+	};
+
+	enum ActionStates
+	{
+		StateSuccess, StateError, StateNeutral
 	};
 	
 	FileSelector( Modes mode, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
@@ -70,6 +75,8 @@ signals:
 public slots:
 	void setText( const QString & );
 	void setFile( const QString & );
+
+	void setState( const ActionStates & = StateNeutral );
 	
 	void replaceText( const QString & );
 	

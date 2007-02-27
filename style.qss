@@ -23,3 +23,27 @@ QTreeView:disabled
 	alternate-background-color: gainsboro;
 	color: slategray;
 }
+
+
+
+FileSelector QLineEdit
+{
+	border: 1px solid #333;
+	border-radius: 3px;
+	background-color: #fefefe;
+}
+
+FileSelector QLineEdit[State="FileSuccess"]
+{
+	background-color: #cfc;
+}
+
+FileSelector QLineEdit[State="FileError"]
+{
+	background-color: #fcc;
+}
+
+FileSelector QLineEdit[State="Neutral"]
+{
+	background-color: #fefefe;
+}

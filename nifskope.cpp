@@ -87,7 +87,7 @@ void NifSkope::about()
 	"For more informations visit our site at <a href='http://www.niftools.org'>www.niftools.org</a></p>"
 	"<p>Because NifSkope was build using the Qt GUI toolkit it is free software. "
 	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
-	" on <a href='http://sourceforge.net'>sourceforge</a></p>";
+	" on <a href='http://sourceforge.net'>SourceForge</a></p>";
 
     QMessageBox mb( "About NifSkope 0.9.5", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
@@ -116,6 +116,8 @@ NifSkope::NifSkope()
 	list = new NifTreeView;
 	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate( book ) );
+	list->header()->setStretchLastSection( true );
+	list->header()->setMinimumSectionSize( 100 );
 	list->installEventFilter( this );
 
 	connect( list, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
@@ -243,14 +245,18 @@ NifSkope::NifSkope()
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
 	addDockWidget( Qt::RightDockWidgetArea, dKfm );
 
+	/* ******** */
 
 	// tool bars
-	
+
+	// begin Load & Save toolbar
 	tool = new QToolBar( "Load & Save" );
 	tool->setObjectName( "toolbar" );
 	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-	
+		
 	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" );
+
+	// create the load portion of the toolbar
 	tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, "&Load", QBoxLayout::RightToLeft ) );
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
@@ -266,18 +272,25 @@ NifSkope::NifSkope()
 	btCopyFileName->setDefaultAction( actCopyFileName );
 	tool->addWidget( btCopyFileName );
 	
+	// create the save portion of the toolbar
 	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, "&Save", QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 	
 	addToolBar( Qt::TopToolBarArea, tool );
+	// end Load & Save toolbar
 	
-	foreach ( QToolBar * tb, ogl->toolbars() )
+	// begin OpenGL toolbars
+	foreach ( QToolBar * tb, ogl->toolbars() ) {
 		addToolBar( Qt::TopToolBarArea, tb );
-	
+	}
+	// end OpenGL toolbars
+
+	/* ********* */
 	
 	// menu
 
+	// assemble the File menu
 	QMenu * mFile = new QMenu( "&File" );
 	mFile->addActions( lineLoad->actions() );
 	mFile->addActions( lineSave->actions() );
@@ -288,6 +301,7 @@ NifSkope::NifSkope()
 	mFile->addSeparator();
 	mFile->addAction( aLoadXML );
 	mFile->addAction( aReload );
+
 #ifdef FSENGINE
 	if ( aResources )
 	{
@@ -559,8 +573,14 @@ void NifSkope::load()
 	
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
-		if ( ! kfm->loadFromFile( nifname ) )
+		if ( ! kfm->loadFromFile( nifname ) ) {
 			qWarning() << "failed to load kfm from file" << nifname;
+			lineLoad->setState(FileSelector::StateError);
+		}
+		else {
+			lineLoad->setState(FileSelector::StateSuccess);
+		}
+
 		nifname = kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" );
 		if ( ! nifname.isEmpty() )
 			nifname.prepend( kfm->getFolder() + "/" );
@@ -583,8 +603,13 @@ void NifSkope::load()
 		prog.setMinimumDuration( 2100 );
 		connect( nif, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
 		
-		if ( ! nif->loadFromFile( nifname ) )
+		if ( ! nif->loadFromFile( nifname ) ) {
 			qWarning() << "failed to load nif from file " << nifname;
+			lineLoad->setState(FileSelector::StateError);
+		}
+		else {
+			lineLoad->setState(FileSelector::StateSuccess);
+		}
 		
 		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
 	}
@@ -611,8 +636,13 @@ void NifSkope::save()
 	
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
-		if ( ! kfm->saveToFile( nifname ) )
+		if ( ! kfm->saveToFile( nifname ) ) {
 			qWarning() << "failed to write kfm file" << nifname;
+			lineSave->setState(FileSelector::StateError);
+		}
+		else {
+			lineSave->setState(FileSelector::StateSuccess);
+		}
 	}
 	else
 	{
@@ -622,8 +652,15 @@ void NifSkope::save()
 			if ( idx.isValid() )
 				select( idx );
 		}
-		if ( ! nif->saveToFile( nifname ) )
+
+		if ( ! nif->saveToFile( nifname ) ) {
 			qWarning() << "failed to write nif file " << nifname;
+			lineSave->setState(FileSelector::StateError);
+		}
+		else {
+			lineSave->setState(FileSelector::StateSuccess);
+		}
+
 		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
 	}
 	setEnabled( true );
@@ -631,11 +668,19 @@ void NifSkope::save()
 
 void NifSkope::copyFileNameLoadSave()
 {
+	if(lineLoad->text().isEmpty()) {
+		return;
+	}
+
 	lineSave->replaceText( lineLoad->text() );
 }
 
 void NifSkope::copyFileNameSaveLoad()
 {
+	if(lineSave->text().isEmpty()) {
+		return;
+	}
+
 	lineLoad->replaceText( lineSave->text() );
 }
 

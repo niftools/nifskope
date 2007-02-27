@@ -30,6 +30,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+// how long the visual save/load feedback is visible
+#define FEEDBACK_TIME 1200
+
 #include "fileselect.h"
 
 #include <QAction>
@@ -38,7 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDirModel>
 #include <QFileDialog>
 #include <QLayout>
-#include <QLineEdit>
 #include <QMenu>
 #include <QSettings>
 #include <QThread>
@@ -67,11 +69,15 @@ void CompletionAction::sltToggled( bool )
 FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir )
 	: QWidget(), Mode( mode ), dirmdl( 0 ), completer( 0 )
 {
-	QBoxLayout * lay = new QBoxLayout( dir );
+	QBoxLayout * lay = new QBoxLayout( dir, this );
 	lay->setMargin( 0 );
 	setLayout( lay );
 	
-	line = new QLineEdit;
+	line = new QLineEdit( this );
+	// doesn't work in Qt 4.2.2
+	// set the State property for the stylesheet
+	// line->setProperty("State", "Neutral");
+
 	connect( line, SIGNAL( textEdited( const QString & ) ), this, SIGNAL( sigEdited( const QString & ) ) );
 	connect( line, SIGNAL( returnPressed() ), this, SLOT( activate() ) );
 	
@@ -80,13 +86,13 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	connect( action, SIGNAL( triggered() ), this, SLOT( browse() ) );
 	addAction( action );
 	
-	QToolButton * button = new QToolButton;
+	QToolButton * button = new QToolButton( this );
 	button->setDefaultAction( action );
 	
 	lay->addWidget( line );
 	lay->addWidget( button );
 	
-	setFocusProxy( line );
+	// setFocusProxy( line );
 	
 	line->installEventFilter( this );
 	
@@ -146,6 +152,29 @@ void FileSelector::setFile( const QString & x )
 void FileSelector::setText( const QString & x )
 {
 	setFile( x );
+}
+
+void FileSelector::setState( const ActionStates & x )
+{
+	switch( x ) {
+		case StateSuccess:
+			// doesn't work in Qt 4.2.2
+			// line->setProperty("State", "FileSuccess");
+			line->setStyleSheet( "background-color: #efe;" );
+			QTimer::singleShot( FEEDBACK_TIME, this, SLOT( setState() ) );
+			break;
+
+		case StateError:
+			// line->setProperty("State", "FileError");
+			line->setStyleSheet( "background-color: #fee;" );
+			QTimer::singleShot( FEEDBACK_TIME, this, SLOT( setState() ) );
+			break;
+
+		default:
+			// line->setProperty("State", "Neutral");
+			line->setStyleSheet( "background-color: #fefefe;" );
+			break;
+	}
 }
 
 void FileSelector::replaceText( const QString & x )
