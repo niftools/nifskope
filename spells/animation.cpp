@@ -6,8 +6,8 @@
 class spAttachKf : public Spell
 {
 public:
-	QString name() const { return "Attach .KF"; }
-	QString page() const { return "Animation"; }
+	QString name() const { return Spell::tr("Attach .KF"); }
+	QString page() const { return Spell::tr("Animation"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -18,7 +18,7 @@ public:
 	{
 		try
 		{
-			QString kfname = QFileDialog::getOpenFileName( 0, "Choose a .kf file", nif->getFolder(), "*.kf" );
+			QString kfname = QFileDialog::getOpenFileName( 0, Spell::tr("Choose a .kf file"), nif->getFolder(), "*.kf" );
 			
 			if ( kfname.isEmpty() )
 				return index;
@@ -27,10 +27,10 @@ public:
 			
 			QFile kffile( kfname );
 			if ( ! kffile.open( QFile::ReadOnly ) )
-				throw QString( "failed to open .kf %1" ).arg( kfname );
+				throw QString( Spell::tr("failed to open .kf %1") ).arg( kfname );
 			
 			if ( ! kf.load( kffile ) )
-				throw QString( "failed to load .kf from file %1" ).arg( kfname );
+				throw QString( Spell::tr("failed to load .kf from file %1") ).arg( kfname );
 			
 			QPersistentModelIndex iRoot;
 			
@@ -38,18 +38,18 @@ public:
 			{
 				QModelIndex iSeq = kf.getBlock( l, "NiControllerSequence" );
 				if ( ! iSeq.isValid() )
-					throw QString( "this is not a normal .kf file; there should be only NiControllerSequences as root blocks" );
+					throw QString( Spell::tr("this is not a normal .kf file; there should be only NiControllerSequences as root blocks") );
 				
 				QString rootName = kf.get<QString>( iSeq, "Target Name" );
 				QModelIndex ir = findRootTarget( nif, rootName );
 				
 				if ( ! ir.isValid() )
-					throw QString( "couldn't find the animation's root node (%1)" ).arg( rootName );
+					throw QString( Spell::tr("couldn't find the animation's root node (%1)") ).arg( rootName );
 				
 				if ( ! iRoot.isValid() )
 					iRoot = ir;
 				else if ( iRoot != ir )
-					throw QString( "the animation root nodes differ; bailing out..." );
+					throw QString( Spell::tr("the animation root nodes differ; bailing out...") );
 			}
 			
 			QPersistentModelIndex iMultiTransformer = findController( nif, iRoot, "NiMultiTargetTransformController" );
@@ -115,7 +115,7 @@ public:
 			
 			if ( ! missingNodes.isEmpty() )
 			{
-				qWarning() << "The following controlled nodes were not found in the nif:";
+				qWarning() << Spell::tr("The following controlled nodes were not found in the nif:");
 				foreach ( QString nn, missingNodes )
 					qWarning() << nn;
 			}
@@ -200,7 +200,7 @@ public:
 		QModelIndex iArray = nif->getIndex( iParent, array );
 		
 		if ( ! iNum.isValid() || ! iArray.isValid() )
-			throw QString( "array %1 not found" ).arg( array );
+			throw QString( Spell::tr("array %1 not found") ).arg( array );
 		
 		QVector<qint32> links = nif->getLinkArray( iArray );
 		
@@ -219,7 +219,7 @@ public:
 		QModelIndex iArray = nif->getIndex( iParent, array );
 		
 		if ( ! iNum.isValid() || ! iArray.isValid() )
-			throw QString( "array %1 not found" ).arg( array );
+			throw QString( Spell::tr("array %1 not found") ).arg( array );
 		
 		QList< QPersistentModelIndex > blocksToAdd;
 		
@@ -253,8 +253,8 @@ REGISTER_SPELL( spAttachKf )
 class spConvertQuatsToEulers : public Spell
 {
 public:
-	QString name() const { return "Convert Quat- to ZYX-Rotations"; }
-	QString page() const { return "Animation"; }
+	QString name() const { return Spell::tr("Convert Quat- to ZYX-Rotations"); }
+	QString page() const { return Spell::tr("Animation"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

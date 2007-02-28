@@ -38,8 +38,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9.5 of NifSkope.
+This is version 0.9.6 of NifSkope.
 
+
+changes since 0.9.5:
+  - Fixed bug that would crash NifSkope in FlipUVs
+  - Improved stability
+  - Copy filename buttons
+  - Visual load/save feedback
+  - Localization system
 
 changes since 0.9.4:
   - oblivion glow map shaders

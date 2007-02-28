@@ -6,7 +6,7 @@ QT += xml opengl network
 
 CONFIG += qt static release thread warn_on
 
-// useful for MSVC2005
+# useful for MSVC2005
 CONFIG += embed_manifest_exe
 
 #CONFIG += fsengine
@@ -54,6 +54,8 @@ SOURCES += \
 	NvTriStrip/*.cpp
 
 RESOURCES += nifskope.qrc
+
+TRANSLATIONS += lang/NifSkope_de.ts
 
 fsengine {
 	DEFINES += FSENGINE

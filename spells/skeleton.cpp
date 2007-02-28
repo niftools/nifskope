@@ -13,7 +13,7 @@
 #include <QPushButton>
 #include <QSpinBox>
 
-#define SKEL_DAT ":/spells/skel.dat"
+#define SKEL_DAT ":/res/spells/skel.dat"
 
 QDebug operator<<( QDebug dbg, const Vector3 & v )
 {

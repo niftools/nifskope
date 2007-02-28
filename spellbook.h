@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
+#include <QCoreApplication>
 #include <QMenu>
 
 #define REGISTER_SPELL( SPELL ) static Librarian __##SPELL##__ ( new SPELL );
@@ -55,7 +56,10 @@ public:
 
 	virtual bool isApplicable( const NifModel * nif, const QModelIndex & index ) = 0;
 	
-	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;	
+	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;
+
+protected:
+	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 
 class SpellBook : public QMenu

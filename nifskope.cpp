@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFontDialog>
 #include <QFile>
 #include <QHeaderView>
+#include <QLocale>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -50,6 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <QTranslator>
 #include <QUdpSocket>
 #include <QUrl>
 
@@ -64,6 +66,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glview.h"
 #include "spellbook.h"
 #include "widgets/fileselect.h"
+#include "widgets/copyfnam.h"
 
 
 #ifdef FSENGINE
@@ -89,7 +92,7 @@ void NifSkope::about()
 	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
 	" on <a href='http://sourceforge.net'>SourceForge</a></p>";
 
-    QMessageBox mb( "About NifSkope 0.9.5", text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( tr("About NifSkope 0.9.6"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }
@@ -170,24 +173,24 @@ NifSkope::NifSkope()
 
 	// actions
 
-	aSanitize = new QAction( "&Auto Sanitize before Save", this );
+	aSanitize = new QAction( tr("&Auto Sanitize before Save"), this );
 	aSanitize->setCheckable( true );
 	aSanitize->setChecked( true );
-	aLoadXML = new QAction( "Reload &XML", this );
+	aLoadXML = new QAction( tr("Reload &XML"), this );
 	connect( aLoadXML, SIGNAL( triggered() ), this, SLOT( loadXML() ) );
-	aReload = new QAction( "&Reload XML + Nif", this );
+	aReload = new QAction( tr("&Reload XML + Nif"), this );
 	aReload->setShortcut( Qt::ALT + Qt::Key_X );
 	connect( aReload, SIGNAL( triggered() ), this, SLOT( reload() ) );
-	aWindow = new QAction( "&New Window", this );
+	aWindow = new QAction( tr("&New Window"), this );
 	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
-	aQuit = new QAction( "&Quit", this );
+	aQuit = new QAction( tr("&Quit"), this );
 	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 	
-	aList = new QAction( "List", this );
+	aList = new QAction( tr("List"), this );
 	aList->setCheckable( true );
 	aList->setChecked( list->model() == nif );
 
-	aHierarchy = new QAction( "Hierarchy", this );
+	aHierarchy = new QAction( tr("Hierarchy"), this );
 	aHierarchy->setCheckable( true );
 	aHierarchy->setChecked( list->model() == proxy );
 	
@@ -197,19 +200,19 @@ NifSkope::NifSkope()
 	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
 	
-	aSelectFont = new QAction( "Select Font ...", this );
+	aSelectFont = new QAction( tr("Select Font ..."), this );
 	connect( aSelectFont, SIGNAL( triggered() ), this, SLOT( sltSelectFont() ) );
 	
-	aNifSkope = new QAction( "About &NifSkope", this );
+	aNifSkope = new QAction( tr("About &NifSkope"), this );
 	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
 	
-	aAboutQt = new QAction( "About &Qt", this );
+	aAboutQt = new QAction( tr("About &Qt"), this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
 
 #ifdef FSENGINE
 	if ( fsmanager )
 	{
-		aResources = new QAction( "Resource Files", this );
+		aResources = new QAction( tr("Resource Files"), this );
 		connect( aResources, SIGNAL( triggered() ), fsmanager, SLOT( selectArchives() ) );
 	}
 	else
@@ -221,20 +224,20 @@ NifSkope::NifSkope()
 
 	// dock widgets
 	
-	dList = new QDockWidget( "Block List" );
+	dList = new QDockWidget( tr("Block List") );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
 	dList->toggleViewAction()->setShortcut( Qt::Key_F1 );
 	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
-	dTree = new QDockWidget( "Block Details" );
+	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
 	dTree->toggleViewAction()->setShortcut( Qt::Key_F2 );
 	dTree->toggleViewAction()->setChecked( false );
 	dTree->setVisible( false );
 
-	dKfm = new QDockWidget( "KFM" );
+	dKfm = new QDockWidget( tr("KFM") );
 	dKfm->setObjectName( "KfmDock" );
 	dKfm->setWidget( kfmtree );	
 	dKfm->toggleViewAction()->setShortcut( Qt::Key_F3 );
@@ -250,30 +253,28 @@ NifSkope::NifSkope()
 	// tool bars
 
 	// begin Load & Save toolbar
-	tool = new QToolBar( "Load & Save" );
+	tool = new QToolBar( tr("Load & Save") );
 	tool->setObjectName( "toolbar" );
 	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 		
 	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" );
 
 	// create the load portion of the toolbar
-	tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, "&Load", QBoxLayout::RightToLeft ) );
+	tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft ) );
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
 	
-	QAction * actCopyFileName = new QAction( "<", this );
-	connect( actCopyFileName, SIGNAL( triggered() ), this, SLOT( copyFileNameSaveLoad() ) );
-	QToolButton * btCopyFileName = new QToolButton( this );
-	btCopyFileName->setDefaultAction( actCopyFileName );
-	tool->addWidget( btCopyFileName );
-	actCopyFileName = new QAction( ">", this );
-	connect( actCopyFileName, SIGNAL( triggered() ), this, SLOT( copyFileNameLoadSave() ) );
-	btCopyFileName = new QToolButton( this );
-	btCopyFileName->setDefaultAction( actCopyFileName );
-	tool->addWidget( btCopyFileName );
+	// add the Load<=>Save filename copy widget
+	CopyFilename * cpFilename = new CopyFilename( this );
+	cpFilename->setObjectName( "fileCopyWidget" );
+	connect( cpFilename, SIGNAL( leftTriggered() ),
+		this, SLOT( copyFileNameSaveLoad() ) );
+	connect( cpFilename, SIGNAL( rightTriggered() ),
+		this, SLOT( copyFileNameLoadSave() ) );
+	tool->addWidget( cpFilename );
 	
 	// create the save portion of the toolbar
-	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, "&Save", QBoxLayout::LeftToRight ) );
+	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save..."), QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 	
@@ -291,7 +292,7 @@ NifSkope::NifSkope()
 	// menu
 
 	// assemble the File menu
-	QMenu * mFile = new QMenu( "&File" );
+	QMenu * mFile = new QMenu( tr("&File") );
 	mFile->addActions( lineLoad->actions() );
 	mFile->addActions( lineSave->actions() );
 	mFile->addSeparator();
@@ -312,12 +313,12 @@ NifSkope::NifSkope()
 	mFile->addSeparator();
 	mFile->addAction( aQuit );
 	
-	QMenu * mView = new QMenu( "&View" );
+	QMenu * mView = new QMenu( tr("&View") );
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
 	mView->addSeparator();
-	QMenu * mTools = new QMenu( "&Toolbars" );
+	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );
 	foreach ( QObject * o, children() )
 	{
@@ -326,13 +327,13 @@ NifSkope::NifSkope()
 			mTools->addAction( tb->toggleViewAction() );
 	}
 	mView->addSeparator();
-	QMenu * mViewList = new QMenu( "&Block List Options" );
+	QMenu * mViewList = new QMenu( tr("&Block List Options") );
 	mView->addMenu( mViewList );
 	mViewList->addAction( aHierarchy );
 	mViewList->addAction( aList );
 	mView->addAction( aSelectFont );
 	
-	QMenu * mAbout = new QMenu( "&About" );
+	QMenu * mAbout = new QMenu( tr("&About") );
 	mAbout->addAction( aNifSkope );
 	mAbout->addAction( aAboutQt );
 	
@@ -574,16 +575,18 @@ void NifSkope::load()
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
 		if ( ! kfm->loadFromFile( nifname ) ) {
-			qWarning() << "failed to load kfm from file" << nifname;
-			lineLoad->setState(FileSelector::StateError);
+			qWarning() << tr("failed to load kfm from file") << nifname;
+			lineLoad->setState( FileSelector::StateError );
 		}
 		else {
-			lineLoad->setState(FileSelector::StateSuccess);
+			lineLoad->setState( FileSelector::StateSuccess );
+			lineSave->setText( lineLoad->text() );
 		}
 
 		nifname = kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" );
-		if ( ! nifname.isEmpty() )
+		if ( ! nifname.isEmpty() ) {
 			nifname.prepend( kfm->getFolder() + "/" );
+		}
 	}
 	
 	bool a = ogl->aAnimate->isChecked();
@@ -597,18 +600,19 @@ void NifSkope::load()
 	else
 	{
 		ProgDlg prog;
-		prog.setLabelText( "loading nif..." );
+		prog.setLabelText( tr("loading nif...") );
 		prog.setRange( 0, 1 );
 		prog.setValue( 0 );
 		prog.setMinimumDuration( 2100 );
 		connect( nif, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
 		
 		if ( ! nif->loadFromFile( nifname ) ) {
-			qWarning() << "failed to load nif from file " << nifname;
-			lineLoad->setState(FileSelector::StateError);
+			qWarning() << tr("failed to load nif from file ") << nifname;
+			lineLoad->setState( FileSelector::StateError );
 		}
 		else {
-			lineLoad->setState(FileSelector::StateSuccess);
+			lineLoad->setState( FileSelector::StateSuccess );
+			lineSave->setText( lineLoad->text() );
 		}
 		
 		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
@@ -637,7 +641,7 @@ void NifSkope::save()
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
 		if ( ! kfm->saveToFile( nifname ) ) {
-			qWarning() << "failed to write kfm file" << nifname;
+			qWarning() << tr("failed to write kfm file") << nifname;
 			lineSave->setState(FileSelector::StateError);
 		}
 		else {
@@ -654,7 +658,7 @@ void NifSkope::save()
 		}
 
 		if ( ! nif->saveToFile( nifname ) ) {
-			qWarning() << "failed to write nif file " << nifname;
+			qWarning() << tr("failed to write nif file ") << nifname;
 			lineSave->setState(FileSelector::StateError);
 		}
 		else {
@@ -814,7 +818,7 @@ void myMessageOutput(QtMsgType type, const char *msg)
 			msgtarget->append( msg );
 			break;
 		case QtFatalMsg:
-			QMessageBox::critical( 0, "Fatal Error", msg );
+			QMessageBox::critical( 0, QMessageBox::tr("Fatal Error"), msg );
 			abort();
 	}
 }
@@ -918,6 +922,13 @@ int main( int argc, char * argv[] )
 		style.close();
 	}
 	
+	// set the translation
+	QString locale = QLocale::system().name();
+
+	QTranslator translator;
+	translator.load( QString( ":lang/" ) + locale );
+	app.installTranslator( &translator );
+	 
 	NifModel::loadXML();
 	KfmModel::loadXML();
 	

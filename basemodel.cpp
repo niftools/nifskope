@@ -131,7 +131,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 				dim1 = getItem( dim1, left );
 				if ( ! dim1 )
 				{
-					msg( Message() << "failed to get array size for array" << array->name() );
+					msg( Message() << tr("failed to get array size for array") << array->name() );
 					return 0;
 				}
 		
@@ -143,7 +143,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 					if ( item )
 						d1 = item->value().toCount();
 					else {
-						msg( Message() << "failed to get array size for array " << array->name() );
+						msg( Message() << tr("failed to get array size for array ") << array->name() );
 						return 0;
 					};
 				}
@@ -155,7 +155,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 			r = right.toInt( &ok );
 			if ( ! ok )
 			{
-				msg( Message() << "failed to get array size for array " << array->name() );
+				msg( Message() << tr("failed to get array size for array ") << array->name() );
 				return 0;
 			}
 		}
@@ -170,7 +170,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 	
 	if ( d1 < 0 )
 	{
-		msg( Message() << "invalid array size for array" << array->name() );
+		msg( Message() << tr("invalid array size for array") << array->name() );
 		d1 = 0;
 	}
 	return d1;
@@ -504,15 +504,15 @@ QVariant BaseModel::headerData( int section, Qt::Orientation orientation, int ro
 		case Qt::DisplayRole:
 			switch ( section )
 			{
-				case NameCol:		return "Name";
-				case TypeCol:		return "Type";
-				case ValueCol:		return "Value";
-				case ArgCol:		return "Argument";
-				case Arr1Col:		return "Array1";
-				case Arr2Col:		return "Array2";
-				case CondCol:		return "Condition";
-				case Ver1Col:		return "since";
-				case Ver2Col:		return "until";
+				case NameCol:		return tr("Name");
+				case TypeCol:		return tr("Type");
+				case ValueCol:		return tr("Value");
+				case ArgCol:		return tr("Argument");
+				case Arr1Col:		return tr("Array1");
+				case Arr2Col:		return tr("Array2");
+				case CondCol:		return tr("Condition");
+				case Ver1Col:		return tr("since");
+				case Ver2Col:		return tr("until");
 				default:			return QVariant();
 			}
 		default:

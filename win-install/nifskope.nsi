@@ -35,7 +35,7 @@
 
 !include "MUI.nsh"
 
-!define VERSION "0.9.5"
+!define VERSION "0.9.6"
 
 Name "NifSkope ${VERSION}"
 
@@ -56,8 +56,8 @@ Name "NifSkope ${VERSION}"
 !insertmacro MUI_PAGE_INSTFILES
 
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.TXT"
-!define MUI_FINISHPAGE_LINK "Visit us at http://niftools.sourceforge.net/"
-!define MUI_FINISHPAGE_LINK_LOCATION "http://niftools.sourceforge.net/"
+!define MUI_FINISHPAGE_LINK "Visit us at http://www.niftools.org/"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://www.niftools.org/"
 !insertmacro MUI_PAGE_FINISH
 
 !define MUI_WELCOMEPAGE_TEXT  "This wizard will guide you through the uninstallation of NifSkope ${VERSION}.\r\n\r\nBefore starting the uninstallation, make sure NifSkope is not running.\r\n\r\nClick Next to continue."
@@ -82,7 +82,7 @@ LangString DESC_SecCopyUI ${LANG_ENGLISH} "Copy all required files to the applic
 
 OutFile "nifskope-${VERSION}-windows.exe"
 InstallDir "$PROGRAMFILES\NifTools\NifSkope"
-BrandingText "http://niftools.sourceforge.net/"
+BrandingText "http://www.niftools.org/"
 Icon "inst.ico"
 UninstallIcon "inst.ico"
 ShowInstDetails show
@@ -168,7 +168,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   ; Install NifSkope
   SetOutPath $INSTDIR
   File ..\NifSkope.exe
-  File ..\mingwm10.dll
+  ;File ..\mingwm10.dll
   File ..\README.TXT
   File ..\..\docsys\nif.xml
   File ..\..\docsys\kfm.xml
@@ -185,8 +185,8 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   CreateDirectory "$SMPROGRAMS\NifTools\NifSkope\"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\NifSkope.lnk" "$INSTDIR\NifSkope.exe"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Readme.lnk" "$INSTDIR\README.TXT"
-  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Support.lnk" "http://niftools.sourceforge.net/forum/viewforum.php?f=6"
-  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Development.lnk" "http://niftools.sourceforge.net/forum/viewforum.php?f=4"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Support.lnk" "http://www.niftools.org/forum/viewforum.php?f=24"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Development.lnk" "http://www.niftools.org/forum/viewforum.php?f=4"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Copyright.lnk" "$INSTDIR\Copyright.txt"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
