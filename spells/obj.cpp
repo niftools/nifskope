@@ -211,8 +211,8 @@ void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream &
 class spObjExportMesh : public Spell
 {
 public:
-	QString name() const { return "Export Mesh"; }
-	QString page() const { return ".OBJ"; }
+	QString name() const { return Spell::tr("Export .obj Mesh"); }
+	QString page() const { return Spell::tr("Export"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -292,8 +292,8 @@ REGISTER_SPELL( spObjExportMesh )
 class spObjExportMulti : public Spell
 {
 public:
-	QString name() const { return "Export Multi"; }
-	QString page() const { return ".OBJ"; }
+	QString name() const { return Spell::tr("Export multiple .obj meshes"); }
+	QString page() const { return Spell::tr("Export"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -385,8 +385,8 @@ class spObjImportMulti : public Spell
 	};
 	
 public:
-	QString name() const { return "Import Multi"; }
-	QString page() const { return ".OBJ"; }
+	QString name() const { return Spell::tr("Import multiple .obj Meshes"); }
+	QString page() const { return Spell::tr("Import"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -814,8 +814,8 @@ REGISTER_SPELL( spObjImportMulti )
 class spObjImport : public Spell
 {
 public:
-	QString name() const { return "Import Mesh"; }
-	QString page() const { return ".OBJ"; }
+	QString name() const { return Spell::tr("Import .obj Mesh"); }
+	QString page() const { return Spell::tr("Import"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
