@@ -78,43 +78,19 @@
 #define HIDE_TRACK_TAG		0xB029
 #define NODE_ID				0xB030
 
-#define CHUNKHEADERSIZE 6
-#define FILE_DUMMY 0xFFFF
+#define CHUNKHEADERSIZE		6
+#define FILE_DUMMY			0xFFFF
+
+#define FACE_FLAG_ONESIDE	0x0400
 
 #include <QFile>
 #include <QList>
 #include <QMap>
+#include <QMapIterator>
 #include <QString>
 
 class Chunk {
 public:
-
-	// data structures for various chunks
-
-	typedef float ChunkTypeFloat;
-
-	struct ChunkTypeFloat2
-	{
-		float x, y;
-	};
-
-	struct ChunkTypeFloat3
-	{
-		float x, y, z;
-	};
-
-	typedef short ChunkTypeShort;
-
-	struct ChunkTypeFaceArray
-	{
-	  	short vertex1, vertex2, vertex3;
-		short flags;
-	};
-
-	struct ChunkTypeMeshMatrix
-	{
-		float matrix[4][3];
-	};
 
 	// general chunk properties
 
@@ -130,6 +106,41 @@ public:
 	{
 		ChunkType	t;
 		ChunkLength	l;
+	};
+
+	// data structures for various chunks
+
+	typedef float ChunkTypeFloat;
+
+	struct ChunkTypeFloat2
+	{
+		ChunkTypeFloat x, y;
+	};
+
+	struct ChunkTypeFloat3
+	{
+		ChunkTypeFloat x, y, z;
+	};
+
+	struct ChunkTypeChar3
+	{
+		unsigned char x, y, z;
+	};
+
+	typedef short ChunkTypeShort;
+
+	struct ChunkTypeShort3 {
+		ChunkTypeShort x, y, z;
+	};
+
+	struct ChunkTypeFaceArray {
+	  	ChunkTypeShort vertex1, vertex2, vertex3;
+		ChunkTypeShort flags;
+	};
+
+	struct ChunkTypeMeshMatrix
+	{
+		ChunkTypeShort matrix[4][3];
 	};
 
 	// class members
@@ -172,6 +183,11 @@ public:
 		return d;
 	}
 
+	ChunkType getType()
+	{
+		return h.t;
+	}
+
 	QList< Chunk * > getChildren( ChunkType ct = NULL_CHUNK )
 	{
 		if( ct == NULL_CHUNK ) {
@@ -189,6 +205,7 @@ public:
 	void clearData()
 	{
 		delete[] d;
+		d = NULL;
 	}
 
 	QMap< ChunkType, Chunk * >  children();
@@ -297,6 +314,7 @@ private:
 					case FACE_ARRAY:
 						addcount( sizeof( ChunkTypeFaceArray ) );
 						adddata();
+						addchildren();
 						break;
 
 					case MSH_MAT_GROUP:
@@ -384,6 +402,8 @@ private:
 	{
 		f->seek( p + CHUNKHEADERSIZE + dl );
 
+		QMap< ChunkType, Chunk * > temp;
+
 		while( f->pos() < ( p + h.l ) )
 		{
 			ChunkPos q = f->pos();
@@ -394,9 +414,16 @@ private:
 
 			Chunk * z = new Chunk( f, k, q );
 			
-			c.insertMulti( k.t, z );
+			temp.insertMulti( k.t, z );
 
 			f->seek( q + k.l );
+		}
+
+		QMapIterator< ChunkType, Chunk * > tempIter( temp );
+		while( tempIter.hasNext() )
+		{
+			tempIter.next();
+			c.insertMulti( tempIter.key(), tempIter.value() );
 		}
 
 		f->seek( p + h.l );
@@ -425,7 +452,9 @@ private:
 	{
 		f->seek( p + CHUNKHEADERSIZE + dl );
 
-		f->read( (char *)( dc ), sizeof( dc ) );
+		int n = sizeof( dc );
+
+		f->read( (char *)( &dc ), sizeof( dc ) );
 
 		dl += ( sizeof( ChunkDataCount ) + ( dc * _dl ) );
 	}
