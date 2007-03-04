@@ -775,17 +775,17 @@ void NifSkope::dispatchMessage( const Message & msg )
 	switch ( msg.type() )
 	{
 		case QtCriticalMsg:
-			qCritical( msg );
+			qCritical() << msg;
 			break;
 		case QtFatalMsg:
-			qFatal( msg );
+			qFatal( QString( msg ).toAscii().data() );
 			break;
 		case QtWarningMsg:
-			qWarning( msg );
+			qWarning() << msg;
 			break;
 		case QtDebugMsg:
 		default:
-			qDebug( msg );
+			qDebug() << msg;
 			break;
 	}
 }

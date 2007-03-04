@@ -12,7 +12,6 @@ public:
 	template <typename T> Message & operator<<( T );
 	
 	operator QString () const { return s; }
-	operator const char * () const { return s.toAscii().data(); }
 	
 	QtMsgType type() const { return typ; }
 

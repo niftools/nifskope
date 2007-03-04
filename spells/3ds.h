@@ -61,9 +61,11 @@
 #define MAT_MAPNAME			0xA300
 #define MATERIAL			0xAFFF
 
-#define KEYF3DS				0xB000
+#define KFDATA				0xB000
 #define OBJECT_NODE_TAG		0xB002
 #define KFSEG				0xB008
+#define KFCURTIME			0xB009
+#define KFHDR				0xB00A
 #define NODE_HDR			0xB010
 #define PIVOT				0xB013
 #define POS_TRACK_TAG		0xB020
@@ -97,8 +99,8 @@ public:
 	typedef unsigned short	ChunkType;
 	typedef unsigned int	ChunkPos;
 	typedef unsigned long	ChunkLength;
-	typedef unsigned char	ChunkData;
 	typedef bool			ChunkDataFlag;
+	typedef unsigned int	ChunkDataPos;
 	typedef unsigned int	ChunkDataLength;
 	typedef unsigned short	ChunkDataCount;
 
@@ -127,6 +129,8 @@ public:
 		unsigned char x, y, z;
 	};
 
+	typedef long ChunkTypeLong;
+
 	typedef short ChunkTypeShort;
 
 	struct ChunkTypeShort3 {
@@ -143,10 +147,32 @@ public:
 		ChunkTypeShort matrix[4][3];
 	};
 
+	struct ChunkTypeKfPos
+	{
+		ChunkTypeShort framenum;
+		ChunkTypeLong unknown;
+		ChunkTypeFloat pos_x, pos_y, pos_z; 
+	};
+
+	struct ChunkTypeKfRot
+	{
+		ChunkTypeShort framenum;
+		ChunkTypeFloat rotation_rad;
+		ChunkTypeFloat axis_x, axis_y, axis_z;
+		ChunkTypeLong unknown;
+	};
+
+	struct ChunkTypeKfScl
+	{
+		ChunkTypeShort framenum;
+		ChunkTypeLong unknown;
+		ChunkTypeFloat scale_x, scale_y, scale_z; 
+	};
+
 	// class members
 
 	Chunk( QFile * _f, ChunkHeader _h, ChunkPos _p )
-		: f( _f ), h( _h ), p( _p ), d( NULL ), df( false ), dl( 0 ), dc( 0 )
+		: f( _f ), h( _h ), p( _p ), df( false ), dp( 0 ), dl( 0 ), dc( 0 )
 	{
 		if( h.t == FILE_DUMMY ) {
 			this->addchildren();
@@ -158,7 +184,6 @@ public:
 
 	~Chunk()
 	{
-		clearData();
 		qDeleteAll( c );
 	}
 
@@ -172,15 +197,6 @@ public:
 		Chunk * cnk = new Chunk( file, hdr, ( - CHUNKHEADERSIZE ) );
 
 		return cnk;
-	}
-
-	ChunkData * getData()
-	{
-		if( df && ( d == NULL ) ) {
-			readdata();
-		}
-
-		return d;
 	}
 
 	ChunkType getType()
@@ -202,21 +218,53 @@ public:
 		return c[ct];
 	}
 
-	void clearData()
+	void reset()
 	{
-		delete[] d;
-		d = NULL;
+		dp = 0;
 	}
 
-	QMap< ChunkType, Chunk * >  children();
+	template< class T >
+	T read()
+	{
+		T r = T();
+
+		if( !df || dp > ( h.l - CHUNKHEADERSIZE ) ) {
+			return r;
+		}
+
+		f->seek( p + CHUNKHEADERSIZE + dp );
+		dp += f->read( (char *) &r, sizeof( r ) );
+		
+		return r;
+	}
+
+	QString readString()
+	{
+		QString s;
+		char n;
+
+		f->seek( p + CHUNKHEADERSIZE + dp );
+
+		while( true ) {
+			dp += f->read( &n, sizeof( char ) );
+
+			if( n == NULL ) {
+				break;
+			}
+
+			s.append( n );
+		}
+
+		return s;
+	}
 
 private:
-	ChunkHeader		h;
-	ChunkPos		p;
-	ChunkData *		d;
-	ChunkDataFlag	df;
-	ChunkDataLength	dl;
-	ChunkDataCount	dc;
+	ChunkHeader			h;
+	ChunkPos			p;
+	ChunkDataFlag		df;
+	ChunkDataPos		dp;
+	ChunkDataLength		dl;
+	ChunkDataCount		dc;
 
 	QFile * f;
 	QMap< ChunkType, Chunk * > c;
@@ -394,6 +442,73 @@ private:
 				break;
 
 			case 0xb000:
+
+				switch( h.t )
+				{
+					case KFDATA:
+						addchildren();
+						break;
+
+					case KFHDR:
+						adddata( sizeof( ChunkTypeShort ) );
+						addname();
+						adddata( sizeof( ChunkTypeShort ) );
+						adddata( sizeof( ChunkTypeShort ) );
+						break;
+					
+					case KFSEG:
+						adddata( sizeof( ChunkTypeLong ) );
+						adddata( sizeof( ChunkTypeLong ) );
+						break;
+
+					case KFCURTIME:
+						adddata( sizeof( ChunkTypeLong ) );
+						break;
+
+					case OBJECT_NODE_TAG:
+						addchildren();
+						break;
+
+					case NODE_ID:
+						adddata( sizeof( ChunkTypeShort ) );
+						break;
+
+					case NODE_HDR:
+						addname();
+						adddata( sizeof( ChunkTypeShort ) );
+						adddata( sizeof( ChunkTypeShort ) );
+						adddata( sizeof( ChunkTypeShort ) );
+						break;
+
+					case PIVOT:
+						adddata( sizeof( ChunkTypeFloat ) );
+						adddata( sizeof( ChunkTypeFloat ) );
+						adddata( sizeof( ChunkTypeFloat ) );
+						break;
+
+					case POS_TRACK_TAG:
+						adddata( sizeof( ChunkTypeShort ) );
+						adddata( sizeof( ChunkTypeShort[4] ) );
+						addcount( sizeof( ChunkTypeKfPos ) );
+						adddata( sizeof( ChunkTypeShort ) );
+						break;
+
+					case ROT_TRACK_TAG:
+						adddata( sizeof( ChunkTypeShort ) );
+						adddata( sizeof( ChunkTypeShort[4] ) );
+						addcount( sizeof( ChunkTypeKfRot ) );
+						adddata( sizeof( ChunkTypeShort ) );
+						break;
+
+					case SCL_TRACK_TAG:
+						adddata( sizeof( ChunkTypeShort ) );
+						adddata( sizeof( ChunkTypeShort[4] ) );
+						addcount( sizeof( ChunkTypeKfScl ) );
+						adddata( sizeof( ChunkTypeShort ) );
+						break;
+
+				}
+
 				break;
 		}
 	}
@@ -462,30 +577,15 @@ private:
 
 	void adddata( ChunkDataLength _dl = 0 )
 	{
-		f->seek( p + CHUNKHEADERSIZE );
-
 		dl += _dl;
 
 		if( dl == 0 ) {
-			dl = ( h.l - CHUNKHEADERSIZE ) / sizeof( ChunkData );
+			dl = ( h.l - CHUNKHEADERSIZE );
 		}
-
-		Q_ASSERT( ( dl % sizeof( ChunkData ) ) == 0 );
 
 		df = true;
 
 		f->seek( p + CHUNKHEADERSIZE + dl );
-	}
-
-	void readdata()
-	{
-		d = new ChunkData[ dl / sizeof( ChunkData ) ];
-
-		f->seek( p + CHUNKHEADERSIZE );
-
-		f->read( (char *)( d ), dl );
-		
-		f->seek( p + dl );
 	}
 
 };

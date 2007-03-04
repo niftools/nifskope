@@ -60,6 +60,27 @@ class sp3dsImportModel : public Spell
 		objMesh() : pos( 0.0f, 0.0f, 0.0f ), rot( 0.0f, 0.0f, 0.0f ) {}
 	};
 
+	struct objKeyframe {
+		Vector3 pos;
+		float rotAngle;
+		Vector3 rotAxis;
+		float scale;
+
+		objKeyframe()
+			: pos( 0.0f, 0.0f, 0.0f ), rotAngle( 0 ), rotAxis( 0.0f, 0.0f, 0.0f ), scale( 0.0f )
+		{}
+	};
+
+	struct objKfSequence {
+		short objectId;
+		QString objectName;
+		long startTime, endTime, curTime;
+		Vector3 pivot;
+		QMap< short, objKeyframe > frames;
+
+		objKfSequence() : pivot( 0.0f, 0.0f, 0.0f ) {}
+	};
+
 public:
 	QString name() const { return Spell::tr("Import .3ds Model"); }
 	QString page() const { return Spell::tr("Import"); }
@@ -74,6 +95,7 @@ public:
 		float ObjScale;
 		QVector< objMesh > ObjMeshes;
 		QMap< QString, objMaterial > ObjMaterials;
+		QMap< QString, objKfSequence > ObjKeyframes;
 
 		// read the file
 		
@@ -114,8 +136,7 @@ public:
 
 		Chunk * MasterScale = ModelData->getChild( MASTER_SCALE );
 		if( MasterScale ) {
-			ObjScale = *( (float *) MasterScale->getData() );
-			MasterScale->clearData();
+			ObjScale = MasterScale->read< float >();
 		}
 		else {
 			ObjScale = 1.0f;
@@ -131,7 +152,7 @@ public:
 			// material name
 			Chunk * matName = mat->getChild( MAT_NAME );
 			if( matName ) {
-				newMat.name = GetNameFromChunk( matName );
+				newMat.name = matName->readString();
 			}
 
 			// material colors
@@ -155,7 +176,7 @@ public:
 			if( matTexture ) {
 				Chunk * matTexProperty = matTexture->getChild( MAT_MAPNAME );
 				if( matTexProperty ) {
-					newMat.map_Kd = GetNameFromChunk( matTexProperty );
+					newMat.map_Kd = matTexProperty->readString();
 				}
 			}
 
@@ -172,50 +193,47 @@ public:
 		{
 			objMesh newMesh;
 
-			newMesh.name = GetNameFromChunk( mesh );
+			newMesh.name = mesh->readString();
 
 			foreach( Chunk * TriObj, mesh->getChildren( N_TRI_OBJECT ) )
 			{
 				Chunk * PointArray = TriObj->getChild( POINT_ARRAY );
 				if( PointArray ) {
-					Chunk::ChunkData * rawData = PointArray->getData();
+					unsigned short nPoints = PointArray->read< unsigned short >();
 
-					short * nPoints = (short *) rawData;
-
-					rawData += sizeof( short );
-
-					for( int i = 0; i < *nPoints; i++ )
+					for( unsigned short i = 0; i < nPoints; i++ )
 					{
-						Chunk::ChunkTypeFloat3 * v = (Chunk::ChunkTypeFloat3 *) rawData;
-						rawData += sizeof( Chunk::ChunkTypeFloat3 );
+						float x, y, z;
+						x = PointArray->read< float >();
+						y = PointArray->read< float >();
+						z = PointArray->read< float >();
 
-						newMesh.vertices.append( Vector3( v->x, v->y, v->z ) );
-						newMesh.normals.append( Vector3( 0.0f, 0.0f, 0.0f ) );
+						newMesh.vertices.append( Vector3( x, y, z ) );
+						newMesh.normals.append( Vector3( 0.0f, 0.0f, 1.0f ) );
 					}
-
-					PointArray->clearData();
 				}
 
 				Chunk * FaceArray = TriObj->getChild( FACE_ARRAY );
 				if( FaceArray ) {
-					Chunk::ChunkData * rawData = FaceArray->getData();
 
-					short * nPoints = (short *) rawData;
+					unsigned short nFaces = FaceArray->read< unsigned short >();
 
-					rawData += sizeof( short );
-
-					for( int i = 0; i < *nPoints; i++ )
+					for( unsigned short i = 0; i < nFaces; i++ )
 					{
-						Chunk::ChunkTypeFaceArray * f = (Chunk::ChunkTypeFaceArray *) rawData;
-						rawData += sizeof( Chunk::ChunkTypeFaceArray );
+						Chunk::ChunkTypeFaceArray f;
+
+						f.vertex1	= FaceArray->read< unsigned short >();
+						f.vertex2	= FaceArray->read< unsigned short >();
+						f.vertex3	= FaceArray->read< unsigned short >();
+						f.flags		= FaceArray->read< unsigned short >();
 
 						objFace newFace;
 
-						newFace.v1 = f->vertex1;
-						newFace.v2 = f->vertex2;
-						newFace.v3 = f->vertex3;
+						newFace.v1 = f.vertex1;
+						newFace.v2 = f.vertex2;
+						newFace.v3 = f.vertex3;
 
-						newFace.dblside = !(f->flags & FACE_FLAG_ONESIDE);
+						newFace.dblside = !(f.flags & FACE_FLAG_ONESIDE);
 
 						Vector3 n1 = newMesh.vertices[newFace.v2] - newMesh.vertices[newFace.v1];
 						Vector3 n2 = newMesh.vertices[newFace.v3] - newMesh.vertices[newFace.v1];
@@ -229,35 +247,18 @@ public:
 
 					}
 
-					FaceArray->clearData();
-
 					objMatFace newMatFace;
 
 					Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
 					if( MatFaces ) {
-						Chunk::ChunkData * rawData = MatFaces->getData();
+						newMatFace.matName = MatFaces->readString();
 
-						QString MatName;
+						unsigned short nFaces = MatFaces->read< unsigned short >();
 
-						while( *rawData ) {
-							MatName.append( *rawData );
-							rawData++;
+						for( unsigned short i = 0; i < nFaces; i++ ) {
+							unsigned short FaceNum = MatFaces->read< unsigned short >();
+							newMatFace.subFaces.append( FaceNum );
 						}
-						rawData++;
-
-						newMatFace.matName = MatName;
-
-						short * nFaces = (short *) rawData;
-						rawData += sizeof( short );
-
-						for( int i = 0; i < *nFaces; i++ ) {
-							short * FaceNum = (short *) rawData;
-							rawData += sizeof( short );
-
-							newMatFace.subFaces.append( *FaceNum );
-						}
-
-						MatFaces->clearData();
 
 						newMesh.matfaces.append( newMatFace );
 					}
@@ -265,21 +266,16 @@ public:
 
 				Chunk * TexVerts = TriObj->getChild( TEX_VERTS );
 				if( TexVerts ) {
-					Chunk::ChunkData * rawData = PointArray->getData();
+					unsigned short nVerts = TexVerts->read< unsigned short >();
 
-					short * nVerts = (short *) rawData;
-
-					rawData += sizeof( short );
-
-					for( int i = 0; i < *nVerts; i++ )
+					for( unsigned short i = 0; i < nVerts; i++ )
 					{
-						Chunk::ChunkTypeFloat2 * v = (Chunk::ChunkTypeFloat2 *) rawData;
-						rawData += sizeof( Chunk::ChunkTypeFloat2 );
+						float x, y;
+						x = TexVerts->read< float >();
+						y = TexVerts->read< float >();
 
-						newMesh.texcoords.append( Vector2( v->x, v->y ) );
+						newMesh.texcoords.append( Vector2( x, -y ) );
 					}
-
-					TexVerts->clearData();
 				}
 
 			}
@@ -290,6 +286,135 @@ public:
 			}
 
 			ObjMeshes.append( newMesh );
+		}
+
+		Chunk * Keyframes = Model->getChild( KFDATA );
+		if( Keyframes ) {
+			if( Chunk * KfHdr = Keyframes->getChild( KFHDR ) )
+			{
+
+			}
+
+			QList< Chunk * > KfSegs = Keyframes->getChildren( KFSEG );
+			QList< Chunk * > KfCurTimes = Keyframes->getChildren( KFCURTIME );
+
+			for( int i = 0; i < KfSegs.size(); i++ )
+			{
+				/*
+				Chunk::ChunkData * rawData = KfSegs[i]->getData();
+				newKfSeg.startTime = *( (long *) rawData );
+				rawData += sizeof( long );
+				newKfSeg.endTime = *( (long *) rawData );
+				KfSegs[i]->clearData();
+
+				Chunk * KfCurTime = KfCurTimes[i];
+
+				rawData = KfCurTimes[i]->getData();
+				newKfSeg.curTime = *( (long *) rawData );
+				KfCurTimes[i]->clearData();
+				*/
+			}
+
+			foreach( Chunk * KfObj, Keyframes->getChildren( OBJECT_NODE_TAG ) )
+			{
+				objKfSequence newKfSeq;
+				
+				if( Chunk * NodeId = KfObj->getChild( NODE_ID ) ) {
+					newKfSeq.objectId = NodeId->read< unsigned short >();
+				}
+
+				if( Chunk * NodeHdr = KfObj->getChild( NODE_HDR ) ) {
+					newKfSeq.objectName = NodeHdr->readString();
+
+					unsigned short Flags1 = NodeHdr->read< unsigned short >();
+					unsigned short Flags2 = NodeHdr->read< unsigned short >();
+					unsigned short Hierarchy = NodeHdr->read< unsigned short >();
+				}
+
+				if( Chunk * Pivot = KfObj->getChild( PIVOT ) ) {
+					float x = Pivot->read< float >();
+					float y = Pivot->read< float >();
+					float z = Pivot->read< float >();
+
+					newKfSeq.pivot = Vector3( x, y, z );
+				}
+
+				if( Chunk * PosTrack = KfObj->getChild( POS_TRACK_TAG ) ) {
+					unsigned short flags = PosTrack->read< unsigned short >();
+
+					unsigned short unknown1 = PosTrack->read< unsigned short >();
+					unsigned short unknown2 = PosTrack->read< unsigned short >();
+					unsigned short unknown3 = PosTrack->read< unsigned short >();
+					unsigned short unknown4 = PosTrack->read< unsigned short >();
+
+					unsigned short keys = PosTrack->read< unsigned short >();
+					
+					unsigned short unknown = PosTrack->read< unsigned short >();
+
+					for( int key = 0; key < keys; key++ )
+					{
+						unsigned short kfNum = PosTrack->read< unsigned short >();
+						unsigned long kfUnknown = PosTrack->read< unsigned long >();
+						float kfPosX = PosTrack->read< float >();
+						float kfPosY = PosTrack->read< float >();
+						float kfPosZ = PosTrack->read< float >();
+
+						newKfSeq.frames[kfNum].pos = Vector3( kfPosX, kfPosY, kfPosZ );
+					}
+				}
+
+				if( Chunk * RotTrack = KfObj->getChild( ROT_TRACK_TAG ) ) {
+					unsigned short flags = RotTrack->read< unsigned short >();
+
+					unsigned short unknown1 = RotTrack->read< unsigned short >();
+					unsigned short unknown2 = RotTrack->read< unsigned short >();
+					unsigned short unknown3 = RotTrack->read< unsigned short >();
+					unsigned short unknown4 = RotTrack->read< unsigned short >();
+
+					unsigned short keys = RotTrack->read< unsigned short >();
+					
+					unsigned short unknown = RotTrack->read< unsigned short >();
+
+					for( unsigned short key = 0; key < keys; key++ )
+					{
+						unsigned short kfNum = RotTrack->read< unsigned short >();
+						unsigned long kfUnknown = RotTrack->read< unsigned long >();
+						float kfRotAngle = RotTrack->read< float >();
+						float kfAxisX = RotTrack->read< float >();
+						float kfAxisY = RotTrack->read< float >();
+						float kfAxisZ = RotTrack->read< float >();
+						
+						newKfSeq.frames[kfNum].rotAngle = kfRotAngle;
+						newKfSeq.frames[kfNum].rotAxis = Vector3( kfAxisX, kfAxisY, kfAxisZ );
+					}
+				}
+
+				if( Chunk * SclTrack = KfObj->getChild( SCL_TRACK_TAG ) ) {
+					unsigned short flags = SclTrack->read< unsigned short >();
+
+					unsigned short unknown1 = SclTrack->read< unsigned short >();
+					unsigned short unknown2 = SclTrack->read< unsigned short >();
+					unsigned short unknown3 = SclTrack->read< unsigned short >();
+					unsigned short unknown4 = SclTrack->read< unsigned short >();
+
+					unsigned short keys = SclTrack->read< unsigned short >();
+					
+					unsigned short unknown = SclTrack->read< unsigned short >();
+
+					for( unsigned short key = 0; key < keys; key++ )
+					{
+						unsigned short kfNum = SclTrack->read< unsigned short >();
+						unsigned long kfUnknown = SclTrack->read< unsigned long >();
+						float kfSclX = SclTrack->read< float >();
+						float kfSclY = SclTrack->read< float >();
+						float kfSclZ = SclTrack->read< float >();
+
+						newKfSeq.frames[kfNum].scale =	( kfSclX + kfSclY + kfSclZ ) / 3.0f;
+					}
+				}
+
+				ObjKeyframes.insertMulti( newKfSeq.objectName, newKfSeq );
+			}
 		}
 
 		fobj.close();
@@ -405,6 +530,8 @@ public:
 				
 				nif->set<int>( iData, "Unknown Short 2", 0x4000 );
 			}
+
+			// set up a controller for animated objects
 		}
 		
 		settings.setValue( "File Name", fname );
@@ -437,14 +564,9 @@ private:
 			ColorChunk = cnk->getChild( LIN_COLOR_F );
 		}
 		if( ColorChunk ) {
-			Chunk::ChunkTypeFloat3 * colorData =
-				(Chunk::ChunkTypeFloat3 *) ColorChunk->getData();
-
-			r = colorData->x;
-			g = colorData->y;
-			b = colorData->z;
-
-			ColorChunk->clearData();
+			r = ColorChunk->read< float >();
+			g = ColorChunk->read< float >();
+			b = ColorChunk->read< float >();
 		}
 
 		ColorChunk = cnk->getChild( COLOR_24 );
@@ -452,16 +574,9 @@ private:
 			ColorChunk = cnk->getChild( LIN_COLOR_24 );
 		}
 		if( ColorChunk ) {
-			Chunk::ChunkTypeChar3 * colorData =
-				(Chunk::ChunkTypeChar3 *) ColorChunk->getData();
-
-			if( colorData ) {
-				r = (float)( colorData->x ) / 255.0f;
-				g = (float)( colorData->y ) / 255.0f;
-				b = (float)( colorData->z ) / 255.0f;
-			}
-			
-			ColorChunk->clearData();
+			r = (float)( ColorChunk->read< unsigned char >() ) / 255.0f;
+			g = (float)( ColorChunk->read< unsigned char >() ) / 255.0f;
+			b = (float)( ColorChunk->read< unsigned char >() ) / 255.0f;
 		}		
 
 		return Color3( r, g, b );
@@ -473,40 +588,15 @@ private:
 
 		Chunk * PercChunk = cnk->getChild( FLOAT_PERCENTAGE );
 		if( PercChunk ) {
-			Chunk::ChunkTypeFloat * floatData =
-				(Chunk::ChunkTypeFloat *) PercChunk->getData();
-
-			if( floatData ) {
-				f = *floatData;
-			}
-
-			PercChunk->clearData();
+			f = PercChunk->read< float >();
 		}
 
 		PercChunk = cnk->getChild( INT_PERCENTAGE );
 		if( PercChunk ) {
-			Chunk::ChunkTypeShort * intData =
-				(Chunk::ChunkTypeShort *) PercChunk->getData();
-
-			if( intData ) {
-				f = (float)( (short)( *intData ) / 255.0f );
-			}
-
-			PercChunk->clearData();
+			f = (float)( PercChunk->read< unsigned short >() / 255.0f );
 		}
 
 		return f;
-	}
-
-	QString GetNameFromChunk( Chunk * cnk )
-	{
-		QString str;
-
-		char * _str = (char *)cnk->getData();
-		str = _str;
-		cnk->clearData();
-
-		return str;
 	}
 };
 
