@@ -30,65 +30,85 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef COLORWHEEL_H
-#define COLORWHEEL_H
+#ifndef UVEDIT_H
+#define UVEDIT_H
 
-#include <QColor>
-#include <QSlider>
-#include <QWidget>
+#include <QtOpenGL>
+#include <QVector>
 
-class Color3;
-class Color4;
+class NifModel;
+class QModelIndex;
+class QString;
+class TexCache;
+class Vector2;
 
-class ColorWheel : public QWidget
+class UVWidget : public QGLWidget
 {
 	Q_OBJECT
 public:
-	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = 0 );
-	static Color3 choose( const Color3 & color, QWidget * parent = 0 );
-	static Color4 choose( const Color4 & color, QWidget * parent = 0 );
-	
-	static QIcon getIcon();
-	
-	ColorWheel( QWidget * parent = 0 );
-	ColorWheel( const QColor & c, QWidget * parent = 0 );
-	
-	Q_PROPERTY( QColor color READ getColor WRITE setColor NOTIFY sigColor USER true )
-	
-	QColor getColor() const;
-	
+	UVWidget( QWidget * parent = 0 );
+	~UVWidget();
+
+	bool setNifData( NifModel * nif, const QModelIndex & index );
+			
 	QSize sizeHint() const;
 	QSize minimumSizeHint() const;
 	
 	void setSizeHint( const QSize & s );
 	
 	int heightForWidth( int width ) const;
-
-signals:
-	void sigColor( const QColor & );
-	void sigColorEdited( const QColor & );
-	
-public slots:
-	void setColor( const QColor & );
 	
 protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
-	void contextMenuEvent( QContextMenuEvent * e );
+	void initializeGL();
+	void resizeGL( int width, int height );
+	void paintGL();
 
-	void setColor( int x, int y );
+	void mousePressEvent( QMouseEvent * e );
+	void mouseReleaseEvent( QMouseEvent * e );
+	void mouseMoveEvent( QMouseEvent * e );
+	void wheelEvent( QWheelEvent * e );
 
 private:
-	double H, S, V;
-	
 	enum {
-		Nope, Circle, Triangle
-	} pressed;
+		NoneSel, TexCoordSel, FaceSel
+	} selectedType;
+
+	int selectedTexCoord;
+	int selectedFace;
+	int selectCycle;
+
+	struct face {
+		int t[3];
+	};
+
+	QVector< Vector2 > texcoords;
+	QVector< face > faces;
 	
 	QSize sHint;
 
-	static QIcon * icon;
+	TexCache * textures;
+	QString texfile;
+
+	void drawTexCoords();
+
+	void setupViewport( int width, int height );
+	void updateViewRect( int width, int height );
+	bool bindTexture( const QString & filename );
+
+	int indexAt( const QPoint & hitPos );
+
+	void updateNif();
+
+	NifModel * nif;
+	QModelIndex idx, iTexCoords;
+
+	GLdouble glViewRect[4];
+
+	QPoint pos;
+
+	QPoint mousePos;
+
+	GLdouble zoom;
 };
 
 #endif

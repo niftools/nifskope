@@ -1,13 +1,16 @@
 #include "../spellbook.h"
 
+#include "../widgets/groupbox.h"
+#include "../widgets/uvedit.h"
+
 #include <QDebug>
 
 
 class spFlipTexCoords : public Spell
 {
 public:
-	QString name() const { return "Flip UV"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Flip UV"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -85,10 +88,47 @@ public:
 REGISTER_SPELL( spFlipTexCoords )
 
 
+class spEditTexCoords : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Edit UV"); }
+	QString page() const { return Spell::tr("Mesh"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->inherits( index, "NiTriBasedGeom" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		GroupBox * dialog = new GroupBox( "", Qt::Vertical );
+		dialog->setWindowTitle( Spell::tr("UV Editor") );
+		dialog->setWindowFlags( Qt::Dialog );
+		
+		UVWidget * uvEditor = new UVWidget( dialog );
+
+		if( !uvEditor->setNifData( nif, index ) ) {
+			qWarning() << Spell::tr( "Could not load texture data for UV editor." );
+			delete uvEditor;
+			delete dialog;
+			return index;
+		}
+
+		dialog->addWidget( uvEditor );
+
+		dialog->show();
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spEditTexCoords )
+
+
 class spFlipFace : public Spell
 {
 public:
-	QString name() const { return "Flip Face"; }
+	QString name() const { return Spell::tr("Flip Face"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -121,8 +161,8 @@ REGISTER_SPELL( spFlipFace )
 class spPruneRedundantTriangles : public Spell
 {
 public:
-	QString name() const { return "Prune Redundant Triangles"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Prune Redundant Triangles"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & index )
 	{
@@ -184,7 +224,7 @@ public:
 		
 		if ( cnt > 0 )
 		{
-			qWarning() << cnt << "triangles removed";
+			qWarning() << QString( Spell::tr("%1 triangles removed") ).arg( cnt );
 			nif->set<int>( iData, "Num Triangles", tris.count() );
 			nif->set<int>( iData, "Num Triangle Points", tris.count() * 3 );
 			nif->updateArray( iData, "Triangles" );
@@ -213,8 +253,9 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		// read the data
 		
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-		if ( ! verts.count() )
-			throw QString( "no vertices?" );
+		if ( ! verts.count() ) {
+			throw QString( Spell::tr("no vertices?") );
+		}
 		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
 		QVector<Color4> colors = nif->getArray<Color4>( iData, "Vertex Colors" );
 		QList< QVector<Vector2> > texco;
@@ -375,8 +416,8 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 class spRemoveDoublicateVertices : public Spell
 {
 public:
-	QString name() const { return "Remove Doublicate Vertices"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Remove Doublicate Vertices"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
 	{
@@ -414,7 +455,7 @@ public:
 			{
 				texco << nif->getArray<Vector2>( iUVSets.child( r, 0 ) );
 				if ( texco.last().count() != verts.count() )
-					throw QString( "uv array size differs" );
+					throw QString( Spell::tr("uv array size differs") );
 			}
 			
 			int numVerts = verts.count();
@@ -423,7 +464,7 @@ public:
 				( norms.count() && norms.count() != numVerts ) ||
 				( colors.count() && colors.count() != numVerts ) )
 			{
-				throw QString( "vertex array size differs" );
+				throw QString( Spell::tr("vertex array size differs") );
 			}
 			
 			// detect the dublicates
@@ -454,11 +495,11 @@ public:
 				}
 			}
 			
-			qWarning() << "detected" << map.count() << "doublicates";
+			qWarning() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
 			
 			// adjust the faces
 			
-			QVector<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" );
+			QVector< Triangle > tris = nif->getArray< Triangle >( iData, "Triangles" );
 			QMutableVectorIterator<Triangle> itri( tris );
 			while ( itri.hasNext() )
 			{
@@ -502,8 +543,8 @@ REGISTER_SPELL( spRemoveDoublicateVertices )
 class spRemoveWasteVertices : public Spell
 {
 public:
-	QString name() const { return "Remove Unused Vertices"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Remove Unused Vertices"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -527,8 +568,8 @@ REGISTER_SPELL( spRemoveWasteVertices )
 class spUpdateCenterRadius : public Spell
 {
 public:
-	QString name() const { return "Update Center/Radius"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Update Center/Radius"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

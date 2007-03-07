@@ -58,7 +58,6 @@ public:
 	
 	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;
 
-protected:
 	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 
