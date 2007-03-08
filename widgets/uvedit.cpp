@@ -72,9 +72,7 @@ UVWidget::UVWidget( QWidget * parent )
 	mousePos.setX( -1000 );
 	mousePos.setY( -1000 );
 
-	selectedType		= NoneSel;
-	selectedTexCoord	= -1;
-	selectedFace		= -1;
+	selectionType = NoneSel;
 }
 
 UVWidget::~UVWidget()
@@ -251,8 +249,6 @@ void UVWidget::paintGL()
 
 void UVWidget::drawTexCoords()
 {
-	QVector< int > selTexCoords( 1, selectedTexCoord );
-
 	glMatrixMode( GL_MODELVIEW );
 
 	glPushMatrix();
@@ -271,27 +267,24 @@ void UVWidget::drawTexCoords()
 	glLineWidth( 1.0f );
 	for( int i = faces.size() - 1; i > -1; i-- )
 	{
-		if( selectedFace == i ) {
+		bool selected = selectedFaces.contains( i );
+
+		if( selected ) {
 			glColor( hlColor );
 			zPos = 0.1f;
-
-			for( int j = 0; j < 3; j++ )
-			{
-				selTexCoords.append( faces[i].t[j] );
-			}
 		}
 
 		glLoadName( glName );
 		glBegin( GL_LINES );
 		for( int j = 0; j < 3; j++ )
 		{
-			glVertex3f( texcoords[faces[i].t[j]][0], texcoords[faces[i].t[j]][1], zPos );
-			glVertex3f( texcoords[faces[i].t[(j + 1) % 3]][0], texcoords[faces[i].t[(j + 1) % 3]][1], zPos );
+			glVertex3f( texcoords[faces[i].tc[j]][0], texcoords[faces[i].tc[j]][1], zPos );
+			glVertex3f( texcoords[faces[i].tc[(j + 1) % 3]][0], texcoords[faces[i].tc[(j + 1) % 3]][1], zPos );
 		}
 		glEnd();
 		glName--;
 
-		if( selectedFace == i ) {
+		if( selected ) {
 			glColor( nlColor );
 			zPos = 0.0f;
 		}
@@ -300,7 +293,7 @@ void UVWidget::drawTexCoords()
 	glPointSize( 3.5f );
 	for( int i = texcoords.size() - 1; i > -1; i-- )
 	{
-		bool selected = selTexCoords.contains( i );
+		bool selected = selectedTexCoords.contains( i );
 
 		if( selected ) {
 			glColor( hlColor );
@@ -336,8 +329,8 @@ void UVWidget::updateViewRect( int width, int height )
 {
 	GLdouble glOffX	= glUnit * zoom * 0.5 * width;
 	GLdouble glOffY	= glUnit * zoom * 0.5 * height;
-	GLdouble glPosX = glUnit * zoom * pos.x();
-	GLdouble glPosY = glUnit * zoom * pos.y();
+	GLdouble glPosX = glUnit * pos.x();
+	GLdouble glPosY = glUnit * pos.y();
 
 	glViewRect[0] = - glOffX - glPosX;
 	glViewRect[1] = + glOffX - glPosX;
@@ -482,20 +475,92 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 
 			selection = indexAt( e->pos() ) - 1;
 
+			selectionMode = (e->modifiers() == Qt::ControlModifier ) ? AddSel : NormalSel;
+
 			if( selection < 0 ) {
-				selectedType = NoneSel;
-				selectedTexCoord = -1;
-				selectedFace = -1;
+				selectCycle = 0;
+				selectionType = NoneSel;
+				selectedTexCoords.clear();
+				selectedFaces.clear();
 			}
 			else if( selection < texcoords.size() ) {
-				selectedType		= TexCoordSel;
-				selectedTexCoord	= selection;
-				selectedFace		= -1;
+				switch( e->modifiers() )
+				{
+					case Qt::ControlModifier:
+						if( selectionType != TexCoordSel ) {
+							return;
+						}
+						selectTexCoord( selection );
+						break;
+
+					case Qt::ShiftModifier:
+						selectedTexCoords.clear();
+						selectedFaces.clear();
+
+						if( texcoords2faces.contains( selection ) ) {
+							selectionType = ElementSel;
+							selectFace( texcoords2faces[selection] );
+						}
+						else {
+							selectionType = TexCoordSel;
+							selectTexCoord( selection );
+						}
+
+						break;
+
+					case Qt::NoModifier:
+						selectedTexCoords.clear();
+						selectedFaces.clear();
+
+						selectionType = TexCoordSel;
+						selectTexCoord( selection );
+						break;
+
+					default:
+						selectCycle = 0;
+						selectionType = NoneSel;
+						selectedTexCoords.clear();
+						selectedFaces.clear();
+						return;
+				}
 			}
 			else {
-				selectedType		= FaceSel;
-				selectedTexCoord	= -1;
-				selectedFace		= selection - texcoords.size();
+				selection -= texcoords.size();
+
+				switch( e->modifiers() )
+				{
+					case Qt::ControlModifier:
+						if( selectionType != FaceSel ) {
+							return;
+						}
+						selectFace( selection );
+						break;
+
+					case Qt::ShiftModifier:
+						selectedTexCoords.clear();
+						selectedFaces.clear();
+
+						selectionType = ElementSel;
+						selectFace( selection );
+
+						break;
+
+					case Qt::NoModifier:
+						selectedTexCoords.clear();
+						selectedFaces.clear();
+
+						selectionType = FaceSel;
+						selectFace( selection );
+
+						break;
+
+					default:
+						selectCycle = 0;
+						selectionType = NoneSel;
+						selectedTexCoords.clear();
+						selectedFaces.clear();
+						return;
+				}
 			}
 
 			break;
@@ -515,14 +580,22 @@ void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 void UVWidget::mouseMoveEvent( QMouseEvent * e )
 {
 	QPoint dPos( e->pos() - mousePos );
+	GLdouble moveX, moveY;
 
 	switch( e->buttons()) {
 		case Qt::LeftButton:
-			switch( selectedType )
+			switch( selectionType )
 			{
 				case TexCoordSel:
-					texcoords[selectedTexCoord][0] += glUnit * zoom * dPos.x();
-					texcoords[selectedTexCoord][1] -= glUnit * zoom * dPos.y();
+					moveX = glUnit * zoom * dPos.x();
+					moveY = glUnit * zoom * dPos.y();
+
+					foreach( int tc, selectedTexCoords )
+					{
+						texcoords[tc][0] += moveX;
+						texcoords[tc][1] -= moveY;
+					}
+
 					updateNif();
 					break;
 
@@ -532,7 +605,7 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 			break;
 
 		case Qt::MidButton:
-			pos += dPos;
+			pos += zoom * dPos;
 			updateViewRect( width(), height() );
 			break;
 
@@ -606,12 +679,13 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			while ( itri.hasNext() )
 			{
 				Triangle & t = itri.next();
-				face f;
-				f.t[0] = t[0];
-				f.t[1] = t[1];
-				f.t[2] = t[2];
 
-				faces.append( f );
+				int fIdx = faces.size();
+				faces.append( face( fIdx, t[0], t[1], t[2] ) );
+
+				for( int i = 0; i < 3; i++ ) {
+					texcoords2faces.insertMulti( t[i], fIdx );
+				}
 			}
 		}
 		else if( nif->isNiBlock( idx, "NiTriStrips" ) ) {
@@ -623,12 +697,12 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			QVector< ushort > pnts = nif->getArray< ushort >( iPoints, "Points" );
 			for( int i = 0; i < ( pnts.size() - 2 ); i++ )
 			{
-				face f;
-				f.t[0] = pnts[i];
-				f.t[1] = pnts[i+1];
-				f.t[2] = pnts[i+2];
+				int fIdx = faces.size();
+				faces.append( face( fIdx, pnts[i], pnts[i+1], pnts[i+2] ) );
 
-				faces.append( f );
+				for( int j = 0; j < 3; j++ ) {
+					texcoords2faces.insertMulti( pnts[i+j], fIdx );
+				}
 			}
 		}
 		else {
@@ -662,4 +736,56 @@ void UVWidget::updateNif()
 	if( iTexCoords.isValid() ) {
 		nif->setArray< Vector2 >( iTexCoords, texcoords );
 	}
+}
+
+void UVWidget::selectTexCoord( int index )
+{
+	if( !selectedTexCoords.contains( index ) ) {
+		selectedTexCoords.append( index );
+
+		if( selectionType == TexCoordSel ) {
+			QList< int > tcFaces = texcoords2faces.values( index );
+			foreach( int i, tcFaces ) {
+				bool faceSel = true;
+				for( int j = 0; j < 3; i++ ) {
+					if( !selectedTexCoords.contains( faces[i].tc[j] ) ) {
+						faceSel = false;
+						break;
+					}
+				}
+				if( faceSel ) {
+					selectFace( i );
+				}
+			}
+		}
+	}
+}
+
+void UVWidget::selectFace( int index )
+{
+	if( !selectedFaces.contains( index ) ) {
+		selectedFaces.append( index );
+
+		if( selectionType == FaceSel || selectionType == ElementSel ) {
+			for( int i = 0; i < 3; i++ ) {
+				selectTexCoord( faces[index].tc[i] );
+			}
+		}
+
+		if( selectionType == ElementSel ) {
+			for( int i = 0; i < 3; i++ )
+			{
+				QList< int > neighbors = texcoords2faces.values( faces[index].tc[i] );
+				foreach( int j, neighbors )
+				{
+					if( i == index ) {
+						continue;
+					}
+
+					selectFace( j );
+				}
+			}
+		}
+	}
+
 }

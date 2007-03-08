@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define UVEDIT_H
 
 #include <QtOpenGL>
+
+#include <QMap>
 #include <QVector>
 
 class NifModel;
@@ -70,19 +72,50 @@ protected:
 
 private:
 	enum {
-		NoneSel, TexCoordSel, FaceSel
-	} selectedType;
+		RenderMode, SelectionMode
+	} glMode;
 
-	int selectedTexCoord;
-	int selectedFace;
+	enum {
+		NormalSel, AddSel
+	} selectionMode;
+
+	enum {
+		NoneSel, TexCoordSel, FaceSel, ElementSel
+	} selectionType;
+
+	QVector< int > selectedTexCoords;
+	QVector< int > selectedFaces;
 	int selectCycle;
 
+	void selectTexCoord( int index );
+	void selectFace( int index );
+
 	struct face {
-		int t[3];
+		int index;
+
+		int tc[3];
+
+		bool contains( int v )
+		{
+			return ( tc[0] == v || tc[1] == v || tc[2] == v );
+		}
+
+		face()
+			: index( -1 )
+		{}
+
+		face( int idx, int tc1, int tc2, int tc3 )
+			: index( idx )
+		{
+			tc[0] = tc1;
+			tc[1] = tc2;
+			tc[2] = tc3;
+		}
 	};
 
 	QVector< Vector2 > texcoords;
 	QVector< face > faces;
+	QMap< int, int > texcoords2faces;
 	
 	QSize sHint;
 
