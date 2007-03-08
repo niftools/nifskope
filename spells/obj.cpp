@@ -713,7 +713,7 @@ public:
 				
 				QPersistentModelIndex iShape = nif->insertNiBlock( "bhkNiTriStripsShape" );
 				
-				nif->setArray<float>( iShape, "Unknown Floats 1", QVector<float>() << 0.1 << 0.0 );
+				nif->setArray<float>( iShape, "Unknown Floats 1", QVector<float>() << 0.1f << 0.0f );
 				nif->setArray<int>( iShape, "Unknown Ints 1",  QVector<int>() << 0 << 0 << 0 << 0 << 1 );
 				nif->set<Vector3>( iShape, "Scale", Vector3( 1.0, 1.0, 1.0 ) );
 				addLink( nif, iShape, "Strips Data", nif->getBlockNumber( iData ) );

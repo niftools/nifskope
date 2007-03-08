@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef M_PI
 #define PI M_PI
 #else
-#define PI 3.1416
+#define PI 3.1416f
 #endif
 #endif
 

@@ -886,7 +886,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	}
 	else if ( name == "bhkNiTriStripsShape" )
 	{
-		float s = 1 / 7.0;
+		float s = 1.0f / 7.0f;
 		glScalef( s, s, s );
 		
 		glLoadName( nif->getBlockNumber( iShape ) );
@@ -1011,7 +1011,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const float maxAngle = nif->get<float>( iHinge, "Max Angle" );
 		
 		glLoadMatrix( tBodies.value( 0 ) );
-		glColor( Color3( 0.8, 0.6, 0.0 ) );
+		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
 		
 		glBegin( GL_POINTS );
 		glVertex( pivotA );
@@ -1031,7 +1031,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle );
 		
 		glLoadMatrix( tBodies.value( 1 ) );
-		glColor( Color3( 0.6, 0.8, 0.0 ) );
+		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
 		
 		glBegin( GL_POINTS );
 		glVertex( pivotB );
@@ -1093,7 +1093,16 @@ void Node::drawHavok()
 	glPointSize( 4.5 );
 	glLineWidth( 1.0 );
 	
-	static const float colors[8][3] = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 }, { 1.0, 1.0, 1.0 }, { 0.5, 0.5, 1.0 }, { 1.0, 0.8, 0.0 }, { 1.0, 0.8, 0.4 }, { 0.0, 1.0, 1.0 } };
+	static const float colors[8][3] = {
+		{ 0.0f, 1.0f, 0.0f },
+		{ 1.0f, 0.0f, 0.0f },
+		{ 1.0f, 0.0f, 1.0f },
+		{ 1.0f, 1.0f, 1.0f },
+		{ 0.5f, 0.5f, 1.0f },
+		{ 1.0f, 0.8f, 0.0f },
+		{ 1.0f, 0.8f, 0.4f },
+		{ 0.0f, 1.0f, 1.0f }
+	};
 	
 	glColor3fv( colors[ nif->get<int>( iBody, "Layer" ) & 7 ] );
 
@@ -1101,7 +1110,7 @@ void Node::drawHavok()
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack );
 	
 	glLoadName( nif->getBlockNumber( iBody ) );
-	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2 );
+	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2f );
 	
 	glPopMatrix();
 	

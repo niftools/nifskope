@@ -174,6 +174,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\..\docsys\kfm.xml
   File Copyright.txt
   File nif_file.ico
+  File ..\style.qss
 
   ; Install shaders
   SetOutPath $INSTDIR\shaders

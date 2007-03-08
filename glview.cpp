@@ -416,7 +416,7 @@ void GLView::paintGL()
 		glDepthFunc( GL_LESS );
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
-		glLineWidth( 1.2 );
+		glLineWidth( 1.2f );
 		
 		glPushMatrix();
 		glLoadMatrix( viewTrans );
@@ -892,8 +892,8 @@ void GLView::advanceGears()
 	if ( kbd[ Qt::Key_R ] )		move( 0, - MOV_SPD * dT, 0 );
 	if ( kbd[ Qt::Key_Q ] )		setDistance( Dist * 0.9 );
 	if ( kbd[ Qt::Key_E ] )		setDistance( Dist * 1.1 );
-	if ( kbd[ Qt::Key_PageUp ] )	zoom( 1.1 );
-	if ( kbd[ Qt::Key_PageDown ] )	zoom( 0.9 );
+	if ( kbd[ Qt::Key_PageUp ] )	zoom( 1.1f );
+	if ( kbd[ Qt::Key_PageDown ] )	zoom( 0.9f );
 	
 	if ( mouseMov[0] != 0 || mouseMov[1] != 0 || mouseMov[2] != 0 )
 	{
@@ -1014,7 +1014,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if ( event->buttons() & Qt::RightButton )
 	{
-		setDistance( Dist + dy * ( axis / ( qMax( width(), height() ) + 1 ) ) );
+		setDistance( Dist - dy * ( axis / ( qMax( width(), height() ) + 1 ) ) );
 	}
 	lastPos = event->pos();
 }
@@ -1034,7 +1034,7 @@ void GLView::wheelEvent( QWheelEvent * event )
 	if ( aViewWalk->isChecked() )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
-		setDistance( Dist * ( event->delta() < 0 ? 1.2 : 0.8 ) );
+		setDistance( Dist * ( event->delta() > 0 ? 1.2 : 0.8 ) );
 }
 
 void GLView::checkActions()

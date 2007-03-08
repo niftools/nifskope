@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../gl/gltools.h"
 
 #include <math.h>
+#include <gl/glext.h>
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0
@@ -145,30 +146,30 @@ void UVWidget::paintGL()
 	
 	glEnable( GL_TEXTURE_2D );
 
-	glTranslatef( -0.5, -0.5, 0.0 );
+	glTranslatef( -0.5f, -0.5f, 0.0f );
 
-	glTranslatef( -1.0, -1.0, 0.0 );
+	glTranslatef( -1.0f, -1.0f, 0.0f );
 	for( int i = 0; i < 3; i++ )
 	{
 		for( int j = 0; j < 3; j++ )
 		{
 			if( i != 1 || j != 1 ) {
-				glColor4f( 1.0, 0.8, 0.8, 1.0 );
+				glColor4f( 1.0f, 0.8f, 0.8f, 1.0f );
 			}
 
 			glDrawArrays( GL_QUADS, 0, 4 );
 
-			glTranslatef( 1.0, 0.0, 0.0 );
+			glTranslatef( 1.0f, 0.0f, 0.0f );
 		}
 
-		glTranslatef( -3.0, 1.0, 0.0 );
+		glTranslatef( -3.0f, 1.0f, 0.0f );
 	}
-	glTranslatef( 1.0, -2.0, 0.0 );
+	glTranslatef( 1.0f, -2.0f, 0.0f );
 	
 	glDisable( GL_TEXTURE_2D );
 	
-	glLineWidth( 2.0 );
-	glColor4f( 0.5, 0.5, 0.5, 0.5 );
+	glLineWidth( 2.0f );
+	glColor4f( 0.5f, 0.5f, 0.5f, 0.5f );
 	glBegin( GL_LINE_STRIP );
 	for( int i = 0; i < 5; i++ )
 	{
@@ -183,7 +184,7 @@ void UVWidget::paintGL()
 	glPushMatrix();
 	glLoadIdentity();
 
-	glLineWidth( 0.8 );
+	glLineWidth( 0.8f );
 	glBegin( GL_LINES );
 	int glGridMinX	= qRound( glViewRect[0] / glGridD );
 	int glGridMaxX	= qRound( glViewRect[1] / glGridD );
@@ -194,8 +195,8 @@ void UVWidget::paintGL()
 		GLdouble glGridPos = glGridD * i;
 
 		if( ( i % GRIDSEGS ) == 0 ) {
-			glLineWidth( 1.2 );
-			glColor4f( 1.0, 1.0, 1.0, 0.2 );
+			glLineWidth( 1.2f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.2f );
 		}
 		else if( zoom > 2.0 ) {
 			continue;
@@ -205,8 +206,8 @@ void UVWidget::paintGL()
 		glVertex2d( glGridPos, glViewRect[3] );
 
 		if( ( i % GRIDSEGS ) == 0 ) {
-			glLineWidth( 0.8 );
-			glColor4f( 1.0, 1.0, 1.0, 0.1 );
+			glLineWidth( 0.8f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.1f );
 		}
 	}
 	for( int i = glGridMinY; i < glGridMaxY; i++ )
@@ -214,8 +215,8 @@ void UVWidget::paintGL()
 		GLdouble glGridPos = glGridD * i;
 
 		if( ( i % GRIDSEGS ) == 0 ) {
-			glLineWidth( 1.2 );
-			glColor4f( 1.0, 1.0, 1.0, 0.2 );
+			glLineWidth( 1.2f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.2f );
 		}
 		else if( zoom > 2.0 ) {
 			continue;
@@ -225,8 +226,8 @@ void UVWidget::paintGL()
 		glVertex2d( glViewRect[1], glGridPos );
 
 		if( ( i % GRIDSEGS ) == 0 ) {
-			glLineWidth( 0.8 );
-			glColor4f( 1.0, 1.0, 1.0, 0.1 );
+			glLineWidth( 0.8f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.1f );
 		}
 	}
 	glEnd();
@@ -256,18 +257,18 @@ void UVWidget::drawTexCoords()
 
 	glPushMatrix();
 	glLoadIdentity();
-	glTranslated( -0.5, -0.5, 0.0 );
+	glTranslatef( -0.5f, -0.5f, 0.0f );
 
 	Color4 nlColor( GLOptions::nlColor() );
-	nlColor.setAlpha( 0.5 );
+	nlColor.setAlpha( 0.5f );
 	Color4 hlColor( GLOptions::hlColor() );
-	hlColor.setAlpha( 0.5 );
+	hlColor.setAlpha( 0.5f );
 
 	glColor( nlColor );
 	GLfloat zPos = 0.0f;
 	GLint glName = texcoords.size() + faces.size();
 
-	glLineWidth( 1.0 );
+	glLineWidth( 1.0f );
 	for( int i = faces.size() - 1; i > -1; i-- )
 	{
 		if( selectedFace == i ) {
@@ -296,7 +297,7 @@ void UVWidget::drawTexCoords()
 		}
 	}
 
-	glPointSize( 3.5 );
+	glPointSize( 3.5f );
 	for( int i = texcoords.size() - 1; i > -1; i-- )
 	{
 		bool selected = selTexCoords.contains( i );
@@ -411,12 +412,12 @@ bool UVWidget::bindTexture( const QString & filename )
 
 	if ( mipmaps = textures->bind( filename ) )
 	{
-		if ( max_anisotropy > 0.0 )
+		if ( max_anisotropy > 0.0f )
 		{
 			if ( GLOptions::antialias() )
 				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
 			else
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0 );
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f );
 		}
 
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );

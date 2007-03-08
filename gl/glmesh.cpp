@@ -544,7 +544,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
 	}
 	else
-		glColor( Color3( 1.0, 0.2, 1.0 ) );
+		glColor( Color3( 1.0f, 0.2f, 1.0f ) );
 	
 	
 	shader = scene->renderer.setupProgram( this, shader );
@@ -646,7 +646,7 @@ void Mesh::drawSelection() const
 		glNormalColor();
 		
 		float normalScale = bounds().radius / 20;
-		if ( normalScale < 0.1 ) normalScale = 0.1;
+		if ( normalScale < 0.1f ) normalScale = 0.1f;
 		
 		glBegin( GL_LINES );
 		

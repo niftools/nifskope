@@ -271,5 +271,150 @@
         <source>Convert Quat- to ZYX-Rotations</source>
         <translation>Konvertiere Quat- nach ZYX-Rotation</translation>
     </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="85"/>
+        <source>Import .3ds Model</source>
+        <translation>3DS Modell importieren</translation>
+    </message>
+    <message>
+        <location filename="spells/obj.cpp" line="818"/>
+        <source>Import</source>
+        <translation>Import</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="107"/>
+        <source>Choose a .3ds file to import</source>
+        <translation>Bitte eine .3ds Datei zum Importieren auswählen</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="107"/>
+        <source>File Name</source>
+        <translation>Datei</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="115"/>
+        <source>Could not open %1 for read access</source>
+        <translation>Datei %1 konnte nicht zum Lesen geöffnet werden</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="121"/>
+        <source>Could not get 3ds data</source>
+        <translation>3DS Daten konnten nicht gelesen werden</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="127"/>
+        <source>Could not get 3ds model</source>
+        <translation>3DS Model konnte nicht gelesen werden</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="133"/>
+        <source>Could not get 3ds model data</source>
+        <translation>3DS Model Data konnte nicht gelesen werden</translation>
+    </message>
+    <message>
+        <location filename="spells/3ds.cpp" line="434"/>
+        <source>Material &apos;%1&apos; not found in list!</source>
+        <translation>Material &apos;%1&apos; konnte nicht in der Liste gefunden werden!</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="13"/>
+        <source>Flip UV</source>
+        <translation>Flip UV</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="573"/>
+        <source>Mesh</source>
+        <translation>Mesh</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="95"/>
+        <source>Edit UV</source>
+        <translation>UV bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="106"/>
+        <source>UV Editor</source>
+        <translation>UV Editor</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="112"/>
+        <source>Could not load texture data for UV editor.</source>
+        <translation>Der UV Editor konnte keine Texturdaten laden.</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="132"/>
+        <source>Flip Face</source>
+        <translation>Flip Face</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="165"/>
+        <source>Prune Redundant Triangles</source>
+        <translation>Reduntante Triangles entfernen</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="228"/>
+        <source>%1 triangles removed</source>
+        <translation>%1 Triangles wurden entfernt</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="258"/>
+        <source>no vertices?</source>
+        <translation>keine Vertices?</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="420"/>
+        <source>Remove Doublicate Vertices</source>
+        <translation>Doppelte Vertices entfernen</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="459"/>
+        <source>uv array size differs</source>
+        <translation>Größen der UV-Arrays stimmen nicht überein</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="468"/>
+        <source>vertex array size differs</source>
+        <translation>Größen der Vertex-Arrays stimmen nicht überein</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="499"/>
+        <source>detected % duplicates</source>
+        <translation>%1 Duplikate gefunden</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="547"/>
+        <source>Remove Unused Vertices</source>
+        <translation>Unbenutzte Vertices entfernen</translation>
+    </message>
+    <message>
+        <location filename="spells/mesh.cpp" line="572"/>
+        <source>Update Center/Radius</source>
+        <translation>Center / Radius updaten</translation>
+    </message>
+    <message>
+        <location filename="spells/obj.cpp" line="214"/>
+        <source>Export .obj Mesh</source>
+        <translation>OBJ Mesh exportieren</translation>
+    </message>
+    <message>
+        <location filename="spells/obj.cpp" line="296"/>
+        <source>Export</source>
+        <translation>Export</translation>
+    </message>
+    <message>
+        <location filename="spells/obj.cpp" line="295"/>
+        <source>Export multiple .obj meshes</source>
+        <translation>Mehrere OBJ Meshes exportieren</translation>
+    </message>
+    <message>
+        <location filename="spells/obj.cpp" line="388"/>
+        <source>Import multiple .obj Meshes</source>
+        <translation>Mehrere OBJ Meshes importieren</translation>
+    </message>
+    <message>
+        <location filename="spells/obj.cpp" line="817"/>
+        <source>Import .obj Mesh</source>
+        <translation>OBJ Mesh importieren</translation>
+    </message>
 </context>
 </TS>

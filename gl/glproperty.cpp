@@ -616,10 +616,10 @@ void glProperty( MaterialProperty * p, SpecularProperty * s )
 	}
 	else
 	{
-		Color4 a( 0.4, 0.4, 0.4, 1.0 );
-		Color4 d( 0.8, 0.8, 0.8, 1.0 );
-		Color4 s( 1.0, 1.0, 1.0, 1.0 );
-		glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 33.0 );
+		Color4 a( 0.4f, 0.4f, 0.4f, 1.0f );
+		Color4 d( 0.8f, 0.8f, 0.8f, 1.0f );
+		Color4 s( 1.0f, 1.0f, 1.0f, 1.0f );
+		glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 33.0f );
 		glMaterial( GL_FRONT_AND_BACK, GL_AMBIENT, a );
 		glMaterial( GL_FRONT_AND_BACK, GL_DIFFUSE, d );
 		glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, s );
