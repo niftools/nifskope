@@ -35,8 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
+#include <QList>
 #include <QMap>
-#include <QVector>
 
 class NifModel;
 class QModelIndex;
@@ -76,19 +76,15 @@ private:
 	} glMode;
 
 	enum {
-		NormalSel, AddSel
-	} selectionMode;
-
-	enum {
 		NoneSel, TexCoordSel, FaceSel, ElementSel
 	} selectionType;
 
-	QVector< int > selectedTexCoords;
-	QVector< int > selectedFaces;
+	QList< int > selectedTexCoords;
+	QList< int > selectedFaces;
 	int selectCycle;
 
-	void selectTexCoord( int index );
-	void selectFace( int index );
+	void selectTexCoord( int index, bool toggle = false );
+	void selectFace( int index, bool toggle = false );
 
 	struct face {
 		int index;

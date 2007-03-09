@@ -64,6 +64,8 @@ UVWidget::UVWidget( QWidget * parent )
 {
 	textures = new TexCache( this );
 
+	glMode = RenderMode;
+
 	pos.setX( 0 );
 	pos.setY( 0 );
 
@@ -92,9 +94,9 @@ void UVWidget::initializeGL()
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glEnable( GL_BLEND );
 
-	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LEQUAL );
 	glDepthRange( 0.0, -1.0 );
+	glEnable( GL_DEPTH_TEST );
 
 	glEnable( GL_MULTISAMPLE );
 	glDisable( GL_LIGHTING );
@@ -262,53 +264,84 @@ void UVWidget::drawTexCoords()
 
 	glColor( nlColor );
 	GLfloat zPos = 0.0f;
-	GLint glName = texcoords.size() + faces.size();
+	
+	if( glMode == RenderMode || ( glMode == SelectionMode && selectionType != TexCoordSel ) ) {
+		GLint glName = texcoords.size() + faces.size();
 
-	glLineWidth( 1.0f );
-	for( int i = faces.size() - 1; i > -1; i-- )
-	{
-		bool selected = selectedFaces.contains( i );
+		glLineWidth( 1.0f );
 
-		if( selected ) {
-			glColor( hlColor );
-			zPos = 0.1f;
-		}
-
-		glLoadName( glName );
-		glBegin( GL_LINES );
-		for( int j = 0; j < 3; j++ )
+		for( int i = faces.size() - 1; i > -1; i-- )
 		{
-			glVertex3f( texcoords[faces[i].tc[j]][0], texcoords[faces[i].tc[j]][1], zPos );
-			glVertex3f( texcoords[faces[i].tc[(j + 1) % 3]][0], texcoords[faces[i].tc[(j + 1) % 3]][1], zPos );
-		}
-		glEnd();
-		glName--;
+			bool selected = selectedFaces.contains( i );
 
-		if( selected ) {
-			glColor( nlColor );
-			zPos = 0.0f;
+			if( glMode == RenderMode ) {
+
+				if( selected ) {
+					glColor( hlColor );
+					zPos = -1.0f;
+				}
+			}
+
+			if( glMode == SelectionMode ) {
+				glLoadName( glName );
+			}
+
+			glBegin( GL_LINES );
+			for( int j = 0; j < 3; j++ )
+			{
+				glVertex3f( texcoords[faces[i].tc[j]][0], texcoords[faces[i].tc[j]][1], zPos );
+				glVertex3f( texcoords[faces[i].tc[(j + 1) % 3]][0], texcoords[faces[i].tc[(j + 1) % 3]][1], zPos );
+			}
+			glEnd();
+			
+			if( glMode == SelectionMode ) {
+				glName--;
+			}
+
+			if( glMode == RenderMode ) {
+				if( selected ) {
+					glColor( nlColor );
+					zPos = 0.0f;
+				}
+			}
 		}
 	}
 
-	glPointSize( 3.5f );
-	for( int i = texcoords.size() - 1; i > -1; i-- )
-	{
-		bool selected = selectedTexCoords.contains( i );
+	if( glMode == RenderMode || ( glMode == SelectionMode && selectionType != FaceSel ) ) {
+		GLint glName = texcoords.size();
 
-		if( selected ) {
-			glColor( hlColor );
-			zPos = 0.1f;
-		}
+		glPointSize( 3.5f );
 
-		glLoadName( glName );
-		glBegin( GL_POINTS );
-		glVertex2f( texcoords[i][0], texcoords[i][1] );
-		glEnd();
-		glName--;
+		for( int i = texcoords.size() - 1; i > -1; i-- )
+		{
+			bool selected = selectedTexCoords.contains( i );
 
-		if( selected ) {
-			glColor( nlColor );
-			zPos = 0.0f;
+			if( glMode == RenderMode ) {
+				if( selected ) {
+					glColor( hlColor );
+					zPos = -1.0f;
+				}
+			}
+
+			if( glMode == SelectionMode ) {
+				glLoadName( glName );
+			}
+
+			glBegin( GL_POINTS );
+			glVertex2f( texcoords[i][0], texcoords[i][1] );
+			glEnd();
+			
+			if( glMode == SelectionMode ) {
+				glName--;
+			}
+
+			
+			if( glMode == RenderMode ) {
+				if( selected ) {
+					glColor( nlColor );
+					zPos = 0.0f;
+				}
+			}
 		}
 	}
 
@@ -347,7 +380,8 @@ int UVWidget::indexAt( const QPoint & hitPos )
 	GLuint buffer[512];
 	glSelectBuffer( 512, buffer );
 
-	glRenderMode( GL_SELECT );	
+	glRenderMode( GL_SELECT );
+	glMode = SelectionMode;
 
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
@@ -367,8 +401,10 @@ int UVWidget::indexAt( const QPoint & hitPos )
 	
 	drawTexCoords();
 	
-	int selection = -1;
 	GLint hits = glRenderMode( GL_RENDER );
+	glMode = RenderMode;
+
+	int selection = -1;
 	if( hits > 0 ) {
 		QList< GLint > hitNames;
 		for( int i = 0; i < hits; i++ )
@@ -466,100 +502,105 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 
 	switch( e->button() ) {
 		case Qt::LeftButton:
-			if( dPos.manhattanLength() < 4 ) {
-				selectCycle++;
-			}
-			else {
+			if( dPos.manhattanLength() > 3 ) {
 				selectCycle = 0;
+			}
+
+			// clear the selection lock if alt is pressed
+			if( e->modifiers() == Qt::AltModifier ) {
+				if( dPos.manhattanLength() < 4 ) {
+					selectCycle++;
+				}
+
+				selectionType = NoneSel;
 			}
 
 			selection = indexAt( e->pos() ) - 1;
 
-			selectionMode = (e->modifiers() == Qt::ControlModifier ) ? AddSel : NormalSel;
-
+			// nothing was selected
 			if( selection < 0 ) {
+				if( e->modifiers() == Qt::ControlModifier ) {
+					return;
+				}
+
 				selectCycle = 0;
 				selectionType = NoneSel;
 				selectedTexCoords.clear();
 				selectedFaces.clear();
 			}
+
+			// a texcoord was selected
 			else if( selection < texcoords.size() ) {
-				switch( e->modifiers() )
+
+				// add selection mode
+				if( e->modifiers() & Qt::ControlModifier )
 				{
-					case Qt::ControlModifier:
-						if( selectionType != TexCoordSel ) {
-							return;
-						}
+					if( selectionType != NoneSel && selectionType != TexCoordSel ) {
+						return;
+					}
+					selectionType = TexCoordSel;
+					selectTexCoord( selection, ( e->modifiers() & Qt::AltModifier ) );
+				}
+
+				// select whole element mode
+				else if( e->modifiers() & Qt::ShiftModifier )
+				{
+					selectedTexCoords.clear();
+					selectedFaces.clear();
+
+					if( texcoords2faces.contains( selection ) ) {
+						selectionType = ElementSel;
+						selectFace( texcoords2faces[selection] );
+					}
+					else {
+						selectionType = TexCoordSel;
 						selectTexCoord( selection );
-						break;
+					}
+				}
 
-					case Qt::ShiftModifier:
-						selectedTexCoords.clear();
-						selectedFaces.clear();
-
-						if( texcoords2faces.contains( selection ) ) {
-							selectionType = ElementSel;
-							selectFace( texcoords2faces[selection] );
-						}
-						else {
-							selectionType = TexCoordSel;
-							selectTexCoord( selection );
-						}
-
-						break;
-
-					case Qt::NoModifier:
+				// normal selection
+				else 
+				{
 						selectedTexCoords.clear();
 						selectedFaces.clear();
 
 						selectionType = TexCoordSel;
 						selectTexCoord( selection );
-						break;
-
-					default:
-						selectCycle = 0;
-						selectionType = NoneSel;
-						selectedTexCoords.clear();
-						selectedFaces.clear();
-						return;
 				}
 			}
+
+			// a face was selected
 			else {
 				selection -= texcoords.size();
 
-				switch( e->modifiers() )
+				// add selection mode
+				if( e->modifiers() & Qt::ControlModifier )
 				{
-					case Qt::ControlModifier:
-						if( selectionType != FaceSel ) {
-							return;
-						}
-						selectFace( selection );
-						break;
-
-					case Qt::ShiftModifier:
-						selectedTexCoords.clear();
-						selectedFaces.clear();
-
-						selectionType = ElementSel;
-						selectFace( selection );
-
-						break;
-
-					case Qt::NoModifier:
-						selectedTexCoords.clear();
-						selectedFaces.clear();
-
-						selectionType = FaceSel;
-						selectFace( selection );
-
-						break;
-
-					default:
-						selectCycle = 0;
-						selectionType = NoneSel;
-						selectedTexCoords.clear();
-						selectedFaces.clear();
+					if( selectionType != NoneSel && selectionType != FaceSel ) {
 						return;
+					}
+					selectionType = FaceSel;
+					selectFace( selection, ( e->modifiers() & Qt::AltModifier ) );
+				}
+
+				// select whole element mode
+				else if( e->modifiers() & Qt::ShiftModifier )
+				{
+					selectedTexCoords.clear();
+					selectedFaces.clear();
+
+					selectionType = ElementSel;
+					selectFace( selection );
+				}
+
+				// normal selection
+				else 
+				{
+					selectedTexCoords.clear();
+					selectedFaces.clear();
+
+					selectionType = FaceSel;
+					selectFace( selection );
 				}
 			}
 
@@ -584,24 +625,16 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 
 	switch( e->buttons()) {
 		case Qt::LeftButton:
-			switch( selectionType )
+			moveX = glUnit * zoom * dPos.x();
+			moveY = glUnit * zoom * dPos.y();
+
+			foreach( int tc, selectedTexCoords )
 			{
-				case TexCoordSel:
-					moveX = glUnit * zoom * dPos.x();
-					moveY = glUnit * zoom * dPos.y();
-
-					foreach( int tc, selectedTexCoords )
-					{
-						texcoords[tc][0] += moveX;
-						texcoords[tc][1] -= moveY;
-					}
-
-					updateNif();
-					break;
-
-				default:
-					return;
+				texcoords[tc][0] += moveX;
+				texcoords[tc][1] -= moveY;
 			}
+
+			updateNif();
 			break;
 
 		case Qt::MidButton:
@@ -634,16 +667,21 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 
 void UVWidget::wheelEvent( QWheelEvent * e )
 {
-	zoom *= 1.0 + ( e->delta() / 8.0 ) / ZOOMUNIT;
+	switch( e->modifiers()) {
+		case Qt::NoModifier:
+			zoom *= 1.0 + ( e->delta() / 8.0 ) / ZOOMUNIT;
 
-	if( zoom < 0.1 ) {
-		zoom = 0.1;
-	}
-	else if( zoom > 10.0 ) {
-		zoom = 10.0;
-	}
+			if( zoom < 0.1 ) {
+				zoom = 0.1;
+			}
+			else if( zoom > 10.0 ) {
+				zoom = 10.0;
+			}
 
-	updateViewRect( width(), height() );
+			updateViewRect( width(), height() );
+
+			break;
+	}
 
 	updateGL();
 }
@@ -738,30 +776,17 @@ void UVWidget::updateNif()
 	}
 }
 
-void UVWidget::selectTexCoord( int index )
+void UVWidget::selectTexCoord( int index, bool toggle )
 {
 	if( !selectedTexCoords.contains( index ) ) {
 		selectedTexCoords.append( index );
-
-		if( selectionType == TexCoordSel ) {
-			QList< int > tcFaces = texcoords2faces.values( index );
-			foreach( int i, tcFaces ) {
-				bool faceSel = true;
-				for( int j = 0; j < 3; i++ ) {
-					if( !selectedTexCoords.contains( faces[i].tc[j] ) ) {
-						faceSel = false;
-						break;
-					}
-				}
-				if( faceSel ) {
-					selectFace( i );
-				}
-			}
-		}
+	}
+	else if( toggle ) {
+		selectedTexCoords.removeAll( index );
 	}
 }
 
-void UVWidget::selectFace( int index )
+void UVWidget::selectFace( int index, bool toggle )
 {
 	if( !selectedFaces.contains( index ) ) {
 		selectedFaces.append( index );
@@ -786,6 +811,30 @@ void UVWidget::selectFace( int index )
 				}
 			}
 		}
-	}
 
+	}
+	else if( toggle ) {
+		selectedFaces.removeAll( index );
+
+		if( selectionType == FaceSel ) {
+			for( int i = 0; i < 3; i++ ) {
+				QList< int > tcFaces = texcoords2faces.values( faces[index].tc[i] );
+				bool deselect = true;
+				foreach( int j, tcFaces )
+				{
+					if( selectedFaces.contains( j ) ) {
+						deselect = false;
+						break;
+					}
+				}
+				if( deselect ) {
+					selectTexCoord( faces[index].tc[i], true );
+				}
+			}
+
+			if( selectedFaces.empty() ) {
+				selectionType = NoneSel;
+			}
+		}
+	}
 }
