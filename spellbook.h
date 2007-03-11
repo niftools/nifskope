@@ -58,6 +58,13 @@ public:
 	
 	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;
 
+	void castIfApplicable( NifModel * nif, const QModelIndex & index )
+	{
+		if ( isApplicable( nif, index ) )
+			cast( nif, index );
+	}
+
+protected:
 	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 

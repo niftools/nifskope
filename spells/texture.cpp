@@ -131,7 +131,8 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex iBlock = nif->getBlock( idx );
-		return ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) );
+		return ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+			&& ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx )

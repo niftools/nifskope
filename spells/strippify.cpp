@@ -141,6 +141,40 @@ class spStrippify : public Spell
 REGISTER_SPELL( spStrippify )
 
 
+class spStrippifyAll : public Spell
+{
+public:
+	QString name() const { return "Strippify all TriShapes"; }
+	QString page() const { return "Optimize"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->checkVersion( 0x0a000000, 0 ) && ! index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		QList<QPersistentModelIndex> iTriShapes;
+		
+		for ( int l = 0; l < nif->getBlockCount(); l++ )
+		{
+			QModelIndex idx = nif->getBlock( l, "NiTriShape" );
+			if ( idx.isValid() )
+				iTriShapes << idx;
+		}
+		
+		spStrippify Stripper;
+		
+		foreach ( QModelIndex idx, iTriShapes )
+			Stripper.castIfApplicable( nif, idx );
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spStrippifyAll )
+
+
 class spTriangulate : public Spell
 {
 	QString name() const { return "Triangulate"; }

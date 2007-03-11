@@ -1,4 +1,4 @@
-#include "../spellbook.h"
+#include "blocks.h"
 
 #include <QApplication>
 #include <QBuffer>
@@ -607,28 +607,7 @@ public:
 REGISTER_SPELL( spPasteBranch )
 
 
-class spRemoveBranch : public Spell
-{
-public:
-	QString name() const { return "Remove Branch"; }
-	QString page() const { return "Block"; }
-	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Delete ); }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & iBlock )
-	{
-		int ix = nif->getBlockNumber( iBlock );
-		return ( nif->isNiBlock( iBlock ) && ix >= 0 && ( nif->getRootLinks().contains( ix ) || nif->getParent( ix ) >= 0 ) );
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		QPersistentModelIndex iBlock = index;
-		removeChildren( nif, iBlock );
-		nif->removeNiBlock( nif->getBlockNumber( iBlock ) );
-		return QModelIndex();
-	}
-	
-	void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
+	static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
 	{
 		QList<QPersistentModelIndex> iChildren;
 		foreach ( quint32 link, nif->getChildLinks( nif->getBlockNumber( iBlock ) ) )
@@ -642,7 +621,20 @@ public:
 			if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
 				nif->removeNiBlock( nif->getBlockNumber( iChild ) );
 	}
-};
+
+bool spRemoveBranch::isApplicable( const NifModel * nif, const QModelIndex & iBlock )
+{
+	int ix = nif->getBlockNumber( iBlock );
+	return ( nif->isNiBlock( iBlock ) && ix >= 0 && ( nif->getRootLinks().contains( ix ) || nif->getParent( ix ) >= 0 ) );
+}
+
+QModelIndex spRemoveBranch::cast( NifModel * nif, const QModelIndex & index )
+{
+	QPersistentModelIndex iBlock = index;
+	removeChildren( nif, iBlock );
+	nif->removeNiBlock( nif->getBlockNumber( iBlock ) );
+	return QModelIndex();
+}
 
 REGISTER_SPELL( spRemoveBranch )
 

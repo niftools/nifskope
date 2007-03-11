@@ -1,4 +1,4 @@
-#include "../spellbook.h"
+#include "mesh.h"
 
 #include "../widgets/groupbox.h"
 #include "../widgets/uvedit.h"
@@ -565,40 +565,30 @@ public:
 REGISTER_SPELL( spRemoveWasteVertices )
 
 
-class spUpdateCenterRadius : public Spell
+bool spUpdateCenterRadius::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 public:
 	QString name() const { return Spell::tr("Update Center/Radius"); }
 	QString page() const { return Spell::tr("Mesh"); }
 	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return nif->getBlock( index, "NiGeometryData" ).isValid();
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		QModelIndex iData = nif->getBlock( index );
-		
-		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-		if ( ! verts.count() )
-			return index;
-		
-		Vector3 center;
-		foreach ( Vector3 v, verts )
-			center += v;
-		center /= verts.count();
-		float radius = 0;
-		float d;
-		foreach ( Vector3 v, verts )
-			if ( ( d = ( center - v ).length() ) > radius )
-				radius = d;
-		
-		nif->set<Vector3>( iData, "Center", center );
-		nif->set<float>( iData, "Radius", radius );
-		
+	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+	if ( ! verts.count() )
 		return index;
-	}
-};
+	
+	Vector3 center;
+	foreach ( Vector3 v, verts )
+		center += v;
+	center /= verts.count();
+	float radius = 0;
+	float d;
+	foreach ( Vector3 v, verts )
+		if ( ( d = ( center - v ).length() ) > radius )
+			radius = d;
+	
+	nif->set<Vector3>( iData, "Center", center );
+	nif->set<float>( iData, "Radius", radius );
+	
+	return index;
+}
 
 REGISTER_SPELL( spUpdateCenterRadius );

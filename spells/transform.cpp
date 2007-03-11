@@ -1,4 +1,4 @@
-#include "../spellbook.h"
+#include "transform.h"
 
 #include "../widgets/nifeditors.h"
 
@@ -82,86 +82,79 @@ static char * transform_xpm[] = {
 "                                                                ",
 "                                                                "};
 
-class spApplyTransformation : public Spell
+bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-public:
-	QString name() const { return "Apply"; }
-	QString page() const { return "Transform"; }
+	return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "NiNode" )
+			|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" );
+}
+
+QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & index )
+{
+	if ( ( nif->getLink( index, "Controller" ) != -1 || nif->getLink( index, "Skin Instance" ) != -1 ) )
+		if ( QMessageBox::question( 0, "Apply Transformation", "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it.", "Try anyway", "Cancel" ) != 0 )
+			return index;
 	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	if ( nif->inherits( nif->itemName( index ), "NiNode" ) )
 	{
-		return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "NiNode" )
-				|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" );
+		Transform tp( nif, index );
+		bool ok = false;
+		foreach ( int l, nif->getChildLinks( nif->getBlockNumber( index ) ) )
+		{
+			QModelIndex iChild = nif->getBlock( l );
+			if ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "NiAVObject" ) )
+			{
+				Transform tc( nif, iChild );
+				tc = tp * tc;
+				tc.writeBack( nif, iChild );
+				ok = true;
+			}
+		}
+		if ( ok )
+		{
+			tp = Transform();
+			tp.writeBack( nif, index );
+		}
 	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	else
 	{
-		if ( ( nif->getLink( index, "Controller" ) != -1 || nif->getLink( index, "Skin Instance" ) != -1 ) )
-			if ( QMessageBox::question( 0, "Apply Transformation", "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it.", "Try anyway", "Cancel" ) != 0 )
-				return index;
+		QModelIndex iData;
+		if ( nif->itemName( index ) == "NiTriShape") 
+			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriShapeData" );
+		else if ( nif->itemName( index ) == "NiTriStrips" ) 
+			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );
 		
-		if ( nif->inherits( nif->itemName( index ), "NiNode" ) )
+		if ( iData.isValid() )
 		{
-			Transform tp( nif, index );
-			bool ok = false;
-			foreach ( int l, nif->getChildLinks( nif->getBlockNumber( index ) ) )
+			Transform t( nif, index );
+			QModelIndex iVertices = nif->getIndex( iData, "Vertices" );
+			if ( iVertices.isValid() )
 			{
-				QModelIndex iChild = nif->getBlock( l );
-				if ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "NiAVObject" ) )
+				QVector<Vector3> a = nif->getArray<Vector3>( iVertices );
+				for ( int v = 0; v < nif->rowCount( iVertices ); v++ )
+					a[v] = t * a[v];
+				nif->setArray<Vector3>( iVertices, a );
+				
+				QModelIndex iNormals = nif->getIndex( iData, "Normals" );
+				if ( iNormals.isValid() )
 				{
-					Transform tc( nif, iChild );
-					tc = tp * tc;
-					tc.writeBack( nif, iChild );
-					ok = true;
+					a = nif->getArray<Vector3>( iNormals );
+					for ( int n = 0; n < nif->rowCount( iNormals ); n++ )
+						a[n] = t.rotation * a[n];
+					nif->setArray<Vector3>( iNormals, a );
 				}
 			}
-			if ( ok )
-			{
-				tp = Transform();
-				tp.writeBack( nif, index );
-			}
+			QModelIndex iCenter = nif->getIndex( iData, "Center" );
+			if ( iCenter.isValid() )
+				nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
+			QModelIndex iRadius = nif->getIndex( iData, "Radius" );
+			if ( iRadius.isValid() )
+				nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
+			t = Transform();
+			t.writeBack( nif, index );
 		}
-		else
-		{
-			QModelIndex iData;
-			if ( nif->itemName( index ) == "NiTriShape") 
-				iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriShapeData" );
-			else if ( nif->itemName( index ) == "NiTriStrips" ) 
-				iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );
-			
-			if ( iData.isValid() )
-			{
-				Transform t( nif, index );
-				QModelIndex iVertices = nif->getIndex( iData, "Vertices" );
-				if ( iVertices.isValid() )
-				{
-					QVector<Vector3> a = nif->getArray<Vector3>( iVertices );
-					for ( int v = 0; v < nif->rowCount( iVertices ); v++ )
-						a[v] = t * a[v];
-					nif->setArray<Vector3>( iVertices, a );
-					
-					QModelIndex iNormals = nif->getIndex( iData, "Normals" );
-					if ( iNormals.isValid() )
-					{
-						a = nif->getArray<Vector3>( iNormals );
-						for ( int n = 0; n < nif->rowCount( iNormals ); n++ )
-							a[n] = t.rotation * a[n];
-						nif->setArray<Vector3>( iNormals, a );
-					}
-				}
-				QModelIndex iCenter = nif->getIndex( iData, "Center" );
-				if ( iCenter.isValid() )
-					nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
-				QModelIndex iRadius = nif->getIndex( iData, "Radius" );
-				if ( iRadius.isValid() )
-					nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
-				t = Transform();
-				t.writeBack( nif, index );
-			}
-		}
-		return index;
 	}
-};
+	return index;
+}
 
 REGISTER_SPELL( spApplyTransformation )
 
