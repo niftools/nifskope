@@ -6,8 +6,8 @@
 class spRemoveBranch : public Spell
 {
 public:
-	QString name() const { return "Remove Branch"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Remove Branch"); }
+	QString page() const { return Spell::tr("Block"); }
 	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Delete ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index );

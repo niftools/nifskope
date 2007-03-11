@@ -63,8 +63,7 @@ public:
 		if ( isApplicable( nif, index ) )
 			cast( nif, index );
 	}
-
-protected:
+	
 	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 

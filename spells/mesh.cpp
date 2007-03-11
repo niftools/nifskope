@@ -567,9 +567,12 @@ REGISTER_SPELL( spRemoveWasteVertices )
 
 bool spUpdateCenterRadius::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-public:
-	QString name() const { return Spell::tr("Update Center/Radius"); }
-	QString page() const { return Spell::tr("Mesh"); }
+	return nif->getBlock( index, "NiGeometryData" ).isValid();
+}
+
+QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & index )
+{
+	QModelIndex iData = nif->getBlock( index );
 	
 	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 	if ( ! verts.count() )

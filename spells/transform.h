@@ -6,8 +6,8 @@
 class spApplyTransformation : public Spell
 {
 public:
-	QString name() const { return "Apply"; }
-	QString page() const { return "Transform"; }
+	QString name() const { return Spell::tr("Apply"); }
+	QString page() const { return Spell::tr("Transform"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index );
 	QModelIndex cast( NifModel * nif, const QModelIndex & index );
