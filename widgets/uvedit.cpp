@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../gl/options.h"
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"
+#include "../nvtristrip/qtwrapper.h"
 
 #include <math.h>
 #include <gl/glext.h>
@@ -66,13 +67,13 @@ UVWidget::UVWidget( QWidget * parent )
 
 	glMode = RenderMode;
 
-	pos.setX( 0 );
-	pos.setY( 0 );
-
 	zoom = 1.2;
 
-	mousePos.setX( -1000 );
-	mousePos.setY( -1000 );
+	pos = QPoint( 0, 0 );
+
+	mousePos = QPoint( -1000, -1000 );
+
+	selectionRect = QRect( 0, 0, 0, 0 );
 
 	selectionType = NoneSel;
 }
@@ -153,8 +154,11 @@ void UVWidget::paintGL()
 	{
 		for( int j = 0; j < 3; j++ )
 		{
-			if( i != 1 || j != 1 ) {
-				glColor4f( 1.0f, 0.8f, 0.8f, 1.0f );
+			if( i == 1 && j == 1 ) {
+				glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+			}
+			else {
+				glColor4f( 0.8f, 0.8f, 0.8f, 1.0f );
 			}
 
 			glDrawArrays( GL_QUADS, 0, 4 );
@@ -237,6 +241,12 @@ void UVWidget::paintGL()
 
 
 	drawTexCoords();
+
+
+
+	if( !selectionRect.isNull() ) {
+		drawSelectionRect();
+	}
 
 
 
@@ -348,6 +358,36 @@ void UVWidget::drawTexCoords()
 	glPopMatrix();
 }
 
+void UVWidget::drawSelectionRect()
+{
+	glMatrixMode( GL_MODELVIEW );
+	glPushMatrix();
+	glLoadIdentity();
+
+	glScaled( glUnit, -glUnit, 1.0 );
+	glTranslated( -1.0 * pos.x(), -1.0 * pos.y(), 0.0 );
+	glScaled( zoom, zoom, 1.0 );
+	glTranslated( -0.5 * width(), -0.5 * height(), 0.0 );
+
+	GLint selRect[4];
+	selRect[0] = selectionRect.left();
+	selRect[1] = selectionRect.top();
+	selRect[2] = selectionRect.right();
+	selRect[3] = selectionRect.bottom();
+
+	glHighlightColor();
+
+	glBegin( GL_LINE_LOOP );
+	for( int i = 0; i < 2; i++ ) {
+		for( int j = 0; j < 2; j++ ) {
+			glVertex2i( selRect[( ( i + j ) * 2 ) % 4], selRect[( ( i * 2 ) + 1 ) % 4] );
+		}
+	}
+	glEnd();
+
+	glPopMatrix();
+}
+
 void UVWidget::setupViewport( int width, int height )
 {
 	glMatrixMode( GL_PROJECTION );
@@ -371,7 +411,7 @@ void UVWidget::updateViewRect( int width, int height )
 	glViewRect[3] = + glOffY + glPosY;
 }
 
-int UVWidget::indexAt( const QPoint & hitPos )
+int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[32], GLdouble dx, GLdouble dy )
 {
 	makeCurrent();
 
@@ -392,7 +432,7 @@ int UVWidget::indexAt( const QPoint & hitPos )
 	GLint viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 
-	gluPickMatrix( hitPos.x(), viewport[3] - hitPos.y(), 8.0, 8.0, viewport );
+	gluPickMatrix( hitPos.x(), viewport[3] - hitPos.y(), dx, dy, viewport );
 
 	glOrtho( glViewRect[0], glViewRect[1], glViewRect[2], glViewRect[3], 0.0, 100.0 );
 	
@@ -405,14 +445,23 @@ int UVWidget::indexAt( const QPoint & hitPos )
 	glMode = RenderMode;
 
 	int selection = -1;
+	QList< int > hitNames;
+
 	if( hits > 0 ) {
-		QList< GLint > hitNames;
 		for( int i = 0; i < hits; i++ )
 		{
 			hitNames.append( buffer[i * 4 + 3] );
 		}
 		qSort< QList< GLint > >( hitNames );
 		selection = hitNames[selectCycle % hits];
+
+		for( int i = 0; i < hitNames.size(); i++ )
+		{
+			if( i > 30 ) {
+				break;
+			}
+			hitArray[i] = hitNames[i];
+		}
 	}
 
 	glMatrixMode( GL_MODELVIEW );
@@ -423,7 +472,7 @@ int UVWidget::indexAt( const QPoint & hitPos )
 	
 	glPopAttrib();
 
-	return selection;
+	return hits;
 }
 
 bool UVWidget::bindTexture( const QString & filename )
@@ -498,7 +547,10 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 	QPoint dPos( e->pos() - mousePos );
 	mousePos = e->pos();
 
+	int hits;
+	int hitArray[32];
 	int selection;
+	selTypes prevSelType;
 
 	switch( e->button() ) {
 		case Qt::LeftButton:
@@ -508,6 +560,7 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 
 			// clear the selection lock if alt is pressed
 			if( e->modifiers() == Qt::AltModifier ) {
+
 				if( dPos.manhattanLength() < 4 ) {
 					selectCycle++;
 				}
@@ -515,99 +568,88 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 				selectionType = NoneSel;
 			}
 
-			selection = indexAt( e->pos() ) - 1;
+			hits = indexAt( e->pos(), hitArray, 4.0, 4.0 );
 
 			// nothing was selected
-			if( selection < 0 ) {
+			if( hits < 1 ) {
+				selectionRect.setTopLeft( e->pos() );
+				selectionRect.setBottomRight( e->pos() );
+
 				if( e->modifiers() == Qt::ControlModifier ) {
-					return;
+					break;
 				}
 
 				selectCycle = 0;
 				selectionType = NoneSel;
 				selectedTexCoords.clear();
 				selectedFaces.clear();
+
+				break;
 			}
 
+			// Store previous selection type
+			prevSelType = selectionType;
+
+			// Select the currently cycled object 
+			selection = hitArray[selectCycle % hits] - 1;
+
 			// a texcoord was selected
-			else if( selection < texcoords.size() ) {
-
-				// add selection mode
-				if( e->modifiers() & Qt::ControlModifier )
-				{
-					if( selectionType != NoneSel && selectionType != TexCoordSel ) {
-						return;
-					}
-					selectionType = TexCoordSel;
-					selectTexCoord( selection, ( e->modifiers() & Qt::AltModifier ) );
-				}
-
-				// select whole element mode
-				else if( e->modifiers() & Qt::ShiftModifier )
-				{
-					selectedTexCoords.clear();
-					selectedFaces.clear();
-
-					if( texcoords2faces.contains( selection ) ) {
-						selectionType = ElementSel;
-						selectFace( texcoords2faces[selection] );
-					}
-					else {
-						selectionType = TexCoordSel;
-						selectTexCoord( selection );
-					}
-				}
-
-				// normal selection
-				else 
-				{
-						selectedTexCoords.clear();
-						selectedFaces.clear();
-
-						selectionType = TexCoordSel;
-						selectTexCoord( selection );
-				}
+			if( selection < texcoords.size() ) {
+				selectionType = TexCoordSel;
 			}
 
 			// a face was selected
 			else {
 				selection -= texcoords.size();
-
-				// add selection mode
-				if( e->modifiers() & Qt::ControlModifier )
-				{
-					if( selectionType != NoneSel && selectionType != FaceSel ) {
-						return;
-					}
-					selectionType = FaceSel;
-					selectFace( selection, ( e->modifiers() & Qt::AltModifier ) );
-				}
-
-				// select whole element mode
-				else if( e->modifiers() & Qt::ShiftModifier )
-				{
+				selectionType = FaceSel;
+			}
+			
+			switch( e->modifiers() )
+			{
+				case Qt::ShiftModifier:
 					selectedTexCoords.clear();
 					selectedFaces.clear();
+
+					if( selectionType == TexCoordSel ) {
+						if( !texcoords2faces.contains( selection ) ) {
+							selectionType = TexCoordSel;
+							selectTexCoord( selection );
+
+							break;
+						}
+
+						selection = texcoords2faces[selection];
+					}
 
 					selectionType = ElementSel;
 					selectFace( selection );
-				}
+					break;
+					
+				case Qt::ControlModifier:
+					if( prevSelType == NoneSel || prevSelType == selectionType ) {
+						selectObject( selection, true );
+					}
+					else {
+						selectionType = prevSelType;
+					}
+					break;
 
-				// normal selection
-				else 
-				{
-					selectedTexCoords.clear();
-					selectedFaces.clear();
+				default:
+					if( prevSelType == NoneSel || prevSelType == selectionType ) {
+						if( !isSelected( selection ) ) {
+							selectedTexCoords.clear();
+							selectedFaces.clear();
 
-					selectionType = FaceSel;
-					selectFace( selection );
-				}
+							selectObject( selection );
+						}
+					}
+					else {
+						selectionType = prevSelType;
+					}
+					break;
 			}
 
 			break;
-
-		default:
-			return;
 	}
 
 	updateGL();
@@ -615,8 +657,39 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 
 void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 {
-}
+	int hits;
+	int hitArray[32];
+	QRect hitRect = selectionRect.normalized();
+	selectionRect = QRect( 0, 0, 0, 0 );
 
+	switch( e->button() )
+	{
+		case Qt::LeftButton:
+
+			if( hitRect.isNull() || selectionType != NoneSel ) {
+				break;
+			}
+
+			selectionType = TexCoordSel;
+
+			hits = indexAt( hitRect.center(), hitArray, hitRect.width(), hitRect.height() );
+
+			if( hits < 1 ) {
+				selectionType = NoneSel;
+				break;
+			}
+			else {
+				for( int i = 0; i < hits; i++ ) {
+					if( hitArray[i] - 1 < texcoords.size() ) {
+						selectTexCoord( hitArray[i] - 1 );
+					}
+				}
+			}
+			break;
+	}
+
+	updateGL();
+}
 
 void UVWidget::mouseMoveEvent( QMouseEvent * e )
 {
@@ -625,16 +698,22 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 
 	switch( e->buttons()) {
 		case Qt::LeftButton:
-			moveX = glUnit * zoom * dPos.x();
-			moveY = glUnit * zoom * dPos.y();
+			if( selectionType != NoneSel ) {
+				moveX = glUnit * zoom * dPos.x();
+				moveY = glUnit * zoom * dPos.y();
 
-			foreach( int tc, selectedTexCoords )
-			{
-				texcoords[tc][0] += moveX;
-				texcoords[tc][1] -= moveY;
+				foreach( int tc, selectedTexCoords )
+				{
+					texcoords[tc][0] += moveX;
+					texcoords[tc][1] -= moveY;
+				}
+
+				updateNif();
+			}
+			else {
+				selectionRect.setBottomRight( e->pos() );
 			}
 
-			updateNif();
 			break;
 
 		case Qt::MidButton:
@@ -711,40 +790,42 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			return false;
 		}
 		
+		QVector< Triangle > tris;
+		
 		if( nif->isNiBlock( idx, "NiTriShape" ) ) {
-			QVector< Triangle > tris = nif->getArray< Triangle >( iData, "Triangles" );
-			QMutableVectorIterator< Triangle > itri( tris );
-			while ( itri.hasNext() )
-			{
-				Triangle & t = itri.next();
-
-				int fIdx = faces.size();
-				faces.append( face( fIdx, t[0], t[1], t[2] ) );
-
-				for( int i = 0; i < 3; i++ ) {
-					texcoords2faces.insertMulti( t[i], fIdx );
-				}
-			}
+			tris = nif->getArray< Triangle >( iData, "Triangles" );
 		}
 		else if( nif->isNiBlock( idx, "NiTriStrips" ) ) {
-			QModelIndex iPoints = nif->getIndex( nif->getBlock( iData ), "Points" );
-			if( !iPoints.isValid() ) {
-				return false;
-			}
-
-			QVector< ushort > pnts = nif->getArray< ushort >( iPoints, "Points" );
-			for( int i = 0; i < ( pnts.size() - 2 ); i++ )
+			QModelIndex iPoints = nif->getIndex( iData, "Points" );
+			if( iPoints.isValid() )
 			{
-				int fIdx = faces.size();
-				faces.append( face( fIdx, pnts[i], pnts[i+1], pnts[i+2] ) );
-
-				for( int j = 0; j < 3; j++ ) {
-					texcoords2faces.insertMulti( pnts[i+j], fIdx );
+				QList< QVector< quint16 > > strips;
+				for( int r = 0; r < nif->rowCount( iPoints ); r++ )
+				{
+					strips.append( nif->getArray< quint16 >( iPoints.child( r, 0 ) ) );
 				}
+
+				tris = triangulate( strips );
+			}
+			else {
+				return false;
 			}
 		}
 		else {
 			return false;
+		}
+
+		QMutableVectorIterator< Triangle > itri( tris );
+		while ( itri.hasNext() )
+		{
+			Triangle & t = itri.next();
+
+			int fIdx = faces.size();
+			faces.append( face( fIdx, t[0], t[1], t[2] ) );
+
+			for( int i = 0; i < 3; i++ ) {
+				texcoords2faces.insertMulti( t[i], fIdx );
+			}
 		}
 	}
 
@@ -773,6 +854,39 @@ void UVWidget::updateNif()
 {
 	if( iTexCoords.isValid() ) {
 		nif->setArray< Vector2 >( iTexCoords, texcoords );
+	}
+}
+
+bool UVWidget::isSelected( int index )
+{
+	switch( selectionType )
+	{
+		case TexCoordSel:
+			return selectedTexCoords.contains( index );
+
+		case FaceSel:
+			return selectedFaces.contains( index );
+			break;
+
+		default:
+			return false;
+	}
+}
+
+void UVWidget::selectObject( int index, bool toggle )
+{
+	switch( selectionType )
+	{
+		case TexCoordSel:
+			selectTexCoord( index, toggle );
+			break;
+
+		case FaceSel:
+			selectFace( index, toggle );
+			break;
+
+		default:
+			return;
 	}
 }
 

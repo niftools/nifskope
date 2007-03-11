@@ -11,8 +11,8 @@
 class spFaceNormals : public Spell
 {
 public:
-	QString name() const { return "Face Normals"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Face Normals"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
@@ -80,8 +80,8 @@ REGISTER_SPELL( spFaceNormals )
 class spSmoothNormals : public Spell
 {
 public:
-	QString name() const { return "Smooth Normals"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Smooth Normals"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -99,7 +99,7 @@ public:
 			return index;
 		
 		QDialog dlg;
-		dlg.setWindowTitle( "Smooth Normals" );
+		dlg.setWindowTitle( Spell::tr("Smooth Normals") );
 		
 		QGridLayout * grid = new QGridLayout;
 		dlg.setLayout( grid );
@@ -109,7 +109,7 @@ public:
 		angle->setValue( 60 );
 		angle->setSingleStep( 5 );
 		
-		grid->addWidget( new QLabel( "Max Smooth Angle" ), 0, 0 );
+		grid->addWidget( new QLabel( Spell::tr("Max Smooth Angle") ), 0, 0 );
 		grid->addWidget( angle, 0, 1 );
 		
 		QDoubleSpinBox * dist = new QDoubleSpinBox;
@@ -118,15 +118,15 @@ public:
 		dist->setSingleStep( 0.01 );
 		dist->setValue( 0.001 );
 		
-		grid->addWidget( new QLabel( "Max Vertex Distance" ), 1, 0 );
+		grid->addWidget( new QLabel( Spell::tr("Max Vertex Distance") ), 1, 0 );
 		grid->addWidget( dist, 1, 1 );
 		
 		QPushButton * btOk = new QPushButton;
-		btOk->setText( "Smooth" );
+		btOk->setText( Spell::tr("Smooth") );
 		QObject::connect( btOk, SIGNAL( clicked() ), & dlg, SLOT( accept() ) );
 		
 		QPushButton * btCancel = new QPushButton;
-		btCancel->setText( "Cancel" );
+		btCancel->setText( Spell::tr("Cancel") );
 		QObject::connect( btCancel, SIGNAL( clicked() ), & dlg, SLOT( reject() ) );
 		
 		grid->addWidget( btOk, 2, 0 );
@@ -174,7 +174,7 @@ REGISTER_SPELL( spSmoothNormals )
 class spNormalize : public Spell
 {
 public:
-	QString name() const { return "Normalize"; }
+	QString name() const { return Spell::tr("Normalize"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

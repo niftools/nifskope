@@ -69,7 +69,7 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 	{
 		setAttribute( Qt::WA_DeleteOnClose );
 		
-		QPushButton * btAccept = new QPushButton( "Accept" );
+		QPushButton * btAccept = new QPushButton( tr("Accept") );
 		connect( btAccept, SIGNAL( clicked() ), this, SLOT( close() ) );
 		layout->addWidget( btAccept );
 	}
@@ -215,6 +215,7 @@ NifFloatEdit::NifFloatEdit( NifModel * nif, const QModelIndex & index, float min
 {
 	getLayout()->addWidget( spinbox = new QDoubleSpinBox() );
 	spinbox->setRange( min, max );
+	spinbox->setDecimals( 4 );
 	connect( spinbox, SIGNAL( valueChanged( double ) ), this, SLOT( applyData() ) );
 }
 
@@ -349,21 +350,21 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 	
 	QGroupBox * group = new QGroupBox;
 	vbox->addWidget( group );
-	group->setTitle( "Translation" );
+	group->setTitle( tr("Translation") );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( translation = new VectorEdit() );
 	connect( translation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 	
 	group = new QGroupBox;
 	vbox->addWidget( group );
-	group->setTitle( "Rotation" );
+	group->setTitle( tr("Rotation") );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( rotation = new RotationEdit() );
 	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 	
 	group = new QGroupBox;
 	vbox->addWidget( group );
-	group->setTitle( "Scale" );
+	group->setTitle( tr("Scale") );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( scale = new VectorEdit() );
 	connect( scale, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );

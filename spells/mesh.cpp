@@ -1,10 +1,10 @@
 #include "mesh.h"
 
-#include "../widgets/groupbox.h"
 #include "../widgets/uvedit.h"
 
 #include <QDebug>
-
+#include <QDialog>
+#include <QGridLayout>
 
 class spFlipTexCoords : public Spell
 {
@@ -101,22 +101,22 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		GroupBox * dialog = new GroupBox( "", Qt::Vertical );
-		dialog->setWindowTitle( Spell::tr("UV Editor") );
-		dialog->setWindowFlags( Qt::Dialog );
-		
-		UVWidget * uvEditor = new UVWidget( dialog );
+		QDialog dlg;
+		dlg.setWindowTitle( Spell::tr("UV Editor") );
 
-		if( !uvEditor->setNifData( nif, index ) ) {
+		QGridLayout * grid = new QGridLayout;
+		dlg.setLayout( grid );
+		
+		UVWidget uvEditor( &dlg );
+
+		if( !uvEditor.setNifData( nif, index ) ) {
 			qWarning() << Spell::tr( "Could not load texture data for UV editor." );
-			delete uvEditor;
-			delete dialog;
 			return index;
 		}
 
-		dialog->addWidget( uvEditor );
+		grid->addWidget( &uvEditor );
 
-		dialog->show();
+		dlg.exec();
 
 		return index;
 	}

@@ -37,10 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QList>
 #include <QMap>
+#include <QString>
 
 class NifModel;
 class QModelIndex;
-class QString;
 class TexCache;
 class Vector2;
 
@@ -75,14 +75,18 @@ private:
 		RenderMode, SelectionMode
 	} glMode;
 
-	enum {
+	enum selTypes {
 		NoneSel, TexCoordSel, FaceSel, ElementSel
-	} selectionType;
+	};
+	
+	selTypes selectionType;
 
 	QList< int > selectedTexCoords;
 	QList< int > selectedFaces;
 	int selectCycle;
 
+	bool isSelected( int index );
+	void selectObject( int index, bool toggle = false );
 	void selectTexCoord( int index, bool toggle = false );
 	void selectFace( int index, bool toggle = false );
 
@@ -91,22 +95,10 @@ private:
 
 		int tc[3];
 
-		bool contains( int v )
-		{
-			return ( tc[0] == v || tc[1] == v || tc[2] == v );
-		}
+		bool contains( int v ) { return ( tc[0] == v || tc[1] == v || tc[2] == v ); }
 
-		face()
-			: index( -1 )
-		{}
-
-		face( int idx, int tc1, int tc2, int tc3 )
-			: index( idx )
-		{
-			tc[0] = tc1;
-			tc[1] = tc2;
-			tc[2] = tc3;
-		}
+		face() : index( -1 ) {}
+		face( int idx, int tc1, int tc2, int tc3 ) : index( idx ) { tc[0] = tc1; tc[1] = tc2; tc[2] = tc3; }
 	};
 
 	QVector< Vector2 > texcoords;
@@ -119,12 +111,13 @@ private:
 	QString texfile;
 
 	void drawTexCoords();
+	void drawSelectionRect();
 
 	void setupViewport( int width, int height );
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
 
-	int indexAt( const QPoint & hitPos );
+	int indexAt( const QPoint & hitPos, int (&buffer)[32], GLdouble dx, GLdouble dy );
 
 	void updateNif();
 
@@ -136,7 +129,8 @@ private:
 	QPoint pos;
 
 	QPoint mousePos;
-
+	QRect selectionRect;
+	
 	GLdouble zoom;
 };
 
