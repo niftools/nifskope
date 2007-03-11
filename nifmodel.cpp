@@ -680,9 +680,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 	if ( column == ValueCol && item->parent() == root && item->type() == "NiBlock" )
 	{
 		QModelIndex buddy;
-		if ( item->name() == "NiSourceTexture" )
+		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
 			buddy = getIndex( index, "File Name" );
-      else
+		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
 			buddy = buddy.sibling( buddy.row(), index.column() );
@@ -837,7 +837,21 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						return QString( "array index: %1" ).arg( item->row() );
 					}
 					else
-						return QString( "<p>%1</p>" ).arg( item->text() ); // enforce rich text tooltips
+					{
+						QString tip = QString( "<p><b>%1</b></p><p>%2</p>" ).arg( item->name() ).arg( item->text() );
+						
+						if ( NifBlock * blk = blocks.value( item->name() ) )
+						{
+							tip += "<p>Ancestors:<ul>";
+							while ( blocks.contains( blk->ancestor ) )
+							{
+								tip += QString( "<li>%1</li>" ).arg( blk->ancestor );
+								blk = blocks.value( blk->ancestor );
+							}
+							tip += "</ul></p>";
+						}
+						return tip;
+					}
 				}	break;
 				case TypeCol:
 					return NifValue::typeDescription( item->type() );
@@ -933,7 +947,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" )
 	{
 		QModelIndex buddy;
-		if ( item->name() == "NiSourceTexture" )
+		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
 			buddy = getIndex( index, "File Name" );
 		else
 			buddy = getIndex( index, "Name" );
@@ -984,13 +998,13 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 			return false;
 	}
 
-	// reverse buddy lookup (perhaps I'd better think of a way how to make the mapping of values to the block level more efficient)
+	// reverse buddy lookup
 	if ( index.column() == ValueCol )
 	{
 		if ( item->name() == "File Name" )
 		{
 			NifItem * parent = item->parent();
-			if ( parent && parent->name() == "Texture Source" )
+			if ( parent && ( parent->name() == "Texture Source" || parent->name() == "NiImage" ) )
 			{
 				parent = parent->parent();
 				if ( parent && parent->type() == "NiBlock" && parent->name() == "NiSourceTexture" )
