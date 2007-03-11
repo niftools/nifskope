@@ -91,7 +91,7 @@ bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelInde
 QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & index )
 {
 	if ( ( nif->getLink( index, "Controller" ) != -1 || nif->getLink( index, "Skin Instance" ) != -1 ) )
-		if ( QMessageBox::question( 0, "Apply Transformation", "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it.", "Try anyway", "Cancel" ) != 0 )
+		if ( QMessageBox::question( 0, Spell::tr("Apply Transformation"), Spell::tr("On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it."), Spell::tr("Try anyway"), Spell::tr("Cancel") ) != 0 )
 			return index;
 	
 	if ( nif->inherits( nif->itemName( index ), "NiNode" ) )
@@ -161,8 +161,8 @@ REGISTER_SPELL( spApplyTransformation )
 class spClearTransformation : public Spell
 {
 public:
-	QString name() const { return "Clear"; }
-	QString page() const { return "Transform"; }
+	QString name() const { return Spell::tr("Clear"); }
+	QString page() const { return Spell::tr("Transform"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -182,8 +182,8 @@ REGISTER_SPELL( spClearTransformation )
 class spCopyTransformation : public Spell
 {
 public:
-	QString name() const { return "Copy"; }
-	QString page() const { return "Transform"; }
+	QString name() const { return Spell::tr("Copy"); }
+	QString page() const { return Spell::tr("Transform"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -212,8 +212,8 @@ REGISTER_SPELL( spCopyTransformation )
 class spPasteTransformation : public Spell
 {
 public:
-	QString name() const { return "Paste"; }
-	QString page() const { return "Transform"; }
+	QString name() const { return Spell::tr("Paste"); }
+	QString page() const { return Spell::tr("Transform"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -259,8 +259,8 @@ QIcon * transform_xpm_icon = 0;
 class spEditTransformation : public Spell
 {
 public:
-	QString name() const { return "Edit"; }
-	QString page() const { return "Transform"; }
+	QString name() const { return Spell::tr("Edit"); }
+	QString page() const { return Spell::tr("Transform"); }
 	QIcon icon() const
 	{
 		if ( ! transform_xpm_icon )
@@ -288,7 +288,7 @@ REGISTER_SPELL( spEditTransformation )
 
 class spEditMatrix4 : public Spell
 {
-	QString name() const { return "Edit Matrix"; }
+	QString name() const { return Spell::tr("Edit Matrix"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

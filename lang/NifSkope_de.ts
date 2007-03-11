@@ -64,6 +64,32 @@
     </message>
 </context>
 <context>
+    <name>NifBlockEditor</name>
+    <message>
+        <location filename="widgets/nifeditors.cpp" line="72"/>
+        <source>Accept</source>
+        <translation>Übernehmen</translation>
+    </message>
+</context>
+<context>
+    <name>NifMatrix4Edit</name>
+    <message>
+        <location filename="widgets/nifeditors.cpp" line="353"/>
+        <source>Translation</source>
+        <translation>Translation</translation>
+    </message>
+    <message>
+        <location filename="widgets/nifeditors.cpp" line="360"/>
+        <source>Rotation</source>
+        <translation>Rotation</translation>
+    </message>
+    <message>
+        <location filename="widgets/nifeditors.cpp" line="367"/>
+        <source>Scale</source>
+        <translation>Skalierung</translation>
+    </message>
+</context>
+<context>
     <name>NifSkope</name>
     <message>
         <location filename="../nifskope.cpp" line="176"/>
@@ -171,27 +197,27 @@
         <translation>&amp;Über</translation>
     </message>
     <message>
-        <location filename="../nifskope.cpp" line="578"/>
+        <location filename="../nifskope.cpp" line="580"/>
         <source>failed to load kfm from file</source>
         <translation>Fehler beim Lesen von KFM aus Datei </translation>
     </message>
     <message>
-        <location filename="../nifskope.cpp" line="603"/>
+        <location filename="../nifskope.cpp" line="605"/>
         <source>loading nif...</source>
         <translation>Nif wird geladen...</translation>
     </message>
     <message>
-        <location filename="../nifskope.cpp" line="610"/>
+        <location filename="../nifskope.cpp" line="614"/>
         <source>failed to load nif from file </source>
         <translation>Fehler beim Lesen von Nif aus Datei</translation>
     </message>
     <message>
-        <location filename="../nifskope.cpp" line="644"/>
+        <location filename="../nifskope.cpp" line="649"/>
         <source>failed to write kfm file</source>
         <translation>Fehler beim Schreiben von KFM in Datei</translation>
     </message>
     <message>
-        <location filename="../nifskope.cpp" line="661"/>
+        <location filename="../nifskope.cpp" line="668"/>
         <source>failed to write nif file </source>
         <translation>Fehler beim Schreiben von Nif in Datei</translation>
     </message>
@@ -209,7 +235,7 @@
 <context>
     <name>QMessageBox</name>
     <message>
-        <location filename="../nifskope.cpp" line="821"/>
+        <location filename="../nifskope.cpp" line="828"/>
         <source>Fatal Error</source>
         <translation>Schwerer Fehler</translation>
     </message>
@@ -317,77 +343,77 @@
         <translation>Material &apos;%1&apos; konnte nicht in der Liste gefunden werden!</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="13"/>
+        <location filename="spells/mesh.cpp" line="12"/>
         <source>Flip UV</source>
         <translation>Flip UV</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="573"/>
+        <location filename="spells/tangentspace.h" line="10"/>
         <source>Mesh</source>
         <translation>Mesh</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="95"/>
+        <location filename="spells/mesh.cpp" line="94"/>
         <source>Edit UV</source>
         <translation>UV bearbeiten</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="106"/>
+        <location filename="spells/mesh.cpp" line="105"/>
         <source>UV Editor</source>
         <translation>UV Editor</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="112"/>
+        <location filename="spells/mesh.cpp" line="113"/>
         <source>Could not load texture data for UV editor.</source>
         <translation>Der UV Editor konnte keine Texturdaten laden.</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="132"/>
+        <location filename="spells/mesh.cpp" line="131"/>
         <source>Flip Face</source>
         <translation>Flip Face</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="165"/>
+        <location filename="spells/mesh.cpp" line="164"/>
         <source>Prune Redundant Triangles</source>
         <translation>Reduntante Triangles entfernen</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="228"/>
+        <location filename="spells/mesh.cpp" line="227"/>
         <source>%1 triangles removed</source>
         <translation>%1 Triangles wurden entfernt</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="258"/>
+        <location filename="spells/mesh.cpp" line="257"/>
         <source>no vertices?</source>
         <translation>keine Vertices?</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="420"/>
+        <location filename="spells/mesh.cpp" line="419"/>
         <source>Remove Doublicate Vertices</source>
         <translation>Doppelte Vertices entfernen</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="459"/>
+        <location filename="spells/mesh.cpp" line="458"/>
         <source>uv array size differs</source>
         <translation>Größen der UV-Arrays stimmen nicht überein</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="468"/>
+        <location filename="spells/mesh.cpp" line="467"/>
         <source>vertex array size differs</source>
         <translation>Größen der Vertex-Arrays stimmen nicht überein</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="499"/>
+        <location filename="spells/mesh.cpp" line="498"/>
         <source>detected % duplicates</source>
         <translation>%1 Duplikate gefunden</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="547"/>
+        <location filename="spells/mesh.cpp" line="546"/>
         <source>Remove Unused Vertices</source>
         <translation>Unbenutzte Vertices entfernen</translation>
     </message>
     <message>
-        <location filename="spells/mesh.cpp" line="572"/>
+        <location filename="spells/mesh.h" line="9"/>
         <source>Update Center/Radius</source>
         <translation>Center / Radius updaten</translation>
     </message>
@@ -415,6 +441,106 @@
         <location filename="spells/obj.cpp" line="817"/>
         <source>Import .obj Mesh</source>
         <translation>OBJ Mesh importieren</translation>
+    </message>
+    <message>
+        <location filename="spells/blocks.h" line="9"/>
+        <source>Remove Branch</source>
+        <translation>Branch entfernen</translation>
+    </message>
+    <message>
+        <location filename="spells/blocks.h" line="10"/>
+        <source>Block</source>
+        <translation>Block</translation>
+    </message>
+    <message>
+        <location filename="spells/normals.cpp" line="14"/>
+        <source>Face Normals</source>
+        <translation>Face Normals</translation>
+    </message>
+    <message>
+        <location filename="spells/normals.cpp" line="102"/>
+        <source>Smooth Normals</source>
+        <translation>Smooth Normals</translation>
+    </message>
+    <message>
+        <location filename="spells/normals.cpp" line="112"/>
+        <source>Max Smooth Angle</source>
+        <translation>Max. Smooth-Winkel</translation>
+    </message>
+    <message>
+        <location filename="spells/normals.cpp" line="121"/>
+        <source>Max Vertex Distance</source>
+        <translation>Max. Vertex-Abstand</translation>
+    </message>
+    <message>
+        <location filename="spells/normals.cpp" line="125"/>
+        <source>Smooth</source>
+        <translation>Smooth</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="94"/>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <location filename="spells/normals.cpp" line="177"/>
+        <source>Normalize</source>
+        <translation>Normalisieren</translation>
+    </message>
+    <message>
+        <location filename="spells/tangentspace.h" line="9"/>
+        <source>Update Tangent Space</source>
+        <translation>Tangent Space updaten</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="94"/>
+        <source>Apply Transformation</source>
+        <translation>Transformation übernehmen</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="94"/>
+        <source>On animated and or skinned nodes Apply Transformation most likely won&apos;t work the way you expected it.</source>
+        <translation>Für animierte und/oder geskinnte Nodes wird das Übernehmen der Transformation wahrscheinlich fehlschlagen.</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="94"/>
+        <source>Try anyway</source>
+        <translation>Trotzdem weiter</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="164"/>
+        <source>Clear</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.h" line="10"/>
+        <source>Transform</source>
+        <translation>Transformieren</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="185"/>
+        <source>Copy</source>
+        <translation>Kopieren</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="215"/>
+        <source>Paste</source>
+        <translation>Einfügen</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="262"/>
+        <source>Edit</source>
+        <translation>Bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.cpp" line="291"/>
+        <source>Edit Matrix</source>
+        <translation>Matrix bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="spells/transform.h" line="9"/>
+        <source>Apply</source>
+        <translation>Anwenden</translation>
     </message>
 </context>
 </TS>

@@ -93,6 +93,7 @@ protected:
 
 class NifFloatSlider : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifFloatSlider( NifModel * nif, const QModelIndex & index, float min, float max );
 
@@ -105,6 +106,7 @@ protected:
 
 class NifFloatEdit : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifFloatEdit( NifModel * nif, const QModelIndex & index, float min = -10e8, float max = +10e8 );
 	
@@ -117,6 +119,7 @@ protected:
 
 class NifLineEdit : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifLineEdit( NifModel * nif, const QModelIndex & index );
 	
@@ -129,6 +132,7 @@ protected:
 
 class NifColorEdit : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifColorEdit( NifModel * nif, const QModelIndex & index );
 	
@@ -142,6 +146,7 @@ protected:
 
 class NifVectorEdit : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifVectorEdit( NifModel * nif, const QModelIndex & index );
 	
@@ -154,6 +159,7 @@ protected:
 
 class NifRotationEdit : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifRotationEdit( NifModel * nif, const QModelIndex & index );
 	
@@ -166,6 +172,7 @@ protected:
 
 class NifMatrix4Edit : public NifEditBox
 {
+	Q_OBJECT
 public:
 	NifMatrix4Edit( NifModel * nif, const QModelIndex & index );
 	
