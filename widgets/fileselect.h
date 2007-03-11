@@ -44,20 +44,25 @@ class QDirModel;
 class FileSelector : public QWidget
 {
 	Q_OBJECT
+    Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
+	Q_PROPERTY(QStringList filter READ filter WRITE setFilter)
+	Q_PROPERTY(Modes mode READ mode WRITE setMode)
+	Q_PROPERTY(States state READ state WRITE setState RESET rstState)
+	Q_ENUMS(Modes)
+	Q_ENUMS(States)
+	
 public:
 	enum Modes
 	{
 		LoadFile, SaveFile, Folder
 	};
 
-	enum ActionStates
+	enum States
 	{
-		StateSuccess, StateError, StateNeutral
+		stNeutral = 0, stSuccess = 1, stError = 2
 	};
 	
-	FileSelector( Modes mode, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
-	
-    Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
+	FileSelector( Modes m, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
 	
 	QString text() const { return file(); }
 	QString file() const;
@@ -68,6 +73,10 @@ public:
 	Modes mode() const { return Mode; }
 	void setMode( Modes m ) { Mode = m; }
 
+	States state() const { return State; }
+	void setState( States );
+	void rstState() { setState( stNeutral ); }
+	
 signals:
 	void sigEdited( const QString & );
 	void sigActivated( const QString & );
@@ -76,8 +85,6 @@ public slots:
 	void setText( const QString & );
 	void setFile( const QString & );
 
-	void setState( const ActionStates & = StateNeutral );
-	
 	void replaceText( const QString & );
 	
 	void setCompletionEnabled( bool );
@@ -92,6 +99,7 @@ protected:
 	QAction * completionAction();
 	
 	Modes Mode;
+	States State;
 
 	QLineEdit * line;
 	QAction   * action;

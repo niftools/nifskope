@@ -1,3 +1,7 @@
+/*
+	Stylish tooltips
+*/
+
 QToolTip
 {
 	opacity: 213;
@@ -7,6 +11,10 @@ QToolTip
 	padding: 4px;
 	background: ghostwhite;
 }
+
+/*
+	Make the disabled rows of the table views more distinguishable
+*/
 
 QTreeView
 {
@@ -25,25 +33,28 @@ QTreeView:disabled
 }
 
 
+/*
+	Give the fileselectors a green tint on success and a red one on error
+*/
 
-FileSelector QLineEdit
+FileSelector > QLineEdit
 {
 	border: 1px solid #333;
 	border-radius: 3px;
 	background-color: #fefefe;
 }
 
-FileSelector QLineEdit[State="FileSuccess"]
+FileSelector[state="0"] > QLineEdit
+{	/* the attribute selector doesn't support enums yet, so we need to use raw numbers */
+	background-color: #fefefe;
+}
+
+FileSelector[state="1"] > QLineEdit
 {
 	background-color: #cfc;
 }
 
-FileSelector QLineEdit[State="FileError"]
+FileSelector[state="2"] > QLineEdit
 {
 	background-color: #fcc;
-}
-
-FileSelector QLineEdit[State="Neutral"]
-{
-	background-color: #fefefe;
 }

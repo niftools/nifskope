@@ -154,27 +154,13 @@ void FileSelector::setText( const QString & x )
 	setFile( x );
 }
 
-void FileSelector::setState( const ActionStates & x )
+void FileSelector::setState( States s )
 {
-	switch( x ) {
-		case StateSuccess:
-			// doesn't work in Qt 4.2.2
-			// line->setProperty("State", "FileSuccess");
-			line->setStyleSheet( "background-color: #efe;" );
-			QTimer::singleShot( FEEDBACK_TIME, this, SLOT( setState() ) );
-			break;
-
-		case StateError:
-			// line->setProperty("State", "FileError");
-			line->setStyleSheet( "background-color: #fee;" );
-			QTimer::singleShot( FEEDBACK_TIME, this, SLOT( setState() ) );
-			break;
-
-		default:
-			// line->setProperty("State", "Neutral");
-			line->setStyleSheet( "background-color: #fefefe;" );
-			break;
-	}
+	State = s;
+	// reload style sheet
+	QString styletmp = styleSheet();
+	setStyleSheet( QString() );
+	setStyleSheet( styletmp );
 }
 
 void FileSelector::replaceText( const QString & x )

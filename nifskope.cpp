@@ -574,15 +574,17 @@ void NifSkope::load()
 	
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
+		lineLoad->rstState();
+		lineSave->rstState();
 		if ( ! kfm->loadFromFile( nifname ) ) {
 			qWarning() << tr("failed to load kfm from file") << nifname;
-			lineLoad->setState( FileSelector::StateError );
+			lineLoad->setState( FileSelector::stError );
 		}
 		else {
-			lineLoad->setState( FileSelector::StateSuccess );
+			lineLoad->setState( FileSelector::stSuccess );
 			lineSave->setText( lineLoad->text() );
 		}
-
+		
 		nifname = kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" );
 		if ( ! nifname.isEmpty() ) {
 			nifname.prepend( kfm->getFolder() + "/" );
@@ -606,12 +608,14 @@ void NifSkope::load()
 		prog.setMinimumDuration( 2100 );
 		connect( nif, SIGNAL( sigProgress( int, int ) ), & prog, SLOT( sltProgress( int, int ) ) );
 		
+		lineLoad->rstState();
+		lineSave->rstState();
 		if ( ! nif->loadFromFile( nifname ) ) {
 			qWarning() << tr("failed to load nif from file ") << nifname;
-			lineLoad->setState( FileSelector::StateError );
+			lineLoad->setState( FileSelector::stError );
 		}
 		else {
-			lineLoad->setState( FileSelector::StateSuccess );
+			lineLoad->setState( FileSelector::stSuccess );
 			lineSave->setText( lineLoad->text() );
 		}
 		
@@ -640,29 +644,32 @@ void NifSkope::save()
 	
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
 	{
+		lineSave->rstState();
 		if ( ! kfm->saveToFile( nifname ) ) {
 			qWarning() << tr("failed to write kfm file") << nifname;
-			lineSave->setState(FileSelector::StateError);
+			lineSave->setState(FileSelector::stError);
 		}
 		else {
-			lineSave->setState(FileSelector::StateSuccess);
+			lineSave->setState(FileSelector::stSuccess);
 		}
 	}
 	else
 	{
+		lineSave->rstState();
+		
 		if ( aSanitize->isChecked() )
 		{
 			QModelIndex idx = SpellBook::sanitize( nif );
 			if ( idx.isValid() )
 				select( idx );
 		}
-
+		
 		if ( ! nif->saveToFile( nifname ) ) {
 			qWarning() << tr("failed to write nif file ") << nifname;
-			lineSave->setState(FileSelector::StateError);
+			lineSave->setState(FileSelector::stError);
 		}
 		else {
-			lineSave->setState(FileSelector::StateSuccess);
+			lineSave->setState(FileSelector::stSuccess);
 		}
 
 		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
