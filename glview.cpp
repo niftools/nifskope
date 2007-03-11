@@ -48,6 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/gltex.h"
 #include "gl/options.h"
 
+#include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
 #define FPS 25
@@ -204,6 +205,14 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	connect( this, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
 	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );
 	tAnim->addWidget( sldTime );
+	
+	FloatEdit * edtTime = new FloatEdit;
+	edtTime->setSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum );
+	connect( this, SIGNAL( sigTime( float, float, float ) ), edtTime, SLOT( set( float, float, float ) ) );
+	connect( edtTime, SIGNAL( sigEdited( float ) ), this, SLOT( sltTime( float ) ) );
+	connect( sldTime, SIGNAL( valueChanged( float ) ), edtTime, SLOT( setValue( float ) ) );
+	connect( edtTime, SIGNAL( sigEdited( float ) ), sldTime, SLOT( setValue( float ) ) );
+	tAnim->addWidget( edtTime );
 	
 	tAnim->addAction( aAnimLoop );
 
