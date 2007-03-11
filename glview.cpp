@@ -121,77 +121,77 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	grpView->setExclusive( false );
 	connect( grpView, SIGNAL( triggered( QAction * ) ), this, SLOT( viewAction( QAction * ) ) );
 	
-	aViewTop = new QAction( "Top", grpView );
-	aViewTop->setToolTip( "View from above" );
+	aViewTop = new QAction( tr("Top"), grpView );
+	aViewTop->setToolTip( tr("View from above") );
 	aViewTop->setCheckable( true );
 	aViewTop->setShortcut( Qt::Key_F5 );
 	grpView->addAction( aViewTop );
 	
-	aViewFront = new QAction( "Front", grpView );
-	aViewFront->setToolTip( "View from the front" );
+	aViewFront = new QAction( tr("Front"), grpView );
+	aViewFront->setToolTip( tr("View from the front") );
 	aViewFront->setCheckable( true );
 	aViewFront->setChecked( true );
 	aViewFront->setShortcut( Qt::Key_F6 );
 	grpView->addAction( aViewFront );
 	
-	aViewSide = new QAction( "Side", grpView );
-	aViewSide->setToolTip( "View from the side" );
+	aViewSide = new QAction( tr("Side"), grpView );
+	aViewSide->setToolTip( tr("View from the side") );
 	aViewSide->setCheckable( true );
 	aViewSide->setShortcut( Qt::Key_F7 );
 	grpView->addAction( aViewSide );
 	
-	aViewWalk = new QAction( "Walk", grpView );
-	aViewWalk->setToolTip( "Enable walk mode" );
+	aViewWalk = new QAction( tr("Walk"), grpView );
+	aViewWalk->setToolTip( tr("Enable walk mode") );
 	aViewWalk->setCheckable( true );
 	aViewWalk->setShortcut( Qt::Key_F8 );
 	grpView->addAction( aViewWalk );
 	
-	aViewUser = new QAction( "User", grpView );
-	aViewUser->setToolTip( "Restore the view as it was when Save User View was activated" );
+	aViewUser = new QAction( tr("User"), grpView );
+	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
 	aViewUser->setCheckable( true );
 	aViewUser->setShortcut( Qt::Key_F9 );
 	grpView->addAction( aViewUser );
 	
-	aViewFlip = new QAction( "Flip", this );
-	aViewFlip->setToolTip( "Flip View from Front to Back, Top to Bottom, Side to Other Side" );
+	aViewFlip = new QAction( tr("Flip"), this );
+	aViewFlip->setToolTip( tr("Flip View from Front to Back, Top to Bottom, Side to Other Side") );
 	aViewFlip->setCheckable( true );
 	aViewFlip->setShortcut( Qt::Key_F11 );
 	grpView->addAction( aViewFlip );
 	
-	aViewPerspective = new QAction( "Perspective", this );
-	aViewPerspective->setToolTip( "Perspective View Transformation or Orthogonal View Transformation" );
+	aViewPerspective = new QAction( tr("Perspective"), this );
+	aViewPerspective->setToolTip( tr("Perspective View Transformation or Orthogonal View Transformation") );
 	aViewPerspective->setCheckable( true );
 	aViewPerspective->setShortcut( Qt::Key_F10 );
 	grpView->addAction( aViewPerspective );
 	
-	aViewUserSave = new QAction( "Save User View", this );
-	aViewUserSave->setToolTip( "Save current view rotation, position and distance" );
+	aViewUserSave = new QAction( tr("Save User View"), this );
+	aViewUserSave->setToolTip( tr("Save current view rotation, position and distance") );
 	aViewUserSave->setShortcut( Qt::CTRL + Qt::Key_F9 );
 	connect( aViewUserSave, SIGNAL( triggered() ), this, SLOT( sltSaveUserView() ) );
 	
-	aAnimate = new QAction( "&Animations", this );
-	aAnimate->setToolTip( "enables evaluation of animation controllers" );
+	aAnimate = new QAction( tr("&Animations"), this );
+	aAnimate->setToolTip( tr("enables evaluation of animation controllers") );
 	aAnimate->setCheckable( true );
 	aAnimate->setChecked( true );
 	connect( aAnimate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aAnimate );
 
-	aAnimPlay = new QAction( "&Play", this );
+	aAnimPlay = new QAction( tr("&Play"), this );
 	aAnimPlay->setCheckable( true );
 	aAnimPlay->setChecked( true );
 	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	
-	aAnimLoop = new QAction( "&Loop", this );
+	aAnimLoop = new QAction( tr("&Loop"), this );
 	aAnimLoop->setCheckable( true );
 	aAnimLoop->setChecked( true );
 	
-	aAnimSwitch = new QAction( "&Switch", this );
+	aAnimSwitch = new QAction( tr("&Switch"), this );
 	aAnimSwitch->setCheckable( true );
 	aAnimSwitch->setChecked( true );
 	
 	// animation tool bar
 	
-	tAnim = new QToolBar( "Animation" );
+	tAnim = new QToolBar( tr("Animation") );
 	tAnim->setObjectName( "AnimTool" );
 	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	
@@ -202,12 +202,13 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tAnim->addAction( aAnimPlay );
 	
 	FloatSlider * sldTime = new FloatSlider( Qt::Horizontal );
+	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
 	connect( this, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
 	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );
 	tAnim->addWidget( sldTime );
 	
 	FloatEdit * edtTime = new FloatEdit;
-	edtTime->setSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum );
+	edtTime->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Maximum );
 	connect( this, SIGNAL( sigTime( float, float, float ) ), edtTime, SLOT( set( float, float, float ) ) );
 	connect( edtTime, SIGNAL( sigEdited( float ) ), this, SLOT( sltTime( float ) ) );
 	connect( sldTime, SIGNAL( valueChanged( float ) ), edtTime, SLOT( setValue( float ) ) );
@@ -239,7 +240,7 @@ QList<QToolBar*> GLView::toolbars() const
 
 QMenu * GLView::createMenu() const
 {
-	QMenu * m = new QMenu( "&Render" );
+	QMenu * m = new QMenu( tr("&Render") );
 	m->addAction( aViewTop );
 	m->addAction( aViewFront );
 	m->addAction( aViewSide );

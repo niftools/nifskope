@@ -64,6 +64,124 @@
     </message>
 </context>
 <context>
+    <name>GLView</name>
+    <message>
+        <location filename="../glview.cpp" line="124"/>
+        <source>Top</source>
+        <translation>Top</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="125"/>
+        <source>View from above</source>
+        <translation>Ansicht von oben</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="130"/>
+        <source>Front</source>
+        <translation>Front</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="131"/>
+        <source>View from the front</source>
+        <translation>Ansicht von vorne</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="137"/>
+        <source>Side</source>
+        <translation>Seite</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="138"/>
+        <source>View from the side</source>
+        <translation>Ansicht von der Seite</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="143"/>
+        <source>Walk</source>
+        <translation>Gehen</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="144"/>
+        <source>Enable walk mode</source>
+        <translation>&quot;Gehen&quot;-Modus aktivieren</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="149"/>
+        <source>User</source>
+        <translation>Benutzer</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="150"/>
+        <source>Restore the view as it was when Save User View was activated</source>
+        <translation>Die Einstellungen des &quot;Benutzer&quot;-Modus wiederherstellen</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="155"/>
+        <source>Flip</source>
+        <translation>Umkehren</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="156"/>
+        <source>Flip View from Front to Back, Top to Bottom, Side to Other Side</source>
+        <translation>Die Ansichten umkehren: Front zu Rückseite, Oben zu Unten, Seite zu anderer Seite</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="161"/>
+        <source>Perspective</source>
+        <translation>Perspektivisch</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="162"/>
+        <source>Perspective View Transformation or Orthogonal View Transformation</source>
+        <translation>Perspektivische Ansicht oder Orthogonale Ansicht</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="167"/>
+        <source>Save User View</source>
+        <translation>Benutzer-Ansicht speichern</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="168"/>
+        <source>Save current view rotation, position and distance</source>
+        <translation>Speichert die momentane Rotation, Position und Entfernung</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="172"/>
+        <source>&amp;Animations</source>
+        <translation>&amp;Animationen</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="173"/>
+        <source>enables evaluation of animation controllers</source>
+        <translation>Aktiviert die Verarbeitung von Animation Controllern</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="179"/>
+        <source>&amp;Play</source>
+        <translation>Ab&amp;spielen</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="184"/>
+        <source>&amp;Loop</source>
+        <translation>Sch&amp;leife</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="188"/>
+        <source>&amp;Switch</source>
+        <translation>&amp;Wechseln</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="194"/>
+        <source>Animation</source>
+        <translation>Animation</translation>
+    </message>
+    <message>
+        <location filename="../glview.cpp" line="243"/>
+        <source>&amp;Render</source>
+        <translation>&amp;Rendern</translation>
+    </message>
+</context>
+<context>
     <name>NifBlockEditor</name>
     <message>
         <location filename="widgets/nifeditors.cpp" line="72"/>
