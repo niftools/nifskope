@@ -45,6 +45,8 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 		property = new ZBufferProperty( scene, index );
 	else if ( nif->isNiBlock( index, "NiTexturingProperty" ) )
 		property = new TexturingProperty( scene, index );
+	else if ( nif->isNiBlock( index, "NiTextureProperty" ) )
+		property = new TextureProperty( scene, index );
 	else if ( nif->isNiBlock( index, "NiMaterialProperty" ) )
 		property = new MaterialProperty( scene, index );
 	else if ( nif->isNiBlock( index, "NiSpecularProperty" ) )
@@ -326,6 +328,7 @@ int TexturingProperty::coordSet( int id ) const
 	return -1;
 }
 
+
 class TexFlipController : public Controller
 {
 public:
@@ -476,6 +479,38 @@ void glProperty( TexturingProperty * p )
 		glDisable( GL_TEXTURE_2D );
 	}
 }
+
+
+void TextureProperty::update( const NifModel * nif, const QModelIndex & property )
+{
+	Property::update( nif, property );
+	
+	if ( iBlock.isValid() && iBlock == property )
+	{
+		iImage = nif->getBlock( nif->getLink( iBlock, "Image" ), "NiImage" );
+	}
+}
+
+QString TextureProperty::fileName() const
+{
+	const NifModel * nif = qobject_cast<const NifModel *>( iImage.model() );
+	if ( nif && iImage.isValid() )
+		return nif->get<QString>( iImage, "File Name" );
+	return QString();
+}
+
+void glProperty( TextureProperty * p )
+{
+	if ( p && GLOptions::texturing() && p->bind() )
+	{
+		glEnable( GL_TEXTURE_2D );
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
+	}
+}
+
 
 void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 {

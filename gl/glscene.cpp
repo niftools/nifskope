@@ -62,6 +62,7 @@ void Scene::clear( bool flushTextures )
 	roots.clear();
 	
 	animGroups.clear();
+	animTags.clear();
 	
 	//if ( flushTextures )
 		textures->flush();
@@ -169,8 +170,11 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 Property * Scene::getProperty( const NifModel * nif, const QModelIndex & iProperty )
 {
 	Property * prop = properties.get( iProperty );
-	if ( prop ) return prop;
-	properties.add( prop = Property::create( this, nif, iProperty ) );
+	if ( prop )
+		return prop;
+	prop = Property::create( this, nif, iProperty );
+	if ( prop )
+		properties.add( prop );
 	return prop;
 }
 
@@ -299,16 +303,27 @@ void Scene::updateTimeBounds() const
 
 float Scene::timeMin() const
 {
+	if ( animTags.contains( animGroup ) )
+	{
+		if ( animTags[ animGroup ].contains( "start" ) )
+			return animTags[ animGroup ][ "start" ];
+	}
 	if ( ! timeBoundsValid )
 		updateTimeBounds();
-	return tMin;
+	return ( tMin > tMax ? 0 : tMin );
 }
 
 float Scene::timeMax() const
 {
+	if ( animTags.contains( animGroup ) )
+	{
+		if ( animTags[ animGroup ].contains( "end" ) )
+			return animTags[ animGroup ][ "end" ];
+	}
+	
 	if ( ! timeBoundsValid )
 		updateTimeBounds();
-	return tMax;
+	return ( tMin > tMax ? 0 : tMax );
 }
 
 QString Scene::textStats()

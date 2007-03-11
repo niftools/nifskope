@@ -654,7 +654,7 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 
 	// setup texturing
 	
-	glProperty( props.get< TexturingProperty >() );
+	//glProperty( props.get< TexturingProperty >() );
 	
 	// setup z buffer
 	
@@ -675,11 +675,10 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 	else
 		glDisable( GL_NORMALIZE );
 
-	// setup multitexturing
+	// setup texturing
 	
-	TexturingProperty * texprop = props.get< TexturingProperty >();
-	if ( texprop )
-	{
+	if ( TexturingProperty * texprop = props.get< TexturingProperty >() )
+	{	// standard multi texturing property
 		int stage = 0;
 		
 		if ( texprop->bind( 1, mesh->coords, stage ) )
@@ -799,6 +798,14 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 			
 			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
 		}
+	}
+	else if ( TextureProperty * texprop = props.get< TextureProperty >() )
+	{	// old single texture property
+		texprop->bind( mesh->coords );
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
 	}
 }
 

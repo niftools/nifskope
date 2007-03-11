@@ -215,7 +215,20 @@ public:
 					{
 						QString name = nif->get<QString>( iSeq, "Name" );
 						if ( ! scene->animGroups.contains( name ) )
+						{
 							scene->animGroups.append( name );
+							
+							QMap<QString,float> tags = scene->animTags[ name ];
+							
+							QModelIndex iKeys = nif->getBlock( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
+							QModelIndex iTags = nif->getIndex( iKeys, "Text Keys" );
+							for ( int r = 0; r < nif->rowCount( iTags ); r++ )
+							{
+								tags.insert( nif->get<QString>( iTags.child( r, 0 ), "Value" ), nif->get<float>( iTags.child( r, 0 ), "Time" ) );
+							}
+							
+							scene->animTags[ name ] = tags;
+						}
 					}
 				}
 			}
@@ -546,7 +559,8 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 	{
 		PropertyList newProps;
 		foreach ( qint32 l, nif->getLinkArray( iBlock, "Properties" ) )
-			newProps.add( scene->getProperty( nif, nif->getBlock( l ) ) );
+			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
+				newProps.add( p );
 		properties = newProps;
 		
 		children.clear();

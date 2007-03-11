@@ -51,7 +51,7 @@ public:
 
 	enum Type
 	{
-		Alpha, ZBuffer, Material, Texturing, Specular, Wireframe, VertexColor, Stencil
+		Alpha, ZBuffer, Material, Texturing, Texture, Specular, Wireframe, VertexColor, Stencil
 	};
 	
 	virtual Type type() const = 0;
@@ -209,6 +209,30 @@ protected:
 };
 
 REGISTER_PROPERTY( TexturingProperty, Texturing )
+
+
+class TextureProperty : public Property
+{
+public:
+	TextureProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	
+	Type type() const { return Texture; }
+	QString typeId() const { return "NiTextureProperty"; }
+	
+	void update( const NifModel * nif, const QModelIndex & block );
+	
+	friend void glProperty( TextureProperty * );
+	
+	bool bind();
+	bool bind( const QList< QVector<Vector2> > & texcoords );
+	
+	QString fileName() const;
+
+protected:
+	QPersistentModelIndex iImage;
+};
+
+REGISTER_PROPERTY( TextureProperty, Texture )
 
 
 class MaterialProperty : public Property

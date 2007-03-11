@@ -96,6 +96,7 @@ public:
 
 	QString animGroup;
 	QStringList animGroups;
+	QMap<QString, QMap<QString,float> > animTags;
 	
 	TexCache * textures;
 	
