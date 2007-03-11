@@ -110,7 +110,7 @@ void UVWidget::initializeGL()
 	glVertexPointer( 2, GL_SHORT, 0, vertArray );
 
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-	glTexCoordPointer( 2, GL_SHORT, 0, vertArray );
+	glTexCoordPointer( 2, GL_SHORT, 0, texArray );
 
 	// check for errors
 	GLenum err;
@@ -158,7 +158,7 @@ void UVWidget::paintGL()
 				glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 			}
 			else {
-				glColor4f( 0.8f, 0.8f, 0.8f, 1.0f );
+				glColor4f( 0.5f, 0.5f, 0.5f, 1.0f );
 			}
 
 			glDrawArrays( GL_QUADS, 0, 4 );
@@ -265,6 +265,7 @@ void UVWidget::drawTexCoords()
 
 	glPushMatrix();
 	glLoadIdentity();
+	glScalef( 1.0f, -1.0f, 1.0f );
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
 	Color4 nlColor( GLOptions::nlColor() );
@@ -411,7 +412,7 @@ void UVWidget::updateViewRect( int width, int height )
 	glViewRect[3] = + glOffY + glPosY;
 }
 
-int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[32], GLdouble dx, GLdouble dy )
+int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[128], GLdouble dx, GLdouble dy )
 {
 	makeCurrent();
 
@@ -457,7 +458,7 @@ int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[32], GLdouble dx, 
 
 		for( int i = 0; i < hitNames.size(); i++ )
 		{
-			if( i > 30 ) {
+			if( i > 511 ) {
 				break;
 			}
 			hitArray[i] = hitNames[i];
@@ -548,7 +549,7 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 	mousePos = e->pos();
 
 	int hits;
-	int hitArray[32];
+	int hitArray[128];
 	int selection;
 	selTypes prevSelType;
 
@@ -658,8 +659,11 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 {
 	int hits;
-	int hitArray[32];
+	int hitArray[128];
+	QList< int > hitList;
 	QRect hitRect = selectionRect.normalized();
+	QRect hitDivide = hitRect;
+	QRect hitConquer;
 	selectionRect = QRect( 0, 0, 0, 0 );
 
 	switch( e->button() )
@@ -672,16 +676,27 @@ void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 
 			selectionType = TexCoordSel;
 
-			hits = indexAt( hitRect.center(), hitArray, hitRect.width(), hitRect.height() );
+			hitDivide.setWidth( 4 );
+			hitConquer = hitRect.intersected( hitDivide );
+			while( !hitConquer.isEmpty() ) {
+				hits = indexAt( hitConquer.center(), hitArray, hitConquer.width(), hitConquer.height() );
+				for( int i = 0; i < hits; i++ )
+				{
+					hitList.append( hitArray[i] );
+				}
 
-			if( hits < 1 ) {
+				hitDivide.adjust( 4, 0, 4, 0 );
+				hitConquer = hitRect.intersected( hitDivide );
+			}
+
+			if( hitList.empty() ) {
 				selectionType = NoneSel;
 				break;
 			}
 			else {
-				for( int i = 0; i < hits; i++ ) {
-					if( hitArray[i] - 1 < texcoords.size() ) {
-						selectTexCoord( hitArray[i] - 1 );
+				for( int i = 0; i < hitList.size(); i++ ) {
+					if( hitList[i] - 1 < texcoords.size() ) {
+						selectTexCoord( hitList[i] - 1 );
 					}
 				}
 			}
@@ -705,7 +720,7 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 				foreach( int tc, selectedTexCoords )
 				{
 					texcoords[tc][0] += moveX;
-					texcoords[tc][1] -= moveY;
+					texcoords[tc][1] += moveY;
 				}
 
 				updateNif();

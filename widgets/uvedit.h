@@ -117,7 +117,7 @@ private:
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
 
-	int indexAt( const QPoint & hitPos, int (&buffer)[32], GLdouble dx, GLdouble dy );
+	int indexAt( const QPoint & hitPos, int (&buffer)[128], GLdouble dx, GLdouble dy );
 
 	void updateNif();
 
