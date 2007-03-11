@@ -146,7 +146,7 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 	opt.orientation = ori;
 	opt.pageStep = 10;
 	opt.singleStep = 1;
-	opt.sliderValue = int( ( val - min ) / ( max - min ) * MAX + .5 );
+	opt.sliderValue = ( max != min ? int( ( val - min ) / ( max - min ) * MAX + .5 ) : 0 );
 	if ( ori == Qt::Vertical )	opt.sliderValue = MAX - opt.sliderValue;
 	opt.sliderPosition = opt.sliderValue;
 	opt.tickPosition = QSlider::NoTicks;
@@ -235,7 +235,7 @@ float FloatSlider::mapToValue( const QPoint & p ) const
 		return min;
 	if ( sliderPos >= sliderMin + sliderLen )
 		return max;
-    return min + ( float( sliderPos - sliderMin ) / float( sliderLen ) * ( max - min ) );
+    return min + ( min != max ? ( float( sliderPos - sliderMin ) / float( sliderLen ) * ( max - min ) ) : 0 );
 }
 
 QSize FloatSlider::sizeHint() const
