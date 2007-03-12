@@ -74,9 +74,6 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	setLayout( lay );
 	
 	line = new QLineEdit( this );
-	// doesn't work in Qt 4.2.2
-	// set the State property for the stylesheet
-	// line->setProperty("State", "Neutral");
 
 	connect( line, SIGNAL( textEdited( const QString & ) ), this, SIGNAL( sigEdited( const QString & ) ) );
 	connect( line, SIGNAL( returnPressed() ), this, SLOT( activate() ) );
@@ -98,6 +95,11 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	
 	connect( completionAction(), SIGNAL( toggled( bool ) ), this, SLOT( setCompletionEnabled( bool ) ) );
 	setCompletionEnabled( completionAction()->isChecked() );
+	
+	timer = new QTimer( this );
+	timer->setSingleShot( true );
+	timer->setInterval( FEEDBACK_TIME );
+	connect( timer, SIGNAL( timeout() ), this, SLOT( rstState() ) );
 }
 
 QAction * FileSelector::completionAction()
@@ -157,10 +159,21 @@ void FileSelector::setText( const QString & x )
 void FileSelector::setState( States s )
 {
 	State = s;
+	
+	if ( State != stNeutral )
+		timer->start();
+	else
+		timer->stop();
+	
 	// reload style sheet
 	QString styletmp = styleSheet();
 	setStyleSheet( QString() );
 	setStyleSheet( styletmp );
+}
+
+void FileSelector::rstState()
+{
+	setState( stNeutral );
 }
 
 void FileSelector::replaceText( const QString & x )

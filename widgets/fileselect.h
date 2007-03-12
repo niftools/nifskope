@@ -75,13 +75,14 @@ public:
 
 	States state() const { return State; }
 	void setState( States );
-	void rstState() { setState( stNeutral ); }
 	
 signals:
 	void sigEdited( const QString & );
 	void sigActivated( const QString & );
 
 public slots:
+	void rstState();
+
 	void setText( const QString & );
 	void setFile( const QString & );
 
@@ -107,6 +108,8 @@ protected:
 	QDirModel * dirmdl;
 	QCompleter * completer;
 	QStringList fltr;
+	
+	QTimer * timer;
 };
 
 class CompletionAction : public QAction
