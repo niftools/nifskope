@@ -232,8 +232,8 @@ public:
 class spSkinPartition : public Spell
 {
 public:
-	QString name() const { return "Make Skin Partition"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return tr("Make Skin Partition"); }
+	QString page() const { return tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & iShape )
 	{
@@ -256,6 +256,12 @@ public:
 	} Partition;
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	{
+		int mbpp = 0, mbpv = 0;
+		return cast( nif, iBlock, mbpp, mbpv );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex )
 	{
 		QPersistentModelIndex iShape = iBlock;
 		try
@@ -281,7 +287,7 @@ public:
 					int vertex = nif->get<int>( iVertexWeights.child( r, 0 ), "Index" );
 					float weight = nif->get<float>( iVertexWeights.child( r, 0 ), "Weight" );
 					if ( vertex >= weights.count() )
-						throw QString( "bad NiSkinData - vertex count does not match" );
+						throw QString( tr("bad NiSkinData - vertex count does not match") );
 					weights[vertex].append( boneweight( bone, weight ) );
 				}
 			}
@@ -299,17 +305,20 @@ public:
 			}
 			
 			if ( minBones <= 0 )
-				throw QString( "bad NiSkinData - some vertices have no weights at all" );
+				throw QString( tr("bad NiSkinData - some vertices have no weights at all") );
 			
 			// query max bones per vertex/partition
 			
-			SkinPartitionDialog dlg( maxBones );
-			
-			if ( dlg.exec() != QDialog::Accepted )
-				return iBlock;
-			
-			int maxBonesPerPartition = dlg.maxBonesPerPartition();
-			int maxBonesPerVertex = dlg.maxBonesPerVertex();
+			if ( maxBonesPerPartition <= 0 || maxBonesPerVertex <= 0 )
+			{
+				SkinPartitionDialog dlg( maxBones );
+				
+				if ( dlg.exec() != QDialog::Accepted )
+					return iBlock;
+				
+				maxBonesPerPartition = dlg.maxBonesPerPartition();
+				maxBonesPerVertex = dlg.maxBonesPerVertex();
+			}
 			
 			// reduce vertex influences if necessary
 			
@@ -347,7 +356,7 @@ public:
 						lst[b].second /= totalWeight;
 					}
 				}
-				qWarning() << "reduced" << c << "vertices to" << maxBonesPerVertex << "bone influences (maximum number of bones per vertex was" << maxBones << ")";
+				qWarning() << QString( tr( "reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" ) ).arg( c ).arg( maxBonesPerVertex ).arg( maxBones );
 			}
 			
 			maxBones = maxBonesPerVertex;
@@ -471,7 +480,7 @@ public:
 			}
 			
 			if ( cnt > 0 )
-				qWarning() << "removed" << cnt << "bone influences";
+				qWarning() << QString( tr( "removed %1 bone influences" ) ).arg( cnt );
 			
 			// split the triangles into partitions
 			
@@ -739,6 +748,46 @@ public:
 REGISTER_SPELL( spSkinPartition )
 
 
+class spAllSkinPartitions : public Spell
+{
+public:
+	QString name() const { return tr( "Make All Skin Partitions" ); }
+	QString page() const { return tr( "Batch" ); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif && ! index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QList< QPersistentModelIndex > indices;
+		
+		spSkinPartition Partitioner;
+		
+		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		{
+			QModelIndex idx = nif->getBlock( n );
+			if ( Partitioner.isApplicable( nif, idx ) )
+				indices.append( idx );
+		}
+		
+		int mbpp = 0, mbpv = 0;
+		
+		foreach ( QModelIndex idx, indices )
+		{
+			Partitioner.cast( nif, idx, mbpp, mbpv );
+		}
+		
+		qWarning() << QString( tr( "did %1 partitions" ) ).arg( indices.count() );
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spAllSkinPartitions )
+
+
 SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 {
 	spnVert = new QSpinBox( this );
@@ -753,30 +802,30 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnPart->setValue( 18 );
 	
 	QLabel * labVert = new QLabel( this );
-	labVert->setText(
+	labVert->setText( tr(
 	"<b>Number of Bones per Vertex</b><br>"
 	"Hint: Most games use 4 bones per vertex<br>"
 	"Note: If the mesh contains vertices which are<br>"
 	"influenced by more than x bones the number of<br>"
 	"influences will be reduced for these vertices<br>"
-	);
+	) );
 	
 	QLabel * labPart = new QLabel( this );
-	labPart->setText(
+	labPart->setText( tr(
 	"<b>Number of Bones per Partition</b><br>"
 	"Hint: Oblivion uses 18 bones pp<br>"
 	"CivIV (non shader meshes) 4 bones pp<br>"
 	"CivIV (shader enabled meshes) 18 bones pp<br>"
 	"Note: To fit the triangles into the partitions<br>"
 	"some bone influences may be removed again."
-	);
+	) );
 	
 	QPushButton * btOk = new QPushButton( this );
-	btOk->setText( "Ok" );
+	btOk->setText( tr( "Ok" ) );
 	connect( btOk, SIGNAL( clicked() ), this, SLOT( accept() ) );
 	
 	QPushButton * btCancel = new QPushButton( this );
-	btCancel->setText( "Cancel" );
+	btCancel->setText( tr( "Cancel" ) );
 	connect( btCancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
 	
 	QGridLayout * grid = new QGridLayout( this );
@@ -807,8 +856,8 @@ int SkinPartitionDialog::maxBonesPerPartition()
 class spFixBoneBounds : public Spell
 {
 public:
-	QString name() const { return "Fix Bone Bounds"; }
-	QString page() const { return "Skeleton"; }
+	QString name() const { return tr( "Fix Bone Bounds" ); }
+	QString page() const { return tr( "Skeleton" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

@@ -4,8 +4,6 @@
 
 #include <QDebug>
 
-#define TOLERANCE ( PI * 1 / 180 )
-
 bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
@@ -44,7 +42,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	
 	if ( verts.isEmpty() || norms.count() != verts.count() || texco.count() != verts.count() || triangles.isEmpty() )
 	{
-		qWarning() << "need vertices, normals, texture coordinates and faces to calculate tangents and binormals";
+		qWarning() << tr( "need vertices, normals, texture coordinates and faces to calculate tangents and binormals" );
 		return iBlock;
 	}
 	
@@ -192,3 +190,39 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 }
 
 REGISTER_SPELL( spTangentSpace )
+
+class spAllTangentSpaces : public Spell
+{
+public:
+	QString name() const { return tr( "Update All Tangent Spaces" ); }
+	QString page() const { return tr( "Batch" ); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	{
+		return nif && nif->checkVersion( 0x14000005, 0x14000005 ) && ! idx.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		QList< QPersistentModelIndex > indices;
+		
+		spTangentSpace TSpacer;
+		
+		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		{
+			QModelIndex idx = nif->getBlock( n );
+			if ( TSpacer.isApplicable( nif, idx ) )
+				indices << idx;
+		}
+		
+		foreach ( QModelIndex idx, indices )
+		{
+			TSpacer.castIfApplicable( nif, idx );
+		}
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spAllTangentSpaces )
+
