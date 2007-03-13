@@ -8,6 +8,7 @@
 
 QList< QVector<quint16> > strippify( QVector<Triangle> triangles, bool stitch = true );
 
+QVector<Triangle> triangulate( QVector<quint16> strips );
 QVector<Triangle> triangulate( QList< QVector<quint16> > strips );
 
 #endif

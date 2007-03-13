@@ -231,7 +231,7 @@ public:
 		return xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2];
 	}
 	
-	void normalize()
+	Vector3 & normalize()
 	{
 		float m = length();
 		if ( m > 0.0 )
@@ -241,6 +241,7 @@ public:
 		xyz[0] *= m;
 		xyz[1] *= m;
 		xyz[2] *= m;
+		return *this;
 	}
 	
 	static float dotproduct( const Vector3 & v1, const Vector3 & v2 )

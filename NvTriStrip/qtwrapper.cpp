@@ -43,27 +43,34 @@ QList< QVector<quint16> > strippify( QVector<Triangle> triangles, bool stitch )
 	return strips;
 }
 
+QVector<Triangle> triangulate( QVector<quint16> strip )
+{
+	QVector<Triangle> tris;
+	quint16 a, b = strip.value( 0 ), c = strip.value( 1 );
+	bool flip = false;
+	for ( int s = 2; s < strip.count(); s++ )
+	{
+		a = b;
+		b = c;
+		c = strip.value( s );
+		if ( a != b && b != c && c != a )
+		{
+			if ( ! flip )
+				tris.append( Triangle( a, b, c ) );
+			else
+				tris.append( Triangle( a, c, b ) );
+		}
+		flip = ! flip;
+	}
+	return tris;
+}
+
 QVector<Triangle> triangulate( QList< QVector<quint16> > strips )
 {
 	QVector<Triangle> tris;
 	foreach( QVector<quint16> strip, strips )
 	{
-		quint16 a, b = strip.value( 0 ), c = strip.value( 1 );
-		bool flip = false;
-		for ( int s = 2; s < strip.count(); s++ )
-		{
-			a = b;
-			b = c;
-			c = strip.value( s );
-			if ( a != b && b != c && c != a )
-			{
-				if ( ! flip )
-					tris.append( Triangle( a, b, c ) );
-				else
-					tris.append( Triangle( a, c, b ) );
-			}
-			flip = ! flip;
-		}
+		tris += triangulate( strip );
 	}
 	return tris;
 }

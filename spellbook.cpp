@@ -247,16 +247,19 @@ Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
 
 QModelIndex SpellBook::sanitize( NifModel * nif )
 {
+	QPersistentModelIndex ridx;
+	
 	foreach ( Spell * spell, sanitizers() )
 	{
 		if ( spell->isApplicable( nif, QModelIndex() ) )
 		{
 			QModelIndex idx = spell->cast( nif, QModelIndex() );
-			if ( idx.isValid() )
-				return idx;
+			if ( idx.isValid() && ! ridx.isValid() )
+				ridx = idx;
 		}
 	}
-	return QModelIndex();
+	
+	return ridx;
 }
 
 QAction * SpellBook::exec( const QPoint & pos, QAction * act )
