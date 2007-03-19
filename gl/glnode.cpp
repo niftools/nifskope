@@ -751,7 +751,7 @@ void Node::transform()
 					t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
 					t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
 				}
-				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), viewTrans() * t );
+				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), worldTrans() * t );
 			}
 		}
 	}
@@ -1001,6 +1001,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	
 	glLoadName( nif->getBlockNumber( iConstraint ) );
 	glPushMatrix();
+	glLoadMatrix( scene->view );
 	
 	QString name = nif->itemName( iConstraint );
 	if ( name == "bhkLimitedHingeConstraint" )
@@ -1024,7 +1025,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const float minAngle = nif->get<float>( iHinge, "Min Angle" );
 		const float maxAngle = nif->get<float>( iHinge, "Max Angle" );
 		
-		glLoadMatrix( tBodies.value( 0 ) );
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 0 ) );
 		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
 		
 		glBegin( GL_POINTS );
@@ -1044,7 +1046,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		drawCircle( pivotA, axleA, 1.0 );
 		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle );
 		
-		glLoadMatrix( tBodies.value( 1 ) );
+		glPopMatrix();
+		glMultMatrix( tBodies.value( 1 ) );
 		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
 		
 		glBegin( GL_POINTS );
@@ -1063,6 +1066,16 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		
 		drawCircle( pivotB, axleB, 1.0 );
 		drawSolidArc( pivotB, axleB / 6, axleB2, Vector3::crossproduct( axleB2, axleB ), minAngle, maxAngle );
+	}
+	else if ( name == "bhkStiffSpringConstraint" )
+	{
+		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) );
+		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot B" ) );
+		const float stiffness = nif->get<float>( iConstraint, "Stiffness" );
+		
+		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
+		
+		drawSpring( pivotA, pivotB, stiffness );
 	}
 	else if ( name == "bhkRagdollConstraint" )
 	{
@@ -1089,7 +1102,8 @@ void Node::drawHavok()
 	QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
 	
 	glPushMatrix();
-	glLoadMatrix( scene->bhkBodyTrans.value( nif->getBlockNumber( iBody ) ) );
+	glLoadMatrix( scene->view );
+	glMultMatrix( scene->bhkBodyTrans.value( nif->getBlockNumber( iBody ) ) );
 	
 
 	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );

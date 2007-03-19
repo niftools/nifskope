@@ -321,6 +321,51 @@ void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd )
 	glEnd();
 }
 
+void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
+{	// draw a spring with stiffness turns
+	bool cull = glIsEnabled( GL_CULL_FACE );
+	glDisable( GL_CULL_FACE );
+
+	Vector3 h = b - a;
+	
+	float r = h.length() / 5;
+	
+	Vector3 n = h;
+	n.normalize();
+	
+	Vector3 x = Vector3::crossproduct( n, Vector3( n[1], n[2], n[0] ) );
+	Vector3 y = Vector3::crossproduct( n, x );
+	
+	x.normalize();
+	y.normalize();
+	
+	x*=r;
+	y*=r;
+	
+	glBegin( GL_LINES );
+	glVertex( a );
+	glVertex( a + x * sin( 0 ) + y * cos( 0 ) );
+	glEnd();
+	glBegin( solid ? GL_QUAD_STRIP : GL_LINE_STRIP );
+	int m = int( stiffness * sd );
+	for ( int i = 0; i <= m; i++ )
+	{
+		float f = 2 * PI * float( i ) / float( sd );
+		
+		glVertex( a + h * i / m + x * sin( f ) + y * cos( f ) );
+		if ( solid )
+			glVertex( a + h * i / m + x * 0.8 * sin( f ) + y * 0.8 * cos( f ) );
+	}
+	glEnd();
+	glBegin( GL_LINES );
+	glVertex( b + x * sin( 2 * PI * float( m ) / float( sd ) ) + y * cos( 2 * PI * float( m ) / float( sd ) ) );
+	glVertex( b );
+	glVertex( b );
+	glEnd();
+	if ( cull )
+		glEnable( GL_CULL_FACE );
+}
+
 void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, int sd )
 {
 	bool cull = glIsEnabled( GL_CULL_FACE );

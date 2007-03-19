@@ -109,6 +109,7 @@ void drawSphere( Vector3 c, float r, int sd = 8 );
 void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
 void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );
 void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals );
+void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd = 16, bool solid = false );
 
 inline void glTranslate( const Vector3 & v )
 {
