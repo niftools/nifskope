@@ -42,6 +42,7 @@ class NifModel;
 class NifProxyModel;
 class KfmModel;
 class NifTreeView;
+class ReferenceBrowser;
 
 class GLView;
 class FileSelector;
@@ -120,6 +121,8 @@ private:
 	NifTreeView * list;
 	NifTreeView * tree;
 	NifTreeView * kfmtree;
+
+	ReferenceBrowser * refrbrwsr;
 	
 	GLView * ogl;
 	
@@ -132,6 +135,7 @@ private:
 	QDockWidget * dList;
 	QDockWidget * dTree;
 	QDockWidget * dKfm;
+	QDockWidget * dRefr;
 	
 	QToolBar * tool;
 	

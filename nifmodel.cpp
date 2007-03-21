@@ -465,6 +465,16 @@ void NifModel::mapLinks( const QMap<qint32,qint32> & map )
 	updateFooter();
 }
 
+QString NifModel::getBlockName( const QModelIndex & idx ) const
+{
+	const NifItem * block = static_cast<NifItem*>( idx.internalPointer() );
+	if( block ) {
+		return block->name();
+	}
+
+	return QString( "" );
+}
+
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
 {
 	if ( ! ( idx.isValid() && idx.model() == this ) )

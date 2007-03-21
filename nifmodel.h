@@ -85,6 +85,8 @@ public:
 	void removeNiBlock( int blocknum );
 	// move a block in the list
 	void moveNiBlock( int src, int dst );
+	// return the block name
+	QString getBlockName( const QModelIndex & ) const;
 	// returns the block number
 	int getBlockNumber( const QModelIndex & ) const;
 	// returns the parent block ( optional: check if it is of type name )

@@ -62,6 +62,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "nifproxy.h"
 #include "widgets/nifview.h"
+#include "widgets/refrbrowser.h"
 
 #include "glview.h"
 #include "spellbook.h"
@@ -151,6 +152,12 @@ NifSkope::NifSkope()
 	connect( kfmtree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 		this, SLOT( contextMenu( const QPoint & ) ) );
 
+	// this browser shows the reference of current node
+	refrbrwsr = new ReferenceBrowser;
+
+	refrbrwsr->setNifModel( nif );
+	connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
+		refrbrwsr, SLOT( browse( const QModelIndex & ) ) );
 
 #ifdef EDIT_ON_ACTIVATE
 	connect( list, SIGNAL( activated( const QModelIndex & ) ),
@@ -244,9 +251,17 @@ NifSkope::NifSkope()
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
 
+	dRefr = new QDockWidget( tr("Reference") );
+	dRefr->setObjectName( "RefrDock" );
+	dRefr->setWidget( refrbrwsr );
+	dRefr->toggleViewAction()->setShortcut( Qt::Key_F4 );
+	dRefr->toggleViewAction()->setChecked( false );
+	dRefr->setVisible( false );
+
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
 	addDockWidget( Qt::RightDockWidgetArea, dKfm );
+	addDockWidget( Qt::BottomDockWidgetArea, dRefr );
 
 	/* ******** */
 
@@ -317,6 +332,7 @@ NifSkope::NifSkope()
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
+	mView->addAction( dRefr->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );
