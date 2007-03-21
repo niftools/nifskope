@@ -344,7 +344,7 @@ void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 	
 	glBegin( GL_LINES );
 	glVertex( a );
-	glVertex( a + x * sin( 0 ) + y * cos( 0 ) );
+	glVertex( a + x * sinf( 0 ) + y * cosf( 0 ) );
 	glEnd();
 	glBegin( solid ? GL_QUAD_STRIP : GL_LINE_STRIP );
 	int m = int( stiffness * sd );
@@ -352,13 +352,13 @@ void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 	{
 		float f = 2 * PI * float( i ) / float( sd );
 		
-		glVertex( a + h * i / m + x * sin( f ) + y * cos( f ) );
+		glVertex( a + h * i / m + x * sinf( f ) + y * cosf( f ) );
 		if ( solid )
-			glVertex( a + h * i / m + x * 0.8 * sin( f ) + y * 0.8 * cos( f ) );
+			glVertex( a + h * i / m + x * 0.8f * sinf( f ) + y * 0.8f * cosf( f ) );
 	}
 	glEnd();
 	glBegin( GL_LINES );
-	glVertex( b + x * sin( 2 * PI * float( m ) / float( sd ) ) + y * cos( 2 * PI * float( m ) / float( sd ) ) );
+	glVertex( b + x * sinf( 2 * PI * float( m ) / float( sd ) ) + y * cosf( 2 * PI * float( m ) / float( sd ) ) );
 	glVertex( b );
 	glVertex( b );
 	glEnd();
