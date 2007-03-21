@@ -1071,11 +1071,11 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	{
 		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) );
 		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot B" ) );
-		const float stiffness = nif->get<float>( iConstraint, "Stiffness" );
+		const float length = nif->get<float>( iConstraint, "Length" );
 		
 		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
 		
-		drawSpring( pivotA, pivotB, stiffness );
+		drawSpring( pivotA, pivotB, length );
 	}
 	else if ( name == "bhkRagdollConstraint" )
 	{
