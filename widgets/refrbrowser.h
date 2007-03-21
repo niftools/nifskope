@@ -51,6 +51,7 @@ public slots:
 
 private:
 	NifModel * nif;
+	bool docFolderPresent;
 };
 
 #endif

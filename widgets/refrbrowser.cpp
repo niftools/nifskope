@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "refrbrowser.h"
 
+#include <QDir>
+
 #include "nifmodel.h"
 
 ReferenceBrowser::ReferenceBrowser( QWidget * parent )
@@ -39,9 +41,17 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
 {
 	nif = NULL;
 
-	setSearchPaths( QStringList() << "./doc" );
-	setStyleSheet( "docsys.css" );
-	setSource( QUrl( "index.html" ) );
+	docFolderPresent = QDir( "./doc" ).exists();
+
+	if( docFolderPresent ) {
+		setSearchPaths( QStringList() << "./doc" );
+		setStyleSheet( "docsys.css" );
+		setSource( QUrl( "index.html" ) );
+	}
+	else {
+		setText( tr("Please install the reference " \
+			"documentation into the 'doc' folder.") );
+	}
 }
 
 void ReferenceBrowser::setNifModel( NifModel * nifModel )
@@ -53,11 +63,18 @@ void ReferenceBrowser::setNifModel( NifModel * nifModel )
 
 void ReferenceBrowser::browse( const QModelIndex & index )
 {
-	if( !nif ) {
+	if( !nif || !docFolderPresent ) {
 		return;
 	}
 
 	QString blockName = nif->getBlockName( index );
 
-	setSource( QUrl( blockName.append( ".html" ) ) );
+	QFile RefrFile( QString( "./doc/%1.html" ).arg( blockName ) );
+	if( RefrFile.exists() ) {
+		setSource( QUrl( QString( "%1.html" ).arg( blockName ) ) );
+	}
+	else {
+		setText( tr("The reference file for '%1' " \
+			"could not be found.").arg( blockName ) );
+	}
 }
