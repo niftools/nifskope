@@ -475,6 +475,16 @@ QString NifModel::getBlockName( const QModelIndex & idx ) const
 	return QString( "" );
 }
 
+QString NifModel::getBlockType( const QModelIndex & idx ) const
+{
+	const NifItem * block = static_cast<NifItem*>( idx.internalPointer() );
+	if( block ) {
+		return block->type();
+	}
+
+	return QString( "" );
+}
+
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
 {
 	if ( ! ( idx.isValid() && idx.model() == this ) )

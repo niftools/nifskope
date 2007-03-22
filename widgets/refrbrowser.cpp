@@ -67,14 +67,17 @@ void ReferenceBrowser::browse( const QModelIndex & index )
 		return;
 	}
 
-	QString blockName = nif->getBlockName( index );
+	QString blockType = nif->getBlockType( index );
+	if( blockType == "NiBlock" ) {
+		blockType = nif->getBlockName( index );
+	}
 
-	QFile RefrFile( QString( "./doc/%1.html" ).arg( blockName ) );
+	QFile RefrFile( QString( "./doc/%1.html" ).arg( blockType ) );
 	if( RefrFile.exists() ) {
-		setSource( QUrl( QString( "%1.html" ).arg( blockName ) ) );
+		setSource( QUrl( QString( "%1.html" ).arg( blockType ) ) );
 	}
 	else {
 		setText( tr("The reference file for '%1' " \
-			"could not be found.").arg( blockName ) );
+			"could not be found.").arg( blockType ) );
 	}
 }

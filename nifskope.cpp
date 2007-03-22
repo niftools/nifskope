@@ -251,7 +251,7 @@ NifSkope::NifSkope()
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
 
-	dRefr = new QDockWidget( tr("Reference") );
+	dRefr = new QDockWidget( tr("Reference Browser") );
 	dRefr->setObjectName( "RefrDock" );
 	dRefr->setWidget( refrbrwsr );
 	dRefr->toggleViewAction()->setShortcut( Qt::Key_F4 );

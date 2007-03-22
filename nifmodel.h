@@ -87,6 +87,8 @@ public:
 	void moveNiBlock( int src, int dst );
 	// return the block name
 	QString getBlockName( const QModelIndex & ) const;
+	// return the block type
+	QString getBlockType( const QModelIndex & ) const;
 	// returns the block number
 	int getBlockNumber( const QModelIndex & ) const;
 	// returns the parent block ( optional: check if it is of type name )
