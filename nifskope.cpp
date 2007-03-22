@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDockWidget>
 #include <QFontDialog>
 #include <QFile>
+#include <QFileInfo>
 #include <QHeaderView>
 #include <QLocale>
 #include <QMenu>
@@ -586,33 +587,34 @@ void NifSkope::load()
 {
 	setEnabled( false );
 
-	QString nifname = lineLoad->text();
+	QFileInfo niffile( QDir::fromNativeSeparators( lineLoad->text() ) );
+	niffile.makeAbsolute();
 	
-	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) )
+	if ( niffile.suffix().compare( "kfm", Qt::CaseInsensitive ) == 0 )
 	{
 		lineLoad->rstState();
 		lineSave->rstState();
-		if ( ! kfm->loadFromFile( nifname ) ) {
-			qWarning() << tr("failed to load kfm from file") << nifname;
+		if ( !kfm->loadFromFile( niffile.filePath() ) ) {
+			qWarning() << tr("failed to load kfm from '%1'").arg( niffile.filePath() );
 			lineLoad->setState( FileSelector::stError );
 		}
 		else {
 			lineLoad->setState( FileSelector::stSuccess );
-			lineSave->setText( lineLoad->text() );
+			lineLoad->setText( niffile.filePath() );
+			lineSave->setText( niffile.filePath() );
 		}
 		
-		nifname = kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" );
-		if ( ! nifname.isEmpty() ) {
-			nifname.prepend( kfm->getFolder() + "/" );
-		}
+		niffile.setFile( kfm->getFolder(),
+			kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
 	}
 	
 	bool a = ogl->aAnimate->isChecked();
 	ogl->aAnimate->setChecked( false );
 	
-	if ( nifname.isEmpty() )
+	if ( !niffile.isFile() )
 	{
 		nif->clear();
+		lineLoad->setState( FileSelector::stError );
 		setWindowTitle( "NifSkope" );
 	}
 	else
@@ -626,16 +628,17 @@ void NifSkope::load()
 		
 		lineLoad->rstState();
 		lineSave->rstState();
-		if ( ! nif->loadFromFile( nifname ) ) {
-			qWarning() << tr("failed to load nif from file ") << nifname;
+		if ( !nif->loadFromFile( niffile.filePath() ) ) {
+			qWarning() << tr("failed to load nif from '%1'").arg( niffile.filePath() );
 			lineLoad->setState( FileSelector::stError );
 		}
 		else {
 			lineLoad->setState( FileSelector::stSuccess );
-			lineSave->setText( lineLoad->text() );
+			lineLoad->setText( niffile.filePath() );
+			lineSave->setText( niffile.filePath() );
 		}
 		
-		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
+		setWindowTitle( "NifSkope - " + niffile.fileName() );
 	}
 	
 	ogl->aAnimate->setChecked( a );
