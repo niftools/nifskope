@@ -91,8 +91,7 @@ QIcon * flag42_xpm_icon = 0;
 class spEditFlags : public Spell
 {
 public:
-	QString name() const { return "Flags"; }
-	QString page() const { return ""; }
+	QString name() const { return tr( "Flags" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -102,12 +101,12 @@ public:
 	
 	enum FlagType
 	{
-		Alpha, Controller, Node, RigidBody, Shape, ZBuffer, None
+		Alpha, Controller, Node, RigidBody, Shape, ZBuffer, BSX, None
 	};
 	
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
 	{
-		if ( nif->getValue( index ).type() == NifValue::tFlags && nif->itemType( index.parent() ) == "NiBlock" )
+		if ( nif->itemName( index ) == "Flags" && nif->itemType( index.parent() ) == "NiBlock" )
 			return index;
 		if ( nif->itemType( index ) == "NiBlock" )
 			return nif->getIndex( index, "Flags" );
@@ -138,6 +137,8 @@ public:
 				return Shape;
 			else if ( name == "NiZBufferProperty" )
 				return ZBuffer;
+			else if ( name == "BSXFlags" )
+				return BSX;
 		}
 		return None;
 	}
@@ -170,6 +171,9 @@ public:
 				break;
 			case ZBuffer:
 				zbufferFlags( nif, iFlags );
+				break;
+			case BSX:
+				bsxFlags(  nif, iFlags );
 				break;
 			default:
 				break;
@@ -384,6 +388,45 @@ public:
 				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
 			else
 				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
+			nif->set<int>( index, flags );
+		}
+	}
+	
+	void bsxFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint32 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout( & dlg );
+		
+		QStringList flagNames( QStringList()
+			<< tr( "Enable Animation" ) // 1
+			<< tr( "Enable Collision" ) // 2
+			<< tr( "Is Skeleton Nif (?)" ) // 4
+			<< tr( "Unidentified Flag (?)" ) // 8
+			<< tr( "FlameNodes Present" ) // 16
+			<< tr( "EditorMarkers Present" ) // 32
+		);
+		
+		QList<QCheckBox *> chkBoxes;
+		int x = 0;
+		foreach ( QString flagName, flagNames )
+		{
+			chkBoxes << dlgCheck( vbox, QString( "%1 (%2)" ).arg( flagName ).arg( 1 << x ) );
+			chkBoxes.last()->setChecked( flags & ( 1 << x ) );
+			x++;
+		}
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			x = 0;
+			foreach ( QCheckBox * chk, chkBoxes )
+			{
+				flags = flags & ( ~ ( 1 << x ) ) | ( chk->isChecked() ? 1 << x : 0 );
+				x++;
+			}
 			nif->set<int>( index, flags );
 		}
 	}
