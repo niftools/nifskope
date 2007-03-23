@@ -163,12 +163,14 @@ class IPCsocket : public QObject
 {
 	Q_OBJECT
 public:
-	static bool nifskope( const QString & );
+	static IPCsocket * create();
+	
+	static void sendCommand( const QString & cmd );
 
 public slots:
-	void openNif( const QUrl & );
+	void execCommand( const QString & cmd );
 	
-	void execCommand( QString cmd );
+	void openNif( const QUrl & );
 
 protected slots:
 	void processDatagram();

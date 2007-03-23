@@ -719,6 +719,7 @@ void NifSkope::sltWindow()
 	createWindow();
 }
 
+
 NifSkope * NifSkope::createWindow( const QString & fname )
 {
 	NifSkope * skope = new NifSkope;
@@ -726,9 +727,14 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 	QSettings settings( "NifTools", "NifSkope" );
 	skope->restore( settings );
 	skope->show();
-	if ( ! fname.isEmpty() )
-		skope->load( fname );
+	
 	skope->raise();
+	
+	if ( ! fname.isEmpty() )
+	{
+		skope->lineLoad->setFile( fname );
+		QTimer::singleShot( 0, skope, SLOT( load() ) );
+	}
 	return skope;
 }
 
@@ -854,7 +860,7 @@ void myMessageOutput(QtMsgType type, const char *msg)
  *  IPC socket
  */
 
-bool IPCsocket::nifskope( const QString & cmd )
+IPCsocket * IPCsocket::create()
 {
 	QUdpSocket * udp = new QUdpSocket();
 	
@@ -862,15 +868,16 @@ bool IPCsocket::nifskope( const QString & cmd )
 	{
 		IPCsocket * ipc = new IPCsocket( udp );
 		QDesktopServices::setUrlHandler( "nif", ipc, "openNif" );
-		ipc->execCommand( cmd );
-		return true;
+		return ipc;
 	}
-	else
-	{
-		udp->writeDatagram( (const char *) cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
-		delete udp;
-		return false;
-	}
+	
+	return 0;
+}
+
+void IPCsocket::sendCommand( const QString & cmd )
+{
+	QUdpSocket udp;
+	udp.writeDatagram( (const char *) cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
 }
 
 IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
@@ -907,12 +914,11 @@ void IPCsocket::processDatagram()
 	}
 }
 
-void IPCsocket::execCommand( QString cmd )
+void IPCsocket::execCommand( const QString & cmd )
 {
 	if ( cmd.startsWith( "NifSkope::open" ) )
 	{
-		cmd.remove( 0, 15 );
-		openNif( cmd );
+		openNif( cmd.right( cmd.length() - 15 ) );
 	}
 }
 
@@ -962,9 +968,14 @@ int main( int argc, char * argv[] )
     if ( app.argc() > 1 )
         fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
 	
-	if ( IPCsocket::nifskope( QString( "NifSkope::open %1" ).arg( fname ) ) )
-		// start the event loop
+	if ( IPCsocket * ipc = IPCsocket::create() )
+	{
+		ipc->execCommand( QString( "NifSkope::open %1" ).arg( fname ) );
 		return app.exec();
+	}
 	else
+	{
+		IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fname ) );
 		return 0;
+	}
 }
