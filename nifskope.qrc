@@ -8,6 +8,11 @@
 		<file alias="ArrowLeft.png">resources/arrow_left.png</file>
 		<file alias="ArrowRight.png">resources/arrow_right.png</file>
 	</qresource>
+	<qresource prefix="/btn">
+		<file alias="play">resources/button_play.png</file>
+		<file alias="loop">resources/button_loop.png</file>
+		<file alias="switch">resources/button_switch.png</file>
+	</qresource>
 	<qresource prefix="/lang">
 		<file alias="de">lang/NifSkope_de.qm</file>
 	</qresource>

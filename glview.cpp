@@ -176,16 +176,16 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	connect( aAnimate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aAnimate );
 
-	aAnimPlay = new QAction( tr("&Play"), this );
+	aAnimPlay = new QAction( QIcon( ":/btn/play" ), tr("&Play"), this );
 	aAnimPlay->setCheckable( true );
 	aAnimPlay->setChecked( true );
 	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	
-	aAnimLoop = new QAction( tr("&Loop"), this );
+	aAnimLoop = new QAction( QIcon( ":/btn/loop" ), tr("&Loop"), this );
 	aAnimLoop->setCheckable( true );
 	aAnimLoop->setChecked( true );
 	
-	aAnimSwitch = new QAction( tr("&Switch"), this );
+	aAnimSwitch = new QAction( QIcon( ":/btn/switch" ), tr("&Switch"), this );
 	aAnimSwitch->setCheckable( true );
 	aAnimSwitch->setChecked( true );
 	
@@ -194,6 +194,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tAnim = new QToolBar( tr("Animation") );
 	tAnim->setObjectName( "AnimTool" );
 	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	tAnim->setIconSize( QSize( 16, 16 ) );
 	
 	connect( aAnimate, SIGNAL( toggled( bool ) ), tAnim->toggleViewAction(), SLOT( setChecked( bool ) ) );
 	connect( aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
@@ -218,12 +219,12 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	tAnim->addAction( aAnimLoop );
 
+	tAnim->addAction( aAnimSwitch );
+
 	animGroups = new QComboBox();
 	animGroups->setMinimumWidth( 100 );
 	connect( animGroups, SIGNAL( activated( const QString & ) ), this, SLOT( sltSequence( const QString & ) ) );
 	tAnim->addWidget( animGroups );
-
-	tAnim->addAction( aAnimSwitch );
 	
 	connect( GLOptions::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
 	connect( GLOptions::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );

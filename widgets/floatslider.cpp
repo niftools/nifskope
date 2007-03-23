@@ -283,7 +283,7 @@ void FloatSlider::mousePressEvent( QMouseEvent * ev )
 	}
 }
 
-void FloatSlider::mouseMoveEvent(QMouseEvent *ev)
+void FloatSlider::mouseMoveEvent( QMouseEvent * ev )
 {
     if ( !pressed || max <= min || ( ev->buttons() != Qt::LeftButton ) )
 	{
@@ -296,7 +296,7 @@ void FloatSlider::mouseMoveEvent(QMouseEvent *ev)
 	update();
 }
 
-void FloatSlider::mouseReleaseEvent(QMouseEvent *ev)
+void FloatSlider::mouseReleaseEvent( QMouseEvent * ev )
 {
     if ( ev->button() != Qt::LeftButton )
 	{
