@@ -5,8 +5,13 @@
 #include <QApplication>
 #include <QBuffer>
 #include <QClipboard>
+#include <QDialog>
+#include <QDoubleSpinBox>
+#include <QGridLayout>
+#include <QLabel>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QPushButton>
 
 /* XPM */
 static char * transform_xpm[] = {
@@ -306,3 +311,62 @@ class spEditMatrix4 : public Spell
 };
 
 REGISTER_SPELL( spEditMatrix4 )
+
+
+class spScaleVertices : public Spell
+{
+public:
+	QString name() const { return Spell::tr( "Scale Vertices" ); }
+	QString page() const { return Spell::tr( "Transform" ); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->inherits( index, "NiGeometry" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QDialog dlg;
+		
+		QGridLayout * grid = new QGridLayout( &dlg );
+		
+		QList<QDoubleSpinBox *> scale;
+		
+		for ( int a = 0; a < 3; a++ )
+		{
+			QDoubleSpinBox * spn = new QDoubleSpinBox;
+			scale << spn;
+			spn->setValue( 1.0 );
+			spn->setDecimals( 4 );
+			spn->setRange( 10e-4, 10e+4 );
+			grid->addWidget( new QLabel( ( QStringList() << "X" << "Y" << "Z" ).value( a ) ), a, 0 );
+			grid->addWidget( spn, a, 1 );
+		}
+		
+		QPushButton * btScale = new QPushButton( tr( "Scale" ) );
+		grid->addWidget( btScale, 3, 0, 1, 2 );
+		QObject::connect( btScale, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		
+		if ( dlg.exec() != QDialog::Accepted )
+			return QModelIndex();
+		
+		QModelIndex iData = nif->getBlock( nif->getLink( nif->getBlock( index ), "Data" ), "NiGeometryData" );
+		
+		QVector<Vector3> vertices = nif->getArray<Vector3>( iData, "Vertices" );
+		QMutableVectorIterator<Vector3> it( vertices );
+		while ( it.hasNext() )
+		{
+			Vector3 & v = it.next();
+			
+			for ( int a = 0; a < 3; a++ )
+				v[a] *= scale[a]->value();
+		}
+		nif->setArray<Vector3>( iData, "Vertices", vertices );
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spScaleVertices )
+
+
