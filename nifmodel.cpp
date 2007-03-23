@@ -732,7 +732,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case NameCol:	return item->name();
 				case TypeCol:
 				{
-					if ( isCompound( item->type() ) && ! item->temp().isEmpty() )
+					if ( ! item->temp().isEmpty() )
 					{
 						NifItem * i = item;
 						while ( i && i->temp() == "TEMPLATE" )
@@ -808,7 +808,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					}
 					else
 						return item->value().toString();
-				}
+				}	break;
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
 				case Arr2Col:	return item->arr2();
