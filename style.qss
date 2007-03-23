@@ -1,60 +1,69 @@
 /*
-	Stylish tooltips
+    Stylish tooltips
 */
 
 QToolTip
 {
-	opacity: 213;
-	color: steelblue;
-	border: 1px solid steelblue;
-	border-radius: 5px;
-	padding: 4px;
-	background: ghostwhite;
+    opacity: 213;
+    color: steelblue;
+    border: 1px solid steelblue;
+    border-radius: 5px;
+    padding: 4px;
+    background: ghostwhite;
 }
 
 /*
-	Make the disabled rows of the table views more distinguishable
+    Make the disabled rows of the table views more distinguishable
 */
 
 QTreeView
 {
-	background: azure;
-	alternate-background-color: cornsilk;
-	selection-background-color: royalblue;
-	selection-color: snow;
-	color: black;
+    background: azure;
+    alternate-background-color: cornsilk;
+    selection-background-color: royalblue;
+    selection-color: snow;
+    color: black;
 }
 
 QTreeView:disabled
 {
-	background: gainsboro;
-	alternate-background-color: gainsboro;
-	color: slategray;
+    background: gainsboro;
+    alternate-background-color: gainsboro;
+    color: slategray;
 }
 
 
 /*
-	Give the fileselectors a green tint on success and a red one on error
+    Give the fileselectors a green tint on success and a red one on error
 */
 
 FileSelector > QLineEdit
 {
-	border: 1px solid #333;
-	border-radius: 3px;
-	background-color: #fefefe;
+    border: 1px solid #333;
+    border-radius: 3px;
+    background-color: #fefefe;
 }
 
 FileSelector[state="0"] > QLineEdit
 {	/* the attribute selector doesn't support enums yet, so we need to use raw numbers */
-	background-color: #fefefe;
+    background-color: #fefefe;
 }
 
 FileSelector[state="1"] > QLineEdit
 {
-	background-color: #cfc;
+    background-color: #cfc;
 }
 
 FileSelector[state="2"] > QLineEdit
 {
-	background-color: #fcc;
+    background-color: #fcc;
+}
+
+
+/*
+    Add a border to the FloatSliderEditBoxes
+*/
+FloatSliderEditBox
+{
+    border: 1px solid black;
 }

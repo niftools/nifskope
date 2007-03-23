@@ -39,7 +39,7 @@ class FloatEdit : public QLineEdit
 {
 	Q_OBJECT
 public:
-	FloatEdit();
+	FloatEdit( QWidget * = NULL );
 	
 	float value() const;
 

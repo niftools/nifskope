@@ -74,7 +74,6 @@ UVWidget::UVWidget( QWidget * parent )
 	mousePos = QPoint( -1000, -1000 );
 
 	selectionRect = QRect( 0, 0, 0, 0 );
-
 	selectionType = NoneSel;
 }
 
@@ -275,13 +274,24 @@ void UVWidget::drawTexCoords()
 
 	glColor( nlColor );
 	GLfloat zPos = 0.0f;
+
+	int renderedObjects = 0;
 	
-	if( glMode == RenderMode || ( glMode == SelectionMode && selectionType != TexCoordSel ) ) {
-		GLint glName = texcoords.size() + faces.size();
+	if( glMode == RenderMode || selectionType != TexCoordSel ) {
+		if( glMode == SelectionMode && glSelectObjectCount == 0 ) {
+			glSelectObjectCount = faces.size() + texcoords.size();
+		}
+
+		if( glMode == SelectionMode && glSelectObjectCount <= texcoords.size() ) {
+			goto RenderTexCoords;
+		}
+
+		int loopBegin = ( glMode == RenderMode ) ? faces.size() : glSelectObjectCount - texcoords.size();
+		GLint glName = loopBegin + texcoords.size();
 
 		glLineWidth( 1.0f );
 
-		for( int i = faces.size() - 1; i > -1; i-- )
+		for( int i = loopBegin - 1; i > -1; i-- )
 		{
 			bool selected = selectedFaces.contains( i );
 
@@ -294,6 +304,11 @@ void UVWidget::drawTexCoords()
 			}
 
 			if( glMode == SelectionMode ) {
+				if( renderedObjects > GL_SELECT_OBJECTS ) {
+					glPopMatrix();
+					return;
+				}
+
 				glLoadName( glName );
 			}
 
@@ -307,6 +322,7 @@ void UVWidget::drawTexCoords()
 			
 			if( glMode == SelectionMode ) {
 				glName--;
+				glSelectObjectCount--;
 			}
 
 			if( glMode == RenderMode ) {
@@ -315,15 +331,26 @@ void UVWidget::drawTexCoords()
 					zPos = 0.0f;
 				}
 			}
+
+			renderedObjects++;
 		}
+
+		glSelectObjectCount = 0;
 	}
 
-	if( glMode == RenderMode || ( glMode == SelectionMode && selectionType != FaceSel ) ) {
-		GLint glName = texcoords.size();
+	RenderTexCoords:
+
+	if( glMode == RenderMode || selectionType != FaceSel ) {
+		if( glMode == SelectionMode && glSelectObjectCount == 0 ) {
+			glSelectObjectCount = texcoords.size();
+		}
+
+		int loopBegin = ( glMode == RenderMode ) ? texcoords.size() : glSelectObjectCount;
+		GLint glName = loopBegin;
 
 		glPointSize( 3.5f );
 
-		for( int i = texcoords.size() - 1; i > -1; i-- )
+		for( int i = loopBegin - 1; i > -1; i-- )
 		{
 			bool selected = selectedTexCoords.contains( i );
 
@@ -335,6 +362,11 @@ void UVWidget::drawTexCoords()
 			}
 
 			if( glMode == SelectionMode ) {
+				if( renderedObjects > GL_SELECT_OBJECTS ) {
+					glPopMatrix();
+					return;
+				}
+
 				glLoadName( glName );
 			}
 
@@ -344,6 +376,7 @@ void UVWidget::drawTexCoords()
 			
 			if( glMode == SelectionMode ) {
 				glName--;
+				glSelectObjectCount--;
 			}
 
 			
@@ -353,7 +386,11 @@ void UVWidget::drawTexCoords()
 					zPos = 0.0f;
 				}
 			}
+
+			renderedObjects++;
 		}
+
+		glSelectObjectCount = 0;
 	}
 
 	glPopMatrix();
@@ -412,17 +449,17 @@ void UVWidget::updateViewRect( int width, int height )
 	glViewRect[3] = + glOffY + glPosY;
 }
 
-int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[128], GLdouble dx, GLdouble dy )
+int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[512], GLdouble dx, GLdouble dy )
 {
 	makeCurrent();
 
-	glPushAttrib( GL_ALL_ATTRIB_BITS );
+	GLuint buffer[4 * GL_SELECT_OBJECTS];
 
-	GLuint buffer[512];
-	glSelectBuffer( 512, buffer );
+	QList< int > hitNames;
 
-	glRenderMode( GL_SELECT );
 	glMode = SelectionMode;
+
+	glPushAttrib( GL_ALL_ATTRIB_BITS );
 
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
@@ -437,34 +474,29 @@ int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[128], GLdouble dx,
 
 	glOrtho( glViewRect[0], glViewRect[1], glViewRect[2], glViewRect[3], 0.0, 100.0 );
 	
-	glInitNames();
-	glPushName( 0 );
-	
-	drawTexCoords();
-	
-	GLint hits = glRenderMode( GL_RENDER );
-	glMode = RenderMode;
+	glSelectObjectCount = 0;
+	do
+	{
+		glSelectBuffer( 4 * GL_SELECT_OBJECTS, buffer );
 
-	int selection = -1;
-	QList< int > hitNames;
+		glRenderMode( GL_SELECT );
 
-	if( hits > 0 ) {
+		glInitNames();
+		glPushName( 0 );
+		
+		drawTexCoords();
+		
+		GLint hits = glRenderMode( GL_RENDER );
+
 		for( int i = 0; i < hits; i++ )
 		{
 			hitNames.append( buffer[i * 4 + 3] );
 		}
-		qSort< QList< GLint > >( hitNames );
-		selection = hitNames[selectCycle % hits];
 
-		for( int i = 0; i < hitNames.size(); i++ )
-		{
-			if( i > 511 ) {
-				break;
-			}
-			hitArray[i] = hitNames[i];
-		}
+		Q_ASSERT( glSelectObjectCount == 0 );
 	}
-
+	while( glSelectObjectCount > 0 );
+	
 	glMatrixMode( GL_MODELVIEW );
 	glPopMatrix();
 
@@ -473,7 +505,15 @@ int UVWidget::indexAt( const QPoint & hitPos, int (&hitArray)[128], GLdouble dx,
 	
 	glPopAttrib();
 
-	return hits;
+	glMode = RenderMode;
+
+	qSort( hitNames.begin(), hitNames.end() );
+	for( int i = 0; i < qMin( hitNames.size(), 512 ); i++ )
+	{
+		hitArray[i] = hitNames[i];
+	}
+
+	return hitNames.size();
 }
 
 bool UVWidget::bindTexture( const QString & filename )
@@ -549,7 +589,8 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 	mousePos = e->pos();
 
 	int hits;
-	int hitArray[128];
+	int hitArray[512];
+
 	int selection;
 	selTypes prevSelType;
 
@@ -659,11 +700,9 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 {
 	int hits;
-	int hitArray[128];
-	QList< int > hitList;
+	int hitArray[512];
+
 	QRect hitRect = selectionRect.normalized();
-	QRect hitDivide = hitRect;
-	QRect hitConquer;
 	selectionRect = QRect( 0, 0, 0, 0 );
 
 	switch( e->button() )
@@ -676,27 +715,16 @@ void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 
 			selectionType = TexCoordSel;
 
-			hitDivide.setWidth( 4 );
-			hitConquer = hitRect.intersected( hitDivide );
-			while( !hitConquer.isEmpty() ) {
-				hits = indexAt( hitConquer.center(), hitArray, hitConquer.width(), hitConquer.height() );
-				for( int i = 0; i < hits; i++ )
-				{
-					hitList.append( hitArray[i] );
-				}
+			hits = indexAt( hitRect.center(), hitArray, hitRect.width(), hitRect.height() );
 
-				hitDivide.adjust( 4, 0, 4, 0 );
-				hitConquer = hitRect.intersected( hitDivide );
-			}
-
-			if( hitList.empty() ) {
+			if( hits < 1 ) {
 				selectionType = NoneSel;
 				break;
 			}
 			else {
-				for( int i = 0; i < hitList.size(); i++ ) {
-					if( hitList[i] - 1 < texcoords.size() ) {
-						selectTexCoord( hitList[i] - 1 );
+				for( int i = 0; i < hits; i++ ) {
+					if( hitArray[i] - 1 < texcoords.size() ) {
+						selectTexCoord( hitArray[i] - 1 );
 					}
 				}
 			}

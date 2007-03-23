@@ -44,6 +44,8 @@ class QModelIndex;
 class TexCache;
 class Vector2;
 
+#define GL_SELECT_OBJECTS 64
+
 class UVWidget : public QGLWidget
 {
 	Q_OBJECT
@@ -74,6 +76,12 @@ private:
 	enum {
 		RenderMode, SelectionMode
 	} glMode;
+
+	/*!
+	 * Buffers the remaining number of objects in selection mode.
+	 * This is needed since the selection can be bigger than OpenGL's name buffer
+	 */
+	int glSelectObjectCount;
 
 	enum selTypes {
 		NoneSel, TexCoordSel, FaceSel, ElementSel
@@ -117,7 +125,7 @@ private:
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
 
-	int indexAt( const QPoint & hitPos, int (&buffer)[128], GLdouble dx, GLdouble dy );
+	int indexAt( const QPoint & hitPos, int (&buffer)[512], GLdouble dx, GLdouble dy );
 
 	void updateNif();
 

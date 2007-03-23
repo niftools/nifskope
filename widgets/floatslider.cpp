@@ -33,19 +33,95 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "floatslider.h"
 
 #include <QApplication>
+#include <QVBoxLayout>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QStyle>
 #include <QStyleOption>
 
+#include "floatedit.h"
+
 #define MAX 0xffff
 
-FloatSlider::FloatSlider( Qt::Orientation o ) : QWidget(), val( 0.5 ), min( 0 ), max( 1.0 ), ori( o ), pressed( false )
+FloatSliderEditBox::FloatSliderEditBox( QWidget * parent )
+	: QFrame( parent, Qt::Tool | Qt::FramelessWindowHint )
+{
+	setVisible( false );
+	setFrameShadow( QFrame::Raised );
+	setFrameShape( QFrame::StyledPanel );
+	setLineWidth( 0 );
+	setMaximumWidth( 100 );
+
+	QVBoxLayout * layout = new QVBoxLayout();
+	layout->setMargin( 4 );
+	layout->setSpacing( 2 );
+	setLayout( layout );
+}
+
+void FloatSliderEditBox::addWidget( QWidget * w )
+{
+	layout()->addWidget( w );
+}
+
+void FloatSliderEditBox::show( const QPoint & pos )
+{
+	if( isVisible() ) {
+		return;
+	}
+
+	move( pos );
+	QWidget::show();
+	setFocus( Qt::PopupFocusReason );
+
+	connect( QApplication::instance(), SIGNAL( focusChanged( QWidget *, QWidget * ) ), this, SLOT( focusChanged( QWidget *, QWidget * ) ) );
+}
+
+void FloatSliderEditBox::hide()
+{
+	if( !isVisible() ) {
+		return;
+	}
+
+	disconnect( QApplication::instance(), SIGNAL( focusChanged( QWidget *, QWidget * ) ), this, SLOT( focusChanged( QWidget *, QWidget * ) ) );
+
+	QWidget::hide();
+}
+
+void FloatSliderEditBox::focusChanged( QWidget * oldW, QWidget * newW )
+{
+	if( newW == this ) {
+		return;
+	}
+
+	if( layout()->indexOf( newW ) > -1 ) {
+		return;
+	}
+
+	hide();
+}
+
+FloatSlider::FloatSlider( Qt::Orientation o, bool showValue, bool isEditor )
+	: QWidget(), val( 0.5 ), min( 0 ), max( 1.0 ), ori( o ), pressed( false )
 {
 	QSizePolicy sp( QSizePolicy::Expanding, QSizePolicy::Fixed );
 	if ( ori == Qt::Vertical )
 		sp.transpose();
 	setSizePolicy( sp );
+
+	showVal = showValue;
+	editVal = showVal && isEditor;
+
+	if( showVal ) {
+		QFont fnt = font();
+		fnt.setPixelSize( 10 );
+		setFont( fnt );
+	}
+
+	if( editVal ) {
+		setToolTip( tr("Click the value to edit.") );
+	}
+
+	editBox = new FloatSliderEditBox( this );
 }
 
 void FloatSlider::setValue( float v )
@@ -115,6 +191,10 @@ void FloatSlider::setOrientation( Qt::Orientation o )
 	}
 }
 
+void FloatSlider::addEditor( QWidget * editWidget ) {
+	editBox->addWidget( editWidget );
+}
+
 QStyleOptionSlider FloatSlider::getStyleOption() const
 {
 	QStyleOptionSlider opt;
@@ -152,6 +232,11 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 	opt.tickPosition = QSlider::NoTicks;
 	opt.upsideDown = false;
 	opt.direction = Qt::LeftToRight;
+
+	if( showVal ) {
+		opt.rect.adjust( 8, 10, -8, 0 );
+	}
+
     return opt;
 	
 }
@@ -161,17 +246,24 @@ void FloatSlider::paintEvent( QPaintEvent * e )
 	QPainter p( this );
 	QStyleOptionSlider opt = getStyleOption();
 	
-    opt.subControls = QStyle::SC_SliderGroove | QStyle::SC_SliderHandle;
+	opt.subControls = QStyle::SC_SliderGroove | QStyle::SC_SliderHandle;
     if ( pressed )
 	{
         opt.activeSubControls = QStyle::SC_SliderHandle;
-        opt.state |= QStyle::State_Sunken;
+		opt.state |= QStyle::State_Sunken;
     }
-	
+
+	if( showVal ) {
+		QTextOption to( Qt::AlignCenter );
+		to.setWrapMode( QTextOption::NoWrap );
+		QRect tr( ( val - min ) / ( max - min ) * ( width() - 24 ), -2, 24, 10 );
+		p.drawText( tr, QString().number( val, 'f', 3 ) );
+	}
+
 	style()->drawComplexControl( QStyle::CC_Slider, &opt, &p, this );
 }
 
-void FloatSlider::mousePressEvent(QMouseEvent *ev)
+void FloatSlider::mousePressEvent( QMouseEvent * ev )
 {
     if ( max <= min || ( ev->buttons() != Qt::LeftButton ) )
 	{
@@ -179,16 +271,21 @@ void FloatSlider::mousePressEvent(QMouseEvent *ev)
         return;
     }
     ev->accept();
-	
-	pressed = true;
-	
-    setValueUser( mapToValue( ev->pos() ) );
-    update();
+
+	if( editVal && QRect( 0, 0, width(), 10 ).contains( ev->pos() ) ) {
+		editBox->show( this->mapToGlobal( ev->pos() ) );
+	}
+	else {
+		pressed = true;
+		
+		setValueUser( mapToValue( ev->pos() ) );
+		update();
+	}
 }
 
 void FloatSlider::mouseMoveEvent(QMouseEvent *ev)
 {
-    if ( max <= min || ( ev->buttons() != Qt::LeftButton ) )
+    if ( !pressed || max <= min || ( ev->buttons() != Qt::LeftButton ) )
 	{
         ev->ignore();
         return;

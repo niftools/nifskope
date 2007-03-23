@@ -34,9 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QDoubleValidator>
 
-
-FloatEdit::FloatEdit()
-	: QLineEdit()
+FloatEdit::FloatEdit( QWidget * parent )
+	: QLineEdit( parent )
 {
 	setValidator( validator = new QDoubleValidator( this ) );
 	connect( this, SIGNAL( returnPressed() ), this, SLOT( edited() ) );

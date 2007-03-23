@@ -34,12 +34,29 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FLOATSLIDER_H
 
 #include <QWidget>
+#include <QFrame>
+
+class FloatEdit;
+
+class FloatSliderEditBox : public QFrame
+{
+	Q_OBJECT
+public:
+	FloatSliderEditBox( QWidget * = NULL );
+
+	void addWidget( QWidget * );
+
+public slots:
+	void show( const QPoint & );
+	void hide();
+	void focusChanged( QWidget *, QWidget * );
+};
 
 class FloatSlider : public QWidget
 {
 	Q_OBJECT
 public:
-	FloatSlider( Qt::Orientation o = Qt::Horizontal );
+	FloatSlider( Qt::Orientation = Qt::Horizontal, bool = false, bool = false );
 	
 	float value() const { return val; }
 
@@ -48,6 +65,8 @@ public:
 
 	Qt::Orientation orientation() const { return ori; }
 	void setOrientation( Qt::Orientation o );
+
+	void addEditor( QWidget * );
 	
 	QSize sizeHint() const;
 	QSize minimumSizeHint() const;
@@ -76,6 +95,10 @@ protected:
 	Qt::Orientation ori;
 	
 	bool pressed;
+	bool showVal;
+	bool editVal;
+
+	FloatSliderEditBox * editBox;
 };
 
 class AlphaSlider : public FloatSlider
