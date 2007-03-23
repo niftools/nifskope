@@ -1000,20 +1000,20 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		return;
 	
 	glLoadName( nif->getBlockNumber( iConstraint ) );
+	
 	glPushMatrix();
 	glLoadMatrix( scene->view );
+	
+	glPushAttrib( GL_ENABLE_BIT );
+	glDisable( GL_DEPTH_TEST );
 	
 	QString name = nif->itemName( iConstraint );
 	if ( name == "bhkLimitedHingeConstraint" )
 	{
-		glDisable( GL_DEPTH_TEST );
-		
-		//glDepthFunc( GL_LEQUAL );
-		
 		QModelIndex iHinge = nif->getIndex( iConstraint, "Limited Hinge" );
 		
-		const Vector3 pivotA = Vector3( nif->get<Vector4>( iHinge, "Pivot A" ) );
-		const Vector3 pivotB = Vector3( nif->get<Vector4>( iHinge, "Pivot B" ) );
+		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
+		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
 		
 		const Vector3 axleA( nif->get<Vector4>( iHinge, "Axle A" ) );
 		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2AxleInA1" ) );
@@ -1028,44 +1028,65 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glPushMatrix();
 		glMultMatrix( tBodies.value( 0 ) );
 		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
-		
-		glBegin( GL_POINTS );
-		glVertex( pivotA );
-		glEnd();
-		
-		glBegin( GL_LINES );
-		glVertex( pivotA );
-		glVertex( pivotA + axleA );
-		glVertex( pivotA );
-		glVertex( pivotA + axleA1 );
-		//glVertex( pivotA );
-		//glVertex( pivotA + axleA2 );
-		glEnd();
-		drawDashLine( pivotA, pivotA + axleA2 );
-		
+		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
+		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + axleA ); glEnd();
+		drawDashLine( pivotA, pivotA + axleA1, 14 );
+		drawDashLine( pivotA, pivotA + axleA2, 14 );
 		drawCircle( pivotA, axleA, 1.0 );
 		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle );
-		
 		glPopMatrix();
+		
+		glPushMatrix();
 		glMultMatrix( tBodies.value( 1 ) );
 		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
-		
-		glBegin( GL_POINTS );
-		glVertex( pivotB );
-		glEnd();
-		
-		glBegin( GL_LINES );
-		glVertex( pivotB );
-		glVertex( pivotB + axleB );
-		glVertex( pivotB );
-		glVertex( pivotB + axleB2 );
-		//glVertex( pivotB );
-		//glVertex( pivotB + Vector3::crossproduct( Vector3( nif->get<Vector4>( iHinge, "Axle B" ) ), Vector3( nif->get<Vector4>( iHinge, "Unknown Vector" ) ) ) );
-		glEnd();
-		
-		
+		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
+		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
+		drawDashLine( pivotB + axleB2, pivotB, 14 );
+		drawDashLine( pivotB + Vector3::crossproduct( axleB2, axleB ), pivotB, 14 );
 		drawCircle( pivotB, axleB, 1.0 );
 		drawSolidArc( pivotB, axleB / 6, axleB2, Vector3::crossproduct( axleB2, axleB ), minAngle, maxAngle );
+		glPopMatrix();
+		
+		glMultMatrix( tBodies.value( 0 ) );
+		float angle = Vector3::angle( tBodies.value( 0 ).rotation * axleA2, tBodies.value( 1 ).rotation * axleB2 );
+		glColor( Color3( 0.8, 0.6, 0.0 ) );
+		glBegin( GL_LINES );
+		glVertex( pivotA );
+		glVertex( pivotA + axleA1 * cosf( angle ) + axleA2 * sinf( angle ) );
+		glEnd();
+	}
+	else if ( name == "bhkHingeConstraint" )
+	{
+		QModelIndex iHinge = iConstraint;
+		
+		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
+		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
+		
+		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2AxleInA1" ) );
+		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2AxleInA2" ) );
+		const Vector3 axleA( Vector3::crossproduct( axleA1, axleA2 ) );
+		
+		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle A" ) );
+		const Vector3 axleB1( axleB[1], axleB[2], axleB[0] );
+		const Vector3 axleB2( Vector3::crossproduct( axleB, axleB1 ) );
+		
+		const float minAngle = - PI;
+		const float maxAngle = + PI;
+		
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 0 ) );
+		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
+		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
+		drawDashLine( pivotA, pivotA + axleA1 );
+		drawDashLine( pivotA, pivotA + axleA2 );
+		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 16 );
+		glPopMatrix();
+		
+		glMultMatrix( tBodies.value( 1 ) );
+		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
+		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
+		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
+		drawSolidArc( pivotB, axleB / 6, axleB2, axleB1, minAngle, maxAngle, 16 );
 	}
 	else if ( name == "bhkStiffSpringConstraint" )
 	{
@@ -1081,6 +1102,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	{
 	}
 	
+	glPopAttrib();
 	glPopMatrix();
 }
 

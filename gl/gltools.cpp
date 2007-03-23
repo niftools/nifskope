@@ -360,7 +360,6 @@ void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 	glBegin( GL_LINES );
 	glVertex( b + x * sinf( 2 * PI * float( m ) / float( sd ) ) + y * cosf( 2 * PI * float( m ) / float( sd ) ) );
 	glVertex( b );
-	glVertex( b );
 	glEnd();
 	if ( cull )
 		glEnable( GL_CULL_FACE );
