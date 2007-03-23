@@ -33,15 +33,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "floatslider.h"
 
 #include <QApplication>
-#include <QVBoxLayout>
+#include <QFont>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QStyle>
 #include <QStyleOption>
+#include <QVBoxLayout>
 
 #include "floatedit.h"
 
-#define MAX 0xffff
+#define MAX 0x0fff
+#define VAL_HEIGHT 12
 
 FloatSliderEditBox::FloatSliderEditBox( QWidget * parent )
 	: QFrame( parent, Qt::Tool | Qt::FramelessWindowHint )
@@ -112,8 +114,9 @@ FloatSlider::FloatSlider( Qt::Orientation o, bool showValue, bool isEditor )
 	editVal = showVal && isEditor;
 
 	if( showVal ) {
-		QFont fnt = font();
-		fnt.setPixelSize( 10 );
+		QFont fnt( "Helvetica", -1, QFont::Normal );
+		fnt.setStyleStrategy( QFont::PreferAntialias );
+		fnt.setPixelSize( VAL_HEIGHT - 2 );
 		setFont( fnt );
 	}
 
@@ -216,10 +219,16 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
     if (orientation == Qt::Horizontal)
         opt.state |= QStyle::State_Horizontal;
 	*/
+
 	opt.initFrom( this );
 	
-    opt.subControls = QStyle::SC_None;
+    opt.subControls = QStyle::SC_SliderGroove | QStyle::SC_SliderHandle;
     opt.activeSubControls = QStyle::SC_None;
+
+	if( showVal ) {
+		int w = fontMetrics().width( "0.000" );
+		opt.rect.adjust( 0.6*w, VAL_HEIGHT, -0.6*w, 0 );
+	}
 
 	opt.maximum = MAX;
 	opt.minimum = 0;
@@ -227,15 +236,15 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 	opt.pageStep = 10;
 	opt.singleStep = 1;
 	opt.sliderValue = ( max != min ? int( ( val - min ) / ( max - min ) * MAX + .5 ) : 0 );
-	if ( ori == Qt::Vertical )	opt.sliderValue = MAX - opt.sliderValue;
+	
+	if ( ori == Qt::Vertical ) {
+		opt.sliderValue = MAX - opt.sliderValue;
+	}
+
 	opt.sliderPosition = opt.sliderValue;
 	opt.tickPosition = QSlider::NoTicks;
 	opt.upsideDown = false;
 	opt.direction = Qt::LeftToRight;
-
-	if( showVal ) {
-		opt.rect.adjust( 8, 10, -8, 0 );
-	}
 
     return opt;
 	
@@ -246,7 +255,6 @@ void FloatSlider::paintEvent( QPaintEvent * e )
 	QPainter p( this );
 	QStyleOptionSlider opt = getStyleOption();
 	
-	opt.subControls = QStyle::SC_SliderGroove | QStyle::SC_SliderHandle;
     if ( pressed )
 	{
         opt.activeSubControls = QStyle::SC_SliderHandle;
@@ -254,10 +262,11 @@ void FloatSlider::paintEvent( QPaintEvent * e )
     }
 
 	if( showVal ) {
-		QTextOption to( Qt::AlignCenter );
-		to.setWrapMode( QTextOption::NoWrap );
-		QRect tr( ( val - min ) / ( max - min ) * ( width() - 24 ), -2, 24, 10 );
-		p.drawText( tr, QString().number( val, 'f', 3 ) );
+		QString t = QString().number( val, 'f', 3 );
+		QRect tr = style()->subControlRect( QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this );
+		tr.adjust( -opt.rect.left()+2, -VAL_HEIGHT, opt.rect.left()-2, -tr.height()-1 );
+
+		p.drawText( tr, t, QTextOption( Qt::AlignCenter ) );
 	}
 
 	style()->drawComplexControl( QStyle::CC_Slider, &opt, &p, this );
@@ -272,7 +281,7 @@ void FloatSlider::mousePressEvent( QMouseEvent * ev )
     }
     ev->accept();
 
-	if( editVal && QRect( 0, 0, width(), 10 ).contains( ev->pos() ) ) {
+	if( editVal && QRect( 0, 0, width(), VAL_HEIGHT ).contains( ev->pos() ) ) {
 		editBox->show( this->mapToGlobal( ev->pos() ) );
 	}
 	else {
@@ -338,7 +347,7 @@ float FloatSlider::mapToValue( const QPoint & p ) const
 QSize FloatSlider::sizeHint() const
 {
     QStyleOptionSlider opt = getStyleOption();
-    int w = style()->pixelMetric(QStyle::PM_SliderThickness, &opt, this);
+    int w = style()->pixelMetric( QStyle::PM_SliderThickness, &opt, this );
 	int h = 84;
     if ( ori == Qt::Horizontal )
 	{
@@ -353,11 +362,11 @@ QSize FloatSlider::minimumSizeHint() const
 {
     QSize s = sizeHint();
     QStyleOptionSlider opt = getStyleOption();
-    int length = style()->pixelMetric(QStyle::PM_SliderLength, &opt, this);
+	int length = style()->pixelMetric( QStyle::PM_SliderLength, &opt, this );
     if ( ori == Qt::Horizontal )
-        s.setWidth(length);
+        s.setWidth( length );
     else
-        s.setHeight(length);
+        s.setHeight( length );
     return s;
 }
 
