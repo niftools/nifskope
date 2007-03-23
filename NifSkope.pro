@@ -15,7 +15,7 @@ CONFIG += embed_manifest_exe
 #CONFIG += console
 
 # uncomment this if you want the text stats gl option
-#DEFINES += USE_GL_QPAINTER
+DEFINES += USE_GL_QPAINTER
 
 DESTDIR = ./
 

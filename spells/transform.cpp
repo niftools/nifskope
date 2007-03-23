@@ -343,7 +343,7 @@ public:
 			grid->addWidget( spn, a, 1 );
 		}
 		
-		QPushButton * btScale = new QPushButton( tr( "Scale" ) );
+		QPushButton * btScale = new QPushButton( Spell::tr( "Scale" ) );
 		grid->addWidget( btScale, 3, 0, 1, 2 );
 		QObject::connect( btScale, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
 		

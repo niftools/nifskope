@@ -232,8 +232,8 @@ public:
 class spSkinPartition : public Spell
 {
 public:
-	QString name() const { return tr("Make Skin Partition"); }
-	QString page() const { return tr("Mesh"); }
+	QString name() const { return Spell::tr("Make Skin Partition"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & iShape )
 	{
@@ -287,7 +287,7 @@ public:
 					int vertex = nif->get<int>( iVertexWeights.child( r, 0 ), "Index" );
 					float weight = nif->get<float>( iVertexWeights.child( r, 0 ), "Weight" );
 					if ( vertex >= weights.count() )
-						throw QString( tr("bad NiSkinData - vertex count does not match") );
+						throw QString( Spell::tr("bad NiSkinData - vertex count does not match") );
 					weights[vertex].append( boneweight( bone, weight ) );
 				}
 			}
@@ -305,7 +305,7 @@ public:
 			}
 			
 			if ( minBones <= 0 )
-				throw QString( tr("bad NiSkinData - some vertices have no weights at all") );
+				throw QString( Spell::tr("bad NiSkinData - some vertices have no weights at all") );
 			
 			// query max bones per vertex/partition
 			
@@ -356,7 +356,7 @@ public:
 						lst[b].second /= totalWeight;
 					}
 				}
-				qWarning() << QString( tr( "reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" ) ).arg( c ).arg( maxBonesPerVertex ).arg( maxBones );
+				qWarning() << QString( Spell::tr( "reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" ) ).arg( c ).arg( maxBonesPerVertex ).arg( maxBones );
 			}
 			
 			maxBones = maxBonesPerVertex;
@@ -480,7 +480,7 @@ public:
 			}
 			
 			if ( cnt > 0 )
-				qWarning() << QString( tr( "removed %1 bone influences" ) ).arg( cnt );
+				qWarning() << QString( Spell::tr( "removed %1 bone influences" ) ).arg( cnt );
 			
 			// split the triangles into partitions
 			
@@ -751,8 +751,8 @@ REGISTER_SPELL( spSkinPartition )
 class spAllSkinPartitions : public Spell
 {
 public:
-	QString name() const { return tr( "Make All Skin Partitions" ); }
-	QString page() const { return tr( "Batch" ); }
+	QString name() const { return Spell::tr( "Make All Skin Partitions" ); }
+	QString page() const { return Spell::tr( "Batch" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -779,7 +779,7 @@ public:
 			Partitioner.cast( nif, idx, mbpp, mbpv );
 		}
 		
-		qWarning() << QString( tr( "did %1 partitions" ) ).arg( indices.count() );
+		qWarning() << QString( Spell::tr( "did %1 partitions" ) ).arg( indices.count() );
 		
 		return QModelIndex();
 	}
@@ -802,7 +802,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnPart->setValue( 18 );
 	
 	QLabel * labVert = new QLabel( this );
-	labVert->setText( tr(
+	labVert->setText( Spell::tr(
 	"<b>Number of Bones per Vertex</b><br>"
 	"Hint: Most games use 4 bones per vertex<br>"
 	"Note: If the mesh contains vertices which are<br>"
@@ -811,7 +811,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	) );
 	
 	QLabel * labPart = new QLabel( this );
-	labPart->setText( tr(
+	labPart->setText( Spell::tr(
 	"<b>Number of Bones per Partition</b><br>"
 	"Hint: Oblivion uses 18 bones pp<br>"
 	"CivIV (non shader meshes) 4 bones pp<br>"
@@ -821,11 +821,11 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	) );
 	
 	QPushButton * btOk = new QPushButton( this );
-	btOk->setText( tr( "Ok" ) );
+	btOk->setText( Spell::tr( "Ok" ) );
 	connect( btOk, SIGNAL( clicked() ), this, SLOT( accept() ) );
 	
 	QPushButton * btCancel = new QPushButton( this );
-	btCancel->setText( tr( "Cancel" ) );
+	btCancel->setText( Spell::tr( "Cancel" ) );
 	connect( btCancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
 	
 	QGridLayout * grid = new QGridLayout( this );
@@ -856,8 +856,8 @@ int SkinPartitionDialog::maxBonesPerPartition()
 class spFixBoneBounds : public Spell
 {
 public:
-	QString name() const { return tr( "Fix Bone Bounds" ); }
-	QString page() const { return tr( "Skeleton" ); }
+	QString name() const { return Spell::tr( "Fix Bone Bounds" ); }
+	QString page() const { return Spell::tr( "Skeleton" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

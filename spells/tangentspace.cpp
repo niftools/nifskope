@@ -42,7 +42,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	
 	if ( verts.isEmpty() || norms.count() != verts.count() || texco.count() != verts.count() || triangles.isEmpty() )
 	{
-		qWarning() << tr( "need vertices, normals, texture coordinates and faces to calculate tangents and binormals" );
+		qWarning() << Spell::tr( "need vertices, normals, texture coordinates and faces to calculate tangents and binormals" );
 		return iBlock;
 	}
 	
@@ -194,8 +194,8 @@ REGISTER_SPELL( spTangentSpace )
 class spAllTangentSpaces : public Spell
 {
 public:
-	QString name() const { return tr( "Update All Tangent Spaces" ); }
-	QString page() const { return tr( "Batch" ); }
+	QString name() const { return Spell::tr( "Update All Tangent Spaces" ); }
+	QString page() const { return Spell::tr( "Batch" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{

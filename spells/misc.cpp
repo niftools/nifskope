@@ -3,8 +3,8 @@
 class spUpdateArray : public Spell
 {
 public:
-	QString name() const { return tr( "Update" ); }
-	QString page() const { return tr( "Array" ); }
+	QString name() const { return Spell::tr( "Update" ); }
+	QString page() const { return Spell::tr( "Array" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -23,8 +23,8 @@ REGISTER_SPELL( spUpdateArray )
 class spUpdateHeader : public Spell
 {
 public:
-	QString name() const { return tr( "Update" ); }
-	QString page() const { return tr( "Header" ); }
+	QString name() const { return Spell::tr( "Update" ); }
+	QString page() const { return Spell::tr( "Header" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -43,8 +43,8 @@ REGISTER_SPELL( spUpdateHeader )
 class spUpdateFooter : public Spell
 {
 public:
-	QString name() const { return tr( "Update" ); }
-	QString page() const { return tr( "Footer" ); }
+	QString name() const { return Spell::tr( "Update" ); }
+	QString page() const { return Spell::tr( "Footer" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -118,7 +118,7 @@ QIcon * followlink_xpm_icon = 0;
 class spFollowLink : public Spell
 {
 public:
-	QString name() const { return tr( "Follow Link" ); }
+	QString name() const { return Spell::tr( "Follow Link" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -147,7 +147,7 @@ REGISTER_SPELL( spFollowLink )
 class spFileOffset : public Spell
 {
 public:
-	QString name() const { return tr( "File Offset" ); }
+	QString name() const { return Spell::tr( "File Offset" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

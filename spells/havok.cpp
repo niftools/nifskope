@@ -82,8 +82,8 @@ REGISTER_SPELL( spLimitedHingeHelper )
 class spPackHavokStrips : public Spell
 {
 public:
-	QString name() const { return tr( "Pack Strips" ); }
-	QString page() const { return tr( "Havok" ); }
+	QString name() const { return Spell::tr( "Pack Strips" ); }
+	QString page() const { return Spell::tr( "Havok" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
@@ -139,7 +139,7 @@ public:
 		
 		if ( vertices.isEmpty() || triangles.isEmpty() )
 		{
-			qWarning() << tr( "no mesh data was found" );
+			qWarning() << Spell::tr( "no mesh data was found" );
 			return iShape;
 		}
 		

@@ -91,7 +91,7 @@ QIcon * flag42_xpm_icon = 0;
 class spEditFlags : public Spell
 {
 public:
-	QString name() const { return tr( "Flags" ); }
+	QString name() const { return Spell::tr( "Flags" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -400,12 +400,12 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout( & dlg );
 		
 		QStringList flagNames( QStringList()
-			<< tr( "Enable Animation" ) // 1
-			<< tr( "Enable Collision" ) // 2
-			<< tr( "Is Skeleton Nif (?)" ) // 4
-			<< tr( "Unidentified Flag (?)" ) // 8
-			<< tr( "FlameNodes Present" ) // 16
-			<< tr( "EditorMarkers Present" ) // 32
+			<< Spell::tr( "Enable Animation" ) // 1
+			<< Spell::tr( "Enable Collision" ) // 2
+			<< Spell::tr( "Is Skeleton Nif (?)" ) // 4
+			<< Spell::tr( "Unidentified Flag (?)" ) // 8
+			<< Spell::tr( "FlameNodes Present" ) // 16
+			<< Spell::tr( "EditorMarkers Present" ) // 32
 		);
 		
 		QList<QCheckBox *> chkBoxes;
