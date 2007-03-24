@@ -74,6 +74,8 @@ public:
 	TestShredder();
 	~TestShredder();
 	
+	static TestShredder * create();
+	
 protected slots:
 	void chooseBlock();
 	void run();

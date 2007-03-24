@@ -82,6 +82,7 @@ public slots:
 	void reload();
 	
 	void sltWindow();
+	void sltShredder();
 	
 	void about();
 	
@@ -143,6 +144,7 @@ private:
 	QAction * aLoadXML;
 	QAction * aReload;
 	QAction * aWindow;
+	QAction * aShredder;
 	QAction * aQuit;
 
 #ifdef FSENGINE

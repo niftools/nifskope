@@ -1,10 +1,9 @@
 #include "xmlcheck.h"
 
-#include "../spellbook.h"
-
 #include "../kfmmodel.h"
+#include "../nifmodel.h"
 
-#include "../widgets/fileselect.h"
+#include "fileselect.h"
 
 #include <QAction>
 #include <QApplication>
@@ -28,27 +27,15 @@
 
 #define NUM_THREADS 2
 
-class spThreadLoad : public Spell
-{
-public:
-	QString name() const { return "XML Checker"; }
-	QString page() const { return ""; }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return ( ! nif || ! index.isValid() );
-	}
-	
-	QModelIndex cast( NifModel *, const QModelIndex & index )
-	{
-		TestShredder * shredder = new TestShredder();
-		shredder->setAttribute( Qt::WA_DeleteOnClose );
-		shredder->show();
-		return index;
-	}
-};
 
-REGISTER_SPELL( spThreadLoad )
+TestShredder * TestShredder::create()
+{
+	TestShredder * shredder = new TestShredder();
+	shredder->setAttribute( Qt::WA_DeleteOnClose );
+	shredder->show();
+	return shredder;
+}
+
 
 TestShredder::TestShredder()
 	: QWidget()

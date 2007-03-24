@@ -69,6 +69,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 #include "widgets/copyfnam.h"
+#include "widgets/xmlcheck.h"
 
 
 #ifdef FSENGINE
@@ -191,6 +192,8 @@ NifSkope::NifSkope()
 	connect( aReload, SIGNAL( triggered() ), this, SLOT( reload() ) );
 	aWindow = new QAction( tr("&New Window"), this );
 	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
+	aShredder = new QAction( tr("XML Checker" ), this );
+	connect( aShredder, SIGNAL( triggered() ), this, SLOT( sltShredder() ) );
 	aQuit = new QAction( tr("&Quit"), this );
 	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 	
@@ -318,6 +321,7 @@ NifSkope::NifSkope()
 	mFile->addSeparator();
 	mFile->addAction( aLoadXML );
 	mFile->addAction( aReload );
+	mFile->addAction( aShredder );
 
 #ifdef FSENGINE
 	if ( aResources )
@@ -717,6 +721,11 @@ void NifSkope::copyFileNameSaveLoad()
 void NifSkope::sltWindow()
 {
 	createWindow();
+}
+
+void NifSkope::sltShredder()
+{
+	TestShredder::create();
 }
 
 
