@@ -12,6 +12,13 @@
 		<file alias="play">resources/button_play.png</file>
 		<file alias="loop">resources/button_loop.png</file>
 		<file alias="switch">resources/button_switch.png</file>
+		<file alias="viewTop">resources/button_view_top.png</file>
+		<file alias="viewFront">resources/button_view_front.png</file>
+		<file alias="viewSide">resources/button_view_side.png</file>
+		<file alias="viewWalk">resources/button_view_walk.png</file>
+		<file alias="viewUser">resources/button_view_user.png</file>
+		<file alias="viewFlip">resources/button_view_flip.png</file>
+		<file alias="viewPers">resources/button_view_pers.png</file>
 	</qresource>
 	<qresource prefix="/lang">
 		<file alias="de">lang/NifSkope_de.qm</file>

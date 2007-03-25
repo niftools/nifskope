@@ -104,6 +104,8 @@ public:
 	
 	QToolBar * tAnim;
 	QComboBox * animGroups;
+
+	QToolBar * tView;
 	
 	void	save( QSettings & );
 	void	restore( QSettings & );

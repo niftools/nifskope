@@ -121,44 +121,44 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	grpView->setExclusive( false );
 	connect( grpView, SIGNAL( triggered( QAction * ) ), this, SLOT( viewAction( QAction * ) ) );
 	
-	aViewTop = new QAction( tr("Top"), grpView );
+	aViewTop = new QAction( QIcon( ":/btn/viewTop" ), tr("Top"), grpView );
 	aViewTop->setToolTip( tr("View from above") );
 	aViewTop->setCheckable( true );
 	aViewTop->setShortcut( Qt::Key_F5 );
 	grpView->addAction( aViewTop );
 	
-	aViewFront = new QAction( tr("Front"), grpView );
+	aViewFront = new QAction( QIcon( ":/btn/viewFront" ), tr("Front"), grpView );
 	aViewFront->setToolTip( tr("View from the front") );
 	aViewFront->setCheckable( true );
 	aViewFront->setChecked( true );
 	aViewFront->setShortcut( Qt::Key_F6 );
 	grpView->addAction( aViewFront );
 	
-	aViewSide = new QAction( tr("Side"), grpView );
+	aViewSide = new QAction( QIcon( ":/btn/viewSide" ), tr("Side"), grpView );
 	aViewSide->setToolTip( tr("View from the side") );
 	aViewSide->setCheckable( true );
 	aViewSide->setShortcut( Qt::Key_F7 );
 	grpView->addAction( aViewSide );
 	
-	aViewWalk = new QAction( tr("Walk"), grpView );
+	aViewWalk = new QAction( QIcon( ":/btn/viewWalk" ), tr("Walk"), grpView );
 	aViewWalk->setToolTip( tr("Enable walk mode") );
 	aViewWalk->setCheckable( true );
 	aViewWalk->setShortcut( Qt::Key_F8 );
 	grpView->addAction( aViewWalk );
 	
-	aViewUser = new QAction( tr("User"), grpView );
+	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr("User"), grpView );
 	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
 	aViewUser->setCheckable( true );
 	aViewUser->setShortcut( Qt::Key_F9 );
 	grpView->addAction( aViewUser );
 	
-	aViewFlip = new QAction( tr("Flip"), this );
+	aViewFlip = new QAction( QIcon( ":/btn/viewFlip" ), tr("Flip"), this );
 	aViewFlip->setToolTip( tr("Flip View from Front to Back, Top to Bottom, Side to Other Side") );
 	aViewFlip->setCheckable( true );
 	aViewFlip->setShortcut( Qt::Key_F11 );
 	grpView->addAction( aViewFlip );
 	
-	aViewPerspective = new QAction( tr("Perspective"), this );
+	aViewPerspective = new QAction( QIcon( ":/btn/viewPers" ), tr("Perspective"), this );
 	aViewPerspective->setToolTip( tr("Perspective View Transformation or Orthogonal View Transformation") );
 	aViewPerspective->setCheckable( true );
 	aViewPerspective->setShortcut( Qt::Key_F10 );
@@ -228,6 +228,20 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	connect( GLOptions::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
 	connect( GLOptions::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
+
+	tView = new QToolBar( tr("View") );
+	tView->setObjectName( "ViewTool" );
+	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	tView->setIconSize( QSize( 16, 16 ) );
+
+	tView->addAction( aViewTop );
+	tView->addAction( aViewFront );
+	tView->addAction( aViewSide );
+	tView->addAction( aViewWalk );
+	tView->addAction( aViewUser );
+	tView->addSeparator();
+	tView->addAction( aViewFlip );
+	tView->addAction( aViewPerspective );
 }
 
 GLView::~GLView()
@@ -237,7 +251,7 @@ GLView::~GLView()
 
 QList<QToolBar*> GLView::toolbars() const
 {
-	return QList<QToolBar*>() << tAnim;
+	return QList<QToolBar*>() << tView << tAnim;
 }
 
 QMenu * GLView::createMenu() const
