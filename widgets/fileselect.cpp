@@ -228,16 +228,22 @@ void FileSelector::activate()
 	switch ( Mode )
 	{
 		case LoadFile:
-			if ( ! inf.isFile() )
+			if ( ! inf.isFile() ) {
+				setState( stError );
 				return;
+			}
 			break;
 		case SaveFile:
-			if ( inf.isDir() )
+			if ( inf.isDir() ) {
+				setState( stError );
 				return;
+			}
 			break;
 		case Folder:
-			if ( ! inf.isDir() )
+			if ( ! inf.isDir() ) {
+				setState( stError );
 				return;
+			}
 			break;
 	}
 	emit sigActivated( file() );
