@@ -612,8 +612,7 @@ void NifSkope::load()
 			kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
 	}
 	
-	bool a = ogl->aAnimate->isChecked();
-	ogl->aAnimate->setChecked( false );
+	ogl->tAnim->setEnabled( false );
 	
 	if ( !niffile.isFile() )
 	{
@@ -645,7 +644,7 @@ void NifSkope::load()
 		setWindowTitle( "NifSkope - " + niffile.fileName() );
 	}
 	
-	ogl->aAnimate->setChecked( a );
+	ogl->tAnim->setEnabled( true );
 	ogl->center();
 	
 	setEnabled( true );
