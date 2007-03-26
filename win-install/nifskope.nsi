@@ -170,8 +170,8 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\NifSkope.exe
   ;File ..\mingwm10.dll
   File ..\README.TXT
-  File ..\..\docsys\nif.xml
-  File ..\..\docsys\kfm.xml
+  File ..\..\docsys\nifxml\nif.xml
+  File ..\..\docsys\nifxml\kfm.xml
   File Copyright.txt
   File nif_file.ico
   File ..\style.qss
