@@ -900,6 +900,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	}
 	else if ( name == "bhkNiTriStripsShape" )
 	{
+		glPushMatrix();
 		float s = 1.0f / 7.0f;
 		glScalef( s, s, s );
 		
@@ -942,6 +943,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 			}
 		}
+		glPopMatrix();
 	}
 	else if ( name == "bhkConvexVerticesShape" )
 	{
