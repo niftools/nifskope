@@ -315,6 +315,9 @@ NifSkope::NifSkope()
 	mFile->addActions( lineLoad->actions() );
 	mFile->addActions( lineSave->actions() );
 	mFile->addSeparator();
+	mFile->addMenu( mImport = new QMenu( tr("Import") ) );
+	mFile->addMenu( mExport = new QMenu( tr("Export") ) );
+	mFile->addSeparator();
 	mFile->addAction( aSanitize );
 	mFile->addSeparator();
 	mFile->addAction( aWindow );
@@ -363,6 +366,10 @@ NifSkope::NifSkope()
 	menuBar()->addMenu( ogl->createMenu() );
 	menuBar()->addMenu( book );
 	menuBar()->addMenu( mAbout );
+	
+	fillImportExportMenus();
+	connect( mExport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
+	connect( mImport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
 }
 
 NifSkope::~NifSkope()
@@ -840,8 +847,8 @@ void myMessageOutput(QtMsgType type, const char *msg)
 			printf( "%s\n", msg );
 			break;
 		case QtWarningMsg:
-			// workaround for Qt 4.1.3
-			if ( QString( "QEventDispatcherUNIX::unregisterTimer: invalid argument" ) == msg )
+			// workaround for Qt 4.2.2
+			if ( QString( "edit: editing failed" ) == msg )
 				return;
 		case QtCriticalMsg:
 			if ( ! msgtarget )

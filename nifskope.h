@@ -103,6 +103,9 @@ protected slots:
 	void copyFileNameLoadSave();
 	void copyFileNameSaveLoad();
 	
+	void fillImportExportMenus();
+	void sltImportExport( QAction * action );
+	
 protected:
 	void closeEvent( QCloseEvent * e );
 	bool eventFilter( QObject * o, QEvent * e );
@@ -146,7 +149,7 @@ private:
 	QAction * aWindow;
 	QAction * aShredder;
 	QAction * aQuit;
-
+	
 #ifdef FSENGINE
 	QAction * aResources;
 #endif
@@ -159,6 +162,9 @@ private:
 	
 	QAction * aNifSkope;
 	QAction * aAboutQt;
+
+	QMenu * mExport;
+	QMenu * mImport;
 };
 
 class IPCsocket : public QObject

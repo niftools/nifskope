@@ -9,7 +9,8 @@ CONFIG += qt static release thread warn_on
 # useful for MSVC2005
 CONFIG += embed_manifest_exe
 
-#CONFIG += fsengine
+# this enables the resource file engine
+CONFIG += fsengine
 
 # uncomment this if you want all the messages to be logged to stdout
 #CONFIG += console
@@ -32,7 +33,8 @@ HEADERS += \
 	spellbook.h \
 	gl/*.h \
 	widgets/*.h \
-	spells/*.h
+	spells/*.h \
+	importex/*.h
 
 SOURCES += \
 	niftypes.cpp \
@@ -51,6 +53,7 @@ SOURCES += \
 	gl/*.cpp \
 	widgets/*.cpp \
 	spells/*.cpp \
+	importex/*.cpp \
 	NvTriStrip/*.cpp
 
 RESOURCES += nifskope.qrc
