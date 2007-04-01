@@ -831,3 +831,11 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	return mipmaps > 0;
 }
 	
+bool texCanLoad( const QString & filepath )
+{
+	QFileInfo i( filepath );
+	return i.exists() && i.isReadable() && (
+		filepath.endsWith( ".dds", Qt::CaseInsensitive ) ||
+		filepath.endsWith( ".tga", Qt::CaseInsensitive ) ||
+		filepath.endsWith( ".bmp", Qt::CaseInsensitive ) );
+}

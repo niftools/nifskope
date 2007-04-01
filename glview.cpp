@@ -89,6 +89,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 {
 	setFocusPolicy( Qt::ClickFocus );
 	setAttribute( Qt::WA_NoSystemBackground );
+	setAcceptDrops( true );
 	//setContextMenuPolicy( Qt::CustomContextMenu );
 	
 	Zoom = 1.0;
@@ -582,7 +583,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	glPushMatrix();
 
 	glViewport( 0, 0, width(), height() );
-	glProjection( pressPos.x(), pressPos.y() );
+	glProjection( pos.x(), pos.y() );
 
 	GLuint	buffer[512];
 	glSelectBuffer( 512, buffer );
@@ -1155,4 +1156,77 @@ void GLView::setDistance( float x )
 {
 	Dist = x;
 	update();
+}
+
+void GLView::dragEnterEvent( QDragEnterEvent * e )
+{
+	if ( e->mimeData()->hasUrls() && e->mimeData()->urls().count() == 1 )
+	{
+		QUrl url = e->mimeData()->urls().first();
+		if ( url.scheme() == "file" )
+		{
+			QString fn = url.toLocalFile();
+			if ( textures->canLoad( fn ) )
+			{
+				fnDragTex = textures->stripPath( fn, model->getFolder() );
+				e->accept();
+				return;
+			}
+		}
+	}
+	
+	e->ignore();
+}
+
+void GLView::dragMoveEvent( QDragMoveEvent * e )
+{
+	if ( iDragTarget.isValid() )
+	{
+		model->set<QString>( iDragTarget, fnDragTexOrg );
+		iDragTarget = QModelIndex();
+		fnDragTexOrg = QString();
+	}
+	
+	QModelIndex iObj = model->getBlock( indexAt( e->pos() ), "NiAVObject" );
+	if ( iObj.isValid() )
+	{
+		foreach ( qint32 l, model->getChildLinks( model->getBlockNumber( iObj ) ) )
+		{
+			QModelIndex iTxt = model->getBlock( l, "NiTexturingProperty" );
+			if ( iTxt.isValid() )
+			{
+				QModelIndex iSrc = model->getBlock( model->getLink( iTxt, "Base Texture/Source" ), "NiSourceTexture" );
+				if ( iSrc.isValid() )
+				{
+					iDragTarget = model->getIndex( iSrc, "File Name" );
+					if ( iDragTarget.isValid() )
+					{
+						fnDragTexOrg = model->get<QString>( iDragTarget );
+						model->set<QString>( iDragTarget, fnDragTex );
+						e->accept();
+						return;
+					}
+				}
+			}
+		}
+	}
+	
+	e->ignore();
+}
+
+void GLView::dropEvent( QDropEvent * e )
+{
+	iDragTarget = QModelIndex();
+	fnDragTex = fnDragTexOrg = QString();
+	e->accept();
+}
+
+void GLView::dragLeaveEvent( QDragLeaveEvent * e )
+{
+	if ( iDragTarget.isValid() )
+	{
+		model->set<QString>( iDragTarget, fnDragTexOrg );
+		iDragTarget = QModelIndex();
+		fnDragTex = fnDragTexOrg = QString();
+	}
 }

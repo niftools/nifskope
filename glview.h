@@ -148,6 +148,11 @@ protected:
 	void keyReleaseEvent( QKeyEvent * );
 	void focusOutEvent( QFocusEvent * );
 	
+	void dragEnterEvent( QDragEnterEvent * );
+	void dragMoveEvent( QDragMoveEvent * );
+	void dropEvent( QDropEvent * );
+	void dragLeaveEvent( QDragLeaveEvent * );
+	
 private slots:
 	void advanceGears();
 	
@@ -201,6 +206,9 @@ private:
 	float	fpsacc;
 	
 	class TexCache * textures;
+	
+	QPersistentModelIndex iDragTarget;
+	QString fnDragTex, fnDragTexOrg;
 };
 
 #endif

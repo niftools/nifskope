@@ -65,6 +65,7 @@ public:
 	
 	static QString find( const QString & file, const QString & nifFolder );
 	static QString stripPath( const QString & file, const QString & nifFolder );
+	static bool canLoad( const QString & file );
 	
 signals:
 	void sigRefresh();

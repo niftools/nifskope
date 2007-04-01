@@ -218,6 +218,11 @@ QString TexCache::stripPath( const QString & filepath, const QString & nifFolder
 	return file;
 }
 
+bool TexCache::canLoad( const QString & filePath )
+{
+	return texCanLoad( filePath );
+}
+
 void TexCache::fileChanged( const QString & filepath )
 {
 	QMutableHashIterator<QString,Tex*> it( textures );
