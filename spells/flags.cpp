@@ -106,9 +106,9 @@ public:
 	
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
 	{
-		if ( nif->itemName( index ) == "Flags" && nif->itemType( index.parent() ) == "NiBlock" )
+		if ( nif->itemName( index ) == "Flags" && nif->isNiBlock( index.parent() ) )
 			return index;
-		if ( nif->itemType( index ) == "NiBlock" )
+		if ( nif->isNiBlock( index ) )
 			return nif->getIndex( index, "Flags" );
 		if ( nif->inherits( nif->getBlock( index ), "bhkRigidBody" ) )
 		{
@@ -116,6 +116,15 @@ public:
 			iFlags = iFlags.sibling( iFlags.row(), NifModel::ValueCol );
 			if ( index == iFlags )
 				return iFlags;
+		}
+		else if ( nif->inherits( nif->getBlock( index ), "BSXFlags" ) )
+		{
+			QModelIndex iBlock = nif->getBlock( index, "BSXFlags" );
+			QModelIndex sibling = index.sibling( index.row(), 0 );
+			if ( nif->getIndex( nif->getBlock( index ), "Name" ) == sibling )
+			{
+				return nif->getIndex( nif->getBlock( index ), "Flags" );
+			}
 		}
 		return QModelIndex();
 	}

@@ -25,11 +25,11 @@ static char * transform_xpm[] = {
 "                                                                ",
 "                                                                ",
 "                                                                ",
-"                                                                ",
+"                             .                                  ",
+"                            ...                                 ",
 "                           .....                                ",
-"                            ....                                ",
-"                            ....                                ",
-"                           ......                               ",
+"                          .......                               ",
+"                            ...                                 ",
 "                            ...                                 ",
 "                            ...                                 ",
 "                            ...                                 ",
@@ -79,7 +79,7 @@ static char * transform_xpm[] = {
 "                            ...                                 ",
 "                            ...                                 ",
 "                            ...                                 ",
-"                             ..                                 ",
+"                            ...                                 ",
 "                                                                ",
 "                                                                ",
 "                                                                ",
@@ -275,42 +275,38 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return Transform::canConstruct( nif, index );
+		if ( Transform::canConstruct( nif, index ) )
+			return true;
+		
+		QModelIndex iTransform = nif->getIndex( index, "Transform" );
+		if ( ! iTransform.isValid() )
+			iTransform = index;
+		
+		return ( nif->getValue( iTransform ).type() == NifValue::tMatrix4 );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
-		edit->add( new NifVectorEdit( nif, nif->getIndex( index, "Translation" ) ) );
-		edit->add( new NifRotationEdit( nif, nif->getIndex( index, "Rotation" ) ) );
-		edit->add( new NifFloatEdit( nif, nif->getIndex( index, "Scale" ) ) );
+		if ( Transform::canConstruct( nif, index ) )
+		{
+			edit->add( new NifVectorEdit( nif, nif->getIndex( index, "Translation" ) ) );
+			edit->add( new NifRotationEdit( nif, nif->getIndex( index, "Rotation" ) ) );
+			edit->add( new NifFloatEdit( nif, nif->getIndex( index, "Scale" ) ) );
+		}
+		else
+		{
+			QModelIndex iTransform = nif->getIndex( index, "Transform" );
+			if ( ! iTransform.isValid() )
+				iTransform = index;
+			edit->add( new NifMatrix4Edit( nif, iTransform ) );
+		}
 		edit->show();
 		return index;
 	}
 };
 
 REGISTER_SPELL( spEditTransformation )
-
-class spEditMatrix4 : public Spell
-{
-	QString name() const { return Spell::tr("Edit Matrix"); }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return nif->getValue( index ).type() == NifValue::tMatrix4;
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
-		edit->add( new NifMatrix4Edit( nif, index ) );
-		edit->show();
-		
-		return index;
-	}
-};
-
-REGISTER_SPELL( spEditMatrix4 )
 
 
 class spScaleVertices : public Spell
