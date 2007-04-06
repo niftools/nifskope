@@ -73,6 +73,8 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 		connect( btAccept, SIGNAL( clicked() ), this, SLOT( close() ) );
 		layout->addWidget( btAccept );
 	}
+	
+	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
 }
 
 void NifBlockEditor::add( NifEditBox * box )
@@ -132,7 +134,7 @@ void NifBlockEditor::nifDataChanged( const QModelIndex & begin, const QModelInde
 {
 	if ( nif && iBlock.isValid() )
 	{
-		if ( isVisible() && nif->getBlockOrHeader( begin ) == iBlock || nif->getBlockOrHeader( end ) == iBlock )
+		if ( nif->getBlockOrHeader( begin ) == iBlock || nif->getBlockOrHeader( end ) == iBlock )
 		{
 			if ( ! timer->isActive() )
 				timer->start();
