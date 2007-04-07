@@ -121,6 +121,11 @@ inline void glScale( const Vector3 & v )
 	glScalef( v[0], v[1], v[2] );
 }
 
+inline void glVertex( const Vector2 & v )
+{
+	glVertex2fv( v.data() );
+}
+
 inline void glVertex( const Vector3 & v )
 {
 	glVertex3fv( v.data() );

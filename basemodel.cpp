@@ -423,7 +423,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 							return item->value().get<Quat>().toHtml();
 						case NifValue::tColor3:
 							{
-								Color4 c = item->value().get<Color3>();
+								Color3 c = item->value().get<Color3>();
 								return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
 							}
 						case NifValue::tColor4:

@@ -570,7 +570,7 @@ public:
 		Vector3 v3;
 		interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
 		
-		Color3 color( v3 );
+		Color4 color( Color3( v3 ), 1.0 );
 		
 		switch ( tColor )
 		{

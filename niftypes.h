@@ -150,6 +150,12 @@ public:
 		xyz[1] = y;
 		xyz[2] = z;
 	}
+	explicit Vector3( const Vector2 & v2, float z = 0 )
+	{
+		xyz[0] = v2[0];
+		xyz[1] = v2[1];
+		xyz[2] = z;
+	}
 	explicit Vector3( const class Vector4 & );
 	
 	Vector3 & operator+=( const Vector3 & v )
@@ -712,6 +718,7 @@ public:
 	Color3( float r, float g, float b ) { setRGB( r, g, b ); }
 	explicit Color3( const QColor & c ) { fromQColor( c ); }
 	explicit Color3( const Vector3 & v ) { fromVector3( v ); }
+	explicit Color3( const class Color4 & c4 );
 	
 	float & operator[]( unsigned int i )
 	{
@@ -802,7 +809,7 @@ class Color4
 {
 public:
 	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
-	Color4( const Color3 & c, float alpha = 1.0 ) { rgba[0] = c[0]; rgba[1] = c[1]; rgba[2] = c[2]; rgba[3] = alpha; }
+	explicit Color4( const Color3 & c, float alpha = 1.0 ) { rgba[0] = c[0]; rgba[1] = c[1]; rgba[2] = c[2]; rgba[3] = alpha; }
 	explicit Color4( const QColor & c ) { fromQColor( c ); }
 	Color4( float r, float g, float b, float a ) { setRGBA( r, g, b, a ); }
 	
@@ -899,5 +906,12 @@ protected:
 	friend class NifIStream;
 	friend class NifOStream;
 };
+
+inline Color3::Color3( const Color4 & c4 )
+{
+	rgb[0] = c4[0];
+	rgb[1] = c4[1];
+	rgb[2] = c4[2];
+}
 
 #endif

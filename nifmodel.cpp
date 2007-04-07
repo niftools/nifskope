@@ -920,7 +920,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return item->value().get<Quat>().toHtml();
 						case NifValue::tColor3:
 							{
-								Color4 c = item->value().get<Color3>();
+								Color3 c = item->value().get<Color3>();
 								return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
 							}
 						case NifValue::tColor4:
@@ -1163,12 +1163,12 @@ bool NifModel::load( QIODevice & device )
 				
 				if ( version >= 0x0a000000 )
 				{
-					if ( version < 0x0a020000 )
-						device.read( 4 );
-					
 					// block types are stored in the header for versions above 10.x.x.x
 					int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
 					blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+					
+					if ( version < 0x0a020000 )
+						device.read( 4 );
 				}
 				else
 				{
