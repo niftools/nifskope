@@ -3,6 +3,8 @@
 #include "../gl/gltex.h"
 
 #include "../widgets/fileselect.h"
+#include "../widgets/uvedit.h"
+
 #include "../NvTriStrip/qtwrapper.h"
 
 #include <QGLPixelBuffer>
@@ -154,6 +156,28 @@ public:
 };
 
 REGISTER_SPELL( spChooseTexture )
+
+
+class spEditTexCoords : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Edit UV"); }
+	QString page() const { return Spell::tr("Texture"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->inherits( index, "NiTriBasedGeom" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		UVWidget::createEditor( nif, index );
+		return index;
+	}
+};
+
+REGISTER_SPELL( spEditTexCoords )
+
 
 QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString & name )
 {

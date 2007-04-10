@@ -1,7 +1,5 @@
 #include "mesh.h"
 
-#include "../widgets/uvedit.h"
-
 #include <QDebug>
 #include <QDialog>
 #include <QGridLayout>
@@ -86,43 +84,6 @@ public:
 };
 
 REGISTER_SPELL( spFlipTexCoords )
-
-
-class spEditTexCoords : public Spell
-{
-public:
-	QString name() const { return Spell::tr("Edit UV"); }
-	QString page() const { return Spell::tr("Mesh"); }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return nif->inherits( index, "NiTriBasedGeom" );
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		QDialog dlg;
-		dlg.setWindowTitle( Spell::tr("UV Editor") );
-
-		QGridLayout * grid = new QGridLayout;
-		dlg.setLayout( grid );
-		
-		UVWidget uvEditor( &dlg );
-
-		if( !uvEditor.setNifData( nif, index ) ) {
-			qWarning() << Spell::tr( "Could not load texture data for UV editor." );
-			return index;
-		}
-
-		grid->addWidget( &uvEditor );
-
-		dlg.exec();
-
-		return index;
-	}
-};
-
-REGISTER_SPELL( spEditTexCoords )
 
 
 class spFlipFace : public Spell

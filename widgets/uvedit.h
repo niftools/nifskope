@@ -41,20 +41,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class NifModel;
 class QModelIndex;
+class QUndoStack;
 class TexCache;
 class Vector2;
-
-#define GL_SELECT_OBJECTS 64
 
 class UVWidget : public QGLWidget
 {
 	Q_OBJECT
-public:
+protected:
 	UVWidget( QWidget * parent = 0 );
 	~UVWidget();
+	
+public:
+	static UVWidget * createEditor( NifModel * nif, const QModelIndex & index );
 
 	bool setNifData( NifModel * nif, const QModelIndex & index );
-			
+	
 	QSize sizeHint() const;
 	QSize minimumSizeHint() const;
 	
@@ -72,39 +74,34 @@ protected:
 	void mouseMoveEvent( QMouseEvent * e );
 	void wheelEvent( QWheelEvent * e );
 
-private:
-	enum {
-		RenderMode, SelectionMode
-	} glMode;
-
-	/*!
-	 * Buffers the remaining number of objects in selection mode.
-	 * This is needed since the selection can be bigger than OpenGL's name buffer
-	 */
-	int glSelectObjectCount;
-
-	enum selTypes {
-		NoneSel, TexCoordSel, FaceSel, ElementSel
-	};
-	
-	selTypes selectionType;
-
-	QList< int > selectedTexCoords;
-	QList< int > selectedFaces;
-	int selectCycle;
-
+protected slots:
 	bool isSelected( int index );
-	void selectObject( int index, bool toggle = false );
-	void selectTexCoord( int index, bool toggle = false );
-	void selectFace( int index, bool toggle = false );
+	void select( int index, bool yes = true );
+	void select( const QRegion & r, bool add = true );
+	void selectAll();
+	void selectNone();
+	void selectFaces();
+	void selectConnected();
+	void moveSelection( double dx, double dy );
+	
+protected slots:
+	void nifDataChanged( const QModelIndex & );
+	
+private:
+	QList< int > selection;
 
+	QRect selectRect;
+	QList<QPoint> selectPoly;
+	int selectCycle;
+	
+	
 	struct face {
 		int index;
-
+		
 		int tc[3];
-
+		
 		bool contains( int v ) { return ( tc[0] == v || tc[1] == v || tc[2] == v ); }
-
+		
 		face() : index( -1 ) {}
 		face( int idx, int tc1, int tc2, int tc3 ) : index( idx ) { tc[0] = tc1; tc[1] = tc2; tc[2] = tc3; }
 	};
@@ -119,27 +116,36 @@ private:
 	QString texfile;
 
 	void drawTexCoords();
-	void drawSelectionRect();
-
+	
 	void setupViewport( int width, int height );
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
 
-	int indexAt( const QPoint & hitPos, int (&buffer)[512], GLdouble dx, GLdouble dy );
+	QVector<int> indices( const QPoint & p ) const;
+	QVector<int> indices( const QRegion & r ) const;
+	
+	QPoint mapFromContents( const Vector2 & v ) const;
+	Vector2 mapToContents( const QPoint & p ) const;
 
 	void updateNif();
 
-	NifModel * nif;
-	QModelIndex idx, iTexCoords;
+	QPointer<NifModel> nif;
+	QPersistentModelIndex iShape, iShapeData, iTexCoords;
 
 	GLdouble glViewRect[4];
 
-	QPoint pos;
+	QPointF pos;
 
 	QPoint mousePos;
-	QRect selectionRect;
 	
 	GLdouble zoom;
+	
+	QUndoStack * undoStack;
+	
+	friend class UVWSelectCommand;
+	friend class UVWMoveCommand;
+	
+	QAction * aTextureBlend;
 };
 
 #endif
