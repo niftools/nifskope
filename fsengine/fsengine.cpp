@@ -458,7 +458,7 @@ int main( int argc, char * argv[] )
 {
 	QApplication app( argc, argv );
 	
-	QString fn = "g:\\nif\\mw\\data files\\bsa.bsa"; //"f:\\data\\Oblivion - Misc.bsa";
+	QString fn = "f:\\data\\dlcShiveringisles - meshes.bsa"; //"g:\\nif\\mw\\data files\\bsa.bsa"; //"f:\\data\\Oblivion - Misc.bsa";
 	if ( argc > 1 )
 		fn = argv[ argc - 1 ];
 	

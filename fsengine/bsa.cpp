@@ -62,11 +62,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OB_BSAFILE_CTL	0x0100
 
 /* Bitmasks for the size field in the header */
-#define OB_BSAFILEREC_SIZEMASK 0x7fffffff
-#define OB_BSAFILEREC_FLAGMASK 0xC0000000
+#define OB_BSAFILE_SIZEMASK       0x3fffffff
+#define OB_BSAFILE_FLAGMASK       0xC0000000
 
 /* Record flags */
-#define OB_BSAFILEREC_FLAG_COMPRESS	0x80000000
+#define OB_BSAFILE_FLAG_COMPRESS  0xC0000000
 
 struct OBBSAHeader
 {
@@ -122,11 +122,11 @@ struct MWBSAFileSizeOffset
 
 quint32 BSA::BSAFile::size() const
 {
-	return sizeFlags & OB_BSAFILEREC_SIZEMASK;
+	return sizeFlags & OB_BSAFILE_SIZEMASK;
 }
 bool BSA::BSAFile::compressed() const
 {
-	return sizeFlags & OB_BSAFILEREC_FLAG_COMPRESS;
+	return sizeFlags & OB_BSAFILE_FLAG_COMPRESS;
 }
 
 static bool BSAReadString( QAbstractFileEngine & bsa, QString & s )
@@ -217,7 +217,7 @@ bool BSA::open()
 			if ( bsa.read( (char *) & header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header size" );
 			
-			// qDebug() << header;
+			//qWarning() << bsaName << header;
 			
 			if ( ( header.ArchiveFlags & OB_BSAARCHIVE_PATHNAMES ) == 0 || ( header.ArchiveFlags & OB_BSAARCHIVE_FILENAMES ) == 0 )
 				throw QString( "header flags" );
