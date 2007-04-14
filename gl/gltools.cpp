@@ -321,6 +321,49 @@ void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd )
 	glEnd();
 }
 
+void drawCone( Vector3 c, Vector3 n, float a, int sd )
+{
+	Vector3 x = Vector3::crossproduct( n, Vector3( n[1], n[2], n[0] ) );
+	Vector3 y = Vector3::crossproduct( n, x );
+	
+	x = x * sin( a );
+	y = y * sin( a );
+	n = n * cos( a );
+	
+	glBegin( GL_TRIANGLE_FAN );
+	glVertex( c );
+	for ( int i = 0; i <= sd; i++ )
+	{
+		float f = ( 2 * PI * float( i ) / float( sd ) );
+		
+		glVertex( c + n + x * sin( f ) + y * cos( f ) );
+	}
+	glEnd();
+}
+
+void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd )
+{
+	Vector3 z = twist;
+	Vector3 y = plane;
+	Vector3 x = Vector3::crossproduct( z, y );
+	
+	x = x * sin( coneAngle );
+	y = y;
+	z = z;
+	
+	glBegin( GL_TRIANGLE_FAN );
+	glVertex( pivot );
+	for ( int i = 0; i <= sd; i++ )
+	{
+		float f = ( 2 * PI * float( i ) / float( sd ) );
+		
+		Vector3 xy = x * sin( f ) + y * sin( f <= PI / 2 || f >= 3 * PI / 2 ? maxPlaneAngle : -minPlaneAngle ) * cos( f );
+		
+		glVertex( pivot + z * sqrt( 1 - xy.length() * xy.length() ) + xy );
+	}
+	glEnd();
+}
+
 void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 {	// draw a spring with stiffness turns
 	bool cull = glIsEnabled( GL_CULL_FACE );

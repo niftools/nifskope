@@ -809,7 +809,7 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	if ( scene->currentBlock != iBlock )
+	if ( scene->currentBlock != iBlock || ! GLOptions::drawNodes() )
 		return;
 	
 	glLoadName( nodeId );
@@ -1007,9 +1007,21 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	glLoadMatrix( scene->view );
 	
 	glPushAttrib( GL_ENABLE_BIT );
-	glDisable( GL_DEPTH_TEST );
+	glEnable( GL_DEPTH_TEST );
 	
 	QString name = nif->itemName( iConstraint );
+	if ( name == "bhkMalleableConstraint" )
+	{
+		if ( nif->getIndex( iConstraint, "Ragdoll" ).isValid() )
+		{
+			name = "bhkRagdollConstraint";
+		}
+		else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() )
+		{
+			name = "bhkLimitedHingeConstraint";
+		}
+	}
+	
 	if ( name == "bhkLimitedHingeConstraint" )
 	{
 		QModelIndex iHinge = nif->getIndex( iConstraint, "Limited Hinge" );
@@ -1102,6 +1114,47 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	}
 	else if ( name == "bhkRagdollConstraint" )
 	{
+		QModelIndex iRagdoll = nif->getIndex( iConstraint, "Ragdoll" );
+		
+		const Vector3 pivotA( nif->get<Vector4>( iRagdoll, "Pivot A" ) );
+		const Vector3 pivotB( nif->get<Vector4>( iRagdoll, "Pivot B" ) );
+		
+		const Vector3 planeA( nif->get<Vector4>( iRagdoll, "Plane A" ) );
+		const Vector3 planeB( nif->get<Vector4>( iRagdoll, "Plane B" ) );
+		
+		const Vector3 twistA( nif->get<Vector4>( iRagdoll, "Twist A" ) );
+		const Vector3 twistB( nif->get<Vector4>( iRagdoll, "Twist B" ) );
+		
+		const float coneAngle( nif->get<float>( iRagdoll, "Cone Min Angle" ) );
+		
+		const float minPlaneAngle( nif->get<float>( iRagdoll, "Plane Min Angle" ) );
+		const float maxPlaneAngle( nif->get<float>( iRagdoll, "Plane Max Angle" ) );
+		
+		const float minTwistAngle( nif->get<float>( iRagdoll, "Twist Min Angle" ) );
+		const float maxTwistAngle( nif->get<float>( iRagdoll, "Twist Max Angle" ) );
+		
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 0 ) );
+		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
+		glPopMatrix();
+		
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 0 ) );
+		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
+		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
+		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + twistA ); glEnd();
+		drawDashLine( pivotA, pivotA + planeA, 14 );
+		drawRagdollCone( pivotA, twistA, planeA, coneAngle, minPlaneAngle, maxPlaneAngle );
+		glPopMatrix();
+		
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 1 ) );
+		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
+		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
+		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + twistB ); glEnd();
+		drawDashLine( pivotB + planeB, pivotB, 14 );
+		drawRagdollCone( pivotB, twistB, planeB, coneAngle, minPlaneAngle, maxPlaneAngle );
+		glPopMatrix();
 	}
 	
 	glPopAttrib();
@@ -1133,7 +1186,7 @@ void Node::drawHavok()
 	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
 	
 	glEnable( GL_DEPTH_TEST );
-	glDepthMask( GL_FALSE );
+	glDepthMask( GL_TRUE );
 	glDepthFunc( GL_LEQUAL );
 	glDisable( GL_TEXTURE_2D );
 	glDisable( GL_NORMALIZE );
