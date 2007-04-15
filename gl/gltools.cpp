@@ -339,6 +339,18 @@ void drawCone( Vector3 c, Vector3 n, float a, int sd )
 		glVertex( c + n + x * sin( f ) + y * cos( f ) );
 	}
 	glEnd();
+	
+	// double-sided, please
+	
+	glBegin( GL_TRIANGLE_FAN );
+	glVertex( c );
+	for ( int i = 0; i <= sd; i++ )
+	{
+		float f = ( 2 * PI * float( i ) / float( sd ) );
+		
+		glVertex( c + n + x * sin( -f ) + y * cos( -f ) );
+	}
+	glEnd();
 }
 
 void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd )
@@ -355,9 +367,23 @@ void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAng
 	glVertex( pivot );
 	for ( int i = 0; i <= sd; i++ )
 	{
-		float f = ( 2 * PI * float( i ) / float( sd ) );
+		float f = ( 2.0f * PI * float( i ) / float( sd ) );
 		
 		Vector3 xy = x * sin( f ) + y * sin( f <= PI / 2 || f >= 3 * PI / 2 ? maxPlaneAngle : -minPlaneAngle ) * cos( f );
+		
+		glVertex( pivot + z * sqrt( 1 - xy.length() * xy.length() ) + xy );
+	}
+	glEnd();
+	
+	// double-sided, please
+	
+	glBegin( GL_TRIANGLE_FAN );
+	glVertex( pivot );
+	for ( int i = 0; i <= sd; i++ )
+	{
+		float f = ( 2.0f * PI * float( i ) / float( sd ) );
+		
+		Vector3 xy = x * sin( -f ) + y * sin( -f <= PI / 2 || -f >= 3 * PI / 2 ? maxPlaneAngle : -minPlaneAngle ) * cos( -f );
 		
 		glVertex( pivot + z * sqrt( 1 - xy.length() * xy.length() ) + xy );
 	}

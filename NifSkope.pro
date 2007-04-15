@@ -6,11 +6,7 @@ QT += xml opengl network
 
 CONFIG += qt static release thread warn_on
 
-# useful for MSVC2005
-CONFIG += embed_manifest_exe
-
-# this enables the resource file engine
-CONFIG += fsengine
+#CONFIG += fsengine
 
 # uncomment this if you want all the messages to be logged to stdout
 #CONFIG += console
@@ -67,6 +63,10 @@ fsengine {
 }
 
 win32 {
+    # useful for MSVC2005
+    CONFIG += embed_manifest_exe
+    CONFIG -= flat
+
     RC_FILE = icon.rc
 	DEFINES += EDIT_ON_ACTIVATE
 }

@@ -1063,7 +1063,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		
 		glMultMatrix( tBodies.value( 0 ) );
 		float angle = Vector3::angle( tBodies.value( 0 ).rotation * axleA2, tBodies.value( 1 ).rotation * axleB2 );
-		glColor( Color3( 0.8, 0.6, 0.0 ) );
+		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
 		glBegin( GL_LINES );
 		glVertex( pivotA );
 		glVertex( pivotA + axleA1 * cosf( angle ) + axleA2 * sinf( angle ) );
