@@ -107,8 +107,8 @@ public:
 		Transform transA = spLimitedHingeHelper::bodyTrans( nif, iBodyA );
 		Transform transB = spLimitedHingeHelper::bodyTrans( nif, iBodyB );
 		
-		Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) );
-		Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) );
+		Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) * 7 );
+		Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) * 7 );
 		
 		float length = ( transA * pivotA - transB * pivotB ).length() / 7;
 		
