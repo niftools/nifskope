@@ -56,7 +56,6 @@ signals:
 
 public slots:
 	void setRootIndex( const QModelIndex & index );
-	void setCurrentIndexExpanded( const QModelIndex & index );
 
 	void setEvalConditions( bool );
 	

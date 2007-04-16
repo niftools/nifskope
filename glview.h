@@ -209,6 +209,10 @@ private:
 	
 	QPersistentModelIndex iDragTarget;
 	QString fnDragTex, fnDragTexOrg;
+	
+	QPoint popPos;
+protected slots:
+	void popMenu();
 };
 
 #endif

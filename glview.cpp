@@ -885,7 +885,7 @@ void GLView::advanceGears()
 	if ( ! isVisible() )
 		return;
 	
-	if ( aAnimate->isChecked() && aAnimPlay->isChecked() )
+	if ( aAnimate->isChecked() && aAnimPlay->isChecked() && scene->timeMin() != scene->timeMax() )
 	{
 		time += dT;
 		if ( time > scene->timeMax() )
@@ -917,10 +917,10 @@ void GLView::advanceGears()
 	if ( kbd[ Qt::Key_S ] )		move( 0, 0, - MOV_SPD * dT );
 	if ( kbd[ Qt::Key_F ] )		move( 0, + MOV_SPD * dT, 0 );
 	if ( kbd[ Qt::Key_R ] )		move( 0, - MOV_SPD * dT, 0 );
-	if ( kbd[ Qt::Key_Q ] )		setDistance( Dist * 0.9 );
+	if ( kbd[ Qt::Key_Q ] )		setDistance( Dist * 1.0 / 1.1 );
 	if ( kbd[ Qt::Key_E ] )		setDistance( Dist * 1.1 );
 	if ( kbd[ Qt::Key_PageUp ] )	zoom( 1.1f );
-	if ( kbd[ Qt::Key_PageDown ] )	zoom( 0.9f );
+	if ( kbd[ Qt::Key_PageDown ] )	zoom( 1 / 1.1f );
 	
 	if ( mouseMov[0] != 0 || mouseMov[1] != 0 || mouseMov[2] != 0 )
 	{
@@ -1023,6 +1023,17 @@ void GLView::mouseReleaseEvent( QMouseEvent *event )
 		emit clicked( idx );
 	}
 	update();
+	
+	if ( event->button() == Qt::RightButton )
+	{	// workaround for Qt 4.2.2 ( QMainWindow Menu pops out of nowhere )
+		popPos = event->pos();
+		QTimer::singleShot( 0, this, SLOT( popMenu() ) );
+	}
+}
+
+void GLView::popMenu()
+{
+	emit customContextMenuRequested( popPos );
 }
 
 void GLView::mouseMoveEvent(QMouseEvent *event)
@@ -1061,7 +1072,7 @@ void GLView::wheelEvent( QWheelEvent * event )
 	if ( aViewWalk->isChecked() )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
-		setDistance( Dist * ( event->delta() > 0 ? 1.2 : 0.8 ) );
+		setDistance( Dist * ( event->delta() > 0 ? 1.0 / 0.8 : 0.8 ) );
 }
 
 void GLView::checkActions()

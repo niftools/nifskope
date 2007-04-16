@@ -75,6 +75,46 @@ public:
 REGISTER_SPELL( spSanitizeLinkArrays20000005 )
 
 
+class spAdjustTextureSources : public Spell
+{
+public:
+	QString name() const { return "Adjust Texture Sources"; }
+	QString page() const { return "Sanitize"; }
+	bool sanity() const { return true; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif && ! index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		for ( int i = 0; i < nif->getBlockCount(); i++ )
+		{
+			QModelIndex iTexSrc = nif->getBlock( i, "NiSourceTexture" );
+			if ( iTexSrc.isValid() )
+			{
+				QModelIndex iFileName = nif->getIndex( iTexSrc, "File Name" );
+				if ( iFileName.isValid() ) // adjust file path
+					nif->set<QString>( iFileName, nif->get<QString>( iFileName ).replace( "/", "\\" ) );
+				
+				if ( nif->checkVersion( 0x14000005, 0x14000005 ) )
+				{	// adjust format options (oblivion only)
+					nif->set<int>( iTexSrc, "Pixel Layout", 6 );
+					nif->set<int>( iTexSrc, "Use Mipmaps", 1 );
+					nif->set<int>( iTexSrc, "Alpha Format", 3 );
+					nif->set<int>( iTexSrc, "Unknown Byte", 1 );
+					nif->set<int>( iTexSrc, "Unknown Byte 2", 1 );
+				}
+			}
+		}
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spAdjustTextureSources )
+
+
 class spSanitizeHavokBlockOrder : public Spell
 {
 public:
@@ -232,11 +272,13 @@ public:
 				qint32 l = nif->getLink( idx );
 				if ( l < 0 )
 				{
+					/*
 					if ( ! child )
 					{
 						qWarning() << "unassigned parent link";
 						return idx;
 					}
+					*/
 				}
 				else if ( l >= nif->getBlockCount() )
 				{

@@ -74,27 +74,6 @@ void NifTreeView::setRootIndex( const QModelIndex & index )
 	QTreeView::setRootIndex( root );
 }
 
-void NifTreeView::setCurrentIndexExpanded( const QModelIndex & index )
-{
-	if ( ! index.isValid() || index.model() != model() )
-	{
-		setCurrentIndex( QModelIndex() );
-		return;
-	}
-	
-	if ( itemsExpandable() )
-	{
-		QModelIndex idx = index.parent();
-		while ( idx.isValid() )
-		{
-			expand( idx );
-			idx = idx.parent();
-		}
-	}
-	
-	setCurrentIndex( index );
-}
-
 void NifTreeView::setEvalConditions( bool c )
 {
 	if ( EvalConditions == c )

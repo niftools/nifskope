@@ -162,8 +162,8 @@ public:
 		
 		foreach ( NifProxyItem * child, childItems )
 		{
-			NifProxyItem * x = child->findItem( b, false );
-			if ( x ) return x;
+			if ( NifProxyItem * x = child->findItem( b, false ) )
+				return x;
 		}
 		
 		if ( parentItem && scanParents )
@@ -171,8 +171,8 @@ public:
 			NifProxyItem * root = parentItem;
 			while ( root && root->parentItem )
 				root = root->parentItem;
-			NifProxyItem * x = root->findItem( b, true );
-			if ( x )	return x;
+			if ( NifProxyItem * x = root->findItem( b, false ) )
+				return x;
 		}
 		
 		return 0;

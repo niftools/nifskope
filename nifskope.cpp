@@ -490,7 +490,7 @@ void NifSkope::clearRoot()
 	QModelIndex index = tree->currentIndex();
 	if ( ! index.isValid() ) index = tree->rootIndex();
 	tree->setRootIndex( QModelIndex() );
-	tree->setCurrentIndexExpanded( index );
+	tree->setCurrentIndex( index );
 }
 
 void NifSkope::select( const QModelIndex & index )
@@ -517,7 +517,7 @@ void NifSkope::select( const QModelIndex & index )
 		if ( list->model() == proxy )
 		{
 			QModelIndex pidx = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
-			list->setCurrentIndexExpanded( pidx );
+			list->setCurrentIndex( pidx );
 		}
 		else if ( list->model() == nif )
 		{
@@ -532,13 +532,13 @@ void NifSkope::select( const QModelIndex & index )
 			QModelIndex root = nif->getBlockOrHeader( idx );
 			if ( tree->rootIndex() != root )
 				tree->setRootIndex( root );
-			tree->setCurrentIndexExpanded( idx.sibling( idx.row(), 0 ) );
+			tree->setCurrentIndex( idx.sibling( idx.row(), 0 ) );
 		}
 		else
 		{
 			if ( tree->rootIndex() != QModelIndex() )
 				tree->setRootIndex( QModelIndex() );
-			tree->setCurrentIndexExpanded( idx.sibling( idx.row(), 0 ) );
+			tree->setCurrentIndex( idx.sibling( idx.row(), 0 ) );
 		}
 	}
 	selecting = false;
@@ -558,7 +558,7 @@ void NifSkope::setListMode()
 			list->setModel( nif );
 			list->setItemsExpandable( false );
 			list->setRootIsDecorated( false );
-			list->setCurrentIndexExpanded( proxy->mapTo( idx ) );
+			list->setCurrentIndex( proxy->mapTo( idx ) );
 			list->setColumnHidden( NifModel::TypeCol, true );
 			list->setColumnHidden( NifModel::ArgCol, true );
 			list->setColumnHidden( NifModel::Arr1Col, true );
@@ -581,7 +581,7 @@ void NifSkope::setListMode()
 			list->setItemsExpandable( true );
 			list->setRootIsDecorated( true );
 			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
-			list->setCurrentIndexExpanded( pidx );
+			list->setCurrentIndex( pidx );
 			head->resizeSection( 0, s0 );
 			head->resizeSection( 1, s1 );
 		}
@@ -774,7 +774,7 @@ void NifSkope::sltSelectFont()
 	if ( ! ok )
 		return;
 	setViewFont( fnt );
-	QSettings settings( "NifTools", "NifSkope" );
+	QSettings settings;
 	settings.setValue( "viewFont", fnt );
 }
 
@@ -794,15 +794,6 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	if ( e->type() == QEvent::Polish )
 	{
 		QTimer::singleShot( 0, this, SLOT( overrideViewFont() ) );
-	}
-	else if ( e->type() == QEvent::Show )
-	{
-		if ( initialShowEvent )
-		{
-			initialShowEvent = false;
-			QSettings settings;
-			restoreGeometry( settings.value( "window geometry" ).toByteArray() );
-		}
 	}
 	return QMainWindow::eventFilter( o, e );
 }

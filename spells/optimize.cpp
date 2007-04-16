@@ -11,8 +11,8 @@
 class spCombiProps : public Spell
 {
 public:
-	QString name() const { return "Combine Properties"; }
-	QString page() const { return "Optimize"; }
+	QString name() const { return Spell::tr( "Combine Properties" ); }
+	QString page() const { return Spell::tr( "Optimize" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -88,8 +88,8 @@ REGISTER_SPELL( spCombiProps )
 class spUniqueProps : public Spell
 {
 public:
-	QString name() const { return "Unique Properties"; }
-	QString page() const { return "Optimize"; }
+	QString name() const { return Spell::tr( "Split Properties" ); }
+	QString page() const { return Spell::tr( "Optimize" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -154,8 +154,8 @@ REGISTER_SPELL( spUniqueProps )
 class spRemoveBogusNodes : public Spell
 {
 public:
-	QString name() const { return "Remove Bogus Nodes"; }
-	QString page() const { return "Optimize"; }
+	QString name() const { return Spell::tr( "Remove Bogus Nodes" ); }
+	QString page() const { return Spell::tr( "Optimize" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -214,8 +214,8 @@ REGISTER_SPELL( spRemoveBogusNodes )
 class spCombiTris : public Spell
 {
 public:
-	QString name() const { return "Combine Shapes & Strips"; }
-	QString page() const { return "Optimize"; }
+	QString name() const { return Spell::tr( "Combine Shapes" ); }
+	QString page() const { return Spell::tr( "Optimize" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

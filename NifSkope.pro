@@ -4,9 +4,9 @@ TARGET   = NifSkope
 
 QT += xml opengl network
 
-CONFIG += qt static release thread warn_on
+CONFIG += qt release thread warn_on
 
-#CONFIG += fsengine
+CONFIG += fsengine
 
 # uncomment this if you want all the messages to be logged to stdout
 #CONFIG += console

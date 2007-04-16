@@ -832,7 +832,6 @@ bool NifOStream::write( const NifValue & val )
 		case NifValue::tFilePath:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
-			string.replace( "/", "\\" );
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;

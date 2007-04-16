@@ -26,7 +26,7 @@ public:
 		
 		if ( ! iBodyA.isValid() || ! iBodyB.isValid() )
 		{
-			qWarning() << "didn't find the bodies for this constraint";
+			qWarning() << "coudn't find the bodies for this constraint";
 			return index;
 		}
 		
@@ -78,6 +78,48 @@ public:
 };
 
 REGISTER_SPELL( spLimitedHingeHelper )
+
+
+class spStiffSpringHelper : public Spell
+{
+public:
+	QString name() const { return tr( "Calculate Spring Length" ); }
+	QString page() const { return tr( "Havok" ); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	{
+		return nif && nif->isNiBlock( nif->getBlock( idx ), "bhkStiffSpringConstraint" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
+	{
+		QModelIndex iConstraint = nif->getBlock( idx );
+		
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 0, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 1, 0 ) ), "bhkRigidBody" );
+		
+		if ( ! iBodyA.isValid() || ! iBodyB.isValid() )
+		{
+			qWarning() << "coudn't find the bodies for this constraint";
+			return idx;
+		}
+		
+		Transform transA = spLimitedHingeHelper::bodyTrans( nif, iBodyA );
+		Transform transB = spLimitedHingeHelper::bodyTrans( nif, iBodyB );
+		
+		Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) );
+		Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) );
+		
+		float length = ( transA * pivotA - transB * pivotB ).length() / 7;
+		
+		nif->set<float>( iConstraint, "Length", length );
+		
+		return nif->getIndex( iConstraint, "Length" );
+	}
+};
+
+REGISTER_SPELL( spStiffSpringHelper )
+
 
 class spPackHavokStrips : public Spell
 {

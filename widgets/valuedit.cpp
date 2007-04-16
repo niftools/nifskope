@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTextEdit>
 #include <QToolButton>
 
+#include "floatedit.h"
+
 ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNone ), edit( 0 )
 {
 	setAutoFillBackground( true );
@@ -142,10 +144,12 @@ void ValueEdit::setValue( const NifValue & v )
 		}	break;
 		case NifValue::tFloat:
 		{	
-			QDoubleSpinBox * fe = new QDoubleSpinBox( this );
+			FloatEdit * fe = new FloatEdit( this );
+			/*
 			fe->setFrame(false);
 			fe->setRange( -1e10, +1e10 );
 			fe->setDecimals( 4 );
+			*/
 			fe->setValue( v.toFloat() );
 			edit = fe;
 		}	break;
@@ -242,7 +246,7 @@ NifValue ValueEdit::getValue() const
 			val.setLink( qobject_cast<QSpinBox*>( edit )->value() );
 			break;
 		case NifValue::tFloat:
-			val.setFloat( qobject_cast<QDoubleSpinBox*>( edit )->value() );
+			val.setFloat( qobject_cast<FloatEdit*>( edit )->value() );
 			break;
 		case NifValue::tString:
 		case NifValue::tFilePath:
