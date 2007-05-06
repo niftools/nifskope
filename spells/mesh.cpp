@@ -122,7 +122,7 @@ REGISTER_SPELL( spFlipFace )
 class spPruneRedundantTriangles : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Prune Redundant Triangles"); }
+	QString name() const { return Spell::tr("Prune Triangles"); }
 	QString page() const { return Spell::tr("Mesh"); }
 	
 	static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & index )
@@ -456,7 +456,7 @@ public:
 				}
 			}
 			
-			qWarning() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
+			//qWarning() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
 			
 			// adjust the faces
 			

@@ -38,8 +38,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9.6 of NifSkope.
+This is version 0.9.7 of NifSkope.
 
+
+changes since 0.9.6:
+  - texture layout editor
+  - change textures via drag&drop
+  - support for single texture properties from StarTrek:BridgeCommander
+  - import .3ds
+  - pack havok strips
+  - experimental visuals for stiff spring and ragdoll constraints
+  - reference browser
 
 changes since 0.9.5:
   - Fixed bug that would crash NifSkope in FlipUVs
@@ -61,7 +70,6 @@ changes since 0.9.4:
     if you want you can customize the look and feel of NifSkope through this style sheet
   - fixed an issue with the ipc socket
     NifSkope should open now at least one window regardless of any personal firewall settings
-
 
 changes since 0.9.3:
   - support for nifs below version 4 (StarTrek: Bridge Commander)
