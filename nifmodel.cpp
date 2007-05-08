@@ -1398,12 +1398,45 @@ bool NifModel::save( QIODevice & device, const QModelIndex & index ) const
 int NifModel::fileOffset( const QModelIndex & index ) const
 {
 	NifSStream stream( this );
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-	if ( item && index.isValid() && index.model() == this )
+	NifItem * target = static_cast<NifItem *>( index.internalPointer() );
+	if ( target && index.isValid() && index.model() == this )
 	{
 		int ofs = 0;
-		if ( fileOffset( root, item, stream, ofs ) )
-			return ofs;
+		for ( int c = 0; c < root->childCount(); c++ )
+		{
+			if ( c > 0 && c <= getBlockCount() )
+			{
+				if ( version > 0x0a000000 )
+				{
+					if ( version < 0x0a020000 )	
+					{
+						ofs += 4;
+					}
+				}
+				else
+				{
+					if ( version < 0x0303000d )
+					{
+						if ( rootLinks.contains( c - 1 ) )
+						{
+							QString string = "Top Level Object";
+							ofs += 4 + string.length();
+						}
+					}
+					
+					QString string = itemName( this->NifModel::index( c, 0 ) );
+					ofs += 4 + string.length();
+					
+					if ( version < 0x0303000d )
+					{
+						ofs += 4;
+					}
+				}
+			}
+			
+			if ( fileOffset( root->child( c ), target, stream, ofs ) )
+				return ofs;
+		}
 	}
 	return -1;
 }
@@ -1470,6 +1503,9 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 
 bool NifModel::fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const
 {
+	if ( parent == target )
+		return true;
+	
 	for ( int row = 0; row < parent->childCount(); row++ )
 	{
 		NifItem * child = parent->child( row );
