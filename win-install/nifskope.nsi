@@ -175,6 +175,11 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File Copyright.txt
   File nif_file.ico
   File ..\style.qss
+  
+  ;Install HTML NIF Documentation
+  ;Don't forget to run ..\..\docsys\nifxml_doc.py to update the HTML files before compiling the install script
+  SetOutPath $INSTDIR\doc
+  File ..\..\docsys\doc\*.*
 
   ; Install shaders
   SetOutPath $INSTDIR\shaders
