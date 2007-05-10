@@ -187,7 +187,12 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\shaders\*.vert
   File ..\shaders\*.frag
 
+  ; Install reference manual
+  SetOutPath $INSTDIR\doc
+  File ..\doc\*.*
+
   ; Install shortcuts
+  SetOutPath $INSTDIR
   CreateDirectory "$SMPROGRAMS\NifTools\NifSkope\"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\NifSkope.lnk" "$INSTDIR\NifSkope.exe"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Readme.lnk" "$INSTDIR\README.TXT"
