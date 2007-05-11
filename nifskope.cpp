@@ -95,7 +95,7 @@ void NifSkope::about()
 	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
 	" on <a href='http://sourceforge.net'>SourceForge</a></p>";
 
-    QMessageBox mb( tr("About NifSkope 0.9.7"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( tr("About NifSkope 0.9.8"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }

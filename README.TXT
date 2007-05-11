@@ -38,7 +38,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 
-This is version 0.9.7 of NifSkope.
+This is version 0.9.8 of NifSkope.
+
+
+changes since 0.9.7:
+  - Bugfix Re-Release
+  - added docs by default and fixed RefBrowser bugs
 
 
 changes since 0.9.6:

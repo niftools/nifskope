@@ -54,8 +54,6 @@ SOURCES += \
 
 RESOURCES += nifskope.qrc
 
-TRANSLATIONS += lang/NifSkope_de.ts
-
 fsengine {
 	DEFINES += FSENGINE
 	HEADERS += fsengine/*.h

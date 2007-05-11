@@ -20,7 +20,4 @@
 		<file alias="viewFlip">resources/button_view_flip.png</file>
 		<file alias="viewPers">resources/button_view_pers.png</file>
 	</qresource>
-	<qresource prefix="/lang">
-		<file alias="de">lang/NifSkope_de.qm</file>
-	</qresource>
 </RCC>

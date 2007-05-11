@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REFRBROWSER_H
 #define REFRBROWSER_H
 
+#include <QDir>
 #include <QTextBrowser>
 
 class NifModel;
@@ -40,18 +41,20 @@ class QModelIndex;
 
 class ReferenceBrowser : public QTextBrowser
 {
-	Q_OBJECT
-	
+    Q_OBJECT
+    
 public:
-	ReferenceBrowser( QWidget * parent = NULL );
+    ReferenceBrowser( QWidget * parent = NULL );
 
 public slots:
-	void setNifModel( NifModel * );
-	void browse( const QModelIndex & );
+    void setNifModel( NifModel * );
+    void setSourceFile( const QString & );
+    void browse( const QModelIndex & );
 
 private:
-	NifModel * nif;
-	bool docFolderPresent;
+    NifModel * nif;
+    bool docFolderPresent;
+    QDir docFolder;
 };
 
 #endif

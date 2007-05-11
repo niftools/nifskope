@@ -35,7 +35,7 @@
 
 !include "MUI.nsh"
 
-!define VERSION "0.9.7"
+!define VERSION "0.9.8"
 
 Name "NifSkope ${VERSION}"
 
@@ -189,7 +189,8 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
 
   ; Install reference manual
   SetOutPath $INSTDIR\doc
-  File ..\doc\*.*
+  File ..\..\docsys\doc\*.html
+  File ..\..\docsys\doc\*.css
 
   ; Install shortcuts
   SetOutPath $INSTDIR

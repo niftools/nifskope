@@ -32,52 +32,68 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "refrbrowser.h"
 
-#include <QDir>
+#include <QApplication>
+#include <QFileInfo>
 
 #include "nifmodel.h"
 
 ReferenceBrowser::ReferenceBrowser( QWidget * parent )
-	: QTextBrowser( parent )
+    : QTextBrowser( parent )
 {
-	nif = NULL;
+    nif = NULL;
 
-	docFolderPresent = QDir( "./doc" ).exists();
+    docFolder.setPath( qApp->applicationDirPath() );
+    
+    if( ! docFolder.exists( "doc" ) ) {
+        docFolder.cd( "../docsys" );
+    }
+    
+    docFolderPresent = docFolder.exists( "doc" );
+    
+    if( docFolderPresent ) {
+        docFolder.cd( "doc" );
+    }
 
-	if( docFolderPresent ) {
-		setSearchPaths( QStringList() << "./doc" );
-		setStyleSheet( "docsys.css" );
-		setSource( QUrl( "index.html" ) );
-	}
-	else {
-		setText( tr("Please install the reference " \
-			"documentation into the 'doc' folder.") );
-	}
+    if( ! docFolderPresent || ! QFileInfo( docFolder.filePath( "index.html" ) ).exists() )
+    {
+        setText( tr("Please install the reference documentation into the 'doc' folder.") );
+        return;
+    }
+        
+    setSearchPaths( QStringList() << docFolder.absolutePath() );
+    setStyleSheet( "docsys.css" );
+    setSourceFile( "index.html" );
 }
 
 void ReferenceBrowser::setNifModel( NifModel * nifModel )
 {
-	nif = nifModel;
+    nif = nifModel;
 }
 
 // TODO: Read documentation from ZIP files
 
+void ReferenceBrowser::setSourceFile( const QString & source )
+{
+    if( QFileInfo( docFolder.filePath( source ) ).exists() ) {
+        setSource( QUrl( source ) );
+    }
+}
+
 void ReferenceBrowser::browse( const QModelIndex & index )
 {
-	if( !nif || !docFolderPresent ) {
-		return;
-	}
+    if( !nif || !docFolderPresent ) {
+        return;
+    }
 
-	QString blockType = nif->getBlockType( index );
-	if( blockType == "NiBlock" ) {
-		blockType = nif->getBlockName( index );
-	}
+    QString blockType = nif->getBlockType( index );
+    if( blockType == "NiBlock" ) {
+        blockType = nif->getBlockName( index );
+    }
 
-	QFile RefrFile( QString( "./doc/%1.html" ).arg( blockType ) );
-	if( RefrFile.exists() ) {
-		setSource( QUrl( QString( "%1.html" ).arg( blockType ) ) );
-	}
-	else {
-		setText( tr("The reference file for '%1' " \
-			"could not be found.").arg( blockType ) );
-	}
+    if( ! QFileInfo( docFolder.filePath( "%1.html" ).arg( blockType ) ).exists() ) {
+        setText( tr("The reference file for '%1' could not be found.").arg( blockType ) );
+        return;
+    }
+    
+    setSourceFile( QString( "%1.html" ).arg( blockType ) );
 }
