@@ -44,7 +44,7 @@ This is version 0.9.8 of NifSkope.
 changes since 0.9.7:
   - Bugfix Re-Release
   - added docs by default and fixed RefBrowser bugs
-
+  - changed relative path identifier from "$NIFDIR" to the standard "./"
 
 changes since 0.9.6:
   - texture layout editor

@@ -126,7 +126,7 @@ void resetTextureUnits()
 
 
 /*
-    TexCache
+	TexCache
 */
 
 TexCache::TexCache( QObject * parent ) : QObject( parent )
@@ -177,7 +177,9 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 		
 		foreach ( QString folder, GLOptions::textureFolders() )
 		{
-			folder.replace( "$NIFDIR", nifdir );
+			if( folder.startsWith( "./" ) || folder.startsWith( ".\\" ) ) {
+				folder = nifdir + "/" + folder;
+			}
 			
 			dir.setPath( folder );
 			if ( dir.exists( filename ) )
@@ -203,7 +205,10 @@ QString TexCache::stripPath( const QString & filepath, const QString & nifFolder
 	
 	foreach ( QString base, GLOptions::textureFolders() )
 	{
-		base = base.replace( "$NIFDIR", nifFolder ).replace( "/", "\\" ).toLower();
+		if( base.startsWith( "./" ) || base.startsWith( ".\\" ) ) {
+			base = nifFolder + "/" + base;
+		}
+		base = base.replace( "/", "\\" ).toLower();
 		
 		if ( file.startsWith( base ) )
 		{

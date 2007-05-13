@@ -148,7 +148,7 @@ QString FileSelector::file() const
 
 void FileSelector::setFile( const QString & x )
 {
-	line->setText( x );
+	line->setText( QDir::toNativeSeparators( x ) );
 }
 
 void FileSelector::setText( const QString & x )
