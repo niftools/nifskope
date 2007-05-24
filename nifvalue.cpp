@@ -57,7 +57,7 @@ void NifValue::initialize()
 	typeMap.insert( "link", NifValue::tLink );
 	typeMap.insert( "uplink", NifValue::tUpLink );
 	typeMap.insert( "float", NifValue::tFloat );
-	typeMap.insert( "string", NifValue::tString );
+	typeMap.insert( "sizedstring", NifValue::tSizedString );
 	typeMap.insert( "text", NifValue::tText );
 	typeMap.insert( "shortstring", NifValue::tShortString );
 	typeMap.insert( "filepath", NifValue::tFilePath );
@@ -79,6 +79,7 @@ void NifValue::initialize()
 	typeMap.insert( "linestring", NifValue::tLineString );
 	typeMap.insert( "stringpalette", NifValue::tStringPalette );
 	typeMap.insert( "stringoffset", NifValue::tStringOffset );
+	typeMap.insert( "stringindex", NifValue::tStringIndex );
 	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
 	typeMap.insert( "ushort", NifValue::tWord );
 	typeMap.insert( "uint", NifValue::tUInt );
@@ -242,7 +243,7 @@ void NifValue::clear()
 		case tTriangle:
 			delete static_cast<Triangle*>( val.data );
 			break;
-		case tString:
+		case tSizedString:
 		case tText:
 		case tShortString:
 		case tFilePath:
@@ -299,7 +300,7 @@ void NifValue::changeType( Type t )
 		case tTriangle:
 			val.data = new Triangle();
 			return;
-		case tString:
+		case tSizedString:
 		case tText:
 		case tShortString:
 		case tFilePath:
@@ -318,6 +319,7 @@ void NifValue::changeType( Type t )
 			val.data = new QByteArray();
 			return;
 		case tStringOffset:
+		case tStringIndex:
 			val.u32 = 0xffffffff;
 			return;
 		default:
@@ -352,7 +354,7 @@ void NifValue::operator=( const NifValue & other )
 		case tVector2:
 			*static_cast<Vector2*>( val.data ) = *static_cast<Vector2*>( other.val.data );
 			return;
-		case tString:
+		case tSizedString:
 		case tText:
 		case tShortString:
 		case tFilePath:
@@ -423,6 +425,7 @@ bool NifValue::fromString( const QString & s )
 		case tWord:
 		case tFlags:
 		case tStringOffset:
+		case tStringIndex:
 		case tBlockTypeIndex:
 		case tShort:
 			val.u32 = 0;
@@ -439,7 +442,7 @@ bool NifValue::fromString( const QString & s )
 		case tFloat:
 			val.f32 = s.toDouble( &ok );
 			return ok;
-		case tString:
+		case tSizedString:
 		case tText:
 		case tShortString:
 		case tFilePath:
@@ -482,6 +485,7 @@ QString NifValue::toString() const
 		case tWord:
 		case tFlags:
 		case tStringOffset:
+		case tStringIndex:
 		case tBlockTypeIndex:
 		case tUInt:
 			return QString::number( val.u32 );
@@ -494,7 +498,7 @@ QString NifValue::toString() const
 			return QString::number( val.i32 );
 		case tFloat:
 			return QString::number( val.f32, 'f', 4 );
-		case tString:
+		case tSizedString:
 		case tText:
 		case tShortString:
 		case tFilePath:
@@ -609,18 +613,19 @@ bool NifIStream::read( NifValue & val )
 				return device->read( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->read( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tByte:
+		case NifValue::tByte:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tWord:
-      case NifValue::tShort:
+		case NifValue::tWord:
+		case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tStringOffset:
+		case NifValue::tStringIndex:
 		case NifValue::tInt:
-      case NifValue::tUInt:
+		case NifValue::tUInt:
 			return device->read( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
 		case NifValue::tUpLink:
@@ -659,7 +664,7 @@ bool NifIStream::read( NifValue & val )
 			return device->read( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
 		case NifValue::tColor4:
 			return device->read( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
-		case NifValue::tString:
+		case NifValue::tSizedString:
 		{
 			int len;
 			device->read( (char *) &len, 4 );
@@ -759,16 +764,17 @@ bool NifOStream::write( const NifValue & val )
 				return device->write( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->write( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tByte:
+		case NifValue::tByte:
 			return device->write( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tWord:
-      case NifValue::tShort:
+		case NifValue::tWord:
+		case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
 		case NifValue::tStringOffset:
-      case NifValue::tInt:
-      case NifValue::tUInt:
+		case NifValue::tStringIndex:
+		case NifValue::tInt:
+		case NifValue::tUInt:
 		case NifValue::tFileVersion:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tLink:
@@ -807,7 +813,7 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
 		case NifValue::tColor4:
 			return device->write( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
-		case NifValue::tString:
+		case NifValue::tSizedString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );
@@ -883,7 +889,7 @@ int NifSStream::size( const NifValue & val )
 				return 4;
 			else
 				return 1;
-      case NifValue::tByte:
+		case NifValue::tByte:
 			return 1;
 		case NifValue::tWord:
 		case NifValue::tShort:
@@ -891,6 +897,7 @@ int NifSStream::size( const NifValue & val )
 		case NifValue::tBlockTypeIndex:
 			return 2;
 		case NifValue::tStringOffset:
+		case NifValue::tStringIndex:
 		case NifValue::tInt:
 		case NifValue::tUInt:
 		case NifValue::tFileVersion:
@@ -917,7 +924,7 @@ int NifSStream::size( const NifValue & val )
 			return 12;
 		case NifValue::tColor4:
 			return 16;
-		case NifValue::tString:
+		case NifValue::tSizedString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			string.replace( "\\r", "\r" );

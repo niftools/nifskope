@@ -729,7 +729,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		{
 			switch ( column )
 			{
-				case NameCol:	return item->name();
+				case NameCol:
+					return item->name();
 				case TypeCol:
 				{
 					if ( ! item->temp().isEmpty() )
@@ -746,7 +747,39 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				}	break;
 				case ValueCol:
 				{
-					if ( item->value().type() == NifValue::tStringOffset )
+					if( isNiBlock( index, "string" ) ) {
+						if( version < 0x14010003 ) {
+							NifItem * str = getItem( item, "String" );
+							if( str )
+								return str->value().get<QString>();
+							return QString( "<string not found>" );
+						}
+						else {
+							uint stridx = get<int>( index, "Index" );
+							return get<QString>( NifModel::index( stridx, 0, getIndex( getHeader(), "Strings" ) ) );
+						}
+					}
+					else if( item->value().type() == NifValue::tStringIndex ) {
+						if( version < 0x14010003 ) {
+							return QString( "<version too old>" );
+						}
+						uint idx = item->value().get<uint>();
+						if( idx == 0xffffffff ) {
+							return QString( "<empty>" );
+						}
+						return get<QString>( NifModel::index( idx, 0, getIndex( getHeader(), "Strings" ) ) );
+					}
+					else if( item->value().type() == NifValue::tFloat ) {
+						float f = item->value().get<float>();
+						uint fmin = 0xff7fffff;
+						uint fmax = 0x7f7fffff;
+						if( f == *(float*)&fmin )
+							return QString( "<float_min>" );
+						else if( f == *(float*)&fmax )
+							return QString( "<float_max>" );
+						return item->value().toString();
+					}
+					else if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
 						if ( ofs < 0 )

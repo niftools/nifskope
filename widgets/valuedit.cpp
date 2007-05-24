@@ -52,7 +52,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-		|| t == NifValue::tString || t == NifValue::tFilePath || t == NifValue::tLineString || t == NifValue::tShortString 
+		|| t == NifValue::tSizedString || t == NifValue::tFilePath || t == NifValue::tLineString || t == NifValue::tShortString 
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
@@ -153,7 +153,7 @@ void ValueEdit::setValue( const NifValue & v )
 			fe->setValue( v.toFloat() );
 			edit = fe;
 		}	break;
-		case NifValue::tString:
+		case NifValue::tSizedString:
 		case NifValue::tFilePath:
 		case NifValue::tLineString:
 		case NifValue::tShortString:
@@ -248,7 +248,7 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tFloat:
 			val.setFloat( qobject_cast<FloatEdit*>( edit )->value() );
 			break;
-		case NifValue::tString:
+		case NifValue::tSizedString:
 		case NifValue::tFilePath:
 		case NifValue::tLineString:
 		case NifValue::tShortString:

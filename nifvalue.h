@@ -57,7 +57,7 @@ public:
 		tLink = 7,
 		tUpLink = 8,
 		tFloat = 9,
-		tString = 10,
+		tSizedString = 10,
 		tText = 11,
 		tShortString = 12,
 		tFilePath = 13,
@@ -78,6 +78,7 @@ public:
 		tStringPalette = 28,
 		tShort = 29,
 		tUInt = 30,
+		tStringIndex = 31,
 
 		tNone = 0xff
 	};
@@ -116,14 +117,14 @@ public:
 	
 	bool isValid() const { return typ != tNone; }
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
-	bool isCount() const { return (typ >= tBool && typ <= tInt) || (typ >= tShort && typ <= tUInt); }
+	bool isCount() const { return (typ >= tBool && typ <= tInt) || (typ >= tShort && typ <= tStringIndex); }
 	bool isFlags() const { return typ == tFlags; }
 	bool isFloat() const { return typ == tFloat; }
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
-	bool isString() const { return typ >= tString && typ <= tLineString; }
+	bool isString() const { return typ >= tSizedString && typ <= tLineString; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
