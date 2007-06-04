@@ -1438,18 +1438,42 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	return true;
 }
 
-bool NifModel::checkForBlock( const QString & filepath, const QString & blockId )
+bool NifModel::earlyRejection( const QString & filepath, const QString & blockId, quint32 version )
 {
 	NifModel nif;
-	if ( nif.loadHeaderOnly( filepath ) )
+	if ( nif.loadHeaderOnly( filepath ) == false ) {
+		//File failed to read entierly
+		return false;
+	}
+	
+	bool ver_match = false;
+	if ( version == 0 )
+	{
+		ver_match = true;
+	}
+	else if ( version != 0 && nif.getVersionNumber() == version )
+	{
+		ver_match = true;
+	}
+
+	bool blk_match = false;
+	if ( blockId.isEmpty() == true || version < 0x0A000100 )
+	{
+		blk_match = true;
+	}
+	else
 	{
 		foreach ( QString s, nif.getArray<QString>( nif.getHeader(), "Block Types" ) )
 		{
 			if ( inherits( s, blockId ) )
-				return true;
+			{
+				blk_match = true;
+				break;
+			}
 		}
 	}
-	return false;
+	
+	return (ver_match && blk_match);
 }
  
 bool NifModel::save( QIODevice & device, const QModelIndex & index ) const

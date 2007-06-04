@@ -596,7 +596,7 @@ QColor NifValue::toColor() const
 void NifOStream::init()
 {
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x03030013 );
+	linkAdjust = false;//( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
 }
 
 bool NifIStream::read( NifValue & val )
@@ -747,7 +747,7 @@ bool NifIStream::read( NifValue & val )
 void NifIStream::init()
 {
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x03030013 );
+	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
 }
 
 bool NifOStream::write( const NifValue & val )

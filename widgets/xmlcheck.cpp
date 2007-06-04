@@ -68,7 +68,7 @@ TestShredder::TestShredder()
 	btChoose->setDefaultAction( aChoose );
 	
 	blockMatch = new QLineEdit( this );
-	
+
 	repErr = new QCheckBox( "report errors only", this );
 	repErr->setChecked( settings.value( "report errors only", true ).toBool() );
 	
@@ -77,7 +77,10 @@ TestShredder::TestShredder()
 	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
 	count->setPrefix( "threads " );
 	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
-	
+
+	//Version Check
+	verMatch = new QLineEdit(this);
+
 	text = new QTextBrowser();
 	text->setHidden( false );
 	text->setReadOnly( true );
@@ -114,6 +117,10 @@ TestShredder::TestShredder()
 	hbox->addWidget( blockMatch );
 	hbox->addWidget( repErr );
 	hbox->addWidget( count );
+
+	lay->addLayout( hbox = new QHBoxLayout() );
+	hbox->addWidget( new QLabel( "Version Match:" ) );
+	hbox->addWidget( verMatch );
 	
 	lay->addWidget( text );
 	
@@ -166,6 +173,7 @@ void TestShredder::renumberThreads( int num )
 		threads.append( thread );
 		
 		thread->blockMatch = blockMatch->text();
+		thread->verMatch = NifModel::version2number( verMatch->text() );
 		thread->reportAll = ! repErr->isChecked();
 		
 		if ( btRun->isChecked() )
@@ -211,6 +219,7 @@ void TestShredder::run()
 	
 	foreach ( TestThread * thread, threads )
 	{
+		thread->verMatch = NifModel::version2number( verMatch->text() );
 		thread->blockMatch = blockMatch->text();
 		thread->reportAll = ! repErr->isChecked();
 		thread->start();
@@ -375,29 +384,42 @@ void TestThread::run()
 		{	// lock the XML lock
 			QReadLocker lck( lock );
 			
-			if ( blockMatch.isEmpty() || ( model == &nif && NifModel::checkForBlock( filepath, blockMatch ) ) )
+			if (  model == &nif && NifModel::earlyRejection( filepath, blockMatch, verMatch ) )
 			{
 				bool loaded = model->loadFromFile( filepath );
 				
 				QString result = QString( "<a href=\"nif:%1\">%1</a> (%2)" ).arg( filepath ).arg( model->getVersion() );
 				QList<Message> messages = model->getMessages();
 				
+				bool blk_match = false;
 				if ( loaded && model == & nif )
 					for ( int b = 0; b < nif.getBlockCount(); b++ )
+					{
+						//In case early rejection failed, such as if this is an older file without the block types in the header
+						//note if any of these blocks types match the specified one.
+						if ( blockMatch.isEmpty() == false && NifModel::inherits( nif.getBlockName( nif.getBlock(b) ), blockMatch ) ) {
+							blk_match = true;
+						}
 						messages += checkLinks( &nif, nif.getBlock( b ), kf );
+					}
 				
 				bool rep = reportAll;
-				
-				foreach ( Message msg, messages )
+
+				//Don't show anything if block match is on but the requested type wasn't found
+
+				if ( blk_match == true )
 				{
-					if ( msg.type() != QtDebugMsg )
+					foreach ( Message msg, messages )
 					{
-						result += "<br>" + msg;
-						rep |= true;
+						if ( msg.type() != QtDebugMsg )
+						{
+							result += "<br>" + msg;
+							rep |= true;
+						}
 					}
+					if ( rep )
+						emit sigReady( result );
 				}
-				if ( rep )
-					emit sigReady( result );
 			}
 		}
 		

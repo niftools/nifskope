@@ -68,8 +68,9 @@ public:
 	// this returns the the estimated file offset of the model index
 	int fileOffset( const QModelIndex & ) const;
 	
-	// checks if the nif pointed to by filepath contains the  specified block id
-	static bool checkForBlock( const QString & filepath, const QString & blockId );
+	// checks if the nif pointed to by filepath contains the  specified block id in its header and is of the specified version
+	// will not open the full file to look for block types
+	static bool earlyRejection( const QString & filepath, const QString & blockId, quint32 version );
 	
 	// returns the model index of the NiHeader
 	QModelIndex getHeader() const;
