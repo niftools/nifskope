@@ -813,7 +813,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
-						if ( ofs < 0 )
+						if ( ofs < 0 || ofs == 0x0000FFFF )
 							return QString( "<empty>" );
 						NifItem * palette = getItemX( item, "String Palette" );
 						int link = ( palette ? palette->value().toLink() : -1 );
