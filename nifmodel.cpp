@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "niftypes.h"
+#include "gl\options.h"
 
 #include "spellbook.h"
 
@@ -48,10 +49,28 @@ NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 QString NifModel::version2string( quint32 v )
 {
 	if ( v == 0 )	return QString();
-	QString s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
-		+ QString::number( ( v >> 16 ) & 0xff, 10 ) + "."
-		+ QString::number( ( v >> 8 ) & 0xff, 10 ) + "."
-		+ QString::number( v & 0xff, 10 );
+	QString s;
+	if ( v < 0x0303000D ) {
+		//This is an old-style 2-number version with one period
+		s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
+		+ QString::number( ( v >> 16 ) & 0xff, 10 );
+
+		quint32 sub_num1 = ((v >> 8) & 0xff);
+		quint32 sub_num2 = (v & 0xff);
+		if ( sub_num1 > 0 || sub_num2 > 0 ) {
+			s = s + QString::number( sub_num1, 10 );
+		}
+		
+		if ( sub_num2 > 0 ) {
+			s = s + QString::number( sub_num2, 10 );
+		}
+	} else {
+		//This is a new-style 4-number version with 3 periods
+		s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
+			+ QString::number( ( v >> 16 ) & 0xff, 10 ) + "."
+			+ QString::number( ( v >> 8 ) & 0xff, 10 ) + "."
+			+ QString::number( v & 0xff, 10 );
+	}
 	return s;
 }	
 
@@ -62,13 +81,36 @@ quint32 NifModel::version2number( const QString & s )
 	if ( s.contains( "." ) )
 	{
 		QStringList l = s.split( "." );
+
 		quint32 v = 0;
-		for ( int i = 0; i < 4 && i < l.count(); i++ )
-			v += l[i].toInt( 0, 10 ) << ( (3-i) * 8 );
-		return v;
-	}
-	else
-	{
+
+		if ( l.count() > 4 ) {
+			//Should probaby post a warning here or something.  Version # has more than 3 dots in it.
+			return 0;
+		} else if ( l.count() == 2 ) {
+			//This is an old style version number.  Take each digit following the first one at a time.
+			//The first one is the major version
+			v += l[0].toInt() << (3 * 8);
+
+			if ( l[1].size() >= 1 ) {
+				v += l[1].mid(0, 1).toInt() << (2 * 8);
+			}
+			if ( l[1].size() >= 2 ) {
+				v += l[1].mid(1, 1).toInt() << (1 * 8);
+			}
+			if ( l[1].size() >= 3 ) {
+				v += l[1].mid(2, -1).toInt();
+			}
+			return v;
+		} else {
+			//This is a new style version number with dots separating the digits
+			for ( int i = 0; i < 4 && i < l.count(); i++ ) {
+				v += l[i].toInt( 0, 10 ) << ( (3-i) * 8 );
+			}
+			return v;
+		}
+
+	} else {
 		bool ok;
 		quint32 i = s.toUInt( &ok );
 		return ( i == 0xffffffff ? 0 : i );
@@ -93,14 +135,36 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
-	version = version2number( "20.0.0.5" );
+	version = version2number( GLOptions::startupVersion() );
 	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
 	if ( item ) item->value().setFileVersion( version );
+
+	QString header_string;
+	if ( version <= 0x0A000100 ) {
+		header_string = "NetImmerse File Format, Version ";
+	} else {
+		header_string = "Gamebryo File Format, Version ";
+	}
+
+	header_string += version2string(version);
 	
-	set<QString>( getHeaderItem(), "Header String", "Gamebryo File Format, Version 20.0.0.5" );
-	set<int>( getHeaderItem(), "User Version", 11 );
+	set<QString>( getHeaderItem(), "Header String", header_string );
+
+	if ( version == 0x14000005 ) {
+		//Just set this if version is 20.0.0.5 for now.  Probably should be a separate option.
+		set<int>( getHeaderItem(), "User Version", 11 );
+	}
 	set<int>( getHeaderItem(), "Unknown Int 3", 11 );
+
+	if ( version < 0x0303000D ) {
+		QVector<QString> copyright(3);
+		copyright[0] = "Numerical Design Limited, Chapel Hill, NC 27514";
+		copyright[1] = "Copyright (c) 1996-2000";
+		copyright[2] = "All Rights Reserved";
+
+		setArray<QString>( getHeader(), "Copyright", copyright );
+	}
 }
 
 /*

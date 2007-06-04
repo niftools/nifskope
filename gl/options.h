@@ -98,6 +98,8 @@ public:
 	static bool lightFrontal();
 	static int lightDeclination();
 	static int lightPlanarAngle();
+
+	static QString startupVersion();
 	
 signals:
 	void sigChanged();
@@ -157,6 +159,10 @@ protected:
 	
 	
 	QTimer * tSave, * tEmit;
+
+	//Misc Optoins
+	QLineEdit * StartVer;
+
 };
 
 #define glNormalColor() glColor( Color4( GLOptions::nlColor() ) )

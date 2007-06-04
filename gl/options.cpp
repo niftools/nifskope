@@ -365,8 +365,24 @@ GLOptions::GLOptions()
 		
 		dialog->popLayout();
 	}
+	dialog->popLayout();
+
+	//Misc Options
+	cfg.beginGroup( "Misc. Settings" );
+
+	dialog->pushLayout( "Misc. Settings", Qt::Vertical, 1 );
+	dialog->pushLayout( Qt::Horizontal );
+
+	
+	dialog->addWidget( new QLabel( "Startup Version" ) );
+	dialog->addWidget( StartVer = new QLineEdit( cfg.value( "Startup Version", "20.0.0.5" ).toString() ) );
+	StartVer->setToolTip( "This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be." );
 
 	dialog->popLayout();
+
+	//More Misc options can be added here.
+	dialog->popLayout();
+	cfg.endGroup();
 }
 
 GLOptions::~GLOptions()
@@ -457,6 +473,14 @@ void GLOptions::save()
 	cfg.setValue( "Planar Angle", lightPlanarAngle() );
 	
 	cfg.endGroup();
+
+	cfg.beginGroup( "Misc. Settings" );
+
+	cfg.setValue( "Startup Version", StartVer->text() );
+
+	cfg.endGroup();
+
+
 }
 
 void GLOptions::textureFolderAutoDetect( int game )
@@ -746,5 +770,10 @@ int GLOptions::lightPlanarAngle()
 {
 	return get()->LightPlanarAngle->value();
 }
+
+QString GLOptions::startupVersion()
+{
+	return get()->StartVer->text();	
+};
 
 
