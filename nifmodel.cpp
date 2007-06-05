@@ -1262,48 +1262,59 @@ bool NifModel::load( QIODevice & device )
 		{	// versions below 3.3.0.13
 			QMap<qint32,qint32> linkMap;
 			
-			for ( qint32 c = 0; true; c++ )
-			{
-				emit sigProgress( c + 1, 0 );
-				
-				if ( device.atEnd() )
-					throw QString( "unexpected EOF during load" );
-				
-				int len;
-				device.read( (char *) &len, 4 );
-				if ( len < 0 || len > 80 )
-					throw QString( "next block does not start with a NiString" );
-				
-				QString blktyp = device.read( len );
-				
-				if ( blktyp == "End Of File" )
+			try {
+				for ( qint32 c = 0; true; c++ )
 				{
-					break;
-				}
-				else if ( blktyp == "Top Level Object" )
-				{
+					emit sigProgress( c + 1, 0 );
+					
+					if ( device.atEnd() )
+						throw QString( "unexpected EOF during load" );
+					
+					int len;
 					device.read( (char *) &len, 4 );
 					if ( len < 0 || len > 80 )
 						throw QString( "next block does not start with a NiString" );
-					blktyp = device.read( len );
+					
+					QString blktyp = device.read( len );
+					
+					if ( blktyp == "End Of File" )
+					{
+						break;
+					}
+					else if ( blktyp == "Top Level Object" )
+					{
+						device.read( (char *) &len, 4 );
+						if ( len < 0 || len > 80 )
+							throw QString( "next block does not start with a NiString" );
+						blktyp = device.read( len );
+					}
+					
+					qint32 p;
+					device.read( (char *) &p, 4 );
+					p -= 1;
+					if ( p != c )
+						linkMap.insert( p, c );
+					
+					if ( isNiBlock( blktyp ) )
+					{
+						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+						insertNiBlock( blktyp, -1, true );
+						if ( ! load( root->child( c+1 ), stream, true ) ) 
+							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+					}
+					else
+						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 				}
-				
-				qint32 p;
-				device.read( (char *) &p, 4 );
-				p -= 1;
-				if ( p != c )
-					linkMap.insert( p, c );
-				
-				if ( isNiBlock( blktyp ) )
-				{
-					msg( DbgMsg() << "loading block" << c << ":" << blktyp );
-					insertNiBlock( blktyp, -1, true );
-					if ( ! load( root->child( c+1 ), stream, true ) ) 
-						throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
-				}
-				else
-					throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 			}
+			catch ( QString err ) {
+				//If this is an old file we should still map the links, even if it failed
+				mapLinks( linkMap );
+
+				//Re-throw exception so that the error is printed
+				throw err;
+			}
+
+			//Also map links if nothing went wrong
 			mapLinks( linkMap );
 		}
 	}

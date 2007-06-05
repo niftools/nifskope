@@ -368,7 +368,7 @@ GLOptions::GLOptions()
 	dialog->popLayout();
 
 	//Misc Options
-	cfg.beginGroup( "Misc. Settings" );
+	cfg.beginGroup( "Misc Settings" );
 
 	dialog->pushLayout( "Misc. Settings", Qt::Vertical, 1 );
 	dialog->pushLayout( Qt::Horizontal );
@@ -377,6 +377,8 @@ GLOptions::GLOptions()
 	dialog->addWidget( new QLabel( "Startup Version" ) );
 	dialog->addWidget( StartVer = new QLineEdit( cfg.value( "Startup Version", "20.0.0.5" ).toString() ) );
 	StartVer->setToolTip( "This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be." );
+	connect( StartVer, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
+
 
 	dialog->popLayout();
 
@@ -474,9 +476,9 @@ void GLOptions::save()
 	
 	cfg.endGroup();
 
-	cfg.beginGroup( "Misc. Settings" );
+	cfg.beginGroup( "Misc Settings" );
 
-	cfg.setValue( "Startup Version", StartVer->text() );
+	cfg.setValue( "Startup Version", startupVersion() );
 
 	cfg.endGroup();
 
