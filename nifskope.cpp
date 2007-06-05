@@ -89,11 +89,14 @@ void NifSkope::about()
 {
 	QString text =
 	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
-	"<p>NifSkope is based on NifTool's file format data base. "
-	"For more informations visit our site at <a href='http://www.niftools.org'>www.niftools.org</a></p>"
-	"<p>Because NifSkope was build using the Qt GUI toolkit it is free software. "
+	"<p>NifSkope is based on NifTool's XML file format specification. "
+	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
+	"<p>NifSkope is free software and the source code is availiable under a BSD lisence, however the executable is distributed under the GPL"
+	" because it was built using the Qt library. "
 	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
-	" on <a href='http://sourceforge.net'>SourceForge</a></p>";
+	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
+	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
+	"NifTools SourceForge Project page</a>.";
 
     QMessageBox mb( tr("About NifSkope 0.9.8"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
@@ -944,7 +947,7 @@ int main( int argc, char * argv[] )
 	QApplication app( argc, argv );
 	app.setOrganizationName( "NifTools" );
 	app.setApplicationName( "NifSkope" );
-	app.setOrganizationDomain( "niftools.org" );
+	app.setOrganizationDomain( "niftools.sourceforge.net" );
 	
 	// install message handler
 	qRegisterMetaType<Message>( "Message" );
