@@ -71,6 +71,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/copyfnam.h"
 #include "widgets/xmlcheck.h"
 
+#ifdef WIN32
+#define WINDOWS_LEAN_AND_MEAN
+#include "windows.h"
+#endif
+
 
 #ifdef FSENGINE
 
@@ -975,8 +980,28 @@ int main( int argc, char * argv[] )
 	
 	QString fname;
     if ( app.argc() > 1 )
-        fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
-	
+	{
+		//Getting a NIF file name from the OS
+		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
+
+		//Windows returns an ugly 8.3 file path, so a WinAPI function to fix that
+#ifdef WIN32
+		WIN32_FIND_DATA ffd;
+		HANDLE h;
+		wchar_t * str = new wchar_t[fname.size() + 1];
+		fname.toWCharArray( str );
+		str[fname.size()] = 0;
+
+		h = FindFirstFileW( str, &ffd );
+		if ( h != INVALID_HANDLE_VALUE ) {
+			//Get the nice looking long path
+			fname = QString::fromWCharArray( ffd.cFileName );		
+		}
+
+		delete [] str;
+#endif
+	}
+
 	if ( IPCsocket * ipc = IPCsocket::create() )
 	{
 		ipc->execCommand( QString( "NifSkope::open %1" ).arg( fname ) );
