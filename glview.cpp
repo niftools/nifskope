@@ -1052,7 +1052,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if ( event->buttons() & Qt::RightButton )
 	{
-		setDistance( Dist - dy * ( axis / ( qMax( width(), height() ) + 1 ) ) );
+		setDistance( Dist - (-dx - dy) * ( axis / ( qMax( width(), height() ) + 1 ) ) );
 	}
 	lastPos = event->pos();
 }
@@ -1072,7 +1072,7 @@ void GLView::wheelEvent( QWheelEvent * event )
 	if ( aViewWalk->isChecked() )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
-		setDistance( Dist * ( event->delta() > 0 ? 1.0 / 0.8 : 0.8 ) );
+		setDistance( Dist * ( event->delta() < 0 ? 1.0 / 0.8 : 0.8 ) );
 }
 
 void GLView::checkActions()
