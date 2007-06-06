@@ -405,9 +405,9 @@ void TestThread::run()
 				
 				bool rep = reportAll;
 
-				//Don't show anything if block match is on but the requested type wasn't found
+				//Don't show anything if block match is on but the requested type wasn't found & we're in block match mode
 
-				if ( blk_match == true )
+				if ( blockMatch.isEmpty() == true || blk_match == true )
 				{
 					foreach ( Message msg, messages )
 					{
