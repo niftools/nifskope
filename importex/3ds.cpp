@@ -500,25 +500,42 @@ void import3ds( NifModel * nif )
 			
 			if ( !mat->map_Kd.isEmpty() )
 			{
-				QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
-				addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
-				
-				nif->set<int>( iTexProp, "Has Base Texture", 1 );
-				QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
-				nif->set<int>( iBaseMap, "Clamp Mode", 3 );
-				nif->set<int>( iBaseMap, "Filter Mode", 2 );
-				
-				QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
-				nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
-				
-				nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
-				nif->set<int>( iTexSource, "Use Mipmaps", 2 );
-				nif->set<int>( iTexSource, "Alpha Format", 3 );
-				nif->set<int>( iTexSource, "Unknown Byte", 1 );
-				nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
-				
-				nif->set<int>( iTexSource, "Use External", 1 );
-				nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+				if ( nif->getVersionNumber() >= 0x0303000D )
+				{
+					//Newer versions use NiTexturingProperty and NiSourceTexture
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+					
+					nif->set<int>( iTexProp, "Has Base Texture", 1 );
+					QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
+					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
+					nif->set<int>( iBaseMap, "Filter Mode", 2 );
+					
+					QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
+					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
+					
+					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
+					nif->set<int>( iTexSource, "Use Mipmaps", 2 );
+					nif->set<int>( iTexSource, "Alpha Format", 3 );
+					nif->set<int>( iTexSource, "Unknown Byte", 1 );
+					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
+					
+					nif->set<int>( iTexSource, "Use External", 1 );
+					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+				}
+				else
+				{
+					//Older versions use NiTextureProperty and NiImage
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTextureProperty" );
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+					
+					QModelIndex iTexSource = nif->insertNiBlock( "NiImage" );
+
+					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
+					
+					nif->set<int>( iTexSource, "External", 1 );
+					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+				}
 			}
 			
 			QModelIndex iData = nif->insertNiBlock( "NiTriShapeData" );

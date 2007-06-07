@@ -150,6 +150,11 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
 			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
+		else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) )
+		{
+			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
+			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
+		}
 	}
 	
 	//if ( ! texfn.isEmpty() )
@@ -537,25 +542,40 @@ void importObj( NifModel * nif )
 			
 			if ( ! mtl.map_Kd.isEmpty() )
 			{
-				QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
-				addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
-				
-				nif->set<int>( iTexProp, "Has Base Texture", 1 );
-				QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
-				nif->set<int>( iBaseMap, "Clamp Mode", 3 );
-				nif->set<int>( iBaseMap, "Filter Mode", 2 );
-				
-				QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
-				nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
-				
-				nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
-				nif->set<int>( iTexSource, "Use Mipmaps", 2 );
-				nif->set<int>( iTexSource, "Alpha Format", 3 );
-				nif->set<int>( iTexSource, "Unknown Byte", 1 );
-				nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
-				
-				nif->set<int>( iTexSource, "Use External", 1 );
-				nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+				if ( nif->getVersionNumber() >= 0x0303000D )
+				{
+					//Newer versions use NiTexturingProperty and NiSourceTexture
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+					
+					nif->set<int>( iTexProp, "Has Base Texture", 1 );
+					QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
+					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
+					nif->set<int>( iBaseMap, "Filter Mode", 2 );
+					
+					QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
+					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
+					
+					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
+					nif->set<int>( iTexSource, "Use Mipmaps", 2 );
+					nif->set<int>( iTexSource, "Alpha Format", 3 );
+					nif->set<int>( iTexSource, "Unknown Byte", 1 );
+					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
+					
+					nif->set<int>( iTexSource, "Use External", 1 );
+					nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+				} else {
+					//Older versions use NiTextureProperty and NiImage
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTextureProperty" );
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+					
+					QModelIndex iTexSource = nif->insertNiBlock( "NiImage" );
+
+					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
+					
+					nif->set<int>( iTexSource, "External", 1 );
+					nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+				}
 			}
 			
 			QModelIndex iData = nif->insertNiBlock( "NiTriShapeData" );
@@ -632,7 +652,7 @@ void importObj( NifModel * nif )
 			
 			nif->set<int>( iData, "Unknown Short 2", 0x4000 );
 		}
-		else
+		else if ( nif->getVersionNumber() == 0x14000005 )
 		{
 			// create experimental havok collision mesh
 			QVector<Vector3> verts;
