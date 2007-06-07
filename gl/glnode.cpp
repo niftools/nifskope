@@ -1169,7 +1169,33 @@ void Node::drawHavok()
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 	if ( ! ( iBlock.isValid() && nif ) )
 		return;
-	
+
+	//Check if there's any old style collision bounding box set
+	if ( nif->get<bool>( iBlock, "Has Bounding Box" ) == true )
+	{
+		QModelIndex iBox = nif->getIndex( iBlock, "Bounding Box" );
+
+		Transform bt;
+
+		bt.translation = nif->get<Vector3>( iBox, "Translation" );
+		bt.rotation = nif->get<Matrix>( iBox, "Rotation" );
+		bt.scale = 1.0f;
+
+		Vector3 rad = nif->get<Vector3>( iBox, "Radius" );
+
+		glPushMatrix();
+		glLoadMatrix( scene->view );
+		glMultMatrix( worldTrans() );
+		glMultMatrix( bt );
+
+		glColor( Color3( 1.0f, 0.0f, 0.0f ) );
+		glLineWidth( 1.0f );
+		glDisable( GL_LIGHTING );
+		drawBox( rad, - rad );
+
+		glPopMatrix();
+	}
+
 	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 	if ( ! iObject.isValid() )
 		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );				
@@ -1213,7 +1239,7 @@ void Node::drawHavok()
 
 	QStack<QModelIndex> shapeStack;
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack );
-	
+
 	glLoadName( nif->getBlockNumber( iBody ) );
 	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2f );
 	

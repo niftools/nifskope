@@ -984,7 +984,7 @@ int main( int argc, char * argv[] )
 		//Getting a NIF file name from the OS
 		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
 
-		//Windows returns an ugly 8.3 file path, so a WinAPI function to fix that
+		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
 #ifdef WIN32
 		WIN32_FIND_DATA ffd;
 		HANDLE h;
