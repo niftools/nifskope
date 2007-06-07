@@ -995,7 +995,8 @@ int main( int argc, char * argv[] )
 		h = FindFirstFileW( str, &ffd );
 		if ( h != INVALID_HANDLE_VALUE ) {
 			//Get the nice looking long path
-			fname = QString::fromWCharArray( ffd.cFileName );		
+			fname = QString::fromWCharArray( ffd.cFileName );
+			FindClose(h);
 		}
 
 		delete [] str;
