@@ -1,10 +1,13 @@
 #include "../spellbook.h"
 
+
 class spUpdateArray : public Spell
 {
 public:
 	QString name() const { return Spell::tr( "Update" ); }
 	QString page() const { return Spell::tr( "Array" ); }
+	QIcon icon() const { return  QIcon( ":/img/update" ); }
+	bool instant() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
