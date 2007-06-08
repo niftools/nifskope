@@ -140,18 +140,19 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewSide->setCheckable( true );
 	aViewSide->setShortcut( Qt::Key_F7 );
 	grpView->addAction( aViewSide );
+
+	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr("User"), grpView );
+	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
+	aViewUser->setCheckable( true );
+	aViewUser->setShortcut( Qt::Key_F8 );
+	grpView->addAction( aViewUser );
+
 	
 	aViewWalk = new QAction( QIcon( ":/btn/viewWalk" ), tr("Walk"), grpView );
 	aViewWalk->setToolTip( tr("Enable walk mode") );
 	aViewWalk->setCheckable( true );
-	aViewWalk->setShortcut( Qt::Key_F8 );
+	aViewWalk->setShortcut( Qt::Key_F9 );
 	grpView->addAction( aViewWalk );
-	
-	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr("User"), grpView );
-	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
-	aViewUser->setCheckable( true );
-	aViewUser->setShortcut( Qt::Key_F9 );
-	grpView->addAction( aViewUser );
 	
 	aViewFlip = new QAction( QIcon( ":/btn/viewFlip" ), tr("Flip"), this );
 	aViewFlip->setToolTip( tr("Flip View from Front to Back, Top to Bottom, Side to Other Side") );
@@ -238,8 +239,8 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tView->addAction( aViewTop );
 	tView->addAction( aViewFront );
 	tView->addAction( aViewSide );
-	tView->addAction( aViewWalk );
 	tView->addAction( aViewUser );
+	tView->addAction( aViewWalk );
 	tView->addSeparator();
 	tView->addAction( aViewFlip );
 	tView->addAction( aViewPerspective );
@@ -960,6 +961,23 @@ void GLView::keyPressEvent( QKeyEvent * event )
 			if ( ! aViewWalk->isChecked() )
 				doCenter = true;
 			update();
+			break;
+		case Qt::Key_C:
+			{
+				Node * node = scene->getNode( model, scene->currentBlock );
+
+				if ( node != 0 )
+				{
+					BoundSphere bs = node->bounds();
+
+					this->setPosition( -bs.center );
+
+					if ( bs.radius > 0 )
+					{
+						setDistance( bs.radius );
+					}
+				}
+			}
 			break;
 		default:
 			event->ignore();

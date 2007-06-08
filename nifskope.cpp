@@ -301,7 +301,7 @@ NifSkope::NifSkope()
 	tool->addWidget( cpFilename );
 	
 	// create the save portion of the toolbar
-	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save..."), QBoxLayout::LeftToRight ) );
+	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 	
