@@ -136,10 +136,11 @@ void ValueEdit::setValue( const NifValue & v )
 		case NifValue::tLink:
 		case NifValue::tUpLink:
 		{	
-			QSpinBox * le = new QSpinBox( this );
-			le->setFrame(false);
-			le->setRange( -1, 0xffff );
-			le->setValue( v.toLink() );
+			QLineEdit * le = new QLineEdit( this );
+			int tmp = v.toLink();
+			if ( tmp > 0 ) {
+				le->setText( QString::number(tmp) );
+			}
 			edit = le;
 		}	break;
 		case NifValue::tFloat:
@@ -243,7 +244,18 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tLink:
 		case NifValue::tUpLink:
-			val.setLink( qobject_cast<QSpinBox*>( edit )->value() );
+			{
+				QString str = qobject_cast<QLineEdit*>( edit )->text();
+				bool ok = false;
+				int tmp = str.toInt( &ok );
+				if ( ok == false || tmp < 0 ) {
+					val.setLink( -1 );
+				}
+				else
+				{
+					val.setLink( tmp );
+				}
+			}
 			break;
 		case NifValue::tFloat:
 			val.setFloat( qobject_cast<FloatEdit*>( edit )->value() );
