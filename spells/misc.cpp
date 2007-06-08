@@ -63,72 +63,12 @@ public:
 
 REGISTER_SPELL( spUpdateFooter )
 
-/* XPM */
-static char * followlink_xpm[] = {
-"48 48 2 1",
-" 	c None",
-".	c #000000",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                    .....                       ",
-"                  ........                      ",
-"                 ....  ....                     ",
-"                ....    ....                    ",
-"               ....     ....                    ",
-"              ....      ....                    ",
-"             ....       ....                    ",
-"            ....        ....                    ",
-"           ....         ....                    ",
-"          ....          ....                    ",
-"         ....           ....                    ",
-"        ....            ....                    ",
-"       ....             ....                    ",
-"      ....              ....                    ",
-"    ....                ...................     ",
-"   ....                  ...................    ",
-"  ....                                   ....   ",
-"  ....                                    ....  ",
-"  ....                                    ....  ",
-"  ....                                    ....  ",
-"  ....                                    ....  ",
-"   ....                                  ....   ",
-"    ....                .....................   ",
-"     ....              ....................     ",
-"      ....             ....                     ",
-"       ....            ....                     ",
-"        ....           ....                     ",
-"         ....          ....                     ",
-"          ....         ....                     ",
-"           ....        ....                     ",
-"            ....       ....                     ",
-"             ....      ....                     ",
-"              ....     ....                     ",
-"               ....    ....                     ",
-"                ....  ....                      ",
-"                 .........                      ",
-"                  ......                        ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                "};
-QIcon * followlink_xpm_icon = 0;
-
 class spFollowLink : public Spell
 {
 public:
 	QString name() const { return Spell::tr( "Follow Link" ); }
 	bool instant() const { return true; }
-	QIcon icon() const
-	{
-		if ( ! followlink_xpm_icon )
-			followlink_xpm_icon = new QIcon( followlink_xpm );
-		return *followlink_xpm_icon;
-	}
+	QIcon icon() const { return  QIcon( ":/img/link" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
