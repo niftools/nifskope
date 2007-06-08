@@ -682,6 +682,7 @@ void Mesh::drawSelection() const
 	if ( n == "Faces" || n == "Triangles" )
 	{
 		glDepthFunc( GL_LEQUAL );
+		glLineWidth( 1.5f );
 		glNormalColor();
 		foreach ( Triangle tri, triangles )
 		{
@@ -708,6 +709,7 @@ void Mesh::drawSelection() const
 	if ( n == "Faces" || n == "Strips" )
 	{
 		glDepthFunc( GL_LEQUAL );
+		glLineWidth( 1.5f );
 		glNormalColor();
 		foreach ( QVector<quint16> strip, tristrips )
 		{
