@@ -473,13 +473,20 @@ void import3ds( NifModel * nif )
 	for(int objIndex = 0; objIndex < ObjMeshes.size(); objIndex++) {
 		objMesh * mesh = &ObjMeshes[objIndex];
 
-		// create group node
-		QPersistentModelIndex iNode = nif->insertNiBlock( "NiNode" );
-		nif->set<QString>( iNode, "Name", mesh->name );
-		addLink( nif, iRoot, "Children", nif->getBlockNumber( iNode ) );
-
-		
 		// create a NiTriShape foreach material in the object
+
+		// create group node if there is more than 1 material
+		bool groupNode = false;
+		QPersistentModelIndex iNode;
+		if ( mesh->matfaces.size() > 1 )
+		{
+			groupNode = true;
+
+			iNode = nif->insertNiBlock( "NiNode" );
+			nif->set<QString>( iNode, "Name", mesh->name );
+			addLink( nif, iRoot, "Children", nif->getBlockNumber( iNode ) );
+		}
+
 		int shapecount = 0;
 		for( int i = 0; i < mesh->matfaces.size(); i++ )
 		{
@@ -490,8 +497,16 @@ void import3ds( NifModel * nif )
 			objMaterial * mat = &ObjMaterials[mesh->matfaces[i].matName];
 
 			QPersistentModelIndex iShape = nif->insertNiBlock( "NiTriShape" );
-			nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
-			addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
+			if ( groupNode )
+			{
+				nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
+				addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
+			}
+			else
+			{
+				nif->set<QString>( iShape, "Name", mesh->name );
+				addLink( nif, iRoot, "Children", nif->getBlockNumber( iShape ) );
+			}
 			
 			QModelIndex iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
 			nif->set<QString>( iMaterial, "Name", mat->name );
