@@ -1070,7 +1070,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if ( event->buttons() & Qt::RightButton )
 	{
-		setDistance( Dist - (-dx - dy) * ( axis / ( qMax( width(), height() ) + 1 ) ) );
+		setDistance( Dist - (dx + dy) * ( axis / ( qMax( width(), height() ) + 1 ) ) );
 	}
 	lastPos = event->pos();
 }

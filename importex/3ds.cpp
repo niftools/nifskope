@@ -562,7 +562,7 @@ void import3ds( NifModel * nif )
 			nif->set<int>( iData, "Has Normals", 1 );
 			nif->updateArray( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals",  mesh->normals );
-			nif->set<int>( iData, "Has UV Sets", 1 );
+			nif->set<int>( iData, "Has UV", 1 );
 			nif->set<int>( iData, "Num UV Sets", 1 );
 			nif->set<int>( iData, "Num UV Sets 2", 1 );
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
