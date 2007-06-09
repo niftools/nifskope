@@ -974,7 +974,7 @@ void GLView::keyPressEvent( QKeyEvent * event )
 
 					if ( bs.radius > 0 )
 					{
-						setDistance( bs.radius );
+						setDistance( bs.radius * 1.5f );
 					}
 				}
 			}

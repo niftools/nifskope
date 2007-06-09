@@ -500,7 +500,7 @@ BoundSphere Mesh::bounds() const
 		upBounds = false;
 		bndSphere = BoundSphere( verts );
 	}
-	return worldTrans() * bndSphere | Node::bounds();
+	return worldTrans() * bndSphere;
 }
 
 void Mesh::drawShapes( NodeList * draw2nd )
