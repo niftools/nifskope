@@ -465,6 +465,10 @@ void import3ds( NifModel * nif )
 	}
 
 	fobj.close();
+
+	// create scene root
+	QPersistentModelIndex iRoot = nif->insertNiBlock( "NiNode" );
+	nif->set<QString>( iRoot, "Name", "Scene Root" );
 	
 	for(int objIndex = 0; objIndex < ObjMeshes.size(); objIndex++) {
 		objMesh * mesh = &ObjMeshes[objIndex];
@@ -472,6 +476,8 @@ void import3ds( NifModel * nif )
 		// create group node
 		QPersistentModelIndex iNode = nif->insertNiBlock( "NiNode" );
 		nif->set<QString>( iNode, "Name", mesh->name );
+		addLink( nif, iRoot, "Children", nif->getBlockNumber( iNode ) );
+
 		
 		// create a NiTriShape foreach material in the object
 		int shapecount = 0;
