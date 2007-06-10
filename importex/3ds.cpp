@@ -296,18 +296,21 @@ void import3ds( NifModel * nif )
 
 				objMatFace newMatFace;
 
-				Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
-				if( MatFaces ) {
-					newMatFace.matName = MatFaces->readString();
+				foreach( Chunk * MatFaces, FaceArray->getChildren( MSH_MAT_GROUP ) )
+				{
+					//Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
+					if( MatFaces ) {
+						newMatFace.matName = MatFaces->readString();
 
-					unsigned short nFaces = MatFaces->read< unsigned short >();
+						unsigned short nFaces = MatFaces->read< unsigned short >();
 
-					for( unsigned short i = 0; i < nFaces; i++ ) {
-						unsigned short FaceNum = MatFaces->read< unsigned short >();
-						newMatFace.subFaces.append( FaceNum );
+						for( unsigned short i = 0; i < nFaces; i++ ) {
+							unsigned short FaceNum = MatFaces->read< unsigned short >();
+							newMatFace.subFaces.append( FaceNum );
+						}
+
+						newMesh.matfaces.append( newMatFace );
 					}
-
-					newMesh.matfaces.append( newMatFace );
 				}
 			}
 
