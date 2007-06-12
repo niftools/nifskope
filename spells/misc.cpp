@@ -11,10 +11,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return (
-			nif->isArray( index ) &&
-			nif->checkVersion( nif->itemVer1( index ), nif->itemVer2( index ) )
-		);
+		return ( nif->isArray( index ) && nif->evalCondition( index ) );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
