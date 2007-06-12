@@ -42,11 +42,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "floatedit.h"
 
-#define MAX 0xffff
+#include <climits>
+
 #define VAL_HEIGHT 12
 
 FloatSliderEditBox::FloatSliderEditBox( QWidget * parent )
-	: QFrame( parent, Qt::Tool | Qt::FramelessWindowHint )
+	: QFrame( parent, Qt::Popup | Qt::FramelessWindowHint )
 {
 	setVisible( false );
 	setFrameShadow( QFrame::Raised );
@@ -114,7 +115,7 @@ FloatSlider::FloatSlider( Qt::Orientation o, bool showValue, bool isEditor )
 	editVal = showVal && isEditor;
 
 	if( showVal ) {
-		QFont fnt( "Helvetica", -1, QFont::Normal );
+		QFont fnt( "Arial", -1, QFont::Normal );
 		fnt.setStyleStrategy( QFont::PreferAntialias );
 		fnt.setPixelSize( VAL_HEIGHT - 2 );
 		setFont( fnt );
@@ -231,21 +232,18 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 		opt.rect.adjust( 0.6*w, VAL_HEIGHT, -0.6*w, 0 );
 	}
 
-	opt.maximum = MAX;
+	opt.maximum = INT_MAX - 1;
 	opt.minimum = 0;
 	opt.orientation = ori;
 	opt.pageStep = 10;
 	opt.singleStep = 1;
-	opt.sliderValue = ( max != min ? int( ( val - min ) / ( max - min ) * MAX + .5 ) : 0 );
-	
-	if ( ori == Qt::Vertical ) {
-		opt.sliderValue = MAX - opt.sliderValue;
-	}
-
+	opt.sliderValue = ( max != min ) ? int( 1.0f * ( val - min ) / ( max - min ) * opt.maximum ) : 0;
 	opt.sliderPosition = opt.sliderValue;
 	opt.tickPosition = QSlider::NoTicks;
-	opt.upsideDown = false;
 	opt.direction = Qt::LeftToRight;
+
+	/* upside down for vertical slider; zero at bottom position */
+	opt.upsideDown = (ori == Qt::Vertical);
 
     return opt;
 	

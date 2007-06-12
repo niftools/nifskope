@@ -105,6 +105,8 @@ protected slots:
 	
 	void fillImportExportMenus();
 	void sltImportExport( QAction * action );
+
+	void openURL();
 	
 protected:
 	void closeEvent( QCloseEvent * e );
@@ -160,6 +162,7 @@ private:
 	
 	QAction * aSelectFont;
 	
+	QAction * aHelpWebsite;
 	QAction * aNifSkope;
 	QAction * aAboutQt;
 

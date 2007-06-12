@@ -221,6 +221,13 @@ NifSkope::NifSkope()
 	
 	aSelectFont = new QAction( tr("Select Font ..."), this );
 	connect( aSelectFont, SIGNAL( triggered() ), this, SLOT( sltSelectFont() ) );
+
+
+	/* help menu */
+
+	aHelpWebsite = new QAction( tr("Visit NifTools"), this );
+	aHelpWebsite->setData( QUrl("http://niftools.sourceforge.net") );
+	connect( aHelpWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
 	
 	aNifSkope = new QAction( tr("About &NifSkope"), this );
 	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
@@ -365,9 +372,11 @@ NifSkope::NifSkope()
 	mViewList->addAction( aList );
 	mView->addAction( aSelectFont );
 	
-	QMenu * mAbout = new QMenu( tr("&About") );
-	mAbout->addAction( aNifSkope );
+	QMenu * mAbout = new QMenu( tr("&Help") );
+	mAbout->addAction( aHelpWebsite );
+	mAbout->addSeparator();
 	mAbout->addAction( aAboutQt );
+	mAbout->addAction( aNifSkope );
 	
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
@@ -740,6 +749,19 @@ void NifSkope::sltWindow()
 void NifSkope::sltShredder()
 {
 	TestShredder::create();
+}
+
+void NifSkope::openURL()
+{
+	if( !sender() ) return;
+
+	QAction * aURL = qobject_cast<QAction*>( sender() );
+	if( !aURL ) return;
+
+	QUrl URL = aURL->data().toUrl();
+	if( !URL.isValid() ) return;
+
+	QDesktopServices::openUrl( URL );
 }
 
 
