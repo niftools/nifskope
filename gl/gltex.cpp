@@ -315,7 +315,9 @@ void TexCache::flush()
 	qDeleteAll( textures );
 	textures.clear();
 	
-	watcher->removePaths( watcher->files() );
+	if( !watcher->files().empty() ) {
+		watcher->removePaths( watcher->files() );
+	}
 }
 
 bool TexturingProperty::bind( int id, const QString & fname )

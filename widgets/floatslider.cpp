@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "floatedit.h"
 
-#define MAX 0x0fff
+#define MAX 0xffff
 #define VAL_HEIGHT 12
 
 FloatSliderEditBox::FloatSliderEditBox( QWidget * parent )
@@ -121,7 +121,7 @@ FloatSlider::FloatSlider( Qt::Orientation o, bool showValue, bool isEditor )
 	}
 
 	if( editVal ) {
-		setToolTip( tr("Click the value to edit.") );
+		setToolTip( tr("Click value to edit.") );
 	}
 
 	editBox = new FloatSliderEditBox( this );
@@ -227,6 +227,7 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 
 	if( showVal ) {
 		int w = fontMetrics().width( "0.000" );
+#pragma message("NOTICE: Qt Bugfix is needed here, see http://pastebin.mozilla.org/87456")
 		opt.rect.adjust( 0.6*w, VAL_HEIGHT, -0.6*w, 0 );
 	}
 

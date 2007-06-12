@@ -136,6 +136,10 @@ void NifModel::clear()
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
 	version = version2number( GLOptions::startupVersion() );
+	if( !isVersionSupported(version) ) {
+		qWarning( tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( GLOptions::startupVersion() ).toAscii() );
+		version = 0x14000005;
+	}
 	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
 	if ( item ) item->value().setFileVersion( version );
