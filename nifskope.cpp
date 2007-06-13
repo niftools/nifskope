@@ -225,10 +225,22 @@ NifSkope::NifSkope()
 
 	/* help menu */
 
-	aHelpWebsite = new QAction( tr("Visit NifTools"), this );
-	aHelpWebsite->setData( QUrl("http://niftools.sourceforge.net") );
+	aHelpWebsite = new QAction( tr("NifSkope Documentation && &Tutorials"), this );
+	aHelpWebsite->setData( QUrl("http://niftools.sourceforge.net/wiki/index.php/NifSkope") );
 	connect( aHelpWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
-	
+
+	aHelpForum = new QAction( tr("NifSkope Help && Bug Report &Forum"), this );
+	aHelpForum->setData( QUrl("http://niftools.sourceforge.net/forum/viewforum.php?f=24") );
+	connect( aHelpForum, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
+	aNifToolsWebsite = new QAction( tr("NifTools &Wiki"), this );
+	aNifToolsWebsite->setData( QUrl("http://niftools.sourceforge.net") );
+	connect( aNifToolsWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
+	aNifToolsDownloads = new QAction( tr("NifTools &Downloads"), this );
+	aNifToolsDownloads->setData( QUrl("http://sourceforge.net/project/showfiles.php?group_id=149157") );
+	connect( aNifToolsDownloads, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
 	aNifSkope = new QAction( tr("About &NifSkope"), this );
 	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
 	
@@ -249,33 +261,34 @@ NifSkope::NifSkope()
 	
 
 	// dock widgets
+
+	dRefr = new QDockWidget( tr("Reference Browser") );
+	dRefr->setObjectName( "RefrDock" );
+	dRefr->setWidget( refrbrwsr );
+	dRefr->toggleViewAction()->setShortcut( Qt::Key_F1 );
+	dRefr->toggleViewAction()->setChecked( false );
+	dRefr->setVisible( false );
+
 	
 	dList = new QDockWidget( tr("Block List") );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
-	dList->toggleViewAction()->setShortcut( Qt::Key_F1 );
+	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
 	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
 	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
-	dTree->toggleViewAction()->setShortcut( Qt::Key_F2 );
+	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
 	dTree->toggleViewAction()->setChecked( false );
 	dTree->setVisible( false );
 
 	dKfm = new QDockWidget( tr("KFM") );
 	dKfm->setObjectName( "KfmDock" );
 	dKfm->setWidget( kfmtree );	
-	dKfm->toggleViewAction()->setShortcut( Qt::Key_F3 );
+	dKfm->toggleViewAction()->setShortcut( Qt::Key_F4 );
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
-
-	dRefr = new QDockWidget( tr("Reference Browser") );
-	dRefr->setObjectName( "RefrDock" );
-	dRefr->setWidget( refrbrwsr );
-	dRefr->toggleViewAction()->setShortcut( Qt::Key_F4 );
-	dRefr->toggleViewAction()->setChecked( false );
-	dRefr->setVisible( false );
 
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
@@ -352,10 +365,10 @@ NifSkope::NifSkope()
 	mFile->addAction( aQuit );
 	
 	QMenu * mView = new QMenu( tr("&View") );
+	mView->addAction( dRefr->toggleViewAction() );
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
-	mView->addAction( dRefr->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );
@@ -374,6 +387,11 @@ NifSkope::NifSkope()
 	
 	QMenu * mAbout = new QMenu( tr("&Help") );
 	mAbout->addAction( aHelpWebsite );
+	mAbout->addAction( aHelpForum );
+	mAbout->addAction( dRefr->toggleViewAction() );
+	mAbout->addSeparator();
+	mAbout->addAction( aNifToolsWebsite );
+	mAbout->addAction( aNifToolsDownloads );
 	mAbout->addSeparator();
 	mAbout->addAction( aAboutQt );
 	mAbout->addAction( aNifSkope );

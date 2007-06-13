@@ -11,7 +11,34 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->isArray( index ) && nif->evalCondition( index ) );
+		if ( nif->isArray(index) && nif->evalCondition( index ) )
+		{
+			//Check if array is of fixed size
+			NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+			bool static1 = true;
+			bool static2 = true;
+
+			if ( item->arr1().isEmpty() == false )
+			{
+				item->arr1().toInt( &static1 );
+			}
+
+			if ( item->arr2().isEmpty() == false )
+			{
+				item->arr2().toInt( &static2 );
+			}
+
+			if ( static1 && static2 )
+			{
+				//Neither arr1 or arr2 is a variable name
+				return false;
+			}
+
+			//One of arr1 or arr2 is a variable name so the array is dynamic
+			return true;
+		}
+
+		return false;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )

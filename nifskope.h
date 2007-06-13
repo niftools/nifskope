@@ -163,6 +163,10 @@ private:
 	QAction * aSelectFont;
 	
 	QAction * aHelpWebsite;
+	QAction * aHelpForum;
+	QAction * aNifToolsWebsite;
+	QAction * aNifToolsDownloads;
+
 	QAction * aNifSkope;
 	QAction * aAboutQt;
 
