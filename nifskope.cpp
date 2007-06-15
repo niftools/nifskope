@@ -261,34 +261,33 @@ NifSkope::NifSkope()
 	
 
 	// dock widgets
-
-	dRefr = new QDockWidget( tr("Reference Browser") );
-	dRefr->setObjectName( "RefrDock" );
-	dRefr->setWidget( refrbrwsr );
-	dRefr->toggleViewAction()->setShortcut( Qt::Key_F1 );
-	dRefr->toggleViewAction()->setChecked( false );
-	dRefr->setVisible( false );
-
 	
 	dList = new QDockWidget( tr("Block List") );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
-	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
+	dList->toggleViewAction()->setShortcut( Qt::Key_F1 );
 	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
 	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
-	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
+	dTree->toggleViewAction()->setShortcut( Qt::Key_F2 );
 	dTree->toggleViewAction()->setChecked( false );
 	dTree->setVisible( false );
 
 	dKfm = new QDockWidget( tr("KFM") );
 	dKfm->setObjectName( "KfmDock" );
 	dKfm->setWidget( kfmtree );	
-	dKfm->toggleViewAction()->setShortcut( Qt::Key_F4 );
+	dKfm->toggleViewAction()->setShortcut( Qt::Key_F3 );
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
+
+	dRefr = new QDockWidget( tr("Reference Browser") );
+	dRefr->setObjectName( "RefrDock" );
+	dRefr->setWidget( refrbrwsr );
+	dRefr->toggleViewAction()->setShortcut( Qt::Key_F4 );
+	dRefr->toggleViewAction()->setChecked( false );
+	dRefr->setVisible( false );
 
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
@@ -365,10 +364,10 @@ NifSkope::NifSkope()
 	mFile->addAction( aQuit );
 	
 	QMenu * mView = new QMenu( tr("&View") );
-	mView->addAction( dRefr->toggleViewAction() );
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
+	mView->addAction( dRefr->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );

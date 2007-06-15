@@ -988,7 +988,11 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		return;
 	
 	QList<Transform> tBodies;
-	QModelIndex iBodies = nif->getIndex( iConstraint, "Bodies" );
+	QModelIndex iBodies = nif->getIndex( iConstraint, "Entities" );
+	if( !iBodies.isValid() ) {
+		return;
+	}
+
 	for ( int r = 0; r < nif->rowCount( iBodies ); r++ )
 	{
 		qint32 l = nif->getLink( iBodies.child( r, 0 ) );
@@ -1248,7 +1252,7 @@ void Node::drawHavok()
 	foreach ( qint32 l, nif->getLinkArray( iBody, "Constraints" ) )
 	{
 		QModelIndex iConstraint = nif->getBlock( l );
-		if ( nif->inherits( iConstraint, "AbhkConstraint" ) )
+		if ( nif->inherits( iConstraint, "bhkConstraint" ) )
 			drawHvkConstraint( nif, iConstraint, scene );
 	}
 }
