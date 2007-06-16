@@ -1,11 +1,36 @@
-struct FurnitureMarker
-{
-     int nv;
-     int nf;
-     const float *verts;
-     const unsigned short *faces;
+/***** BEGIN LICENSE BLOCK *****
 
-};
+BSD License
+
+Copyright (c) 2005, NIF File Format Library and Tools
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the NIF File Format Library and Tools projectmay not be
+   used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+***** END LICENCE BLOCK *****/
+
+#include "../glmarker.h"
 
 static const float FurnitureMarker01Verts[] = 
 {
@@ -177,7 +202,7 @@ static const unsigned short FurnitureMarker01Faces[] =
      93, 95, 94
 };
 
-static const FurnitureMarker FurnitureMarker01 = { 96, 66, FurnitureMarker01Verts, FurnitureMarker01Faces };
+static const GLMarker FurnitureMarker01 = { 96, 66, FurnitureMarker01Verts, FurnitureMarker01Faces };
 
 static const float FurnitureMarker03Verts[] = 
 {
@@ -319,7 +344,7 @@ static const unsigned short FurnitureMarker03Faces[] =
      72, 74, 70
 };
 
-static const FurnitureMarker FurnitureMarker03 = { 76, 56, FurnitureMarker03Verts, FurnitureMarker03Faces };
+static const GLMarker FurnitureMarker03 = { 76, 56, FurnitureMarker03Verts, FurnitureMarker03Faces };
 
 static const float FurnitureMarker04Verts[] = 
 {
@@ -461,7 +486,7 @@ static const unsigned short FurnitureMarker04Faces[] =
      72, 74, 70
 };
 
-static const FurnitureMarker FurnitureMarker04 = { 76, 56, FurnitureMarker04Verts, FurnitureMarker04Faces };
+static const GLMarker FurnitureMarker04 = { 76, 56, FurnitureMarker04Verts, FurnitureMarker04Faces };
 
 static const float FurnitureMarker11Verts[] = 
 {
@@ -655,7 +680,7 @@ static const unsigned short FurnitureMarker11Faces[] =
      105, 107, 106
 };
 
-static const FurnitureMarker FurnitureMarker11 = { 108, 76, FurnitureMarker11Verts, FurnitureMarker11Faces };
+static const GLMarker FurnitureMarker11 = { 108, 76, FurnitureMarker11Verts, FurnitureMarker11Faces };
 
 static const float FurnitureMarker13Verts[] = 
 {
@@ -849,7 +874,7 @@ static const unsigned short FurnitureMarker13Faces[] =
      105, 107, 106
 };
 
-static const FurnitureMarker FurnitureMarker13 = { 108, 76, FurnitureMarker13Verts, FurnitureMarker13Faces };
+static const GLMarker FurnitureMarker13 = { 108, 76, FurnitureMarker13Verts, FurnitureMarker13Faces };
 
 static const float FurnitureMarker14Verts[] = 
 {
@@ -1043,4 +1068,4 @@ static const unsigned short FurnitureMarker14Faces[] =
      105, 107, 106
 };
 
-static const FurnitureMarker FurnitureMarker14 = { 108, 76, FurnitureMarker14Verts, FurnitureMarker14Faces };
+static const GLMarker FurnitureMarker14 = { 108, 76, FurnitureMarker14Verts, FurnitureMarker14Faces };

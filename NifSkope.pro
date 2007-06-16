@@ -28,6 +28,7 @@ HEADERS += \
     nifskope.h \
     spellbook.h \
     gl/*.h \
+    gl/marker/*.h \
     widgets/*.h \
     spells/*.h \
     importex/*.h

@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "glmarker.h"
 #include "glnode.h"
 #include "glcontroller.h"
 #include "glscene.h"
@@ -37,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "NvTriStrip/qtwrapper.h"
 
-#include "FurnitureMarkers.h"
+#include "marker/furniture.h"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
@@ -1272,7 +1273,7 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 	}
 
 	Vector3 flip(1, 1, 1);
-	const FurnitureMarker *mark;
+	const GLMarker *mark;
 	switch ( ref1 )
 	{
 		case 1:
@@ -1327,12 +1328,7 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 	
 	glScale(flip);
 
-	glEnableClientState( GL_VERTEX_ARRAY );
-	glVertexPointer( 3, GL_FLOAT, 0, mark->verts );
-
-	glDrawElements( GL_TRIANGLES, mark->nf * 3, GL_UNSIGNED_SHORT, mark->faces );
-
-	glDisableClientState( GL_VERTEX_ARRAY );
+	drawMarker( mark );
 	
 	glPopMatrix();
 }
