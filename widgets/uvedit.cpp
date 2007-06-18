@@ -59,6 +59,7 @@ UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 	{
 		qWarning() << tr( "Could not load texture data for UV editor." );
 		delete uvw;
+		return NULL;
 	}
 	uvw->show();
 	return uvw;
@@ -795,9 +796,22 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )
 		{
-			foreach ( qint32 sl, nif->getChildLinks( nif->getBlockNumber( iTexProp ) ) )
+			QModelIndex iBaseTex = nif->getIndex( iTexProp, "Base Texture" );
+			if( iBaseTex.isValid() )
 			{
-				QModelIndex iTexSource = nif->getBlock( sl, "NiSourceTexture" );
+				QModelIndex iTexSource = nif->getBlock( nif->getLink( iBaseTex, "Source" ) );
+				if( iTexSource.isValid() )
+				{
+					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					return true;
+				}
+			}
+		}
+		else {
+			iTexProp = nif->getBlock( l, "NiTextureProperty" );
+			if( iTexProp.isValid() )
+			{
+				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Image" ) );
 				if( iTexSource.isValid() )
 				{
 					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );

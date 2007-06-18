@@ -1051,8 +1051,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + axleA ); glEnd();
 		drawDashLine( pivotA, pivotA + axleA1, 14 );
 		drawDashLine( pivotA, pivotA + axleA2, 14 );
-		drawCircle( pivotA, axleA, 1.0 );
-		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle );
+		drawCircle( pivotA, axleA, 1.0f );
+		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 1.0f );
 		glPopMatrix();
 		
 		glPushMatrix();
@@ -1062,8 +1062,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
 		drawDashLine( pivotB + axleB2, pivotB, 14 );
 		drawDashLine( pivotB + Vector3::crossproduct( axleB2, axleB ), pivotB, 14 );
-		drawCircle( pivotB, axleB, 1.0 );
-		drawSolidArc( pivotB, axleB / 6, axleB2, Vector3::crossproduct( axleB2, axleB ), minAngle, maxAngle );
+		drawCircle( pivotB, axleB, 1.01f );
+		drawSolidArc( pivotB, axleB / 7, axleB2, Vector3::crossproduct( axleB2, axleB ), minAngle, maxAngle, 1.01f );
 		glPopMatrix();
 		
 		glMultMatrix( tBodies.value( 0 ) );

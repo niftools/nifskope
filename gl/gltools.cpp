@@ -434,7 +434,7 @@ void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 		glEnable( GL_CULL_FACE );
 }
 
-void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, int sd )
+void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd )
 {
 	bool cull = glIsEnabled( GL_CULL_FACE );
 	glDisable( GL_CULL_FACE );
@@ -443,8 +443,8 @@ void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float a
 	{
 		float f = ( ax - an ) * float( j ) / float( sd ) + an;
 		
-		glVertex( c + x * sin( f ) + y * cos( f ) + n );
-		glVertex( c + x * sin( f ) + y * cos( f ) - n );
+		glVertex( c + x * r * sin( f ) + y * r * cos( f ) + n );
+		glVertex( c + x * r * sin( f ) + y * r * cos( f ) - n );
 	}
 	glEnd();
 	if ( cull )

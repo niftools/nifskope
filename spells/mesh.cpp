@@ -374,10 +374,10 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 }
 
 
-class spRemoveDoublicateVertices : public Spell
+class spRemoveDuplicateVertices : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Remove Doublicate Vertices"); }
+	QString name() const { return Spell::tr("Remove Duplicate Vertices"); }
 	QString page() const { return Spell::tr("Mesh"); }
 	
 	static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
@@ -498,7 +498,7 @@ public:
 	}
 };
 
-REGISTER_SPELL( spRemoveDoublicateVertices )
+REGISTER_SPELL( spRemoveDuplicateVertices )
 
 
 class spRemoveWasteVertices : public Spell
@@ -509,12 +509,12 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return spRemoveDoublicateVertices::getShape( nif, index ).isValid();
+		return spRemoveDuplicateVertices::getShape( nif, index ).isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iShape = spRemoveDoublicateVertices::getShape( nif, index );
+		QModelIndex iShape = spRemoveDuplicateVertices::getShape( nif, index );
 		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 		
 		removeWasteVertices( nif, iData, iShape );
