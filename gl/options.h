@@ -79,6 +79,7 @@ public:
 	static bool drawAxes();
 	static bool drawNodes();
 	static bool drawHavok();
+	static bool drawConstraints();
 	static bool drawFurn();
 	static bool drawHidden();
 	static bool drawStats();
@@ -122,6 +123,7 @@ protected:
 	QAction * aDrawAxes;
 	QAction * aDrawNodes;
 	QAction * aDrawHavok;
+	QAction * aDrawConstraints;
 	QAction * aDrawFurn;
 	QAction * aDrawHidden;
 	QAction * aDrawStats;

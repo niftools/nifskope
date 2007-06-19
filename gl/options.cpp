@@ -99,6 +99,12 @@ GLOptions::GLOptions()
 	aDrawHavok->setChecked( cfg.value( "Draw Collision Geometry", true ).toBool() );
 	connect( aDrawHavok, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
+	aDrawConstraints = new QAction( "Draw &Constraints", this );
+	aDrawConstraints->setToolTip( "draw the havok constraints" );
+	aDrawConstraints->setCheckable( true );
+	aDrawConstraints->setChecked( cfg.value( "Draw Constraints", true ).toBool() );
+	connect( aDrawConstraints, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+
 	aDrawFurn = new QAction( "Draw &Furniture", this );
 	aDrawFurn->setToolTip( "draw the furniture markers" );
 	aDrawFurn->setCheckable( true );
@@ -406,6 +412,7 @@ QList<QAction*> GLOptions::actions()
 		<< opts->aDrawAxes
 		<< opts->aDrawNodes
 		<< opts->aDrawHavok
+		<< opts->aDrawConstraints
 		<< opts->aDrawFurn
 		<< opts->aDrawHidden
 #ifdef USE_GL_QPAINTER
@@ -448,6 +455,7 @@ void GLOptions::save()
 	cfg.setValue( "Draw Axes", drawAxes() );
 	cfg.setValue( "Draw Nodes", drawNodes() );
 	cfg.setValue( "Draw Collision Geometry", drawHavok() );
+	cfg.setValue( "Draw Constraints", drawConstraints() );
 	cfg.setValue( "Draw Furniture Markers", drawFurn() );
 	cfg.setValue( "Show Hidden Objects", drawHidden() );
 	cfg.setValue( "Show Stats", drawStats() );
@@ -689,6 +697,11 @@ bool GLOptions::drawNodes()
 bool GLOptions::drawHavok()
 {
 	return get()->aDrawHavok->isChecked();
+}
+
+bool GLOptions::drawConstraints()
+{
+	return get()->aDrawConstraints->isChecked();
 }
 
 bool GLOptions::drawFurn()

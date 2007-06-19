@@ -986,7 +986,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( ! ( nif && iConstraint.isValid() && scene ) )
+	if ( ! ( nif && iConstraint.isValid() && scene && GLOptions::drawConstraints() ) )
 		return;
 	
 	QList<Transform> tBodies;
