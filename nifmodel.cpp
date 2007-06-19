@@ -158,6 +158,7 @@ void NifModel::clear()
 	if ( version == 0x14000005 ) {
 		//Just set this if version is 20.0.0.5 for now.  Probably should be a separate option.
 		set<int>( getHeaderItem(), "User Version", 11 );
+		set<int>( getHeaderItem(), "User Version 2", 11 );
 	}
 	set<int>( getHeaderItem(), "Unknown Int 3", 11 );
 
