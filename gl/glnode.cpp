@@ -1208,7 +1208,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		drawMarker( &BumperMarker01 );
 
 		/*draw second marker*/
-		t.translation = Vector3( ( d2 - d1 ).length(), 0.0f, 0.0f );
+		t.translation = Vector3( minDistance < maxDistance ? ( d2 - d1 ).length() : 0.0f, 0.0f, 0.0f );
 		t.rotation.fromEuler( 0.0f, 0.0f, PI );
 		glMultMatrix( t );
 
