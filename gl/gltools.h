@@ -112,6 +112,7 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
 void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );
 void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals );
 void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd = 16, bool solid = false );
+void drawRail( const Vector3 &a, const Vector3 &b );
 
 inline void glTranslate( const Vector3 & v )
 {

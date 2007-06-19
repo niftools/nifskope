@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "NvTriStrip/qtwrapper.h"
 
 #include "marker/furniture.h"
+#include "marker/constraints.h"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
@@ -1159,6 +1160,66 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + twistB ); glEnd();
 		drawDashLine( pivotB + planeB, pivotB, 14 );
 		drawRagdollCone( pivotB, twistB, planeB, coneAngle, minPlaneAngle, maxPlaneAngle );
+		glPopMatrix();
+	}
+	else if ( name == "bhkPrismaticConstraint" )
+	{
+		const Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) );
+		const Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) );
+
+		const Vector3 planeNormal( nif->get<Vector4>( iConstraint, "Plane" ) );
+		const Vector3 slidingAxis( nif->get<Vector4>( iConstraint, "Sliding Axis" ) );
+
+		const float minDistance = nif->get<float>( iConstraint, "Min Distance" );
+		const float maxDistance = nif->get<float>( iConstraint, "Max Distance" );
+
+		const Vector3 d1 = pivotA + slidingAxis * minDistance;
+		const Vector3 d2 = pivotA + slidingAxis * maxDistance;
+
+		/* draw Pivot A and Plane */
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 0 ) );
+		glColor( Color3( 0.8f, 0.6f, 0.0f ) );
+		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
+		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + planeNormal ); glEnd();
+		drawDashLine( pivotA, d1, 14 );
+
+		/* draw drail */
+		if ( minDistance < maxDistance ) {
+			drawRail( d1, d2 );
+		}
+
+		/*draw first marker*/
+		Transform t;
+		float angle = atan2f( slidingAxis[1], slidingAxis[0] );
+		if ( slidingAxis[0] < 0.0001f && slidingAxis[1] < 0.0001f ) {
+			angle = PI / 2;
+		}
+
+		t.translation = d1;
+		t.rotation.fromEuler( 0.0f, 0.0f, angle );
+		glMultMatrix( t );
+
+		angle = - asinf( slidingAxis[2] / slidingAxis.length() );
+		t.translation = Vector3( 0.0f, 0.0f, 0.0f );
+		t.rotation.fromEuler( 0.0f, angle, 0.0f );
+		glMultMatrix( t );
+		
+		drawMarker( &BumperMarker01 );
+
+		/*draw second marker*/
+		t.translation = Vector3( ( d2 - d1 ).length(), 0.0f, 0.0f );
+		t.rotation.fromEuler( 0.0f, 0.0f, PI );
+		glMultMatrix( t );
+
+		drawMarker( &BumperMarker01 );
+		glPopMatrix();
+
+		/* draw Pivot B */
+		glPushMatrix();
+		glMultMatrix( tBodies.value( 1 ) );
+		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
+		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
 		glPopMatrix();
 	}
 	

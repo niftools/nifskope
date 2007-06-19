@@ -434,7 +434,44 @@ void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 		glEnable( GL_CULL_FACE );
 }
 
-void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd )
+void drawRail( const Vector3 &a, const Vector3 &b )
+{
+	/* offset between beginning and end points */
+	Vector3 off = b - a;
+
+	/* direction vector of "rail track width", in xy-plane */
+	Vector3 x = Vector3( - off[1], off[0], 0 );
+	if( x.length() < 0.0001f ) {
+		x[0] = 1.0f; }
+	x.normalize();
+
+	glBegin( GL_POINTS );
+		glVertex( a );
+		glVertex( b );
+	glEnd();
+
+	/* draw the rail */
+	glBegin( GL_LINES );
+		glVertex( a + x );
+		glVertex( b + x );
+		glVertex( a - x );
+		glVertex( b - x );
+	glEnd();
+
+	int len = int( off.length() );
+
+	/* draw the logs */
+	glBegin( GL_LINES );
+	for ( int i = 0; i <= len; i++ )
+	{
+		float rel_off = ( 1.0f * i ) / len;
+		glVertex( a + off * rel_off + x * 1.3f );
+		glVertex( a + off * rel_off - x * 1.3f );
+	}
+	glEnd();
+}
+
+void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, int sd )
 {
 	bool cull = glIsEnabled( GL_CULL_FACE );
 	glDisable( GL_CULL_FACE );
