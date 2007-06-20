@@ -1106,7 +1106,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
 		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
-		drawSolidArc( pivotB, axleB / 6, axleB2, axleB1, minAngle, maxAngle, 1.0f, 16 );
+		drawSolidArc( pivotB, axleB / 7, axleB2, axleB1, minAngle, maxAngle, 1.01f, 16 );
 	}
 	else if ( name == "bhkStiffSpringConstraint" )
 	{
@@ -1184,7 +1184,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_LINES ); glVertex( pivotA ); glVertex( pivotA + planeNormal ); glEnd();
 		drawDashLine( pivotA, d1, 14 );
 
-		/* draw drail */
+		/* draw rail */
 		if ( minDistance < maxDistance ) {
 			drawRail( d1, d2 );
 		}
