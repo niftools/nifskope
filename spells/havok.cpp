@@ -21,8 +21,8 @@ public:
 	{
 		QModelIndex iConstraint = nif->getBlock( index );
 		
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 0, 0 ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 1, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 		
 		if ( ! iBodyA.isValid() || ! iBodyB.isValid() )
 		{
@@ -95,8 +95,8 @@ public:
 	{
 		QModelIndex iConstraint = nif->getBlock( idx );
 		
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 0, 0 ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 1, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 		
 		if ( ! iBodyA.isValid() || ! iBodyB.isValid() )
 		{

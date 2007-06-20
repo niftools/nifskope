@@ -1086,7 +1086,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2AxleInA2" ) );
 		const Vector3 axleA( Vector3::crossproduct( axleA1, axleA2 ) );
 		
-		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle A" ) );
+		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
 		const Vector3 axleB1( axleB[1], axleB[2], axleB[0] );
 		const Vector3 axleB2( Vector3::crossproduct( axleB, axleB1 ) );
 		
@@ -1099,14 +1099,14 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
 		drawDashLine( pivotA, pivotA + axleA1 );
 		drawDashLine( pivotA, pivotA + axleA2 );
-		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 16 );
+		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 1.0f, 16 );
 		glPopMatrix();
 		
 		glMultMatrix( tBodies.value( 1 ) );
 		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
 		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
-		drawSolidArc( pivotB, axleB / 6, axleB2, axleB1, minAngle, maxAngle, 16 );
+		drawSolidArc( pivotB, axleB / 6, axleB2, axleB1, minAngle, maxAngle, 1.0f, 16 );
 	}
 	else if ( name == "bhkStiffSpringConstraint" )
 	{
