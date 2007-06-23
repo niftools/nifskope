@@ -6,6 +6,7 @@
 
 #include "../NvTriStrip/qtwrapper.h"
 
+#include <QDebug>
 #include <QFile>
 #include <QGridLayout>
 #include <QLabel>

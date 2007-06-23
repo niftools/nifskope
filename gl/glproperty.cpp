@@ -190,7 +190,7 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 
 void glProperty( AlphaProperty * p )
 {
-	if ( p && p->alphaBlend && GLOptions::blending() )
+	if ( p && p->alphaBlend && Options::blending() )
 	{
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
@@ -198,7 +198,7 @@ void glProperty( AlphaProperty * p )
 	else
 		glDisable( GL_BLEND );
 	
-	if ( p && p->alphaTest && GLOptions::blending() )
+	if ( p && p->alphaTest && Options::blending() )
 	{
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
@@ -470,7 +470,7 @@ int TexturingProperty::getId( const QString & texname )
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && GLOptions::texturing() && p->bind( 0 ) )
+	if ( p && Options::texturing() && p->bind( 0 ) )
 	{
 		glEnable( GL_TEXTURE_2D );
 	}
@@ -501,7 +501,7 @@ QString TextureProperty::fileName() const
 
 void glProperty( TextureProperty * p )
 {
-	if ( p && GLOptions::texturing() && p->bind() )
+	if ( p && Options::texturing() && p->bind() )
 	{
 		glEnable( GL_TEXTURE_2D );
 	}

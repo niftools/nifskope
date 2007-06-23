@@ -36,30 +36,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
-QDataStream & operator<<( QDataStream & ds, const Transform & t )
-{
-	for ( int x = 0; x < 3; x++ )
-	{
-		for ( int y = 0; y < 3; y++ )
-			ds << t.rotation( x, y );
-		ds << t.translation[ x ];
-	}
-	ds << t.scale;
-	return ds;
-}
-
-QDataStream & operator>>( QDataStream & ds, Transform & t )
-{
-	for ( int x = 0; x < 3; x++ )
-	{
-		for ( int y = 0; y < 3; y++ )
-			ds >> t.rotation( x, y );
-		ds >> t.translation[ x ];
-	}
-	ds >> t.scale;
-	return ds;
-}
-
 
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {

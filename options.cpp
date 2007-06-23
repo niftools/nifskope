@@ -63,7 +63,7 @@ public:
 	QSize sizeHint() const { return minimumSizeHint(); }
 };
 
-GLOptions::GLOptions()
+Options::Options()
 {
 	tSave = new QTimer( this );
 	tSave->setInterval( 5000 );
@@ -393,21 +393,21 @@ GLOptions::GLOptions()
 	cfg.endGroup();
 }
 
-GLOptions::~GLOptions()
+Options::~Options()
 {
 	if ( tSave->isActive() )
 		save();
 }
 
-GLOptions * GLOptions::get()
+Options * Options::get()
 {
-	static GLOptions * options = new GLOptions();
+	static Options * options = new Options();
 	return options;
 }
 
-QList<QAction*> GLOptions::actions()
+QList<QAction*> Options::actions()
 {
-	GLOptions * opts = get();
+	Options * opts = get();
 	return QList<QAction*>()
 		<< opts->aDrawAxes
 		<< opts->aDrawNodes
@@ -421,7 +421,7 @@ QList<QAction*> GLOptions::actions()
 		<< opts->aSettings;
 }
 
-bool GLOptions::eventFilter( QObject * o, QEvent * e )
+bool Options::eventFilter( QObject * o, QEvent * e )
 {
 	if ( o == dialog && e->type() == QEvent::Close && tSave->isActive() )
 	{
@@ -430,7 +430,7 @@ bool GLOptions::eventFilter( QObject * o, QEvent * e )
 	return false;
 }
 
-void GLOptions::save()
+void Options::save()
 {
 	tSave->stop();
 	
@@ -493,7 +493,7 @@ void GLOptions::save()
 
 }
 
-void GLOptions::textureFolderAutoDetect( int game )
+void Options::textureFolderAutoDetect( int game )
 {
 #ifdef Q_OS_WIN32
 	switch ( game )
@@ -594,7 +594,7 @@ void GLOptions::textureFolderAutoDetect( int game )
 #endif
 }
 
-void GLOptions::textureFolderAction( int id )
+void Options::textureFolderAction( int id )
 {
 	QModelIndex idx = TexFolderView->currentIndex();
 	switch ( id )
@@ -624,7 +624,7 @@ void GLOptions::textureFolderAction( int id )
 	}
 }
 
-void GLOptions::textureFolderIndex( const QModelIndex & idx )
+void Options::textureFolderIndex( const QModelIndex & idx )
 {
 	TexFolderSelect->setEnabled( idx.isValid() );
 	TexFolderButtons[0]->setEnabled( true );
@@ -632,7 +632,7 @@ void GLOptions::textureFolderIndex( const QModelIndex & idx )
 	TexFolderButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
 }
 
-void GLOptions::activateLightPreset( int id )
+void Options::activateLightPreset( int id )
 {
 	switch ( id )
 	{
@@ -653,91 +653,91 @@ void GLOptions::activateLightPreset( int id )
 }
 
 
-QStringList GLOptions::textureFolders()
+QStringList Options::textureFolders()
 {
 	return get()->TexFolderModel->stringList();
 }
 
-bool GLOptions::textureAlternatives()
+bool Options::textureAlternatives()
 {
 	return get()->TexAlternatives->isChecked();
 }
 
-GLOptions::Axis GLOptions::upAxis()
+Options::Axis Options::upAxis()
 {
 	return get()->AxisX->isChecked() ? XAxis : get()->AxisY->isChecked() ? YAxis : ZAxis;
 }
 
-bool GLOptions::antialias()
+bool Options::antialias()
 {
 	return get()->AntiAlias->isChecked();
 }
 
-bool GLOptions::texturing()
+bool Options::texturing()
 {
 	return get()->Textures->isChecked();
 }
 
-bool GLOptions::shaders()
+bool Options::shaders()
 {
 	return get()->Shaders->isChecked();
 }
 
 
-bool GLOptions::drawAxes()
+bool Options::drawAxes()
 {
 	return get()->aDrawAxes->isChecked();
 }
 
-bool GLOptions::drawNodes()
+bool Options::drawNodes()
 {
 	return get()->aDrawNodes->isChecked();
 }
 
-bool GLOptions::drawHavok()
+bool Options::drawHavok()
 {
 	return get()->aDrawHavok->isChecked();
 }
 
-bool GLOptions::drawConstraints()
+bool Options::drawConstraints()
 {
 	return get()->aDrawConstraints->isChecked();
 }
 
-bool GLOptions::drawFurn()
+bool Options::drawFurn()
 {
 	return get()->aDrawFurn->isChecked();
 }
 
-bool GLOptions::drawHidden()
+bool Options::drawHidden()
 {
 	return get()->aDrawHidden->isChecked();
 }
 
-bool GLOptions::drawStats()
+bool Options::drawStats()
 {
 	return get()->aDrawStats->isChecked();
 }
 
-bool GLOptions::benchmark()
+bool Options::benchmark()
 {
 	return false;
 }
 
 
-QColor GLOptions::bgColor()
+QColor Options::bgColor()
 {
 	return get()->colors[ 0 ]->getColor();
 }
 
-QColor GLOptions::nlColor()
+QColor Options::nlColor()
 {
 	QColor c = get()->colors[ 1 ]->getColor();
 	c.setAlphaF( get()->alpha[ 1 ]->value() );
 	return c;
 }
 
-QColor GLOptions::hlColor()
+QColor Options::hlColor()
 {
 	QColor c = get()->colors[ 2 ]->getColor();
 	c.setAlphaF( get()->alpha[ 2 ]->value() );
@@ -745,48 +745,48 @@ QColor GLOptions::hlColor()
 }
 
 
-QRegExp GLOptions::cullExpression()
+QRegExp Options::cullExpression()
 {
 	return get()->CullByID->isChecked() ? QRegExp( get()->CullExpr->text() ) : QRegExp();
 }
 
-bool GLOptions::onlyTextured()
+bool Options::onlyTextured()
 {
 	return get()->CullNoTex->isChecked();
 }
 
 
-QColor GLOptions::ambient()
+QColor Options::ambient()
 {
 	return get()->LightColor[ 0 ]->getColor();
 }
 
-QColor GLOptions::diffuse()
+QColor Options::diffuse()
 {
 	return get()->LightColor[ 1 ]->getColor();
 }
 
-QColor GLOptions::specular()
+QColor Options::specular()
 {
 	return get()->LightColor[ 2 ]->getColor();
 }
 
-bool GLOptions::lightFrontal()
+bool Options::lightFrontal()
 {
 	return get()->LightFrontal->isChecked();
 }
 
-int GLOptions::lightDeclination()
+int Options::lightDeclination()
 {
 	return get()->LightDeclination->value();
 }
 
-int GLOptions::lightPlanarAngle()
+int Options::lightPlanarAngle()
 {
 	return get()->LightPlanarAngle->value();
 }
 
-QString GLOptions::startupVersion()
+QString Options::startupVersion()
 {
 	return get()->StartVer->text();	
 };

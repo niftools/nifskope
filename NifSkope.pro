@@ -27,6 +27,7 @@ HEADERS += \
     nifproxy.h \
     nifskope.h \
     spellbook.h \
+    options.h \
     gl/*.h \
     gl/marker/*.h \
     widgets/*.h \
@@ -47,6 +48,7 @@ SOURCES += \
     nifproxy.cpp \
     nifskope.cpp \
     spellbook.cpp \
+    options.cpp \
     gl/*.cpp \
     widgets/*.cpp \
     spells/*.cpp \

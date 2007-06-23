@@ -447,7 +447,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	PropertyList props;
 	mesh->activeProperties( props );
 	
-	if ( ! shader_ready || ! GLOptions::shaders() )
+	if ( ! shader_ready || ! Options::shaders() )
 	{
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );

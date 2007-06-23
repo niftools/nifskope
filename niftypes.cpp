@@ -265,6 +265,30 @@ void Quat::toAxisAngle( Vector3 & axis, float & angle ) const
  *  Transform
  */
 
+QDataStream & operator<<( QDataStream & ds, const Transform & t )
+{
+	for ( int x = 0; x < 3; x++ )
+	{
+		for ( int y = 0; y < 3; y++ )
+			ds << t.rotation( x, y );
+		ds << t.translation[ x ];
+	}
+	ds << t.scale;
+	return ds;
+}
+
+QDataStream & operator>>( QDataStream & ds, Transform & t )
+{
+	for ( int x = 0; x < 3; x++ )
+	{
+		for ( int y = 0; y < 3; y++ )
+			ds >> t.rotation( x, y );
+		ds >> t.translation[ x ];
+	}
+	ds >> t.scale;
+	return ds;
+}
+
 Transform operator*( const Transform & t1, const Transform & t2 )
 {
 	Transform t;

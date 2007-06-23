@@ -30,8 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLOPTIONS_H
-#define GLOPTIONS_H
+#ifndef OPTIONS_H
+#define OPTIONS_H
 
 #include <QObject>
 
@@ -53,11 +53,11 @@ class ColorWheel;
 class FileSelector;
 class GroupBox;
 
-class GLOptions : public QObject
+class Options : public QObject
 {
 	Q_OBJECT
 public:
-	static GLOptions * get();
+	static Options * get();
 	static QList<QAction*> actions();
 	
 	static QStringList textureFolders();
@@ -115,8 +115,8 @@ protected slots:
 	void activateLightPreset( int );
 	
 protected:
-	GLOptions();
-	~GLOptions();
+	Options();
+	~Options();
 	
 	bool eventFilter( QObject * o, QEvent * e );
 	
@@ -167,8 +167,8 @@ protected:
 
 };
 
-#define glNormalColor() glColor( Color4( GLOptions::nlColor() ) )
-#define glHighlightColor() glColor( Color4( GLOptions::hlColor() ) )
+#define glNormalColor() glColor( Color4( Options::nlColor() ) )
+#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
 
 
 #endif

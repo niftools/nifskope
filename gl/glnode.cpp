@@ -720,13 +720,13 @@ Node * Node::findChild( const QString & name ) const
 
 bool Node::isHidden() const
 {
-	if ( GLOptions::drawHidden() )
+	if ( Options::drawHidden() )
 		return false;
 	
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 	
-	return ! GLOptions::cullExpression().isEmpty() && name.contains( GLOptions::cullExpression() );
+	return ! Options::cullExpression().isEmpty() && name.contains( Options::cullExpression() );
 }
 
 void Node::transform()
@@ -811,7 +811,7 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	if ( scene->currentBlock != iBlock || ! GLOptions::drawNodes() )
+	if ( scene->currentBlock != iBlock || ! Options::drawNodes() )
 		return;
 	
 	glLoadName( nodeId );
@@ -986,7 +986,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( ! ( nif && iConstraint.isValid() && scene && GLOptions::drawConstraints() ) )
+	if ( ! ( nif && iConstraint.isValid() && scene && Options::drawConstraints() ) )
 		return;
 	
 	QList<Transform> tBodies;
@@ -1099,14 +1099,14 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_POINTS ); glVertex( pivotA ); glEnd();
 		drawDashLine( pivotA, pivotA + axleA1 );
 		drawDashLine( pivotA, pivotA + axleA2 );
-		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 1.0f, 16 );
+		drawSolidArc( pivotA, axleA / 5, axleA2, axleA1, minAngle, maxAngle, 16 );
 		glPopMatrix();
 		
 		glMultMatrix( tBodies.value( 1 ) );
 		glColor( Color3( 0.6f, 0.8f, 0.0f ) );
 		glBegin( GL_POINTS ); glVertex( pivotB ); glEnd();
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
-		drawSolidArc( pivotB, axleB / 7, axleB2, axleB1, minAngle, maxAngle, 1.01f, 16 );
+		drawSolidArc( pivotB, axleB / 6, axleB2, axleB1, minAngle, maxAngle, 16 );
 	}
 	else if ( name == "bhkStiffSpringConstraint" )
 	{
@@ -1485,7 +1485,7 @@ QString Node::textStats() const
 
 BoundSphere Node::bounds() const
 {
-	if ( GLOptions::drawNodes() )
+	if ( Options::drawNodes() )
 		return BoundSphere( worldTrans().translation, 0 );
 	else
 		return BoundSphere();

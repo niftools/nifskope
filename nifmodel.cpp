@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "niftypes.h"
-#include "gl\options.h"
+#include "options.h"
 
 #include "spellbook.h"
 
@@ -135,9 +135,9 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
-	version = version2number( GLOptions::startupVersion() );
+	version = version2number( Options::startupVersion() );
 	if( !isVersionSupported(version) ) {
-		qWarning( tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( GLOptions::startupVersion() ).toAscii() );
+		qWarning( tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toAscii() );
 		version = 0x14000005;
 	}
 	reset();
@@ -798,7 +798,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		{
 			switch ( column )
 			{
-				case NameCol:	return item->name();
+				case NameCol:
+				{
+					return item->name();
+				}	break;
 				case TypeCol:
 				{
 					if ( ! item->temp().isEmpty() )
@@ -815,7 +818,17 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				}	break;
 				case ValueCol:
 				{
-					if ( item->value().type() == NifValue::tStringOffset )
+					if( item->value().type() == NifValue::tFloat ) {
+						float f = item->value().get<float>();
+						uint fmin = 0xff7fffff;
+						uint fmax = 0x7f7fffff;
+						if( f == *(float*)&fmin )
+							return QString( "<float_min>" );
+						else if( f == *(float*)&fmax )
+							return QString( "<float_max>" );
+						return item->value().toString();
+					}
+					else if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
 						if ( ofs < 0 || ofs == 0x0000FFFF )
