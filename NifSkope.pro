@@ -32,7 +32,8 @@ HEADERS += \
     gl/marker/*.h \
     widgets/*.h \
     spells/*.h \
-    importex/*.h
+    importex/*.h \
+    NvTriStrip/qtwrapper.h
 
 SOURCES += \
     niftypes.cpp \

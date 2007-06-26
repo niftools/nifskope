@@ -156,6 +156,7 @@ public:
 
 	QString getVersion() const { return version2string( version ); }
 	quint32 getVersionNumber() const { return version; }
+	quint32 getUserVersion() const { return get<int>(getHeader(), "User Version"); }
 	
 	// QAbstractModel interface
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;

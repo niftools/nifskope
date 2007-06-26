@@ -818,17 +818,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				}	break;
 				case ValueCol:
 				{
-					if( item->value().type() == NifValue::tFloat ) {
-						float f = item->value().get<float>();
-						uint fmin = 0xff7fffff;
-						uint fmax = 0x7f7fffff;
-						if( f == *(float*)&fmin )
-							return QString( "<float_min>" );
-						else if( f == *(float*)&fmax )
-							return QString( "<float_max>" );
-						return item->value().toString();
-					}
-					else if ( item->value().type() == NifValue::tStringOffset )
+					if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
 						if ( ofs < 0 || ofs == 0x0000FFFF )
@@ -962,35 +952,33 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					switch ( item->value().type() )
 					{
 						case NifValue::tByte:
-							{
-								quint8 b = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2" ).arg( b ).arg( b, 2, 16, QChar( '0' ) );
-							}
 						case NifValue::tWord:
 						case NifValue::tShort:
-							{
-								quint16 s = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2" ).arg( s ).arg( s, 4, 16, QChar( '0' ) );
-							}
 						case NifValue::tBool:
 						case NifValue::tInt:
 						case NifValue::tUInt:
 							{
-								quint32 i = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
+								return QString( "dec: %1\nhex: 0x%2" )
+									.arg( item->value().toString() )
+									.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFloat:
 							{
-								float f = item->value().toFloat();
-								return QString( "float: %1<br>data: 0x%2" ).arg( f ).arg( *( (unsigned int*) &f ), 8, 16, QChar( '0' ) );
+								return QString( "float: %1\nhex: 0x%2" )
+									.arg( NumOrMinMax( item->value().toFloat(), 'g', 8 ) )
+									.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFlags:
 							{
 								quint16 f = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2<br>bin: 0b%3" ).arg( f ).arg( f, 4, 16, QChar( '0' ) ).arg( f, 16, 2, QChar( '0' ) );
+								return QString( "dec: %1\nhex: 0x%2\nbin: 0b%3" )
+									.arg( f )
+									.arg( f, 4, 16, QChar( '0' ) )
+									.arg( f, 16, 2, QChar( '0' ) );
 							}
 						case NifValue::tStringOffset:
-							return QString( "0x%1" ).arg( item->value().toCount(), 8, 16, QChar( '0' ) );
+							return QString( "0x%1" )
+								.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 						case NifValue::tVector3:
 							return item->value().get<Vector3>().toHtml();
 						case NifValue::tMatrix:
@@ -1003,12 +991,19 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						case NifValue::tColor3:
 							{
 								Color3 c = item->value().get<Color3>();
-								return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
+								return QString( "R %1\nG %2\nB %3" )
+									.arg( c[0] )
+									.arg( c[1] )
+									.arg( c[2] );
 							}
 						case NifValue::tColor4:
 							{
 								Color4 c = item->value().get<Color4>();
-								return QString( "R %1<br>G %2<br>B %3<br>A %4" ).arg( c[0] ).arg( c[1] ).arg( c[2] ).arg( c[3] );
+								return QString( "R %1\nG %2\nB %3\nA %4" )
+									.arg( c[0] )
+									.arg( c[1] )
+									.arg( c[2] )
+									.arg( c[3] );
 							}
 						default:
 							break;

@@ -456,13 +456,21 @@ bool NifValue::fromString( const QString & s )
 		case tFileVersion:
 			val.u32 = NifModel::version2number( s );
 			return val.u32 != 0;
-		case tByteArray:
-		case tStringPalette:
 		case tVector2:
-		case tVector4:
+			static_cast<Vector2*>( val.data )->fromString( s );
+			return true;
 		case tVector3:
+			static_cast<Vector3*>( val.data )->fromString( s );
+			return true;
+		case tVector4:
+			static_cast<Vector4*>( val.data )->fromString( s );
+			return true;
 		case tQuat:
 		case tQuatXYZW:
+			static_cast<Quat*>( val.data )->fromString( s );
+			return true;
+		case tByteArray:
+		case tStringPalette:
 		case tMatrix:
 		case tMatrix4:
 		case tTriangle:
@@ -485,15 +493,15 @@ QString NifValue::toString() const
 		case tBlockTypeIndex:
 		case tUInt:
 			return QString::number( val.u32 );
-      case tShort:
-         return QString::number( (short)val.u16 );
-      case tInt:
-         return QString::number( (int)val.u32 );
+		case tShort:
+			return QString::number( (short)val.u16 );
+		case tInt:
+			return QString::number( (int)val.u32 );
 		case tLink:
 		case tUpLink:
 			return QString::number( val.i32 );
 		case tFloat:
-			return QString::number( val.f32, 'f', 4 );
+			return NumOrMinMax( val.f32, 'f', 4 );
 		case tString:
 		case tText:
 		case tShortString:
@@ -504,36 +512,67 @@ QString NifValue::toString() const
 		case tColor3:
 		{
 			Color3 * col = static_cast<Color3*>( val.data );
-			return QString( "#%1%2%3" ).arg( (int) ( col->red() * 0xff ), 2, 16, QChar( '0' ) ).arg( (int) ( col->green() * 0xff ), 2, 16, QChar( '0' ) ).arg( (int) ( col->blue() * 0xff ), 2, 16, QChar( '0' ) );
+			return QString( "#%1%2%3" )
+				.arg( (int) ( col->red() * 0xff ), 2, 16, QChar( '0' ) )
+				.arg( (int) ( col->green() * 0xff ), 2, 16, QChar( '0' ) )
+				.arg( (int) ( col->blue() * 0xff ), 2, 16, QChar( '0' ) );
 		}
 		case tColor4:
 		{
 			Color4 * col = static_cast<Color4*>( val.data );
-			return QString( "#%1%2%3%4" ).arg( (int) ( col->red() * 0xff ), 2, 16, QChar( '0' ) ).arg( (int) ( col->green() * 0xff ), 2, 16, QChar( '0' ) ).arg( (int) ( col->blue() * 0xff ), 2, 16, QChar( '0' ) ).arg( (int) ( col->alpha() * 0xff ), 2, 16, QChar( '0' ) );
+			return QString( "#%1%2%3%4" )
+				.arg( (int) ( col->red() * 0xff ), 2, 16, QChar( '0' ) )
+				.arg( (int) ( col->green() * 0xff ), 2, 16, QChar( '0' ) )
+				.arg( (int) ( col->blue() * 0xff ), 2, 16, QChar( '0' ) )
+				.arg( (int) ( col->alpha() * 0xff ), 2, 16, QChar( '0' ) );
 		}
 		case tVector2:
 		{
 			Vector2 * v = static_cast<Vector2*>( val.data );
-			return QString( "X %1 Y %2" ).arg( (*v)[0], 0, 'f', 3 ).arg( (*v)[1], 0, 'f', 3 );
+
+			return QString( "X %1 Y %2" )
+				.arg( NumOrMinMax( (*v)[0], 'f', 4 ) )
+				.arg( NumOrMinMax( (*v)[1], 'f', 4 ) );
 		}
 		case tVector3:
 		{
 			Vector3 * v = static_cast<Vector3*>( val.data );
-			return QString( "X %1 Y %2 Z %3" ).arg( (*v)[0], 0, 'f', 3 ).arg( (*v)[1], 0, 'f', 3 ).arg( (*v)[2], 0, 'f', 3 );
+
+			return QString( "X %1 Y %2 Z %3" )
+				.arg( NumOrMinMax( (*v)[0], 'f', 4 ) )
+				.arg( NumOrMinMax( (*v)[1], 'f', 4 ) )
+				.arg( NumOrMinMax( (*v)[2], 'f', 4 ) );
 		}
 		case tVector4:
 		{
 			Vector4 * v = static_cast<Vector4*>( val.data );
-			return QString( "X %1 Y %2 Z %3 W %4" ).arg( (*v)[0], 0, 'f', 3 ).arg( (*v)[1], 0, 'f', 3 ).arg( (*v)[2], 0, 'f', 3 ).arg( (*v)[3], 0, 'f', 3 );
+
+			return QString( "X %1 Y %2 Z %3 W %4" )
+				.arg( NumOrMinMax( (*v)[0], 'f', 4 ) )
+				.arg( NumOrMinMax( (*v)[1], 'f', 4 ) )
+				.arg( NumOrMinMax( (*v)[2], 'f', 4 ) )
+				.arg( NumOrMinMax( (*v)[3], 'f', 4 ) );
 		}
 		case tMatrix:
+		case tQuat:
+		case tQuatXYZW:
 		{
-			Matrix * m = static_cast<Matrix*>( val.data );
-			float x, y, z;
-			if ( m->toEuler( x, y, z ) )
-				return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+			Matrix m;
+			if( typ == tMatrix )
+				m = *(static_cast<Matrix*>( val.data ));
 			else
-				return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+				m.fromQuat( *(static_cast<Quat*>( val.data )) );
+			float x, y, z;
+			QString pre, suf;
+			if( !m.toEuler( x, y, z ) ) {
+				pre = "(";
+				suf = ")";
+			}
+			
+			return ( pre + QString( "Y %1 P %2 R %3" ) + suf )
+				.arg( NumOrMinMax( x / PI * 180, 'f', 1 ) )
+				.arg( NumOrMinMax( y / PI * 180, 'f', 1 ) )
+				.arg( NumOrMinMax( z / PI * 180, 'f', 1 ) );
 		}
 		case tMatrix4:
 		{
@@ -545,21 +584,20 @@ QString NifValue::toString() const
 			xr *= 180 / PI;
 			yr *= 180 / PI;
 			zr *= 180 / PI;
-			return QString( "Trans( X %1 Y %2 Z %3 ) Rot( Y %4 P %5 R %6 ) Scale( X %7 Y %8 Z %9 )" ).arg( t[0], 0, 'f', 3 ).arg( t[1], 0, 'f', 3 ).arg( t[2], 0, 'f', 3 ).arg( xr, 0, 'f', 3 ).arg( yr, 0, 'f', 3 ).arg( zr, 0, 'f', 3 ).arg( s[0], 0, 'f', 3 ).arg( s[1], 0, 'f', 3 ).arg( s[2], 0, 'f', 3 );
-		}
-		case tQuat:
-		case tQuatXYZW:
-		{
-			Matrix m;
-			m.fromQuat( *static_cast<Quat*>( val.data ) );
-			float x, y, z;
-			if ( m.toEuler( x, y, z ) )
-				return QString( "Y %1 P %2 R %3" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
-			else
-				return QString( "(Y %1 P %2 R %3)" ).arg( x / PI * 180, 0, 'f', 0 ).arg( y / PI * 180, 0, 'f', 0 ).arg( z / PI * 180, 0, 'f', 0 );
+			return QString( "Trans( X %1 Y %2 Z %3 ) Rot( Y %4 P %5 R %6 ) Scale( X %7 Y %8 Z %9 )" )
+				.arg( t[0], 0, 'f', 3 )
+				.arg( t[1], 0, 'f', 3 )
+				.arg( t[2], 0, 'f', 3 )
+				.arg( xr, 0, 'f', 3 )
+				.arg( yr, 0, 'f', 3 )
+				.arg( zr, 0, 'f', 3 )
+				.arg( s[0], 0, 'f', 3 )
+				.arg( s[1], 0, 'f', 3 )
+				.arg( s[2], 0, 'f', 3 );
 		}
 		case tByteArray:
-			return QString( "%1 bytes" ).arg( static_cast<QByteArray*>( val.data )->count() );
+			return QString( "%1 bytes" )
+				.arg( static_cast<QByteArray*>( val.data )->count() );
 		case tStringPalette:
 		{
 			QByteArray * array = static_cast<QByteArray*>( val.data );
@@ -576,7 +614,10 @@ QString NifValue::toString() const
 		case tTriangle:
 		{
 			Triangle * tri = static_cast<Triangle*>( val.data );
-			return QString( "%1 %2 %3" ).arg( tri->v1() ).arg( tri->v2() ).arg( tri->v3() );
+			return QString( "%1 %2 %3" )
+				.arg( tri->v1() )
+				.arg( tri->v2() )
+				.arg( tri->v3() );
 		}
 		default:
 			return QString();

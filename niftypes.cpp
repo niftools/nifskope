@@ -33,9 +33,87 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 #include "nifmodel.h"
 
+#include <QStringList>
+
 const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
 const float Matrix::identity[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
 const float Matrix4::identity[16] = { 1.0, 0.0, 0.0, 0.0,  0.0, 1.0, 0.0, 0.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0 };
+
+QString NumOrMinMax( float val, char f, int prec )
+{
+	if( val == -FLT_MAX )
+		return "<float_min>";
+	else if( val == FLT_MAX )
+		return "<float_max>";
+	
+	return QString::number( val, f, prec );
+}
+
+void Vector2::fromString( QString str )
+{
+	QStringList parts = str.split( "," );
+	if( parts.size() != 2 )
+		return;
+	bool xOk, yOk;
+	float x_ = parts[0].toFloat( &xOk );
+	float y_ = parts[1].toFloat( &yOk );
+	if( xOk && yOk ) {
+		xy[0] = x_;
+		xy[1] = y_;
+	}
+}
+
+void Vector3::fromString( QString str )
+{
+	QStringList parts = str.split( "," );
+	if( parts.size() != 3 )
+		return;
+	bool xOk, yOk, zOk;
+	float x_ = parts[0].toFloat( &xOk );
+	float y_ = parts[1].toFloat( &yOk );
+	float z_ = parts[2].toFloat( &zOk );
+	if( xOk && yOk && zOk ) {
+		xyz[0] = x_;
+		xyz[1] = y_;
+		xyz[2] = z_;
+	}
+}
+
+void Vector4::fromString( QString str )
+{
+	QStringList parts = str.split( "," );
+	if( parts.size() != 4 )
+		return;
+	bool xOk, yOk, zOk, wOk;
+	float x_ = parts[0].toFloat( &xOk );
+	float y_ = parts[1].toFloat( &yOk );
+	float z_ = parts[2].toFloat( &zOk );
+	float w_ = parts[3].toFloat( &wOk );
+	if( xOk && yOk && zOk && wOk ) {
+		xyzw[0] = x_;
+		xyzw[1] = y_;
+		xyzw[2] = z_;
+		xyzw[3] = w_;
+	}
+}
+
+void Quat::fromString( QString str )
+{
+	QStringList parts = str.split( "," );
+	if( parts.size() != 4 )
+		return;
+	bool wOk, xOk, yOk, zOk;
+	float w_ = parts[3].toFloat( &wOk );
+	float x_ = parts[0].toFloat( &xOk );
+	float y_ = parts[1].toFloat( &yOk );
+	float z_ = parts[2].toFloat( &zOk );
+	if( wOk && xOk&& yOk && zOk  ) {
+		wxyz[0] = w_;
+		wxyz[1] = x_;
+		wxyz[2] = y_;
+		wxyz[3] = z_;
+	}
+}
 
 void Matrix::fromQuat( const Quat & q )
 {

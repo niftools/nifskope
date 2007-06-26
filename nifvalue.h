@@ -177,7 +177,13 @@ protected:
 	friend class NifSStream;
 };
 
-inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
+inline quint32 NifValue::toCount() const {
+	if ( isCount() )
+		return val.u32;
+	else if( isFloat() )
+		return *(quint32*)&val.f32;
+	return 0;
+}
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
 inline qint32 NifValue::toLink() const { if ( isLink() ) return val.i32; else return -1; }
 inline quint32 NifValue::toFileVersion() const { if ( isFileVersion() ) return val.u32; else return 0; }

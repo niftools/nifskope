@@ -35,7 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QColor>
 
-#include "math.h"
+#include <cfloat>
+#include <cmath>
 
 #ifndef PI
 #ifdef M_PI
@@ -44,6 +45,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PI 3.1416f
 #endif
 #endif
+
+QString NumOrMinMax( float val, char f = 'g', int prec = 6 );
 
 class NifModel;
 class QModelIndex;
@@ -130,6 +133,8 @@ public:
 		return xy;
 	}
 	
+	void fromString( QString str );
+
 protected:
 	float	xy[2];
 	
@@ -287,9 +292,15 @@ public:
 	
 	const float * data() const { return xyz; }
 	
+	void fromString( QString str );
+	
 	QString toHtml() const
 	{
-		return QString( "X %1 Y %2 Z %3<br>length %4" ).arg( xyz[0] ).arg( xyz[1] ).arg( xyz[2] ).arg( length() );
+		return QString( "X %1 Y %2 Z %3\nlength %4" )
+			.arg( NumOrMinMax( xyz[0] ) )
+			.arg( NumOrMinMax( xyz[1] ) )
+			.arg( NumOrMinMax( xyz[2] ) )
+			.arg( length() );
 	}
 	
 protected:
@@ -436,9 +447,16 @@ public:
 	
 	const float * data() const { return xyzw; }
 	
+	void fromString( QString str );
+	
 	QString toHtml() const
 	{
-		return QString( "X %1 Y %2 Z %3 W %4<br>length %5" ).arg( xyzw[0] ).arg( xyzw[1] ).arg( xyzw[2] ).arg( xyzw[3] ).arg( length() );
+		return QString( "X %1 Y %2 Z %3 W %4\nlength %5" )
+			.arg( NumOrMinMax( xyzw[0] ) )
+			.arg( NumOrMinMax( xyzw[1] ) )
+			.arg( NumOrMinMax( xyzw[2] ) )
+			.arg( NumOrMinMax( xyzw[3] ) )
+			.arg( length() );
 	}
 	
 protected:
@@ -506,13 +524,19 @@ public:
 	{
 		return q1[0]*q2[0]+q1[1]*q2[1]+q1[2]*q2[2]+q1[3]*q2[3];
 	}
-	
+
+
+	void fromString( QString str );
 	void fromAxisAngle( Vector3 axis, float angle );
 	void toAxisAngle( Vector3 & axis, float & angle ) const;
 
 	QString toHtml() const
 	{
-		return QString( "W %1<br>X %2<br>Y %3<br>Z %4" ).arg( wxyz[0], 0, 'f', 4 ).arg( wxyz[1], 0, 'f', 4 ).arg( wxyz[2], 0, 'f', 4 ).arg( wxyz[3], 0, 'f', 4 );
+		return QString( "W %1\nX %2\nY %3\nZ %4" )
+			.arg( NumOrMinMax( wxyz[0] ) )
+			.arg( NumOrMinMax( wxyz[1] ) )
+			.arg( NumOrMinMax( wxyz[2] ) )
+			.arg( NumOrMinMax( wxyz[3] ) );
 	}
 	
 protected:

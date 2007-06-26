@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QGridLayout>
 
+#include <cfloat>
+
 class spFlipTexCoords : public Spell
 {
 public:
@@ -540,14 +542,53 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 		return index;
 	
 	Vector3 center;
-	foreach ( Vector3 v, verts )
-		center += v;
-	center /= verts.count();
-	float radius = 0;
+	float radius = 0.0f;
+
+	/*
+		Oblivion and CT_volatile meshes require a
+		different center algorithm
+	*/
+	if( ( ( nif->getVersionNumber() & 0x14000000 ) && ( nif->getUserVersion() == 11 ) )
+		|| ( nif->get<ushort>(iData, "Consistency Flags") & 0x8000 ) )
+	{
+		/* is a Oblivion mesh! */
+		float xMin(FLT_MAX), xMax(-FLT_MAX);
+		float yMin(FLT_MAX), yMax(-FLT_MAX);
+		float zMin(FLT_MAX), zMax(-FLT_MAX);
+		foreach( Vector3 v, verts )
+		{
+			if( v[0] < xMin )
+				xMin = v[0];
+			else if ( v[0] > xMax )
+				xMax = v[0];
+
+			if( v[1] < yMin )
+				yMin = v[1];
+			else if ( v[1] > yMax )
+				yMax = v[1];
+
+			if( v[2] < zMin )
+				zMin = v[2];
+			else if ( v[2] > zMax )
+				zMax = v[2];
+		}
+
+		center = Vector3( xMin + xMax, yMin + yMax, zMin + zMax ) / 2;
+	}
+	else {
+		foreach( Vector3 v, verts )
+		{
+			center += v;
+		}
+		center /= verts.count();
+	}
+	
 	float d;
 	foreach ( Vector3 v, verts )
+	{
 		if ( ( d = ( center - v ).length() ) > radius )
 			radius = d;
+	}
 	
 	nif->set<Vector3>( iData, "Center", center );
 	nif->set<float>( iData, "Radius", radius );

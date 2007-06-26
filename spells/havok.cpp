@@ -6,6 +6,57 @@
 
 #include <QDebug>
 
+class spCreateCVS : public Spell
+{
+public:
+	QString name() const { return "Create Convex Shape"; }
+	QString page() const { return "Havok"; }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+
+		if( !nif->inherits( index, "NiTriBasedGeom" ) )
+			return false;
+
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		return iData.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		if( !iData.isValid() )
+			return index;
+
+		/* those will be filled with the CVS data */
+		QVector<Vector4> convex_verts, convex_norms;
+
+		/* get the verts of our mesh */
+		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+
+		/* make a convex hull from it */
+		// compute_convex_hull( verts, convex_verts, convex_norms );
+
+		/* create the CVS block */
+		QModelIndex iCVS = nif->insertNiBlock( "bhkConvexVerticesShape" );
+
+		/* set CVS verts */
+		nif->set<uint>( iCVS, "Num Vertices", convex_verts.count() );
+		nif->updateArray( iCVS, "Vertices" );
+		nif->setArray<Vector4>( iCVS, "Vertices", convex_verts );
+
+		/* set CVS norms */
+		nif->set<uint>( iCVS, "Num Half-Spaces", convex_norms.count() );
+		nif->updateArray( iCVS, "Half-Spaces" );
+		nif->setArray<Vector4>( iCVS, "Half-Spaces", convex_norms );
+		
+		return iCVS;
+	}
+};
+
+REGISTER_SPELL( spCreateCVS );
+
+
 class spConstraintHelper : public Spell
 {
 public:
