@@ -802,7 +802,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 				QModelIndex iTexSource = nif->getBlock( nif->getLink( iBaseTex, "Source" ) );
 				if( iTexSource.isValid() )
 				{
-					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					texfile = TexCache::find( nif->string( iTexSource, "File Name" ), nif->getFolder() );
 					return true;
 				}
 			}
@@ -814,7 +814,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Image" ) );
 				if( iTexSource.isValid() )
 				{
-					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					texfile = TexCache::find( nif->string( iTexSource, "File Name" ) , nif->getFolder() );
 					return true;
 				}
 			}

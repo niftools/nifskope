@@ -826,7 +826,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case ValueCol:
 				{
 					QString type = item->type();
-					if ( type == "string" )
+					if ( type == "string" || type == "FilePath" )
 					{
 						if (version >= 0x14010003)
 						{
@@ -876,7 +876,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						QString string = get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
 						if ( idx >= 0 )
 							return QString( "%2 [%1]").arg( idx ).arg( string );
-						return QString( "%1 - <>" ).arg( idx );
+						return QString( "%1 - <index invalid>" ).arg( idx );
                     }
 					else if ( item->value().type() == NifValue::tBlockTypeIndex )
 					{
@@ -947,7 +947,15 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			{
 				case NameCol:	return item->name();
 				case TypeCol:	return item->type();
-				case ValueCol:	return item->value().toVariant();
+				case ValueCol:	
+				{
+					QString type = item->type();
+					if ( type == "string" || type == "FilePath" )
+					{
+						return string(index);
+					}
+					return item->value().toVariant();
+				}
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
 				case Arr2Col:	return item->arr2();
@@ -1108,14 +1116,23 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 			item->setType( value.toString() );
 			break;
 		case NifModel::ValueCol:
-			item->value().fromVariant( value );
-			if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
 			{
-				updateLinks();
-				updateFooter();
-				emit linksChanged();
-			}
-			break;
+				QString type = item->type();
+				if ( type == "string" || type == "FilePath" )
+				{
+					assignString(index, value.toString(), true);
+				}
+				else
+				{
+					item->value().fromVariant( value );
+					if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
+					{
+						updateLinks();
+						updateFooter();
+						emit linksChanged();
+					}
+				}
+			}	break;
 		case NifModel::ArgCol:
 			item->setArg( value.toString() );
 			break;
@@ -1293,8 +1310,8 @@ bool NifModel::load( QIODevice & device )
 						if ( version < 0x0a020000 )
 							device.read( 4 );
 
-						// for version 20.3.0.6 and above the block size is stored in the header
-						if (version >= 0x14030006)
+						// for version 20.3.0.3 and above the block size is stored in the header
+						if (version >= 0x14030003)
 							size = get<quint32>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Size" ) ) );
 					}
 					else
@@ -1318,7 +1335,7 @@ bool NifModel::load( QIODevice & device )
 				}
 				catch ( QString err )
 				{
-					// version 20.3.0.6 can mostly recover from some failures because it store block sizes
+					// version 20.3.0.3 can mostly recover from some failures because it store block sizes
 					if (size == UINT_MAX)
 						throw err;
 				}
@@ -2011,3 +2028,104 @@ int NifModel::getParent( int block ) const
 	}
 	return parent;
 }
+
+QString NifModel::string( const QModelIndex & index ) const
+{
+	if (getVersionNumber() >= 0x14010003)
+	{
+		QModelIndex iIndex = (getValue( index ).type() == NifValue::tStringIndex) ? index : getIndex( index, "Index" );
+
+		int idx = get<int>( iIndex );
+		if (idx == -1)
+			return QString();
+		if ( idx >= 0 )
+		{
+			NifItem * header = this->getHeaderItem();
+			QModelIndex stringIndex = createIndex( header->row(), 0, header );
+			if ( stringIndex.isValid() )
+				return get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+		}
+	}
+	else
+	{
+		if (getValue( index ).type() == NifValue::tSizedString)
+		{
+			return get<QString>( index );		
+		}
+		else
+		{
+			QModelIndex iIndex = getIndex( index, "String" );
+			if (iIndex.isValid())
+				return get<QString>( iIndex );
+		}
+	}
+	return QString();
+}
+
+QString NifModel::string( const QModelIndex & index, const QString & name ) const
+{
+	return string( getIndex(index, name) );
+}
+
+
+bool NifModel::assignString( const QModelIndex & index, const QString & string, bool replace)
+{
+	if (getVersionNumber() >= 0x14010003)
+	{
+		QModelIndex iIndex = (getValue( index ).type() == NifValue::tStringIndex) ? index : getIndex( index, "Index" );
+
+		QModelIndex header = getHeader();
+		int nstrings = get<int>( header, "Num Strings" );
+
+		int idx = get<int>( iIndex );
+		if ( string.isEmpty() ) 
+		{
+			if (replace && idx >= 0 && idx < nstrings)
+			{
+				// TODO: Can we remove the string safely here?
+			}
+			return set<int>( iIndex, 0xffffffff );
+		}
+		// Simply replace the string
+		QModelIndex iArray = getIndex( header, "Strings" );
+		if (replace && idx >= 0 && idx < nstrings)
+		{
+			return set<QString>(iArray.child(idx, 0), string);
+		}
+
+		QVector<QString> stringVector = getArray<QString>( iArray );
+		idx = stringVector.indexOf(string);
+		// Already exists.  Just update the Index
+		if (idx >= 0 && idx < stringVector.size())
+		{
+			return set<int>( iIndex, idx );
+		}
+		else // append string to end of list
+		{
+			set<uint>( header, "Num Strings", nstrings+1);
+			updateArray(header, "Strings");
+			QModelIndex iArray = getIndex( header, "Strings" );
+			set<QString>(iArray.child(nstrings, 0), string);
+
+			return set<int>( iIndex, nstrings );
+		}
+	}
+	else // handle the older simpler strings
+	{
+		if (getValue( index ).type() == NifValue::tSizedString)
+		{
+			return set<QString>( index, string );
+		}
+		else
+		{
+			return set<QString>( getIndex( index, "String" ), string );
+		}
+	}
+	return false;
+}
+
+bool NifModel::assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace )
+{
+	return assignString( getIndex(index, name), string, replace );
+}
+

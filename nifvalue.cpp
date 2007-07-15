@@ -62,7 +62,6 @@ void NifValue::initialize()
 	typeMap.insert( "sizedstring", NifValue::tSizedString );
 	typeMap.insert( "text", NifValue::tText );
 	typeMap.insert( "shortstring", NifValue::tShortString );
-	typeMap.insert( "filepath", NifValue::tFilePath );
 	typeMap.insert( "color3", NifValue::tColor3 );
 	typeMap.insert( "color4", NifValue::tColor4 );
 	typeMap.insert( "vector4", NifValue::tVector4 );
@@ -246,7 +245,6 @@ void NifValue::clear()
 		case tSizedString:
 		case tText:
 		case tShortString:
-		case tFilePath:
 		case tHeaderString:
 		case tLineString:
 			delete static_cast<QString*>( val.data );
@@ -303,7 +301,6 @@ void NifValue::changeType( Type t )
 		case tSizedString:
 		case tText:
 		case tShortString:
-		case tFilePath:
 		case tHeaderString:
 		case tLineString:
 			val.data = new QString();
@@ -357,7 +354,6 @@ void NifValue::operator=( const NifValue & other )
 		case tSizedString:
 		case tText:
 		case tShortString:
-		case tFilePath:
 		case tHeaderString:
 		case tLineString:
 			*static_cast<QString*>( val.data ) = *static_cast<QString*>( other.val.data );
@@ -447,7 +443,6 @@ bool NifValue::fromString( const QString & s )
 		case tSizedString:
 		case tText:
 		case tShortString:
-		case tFilePath:
 		case tHeaderString:
 		case tLineString:
 			*static_cast<QString*>( val.data ) = s;
@@ -512,7 +507,6 @@ QString NifValue::toString() const
 		case tSizedString:
 		case tText:
 		case tShortString:
-		case tFilePath:
 		case tHeaderString:
 		case tLineString:
 			return *static_cast<QString*>( val.data );
@@ -731,7 +725,6 @@ bool NifIStream::read( NifValue & val )
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
 		case NifValue::tText:
-		case NifValue::tFilePath:
 		{
 			int len;
 			device->read( (char *) &len, 4 );
@@ -880,7 +873,6 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (const char *) string, len ) == len;
 		}
 		case NifValue::tText:
-		case NifValue::tFilePath:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			int len = string.size();
@@ -985,7 +977,6 @@ int NifSStream::size( const NifValue & val )
 			return 1 + string.size() + 1;
 		}
 		case NifValue::tText:
-		case NifValue::tFilePath:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			return 4 + string.size();

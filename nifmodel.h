@@ -165,7 +165,13 @@ public:
 	
 	// removes an item from the model
 	bool removeRows( int row, int count, const QModelIndex & parent );
-	
+
+	QString string( const QModelIndex & index ) const;
+	QString string( const QModelIndex & index, const QString & name ) const;
+
+	bool assignString( const QModelIndex & index, const QString & string, bool replace = false );
+	bool assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace = false );
+
 	static QAbstractItemDelegate * createDelegate( class SpellBook * );
 
 signals:

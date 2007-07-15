@@ -125,26 +125,9 @@ public:
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
 		
-		nif->set<int>( index, addString( nif, strings, le->text() ) );
-		
+		nif->assignString( index, le->text() );
+	
 		return index;
-	}
-
-	static int addString( NifModel * nif, const QStringList & strings, const QString & string )
-	{
-		if ( string.isEmpty() )
-			return 0xffffffff;
-		
-		if ( strings.contains( string ) )
-			return strings.indexOf( string );
-
-		QModelIndex header = nif->getHeader();
-		uint nstrings = nif->get<uint>( header, "Num Strings" );
-		nif->set<uint>( header, "Num Strings", nstrings+1);
-		nif->updateArray(header, "Strings");
-		QModelIndex iArray = nif->getIndex( header, "Strings" );
-		nif->set<QString>(iArray.child(nstrings, 0), string);
-		return nstrings;
 	}
 };
 

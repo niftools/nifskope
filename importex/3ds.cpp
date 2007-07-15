@@ -545,7 +545,7 @@ void import3ds( NifModel * nif )
 					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
 					
 					nif->set<int>( iTexSource, "Use External", 1 );
-					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+					nif->assignString( iTexSource, "File Name", mat->map_Kd );
 				}
 				else
 				{
@@ -558,7 +558,7 @@ void import3ds( NifModel * nif )
 					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
 					
 					nif->set<int>( iTexSource, "External", 1 );
-					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+					nif->assignString( iTexSource, "File Name", mat->map_Kd );
 				}
 			}
 			

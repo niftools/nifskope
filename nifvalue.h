@@ -312,6 +312,7 @@ template <> inline bool NifValue::ask( QString * ) const { return isString(); }
 template <> inline bool NifValue::ask( QByteArray * ) const { return isByteArray(); }
 
 class BaseModel;
+class NifItem;
 
 class NifIStream
 {

@@ -161,7 +161,8 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex iSource = nif->getBlock( idx );
-		QString file = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
+		QModelIndex iFile = nif->getIndex( iSource, "File Name" );
+		QString file = TexCache::find( nif->string( iFile ), nif->getFolder() );
 		
 		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
 		
@@ -169,8 +170,7 @@ public:
 		{
 			file = TexCache::stripPath( file, nif->getFolder() );
 			nif->set<int>( iSource, "Use External", 1 );
-			QModelIndex iFile = nif->getIndex( iSource, "File Name" );
-			nif->setData( iFile.sibling( iFile.row(), NifModel::ValueCol ), file.replace( "/", "\\" ) );
+			nif->assignString( iFile, file.replace( "/", "\\" ) );
 		}
 		return idx;
 	}
