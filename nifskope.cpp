@@ -71,6 +71,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/copyfnam.h"
 #include "widgets/xmlcheck.h"
 
+#ifdef WIN32
+#define WINDOWS_LEAN_AND_MEAN
+#include "windows.h"
+#endif
+
 
 #ifdef FSENGINE
 
@@ -89,11 +94,14 @@ void NifSkope::about()
 {
 	QString text =
 	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
-	"<p>NifSkope is based on NifTool's file format data base. "
-	"For more informations visit our site at <a href='http://www.niftools.org'>www.niftools.org</a></p>"
-	"<p>Because NifSkope was build using the Qt GUI toolkit it is free software. "
+	"<p>NifSkope is based on NifTool's XML file format specification. "
+	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
+	"<p>NifSkope is free software and the source code is availiable under a BSD lisence, however the executable is distributed under the GPL"
+	" because it was built using the Qt library. "
 	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
-	" on <a href='http://sourceforge.net'>SourceForge</a></p>";
+	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
+	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
+	"NifTools SourceForge Project page</a>.";
 
     QMessageBox mb( tr("About NifSkope 0.9.8"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
@@ -213,7 +221,26 @@ NifSkope::NifSkope()
 	
 	aSelectFont = new QAction( tr("Select Font ..."), this );
 	connect( aSelectFont, SIGNAL( triggered() ), this, SLOT( sltSelectFont() ) );
-	
+
+
+	/* help menu */
+
+	aHelpWebsite = new QAction( tr("NifSkope Documentation && &Tutorials"), this );
+	aHelpWebsite->setData( QUrl("http://niftools.sourceforge.net/wiki/index.php/NifSkope") );
+	connect( aHelpWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
+	aHelpForum = new QAction( tr("NifSkope Help && Bug Report &Forum"), this );
+	aHelpForum->setData( QUrl("http://niftools.sourceforge.net/forum/viewforum.php?f=24") );
+	connect( aHelpForum, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
+	aNifToolsWebsite = new QAction( tr("NifTools &Wiki"), this );
+	aNifToolsWebsite->setData( QUrl("http://niftools.sourceforge.net") );
+	connect( aNifToolsWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
+	aNifToolsDownloads = new QAction( tr("NifTools &Downloads"), this );
+	aNifToolsDownloads->setData( QUrl("http://sourceforge.net/project/showfiles.php?group_id=149157") );
+	connect( aNifToolsDownloads, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+
 	aNifSkope = new QAction( tr("About &NifSkope"), this );
 	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
 	
@@ -293,7 +320,7 @@ NifSkope::NifSkope()
 	tool->addWidget( cpFilename );
 	
 	// create the save portion of the toolbar
-	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save..."), QBoxLayout::LeftToRight ) );
+	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 	
@@ -357,9 +384,16 @@ NifSkope::NifSkope()
 	mViewList->addAction( aList );
 	mView->addAction( aSelectFont );
 	
-	QMenu * mAbout = new QMenu( tr("&About") );
-	mAbout->addAction( aNifSkope );
+	QMenu * mAbout = new QMenu( tr("&Help") );
+	mAbout->addAction( aHelpWebsite );
+	mAbout->addAction( aHelpForum );
+	mAbout->addAction( dRefr->toggleViewAction() );
+	mAbout->addSeparator();
+	mAbout->addAction( aNifToolsWebsite );
+	mAbout->addAction( aNifToolsDownloads );
+	mAbout->addSeparator();
 	mAbout->addAction( aAboutQt );
+	mAbout->addAction( aNifSkope );
 	
 	menuBar()->addMenu( mFile );
 	menuBar()->addMenu( mView );
@@ -734,6 +768,19 @@ void NifSkope::sltShredder()
 	TestShredder::create();
 }
 
+void NifSkope::openURL()
+{
+	if( !sender() ) return;
+
+	QAction * aURL = qobject_cast<QAction*>( sender() );
+	if( !aURL ) return;
+
+	QUrl URL = aURL->data().toUrl();
+	if( !URL.isValid() ) return;
+
+	QDesktopServices::openUrl( URL );
+}
+
 
 NifSkope * NifSkope::createWindow( const QString & fname )
 {
@@ -944,7 +991,7 @@ int main( int argc, char * argv[] )
 	QApplication app( argc, argv );
 	app.setOrganizationName( "NifTools" );
 	app.setApplicationName( "NifSkope" );
-	app.setOrganizationDomain( "niftools.org" );
+	app.setOrganizationDomain( "niftools.sourceforge.net" );
 	
 	// install message handler
 	qRegisterMetaType<Message>( "Message" );
@@ -972,8 +1019,29 @@ int main( int argc, char * argv[] )
 	
 	QString fname;
     if ( app.argc() > 1 )
-        fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
-	
+	{
+		//Getting a NIF file name from the OS
+		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
+
+		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
+#ifdef WIN32
+		WIN32_FIND_DATA ffd;
+		HANDLE h;
+		wchar_t * str = new wchar_t[fname.size() + 1];
+		fname.toWCharArray( str );
+		str[fname.size()] = 0;
+
+		h = FindFirstFileW( str, &ffd );
+		if ( h != INVALID_HANDLE_VALUE ) {
+			//Get the nice looking long path
+			fname = QString::fromWCharArray( ffd.cFileName );
+			FindClose(h);
+		}
+
+		delete [] str;
+#endif
+	}
+
 	if ( IPCsocket * ipc = IPCsocket::create() )
 	{
 		ipc->execCommand( QString( "NifSkope::open %1" ).arg( fname ) );

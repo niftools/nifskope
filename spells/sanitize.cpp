@@ -147,7 +147,7 @@ public:
 				stack.push( n );
 				setup( nif, stack, sortwrapper );
 			}
-			else if ( nif->inherits( nif->getBlock( n ), "AbhkConstraint" ) )
+			else if ( nif->inherits( nif->getBlock( n ), "bhkConstraint" ) )
 			{
 				QStack<qint32> stack;
 				stack.push( n );

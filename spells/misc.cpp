@@ -1,14 +1,44 @@
 #include "../spellbook.h"
 
+
 class spUpdateArray : public Spell
 {
 public:
 	QString name() const { return Spell::tr( "Update" ); }
 	QString page() const { return Spell::tr( "Array" ); }
+	QIcon icon() const { return  QIcon( ":/img/update" ); }
+	bool instant() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->isArray( index );
+		if ( nif->isArray(index) && nif->evalCondition( index ) )
+		{
+			//Check if array is of fixed size
+			NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+			bool static1 = true;
+			bool static2 = true;
+
+			if ( item->arr1().isEmpty() == false )
+			{
+				item->arr1().toInt( &static1 );
+			}
+
+			if ( item->arr2().isEmpty() == false )
+			{
+				item->arr2().toInt( &static2 );
+			}
+
+			if ( static1 && static2 )
+			{
+				//Neither arr1 or arr2 is a variable name
+				return false;
+			}
+
+			//One of arr1 or arr2 is a variable name so the array is dynamic
+			return true;
+		}
+
+		return false;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -60,72 +90,12 @@ public:
 
 REGISTER_SPELL( spUpdateFooter )
 
-/* XPM */
-static char * followlink_xpm[] = {
-"48 48 2 1",
-" 	c None",
-".	c #000000",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                    .....                       ",
-"                  ........                      ",
-"                 ....  ....                     ",
-"                ....    ....                    ",
-"               ....     ....                    ",
-"              ....      ....                    ",
-"             ....       ....                    ",
-"            ....        ....                    ",
-"           ....         ....                    ",
-"          ....          ....                    ",
-"         ....           ....                    ",
-"        ....            ....                    ",
-"       ....             ....                    ",
-"      ....              ....                    ",
-"    ....                ...................     ",
-"   ....                  ...................    ",
-"  ....                                   ....   ",
-"  ....                                    ....  ",
-"  ....                                    ....  ",
-"  ....                                    ....  ",
-"  ....                                    ....  ",
-"   ....                                  ....   ",
-"    ....                .....................   ",
-"     ....              ....................     ",
-"      ....             ....                     ",
-"       ....            ....                     ",
-"        ....           ....                     ",
-"         ....          ....                     ",
-"          ....         ....                     ",
-"           ....        ....                     ",
-"            ....       ....                     ",
-"             ....      ....                     ",
-"              ....     ....                     ",
-"               ....    ....                     ",
-"                ....  ....                      ",
-"                 .........                      ",
-"                  ......                        ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                ",
-"                                                "};
-QIcon * followlink_xpm_icon = 0;
-
 class spFollowLink : public Spell
 {
 public:
 	QString name() const { return Spell::tr( "Follow Link" ); }
 	bool instant() const { return true; }
-	QIcon icon() const
-	{
-		if ( ! followlink_xpm_icon )
-			followlink_xpm_icon = new QIcon( followlink_xpm );
-		return *followlink_xpm_icon;
-	}
+	QIcon icon() const { return  QIcon( ":/img/link" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

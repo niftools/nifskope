@@ -296,18 +296,21 @@ void import3ds( NifModel * nif )
 
 				objMatFace newMatFace;
 
-				Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
-				if( MatFaces ) {
-					newMatFace.matName = MatFaces->readString();
+				foreach( Chunk * MatFaces, FaceArray->getChildren( MSH_MAT_GROUP ) )
+				{
+					//Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
+					if( MatFaces ) {
+						newMatFace.matName = MatFaces->readString();
 
-					unsigned short nFaces = MatFaces->read< unsigned short >();
+						unsigned short nFaces = MatFaces->read< unsigned short >();
 
-					for( unsigned short i = 0; i < nFaces; i++ ) {
-						unsigned short FaceNum = MatFaces->read< unsigned short >();
-						newMatFace.subFaces.append( FaceNum );
+						for( unsigned short i = 0; i < nFaces; i++ ) {
+							unsigned short FaceNum = MatFaces->read< unsigned short >();
+							newMatFace.subFaces.append( FaceNum );
+						}
+
+						newMesh.matfaces.append( newMatFace );
 					}
-
-					newMesh.matfaces.append( newMatFace );
 				}
 			}
 
@@ -465,15 +468,28 @@ void import3ds( NifModel * nif )
 	}
 
 	fobj.close();
+
+	// create scene root
+	QPersistentModelIndex iRoot = nif->insertNiBlock( "NiNode" );
+	nif->set<QString>( iRoot, "Name", "Scene Root" );
 	
 	for(int objIndex = 0; objIndex < ObjMeshes.size(); objIndex++) {
 		objMesh * mesh = &ObjMeshes[objIndex];
 
-		// create group node
-		QPersistentModelIndex iNode = nif->insertNiBlock( "NiNode" );
-		nif->set<QString>( iNode, "Name", mesh->name );
-		
 		// create a NiTriShape foreach material in the object
+
+		// create group node if there is more than 1 material
+		bool groupNode = false;
+		QPersistentModelIndex iNode;
+		if ( mesh->matfaces.size() > 1 )
+		{
+			groupNode = true;
+
+			iNode = nif->insertNiBlock( "NiNode" );
+			nif->set<QString>( iNode, "Name", mesh->name );
+			addLink( nif, iRoot, "Children", nif->getBlockNumber( iNode ) );
+		}
+
 		int shapecount = 0;
 		for( int i = 0; i < mesh->matfaces.size(); i++ )
 		{
@@ -484,8 +500,16 @@ void import3ds( NifModel * nif )
 			objMaterial * mat = &ObjMaterials[mesh->matfaces[i].matName];
 
 			QPersistentModelIndex iShape = nif->insertNiBlock( "NiTriShape" );
-			nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
-			addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
+			if ( groupNode )
+			{
+				nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
+				addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
+			}
+			else
+			{
+				nif->set<QString>( iShape, "Name", mesh->name );
+				addLink( nif, iRoot, "Children", nif->getBlockNumber( iShape ) );
+			}
 			
 			QModelIndex iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
 			nif->set<QString>( iMaterial, "Name", mat->name );
@@ -500,25 +524,42 @@ void import3ds( NifModel * nif )
 			
 			if ( !mat->map_Kd.isEmpty() )
 			{
-				QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
-				addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
-				
-				nif->set<int>( iTexProp, "Has Base Texture", 1 );
-				QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
-				nif->set<int>( iBaseMap, "Clamp Mode", 3 );
-				nif->set<int>( iBaseMap, "Filter Mode", 2 );
-				
-				QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
-				nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
-				
-				nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
-				nif->set<int>( iTexSource, "Use Mipmaps", 2 );
-				nif->set<int>( iTexSource, "Alpha Format", 3 );
-				nif->set<int>( iTexSource, "Unknown Byte", 1 );
-				nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
-				
-				nif->set<int>( iTexSource, "Use External", 1 );
-				nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+				if ( nif->getVersionNumber() >= 0x0303000D )
+				{
+					//Newer versions use NiTexturingProperty and NiSourceTexture
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+					
+					nif->set<int>( iTexProp, "Has Base Texture", 1 );
+					QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
+					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
+					nif->set<int>( iBaseMap, "Filter Mode", 2 );
+					
+					QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
+					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
+					
+					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
+					nif->set<int>( iTexSource, "Use Mipmaps", 2 );
+					nif->set<int>( iTexSource, "Alpha Format", 3 );
+					nif->set<int>( iTexSource, "Unknown Byte", 1 );
+					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
+					
+					nif->set<int>( iTexSource, "Use External", 1 );
+					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+				}
+				else
+				{
+					//Older versions use NiTextureProperty and NiImage
+					QModelIndex iTexProp = nif->insertNiBlock( "NiTextureProperty" );
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+					
+					QModelIndex iTexSource = nif->insertNiBlock( "NiImage" );
+
+					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
+					
+					nif->set<int>( iTexSource, "External", 1 );
+					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
+				}
 			}
 			
 			QModelIndex iData = nif->insertNiBlock( "NiTriShapeData" );
@@ -545,7 +586,7 @@ void import3ds( NifModel * nif )
 			nif->set<int>( iData, "Has Normals", 1 );
 			nif->updateArray( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals",  mesh->normals );
-			nif->set<int>( iData, "Has UV Sets", 1 );
+			nif->set<int>( iData, "Has UV", 1 );
 			nif->set<int>( iData, "Num UV Sets", 1 );
 			nif->set<int>( iData, "Num UV Sets 2", 1 );
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );

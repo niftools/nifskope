@@ -31,24 +31,106 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "floatedit.h"
+#include "../nifvalue.h"
 
-#include <QDoubleValidator>
+#include <QAction>
+#include <QContextMenuEvent>
+#include <QMenu>
+
+#include <cfloat>
+
+
+QValidator::State FloatValidator::validate ( QString & input, int & pos ) const
+{
+	if( !( bottom() > -FLT_MAX ) && QString( "<float_min>" ).startsWith( input ) ) {
+		if( input == "<float_min>" )
+			return QValidator::Acceptable;
+		return QValidator::Intermediate;
+	}
+
+	if( !( top() < FLT_MAX ) && QString( "<float_max>" ).startsWith( input ) ) {
+		if( input == "<float_max>" )
+			return QValidator::Acceptable;
+		return QValidator::Intermediate;
+	}
+
+	return QDoubleValidator::validate( input, pos );
+}
+
+bool FloatValidator::canMin() const
+{
+	return !( bottom() > -FLT_MAX );
+}
+
+bool FloatValidator::canMax() const
+{
+	return !( top() < FLT_MAX );
+}
 
 FloatEdit::FloatEdit( QWidget * parent )
 	: QLineEdit( parent )
 {
-	setValidator( validator = new QDoubleValidator( this ) );
-	connect( this, SIGNAL( returnPressed() ), this, SLOT( edited() ) );
+	val = 0.0f;
+
+	setValidator( validator = new FloatValidator( this ) );
+	validator->setDecimals( 4 );
+
+	connect( this, SIGNAL( editingFinished() ), this, SLOT( edited() ) );
+
+	/*
+		context menu
+	*/
+	actMin = new QAction( "<float_min>", this );
+	connect( actMin, SIGNAL( triggered() ), this, SLOT( setMin() ) );
+	addAction( actMin );
+
+	actMax = new QAction( "<float_max>", this );
+	connect( actMax, SIGNAL( triggered() ), this, SLOT( setMax() ) );
+	addAction( actMax );
+}
+
+void FloatEdit::contextMenuEvent( QContextMenuEvent * event ) 
+{
+	QMenu * mnuContext = new QMenu( this );
+	mnuContext->setMouseTracking( true );
+
+	QMenu * mnuStd = createStandardContextMenu();
+
+	if( validator->canMin() )
+		mnuContext->addAction( actMin );
+	if( validator->canMax() )
+		mnuContext->addAction( actMax );
+	if( validator->canMin() || validator->canMax() )
+		mnuContext->addSeparator();
+
+	mnuContext->addActions( mnuStd->actions() );
+
+	mnuContext->exec( event->globalPos() );
+
+	delete mnuStd;
+	delete mnuContext;
 }
 
 void FloatEdit::edited()
 {
-	emit sigEdited( value() );
+	QString str = text();
+	if( str == "<float_min>" )
+		val = -FLT_MAX;
+	else if( str == "<float_max>" )
+		val = FLT_MAX;
+	else
+		val = str.toFloat();
+
+	emit sigEdited( val );
+	emit sigEdited( str );
 }
 
 void FloatEdit::setValue( float f )
 {
-	setText( QString::number( f ) );
+	val = f;
+	setText( NumOrMinMax( val, 'f', validator->decimals() ) );
+	emit valueChanged( val );
+	emit valueChanged( text() );
 }
 
 void FloatEdit::set( float f, float, float )
@@ -56,7 +138,34 @@ void FloatEdit::set( float f, float, float )
 	setValue( f );
 }
 
+void FloatEdit::setMin()
+{
+	if( validator->canMin() )
+		setValue( -FLT_MAX );
+}
+
+void FloatEdit::setMax()
+{
+	if( validator->canMax() )
+		setValue( FLT_MAX );
+}
+
 float FloatEdit::value() const
 {
-	return text().toDouble();
+	return val;
+}
+
+void FloatEdit::setRange( float minimum, float maximum )
+{
+	validator->setRange( minimum, maximum );
+}
+
+bool FloatEdit::isMin() const
+{
+	return (text() == "<float_min>");
+}
+
+bool FloatEdit::isMax() const
+{
+	return (text() == "<float_min>");
 }

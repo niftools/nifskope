@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "niftypes.h"
+#include "options.h"
 
 #include "spellbook.h"
 
@@ -48,10 +49,28 @@ NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 QString NifModel::version2string( quint32 v )
 {
 	if ( v == 0 )	return QString();
-	QString s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
-		+ QString::number( ( v >> 16 ) & 0xff, 10 ) + "."
-		+ QString::number( ( v >> 8 ) & 0xff, 10 ) + "."
-		+ QString::number( v & 0xff, 10 );
+	QString s;
+	if ( v < 0x0303000D ) {
+		//This is an old-style 2-number version with one period
+		s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
+		+ QString::number( ( v >> 16 ) & 0xff, 10 );
+
+		quint32 sub_num1 = ((v >> 8) & 0xff);
+		quint32 sub_num2 = (v & 0xff);
+		if ( sub_num1 > 0 || sub_num2 > 0 ) {
+			s = s + QString::number( sub_num1, 10 );
+		}
+		
+		if ( sub_num2 > 0 ) {
+			s = s + QString::number( sub_num2, 10 );
+		}
+	} else {
+		//This is a new-style 4-number version with 3 periods
+		s = QString::number( ( v >> 24 ) & 0xff, 10 ) + "."
+			+ QString::number( ( v >> 16 ) & 0xff, 10 ) + "."
+			+ QString::number( ( v >> 8 ) & 0xff, 10 ) + "."
+			+ QString::number( v & 0xff, 10 );
+	}
 	return s;
 }	
 
@@ -62,13 +81,36 @@ quint32 NifModel::version2number( const QString & s )
 	if ( s.contains( "." ) )
 	{
 		QStringList l = s.split( "." );
+
 		quint32 v = 0;
-		for ( int i = 0; i < 4 && i < l.count(); i++ )
-			v += l[i].toInt( 0, 10 ) << ( (3-i) * 8 );
-		return v;
-	}
-	else
-	{
+
+		if ( l.count() > 4 ) {
+			//Should probaby post a warning here or something.  Version # has more than 3 dots in it.
+			return 0;
+		} else if ( l.count() == 2 ) {
+			//This is an old style version number.  Take each digit following the first one at a time.
+			//The first one is the major version
+			v += l[0].toInt() << (3 * 8);
+
+			if ( l[1].size() >= 1 ) {
+				v += l[1].mid(0, 1).toInt() << (2 * 8);
+			}
+			if ( l[1].size() >= 2 ) {
+				v += l[1].mid(1, 1).toInt() << (1 * 8);
+			}
+			if ( l[1].size() >= 3 ) {
+				v += l[1].mid(2, -1).toInt();
+			}
+			return v;
+		} else {
+			//This is a new style version number with dots separating the digits
+			for ( int i = 0; i < 4 && i < l.count(); i++ ) {
+				v += l[i].toInt( 0, 10 ) << ( (3-i) * 8 );
+			}
+			return v;
+		}
+
+	} else {
 		bool ok;
 		quint32 i = s.toUInt( &ok );
 		return ( i == 0xffffffff ? 0 : i );
@@ -93,14 +135,41 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
-	version = version2number( "20.0.0.5" );
+	version = version2number( Options::startupVersion() );
+	if( !isVersionSupported(version) ) {
+		qWarning( tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toAscii() );
+		version = 0x14000005;
+	}
 	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
 	if ( item ) item->value().setFileVersion( version );
+
+	QString header_string;
+	if ( version <= 0x0A000100 ) {
+		header_string = "NetImmerse File Format, Version ";
+	} else {
+		header_string = "Gamebryo File Format, Version ";
+	}
+
+	header_string += version2string(version);
 	
-	set<QString>( getHeaderItem(), "Header String", "Gamebryo File Format, Version 20.0.0.5" );
-	set<int>( getHeaderItem(), "User Version", 11 );
+	set<QString>( getHeaderItem(), "Header String", header_string );
+
+	if ( version == 0x14000005 ) {
+		//Just set this if version is 20.0.0.5 for now.  Probably should be a separate option.
+		set<int>( getHeaderItem(), "User Version", 11 );
+		set<int>( getHeaderItem(), "User Version 2", 11 );
+	}
 	set<int>( getHeaderItem(), "Unknown Int 3", 11 );
+
+	if ( version < 0x0303000D ) {
+		QVector<QString> copyright(3);
+		copyright[0] = "Numerical Design Limited, Chapel Hill, NC 27514";
+		copyright[1] = "Copyright (c) 1996-2000";
+		copyright[2] = "All Rights Reserved";
+
+		setArray<QString>( getHeader(), "Copyright", copyright );
+	}
 }
 
 /*
@@ -238,6 +307,11 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	if ( d1 > 1024 * 1024 * 8 )
 	{
 		msg( Message() << "array" << array->name() << "much too large" );
+		return false;
+	}
+	else if ( d1 < 0 )
+	{
+		msg( Message() << "array" << array->name() << "invalid" );
 		return false;
 	}
 
@@ -702,6 +776,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
 			buddy = getIndex( index, "File Name" );
+		else if ( item->name() == "NiStringExtraData" )
+			buddy = getIndex( index, "String Data" );
 		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
@@ -730,7 +806,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			switch ( column )
 			{
 				case NameCol:
+				{
 					return item->name();
+				}	break;
 				case TypeCol:
 				{
 					if ( ! item->temp().isEmpty() )
@@ -747,42 +825,31 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				}	break;
 				case ValueCol:
 				{
-					if( isNiBlock( index, "string" ) ) {
-						if( version < 0x14010003 ) {
-							NifItem * str = getItem( item, "String" );
-							if( str )
-								return str->value().get<QString>();
-							return QString( "<string not found>" );
+					QString type = item->type();
+					if ( type == "string" )
+					{
+						if (version >= 0x14010003)
+						{
+							QModelIndex buddy = getIndex( index, "Index" );
+							if ( buddy.isValid() )
+								buddy = buddy.sibling( buddy.row(), index.column() );
+							if ( buddy.isValid() )
+								return data( buddy, role );
 						}
-						else {
-							uint stridx = get<int>( index, "Index" );
-							return get<QString>( NifModel::index( stridx, 0, getIndex( getHeader(), "Strings" ) ) );
+						else
+						{
+							QModelIndex buddy = getIndex( index, "String" );
+							if ( buddy.isValid() )
+								buddy = buddy.sibling( buddy.row(), index.column() );
+							if ( buddy.isValid() )
+								return data( buddy, role );
 						}
-					}
-					else if( item->value().type() == NifValue::tStringIndex ) {
-						if( version < 0x14010003 ) {
-							return QString( "<version too old>" );
-						}
-						uint idx = item->value().get<uint>();
-						if( idx == 0xffffffff ) {
-							return QString( "<empty>" );
-						}
-						return get<QString>( NifModel::index( idx, 0, getIndex( getHeader(), "Strings" ) ) );
-					}
-					else if( item->value().type() == NifValue::tFloat ) {
-						float f = item->value().get<float>();
-						uint fmin = 0xff7fffff;
-						uint fmax = 0x7f7fffff;
-						if( f == *(float*)&fmin )
-							return QString( "<float_min>" );
-						else if( f == *(float*)&fmax )
-							return QString( "<float_max>" );
 						return item->value().toString();
 					}
 					else if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
-						if ( ofs < 0 )
+						if ( ofs < 0 || ofs == 0x0000FFFF )
 							return QString( "<empty>" );
 						NifItem * palette = getItemX( item, "String Palette" );
 						int link = ( palette ? palette->value().toLink() : -1 );
@@ -799,6 +866,18 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return QString( "<palette not found>" );
 						}
 					}
+					else if ( item->value().type() == NifValue::tStringIndex )
+					{
+						int idx = item->value().get<int>();
+						if (idx == -1)
+							return QString();
+						NifItem * header = getHeaderItem();
+						QModelIndex stringIndex = createIndex( header->row(), 0, header );
+						QString string = get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+						if ( idx >= 0 )
+							return QString( "%2 [%1]").arg( idx ).arg( string );
+						return QString( "%1 - <>" ).arg( idx );
+                    }
 					else if ( item->value().type() == NifValue::tBlockTypeIndex )
 					{
 						int idx = item->value().get<int>();
@@ -913,35 +992,36 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					switch ( item->value().type() )
 					{
 						case NifValue::tByte:
-							{
-								quint8 b = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2" ).arg( b ).arg( b, 2, 16, QChar( '0' ) );
-							}
 						case NifValue::tWord:
 						case NifValue::tShort:
-							{
-								quint16 s = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2" ).arg( s ).arg( s, 4, 16, QChar( '0' ) );
-							}
 						case NifValue::tBool:
 						case NifValue::tInt:
 						case NifValue::tUInt:
 							{
-								quint32 i = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
+								return QString( "dec: %1\nhex: 0x%2" )
+									.arg( item->value().toString() )
+									.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFloat:
 							{
-								float f = item->value().toFloat();
-								return QString( "float: %1<br>data: 0x%2" ).arg( f ).arg( *( (unsigned int*) &f ), 8, 16, QChar( '0' ) );
+								return QString( "float: %1\nhex: 0x%2" )
+									.arg( NumOrMinMax( item->value().toFloat(), 'g', 8 ) )
+									.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFlags:
 							{
 								quint16 f = item->value().toCount();
-								return QString( "dec: %1<br>hex: 0x%2<br>bin: 0b%3" ).arg( f ).arg( f, 4, 16, QChar( '0' ) ).arg( f, 16, 2, QChar( '0' ) );
+								return QString( "dec: %1\nhex: 0x%2\nbin: 0b%3" )
+									.arg( f )
+									.arg( f, 4, 16, QChar( '0' ) )
+									.arg( f, 16, 2, QChar( '0' ) );
 							}
+						case NifValue::tStringIndex:
+							return QString( "0x%1" )
+								.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 						case NifValue::tStringOffset:
-							return QString( "0x%1" ).arg( item->value().toCount(), 8, 16, QChar( '0' ) );
+							return QString( "0x%1" )
+								.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 						case NifValue::tVector3:
 							return item->value().get<Vector3>().toHtml();
 						case NifValue::tMatrix:
@@ -954,12 +1034,19 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						case NifValue::tColor3:
 							{
 								Color3 c = item->value().get<Color3>();
-								return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
+								return QString( "R %1\nG %2\nB %3" )
+									.arg( c[0] )
+									.arg( c[1] )
+									.arg( c[2] );
 							}
 						case NifValue::tColor4:
 							{
 								Color4 c = item->value().get<Color4>();
-								return QString( "R %1<br>G %2<br>B %3<br>A %4" ).arg( c[0] ).arg( c[1] ).arg( c[2] ).arg( c[3] );
+								return QString( "R %1\nG %2\nB %3\nA %4" )
+									.arg( c[0] )
+									.arg( c[1] )
+									.arg( c[2] )
+									.arg( c[3] );
 							}
 						default:
 							break;
@@ -1182,6 +1269,7 @@ bool NifModel::load( QIODevice & device )
 	
 	try
 	{
+		qint64 curpos = device.pos();
 		if ( version >= 0x0303000d )
 		{
 			// read in the NiBlocks
@@ -1193,34 +1281,66 @@ bool NifModel::load( QIODevice & device )
 					throw QString( "unexpected EOF during load" );
 				
 				QString blktyp;
-				
-				if ( version >= 0x0a000000 )
+				quint32 size = UINT_MAX;
+				try
 				{
-					// block types are stored in the header for versions above 10.x.x.x
-					int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
-					blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+					if ( version >= 0x0a000000 )
+					{
+						// block types are stored in the header for versions above 10.x.x.x
+						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
+						blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+						
+						if ( version < 0x0a020000 )
+							device.read( 4 );
+
+						// for version 20.3.0.6 and above the block size is stored in the header
+						if (version >= 0x14030006)
+							size = get<quint32>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Size" ) ) );
+					}
+					else
+					{
+						int len;
+						device.read( (char *) &len, 4 );
+						if ( len < 2 || len > 80 )
+							throw QString( "next block does not start with a NiString" );
+						blktyp = device.read( len );
+					}
 					
-					if ( version < 0x0a020000 )
-						device.read( 4 );
+					if ( isNiBlock( blktyp ) )
+					{
+						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+						insertNiBlock( blktyp, -1, true );
+						if ( ! load( root->child( c+1 ), stream, true ) ) 
+							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+					}
+					else
+						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 				}
-				else
+				catch ( QString err )
 				{
-					int len;
-					device.read( (char *) &len, 4 );
-					if ( len < 2 || len > 80 )
-						throw QString( "next block does not start with a NiString" );
-					blktyp = device.read( len );
+					// version 20.3.0.6 can mostly recover from some failures because it store block sizes
+					if (size == UINT_MAX)
+						throw err;
 				}
-				
-				if ( isNiBlock( blktyp ) )
+				// Check device position and emit warning if location is not expected
+				if (size != UINT_MAX)
 				{
-					msg( DbgMsg() << "loading block" << c << ":" << blktyp );
-					insertNiBlock( blktyp, -1, true );
-					if ( ! load( root->child( c+1 ), stream, true ) ) 
-						throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+					qint64 pos = device.pos();
+					if ((curpos + size) != pos)
+					{
+						// unable to seek to location... abort
+						if (device.seek(curpos + size))
+							qWarning( tr("device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5").arg( c ).arg( blktyp ).arg(curpos).arg(pos).arg(curpos+size).toAscii() );
+						else
+							throw QString( "failed to reposition device at block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+
+						curpos = device.pos();
+					}
+					else
+					{
+						curpos = pos;
+					}
 				}
-				else
-					throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 			}
 			
 			// read in the footer
@@ -1231,48 +1351,59 @@ bool NifModel::load( QIODevice & device )
 		{	// versions below 3.3.0.13
 			QMap<qint32,qint32> linkMap;
 			
-			for ( qint32 c = 0; true; c++ )
-			{
-				emit sigProgress( c + 1, 0 );
-				
-				if ( device.atEnd() )
-					throw QString( "unexpected EOF during load" );
-				
-				int len;
-				device.read( (char *) &len, 4 );
-				if ( len < 0 || len > 80 )
-					throw QString( "next block does not start with a NiString" );
-				
-				QString blktyp = device.read( len );
-				
-				if ( blktyp == "End Of File" )
+			try {
+				for ( qint32 c = 0; true; c++ )
 				{
-					break;
-				}
-				else if ( blktyp == "Top Level Object" )
-				{
+					emit sigProgress( c + 1, 0 );
+					
+					if ( device.atEnd() )
+						throw QString( "unexpected EOF during load" );
+					
+					int len;
 					device.read( (char *) &len, 4 );
 					if ( len < 0 || len > 80 )
 						throw QString( "next block does not start with a NiString" );
-					blktyp = device.read( len );
+					
+					QString blktyp = device.read( len );
+					
+					if ( blktyp == "End Of File" )
+					{
+						break;
+					}
+					else if ( blktyp == "Top Level Object" )
+					{
+						device.read( (char *) &len, 4 );
+						if ( len < 0 || len > 80 )
+							throw QString( "next block does not start with a NiString" );
+						blktyp = device.read( len );
+					}
+					
+					qint32 p;
+					device.read( (char *) &p, 4 );
+					p -= 1;
+					if ( p != c )
+						linkMap.insert( p, c );
+					
+					if ( isNiBlock( blktyp ) )
+					{
+						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+						insertNiBlock( blktyp, -1, true );
+						if ( ! load( root->child( c+1 ), stream, true ) ) 
+							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+					}
+					else
+						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 				}
-				
-				qint32 p;
-				device.read( (char *) &p, 4 );
-				p -= 1;
-				if ( p != c )
-					linkMap.insert( p, c );
-				
-				if ( isNiBlock( blktyp ) )
-				{
-					msg( DbgMsg() << "loading block" << c << ":" << blktyp );
-					insertNiBlock( blktyp, -1, true );
-					if ( ! load( root->child( c+1 ), stream, true ) ) 
-						throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
-				}
-				else
-					throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 			}
+			catch ( QString err ) {
+				//If this is an old file we should still map the links, even if it failed
+				mapLinks( linkMap );
+
+				//Re-throw exception so that the error is printed
+				throw err;
+			}
+
+			//Also map links if nothing went wrong
 			mapLinks( linkMap );
 		}
 	}
@@ -1407,18 +1538,42 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	return true;
 }
 
-bool NifModel::checkForBlock( const QString & filepath, const QString & blockId )
+bool NifModel::earlyRejection( const QString & filepath, const QString & blockId, quint32 version )
 {
 	NifModel nif;
-	if ( nif.loadHeaderOnly( filepath ) )
+	if ( nif.loadHeaderOnly( filepath ) == false ) {
+		//File failed to read entierly
+		return false;
+	}
+	
+	bool ver_match = false;
+	if ( version == 0 )
+	{
+		ver_match = true;
+	}
+	else if ( version != 0 && nif.getVersionNumber() == version )
+	{
+		ver_match = true;
+	}
+
+	bool blk_match = false;
+	if ( blockId.isEmpty() == true || version < 0x0A000100 )
+	{
+		blk_match = true;
+	}
+	else
 	{
 		foreach ( QString s, nif.getArray<QString>( nif.getHeader(), "Block Types" ) )
 		{
 			if ( inherits( s, blockId ) )
-				return true;
+			{
+				blk_match = true;
+				break;
+			}
 		}
 	}
-	return false;
+	
+	return (ver_match && blk_match);
 }
  
 bool NifModel::save( QIODevice & device, const QModelIndex & index ) const

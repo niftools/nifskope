@@ -117,6 +117,27 @@ static char * tex42_xpm[] = {
 "                                                                                "};
 
 QIcon * tex42_xpm_icon = 0;
+	
+QModelIndex getData( const NifModel * nif, const QModelIndex & index )
+{
+	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+		return nif->getBlock( nif->getLink( index, "Data" ) );
+	else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
+		return index;
+	return QModelIndex();
+}
+
+QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
+{
+	QModelIndex iData = getData( nif, index );
+	
+	if ( iData.isValid() )
+	{
+		QModelIndex iUVs = nif->getIndex( iData, "UV Sets" );
+		return iUVs;
+	}
+	return QModelIndex();
+}
 
 class spChooseTexture : public Spell
 {
@@ -166,7 +187,8 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->inherits( index, "NiTriBasedGeom" );
+		QModelIndex iUVs = getUV( nif, index );
+		return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -294,29 +316,6 @@ class spTextureTemplate : public Spell
 {
 	QString name() const { return "Export Template"; }
 	QString page() const { return "Texture"; }
-	
-	QModelIndex getData( const NifModel * nif, const QModelIndex & index ) const
-	{
-		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
-			return nif->getBlock( nif->getLink( index, "Data" ) );
-		else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
-			return index;
-		return QModelIndex();
-	}
-	
-	QModelIndex getUV( const NifModel * nif, const QModelIndex & index ) const
-	{
-		QModelIndex iData = getData( nif, index );
-		
-		if ( iData.isValid() )
-		{
-			QModelIndex iUVs = nif->getIndex( iData, "UV Sets" );
-			if ( ! iUVs.isValid() )
-				iUVs = nif->getIndex( iData, "UV Sets 2" );
-			return iUVs;
-		}
-		return QModelIndex();
-	}
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

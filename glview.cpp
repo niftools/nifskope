@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "gl/glscene.h"
 #include "gl/gltex.h"
-#include "gl/options.h"
+#include "options.h"
 
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
@@ -77,7 +77,7 @@ GLView * GLView::create()
 	if ( share )
 		fmt = share->format();
 	else
-		fmt.setSampleBuffers( GLOptions::antialias() );
+		fmt.setSampleBuffers( Options::antialias() );
 	
 	views.append( QPointer<GLView>( new GLView( fmt, share ) ) );
 	
@@ -140,18 +140,19 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewSide->setCheckable( true );
 	aViewSide->setShortcut( Qt::Key_F7 );
 	grpView->addAction( aViewSide );
+
+	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr("User"), grpView );
+	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
+	aViewUser->setCheckable( true );
+	aViewUser->setShortcut( Qt::Key_F8 );
+	grpView->addAction( aViewUser );
+
 	
 	aViewWalk = new QAction( QIcon( ":/btn/viewWalk" ), tr("Walk"), grpView );
 	aViewWalk->setToolTip( tr("Enable walk mode") );
 	aViewWalk->setCheckable( true );
-	aViewWalk->setShortcut( Qt::Key_F8 );
+	aViewWalk->setShortcut( Qt::Key_F9 );
 	grpView->addAction( aViewWalk );
-	
-	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr("User"), grpView );
-	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
-	aViewUser->setCheckable( true );
-	aViewUser->setShortcut( Qt::Key_F9 );
-	grpView->addAction( aViewUser );
 	
 	aViewFlip = new QAction( QIcon( ":/btn/viewFlip" ), tr("Flip"), this );
 	aViewFlip->setToolTip( tr("Flip View from Front to Back, Top to Bottom, Side to Other Side") );
@@ -227,8 +228,8 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	connect( animGroups, SIGNAL( activated( const QString & ) ), this, SLOT( sltSequence( const QString & ) ) );
 	tAnim->addWidget( animGroups );
 	
-	connect( GLOptions::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
-	connect( GLOptions::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
+	connect( Options::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
+	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
 
 	tView = new QToolBar( tr("View") );
 	tView->setObjectName( "ViewTool" );
@@ -238,8 +239,8 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tView->addAction( aViewTop );
 	tView->addAction( aViewFront );
 	tView->addAction( aViewSide );
-	tView->addAction( aViewWalk );
 	tView->addAction( aViewUser );
+	tView->addAction( aViewWalk );
 	tView->addSeparator();
 	tView->addAction( aViewFlip );
 	tView->addAction( aViewPerspective );
@@ -268,7 +269,7 @@ QMenu * GLView::createMenu() const
 	m->addAction( aViewPerspective );
 	m->addAction( aViewUserSave );
 	m->addSeparator();
-	m->addActions( GLOptions::actions() );
+	m->addActions( Options::actions() );
 	return m;
 }
 
@@ -312,7 +313,7 @@ void GLView::glProjection( int x, int y )
 	}
 	
 	BoundSphere bs = scene->view * scene->bounds();
-	if ( GLOptions::drawAxes() )
+	if ( Options::drawAxes() )
 		bs |= BoundSphere( scene->view * Vector3(), axis );
 	
 	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
@@ -365,7 +366,7 @@ void GLView::paintGL()
 	glPushMatrix();
 
 	glViewport( 0, 0, width(), height() );
-	qglClearColor( GLOptions::bgColor() );
+	qglClearColor( Options::bgColor() );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	glShadeModel( GL_SMOOTH );
 	
@@ -402,13 +403,13 @@ void GLView::paintGL()
 	
 	Matrix ap;
 	
-	if ( GLOptions::upAxis() == GLOptions::YAxis )
+	if ( Options::upAxis() == Options::YAxis )
 	{
 		ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
 		ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
 		ap( 2, 0 ) = 0; ap( 2, 1 ) = 1; ap( 2, 2 ) = 0;
 	}
-	else if ( GLOptions::upAxis() == GLOptions::XAxis )
+	else if ( Options::upAxis() == Options::XAxis )
 	{
 		ap( 0, 0 ) = 0; ap( 0, 1 ) = 1; ap( 0, 2 ) = 0;
 		ap( 1, 0 ) = 0; ap( 1, 1 ) = 0; ap( 1, 2 ) = 1;
@@ -432,7 +433,7 @@ void GLView::paintGL()
 	
 	// draw the axis
 	
-	if ( GLOptions::drawAxes() )
+	if ( Options::drawAxes() )
 	{
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
@@ -456,18 +457,18 @@ void GLView::paintGL()
 	// setup light
 	
 	Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
-	if ( ! GLOptions::lightFrontal() )
+	if ( ! Options::lightFrontal() )
 	{
-		float decl = GLOptions::lightDeclination() / 180.0 * PI;
+		float decl = Options::lightDeclination() / 180.0 * PI;
 		Vector3 v( sin( decl ), 0, cos( decl ) );
-		Matrix m; m.fromEuler( 0, 0, GLOptions::lightPlanarAngle() / 180.0 * PI );
+		Matrix m; m.fromEuler( 0, 0, Options::lightPlanarAngle() / 180.0 * PI );
 		v = m * v;
 		lightDir = Vector4( viewTrans.rotation * v, 0.0 );
 	}
 	glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
-	glLightfv( GL_LIGHT0, GL_AMBIENT, Color4( GLOptions::ambient() ).data() );
-	glLightfv( GL_LIGHT0, GL_DIFFUSE, Color4( GLOptions::diffuse() ).data() );
-	glLightfv( GL_LIGHT0, GL_SPECULAR, Color4( GLOptions::specular() ).data() );
+	glLightfv( GL_LIGHT0, GL_AMBIENT, Color4( Options::ambient() ).data() );
+	glLightfv( GL_LIGHT0, GL_DIFFUSE, Color4( Options::diffuse() ).data() );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, Color4( Options::specular() ).data() );
 	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
 	glEnable( GL_LIGHT0 );
 	glEnable( GL_LIGHTING );
@@ -506,20 +507,20 @@ void GLView::paintGL()
 #ifdef USE_GL_QPAINTER
 	// draw text on top using QPainter
 
-	if ( GLOptions::benchmark() || GLOptions::drawStats() )
+	if ( Options::benchmark() || Options::drawStats() )
 	{
 		int ls = QFontMetrics( font() ).lineSpacing();
 		int y = 1;
 		
-		painter.setPen( GLOptions::hlColor() );
+		painter.setPen( Options::hlColor() );
 		
-		if ( GLOptions::benchmark() )
+		if ( Options::benchmark() )
 		{
 			painter.drawText( 10, y++ * ls, QString( "FPS %1" ).arg( int( fpsact ) ) );
 			y++;
 		}
 		
-		if ( GLOptions::drawStats() )
+		if ( Options::drawStats() )
 		{
 			QString stats = scene->textStats();
 			QStringList lines = stats.split( "\n" );
@@ -589,7 +590,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	glSelectBuffer( 512, buffer );
 	
 	int choose;
-	if ( GLOptions::drawFurn() )
+	if ( Options::drawFurn() )
 	{		
 		choose = ::indexAt( buffer, model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle ); 
 		if ( choose != -1 )
@@ -607,9 +608,9 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	
 	QList<DrawFunc> df;
 	
-	if ( GLOptions::drawHavok() )
+	if ( Options::drawHavok() )
 		df << &Scene::drawHavok;
-	if ( GLOptions::drawNodes() )
+	if ( Options::drawNodes() )
 		df << &Scene::drawNodes;
 	df << &Scene::drawShapes;
 	
@@ -748,7 +749,7 @@ void GLView::sltSequence( const QString & seqname )
 void GLView::viewAction( QAction * act )
 {
 	BoundSphere bs = scene->bounds();
-	if ( GLOptions::drawAxes() )
+	if ( Options::drawAxes() )
 		bs |= BoundSphere( Vector3(), axis );
 	
 	if ( bs.radius < 1 ) bs.radius = 1;
@@ -871,7 +872,7 @@ void GLView::advanceGears()
 	QTime t = QTime::currentTime();
 	float dT = lastTime.msecsTo( t ) / 1000.0;
 	
-	if ( GLOptions::benchmark() )
+	if ( Options::benchmark() )
 	{
 		fpsacc += dT;
 		fpscnt++;
@@ -960,6 +961,23 @@ void GLView::keyPressEvent( QKeyEvent * event )
 			if ( ! aViewWalk->isChecked() )
 				doCenter = true;
 			update();
+			break;
+		case Qt::Key_C:
+			{
+				Node * node = scene->getNode( model, scene->currentBlock );
+
+				if ( node != 0 )
+				{
+					BoundSphere bs = node->bounds();
+
+					this->setPosition( -bs.center );
+
+					if ( bs.radius > 0 )
+					{
+						setDistance( bs.radius * 1.5f );
+					}
+				}
+			}
 			break;
 		default:
 			event->ignore();
@@ -1052,7 +1070,7 @@ void GLView::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if ( event->buttons() & Qt::RightButton )
 	{
-		setDistance( Dist - dy * ( axis / ( qMax( width(), height() ) + 1 ) ) );
+		setDistance( Dist - (dx + dy) * ( axis / ( qMax( width(), height() ) + 1 ) ) );
 	}
 	lastPos = event->pos();
 }
@@ -1072,7 +1090,7 @@ void GLView::wheelEvent( QWheelEvent * event )
 	if ( aViewWalk->isChecked() )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
-		setDistance( Dist * ( event->delta() > 0 ? 1.0 / 0.8 : 0.8 ) );
+		setDistance( Dist * ( event->delta() < 0 ? 1.0 / 0.8 : 0.8 ) );
 }
 
 void GLView::checkActions()
@@ -1081,7 +1099,7 @@ void GLView::checkActions()
 	
 	lastTime = QTime::currentTime();
 	
-	if ( GLOptions::benchmark() )
+	if ( Options::benchmark() )
 		timer->setInterval( 0 );
 	else
 		timer->setInterval( 1000 / FPS );

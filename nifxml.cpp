@@ -243,6 +243,15 @@ public:
 							cond += "HEADER/User Version == " + userver;
 							data.setCond( cond );
 						}
+						QString userver2 = list.value( "userver2" );
+						if ( ! userver2.isEmpty() )
+						{
+							QString cond = data.cond();
+							if ( ! cond.isEmpty() )
+								cond += " && ";
+							cond += "HEADER/User Version 2 == " + userver2;
+							data.setCond( cond );
+						}
 						if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
 					}	break;
 					default:

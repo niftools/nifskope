@@ -266,6 +266,7 @@ class spEditTransformation : public Spell
 public:
 	QString name() const { return Spell::tr("Edit"); }
 	QString page() const { return Spell::tr("Transform"); }
+	bool instant() const { return true; }
 	QIcon icon() const
 	{
 		if ( ! transform_xpm_icon )

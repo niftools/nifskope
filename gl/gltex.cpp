@@ -153,7 +153,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	QStringList extensions;
 	extensions << ".tga" << ".dds" << ".bmp";
 	bool replaceExt = false;
-	if ( GLOptions::textureAlternatives() )
+	if ( Options::textureAlternatives() )
 	{
 		foreach ( QString ext, extensions )
 		{
@@ -175,7 +175,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 		if ( replaceExt )
 			filename += ext;
 		
-		foreach ( QString folder, GLOptions::textureFolders() )
+		foreach ( QString folder, Options::textureFolders() )
 		{
 			if( folder.startsWith( "./" ) || folder.startsWith( ".\\" ) ) {
 				folder = nifdir + "/" + folder;
@@ -203,7 +203,7 @@ QString TexCache::stripPath( const QString & filepath, const QString & nifFolder
 	QString file = filepath;
 	file = file.replace( "/", "\\" ).toLower();
 	
-	foreach ( QString base, GLOptions::textureFolders() )
+	foreach ( QString base, Options::textureFolders() )
 	{
 		if( base.startsWith( "./" ) || base.startsWith( ".\\" ) ) {
 			base = nifFolder + "/" + base;
@@ -315,7 +315,9 @@ void TexCache::flush()
 	qDeleteAll( textures );
 	textures.clear();
 	
-	watcher->removePaths( watcher->files() );
+	if( !watcher->files().empty() ) {
+		watcher->removePaths( watcher->files() );
+	}
 }
 
 bool TexturingProperty::bind( int id, const QString & fname )
@@ -325,7 +327,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 	{
 		if ( max_anisotropy > 0 )
 		{
-			if ( GLOptions::antialias() )
+			if ( Options::antialias() )
 				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
 			else
 				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0 );

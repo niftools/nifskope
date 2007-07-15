@@ -8,96 +8,12 @@
 #include <QPushButton>
 #include <QSpinBox>
 
-/* XPM */
-static char * flag42_xpm[] = {
-"64 64 43 1",
-" 	c None",
-".	c #000100","+	c #040702","@	c #090C08","#	c #0E100C","$	c #121311",
-"%	c #161815","&	c #1B1C1A","*	c #222422","=	c #2C2D2B","-	c #2F312E",
-";	c #343633",">	c #3A3C3A",",	c #3F413E","'	c #434542",")	c #4F514E",
-"!	c #545553","~	c #5A5C59","{	c #60625F","]	c #646563","^	c #686A67",
-"/	c #6E706D","(	c #747673","_	c #777976",":	c #7F817E","<	c #80827F",
-"[	c #868885","}	c #8F918E","|	c #90928F","1	c #979996","2	c #A5A7A4",
-"3	c #ACAEAB","4	c #B3B5B2","5	c #B5B7B4","6	c #BDBFBC","7	c #C2C4C1",
-"8	c #CDCFCC","9	c #D3D5D2","0	c #DADCD9","a	c #E0E2DF","b	c #E4E6E3",
-"c	c #EFF1EE","d	c #FEFFFC",
-"                                                                ",
-"                                                                ",
-"                                                                ",
-"                    4/|a                                        ",
-"                   5....#-)|a                                   ",
-"                   '.++.....++#-)|a                             ",
-"                   $..+++.++++.....#-)|a                        ",
-"                   @..5a})-#+++.++.....+#-)|a                   ",
-"                  a.+.adddddda})-#++.+++.....@$-)|a             ",
-"                  |+.$dddddddddddda})-#++.++......+#-)|a        ",
-"                  !++=ddddddddddddddddda})-#+++.+++....&a       ",
-"                  ,+.>dddddddddddddddddddddda5:)-#++.+..8       ",
-"                  =+.!d7~~38addddddddddddddddddddda}=+++a       ",
-"                  #..}d]....#[dddddddddddddddddddddd)+.=        ",
-"                  .++a4$.+...$b80ddddddddddddddddddd=++!        ",
-"                 a++.d:...$..!_$,adddddddddddddddddd#+.}        ",
-"                 |++$d:++.391=..$8ddddddddddddddddda.++a        ",
-"                 )+.=d&+..&<>..*(bddddddddddddddddd|.+$         ",
-"                 ,+.,a..++.$...4ddddddddddddddddddd>++>         ",
-"                 -+.!!++++.#..$dddddddddddddddddddd#+.}         ",
-"                 $+.}.++{2!.+.[ddda316cddddddddddda.++a         ",
-"                a++.a^+]dd]..&ddd[$...1ddddddddddd|++$          ",
-"                }++#dddddd!+.=ddd..++.]dd4)-(bdddd>++>          ",
-"                )+.-dddddd!..!ddd$+...3d5$...|dddd#+.}          ",
-"                ,++>dddddd5;>5ddd_++*5db..++.$,>%+.++a          ",
-"                -..)dddddddddddddda9add|.++......+++$           ",
-"                $+.<dddddddddddddddddd4&..++.+++++++=           ",
-"                +..+#>}adddddddddddddd>.+++++#,,,#+.)           ",
-"               a++.+....#=!}addddddddd;++++++!dd0$+.}           ",
-"               |+++++++.....@-!}addddd4>%$%$*4dd}...b           ",
-"               !++=a}>#+++++......>|addddddddddd!++=            ",
-"               ,+.>    a})-@+++......#-)|adddddd=..)            ",
-"               =+.!        a})=$...++.....=)|add$+.|            ",
-"               #..}             a}>#+++........=+..a            ",
-"              a.++a                 a})=@..+++..++%             ",
-"              5++.                      a}!=..+++.+             ",
-"              :++$                           b}>#+^             ",
-"              !..-                                              ",
-"              =+.!                                              ",
-"              $+.:                                              ",
-"              .+.4                                              ",
-"             b++.a                                              ",
-"             }.+$                                               ",
-"             )+.-                                               ",
-"             ,++>                                               ",
-"             -..)                                               ",
-"             $+.|                                               ",
-"             +..a                                               ",
-"            a+++                                                ",
-"            |++#                                                ",
-"            !++=                                                ",
-"            ,..,                                                ",
-"            =+.!                                                ",
-"            #+.}                                                ",
-"           a.++a                                                ",
-"           |++$                                                 ",
-"           !++=                                                 ",
-"           ,+.,                                                 ",
-"           =+.!                                                 ",
-"           @+.[                                                 ",
-"           .++0                                                 ",
-"           ]+]                                                  ",
-"                                                                ",
-"                                                                "};
-
-QIcon * flag42_xpm_icon = 0;
-
 class spEditFlags : public Spell
 {
 public:
 	QString name() const { return Spell::tr( "Flags" ); }
 	bool instant() const { return true; }
-	QIcon icon() const
-	{
-		if ( ! flag42_xpm_icon ) flag42_xpm_icon = new QIcon( flag42_xpm );
-		return *flag42_xpm_icon;
-	}
+	QIcon icon() const { return  QIcon( ":/img/flag" ); }
 	
 	enum FlagType
 	{

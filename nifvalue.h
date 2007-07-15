@@ -52,33 +52,33 @@ public:
 		tWord = 2,
 		tFlags = 3,
 		tStringOffset = 4,
-		tBlockTypeIndex = 5,
-		tInt = 6,
-		tLink = 7,
-		tUpLink = 8,
-		tFloat = 9,
-		tSizedString = 10,
-		tText = 11,
-		tShortString = 12,
-		tFilePath = 13,
-		tHeaderString = 14,
-		tLineString = 15,
-		tColor3 = 16,
-		tColor4 = 17,
-		tVector3 = 18,
-		tQuat = 19,
-		tQuatXYZW = 20,
-		tMatrix = 21,
-		tMatrix4 = 22,
-		tVector2 = 23,
-		tVector4 = 24,
-		tTriangle = 25,
-		tFileVersion = 26,
-		tByteArray = 27,
-		tStringPalette = 28,
-		tShort = 29,
-		tUInt = 30,
-		tStringIndex = 31,
+		tStringIndex = 5,
+		tBlockTypeIndex = 6,
+		tInt = 7,
+		tShort = 8,
+		tUInt = 9,
+		tLink = 10,
+		tUpLink = 11,
+		tFloat = 12,
+		tSizedString = 13,
+		tText = 14,
+		tShortString = 15,
+		tFilePath = 16,
+		tHeaderString = 17,
+		tLineString = 18,
+		tColor3 = 20,
+		tColor4 = 21,
+		tVector3 = 22,
+		tQuat = 23,
+		tQuatXYZW = 24,
+		tMatrix = 25,
+		tMatrix4 = 26,
+		tVector2 = 27,
+		tVector4 = 28,
+		tTriangle = 29,
+		tFileVersion = 30,
+		tByteArray = 31,
+		tStringPalette = 32,
 
 		tNone = 0xff
 	};
@@ -117,7 +117,7 @@ public:
 	
 	bool isValid() const { return typ != tNone; }
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
-	bool isCount() const { return (typ >= tBool && typ <= tInt) || (typ >= tShort && typ <= tStringIndex); }
+	bool isCount() const { return (typ >= tBool && typ <= tUInt); }
 	bool isFlags() const { return typ == tFlags; }
 	bool isFloat() const { return typ == tFloat; }
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
@@ -178,7 +178,13 @@ protected:
 	friend class NifSStream;
 };
 
-inline quint32 NifValue::toCount() const { if ( isCount() ) return val.u32; return 0; }
+inline quint32 NifValue::toCount() const {
+	if ( isCount() )
+		return val.u32;
+	else if( isFloat() )
+		return *(quint32*)&val.f32;
+	return 0;
+}
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
 inline qint32 NifValue::toLink() const { if ( isLink() ) return val.i32; else return -1; }
 inline quint32 NifValue::toFileVersion() const { if ( isFileVersion() ) return val.u32; else return 0; }

@@ -63,7 +63,7 @@ public:
 	QSize sizeHint() const { return minimumSizeHint(); }
 };
 
-GLOptions::GLOptions()
+Options::Options()
 {
 	tSave = new QTimer( this );
 	tSave->setInterval( 5000 );
@@ -98,6 +98,12 @@ GLOptions::GLOptions()
 	aDrawHavok->setCheckable( true );
 	aDrawHavok->setChecked( cfg.value( "Draw Collision Geometry", true ).toBool() );
 	connect( aDrawHavok, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+
+	aDrawConstraints = new QAction( "Draw &Constraints", this );
+	aDrawConstraints->setToolTip( "draw the havok constraints" );
+	aDrawConstraints->setCheckable( true );
+	aDrawConstraints->setChecked( cfg.value( "Draw Constraints", true ).toBool() );
+	connect( aDrawConstraints, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
 	aDrawFurn = new QAction( "Draw &Furniture", this );
 	aDrawFurn->setToolTip( "draw the furniture markers" );
@@ -365,29 +371,48 @@ GLOptions::GLOptions()
 		
 		dialog->popLayout();
 	}
+	dialog->popLayout();
+
+	//Misc Options
+	cfg.beginGroup( "Misc Settings" );
+
+	dialog->pushLayout( "Misc. Settings", Qt::Vertical, 1 );
+	dialog->pushLayout( Qt::Horizontal );
+
+	
+	dialog->addWidget( new QLabel( "Startup Version" ) );
+	dialog->addWidget( StartVer = new QLineEdit( cfg.value( "Startup Version", "20.0.0.5" ).toString() ) );
+	StartVer->setToolTip( "This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be." );
+	connect( StartVer, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
+
 
 	dialog->popLayout();
+
+	//More Misc options can be added here.
+	dialog->popLayout();
+	cfg.endGroup();
 }
 
-GLOptions::~GLOptions()
+Options::~Options()
 {
 	if ( tSave->isActive() )
 		save();
 }
 
-GLOptions * GLOptions::get()
+Options * Options::get()
 {
-	static GLOptions * options = new GLOptions();
+	static Options * options = new Options();
 	return options;
 }
 
-QList<QAction*> GLOptions::actions()
+QList<QAction*> Options::actions()
 {
-	GLOptions * opts = get();
+	Options * opts = get();
 	return QList<QAction*>()
 		<< opts->aDrawAxes
 		<< opts->aDrawNodes
 		<< opts->aDrawHavok
+		<< opts->aDrawConstraints
 		<< opts->aDrawFurn
 		<< opts->aDrawHidden
 #ifdef USE_GL_QPAINTER
@@ -396,7 +421,7 @@ QList<QAction*> GLOptions::actions()
 		<< opts->aSettings;
 }
 
-bool GLOptions::eventFilter( QObject * o, QEvent * e )
+bool Options::eventFilter( QObject * o, QEvent * e )
 {
 	if ( o == dialog && e->type() == QEvent::Close && tSave->isActive() )
 	{
@@ -405,7 +430,7 @@ bool GLOptions::eventFilter( QObject * o, QEvent * e )
 	return false;
 }
 
-void GLOptions::save()
+void Options::save()
 {
 	tSave->stop();
 	
@@ -430,6 +455,7 @@ void GLOptions::save()
 	cfg.setValue( "Draw Axes", drawAxes() );
 	cfg.setValue( "Draw Nodes", drawNodes() );
 	cfg.setValue( "Draw Collision Geometry", drawHavok() );
+	cfg.setValue( "Draw Constraints", drawConstraints() );
 	cfg.setValue( "Draw Furniture Markers", drawFurn() );
 	cfg.setValue( "Show Hidden Objects", drawHidden() );
 	cfg.setValue( "Show Stats", drawStats() );
@@ -457,9 +483,17 @@ void GLOptions::save()
 	cfg.setValue( "Planar Angle", lightPlanarAngle() );
 	
 	cfg.endGroup();
+
+	cfg.beginGroup( "Misc Settings" );
+
+	cfg.setValue( "Startup Version", startupVersion() );
+
+	cfg.endGroup();
+
+
 }
 
-void GLOptions::textureFolderAutoDetect( int game )
+void Options::textureFolderAutoDetect( int game )
 {
 #ifdef Q_OS_WIN32
 	switch ( game )
@@ -560,7 +594,7 @@ void GLOptions::textureFolderAutoDetect( int game )
 #endif
 }
 
-void GLOptions::textureFolderAction( int id )
+void Options::textureFolderAction( int id )
 {
 	QModelIndex idx = TexFolderView->currentIndex();
 	switch ( id )
@@ -590,7 +624,7 @@ void GLOptions::textureFolderAction( int id )
 	}
 }
 
-void GLOptions::textureFolderIndex( const QModelIndex & idx )
+void Options::textureFolderIndex( const QModelIndex & idx )
 {
 	TexFolderSelect->setEnabled( idx.isValid() );
 	TexFolderButtons[0]->setEnabled( true );
@@ -598,7 +632,7 @@ void GLOptions::textureFolderIndex( const QModelIndex & idx )
 	TexFolderButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
 }
 
-void GLOptions::activateLightPreset( int id )
+void Options::activateLightPreset( int id )
 {
 	switch ( id )
 	{
@@ -619,86 +653,91 @@ void GLOptions::activateLightPreset( int id )
 }
 
 
-QStringList GLOptions::textureFolders()
+QStringList Options::textureFolders()
 {
 	return get()->TexFolderModel->stringList();
 }
 
-bool GLOptions::textureAlternatives()
+bool Options::textureAlternatives()
 {
 	return get()->TexAlternatives->isChecked();
 }
 
-GLOptions::Axis GLOptions::upAxis()
+Options::Axis Options::upAxis()
 {
 	return get()->AxisX->isChecked() ? XAxis : get()->AxisY->isChecked() ? YAxis : ZAxis;
 }
 
-bool GLOptions::antialias()
+bool Options::antialias()
 {
 	return get()->AntiAlias->isChecked();
 }
 
-bool GLOptions::texturing()
+bool Options::texturing()
 {
 	return get()->Textures->isChecked();
 }
 
-bool GLOptions::shaders()
+bool Options::shaders()
 {
 	return get()->Shaders->isChecked();
 }
 
 
-bool GLOptions::drawAxes()
+bool Options::drawAxes()
 {
 	return get()->aDrawAxes->isChecked();
 }
 
-bool GLOptions::drawNodes()
+bool Options::drawNodes()
 {
 	return get()->aDrawNodes->isChecked();
 }
 
-bool GLOptions::drawHavok()
+bool Options::drawHavok()
 {
 	return get()->aDrawHavok->isChecked();
 }
 
-bool GLOptions::drawFurn()
+bool Options::drawConstraints()
+{
+	return get()->aDrawConstraints->isChecked();
+}
+
+bool Options::drawFurn()
 {
 	return get()->aDrawFurn->isChecked();
 }
 
-bool GLOptions::drawHidden()
+bool Options::drawHidden()
 {
 	return get()->aDrawHidden->isChecked();
 }
 
-bool GLOptions::drawStats()
+bool Options::drawStats()
 {
 	return get()->aDrawStats->isChecked();
 }
 
-bool GLOptions::benchmark()
+bool Options::benchmark()
 {
 	return false;
 }
 
 
-QColor GLOptions::bgColor()
+QColor Options::bgColor()
 {
 	return get()->colors[ 0 ]->getColor();
 }
 
-QColor GLOptions::nlColor()
+QColor Options::nlColor()
 {
 	QColor c = get()->colors[ 1 ]->getColor();
 	c.setAlphaF( get()->alpha[ 1 ]->value() );
 	return c;
 }
 
-QColor GLOptions::hlColor()
+QColor Options::hlColor()
 {
 	QColor c = get()->colors[ 2 ]->getColor();
 	c.setAlphaF( get()->alpha[ 2 ]->value() );
@@ -706,45 +745,50 @@ QColor GLOptions::hlColor()
 }
 
 
-QRegExp GLOptions::cullExpression()
+QRegExp Options::cullExpression()
 {
 	return get()->CullByID->isChecked() ? QRegExp( get()->CullExpr->text() ) : QRegExp();
 }
 
-bool GLOptions::onlyTextured()
+bool Options::onlyTextured()
 {
 	return get()->CullNoTex->isChecked();
 }
 
 
-QColor GLOptions::ambient()
+QColor Options::ambient()
 {
 	return get()->LightColor[ 0 ]->getColor();
 }
 
-QColor GLOptions::diffuse()
+QColor Options::diffuse()
 {
 	return get()->LightColor[ 1 ]->getColor();
 }
 
-QColor GLOptions::specular()
+QColor Options::specular()
 {
 	return get()->LightColor[ 2 ]->getColor();
 }
 
-bool GLOptions::lightFrontal()
+bool Options::lightFrontal()
 {
 	return get()->LightFrontal->isChecked();
 }
 
-int GLOptions::lightDeclination()
+int Options::lightDeclination()
 {
 	return get()->LightDeclination->value();
 }
 
-int GLOptions::lightPlanarAngle()
+int Options::lightPlanarAngle()
 {
 	return get()->LightPlanarAngle->value();
 }
+
+QString Options::startupVersion()
+{
+	return get()->StartVer->text();	
+};
 
 

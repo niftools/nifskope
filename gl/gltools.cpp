@@ -36,30 +36,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
-QDataStream & operator<<( QDataStream & ds, const Transform & t )
-{
-	for ( int x = 0; x < 3; x++ )
-	{
-		for ( int y = 0; y < 3; y++ )
-			ds << t.rotation( x, y );
-		ds << t.translation[ x ];
-	}
-	ds << t.scale;
-	return ds;
-}
-
-QDataStream & operator>>( QDataStream & ds, Transform & t )
-{
-	for ( int x = 0; x < 3; x++ )
-	{
-		for ( int y = 0; y < 3; y++ )
-			ds >> t.rotation( x, y );
-		ds >> t.translation[ x ];
-	}
-	ds >> t.scale;
-	return ds;
-}
-
 
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {
@@ -434,7 +410,44 @@ void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
 		glEnable( GL_CULL_FACE );
 }
 
-void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, int sd )
+void drawRail( const Vector3 &a, const Vector3 &b )
+{
+	/* offset between beginning and end points */
+	Vector3 off = b - a;
+
+	/* direction vector of "rail track width", in xy-plane */
+	Vector3 x = Vector3( - off[1], off[0], 0 );
+	if( x.length() < 0.0001f ) {
+		x[0] = 1.0f; }
+	x.normalize();
+
+	glBegin( GL_POINTS );
+		glVertex( a );
+		glVertex( b );
+	glEnd();
+
+	/* draw the rail */
+	glBegin( GL_LINES );
+		glVertex( a + x );
+		glVertex( b + x );
+		glVertex( a - x );
+		glVertex( b - x );
+	glEnd();
+
+	int len = int( off.length() );
+
+	/* draw the logs */
+	glBegin( GL_LINES );
+	for ( int i = 0; i <= len; i++ )
+	{
+		float rel_off = ( 1.0f * i ) / len;
+		glVertex( a + off * rel_off + x * 1.3f );
+		glVertex( a + off * rel_off - x * 1.3f );
+	}
+	glEnd();
+}
+
+void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd )
 {
 	bool cull = glIsEnabled( GL_CULL_FACE );
 	glDisable( GL_CULL_FACE );
@@ -443,8 +456,8 @@ void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float a
 	{
 		float f = ( ax - an ) * float( j ) / float( sd ) + an;
 		
-		glVertex( c + x * sin( f ) + y * cos( f ) + n );
-		glVertex( c + x * sin( f ) + y * cos( f ) - n );
+		glVertex( c + x * r * sin( f ) + y * r * cos( f ) + n );
+		glVertex( c + x * r * sin( f ) + y * r * cos( f ) - n );
 	}
 	glEnd();
 	if ( cull )

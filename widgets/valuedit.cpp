@@ -52,7 +52,8 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-		|| t == NifValue::tSizedString || t == NifValue::tFilePath || t == NifValue::tLineString || t == NifValue::tShortString 
+		|| t == NifValue::tSizedString || t == NifValue::tFilePath || t == NifValue::tLineString 
+		|| t == NifValue::tShortString || t == NifValue::tStringIndex 
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
@@ -126,7 +127,8 @@ void ValueEdit::setValue( const NifValue & v )
             ie->setValue( (int)v.toCount() );
             edit = ie;
          }	break;
-      case NifValue::tUInt:
+        case NifValue::tUInt:
+	    case NifValue::tStringIndex:
 		{	
 			QSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame(false);
@@ -136,10 +138,11 @@ void ValueEdit::setValue( const NifValue & v )
 		case NifValue::tLink:
 		case NifValue::tUpLink:
 		{	
-			QSpinBox * le = new QSpinBox( this );
-			le->setFrame(false);
-			le->setRange( -1, 0xffff );
-			le->setValue( v.toLink() );
+			QLineEdit * le = new QLineEdit( this );
+			int tmp = v.toLink();
+			if ( tmp > 0 ) {
+				le->setText( QString::number(tmp) );
+			}
 			edit = le;
 		}	break;
 		case NifValue::tFloat:
@@ -239,11 +242,23 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tFlags:
 		case NifValue::tInt:
 		case NifValue::tUInt:
+		case NifValue::tStringIndex:
 			val.setCount( qobject_cast<QSpinBox*>( edit )->value() );
 			break;
 		case NifValue::tLink:
 		case NifValue::tUpLink:
-			val.setLink( qobject_cast<QSpinBox*>( edit )->value() );
+			{
+				QString str = qobject_cast<QLineEdit*>( edit )->text();
+				bool ok = false;
+				int tmp = str.toInt( &ok );
+				if ( ok == false || tmp < 0 ) {
+					val.setLink( -1 );
+				}
+				else
+				{
+					val.setLink( tmp );
+				}
+			}
 			break;
 		case NifValue::tFloat:
 			val.setFloat( qobject_cast<FloatEdit*>( edit )->value() );

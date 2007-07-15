@@ -34,13 +34,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 #include "../niftypes.h"
-#include "../gl/options.h"
+#include "../options.h"
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"
-#include "../nvtristrip/qtwrapper.h"
+#include "../NvTriStrip/qtwrapper.h"
 
 #include <math.h>
-#include <gl/glext.h>
+#include <GL/glext.h>
 
 #include <QCursor>
 #include <QTimer>
@@ -59,6 +59,7 @@ UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 	{
 		qWarning() << tr( "Could not load texture data for UV editor." );
 		delete uvw;
+		return NULL;
 	}
 	uvw->show();
 	return uvw;
@@ -136,7 +137,7 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aTextureBlend, SIGNAL( toggled( bool ) ), this, SLOT( updateGL() ) );
 	addAction( aTextureBlend );
 	
-	connect( GLOptions::get(), SIGNAL( sigChanged() ), this, SLOT( updateGL() ) );
+	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( updateGL() ) );
 }
 
 UVWidget::~UVWidget()
@@ -162,7 +163,7 @@ void UVWidget::initializeGL()
 	glEnable( GL_MULTISAMPLE );
 	glDisable( GL_LIGHTING );
 
-	qglClearColor( GLOptions::bgColor() );
+	qglClearColor( Options::bgColor() );
 
 	bindTexture( texfile );
 	
@@ -198,7 +199,7 @@ void UVWidget::paintGL()
 	glPushMatrix();
 	glLoadIdentity();
 	
-	qglClearColor( GLOptions::bgColor() );
+	qglClearColor( Options::bgColor() );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	
 	glDisable( GL_DEPTH_TEST );
@@ -354,9 +355,9 @@ void UVWidget::drawTexCoords()
 	glScalef( 1.0f, 1.0f, 1.0f );
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
-	Color4 nlColor( GLOptions::nlColor() );
+	Color4 nlColor( Options::nlColor() );
 	nlColor.setAlpha( 0.5f );
-	Color4 hlColor( GLOptions::hlColor() );
+	Color4 hlColor( Options::hlColor() );
 	hlColor.setAlpha( 0.5f );
 
 	glLineWidth( 1.0f );
@@ -489,7 +490,7 @@ bool UVWidget::bindTexture( const QString & filename )
 	{
 		if ( max_anisotropy > 0.0f )
 		{
-			if ( GLOptions::antialias() )
+			if ( Options::antialias() )
 				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
 			else
 				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f );
@@ -795,9 +796,22 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )
 		{
-			foreach ( qint32 sl, nif->getChildLinks( nif->getBlockNumber( iTexProp ) ) )
+			QModelIndex iBaseTex = nif->getIndex( iTexProp, "Base Texture" );
+			if( iBaseTex.isValid() )
 			{
-				QModelIndex iTexSource = nif->getBlock( sl, "NiSourceTexture" );
+				QModelIndex iTexSource = nif->getBlock( nif->getLink( iBaseTex, "Source" ) );
+				if( iTexSource.isValid() )
+				{
+					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					return true;
+				}
+			}
+		}
+		else {
+			iTexProp = nif->getBlock( l, "NiTextureProperty" );
+			if( iTexProp.isValid() )
+			{
+				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Image" ) );
 				if( iTexSource.isValid() )
 				{
 					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );

@@ -30,65 +30,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef FLOATEDIT_H
-#define FLOATEDIT_H
+#include "glmarker.h"
 
-#include <QDoubleValidator>
-#include <QLineEdit>
+#include <QtOpenGL>
 
-class FloatValidator : public QDoubleValidator
+void drawMarker( const GLMarker * marker )
 {
-	Q_OBJECT
-public:
-	FloatValidator( QObject * parent = NULL )
-		: QDoubleValidator( parent )
-	{}
-	FloatValidator( double bottom, double top, int decimals, QObject * parent = NULL )
-		: QDoubleValidator( bottom, top, decimals, parent )
-	{}
+	glEnableClientState( GL_VERTEX_ARRAY );
 
-	QValidator::State validate ( QString & input, int & pos ) const;
+	glVertexPointer( 3, GL_FLOAT, 0, marker->verts );
 
-	bool canMin() const;
-	bool canMax() const;
-};
+	glDrawElements( GL_TRIANGLES, marker->nf * 3, GL_UNSIGNED_SHORT, marker->faces );
 
-class FloatEdit : public QLineEdit
-{
-	Q_OBJECT
-public:
-	FloatEdit( QWidget * = NULL );
-	
-	float value() const;
-
-	void setRange( float minimum, float maximum );
-
-	bool isMin() const;
-	bool isMax() const;
-
-protected:
-	void contextMenuEvent( class QContextMenuEvent * event );
-
-signals:
-	void sigEdited( float );
-	void sigEdited( const QString & );
-	void valueChanged( float );
-	void valueChanged( const QString & );
-
-public slots:
-	void setValue( float val );
-	void set( float val, float n, float x );
-	void setMin();
-	void setMax();
-	
-protected slots:
-	void edited();
-	
-protected:
-	float val;
-	FloatValidator * validator;
-	class QAction * actMin;
-	class QAction * actMax;
-};
-
-#endif
+	glDisableClientState( GL_VERTEX_ARRAY );
+}

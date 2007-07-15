@@ -51,6 +51,7 @@ public:
 	~TestThread();
 	
 	QString blockMatch;
+	quint32 verMatch;
 	bool reportAll;
 
 signals:
@@ -95,6 +96,7 @@ protected:
 	QCheckBox    * chkNif, * chkKf, * chkKfm;
 	QCheckBox    * repErr;
 	QSpinBox     * count;
+	QLineEdit    * verMatch;
 	QTextBrowser * text;
 	QProgressBar * progress;
 	QLabel       * label;

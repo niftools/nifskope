@@ -77,16 +77,16 @@ public:
 		QMap< QString, QMenu *> map;
 		foreach ( QString id, ids )
 		{
-			QString x( "*" );
+			QString x( "Other" );
 			
 			if ( id.startsWith( "Ni" ) )
-				x = id.mid( 2, 1 );
+				x = QString("Ni&") + id.mid( 2, 1 ) + "...";
 			if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
-				x = "bhk";
-			if ( id.startsWith( "BS" ) )
-				x = "BS";
-			
-			x = x.toUpper();
+				x = "Havok";
+			if ( id.startsWith( "BS" ) || id == "AvoidNode" || id == "RootCollisionNode" )
+				x = "Bethesda";
+			if ( id.startsWith( "Fx" ) )
+				x = "Firaxis";
 			
 			if ( ! map.contains( x ) )
 				map[ x ] = new QMenu( x );

@@ -214,7 +214,7 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 
 bool Mesh::isHidden() const
 {
-	return ( Node::isHidden() || ( ! GLOptions::drawHidden() && GLOptions::onlyTextured() && ! properties.get< TexturingProperty >() ) );
+	return ( Node::isHidden() || ( ! Options::drawHidden() && Options::onlyTextured() && ! properties.get< TexturingProperty >() ) );
 }
 
 bool compareTriangles( const QPair< int, float > & tri1, const QPair< int, float > & tri2 )
@@ -500,7 +500,7 @@ BoundSphere Mesh::bounds() const
 		upBounds = false;
 		bndSphere = BoundSphere( verts );
 	}
-	return worldTrans() * bndSphere | Node::bounds();
+	return worldTrans() * bndSphere;
 }
 
 void Mesh::drawShapes( NodeList * draw2nd )
@@ -682,6 +682,7 @@ void Mesh::drawSelection() const
 	if ( n == "Faces" || n == "Triangles" )
 	{
 		glDepthFunc( GL_LEQUAL );
+		glLineWidth( 1.5f );
 		glNormalColor();
 		foreach ( Triangle tri, triangles )
 		{
@@ -708,6 +709,7 @@ void Mesh::drawSelection() const
 	if ( n == "Faces" || n == "Strips" )
 	{
 		glDepthFunc( GL_LEQUAL );
+		glLineWidth( 1.5f );
 		glNormalColor();
 		foreach ( QVector<quint16> strip, tristrips )
 		{

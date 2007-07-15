@@ -6,7 +6,58 @@
 
 #include <QDebug>
 
-class spLimitedHingeHelper : public Spell
+class spCreateCVS : public Spell
+{
+public:
+	QString name() const { return "Create Convex Shape"; }
+	QString page() const { return "Havok"; }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+
+		if( !nif->inherits( index, "NiTriBasedGeom" ) )
+			return false;
+
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		return iData.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		if( !iData.isValid() )
+			return index;
+
+		/* those will be filled with the CVS data */
+		QVector<Vector4> convex_verts, convex_norms;
+
+		/* get the verts of our mesh */
+		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+
+		/* make a convex hull from it */
+		// compute_convex_hull( verts, convex_verts, convex_norms );
+
+		/* create the CVS block */
+		QModelIndex iCVS = nif->insertNiBlock( "bhkConvexVerticesShape" );
+
+		/* set CVS verts */
+		nif->set<uint>( iCVS, "Num Vertices", convex_verts.count() );
+		nif->updateArray( iCVS, "Vertices" );
+		nif->setArray<Vector4>( iCVS, "Vertices", convex_verts );
+
+		/* set CVS norms */
+		nif->set<uint>( iCVS, "Num Half-Spaces", convex_norms.count() );
+		nif->updateArray( iCVS, "Half-Spaces" );
+		nif->setArray<Vector4>( iCVS, "Half-Spaces", convex_norms );
+		
+		return iCVS;
+	}
+};
+
+REGISTER_SPELL( spCreateCVS );
+
+
+class spConstraintHelper : public Spell
 {
 public:
 	QString name() const { return "A -> B"; }
@@ -14,15 +65,32 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif && nif->isNiBlock( nif->getBlock( index ), "bhkLimitedHingeConstraint" );
+		return nif && (
+			nif->isNiBlock( nif->getBlock( index ), "bhkMalleableConstraint" )
+			|| nif->isNiBlock( nif->getBlock( index ), "bhkRagdollConstraint" )
+			|| nif->isNiBlock( nif->getBlock( index ), "bhkLimitedHingeConstraint" )
+			|| nif->isNiBlock( nif->getBlock( index ), "bhkHingeConstraint" )
+			|| nif->isNiBlock( nif->getBlock( index ), "bhkPrismaticConstraint" ) );
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex iConstraint = nif->getBlock( index );
+		QString name = nif->itemName( iConstraint );
+		if ( name == "bhkMalleableConstraint" )
+		{
+			if ( nif->getIndex( iConstraint, "Ragdoll" ).isValid() )
+			{
+				name = "bhkRagdollConstraint";
+			}
+			else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() )
+			{
+			name = "bhkLimitedHingeConstraint";
+			}
+		}
 		
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 0, 0 ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 1, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 		
 		if ( ! iBodyA.isValid() || ! iBodyB.isValid() )
 		{
@@ -32,25 +100,51 @@ public:
 		
 		Transform transA = bodyTrans( nif, iBodyA );
 		Transform transB = bodyTrans( nif, iBodyB );
-		
-		iConstraint = nif->getIndex( iConstraint, "Limited Hinge" );
-		if ( ! iConstraint.isValid() )
-			return index;
+
+		if ( name == "bhkLimitedHingeConstraint" )
+		{
+			iConstraint = nif->getIndex( iConstraint, "Limited Hinge" );
+			if ( ! iConstraint.isValid() )
+				return index;
+		}
+
+		if ( name == "bhkRagdollConstraint" )
+		{
+			iConstraint = nif->getIndex( iConstraint, "Ragdoll" );
+			if ( ! iConstraint.isValid() )
+				return index;
+		}
 		
 		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * 7.0;
 		pivot = transA * pivot;
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / 7.0;
 		nif->set<Vector4>( iConstraint, "Pivot B", Vector4( pivot[0], pivot[1], pivot[2], 0 ) );
 		
-		Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Axle A" ) );
-		axle = transA.rotation * axle;
-		axle = transB.rotation.inverted() * axle;
-		nif->set<Vector4>( iConstraint, "Axle B", Vector4( axle[0], axle[1], axle[2], 0 ) );
+		if ( name == "bhkLimitedHingeConstraint" )
+		{
+			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Axle A" ) );
+			axle = transA.rotation * axle;
+			axle = transB.rotation.inverted() * axle;
+			nif->set<Vector4>( iConstraint, "Axle B", Vector4( axle[0], axle[1], axle[2], 0 ) );
 		
-		axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2AxleInA2" ) );
-		axle = transA.rotation * axle;
-		axle = transB.rotation.inverted() * axle;
-		nif->set<Vector4>( iConstraint, "Perp2AxleInB2", Vector4( axle[0], axle[1], axle[2], 0 ) );
+			axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2AxleInA2" ) );
+			axle = transA.rotation * axle;
+			axle = transB.rotation.inverted() * axle;
+			nif->set<Vector4>( iConstraint, "Perp2AxleInB2", Vector4( axle[0], axle[1], axle[2], 0 ) );
+		}
+
+		if ( name == "bhkRagdollConstraint" )
+		{
+			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Plane A" ) );
+			axle = transA.rotation * axle;
+			axle = transB.rotation.inverted() * axle;
+			nif->set<Vector4>( iConstraint, "Plane B", Vector4( axle[0], axle[1], axle[2], 0 ) );
+
+			axle = Vector3( nif->get<Vector4>( iConstraint, "Twist A" ) );
+			axle = transA.rotation * axle;
+			axle = transB.rotation.inverted() * axle;
+			nif->set<Vector4>( iConstraint, "Twist B", Vector4( axle[0], axle[1], axle[2], 0 ) );
+		}
 		
 		return index;
 	}
@@ -77,7 +171,7 @@ public:
 	}
 };
 
-REGISTER_SPELL( spLimitedHingeHelper )
+REGISTER_SPELL( spConstraintHelper )
 
 
 class spStiffSpringHelper : public Spell
@@ -95,8 +189,8 @@ public:
 	{
 		QModelIndex iConstraint = nif->getBlock( idx );
 		
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 0, 0 ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Bodies" ).child( 1, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 		
 		if ( ! iBodyA.isValid() || ! iBodyB.isValid() )
 		{
@@ -104,8 +198,8 @@ public:
 			return idx;
 		}
 		
-		Transform transA = spLimitedHingeHelper::bodyTrans( nif, iBodyA );
-		Transform transB = spLimitedHingeHelper::bodyTrans( nif, iBodyB );
+		Transform transA = spConstraintHelper::bodyTrans( nif, iBodyA );
+		Transform transB = spConstraintHelper::bodyTrans( nif, iBodyB );
 		
 		Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) * 7 );
 		Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) * 7 );

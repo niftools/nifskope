@@ -30,8 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLOPTIONS_H
-#define GLOPTIONS_H
+#ifndef OPTIONS_H
+#define OPTIONS_H
 
 #include <QObject>
 
@@ -53,11 +53,11 @@ class ColorWheel;
 class FileSelector;
 class GroupBox;
 
-class GLOptions : public QObject
+class Options : public QObject
 {
 	Q_OBJECT
 public:
-	static GLOptions * get();
+	static Options * get();
 	static QList<QAction*> actions();
 	
 	static QStringList textureFolders();
@@ -79,6 +79,7 @@ public:
 	static bool drawAxes();
 	static bool drawNodes();
 	static bool drawHavok();
+	static bool drawConstraints();
 	static bool drawFurn();
 	static bool drawHidden();
 	static bool drawStats();
@@ -98,6 +99,8 @@ public:
 	static bool lightFrontal();
 	static int lightDeclination();
 	static int lightPlanarAngle();
+
+	static QString startupVersion();
 	
 signals:
 	void sigChanged();
@@ -112,14 +115,15 @@ protected slots:
 	void activateLightPreset( int );
 	
 protected:
-	GLOptions();
-	~GLOptions();
+	Options();
+	~Options();
 	
 	bool eventFilter( QObject * o, QEvent * e );
 	
 	QAction * aDrawAxes;
 	QAction * aDrawNodes;
 	QAction * aDrawHavok;
+	QAction * aDrawConstraints;
 	QAction * aDrawFurn;
 	QAction * aDrawHidden;
 	QAction * aDrawStats;
@@ -157,10 +161,14 @@ protected:
 	
 	
 	QTimer * tSave, * tEmit;
+
+	//Misc Optoins
+	QLineEdit * StartVer;
+
 };
 
-#define glNormalColor() glColor( Color4( GLOptions::nlColor() ) )
-#define glHighlightColor() glColor( Color4( GLOptions::hlColor() ) )
+#define glNormalColor() glColor( Color4( Options::nlColor() ) )
+#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
 
 
 #endif

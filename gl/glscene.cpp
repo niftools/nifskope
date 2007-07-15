@@ -216,11 +216,11 @@ void Scene::draw()
 {
 	drawShapes();
 	
-	if ( GLOptions::drawNodes() )
+	if ( Options::drawNodes() )
 		drawNodes();
-	if ( GLOptions::drawHavok() )
+	if ( Options::drawHavok() )
 		drawHavok();
-	if ( GLOptions::drawFurn() )
+	if ( Options::drawFurn() )
 		drawFurn();
 	
 	drawSelection();
@@ -228,7 +228,7 @@ void Scene::draw()
 
 void Scene::drawShapes()
 {
-	if ( GLOptions::blending() )
+	if ( Options::blending() )
 	{
 		NodeList draw2nd;
 		
@@ -340,7 +340,7 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( ! GLOptions::texturing() || fname.isEmpty() )
+	if ( ! Options::texturing() || fname.isEmpty() )
 		return 0;
 	
 	return textures->bind( fname );

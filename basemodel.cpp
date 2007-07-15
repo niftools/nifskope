@@ -171,7 +171,7 @@ int BaseModel::getArraySize( NifItem * array ) const
 	if ( d1 < 0 )
 	{
 		msg( Message() << tr("invalid array size for array") << array->name() );
-		d1 = 0;
+		d1 = -1;
 	}
 	return d1;
 }
