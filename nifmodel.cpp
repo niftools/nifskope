@@ -790,11 +790,22 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
       QModelIndex buddy;
       if ( item->name() == "Controlled Blocks" )
       {
-         buddy = getIndex( index, "Node Name Offset" );
-         if ( buddy.isValid() )
-            buddy = buddy.sibling( buddy.row(), index.column() );
-         if ( buddy.isValid() )
-            return data( buddy, role );
+		  if (version >= 0x14010003)
+		  {
+			  buddy = getIndex( index, "Node Name" );
+			  if ( buddy.isValid() )
+				  buddy = buddy.sibling( buddy.row(), index.column() );
+			  if ( buddy.isValid() )
+				  return data( buddy, role );
+		  }
+		  else if (version <= 0x14000005)
+		  {
+			  buddy = getIndex( index, "Node Name Offset" );
+			  if ( buddy.isValid() )
+				  buddy = buddy.sibling( buddy.row(), index.column() );
+			  if ( buddy.isValid() )
+				  return data( buddy, role );
+		  }
       }
    }
 
