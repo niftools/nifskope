@@ -243,6 +243,15 @@ public:
 							cond += "HEADER/User Version == " + userver;
 							data.setCond( cond );
 						}
+						QString userver2 = list.value( "userver2" );
+						if ( ! userver2.isEmpty() )
+						{
+							QString cond = data.cond();
+							if ( ! cond.isEmpty() )
+								cond += " && ";
+							cond += "HEADER/User Version 2 == " + userver2;
+							data.setCond( cond );
+						}
 						if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
 					}	break;
 					default:
@@ -415,8 +424,8 @@ bool NifModel::loadXML()
 {
 	QDir dir( QApplication::applicationDirPath() );
 	QString fname;
-	if ( dir.exists( "../docsys/nif.xml" ) )
-		fname = dir.filePath( "../docsys/nif.xml" );
+	if ( dir.exists( "../../docsys/nif.xml" ) )
+		fname = dir.filePath( "../../docsys/nif.xml" );
 	else
 		fname = dir.filePath( "nif.xml" );
 	QString result = NifModel::parseXmlDescription( fname );
