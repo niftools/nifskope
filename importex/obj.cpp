@@ -149,12 +149,12 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 		{
 			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
 			
-			texfn = TexCache::find( nif->string( iSource, "File Name" ), nif->getFolder() );
+			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
 		else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) )
 		{
 			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
-			texfn = TexCache::find( nif->string( iSource, "File Name" ), nif->getFolder() );
+			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
 	}
 	
@@ -564,7 +564,7 @@ void importObj( NifModel * nif )
 					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
 					
 					nif->set<int>( iTexSource, "Use External", 1 );
-					nif->assignString( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+					nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
 				} else {
 					//Older versions use NiTextureProperty and NiImage
 					QModelIndex iTexProp = nif->insertNiBlock( "NiTextureProperty" );
@@ -575,7 +575,7 @@ void importObj( NifModel * nif )
 					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
 					
 					nif->set<int>( iTexSource, "External", 1 );
-					nif->assignString( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+					nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
 				}
 			}
 			

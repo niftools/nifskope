@@ -314,7 +314,7 @@ QString TexturingProperty::fileName( int id ) const
 		QModelIndex iSource = textures[ id ].iSource;
 		const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
 		if ( nif && iSource.isValid() ) {
-			return nif->string( iSource, "File Name" );
+			return nif->get<QString>( iSource, "File Name" );
 		}
 	}
 	return QString();
@@ -496,7 +496,7 @@ QString TextureProperty::fileName() const
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iImage.model() );
 	if ( nif && iImage.isValid() )
-		return nif->string( iImage, "File Name" );
+		return nif->get<QString>( iImage, "File Name" );
 	return QString();
 }
 

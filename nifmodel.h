@@ -166,11 +166,20 @@ public:
 	// removes an item from the model
 	bool removeRows( int row, int count, const QModelIndex & parent );
 
-	QString string( const QModelIndex & index ) const;
-	QString string( const QModelIndex & index, const QString & name ) const;
+	QString string( const QModelIndex & index, bool extraInfo = false ) const;
+	QString string( const QModelIndex & index, const QString & name, bool extraInfo = false ) const;
 
 	bool assignString( const QModelIndex & index, const QString & string, bool replace = false );
 	bool assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace = false );
+
+
+	// BaseModel Overrides
+	template <typename T> T get( const QModelIndex & index ) const;
+	template <typename T> bool set( const QModelIndex & index, const T & d );	
+
+	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
+	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
+
 
 	static QAbstractItemDelegate * createDelegate( class SpellBook * );
 
@@ -225,6 +234,12 @@ protected:
 	static QHash<QString,NifBlock*>		blocks;
 	
 	static QString parseXmlDescription( const QString & filename );
+
+	// Get and Set template overloads from base model
+	template <typename T> T get( NifItem * parent, const QString & name ) const;
+	template <typename T> T get( NifItem * item ) const;
+	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
+	template <typename T> bool set( NifItem * item, const T & d );
 
 	friend class NifXmlHandler;
 }; // class NifModel
@@ -289,4 +304,70 @@ inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
 }
 
 
+// Overrides for get and set templates.
+template <typename T> inline T NifModel::get( const QModelIndex & index ) const {
+	return BaseModel::get<T>( index );
+}
+
+template <typename T> inline T NifModel::get( NifItem * item ) const {
+	return BaseModel::get<T>( item );
+}
+
+template <typename T> inline T NifModel::get( NifItem * parent, const QString & name ) const {
+	return BaseModel::get<T>(parent, name);
+}
+
+template <typename T> inline T NifModel::get( const QModelIndex & parent, const QString & name ) const {
+	return BaseModel::get<T>(parent, name);
+}
+
+template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & d ) {
+	return BaseModel::set<T>( index, d );
+}
+
+template <typename T> inline bool NifModel::set( NifItem * item, const T & d ) {
+	return BaseModel::set<T>( item, d );
+}
+
+template <typename T> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const T & d ){
+	return BaseModel::set<T>(parent, name, d);
+}
+
+template <typename T> inline bool NifModel::set( NifItem * parent, const QString & name, const T & d ) {
+	return BaseModel::set<T>(parent, name, d);
+}
+
+
+// QString overloads for the get and set templates
+template <> inline QString NifModel::get( const QModelIndex & index ) const {
+	return this->string( index );
+}
+
+//template <> inline QString NifModel::get( NifItem * item ) const {
+//	return this->string( this->item );
+//}
+
+//template <> inline QString NifModel::get( NifItem * parent, const QString & name ) const {
+//	return this->string(parent, name);
+//}
+
+template <> inline QString NifModel::get( const QModelIndex & parent, const QString & name ) const {
+	return this->string(parent, name);
+}
+
+template <> inline bool NifModel::set( const QModelIndex & index, const QString & d ) {
+	return this->assignString( index, d );
+}
+
+//template <> inline bool NifModel::set( NifItem * item, const QString & d ) {
+//	return this->assignString( item, d );
+//}
+
+template <> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const QString & d ){
+	return this->assignString(parent, name, d);
+}
+
+//template <> inline bool NifModel::set( NifItem * parent, const QString & name, const QString & d ) {
+//	return this->assignString(parent, name, d);
+//}
 #endif

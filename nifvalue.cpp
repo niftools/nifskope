@@ -82,6 +82,9 @@ void NifValue::initialize()
 	typeMap.insert( "stringoffset", NifValue::tStringOffset );
 	typeMap.insert( "stringindex", NifValue::tStringIndex );
 	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
+	typeMap.insert( "char8string", NifValue::tChar8String );
+	typeMap.insert( "string", NifValue::tString );
+	typeMap.insert( "filepath", NifValue::tFilePath);
 	
 	enumMap.clear();
 }
@@ -247,6 +250,7 @@ void NifValue::clear()
 		case tShortString:
 		case tHeaderString:
 		case tLineString:
+		case tChar8String:
 			delete static_cast<QString*>( val.data );
 			break;
 		case tColor3:
@@ -303,6 +307,7 @@ void NifValue::changeType( Type t )
 		case tShortString:
 		case tHeaderString:
 		case tLineString:
+		case tChar8String:
 			val.data = new QString();
 			return;
 		case tColor3:
@@ -356,6 +361,7 @@ void NifValue::operator=( const NifValue & other )
 		case tShortString:
 		case tHeaderString:
 		case tLineString:
+		case tChar8String:
 			*static_cast<QString*>( val.data ) = *static_cast<QString*>( other.val.data );
 			return;
 		case tColor3:
@@ -445,6 +451,7 @@ bool NifValue::fromString( const QString & s )
 		case tShortString:
 		case tHeaderString:
 		case tLineString:
+		case tChar8String:
 			*static_cast<QString*>( val.data ) = s;
 			return true;
 		case tColor3:
@@ -509,6 +516,7 @@ QString NifValue::toString() const
 		case tShortString:
 		case tHeaderString:
 		case tLineString:
+		case tChar8String:
 			return *static_cast<QString*>( val.data );
 		case tColor3:
 		{
@@ -620,6 +628,11 @@ QString NifValue::toString() const
 				.arg( tri->v2() )
 				.arg( tri->v3() );
 		}
+		case tString:
+		case tFilePath:
+			{
+			return *static_cast<QString*>( val.data );
+			}
 		default:
 			return QString();
 	}
@@ -639,6 +652,7 @@ void NifOStream::init()
 {
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
 	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
+	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
 }
 
 bool NifIStream::read( NifValue & val )
@@ -774,6 +788,17 @@ bool NifIStream::read( NifValue & val )
 			*static_cast<QString*>( val.val.data ) = QString( string );
 			return true;
 		}
+		case NifValue::tChar8String:
+		{
+			QByteArray string;
+			int c = 0;
+			char chr = 0;
+			while ( c++ < 8 && device->getChar( &chr ) )
+				string.append( chr );
+			if ( c > 9 ) return false;
+			*static_cast<QString*>( val.val.data ) = QString( string );
+			return true;
+		}
 		case NifValue::tFileVersion:
 		{
 			if ( device->read( (char *) &val.val.u32, 4 ) != 4 )	return false;
@@ -781,6 +806,29 @@ bool NifIStream::read( NifValue & val )
 			//init();
 			return true;
 		}
+		case NifValue::tString:
+		case NifValue::tFilePath:
+		{
+			if (stringAdjust)
+			{
+				val.changeType(NifValue::tStringIndex);
+				return device->read( (char *) &val.val.i32, 4 ) == 4;
+			}
+			else
+			{
+				val.changeType(NifValue::tSizedString);
+
+				int len;
+				device->read( (char *) &len, 4 );
+				if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+				QByteArray string = device->read( len );
+				if ( string.size() != len ) return false;
+				string.replace( "\r", "\\r" );
+				string.replace( "\n", "\\n" );
+				*static_cast<QString*>( val.val.data ) = QString( string );
+				return true;
+			}
+		} 
 		case NifValue::tNone:
 			return true;
 	}
@@ -791,6 +839,7 @@ void NifIStream::init()
 {
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
 	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
+	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
 }
 
 bool NifOStream::write( const NifValue & val )
@@ -888,6 +937,16 @@ bool NifOStream::write( const NifValue & val )
 				return false;
 			return ( device->write( "\n", 1 ) == 1 );
 		}
+		case NifValue::tChar8String:
+		{
+			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			quint32 n = std::min<quint32>(8, string.length());
+			if ( device->write( (const char *) string, n ) != n )
+				return false;
+			for ( quint32 i=n; i<n; ++i)
+				if ( device->write( "\0", 1 ) != 1 ) return false;
+			return true;
+		}
 		case NifValue::tByteArray:
 		{
 			QByteArray * array = static_cast<QByteArray*>( val.val.data );
@@ -906,6 +965,24 @@ bool NifOStream::write( const NifValue & val )
 				return false;
 			return device->write( (char *) &len, 4 ) == 4;
 		}
+		case NifValue::tString:
+		case NifValue::tFilePath:
+		{
+			if (stringAdjust)
+			{
+				return device->write( (char *) &val.val.u32, 4 ) == 4;
+			}
+			else
+			{
+				QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+				string.replace( "\\r", "\r" );
+				string.replace( "\\n", "\n" );
+				int len = string.size();
+				if ( device->write( (char *) &len, 4 ) != 4 )
+					return false;
+				return device->write( (const char *) string, string.size() ) == string.size();
+			}
+		} 
 		case NifValue::tNone:
 			return true;
 	}
@@ -915,6 +992,7 @@ bool NifOStream::write( const NifValue & val )
 void NifSStream::init()
 {
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
+	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
 }
 
 int NifSStream::size( const NifValue & val )
@@ -987,6 +1065,10 @@ int NifSStream::size( const NifValue & val )
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
 			return string.length() + 1;
 		}
+		case NifValue::tChar8String:
+		{
+			return 8;
+		}
 		case NifValue::tByteArray:
 		{
 			QByteArray * array = static_cast<QByteArray*>( val.val.data );
@@ -997,6 +1079,21 @@ int NifSStream::size( const NifValue & val )
 			QByteArray * array = static_cast<QByteArray*>( val.val.data );
 			return 4 + array->count() + 4;
 		}
+		case NifValue::tString:
+		case NifValue::tFilePath:
+		{
+			if (stringAdjust)
+			{
+				return 4;
+			}
+			else
+			{
+				QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+				string.replace( "\\r", "\r" );
+				string.replace( "\\n", "\n" );
+				return 4 + string.size();
+			}
+		} 
 		case NifValue::tNone:
 			return 0;
 	}

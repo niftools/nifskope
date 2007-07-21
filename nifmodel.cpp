@@ -837,25 +837,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case ValueCol:
 				{
 					QString type = item->type();
-					if ( type == "string" || type == "FilePath" )
+					const NifValue& value = item->value();
+					if (value.type() == NifValue::tString || value.type() == NifValue::tFilePath)
 					{
-						if (version >= 0x14010003)
-						{
-							QModelIndex buddy = getIndex( index, "Index" );
-							if ( buddy.isValid() )
-								buddy = buddy.sibling( buddy.row(), index.column() );
-							if ( buddy.isValid() )
-								return data( buddy, role );
-						}
-						else
-						{
-							QModelIndex buddy = getIndex( index, "String" );
-							if ( buddy.isValid() )
-								buddy = buddy.sibling( buddy.row(), index.column() );
-							if ( buddy.isValid() )
-								return data( buddy, role );
-						}
-						return item->value().toString();
+						return this->string(index);
 					}
 					else if ( item->value().type() == NifValue::tStringOffset )
 					{
@@ -960,8 +945,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case TypeCol:	return item->type();
 				case ValueCol:	
 				{
-					QString type = item->type();
-					if ( type == "string" || type == "FilePath" )
+					const NifValue& value = item->value();
+					if (value.type() == NifValue::tString || value .type() == NifValue::tFilePath)
 					{
 						return string(index);
 					}
@@ -1129,13 +1114,15 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		case NifModel::ValueCol:
 			{
 				QString type = item->type();
-				if ( type == "string" || type == "FilePath" )
+				NifValue& val = item->value();
+				if (val.type() == NifValue::tString || val.type() == NifValue::tFilePath)
 				{
+					val.changeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
 					assignString(index, value.toString(), true);
 				}
 				else
 				{
-					item->value().fromVariant( value );
+					//item->value().fromVariant( value );
 					if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
 					{
 						updateLinks();
@@ -2040,55 +2027,80 @@ int NifModel::getParent( int block ) const
 	return parent;
 }
 
-QString NifModel::string( const QModelIndex & index ) const
+QString NifModel::string( const QModelIndex & index, bool extraInfo ) const
 {
+	NifValue v = getValue( index );
+	if (v.type() == NifValue::tSizedString)
+		return BaseModel::get<QString>( index );
+
 	if (getVersionNumber() >= 0x14010003)
 	{
-		QModelIndex iIndex = (getValue( index ).type() == NifValue::tStringIndex) ? index : getIndex( index, "Index" );
-
-		int idx = get<int>( iIndex );
+		QModelIndex iIndex;
+		int idx = -1;
+		if (v.type() == NifValue::tStringIndex)
+			idx = get<int>( index );
+		else if (!v.isValid())
+			idx = get<int>( getIndex( index, "Index" ) );
 		if (idx == -1)
+		{
 			return QString();
-		if ( idx >= 0 )
+		}
+		else if ( idx >= 0 )
 		{
 			NifItem * header = this->getHeaderItem();
 			QModelIndex stringIndex = createIndex( header->row(), 0, header );
 			if ( stringIndex.isValid() )
-				return get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+			{
+				QString string = BaseModel::get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+				if (extraInfo)
+					string = QString( "%2 [%1]").arg( idx ).arg( string );
+				return string;
+			}
+			else
+			{
+				return QString( "%1 - <index invalid>" ).arg( idx );
+			}
 		}
 	}
 	else
 	{
-		if (getValue( index ).type() == NifValue::tSizedString)
-		{
-			return get<QString>( index );		
-		}
-		else
+		if (v.type() == NifValue::tNone)
 		{
 			QModelIndex iIndex = getIndex( index, "String" );
 			if (iIndex.isValid())
-				return get<QString>( iIndex );
+				return BaseModel::get<QString>( iIndex );
+		}
+		else
+		{
+			return BaseModel::get<QString>( index );		
 		}
 	}
 	return QString();
 }
 
-QString NifModel::string( const QModelIndex & index, const QString & name ) const
+QString NifModel::string( const QModelIndex & index, const QString & name, bool extraInfo ) const
 {
-	return string( getIndex(index, name) );
+	return string( getIndex(index, name), extraInfo );
 }
 
 
 bool NifModel::assignString( const QModelIndex & index, const QString & string, bool replace)
 {
+	NifValue v = getValue( index );
+
 	if (getVersionNumber() >= 0x14010003)
 	{
-		QModelIndex iIndex = (getValue( index ).type() == NifValue::tStringIndex) ? index : getIndex( index, "Index" );
+		QModelIndex iIndex;
+		int idx = -1;
+		if (v.type() == NifValue::tStringIndex)
+			idx = get<int>( iIndex = index );
+		else if (!v.isValid())
+			idx = get<int>( iIndex = getIndex( index, "Index" ) );
+		else
+			return BaseModel::set<QString>( index, string );
 
 		QModelIndex header = getHeader();
 		int nstrings = get<int>( header, "Num Strings" );
-
-		int idx = get<int>( iIndex );
 		if ( string.isEmpty() ) 
 		{
 			if (replace && idx >= 0 && idx < nstrings)
@@ -2101,7 +2113,7 @@ bool NifModel::assignString( const QModelIndex & index, const QString & string, 
 		QModelIndex iArray = getIndex( header, "Strings" );
 		if (replace && idx >= 0 && idx < nstrings)
 		{
-			return set<QString>(iArray.child(idx, 0), string);
+			return BaseModel::set<QString>(iArray.child(idx, 0), string);
 		}
 
 		QVector<QString> stringVector = getArray<QString>( iArray );
@@ -2116,20 +2128,20 @@ bool NifModel::assignString( const QModelIndex & index, const QString & string, 
 			set<uint>( header, "Num Strings", nstrings+1);
 			updateArray(header, "Strings");
 			QModelIndex iArray = getIndex( header, "Strings" );
-			set<QString>(iArray.child(nstrings, 0), string);
+			BaseModel::set<QString>(iArray.child(nstrings, 0), string);
 
 			return set<int>( iIndex, nstrings );
 		}
 	}
 	else // handle the older simpler strings
 	{
-		if (getValue( index ).type() == NifValue::tSizedString)
+		if (v.type() == NifValue::tNone)
 		{
-			return set<QString>( index, string );
+			return BaseModel::set<QString>( getIndex( index, "String" ), string );
 		}
 		else
 		{
-			return set<QString>( getIndex( index, "String" ), string );
+			return BaseModel::set<QString>( index, string );
 		}
 	}
 	return false;

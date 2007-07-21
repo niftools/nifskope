@@ -52,8 +52,8 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-		|| t == NifValue::tSizedString || t == NifValue::tLineString 
-		|| t == NifValue::tShortString || t == NifValue::tStringIndex 
+		|| t == NifValue::tSizedString || t == NifValue::tLineString || NifValue::tChar8String
+		|| t == NifValue::tShortString || t == NifValue::tStringIndex || NifValue::tString
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
@@ -127,8 +127,15 @@ void ValueEdit::setValue( const NifValue & v )
             ie->setValue( (int)v.toCount() );
             edit = ie;
          }	break;
+	  case NifValue::tStringIndex:
+		  {	
+			  QSpinBox * ie = new QSpinBox( this );
+			  ie->setFrame(false);
+			  ie->setRange( -1, INT_MAX );
+			  ie->setValue( (int)v.toCount() );
+			  edit = ie;
+		  }	break;
         case NifValue::tUInt:
-	    case NifValue::tStringIndex:
 		{	
 			QSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame(false);
@@ -159,7 +166,8 @@ void ValueEdit::setValue( const NifValue & v )
 		case NifValue::tSizedString:
 		case NifValue::tLineString:
 		case NifValue::tShortString:
-		{	
+		case NifValue::tChar8String:
+		{
 			QLineEdit * le = new QLineEdit( this );
 			le->setText( v.toString() );
 			edit = le;
@@ -219,6 +227,23 @@ void ValueEdit::setValue( const NifValue & v )
 			te->setTriangle( v.get<Triangle>() );
 			edit = te;
 		}	break;
+		case NifValue::tString:
+		case NifValue::tFilePath:
+		{
+			if (/*???*/false)
+			{	
+				QSpinBox * ie = new UIntSpinBox( this );
+				ie->setFrame(false);
+				ie->setValue( v.toCount() );
+				edit = ie;
+			}
+			else
+			{
+				QLineEdit * le = new QLineEdit( this );
+				le->setText( v.toString() );
+				edit = le;
+			}
+		} break;
 		default:
 			edit = 0;
 			break;
@@ -265,6 +290,7 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tSizedString:
 		case NifValue::tLineString:
 		case NifValue::tShortString:
+		case NifValue::tChar8String:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
 			break;
 		case NifValue::tText:

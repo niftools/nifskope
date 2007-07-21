@@ -69,7 +69,10 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if (nif->getValue( index ).type() == NifValue::tStringIndex && nif->checkVersion( 0x14010003, 0 ) )
+		NifValue::Type type = nif->getValue( index ).type() ;
+		if (type == NifValue::tStringIndex)
+				return true;
+		if ((type == NifValue::tString || type == NifValue::tFilePath) && nif->checkVersion( 0x14010003, 0 ) )
 			return true;
 		return false;
 	}
@@ -125,7 +128,7 @@ public:
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
 		
-		nif->assignString( index, le->text() );
+		nif->set<QString>( index, le->text() );
 	
 		return index;
 	}

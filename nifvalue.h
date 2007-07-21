@@ -61,24 +61,26 @@ public:
 		tUpLink = 11,
 		tFloat = 12,
 		tSizedString = 13,
-		tText = 14,
-		tShortString = 15,
-		tFilePath = 16,
-		tHeaderString = 17,
-		tLineString = 18,
-		tColor3 = 20,
-		tColor4 = 21,
-		tVector3 = 22,
-		tQuat = 23,
-		tQuatXYZW = 24,
-		tMatrix = 25,
-		tMatrix4 = 26,
-		tVector2 = 27,
-		tVector4 = 28,
-		tTriangle = 29,
-		tFileVersion = 30,
-		tByteArray = 31,
-		tStringPalette = 32,
+		tText = 15,
+		tShortString = 16,
+		tHeaderString = 18,
+		tLineString = 19,
+		tChar8String = 20,
+		tColor3 = 21,
+		tColor4 = 22,
+		tVector3 = 23,
+		tQuat = 24,
+		tQuatXYZW = 25,
+		tMatrix = 26,
+		tMatrix4 = 27,
+		tVector2 = 28,
+		tVector4 = 29,
+		tTriangle = 30,
+		tFileVersion = 31,
+		tByteArray = 32,
+		tStringPalette = 33,
+		tString = 34,
+		tFilePath = 35,
 
 		tNone = 0xff
 	};
@@ -124,7 +126,7 @@ public:
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
-	bool isString() const { return typ >= tSizedString && typ <= tLineString; }
+	bool isString() const { return typ >= tSizedString && typ <= tChar8String; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
@@ -269,7 +271,7 @@ template <> inline bool NifValue::set( const Color4 & x ) { return setType( tCol
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
 template <> inline bool NifValue::set( const QString & x )
 {
-	if ( isString() )
+	if ( isString() && val.data != NULL )
 	{
 		*static_cast<QString*>( val.data ) = x;
 		return true;
@@ -329,6 +331,7 @@ private:
 	
 	bool bool32bit;
 	bool linkAdjust;
+	bool stringAdjust;
 };
 
 class NifOStream
@@ -346,6 +349,7 @@ private:
 	
 	bool bool32bit;
 	bool linkAdjust;
+	bool stringAdjust;
 };
 
 class NifSStream
@@ -361,6 +365,7 @@ private:
 	void init();
 	
 	bool bool32bit;
+	bool stringAdjust;
 };
 
 

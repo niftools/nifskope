@@ -1230,7 +1230,7 @@ void GLView::dragMoveEvent( QDragMoveEvent * e )
 					iDragTarget = model->getIndex( iSrc, "File Name" );
 					if ( iDragTarget.isValid() )
 					{
-						fnDragTexOrg = model->string( iDragTarget );
+						fnDragTexOrg = model->get<QString>( iDragTarget );
 						model->set<QString>( iDragTarget, fnDragTex );
 						e->accept();
 						return;
