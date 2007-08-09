@@ -52,8 +52,8 @@ bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
 		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-		|| t == NifValue::tSizedString || t == NifValue::tLineString || NifValue::tChar8String
-		|| t == NifValue::tShortString || t == NifValue::tStringIndex || NifValue::tString
+		|| t == NifValue::tSizedString || t == NifValue::tLineString || t == NifValue::tChar8String
+		|| t == NifValue::tShortString || t == NifValue::tStringIndex || t == NifValue::tString
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
