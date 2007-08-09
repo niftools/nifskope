@@ -885,7 +885,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	else if ( name == "bhkTransformShape" || name == "bhkConvexTransformShape" )
 	{
 		glPushMatrix();
-		Matrix4 &tm = nif->get<Matrix4>( iShape, "Transform" );
+		Matrix4 tm = nif->get<Matrix4>( iShape, "Transform" );
 		glMultMatrix( tm );
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack );
 		glPopMatrix();
