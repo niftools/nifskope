@@ -35,12 +35,10 @@ public:
 		}
 		else if ( nif->inherits( nif->getBlock( index ), "BSXFlags" ) )
 		{
-			QModelIndex iBlock = nif->getBlock( index, "BSXFlags" );
-			QModelIndex sibling = index.sibling( index.row(), 0 );
-			if ( nif->getIndex( nif->getBlock( index ), "Name" ) == sibling )
-			{
-				return nif->getIndex( nif->getBlock( index ), "Flags" );
-			}
+			QModelIndex iFlags = nif->getIndex( nif->getBlock( index ), "Integer Data" );
+			iFlags = iFlags.sibling( iFlags.row(), NifModel::ValueCol );
+			if ( index == iFlags )
+				return iFlags;
 		}
 		return QModelIndex();
 	}
