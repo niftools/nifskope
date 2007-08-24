@@ -1122,7 +1122,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 				}
 				else
 				{
-					//item->value().fromVariant( value );
+					item->value().fromVariant( value );
 					if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
 					{
 						updateLinks();
