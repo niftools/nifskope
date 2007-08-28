@@ -407,7 +407,8 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 						case NifValue::tFloat:
 							{
 								float f = item->value().toFloat();
-								return QString( "float: %1<br>data: 0x%2" ).arg( f ).arg( *( (unsigned int*) &f ), 8, 16, QChar( '0' ) );
+								quint32 i = item->value().toCount();
+								return QString( "float: %1<br>data: 0x%2" ).arg( f ).arg( i, 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFlags:
 							{

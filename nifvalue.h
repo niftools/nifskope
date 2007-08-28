@@ -181,10 +181,15 @@ protected:
 };
 
 inline quint32 NifValue::toCount() const {
+#ifndef __GNUC__
 	if ( isCount() )
 		return val.u32;
 	else if( isFloat() )
 		return *(quint32*)&val.f32;
+#else
+	if ( isCount() || isFloat() )
+		return val.u32; // GCC only allows type punning via union (http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Optimize-Options.html#index-fstrict_002daliasing-550)
+#endif
 	return 0;
 }
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }

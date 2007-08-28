@@ -229,7 +229,7 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 	if( showVal ) {
 		int w = fontMetrics().width( "0.000" );
 #pragma message("NOTICE: Qt Bugfix is needed here, see http://pastebin.mozilla.org/101393")
-		opt.rect.adjust( 0.6*w, VAL_HEIGHT, -0.6*w, 0 );
+		opt.rect.adjust( (6*w)/10, VAL_HEIGHT, (-6*w)/10, 0 );
 	}
 
 	opt.maximum = INT_MAX - 1;
