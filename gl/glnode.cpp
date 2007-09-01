@@ -861,7 +861,40 @@ void Node::drawSelection() const
 	glEnd();	
 }
 
-void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack )
+void DrawVertexSelection( QVector<Vector3> &verts, int i )
+{
+	glPointSize( 3.5 );
+	glDepthFunc( GL_LEQUAL );
+	glNormalColor();
+	glBegin( GL_POINTS );
+	for ( int j = 0; j < verts.count(); j++ )
+		glVertex( verts.value( j ) );
+	glEnd();
+
+	if ( i >= 0 )
+	{
+		glDepthFunc( GL_ALWAYS );
+		glHighlightColor();
+		glBegin( GL_POINTS );
+		glVertex( verts.value( i ) );
+		glEnd();
+	}
+}
+
+void DrawTriangleSelection( QVector<Vector3> &verts, Triangle &tri )
+{
+	glLineWidth( 1.5f );
+	glDepthFunc( GL_ALWAYS );
+	glHighlightColor();
+	glBegin( GL_LINE_STRIP );
+	glVertex( verts.value( tri.v1() ) );
+	glVertex( verts.value( tri.v2() ) );
+	glVertex( verts.value( tri.v3() ) );
+	glVertex( verts.value( tri.v1() ) );
+	glEnd();
+}
+
+void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene )
 {
 	if ( ! nif || ! iShape.isValid() || stack.contains( iShape ) )
 		return;
@@ -878,7 +911,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		{
 			for ( int r = 0; r < nif->rowCount( iShapes ); r++ )
 			{
-				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack );
+				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene );
 			}
 		}
 	}
@@ -887,7 +920,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		glPushMatrix();
 		Matrix4 tm = nif->get<Matrix4>( iShape, "Transform" );
 		glMultMatrix( tm );
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack );
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene );
 		glPopMatrix();
 	}
 	else if ( name == "bhkSphereShape" )
@@ -969,7 +1002,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	}
 	else if ( name == "bhkMoppBvTreeShape" )
 	{
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack );
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene );
 	}
 	else if ( name == "bhkPackedNiTriStripsShape" )
 	{
@@ -991,6 +1024,25 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					glVertex( verts.value( tri[2] ) );
 					glVertex( verts.value( tri[0] ) );
 					glEnd();
+				}
+			}
+
+			// Handle Selection
+			if (scene->currentBlock == iData )
+			{
+				int i = -1;
+				QString n = scene->currentIndex.data( Qt::DisplayRole ).toString();
+				QModelIndex iParent = scene->currentIndex.parent();
+				if ( iParent.isValid() && iParent != iData )
+				{
+					n = iParent.data( Qt::DisplayRole ).toString();
+					i = scene->currentIndex.row();
+				}
+				if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
+					DrawVertexSelection(verts, i);
+				else if ( ( n == "Faces" || n == "Triangles" ) && ( i >= 0 ) )
+				{
+					DrawTriangleSelection(verts, nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" ) );
 				}
 			}
 		}
@@ -1319,7 +1371,7 @@ void Node::drawHavok()
 	glColor3fv( colors[ nif->get<int>( iBody, "Layer" ) & 7 ] );
 
 	QStack<QModelIndex> shapeStack;
-	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack );
+	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene );
 
 	glLoadName( nif->getBlockNumber( iBody ) );
 	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2f );
