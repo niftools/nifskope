@@ -200,4 +200,8 @@ inline GLuint glClosestMatch( GLuint * buffer, GLint hits )
 	return choose;
 }
 
+void renderText(double x, double y, double z, const QString & str);
+void renderText(const Vector3& c, const QString & str);
+
+
 #endif

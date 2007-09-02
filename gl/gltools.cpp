@@ -584,3 +584,27 @@ void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals )
 	*/
 	glEnd();
 }
+
+// Renders text using the font initialized in the primary view class
+void renderText(const Vector3& c, const QString & str)
+{
+	renderText(c[0], c[1], c[2], str);
+}
+void renderText(double x, double y, double z, const QString & str)
+{
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+	glDisable(GL_TEXTURE_1D);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_CULL_FACE);
+
+	glRasterPos3d(x, y, z);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glAlphaFunc(GL_GREATER, 0.0);
+	glEnable(GL_ALPHA_TEST);
+
+	QByteArray cstr(str.toLatin1());
+	glCallLists(cstr.size(), GL_UNSIGNED_BYTE, cstr.constData());
+	glPopAttrib();
+}

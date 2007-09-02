@@ -894,6 +894,12 @@ void DrawTriangleSelection( QVector<Vector3> &verts, Triangle &tri )
 	glEnd();
 }
 
+void DrawTriangleIndex( QVector<Vector3> &verts, Triangle &tri, int index)
+{
+	Vector3 c = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
+	renderText(c, QString("%1").arg(index));
+}
+
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene )
 {
 	if ( ! nif || ! iShape.isValid() || stack.contains( iShape ) )
@@ -1040,10 +1046,21 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				}
 				if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
 					DrawVertexSelection(verts, i);
-				else if ( ( n == "Faces" || n == "Triangles" ) && ( i >= 0 ) )
+				else if ( ( n == "Faces" || n == "Triangles" ) )
 				{
-					Triangle t = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
-					DrawTriangleSelection(verts, t );
+					if ( i == -1 )
+					{
+						glDepthFunc( GL_ALWAYS );
+						glHighlightColor();
+						for ( int t = 0; t < nif->rowCount( iTris ); t++ )
+							DrawTriangleIndex(verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t);
+					}
+					else
+					{
+						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
+						DrawTriangleSelection(verts, tri );
+						DrawTriangleIndex(verts, tri, i);
+					}
 				}
 			}
 		}

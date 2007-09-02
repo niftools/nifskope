@@ -472,13 +472,14 @@ void GLView::paintGL()
 	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
 	glEnable( GL_LIGHT0 );
 	glEnable( GL_LIGHTING );
-	
-	// draw the model
 
+	// Initialize Rendering Font 
+	glListBase(fontDisplayListBase(QFont(), 2000));
+
+	// draw the model
 	scene->draw();
 	
 	// restore gl state
-	
 	glPopAttrib();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();

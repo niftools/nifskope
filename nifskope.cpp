@@ -834,6 +834,7 @@ void NifSkope::setViewFont( const QFont & font )
 	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	kfmtree->setFont( font );
 	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	ogl->setFont( font );
 }
 
 bool NifSkope::eventFilter( QObject * o, QEvent * e )
