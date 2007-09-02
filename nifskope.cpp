@@ -1021,24 +1021,29 @@ int main( int argc, char * argv[] )
     if ( app.argc() > 1 )
 	{
 		//Getting a NIF file name from the OS
-		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
-
-		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
 #ifdef WIN32
-		WIN32_FIND_DATA ffd;
-		HANDLE h;
-		wchar_t * str = new wchar_t[fname.size() + 1];
-		fname.toWCharArray( str );
-		str[fname.size()] = 0;
-
-		h = FindFirstFileW( str, &ffd );
-		if ( h != INVALID_HANDLE_VALUE ) {
-			//Get the nice looking long path
-			fname = QString::fromWCharArray( ffd.cFileName );
-			FindClose(h);
+		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
+		char full[MAX_PATH];
+		char *name = app.argv()[ app.argc() - 1 ];
+		fname = name;
+		if (fname.contains('*') || fname.contains('?'))
+		{
+			WIN32_FIND_DATAA ffd;
+			HANDLE h = FindFirstFileA( name, &ffd );
+			if ( h != INVALID_HANDLE_VALUE ) {
+				//Get the nice looking long path
+				GetFullPathNameA(ffd.cFileName, MAX_PATH, full, NULL);
+				fname = QString(full);
+				FindClose(h);
+			}
 		}
-
-		delete [] str;
+		else
+		{
+			GetFullPathNameA(name, MAX_PATH, full, NULL);
+			fname = QString(full);
+		}
+#else
+		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
 #endif
 	}
 
