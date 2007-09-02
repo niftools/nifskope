@@ -1042,7 +1042,8 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					DrawVertexSelection(verts, i);
 				else if ( ( n == "Faces" || n == "Triangles" ) && ( i >= 0 ) )
 				{
-					DrawTriangleSelection(verts, nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" ) );
+					Triangle t = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
+					DrawTriangleSelection(verts, t );
 				}
 			}
 		}
