@@ -881,7 +881,7 @@ void DrawVertexSelection( QVector<Vector3> &verts, int i )
 	}
 }
 
-void DrawTriangleSelection( QVector<Vector3> &verts, Triangle &tri )
+void DrawTriangleSelection( QVector<Vector3> const &verts, Triangle const &tri )
 {
 	glLineWidth( 1.5f );
 	glDepthFunc( GL_ALWAYS );
@@ -894,7 +894,7 @@ void DrawTriangleSelection( QVector<Vector3> &verts, Triangle &tri )
 	glEnd();
 }
 
-void DrawTriangleIndex( QVector<Vector3> &verts, Triangle &tri, int index)
+void DrawTriangleIndex( QVector<Vector3> const &verts, Triangle const &tri, int index)
 {
 	Vector3 c = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
 	renderText(c, QString("%1").arg(index));
