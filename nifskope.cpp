@@ -1022,29 +1022,40 @@ int main( int argc, char * argv[] )
     if ( app.argc() > 1 )
 	{
 		//Getting a NIF file name from the OS
+		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
+
 #ifdef WIN32
 		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
-		char full[MAX_PATH];
-		char *name = app.argv()[ app.argc() - 1 ];
-		fname = name;
-		if (fname.contains('*') || fname.contains('?'))
+		wchar_t full[MAX_PATH];
+		wchar_t * temp_name = new wchar_t[fname.size() + 1];
+
+		fname.toWCharArray( temp_name );
+		temp_name[fname.size()] = 0; //The above function doesn't seem to write a null character, so add it.
+
+		//Ensure that input is a full path, even if a partial one was given on the command line
+		DWORD ret = GetFullPathNameW( temp_name, MAX_PATH, full, NULL );
+
+		if ( ret != 0 )
 		{
-			WIN32_FIND_DATAA ffd;
-			HANDLE h = FindFirstFileA( name, &ffd );
-			if ( h != INVALID_HANDLE_VALUE ) {
-				//Get the nice looking long path
-				GetFullPathNameA(ffd.cFileName, MAX_PATH, full, NULL);
-				fname = QString(full);
-				FindClose(h);
+			delete [] temp_name;
+			temp_name = new wchar_t[MAX_PATH];
+
+			//Finally get the full long file name version of the path
+			ret = GetLongPathNameW( full, temp_name, MAX_PATH );
+			
+			//Copy the name back to the QString variable that Qt uses
+			if ( ret != 0 )
+			{
+				//GetLongPath succeeded
+				fname = QString::fromWCharArray( temp_name);
+			} else
+			{
+				//GetLongPath failed, use result from GetFullPathName function
+				fname = QString::fromWCharArray( full );
 			}
 		}
-		else
-		{
-			GetFullPathNameA(name, MAX_PATH, full, NULL);
-			fname = QString(full);
-		}
-#else
-		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
+
+		delete [] temp_name;
 #endif
 	}
 

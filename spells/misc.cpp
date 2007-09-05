@@ -28,11 +28,12 @@ public:
 				item->arr2().toInt( &static2 );
 			}
 
-			if ( static1 && static2 )
-			{
-				//Neither arr1 or arr2 is a variable name
-				return false;
-			}
+			//Leave this commented out until a way for static arrays to be initialized to the right size is created.
+			//if ( static1 && static2 )
+			//{
+			//	//Neither arr1 or arr2 is a variable name
+			//	return false;
+			//}
 
 			//One of arr1 or arr2 is a variable name so the array is dynamic
 			return true;
