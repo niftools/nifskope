@@ -405,10 +405,24 @@ static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 li
 	nif->setLink( iArray.child( numIndices, 0 ), link );
 }
 
-void importObj( NifModel * nif )
+void importObj( NifModel * nif, const QModelIndex & index )
 {
-	// read the file
+
+	/*
+	Commented out because it doesn't seem like the code in sltImportExport
+	from importex.cpp is returning the correct index from the tree or list
+	view.  It's supposed to be the index of the currently selected item, but it
+	doesn't seem to have any name or type and fails the "isValid" test.  
 	
+	QModelIndex iBlock = nif->getBlock( index );
+
+	//Test whether this index is really the NiObject that's selected
+	qWarning() << "Type:  " << nif->itemType( index );
+	qWarning() << "Name:  " << nif->get<QString>( index, "Name" );
+	*/
+
+
+	// read the file	
 	QSettings settings;
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "obj" );

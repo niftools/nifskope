@@ -33,15 +33,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "../nifskope.h"
-
+#include "../widgets/nifview.h"
 
 #include <QMenu>
+#include <QModelIndex>
+#include <QDockWidget>
 
 
 void exportObj( const NifModel * nif );
-void importObj( NifModel * nif );
+void importObj( NifModel * nif, const QModelIndex & index );
 
-void import3ds( NifModel * nif );
+void import3ds( NifModel * nif, const QModelIndex & index );
 
 
 void NifSkope::fillImportExportMenus()
@@ -53,10 +55,28 @@ void NifSkope::fillImportExportMenus()
 
 void NifSkope::sltImportExport( QAction * a )
 {
+	QModelIndex index;
+	/*
+	As far as I can tell, this part of the code isn't working.  It's supposed
+	to return the index of the currently selected object in the TreeView or
+	the list view, whichever has its dock widget visible, but I can't seem to
+	get any information out of the index it returns.
+
+
+	if ( dList->isVisible() )
+	{
+		index = list->currentIndex();
+	}
+	else if ( dTree->isVisible() )
+	{
+		index = tree->currentIndex();
+	}
+	*/
+
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif );
 	else if ( a->text() == tr( "Import .OBJ" ) )
-		importObj( nif );
+		importObj( nif, index );
 	else if ( a->text() == tr( "Import .3DS" ) )
-		import3ds( nif );
+		import3ds( nif, index );
 }

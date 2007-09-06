@@ -138,7 +138,7 @@ static float GetPercentageFromChunk( Chunk * cnk )
 }
 
 
-void import3ds( NifModel * nif )
+void import3ds( NifModel * nif, const QModelIndex & index )
 {
 	float ObjScale;
 	QVector< objMesh > ObjMeshes;
