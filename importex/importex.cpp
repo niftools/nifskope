@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifskope.h"
 #include "../widgets/nifview.h"
+#include "../nifproxy.h"
+#include "../nifmodel.h"
 
 #include <QMenu>
 #include <QModelIndex>
@@ -56,23 +58,32 @@ void NifSkope::fillImportExportMenus()
 void NifSkope::sltImportExport( QAction * a )
 {
 	QModelIndex index;
-	/*
-	As far as I can tell, this part of the code isn't working.  It's supposed
-	to return the index of the currently selected object in the TreeView or
-	the list view, whichever has its dock widget visible, but I can't seem to
-	get any information out of the index it returns.
 
 
+	//Get the currently selected NiBlock index in the list or tree view
 	if ( dList->isVisible() )
 	{
-		index = list->currentIndex();
+		if ( list->model() == proxy )
+		{
+			index = proxy->mapTo( list->currentIndex() );
+		}
+		else if ( list->model() == nif )
+		{
+			index = list->currentIndex();
+		}
 	}
 	else if ( dTree->isVisible() )
 	{
-		index = tree->currentIndex();
+		if ( tree->model() == proxy )
+		{
+			index = proxy->mapTo( tree->currentIndex() );
+		}
+		else if ( tree->model() == nif )
+		{
+			index = tree->currentIndex();
+		}
 	}
-	*/
-
+	
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif );
 	else if ( a->text() == tr( "Import .OBJ" ) )

@@ -469,9 +469,19 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 	fobj.close();
 
-	// create scene root
-	QPersistentModelIndex iRoot = nif->insertNiBlock( "NiNode" );
-	nif->set<QString>( iRoot, "Name", "Scene Root" );
+	// If no existing node is selected, create a group node.  Otherwise use selected node
+	QPersistentModelIndex iRoot;
+	QModelIndex iBlock = nif->getBlock( index );
+	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" )
+	{
+		iRoot = index;
+	}
+	else
+	{
+		qWarning() << "No NiNode selected.  Importing to root of file.";
+		iRoot = nif->insertNiBlock( "NiNode" );
+		nif->set<QString>( iRoot, "Name", "Scene Root" );
+	}
 	
 	for(int objIndex = 0; objIndex < ObjMeshes.size(); objIndex++) {
 		objMesh * mesh = &ObjMeshes[objIndex];

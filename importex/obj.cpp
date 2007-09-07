@@ -407,21 +407,6 @@ static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 li
 
 void importObj( NifModel * nif, const QModelIndex & index )
 {
-
-	/*
-	Commented out because it doesn't seem like the code in sltImportExport
-	from importex.cpp is returning the correct index from the tree or list
-	view.  It's supposed to be the index of the currently selected item, but it
-	doesn't seem to have any name or type and fails the "isValid" test.  
-	
-	QModelIndex iBlock = nif->getBlock( index );
-
-	//Test whether this index is really the NiObject that's selected
-	qWarning() << "Type:  " << nif->itemType( index );
-	qWarning() << "Name:  " << nif->get<QString>( index, "Name" );
-	*/
-
-
 	// read the file	
 	QSettings settings;
 	settings.beginGroup( "import-export" );
@@ -519,9 +504,20 @@ void importObj( NifModel * nif, const QModelIndex & index )
 		}
 	}
 	
-	// create group node
-	QPersistentModelIndex iNode = nif->insertNiBlock( "NiNode" );
-	nif->set<QString>( iNode, "Name", fobj.fileName().right( fobj.fileName().length() - fobj.fileName().lastIndexOf( "/" ) - 1 ) );
+	// If no existing node is selected, create a group node.  Otherwise use selected node
+	QPersistentModelIndex iNode;
+	QModelIndex iBlock = nif->getBlock( index );
+
+	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" )
+	{
+		iNode = index;
+	}
+	else
+	{
+		qWarning() << "No NiNode selected.  Importing to root of file.";
+		iNode = nif->insertNiBlock( "NiNode" );
+		nif->set<QString>( iNode, "Name", "Scene Root" );
+	}
 	
 	// create a NiTriShape foreach material in the object
 	int shapecount = 0;
