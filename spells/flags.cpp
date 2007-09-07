@@ -137,8 +137,8 @@ public:
 		QSpinBox * spnTest = dlgSpin( vbox, "Alpha Test Threshold", 0x00, 0xff, chkTest );
 		spnTest->setValue( nif->get<int>( nif->getBlock( index ), "Threshold" ) );
 		
-		QCheckBox * chkSort = dlgCheck( vbox, "Sort Triangles" );
-		chkSort->setChecked( ( flags & 0x2000 ) == 0 );
+		QCheckBox * chkSort = dlgCheck( vbox, "No Sorter" );
+		chkSort->setChecked( ( flags & 0x2000 ) != 0 );
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -160,7 +160,7 @@ public:
 				nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
 			}
 			
-			flags = flags & 0xdfff | ( chkSort->isChecked() ? 0 : 0x2000 );
+			flags = flags & 0xdfff | ( chkSort->isChecked() ? 0x2000 : 0 );
 			
 			nif->set<int>( index, flags );
 		}

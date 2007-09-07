@@ -447,9 +447,20 @@ void Mesh::transformShapes()
 	}
 	
 	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
-	
+
+
+	/*
+	//Commented this out because this appears from my tests to be an
+	//incorrect understanding of the flag we previously called "sort."
+	//Tests have shown that none of the games or official scene viewers
+	//ever sort triangles, regarless of the path.  The triangles are always
+	//drawn in the order they exist in the triangle array.
+
 	if ( alphaprop && alphaprop->sort() )
 	{
+	
+		
+
 		QVector< QPair< int, float > > triOrder( triangles.count() );
 		if ( transformRigid )
 		{
@@ -479,7 +490,10 @@ void Mesh::transformShapes()
 			sortedTriangles[t] = triangles[ triOrder[t].first ];
 	}
 	else
+	{
+	*/
 		sortedTriangles = triangles;
+	//}
 	
 	MaterialProperty * matprop = findProperty<MaterialProperty>();
 	if ( matprop && matprop->alphaValue() != 1.0 )
