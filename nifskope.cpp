@@ -205,11 +205,11 @@ NifSkope::NifSkope()
 	aQuit = new QAction( tr("&Quit"), this );
 	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 	
-	aList = new QAction( tr("List"), this );
+	aList = new QAction( tr("Block List"), this );
 	aList->setCheckable( true );
 	aList->setChecked( list->model() == nif );
 
-	aHierarchy = new QAction( tr("Hierarchy"), this );
+	aHierarchy = new QAction( tr("Show Blocks in Tree"), this );
 	aHierarchy->setCheckable( true );
 	aHierarchy->setChecked( list->model() == proxy );
 	
@@ -261,38 +261,39 @@ NifSkope::NifSkope()
 	
 
 	// dock widgets
+
+	dRefr = new QDockWidget( tr("Interactive Help") );
+	dRefr->setObjectName( "RefrDock" );
+	dRefr->setWidget( refrbrwsr );
+	dRefr->toggleViewAction()->setShortcut( Qt::Key_F1 );
+	dRefr->toggleViewAction()->setChecked( false );
+	dRefr->setVisible( false );
 	
 	dList = new QDockWidget( tr("Block List") );
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
-	dList->toggleViewAction()->setShortcut( Qt::Key_F1 );
+	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
 	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
 	
 	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );	
-	dTree->toggleViewAction()->setShortcut( Qt::Key_F2 );
+	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
 	dTree->toggleViewAction()->setChecked( false );
 	dTree->setVisible( false );
 
 	dKfm = new QDockWidget( tr("KFM") );
 	dKfm->setObjectName( "KfmDock" );
 	dKfm->setWidget( kfmtree );	
-	dKfm->toggleViewAction()->setShortcut( Qt::Key_F3 );
+	dKfm->toggleViewAction()->setShortcut( Qt::Key_F4 );
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
 
-	dRefr = new QDockWidget( tr("Reference Browser") );
-	dRefr->setObjectName( "RefrDock" );
-	dRefr->setWidget( refrbrwsr );
-	dRefr->toggleViewAction()->setShortcut( Qt::Key_F4 );
-	dRefr->toggleViewAction()->setChecked( false );
-	dRefr->setVisible( false );
-
+	addDockWidget( Qt::BottomDockWidgetArea, dRefr );
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
 	addDockWidget( Qt::RightDockWidgetArea, dKfm );
-	addDockWidget( Qt::BottomDockWidgetArea, dRefr );
+
 
 	/* ******** */
 
@@ -364,10 +365,10 @@ NifSkope::NifSkope()
 	mFile->addAction( aQuit );
 	
 	QMenu * mView = new QMenu( tr("&View") );
+	mView->addAction( dRefr->toggleViewAction() );
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
-	mView->addAction( dRefr->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );
@@ -378,16 +379,17 @@ NifSkope::NifSkope()
 			mTools->addAction( tb->toggleViewAction() );
 	}
 	mView->addSeparator();
-	QMenu * mViewList = new QMenu( tr("&Block List Options") );
-	mView->addMenu( mViewList );
-	mViewList->addAction( aHierarchy );
-	mViewList->addAction( aList );
+	//QMenu * mViewList = new QMenu( tr("&Block List Options") );
+	//mView->addMenu( mViewList );
+	mView->addAction( aHierarchy );
+	mView->addAction( aList );
+	mView->addSeparator();
 	mView->addAction( aSelectFont );
 	
 	QMenu * mAbout = new QMenu( tr("&Help") );
+	mAbout->addAction( dRefr->toggleViewAction() );
 	mAbout->addAction( aHelpWebsite );
 	mAbout->addAction( aHelpForum );
-	mAbout->addAction( dRefr->toggleViewAction() );
 	mAbout->addSeparator();
 	mAbout->addAction( aNifToolsWebsite );
 	mAbout->addAction( aNifToolsDownloads );
