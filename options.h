@@ -111,7 +111,7 @@ public slots:
 protected slots:
 	void textureFolderAction( int );
 	void textureFolderIndex( const QModelIndex & );
-	void textureFolderAutoDetect( int game );
+	void textureFolderAutoDetect();
 	void activateLightPreset( int );
 	
 protected:

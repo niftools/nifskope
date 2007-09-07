@@ -140,14 +140,12 @@ Options::Options()
 #ifdef Q_OS_WIN32
 	dialog->pushLayout( "Auto Detect", Qt::Vertical );
 	QButtonGroup * tfgamegrp = new QButtonGroup( this );
-	connect( tfgamegrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAutoDetect( int ) ) );
+	connect( tfgamegrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAutoDetect() ) );
 	int gameid = 0;
-	foreach( QString game, QStringList() << "Oblivion" << "Morrowind" << "Civilization IV" << "Freedom Force" )
-	{
-		QPushButton * bt = new QPushButton( game );
-		tfgamegrp->addButton( bt, gameid++ );
-		dialog->addWidget( bt );
-	}
+	QPushButton * bt = new QPushButton( "Auto Detect\nGame Paths" );
+	tfgamegrp->addButton( bt);
+	dialog->addWidget( bt );
+
 	dialog->popLayout();
 #endif
 	
@@ -493,105 +491,133 @@ void Options::save()
 
 }
 
-void Options::textureFolderAutoDetect( int game )
+void Options::textureFolderAutoDetect()
 {
+	//List to hold all games paths that were detected
+	QStringList list;
+
+	//Generic "same directory" path should always be added
+	list.append( "./" );
+
+	//String to hold the message box message
+	QString game_list;
+
 #ifdef Q_OS_WIN32
-	switch ( game )
+
+	// Oblivion
 	{
-		case 0:
-			{	// Oblivion
-				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
-				QDir dir( reg.value( "Installed Path" ).toString() );
-				if ( dir.exists() && dir.cd( "Data" ) )
-				{
-					QStringList list( QStringList() << dir.path() );
-					
-					dir.setNameFilters( QStringList() << "*.bsa" );
-					dir.setFilter( QDir::Dirs );
-					foreach ( QString dn, dir.entryList() )
-						list << dir.filePath( dn );
-					
-					TexFolderModel->setStringList( list );
-					TexAlternatives->setChecked( false );
-					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
+		QDir dir( reg.value( "Installed Path" ).toString() );
+		if ( dir.exists() && dir.cd( "Data" ) )
+		{
+			game_list.append( "TES4: Oblivion\n" );
+
+			list.append( dir.path() );
+			
+			dir.setNameFilters( QStringList() << "*.bsa" );
+			dir.setFilter( QDir::Dirs );
+			foreach ( QString dn, dir.entryList() )
+				list << dir.filePath( dn );
+				
 #ifndef FSENGINE
-					if ( ! dir.cd( "Textures" ) )
-						QMessageBox::information( dialog, "NifSkope",
-							"<p>The texture folder was not found.</p>"
-							"<p>This may be because you haven't extracted the archive files yet.<br>"
-							"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" );
+			if ( ! dir.cd( "Textures" ) )
+			{
+				QMessageBox::information( dialog, "NifSkope",
+					"<p>The texture folder was not found.</p>"
+					"<p>This may be because you haven't extracted the archive files yet.<br>"
+					"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" );
+			}
 #endif
-				}
-				else
-				{
-					QMessageBox::information( dialog, "NifSkope", "Oblivion's Data folder could not be found" );
-				}
-			}	break;
-		case 1:
-			{	// Morrowind
-				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
-				QDir dir( reg.value( "Installed Path" ).toString() );
-				if ( dir.exists() && dir.cd( "Data Files" ) )
-				{
-					QStringList list;
-					list.append( dir.path() );
-					list.append( dir.path() + "/Textures" );
-					
-					dir.setNameFilters( QStringList() << "*.bsa" );
-					dir.setFilter( QDir::Dirs );
-					foreach ( QString dn, dir.entryList() )
-						list << dir.filePath( dn ) << dir.filePath( dn ) + "/Textures";
-					
-					TexFolderModel->setStringList( list );
-					TexAlternatives->setChecked( true );
-					TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-				}
-				else
-				{
-					QMessageBox::information( dialog, "NifSkope", "Morrowind's Texture folder could not be found" );
-				}
-			}	break;
-		case 2:
-			{	// CIV IV
-				QStringList list;
-				list.append( "$NIFDIR" );
-				QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4", QSettings::NativeFormat );
-				QDir dir( reg.value( "INSTALLDIR" ).toString() );
-				if ( dir.exists() && dir.cd( "Assets/Art/shared" ) )
-					list.append( dir.path() );
-				TexFolderModel->setStringList( list );
-				TexAlternatives->setChecked( false );
-				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-			}	break;
-		case 3:
-			{	// Freedom Force
-				QStringList list;
-				list.append( "$NIFDIR\\textures" );
-				list.append( "$NIFDIR\\skins\\standard" );
-				{
-					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR", QSettings::NativeFormat );
-					QDir dir( reg.value( "InstallDir" ).toString() );
-					if ( dir.exists() && dir.cd( "/Data/Art/library/area_specific/_textures" ) )
-						list.append( dir.path() );
-				}
-				{
-					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force", QSettings::NativeFormat );
-					QDir dir( reg.value( "InstallDir" ).toString() );
-					if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) )
-						list.append( dir.path() );
-				}
-				{
-					QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo", QSettings::NativeFormat );
-					QDir dir( reg.value( "InstallDir" ).toString() );
-					if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) )
-						list.append( dir.path() );
-				}
-				TexFolderModel->setStringList( list );
-				TexAlternatives->setChecked( false );
-				TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-			}	break;
+		}
+	}
+
+	// Morrowind
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
+		QDir dir( reg.value( "Installed Path" ).toString() );
+		if ( dir.exists() && dir.cd( "Data Files" ) )
+		{
+			game_list.append( "TES3: Morrowind\n" );
+
+			list.append( dir.path() );
+			list.append( dir.path() + "/Textures" );
+			
+			dir.setNameFilters( QStringList() << "*.bsa" );
+			dir.setFilter( QDir::Dirs );
+			foreach ( QString dn, dir.entryList() )
+				list << dir.filePath( dn ) << dir.filePath( dn ) + "/Textures";
+		}
+	}
+
+	// CIV IV
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4", QSettings::NativeFormat );
+		QDir dir( reg.value( "INSTALLDIR" ).toString() );
+		if ( dir.exists() && dir.cd( "Assets/Art/shared" ) )
+		{
+			game_list.append( "Sid Meier's Civilization IV\n" );
+
+			list.append( dir.path() );
+		}
+	}
+
+	// Freedom Force
+	list.append( "./textures" );
+	list.append( "./skins/standard" );
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR", QSettings::NativeFormat );
+		QDir dir( reg.value( "InstallDir" ).toString() );
+		if ( dir.exists() && dir.cd( "/Data/Art/library/area_specific/_textures" ) )
+		{
+			game_list.append( "Freedom Force vs. the Third Reich\n" );
+			list.append( dir.path() );
+		}
+	}
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force", QSettings::NativeFormat );
+		QDir dir( reg.value( "InstallDir" ).toString() );
+		if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) )
+		{
+			game_list.append( "Freedom Force\n" );
+
+			list.append( dir.path() );
+		}
+	}
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo", QSettings::NativeFormat );
+		QDir dir( reg.value( "InstallDir" ).toString() );
+		if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) ) {
+			game_list.append( "Freedom Force Demo\n" );
+
+			list.append( dir.path() );
+		}
 	}
 #endif
+	//Set folder list box to contain the newly detected textures, along with the ones the user has already defined, ignoring any duplicates
+
+	//Remove duplicates
+	QStringList finalList = TexFolderModel->stringList();
+	for( QStringList::ConstIterator it = list.begin(); it != list.end(); ++it ) {
+		if ( finalList.contains( *it ) == false )
+			finalList << *it;
+	}
+
+	TexFolderModel->setStringList( finalList );
+	TexAlternatives->setChecked( false );
+	TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+
+	//Announce result to user
+	if ( game_list.size() == 0 )
+	{
+		game_list = QString("No supported games were detected.\nYour game may still work, you will just have to set the folders manually until an auto-detect routine is created.");
+	}
+	else
+	{
+		game_list = QString("Successfully detected the following games:") + game_list;
+	}
+	QMessageBox::information( dialog, "NifSkope", game_list );
+
+
 }
 
 void Options::textureFolderAction( int id )
