@@ -256,14 +256,41 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 	}
 }
 
-void exportObj( const NifModel * nif )
+void exportObj( const NifModel * nif, const QModelIndex & index )
 {
+	//--Determine how the file will export, and be sure the user wants to continue--//
+	QList<int> roots;
+	QModelIndex iBlock = nif->getBlock( index );
+
+	QString question;
+	if ( iBlock.isValid() )
+	{
+		roots.append( nif->getBlockNumber(index) );
+		if ( nif->itemName(index) == "NiNode" )
+		{
+			question = "NiNode selected.  All children of selected node will be exported.";
+		} else if ( nif->itemName(index) == "NiTriShape" || nif->itemName(index) == "NiTriStrips" )
+		{
+			question = nif->itemName(index) + QString(" selected.  Selected mesh will be exported.");
+		}
+	}
+	else
+	{
+		question = "No NiNode, NiTriShape,or NiTriStrips is selected.  Entire scene will be exported.";
+		roots = nif->getRootLinks();
+	}
+
+	int result = QMessageBox::question( 0, "Export OBJ", question, QMessageBox::Ok, QMessageBox::Cancel );
+	if ( result == QMessageBox::Cancel ) {
+		return;
+	}
+
+	//--Allow the user to select the file--//
+
 	QSettings settings;
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "obj" );
-	
-	// target file setup
-	
+
 	QString fname = QFileDialog::getSaveFileName( 0, "Choose a .OBJ file for export", settings.value( "File Name" ).toString(), "*.obj" );
 	if ( fname.isEmpty() )
 		return;
@@ -294,9 +321,11 @@ void exportObj( const NifModel * nif )
 	QTextStream smtl( &fmtl );
 	
 	sobj << "# exported with NifSkope\r\n\r\n" << "mtllib " << fname << "\r\n";
-	
+
+	//--Translate NIF structure into file structure --//
+
 	int ofs[3] = { 1, 1, 1 };
-	foreach ( int l, nif->getRootLinks() )
+	foreach ( int l, roots )
 	{
 		QModelIndex iBlock = nif->getBlock( l );
 		if ( nif->inherits( iBlock, "NiNode" ) )
@@ -407,7 +436,83 @@ static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 li
 
 void importObj( NifModel * nif, const QModelIndex & index )
 {
-	// read the file	
+	//--Determine how the file will import, and be sure the user wants to continue--//
+
+	// If no existing node is selected, create a group node.  Otherwise use selected node
+	QPersistentModelIndex iNode, iShape, iMaterial, iData, iTexProp, iTexSource;
+	QModelIndex iBlock = nif->getBlock( index );
+
+	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" )
+	{
+		iNode = index;
+	}
+	else if ( iBlock.isValid() && nif->itemName( index ) == "NiTriShape" )
+	{
+		iShape = index;
+		//Find parent of NiTriShape
+		int par_num = nif->getParent( nif->getBlockNumber( index ) );
+		if ( par_num != -1 )
+		{
+			iNode = nif->getBlock( par_num );
+		}
+
+		//Find material, texture, and data objects
+		QList<int> children = nif->getChildLinks( nif->getBlockNumber(iShape) );
+		for( QList<int>::iterator it = children.begin(); it != children.end(); ++it )
+		{
+			if ( *it != -1 )
+			{
+				QModelIndex temp = nif->getBlock( *it );
+				QString type = nif->itemName( temp );
+				if ( type == "NiMaterialProperty" )
+				{
+					iMaterial = temp;
+				}
+				else if ( type == "NiTriShapeData" )
+				{
+					iData = temp;
+				}
+				else if ( (type == "NiTexturingProperty") || (type == "NiTextureProperty") )
+				{
+					iTexProp = temp;
+
+					//Search children of texture property for texture sources/images
+					QList<int> children = nif->getChildLinks( nif->getBlockNumber(iTexProp) );
+					for( QList<int>::iterator it = children.begin(); it != children.end(); ++it )
+					{
+						QModelIndex temp = nif->getBlock( *it );
+						QString type = nif->itemName( temp );
+						if ( (type == "NiSourceTexture") || (type == "NiImage") )
+						{
+							iTexSource = temp;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	QString question;
+	if ( iNode.isValid() == true )
+	{
+		question = "NiNode selected.  Meshes will be attached to the selected node.";
+	}
+	else if ( iShape.isValid() == true )
+	{
+		question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+	}
+	else
+	{
+		question = "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file.";
+	}
+
+	int result = QMessageBox::question( 0, "Import OBJ", question, QMessageBox::Ok, QMessageBox::Cancel );
+	if ( result == QMessageBox::Cancel ) {
+		return;
+	}
+
+	//--Read the file--//
+
 	QSettings settings;
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "obj" );
@@ -503,24 +608,18 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			}
 		}
 	}
-	
-	// If no existing node is selected, create a group node.  Otherwise use selected node
-	QPersistentModelIndex iNode;
-	QModelIndex iBlock = nif->getBlock( index );
 
-	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" )
+	//--Translate file structures into NIF ones--//
+
+	if ( iNode.isValid() == false )
 	{
-		iNode = index;
-	}
-	else
-	{
-		qWarning() << "No NiNode selected.  Importing to root of file.";
 		iNode = nif->insertNiBlock( "NiNode" );
 		nif->set<QString>( iNode, "Name", "Scene Root" );
 	}
-	
+
 	// create a NiTriShape foreach material in the object
 	int shapecount = 0;
+	bool first_tri_shape = true;
 	QMapIterator< QString, QVector<ObjFace> * > it( ofaces );
 	while ( it.hasNext() )
 	{
@@ -531,7 +630,12 @@ void importObj( NifModel * nif, const QModelIndex & index )
 		
 		if ( it.key() != "collision" )
 		{
-			QPersistentModelIndex iShape = nif->insertNiBlock( "NiTriShape" );
+			//If we are on the first shape, and one was selected in the 3D view, use the existing one
+			if ( iShape.isValid() == false || first_tri_shape == false )
+			{
+				iShape = nif->insertNiBlock( "NiTriShape" );
+			}
+
 			nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
 			addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
 			
@@ -540,7 +644,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			
 			ObjMaterial mtl = omaterials.value( it.key() );
 			
-			QModelIndex iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
+			if ( iMaterial.isValid() == false || first_tri_shape == false )
+			{
+				iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
+			}
 			nif->set<QString>( iMaterial, "Name", it.key() );
 			nif->set<Color3>( iMaterial, "Ambient Color", mtl.Ka );
 			nif->set<Color3>( iMaterial, "Diffuse Color", mtl.Kd );
@@ -556,7 +663,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 				if ( nif->getVersionNumber() >= 0x0303000D )
 				{
 					//Newer versions use NiTexturingProperty and NiSourceTexture
-					QModelIndex iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType(iTexProp) != "NiTexturingProperty" )
+					{
+						iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+					}
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 					
 					nif->set<int>( iTexProp, "Has Base Texture", 1 );
@@ -564,7 +674,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
 					nif->set<int>( iBaseMap, "Filter Mode", 2 );
 					
-					QModelIndex iTexSource = nif->insertNiBlock( "NiSourceTexture" );
+					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType(iTexSource) != "NiSourceTexture" )
+					{
+						iTexSource = nif->insertNiBlock( "NiSourceTexture" );
+					}
 					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
 					
 					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
@@ -577,10 +690,16 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
 				} else {
 					//Older versions use NiTextureProperty and NiImage
-					QModelIndex iTexProp = nif->insertNiBlock( "NiTextureProperty" );
+					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType(iTexProp) != "NiTextureProperty" )
+					{
+						iTexProp = nif->insertNiBlock( "NiTextureProperty" );
+					}
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
 					
-					QModelIndex iTexSource = nif->insertNiBlock( "NiImage" );
+					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType(iTexSource) != "NiImage" )
+					{
+						iTexSource = nif->insertNiBlock( "NiImage" );
+					}
 
 					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
 					
@@ -589,7 +708,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 				}
 			}
 			
-			QModelIndex iData = nif->insertNiBlock( "NiTriShapeData" );
+			if ( iData.isValid() == false || first_tri_shape == false )
+			{
+				iData = nif->insertNiBlock( "NiTriShapeData" );
+			}
 			nif->setLink( iShape, "Data", nif->getBlockNumber( iData ) );
 			
 			QVector<Vector3> verts;
@@ -767,6 +889,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			
 			nif->setLink( iNode, "Collision Object", nif->getBlockNumber( iObject ) );
 		}
+
+		//Finished with the first shape which is the only one that can import over the top of existing data
+		first_tri_shape = false;
 	}
 	
 	qDeleteAll( ofaces );

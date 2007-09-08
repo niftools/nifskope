@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDockWidget>
 
 
-void exportObj( const NifModel * nif );
+void exportObj( const NifModel * nif, const QModelIndex & index );
 void importObj( NifModel * nif, const QModelIndex & index );
 
 void import3ds( NifModel * nif, const QModelIndex & index );
@@ -85,7 +85,7 @@ void NifSkope::sltImportExport( QAction * a )
 	}
 	
 	if ( a->text() == tr( "Export .OBJ" ) )
-		exportObj( nif );
+		exportObj( nif, index );
 	else if ( a->text() == tr( "Import .OBJ" ) )
 		importObj( nif, index );
 	else if ( a->text() == tr( "Import .3DS" ) )
