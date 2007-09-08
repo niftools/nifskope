@@ -144,9 +144,14 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 {
 	if ( file.isEmpty() )
 		return QString();
-	
+
+#ifdef __GNUC__
+	/* convert nif path backslash into forward slash */
+	QString filename = file.toLower().replace( "\\", "/" );
+#else
 	QString filename = file.toLower();
-	
+#endif
+
 	while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
 		filename.remove( 0, 1 );
 	
