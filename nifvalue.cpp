@@ -974,7 +974,11 @@ bool NifOStream::write( const NifValue & val )
 			}
 			else
 			{
-				QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+				QByteArray string;
+				if( val.val.data != 0 )
+				{
+					string = static_cast<QString*>( val.val.data )->toAscii();
+				}
 				string.replace( "\\r", "\r" );
 				string.replace( "\\n", "\n" );
 				int len = string.size();
