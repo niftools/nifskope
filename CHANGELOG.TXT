@@ -3,7 +3,61 @@
 This is version 1.0 of NifSkope.
 
 changes since 0.9.8:
-
+ * User Interface
+  - Expanded help menu and renamed "Reference Browser" to "Interactive Help" and made it come up when F1 is pressed.
+  - Merged autodetect buttons into a single button which looks for every supported game so you can auto-detect all our games at the same time.
+  - The custom paths you've specified will no longer be deleted by the autodetect button.
+  - File names displayed in the load and save box should now always have the full path and show long file names on Windows.  They should also contain back slashes instead of forward slashes.
+  - Added Vertex and Triangle Selection to bhkPackedNiTriStripsShape
+  - Linux file select fix
+  - The BSXFlags selection box works again
+  - Improved FloatEdit to accept "<float_min>" and "<float_max>".
+  - Added Draw Constraints option.
+  - Added check if array is even enabled to "Update Array" spell
+  - Created new icons for "Follow Link" and "Flags" spells just for fun.
+  - Created an icon for "Array Update" and made the spell instant, so now arrays can be updated just by clicking the icon.
+  - Made the Matrix4 edit spell "instant" so that the icon would appear next to the Matrix and the user won't have to drill down into the right-click menu.
+  - Created some more amusing icons for the various view toolbar buttons.
+  - Reformatted the insert block menu to make a little more sense.  "Havok" instead of "BHK," grouped other Bethesda and Firaxis nodes, etc.
+  - Added version matching to XML checker.
+  - Changed link editing so if you clear the value and press enter, the link changes to "None."  This way the user won't have to know that "-1" has a special meaning.
+  - Fixed block-matching so it works for all versions, though it won't be any faster for old versions since early rejection can't be used.
+  - Fixed NiControllerSequence links so that 0x0000FFFF also counts as "empty" instead of showing up as "invalid index"
+  - Added the ability to specify what NIF version the new "blank" NIF is when NifSkope starts.
+  - Changed relative path specifier to './'
+  - Fixed issue where links in old files weren't mapped if the file didn't load completely.
+ 
+ * 3D View
+  - Added ability to center the view on the selected node or shape.  Select the node/shape and press the C key.
+  - Made it so you can zoom in and out by right-dragging left and right as well as up and down.
+  - Added Text Rendering when "Triangles" is selected on the bhkNiTriStripsShape data.  If the top is selected all triangles are numbered if a specific one is selected then only that triangle index is shown.
+  - Removed triangle sorting of alpha meshes because none of the games or official scene viewers actually seem to do this.  Improves display of Oblivion hair meshes.
+  - Fixed, added, or improved several Havok Constraint visuals.
+  - Added support for displaying textures in NiTextureProperty (Nif ver. 3.x)
+  - Made selection lines look much less flickery by increasing the line width to 1.5 before drawing them.
+  - Added visualization for old style collision boxes.  Lumped it in with "Havok" since it's the same idea as a Havok box shape.
+ 
+ * Spells
+  - Added "Create Convex Shape" spell - currently, using QHull which is not on SVN due to licensing.
+  - Update Center/Radius" spell now respects CF_VOLATILE and Oblivion simple center searching methods.
+  - Enhanced LimitedHingeHelper spell to every constraint
+  - "Edit UV" is applicable only when there are texture coordinates present and fixed bug which could lead to crashing.
+ 
+ * Import/Export
+  - 3ds and OBJ import updated so that all the NiTriShapes will be attached to whatever NiNode is selected in the tree view, similar to the old right-click->Import method.
+  - Fixed 3ds import for shapes with multiple materials.
+  - Optimized 3ds import a bit so that group nodes will only be created when there is more than one material in a shape.
+  - Updated Import 3ds so that it creates a "Scene Root" node which all object nodes are attached to, rather than creating a NIF file with many roots.
+  - Fixed a the same bug in 3ds import as was fixed in OBJ import where "Has UV" was not being set properly.
+  - Fixed OBJ and 3ds import and export so that NiImage and NiTexture are created in 3.x files, and are detected during OBJ export.
+  - Fixed a bug that was causing the "Has UV" bool not to be set correctly when an OBJ file was imported.
+  
+ * Misc.
+  - GCC build fixes.
+  - Added check for empty QFileSystemWatcher, this removes the nasty qWarning
+  - Fixed a bug that made NifSkope fail to load the 3.3.0.13 file.
+  - Fixed problem with version 3.03 conditions in the XML.  Version 3.1 files can be read again.
+  - Added QDir::toNativeSeparators() to the file field.  Slashes will now be backslashes on Windows.
 
 changes since 0.9.7:
   - Bugfix Re-Release
