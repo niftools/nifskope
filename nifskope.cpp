@@ -205,7 +205,7 @@ NifSkope::NifSkope()
 	aQuit = new QAction( tr("&Quit"), this );
 	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 	
-	aList = new QAction( tr("Block List"), this );
+	aList = new QAction( tr("Show Blocks in List"), this );
 	aList->setCheckable( true );
 	aList->setChecked( list->model() == nif );
 
