@@ -38,13 +38,15 @@ changes since 0.9.8:
   - Added visualization for old style collision boxes.  Lumped it in with "Havok" since it's the same idea as a Havok box shape.
  
  * Spells
-  - Added "Create Convex Shape" spell - currently, using QHull which is not on SVN due to licensing.
   - Update Center/Radius" spell now respects CF_VOLATILE and Oblivion simple center searching methods.
   - Enhanced LimitedHingeHelper spell to every constraint
   - "Edit UV" is applicable only when there are texture coordinates present and fixed bug which could lead to crashing.
  
  * Import/Export
   - 3ds and OBJ import updated so that all the NiTriShapes will be attached to whatever NiNode is selected in the tree view, similar to the old right-click->Import method.
+  - Added the ability to import the first mesh from an OBJ or 3DS file over the top of the selected NiTriShape object.
+  - Added the ability to export starting from the specified node, or only a specific mesh, depending on what is selected.
+  - Import and export now warn the user what they are about to do, based on the selection, giving them a chance to cancel the operation if it isn't what they wanted.
   - Fixed 3ds import for shapes with multiple materials.
   - Optimized 3ds import a bit so that group nodes will only be created when there is more than one material in a shape.
   - Updated Import 3ds so that it creates a "Scene Root" node which all object nodes are attached to, rather than creating a NIF file with many roots.

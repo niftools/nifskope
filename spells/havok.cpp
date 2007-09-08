@@ -6,6 +6,11 @@
 
 #include <QDebug>
 
+//Wz didn't provide enough code for this to work.  I don't see any reason QHull can't be put on SVN, but he seems to have changed
+//the parameters of the example compute_convex_hull function, so I'll just leave it defined out until someone has a chance to dig
+//into it or provide an alternative implementation without QHull.
+#ifdef USE_QHULL
+
 class spCreateCVS : public Spell
 {
 public:
@@ -35,7 +40,7 @@ public:
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 
 		/* make a convex hull from it */
-		// compute_convex_hull( verts, convex_verts, convex_norms );
+		compute_convex_hull( verts, convex_verts, convex_norms );
 
 		/* create the CVS block */
 		QModelIndex iCVS = nif->insertNiBlock( "bhkConvexVerticesShape" );
@@ -55,6 +60,7 @@ public:
 };
 
 REGISTER_SPELL( spCreateCVS );
+#endif
 
 
 class spConstraintHelper : public Spell
