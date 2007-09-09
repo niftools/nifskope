@@ -613,7 +613,7 @@ void Options::textureFolderAutoDetect()
 	}
 	else
 	{
-		game_list = QString("Successfully detected the following games:") + game_list;
+		game_list = QString("Successfully detected the following games:\n") + game_list;
 	}
 	QMessageBox::information( dialog, "NifSkope", game_list );
 
