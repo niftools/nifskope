@@ -200,13 +200,17 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	}
 
 	QString question;
+
 	if ( iNode.isValid() == true )
 	{
-		question = "NiNode selected.  Meshes will be attached to the selected node.";
-	}
-	else if ( iShape.isValid() == true )
-	{
-		question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+		if ( iShape.isValid() == true )
+		{
+			question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+		}
+		else
+		{
+			question = "NiNode selected.  Meshes will be attached to the selected node.";
+		}
 	}
 	else
 	{

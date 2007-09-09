@@ -274,7 +274,8 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 			question = nif->itemName(index) + QString(" selected.  Selected mesh will be exported.");
 		}
 	}
-	else
+	
+	if ( question.size() == 0 )
 	{
 		question = "No NiNode, NiTriShape,or NiTriStrips is selected.  Entire scene will be exported.";
 		roots = nif->getRootLinks();
@@ -442,15 +443,15 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	QPersistentModelIndex iNode, iShape, iMaterial, iData, iTexProp, iTexSource;
 	QModelIndex iBlock = nif->getBlock( index );
 
-	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" )
+	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiNode" )
 	{
-		iNode = index;
+		iNode = iBlock;
 	}
-	else if ( iBlock.isValid() && nif->itemName( index ) == "NiTriShape" )
+	else if ( iBlock.isValid() && nif->itemName( iBlock ) == "NiTriShape" )
 	{
-		iShape = index;
+		iShape = iBlock;
 		//Find parent of NiTriShape
-		int par_num = nif->getParent( nif->getBlockNumber( index ) );
+		int par_num = nif->getParent( nif->getBlockNumber( iBlock ) );
 		if ( par_num != -1 )
 		{
 			iNode = nif->getBlock( par_num );
@@ -495,11 +496,14 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	QString question;
 	if ( iNode.isValid() == true )
 	{
-		question = "NiNode selected.  Meshes will be attached to the selected node.";
-	}
-	else if ( iShape.isValid() == true )
-	{
-		question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+		if ( iShape.isValid() == true )
+		{
+			question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+		}
+		else
+		{
+			question = "NiNode selected.  Meshes will be attached to the selected node.";
+		}
 	}
 	else
 	{
