@@ -6,44 +6,14 @@ NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
 This is version 1.0 of NifSkope.
 
+Note:  Windows users will will need to install this Microsoft package which contains Visual C++ DLL files:
 
-Recompiling NifSkope from source:
+http://www.microsoft.com/downloads/details.aspx?familyid=200B2FD9-AE1A-4A14-984D-389C36F85647&displaylang=en
+
+This only needs to be done if an error message appears when NifSkope starts saying something like:
+
+ "The application is not configured correctly.  Reinstalling it may help."
+
+How to compile NifSkope from source:
 
   - see http://niftools.sourceforge.net/wiki/NifSkope/Compile for instructions
-
-
-License notice for QHull:
-
-                    Qhull, Copyright (c) 1993-2003
-
-       The National Science and Technology Research Center for
-        Computation and Visualization of Geometric Structures
-                        (The Geometry Center)
-                       University of Minnesota
-
-                       email: qhull@qhull.org
-
-This software includes Qhull from The Geometry Center.  Qhull is 
-copyrighted as noted above.  Qhull is free software and may be obtained 
-via http from www.qhull.org.  It may be freely copied, modified, 
-and redistributed under the following conditions:
-
-1. All copyright notices must remain intact in all files.
-
-2. A copy of this text file must be distributed along with any copies 
-   of Qhull that you redistribute; this includes copies that you have 
-   modified, or copies of programs or other software products that 
-   include Qhull.
-
-3. If you modify Qhull, you must include a notice giving the
-   name of the person performing the modification, the date of
-   modification, and the reason for such modification.
-
-4. When distributing modified versions of Qhull, or other software 
-   products that include Qhull, you must provide notice that the original 
-   source code may be obtained as noted above.
-
-5. There is no warranty or other guarantee of fitness for Qhull, it is 
-   provided solely "as is".  Bug reports or fixes may be sent to 
-   qhull_bug@qhull.org; the authors may or may not act on them as 
-   they desire.

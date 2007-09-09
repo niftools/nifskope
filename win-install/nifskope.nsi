@@ -35,7 +35,7 @@
 
 !include "MUI.nsh"
 
-!define VERSION "1.0 RC1"
+!define VERSION "1.0 RC2"
 
 Name "NifSkope ${VERSION}"
 
@@ -56,8 +56,8 @@ Name "NifSkope ${VERSION}"
 !insertmacro MUI_PAGE_INSTFILES
 
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\README.TXT"
-!define MUI_FINISHPAGE_LINK "Visit us at http://www.niftools.org/"
-!define MUI_FINISHPAGE_LINK_LOCATION "http://www.niftools.org/"
+!define MUI_FINISHPAGE_LINK "Visit us at http://niftools.sourceforge.net/"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://niftools.sourceforge.net/"
 !insertmacro MUI_PAGE_FINISH
 
 !define MUI_WELCOMEPAGE_TEXT  "This wizard will guide you through the uninstallation of NifSkope ${VERSION}.\r\n\r\nBefore starting the uninstallation, make sure NifSkope is not running.\r\n\r\nClick Next to continue."
@@ -167,7 +167,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
 
   ; Install NifSkope
   SetOutPath $INSTDIR
-  File ..\NifSkope.exe
+  File ..\release\NifSkope.exe
   ;File ..\mingwm10.dll
   File ..\README.TXT
   File ..\CHANGELOG.TXT
@@ -276,7 +276,11 @@ KfaAssocNoOwn:
   DeleteRegKey HKLM "SOFTWARE\NifSkope"
 
   ; remove program files and program directory
+  Delete "$INSTDIR\doc\*.*"
+  Delete "$INSTDIR\shaders\*.*"
   Delete "$INSTDIR\*.*"
+  RMDir "$INSTDIR\doc"
+  RMDir "$INSTDIR\shaders"
   RMDir "$INSTDIR"
 
   ; remove links in start menu

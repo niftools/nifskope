@@ -26,6 +26,8 @@ changes since 0.9.8:
   - Added the ability to specify what NIF version the new "blank" NIF is when NifSkope starts.
   - Changed relative path specifier to './'
   - Fixed issue where links in old files weren't mapped if the file didn't load completely.
+  - The XML checker window's Block choosing button now has the same new menu structure as the Block > Insert spell.
+
  
  * 3D View
   - Added ability to center the view on the selected node or shape.  Select the node/shape and press the C key.
@@ -41,7 +43,9 @@ changes since 0.9.8:
   - Update Center/Radius" spell now respects CF_VOLATILE and Oblivion simple center searching methods.
   - Enhanced LimitedHingeHelper spell to every constraint
   - "Edit UV" is applicable only when there are texture coordinates present and fixed bug which could lead to crashing.
- 
+  - The Optimize > Combine Shapes spell now issues warnings when shapes don't count as matching due to the presence of unsupported NiObjects, such as NiSkinInstance.
+  - The Multi Apply Mode spell is now on the "Batch" page of the spell book, and only appears in the Spell menu, never in the right-click menu.
+
  * Import/Export
   - 3ds and OBJ import updated so that all the NiTriShapes will be attached to whatever NiNode is selected in the tree view, similar to the old right-click->Import method.
   - Added the ability to import the first mesh from an OBJ or 3DS file over the top of the selected NiTriShape object.
@@ -62,6 +66,7 @@ changes since 0.9.8:
  * Misc. 
   - GCC build fixes.
   - Added check for empty QFileSystemWatcher, this removes the nasty qWarning
+  - Uninstall now correctly removes all folders.
 
 changes since 0.9.7:
   - Bugfix Re-Release
