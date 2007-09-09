@@ -641,11 +641,21 @@ public:
 				}
 				
 				// strippify the triangles
-				
-				QList< QVector<quint16> > strips = strippify( triangles );
+				QList< QVector<quint16> > strips;
 				int numTriangles = 0;
-				foreach ( QVector<quint16> strip, strips )
-					numTriangles += strip.count() - 2;
+				if ( stripify == true )
+				{
+					strips = strippify( triangles );
+
+					foreach ( QVector<quint16> strip, strips )
+					{
+						numTriangles += strip.count() - 2;
+					}
+				}
+				else
+				{
+					numTriangles = triangles.count();
+				}
 				
 				// fill in counts
 				
@@ -681,21 +691,29 @@ public:
 					for ( int b = 0; b < maxBones; b++ )
 						nif->set<float>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].second : 0.0 );
 				}
-				
-				// write the strips
-				
-				nif->set<int>( iPart, "Has Strips", 1 );
-				QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
-				nif->updateArray( iStripLengths );
-				for ( int s = 0; s < nif->rowCount( iStripLengths ); s++ )
-					nif->set<int>( iStripLengths.child( s, 0 ), strips.value( s ).count() );
-				
-				QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
-				nif->updateArray( iStrips );
-				for ( int s = 0; s < nif->rowCount( iStrips ); s++ )
+
+				if ( stripify == true )
 				{
-					nif->updateArray( iStrips.child( s, 0 ) );
-					nif->setArray<quint16>( iStrips.child( s, 0 ), strips.value( s ) );
+					// write the strips
+					nif->set<int>( iPart, "Has Strips", 1 );
+					QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
+					nif->updateArray( iStripLengths );
+					for ( int s = 0; s < nif->rowCount( iStripLengths ); s++ )
+						nif->set<int>( iStripLengths.child( s, 0 ), strips.value( s ).count() );
+					
+					QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
+					nif->updateArray( iStrips );
+					for ( int s = 0; s < nif->rowCount( iStrips ); s++ )
+					{
+						nif->updateArray( iStrips.child( s, 0 ) );
+						nif->setArray<quint16>( iStrips.child( s, 0 ), strips.value( s ) );
+					}
+				}
+				else
+				{
+					QModelIndex iTriangles = nif->getIndex( iPart, "Triangles" );
+					nif->updateArray( iTriangles );
+					nif->setArray<Triangle>( iTriangles, triangles );
 				}
 				
 				// fill in vertex bones
