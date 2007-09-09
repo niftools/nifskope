@@ -852,7 +852,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	labTStrip->setText( Spell::tr(
 	"<b>Whether or not to stripify the triangles in each partition.</b><br>"
 	"Hint:  Morrowind and Freedom force do not support strips.<br>"
-	"Strips generally perform faster, if the game supports it"
+	"Strips generally perform faster, if the game supports them."
 	) );
 	
 	QPushButton * btOk = new QPushButton( this );
