@@ -443,6 +443,13 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	QPersistentModelIndex iNode, iShape, iMaterial, iData, iTexProp, iTexSource;
 	QModelIndex iBlock = nif->getBlock( index );
 
+	//Be sure the user hasn't clicked on a NiTriStrips object
+	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiTriStrips" )
+	{
+		int result = QMessageBox::information( 0, "Import OBJ", "You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate" );
+		return;
+	}
+
 	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiNode" )
 	{
 		iNode = iBlock;
