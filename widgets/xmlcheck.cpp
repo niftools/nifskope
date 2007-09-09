@@ -251,16 +251,22 @@ void TestShredder::chooseBlock()
 	QStringList ids = NifModel::allNiBlocks();
 	ids.sort();
 	
-	QMap< QChar, QMenu *> map;
+	QMap< QString, QMenu *> map;
 	foreach ( QString id, ids )
 	{
-		QChar x;
+		QString x( "Other" );
+		
 		if ( id.startsWith( "Ni" ) )
-			x = id[ 2 ].toUpper();
-		else
-			x = '*';
+			x = QString("Ni&") + id.mid( 2, 1 ) + "...";
+		if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
+			x = "Havok";
+		if ( id.startsWith( "BS" ) || id == "AvoidNode" || id == "RootCollisionNode" )
+			x = "Bethesda";
+		if ( id.startsWith( "Fx" ) )
+			x = "Firaxis";
+		
 		if ( ! map.contains( x ) )
-			map.insert( x, new QMenu( x ) );
+			map[ x ] = new QMenu( x );
 		map[ x ]->addAction( id );
 	}
 

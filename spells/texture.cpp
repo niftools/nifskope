@@ -458,11 +458,11 @@ class spMultiApplyMode : public Spell
 public:
 
 	QString name() const { return "Multi Apply Mode"; }
-	QString page() const { return "Texture"; } 
+	QString page() const { return "Batch"; } 
 
   	bool isApplicable( const NifModel * nif, const QModelIndex &index )
   	{
-     	return nif->checkVersion( 0x14000005, 0x14000005 ) && index.isValid() && nif->isNiBlock( index );
+     	return nif->checkVersion( 0x14000005, 0x14000005 ) && ! index.isValid();
 	}
 
   	QModelIndex cast( NifModel *nif, const QModelIndex &index )

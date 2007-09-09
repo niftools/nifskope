@@ -320,6 +320,7 @@ public:
 				continue;
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
+			qWarning() << "Attached " << nif->itemName( iBlock ) << " prevents " << nif->get<QString>( iTriA, "Name" ) << " and " << nif->get<QString>( iTriB, "Name" ) << " from matching.";
 			return false;
 		}
 		
@@ -334,6 +335,7 @@ public:
 				continue;
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
+			qWarning() << "Attached " << nif->itemName( iBlock ) << " prevents " << nif->get<QString>( iTriA, "Name" ) << " and " << nif->get<QString>( iTriB, "Name" ) << " from matching.";
 			return false;
 		}
 		
