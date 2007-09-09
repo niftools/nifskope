@@ -854,7 +854,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->set<float>( iData, "Radius", radius );
 			
 			// do not stitch, because it looks better in the cs
-			QList< QVector< quint16 > > strips = strippify( triangles, false );
+			QList< QVector< quint16 > > strips = stripify( triangles, false );
 			
 			nif->set<int>( iData, "Num Strips", strips.count() );
 			nif->set<int>( iData, "Has Points", 1 );

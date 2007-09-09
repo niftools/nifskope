@@ -233,7 +233,7 @@ changes since 0.6:
 changes since 0.5:
   - new flexible context menu system (spells)
   - texture spells ( choose + pack + export + add glow/base map )
-  - strippify spell converts NiTriShape to NiTriStrip
+  - stripify spell converts NiTriShape to NiTriStrip
   - gl view now uses filtered mipmaps
   - various fixes and adjustments
 

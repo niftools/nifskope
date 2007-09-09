@@ -14,7 +14,7 @@ public:
 	
 	int maxBonesPerPartition();
 	int maxBonesPerVertex();
-	bool stripify();
+	bool makeStrips();
 	
 protected slots:
 	void changed();

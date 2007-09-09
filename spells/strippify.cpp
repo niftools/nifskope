@@ -25,7 +25,7 @@ template <typename T> void copyValue( NifModel * nif, const QModelIndex & iDst, 
 
 class spStrippify : public Spell
 {
-	QString name() const { return "Strippify"; }
+	QString name() const { return "Stripify"; }
 	QString page() const { return "Mesh"; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -58,7 +58,7 @@ class spStrippify : public Spell
 		else
 			return idx;
 		
-		QList< QVector<quint16> > strips = strippify ( triangles );
+		QList< QVector<quint16> > strips = stripify ( triangles );
 		
 		if ( strips.count() <= 0 )
 			return idx;
@@ -144,7 +144,7 @@ REGISTER_SPELL( spStrippify )
 class spStrippifyAll : public Spell
 {
 public:
-	QString name() const { return "Strippify all TriShapes"; }
+	QString name() const { return "Stripify all TriShapes"; }
 	QString page() const { return "Optimize"; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )

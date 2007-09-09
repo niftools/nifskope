@@ -259,11 +259,11 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
 	{
 		int mbpp = 0, mbpv = 0;
-		bool stripify = false;
-		return cast( nif, iBlock, mbpp, mbpv, stripify );
+		bool make_strips = false;
+		return cast( nif, iBlock, mbpp, mbpv, make_strips );
 	}
 	
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool stripify )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool make_strips )
 	{
 		QPersistentModelIndex iShape = iBlock;
 		try
@@ -320,7 +320,7 @@ public:
 				
 				maxBonesPerPartition = dlg.maxBonesPerPartition();
 				maxBonesPerVertex = dlg.maxBonesPerVertex();
-				stripify = dlg.stripify();
+				make_strips = dlg.makeStrips();
 			}
 			
 			// reduce vertex influences if necessary
@@ -640,12 +640,12 @@ public:
 					}
 				}
 				
-				// strippify the triangles
+				// stripify the triangles
 				QList< QVector<quint16> > strips;
 				int numTriangles = 0;
-				if ( stripify == true )
+				if ( make_strips == true )
 				{
-					strips = strippify( triangles );
+					strips = stripify( triangles );
 
 					foreach ( QVector<quint16> strip, strips )
 					{
@@ -692,7 +692,7 @@ public:
 						nif->set<float>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].second : 0.0 );
 				}
 
-				if ( stripify == true )
+				if ( make_strips == true )
 				{
 					// write the strips
 					nif->set<int>( iPart, "Has Strips", 1 );
@@ -794,11 +794,11 @@ public:
 		}
 		
 		int mbpp = 0, mbpv = 0;
-		bool stripify = false;
+		bool make_strips = false;
 		
 		foreach ( QModelIndex idx, indices )
 		{
-			Partitioner.cast( nif, idx, mbpp, mbpv, stripify );
+			Partitioner.cast( nif, idx, mbpp, mbpv, make_strips );
 		}
 		
 		qWarning() << QString( Spell::tr( "did %1 partitions" ) ).arg( indices.count() );
@@ -885,7 +885,7 @@ int SkinPartitionDialog::maxBonesPerPartition()
 	return spnPart->value();
 }
 
-bool SkinPartitionDialog::stripify()
+bool SkinPartitionDialog::makeStrips()
 {
 	return ckTStrip->isChecked();
 }
