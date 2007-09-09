@@ -259,10 +259,11 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
 	{
 		int mbpp = 0, mbpv = 0;
-		return cast( nif, iBlock, mbpp, mbpv );
+		bool stripify = false;
+		return cast( nif, iBlock, mbpp, mbpv, stripify );
 	}
 	
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool stripify )
 	{
 		QPersistentModelIndex iShape = iBlock;
 		try
@@ -319,6 +320,7 @@ public:
 				
 				maxBonesPerPartition = dlg.maxBonesPerPartition();
 				maxBonesPerVertex = dlg.maxBonesPerVertex();
+				stripify = dlg.stripify();
 			}
 			
 			// reduce vertex influences if necessary
@@ -774,10 +776,11 @@ public:
 		}
 		
 		int mbpp = 0, mbpv = 0;
+		bool stripify = false;
 		
 		foreach ( QModelIndex idx, indices )
 		{
-			Partitioner.cast( nif, idx, mbpp, mbpv );
+			Partitioner.cast( nif, idx, mbpp, mbpv, stripify );
 		}
 		
 		qWarning() << QString( Spell::tr( "did %1 partitions" ) ).arg( indices.count() );
@@ -801,6 +804,12 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnPart->setMinimum( 4 );
 	spnPart->setMaximum( 40 );
 	spnPart->setValue( 18 );
+
+	ckTStrip = new QCheckBox( "&Stripify Triangles" );
+	ckTStrip->setChecked( true );
+	ckTStrip->setToolTip( "Determines whether the triangles in each partition will be arranged into strips or as a list of individual triangles.  Different gaems work best with one or the other." );
+	connect( ckTStrip, SIGNAL( clicked() ), this, SLOT( changed() ) );
+
 	
 	QLabel * labVert = new QLabel( this );
 	labVert->setText( Spell::tr(
@@ -820,6 +829,13 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	"Note: To fit the triangles into the partitions<br>"
 	"some bone influences may be removed again."
 	) );
+
+	QLabel * labTStrip = new QLabel( this );
+	labTStrip->setText( Spell::tr(
+	"<b>Whether or not to stripify the triangles in each partition.</b><br>"
+	"Hint:  Morrowind and Freedom force do not support strips.<br>"
+	"Strips generally perform faster, if the game supports it"
+	) );
 	
 	QPushButton * btOk = new QPushButton( this );
 	btOk->setText( Spell::tr( "Ok" ) );
@@ -830,12 +846,10 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	connect( btCancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
 	
 	QGridLayout * grid = new QGridLayout( this );
-	grid->addWidget( labVert, 0, 0 );
-	grid->addWidget( labPart, 1, 0 );
-	grid->addWidget( spnVert, 0, 1 );
-	grid->addWidget( spnPart, 1, 1 );
-	grid->addWidget( btOk, 2, 0 );
-	grid->addWidget( btCancel, 2, 1 );
+	grid->addWidget( labVert, 0, 0 );    grid->addWidget( spnVert, 0, 1 );
+	grid->addWidget( labPart, 1, 0 );    grid->addWidget( spnPart, 1, 1 );
+	grid->addWidget( labTStrip, 2, 0);   grid->addWidget( ckTStrip, 2, 1 );
+	grid->addWidget( btOk, 3, 0 );       grid->addWidget( btCancel, 3, 1 );
 }
 
 void SkinPartitionDialog::changed()
@@ -853,6 +867,10 @@ int SkinPartitionDialog::maxBonesPerPartition()
 	return spnPart->value();
 }
 
+bool SkinPartitionDialog::stripify()
+{
+	return ckTStrip->isChecked();
+}
 
 class spFixBoneBounds : public Spell
 {

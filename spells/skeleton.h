@@ -2,6 +2,7 @@
 #define SPELL_SKELETON_H
 
 #include <QDialog>
+#include <QCheckBox>
 
 class QSpinBox;
 
@@ -13,6 +14,7 @@ public:
 	
 	int maxBonesPerPartition();
 	int maxBonesPerVertex();
+	bool stripify();
 	
 protected slots:
 	void changed();
@@ -20,6 +22,7 @@ protected slots:
 protected:
 	QSpinBox * spnPart;
 	QSpinBox * spnVert;
+	QCheckBox * ckTStrip;
 	
 	int maxInfluences;
 };
