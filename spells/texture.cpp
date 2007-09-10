@@ -187,8 +187,10 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iUVs = getUV( nif, index );
-		return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
+		return ( nif->itemName(index) == "NiTriShape" || nif->itemName(index) == "NiTriStrips" );
+
+		//QModelIndex iUVs = getUV( nif, index );
+		//return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
