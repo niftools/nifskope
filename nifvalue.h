@@ -126,7 +126,7 @@ public:
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
-	bool isString() const { return typ >= tSizedString && typ <= tChar8String; }
+	bool isString() const { return (typ >= tSizedString && typ <= tChar8String) || typ == tString; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
@@ -276,8 +276,13 @@ template <> inline bool NifValue::set( const Color4 & x ) { return setType( tCol
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
 template <> inline bool NifValue::set( const QString & x )
 {
-	if ( isString() && val.data != NULL )
+	if ( isString() )
 	{
+		if ( val.data == NULL )
+		{
+			val.data = new QString;
+		}
+	
 		*static_cast<QString*>( val.data ) = x;
 		return true;
 	}

@@ -245,6 +245,7 @@ void NifValue::clear()
 		case tTriangle:
 			delete static_cast<Triangle*>( val.data );
 			break;
+		case tString:
 		case tSizedString:
 		case tText:
 		case tShortString:
@@ -302,6 +303,7 @@ void NifValue::changeType( Type t )
 		case tTriangle:
 			val.data = new Triangle();
 			return;
+		case tString:
 		case tSizedString:
 		case tText:
 		case tShortString:
@@ -356,6 +358,7 @@ void NifValue::operator=( const NifValue & other )
 		case tVector2:
 			*static_cast<Vector2*>( val.data ) = *static_cast<Vector2*>( other.val.data );
 			return;
+		case tString:
 		case tSizedString:
 		case tText:
 		case tShortString:
@@ -446,6 +449,7 @@ bool NifValue::fromString( const QString & s )
 		case tFloat:
 			val.f32 = s.toDouble( &ok );
 			return ok;
+		case tString:
 		case tSizedString:
 		case tText:
 		case tShortString:
@@ -511,6 +515,7 @@ QString NifValue::toString() const
 			return QString::number( val.i32 );
 		case tFloat:
 			return NumOrMinMax( val.f32, 'f', 4 );
+		case tString:
 		case tSizedString:
 		case tText:
 		case tShortString:
@@ -628,7 +633,6 @@ QString NifValue::toString() const
 				.arg( tri->v2() )
 				.arg( tri->v3() );
 		}
-		case tString:
 		case tFilePath:
 			{
 			return *static_cast<QString*>( val.data );
