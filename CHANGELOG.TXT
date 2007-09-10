@@ -38,13 +38,17 @@ changes since 0.9.8:
   - Added support for displaying textures in NiTextureProperty (Nif ver. 3.x)
   - Made selection lines look much less flickery by increasing the line width to 1.5 before drawing them.
   - Added visualization for old style collision boxes.  Lumped it in with "Havok" since it's the same idea as a Havok box shape.
- 
+  - A warning will appear if S3TC texture compression is not supported by the OpenGL driver.
+
  * Spells
   - Update Center/Radius" spell now respects CF_VOLATILE and Oblivion simple center searching methods.
   - Enhanced LimitedHingeHelper spell to every constraint
   - "Edit UV" is applicable only when there are texture coordinates present and fixed bug which could lead to crashing.
   - The Optimize > Combine Shapes spell now issues warnings when shapes don't count as matching due to the presence of unsupported NiObjects, such as NiSkinInstance.
   - The Multi Apply Mode spell is now on the "Batch" page of the spell book, and only appears in the Spell menu, never in the right-click menu.
+  - Edit UV is now only applicable to NiTriShape or NiTriStrips. It didn't work for NiTriShapeData or NiTriStripsData, but would show up in the right-click menu anyway.
+  - Added the ability to not stripify newly created NiSkinPartition objects in the "Make Partition" spell.
+
 
  * Import/Export
   - 3ds and OBJ import updated so that all the NiTriShapes will be attached to whatever NiNode is selected in the tree view, similar to the old right-click->Import method.
