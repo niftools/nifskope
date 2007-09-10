@@ -947,7 +947,7 @@ bool NifOStream::write( const NifValue & val )
 			quint32 n = std::min<quint32>(8, string.length());
 			if ( device->write( (const char *) string, n ) != n )
 				return false;
-			for ( quint32 i=n; i<n; ++i)
+			for ( quint32 i = n; i < 8; ++i)
 				if ( device->write( "\0", 1 ) != 1 ) return false;
 			return true;
 		}
