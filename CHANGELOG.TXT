@@ -49,7 +49,6 @@ changes since 0.9.8:
   - Edit UV is now only applicable to NiTriShape or NiTriStrips. It didn't work for NiTriShapeData or NiTriStripsData, but would show up in the right-click menu anyway.
   - Added the ability to not stripify newly created NiSkinPartition objects in the "Make Partition" spell.
 
-
  * Import/Export
   - 3ds and OBJ import updated so that all the NiTriShapes will be attached to whatever NiNode is selected in the tree view, similar to the old right-click->Import method.
   - Added the ability to import the first mesh from an OBJ or 3DS file over the top of the selected NiTriShape object.

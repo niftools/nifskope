@@ -694,8 +694,12 @@ public:
 
 				if ( make_strips == true )
 				{
-					// write the strips
+					//Clear out any existing triangle data that might be left over from an existing Skin Partition
 					nif->set<int>( iPart, "Has Strips", 1 );
+					QModelIndex iTriangles = nif->getIndex( iPart, "Triangles" );
+					nif->updateArray( iTriangles );
+
+					// write the strips
 					QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
 					nif->updateArray( iStripLengths );
 					for ( int s = 0; s < nif->rowCount( iStripLengths ); s++ )
@@ -711,6 +715,13 @@ public:
 				}
 				else
 				{
+					//Clear out any existing strip data that might be left over from an existing Skin Partition
+					nif->set<int>( iPart, "Has Strips", 0 );
+					QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
+					nif->updateArray( iStripLengths );
+					QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
+					nif->updateArray( iStrips );
+
 					QModelIndex iTriangles = nif->getIndex( iPart, "Triangles" );
 					nif->updateArray( iTriangles );
 					nif->setArray<Triangle>( iTriangles, triangles );
