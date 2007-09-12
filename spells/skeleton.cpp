@@ -699,10 +699,11 @@ public:
 						nif->set<float>( iVertex.child( b, 0 ), list.count() > b ? list[ b ].second : 0.0 );
 				}
 
+				nif->set<int>( iPart, "Has Faces", 1 );
+
 				if ( make_strips == true )
 				{
 					//Clear out any existing triangle data that might be left over from an existing Skin Partition
-					nif->set<int>( iPart, "Has Strips", 1 );
 					QModelIndex iTriangles = nif->getIndex( iPart, "Triangles" );
 					nif->updateArray( iTriangles );
 
@@ -723,7 +724,6 @@ public:
 				else
 				{
 					//Clear out any existing strip data that might be left over from an existing Skin Partition
-					nif->set<int>( iPart, "Has Strips", 0 );
 					QModelIndex iStripLengths = nif->getIndex( iPart, "Strip Lengths" );
 					nif->updateArray( iStripLengths );
 					QModelIndex iStrips = nif->getIndex( iPart, "Strips" );
