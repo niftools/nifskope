@@ -263,7 +263,7 @@ public:
 		return cast( nif, iBlock, mbpp, mbpv, make_strips );
 	}
 	
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool make_strips )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool make_strips, bool pad = false )
 	{
 		QPersistentModelIndex iShape = iBlock;
 		try
@@ -321,6 +321,7 @@ public:
 				maxBonesPerPartition = dlg.maxBonesPerPartition();
 				maxBonesPerVertex = dlg.maxBonesPerVertex();
 				make_strips = dlg.makeStrips();
+				pad = dlg.padPartitions();
 			}
 			
 			// reduce vertex influences if necessary
@@ -658,6 +659,12 @@ public:
 				}
 				
 				// fill in counts
+				if ( pad )
+				{
+					while ( bones.size() < maxBonesPerPartition ) {
+						bones.append(0);
+					}
+				}
 				
 				nif->set<int>( iPart, "Num Vertices", vertices.count() );
 				nif->set<int>( iPart, "Num Triangles", numTriangles );
@@ -839,6 +846,11 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	ckTStrip->setToolTip( "Determines whether the triangles in each partition will be arranged into strips or as a list of individual triangles.  Different gaems work best with one or the other." );
 	connect( ckTStrip, SIGNAL( clicked() ), this, SLOT( changed() ) );
 
+	ckPad = new QCheckBox( "&Pad Small Partitions" );
+	ckPad->setChecked( false );
+	ckPad->setToolTip( "Determines whether partitions that will have fewer than the selected maximum number of bones will have extra bones added to bring them up to that number." );
+	connect( ckPad, SIGNAL( clicked() ), this, SLOT( changed() ) );
+
 	
 	QLabel * labVert = new QLabel( this );
 	labVert->setText( Spell::tr(
@@ -865,6 +877,12 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	"Hint:  Morrowind and Freedom force do not support strips.<br>"
 	"Strips generally perform faster, if the game supports them."
 	) );
+
+	QLabel * labPad = new QLabel( this );
+	labPad->setText( Spell::tr(
+	"<b>Whether or not to pad partitions that will have fewer bones than specified above.</b><br>"
+	"Hint:  Freedom Force seems to require this, but it doesn't seem to affect other games."
+	) );
 	
 	QPushButton * btOk = new QPushButton( this );
 	btOk->setText( Spell::tr( "Ok" ) );
@@ -878,7 +896,8 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	grid->addWidget( labVert, 0, 0 );    grid->addWidget( spnVert, 0, 1 );
 	grid->addWidget( labPart, 1, 0 );    grid->addWidget( spnPart, 1, 1 );
 	grid->addWidget( labTStrip, 2, 0);   grid->addWidget( ckTStrip, 2, 1 );
-	grid->addWidget( btOk, 3, 0 );       grid->addWidget( btCancel, 3, 1 );
+	grid->addWidget( labPad, 3, 0);      grid->addWidget( ckPad, 3, 1 );
+	grid->addWidget( btOk, 4, 0 );       grid->addWidget( btCancel, 4, 1 );
 }
 
 void SkinPartitionDialog::changed()
@@ -899,6 +918,11 @@ int SkinPartitionDialog::maxBonesPerPartition()
 bool SkinPartitionDialog::makeStrips()
 {
 	return ckTStrip->isChecked();
+}
+
+bool SkinPartitionDialog::padPartitions()
+{
+	return ckPad->isChecked();
 }
 
 class spFixBoneBounds : public Spell

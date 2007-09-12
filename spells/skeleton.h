@@ -15,6 +15,7 @@ public:
 	int maxBonesPerPartition();
 	int maxBonesPerVertex();
 	bool makeStrips();
+	bool padPartitions();
 	
 protected slots:
 	void changed();
@@ -23,6 +24,7 @@ protected:
 	QSpinBox * spnPart;
 	QSpinBox * spnVert;
 	QCheckBox * ckTStrip;
+	QCheckBox * ckPad;
 	
 	int maxInfluences;
 };
