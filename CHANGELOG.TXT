@@ -47,7 +47,7 @@ changes since 0.9.8:
   - The Optimize > Combine Shapes spell now issues warnings when shapes don't count as matching due to the presence of unsupported NiObjects, such as NiSkinInstance.
   - The Multi Apply Mode spell is now on the "Batch" page of the spell book, and only appears in the Spell menu, never in the right-click menu.
   - Edit UV is now only applicable to NiTriShape or NiTriStrips. It didn't work for NiTriShapeData or NiTriStripsData, but would show up in the right-click menu anyway.
-  - Added the ability to not stripify newly created NiSkinPartition objects in the "Make Partition" spell.
+  - Added the ability to not stripify and pad newly created NiSkinPartition objects in the "Make Partition" spell.  Still needs more work to make proper partitions for games which require 4 bones per partion, however.
 
  * Import/Export
   - 3ds and OBJ import updated so that all the NiTriShapes will be attached to whatever NiNode is selected in the tree view, similar to the old right-click->Import method.
@@ -65,6 +65,7 @@ changes since 0.9.8:
   - Added partial support for the following new games: Loki, Pro Cycling Manager, Shin Megami Tensei
   - Fixed a bug that made NifSkope fail to load the 3.3.0.13 file.
   - Fixed problem with version 3.03 conditions in the XML.  Version 3.1 files can be read again.
+  - XML changes which allow NiSkinPartition objects that won't crash Morrowind and Freedom Force to be created.
  
  * Misc. 
   - GCC build fixes.
