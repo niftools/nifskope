@@ -176,7 +176,6 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			{
 				QModelIndex temp = nif->getBlock( *it );
 				QString type = nif->itemName( temp );
-				qWarning() << "Child Type:" << type;
 				if ( type == "NiMaterialProperty" )
 				{
 					iMaterial = temp;
@@ -195,7 +194,6 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					{
 						QModelIndex temp = nif->getBlock( *it );
 						QString type = nif->itemName( temp );
-						qWarning() << "Texture Child Type:" << type;
 						if ( (type == "NiSourceTexture") || (type == "NiImage") )
 						{
 							iTexSource = temp;
