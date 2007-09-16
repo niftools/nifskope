@@ -329,6 +329,9 @@ void Mesh::transform()
 		}
 		
 		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+		if ( ! iSkinPart.isValid() )
+			// nif versions < 10.2.0.0 have skin partition linked in the skin data block
+			iSkinPart = nif->getBlock( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
 		if ( iSkinPart.isValid() )
 		{
 			QModelIndex idx = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
