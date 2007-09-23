@@ -728,8 +728,8 @@ bool NifIStream::read( NifValue & val )
 			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
-			string.replace( "\r", "\\r" );
-			string.replace( "\n", "\\n" );
+			//string.replace( "\r", "\\r" );
+			//string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
 		case NifValue::tShortString:
@@ -738,8 +738,8 @@ bool NifIStream::read( NifValue & val )
 			device->read( (char *) &len, 1 );
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
-			string.replace( "\r", "\\r" );
-			string.replace( "\n", "\\n" );
+			//string.replace( "\r", "\\r" );
+			//string.replace( "\n", "\\n" );
 			*static_cast<QString*>( val.val.data ) = QString( string );
 		}	return true;
 		case NifValue::tText:
@@ -811,6 +811,27 @@ bool NifIStream::read( NifValue & val )
 			return true;
 		}
 		case NifValue::tString:
+		{
+			if (stringAdjust)
+			{
+				val.changeType(NifValue::tStringIndex);
+				return device->read( (char *) &val.val.i32, 4 ) == 4;
+			}
+			else
+			{
+				val.changeType(NifValue::tSizedString);
+
+				int len;
+				device->read( (char *) &len, 4 );
+				if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+				QByteArray string = device->read( len );
+				if ( string.size() != len ) return false;
+				//string.replace( "\r", "\\r" );
+				//string.replace( "\n", "\\n" );
+				*static_cast<QString*>( val.val.data ) = QString( string );
+				return true;
+			}
+		} 
 		case NifValue::tFilePath:
 		{
 			if (stringAdjust)
@@ -827,12 +848,11 @@ bool NifIStream::read( NifValue & val )
 				if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 				QByteArray string = device->read( len );
 				if ( string.size() != len ) return false;
-				string.replace( "\r", "\\r" );
-				string.replace( "\n", "\\n" );
 				*static_cast<QString*>( val.val.data ) = QString( string );
 				return true;
 			}
-		} 
+		}
+
 		case NifValue::tNone:
 			return true;
 	}
@@ -907,8 +927,8 @@ bool NifOStream::write( const NifValue & val )
 		case NifValue::tSizedString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
-			string.replace( "\\r", "\r" );
-			string.replace( "\\n", "\n" );
+			//string.replace( "\\r", "\r" );
+			//string.replace( "\\n", "\n" );
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
@@ -983,8 +1003,8 @@ bool NifOStream::write( const NifValue & val )
 				{
 					string = static_cast<QString*>( val.val.data )->toAscii();
 				}
-				string.replace( "\\r", "\r" );
-				string.replace( "\\n", "\n" );
+				//string.replace( "\\r", "\r" );
+				//string.replace( "\\n", "\n" );
 				int len = string.size();
 				if ( device->write( (char *) &len, 4 ) != 4 )
 					return false;
@@ -1050,15 +1070,15 @@ int NifSStream::size( const NifValue & val )
 		case NifValue::tSizedString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
-			string.replace( "\\r", "\r" );
-			string.replace( "\\n", "\n" );
+			//string.replace( "\\r", "\r" );
+			//string.replace( "\\n", "\n" );
 			return 4 + string.size();
 		}
 		case NifValue::tShortString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
-			string.replace( "\\r", "\r" );
-			string.replace( "\\n", "\n" );
+			//string.replace( "\\r", "\r" );
+			//string.replace( "\\n", "\n" );
 			if ( string.size() > 254 )	string.resize( 254 );
 			return 1 + string.size() + 1;
 		}
@@ -1097,8 +1117,8 @@ int NifSStream::size( const NifValue & val )
 			else
 			{
 				QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
-				string.replace( "\\r", "\r" );
-				string.replace( "\\n", "\n" );
+				//string.replace( "\\r", "\r" );
+				//string.replace( "\\n", "\n" );
 				return 4 + string.size();
 			}
 		} 

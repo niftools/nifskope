@@ -163,6 +163,7 @@ void ValueEdit::setValue( const NifValue & v )
 			fe->setValue( v.toFloat() );
 			edit = fe;
 		}	break;
+
 		case NifValue::tSizedString:
 		case NifValue::tLineString:
 		case NifValue::tShortString:
@@ -228,6 +229,21 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = te;
 		}	break;
 		case NifValue::tString:
+		{
+			if (/*???*/false)
+			{	
+				QSpinBox * ie = new UIntSpinBox( this );
+				ie->setFrame(false);
+				ie->setValue( v.toCount() );
+				edit = ie;
+			}
+			else
+			{
+				QLineEdit * le = new QLineEdit( this );
+				le->setText( v.toString() );
+				edit = le;
+			}
+		} break;
 		case NifValue::tFilePath:
 		{
 			if (/*???*/false)

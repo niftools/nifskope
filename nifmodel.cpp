@@ -1308,8 +1308,8 @@ bool NifModel::load( QIODevice & device )
 						if ( version < 0x0a020000 )
 							device.read( 4 );
 
-						// for version 20.3.0.3 and above the block size is stored in the header
-						if (version >= 0x14030003)
+						// for version 20.2.0.? and above the block size is stored in the header
+						if (version >= 0x14020000)
 							size = get<quint32>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Size" ) ) );
 					}
 					else
