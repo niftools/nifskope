@@ -3,7 +3,7 @@
 ; (NifTools - http://niftools.sourceforge.net) 
 ; (NSIS - http://nsis.sourceforge.net)
 ;
-; Copyright (c) 2005, NIF File Format Library and Tools
+; Copyright (c) 2005-2007, NIF File Format Library and Tools
 ; All rights reserved.
 ; 
 ; Redistribution and use in source and binary forms, with or without
@@ -33,9 +33,11 @@
 ; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
+SetCompressor /SOLID lzma
+
 !include "MUI.nsh"
 
-!define VERSION "1.0"
+!define VERSION "1.0.1"
 
 Name "NifSkope ${VERSION}"
 

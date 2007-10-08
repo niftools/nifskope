@@ -1,6 +1,10 @@
  == CHANGELOG ==
 
-This is version 1.0 of NifSkope.
+This is version 1.0.1 of NifSkope.
+
+changes since 1.0:
+  - visualize skin partitions for versions < 10.2.0.0
+  - fixed \r \n issue
 
 changes since 0.9.8:
  * User Interface
