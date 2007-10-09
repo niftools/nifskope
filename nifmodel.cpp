@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QColor>
 #include <QFile>
 #include <QTime>
+#include <QDebug>
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
@@ -840,7 +841,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					const NifValue& value = item->value();
 					if (value.type() == NifValue::tString || value.type() == NifValue::tFilePath)
 					{
-						return this->string(index);
+						return QString(this->string(index)).replace("\n", " ").replace("\r", " ");
 					}
 					else if ( item->value().type() == NifValue::tStringOffset )
 					{
@@ -915,7 +916,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return QString( "%1" ).arg( optId );
 					}
 					else
-						return item->value().toString();
+					{
+						return item->value().toString().replace("\n", " ").replace("\r", " ");
+					}
 				}	break;
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
