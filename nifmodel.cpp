@@ -40,7 +40,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QColor>
 #include <QFile>
 #include <QTime>
-#include <QDebug>
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
