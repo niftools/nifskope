@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QToolButton>
+#include <QSizePolicy>
 
 #include "floatedit.h"
 
@@ -90,7 +91,11 @@ void ValueEdit::setValue( const NifValue & v )
 	typ = v.type();
 	
 	if ( edit )
+	{
 		delete edit;
+		edit = 0;
+		resize( this->baseSize() );
+	}
 	
 	switch ( typ )
 	{
@@ -175,7 +180,10 @@ void ValueEdit::setValue( const NifValue & v )
 		}	break;
 		case NifValue::tText:
 		{
+			QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 			QTextEdit * te = new QTextEdit( this );
+			te->setSizePolicy ( policy );
+			te->setMinimumSize( width(), height() );
 			te->setPlainText( v.toString() );
 			edit = te;
 		}	break;
@@ -349,13 +357,43 @@ void ValueEdit::resizeEditor()
 	if ( edit )
 	{
 		edit->move( QPoint( 0, 0 ) );
-		edit->resize( size() );
+
+		QSize sz = size();
+
+		switch ( typ )
+		{
+		case NifValue::tText:
+			{
+				QSize minsz = edit->minimumSize();
+				int ht = edit->heightForWidth( sz.width() );
+				sz.setHeight( (ht <= 0) ? minsz.height() * 5 : ht );
+			} break;
+		}
+
+		edit->resize( sz );
+
+		resize(sz);
 	}
 }
 
 void ValueEdit::resizeEvent( QResizeEvent * )
 {
 	resizeEditor();
+}
+
+void ValueEdit::focusInEvent(QFocusEvent *)
+{
+	if (baseSize().height() == 0)
+		setBaseSize( size() );
+}
+
+void ValueEdit::focusOutEvent(QFocusEvent *)
+{
+	QSize sz = baseSize();
+	if (sz.height() != 0 && sz.height() < height() )
+	{
+		resize( sz );
+	}
 }
 
 

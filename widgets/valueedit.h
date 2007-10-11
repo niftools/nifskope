@@ -59,6 +59,8 @@ public slots:
 protected:
 	void resizeEditor();
 	void resizeEvent( QResizeEvent * e );
+	void focusInEvent(QFocusEvent *);
+	void focusOutEvent(QFocusEvent *);
 
 private:
 	NifValue::Type typ;

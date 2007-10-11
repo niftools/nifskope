@@ -1095,6 +1095,8 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
 			buddy = getIndex( index, "File Name" );
+		else if ( item->name() == "NiStringExtraData" )
+			buddy = getIndex( index, "String Data" );
 		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
