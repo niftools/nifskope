@@ -14,6 +14,12 @@ This only needs to be done if an error message appears when NifSkope starts sayi
 
  "The application is not configured correctly.  Reinstalling it may help."
 
-How to compile NifSkope from source:
+Reporting bugs
+--------------
 
-  - see http://niftools.sourceforge.net/wiki/NifSkope/Compile for instructions
+http://sourceforge.net/tracker/?group_id=149157&atid=776343
+ 
+Compiling NifSkope from source
+------------------------------
+
+http://niftools.sourceforge.net/wiki/NifSkope/Compile
