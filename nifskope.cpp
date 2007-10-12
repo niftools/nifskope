@@ -984,12 +984,31 @@ void IPCsocket::openNif( const QUrl & url )
 }
 
 
+// Qt does not use the System Locale consistency so this basically forces all floating
+//   numbers into C format but leaves all other local specific settings.
+class NifSystemLocale : QSystemLocale
+{
+	virtual QVariant query(QueryType type, QVariant in) const
+	{
+		switch (type)
+		{
+		case DecimalPoint: 
+			return QVariant( QLocale::c().decimalPoint() );
+		case GroupSeparator:
+			return QVariant( QLocale::c().groupSeparator() );
+		}
+		return QVariant();
+	}
+};
+
 /*
  *  main
  */
 
 int main( int argc, char * argv[] )
 {
+	NifSystemLocale mLocale;
+
 	// set up the Qt Application
 	QApplication app( argc, argv );
 	app.setOrganizationName( "NifTools" );
