@@ -72,6 +72,14 @@ win32 {
 
     RC_FILE = icon.rc
     DEFINES += EDIT_ON_ACTIVATE
+    
+    # Ignore specific errors that are very common in the code
+    # CFLAGS += /Zc:wchar_t-
+    # QMAKE_CFLAGS += /Zc:wchar_t- /wd4305
+    # QMAKE_CXXFLAGS += /Zc:forScope- /Zc:wchar_t- /wd4305 
+    
+    # add specific libraries to msvc builds
+    MSVCPROJ_LIBS += winmm.lib Ws2_32.lib imm32.lib
 }
 
 win32:console {

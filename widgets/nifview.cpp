@@ -159,11 +159,20 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 		
 		if ( nif && spell->isApplicable( nif, oldidx ) )
 		{
+			selectionModel()->setCurrentIndex( QModelIndex(), QItemSelectionModel::Clear | QItemSelectionModel::Rows );
+
 			QModelIndex newidx = spell->cast( nif, oldidx );
 			if ( proxy )
 				newidx = proxy->mapFrom( newidx, oldidx );
-			emit clicked( newidx );
-            selectionModel()->setCurrentIndex( newidx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows );
+
+			// grab selection from the selection model as it tends to be more accurate
+			newidx = selectionModel()->currentIndex();
+			if ( newidx.isValid() )
+			{
+				scrollTo(newidx, EnsureVisible);
+				emit clicked( newidx );
+			}
+
 			return;
 		}
 	}
