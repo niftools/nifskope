@@ -539,7 +539,8 @@ void NifSkope::select( const QModelIndex & index )
 	if ( idx.model() == proxy )
 		idx = proxy->mapTo( index );
 	
-	if ( ! idx.isValid() || idx.model() != nif ) return;
+	if ( idx.isValid() && idx.model() != nif )
+		return;
 	
 	selecting = true;
 	
