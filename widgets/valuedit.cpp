@@ -850,7 +850,7 @@ void TextEdit::CalcSize()
 	QString text = this->toPlainText();
 	int lines = text.count(QLatin1Char('\n'))+1;
 	if (lines > 5) lines = 5;
-	int ht = fontMetrics().lineSpacing() * lines;
+	int ht = fontMetrics().lineSpacing() * lines + 10; // 10 extra lines because single lines seem to need a bit more than lineSpacing()
 	if ( lines == 1 )
 	{
 		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
