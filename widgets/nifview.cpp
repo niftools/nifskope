@@ -169,7 +169,7 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 			if (!newidx.isValid())
 			{
 				if (oldidx.isValid())
-					newidx = ( proxy ) ? proxy->mapFrom( oldidx, oldidx ) : oldidx;
+					newidx = ( proxy ) ? proxy->mapFrom( oldidx, oldidx ) : ((QModelIndex)oldidx);
 				else
 					newidx = selectionModel()->currentIndex();
 			}
