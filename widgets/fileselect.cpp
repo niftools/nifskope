@@ -207,10 +207,12 @@ void FileSelector::browse()
 			x = QFileDialog::getExistingDirectory( this, "Choose a folder", file() );
 			break;
 		case LoadFile:
-			x = QFileDialog::getOpenFileName( this, "Choose a file", file(), fltr.join( " " ) );
-			break;
+			// Qt uses ;; as separator if multiple types are available
+			{ QStringList allfltr = fltr; allfltr.insert(0, fltr.join( " " ));
+			  x = QFileDialog::getOpenFileName( this, "Choose a file", file(), allfltr.join( ";;" ) );
+			} break;
 		case SaveFile:
-			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), fltr.join( " " ) );
+			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), fltr.join( ";;" ) );
 			break;
 	}
 	
