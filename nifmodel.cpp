@@ -877,8 +877,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					else if ( item->value().type() == NifValue::tBlockTypeIndex )
 					{
 						int idx = item->value().get<int>();
+						int offset = idx & 0x7FFF;
 						NifItem * blocktypes = getItemX( item, "Block Types" );
-						NifItem * blocktyp = ( blocktypes ? blocktypes->child( idx ) : 0 );
+						NifItem * blocktyp = ( blocktypes ? blocktypes->child( offset ) : 0 );
 						if ( blocktyp )
 							return QString( "%2 [%1]").arg( idx ).arg( blocktyp->value().get<QString>() );
 						else
@@ -1306,8 +1307,9 @@ bool NifModel::load( QIODevice & device )
 					if ( version >= 0x0a000000 )
 					{
 						// block types are stored in the header for versions above 10.x.x.x
+						//   the upper bit or the blocktypeindex seems to be related to PhysX
 						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
-						blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+						blktyp = get<QString>( index( blktypidx & 0x7FFF, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
 						
 						if ( version < 0x0a020000 )
 							device.read( 4 );
