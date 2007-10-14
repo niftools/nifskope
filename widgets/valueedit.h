@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifvalue.h"
 
 #include <QWidget>
+#include <QTextEdit>
 
 class QDoubleSpinBox;
 class QLabel;
@@ -55,12 +56,11 @@ public:
 
 public slots:
 	void setValue( const NifValue & v );
+	void childResized( QResizeEvent * e );
 	
 protected:
 	void resizeEditor();
 	void resizeEvent( QResizeEvent * e );
-	void focusInEvent(QFocusEvent *);
-	void focusOutEvent(QFocusEvent *);
 
 private:
 	NifValue::Type typ;
@@ -187,6 +187,25 @@ private:
 	QSpinBox * v1;
 	QSpinBox * v2;
 	QSpinBox * v3;
+};
+
+
+class TextEdit : public QTextEdit
+{
+	Q_OBJECT
+public:
+	TextEdit(const QString & str, QWidget *parent = 0);
+	void CalcSize();
+
+signals:
+	void sigResized( QResizeEvent * e );
+
+public slots:
+	void sltTextChanged();
+
+protected:
+	void resizeEvent( QResizeEvent * e );
+	void keyPressEvent(QKeyEvent *e);
 };
 
 #endif

@@ -40,7 +40,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QToolButton>
-#include <QSizePolicy>
+#include <QScrollBar>
+#include <QResizeEvent>
+#include <QTextCursor>
 
 #include "floatedit.h"
 
@@ -169,7 +171,15 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = fe;
 		}	break;
 
+		case NifValue::tText:
 		case NifValue::tSizedString:
+			{
+				TextEdit * te = new TextEdit( v.toString(), this );
+				te->resize( size() );
+				connect( te, SIGNAL( sigResized(QResizeEvent *) ), this, SLOT( childResized(QResizeEvent *) ) );
+				edit = te;
+			}
+			break;
 		case NifValue::tLineString:
 		case NifValue::tShortString:
 		case NifValue::tChar8String:
@@ -178,15 +188,13 @@ void ValueEdit::setValue( const NifValue & v )
 			le->setText( v.toString() );
 			edit = le;
 		}	break;
-		case NifValue::tText:
-		{
-			QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-			QTextEdit * te = new QTextEdit( this );
-			te->setSizePolicy ( policy );
-			te->setMinimumSize( width(), height() );
-			te->setPlainText( v.toString() );
-			edit = te;
-		}	break;
+		//case NifValue::tText:
+		//{
+		//	TextEdit * te = new TextEdit( v.toString(), this );
+		//	te->setMinimumSize( width(), height() );
+		//	te->setBaseSize( width(), height() * 5);
+		//	edit = te;
+		//}	break;
 		case NifValue::tColor4:
 		{
 			ColorEdit * ce = new ColorEdit( this );
@@ -311,12 +319,12 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tFloat:
 			val.setFloat( qobject_cast<FloatEdit*>( edit )->value() );
 			break;
-		case NifValue::tSizedString:
 		case NifValue::tLineString:
 		case NifValue::tShortString:
 		case NifValue::tChar8String:
 			val.fromString( qobject_cast<QLineEdit*>( edit )->text() );
 			break;
+		case NifValue::tSizedString:
 		case NifValue::tText:
 			val.fromString( qobject_cast<QTextEdit*>( edit )->toPlainText() );
 			break;
@@ -356,23 +364,39 @@ void ValueEdit::resizeEditor()
 {
 	if ( edit )
 	{
-		edit->move( QPoint( 0, 0 ) );
-
 		QSize sz = size();
 
 		switch ( typ )
 		{
+		case NifValue::tSizedString:
 		case NifValue::tText:
 			{
-				QSize minsz = edit->minimumSize();
-				int ht = edit->heightForWidth( sz.width() );
-				sz.setHeight( (ht <= 0) ? minsz.height() * 5 : ht );
+				TextEdit * te = (TextEdit *)edit;
+				te->move( QPoint( 0, 0 ) );
+				resize( size() );
+				te->CalcSize();
+			} break;
+
+		default:
+			{
+			edit->move( QPoint( 0, 0 ) );
+			edit->resize( sz );
+			resize( sz );
 			} break;
 		}
+	}
+}
 
-		edit->resize( sz );
-
-		resize(sz);
+void ValueEdit::childResized( QResizeEvent * e )
+{
+	switch ( typ )
+	{
+	case NifValue::tSizedString:
+	case NifValue::tText:
+		{
+			//edit->move( QPoint( 1, 0 ) );
+			resize( QSize( width(), e->size().height() ) );
+		} break;
 	}
 }
 
@@ -380,22 +404,6 @@ void ValueEdit::resizeEvent( QResizeEvent * )
 {
 	resizeEditor();
 }
-
-void ValueEdit::focusInEvent(QFocusEvent *)
-{
-	if (baseSize().height() == 0)
-		setBaseSize( size() );
-}
-
-void ValueEdit::focusOutEvent(QFocusEvent *)
-{
-	QSize sz = baseSize();
-	if (sz.height() != 0 && sz.height() < height() )
-	{
-		resize( sz );
-	}
-}
-
 
 ColorEdit::ColorEdit( QWidget * parent ) : QWidget( parent )
 {
@@ -771,3 +779,88 @@ Triangle TriangleEdit::getTriangle() const
 	return Triangle( v1->value(), v2->value(), v3->value() );
 }
 
+
+TextEdit::TextEdit(const QString & str, QWidget *parent) : QTextEdit(parent)
+{
+	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	//setFrameShape(QFrame::NoFrame);
+	setFrameShadow(QFrame::Plain);
+	setLineWrapMode(QTextEdit::NoWrap);
+	setAcceptRichText(false);
+	setAutoFormatting(QTextEdit::AutoNone);
+	setTabChangesFocus(true);
+	setPlainText(str);
+	CalcSize();
+	connect( this, SIGNAL( textChanged() ), this, SLOT( sltTextChanged() ) );
+
+	QTextCursor cursor = this->textCursor();
+	cursor.select(QTextCursor::LineUnderCursor);
+	setTextCursor( cursor );
+}
+
+void TextEdit::resizeEvent( QResizeEvent * e )
+{
+	QTextEdit::resizeEvent(e);
+	emit sigResized( e );
+}
+
+void TextEdit::keyPressEvent(QKeyEvent *e)
+{
+	if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return || e->key() == Qt::Key_F4)
+	{
+		if (e->modifiers() == Qt::AltModifier || e->modifiers() == Qt::ShiftModifier)
+		{
+			// Eat the Alt and Shift Modifiers and 'send' an enter instead
+			e->accept();
+
+			QKeyEvent newEvent(  
+				e->type(),
+				e->key(),
+				Qt::NoModifier,
+				e->text(),
+				e->isAutoRepeat(),
+				e->count()
+				);
+			QTextEdit::keyPressEvent(&newEvent);
+		}
+		else if (e->modifiers() == Qt::NoModifier)
+		{
+			e->ignore();
+		}
+		else
+		{
+			QTextEdit::keyPressEvent(e);
+		}
+	}
+	else
+	{
+		QTextEdit::keyPressEvent(e);
+	}
+}
+
+void TextEdit::sltTextChanged()
+{
+	CalcSize();
+}
+
+void TextEdit::CalcSize()
+{
+	QSize sz = this->size();
+	QString text = this->toPlainText();
+	int lines = text.count(QLatin1Char('\n'))+1;
+	if (lines > 5) lines = 5;
+	int ht = fontMetrics().lineSpacing() * lines;
+	if ( lines == 1 )
+	{
+		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		sz.setHeight( ht );
+		resize( sz );
+	}
+	else if ( ht > sz.height() )
+	{
+		setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+		sz.setHeight( ht );
+		resize( sz );
+	}
+}
