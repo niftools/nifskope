@@ -180,11 +180,6 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File nif_file.ico
   File ..\style.qss
   
-  ;Install HTML NIF Documentation
-  ;Don't forget to run ..\..\docsys\nifxml_doc.py to update the HTML files before compiling the install script
-  SetOutPath $INSTDIR\doc
-  File ..\..\docsys\doc\*.*
-
   ; Install shaders
   SetOutPath $INSTDIR\shaders
   File ..\shaders\*.prog
@@ -192,9 +187,11 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\shaders\*.frag
 
   ; Install reference manual
+  ; run ..\..\docsys\nifxml_doc.py to update the HTML files before compiling the install script
   SetOutPath $INSTDIR\doc
   File ..\..\docsys\doc\*.html
-  File ..\..\docsys\doc\*.css
+  File ..\..\docsys\doc\docsys.css
+  File ..\..\docsys\doc\favicon.ico
 
   ; Install shortcuts
   SetOutPath $INSTDIR
