@@ -137,7 +137,7 @@ void NifModel::clear()
 	insertType( root, NifData( "NiFooter", "Footer" ) );
 	version = version2number( Options::startupVersion() );
 	if( !isVersionSupported(version) ) {
-		qWarning( tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toAscii() );
+		msg( Message() << tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toAscii() );
 		version = 0x14000005;
 	}
 	reset();
@@ -306,7 +306,7 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	int d1 = getArraySize( array );
 	if ( d1 > 1024 * 1024 * 8 )
 	{
-		msg( Message() << "array" << array->name() << "much too large" );
+		msg( Message() << "array" << array->name() << "much too large." << d1 << " bytes requested" );
 		return false;
 	}
 	else if ( d1 < 0 )
@@ -1351,7 +1351,7 @@ bool NifModel::load( QIODevice & device )
 					{
 						// unable to seek to location... abort
 						if (device.seek(curpos + size))
-							qWarning( tr("device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5").arg( c ).arg( blktyp ).arg(curpos).arg(pos).arg(curpos+size).toAscii() );
+							msg( Message() << tr("device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5").arg( c ).arg( blktyp ).arg(curpos).arg(pos).arg(curpos+size).toAscii() );
 						else
 							throw QString( "failed to reposition device at block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
 

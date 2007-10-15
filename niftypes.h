@@ -938,4 +938,128 @@ inline Color3::Color3( const Color4 & c4 )
 	rgb[2] = c4[2];
 }
 
+
+//! A fixed length vector of type T.
+//!  Data is allocated into a vector portion and the data section.
+//!  The vector simply points to appropriate places in the data section.
+//! @param  T   Type of Vector
+template<typename T>
+class FixedMatrix
+{
+public:
+	//! Default Constructor:  Allocates empty vector
+	FixedMatrix() : v_( NULL ), len0(0), len1(0)
+	{}
+
+	//! Size Constructor
+	//! Allocate the requested number of elements.
+	FixedMatrix(int length1, int length2)
+	{
+		int length = length1*length2;
+		v_ = (T*)qMalloc(sizeof(T)*length);
+		len0 = length1;
+		len1 = length2;
+	}
+
+	//! Copy Constructor
+	FixedMatrix(const FixedMatrix& other)
+	{
+		int datalen = other.count();
+		len0 = other.count(0);
+		len1 = other.count(1);
+		v_ = (T*)qMalloc(sizeof(T) * datalen);
+		qMemCopy( array(), other.array(), datalen );
+	}
+
+	//! Default Destructor
+	~FixedMatrix()
+	{ qFree(v_); }
+
+	//! Copy Assignment
+	FixedMatrix& operator=(const FixedMatrix& other)         
+	{
+		FixedMatrix tmp( other );
+		swap( tmp );
+		return *this;
+	}
+
+	T* operator[](int index)
+	{
+		// assert( index >= 0 && index < len_ )
+		return &v_[index*count(0) + 0];
+	} 
+
+	//! Accessor for element (i,j) in the matrix
+	const T& operator[](int index) const
+	{
+		// assert( index >= 0 && index < len_ )
+		return &v_[index*count(0) + 0];
+	} 
+
+	//! Accessor for element (i,j) in the matrix
+	T* operator()(int index)
+	{
+		// assert( index >= 0 && index < len_ )
+		return &v_[index*count(0) + 0];
+	} 
+
+	//! Accessor for element (i,j) in the matrix
+	T& operator()(int index1, int index2)
+	{
+		// assert( index >= 0 && index < len_ )
+		return element(index1, index2);
+	} 
+
+	//! Accessor for element (i,j) in the matrix
+	operator T*() const
+	{
+		return array();
+	}
+
+	//! Accessor for element (i,j) in the matrix
+	T& element(int index1, int index2)
+	{
+		return v_[ calcindex(index1, index2) ];
+	}
+
+	int calcindex(int index1, int index2)
+	{
+		return index1*count(1) + index2;
+	}
+
+	//! Number of items in the vector.
+	int count() const 
+	{ return len0 * len1; }
+
+	int count(int dimension) const 
+	{ return (dimension == 0 ? len0 : (dimension == 1 ? len1 : 0)); }
+
+	//! Start of the array portion of the vector
+	T*array() const { return v_; }
+	T*data() const { return v_; }
+
+	//! Assign a string to vector at specified index
+	//! @param[in]   index  Index in array to assign
+	//! @param[in]   value  Value to copy into string
+	void assign(int index1, int index2, T value)
+	{
+		element(index1, index2) = value;
+	}
+
+	//! Swap contents with another APRFixedMatrix
+	//! @param[in,out]   other  Other vector to swap with
+	void swap( FixedMatrix &other )
+	{
+		qSwap(v_, other.v_);
+		qSwap(len0, other.len0);
+		qSwap(len1, other.len1);
+	}
+
+private:
+	T* v_; //! Vector data
+	int len0, len1; //! length
+};
+
+typedef FixedMatrix<char> ByteMatrix;
+
 #endif

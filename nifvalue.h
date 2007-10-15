@@ -81,6 +81,7 @@ public:
 		tStringPalette = 33,
 		tString = 34,
 		tFilePath = 35,
+		tByteMatrix = 36,
 
 		tNone = 0xff
 	};
@@ -131,8 +132,9 @@ public:
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
 	bool isTriangle() const { return typ == tTriangle; }
-	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette; }
+	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette ; }
 	bool isFileVersion() const { return typ == tFileVersion; }
+	bool isByteMatrix() const { return typ == tByteMatrix; }
 	
 	QColor toColor() const;
 	quint32 toCount() const;
