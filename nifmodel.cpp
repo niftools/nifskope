@@ -1293,6 +1293,7 @@ bool NifModel::load( QIODevice & device )
 		if ( version >= 0x0303000d )
 		{
 			// read in the NiBlocks
+			QString prevblktyp;
 			for ( int c = 0; c < numblocks; c++ )
 			{
 				emit sigProgress( c + 1, numblocks );
@@ -1332,7 +1333,10 @@ bool NifModel::load( QIODevice & device )
 						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
 						insertNiBlock( blktyp, -1, true );
 						if ( ! load( root->child( c+1 ), stream, true ) ) 
-							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+						{
+							NifItem * child = root->child( c );
+							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( child ? child->name() : prevblktyp );
+						}
 					}
 					else
 						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
@@ -1362,6 +1366,7 @@ bool NifModel::load( QIODevice & device )
 						curpos = pos;
 					}
 				}
+				prevblktyp = blktyp;
 			}
 			
 			// read in the footer
