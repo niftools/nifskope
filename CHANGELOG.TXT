@@ -3,9 +3,33 @@
 This is version 1.0.1 of NifSkope.
 
 changes since 1.0:
+ * User Interface
   - visualize skin partitions for versions < 10.2.0.0
-  - fixed \r \n issue
+  - fixed \r \n issue.  (Embedded carriage returns can be added using the Shift+Enter or Alt+Enter keys.)
+  - Avoid crashing when using XML Checker on 20.1 nifs with unknown file formats
+  - Add ByteMatrix data type for NiPixelData
+  - extra space in text editor to ensure that single line strings are nicely displayed on edit
+  - Allow for multiple file filters in the file open and save dialogs.
+  - Force C locale so there is at least some consistency somewhere in the app.  
+      Currently some editors use system locale but Qt forces C locale on some string operations.
+  - Fix sync bug when using delete branch
+  - Add multiline editor for text fields.  Also sets uniform row height on tree.
+  - fixed display of multiline strings (without affecting the actual data)
+  - syncing strip pack spell with xml
 
+  * NIF Compatibility
+  - fixes for oblivion skeleton.nif files
+  - Fixes for Emerge Demo and Megami Tensei: Imagine and the NiBoneLODController and related items.  
+  - Fixes for the following: Loki, Guild 2, Warhammer, PCM 2007, 
+      1. Added skeleton PhysX blocks from copetech examples
+      2. Fixed NiSortNode
+      3. Fixed NiPixelData to better match file format
+      4. Fixed NiBoneLODController
+  - fixes for ffvt3r 10.1.0.0 nifs (capsule NiCollisionData)
+  - fixed NiGeometryData for 10.1.0.0 nifs
+  - Fixes for NiCollisionObject and Multiline text in nifskope.
+  - number of vertices in oblivion sub shapes
+  
 changes since 0.9.8:
  * User Interface
   - Expanded help menu and renamed "Reference Browser" to "Interactive Help" and made it come up when F1 is pressed.

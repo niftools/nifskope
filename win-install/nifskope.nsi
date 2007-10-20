@@ -180,6 +180,10 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File nif_file.ico
   File ..\style.qss
   
+  ; Microsoft Runtime
+  File "C:\Program Files\Microsoft Visual Studio 8\VC\redist\x86\Microsoft.VC80.CRT\*.*"
+  
+  
   ; Install shaders
   SetOutPath $INSTDIR\shaders
   File ..\shaders\*.prog
