@@ -137,7 +137,7 @@ Function openLinkNewWindow
   Pop $3
 FunctionEnd
 
-!define DLL_VER "8.00.50727.42"
+!define DLL_VER "8.00.50727.762"
 
 Function LocateCallback
 
