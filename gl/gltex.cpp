@@ -151,8 +151,10 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	if ( file.isEmpty() )
 		return QString();
 
-#ifdef __GNUC__
+#ifndef WIN32
 	/* convert nif path backslash into forward slash */
+	/* also check for both original name and lower case name */
+	QString filename_orig = QString(file).replace( "\\", "/" );;
 	QString filename = file.toLower().replace( "\\", "/" );
 #else
 	QString filename = file.toLower();
@@ -163,6 +165,9 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	
 	QStringList extensions;
 	extensions << ".tga" << ".dds" << ".bmp";
+#ifndef WIN32
+	extensions << ".TGA" << ".DDS" << ".BMP";
+#endif
 	bool replaceExt = false;
 	if ( Options::textureAlternatives() )
 	{
@@ -173,6 +178,9 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 				extensions.removeAll( ext );
 				extensions.prepend( ext );
 				filename = filename.left( filename.length() - ext.length() );
+#ifndef WIN32
+				filename_orig = filename_orig.left( filename_orig.length() - ext.length() );
+#endif
 				replaceExt = true;
 				break;
 			}
@@ -183,8 +191,12 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	QDir dir;
 	foreach ( QString ext, extensions )
 	{
-		if ( replaceExt )
+		if ( replaceExt ) {
 			filename += ext;
+#ifndef WIN32
+			filename_orig += ext;
+#endif
+		}
 		
 		foreach ( QString folder, Options::textureFolders() )
 		{
@@ -193,13 +205,24 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			}
 			
 			dir.setPath( folder );
+#ifndef WIN32
+			qWarning() << folder << filename;
+#endif
 			if ( dir.exists( filename ) )
 				return dir.filePath( filename );
+#ifndef WIN32
+			qWarning() << folder << filename_orig;
+			if ( dir.exists( filename_orig ) )
+				return dir.filePath( filename_orig );
+#endif
 		}
 		
-		if ( replaceExt )
+		if ( replaceExt ) {
 			filename = filename.left( filename.length() - ext.length() );
-		else
+#ifndef WIN32
+			filename_orig = filename_orig.left( filename_orig.length() - ext.length() );
+#endif
+		} else
 			break;
 	}
 	
