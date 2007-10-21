@@ -5,6 +5,8 @@
 VERSION=1.0.1
 
 FILES="NifSkope.pro \
+    README.TXT \
+    CHANGELOG.TXT \
     nifskope.qrc \
     resources/*.png \
     nifskope.png \
@@ -69,6 +71,9 @@ mkdir -p gl widgets NvTriStrip spells importex fsengine
 cd ../..
 cp --parents $FILES linux-install/nifskope-$VERSION
 cd linux-install
+
+# copy desktop file
+cp nifskope.desktop nifskope-$VERSION
 
 # create tarball
 tar cfvj ~/rpmbuild/SOURCES/nifskope-$VERSION.tar.bz2 nifskope-$VERSION

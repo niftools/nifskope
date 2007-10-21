@@ -1,7 +1,7 @@
 Name:           nifskope
 Version:        1.0.1
 Release:        1%{?dist}
-Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files.
+Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
 Group:          Applications/Multimedia
 License:        BSD
@@ -17,18 +17,6 @@ NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo files.
 
 %prep
 %setup -q
-
-%{__cat} <nifskope.desktop
-[Desktop Entry]
-Name=NifSkope
-Comment=Edit nif files
-Exec=nifskope
-Icon=nifskope.png
-Terminal=false
-Type=Application
-Categories=Application;Graphics;
-Encoding=UTF-8
-EOF
 
 %build
 qmake-qt4 -after TARGET=nifskope
@@ -51,6 +39,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc doc/docsys.css
 %doc doc/favicon.ico
 %{_bindir}/nifskope
+%{_datadir}/pixmaps/nifskope.png
 %{_datadir}/gnome/apps/Multimedia/nifskope.desktop
 
 %changelog

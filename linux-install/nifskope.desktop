@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=NifSkope
+Comment=Edit nif files
+Exec=nifskope
+Icon=nifskope.png
+Terminal=false
+Type=Application
+Categories=Application;Graphics;
+Encoding=UTF-8
+
