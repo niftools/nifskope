@@ -1,6 +1,15 @@
 #!/bin/sh
 
-# script for preparing tarball
+# Script for preparing the ~/rpmbuild/SOURCES/nifskope-$VERSION.tar.bz2 tarball
+
+# How to build the rpm:
+
+# yum install rpmdevtools
+# rpmdev-setuptree
+# ./maketarball.sh
+# rpmbuild -ba nifskope.spec
+
+# and the rpm will reside in ~/rpmbuild/RPMS
 
 VERSION=1.0.1
 
