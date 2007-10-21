@@ -58,6 +58,11 @@ rm -f ~/rpmbuild/SOURCES/nifskope-$VERSION.tar.bz2
 # create fresh source directory
 mkdir nifskope-$VERSION
 
+# copy xml files
+cd ../../docsys
+cp nif.xml kfm.xml ../nifskope/linux-install/nifskope-$VERSION
+cd ../nifskope/linux-install
+
 # copy docsys files
 cd ../../docsys
 rm -f doc/*.html

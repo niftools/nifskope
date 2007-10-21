@@ -229,6 +229,8 @@ bool KfmModel::loadXML()
 		fname = dir.filePath( "../docsys/kfm.xml" );
 	else if ( dir.exists( "../../docsys/kfm.xml" ) )
 		fname = dir.filePath( "../../docsys/kfm.xml" );
+	else if ( dir.exists( "/usr/share/nifskope/kfm.xml" ) )
+		fname = dir.filePath( "/usr/share/nifskope/kfm.xml" );
 	else
 		fname = dir.filePath( "kfm.xml" );
 	QString result = KfmModel::parseXmlDescription( fname );

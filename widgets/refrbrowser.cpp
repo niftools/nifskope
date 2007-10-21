@@ -50,6 +50,12 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
     
     docFolderPresent = docFolder.exists( "doc" );
     
+    if ( ! docFolderPresent ) {
+        docFolder.cd( "/usr/share/nifskope" );
+        docFolderPresent = docFolder.exists( "doc" );
+    }
+
+    
     if( docFolderPresent ) {
         docFolder.cd( "doc" );
     }

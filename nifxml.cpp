@@ -428,6 +428,8 @@ bool NifModel::loadXML()
 		fname = dir.filePath( "../docsys/nif.xml" );
 	else if ( dir.exists( "../../docsys/nif.xml" ) )
 		fname = dir.filePath( "../../docsys/nif.xml" );
+        else if ( dir.exists( "/usr/share/nifskope/nif.xml" ) )
+                fname = dir.filePath( "/usr/share/nifskope/nif.xml" );
 	else
 		fname = dir.filePath( "nif.xml" );
 	QString result = NifModel::parseXmlDescription( fname );

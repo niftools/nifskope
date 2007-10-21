@@ -5,6 +5,6 @@ Exec=nifskope
 Icon=nifskope.png
 Terminal=false
 Type=Application
-Categories=Application;Graphics;
+Categories=Graphics
 Encoding=UTF-8
 

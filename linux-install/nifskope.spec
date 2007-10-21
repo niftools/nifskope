@@ -1,3 +1,5 @@
+%define desktop_vendor niftools
+
 Name:           nifskope
 Version:        1.0.1
 Release:        1%{?dist}
@@ -24,9 +26,25 @@ make %{?_smp_mflags}
 
 
 %install
+rm -rf $RPM_BUILD_ROOT
 %{__install} -Dp -m0755 nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
 %{__install} -Dp -m0644 nifskope.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/nifskope.png
-%{__install} -Dp -m0644 nifskope.desktop $RPM_BUILD_ROOT/%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
+%{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
+%{__install} -Dp -m0644 nif.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/nif.xml
+%{__install} -Dp -m0644 kfm.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/kfm.xml
+%{__install} -Dp -m0644 doc/*.html $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
+%{__install} -Dp -m0644 doc/docsys.css $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
+%{__install} -Dp -m0644 doc/favicon.ico $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
+
+%if %{?_without_freedesktop:1}0
+        %{__install} -Dp -m0644 nifskope.desktop %{buildroot}%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
+%else
+	%{__install} -d -m0755 %{buildroot}%{_datadir}/applications/
+	desktop-file-install --vendor %{desktop_vendor}    \
+		--add-category X-Red-Hat-Base              \
+		--dir %{buildroot}%{_datadir}/applications \
+		nifskope.desktop
+%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -35,12 +53,15 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc README.TXT CHANGELOG.TXT
-%doc doc/*.html
-%doc doc/docsys.css
-%doc doc/favicon.ico
 %{_bindir}/nifskope
 %{_datadir}/pixmaps/nifskope.png
-%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
+%{_datadir}/nifskope/nif.xml
+%{_datadir}/nifskope/kfm.xml
+%{_datadir}/nifskope/doc/*.html
+%{_datadir}/nifskope/doc/docsys.css
+%{_datadir}/nifskope/doc/favicon.ico
+%{?_without_freedesktop:%{_datadir}/gnome/apps/Multimedia/nifskope.desktop}
+%{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
 * Sun Oct 21 2007 amorilia - 1.0.1-1
