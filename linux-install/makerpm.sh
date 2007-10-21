@@ -8,6 +8,7 @@ FILES="NifSkope.pro \
     nifskope.qrc \
     resources/*.png \
     nifskope.png \
+    spells/skel.dat \
     nifitem.h \
     niftypes.h \
     nifvalue.h \
@@ -52,13 +53,24 @@ FILES="NifSkope.pro \
 rm -rf nifskope-$VERSION
 rm -f ~/rpmbuild/SOURCES/nifskope-$VERSION.tar.bz2
 
-# create tarball
+# create fresh source directory
 mkdir nifskope-$VERSION
+
+# copy docsys files
+cd ../../docsys
+rm -f doc/*.html
+python nifxml_doc.py
+cp --parents doc/*.html doc/docsys.css doc/favicon.ico ../nifskope/linux-install/nifskope-$VERSION
+cd ../nifskope/linux-install
+
+# copy source files
 cd nifskope-$VERSION
 mkdir -p gl widgets NvTriStrip spells importex fsengine
 cd ../..
 cp --parents $FILES linux-install/nifskope-$VERSION
 cd linux-install
+
+# create tarball
 tar cfvj ~/rpmbuild/SOURCES/nifskope-$VERSION.tar.bz2 nifskope-$VERSION
 
 # clean

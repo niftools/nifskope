@@ -18,16 +18,27 @@ NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo files.
 %prep
 %setup -q
 
+%{__cat} <nifskope.desktop
+[Desktop Entry]
+Name=NifSkope
+Comment=Edit nif files
+Exec=nifskope
+Icon=nifskope.png
+Terminal=false
+Type=Application
+Categories=Application;Graphics;
+Encoding=UTF-8
+EOF
 
 %build
-qmake-qt4 TARGET=nifskope
+qmake-qt4 -after TARGET=nifskope
 make %{?_smp_mflags}
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
-
+%{__install} -Dp -m0755 nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
+%{__install} -Dp -m0644 nifskope.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/nifskope.png
+%{__install} -Dp -m0644 nifskope.desktop $RPM_BUILD_ROOT/%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -36,8 +47,11 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc README.TXT CHANGELOG.TXT
+%doc doc/*.html
+%doc doc/docsys.css
+%doc doc/favicon.ico
 %{_bindir}/nifskope
-
+%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
 
 %changelog
 * Sun Oct 21 2007 amorilia - 1.0.1-1
