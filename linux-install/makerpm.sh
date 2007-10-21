@@ -5,6 +5,9 @@
 VERSION=1.0.1
 
 FILES="NifSkope.pro \
+    nifskope.qrc \
+    resources/*.png \
+    nifskope.png \
     nifitem.h \
     niftypes.h \
     nifvalue.h \
