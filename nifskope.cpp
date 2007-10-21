@@ -103,7 +103,7 @@ void NifSkope::about()
 	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
 	"NifTools SourceForge Project page</a>.";
 
-    QMessageBox mb( tr("About NifSkope 1.0"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+    QMessageBox mb( tr("About NifSkope 1.0.1"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
     mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
     mb.exec();
 }
