@@ -1,7 +1,11 @@
  == CHANGELOG ==
 
-This is version 1.0.1 of NifSkope.
+This is version 1.0.2 of NifSkope.
 
+changes since 1.0.1:
+ * User Interface
+  - another attempt at fixing the delete block crashes
+  
 changes since 1.0:
  * User Interface
   - visualize skin partitions for versions < 10.2.0.0
