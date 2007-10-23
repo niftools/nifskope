@@ -241,8 +241,11 @@ void NifModel::updateHeader()
 		
 		set<int>( header, "Num Block Types", blocktypes.count() );
 		
+      // Setting fast update to true to workaround bug where deleting blocks
+      //   causes a crash.  This probably means anyone listening to updates
+      //   for these two arrays will not work.
 		updateArrayItem( idxBlockTypes, false );
-		updateArrayItem( idxBlockTypeIndices, false );
+		updateArrayItem( idxBlockTypeIndices, true );
 		
 		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
 			set<QString>( idxBlockTypes->child( r ), blocktypes.value( r ) );
