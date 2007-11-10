@@ -163,7 +163,7 @@ FunctionEnd
 
 Function DownloadDLL
     MessageBox MB_OK "You will need to download the Microsoft Visual C++ 2005 Redistributable Package in order to run NifSkope. Pressing OK will take you to the download page, please follow the instructions on the page that appears."
-    StrCpy $0 "http://www.microsoft.com/downloads/details.aspx?familyid=32BC1BEE-A3F9-4C13-9C99-220B62A191EE&displaylang=en"
+    StrCpy $0 "http://www.microsoft.com/downloads/details.aspx?familyid=200b2fd9-ae1a-4a14-984d-389c36f85647&displaylang=en"
     Call openLinkNewWindow
 FunctionEnd
 
