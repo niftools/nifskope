@@ -408,7 +408,9 @@ void Renderer::updateShaders()
 		dir.cd( "shaders" );
         else if ( dir.exists( "/usr/share/nifskope/shaders" ) )
                 dir.cd( "/usr/share/nifskope/shaders" );
-	
+
+// linux does not want to load the shaders so disable them for now
+#ifdef WIN32	
 	dir.setNameFilters( QStringList() << "*.vert" );
 	foreach ( QString name, dir.entryList() )
 	{
@@ -432,6 +434,7 @@ void Renderer::updateShaders()
 		program->load( dir.filePath( name ), this );
 		programs.insert( name, program );
 	}
+#endif
 }
 
 void Renderer::releaseShaders()
