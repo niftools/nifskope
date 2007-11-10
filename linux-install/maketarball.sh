@@ -58,7 +58,10 @@ FILES="NifSkope.pro \
     importex/*.cpp \
     NvTriStrip/*.cpp \
     fsengine/*.h \
-    fsengine/*.cpp"
+    fsengine/*.cpp
+    shaders/*.frag
+    shaders/*.prog
+    shaders/*.vert"
 
 # clean old tarball
 rm -rf nifskope-$VERSION

@@ -30,8 +30,12 @@ rm -rf $RPM_BUILD_ROOT
 %{__install} -Dp -m0755 nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
 %{__install} -Dp -m0644 nifskope.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/nifskope.png
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
+%{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
 %{__install} -Dp -m0644 nif.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/nif.xml
 %{__install} -Dp -m0644 kfm.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/kfm.xml
+%{__install} -Dp -m0644 shaders/*.frag $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
+%{__install} -Dp -m0644 shaders/*.prog $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
+%{__install} -Dp -m0644 shaders/*.vert $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
 %{__install} -Dp -m0644 doc/*.html $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -Dp -m0644 doc/docsys.css $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -Dp -m0644 doc/favicon.ico $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
@@ -57,6 +61,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/pixmaps/nifskope.png
 %{_datadir}/nifskope/nif.xml
 %{_datadir}/nifskope/kfm.xml
+%{_datadir}/nifskope/shaders/*.vert
+%{_datadir}/nifskope/shaders/*.frag
+%{_datadir}/nifskope/shaders/*.prog
 %{_datadir}/nifskope/doc/*.html
 %{_datadir}/nifskope/doc/docsys.css
 %{_datadir}/nifskope/doc/favicon.ico
@@ -66,5 +73,6 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Sat Nov 10 2007 amorilia - 1.0.2-1
 - Small bugs fixed.
+- Including shaders.
 * Sun Oct 21 2007 amorilia - 1.0.1-1
 - Initial package.

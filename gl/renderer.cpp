@@ -404,7 +404,10 @@ void Renderer::updateShaders()
 	releaseShaders();
 	
 	QDir dir( QApplication::applicationDirPath() );
-	dir.cd( "shaders" );
+        if ( dir.exists( "shaders" ) )
+		dir.cd( "shaders" );
+        else if ( dir.exists( "/usr/share/nifskope/shaders" ) )
+                dir.cd( "/usr/share/nifskope/shaders" );
 	
 	dir.setNameFilters( QStringList() << "*.vert" );
 	foreach ( QString name, dir.entryList() )
