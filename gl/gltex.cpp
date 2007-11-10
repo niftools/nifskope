@@ -206,12 +206,12 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			
 			dir.setPath( folder );
 #ifndef WIN32
-			qWarning() << folder << filename;
+			//qWarning() << folder << filename;
 #endif
 			if ( dir.exists( filename ) )
 				return dir.filePath( filename );
 #ifndef WIN32
-			qWarning() << folder << filename_orig;
+			//qWarning() << folder << filename_orig;
 			if ( dir.exists( filename_orig ) )
 				return dir.filePath( filename_orig );
 #endif
