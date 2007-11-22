@@ -1,6 +1,10 @@
  == CHANGELOG ==
 
-This is version 1.0.2 of NifSkope.
+This is version 1.0.3 of NifSkope.
+
+changes since 1.0.2:
+ * Installer
+  - fixed link where user can download MSVC redistributables
 
 changes since 1.0.1:
  * User Interface

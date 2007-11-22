@@ -1,5 +1,5 @@
 set NAME=nifskope
-set VERSION=1.0.2
+set VERSION=1.0.3
 
 del %NAME%-%VERSION%-windows.exe
 

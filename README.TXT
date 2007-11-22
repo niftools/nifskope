@@ -4,7 +4,7 @@
  
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
-This is version 1.0.2 of NifSkope.
+This is version 1.0.3 of NifSkope.
 
 Note: Windows users may need to install this Microsoft package which contains Visual C++ DLL files:
 
