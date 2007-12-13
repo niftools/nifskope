@@ -228,4 +228,10 @@ public slots:
 	void sltProgress( int, int );
 };
 
+/*! \mainpage NifSkope API Documentation
+ *
+ * A concise description of nifskope's inner workings should come here, with
+ * pointers to get people started.
+ */
+
 #endif
