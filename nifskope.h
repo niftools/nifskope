@@ -94,17 +94,31 @@ public:
 	void restore( const QSettings & settings );
 	
 public slots:
+	//! Set the lineLoad string and load a nif, kf, or kfm file.
+	/*!
+	 * \param filepath The file to load.
+	 */
 	void load( const QString & filepath );
-	
+
+	//! Load a nif, kf, or kfm file, taking the file path from the lineLoad widget.
 	void load();
+
+	//! Save a nif, kf, or kfm file, taking the file path from the lineSave widget.
 	void save();
 	
+	//! Reparse the nif.xml and kfm.xml files.
 	void loadXML();
+
+	//! Reparse the nif.xml and kfm.xml files and reload the current file.
 	void reload();
 	
+	//! A slot that creates a new NifSkope application window.
 	void sltWindow();
+
+	// *** not sure what this one does ***
 	void sltShredder();
 	
+	//! Display the "About NifSkope" window.
 	void about();
 	
 protected slots:
