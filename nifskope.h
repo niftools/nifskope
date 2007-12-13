@@ -60,6 +60,13 @@ class QUdpSocket;
 
 #include "message.h"
 
+//! The main application class for NifSkope. 
+/*!
+ * This class encapsulates the main NifSkope window. It has members for saving
+ * and restoring settings, loading and saving nif files, loading an xml
+ * description, widgets for the various subwindows, menu's, and a socket by
+ * which NifSkope can communicate with itself.
+ */
 class NifSkope : public QMainWindow
 {
 Q_OBJECT
@@ -67,10 +74,24 @@ public:
 	NifSkope();
 	~NifSkope();
 	
+	//! Create and initialize a new NifSkope application window.
+	/*!
+	 * \param fname The name of the file to load in the new NifSkope window.
+	 * \return The newly created NifSkope instance.
+	 */
 	static NifSkope * createWindow( const QString & fname = QString() );
-	
+
+	//! Save NifSkope application settings.
+	/*!
+	 * \param settings The QSettings object used to store the settings.
+	 */
 	void save( QSettings & settings ) const;
-	void restore( QSettings & settings );
+
+	//! Restore NifSkope application settings. 
+	/*!
+	 * \param settings The QSettings object to restore the settings from.
+	 */
+	void restore( const QSettings & settings );
 	
 public slots:
 	void load( const QString & filepath );

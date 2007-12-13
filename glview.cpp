@@ -1121,7 +1121,7 @@ void GLView::save( QSettings & settings )
 	//settings.endGroup();
 }
 
-void GLView::restore( QSettings & settings )
+void GLView::restore( const QSettings & settings )
 {
 	//settings.beginGroup( "OpenGL" );
 	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );

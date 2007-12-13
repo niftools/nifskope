@@ -420,7 +420,7 @@ void NifSkope::closeEvent( QCloseEvent * e )
 	QMainWindow::closeEvent( e );
 }
 
-void restoreHeader( const QString & name, QSettings & settings, QHeaderView * header )
+void restoreHeader( const QString & name, const QSettings & settings, QHeaderView * header )
 {
 	QByteArray b = settings.value( name ).value<QByteArray>();
 	if ( b.isEmpty() )
@@ -437,7 +437,7 @@ void restoreHeader( const QString & name, QSettings & settings, QHeaderView * he
 	}
 }
 
-void NifSkope::restore( QSettings & settings )
+void NifSkope::restore( const QSettings & settings )
 {
 	restoreGeometry( settings.value( "window geometry" ).toByteArray() );
 	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );

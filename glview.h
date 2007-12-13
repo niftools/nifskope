@@ -108,7 +108,7 @@ public:
 	QToolBar * tView;
 	
 	void	save( QSettings & );
-	void	restore( QSettings & );
+	void	restore( const QSettings & );
 
 public slots:
 	void setNif( NifModel * );
