@@ -98,14 +98,15 @@ void NifSkope::about()
 	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
 	"<p>NifSkope is free software and the source code is availiable under a BSD lisence, however the executable is distributed under the GPL"
 	" because it was built using the Qt library. "
-	"The source is available via <a href='https://svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
+	"The source is available via <a href='https://niftools.svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
 	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
 	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
 	"NifTools SourceForge Project page</a>.";
 
-    QMessageBox mb( tr("About NifSkope 1.0.3"), text, QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
-    mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
-    mb.exec();
+	QMessageBox mb( tr("About NifSkope 1.0.3"), text, QMessageBox::Information,
+		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
+	mb.exec();
 }
 
 NifSkope::NifSkope()

@@ -44,6 +44,11 @@ class QAbstractItemDelegate;
 
 #include "message.h"
 
+//! Base class for nif and kfm models, which store files in memory.
+/*!
+ * This class serves as an abstract base class for NifModel and KfmModel
+ * classes.
+ */
 class BaseModel : public QAbstractItemModel
 {
 Q_OBJECT
@@ -51,59 +56,85 @@ public:
 	BaseModel( QObject * parent = 0 );
 	~BaseModel();
 	
-	// clear model data
+	//! Clear model data.
 	virtual void clear() = 0;
 	
-	// load and save to and from file
+	//! Load from file.
 	bool loadFromFile( const QString & filename );
+	//! Save to file.
 	bool saveToFile( const QString & filename ) const;
 	
-	// generic load and save to and from QIODevice
+	//! Generic load from QIODevice.
 	virtual bool load( QIODevice & device ) = 0;
+	//! Generic save to QIODevice.
 	virtual bool save( QIODevice & device ) const = 0;
 	
-	// if the model was loaded from a file getFolder returns the directory
-	// can be used to resolve external resources
+	//! If the model was loaded from a file then getFolder returns the folder.
+	/*!
+	 * This function is used to resolve external resources.
+	 * \return The folder of the last file that was loaded with loadFromFile.
+	 */
 	QString getFolder() const { return folder; }
 	
-	
-	bool isArray( const QModelIndex & array ) const;
-	// this updates an array ( append or remove items )
-	bool updateArray( const QModelIndex & array );
+	//! Return true if the index pointed to is an array.
+	/*!
+	 * \param array The index to check.
+	 * \return true if the index is an array.
+	 */
+	bool isArray( const QModelIndex & iArray ) const;
+	//! Update the size of an array (append or remove items).
+	/*!
+	 * \param array The index of the array whose size to update.
+	 * \return true if the update succeeded, false otherwise.
+	 */
+	bool updateArray( const QModelIndex & iArray );
 	bool updateArray( const QModelIndex & parent, const QString & name );
-	// read an array
+	//! Get an model index array as a QVector.
+	/*!
+	 * \param array The index of the array to get.
+	 * \return The array as QVector.
+	 */
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray ) const;
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray, const QString & name ) const;
-	// write an array
+	//! Write a QVector to a model index array.
 	template <typename T> void setArray( const QModelIndex & iArray, const QVector<T> & array );
 	template <typename T> void setArray( const QModelIndex & iArray, const QString & name, const QVector<T> & array );
 	
-	
+	//! Get an item.
 	template <typename T> T get( const QModelIndex & index ) const;
-	template <typename T> bool set( const QModelIndex & index, const T & d );	
-	
-	// find an item named name and return the coresponding value
 	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
+	//! Set an item.
+	template <typename T> bool set( const QModelIndex & index, const T & d );	
 	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-	
-	// set item value
-	bool setValue( const QModelIndex & index, const NifValue & v );
-	// sets a named attribute to value
-	bool setValue( const QModelIndex & index, const QString & name, const NifValue & v );
-	
+
+	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
-	NifValue getValue( const QModelIndex & index, const QString & name ) const;
+	NifValue getValue( const QModelIndex & parent, const QString & name ) const;
+	
+	//! Set an item from a NifValue.
+	bool setValue( const QModelIndex & index, const NifValue & v );
+	bool setValue( const QModelIndex & parent, const QString & name, const NifValue & v );
 	
 	// get item attributes
+	//! Get the item name.
 	QString  itemName( const QModelIndex & index ) const;
+	//! Get the item type string.
 	QString  itemType( const QModelIndex & index ) const;
+	//! Get the item argument string.
 	QString  itemArg( const QModelIndex & index ) const;
+	//! Get the item arr1 string.
 	QString  itemArr1( const QModelIndex & index ) const;
+	//! Get the item arr2 string.
 	QString  itemArr2( const QModelIndex & index ) const;
+	//! Get the item condition string.
 	QString  itemCond( const QModelIndex & index ) const;
+	//! Get the item first version.
 	quint32  itemVer1( const QModelIndex & index ) const;
+	//! Get the item last version.
 	quint32  itemVer2( const QModelIndex & index ) const;
+	//! Get the item documentation.
 	QString  itemText( const QModelIndex & index ) const;
+	//! Get the item template string.
 	QString  itemTmplt( const QModelIndex & index ) const;
 
 	// find a branch by name

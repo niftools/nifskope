@@ -154,9 +154,12 @@ private:
 	void initMenu();
 	
 	void setViewFont( const QFont & );
-	
+
+	//! Stores the nif file in memory.
 	NifModel * nif;
+	//! A hierarchical proxy for the nif file.
 	NifProxyModel * proxy;
+	//! Stores the kfm file in memory.
 	KfmModel * kfm;
 	
 	NifTreeView * list;

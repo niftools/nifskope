@@ -222,6 +222,10 @@ NifValue BaseModel::getValue( const QModelIndex & index ) const
 	return item->value();
 }
 
+// where is
+// NifValue BaseModel::getValue( const QModelIndex & parent, const QString & name ) const
+// ?
+
 QString BaseModel::itemArg( const QModelIndex & index ) const
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
