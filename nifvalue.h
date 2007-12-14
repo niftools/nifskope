@@ -42,9 +42,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 
 
+//! A generic class used for storing a value of any type.
+/*!
+ * The NifValue::Type enum lists all supported types.
+ */
 class NifValue
 {
 public:
+	//! List of all types implemented internally by NifSkope.
 	enum Type
 	{
 		tBool = 0,
@@ -109,6 +114,7 @@ public:
 	~NifValue();
 	
 	void clear();
+	//! Change the type of this data.
 	void changeType( Type );
 	
 	void operator=( const NifValue & other );
@@ -158,24 +164,36 @@ public:
 	template <typename T> bool set( const T & x );
 
 protected:
+	//! The type of this data.
 	Type typ;
 	
 	union Value
 	{
 		quint8	u08;
-		quint16 u16;
-		quint32 u32;
+		quint16	u16;
+		quint32	u32;
 		qint32	i32;
 		float	f32;
 		void *	data;
-	} val;
+	};
+	//! The data value.
+	Value val;
 	
 	template <typename T> T getType( Type t ) const;
 	template <typename T> bool setType( Type t, T v );
 	
-	static QHash<QString,Type>	typeMap;
-	static QHash<QString, QHash<quint32, QPair<QString, QString> > > enumMap;
-	static QHash<QString, QString> typeTxt;
+	//! A dictionary yielding the Type from a type string.
+	static QHash<QString, Type>	typeMap;
+	//! A dictionary yielding the enumaration dictionary from a string.
+	/*!
+	 * Enums are stored as mappings from quint32 to pairs of strings, where
+	 * the first string in the pair is the enumerant string, and the second
+	 * is the enumerant documentation string. For example,
+	 * enumMap["AlphaFormat"][1] = QPair<"ALPHA_BINARY", "Texture is either fully transparent or fully opaque.">
+	 */
+	static QHash<QString, QHash<quint32, QPair<QString, QString> > >	enumMap;
+	//! A dictionary yielding the documentation string of a type string.
+	static QHash<QString, QString>	typeTxt;
 	
 	friend class NifIStream;
 	friend class NifOStream;
@@ -183,7 +201,7 @@ protected:
 };
 
 inline quint32 NifValue::toCount() const {
-#ifndef __GNUC__
+#ifdef WIN32
 	if ( isCount() )
 		return val.u32;
 	else if( isFloat() )

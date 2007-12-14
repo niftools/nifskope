@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 QHash<QString,NifValue::Type>	NifValue::typeMap;
-QHash<QString,QString>         NifValue::typeTxt;
+QHash<QString,QString>		NifValue::typeTxt;
 QHash<QString,QHash<quint32, QPair<QString,QString> > >	NifValue::enumMap;
 
 void NifValue::initialize()
