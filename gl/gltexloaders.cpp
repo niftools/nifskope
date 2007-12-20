@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D;
 
+//! Check whether a number is a power of two.
 bool isPowerOfTwo( unsigned int x )
 {
 	while ( ! ( x == 0 || x & 1 ) )
@@ -43,20 +44,28 @@ bool isPowerOfTwo( unsigned int x )
 	return ( x == 1 );
 }
 
+//! Completes mipmap sequence of the current active OpenGL texture.
+/*!
+ * \param m Number of mipmaps that are already in the texture.
+ * \return Total number of mipmaps.
+ */
 int generateMipMaps( int m )
 {
 	GLint w = 0, h = 0;
 	
+	// load the (m-1)'th mipmap as a basis
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, m-1, GL_TEXTURE_WIDTH, &w );
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, m-1, GL_TEXTURE_HEIGHT, &h );
 	
 	//qWarning() << m-1 << w << h;
-
+	
 	quint8 * data = (quint8 *) malloc( w * h * 4 );
 	glGetTexImage( GL_TEXTURE_2D, m-1, GL_RGBA, GL_UNSIGNED_BYTE, data );
 	
+	// now generate the mipmaps until width is one or height is one.
 	while ( w > 1 || h > 1 )
 	{
+		// the buffer overwrites itself to save memory
 		const quint8 * src = data;
 		quint8 * dst = data;
 		
@@ -546,10 +555,7 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 		return m;
 }
 
-/*
- *  load a (compressed) dds texture
- */
- 
+//! Load a (possibly compressed) dds texture.
 GLuint texLoadDDS( QIODevice & f, QString & texformat )
 {
 	char tag[4];
@@ -613,9 +619,8 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 	}
 }
 
-/*
- *  load a tga texture
- */
+
+// TGA constants
 
 #define TGA_COLORMAP     1
 #define TGA_COLOR        2
@@ -624,6 +629,7 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 #define TGA_COLOR_RLE    10
 #define TGA_GREY_RLE     11
 
+//! Load a TGA texture.
 GLuint texLoadTGA( QIODevice & f, QString & texformat )
 {
 	texformat = "TGA";
@@ -755,6 +761,7 @@ quint16 get16( quint8 * x )
 	return *( (quint16 *) x );
 }
 
+//! Load a BMP texture.
 GLuint texLoadBMP( QIODevice & f, QString & texformat )
 {
 	// read in bmp header
@@ -808,6 +815,7 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 	return 0;
 }
 
+// (public function, documented in gltexloaders.h)
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	width = height = mipmaps = 0;
@@ -831,6 +839,7 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	return mipmaps > 0;
 }
 	
+// (public function, documented in gltexloaders.h)
 bool texCanLoad( const QString & filepath )
 {
 	QFileInfo i( filepath );
