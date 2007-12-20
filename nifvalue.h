@@ -56,6 +56,7 @@ public:
 	 */
 	enum Type
 	{
+		// all count types should come between tBool and tUInt
 		tBool = 0,
 		tByte = 1,
 		tWord = 2,
@@ -66,15 +67,18 @@ public:
 		tInt = 7,
 		tShort = 8,
 		tUInt = 9,
+		//
 		tLink = 10,
 		tUpLink = 11,
 		tFloat = 12,
+		// all string types should come between tSizedString and tChar8String
 		tSizedString = 13,
 		tText = 15,
 		tShortString = 16,
 		tHeaderString = 18,
 		tLineString = 19,
 		tChar8String = 20,
+		//
 		tColor3 = 21,
 		tColor4 = 22,
 		tVector3 = 23,
@@ -88,8 +92,8 @@ public:
 		tFileVersion = 31,
 		tByteArray = 32,
 		tStringPalette = 33,
-		tString = 34,
-		tFilePath = 35,
+		tString = 34, // not a regular string: an integer for nif versions 20.1.0.3 and up
+		tFilePath = 35, // not a string: requires special handling for slash/backslash etc.
 		tByteMatrix = 36,
 
 		tNone = 0xff
@@ -146,27 +150,44 @@ public:
 	
 	//! Initialize the value to nothing, type tNone.
 	NifValue() { typ = tNone; }
+	//! Initialize the value to a default value of the specified type.
 	NifValue( Type t );
+	//! Copy constructor.
 	NifValue( const NifValue & other );
 	
 	~NifValue();
 	
+	//! Clear the data, setting its type to tNone.
 	void clear();
-	//! Change the type of this data.
+	//! Change the type of data stored.
+	/*!
+	 * Clears existing data, changes its type, and then reinitializes the data to its default.
+	 * Note that if Type is the same as originally, then the data is not cleared.
+	 */
 	void changeType( Type );
 	
+	//! Assignment. Performs a deep copy of the data.
 	void operator=( const NifValue & other );
 	
+	//! Get the type.
 	Type type() const { return typ; }
 	
+	//! Check if the type is not tNone.
 	static bool isValid( Type t ) { return t != tNone; }
+	//! Check if a type is of a link type (Ref or Ptr in xml).
 	static bool isLink( Type t ) { return t == tLink || t == tUpLink; }
 	
+	//! Check if the type of the data is not tNone.
 	bool isValid() const { return typ != tNone; }
+	//! Check if the type of the data is a color type (Color3 or Color4 in xml).
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
+	//! Check if the type of the data is a count.
 	bool isCount() const { return (typ >= tBool && typ <= tUInt); }
+	//! Check if the type of the data is a flag type (Flags in xml).
 	bool isFlags() const { return typ == tFlags; }
+	//! Check if the type of the data is a float type (Float in xml).
 	bool isFloat() const { return typ == tFloat; }
+	//! Check if the type of the data  is of a link type (Ref or Ptr in xml).
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
@@ -196,9 +217,12 @@ public:
 	
 	bool fromString( const QString & );
 	bool fromVariant( const QVariant & );
-	
+
+	//! Check whether the data can be converted to something of type T.
 	template <typename T> bool ask( T * t = 0 ) const;
+	//! Get the data in the form of something of type T.
 	template <typename T> T get() const;
+	//! Set the data from an instance of type T. Return true if successful.
 	template <typename T> bool set( const T & x );
 
 protected:
@@ -219,7 +243,17 @@ protected:
 	//! The data value.
 	Value val;
 	
+	//! Get the data as an object of type T.
+	/*!
+	 * If the type t is not equal to the actual type of the data, then return T(). Serves
+	 * as a helper function for get, intended for internal use only.
+	 */
 	template <typename T> T getType( Type t ) const;
+	//! Set the data from an object of type T.
+	/*!
+	 * If the type t is not equal to the actual type of the data, then return false, else
+	 * return true. Helper function for set, intended for internal use only.
+	 */
 	template <typename T> bool setType( Type t, T v );
 	
 	//! A dictionary yielding the Type from a type string.
@@ -264,7 +298,7 @@ inline bool NifValue::setFileVersion( quint32 v ) { if ( isFileVersion() ) { val
 template <typename T> inline T NifValue::getType( Type t ) const
 {
 	if ( typ == t )
-		return *static_cast<T*>( val.data );
+		return *static_cast<T*>( val.data ); // WARNING: this throws an exception if the type of v is not the original type by which val.data was initialized; the programmer must make sure that T matches t.
 	else
 		return T();
 }
@@ -273,7 +307,7 @@ template <typename T> inline bool NifValue::setType( Type t, T v )
 {
 	if ( typ == t )
 	{
-		*static_cast<T*>( val.data ) = v;
+		*static_cast<T*>( val.data ) = v; // WARNING: this throws an exception if the type of v is not the original type by which val.data was initialized; the programmer must make sure that T matches t.
 		return true;
 	}
 	return false;
