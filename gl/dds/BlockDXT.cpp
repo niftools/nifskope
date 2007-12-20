@@ -60,10 +60,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include <Common.h>
-#include <Stream.h>
-#include <ColorBlock.h>
-#include <BlockDXT.h>
+#include "Common.h"
+#include "Stream.h"
+#include "ColorBlock.h"
+#include "BlockDXT.h"
 
 /*----------------------------------------------------------------------------
 	BlockDXT1

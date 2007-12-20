@@ -39,8 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This code is in the public domain -- castanyo@yahoo.es
 
-#include <Color.h>
-#include <Image.h>
+#include "Color.h"
+#include "Image.h"
 
 #include <stdio.h> // printf
 

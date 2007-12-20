@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <Stream.h>
+#include "Stream.h"
 
 #include <stdio.h>  // printf
 #include <string.h> // memcpy

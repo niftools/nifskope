@@ -63,10 +63,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_DIRECTDRAWSURFACE_H
 #define _DDS_DIRECTDRAWSURFACE_H
 
-#include <Common.h>
-#include <Stream.h>
-#include <ColorBlock.h>
-#include <Image.h>
+#include "Common.h"
+#include "Stream.h"
+#include "ColorBlock.h"
+#include "Image.h"
 
 struct DDSPixelFormat
 {

@@ -60,9 +60,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-#include <DirectDrawSurface.h>
-#include <BlockDXT.h>
-#include <PixelFormat.h>
+#include "DirectDrawSurface.h"
+#include "BlockDXT.h"
+#include "PixelFormat.h"
 
 #include <stdio.h> // printf
 #include <math.h>  // sqrt

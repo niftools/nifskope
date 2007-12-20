@@ -63,10 +63,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_BLOCKDXT_H
 #define _DDS_BLOCKDXT_H
 
-#include <Common.h>
-#include <Color.h>
-#include <ColorBlock.h>
-#include <Stream.h>
+#include "Common.h"
+#include "Color.h"
+#include "ColorBlock.h"
+#include "Stream.h"
 
 /// DXT1 block.
 struct BlockDXT1

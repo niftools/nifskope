@@ -30,13 +30,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <dds_api.h>
-#include <Stream.h>
-#include <DirectDrawSurface.h>
+#include "dds_api.h"
+#include "Stream.h"
+#include "DirectDrawSurface.h"
 #include <stdio.h> // printf
-#include <QByteArray.h>
 
-int imb_is_a_dds(unsigned char *mem) // note: use at most first 32 bytes
+int is_a_dds(unsigned char *mem) // note: use at most first 8 bytes
 {
 	/* heuristic check to see if mem contains a DDS file */
 	/* header.fourcc == FOURCC_DDS */
@@ -46,17 +45,10 @@ int imb_is_a_dds(unsigned char *mem) // note: use at most first 32 bytes
 	return(1);
 }
 
-int load_dds(unsigned char *mem, int size)
+Image * load_dds(unsigned char *mem, int size)
 {
 	DirectDrawSurface dds(mem, size); /* reads header */
-	unsigned char bits_per_pixel;
-	Image img;
-	unsigned int numpixels = 0;
-	int col;
-	unsigned char *cp = (unsigned char *) &col;
-	Color32 pixel;
-	Color32 *pixels = 0;
-
+	
 	/* check if DDS is valid and supported */
 	if (!dds.isValid()) {
 		printf("DDS: not valid; header follows\n");
@@ -71,24 +63,9 @@ int load_dds(unsigned char *mem, int size)
 		printf("DDS: dimensions too large\n");
 		return(0);
 	}
-
-	/* convert DDS into ImBuf */
-	if (dds.hasAlpha()) bits_per_pixel = 32;
-	else bits_per_pixel = 24;
-
-	dds.mipmap(&img, 0, 0); /* load first face, first mipmap */
-	pixels = img.pixels();
-	numpixels = dds.width() * dds.height();
-	cp[3] = 0xff; /* default alpha if alpha channel is not present */
-
-	for (unsigned int i = 0; i < numpixels; i++) {
-		pixel = pixels[i];
-		cp[0] = pixel.r; /* set R component of col */
-		cp[1] = pixel.g; /* set G component of col */
-		cp[2] = pixel.b; /* set B component of col */
-		if (bits_per_pixel == 32)
-			cp[3] = pixel.a; /* set A component of col */
-	}
 	
-	return(1);
+	/* load first face, first mipmap */
+	Image *img = new Image();	
+	dds.mipmap(img, 0, 0);
+	return img;
 }

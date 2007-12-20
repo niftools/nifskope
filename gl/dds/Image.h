@@ -42,8 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_IMAGE_H
 #define _DDS_IMAGE_H
 
-#include <Common.h>
-#include <Color.h>
+#include "Common.h"
+#include "Color.h"
 
 /// 32 bit RGBA image.
 class Image

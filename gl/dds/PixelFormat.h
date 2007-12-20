@@ -63,7 +63,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_PIXELFORMAT_H
 #define _DDS_PIXELFORMAT_H
 
-#include <Common.h>
+#include "Common.h"
 
 	namespace PixelFormat
 	{

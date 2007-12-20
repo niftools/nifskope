@@ -42,8 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_COLORBLOCK_H
 #define _DDS_COLORBLOCK_H
 
-#include <Color.h>
-#include <Image.h>
+#include "Color.h"
+#include "Image.h"
 
 /// Uncompressed 4x4 color block.
 struct ColorBlock

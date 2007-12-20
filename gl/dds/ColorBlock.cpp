@@ -39,9 +39,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This code is in the public domain -- castanyo@yahoo.es
 
-#include <ColorBlock.h>
-#include <Image.h>
-#include <Common.h>
+#include "ColorBlock.h"
+#include "Image.h"
+#include "Common.h"
 
 	// Get approximate luminance.
 	inline static uint colorLuminance(Color32 c)

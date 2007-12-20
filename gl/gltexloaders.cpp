@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtOpenGL>
 
 #include <GL/glext.h>
+#include "dds/dds_api.h"
 
 extern PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D;
 
@@ -517,9 +518,22 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 
 GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
 {
+#ifndef WIN32
+	// load the pixels
+	f.seek(0);
+	QByteArray bytes = f.readAll();
+	Image * img = load_dds((unsigned char*)bytes.data(), bytes.size());
+	if (!img) return(0);
+	// load the texture into OpenGL
+	GLuint m = 0;
+	glTexImage2D( GL_TEXTURE_2D, m++, 4, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLubyte *)img->pixels() );
+	delete img;
+	m = generateMipMaps( m );
+	return m;
+#else
 	if ( !_glCompressedTexImage2D )
 		throw QString( "DXT texture compression not supported" );
-	
+
 	GLubyte * pixels = (GLubyte *) malloc( ( ( width + 3 ) / 4 ) * ( ( height + 3 ) / 4 ) * blockSize );
 	unsigned int w = width, h = height, s;
 	unsigned int m = 0;
@@ -553,6 +567,7 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 		return 1;
 	else
 		return m;
+#endif
 }
 
 //! Load a (possibly compressed) dds texture.

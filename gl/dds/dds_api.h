@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_API_H
 #define _DDS_API_H
 
+#include "Image.h"
+
 //! Check whether the memory array effectively contains a DDS file.
 /*!
  * Caller must make sure that mem contains at least 8 bytes.
@@ -43,8 +45,8 @@ int is_a_dds(unsigned char *mem); /* use only first 8 bytes of mem */
 
 //! Load a DDS file.
 /*!
- * \return 1 if the file was loaded, 0 otherwise.
+ * \return 0 if load failed, or pointer to Image object otherwise. The caller is responsible for destructing the image object (using delete).
  */
-int load_dds(unsigned char *mem, int size);
+Image * load_dds(unsigned char *mem, int size);
 
 #endif /* __DDS_API_H */

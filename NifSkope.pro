@@ -30,6 +30,7 @@ HEADERS += \
     options.h \
     gl/*.h \
     gl/marker/*.h \
+    gl/dds/*.h \
     widgets/*.h \
     spells/*.h \
     importex/*.h \
@@ -51,6 +52,7 @@ SOURCES += \
     spellbook.cpp \
     options.cpp \
     gl/*.cpp \
+    gl/dds/*.cpp \
     widgets/*.cpp \
     spells/*.cpp \
     importex/*.cpp \
