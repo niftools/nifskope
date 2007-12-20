@@ -33,14 +33,29 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
-// loads a texture pointed to by filepath
-// returns true on success
-// throws a QString otherwise
-// format, width, height and mipmaps will be filled with infos about the loaded texture
-
+//! A function for loading textures.
+/*!
+ * Loads a texture pointed to by filepath.
+ * Returns true on success, and throws a QString otherwise.
+ * The parameters format, width, height and mipmaps will be filled with information about
+ * the loaded texture.
+ *
+ * \param filepath The full path to the texture that must be loaded.
+ * \param format Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
+ * \param width Contains the texture width on successful load.
+ * \param height Contains the texture height on successful load.
+ * \param mipmaps Contains the number of mipmaps on successful load.
+ * \return true if the load was successful, false otherwise.
+ */
 extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
 
+//! A function which checks whether the given file can be loaded.
+/*!
+ * The function checks whether the file exists, is readable, and whether its extension
+ * is that of a supported file format (dds, tga, or bmp).
+ *
+ * \param filepath The full path to the texture that must be checked.
+ */
 extern bool texCanLoad( const QString & filepath );
-
 
 #endif

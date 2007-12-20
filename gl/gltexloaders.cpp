@@ -617,12 +617,12 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
  *  load a tga texture
  */
 
-#define TGA_COLORMAP	1
-#define TGA_COLOR		2
-#define TGA_GREY		3
+#define TGA_COLORMAP     1
+#define TGA_COLOR        2
+#define TGA_GREY         3
 #define TGA_COLORMAP_RLE 9
-#define TGA_COLOR_RLE	10
-#define TGA_GREY_RLE	11
+#define TGA_COLOR_RLE    10
+#define TGA_GREY_RLE     11
 
 GLuint texLoadTGA( QIODevice & f, QString & texformat )
 {

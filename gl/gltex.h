@@ -40,13 +40,20 @@ class QFileSystemWatcher;
 
 class GroupBox;
 
+//! A class for handling OpenGL textures.
+/*!
+ * This class stores information on all loaded textures, and watches the texture files.
+ */
 class TexCache : public QObject
 {
 	Q_OBJECT
 
+	//! A structure for storing information on a single texture.
 	struct Tex
 	{
+		//! The texture file name.
 		QString filename;
+		//! The texture file path.
 		QString filepath;
 		GLuint	id;
 		GLuint	width, height, mipmaps;
