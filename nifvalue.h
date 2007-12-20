@@ -50,6 +50,10 @@ class NifValue
 {
 public:
 	//! List of all types implemented internally by NifSkope.
+	/*!
+	 * To add a new type, add a new enumerant to Type, and update NifValue::initialize()
+	 * to reflect the name of the type as used in the xml.
+	 */
 	enum Type
 	{
 		tBool = 0,
@@ -91,22 +95,56 @@ public:
 		tNone = 0xff
 	};
 	
-	template <typename T> static Type typeId();
+	// *** apparently not used ***
+	//template <typename T> static Type typeId();
 	
+	//! Initialize the class data
+	/*!
+	 * Sets typeMap. Clears typeTxt and enumMap (which will be filled later during xml parsing).
+	 */
 	static void initialize();
 	
+	//! Get the Type corresponding to a string typId, as stored in the typeMap.
+	/*!
+	 * \param typId The type string (as used in the xml).
+	 * \return The Type corresponding to the string, or tNone if the type is not found.
+	 */
 	static Type type( const QString & typId );
+	//! Get a html formatted description of the type.
 	static QString typeDescription( const QString & typId );
+	//! Update the typeTxt map with the type description. Newline characters are replaced by html line break tags.
 	static void setTypeDescription( const QString & typId, const QString & txt );
-	
+	//! Register an alias for a type.
+	/*!
+	 * This is done by updating the typeMap and maps the alias string to the type
+	 * corresponding to the internal string.
+	 */
 	static bool registerAlias( const QString & alias, const QString & internal );
-	
+
+	//! Register an option for an enum type.
+	/*!
+	 * \param eid The name of the enum type.
+	 * \param oid The name of the option of that type to add.
+	 * \param oval The value of that option.
+	 * \param otxt The documentation string for the option.
+	 * \return true if successful, false if the option value was already registered.
+	 */
 	static bool registerEnumOption( const QString & eid, const QString & oid, quint32 oval, const QString & otxt );
+	//! Get the name of an option from its value.
 	static QString enumOptionName( const QString & eid, quint32 oval );
+	//! Get the documentation string of an option from its value.
 	static QString enumOptionText( const QString & eid, quint32 oval );
+	//! Get the an option from an option string.
+	/*!
+	 * \param eid The name of the enum type.
+	 * \param oid The name of the option.
+	 * \param ok Is set to true if succesfull, is set to false if the option string was not found.
+	 */
 	static quint32 enumOptionValue( const QString & eid, const QString & oid, bool * ok = 0 );
+	//! Get list of all options that have been registered for the given enum type.
 	static QStringList enumOptions( const QString & eid );
 	
+	//! Initialize the value to nothing, type tNone.
 	NifValue() { typ = tNone; }
 	NifValue( Type t );
 	NifValue( const NifValue & other );
@@ -167,6 +205,7 @@ protected:
 	//! The type of this data.
 	Type typ;
 	
+	//! The structure containing the data.
 	union Value
 	{
 		quint8	u08;
@@ -176,6 +215,7 @@ protected:
 		float	f32;
 		void *	data;
 	};
+	
 	//! The data value.
 	Value val;
 	
