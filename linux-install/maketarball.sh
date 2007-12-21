@@ -33,6 +33,7 @@ FILES="NifSkope.pro \
     spellbook.h \
     options.h \
     gl/*.h \
+    gl/dds/*.h \
     gl/marker/*.h \
     widgets/*.h \
     spells/*.h \
@@ -53,6 +54,7 @@ FILES="NifSkope.pro \
     spellbook.cpp \
     options.cpp \
     gl/*.cpp \
+    gl/dds/*.cpp \
     widgets/*.cpp \
     spells/*.cpp \
     importex/*.cpp \
