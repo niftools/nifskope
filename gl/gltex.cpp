@@ -62,8 +62,9 @@ void initializeTextureUnits( const QGLContext * context )
 	//if (!extensions.contains("GL_ARB_texture_compression"))
 	//	qWarning() << "texture compression not supported, some textures may not load";
 
-	if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
-		qWarning() << "S3TC texture compression not supported, some textures may not load";
+	// *** check disabled: software decompression is supported ***
+	//if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
+	//	qWarning() << "S3TC texture compression not supported, some textures may not load";
 
 	_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2D" );
 	if ( ! _glCompressedTexImage2D )

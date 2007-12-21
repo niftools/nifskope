@@ -518,22 +518,42 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 
 GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
 {
-#ifndef WIN32
+#ifdef WIN32
+	if ( !_glCompressedTexImage2D )
+	{
+#endif
 	// load the pixels
 	f.seek(0);
 	QByteArray bytes = f.readAll();
 	Image * img = load_dds((unsigned char*)bytes.data(), bytes.size());
 	if (!img) return(0);
+	// convert texture to OpenGL RGBA format
+	unsigned int w = img->width();
+	unsigned int h = img->height();
+	GLubyte * pixels = new GLubyte[w * h * 4];
+	if (!pixels) return(0);
+	Color32 * src = img->pixels();
+	GLubyte * dst = pixels;
+	for ( int y = 0; y < h; y++ )
+	{
+		for ( int x = 0; x < w; x++ )
+		{
+			*dst++ = src->r;
+			*dst++ = src->g;
+			*dst++ = src->b;
+			*dst++ = src->a;
+			src++;
+		}
+	}
+	delete img;
 	// load the texture into OpenGL
 	GLuint m = 0;
-	glTexImage2D( GL_TEXTURE_2D, m++, 4, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLubyte *)img->pixels() );
-	delete img;
+	glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
+	delete [] pixels;
 	m = generateMipMaps( m );
 	return m;
-#else
-	if ( !_glCompressedTexImage2D )
-		throw QString( "DXT texture compression not supported" );
-
+#ifdef WIN32
+	}
 	GLubyte * pixels = (GLubyte *) malloc( ( ( width + 3 ) / 4 ) * ( ( height + 3 ) / 4 ) * blockSize );
 	unsigned int w = width, h = height, s;
 	unsigned int m = 0;
