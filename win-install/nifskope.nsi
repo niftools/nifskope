@@ -272,6 +272,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   CreateDirectory "$SMPROGRAMS\NifTools\NifSkope\"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\NifSkope.lnk" "$INSTDIR\NifSkope.exe"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Readme.lnk" "$INSTDIR\README.TXT"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Changelog.lnk" "$INSTDIR\CHANGELOG.TXT"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Support.lnk" "http://www.niftools.org/forum/viewforum.php?f=24"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Development.lnk" "http://www.niftools.org/forum/viewforum.php?f=4"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Copyright.lnk" "$INSTDIR\Copyright.txt"
