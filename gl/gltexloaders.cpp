@@ -526,17 +526,17 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 	f.seek(0);
 	QByteArray bytes = f.readAll();
 	Image * img = load_dds((unsigned char*)bytes.data(), bytes.size());
-	if (!img) return(0);
+	if (!img)
+		return(0);
 	// convert texture to OpenGL RGBA format
 	unsigned int w = img->width();
 	unsigned int h = img->height();
 	GLubyte * pixels = new GLubyte[w * h * 4];
-	if (!pixels) return(0);
 	Color32 * src = img->pixels();
 	GLubyte * dst = pixels;
-	for ( int y = 0; y < h; y++ )
+	for ( quint32 y = 0; y < h; y++ )
 	{
-		for ( int x = 0; x < w; x++ )
+		for ( quint32 x = 0; x < w; x++ )
 		{
 			*dst++ = src->r;
 			*dst++ = src->g;

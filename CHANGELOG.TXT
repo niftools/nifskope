@@ -1,6 +1,12 @@
  == CHANGELOG ==
 
-This is version 1.0.3 of NifSkope.
+This is version 1.0.4 of NifSkope.
+
+changes since 1.0.3:
+ * Started adding doxygen-style documentation in some source files.
+ * Textures:
+  - software dxt decompression for platforms that do not have the s3tc opengl
+    extension (such as linux with vanilla xorg drivers)
 
 changes since 1.0.2:
  * Installer
@@ -25,7 +31,7 @@ changes since 1.0:
   - fixed display of multiline strings (without affecting the actual data)
   - syncing strip pack spell with xml
 
-  * NIF Compatibility
+ * NIF Compatibility
   - fixes for oblivion skeleton.nif files
   - Fixes for Emerge Demo and Megami Tensei: Imagine and the NiBoneLODController and related items.  
   - Fixes for the following: Loki, Guild 2, Warhammer, PCM 2007, 
