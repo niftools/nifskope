@@ -97,7 +97,7 @@ public:
 			if ( ! caseSensitive() )
 				base = base.toLower();
 			
-			qDebug() << "base" << base;
+			//qDebug() << "base" << base;
 			
 			if ( overlayDirs.contains( base ) )
 			{
@@ -105,7 +105,7 @@ public:
 				if ( ! caseSensitive() )
 					name = name.toLower();
 				
-				qDebug() << "name" << name;
+				//qDebug() << "name" << name;
 				
 				if ( overlayDirs[ base ].contains( name ) )
 				{
