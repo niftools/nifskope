@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.3
+Version:        1.0.4
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -71,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sat Nov 10 2007 amorilia - 1.0.4-1
+- Software DXT decompression (so DDS textures show up even when S3TC extension
+is not supported in the driver)
 * Sat Nov 10 2007 amorilia - 1.0.3-1
 * Sat Nov 10 2007 amorilia - 1.0.2-1
 - Small bugs fixed.
