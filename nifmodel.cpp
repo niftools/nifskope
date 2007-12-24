@@ -1229,7 +1229,7 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 
 bool NifModel::setHeaderString( const QString & s )
 {
- 	msg( DbgMsg() << s );
+ 	//msg( DbgMsg() << s );
 	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) ) )
 	{
 		msg( Message() << "this is not a NIF" );
@@ -1285,7 +1285,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	
 	int numblocks = get<int>( header, "Num Blocks" );
-	qDebug( "numblocks %i", numblocks );
+	//qDebug( "numblocks %i", numblocks );
 	
 	emit sigProgress( 0, numblocks );
 	QTime t = QTime::currentTime();
@@ -1333,7 +1333,7 @@ bool NifModel::load( QIODevice & device )
 					
 					if ( isNiBlock( blktyp ) )
 					{
-						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+						//msg( DbgMsg() << "loading block" << c << ":" << blktyp );
 						insertNiBlock( blktyp, -1, true );
 						if ( ! load( root->child( c+1 ), stream, true ) ) 
 						{
@@ -1415,7 +1415,7 @@ bool NifModel::load( QIODevice & device )
 					
 					if ( isNiBlock( blktyp ) )
 					{
-						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+						//msg( DbgMsg() << "loading block" << c << ":" << blktyp );
 						insertNiBlock( blktyp, -1, true );
 						if ( ! load( root->child( c+1 ), stream, true ) ) 
 							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
@@ -1457,7 +1457,7 @@ bool NifModel::save( QIODevice & device ) const
 	{
 		emit sigProgress( c+1, rowCount( QModelIndex() ) );
 		
-		msg( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
+		//msg( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
 		if ( itemType( index( c, 0 ) ) == "NiBlock" )
 		{
 			if ( version > 0x0a000000 )
