@@ -3,10 +3,14 @@
 This is version 1.0.4 of NifSkope.
 
 changes since 1.0.3:
+ * XML update to fix the 'array "Constraints" much too large ... failed to load
+   block number X (bhkRigidBodyT) previous block was bhkMoppBvTreeShape'
+   problem.
+ * Software DXT decompression for platforms that do not have the S3TC opengl
+   extension such as linux with vanilla xorg drivers, so DDS textures show up
+   even when S3TC extension is not supported in the driver (code ported from
+   nvidia texture tools project).
  * Started adding doxygen-style documentation in some source files.
- * Textures:
-  - software dxt decompression for platforms that do not have the s3tc opengl
-    extension (such as linux with vanilla xorg drivers)
 
 changes since 1.0.2:
  * Installer

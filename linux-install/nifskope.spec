@@ -71,10 +71,17 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Sat Nov 10 2007 amorilia - 1.0.4-1
-- Software DXT decompression (so DDS textures show up even when S3TC extension
-is not supported in the driver)
+* Mon Dec 24 2007 amorilia - 1.0.4-1
+- XML update to fix the 'array "Constraints" much too large ... failed to load
+  block number X (bhkRigidBodyT) previous block was bhkMoppBvTreeShape'
+  problem.
+- Software DXT decompression for platforms that do not have the S3TC opengl
+  extension such as linux with vanilla xorg drivers, so DDS textures show up
+  even when S3TC extension is not supported in the driver (code ported from
+  nvidia texture tools project).
+- Started adding doxygen-style documentation in some source files.
 * Sat Nov 10 2007 amorilia - 1.0.3-1
+- Nothing (release affects Windows only).
 * Sat Nov 10 2007 amorilia - 1.0.2-1
 - Small bugs fixed.
 - Including shaders.
