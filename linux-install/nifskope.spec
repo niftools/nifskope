@@ -71,7 +71,7 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Mon Dec 24 2007 amorilia - 1.0.4-1
+* Wed Dec 26 2007 amorilia - 1.0.4-1
 - XML update to fix the 'array "Constraints" much too large ... failed to load
   block number X (bhkRigidBodyT) previous block was bhkMoppBvTreeShape'
   problem.
@@ -80,6 +80,8 @@ rm -rf $RPM_BUILD_ROOT
   even when S3TC extension is not supported in the driver (code ported from
   nvidia texture tools project).
 - Started adding doxygen-style documentation in some source files.
+- Added nifcache and texcache to nif file extension list (used by Empire
+  Earth III)
 * Sat Nov 10 2007 amorilia - 1.0.3-1
 - Nothing (release affects Windows only).
 * Sat Nov 10 2007 amorilia - 1.0.2-1
