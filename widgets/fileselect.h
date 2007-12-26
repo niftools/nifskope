@@ -41,10 +41,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class QCompleter;
 class QDirModel;
 
+//! A widget for file selection, both via a browser window and via editing a string.
+/*!
+ * This widget displays a button (typically Load or Save) and a filename string. If the button is
+ * pressed, then a file selection window is displayed.
+ *
+ * Emits sigActivated when a file has been chosen, or when the filename string is activated (that
+ * is, pressing enter after editing the string). This signal can be connected to the load/save
+ * slot of the application.
+ *
+ * Emits sigEdited when the string is edited.
+ */
 class FileSelector : public QWidget
 {
 	Q_OBJECT
-    Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
+	Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
 	Q_PROPERTY(QStringList filter READ filter WRITE setFilter)
 	Q_PROPERTY(Modes mode READ mode WRITE setMode)
 	Q_PROPERTY(States state READ state WRITE setState RESET rstState)
