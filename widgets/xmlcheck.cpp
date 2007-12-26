@@ -204,7 +204,7 @@ void TestShredder::run()
 	
 	QStringList extensions;
 	if ( chkNif->isChecked() )
-		extensions << "*.nif";
+		extensions << "*.nif" << "*.nifcache" << "*.texcache";
 	if ( chkKf->isChecked() )
 		extensions << "*.kf" << "*.kfa";
 	if ( chkKfm->isChecked() )

@@ -11,6 +11,7 @@ changes since 1.0.3:
    even when S3TC extension is not supported in the driver (code ported from
    nvidia texture tools project).
  * Started adding doxygen-style documentation in some source files.
+ * Added nifcache and texcache to nif file extension list (used by Empire Earth III)
 
 changes since 1.0.2:
  * Installer
