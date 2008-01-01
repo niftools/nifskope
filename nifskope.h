@@ -115,7 +115,7 @@ public slots:
 	//! A slot that creates a new NifSkope application window.
 	void sltWindow();
 
-	// *** not sure what this one does ***
+	//! A slot for starting the XML checker.
 	void sltShredder();
 	
 	//! Display the "About NifSkope" window.
@@ -162,7 +162,9 @@ private:
 	//! Stores the kfm file in memory.
 	KfmModel * kfm;
 	
+	//! This view shows the block list.
 	NifTreeView * list;
+	//! This view shows the whole nif file or the block details.
 	NifTreeView * tree;
 	NifTreeView * kfmtree;
 

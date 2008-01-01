@@ -68,6 +68,7 @@ protected:
 	QMutex quit;
 };
 
+//! The XML checker widget.
 class TestShredder : public QWidget
 {
 	Q_OBJECT
