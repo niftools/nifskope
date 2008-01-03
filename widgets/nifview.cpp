@@ -74,6 +74,11 @@ void NifTreeView::setRootIndex( const QModelIndex & index )
 	QTreeView::setRootIndex( root );
 }
 
+void NifTreeView::clearRootIndex()
+{
+	setRootIndex( QModelIndex() );
+}
+
 void NifTreeView::setEvalConditions( bool c )
 {
 	if ( EvalConditions == c )

@@ -122,14 +122,13 @@ public slots:
 	void about();
 	
 protected slots:
-	void clearRoot();
 	void select( const QModelIndex & );
+	
+	void contextMenu( const QPoint & pos );
 	
 	void setListMode();
 	
 	void sltSelectFont();
-	
-	void contextMenu( const QPoint & pos );
 	
 	void dispatchMessage( const Message & msg );
 	

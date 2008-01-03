@@ -180,12 +180,12 @@ public:
 	
 	void findAllItems( int b, QList<NifProxyItem*> & list )
 	{
-		if ( blockNumber == b )
-			list.append( this );
 		foreach ( NifProxyItem * item, childItems )
 		{
 			item->findAllItems( b, list );
 		}
+		if ( blockNumber == b )
+			list.append( this );
 	}
 	
 	int blockNumber;
@@ -217,8 +217,8 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
                    this, SLOT(xDataChanged(const QModelIndex &,const QModelIndex &)));
         disconnect(nif, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
                    this, SLOT(xHeaderDataChanged(Qt::Orientation,int,int)));
-		
-		disconnect( nif, SIGNAL( linksChanged() ),	this, SLOT( xLinksChanged() ) );
+	disconnect( nif, SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ), this, SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) ) );
+	disconnect( nif, SIGNAL( linksChanged() ),	this, SLOT( xLinksChanged() ) );
 		
         disconnect(nif, SIGNAL(modelReset()), this, SLOT(reset()));
         disconnect(nif, SIGNAL(layoutChanged()), this, SIGNAL(layoutChanged()));
@@ -228,15 +228,14 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
 
     if ( nif )
 	{
-        connect(nif, SIGNAL(dataChanged( const QModelIndex &, const QModelIndex & )),
+        connect( nif, SIGNAL(dataChanged( const QModelIndex &, const QModelIndex & )),
                    this, SLOT(xDataChanged( const QModelIndex &, const QModelIndex & )));
-        connect(nif, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
+        connect( nif, SIGNAL(headerDataChanged(Qt::Orientation,int,int)),
                    this, SLOT(xHeaderDataChanged(Qt::Orientation,int,int)));
-		
-		connect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
-		
-        connect(nif, SIGNAL(modelReset()), this, SLOT(reset()));
-        connect(nif, SIGNAL(layoutChanged()), this, SIGNAL(layoutChanged()));
+	connect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
+	connect( nif, SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ), this, SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) ) );
+        connect( nif, SIGNAL(modelReset()), this, SLOT(reset()));
+        connect( nif, SIGNAL(layoutChanged()), this, SIGNAL(layoutChanged()));
     }
 
 	reset();
@@ -514,4 +513,24 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 void NifProxyModel::xLinksChanged()
 {
 	updateRoot( false );
+}
+
+void NifProxyModel::xRowsAboutToBeRemoved( const QModelIndex & parent, int first, int last )
+{
+	if ( ! parent.isValid() )
+	{	// block removed
+		for ( int c = first; c <= last; c++ )
+		{
+			QList<NifProxyItem*> list;
+			root->findAllItems( c-1, list );
+			foreach ( NifProxyItem * item, list )
+			{
+				QModelIndex idx = createIndex( item->row(), 0, item );
+				beginRemoveRows( idx.parent(), idx.row(), idx.row() );
+				item->parentItem->childItems.removeAll( item );
+				delete item;
+				endRemoveRows();
+			}
+		}
+	}
 }

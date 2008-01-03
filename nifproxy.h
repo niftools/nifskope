@@ -76,6 +76,7 @@ public slots:
 protected slots:
 	void xDataChanged( const QModelIndex &, const QModelIndex & );
 	void xHeaderDataChanged( Qt::Orientation, int, int );
+	void xRowsAboutToBeRemoved( const QModelIndex &, int, int );
 	
 	void xLinksChanged();
 	

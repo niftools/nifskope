@@ -378,7 +378,7 @@ AlphaSlider::AlphaSlider( Qt::Orientation o )
 
 QSize AlphaSlider::sizeHint() const
 {
-	return FloatSlider::sizeHint() * 1.4;
+	return FloatSlider::sizeHint() * 1.0;
 }
 
 void AlphaSlider::setColor( const QColor & c )

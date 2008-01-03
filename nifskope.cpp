@@ -96,8 +96,7 @@ void NifSkope::about()
 	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
 	"<p>NifSkope is based on NifTool's XML file format specification. "
 	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
-	"<p>NifSkope is free software and the source code is availiable under a BSD lisence, however the executable is distributed under the GPL"
-	" because it was built using the Qt library. "
+	"<p>NifSkope is free software available under a BSD lisence. "
 	"The source is available via <a href='https://niftools.svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
 	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
 	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
@@ -129,7 +128,7 @@ NifSkope::NifSkope()
 	
 	// this view shows the block list
 	list = new NifTreeView;
-	list->setModel( proxy );
+	list->setModel( nif );
 	list->setItemDelegate( nif->createDelegate( book ) );
 	list->header()->setStretchLastSection( true );
 	list->header()->setMinimumSectionSize( 100 );
@@ -274,7 +273,7 @@ NifSkope::NifSkope()
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
 	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
-	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), this, SLOT( clearRoot() ) );
+	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), tree, SLOT( clearRootIndex() ) );
 	
 	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
@@ -380,8 +379,6 @@ NifSkope::NifSkope()
 			mTools->addAction( tb->toggleViewAction() );
 	}
 	mView->addSeparator();
-	//QMenu * mViewList = new QMenu( tr("&Block List Options") );
-	//mView->addMenu( mViewList );
 	mView->addAction( aHierarchy );
 	mView->addAction( aList );
 	mView->addSeparator();
@@ -515,19 +512,13 @@ void NifSkope::contextMenu( const QPoint & pos )
 	else
 		return;
 	
-	if ( idx.model() == proxy )
-		idx = proxy->mapTo( idx );
+	while ( idx.model() && idx.model()->inherits( "NifProxyModel" ) )
+	{
+		idx = qobject_cast<const NifProxyModel*>( idx.model() )->mapTo( idx );
+	}
 	
 	SpellBook book( nif, idx, this, SLOT( select( const QModelIndex & ) ) );
 	book.exec( p );
-}
-
-void NifSkope::clearRoot()
-{
-	QModelIndex index = tree->currentIndex();
-	if ( ! index.isValid() ) index = tree->rootIndex();
-	tree->setRootIndex( QModelIndex() );
-	tree->setCurrentIndex( index );
 }
 
 void NifSkope::select( const QModelIndex & index )
@@ -998,8 +989,9 @@ class NifSystemLocale : QSystemLocale
 			return QVariant( QLocale::c().decimalPoint() );
 		case GroupSeparator:
 			return QVariant( QLocale::c().groupSeparator() );
+		default:
+			return QVariant();
 		}
-		return QVariant();
 	}
 };
 
