@@ -1,6 +1,9 @@
  == CHANGELOG ==
 
-This is version 1.0.4 of NifSkope.
+This is version 1.0.5 of NifSkope.
+
+changes since 1.0.4:
+ * Fixed block deletion bug.
 
 changes since 1.0.3:
  * XML update to fix the 'array "Constraints" much too large ... failed to load

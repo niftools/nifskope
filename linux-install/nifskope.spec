@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.4
+Version:        1.0.5
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -71,6 +71,8 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Tue Jan 8 2008 amorilia - 1.0.5-1
+- Fixed block deletion bug.
 * Wed Dec 26 2007 amorilia - 1.0.4-1
 - XML update to fix the 'array "Constraints" much too large ... failed to load
   block number X (bhkRigidBodyT) previous block was bhkMoppBvTreeShape'
@@ -82,7 +84,7 @@ rm -rf $RPM_BUILD_ROOT
 - Started adding doxygen-style documentation in some source files.
 - Added nifcache and texcache to nif file extension list (used by Empire
   Earth III)
-* Sat Nov 10 2007 amorilia - 1.0.3-1
+* Sat Nov 11 2007 amorilia - 1.0.3-1
 - Nothing (release affects Windows only).
 * Sat Nov 10 2007 amorilia - 1.0.2-1
 - Small bugs fixed.
