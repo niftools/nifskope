@@ -139,7 +139,7 @@ Function openLinkNewWindow
   Pop $3
 FunctionEnd
 
-!define DLL_VER "8.00.50727.762"
+!define DLL_VER "9.00.21022.8"
 
 Function LocateCallback
 
@@ -164,8 +164,8 @@ Function LocateCallback
 FunctionEnd
 
 Function DownloadDLL
-    MessageBox MB_OK "You will need to download the Microsoft Visual C++ 2005 Redistributable Package in order to run NifSkope. Pressing OK will take you to the download page, please follow the instructions on the page that appears."
-    StrCpy $0 "http://www.microsoft.com/downloads/details.aspx?familyid=200b2fd9-ae1a-4a14-984d-389c36f85647&displaylang=en"
+    MessageBox MB_OK "You will need to download the Microsoft Visual C++ 2008 Redistributable Package in order to run NifSkope. Pressing OK will take you to the download page, please follow the instructions on the page that appears."
+    StrCpy $0 "http://www.microsoft.com/downloads/details.aspx?familyid=9b2da534-3e03-4391-8a4d-074b9f2bc1bf&displaylang=en"
     Call openLinkNewWindow
 FunctionEnd
 
@@ -293,11 +293,11 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NifSkope" "UninstallString" "$INSTDIR\uninstall.exe"
   WriteUninstaller "uninstall.exe"
 
-  ; Check for msvcr80.dll - give notice to download if not found
+  ; Check for msvcr90.dll - give notice to download if not found
   MessageBox MB_OK "The installer will now check your system for the required system dlls."
   StrCpy $1 $WINDIR
   StrCpy $DLL_found "false"
-  ${Locate} "$1" "/L=F /M=MSVCR80.DLL /S=0B" "LocateCallback"
+  ${Locate} "$1" "/L=F /M=MSVCR90.DLL /S=0B" "LocateCallback"
   StrCmp $DLL_found "false" 0 +2
     Call DownloadDLL
   

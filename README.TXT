@@ -16,7 +16,7 @@ Known Issues and Workarounds
   when starting NifSkope, install this Microsoft package which contains Visual
   C++ DLL files:
 
-    http://www.microsoft.com/downloads/details.aspx?familyid=200B2FD9-AE1A-4A14-984D-389C36F85647&displaylang=en
+    http://www.microsoft.com/downloads/details.aspx?familyid=9b2da534-3e03-4391-8a4d-074b9f2bc1bf&displaylang=en
 
 * If NifSkope does not start at all, check your firewall. NifSkope uses the
   network (locally, nothing is sent to the outside world) to communicate with

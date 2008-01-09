@@ -4,6 +4,8 @@ This is version 1.0.5 of NifSkope.
 
 changes since 1.0.4:
  * Fixed block deletion bug.
+ * Updated to compile with MSVC Express 2008 and Qt 4.3.3
+ * Updated installer to check for the MSVC 2008 dll.
 
 changes since 1.0.3:
  * XML update to fix the 'array "Constraints" much too large ... failed to load
