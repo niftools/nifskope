@@ -6,6 +6,9 @@ changes since 1.0.4:
  * Fixed block deletion bug.
  * Updated to compile with MSVC Express 2008 and Qt 4.3.3
  * Updated installer to check for the MSVC 2008 dll.
+ * Registry settings between different versions of nifskope are no longer
+   shared to avoid compatibility problems if multiple versions of nifskope
+   are used on the same system.
 
 changes since 1.0.3:
  * XML update to fix the 'array "Constraints" much too large ... failed to load

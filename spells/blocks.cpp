@@ -1,4 +1,5 @@
 #include "blocks.h"
+#include "../config.h"
 
 #include <QApplication>
 #include <QBuffer>
@@ -749,7 +750,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & )
 	{
-		QSettings settings( "NifTools", "NifSkope" );
+		NIFSKOPE_QSETTINGS(settings);
 		settings.beginGroup( "spells" );
 		settings.beginGroup( page() );
 		settings.beginGroup( name() );

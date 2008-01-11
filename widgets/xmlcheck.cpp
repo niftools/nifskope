@@ -2,6 +2,7 @@
 
 #include "../kfmmodel.h"
 #include "../nifmodel.h"
+#include "../config.h"
 
 #include "fileselect.h"
 
@@ -40,7 +41,7 @@ TestShredder * TestShredder::create()
 TestShredder::TestShredder()
 	: QWidget()
 {
-	QSettings settings( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(settings);
 	settings.beginGroup( "XML Checker" );
 
 	directory = new FileSelector( FileSelector::Folder, "Dir", QBoxLayout::RightToLeft );
@@ -138,7 +139,7 @@ TestShredder::TestShredder()
 
 TestShredder::~TestShredder()
 {
-	QSettings settings( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(settings);
 	settings.beginGroup( "XML Checker" );
 	
 	settings.setValue( "Directory", directory->text() );

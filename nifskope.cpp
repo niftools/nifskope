@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifskope.h"
+#include "config.h"
 
 #include <QAction>
 #include <QApplication>
@@ -102,7 +103,7 @@ void NifSkope::about()
 	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
 	"NifTools SourceForge Project page</a>.";
 
-	QMessageBox mb( tr("About NifSkope 1.0.5"), text, QMessageBox::Information,
+	QMessageBox mb( tr("About NifSkope "NIFSKOPE_VERSION), text, QMessageBox::Information,
 		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
 	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
 	mb.exec();
@@ -412,7 +413,7 @@ NifSkope::~NifSkope()
 
 void NifSkope::closeEvent( QCloseEvent * e )
 {
-	QSettings settings( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(settings);
 	save( settings );
 	
 	QMainWindow::closeEvent( e );
@@ -781,7 +782,7 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 {
 	NifSkope * skope = new NifSkope;
 	skope->setAttribute( Qt::WA_DeleteOnClose );
-	QSettings settings( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(settings);
 	skope->restore( settings );
 	skope->show();
 	

@@ -2,6 +2,8 @@
 #include "../spellbook.h"
 #include "../gl/gltex.h"
 
+#include "../config.h"
+
 #include "../widgets/fileselect.h"
 #include "../widgets/uvedit.h"
 
@@ -362,7 +364,7 @@ class spTextureTemplate : public Spell
 		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
 		lay->addWidget( ok, 4, 0, 1, 2 );
 		
-		QSettings settings( "NifTools", "NifSkope" );
+		NIFSKOPE_QSETTINGS(settings);
 		settings.beginGroup( "spells" );
 		settings.beginGroup( page() );
 		settings.beginGroup( name() );

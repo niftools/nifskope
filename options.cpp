@@ -52,6 +52,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringListModel>
 #include <QTimer>
 
+#include "config.h"
+
 #include "widgets/colorwheel.h"
 #include "widgets/fileselect.h"
 #include "widgets/floatslider.h"
@@ -78,7 +80,7 @@ Options::Options()
 	connect( this, SIGNAL( sigChanged() ), tEmit, SLOT( stop() ) );
 	
 	
-	QSettings cfg( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(cfg);
 	cfg.beginGroup( "Render Settings" );
 	
 	aDrawAxes = new QAction( "Draw &Axes", this );
@@ -432,7 +434,7 @@ void Options::save()
 {
 	tSave->stop();
 	
-	QSettings cfg( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(cfg);
 
 	// remove obsolete keys
 	foreach ( QString key, QStringList()

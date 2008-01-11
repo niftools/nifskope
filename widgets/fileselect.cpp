@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FEEDBACK_TIME 1200
 
 #include "fileselect.h"
+#include "config.h"
 
 #include <QAction>
 #include <QCompleter>
@@ -49,7 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of Filenames", parent )
 {
-	QSettings cfg( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(cfg);
 	setCheckable( true );
 	setChecked( cfg.value( "completion of file names", false ).toBool() );
 
@@ -62,7 +63,7 @@ CompletionAction::~CompletionAction()
 
 void CompletionAction::sltToggled( bool )
 {
-	QSettings cfg( "NifTools", "NifSkope" );
+	NIFSKOPE_QSETTINGS(cfg);
 	cfg.setValue( "completion of file names", isChecked() );
 }
 
