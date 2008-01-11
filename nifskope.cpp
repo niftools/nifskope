@@ -87,6 +87,28 @@ FSManager * fsmanager = 0;
 #endif
 
 
+void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const char *name) const
+{
+	if (!cfg.contains(name) && oldcfg.contains(name))
+		cfg.setValue(name, oldcfg.value(name));
+};
+
+void NifSkope::migrateSettings() const
+{
+	// load current nifskope settings
+	NIFSKOPE_QSETTINGS(cfg);
+	// check for pre-nifskope 1.0.5 settings
+	QSettings oldcfg( "NifTools", "NifSkope" );
+	if (oldcfg.contains("window state")) {
+		// settings from an older version of nifskope exist
+		// check for important missing keys and copy them from old settings
+		copySettings(cfg, oldcfg, "last load");
+		copySettings(cfg, oldcfg, "last save");
+		copySettings(cfg, oldcfg, "list mode");
+		copySettings(cfg, oldcfg, "Render Settings/Texture Folders");
+	};
+};
+
 /*
  * main GUI window
  */
@@ -112,6 +134,9 @@ void NifSkope::about()
 NifSkope::NifSkope()
 	: QMainWindow(), selecting( false ), initialShowEvent( true )
 {
+	// migrate settings from older versions of NifSkope
+	migrateSettings();
+
 	// create a new nif
 	nif = new NifModel( this );
 	connect( nif, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
