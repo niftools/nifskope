@@ -32,6 +32,7 @@ FILES="NifSkope.pro \
     nifskope.h \
     spellbook.h \
     options.h \
+    config.h \
     gl/*.h \
     gl/dds/*.h \
     gl/marker/*.h \
