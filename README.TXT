@@ -9,12 +9,11 @@ This is version 1.0.5 of NifSkope.
 Known Issues and Workarounds
 ----------------------------
 
-* Upgrading from previous versions of NifSkope may yield moved and/or
-  disappearing windows and other artifacts in some circumstances. To solve
-  this problem, close NifSkope and remove the NifSkope settings by deleting
-  the registry key(s)
+* If one of NifSkope's windows disappears due to moving it to a location
+  outside of the desktop view, close NifSkope and remove the NifSkope settings
+  by deleting the registry key(s)
 
-    HKEY_USERS\S-1-5-***\Software\NifTools\NifSkope
+    HKEY_USERS\S-1-5-***\Software\NifTools\NifSkope-***
 
   Launch NifSkope again, and all windows will appear at their default
   position.
