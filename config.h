@@ -35,6 +35,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <QStringList>
+
+// QSettings keys for older versions of nifskope
+// add versions to this list (most recent first) whenever incrementing
+// NIFSKOPE_VERSION
+const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList() << "NifSkope");
+
 // a string describing the version of nifskope
 #define NIFSKOPE_VERSION "1.0.5"
 

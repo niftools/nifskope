@@ -87,25 +87,38 @@ FSManager * fsmanager = 0;
 #endif
 
 
-void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const char *name) const
+void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const
 {
-	if (!cfg.contains(name) && oldcfg.contains(name))
+	if ((!cfg.contains(name)) && oldcfg.contains(name)) {
+		//qDebug() << "copying nifskope setting" << name;
 		cfg.setValue(name, oldcfg.value(name));
+	};
 };
 
 void NifSkope::migrateSettings() const
 {
 	// load current nifskope settings
 	NIFSKOPE_QSETTINGS(cfg);
-	// check for pre-nifskope 1.0.5 settings
-	QSettings oldcfg( "NifTools", "NifSkope" );
-	if (oldcfg.contains("window state")) {
-		// settings from an older version of nifskope exist
-		// check for important missing keys and copy them from old settings
-		copySettings(cfg, oldcfg, "last load");
-		copySettings(cfg, oldcfg, "last save");
-		copySettings(cfg, oldcfg, "list mode");
-		copySettings(cfg, oldcfg, "Render Settings/Texture Folders");
+	// check for older nifskope settings
+	for (QStringList::ConstIterator it = NIFSKOPE_OLDERVERSIONS.begin(); it != NIFSKOPE_OLDERVERSIONS.end(); ++it ) {
+		QSettings oldcfg( "NifTools", *it );
+		// check for non-binary missing keys and copy them from old settings
+		QStringList keys = oldcfg.allKeys();
+		for (QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key) {
+			//qDebug() << "checking" << *key << oldcfg.value(*key).type(); 
+			switch (oldcfg.value(*key).type()) {
+				case QVariant::Bool:
+				case QVariant::Int:
+				case QVariant::UInt:
+				case QVariant::Double:
+				case QVariant::String:
+				case QVariant::StringList:
+					// copy settings for these types
+					copySettings(cfg, oldcfg, *key);
+				default:
+					; // do nothing
+			};
+		};
 	};
 };
 
