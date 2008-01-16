@@ -71,8 +71,13 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Tue Jan 8 2008 amorilia - 1.0.5-1
+* Wed Jan 16 2008 amorilia - 1.0.5-1
 - Fixed block deletion bug.
+- Settings between different versions of nifskope are no longer shared to avoid compatibility problems if multiple versions of nifskope are used on the same system.
+- Non-binary registry settings are copied from older versions of nifskope, if a newer version of nifskope is run for the first time.
+- NiMeshPSysData fixed and simplified
+- new version 20.3.0.2 from emerge demo
+- replaced Target in NiTimeController with unknown int to cope with invalid pointers in nif versions <= 3.1
 * Wed Dec 26 2007 amorilia - 1.0.4-1
 - XML update to fix the 'array "Constraints" much too large ... failed to load
   block number X (bhkRigidBodyT) previous block was bhkMoppBvTreeShape'
