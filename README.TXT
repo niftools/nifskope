@@ -9,6 +9,9 @@ This is version 1.0.5 of NifSkope.
 Known Issues and Workarounds
 ----------------------------
 
+* On some graphic cards textures show up black or distorted. If this happens,
+  uncheck "Shaders" in NifSkope's settings.
+
 * If one of NifSkope's windows disappears due to moving it to a location
   outside of the desktop view, close NifSkope and remove the NifSkope settings
   by deleting the registry key(s)
