@@ -11,11 +11,12 @@
 
 # and the rpm will reside in ~/rpmbuild/RPMS
 
-VERSION=1.0.5
+VERSION=1.0.6
 
 FILES="NifSkope.pro \
     README.TXT \
     CHANGELOG.TXT \
+    style.qss \
     nifskope.qrc \
     resources/*.png \
     nifskope.png \

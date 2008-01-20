@@ -1,6 +1,9 @@
  == CHANGELOG ==
 
-This is version 1.0.5 of NifSkope.
+This is version 1.0.6 of NifSkope.
+
+changes since 1.0.5:
+ * Stylesheet for the linux version.
 
 changes since 1.0.4:
  * Fixed block deletion bug.

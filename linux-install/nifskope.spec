@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.5
+Version:        1.0.6
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -33,6 +33,7 @@ rm -rf $RPM_BUILD_ROOT
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
 %{__install} -Dp -m0644 nif.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/nif.xml
 %{__install} -Dp -m0644 kfm.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/kfm.xml
+%{__install} -Dp -m0644 style.qss $RPM_BUILD_ROOT/%{_datadir}/nifskope/style.qss
 %{__install} -Dp -m0644 shaders/*.frag $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
 %{__install} -Dp -m0644 shaders/*.prog $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
 %{__install} -Dp -m0644 shaders/*.vert $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
@@ -61,6 +62,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/pixmaps/nifskope.png
 %{_datadir}/nifskope/nif.xml
 %{_datadir}/nifskope/kfm.xml
+%{_datadir}/nifskope/style.qss
 %{_datadir}/nifskope/shaders/*.vert
 %{_datadir}/nifskope/shaders/*.frag
 %{_datadir}/nifskope/shaders/*.prog
@@ -71,6 +73,8 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sun Jan 20 2008 amorilia - 1.0.6-1
+- added stylesheet to rpm
 * Wed Jan 16 2008 amorilia - 1.0.5-1
 - Fixed block deletion bug.
 - Settings between different versions of nifskope are no longer shared to avoid compatibility problems if multiple versions of nifskope are used on the same system.

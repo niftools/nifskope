@@ -1055,13 +1055,28 @@ int main( int argc, char * argv[] )
 #endif
 	
 	// if there is a style sheet present then load it
-	QFile style( QDir( QApplication::applicationDirPath() ).filePath( "style.qss" ) );
-	if ( style.open( QFile::ReadOnly ) )
+	QDir qssDir;
+	bool qssFound;
+	// look for stylesheet in application directory
+        qssDir.setPath(QApplication::applicationDirPath());
+	qssFound = qssDir.exists("style.qss");
+	// look for stylesheet in linux nifskope data directory
+        if (!qssFound)
 	{
-		app.setStyleSheet( style.readAll() );
-		style.close();
+		qssDir.setPath("/usr/share/nifskope");
+		qssFound = qssDir.exists("style.qss");
 	}
-	
+	// load the style sheet if present
+	if (qssFound)
+	{
+		QFile style( qssDir.filePath( "style.qss" ) );
+		if ( style.open( QFile::ReadOnly ) )
+		{
+			app.setStyleSheet( style.readAll() );
+			style.close();
+		}
+	}
+
 	// set the translation
 	QString locale = QLocale::system().name();
 

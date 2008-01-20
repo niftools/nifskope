@@ -42,7 +42,7 @@ SetCompressor /SOLID lzma
 !include "FileFunc.nsh"
 !include "WordFunc.nsh"
 
-!define VERSION "1.0.5"
+!define VERSION "1.0.6"
 
 Name "NifSkope ${VERSION}"
 
