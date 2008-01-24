@@ -132,10 +132,10 @@ void NifSkope::about()
 	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
 	"<p>NifSkope is based on NifTool's XML file format specification. "
 	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
-	"<p>NifSkope is free software available under a BSD lisence. "
+	"<p>NifSkope is free software available under a BSD license. "
 	"The source is available via <a href='https://niftools.svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
 	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
-	"<p>New versions of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
+	"<p>The most recent version of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
 	"NifTools SourceForge Project page</a>.";
 
 	QMessageBox mb( tr("About NifSkope "NIFSKOPE_VERSION), text, QMessageBox::Information,
