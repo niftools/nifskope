@@ -21,9 +21,13 @@ Known Issues and Workarounds
   Launch NifSkope again, and all windows will appear at their default
   position.
 
-* If you get the message
+* If you get a message similar to
 
     "The application is not configured correctly. Reinstalling it may help."
+
+  or
+
+    "Side by side configuration is incorrect."
 
   when starting NifSkope, install this Microsoft package which contains Visual
   C++ DLL files:
