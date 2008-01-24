@@ -7,7 +7,7 @@
 bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
-	return nif->checkVersion( 0x14000005, 0x14000005 ) &&
+	return nif->checkVersion( 0x14000004, 0x14000005 ) &&
 		( ( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
 		|| ( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) );
 }
@@ -199,7 +199,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
-		return nif && nif->checkVersion( 0x14000005, 0x14000005 ) && ! idx.isValid();
+		return nif && nif->checkVersion( 0x14000004, 0x14000005 ) && ! idx.isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & )

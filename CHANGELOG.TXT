@@ -4,6 +4,7 @@ This is version 1.0.6 of NifSkope.
 
 changes since 1.0.5:
  * Stylesheet for the linux version.
+ * Activated update tangent space spell for 20.0.0.4 nifs
 
 changes since 1.0.4:
  * Fixed block deletion bug.
