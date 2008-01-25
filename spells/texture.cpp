@@ -175,7 +175,8 @@ public:
 		}
 
 
-		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
+		// NOTE: remove the QFileDialog::DontUseNativeDialog when the shortcut resolve bug is fixed in a next version of Qt
+		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file, "", 0, QFileDialog::DontUseNativeDialog );
 
 		if ( ! file.isEmpty() )
 		{
