@@ -165,7 +165,7 @@ public:
 		QModelIndex iSource = nif->getBlock( idx );
 		QModelIndex iFile = nif->getIndex( iSource, "File Name" );
 		QString file = TexCache::find( nif->get<QString>( iFile ), nif->getFolder() );
-		
+
 		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
 		
 		if ( ! file.isEmpty() )
@@ -218,7 +218,7 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 	
 	nif->set<int>( iTex, "Clamp Mode", 3 );
 	nif->set<int>( iTex, "Filter Mode", 3 );
-	nif->set<int>( iTex, "PS2 K", 65461 );
+	nif->set<int>( iTex, "PS2 K", -75 );
 	nif->set<int>( iTex, "Unknown1", 257 );
 	
 	QModelIndex iSrcTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( iTexProp ) + 1 );
