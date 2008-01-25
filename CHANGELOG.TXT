@@ -5,6 +5,9 @@ This is version 1.0.6 of NifSkope.
 changes since 1.0.5:
  * Stylesheet for the linux version.
  * Activated update tangent space spell for 20.0.0.4 nifs
+ * Temporarily disabled removing of the old unpacked strips when calling the
+   pack strip spell as this crashes nifskope; remove the branch manually
+   instead until this bug is fixed.
 
 changes since 1.0.4:
  * Fixed block deletion bug.

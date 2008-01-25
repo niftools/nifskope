@@ -317,8 +317,10 @@ public:
 		lnkmap.insert( nif->getBlockNumber( iShape ), nif->getBlockNumber( iPackedShape ) );
 		nif->mapLinks( lnkmap );
 		
-		spRemoveBranch BranchRemover;
-		BranchRemover.castIfApplicable( nif, iShape );
+		// *** THIS SOMETIMES CRASHES NIFSKOPE        ***
+		// *** UNCOMMENT WHEN BRANCH REMOVER IS FIXED ***
+		//spRemoveBranch BranchRemover;
+		//BranchRemover.castIfApplicable( nif, iShape );
 		
 		return iPackedShape;
 	}
