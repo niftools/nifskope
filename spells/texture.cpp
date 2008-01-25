@@ -166,10 +166,23 @@ public:
 		QModelIndex iFile = nif->getIndex( iSource, "File Name" );
 		QString file = TexCache::find( nif->get<QString>( iFile ), nif->getFolder() );
 
+		if ( ! QFile::exists(file) )
+		{
+			// if file not found in cache, use last texture path
+			NIFSKOPE_QSETTINGS(cfg);
+			QString defaulttexpath(cfg.value("last texture path", QVariant(QDir::homePath())).toString());
+			file = QDir(defaulttexpath).filePath(file);
+		}
+
+
 		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file );
-		
+
 		if ( ! file.isEmpty() )
 		{
+			// save path for future
+			NIFSKOPE_QSETTINGS(cfg);
+			cfg.setValue("last texture path", QVariant(QDir(file).absolutePath()));
+
 			file = TexCache::stripPath( file, nif->getFolder() );
 			nif->set<int>( iSource, "Use External", 1 );
 			nif->set<QString>( iFile, file.replace( "/", "\\" ) );
