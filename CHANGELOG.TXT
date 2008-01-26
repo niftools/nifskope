@@ -8,7 +8,8 @@ changes since 1.0.5:
  * Temporarily disabled removing of the old unpacked strips when calling the
    pack strip spell as this crashes nifskope; remove the branch manually
    instead until this bug is fixed.
-   
+ * Texture path used for selecting new textures is saved.
+ 
 changes since 1.0.4:
  * Fixed block deletion bug.
  * Updated to compile with MSVC Express 2008 and Qt 4.3.3
