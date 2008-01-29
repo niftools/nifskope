@@ -9,7 +9,7 @@ changes since 1.0.5:
    pack strip spell as this crashes nifskope; remove the branch manually
    instead until this bug is fixed.
  * Texture path used for selecting new textures is saved.
- * Shortcut in texture selection file dialog are now actually followed.
+ * Shortcuts in texture selection file dialog are now actually followed.
  
 changes since 1.0.4:
  * Fixed block deletion bug.
