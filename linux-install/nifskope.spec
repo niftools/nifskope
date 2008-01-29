@@ -73,8 +73,12 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Sun Jan 20 2008 amorilia - 1.0.6-1
-- added stylesheet to rpm
+* Tue Jan 29 2008 amorilia - 1.0.6-1
+- Stylesheet for the linux version.
+- Activated update tangent space spell for 20.0.0.4 nifs
+- Temporarily disabled removing of the old unpacked strips when calling the pack strip spell as this crashes nifskope; remove the branch manually instead until this bug is fixed.
+- Texture path used for selecting new textures is saved.
+- Shortcuts in texture selection file dialog are now actually followed.
 * Wed Jan 16 2008 amorilia - 1.0.5-1
 - Fixed block deletion bug.
 - Settings between different versions of nifskope are no longer shared to avoid compatibility problems if multiple versions of nifskope are used on the same system.
