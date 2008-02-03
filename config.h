@@ -40,10 +40,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // QSettings keys for older versions of nifskope
 // add versions to this list (most recent first) whenever incrementing
 // NIFSKOPE_VERSION
-const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList() << "NifSkope-1.0.5" << "NifSkope");
+const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList() << "NifSkope-1.0.6" << "NifSkope-1.0.5" << "NifSkope");
 
 // a string describing the version of nifskope
-#define NIFSKOPE_VERSION "1.0.6"
+#define NIFSKOPE_VERSION "1.0.7"
 
 // create a QSettings variable for nifskope
 #define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope-"NIFSKOPE_VERSION )
