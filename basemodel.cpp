@@ -89,8 +89,8 @@ int BaseModel::getArraySize( NifItem * array ) const
 		QString left, right;
 		QString arr1 = array->arr1();
 		
-		static const char * const exp[] = { " | ", " & ", " / " };
-		static const int num_exp = 3;
+		static const char * const exp[] = { " | ", " & ", " / ", " + ", " - " };
+		static const int num_exp = 5;
 		
 		int c;
 		for ( c = 0; c < num_exp; c++ )
@@ -165,6 +165,8 @@ int BaseModel::getArraySize( NifItem * array ) const
 			case 0: d1 |= r; break;
 			case 1: d1 &= r; break;
 			case 2: d1 /= r; break;
+			case 3: d1 += r; break;
+			case 4: d1 -= r; break;
 		}
 	}
 	
@@ -665,8 +667,8 @@ bool BaseModel::evalConditionHelper( NifItem * item, const QString & cond ) cons
 {	
 	QString left, right;
 	
-	static const char * const exp[] = { "!=", "==", ">=", "<=", ">", "<", "&" };
-	static const int num_exp = 7;
+	static const char * const exp[] = { "!=", "==", ">=", "<=", ">", "<", "&", "+", "-" };
+	static const int num_exp = 9;
 	
 	int c;
 	for ( c = 0; c < num_exp; c++ )
@@ -735,6 +737,8 @@ bool BaseModel::evalConditionHelper( NifItem * item, const QString & cond ) cons
 		case 4: return l > r;
 		case 5: return l < r;
 		case 6: return l & r;
+		case 7: return l + r;
+		case 8: return l - r;
 		default: return false;
 	}
 }
