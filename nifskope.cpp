@@ -1094,6 +1094,7 @@ int main( int argc, char * argv[] )
 		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
 
 #ifdef WIN32
+#ifndef __GNUC__ // mingw defines WIN32 and __GNUC__ but does not have GetLongPathNameW
 		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
 		wchar_t full[MAX_PATH];
 		wchar_t * temp_name = new wchar_t[fname.size() + 1];
@@ -1125,6 +1126,7 @@ int main( int argc, char * argv[] )
 		}
 
 		delete [] temp_name;
+#endif
 #endif
 	}
 
