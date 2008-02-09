@@ -30,6 +30,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+// MinGW hack to ensure that GetLongPathNameW is defined
+#ifdef WIN32 
+#  ifdef __GNUC__
+#    define WINVER 0x0500
+#  endif
+#endif
+
 #include "nifskope.h"
 #include "config.h"
 
@@ -73,8 +80,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/xmlcheck.h"
 
 #ifdef WIN32
-#define WINDOWS_LEAN_AND_MEAN
-#include "windows.h"
+#  define WINDOWS_LEAN_AND_MEAN
+#  include "windows.h"
 #endif
 
 
@@ -1094,7 +1101,6 @@ int main( int argc, char * argv[] )
 		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
 
 #ifdef WIN32
-#ifndef __GNUC__ // mingw defines WIN32 and __GNUC__ but does not have GetLongPathNameW
 		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
 		wchar_t full[MAX_PATH];
 		wchar_t * temp_name = new wchar_t[fname.size() + 1];
@@ -1126,7 +1132,6 @@ int main( int argc, char * argv[] )
 		}
 
 		delete [] temp_name;
-#endif
 #endif
 	}
 
