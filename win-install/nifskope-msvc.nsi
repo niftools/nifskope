@@ -38,6 +38,8 @@
 
 SetCompressor /SOLID lzma
 
+!define INSTALLERPOSTFIX "windows"
+
 !include "FileFunc.nsh"
 !include "WordFunc.nsh"
 

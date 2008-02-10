@@ -38,6 +38,8 @@
 
 SetCompressor /SOLID lzma
 
+!define INSTALLERPOSTFIX "windows-mingw"
+
 !macro InstallHook
   ; pack dll files
   SetOutPath $INSTDIR
