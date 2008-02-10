@@ -1,12 +1,8 @@
-; *** REQUIRES MOREINFO PLUGIN ***
-; Download the MoreInfo zip file from  http://nsis.sourceforge.net/MoreInfo_plug-in
-; and copy the Plugins\MoreInfo.dll file to your NSIS Plugins folder.
-
-; NifSkope Self-Installer for Windows
+; NifSkope Self-Installer Header File for Windows
 ; (NifTools - http://niftools.sourceforge.net) 
 ; (NSIS - http://nsis.sourceforge.net)
 ;
-; Copyright (c) 2005-2007, NIF File Format Library and Tools
+; Copyright (c) 2005-2008, NIF File Format Library and Tools
 ; All rights reserved.
 ; 
 ; Redistribution and use in source and binary forms, with or without
@@ -36,11 +32,7 @@
 ; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-SetCompressor /SOLID lzma
-
 !include "MUI.nsh"
-!include "FileFunc.nsh"
-!include "WordFunc.nsh"
 
 !define VERSION "1.0.7"
 
@@ -75,9 +67,6 @@ Name "NifSkope ${VERSION}"
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
-!insertmacro Locate
-!insertmacro VersionCompare
-
 ;--------------------------------
 ; Languages
  
@@ -102,72 +91,6 @@ ShowUninstDetails show
 
 ;--------------------------------
 ; Functions
-
-Var DLL_found
-
-# Uses $0
-Function openLinkNewWindow
-  Push $3 
-  Push $2
-  Push $1
-  Push $0
-  ReadRegStr $0 HKCR "http\shell\open\command" ""
-# Get browser path
-    DetailPrint $0
-  StrCpy $2 '"'
-  StrCpy $1 $0 1
-  StrCmp $1 $2 +2 # if path is not enclosed in " look for space as final char
-    StrCpy $2 ' '
-  StrCpy $3 1
-  loop:
-    StrCpy $1 $0 1 $3
-    DetailPrint $1
-    StrCmp $1 $2 found
-    StrCmp $1 "" found
-    IntOp $3 $3 + 1
-    Goto loop
- 
-  found:
-    StrCpy $1 $0 $3
-    StrCmp $2 " " +2
-      StrCpy $1 '$1"'
- 
-  Pop $0
-  Exec '$1 $0'
-  Pop $1
-  Pop $2
-  Pop $3
-FunctionEnd
-
-!define DLL_VER "9.00.21022.8"
-
-Function LocateCallback
-
-	MoreInfo::GetProductVersion "$R9"
-	Pop $0
-
-        ${VersionCompare} "$0" "${DLL_VER}" $R1
-
-        StrCmp $R1 0 0 new
-      new:
-        StrCmp $R1 1 0 old
-      old:
-        StrCmp $R1 2 0 end
-	; Found DLL is older
-        Call DownloadDLL
-
-     end:
-	StrCpy "$0" StopLocate
-	StrCpy $DLL_found "true"
-	Push "$0"
-
-FunctionEnd
-
-Function DownloadDLL
-    MessageBox MB_OK "You will need to download the Microsoft Visual C++ 2008 Redistributable Package in order to run NifSkope. Pressing OK will take you to the download page, please follow the instructions on the page that appears."
-    StrCpy $0 "http://www.microsoft.com/downloads/details.aspx?familyid=9b2da534-3e03-4391-8a4d-074b9f2bc1bf&displaylang=en"
-    Call openLinkNewWindow
-FunctionEnd
 
 Function finishShowReadmeChangelog
 	ExecShell "open" "$INSTDIR\README.TXT"
@@ -293,13 +216,8 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NifSkope" "UninstallString" "$INSTDIR\uninstall.exe"
   WriteUninstaller "uninstall.exe"
 
-  ; Check for msvcr90.dll - give notice to download if not found
-  MessageBox MB_OK "The installer will now check your system for the required system dlls."
-  StrCpy $1 $WINDIR
-  StrCpy $DLL_found "false"
-  ${Locate} "$1" "/L=F /M=MSVCR90.DLL /S=0B" "LocateCallback"
-  StrCmp $DLL_found "false" 0 +2
-    Call DownloadDLL
+  ; call installer hook for extra install stuff
+  !insertmacro InstallHook
   
 SectionEnd
 
