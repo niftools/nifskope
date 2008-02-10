@@ -174,7 +174,6 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   ; Install NifSkope
   SetOutPath $INSTDIR
   File ..\release\NifSkope.exe
-  ;File ..\mingwm10.dll
   File ..\README.TXT
   File ..\CHANGELOG.TXT
   File ..\LICENSE.TXT
