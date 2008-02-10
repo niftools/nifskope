@@ -42,19 +42,33 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
 {
     nif = NULL;
 
+    // Search for reference documentation in different locations.
+
+    // First, try the application path, for windows install.
     docFolder.setPath( qApp->applicationDirPath() );
-    
-    if( ! docFolder.exists( "doc" ) ) {
-        docFolder.cd( "../docsys" );
-    }
-    
     docFolderPresent = docFolder.exists( "doc" );
     
+    // Next, try the docsys path (if application is run from the nifskope
+    // repository directory, as in linux build).
+    if( ! docFolderPresent ) {
+        docFolder.setPath( qApp->applicationDirPath() );
+        docFolder.cd( "../docsys" );
+        docFolderPresent = docFolder.exists( "doc" );
+    }
+    
+    // Again, try the docsys path (if application is run from the
+    // nifskope/release repository directory, as in windows build).
+    if( ! docFolderPresent ) {
+        docFolder.setPath( qApp->applicationDirPath() );
+        docFolder.cd( "../../docsys" );
+        docFolderPresent = docFolder.exists( "doc" );
+    }
+    
+    // Try the /usr/share/nifskope path, for linux install.
     if ( ! docFolderPresent ) {
         docFolder.cd( "/usr/share/nifskope" );
         docFolderPresent = docFolder.exists( "doc" );
     }
-
     
     if( docFolderPresent ) {
         docFolder.cd( "doc" );
