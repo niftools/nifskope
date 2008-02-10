@@ -1,3 +1,5 @@
+rem Quick build script to create the installer for release.
+
 set NAME=nifskope
 set VERSION=1.0.7
 
@@ -12,6 +14,6 @@ pause
 
 cd ..\nifskope\win-install
 
-"%PROGRAMFILES%\NSIS\makensis.exe" /v3 %NAME%.nsi
+"%PROGRAMFILES%\NSIS\makensis.exe" /v3 %NAME%-msvc.nsi
 
 pause
