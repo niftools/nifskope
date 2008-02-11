@@ -6,6 +6,7 @@ changes since 1.0.6:
  * Added + and - to expression parser.
  * Updates to nif and kfm format.
  * Fixes for the MinGW build.
+ * Cleaned up kfm xml format.
 
 changes since 1.0.5:
  * Stylesheet for the linux version.

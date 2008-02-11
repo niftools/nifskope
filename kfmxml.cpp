@@ -88,6 +88,7 @@ public:
 			return true;
 		}
 		
+		int v;
 		switch ( current() )
 		{
 			case 0:
@@ -95,9 +96,16 @@ public:
 				push( x );
 				switch ( x )
 				{
+					case 1:
+						v = KfmModel::version2number( list.value( "num" ).trimmed() );
+						if ( v != 0 && ! list.value( "num" ).isEmpty() )
+							KfmModel::supportedVersions.append( v );
+						else
+							err( "invalid version string" );
+						break;
 					case 2:
 						if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
-							err( "compound " + list.value( "name" ) + " is allready registered as internal type" );
+							err( "compound " + list.value( "name" ) + " is already registered as internal type" );
 						if ( ! blk ) blk = new NifBlock;
 						blk->id = list.value( "name" );
 						break;
@@ -161,22 +169,6 @@ public:
 					}
 				}
 				break;
-		}
-		return true;
-	}
-	
-	bool characters( const QString & s )
-	{
-		switch ( current() )
-		{
-			case 1:
-			{
-				int v = KfmModel::version2number( s.trimmed() );
-				if ( v != 0 )
-					KfmModel::supportedVersions.append( v );
-				else
-					err( "invalid version string " + s );
-			}	break;
 		}
 		return true;
 	}

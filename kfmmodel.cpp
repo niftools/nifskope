@@ -87,12 +87,12 @@ void KfmModel::clear()
 {
 	folder = QString();
 	root->killChildren();
-	insertType( root, NifData( "kfm", "kfm" ) );
+	insertType( root, NifData( "Kfm", "Kfm" ) );
 	kfmroot = root->child( 0 );
-	version = 0x04000002;
+	version = 0x0200000b;
 	reset();
 	if ( kfmroot )
-		set<QString>( kfmroot, "Header String", "NetImmerse File Format, Version 4.0.0.2" );
+		set<QString>( kfmroot, "Header String", ";Gamebryo KFM File Version 2.0.0.0b" );
 }
 
 /*
