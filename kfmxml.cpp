@@ -50,7 +50,7 @@ public:
 	KfmXmlHandler()
 	{
 		depth = 0;
-		elements << "niflotoxml" << "version" << "compound" << "add";
+		elements << "niftoolsxml" << "version" << "compound" << "add";
 		blk = 0;
 	}
 	
@@ -83,7 +83,7 @@ public:
 		
 		if ( depth == 0 )
 		{
-			if ( x != 0 )	err( "this is not a niflotoxml file" );
+			if ( x != 0 )	err( "this is not a niftoolsxml file" );
 			push( x );
 			return true;
 		}

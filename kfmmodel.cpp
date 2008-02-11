@@ -212,7 +212,7 @@ bool KfmModel::setItemValue( NifItem * item, const NifValue & val )
 
 bool KfmModel::setHeaderString( const QString & s )
 {
-	msg( DbgMsg() << s << s.right( s.length() - 27 ) );
+	//msg( DbgMsg() << s << s.right( s.length() - 27 ) );
 	if ( s.startsWith( ";Gamebryo KFM File Version " ) )
 	{
 		version = version2number( s.right( s.length() - 27 ) );
