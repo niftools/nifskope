@@ -4,6 +4,8 @@ This is version 1.0.7 of NifSkope.
 
 changes since 1.0.6:
  * Added + and - to expression parser.
+ * Updates to nif and kfm format.
+ * Fixes for the MinGW build.
 
 changes since 1.0.5:
  * Stylesheet for the linux version.

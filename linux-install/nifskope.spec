@@ -73,6 +73,10 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Mon Feb 11 2008 amorilia - 1.0.7-1
+- Added + and - to expression parser.
+- Updates to nif and kfm format.
+- Fixes for the MinGW build.
 * Tue Jan 29 2008 amorilia - 1.0.6-1
 - Stylesheet for the linux version.
 - Activated update tangent space spell for 20.0.0.4 nifs
