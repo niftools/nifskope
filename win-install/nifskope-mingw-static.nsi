@@ -2,7 +2,7 @@
 ; Download the MoreInfo zip file from  http://nsis.sourceforge.net/MoreInfo_plug-in
 ; and copy the Plugins\MoreInfo.dll file to your NSIS Plugins folder.
 
-; NifSkope Self-Installer for Windows (MSVC build)
+; NifSkope Self-Installer for Windows (MinGW static build)
 ; (NifTools - http://niftools.sourceforge.net) 
 ; (NSIS - http://nsis.sourceforge.net)
 ;
@@ -44,11 +44,6 @@ SetCompressor /SOLID lzma
   ; pack dll files
   SetOutPath $INSTDIR
   File ..\release\mingwm10.dll
-  File ..\release\QtCore4.dll
-  File ..\release\QtGui4.dll
-  File ..\release\QtNetwork4.dll
-  File ..\release\QtOpenGL4.dll
-  File ..\release\QtXml4.dll
 !macroend
 
 !include "nifskope.nsh"
