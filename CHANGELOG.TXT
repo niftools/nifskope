@@ -5,6 +5,7 @@ This is version 1.0.7 of NifSkope.
 changes since 1.0.6:
  * Fixes for the MinGW build, the build now works on all Windows versions
    (also older versions that are no longer supported by Microsoft).
+ * Updated build to use Qt 4.3.4
  * Added + and - to expression parser.
  * Updates to nif and kfm format.
  * Cleaned up kfm xml format.
