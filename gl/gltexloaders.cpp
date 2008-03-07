@@ -518,10 +518,12 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 
 GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
 {
+/*
 #ifdef WIN32
 	if ( !_glCompressedTexImage2D )
 	{
 #endif
+*/
 	// load the pixels
 	f.seek(0);
 	QByteArray bytes = f.readAll();
@@ -552,6 +554,7 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 	delete [] pixels;
 	m = generateMipMaps( m );
 	return m;
+/*
 #ifdef WIN32
 	}
 	GLubyte * pixels = (GLubyte *) malloc( ( ( width + 3 ) / 4 ) * ( ( height + 3 ) / 4 ) * blockSize );
@@ -588,6 +591,7 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 	else
 		return m;
 #endif
+*/
 }
 
 //! Load a (possibly compressed) dds texture.
