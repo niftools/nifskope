@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.7
+Version:        1.0.8
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,6 +73,8 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sat Mar 8 2008 amorilia - 1.0.8-1
+- Fixed texture DXT5 corruption on windows build.
 * Mon Feb 11 2008 amorilia - 1.0.7-1
 - Added + and - to expression parser.
 - Updates to nif and kfm format.
