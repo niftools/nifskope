@@ -58,6 +58,7 @@ struct ColorBlock
 	void splatX();
 	void splatY();
 	
+	bool isSingleColor() const;
 	uint countUniqueColors() const;
 	Color32 averageColor() const;
 	bool hasAlpha() const;
@@ -66,7 +67,6 @@ struct ColorBlock
 	void luminanceRange(Color32 * start, Color32 * end) const;
 	void boundsRange(Color32 * start, Color32 * end) const;
 	void boundsRangeAlpha(Color32 * start, Color32 * end) const;
-	void bestFitRange(Color32 * start, Color32 * end) const;
 	
 	void sortColorsByAbsoluteValue();
 
