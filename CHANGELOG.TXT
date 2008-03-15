@@ -1,6 +1,9 @@
  == CHANGELOG ==
 
-This is version 1.0.8 of NifSkope.
+This is version 1.0.9 of NifSkope.
+
+changes since 1.0.8:
+ * synced DDS decompression with upstream (nvidia texture tools revision 488)
 
 changes since 1.0.7:
  * Use software DXT decompression also on Windows to work around texture

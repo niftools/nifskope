@@ -1,7 +1,7 @@
 rem Quick build script to create the installer for release.
 
 set NAME=nifskope
-set VERSION=1.0.8
+set VERSION=1.0.9
 
 del %NAME%-%VERSION%-windows.exe
 
