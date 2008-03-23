@@ -73,8 +73,10 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* xxx - 1.0.9-1
+* Sun Mar 23 2008 amorilia - 1.0.9-1
 - synced DDS decompression with upstream (nvidia texture tools rev 488)
+- fixed nif.xml for 10.2.0.0 Oblivion havok blocks
+- fixed DXT5 alpha channel corruption
 * Sat Mar 8 2008 amorilia - 1.0.8-1
 - Fixed texture DXT5 corruption on windows build.
 * Mon Feb 11 2008 amorilia - 1.0.7-1
