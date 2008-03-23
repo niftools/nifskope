@@ -716,7 +716,13 @@ void DirectDrawSurface::readLinearImage(Image * img)
 		return;
 	}
 
-	if (header.pf.amask != 0)
+	// set image format: RGB or ARGB
+	// alpha channel exists if and only if the alpha mask is non-zero
+	if (header.pf.amask == 0)
+	{
+		img->setFormat(Image::Format_RGB);
+	}
+	else
 	{
 		img->setFormat(Image::Format_ARGB);
 	}
@@ -747,6 +753,17 @@ void DirectDrawSurface::readBlockImage(Image * img)
 	
 	const uint bw = (w + 3) / 4;
 	const uint bh = (h + 3) / 4;
+
+	// set image format: RGB or ARGB
+	// all DXT formats have alpha channel, except DXT1
+	if (header.pf.fourcc == FOURCC_DXT1)
+	{
+		img->setFormat(Image::Format_RGB);
+	}
+	else
+	{
+		img->setFormat(Image::Format_ARGB);
+	}
 	
 	for (uint by = 0; by < bh; by++)
 	{
