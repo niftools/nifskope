@@ -536,6 +536,7 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 	GLubyte * pixels = new GLubyte[w * h * 4];
 	Color32 * src = img->pixels();
 	GLubyte * dst = pixels;
+	//qWarning() << "flipV = " << flipV;
 	for ( quint32 y = 0; y < h; y++ )
 	{
 		for ( quint32 x = 0; x < w; x++ )
