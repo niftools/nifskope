@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.9
+Version:        1.0.10
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,6 +73,8 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* XXX XXX XX 2008 amorilia - 1.0.10-1
+- fixed bsa file compression bug for Morrowind
 * Sun Mar 23 2008 amorilia - 1.0.9-1
 - synced DDS decompression with upstream (nvidia texture tools rev 488)
 - fixed nif.xml for 10.2.0.0 Oblivion havok blocks
