@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 
 /* Default header data */
+#define MW_BSAHEADER_FILEID	0x00000100
 #define OB_BSAHEADER_FILEID	0x00415342 /* "BSA\0" */
 #define OB_BSAHEADER_VERSION	0x67
 
@@ -178,15 +179,15 @@ bool BSA::canOpen( const QString & fn )
 		if ( f.read( (char *) & magic, sizeof( magic ) ) != 4 )
 			return false;
 		
-		if ( magic == 0x00415342 )
+		if ( magic == OB_BSAHEADER_FILEID )
 		{
 			if ( f.read( (char *) & version, sizeof( version ) ) != 4 )
 				return false;
 			
-			return ( version == 0x67 );
+			return ( version == OB_BSAHEADER_VERSION );
 		}
 		else
-			return magic == 0x00000100;
+			return magic == MW_BSAHEADER_FILEID;
 	}
 	
 	return false;
@@ -205,11 +206,11 @@ bool BSA::open()
 		
 		bsa.read( (char*) &magic, sizeof( magic ) );
 		
-		if ( magic == 0x00415342 )
+		if ( magic == OB_BSAHEADER_FILEID )
 		{
 			bsa.read( (char*) &version, sizeof( version ) );
 			
-			if ( version != 0x67 )
+			if ( version != OB_BSAHEADER_VERSION )
 				throw QString( "file version" );
 			
 			OBBSAHeader header;
@@ -280,13 +281,16 @@ bool BSA::open()
 			if ( totalFileCount != header.FileCount )
 				throw QString( "file count" );
 		}
-		else if ( magic == 0x00000100 )
+		else if ( magic == MW_BSAHEADER_FILEID )
 		{
 			MWBSAHeader header;
 			
 			if ( bsa.read( (char *) & header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header" );
 			
+
+			compressToggle = false;
+
 			quint32 dataOffset = 12 + header.HashOffset + header.FileCount * 8;
 			
 			QVector<MWBSAFileSizeOffset> sizeOffset( header.FileCount );
