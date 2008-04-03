@@ -212,6 +212,8 @@ public:
 				// model index of current block (to check type)
 				QModelIndex iBlock(nif->getBlock(*oldblocks_iter));
 				// should we add block oldblocknr?
+				
+				// first check that havok children are added before their parents
 				if (nif->inherits(iBlock, "bhkRefObject") || nif->inherits(iBlock, "NiCollisionObject")) {
 					// havok block: check that all of its
 					// children are in newblocks
@@ -225,8 +227,40 @@ public:
 							addit = false;
 							break;
 						}
+					}					
+				}
+
+				// nitribasedgeom block: check if it has a ninode parent,
+				// and if so check that this ninode's collision object
+				// tree has already been added into newblocks
+				if (nif->inherits(iBlock, "NiTriBasedGeom")) {
+					// get the parent block index
+					qint32 oldblock_parent = nif->getParent(*oldblocks_iter);
+					QModelIndex iParent(nif->getBlock(oldblock_parent));
+					// check that the parent is a NiAVObject (that is, one that has a Collision Object)
+					if (nif->inherits(iBlock, "NiAVObject")) {
+						//qWarning() << "NiTriBasedGeom" << *oldblocks_iter << "with parent" << oldblock_parent;
+						// it is! get its collision object block number
+						QModelIndex iCollision(nif->getIndex(iParent, "Collision Object"));
+
+						if (iCollision.isValid()) {
+							// convert index into block number
+							quint32 collision_sibling = nif->getLink(iCollision);
+							//qWarning() << "checking collision" << collision_sibling;
+							// we don't need to check the children anymore!
+							// the previous check ensures already that
+							// collision_block already has the highest block
+							// number in the tree
+							// so we only need to check that collision_block
+							// is already added
+							if (!newblocks.contains(collision_sibling)) {
+								//qWarning() << "not yet adding" << *oldblocks_iter;
+								addit = false;
+							}
+						}
 					}
 				}
+
 				// note, other blocks: no extra check needed
 				if (addit) {
 					//qWarning() << "adding" << *oldblocks_iter;
