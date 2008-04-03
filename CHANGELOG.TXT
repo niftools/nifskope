@@ -4,6 +4,7 @@ This is version 1.0.10 of NifSkope.
 
 changes since 1.0.9:
  * fixed bsa file compression bug for Morrowind
+ * fixed havok block reorder sanitize spell
 
 changes since 1.0.8:
  * synced DDS decompression with upstream (nvidia texture tools revision 488)

@@ -75,6 +75,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * XXX XXX XX 2008 amorilia - 1.0.10-1
 - fixed bsa file compression bug for Morrowind
+- fixed havok block reorder sanitize spell
 * Sun Mar 23 2008 amorilia - 1.0.9-1
 - synced DDS decompression with upstream (nvidia texture tools rev 488)
 - fixed nif.xml for 10.2.0.0 Oblivion havok blocks
