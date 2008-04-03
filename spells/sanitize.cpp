@@ -124,18 +124,20 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->checkVersion( 0x14000005, 0x14000005 ) && ! index.isValid();
+		// bhk blocks can occur in 20.0.0.4 and 20.0.0.5 files
+		return nif->checkVersion( 0x14000004, 0x14000005 ) && ! index.isValid();
 	}
-	
+/*	
 	struct wrap
 	{
 		qint32 blocknr;
 		QList<qint32> parents;
 		QList<qint32> children;
 	};
-	
+*/	
 	QModelIndex cast( NifModel * nif, const QModelIndex & )
 	{
+/*
 		// wrap blocks for sorting
 		QVector<wrap> sortwrapper( nif->getBlockCount() );
 		for ( qint32 n = 0; n < nif->getBlockCount(); n++ )
@@ -178,13 +180,94 @@ public:
 		QVector<qint32> order( sortwrapper.count() );
 		for ( qint32 n = 0; n < sortwrapper.count(); n++ )
 			order[ sortwrapper[ n ].blocknr ] = n;
-		
+
+		// DEBUG
+		for ( qint32 n = 0; n < sortwrapper.count(); n++ )
+			qWarning() << n << sortwrapper[n].blocknr;
 		// reorder the blocks
 		nif->reorderBlocks( order );
-		
+*/
+		// new version of order block code
+
+		// list of blocks that still must be added
+		// at this moment this is just the identity map
+		QList<qint32> oldblocks;
+		for (qint32 n = 0; n < nif->getBlockCount(); n++)
+			oldblocks.append(n);
+
+		// list of blocks that have been added
+		// newblocks[0] is the block number of the block that must be 
+		// assigned number 0
+		// newblocks[1] is the block number of the block that must be
+		// assigned number 1
+		// etc.
+		QVector<qint32> newblocks;
+
+		// add blocks, as long as there are blocks to be added
+		while (!oldblocks.isEmpty()) {
+			QList<qint32>::iterator oldblocks_iter = oldblocks.begin();
+			while (oldblocks_iter != oldblocks.end()) {
+				// flag to signal block adding
+				bool addit = true;
+				// model index of current block (to check type)
+				QModelIndex iBlock(nif->getBlock(*oldblocks_iter));
+				// should we add block oldblocknr?
+				if (nif->inherits(iBlock, "bhkRefObject") || nif->inherits(iBlock, "NiCollisionObject")) {
+					// havok block: check that all of its
+					// children are in newblocks
+					// (note: for speed we really should
+					// have a lookup table, oh well...)
+					QList<qint32> allchildren = getAllChildLinks(nif, *oldblocks_iter);
+					//qWarning() << *oldblocks_iter << "children" << allchildren;
+					foreach (qint32 child, allchildren) {
+						if (!newblocks.contains(child)) {
+							//qWarning() << "not yet adding" << *oldblocks_iter;
+							addit = false;
+							break;
+						}
+					}
+				}
+				// note, other blocks: no extra check needed
+				if (addit) {
+					//qWarning() << "adding" << *oldblocks_iter;
+					// add the block and remove it from old list
+					newblocks.append(*oldblocks_iter);
+					oldblocks.erase(oldblocks_iter);
+					// start a new iteration
+					break;
+				}
+				oldblocks_iter++;
+			}
+		}
+
+		QVector<qint32> order(nif->getBlockCount());
+
+		for (qint32 n = 0; n < newblocks.size(); n++) {
+			order[newblocks[n]] = n;
+			// DEBUG
+			//qWarning() << n << newblocks[n];
+		}
+
+		// reorder the blocks
+		nif->reorderBlocks(order);
+
 		return QModelIndex();
 	}
 
+	// get all children, as block numbers
+	static QList<qint32> getAllChildLinks(const NifModel * nif, qint32 link)
+	{
+		// get list of immediate children
+		QList<qint32> children(nif->getChildLinks(link));
+		// construct list of all children: start with immediate ones
+		QList<qint32> allchildren(children);
+		foreach (qint32 child, children)
+			// now add allchildren of each immediate child
+			allchildren += getAllChildLinks(nif, child);
+		// return result
+		return allchildren;
+	}
+/*
 	static bool isHvkBlock( const NifModel * nif, const QModelIndex & iBlock )
 	{
 		return nif->inherits( iBlock, "bhkShape" ) || nif->inherits( iBlock, "NiCollisionObject" ) || nif->inherits( iBlock, "NiTriBasedGeomData" );
@@ -232,6 +315,7 @@ public:
 	{
 		return a.parents.contains( b.blocknr ) || b.children.contains( a.blocknr );
 	}
+*/
 };
 
 REGISTER_SPELL( spSanitizeHavokBlockOrder )
