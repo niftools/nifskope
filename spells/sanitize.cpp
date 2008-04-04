@@ -238,7 +238,7 @@ public:
 					qint32 oldblock_parent = nif->getParent(*oldblocks_iter);
 					QModelIndex iParent(nif->getBlock(oldblock_parent));
 					// check that the parent is a NiAVObject (that is, one that has a Collision Object)
-					if (nif->inherits(iBlock, "NiAVObject")) {
+					if (nif->inherits(iParent, "NiAVObject")) {
 						//qWarning() << "NiTriBasedGeom" << *oldblocks_iter << "with parent" << oldblock_parent;
 						// it is! get its collision object block number
 						QModelIndex iCollision(nif->getIndex(iParent, "Collision Object"));
