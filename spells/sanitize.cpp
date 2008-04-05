@@ -127,27 +127,35 @@ public:
 		return !index.isValid();
 	}
 
+	// check whether the block is of a type that comes before the parent or not
+	bool childBeforeParent(NifModel * nif, qint32 block) {
+		// get index to the block
+		QModelIndex iBlock(nif->getBlock(block));
+		// check its type
+		return (
+			nif->inherits(iBlock, "bhkRefObject")
+			&& !nif->inherits(iBlock, "bhkConstraint")
+		);
+	}
+	
 	// build the nif tree at node block; the block itself and its children are recursively added to
 	// the newblocks list
 	void addTree(NifModel * nif, qint32 block, QList<qint32> & newblocks) {
 		// is the block already added?
 		if (newblocks.contains(block))
 			return;
-		// is it a havok block?
-		QModelIndex iBlock(nif->getBlock(block));
-		bool is_havok =
-			nif->inherits(iBlock, "bhkRefObject")
-			|| nif->inherits(iBlock, "NiCollisionObject");
-		// if it is not a havok block, add block before children
-		if (!is_havok)
-			newblocks.append(block);
-		// check if it is a havok block
+		// add all children of block that should be before block
 		foreach (qint32 child, nif->getChildLinks(block))
-			// now add allchildren of each immediate child
-			addTree(nif, child, newblocks);
-		// if it is a havok block, add block after children
-		if (is_havok)
-			newblocks.append(block);
+			if (childBeforeParent(nif, child))
+				// now add this child and all of its children
+				addTree(nif, child, newblocks);
+		// add the block
+		newblocks.append(block);
+		// add all children of block that should be after block
+		foreach (qint32 child, nif->getChildLinks(block))
+			if (!childBeforeParent(nif, child))
+				// now add this child and all of its children
+				addTree(nif, child, newblocks);
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & )
@@ -189,7 +197,7 @@ public:
 
 		return QModelIndex();
 	}
-}
+};
 
 REGISTER_SPELL( spSanitizeBlockOrder )
 
