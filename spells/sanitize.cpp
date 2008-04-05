@@ -114,7 +114,7 @@ public:
 
 REGISTER_SPELL( spAdjustTextureSources )
 
-
+/*** NOTE spSanitizeHavokBlockOrder superseded by spSanitizeBlockOrder ***/
 class spSanitizeHavokBlockOrder : public Spell
 {
 public:
@@ -352,8 +352,84 @@ public:
 */
 };
 
-REGISTER_SPELL( spSanitizeHavokBlockOrder )
+//REGISTER_SPELL( spSanitizeHavokBlockOrder ) // DISABLED FOR NOW; SEE SANITIZE BLOCK ORDER SPELL
 
+class spSanitizeBlockOrder : public Spell
+{
+public:
+	QString name() const { return "Reorder Blocks"; }
+	QString page() const { return "Sanitize"; }
+	bool sanity() const { return true; }
+	
+	bool isApplicable( const NifModel *, const QModelIndex & index )
+	{
+		// all files
+		return !index.isValid();
+	}
+
+	void addTree(NifModel * nif, qint32 block, QList<qint32> & newblocks) {
+		// is the block already added?
+		if (newblocks.contains(block))
+			return;
+		// is it a havok block?
+		QModelIndex iBlock(nif->getBlock(block));
+		bool is_havok =
+			nif->inherits(iBlock, "bhkRefObject")
+			|| nif->inherits(iBlock, "NiCollisionObject");
+		// if it is not a havok block, add block before children
+		if (!is_havok)
+			newblocks.append(block);
+		// check if it is a havok block
+		foreach (qint32 child, nif->getChildLinks(block))
+			// now add allchildren of each immediate child
+			addTree(nif, child, newblocks);
+		// if it is a havok block, add block after children
+		if (is_havok)
+			newblocks.append(block);
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		// list of root blocks
+		QList<qint32> rootblocks = nif->getRootLinks();
+
+		// list of blocks that have been added
+		// newblocks[0] is the block number of the block that must be 
+		// assigned number 0
+		// newblocks[1] is the block number of the block that must be
+		// assigned number 1
+		// etc.
+		QList<qint32> newblocks;
+
+		// add blocks recursively		
+		for (QList<qint32>::iterator rootblock_iter = rootblocks.begin();
+			rootblock_iter != rootblocks.end(); rootblock_iter++) {
+			addTree(nif, *rootblock_iter, newblocks);
+		};
+
+		// check whether all blocks have been added
+		if (nif->getBlockCount() != newblocks.size()) {
+			qWarning() << "failed to sanitize blocks order, corrupt nif tree?";
+			return QModelIndex();
+		};
+
+		// invert mapping
+		QVector<qint32> order(nif->getBlockCount());
+
+		for (qint32 n = 0; n < newblocks.size(); n++) {
+			order[newblocks[n]] = n;
+			// DEBUG
+			//qWarning() << n << newblocks[n];
+		}
+
+		// reorder the blocks
+		nif->reorderBlocks(order);
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spSanitizeBlockOrder )
 
 class spSanityCheckLinks : public Spell
 {
