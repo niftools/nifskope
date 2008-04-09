@@ -16,8 +16,6 @@ changes since 1.0.7:
  * Use software DXT decompression also on Windows to work around texture
    corruption bug
 
-This is version 1.0.7 of NifSkope.
-
 changes since 1.0.6:
  * Fixes for the MinGW build, the build now works on all Windows versions
    (also older versions that are no longer supported by Microsoft).
