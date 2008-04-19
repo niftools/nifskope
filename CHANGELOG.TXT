@@ -1,6 +1,10 @@
  == CHANGELOG ==
 
-This is version 1.0.10 of NifSkope.
+This is version 1.0.11 of NifSkope.
+
+changes since 1.0.10:
+ * added support for nif version 10.1.0.101 (used for instance by Oblivion
+   furniture markers in some releases of the game)
 
 changes since 1.0.9:
  * fixed bsa file compression bug for Morrowind
