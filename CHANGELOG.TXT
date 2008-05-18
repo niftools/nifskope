@@ -5,6 +5,8 @@ This is version 1.0.11 of NifSkope.
 changes since 1.0.10:
  * added support for nif version 10.1.0.101 (used for instance by Oblivion
    furniture markers in some releases of the game)
+ * fixed code to compile with Qt 4.4.0
+ * creating new BSXFlags block sets name automatically to BSX (issue #1955870)
 
 changes since 1.0.9:
  * fixed bsa file compression bug for Morrowind

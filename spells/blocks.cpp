@@ -99,10 +99,18 @@ public:
 			menu.addMenu( m );
 		
 		QAction * act = menu.exec( QCursor::pos() );
-		if ( act )
-			return nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
-		else
+		if ( act ) {
+			// insert block
+			QModelIndex newindex = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+			// do some stuff with the new block
+			if ( act->text() == "BSXFlags" ) {
+				nif->set<QString>( nif->getIndex( newindex, "Name" ), "BSX" );
+			}
+			// return index to new block
+			return newindex;
+		} else {
 			return index;
+		}
 	}
 };
 
