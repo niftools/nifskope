@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAbstractFileEngine>
 #include <QAbstractFileEngineHandler>
-#include <QSharedData>
+#include <QAtomicInt>
 
 
 class FSOverlayHandler : public QAbstractFileEngineHandler
@@ -90,7 +90,7 @@ public:
 	virtual QDateTime fileTime( const QString &, QAbstractFileEngine::FileTime type ) const = 0;
 
 protected:
-	QAtomic ref;
+	QAtomicInt ref;
 	
 	friend class FSArchiveHandler;
 	friend class FSArchiveEngine;
