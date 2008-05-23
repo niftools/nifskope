@@ -37,7 +37,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAbstractFileEngine>
 #include <QAbstractFileEngineHandler>
+#if (QT_VERSION >= QT_VERSION_CHECK(4, 4, 0))
 #include <QAtomicInt>
+#else
+// define QAtomicInt as QAtomic in older versions of qt
+#include <QSharedData>
+#define QAtomicInt QAtomic
+#endif
 
 
 class FSOverlayHandler : public QAbstractFileEngineHandler
