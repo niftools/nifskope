@@ -73,11 +73,11 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Fri May 23 2008 amorilia - 1.0.11-1
+* Sat May 24 2008 amorilia - 1.0.11-1
 - added support for nif version 10.1.0.101 (used for instance by Oblivion furniture markers in some releases of the game)
 - fixed code to compile with Qt 4.4.0
 - creating new BSXFlags block sets name automatically to BSX (issue #1955870)
-
+- darker background for UV editor to ease editing of UV map (issue #1971002)
 * Wed Apr 9 2008 amorilia - 1.0.10-1
 - fixed bsa file compression bug for Morrowind
 - fixed havok block reorder sanitize spell (replaced with a global block reorder spell)

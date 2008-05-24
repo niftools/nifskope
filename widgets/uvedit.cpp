@@ -225,7 +225,7 @@ void UVWidget::paintGL()
 		for( int j = 0; j < 3; j++ )
 		{
 			if( i == 1 && j == 1 ) {
-				glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
+				glColor4f( 0.75f, 0.75f, 0.75f, 1.0f );
 			}
 			else {
 				glColor4f( 0.5f, 0.5f, 0.5f, 1.0f );
