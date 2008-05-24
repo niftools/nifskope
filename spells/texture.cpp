@@ -171,7 +171,8 @@ public:
 			// if file not found in cache, use last texture path
 			NIFSKOPE_QSETTINGS(cfg);
 			QString defaulttexpath(cfg.value("last texture path", QVariant(QDir::homePath())).toString());
-			file = QDir(defaulttexpath).filePath(file);
+			//file = QDir(defaulttexpath).filePath(file);
+			file = defaulttexpath;
 		}
 
 
