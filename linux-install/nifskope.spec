@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.10
+Version:        1.0.11
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,6 +73,11 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Fri May 23 2008 amorilia - 1.0.11-1
+- added support for nif version 10.1.0.101 (used for instance by Oblivion furniture markers in some releases of the game)
+- fixed code to compile with Qt 4.4.0
+- creating new BSXFlags block sets name automatically to BSX (issue #1955870)
+
 * Wed Apr 9 2008 amorilia - 1.0.10-1
 - fixed bsa file compression bug for Morrowind
 - fixed havok block reorder sanitize spell (replaced with a global block reorder spell)
