@@ -8,6 +8,11 @@ changes since 1.0.10:
  * fixed code to compile with Qt 4.4.0
  * creating new BSXFlags block sets name automatically to BSX (issue #1955870)
  * darker background for UV editor to ease editing of UV map (issue #1971002)
+ * fixed bug which caused texture file path not to be stored between
+   invokations of the texture file selector in certain circumstances (issue
+   #1971132)
+ * new "crop to branch" spell to remove everything in a nif file except for a
+   single branch
 
 changes since 1.0.9:
  * fixed bsa file compression bug for Morrowind
