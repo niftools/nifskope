@@ -57,6 +57,8 @@ Name "NifSkope ${VERSION}"
 !define MUI_FINISHPAGE_SHOWREADME
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Show Readme and Changelog"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishShowReadmeChangelog
+!define MUI_FINISHPAGE_RUN "$INSTDIR\NifSkope.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Run NifSkope"
 !define MUI_FINISHPAGE_LINK "Visit us at http://niftools.sourceforge.net/"
 !define MUI_FINISHPAGE_LINK_LOCATION "http://niftools.sourceforge.net/"
 !insertmacro MUI_PAGE_FINISH
