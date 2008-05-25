@@ -790,3 +790,54 @@ public:
 
 REGISTER_SPELL( spRemoveBlocksById )
 
+
+
+class spCropToBranch : public Spell
+{
+public:
+	QString name() const { return "Crop To Branch"; }
+	QString page() const { return "Block"; }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index );
+	}
+
+	// construct list of block numbers of all blocks that are in the link's branch (including link itself)
+	QList<quint32> getBranch(NifModel * nif, quint32 link)
+	{
+		QList<quint32> branch;
+		// add the link itself
+		branch << link;
+		// add all its children, grandchildren, ...
+		foreach (quint32 child, nif->getChildLinks(link))
+			// check that child is not in branch to avoid infinite recursion
+			if (!branch.contains(child))
+				// it's not in there yet so add the child and grandchildren etc...
+				branch << getBranch(nif, child);
+		// done, so return result
+		return branch;
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index)
+	{
+		// construct list of block numbers of all blocks in this branch of index
+		QList<quint32> branch = getBranch(nif, nif->getBlockNumber(index));
+		//qWarning() << branch; // DEBUG
+		// remove non-branch blocks
+		int n = 0; // tracks the current block number in the new system (after some blocks have been removed already)
+		int m = 0; // tracks the block number in the old system i.e.  as they are numbered in the branch list
+		while ( n < nif->getBlockCount() )
+		{
+			if (!branch.contains(m))
+				nif->removeNiBlock(n);
+			else
+				n++;
+			m++;
+		}
+		// done
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spCropToBranch )
