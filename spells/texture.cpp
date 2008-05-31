@@ -329,6 +329,46 @@ public:
 
 REGISTER_SPELL( spAddGlowMap )
 
+class spAddBumpMap : public Spell
+{
+public:
+	QString name() const { return "Add Bump Map"; }
+	QString page() const { return "Texture"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( block, "Has Bump Map Texture" ) == 0 ); 
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		return addTexture( nif, index, "Bump Map Texture" );
+	}
+};
+
+REGISTER_SPELL( spAddBumpMap )
+
+class spAddDecal0Map : public Spell
+{
+public:
+	QString name() const { return "Add Decal 0 Map"; }
+	QString page() const { return "Texture"; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 0 Texture" ) == 0 ); 
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		return addTexture( nif, index, "Decal 0 Texture" );
+	}
+};
+
+REGISTER_SPELL( spAddDecal0Map )
+
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
 class spTextureTemplate : public Spell

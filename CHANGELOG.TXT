@@ -13,6 +13,8 @@ changes since 1.0.10:
    #1971132)
  * new "crop to branch" spell to remove everything in a nif file except for a
    single branch
+ * new "Add Bump Map" and "Add Decal 0 Map" spells for NiTexturingProperty
+   blocks (issue #1980709)
 
 changes since 1.0.9:
  * fixed bsa file compression bug for Morrowind
