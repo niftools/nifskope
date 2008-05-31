@@ -343,7 +343,16 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		return addTexture( nif, index, "Bump Map Texture" );
+		QModelIndex iSrcTex = addTexture( nif, index, "Bump Map Texture" );
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		nif->set<float>( block, "Bump Map Luma Scale", 1.0 );
+		nif->set<float>( block, "Bump Map Luma Offset", 0.0 );
+		QModelIndex iMatrix = nif->getIndex( block, "Bump Map Matrix" );
+		nif->set<float>( iMatrix, "m11", 1.0 );
+		nif->set<float>( iMatrix, "m12", 0.0 );
+		nif->set<float>( iMatrix, "m21", 0.0 );
+		nif->set<float>( iMatrix, "m22", 1.0 );
+		return iSrcTex;
 	}
 };
 
