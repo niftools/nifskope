@@ -527,32 +527,36 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width,
 	// load the pixels
 	f.seek(0);
 	QByteArray bytes = f.readAll();
-	Image * img = load_dds((unsigned char*)bytes.data(), bytes.size());
-	if (!img)
-		return(0);
-	// convert texture to OpenGL RGBA format
-	unsigned int w = img->width();
-	unsigned int h = img->height();
-	GLubyte * pixels = new GLubyte[w * h * 4];
-	Color32 * src = img->pixels();
-	GLubyte * dst = pixels;
-	//qWarning() << "flipV = " << flipV;
-	for ( quint32 y = 0; y < h; y++ )
-	{
-		for ( quint32 x = 0; x < w; x++ )
-		{
-			*dst++ = src->r;
-			*dst++ = src->g;
-			*dst++ = src->b;
-			*dst++ = src->a;
-			src++;
-		}
-	}
-	delete img;
-	// load the texture into OpenGL
 	GLuint m = 0;
-	glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
-	delete [] pixels;
+	while ( m < mipmaps )
+	{
+		// load face 0, mipmap m
+		Image * img = load_dds((unsigned char*)bytes.data(), bytes.size(), 0, m);
+		if (!img)
+			return(0);
+		// convert texture to OpenGL RGBA format
+		unsigned int w = img->width();
+		unsigned int h = img->height();
+		GLubyte * pixels = new GLubyte[w * h * 4];
+		Color32 * src = img->pixels();
+		GLubyte * dst = pixels;
+		//qWarning() << "flipV = " << flipV;
+		for ( quint32 y = 0; y < h; y++ )
+		{
+			for ( quint32 x = 0; x < w; x++ )
+			{
+				*dst++ = src->r;
+				*dst++ = src->g;
+				*dst++ = src->b;
+				*dst++ = src->a;
+				src++;
+			}
+		}
+		delete img;
+		// load the texture into OpenGL
+		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
+		delete [] pixels;
+	}
 	m = generateMipMaps( m );
 	return m;
 /*

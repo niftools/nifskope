@@ -15,6 +15,8 @@ changes since 1.0.10:
    single branch
  * new "Add Bump Map" and "Add Decal 0 Map" spells for NiTexturingProperty
    blocks (issue #1980709)
+ * load mipmaps from DDS file rather than recalculating them from the first
+   level texture (issue #1981056)
 
 changes since 1.0.9:
  * fixed bsa file compression bug for Morrowind

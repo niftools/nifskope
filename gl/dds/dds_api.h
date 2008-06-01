@@ -47,6 +47,6 @@ int is_a_dds(unsigned char *mem); /* use only first 8 bytes of mem */
 /*!
  * \return 0 if load failed, or pointer to Image object otherwise. The caller is responsible for destructing the image object (using delete).
  */
-Image * load_dds(unsigned char *mem, int size);
+Image * load_dds(unsigned char *mem, int size, int face = 0, int mipmap = 0);
 
 #endif /* __DDS_API_H */

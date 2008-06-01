@@ -45,7 +45,7 @@ int is_a_dds(unsigned char *mem) // note: use at most first 8 bytes
 	return(1);
 }
 
-Image * load_dds(unsigned char *mem, int size)
+Image * load_dds(unsigned char *mem, int size, int face, int mipmap)
 {
 	DirectDrawSurface dds(mem, size); /* reads header */
 	
@@ -66,6 +66,6 @@ Image * load_dds(unsigned char *mem, int size)
 	
 	/* load first face, first mipmap */
 	Image *img = new Image();	
-	dds.mipmap(img, 0, 0);
+	dds.mipmap(img, face, mipmap);
 	return img;
 }
