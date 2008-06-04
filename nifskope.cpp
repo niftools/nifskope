@@ -784,6 +784,11 @@ void NifSkope::save()
 		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
 	}
 	setEnabled( true );
+
+	// work around for what is apparently a Qt 4.4.0 bug: force toolbar actions to enable again 
+	aLineLoad->setEnabled( true );
+	aLineSave->setEnabled( true );
+	aCpFileName->setEnabled( true );
 }
 
 void NifSkope::copyFileNameLoadSave()
