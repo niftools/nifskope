@@ -353,7 +353,7 @@ NifSkope::NifSkope()
 	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" << "*.nifcache" << "*.texcache" );
 
 	// create the load portion of the toolbar
-	tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft ) );
+	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft ) );
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
 	
@@ -364,10 +364,10 @@ NifSkope::NifSkope()
 		this, SLOT( copyFileNameSaveLoad() ) );
 	connect( cpFilename, SIGNAL( rightTriggered() ),
 		this, SLOT( copyFileNameLoadSave() ) );
-	tool->addWidget( cpFilename );
+	aCpFileName = tool->addWidget( cpFilename );
 	
 	// create the save portion of the toolbar
-	tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight ) );
+	aLineSave = tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 	
@@ -730,6 +730,11 @@ void NifSkope::load()
 	ogl->center();
 	
 	setEnabled( true );
+	
+	// work around for what is apparently a Qt 4.4.0 bug: force toolbar actions to enable again 
+	aLineLoad->setEnabled( true );
+	aLineSave->setEnabled( true );
+	aCpFileName->setEnabled( true );
 }
 
 void ProgDlg::sltProgress( int x, int y )

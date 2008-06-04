@@ -200,6 +200,10 @@ private:
 	QAction * aShredder;
 	QAction * aQuit;
 	
+	QAction * aLineLoad;
+	QAction * aLineSave;
+	QAction * aCpFileName;
+	
 #ifdef FSENGINE
 	QAction * aResources;
 #endif
