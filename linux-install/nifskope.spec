@@ -73,11 +73,15 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Sat May 24 2008 amorilia - 1.0.11-1
+* Wed Jun 4 2008 amorilia - 1.0.11-1
 - added support for nif version 10.1.0.101 (used for instance by Oblivion furniture markers in some releases of the game)
 - fixed code to compile with Qt 4.4.0
 - creating new BSXFlags block sets name automatically to BSX (issue #1955870)
 - darker background for UV editor to ease editing of UV map (issue #1971002)
+- fixed bug which caused texture file path not to be stored between invokations of the texture file selector in certain circumstances (issue #1971132)
+- new crop to branch spell to remove everything in a nif file except for a single branch
+- new "Add Bump Map" and "Add Decal 0 Map" spells for NiTexturingProperty blocks (issue #1980709)
+- load mipmaps from DDS file rather than recalculating them from the first level texture (issue #1981056)
 * Wed Apr 9 2008 amorilia - 1.0.10-1
 - fixed bsa file compression bug for Morrowind
 - fixed havok block reorder sanitize spell (replaced with a global block reorder spell)
