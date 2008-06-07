@@ -370,7 +370,14 @@ NifSkope::NifSkope()
 	aLineSave = tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
-	
+
+#ifdef Q_OS_LINUX
+	// extra whitespace for linux
+	QWidget * extraspace = new QWidget();
+	extraspace->setFixedWidth(5);
+	tool->addWidget( extraspace );
+#endif
+
 	addToolBar( Qt::TopToolBarArea, tool );
 	// end Load & Save toolbar
 	

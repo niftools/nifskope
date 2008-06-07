@@ -231,6 +231,13 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	connect( Options::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
 	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
 
+#ifdef Q_OS_LINUX
+	// extra whitespace for linux
+	QWidget * extraspace = new QWidget();
+	extraspace->setFixedWidth(5);
+	tAnim->addWidget( extraspace );
+#endif
+
 	tView = new QToolBar( tr("View") );
 	tView->setObjectName( "ViewTool" );
 	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
@@ -244,6 +251,13 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tView->addSeparator();
 	tView->addAction( aViewFlip );
 	tView->addAction( aViewPerspective );
+
+#ifdef Q_OS_LINUX
+	// extra whitespace for linux
+	extraspace = new QWidget();
+	extraspace->setFixedWidth(5);
+	tView->addWidget( extraspace );
+#endif
 }
 
 GLView::~GLView()
