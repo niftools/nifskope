@@ -204,7 +204,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	tAnim->addAction( aAnimPlay );
 	
-	FloatSlider * sldTime = new FloatSlider( Qt::Horizontal, true, true );
+    sldTime = new FloatSlider( Qt::Horizontal, true, true );
 	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
 	connect( this, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
 	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );

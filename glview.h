@@ -41,11 +41,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QQueue>
 
 #include "nifmodel.h"
+#include "widgets/floatedit.h"
+#include "widgets/floatslider.h"
 
 class Scene;
 
 class QActionGroup;
-class QComboBox;
+#include <QComboBox>
+// class QComboBox;
 class QMenu;
 class QSettings;
 class QToolBar;
@@ -104,6 +107,7 @@ public:
 	
 	QToolBar * tAnim;
 	QComboBox * animGroups;
+    FloatSlider * sldTime;
 
 	QToolBar * tView;
 	

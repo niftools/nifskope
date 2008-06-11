@@ -742,6 +742,8 @@ void NifSkope::load()
 	aLineLoad->setEnabled( true );
 	aLineSave->setEnabled( true );
 	aCpFileName->setEnabled( true );
+    ogl->animGroups->setEnabled( true );
+    ogl->sldTime->setEnabled( true );
 }
 
 void ProgDlg::sltProgress( int x, int y )
@@ -796,6 +798,8 @@ void NifSkope::save()
 	aLineLoad->setEnabled( true );
 	aLineSave->setEnabled( true );
 	aCpFileName->setEnabled( true );
+    ogl->animGroups->setEnabled( true );
+    ogl->sldTime->setEnabled( true );
 }
 
 void NifSkope::copyFileNameLoadSave()
