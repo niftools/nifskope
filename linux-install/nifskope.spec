@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.11
+Version:        1.0.12
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,6 +73,8 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Thu Jun 12 2008 amorilia - 1.0.12-1
+- fixed animation slider and animation group selector being grayed out
 * Wed Jun 4 2008 amorilia - 1.0.11-1
 - added support for nif version 10.1.0.101 (used for instance by Oblivion furniture markers in some releases of the game)
 - fixed code to compile with Qt 4.4.0

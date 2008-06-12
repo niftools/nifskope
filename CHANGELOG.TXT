@@ -1,6 +1,9 @@
  == CHANGELOG ==
 
-This is version 1.0.11 of NifSkope.
+This is version 1.0.12 of NifSkope.
+
+changes since 1.0.11:
+ * fixed animation slider and animation group selector being grayed out
 
 changes since 1.0.10:
  * added support for nif version 10.1.0.101 (used for instance by Oblivion
