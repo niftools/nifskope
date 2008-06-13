@@ -152,7 +152,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	if ( file.isEmpty() )
 		return QString();
 
-#ifndef WIN32
+#ifndef Q_OS_WIN
 	/* convert nif path backslash into forward slash */
 	/* also check for both original name and lower case name */
 	QString filename_orig = QString(file).replace( "\\", "/" );;
@@ -166,7 +166,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	
 	QStringList extensions;
 	extensions << ".tga" << ".dds" << ".bmp";
-#ifndef WIN32
+#ifndef Q_OS_WIN
 	extensions << ".TGA" << ".DDS" << ".BMP";
 #endif
 	bool replaceExt = false;
@@ -179,7 +179,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 				extensions.removeAll( ext );
 				extensions.prepend( ext );
 				filename = filename.left( filename.length() - ext.length() );
-#ifndef WIN32
+#ifndef Q_OS_WIN
 				filename_orig = filename_orig.left( filename_orig.length() - ext.length() );
 #endif
 				replaceExt = true;
@@ -194,7 +194,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	{
 		if ( replaceExt ) {
 			filename += ext;
-#ifndef WIN32
+#ifndef Q_OS_WIN
 			filename_orig += ext;
 #endif
 		}
@@ -206,12 +206,12 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			}
 			
 			dir.setPath( folder );
-#ifndef WIN32
+#ifndef Q_OS_WIN
 			//qWarning() << folder << filename;
 #endif
 			if ( dir.exists( filename ) )
 				return dir.filePath( filename );
-#ifndef WIN32
+#ifndef Q_OS_WIN
 			//qWarning() << folder << filename_orig;
 			if ( dir.exists( filename_orig ) )
 				return dir.filePath( filename_orig );
@@ -220,7 +220,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 		
 		if ( replaceExt ) {
 			filename = filename.left( filename.length() - ext.length() );
-#ifndef WIN32
+#ifndef Q_OS_WIN
 			filename_orig = filename_orig.left( filename_orig.length() - ext.length() );
 #endif
 		} else
