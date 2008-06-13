@@ -209,12 +209,28 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 #ifndef Q_OS_WIN
 			//qWarning() << folder << filename;
 #endif
-			if ( dir.exists( filename ) )
-				return dir.filePath( filename );
+			if ( dir.exists( filename ) ) {
+				filename = dir.filePath( filename );
+				// fix separators
+#ifdef Q_OS_WIN
+				filename.replace("/", "\\");
+#else
+				filename.replace("\\", "/");
+#endif
+				return filename;
+			}
 #ifndef Q_OS_WIN
 			//qWarning() << folder << filename_orig;
-			if ( dir.exists( filename_orig ) )
-				return dir.filePath( filename_orig );
+			if ( dir.exists( filename_orig ) ) {
+				filename = dir.filePath( filename_orig );
+				// fix separators
+#ifdef Q_OS_WIN
+				filename.replace("/", "\\");
+#else
+				filename.replace("\\", "/");
+#endif
+				return filename;
+			}
 #endif
 		}
 		
@@ -227,6 +243,13 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			break;
 	}
 	
+	// fix separators
+#ifdef Q_OS_WIN
+	filename.replace("/", "\\");
+#else
+	filename.replace("\\", "/");
+#endif
+
 	if ( replaceExt )
 		return filename + extensions.value( 0 );
 	else
@@ -309,7 +332,7 @@ int TexCache::bind( const QString & fname )
 	
 	if ( ! tx->id || tx->reload )
 	{
-		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() )
+		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() && (!watcher->files().contains(tx->filepath)) )
 			watcher->addPath( tx->filepath );
 		tx->load();
 	}
