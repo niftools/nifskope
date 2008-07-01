@@ -159,8 +159,10 @@ KfaAssocNoBackup:
 
   ; write out the file association details for NetImmerseFile
   WriteRegStr HKCR ".nif" "" "NetImmerseFile"
+  WriteRegStr HKCR ".nifcache" "" "NetImmerseFile"
   WriteRegStr HKCR ".kf" "" "NetImmerseFile"
   WriteRegStr HKCR ".kfa" "" "NetImmerseFile"
+  WriteRegStr HKCR ".kfm" "" "NetImmerseFile"
   ReadRegStr $0 HKCR "NetImmerseFile" ""
   StrCmp $0 "" 0 NifAssocSkip ; if our association is already defined, skip it
   
