@@ -1,6 +1,11 @@
  == CHANGELOG ==
 
-This is version 1.0.12 of NifSkope.
+This is version 1.0.13 of NifSkope.
+
+changes since 1.0.12:
+ * workaround for Qt 4.4.0 annoyance: QFileSystemWatcher no longer barfs
+ * installer also registers kfm and nifcache extensions
+ * remove empty modifiers from NiParticleSystem when sanitizing
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out

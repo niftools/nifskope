@@ -67,6 +67,25 @@ public:
 					nif->setLinkArray( iProperties, links );
 				}
 			}
+
+			// remove empty modifier links (NiParticleSystem crashes Oblivion for those)
+			QModelIndex iNumModifiers = nif->getIndex( iBlock, "Num Modifiers" );
+			QModelIndex iModifiers = nif->getIndex( iBlock, "Modifiers" );
+			if ( iNumModifiers.isValid() && iModifiers.isValid() )
+			{
+				QVector<qint32> links;
+				for ( int r = 0; r < nif->rowCount( iModifiers ); r++ )
+				{
+					qint32 l = nif->getLink( iModifiers.child( r, 0 ) );
+					if ( l >= 0 ) links.append( l );
+				}
+				if ( links.count() < nif->rowCount( iModifiers ) )
+				{
+					nif->set<int>( iNumModifiers, links.count() );
+					nif->updateArray( iModifiers );
+					nif->setLinkArray( iModifiers, links );
+				}
+			}
 		}
 		return QModelIndex();
 	}
