@@ -634,6 +634,7 @@ void NifSkope::setListMode()
 	{
 		if ( list->model() != nif )
 		{
+			// switch to list view
 			QHeaderView * head = list->header();
 			int s0 = head->sectionSize( head->logicalIndex( 0 ) );
 			int s1 = head->sectionSize( head->logicalIndex( 1 ) );
@@ -641,7 +642,9 @@ void NifSkope::setListMode()
 			list->setItemsExpandable( false );
 			list->setRootIsDecorated( false );
 			list->setCurrentIndex( proxy->mapTo( idx ) );
+			list->setColumnHidden( NifModel::NameCol, false );
 			list->setColumnHidden( NifModel::TypeCol, true );
+			list->setColumnHidden( NifModel::ValueCol, false );
 			list->setColumnHidden( NifModel::ArgCol, true );
 			list->setColumnHidden( NifModel::Arr1Col, true );
 			list->setColumnHidden( NifModel::Arr2Col, true );
@@ -656,6 +659,7 @@ void NifSkope::setListMode()
 	{
 		if ( list->model() != proxy )
 		{
+			// switch to hierarchy view
 			QHeaderView * head = list->header();
 			int s0 = head->sectionSize( head->logicalIndex( 0 ) );
 			int s1 = head->sectionSize( head->logicalIndex( 1 ) );
@@ -664,6 +668,9 @@ void NifSkope::setListMode()
 			list->setRootIsDecorated( true );
 			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
 			list->setCurrentIndex( pidx );
+			// proxy model has only two columns (see columnCount in nifproxy.h)
+			list->setColumnHidden( 0, false );
+			list->setColumnHidden( 1, false );
 			head->resizeSection( 0, s0 );
 			head->resizeSection( 1, s1 );
 		}
