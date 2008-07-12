@@ -73,10 +73,11 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Thu Jul 10 2008 amorilia - 1.0.13-1
+* Sat Jul 12 2008 amorilia - 1.0.13-1
 - workaround for Qt 4.4.0 annoyance: QFileSystemWatcher no longer barfs
 - installer also registers kfm and nifcache extensions
 - remove empty modifiers from NiParticleSystem when sanitizing
+- fixed value column in hierarchy view when switching from list view
 * Thu Jun 12 2008 amorilia - 1.0.12-1
 - fixed animation slider and animation group selector being grayed out
 * Wed Jun 4 2008 amorilia - 1.0.11-1
