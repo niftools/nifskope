@@ -194,6 +194,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File Copyright.txt
   File nif_file.ico
   File ..\style.qss
+  File ..\..\contrib\niflib\NifMopp\NifMopp.dll
   
   ; Install shaders
   SetOutPath $INSTDIR\shaders
