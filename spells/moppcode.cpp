@@ -1,8 +1,6 @@
-#if defined(_WIN32) && defined(_MSC_VER) 
+#if defined(_WIN32) || defined(WIN32)
 
 // This code is only intended to be run with Win32 platform.
-//   It has only been tested using Visual Studio and will likely 
-//   need to be to fixed to compile with ming or other compilers
 
 #include "../spellbook.h"
 
@@ -173,7 +171,11 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
-		return nif && nif->checkVersion( 0x14000004, 0x14000005 ) && ! idx.isValid();
+    	if ( TheHavokCode.Initialize() )
+    	{
+            return nif && nif->checkVersion( 0x14000004, 0x14000005 ) && ! idx.isValid();
+        }
+        return false;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & )
