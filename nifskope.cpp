@@ -632,8 +632,8 @@ void NifSkope::setListMode()
 	QAction * a = gListMode->checkedAction();
 	if ( !a || a == aList )
 	{
-		if ( list->model() != nif )
-		{
+		//if ( list->model() != nif )
+		//{
 			// switch to list view
 			QHeaderView * head = list->header();
 			int s0 = head->sectionSize( head->logicalIndex( 0 ) );
@@ -653,12 +653,12 @@ void NifSkope::setListMode()
 			list->setColumnHidden( NifModel::Ver2Col, true );
 			head->resizeSection( 0, s0 );
 			head->resizeSection( 1, s1 );
-		}
+		//}
 	}
 	else
 	{
-		if ( list->model() != proxy )
-		{
+		//if ( list->model() != proxy )
+		//{
 			// switch to hierarchy view
 			QHeaderView * head = list->header();
 			int s0 = head->sectionSize( head->logicalIndex( 0 ) );
@@ -673,7 +673,7 @@ void NifSkope::setListMode()
 			list->setColumnHidden( 1, false );
 			head->resizeSection( 0, s0 );
 			head->resizeSection( 1, s1 );
-		}
+		//}
 	}
 }
 
