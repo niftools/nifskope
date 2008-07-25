@@ -16,6 +16,7 @@ VERSION=1.0.13
 FILES="NifSkope.pro \
     README.TXT \
     CHANGELOG.TXT \
+    LICENSE.TXT \
     style.qss \
     nifskope.qrc \
     resources/*.png \

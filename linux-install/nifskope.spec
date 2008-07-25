@@ -57,7 +57,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc README.TXT CHANGELOG.TXT
+%doc README.TXT CHANGELOG.TXT LICENSE.TXT
 %{_bindir}/nifskope
 %{_datadir}/pixmaps/nifskope.png
 %{_datadir}/nifskope/nif.xml
@@ -73,7 +73,7 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Tue Jul 15 2008 amorilia - 1.0.13-1
+* Fri Jul 25 2008 amorilia - 1.0.13-1
 - workaround for Qt 4.4.0 annoyance: QFileSystemWatcher no longer barfs
 - installer also registers kfm and nifcache extensions
 - remove empty modifiers from NiParticleSystem when sanitizing

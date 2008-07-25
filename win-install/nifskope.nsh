@@ -182,6 +182,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   Delete $INSTDIR\QtNetwork4.dll
   Delete $INSTDIR\QtOpenGL4.dll
   Delete $INSTDIR\QtXml4.dll
+  Delete $INSTDIR\Copyright.txt
   
   ; Install NifSkope
   SetOutPath $INSTDIR
