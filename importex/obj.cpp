@@ -156,6 +156,16 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
 			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
+		else if ( nif->isNiBlock( iProp, "NiSkinInstance" ) )
+		{
+			QMessageBox::warning(
+				0,
+				"OBJ Export Warning",
+				QString("The shape ") + name + QString(" is skinned, but the "
+				"obj format does not support skinning. This mesh will be "
+				"exported statically in its bind pose, without skin weights.")
+			);
+		}
 	}
 	
 	//if ( ! texfn.isEmpty() )

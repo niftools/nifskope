@@ -80,6 +80,7 @@ rm -rf $RPM_BUILD_ROOT
 - fixed value column in hierarchy view when switching from list view
 - new mopp code generator spell (windows only), using havok library
 - some small nif.xml updates
+- warn user when exporting skinned mesh as .OBJ that skin weights will not be exported
 * Thu Jun 12 2008 amorilia - 1.0.12-1
 - fixed animation slider and animation group selector being grayed out
 * Wed Jun 4 2008 amorilia - 1.0.11-1
