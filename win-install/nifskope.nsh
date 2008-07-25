@@ -45,7 +45,7 @@ Name "NifSkope ${VERSION}"
 !define MUI_WELCOMEPAGE_TEXT  "This wizard will guide you through the installation of NifSkope ${VERSION}.\r\n\r\nIt is recommended that you close all other applications.\r\n\r\nNote to Win2k/XP users: you require administrator privileges to install NifSkope successfully."
 !insertmacro MUI_PAGE_WELCOME
 
-!insertmacro MUI_PAGE_LICENSE Copyright.txt
+!insertmacro MUI_PAGE_LICENSE ..\LICENSE.TXT
 
 !define MUI_DIRECTORYPAGE_TEXT_TOP "Use the field below to specify the folder where you want NifSkope to be copied to. To specify a different folder, type a new name or use the Browse button to select an existing folder."
 !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "NifSkope Folder"
@@ -191,7 +191,6 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\LICENSE.TXT
   File ..\..\docsys\nif.xml
   File ..\..\docsys\kfm.xml
-  File Copyright.txt
   File nif_file.ico
   File ..\style.qss
   File ..\..\contrib\niflib\NifMopp\NifMopp.dll
@@ -217,7 +216,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Changelog.lnk" "$INSTDIR\CHANGELOG.TXT"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Support.lnk" "http://www.niftools.org/forum/viewforum.php?f=24"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Development.lnk" "http://www.niftools.org/forum/viewforum.php?f=4"
-  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Copyright.lnk" "$INSTDIR\Copyright.txt"
+  CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Copyright.lnk" "$INSTDIR\LICENSE.TXT"
   CreateShortCut "$SMPROGRAMS\NifTools\NifSkope\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
   ; Write the installation path into the registry

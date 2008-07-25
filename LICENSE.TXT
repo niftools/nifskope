@@ -1,6 +1,6 @@
-BSD License
+NIFSKOPE LICENSE
 
-Copyright (c) 2005-2008, NIF File Format Library and Tools
+Copyright (c) 2005-2008, NIF File Format Library and Tools.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,7 +27,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-NOTICE:
-  Parts of NifSkope (ie. included libraries) might be subject to
-  other licenses. This license only applies to original NifSkope
-  sources.
+CREDITS
+
+NifSkope uses Havok(R) for the generation of mopp code.
+(C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). 
+All Rights Reserved.  See www.havok.com for details.
+
+
+NOTICE
+
+Parts of NifSkope (i.e. included libraries) might be subject to
+other licenses. This license only applies to original NifSkope
+sources.
