@@ -238,7 +238,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & iShape )
 	{
-		if ( nif->isNiBlock( iShape, "NiTriShape" ) )
+		if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( iShape, "NiTriStrips" ) )
 		{
 			QModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 			if ( iSkinInst.isValid() )
@@ -266,9 +266,20 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool make_strips, bool pad = false )
 	{
 		QPersistentModelIndex iShape = iBlock;
+		QString iShapeType = "";
+		if ( nif->isNiBlock( iShape, "NiTriShape" ) ) {
+			iShapeType = "NiTriShape";
+		} else if ( nif->isNiBlock( iShape, "NiTriStrips" ) ) {
+			iShapeType = "NiTriStrips";
+		}
 		try
 		{
-			QPersistentModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriShapeData" );
+			QPersistentModelIndex iData;
+			if ( iShapeType == "NiTriShape" ) {
+				iData = nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriShapeData" );
+			} else if ( iShapeType == "NiTriStrips" ) {
+				iData = nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriStripsData" );
+			}
 			QPersistentModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 			QPersistentModelIndex iSkinData = nif->getBlock( nif->getLink( iSkinInst, "Data" ), "NiSkinData" );
 			QModelIndex iSkinPart = nif->getBlock( nif->getLink( iSkinInst, "Skin Partition" ), "NiSkinPartition" );
@@ -366,8 +377,25 @@ public:
 			maxBones = maxBonesPerVertex;
 			
 			// reduces bone weights so that the triangles fit into the partitions
-			
-			QList<Triangle> triangles = nif->getArray<Triangle>( iData, "Triangles" ).toList();
+
+			QList<Triangle> triangles;
+			if ( iShapeType == "NiTriShape" ) {
+				triangles = nif->getArray<Triangle>( iData, "Triangles" ).toList();
+			} else if ( iShapeType == "NiTriStrips" ) {
+				// triangulate first (code copied from strippify.cpp)
+				QList< QVector<quint16> > strips;
+				QModelIndex iPoints = nif->getIndex( iData, "Points" );
+				for ( int s = 0; s < nif->rowCount( iPoints ); s++ )
+				{
+					QVector<quint16> strip;
+					QModelIndex iStrip = iPoints.child( s, 0 );
+					for ( int p = 0; p < nif->rowCount( iStrip ); p++ ) {
+						strip.append( nif->get<int>( iStrip.child( p, 0 ) ) );
+					}
+					strips.append( strip );
+				}
+				triangles = triangulate(strips).toList();
+			}
 			
 			QMap< int, int > match;
 			bool doMatch = true;
