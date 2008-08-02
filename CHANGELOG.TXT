@@ -12,6 +12,8 @@ changes since 1.0.12:
  * warn user when exporting skinned mesh as .OBJ that skin weights will not be
    exported
  * updated skin partition spell to work also on NiTriStrips
+ * when inserting a new NiStencilProperty block, its draw mode is set to
+   3 (DRAW_BOTH) by default (issue #2033534)
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out
