@@ -222,9 +222,9 @@ void NifModel::updateHeader()
 	NifItem * header = getHeaderItem();
 	
 	set<int>( header, "Num Blocks", getBlockCount() );
-	
 	NifItem * idxBlockTypes = getItem( header, "Block Types" );
 	NifItem * idxBlockTypeIndices = getItem( header, "Block Type Index" );
+	NifItem * idxBlockSize = getItem( header, "Block Size" );
 	if ( idxBlockTypes && idxBlockTypeIndices )
 	{
 		QStringList blocktypes;
@@ -236,7 +236,7 @@ void NifModel::updateHeader()
 			
 			if ( ! blocktypes.contains( block->name() ) )
 				blocktypes.append( block->name() );
-			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
+			blocktypeindices.append( blocktypes.indexOf( block->name() ) );				
 		}
 		
 		set<int>( header, "Num Block Types", blocktypes.count() );
@@ -246,12 +246,19 @@ void NifModel::updateHeader()
       //   for these two arrays will not work.
 		updateArrayItem( idxBlockTypes, false );
 		updateArrayItem( idxBlockTypeIndices, true );
+		updateArrayItem( idxBlockSize, false );
 		
 		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
 			set<QString>( idxBlockTypes->child( r ), blocktypes.value( r ) );
 		
 		for ( int r = 0; r < idxBlockTypeIndices->childCount(); r++ )
 			set<int>( idxBlockTypeIndices->child( r ), blocktypeindices.value( r ) );
+
+		// for version 20.2.0.? and above the block size is stored in the header
+		if (version >= 0x14020000 && idxBlockSize )
+			for ( int r = 0; r < idxBlockSize->childCount(); r++ )
+				set<quint32>( idxBlockSize->child( r ), blockSize( getBlockItem( r ) ) );
+
 	}
 }
 
@@ -1656,6 +1663,45 @@ int NifModel::fileOffset( const QModelIndex & index ) const
 		}
 	}
 	return -1;
+}
+
+int NifModel::blockSize( const QModelIndex & index ) const
+{
+	NifSStream stream( this );
+	return blockSize( static_cast<NifItem *>( index.internalPointer() ), stream );
+}
+
+int NifModel::blockSize( NifItem * parent ) const
+{
+	NifSStream stream( this );
+	return blockSize( parent, stream );
+}
+
+int NifModel::blockSize( NifItem * parent, NifSStream& stream ) const
+{
+	int size = 0;
+	if ( ! parent ) 
+		return 0;
+
+	for ( int row = 0; row < parent->childCount(); row++ )
+	{
+		NifItem * child = parent->child( row );
+		if ( evalCondition( child ) )
+		{
+			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
+			{
+				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
+					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+
+				size += blockSize( child, stream );
+			}
+			else
+			{
+				size += stream.size( child->value() );
+			}
+		}
+	}
+	return size;
 }
 
 bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
