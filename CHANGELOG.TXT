@@ -3,7 +3,7 @@
 This is version 1.0.13 of NifSkope.
 
 changes since 1.0.12:
- * workaround for Qt 4.4.0 annoyance: QFileSystemWatcher no longer barfs
+ * workaround for Qt annoyance: QFileSystemWatcher no longer barfs
  * installer also registers kfm and nifcache extensions
  * remove empty modifiers from NiParticleSystem when sanitizing
  * fixed value column in hierarchy view when switching from list view
@@ -14,6 +14,8 @@ changes since 1.0.12:
  * updated skin partition spell to work also on NiTriStrips
  * when inserting a new NiStencilProperty block, its draw mode is set to
    3 (DRAW_BOTH) by default (issue #2033534)
+ * update block size when fixing headers on v 20.2 and later
+ * updated for Qt 4.4.1
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out
