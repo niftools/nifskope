@@ -236,7 +236,7 @@ void NifModel::updateHeader()
 			
 			if ( ! blocktypes.contains( block->name() ) )
 				blocktypes.append( block->name() );
-			blocktypeindices.append( blocktypes.indexOf( block->name() ) );				
+			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
 		}
 		
 		set<int>( header, "Num Block Types", blocktypes.count() );
@@ -246,7 +246,8 @@ void NifModel::updateHeader()
       //   for these two arrays will not work.
 		updateArrayItem( idxBlockTypes, false );
 		updateArrayItem( idxBlockTypeIndices, true );
-		updateArrayItem( idxBlockSize, false );
+		if (version >= 0x14020000 && idxBlockSize )
+			updateArrayItem( idxBlockSize, false );
 		
 		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
 			set<QString>( idxBlockTypes->child( r ), blocktypes.value( r ) );
@@ -258,7 +259,6 @@ void NifModel::updateHeader()
 		if (version >= 0x14020000 && idxBlockSize )
 			for ( int r = 0; r < idxBlockSize->childCount(); r++ )
 				set<quint32>( idxBlockSize->child( r ), blockSize( getBlockItem( r ) ) );
-
 	}
 }
 
