@@ -165,9 +165,9 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 		filename.remove( 0, 1 );
 	
 	QStringList extensions;
-	extensions << ".tga" << ".dds" << ".bmp";
+	extensions << ".tga" << ".dds" << ".bmp" << ".nif";
 #ifndef Q_OS_WIN
-	extensions << ".TGA" << ".DDS" << ".BMP";
+	extensions << ".TGA" << ".DDS" << ".BMP" << ".NIF";
 #endif
 	bool replaceExt = false;
 	if ( Options::textureAlternatives() )
@@ -198,8 +198,9 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			filename_orig += ext;
 #endif
 		}
-		
-		foreach ( QString folder, Options::textureFolders() )
+		QStringList folders = Options::textureFolders();
+		folders.append("./"); // always search local directory
+		foreach ( QString folder, folders )
 		{
 			if( folder.startsWith( "./" ) || folder.startsWith( ".\\" ) ) {
 				folder = nifdir + "/" + folder;
@@ -342,6 +343,39 @@ int TexCache::bind( const QString & fname )
 	return tx->mipmaps;
 }
 
+int TexCache::bind( const QModelIndex & iSource )
+{
+	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
+	if ( nif && iSource.isValid() ) {
+		if ( nif->get<byte>( iSource, "Use External" ) == 0 ){
+			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			if (iData.isValid()) {
+				Tex * tx = embedTextures.value( iData );
+				if (tx == NULL){
+					tx = new Tex();
+					tx->id = 0;
+					tx->reload = false;
+					try
+					{
+						glGenTextures( 1, &tx->id );
+						glBindTexture( GL_TEXTURE_2D, tx->id );
+						embedTextures.insert( iData, tx );
+						texLoad(iData, tx->format, tx->width, tx->height, tx->mipmaps);
+					} catch ( QString e ) {
+						tx->status = e;
+					}
+				}
+				glBindTexture( GL_TEXTURE_2D, tx->id );
+				return tx->mipmaps;
+			}
+		} else {
+			return bind( nif->get<QString>( iSource, "File Name" ) );
+		}
+	}
+	return 0;
+}
+
+
 void TexCache::Tex::load()
 {
 	if ( ! id )
@@ -372,6 +406,14 @@ void TexCache::flush()
 	}
 	qDeleteAll( textures );
 	textures.clear();
+
+	foreach ( Tex * tx, embedTextures )
+	{
+		if ( tx->id )
+			glDeleteTextures( 1, &tx->id );
+	}
+	qDeleteAll( embedTextures );
+	embedTextures.clear();
 	
 	if( !watcher->files().empty() ) {
 		watcher->removePaths( watcher->files() );
@@ -381,8 +423,13 @@ void TexCache::flush()
 bool TexturingProperty::bind( int id, const QString & fname )
 {
 	GLuint mipmaps = 0;
-	if ( id >= 0 && id <= 7 && ( mipmaps = scene->bindTexture( fname.isEmpty() ? fileName( id ) : fname ) ) )
+	if ( id >= 0 && id <= 7 )
 	{
+		if ( !fname.isEmpty() )
+			mipmaps = scene->bindTexture(  fname );
+		else 
+			mipmaps = scene->bindTexture( textures[ id ].iSource );
+		
 		if ( max_anisotropy > 0 )
 		{
 			if ( Options::antialias() )

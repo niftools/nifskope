@@ -49,6 +49,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
 
+//! A function for loading textures.
+/*!
+* Loads a texture pointed to by model index.
+* Returns true on success, and throws a QString otherwise.
+* The parameters format, width, height and mipmaps will be filled with information about
+* the loaded texture.
+*
+* \param iPixelData Reference to pixel data block
+* \param format Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
+* \param width Contains the texture width on successful load.
+* \param height Contains the texture height on successful load.
+* \param mipmaps Contains the number of mipmaps on successful load.
+* \return true if the load was successful, false otherwise.
+*/
+extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
+
 //! A function which checks whether the given file can be loaded.
 /*!
  * The function checks whether the file exists, is readable, and whether its extension

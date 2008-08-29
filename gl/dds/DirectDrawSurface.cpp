@@ -369,6 +369,7 @@ DDSHeader::DDSHeader()
 	this->caps.caps3 = 0;
 	this->caps.caps4 = 0;
 	this->notused = 0;
+	this->offset = 128;
 
 	this->header10.dxgiFormat = DXGI_FORMAT_UNKNOWN;
 	this->header10.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
@@ -525,14 +526,25 @@ void DDSHeader::setNormalFlag(bool b)
 	else this->pf.flags &= ~DDPF_NORMAL;
 }
 
+void DDSHeader::setOffset(uint size)
+{
+	this->offset = size;
+}
+
 bool DDSHeader::hasDX10Header() const
 {
 	return this->pf.flags == 0;
 }
 
-DirectDrawSurface::DirectDrawSurface(unsigned char *mem, uint size) : stream(mem, size), header()
+DirectDrawSurface::DirectDrawSurface(const unsigned char *mem, uint size) : stream(mem, size), header()
 {
 	mem_read(stream, header);
+	header.offset = 128;
+}
+
+DirectDrawSurface::DirectDrawSurface(const DDSHeader &ddsheader, const unsigned char *mem, uint size)
+	: stream(mem, size), header(ddsheader)
+{
 }
 
 DirectDrawSurface::~DirectDrawSurface()
@@ -940,7 +952,7 @@ uint DirectDrawSurface::faceSize() const
 
 uint DirectDrawSurface::offset(const uint face, const uint mipmap)
 {
-	uint size = 128; //sizeof(DDSHeader);
+	uint size = header.offset; //sizeof(DDSHeader);
 
 	if (header.hasDX10Header())
 	{

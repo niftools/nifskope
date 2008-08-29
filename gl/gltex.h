@@ -69,6 +69,7 @@ public:
 	~TexCache();
 	
 	int bind( const QString & fname );
+	int bind( const QModelIndex& iSource );
 	
 	static QString find( const QString & file, const QString & nifFolder );
 	static QString stripPath( const QString & file, const QString & nifFolder );
@@ -87,6 +88,7 @@ protected slots:
 	
 protected:
 	QHash<QString,Tex*>	textures;
+	QHash<QModelIndex,Tex*>	embedTextures;
 	QFileSystemWatcher * watcher;
 	
 	QString nifFolder;

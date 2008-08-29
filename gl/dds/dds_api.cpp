@@ -69,3 +69,47 @@ Image * load_dds(unsigned char *mem, int size, int face, int mipmap)
 	dds.mipmap(img, face, mipmap);
 	return img;
 }
+
+Image * load_dds(const unsigned char *mem, int size, int face, int mipmap, DDSFormat* format)
+{
+	DDSHeader hdr;
+	hdr.setFourCC((unsigned char)(format->ddsPixelFormat.dwFourCC>>0), 
+		(unsigned char)(format->ddsPixelFormat.dwFourCC>>8), 
+		(unsigned char)(format->ddsPixelFormat.dwFourCC>>16), 
+		(unsigned char)(format->ddsPixelFormat.dwFourCC>>24) );
+	hdr.setHeight(format->dwHeight);
+	hdr.setWidth(format->dwWidth);
+	hdr.setTexture2D();
+	hdr.setLinearSize( format->dwLinearSize );
+	hdr.setMipmapCount(format->dwMipMapCount);
+	hdr.setOffset(format->dwSize);
+
+	//hdr.setPixelFormat(format->ddsPixelFormat.dwBPP, 
+	//	format->ddsPixelFormat.dwRMask, 
+	//	format->ddsPixelFormat.dwGMask, 
+	//	format->ddsPixelFormat.dwBMask, 
+	//	format->ddsPixelFormat.dwAMask);
+	//hdr.setDepth();
+
+	DirectDrawSurface dds(hdr, mem, size); /* reads header */
+
+	/* check if DDS is valid and supported */
+	if (!dds.isValid()) {
+		printf("DDS: not valid; header follows\n");
+		dds.printInfo();
+		return(0);
+	}
+	if (!dds.isSupported()) {
+		printf("DDS: format not supported\n");
+		return(0);
+	}
+	if ((dds.width() > 65535) || (dds.height() > 65535)) {
+		printf("DDS: dimensions too large\n");
+		return(0);
+	}
+
+	/* load first face, first mipmap */
+	Image *img = new Image();	
+	dds.mipmap(img, face, mipmap);
+	return img;
+}

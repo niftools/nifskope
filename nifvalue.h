@@ -352,6 +352,13 @@ template <> inline Quat NifValue::get() const
 	else
 		return Quat();
 }
+template <> inline ByteMatrix* NifValue::get() const
+{
+	if ( isByteMatrix() )
+		return static_cast<ByteMatrix*>( val.data );
+	else
+		return NULL;
+}
 
 template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }

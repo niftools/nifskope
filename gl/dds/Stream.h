@@ -37,10 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct Stream
 {
-	unsigned char *mem; // location in memory
+	const unsigned char *mem; // location in memory
 	unsigned int size;  // size
 	unsigned int pos;   // current position
-	Stream(unsigned char *m, unsigned int s) : mem(m), size(s), pos(0) {};
+	Stream(const unsigned char *m, unsigned int s) : mem(m), size(s), pos(0) {};
 	unsigned int seek(unsigned int p);
 };
 

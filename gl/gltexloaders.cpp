@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <GL/glext.h>
 #include "dds/dds_api.h"
+#include "dds/DirectDrawSurface.h"
+#include "nifmodel.h"
 
 extern PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D;
 
@@ -313,38 +315,6 @@ int texLoadPal( QIODevice & f, int width, int height, int num_mipmaps, int bpp, 
 	return m;
 }
 
-#define DDSD_MIPMAPCOUNT           0x00020000
-#define DDPF_FOURCC                0x00000004
-
-// DDS format structure
-struct DDSFormat {
-    quint32 dwSize;
-    quint32 dwFlags;
-    quint32 dwHeight;
-    quint32 dwWidth;
-    quint32 dwLinearSize;
-    quint32 dummy1;
-    quint32 dwMipMapCount;
-    quint32 dummy2[11];
-    struct {
-	quint32 dwSize;
-	quint32 dwFlags;
-	quint32 dwFourCC;
-	quint32 dwBPP;
-	quint32 dwRMask;
-	quint32 dwGMask;
-	quint32 dwBMask;
-	quint32 dwAMask;
-    } ddsPixelFormat;
-};
-
-// compressed texture pixel formats
-#define FOURCC_DXT1  0x31545844
-#define FOURCC_DXT2  0x32545844
-#define FOURCC_DXT3  0x33545844
-#define FOURCC_DXT4  0x34545844
-#define FOURCC_DXT5  0x35545844
-
 // thanks nvidia for providing the source code to flip dxt images
 
 typedef struct
@@ -516,7 +486,7 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 }
 
 
-GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int blockSize, quint32 width, quint32 height, quint32 mipmaps, bool flipV = false )
+GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
 {
 /*
 #ifdef WIN32
@@ -662,6 +632,43 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 			&ddsHeader.ddsPixelFormat.dwRMask );
 	}
 }
+
+GLuint texLoadDXT( DDSFormat &hdr, const byte *pixels, uint size )
+{
+	int m = 0;
+	while ( m < (int)hdr.dwMipMapCount )
+	{
+		// load face 0, mipmap m
+		Image * img = load_dds(pixels, (int)size, 0, m, &hdr);
+		if (!img)
+			return(0);
+		// convert texture to OpenGL RGBA format
+		unsigned int w = img->width();
+		unsigned int h = img->height();
+		GLubyte * pixels = new GLubyte[w * h * 4];
+		Color32 * src = img->pixels();
+		GLubyte * dst = pixels;
+		//qWarning() << "flipV = " << flipV;
+		for ( quint32 y = 0; y < h; y++ )
+		{
+			for ( quint32 x = 0; x < w; x++ )
+			{
+				*dst++ = src->r;
+				*dst++ = src->g;
+				*dst++ = src->b;
+				*dst++ = src->a;
+				src++;
+			}
+		}
+		delete img;
+		// load the texture into OpenGL
+		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
+		delete [] pixels;
+	}
+	m = generateMipMaps( m );
+	return m;
+}
+
 
 
 // TGA constants
@@ -860,6 +867,158 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 }
 
 // (public function, documented in gltexloaders.h)
+bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GLuint & height, GLuint & mipmaps )
+{
+	bool ok = false;
+	const NifModel * nif = qobject_cast<const NifModel *>( iData.model() );
+	if ( nif && iData.isValid() ) {
+		mipmaps = nif->get<uint>(iData, "Num Mipmaps");
+		QModelIndex iMipmaps = nif->getIndex( iData, "Mipmaps" );
+		if ( mipmaps > 0 && iMipmaps.isValid() )
+		{
+			QModelIndex iMipmap = iMipmaps.child(0,0);
+			width = nif->get<uint>(iMipmap, "Width");
+			height = nif->get<uint>(iMipmap, "Height");
+		}
+
+		int bpp = nif->get<uint>(iData, "Bits Per Pixel");
+		int bytespp = nif->get<uint>(iData, "Bytes Per Pixel");
+		uint format = nif->get<uint>(iData, "Pixel Format");
+		bool flipV = false;
+		bool flipH = false;
+		bool rle = false;
+
+		QBuffer buf;
+		if ( nif->getVersionNumber() <= 0x0A020000 ) {
+			QByteArray data = nif->get<QByteArray>( iData, "Binary Data" );
+			buf.setData(data);
+			buf.open(QIODevice::ReadOnly);
+			buf.seek(0);
+		} else {
+			ByteMatrix* bm = nif->get<ByteMatrix*>( iData, "Pixel Data Matrix" );				
+			if (bm != NULL) buf.setData( bm->data(), bm->count() );
+			buf.open(QIODevice::ReadOnly);
+			buf.seek(0);
+		}
+
+		quint32 mask[4] = { 0x00000000, 0x00000000, 0x00000000, 0x00000000 };
+		QModelIndex iChannels = nif->getIndex( iData, "Channels" );
+		if ( iChannels.isValid() )
+		{
+			for ( int i = 0; i < 4; i++ ) {
+				QModelIndex iChannel = iChannels.child( i, 0 );
+				uint type = nif->get<uint>(iChannel, "Type");
+				uint bpc = nif->get<uint>(iChannel, "Bits Per Channel");
+				int m = (1 << bpc) - 1;
+				switch (type)
+				{
+				case 0: mask[i] = m << (bpc * 0); break; //Green
+				case 1: mask[i] = m << (bpc * 1); break; //Blue
+				case 2: mask[i] = m << (bpc * 2); break; //Red
+				case 3: mask[i] = m << (bpc * 3); break; //Red
+				}
+			}
+		}
+		DDSFormat hdr;
+		hdr.dwSize = 0;
+		hdr.dwFlags = DDPF_FOURCC;
+		hdr.dwHeight = height;
+		hdr.dwWidth = width;
+		hdr.dwLinearSize = 0;
+		hdr.dwMipMapCount = mipmaps;
+		hdr.ddsPixelFormat.dwSize = 0;
+		hdr.ddsPixelFormat.dwFlags = DDPF_FOURCC;
+		hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT1;
+		hdr.ddsPixelFormat.dwBPP = bpp;
+		hdr.ddsPixelFormat.dwRMask = mask[0];
+		hdr.ddsPixelFormat.dwGMask = mask[1];
+		hdr.ddsPixelFormat.dwBMask = mask[2];
+		hdr.ddsPixelFormat.dwAMask = mask[3];
+
+		texformat = "NIF";
+		switch (format)
+		{
+		case 0: // PX_FMT_RGB8
+			texformat += " (RGB8)";
+			ok = (0 != texLoadRaw(buf, width, height, mipmaps, bpp, bytespp, mask, flipV, flipH, rle));
+			break;
+		case 1: // PX_FMT_RGBA8
+			texformat += " (RGBA5)";
+			ok = (0 != texLoadRaw(buf, width, height, mipmaps, bpp, bytespp, mask, flipV, flipH, rle));
+			break;
+		case 2: // PX_FMT_PAL8
+			{
+				texformat += " (PAL8)";
+				QModelIndex iPalette = nif->getBlock( nif->getLink( iData, "Palette" ) );
+				if (iPalette.isValid()) {
+					QVector<quint32> map;
+					uint nmap = nif->get<uint>(iPalette, "Num Entries");
+					map.resize(nmap);
+					QModelIndex iPaletteArray = nif->getIndex( iPalette, "Palette" );
+					if ( nmap > 0 && iPaletteArray.isValid() ) {
+						for (uint i=0; i<nmap; ++i) {
+							QModelIndex iRGBElem = iPaletteArray.child(i,0);
+							byte r = nif->get<byte>(iRGBElem, "r");
+							byte g = nif->get<byte>(iRGBElem, "g");
+							byte b = nif->get<byte>(iRGBElem, "b");
+							byte a = nif->get<byte>(iRGBElem, "a");
+							map[i] = ((quint32)((r|((quint16)g<<8))|(((quint32)b)<<16)|(((quint32)a)<<24)));
+						}
+					}
+					ok = (0 != texLoadPal( buf, width, height, mipmaps, bpp, bytespp, map.data(), flipV, flipH, rle ));
+				}
+			}
+			break;
+		case 4: //PX_FMT_DXT1
+			texformat += " (DXT1)";
+			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT1;
+			ok = (0 != texLoadDXT(hdr, (const unsigned char *)buf.data().data(), buf.size()));
+			break;
+		case 5: //PX_FMT_DXT5
+			texformat += " (DXT5)";
+			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT5;
+			ok = (0 != texLoadDXT(hdr, (const unsigned char *)buf.data().data(), buf.size()));
+			break;
+		case 6: //PX_FMT_DXT5_ALT
+			texformat += " (DXT5ALT)";
+			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT5;
+			ok = (0 != texLoadDXT(hdr, (const unsigned char *)buf.data().data(), buf.size()));
+			break;
+		}
+		if (ok) {
+			glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *) & width );
+			glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *) & height );
+		}
+	}
+	return ok;
+}
+
+
+GLuint texLoadNIF( QIODevice & f, QString & texformat ) {
+	GLuint mipmaps = 0;
+
+	NifModel pix;
+
+	if ( ! pix.load( f ) )
+		throw QString( "failed to load NiPixelData from file" );
+
+	QPersistentModelIndex iRoot;
+
+	foreach ( qint32 l, pix.getRootLinks() )
+	{
+		QModelIndex iData = pix.getBlock( l, "NiPixelData" );
+		if ( ! iData.isValid() )
+			throw QString( "this is not a normal .nif file; there should be only NiPixelDatas as root blocks" );
+
+		GLuint width, height;
+		texLoad(iData, texformat, width, height, mipmaps);
+	}
+
+	return mipmaps;
+}
+
+
+// (public function, documented in gltexloaders.h)
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	width = height = mipmaps = 0;
@@ -874,6 +1033,8 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 		mipmaps = texLoadTGA( f, format );
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
 		mipmaps = texLoadBMP( f, format );
+	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) )
+		mipmaps = texLoadNIF( f, format );
 	else
 		throw QString( "unknown texture format" );
 	
@@ -887,8 +1048,11 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 bool texCanLoad( const QString & filepath )
 {
 	QFileInfo i( filepath );
-	return i.exists() && i.isReadable() && (
-		filepath.endsWith( ".dds", Qt::CaseInsensitive ) ||
-		filepath.endsWith( ".tga", Qt::CaseInsensitive ) ||
-		filepath.endsWith( ".bmp", Qt::CaseInsensitive ) );
+	return i.exists() && i.isReadable() && 
+		(  filepath.endsWith( ".dds", Qt::CaseInsensitive )
+		|| filepath.endsWith( ".tga", Qt::CaseInsensitive )
+		|| filepath.endsWith( ".bmp", Qt::CaseInsensitive ) 
+		|| filepath.endsWith( ".nif", Qt::CaseInsensitive ) 		
+		);
 }
+

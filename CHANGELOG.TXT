@@ -16,6 +16,7 @@ changes since 1.0.12:
    3 (DRAW_BOTH) by default (issue #2033534)
  * update block size when fixing headers on v 20.2 and later
  * updated for Qt 4.4.1
+ * add support for embedded textures and external nif textures
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out

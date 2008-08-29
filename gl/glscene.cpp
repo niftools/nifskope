@@ -346,3 +346,12 @@ int Scene::bindTexture( const QString & fname )
 	return textures->bind( fname );
 }
 
+int Scene::bindTexture( const QModelIndex & iSource )
+{
+	if ( ! Options::texturing() || !iSource.isValid() )
+		return 0;
+
+	return textures->bind( iSource );
+}
+
+

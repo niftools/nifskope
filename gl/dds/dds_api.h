@@ -35,6 +35,39 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Image.h"
 
+#define DDSD_MIPMAPCOUNT           0x00020000
+#define DDPF_FOURCC                0x00000004
+
+// DDS format structure
+struct DDSFormat {
+	uint32 dwSize;
+	uint32 dwFlags;
+	uint32 dwHeight;
+	uint32 dwWidth;
+	uint32 dwLinearSize;
+	uint32 dummy1;
+	uint32 dwMipMapCount;
+	uint32 dummy2[11];
+	struct {
+		uint32 dwSize;
+		uint32 dwFlags;
+		uint32 dwFourCC;
+		uint32 dwBPP;
+		uint32 dwRMask;
+		uint32 dwGMask;
+		uint32 dwBMask;
+		uint32 dwAMask;
+	} ddsPixelFormat;
+};
+
+// compressed texture pixel formats
+#define FOURCC_DXT1  0x31545844
+#define FOURCC_DXT2  0x32545844
+#define FOURCC_DXT3  0x33545844
+#define FOURCC_DXT4  0x34545844
+#define FOURCC_DXT5  0x35545844
+
+
 //! Check whether the memory array effectively contains a DDS file.
 /*!
  * Caller must make sure that mem contains at least 8 bytes.
@@ -48,5 +81,12 @@ int is_a_dds(unsigned char *mem); /* use only first 8 bytes of mem */
  * \return 0 if load failed, or pointer to Image object otherwise. The caller is responsible for destructing the image object (using delete).
  */
 Image * load_dds(unsigned char *mem, int size, int face = 0, int mipmap = 0);
+
+
+//! Load a DDS file.
+/*!
+* \return 0 if load failed, or pointer to Image object otherwise. The caller is responsible for destructing the image object (using delete).
+*/
+Image * load_dds(const unsigned char *mem, int size, int face, int mipmap, DDSFormat* format);
 
 #endif /* __DDS_API_H */

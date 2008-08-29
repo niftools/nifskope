@@ -114,6 +114,7 @@ struct DDSHeader
 	DDSCaps caps;
 	uint notused;
 	DDSHeader10 header10;
+	uint offset;
 
 
 	// Helper methods.
@@ -132,6 +133,7 @@ struct DDSHeader
 	void setPixelFormat(uint bitcount, uint rmask, uint gmask, uint bmask, uint amask);
 	void setDX10Format(uint format);
 	void setNormalFlag(bool b);
+	void setOffset(uint size);
 	
 	bool hasDX10Header() const;
 };
@@ -140,7 +142,8 @@ struct DDSHeader
 class DirectDrawSurface
 {
 public:
-	DirectDrawSurface(unsigned char *mem, uint size);
+	DirectDrawSurface(const unsigned char *mem, uint size);
+	DirectDrawSurface(const DDSHeader &header, const unsigned char *mem, uint size);
 	~DirectDrawSurface();
 	
 	bool isValid() const;
