@@ -890,7 +890,7 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 
 		QBuffer buf;
 		if ( nif->getVersionNumber() <= 0x0A020000 ) {
-			QByteArray data = nif->get<QByteArray>( iData, "Binary Data" );
+			QByteArray data = nif->get<QByteArray>( iData, "Pixel Data" );
 			buf.setData(data);
 			buf.open(QIODevice::ReadOnly);
 			buf.seek(0);
@@ -902,20 +902,28 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 		}
 
 		quint32 mask[4] = { 0x00000000, 0x00000000, 0x00000000, 0x00000000 };
-		QModelIndex iChannels = nif->getIndex( iData, "Channels" );
-		if ( iChannels.isValid() )
-		{
-			for ( int i = 0; i < 4; i++ ) {
-				QModelIndex iChannel = iChannels.child( i, 0 );
-				uint type = nif->get<uint>(iChannel, "Type");
-				uint bpc = nif->get<uint>(iChannel, "Bits Per Channel");
-				int m = (1 << bpc) - 1;
-				switch (type)
-				{
-				case 0: mask[i] = m << (bpc * 0); break; //Green
-				case 1: mask[i] = m << (bpc * 1); break; //Blue
-				case 2: mask[i] = m << (bpc * 2); break; //Red
-				case 3: mask[i] = m << (bpc * 3); break; //Red
+		
+		if ( nif->getVersionNumber() < 0x14000004 ) {
+			mask[0] = nif->get<uint>(iData, "Red Mask");
+			mask[1] = nif->get<uint>(iData, "Green Mask");
+			mask[2] = nif->get<uint>(iData, "Blue Mask");
+			mask[3] = nif->get<uint>(iData, "Alpha Mask");
+		} else {
+			QModelIndex iChannels = nif->getIndex( iData, "Channels" );
+			if ( iChannels.isValid() )
+			{
+				for ( int i = 0; i < 4; i++ ) {
+					QModelIndex iChannel = iChannels.child( i, 0 );
+					uint type = nif->get<uint>(iChannel, "Type");
+					uint bpc = nif->get<uint>(iChannel, "Bits Per Channel");
+					int m = (1 << bpc) - 1;
+					switch (type)
+					{
+					case 0: mask[i] = m << (bpc * 0); break; //Green
+					case 1: mask[i] = m << (bpc * 1); break; //Blue
+					case 2: mask[i] = m << (bpc * 2); break; //Red
+					case 3: mask[i] = m << (bpc * 3); break; //Red
+					}
 				}
 			}
 		}
