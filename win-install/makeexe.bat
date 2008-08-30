@@ -14,7 +14,9 @@ pause
 
 cd ..\nifskope\win-install
 
+if exist "%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe" "%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe" .. ..\config.h.in ..\config.h
+
 if exist "%PROGRAMFILES%\NSIS\makensis.exe" "%PROGRAMFILES%\NSIS\makensis.exe" /v3 %NAME%-mingw-dynamic.nsi
 if exist "%PROGRAMFILES(x86)%\NSIS\makensis.exe" "%PROGRAMFILES(x86)%\NSIS\makensis.exe" /v3 %NAME%-mingw-dynamic.nsi
 
- pause
+pause
