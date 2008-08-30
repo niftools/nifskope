@@ -17,6 +17,7 @@ changes since 1.0.12:
  * update block size when fixing headers on v 20.2 and later
  * updated for Qt 4.4.1
  * add support for embedded textures and external nif textures
+ * display revision number in about box
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out

@@ -150,7 +150,7 @@ void NifSkope::about()
 	"All Rights Reserved. "
 	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>";
 
-	QMessageBox mb( tr("About NifSkope "NIFSKOPE_VERSION), text, QMessageBox::Information,
+	QMessageBox mb( tr("About NifSkope "NIFSKOPE_VERSION" (revision "NIFSKOPE_REVISION")"), text, QMessageBox::Information,
 		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
 	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
 	mb.exec();
