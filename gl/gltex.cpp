@@ -347,7 +347,7 @@ int TexCache::bind( const QModelIndex & iSource )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
 	if ( nif && iSource.isValid() ) {
-		if ( nif->get<byte>( iSource, "Use External" ) == 0 ){
+		if ( nif->get<quint8>( iSource, "Use External" ) == 0 ){
 			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
 			if (iData.isValid()) {
 				Tex * tx = embedTextures.value( iData );
