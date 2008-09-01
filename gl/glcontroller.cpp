@@ -650,8 +650,8 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
       lRotate = nif->getIndex( index, "Rotation");
       lScale = nif->getIndex( index, "Scale");
 
-      lTransOff = nif->get<uint>( index, "Translate Offset");
-      lRotateOff = nif->get<uint>( index, "Rotate Offset");
+      lTransOff = nif->get<uint>( index, "Translation Offset");
+      lRotateOff = nif->get<uint>( index, "Rotation Offset");
       lScaleOff = nif->get<uint>( index, "Scale Offset");
       lTransMult = nif->get<float>( index, "Translate Multiplier");
       lRotateMult = nif->get<float>( index, "Rotation Multiplier");
