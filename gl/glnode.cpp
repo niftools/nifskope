@@ -289,12 +289,12 @@ public:
 						}
 						QString var1 = nif->get<QString>( iCB, "Variable 1" );
 						if ( var1.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Variable Offset 1" );
+							QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
 							var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
 						}
 						QString var2 = nif->get<QString>( iCB, "Variable 2" );
 						if ( var2.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Variable Offset 2" );
+							QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
 							var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
 						}
 						Node * node = target->findChild( nodename );
