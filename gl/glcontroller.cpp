@@ -644,7 +644,7 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
       if (iSpline.isValid())
          iControl = nif->getIndex( iSpline, "Short Control Points");
       if (iBasis.isValid())
-          nCtrl = nif->get<uint>( iBasis, "Num Control Pt" );
+          nCtrl = nif->get<uint>( iBasis, "Num Control Points" );
 
       lTrans = nif->getIndex( index, "Translation");
       lRotate = nif->getIndex( index, "Rotation");
