@@ -1216,7 +1216,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 twistA( nif->get<Vector4>( iRagdoll, "Twist A" ) );
 		const Vector3 twistB( nif->get<Vector4>( iRagdoll, "Twist B" ) );
 		
-		const float coneAngle( nif->get<float>( iRagdoll, "Cone Min Angle" ) );
+		const float coneAngle( nif->get<float>( iRagdoll, "Cone Max Angle" ) );
 		
 		const float minPlaneAngle( nif->get<float>( iRagdoll, "Plane Min Angle" ) );
 		const float maxPlaneAngle( nif->get<float>( iRagdoll, "Plane Max Angle" ) );
