@@ -75,19 +75,23 @@ bool BaseModel::isArray( const QModelIndex & index ) const
  
 int BaseModel::getArraySize( NifItem * array ) const
 {
+	return evaluateString( array, array->arr1() );
+}
+
+int BaseModel::evaluateString( NifItem * array, const QString & text ) const
+{
 	NifItem * parent = array->parent();
 	if ( ! parent || parent == root )
 		return -1;
 		
-	if ( array->arr1().isEmpty() )
+	if ( text.isEmpty() )
 		return 0;
 	
 	bool ok;
-	int d1 = array->arr1().toInt( &ok );
+	int d1 = text.toInt( &ok );
 	if ( ! ok )
 	{
 		QString left, right;
-		QString arr1 = array->arr1();
 		
 		static const char * const exp[] = { " | ", " & ", " / ", " + ", " - " };
 		static const int num_exp = 5;
@@ -95,18 +99,18 @@ int BaseModel::getArraySize( NifItem * array ) const
 		int c;
 		for ( c = 0; c < num_exp; c++ )
 		{
-			int p = arr1.indexOf( exp[c] );
+			int p = text.indexOf( exp[c] );
 			if ( p > 0 )
 			{
-				left = arr1.left( p ).trimmed();
-				right = arr1.right( arr1.length() - p - strlen( exp[c] ) ).trimmed();
+				left = text.left( p ).trimmed();
+				right = text.right( text.length() - p - strlen( exp[c] ) ).trimmed();
 				break;
 			}
 		}
 		
 		if ( c >= num_exp )
 		{
-			left = arr1.trimmed();
+			left = text.trimmed();
 			c = 0;
 		}
 	

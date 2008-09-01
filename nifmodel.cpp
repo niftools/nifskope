@@ -330,22 +330,33 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	// Special case for very large arrays that are opaque in nature.
 	//  Typical array handling has very poor performance with these arrays
 	if ( NifValue::isBlob( NifValue::type( array->type() ) ) ) {
-		if (rows != 1) {
-			NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ),QString(), QString(), QString(), QString(), 0, 0 );
-			if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), 0, 1 );
-			array->prepareInsert( 1 );
-			insertType( array, data );
+		int sz = d1;
+		// For one dim arrays, show one row.  For 2-d, show n rows
+		if ( array->arr2().isEmpty() ) {
+			d1 = 1;
+		} else {
+			sz = evaluateString( array, array->arr2() );
+		}
+		if ( d1 > rows ) {
+			NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), QString(), QString(), QString(), 0, 0 );
+			if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), rows, d1-1 );
+			array->prepareInsert( d1 - rows );
+			for ( int c = rows; c < d1; c++ )
+				insertType( array, data );
 			if ( ! fast )	endInsertRows();
 		}
-		NifItem *child = array->child(0);
-		QByteArray* bm = get<QByteArray*>( child );
-		if (bm == NULL) {
-			QByteArray bm; bm.resize( d1 );
-			set<QByteArray>( child, bm );
-		} else {
-			bm->resize(d1);
+		for (int i=0; i<d1; i++) {
+			if ( NifItem *child = array->child(i) ) {
+				QByteArray* bm = get<QByteArray*>( child );
+				if (bm == NULL) {
+					QByteArray bm; bm.resize( sz );
+					set<QByteArray>( child, bm );
+				} else {
+					bm->resize(sz);
+				}
+			}
 		}
-		rows = d1 = 1; // indicate one rows
+		rows = d1 = 0; // indicate one rows
 	}
 
 	if ( d1 > rows )

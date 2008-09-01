@@ -194,6 +194,7 @@ signals:
 protected:
 	virtual bool		updateArrayItem( NifItem * array, bool fast ) = 0;
 	int			getArraySize( NifItem * array ) const;
+	int			evaluateString( NifItem * array, const QString & text ) const;
 
 	virtual NifItem *	getItem( NifItem * parent, const QString & name ) const;
 	NifItem *	getItemX( NifItem * item, const QString & name ) const; // find upwards
