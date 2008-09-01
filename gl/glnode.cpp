@@ -1121,11 +1121,11 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
 		
 		const Vector3 axleA( nif->get<Vector4>( iHinge, "Axle A" ) );
-		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2AxleInA1" ) );
-		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2AxleInA2" ) );
+		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2 Axle In A1" ) );
+		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2 Axle In A2" ) );
 		
 		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
-		const Vector3 axleB2( nif->get<Vector4>( iHinge, "Perp2AxleInB2" ) );
+		const Vector3 axleB2( nif->get<Vector4>( iHinge, "Perp2 Axle In B2" ) );
 		
 		const float minAngle = nif->get<float>( iHinge, "Min Angle" );
 		const float maxAngle = nif->get<float>( iHinge, "Max Angle" );
@@ -1167,8 +1167,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
 		
-		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2AxleInA1" ) );
-		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2AxleInA2" ) );
+		const Vector3 axleA1( nif->get<Vector4>( iHinge, "Perp2 Axle In A1" ) );
+		const Vector3 axleA2( nif->get<Vector4>( iHinge, "Perp2 Axle In A2" ) );
 		const Vector3 axleA( Vector3::crossproduct( axleA1, axleA2 ) );
 		
 		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );

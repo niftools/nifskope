@@ -133,10 +133,10 @@ public:
 			axle = transB.rotation.inverted() * axle;
 			nif->set<Vector4>( iConstraint, "Axle B", Vector4( axle[0], axle[1], axle[2], 0 ) );
 		
-			axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2AxleInA2" ) );
+			axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2 Axle In A2" ) );
 			axle = transA.rotation * axle;
 			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Perp2AxleInB2", Vector4( axle[0], axle[1], axle[2], 0 ) );
+			nif->set<Vector4>( iConstraint, "Perp2 Axle In B2", Vector4( axle[0], axle[1], axle[2], 0 ) );
 		}
 
 		if ( name == "bhkRagdollConstraint" )
