@@ -143,7 +143,6 @@ Options::Options()
 	dialog->pushLayout( "Auto Detect", Qt::Vertical );
 	QButtonGroup * tfgamegrp = new QButtonGroup( this );
 	connect( tfgamegrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAutoDetect() ) );
-	int gameid = 0;
 	QPushButton * bt = new QPushButton( "Auto Detect\nGame Paths" );
 	tfgamegrp->addButton( bt);
 	dialog->addWidget( bt );

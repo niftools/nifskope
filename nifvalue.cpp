@@ -86,6 +86,7 @@ void NifValue::initialize()
 	typeMap.insert( "char8string", NifValue::tChar8String );
 	typeMap.insert( "string", NifValue::tString );
 	typeMap.insert( "filepath", NifValue::tFilePath);
+	typeMap.insert( "blob", NifValue::tBlob );
 	
 	enumMap.clear();
 }
@@ -264,6 +265,9 @@ void NifValue::clear()
 		case tColor4:
 			delete static_cast<Color4*>( val.data );
 			break;
+		case tBlob:
+			delete static_cast<QByteArray*>( val.data );
+			break;
 		default:
 			break;
 	}
@@ -333,6 +337,9 @@ void NifValue::changeType( Type t )
 		case tStringIndex:
 			val.u32 = 0xffffffff;
 			return;
+		case tBlob:
+			val.data = new QByteArray();
+			return;
 		default:
 			val.u32 = 0;
 			return;
@@ -389,6 +396,9 @@ void NifValue::operator=( const NifValue & other )
 			return;
 		case tTriangle:
 			*static_cast<Triangle*>( val.data ) = *static_cast<Triangle*>( other.val.data );
+			return;
+		case tBlob:
+			*static_cast<QByteArray*>( val.data ) = *static_cast<QByteArray*>( other.val.data );
 			return;
 		default:
 			val = other.val;
@@ -496,6 +506,7 @@ bool NifValue::fromString( const QString & s )
 		case tMatrix:
 		case tMatrix4:
 		case tTriangle:
+		case tBlob:
 		case tNone:
 			return false;
 	}
@@ -656,6 +667,13 @@ QString NifValue::toString() const
 		case tFilePath:
 			{
 			return *static_cast<QString*>( val.data );
+			}
+		case tBlob:
+			{
+				QByteArray * array = static_cast<QByteArray*>( val.data );
+				return QString( "%1 bytes" )
+					.arg( array->size() )
+					;
 			}
 		default:
 			return QString();
@@ -885,6 +903,13 @@ bool NifIStream::read( NifValue & val )
 			}
 		}
 
+		case NifValue::tBlob:
+			if ( val.val.data ) {
+				QByteArray* array = static_cast<QByteArray*>( val.val.data );
+				return device->read( array->data(), array->size() ) == array->size();
+			}
+			return false;
+
 		case NifValue::tNone:
 			return true;
 	}
@@ -1055,6 +1080,13 @@ bool NifOStream::write( const NifValue & val )
 				return device->write( (const char *) string, string.size() ) == string.size();
 			}
 		} 
+		case NifValue::tBlob:
+			if ( val.val.data ) {
+				QByteArray* array = static_cast<QByteArray*>( val.val.data );
+				return device->write( array->data(), array->size() ) == array->size();
+			}
+			return true;
+
 		case NifValue::tNone:
 			return true;
 	}
@@ -1170,7 +1202,15 @@ int NifSStream::size( const NifValue & val )
 				//string.replace( "\\n", "\n" );
 				return 4 + string.size();
 			}
-		} 
+		}
+
+		case NifValue::tBlob:
+			if ( val.val.data ) {
+				QByteArray* array = static_cast<QByteArray*>( val.val.data );
+				return array->size();
+			}
+			return 0;
+
 		case NifValue::tNone:
 			return 0;
 	}

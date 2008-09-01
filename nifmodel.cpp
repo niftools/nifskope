@@ -326,6 +326,28 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	}
 
 	int rows = array->childCount();
+
+	// Special case for very large arrays that are opaque in nature.
+	//  Typical array handling has very poor performance with these arrays
+	if ( NifValue::isBlob( NifValue::type( array->type() ) ) ) {
+		if (rows != 1) {
+			NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ),QString(), QString(), QString(), QString(), 0, 0 );
+			if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), 0, 1 );
+			array->prepareInsert( 1 );
+			insertType( array, data );
+			if ( ! fast )	endInsertRows();
+		}
+		NifItem *child = array->child(0);
+		QByteArray* bm = get<QByteArray*>( child );
+		if (bm == NULL) {
+			QByteArray bm; bm.resize( d1 );
+			set<QByteArray>( child, bm );
+		} else {
+			bm->resize(d1);
+		}
+		rows = d1 = 1; // indicate one rows
+	}
+
 	if ( d1 > rows )
 	{
 		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
@@ -655,6 +677,7 @@ int NifModel::getBlockCount() const
 
 void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int at )
 {
+	Q_UNUSED(at);
 	NifBlock * ancestor = blocks.value( identifier );
 	if ( ancestor )
 	{

@@ -889,17 +889,17 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 		bool rle = false;
 
 		QBuffer buf;
-		if ( nif->getVersionNumber() <= 0x0A020000 ) {
-			QByteArray data = nif->get<QByteArray>( iData, "Pixel Data" );
-			buf.setData(data);
-			buf.open(QIODevice::ReadOnly);
-			buf.seek(0);
-		} else {
-			ByteMatrix* bm = nif->get<ByteMatrix*>( iData, "Pixel Data Matrix" );				
-			if (bm != NULL) buf.setData( bm->data(), bm->count() );
-			buf.open(QIODevice::ReadOnly);
-			buf.seek(0);
+		
+		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
+		if ( iPixelData.isValid() ) {
+			if ( QByteArray* pdata = nif->get<QByteArray*>( iPixelData.child(0,0) ) ) {
+				buf.setData(*pdata);
+				buf.open(QIODevice::ReadOnly);
+				buf.seek(0);
+			}
 		}
+		if (buf.size() == 0)
+			return false;
 
 		quint32 mask[4] = { 0x00000000, 0x00000000, 0x00000000, 0x00000000 };
 		

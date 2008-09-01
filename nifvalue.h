@@ -95,6 +95,7 @@ public:
 		tString = 34, // not a regular string: an integer for nif versions 20.1.0.3 and up
 		tFilePath = 35, // not a string: requires special handling for slash/backslash etc.
 		tByteMatrix = 36,
+		tBlob = 37,
 
 		tNone = 0xff
 	};
@@ -197,9 +198,10 @@ public:
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
 	bool isTriangle() const { return typ == tTriangle; }
-	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette ; }
+	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette || typ == tBlob ; }
 	bool isFileVersion() const { return typ == tFileVersion; }
 	bool isByteMatrix() const { return typ == tByteMatrix; }
+	static bool isBlob( Type t ) { return t == tBlob; }
 	
 	QColor toColor() const;
 	quint32 toCount() const;
@@ -344,6 +346,13 @@ template <> inline QByteArray NifValue::get() const
 		return *static_cast<QByteArray*>( val.data );
 	else
 		return QByteArray();
+}
+template <> inline QByteArray* NifValue::get() const
+{
+	if ( isByteArray() )
+		return static_cast<QByteArray*>( val.data );
+	else
+		return NULL;
 }
 template <> inline Quat NifValue::get() const
 {

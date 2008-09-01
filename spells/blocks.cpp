@@ -67,6 +67,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
+		Q_UNUSED(nif);
 		return ( ! index.isValid() || ! index.parent().isValid() );
 	}
 	
@@ -319,6 +320,7 @@ public:
 	
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
+		Q_UNUSED(nif);
 		QStringList split = format.split( "/" );
 		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock" && nif->isNiBlock( split.value( 2 ) ) )
 			return split.value( 3 );
@@ -332,6 +334,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
+		Q_UNUSED(index);
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
 			foreach ( QString form, mime->formats() )
@@ -506,6 +509,7 @@ public:
 	
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
+		Q_UNUSED(nif);
 		QStringList split = format.split( "/" );
 		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
 			return split.value( 2 );
@@ -753,6 +757,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
+		Q_UNUSED(nif);
 		return ! index.isValid();
 	}
 	

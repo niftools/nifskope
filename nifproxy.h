@@ -56,7 +56,7 @@ public:
 	
 	Qt::ItemFlags flags( const QModelIndex & index ) const;
 	
-	int columnCount( const QModelIndex & index ) const { return 2; }
+	int columnCount( const QModelIndex & index ) const { Q_UNUSED(index); return 2; }
 	int rowCount( const QModelIndex & index ) const;
 	
 	bool hasChildren( const QModelIndex & index ) const
