@@ -892,10 +892,13 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 		
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 		if ( iPixelData.isValid() ) {
-			if ( QByteArray* pdata = nif->get<QByteArray*>( iPixelData.child(0,0) ) ) {
-				buf.setData(*pdata);
-				buf.open(QIODevice::ReadOnly);
-				buf.seek(0);
+			QModelIndex iFaceData = iPixelData.child(0,0);
+			if ( iFaceData.isValid() ) {
+				if ( QByteArray* pdata = nif->get<QByteArray*>( iFaceData.child(0,0) ) ) {
+					buf.setData(*pdata);
+					buf.open(QIODevice::ReadOnly);
+					buf.seek(0);
+				}
 			}
 		}
 		if (buf.size() == 0)

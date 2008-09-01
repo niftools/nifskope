@@ -198,10 +198,9 @@ public:
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
 	bool isTriangle() const { return typ == tTriangle; }
-	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette || typ == tBlob ; }
+	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette || typ == tBlob; }
 	bool isFileVersion() const { return typ == tFileVersion; }
 	bool isByteMatrix() const { return typ == tByteMatrix; }
-	static bool isBlob( Type t ) { return t == tBlob; }
 	
 	QColor toColor() const;
 	quint32 toCount() const;

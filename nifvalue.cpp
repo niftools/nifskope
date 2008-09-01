@@ -86,7 +86,6 @@ void NifValue::initialize()
 	typeMap.insert( "char8string", NifValue::tChar8String );
 	typeMap.insert( "string", NifValue::tString );
 	typeMap.insert( "filepath", NifValue::tFilePath);
-	typeMap.insert( "blob", NifValue::tBlob );
 	
 	enumMap.clear();
 }

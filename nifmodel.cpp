@@ -308,6 +308,86 @@ static QString parentPrefix( const QString & x )
 	return x;
 }
 
+bool NifModel::updateByteArrayItem( NifItem * array, bool fast )
+{
+	const int ArrayConvertSize = 0x1000;
+
+	int calcRows = getArraySize( array );
+	int rows = array->childCount();
+
+	// exit early and let default handling delete all rows
+	if (calcRows == 0)
+		return false;
+
+	// Transition from large array to smaller array which now requires real rows
+	if ( calcRows < ArrayConvertSize ) {
+		if (rows == 1) {
+			if ( NifItem *child = array->child(0) ) {
+				if ( child->value().type() == NifValue::tBlob ) {
+					QByteArray bm = get<QByteArray>( child );
+
+					// Delete the blob row after grabbing the data
+					if ( ! fast )	beginRemoveRows( createIndex( array->row(), 0, array ), 0, rows - 1 );
+					array->removeChildren( 0, rows );
+					if ( ! fast )	endRemoveRows();
+
+					// Now insert approprate rows and replace data from byte array to preserve some of the data.
+					if ( calcRows > 0 )
+					{
+						NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
+						if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), 0, calcRows-1 );
+						array->prepareInsert( calcRows );
+						for ( int i = 0; i < calcRows; i++ ) {
+							insertType( array, data );
+							if ( NifItem *c = array->child(i) )
+								c->value().set<quint8>( bm[i] );
+						}
+						if ( ! fast )	endInsertRows();
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+
+	// Create dummy row for holding the blob data
+	QByteArray bytes; bytes.resize( calcRows );
+
+	// Grab data from existing rows if appropriate and then purge
+	if (rows > 1) {
+		for (int i=0;i<rows;i++) {
+			if ( NifItem *child = array->child(0) ) {
+				bytes[i] = get<quint8>( child );
+			}
+		}
+		if ( ! fast )	beginRemoveRows( createIndex( array->row(), 0, array ), 0, rows - 1 );
+		array->removeChildren( 0, rows );
+		if ( ! fast )	endRemoveRows();
+		rows = 0;
+	}
+
+	// Create the dummy row for holding the byte array
+	if ( rows == 0 ) {
+		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::tBlob ), parentPrefix( array->arg() ), QString(), QString(), QString(), 0, 0 );
+		if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), 0, 1 );
+		array->prepareInsert( 1 );
+		insertType( array, data );
+		if ( ! fast )	endInsertRows();
+	}
+	if ( NifItem *child = array->child(0) ) {
+		QByteArray* bm = (child->value().type() == NifValue::tBlob) ? get<QByteArray*>( child ) : NULL;
+		if (bm == NULL) {
+			set<QByteArray>( child, bytes );
+		} else if (bm->size() == 0) {
+			*bm = bytes;
+		} else {
+			bm->resize(calcRows);
+		}
+	}
+	return true;
+}
+
 bool NifModel::updateArrayItem( NifItem * array, bool fast )
 {
 	if ( array->arr1().isEmpty() )
@@ -325,40 +405,14 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 		return false;
 	}
 
-	int rows = array->childCount();
-
 	// Special case for very large arrays that are opaque in nature.
 	//  Typical array handling has very poor performance with these arrays
-	if ( NifValue::isBlob( NifValue::type( array->type() ) ) ) {
-		int sz = d1;
-		// For one dim arrays, show one row.  For 2-d, show n rows
-		if ( array->arr2().isEmpty() ) {
-			d1 = 1;
-		} else {
-			sz = evaluateString( array, array->arr2() );
-		}
-		if ( d1 > rows ) {
-			NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), QString(), QString(), QString(), 0, 0 );
-			if ( ! fast )	beginInsertRows( createIndex( array->row(), 0, array ), rows, d1-1 );
-			array->prepareInsert( d1 - rows );
-			for ( int c = rows; c < d1; c++ )
-				insertType( array, data );
-			if ( ! fast )	endInsertRows();
-		}
-		for (int i=0; i<d1; i++) {
-			if ( NifItem *child = array->child(i) ) {
-				QByteArray* bm = get<QByteArray*>( child );
-				if (bm == NULL) {
-					QByteArray bm; bm.resize( sz );
-					set<QByteArray>( child, bm );
-				} else {
-					bm->resize(sz);
-				}
-			}
-		}
-		rows = d1 = 0; // indicate one rows
+	if ( NifValue::type( array->type() ) == NifValue::tByte )  {
+		if ( updateByteArrayItem(array, fast) )
+			return true;
 	}
 
+	int rows = array->childCount();
 	if ( d1 > rows )
 	{
 		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
@@ -1724,8 +1778,13 @@ int NifModel::blockSize( NifItem * parent, NifSStream& stream ) const
 		{
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
-				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+					if ( ( NifValue::type( child->type() ) == NifValue::tByte ) && (getArraySize( child ) > 0x1000) ) {
+						// special byte 
+					} else {
+						msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+					}
+				}
 
 				size += blockSize( child, stream );
 			}
@@ -1782,8 +1841,14 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 		{
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
-				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+
+					if ( ( NifValue::type( child->type() ) == NifValue::tByte ) && (getArraySize( child ) > 0x1000) ) {
+						// special byte 
+					} else {
+						msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+					}
+				}
 				
 				if ( !save( child, stream ) )
 					return false;

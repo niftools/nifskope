@@ -197,6 +197,7 @@ protected:
 	NifItem *	insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
 	bool		updateArrayItem( NifItem * array, bool fast );
+	bool		updateByteArrayItem( NifItem * array, bool fast );
 	
 	NifItem *	getHeaderItem() const;
 	NifItem *	getFooterItem() const;
