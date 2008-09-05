@@ -18,6 +18,7 @@ changes since 1.0.12:
  * updated for Qt 4.4.1
  * add support for embedded textures and external nif textures
  * display revision number in about box
+ * new blob type to make large byte arrays more efficient
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out
