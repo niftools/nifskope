@@ -310,13 +310,13 @@ static QString parentPrefix( const QString & x )
 
 bool NifModel::updateByteArrayItem( NifItem * array, bool fast )
 {
-	const int ArrayConvertSize = 0x1000;
+	const int ArrayConvertSize = 0; // Currently disabled.  Use nifskopetype="blob" instead
 
 	int calcRows = getArraySize( array );
 	int rows = array->childCount();
 
 	// exit early and let default handling delete all rows
-	if (calcRows == 0)
+	if (calcRows == 0 || !array->arr2().isEmpty())
 		return false;
 
 	// Transition from large array to smaller array which now requires real rows
@@ -407,7 +407,7 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 
 	// Special case for very large arrays that are opaque in nature.
 	//  Typical array handling has very poor performance with these arrays
-	if ( NifValue::type( array->type() ) == NifValue::tByte )  {
+	if ( NifValue::type( array->type() ) == NifValue::tBlob )  {
 		if ( updateByteArrayItem(array, fast) )
 			return true;
 	}
