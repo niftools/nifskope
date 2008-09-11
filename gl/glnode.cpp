@@ -1342,7 +1342,7 @@ void Node::drawHavok()
 		glColor( Color3( 1.0f, 0.0f, 0.0f ) );
 		glLineWidth( 1.0f );
 		glDisable( GL_LIGHTING );
-		drawBox( rad, - rad );
+		drawBox( rad - bt.translation, - rad - bt.translation);
 
 		glPopMatrix();
 	}
