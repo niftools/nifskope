@@ -19,6 +19,7 @@ changes since 1.0.12:
  * add support for embedded textures and external nif textures
  * display revision number in about box
  * new blob type to make large byte arrays more efficient
+ * fixed bounding box location in opengl window
 
 changes since 1.0.11:
  * fixed animation slider and animation group selector being grayed out
