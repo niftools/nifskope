@@ -81,6 +81,15 @@ rm -rf $RPM_BUILD_ROOT
 - new mopp code generator spell (windows only), using havok library
 - some small nif.xml updates
 - warn user when exporting skinned mesh as .OBJ that skin weights will not be exported
+- updated skin partition spell to work also on NiTriStrips
+- when inserting a new NiStencilProperty block, its draw mode is set to 3 (DRAW_BOTH) by default (issue #2033534)
+- update block size when fixing headers on v 20.2 and later
+- updated for Qt 4.4.1
+- add support for embedded textures and external nif textures
+- display revision number in about box
+- new blob type to make large byte arrays more efficient
+- fixed bounding box location in opengl window
+
 * Thu Jun 12 2008 amorilia - 1.0.12-1
 - fixed animation slider and animation group selector being grayed out
 * Wed Jun 4 2008 amorilia - 1.0.11-1
