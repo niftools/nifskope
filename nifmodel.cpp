@@ -1779,7 +1779,7 @@ int NifModel::blockSize( NifItem * parent, NifSStream& stream ) const
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
-					if ( ( NifValue::type( child->type() ) == NifValue::tByte ) && (getArraySize( child ) > 0x1000) ) {
+					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte 
 					} else {
 						msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
@@ -1842,8 +1842,7 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
-
-					if ( ( NifValue::type( child->type() ) == NifValue::tByte ) && (getArraySize( child ) > 0x1000) ) {
+					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte 
 					} else {
 						msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
