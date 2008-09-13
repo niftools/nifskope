@@ -765,7 +765,7 @@ void Node::transform()
 				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) )
 				{
 					t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-					t.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
+					t.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7 );
 				}
 				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), worldTrans() * t );
 			}

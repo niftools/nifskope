@@ -208,7 +208,7 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) )
 				{
 					bt.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-					bt.translation = nif->get<Vector3>( iBody, "Translation" ) * 7;
+					bt.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7 );
 				}
 				QModelIndex iShape = nif->getBlock( nif->getLink( iBody, "Shape" ) );
 				if ( nif->isNiBlock( iShape, "bhkMoppBvTreeShape" ) )
