@@ -445,6 +445,8 @@ bool TexturingProperty::bind( int id, const QString & fname )
 			mipmaps = scene->bindTexture(  fname );
 		else 
 			mipmaps = scene->bindTexture( textures[ id ].iSource );
+		if (mipmaps == 0)
+			return false;
 		
 		if ( max_anisotropy > 0 )
 		{
