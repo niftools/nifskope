@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.13
+Version:        1.0.14
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,7 +73,10 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Fri Jul 25 2008 amorilia - 1.0.13-1
+* Fri Sep 14 2008 amorilia - 1.0.14-1
+- fixed bhkRigidBodyT transform
+- fixed (innocent but annoying) error message on blob type
+* Fri Sep 12 2008 amorilia - 1.0.13-1
 - workaround for Qt 4.4.0 annoyance: QFileSystemWatcher no longer barfs
 - installer also registers kfm and nifcache extensions
 - remove empty modifiers from NiParticleSystem when sanitizing

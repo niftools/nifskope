@@ -1,6 +1,10 @@
  == CHANGELOG ==
 
-This is version 1.0.13 of NifSkope.
+This is version 1.0.14 of NifSkope.
+
+changes since 1.0.13:
+ * fixed bhkRigidBodyT transform
+ * fixed (innocent but annoying) error message on blob type
 
 changes since 1.0.12:
  * workaround for Qt annoyance: QFileSystemWatcher no longer barfs
