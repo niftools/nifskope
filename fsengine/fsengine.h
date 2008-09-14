@@ -63,6 +63,7 @@ public:
 	~FSArchiveHandler();
 	
 	QAbstractFileEngine * create( const QString & filename ) const;
+	FSArchiveFile * getArchive() { return archive; }
 
 protected:
 	class FSArchiveFile * archive;
@@ -90,6 +91,7 @@ public:
 	virtual bool hasFile( const QString & ) const = 0;
 	virtual qint64 fileSize( const QString & ) const = 0;
 	virtual bool fileContents( const QString &, QByteArray & ) = 0;	
+	virtual QString absoluteFilePath( const QString & ) const = 0;
 
 	virtual uint ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const = 0;
 	virtual QString owner( const QString &, QAbstractFileEngine::FileOwner type ) const = 0;

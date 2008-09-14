@@ -1014,7 +1014,7 @@ IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
 
 #ifdef FSENGINE
 	if ( ! fsmanager )
-		fsmanager = new FSManager( this );
+		fsmanager = FSManager::get();
 #endif
 }
 

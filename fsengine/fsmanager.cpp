@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "fsmanager.h"
 #include "fsengine.h"
-
+#include "bsa.h"
 
 #include <QCheckBox>
 #include <QFileDialog>
@@ -44,6 +44,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QStringListModel>
 
+
+static FSManager *theFSManager = NULL;
+FSManager* FSManager::get() 
+{
+	if (theFSManager == NULL)
+		theFSManager = new FSManager();
+	return theFSManager;
+}
+
+QList <FSArchiveFile *> FSManager::archiveList()
+{
+	QList<FSArchiveFile *> archives;
+	foreach ( FSArchiveHandler* an, get()->archives.values() ){
+		archives.append( an->getArchive() );
+	}
+	return archives;
+}
 
 FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )

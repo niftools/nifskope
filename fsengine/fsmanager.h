@@ -42,13 +42,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class FSOverlayHandler;
 class FSArchiveHandler;
-
+class FSArchiveFile;
 
 class FSManager : public QObject
 {
 	Q_OBJECT
 public:
-	FSManager( QObject * parent );
+	static FSManager * get();
+	static QList<FSArchiveFile *> archiveList();
+
+protected:
+	FSManager( QObject * parent = NULL );
 	~FSManager();
 
 public slots:

@@ -363,6 +363,8 @@ public:
 	
 	qint64 write( const char * data, qint64 len )
 	{
+		Q_UNUSED(len);
+		Q_UNUSED(data);
 		return -1;
 	}
 	
@@ -393,6 +395,7 @@ public:
 	
 	bool copy( const QString & newFile )
 	{
+		Q_UNUSED(newFile);
 		return false;
 	}
 	
@@ -443,8 +446,6 @@ QAbstractFileEngine * FSArchiveHandler::create( const QString & filename ) const
 	fn.replace( "\\", "/" );
 	return archive->stripBasePath( fn ) ? new FSArchiveEngine( archive, filename, fn ) : 0;
 }
-
-
 
 #ifdef BSA_TEST
 

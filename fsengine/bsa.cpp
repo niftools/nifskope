@@ -385,6 +385,14 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 	return false;
 }
 
+QString BSA::absoluteFilePath( const QString & fn ) const
+{
+	if ( hasFile(fn) ) {
+		return QFileInfo(this->bsaPath, fn).absoluteFilePath();
+	}
+	return QString();
+}
+
 QStringList BSA::entryList( const QString & fn, QDir::Filters filters ) const
 {
 	if ( const BSAFolder * folder = getFolder( fn ) )

@@ -68,6 +68,7 @@ public:
 	uint ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const;
 	QString owner( const QString &, QAbstractFileEngine::FileOwner type ) const;
 	QDateTime fileTime( const QString &, QAbstractFileEngine::FileTime type ) const;
+	QString absoluteFilePath( const QString & ) const;
 
 	static bool canOpen( const QString & );
 	

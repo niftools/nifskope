@@ -43,7 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltex.h"
 #include "gltexloaders.h"
 #include "options.h"
-
+#include "fsengine/fsmanager.h"
+#include "fsengine/fsengine.h"
 #include <GL/glext.h>
 
 PFNGLACTIVETEXTUREARBPROC       _glActiveTextureARB       = 0;
@@ -198,9 +199,8 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			filename_orig += ext;
 #endif
 		}
-		QStringList folders = Options::textureFolders();
-		folders.append("./"); // always search local directory
-		foreach ( QString folder, folders )
+		
+		foreach ( QString folder, Options::textureFolders() )
 		{
 			if( folder.startsWith( "./" ) || folder.startsWith( ".\\" ) ) {
 				folder = nifdir + "/" + folder;
@@ -233,6 +233,22 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 				return filename;
 			}
 #endif
+		}
+
+		// Search through archives last and return archive annotated name
+		//   which will be removed by any handlers
+		foreach ( FSArchiveFile* archive, FSManager::archiveList() ) {
+			if ( archive ) {
+				QString fullname = archive->absoluteFilePath( filename.toLower().replace( "\\", "/" ) );
+				if (!fullname.isEmpty()) {
+#ifdef Q_OS_WIN
+					fullname.replace("/", "\\");
+#else
+					fullname.replace("\\", "/");
+#endif
+					return fullname;
+				}
+			}
 		}
 		
 		if ( replaceExt ) {
