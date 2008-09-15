@@ -73,9 +73,11 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Fri Sep 14 2008 amorilia - 1.0.14-1
+* Mon Sep 15 2008 amorilia - 1.0.14-1
 - fixed bhkRigidBodyT transform
 - fixed (innocent but annoying) error message on blob type
+- fixed Oblivion archive support for BSA files for use with textures
+- fixed having wrong texture in render window under certain conditions
 * Fri Sep 12 2008 amorilia - 1.0.13-1
 - workaround for Qt 4.4.0 annoyance: QFileSystemWatcher no longer barfs
 - installer also registers kfm and nifcache extensions
@@ -92,7 +94,6 @@ rm -rf $RPM_BUILD_ROOT
 - display revision number in about box
 - new blob type to make large byte arrays more efficient
 - fixed bounding box location in opengl window
-
 * Thu Jun 12 2008 amorilia - 1.0.12-1
 - fixed animation slider and animation group selector being grayed out
 * Wed Jun 4 2008 amorilia - 1.0.11-1
