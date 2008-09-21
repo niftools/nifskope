@@ -763,7 +763,7 @@ bool NifIStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+			if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			//string.replace( "\r", "\\r" );
@@ -784,7 +784,7 @@ bool NifIStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+			if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			*static_cast<QString*>( val.val.data ) = QString( string );
@@ -873,7 +873,7 @@ bool NifIStream::read( NifValue & val )
 
 				int len;
 				device->read( (char *) &len, 4 );
-				if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+				if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 				QByteArray string = device->read( len );
 				if ( string.size() != len ) return false;
 				//string.replace( "\r", "\\r" );
@@ -895,7 +895,7 @@ bool NifIStream::read( NifValue & val )
 
 				int len;
 				device->read( (char *) &len, 4 );
-				if ( len > 4096 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
+				if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = "<string too long>"; return false; }
 				QByteArray string = device->read( len );
 				if ( string.size() != len ) return false;
 				*static_cast<QString*>( val.val.data ) = QString( string );
