@@ -394,6 +394,15 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 		return false;
 	
 	int d1 = getArraySize( array );
+
+
+	// Special case for very large arrays that are opaque in nature.
+	//  Typical array handling has very poor performance with these arrays
+	if ( NifValue::type( array->type() ) == NifValue::tBlob )  {
+		if ( updateByteArrayItem(array, fast) )
+			return true;
+	}
+
 	if ( d1 > 1024 * 1024 * 8 )
 	{
 		msg( Message() << "array" << array->name() << "much too large." << d1 << " bytes requested" );
@@ -403,13 +412,6 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	{
 		msg( Message() << "array" << array->name() << "invalid" );
 		return false;
-	}
-
-	// Special case for very large arrays that are opaque in nature.
-	//  Typical array handling has very poor performance with these arrays
-	if ( NifValue::type( array->type() ) == NifValue::tBlob )  {
-		if ( updateByteArrayItem(array, fast) )
-			return true;
 	}
 
 	int rows = array->childCount();
@@ -1325,7 +1327,7 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 bool NifModel::setHeaderString( const QString & s )
 {
  	//msg( DbgMsg() << s );
-	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) ) )
+	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) || s.startsWith( "NDSNIF" ) ) )
 	{
 		msg( Message() << "this is not a NIF" );
 		return false;
