@@ -543,10 +543,27 @@ void NifModel::moveNiBlock( int src, int dst )
 	emit linksChanged();
 }
 
+void NifModel::updateStrings(NifModel *src, NifModel* tgt, NifItem *item)
+{
+   if ( NULL == item )
+      return;
+   if ( item->value().type() == NifValue::tStringIndex )
+   {
+      QString str = src->string( src->createIndex(0, 0, item) );
+      tgt->assignString( tgt->createIndex(0, 0, item), str, false ); 
+   }
+   for (int i=0; i<item->childCount(); ++i)
+   {
+      updateStrings(src, tgt, item->child(i));
+   }
+}
+
 QMap<qint32,qint32> NifModel::moveAllNiBlocks( NifModel * targetnif )
 {
 	int bcnt = getBlockCount();
-	
+
+   bool doStringUpdate = (  this->getVersionNumber() >= 0x14010003 || targetnif->getVersionNumber() >= 0x14010003 );
+
 	QMap<qint32,qint32> map;
 	
 	beginRemoveRows( QModelIndex(), 1, bcnt );
@@ -562,9 +579,12 @@ QMap<qint32,qint32> NifModel::moveAllNiBlocks( NifModel * targetnif )
 	
 	for ( int i = 0; i < bcnt; i++ )
 	{
-		targetnif->mapLinks( targetnif->root->child( targetnif->getBlockCount() - i ), map );
+      NifItem *item = targetnif->root->child( targetnif->getBlockCount() - i );
+		targetnif->mapLinks( item , map );
+      if (doStringUpdate)
+         updateStrings( this, targetnif, item );
 	}
-	
+
 	updateLinks();
 	updateHeader();
 	updateFooter();
@@ -2299,6 +2319,13 @@ bool NifModel::assignString( const QModelIndex & index, const QString & string, 
 		{
 			return BaseModel::set<QString>( getIndex( index, "String" ), string );
 		}
+      else if (v.type() == NifValue::tStringIndex)
+      {
+         NifValue v(NifValue::tString);
+         v.set(string);
+         return setItemValue(static_cast<NifItem*>(index.internalPointer()), v);
+         //return BaseModel::set<QString>( index, string );
+      }
 		else
 		{
 			return BaseModel::set<QString>( index, string );

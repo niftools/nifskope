@@ -233,6 +233,8 @@ protected:
 	void adjustLinks( NifItem * parent, int block, int delta );
 	void mapLinks( NifItem * parent, const QMap<qint32,qint32> & map );
 	
+   static void updateStrings(NifModel *src, NifModel* tgt, NifItem *item);
+
 	// XML structures
 	static QList<quint32>		supportedVersions;
 	

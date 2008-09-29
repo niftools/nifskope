@@ -67,7 +67,7 @@ public:
 				QModelIndex iCtrlBlcks = kf.getIndex( iSeq, "Controlled Blocks" );
 				for ( int r = 0; r < kf.rowCount( iCtrlBlcks ); r++ )
 				{
-					QString nodeName = kf.string( iCtrlBlcks.child( r, 0 ), "Node Name" );
+					QString nodeName = kf.string( iCtrlBlcks.child( r, 0 ), "Node Name", false );
 					if (nodeName.isEmpty()) {
 						QModelIndex iNodeName = kf.getIndex( iCtrlBlcks.child( r, 0 ), "Node Name Offset" );
 						nodeName = iNodeName.sibling( iNodeName.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
