@@ -1,17 +1,19 @@
  == CHANGELOG ==
 
-This is version 1.0.14 of NifSkope.
+This is version 1.0.15 of NifSkope.
+
+changes since 1.0.14:
+ * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
+ * updated mopp code generation to use subshape materials
+ * updated for Qt 4.4.3
+ * support reading nifs which use the NDSNIF header used in Atlantica
+ * new block types added from Atlantica, Florensia, Red Ocean
 
 changes since 1.0.13:
  * fixed bhkRigidBodyT transform
  * fixed (innocent but annoying) error message on blob type
  * fixed Oblivion archive support for BSA files for use with textures
  * fixed having wrong texture in render window under certain conditions
- * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
- * updated mopp code generation to use subshape materials
- * updated for Qt 4.4.3
- * support reading nifs which use the NDSNIF header used in Atlantica
- * new block types added from Atlantica, Florensia, Red Ocean
 
 changes since 1.0.12:
  * workaround for Qt annoyance: QFileSystemWatcher no longer barfs

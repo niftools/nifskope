@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.14
+Version:        1.0.15
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,6 +73,12 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Mon Oct 6 2008 tazpn - 1.0.15-1
+- fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
+- updated mopp code generation to use subshape materials
+- updated for Qt 4.4.3
+- support reading nifs which use the NDSNIF header used in Atlantica
+- new block types added from Atlantica, Florensia, Red Ocean
 * Mon Sep 15 2008 amorilia - 1.0.14-1
 - fixed bhkRigidBodyT transform
 - fixed (innocent but annoying) error message on blob type
