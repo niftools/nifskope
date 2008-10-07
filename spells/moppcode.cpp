@@ -15,6 +15,7 @@ class HavokMoppCode
 {
 private:
 	typedef int (__stdcall * fnGenerateMoppCode)(int nVerts, Vector3 const* verts, int nTris, Triangle const *tris);
+   typedef int (__stdcall * fnGenerateMoppCodeWithSubshapes)(int nShapes, int const *shapes, int nVerts, Vector3 const* verts, int nTris, Triangle const *tris);
 	typedef int (__stdcall * fnRetrieveMoppCode)(int nBuffer, char *buffer);
 	typedef int (__stdcall * fnRetrieveMoppScale)(float *value);
 	typedef int (__stdcall * fnRetrieveMoppOrigin)(Vector3 *value);
@@ -24,10 +25,13 @@ private:
 	fnRetrieveMoppCode RetrieveMoppCode;
 	fnRetrieveMoppScale RetrieveMoppScale;
 	fnRetrieveMoppOrigin RetrieveMoppOrigin;
+   fnGenerateMoppCodeWithSubshapes GenerateMoppCodeWithSubshapes;
 
 public:
-	HavokMoppCode() : hMoppLib(0), GenerateMoppCode(0), RetrieveMoppCode(0), RetrieveMoppScale(0), RetrieveMoppOrigin(0) {
-	}
+   HavokMoppCode() : hMoppLib(0), GenerateMoppCode(0), RetrieveMoppCode(0)
+      , RetrieveMoppScale(0), RetrieveMoppOrigin(0), GenerateMoppCodeWithSubshapes(0)
+   {
+   }
 
 	~HavokMoppCode() {
 		if (hMoppLib) FreeLibrary(hMoppLib);
@@ -42,6 +46,7 @@ public:
 			RetrieveMoppCode = (fnRetrieveMoppCode)GetProcAddress( hMoppLib, "RetrieveMoppCode" );
 			RetrieveMoppScale = (fnRetrieveMoppScale)GetProcAddress( hMoppLib, "RetrieveMoppScale" );
 			RetrieveMoppOrigin = (fnRetrieveMoppOrigin)GetProcAddress( hMoppLib, "RetrieveMoppOrigin" );
+         GenerateMoppCodeWithSubshapes = (fnGenerateMoppCodeWithSubshapes)GetProcAddress( hMoppLib, "GenerateMoppCodeWithSubshapes" );
 		}
 		return ( NULL != GenerateMoppCode  && NULL != RetrieveMoppCode 
 			&& NULL != RetrieveMoppScale && NULL != RetrieveMoppOrigin
@@ -72,6 +77,38 @@ public:
 		}
 		return code;
 	}
+
+   QByteArray CalculateMoppCode( QVector<int> const & subShapesVerts
+                               , QVector<Vector3> const & verts
+                               , QVector<Triangle> const & tris
+                               , Vector3* origin, float* scale)
+   {
+      QByteArray code;
+      if ( Initialize() )
+      {
+         int len;
+         if (GenerateMoppCodeWithSubshapes != NULL)
+            len = GenerateMoppCodeWithSubshapes( subShapesVerts.size(), &subShapesVerts[0], verts.size(), &verts[0], tris.size(), &tris[0] );
+         else
+            len = GenerateMoppCode( verts.size(), &verts[0], tris.size(), &tris[0] );
+         if ( len > 0 )
+         {
+            code.resize( len );
+            if ( 0 != RetrieveMoppCode( len , code.data() ) )
+            {
+               if ( NULL != scale )
+                  RetrieveMoppScale(scale);
+               if ( NULL != origin )
+                  RetrieveMoppOrigin(origin);
+            }
+            else
+            {
+               code.clear();
+            }
+         }
+      }
+      return code;
+   }
 } TheHavokCode;
 
 
@@ -111,7 +148,15 @@ QModelIndex spMoppCode::cast( NifModel * nif, const QModelIndex & iBlock )
 		qWarning() << Spell::tr( "only bhkPackedNiTriStripsShape can be used with bhkMoppBvTreeShape Mopp code at this time" );
 		return iBlock;
 	}
-    
+
+   QVector<int> subshapeVerts;
+   int nSubShapes = nif->get<int>( ibhkPackedNiTriStripsShape, "Num Sub Shapes" );
+   QModelIndex ihkSubShapes = nif->getIndex( ibhkPackedNiTriStripsShape, "Sub Shapes" );
+   subshapeVerts.resize(nSubShapes);
+   for ( int t = 0; t < nSubShapes; t++ ) {
+      subshapeVerts[t] = nif->get<int>( ihkSubShapes.child( t, 0 ), "Num Vertices" );
+   }
+
 	QModelIndex ihkPackedNiTriStripsData = nif->getBlock( nif->getLink( ibhkPackedNiTriStripsShape, "Data" ) );
 	QVector<Vector3> verts = nif->getArray<Vector3>( ihkPackedNiTriStripsData, "Vertices" );
 	QVector<Triangle> triangles;
@@ -131,7 +176,7 @@ QModelIndex spMoppCode::cast( NifModel * nif, const QModelIndex & iBlock )
 
 	Vector3 origin;
 	float scale;
-	QByteArray moppcode = TheHavokCode.CalculateMoppCode(verts, triangles, &origin, &scale);
+	QByteArray moppcode = TheHavokCode.CalculateMoppCode(subshapeVerts, verts, triangles, &origin, &scale);
 
 	if (moppcode.size() == 0)
 	{
