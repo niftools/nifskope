@@ -73,7 +73,7 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Mon Oct 6 2008 tazpn - 1.0.15-1
+* Mon Oct 18 2008 tazpn - 1.0.15-1
 - fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
 - updated mopp code generation to use subshape materials
 - updated for Qt 4.4.3
