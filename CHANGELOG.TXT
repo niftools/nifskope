@@ -1,7 +1,9 @@
  == CHANGELOG ==
 
-This is version 1.0.15 of NifSkope.
+This is version 1.0.16 of NifSkope.
 
+changes since 1.0.15:
+ 
 changes since 1.0.14:
  * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
  * updated mopp code generation to use subshape materials
