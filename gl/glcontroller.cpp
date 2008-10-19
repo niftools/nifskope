@@ -56,6 +56,7 @@ void Controllable::clear()
 
 Controller * Controllable::findController( const QString & ctrltype, const QString & var1, const QString & var2 )
 {
+   Q_UNUSED(var2); Q_UNUSED(var1);
 	Controller * ctrl = 0;
 	foreach ( Controller * c, controllers )
 	{
@@ -172,6 +173,7 @@ QString Controller::typeId() const
 
 void Controller::setSequence( const QString & seqname )
 {
+    Q_UNUSED(seqname);
 }
 
 void Controller::setInterpolator( const QModelIndex & index )
@@ -429,15 +431,17 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 				{
 					Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );
 					Quat v2 = nif->get<Quat>( frames.child( next, 0 ), "Value" );
-					
+					Quat v3 = Quat::slerp(x, v1, v2);
+					/*
+					Quat v4;
 					float a = acos( Quat::dotproduct( v1, v2 ) );
-					
 					if ( fabs( a ) >= 0.00005 )
 					{
 						float i = 1.0 / sin( a );
-						v1 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
+						v4 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
 					}
-					value.fromQuat( v1 );
+					*/
+					value.fromQuat( v3 );
 					return true;
 				}
 			}	break;
@@ -445,7 +449,6 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 	}
 	return false;
 }
-
 
 /*********************************************************************
 Simple b-spline curve algorithm
@@ -592,6 +595,7 @@ Interpolator::Interpolator(Controller *owner) : parent(owner) {}
 
 bool Interpolator::update( const NifModel * nif, const QModelIndex & index )
 {
+   Q_UNUSED(nif); Q_UNUSED(index);
    return true;
 }
 QPersistentModelIndex Interpolator::GetControllerData()

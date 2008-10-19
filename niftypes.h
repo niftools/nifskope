@@ -530,6 +530,8 @@ public:
 	void fromAxisAngle( Vector3 axis, float angle );
 	void toAxisAngle( Vector3 & axis, float & angle ) const;
 
+   static Quat slerp (float t, const Quat& p, const Quat& q);
+
 	QString toHtml() const
 	{
 		return QString( "W %1\nX %2\nY %3\nZ %4" )

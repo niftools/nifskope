@@ -339,6 +339,59 @@ void Quat::toAxisAngle( Vector3 & axis, float & angle ) const
     }
 }
 
+static inline float ISqrt_approx_in_neighborhood(float s) {
+   static const float NEIGHBORHOOD = 0.959066f;
+   static const float SCALE = 1.000311f;
+   static const float ADDITIVE_CONSTANT = SCALE / (float)sqrt(NEIGHBORHOOD);
+   static const float FACTOR = SCALE * (-0.5f / (NEIGHBORHOOD * (float)sqrt(NEIGHBORHOOD)));
+   return ADDITIVE_CONSTANT + (s - NEIGHBORHOOD) * FACTOR;
+}
+
+static inline void fast_normalize(Quat &q) 
+{
+   float s = q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3];
+   float k = ISqrt_approx_in_neighborhood(s);
+   if (s <= 0.91521198f) {
+      k *= ISqrt_approx_in_neighborhood(k * k * s);
+      if (s <= 0.65211970f) {
+         k *= ISqrt_approx_in_neighborhood(k * k * s);
+      }
+   }
+   q[0] *= k; q[1] *= k; q[2] *= k; q[3] *= k;
+}
+
+static inline float lerp(float v0, float v1, float perc)
+{
+   return v0 + perc * (v1 - v0);
+}
+
+static inline float correction(float t, float fCos) 
+{
+   const float s = 0.8228677f;
+   const float kc = 0.5855064f;
+   float factor = 1.0f - s * fCos;
+   float k = kc * factor * factor;
+   return t * ( k * t * ( 2.0f * t - 3.0f ) + 1.0f + k );
+}
+
+Quat Quat::slerp(float t, const Quat& p, const Quat& q)
+{
+   // Copyright (c) 2002 Jonathan Blow
+   //  "Hacking Quaternions", The Inner Product, March 2002
+   //   http://number-none.com/product/Hacking%20Quaternions/index.html
+
+   float tprime;
+   if (t <= 0.5f) {
+      tprime = correction(t, dotproduct(p, q) );
+   } else {
+      tprime = 1.0f - correction(1.0f - t, dotproduct(p, q) );
+   }
+   Quat result( lerp(p[0], q[0], tprime), lerp(p[1], q[1], tprime),
+                lerp(p[2], q[2], tprime), lerp(p[3], q[3], tprime));
+   fast_normalize(result);
+   return result;
+}
+
 /*
  *  Transform
  */

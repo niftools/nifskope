@@ -72,6 +72,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifproxy.h"
 #include "widgets/nifview.h"
 #include "widgets/refrbrowser.h"
+#include "widgets/inspect.h"
 
 #include "glview.h"
 #include "spellbook.h"
@@ -238,7 +239,18 @@ NifSkope::NifSkope()
 	connect( ogl, SIGNAL( customContextMenuRequested( const QPoint & ) ),
 		this, SLOT( contextMenu( const QPoint & ) ) );
 
-
+#ifndef DISABLE_INSPECTIONVIEWER
+   // this browser shows the state of the current selected item
+   //   currently for showing transform state of nodes at current time
+   inspect = new InspectView;
+   inspect->setNifModel( nif );
+   inspect->setScene( ogl->getScene() );
+   connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
+      inspect, SLOT( updateSelection( const QModelIndex & ) ) );
+   connect( ogl, SIGNAL( sigTime( float, float, float ) ),
+      inspect, SLOT( updateTime( float, float, float ) ) );
+   connect( ogl, SIGNAL( paintUpdate() ), inspect, SLOT( refresh() ) );
+#endif
 	// actions
 
 	aSanitize = new QAction( tr("&Auto Sanitize before Save"), this );
@@ -340,11 +352,23 @@ NifSkope::NifSkope()
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
 
+#ifndef DISABLE_INSPECTIONVIEWER
+   dInsp = new QDockWidget( tr("Inspect") );
+   dInsp->setObjectName( "InspectDock" );
+   dInsp->setWidget( inspect );	
+   //dInsp->toggleViewAction()->setShortcut( Qt::ALT + Qt::Key_Enter );
+   dInsp->toggleViewAction()->setChecked( false );
+   dInsp->setVisible( false );
+#endif
+
 	addDockWidget( Qt::BottomDockWidgetArea, dRefr );
 	addDockWidget( Qt::LeftDockWidgetArea, dList );
 	addDockWidget( Qt::BottomDockWidgetArea, dTree );
 	addDockWidget( Qt::RightDockWidgetArea, dKfm );
 
+#ifndef DISABLE_INSPECTIONVIEWER
+   addDockWidget( Qt::RightDockWidgetArea, dInsp, Qt::Vertical );
+#endif
 
 	/* ******** */
 
@@ -427,6 +451,7 @@ NifSkope::NifSkope()
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
+   mView->addAction( dInsp->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );

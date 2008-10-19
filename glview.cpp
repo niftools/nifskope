@@ -507,7 +507,6 @@ void GLView::paintGL()
 		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
 	
 	// update fps counter
-	
 	if ( fpsacc > 1.0 && fpscnt )
 	{
 		fpsacc /= fpscnt;
@@ -519,6 +518,8 @@ void GLView::paintGL()
 		fpscnt = 0;
 	}
 	
+   emit paintUpdate();
+
 #ifdef USE_GL_QPAINTER
 	// draw text on top using QPainter
 
@@ -560,6 +561,7 @@ typedef void (Scene::*DrawFunc)(void);
 	
 int indexAt( GLuint *buffer, NifModel *model, Scene *scene, QList<DrawFunc> drawFunc, int cycle )
 {
+   Q_UNUSED(model);
 	glRenderMode( GL_SELECT );	
 	glInitNames();
 	glPushName( 0 );
@@ -748,6 +750,7 @@ void GLView::sltTime( float t )
 {
 	time = t;
 	update();
+   emit sigTime( time, scene->timeMin(), scene->timeMax() );
 }
 
 void GLView::sltSequence( const QString & seqname )
@@ -1267,10 +1270,17 @@ void GLView::dropEvent( QDropEvent * e )
 
 void GLView::dragLeaveEvent( QDragLeaveEvent * e )
 {
+   Q_UNUSED(e);
 	if ( iDragTarget.isValid() )
 	{
 		model->set<QString>( iDragTarget, fnDragTexOrg );
 		iDragTarget = QModelIndex();
 		fnDragTex = fnDragTexOrg = QString();
 	}
+}
+
+
+Scene* GLView::getScene()
+{
+    return scene;
 }

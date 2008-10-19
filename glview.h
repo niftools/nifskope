@@ -114,6 +114,8 @@ public:
 	void	save( QSettings & );
 	void	restore( const QSettings & );
 
+   Scene * getScene();
+
 public slots:
 	void setNif( NifModel * );
 
@@ -130,7 +132,9 @@ signals:
 	void clicked( const QModelIndex & );
 	
 	void sigTime( float t, float mn, float mx );
-	
+
+	void paintUpdate();
+
 protected:
 	void initializeGL();
 	int  pickGL( int x, int y );
