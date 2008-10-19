@@ -57,6 +57,7 @@ Scene::~Scene()
 
 void Scene::clear( bool flushTextures )
 {
+   Q_UNUSED(flushTextures);
 	nodes.clear();
 	properties.clear();
 	roots.clear();

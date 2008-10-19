@@ -469,6 +469,7 @@ QVariant NifProxyModel::headerData( int section, Qt::Orientation orient, int rol
 
 void NifProxyModel::xHeaderDataChanged( Qt::Orientation o, int a, int b )
 {
+   Q_UNUSED(a); Q_UNUSED(b);
 	emit headerDataChanged( o, 0, 1 );
 }
  

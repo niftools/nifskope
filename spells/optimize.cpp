@@ -164,6 +164,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
+      Q_UNUSED(index);
 		bool removed;
 		int cnt = 0;
 		do

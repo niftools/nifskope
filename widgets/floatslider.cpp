@@ -92,6 +92,7 @@ void FloatSliderEditBox::hide()
 
 void FloatSliderEditBox::focusChanged( QWidget * oldW, QWidget * newW )
 {
+   Q_UNUSED(oldW);
 	if( newW == this ) {
 		return;
 	}
@@ -228,7 +229,7 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 
 	if( showVal ) {
 		int w = fontMetrics().width( "0.000" );
-#pragma message("NOTICE: Qt Bugfix is needed here, see http://pastebin.mozilla.org/101393")
+//#pragma message("NOTICE: Qt Bugfix is needed here, see http://pastebin.mozilla.org/101393")
 		opt.rect.adjust( (6*w)/10, VAL_HEIGHT, (-6*w)/10, 0 );
 	}
 
@@ -251,6 +252,7 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 
 void FloatSlider::paintEvent( QPaintEvent * e )
 {
+   Q_UNUSED(e);
 	QPainter p( this );
 	QStyleOptionSlider opt = getStyleOption();
 	

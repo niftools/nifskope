@@ -47,6 +47,7 @@ CopyFilename::CopyFilename( QWidget * parent )
 
 void CopyFilename::paintEvent( QPaintEvent * e )
 {
+   Q_UNUSED(e);
 	int w = this->width();
 	int h = this->height() / 2;
 

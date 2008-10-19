@@ -166,6 +166,7 @@ int ColorWheel::heightForWidth( int width ) const
 
 void ColorWheel::paintEvent( QPaintEvent * e )
 {
+   Q_UNUSED(e);
 	double s = qMin( width(), height() ) / 2.0;
 	double c = s - s / 5;
 	
