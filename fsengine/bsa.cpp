@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MW_BSAHEADER_FILEID	0x00000100
 #define OB_BSAHEADER_FILEID	0x00415342 /* "BSA\0" */
 #define OB_BSAHEADER_VERSION	0x67
+#define F3_BSAHEADER_VERSION	0x68
 
 /* Archive flags */
 #define OB_BSAARCHIVE_PATHNAMES	1
@@ -184,7 +185,7 @@ bool BSA::canOpen( const QString & fn )
 			if ( f.read( (char *) & version, sizeof( version ) ) != 4 )
 				return false;
 			
-			return ( version == OB_BSAHEADER_VERSION );
+			return ( version == OB_BSAHEADER_VERSION || version == F3_BSAHEADER_VERSION );
 		}
 		else
 			return magic == MW_BSAHEADER_FILEID;
@@ -210,7 +211,7 @@ bool BSA::open()
 		{
 			bsa.read( (char*) &version, sizeof( version ) );
 			
-			if ( version != OB_BSAHEADER_VERSION )
+			if ( version != OB_BSAHEADER_VERSION && version != F3_BSAHEADER_VERSION )
 				throw QString( "file version" );
 			
 			OBBSAHeader header;
