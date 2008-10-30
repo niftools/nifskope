@@ -51,7 +51,7 @@ public:
 
 	enum Type
 	{
-		Alpha, ZBuffer, Material, Texturing, Texture, Specular, Wireframe, VertexColor, Stencil
+		Alpha, ZBuffer, Material, Texturing, Texture, Specular, Wireframe, VertexColor, Stencil, ShaderLighting
 	};
 	
 	virtual Type type() const = 0;
@@ -348,5 +348,35 @@ protected:
 };
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
+
+
+class BSShaderLightingProperty : public Property
+{
+public:
+   BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+
+   Type type() const { return ShaderLighting; }
+   QString typeId() const { return "BSShaderLightingProperty"; }
+
+   void update( const NifModel * nif, const QModelIndex & block );
+
+   friend void glProperty( BSShaderLightingProperty * );
+
+   bool bind( int id, const QString & fname = QString() );
+   bool bind( int id, const QList< QVector<Vector2> > & texcoords );
+   bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
+
+   QString fileName( int id ) const;
+   //int coordSet( int id ) const;
+
+   static int getId( const QString & id );
+
+protected:
+   //QVector<QString> textures;
+   QPersistentModelIndex iTextureSet;
+};
+
+REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
+
 
 #endif

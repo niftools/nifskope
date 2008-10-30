@@ -6,6 +6,7 @@ changes since 1.0.15:
  * add Transform Inspection window
  * add Fallout 3 to game texture auto detection
  * nif.xml updates for Fallout 3
+ * add support for Fallout 3 BSA files
 
 changes since 1.0.14:
  * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3

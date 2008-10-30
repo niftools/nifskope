@@ -57,6 +57,12 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 		property = new VertexColorProperty( scene, index );
 	else if ( nif->isNiBlock( index, "NiStencilProperty" ) )
 		property = new StencilProperty( scene, index );
+   else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) )
+      property = new BSShaderLightingProperty( scene, index );
+   else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) )
+      property = new BSShaderLightingProperty( scene, index );
+   else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) )
+      property = new BSShaderLightingProperty( scene, index );
 	
 	if ( property )
 		property->update( nif, index );
@@ -523,8 +529,13 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 		if ( alpha < 0.0 ) alpha = 0.0;
 		if ( alpha > 1.0 ) alpha = 1.0;
 		
-		ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
-		diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
+      if ( nif->getVersionNumber() >= 0x14020007 && nif->getUserVersion() == 11 ) {
+         ambient = Color4(0.0f,0.0f,0.0f,1.0f);
+         diffuse = Color4(0.0f,0.0f,0.0f,1.0f);
+      } else {
+		   ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
+		   diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
+      }
 		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
 		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
 		
@@ -796,4 +807,44 @@ void glProperty( StencilProperty * p )
 		glEnable( GL_CULL_FACE );
 		glCullFace( GL_BACK );
 	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex & property )
+{
+   Property::update( nif, property );
+
+   if ( iBlock.isValid() && iBlock == property )
+   {
+      iTextureSet = nif->getBlock( nif->getLink( iBlock, "Texture Set" ), "BSShaderTextureSet" );
+   }
+}
+
+QString BSShaderLightingProperty::fileName( int id ) const
+{
+   const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
+   if ( nif && iTextureSet.isValid() )
+   {
+      int nTextures = nif->get<int>( iTextureSet, "Num Textures" );
+      QModelIndex iTextures = nif->getIndex( iTextureSet, "Textures" );
+      if (id >= 0 && id < nTextures)
+         return nif->get<QString>( iTextures.child( id, 0 ) );
+   }
+   return QString();
+}
+
+void glProperty( BSShaderLightingProperty * p )
+{
+   if ( p && Options::texturing() && p->bind( 0 ) )
+   {
+      glEnable( GL_TEXTURE_2D );
+   }
+   else
+   {
+      glDisable( GL_TEXTURE_2D );
+   }
 }

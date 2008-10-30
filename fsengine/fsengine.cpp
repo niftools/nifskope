@@ -455,11 +455,11 @@ QAbstractFileEngine * FSArchiveHandler::create( const QString & filename ) const
 #include <QLineEdit>
 #include <QTreeView>
 
-int main( int argc, char * argv[] )
+int texmain( int argc, char * argv[] )
 {
 	QApplication app( argc, argv );
 	
-	QString fn = "f:\\data\\dlcShiveringisles - meshes.bsa"; //"g:\\nif\\mw\\data files\\bsa.bsa"; //"f:\\data\\Oblivion - Misc.bsa";
+	QString fn = "E:\\Valve\\Steam\\SteamApps\\common\\fallout 3\\Data\\Fallout - Textures.bsa"; //"g:\\nif\\mw\\data files\\bsa.bsa"; //"f:\\data\\Oblivion - Misc.bsa";
 	if ( argc > 1 )
 		fn = argv[ argc - 1 ];
 	

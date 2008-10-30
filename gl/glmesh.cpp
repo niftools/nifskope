@@ -214,7 +214,12 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 
 bool Mesh::isHidden() const
 {
-	return ( Node::isHidden() || ( ! Options::drawHidden() && Options::onlyTextured() && ! properties.get< TexturingProperty >() ) );
+	return ( Node::isHidden() 
+          || ( ! Options::drawHidden() && Options::onlyTextured() 
+            && ! properties.get< TexturingProperty >() 
+            && ! properties.get< BSShaderLightingProperty >()
+             ) 
+          );
 }
 
 bool compareTriangles( const QPair< int, float > & tri1, const QPair< int, float > & tri2 )

@@ -439,7 +439,11 @@ void Particles::drawShapes( NodeList * draw2nd )
 	// setup texturing
 	
 	glProperty( findProperty< TexturingProperty >() );
-	
+
+   // setup texturing
+
+   glProperty( findProperty< BSShaderLightingProperty >() );
+
 	// setup z buffer
 	
 	glProperty( findProperty< ZBufferProperty >() );

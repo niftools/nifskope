@@ -47,6 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OB_BSAARCHIVE_PATHNAMES	1
 #define OB_BSAARCHIVE_FILENAMES	2
 #define OB_BSAARCHIVE_COMPRESSFILES	4
+#define F3_BSAARCHIVE_PREFIXFULLFILENAMES 0x0100
 
 /* File flags */
 #define OB_BSAFILE_NIF	0x0001
@@ -225,6 +226,12 @@ bool BSA::open()
 				throw QString( "header flags" );
 			
 			compressToggle = header.ArchiveFlags & OB_BSAARCHIVE_COMPRESSFILES;
+
+         if (version == F3_BSAHEADER_VERSION) {
+            namePrefix = header.ArchiveFlags & F3_BSAARCHIVE_PREFIXFULLFILENAMES;
+         } else {
+            namePrefix = false;
+         }
 			
 			if ( ! bsa.seek( header.FolderRecordOffset + header.FolderNameLength + header.FolderCount * ( 1 + sizeof( OBBSAFolderInfo ) ) + header.FileCount * sizeof( OBBSAFileInfo ) ) )
 				throw QString( "file name seek" );
@@ -291,6 +298,7 @@ bool BSA::open()
 			
 
 			compressToggle = false;
+         namePrefix = false;
 
 			quint32 dataOffset = 12 + header.HashOffset + header.FileCount * 8;
 			
@@ -366,8 +374,16 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 		QMutexLocker lock( & bsaMutex );
 		if ( bsa.seek( file->offset ) )
 		{
-			content.resize( file->size() );
-			if ( bsa.read( content.data(), file->size() ) == file->size() )
+         quint64 filesz = file->size();
+         bool ok = true;
+         if (namePrefix) {
+            char len;
+            ok = bsa.read(&len, 1);
+            filesz -= len;
+            if (ok) ok = bsa.seek( file->offset + 1 + len );
+         }
+			content.resize( filesz );
+			if ( ok && bsa.read( content.data(), filesz ) == filesz )
 			{
 				if ( file->compressed() ^ compressToggle )
 				{

@@ -543,4 +543,44 @@ void TexCache::setNifFolder( const QString & folder )
 	emit sigRefresh();
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+
+bool BSShaderLightingProperty::bind( int id, const QString & fname )
+{
+   GLuint mipmaps = 0;
+   if ( !fname.isEmpty() )
+      mipmaps = scene->bindTexture(  fname );
+   else 
+      mipmaps = scene->bindTexture( this->fileName(id) );
+   if (mipmaps == 0)
+      return false;
+
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+   glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+   glMatrixMode( GL_TEXTURE );
+   glLoadIdentity();
+   glMatrixMode( GL_MODELVIEW );
+   return true;
+}
+
+bool BSShaderLightingProperty::bind( int id, const QList< QVector<Vector2> > & texcoords )
+{
+   if ( checkSet( 0, texcoords ) && bind(id) )
+   {
+      glEnable( GL_TEXTURE_2D );
+      glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+      glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
+      return true;
+   }
+   else
+   {
+      glDisable( GL_TEXTURE_2D );
+      return false;
+   }
+}
+
 #endif

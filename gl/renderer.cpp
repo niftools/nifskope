@@ -504,14 +504,23 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// texturing
 	
 	TexturingProperty * texprop = props.get< TexturingProperty >();
-	
+   BSShaderLightingProperty * bsprop = props.get< BSShaderLightingProperty >();
+
 	int texunit = 0;
 	
 	GLint uniBaseMap = _glGetUniformLocationARB( prog->id, "BaseMap" );
 	
 	if ( uniBaseMap >= 0 )
 	{
-		if ( ! texprop || ! activateTextureUnit( texunit ) || ! texprop->bind( 0 ) )
+      if ( ! texprop && ! bsprop )
+         return false;
+
+      if ( ! activateTextureUnit( texunit ) )
+         return false;
+
+		if (  ( texprop && ! texprop->bind( 0 ) )
+         || ( bsprop && ! bsprop->bind( 0 ) )
+         )
 			return false;
 		
 		_glUniform1iARB( uniBaseMap, texunit++ );
@@ -521,18 +530,30 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	if ( uniNormalMap >= 0 )
 	{
-		QString fname = texprop->fileName( 0 );
-		if ( fname.isEmpty() )
-			return false;
-		
-		int pos = fname.indexOf( "_" );
-		if ( pos >= 0 )
-			fname = fname.left( pos ) + "_n.dds";
-		else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-			fname = fname.insert( pos, "_n" );
-		
-		if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
-			return false;
+      if (texprop != NULL)
+      {
+		   QString fname = texprop->fileName( 0 );
+		   if ( fname.isEmpty() )
+			   return false;
+   		
+		   int pos = fname.indexOf( "_" );
+		   if ( pos >= 0 )
+			   fname = fname.left( pos ) + "_n.dds";
+		   else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+			   fname = fname.insert( pos, "_n" );
+
+         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
+            return false;
+      }
+      else if ( bsprop != NULL )
+      {
+         QString fname = texprop->fileName( 1 );
+         if ( fname.isEmpty() )
+            return false;
+
+         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 1, fname ) )
+            return false;
+      }
 		
 		_glUniform1iARB( uniNormalMap, texunit++ );
 	}
@@ -541,35 +562,56 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	if ( uniGlowMap >= 0 )
 	{
-		QString fname = texprop->fileName( 0 );
-		if ( fname.isEmpty() )
-			return false;
-		
-		int pos = fname.indexOf( "_" );
-		if ( pos >= 0 )
-			fname = fname.left( pos ) + "_g.dds";
-		else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-			fname = fname.insert( pos, "_g" );
-		
-		if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
-			return false;
-		
+      if (texprop != NULL)
+      {
+		   QString fname = texprop->fileName( 0 );
+		   if ( fname.isEmpty() )
+			   return false;
+   		
+		   int pos = fname.indexOf( "_" );
+		   if ( pos >= 0 )
+			   fname = fname.left( pos ) + "_g.dds";
+		   else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+			   fname = fname.insert( pos, "_g" );
+   		
+		   if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
+			   return false;
+      }
+      else if ( bsprop != NULL )
+      {
+         QString fname = texprop->fileName( 2 );
+         if ( fname.isEmpty() )
+            return false;
+         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 2, fname ) )
+            return false;
+      }
 		_glUniform1iARB( uniGlowMap, texunit++ );
 	}
 	else
 	{
-		QString fname = texprop->fileName( 0 );
-		if ( ! fname.isEmpty() )
-		{
-			int pos = fname.indexOf( "_" );
-			if ( pos >= 0 )
-				fname = fname.left( pos ) + "_g.dds";
-			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-				fname = fname.insert( pos, "_g" );
-			
-			if ( activateTextureUnit( texunit ) && texprop->bind( 0, fname ) )
-				return false;
-		}
+      if (texprop != NULL)
+      {
+		   QString fname = texprop->fileName( 0 );
+		   if ( ! fname.isEmpty() )
+		   {
+			   int pos = fname.indexOf( "_" );
+			   if ( pos >= 0 )
+				   fname = fname.left( pos ) + "_g.dds";
+			   else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+				   fname = fname.insert( pos, "_g" );
+   			
+			   if ( activateTextureUnit( texunit ) && texprop->bind( 0, fname ) )
+				   return false;
+		   }
+      }
+      else if ( bsprop != NULL )
+      {
+         QString fname = texprop->fileName( 2 );
+         if ( fname.isEmpty() )
+            return false;
+         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 2, fname ) )
+            return false;
+      }
 	}
 	
 	QMapIterator<int, QString> itx( prog->texcoords );
@@ -592,7 +634,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBinormals.data() );
 		}
-		else
+		else if (texprop != NULL)
 		{
 			int txid = TexturingProperty::getId( itx.value() );
 			if ( txid < 0 )
@@ -809,6 +851,30 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 	{	// old single texture property
 		texprop->bind( mesh->coords );
 	}
+   else if ( BSShaderLightingProperty * texprop = props.get< BSShaderLightingProperty >() )
+   {	// standard multi texturing property
+      int stage = 0;
+
+      if ( texprop->bind( 0, mesh->coords ) ) //, mesh->coords, stage ) )
+      {	// base
+         stage++;
+         glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+
+         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+
+         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
+
+         glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+      }
+   }
 	else
 	{
 		glDisable( GL_TEXTURE_2D );

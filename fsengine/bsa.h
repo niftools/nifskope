@@ -113,6 +113,7 @@ protected:
 	QString status;
 	
 	bool compressToggle;
+   bool namePrefix;
 };
 
 #endif
