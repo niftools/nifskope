@@ -807,7 +807,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 				}
 			}
 		}
-		else {
+		else 
+      {
 			iTexProp = nif->getBlock( l, "NiTextureProperty" );
 			if( iTexProp.isValid() )
 			{
@@ -818,6 +819,23 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 					return true;
 				}
 			}
+         else
+         {
+            iTexProp = nif->getBlock( l, "BSShaderPPLightingProperty" );
+            if( iTexProp.isValid() )
+            {
+               QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );
+               if( iTexSource.isValid() )
+               {
+                  QModelIndex textures = nif->getIndex(iTexSource, "Textures");
+                  if (textures.isValid())
+                  {
+                     texfile = TexCache::find( nif->get<QString>( textures.child(0, 0)) , nif->getFolder() );
+                     return true;   
+                  }
+               }
+            }
+         }
 		}
 	}
 
