@@ -172,6 +172,8 @@ private slots:
 	void checkActions();
 	void viewAction( QAction * );
 
+   void sceneUpdate();
+
 private:
 	QAction * checkedViewAction() const;
 	void uncheckViewAction();

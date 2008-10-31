@@ -41,6 +41,7 @@ class GroupBox : public QGroupBox
 {
 	QStack<QBoxLayout*> lay;
 public:
+   GroupBox( Qt::Orientation o );
 	GroupBox( const QString & title, Qt::Orientation o );
 	~GroupBox();
 	

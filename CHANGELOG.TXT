@@ -7,6 +7,7 @@ changes since 1.0.15:
  * add Fallout 3 to game texture auto detection
  * nif.xml updates for Fallout 3
  * add support for Fallout 3 BSA files
+ * add material color override in settings 
 
 changes since 1.0.14:
  * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3

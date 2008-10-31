@@ -230,6 +230,8 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	connect( Options::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
 	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
+   connect( Options::get(), SIGNAL( materialOverridesChanged() ), this, SLOT( sceneUpdate() ) );
+   
 
 #ifdef Q_OS_LINUX
 	// extra whitespace for linux
@@ -743,6 +745,12 @@ void GLView::modelLinked()
 void GLView::modelDestroyed()
 {
 	setNif( 0 );
+}
+
+void GLView::sceneUpdate()
+{
+   scene->update( model, QModelIndex() );
+   update();
 }
 
 

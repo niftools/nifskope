@@ -252,6 +252,7 @@ public:
 protected:
 	Color4 ambient, diffuse, specular, emissive;
 	GLfloat shininess, alpha;
+   bool overridden;
 
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	

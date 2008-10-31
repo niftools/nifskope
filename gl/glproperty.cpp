@@ -522,25 +522,39 @@ void glProperty( TextureProperty * p )
 void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 {
 	Property::update( nif, index );
-	
+
 	if ( iBlock.isValid() && iBlock == index )
 	{
 		alpha = nif->get<float>( index, "Alpha" );
 		if ( alpha < 0.0 ) alpha = 0.0;
 		if ( alpha > 1.0 ) alpha = 1.0;
 		
-      if ( nif->getVersionNumber() >= 0x14020007 && nif->getUserVersion() == 11 ) {
-         ambient = Color4(0.0f,0.0f,0.0f,1.0f);
-         diffuse = Color4(0.0f,0.0f,0.0f,1.0f);
-      } else {
-		   ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
-		   diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
-      }
-		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
-		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
+      ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
+      diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
+      specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
+      emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
 		
 		shininess = nif->get<float>( index, "Glossiness" );
 	}
+
+   // special case to force refresh of materials
+   bool overrideMaterials = Options::overrideMaterials();
+   if ( overridden && !overrideMaterials && iBlock.isValid() )
+   {
+      ambient = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
+      diffuse = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
+      specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
+      emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
+   } 
+   else if ( overrideMaterials  )
+   {
+      ambient = Color4( Options::overrideAmbient() );
+      diffuse = Color4( Options::overrideDiffuse() );
+      specular = Color4( Options::overrideSpecular() );
+      emissive = Color4( Options::overrideEmissive() );
+   }
+   overridden = overrideMaterials;
+
 }
 
 class AlphaController : public Controller

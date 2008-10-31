@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OPTIONS_H
 
 #include <QObject>
+#include "../widgets/GroupBox.h"
 
 class QAbstractButton;
 class QAction;
@@ -46,6 +47,7 @@ class QModelIndex;
 class QRadioButton;
 class QSpinBox;
 class QStringListModel;
+class QTabWidget;
 class QTimer;
 
 class AlphaSlider;
@@ -100,70 +102,90 @@ public:
 	static int lightDeclination();
 	static int lightPlanarAngle();
 
+   static bool overrideMaterials();
+   static QColor overrideAmbient();
+   static QColor overrideDiffuse();
+   static QColor overrideSpecular();
+   static QColor overrideEmissive();
+
 	static QString startupVersion();
-	
+
 signals:
 	void sigChanged();
+   void materialOverridesChanged();
+
+protected slots:
+   void textureFolderAction( int );
+   void textureFolderIndex( const QModelIndex & );
+   void textureFolderAutoDetect();
+   void activateLightPreset( int );
 
 public slots:
 	void save();
 	
-protected slots:
-	void textureFolderAction( int );
-	void textureFolderIndex( const QModelIndex & );
-	void textureFolderAutoDetect();
-	void activateLightPreset( int );
-	
 protected:
+   friend class TexturesPage;
+   friend class ColorsOptionPage;
+   friend class MaterialOverrideOptionPage;
+
 	Options();
 	~Options();
-	
-	bool eventFilter( QObject * o, QEvent * e );
-	
-	QAction * aDrawAxes;
-	QAction * aDrawNodes;
-	QAction * aDrawHavok;
-	QAction * aDrawConstraints;
-	QAction * aDrawFurn;
-	QAction * aDrawHidden;
-	QAction * aDrawStats;
-	
-	QAction * aSettings;
-	
-	GroupBox * dialog;
-	
-	QStringListModel * TexFolderModel;
-	QListView * TexFolderView;
-	FileSelector * TexFolderSelect;
-	QCheckBox * TexAlternatives;
-	QAbstractButton * TexFolderButtons[3];
-	
-	ColorWheel * colors[3];
-	AlphaSlider * alpha[3];
-	
-	QCheckBox * AntiAlias;
-	QCheckBox * Textures;
-	QCheckBox * Shaders;
-	
-	QCheckBox * CullNoTex;
-	QCheckBox * CullByID;
-	QLineEdit * CullExpr;
-	
-	QRadioButton * AxisX;
-	QRadioButton * AxisY;
-	QRadioButton * AxisZ;
-	
-	ColorWheel * LightColor[3];
-	
-	QCheckBox * LightFrontal;
-	QSpinBox * LightDeclination;
-	QSpinBox * LightPlanarAngle;
-	
-	
-	QTimer * tSave, * tEmit;
 
-	//Misc Optoins
-	QLineEdit * StartVer;
+   bool eventFilter( QObject * o, QEvent * e );
+
+   QAction * aDrawAxes;
+   QAction * aDrawNodes;
+   QAction * aDrawHavok;
+   QAction * aDrawConstraints;
+   QAction * aDrawFurn;
+   QAction * aDrawHidden;
+   QAction * aDrawStats;
+
+   QAction * aSettings;
+
+   QTimer * tSave, * tEmit;
+
+   //////////////////////////////////////////////////////////////////////////
+   QStringListModel * TexFolderModel;
+   QListView * TexFolderView;
+   FileSelector * TexFolderSelect;
+   QCheckBox * TexAlternatives;
+   QAbstractButton * TexFolderButtons[3];
+
+   QCheckBox * AntiAlias;
+   QCheckBox * Textures;
+   QCheckBox * Shaders;
+
+   QCheckBox * CullNoTex;
+   QCheckBox * CullByID;
+   QLineEdit * CullExpr;
+
+   QRadioButton * AxisX;
+   QRadioButton * AxisY;
+   QRadioButton * AxisZ;
+
+   //Misc Optoins
+   QLineEdit * StartVer;
+
+   //////////////////////////////////////////////////////////////////////////
+   ColorWheel * colors[3];
+   AlphaSlider * alpha[3];
+
+   ColorWheel * LightColor[3];
+
+   QCheckBox * LightFrontal;
+   QSpinBox * LightDeclination;
+   QSpinBox * LightPlanarAngle;
+
+   //////////////////////////////////////////////////////////////////////////
+
+   QCheckBox * overrideMatCheck;
+   ColorWheel * matColors[4];
+
+   //////////////////////////////////////////////////////////////////////////
+
+   GroupBox * dialog;
+   QTabWidget *tab;
 
 };
 
