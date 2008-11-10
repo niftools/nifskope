@@ -250,6 +250,7 @@ protected:
 	template <typename T> bool set( NifItem * item, const T & d );
 
 	friend class NifXmlHandler;
+   friend class NifModelEval;
 }; // class NifModel
 
 

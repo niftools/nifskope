@@ -149,13 +149,29 @@ public:
 	virtual quint32 getVersionNumber() const = 0;
 
 	
+
+   // column numbers
+   enum {
+      NameCol  = 0,
+      TypeCol  = 1,
+      ValueCol = 2,
+      ArgCol   = 3,
+      Arr1Col  = 4,
+      Arr2Col  = 5,
+      CondCol  = 6,
+      Ver1Col  = 7,
+      Ver2Col  = 8,
+      VerCondCol  = 9,
+      NumColumns = 10,
+   };
+
 	// QAbstractModel interface
 	
 	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
 	QModelIndex parent( const QModelIndex & index ) const;
 
 	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
-	int columnCount( const QModelIndex & parent = QModelIndex() ) const { Q_UNUSED(parent); return 9; }
+	int columnCount( const QModelIndex & parent = QModelIndex() ) const { Q_UNUSED(parent); return NumColumns; }
 	
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
@@ -164,20 +180,6 @@ public:
 	
 	Qt::ItemFlags flags( const QModelIndex & index ) const;
 	
-
-
-	// column numbers
-	enum {
-		NameCol  = 0,
-		TypeCol  = 1,
-		ValueCol = 2,
-		ArgCol   = 3,
-		Arr1Col  = 4,
-		Arr2Col  = 5,
-		CondCol  = 6,
-		Ver1Col  = 7,
-		Ver2Col  = 8
-	};
 	
 	enum MsgMode
 	{
@@ -210,7 +212,7 @@ protected:
 	virtual bool		evalVersion( NifItem * item, bool chkParents = false ) const = 0;
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
 	bool		evalConditionHelper( NifItem * item, const QString & cond ) const;
-	
+
 	virtual QString ver2str( quint32 ) const = 0;
 	virtual quint32 str2ver( QString ) const = 0;
 
@@ -228,6 +230,7 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+	friend class BaseModelEval;
 }; // class BaseModel
 
 

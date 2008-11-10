@@ -681,6 +681,7 @@ void NifSkope::setListMode()
 			list->setColumnHidden( NifModel::CondCol, true );
 			list->setColumnHidden( NifModel::Ver1Col, true );
 			list->setColumnHidden( NifModel::Ver2Col, true );
+         list->setColumnHidden( NifModel::VerCondCol, true );
 			head->resizeSection( 0, s0 );
 			head->resizeSection( 1, s1 );
 		}

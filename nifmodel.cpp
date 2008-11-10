@@ -117,6 +117,28 @@ quint32 NifModel::version2number( const QString & s )
 	}
 }
 
+// Helper class for evaluating condition expressions
+class NifModelEval
+{
+public:
+   const NifModel * model;
+   const NifItem * item;
+   NifModelEval(const NifModel * model, const NifItem * item) {
+      this->model = model;
+      this->item = item;
+   }
+
+   QVariant operator()(const QVariant &v) const {
+      if ( v.type() == QVariant::String ) {
+         QString left = v.toString();
+         NifItem * i = const_cast<NifItem*>(item);
+         i = model->getItem( i, left );
+         return ( i ) ? QVariant( i->value().toCount() ) : QVariant(0L);
+      }
+      return v;
+   }
+};
+
 bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 {
 	if ( item == root )
@@ -126,7 +148,15 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 		if ( ! evalVersion( item->parent(), true ) )
 			return false;
 	
-	return item->evalVersion( version );
+	if ( !item->evalVersion( version ) )
+      return false;
+
+   QString vercond = item->vercond();
+   if ( vercond.isEmpty() )
+      return true;
+
+   NifModelEval functor(this, getHeaderItem());
+   return item->verexpr().evaluateBool(functor);
 }
 
 void NifModel::clear()
@@ -1046,6 +1076,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return version2string( item->ver1() );
 				case Ver2Col:	return version2string( item->ver2() );
+            case VerCondCol: return item->vercond();
 				default:		return QVariant();
 			}
 		}
@@ -1081,6 +1112,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return version2string( item->ver1() );
 				case Ver2Col:	return version2string( item->ver2() );
+            case VerCondCol: return item->vercond();
 				default:		return QVariant();
 			}
 		}
@@ -1274,6 +1306,8 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		case NifModel::Ver2Col:
 			item->setVer2( NifModel::version2number( value.toString() ) );
 			break;
+      case NifModel::VerCondCol:
+         item->setVerCond( value.toString() );
 		default:
 			return false;
 	}
@@ -1469,7 +1503,7 @@ bool NifModel::load( QIODevice & device )
 				}
 				// Check device position and emit warning if location is not expected
 				if (size != UINT_MAX)
-				{
+				   {
 					qint64 pos = device.pos();
 					if ((curpos + size) != pos)
 					{

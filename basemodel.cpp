@@ -373,6 +373,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return ver2str( item->ver1() );
 				case Ver2Col:	return ver2str( item->ver2() );
+            case VerCondCol:	return item->vercond();
 				default:		return QVariant();
 			}
 		}
@@ -389,6 +390,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return ver2str( item->ver1() );
 				case Ver2Col:	return ver2str( item->ver2() );
+            case VerCondCol: return item->vercond();
 				default:		return QVariant();
 			}
 		}
@@ -497,6 +499,9 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 		case BaseModel::Ver2Col:
 			item->setVer2( str2ver( value.toString() ) );
 			break;
+      case BaseModel::VerCondCol:
+         item->setVerCond( value.toString() );
+         break;
 		default:
 			return false;
 	}
@@ -525,6 +530,7 @@ QVariant BaseModel::headerData( int section, Qt::Orientation orientation, int ro
 				case CondCol:		return tr("Condition");
 				case Ver1Col:		return tr("since");
 				case Ver2Col:		return tr("until");
+            case VerCondCol:  return tr("Version Condition");
 				default:			return QVariant();
 			}
 		default:
@@ -634,6 +640,32 @@ QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & nam
  *  conditions and version
  */
 
+// Helper class for evaluating condition expressions
+class BaseModelEval
+{
+public:
+   const BaseModel * model;
+   const NifItem * item;
+   BaseModelEval(const BaseModel * model, const NifItem * item) {
+      this->model = model;
+      this->item = item;
+   }
+
+   QVariant operator()(const QVariant &v) const {
+      if ( v.type() == QVariant::String ) {
+         QString left = v.toString();
+         const NifItem * i = item;
+         while ( left == "ARG" ) {
+            if ( ! i->parent() )	return false;
+            i = i->parent();
+            left = i->arg();
+         }
+         i = model->getItem( i->parent(), left );
+         return ( i ) ? QVariant( i->value().toCount() ) : QVariant(0L);
+      }
+      return v;
+   }
+};
 
 bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 {
@@ -646,26 +678,13 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 	if ( chkParents && item->parent() )
 		if ( ! evalCondition( item->parent(), true ) )
 			return false;
-	
+
 	QString cond = item->cond();
-	
 	if ( cond.isEmpty() )
 		return true;
-	
-	if ( cond.contains( "&&" ) )
-	{
-		foreach ( QString c, cond.split( "&&" ) )
-		{
-			c = c.trimmed();
-			if ( c.startsWith( "(" ) && c.endsWith( ")" ) )
-				c = c.mid( 1, c.length() - 2 ).trimmed();
-			if ( ! evalConditionHelper( item, c ) )
-				return false;
-		}
-		return true;
-	}
-	
-	return evalConditionHelper( item, cond );
+
+	BaseModelEval functor(this, item);
+	return item->condexpr().evaluateBool(functor);
 }
 
 bool BaseModel::evalConditionHelper( NifItem * item, const QString & cond ) const
