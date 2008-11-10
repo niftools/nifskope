@@ -63,29 +63,8 @@ public:
       opcode = Expression::nop;
       partition(cond);
    }
-private:
-   Expression (const QVariant& lhs, Operator opcode, const QVariant& rhs)
-   {
-      this->lhs = lhs;
-      this->opcode = opcode;
-      this->rhs = rhs;
-   }
 
-   static Operator operatorFromString(const QString& str);
-
-   void partition(const QString & cond, int offset = 0);
-
-
-   template <class F>
-   QVariant convertValue(const QVariant& v, const F& convert ) const
-   {
-      if (v.type() == QVariant::UserType)
-      {
-         if ( v.canConvert<Expression>() )
-            return v.value<Expression>().evaluateValue(convert);
-      }
-      return convert(v);
-   }
+   QString toString() const;
 
 public:
    template <class F>
@@ -130,6 +109,21 @@ public:
    bool evaluateBool( const F& convert ) const
    {
       return evaluateValue(convert).toBool();
+   }
+
+private:
+   static Operator operatorFromString(const QString& str);
+   void partition(const QString & cond, int offset = 0);
+
+   template <class F>
+   QVariant convertValue(const QVariant& v, const F& convert ) const
+   {
+      if (v.type() == QVariant::UserType)
+      {
+         if ( v.canConvert<Expression>() )
+            return v.value<Expression>().evaluateValue(convert);
+      }
+      return convert(v);
    }
 };
 

@@ -128,10 +128,10 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
    }
 
    // Handle unary operators
-   QRegExp reUnary("^\\s*!.*");
+   QRegExp reUnary("^\\s*!(.*)");
    pos = reUnary.indexIn(cond, offset, QRegExp::CaretAtOffset);
    if (pos != -1) {
-      Expression e(cond.mid(pos+1).trimmed());
+      Expression e(reUnary.cap(1).trimmed());
       this->opcode = Expression::not;
       this->rhs = QVariant::fromValue( e );
       return;
@@ -180,14 +180,8 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
       }
    }
 
-   pos = reLParen.indexIn(cond,oendpos+1, QRegExp::CaretAtOffset);
-   if (pos != -1) {
-      matchGroup(cond, pos, rstartpos, rendpos);
-      ++rstartpos, --rendpos;
-   } else {
-      rstartpos = oendpos+1;
-      rendpos = cond.size() - 1;
-   }
+   rstartpos = oendpos+1;
+   rendpos = cond.size() - 1;
 
    Expression lhsexp(cond.mid(lstartpos, lendpos-lstartpos+1).trimmed());
    Expression rhsexp(cond.mid(rstartpos, rendpos-rstartpos+1).trimmed());
@@ -202,4 +196,47 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
    } else {
       this->rhs = QVariant::fromValue( rhsexp );
    }
+}
+
+QString Expression::toString() const
+{
+   QString l = lhs.toString();
+   QString r = rhs.toString();
+   if (lhs.type() == QVariant::UserType && lhs.canConvert<Expression>())
+      l = lhs.value<Expression>().toString();
+   if (rhs.type() == QVariant::UserType && rhs.canConvert<Expression>())
+      r = rhs.value<Expression>().toString();
+
+   switch (opcode)
+   {
+   case Expression::not:
+      return QString("!%1").arg(r);
+   case Expression::not_eq:
+      return QString("(%1 != %2)").arg(l).arg(r);
+   case Expression::eq:
+      return QString("(%1 == %2)").arg(l).arg(r);
+   case Expression::gte:
+      return QString("(%1 >= %2)").arg(l).arg(r);
+   case Expression::lte:
+      return QString("(%1 <= %2)").arg(l).arg(r);
+   case Expression::gt:
+      return QString("(%1 > %2)").arg(l).arg(r);
+   case Expression::lt:
+      return QString("(%1 < %2)").arg(l).arg(r);
+   case Expression::bit_and:
+      return QString("(%1 & %2)").arg(l).arg(r);
+   case Expression::bit_or:
+      return QString("(%1 | %2)").arg(l).arg(r);
+   case Expression::add:
+      return QString("(%1 + %2)").arg(l).arg(r);
+   case Expression::sub:
+      return QString("(%1 - %2)").arg(l).arg(r);
+   case Expression::bool_and:
+      return QString("(%1 && %2)").arg(l).arg(r);
+   case Expression::bool_or:
+      return QString("(%1 || %2)").arg(l).arg(r);
+   case Expression::nop:
+      return QString("%1").arg(l);
+   }
+   return QString();
 }

@@ -661,7 +661,13 @@ public:
             left = i->arg();
          }
          i = model->getItem( i->parent(), left );
-         return ( i ) ? QVariant( i->value().toCount() ) : QVariant(0L);
+         if (i) {
+            if ( i->value().isCount() )
+               return QVariant( i->value().toCount() );
+            else if ( i->value().isFileVersion() )
+               return QVariant( i->value().toFileVersion() );
+         }
+         return QVariant(0L);
       }
       return v;
    }

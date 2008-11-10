@@ -133,7 +133,13 @@ public:
          QString left = v.toString();
          NifItem * i = const_cast<NifItem*>(item);
          i = model->getItem( i, left );
-         return ( i ) ? QVariant( i->value().toCount() ) : QVariant(0L);
+         if (i) {
+            if ( i->value().isCount() )
+               return QVariant( i->value().toCount() );
+            else if ( i->value().isFileVersion() )
+               return QVariant( i->value().toFileVersion() );
+         }
+         QVariant(0L);
       }
       return v;
    }
@@ -154,6 +160,8 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
    QString vercond = item->vercond();
    if ( vercond.isEmpty() )
       return true;
+
+   QString vercond2 = item->verexpr().toString();
 
    NifModelEval functor(this, getHeaderItem());
    return item->verexpr().evaluateBool(functor);
