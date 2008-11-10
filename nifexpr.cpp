@@ -102,20 +102,20 @@ static quint32 version2number( const QString & s )
 
 Expression::Operator Expression::operatorFromString( const QString& str )
 {
-   if ( str == "!" ) return Expression::not;
-   else if ( str == "!=" ) return Expression::not_eq;
-   else if ( str == "==" ) return Expression::eq;
-   else if ( str == ">=" ) return Expression::gte;
-   else if ( str == "<=" ) return Expression::lte;
-   else if ( str == ">" ) return Expression::gt;
-   else if ( str == "<" ) return Expression::lt;
-   else if ( str == "&" ) return Expression::bit_and;
-   else if ( str == "|" ) return Expression::bit_or;
-   else if ( str == "+" ) return Expression::add;
-   else if ( str == "-" ) return Expression::sub;
-   else if ( str == "&&" ) return Expression::bool_and;
-   else if ( str == "||" ) return Expression::bool_or;
-   return Expression::nop;
+   if ( str == "!" ) return Expression::e_not;
+   else if ( str == "!=" ) return Expression::e_not_eq;
+   else if ( str == "==" ) return Expression::e_eq;
+   else if ( str == ">=" ) return Expression::e_gte;
+   else if ( str == "<=" ) return Expression::e_lte;
+   else if ( str == ">" ) return Expression::e_gt;
+   else if ( str == "<" ) return Expression::e_lt;
+   else if ( str == "&" ) return Expression::e_bit_and;
+   else if ( str == "|" ) return Expression::e_bit_or;
+   else if ( str == "+" ) return Expression::e_add;
+   else if ( str == "-" ) return Expression::e_sub;
+   else if ( str == "&&" ) return Expression::e_bool_and;
+   else if ( str == "||" ) return Expression::e_bool_or;
+   return Expression::e_nop;
 }
 
 void Expression::partition( const QString & cond, int offset /*= 0*/ )
@@ -123,7 +123,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
    int pos;
    if (cond.isEmpty())
    {
-      this->opcode = Expression::nop;
+      this->opcode = Expression::e_nop;
       return;
    }
 
@@ -132,7 +132,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
    pos = reUnary.indexIn(cond, offset, QRegExp::CaretAtOffset);
    if (pos != -1) {
       Expression e(reUnary.cap(1).trimmed());
-      this->opcode = Expression::not;
+      this->opcode = Expression::e_not;
       this->rhs = QVariant::fromValue( e );
       return;
    }
@@ -175,7 +175,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
          } else if (reVersion.exactMatch(cond)) {
             this->lhs.setValue( version2number(cond) );
          }
-         this->opcode = Expression::nop;
+         this->opcode = Expression::e_nop;
          return;
       }
    }
@@ -185,13 +185,13 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 
    Expression lhsexp(cond.mid(lstartpos, lendpos-lstartpos+1).trimmed());
    Expression rhsexp(cond.mid(rstartpos, rendpos-rstartpos+1).trimmed());
-   if (lhsexp.opcode == Expression::nop) {
+   if (lhsexp.opcode == Expression::e_nop) {
       this->lhs = lhsexp.lhs;
    } else {
       this->lhs = QVariant::fromValue( lhsexp );
    }
    this->opcode = operatorFromString(cond.mid(ostartpos, oendpos-ostartpos));
-   if (rhsexp.opcode == Expression::nop) {
+   if (rhsexp.opcode == Expression::e_nop) {
       this->rhs = rhsexp.lhs;
    } else {
       this->rhs = QVariant::fromValue( rhsexp );
@@ -209,33 +209,33 @@ QString Expression::toString() const
 
    switch (opcode)
    {
-   case Expression::not:
+   case Expression::e_not:
       return QString("!%1").arg(r);
-   case Expression::not_eq:
+   case Expression::e_not_eq:
       return QString("(%1 != %2)").arg(l).arg(r);
-   case Expression::eq:
+   case Expression::e_eq:
       return QString("(%1 == %2)").arg(l).arg(r);
-   case Expression::gte:
+   case Expression::e_gte:
       return QString("(%1 >= %2)").arg(l).arg(r);
-   case Expression::lte:
+   case Expression::e_lte:
       return QString("(%1 <= %2)").arg(l).arg(r);
-   case Expression::gt:
+   case Expression::e_gt:
       return QString("(%1 > %2)").arg(l).arg(r);
-   case Expression::lt:
+   case Expression::e_lt:
       return QString("(%1 < %2)").arg(l).arg(r);
-   case Expression::bit_and:
+   case Expression::e_bit_and:
       return QString("(%1 & %2)").arg(l).arg(r);
-   case Expression::bit_or:
+   case Expression::e_bit_or:
       return QString("(%1 | %2)").arg(l).arg(r);
-   case Expression::add:
+   case Expression::e_add:
       return QString("(%1 + %2)").arg(l).arg(r);
-   case Expression::sub:
+   case Expression::e_sub:
       return QString("(%1 - %2)").arg(l).arg(r);
-   case Expression::bool_and:
+   case Expression::e_bool_and:
       return QString("(%1 && %2)").arg(l).arg(r);
-   case Expression::bool_or:
+   case Expression::e_bool_or:
       return QString("(%1 || %2)").arg(l).arg(r);
-   case Expression::nop:
+   case Expression::e_nop:
       return QString("%1").arg(l);
    }
    return QString();

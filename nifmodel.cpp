@@ -139,7 +139,7 @@ public:
             else if ( i->value().isFileVersion() )
                return QVariant( i->value().toFileVersion() );
          }
-         QVariant(0L);
+         QVariant(0);
       }
       return v;
    }

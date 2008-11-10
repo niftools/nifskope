@@ -17,18 +17,7 @@ CONFIG += fsengine
 DESTDIR = .
 
 HEADERS += \
-    niftypes.h \
-    nifvalue.h \
-    basemodel.h \
-    kfmmodel.h \
-    nifmodel.h \
-    glview.h \
-    message.h \
-    nifproxy.h \
-    nifskope.h \
-    spellbook.h \
-    options.h \
-    config.h \
+    *.h \
     gl/*.h \
     gl/marker/*.h \
     gl/dds/*.h \
@@ -38,20 +27,7 @@ HEADERS += \
     NvTriStrip/qtwrapper.h
 
 SOURCES += \
-    niftypes.cpp \
-    nifvalue.cpp \
-    basemodel.cpp \
-    kfmmodel.cpp \
-    kfmxml.cpp \
-    nifmodel.cpp \
-    nifxml.cpp \
-    glview.cpp \
-    message.cpp \
-    nifdelegate.cpp \
-    nifproxy.cpp \
-    nifskope.cpp \
-    spellbook.cpp \
-    options.cpp \
+    *.cpp \
     gl/*.cpp \
     gl/dds/*.cpp \
     widgets/*.cpp \
