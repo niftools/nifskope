@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #ifdef QT_OPENGL_LIB
-
+#include "GLee.h"
 #include <QtOpenGL>
 
 #include <QDebug>
@@ -46,10 +46,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "fsengine/fsmanager.h"
 #include "fsengine/fsengine.h"
 #include <GL/glext.h>
-
-PFNGLACTIVETEXTUREARBPROC       _glActiveTextureARB       = 0;
-PFNGLCLIENTACTIVETEXTUREARBPROC _glClientActiveTextureARB = 0;
-PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D   = 0;
 
 int num_texture_units = 0;
 float max_anisotropy = 0;
@@ -67,30 +63,20 @@ void initializeTextureUnits( const QGLContext * context )
 	//if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
 	//	qWarning() << "S3TC texture compression not supported, some textures may not load";
 
-	_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2D" );
-	if ( ! _glCompressedTexImage2D )
-		_glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) context->getProcAddress( "glCompressedTexImage2DARB" );
-
-	if ( ! _glCompressedTexImage2D )
-		qWarning( "texture compression not supported" );
-	
-	_glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) context->getProcAddress( "glActiveTextureARB" );
-	_glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) context->getProcAddress( "glClientActiveTextureARB" );
-	
-	if ( ! _glActiveTextureARB || ! _glClientActiveTextureARB )
+	if ( GLEE_ARB_multitexture )
 	{
-		qWarning( "multitexturing not supported" );
-		num_texture_units = 1;
+    glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
+    if ( num_texture_units < 1 )
+      num_texture_units = 1;
+		  //qWarning() << "texture units" << num_texture_units;
 	}
 	else
 	{
-		glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
-		if ( num_texture_units < 1 )
-			num_texture_units = 1;
-		//qWarning() << "texture units" << num_texture_units;
+    qWarning( "multitexturing not supported" );
+    num_texture_units = 1;
 	}
 	
-	if ( extensions.contains( "GL_EXT_texture_filter_anisotropic" ) )
+	if ( GLEE_EXT_texture_filter_anisotropic )
 	{
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, & max_anisotropy );
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
@@ -104,12 +90,17 @@ bool activateTextureUnit( int stage )
 	
 	if ( stage < num_texture_units )
 	{
-		_glActiveTextureARB( GL_TEXTURE0_ARB + stage );
-		_glClientActiveTextureARB( GL_TEXTURE0_ARB + stage );	
-		return true;
-	}
-	else
-		return false;
+    if (GLEE_ARB_texture_compression )
+    {
+      glActiveTexture( GL_TEXTURE0 + stage );
+      glClientActiveTexture( GL_TEXTURE0 + stage );	
+      return true;
+    }
+    else
+      qWarning( "texture compression not supported" );
+  }
+  else
+    return false;
 }
 
 void resetTextureUnits()
@@ -122,12 +113,12 @@ void resetTextureUnits()
 	
 	for ( int x = num_texture_units-1; x >= 0; x-- )
 	{
-		_glActiveTextureARB( GL_TEXTURE0_ARB + x );
+		glActiveTexture( GL_TEXTURE0 + x );
 		glDisable( GL_TEXTURE_2D );
 		glMatrixMode( GL_TEXTURE );
 		glLoadIdentity();
 		glMatrixMode( GL_MODELVIEW );
-		_glClientActiveTextureARB( GL_TEXTURE0_ARB + x );
+		glClientActiveTexture( GL_TEXTURE0 + x );
 		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	}
 }

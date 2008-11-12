@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OPTIONS_H
 
 #include <QObject>
-#include "../widgets/GroupBox.h"
+#include "widgets/groupbox.h"
 
 class QAbstractButton;
 class QAction;

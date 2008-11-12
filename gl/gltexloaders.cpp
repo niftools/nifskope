@@ -29,15 +29,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
-
+#include "GLee.h"
 #include <QtOpenGL>
-
-#include <GL/glext.h>
 #include "dds/dds_api.h"
 #include "dds/DirectDrawSurface.h"
 #include "nifmodel.h"
-
-extern PFNGLCOMPRESSEDTEXIMAGE2DPROC   _glCompressedTexImage2D;
 
 //! Check whether a number is a power of two.
 bool isPowerOfTwo( unsigned int x )

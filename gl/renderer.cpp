@@ -30,8 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "GLee.h"
 #include "renderer.h"
-
 #include <QApplication>
 #include <QDebug>
 #include <QDir>
@@ -46,21 +46,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "options.h"
 
-// GL_ARB_shader_objects
-PFNGLCREATEPROGRAMOBJECTARBPROC  _glCreateProgramObjectARB  = NULL;
-PFNGLDELETEOBJECTARBPROC         _glDeleteObjectARB         = NULL;
-PFNGLUSEPROGRAMOBJECTARBPROC     _glUseProgramObjectARB     = NULL;
-PFNGLCREATESHADEROBJECTARBPROC   _glCreateShaderObjectARB   = NULL;
-PFNGLSHADERSOURCEARBPROC         _glShaderSourceARB         = NULL;
-PFNGLCOMPILESHADERARBPROC        _glCompileShaderARB        = NULL;
-PFNGLGETOBJECTPARAMETERIVARBPROC _glGetObjectParameterivARB = NULL;
-PFNGLATTACHOBJECTARBPROC         _glAttachObjectARB         = NULL;
-PFNGLGETINFOLOGARBPROC           _glGetInfoLogARB           = NULL;
-PFNGLLINKPROGRAMARBPROC          _glLinkProgramARB          = NULL;
-PFNGLGETUNIFORMLOCATIONARBPROC   _glGetUniformLocationARB   = NULL;
-PFNGLUNIFORM4FARBPROC            _glUniform4fARB            = NULL;
-PFNGLUNIFORM1IARBPROC            _glUniform1iARB            = NULL;
-
 bool shader_initialized = false;
 bool shader_ready = false;
 
@@ -73,35 +58,10 @@ bool Renderer::initialize( const QGLContext * cx )
 	
 	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
 	
-	if ( ! extensions.contains( "GL_ARB_shading_language_100" ) || ! extensions.contains( "GL_ARB_shader_objects" )
-		|| ! extensions.contains( "GL_ARB_vertex_shader" ) || ! extensions.contains( "GL_ARB_fragment_shader" ) )
+	if ( !GLEE_ARB_shading_language_100|| ! GLEE_ARB_shader_objects || ! GLEE_ARB_vertex_shader || GLEE_ARB_fragment_shader)
 	{
 		return false;
 	}
-
-	_glCreateProgramObjectARB  = (PFNGLCREATEPROGRAMOBJECTARBPROC) cx->getProcAddress("glCreateProgramObjectARB");
-	_glDeleteObjectARB         = (PFNGLDELETEOBJECTARBPROC) cx->getProcAddress("glDeleteObjectARB");
-	_glUseProgramObjectARB     = (PFNGLUSEPROGRAMOBJECTARBPROC) cx->getProcAddress("glUseProgramObjectARB");
-	_glCreateShaderObjectARB   = (PFNGLCREATESHADEROBJECTARBPROC) cx->getProcAddress("glCreateShaderObjectARB");
-	_glShaderSourceARB         = (PFNGLSHADERSOURCEARBPROC) cx->getProcAddress("glShaderSourceARB");
-	_glCompileShaderARB        = (PFNGLCOMPILESHADERARBPROC) cx->getProcAddress("glCompileShaderARB");
-	_glGetObjectParameterivARB = (PFNGLGETOBJECTPARAMETERIVARBPROC) cx->getProcAddress("glGetObjectParameterivARB");
-	_glAttachObjectARB         = (PFNGLATTACHOBJECTARBPROC) cx->getProcAddress("glAttachObjectARB");
-	_glGetInfoLogARB           = (PFNGLGETINFOLOGARBPROC) cx->getProcAddress("glGetInfoLogARB");
-	_glLinkProgramARB          = (PFNGLLINKPROGRAMARBPROC) cx->getProcAddress("glLinkProgramARB");
-	_glGetUniformLocationARB   = (PFNGLGETUNIFORMLOCATIONARBPROC) cx->getProcAddress("glGetUniformLocationARB");
-	_glUniform4fARB            = (PFNGLUNIFORM4FARBPROC) cx->getProcAddress("glUniform4fARB");
-	_glUniform1iARB            = (PFNGLUNIFORM1IARBPROC) cx->getProcAddress("glUniform1iARB");
-
-	if( !_glCreateProgramObjectARB || !_glDeleteObjectARB || !_glUseProgramObjectARB ||
-		!_glCreateShaderObjectARB || !_glShaderSourceARB || !_glCompileShaderARB || 
-		!_glGetObjectParameterivARB || !_glAttachObjectARB || !_glGetInfoLogARB || 
-		!_glLinkProgramARB || !_glGetUniformLocationARB || !_glUniform4fARB ||
-		!_glUniform1iARB )
-	{
-		return false;
-	}
-
 	shader_ready = true;
 	return true;
 }
@@ -219,13 +179,13 @@ void Renderer::ConditionGroup::addCondition( Condition * c )
 
 Renderer::Shader::Shader( const QString & n, GLenum t ) : name( n ), id( 0 ), status( false ), type( t )
 {
-	id = _glCreateShaderObjectARB( type );
+	id = glCreateShader( type );
 }
 
 Renderer::Shader::~Shader()
 {
 	if ( id )
-		_glDeleteObjectARB( id );
+		glDeleteShader( id );
 }
 
 bool Renderer::Shader::load( const QString & filepath )
@@ -240,18 +200,18 @@ bool Renderer::Shader::load( const QString & filepath )
 		
 		const char * src = data.constData();
 		
-		_glShaderSourceARB( id, 1, & src, 0 );
-		_glCompileShaderARB( id );
+		glShaderSource( id, 1, & src, 0 );
+		glCompileShader( id );
 		
 		GLint result;
-		_glGetObjectParameterivARB( id, GL_OBJECT_COMPILE_STATUS_ARB, & result );
+		glGetShaderiv( id, GL_COMPILE_STATUS, & result );
 		
 		if ( result != GL_TRUE )
 		{
 			int logLen;
-			_glGetObjectParameterivARB( id, GL_OBJECT_INFO_LOG_LENGTH_ARB, & logLen );
+			glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			char * log = new char[ logLen ];
-			_glGetInfoLogARB( id, logLen, 0, log );
+			glGetShaderInfoLog( id, logLen, 0, log );
 			QString errlog( log );
 			delete[] log;
 			throw errlog;
@@ -269,13 +229,13 @@ bool Renderer::Shader::load( const QString & filepath )
 
 Renderer::Program::Program( const QString & n ) : name( n ), id( 0 ), status( false )
 {
-	id = _glCreateProgramObjectARB();
+	id = glCreateProgram();
 }
 
 Renderer::Program::~Program()
 {
 	if ( id )
-		_glDeleteObjectARB( id );
+		glDeleteShader( id );
 }
 
 bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
@@ -304,7 +264,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 					if ( shader )
 					{
 						if ( shader->status )
-							_glAttachObjectARB( id, shader->id );
+							glAttachShader( id, shader->id );
 						else
 							throw QString( "depends on shader %1 which was not compiled successful" ).arg( list[ i ] );
 					}
@@ -361,17 +321,19 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 			}
 		}
 		
-		_glLinkProgramARB( id );
+		glLinkProgram( id );
 		
 		int result;
-		_glGetObjectParameterivARB( id, GL_OBJECT_LINK_STATUS_ARB, & result );
+    
+		glGetShaderiv( id, GL_LINK_STATUS, & result );
 		
 		if ( result != GL_TRUE )
 		{
 			int logLen;
-			_glGetObjectParameterivARB( id, GL_OBJECT_INFO_LOG_LENGTH_ARB, & logLen );
+			glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			char * log = new char[ logLen ];
-			_glGetInfoLogARB( id, logLen, 0, log );
+      
+			glGetShaderInfoLog( id, logLen, 0, log );
 			QString errlog( log );
 			delete[] log;
 			throw errlog;
@@ -414,7 +376,7 @@ void Renderer::updateShaders()
 	dir.setNameFilters( QStringList() << "*.vert" );
 	foreach ( QString name, dir.entryList() )
 	{
-		Shader * shader = new Shader( name, GL_VERTEX_SHADER_ARB );
+		Shader * shader = new Shader( name, GL_VERTEX_SHADER );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
@@ -422,7 +384,7 @@ void Renderer::updateShaders()
 	dir.setNameFilters( QStringList() << "*.frag" );
 	foreach ( QString name, dir.entryList() )
 	{
-		Shader * shader = new Shader( name, GL_FRAGMENT_SHADER_ARB );
+		Shader * shader = new Shader( name, GL_FRAGMENT_SHADER );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
@@ -486,7 +448,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 void Renderer::stopProgram()
 {
 	if ( shader_ready )
-		_glUseProgramObjectARB( 0 );
+		glUseProgram( 0 );
 	resetTextureUnits();
 }
 
@@ -499,7 +461,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	if ( ! prog->conditions.eval( nif, iBlocks ) )
 		return false;
 	
-	_glUseProgramObjectARB( prog->id );
+	glUseProgram( prog->id );
 	
 	// texturing
 	
@@ -508,8 +470,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	int texunit = 0;
 	
-	GLint uniBaseMap = _glGetUniformLocationARB( prog->id, "BaseMap" );
-	
+	GLint uniBaseMap = glGetUniformLocation( prog->id, "BaseMap" );
 	if ( uniBaseMap >= 0 )
 	{
       if ( ! texprop && ! bsprop )
@@ -523,10 +484,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
          )
 			return false;
 		
-		_glUniform1iARB( uniBaseMap, texunit++ );
+		glUniform1i( uniBaseMap, texunit++ );
 	}
 	
-	GLint uniNormalMap = _glGetUniformLocationARB( prog->id, "NormalMap" );
+	GLint uniNormalMap = glGetUniformLocation( prog->id, "NormalMap" );
 	
 	if ( uniNormalMap >= 0 )
 	{
@@ -555,10 +516,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
             return false;
       }
 		
-		_glUniform1iARB( uniNormalMap, texunit++ );
+		glUniform1i( uniNormalMap, texunit++ );
 	}
 	
-	GLint uniGlowMap = _glGetUniformLocationARB( prog->id, "GlowMap" );
+	GLint uniGlowMap = glGetUniformLocation( prog->id, "GlowMap" );
 	
 	if ( uniGlowMap >= 0 )
 	{
@@ -585,7 +546,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
          if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 2, fname ) )
             return false;
       }
-		_glUniform1iARB( uniGlowMap, texunit++ );
+		glUniform1i( uniGlowMap, texunit++ );
 	}
 	else
 	{
@@ -732,119 +693,119 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 		if ( texprop->bind( 1, mesh->coords, stage ) )
 		{	// dark
 			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS);
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA );
 			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
 		}
 		
 		if ( texprop->bind( 0, mesh->coords, stage ) )
 		{	// base
 			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA );
 			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
 		}
 		
 		if ( texprop->bind( 2, mesh->coords, stage ) )
 		{	// detail
 			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA );
 			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0 );
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 2.0 );
 		}
 		
 		if ( texprop->bind( 6, mesh->coords, stage ) )
 		{	// decal 0
 			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_REPLACE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
 			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
 		}
 		
 		if ( texprop->bind( 7, mesh->coords, stage ) )
 		{	// decal 1
 			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_REPLACE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
 			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
 		}
 		
 		if ( texprop->bind( 4, mesh->coords, stage ) )
 		{	// glow
 			stage++;
-			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_ADD );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
 			
-			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_REPLACE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
 			
-			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
 		}
 	}
 	else if ( TextureProperty * texprop = props.get< TextureProperty >() )
@@ -858,21 +819,21 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
       if ( texprop->bind( 0, mesh->coords ) ) //, mesh->coords, stage ) )
       {	// base
          stage++;
-         glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+         glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
 
-         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
 
-         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA );
+         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
+         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE );
+         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA );
 
-         glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0 );
+         glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
       }
    }
 	else
