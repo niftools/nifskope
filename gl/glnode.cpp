@@ -1162,7 +1162,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	}
 	else if ( name == "bhkHingeConstraint" )
 	{
-		QModelIndex iHinge = iConstraint;
+		QModelIndex iHinge = nif->getIndex( iConstraint, "Hinge" );
 		
 		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
