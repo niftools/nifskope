@@ -198,6 +198,7 @@ protected:
 
 	bool		updateArrayItem( NifItem * array, bool fast );
 	bool		updateByteArrayItem( NifItem * array, bool fast );
+   bool     updateArrays( NifItem * parent, bool fast );
 	
 	NifItem *	getHeaderItem() const;
 	NifItem *	getFooterItem() const;

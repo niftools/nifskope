@@ -275,6 +275,9 @@ void NifModel::updateHeader()
 			if ( ! blocktypes.contains( block->name() ) )
 				blocktypes.append( block->name() );
 			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
+
+         if (version >= 0x14020000 && idxBlockSize )
+            updateArrays(block, false);
 		}
 		
 		set<int>( header, "Num Block Types", blocktypes.count() );
@@ -284,8 +287,9 @@ void NifModel::updateHeader()
       //   for these two arrays will not work.
 		updateArrayItem( idxBlockTypes, false );
 		updateArrayItem( idxBlockTypeIndices, true );
-		if (version >= 0x14020000 && idxBlockSize )
+      if (version >= 0x14020000 && idxBlockSize ) {
 			updateArrayItem( idxBlockSize, false );
+      }
 		
 		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
 			set<QString>( idxBlockTypes->child( r ), blocktypes.value( r ) );
@@ -482,6 +486,34 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 		}
 	}
 	return true;
+}
+
+bool NifModel::updateArrays( NifItem * parent, bool fast )
+{
+   if ( ! parent ) return false;
+
+   for ( int row = 0; row < parent->childCount(); row++ )
+   {
+      NifItem * child = parent->child( row );
+
+      if ( evalCondition( child ) )
+      {
+         if ( ! child->arr1().isEmpty() )
+         {
+            if ( ! updateArrayItem( child, fast ) )
+               return false;
+
+            if ( ! updateArrays( child, false ) )
+               return false;
+         }
+         else if ( child->childCount() > 0 )
+         {
+            if ( ! updateArrays( child, fast ) )
+               return false;
+         }
+      }
+   }
+   return true;
 }
 
 /*
