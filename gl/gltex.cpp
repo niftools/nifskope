@@ -31,13 +31,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #ifdef QT_OPENGL_LIB
-#include "GLee.h"
-#include <QtOpenGL>
 
+// include before GLee.h to avoid compile error on linux
 #include <QDebug>
 #include <QDir>
 #include <QFileSystemWatcher>
 #include <QListView>
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtGui/QtGui>   // dito
+
+#include "GLee.h"
+
+#include <QtOpenGL>
+
+
 
 #include "glscene.h"
 #include "gltex.h"

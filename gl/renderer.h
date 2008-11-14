@@ -33,6 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtGui/QtGui>   // dito
+
+#include "GLee.h"
 #include <QtOpenGL>
 
 #include "nifmodel.h"
@@ -76,7 +80,7 @@ protected:
 		QString left, right;
 		enum Type
 		{
-			None, EQ, NE, LE, GE, LT, GT, AND
+			NONE, EQ, NE, LE, GE, LT, GT, AND
 		};
 		Type comp;
 		static QHash<Type,QString> compStrs;

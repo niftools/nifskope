@@ -107,7 +107,7 @@ Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : i
 	else
 	{
 		left = line;
-		comp = None;
+		comp = NONE;
 	}
 }
 
@@ -138,7 +138,7 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIn
 	QModelIndex iLeft = getIndex( nif, iBlocks, left );
 	if ( ! iLeft.isValid() )
 		return invert;
-	if ( comp == None )
+	if ( comp == NONE )
 		return ! invert;
 	NifValue val = nif->getValue( iLeft );
 	if ( val.isString() )

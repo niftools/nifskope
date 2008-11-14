@@ -33,8 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSCENE_H
 #define GLSCENE_H
 
-#include <QtOpenGL>
 #include <QRegExp>
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtGui/QtGui>   // dito
+
+#include "GLee.h"
+#include <QtOpenGL>
 
 #include "nifmodel.h"
 
