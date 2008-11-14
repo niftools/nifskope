@@ -1063,7 +1063,12 @@ bool NifOStream::write( const NifValue & val )
 		{
 			if (stringAdjust)
 			{
-				return device->write( (char *) &val.val.u32, 4 ) == 4;
+				if( val.val.u32 < 0x00010000 ) {
+					return device->write( (char *) &val.val.u32, 4 ) == 4;
+				} else {
+					int value = 0;
+					return device->write( (char *) &value, 4 ) == 4;
+				}
 			}
 			else
 			{

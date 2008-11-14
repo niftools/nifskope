@@ -919,7 +919,14 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 			insertType( parent, d, at );
 		}
 		else
-			parent->insertChild( data, at );
+		{
+			NifItem *item = parent->insertChild( data, at );
+			// Kludge for string conversion.  
+			//  Ensure that the string type is correct for the nif version
+			if ( item->value().type() == NifValue::tString || item->value().type() == NifValue::tFilePath ) {
+				item->value().changeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
+			}
+		}
 	}
 }
 
@@ -2337,21 +2344,27 @@ QString NifModel::string( const QModelIndex & index, const QString & name, bool 
 	return string( getIndex(index, name), extraInfo );
 }
 
-
 bool NifModel::assignString( const QModelIndex & index, const QString & string, bool replace)
 {
-	NifValue v = getValue( index );
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	if ( ! ( index.isValid() && item && index.model() == this ) )	return false;
+	return assignString(item, string, replace);
+}
+
+bool NifModel::assignString( NifItem * item, const QString & string, bool replace )
+{
+	NifValue& v = item->value();
 
 	if (getVersionNumber() >= 0x14010003)
 	{
-		QModelIndex iIndex;
+		NifItem * pItem;
 		int idx = -1;
 		if (v.type() == NifValue::tStringIndex)
-			idx = get<int>( iIndex = index );
+			idx = get<int>( pItem = item );
 		else if (!v.isValid())
-			idx = get<int>( iIndex = getIndex( index, "Index" ) );
+			idx = get<int>( pItem = getItem( item, "Index" ) );
 		else
-			return BaseModel::set<QString>( index, string );
+			return BaseModel::set<QString>( item, string );
 
 		QModelIndex header = getHeader();
 		int nstrings = get<int>( header, "Num Strings" );
@@ -2361,7 +2374,7 @@ bool NifModel::assignString( const QModelIndex & index, const QString & string, 
 			{
 				// TODO: Can we remove the string safely here?
 			}
-			return set<int>( iIndex, 0xffffffff );
+			return set<int>( item, 0xffffffff );
 		}
 		// Simply replace the string
 		QModelIndex iArray = getIndex( header, "Strings" );
@@ -2375,7 +2388,7 @@ bool NifModel::assignString( const QModelIndex & index, const QString & string, 
 		// Already exists.  Just update the Index
 		if (idx >= 0 && idx < stringVector.size())
 		{
-			return set<int>( iIndex, idx );
+			return set<int>( pItem, idx );
 		}
 		else // append string to end of list
 		{
@@ -2384,25 +2397,25 @@ bool NifModel::assignString( const QModelIndex & index, const QString & string, 
 			QModelIndex iArray = getIndex( header, "Strings" );
 			BaseModel::set<QString>(iArray.child(nstrings, 0), string);
 
-			return set<int>( iIndex, nstrings );
+			return set<int>( pItem, nstrings );
 		}
 	}
 	else // handle the older simpler strings
 	{
 		if (v.type() == NifValue::tNone)
 		{
-			return BaseModel::set<QString>( getIndex( index, "String" ), string );
+			return BaseModel::set<QString>( getItem( item, "String" ), string );
 		}
       else if (v.type() == NifValue::tStringIndex)
       {
          NifValue v(NifValue::tString);
          v.set(string);
-         return setItemValue(static_cast<NifItem*>(index.internalPointer()), v);
+         return setItemValue(item, v);
          //return BaseModel::set<QString>( index, string );
       }
 		else
 		{
-			return BaseModel::set<QString>( index, string );
+			return BaseModel::set<QString>( item, string );
 		}
 	}
 	return false;
