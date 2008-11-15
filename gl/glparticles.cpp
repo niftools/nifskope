@@ -30,9 +30,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "glscene.h"
 #include "glcontroller.h"
 #include "glparticles.h"
-#include "glscene.h"
 
 #include "math.h"
 

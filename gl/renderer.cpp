@@ -30,15 +30,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "GLee.h"
-#include "renderer.h"
 #include <QApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
 
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtGui/QtGui>   // dito
+#include "GLee.h"
+
 #include <GL/glext.h>
+
+#include "renderer.h"
 
 #include "gltex.h"
 #include "glmesh.h"

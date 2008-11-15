@@ -94,6 +94,9 @@ FSManager * fsmanager = 0;
 
 #endif
 
+// hackish workaround to undefine symbols from extra includes
+#undef None
+#undef Bool
 
 void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const
 {

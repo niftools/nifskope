@@ -33,6 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLPROPERTY_H
 #define GLPROPERTY_H
 
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtGui/QtGui>   // dito
+
+#include "GLee.h"
 #include <QtOpenGL>
 
 #include "glcontrolable.h"

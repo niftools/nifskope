@@ -30,10 +30,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "glscene.h"
 #include "glmarker.h"
 #include "glnode.h"
 #include "glcontroller.h"
-#include "glscene.h"
 #include "options.h"
 
 #include "NvTriStrip/qtwrapper.h"

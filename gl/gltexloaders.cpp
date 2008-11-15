@@ -29,6 +29,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
+
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtGui/QtGui>   // dito
 #include "GLee.h"
 #include <QtOpenGL>
 #include "dds/dds_api.h"
