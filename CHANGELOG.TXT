@@ -9,6 +9,7 @@ changes since 1.0.15:
  * add support for Fallout 3 BSA files
  * add material color override in settings 
  * new version condition evaluation engine to handle Fallout
+ * using GLee, so nifskope now also compiles on mac
 
 changes since 1.0.14:
  * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3

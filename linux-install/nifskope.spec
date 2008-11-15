@@ -73,6 +73,14 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sat Nov 15 2008 amorilia - 1.0.16-1
+- add Transform Inspection window
+- add Fallout 3 to game texture auto detection
+- nif.xml updates for Fallout 3
+- add support for Fallout 3 BSA files
+- add material color override in settings
+- new version condition evaluation engine to handle Fallout
+- using GLee, so nifskope now also compiles on mac
 * Mon Oct 18 2008 tazpn - 1.0.15-1
 - fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
 - updated mopp code generation to use subshape materials
