@@ -10,6 +10,7 @@ changes since 1.0.15:
  * add material color override in settings 
  * new version condition evaluation engine to handle Fallout
  * using GLee, so nifskope now also compiles on mac
+ * update tangent and binormal update script for Fallout as well as rendering.
 
 changes since 1.0.14:
  * fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
