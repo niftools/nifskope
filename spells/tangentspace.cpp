@@ -7,9 +7,26 @@
 bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
-	return nif->checkVersion( 0x14000004, 0x14000005 ) &&
-		( ( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
-		|| ( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) );
+	if ( !( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
+		&& !( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) )
+		return false;
+
+	// early exit of normals are missing
+	if ( !nif->get<bool>( iData, "Has Normals" ) )
+		return false;
+
+	if ( nif->checkVersion( 0x14000004, 0x14000005 ) && (nif->getUserVersion() == 11) )
+		return true;
+
+	// If bethesda then we will configure the settings for the mesh.
+	if ( nif->getUserVersion() == 11 ) 
+		return true;
+
+	// 10.1.0.0 and greater can have tangents and binormals
+	if (  nif->checkVersion( 0x0A010000, 0 ) )
+		return true;
+
+	return false;
 }
 
 QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
@@ -20,7 +37,9 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	
 	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 	QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+
 	QVector<Color4> vxcol = nif->getArray<Color4>( iData, "Vertex Colors" );
+	int numUVSets = nif->get<int>( iData, "Num UV Sets" );
 	QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 	if ( ! iTexCo.isValid() ) iTexCo = nif->getIndex( iData, "UV Sets 2" );
 	iTexCo = iTexCo.child( 0, 0 );
@@ -157,35 +176,51 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	}
 	
 	//qWarning() << "unassigned vertices" << cnt;
-	
-	// update or create the tangent space extra data
-	
-	QModelIndex iTSpace;
-	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) )
+
+	bool isOblivion = false;
+	if ( nif->checkVersion( 0x14000004, 0x14000005 ) && (nif->getUserVersion() == 11) )
+		isOblivion = true;
+
+	if (isOblivion)
 	{
-		iTSpace = nif->getBlock( link, "NiBinaryExtraData" );
-		if ( iTSpace.isValid() && nif->get<QString>( iTSpace, "Name" ) == "Tangent space (binormal & tangent vectors)" )
-			break;
-		else
-			iTSpace = QModelIndex();
-	}
-	
-	if ( ! iTSpace.isValid() )
-	{
-		iTSpace = nif->insertNiBlock( "NiBinaryExtraData", nif->getBlockNumber( iShape ) + 1 );
-		nif->set<QString>( iTSpace, "Name", "Tangent space (binormal & tangent vectors)" );
-		QModelIndex iNumExtras = nif->getIndex( iShape, "Num Extra Data List" );
-		QModelIndex iExtras = nif->getIndex( iShape, "Extra Data List" );
-		if ( iNumExtras.isValid() && iExtras.isValid() )
+		QModelIndex iTSpace;
+		foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) )
 		{
-			int numlinks = nif->get<int>( iNumExtras );
-			nif->set<int>( iNumExtras, numlinks + 1 );
-			nif->updateArray( iExtras );
-			nif->setLink( iExtras.child( numlinks, 0 ), nif->getBlockNumber( iTSpace ) );
+			iTSpace = nif->getBlock( link, "NiBinaryExtraData" );
+			if ( iTSpace.isValid() && nif->get<QString>( iTSpace, "Name" ) == "Tangent space (binormal & tangent vectors)" )
+				break;
+			else
+				iTSpace = QModelIndex();
 		}
-	}
+		
+		if ( ! iTSpace.isValid() )
+		{
+			iTSpace = nif->insertNiBlock( "NiBinaryExtraData", nif->getBlockNumber( iShape ) + 1 );
+			nif->set<QString>( iTSpace, "Name", "Tangent space (binormal & tangent vectors)" );
+			QModelIndex iNumExtras = nif->getIndex( iShape, "Num Extra Data List" );
+			QModelIndex iExtras = nif->getIndex( iShape, "Extra Data List" );
+			if ( iNumExtras.isValid() && iExtras.isValid() )
+			{
+				int numlinks = nif->get<int>( iNumExtras );
+				nif->set<int>( iNumExtras, numlinks + 1 );
+				nif->updateArray( iExtras );
+				nif->setLink( iExtras.child( numlinks, 0 ), nif->getBlockNumber( iTSpace ) );
+			}
+		}
 	
-	nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *) tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *) bin.data(), bin.count() * sizeof( Vector3 ) ) );
+		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *) tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *) bin.data(), bin.count() * sizeof( Vector3 ) ) );
+	}
+	else
+	{
+		numUVSets |= 0x1000;
+		nif->set<int>( iShape, "Num UV Sets", numUVSets);
+		QModelIndex iBinorms = nif->getIndex( iData, "Binormals" );
+		QModelIndex iTangents = nif->getIndex( iData, "Tangents" );
+		nif->updateArray(iBinorms);
+		nif->updateArray(iTangents);
+		nif->setArray(iBinorms, bin);
+		nif->setArray(iTangents, tan);
+	}
 	return iShape;
 }
 

@@ -243,8 +243,8 @@ void Mesh::transform()
 		verts = nif->getArray<Vector3>( iData, "Vertices" );
 		norms = nif->getArray<Vector3>( iData, "Normals" );
 		colors = nif->getArray<Color4>( iData, "Vertex Colors" );
-		tangents.clear();
-		binormals.clear();
+		tangents = nif->getArray<Vector3>( iData, "Tangents" );
+		binormals = nif->getArray<Vector3>( iData, "Binormals" );
 		
 		if ( norms.count() < verts.count() ) norms.clear();
 		if ( colors.count() < verts.count() ) colors.clear();
@@ -645,7 +645,8 @@ void Mesh::drawSelection() const
 		n = "TSpace";
 	}
 	
-	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
+	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" 
+	  || n == "UV Sets" || n == "Tangents" || n == "Binormals" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
@@ -698,6 +699,68 @@ void Mesh::drawSelection() const
 			glBegin( GL_LINES );
 			glVertex( transVerts.value( i ) );
 			glVertex( transVerts.value( i ) + transNorms.value( i ) * normalScale );
+			glEnd();
+		}
+	}
+	if ( n == "Tangents" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+
+		float normalScale = bounds().radius / 20;
+		normalScale /= 2.0f;
+		if ( normalScale < 0.1f ) normalScale = 0.1f;
+
+		glBegin( GL_LINES );
+		for ( int j = 0; j < transVerts.count() && j < transTangents.count(); j++ )
+		{
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) + transTangents.value( j ) * normalScale );
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) - transTangents.value( j ) * normalScale );
+		}
+		glEnd();
+
+		if ( i >= 0 )
+		{
+			glDepthFunc( GL_ALWAYS );
+			glHighlightColor();
+			glBegin( GL_LINES );
+			glVertex( transVerts.value( i ) );
+			glVertex( transVerts.value( i ) + transTangents.value( i ) * normalScale );
+			glVertex( transVerts.value( i ) );
+			glVertex( transVerts.value( i ) - transTangents.value( i ) * normalScale );
+			glEnd();
+		}
+	}
+	if ( n == "Binormals" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+
+		float normalScale = bounds().radius / 20;
+		normalScale /= 2.0f;
+		if ( normalScale < 0.1f ) normalScale = 0.1f;
+
+		glBegin( GL_LINES );
+		for ( int j = 0; j < transVerts.count() && j < transBinormals.count(); j++ )
+		{
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) + transBinormals.value( j ) * normalScale );
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) - transBinormals.value( j ) * normalScale );
+		}
+		glEnd();
+
+		if ( i >= 0 )
+		{
+			glDepthFunc( GL_ALWAYS );
+			glHighlightColor();
+			glBegin( GL_LINES );
+			glVertex( transVerts.value( i ) );
+			glVertex( transVerts.value( i ) + transBinormals.value( i ) * normalScale );
+			glVertex( transVerts.value( i ) );
+			glVertex( transVerts.value( i ) - transBinormals.value( i ) * normalScale );
 			glEnd();
 		}
 	}
