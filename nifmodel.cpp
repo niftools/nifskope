@@ -198,7 +198,7 @@ void NifModel::clear()
 		set<int>( getHeaderItem(), "User Version", 11 );
 		set<int>( getHeaderItem(), "User Version 2", 11 );
 	}
-	set<int>( getHeaderItem(), "Unknown Int 3", 11 );
+	//set<int>( getHeaderItem(), "Unknown Int 3", 11 );
 
 	if ( version < 0x0303000D ) {
 		QVector<QString> copyright(3);
@@ -1476,6 +1476,14 @@ bool NifModel::load( QIODevice & device )
 
 	// read header
 	NifItem * header = getHeaderItem();
+	// bugfix: force user versions to zero (if the template was version
+	// 20.0.0.5 then they have been set to non-zero, and the read function
+	// will not reset them to zero on older files...)
+	if (header)
+	{
+		set<int>( header, "User Version 2", 0 );
+		set<int>( header, "User Version", 0 );
+	}
 	if ( !header || !load( header, stream, true ) )
 	{
 		msg( Message() << "failed to load file header (version" << version << ")" );
