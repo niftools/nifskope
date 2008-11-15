@@ -66,7 +66,9 @@ FILES="NifSkope.pro \
     fsengine/*.cpp
     shaders/*.frag
     shaders/*.prog
-    shaders/*.vert"
+    shaders/*.vert
+    nifexpr.cpp
+    nifexpr.h"
 
 # clean old tarball
 rm -rf nifskope-$VERSION
