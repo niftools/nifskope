@@ -73,6 +73,7 @@ public:
    {
       QVariant l = convertValue(lhs, convert);
       QVariant r = convertValue(rhs, convert);
+      NormalizeVariants(l, r);
 
       switch (opcode)
       {
@@ -117,6 +118,7 @@ public:
 private:
    static Operator operatorFromString(const QString& str);
    void partition(const QString & cond, int offset = 0);
+   void NormalizeVariants(QVariant &l, QVariant &r) const;
 
    template <class F>
    QVariant convertValue(const QVariant& v, const F& convert ) const

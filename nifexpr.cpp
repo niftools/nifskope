@@ -240,3 +240,23 @@ QString Expression::toString() const
    }
    return QString();
 }
+
+void Expression::NormalizeVariants( QVariant &l, QVariant &r ) const
+{
+	if (l.isValid() && r.isValid()) {
+		if (l.type() != r.type()) {
+			if ( l.type() == QVariant::String && l.canConvert(r.type()) )
+				l.convert(r.type());
+			else if ( r.type() == QVariant::String && r.canConvert(l.type()) )
+				r.convert(l.type());
+			else
+			{
+				QVariant::Type t = l.type() > r.type() ? l.type() : r.type();
+				if (r.canConvert(t) && l.canConvert(t)) {
+					l.convert(t);
+					r.convert(t);
+				}
+			}
+		}
+	}
+}
