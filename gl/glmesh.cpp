@@ -352,7 +352,7 @@ void Mesh::transform()
 
 void Mesh::transformShapes()
 {
-	if ( isHidden() )
+	if ( isHidden() || !Options::drawMeshes() )
 		return;
 	
 	Node::transformShapes();
@@ -527,7 +527,7 @@ BoundSphere Mesh::bounds() const
 
 void Mesh::drawShapes( NodeList * draw2nd )
 {
-	if ( isHidden() )
+	if ( isHidden() || !Options::drawMeshes() )
 		return;
 	
 	glLoadName( nodeId );
@@ -596,7 +596,7 @@ void Mesh::drawSelection() const
 {
 	Node::drawSelection();
 	
-	if ( isHidden() )
+	if ( isHidden() || !Options::drawMeshes() )
 		return;
 	
 	if ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart

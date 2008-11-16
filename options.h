@@ -85,6 +85,7 @@ public:
 	static bool drawFurn();
 	static bool drawHidden();
 	static bool drawStats();
+	static bool drawMeshes();
 	
 	static bool benchmark();
 	
@@ -186,6 +187,8 @@ protected:
 
    GroupBox * dialog;
    QTabWidget *tab;
+
+	bool showMeshes;
 
 };
 

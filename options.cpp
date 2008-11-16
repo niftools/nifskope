@@ -71,6 +71,8 @@ Options::Options()
    NIFSKOPE_QSETTINGS(cfg);
    cfg.beginGroup( "Render Settings" );
 
+   showMeshes = cfg.value("Draw Meshes", true).toBool();
+
    tSave = new QTimer( this );
    tSave->setInterval( 5000 );
    tSave->setSingleShot( true );
@@ -937,3 +939,7 @@ QColor Options::overrideEmissive()
    return get()->matColors[3]->getColor();
 }
 
+bool Options::drawMeshes()
+{
+	return get()->showMeshes;
+}

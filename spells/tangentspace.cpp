@@ -40,6 +40,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 
 	QVector<Color4> vxcol = nif->getArray<Color4>( iData, "Vertex Colors" );
 	int numUVSets = nif->get<int>( iData, "Num UV Sets" );
+	int tspaceFlags = nif->get<int>( iData, "TSpace Flag" );
 	QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 	if ( ! iTexCo.isValid() ) iTexCo = nif->getIndex( iData, "UV Sets 2" );
 	iTexCo = iTexCo.child( 0, 0 );
@@ -212,7 +213,9 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	}
 	else
 	{
-		numUVSets |= 0x1000;
+		if (tspaceFlags == 0)
+			tspaceFlags = 0x10;
+		nif->set<int>( iShape, "TSpace Flag", tspaceFlags);
 		nif->set<int>( iShape, "Num UV Sets", numUVSets);
 		QModelIndex iBinorms = nif->getIndex( iData, "Binormals" );
 		QModelIndex iTangents = nif->getIndex( iData, "Tangents" );
