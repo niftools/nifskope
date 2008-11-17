@@ -128,7 +128,7 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
 {
 	QString name = nif->get<QString>( iShape, "Name" );
-	QString matn = name, texfn;
+	QString matn = name, map_Kd, map_Ks, map_Ns, map_d ,disp, decal, bump;
 	
 	Color3 mata, matd, mats;
 	float matt = 1.0, matg = 33.0;
@@ -147,14 +147,19 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 		}
 		else if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) )
 		{
-			QModelIndex iSource = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
-			
-			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
+			QModelIndex iBase = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
+			map_Kd = TexCache::find( nif->get<QString>( iBase, "File Name" ), nif->getFolder() );
+
+			QModelIndex iDark = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Decal Texture 1" ), "Source" ), "NiSourceTexture" );
+			decal = TexCache::find( nif->get<QString>( iDark, "File Name" ), nif->getFolder() );
+
+			QModelIndex iBump = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Bump Map Texture" ), "Source" ), "NiSourceTexture" );
+			bump = TexCache::find( nif->get<QString>( iBump, "File Name" ), nif->getFolder() );
 		}
 		else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) )
 		{
 			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
-			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
+			map_Kd = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
 		else if ( nif->isNiBlock( iProp, "NiSkinInstance" ) )
 		{
@@ -165,6 +170,20 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 				"obj format does not support skinning. This mesh will be "
 				"exported statically in its bind pose, without skin weights.")
 			);
+		}
+		else if ( nif->isNiBlock( iProp, "BSShaderNoLightingProperty" ) 
+			    || nif->isNiBlock( iProp, "SkyShaderProperty" ) 
+				 || nif->isNiBlock( iProp, "TileShaderProperty" ) 
+			     )
+		{
+			map_Kd = TexCache::find( nif->get<QString>( iProp, "File Name" ), nif->getFolder() );
+		}
+		else if ( nif->isNiBlock( iProp, "BSShaderPPLightingProperty" ) 
+			    || nif->isNiBlock( iProp, "Lighting30ShaderProperty" ) 
+			     )
+		{
+			QModelIndex iArray = nif->getIndex( nif->getBlock( nif->getLink( iProp, "Texture Set" ) ) , "Textures");
+			map_Kd = TexCache::find( nif->get<QString>( iArray.child( 0, 0 ) ), nif->getFolder() );
 		}
 	}
 	
@@ -180,8 +199,12 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 	mtl << "Ks " << mats[0] << " "  << mats[1] << " " << mats[2] << "\r\n";
 	mtl << "d " << matt << "\r\n";
 	mtl << "Ns " << matg << "\r\n";
-	if ( ! texfn.isEmpty() )
-		mtl << "map_Kd " << texfn << "\r\n\r\n";
+	if ( ! map_Kd.isEmpty() )
+		mtl << "map_Kd " << map_Kd << "\r\n\r\n";
+	if ( ! decal.isEmpty() )
+		mtl << "decal " << decal << "\r\n\r\n";
+	if ( ! bump.isEmpty() )
+		mtl << "bump " << decal << "\r\n\r\n";
 	
 	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
 	

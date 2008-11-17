@@ -1155,12 +1155,31 @@ int main( int argc, char * argv[] )
 	 
 	NifModel::loadXML();
 	KfmModel::loadXML();
-	
+
 	QString fname;
-    if ( app.argc() > 1 )
+	bool reuseSession = true;
+	for (int i=1; i<argc; ++i)
+	{
+		char *arg = argv[i];
+		if (arg && (arg[0] == '-' || arg[0] == '/'))
+		{
+			switch(arg[1])
+			{
+			case 'i': case 'I':
+				reuseSession = false;
+				break;
+			}
+		}
+		else
+		{
+			fname = QDir::current().filePath( arg );
+		}
+	}
+	
+   if ( !fname.isEmpty() )
 	{
 		//Getting a NIF file name from the OS
-		fname = QDir::current().filePath( QString( app.argv()[ app.argc() - 1 ] ) );
+		fname = QDir::current().filePath( app.argv()[ app.argc() - 1 ] );
 
 #ifdef WIN32
 		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
@@ -1195,6 +1214,11 @@ int main( int argc, char * argv[] )
 
 		delete [] temp_name;
 #endif
+	}
+
+	if ( !reuseSession ) {
+		NifSkope::createWindow( fname );
+		return app.exec();
 	}
 
 	if ( IPCsocket * ipc = IPCsocket::create() )

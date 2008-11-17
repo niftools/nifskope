@@ -2369,8 +2369,11 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		int idx = -1;
 		if (v.type() == NifValue::tStringIndex)
 			idx = get<int>( pItem = item );
-		else if (!v.isValid())
-			idx = get<int>( pItem = getItem( item, "Index" ) );
+		else if (!v.isValid()) {
+			pItem = getItem( item, "Index" );
+			if (!pItem) return false;
+			idx = get<int>( pItem );
+		}
 		else
 			return BaseModel::set<QString>( item, string );
 

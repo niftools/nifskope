@@ -159,10 +159,14 @@ public:
 		if (  ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
 			&& ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 			return true;
-
-		if ( nif->isNiBlock( iBlock, "BSShaderTextureSet" ) && nif->itemName( idx ) == "Textures" )
+		else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" )
 			return true;
-
+		else if ( nif->isNiBlock( iBlock, "BSShaderTextureSet" ) && nif->itemName( idx ) == "Textures" )
+			return true;
+		else if ( nif->isNiBlock( iBlock, "SkyShaderProperty" ) && nif->itemName( idx ) == "File Name" )
+			return true;
+		else if ( nif->isNiBlock( iBlock, "TileShaderProperty" ) && nif->itemName( idx ) == "File Name" )
+			return true;
 		return false;
 	}
 
@@ -179,9 +183,14 @@ public:
 			setExternal = true;
 		}
 		else if ( nif->isNiBlock( iBlock, "BSShaderTextureSet" ) && nif->itemName( idx ) == "Textures" )
-		{
 			iFile = idx;
-		}
+		else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" )
+			iFile = idx;
+		else if ( nif->isNiBlock( iBlock, "SkyShaderProperty" ) && nif->itemName( idx ) == "File Name" )
+			iFile = idx;
+		else if ( nif->isNiBlock( iBlock, "TileShaderProperty" ) && nif->itemName( idx ) == "File Name" )
+			iFile = idx;
+
 		if (!iFile.isValid())
 			return idx;
 
