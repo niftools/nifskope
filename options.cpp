@@ -228,7 +228,7 @@ Options::Options()
 
       texPage->addWidget( Shaders = new QCheckBox( "&Shaders" ) );
       Shaders->setToolTip( "Enable Shaders" );
-      Shaders->setChecked( cfg.value( "Enable Shaders", true ).toBool() );
+      Shaders->setChecked( cfg.value( "Enable Shaders", false ).toBool() );
       connect( Shaders, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
 
