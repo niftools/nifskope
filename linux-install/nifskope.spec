@@ -81,6 +81,7 @@ rm -rf $RPM_BUILD_ROOT
 - add material color override in settings
 - new version condition evaluation engine to handle Fallout
 - using GLee, so nifskope now also compiles on mac
+- update tangent and binormal update script for Fallout as well as rendering
 * Mon Oct 18 2008 tazpn - 1.0.15-1
 - fixed issues with attaching kf controller with nif/kf version >= 20.1.0.3
 - updated mopp code generation to use subshape materials
