@@ -221,7 +221,7 @@ void NifCheckBoxList::updateText()
 
 		// dont bother updating if user entered number non-zero
 		bool ok = false;
-		int val = txt.toInt(&ok);
+		quint32 val = txt.toULong(&ok, 0);
 		if (ok && !val) return;
 
 		bool checked = this->itemData(i, Qt::UserRole).toBool();

@@ -250,7 +250,7 @@ quint32 NifValue::enumOptionValue( const QString & eid, const QString & oid, boo
 					}
 				}
 				if (!found)
-					value |= str.toInt(&found);
+					value |= str.toULong(&found, 0);
 				if ( ok ) *ok &= found;
 			}
 			return value;
@@ -521,7 +521,7 @@ bool NifValue::fromString( const QString & s )
 			}
 		case tByte:
 			val.u32 = 0;
-			val.u08 = s.toUInt( &ok );
+			val.u08 = s.toUInt( &ok, 0 );
 			return ok;
 		case tWord:
 		case tFlags:
@@ -529,11 +529,11 @@ bool NifValue::fromString( const QString & s )
 		case tBlockTypeIndex:
 		case tShort:
 			val.u32 = 0;
-			val.u16 = s.toUInt( &ok );
+			val.u16 = s.toUInt( &ok, 0 );
 			return ok;
 		case tInt:
 		case tUInt:
-			val.u32 = s.toUInt( &ok );
+			val.u32 = s.toUInt( &ok, 0 );
 			return ok;
 		case tStringIndex:
 			val.u32 = s.toUInt( &ok );

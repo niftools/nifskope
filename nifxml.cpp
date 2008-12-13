@@ -285,7 +285,7 @@ public:
 						if ( optId.isEmpty() || optVal.isEmpty() )
 							err( "option defintion must have a name and a value" );
 						bool ok;
-						optVal.toInt( &ok );
+						optVal.toInt( &ok, 0 );
 						if ( ! ok )
 							err( "option value error (only integers please)" );
 						break;
