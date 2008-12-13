@@ -39,11 +39,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "spellbook.h"
 
 #include "widgets/valueedit.h"
+#include "widgets/nifcheckboxlist.h"
 
 #include <QComboBox>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QListView>
 
 extern void qt_format_text(const QFont& font, const QRectF &_r,
                            int tf, const QString& str, QRectF *brect,
@@ -188,13 +190,18 @@ public:
 		if ( v.canConvert<NifValue>() )
 		{
 			NifValue nv = v.value<NifValue>();
-			if ( nv.isCount() && index.column() == NifModel::ValueCol && ! NifValue::enumOptions( index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString() ).isEmpty() )
+			if ( nv.isCount() && index.column() == NifModel::ValueCol )
 			{
-				QComboBox * c = new QComboBox( parent );
-				w = c;
-				c->setEditable( true );
+				NifValue::EnumType type = NifValue::enumType( index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString() );
+				if ( type == NifValue::eFlags) {
+					w = new NifCheckBoxList( parent );
+				} else if ( type == NifValue::eDefault) {
+					QComboBox * c = new QComboBox( parent );
+					w = c;
+					c->setEditable( true );
+				}
 			}
-			else if ( ValueEdit::canEdit( nv.type() ) )
+			if ( w == NULL && ValueEdit::canEdit( nv.type() ) )
 				w = new ValueEdit( parent );
 		}
 		else if ( v.type() == QVariant::String )
@@ -222,13 +229,20 @@ public:
 		{
 			cedit->clear();
 			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString();
-			QStringList o = NifValue::enumOptions( t );
-			cedit->addItems( o );
-			QString x = NifValue::enumOptionName( t, v.value<NifValue>().toCount() );
-			if ( ! x.isEmpty() )
-				cedit->setCurrentIndex( o.indexOf( x ) );
-			else
-				cedit->setEditText( QString::number( v.value<NifValue>().toCount() ) );
+			const NifValue::EnumOptions& eo = NifValue::enumOptionData( t );
+			quint32 value = v.value<NifValue>().toCount();
+			QHashIterator< quint32, QPair< QString, QString > > it( eo.o );
+			while ( it.hasNext() )
+			{
+				it.next();
+				bool ok = false;
+				if (eo.t == NifValue::eFlags) {
+					cedit->addItem(it.value().first, ok = (value & (1 << it.key())) );
+				} else {
+					cedit->addItem(it.value().first, ok = (value == it.key()) );
+				}
+			}
+			cedit->setEditText( NifValue::enumOptionName(t, value) );
 		}
 		else if ( ledit )
 		{

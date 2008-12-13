@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QHash<QString,NifValue::Type>	NifValue::typeMap;
 QHash<QString,QString>		NifValue::typeTxt;
-QHash<QString,QHash<quint32, QPair<QString,QString> > >	NifValue::enumMap;
+QHash<QString,NifValue::EnumOptions>	NifValue::enumMap;
 
 void NifValue::initialize()
 {
@@ -114,7 +114,7 @@ QString NifValue::typeDescription( const QString & typId )
 	if ( enumMap.contains( typId ) )
 	{
 		txt += "<p><table><tr><td><table>";
-		QHashIterator< quint32, QPair< QString, QString > > it( enumMap[ typId ] );
+		QHashIterator< quint32, QPair< QString, QString > > it( enumMap[ typId ].o );
 		int cnt = 0;
 		while ( it.hasNext() )
 		{
@@ -148,7 +148,7 @@ bool NifValue::registerAlias( const QString & alias, const QString & original )
 
 bool NifValue::registerEnumOption( const QString & eid, const QString & oid, quint32 oval, const QString & otxt )
 {
-	QHash< quint32, QPair< QString, QString > > & e = enumMap[eid];
+	QHash< quint32, QPair< QString, QString > > & e = enumMap[eid].o;
 	
 	if ( e.contains( oval ) )
 		return false;
@@ -162,7 +162,7 @@ QStringList NifValue::enumOptions( const QString & eid )
 	QStringList opts;
 	if ( enumMap.contains( eid ) )
 	{
-		QHashIterator< quint32, QPair< QString, QString > > it( enumMap[ eid ] );
+		QHashIterator< quint32, QPair< QString, QString > > it( enumMap[ eid ].o );
 		while ( it.hasNext() )
 		{
 			it.next();
@@ -172,33 +172,109 @@ QStringList NifValue::enumOptions( const QString & eid )
 	return opts;
 }
 
+bool NifValue::registerEnumType( const QString & eid, EnumType eTyp )
+{
+	if ( enumMap.contains( eid ) )
+		return false;
+	enumMap[eid].t = eTyp;
+	return true;
+}
+
+NifValue::EnumType NifValue::enumType( const QString & eid )
+{
+	return enumMap.contains(eid) ? enumMap.value( eid ).t : NifValue::eNone;
+}
+
 QString NifValue::enumOptionName( const QString & eid, quint32 val )
 {
-	return enumMap.value( eid ).value( val ).first;
+	if ( enumMap.contains( eid ) )
+	{
+		NifValue::EnumOptions& eo = enumMap[eid];
+		if (eo.t == NifValue::eFlags) {
+			QString text;
+			quint32 val2 = 0;
+			QHashIterator< quint32, QPair< QString, QString > > it( eo.o );
+			while ( it.hasNext() ) {
+				it.next();
+				if (val & (1 << it.key())) { 
+					val2 |= (1 << it.key());
+					if (!text.isEmpty()) text += " | ";
+					text += it.value().first;				
+				}
+			}
+			val2 = (val & ~val2);
+			if (val2)
+			{
+				if (!text.isEmpty()) text += " | ";
+				text += QString::number(val2, 16);
+			}
+			return text;
+		}
+		else if (eo.t == NifValue::eDefault)
+		{
+			if ( eo.o.contains(val) )
+				return eo.o.value(val).first;
+		}
+		return QString::number(val);
+	}
+	return QString();	
 }
 
 QString NifValue::enumOptionText( const QString & eid, quint32 val )
 {
-	return enumMap.value( eid ).value( val ).second;
+	return enumMap.value( eid ).o.value( val ).second;
 }
 
 quint32 NifValue::enumOptionValue( const QString & eid, const QString & oid, bool * ok )
 {
 	if ( enumMap.contains( eid ) )
 	{
-		QHashIterator< quint32, QPair< QString, QString > > it( enumMap[ eid ] );
-		while ( it.hasNext() )
+		EnumOptions& eo = enumMap[ eid ];
+		QHashIterator< quint32, QPair< QString, QString > > it( eo.o );
+		if (eo.t == NifValue::eFlags)
 		{
-			it.next();
-			if ( it.value().first == oid )
+			if ( ok ) *ok = true;
+			quint32 value = 0;
+			QStringList list = oid.split(QRegExp("\\s*\\|\\s*"), QString::SkipEmptyParts);
+			QStringListIterator lit(list);
+			while ( lit.hasNext() ) {
+				QString str = lit.next();
+				bool found = false;
+				it.toFront();
+				while ( it.hasNext() ) {
+					it.next();
+					if ( it.value().first == str ) {
+						value |= (1 << it.key());
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					value |= str.toInt(&found);
+				if ( ok ) *ok &= found;
+			}
+			return value;
+		}
+		else if (eo.t == NifValue::eDefault)
+		{
+			while ( it.hasNext() )
 			{
-				if ( ok ) *ok = true;
-				return it.key();
+				it.next();
+				if ( it.value().first == oid )
+				{
+					if ( ok ) *ok = true;
+					return it.key();
+				}
 			}
 		}
 	}
 	if ( ok ) *ok = false;
 	return 0;
+}
+
+const NifValue::EnumOptions& NifValue::enumOptionData( const QString & eid )
+{
+	return enumMap[eid];
 }
 
 	

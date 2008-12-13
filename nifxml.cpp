@@ -59,7 +59,8 @@ public:
 		tagAdd,
 		tagBasic,
 		tagEnum,
-		tagOption
+		tagOption,
+		tagBitFlag
 	};
 	
 	NifXmlHandler()
@@ -73,6 +74,7 @@ public:
 		tags.insert( "basic", tagBasic );
 		tags.insert( "enum", tagEnum );
 		tags.insert( "option", tagOption );
+		tags.insert( "bitflags", tagBitFlag );
 		blk = 0;
 	}
 
@@ -177,6 +179,7 @@ public:
 						typTxt = QString();
 					}	break;
 					case tagEnum:
+					case tagBitFlag:
 					{
 						typId = list.value( "name" );
 						typTxt = QString();
@@ -185,6 +188,8 @@ public:
 							err( "enum definition must have a name and a known storage type" );
 						if ( ! NifValue::registerAlias( typId, storage ) )
 							err( "failed to register alias " + storage + " for enum type " + typId );
+						NifValue::EnumType flags = (x == tagBitFlag) ? NifValue::eFlags : NifValue::eDefault;
+						NifValue::registerEnumType(typId, flags);
 					}	break;
 					case tagVersion:
 					{
@@ -268,6 +273,7 @@ public:
 						err( "only add tags allowed in block declaration" );
 				}	break;
 			case tagEnum:
+			case tagBitFlag:
 				push( x );
 				switch ( x )
 				{
@@ -337,6 +343,7 @@ public:
 				break;
 			case tagBasic:
 			case tagEnum:
+			case tagBitFlag:
 				NifValue::setTypeDescription( typId, typTxt );
 			default:
 				break;
@@ -362,6 +369,7 @@ public:
 				break;
 			case tagBasic:
 			case tagEnum:
+			case tagBitFlag:
 				typTxt += s.trimmed();
 				break;
 			case tagOption:

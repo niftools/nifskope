@@ -1,0 +1,4 @@
+To do:
+
+- Copy/Paste from 20.0.0.5 to 20.2.0.7 does not work as expected
+- Size update not calculated correctly after string edits and array edits

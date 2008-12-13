@@ -1,7 +1,11 @@
  == CHANGELOG ==
 
-This is version 1.0.16 of NifSkope.
+This is version 1.0.17 of NifSkope.
 
+changes since 1.0.16:
+ * introduce bitflag data type
+ * add editor for bitflag types
+ 
 changes since 1.0.15:
  * add Transform Inspection window
  * add Fallout 3 to game texture auto detection

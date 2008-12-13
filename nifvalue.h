@@ -37,7 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QIODevice>
 #include <QPair>
 #include <QVariant>
-
+#include <QHash>
+#include <QString>
 
 #include "niftypes.h"
 
@@ -99,6 +100,13 @@ public:
 
 		tNone = 0xff
 	};
+
+	enum EnumType
+	{
+		eNone,    // Not an enum
+		eDefault, // Standard enum
+		eFlags,   // bitflag enum
+	};
 	
 	// *** apparently not used ***
 	//template <typename T> static Type typeId();
@@ -126,6 +134,13 @@ public:
 	 */
 	static bool registerAlias( const QString & alias, const QString & internal );
 
+	//! A struct holding information about a enumeration
+	struct EnumOptions {
+		EnumType t; QHash<quint32, QPair<QString, QString> > o;
+	};
+
+	//! Register an enum type.
+	static bool registerEnumType( const QString & eid, EnumType eTyp );
 	//! Register an option for an enum type.
 	/*!
 	 * \param eid The name of the enum type.
@@ -139,15 +154,20 @@ public:
 	static QString enumOptionName( const QString & eid, quint32 oval );
 	//! Get the documentation string of an option from its value.
 	static QString enumOptionText( const QString & eid, quint32 oval );
-	//! Get the an option from an option string.
+	//! Get an option from an option string.
 	/*!
 	 * \param eid The name of the enum type.
 	 * \param oid The name of the option.
-	 * \param ok Is set to true if succesfull, is set to false if the option string was not found.
+	 * \param ok Is set to true if successful, is set to false if the option string was not found.
 	 */
 	static quint32 enumOptionValue( const QString & eid, const QString & oid, bool * ok = 0 );
 	//! Get list of all options that have been registered for the given enum type.
 	static QStringList enumOptions( const QString & eid );
+	//! Get type of enum for given enum type
+	static EnumType enumType( const QString & eid );
+	//! Get list of all options that have been registered for the given enum type.
+	static const EnumOptions& enumOptionData( const QString & eid );
+
 	
 	//! Initialize the value to nothing, type tNone.
 	NifValue() { typ = tNone; }
@@ -259,6 +279,7 @@ protected:
 	
 	//! A dictionary yielding the Type from a type string.
 	static QHash<QString, Type>	typeMap;
+
 	//! A dictionary yielding the enumaration dictionary from a string.
 	/*!
 	 * Enums are stored as mappings from quint32 to pairs of strings, where
@@ -266,7 +287,7 @@ protected:
 	 * is the enumerant documentation string. For example,
 	 * enumMap["AlphaFormat"][1] = QPair<"ALPHA_BINARY", "Texture is either fully transparent or fully opaque.">
 	 */
-	static QHash<QString, QHash<quint32, QPair<QString, QString> > >	enumMap;
+	static QHash<QString, EnumOptions>	enumMap;
 	//! A dictionary yielding the documentation string of a type string.
 	static QHash<QString, QString>	typeTxt;
 	

@@ -981,12 +981,52 @@ void NifSkope::dispatchMessage( const Message & msg )
 
 QTextEdit * msgtarget = 0;
 
+
+#ifdef WIN32
+class QDefaultHandlerCriticalSection
+{
+	CRITICAL_SECTION cs;
+public:
+	QDefaultHandlerCriticalSection() { InitializeCriticalSection(&cs); }
+	~QDefaultHandlerCriticalSection() { DeleteCriticalSection(&cs); }
+	void lock() { EnterCriticalSection(&cs); }
+	void unlock() { LeaveCriticalSection(&cs); }
+};
+
+static void qDefaultMsgHandler(QtMsgType t, const char* str)
+{
+	Q_UNUSED(t);
+	// OutputDebugString is not threadsafe.
+	// cannot use QMutex here, because qWarning()s in the QMutex
+	// implementation may cause this function to recurse
+	static QDefaultHandlerCriticalSection staticCriticalSection;
+	if (!str) str = "(null)";
+	staticCriticalSection.lock();
+	QT_WA({
+		QString s(QString::fromLocal8Bit(str));
+		s += QLatin1String("\n");
+		OutputDebugStringW((TCHAR*)s.utf16());
+	}, {
+		QByteArray s(str);
+		s += "\n";
+		OutputDebugStringA(s.data());
+	})
+	staticCriticalSection.unlock();
+}
+#else
+void qDefaultMsgHandler(QtMsgType t, const char* str)
+{
+	if (!str) str = "(null)";
+	printf( "%s\n", str );
+}
+#endif
+
 void myMessageOutput(QtMsgType type, const char *msg)
 {
 	switch (type)
 	{
 		case QtDebugMsg:
-			printf( "%s\n", msg );
+			qDefaultMsgHandler(type, msg);
 			break;
 		case QtWarningMsg:
 			// workaround for Qt 4.2.2
@@ -1003,10 +1043,11 @@ void myMessageOutput(QtMsgType type, const char *msg)
 				msgtarget->clear();
 				msgtarget->show();
 			}
-			
 			msgtarget->append( msg );
+			qDefaultMsgHandler( type, msg );
 			break;
 		case QtFatalMsg:
+			qDefaultMsgHandler( type, msg );
 			QMessageBox::critical( 0, QMessageBox::tr("Fatal Error"), msg );
 			abort();
 	}
