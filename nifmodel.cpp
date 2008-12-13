@@ -1657,6 +1657,12 @@ bool NifModel::save( QIODevice & device ) const
 {
 	NifOStream stream( this, &device );
 
+	// Force update header and footer prior to save
+	if ( NifModel* mdl = const_cast<NifModel*>(this) ) {
+		mdl->updateHeader();
+		mdl->updateFooter();
+	}
+
 	emit sigProgress( 0, rowCount( QModelIndex() ) );
 	
 	for ( int c = 0; c < rowCount( QModelIndex() ); c++ )
@@ -2436,4 +2442,3 @@ bool NifModel::assignString( const QModelIndex & index, const QString & name, co
 {
 	return assignString( getIndex(index, name), string, replace );
 }
-
