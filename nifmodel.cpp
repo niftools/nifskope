@@ -445,14 +445,11 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 			return true;
 	}
 
-	if ( d1 > 1024 * 1024 * 8 )
-	{
-		msg( Message() << "array" << array->name() << "much too large." << d1 << " bytes requested" );
+	if ( d1 > 1024 * 1024 * 8 ) {
+		msg( Message() << tr("array %1 much too large. %2 bytes requested").arg(array->name()).arg(d1) );
 		return false;
-	}
-	else if ( d1 < 0 )
-	{
-		msg( Message() << "array" << array->name() << "invalid" );
+	} else if ( d1 < 0 ) {
+		msg( Message() << tr("array %1 invalid").arg(array->name()) );
 		return false;
 	}
 
@@ -558,7 +555,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 	}
 	else
 	{
-		msg( Message() << "unknown block " << identifier );
+		msg( Message() << tr("unknown block %1").arg(identifier) );
 		return QModelIndex();
 	}
 }
@@ -675,7 +672,7 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 	
 	if ( order.count() != getBlockCount() )
 	{
-		msg( Message() << "NifModel::reorderBlocks() - invalid argument" );
+		msg( Message() << tr("NifModel::reorderBlocks() - invalid argument") );
 		return;
 	}
 	
@@ -686,7 +683,7 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 	{
 		if ( blockMap.contains( order[n] ) || order[n] < 0 || order[n] >= getBlockCount() )
 		{
-			msg( Message() << "NifModel::reorderBlocks() - invalid argument" );
+			msg( Message() << tr("NifModel::reorderBlocks() - invalid argument") );
 			return;
 		}
 		blockMap.insert( order[n], n );
@@ -846,7 +843,7 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 			insertType( parent, data );
 	}
 	else
-		msg( Message() << "unknown ancestor " << identifier );
+		msg( Message() << tr("unknown ancestor %1").arg(identifier) );
 }
 
 bool NifModel::inherits( const QString & name, const QString & aunty )
@@ -1052,11 +1049,11 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							if ( ofs < bytes.count() )
 								return QString( & bytes.data()[ofs] );
 							else
-								return QString( "<offset invalid>" );
+								return tr("<offset invalid>");
 						}
 						else
 						{
-							return QString( "<palette not found>" );
+							return tr("<palette not found>");
 						}
 					}
 					else if ( item->value().type() == NifValue::tStringIndex )
@@ -1069,7 +1066,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						QString string = get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
 						if ( idx >= 0 )
 							return QString( "%2 [%1]").arg( idx ).arg( string );
-						return QString( "%1 - <index invalid>" ).arg( idx );
+						return tr("%1 - <index invalid>").arg( idx );
                     }
 					else if ( item->value().type() == NifValue::tBlockTypeIndex )
 					{
@@ -1080,7 +1077,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						if ( blocktyp )
 							return QString( "%2 [%1]").arg( idx ).arg( blocktyp->value().get<QString>() );
 						else
-							return QString( "%1 - <index invalid>" ).arg( idx );
+							return tr("%1 - <index invalid>").arg( idx );
 					}
 					else if ( item->value().isLink() )
 					{
@@ -1098,11 +1095,11 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							}
 							else
 							{
-								return QString( "%1 <invalid>" ).arg( lnk );
+								return tr("%1 <invalid>").arg( lnk );
 							}
 						}
 						else
-							return QString( "None" );
+							return tr("None");
 					}
 					else if ( item->value().isCount() )
 					{
@@ -1204,20 +1201,20 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						case NifValue::tInt:
 						case NifValue::tUInt:
 							{
-								return QString( "dec: %1\nhex: 0x%2" )
+								return tr("dec: %1\nhex: 0x%2")
 									.arg( item->value().toString() )
 									.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFloat:
 							{
-								return QString( "float: %1\nhex: 0x%2" )
+								return tr("float: %1\nhex: 0x%2")
 									.arg( NumOrMinMax( item->value().toFloat(), 'g', 8 ) )
 									.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 							}
 						case NifValue::tFlags:
 							{
 								quint16 f = item->value().toCount();
-								return QString( "dec: %1\nhex: 0x%2\nbin: 0b%3" )
+								return tr("dec: %1\nhex: 0x%2\nbin: 0b%3")
 									.arg( f )
 									.arg( f, 4, 16, QChar( '0' ) )
 									.arg( f, 16, 2, QChar( '0' ) );
@@ -1430,7 +1427,7 @@ bool NifModel::setHeaderString( const QString & s )
  	//msg( DbgMsg() << s );
 	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) || s.startsWith( "NDSNIF" ) ) )
 	{
-		msg( Message() << "this is not a NIF" );
+		msg( Message() << tr("this is not a NIF") );
 		return false;
 	}
 	
@@ -1455,7 +1452,7 @@ bool NifModel::setHeaderString( const QString & s )
 		
 		if ( ! isVersionSupported( version ) )
 		{
-			msg( Message() << "version" << version2string( version ) << "(" << v << ")" << "is not supported yet" );
+			msg( Message() << tr("version %1 (%2) is not supported yet").arg(version2string( version )).arg(v) );
 			return false;
 		}
 		
@@ -1463,7 +1460,7 @@ bool NifModel::setHeaderString( const QString & s )
 	}
 	else
 	{
-		msg( Message() << "invalid header string" );
+		msg( Message() << tr("invalid header string") );
 		return false;
 	}
 }
@@ -1486,7 +1483,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	if ( !header || !load( header, stream, true ) )
 	{
-		msg( Message() << "failed to load file header (version" << version << ")" );
+		msg( Message() << tr("failed to load file header (version %1)").arg(version) );
 		return false;
 	}
 	
@@ -1508,7 +1505,7 @@ bool NifModel::load( QIODevice & device )
 				emit sigProgress( c + 1, numblocks );
 				
 				if ( device.atEnd() )
-					throw QString( "unexpected EOF during load" );
+					throw tr("unexpected EOF during load");
 				
 				QString blktyp;
 				quint32 size = UINT_MAX;
@@ -1533,7 +1530,7 @@ bool NifModel::load( QIODevice & device )
 						int len;
 						device.read( (char *) &len, 4 );
 						if ( len < 2 || len > 80 )
-							throw QString( "next block does not start with a NiString" );
+							throw tr("next block does not start with a NiString");
 						blktyp = device.read( len );
 					}
 					
@@ -1544,11 +1541,11 @@ bool NifModel::load( QIODevice & device )
 						if ( ! load( root->child( c+1 ), stream, true ) ) 
 						{
 							NifItem * child = root->child( c );
-							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( child ? child->name() : prevblktyp );
+							throw tr("failed to load block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( child ? child->name() : prevblktyp );
 						}
 					}
 					else
-						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
+						throw tr("encountered unknown block (%1)").arg( blktyp );
 				}
 				catch ( QString err )
 				{
@@ -1566,7 +1563,7 @@ bool NifModel::load( QIODevice & device )
 						if (device.seek(curpos + size))
 							msg( Message() << tr("device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5").arg( c ).arg( blktyp ).arg(curpos).arg(pos).arg(curpos+size).toAscii() );
 						else
-							throw QString( "failed to reposition device at block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+							throw tr("failed to reposition device at block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( root->child( c )->name() );
 
 						curpos = device.pos();
 					}
@@ -1580,7 +1577,7 @@ bool NifModel::load( QIODevice & device )
 			
 			// read in the footer
 			if ( !load( getFooterItem(), stream, true ) )
-				throw QString( "failed to load file footer" );
+				throw tr("failed to load file footer");
 		}
 		else
 		{	// versions below 3.3.0.13
@@ -1592,12 +1589,12 @@ bool NifModel::load( QIODevice & device )
 					emit sigProgress( c + 1, 0 );
 					
 					if ( device.atEnd() )
-						throw QString( "unexpected EOF during load" );
+						throw tr("unexpected EOF during load");
 					
 					int len;
 					device.read( (char *) &len, 4 );
 					if ( len < 0 || len > 80 )
-						throw QString( "next block does not start with a NiString" );
+						throw tr("next block does not start with a NiString");
 					
 					QString blktyp = device.read( len );
 					
@@ -1609,7 +1606,7 @@ bool NifModel::load( QIODevice & device )
 					{
 						device.read( (char *) &len, 4 );
 						if ( len < 0 || len > 80 )
-							throw QString( "next block does not start with a NiString" );
+							throw tr("next block does not start with a NiString");
 						blktyp = device.read( len );
 					}
 					
@@ -1624,10 +1621,10 @@ bool NifModel::load( QIODevice & device )
 						//msg( DbgMsg() << "loading block" << c << ":" << blktyp );
 						insertNiBlock( blktyp, -1, true );
 						if ( ! load( root->child( c+1 ), stream, true ) ) 
-							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+							throw tr("failed to load block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( root->child( c )->name() );
 					}
 					else
-						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
+						throw tr("encountered unknown block (%1)").arg( blktyp );
 				}
 			}
 			catch ( QString err ) {
@@ -1706,7 +1703,7 @@ bool NifModel::save( QIODevice & device ) const
 		}
 		if ( !save( root->child( c ), stream ) )
 		{
-			msg( Message() << "failed to write block" << itemName( index( c, 0 ) ) << "(" << c-1 << ")" );
+			msg( Message() << tr("failed to write block %1(%2)").arg(itemName( index( c, 0 ) )).arg(c-1) );
 			return false;
 		}
 	}
@@ -1762,7 +1759,7 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	QFile f( fname );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 	{
-		msg( Message() << "failed to open file" << fname );
+		msg( Message() << tr("failed to open file") << fname );
 		return false;
 	}
 	
@@ -1772,7 +1769,7 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	NifItem * header = getHeaderItem();
 	if ( !header || !load( header, stream, true ) )
 	{
-		msg( Message() << "failed to load file header (version" << version << ")" );
+		msg( Message() << tr("failed to load file header (version %1)").arg(version) );
 		return false;
 	}
 	
@@ -1899,7 +1896,7 @@ int NifModel::blockSize( NifItem * parent, NifSStream& stream ) const
 					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte 
 					} else {
-						msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+						msg( Message() << tr("block %1 %2 array size mismatch").arg(getBlockNumber( parent )).arg(child->name()) );
 					}
 				}
 
@@ -1962,7 +1959,7 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte 
 					} else {
-						msg( Message() << "block" << getBlockNumber( parent ) << child->name() << "array size mismatch" );
+						msg( Message() << tr("block %1 %2 array size mismatch").arg(getBlockNumber( parent )).arg(child->name()) );
 					}
 				}
 				
@@ -2097,7 +2094,7 @@ void NifModel::checkLinks( int block, QStack<int> & parents )
 	{
 		if ( parents.contains( child ) )
 		{
-			msg( Message() << "infinite recursive link construct detected" << block << "->" << child );
+			msg( Message() << tr("infinite recursive link construct detected %1 -> %2").arg(block).arg(child) );
 			childLinks[block].removeAll( child );
 		}
 		else
@@ -2333,7 +2330,7 @@ QString NifModel::string( const QModelIndex & index, bool extraInfo ) const
 			}
 			else
 			{
-				return QString( "%1 - <index invalid>" ).arg( idx );
+				return tr( "%1 - <index invalid>" ).arg( idx );
 			}
 		}
 	}

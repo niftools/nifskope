@@ -316,7 +316,7 @@ void GLView::initializeGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
+		qDebug() << tr("GL ERROR (init) : ") << (const char *) gluErrorString( err );
 }
 
 void GLView::glProjection( int x, int y )
@@ -510,7 +510,7 @@ void GLView::paintGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << "GL ERROR (paint): " << (const char *) gluErrorString( err );
+		qDebug() << tr("GL ERROR (paint): ") << (const char *) gluErrorString( err );
 	
 	// update fps counter
 	if ( fpsacc > 1.0 && fpscnt )

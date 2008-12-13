@@ -47,36 +47,36 @@ TestShredder::TestShredder()
 	directory = new FileSelector( FileSelector::Folder, "Dir", QBoxLayout::RightToLeft );
 	directory->setText( settings.value( "Directory" ).toString() );
 	
-	recursive = new QCheckBox( "Recursive", this );
+	recursive = new QCheckBox( tr("Recursive"), this );
 	recursive->setChecked( settings.value( "Recursive", true ).toBool() );
-	recursive->setToolTip( "Recurse into sub directories" );
+	recursive->setToolTip( tr("Recurse into sub directories") );
 	
-	chkNif = new QCheckBox( "*.nif", this );
+	chkNif = new QCheckBox( tr("*.nif"), this );
 	chkNif->setChecked( settings.value( "check nif", true ).toBool() );
-	chkNif->setToolTip( "Check .nif files" );
+	chkNif->setToolTip( tr("Check .nif files") );
 	
-	chkKf = new QCheckBox( "*.kf(a)", this );
+	chkKf = new QCheckBox( tr("*.kf(a)"), this );
 	chkKf->setChecked( settings.value( "check kf", true ).toBool() );
-	chkKf->setToolTip( "Check .kf files" );
+	chkKf->setToolTip( tr("Check .kf files") );
 	
-	chkKfm = new QCheckBox( "*.kfm", this );
+	chkKfm = new QCheckBox( tr("*.kfm"), this );
 	chkKfm->setChecked( settings.value( "check kfm", true ).toBool() );
-	chkKfm->setToolTip( "Check .kfm files" );
+	chkKfm->setToolTip( tr("Check .kfm files") );
 	
-	QAction * aChoose = new QAction( "Block Match", this );
+	QAction * aChoose = new QAction( tr("Block Match"), this );
 	connect( aChoose, SIGNAL( triggered() ), this, SLOT( chooseBlock() ) );
 	QToolButton * btChoose = new QToolButton( this );
 	btChoose->setDefaultAction( aChoose );
 	
 	blockMatch = new QLineEdit( this );
 
-	repErr = new QCheckBox( "report errors only", this );
+	repErr = new QCheckBox( tr("report errors only"), this );
 	repErr->setChecked( settings.value( "report errors only", true ).toBool() );
 	
 	count = new QSpinBox();
 	count->setRange( 1, 8 );
 	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
-	count->setPrefix( "threads " );
+	count->setPrefix( tr("threads ") );
 	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
 
 	//Version Check
@@ -92,14 +92,14 @@ TestShredder::TestShredder()
 	label = new QLabel( this );
 	label->setHidden( true );
 	
-	btRun = new QPushButton( "run", this );
+	btRun = new QPushButton( tr("run"), this );
 	btRun->setCheckable( true );
 	connect( btRun, SIGNAL( clicked() ), this, SLOT( run() ) );
 	
-	QPushButton * btXML = new QPushButton( "Reload XML", this );
+	QPushButton * btXML = new QPushButton( tr("Reload XML"), this );
 	connect( btXML, SIGNAL( clicked() ), this, SLOT( xml() ) );
 	
-	QPushButton * btClose = new QPushButton( "Close", this );
+	QPushButton * btClose = new QPushButton( tr("Close"), this );
 	connect( btClose, SIGNAL( clicked() ), this, SLOT( close() ) );
 	
 	QVBoxLayout * lay = new QVBoxLayout();
@@ -120,7 +120,7 @@ TestShredder::TestShredder()
 	hbox->addWidget( count );
 
 	lay->addLayout( hbox = new QHBoxLayout() );
-	hbox->addWidget( new QLabel( "Version Match:" ) );
+	hbox->addWidget( new QLabel( tr("Version Match:") ) );
 	hbox->addWidget( verMatch );
 	
 	lay->addWidget( text );
@@ -242,7 +242,7 @@ void TestShredder::threadFinished()
 		
 		btRun->setChecked( false );
 		
-		label->setText( QString( "%1 files in %2 seconds" ).arg( progress->maximum() ).arg( time.secsTo( QDateTime::currentDateTime() ) ) );
+		label->setText( tr( "%1 files in %2 seconds" ).arg( progress->maximum() ).arg( time.secsTo( QDateTime::currentDateTime() ) ) );
 		label->setVisible( true );
 	}
 }
@@ -464,10 +464,10 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 			{
 				//This is not really an error
 				//if ( ! child && ! kf )
-				//	messages.append( Message() << "unassigned parent link" << linkId( nif, idx ) );
+				//	messages.append( Message() << tr("unassigned parent link") << linkId( nif, idx ) );
 			}
 			else if ( l >= nif->getBlockCount() )
-				messages.append( Message() << "invalid link" << linkId( nif, idx ) );
+				messages.append( Message() << tr("invalid link") << linkId( nif, idx ) );
 			else
 			{
 				QString tmplt = nif->itemTmplt( idx );
@@ -475,7 +475,7 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 				{
 					QModelIndex iBlock = nif->getBlock( l );
 					if ( ! nif->inherits( iBlock, tmplt ) )
-						messages.append( Message() << "link" << linkId( nif, idx ) << "points to wrong block type" << nif->itemName( iBlock ) );
+						messages.append( Message() << tr("link") << linkId( nif, idx ) << tr("points to wrong block type") << nif->itemName( iBlock ) );
 				}
 			}
 		}

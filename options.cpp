@@ -86,54 +86,54 @@ Options::Options()
    connect( this, SIGNAL( sigChanged() ), tEmit, SLOT( stop() ) );
 
    dialog = new GroupBox( "", Qt::Vertical );
-   dialog->setWindowTitle(  "Render Settings"  );
+   dialog->setWindowTitle(  tr("Render Settings")  );
    dialog->setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
    dialog->installEventFilter( this );
 
-   aDrawAxes = new QAction( "Draw &Axes", this );
-   aDrawAxes->setToolTip( "draw xyz-Axes" );
+   aDrawAxes = new QAction( tr("Draw &Axes"), this );
+   aDrawAxes->setToolTip( tr("draw xyz-Axes") );
    aDrawAxes->setCheckable( true );
    aDrawAxes->setChecked( cfg.value( "Draw AXes", true ).toBool() );
    connect( aDrawAxes, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aDrawNodes = new QAction( "Draw &Nodes", this );
-   aDrawNodes->setToolTip( "draw bones/nodes" );
+   aDrawNodes = new QAction( tr("Draw &Nodes"), this );
+   aDrawNodes->setToolTip( tr("draw bones/nodes") );
    aDrawNodes->setCheckable( true );
    aDrawNodes->setChecked( cfg.value( "Draw Nodes", true ).toBool() );
    connect( aDrawNodes, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aDrawHavok = new QAction( "Draw &Havok", this );
-   aDrawHavok->setToolTip( "draw the havok shapes" );
+   aDrawHavok = new QAction( tr("Draw &Havok"), this );
+   aDrawHavok->setToolTip( tr("draw the havok shapes") );
    aDrawHavok->setCheckable( true );
    aDrawHavok->setChecked( cfg.value( "Draw Collision Geometry", true ).toBool() );
    connect( aDrawHavok, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aDrawConstraints = new QAction( "Draw &Constraints", this );
-   aDrawConstraints->setToolTip( "draw the havok constraints" );
+   aDrawConstraints = new QAction( tr("Draw &Constraints"), this );
+   aDrawConstraints->setToolTip( tr("draw the havok constraints") );
    aDrawConstraints->setCheckable( true );
    aDrawConstraints->setChecked( cfg.value( "Draw Constraints", true ).toBool() );
    connect( aDrawConstraints, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aDrawFurn = new QAction( "Draw &Furniture", this );
-   aDrawFurn->setToolTip( "draw the furniture markers" );
+   aDrawFurn = new QAction( tr("Draw &Furniture"), this );
+   aDrawFurn->setToolTip( tr("draw the furniture markers") );
    aDrawFurn->setCheckable( true );
    aDrawFurn->setChecked( cfg.value( "Draw Furniture Markers", true ).toBool() );
    connect( aDrawFurn, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aDrawHidden = new QAction( "Show Hid&den", this );
-   aDrawHidden->setToolTip( "always draw nodes and meshes" );
+   aDrawHidden = new QAction( tr("Show Hid&den"), this );
+   aDrawHidden->setToolTip( tr("always draw nodes and meshes") );
    aDrawHidden->setCheckable( true );
    aDrawHidden->setChecked( cfg.value( "Show Hidden Objects", false ).toBool() );
    connect( aDrawHidden, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aDrawStats = new QAction( "Show S&tats", this );
-   aDrawStats->setToolTip( "display some statistics about the selected node" );
+   aDrawStats = new QAction( tr("Show S&tats"), this );
+   aDrawStats->setToolTip( tr("display some statistics about the selected node") );
    aDrawStats->setCheckable( true );
    aDrawStats->setChecked( cfg.value( "Show Stats", false ).toBool() );
    connect( aDrawStats, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-   aSettings = new QAction( "&Settings...", this );
-   aSettings->setToolTip( "show the settings dialog" );
+   aSettings = new QAction( tr("&Settings..."), this );
+   aSettings->setToolTip( tr("show the settings dialog") );
    connect( aSettings, SIGNAL( triggered() ), dialog, SLOT( show() ) );
 
    GroupBox *texPage;
@@ -143,27 +143,27 @@ Options::Options()
       NIFSKOPE_QSETTINGS(cfg);
       cfg.beginGroup( "Render Settings" );
 
-      texPage->pushLayout( "Texture Folders", Qt::Vertical );
+      texPage->pushLayout( tr("Texture Folders"), Qt::Vertical );
       texPage->pushLayout( Qt::Horizontal );
 
 #ifdef Q_OS_WIN32
-      texPage->pushLayout( "Auto Detect", Qt::Vertical );
+      texPage->pushLayout( tr("Auto Detect"), Qt::Vertical );
       QButtonGroup * tfgamegrp = new QButtonGroup( this );
       connect( tfgamegrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAutoDetect() ) );
-      QPushButton * bt = new QPushButton( "Auto Detect\nGame Paths" );
+      QPushButton * bt = new QPushButton( tr("Auto Detect\nGame Paths") );
       tfgamegrp->addButton( bt);
       texPage->addWidget( bt );
 
       texPage->popLayout();
 #endif
 
-      texPage->pushLayout( "Custom", Qt::Vertical );
+      texPage->pushLayout( tr("Custom"), Qt::Vertical );
       texPage->pushLayout( Qt::Horizontal );
 
       QButtonGroup * tfactgrp = new QButtonGroup( this );
       connect( tfactgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAction( int ) ) );
       int tfaid = 0;
-      foreach ( QString tfaname, QStringList() << "Add Folder" << "Remove Folder" << "Move Up" )
+      foreach ( QString tfaname, QStringList() << tr("Add Folder") << tr("Remove Folder") << tr("Move Up") )
       {
          QPushButton * bt = new QPushButton( tfaname );
          TexFolderButtons[tfaid] = bt;
@@ -203,8 +203,8 @@ Options::Options()
          this, SLOT( textureFolderIndex( const QModelIndex & ) ) );
       textureFolderIndex( TexFolderView->currentIndex() );
 
-      texPage->addWidget( TexAlternatives = new QCheckBox( "&Look for alternatives" ) );
-      TexAlternatives->setToolTip( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" );
+      texPage->addWidget( TexAlternatives = new QCheckBox( tr("&Look for alternatives") ) );
+      TexAlternatives->setToolTip( tr("If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>") );
       TexAlternatives->setChecked( cfg.value( "Texture Alternatives", true ).toBool() );
       connect( TexAlternatives, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
@@ -213,32 +213,32 @@ Options::Options()
       texPage->popLayout();
       texPage->popLayout();
       texPage->pushLayout( Qt::Horizontal );
-      texPage->pushLayout( "Render", Qt::Vertical );
+      texPage->pushLayout( tr("Render"), Qt::Vertical );
 
 
-      texPage->addWidget( AntiAlias = new QCheckBox( "&Anti Aliasing" ) );
-      AntiAlias->setToolTip( "Enable anti aliasing and anisotropic texture filtering if available.<br>You'll need to restart NifSkope for this setting to take effect.<br>" );
+      texPage->addWidget( AntiAlias = new QCheckBox( tr("&Anti Aliasing") ) );
+      AntiAlias->setToolTip( tr("Enable anti aliasing and anisotropic texture filtering if available.<br>You'll need to restart NifSkope for this setting to take effect.<br>") );
       AntiAlias->setChecked( cfg.value( "Anti Aliasing", true ).toBool() );
       connect( AntiAlias, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-      texPage->addWidget( Textures = new QCheckBox( "&Textures" ) );
-      Textures->setToolTip( "Enable textures" );
+      texPage->addWidget( Textures = new QCheckBox( tr("&Textures") ) );
+      Textures->setToolTip( tr("Enable textures") );
       Textures->setChecked( cfg.value( "Texturing", true ).toBool() );
       connect( Textures, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-      texPage->addWidget( Shaders = new QCheckBox( "&Shaders" ) );
-      Shaders->setToolTip( "Enable Shaders" );
+      texPage->addWidget( Shaders = new QCheckBox( tr("&Shaders") ) );
+      Shaders->setToolTip( tr("Enable Shaders") );
       Shaders->setChecked( cfg.value( "Enable Shaders", false ).toBool() );
       connect( Shaders, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
 
       texPage->popLayout();
-      texPage->pushLayout( "Up Axis", Qt::Vertical );
+      texPage->pushLayout( tr("Up Axis"), Qt::Vertical );
 
 
-      texPage->addWidget( AxisX = new QRadioButton( "X" ) );
-      texPage->addWidget( AxisY = new QRadioButton( "Y" ) );
-      texPage->addWidget( AxisZ = new QRadioButton( "Z" ) );
+      texPage->addWidget( AxisX = new QRadioButton( tr("X") ) );
+      texPage->addWidget( AxisY = new QRadioButton( tr("Y") ) );
+      texPage->addWidget( AxisZ = new QRadioButton( tr("Z") ) );
 
       QButtonGroup * btgrp = new QButtonGroup( this );
       btgrp->addButton( AxisX );
@@ -260,20 +260,20 @@ Options::Options()
 
 
       texPage->popLayout();
-      texPage->pushLayout( "Culling", Qt::Vertical, 1 );
+      texPage->pushLayout( tr("Culling"), Qt::Vertical, 1 );
 
-      texPage->addWidget( CullNoTex = new QCheckBox( "Cull &Non Textured" ) );
-      CullNoTex->setToolTip( "Hide all meshes without textures" );
+      texPage->addWidget( CullNoTex = new QCheckBox( tr("Cull &Non Textured") ) );
+      CullNoTex->setToolTip( tr("Hide all meshes without textures") );
       CullNoTex->setChecked( cfg.value( "Cull Non Textured", false ).toBool() );
       connect( CullNoTex, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-      texPage->addWidget( CullByID = new QCheckBox( "&Cull Nodes by Name" ) );
-      CullByID->setToolTip( "Enabling this option hides some special nodes and meshes" );
+      texPage->addWidget( CullByID = new QCheckBox( tr("&Cull Nodes by Name") ) );
+      CullByID->setToolTip( tr("Enabling this option hides some special nodes and meshes") );
       CullByID->setChecked( cfg.value( "Cull Nodes By Name", false ).toBool() );
       connect( CullByID, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
       texPage->addWidget( CullExpr = new QLineEdit( cfg.value( "Cull Expression", "^collidee|^shadowcaster|^\\!LoD_cullme|^footprint" ).toString() ) );
-      CullExpr->setToolTip( "Enter a regular expression. Nodes which names match the expression will be hidden" );
+      CullExpr->setToolTip( tr("Enter a regular expression. Nodes which names match the expression will be hidden") );
       CullExpr->setEnabled( CullByID->isChecked() );
       connect( CullExpr, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
       connect( CullByID, SIGNAL( toggled( bool ) ), CullExpr, SLOT( setEnabled( bool ) ) );
@@ -287,13 +287,13 @@ Options::Options()
       //Misc Options
       cfg.beginGroup( "Misc Settings" );
 
-      texPage->pushLayout( "Misc. Settings", Qt::Vertical, 1 );
+      texPage->pushLayout( tr("Misc. Settings"), Qt::Vertical, 1 );
       texPage->pushLayout( Qt::Horizontal );
 
 
-      texPage->addWidget( new QLabel( "Startup Version" ) );
+      texPage->addWidget( new QLabel( tr("Startup Version") ) );
       texPage->addWidget( StartVer = new QLineEdit( cfg.value( "Startup Version", "20.0.0.5" ).toString() ) );
-      StartVer->setToolTip( "This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be." );
+      StartVer->setToolTip( tr("This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be.") );
       connect( StartVer, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
 
 
@@ -307,13 +307,13 @@ Options::Options()
    GroupBox *colorPage;
    tab->addTab( colorPage = new GroupBox(Qt::Vertical), tr("Colors"));
    {
-      colorPage->pushLayout( "Light", Qt::Vertical );
+      colorPage->pushLayout( tr("Light"), Qt::Vertical );
       colorPage->pushLayout( Qt::Horizontal );
 
 
       cfg.beginGroup( "Light0" );
 
-      QStringList lightNames( QStringList() << "Ambient" << "Diffuse" << "Specular" );
+      QStringList lightNames( QStringList() << tr("Ambient") << tr("Diffuse") << tr("Specular") );
       QList<QColor> lightDefaults( QList<QColor>() << QColor::fromRgbF( .4, .4, .4 ) << QColor::fromRgbF( .8, .8, .8 ) << QColor::fromRgbF( 1, 1, 1 ) );
       for ( int l = 0; l < 3; l++ )
       {
@@ -330,16 +330,16 @@ Options::Options()
       colorPage->popLayout();
       colorPage->pushLayout( Qt::Horizontal );
 
-      colorPage->addWidget( LightFrontal = new QCheckBox( "Frontal" ), 0 );
-      LightFrontal->setToolTip( "Lock light to camera position" );
+      colorPage->addWidget( LightFrontal = new QCheckBox( tr("Frontal") ), 0 );
+      LightFrontal->setToolTip( tr("Lock light to camera position") );
       LightFrontal->setChecked( cfg.value( "Frontal", true ).toBool() );
       connect( LightFrontal, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 
-      QWidget * pos = colorPage->pushLayout( "Position", Qt::Horizontal, 1 );
+      QWidget * pos = colorPage->pushLayout( tr("Position"), Qt::Horizontal, 1 );
       pos->setDisabled( LightFrontal->isChecked() );
       connect( LightFrontal, SIGNAL( toggled( bool ) ), pos, SLOT( setDisabled( bool ) ) );
 
-      colorPage->addWidget( new QLabel( "Declination" ) );
+      colorPage->addWidget( new QLabel( tr("Declination") ) );
       colorPage->addWidget( LightDeclination = new QSpinBox, 1 );
       LightDeclination->setMinimum( -180 );
       LightDeclination->setMaximum( +180 );
@@ -348,7 +348,7 @@ Options::Options()
       LightDeclination->setValue( cfg.value( "Declination", 0 ).toInt() );
       connect( LightDeclination, SIGNAL( valueChanged( int ) ), this, SIGNAL( sigChanged() ) );
 
-      colorPage->addWidget( new QLabel( "Planar Angle" ) );
+      colorPage->addWidget( new QLabel( tr("Planar Angle") ) );
       colorPage->addWidget( LightPlanarAngle = new QSpinBox, 1 );
       LightPlanarAngle->setMinimum( -180 );
       LightPlanarAngle->setMaximum( +180 );
@@ -360,12 +360,12 @@ Options::Options()
       cfg.endGroup();
 
       colorPage->popLayout();
-      colorPage->pushLayout( "Presets", Qt::Horizontal );
+      colorPage->pushLayout( tr("Presets"), Qt::Horizontal );
 
       QButtonGroup * grp = new QButtonGroup( this );
       connect( grp, SIGNAL( buttonClicked( int ) ), this, SLOT( activateLightPreset( int ) ) );
       int psid = 0;
-      foreach ( QString psname, QStringList() << "Sunny Day" << "Dark Night" )
+      foreach ( QString psname, QStringList() << tr("Sunny Day") << tr("Dark Night") )
       {
          QPushButton * bt = new QPushButton( psname );
          grp->addButton( bt, psid++ );
@@ -375,10 +375,10 @@ Options::Options()
       colorPage->popLayout();
       colorPage->popLayout();
       colorPage->popLayout();
-      colorPage->pushLayout( "Colors", Qt::Horizontal );
+      colorPage->pushLayout( tr("Colors"), Qt::Horizontal );
 
 
-      QStringList colorNames( QStringList() << "Background" << "Foreground" << "Highlight" );
+      QStringList colorNames( QStringList() << tr("Background") << tr("Foreground") << tr("Highlight") );
       QList<QColor> colorDefaults( QList<QColor>() << QColor::fromRgb( 0, 0, 0 ) << QColor::fromRgb( 255, 255, 255 ) << QColor::fromRgb( 255, 255, 0 ) );
       for ( int c = 0; c < 3; c++ )
       {
@@ -409,14 +409,14 @@ Options::Options()
    GroupBox *matPage;
    tab->addTab( matPage = new GroupBox(Qt::Vertical), tr("Materials"));
    {
-      QWidget* overrideBox = matPage->pushLayout( "Material Overrides", Qt::Vertical );
+      QWidget* overrideBox = matPage->pushLayout( tr("Material Overrides"), Qt::Vertical );
       overrideBox->setMaximumHeight(200);
 
       matPage->pushLayout( Qt::Horizontal );
 
       cfg.beginGroup( "MatOver" );
 
-      QStringList names( QStringList() << "Ambient" << "Diffuse" << "Specular" << "Emissive" );
+      QStringList names( QStringList() << tr("Ambient") << tr("Diffuse") << tr("Specular") << tr("Emissive") );
       QList<QColor> defaults( QList<QColor>() << QColor::fromRgbF( 1, 1, 1 ) << QColor::fromRgbF( 1, 1, 1 ) << QColor::fromRgbF( 1, 1, 1 ) << QColor::fromRgbF( 1, 1, 1 ) );
       for ( int l = 0; l < 4; l++ )
       {
@@ -434,8 +434,8 @@ Options::Options()
       matPage->popLayout();
       matPage->pushLayout( Qt::Horizontal );
 
-      matPage->addWidget( overrideMatCheck = new QCheckBox( "Enable Material Color Overrides" ), 0 );
-      overrideMatCheck->setToolTip( "Override colors used on Materials" );
+      matPage->addWidget( overrideMatCheck = new QCheckBox( tr("Enable Material Color Overrides") ), 0 );
+      overrideMatCheck->setToolTip( tr("Override colors used on Materials") );
       //overrideMaterials->setChecked( cfg.value( "Override", true ).toBool() );
       connect( overrideMatCheck, SIGNAL( toggled( bool ) ), this, SIGNAL( materialOverridesChanged() ) );
 
@@ -592,9 +592,9 @@ void Options::textureFolderAutoDetect()
 			if ( ! dir.cd( "Textures" ) )
 			{
 				QMessageBox::information( dialog, "NifSkope",
-					"<p>The texture folder was not found.</p>"
+					tr("<p>The texture folder was not found.</p>"
 					"<p>This may be because you haven't extracted the archive files yet.<br>"
-					"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" );
+					"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>") );
 			}
 #endif
 		}
@@ -682,9 +682,9 @@ void Options::textureFolderAutoDetect()
          if ( ! dir.cd( "Textures" ) )
          {
             QMessageBox::information( dialog, "NifSkope",
-               "<p>The texture folder was not found.</p>"
+               tr("<p>The texture folder was not found.</p>"
                "<p>This may be because you haven't extracted the archive files yet.<br>"
-               "<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" );
+               "<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>") );
          }
 #endif
       }
@@ -707,11 +707,11 @@ void Options::textureFolderAutoDetect()
 	//Announce result to user
 	if ( game_list.size() == 0 )
 	{
-		game_list = QString("No supported games were detected.\nYour game may still work, you will just have to set the folders manually until an auto-detect routine is created.");
+		game_list = tr("No supported games were detected.\nYour game may still work, you will just have to set the folders manually until an auto-detect routine is created.");
 	}
 	else
 	{
-		game_list = QString("Successfully detected the following games:\n") + game_list;
+		game_list = tr("Successfully detected the following games:\n") + game_list;
 	}
 	QMessageBox::information( dialog, "NifSkope", game_list );
 
@@ -726,7 +726,7 @@ void Options::textureFolderAction( int id )
 		case 0:
 			// add folder
 			TexFolderModel->insertRow( 0, QModelIndex() );
-			TexFolderModel->setData( TexFolderModel->index( 0, 0, QModelIndex() ), "Choose a folder", Qt::EditRole );
+			TexFolderModel->setData( TexFolderModel->index( 0, 0, QModelIndex() ), tr("Choose a folder"), Qt::EditRole );
 			TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
 			break;
 		case 1:

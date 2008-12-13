@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFTYPES_H
 
 #include <QColor>
-
+#include <QApplication>
 #include <cfloat>
 #include <cmath>
 
@@ -143,7 +143,9 @@ protected:
 };
 
 class Vector3
-{
+{	
+	Q_DECLARE_TR_FUNCTIONS(Vector3);
+
 public:
 	Vector3()
 	{
@@ -296,7 +298,7 @@ public:
 	
 	QString toHtml() const
 	{
-		return QString( "X %1 Y %2 Z %3\nlength %4" )
+		return tr( "X %1 Y %2 Z %3\nlength %4" )
 			.arg( NumOrMinMax( xyz[0] ) )
 			.arg( NumOrMinMax( xyz[1] ) )
 			.arg( NumOrMinMax( xyz[2] ) )
@@ -312,6 +314,8 @@ protected:
 
 class Vector4
 {
+	Q_DECLARE_TR_FUNCTIONS(Vector4);
+
 public:
 	Vector4()
 	{
@@ -451,7 +455,7 @@ public:
 	
 	QString toHtml() const
 	{
-		return QString( "X %1 Y %2 Z %3 W %4\nlength %5" )
+		return tr( "X %1 Y %2 Z %3 W %4\nlength %5" )
 			.arg( NumOrMinMax( xyzw[0] ) )
 			.arg( NumOrMinMax( xyzw[1] ) )
 			.arg( NumOrMinMax( xyzw[2] ) )
@@ -475,6 +479,8 @@ inline Vector3::Vector3( const Vector4 & v4 )
 
 class Quat
 {
+	Q_DECLARE_TR_FUNCTIONS(Quat);
+
 public:
 	Quat()
 	{
@@ -534,7 +540,7 @@ public:
 
 	QString toHtml() const
 	{
-		return QString( "W %1\nX %2\nY %3\nZ %4" )
+		return tr( "W %1\nX %2\nY %3\nZ %4" )
 			.arg( NumOrMinMax( wxyz[0] ) )
 			.arg( NumOrMinMax( wxyz[1] ) )
 			.arg( NumOrMinMax( wxyz[2] ) )

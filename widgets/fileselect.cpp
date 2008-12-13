@@ -64,7 +64,7 @@ CompletionAction::~CompletionAction()
 void CompletionAction::sltToggled( bool )
 {
 	NIFSKOPE_QSETTINGS(cfg);
-	cfg.setValue( "completion of file names", isChecked() );
+	cfg.setValue( tr("completion of file names"), isChecked() );
 }
 
 FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir )
@@ -205,15 +205,15 @@ void FileSelector::browse()
 	switch ( Mode )
 	{
 		case Folder:
-			x = QFileDialog::getExistingDirectory( this, "Choose a folder", file() );
+			x = QFileDialog::getExistingDirectory( this, tr("Choose a folder"), file() );
 			break;
 		case LoadFile:
 			// Qt uses ;; as separator if multiple types are available
 			{ QStringList allfltr = fltr; allfltr.insert(0, fltr.join( " " ));
-			  x = QFileDialog::getOpenFileName( this, "Choose a file", file(), allfltr.join( ";;" ) );
+			  x = QFileDialog::getOpenFileName( this, tr("Choose a file"), file(), allfltr.join( ";;" ) );
 			} break;
 		case SaveFile:
-			x = QFileDialog::getSaveFileName( this, "Choose a file", file(), fltr.join( ";;" ) );
+			x = QFileDialog::getSaveFileName( this, tr("Choose a file"), file(), fltr.join( ";;" ) );
 			break;
 	}
 	

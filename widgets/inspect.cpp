@@ -108,36 +108,36 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
     impl->time = 0.0f;
 
     impl->nameLabel = new QLabel( this );
-    impl->nameLabel->setText( "Name:" );
+    impl->nameLabel->setText( tr("Name:") );
     impl->nameText = new QLineEdit( this );
     impl->nameText->setReadOnly(true);
 
     impl->typeLabel = new QLabel( this );
-    impl->typeLabel->setText( "Type:" );
+    impl->typeLabel->setText( tr("Type:") );
     impl->typeText = new QLineEdit( this );
     impl->typeText->setReadOnly(true);
 
     impl->timeLabel = new QLabel( this );
-    impl->timeLabel->setText( "Time:" );
+    impl->timeLabel->setText( tr("Time:") );
     impl->timeText = new QLineEdit( this );
     impl->timeText->setReadOnly(true);
 
     impl->localCheck = new QCheckBox( this );
     impl->localCheck->setCheckState( Qt::Unchecked );
-    impl->localCheck->setText( "Show Local Transform" );
+    impl->localCheck->setText( tr("Show Local Transform") );
 
     impl->posGroup = new QGroupBox( this );
-    impl->posGroup->setTitle( "Position:" );
+    impl->posGroup->setTitle( tr("Position:") );
     impl->posXLabel = new QLabel(this);
-    impl->posXLabel->setText("X:");
+    impl->posXLabel->setText(tr("X:"));
     impl->posXText = new QLineEdit( this );
     impl->posXText->setReadOnly(true);
     impl->posYLabel = new QLabel(this);
-    impl->posYLabel->setText("Y:");
+    impl->posYLabel->setText(tr("Y:"));
     impl->posYText = new QLineEdit( this );
     impl->posYText->setReadOnly(true);
     impl->posZLabel = new QLabel(this);
-    impl->posZLabel->setText("Z:");
+    impl->posZLabel->setText(tr("Z:"));
     impl->posZText = new QLineEdit( this );
     impl->posZText->setReadOnly(true);
 
@@ -152,24 +152,24 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
 
     impl->invertCheck = new QCheckBox( this );
     impl->invertCheck->setCheckState( Qt::Unchecked );
-    impl->invertCheck->setText( "Invert Rotation" );
+    impl->invertCheck->setText( tr("Invert Rotation") );
 
     impl->rotGroup = new QGroupBox( this );
-    impl->rotGroup->setTitle( "Quaternion Rotation:" );
+    impl->rotGroup->setTitle( tr("Quaternion Rotation:") );
     impl->rotWLabel = new QLabel(this);
-    impl->rotWLabel->setText("W:");
+    impl->rotWLabel->setText(tr("W:"));
     impl->rotWText = new QLineEdit( this );
     impl->rotWText->setReadOnly(true);
     impl->rotXLabel = new QLabel(this);
-    impl->rotXLabel->setText("X:");
+    impl->rotXLabel->setText(tr("X:"));
     impl->rotXText = new QLineEdit( this );
     impl->rotXText->setReadOnly(true);
     impl->rotYLabel = new QLabel(this);
-    impl->rotYLabel->setText("Y:");
+    impl->rotYLabel->setText(tr("Y:"));
     impl->rotYText = new QLineEdit( this );
     impl->rotYText->setReadOnly(true);
     impl->rotZLabel = new QLabel(this);
-    impl->rotZLabel->setText("Z:");
+    impl->rotZLabel->setText(tr("Z:"));
     impl->rotZText = new QLineEdit( this );
     impl->rotZText->setReadOnly(true);
 
@@ -185,17 +185,17 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
     rotGrid->addWidget( impl->rotZText,   3, 1 );
 
     impl->eulGroup = new QGroupBox( this );
-    impl->eulGroup->setTitle( "Euler Rotation:" );
+    impl->eulGroup->setTitle( tr("Euler Rotation:") );
     impl->eulXLabel = new QLabel(this);
-    impl->eulXLabel->setText("X:");
+    impl->eulXLabel->setText(tr("X:"));
     impl->eulXText = new QLineEdit( this );
     impl->eulXText->setReadOnly(true);
     impl->eulYLabel = new QLabel(this);
-    impl->eulYLabel->setText("Y:");
+    impl->eulYLabel->setText(tr("Y:"));
     impl->eulYText = new QLineEdit( this );
     impl->eulYText->setReadOnly(true);
     impl->eulZLabel = new QLabel(this);
-    impl->eulZLabel->setText("Z:");
+    impl->eulZLabel->setText(tr("Z:"));
     impl->eulZText = new QLineEdit( this );
     impl->eulZText->setReadOnly(true);
 
@@ -210,7 +210,7 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
 
 
     impl->matGroup = new QGroupBox( this );
-    impl->matGroup->setTitle("Transform Matrix");
+    impl->matGroup->setTitle(tr("Transform Matrix"));
     impl->matText = new QTextEdit(this);
     impl->matText->setLineWrapMode(QTextEdit::NoWrap);
 
@@ -219,12 +219,12 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
     matGrid->addWidget( impl->matText );
 
     impl->lenLabel = new QLabel( this );
-    impl->lenLabel->setText( "Length:" );
+    impl->lenLabel->setText( tr("Length:") );
     impl->lenText = new QLineEdit( this );
     impl->lenText->setReadOnly(true);
 
     impl->refreshBtn = new QPushButton( this );
-    impl->refreshBtn->setText( "Refresh" );
+    impl->refreshBtn->setText( tr("Refresh") );
     impl->refreshBtn->setFocus();
 
     QGridLayout * grid = new QGridLayout;

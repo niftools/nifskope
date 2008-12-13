@@ -48,6 +48,8 @@ QHash<QString,NifBlock*>		NifModel::blocks;
 
 class NifXmlHandler : public QXmlDefaultHandler
 {
+	Q_DECLARE_TR_FUNCTIONS(NifXmlHandler)
+
 public:
 	enum Tag
 	{
@@ -108,14 +110,14 @@ public:
 	
 	bool startElement( const QString &, const QString &, const QString & tagid, const QXmlAttributes & list )
 	{
-		if ( depth >= 8 )	err( "error maximum nesting level exceeded" );
+		if ( depth >= 8 )	err( tr("error maximum nesting level exceeded") );
 		
 		Tag x = tags.value( tagid );
-		if ( x == tagNone )	err( "error unknown element '" + tagid + "'" );
+		if ( x == tagNone )	err( tr("error unknown element '%1'").arg(tagid) );
 		
 		if ( depth == 0 )
 		{
-			if ( x != tagFile )	err( "this is not a niftoolsxml file" );
+			if ( x != tagFile )	err( tr("this is not a niftoolsxml file") );
 			push( x );
 			return true;
 		}
@@ -135,21 +137,21 @@ public:
 							QString type = list.value( "nifskopetype" );
 							if ( alias != type )
 								if ( ! NifValue::registerAlias( alias, type ) )
-									err( "failed to register alias " + alias + " for type " + type );
+									err( tr("failed to register alias %1 for type %2").arg(alias).arg(type) );
 							typId = alias;
 							typTxt = QString();
 						}
 						else
 						{
 							if ( x == tagCompound && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
-								err( "compound " + list.value( "name" ) + " is already registered as internal type" );
+								err( tr("compound %1 is already registered as internal type").arg( list.value( "name" ) ) );
 							
 							QString id = list.value( "name" );
 							if ( id.isEmpty() )
-								err( "compound and niblocks must have a name" );
+								err( tr("compound and niblocks must have a name") );
 							
 							if ( NifModel::compounds.contains( id ) || NifModel::blocks.contains( id ) )
-								err( "multiple declarations of " + id );
+								err( tr("multiple declarations of %1").arg(id) );
 							
 							if ( ! blk ) blk = new NifBlock;
 							blk->id = list.value( "name" );
@@ -161,7 +163,7 @@ public:
 								if ( ! blk->ancestor.isEmpty() )
 								{
 									if ( ! NifModel::blocks.contains( blk->ancestor ) )
-										err( "forward declaration of block id " + blk->ancestor );
+										err( tr("forward declaration of block id %1").arg(blk->ancestor) );
 								}
 							}
 						};
@@ -171,10 +173,10 @@ public:
 						QString alias = list.value( "name" );
 						QString type = list.value( "nifskopetype" );
 						if ( alias.isEmpty() || type.isEmpty() )
-							err( "basic definition must have a name and a nifskopetype" );
+							err( tr("basic definition must have a name and a nifskopetype") );
 						if ( alias != type )
 							if ( ! NifValue::registerAlias( alias, type ) )
-								err( "failed to register alias " + alias + " for type " + type );
+								err( tr("failed to register alias %1 for type %2" ).arg(alias).arg(type) );
 						typId = alias;
 						typTxt = QString();
 					}	break;
@@ -185,9 +187,9 @@ public:
 						typTxt = QString();
 						QString storage = list.value( "storage" );
 						if ( typId.isEmpty() || storage.isEmpty() )
-							err( "enum definition must have a name and a known storage type" );
+							err( tr("enum definition must have a name and a known storage type") );
 						if ( ! NifValue::registerAlias( typId, storage ) )
-							err( "failed to register alias " + storage + " for enum type " + typId );
+							err( tr("failed to register alias %1 for enum type %2").arg(storage).arg(typId) );
 						NifValue::EnumType flags = (x == tagBitFlag) ? NifValue::eFlags : NifValue::eDefault;
 						NifValue::registerEnumType(typId, flags);
 					}	break;
@@ -197,16 +199,16 @@ public:
 						if ( v != 0 && ! list.value( "num" ).isEmpty() )
 							NifModel::supportedVersions.append( v );
 						else
-							err( "invalid version tag" );
+							err( tr("invalid version tag") );
 					}	break;
 					default:
-						err( "expected basic, enum, compound, niobject or version got " + tagid + " instead" );
+						err( tr("expected basic, enum, compound, niobject or version got %1 instead").arg(tagid) );
 				}	break;
 			case tagVersion:
-				//err( "version tag must not contain any sub tags" );
+				//err( tr("version tag must not contain any sub tags") );
 				break;
 			case tagCompound:
-				if ( x != tagAdd )	err( "only add tags allowed in compound type declaration" );
+				if ( x != tagAdd )	err( tr("only add tags allowed in compound type declaration") );
 			case tagBlock:
 				push( x );
 				switch ( x )
@@ -267,10 +269,11 @@ public:
                      data.setVerCond( vercond );
                   }
 
-						if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
+						if ( data.name().isEmpty() || data.type().isEmpty() ) 
+							err( tr("add needs at least name and type attributes") );
 					}	break;
 					default:
-						err( "only add tags allowed in block declaration" );
+						err( tr("only add tags allowed in block declaration") );
 				}	break;
 			case tagEnum:
 			case tagBitFlag:
@@ -283,17 +286,17 @@ public:
 						optTxt = QString();
 						
 						if ( optId.isEmpty() || optVal.isEmpty() )
-							err( "option defintion must have a name and a value" );
+							err( tr("option defintion must have a name and a value") );
 						bool ok;
 						optVal.toInt( &ok, 0 );
 						if ( ! ok )
-							err( "option value error (only integers please)" );
+							err( tr("option value error (only integers please)") );
 						break;
 					default:
-						err( "only option tags allowed in enum declaration" );
+						err( tr("only option tags allowed in enum declaration") );
 				}	break;
 			default:
-				err( "error unhandled tag " + tagid );
+				err( tr("error unhandled tag %1").arg(tagid) );
 				break;
 		}
 		return true;
@@ -301,9 +304,9 @@ public:
 	
 	bool endElement( const QString &, const QString &, const QString & tagid )
 	{
-		if ( depth <= 0 )		err( "mismatching end element tag for element " + tagid );
+		if ( depth <= 0 )		err( tr("mismatching end element tag for element %1").arg(tagid) );
 		Tag x = tags.value( tagid );
-		if ( pop() != x )		err( "mismatching end element tag for element " + tagid );
+		if ( pop() != x )		err( tr("mismatching end element tag for element %1").arg(tagid) );
 		switch ( x )
 		{
 			case tagCompound:
@@ -318,7 +321,7 @@ public:
 					{
 						delete blk;
 						blk = 0;
-						err( "invalid " + tagid + " declaration: name is empty" );
+						err( tr("invalid %1 declaration: name is empty").arg(tagid) );
 					}
 					switch ( x )
 					{
@@ -339,7 +342,7 @@ public:
 				break;
 			case tagOption:
 				if ( ! NifValue::registerEnumOption( typId, optId, optVal.toInt(), optTxt ) )
-					err( "failed to register enum option" );
+					err( tr("failed to register enum option") );
 				break;
 			case tagBasic:
 			case tagEnum:
@@ -399,11 +402,11 @@ public:
 			foreach ( NifData data, c->types )
 			{
 				if ( ! checkType( data ) )
-					err( "compound type " + key + " referes to unknown type " + data.type() );
+					err( tr("compound type %1 refers to unknown type %2").arg(key).arg(data.type()) );
 				if ( ! checkTemp( data ) )
-					err( "compound type " + key + " referes to unknown template type " + data.temp() );
+					err( tr("compound type %1 refers to unknown template type %2").arg(key).arg(data.temp()) );
 				if ( data.type() == key )
-					err( "compound type " + key + " contains itself" );
+					err( tr("compound type %1 contains itself").arg(key) );
 			}
 		}
 		
@@ -411,15 +414,15 @@ public:
 		{
 			NifBlock * blk = NifModel::blocks.value( key );
 			if ( ! blk->ancestor.isEmpty() && ! NifModel::blocks.contains( blk->ancestor ) )
-				err( "niobject " + key + " inherits unknown ancestor " + blk->ancestor );
+				err( tr("niobject %1 inherits unknown ancestor %2").arg(key).arg(blk->ancestor) );
 			if ( blk->ancestor == key )
-				err( "niobject " + key + " inherits itself" );
+				err( tr("niobject %1 inherits itself").arg(key) );
 			foreach ( NifData data, blk->types )
 			{
 				if ( ! checkType( data ) )
-					err( "niobject " + key + " referres to unknown type " + data.type() );
+					err( tr("niobject %1 refers to unknown type ").arg(key).arg(data.type()) );
 				if ( ! checkTemp( data ) )
-					err( "niobject " + key + " referes to unknown template type " + data.temp() );
+					err( tr("niobject %1 refers to unknown template type ").arg(key).arg(data.temp()) );
 			}
 		}
 		
@@ -433,7 +436,7 @@ public:
 	bool fatalError( const QXmlParseException & exception )
 	{
 		if ( errorStr.isEmpty() ) errorStr = "Syntax error";
-		errorStr.prepend( QString( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
+		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
 		return false;
 	}
 };
@@ -472,7 +475,7 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return QString( "error: couldn't open xml description file: " + filename );
+		return tr( "error: couldn't open xml description file: ") + filename;
 	
 	NifXmlHandler handler;
 	QXmlSimpleReader reader;

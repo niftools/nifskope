@@ -39,7 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 #include <QHash>
 #include <QString>
-
 #include "niftypes.h"
 
 
@@ -49,6 +48,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 class NifValue
 {
+	Q_DECLARE_TR_FUNCTIONS(NifValue)
+
 public:
 	//! List of all types implemented internally by NifSkope.
 	/*!
@@ -458,6 +459,8 @@ class NifItem;
 
 class NifIStream
 {
+	Q_DECLARE_TR_FUNCTIONS(NifIStream)
+
 public:
 	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d ) { init(); }
 	
@@ -476,6 +479,8 @@ private:
 
 class NifOStream
 {
+	Q_DECLARE_TR_FUNCTIONS(NifOStream)
+
 public:
 	NifOStream( const BaseModel * n, QIODevice * d ) : model( n ), device( d ) { init(); }
 	

@@ -46,6 +46,8 @@ QHash<QString,NifBlock*>		KfmModel::compounds;
 
 class KfmXmlHandler : public QXmlDefaultHandler
 {
+	Q_DECLARE_TR_FUNCTIONS(KfmXmlHandler)
+
 public:
 	KfmXmlHandler()
 	{
@@ -76,14 +78,14 @@ public:
 	
 	bool startElement( const QString &, const QString &, const QString & name, const QXmlAttributes & list )
 	{
-		if ( depth >= 8 )	err( "error maximum nesting level exceeded" );
+		if ( depth >= 8 )	err( tr("error maximum nesting level exceeded") );
 		
 		int x = elements.indexOf( name );
-		if ( x < 0 )	err( "error unknown element '" + name + "'" );
+		if ( x < 0 )	err( tr("error unknown element") + " '" + name + "'" );
 		
 		if ( depth == 0 )
 		{
-			if ( x != 0 )	err( "this is not a niftoolsxml file" );
+			if ( x != 0 )	err( tr("this is not a niftoolsxml file") );
 			push( x );
 			return true;
 		}
@@ -92,7 +94,7 @@ public:
 		switch ( current() )
 		{
 			case 0:
-				if ( ! ( x == 1 || x == 2 ) )	err( "expected compound or version got " + name + " instead" );
+				if ( ! ( x == 1 || x == 2 ) )	err( tr("expected compound or version got %1 instead").arg(name) );
 				push( x );
 				switch ( x )
 				{
@@ -101,18 +103,18 @@ public:
 						if ( v != 0 && ! list.value( "num" ).isEmpty() )
 							KfmModel::supportedVersions.append( v );
 						else
-							err( "invalid version string" );
+							err( tr("invalid version string") );
 						break;
 					case 2:
 						if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
-							err( "compound " + list.value( "name" ) + " is already registered as internal type" );
+							err( tr("compound %1 is already registered as internal type").arg(list.value( "name" )) );
 						if ( ! blk ) blk = new NifBlock;
 						blk->id = list.value( "name" );
 						break;
 				}
 				break;
 			case 1:
-				err( "version tag must not contain any sub tags" );
+				err( tr("version tag must not contain any sub tags") );
 				break;
 			case 2:
 				if ( x == 3 )
@@ -129,15 +131,15 @@ public:
 						KfmModel::version2number( list.value( "ver1" ) ),
 						KfmModel::version2number( list.value( "ver2" ) )
 					);
-					if ( data.name().isEmpty() || data.type().isEmpty() ) err( "add needs at least name and type attributes" );
+					if ( data.name().isEmpty() || data.type().isEmpty() ) err( tr("add needs at least name and type attributes") );
 					if ( blk )	blk->types.append( data );
 				}
 				else
-					err( "only add tags allowed in compound type declaration" );
+					err( tr("only add tags allowed in compound type declaration") );
 				push( x );
 				break;
 			default:
-				err( "error unhandled tag " + name + " in " + elements.value( current() ) );
+				err( tr("error unhandled tag %1 in %2").arg(name).arg(elements.value( current() )) );
 				break;
 		}
 		return true;
@@ -145,9 +147,9 @@ public:
 	
 	bool endElement( const QString &, const QString &, const QString & name )
 	{
-		if ( depth <= 0 )		err( "mismatching end element tag for element " + name );
+		if ( depth <= 0 )		err( tr("mismatching end element tag for element ") + name );
 		int x = elements.indexOf( name );
-		if ( pop() != x )		err( "mismatching end element tag for element " + elements.value( current() ) );
+		if ( pop() != x )		err( tr("mismatching end element tag for element ") + elements.value( current() ) );
 		switch ( x )
 		{
 			case 2:
@@ -165,7 +167,7 @@ public:
 					{
 						delete blk;
 						blk = 0;
-						err( "invalid " + elements.value( x ) + " declaration: name is empty" );
+						err( tr("invalid %1 declaration: name is empty").arg(elements.value( x )) );
 					}
 				}
 				break;
@@ -191,11 +193,11 @@ public:
 			foreach ( NifData data, c->types )
 			{
 				if ( ! checkType( data ) )
-					err( "compound type " + key + " referes to unknown type " + data.type() );
+					err( tr("compound type %1 referes to unknown type %2").arg(key).arg(data.type()) );
 				if ( ! checkTemp( data ) )
-					err( "compound type " + key + " referes to unknown template type " + data.temp() );
+					err( tr("compound type %1 refers to unknown template type %2").arg(key).arg(data.temp()));
 				if ( data.type() == key )
-					err( "compound type " + key + " contains itself" );
+					err( tr("compound type %1 contains itself").arg(key) );
 			}
 		}
 		return true;
@@ -207,8 +209,8 @@ public:
 	}
 	bool fatalError( const QXmlParseException & exception )
 	{
-		if ( errorStr.isEmpty() ) errorStr = "Syntax error";
-		errorStr.prepend( QString( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
+		if ( errorStr.isEmpty() ) errorStr = tr("Syntax error");
+		errorStr.prepend( tr("XML parse error (line %1):<br>").arg( exception.lineNumber() ) );
 			return false;
 	}
 };
@@ -243,7 +245,7 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 	
 	QFile f( filename );
 	if ( ! f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return QString( "error: couldn't open xml description file: " + filename );
+		return tr("error: couldn't open xml description file: %1").arg( filename );
 	
 	KfmXmlHandler handler;
 	QXmlSimpleReader reader;

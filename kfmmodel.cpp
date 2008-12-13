@@ -222,13 +222,13 @@ bool KfmModel::setHeaderString( const QString & s )
 		}
 		else
 		{
-			msg( Message() << "version" << version2string( version ) << "not supported yet" );
+			msg( Message() << tr("version") << version2string( version ) << tr("not supported yet") );
 			return false;
 		}
 	}
 	else
 	{
-		msg( Message() << "this is not a KFM" );
+		msg( Message() << tr("this is not a KFM") );
 		return false;
 	}
 }
@@ -241,7 +241,7 @@ bool KfmModel::load( QIODevice & device )
 
 	if ( !kfmroot || !load( kfmroot, stream, true ) )
 	{
-		msg( Message() << "failed to load kfm file (version" << version << ")" );
+		msg( Message() << tr("failed to load kfm file (%1)").arg(version));
 		return false;
 	}
 	
@@ -255,7 +255,7 @@ bool KfmModel::save( QIODevice & device ) const
 
 	if ( ! kfmroot || save( kfmroot, stream ) )
 	{
-		msg( Message() << "failed to write kfm file" );
+		msg( Message() << tr("failed to write kfm file") );
 		return false;
 	}
 	return true;
@@ -306,7 +306,7 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
 			{
 				if ( ! child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					msg( Message() << child->name() << "array size mismatch" );
+					msg( Message() << child->name() << tr("array size mismatch") );
 				
 				if ( !save( child, stream ) )
 					return false;

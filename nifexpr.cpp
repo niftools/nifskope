@@ -52,7 +52,7 @@ static bool matchGroup(const QString & cond, int offset, int& startpos, int& end
       }
    }
    if (startpos != -1 || endpos != -1)
-      throw QString("expression syntax error (non-matching brackets?)");
+      throw "expression syntax error (non-matching brackets?)";
    return false;
 }
 

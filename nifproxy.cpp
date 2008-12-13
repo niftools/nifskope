@@ -319,7 +319,7 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 			updateItem( child, fast );
 		}
 		else
-			qWarning() << "infinite recursing link construct detected" << item->block() << "->" << child->block();
+			qWarning() << tr("infinite recursing link construct detected") << item->block() << "->" << child->block();
 	}
 	foreach ( int l, nif->getParentLinks( item->block() ) )
 	{
@@ -380,7 +380,7 @@ QModelIndex NifProxyModel::mapTo( const QModelIndex & idx ) const
 	
 	if ( idx.model() != this )
 	{
-		qDebug() << "NifProxyModel::mapTo() called with wrong model";
+		qDebug() << tr("NifProxyModel::mapTo() called with wrong model");
 		return QModelIndex();
 	}
 	NifProxyItem * item = static_cast<NifProxyItem*>( idx.internalPointer() );
@@ -395,7 +395,7 @@ QModelIndex NifProxyModel::mapFrom( const QModelIndex & idx, const QModelIndex &
 	if ( ! ( nif && idx.isValid() ) ) return QModelIndex();
 	if ( idx.model() != nif )
 	{
-		qDebug() << "NifProxyModel::mapFrom() called with wrong model";
+		qDebug() << tr("NifProxyModel::mapFrom() called with wrong model");
 		return QModelIndex();
 	}
 	int blockNumber = nif->getBlockNumber( idx );
@@ -406,7 +406,7 @@ QModelIndex NifProxyModel::mapFrom( const QModelIndex & idx, const QModelIndex &
 		if ( ref.model() == this )
 			item = static_cast<NifProxyItem*>( ref.internalPointer() );
 		else
-			qDebug() << "NifProxyModel::mapFrom() called with wrong ref model";
+			qDebug() << tr("NifProxyModel::mapFrom() called with wrong ref model");
 	}
 	item = item->findItem( blockNumber );
 	if ( item )
@@ -421,7 +421,7 @@ QList<QModelIndex> NifProxyModel::mapFrom( const QModelIndex & idx ) const
 	if ( !( nif && idx.isValid() && ( idx.column() == NifModel::NameCol || idx.column() == NifModel::ValueCol ) ) ) return indices;
 	if ( idx.model() != nif )
 	{
-		qDebug() << "NifProxyModel::mapFrom() plural called with wrong model";
+		qDebug() << tr("NifProxyModel::mapFrom() plural called with wrong model");
 		return indices;
 	}
 	if ( idx.parent().isValid() )
