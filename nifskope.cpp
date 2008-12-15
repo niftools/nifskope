@@ -1188,10 +1188,10 @@ int main( int argc, char * argv[] )
 	}
 
 	// set the translation
-	QString locale = QLocale::system().name();
+	QString locale = QLocale::system().name().section('_',0,0);
 
 	QTranslator translator;
-	translator.load( QString( ":lang/" ) + locale );
+	translator.load( QString( "lang/NifSkope_" ) + locale );
 	app.installTranslator( &translator );
 	 
 	NifModel::loadXML();

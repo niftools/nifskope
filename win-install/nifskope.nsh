@@ -202,6 +202,11 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\shaders\*.vert
   File ..\shaders\*.frag
 
+  ; Install languages
+  SetOutPath $INSTDIR\lang
+  File ..\lang\*.ts
+  File ..\lang\*.qm
+
   ; Install reference manual
   ; run ..\..\docsys\nifxml_doc.py to update the HTML files before compiling the install script
   SetOutPath $INSTDIR\doc
@@ -298,9 +303,11 @@ KfaAssocNoOwn:
   ; remove program files and program directory
   Delete "$INSTDIR\doc\*.*"
   Delete "$INSTDIR\shaders\*.*"
+  Delete "$INSTDIR\lang\*.*"
   Delete "$INSTDIR\*.*"
   RMDir "$INSTDIR\doc"
   RMDir "$INSTDIR\shaders"
+  RMDir "$INSTDIR\lang"
   RMDir "$INSTDIR"
 
   ; remove links in start menu

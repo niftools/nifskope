@@ -68,3 +68,5 @@ win32:console {
 console {
     DEFINES += NO_MESSAGEHANDLER
 }
+
+TRANSLATIONS += lang/NifSkope_de.ts lang/NifSkope_fr.ts
