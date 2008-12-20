@@ -26,8 +26,8 @@ typedef QMap<QString,Transform> TransMap;
 class spFixSkeleton : public Spell
 {
 public:
-	QString name() const { return "Fix Bip01"; }
-	QString page() const { return "Skeleton"; }
+	QString name() const { return Spell::tr("Fix Bip01"); }
+	QString page() const { return Spell::tr("Skeleton"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -189,8 +189,8 @@ REGISTER_SPELL( spFixSkeleton )
 class spScanSkeleton : public Spell
 {
 public:
-	QString name() const { return "Scan Bip01"; }
-	QString page() const { return "Skeleton"; }
+	QString name() const { return Spell::tr("Scan Bip01"); }
+	QString page() const { return Spell::tr("Skeleton"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

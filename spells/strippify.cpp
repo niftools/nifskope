@@ -25,8 +25,8 @@ template <typename T> void copyValue( NifModel * nif, const QModelIndex & iDst, 
 
 class spStrippify : public Spell
 {
-	QString name() const { return "Stripify"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Stripify"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -144,8 +144,8 @@ REGISTER_SPELL( spStrippify )
 class spStrippifyAll : public Spell
 {
 public:
-	QString name() const { return "Stripify all TriShapes"; }
-	QString page() const { return "Optimize"; }
+	QString name() const { return Spell::tr("Stripify all TriShapes"); }
+	QString page() const { return Spell::tr("Optimize"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -177,8 +177,8 @@ REGISTER_SPELL( spStrippifyAll )
 
 class spTriangulate : public Spell
 {
-	QString name() const { return "Triangulate"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Triangulate"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -277,8 +277,8 @@ REGISTER_SPELL( spTriangulate )
 class spStichStrips : public Spell
 {
 public:
-	QString name() const { return "Stich Strips"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Stich Strips"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	static QModelIndex getStripsData( const NifModel * nif, const QModelIndex & index )
 	{
@@ -337,8 +337,8 @@ REGISTER_SPELL( spStichStrips )
 class spUnstichStrips : public Spell
 {
 public:
-	QString name() const { return "Unstich Strips"; }
-	QString page() const { return "Mesh"; }
+	QString name() const { return Spell::tr("Unstich Strips"); }
+	QString page() const { return Spell::tr("Mesh"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

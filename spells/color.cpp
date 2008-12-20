@@ -5,8 +5,8 @@
 class spChooseColor : public Spell
 {
 public:
-	QString name() const { return "Choose"; }
-	QString page() const { return "Color"; }
+	QString name() const { return Spell::tr("Choose"); }
+	QString page() const { return Spell::tr("Color"); }
 	QIcon icon() const { return ColorWheel::getIcon(); }
 	bool instant() const { return true; }
 	

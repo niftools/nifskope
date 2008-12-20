@@ -85,8 +85,8 @@ QIcon * mat42_xpm_icon = 0;
 class spMaterialEdit : public Spell
 {
 public:
-	QString name() const { return "Material"; }
-	QString page() const { return ""; }
+	QString name() const { return Spell::tr("Material"); }
+	QString page() const { return Spell::tr(""); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{

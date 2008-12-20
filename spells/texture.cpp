@@ -144,8 +144,8 @@ QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
 class spChooseTexture : public Spell
 {
 public:
-	QString name() const { return "Choose"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Choose"); }
+	QString page() const { return Spell::tr("Texture"); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -283,8 +283,8 @@ REGISTER_SPELL( spEditTexCoords )
 class spAddBaseMap : public Spell
 {
 public:
-	QString name() const { return "Add Base Texture"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Add Base Texture"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -303,8 +303,8 @@ REGISTER_SPELL( spAddBaseMap )
 class spAddDarkMap : public Spell
 {
 public:
-	QString name() const { return "Add Dark Map"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Add Dark Map"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -323,8 +323,8 @@ REGISTER_SPELL( spAddDarkMap )
 class spAddDetailMap : public Spell
 {
 public:
-	QString name() const { return "Add Detail Map"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Add Detail Map"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -343,8 +343,8 @@ REGISTER_SPELL( spAddDetailMap )
 class spAddGlowMap : public Spell
 {
 public:
-	QString name() const { return "Add Glow Map"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Add Glow Map"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -363,8 +363,8 @@ REGISTER_SPELL( spAddGlowMap )
 class spAddBumpMap : public Spell
 {
 public:
-	QString name() const { return "Add Bump Map"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Add Bump Map"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -392,8 +392,8 @@ REGISTER_SPELL( spAddBumpMap )
 class spAddDecal0Map : public Spell
 {
 public:
-	QString name() const { return "Add Decal 0 Map"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Add Decal 0 Map"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -413,8 +413,8 @@ REGISTER_SPELL( spAddDecal0Map )
 
 class spTextureTemplate : public Spell
 {
-	QString name() const { return "Export Template"; }
-	QString page() const { return "Texture"; }
+	QString name() const { return Spell::tr("Export Template"); }
+	QString page() const { return Spell::tr("Texture"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -556,8 +556,8 @@ class spMultiApplyMode : public Spell
 
 public:
 
-	QString name() const { return "Multi Apply Mode"; }
-	QString page() const { return "Batch"; } 
+	QString name() const { return Spell::tr("Multi Apply Mode"); }
+	QString page() const { return Spell::tr("Batch"); } 
 
 	bool isApplicable( const NifModel * nif, const QModelIndex &index )
 	{

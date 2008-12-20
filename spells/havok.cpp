@@ -14,8 +14,8 @@
 class spCreateCVS : public Spell
 {
 public:
-	QString name() const { return "Create Convex Shape"; }
-	QString page() const { return "Havok"; }
+	QString name() const { return Spell::tr("Create Convex Shape"); }
+	QString page() const { return Spell::tr("Havok"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -66,8 +66,8 @@ REGISTER_SPELL( spCreateCVS );
 class spConstraintHelper : public Spell
 {
 public:
-	QString name() const { return "A -> B"; }
-	QString page() const { return "Havok"; }
+	QString name() const { return Spell::tr("A -> B"); }
+	QString page() const { return Spell::tr("Havok"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

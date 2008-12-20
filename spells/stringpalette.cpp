@@ -57,8 +57,8 @@ QIcon * txt_xpm_icon = 0;
 class spEditStringOffset : public Spell
 {
 public:
-	QString name() const { return "Edit String Offset"; }
-	QString page() const { return ""; }
+	QString name() const { return Spell::tr("Edit String Offset"); }
+	QString page() const { return Spell::tr(""); }
 	QIcon icon() const
 	{
 		if ( ! txt_xpm_icon )

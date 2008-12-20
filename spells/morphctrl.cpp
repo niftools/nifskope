@@ -5,8 +5,8 @@
 class spMorphFrameSave : public Spell
 {
 public:
-	QString name() const { return "Save Vertices To Frame"; }
-	QString page() const { return "Morph"; }
+	QString name() const { return Spell::tr("Save Vertices To Frame"); }
+	QString page() const { return Spell::tr("Morph"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

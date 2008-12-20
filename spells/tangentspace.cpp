@@ -237,7 +237,18 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
-		return nif && nif->checkVersion( 0x14000004, 0x14000005 ) && ! idx.isValid();
+		if (!nif || !idx.isValid())
+			return false;
+
+		// If bethesda then we will configure the settings for the mesh.
+		if ( nif->getUserVersion() == 11 ) 
+			return true;
+
+		// 10.1.0.0 and greater can have tangents and binormals
+		if (  nif->checkVersion( 0x0A010000, 0 ) )
+			return true;
+
+		return false;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & )

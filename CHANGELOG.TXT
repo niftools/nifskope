@@ -6,6 +6,9 @@ changes since 1.0.16:
  * force updateHeader and updateFooter to be called before save
  * introduce bitflag data type
  * add editor for bitflag types
+ * update santize spells to better cleanup Fallout3 NIFs during export
+ * custom Fallout 3 sanitize spell forcing NiGeometryData blocks to have names
+ * more support for internationalization
  
 changes since 1.0.15:
  * add Transform Inspection window

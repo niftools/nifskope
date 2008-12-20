@@ -57,8 +57,8 @@ static QIcon * txt_xpm_icon = 0;
 class spEditStringIndex : public Spell
 {
 public:
-	QString name() const { return "Edit String Index"; }
-	QString page() const { return ""; }
+	QString name() const { return Spell::tr("Edit String Index"); }
+	QString page() const { return Spell::tr(""); }
 	QIcon icon() const
 	{
 		if ( ! txt_xpm_icon )

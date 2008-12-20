@@ -62,8 +62,8 @@ static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIn
 class spInsertBlock : public Spell
 {
 public:
-	QString name() const { return "Insert"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Insert"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -121,8 +121,8 @@ REGISTER_SPELL( spInsertBlock )
 class spAttachProperty : public Spell
 {
 public:
-	QString name() const { return "Attach Property"; }
-	QString page() const { return "Node"; }
+	QString name() const { return Spell::tr("Attach Property"); }
+	QString page() const { return Spell::tr("Node"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -158,8 +158,8 @@ REGISTER_SPELL( spAttachProperty )
 class spAttachNode : public Spell
 {
 public:
-	QString name() const { return "Attach Node"; }
-	QString page() const { return "Node"; }
+	QString name() const { return Spell::tr("Attach Node"); }
+	QString page() const { return Spell::tr("Node"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -194,8 +194,8 @@ REGISTER_SPELL( spAttachNode )
 class spAttachLight : public Spell
 {
 public:
-	QString name() const { return "Attach Light"; }
-	QString page() const { return "Node"; }
+	QString name() const { return Spell::tr("Attach Light"); }
+	QString page() const { return Spell::tr("Node"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -231,8 +231,8 @@ REGISTER_SPELL( spAttachLight )
 class spAttachExtraData : public Spell
 {
 public:
-	QString name() const { return "Attach Extra Data"; }
-	QString page() const { return "Node"; }
+	QString name() const { return Spell::tr("Attach Extra Data"); }
+	QString page() const { return Spell::tr("Node"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -266,8 +266,8 @@ REGISTER_SPELL( spAttachExtraData )
 class spRemoveBlock : public Spell
 {
 public:
-	QString name() const { return "Remove"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Remove"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -287,8 +287,8 @@ REGISTER_SPELL( spRemoveBlock )
 class spCopyBlock : public Spell
 {
 public:
-	QString name() const { return "Copy"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Copy"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -315,8 +315,8 @@ REGISTER_SPELL( spCopyBlock )
 class spPasteBlock : public Spell
 {
 public:
-	QString name() const { return "Paste"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Paste"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
@@ -375,8 +375,8 @@ REGISTER_SPELL( spPasteBlock )
 class spPasteOverBlock : public Spell
 {
 public:
-	QString name() const { return "Paste Over"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Paste Over"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	QString acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
 	{
@@ -426,8 +426,8 @@ REGISTER_SPELL( spPasteOverBlock )
 class spCopyBranch : public Spell
 {
 public:
-	QString name() const { return "Copy Branch"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Copy Branch"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -504,8 +504,8 @@ REGISTER_SPELL( spCopyBranch )
 class spPasteBranch : public Spell
 {
 public:
-	QString name() const { return "Paste Branch"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Paste Branch"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
@@ -655,8 +655,8 @@ REGISTER_SPELL( spRemoveBranch )
 class spFlattenBranch : public Spell
 {
 public:
-	QString name() const { return "Flatten Branch"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Flatten Branch"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -706,8 +706,8 @@ REGISTER_SPELL( spFlattenBranch )
 class spMoveBlockUp : public Spell
 {
 public:
-	QString name() const { return "Move Up"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Move Up"); }
+	QString page() const { return Spell::tr("Block"); }
 	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Up ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -729,8 +729,8 @@ REGISTER_SPELL( spMoveBlockUp )
 class spMoveBlockDown : public Spell
 {
 public:
-	QString name() const { return "Move Down"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Move Down"); }
+	QString page() const { return Spell::tr("Block"); }
 	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Down ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -752,8 +752,8 @@ REGISTER_SPELL( spMoveBlockDown )
 class spRemoveBlocksById : public Spell
 {
 public:
-	QString name() const { return "Remove By Id"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Remove By Id"); }
+	QString page() const { return Spell::tr("Block"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -800,8 +800,8 @@ REGISTER_SPELL( spRemoveBlocksById )
 class spCropToBranch : public Spell
 {
 public:
-	QString name() const { return "Crop To Branch"; }
-	QString page() const { return "Block"; }
+	QString name() const { return Spell::tr("Crop To Branch"); }
+	QString page() const { return Spell::tr("Block"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

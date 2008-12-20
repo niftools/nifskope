@@ -2,16 +2,16 @@
 
 #include <QDebug>
 
-class spSanitizeLinkArrays20000005 : public Spell
+class spSanitizeLinkArrays : public Spell
 {
 public:
-	QString name() const { return "Adjust Link Arrays"; }
-	QString page() const { return "Sanitize"; }
+	QString name() const { return Spell::tr("Adjust Link Arrays"); }
+	QString page() const { return Spell::tr("Sanitize"); }
 	bool sanity() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->checkVersion( 0x14000005, 0x14000005 ) && ! index.isValid();
+		return (! index.isValid() && ( nif->getVersionNumber() >= 0x14000005 ) );
 	}
 	
 	static bool compareChildLinks( QPair<qint32, bool> a, QPair<qint32, bool> b )
@@ -52,53 +52,50 @@ public:
 			// remove empty property links
 			QModelIndex iNumProperties = nif->getIndex( iBlock, "Num Properties" );
 			QModelIndex iProperties = nif->getIndex( iBlock, "Properties" );
-			if ( iNumProperties.isValid() && iProperties.isValid() )
-			{
-				QVector<qint32> links;
-				for ( int r = 0; r < nif->rowCount( iProperties ); r++ )
-				{
-					qint32 l = nif->getLink( iProperties.child( r, 0 ) );
-					if ( l >= 0 ) links.append( l );
-				}
-				if ( links.count() < nif->rowCount( iProperties ) )
-				{
-					nif->set<int>( iNumProperties, links.count() );
-					nif->updateArray( iProperties );
-					nif->setLinkArray( iProperties, links );
-				}
-			}
+			CollapseArray(nif, iNumProperties, iProperties);
+
+			// remove empty extra data links
+			QModelIndex iNumExtraData = nif->getIndex( iBlock, "Num Extra Data List" );
+			QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
+			CollapseArray(nif, iNumExtraData, iExtraData);
 
 			// remove empty modifier links (NiParticleSystem crashes Oblivion for those)
 			QModelIndex iNumModifiers = nif->getIndex( iBlock, "Num Modifiers" );
 			QModelIndex iModifiers = nif->getIndex( iBlock, "Modifiers" );
-			if ( iNumModifiers.isValid() && iModifiers.isValid() )
-			{
-				QVector<qint32> links;
-				for ( int r = 0; r < nif->rowCount( iModifiers ); r++ )
-				{
-					qint32 l = nif->getLink( iModifiers.child( r, 0 ) );
-					if ( l >= 0 ) links.append( l );
-				}
-				if ( links.count() < nif->rowCount( iModifiers ) )
-				{
-					nif->set<int>( iNumModifiers, links.count() );
-					nif->updateArray( iModifiers );
-					nif->setLinkArray( iModifiers, links );
-				}
-			}
+			CollapseArray(nif, iNumModifiers, iModifiers);
 		}
 		return QModelIndex();
 	}
+
+	void CollapseArray( NifModel * nif, QModelIndex &iNumElem, QModelIndex &iArray )
+	{
+		if ( iNumElem.isValid() && iArray.isValid() )
+		{
+			QVector<qint32> links;
+			for ( int r = 0; r < nif->rowCount( iArray ); r++ )
+			{
+				qint32 l = nif->getLink( iArray.child( r, 0 ) );
+				if ( l >= 0 ) links.append( l );
+			}
+			if ( links.count() < nif->rowCount( iArray ) )
+			{
+				nif->set<int>( iNumElem, links.count() );
+				nif->updateArray( iArray );
+				nif->setLinkArray( iArray, links );
+			}
+		}
+	}
 };
 
-REGISTER_SPELL( spSanitizeLinkArrays20000005 )
+
+REGISTER_SPELL( spSanitizeLinkArrays )
 
 
 class spAdjustTextureSources : public Spell
 {
 public:
-	QString name() const { return "Adjust Texture Sources"; }
-	QString page() const { return "Sanitize"; }
+	QString name() const { return Spell::tr("Adjust Texture Sources"); }
+	QString page() const { return Spell::tr("Sanitize"); }
 	bool sanity() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -136,8 +133,8 @@ REGISTER_SPELL( spAdjustTextureSources )
 class spSanitizeBlockOrder : public Spell
 {
 public:
-	QString name() const { return "Reorder Blocks"; }
-	QString page() const { return "Sanitize"; }
+	QString name() const { return Spell::tr("Reorder Blocks"); }
+	QString page() const { return Spell::tr("Sanitize"); }
 	bool sanity() const { return true; }
 	
 	bool isApplicable( const NifModel *, const QModelIndex & index )
@@ -223,8 +220,8 @@ REGISTER_SPELL( spSanitizeBlockOrder )
 class spSanityCheckLinks : public Spell
 {
 public:
-	QString name() const { return "Check Links"; }
-	QString page() const { return "Sanitize"; }
+	QString name() const { return Spell::tr("Check Links"); }
+	QString page() const { return Spell::tr("Sanitize"); }
 	bool sanity() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )

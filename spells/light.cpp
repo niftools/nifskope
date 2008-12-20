@@ -45,8 +45,8 @@ QIcon * light42_xpm_icon = 0;
 class spLightEdit : public Spell
 {
 public:
-	QString name() const { return "Light"; }
-	QString page() const { return ""; }
+	QString name() const { return Spell::tr("Light"); }
+	QString page() const { return Spell::tr(""); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
