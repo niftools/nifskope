@@ -8,9 +8,11 @@ for %%i in (svnversion.exe) do IF EXIST "%%~$PATH:i" set SVNVERSION=%%~$PATH:i)
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%SystemDrive%\svn\bin\svnversion.exe
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%PROGRAMFILES%\TortoiseSVN\bin\svnversion.exe
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%PROGRAMFILES%\Subversion\bin\svnversion.exe
-IF EXIST "%SVNVERSION%" for /f "delims=| usebackq" %%j in (`"%SVNVERSION%" ..`) do set VERSION=%VERSION%.%%j 
+IF EXIST "%SVNVERSION%" for /f "delims=| usebackq" %%j in (`"%SVNVERSION%" ..`) do set VERSION=%VERSION%.%%j
 
 del %NAME%-%VERSION%-windows.exe > nul
+
+echo !define VERSION "%VERSION%" > nifversion.nsh
 
 cd ..\..\docsys
 del doc\*.html
@@ -28,5 +30,4 @@ if exist "%PROGRAMFILES%\NSIS\makensis.exe" "%PROGRAMFILES%\NSIS\makensis.exe" /
 if exist "%PROGRAMFILES(x86)%\NSIS\makensis.exe" "%PROGRAMFILES(x86)%\NSIS\makensis.exe" /v3 %NAME%-mingw-dynamic.nsi
 
 pause
-:TheEnd
 endlocal
