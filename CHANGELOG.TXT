@@ -9,6 +9,8 @@ changes since 1.0.16:
  * update santize spells to better cleanup Fallout3 NIFs during export
  * custom Fallout 3 sanitize spell forcing NiGeometryData blocks to have names
  * more support for internationalization
+ * bug fixes in the renderer which completely disabled shaders on common hardware
+ * bug fix for showing BSDismemberedSkinInstance highlighting in viewer when partitions were selected
  
 changes since 1.0.15:
  * add Transform Inspection window
