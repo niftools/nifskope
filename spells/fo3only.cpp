@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+// disable since name was removed from NiGeometryData
+#if 0
 // Spell to set the name of the NiGeometryData node to parent name or zero
 class spFO3FixShapeDataName : public Spell
 {
@@ -67,3 +69,4 @@ public:
 };
 
 REGISTER_SPELL( spFO3FixShapeDataName )
+#endif
