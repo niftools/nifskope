@@ -171,8 +171,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 			QModelIndex iChild = nif->getBlock( link );
 			if ( ! iChild.isValid() ) continue;
 			QString name = nif->itemName( iChild );
-			
-			if ( name == "NiTriShapeData" || name == "NiTriStripsData" )
+			if ( nif->inherits(iChild, "NiTriShapeData") || nif->inherits(iChild, "NiTriStripsData" ) )
 			{
 				if ( ! iData.isValid() )
 				{
@@ -184,7 +183,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					qWarning() << "shape block" << id() << "has multiple data blocks";
 				}
 			}
-			else if ( name == "NiSkinInstance" )
+			else if ( nif->inherits(iChild, "NiSkinInstance" ) )
 			{
 				if ( ! iSkin.isValid() )
 				{
