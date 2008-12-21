@@ -117,7 +117,7 @@ class spMoppCode : public Spell
 {
 public:
 	QString name() const { return Spell::tr("Update MOPP Code"); }
-	QString page() const { return Spell::tr("Code"); }
+	QString page() const { return Spell::tr("Havok"); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index );
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock );
@@ -125,10 +125,16 @@ public:
 
 bool spMoppCode::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
+	if (nif->getUserVersion() != 10 && nif->getUserVersion() != 11)
+		return false;
 	if ( TheHavokCode.Initialize() )
 	{
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
-		return nif->checkVersion( 0x14000004, 0x14000005 ) && nif->isNiBlock( index, "bhkMoppBvTreeShape" );
+		if ( nif->isNiBlock( index, "bhkMoppBvTreeShape" ) )
+		{
+			return ( nif->checkVersion( 0x14000004, 0x14000005 ) 
+					|| nif->checkVersion( 0x14020007, 0x14020007 ) );
+		}			
 	}
 	return false;
 }
@@ -149,15 +155,27 @@ QModelIndex spMoppCode::cast( NifModel * nif, const QModelIndex & iBlock )
 		return iBlock;
 	}
 
-   QVector<int> subshapeVerts;
-   int nSubShapes = nif->get<int>( ibhkPackedNiTriStripsShape, "Num Sub Shapes" );
-   QModelIndex ihkSubShapes = nif->getIndex( ibhkPackedNiTriStripsShape, "Sub Shapes" );
-   subshapeVerts.resize(nSubShapes);
-   for ( int t = 0; t < nSubShapes; t++ ) {
-      subshapeVerts[t] = nif->get<int>( ihkSubShapes.child( t, 0 ), "Num Vertices" );
-   }
-
 	QModelIndex ihkPackedNiTriStripsData = nif->getBlock( nif->getLink( ibhkPackedNiTriStripsShape, "Data" ) );
+	if ( !nif->isNiBlock( ihkPackedNiTriStripsData, "hkPackedNiTriStripsData" ))
+		return iBlock;
+
+	QVector<int> subshapeVerts;
+	if ( nif->checkVersion( 0x14000004, 0x14000005 ) ) {
+		int nSubShapes = nif->get<int>( ibhkPackedNiTriStripsShape, "Num Sub Shapes" );
+		QModelIndex ihkSubShapes = nif->getIndex( ibhkPackedNiTriStripsShape, "Sub Shapes" );
+		subshapeVerts.resize(nSubShapes);
+		for ( int t = 0; t < nSubShapes; t++ ) {
+			subshapeVerts[t] = nif->get<int>( ihkSubShapes.child( t, 0 ), "Num Vertices" );
+		}
+	} else if ( nif->checkVersion( 0x14020007, 0x14020007 ) ) {
+		int nSubShapes = nif->get<int>( ihkPackedNiTriStripsData, "Num Sub Shapes" );
+		QModelIndex ihkSubShapes = nif->getIndex( ihkPackedNiTriStripsData, "Sub Shapes" );
+		subshapeVerts.resize(nSubShapes);
+		for ( int t = 0; t < nSubShapes; t++ ) {
+			subshapeVerts[t] = nif->get<int>( ihkSubShapes.child( t, 0 ), "Num Vertices" );
+		}
+	}
+
 	QVector<Vector3> verts = nif->getArray<Vector3>( ihkPackedNiTriStripsData, "Vertices" );
 	QVector<Triangle> triangles;
 	
@@ -216,9 +234,16 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
+		if (nif->getUserVersion() != 10 && nif->getUserVersion() != 11)
+			return false;
+
     	if ( TheHavokCode.Initialize() )
     	{
-            return nif && nif->checkVersion( 0x14000004, 0x14000005 ) && ! idx.isValid();
+            if ( nif && ! idx.isValid() )
+				{
+					return ( nif->checkVersion( 0x14000004, 0x14000005 ) 
+							|| nif->checkVersion( 0x14020007, 0x14020007 ) );
+				}
         }
         return false;
 	}
