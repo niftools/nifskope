@@ -28,27 +28,29 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		if ( index.isValid() && 
-			   ( nif->getBlock( index, "NiGeometryData" ).isValid() 
-			   || nif->getBlock( index, "NiGeometry" ).isValid() 
-				)
-			)
+		if ( index.isValid() && nif->getBlock( index, "NiGeometryData" ).isValid() )
 		{
 			QString name = nif->get<QString>(index, "Name");
 			if (name.isNull() || name.isEmpty())
-			{
-				int id = nif->getBlockNumber(index);
-				int parentid = nif->getParent(id);
-				QModelIndex parent = nif->getBlock( parentid );
-				name = nif->get<QString>(parent, "Name");
+                nif->set<int>(index, "Name", 0);        
+        }
+		else if ( index.isValid() && nif->getBlock( index, "NiGeometry" ).isValid() )
+		{
+            QString name = nif->get<QString>(index, "Name");
+            if (name.isNull() || name.isEmpty())
+            {
+                int id = nif->getBlockNumber(index);
+                int parentid = nif->getParent(id);
+                QModelIndex parent = nif->getBlock( parentid );
+                name = nif->get<QString>(parent, "Name");
 
-				if (name.isNull() || name.isEmpty()) {
-					nif->set<int>(index, "Name", 0);
-				} else {
-					nif->set<QString>(index, "Name", name);
-				}
-			}
-		}
+                if (name.isNull() || name.isEmpty()) {
+                        nif->set<int>(index, "Name", 0);
+                } else {
+                        nif->set<QString>(index, "Name", name);
+                }
+            }		
+        }
 		else
 		{
 			// set all blocks
