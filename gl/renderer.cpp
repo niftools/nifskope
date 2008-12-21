@@ -119,6 +119,9 @@ Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : i
 QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QList<QModelIndex> & iBlocks, QString blkid ) const
 {
 	QString childid;
+	if ( blkid.startsWith( "HEADER/" ) )
+		return nif->getIndex( nif->getHeader(), blkid );
+
 	int pos = blkid.indexOf( "/" );
 	if ( pos > 0 )
 	{
@@ -149,10 +152,12 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIn
 	if ( val.isString() )
 		return compare( val.toString(), right ) ^ invert;
 	else if ( val.isCount() )
-		return compare( val.toCount(), right.toUInt() ) ^ invert;
+		return compare( val.toCount(), right.toUInt(NULL, 0) ) ^ invert;
 	else if ( val.isFloat() )
 		return compare( val.toFloat(), (float) right.toDouble() ) ^ invert;
-	else
+	else if ( val.isFileVersion() )
+		return compare( val.toFileVersion(), right.toUInt(NULL, 0) ) ^ invert;
+
 		return false;
 }
 
@@ -522,11 +527,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
       }
       else if ( bsprop != NULL )
       {
-         QString fname = texprop->fileName( 1 );
-         if ( fname.isEmpty() )
-            return false;
-
-         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 1, fname ) )
+         QString fname = bsprop->fileName( 1 );
+         if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 1, fname ) ) )
             return false;
       }
 		
@@ -554,39 +556,11 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
       }
       else if ( bsprop != NULL )
       {
-         QString fname = texprop->fileName( 2 );
-         if ( fname.isEmpty() )
-            return false;
-         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 2, fname ) )
+         QString fname = bsprop->fileName( 2 );
+         if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 2, fname ) ) )
             return false;
       }
 		glUniform1i( uniGlowMap, texunit++ );
-	}
-	else
-	{
-      if (texprop != NULL)
-      {
-		   QString fname = texprop->fileName( 0 );
-		   if ( ! fname.isEmpty() )
-		   {
-			   int pos = fname.indexOf( "_" );
-			   if ( pos >= 0 )
-				   fname = fname.left( pos ) + "_g.dds";
-			   else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-				   fname = fname.insert( pos, "_g" );
-   			
-			   if ( activateTextureUnit( texunit ) && texprop->bind( 0, fname ) )
-				   return false;
-		   }
-      }
-      else if ( bsprop != NULL )
-      {
-         QString fname = texprop->fileName( 2 );
-         if ( fname.isEmpty() )
-            return false;
-         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 2, fname ) )
-            return false;
-      }
 	}
 	
 	QMapIterator<int, QString> itx( prog->texcoords );
@@ -615,6 +589,20 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( txid < 0 )
 				return false;
 			int set = texprop->coordSet( txid );
+			if ( set >= 0 && set < mesh->coords.count() && mesh->coords[set].count() )
+			{
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
+			}
+			else
+				return false;
+		}
+		else if (bsprop != NULL)
+		{
+			int txid = BSShaderLightingProperty::getId( itx.value() );
+			if ( txid < 0 )
+				return false;
+			int set = 0;
 			if ( set >= 0 && set < mesh->coords.count() && mesh->coords[set].count() )
 			{
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );

@@ -1,8 +1,16 @@
 
 comment normal mapping, no vertex colors
 
-check NiTexturingProperty/Apply Mode == 2
-check NiTriBasedGeom/Has Shader == 0
+checkgroup begin or
+	checkgroup begin and
+        check HEADER/Version >= 0x14020007
+        check HEADER/User Version >= 11
+    checkgroup end  
+	checkgroup begin
+        check NiTexturingProperty/Apply Mode == 2
+        check NiTriBasedGeom/Has Shader == 0
+	checkgroup end
+checkgroup end
 
 checkgroup begin or
 	check NiTriBasedGeomData/Has Vertex Colors == 0

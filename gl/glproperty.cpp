@@ -862,3 +862,24 @@ void glProperty( BSShaderLightingProperty * p )
       glDisable( GL_TEXTURE_2D );
    }
 }
+
+int BSShaderLightingProperty::getId( const QString & id )
+{
+	static QHash<QString, int> hash;
+	if ( hash.isEmpty() )
+	{
+		hash.insert( "base", 0 );
+		hash.insert( "dark", 1 );
+		hash.insert( "detail", 2 );
+		hash.insert( "gloss", 3 );
+		hash.insert( "glow", 4 );
+		hash.insert( "bumpmap", 5 );
+		hash.insert( "decal0", 6 );
+		hash.insert( "decal1", 7 );
+	}
+	if ( hash.contains( id ) )
+		return hash[ id ];
+	else
+		return -1;
+}
+
