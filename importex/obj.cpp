@@ -44,8 +44,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMessageBox>
 #include <QSettings>
 #include <QTextStream>
+#include <QApplication>
 
-
+#define tr(x) QApplication::tr("ObjImport", x)
 
 /*
  *  .OBJ EXPORT
@@ -301,20 +302,20 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 		roots.append( nif->getBlockNumber(index) );
 		if ( nif->itemName(index) == "NiNode" )
 		{
-			question = "NiNode selected.  All children of selected node will be exported.";
+			question = tr("NiNode selected.  All children of selected node will be exported.");
 		} else if ( nif->itemName(index) == "NiTriShape" || nif->itemName(index) == "NiTriStrips" )
 		{
-			question = nif->itemName(index) + QString(" selected.  Selected mesh will be exported.");
+			question = nif->itemName(index) + tr(" selected.  Selected mesh will be exported.");
 		}
 	}
 	
 	if ( question.size() == 0 )
 	{
-		question = "No NiNode, NiTriShape,or NiTriStrips is selected.  Entire scene will be exported.";
+		question = tr("No NiNode, NiTriShape,or NiTriStrips is selected.  Entire scene will be exported.");
 		roots = nif->getRootLinks();
 	}
 
-	int result = QMessageBox::question( 0, "Export OBJ", question, QMessageBox::Ok, QMessageBox::Cancel );
+	int result = QMessageBox::question( 0, tr("Export OBJ"), question, QMessageBox::Ok, QMessageBox::Cancel );
 	if ( result == QMessageBox::Cancel ) {
 		return;
 	}
@@ -325,7 +326,7 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "obj" );
 
-	QString fname = QFileDialog::getSaveFileName( 0, "Choose a .OBJ file for export", settings.value( "File Name" ).toString(), "*.obj" );
+	QString fname = QFileDialog::getSaveFileName( 0, tr("Choose a .OBJ file for export"), settings.value( "File Name" ).toString(), "*.obj" );
 	if ( fname.isEmpty() )
 		return;
 	
@@ -479,7 +480,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	//Be sure the user hasn't clicked on a NiTriStrips object
 	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiTriStrips" )
 	{
-		int result = QMessageBox::information( 0, "Import OBJ", "You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate" );
+		int result = QMessageBox::information( 0, tr("Import OBJ"), tr("You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate") );
 		return;
 	}
 
@@ -538,19 +539,19 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	{
 		if ( iShape.isValid() == true )
 		{
-			question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+			question = tr("NiTriShape selected.  The first imported mesh will replace the selected one.");
 		}
 		else
 		{
-			question = "NiNode selected.  Meshes will be attached to the selected node.";
+			question = tr("NiNode selected.  Meshes will be attached to the selected node.");
 		}
 	}
 	else
 	{
-		question = "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file.";
+		question = tr("No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file.");
 	}
 
-	int result = QMessageBox::question( 0, "Import OBJ", question, QMessageBox::Ok, QMessageBox::Cancel );
+	int result = QMessageBox::question( 0, tr("Import OBJ"), question, QMessageBox::Ok, QMessageBox::Cancel );
 	if ( result == QMessageBox::Cancel ) {
 		return;
 	}
@@ -561,14 +562,14 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "obj" );
 	
-	QString fname = QFileDialog::getOpenFileName( 0, "Choose a .OBJ file to import", settings.value( "File Name" ).toString(), "*.obj" );
+	QString fname = QFileDialog::getOpenFileName( 0, tr("Choose a .OBJ file to import"), settings.value( "File Name" ).toString(), "*.obj" );
 	if ( fname.isEmpty() )
 		return;
 	
 	QFile fobj( fname );
 	if ( ! fobj.open( QIODevice::ReadOnly ) )
 	{
-		qWarning() << "could not open " << fobj.fileName() << " for read access";
+		qWarning() << tr("could not open ") << fobj.fileName() << tr(" for read access");
 		return;
 	}
 	

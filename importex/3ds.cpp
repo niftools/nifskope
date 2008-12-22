@@ -12,6 +12,10 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QString>
+#include <QApplication>
+
+#define tr(x) QApplication::tr("3dsImport", x)
+
 
 struct objPoint
 {
@@ -150,7 +154,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	//Be sure the user hasn't clicked on a NiTriStrips object
 	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiTriStrips" )
 	{
-		int result = QMessageBox::information( 0, "Import OBJ", "You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate" );
+		int result = QMessageBox::information( 0, tr("Import OBJ"), tr("You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate") );
 		return;
 	}
 
@@ -210,19 +214,19 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	{
 		if ( iShape.isValid() == true )
 		{
-			question = "NiTriShape selected.  The first imported mesh will replace the selected one.";
+			question = tr("NiTriShape selected.  The first imported mesh will replace the selected one.");
 		}
 		else
 		{
-			question = "NiNode selected.  Meshes will be attached to the selected node.";
+			question = tr("NiNode selected.  Meshes will be attached to the selected node.");
 		}
 	}
 	else
 	{
-		question = "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file.";
+		question = tr("No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file.");
 	}
 
-	int result = QMessageBox::question( 0, "Import 3DS", question, QMessageBox::Ok, QMessageBox::Cancel );
+	int result = QMessageBox::question( 0, tr("Import 3DS"), question, QMessageBox::Ok, QMessageBox::Cancel );
 	if ( result == QMessageBox::Cancel ) {
 		return;
 	}
@@ -239,7 +243,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "3ds" );
 	
-	QString fname = QFileDialog::getOpenFileName( 0, Spell::tr("Choose a .3ds file to import"), settings.value( Spell::tr("File Name") ).toString(), "*.3ds" );
+	QString fname = QFileDialog::getOpenFileName( 0, tr("Choose a .3ds file to import"), settings.value( tr("File Name") ).toString(), "*.3ds" );
 	if ( fname.isEmpty() ) {
 		return;
 	}
@@ -247,25 +251,25 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	QFile fobj( fname );
 	if ( !fobj.open( QIODevice::ReadOnly ) )
 	{
-		qWarning() << Spell::tr("Could not open %1 for read access").arg( fobj.fileName() );
+		qWarning() << tr("Could not open %1 for read access").arg( fobj.fileName() );
 		return;
 	}
 	
 	Chunk * FileChunk = Chunk::LoadFile( &fobj );
 	if( !FileChunk ) {
-		qWarning() << Spell::tr("Could not get 3ds data");
+		qWarning() << tr("Could not get 3ds data");
 		return;
 	}
 
 	Chunk * Model = FileChunk->getChild( M3DMAGIC );
 	if( !Model ) {
-		qWarning() << Spell::tr("Could not get 3ds model");
+		qWarning() << tr("Could not get 3ds model");
 		return;
 	}
 
 	Chunk * ModelData = Model->getChild( MDATA );
 	if( !ModelData ) {
-		qWarning() << Spell::tr("Could not get 3ds model data");
+		qWarning() << tr("Could not get 3ds model data");
 		return;
 	}
 
@@ -590,7 +594,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 		for( int i = 0; i < mesh->matfaces.size(); i++ )
 		{
 			if ( !ObjMaterials.contains( mesh->matfaces[i].matName ) ) {
-				qWarning() << Spell::tr("Material '%1' not found in list!").arg( mesh->matfaces[i].matName );
+				qWarning() << tr("Material '%1' not found in list!").arg( mesh->matfaces[i].matName );
 			}
 
 			objMaterial * mat = &ObjMaterials[mesh->matfaces[i].matName];

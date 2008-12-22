@@ -139,7 +139,7 @@ void NifSkope::migrateSettings() const
 
 void NifSkope::about()
 {
-	QString text =
+	QString text = tr(
 	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
 	"<p>NifSkope is based on NifTool's XML file format specification. "
 	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
@@ -152,9 +152,9 @@ void NifSkope::about()
 	"<p>NifSkope uses Havok(R) for the generation of mopp code. "
 	"(C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). "
 	"All Rights Reserved. "
-	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>";
+	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>");
 
-	QMessageBox mb( tr("About NifSkope "NIFSKOPE_VERSION" (revision "NIFSKOPE_REVISION")"), text, QMessageBox::Information,
+	QMessageBox mb( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION), text, QMessageBox::Information,
 		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
 	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
 	mb.exec();
