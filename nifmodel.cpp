@@ -302,6 +302,21 @@ void NifModel::updateHeader()
 		if (version >= 0x14020000 && idxBlockSize )
 			for ( int r = 0; r < idxBlockSize->childCount(); r++ )
 				set<quint32>( idxBlockSize->child( r ), blockSize( getBlockItem( r ) ) );
+
+      // For 20.1 and above strings are saved in the header.  Max String Length must be updated.
+      if (version >= 0x14010003) {
+         int maxlen = 0;
+         int nstrings = get<uint>(header, "Num Strings");
+         QModelIndex iArray = getIndex( getHeader(), "Strings" );
+         if ( nstrings > 0 && iArray.isValid() ) {
+            for (int row=0; row<nstrings; ++row) {
+               int len = get<QString>( iArray.child(row,0) ).length();
+               if (len > maxlen)
+                  maxlen = len;
+            }
+         }
+         set<uint>(header, "Max String Length", maxlen);
+      }
 	}
 }
 
