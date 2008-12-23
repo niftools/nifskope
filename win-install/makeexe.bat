@@ -2,7 +2,7 @@ rem Quick build script to create the installer for release.
 @echo on
 setlocal
 set NAME=nifskope
-set VERSION=1.0.17
+set VERSION=1.0.18
 
 for %%i in (svnversion.exe) do IF EXIST "%%~$PATH:i" set SVNVERSION=%%~$PATH:i)
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%SystemDrive%\svn\bin\svnversion.exe
