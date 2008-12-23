@@ -33,13 +33,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "niftypes.h"
 #include "options.h"
-
+#include "config.h"
 #include "spellbook.h"
 
 #include <QByteArray>
 #include <QColor>
 #include <QFile>
 #include <QTime>
+#include <QSettings>
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
@@ -1470,6 +1471,9 @@ bool NifModel::setHeaderString( const QString & s )
 
 bool NifModel::load( QIODevice & device )
 {
+   NIFSKOPE_QSETTINGS(cfg);
+   bool ignoreSize = cfg.value("ignore block size", false).toBool();
+
 	clear();
 	
 	NifIStream stream( this, &device );
@@ -1525,7 +1529,7 @@ bool NifModel::load( QIODevice & device )
 							device.read( 4 );
 
 						// for version 20.2.0.? and above the block size is stored in the header
-						if (version >= 0x14020000)
+						if (!ignoreSize && version >= 0x14020000)
 							size = get<quint32>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Size" ) ) );
 					}
 					else
@@ -2379,8 +2383,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 			pItem = getItem( item, "Index" );
 			if (!pItem) return false;
 			idx = get<int>( pItem );
-		}
-      else if (v.type() == NifValue::tSizedString) {
+		} else if (v.type() == NifValue::tSizedString && item->type() == "string") {
          pItem = item;
          idx = -1;
       }
