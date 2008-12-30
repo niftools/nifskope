@@ -56,6 +56,8 @@ class QSettings;
 class QSlider;
 class QSpinBox;
 class QTextEdit;
+class QTranslator;
+class QLocale;
 
 class QUdpSocket;
 
@@ -142,6 +144,8 @@ protected slots:
 	void sltImportExport( QAction * action );
 
 	void openURL();
+
+   void sltLocaleChanged();
 	
 protected:
 	void closeEvent( QCloseEvent * e );

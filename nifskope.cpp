@@ -79,6 +79,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/fileselect.h"
 #include "widgets/copyfnam.h"
 #include "widgets/xmlcheck.h"
+#include "options.h"
 
 #ifdef WIN32
 #  define WINDOWS_LEAN_AND_MEAN
@@ -490,6 +491,9 @@ NifSkope::NifSkope()
 	fillImportExportMenus();
 	connect( mExport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
 	connect( mImport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
+
+   connect( Options::get(), SIGNAL( sigLocaleChanged() ), this, SLOT( sltLocaleChanged() ) );
+  
 }
 
 NifSkope::~NifSkope()
@@ -574,6 +578,8 @@ void NifSkope::save( QSettings & settings ) const
 	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );
+
+   Options::get()->save();
 }
 
 void NifSkope::contextMenu( const QPoint & pos )
@@ -1144,6 +1150,38 @@ class NifSystemLocale : QSystemLocale
 	}
 };
 
+static QTranslator *mTranslator = NULL;
+
+static void SetAppLocale(QLocale curLocale)
+{
+   QString fileName = QString( "lang/NifSkope_" ) + curLocale.name();
+   if ( !QFile::exists( fileName + ".qm" ) )
+      fileName = QString( "lang/NifSkope_" ) + curLocale.name().section('_',0,0);
+   if ( !QFile::exists( fileName + ".qm" ) ) {
+      if (mTranslator != NULL) {
+         qApp->removeTranslator( mTranslator );
+         delete mTranslator;
+         mTranslator = NULL;
+      }
+   } else {
+      if (mTranslator == NULL) {
+         mTranslator = new QTranslator();
+         qApp->installTranslator( mTranslator );
+      }
+      mTranslator->load( fileName );
+   }
+}
+
+void NifSkope::sltLocaleChanged()
+{
+   SetAppLocale( Options::get()->translationLocale() );
+
+   QMessageBox mb( "Nifskope", 
+      tr("Nifskope must be restarted for this setting to take full effect."), QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, qApp->activeWindow());
+   mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
+   mb.exec();
+}
+
 /*
  *  main
  */
@@ -1187,12 +1225,10 @@ int main( int argc, char * argv[] )
 		}
 	}
 
-	// set the translation
-	QString locale = QLocale::system().name().section('_',0,0);
-
-	QTranslator translator;
-	translator.load( QString( "lang/NifSkope_" ) + locale );
-	app.installTranslator( &translator );
+   NIFSKOPE_QSETTINGS(cfg);
+   cfg.beginGroup( "Settings" );
+   SetAppLocale( cfg.value( "Language", "en" ).toLocale() );
+   cfg.endGroup();
 	 
 	NifModel::loadXML();
 	KfmModel::loadXML();

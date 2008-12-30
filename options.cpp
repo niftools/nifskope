@@ -52,6 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringListModel>
 #include <QTimer>
 #include <QTabWidget>
+#include <QComboBox>
 
 #include "config.h"
 
@@ -86,7 +87,7 @@ Options::Options()
    connect( this, SIGNAL( sigChanged() ), tEmit, SLOT( stop() ) );
 
    dialog = new GroupBox( "", Qt::Vertical );
-   dialog->setWindowTitle(  tr("Render Settings")  );
+   dialog->setWindowTitle(  tr("Settings")  );
    dialog->setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
    dialog->installEventFilter( this );
 
@@ -136,11 +137,77 @@ Options::Options()
    aSettings->setToolTip( tr("show the settings dialog") );
    connect( aSettings, SIGNAL( triggered() ), dialog, SLOT( show() ) );
 
+   cfg.endGroup();
+
    GroupBox *texPage;
    tab = new QTabWidget;
-   tab->addTab( texPage = new GroupBox(Qt::Vertical), tr("General"));
+
+   if ( GroupBox *genPage = new GroupBox(Qt::Vertical) )
    {
-      NIFSKOPE_QSETTINGS(cfg);
+      tab->addTab( genPage, tr("General") );
+
+      genPage->pushLayout( Qt::Vertical );
+      cfg.beginGroup( "Settings" );
+
+      // Locale Settings
+      genPage->pushLayout( tr("Regional and Language Settings"), Qt::Vertical, 1 );
+      genPage->pushLayout( Qt::Horizontal );
+      
+      genPage->addWidget( new QLabel( "Language:" ) );
+      RegionOpt = new QComboBox;
+      genPage->addWidget( RegionOpt );
+
+      QLocale localeInvariant("en");
+      QString txtLang = QLocale::languageToString(localeInvariant.language());
+      if (localeInvariant.country() != QLocale::AnyCountry)
+         txtLang.append( " (" ).append(QLocale::countryToString(localeInvariant.country())).append(")");
+      RegionOpt->addItem( txtLang, localeInvariant );
+
+      QDir directory = QDir("lang");
+      QRegExp fileRe("NifSkope_(.*)\\.ts", Qt::CaseInsensitive);
+      foreach( QString file, directory.entryList(QStringList("NifSkope_*.ts"), QDir::Files | QDir::NoSymLinks) ) {
+         if ( fileRe.exactMatch(file) ) {
+            QString localeText = fileRe.capturedTexts()[1];
+            QLocale fileLocale(localeText);
+            if ( RegionOpt->findData(fileLocale) < 0 ) {
+               QString txtLang = QLocale::languageToString(fileLocale.language());
+               if (fileLocale.country() != QLocale::AnyCountry)
+                  txtLang.append( " (" ).append(QLocale::countryToString(fileLocale.country())).append(")");
+               RegionOpt->addItem( txtLang, fileLocale );
+            }
+         }
+      }
+      QLocale locale = cfg.value( "Language", "en" ).toLocale();
+      int localeIdx = RegionOpt->findData(locale);
+      RegionOpt->setCurrentIndex( localeIdx > 0 ? localeIdx : 0 );
+
+      connect( RegionOpt, SIGNAL( currentIndexChanged( int ) ), this, SIGNAL( sigChanged() ) );
+      connect( RegionOpt, SIGNAL( currentIndexChanged( int ) ), this, SIGNAL( sigLocaleChanged() ) );
+
+      genPage->popLayout();
+      genPage->popLayout();
+
+      //Misc Options
+      genPage->pushLayout( tr("Misc. Settings"), Qt::Vertical, 1 );
+      genPage->pushLayout( Qt::Horizontal );
+
+      genPage->addWidget( new QLabel( tr("Startup Version") ) );
+      genPage->addWidget( StartVer = new QLineEdit( cfg.value( "Startup Version", "20.0.0.5" ).toString() ) );
+      StartVer->setToolTip( tr("This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be.") );
+      connect( StartVer, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
+
+      genPage->popLayout();
+
+      //More Misc options can be added here.
+      genPage->popLayout();
+
+      cfg.endGroup();
+      genPage->popLayout();
+   }
+
+
+   tab->addTab( texPage = new GroupBox(Qt::Vertical), tr("&Rendering"));
+   {
       cfg.beginGroup( "Render Settings" );
 
       texPage->pushLayout( tr("Texture Folders"), Qt::Vertical );
@@ -283,30 +350,13 @@ Options::Options()
       texPage->popLayout();
 
       cfg.endGroup();
-
-      //Misc Options
-      cfg.beginGroup( "Misc Settings" );
-
-      texPage->pushLayout( tr("Misc. Settings"), Qt::Vertical, 1 );
-      texPage->pushLayout( Qt::Horizontal );
-
-
-      texPage->addWidget( new QLabel( tr("Startup Version") ) );
-      texPage->addWidget( StartVer = new QLineEdit( cfg.value( "Startup Version", "20.0.0.5" ).toString() ) );
-      StartVer->setToolTip( tr("This is the version that the initial 'blank' NIF file that is created when NifSkope opens will be.") );
-      connect( StartVer, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
-
-
-      texPage->popLayout();
-
-      //More Misc options can be added here.
-      texPage->popLayout();
-      cfg.endGroup();
    }
 
    GroupBox *colorPage;
    tab->addTab( colorPage = new GroupBox(Qt::Vertical), tr("Colors"));
    {
+      cfg.beginGroup( "Render Settings" );
+
       colorPage->pushLayout( tr("Light"), Qt::Vertical );
       colorPage->pushLayout( Qt::Horizontal );
 
@@ -405,10 +455,14 @@ Options::Options()
          colorPage->popLayout();
       }
       colorPage->popLayout();
+
+      cfg.endGroup();
    }
    GroupBox *matPage;
    tab->addTab( matPage = new GroupBox(Qt::Vertical), tr("Materials"));
    {
+      cfg.beginGroup( "Render Settings" );
+
       QWidget* overrideBox = matPage->pushLayout( tr("Material Overrides"), Qt::Vertical );
       overrideBox->setMaximumHeight(200);
 
@@ -443,15 +497,17 @@ Options::Options()
 
       matPage->popLayout();
       matPage->popLayout();
+
+      cfg.endGroup();
    }
+   // set render page as default
+   tab->setCurrentWidget( texPage );
+
    dialog->pushLayout( Qt::Vertical );
 
    dialog->addWidget( tab );
 
    dialog->popLayout();
-
-
-   cfg.endGroup();
 }
 
 Options::~Options()
@@ -551,13 +607,14 @@ void Options::save()
    cfg.setValue( "Emmissive", overrideEmissive() );
    cfg.endGroup();
 
-	cfg.beginGroup( "Misc Settings" );
+   cfg.endGroup(); // Render Settings
 
+	cfg.beginGroup( "Settings" );
+
+   cfg.setValue( "Language", translationLocale() );
 	cfg.setValue( "Startup Version", startupVersion() );
 
-	cfg.endGroup();
-
-
+	cfg.endGroup(); // Settings
 }
 
 void Options::textureFolderAutoDetect()
@@ -942,4 +999,13 @@ QColor Options::overrideEmissive()
 bool Options::drawMeshes()
 {
 	return get()->showMeshes;
+}
+
+QLocale Options::translationLocale()
+{
+   int idx = get()->RegionOpt->currentIndex();
+   if (idx >= 0) {
+      return get()->RegionOpt->itemData( idx ).toLocale();
+   }
+   return QLocale::system();
 }

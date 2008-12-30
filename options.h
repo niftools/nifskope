@@ -49,6 +49,7 @@ class QSpinBox;
 class QStringListModel;
 class QTabWidget;
 class QTimer;
+class QComboBox;
 
 class AlphaSlider;
 class ColorWheel;
@@ -110,10 +111,12 @@ public:
    static QColor overrideEmissive();
 
 	static QString startupVersion();
+   static QLocale translationLocale();
 
 signals:
 	void sigChanged();
    void materialOverridesChanged();
+   void sigLocaleChanged();
 
 protected slots:
    void textureFolderAction( int );
@@ -147,6 +150,11 @@ protected:
    QTimer * tSave, * tEmit;
 
    //////////////////////////////////////////////////////////////////////////
+
+   QComboBox * RegionOpt;
+   QLineEdit * StartVer;
+
+   //////////////////////////////////////////////////////////////////////////
    QStringListModel * TexFolderModel;
    QListView * TexFolderView;
    FileSelector * TexFolderSelect;
@@ -164,9 +172,6 @@ protected:
    QRadioButton * AxisX;
    QRadioButton * AxisY;
    QRadioButton * AxisZ;
-
-   //Misc Optoins
-   QLineEdit * StartVer;
 
    //////////////////////////////////////////////////////////////////////////
    ColorWheel * colors[3];
