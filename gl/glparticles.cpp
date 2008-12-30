@@ -424,6 +424,9 @@ void Particles::drawShapes( NodeList * draw2nd )
 
 	glLoadName( nodeId );
 	
+	// Disable texturing,  texturing properties will reenable if applicable
+	glDisable( GL_TEXTURE_2D );
+
 	// setup blending
 	
 	glProperty( findProperty< AlphaProperty >() );

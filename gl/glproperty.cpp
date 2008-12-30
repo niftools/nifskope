@@ -481,10 +481,6 @@ void glProperty( TexturingProperty * p )
 	{
 		glEnable( GL_TEXTURE_2D );
 	}
-	else
-	{
-		glDisable( GL_TEXTURE_2D );
-	}
 }
 
 
@@ -511,10 +507,6 @@ void glProperty( TextureProperty * p )
 	if ( p && Options::texturing() && p->bind() )
 	{
 		glEnable( GL_TEXTURE_2D );
-	}
-	else
-	{
-		glDisable( GL_TEXTURE_2D );
 	}
 }
 
@@ -856,10 +848,6 @@ void glProperty( BSShaderLightingProperty * p )
    if ( p && Options::texturing() && p->bind( 0 ) )
    {
       glEnable( GL_TEXTURE_2D );
-   }
-   else
-   {
-      glDisable( GL_TEXTURE_2D );
    }
 }
 
