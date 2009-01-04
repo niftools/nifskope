@@ -1414,7 +1414,7 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 	if ( ! ( parent.isValid() && parent.model() == this && item ) )
 		return false;
 	
-	if ( row >= 0 && row+count < item->childCount() )
+	if ( row >= 0 && ((row+count) <= item->childCount()) )
 	{
 		bool link = false;
 		for ( int r = row; r < row + count; r++ )
@@ -2465,4 +2465,68 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 bool NifModel::assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace )
 {
 	return assignString( getIndex(index, name), string, replace );
+}
+
+
+// convert a block from one type to another
+void NifModel::convertNiBlock( const QString & identifier, const QModelIndex& index , bool fast )
+{
+   QString btype = getBlockName( index );
+   if (btype == identifier)
+      return;
+
+   if ( !inherits( btype, identifier ) && !inherits(identifier, btype) ) {
+      msg( Message() << tr("blocktype %1 and %2 are not related").arg(btype).arg(identifier) );
+      return;
+   }
+   NifItem * branch = static_cast<NifItem*>( index.internalPointer() );
+   NifBlock * srcBlock = blocks.value( btype );
+   NifBlock * dstBlock = blocks.value( identifier );
+   if ( srcBlock && dstBlock && branch )
+   {
+      branch->setName( identifier );
+
+      if ( inherits( btype, identifier ) ) {
+         // Remove any level between the two types
+         for (QString ancestor = btype; !ancestor.isNull() && ancestor != identifier; ) {
+            NifBlock * block = blocks.value( ancestor );
+            if (!block) break;
+
+            int n = block->types.count();
+            if (n > 0) removeRows( branch->childCount() - n,  n, index );
+            ancestor = block->ancestor;
+         }
+      } else if ( inherits(identifier, btype) ) {
+         // Add any level between the two types
+         QStringList types;
+         for (QString ancestor = identifier; !ancestor.isNull() && ancestor != btype; ) {
+            NifBlock * block = blocks.value( ancestor );
+            if (!block) break;
+            types.insert(0, ancestor);
+            ancestor = block->ancestor;
+         }
+         foreach(QString ancestor, types)
+         {
+            NifBlock * block = blocks.value( ancestor );
+            if (!block) break;
+            int cn = branch->childCount();
+            int n = block->types.count();
+            if (n > 0) {
+               beginInsertRows( index, cn, cn+n-1 ); 
+               branch->prepareInsert( n );
+               foreach ( NifData data, block->types )
+                  insertType( branch, data );
+               endInsertRows();
+            }
+         }
+      }
+
+      if ( ! fast )
+      {
+         updateHeader();
+         updateLinks();
+         updateFooter();
+         emit linksChanged();
+      }
+   }
 }

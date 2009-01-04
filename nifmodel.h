@@ -115,6 +115,8 @@ public:
 	void reorderBlocks( const QVector<qint32> & order );
 	// moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
 	QMap<qint32,qint32> moveAllNiBlocks( NifModel * targetnif, bool update = true );
+	// convert a block from one type to another
+	void convertNiBlock( const QString & identifier, const QModelIndex& index , bool fast = false );
 	
 	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
 	
