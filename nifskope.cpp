@@ -1154,9 +1154,21 @@ static QTranslator *mTranslator = NULL;
 
 static void SetAppLocale(QLocale curLocale)
 {
-   QString fileName = QString( "lang/NifSkope_" ) + curLocale.name();
+   QDir directory( QApplication::applicationDirPath() );
+   // local copy
+   if (!directory.cd("lang")) {
+      // relative from nifskope/release
+      if (!directory.cd("../lang")) {
+         // linux
+         if (!directory.cd("/usr/share/nifskope/lang")) {
+            // no language directory found
+         }
+      }
+   }
+
+   QString fileName = directory.filePath( "NifSkope_" ) + curLocale.name();
    if ( !QFile::exists( fileName + ".qm" ) )
-      fileName = QString( "lang/NifSkope_" ) + curLocale.name().section('_',0,0);
+      fileName = directory.filePath( "NifSkope_" ) + curLocale.name().section('_',0,0);
    if ( !QFile::exists( fileName + ".qm" ) ) {
       if (mTranslator != NULL) {
          qApp->removeTranslator( mTranslator );

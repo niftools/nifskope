@@ -53,6 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTimer>
 #include <QTabWidget>
 #include <QComboBox>
+#include <QApplication>
 
 #include "config.h"
 
@@ -163,7 +164,18 @@ Options::Options()
          txtLang.append( " (" ).append(QLocale::countryToString(localeInvariant.country())).append(")");
       RegionOpt->addItem( txtLang, localeInvariant );
 
-      QDir directory = QDir("lang");
+      QDir directory( QApplication::applicationDirPath() );
+      // local copy
+      if (!directory.cd("lang")) {
+         // relative from nifskope/release
+         if (!directory.cd("../lang")) {
+            // linux
+            if (!directory.cd("/usr/share/nifskope/lang")) {
+               // no language directory found
+            }
+         }
+      }
+
       QRegExp fileRe("NifSkope_(.*)\\.ts", Qt::CaseInsensitive);
       foreach( QString file, directory.entryList(QStringList("NifSkope_*.ts"), QDir::Files | QDir::NoSymLinks) ) {
          if ( fileRe.exactMatch(file) ) {
