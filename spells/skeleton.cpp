@@ -867,7 +867,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	
 	spnPart = new QSpinBox( this );
 	spnPart->setMinimum( 4 );
-	spnPart->setMaximum( 40 );
+	spnPart->setMaximum( 99 );
 	spnPart->setValue( 18 );
 
 	ckTStrip = new QCheckBox( "&Stripify Triangles" );
