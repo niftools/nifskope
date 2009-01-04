@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.16
+Version:        1.0.18
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -73,6 +73,21 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sun Jan 4 2008 amorilia - 1.0.18-1
+- fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
+- fixed rendering settings which sometimes broke texture rendering when shader not used
+- added settings page for selecting displayed user interface language
+* Mon Dec 22 2008 amorilia - 1.0.17-1
+- (linux version not released)
+- force updateHeader and updateFooter to be called before save
+- introduce bitflag data type
+- add editor for bitflag types
+- update santize spells to better cleanup Fallout3 NIFs during export
+- custom Fallout 3 sanitize spell forcing NiGeometryData blocks to have names
+- more support for internationalization
+- bug fixes in the renderer which completely disabled shaders on common hardware
+- bug fix for showing BSDismemberedSkinInstance highlighting in viewer when partitions were selected
+- fix to make Fallout 3 normal map shader renderer work
 * Sat Nov 15 2008 amorilia - 1.0.16-1
 - add Transform Inspection window
 - add Fallout 3 to game texture auto detection
