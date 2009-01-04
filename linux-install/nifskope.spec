@@ -31,6 +31,7 @@ rm -rf $RPM_BUILD_ROOT
 %{__install} -Dp -m0644 nifskope.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/nifskope.png
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
+%{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/lang
 %{__install} -Dp -m0644 nif.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/nif.xml
 %{__install} -Dp -m0644 kfm.xml $RPM_BUILD_ROOT/%{_datadir}/nifskope/kfm.xml
 %{__install} -Dp -m0644 style.qss $RPM_BUILD_ROOT/%{_datadir}/nifskope/style.qss
@@ -40,6 +41,8 @@ rm -rf $RPM_BUILD_ROOT
 %{__install} -Dp -m0644 doc/*.html $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -Dp -m0644 doc/docsys.css $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -Dp -m0644 doc/favicon.ico $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
+%{__install} -Dp -m0644 lang/*.ts $RPM_BUILD_ROOT/%{_datadir}/nifskope/lang
+%{__install} -Dp -m0644 lang/*.qm $RPM_BUILD_ROOT/%{_datadir}/nifskope/lang
 
 %if %{?_without_freedesktop:1}0
         %{__install} -Dp -m0644 nifskope.desktop %{buildroot}%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
@@ -57,7 +60,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc README.TXT CHANGELOG.TXT LICENSE.TXT
+%doc README.TXT CHANGELOG.TXT LICENSE.TXT TODO.TXT
+%dir %{_datadir}/nifskope
+%dir %{_datadir}/nifskope/shaders
+%dir %{_datadir}/nifskope/doc
+%dir %{_datadir}/nifskope/lang
 %{_bindir}/nifskope
 %{_datadir}/pixmaps/nifskope.png
 %{_datadir}/nifskope/nif.xml
@@ -69,11 +76,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/nifskope/doc/*.html
 %{_datadir}/nifskope/doc/docsys.css
 %{_datadir}/nifskope/doc/favicon.ico
+%{_datadir}/nifskope/lang/*.ts
+%{_datadir}/nifskope/lang/*.qm
 %{?_without_freedesktop:%{_datadir}/gnome/apps/Multimedia/nifskope.desktop}
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Sun Jan 4 2008 amorilia - 1.0.18-1
+* Sun Jan 4 2009 amorilia - 1.0.18-1
 - fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
 - fixed rendering settings which sometimes broke texture rendering when shader not used
 - added settings page for selecting displayed user interface language

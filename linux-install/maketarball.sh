@@ -4,7 +4,7 @@
 
 # How to build the rpm:
 
-# yum install rpmdevtools
+# su -c 'yum install rpmdevtools'
 # rpmdev-setuptree
 # ./maketarball.sh
 # rpmbuild -ba nifskope.spec
@@ -14,6 +14,7 @@
 VERSION=1.0.18
 
 FILES="NifSkope.pro \
+    TODO.TXT \
     README.TXT \
     CHANGELOG.TXT \
     LICENSE.TXT \
@@ -68,7 +69,9 @@ FILES="NifSkope.pro \
     shaders/*.prog
     shaders/*.vert
     nifexpr.cpp
-    nifexpr.h"
+    nifexpr.h
+    lang/*.ts
+    lang/*.qm"
 
 # clean old tarball
 rm -rf nifskope-$VERSION
@@ -88,6 +91,16 @@ rm -f doc/*.html
 python nifxml_doc.py
 cp --parents doc/*.html doc/docsys.css doc/favicon.ico ../nifskope/linux-install/nifskope-$VERSION
 cd ../nifskope/linux-install
+
+# run config script
+cd ..
+./makeconfig.sh
+cd linux-install
+
+# run language scripts
+cd ../lang
+for i in *.ts; do lrelease-qt4 $i; done
+cd ../linux-install
 
 # copy source files
 cd nifskope-$VERSION
