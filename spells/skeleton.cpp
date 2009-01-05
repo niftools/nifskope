@@ -229,6 +229,14 @@ public:
 
 //REGISTER_SPELL( spScanSkeleton )
 
+template <> inline bool qMapLessThanKey<Triangle>(const Triangle &s1, const Triangle &s2)
+{
+   int d = 0;
+   if (d == 0) d = (s1[0] - s2[0]);
+   if (d == 0) d = (s1[1] - s2[1]);
+   if (d == 0) d = (s1[2] - s2[2]);
+   return d < 0; 
+}
 
 class spSkinPartition : public Spell
 {
@@ -396,6 +404,79 @@ public:
 				}
 				triangles = triangulate(strips).toList();
 			}
+
+         QMap<Triangle, quint32> trimap;
+         quint32 defaultPart = 0;
+         if (nif->inherits(iSkinInst, "BSDismemberSkinInstance"))
+         {
+            // First find a partition to dump dangling faces.  Torso is prefered if available.
+            quint32 nparts = nif->get<uint>(iSkinInst, "Num Partitions");
+            QModelIndex iPartData = nif->getIndex( iSkinInst, "Partitions" );
+            for (quint32 i=0; i<nparts; ++i) {
+               QModelIndex iPart = iPartData.child(i,0);
+               if (!iPart.isValid()) continue;
+               if ( nif->get<uint>(iPart, "Body Part") == 0 /* Torso */) {
+                  defaultPart = i;
+                  break;
+               }
+            }
+            defaultPart = min(nparts-1, defaultPart);
+
+            // enumerate existing partitions and select faces into same partition
+            quint32 nskinparts = nif->get<int>( iSkinPart, "Num Skin Partition Blocks" );
+            iPartData = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+            for (quint32 i=0; i<nskinparts; ++i) {
+               QModelIndex iPart = iPartData.child(i,0);
+               if (!iPart.isValid()) continue;
+
+               quint32 finalPart = min(nparts-1, i);
+
+               QVector<int> vertmap = nif->getArray<int>( iPart, "Vertex Map" );
+
+               quint8 hasFaces = nif->get<quint8>(iPart, "Has Faces");
+               quint8 numStrips = nif->get<quint8>(iPart, "Num Strips");              
+               QVector<Triangle> partTriangles;
+               if ( hasFaces && numStrips == 0 ) {
+                  partTriangles = nif->getArray<Triangle>( iPart, "Triangles" );
+               } else if ( numStrips != 0 ) {
+                  // triangulate first (code copied from strippify.cpp)
+                  QList< QVector<quint16> > strips;
+                  QModelIndex iPoints = nif->getIndex( iData, "Points" );
+                  for ( int s = 0; s < nif->rowCount( iPoints ); s++ )
+                  {
+                     QVector<quint16> strip;
+                     QModelIndex iStrip = iPoints.child( s, 0 );
+                     for ( int p = 0; p < nif->rowCount( iStrip ); p++ ) {
+                        strip.append( nif->get<int>( iStrip.child( p, 0 ) ) );
+                     }
+                     strips.append( strip );
+                  }
+                  partTriangles = triangulate(strips);
+               }
+               for (int j = 0; j<partTriangles.count(); ++j) 
+               {
+                  Triangle t = partTriangles[j];
+                  Triangle tri = t;
+                  if (!vertmap.isEmpty()) {
+                     tri[0] = vertmap[tri[0]];
+                     tri[1] = vertmap[tri[1]];
+                     tri[2] = vertmap[tri[2]];
+                  }
+                  QMap<Triangle, quint32>::iterator partItr = trimap.find(tri);
+                  if ( partItr != trimap.end() )
+                     qDebug() << QString("Duplicate: %1, %2, %3 = %4 (%5)").arg(tri[0]).arg(tri[1]).arg(tri[2]).arg(partItr.value()).arg(finalPart);
+                  else
+                     qDebug() << QString("Map: %4 | %8 | (%1, %2, %3) = (%5, %6, %7) ")
+                     .arg(t[0]).arg(t[1]).arg(t[2])
+                     .arg(i)
+                     .arg(tri[0]).arg(tri[1]).arg(tri[2])
+                     .arg(finalPart)
+                     ;
+
+                  trimap.insert( tri, finalPart );
+               }
+            }
+         }
 			
 			QMap< int, int > match;
 			bool doMatch = true;
@@ -515,9 +596,62 @@ public:
 				qWarning() << QString( Spell::tr( "removed %1 bone influences" ) ).arg( cnt );
 			
 			// split the triangles into partitions
-			
+
+         bool merged = true;
+
 			QList<Partition> parts;
-			
+
+         if (!trimap.isEmpty()) {
+            QMutableListIterator<Triangle> it( triangles );
+            while ( it.hasNext() )
+            {
+               Triangle & tri = it.next();
+
+               QMap<Triangle, quint32>::iterator partItr = trimap.find(tri);
+               bool found = ( partItr == trimap.end());
+               if (found){
+                  qDebug() << QString("Triangle Miss: %1, %2, %3 = %4").arg(tri[0]).arg(tri[1]).arg(tri[2]).arg(defaultPart);
+               } else {
+                  const Triangle& ct = partItr.key();
+                  if (ct[0] != tri[0] || ct[1] != tri[1] || ct[2] != tri[2])
+                     qDebug() << QString("False Positive: %1, %2, %3 = %4 | %5 %6 %7")
+                        .arg(tri[0]).arg(tri[1]).arg(tri[2])
+                        .arg(partItr.value())
+                        .arg(ct[0]).arg(ct[1]).arg(ct[2]);
+               }
+
+
+
+
+               int partIdx = ( partItr != trimap.end()) ? partItr.value() : defaultPart;
+               if (partIdx >= 0)
+               {
+                  //Triangle & tri = *it;
+
+                  // Ensure enough partitions
+                  while ( partIdx >= int(parts.size()) )
+                     parts.push_back( Partition() );
+
+                  Partition& part = parts[partIdx];
+
+                  QList<int> tribones;
+                  for ( int c = 0; c < 3; c++ )
+                  {
+                     foreach ( boneweight bw, weights[tri[c]] )
+                     {
+                        if ( ! tribones.contains( bw.first ) )
+                           tribones.append( bw.first );
+                     }
+                  }
+
+                  part.bones = mergeBones( part.bones, tribones );
+                  part.triangles.append( tri );
+                  it.remove();
+               }
+            }
+            merged = false; // when explicit mapping enabled, no merging is allowed
+         }
+
 			while ( ! triangles.isEmpty() )
 			{
 				Partition part;
@@ -599,8 +733,7 @@ public:
 			
 			// merge partitions
 			
-			bool merged;
-			do
+			while (merged)
 			{
 				merged = false;
 				for ( int p1 = 0; p1 < parts.count() && ! merged; p1++ )
@@ -621,7 +754,6 @@ public:
 					}
 				}
 			}
-			while ( merged );
 			
 			//qWarning() << parts.count() << "partitions";
 			
