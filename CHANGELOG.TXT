@@ -8,6 +8,7 @@ changes since 1.0.17:
  * added settings page for selecting displayed user interface language
  * fixed Binormals and Tangents swapped in Fallout 3 files [ niftools-Bugs-2466995 ]
  * added Block | Convert Spell for cleanly changing node type
+ * set default stencil property flags to 19840 for Fallout 3 (suggested by Saiden)
 
 changes since 1.0.16:
  * force updateHeader and updateFooter to be called before save

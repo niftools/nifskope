@@ -107,6 +107,9 @@ public:
 			if ( act->text() == "BSXFlags" ) {
 				nif->set<QString>( nif->getIndex( newindex, "Name" ), "BSX" );
 			}
+			else if ( ( act->text() == "NiStencilProperty" ) && ( nif->checkVersion(0x14010003, 0))) {
+				nif->set<unsigned short>( nif->getIndex( newindex, "Flags" ), 19840 );
+			}
 			// return index to new block
 			return newindex;
 		} else {
