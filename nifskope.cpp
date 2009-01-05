@@ -1250,7 +1250,7 @@ int main( int argc, char * argv[] )
 	for (int i=1; i<argc; ++i)
 	{
 		char *arg = argv[i];
-		if (arg && (arg[0] == '-' || arg[0] == '/'))
+		if (arg && arg[0] == '-')
 		{
 			switch(arg[1])
 			{
