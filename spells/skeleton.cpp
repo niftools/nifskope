@@ -420,7 +420,7 @@ public:
                   break;
                }
             }
-            defaultPart = min(nparts-1, defaultPart);
+            defaultPart = qMin(nparts-1, defaultPart);
 
             // enumerate existing partitions and select faces into same partition
             quint32 nskinparts = nif->get<int>( iSkinPart, "Num Skin Partition Blocks" );
@@ -429,7 +429,7 @@ public:
                QModelIndex iPart = iPartData.child(i,0);
                if (!iPart.isValid()) continue;
 
-               quint32 finalPart = min(nparts-1, i);
+               quint32 finalPart = qMin(nparts-1, i);
 
                QVector<int> vertmap = nif->getArray<int>( iPart, "Vertex Map" );
 
