@@ -3,12 +3,21 @@ rem Quick build script to create the installer for release.
 setlocal
 set NAME=nifskope
 set VERSION=1.0.18
+set REVISION=
 
-for %%i in (svnversion.exe) do IF EXIST "%%~$PATH:i" set SVNVERSION=%%~$PATH:i)
+for %%i in (svnversion.exe) do IF EXIST "%%~$PATH:i" set SVNVERSION=%%~$PATH:i
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%SystemDrive%\svn\bin\svnversion.exe
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%PROGRAMFILES%\TortoiseSVN\bin\svnversion.exe
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%PROGRAMFILES%\Subversion\bin\svnversion.exe
-IF EXIST "%SVNVERSION%" for /f "delims=| usebackq" %%j in (`"%SVNVERSION%" ..`) do set VERSION=%VERSION%.%%j
+IF EXIST "%SVNVERSION%" for /f "delims=| usebackq" %%j in (`"%SVNVERSION%" ..`) do set REVISION=%%j
+
+for %%i in (sed.exe) do IF EXIST "%%~$PATH:i" set SED=%%~$PATH:i
+IF NOT "%SED%" == "" (
+    "%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe" . -f | %SED% "s#Last committed at revision ##pg" -n > %TEMP%\nifskope.svnrev
+    for /f %%j in (%TEMP%\nifskope.svnrev) do set REVISION=%%j
+    del /q %TEMP%\nifskope.svnrev
+)
+IF NOT "%REVISION%" == "" set VERSION=%VERSION%.%REVISION%
 
 del %NAME%-%VERSION%-windows.exe > nul
 
