@@ -239,7 +239,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
-		if (!nif || !idx.isValid())
+		if (!nif || idx.isValid())
 			return false;
 
 		// If bethesda then we will configure the settings for the mesh.
