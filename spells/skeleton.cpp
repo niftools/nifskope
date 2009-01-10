@@ -231,11 +231,19 @@ public:
 
 template <> inline bool qMapLessThanKey<Triangle>(const Triangle &s1, const Triangle &s2)
 {
-   int d = 0;
-   if (d == 0) d = (s1[0] - s2[0]);
-   if (d == 0) d = (s1[1] - s2[1]);
-   if (d == 0) d = (s1[2] - s2[2]);
-   return d < 0; 
+	int d = 0;
+	if (d == 0) d = (s1[0] - s2[0]);
+	if (d == 0) d = (s1[1] - s2[1]);
+	if (d == 0) d = (s1[2] - s2[2]);
+	return d < 0; 
+}
+inline void qRotate(Triangle &t)
+{
+	if (t[1] < t[0] && t[1] < t[2]) {
+		t.set( t[1], t[2], t[0] );
+	} else if (t[2] < t[0]) {
+		t.set( t[2], t[0], t[1] );
+	}
 }
 
 class spSkinPartition : public Spell
@@ -259,6 +267,24 @@ public:
 	
 	typedef QPair<int,float> boneweight;
 	
+	struct boneweight_equivalence {
+		bool operator()(const boneweight& lhs, const boneweight& rhs) {
+			if (lhs.second == 0.0) {
+				if (rhs.second == 0.0) {
+					return rhs.first < lhs.first;
+				} else {
+					return true;
+				}
+				return false;
+			} else if ( rhs.second == lhs.second ) {
+				return lhs.first < rhs.first;
+			} else {
+				return rhs.second < lhs.second;
+			}
+		}
+	};
+
+
 	typedef struct {
 		QList<int> bones;
 		QVector<Triangle> triangles;
@@ -296,7 +322,8 @@ public:
 			
 			// read in the weights from NiSkinData
 			
-			QVector< QList< boneweight > > weights( nif->get<int>( iData, "Num Vertices" ) );
+			int numVerts = nif->get<int>( iData, "Num Vertices" );
+			QVector< QList< boneweight > > weights( numVerts );
 			
 			QModelIndex iBoneList = nif->getIndex( iSkinData, "Bone List" );
 			int numBones = nif->rowCount( iBoneList );
@@ -352,20 +379,14 @@ public:
 				while ( it.hasNext() )
 				{
 					QList< boneweight > & lst = it.next();
-					
+					qSort( lst.begin(), lst.end(), boneweight_equivalence() );
+
 					if ( lst.count() > maxBonesPerVertex )
 						c++;
 					
 					while ( lst.count() > maxBonesPerVertex )
 					{
-						int j = 0;
-						float weight = lst.first().second;
-						for ( int i = 0; i < lst.count(); i++ )
-						{
-							if ( lst[i].second < weight )
-								j = i;
-						}
-						lst.removeAt( j );
+						lst.removeLast();
 					}
 					
 					float totalWeight = 0;
@@ -405,78 +426,68 @@ public:
 				triangles = triangulate(strips).toList();
 			}
 
-         QMap<Triangle, quint32> trimap;
-         quint32 defaultPart = 0;
-         if (nif->inherits(iSkinInst, "BSDismemberSkinInstance"))
-         {
-            // First find a partition to dump dangling faces.  Torso is prefered if available.
-            quint32 nparts = nif->get<uint>(iSkinInst, "Num Partitions");
-            QModelIndex iPartData = nif->getIndex( iSkinInst, "Partitions" );
-            for (quint32 i=0; i<nparts; ++i) {
-               QModelIndex iPart = iPartData.child(i,0);
-               if (!iPart.isValid()) continue;
-               if ( nif->get<uint>(iPart, "Body Part") == 0 /* Torso */) {
-                  defaultPart = i;
-                  break;
-               }
-            }
-            defaultPart = qMin(nparts-1, defaultPart);
+			QMap<Triangle, quint32> trimap;
+			quint32 defaultPart = 0;
+			if (nif->inherits(iSkinInst, "BSDismemberSkinInstance"))
+			{
+				// First find a partition to dump dangling faces.  Torso is prefered if available.
+				quint32 nparts = nif->get<uint>(iSkinInst, "Num Partitions");
+				QModelIndex iPartData = nif->getIndex( iSkinInst, "Partitions" );
+				for (quint32 i=0; i<nparts; ++i) {
+					QModelIndex iPart = iPartData.child(i,0);
+					if (!iPart.isValid()) continue;
+					if ( nif->get<uint>(iPart, "Body Part") == 0 /* Torso */) {
+						defaultPart = i;
+						break;
+					}
+				}
+				defaultPart = qMin(nparts-1, defaultPart);
 
-            // enumerate existing partitions and select faces into same partition
-            quint32 nskinparts = nif->get<int>( iSkinPart, "Num Skin Partition Blocks" );
-            iPartData = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
-            for (quint32 i=0; i<nskinparts; ++i) {
-               QModelIndex iPart = iPartData.child(i,0);
-               if (!iPart.isValid()) continue;
+				// enumerate existing partitions and select faces into same partition
+				quint32 nskinparts = nif->get<int>( iSkinPart, "Num Skin Partition Blocks" );
+				iPartData = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+				for (quint32 i=0; i<nskinparts; ++i) {
+					QModelIndex iPart = iPartData.child(i,0);
+					if (!iPart.isValid()) continue;
 
-               quint32 finalPart = qMin(nparts-1, i);
+					quint32 finalPart = qMin(nparts-1, i);
 
-               QVector<int> vertmap = nif->getArray<int>( iPart, "Vertex Map" );
+					QVector<int> vertmap = nif->getArray<int>( iPart, "Vertex Map" );
 
-               quint8 hasFaces = nif->get<quint8>(iPart, "Has Faces");
-               quint8 numStrips = nif->get<quint8>(iPart, "Num Strips");              
-               QVector<Triangle> partTriangles;
-               if ( hasFaces && numStrips == 0 ) {
-                  partTriangles = nif->getArray<Triangle>( iPart, "Triangles" );
-               } else if ( numStrips != 0 ) {
-                  // triangulate first (code copied from strippify.cpp)
-                  QList< QVector<quint16> > strips;
-                  QModelIndex iPoints = nif->getIndex( iData, "Points" );
-                  for ( int s = 0; s < nif->rowCount( iPoints ); s++ )
-                  {
-                     QVector<quint16> strip;
-                     QModelIndex iStrip = iPoints.child( s, 0 );
-                     for ( int p = 0; p < nif->rowCount( iStrip ); p++ ) {
-                        strip.append( nif->get<int>( iStrip.child( p, 0 ) ) );
-                     }
-                     strips.append( strip );
-                  }
-                  partTriangles = triangulate(strips);
-               }
-               for (int j = 0; j<partTriangles.count(); ++j) 
-               {
-                  Triangle t = partTriangles[j];
-                  Triangle tri = t;
-                  if (!vertmap.isEmpty()) {
-                     tri[0] = vertmap[tri[0]];
-                     tri[1] = vertmap[tri[1]];
-                     tri[2] = vertmap[tri[2]];
-                  }
-                  QMap<Triangle, quint32>::iterator partItr = trimap.find(tri);
-                  if ( partItr != trimap.end() )
-                     qDebug() << QString("Duplicate: %1, %2, %3 = %4 (%5)").arg(tri[0]).arg(tri[1]).arg(tri[2]).arg(partItr.value()).arg(finalPart);
-                  else
-                     qDebug() << QString("Map: %4 | %8 | (%1, %2, %3) = (%5, %6, %7) ")
-                     .arg(t[0]).arg(t[1]).arg(t[2])
-                     .arg(i)
-                     .arg(tri[0]).arg(tri[1]).arg(tri[2])
-                     .arg(finalPart)
-                     ;
-
-                  trimap.insert( tri, finalPart );
-               }
-            }
-         }
+					quint8 hasFaces = nif->get<quint8>(iPart, "Has Faces");
+					quint8 numStrips = nif->get<quint8>(iPart, "Num Strips");				  
+					QVector<Triangle> partTriangles;
+					if ( hasFaces && numStrips == 0 ) {
+						partTriangles = nif->getArray<Triangle>( iPart, "Triangles" );
+					} else if ( numStrips != 0 ) {
+						// triangulate first (code copied from strippify.cpp)
+						QList< QVector<quint16> > strips;
+						QModelIndex iPoints = nif->getIndex( iPart, "Strips" );
+						for ( int s = 0; s < nif->rowCount( iPoints ); s++ )
+						{
+							QVector<quint16> strip;
+							QModelIndex iStrip = iPoints.child( s, 0 );
+							for ( int p = 0; p < nif->rowCount( iStrip ); p++ ) {
+								strip.append( nif->get<int>( iStrip.child( p, 0 ) ) );
+							}
+							strips.append( strip );
+						}
+						partTriangles = triangulate(strips);
+					}
+					for (int j = 0; j<partTriangles.count(); ++j) 
+					{
+						Triangle t = partTriangles[j];
+						Triangle tri = t;
+						if (!vertmap.isEmpty()) {
+							tri[0] = vertmap[tri[0]];
+							tri[1] = vertmap[tri[1]];
+							tri[2] = vertmap[tri[2]];
+						}
+						qRotate(tri);
+						trimap.insert( tri, finalPart );
+					}
+				}
+			}
 			
 			QMap< int, int > match;
 			bool doMatch = true;
@@ -597,60 +608,45 @@ public:
 			
 			// split the triangles into partitions
 
-         bool merged = true;
+			bool merged = true;
 
 			QList<Partition> parts;
 
-         if (!trimap.isEmpty()) {
-            QMutableListIterator<Triangle> it( triangles );
-            while ( it.hasNext() )
-            {
-               Triangle & tri = it.next();
+			if (!trimap.isEmpty()) {
+				QMutableListIterator<Triangle> it( triangles );
+				while ( it.hasNext() )
+				{
+					Triangle tri = it.next();
+					qRotate(tri);
+					QMap<Triangle, quint32>::iterator partItr = trimap.find(tri);
+					int partIdx = ( partItr != trimap.end()) ? partItr.value() : defaultPart;
+					if (partIdx >= 0)
+					{
+						//Triangle & tri = *it;
 
-               QMap<Triangle, quint32>::iterator partItr = trimap.find(tri);
-               bool found = ( partItr == trimap.end());
-               if (found){
-                  qDebug() << QString("Triangle Miss: %1, %2, %3 = %4").arg(tri[0]).arg(tri[1]).arg(tri[2]).arg(defaultPart);
-               } else {
-                  const Triangle& ct = partItr.key();
-                  if (ct[0] != tri[0] || ct[1] != tri[1] || ct[2] != tri[2])
-                     qDebug() << QString("False Positive: %1, %2, %3 = %4 | %5 %6 %7")
-                        .arg(tri[0]).arg(tri[1]).arg(tri[2])
-                        .arg(partItr.value())
-                        .arg(ct[0]).arg(ct[1]).arg(ct[2]);
-               }
+						// Ensure enough partitions
+						while ( partIdx >= int(parts.size()) )
+							parts.push_back( Partition() );
 
+						Partition& part = parts[partIdx];
 
+						QList<int> tribones;
+						for ( int c = 0; c < 3; c++ )
+						{
+							foreach ( boneweight bw, weights[tri[c]] )
+							{
+								if ( ! tribones.contains( bw.first ) )
+									tribones.append( bw.first );
+							}
+						}
 
-
-               int partIdx = ( partItr != trimap.end()) ? partItr.value() : defaultPart;
-               if (partIdx >= 0)
-               {
-                  //Triangle & tri = *it;
-
-                  // Ensure enough partitions
-                  while ( partIdx >= int(parts.size()) )
-                     parts.push_back( Partition() );
-
-                  Partition& part = parts[partIdx];
-
-                  QList<int> tribones;
-                  for ( int c = 0; c < 3; c++ )
-                  {
-                     foreach ( boneweight bw, weights[tri[c]] )
-                     {
-                        if ( ! tribones.contains( bw.first ) )
-                           tribones.append( bw.first );
-                     }
-                  }
-
-                  part.bones = mergeBones( part.bones, tribones );
-                  part.triangles.append( tri );
-                  it.remove();
-               }
-            }
-            merged = false; // when explicit mapping enabled, no merging is allowed
-         }
+						part.bones = mergeBones( part.bones, tribones );
+						part.triangles.append( tri );
+						it.remove();
+					}
+				}
+				merged = false; // when explicit mapping enabled, no merging is allowed
+			}
 
 			while ( ! triangles.isEmpty() )
 			{
@@ -771,26 +767,57 @@ public:
 			nif->set<int>( iSkinPart, "Num Skin Partition Blocks", parts.count() );
 			nif->updateArray( iSkinPart, "Skin Partition Blocks" );
 			
+			QModelIndex iBSSkinInstPartData;
+			if (nif->inherits(iSkinInst, "BSDismemberSkinInstance"))
+			{
+				quint32 nparts = nif->get<uint>(iSkinInst, "Num Partitions");
+				iBSSkinInstPartData = nif->getIndex( iSkinInst, "Partitions" );
+				if (nparts != parts.count())
+				{
+					qWarning() << "BSDismemberSkinInstance partition count does not match Skin Partition count.  Adjusting to fit.";
+					nif->set<uint>(iSkinInst, "Num Partitions", parts.count());
+					nif->updateArray( iSkinInst, "Partitions" );
+				}
+			}
+
+			QList<int> prevPartBones;
+
 			for ( int p = 0; p < parts.count(); p++ )
 			{
 				QModelIndex iPart = nif->getIndex( iSkinPart, "Skin Partition Blocks" ).child( p, 0 );
 				
 				QList<int> bones = parts[p].bones;
 				qSort( bones );
+
+				// set partition flags for bs skin instance if present
+				if (iBSSkinInstPartData.isValid()) {
+					if (bones != prevPartBones) {
+						prevPartBones = bones;
+						nif->set<uint>(iBSSkinInstPartData.child(p,0), "Part Flag", 257);
+					}
+				}
 				
 				QVector<Triangle> triangles = parts[p].triangles;
 				
-				QVector<int> vertices;
-				foreach ( Triangle tri, triangles )
-				{
-					for ( int t = 0; t < 3; t++ )
-					{
-						if ( ! vertices.contains( tri[t] ) )
-							vertices.append( tri[t] );
+				// Create the vertex map
+
+				int idx = 0;
+				QVector<int> vidx(numVerts, -1);
+				foreach ( Triangle tri, triangles ) {
+					for ( int t = 0; t < 3; t++ ) {
+						int v = tri[t];
+						if ( vidx[v] < 0)
+							vidx[v] = idx++;
 					}
 				}
-				qSort( vertices );
-				
+				QVector<int> vertices(idx, -1);
+				for (int i = 0; i < numVerts; ++i) {
+					int v = vidx[i];
+					if (v >= 0) {
+						vertices[v] = i;
+					}
+				}
+
 				// map the vertices
 				
 				for ( int tri = 0; tri < triangles.count(); tri++ )
@@ -825,7 +852,14 @@ public:
 						bones.append(0);
 					}
 				}
-				
+
+				// resort the bone weights in bone order
+				QMutableVectorIterator< QList< boneweight > > it( weights );
+				while ( it.hasNext() ) {
+					QList< boneweight > &bw = it.next();
+					qSort( bw.begin(), bw.end(), boneweight_equivalence() );
+				}
+
 				nif->set<int>( iPart, "Num Vertices", vertices.count() );
 				nif->set<int>( iPart, "Num Triangles", numTriangles );
 				nif->set<int>( iPart, "Num Bones", bones.count() );
@@ -960,7 +994,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-      Q_UNUSED(index);
+		Q_UNUSED(index);
 		QList< QPersistentModelIndex > indices;
 		
 		spSkinPartition Partitioner;
@@ -1054,11 +1088,11 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	connect( btCancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
 	
 	QGridLayout * grid = new QGridLayout( this );
-	grid->addWidget( labVert, 0, 0 );    grid->addWidget( spnVert, 0, 1 );
-	grid->addWidget( labPart, 1, 0 );    grid->addWidget( spnPart, 1, 1 );
-	grid->addWidget( labTStrip, 2, 0);   grid->addWidget( ckTStrip, 2, 1 );
-	grid->addWidget( labPad, 3, 0);      grid->addWidget( ckPad, 3, 1 );
-	grid->addWidget( btOk, 4, 0 );       grid->addWidget( btCancel, 4, 1 );
+	grid->addWidget( labVert, 0, 0 );	 grid->addWidget( spnVert, 0, 1 );
+	grid->addWidget( labPart, 1, 0 );	 grid->addWidget( spnPart, 1, 1 );
+	grid->addWidget( labTStrip, 2, 0);	grid->addWidget( ckTStrip, 2, 1 );
+	grid->addWidget( labPad, 3, 0);		grid->addWidget( ckPad, 3, 1 );
+	grid->addWidget( btOk, 4, 0 );		 grid->addWidget( btCancel, 4, 1 );
 }
 
 void SkinPartitionDialog::changed()
