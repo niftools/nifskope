@@ -13,7 +13,7 @@ IF EXIST "%SVNVERSION%" for /f "delims=| usebackq" %%j in (`"%SVNVERSION%" ..`) 
 
 for %%i in (sed.exe) do IF EXIST "%%~$PATH:i" set SED=%%~$PATH:i
 IF NOT "%SED%" == "" (
-    "%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe" . -f | %SED% "s#Last committed at revision ##pg" -n > %TEMP%\nifskope.svnrev
+    "%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe" .. -f | %SED% "s#Last committed at revision ##pg" -n > %TEMP%\nifskope.svnrev
     for /f %%j in (%TEMP%\nifskope.svnrev) do set REVISION=%%j
     del /q %TEMP%\nifskope.svnrev
 )
