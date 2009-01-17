@@ -54,7 +54,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "fsengine/fsengine.h"
 #include <GL/glext.h>
 
-int num_texture_units = 0;
+GLint num_texture_units = 0;
 float max_anisotropy = 0;
 
 void initializeTextureUnits( const QGLContext * context )
@@ -106,8 +106,7 @@ bool activateTextureUnit( int stage )
     else
       qWarning( "texture compression not supported" );
   }
-  else
-    return false;
+  return false;
 }
 
 void resetTextureUnits()
