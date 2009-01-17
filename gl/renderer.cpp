@@ -218,7 +218,7 @@ bool Renderer::Shader::load( const QString & filepath )
 		
 		if ( result != GL_TRUE )
 		{
-			int logLen;
+			GLint logLen;
 			glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			char * log = new char[ logLen ];
 			glGetShaderInfoLog( id, logLen, 0, log );
@@ -333,13 +333,13 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 		
 		glLinkProgram( id );
 		
-		int result;
+		GLint result;
     
 		glGetShaderiv( id, GL_LINK_STATUS, & result );
 		
 		if ( result != GL_TRUE )
 		{
-			int logLen = 0;
+			GLint logLen = 0;
 			glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			if (logLen != 0)
 			{
