@@ -77,6 +77,34 @@ public:
 
 REGISTER_SPELL( spFaceNormals )
 
+//! Flip normals of a mesh, without recalculating them.
+class spFlipNormals : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Flip Normals"); }
+	QString page() const { return Spell::tr("Mesh"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
+		return ( iData.isValid() && nif->get<bool>( iData, "Has Normals" ) );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
+		
+		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+		for ( int n = 0; n < norms.count(); n++ )
+			norms[n] = -norms[n];
+		nif->setArray<Vector3>( iData, "Normals", norms );
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spFlipNormals )
+
 class spSmoothNormals : public Spell
 {
 public:
