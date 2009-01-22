@@ -593,6 +593,7 @@ public:
 	void fromQuat( const Quat & q );
 	Quat toQuat() const;
 	
+	//! Convert from Euler angles in a (Z,Y,X) manner.
 	void fromEuler( float x, float y, float z );
 	bool toEuler( float & x, float & y, float & z ) const;
 	
@@ -685,6 +686,13 @@ public:
 	
 	Matrix4 toMatrix4() const;
 	
+	// Format of rotation matrix? See http://en.wikipedia.org/wiki/Euler_angles
+	// fromEuler indicates that it might be "zyx" form
+	// Yaw, Pitch, Roll correspond to rotations in X, Y, Z axes respectively
+	// Note that by convention, all angles in mathematics are anticlockwise, looking top-down at the plane
+	// ie. rotation on X axis means "in the YZ plane where a positive X vector is up"
+	// From entim: "The rotations are applied after each other: first yaw, then pitch, then roll"
+	// For A,X,Y,Z representation, A is amplitude, each axis is a percentage
 	Matrix rotation;
 	Vector3 translation;
 	float scale;
@@ -948,9 +956,11 @@ inline Color3::Color3( const Color4 & c4 )
 
 
 //! A fixed length vector of type T.
-//!  Data is allocated into a vector portion and the data section.
-//!  The vector simply points to appropriate places in the data section.
-//! @param  T   Type of Vector
+/*!
+ * Data is allocated into a vector portion and the data section.
+ * The vector simply points to appropriate places in the data section.
+ * @param   T   Type of Vector
+ */
 template<typename T>
 class FixedMatrix
 {
@@ -960,7 +970,9 @@ public:
 	{}
 
 	//! Size Constructor
-	//! Allocate the requested number of elements.
+	/*!
+	 * Allocate the requested number of elements.
+	 */
 	FixedMatrix(int length1, int length2)
 	{
 		int length = length1*length2;
@@ -991,6 +1003,7 @@ public:
 		return *this;
 	}
 
+	//! Accessor for...?
 	T* operator[](int index)
 	{
 		// assert( index >= 0 && index < len_ )
@@ -1030,6 +1043,12 @@ public:
 		return v_[ calcindex(index1, index2) ];
 	}
 
+	//! Calculates row? of element
+	/*!
+	 *  @param[in]  index1  i value of element
+	 *  @param[in]  index2  j value of element
+	 *  @return             position of element?
+	 */
 	int calcindex(int index1, int index2)
 	{
 		return index1*count(1) + index2;
@@ -1039,23 +1058,31 @@ public:
 	int count() const 
 	{ return len0 * len1; }
 
+	//! Number of items in specified dimension.
 	int count(int dimension) const 
 	{ return (dimension == 0 ? len0 : (dimension == 1 ? len1 : 0)); }
 
 	//! Start of the array portion of the vector
 	T*array() const { return v_; }
+	// Department of Rendundancy Department?
+	//! Start of the array portion of the vector
 	T*data() const { return v_; }
 
-	//! Assign a string to vector at specified index
-	//! @param[in]   index  Index in array to assign
-	//! @param[in]   value  Value to copy into string
+	//! Assign a string to vector at specified index.
+	/*!
+	 *  @param[in]  index1  Index (i) in array to assign
+	 *  @param[in]  index2  Index (j) in array to assign
+	 *  @param[in]   value  Value to copy into string
+	 */
 	void assign(int index1, int index2, T value)
 	{
 		element(index1, index2) = value;
 	}
 
 	//! Swap contents with another APRFixedMatrix
-	//! @param[in,out]   other  Other vector to swap with
+	/*!
+	 *  @param[in,out]  other   Other vector to swap with
+	 */
 	void swap( FixedMatrix &other )
 	{
 		qSwap(v_, other.v_);
@@ -1064,8 +1091,8 @@ public:
 	}
 
 private:
-	T* v_; //! Vector data
-	int len0, len1; //! length
+	T* v_; //!< Vector data
+	int len0, len1; //!< length
 };
 
 typedef FixedMatrix<char> ByteMatrix;

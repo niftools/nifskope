@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 #include <QReadWriteLock>
 
+//! Base class for nif models.
 class NifModel : public BaseModel
 {
 Q_OBJECT
