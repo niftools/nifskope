@@ -82,10 +82,13 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Sun Jan 4 2009 amorilia - 1.0.18-1
+* Sun Jan 25 2009 amorilia - 1.0.18-1
 - fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
 - fixed rendering settings which sometimes broke texture rendering when shader not used
 - added settings page for selecting displayed user interface language
+- fixed Binormals and Tangents swapped in Fallout 3 files [ niftools-Bugs-2466995 ]
+- added Block | Convert Spell for cleanly changing node type
+- set default stencil property flags to 19840 for Fallout 3 (suggested by Saiden)
 * Mon Dec 22 2008 amorilia - 1.0.17-1
 - (linux version not released)
 - force updateHeader and updateFooter to be called before save
