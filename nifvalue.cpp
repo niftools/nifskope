@@ -199,7 +199,7 @@ QString NifValue::enumOptionName( const QString & eid, quint32 val )
 				if (val & (1 << it.key())) { 
 					val2 |= (1 << it.key());
 					if (!text.isEmpty()) text += " | ";
-					text += it.value().first;				
+					text += it.value().first;
 				}
 			}
 			val2 = (val & ~val2);
@@ -217,7 +217,7 @@ QString NifValue::enumOptionName( const QString & eid, quint32 val )
 		}
 		return QString::number(val);
 	}
-	return QString();	
+	return QString();
 }
 
 QString NifValue::enumOptionText( const QString & eid, quint32 val )
@@ -585,6 +585,8 @@ bool NifValue::fromString( const QString & s )
 		case tBlob:
 		case tNone:
 			return false;
+		default:
+			return false;
 	}
 	return false;
 }
@@ -722,14 +724,14 @@ QString NifValue::toString() const
 			return s;
 		}
 		case tByteMatrix:
-			{
-				ByteMatrix * array = static_cast<ByteMatrix*>( val.data );
-				return QString( "%1 bytes  [%2 x %3]" )
-					.arg( array->count() )
-					.arg( array->count(0) )
-					.arg( array->count(1) )
-					;
-			}
+		{
+			ByteMatrix * array = static_cast<ByteMatrix*>( val.data );
+			return QString( "%1 bytes  [%2 x %3]" )
+				.arg( array->count() )
+				.arg( array->count(0) )
+				.arg( array->count(1) )
+				;
+		}
 		case tFileVersion:
 			return NifModel::version2string( val.u32 );
 		case tTriangle:
@@ -741,16 +743,16 @@ QString NifValue::toString() const
 				.arg( tri->v3() );
 		}
 		case tFilePath:
-			{
+		{
 			return *static_cast<QString*>( val.data );
-			}
+		}
 		case tBlob:
-			{
-				QByteArray * array = static_cast<QByteArray*>( val.data );
-				return QString( "%1 bytes" )
-					.arg( array->size() )
-					;
-			}
+		{
+			QByteArray * array = static_cast<QByteArray*>( val.data );
+			return QString( "%1 bytes" )
+				.arg( array->size() )
+				;
+		}
 		default:
 			return QString();
 	}
@@ -783,11 +785,11 @@ bool NifIStream::read( NifValue & val )
 				return device->read( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->read( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tByte:
+		case NifValue::tByte:
 			val.val.u32 = 0;
 			return device->read( (char *) &val.val.u08, 1 ) == 1;
-	  case NifValue::tWord:
-	  case NifValue::tShort:
+		case NifValue::tWord:
+		case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			val.val.u32 = 0;
@@ -1008,10 +1010,10 @@ bool NifOStream::write( const NifValue & val )
 				return device->write( (char *) &val.val.u32, 4 ) == 4;
 			else
 				return device->write( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tByte:
+		case NifValue::tByte:
 			return device->write( (char *) &val.val.u08, 1 ) == 1;
-      case NifValue::tWord:
-      case NifValue::tShort:
+		case NifValue::tWord:
+		case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			return device->write( (char *) &val.val.u16, 2 ) == 2;
@@ -1123,17 +1125,17 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) &len, 4 ) == 4;
 		}
 		case NifValue::tByteMatrix:
-			{
-				ByteMatrix * array = static_cast<ByteMatrix*>( val.val.data );
-				int len = array->count(0);
-				if ( device->write( (char *) &len, 4 ) != 4 )
-					return false;
-				len = array->count(1);
-				if ( device->write( (char *) &len, 4 ) != 4 )
-					return false;
-				len = array->count();
-				return device->write(array->data(), len) == len;
-			}
+		{
+			ByteMatrix * array = static_cast<ByteMatrix*>( val.val.data );
+			int len = array->count(0);
+			if ( device->write( (char *) &len, 4 ) != 4 )
+				return false;
+			len = array->count(1);
+			if ( device->write( (char *) &len, 4 ) != 4 )
+				return false;
+			len = array->count();
+			return device->write(array->data(), len) == len;
+		}
 		case NifValue::tString:
 		case NifValue::tFilePath:
 		{
@@ -1189,7 +1191,7 @@ int NifSStream::size( const NifValue & val )
 				return 4;
 			else
 				return 1;
-      case NifValue::tByte:
+		case NifValue::tByte:
 			return 1;
 		case NifValue::tWord:
 		case NifValue::tShort:

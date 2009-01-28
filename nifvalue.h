@@ -176,7 +176,7 @@ public:
 	NifValue( Type t );
 	//! Copy constructor.
 	NifValue( const NifValue & other );
-	
+	//! Destructor.
 	~NifValue();
 	
 	//! Clear the data, setting its type to tNone.
@@ -209,18 +209,29 @@ public:
 	bool isFlags() const { return typ == tFlags; }
 	//! Check if the type of the data is a float type (Float in xml).
 	bool isFloat() const { return typ == tFloat; }
-	//! Check if the type of the data  is of a link type (Ref or Ptr in xml).
+	//! Check if the type of the data is of a link type (Ref or Ptr in xml).
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
+	//! Check if the type of the data is a 3x3 matrix type (Matrix33 in xml).
 	bool isMatrix() const { return typ == tMatrix; }
+	//! Check if the type of the data is a 4x4 matrix type (Matrix44 in xml).
 	bool isMatrix4() const { return typ == tMatrix4; }
+	//! Check if the type of the data is a quaternion type.
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
+	//! Check if the type of the data is a string type.
 	bool isString() const { return (typ >= tSizedString && typ <= tChar8String) || typ == tString; }
+	//! Check if the type of the data is a Vector 4.
 	bool isVector4() const { return typ == tVector4; }
+	//! Check if the type of the data is a Vector 3.
 	bool isVector3() const { return typ == tVector3; }
+	//! Check if the type of the data is a Vector 2.
 	bool isVector2() const { return typ == tVector2; }
+	//! Check if the type of the data is a triangle type.
 	bool isTriangle() const { return typ == tTriangle; }
+	//! Check if the type of the data is a byte array.
 	bool isByteArray() const { return typ == tByteArray || typ == tStringPalette || typ == tBlob; }
+	//! Check if the type of the data is a File Version.
 	bool isFileVersion() const { return typ == tFileVersion; }
+	//! Check if the type of the data is a byte matrix.
 	bool isByteMatrix() const { return typ == tByteMatrix; }
 	
 	QColor toColor() const;
