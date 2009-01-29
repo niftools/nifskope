@@ -551,24 +551,23 @@ class spTextureTemplate : public Spell
 
 REGISTER_SPELL( spTextureTemplate )
 
+//! Global search and replace of texturing apply modes
 class spMultiApplyMode : public Spell
 {
-
 public:
-
 	QString name() const { return Spell::tr("Multi Apply Mode"); }
 	QString page() const { return Spell::tr("Batch"); } 
-
+	
 	bool isApplicable( const NifModel * nif, const QModelIndex &index )
 	{
 		return nif->checkVersion( 0x14000005, 0x14000005 ) && ! index.isValid();
 	}
-
+	
 	QModelIndex cast( NifModel *nif, const QModelIndex &index )
 	{
 		QStringList modes;
 		modes << "Replace" <<  "Decal" << "Modulate" << "Hilight" << "Hilight2";
-
+		
 		QDialog dlg;
 		dlg.resize( 300, 60 );
 		QComboBox *cbRep = new QComboBox( &dlg );
@@ -579,7 +578,7 @@ public:
 		cbRep->setCurrentIndex( 2 );
 		cbBy->addItems( modes );
 		cbBy->setCurrentIndex( 2 );
-
+		
 		QGridLayout *layout;
 		layout = new QGridLayout;
 		layout->setSpacing( 20 );
@@ -589,28 +588,40 @@ public:
 		layout->addWidget( cbBy, 1, 1, Qt::AlignTop );
 		layout->addWidget( btnOk, 2, 0 );
 		layout->addWidget( btnCancel, 2, 1 );
-		dlg.setLayout( layout );		
-
+		dlg.setLayout( layout );
+		
 		QObject::connect( btnOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
 		QObject::connect( btnCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
-
+		
 		if ( dlg.exec() != QDialog::Accepted )
 			return QModelIndex();
-
-		replaceApplyMode( nif, index, cbRep->currentIndex(), cbBy->currentIndex() );
-
+		
+		QList< QPersistentModelIndex > indices;
+		
+		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		{
+			QModelIndex idx = nif->getBlock( n );
+			indices << idx;
+		}
+		
+		foreach ( QModelIndex idx, indices )
+		{
+			replaceApplyMode( nif, idx, cbRep->currentIndex(), cbBy->currentIndex() );
+		}
+		
 		return QModelIndex();
 	}
-
-	void 	replaceApplyMode( NifModel *nif, const QModelIndex &index, int rep, int by )
-	{	
+	
+	//! Recursively replace the Apply Mode
+	void replaceApplyMode( NifModel *nif, const QModelIndex &index, int rep, int by )
+	{
 		if ( !index.isValid() )
 			return;
-
+		
 		if ( nif->inherits( index, "NiTexturingProperty" ) &&
 			nif->get<int>( index, "Apply Mode" ) == rep )
 			nif->set<int>( index, "Apply Mode", by );
-
+		
 		QModelIndex iChildren = nif->getIndex( index, "Children" );
 		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( index ) );
 		if ( iChildren.isValid() )
@@ -625,7 +636,7 @@ public:
 				}
 			}
 		}
-
+		
 		QModelIndex iProperties = nif->getIndex( index, "Properties" );
 		if ( iProperties.isValid() )
 		{
