@@ -40,30 +40,44 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define REGISTER_SPELL( SPELL ) static Librarian __##SPELL##__ ( new SPELL );
 
+//! Flexible context menu magic functions.
 class Spell
 {
 public:
+	//! Constructor
 	Spell() {}
+	//! Destructor
 	virtual ~Spell() {}
 	
+	//! Name of spell
 	virtual QString name() const = 0;
+	//! Context sub-menu that the spell appears on
 	virtual QString page() const { return QString(); }
+	//! Unused?
 	virtual QString hint() const { return QString(); }
+	//! Icon displayed in block view
 	virtual QIcon icon() const { return QIcon(); }
+	//! Whether the spell shows up in block list?
 	virtual bool instant() const { return false; }
+	//! Whether the spell performs a sanitizing function
 	virtual bool sanity() const { return false; }
+	//! Hotkey sequence
 	virtual QKeySequence hotkey() const { return QKeySequence(); }
 
+	//! Determine if/when the spell can be cast
 	virtual bool isApplicable( const NifModel * nif, const QModelIndex & index ) = 0;
 	
+	//! Cast (apply) the spell
 	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;
 
+	//! Cast the spell if applicable
 	void castIfApplicable( NifModel * nif, const QModelIndex & index )
 	{
 		if ( isApplicable( nif, index ) )
 			cast( nif, index );
 	}
 	
+	//! i18n wrapper for various strings
 	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 
