@@ -57,7 +57,7 @@ public:
 	virtual QString hint() const { return QString(); }
 	//! Icon displayed in block view
 	virtual QIcon icon() const { return QIcon(); }
-	//! Whether the spell shows up in block list?
+	//! Whether the spell shows up in block list instead of a context menu
 	virtual bool instant() const { return false; }
 	//! Whether the spell performs a sanitizing function
 	virtual bool sanity() const { return false; }
@@ -81,21 +81,30 @@ public:
 	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 
+//! Menu containing spells
 class SpellBook : public QMenu
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	SpellBook( NifModel * nif, const QModelIndex & index = QModelIndex(), QObject * receiver = 0, const char * member = 0 );
+	//! Destructor
 	~SpellBook();
 	
+	//! From QMenu: Pops up the menu so that the action <i>act</i> will be at the specified global position <i>pos</i>
 	QAction * exec( const QPoint & pos, QAction * act = 0 );
 	
+	//! Register spell with appropriate books
 	static void registerSpell( Spell * spell );
 	
+	//! Locate spell by name
 	static Spell * lookup( const QString & id );
+	//! Locate spell by hotkey
 	static Spell * lookup( const QKeySequence & hotkey );
+	//! Locate instant spells by datatype
 	static Spell * instant( const NifModel * nif, const QModelIndex & index );
 	
+	//! Cast all sanitizing spells
 	static QModelIndex sanitize( NifModel * nif );
 	
 public slots:
@@ -129,9 +138,16 @@ private:
 	static QList<Spell*> & sanitizers();
 };
 
+//! Manager of spellbooks
 class Librarian
 {
 public:
+	//! Contructor.
+	/**
+	 * Registers the spell with the appropriate spellbooks.
+	 *
+	 * \param spell The spell to manage
+	 */
 	Librarian( Spell * spell )
 	{
 		SpellBook::registerSpell( spell );
