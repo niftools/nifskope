@@ -53,7 +53,9 @@ class BaseModel : public QAbstractItemModel
 {
 Q_OBJECT
 public:
+	//! Constructor
 	BaseModel( QObject * parent = 0 );
+	//! Destructor
 	~BaseModel();
 	
 	//! Clear model data.
@@ -88,6 +90,7 @@ public:
 	 * \return true if the update succeeded, false otherwise.
 	 */
 	bool updateArray( const QModelIndex & iArray );
+	//! Update the size of an array by name.
 	bool updateArray( const QModelIndex & parent, const QString & name );
 	//! Get an model index array as a QVector.
 	/*!
@@ -95,24 +98,30 @@ public:
 	 * \return The array as QVector.
 	 */
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray ) const;
+	//! Get an model index array as a QVector by name.
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray, const QString & name ) const;
 	//! Write a QVector to a model index array.
 	template <typename T> void setArray( const QModelIndex & iArray, const QVector<T> & array );
+	//! Write a QVector to a model index array by name.
 	template <typename T> void setArray( const QModelIndex & iArray, const QString & name, const QVector<T> & array );
 	
 	//! Get an item.
 	template <typename T> T get( const QModelIndex & index ) const;
+	//! Get an item by name.
 	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
 	//! Set an item.
-	template <typename T> bool set( const QModelIndex & index, const T & d );	
+	template <typename T> bool set( const QModelIndex & index, const T & d );
+	//! Set an item by name.
 	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
 
 	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
+	//! Get an item as a NifValue by name.
 	NifValue getValue( const QModelIndex & parent, const QString & name ) const;
 	
 	//! Set an item from a NifValue.
 	bool setValue( const QModelIndex & index, const NifValue & v );
+	//! Set an item from a NifValue by name.
 	bool setValue( const QModelIndex & parent, const QString & name, const NifValue & v );
 	
 	// get item attributes
@@ -137,33 +146,35 @@ public:
 	//! Get the item template string.
 	QString  itemTmplt( const QModelIndex & index ) const;
 
-	// find a branch by name
+	//! Find a branch by name.
 	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;
 	
-	// evaluate condition and version
+	//! Evaluate condition and version.
 	bool evalCondition( const QModelIndex & idx, bool chkParents = false ) const;
-	// evaluate version
+	//! Evaluate version.
 	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
 	
+	//! Get version as a string
 	virtual QString getVersion() const = 0;
+	//! Get version as a number
 	virtual quint32 getVersionNumber() const = 0;
 
 	
 
-   // column numbers
-   enum {
-      NameCol  = 0,
-      TypeCol  = 1,
-      ValueCol = 2,
-      ArgCol   = 3,
-      Arr1Col  = 4,
-      Arr2Col  = 5,
-      CondCol  = 6,
-      Ver1Col  = 7,
-      Ver2Col  = 8,
-      VerCondCol  = 9,
-      NumColumns = 10,
-   };
+	// column numbers
+	enum {
+		NameCol  = 0,
+		TypeCol  = 1,
+		ValueCol = 2,
+		ArgCol   = 3,
+		Arr1Col  = 4,
+		Arr2Col  = 5,
+		CondCol  = 6,
+		Ver1Col  = 7,
+		Ver2Col  = 8,
+		VerCondCol  = 9,
+		NumColumns = 10,
+	};
 
 	// QAbstractModel interface
 	

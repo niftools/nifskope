@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QFileDialog>
 
+//! Attach a .KF to a .NIF
 class spAttachKf : public Spell
 {
 public:
@@ -195,7 +196,7 @@ public:
 		
 		return iCtrl;
 	}
-
+	
 	static void setLinkArray( NifModel * nif, const QModelIndex & iParent, const QString & array, const QList< QPersistentModelIndex > & iBlocks )
 	{
 		QModelIndex iNum = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
@@ -252,6 +253,7 @@ public:
 
 REGISTER_SPELL( spAttachKf )
 
+//! Convert quaternions to euler rotations; unimplemented.
 class spConvertQuatsToEulers : public Spell
 {
 public:

@@ -23,6 +23,7 @@ QDebug operator<<( QDebug dbg, const Vector3 & v )
 
 typedef QMap<QString,Transform> TransMap;
 
+//! "Fix" a v4.0.0.2 skeleton
 class spFixSkeleton : public Spell
 {
 public:
@@ -185,7 +186,7 @@ public:
 
 REGISTER_SPELL( spFixSkeleton )
 
-
+//! Read skeleton data for use in Fix Skeleton
 class spScanSkeleton : public Spell
 {
 public:
@@ -246,6 +247,7 @@ inline void qRotate(Triangle &t)
 	}
 }
 
+//! Make skin partition
 class spSkinPartition : public Spell
 {
 public:
@@ -772,7 +774,8 @@ public:
 			{
 				quint32 nparts = nif->get<uint>(iSkinInst, "Num Partitions");
 				iBSSkinInstPartData = nif->getIndex( iSkinInst, "Partitions" );
-				if (nparts != parts.count())
+				// why is QList.count() signed? cast to squash warning
+				if (nparts != (quint32) parts.count())
 				{
 					qWarning() << "BSDismemberSkinInstance partition count does not match Skin Partition count.  Adjusting to fit.";
 					nif->set<uint>(iSkinInst, "Num Partitions", parts.count());
@@ -980,7 +983,7 @@ public:
 
 REGISTER_SPELL( spSkinPartition )
 
-
+//! Make all skin partitions
 class spAllSkinPartitions : public Spell
 {
 public:
@@ -1120,6 +1123,7 @@ bool SkinPartitionDialog::padPartitions()
 	return ckPad->isChecked();
 }
 
+//! Fix bone bounds
 class spFixBoneBounds : public Spell
 {
 public:
@@ -1199,3 +1203,4 @@ public:
 };
 
 REGISTER_SPELL( spFixBoneBounds )
+

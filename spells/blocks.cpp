@@ -94,7 +94,7 @@ public:
 				map[ x ] = new QMenu( x );
 			map[ x ]->addAction( id );
 		}
-
+		
 		QMenu menu;
 		foreach ( QMenu * m, map )
 			menu.addMenu( m );
@@ -425,7 +425,6 @@ public:
 
 REGISTER_SPELL( spPasteOverBlock )
 
-
 class spCopyBranch : public Spell
 {
 public:
@@ -493,16 +492,16 @@ public:
 		return index;
 	}
 	
-	void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block )
+	static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block )
 	{
 		if ( ! blocks.contains( block ) ) blocks.append( block );
 		foreach ( qint32 link, nif->getChildLinks( block ) )
 			populateBlocks( blocks, nif, link );
 	}
+
 };
 
 REGISTER_SPELL( spCopyBranch )
-
 
 class spPasteBranch : public Spell
 {
@@ -603,7 +602,7 @@ public:
 		return QModelIndex();
 	}
 	
-	qint32 getBlockByName( NifModel * nif, const QString & tn )
+	static qint32 getBlockByName( NifModel * nif, const QString & tn )
 	{
 		QStringList ls = tn.split( "|" );
 		QString type = ls.value( 0 );
@@ -805,12 +804,12 @@ class spCropToBranch : public Spell
 public:
 	QString name() const { return Spell::tr("Crop To Branch"); }
 	QString page() const { return Spell::tr("Block"); }
-
+	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return nif->isNiBlock( index );
 	}
-
+	
 	// construct list of block numbers of all blocks that are in the link's branch (including link itself)
 	QList<quint32> getBranch(NifModel * nif, quint32 link)
 	{
@@ -854,56 +853,56 @@ REGISTER_SPELL( spCropToBranch )
 class spConvertBlock : public Spell
 {
 public:
-   QString name() const { return Spell::tr("Convert"); }
-   QString page() const { return Spell::tr("Block"); }
-
-   bool isApplicable( const NifModel * nif, const QModelIndex & index )
-   {
-      Q_UNUSED(nif);
-      return ( ! index.isValid() || ! index.parent().isValid() );
-   }
-
-   QModelIndex cast( NifModel * nif, const QModelIndex & index )
-   {
-      QStringList ids = nif->allNiBlocks();
-      ids.sort();
-
-      
-      QString btype = nif->getBlockName( index );
-
-      QMap< QString, QMenu *> map;
-      foreach ( QString id, ids )
-      {
-         QString x( "Other" );
-
-         // Exclude siblings not in inheritance chain
-         if ( btype == id || (!nif->inherits( btype, id ) && !nif->inherits(id, btype) ) )
-            continue;         
-
-         if ( id.startsWith( "Ni" ) )
-            x = QString("Ni&") + id.mid( 2, 1 ) + "...";
-         if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
-            x = "Havok";
-         if ( id.startsWith( "BS" ) || id == "AvoidNode" || id == "RootCollisionNode" )
-            x = "Bethesda";
-         if ( id.startsWith( "Fx" ) )
-            x = "Firaxis";
-
-         if ( ! map.contains( x ) )
-            map[ x ] = new QMenu( x );
-         map[ x ]->addAction( id );
-      }
-
-      QMenu menu;
-      foreach ( QMenu * m, map )
-         menu.addMenu( m );
-
-      QAction * act = menu.exec( QCursor::pos() );
-      if ( act ) {
-         nif->convertNiBlock( act->text(), index );
-      }
-      return index;
-   }
+	QString name() const { return Spell::tr("Convert"); }
+	QString page() const { return Spell::tr("Block"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		Q_UNUSED(nif);
+		return ( ! index.isValid() || ! index.parent().isValid() );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		
+		QString btype = nif->getBlockName( index );
+		
+		QMap< QString, QMenu *> map;
+		foreach ( QString id, ids )
+		{
+			QString x( "Other" );
+			
+			// Exclude siblings not in inheritance chain
+			if ( btype == id || (!nif->inherits( btype, id ) && !nif->inherits(id, btype) ) )
+				continue;         
+			
+			if ( id.startsWith( "Ni" ) )
+				x = QString("Ni&") + id.mid( 2, 1 ) + "...";
+			if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
+				x = "Havok";
+			if ( id.startsWith( "BS" ) || id == "AvoidNode" || id == "RootCollisionNode" )
+				x = "Bethesda";
+			if ( id.startsWith( "Fx" ) )
+				x = "Firaxis";
+			
+			if ( ! map.contains( x ) )
+				map[ x ] = new QMenu( x );
+			map[ x ]->addAction( id );
+		}
+		
+		QMenu menu;
+		foreach ( QMenu * m, map )
+			menu.addMenu( m );
+		
+		QAction * act = menu.exec( QCursor::pos() );
+		if ( act ) {
+			nif->convertNiBlock( act->text(), index );
+		}
+		return index;
+	}
 };
 
 REGISTER_SPELL( spConvertBlock )
+
