@@ -1204,3 +1204,232 @@ public:
 
 REGISTER_SPELL( spFixBoneBounds )
 
+//! Mirror an armature branch.
+/*!
+ * Renames nodes, flips translations and rotations, flips meshes, flips skin data.
+ */
+class spMirrorSkeleton : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Mirror armature"); }
+	QString page() const { return Spell::tr("Skeleton"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" )
+			&& ( ( nif->get<QString>( index, "Name" ).startsWith( "Bip01 L" ) ) || ( nif->get<QString>( index, "Name" ).startsWith( "Bip01 R" ) ) );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		if ( nif->getLink( index, "Controller" ) != -1 )
+		{
+			int keyframeResponse = QMessageBox::question( 0, Spell::tr("Mirror Armature"), Spell::tr("Do you wish to flip or delete animation?"), Spell::tr("Flip"), Spell::tr("Delete"), Spell::tr("Cancel"));
+			if( keyframeResponse == 2 ) return index;
+			else if( keyframeResponse == 1 )
+			{
+				// delete blocks
+				int n = 0;
+				while ( n < nif->getBlockCount() )
+				{
+					QModelIndex iBlock = nif->getBlock( n );
+					if ( nif->itemName( iBlock ).indexOf( "NiKeyframe" ) >= 0 )
+						nif->removeNiBlock( n );
+					else
+						n++;
+				}
+			}
+		}
+		// TODO: Duplicate the branch
+		// Perhaps have the user do this?
+		
+		// Traverse nodes starting with Bip01 L/R and "flip"
+		doBones( nif, index );
+		return index;
+	}
+	
+	void doBones( NifModel * nif, const QModelIndex & index )
+	{
+		// Need correct naming scheme!
+		QString name = nif->get<QString>( index, "Name" );
+		if ( name.startsWith( "Bip01 L" ) || name.startsWith( "Bip01 R" ) )
+		{
+			Transform tlocal( nif, index );
+			
+			// rename as appropriate
+			if ( name.startsWith( "Bip01 L" ) )
+				name.replace(QString(" L"), QString(" R"));
+			else
+				name.replace(QString(" R"), QString(" L"));
+			
+			nif->set<QString>( index, "Name", name );
+			
+			// translation is a Vector3
+			// want [x,y,z] -> [x,y,-z]
+			tlocal.translation = Vector3( tlocal.translation[0], tlocal.translation[1], -tlocal.translation[2] );
+			
+			// rotation is a Matrix, want to negate Y and P components - will get to R component in SkinInstance
+			// convert to Euler, then [Y,P,R] -> [-Y,-P,R]
+			float x, y, z;
+			tlocal.rotation.toEuler( x, y, z );
+			tlocal.rotation.fromEuler( -x, -y, z );
+			
+			// Apply
+			tlocal.writeBack( nif, index );
+		}
+		
+		// traverse
+		foreach ( int link, nif->getChildLinks( nif->getBlockNumber( index ) ) )
+		{
+			QModelIndex iChild = nif->getBlock( link );
+			QString childName = nif->get<QString>( iChild, "Name" );
+			// Might as well rename children now if we can
+			if ( childName.contains( "Left " ) )
+				childName.replace(QString("Left "), QString("Right "));
+			else
+				childName.replace(QString("Right "), QString("Left "));
+			
+			nif->set<QString>( iChild, "Name", childName );
+
+			//qWarning() << "Checking child: " << iChild;
+			if ( iChild.isValid() )
+			{
+				if ( nif->itemName( iChild ) == "NiNode" )
+				{
+					// repeat
+					doBones( nif, iChild );
+				}
+				else if ( nif->inherits( iChild, "NiTriBasedGeom" ) )
+				{
+					// Scale NiTriShape vertices, flip normals
+					// Change SkinInstance bones
+					doShapes( nif, iChild );
+				}
+				else if ( nif->inherits( iChild, "NiKeyframeController" ) )
+				{
+					// Flip keyframe data, fun
+					doKeyframes( nif, iChild );
+				}
+			}
+		}
+	}
+	
+	void doShapes( NifModel * nif, const QModelIndex & index )
+	{
+		//qWarning() << "Entering doShapes";
+		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		QModelIndex iSkinInstance = nif->getBlock( nif->getLink( index, "Skin Instance" ), "NiSkinInstance" );
+		if ( iData.isValid() && iSkinInstance.isValid() )
+		{
+			// from spScaleVertices
+			QVector<Vector3> vertices = nif->getArray<Vector3>( iData, "Vertices" );
+			QMutableVectorIterator<Vector3> it( vertices );
+			while ( it.hasNext() )
+			{
+				Vector3 & v = it.next();
+				for ( int a = 0; a < 3; a++ )
+					v[a] = -v[a];
+			}
+			nif->setArray<Vector3>( iData, "Vertices", vertices );
+			
+			// fix centre Z - don't recalculate
+			Vector3 shapeCentre = nif->get<Vector3>( iData, "Center" );
+			shapeCentre = Vector3( shapeCentre[0], shapeCentre[1], -shapeCentre[2] );
+			nif->set<Vector3>( iData, "Center", shapeCentre );
+			
+			// from spFlipFace
+			QVector<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" );
+			for ( int t = 0; t < tris.count(); t++ )
+			{
+				tris[t].flip();
+			}
+			nif->setArray<Triangle>( iData, "Triangles", tris );
+			
+			// from spFlipNormals
+			QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+			for ( int n = 0; n < norms.count(); n++ )
+			{
+				norms[n] = -norms[n];
+			}
+			nif->setArray<Vector3>( iData, "Normals", norms );
+			
+			// from spFixSkeleton - get the bones from the skin data
+			// weirdness with rounding, sometimes...? probably "good enough" for 99% of cases
+			QModelIndex iSkinData = nif->getBlock( nif->getLink( iSkinInstance, "Data" ), "NiSkinData" );
+			if ( ! iSkinData.isValid() ) return;
+			QModelIndex iBones = nif->getIndex( iSkinData, "Bone List" );
+			if ( ! iBones.isValid() ) return;
+			
+			for ( int b = 0; b < nif->rowCount( iBones ); b++ )
+			{
+				QModelIndex iBone = iBones.child( b, 0 );
+				
+				Transform tlocal( nif, iBone );
+				
+				// translation is a Vector3
+				// want [x,y,z] -> [x,y,-z]
+				tlocal.translation = Vector3( tlocal.translation[0], tlocal.translation[1], -tlocal.translation[2] );
+				
+				// rotation is a Matrix, want to negate Y and P components, R=180+R
+				// convert to Euler, then [Y,P,R] -> [-Y,-P,R]
+				float x, y, z;
+				tlocal.rotation.toEuler( x, y, z );
+				tlocal.rotation.fromEuler( -x, -y, PI+z );
+				
+				// Fix offset Z
+				Vector3 offset = nif->get<Vector3>( iBone, "Bounding Sphere Offset" );
+				offset = Vector3( offset[0], offset[1], -offset[2] );
+				nif->set<Vector3>( iBone, "Bounding Sphere Offset", offset );
+				
+				// Apply
+				tlocal.writeBack( nif, iBone );
+			}
+		}
+	}
+
+	void doKeyframes( NifModel * nif, QModelIndex & index )
+	{
+		// do stuff
+		QModelIndex keyframeData = nif->getBlock( nif->getLink( index, "Data" ), "NiKeyframeData" );
+		if ( ! keyframeData.isValid() ) return;
+		QModelIndex iQuats = nif->getIndex( keyframeData, "Quaternion Keys" );
+		if ( iQuats.isValid() )
+		{
+			for ( int q = 0; q < nif->rowCount( iQuats ); q++ )
+			{
+				QModelIndex iQuat = iQuats.child( q, 0 );
+				
+				Quat value = nif->get<Quat>( iQuat, "Value" );
+				Matrix tlocal;
+				tlocal.fromQuat( value );
+				
+				float x, y, z;
+				tlocal.toEuler( x, y, z );
+				tlocal.fromEuler( -x, -y, z );
+				
+				value = tlocal.toQuat();
+				
+				nif->set<Quat>( iQuat, "Value", value );
+			}
+		}
+
+		QModelIndex iTransKeys = nif->getIndex( keyframeData, "Translations" );
+		if ( iTransKeys.isValid() )
+		{
+			iTransKeys = nif->getIndex( iTransKeys, "Keys" );
+			if ( iTransKeys.isValid() )
+			{
+				for ( int k = 0; k < nif->rowCount( iTransKeys ); k++ )
+				{
+					QModelIndex iKey = iTransKeys.child( k, 0 );
+
+					Vector3 value = nif->get<Vector3>( iKey, "Value" );
+					value = Vector3( value[0], value[1], -value[2] );
+					nif->set<Vector3>( iKey, "Value", value );
+				}
+			}
+		}
+	}
+};
+
+REGISTER_SPELL( spMirrorSkeleton )

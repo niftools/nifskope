@@ -59,6 +59,44 @@ static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIn
 	}
 }
 
+static qint32 getBlockByName( NifModel * nif, const QString & tn )
+{
+	QStringList ls = tn.split( "|" );
+	QString type = ls.value( 0 );
+	QString name = ls.value( 1 );
+	if ( type.isEmpty() || name.isEmpty() )
+		return -1;
+	for ( int b = 0; b < nif->getBlockCount(); b++ )
+	{
+		QModelIndex iBlock = nif->getBlock( b );
+		if ( nif->itemName( iBlock ) == type && nif->get<QString>( iBlock, "Name" ) == name )
+			return b;
+	}
+	return -1;
+}
+
+static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block )
+{
+	if ( ! blocks.contains( block ) ) blocks.append( block );
+	foreach ( qint32 link, nif->getChildLinks( block ) )
+		populateBlocks( blocks, nif, link );
+}
+
+static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
+{
+	QList<QPersistentModelIndex> iChildren;
+	foreach ( quint32 link, nif->getChildLinks( nif->getBlockNumber( iBlock ) ) )
+		iChildren.append( nif->getBlock( link ) );
+
+	foreach ( QPersistentModelIndex iChild, iChildren )
+		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
+			removeChildren( nif, iChild );
+
+	foreach ( QPersistentModelIndex iChild, iChildren )
+		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
+			nif->removeNiBlock( nif->getBlockNumber( iChild ) );
+}
+
 class spInsertBlock : public Spell
 {
 public:
@@ -314,7 +352,6 @@ public:
 
 REGISTER_SPELL( spCopyBlock )
 
-
 class spPasteBlock : public Spell
 {
 public:
@@ -430,6 +467,9 @@ class spCopyBranch : public Spell
 public:
 	QString name() const { return Spell::tr("Copy Branch"); }
 	QString page() const { return Spell::tr("Block"); }
+	// broken?
+	// QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_C ); }
+	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Copy ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -491,14 +531,6 @@ public:
 		}
 		return index;
 	}
-	
-	static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block )
-	{
-		if ( ! blocks.contains( block ) ) blocks.append( block );
-		foreach ( qint32 link, nif->getChildLinks( block ) )
-			populateBlocks( blocks, nif, link );
-	}
-
 };
 
 REGISTER_SPELL( spCopyBranch )
@@ -508,6 +540,9 @@ class spPasteBranch : public Spell
 public:
 	QString name() const { return Spell::tr("Paste Branch"); }
 	QString page() const { return Spell::tr("Block"); }
+	// broken?
+	//QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_V ); }
+	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Paste ); }
 	
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
@@ -601,42 +636,11 @@ public:
 		}
 		return QModelIndex();
 	}
-	
-	static qint32 getBlockByName( NifModel * nif, const QString & tn )
-	{
-		QStringList ls = tn.split( "|" );
-		QString type = ls.value( 0 );
-		QString name = ls.value( 1 );
-		if ( type.isEmpty() || name.isEmpty() )
-			return -1;
-		for ( int b = 0; b < nif->getBlockCount(); b++ )
-		{
-			QModelIndex iBlock = nif->getBlock( b );
-			if ( nif->itemName( iBlock ) == type && nif->get<QString>( iBlock, "Name" ) == name )
-				return b;
-		}
-		return -1;
-	}
 };
 
 REGISTER_SPELL( spPasteBranch )
 
-
-	static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
-	{
-		QList<QPersistentModelIndex> iChildren;
-		foreach ( quint32 link, nif->getChildLinks( nif->getBlockNumber( iBlock ) ) )
-			iChildren.append( nif->getBlock( link ) );
-		
-		foreach ( QPersistentModelIndex iChild, iChildren )
-			if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
-				removeChildren( nif, iChild );
-		
-		foreach ( QPersistentModelIndex iChild, iChildren )
-			if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
-				nif->removeNiBlock( nif->getBlockNumber( iChild ) );
-	}
-
+// majority of spRemoveBranch moved to blocks.h
 bool spRemoveBranch::isApplicable( const NifModel * nif, const QModelIndex & iBlock )
 {
 	int ix = nif->getBlockNumber( iBlock );
@@ -905,4 +909,162 @@ public:
 };
 
 REGISTER_SPELL( spConvertBlock )
+
+class spDuplicateBlock : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Duplicate"); }
+	QString page() const { return Spell::tr("Block"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		// from spCopyBlock
+		QByteArray data;
+		QBuffer buffer( & data );
+		// Opening in ReadWrite doesn't work - race condition?
+		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) )
+		{
+			// from spPasteBlock
+			if ( buffer.open( QIODevice::ReadOnly ) )
+			{
+				QModelIndex block = nif->insertNiBlock( nif->getBlockName( index ), nif->getBlockCount() );
+				nif->load( buffer, block );
+				blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), block );
+				return block;
+			}
+		}
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spDuplicateBlock )
+
+class spDuplicateBranch : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Duplicate Branch"); }
+	QString page() const { return Spell::tr("Block"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		// from spCopyBranch
+		QList<qint32> blocks;
+		populateBlocks( blocks, nif, nif->getBlockNumber( index ) );
+		
+		QMap<qint32,qint32> blockMap;
+		for ( int b = 0; b < blocks.count(); b++ )
+			blockMap.insert( blocks[b], b );
+		
+		QMap<qint32,QString> parentMap;
+		foreach ( qint32 block, blocks )
+		{
+			foreach ( qint32 link, nif->getParentLinks( block ) )
+			{
+				if ( ! blocks.contains( link ) && ! parentMap.contains( link ) )
+				{
+					QModelIndex iParent = nif->getBlock( link );
+					if ( iParent.isValid() )
+					{
+						QString name = nif->get<QString>( iParent, "Name" );
+						if ( ! name.isEmpty() )
+						{
+							parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
+							continue;
+						}
+					}
+					qWarning() << "failed to map parent link" << link << "for block" << block << nif->itemName( nif->getBlock( block ) );
+					return index;
+				}
+			}
+		}
+		
+		QByteArray data;
+		QBuffer buffer( & data );
+		if ( buffer.open( QIODevice::WriteOnly ) )
+		{
+			QDataStream ds( & buffer );
+			ds << blocks.count();
+			ds << blockMap;
+			ds << parentMap;
+			foreach ( qint32 block, blocks )
+			{
+				ds << nif->itemName( nif->getBlock( block ) );
+				if ( ! nif->save( buffer, nif->getBlock( block ) ) )
+				{
+					qWarning() << "failed to save block" << block << nif->itemName( nif->getBlock( block ) );
+					return index;
+				}
+			}
+		}
+		
+		// from spPasteBranch
+		if ( buffer.open( QIODevice::ReadOnly ) )
+		{
+			QDataStream ds( & buffer );
+			
+			int count;
+			ds >> count;
+			
+			QMap<qint32,qint32> blockMap;
+			ds >> blockMap;
+			QMutableMapIterator<qint32,qint32> ibm( blockMap );
+			while ( ibm.hasNext() )
+			{
+				ibm.next();
+				ibm.value() += nif->getBlockCount();
+			}
+			
+			QMap<qint32,QString> parentMap;
+			ds >> parentMap;
+			
+			QMapIterator<qint32, QString> ipm( parentMap );
+			while ( ipm.hasNext() )
+			{
+				ipm.next();
+				qint32 block = getBlockByName( nif, ipm.value() );
+				if ( block >= 0 )
+				{
+					blockMap.insert( ipm.key(), block );
+				}
+				else
+				{
+					qWarning() << "failed to map parent link" << ipm.value();
+					return index;
+				}
+			}
+			
+			QModelIndex iRoot;
+			
+			for ( int c = 0; c < count; c++ )
+			{
+				QString type;
+				ds >> type;
+				
+				QModelIndex block = nif->insertNiBlock( type, -1 );
+				if ( ! nif->loadAndMapLinks( buffer, block, blockMap ) )
+					return index;
+				if ( c == 0 )
+					iRoot = block;
+			}
+			
+			blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), iRoot );
+			
+			return iRoot;
+		}
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spDuplicateBranch )
 
