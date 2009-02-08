@@ -1,10 +1,12 @@
 #include "transform.h"
+#include "../config.h"
 
 #include "../widgets/nifeditors.h"
 
 #include <QApplication>
 #include <QBuffer>
 #include <QClipboard>
+#include <QCheckBox>
 #include <QDialog>
 #include <QDoubleSpinBox>
 #include <QGridLayout>
@@ -12,6 +14,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPushButton>
+#include <QSettings>
 
 /* XPM */
 static char * transform_xpm[] = {
@@ -340,12 +343,24 @@ public:
 			grid->addWidget( spn, a, 1 );
 		}
 		
+		NIFSKOPE_QSETTINGS(settings);
+		settings.beginGroup( "spells" );
+		settings.beginGroup( page() );
+		settings.beginGroup( name() );
+		
+		QCheckBox * chkNormals = new QCheckBox( Spell::tr("Scale Normals") );
+
+		chkNormals->setChecked( settings.value( "scale normals", true ).toBool() );
+		grid->addWidget( chkNormals, 3, 1 );
+		
 		QPushButton * btScale = new QPushButton( Spell::tr( "Scale" ) );
-		grid->addWidget( btScale, 3, 0, 1, 2 );
+		grid->addWidget( btScale, 4, 0, 1, 2 );
 		QObject::connect( btScale, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
 		
 		if ( dlg.exec() != QDialog::Accepted )
 			return QModelIndex();
+
+		settings.setValue( "scale normals", chkNormals->isChecked() );
 		
 		QModelIndex iData = nif->getBlock( nif->getLink( nif->getBlock( index ), "Data" ), "NiGeometryData" );
 		
@@ -359,6 +374,20 @@ public:
 				v[a] *= scale[a]->value();
 		}
 		nif->setArray<Vector3>( iData, "Vertices", vertices );
+		
+		if( chkNormals->isChecked() )
+		{
+			QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+			QMutableVectorIterator<Vector3> it( norms );
+			while ( it.hasNext() )
+			{
+				Vector3 & v = it.next();
+
+				for ( int a = 0; a < 3; a++ )
+					v[a] *= scale[a]->value();
+			}
+			nif->setArray<Vector3>( iData, "Normals", norms );
+		}
 		
 		return QModelIndex();
 	}
