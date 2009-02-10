@@ -35,6 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
+#include "niftypes.h"
+
 class QAction;
 class QFileSystemWatcher;
 
@@ -55,24 +57,41 @@ class TexCache : public QObject
 		QString filename;
 		//! The texture file path.
 		QString filepath;
-		GLuint	id;
-		GLuint	width, height, mipmaps;
-		bool	reload;
+		//! ID for use with GL texture functions
+		GLuint id;
+		//! Width of the texture
+		GLuint width;
+		//! Height of the texture
+		GLuint height;
+		//! Number of mipmaps present
+		GLuint mipmaps;
+		//! Determine whether the texture needs reloading
+		bool reload;
+		//! Format of the texture
 		QString format;
+		//! Status messages
 		QString status;
 		
+		//! Load the texture 
 		void load();
 	};
 	
 public:
+	//! Constructor
 	TexCache( QObject * parent = 0 );
+	//! Destructor
 	~TexCache();
 	
+	//! Bind a texture from filename
 	int bind( const QString & fname );
+	//! Bind a texture from pixel data
 	int bind( const QModelIndex& iSource );
 	
+	//! Find a texture based on its filename
 	static QString find( const QString & file, const QString & nifFolder );
+	//! Remove the path from a filename
 	static QString stripPath( const QString & file, const QString & nifFolder );
+	//! Checks whether the given file can be loaded
 	static bool canLoad( const QString & file );
 	
 signals:
@@ -93,6 +112,9 @@ protected:
 	
 	QString nifFolder;
 };
+
+bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords );
+float get_max_anisotropy();
 
 void initializeTextureUnits( const QGLContext * );	
 

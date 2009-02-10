@@ -44,19 +44,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Mesh;
 class PropertyList;
 
+//! Manages rendering and shaders?
 class Renderer
 {
 public:
+	//! Constructor
 	Renderer();
+	//! Destructor
 	~Renderer();
 	
+	//! Init from context?
 	static bool initialize( const QGLContext * );
+	//! Whether the shaders are available
 	static bool hasShaderSupport();
 	
+	//! Updates shaders
 	void updateShaders();
+	//! Releases shaders
 	void releaseShaders();
 	
+	//! Sets up rendering?
 	QString setupProgram( Mesh *, const QString & hint = QString() );
+	//! Stops rendering?
 	void stopProgram();
 	
 protected:

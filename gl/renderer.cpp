@@ -121,7 +121,7 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QLi
 	QString childid;
 	if ( blkid.startsWith( "HEADER/" ) )
 		return nif->getIndex( nif->getHeader(), blkid );
-
+	
 	int pos = blkid.indexOf( "/" );
 	if ( pos > 0 )
 	{
@@ -157,8 +157,8 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIn
 		return compare( val.toFloat(), (float) right.toDouble() ) ^ invert;
 	else if ( val.isFileVersion() )
 		return compare( val.toFileVersion(), right.toUInt(NULL, 0) ) ^ invert;
-
-		return false;
+	
+	return false;
 }
 
 bool Renderer::ConditionGroup::eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const
@@ -334,7 +334,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 		glLinkProgram( id );
 		
 		GLint result;
-    
+		
 		glGetShaderiv( id, GL_LINK_STATUS, & result );
 		
 		if ( result != GL_TRUE )
@@ -384,14 +384,14 @@ void Renderer::updateShaders()
 	{
 		dir.cd( ".." );
 	}
-
+	
 	if ( dir.exists( "shaders" ) )
 		dir.cd( "shaders" );
 	else if ( dir.exists( "/usr/share/nifskope/shaders" ) )
 		dir.cd( "/usr/share/nifskope/shaders" );
-
+	
 // linux does not want to load the shaders so disable them for now
-#ifdef WIN32	
+#ifdef WIN32
 	dir.setNameFilters( QStringList() << "*.vert" );
 	foreach ( QString name, dir.entryList() )
 	{
@@ -485,22 +485,20 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// texturing
 	
 	TexturingProperty * texprop = props.get< TexturingProperty >();
-   BSShaderLightingProperty * bsprop = props.get< BSShaderLightingProperty >();
-
+	BSShaderLightingProperty * bsprop = props.get< BSShaderLightingProperty >();
+	
 	int texunit = 0;
 	
 	GLint uniBaseMap = glGetUniformLocation( prog->id, "BaseMap" );
 	if ( uniBaseMap >= 0 )
 	{
-      if ( ! texprop && ! bsprop )
-         return false;
-
-      if ( ! activateTextureUnit( texunit ) )
-         return false;
-
-		if (  ( texprop && ! texprop->bind( 0 ) )
-         || ( bsprop && ! bsprop->bind( 0 ) )
-         )
+		if ( ! texprop && ! bsprop )
+			return false;
+		
+		if ( ! activateTextureUnit( texunit ) )
+			return false;
+		
+		if ( ( texprop && ! texprop->bind( 0 ) ) || ( bsprop && ! bsprop->bind( 0 ) ) )
 			return false;
 		
 		glUniform1i( uniBaseMap, texunit++ );
@@ -510,27 +508,27 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	if ( uniNormalMap >= 0 )
 	{
-      if (texprop != NULL)
-      {
-		   QString fname = texprop->fileName( 0 );
-		   if ( fname.isEmpty() )
-			   return false;
-   		
-		   int pos = fname.indexOf( "_" );
-		   if ( pos >= 0 )
-			   fname = fname.left( pos ) + "_n.dds";
-		   else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-			   fname = fname.insert( pos, "_n" );
-
-         if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
-            return false;
-      }
-      else if ( bsprop != NULL )
-      {
-         QString fname = bsprop->fileName( 1 );
-         if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 1, fname ) ) )
-            return false;
-      }
+		if (texprop != NULL)
+		{
+			QString fname = texprop->fileName( 0 );
+			if ( fname.isEmpty() )
+				return false;
+			
+			int pos = fname.indexOf( "_" );
+			if ( pos >= 0 )
+				fname = fname.left( pos ) + "_n.dds";
+			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+				fname = fname.insert( pos, "_n" );
+			
+			if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
+				return false;
+		}
+		else if ( bsprop != NULL )
+		{
+			QString fname = bsprop->fileName( 1 );
+			if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 1, fname ) ) )
+				return false;
+		}
 		
 		glUniform1i( uniNormalMap, texunit++ );
 	}
@@ -539,27 +537,27 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	if ( uniGlowMap >= 0 )
 	{
-      if (texprop != NULL)
-      {
-		   QString fname = texprop->fileName( 0 );
-		   if ( fname.isEmpty() )
+		if (texprop != NULL)
+		{
+			QString fname = texprop->fileName( 0 );
+			if ( fname.isEmpty() )
 			   return false;
-   		
-		   int pos = fname.indexOf( "_" );
-		   if ( pos >= 0 )
-			   fname = fname.left( pos ) + "_g.dds";
-		   else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-			   fname = fname.insert( pos, "_g" );
-   		
-		   if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
-			   return false;
-      }
-      else if ( bsprop != NULL )
-      {
-         QString fname = bsprop->fileName( 2 );
-         if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 2, fname ) ) )
-            return false;
-      }
+			
+			int pos = fname.indexOf( "_" );
+			if ( pos >= 0 )
+				fname = fname.left( pos ) + "_g.dds";
+			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+				fname = fname.insert( pos, "_g" );
+			
+			if ( ! activateTextureUnit( texunit ) || ! texprop->bind( 0, fname ) )
+				return false;
+		}
+		else if ( bsprop != NULL )
+		{
+			QString fname = bsprop->fileName( 2 );
+			if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 2, fname ) ) )
+				return false;
+		}
 		glUniform1i( uniGlowMap, texunit++ );
 	}
 	
@@ -629,7 +627,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// setup material
 	
 	glProperty( props.get< MaterialProperty >(), props.get< SpecularProperty >() );
-
+	
 	// setup z buffer
 	
 	glProperty( props.get< ZBufferProperty >() );
@@ -641,7 +639,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// wireframe ?
 	
 	glProperty( props.get< WireframeProperty >() );
-
+	
 	return true;
 }
 
@@ -662,7 +660,7 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 	// setup material
 	
 	glProperty( props.get< MaterialProperty >(), props.get< SpecularProperty >() );
-
+	
 	// setup texturing
 	
 	//glProperty( props.get< TexturingProperty >() );
@@ -678,14 +676,14 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 	// wireframe ?
 	
 	glProperty( props.get< WireframeProperty >() );
-
+	
 	// normalize
 	
 	if ( glIsEnabled( GL_NORMAL_ARRAY ) )
 		glEnable( GL_NORMALIZE );
 	else
 		glDisable( GL_NORMALIZE );
-
+	
 	// setup texturing
 	
 	if ( TexturingProperty * texprop = props.get< TexturingProperty >() )
@@ -814,30 +812,30 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 	{	// old single texture property
 		texprop->bind( mesh->coords );
 	}
-   else if ( BSShaderLightingProperty * texprop = props.get< BSShaderLightingProperty >() )
-   {	// standard multi texturing property
-      int stage = 0;
-
-      if ( texprop->bind( 0, mesh->coords ) ) //, mesh->coords, stage ) )
-      {	// base
-         stage++;
-         glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
-
-         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
-
-         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
-         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE );
-         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA );
-
-         glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
-      }
-   }
+	else if ( BSShaderLightingProperty * texprop = props.get< BSShaderLightingProperty >() )
+	{	// standard multi texturing property
+		int stage = 0;
+		
+		if ( texprop->bind( 0, mesh->coords ) ) //, mesh->coords, stage ) )
+		{	// base
+			stage++;
+			glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE );
+			
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR );
+			
+			glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA );
+			glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_TEXTURE );
+			glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA );
+			
+			glTexEnvf( GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0 );
+		}
+	}
 	else
 	{
 		glDisable( GL_TEXTURE_2D );

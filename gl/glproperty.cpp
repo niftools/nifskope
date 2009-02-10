@@ -313,6 +313,68 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 	}
 }
 
+bool TexturingProperty::bind( int id, const QString & fname )
+{
+	GLuint mipmaps = 0;
+	if ( id >= 0 && id <= 7 )
+	{
+		if ( !fname.isEmpty() )
+			mipmaps = scene->bindTexture(  fname );
+		else 
+			mipmaps = scene->bindTexture( textures[ id ].iSource );
+		if (mipmaps == 0)
+			return false;
+		
+		if ( get_max_anisotropy() > 0 )
+		{
+			if ( Options::antialias() )
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
+			else
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0 );
+		}
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textures[id].wrapT );
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		if ( textures[id].hasTransform )
+		{
+			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
+			glRotatef( textures[id].rotation, 0, 0, 1 );
+			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
+			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
+			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );
+		}
+		glMatrixMode( GL_MODELVIEW );
+		return true;
+	}
+	else
+		return false;
+}
+
+bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords )
+{
+	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) )
+	{
+		glEnable( GL_TEXTURE_2D );
+		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ textures[id].coordset ].data() );
+		return true;
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
+		return false;
+	}
+}
+
+bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords, int stage )
+{
+	return ( activateTextureUnit( stage ) && bind( id, texcoords ) );
+}
+
 QString TexturingProperty::fileName( int id ) const
 {
 	if ( id >= 0 && id <= 7 )
@@ -491,6 +553,39 @@ void TextureProperty::update( const NifModel * nif, const QModelIndex & property
 	if ( iBlock.isValid() && iBlock == property )
 	{
 		iImage = nif->getBlock( nif->getLink( iBlock, "Image" ), "NiImage" );
+	}
+}
+
+bool TextureProperty::bind()
+{
+	if ( GLuint mipmaps = scene->bindTexture( fileName() ) )
+	{
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+		glMatrixMode( GL_MODELVIEW );
+		return true;
+	}
+	return false;
+}
+
+bool TextureProperty::bind( const QList< QVector< Vector2 > > & texcoords )
+{
+	if ( checkSet( 0, texcoords ) && bind() )
+	{
+		glEnable( GL_TEXTURE_2D );
+		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
+		return true;
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
+		return false;
 	}
 }
 
@@ -830,6 +925,51 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
    }
 }
 
+void glProperty( BSShaderLightingProperty * p )
+{
+   if ( p && Options::texturing() && p->bind( 0 ) )
+   {
+      glEnable( GL_TEXTURE_2D );
+   }
+}
+
+bool BSShaderLightingProperty::bind( int id, const QString & fname )
+{
+   GLuint mipmaps = 0;
+   if ( !fname.isEmpty() )
+      mipmaps = scene->bindTexture(  fname );
+   else 
+      mipmaps = scene->bindTexture( this->fileName(id) );
+   if (mipmaps == 0)
+      return false;
+
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+   glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+   glMatrixMode( GL_TEXTURE );
+   glLoadIdentity();
+   glMatrixMode( GL_MODELVIEW );
+   return true;
+}
+
+bool BSShaderLightingProperty::bind( int id, const QList< QVector<Vector2> > & texcoords )
+{
+   if ( checkSet( 0, texcoords ) && bind(id) )
+   {
+      glEnable( GL_TEXTURE_2D );
+      glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+      glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
+      return true;
+   }
+   else
+   {
+      glDisable( GL_TEXTURE_2D );
+      return false;
+   }
+}
+
 QString BSShaderLightingProperty::fileName( int id ) const
 {
    const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
@@ -841,14 +981,6 @@ QString BSShaderLightingProperty::fileName( int id ) const
          return nif->get<QString>( iTextures.child( id, 0 ) );
    }
    return QString();
-}
-
-void glProperty( BSShaderLightingProperty * p )
-{
-   if ( p && Options::texturing() && p->bind( 0 ) )
-   {
-      glEnable( GL_TEXTURE_2D );
-   }
 }
 
 int BSShaderLightingProperty::getId( const QString & id )
