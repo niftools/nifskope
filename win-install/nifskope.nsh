@@ -160,20 +160,40 @@ KfaAssocNoBackup:
   ; write out the file association details for NetImmerseFile
   WriteRegStr HKCR ".nif" "" "NetImmerseFile"
   WriteRegStr HKCR ".nifcache" "" "NetImmerseFile"
-  WriteRegStr HKCR ".kf" "" "NetImmerseFile"
-  WriteRegStr HKCR ".kfa" "" "NetImmerseFile"
-  WriteRegStr HKCR ".kfm" "" "NetImmerseFile"
-  ReadRegStr $0 HKCR "NetImmerseFile" ""
-  StrCmp $0 "" 0 NifAssocSkip ; if our association is already defined, skip it
+  WriteRegStr HKCR ".kf" "" "NetImmerseAnim"
+  WriteRegStr HKCR ".kfa" "" "NetImmerseAnim"
+  WriteRegStr HKCR ".kfm" "" "NetImmerseAnimMgr"
   
-    WriteRegStr HKCR "NetImmerseFile" "" "NetImmerse/Gamebryo File"
-    WriteRegStr HKCR "NetImmerseFile\shell" "" "open"
-    WriteRegStr HKCR "NetImmerseFile\DefaultIcon" "" "$INSTDIR\nif_file.ico"
+  ReadRegStr $0 HKCR "NetImmerseFile" ""
+  StrCmp $0 "" 0 NifModelSkip ; if our association is already defined, skip it
+  WriteRegStr HKCR "NetImmerseFile" "" "NetImmerse/Gamebryo Model File"
+  WriteRegStr HKCR "NetImmerseFile\shell" "" "open"
+  WriteRegStr HKCR "NetImmerseFile\DefaultIcon" "" "$INSTDIR\nif_file.ico"
 
-NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we must write these
+NifModelSkip: ; make sure we write the correct install path to NifSkope, so we must write these
   WriteRegStr HKCR "NetImmerseFile\shell\open\command" "" '$INSTDIR\NifSkope.exe "%1"'
   WriteRegStr HKCR "NetImmerseFile\shell\edit" "" "Edit NIF File"
   WriteRegStr HKCR "NetImmerseFile\shell\edit\command" "" '$INSTDIR\NifSkope.exe "%1"'
+  ReadRegStr $0 HKCR "NetImmerseAnim" ""
+  StrCmp $0 "" 0 NifAnimSkip ; if our association is already defined, skip it
+  WriteRegStr HKCR "NetImmerseAnim" "" "NetImmerse/Gamebryo Animation File"
+  WriteRegStr HKCR "NetImmerseAnim\shell" "" "open"
+  WriteRegStr HKCR "NetImmerseAnim\DefaultIcon" "" "$INSTDIR\nif_file.ico"
+
+NifAnimSkip: ; make sure we write the correct install path to NifSkope, so we must write these
+  WriteRegStr HKCR "NetImmerseAnim\shell\open\command" "" '$INSTDIR\NifSkope.exe "%1"'
+  WriteRegStr HKCR "NetImmerseAnim\shell\edit" "" "Edit KF File"
+  WriteRegStr HKCR "NetImmerseAnim\shell\edit\command" "" '$INSTDIR\NifSkope.exe "%1"'
+  ReadRegStr $0 HKCR "NetImmerseAnimMgr" ""
+  StrCmp $0 "" 0 NifAssocSkip ; if our association is already defined, skip it
+  WriteRegStr HKCR "NetImmerseAnimMgr" "" "NetImmerse/Gamebryo Animation Manager File"
+  WriteRegStr HKCR "NetImmerseAnimMgr\shell" "" "open"
+  WriteRegStr HKCR "NetImmerseAnimMgr\DefaultIcon" "" "$INSTDIR\nif_file.ico"
+  
+NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we must write these
+  WriteRegStr HKCR "NetImmerseAnimMgr\shell\open\command" "" '$INSTDIR\NifSkope.exe "%1"'
+  WriteRegStr HKCR "NetImmerseAnimMgr\shell\edit" "" "Edit KFM File"
+  WriteRegStr HKCR "NetImmerseAnimMgr\shell\edit\command" "" '$INSTDIR\NifSkope.exe "%1"'
 
   ; Cleanup old dll files
   Delete $INSTDIR\mingwm10.dll
