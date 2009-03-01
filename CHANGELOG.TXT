@@ -3,6 +3,10 @@
 This is version 1.0.19 of NifSkope.
 
 changes since 1.0.18:
+ * shortcut keys for "Copy Branch" and "Paste Branch"
+ * new "Duplicate" and "Duplicate Branch" spells
+ * new "Flip Normals" spell and option to scale normals in "Scale Vertices"
+ * new "Mirror armature" spell for Morrowind
 
 changes since 1.0.17:
  * fixed corruption of BSShaderNoLightingProperty file names when using texture chooser

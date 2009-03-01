@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtCore/QtCore> // extra include to avoid compile error
 #include <QtGui/QtGui>   // dito
 #include "GLee.h"
+#include "gltexloaders.h"
 #include <QtOpenGL>
 #include "dds/dds_api.h"
 #include "dds/DirectDrawSurface.h"
@@ -103,27 +104,32 @@ int generateMipMaps( int m )
 	return m;
 }
 
+//! Converts RLE-encoded data into pixel data.
+/*!
+ * TGA in particular uses the PackBits format described at
+ * http://en.wikipedia.org/wiki/PackBits and in the TGA spec.
+ */
 bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 {
 	QByteArray data = f.readAll();
 	
-	int c = 0;
-	int o = 0;
+	int c = 0; // total pixel count
+	int o = 0; // data offset
 	
-	quint8 rl;
+	quint8 rl; // runlength - 1
 	while ( c < w * h )
 	{
 		rl = data[o++];
-		if ( rl & 0x80 )
+		if ( rl & 0x80 ) // if RLE packet
 		{
-			quint8 px[4];
+			quint8 px[bytespp]; // pixel data in this packet
 			for ( int b = 0; b < bytespp; b++ )
 				px[b] = data[o++];
-			rl &= 0x7f;
+			rl &= 0x7f; // strip RLE bit
 			do
 			{
 				for ( int b = 0; b < bytespp; b++ )
-					*pixel++ = px[b];
+					*pixel++ = px[b]; // expand pixel data (rl+1) times
 			}
 			while ( ++c < w*h && rl-- > 0  );
 		}
@@ -132,7 +138,7 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 			do
 			{
 				for ( int b = 0; b < bytespp; b++ )
-					*pixel++ = data[o++];
+					*pixel++ = data[o++]; // write (rl+1) raw pixels
 			}
 			while (  ++c < w*h && rl-- > 0 );
 		}
@@ -671,6 +677,8 @@ GLuint texLoadDXT( DDSFormat &hdr, const quint8 *pixels, uint size )
 
 
 // TGA constants
+// Note that TGA_X_RLE = TGA_X + 8
+// i.e. RLE = hdr[2] & 0x8
 
 #define TGA_COLORMAP     1
 #define TGA_COLOR        2
@@ -682,6 +690,7 @@ GLuint texLoadDXT( DDSFormat &hdr, const quint8 *pixels, uint size )
 //! Load a TGA texture.
 GLuint texLoadTGA( QIODevice & f, QString & texformat )
 {
+	// see http://en.wikipedia.org/wiki/Truevision_TGA for a lot of this
 	texformat = "TGA";
 	
 	// read in tga header
@@ -690,6 +699,7 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 	if ( readBytes != 18 )
 		throw QString( "unexpected EOF" );
 	
+	// ID tag, if present
 	if ( hdr[0] ) f.read( hdr[0] );
 	
 	quint8 depth = hdr[16];
