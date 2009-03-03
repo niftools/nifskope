@@ -35,6 +35,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 #include "options.h"
 
+bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
+{
+	return s >= 0 && s < texcoords.count() && texcoords[s].count();
+}
+
 Property * Property::create( Scene * scene, const NifModel * nif, const QModelIndex & index )
 {
 	Property * property = 0;
@@ -57,12 +62,12 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 		property = new VertexColorProperty( scene, index );
 	else if ( nif->isNiBlock( index, "NiStencilProperty" ) )
 		property = new StencilProperty( scene, index );
-   else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) )
-      property = new BSShaderLightingProperty( scene, index );
-   else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) )
-      property = new BSShaderLightingProperty( scene, index );
-   else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) )
-      property = new BSShaderLightingProperty( scene, index );
+	else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) )
+		property = new BSShaderLightingProperty( scene, index );
+	else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) )
+		property = new BSShaderLightingProperty( scene, index );
+	else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) )
+		property = new BSShaderLightingProperty( scene, index );
 	
 	if ( property )
 		property->update( nif, index );
@@ -120,10 +125,10 @@ void PropertyList::del( Property * p )
 {
 	if ( ! p )	return;
 	
-    QHash<Property::Type, Property*>::iterator i = properties.find( p->type() );
-    while ( i != properties.end() && i.key() == p->type() )
+	QHash<Property::Type, Property*>::iterator i = properties.find( p->type() );
+	while ( i != properties.end() && i.key() == p->type() )
 	{
-        if ( i.value() == p )
+		if ( i.value() == p )
 		{
 			i = properties.erase( i );
 			if ( --p->ref <= 0 )
@@ -131,7 +136,7 @@ void PropertyList::del( Property * p )
 		}
 		else
 			++i;
-    }
+	}
 }
 
 Property * PropertyList::get( const QModelIndex & index ) const
@@ -256,6 +261,10 @@ void glProperty( ZBufferProperty * p )
 		glDepthFunc( GL_LEQUAL );
 	}
 }
+
+/*
+	TexturingProperty
+*/
 
 void TexturingProperty::update( const NifModel * nif, const QModelIndex & property )
 {
@@ -419,7 +428,7 @@ public:
 		
 		target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiSourceTexture" );
 	}
-
+	
 	bool update( const NifModel * nif, const QModelIndex & index )
 	{
 		if ( Controller::update( nif, index ) )
@@ -545,6 +554,9 @@ void glProperty( TexturingProperty * p )
 	}
 }
 
+/*
+	TextureProperty
+*/
 
 void TextureProperty::update( const NifModel * nif, const QModelIndex & property )
 {
@@ -605,6 +617,9 @@ void glProperty( TextureProperty * p )
 	}
 }
 
+/*
+	MaterialProperty
+*/
 
 void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 {
@@ -616,31 +631,31 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 		if ( alpha < 0.0 ) alpha = 0.0;
 		if ( alpha > 1.0 ) alpha = 1.0;
 		
-      ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
-      diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
-      specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
-      emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
+		ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
+		diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
+		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
+		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
 		
 		shininess = nif->get<float>( index, "Glossiness" );
 	}
-
-   // special case to force refresh of materials
-   bool overrideMaterials = Options::overrideMaterials();
-   if ( overridden && !overrideMaterials && iBlock.isValid() )
-   {
-      ambient = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
-      diffuse = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
-      specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
-      emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
-   } 
-   else if ( overrideMaterials  )
-   {
-      ambient = Color4( Options::overrideAmbient() );
-      diffuse = Color4( Options::overrideDiffuse() );
-      specular = Color4( Options::overrideSpecular() );
-      emissive = Color4( Options::overrideEmissive() );
-   }
-   overridden = overrideMaterials;
+	
+	// special case to force refresh of materials
+	bool overrideMaterials = Options::overrideMaterials();
+	if ( overridden && !overrideMaterials && iBlock.isValid() )
+	{
+		ambient = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
+		diffuse = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
+		specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
+		emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
+	} 
+	else if ( overrideMaterials  )
+	{
+		ambient = Color4( Options::overrideAmbient() );
+		diffuse = Color4( Options::overrideDiffuse() );
+		specular = Color4( Options::overrideSpecular() );
+		emissive = Color4( Options::overrideEmissive() );
+	}
+	overridden = overrideMaterials;
 
 }
 
@@ -910,77 +925,76 @@ void glProperty( StencilProperty * p )
 	}
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-
-
+/*
+	BSShaderLightingProperty
+*/
 
 void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex & property )
 {
-   Property::update( nif, property );
+	Property::update( nif, property );
 
-   if ( iBlock.isValid() && iBlock == property )
-   {
-      iTextureSet = nif->getBlock( nif->getLink( iBlock, "Texture Set" ), "BSShaderTextureSet" );
-   }
+	if ( iBlock.isValid() && iBlock == property )
+	{
+		iTextureSet = nif->getBlock( nif->getLink( iBlock, "Texture Set" ), "BSShaderTextureSet" );
+	}
 }
 
 void glProperty( BSShaderLightingProperty * p )
 {
-   if ( p && Options::texturing() && p->bind( 0 ) )
-   {
-      glEnable( GL_TEXTURE_2D );
-   }
+	if ( p && Options::texturing() && p->bind( 0 ) )
+	{
+		glEnable( GL_TEXTURE_2D );
+	}
 }
 
 bool BSShaderLightingProperty::bind( int id, const QString & fname )
 {
-   GLuint mipmaps = 0;
-   if ( !fname.isEmpty() )
-      mipmaps = scene->bindTexture(  fname );
-   else 
-      mipmaps = scene->bindTexture( this->fileName(id) );
-   if (mipmaps == 0)
-      return false;
+	GLuint mipmaps = 0;
+	if ( !fname.isEmpty() )
+		mipmaps = scene->bindTexture(  fname );
+	else 
+		mipmaps = scene->bindTexture( this->fileName(id) );
+	if (mipmaps == 0)
+		return false;
 
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
-   glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-   glMatrixMode( GL_TEXTURE );
-   glLoadIdentity();
-   glMatrixMode( GL_MODELVIEW );
-   return true;
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+	glMatrixMode( GL_TEXTURE );
+	glLoadIdentity();
+	glMatrixMode( GL_MODELVIEW );
+	return true;
 }
 
 bool BSShaderLightingProperty::bind( int id, const QList< QVector<Vector2> > & texcoords )
 {
-   if ( checkSet( 0, texcoords ) && bind(id) )
-   {
-      glEnable( GL_TEXTURE_2D );
-      glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-      glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
-      return true;
-   }
-   else
-   {
-      glDisable( GL_TEXTURE_2D );
-      return false;
-   }
+	if ( checkSet( 0, texcoords ) && bind(id) )
+	{
+		glEnable( GL_TEXTURE_2D );
+		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
+		return true;
+	}
+	else
+	{
+		glDisable( GL_TEXTURE_2D );
+		return false;
+	}
 }
 
 QString BSShaderLightingProperty::fileName( int id ) const
 {
-   const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
-   if ( nif && iTextureSet.isValid() )
-   {
-      int nTextures = nif->get<int>( iTextureSet, "Num Textures" );
-      QModelIndex iTextures = nif->getIndex( iTextureSet, "Textures" );
-      if (id >= 0 && id < nTextures)
-         return nif->get<QString>( iTextures.child( id, 0 ) );
-   }
-   return QString();
+	const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
+	if ( nif && iTextureSet.isValid() )
+	{
+		int nTextures = nif->get<int>( iTextureSet, "Num Textures" );
+		QModelIndex iTextures = nif->getIndex( iTextureSet, "Textures" );
+		if (id >= 0 && id < nTextures)
+			return nif->get<QString>( iTextures.child( id, 0 ) );
+	}
+	return QString();
 }
 
 int BSShaderLightingProperty::getId( const QString & id )

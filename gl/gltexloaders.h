@@ -56,7 +56,7 @@ extern bool texLoad( const QString & filepath, QString & format, GLuint & width,
 * The parameters format, width, height and mipmaps will be filled with information about
 * the loaded texture.
 *
-* \param iPixelData Reference to pixel data block
+* \param iData Reference to pixel data block
 * \param format Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
 * \param width Contains the texture width on successful load.
 * \param height Contains the texture height on successful load.

@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltex.h"
 #include "options.h"
 
+//! \file glscene.cpp Scene management
 
 Scene::Scene( TexCache * texcache )
 {

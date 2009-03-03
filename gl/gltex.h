@@ -113,7 +113,6 @@ protected:
 	QString nifFolder;
 };
 
-bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords );
 float get_max_anisotropy();
 
 void initializeTextureUnits( const QGLContext * );	

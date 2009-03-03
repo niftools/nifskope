@@ -165,7 +165,10 @@ void UVWidget::initializeGL()
 
 	qglClearColor( Options::bgColor() );
 
-	bindTexture( texfile );
+	if( !texfile.isEmpty() )
+		bindTexture( texfile );
+	else
+		bindTexture( texsource );
 	
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 2, GL_SHORT, 0, vertArray );
@@ -476,7 +479,7 @@ QVector<int> UVWidget::indices( const QRegion & region ) const
 bool UVWidget::bindTexture( const QString & filename )
 {
 	GLuint mipmaps = 0;
-	GLfloat max_anisotropy = 0.0f;
+	GLfloat max_anisotropy = get_max_anisotropy(); // init from gltex
 
 	QString extensions( (const char *) glGetString( GL_EXTENSIONS ) );
 	
@@ -510,8 +513,46 @@ bool UVWidget::bindTexture( const QString & filename )
 	}
 	
 	return false;
- }
+}
 
+bool UVWidget::bindTexture( const QModelIndex & iSource )
+{
+	GLuint mipmaps = 0;
+	GLfloat max_anisotropy = get_max_anisotropy(); // init from gltex
+
+	QString extensions( (const char *) glGetString( GL_EXTENSIONS ) );
+	
+	if ( extensions.contains( "GL_EXT_texture_filter_anisotropic" ) )
+	{
+		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, & max_anisotropy );
+		//qWarning() << "maximum anisotropy" << max_anisotropy;
+	}
+
+	if ( mipmaps = textures->bind( iSource ) )
+	{
+		if ( max_anisotropy > 0.0f )
+		{
+			if ( Options::antialias() )
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
+			else
+				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f );
+		}
+
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+		// TODO: Add support for non-square textures
+
+		glMatrixMode( GL_TEXTURE );
+		glLoadIdentity();
+
+		glMatrixMode( GL_MODELVIEW );
+		return true;
+	}
+	
+	return false;
+ }
 
 
 QSize UVWidget::sizeHint() const
@@ -802,40 +843,45 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 				QModelIndex iTexSource = nif->getBlock( nif->getLink( iBaseTex, "Source" ) );
 				if( iTexSource.isValid() )
 				{
-					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					texsource = iTexSource;
 					return true;
 				}
 			}
 		}
 		else 
-      {
+		{
 			iTexProp = nif->getBlock( l, "NiTextureProperty" );
 			if( iTexProp.isValid() )
 			{
 				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Image" ) );
 				if( iTexSource.isValid() )
 				{
-					texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					texsource = iTexSource;
 					return true;
 				}
 			}
-         else
-         {
-            iTexProp = nif->getBlock( l, "BSShaderPPLightingProperty" );
-            if( iTexProp.isValid() )
-            {
-               QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );
-               if( iTexSource.isValid() )
-               {
-                  QModelIndex textures = nif->getIndex(iTexSource, "Textures");
-                  if (textures.isValid())
-                  {
-                     texfile = TexCache::find( nif->get<QString>( textures.child(0, 0)) , nif->getFolder() );
-                     return true;   
-                  }
-               }
-            }
-         }
+			else
+			{
+				iTexProp = nif->getBlock( l, "BSShaderPPLightingProperty" );
+				if( iTexProp.isValid() )
+				{
+					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );
+					if( iTexSource.isValid() )
+					{
+						// Assume that a FO3 mesh never has embedded textures...
+						//texsource = iTexSource;
+						//return true;
+						QModelIndex textures = nif->getIndex(iTexSource, "Textures");
+						if (textures.isValid())
+						{
+							texfile = TexCache::find( nif->get<QString>( textures.child(0, 0)) , nif->getFolder() );
+							return true;   
+						}
+					}
+				}
+			}
 		}
 	}
 

@@ -44,8 +44,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
-
-
 #include "glscene.h"
 #include "gltex.h"
 #include "gltexloaders.h"
@@ -54,14 +52,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "fsengine/fsengine.h"
 #include <GL/glext.h>
 
+//! \file gltex.cpp TexCache management
+
+//! Number of texture units
 GLint num_texture_units = 0;
+//! Maximum anisotropy
 float max_anisotropy = 0;
 
-bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
-{
-	return s >= 0 && s < texcoords.count() && texcoords[s].count();
-}
-
+//! Getter function for glProperty etc.
 float get_max_anisotropy()
 {
 	return max_anisotropy;
@@ -82,15 +80,15 @@ void initializeTextureUnits( const QGLContext * context )
 
 	if ( GLEE_ARB_multitexture )
 	{
-    glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
-    if ( num_texture_units < 1 )
-      num_texture_units = 1;
-		  //qWarning() << "texture units" << num_texture_units;
+		glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
+		if ( num_texture_units < 1 )
+			num_texture_units = 1;
+		//qWarning() << "texture units" << num_texture_units;
 	}
 	else
 	{
-    qWarning( "multitexturing not supported" );
-    num_texture_units = 1;
+		qWarning( "multitexturing not supported" );
+		num_texture_units = 1;
 	}
 	
 	if ( GLEE_EXT_texture_filter_anisotropic )
@@ -107,16 +105,16 @@ bool activateTextureUnit( int stage )
 	
 	if ( stage < num_texture_units )
 	{
-    if (GLEE_ARB_texture_compression )
-    {
-      glActiveTexture( GL_TEXTURE0 + stage );
-      glClientActiveTexture( GL_TEXTURE0 + stage );	
-      return true;
-    }
-    else
-      qWarning( "texture compression not supported" );
-  }
-  return false;
+		if (GLEE_ARB_texture_compression )
+		{
+			glActiveTexture( GL_TEXTURE0 + stage );
+			glClientActiveTexture( GL_TEXTURE0 + stage );	
+			return true;
+		}
+		else
+			qWarning( "texture compression not supported" );
+	}
+	return false;
 }
 
 void resetTextureUnits()

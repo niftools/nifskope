@@ -39,6 +39,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "dds/DirectDrawSurface.h"
 #include "nifmodel.h"
 
+/*! \file gltexloaders.cpp
+ * \brief Texture loading functions.
+ *
+ * Can load textures from:
+ * - filename
+ * - pixel data
+ *
+ * Supported formats:
+ * - DDS
+ * - TGA
+ * - BMP
+ * - NIF
+ *
+ */
+
 //! Check whether a number is a power of two.
 bool isPowerOfTwo( unsigned int x )
 {

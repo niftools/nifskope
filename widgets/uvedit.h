@@ -114,12 +114,14 @@ private:
 
 	TexCache * textures;
 	QString texfile;
+	QModelIndex texsource;
 
 	void drawTexCoords();
 	
 	void setupViewport( int width, int height );
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
+	bool bindTexture( const QModelIndex & iSource );
 
 	QVector<int> indices( const QPoint & p ) const;
 	QVector<int> indices( const QRegion & r ) const;
