@@ -1505,7 +1505,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	if ( !header || !load( header, stream, true ) )
 	{
-		msg( Message() << tr("failed to load file header (version %1)").arg(version) );
+		msg( Message() << tr("failed to load file header (version %1, %2)").arg(version, 0, 16).arg(version2string(version)));
 		return false;
 	}
 	
