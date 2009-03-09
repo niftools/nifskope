@@ -529,9 +529,11 @@ bool NifValue::fromString( const QString & s )
 		case tBlockTypeIndex:
 		case tShort:
 			val.u32 = 0;
-			val.u16 = s.toUInt( &ok, 0 );
+			val.u16 = s.toShort( &ok, 0 );
 			return ok;
 		case tInt:
+			val.i32 = s.toInt( &ok, 0 );
+			return ok;
 		case tUInt:
 			val.u32 = s.toUInt( &ok, 0 );
 			return ok;
@@ -777,6 +779,7 @@ void NifOStream::init()
 
 bool NifIStream::read( NifValue & val )
 {
+	int maxLength = 0x4000;
 	switch ( val.type() )
 	{
 		case NifValue::tBool:
@@ -841,7 +844,7 @@ bool NifIStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
+			if ( len > maxLength || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			//string.replace( "\r", "\\r" );
@@ -862,7 +865,7 @@ bool NifIStream::read( NifValue & val )
 		{
 			int len;
 			device->read( (char *) &len, 4 );
-			if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
+			if ( len > maxLength || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			*static_cast<QString*>( val.val.data ) = QString( string );
@@ -951,7 +954,7 @@ bool NifIStream::read( NifValue & val )
 
 				int len;
 				device->read( (char *) &len, 4 );
-				if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
+				if ( len > maxLength || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
 				QByteArray string = device->read( len );
 				if ( string.size() != len ) return false;
 				//string.replace( "\r", "\\r" );
@@ -973,7 +976,7 @@ bool NifIStream::read( NifValue & val )
 
 				int len;
 				device->read( (char *) &len, 4 );
-				if ( len > 8192 || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
+				if ( len > maxLength || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
 				QByteArray string = device->read( len );
 				if ( string.size() != len ) return false;
 				*static_cast<QString*>( val.val.data ) = QString( string );
