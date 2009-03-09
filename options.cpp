@@ -570,7 +570,7 @@ void Options::save()
 		<< "texture folder"	<< "bg color" << "cull nodes by name" << "draw axis" << "draw furniture"
 		<< "draw havok" << "draw hidden" << "draw nodes" << "draw only textured meshes" << "draw stats"
 		<< "enable blending" << "enable shading" << "enable textures" << "highlight meshes" << "hl color"
-		<< "rotate" )
+		<< "rotate" << "hide condition zero" )
 	{
 		if ( cfg.contains( key ) )
 			cfg.remove( key );
