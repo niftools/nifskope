@@ -17,7 +17,7 @@ public:
 	
 	enum FlagType
 	{
-		Alpha, Controller, Node, RigidBody, Shape, ZBuffer, BSX, None
+		Alpha, Billboard, Controller, Node, RigidBody, Shape, ZBuffer, BSX, None
 	};
 	
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
@@ -50,6 +50,8 @@ public:
 			QString name = nif->itemName( index.parent() );
 			if ( name == "NiAlphaProperty" )
 				return Alpha;
+			else if ( name == "NiBillboardNode" )
+				return Billboard;
 			else if ( nif->inherits( name, "NiTimeController" ) )
 				return Controller;
 			else if ( name == "NiNode" )
@@ -79,6 +81,9 @@ public:
 		{
 			case Alpha:
 				alphaFlags( nif, iFlags );
+				break;
+			case Billboard:
+				billboardFlags( nif, iFlags);
 				break;
 			case Controller:
 				controllerFlags( nif, iFlags );
@@ -350,6 +355,47 @@ public:
 				flags = flags & ( ~ ( 1 << x ) ) | ( chk->isChecked() ? 1 << x : 0 );
 				x++;
 			}
+			nif->set<int>( index, flags );
+		}
+	}
+
+	void billboardFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		if( ! flags ) flags = 0x8;
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkHidden = dlgCheck( vbox, Spell::tr("Hidden") );
+		chkHidden->setChecked( flags & 1 );
+		
+		QStringList collideModes = QStringList()
+			<< Spell::tr("None") // 0
+			<< Spell::tr("Triangles") // 2
+			<< Spell::tr("Bounding Box") // 4
+			<< Spell::tr("Continue"); // 6
+		QStringList billboardModes = QStringList()
+			<< Spell::tr("Always Face Camera") // 0
+			<< Spell::tr("Rotate About Up") // 32
+			<< Spell::tr("Rigid Face Camera") // 64
+			<< Spell::tr("Always Face Center"); // 96
+		
+		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr("Collision Detection"), collideModes );
+		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
+
+		QComboBox * cmbMode = dlgCombo( vbox, Spell::tr("Billboard Mode"), billboardModes );
+		cmbMode->setCurrentIndex( flags >> 5 & 3 );
+
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 1 : 0 );
+			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1);
+			flags = flags & 0xff9f | ( cmbMode->currentIndex() << 5 );
+			flags = flags & 0xfff7 | 8; // seems to always be set but has no known effect
 			nif->set<int>( index, flags );
 		}
 	}
