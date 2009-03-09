@@ -249,7 +249,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "NiLight" ) )
+			if ( nif->inherits( id, "NiDynamicEffect" ) )
 				menu.addAction( id );
 		
 		QAction * act = menu.exec( QCursor::pos() );
@@ -259,6 +259,18 @@ public:
 			QModelIndex iLight = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 			addLink( nif, iParent, "Children", nif->getBlockNumber( iLight ) );
 			addLink( nif, iParent, "Effects", nif->getBlockNumber( iLight ) );
+
+			if ( nif->checkVersion(0, 0x04000002) ) {
+				nif->set<int>( iLight, "Num Affected Node List Pointers", 1 );
+				nif->updateArray( iLight, "Affected Node List Pointers" );
+			}
+
+			if ( act->text() == "NiTextureEffect" ) {
+				nif->set<int>( iLight, "Flags", 4 );
+				QModelIndex iSrcTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( iLight ) + 1 );
+				nif->setLink( iLight, "Source Texture", nif->getBlockNumber( iSrcTex ) );
+			}
+			
 			return iLight;
 		}
 		else
@@ -467,8 +479,6 @@ class spCopyBranch : public Spell
 public:
 	QString name() const { return Spell::tr("Copy Branch"); }
 	QString page() const { return Spell::tr("Block"); }
-	// broken?
-	// QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_C ); }
 	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Copy ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -540,8 +550,7 @@ class spPasteBranch : public Spell
 public:
 	QString name() const { return Spell::tr("Paste Branch"); }
 	QString page() const { return Spell::tr("Block"); }
-	// broken?
-	//QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_V ); }
+	// Doesn't work unless the menu entry is unique
 	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Paste ); }
 	
 	QString acceptFormat( const QString & format, const NifModel * nif )
@@ -559,7 +568,7 @@ public:
 		if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
 			return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime )
+		if ( index.isValid() && mime )
 			foreach ( QString form, mime->formats() )
 				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
 					return true;
