@@ -1,6 +1,5 @@
 #include "../spellbook.h"
 
-
 class spUpdateArray : public Spell
 {
 public:
@@ -134,3 +133,43 @@ public:
 };
 
 REGISTER_SPELL( spFileOffset )
+
+class spCollapseArray : public Spell
+{
+public:
+	QString name() const { return Spell::tr( "Collapse" ); }
+	QString page() const { return Spell::tr( "Array" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( nif->isArray(index) && nif->evalCondition( index ) && index.isValid() )
+		{
+			// copy from spUpdateArray when that changes
+			return true;
+		}
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		nif->updateArray( index );
+		// There's probably an easier way of doing this hiding in NifModel somewhere
+		NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+		QModelIndex size = nif->getIndex( nif->getBlock( index.parent() ), item->arr1() );
+		QVector<qint32> links;
+		for ( int r = 0; r < nif->rowCount( index ); r++ )
+		{
+			qint32 l = nif->getLink( index.child( r, 0 ) );
+			if ( l >= 0 ) links.append( l );
+		}
+		if ( links.count() < nif->rowCount( index ) )
+		{
+			nif->set<int>( size, links.count() );
+			nif->updateArray( index );
+			nif->setLinkArray( index, links );
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spCollapseArray )

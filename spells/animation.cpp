@@ -253,7 +253,15 @@ public:
 
 REGISTER_SPELL( spAttachKf )
 
-//! Convert quaternions to euler rotations; unimplemented.
+//! Convert quaternions to euler rotations.
+/*!
+ * There doesn't seem to be much use for this - most official meshes use
+ * Quaternions, and a spell going the other way (ZYX to Quat) might be
+ * of more use. Or, they can be converted in a modelling program.
+ *
+ * Also, since Quaternions can't store tangents (or can they?), quadratic
+ * keys are out, leaving linear and tension-bias-continuity to be converted.
+ */
 class spConvertQuatsToEulers : public Spell
 {
 public:
@@ -266,5 +274,47 @@ public:
 		return iBlock.isValid() && nif->get<int>( iBlock, "Rotation Type" ) != 4;
 	}
 	
-	
+	/*
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iQuats = nif->getIndex( index, "Quaternion Keys" );
+		int rotationType = nif->get<int>( index, "Rotation Type" );
+		nif->set<int>( index, "Rotation Type", 4 );
+		nif->updateArray( index, "XYZ Rotations" );
+		QModelIndex iRots = nif->getIndex( index, "XYZ Rotations" );
+
+		for( int i = 0; i < 3; i++ )
+		{
+			QModelIndex iRot = iRots.child( i, 0 );
+			nif->set<int>( iRot, "Num Keys", nif->get<int>(index, "Num Rotation Keys") );
+			nif->set<int>( iRot, "Interpolation", rotationType );
+			nif->updateArray( iRot, "Keys" );
+		}
+
+		for ( int q = 0; q < nif->rowCount( iQuats ); q++ )
+		{
+			QModelIndex iQuat = iQuats.child( q, 0 );
+			
+			float time = nif->get<float>( iQuat, "Time" );
+			Quat value = nif->get<Quat>( iQuat, "Value" );
+
+			Matrix tlocal;
+			tlocal.fromQuat( value );
+			
+			float x, y, z;
+			tlocal.toEuler( x, y, z );
+
+			QModelIndex xRot = iRots.child( 0, 0 );
+			QModelIndex yRot = iRots.child( 1, 0 );
+			QModelIndex zRot = iRots.child( 2, 0 );
+		
+			xRot = nif->getIndex( xRot, "Keys" );
+
+		}
+
+		return index;
+	}*/
 };
+
+//REGISTER_SPELL( spConvertQuatsToEulers )
+

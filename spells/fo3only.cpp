@@ -6,8 +6,8 @@
 class spFO3FixShapeDataName : public Spell
 {
 public:
-	QString name() const { return tr("Fix Geometry Data Names"); }
-	QString page() const { return tr("Sanitize"); }
+	QString name() const { return Spell::tr("Fix Geometry Data Names"); }
+	QString page() const { return Spell::tr("Sanitize"); }
 	bool sanity() const { return true; }
 
 	//////////////////////////////////////////////////////////////////////////

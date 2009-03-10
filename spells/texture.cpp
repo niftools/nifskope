@@ -251,7 +251,7 @@ public:
 REGISTER_SPELL( spEditTexCoords )
 
 
-	QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString & name )
+QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString & name )
 {
 	QModelIndex iTexProp = nif->getBlock( index, "NiTexturingProperty" );
 	if ( ! iTexProp.isValid() )	return index;
@@ -277,7 +277,8 @@ REGISTER_SPELL( spEditTexCoords )
 	nif->set<int>( iSrcTex, "Unknown Byte 2", 1 );
 	nif->set<int>( iSrcTex, "Use External", 1 );
 
-	return iSrcTex;
+	spChooseTexture * chooser = new spChooseTexture();
+	return chooser->cast( nif, iSrcTex );
 }
 
 class spAddBaseMap : public Spell
@@ -650,3 +651,40 @@ public:
 };
 
 REGISTER_SPELL( spMultiApplyMode )
+
+/*
+class spTexInfo : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Info"); }
+	QString page() const { return Spell::tr("Texture"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iBlock = nif->getBlock( index );
+		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) )
+			return true;
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		TexCache * tex = new TexCache();
+		tex->setNifFolder( nif->getFolder() );
+		int isExternal = nif->get<int>( index, "Use External" );
+		if( isExternal ) {
+			qWarning() << "External texture";
+			QString filename = nif->get<QString>(index, "File Name");
+			qWarning() << "External name: " << filename;
+			tex->bind( filename );
+		} else {
+			tex->bind( index );
+		}
+		qWarning() << tex->info( index );
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spTexInfo )
+*/
+

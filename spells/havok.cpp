@@ -183,8 +183,8 @@ REGISTER_SPELL( spConstraintHelper )
 class spStiffSpringHelper : public Spell
 {
 public:
-	QString name() const { return tr( "Calculate Spring Length" ); }
-	QString page() const { return tr( "Havok" ); }
+	QString name() const { return Spell::tr( "Calculate Spring Length" ); }
+	QString page() const { return Spell::tr( "Havok" ); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{

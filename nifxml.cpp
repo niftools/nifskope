@@ -246,9 +246,17 @@ public:
 						);
 						QString defval = list.value( "default" );
 						if ( ! defval.isEmpty() )
-							data.value.fromString( defval );
+						{
+							bool ok;
+							quint32 enumVal = NifValue::enumOptionValue( type, defval, &ok );
+							if( ok ) {
+								data.value.setCount( enumVal );
+							} else {
+								data.value.fromString( defval );
+							}
+						}
 
-                  QString vercond = list.value( "vercond" );
+						QString vercond = list.value( "vercond" );
 
 						QString userver = list.value( "userver" );
 						if ( ! userver.isEmpty() )
@@ -264,10 +272,10 @@ public:
 							   vercond += " && ";
 							vercond += QString("(User Version 2 == %1)").arg(userver2);
 						}
-                  if ( !vercond.isEmpty() )
-                  {
-                     data.setVerCond( vercond );
-                  }
+						if ( !vercond.isEmpty() )
+						{
+							data.setVerCond( vercond );
+						}
 
 						if ( data.name().isEmpty() || data.type().isEmpty() ) 
 							err( tr("add needs at least name and type attributes") );
