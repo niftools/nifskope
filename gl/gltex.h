@@ -86,6 +86,9 @@ public:
 	int bind( const QString & fname );
 	//! Bind a texture from pixel data
 	int bind( const QModelIndex& iSource );
+
+	//! Debug function for getting info about a texture
+	QString info( const QModelIndex& iSource );
 	
 	//! Find a texture based on its filename
 	static QString find( const QString & file, const QString & nifFolder );
@@ -100,6 +103,11 @@ signals:
 public slots:
 	void flush();
 	
+	//! Set the folder to read textures from
+	/*!
+	 * If this is not set, relative paths won't resolve. The standard usage
+	 * is to give NifModel::getFolder() as the argument.
+	 */
 	void setNifFolder( const QString & );
 	
 protected slots:

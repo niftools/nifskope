@@ -652,7 +652,7 @@ public:
 
 REGISTER_SPELL( spMultiApplyMode )
 
-/*
+//! Debug function - display information about a texture
 class spTexInfo : public Spell
 {
 public:
@@ -673,9 +673,7 @@ public:
 		tex->setNifFolder( nif->getFolder() );
 		int isExternal = nif->get<int>( index, "Use External" );
 		if( isExternal ) {
-			qWarning() << "External texture";
 			QString filename = nif->get<QString>(index, "File Name");
-			qWarning() << "External name: " << filename;
 			tex->bind( filename );
 		} else {
 			tex->bind( index );
@@ -685,6 +683,4 @@ public:
 	}
 };
 
-REGISTER_SPELL( spTexInfo )
-*/
-
+//REGISTER_SPELL( spTexInfo )

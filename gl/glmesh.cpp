@@ -453,16 +453,15 @@ void Mesh::transformShapes()
 		transBinormals = binormals;
 	}
 	
-	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
-
-
 	/*
 	//Commented this out because this appears from my tests to be an
 	//incorrect understanding of the flag we previously called "sort."
 	//Tests have shown that none of the games or official scene viewers
 	//ever sort triangles, regarless of the path.  The triangles are always
 	//drawn in the order they exist in the triangle array.
-
+	
+	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
+	
 	if ( alphaprop && alphaprop->sort() )
 	{
 	

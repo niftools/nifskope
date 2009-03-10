@@ -978,7 +978,7 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 			ok = (0 != texLoadRaw(buf, width, height, mipmaps, bpp, bytespp, mask, flipV, flipH, rle));
 			break;
 		case 1: // PX_FMT_RGBA8
-			texformat += " (RGBA5)";
+			texformat += " (RGBA8)";
 			ok = (0 != texLoadRaw(buf, width, height, mipmaps, bpp, bytespp, mask, flipV, flipH, rle));
 			break;
 		case 2: // PX_FMT_PAL8

@@ -396,28 +396,6 @@ int TexCache::bind( const QModelIndex & iSource )
 	return 0;
 }
 
-
-void TexCache::Tex::load()
-{
-	if ( ! id )
-		glGenTextures( 1, &id );
-	
-	width = height = mipmaps = 0;
-	reload = false;
-	status = QString();
-	
-	glBindTexture( GL_TEXTURE_2D, id );
-	
-	try
-	{
-		texLoad( filepath, format, width, height, mipmaps );
-	}
-	catch ( QString e )
-	{
-		status = e;
-	}
-}
-
 void TexCache::flush()
 {
 	foreach ( Tex * tx, textures )
@@ -448,7 +426,52 @@ void TexCache::setNifFolder( const QString & folder )
 	emit sigRefresh();
 }
 
+QString TexCache::info( const QModelIndex& iSource )
+{
+	QString temp;
+	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
+	if ( nif && iSource.isValid() ) {
+		if ( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
+			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			if (iData.isValid()) {
+				Tex * tx = embedTextures.value( iData );
+				temp.append("Embedded texture: ");
+				temp.append(tx->format);
+			} else {
+				temp.append("Embedded texture invalid");
+			}
+		} else {
+			QString filename = nif->get<QString>( iSource, "File Name" );
+			Tex * tx = textures.value( filename );
+			temp.append("External texture file: " + tx->filename + "\nTexture path: " + tx->filepath + "\nFormat: " + tx->format);
+		}
+	}
+	return temp;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 
+
+void TexCache::Tex::load()
+{
+	if ( ! id )
+		glGenTextures( 1, &id );
+	
+	width = height = mipmaps = 0;
+	reload = false;
+	status = QString();
+	
+	glBindTexture( GL_TEXTURE_2D, id );
+	
+	try
+	{
+		texLoad( filepath, format, width, height, mipmaps );
+	}
+	catch ( QString e )
+	{
+		status = e;
+	}
+}
 
 #endif
