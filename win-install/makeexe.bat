@@ -12,10 +12,15 @@ IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%PROGRAMFILES%\Subversion\bin\svnvers
 IF EXIST "%SVNVERSION%" for /f "delims=| usebackq" %%j in (`"%SVNVERSION%" ..`) do set REVISION=%%j
 
 for %%i in (sed.exe) do IF EXIST "%%~$PATH:i" set SED=%%~$PATH:i
+for %%i in (SubWCRev.exe) do IF EXIST "%%~$PATH:i" set SUBWCREV=%%~$PATH:i
+IF NOT EXIST "%SUBWCREV%" set SUBWCREV=%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe
+IF NOT EXIST "%SUBWCREV%" set SUBWCREV=%PROGRAMFILES%\SubWCRev\SubWCRev.exe
 IF NOT "%SED%" == "" (
-    "%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe" .. -f | %SED% "s#Last committed at revision ##pg" -n > %TEMP%\nifskope.svnrev
-    for /f %%j in (%TEMP%\nifskope.svnrev) do set REVISION=%%j
-    del /q %TEMP%\nifskope.svnrev
+    IF NOT "%SUBWCREV%" == "" (
+        "%SUBWCREV%" .. -f | %SED% "s#Last committed at revision ##pg" -n > %TEMP%\nifskope.svnrev
+        for /f %%j in (%TEMP%\nifskope.svnrev) do set REVISION=%%j
+        del /q %TEMP%\nifskope.svnrev
+    )
 )
 IF NOT "%REVISION%" == "" set VERSION=%VERSION%.%REVISION%
 
@@ -25,7 +30,10 @@ echo !define VERSION "%VERSION%" > nifversion.nsh
 
 cd ..\..\docsys
 del doc\*.html
-\Python25\python nifxml_doc.py
+
+for %%i in (python.exe) do IF EXIST "%%~$PATH:i" set PYTHON=%%~$PATH:i
+IF NOT EXIST "%PYTHON%" set PYTHON=\Python25\python.exe
+"%PYTHON%" nifxml_doc.py
 
 if EXIST "%QTDIR%\bin\lrelease.exe" (
     pushd ..\nifskope\lang

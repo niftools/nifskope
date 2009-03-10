@@ -76,7 +76,6 @@ TestShredder::TestShredder()
 	count = new QSpinBox();
 	count->setRange( 1, 8 );
 	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
-	count->setPrefix( tr("threads ") );
 	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
 
 	//Version Check
@@ -117,6 +116,7 @@ TestShredder::TestShredder()
 	hbox->addWidget( btChoose );
 	hbox->addWidget( blockMatch );
 	hbox->addWidget( repErr );
+	hbox->addWidget( new QLabel( tr("Threads:") ) );
 	hbox->addWidget( count );
 
 	lay->addLayout( hbox = new QHBoxLayout() );

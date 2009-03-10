@@ -85,6 +85,7 @@ LangString DESC_SecCopyUI ${LANG_ENGLISH} "Copy all required files to the applic
 
 OutFile "nifskope-${VERSION}-${INSTALLERPOSTFIX}.exe"
 InstallDir "$PROGRAMFILES\NifTools\NifSkope"
+InstallDirRegKey HKLM SOFTWARE\NifSkope Install_Dir
 BrandingText "http://www.niftools.org/"
 Icon "inst.ico"
 UninstallIcon "inst.ico"
