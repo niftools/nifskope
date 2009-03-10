@@ -213,7 +213,7 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		foreach ( QString id, ids )
-			if ( nif->inherits( id, "NiAVObject" ) && ! nif->inherits( id, "NiLight" ) )
+			if ( nif->inherits( id, "NiAVObject" ) && ! nif->inherits( id, "NiDynamicEffect" ) )
 				menu.addAction( id );
 		
 		QAction * act = menu.exec( QCursor::pos() );
@@ -231,11 +231,11 @@ public:
 
 REGISTER_SPELL( spAttachNode )
 
-
+//! Attach a dynamic effect (4/5 are lights)
 class spAttachLight : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Attach Light"); }
+	QString name() const { return Spell::tr("Attach Effect"); }
 	QString page() const { return Spell::tr("Node"); }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )

@@ -1,5 +1,7 @@
 #include "../spellbook.h"
 
+#include <QDebug>
+
 class spUpdateArray : public Spell
 {
 public:
@@ -142,7 +144,8 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif->isArray(index) && nif->evalCondition( index ) && index.isValid() )
+		if ( nif->isArray(index) && nif->evalCondition( index ) && index.isValid() &&
+				( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
 		{
 			// copy from spUpdateArray when that changes
 			return true;
