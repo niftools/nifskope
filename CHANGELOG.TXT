@@ -13,6 +13,7 @@ changes since 1.0.18:
   - automate NiTextureEffect attachment (found under Node->Attach Light)
   - adding a new texture now presents a file selection dialog
   - new "Collapse Array" spell to selectively remove empty links
+  - re-add TGA texture export
  * Add support for UV editing of embedded textures and external nif textures
  * "failed to load file header" message now gives hexadecimal and string
    values instead of decimal
@@ -20,6 +21,11 @@ changes since 1.0.18:
   - read nif.xml from current directory in preference
   - fix handling of signed values
   - allow enumeration defaults to be specified by name
+  - enumerations now have their underlying data type displayed in tooltip
+ * Installer:
+  - file types for KF and KFM changed to NetImmerse/Gamebryo Animation and
+    NetImmerse/Gamebryo Animation Manager respectively
+  - location now checks for an existing installation
 
 changes since 1.0.17:
  * fixed corruption of BSShaderNoLightingProperty file names when using texture chooser

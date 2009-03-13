@@ -162,6 +162,17 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 	return true;
 }
 
+//! Convert pixels to RGBA
+/*!
+ * \param data Pixels to convert
+ * \param w Width of the image
+ * \param h Height of the image
+ * \param bytespp Number of bytes per pixel
+ * \param mask Bitmask for pixel data
+ * \param flipV Whether to flip the data vertically
+ * \param flipH Whether to flip the data horizontally
+ * \param pixl Pixels to output
+ */
 void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint32 mask[], bool flipV, bool flipH, quint8 * pixl )
 {
 	memset( pixl, 0, w * h * 4 );
@@ -1091,3 +1102,112 @@ bool texCanLoad( const QString & filepath )
 		);
 }
 
+bool texSaveDDS( const QModelIndex & index, const QString & filepath )
+{
+	// copy directly from mipmaps into texture
+	return true;
+}
+
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
+{
+	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
+	QString filename = filepath;
+	if ( ! filename.toLower().endsWith( ".tga" ) )
+		filename.append( ".tga" );
+
+	//quint32 bytespp = nif->get<quint32>( index, "Bytes Per Pixel" );
+	//quint32 bpp = nif->get<quint8>( index, "Bits Per Pixel" );
+
+	quint32 s = width * height * 4; //bytespp;
+	
+	quint8 * pixl = (quint8 *) malloc( s );
+	quint8 * data = (quint8 *) malloc( s );
+
+	glPixelStorei( GL_PACK_ALIGNMENT, 1 );
+	glPixelStorei( GL_PACK_SWAP_BYTES, GL_FALSE );
+	// This is very dodgy and is mainly to avoid having to run through convertToRGBA
+	/*
+	if( nif->get<quint32>( index, "Pixel Format" ) == 0 ) {
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, data );
+	} else { //if( nif->get<quint32>( index, "Pixel Format") == 1 ) {
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, data );
+	}*/
+
+	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixl );
+	
+	static const quint32 TGA_RGBA_MASK_INV[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
+
+	//quint32 mask[4] = { 0x00000000, 0x00000000, 0x00000000, 0x00000000 };
+	/*
+	if ( nif->getVersionNumber() < 0x14000004 ) {
+		mask[0] = nif->get<uint>(index, "Blue Mask");
+		mask[1] = nif->get<uint>(index, "Green Mask");
+		mask[2] = nif->get<uint>(index, "Red Mask");
+		mask[3] = nif->get<uint>(index, "Alpha Mask");
+	}
+	*/
+
+	convertToRGBA( pixl, width, height, 4, TGA_RGBA_MASK_INV, true, false, data );
+	
+	free( pixl );
+	
+	QFile f( filename );
+	if ( ! f.open( QIODevice::WriteOnly ) )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		free( data );
+		return false;
+	}
+	
+	// write out tga header
+	quint8 hdr[18];
+	for ( int o = 0; o < 18; o++ ) hdr[o] = 0;
+
+	hdr[02] = TGA_COLOR;
+	hdr[12] = width % 256;
+	hdr[13] = width / 256;
+	hdr[14] = height % 256;
+	hdr[15] = height / 256;
+	hdr[16] = 32; //bpp;
+	hdr[17] = 8; //(bytespp == 4 ? 8 : 0)+32;
+	
+	quint8 footer[26];
+	
+	// extension area
+	for ( int o = 0; o < 4; o++ ) footer[o] = 0;
+	// developer area
+	for ( int o = 4; o < 8; o++ ) footer[o] = 0;
+
+	// signature
+	const char * signature = "TRUEVISION-XFILE.";
+	memcpy( footer+8, signature, 17 );
+	footer[25] = 0;
+	
+	qint64 writeBytes = f.write( (char *) hdr, 18 );
+	if ( writeBytes != 18 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		free( data );
+		return false;
+	}
+	
+	writeBytes = f.write( (char *) data, s );
+	if ( writeBytes != s )
+	{
+		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		free( data );
+		return false;
+	}
+
+	writeBytes = f.write( (char *) footer, 26 );
+	if ( writeBytes != 26 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		free( data );
+		return false;
+	}
+
+	
+	free( data );
+	return true;
+}

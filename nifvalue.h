@@ -302,6 +302,12 @@ protected:
 	static QHash<QString, EnumOptions>	enumMap;
 	//! A dictionary yielding the documentation string of a type string.
 	static QHash<QString, QString>	typeTxt;
+	//! A dictionary yielding the underlying type string from an alias string.
+	/*!
+	 * Enums are stored as an underlying type (not always uint) which is normally not visible.
+	 * This dictionary allows that type to be exposed,
+	 */
+	static QHash<QString, QString> aliasMap;
 	
 	friend class NifIStream;
 	friend class NifOStream;

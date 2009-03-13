@@ -1284,10 +1284,11 @@ public:
 			QModelIndex iChild = nif->getBlock( link );
 			QString childName = nif->get<QString>( iChild, "Name" );
 			// Might as well rename children now if we can - this is less case-critical than Bip01 L/R
-			if ( childName.contains( "Left " ), Qt::CaseInsensitive )
+			if ( childName.contains( "Left ", Qt::CaseInsensitive ) ) {
 				childName.replace(QString("Left "), QString("Right "), Qt::CaseInsensitive );
-			else
+			} else if ( childName.contains( "Right ", Qt::CaseInsensitive ) ) {
 				childName.replace(QString("Right "), QString("Left "), Qt::CaseInsensitive );
+			}
 			
 			nif->set<QString>( iChild, "Name", childName );
 

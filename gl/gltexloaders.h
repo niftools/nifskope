@@ -74,4 +74,8 @@ extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width
  */
 extern bool texCanLoad( const QString & filepath );
 
+bool texSaveDDS( const QModelIndex & index, const QString & filepath );
+
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps );
+
 #endif

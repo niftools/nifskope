@@ -684,3 +684,35 @@ public:
 };
 
 //REGISTER_SPELL( spTexInfo )
+
+class spExportTexture : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Export"); }
+	QString page() const { return Spell::tr("Texture"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iBlock = nif->getBlock( index );
+		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 0 )
+		{
+			return true;
+		}
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		TexCache * tex = new TexCache();
+		tex->setNifFolder( nif->getFolder() );
+		tex->bind( index );
+		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", nif->getFolder(), "*.tga" );
+		if ( ! filename.isEmpty() ) {
+			tex->exportFile( index, filename );
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spExportTexture )
+

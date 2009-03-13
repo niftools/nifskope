@@ -435,20 +435,36 @@ QString TexCache::info( const QModelIndex& iSource )
 			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
 			if (iData.isValid()) {
 				Tex * tx = embedTextures.value( iData );
-				temp.append("Embedded texture: ");
-				temp.append(tx->format);
+				temp = QString("Embedded texture: %1\nMipmaps: %2").arg(tx->format).arg(tx->mipmaps);
 			} else {
-				temp.append("Embedded texture invalid");
+				temp = QString("Embedded texture invalid");
 			}
 		} else {
 			QString filename = nif->get<QString>( iSource, "File Name" );
 			Tex * tx = textures.value( filename );
-			temp.append("External texture file: " + tx->filename + "\nTexture path: " + tx->filepath + "\nFormat: " + tx->format);
+			temp = QString("External texture file: %1\nTexture path: %2\nFormat: %3\nMipmaps: %4")
+				.arg(tx->filename)
+				.arg(tx->filepath)
+				.arg(tx->format)
+				.arg(tx->mipmaps);
 		}
 	}
 	return temp;
 }
 
+void TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
+{
+	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
+	if ( nif && iSource.isValid() ) {
+		if( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
+			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
+			if (iData.isValid()) {
+				Tex * tx = embedTextures.value( iData );
+				tx->save( iData, filepath );
+			}
+		}
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -472,6 +488,15 @@ void TexCache::Tex::load()
 	{
 		status = e;
 	}
+}
+
+void TexCache::Tex::save( const QModelIndex & index, QString & savepath )
+{
+	//qWarning() << "Saving " << savepath;
+	//qWarning() << QString("Texture is %1 pixels wide, %2 pixels high, has %3 mipmaps").arg(width).arg(height).arg(mipmaps);
+	//qWarning() << QString("Texture has name %1, path %2, is format %3").arg(filename).arg(filepath).arg(format);
+	glBindTexture( GL_TEXTURE_2D, id );
+	texSaveTGA( index, savepath, width, height, mipmaps );
 }
 
 #endif

@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 QHash<QString,NifValue::Type>	NifValue::typeMap;
 QHash<QString,QString>		NifValue::typeTxt;
 QHash<QString,NifValue::EnumOptions>	NifValue::enumMap;
+QHash<QString,QString>		NifValue::aliasMap;
 
 void NifValue::initialize()
 {
@@ -111,7 +112,12 @@ void NifValue::setTypeDescription( const QString & typId, const QString & txt )
 
 QString NifValue::typeDescription( const QString & typId )
 {
-	QString txt = QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId ).arg( typeTxt.value( typId ) );
+	QString txt;
+	if ( enumMap.contains( typId ) ) {
+		txt = QString( "<p><b>%1 (%2)</b><p>%3</p>" ).arg( typId ).arg( aliasMap.value( typId ) ).arg( typeTxt.value( typId ) );
+	} else {
+		txt = QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId ).arg( typeTxt.value( typId ) );
+	}
 	
 	if ( enumMap.contains( typId ) )
 	{
@@ -142,6 +148,7 @@ bool NifValue::registerAlias( const QString & alias, const QString & original )
 	if ( typeMap.contains( original ) && ! typeMap.contains( alias ) )
 	{
 		typeMap.insert( alias, typeMap[original] );
+		aliasMap.insert( alias, original );
 		return true;
 	}
 	
