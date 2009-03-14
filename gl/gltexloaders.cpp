@@ -137,7 +137,7 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 		rl = data[o++];
 		if ( rl & 0x80 ) // if RLE packet
 		{
-			quint8 px[bytespp]; // pixel data in this packet
+			quint8 px[8]; // pixel data in this packet (assume bytespp < 8)
 			for ( int b = 0; b < bytespp; b++ )
 				px[b] = data[o++];
 			rl &= 0x7f; // strip RLE bit
