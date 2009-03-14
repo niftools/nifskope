@@ -1029,6 +1029,8 @@ void qDefaultMsgHandler(QtMsgType t, const char* str)
 
 void myMessageOutput(QtMsgType type, const char *msg)
 {
+	static const QString editFailed ( "edit: editing failed" );
+	static const QString accessWidgetRect ( "QAccessibleWidget::rect" );
 	switch (type)
 	{
 		case QtDebugMsg:
@@ -1036,8 +1038,11 @@ void myMessageOutput(QtMsgType type, const char *msg)
 			break;
 		case QtWarningMsg:
 			// workaround for Qt 4.2.2
-			if ( QString( "edit: editing failed" ) == msg )
+			if ( editFailed == msg )
 				return;
+			else if ( QString(msg).startsWith(accessWidgetRect) )
+				return;
+
 		case QtCriticalMsg:
 			if ( ! msgtarget )
 			{
