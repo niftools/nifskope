@@ -26,6 +26,7 @@ changes since 1.0.18:
   - file types for KF and KFM changed to NetImmerse/Gamebryo Animation and
     NetImmerse/Gamebryo Animation Manager respectively
   - location now checks for an existing installation
+ * ignore "QAccessibleWidget::rect: This implementation does not support subelements!"
 
 changes since 1.0.17:
  * fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
