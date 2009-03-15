@@ -706,7 +706,13 @@ public:
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
 		tex->bind( index );
-		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", nif->getFolder(), "*.tga" );
+		QString file = nif->getFolder();
+		if( nif->checkVersion( 0x0A010000, 0 ) )
+		{
+			// Qt uses "/" regardless of platform
+			file.append( "/" + nif->get<QString>( index, "File Name" ) );
+		}
+		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", file, "*.tga" );
 		if ( ! filename.isEmpty() ) {
 			tex->exportFile( index, filename );
 		}
