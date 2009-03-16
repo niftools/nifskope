@@ -498,12 +498,12 @@ void TexCache::Tex::load()
 
 void TexCache::Tex::save( const QModelIndex & index, QString & savepath )
 {
-	//qWarning() << "Saving " << savepath;
-	//qWarning() << QString("Texture is %1 pixels wide, %2 pixels high, has %3 mipmaps").arg(width).arg(height).arg(mipmaps);
-	//qWarning() << QString("Texture has name %1, path %2, is format %3").arg(filename).arg(filepath).arg(format);
-	//glBindTexture( GL_TEXTURE_2D, id );
-	//texSaveTGA( index, savepath, width, height, mipmaps );
-	texSaveDDS( index, savepath, width, height, mipmaps );
+	if ( savepath.toLower().endsWith( ".tga" ) ) {
+		glBindTexture( GL_TEXTURE_2D, id );
+		texSaveTGA( index, savepath, width, height );
+	} else {
+		texSaveDDS( index, savepath, width, height, mipmaps );
+	}
 }
 
 #endif

@@ -13,7 +13,7 @@ changes since 1.0.18:
   - automate NiTextureEffect attachment (found under Node->Attach Light)
   - adding a new texture now presents a file selection dialog
   - new "Collapse Array" spell to selectively remove empty links
-  - re-add TGA texture export
+  - re-add texture export: NiPixelData can be exported to TGA or DDS (default)
  * Add support for UV editing of embedded textures and external nif textures
  * "failed to load file header" message now gives hexadecimal and string
    values instead of decimal
@@ -26,7 +26,9 @@ changes since 1.0.18:
   - file types for KF and KFM changed to NetImmerse/Gamebryo Animation and
     NetImmerse/Gamebryo Animation Manager respectively
   - location now checks for an existing installation
- * ignore "QAccessibleWidget::rect: This implementation does not support subelements!"
+ * ignore "QAccessibleWidget::rect: This implementation does not support
+ subelements!" message
+ * prevent warning message when attempting to load an empty texture filename
 
 changes since 1.0.17:
  * fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
