@@ -712,7 +712,9 @@ public:
 			// Qt uses "/" regardless of platform
 			file.append( "/" + nif->get<QString>( index, "File Name" ) );
 		}
-		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", file, "*.tga" );
+		// TODO: replace with a FileSelector
+		//QString filename = QFileDialog::getSaveFileName( 0, "Export texture", file, "*.tga" );
+		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", file, "*.dds" );
 		if ( ! filename.isEmpty() ) {
 			tex->exportFile( index, filename );
 		}

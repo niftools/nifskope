@@ -389,7 +389,7 @@ int TexCache::bind( const QModelIndex & iSource )
 				glBindTexture( GL_TEXTURE_2D, tx->id );
 				return tx->mipmaps;
 			}
-		} else {
+		} else if ( ! nif->get<QString>( iSource, "File Name").isEmpty() ) {
 			return bind( nif->get<QString>( iSource, "File Name" ) );
 		}
 	}
@@ -435,17 +435,23 @@ QString TexCache::info( const QModelIndex& iSource )
 			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
 			if (iData.isValid()) {
 				Tex * tx = embedTextures.value( iData );
-				temp = QString("Embedded texture: %1\nMipmaps: %2").arg(tx->format).arg(tx->mipmaps);
+				temp = QString("Embedded texture: %1\nWidth: %2\nHeight: %3\nMipmaps: %4")
+					.arg(tx->format)
+					.arg(tx->width)
+					.arg(tx->height)
+					.arg(tx->mipmaps);
 			} else {
 				temp = QString("Embedded texture invalid");
 			}
 		} else {
 			QString filename = nif->get<QString>( iSource, "File Name" );
 			Tex * tx = textures.value( filename );
-			temp = QString("External texture file: %1\nTexture path: %2\nFormat: %3\nMipmaps: %4")
+			temp = QString("External texture file: %1\nTexture path: %2\nFormat: %3\nWidth: %4\nHeight: %5\nMipmaps: %6")
 				.arg(tx->filename)
 				.arg(tx->filepath)
 				.arg(tx->format)
+				.arg(tx->width)
+				.arg(tx->height)
 				.arg(tx->mipmaps);
 		}
 	}
@@ -495,8 +501,9 @@ void TexCache::Tex::save( const QModelIndex & index, QString & savepath )
 	//qWarning() << "Saving " << savepath;
 	//qWarning() << QString("Texture is %1 pixels wide, %2 pixels high, has %3 mipmaps").arg(width).arg(height).arg(mipmaps);
 	//qWarning() << QString("Texture has name %1, path %2, is format %3").arg(filename).arg(filepath).arg(format);
-	glBindTexture( GL_TEXTURE_2D, id );
-	texSaveTGA( index, savepath, width, height, mipmaps );
+	//glBindTexture( GL_TEXTURE_2D, id );
+	//texSaveTGA( index, savepath, width, height, mipmaps );
+	texSaveDDS( index, savepath, width, height, mipmaps );
 }
 
 #endif

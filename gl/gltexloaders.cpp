@@ -1102,13 +1102,322 @@ bool texCanLoad( const QString & filepath )
 		);
 }
 
-bool texSaveDDS( const QModelIndex & index, const QString & filepath )
+bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
+	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
+	quint32 format = nif->get<quint32>( index, "Pixel Format" );
+	// can't dump palettised textures yet
+	if ( format == 2 )
+	{
+		qWarning() << "Texture format not supported";
+		return false;
+	}
+
 	// copy directly from mipmaps into texture
+	
+	QBuffer buf;
+	
+	QModelIndex iPixelData = nif->getIndex( index, "Pixel Data" );
+	if ( iPixelData.isValid() ) {
+		QModelIndex iFaceData = iPixelData.child(0,0);
+		if ( iFaceData.isValid() ) {
+			if ( QByteArray* pdata = nif->get<QByteArray*>( iFaceData.child(0,0) ) ) {
+				buf.setData(*pdata);
+				buf.open(QIODevice::ReadOnly);
+				buf.seek(0);
+			}
+		}
+	}
+	
+	if (buf.size() == 0)
+		return false;
+	
+	QString filename = filepath;
+	if( ! filename.toLower().endsWith( ".dds" ) )
+		filename.append( ".dds" );
+	
+	QFile f( filename );
+	if ( ! f.open( QIODevice::WriteOnly ) )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	}
+	
+	qint64 writeBytes = f.write( (char *) "DDS ", 4 );
+	if ( writeBytes != 4 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	}
+	
+	quint8 header[124]; // could probably use a bytearray or something here
+	for ( int o = 0; o < 124; o++ ) header[o] = 0;
+	int pos = 0; // offset
+	
+	// size of header
+	header[pos] = 124;
+	pos+=4;
+	//quint8 temp[4] = { 124, 0, 0, 0 };
+	/*writeBytes = f.write( (char *) temp, 4 );
+	if ( writeBytes != 4 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	}*/
+	
+	bool compressed = (format == 4 || format == 5 || format == 6);
+	
+	// header flags
+	header[pos++] = ( 1 << 0 ) // caps = 1
+		| ( 1 << 1 ) // height = 1
+		| ( 1 << 2 ) // width = 1
+		| ( (compressed ? 0 : 1) << 3); // pitch, and 4 bits reserved
+	
+	header[pos++] = ( 1 << 4 ); // 4 bits reserved, pixelformat = 1, 3 bits reserved
+	
+	//quint32 mipmaps = nif->get<quint32>( index, "Num Mipmaps" );
+	
+	bool hasMipMaps = ( mipmaps > 1 );
+	
+	header[pos++] = ( (hasMipMaps ? 1 : 0) << 1 ) // 1 bit reserved, mipmapcount
+			| ( (compressed ? 1 : 0) << 3 ); // linearsize, 3 bits reserved, depth = 0
+	
+	pos++;
+	/*
+	writeBytes = f.write( (char *) temp, 4 );
+	if ( writeBytes != 4 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	}*/
+	
+	//QModelIndex iMipmaps = nif->getIndex( index, "Mipmaps" );
+	//QModelIndex iMipmap = iMipmaps.child( 0, 0 );
+	//quint32 width = nif->get<quint32>( iMipmap, "Width" );
+	//quint32 height = nif->get<quint32>( iMipmap, "Height" );
+	
+	// height
+	header[pos++] = height % 0x00000100;
+	header[pos++] = height / 0x00000100;
+	header[pos++] = height / 0x00010000;
+	header[pos++] = height / 0x01000000;
+	
+	/*
+	writeBytes = f.write( (char *) temp, 4 );
+	if ( writeBytes != 4 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	}*/
+	
+	// width
+	header[pos++] = width % 0x00000100;
+	header[pos++] = width / 0x00000100;
+	header[pos++] = width / 0x00010000;
+	header[pos++] = width / 0x01000000;
+
+	/*
+	writeBytes = f.write( (char *) temp, 4 );
+	if ( writeBytes != 4 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	} */
+
+	// linear size
+	// Uncompressed textures: bytes per scan line;
+	// DXT1: 16-pixel blocks converted to 64 bits = 8 bytes, ie. width * height / 16 * 64 / 8
+	// DXT5: don't know
+	quint32 linearsize;
+	switch ( format ) {
+		case 0:
+			linearsize = width * 3;
+			break;
+		case 1:
+			linearsize = width * 4;
+			break;
+		case 4:
+			linearsize = width * height / 2;
+			break;
+		case 5:
+		case 6:
+			linearsize = width * height;
+			break;
+		default: // how did we get here?
+			linearsize = 0;
+			break;
+	}
+	header[pos++] = linearsize % 0x00000100;
+	header[pos++] = linearsize / 0x00000100;
+	header[pos++] = linearsize / 0x00010000;
+	header[pos++] = linearsize / 0x01000000;
+	
+	/*
+	writeBytes = f.write( (char *) temp, 4 );
+	if ( writeBytes != 4 )
+	{
+		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		return false;
+	}*/
+
+	// quint32 bytespp = nif->get<quint32>( index, "Bytes Per Pixel" );
+
+	// depth
+	pos+=4;
+
+	// mipmapcount
+	header[pos++] = mipmaps % 0x00000100;
+	header[pos++] = mipmaps / 0x00000100;
+	header[pos++] = mipmaps / 0x00010000;
+	header[pos++] = mipmaps / 0x01000000;
+
+	// reserved[11]
+	pos+=44;
+
+	// pixel format size
+	header[pos] = 32;
+	pos+=4;
+	
+	// pixel format flags
+	bool alphapixels = (format == 1 ); //|| format == 5 || format == 6);
+	header[pos] = ( (alphapixels ? 1 : 0) << 0 ) // alpha pixels
+		| ( (alphapixels ? 1 : 0) << 1 ) // alpha
+		| ( (compressed ? 1 : 0) << 2 ) // fourcc
+		| ( (compressed ? 0 : 1) << 6 ); // rgb
+	pos+=4;
+
+	// pixel format fourcc
+	quint32 fourcc;
+	switch ( format )
+	{
+		case 0:
+		case 1:
+			fourcc = 0;
+			break;
+		case 4:
+			fourcc = FOURCC_DXT1;
+			break;
+		case 5:
+		case 6:
+			fourcc = FOURCC_DXT5;
+			break;
+		default: // again, how did we get here?
+			fourcc = 0;
+			break;
+	}
+	header[pos++] = fourcc % 0x00000100;
+	header[pos++] = fourcc / 0x00000100;
+	header[pos++] = fourcc / 0x00010000;
+	header[pos++] = fourcc / 0x01000000;
+
+	// bitcount
+	// NIF might be wrong, so hardcode based on format
+	// quint32 bitcount = nif->get<quint8>( index, "Bits Per Pixel" );
+	quint32 bitcount;
+	switch ( format )
+	{
+		case 0:
+		case 4:
+			bitcount = 24;
+			break;
+		case 1:
+		case 5:
+		case 6:
+			bitcount = 32;
+			break;
+		default: // what?
+			bitcount = 32;
+			break;
+	}
+
+	header[pos++] = bitcount % 0x00000100;
+	header[pos++] = bitcount / 0x00000100;
+	header[pos++] = bitcount / 0x00010000;
+	header[pos++] = bitcount / 0x01000000;
+
+	// masks
+	quint32 mask[4] = { 0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000 };
+
+	if ( nif->getVersionNumber() < 0x14000004 ) {
+		mask[0] = nif->get<quint32>( index, "Red Mask" );
+		mask[1] = nif->get<quint32>( index, "Green Mask" );
+		mask[2] = nif->get<quint32>( index, "Blue Mask" );
+		mask[3] = nif->get<quint32>( index, "Alpha Mask" );
+	} else {
+		QModelIndex iChannels = nif->getIndex( index, "Channels" );
+		if ( iChannels.isValid() )
+		{
+			for ( int i = 0; i < 4; i++ ) {
+				QModelIndex iChannel = iChannels.child( i, 0 );
+				uint type = nif->get<uint>(iChannel, "Type");
+				uint bpc = nif->get<uint>(iChannel, "Bits Per Channel");
+				int m = (1 << bpc) - 1;
+				switch (type)
+				{
+					case 0: mask[i] = m << (bpc * 0); break; //Green
+					case 1: mask[i] = m << (bpc * 1); break; //Blue
+					case 2: mask[i] = m << (bpc * 2); break; //Red
+					case 3: mask[i] = m << (bpc * 3); break; //Red
+				}
+			}
+		}
+	}
+
+	/*
+	if ( alphapixels )
+	{
+		mask[3] = 0xff000000;
+	}*/
+
+	// red mask
+	header[pos++] = mask[0] % 0x00000100;
+	header[pos++] = mask[0] / 0x00000100;
+	header[pos++] = mask[0] / 0x00010000;
+	header[pos++] = mask[0] / 0x01000000;
+	// green mask
+	header[pos++] = mask[1] % 0x00000100;
+	header[pos++] = mask[1] / 0x00000100;
+	header[pos++] = mask[1] / 0x00010000;
+	header[pos++] = mask[1] / 0x01000000;
+	// blue mask
+	header[pos++] = mask[2] % 0x00000100;
+	header[pos++] = mask[2] / 0x00000100;
+	header[pos++] = mask[2] / 0x00010000;
+	header[pos++] = mask[2] / 0x01000000;
+	// alpha mask
+	header[pos++] = mask[3] % 0x00000100;
+	header[pos++] = mask[3] / 0x00000100;
+	header[pos++] = mask[3] / 0x00010000;
+	header[pos++] = mask[3] / 0x01000000;
+
+	// caps1
+	header[pos++] = ( (hasMipMaps ? 1 : 0) << 3); // complex
+	header[pos++] = ( 1 << 4 ); // texture
+	header[pos++] = ( (hasMipMaps ? 1 : 0) << 6); // complex
+
+
+
+
+	// write header
+	writeBytes = f.write( (char *) header, 124 );
+	if ( writeBytes != 124 )
+	{
+		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		return false;
+	}
+
+	// write pixel data
+	writeBytes = f.write( buf.data(), buf.size() );
+	if ( writeBytes != buf.size() )
+	{
+		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		return false;
+	}
+
 	return true;
 }
 
-bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
 {
 	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
 	QString filename = filepath;
