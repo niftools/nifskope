@@ -534,12 +534,12 @@ class spTextureTemplate : public Spell
 
 		quint8 hdr[18];
 		for ( int o = 0; o < 18; o++ ) hdr[o] = 0;
-		hdr[02] = 2;
+		hdr[02] = 2; // TGA_COLOR
 		hdr[12] = s % 256;
 		hdr[13] = s / 256;
 		hdr[14] = s % 256;
 		hdr[15] = s / 256;
-		hdr[16] = 32;
+		hdr[16] = 32; // bpp
 		hdr[17] = 32; // flipV
 
 		QFile f( filename );

@@ -1157,13 +1157,6 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	// size of header
 	header[pos] = 124;
 	pos+=4;
-	//quint8 temp[4] = { 124, 0, 0, 0 };
-	/*writeBytes = f.write( (char *) temp, 4 );
-	if ( writeBytes != 4 )
-	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
-		return false;
-	}*/
 	
 	bool compressed = (format == 4 || format == 5 || format == 6);
 	
@@ -1183,18 +1176,6 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 			| ( (compressed ? 1 : 0) << 3 ); // linearsize, 3 bits reserved, depth = 0
 	
 	pos++;
-	/*
-	writeBytes = f.write( (char *) temp, 4 );
-	if ( writeBytes != 4 )
-	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
-		return false;
-	}*/
-	
-	//QModelIndex iMipmaps = nif->getIndex( index, "Mipmaps" );
-	//QModelIndex iMipmap = iMipmaps.child( 0, 0 );
-	//quint32 width = nif->get<quint32>( iMipmap, "Width" );
-	//quint32 height = nif->get<quint32>( iMipmap, "Height" );
 	
 	// height
 	header[pos++] = height % 0x00000100;
@@ -1202,27 +1183,11 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	header[pos++] = height / 0x00010000;
 	header[pos++] = height / 0x01000000;
 	
-	/*
-	writeBytes = f.write( (char *) temp, 4 );
-	if ( writeBytes != 4 )
-	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
-		return false;
-	}*/
-	
 	// width
 	header[pos++] = width % 0x00000100;
 	header[pos++] = width / 0x00000100;
 	header[pos++] = width / 0x00010000;
 	header[pos++] = width / 0x01000000;
-
-	/*
-	writeBytes = f.write( (char *) temp, 4 );
-	if ( writeBytes != 4 )
-	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
-		return false;
-	} */
 
 	// linear size
 	// Uncompressed textures: bytes per scan line;
@@ -1252,16 +1217,6 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	header[pos++] = linearsize / 0x00010000;
 	header[pos++] = linearsize / 0x01000000;
 	
-	/*
-	writeBytes = f.write( (char *) temp, 4 );
-	if ( writeBytes != 4 )
-	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
-		return false;
-	}*/
-
-	// quint32 bytespp = nif->get<quint32>( index, "Bytes Per Pixel" );
-
 	// depth
 	pos+=4;
 
@@ -1389,15 +1344,12 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	header[pos++] = mask[3] / 0x00000100;
 	header[pos++] = mask[3] / 0x00010000;
 	header[pos++] = mask[3] / 0x01000000;
-
+	
 	// caps1
 	header[pos++] = ( (hasMipMaps ? 1 : 0) << 3); // complex
 	header[pos++] = ( 1 << 4 ); // texture
-	header[pos++] = ( (hasMipMaps ? 1 : 0) << 6); // complex
-
-
-
-
+	header[pos++] = ( (hasMipMaps ? 1 : 0) << 6); // mipmaps
+	
 	// write header
 	writeBytes = f.write( (char *) header, 124 );
 	if ( writeBytes != 124 )
