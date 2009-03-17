@@ -29,6 +29,7 @@ changes since 1.0.18:
  * ignore "QAccessibleWidget::rect: This implementation does not support
  subelements!" message
  * prevent warning message when attempting to load an empty texture filename
+ * fix crash on exit if no file opened and inspect window not opened
 
 changes since 1.0.17:
  * fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
