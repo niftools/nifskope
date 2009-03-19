@@ -1,5 +1,3 @@
-%define desktop_vendor niftools
-
 Name:           nifskope
 Version:        1.0.18
 Release:        1%{?dist}
@@ -11,8 +9,7 @@ URL:            http://niftools.sourceforge.net
 Source0:        nifskope-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  qt4-devel
-Requires:       qt4
+BuildRequires:  qt4-devel desktop-file-utils
 
 %description
 NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo files.
@@ -48,8 +45,7 @@ rm -rf $RPM_BUILD_ROOT
         %{__install} -Dp -m0644 nifskope.desktop %{buildroot}%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
 %else
 	%{__install} -d -m0755 %{buildroot}%{_datadir}/applications/
-	desktop-file-install --vendor %{desktop_vendor}    \
-		--add-category X-Red-Hat-Base              \
+	desktop-file-install --vendor="niftools" \
 		--dir %{buildroot}%{_datadir}/applications \
 		nifskope.desktop
 %endif
