@@ -76,7 +76,7 @@ class TexCache : public QObject
 		void load();
 
 		//! Save the texture
-		void save( const QModelIndex & index, QString & savepath );
+		bool save( const QModelIndex & index, QString & savepath );
 	};
 	
 public:
@@ -94,7 +94,7 @@ public:
 	QString info( const QModelIndex & iSource );
 	
 	//! Export pixel data to a file
-	void exportFile( const QModelIndex & iSource, QString & filepath );
+	bool exportFile( const QModelIndex & iSource, QString & filepath );
 	
 	//! Find a texture based on its filename
 	static QString find( const QString & file, const QString & nifFolder );

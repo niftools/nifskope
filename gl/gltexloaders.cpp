@@ -1158,13 +1158,13 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	header[pos] = 124;
 	pos+=4;
 	
-	bool compressed = (format == 4 || format == 5 || format == 6);
+	bool compressed = ( (format == 4) || (format == 5) || (format == 6) );
 	
 	// header flags
 	header[pos++] = ( 1 << 0 ) // caps = 1
 		| ( 1 << 1 ) // height = 1
 		| ( 1 << 2 ) // width = 1
-		| ( (compressed ? 0 : 1) << 3); // pitch, and 4 bits reserved
+		| ( (compressed ? 0 : 1) << 3 ); // pitch, and 4 bits reserved
 	
 	header[pos++] = ( 1 << 4 ); // 4 bits reserved, pixelformat = 1, 3 bits reserved
 	
@@ -1178,16 +1178,12 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	pos++;
 	
 	// height
-	header[pos++] = height % 0x00000100;
-	header[pos++] = height / 0x00000100;
-	header[pos++] = height / 0x00010000;
-	header[pos++] = height / 0x01000000;
+	qToLittleEndian( height, header+pos );
+	pos+=4;
 	
 	// width
-	header[pos++] = width % 0x00000100;
-	header[pos++] = width / 0x00000100;
-	header[pos++] = width / 0x00010000;
-	header[pos++] = width / 0x01000000;
+	qToLittleEndian( width, header+pos );
+	pos+=4;
 
 	// linear size
 	// Uncompressed textures: bytes per scan line;
@@ -1212,19 +1208,15 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 			linearsize = 0;
 			break;
 	}
-	header[pos++] = linearsize % 0x00000100;
-	header[pos++] = linearsize / 0x00000100;
-	header[pos++] = linearsize / 0x00010000;
-	header[pos++] = linearsize / 0x01000000;
+	qToLittleEndian( linearsize, header+pos );
+	pos+=4;
 	
 	// depth
 	pos+=4;
 
 	// mipmapcount
-	header[pos++] = mipmaps % 0x00000100;
-	header[pos++] = mipmaps / 0x00000100;
-	header[pos++] = mipmaps / 0x00010000;
-	header[pos++] = mipmaps / 0x01000000;
+	qToLittleEndian( mipmaps, header+pos );
+	pos+=4;
 
 	// reserved[11]
 	pos+=44;
@@ -1260,11 +1252,9 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 			fourcc = 0;
 			break;
 	}
-	header[pos++] = fourcc % 0x00000100;
-	header[pos++] = fourcc / 0x00000100;
-	header[pos++] = fourcc / 0x00010000;
-	header[pos++] = fourcc / 0x01000000;
-
+	qToLittleEndian( fourcc, header+pos );
+	pos+=4;
+	
 	// bitcount
 	// NIF might be wrong, so hardcode based on format
 	// quint32 bitcount = nif->get<quint8>( index, "Bits Per Pixel" );
@@ -1284,12 +1274,9 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 			bitcount = 32;
 			break;
 	}
-
-	header[pos++] = bitcount % 0x00000100;
-	header[pos++] = bitcount / 0x00000100;
-	header[pos++] = bitcount / 0x00010000;
-	header[pos++] = bitcount / 0x01000000;
-
+	qToLittleEndian( bitcount, header+pos );
+	pos+=4;
+	
 	// masks
 	quint32 mask[4] = { 0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000 };
 
@@ -1304,8 +1291,8 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 		{
 			for ( int i = 0; i < 4; i++ ) {
 				QModelIndex iChannel = iChannels.child( i, 0 );
-				uint type = nif->get<uint>(iChannel, "Type");
-				uint bpc = nif->get<uint>(iChannel, "Bits Per Channel");
+				uint type = nif->get<uint>( iChannel, "Type" );
+				uint bpc = nif->get<uint>( iChannel, "Bits Per Channel" );
 				int m = (1 << bpc) - 1;
 				switch (type)
 				{
@@ -1325,30 +1312,22 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	}*/
 
 	// red mask
-	header[pos++] = mask[0] % 0x00000100;
-	header[pos++] = mask[0] / 0x00000100;
-	header[pos++] = mask[0] / 0x00010000;
-	header[pos++] = mask[0] / 0x01000000;
+	qToLittleEndian( mask[0], header+pos );
+	pos+=4;
 	// green mask
-	header[pos++] = mask[1] % 0x00000100;
-	header[pos++] = mask[1] / 0x00000100;
-	header[pos++] = mask[1] / 0x00010000;
-	header[pos++] = mask[1] / 0x01000000;
+	qToLittleEndian( mask[1], header+pos );
+	pos+=4;
 	// blue mask
-	header[pos++] = mask[2] % 0x00000100;
-	header[pos++] = mask[2] / 0x00000100;
-	header[pos++] = mask[2] / 0x00010000;
-	header[pos++] = mask[2] / 0x01000000;
+	qToLittleEndian( mask[2], header+pos );
+	pos+=4;
 	// alpha mask
-	header[pos++] = mask[3] % 0x00000100;
-	header[pos++] = mask[3] / 0x00000100;
-	header[pos++] = mask[3] / 0x00010000;
-	header[pos++] = mask[3] / 0x01000000;
+	qToLittleEndian( mask[3], header+pos );
+	pos+=4;
 	
 	// caps1
-	header[pos++] = ( (hasMipMaps ? 1 : 0) << 3); // complex
+	header[pos++] = ( (hasMipMaps ? 1 : 0) << 3 ); // complex
 	header[pos++] = ( 1 << 4 ); // texture
-	header[pos++] = ( (hasMipMaps ? 1 : 0) << 6); // mipmaps
+	header[pos++] = ( (hasMipMaps ? 1 : 0) << 6 ); // mipmaps
 	
 	// write header
 	writeBytes = f.write( (char *) header, 124 );

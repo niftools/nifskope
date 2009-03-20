@@ -278,17 +278,31 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 		return filename;
 }
 
+/*!
+ * Note: all original morrowind nifs use name.ext only for addressing the
+ * textures, but most mods use something like textures/[subdir/]name.ext.
+ * This is due to a feature in Morrowind resource manager: it loads name.ext,
+ * textures/name.ext and textures/subdir/name.ext but NOT subdir/name.ext.
+ */
 QString TexCache::stripPath( const QString & filepath, const QString & nifFolder )
 {
 	QString file = filepath;
 	file = file.replace( "/", "\\" ).toLower();
+	QDir basePath;
 	
 	foreach ( QString base, Options::textureFolders() )
 	{
 		if( base.startsWith( "./" ) || base.startsWith( ".\\" ) ) {
 			base = nifFolder + "/" + base;
 		}
+		
+		basePath.setPath( base );
+		base = basePath.absolutePath();
 		base = base.replace( "/", "\\" ).toLower();
+		/*
+		 * note that basePath.relativeFilePath( file ) here is *not*
+		 * what we want - see the above doc comments for this function
+		 */
 		
 		if ( file.startsWith( base ) )
 		{
@@ -458,7 +472,7 @@ QString TexCache::info( const QModelIndex& iSource )
 	return temp;
 }
 
-void TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
+bool TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
 	if ( nif && iSource.isValid() ) {
@@ -466,10 +480,11 @@ void TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
 			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
 			if (iData.isValid()) {
 				Tex * tx = embedTextures.value( iData );
-				tx->save( iData, filepath );
+				return tx->save( iData, filepath );
 			}
 		}
 	}
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -496,14 +511,15 @@ void TexCache::Tex::load()
 	}
 }
 
-void TexCache::Tex::save( const QModelIndex & index, QString & savepath )
+bool TexCache::Tex::save( const QModelIndex & index, QString & savepath )
 {
 	if ( savepath.toLower().endsWith( ".tga" ) ) {
 		glBindTexture( GL_TEXTURE_2D, id );
-		texSaveTGA( index, savepath, width, height );
+		return texSaveTGA( index, savepath, width, height );
 	} else {
-		texSaveDDS( index, savepath, width, height, mipmaps );
+		return texSaveDDS( index, savepath, width, height, mipmaps );
 	}
+	return false;
 }
 
 #endif

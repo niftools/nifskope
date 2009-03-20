@@ -672,7 +672,7 @@ public:
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
 		int isExternal = nif->get<int>( index, "Use External" );
-		if( isExternal ) {
+		if ( isExternal ) {
 			QString filename = nif->get<QString>(index, "File Name");
 			tex->bind( filename );
 		} else {
@@ -707,18 +707,55 @@ public:
 		tex->setNifFolder( nif->getFolder() );
 		tex->bind( index );
 		QString file = nif->getFolder();
-		if( nif->checkVersion( 0x0A010000, 0 ) )
+		if ( nif->checkVersion( 0x0A010000, 0 ) )
 		{
 			// Qt uses "/" regardless of platform
 			file.append( "/" + nif->get<QString>( index, "File Name" ) );
 		}
 		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", file, "*.dds *.tga" );
 		if ( ! filename.isEmpty() ) {
-			tex->exportFile( index, filename );
+			if ( tex->exportFile( index, filename ) )
+			{
+				nif->set<int>( index, "Use External", 1 );
+				filename = TexCache::stripPath( filename, nif->getFolder() );
+				nif->set<QString>( index, "File Name", filename );
+				tex->bind( filename );
+			}
 		}
 		return index;
 	}
 };
 
 REGISTER_SPELL( spExportTexture )
+
+class spEmbedTexture : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Embed"); }
+	QString page() const { return Spell::tr("Texture"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iBlock = nif->getBlock( index );
+		if ( !( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 1 ))
+		{
+			return false;
+		}
+		TexCache * tex = new TexCache();
+		tex->setNifFolder( nif->getFolder() );
+		if ( tex->bind( nif->get<QString>( iBlock, "File Name" ) ) )
+		{
+			return true;
+		}
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		// write a TexCache function?
+		return index;
+	}
+};
+
+//REGISTER_SPELL( spEmbedTexture )
 
