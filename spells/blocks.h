@@ -3,6 +3,7 @@
 
 #include "../spellbook.h"
 
+//! Remove a branch (a block and its descendents)
 class spRemoveBranch : public Spell
 {
 public:

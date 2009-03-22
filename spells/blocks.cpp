@@ -97,6 +97,7 @@ static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock
 			nif->removeNiBlock( nif->getBlockNumber( iChild ) );
 }
 
+//! Insert an unattached block
 class spInsertBlock : public Spell
 {
 public:
@@ -158,7 +159,7 @@ public:
 
 REGISTER_SPELL( spInsertBlock )
 
-
+//! Attach a Property to a block
 class spAttachProperty : public Spell
 {
 public:
@@ -195,7 +196,7 @@ public:
 
 REGISTER_SPELL( spAttachProperty )
 
-
+//! Attach a Node to a block
 class spAttachNode : public Spell
 {
 public:
@@ -231,7 +232,7 @@ public:
 
 REGISTER_SPELL( spAttachNode )
 
-//! Attach a dynamic effect (4/5 are lights)
+//! Attach a dynamic effect (4/5 are lights) to a block
 class spAttachLight : public Spell
 {
 public:
@@ -280,7 +281,7 @@ public:
 
 REGISTER_SPELL( spAttachLight )
 
-
+//! Attach Extra Data to a block
 class spAttachExtraData : public Spell
 {
 public:
@@ -315,7 +316,7 @@ public:
 
 REGISTER_SPELL( spAttachExtraData )
 
-
+//! Remove a block
 class spRemoveBlock : public Spell
 {
 public:
@@ -336,7 +337,7 @@ public:
 
 REGISTER_SPELL( spRemoveBlock )
 
-
+//! Copy a block to the clipboard
 class spCopyBlock : public Spell
 {
 public:
@@ -364,6 +365,7 @@ public:
 
 REGISTER_SPELL( spCopyBlock )
 
+//! Paste a block from the clipboard
 class spPasteBlock : public Spell
 {
 public:
@@ -423,7 +425,7 @@ public:
 
 REGISTER_SPELL( spPasteBlock )
 
-
+//! Paste a block from the clipboard over another
 class spPasteOverBlock : public Spell
 {
 public:
@@ -474,6 +476,7 @@ public:
 
 REGISTER_SPELL( spPasteOverBlock )
 
+//! Copy a branch (a block and its descendents) to the clipboard
 class spCopyBranch : public Spell
 {
 public:
@@ -545,6 +548,7 @@ public:
 
 REGISTER_SPELL( spCopyBranch )
 
+//! Paste a branch from the clipboard
 class spPasteBranch : public Spell
 {
 public:
@@ -666,7 +670,7 @@ QModelIndex spRemoveBranch::cast( NifModel * nif, const QModelIndex & index )
 
 REGISTER_SPELL( spRemoveBranch )
 
-
+//! Convert descendents to siblings?
 class spFlattenBranch : public Spell
 {
 public:
@@ -717,7 +721,7 @@ public:
 
 REGISTER_SPELL( spFlattenBranch )
 
-
+//! Move a block up in the NIF
 class spMoveBlockUp : public Spell
 {
 public:
@@ -740,7 +744,7 @@ public:
 
 REGISTER_SPELL( spMoveBlockUp )
 
-
+//! Move a block down in the NIF
 class spMoveBlockDown : public Spell
 {
 public:
@@ -763,7 +767,7 @@ public:
 
 REGISTER_SPELL( spMoveBlockDown )
 
-
+//! Remove blocks by regex
 class spRemoveBlocksById : public Spell
 {
 public:
@@ -810,8 +814,7 @@ public:
 
 REGISTER_SPELL( spRemoveBlocksById )
 
-
-
+//! Remove all blocks except a given branch
 class spCropToBranch : public Spell
 {
 public:
@@ -862,7 +865,7 @@ public:
 
 REGISTER_SPELL( spCropToBranch )
 
-
+//! Convert block types
 class spConvertBlock : public Spell
 {
 public:
@@ -919,6 +922,7 @@ public:
 
 REGISTER_SPELL( spConvertBlock )
 
+//! Duplicate a block in place
 class spDuplicateBlock : public Spell
 {
 public:
@@ -954,6 +958,7 @@ public:
 
 REGISTER_SPELL( spDuplicateBlock )
 
+//! Duplicate a branch in place
 class spDuplicateBranch : public Spell
 {
 public:
@@ -1077,3 +1082,63 @@ public:
 
 REGISTER_SPELL( spDuplicateBranch )
 
+//! Sort blocks by name
+class spSortBlockNames : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Sort By Name"); }
+	QString page() const { return Spell::tr("Block"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ( ! index.isValid() || ! index.parent().isValid() );
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		{
+			QModelIndex iBlock = nif->getBlock( n );
+			if ( index.isValid() )
+			{
+				iBlock = index;
+				n = nif->getBlockCount();
+			}
+			
+			QModelIndex iNumChildren = nif->getIndex( iBlock, "Num Children" );
+			QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
+			// NiNode children are NIAVObjects and have a Name
+			if ( iNumChildren.isValid() && iChildren.isValid() )
+			{
+				QList< QPair<QString, qint32> > links;
+				for ( int r = 0; r < nif->rowCount( iChildren ); r++ )
+				{
+					qint32 l = nif->getLink( iChildren.child( r, 0 ) );
+					if ( l >= 0 )
+						links.append( QPair<QString, qint32>( nif->get<QString>( nif->getBlock( l ), "Name" ), l ) );
+				}
+				
+				qStableSort( links.begin(), links.end() );
+				
+				for ( int r = 0; r < links.count(); r++ )
+				{
+					if ( links[r].second != nif->getLink( iChildren.child( r, 0 ) ) )
+						nif->setLink( iChildren.child( r, 0 ), links[r].second );
+					nif->set<int>( iNumChildren, links.count() );
+					nif->updateArray( iChildren );
+				}
+			}
+
+		}
+		if ( index.isValid() )
+		{
+			return index;
+		}
+		else
+		{
+			return QModelIndex();
+		}
+	}
+};
+
+REGISTER_SPELL( spSortBlockNames );

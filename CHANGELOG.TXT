@@ -15,6 +15,7 @@ changes since 1.0.18:
   - new "Collapse Array" spell to selectively remove empty links
   - re-add texture export: NiPixelData can be exported to TGA or DDS (default)
   - texture chooser pathing tweaks
+  - new "Blocks->Sort By Name" spell
  * Add support for UV editing of embedded textures and external nif textures
  * "failed to load file header" message now gives hexadecimal and string
    values instead of decimal
@@ -31,6 +32,7 @@ changes since 1.0.18:
  subelements!" message
  * prevent warning message when attempting to load an empty texture filename
  * fix crash on exit if no file opened and inspect window not opened
+ * Shortcut keys for "Load" and "Save As"
 
 changes since 1.0.17:
  * fixed corruption of BSShaderNoLightingProperty file names when using texture chooser

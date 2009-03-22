@@ -386,7 +386,7 @@ NifSkope::NifSkope()
 	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" << "*.nifcache" << "*.texcache" );
 
 	// create the load portion of the toolbar
-	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft ) );
+	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft, QKeySequence::Open ) );
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
 	
@@ -400,7 +400,7 @@ NifSkope::NifSkope()
 	aCpFileName = tool->addWidget( cpFilename );
 	
 	// create the save portion of the toolbar
-	aLineSave = tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight ) );
+	aLineSave = tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr("&Save As..."), QBoxLayout::LeftToRight, QKeySequence::Save ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
 

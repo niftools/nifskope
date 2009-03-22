@@ -67,7 +67,7 @@ void CompletionAction::sltToggled( bool )
 	cfg.setValue( tr("completion of file names"), isChecked() );
 }
 
-FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir )
+FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir, QKeySequence keySeq )
 	: QWidget(), Mode( mode ), dirmdl( 0 ), completer( 0 )
 {
 	QBoxLayout * lay = new QBoxLayout( dir, this );
@@ -82,6 +82,10 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	action = new QAction( this );
 	action->setText( buttonText );
 	connect( action, SIGNAL( triggered() ), this, SLOT( browse() ) );
+	if ( ! keySeq.isEmpty() )
+	{
+		action->setShortcut( keySeq );
+	}
 	addAction( action );
 	
 	QToolButton * button = new QToolButton( this );

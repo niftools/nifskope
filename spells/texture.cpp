@@ -141,6 +141,7 @@ QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
 	return QModelIndex();
 }
 
+//! Selects a texture filename
 class spChooseTexture : public Spell
 {
 public:
@@ -226,7 +227,7 @@ public:
 
 REGISTER_SPELL( spChooseTexture )
 
-
+//! Opens a UVWidget to edit texture coordinates
 class spEditTexCoords : public Spell
 {
 public:
@@ -281,6 +282,7 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 	return chooser->cast( nif, iSrcTex );
 }
 
+//! Adds a Base texture
 class spAddBaseMap : public Spell
 {
 public:
@@ -301,6 +303,7 @@ public:
 
 REGISTER_SPELL( spAddBaseMap )
 
+//! Adds a Dark texture
 class spAddDarkMap : public Spell
 {
 public:
@@ -321,6 +324,7 @@ public:
 
 REGISTER_SPELL( spAddDarkMap )
 
+//! Adds a Detail texture
 class spAddDetailMap : public Spell
 {
 public:
@@ -341,6 +345,7 @@ public:
 
 REGISTER_SPELL( spAddDetailMap )
 
+//! Adds a Glow texture
 class spAddGlowMap : public Spell
 {
 public:
@@ -361,6 +366,7 @@ public:
 
 REGISTER_SPELL( spAddGlowMap )
 
+//! Adds a Bump texture
 class spAddBumpMap : public Spell
 {
 public:
@@ -390,6 +396,7 @@ public:
 
 REGISTER_SPELL( spAddBumpMap )
 
+//! Adds a Decal 0 texture
 class spAddDecal0Map : public Spell
 {
 public:
@@ -412,6 +419,7 @@ REGISTER_SPELL( spAddDecal0Map )
 
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
+//! Saves the UV layout as a TGA
 class spTextureTemplate : public Spell
 {
 	QString name() const { return Spell::tr("Export Template"); }
@@ -685,6 +693,7 @@ public:
 
 //REGISTER_SPELL( spTexInfo )
 
+//! Export a packed NiPixelData texture
 class spExportTexture : public Spell
 {
 public:
@@ -728,6 +737,7 @@ public:
 
 REGISTER_SPELL( spExportTexture )
 
+//! Pack a texture to NiPixelData (not implmented yet)
 class spEmbedTexture : public Spell
 {
 public:

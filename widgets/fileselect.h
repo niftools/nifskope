@@ -73,7 +73,7 @@ public:
 		stNeutral = 0, stSuccess = 1, stError = 2
 	};
 	
-	FileSelector( Modes m, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight );
+	FileSelector( Modes m, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight, QKeySequence keySeq = QKeySequence::UnknownKey );
 	
 	QString text() const { return file(); }
 	QString file() const;
