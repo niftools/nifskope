@@ -47,6 +47,8 @@ NifTreeView::NifTreeView() : QTreeView()
 	setAlternatingRowColors( true );
 	setContextMenuPolicy( Qt::CustomContextMenu );
 	setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
+
+	connect( this, SIGNAL( expanded( const QModelIndex & ) ), this, SLOT( scrollExpand( const QModelIndex & ) ) );
 }
 
 NifTreeView::~NifTreeView()
@@ -195,4 +197,10 @@ void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex
 {
 	QTreeView::currentChanged( current, last );
 	emit sigCurrentIndexChanged( currentIndex() );
+}
+
+void NifTreeView::scrollExpand( const QModelIndex & index )
+{
+	// this is a compromise between scrolling to the top, and scrolling the last child to the bottom
+	scrollTo( index, PositionAtCenter );
 }

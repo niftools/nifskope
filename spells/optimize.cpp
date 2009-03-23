@@ -2,6 +2,7 @@
 
 #include <QBuffer>
 #include <QDebug>
+#include <QMessageBox>
 
 #include "blocks.h"
 #include "mesh.h"
@@ -21,6 +22,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & )
 	{
+		int numRemoved = 0;
 		QMap<qint32,QByteArray> props;
 		QMap<qint32,qint32> map;
 		do
@@ -68,7 +70,7 @@ public:
 			
 			if ( ! map.isEmpty() )
 			{
-				qWarning() << "removing" << map.count() << "properties";
+				numRemoved += map.count();
 				nif->mapLinks( map );
 				QList<qint32> l = map.keys();
 				qSort( l.begin(), l.end(), qGreater<qint32>() );
@@ -78,6 +80,7 @@ public:
 			
 		} while ( ! map.isEmpty() );
 		
+		QMessageBox::information( 0 , "NifSkope", QString("removed %1 properties").arg(numRemoved) );
 		return QModelIndex();
 	}
 };

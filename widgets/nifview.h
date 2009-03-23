@@ -40,35 +40,46 @@ class NifTreeView : public QTreeView
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	NifTreeView();
+	//! Destructor
 	~NifTreeView();
 	
+	//! Set the model used by the widget
 	void setModel( QAbstractItemModel * model );
+	//! Expand all branches
 	void setAllExpanded( const QModelIndex & index, bool e );
 	
+	//! EvalConditions
 	bool evalConditions() const { return EvalConditions; }
+	//! Is a row hidden?
     bool isRowHidden(int row, const QModelIndex &parent) const;
 	
+	//! Minimum size
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
+	//! Default size
 	QSize sizeHint() const { return QSize( 400, 400 ); }
-	
+
 signals:
 	void sigCurrentIndexChanged( const QModelIndex & );
 
 public slots:
 	void setRootIndex( const QModelIndex & index );
 	void clearRootIndex();
-
-	void setEvalConditions( bool );
 	
+	void setEvalConditions( bool );
+
 protected slots:
 	void updateConditions();
 	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
+	
+	//! Scroll to index; connected to expanded()
+	void scrollExpand( const QModelIndex & index );
 
 protected:
     void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const;
 	void keyPressEvent( QKeyEvent * e );
-
+	
 	QStyleOptionViewItem viewOptions() const;
 	
 	bool EvalConditions;
