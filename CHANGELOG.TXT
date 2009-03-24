@@ -16,6 +16,7 @@ changes since 1.0.18:
   - re-add texture export: NiPixelData can be exported to TGA or DDS (default)
   - texture chooser pathing tweaks
   - new "Blocks->Sort By Name" spell
+  - "Attach .KF" can handle multiple non-conflicting .kf files
  * Add support for UV editing of embedded textures and external nif textures
  * "failed to load file header" message now gives hexadecimal and string
    values instead of decimal

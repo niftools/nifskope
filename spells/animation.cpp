@@ -126,7 +126,7 @@ public:
 						qWarning() << nn;
 				}
 				
-				return iRoot;
+				//return iRoot;
 			}
 			catch ( QString e )
 			{
