@@ -1,5 +1,5 @@
 Name:           nifskope
-Version:        1.0.18
+Version:        1.0.19
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -78,6 +78,32 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Thu Mar 26 2009 amorilia - 1.0.19-1
+- fixed "Multi Apply Mode" spell [ niftools-Bugs-2475705 ]
+- shortcut keys for "Copy Branch" and "Paste Branch"
+- new "Duplicate" and "Duplicate Branch" spells
+- new "Flip Normals" spell and option to scale normals in "Scale Vertices"
+- new "Mirror armature" spell for Morrowind
+- add flag editing for NiBillboardNode
+- automate NiTextureEffect attachment (found under Node->Attach Light)
+- adding a new texture now presents a file selection dialog
+- new "Collapse Array" spell to selectively remove empty links
+- re-add texture export: NiPixelData can be exported to TGA or DDS (default)
+- texture chooser pathing tweaks
+- new "Blocks->Sort By Name" spell
+- "Attach .KF" can handle multiple non-conflicting .kf files
+- Add support for UV editing of embedded textures and external nif textures
+- "failed to load file header" message now gives hexadecimal and string values instead of decimal
+- read nif.xml from current directory in preference
+- fix handling of signed values
+- allow enumeration defaults to be specified by name
+- enumerations now have their underlying data type displayed in tooltip
+- file types for KF and KFM changed to NetImmerse/Gamebryo Animation and NetImmerse/Gamebryo Animation Manager respectively
+- location now checks for an existing installation
+- ignore "QAccessibleWidget::rect: This implementation does not support subelements!" message
+- prevent warning message when attempting to load an empty texture filename
+- fix crash on exit if no file opened and inspect window not opened
+- Shortcut keys for "Load" and "Save As"
 * Sun Jan 25 2009 amorilia - 1.0.18-1
 - fixed corruption of BSShaderNoLightingProperty file names when using texture chooser
 - fixed rendering settings which sometimes broke texture rendering when shader not used
