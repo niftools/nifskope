@@ -3,6 +3,11 @@
 
 #include "../spellbook.h"
 
+//! Calculates tangents and binormals
+/*!
+ * Much fun reading on this can be found at
+ * http://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas
+ */
 class spTangentSpace : public Spell
 {
 public:

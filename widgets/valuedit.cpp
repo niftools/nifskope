@@ -61,7 +61,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW 
 		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt 
-      ;
+	;
 }
 
 class CenterLabel : public QLabel
@@ -84,7 +84,9 @@ protected:
 	
 	int valueFromText( const QString & text ) const
 	{
-		return text.toUInt();
+		// until we convert to a QLineEdit, this lets us put in numbers between
+		// INT_MAX and 2*INT_MAX by entering them as a signed value
+		return text.toLong();
 	}
 };
 
@@ -118,31 +120,31 @@ void ValueEdit::setValue( const NifValue & v )
 			we->setValue( v.toCount() );
 			edit = we;
 		}	break;
-      case NifValue::tShort:
-         {	
-            QSpinBox * we = new QSpinBox( this );
-            we->setFrame(false);
-            we->setRange( SHRT_MIN, SHRT_MAX );
-            we->setValue( (short)v.toCount() );
-            edit = we;
-         }	break;
-      case NifValue::tInt:
-         {	
-            QSpinBox * ie = new QSpinBox( this );
-            ie->setFrame(false);
-            ie->setRange( INT_MIN, INT_MAX );
-            ie->setValue( (int)v.toCount() );
-            edit = ie;
-         }	break;
-	  case NifValue::tStringIndex:
-		  {	
-			  QSpinBox * ie = new QSpinBox( this );
-			  ie->setFrame(false);
-			  ie->setRange( -1, INT_MAX );
-			  ie->setValue( (int)v.toCount() );
-			  edit = ie;
-		  }	break;
-        case NifValue::tUInt:
+		case NifValue::tShort:
+		{	
+			QSpinBox * we = new QSpinBox( this );
+			we->setFrame(false);
+			we->setRange( SHRT_MIN, SHRT_MAX );
+			we->setValue( (short)v.toCount() );
+			edit = we;
+		}	break;
+		case NifValue::tInt:
+		{	
+			QSpinBox * ie = new QSpinBox( this );
+			ie->setFrame(false);
+			ie->setRange( INT_MIN, INT_MAX );
+			ie->setValue( (int)v.toCount() );
+			edit = ie;
+		}	break;
+		case NifValue::tStringIndex:
+		{	
+			QSpinBox * ie = new QSpinBox( this );
+			ie->setFrame(false);
+			ie->setRange( -1, INT_MAX );
+			ie->setValue( (int)v.toCount() );
+			edit = ie;
+		}	break;
+		case NifValue::tUInt:
 		{	
 			QSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame(false);
@@ -397,6 +399,8 @@ void ValueEdit::childResized( QResizeEvent * e )
 			//edit->move( QPoint( 1, 0 ) );
 			resize( QSize( width(), e->size().height() ) );
 		} break;
+	default:
+		break;
 	}
 }
 
