@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifvalue.h"
 #include "nifmodel.h"
 #include "config.h"
+//#include "options.h"
 
 #include <QHash>
 #include <QSettings>
@@ -788,8 +789,6 @@ void NifOStream::init()
 
 bool NifIStream::read( NifValue & val )
 {
-	NIFSKOPE_QSETTINGS(cfg);
-	int maxLength = cfg.value("maximum string length", 0x4000).toInt();
 	switch ( val.type() )
 	{
 		case NifValue::tBool:
@@ -1012,6 +1011,9 @@ void NifIStream::init()
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
 	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
 	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
+	NIFSKOPE_QSETTINGS(cfg);
+	maxLength = cfg.value("maximum string length", 0x4000).toInt();
+	//maxLength = Options::maxStringLength();
 }
 
 bool NifOStream::write( const NifValue & val )

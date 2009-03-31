@@ -111,7 +111,8 @@ public:
    static QColor overrideEmissive();
 
 	static QString startupVersion();
-   static QLocale translationLocale();
+	static QLocale translationLocale();
+	//static int maxStringLength();
 
 signals:
 	void sigChanged();
@@ -153,6 +154,7 @@ protected:
 
    QComboBox * RegionOpt;
    QLineEdit * StartVer;
+   //QSpinBox * StringLength;
 
    //////////////////////////////////////////////////////////////////////////
    QStringListModel * TexFolderModel;

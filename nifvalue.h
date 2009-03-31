@@ -492,6 +492,8 @@ private:
 	bool bool32bit;
 	bool linkAdjust;
 	bool stringAdjust;
+
+	int maxLength;
 };
 
 class NifOStream

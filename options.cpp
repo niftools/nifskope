@@ -210,6 +210,16 @@ Options::Options()
 
       genPage->popLayout();
 
+		/*
+		genPage->pushLayout( Qt::Horizontal );
+		genPage->addWidget( new QLabel( tr("Maximum String Length") ) );
+		genPage->addWidget( StringLength = new QSpinBox );
+		StringLength->setRange( 0, INT_MAX );
+		StringLength->setValue( cfg.value( "Maximum String Length", 0x4000).toInt() );
+		connect( StringLength, SIGNAL( valueChanged( int ) ), this, SIGNAL( sigChanged() ) );
+		*/
+
+
       //More Misc options can be added here.
       genPage->popLayout();
 
@@ -623,8 +633,9 @@ void Options::save()
 
 	cfg.beginGroup( "Settings" );
 
-   cfg.setValue( "Language", translationLocale() );
+	cfg.setValue( "Language", translationLocale() );
 	cfg.setValue( "Startup Version", startupVersion() );
+	//cfg.setValue( "Maximum String Length", maxStringLength() );
 
 	cfg.endGroup(); // Settings
 }
@@ -1021,3 +1032,10 @@ QLocale Options::translationLocale()
    }
    return QLocale::system();
 }
+
+/*
+int Options::maxStringLength()
+{
+	return get()->StringLength->value();
+}
+*/
