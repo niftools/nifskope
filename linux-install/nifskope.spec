@@ -1,3 +1,5 @@
+%define desktop_vendor niftools
+
 Name:           nifskope
 Version:        1.0.19
 Release:        1%{?dist}
@@ -45,7 +47,8 @@ rm -rf $RPM_BUILD_ROOT
         %{__install} -Dp -m0644 nifskope.desktop %{buildroot}%{_datadir}/gnome/apps/Multimedia/nifskope.desktop
 %else
 	%{__install} -d -m0755 %{buildroot}%{_datadir}/applications/
-	desktop-file-install --vendor="niftools" \
+	desktop-file-install \
+		--vendor %{desktop_vendor} \
 		--dir %{buildroot}%{_datadir}/applications \
 		nifskope.desktop
 %endif
