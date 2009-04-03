@@ -271,6 +271,25 @@ public slots:
  *
  * A concise description of nifskope's inner workings should come here, with
  * pointers to get people started.
+ *
+ * <hr>
+ *
+ * %NifSkope is a graphical program that allows you to open NIF files, view
+ * their contents, edit them, and write them back out again. It is written in
+ * C++ using OpenGL and the Qt framework, and designed using the Model/View
+ * Programming paradigm.
+ *
+ * A NIF is internally represented as a NifModel, which inherits from
+ * QAbstractItemModel; blocks are referenced by means of QModelIndex and
+ * QPersistentModelIndex.
+ *
+ * Various "magic" functions can be performed on a NIF via the Spell system;
+ * this is probably a good place to start if you want to learn about how a NIF
+ * is typically structured and how the blocks are manipulated.
+ *
+ * The <a href="annotated.html">class list</a> and
+ * <a href="files.html">file list</a> will eventually contain brief summaries
+ * of what every class is used for and what every file contains respectively.
  */
 
 #endif

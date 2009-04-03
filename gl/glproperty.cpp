@@ -659,6 +659,7 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 
 }
 
+//! Controller for alpha values in a MaterialProperty
 class AlphaController : public Controller
 {
 public:

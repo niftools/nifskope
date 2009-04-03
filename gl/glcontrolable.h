@@ -39,6 +39,7 @@ class Controller;
 
 class Scene;
 
+//! Anything capable of having a Controller
 class Controllable : public QObject
 {
 public:
@@ -59,6 +60,7 @@ public:
 	Controller * findController( const QString & ctrltype, const QString & var1, const QString & var2 );
 	
 protected:
+	//! Sets the Controller
 	virtual void setController( const NifModel * nif, const QModelIndex & iController ) { Q_UNUSED(nif); Q_UNUSED(iController); }
 
 	Scene * scene;

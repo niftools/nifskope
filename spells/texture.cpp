@@ -762,7 +762,13 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		// write a TexCache function?
+		TexCache * tex = new TexCache();
+		tex->setNifFolder( nif->getFolder() );
+		if ( tex->bind( index ) )
+		{
+			// write this function
+			//tex->importFile( index );
+		}
 		return index;
 	}
 };

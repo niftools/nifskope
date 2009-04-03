@@ -42,6 +42,7 @@ class Node;
 class Controller;
 class Interpolator;
 
+//! Something which can be attached to anything Controllable
 class Controller
 {
 public:

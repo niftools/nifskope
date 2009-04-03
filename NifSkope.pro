@@ -70,3 +70,5 @@ console {
 }
 
 TRANSLATIONS += lang/NifSkope_de.ts lang/NifSkope_fr.ts
+
+# vim: set filetype=config : 

@@ -480,7 +480,7 @@ bool TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
 			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
 			if (iData.isValid()) {
 				Tex * tx = embedTextures.value( iData );
-				return tx->save( iData, filepath );
+				return tx->saveAsFile( iData, filepath );
 			}
 		}
 	}
@@ -511,7 +511,7 @@ void TexCache::Tex::load()
 	}
 }
 
-bool TexCache::Tex::save( const QModelIndex & index, QString & savepath )
+bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 {
 	if ( savepath.toLower().endsWith( ".tga" ) ) {
 		glBindTexture( GL_TEXTURE_2D, id );
@@ -520,6 +520,13 @@ bool TexCache::Tex::save( const QModelIndex & index, QString & savepath )
 		return texSaveDDS( index, savepath, width, height, mipmaps );
 	}
 	return false;
+}
+
+bool TexCache::Tex::savePixelData( const QModelIndex & index )
+{
+	// gltexloaders function goes here
+	qWarning() << "Packing " << filename;
+	return true;
 }
 
 #endif

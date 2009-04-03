@@ -81,7 +81,7 @@ public:
 	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
 };
 
-//! Menu containing spells
+//! Spell menu
 class SpellBook : public QMenu
 {
 	Q_OBJECT
@@ -138,7 +138,7 @@ private:
 	static QList<Spell*> & sanitizers();
 };
 
-//! Manager of spellbooks
+//! SpellBook manager
 class Librarian
 {
 public:
