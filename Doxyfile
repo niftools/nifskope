@@ -1065,7 +1065,7 @@ SKIP_FUNCTION_MACROS   = YES
 # If a tag file is not located in the directory in which doxygen 
 # is run, you must also specify the path to the tagfile here.
 
-TAGFILES               = 
+TAGFILES               = "qt.tag = http://doc.trolltech.com/4.5/"
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create 
 # a tag file that is based on the input files it reads.
@@ -1136,7 +1136,7 @@ CLASS_GRAPH            = YES
 # class references variables) of the class with other documented classes.
 
 COLLABORATION_GRAPH    = YES
-
+fil
 # If the GROUP_GRAPHS and HAVE_DOT tags are set to YES then doxygen 
 # will generate a graph for groups, showing the direct groups dependencies
 
