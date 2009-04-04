@@ -569,7 +569,8 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex &index )
 	{
-		return nif->checkVersion( 0x14000005, 0x14000005 ) && ! index.isValid();
+		// Apply Mode field is defined in nifs up to version 20.0.0.5
+		return nif->checkVersion( 0, 0x14000005 ) && ! index.isValid();
 	}
 	
 	QModelIndex cast( NifModel *nif, const QModelIndex &index )
