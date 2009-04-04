@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="1.1">
+ï»¿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS><TS version="1.1" language="fr">
 <context>
     <name>BaseModel</name>
     <message>
@@ -60,7 +60,7 @@
     <message>
         <location filename="basemodel.cpp" line="532"/>
         <source>until</source>
-        <translation>jusqu&apos;à</translation>
+        <translation>jusqu&apos;Ã </translation>
     </message>
     <message>
         <location filename="basemodel.cpp" line="533"/>
@@ -73,7 +73,7 @@
     <message>
         <location filename="widgets/floatslider.cpp" line="126"/>
         <source>Click value to edit.</source>
-        <translation>Cliquer pour éditer la valeur.</translation>
+        <translation>Cliquer pour Ã©diter la valeur.</translation>
     </message>
 </context>
 <context>
@@ -101,12 +101,12 @@
     <message>
         <location filename="glview.cpp" line="142"/>
         <source>Side</source>
-        <translation>Côté</translation>
+        <translation>CÃ´tÃ©</translation>
     </message>
     <message>
         <location filename="glview.cpp" line="143"/>
         <source>View from the side</source>
-        <translation>Vue de côté</translation>
+        <translation>Vue de cÃ´tÃ©</translation>
     </message>
     <message>
         <location filename="glview.cpp" line="148"/>
@@ -116,7 +116,7 @@
     <message>
         <location filename="glview.cpp" line="149"/>
         <source>Restore the view as it was when Save User View was activated</source>
-        <translation>Restaurer la vue utilisateur sauvegardée</translation>
+        <translation>Restaurer la vue utilisateur sauvegardÃ©e</translation>
     </message>
     <message>
         <location filename="glview.cpp" line="155"/>
@@ -136,7 +136,7 @@
     <message>
         <location filename="glview.cpp" line="162"/>
         <source>Flip View from Front to Back, Top to Bottom, Side to Other Side</source>
-        <translation>Passer la vue de Face en vue de Dos, celle de Dessus en celle de Dessous et celle de Côté en celle du côté opposé</translation>
+        <translation>Passer la vue de Face en vue de Dos, celle de Dessus en celle de Dessous et celle de CÃ´tÃ© en celle du cÃ´tÃ© opposÃ©</translation>
     </message>
     <message>
         <location filename="glview.cpp" line="167"/>
@@ -166,7 +166,7 @@
     <message>
         <location filename="glview.cpp" line="179"/>
         <source>enables evaluation of animation controllers</source>
-        <translation>Activer l&apos;évaluation des contrôleurs d&apos;animation</translation>
+        <translation>Activer l&apos;Ã©valuation des contrÃ´leurs d&apos;animation</translation>
     </message>
     <message>
         <location filename="glview.cpp" line="185"/>
@@ -278,12 +278,12 @@
     <message>
         <location filename="nifskope.cpp" line="267"/>
         <source>&amp;New Window</source>
-        <translation>&amp;Nouvelle fenêtre</translation>
+        <translation>&amp;Nouvelle fenÃªtre</translation>
     </message>
     <message>
         <location filename="nifskope.cpp" line="269"/>
         <source>XML Checker</source>
-        <translation>Vérificateur XML</translation>
+        <translation>VÃ©rificateur XML</translation>
     </message>
     <message>
         <location filename="nifskope.cpp" line="271"/>
@@ -323,7 +323,7 @@
     <message>
         <location filename="nifskope.cpp" line="306"/>
         <source>NifTools &amp;Downloads</source>
-        <translation>&amp;Téléchargement de NifTools</translation>
+        <translation>&amp;TÃ©lÃ©chargement de NifTools</translation>
     </message>
     <message>
         <location filename="nifskope.cpp" line="310"/>
@@ -353,7 +353,7 @@
     <message>
         <location filename="nifskope.cpp" line="344"/>
         <source>Block Details</source>
-        <translation>Détails du bloc</translation>
+        <translation>DÃ©tails du bloc</translation>
     </message>
     <message>
         <location filename="nifskope.cpp" line="351"/>
@@ -428,12 +428,12 @@
     <message>
         <location filename="nifskope.cpp" line="808"/>
         <source>failed to write kfm file</source>
-        <translation>Impossible d&apos;écrire dans le fichier KFM</translation>
+        <translation>Impossible d&apos;Ã©crire dans le fichier KFM</translation>
     </message>
     <message>
         <location filename="nifskope.cpp" line="827"/>
         <source>failed to write nif file </source>
-        <translation>Impossible d&apos;écrire dans le fichier Nif</translation>
+        <translation>Impossible d&apos;Ã©crire dans le fichier Nif</translation>
     </message>
 </context>
 <context>
@@ -441,7 +441,7 @@
     <message>
         <location filename="options.cpp" line="141"/>
         <source>General</source>
-        <translation>Général</translation>
+        <translation>GÃ©nÃ©ral</translation>
     </message>
     <message>
         <location filename="options.cpp" line="308"/>
@@ -451,7 +451,7 @@
     <message>
         <location filename="options.cpp" line="410"/>
         <source>Materials</source>
-        <translation>Matériaux</translation>
+        <translation>MatÃ©riaux</translation>
     </message>
 </context>
 <context>
@@ -467,12 +467,12 @@
     <message>
         <location filename="widgets/refrbrowser.cpp" line="79"/>
         <source>Please install the reference documentation into the &apos;doc&apos; folder.</source>
-        <translation>Installez la documentation de référence dans le répertoire &apos;doc&apos;.</translation>
+        <translation>Installez la documentation de rÃ©fÃ©rence dans le rÃ©pertoire &apos;doc&apos;.</translation>
     </message>
     <message>
         <location filename="widgets/refrbrowser.cpp" line="114"/>
         <source>The reference file for &apos;%1&apos; could not be found.</source>
-        <translation>Le fichier de référence pour &apos;%1&apos; est introuvable.</translation>
+        <translation>Le fichier de rÃ©fÃ©rence pour &apos;%1&apos; est introuvable.</translation>
     </message>
 </context>
 <context>
@@ -480,7 +480,7 @@
     <message>
         <location filename="importex/3ds.cpp" line="242"/>
         <source>Choose a .3ds file to import</source>
-        <translation>Choix d&apos;un fichier .3ds à importer</translation>
+        <translation>Choix d&apos;un fichier .3ds Ã  importer</translation>
     </message>
     <message>
         <location filename="importex/3ds.cpp" line="242"/>
@@ -495,22 +495,22 @@
     <message>
         <location filename="importex/3ds.cpp" line="256"/>
         <source>Could not get 3ds data</source>
-        <translation>Impossible d&apos;accéder aux données 3ds</translation>
+        <translation>Impossible d&apos;accÃ©der aux donnÃ©es 3ds</translation>
     </message>
     <message>
         <location filename="importex/3ds.cpp" line="262"/>
         <source>Could not get 3ds model</source>
-        <translation>Impossible d&apos;accéder au modèle 3ds</translation>
+        <translation>Impossible d&apos;accÃ©der au modÃ¨le 3ds</translation>
     </message>
     <message>
         <location filename="importex/3ds.cpp" line="268"/>
         <source>Could not get 3ds model data</source>
-        <translation>Impossible d&apos;accéder aux données du modèle 3ds</translation>
+        <translation>Impossible d&apos;accÃ©der aux donnÃ©es du modÃ¨le 3ds</translation>
     </message>
     <message>
         <location filename="importex/3ds.cpp" line="593"/>
         <source>Material &apos;%1&apos; not found in list!</source>
-        <translation>Matériau &apos;%1&apos; introuvable dans la liste!</translation>
+        <translation>MatÃ©riau &apos;%1&apos; introuvable dans la liste!</translation>
     </message>
     <message>
         <location filename="spells/animation.cpp" line="9"/>
@@ -540,7 +540,7 @@
     <message>
         <location filename="spells/animation.cpp" line="41"/>
         <source>this is not a normal .kf file; there should be only NiControllerSequences as root blocks</source>
-        <translation>Il ne s&apos;agit pas d&apos;un fichier .KF normal; seul un bloc racine peut être un NiControllerSequence</translation>
+        <translation>Il ne s&apos;agit pas d&apos;un fichier .KF normal; seul un bloc racine peut Ãªtre un NiControllerSequence</translation>
     </message>
     <message>
         <location filename="spells/animation.cpp" line="47"/>
@@ -550,12 +550,12 @@
     <message>
         <location filename="spells/animation.cpp" line="52"/>
         <source>the animation root nodes differ; bailing out...</source>
-        <translation>Les noeuds racines de l&apos;animation sont différents; on tente...</translation>
+        <translation>Les noeuds racines de l&apos;animation sont diffÃ©rents; on tente...</translation>
     </message>
     <message>
         <location filename="spells/animation.cpp" line="120"/>
         <source>The following controlled nodes were not found in the nif:</source>
-        <translation>Les noeuds de contrôle suivants n&apos;ont pas été trouvés dans le Nif:</translation>
+        <translation>Les noeuds de contrÃ´le suivants n&apos;ont pas Ã©tÃ© trouvÃ©s dans le Nif:</translation>
     </message>
     <message>
         <location filename="spells/animation.cpp" line="224"/>
@@ -585,12 +585,12 @@
     <message>
         <location filename="spells/flags.cpp" line="327"/>
         <source>Enable Animation</source>
-        <translation>Animation activée</translation>
+        <translation>Animation activÃ©e</translation>
     </message>
     <message>
         <location filename="spells/flags.cpp" line="328"/>
         <source>Enable Collision</source>
-        <translation>Collision activée</translation>
+        <translation>Collision activÃ©e</translation>
     </message>
     <message>
         <location filename="spells/flags.cpp" line="329"/>
@@ -600,17 +600,17 @@
     <message>
         <location filename="spells/flags.cpp" line="330"/>
         <source>Unidentified Flag (?)</source>
-        <translation>Drapeau non-identifié (?)</translation>
+        <translation>Drapeau non-identifiÃ© (?)</translation>
     </message>
     <message>
         <location filename="spells/flags.cpp" line="331"/>
         <source>FlameNodes Present</source>
-        <translation>Présence de FlameNodes</translation>
+        <translation>PrÃ©sence de FlameNodes</translation>
     </message>
     <message>
         <location filename="spells/flags.cpp" line="332"/>
         <source>EditorMarkers Present</source>
-        <translation>Présence de EditorMakers</translation>
+        <translation>PrÃ©sence de EditorMakers</translation>
     </message>
     <message>
         <location filename="spells/havok.cpp" line="227"/>
@@ -625,7 +625,7 @@
     <message>
         <location filename="spells/havok.cpp" line="284"/>
         <source>no mesh data was found</source>
-        <translation>Données de maillage introuvables</translation>
+        <translation>DonnÃ©es de maillage introuvables</translation>
     </message>
     <message>
         <location filename="spells/mesh.cpp" line="12"/>
@@ -645,12 +645,12 @@
     <message>
         <location filename="spells/mesh.cpp" line="127"/>
         <source>Prune Triangles</source>
-        <translation>Découper en triangles</translation>
+        <translation>DÃ©couper en triangles</translation>
     </message>
     <message>
         <location filename="spells/mesh.cpp" line="190"/>
         <source>%1 triangles removed</source>
-        <translation>%1 triangles supprimés</translation>
+        <translation>%1 triangles supprimÃ©s</translation>
     </message>
     <message>
         <location filename="spells/mesh.cpp" line="220"/>
@@ -665,27 +665,27 @@
     <message>
         <location filename="spells/mesh.cpp" line="421"/>
         <source>uv array size differs</source>
-        <translation>La taille des tables UV diffère</translation>
+        <translation>La taille des tables UV diffÃ¨re</translation>
     </message>
     <message>
         <location filename="spells/mesh.cpp" line="430"/>
         <source>vertex array size differs</source>
-        <translation>La taille des tableaux de sommets diffère</translation>
+        <translation>La taille des tableaux de sommets diffÃ¨re</translation>
     </message>
     <message>
         <location filename="spells/mesh.cpp" line="509"/>
         <source>Remove Unused Vertices</source>
-        <translation>Supprimer les sommets inutilisés</translation>
+        <translation>Supprimer les sommets inutilisÃ©s</translation>
     </message>
     <message>
         <location filename="spells/mesh.h" line="9"/>
         <source>Update Center/Radius</source>
-        <translation>Mise-à-jour Centre/Rayon</translation>
+        <translation>Mise-Ã -jour Centre/Rayon</translation>
     </message>
     <message>
         <location filename="spells/misc.cpp" line="77"/>
         <source>Update</source>
-        <translation>Mise-à-jour</translation>
+        <translation>Mise-Ã -jour</translation>
     </message>
     <message>
         <location filename="spells/misc.cpp" line="8"/>
@@ -695,7 +695,7 @@
     <message>
         <location filename="spells/misc.cpp" line="58"/>
         <source>Header</source>
-        <translation>En-tête</translation>
+        <translation>En-tÃªte</translation>
     </message>
     <message>
         <location filename="spells/misc.cpp" line="78"/>
@@ -705,7 +705,7 @@
     <message>
         <location filename="spells/misc.cpp" line="97"/>
         <source>Follow Link</source>
-        <translation>Lien à suivre</translation>
+        <translation>Lien Ã  suivre</translation>
     </message>
     <message>
         <location filename="spells/misc.cpp" line="121"/>
@@ -715,7 +715,7 @@
     <message>
         <location filename="spells/moppcode.cpp" line="119"/>
         <source>Update MOPP Code</source>
-        <translation>Mise-à-jour du code MOPP</translation>
+        <translation>Mise-Ã -jour du code MOPP</translation>
     </message>
     <message>
         <location filename="spells/moppcode.cpp" line="120"/>
@@ -725,27 +725,27 @@
     <message>
         <location filename="spells/moppcode.cpp" line="139"/>
         <source>unable to locate the NifMopp.dll library</source>
-        <translation>Bibliothèque NifMopp.dll introuvable</translation>
+        <translation>BibliothÃ¨que NifMopp.dll introuvable</translation>
     </message>
     <message>
         <location filename="spells/moppcode.cpp" line="148"/>
         <source>only bhkPackedNiTriStripsShape can be used with bhkMoppBvTreeShape Mopp code at this time</source>
-        <translation>Seul un bhkPackedNiTriStripsShape peut être utilisé dans un code Mopp de bhkMoppBvTreeShape pour le moment</translation>
+        <translation>Seul un bhkPackedNiTriStripsShape peut Ãªtre utilisÃ© dans un code Mopp de bhkMoppBvTreeShape pour le moment</translation>
     </message>
     <message>
         <location filename="spells/moppcode.cpp" line="173"/>
         <source>need vertices and faces to calculate mopp code</source>
-        <translation>Le code Mopp nécessite des sommets et des faces</translation>
+        <translation>Le code Mopp nÃ©cessite des sommets et des faces</translation>
     </message>
     <message>
         <location filename="spells/moppcode.cpp" line="183"/>
         <source>failed to generate mopp code</source>
-        <translation>Impossible de générer le code Mopp</translation>
+        <translation>Impossible de gÃ©nÃ©rer le code Mopp</translation>
     </message>
     <message>
         <location filename="spells/moppcode.cpp" line="214"/>
         <source>Update All MOPP Code</source>
-        <translation>Mise-à-jour du code Mopp intégral</translation>
+        <translation>Mise-Ã -jour du code Mopp intÃ©gral</translation>
     </message>
     <message>
         <location filename="spells/tangentspace.cpp" line="236"/>
@@ -790,7 +790,7 @@
     <message>
         <location filename="spells/optimize.cpp" line="14"/>
         <source>Combine Properties</source>
-        <translation>Combiner les propriétées</translation>
+        <translation>Combiner les propriÃ©tÃ©es</translation>
     </message>
     <message>
         <location filename="spells/optimize.cpp" line="219"/>
@@ -800,12 +800,12 @@
     <message>
         <location filename="spells/optimize.cpp" line="91"/>
         <source>Split Properties</source>
-        <translation>Séparer les propriétées</translation>
+        <translation>SÃ©parer les propriÃ©tÃ©es</translation>
     </message>
     <message>
         <location filename="spells/optimize.cpp" line="157"/>
         <source>Remove Bogus Nodes</source>
-        <translation>Supprimer les noeuds à problème</translation>
+        <translation>Supprimer les noeuds Ã  problÃ¨me</translation>
     </message>
     <message>
         <location filename="spells/optimize.cpp" line="218"/>
@@ -830,7 +830,7 @@
     <message>
         <location filename="spells/skeleton.cpp" line="374"/>
         <source>reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)</source>
-        <translation>%1 sommets réduits à %2 liens d&apos;os (le nombre maximal d&apos;os par sommet était %3)</translation>
+        <translation>%1 sommets rÃ©duits Ã  %2 liens d&apos;os (le nombre maximal d&apos;os par sommet Ã©tait %3)</translation>
     </message>
     <message>
         <location filename="spells/skeleton.cpp" line="515"/>
@@ -850,22 +850,22 @@
     <message>
         <location filename="spells/skeleton.cpp" line="891"/>
         <source>&lt;b&gt;Number of Bones per Vertex&lt;/b&gt;&lt;br&gt;Hint: Most games use 4 bones per vertex&lt;br&gt;Note: If the mesh contains vertices which are&lt;br&gt;influenced by more than x bones the number of&lt;br&gt;influences will be reduced for these vertices&lt;br&gt;</source>
-        <translation>&lt;b&gt;Nombre d&apos;os par sommet&lt;/b&gt;&lt;br&gt;Conseil: la plupart des jeux utilisent 4 os par sommet&lt;br&gt;Note: si le maillage contient des sommets qui sont&lt;br&gt;liés à plus que x os, le nombre de&lt;br&gt;liens sera réduit pour ces sommets&lt;br&gt;</translation>
+        <translation>&lt;b&gt;Nombre d&apos;os par sommet&lt;/b&gt;&lt;br&gt;Conseil: la plupart des jeux utilisent 4 os par sommet&lt;br&gt;Note: si le maillage contient des sommets qui sont&lt;br&gt;liÃ©s Ã  plus que x os, le nombre de&lt;br&gt;liens sera rÃ©duit pour ces sommets&lt;br&gt;</translation>
     </message>
     <message>
         <location filename="spells/skeleton.cpp" line="901"/>
         <source>&lt;b&gt;Number of Bones per Partition&lt;/b&gt;&lt;br&gt;Hint: Oblivion uses 18 bones pp&lt;br&gt;CivIV (non shader meshes) 4 bones pp&lt;br&gt;CivIV (shader enabled meshes) 18 bones pp&lt;br&gt;Note: To fit the triangles into the partitions&lt;br&gt;some bone influences may be removed again.</source>
-        <translation>&lt;b&gt;Nombre d&apos;os par partition&lt;/b&gt;&lt;br&gt;Conseil: Oblivion utilise 18 os par partition&lt;br&gt;CivIV (sans maillage de Shader) 4 os par partition&lt;br&gt;CivIV (avec maillage de Shader) 18 os par partition&lt;br&gt;Note: pour ajuster les triangles dans les partitions&lt;br&gt;certains liens d&apos;os peuvent encore être supprimés.</translation>
+        <translation>&lt;b&gt;Nombre d&apos;os par partition&lt;/b&gt;&lt;br&gt;Conseil: Oblivion utilise 18 os par partition&lt;br&gt;CivIV (sans maillage de Shader) 4 os par partition&lt;br&gt;CivIV (avec maillage de Shader) 18 os par partition&lt;br&gt;Note: pour ajuster les triangles dans les partitions&lt;br&gt;certains liens d&apos;os peuvent encore Ãªtre supprimÃ©s.</translation>
     </message>
     <message>
         <location filename="spells/skeleton.cpp" line="908"/>
         <source>&lt;b&gt;Whether or not to stripify the triangles in each partition.&lt;/b&gt;&lt;br&gt;Hint:  Morrowind and Freedom force do not support strips.&lt;br&gt;Strips generally perform faster, if the game supports them.</source>
-        <translation>&lt;b&gt;Stripifier ou non les triangles dans chaque partition.&lt;/b&gt;&lt;br&gt;Conseil: Morrowind et Freedom Force n&apos;acceptent pas la Stripification.&lt;br&gt;En général, le Strip accélère le chargement pour les jeux qui le supporte.</translation>
+        <translation>&lt;b&gt;Stripifier ou non les triangles dans chaque partition.&lt;/b&gt;&lt;br&gt;Conseil: Morrowind et Freedom Force n&apos;acceptent pas la Stripification.&lt;br&gt;En gÃ©nÃ©ral, le Strip accÃ©lÃ¨re le chargement pour les jeux qui le supporte.</translation>
     </message>
     <message>
         <location filename="spells/skeleton.cpp" line="914"/>
         <source>&lt;b&gt;Whether or not to pad partitions that will have fewer bones than specified above.&lt;/b&gt;&lt;br&gt;Hint:  Freedom Force seems to require this, but it doesn&apos;t seem to affect other games.</source>
-        <translation>&lt;b&gt;Protéger ou non les partitions qui ont moins d&apos;os que ce qui a été précisé.&lt;/b&gt;&lt;br&gt;Conseil: Freedom Force semble le demander mais il ne semble pas que cela affecte les autres jeux.</translation>
+        <translation>&lt;b&gt;ProtÃ©ger ou non les partitions qui ont moins d&apos;os que ce qui a Ã©tÃ© prÃ©cisÃ©.&lt;/b&gt;&lt;br&gt;Conseil: Freedom Force semble le demander mais il ne semble pas que cela affecte les autres jeux.</translation>
     </message>
     <message>
         <location filename="spells/skeleton.cpp" line="917"/>
@@ -885,17 +885,17 @@
     <message>
         <location filename="spells/tangentspace.cpp" line="65"/>
         <source>need vertices, normals, texture coordinates and faces to calculate tangents and binormals</source>
-        <translation>Pour calculer les tangentes et les binormales, il faut des sommets, des normales, des faces et des coordonnées de texture</translation>
+        <translation>Pour calculer les tangentes et les binormales, il faut des sommets, des normales, des faces et des coordonnÃ©es de texture</translation>
     </message>
     <message>
         <location filename="spells/tangentspace.cpp" line="235"/>
         <source>Update All Tangent Spaces</source>
-        <translation>Mise-à-jour de tous les espaces tangents</translation>
+        <translation>Mise-Ã -jour de tous les espaces tangents</translation>
     </message>
     <message>
         <location filename="spells/tangentspace.h" line="9"/>
         <source>Update Tangent Space</source>
-        <translation>Mise-à-jour de l&apos;espace tangent</translation>
+        <translation>Mise-Ã -jour de l&apos;espace tangent</translation>
     </message>
     <message>
         <location filename="spells/texture.cpp" line="233"/>
@@ -915,7 +915,7 @@
     <message>
         <location filename="spells/transform.cpp" line="99"/>
         <source>On animated and or skinned nodes Apply Transformation most likely won&apos;t work the way you expected it.</source>
-        <translation>Noeuds animés ou skinnés: appliquer les transformations imprévisibles.</translation>
+        <translation>Noeuds animÃ©s ou skinnÃ©s: appliquer les transformations imprÃ©visibles.</translation>
     </message>
     <message>
         <location filename="spells/transform.cpp" line="99"/>
@@ -968,7 +968,7 @@
     <message>
         <location filename="widgets/uvedit.cpp" line="60"/>
         <source>Could not load texture data for UV editor.</source>
-        <translation>Impossible de charger les données de texture pour l&apos;éditeur UV.</translation>
+        <translation>Impossible de charger les donnÃ©es de texture pour l&apos;Ã©diteur UV.</translation>
     </message>
     <message>
         <location filename="widgets/uvedit.cpp" line="84"/>
@@ -978,27 +978,27 @@
     <message>
         <location filename="widgets/uvedit.cpp" line="113"/>
         <source>Select &amp;All</source>
-        <translation>Sélectionner &amp;Tout</translation>
+        <translation>SÃ©lectionner &amp;Tout</translation>
     </message>
     <message>
         <location filename="widgets/uvedit.cpp" line="118"/>
         <source>Select &amp;None</source>
-        <translation>Sélectionner &amp;Rien</translation>
+        <translation>SÃ©lectionner &amp;Rien</translation>
     </message>
     <message>
         <location filename="widgets/uvedit.cpp" line="122"/>
         <source>Select &amp;Faces</source>
-        <translation>Sélectionner &amp;Faces</translation>
+        <translation>SÃ©lectionner &amp;Faces</translation>
     </message>
     <message>
         <location filename="widgets/uvedit.cpp" line="126"/>
         <source>Select &amp;Connected</source>
-        <translation>Sélectionner &amp;Connexion</translation>
+        <translation>SÃ©lectionner &amp;Connexion</translation>
     </message>
     <message>
         <location filename="widgets/uvedit.cpp" line="134"/>
         <source>Texture Alpha Blending</source>
-        <translation>Mêler la texture alpha</translation>
+        <translation>MÃªler la texture alpha</translation>
     </message>
 </context>
 <context>
