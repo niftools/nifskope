@@ -1,4 +1,4 @@
-#if defined(_WIN32) || defined(WIN32)
+#ifdef Q_OS_WIN32
 
 // This code is only intended to be run with Win32 platform.
 
@@ -272,4 +272,5 @@ public:
 
 REGISTER_SPELL( spAllMoppCodes )
 
-#endif // _MSC_VER
+#endif // Q_OS_WIN32
+

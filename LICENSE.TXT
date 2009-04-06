@@ -29,7 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 CREDITS
 
-NifSkope uses Havok(R) for the generation of mopp code.
+The Windows build of NifSkope uses Havok(R) for the generation of mopp code.
 (C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). 
 All Rights Reserved.  See www.havok.com for details.
 

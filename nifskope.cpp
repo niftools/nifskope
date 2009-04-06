@@ -149,11 +149,16 @@ void NifSkope::about()
 	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
 	"<p>The most recent version of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
 	"NifTools SourceForge Project page</a>.</p>"
+// only the windows build uses havok
+// (Q_OS_WIN32 is also defined on win64)
+#ifdef Q_OS_WIN32
 	"<center><img src=':/img/havok_logo' /></center>"
 	"<p>NifSkope uses Havok(R) for the generation of mopp code. "
 	"(C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). "
 	"All Rights Reserved. "
-	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>");
+	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>"
+#endif
+	);
 
 	QMessageBox mb( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION), text, QMessageBox::Information,
 		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
