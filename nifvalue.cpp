@@ -108,7 +108,7 @@ NifValue::Type NifValue::type( const QString & id )
 
 void NifValue::setTypeDescription( const QString & typId, const QString & txt )
 {
-	typeTxt[typId] = QString( txt ).replace( "\n", "<br>" );
+	typeTxt[typId] = QString( txt ).replace( "<", "&lt;" ).replace( "\n", "<br/>" );
 }
 
 QString NifValue::typeDescription( const QString & typId )

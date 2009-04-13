@@ -1139,7 +1139,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return version2string( item->ver1() );
 				case Ver2Col:	return version2string( item->ver2() );
-            case VerCondCol: return item->vercond();
+				case VerCondCol: return item->vercond();
 				default:		return QVariant();
 			}
 		}
@@ -1175,7 +1175,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				case CondCol:	return item->cond();
 				case Ver1Col:	return version2string( item->ver1() );
 				case Ver2Col:	return version2string( item->ver2() );
-            case VerCondCol: return item->vercond();
+				case VerCondCol: return item->vercond();
 				default:		return QVariant();
 			}
 		}
@@ -1192,7 +1192,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					}
 					else
 					{
-						QString tip = QString( "<p><b>%1</b></p><p>%2</p>" ).arg( item->name() ).arg( item->text() );
+						QString tip = QString( "<p><b>%1</b></p><p>%2</p>" )
+							.arg( item->name() )
+							.arg( QString(item->text()).replace( "<", "&lt;" ).replace( "\n", "<br/>") );
 						
 						if ( NifBlock * blk = blocks.value( item->name() ) )
 						{
@@ -1369,8 +1371,8 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		case NifModel::Ver2Col:
 			item->setVer2( NifModel::version2number( value.toString() ) );
 			break;
-      case NifModel::VerCondCol:
-         item->setVerCond( value.toString() );
+		case NifModel::VerCondCol:
+			item->setVerCond( value.toString() );
 		default:
 			return false;
 	}

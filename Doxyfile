@@ -1136,7 +1136,7 @@ CLASS_GRAPH            = YES
 # class references variables) of the class with other documented classes.
 
 COLLABORATION_GRAPH    = YES
-fil
+
 # If the GROUP_GRAPHS and HAVE_DOT tags are set to YES then doxygen 
 # will generate a graph for groups, showing the direct groups dependencies
 

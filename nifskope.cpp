@@ -1225,21 +1225,25 @@ int main( int argc, char * argv[] )
 #endif
 	
 	// if there is a style sheet present then load it
-	QDir qssDir;
-	bool qssFound;
-	// look for stylesheet in application directory
-        qssDir.setPath(QApplication::applicationDirPath());
-	qssFound = qssDir.exists("style.qss");
-	// look for stylesheet in linux nifskope data directory
-        if (!qssFound)
+	QDir qssDir( QApplication::applicationDirPath() );
+	// Check app dir, relative from nifskope/release, linux data dir
+	QStringList qssList( QStringList()
+			<< "style.qss"
+			<< "../style.qss"
+			<< "/usr/share/nifskope/style.qss" );
+	QString qssName;
+	foreach( QString str, qssList )
 	{
-		qssDir.setPath("/usr/share/nifskope");
-		qssFound = qssDir.exists("style.qss");
+		if ( qssDir.exists( str ) )
+		{
+			qssName = qssDir.filePath( str );
+			break;
+		}
 	}
 	// load the style sheet if present
-	if (qssFound)
+	if ( ! qssName.isEmpty() )
 	{
-		QFile style( qssDir.filePath( "style.qss" ) );
+		QFile style( qssName );
 		if ( style.open( QFile::ReadOnly ) )
 		{
 			app.setStyleSheet( style.readAll() );

@@ -218,20 +218,21 @@ public:
 bool KfmModel::loadXML()
 {
 	QDir dir( QApplication::applicationDirPath() );
-	QString fname;
-	// Try local copy first
-	if ( dir.exists ( "kfm.xml" ) )
-		fname = dir.filePath( "kfm.xml" );
-	else if ( dir.exists( "../docsys/kfm.xml" ) )
-		fname = dir.filePath( "../docsys/kfm.xml" );
-	// relative from nifskope/release
-	else if ( dir.exists( "../../docsys/kfm.xml" ) )
-		fname = dir.filePath( "../../docsys/kfm.xml" );
-	else if ( dir.exists( "/usr/share/nifskope/kfm.xml" ) )
-		fname = dir.filePath( "/usr/share/nifskope/kfm.xml" );
-	// last restort
-	else
-		fname = dir.filePath( "kfm.xml" );
+	QString fname = dir.filePath( "kfm.xml" ); // last resort
+	// Try local copy first, docsys, relative from nifskope/release, linux data dir
+	QStringList xmlList( QStringList()
+			<< "kfm.xml"
+			<< "../docsys/kfm.xml"
+			<< "../../docsys/kfm.xml"
+			<< "/usr/share/nifskope/kfm.xml" );
+	foreach( QString str, xmlList )
+	{
+		if ( dir.exists( str ) )
+		{
+			fname = dir.filePath( str );
+			break;
+		}
+	}
 	QString result = KfmModel::parseXmlDescription( fname );
 	if ( ! result.isEmpty() )
 	{

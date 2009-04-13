@@ -11,7 +11,13 @@
 #include <QMimeData>
 #include <QSettings>
 
-
+//! Add a link to the specified block to a link array
+/*!
+ * @param nif The model
+ * @param iParent The block containing the link array
+ * @param array The name of the link array
+ * @param link A reference to the block to insert into the link array
+ */
 static void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
 {
 	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
@@ -25,6 +31,13 @@ static void addLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 	}
 }
 
+//! Remove a link to a block from the specified link array
+/*!
+ * @param nif The model
+ * @param iParent The block containing the link array
+ * @param array The name of the link array
+ * @param link A reference to the block to remove from the link array
+ */
 static void delLink( NifModel * nif, QModelIndex iParent, QString array, int link )
 {
 	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
@@ -48,6 +61,10 @@ static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIn
 	if ( nif->inherits( index, "NiNode" ) && nif->inherits( iBlock, "NiAVObject" ) )
 	{
 		addLink( nif, index, "Children", nif->getBlockNumber( iBlock ) );
+		if ( nif->inherits( iBlock, "NiDynamicEffect" ) )
+		{
+			addLink( nif, index, "Effects", nif->getBlockNumber( iBlock ) );
+		}
 	}
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiProperty" ) )
 	{
@@ -56,6 +73,30 @@ static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIn
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiExtraData" ) )
 	{
 		addLink( nif, index, "Extra Data List", nif->getBlockNumber( iBlock ) );
+	}
+	else if ( nif->inherits( index, "NiObjectNET") && nif->inherits( iBlock, "NiTimeController" ) )
+	{
+		if ( nif->getLink( index, "Controller" ) > 0 )
+		{
+			blockLink( nif, nif->getBlock( nif->getLink( index, "Controller" ) ), iBlock );
+		}
+		else
+		{
+			nif->setLink( index, "Controller", nif->getBlockNumber( iBlock ) );
+			nif->setLink( iBlock, "Target", nif->getBlockNumber( index ) );
+		}
+	}
+	else if ( nif->inherits( index, "NiTimeController" ) && nif->inherits( iBlock, "NiTimeController" ) )
+	{
+		if ( nif->getLink( index, "Next Controller" ) > 0)
+		{
+			blockLink( nif, nif->getBlock( nif->getLink( index, "Next Controller" ) ), iBlock );
+		}
+		else
+		{
+			nif->setLink( index, "Next Controller", nif->getBlockNumber( iBlock ) );
+			nif->setLink( iBlock, "Target", nif->getLink( index, "Target" ) );
+		}
 	}
 }
 
@@ -1141,4 +1182,4 @@ public:
 	}
 };
 
-REGISTER_SPELL( spSortBlockNames );
+REGISTER_SPELL( spSortBlockNames )

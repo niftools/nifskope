@@ -4,7 +4,7 @@
 
 QToolTip
 {
-    opacity: 213;
+    opacity: 223;
     color: steelblue;
     border: 1px solid steelblue;
     border-radius: 5px;
