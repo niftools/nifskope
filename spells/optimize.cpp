@@ -9,6 +9,21 @@
 #include "tangentspace.h"
 #include "transform.h"
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file optimize.cpp
+ * \brief Optimization spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Combines properties
+/*!
+ * This has a tendency to fail due to supposedly boolean values in many NIFs
+ * having values apart from 0 and 1.
+ *
+ * \sa spCombiTris
+ * \sa spUniqueProps
+ */
 class spCombiProps : public Spell
 {
 public:
@@ -87,7 +102,11 @@ public:
 
 REGISTER_SPELL( spCombiProps )
 
-
+//! Creates unique properties from shared ones
+/*!
+ * \sa spDuplicateBlock
+ * \sa spCombiProps
+ */
 class spUniqueProps : public Spell
 {
 public:
@@ -153,7 +172,13 @@ public:
 
 REGISTER_SPELL( spUniqueProps )
 
-
+//! Removes nodes with no children and singular parents
+/*!
+ * Note that the user might lose "important" named nodes with this; short of
+ * asking for confirmation or simply reporting nodes instead of removing
+ * them, there's not much that can be done to prevent a NIF that won't work
+ * ingame.
+ */
 class spRemoveBogusNodes : public Spell
 {
 public:
@@ -167,7 +192,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-      Q_UNUSED(index);
+		Q_UNUSED(index);
 		bool removed;
 		int cnt = 0;
 		do
@@ -206,7 +231,7 @@ public:
 		} while ( removed );
 		
 		if ( cnt > 0 )
-			qWarning() << "removed" << cnt << "ninodes";
+			QMessageBox::information(0, "NifSkope", QString( Spell::tr( "removed %1 nodes" ) ).arg(cnt));
 		
 		return QModelIndex();
 	}
@@ -214,7 +239,12 @@ public:
 
 REGISTER_SPELL( spRemoveBogusNodes )
 
-
+//! Combines geometry data
+/*!
+ * Can fail for a number of reasons, usually due to mismatched properties (see
+ * spCombiProps for why that can fail) or non-geometry children (extra data,
+ * skin instance etc.).
+ */
 class spCombiTris : public Spell
 {
 public:

@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define REGISTER_SPELL( SPELL ) static Librarian __##SPELL##__ ( new SPELL );
 
+//! \file spellbook.h Spell, SpellBook and Librarian
+
 //! Flexible context menu magic functions.
 class Spell
 {

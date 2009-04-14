@@ -1488,15 +1488,17 @@ bool NifModel::setHeaderString( const QString & s )
 
 bool NifModel::load( QIODevice & device )
 {
-   NIFSKOPE_QSETTINGS(cfg);
-   bool ignoreSize = cfg.value("ignore block size", false).toBool();
+	NIFSKOPE_QSETTINGS(cfg);
+	bool ignoreSize = false;
+	ignoreSize = cfg.value("ignore block size", false).toBool();
 
 	clear();
 	
 	NifIStream stream( this, &device );
 
 	// read header
-	NifItem * header = getHeaderItem();
+	NifItem * header = NULL;
+	header = getHeaderItem();
 	// bugfix: force user versions to zero (if the template was version
 	// 20.0.0.5 then they have been set to non-zero, and the read function
 	// will not reset them to zero on older files...)
@@ -1511,15 +1513,17 @@ bool NifModel::load( QIODevice & device )
 		return false;
 	}
 	
-	int numblocks = get<int>( header, "Num Blocks" );
+	int numblocks = 0;
+	numblocks = get<int>( header, "Num Blocks" );
 	//qDebug( "numblocks %i", numblocks );
 	
 	emit sigProgress( 0, numblocks );
 	QTime t = QTime::currentTime();
 	
+	qint64 curpos = 0;
 	try
 	{
-		qint64 curpos = device.pos();
+		curpos = device.pos();
 		if ( version >= 0x0303000d )
 		{
 			// read in the NiBlocks

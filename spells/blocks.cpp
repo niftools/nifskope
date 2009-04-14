@@ -11,6 +11,13 @@
 #include <QMimeData>
 #include <QSettings>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file blocks.cpp
+ * \brief Block manipulation spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 //! Add a link to the specified block to a link array
 /*!
  * @param nif The model
@@ -52,6 +59,12 @@ static void delLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 	}
 }
 
+//! Link one block to another
+/*!
+ * @param nif The model
+ * @param index The block to link to (becomes parent)
+ * @param iBlock The block to link (becomes child)
+ */
 static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
 {
 	if ( nif->isLink( index ) && nif->inherits( iBlock, nif->itemTmplt( index ) ) )
@@ -100,6 +113,7 @@ static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIn
 	}
 }
 
+//! Helper function for branch paste
 static qint32 getBlockByName( NifModel * nif, const QString & tn )
 {
 	QStringList ls = tn.split( "|" );
@@ -116,6 +130,7 @@ static qint32 getBlockByName( NifModel * nif, const QString & tn )
 	return -1;
 }
 
+//! Helper function for branch copy
 static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block )
 {
 	if ( ! blocks.contains( block ) ) blocks.append( block );
@@ -123,6 +138,7 @@ static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block
 		populateBlocks( blocks, nif, link );
 }
 
+//! Remove the children from the specified block
 static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
 {
 	QList<QPersistentModelIndex> iChildren;
@@ -322,7 +338,7 @@ public:
 
 REGISTER_SPELL( spAttachLight )
 
-//! Attach Extra Data to a block
+//! Attach extra data to a block
 class spAttachExtraData : public Spell
 {
 public:
