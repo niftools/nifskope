@@ -4,6 +4,12 @@
 #include <QFileDialog>
 
 //! Attach a .KF to a .NIF
+/*!
+ * This only works for 10.0.1.0 onwards; prior to then a NiSequenceStreamHelper or NiSequence can be a root block.
+ * The layout is different too; for 4.0.0.2 it appears that the chain of NiStringExtraData gives the names of
+ * the block which the corresponding NiKeyframeController should attach to.
+ * See Node (gl/glnode.cpp) for how controllers are handled
+ */
 class spAttachKf : public Spell
 {
 public:

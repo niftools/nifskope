@@ -17,7 +17,7 @@ public:
 	
 	enum FlagType
 	{
-		Alpha, Billboard, Controller, Node, RigidBody, Shape, ZBuffer, BSX, None
+		Alpha, Billboard, Controller, Node, RigidBody, Shape, Stencil, VertexColor, ZBuffer, BSX, None
 	};
 	
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
@@ -60,6 +60,10 @@ public:
 				return RigidBody;
 			else if ( name == "NiTriShape" || name == "NiTriStrips" )
 				return Shape;
+			else if ( name == "NiStencilProperty" )
+				return Stencil;
+			else if ( name == "NiVertexColorProperty" )
+				return VertexColor;
 			else if ( name == "NiZBufferProperty" )
 				return ZBuffer;
 			else if ( name == "BSXFlags" )
@@ -97,6 +101,12 @@ public:
 			case Shape:
 				shapeFlags( nif, iFlags );
 				break;
+			case Stencil:
+				stencilFlags( nif, iFlags );
+				break;
+			case VertexColor:
+				vertexColorFlags( nif, iFlags );
+				break;
 			case ZBuffer:
 				zbufferFlags( nif, iFlags );
 				break;
@@ -118,9 +128,11 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
+		// See glBlendFunc; ONE and ZERO appear to swapped from where they should be (not to mention missing values before SATURATE)
 		QStringList blendModes = QStringList() <<
 			"One" << "Zero" << "Src Color" << "Inv Src Color" << "Dst Color" << "Inv Dst Color" << "Src Alpha" << "Inv Src Alpha" <<
 			"Dst Alpha" << "Inv Dst Alpha" << "Src Alpha Saturate";
+		// ALWAYS and NEVER are swapped from where they should be; see glAlphaFunc
 		QStringList testModes = QStringList() <<
 			"Always" << "Less" << "Equal" << "Less or Equal" << "Greater" << "Not Equal" << "Greater or Equal" << "Never";
 		
@@ -300,8 +312,19 @@ public:
 		QCheckBox * chkROnly = dlgCheck( vbox, "Z Buffer Read Only" );
 		chkROnly->setChecked( ( flags & 2 ) == 0 );
 		
-		QComboBox * cmbFunc = dlgCombo( vbox, "Z Buffer Test Function", QStringList() << "Always" << "Less" << "Equal" << "Less or Equal" << "Greater" << "Not Equal" << "Greater or Equal" << "Never", chkEnable );
-		if ( nif->checkVersion( 0x04010012, 0 ) )
+		// NetImmerse/Gamebyro swapped ALWAYS and NEVER here, too. Otherwise values match glDepthFunc 
+		QStringList compareFunc = QStringList()
+			<< Spell::tr("Always") // 0
+			<< Spell::tr("Less") // 1
+			<< Spell::tr("Equal") // 2
+			<< Spell::tr("Less or Equal") // 3
+			<< Spell::tr("Greater") // 4
+			<< Spell::tr("Not Equal") // 5
+			<< Spell::tr("Greater or Equal") // 6
+			<< Spell::tr("Never"); // 7
+		
+		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr("Z Buffer Test Function"), compareFunc, chkEnable );
+		if ( nif->checkVersion( 0x04010012, 0x14000005 ) )
 			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Function" ) );
 		else
 			cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
@@ -312,7 +335,7 @@ public:
 		{
 			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
 			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
-			if ( nif->checkVersion( 0x04010012, 0 ) )
+			if ( nif->checkVersion( 0x04010012, 0x14000005 ) )
 				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
 			else
 				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
@@ -358,11 +381,11 @@ public:
 			nif->set<int>( index, flags );
 		}
 	}
-
+	
 	void billboardFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
-		if( ! flags ) flags = 0x8;
+		if ( ! flags ) flags = 0x8;
 		
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -384,10 +407,10 @@ public:
 		
 		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr("Collision Detection"), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
-
+		
 		QComboBox * cmbMode = dlgCombo( vbox, Spell::tr("Billboard Mode"), billboardModes );
 		cmbMode->setCurrentIndex( flags >> 5 & 3 );
-
+		
 		dlgButtons( &dlg, vbox );
 		
 		if ( dlg.exec() == QDialog::Accepted )
@@ -397,6 +420,160 @@ public:
 			flags = flags & 0xff9f | ( cmbMode->currentIndex() << 5 );
 			flags = flags & 0xfff7 | 8; // seems to always be set but has no known effect
 			nif->set<int>( index, flags );
+		}
+	}
+	
+	void stencilFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkEnable = dlgCheck( vbox, Spell::tr("Stencil Enable") );
+		
+		QStringList stencilActions = QStringList()
+			<< Spell::tr("Keep") // 0
+			<< Spell::tr("Zero") // 1
+			<< Spell::tr("Replace") // 2
+			<< Spell::tr("Increment") // 3
+			<< Spell::tr("Decrement") // 4
+			<< Spell::tr("Invert"); // 5
+		
+		QComboBox * cmbFail = dlgCombo( vbox, Spell::tr("Fail Action"), stencilActions );
+		
+		QComboBox * cmbZFail = dlgCombo( vbox, Spell::tr("Z Fail Action"), stencilActions );
+		
+		QComboBox * cmbPass = dlgCombo( vbox, Spell::tr("Pass Action"), stencilActions );
+		
+		QStringList drawModes = QStringList()
+			<< Spell::tr("Counter clock wise or Both") // 0
+			<< Spell::tr("Draw counter clock wise") // 1
+			<< Spell::tr("Draw clock wise") // 2
+			<< Spell::tr("Draw Both"); // 3
+		
+		QComboBox * cmbDrawMode = dlgCombo( vbox, Spell::tr("Draw Mode"), drawModes );
+		
+		// Appears to match glStencilFunc
+		QStringList compareFunc = QStringList()
+			<< Spell::tr("Never") // 0
+			<< Spell::tr("Less") // 1
+			<< Spell::tr("Equal") // 2
+			<< Spell::tr("Less or Equal") // 3
+			<< Spell::tr("Greater") // 4
+			<< Spell::tr("Not Equal") // 5
+			<< Spell::tr("Greater or Equal") // 6
+			<< Spell::tr("Always"); // 7
+		
+		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr("Stencil Function"), compareFunc );
+		
+		// prior to 20.1.0.3 flags itself appears unused; between 10.0.1.2 and 20.1.0.3 it is not present
+		if ( nif->checkVersion( 0, 0x14010003 ) )
+		{
+			// set based on Stencil Enabled, Stencil Function, Fail Action, Z Fail Action, Pass Action, Draw Mode
+			// Possibly include Stencil Ref and Stencil Mask except they don't seem to ever vary from the default
+			chkEnable->setChecked( nif->get<bool>( nif->getBlock( index ), "Stencil Enabled" ) );
+			cmbFail->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Fail Action" ) );
+			cmbZFail->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Z Fail Action" ) );
+			cmbPass->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Pass Action" ) );
+			cmbDrawMode->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Draw Mode" ) );
+			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Stencil Function" ) );
+		}
+		else
+		{
+			// set based on flags itself
+			chkEnable->setChecked( flags & 1 );
+			cmbFail->setCurrentIndex( flags >> 1 & 7 );
+			cmbZFail->setCurrentIndex( flags >> 4 & 7 );
+			cmbPass->setCurrentIndex( flags >> 7 & 7 );
+			cmbDrawMode->setCurrentIndex( flags >> 10 & 3 );
+			cmbFunc->setCurrentIndex( flags >> 12 & 7 );
+		}
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() && QDialog::Accepted )
+		{
+			if ( nif->checkVersion( 0, 0x14010003 ) )
+			{
+				nif->set<bool>( nif->getBlock( index ), "Stencil Enabled", chkEnable->isChecked() );
+				nif->set<int>( nif->getBlock( index ), "Fail Action", cmbFail->currentIndex() );
+				nif->set<int>( nif->getBlock( index ), "Z Fail Action", cmbZFail->currentIndex() );
+				nif->set<int>( nif->getBlock( index ), "Pass Action", cmbPass->currentIndex() );
+				nif->set<int>( nif->getBlock( index ), "Draw Mode", cmbDrawMode->currentIndex() );
+				nif->set<int>( nif->getBlock( index ), "Stencil Function", cmbFunc->currentIndex() );
+			}
+			else
+			{
+				flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
+				flags = flags & 0xfff1 | ( cmbFail->currentIndex() << 1 );
+				flags = flags & 0xff8f | ( cmbZFail->currentIndex() << 4 );
+				flags = flags & 0xfc7f | ( cmbPass->currentIndex() << 7 );
+				flags = flags & 0xf3ff | ( cmbDrawMode->currentIndex() << 10 );
+				flags = flags & 0xcfff | ( cmbFunc->currentIndex() << 12 );
+				nif->set<int>( index, flags );
+			}
+		}
+	}
+	
+	void vertexColorFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		// For versions < 20.1.0.3, give option to set flags regardless
+		QCheckBox * setFlags = 0;
+		if( nif->checkVersion( 0, 0x14010003 ) )
+		{
+			setFlags = dlgCheck( vbox, Spell::tr("Set Flags also") );
+			setFlags->setChecked( flags != 0 );
+		}
+		
+		QStringList lightMode = QStringList()
+			<< Spell::tr("Emissive")
+			<< Spell::tr("Emissive + Ambient + Diffuse");
+		
+		QComboBox * cmbLight = dlgCombo( vbox, Spell::tr("Lighting Mode"), lightMode );
+		
+		QStringList vertMode = QStringList()
+			<< Spell::tr("Source Ignore")
+			<< Spell::tr("Source Emissive")
+			<< Spell::tr("Source Ambient/Diffuse");
+		
+		QComboBox * cmbVert = dlgCombo( vbox, Spell::tr("Vertex Mode"), vertMode );
+		
+		// Use enums in preference to flags since they probably have a higher priority
+		if ( nif->checkVersion( 0, 0x14010003 ) )
+		{
+			cmbLight->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Lighting Mode" ) );
+			cmbVert->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Vertex Mode" ) );
+		}
+		else
+		{
+			cmbLight->setCurrentIndex( flags >> 3 & 1 );
+			cmbVert->setCurrentIndex( flags >> 4 & 3 );
+		}
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() && QDialog::Accepted )
+		{
+			if ( nif->checkVersion( 0, 0x14010003 ) )
+			{
+				nif->set<int>( nif->getBlock( index ), "Lighting Mode", cmbLight->currentIndex() );
+				nif->set<int>( nif->getBlock( index ), "Vertex Mode", cmbVert->currentIndex() );
+			}
+			
+			if( nif->checkVersion( 0x14010003, 0 ) || setFlags != 0 && setFlags->isChecked() )
+			{
+				flags = flags & 0xfff7 | ( cmbLight->currentIndex() << 3 );
+				flags = flags & 0xffcf | ( cmbVert->currentIndex() << 4 );
+				nif->set<int>( index, flags );
+			}
 		}
 	}
 	

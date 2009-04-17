@@ -227,12 +227,18 @@ void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 		int flags = nif->get<int>( iBlock, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
-		if ( nif->checkVersion( 0x10000001, 0 ) )
+		static const GLenum depthMap[8] = {
+			GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
+		};
+
+		// This was checking version 0x10000001 ?
+		if ( nif->checkVersion( 0x04010012, 0x14000005 ) )
 		{
-			static const GLenum depthMap[8] = {
-				GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
-			};
 			depthFunc = depthMap[ nif->get<int>( iBlock, "Function" ) & 0x07 ];
+		}
+		else if ( nif->checkVersion( 0x14010003, 0 ) )
+		{
+			depthFunc = depthMap[ (flags >> 2 ) & 0x07 ];
 		}
 		else
 			depthFunc = GL_LEQUAL;
@@ -890,21 +896,43 @@ void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 		//static const GLenum operations[8] = { GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT, GL_KEEP, GL_KEEP };
 		
 		// ! glFrontFace( GL_CCW )
-		switch ( nif->get<int>( iBlock, "Draw Mode" ) )
+		if ( nif->checkVersion( 0, 0x14000005 ) )
 		{
-			case 2:
-				cullEnable = true;
-				cullMode = GL_FRONT;
-				break;
-			case 3:
-				cullEnable = false;
-				cullMode = GL_BACK;
-				break;
-			case 1:
-			default:
-				cullEnable = true;
-				cullMode = GL_BACK;
-				break;
+			switch ( nif->get<int>( iBlock, "Draw Mode" ) )
+			{
+				case 2:
+					cullEnable = true;
+					cullMode = GL_FRONT;
+					break;
+				case 3:
+					cullEnable = false;
+					cullMode = GL_BACK;
+					break;
+				case 1:
+				default:
+					cullEnable = true;
+					cullMode = GL_BACK;
+					break;
+			}
+		}
+		else
+		{
+			switch ( ( nif->get<int>( iBlock, "Flags" ) >> 10 ) & 3 )
+			{
+				case 2:
+					cullEnable = true;
+					cullMode = GL_FRONT;
+					break;
+				case 3:
+					cullEnable = false;
+					cullMode = GL_BACK;
+					break;
+				case 1:
+				default:
+					cullEnable = true;
+					cullMode = GL_BACK;
+					break;
+			}
 		}
 	}
 }

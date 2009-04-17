@@ -466,6 +466,19 @@ void Particles::drawShapes( NodeList * draw2nd )
 	
 	// render the particles
 	
+	/*
+	 * Goal: get multitexturing happening
+	 *
+	 * Mesh uses Renderer::setupProgram which calls
+	 * Renderer::setupFixedFunction
+	 *
+	 * setupFixedFunction calls TexturingProperty::bind( id, coords, stage )
+	 * bind calls activateTextureUnit
+	 *
+	 * Mesh also draws using glDrawElements and glVertexPointer
+	 *
+	 */
+
 	static const Vector2 tex[4] = { Vector2( 1.0, 1.0 ), Vector2( 0.0, 1.0 ), Vector2( 1.0, 0.0 ), Vector2( 0.0, 0.0 ) };
 	
 	int p = 0;
