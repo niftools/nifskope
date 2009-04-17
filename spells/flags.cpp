@@ -331,11 +331,13 @@ public:
 		
 		dlgButtons( &dlg, vbox );
 		
+		// TODO: check which is used for 4.1.0.12 < x < 20.0.0.5 if flags
+		// and function conflict... perhaps set flags regardless?
 		if ( dlg.exec() == QDialog::Accepted )
 		{
 			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
 			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
-			if ( nif->checkVersion( 0x04010012, 0x14000005 ) )
+			if ( nif->checkVersion( 0x0401000C, 0x14000005 ) )
 				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
 			else
 				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
@@ -469,7 +471,8 @@ public:
 		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr("Stencil Function"), compareFunc );
 		
 		// prior to 20.1.0.3 flags itself appears unused; between 10.0.1.2 and 20.1.0.3 it is not present
-		if ( nif->checkVersion( 0, 0x14010003 ) )
+		// 20.0.0.5 is the last version with these values
+		if ( nif->checkVersion( 0, 0x14000005 ) )
 		{
 			// set based on Stencil Enabled, Stencil Function, Fail Action, Z Fail Action, Pass Action, Draw Mode
 			// Possibly include Stencil Ref and Stencil Mask except they don't seem to ever vary from the default
@@ -495,7 +498,7 @@ public:
 		
 		if ( dlg.exec() && QDialog::Accepted )
 		{
-			if ( nif->checkVersion( 0, 0x14010003 ) )
+			if ( nif->checkVersion( 0, 0x14000005 ) )
 			{
 				nif->set<bool>( nif->getBlock( index ), "Stencil Enabled", chkEnable->isChecked() );
 				nif->set<int>( nif->getBlock( index ), "Fail Action", cmbFail->currentIndex() );
@@ -525,9 +528,9 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
-		// For versions < 20.1.0.3, give option to set flags regardless
+		// For versions < 20.1.0.3 (<= 20.0.0.5), give option to set flags regardless
 		QCheckBox * setFlags = 0;
-		if( nif->checkVersion( 0, 0x14010003 ) )
+		if( nif->checkVersion( 0, 0x14000005 ) )
 		{
 			setFlags = dlgCheck( vbox, Spell::tr("Set Flags also") );
 			setFlags->setChecked( flags != 0 );
@@ -547,7 +550,7 @@ public:
 		QComboBox * cmbVert = dlgCombo( vbox, Spell::tr("Vertex Mode"), vertMode );
 		
 		// Use enums in preference to flags since they probably have a higher priority
-		if ( nif->checkVersion( 0, 0x14010003 ) )
+		if ( nif->checkVersion( 0, 0x14000005 ) )
 		{
 			cmbLight->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Lighting Mode" ) );
 			cmbVert->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Vertex Mode" ) );
@@ -562,7 +565,7 @@ public:
 		
 		if ( dlg.exec() && QDialog::Accepted )
 		{
-			if ( nif->checkVersion( 0, 0x14010003 ) )
+			if ( nif->checkVersion( 0, 0x14000005 ) )
 			{
 				nif->set<int>( nif->getBlock( index ), "Lighting Mode", cmbLight->currentIndex() );
 				nif->set<int>( nif->getBlock( index ), "Vertex Mode", cmbVert->currentIndex() );

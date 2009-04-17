@@ -7,6 +7,9 @@ changes since 1.0.19:
  * Fix tooltips display for nif.xml annotations
  * Paste Block/Branch spells now set Controller and Target links when pasting
    Controller blocks
+ * Fix styling of file selection widget styling ("Load" and "Save As")
+ * Flag spell updated for Vertex Color, Stencil Buffer, and Z Buffer
+   properties
 
 changes since 1.0.18:
  * Spells:

@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QCompleter>
 #include <QContextMenuEvent>
 #include <QDirModel>
@@ -170,8 +171,9 @@ void FileSelector::setState( States s )
 	else
 		timer->stop();
 	
-	// reload style sheet
-	QString styletmp = styleSheet();
+	// reload style sheet to refresh State property selector
+	// qApp is a macro to the global QApplication instance
+	QString styletmp = qApp->styleSheet();
 	setStyleSheet( QString() );
 	setStyleSheet( styletmp );
 }
