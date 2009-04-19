@@ -312,7 +312,7 @@ public:
 		QCheckBox * chkROnly = dlgCheck( vbox, "Z Buffer Read Only" );
 		chkROnly->setChecked( ( flags & 2 ) == 0 );
 		
-		// NetImmerse/Gamebyro swapped ALWAYS and NEVER here, too. Otherwise values match glDepthFunc 
+		// ALWAYS and NEVER are swapped, otherwise values match glDepthFunc 
 		QStringList compareFunc = QStringList()
 			<< Spell::tr("Always") // 0
 			<< Spell::tr("Less") // 1
@@ -324,10 +324,17 @@ public:
 			<< Spell::tr("Never"); // 7
 		
 		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr("Z Buffer Test Function"), compareFunc, chkEnable );
-		if ( nif->checkVersion( 0x04010012, 0x14000005 ) )
+		if ( nif->checkVersion( 0x0401000C, 0x14000005 ) )
 			cmbFunc->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Function" ) );
 		else
 			cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
+		
+		QCheckBox * setFlags = 0;
+		if( nif->checkVersion( 0x0401000C, 0x14000005 ) )
+		{
+			setFlags = dlgCheck( vbox, Spell::tr("Set Flags also") );
+			setFlags->setChecked( flags > 3 );
+		}
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -338,9 +345,14 @@ public:
 			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
 			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
 			if ( nif->checkVersion( 0x0401000C, 0x14000005 ) )
+			{
 				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
-			else
+			}
+
+			if( nif->checkVersion( 0x14010003, 0 ) || setFlags != 0 && setFlags->isChecked() )
+			{
 				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
+			}
 			nif->set<int>( index, flags );
 		}
 	}
@@ -470,7 +482,7 @@ public:
 		
 		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr("Stencil Function"), compareFunc );
 		
-		// prior to 20.1.0.3 flags itself appears unused; between 10.0.1.2 and 20.1.0.3 it is not present
+		// prior to 20.1.0.3 flags itself appears unused; after 10.0.1.2 and until 20.1.0.3 it is not present
 		// 20.0.0.5 is the last version with these values
 		if ( nif->checkVersion( 0, 0x14000005 ) )
 		{

@@ -712,15 +712,16 @@ REGISTER_SPELL( spPasteBranch )
 
 //! Paste branch without parenting; see spPasteBranch
 /*!
- * This is a dodgy hack and could probably be reworked to use spPasteBranch
- * instead of duplicating everything.
+ * This was originally a dodgy hack involving duplicating the contents of
+ * spPasteBranch and neglecting to link the blocks; now it calls
+ * spPasteBranch with a bogus index.
  */
 class spPasteBranch2 : public Spell
 {
 public:
 	QString name() const { return Spell::tr("Paste At End"); }
 	QString page() const { return Spell::tr("Block"); }
-	//QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::SHIFT + Qt::Key_V ); }
+	// hotkey() won't work here, probably because the context menu is not available
 
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
@@ -734,8 +735,8 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
-			return false;
+		//if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
+		//	return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime && ! index.isValid() )
 			foreach ( QString form, mime->formats() )
@@ -747,72 +748,8 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		Q_UNUSED(index);
-		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime )
-		{
-			foreach ( QString form, mime->formats() )
-			{
-				QString v = acceptFormat( form, nif );
-				if ( ! v.isEmpty() && ( v == nif->getVersion() || QMessageBox::question( 0, "Paste Branch", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( v ), "Continue", "Cancel" ) == 0 ) )
-				{
-					QByteArray data = mime->data( form );
-					QBuffer buffer( & data );
-					if ( buffer.open( QIODevice::ReadOnly ) )
-					{
-						QDataStream ds( & buffer );
-						
-						int count;
-						ds >> count;
-						
-						QMap<qint32,qint32> blockMap;
-						ds >> blockMap;
-						QMutableMapIterator<qint32,qint32> ibm( blockMap );
-						while ( ibm.hasNext() )
-						{
-							ibm.next();
-							ibm.value() += nif->getBlockCount();
-						}
-						
-						QMap<qint32,QString> parentMap;
-						ds >> parentMap;
-						
-						QMapIterator<qint32, QString> ipm( parentMap );
-						while ( ipm.hasNext() )
-						{
-							ipm.next();
-							qint32 block = getBlockByName( nif, ipm.value() );
-							if ( block >= 0 )
-							{
-								blockMap.insert( ipm.key(), block );
-							}
-							else
-							{
-								qWarning() << "failed to map parent link" << ipm.value();
-								return QModelIndex();
-							}
-						}
-						
-						QModelIndex iRoot;
-						
-						for ( int c = 0; c < count; c++ )
-						{
-							QString type;
-							ds >> type;
-							
-							QModelIndex block = nif->insertNiBlock( type, -1 );
-							if ( ! nif->loadAndMapLinks( buffer, block, blockMap ) )
-								return QModelIndex();
-							if ( c == 0 )
-								iRoot = block;
-						}
-						
-						//blockLink( nif, index, iRoot );
-						
-						return iRoot;
-					}
-				}
-			}
-		}
+		spPasteBranch paster;
+		paster.cast( nif, QModelIndex() );
 		return QModelIndex();
 	}
 };
