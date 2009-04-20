@@ -182,17 +182,17 @@ int BaseModel::evaluateString( NifItem * array, const QString & text ) const
 	return d1;
 }
 
-bool BaseModel::updateArray( const QModelIndex & array )
+bool BaseModel::updateArray( const QModelIndex & array, bool fast )
 {
 	NifItem * item = static_cast<NifItem*>( array.internalPointer() );
 	if ( ! ( array.isValid() && item && array.model() == this ) )
 		return false;
-	return updateArrayItem( item, false );
+	return updateArrayItem( item, fast );
 }
 
-bool BaseModel::updateArray( const QModelIndex & parent, const QString & name )
+bool BaseModel::updateArray( const QModelIndex & parent, const QString & name, bool fast )
 {
-	return updateArray( getIndex( parent, name ) );
+	return updateArray( getIndex( parent, name ), fast );
 }
 
 /*

@@ -89,9 +89,9 @@ public:
 	 * \param array The index of the array whose size to update.
 	 * \return true if the update succeeded, false otherwise.
 	 */
-	bool updateArray( const QModelIndex & iArray );
+	bool updateArray( const QModelIndex & iArray, bool fast = false );
 	//! Update the size of an array by name.
-	bool updateArray( const QModelIndex & parent, const QString & name );
+	bool updateArray( const QModelIndex & parent, const QString & name, bool fast = false );
 	//! Get an model index array as a QVector.
 	/*!
 	 * \param array The index of the array to get.

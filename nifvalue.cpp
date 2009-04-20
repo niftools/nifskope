@@ -1012,7 +1012,7 @@ void NifIStream::init()
 	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
 	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
 	NIFSKOPE_QSETTINGS(cfg);
-	maxLength = cfg.value("maximum string length", 0x4000).toInt();
+	maxLength = cfg.value("maximum string length", 0x8000).toInt();
 	//maxLength = Options::maxStringLength();
 }
 

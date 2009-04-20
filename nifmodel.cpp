@@ -209,6 +209,8 @@ void NifModel::clear()
 
 		setArray<QString>( getHeader(), "Copyright", copyright );
 	}
+	lockUpdates = false;
+	needUpdates = utNone;
 }
 
 /*
@@ -231,6 +233,11 @@ QModelIndex NifModel::getFooter() const
 
 void NifModel::updateFooter()
 {
+	if (lockUpdates) {
+		needUpdates = UpdateType(needUpdates | utFooter);
+		return;
+	}
+
 	NifItem * footer = getFooterItem();
 	if ( ! footer ) return;
 	NifItem * roots = getItem( footer, "Roots" );
@@ -258,6 +265,11 @@ NifItem * NifModel::getHeaderItem() const
 
 void NifModel::updateHeader()
 {
+	if (lockUpdates) {
+		needUpdates = UpdateType(needUpdates | utHeader);
+		return;
+	}
+
 	NifItem * header = getHeaderItem();
 	
 	set<int>( header, "Num Blocks", getBlockCount() );
@@ -492,11 +504,7 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 		while ( parent->parent() && parent->parent() != root )
 			parent = parent->parent();
 		if ( parent != getFooterItem() )
-		{
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
-		}
+			updateModel(UpdateType(utLinks | utFooter));
 	}
 	return true;
 }
@@ -561,12 +569,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 			insertType( branch, data );
 		
 		if ( ! fast )
-		{
-			updateHeader();
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
-		}
+			updateModel();
 		return createIndex( branch->row(), 0, branch );
 	}
 	else
@@ -586,10 +589,7 @@ void NifModel::removeNiBlock( int blocknum )
 	beginRemoveRows( QModelIndex(), blocknum+1, blocknum+1 );
 	root->removeChild( blocknum + 1 );
 	endRemoveRows();
-	updateHeader();
-	updateLinks();
-	updateFooter();
-	emit linksChanged();
+	updateModel();
 }
 
 void NifModel::moveNiBlock( int src, int dst )
@@ -620,10 +620,7 @@ void NifModel::moveNiBlock( int src, int dst )
 	
 	mapLinks( root, map );
 	
-	updateLinks();
-	updateHeader();
-	updateFooter();
-	emit linksChanged();
+	updateModel();
 }
 
 void NifModel::updateStrings(NifModel *src, NifModel* tgt, NifItem *item)
@@ -671,15 +668,8 @@ QMap<qint32,qint32> NifModel::moveAllNiBlocks( NifModel * targetnif, bool update
 
    if (update)
    {
-	   updateLinks();
-	   updateHeader();
-	   updateFooter();
-	   emit linksChanged();
-   	
-	   targetnif->updateLinks();
-	   targetnif->updateHeader();
-	   targetnif->updateFooter();
-	   emit targetnif->linksChanged();
+	   updateModel();
+	   targetnif->updateModel();
    }
 	return map;
 }
@@ -727,21 +717,14 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 	endInsertRows();
 	
 	mapLinks( root, linkMap );
-	updateLinks();
-	emit linksChanged();
 	
-	updateHeader();
-	updateFooter();
+	updateModel();
 }
 
 void NifModel::mapLinks( const QMap<qint32,qint32> & map )
 {
 	mapLinks( root, map );
-	updateLinks();
-	emit linksChanged();
-	
-	updateHeader();
-	updateFooter();
+	updateModel();
 }
 
 QString NifModel::getBlockName( const QModelIndex & idx ) const
@@ -961,11 +944,7 @@ bool NifModel::setItemValue( NifItem * item, const NifValue & val )
 		while ( parent->parent() && parent->parent() != root )
 			parent = parent->parent();
 		if ( parent != getFooterItem() )
-		{
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
-		}
+			updateModel(UpdateType(utLinks | utFooter));
 	}
 	return true;
 }
@@ -1346,11 +1325,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 				{
 					item->value().fromVariant( value );
 					if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
-					{
-						updateLinks();
-						updateFooter();
-						emit linksChanged();
-					}
+						updateModel(UpdateType(utLinks | utFooter));
 				}
 			}	break;
 		case NifModel::ArgCol:
@@ -1427,11 +1402,7 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 		endRemoveRows();
 		
 		if ( link )
-		{
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
-		}
+			updateModel(UpdateType(utLinks | utFooter));
 		return true;
 	}
 	else
@@ -1684,8 +1655,7 @@ bool NifModel::save( QIODevice & device ) const
 
 	// Force update header and footer prior to save
 	if ( NifModel* mdl = const_cast<NifModel*>(this) ) {
-		mdl->updateHeader();
-		mdl->updateFooter();
+		mdl->updateModel();
 	}
 
 	emit sigProgress( 0, rowCount( QModelIndex() ) );
@@ -1754,9 +1724,7 @@ bool NifModel::load( QIODevice & device, const QModelIndex & index )
 	{
 		NifIStream stream( this, &device );
 		bool ok = load( item, stream, false );
-		updateLinks();
-		updateFooter();
-		emit linksChanged();
+		updateModel(UpdateType(utLinks | utFooter));
 		return ok;
 	}
 	reset();
@@ -1771,9 +1739,7 @@ bool NifModel::loadAndMapLinks( QIODevice & device, const QModelIndex & index, c
 		NifIStream stream( this, & device );
 		bool ok = load( item, stream, false );
 		mapLinks( item, map );
-		updateLinks();
-		updateFooter();
-		emit linksChanged();
+		updateModel(UpdateType(utLinks | utFooter));
 		return ok;
 	}
 	reset();
@@ -2044,6 +2010,11 @@ NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, in
 
 void NifModel::updateLinks( int block )
 {
+	if (lockUpdates) {
+		needUpdates = UpdateType(needUpdates | utLinks);
+		return;
+	}
+
 	if ( block >= 0 )
 	{
 		childLinks[ block ].clear();
@@ -2064,19 +2035,21 @@ void NifModel::updateLinks( int block )
 			QStack<int> stack;
 			checkLinks( c, stack );
 		}
-		
-		for ( int c = 0; c < getBlockCount(); c++ )
+
+
+		int n = getBlockCount();
+		QByteArray hasrefs(n, 0);
+		for ( int c = 0; c < n; c++ )
 		{
-			bool isRoot = true;
-			for ( int d = 0; d < getBlockCount(); d++ )
+			foreach( int d, childLinks.value( c ) )
 			{
-				if ( c != d && childLinks.value( d ).contains( c ) )
-				{
-					isRoot = false;
-					break;
-				}
+				if (d >=0 && d < n)
+					hasrefs[d] = 1;
 			}
-			if ( isRoot )
+		}
+		for ( int c = 0; c < n; c++ )
+		{
+			if (!hasrefs[c])
 				rootLinks.append( c );
 		}
 	}
@@ -2222,7 +2195,7 @@ QVector<qint32> NifModel::getLinkArray( const QModelIndex & parent, const QStrin
 	return getLinkArray( getIndex( parent, name ) );
 }
 
-bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32 l )
+bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32 l, bool fast)
 {
 	NifItem * parentItem = static_cast<NifItem*>( parent.internalPointer() );
 	if ( ! ( parent.isValid() && parentItem && parent.model() == this ) )
@@ -2237,9 +2210,8 @@ bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32
 			parent = parent->parent();
 		if ( parent != getFooterItem() )
 		{
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
+			if (!fast)
+				updateModel(UpdateType(utLinks | utFooter));
 		}
 		return true;
 	}
@@ -2247,7 +2219,7 @@ bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32
 		return false;
 }
 
-bool NifModel::setLink( const QModelIndex & index, qint32 l )
+bool NifModel::setLink( const QModelIndex & index, qint32 l, bool fast )
 {
 	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
 	if ( ! ( index.isValid() && item && index.model() == this ) )
@@ -2261,9 +2233,8 @@ bool NifModel::setLink( const QModelIndex & index, qint32 l )
 			parent = parent->parent();
 		if ( parent != getFooterItem() )
 		{
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
+			if (!fast)
+				updateModel(UpdateType(utLinks | utFooter));
 		}
 		return true;
 	}
@@ -2289,11 +2260,7 @@ bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qint32> &
 		while ( parent->parent() && parent->parent() != root )
 			parent = parent->parent();
 		if ( parent != getFooterItem() )
-		{
-			updateLinks();
-			updateFooter();
-			emit linksChanged();
-		}
+			updateModel(UpdateType(utLinks | utFooter));
 		return ret;
 	}
 	return false;
@@ -2529,10 +2496,29 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex& in
 
       if ( ! fast )
       {
-         updateHeader();
-         updateLinks();
-         updateFooter();
-         emit linksChanged();
+		  updateModel();
       }
    }
+}
+
+bool NifModel::holdUpdates(bool value)
+{
+	bool retval = lockUpdates;
+	if (lockUpdates == value)
+		return retval;
+	lockUpdates = value;
+	if (!lockUpdates)
+	{
+		updateModel(needUpdates);
+		needUpdates = utNone;
+	}
+	return retval;
+}
+
+void NifModel::updateModel( UpdateType value )
+{
+	if (value & utHeader) updateHeader();
+	if (value & utLinks)  updateLinks();
+	if (value & utFooter) updateFooter();
+	if (value & utLinks)  emit linksChanged();
 }

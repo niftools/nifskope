@@ -23,6 +23,10 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
+		if (nif == NULL)
+			return index;
+
+		bool oldHoldUpdates = nif->holdUpdates(true);
 		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr("Choose .kf file(s)"), nif->getFolder(), "*.kf" );
 		foreach( QString kfname, kfnames )
 		{
@@ -96,17 +100,17 @@ public:
 					}
 					
 					if ( ! iMultiTransformer.isValid() )
-						iMultiTransformer = attachController( nif, iRoot, "NiMultiTargetTransformController" );
+						iMultiTransformer = attachController( nif, iRoot, "NiMultiTargetTransformController", true );
 					if ( ! iCtrlManager.isValid() )
-						iCtrlManager = attachController( nif, iRoot, "NiControllerManager" );
+						iCtrlManager = attachController( nif, iRoot, "NiControllerManager", true );
 					
 					setLinkArray( nif, iMultiTransformer, "Extra Targets", controlledNodes );
 					
 					QPersistentModelIndex iObjPalette = nif->getBlock( nif->getLink( iCtrlManager, "Object Palette" ), "NiDefaultAVObjectPalette" );
 					if ( ! iObjPalette.isValid() )
 					{
-						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1 );
-						nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ) );
+						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1, true );
+						nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ), true );
 					}
 					
 					setNameLinkArray( nif, iObjPalette, "Objs", controlledNodes );
@@ -119,10 +123,10 @@ public:
 					qint32 nSeq = map.value( lSeq );
 					int numSeq = nif->get<int>( iCtrlManager, "Num Controller Sequences" );
 					nif->set<int>( iCtrlManager, "Num Controller Sequences", numSeq+1 );
-					nif->updateArray( iCtrlManager, "Controller Sequences" );
-					nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq );
+					nif->updateArray( iCtrlManager, "Controller Sequences", true );
+					nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq, true );
 					QModelIndex iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
-					nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ) );
+					nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ), true );
 				}
 				
 				if ( ! missingNodes.isEmpty() )
@@ -131,7 +135,7 @@ public:
 					foreach ( QString nn, missingNodes )
 						qWarning() << nn;
 				}
-				
+
 				//return iRoot;
 			}
 			catch ( QString e )
@@ -139,6 +143,8 @@ public:
 				qWarning( e.toAscii() );
 			}
 		}
+		if (!oldHoldUpdates)
+			nif->holdUpdates(false);
 		return index;
 	}
 	
@@ -192,16 +198,16 @@ public:
 		return QModelIndex();
 	}
 	
-	static QModelIndex attachController( NifModel * nif, const QPersistentModelIndex & iNode, const QString & ctrltype )
+	static QModelIndex attachController( NifModel * nif, const QPersistentModelIndex & iNode, const QString & ctrltype, bool fast = false )
 	{
-		QModelIndex iCtrl = nif->insertNiBlock( ctrltype, nif->getBlockNumber( iNode ) + 1 );
+		QModelIndex iCtrl = nif->insertNiBlock( ctrltype, nif->getBlockNumber( iNode ) + 1, fast );
 		if ( ! iCtrl.isValid() )
 			return QModelIndex();
 		
 		qint32 oldctrl = nif->getLink( iNode, "Controller" );
-		nif->setLink( iNode, "Controller", nif->getBlockNumber( iCtrl ) );
-		nif->setLink( iCtrl, "Next Controller", oldctrl );
-		nif->setLink( iCtrl, "Target", nif->getBlockNumber( iNode ) );
+		nif->setLink( iNode, "Controller", nif->getBlockNumber( iCtrl ), fast );
+		nif->setLink( iCtrl, "Next Controller", oldctrl, fast );
+		nif->setLink( iCtrl, "Target", nif->getBlockNumber( iNode ), fast );
 		nif->set<int>( iCtrl, "Flags", 8 );
 		
 		return iCtrl;

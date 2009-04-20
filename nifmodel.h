@@ -86,6 +86,8 @@ public:
 	QModelIndex getFooter() const;
 	void updateFooter();
 
+	bool holdUpdates(bool value);
+
 	// insert or append ( row == -1 ) a new NiBlock
 	QModelIndex insertNiBlock( const QString & identifier, int row = -1, bool fast = false );
 	// remove a block from the list
@@ -136,8 +138,8 @@ public:
 	int getLink( const QModelIndex & parent, const QString & name ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & array ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & parent, const QString & name ) const;
-	bool setLink( const QModelIndex & index, qint32 l );
-	bool setLink( const QModelIndex & parent, const QString & name, qint32 l );
+	bool setLink( const QModelIndex & index, qint32 l, bool fast = false );
+	bool setLink( const QModelIndex & parent, const QString & name, qint32 l, bool fast = false );
 	bool setLinkArray( const QModelIndex & array, const QVector<qint32> & links );
 	bool setLinkArray( const QModelIndex & parent, const QString & name, const QVector<qint32> & links );
 	
@@ -230,12 +232,18 @@ protected:
 	QHash< int, QList<int> >	childLinks;
 	QHash< int, QList<int> >	parentLinks;
 	QList< int >				rootLinks;
+
+	bool                        lockUpdates;
+
+	enum UpdateType { utNone = 0, utHeader = 0x1, utLinks = 0x2, utFooter= 0x4, utAll = 0x7 };
+	UpdateType                  needUpdates;
 	
 	void updateLinks( int block = -1 );
 	void updateLinks( int block, NifItem * parent );
 	void checkLinks( int block, QStack<int> & parents );
 	void adjustLinks( NifItem * parent, int block, int delta );
 	void mapLinks( NifItem * parent, const QMap<qint32,qint32> & map );
+	void updateModel( UpdateType value = utAll );
 	
    static void updateStrings(NifModel *src, NifModel* tgt, NifItem *item);
 	bool assignString( NifItem * parent, const QString & string, bool replace = false );
