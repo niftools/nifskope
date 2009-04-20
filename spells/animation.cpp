@@ -26,7 +26,6 @@ public:
 		if (nif == NULL)
 			return index;
 
-		bool oldHoldUpdates = nif->holdUpdates(true);
 		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr("Choose .kf file(s)"), nif->getFolder(), "*.kf" );
 		foreach( QString kfname, kfnames )
 		{
@@ -98,7 +97,9 @@ public:
 								missingNodes << nodeName;
 						}
 					}
-					
+
+					bool oldHoldUpdates = nif->holdUpdates(true);
+
 					if ( ! iMultiTransformer.isValid() )
 						iMultiTransformer = attachController( nif, iRoot, "NiMultiTargetTransformController", true );
 					if ( ! iCtrlManager.isValid() )
@@ -114,8 +115,13 @@ public:
 					}
 					
 					setNameLinkArray( nif, iObjPalette, "Objs", controlledNodes );
+
+					if (!oldHoldUpdates)
+						nif->holdUpdates(false);
 				}
 				
+				bool oldHoldUpdates = nif->holdUpdates(true);
+
 				QMap<qint32,qint32> map = kf.moveAllNiBlocks( nif );
 				
 				foreach ( qint32 lSeq, seqLinks )
@@ -128,7 +134,10 @@ public:
 					QModelIndex iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
 					nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ), true );
 				}
-				
+
+				if (!oldHoldUpdates)
+					nif->holdUpdates(false);
+
 				if ( ! missingNodes.isEmpty() )
 				{
 					qWarning() << Spell::tr("The following controlled nodes were not found in the nif:");
@@ -143,8 +152,6 @@ public:
 				qWarning( e.toAscii() );
 			}
 		}
-		if (!oldHoldUpdates)
-			nif->holdUpdates(false);
 		return index;
 	}
 	
@@ -153,7 +160,8 @@ public:
 		if ( ! nif->inherits( parent, "NiAVObject" ) )
 			return QModelIndex();
 		
-		if ( nif->get<QString>( parent, "Name" ) == name )
+		QString thisName = nif->get<QString>( parent, "Name" );
+		if ( thisName == name )
 			return parent;
 		
 		foreach ( qint32 l, nif->getChildLinks( nif->getBlockNumber( parent ) ) )
