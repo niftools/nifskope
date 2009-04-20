@@ -11,6 +11,7 @@ changes since 1.0.19:
  * Flag spell updated for Vertex Color, Stencil Buffer, and Z Buffer properties
  * bug fix for file selection widget ("Load" and "Save As") textbox styling
  * performance improvements when attaching animation
+ * set sequence controller NiMultiTargetTransformController when importing kfs
 
 changes since 1.0.18:
  * Spells:

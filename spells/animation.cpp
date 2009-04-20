@@ -123,7 +123,7 @@ public:
 				bool oldHoldUpdates = nif->holdUpdates(true);
 
 				QMap<qint32,qint32> map = kf.moveAllNiBlocks( nif );
-				
+				int iMultiTransformerIdx = nif->getBlockNumber( iMultiTransformer );
 				foreach ( qint32 lSeq, seqLinks )
 				{
 					qint32 nSeq = map.value( lSeq );
@@ -133,6 +133,14 @@ public:
 					nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq, true );
 					QModelIndex iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
 					nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ), true );
+
+					QModelIndex iCtrlBlcks = nif->getIndex( iSeq, "Controlled Blocks" );
+					for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ )
+					{
+						QModelIndex iCtrlBlck = iCtrlBlcks.child( r, 0 );
+						if ( nif->getLink( iCtrlBlck, "Controller" ) == -1 )
+							nif->setLink( iCtrlBlck, "Controller", iMultiTransformerIdx, true );
+					}
 				}
 
 				if (!oldHoldUpdates)
