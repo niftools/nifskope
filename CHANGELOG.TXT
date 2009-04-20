@@ -10,6 +10,7 @@ changes since 1.0.19:
  * Paste At End spell added to paste a branch without parenting
  * Flag spell updated for Vertex Color, Stencil Buffer, and Z Buffer properties
  * bug fix for file selection widget ("Load" and "Save As") textbox styling
+ * performance improvements when attaching animation
 
 changes since 1.0.18:
  * Spells:
