@@ -36,6 +36,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glnode.h"
 #include "gltools.h"
 
+//! \file glmesh.h Mesh class
+
+//! A mesh
 class Mesh : public Node
 {
 public:
@@ -94,6 +97,7 @@ protected:
 	QString shader;
 	
 	friend class MorphController;
+	friend class UVController;
 	friend class Renderer;
 };
 

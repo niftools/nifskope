@@ -314,6 +314,7 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 				}
 				else
 				{
+					// we don't really need to set these since they won't be applied in bind() unless hasTransform is set
 					textures[t].translation = Vector2();
 					textures[t].tiling = Vector2( 1.0, 1.0 );
 					textures[t].rotation = 0.0;
@@ -356,11 +357,16 @@ bool TexturingProperty::bind( int id, const QString & fname )
 		glLoadIdentity();
 		if ( textures[id].hasTransform )
 		{
-			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
-			glRotatef( textures[id].rotation, 0, 0, 1 );
+			// Sign order is important here: get it backwards and we rotate etc.
+			// around (-center, -center)
 			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
+			
+			glRotatef( textures[id].rotation, 0, 0, 1 );
+			// It appears that the scaling here is relative to center
 			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
 			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );
+
+			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
 		}
 		glMatrixMode( GL_MODELVIEW );
 		return true;
@@ -475,6 +481,10 @@ public:
 		float val;
 		if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) )
 		{
+			// If desired, we could force display even if texture transform was disabled:
+			// tex->hasTransform = true;
+			// however "Has Texture Transform" doesn't exist until 10.1.0.0, and neither does
+			// NiTextureTransformController - so we won't bother
 			switch ( texOP )
 			{
 				case 0:

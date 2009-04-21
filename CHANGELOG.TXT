@@ -12,6 +12,7 @@ changes since 1.0.19:
  * bug fix for file selection widget ("Load" and "Save As") textbox styling
  * performance improvements when attaching animation
  * set sequence controller NiMultiTargetTransformController when importing kfs
+ * display of NiUVController for UV transformations
 
 changes since 1.0.18:
  * Spells:
@@ -191,7 +192,7 @@ changes since 1.0.2:
 changes since 1.0.1:
  * User Interface
   - another attempt at fixing the delete block crashes
-  
+
 changes since 1.0:
  * User Interface
   - visualize skin partitions for versions < 10.2.0.0

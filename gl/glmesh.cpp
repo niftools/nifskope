@@ -38,8 +38,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <GL/glext.h>
 
+#include <QDebug>
+
+//! A Controller of Mesh geometry
 class MorphController : public Controller
 {
+	//! A representation of Mesh geometry morphs
 	struct MorphKey
 	{
 		QPersistentModelIndex iFrames;
@@ -123,6 +127,62 @@ protected:
 	QVector<MorphKey*>	morph;
 };
 
+//! A Controller of UV data in a Mesh
+class UVController : public Controller
+{
+public:
+	UVController( Mesh * mesh, const QModelIndex & index )
+		: Controller( index ), target( mesh ) {}
+
+	~UVController() {}
+
+	void update( float time )
+	{
+		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
+		QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
+
+		// Suspect that this is U trans, V trans, U scale, V scale
+		// see NiUVData compound in nif.xml
+		float val[4] = { 0.0, 0.0, 1.0, 1.0 };
+		if ( uvGroups.isValid() )
+		{
+			for ( int i = 0; i < 4 && i < nif->rowCount( uvGroups ); i++ )
+			{
+				interpolate( val[i], uvGroups.child( i, 0 ), ctrlTime( time ), luv );
+			}
+			// adjust coords
+			for ( int i = 0; i < target->coords[0].size(); i++ )
+			{
+				// operating on pointers makes this too complicated, so we don't
+				Vector2 current = target->coords[0][i];
+				current += Vector2( val[0], val[1] );
+				// scaling/tiling? not correct yet; unsure of order wrt. translation
+				// Note that scaling is relative to center!
+				current += Vector2( -0.5, -0.5 );
+				current = Vector2( current[0] * val[2], current[1] * val[3] );
+				current += Vector2( 0.5, 0.5 );
+				target->coords[0][i] = current;
+			}
+		}
+		target->upData = true;
+	}
+
+	bool update( const NifModel * nif, const QModelIndex & index )
+	{
+		if ( Controller::update( nif, index ) )
+		{
+			// do stuff here
+			return true;
+		}
+		return false;
+	}
+
+protected:
+	QPointer<Mesh> target;
+
+	int luv;
+};
+
 
 /*
  *  Mesh
@@ -204,6 +264,12 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 	if ( nif->itemName( iController ) == "NiGeomMorpherController" )
 	{
 		Controller * ctrl = new MorphController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+	else if ( nif->itemName( iController ) == "NiUVController" )
+	{
+		Controller * ctrl = new UVController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
 	}
