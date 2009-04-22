@@ -81,6 +81,16 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Wed Apr 22 2009 amorilia - 1.0.20-1
+- updated to Qt 4.5.0
+- fix tooltips display for nif.xml annotations
+- Paste Block/Branch spells now set Controller and Target links when pasting controller blocks, and updates Effects array when pasting an effect block
+- Paste At End spell added to paste a branch without parenting
+- Flag spell updated for Vertex Color, Stencil Buffer, and Z Buffer properties
+- bug fix for file selection widget ("Load" and "Save As") textbox styling
+- performance improvements when attaching animation
+- set sequence controller NiMultiTargetTransformController when importing kfs
+- display of NiUVController for UV transformations
 * Thu Mar 26 2009 amorilia - 1.0.19-1
 - fixed "Multi Apply Mode" spell [ niftools-Bugs-2475705 ]
 - shortcut keys for "Copy Branch" and "Paste Branch"
