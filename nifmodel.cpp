@@ -2372,9 +2372,9 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 			if (!pItem) return false;
 			idx = get<int>( pItem );
 		} else if (v.type() == NifValue::tSizedString && item->type() == "string") {
-         pItem = item;
-         idx = -1;
-      }
+			pItem = item;
+			idx = -1;
+		}
 		else
 			return BaseModel::set<QString>( item, string );
 
@@ -2386,7 +2386,7 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 			{
 				// TODO: Can we remove the string safely here?
 			}
-         v.changeType(NifValue::tStringIndex);
+			v.changeType(NifValue::tStringIndex);
 			return set<int>( item, 0xffffffff );
 		}
 		// Simply replace the string
@@ -2400,17 +2400,17 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		// Already exists.  Just update the Index
 		if (idx >= 0 && idx < stringVector.size())
 		{
-         v.changeType(NifValue::tStringIndex);
+			v.changeType(NifValue::tStringIndex);
 			return set<int>( pItem, idx );
 		}
 		else // append string to end of list
 		{
 			set<uint>( header, "Num Strings", nstrings+1);
-			updateArray(header, "Strings");
+			updateArray(header, "Strings", true );
 			QModelIndex iArray = getIndex( header, "Strings" );
 			BaseModel::set<QString>(iArray.child(nstrings, 0), string);
 
-         v.changeType(NifValue::tStringIndex);
+			v.changeType(NifValue::tStringIndex);
 			return set<int>( pItem, nstrings );
 		}
 	}
@@ -2420,13 +2420,13 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		{
 			return BaseModel::set<QString>( getItem( item, "String" ), string );
 		}
-      else if (v.type() == NifValue::tStringIndex)
-      {
-         NifValue v(NifValue::tString);
-         v.set(string);
-         return setItemValue(item, v);
-         //return BaseModel::set<QString>( index, string );
-      }
+		else if (v.type() == NifValue::tStringIndex)
+		{
+			NifValue v(NifValue::tString);
+			v.set(string);
+			return setItemValue(item, v);
+			//return BaseModel::set<QString>( index, string );
+		}
 		else
 		{
 			return BaseModel::set<QString>( item, string );
@@ -2522,3 +2522,4 @@ void NifModel::updateModel( UpdateType value )
 	if (value & utFooter) updateFooter();
 	if (value & utLinks)  emit linksChanged();
 }
+

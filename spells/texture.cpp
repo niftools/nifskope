@@ -219,6 +219,8 @@ public:
 			file = TexCache::stripPath( file, nif->getFolder() );
 			if (setExternal)
 				nif->set<int>( iBlock, "Use External", 1 );
+			if ( nif->checkVersion( 0x0A010000, 0 ) )
+				iFile = nif->getIndex( iBlock, "File Name" );
 			nif->set<QString>( iFile, file.replace( "/", "\\" ) );
 		}
 		return idx;
