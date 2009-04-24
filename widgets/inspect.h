@@ -36,40 +36,42 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDialog>
 #include <QPersistentModelIndex>
 
+//! \file inspect.h InspectView class
+
 class NifModel;
 class QModelIndex;
 class InspectViewInternal;
 class Scene;
 
+//! The transform inspection window
 class InspectView : public QDialog
 {
-   Q_OBJECT
-
+	Q_OBJECT
 public:
-   explicit InspectView(QWidget *parent = 0, Qt::WindowFlags f = 0);
-   ~InspectView();
-
-   QSize minimumSizeHint() const { return QSize( 50, 50 ); }
-   QSize sizeHint() const { return QSize( 400, 400 ); }
-
-   void setNifModel( NifModel * );
-   void setScene( Scene * );
-
-   void clear();
-
-   virtual void setVisible(bool visible);
-
+	explicit InspectView(QWidget *parent = 0, Qt::WindowFlags f = 0);
+	~InspectView();
+	
+	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
+	QSize sizeHint() const { return QSize( 400, 400 ); }
+	
+	void setNifModel( NifModel * );
+	void setScene( Scene * );
+	
+	void clear();
+	
+	virtual void setVisible(bool visible);
+	
 public slots:
-   void updateSelection( const QModelIndex & );
-   void refresh();
-   void updateTime( float t, float mn, float mx );
-   void update();
-
+	void updateSelection( const QModelIndex & );
+	void refresh();
+	void updateTime( float t, float mn, float mx );
+	void update();
+	
 private:
-   InspectViewInternal *impl;
-   NifModel * nif;
-   Scene * scene;
-   QPersistentModelIndex selection;
+	InspectViewInternal *impl;
+	NifModel * nif;
+	Scene * scene;
+	QPersistentModelIndex selection;
 };
 
 #endif

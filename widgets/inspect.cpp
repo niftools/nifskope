@@ -48,6 +48,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/glscene.h"
 #include "gl/glnode.h"
 
+//! \file inspect.cpp InspectView and InspectViewInternal
+
+//! Keeps track of elements
 class InspectViewInternal
 {
 public:
@@ -72,6 +75,8 @@ public:
    QLineEdit * posZText;
 
    QCheckBox * invertCheck;
+
+   QGroupBox * rotEulGroup;
 
    QGroupBox * rotGroup;
    QLabel * rotWLabel;
@@ -120,7 +125,9 @@ InspectViewInternal::~InspectViewInternal()
 
 	if(invertCheck != 0) delete invertCheck;
 
-	if(rotGroup != 0) delete rotGroup;
+	if(rotEulGroup != 0) delete rotEulGroup;
+
+	//if(rotGroup != 0) delete rotGroup;
 	/*if(rotWLabel != 0) delete rotWLabel;
 	  if(rotWText != 0) delete rotWText;
 	  if(rotXLabel != 0) delete rotXLabel;
@@ -130,7 +137,7 @@ InspectViewInternal::~InspectViewInternal()
 	  if(rotZLabel != 0) delete rotZLabel;
 	  if(rotZText != 0) delete rotZText;*/
 
-	if(eulGroup != 0) delete eulGroup;
+	//if(eulGroup != 0) delete eulGroup;
 	/*if(eulXLabel != 0) delete eulXLabel;
 	  if(eulXText != 0) delete eulXText;
 	  if(eulYLabel != 0) delete eulYLabel;
@@ -256,6 +263,11 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
     eulGrid->addWidget( impl->eulZLabel,  2, 0 );
     eulGrid->addWidget( impl->eulZText,   2, 1 );
 
+	QGridLayout * rotEulGrid = new QGridLayout;
+	impl->rotEulGroup = new QGroupBox( this );
+	impl->rotEulGroup->setLayout( rotEulGrid );
+	rotEulGrid->addWidget( impl->rotGroup, 0, 0 );
+	rotEulGrid->addWidget( impl->eulGroup, 0, 1 );
 
     impl->matGroup = new QGroupBox( this );
     impl->matGroup->setTitle(tr("Transform Matrix"));
@@ -286,12 +298,13 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f)
     grid->addWidget( impl->localCheck,  3, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
     grid->addWidget( impl->posGroup,    4, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
     grid->addWidget( impl->invertCheck, 5, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
-    grid->addWidget( impl->rotGroup,    6, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
-    grid->addWidget( impl->eulGroup,    7, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
-    grid->addWidget( impl->matGroup,    8, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
-    grid->addWidget( impl->lenLabel,    9, 0 );
-    grid->addWidget( impl->lenText,     9, 1 );
-    grid->addWidget( impl->refreshBtn, 10, 1 );
+    //grid->addWidget( impl->rotGroup,    6, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
+    //grid->addWidget( impl->eulGroup,    7, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
+	grid->addWidget( impl->rotEulGroup, 6, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
+    grid->addWidget( impl->matGroup,    7, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
+    grid->addWidget( impl->lenLabel,    8, 0 );
+    grid->addWidget( impl->lenText,     8, 1 );
+    grid->addWidget( impl->refreshBtn,  9, 1 );
 
     connect( impl->localCheck, SIGNAL( stateChanged(int) ), this, SLOT( update() ) );
     connect( impl->invertCheck, SIGNAL( stateChanged(int) ), this, SLOT( update() ) );
