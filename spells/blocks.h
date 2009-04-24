@@ -3,6 +3,13 @@
 
 #include "../spellbook.h"
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file blocks.h
+ * \brief Block spells header
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 //! Remove a branch (a block and its descendents)
 class spRemoveBranch : public Spell
 {

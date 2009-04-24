@@ -5,7 +5,6 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QCursor>
-#include <QDebug>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
@@ -16,6 +15,8 @@
  * \brief Block manipulation spells
  *
  * All classes here inherit from the Spell class.
+ *
+ * spRemoveBranch is declared in \link spells/blocks.h \endlink so that it is accessible to spCombiTris.
  */
 
 //! Add a link to the specified block to a link array
@@ -462,7 +463,7 @@ public:
 			foreach ( QString form, mime->formats() )
 			{
 				QString version = acceptFormat( form, nif );
-				if ( ! version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, "Paste Block", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), "Continue", "Cancel" ) == 0 ))
+				if ( ! version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, Spell::tr("Paste Block"), Spell::tr("Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), Spell::tr("Continue"), Spell::tr("Cancel") ) == 0 ))
 				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( & data );
@@ -515,7 +516,7 @@ public:
 			foreach ( QString form, mime->formats() )
 			{
 				QString version = acceptFormat( form, nif, index );
-				if ( ! version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, "Paste Over", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), "Continue", "Cancel" ) == 0 ))
+				if ( ! version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, Spell::tr("Paste Over"), Spell::tr("Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable...").arg( nif->getVersion() ).arg( version ), Spell::tr("Continue"), Spell::tr("Cancel") ) == 0 ))
 				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( & data );
@@ -562,9 +563,11 @@ public:
 			{
 				if ( ! blocks.contains( link ) && ! parentMap.contains( link ) )
 				{
+					QString failMessage = Spell::tr("parent link invalid");
 					QModelIndex iParent = nif->getBlock( link );
 					if ( iParent.isValid() )
 					{
+						failMessage = Spell::tr("parent unnamed");
 						QString name = nif->get<QString>( iParent, "Name" );
 						if ( ! name.isEmpty() )
 						{
@@ -572,7 +575,13 @@ public:
 							continue;
 						}
 					}
-					qWarning() << "failed to map parent link" << link << "for block" << block << nif->itemName( nif->getBlock( block ) );
+					QMessageBox::information( 0, Spell::tr("Copy Branch"), Spell::tr("failed to map parent link %1 %2 for block %3 %4; %5.")
+						.arg( link )
+						.arg( nif->itemName( nif->getBlock( link ) ) )
+						.arg( block )
+						.arg( nif->itemName( nif->getBlock( block ) ) )
+						.arg( failMessage )
+						);
 					return index;
 				}
 			}
@@ -591,7 +600,10 @@ public:
 				ds << nif->itemName( nif->getBlock( block ) );
 				if ( ! nif->save( buffer, nif->getBlock( block ) ) )
 				{
-					qWarning() << "failed to save block" << block << nif->itemName( nif->getBlock( block ) );
+					QMessageBox::information( 0, Spell::tr("Copy Branch"), Spell::tr("failed to save block %1 %2.")
+						.arg( block )
+						.arg( nif->itemName( nif->getBlock( block ) ) )
+						);
 					return index;
 				}
 			}
@@ -644,7 +656,7 @@ public:
 			foreach ( QString form, mime->formats() )
 			{
 				QString v = acceptFormat( form, nif );
-				if ( ! v.isEmpty() && ( v == nif->getVersion() || QMessageBox::question( 0, "Paste Branch", QString( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( v ), "Continue", "Cancel" ) == 0 ) )
+				if ( ! v.isEmpty() && ( v == nif->getVersion() || QMessageBox::question( 0, Spell::tr("Paste Branch"), Spell::tr("Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( v ), Spell::tr("Continue"), Spell::tr("Cancel") ) == 0 ) )
 				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( & data );
@@ -678,7 +690,9 @@ public:
 							}
 							else
 							{
-								qWarning() << "failed to map parent link" << ipm.value();
+								QMessageBox::information( 0, Spell::tr("Paste Branch"), Spell::tr("failed to map parent link %1")
+									.arg( ipm.value() )
+									);
 								return index;
 							}
 						}
@@ -891,7 +905,7 @@ public:
 		settings.beginGroup( name() );
 		
 		bool ok = true;
-		QString match = QInputDialog::getText( 0, "Remove Blocks by Id", "Enter a regular expression:", QLineEdit::Normal,
+		QString match = QInputDialog::getText( 0, Spell::tr("Remove Blocks by Id"), Spell::tr("Enter a regular expression:"), QLineEdit::Normal,
 			settings.value( "match expression", "^BS|^NiBS|^bhk|^hk" ).toString(), & ok );
 		
 		if ( ! ok )
@@ -1090,9 +1104,11 @@ public:
 			{
 				if ( ! blocks.contains( link ) && ! parentMap.contains( link ) )
 				{
+					QString failMessage = Spell::tr("parent link invalid");
 					QModelIndex iParent = nif->getBlock( link );
 					if ( iParent.isValid() )
 					{
+						failMessage = Spell::tr("parent unnamed");
 						QString name = nif->get<QString>( iParent, "Name" );
 						if ( ! name.isEmpty() )
 						{
@@ -1100,7 +1116,13 @@ public:
 							continue;
 						}
 					}
-					qWarning() << "failed to map parent link" << link << "for block" << block << nif->itemName( nif->getBlock( block ) );
+					QMessageBox::information( 0, Spell::tr("Duplicate Branch"), Spell::tr("failed to map parent link %1 %2 for block %3 %4; %5.")
+						.arg( link )
+						.arg( nif->itemName( nif->getBlock( link ) ) )
+						.arg( block )
+						.arg( nif->itemName( nif->getBlock( block ) ) )
+						.arg( failMessage )
+						);
 					return index;
 				}
 			}
@@ -1119,7 +1141,10 @@ public:
 				ds << nif->itemName( nif->getBlock( block ) );
 				if ( ! nif->save( buffer, nif->getBlock( block ) ) )
 				{
-					qWarning() << "failed to save block" << block << nif->itemName( nif->getBlock( block ) );
+					QMessageBox::information( 0, Spell::tr("Duplicate Branch"), Spell::tr("failed to save block %1 %2.")
+						.arg( block )
+						.arg( nif->itemName( nif->getBlock( block ) ) )
+						);
 					return index;
 				}
 			}
@@ -1156,7 +1181,9 @@ public:
 				}
 				else
 				{
-					qWarning() << "failed to map parent link" << ipm.value();
+					QMessageBox::information( 0, Spell::tr("Duplicate Branch"), Spell::tr("failed to map parent link %1")
+						.arg( ipm.value() )
+						);
 					return index;
 				}
 			}
