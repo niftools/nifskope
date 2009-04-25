@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QObject>
 #include "widgets/groupbox.h"
 
+//! \file options.h Options class
+
 class QAbstractButton;
 class QAction;
 class QColor;
@@ -56,151 +58,206 @@ class ColorWheel;
 class FileSelector;
 class GroupBox;
 
+//! Global options menu and dialog
 class Options : public QObject
 {
 	Q_OBJECT
 public:
+	//! Global instance
 	static Options * get();
+	//! The list of currently enabled actions
 	static QList<QAction*> actions();
 	
+	//! Texture folders
 	static QStringList textureFolders();
+	//! Whether to use alternative textures
 	static bool textureAlternatives();
 	
+	//! Whether to enable antialiasing
 	static bool antialias();
+	//! Whether to enable texturing
 	static bool texturing();
+	//! Whether to enable shaders
 	static bool shaders();
 	
+	//! Whether to enable blending
 	static bool blending() { return true; }
 	
+	//! The background color of the main view window
 	static QColor bgColor();
+	//! The colour to normally use for drawing
 	static QColor nlColor();
+	//! The colour to use when highlighting
 	static QColor hlColor();
 	
+	//! Regular expression to use for culling
 	static QRegExp cullExpression();
+	//! Whether to only draw textured shapes
 	static bool onlyTextured();
 	
+	//! Whether to draw the axes
 	static bool drawAxes();
+	//! Whether to draw nodes
 	static bool drawNodes();
+	//! Whether to draw Havok shapes
 	static bool drawHavok();
+	//! Whether to draw constraints
 	static bool drawConstraints();
+	//! Whether to draw furniture markers
 	static bool drawFurn();
+	//! Whether to draw hidden shapes
 	static bool drawHidden();
+	//! Whether to draw stats
 	static bool drawStats();
+	//! Whether to draw meshes
 	static bool drawMeshes();
 	
+	//! Whether to benchmark FPS
 	static bool benchmark();
 	
+	//! The possible axes
 	typedef enum {
 		ZAxis, YAxis, XAxis
 	} Axis;
-
+	
+	//! The axis defined as up
 	static Axis upAxis();
 	
+	//! The ambient lighting color
 	static QColor ambient();
+	//! The diffuse lighting color
 	static QColor diffuse();
+	//! The specular lighting color
 	static QColor specular();
 	
+	//! Whether to use frontal lighting
 	static bool lightFrontal();
+	//! The angle between the Z axis and the light
 	static int lightDeclination();
+	//! The angle between the X axis and the light
 	static int lightPlanarAngle();
-
-   static bool overrideMaterials();
-   static QColor overrideAmbient();
-   static QColor overrideDiffuse();
-   static QColor overrideSpecular();
-   static QColor overrideEmissive();
-
+	
+	//! Whether to override material colors
+	static bool overrideMaterials();
+	//! The ambient color to override materials with
+	static QColor overrideAmbient();
+	//! The diffuse color to override materials with
+	static QColor overrideDiffuse();
+	//! The specular color to override materials with
+	static QColor overrideSpecular();
+	//! The emissive color to override materials with
+	static QColor overrideEmissive();
+	
+	//! The NIF version to use at start
 	static QString startupVersion();
+	//! The current translation locale
 	static QLocale translationLocale();
+	// Maximum string length (see NifIStream::init for the current usage)
 	//static int maxStringLength();
-
+	
 signals:
+	//! Signal emitted when a value changes
 	void sigChanged();
-   void materialOverridesChanged();
-   void sigLocaleChanged();
-
+	//! Signal emitted when material overrides change
+	void materialOverridesChanged();
+	//! Signal emitted when the locale changes
+	void sigLocaleChanged();
+	
 protected slots:
-   void textureFolderAction( int );
-   void textureFolderIndex( const QModelIndex & );
-   void textureFolderAutoDetect();
-   void activateLightPreset( int );
-
+	//! Texture folder button actions
+	void textureFolderAction( int );
+	//! Per-index texture folder options
+	void textureFolderIndex( const QModelIndex & );
+	//! Automatic detection of texture folders
+	void textureFolderAutoDetect();
+	//! Set lighting presets
+	void activateLightPreset( int );
+	
 public slots:
 	void save();
 	
 protected:
-   friend class TexturesPage;
-   friend class ColorsOptionPage;
-   friend class MaterialOverrideOptionPage;
-
+	friend class TexturesPage;
+	friend class ColorsOptionPage;
+	friend class MaterialOverrideOptionPage;
+	
 	Options();
 	~Options();
-
-   bool eventFilter( QObject * o, QEvent * e );
-
-   QAction * aDrawAxes;
-   QAction * aDrawNodes;
-   QAction * aDrawHavok;
-   QAction * aDrawConstraints;
-   QAction * aDrawFurn;
-   QAction * aDrawHidden;
-   QAction * aDrawStats;
-
-   QAction * aSettings;
-
-   QTimer * tSave, * tEmit;
-
-   //////////////////////////////////////////////////////////////////////////
-
-   QComboBox * RegionOpt;
-   QLineEdit * StartVer;
-   //QSpinBox * StringLength;
-
-   //////////////////////////////////////////////////////////////////////////
-   QStringListModel * TexFolderModel;
-   QListView * TexFolderView;
-   FileSelector * TexFolderSelect;
-   QCheckBox * TexAlternatives;
-   QAbstractButton * TexFolderButtons[3];
-
-   QCheckBox * AntiAlias;
-   QCheckBox * Textures;
-   QCheckBox * Shaders;
-
-   QCheckBox * CullNoTex;
-   QCheckBox * CullByID;
-   QLineEdit * CullExpr;
-
-   QRadioButton * AxisX;
-   QRadioButton * AxisY;
-   QRadioButton * AxisZ;
-
-   //////////////////////////////////////////////////////////////////////////
-   ColorWheel * colors[3];
-   AlphaSlider * alpha[3];
-
-   ColorWheel * LightColor[3];
-
-   QCheckBox * LightFrontal;
-   QSpinBox * LightDeclination;
-   QSpinBox * LightPlanarAngle;
-
-   //////////////////////////////////////////////////////////////////////////
-
-   QCheckBox * overrideMatCheck;
-   ColorWheel * matColors[4];
-
-   //////////////////////////////////////////////////////////////////////////
-
-   GroupBox * dialog;
-   QTabWidget *tab;
-
+	
+	bool eventFilter( QObject * o, QEvent * e );
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Menu
+	
+	QAction * aDrawAxes;
+	QAction * aDrawNodes;
+	QAction * aDrawHavok;
+	QAction * aDrawConstraints;
+	QAction * aDrawFurn;
+	QAction * aDrawHidden;
+	QAction * aDrawStats;
+	
+	QAction * aSettings;
+	
+	QTimer * tSave, * tEmit;
+	
+	//////////////////////////////////////////////////////////////////////////
+	// General Settings page
+	
+	QComboBox * RegionOpt;
+	QLineEdit * StartVer;
+	//QSpinBox * StringLength;
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Rendering Settings page
+	
+	QStringListModel * TexFolderModel;
+	QListView * TexFolderView;
+	FileSelector * TexFolderSelect;
+	QCheckBox * TexAlternatives;
+	QAbstractButton * TexFolderButtons[4];
+	
+	QCheckBox * AntiAlias;
+	QCheckBox * Textures;
+	QCheckBox * Shaders;
+	
+	QCheckBox * CullNoTex;
+	QCheckBox * CullByID;
+	QLineEdit * CullExpr;
+	
+	QRadioButton * AxisX;
+	QRadioButton * AxisY;
+	QRadioButton * AxisZ;
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Colors Settings page
+	
+	ColorWheel * colors[3];
+	AlphaSlider * alpha[3];
+	
+	ColorWheel * LightColor[3];
+	
+	QCheckBox * LightFrontal;
+	QSpinBox * LightDeclination;
+	QSpinBox * LightPlanarAngle;
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Materials Settings page
+	
+	QCheckBox * overrideMatCheck;
+	ColorWheel * matColors[4];
+	
+	//////////////////////////////////////////////////////////////////////////
+	
+	GroupBox * dialog;
+	QTabWidget *tab;
+	
 	bool showMeshes;
-
 };
 
+//! Gets the color normally used for drawing from Options::nlColor()
 #define glNormalColor() glColor( Color4( Options::nlColor() ) )
+//! Gets the color used for highlighting from Options::hlColor()
 #define glHighlightColor() glColor( Color4( Options::hlColor() ) )
-
 
 #endif

@@ -13,6 +13,7 @@ changes since 1.0.19:
  * performance improvements when attaching animation
  * set sequence controller NiMultiTargetTransformController when importing kfs
  * display of NiUVController for UV transformations
+ * Add "Move Down" option to Texture Folders list
 
 changes since 1.0.18:
  * Spells:
@@ -158,7 +159,7 @@ changes since 1.0.5:
    instead until this bug is fixed.
  * Texture path used for selecting new textures is saved.
  * Shortcuts in texture selection file dialog are now actually followed.
- 
+
 changes since 1.0.4:
  * Fixed block deletion bug.
  * Updated to compile with MSVC Express 2008 and Qt 4.3.3

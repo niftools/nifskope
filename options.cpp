@@ -62,6 +62,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/floatslider.h"
 #include "widgets/groupbox.h"
 
+//! \file options.cpp SmallListView and Options implementation
+
+//! Helper class for Options::TexFolderView
 class SmallListView : public QListView
 {
 public:
@@ -210,12 +213,12 @@ Options::Options()
 
       genPage->popLayout();
 
-		/*
+		/* if we want to make max string length more accessible
 		genPage->pushLayout( Qt::Horizontal );
 		genPage->addWidget( new QLabel( tr("Maximum String Length") ) );
 		genPage->addWidget( StringLength = new QSpinBox );
 		StringLength->setRange( 0, INT_MAX );
-		StringLength->setValue( cfg.value( "Maximum String Length", 0x4000).toInt() );
+		StringLength->setValue( cfg.value( "Maximum String Length", 0x8000).toInt() );
 		connect( StringLength, SIGNAL( valueChanged( int ) ), this, SIGNAL( sigChanged() ) );
 		*/
 
@@ -252,7 +255,7 @@ Options::Options()
       QButtonGroup * tfactgrp = new QButtonGroup( this );
       connect( tfactgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAction( int ) ) );
       int tfaid = 0;
-      foreach ( QString tfaname, QStringList() << tr("Add Folder") << tr("Remove Folder") << tr("Move Up") )
+      foreach ( QString tfaname, QStringList() << tr("Add Folder") << tr("Remove Folder") << tr("Move Up") << tr("Move Down") )
       {
          QPushButton * bt = new QPushButton( tfaname );
          TexFolderButtons[tfaid] = bt;
@@ -580,7 +583,7 @@ void Options::save()
 		<< "texture folder"	<< "bg color" << "cull nodes by name" << "draw axis" << "draw furniture"
 		<< "draw havok" << "draw hidden" << "draw nodes" << "draw only textured meshes" << "draw stats"
 		<< "enable blending" << "enable shading" << "enable textures" << "highlight meshes" << "hl color"
-		<< "rotate" << "hide condition zero" )
+		<< "rotate" << "hide condition zero" << "Render Settings/Misc Settings/Startup Version" )
 	{
 		if ( cfg.contains( key ) )
 			cfg.remove( key );
@@ -622,19 +625,20 @@ void Options::save()
 	cfg.setValue( "Planar Angle", lightPlanarAngle() );
 	cfg.endGroup();
 
-   cfg.beginGroup( "MatOver" );
-   cfg.setValue( "Ambient", overrideAmbient() );
-   cfg.setValue( "Diffuse", overrideDiffuse() );
-   cfg.setValue( "Specular", overrideSpecular() );
-   cfg.setValue( "Emmissive", overrideEmissive() );
-   cfg.endGroup();
+	cfg.beginGroup( "MatOver" );
+	cfg.setValue( "Ambient", overrideAmbient() );
+	cfg.setValue( "Diffuse", overrideDiffuse() );
+	cfg.setValue( "Specular", overrideSpecular() );
+	cfg.setValue( "Emmissive", overrideEmissive() );
+	cfg.endGroup();
 
-   cfg.endGroup(); // Render Settings
+	cfg.endGroup(); // Render Settings
 
 	cfg.beginGroup( "Settings" );
 
 	cfg.setValue( "Language", translationLocale() );
 	cfg.setValue( "Startup Version", startupVersion() );
+	// If we want to make this more accessible
 	//cfg.setValue( "Maximum String Length", maxStringLength() );
 
 	cfg.endGroup(); // Settings
@@ -825,6 +829,16 @@ void Options::textureFolderAction( int id )
 				TexFolderView->setCurrentIndex( xdi );
 			}
 			break;
+		case 3:
+			if ( idx.isValid() && idx.row() < TexFolderModel->rowCount() - 1 )
+			{	// move down
+				QModelIndex xdi = idx.sibling( idx.row() + 1, 0 );
+				QVariant v = TexFolderModel->data( idx, Qt::EditRole );
+				TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
+				TexFolderModel->setData( xdi, v, Qt::EditRole );
+				TexFolderView->setCurrentIndex( xdi );
+			}
+			break;
 	}
 }
 
@@ -834,6 +848,7 @@ void Options::textureFolderIndex( const QModelIndex & idx )
 	TexFolderButtons[0]->setEnabled( true );
 	TexFolderButtons[1]->setEnabled( idx.isValid() );
 	TexFolderButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
+	TexFolderButtons[3]->setEnabled( idx.isValid() && ( idx.row() < TexFolderModel->rowCount() - 1 ) );
 }
 
 void Options::activateLightPreset( int id )
@@ -1019,6 +1034,10 @@ QColor Options::overrideEmissive()
    return get()->matColors[3]->getColor();
 }
 
+/*!
+ * This option is hidden in the registry and disabled by setting the key
+ * Render Settings\Draw Meshes to false
+ */
 bool Options::drawMeshes()
 {
 	return get()->showMeshes;
@@ -1033,7 +1052,7 @@ QLocale Options::translationLocale()
    return QLocale::system();
 }
 
-/*
+/* if we want to make this more accessible
 int Options::maxStringLength()
 {
 	return get()->StringLength->value();
