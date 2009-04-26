@@ -138,8 +138,8 @@ public:
 	int getLink( const QModelIndex & parent, const QString & name ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & array ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & parent, const QString & name ) const;
-	bool setLink( const QModelIndex & index, qint32 l, bool fast = false );
-	bool setLink( const QModelIndex & parent, const QString & name, qint32 l, bool fast = false );
+	bool setLink( const QModelIndex & index, qint32 l );
+	bool setLink( const QModelIndex & parent, const QString & name, qint32 l );
 	bool setLinkArray( const QModelIndex & array, const QVector<qint32> & links );
 	bool setLinkArray( const QModelIndex & parent, const QString & name, const QVector<qint32> & links );
 	

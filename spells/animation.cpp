@@ -111,7 +111,7 @@ public:
 					if ( ! iObjPalette.isValid() )
 					{
 						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1, true );
-						nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ), true );
+						nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ) );
 					}
 					
 					setNameLinkArray( nif, iObjPalette, "Objs", controlledNodes );
@@ -129,17 +129,17 @@ public:
 					qint32 nSeq = map.value( lSeq );
 					int numSeq = nif->get<int>( iCtrlManager, "Num Controller Sequences" );
 					nif->set<int>( iCtrlManager, "Num Controller Sequences", numSeq+1 );
-					nif->updateArray( iCtrlManager, "Controller Sequences", true );
-					nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq, true );
+					nif->updateArray( iCtrlManager, "Controller Sequences" );
+					nif->setLink( nif->getIndex( iCtrlManager, "Controller Sequences" ).child( numSeq, 0 ), nSeq );
 					QModelIndex iSeq = nif->getBlock( nSeq, "NiControllerSequence" );
-					nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ), true );
+					nif->setLink( iSeq, "Manager", nif->getBlockNumber( iCtrlManager ) );
 
 					QModelIndex iCtrlBlcks = nif->getIndex( iSeq, "Controlled Blocks" );
 					for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ )
 					{
 						QModelIndex iCtrlBlck = iCtrlBlcks.child( r, 0 );
 						if ( nif->getLink( iCtrlBlck, "Controller" ) == -1 )
-							nif->setLink( iCtrlBlck, "Controller", iMultiTransformerIdx, true );
+							nif->setLink( iCtrlBlck, "Controller", iMultiTransformerIdx );
 					}
 				}
 
@@ -221,9 +221,9 @@ public:
 			return QModelIndex();
 		
 		qint32 oldctrl = nif->getLink( iNode, "Controller" );
-		nif->setLink( iNode, "Controller", nif->getBlockNumber( iCtrl ), fast );
-		nif->setLink( iCtrl, "Next Controller", oldctrl, fast );
-		nif->setLink( iCtrl, "Target", nif->getBlockNumber( iNode ), fast );
+		nif->setLink( iNode, "Controller", nif->getBlockNumber( iCtrl ) );
+		nif->setLink( iCtrl, "Next Controller", oldctrl );
+		nif->setLink( iCtrl, "Target", nif->getBlockNumber( iNode ) );
 		nif->set<int>( iCtrl, "Flags", 8 );
 		
 		return iCtrl;
