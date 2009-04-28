@@ -387,7 +387,7 @@ public:
 		time = ctrlTime( time );
 		
 		bool isVisible;
-		if ( interpolate( isVisible, iKeys, time, visLast ) )
+		if ( interpolate( isVisible, iData, time, visLast ) )
 		{
 			target->flags.node.hidden = ! isVisible;
 		}
@@ -397,7 +397,9 @@ public:
 	{
 		if ( Controller::update( nif, index ) )
 		{
-			iKeys = nif->getIndex( iData, "Data" );
+			// iData already points to the NiVisData
+			// note that nif.xml needs to have "Keys" not "Vis Keys" for interpolate() to work
+			//iKeys = nif->getIndex( iData, "Data" );
 			return true;
 		}
 		return false;
@@ -406,7 +408,7 @@ public:
 protected:
 	QPointer<Node> target;
 	
-	QPersistentModelIndex iKeys;
+	//QPersistentModelIndex iKeys;
 	
 	int	visLast;
 };
@@ -1221,8 +1223,11 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const float minPlaneAngle( nif->get<float>( iRagdoll, "Plane Min Angle" ) );
 		const float maxPlaneAngle( nif->get<float>( iRagdoll, "Plane Max Angle" ) );
 		
+		// Unused? GCC complains
+		/*
 		const float minTwistAngle( nif->get<float>( iRagdoll, "Twist Min Angle" ) );
 		const float maxTwistAngle( nif->get<float>( iRagdoll, "Twist Max Angle" ) );
+		*/
 		
 		glPushMatrix();
 		glMultMatrix( tBodies.value( 0 ) );
@@ -1342,6 +1347,7 @@ void Node::drawHavok()
 		glColor( Color3( 1.0f, 0.0f, 0.0f ) );
 		glLineWidth( 1.0f );
 		glDisable( GL_LIGHTING );
+		// This doesn't always display correctly
 		drawBox( rad - bt.translation, - rad - bt.translation);
 
 		glPopMatrix();
@@ -1349,7 +1355,7 @@ void Node::drawHavok()
 
 	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 	if ( ! iObject.isValid() )
-		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );				
+		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
 	if ( ! iObject.isValid() )
 		return;
 	
