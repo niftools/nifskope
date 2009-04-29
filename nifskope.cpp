@@ -99,6 +99,8 @@ FSManager * fsmanager = 0;
 #undef None
 #undef Bool
 
+//! \file nifskope.cpp The main file for NifSkope
+
 void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const
 {
 	if ((!cfg.contains(name)) && oldcfg.contains(name)) {
@@ -271,6 +273,7 @@ NifSkope::NifSkope()
 	aReload->setShortcut( Qt::ALT + Qt::Key_X );
 	connect( aReload, SIGNAL( triggered() ), this, SLOT( reload() ) );
 	aWindow = new QAction( tr("&New Window"), this );
+	aWindow->setShortcut( QKeySequence::New );
 	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
 	aShredder = new QAction( tr("XML Checker" ), this );
 	connect( aShredder, SIGNAL( triggered() ), this, SLOT( sltShredder() ) );
@@ -513,6 +516,7 @@ void NifSkope::closeEvent( QCloseEvent * e )
 	QMainWindow::closeEvent( e );
 }
 
+//! Resize views from settings
 void restoreHeader( const QString & name, const QSettings & settings, QHeaderView * header )
 {
 	QByteArray b = settings.value( name ).value<QByteArray>();
@@ -556,6 +560,7 @@ void NifSkope::restore( const QSettings & settings )
 		setViewFont( fontVar.value<QFont>() );
 }
 
+//! Save view sizes to settings
 void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
 {
 	QByteArray b;
@@ -993,7 +998,8 @@ void NifSkope::dispatchMessage( const Message & msg )
 QTextEdit * msgtarget = 0;
 
 
-#ifdef WIN32
+#ifdef Q_OS_WIN32
+//! Windows mutex handling
 class QDefaultHandlerCriticalSection
 {
 	CRITICAL_SECTION cs;
@@ -1004,6 +1010,7 @@ public:
 	void unlock() { LeaveCriticalSection(&cs); }
 };
 
+//! Application-wide debug and warning message handler internals
 static void qDefaultMsgHandler(QtMsgType t, const char* str)
 {
 	Q_UNUSED(t);
@@ -1025,6 +1032,8 @@ static void qDefaultMsgHandler(QtMsgType t, const char* str)
 	staticCriticalSection.unlock();
 }
 #else
+// Doxygen won't find this unless you undef Q_OS_WIN32
+//! Application-wide debug and warning message handler internals
 void qDefaultMsgHandler(QtMsgType t, const char* str)
 {
 	if (!str) str = "(null)";
@@ -1032,6 +1041,7 @@ void qDefaultMsgHandler(QtMsgType t, const char* str)
 }
 #endif
 
+//! Application-wide debug and warning message handler
 void myMessageOutput(QtMsgType type, const char *msg)
 {
 	static const QString editFailed ( "edit: editing failed" );
@@ -1142,8 +1152,11 @@ void IPCsocket::openNif( const QUrl & url )
 }
 
 
-// Qt does not use the System Locale consistency so this basically forces all floating
-//   numbers into C format but leaves all other local specific settings.
+//! System locale override
+/**
+ * Qt does not use the System Locale consistency so this basically forces all floating
+ * numbers into C format but leaves all other local specific settings.
+ */
 class NifSystemLocale : QSystemLocale
 {
 	virtual QVariant query(QueryType type, QVariant in) const
@@ -1162,6 +1175,7 @@ class NifSystemLocale : QSystemLocale
 
 static QTranslator *mTranslator = NULL;
 
+//! Sets application locale and loads translation files
 static void SetAppLocale(QLocale curLocale)
 {
    QDir directory( QApplication::applicationDirPath() );
@@ -1208,6 +1222,7 @@ void NifSkope::sltLocaleChanged()
  *  main
  */
 
+//! The main program
 int main( int argc, char * argv[] )
 {
 	NifSystemLocale mLocale;
@@ -1284,7 +1299,7 @@ int main( int argc, char * argv[] )
 		//Getting a NIF file name from the OS
 		fname = QDir::current().filePath( app.argv()[ app.argc() - 1 ] );
 
-#ifdef WIN32
+#ifdef Q_OS_WIN32
 		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
 		wchar_t full[MAX_PATH];
 		wchar_t * temp_name = new wchar_t[fname.size() + 1];

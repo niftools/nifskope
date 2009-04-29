@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTime>
 #include <QSettings>
 
+//! \file nifmodel.cpp NifModel implementation, NifModelEval
+
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
 	clear();

@@ -46,6 +46,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "floatedit.h"
 
+//! \file valuedit.cpp Value edit widget implementations
+
 ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNone ), edit( 0 )
 {
 	setAutoFillBackground( true );

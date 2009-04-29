@@ -305,7 +305,7 @@ protected:
 	//! A dictionary yielding the underlying type string from an alias string.
 	/*!
 	 * Enums are stored as an underlying type (not always uint) which is normally not visible.
-	 * This dictionary allows that type to be exposed,
+	 * This dictionary allows that type to be exposed, eg. for NifValue::typeDescription().
 	 */
 	static QHash<QString, QString> aliasMap;
 	

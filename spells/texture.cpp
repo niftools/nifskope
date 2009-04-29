@@ -22,6 +22,13 @@
 #include <QPushButton>
 #include <QTreeView>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file texture.cpp
+ * \brief Texturing spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 /* XPM */
 static char * tex42_xpm[] = {
 	"80 80 43 1",
@@ -120,6 +127,7 @@ static char * tex42_xpm[] = {
 
 QIcon * tex42_xpm_icon = 0;
 
+//! Find the reference to shape data from a model and index
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
@@ -129,6 +137,7 @@ QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 	return QModelIndex();
 }
 
+//! Find the reference to UV data from a model and index
 QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
 {
 	QModelIndex iData = getData( nif, index );
@@ -253,7 +262,12 @@ public:
 
 REGISTER_SPELL( spEditTexCoords )
 
-
+//! Add a texture to the specified texture slot
+/*!
+ * \param nif The model
+ * \param index The index of the mesh
+ * \param name The name of the texture slot
+ */
 QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString & name )
 {
 	QModelIndex iTexProp = nif->getBlock( index, "NiTexturingProperty" );
@@ -419,6 +433,7 @@ public:
 
 REGISTER_SPELL( spAddDecal0Map )
 
+//! Wrap a value between 0 and 1
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
 //! Saves the UV layout as a TGA
@@ -694,7 +709,9 @@ public:
 	}
 };
 
-//REGISTER_SPELL( spTexInfo )
+#ifndef QT_NO_DEBUG
+REGISTER_SPELL( spTexInfo )
+#endif
 
 //! Export a packed NiPixelData texture
 class spExportTexture : public Spell
@@ -740,7 +757,7 @@ public:
 
 REGISTER_SPELL( spExportTexture )
 
-//! Pack a texture to NiPixelData (not implmented yet)
+//! Pack a texture to NiPixelData (not implemented yet)
 class spEmbedTexture : public Spell
 {
 public:

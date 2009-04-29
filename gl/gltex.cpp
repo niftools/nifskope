@@ -59,7 +59,7 @@ GLint num_texture_units = 0;
 //! Maximum anisotropy
 float max_anisotropy = 0;
 
-//! Getter function for glProperty etc.
+//! Accessor function for glProperty etc.
 float get_max_anisotropy()
 {
 	return max_anisotropy;

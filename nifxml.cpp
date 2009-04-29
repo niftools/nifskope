@@ -37,6 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QMessageBox>
 
+//! \file nifxml.cpp NifXmlHandler, NifModel XML
+
+//! Set NifXmlHandler::errorStr and return
 #define err( X ) { errorStr = X; return false; }
 
 QReadWriteLock					NifModel::XMLlock;
@@ -46,11 +49,13 @@ QList<quint32>					NifModel::supportedVersions;
 QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::blocks;
 
+//! Parses nif.xml
 class NifXmlHandler : public QXmlDefaultHandler
 {
-	Q_DECLARE_TR_FUNCTIONS(NifXmlHandler)
+//	Q_DECLARE_TR_FUNCTIONS(NifXmlHandler)
 
 public:
+	//! XML block types
 	enum Tag
 	{
 		tagNone = 0,
@@ -65,6 +70,15 @@ public:
 		tagBitFlag
 	};
 	
+	//! i18n wrapper for various strings
+	/*!
+	 * Note that we don't use QObject::tr() because that doesn't provide
+	 * context. We also don't use the QCoreApplication Q_DECLARE_TR_FUNCTIONS()
+	 * macro because that won't document properly.
+	 */
+	static inline QString tr( const char * key, const char * comment = 0 ) { return QCoreApplication::translate( "NifXmlHandler", key, comment ); }
+	
+	//! Constructor
 	NifXmlHandler()
 	{
 		depth = 0;
@@ -80,34 +94,55 @@ public:
 		blk = 0;
 	}
 
+	//! Current position on stack
 	int depth;
+	//! Tag stack
 	Tag stack[10];
+	//! Hashmap of tags
 	QHash<QString, Tag> tags;
+	//! Error string
 	QString errorStr;
 	
+	//! Current type ID
 	QString typId;
+	//! Current type description
 	QString typTxt;
 	
+	//! Current enumeration ID
 	QString optId;
+	//! Current enumeration value
 	QString optVal;
+	//! Current enumeration text
 	QString optTxt;
 	
+	//! Block
 	NifBlock		* blk;
+	//! Data
 	NifData data;
 	
+	//! The current tag
 	Tag current() const
 	{
 		return stack[depth-1];
 	}
+	//! Add a tag to the stack
 	void push( Tag x )
 	{
 		stack[depth++] = x;
 	}
+	//! Get a tag from the stack
 	Tag pop()
 	{
 		return stack[--depth];
 	}
 	
+	//! Reimplemented from QXmlContentHandler
+	/*!
+	 * \param Namespace (unused)
+	 * \param localName (unused)
+	 * \param tagid Qualified name
+	 * \param list Attributes
+	 */
 	bool startElement( const QString &, const QString &, const QString & tagid, const QXmlAttributes & list )
 	{
 		if ( depth >= 8 )	err( tr("error maximum nesting level exceeded") );
@@ -310,6 +345,12 @@ public:
 		return true;
 	}
 	
+	//! Reimplemented from QXmlContentHandler
+	/*!
+	 * \param Namespace (unused)
+	 * \param localName (unused)
+	 * \param tagid Qualified name
+	 */
 	bool endElement( const QString &, const QString &, const QString & tagid )
 	{
 		if ( depth <= 0 )		err( tr("mismatching end element tag for element %1").arg(tagid) );
@@ -362,6 +403,10 @@ public:
 		return true;
 	}
 	
+	//! Reimplemented from QXmlContentHandler
+	/*!
+	 * \param s The character data
+	 */
 	bool characters( const QString & s )
 	{
 		switch ( current() )
@@ -392,16 +437,19 @@ public:
 		return true;
 	}
 	
+	//! Checks that the type of the data is valid
 	bool checkType( const NifData & data )
 	{
 		return NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "TEMPLATE";
 	}
 	
+	//! Checks that a template type is valid
 	bool checkTemp( const NifData & data )
 	{
 		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE" || NifModel::blocks.contains( data.temp() );
 	}
 	
+	//! Reimplemented from QXmlContentHandler
 	bool endDocument()
 	{	// make a rough check of the maps
 		foreach ( QString key, NifModel::compounds.keys() )
@@ -437,10 +485,12 @@ public:
 		return true;
 	}
 	
+	//! Reimplemented from QXmlContentHandler
 	QString errorString() const
 	{
 		return errorStr;
 	}
+	//! Exception handler
 	bool fatalError( const QXmlParseException & exception )
 	{
 		if ( errorStr.isEmpty() ) errorStr = "Syntax error";
@@ -449,6 +499,7 @@ public:
 	}
 };
 
+// documented in nifmodel.h
 bool NifModel::loadXML()
 {
 	QDir dir( QApplication::applicationDirPath() );
@@ -476,6 +527,7 @@ bool NifModel::loadXML()
 	return true;
 }
 
+// documented in nifmodel.h
 QString NifModel::parseXmlDescription( const QString & filename )
 {
 	QWriteLocker lck( &XMLlock );

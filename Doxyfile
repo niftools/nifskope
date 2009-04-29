@@ -490,7 +490,7 @@ RECURSIVE              = YES
 # excluded from the INPUT source files. This way you can easily exclude a 
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = 
+EXCLUDE                = release debug
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or 
 # directories that are symbolic links (a Unix filesystem feature) are excluded 
@@ -1029,7 +1029,7 @@ INCLUDE_FILE_PATTERNS  =
 # undefined via #undef or recursively expanded use the := operator 
 # instead of the = operator.
 
-PREDEFINED             = UNICODE QT_LARGEFILE_SUPPORT FSENGINE EDIT_ON_ACTIVATE QT_THREAD_SUPPORT QT_DLL QT_XML_LIB QT_OPENGL_LIB QT_GUI_LIB QT_NETWORK_LIB QT_CORE_LIB QT_NEEDS_QMAIN
+PREDEFINED             = UNICODE QT_LARGEFILE_SUPPORT FSENGINE EDIT_ON_ACTIVATE QT_THREAD_SUPPORT QT_DLL QT_XML_LIB QT_OPENGL_LIB QT_GUI_LIB QT_NETWORK_LIB QT_CORE_LIB QT_NEEDS_QMAIN Q_OS_WIN32 Q_OS_LINUX
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then 
 # this tag can be used to specify a list of macro names that should be expanded. 
@@ -1065,7 +1065,7 @@ SKIP_FUNCTION_MACROS   = YES
 # If a tag file is not located in the directory in which doxygen 
 # is run, you must also specify the path to the tagfile here.
 
-TAGFILES               = "qt.tag = http://doc.trolltech.com/4.5"
+TAGFILES               = "qt.tag = http://doc.trolltech.com/latest"
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create 
 # a tag file that is based on the input files it reads.

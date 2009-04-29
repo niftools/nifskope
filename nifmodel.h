@@ -48,6 +48,7 @@ public:
 	NifModel( QObject * parent = 0 );
 	
 	// call this once on startup to load the XML descriptions
+	//! Find and parse the XML file
 	static bool loadXML();
 
 	// when creating NifModels from outside the main thread protect them with a QReadLocker (see the XML check spell for an example)
@@ -255,6 +256,7 @@ protected:
 	static QHash<QString,NifBlock*>		compounds;
 	static QHash<QString,NifBlock*>		blocks;
 	
+	//! Parse the XML file using a NifXmlHandler
 	static QString parseXmlDescription( const QString & filename );
 
 	// Get and Set template overloads from base model

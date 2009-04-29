@@ -38,6 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QTime>
 
+//! \file basemodel.cpp BaseModel and BaseModelEval
+
 BaseModel::BaseModel( QObject * parent ) : QAbstractItemModel( parent )
 {
 	msgMode = EmitMessages;
@@ -364,34 +366,34 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 		{
 			switch ( column )
 			{
-				case NameCol:	return item->name();
-				case TypeCol:	return item->type();
-				case ValueCol:	return item->value().toString();
-				case ArgCol:	return item->arg();
-				case Arr1Col:	return item->arr1();
-				case Arr2Col:	return item->arr2();
-				case CondCol:	return item->cond();
-				case Ver1Col:	return ver2str( item->ver1() );
-				case Ver2Col:	return ver2str( item->ver2() );
-            case VerCondCol:	return item->vercond();
-				default:		return QVariant();
+				case NameCol:		return item->name();
+				case TypeCol:		return item->type();
+				case ValueCol:		return item->value().toString();
+				case ArgCol:		return item->arg();
+				case Arr1Col:		return item->arr1();
+				case Arr2Col:		return item->arr2();
+				case CondCol:		return item->cond();
+				case Ver1Col:		return ver2str( item->ver1() );
+				case Ver2Col:		return ver2str( item->ver2() );
+				case VerCondCol:	return item->vercond();
+				default:			return QVariant();
 			}
 		}
 		case Qt::EditRole:
 		{
 			switch ( column )
 			{
-				case NameCol:	return item->name();
-				case TypeCol:	return item->type();
-				case ValueCol:	return item->value().toVariant();
-				case ArgCol:	return item->arg();
-				case Arr1Col:	return item->arr1();
-				case Arr2Col:	return item->arr2();
-				case CondCol:	return item->cond();
-				case Ver1Col:	return ver2str( item->ver1() );
-				case Ver2Col:	return ver2str( item->ver2() );
-            case VerCondCol: return item->vercond();
-				default:		return QVariant();
+				case NameCol:		return item->name();
+				case TypeCol:		return item->type();
+				case ValueCol:		return item->value().toVariant();
+				case ArgCol:		return item->arg();
+				case Arr1Col:		return item->arr1();
+				case Arr2Col:		return item->arr2();
+				case CondCol:		return item->cond();
+				case Ver1Col:		return ver2str( item->ver1() );
+				case Ver2Col:		return ver2str( item->ver2() );
+				case VerCondCol:	return item->vercond();
+				default:			return QVariant();
 			}
 		}
 		case Qt::ToolTipRole:
@@ -403,15 +405,15 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 				{
 					switch ( item->value().type() )
 					{
-                  case NifValue::tWord:
-                  case NifValue::tShort:
+						case NifValue::tWord:
+						case NifValue::tShort:
 							{
 								quint16 s = item->value().toCount();
 								return QString( "dec: %1<br>hex: 0x%2" ).arg( s ).arg( s, 4, 16, QChar( '0' ) );
 							}
 						case NifValue::tBool:
-                  case NifValue::tInt:
-                  case NifValue::tUInt:
+						case NifValue::tInt:
+						case NifValue::tUInt:
 							{
 								quint32 i = item->value().toCount();
 								return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
@@ -499,9 +501,9 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 		case BaseModel::Ver2Col:
 			item->setVer2( str2ver( value.toString() ) );
 			break;
-      case BaseModel::VerCondCol:
-         item->setVerCond( value.toString() );
-         break;
+		case BaseModel::VerCondCol:
+			item->setVerCond( value.toString() );
+			break;
 		default:
 			return false;
 	}
@@ -513,7 +515,7 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 
 QVariant BaseModel::headerData( int section, Qt::Orientation orientation, int role ) const
 {
-   Q_UNUSED(orientation);
+	Q_UNUSED(orientation);
 	if ( role != Qt::DisplayRole )
 		return QVariant();
 	switch ( role )
@@ -530,7 +532,7 @@ QVariant BaseModel::headerData( int section, Qt::Orientation orientation, int ro
 				case CondCol:		return tr("Condition");
 				case Ver1Col:		return tr("since");
 				case Ver2Col:		return tr("until");
-            case VerCondCol:  return tr("Version Condition");
+				case VerCondCol:	return tr("Version Condition");
 				default:			return QVariant();
 			}
 		default:
@@ -640,37 +642,41 @@ QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & nam
  *  conditions and version
  */
 
-// Helper class for evaluating condition expressions
+//! Helper class for evaluating condition expressions
 class BaseModelEval
 {
 public:
-   const BaseModel * model;
-   const NifItem * item;
-   BaseModelEval(const BaseModel * model, const NifItem * item) {
-      this->model = model;
-      this->item = item;
-   }
-
-   QVariant operator()(const QVariant &v) const {
-      if ( v.type() == QVariant::String ) {
-         QString left = v.toString();
-         const NifItem * i = item;
-         while ( left == "ARG" ) {
-            if ( ! i->parent() )	return false;
-            i = i->parent();
-            left = i->arg();
-         }
-         i = model->getItem( i->parent(), left );
-         if (i) {
-            if ( i->value().isCount() )
-               return QVariant( i->value().toCount() );
-            else if ( i->value().isFileVersion() )
-               return QVariant( i->value().toFileVersion() );
-         }
-         return QVariant(0);
-      }
-      return v;
-   }
+	//! Model
+	const BaseModel * model;
+	//! Item
+	const NifItem * item;
+	//! Constructor
+	BaseModelEval(const BaseModel * model, const NifItem * item) {
+		this->model = model;
+		this->item = item;
+	}
+	
+	//! Evaluation function
+	QVariant operator()(const QVariant &v) const {
+		if ( v.type() == QVariant::String ) {
+			QString left = v.toString();
+			const NifItem * i = item;
+			while ( left == "ARG" ) {
+				if ( ! i->parent() )	return false;
+				i = i->parent();
+				left = i->arg();
+			}
+			i = model->getItem( i->parent(), left );
+			if (i) {
+				if ( i->value().isCount() )
+					return QVariant( i->value().toCount() );
+				else if ( i->value().isFileVersion() )
+					return QVariant( i->value().toFileVersion() );
+			}
+			return QVariant(0);
+		}
+		return v;
+	}
 };
 
 bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const

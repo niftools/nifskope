@@ -38,24 +38,33 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QWidget>
 #include <QTextEdit>
 
+//! \file valueedit.h Value editing widgets
+
 class QDoubleSpinBox;
 class QLabel;
 class QSpinBox;
 
+//! An editing widget for a NifValue
 class ValueEdit : public QWidget
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	ValueEdit( QWidget * parent = 0 );
 	
+	//! The value being edited?
 	Q_PROPERTY( NifValue value READ getValue WRITE setValue USER true );
 	
+	//! Accessor for value
 	NifValue getValue() const;
 	
+	//! Whether a value can be edited or not
 	static bool canEdit( NifValue::Type t );
 
 public slots:
+	//! Sets the value of the widget
 	void setValue( const NifValue & v );
+	//! Resizes the widget if the child widget is resized
 	void childResized( QResizeEvent * e );
 	
 protected:
@@ -68,6 +77,7 @@ private:
 	QWidget * edit;
 };
 
+//! An editing widget for a vector.
 class VectorEdit : public QWidget
 {
 	Q_OBJECT

@@ -14,6 +14,7 @@ changes since 1.0.19:
  * set sequence controller NiMultiTargetTransformController when importing kfs
  * display of NiUVController for UV transformations
  * Add "Move Down" option to Texture Folders list
+ * display of NiVisController
 
 changes since 1.0.18:
  * Spells:

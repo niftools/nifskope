@@ -8,6 +8,14 @@
 #include <QPushButton>
 #include <QSpinBox>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file flags.cpp
+ * \brief Flag editing spells (spEditFlags)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Edit flags
 class spEditFlags : public Spell
 {
 public:
@@ -15,11 +23,13 @@ public:
 	bool instant() const { return true; }
 	QIcon icon() const { return  QIcon( ":/img/flag" ); }
 	
+	//! Node / Property types on which flags are applicable
 	enum FlagType
 	{
 		Alpha, Billboard, Controller, Node, RigidBody, Shape, Stencil, VertexColor, ZBuffer, BSX, None
 	};
 	
+	//! Find the index of flags relative to a given NIF index
 	QModelIndex getFlagIndex( const NifModel * nif, const QModelIndex & index ) const
 	{
 		if ( nif->itemName( index ) == "Flags" && nif->isNiBlock( index.parent() ) )
@@ -43,6 +53,7 @@ public:
 		return QModelIndex();
 	}
 	
+	//! Determine the applicable flag editing dialog for a NIF block type
 	FlagType queryType( const NifModel * nif, const QModelIndex & index ) const
 	{
 		if ( nif->getValue( index ).isCount() )
@@ -119,6 +130,7 @@ public:
 		return index;
 	}
 	
+	//! Set flags on an AlphaProperty
 	void alphaFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -183,6 +195,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a Node
 	void nodeFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -211,6 +224,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a Controller
 	void controllerFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -235,6 +249,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a bhkRigidBody
 	void bodyFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -265,6 +280,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a Mesh
 	void shapeFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -298,6 +314,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a ZBufferProperty
 	void zbufferFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -357,6 +374,7 @@ public:
 		}
 	}
 	
+	//! Set BSX flags
 	void bsxFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint32 flags = nif->get<int>( index );
@@ -396,6 +414,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a BillboardNode
 	void billboardFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -437,6 +456,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a StencilProperty
 	void stencilFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -532,6 +552,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a VertexColorProperty
 	void vertexColorFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -592,6 +613,13 @@ public:
 		}
 	}
 	
+	//! Add a checkbox to a dialog
+	/*!
+	 * \param vbox Vertical box layout to add the checkbox to
+	 * \param name The name to give the checkbox
+	 * \param chk A checkbox that enables or disables this checkbox
+	 * \return A pointer to the checkbox
+	 */
 	QCheckBox * dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = 0 )
 	{
 		QCheckBox * box = new QCheckBox( name );
@@ -604,6 +632,14 @@ public:
 		return box;
 	}
 	
+	//! Add a combobox to a dialog
+	/*!
+	 * \param vbox Vertical box layout to add the combobox to
+	 * \param name The name to give the combobox
+	 * \param items The items to add to the combobox
+	 * \param chk A checkbox that enables or disables this combobox
+	 * \return A pointer to the combobox
+	 */
 	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = 0 )
 	{
 		vbox->addWidget( new QLabel( name ) );
@@ -618,6 +654,15 @@ public:
 		return cmb;
 	}
 	
+	//! Add a spinbox to a dialog
+	/*!
+	 * \param vbox Vertical box layout to add the spinbox to
+	 * \param name The name to give the spinbox
+	 * \param min The minimum value of the spinbox
+	 * \param max The maximum value of the spinbox
+	 * \param chk A checkbox that enables or disables this spinbox
+	 * \return A pointer to the spinbox
+	 */	
 	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = 0 )
 	{
 		vbox->addWidget( new QLabel( name ) );
@@ -632,16 +677,21 @@ public:
 		return spn;
 	}
 	
+	//! Add standard buttons to a dialog
+	/*!
+	 * \param dlg The dialog to add buttons to
+	 * \param vbox Vertical box layout used by the dialog
+	 */
 	void dlgButtons( QDialog * dlg, QVBoxLayout * vbox )
 	{
 		QHBoxLayout * hbox = new QHBoxLayout;
 		vbox->addLayout( hbox );
 		
-		QPushButton * btAccept = new QPushButton( "Accept" );
+		QPushButton * btAccept = new QPushButton( Spell::tr("Accept") );
 		hbox->addWidget( btAccept );
 		QObject::connect( btAccept, SIGNAL( clicked() ), dlg, SLOT( accept() ) );
 		
-		QPushButton * btReject = new QPushButton( "Cancel" );
+		QPushButton * btReject = new QPushButton( Spell::tr("Cancel") );
 		hbox->addWidget( btReject );
 		QObject::connect( btReject, SIGNAL( clicked() ), dlg, SLOT( reject() ) );
 	}

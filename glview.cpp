@@ -69,6 +69,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define M_PI 3.1415926535897932385
 #endif 
 
+//! \file glview.cpp GLView implementation
+
 GLView * GLView::create()
 {
 	static QList< QPointer<GLView> > views;

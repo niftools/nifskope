@@ -41,16 +41,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontrolable.h"
 
+//! \file glproperty.h Property classes
+
+//! Controllable properties attached to nodes and meshes
 class Property : public Controllable
 {
 protected:
+	//! Protected constructor; see Controllable()
 	Property( Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), ref( 0 ) {}
 	
 	int ref;
 	
+	//! List of properties
 	friend class PropertyList;
 	
 public:
+	//! Creates a Property based on the specified index of the specified model
+	/*!
+	 * @param scene The Scene the property is in
+	 * @param nif The model
+	 * @param index The index NiProperty
+	 */
 	static Property * create( Scene * scene, const NifModel * nif, const QModelIndex & index );
 
 	enum Type
@@ -71,8 +82,10 @@ public:
 	}
 };
 
+//! Associate a Property subclass with a Property::Type
 #define REGISTER_PROPERTY( CLASSNAME, TYPENAME ) template <> inline Property::Type Property::_type< CLASSNAME >() { return Property::TYPENAME; }
 
+//! A list of \link Property Properties \endlink
 class PropertyList
 {
 public:
@@ -117,7 +130,7 @@ template <typename T> inline bool PropertyList::contains() const
 	return properties.contains( Property::_type<T>() );
 }
 
-
+//! A Property that specifies alpha blending
 class AlphaProperty : public Property
 {
 public:
@@ -142,7 +155,7 @@ protected:
 
 REGISTER_PROPERTY( AlphaProperty, Alpha )
 
-
+//! A Property that specifies depth testing
 class ZBufferProperty : public Property
 {
 public:
@@ -166,9 +179,10 @@ protected:
 
 REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
 
-
+//! A Property that specifies (multi-)texturing
 class TexturingProperty : public Property
 {
+	//! The properties of each texture slot
 	struct TexDesc
 	{
 		QPersistentModelIndex iSource;
@@ -214,7 +228,7 @@ protected:
 
 REGISTER_PROPERTY( TexturingProperty, Texturing )
 
-
+//! A Property that specifies a texture
 class TextureProperty : public Property
 {
 public:
@@ -238,7 +252,7 @@ protected:
 
 REGISTER_PROPERTY( TextureProperty, Texture )
 
-
+//! A Property that specifies a material
 class MaterialProperty : public Property
 {
 public:
@@ -266,7 +280,7 @@ protected:
 
 REGISTER_PROPERTY( MaterialProperty, Material )
 
-
+//! A Property that specifies specularity
 class SpecularProperty : public Property
 {
 public:
@@ -285,7 +299,7 @@ protected:
 
 REGISTER_PROPERTY( SpecularProperty, Specular )
 
-
+//! A Property that specifies wireframe drawing
 class WireframeProperty : public Property
 {
 public:
@@ -304,7 +318,7 @@ protected:
 
 REGISTER_PROPERTY( WireframeProperty, Wireframe )
 
-
+//! A Property that specifies vertex color handling
 class VertexColorProperty : public Property
 {
 public:
@@ -324,7 +338,7 @@ protected:
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
 
-
+//! A Property that specifies stencil testing
 class StencilProperty : public Property
 {
 public:
@@ -354,7 +368,7 @@ protected:
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
 
-
+//! A Property that specifies shader lighting (Bethesda-specific)
 class BSShaderLightingProperty : public Property
 {
 public:

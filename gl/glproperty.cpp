@@ -35,6 +35,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 #include "options.h"
 
+//! \file glproperty.cpp Property, subclasses and controllers
+
+//! Helper function that checks texture sets
 bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
 {
 	return s >= 0 && s < texcoords.count() && texcoords[s].count();
@@ -418,7 +421,7 @@ int TexturingProperty::coordSet( int id ) const
 	return -1;
 }
 
-
+//! Controller for source textures in a TexturingProperty
 class TexFlipController : public Controller
 {
 public:
@@ -465,6 +468,7 @@ protected:
 	QPersistentModelIndex iSources;
 };
 
+//! Controller for transformations in a TexturingProperty
 class TexTransController : public Controller
 {
 public:
@@ -526,6 +530,7 @@ protected:
 	int		lX;
 };
 
+//! Set the appropriate Controller
 void TexturingProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
 	if ( nif->itemName( iController ) == "NiFlipController" )

@@ -38,9 +38,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCoreApplication>
 #include <QMenu>
 
-#define REGISTER_SPELL( SPELL ) static Librarian __##SPELL##__ ( new SPELL );
-
 //! \file spellbook.h Spell, SpellBook and Librarian
+
+//! Register a Spell using a Librarian
+#define REGISTER_SPELL( SPELL ) static Librarian __##SPELL##__ ( new SPELL );
 
 //! Flexible context menu magic functions.
 class Spell
@@ -80,7 +81,14 @@ public:
 	}
 	
 	//! i18n wrapper for various strings
-	static QString tr( const char * key ) { return QCoreApplication::translate( "Spell", key ); }
+	/*!
+	 * Note that we don't use QObject::tr() because that doesn't provide
+	 * context. We also don't use the QCoreApplication Q_DECLARE_TR_FUNCTIONS()
+	 * macro because that won't document properly.
+	 *
+	 * No spells should reimplement this function.
+	 */
+	static inline QString tr( const char * key, const char * comment = 0 ) { return QCoreApplication::translate( "Spell", key, comment ); }
 };
 
 //! Spell menu

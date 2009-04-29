@@ -1036,7 +1036,7 @@ QColor Options::overrideEmissive()
 
 /*!
  * This option is hidden in the registry and disabled by setting the key
- * Render Settings\Draw Meshes to false
+ * Render Settings/Draw Meshes to false
  */
 bool Options::drawMeshes()
 {

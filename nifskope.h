@@ -63,6 +63,8 @@ class QUdpSocket;
 
 #include "message.h"
 
+//! \file nifskope.h The main header for NifSkope
+
 //! The main application class for NifSkope. 
 /*!
  * This class encapsulates the main NifSkope window. It has members for saving
@@ -74,7 +76,9 @@ class NifSkope : public QMainWindow
 {
 Q_OBJECT
 public:
+	//! Constructor
 	NifSkope();
+	//! Destructor
 	~NifSkope();
 	
 	//! Create and initialize a new NifSkope application window.
@@ -125,27 +129,42 @@ public slots:
 	void about();
 	
 protected slots:
+	//! Select a NIF index
 	void select( const QModelIndex & );
 	
+	//! Display a context menu at the specified position
 	void contextMenu( const QPoint & pos );
 	
+	//! Set the list mode
 	void setListMode();
 	
+	//! Select the font to use
 	void sltSelectFont();
 	
+	//! Send a Message
 	void dispatchMessage( const Message & msg );
 	
+	//! Override the view font
 	void overrideViewFont();
 	
+	//! Copy file name from load to save
 	void copyFileNameLoadSave();
+	//! Copy file name from save to load
 	void copyFileNameSaveLoad();
 	
+	//! Sets Import/Export menus
+	/*!
+	 * see importex/importex.cpp
+	 */
 	void fillImportExportMenus();
+	//! Perform Import or Export
 	void sltImportExport( QAction * action );
-
+	
+	//! Open a URL using the system handler
 	void openURL();
-
-   void sltLocaleChanged();
+	
+	//! Change system locale and notify user that restart may be required
+	void sltLocaleChanged();
 	
 protected:
 	void closeEvent( QCloseEvent * e );
@@ -179,12 +198,16 @@ private:
 	NifTreeView * list;
 	//! This view shows the whole nif file or the block details.
 	NifTreeView * tree;
+	//! This view shows the KFM file, if any
 	NifTreeView * kfmtree;
 
+	//! Help browser
 	ReferenceBrowser * refrbrwsr;
 
-   InspectView * inspect;
+	//! Transform inspect view
+	InspectView * inspect;
 	
+	//! The main window
 	GLView * ogl;
 	
 	bool selecting;
@@ -197,7 +220,7 @@ private:
 	QDockWidget * dTree;
 	QDockWidget * dKfm;
 	QDockWidget * dRefr;
-   QDockWidget * dInsp;
+	QDockWidget * dInsp;
 	
 	QToolBar * tool;
 	
@@ -234,17 +257,22 @@ private:
 	QMenu * mImport;
 };
 
+//! UDP communication between instances
 class IPCsocket : public QObject
 {
 	Q_OBJECT
 public:
+	//! Creates a socket
 	static IPCsocket * create();
 	
+	//! Sends a command
 	static void sendCommand( const QString & cmd );
 
 public slots:
+	//! Acts on a command
 	void execCommand( const QString & cmd );
 	
+	//! Opens a NIF from a URL
 	void openNif( const QUrl & );
 
 protected slots:
@@ -257,14 +285,21 @@ protected:
 	QUdpSocket * socket;
 };
 
+//! Progress dialog
 class ProgDlg : public QProgressDialog
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	ProgDlg() {}
 
 public slots:
-	void sltProgress( int, int );
+	//! Update progress
+	/*!
+	 * \param x The amount done
+	 * \param y The total amount
+	 */
+	void sltProgress( int x, int y );
 };
 
 /*! \mainpage NifSkope API Documentation
@@ -276,12 +311,15 @@ public slots:
  *
  * %NifSkope is a graphical program that allows you to open NIF files, view
  * their contents, edit them, and write them back out again. It is written in
- * C++ using OpenGL and the Qt framework, and designed using the Model/View
- * Programming paradigm.
+ * C++ using OpenGL and the Qt framework, and designed using the
+ * <a href="http://doc.trolltech.com/latest/model-view-programming.html">Model/View
+ * Programming</a> paradigm.
  *
- * A NIF is internally represented as a NifModel, which inherits from
- * QAbstractItemModel; blocks are referenced by means of QModelIndex and
- * QPersistentModelIndex.
+ * The main application is present in the NifSkope class; rendering takes place
+ * via GLView.
+ *
+ * A NIF is internally represented as a NifModel; blocks are referenced by
+ * means of QModelIndex and QPersistentModelIndex.
  *
  * Various "magic" functions can be performed on a NIF via the Spell system;
  * this is probably a good place to start if you want to learn about how a NIF

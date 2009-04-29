@@ -44,6 +44,8 @@ class QAbstractItemDelegate;
 
 #include "message.h"
 
+//! \file basemodel.h BaseModel
+
 //! Base class for nif and kfm models, which store files in memory.
 /*!
  * This class serves as an abstract base class for NifModel and KfmModel
@@ -113,7 +115,7 @@ public:
 	template <typename T> bool set( const QModelIndex & index, const T & d );
 	//! Set an item by name.
 	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-
+	
 	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
 	//! Get an item as a NifValue by name.
@@ -145,7 +147,7 @@ public:
 	QString  itemText( const QModelIndex & index ) const;
 	//! Get the item template string.
 	QString  itemTmplt( const QModelIndex & index ) const;
-
+	
 	//! Find a branch by name.
 	QModelIndex getIndex( const QModelIndex & parent, const QString & name ) const;
 	
@@ -158,10 +160,8 @@ public:
 	virtual QString getVersion() const = 0;
 	//! Get version as a number
 	virtual quint32 getVersionNumber() const = 0;
-
 	
-
-	// column numbers
+	//! Column names
 	enum {
 		NameCol  = 0,
 		TypeCol  = 1,
@@ -175,68 +175,112 @@ public:
 		VerCondCol  = 9,
 		NumColumns = 10,
 	};
-
-	// QAbstractModel interface
 	
+	// QAbstractModel interface
+	//! Creates a model index for the given row and column
+	/*!
+	 * \see QAbstractItemModel::createIndex()
+	 */
 	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
+	//! Finds the parent of the specified index
 	QModelIndex parent( const QModelIndex & index ) const;
-
+	
+	//! Finds the number of rows
 	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
+	//! Finds the number of columns
 	int columnCount( const QModelIndex & parent = QModelIndex() ) const { Q_UNUSED(parent); return NumColumns; }
 	
+	//! Finds the data associated with an index
+	/*!
+	 * \param index The index to find data for
+	 * \param role The Qt::ItemDataRole to get data for
+	 */
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
+	//! Sets data associated with an index
+	/*!
+	 * \param index The index to set data for
+	 * \param value The data to set
+	 * \param role The Qt::ItemDataRole to use
+	 */
 	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
 	
+	//! Get the header data for a section
 	QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const;
 	
+	//! Finds the flags for an index
 	Qt::ItemFlags flags( const QModelIndex & index ) const;
 	
-	
+	//! Message mode
 	enum MsgMode
 	{
 		EmitMessages, CollectMessages
 	};
 	
+	//! Set the Message mode
 	void setMessageMode( MsgMode m ) { msgMode = m; }
+	//! Get Messages collected
 	QList<Message> getMessages() const { QList<Message> lst = messages; messages.clear(); return lst; }
 	
 signals:
+	//! Messaging signal
 	void sigMessage( const Message & msg ) const;
+	//! Progress signal
 	void sigProgress( int c, int m ) const;
 	
 protected:
+	//! Update an array item
 	virtual bool		updateArrayItem( NifItem * array, bool fast ) = 0;
+	//! Get the size of an array
 	int			getArraySize( NifItem * array ) const;
+	//! Evaluate a string for an array
 	int			evaluateString( NifItem * array, const QString & text ) const;
-
+	
+	//! Get an item
 	virtual NifItem *	getItem( NifItem * parent, const QString & name ) const;
+	//! Get an item by name
 	NifItem *	getItemX( NifItem * item, const QString & name ) const; // find upwards
-
+	
+	//! Get an item by name
 	template <typename T> T get( NifItem * parent, const QString & name ) const;
+	//! Get an item
 	template <typename T> T get( NifItem * item ) const;
 	
+	//! Set an item by name
 	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
+	//! Set an item
 	template <typename T> bool set( NifItem * item, const T & d );
+	//! Set an item value
 	virtual bool setItemValue( NifItem * item, const NifValue & v ) = 0;
+	//! Set an item value by name
 	bool setItemValue( NifItem * parent, const QString & name, const NifValue & v );
 	
+	//! Evaluate version
 	virtual bool		evalVersion( NifItem * item, bool chkParents = false ) const = 0;
+	//! Evaluate conditions
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
+	//! Evaluate conditions
 	bool		evalConditionHelper( NifItem * item, const QString & cond ) const;
-
+	
+	//! Convert a version number to a string
 	virtual QString ver2str( quint32 ) const = 0;
+	//! Convert a version string to a number
 	virtual quint32 str2ver( QString ) const = 0;
-
+	
+	//! Set the header string
 	virtual bool setHeaderString( const QString & ) = 0;
 	
-	// root item
+	//! The root item
 	NifItem *	root;
-
+	
+	//! The filepath of the model
 	QString folder;
 	
+	//! The messaging mode
 	MsgMode msgMode;
+	//! A list of messages
 	mutable QList<Message> messages;
 	
+	//! Handle a message
 	void msg( const Message & m ) const;
 	
 	friend class NifIStream;

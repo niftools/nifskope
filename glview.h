@@ -49,16 +49,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
+//! \file glview.h GLView class
+
 class Scene;
 
 class QActionGroup;
-#include <QComboBox>
-// class QComboBox;
+class QComboBox;
 class QMenu;
 class QSettings;
 class QToolBar;
 class QTimer;
 
+//! The model view window
 class GLView : public QGLWidget
 {
 	Q_OBJECT

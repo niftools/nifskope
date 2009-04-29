@@ -14,6 +14,8 @@ CONFIG += fsengine
 # uncomment this if you want the text stats gl option
 #DEFINES += USE_GL_QPAINTER
 
+# On Windows this builds Release in release/ and Debug in debug/
+# On Linux you may need CONFIG += debug_and_release debug_and_release_target
 DESTDIR = .
 
 HEADERS += \

@@ -42,97 +42,122 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef M_PI
 #define PI M_PI
 #else
+//! This is only defined if we can't find M_PI, which should be in stdlib's %math.h
 #define PI 3.1416f
 #endif
 #endif
 
+//! \file niftypes.h Type definitions and functions
+
+//! Format a float with out of range values
 QString NumOrMinMax( float val, char f = 'g', int prec = 6 );
 
 class NifModel;
 class QModelIndex;
 class QDataStream;
 
+/*
+ * Perhaps look at introducing a parent class for all of the vector/matrix types to improve abstraction?
+ */
+
+//! A vector of 2 floats
 class Vector2
 {
 public:
+	//! Default constructor
 	Vector2()
 	{
 		xy[0] = xy[1] = 0.0;
 	}
+	//! Constructor
 	Vector2( float x, float y )
 	{
 		xy[0] = x; xy[1] = y;
 	}
+	//! Add-equals operator
 	Vector2 & operator+=( const Vector2 & v )
 	{
 		xy[0] += v.xy[0];
 		xy[1] += v.xy[1];
 		return *this;
 	}
+	//! Add operator
 	Vector2 operator+( const Vector2 & v ) const
 	{
 		Vector2 w( *this );
 		return ( w += v );
 	}
+	//! Minus-equals operator
 	Vector2 & operator-=( const Vector2 & v )
 	{
 		xy[0] -= v.xy[0];
 		xy[1] -= v.xy[1];
 		return *this;
 	}
+	//! Minus operator
 	Vector2 operator-( const Vector2 & v ) const
 	{
 		Vector2 w( *this );
 		return ( w -= v );
 	}
+	//! Negation operator
 	Vector2 operator-() const
 	{
 		return Vector2() - *this;
 	}
+	//! Times-equals operator
 	Vector2 & operator*=( float s )
 	{
 		xy[0] *= s;
 		xy[1] *= s;
 		return *this;
 	}
+	//! Times operator
 	Vector2 operator*( float s ) const
 	{
 		Vector2 w( *this );
 		return ( w *= s );
 	}
+	//! Divide equals operator
 	Vector2 & operator/=( float s )
 	{
 		xy[0] /= s;
 		xy[1] /= s;
 		return *this;
 	}
+	//! Divide operator
 	Vector2 operator/( float s ) const
 	{
 		Vector2 w( *this );
 		return ( w /= s );
 	}
 	
+	//! Equality operator
 	bool operator==( const Vector2 & v ) const
 	{
 		return xy[0] == v.xy[0] && xy[1] == v.xy[1];
 	}
 	
+	//! Array operator
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 2 );
 		return xy[i];
 	}
+	//! Const array operator
 	const float & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 2 );
 		return xy[i];
 	}
 	
+	//! %Data accessor
 	const float * data() const
 	{
 		return xy;
 	}
 	
+	//! Set from string
 	void fromString( QString str );
 
 protected:
@@ -142,29 +167,39 @@ protected:
 	friend class NifOStream;
 };
 
+//! A vector of 3 floats
 class Vector3
 {	
-	Q_DECLARE_TR_FUNCTIONS(Vector3);
+	Q_DECLARE_TR_FUNCTIONS(Vector3)
 
 public:
+	//! Default constructor
 	Vector3()
 	{
 		xyz[ 0 ] = xyz[ 1 ] = xyz[ 2 ] = 0.0;
 	}
+	//! Constructor
 	Vector3( float x, float y, float z )
 	{
 		xyz[0] = x;
 		xyz[1] = y;
 		xyz[2] = z;
 	}
+	//! Constructor from a Vector2 and a float
 	explicit Vector3( const Vector2 & v2, float z = 0 )
 	{
 		xyz[0] = v2[0];
 		xyz[1] = v2[1];
 		xyz[2] = z;
 	}
+	//! Constructor from a Vector4
+	/*!
+	 * Construct a Vector3 from a Vector4 by truncating.
+	 * Doxygen can't document this due to a circular dependency?
+	 */
 	explicit Vector3( const class Vector4 & );
 	
+	//! Add-equals operator
 	Vector3 & operator+=( const Vector3 & v )
 	{
 		xyz[0] += v.xyz[0];
@@ -172,6 +207,7 @@ public:
 		xyz[2] += v.xyz[2];
 		return *this;
 	}
+	//! Minus-equals operator
 	Vector3 & operator-=( const Vector3 & v )
 	{
 		xyz[0] -= v.xyz[0];
@@ -179,6 +215,7 @@ public:
 		xyz[2] -= v.xyz[2];
 		return *this;
 	}
+	//! Times-equals operator
 	Vector3 & operator*=( float s )
 	{
 		xyz[ 0 ] *= s;
@@ -186,6 +223,7 @@ public:
 		xyz[ 2 ] *= s;
 		return *this;
 	}
+	//! Divide-equals operator
 	Vector3 & operator/=( float s )
 	{
 		xyz[ 0 ] /= s;
@@ -193,57 +231,68 @@ public:
 		xyz[ 2 ] /= s;
 		return *this;
 	}
+	//! Add operator
 	Vector3 operator+( Vector3 v ) const
 	{
 		Vector3 w( *this );
 		return w += v;
 	}
+	//! Minus operator
 	Vector3 operator-( Vector3 v ) const
 	{
 		Vector3 w( *this );
 		return w -= v;
 	}
+	//! Negation operator
 	Vector3 operator-() const
 	{
 		return Vector3() - *this;
 	}
+	//! Times operator
 	Vector3 operator*( float s ) const
 	{
 		Vector3 v( *this );
 		return v *= s;
 	}
+	//! Divide operator
 	Vector3 operator/( float s ) const
 	{
 		Vector3 v( *this );
 		return v /= s;
 	}
 	
+	//! Equality operator
 	bool operator==( const Vector3 & v ) const
 	{
 		return xyz[0] == v.xyz[0] && xyz[1] == v.xyz[1] && xyz[2] == v.xyz[2];
 	}
 	
+	//! Array operator
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 3 );
 		return xyz[i];
 	}
+	//! Const array operator
 	const float & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 3 );
 		return xyz[i];
 	}
 	
+	//! Find the length of the vector
 	float length() const
 	{
 		return sqrt( xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2] );
 	}
 	
+	//! Find the length of the vector, squared
 	float squaredLength() const
 	{
 		return xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2];
 	}
 	
+	//! Normalize the vector
 	Vector3 & normalize()
 	{
 		float m = length();
@@ -257,15 +306,18 @@ public:
 		return *this;
 	}
 	
+	//! Find the dot product of two vectors
 	static float dotproduct( const Vector3 & v1, const Vector3 & v2 )
 	{
 		return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
 	}
+	//! Find the cross product of two vectors
 	static Vector3 crossproduct( const Vector3 & a, const Vector3 & b )
 	{
 		return Vector3( a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0] );
 	}
 	
+	//! Find the angle between two vectors
 	static float angle( const Vector3 & v1, const Vector3 & v2 )
 	{
 		float dot = dotproduct( v1, v2 );
@@ -279,12 +331,14 @@ public:
 			return acos( dot );
 	}
 	
+	//! Size a vector to a minimum bound
 	void boundMin( const Vector3 & v )
 	{
 		if ( v[0] < xyz[0] ) xyz[0] = v[0];
 		if ( v[1] < xyz[1] ) xyz[1] = v[1];
 		if ( v[2] < xyz[2] ) xyz[2] = v[2];
 	}
+	//! Size a vector to a maximum bound
 	void boundMax( const Vector3 & v )
 	{
 		if ( v[0] > xyz[0] ) xyz[0] = v[0];
@@ -292,10 +346,13 @@ public:
 		if ( v[2] > xyz[2] ) xyz[2] = v[2];
 	}
 	
+	//! %Data accessor
 	const float * data() const { return xyz; }
 	
+	//! Set from string
 	void fromString( QString str );
 	
+	//! Format as HTML
 	QString toHtml() const
 	{
 		return tr( "X %1 Y %2 Z %3\nlength %4" )
@@ -312,15 +369,18 @@ protected:
 	friend class NifOStream;
 };
 
+//! A vector of 4 floats
 class Vector4
 {
-	Q_DECLARE_TR_FUNCTIONS(Vector4);
+	Q_DECLARE_TR_FUNCTIONS(Vector4)
 
 public:
+	//! Default constructor
 	Vector4()
 	{
 		xyzw[ 0 ] = xyzw[ 1 ] = xyzw[ 2 ] = xyzw[ 3 ] = 0.0;
 	}
+	//! Constructor
 	Vector4( float x, float y, float z, float w )
 	{
 		xyzw[ 0 ] = x;
@@ -328,6 +388,7 @@ public:
 		xyzw[ 2 ] = z;
 		xyzw[ 3 ] = w;
 	}
+	//! Constructor from a Vector3 and a float
 	explicit Vector4( const Vector3 & v3, float w = 0.0 )
 	{
 		xyzw[0] = v3[0];
@@ -335,6 +396,7 @@ public:
 		xyzw[2] = v3[2];
 		xyzw[3] = w;
 	}
+	//! Add-equals operator
 	Vector4 & operator+=( const Vector4 & v )
 	{
 		xyzw[0] += v.xyzw[0];
@@ -343,6 +405,7 @@ public:
 		xyzw[3] += v.xyzw[3];
 		return *this;
 	}
+	//! Minus-equals operator
 	Vector4 & operator-=( const Vector4 & v )
 	{
 		xyzw[0] -= v.xyzw[0];
@@ -351,6 +414,7 @@ public:
 		xyzw[3] -= v.xyzw[3];
 		return *this;
 	}
+	//! Times-equals operator
 	Vector4 & operator*=( float s )
 	{
 		xyzw[ 0 ] *= s;
@@ -359,6 +423,7 @@ public:
 		xyzw[ 3 ] *= s;
 		return *this;
 	}
+	//! Divide-equals operator
 	Vector4 & operator/=( float s )
 	{
 		xyzw[ 0 ] /= s;
@@ -367,57 +432,68 @@ public:
 		xyzw[ 3 ] /= s;
 		return *this;
 	}
+	//! Add operator
 	Vector4 operator+( Vector4 v ) const
 	{
 		Vector4 w( *this );
 		return w += v;
 	}
+	//! Minus operator
 	Vector4 operator-( Vector4 v ) const
 	{
 		Vector4 w( *this );
 		return w -= v;
 	}
+	//! Negation operator
 	Vector4 operator-() const
 	{
 		return Vector4() - *this;
 	}
+	//! Times operator
 	Vector4 operator*( float s ) const
 	{
 		Vector4 v( *this );
 		return v *= s;
 	}
+	//! Divide operator
 	Vector4 operator/( float s ) const
 	{
 		Vector4 v( *this );
 		return v /= s;
 	}
 	
+	//! Equality operator
 	bool operator==( const Vector4 & v ) const
 	{
 		return xyzw[0] == v.xyzw[0] && xyzw[1] == v.xyzw[1] && xyzw[2] == v.xyzw[2] && xyzw[3] == v.xyzw[3];
 	}
 	
+	//! Array operator
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 4 );
 		return xyzw[i];
 	}
+	//! Const array operator
 	const float & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 4 );
 		return xyzw[i];
 	}
 	
+	//! Find the length of the vector
 	float length() const
 	{
 		return sqrt( xyzw[0]*xyzw[0] + xyzw[1]*xyzw[1] + xyzw[2]*xyzw[2] + xyzw[3]*xyzw[3] );
 	}
 	
+	//! Find the length of the vector, squared
 	float squaredLength() const
 	{
 		return xyzw[0]*xyzw[0] + xyzw[1]*xyzw[1] + xyzw[2]*xyzw[2] + xyzw[3]*xyzw[3];
 	}
 	
+	//! Normalize the vector
 	void normalize()
 	{
 		float m = length();
@@ -431,11 +507,13 @@ public:
 		xyzw[3] *= m;
 	}
 	
+	//! Find the dot product of two vectors
 	static float dotproduct( const Vector4 & v1, const Vector4 & v2 )
 	{
 		return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]+v1[3]*v2[3];
 	}
 	
+	//! Find the angle between two vectors
 	static float angle( const Vector4 & v1, const Vector4 & v2 )
 	{
 		float dot = dotproduct( v1, v2 );
@@ -449,10 +527,13 @@ public:
 			return (float)acos( dot );
 	}
 	
+	//! %Data accessor
 	const float * data() const { return xyzw; }
 	
+	//! Set from string
 	void fromString( QString str );
 	
+	//! Format as HTML
 	QString toHtml() const
 	{
 		return tr( "X %1 Y %2 Z %3 W %4\nlength %5" )
@@ -470,6 +551,7 @@ protected:
 	friend class NifOStream;
 };
 
+// This refuses to document properly in doxygen.
 inline Vector3::Vector3( const Vector4 & v4 )
 {
 	xyz[0] = v4[0];
@@ -477,15 +559,18 @@ inline Vector3::Vector3( const Vector4 & v4 )
 	xyz[2] = v4[2];
 }
 
+//! A quaternion
 class Quat
 {
-	Q_DECLARE_TR_FUNCTIONS(Quat);
+	Q_DECLARE_TR_FUNCTIONS(Quat)
 
 public:
+	//! Default constructor
 	Quat()
 	{
 		memcpy( wxyz, identity, 16 );
 	}
+	//! Constructor
 	Quat( float w, float x, float y, float z )
 	{
 		wxyz[0] = w;
@@ -494,50 +579,61 @@ public:
 		wxyz[3] = z;
 	}
 	
+	//! Array operator
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 4 );
 		return wxyz[ i ];
 	}
+	//! Const array operator
 	const float & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 4 );
 		return wxyz[ i ];
 	}
+	//! Times-equals operator
 	Quat & operator*=( float s )
 	{
 		for ( int c = 0; c < 4; c++ )
 			wxyz[ c ] *= s;
 		return *this;
 	}
+	//! Times operator
 	Quat operator*( float s ) const
 	{
 		Quat q( *this );
 		return ( q *= s );
 	}
+	//! Add-equals operator
 	Quat & operator+=( const Quat & q )
 	{
 		for ( int c = 0; c < 4; c++ )
 			wxyz[ c ] += q.wxyz[ c ];
 		return *this;
 	}
+	//! Add operator
 	Quat operator+( const Quat & q ) const
 	{
 		Quat r( *this );
 		return ( r += q );
 	}
+	//! Find the dot product of two quaternions
 	static float dotproduct( const Quat & q1, const Quat & q2 )
 	{
 		return q1[0]*q2[0]+q1[1]*q2[1]+q1[2]*q2[2]+q1[3]*q2[3];
 	}
-
-
+	
+	//! Set from string
 	void fromString( QString str );
+	//! Set from vector and angle
 	void fromAxisAngle( Vector3 axis, float angle );
+	//! Find vector and angle
 	void toAxisAngle( Vector3 & axis, float & angle ) const;
-
-   static Quat slerp (float t, const Quat& p, const Quat& q);
-
+	
+	//! Spherical linear interpolatation between two quaternions
+	static Quat slerp (float t, const Quat& p, const Quat& q);
+	
+	//! Format as HTML
 	QString toHtml() const
 	{
 		return tr( "W %1\nX %2\nY %3\nZ %4" )
@@ -555,13 +651,16 @@ protected:
 	friend class NifOStream;
 };
 
+//! A 3 by 3 matrix
 class Matrix
 {
 public:
+	//! Constructor
 	Matrix()
 	{
 		memcpy( m, identity, 36 );
 	}
+	//! Times operator for a matrix
 	Matrix operator*( const Matrix & m2 ) const
 	{
 		Matrix m3;
@@ -570,6 +669,7 @@ public:
 				m3.m[r][c] = m[r][0]*m2.m[0][c] + m[r][1]*m2.m[1][c] + m[r][2]*m2.m[2][c];
 		return m3;
 	}
+	//! Times operator for a vector
 	Vector3 operator*( const Vector3 & v ) const
 	{
 		return Vector3(
@@ -577,32 +677,40 @@ public:
 			m[1][0]*v[0] + m[1][1]*v[1] + m[1][2]*v[2],
 			m[2][0]*v[0] + m[2][1]*v[1] + m[2][2]*v[2] );
 	}
+	//! %Element operator
 	float & operator()( unsigned int c, unsigned int d )
 	{
 		Q_ASSERT( c < 3 && d < 3 );
 		return m[c][d];
 	}
+	//! Const element operator
 	float operator()( unsigned int c, unsigned int d ) const
 	{
 		Q_ASSERT( c < 3 && d < 3 );
 		return m[c][d];
 	}
 	
+	//! Find the inverted form
 	Matrix inverted() const;
 	
+	//! Set from quaternion
 	void fromQuat( const Quat & q );
+	//! Convert to quaternion
 	Quat toQuat() const;
 	
 	//! Convert from Euler angles in a (Z,Y,X) manner.
 	void fromEuler( float x, float y, float z );
+	//! Convert to Euler angles
 	bool toEuler( float & x, float & y, float & z ) const;
 	
+	//! Find a matrix from Euler angles
 	static Matrix euler( float x, float y, float z )
 	{
 		Matrix m; m.fromEuler( x, y, z );
 		return m;
 	}
 	
+	//! Format as HTML
 	QString toHtml() const;
 
 protected:
@@ -613,13 +721,16 @@ protected:
 	friend class NifOStream;
 };
 
+//! A 4 by 4 matrix
 class Matrix4
 {
 public:
+	//! Constructor
 	Matrix4()
 	{
 		memcpy( m, identity, 64 );
 	}
+	//! Times operator for a matrix
 	Matrix4 operator*( const Matrix4 & m2 ) const
 	{
 		Matrix4 m3;
@@ -628,6 +739,7 @@ public:
 				m3.m[r][c] = m[r][0]*m2.m[0][c] + m[r][1]*m2.m[1][c] + m[r][2]*m2.m[2][c] + m[r][3]*m2.m[3][c];
 		return m3;
 	}
+	//! Times operator for a vector
 	Vector3 operator*( const Vector3 & v ) const
 	{
 		return Vector3(
@@ -635,28 +747,37 @@ public:
 			m[1][0]*v[0] + m[1][1]*v[1] + m[1][2]*v[2] + m[1][3],
 			m[2][0]*v[0] + m[2][1]*v[1] + m[2][2]*v[2] + m[2][3] );
 	}
+	//! %Element operator
 	float & operator()( unsigned int c, unsigned int d )
 	{
 		Q_ASSERT( c < 4 && d < 4 );
 		return m[c][d];
 	}
+	//! Const element operator
 	float operator()( unsigned int c, unsigned int d ) const
 	{
 		Q_ASSERT( c < 4 && d < 4 );
 		return m[c][d];
 	}
 	
+	// Not implemented; use decompose() instead
+	/*
 	Matrix rotation() const;
 	Vector3 translation() const;
 	Vector3 scale() const;
+	*/
 	
+	//! Decompose into translation, rotation and scale
 	void decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const;
+	//! Compose from translation, rotation and scale
 	void compose( const Vector3 & trans, const Matrix & rot, const Vector3 & scale );
 	
 	//Matrix44 inverted() const;
 	
+	//! Format as HTML
 	QString toHtml() const;
 	
+	//! %Data accessor
 	const float * data() const { return (float *) m; }
 
 protected:
@@ -667,23 +788,37 @@ protected:
 	friend class NifOStream;
 };
 
+//! A transformation consisting of a translation, rotation and scale
 class Transform
 {
 public:
+	//! Constructor
+	/*!
+	 * Creates a transform from a NIF index.
+	 *
+	 * \param nif The model
+	 * \param transform The index to create the transform from
+	 */
 	Transform( const NifModel * nif, const QModelIndex & transform );
+	//! Default constructor
 	Transform()	{ scale = 1.0; }
 	
+	//! Tests if a transform can be constructed
 	static bool canConstruct( const NifModel * nif, const QModelIndex & parent );
 	
+	//! Writes a transform back to a NIF index
 	void writeBack( NifModel * nif, const QModelIndex & transform ) const;
 	
+	//! Times operator
 	friend Transform operator*( const Transform & t1, const Transform & t2 );
 	
+	//! Times operator
 	Vector3 operator*( const Vector3 & v ) const
 	{
 		return rotation * v * scale + translation;
 	}
 	
+	//! Returns a matrix holding the transform
 	Matrix4 toMatrix4() const;
 	
 	// Format of rotation matrix? See http://en.wikipedia.org/wiki/Euler_angles
@@ -703,32 +838,47 @@ public:
 	QString toString() const;
 };
 
+//! A triangle
 class Triangle
 {
 public:
+	//! Default constructor
 	Triangle() { v[0] = v[1] = v[2] = 0; }
+	//! Constructor
 	Triangle( quint16 a, quint16 b, quint16 c ) { set( a, b, c ); }
 	
+	//! Array operator
 	quint16 & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 3 );
 		return v[i];
 	}
+	//! Const array operator
 	const quint16 & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 3 );
 		return v[i];
 	}
+	//! Sets the vertices of the triangle
 	void set( quint16 a, quint16 b, quint16 c )
 	{
 		v[0] = a; v[1] = b; v[2] = c;
 	}
+	//! Gets the first vertex
 	inline quint16 v1() const { return v[0]; }
+	//! Gets the second vertex
 	inline quint16 v2() const { return v[1]; }
+	//! Gets the third vertex
 	inline quint16 v3() const { return v[2]; }
 	
+	//! Flips the triangle face
+	/*!
+	 * Triangles are usually drawn anticlockwise(?); by changing the order of
+	 * the vertices the triangle is flipped.
+	 */
 	void flip() { quint16 x = v[0]; v[0] = v[1]; v[1] = x; }
 	
+	//! Add operator
 	Triangle operator+( quint16 d )
 	{
 		Triangle t( *this );
@@ -744,6 +894,7 @@ protected:
 	friend class NifOStream;
 };
 
+//! Clamps a float to have a value between 0 and 1 inclusive
 inline float clamp01( float a )
 {
 	if ( a < 0 )	return 0;
@@ -751,27 +902,40 @@ inline float clamp01( float a )
 	return a;
 }
 
+//! A 3 value color (RGB)
 class Color3
 {
 public:
+	//! Default constructor
 	Color3() { rgb[0] = rgb[1] = rgb[2] = 1.0; }
+	//! Constructor
 	Color3( float r, float g, float b ) { setRGB( r, g, b ); }
+	//! Constructor
 	explicit Color3( const QColor & c ) { fromQColor( c ); }
+	//! Constructor
 	explicit Color3( const Vector3 & v ) { fromVector3( v ); }
+	//! Constructor
+	/*!
+	 * Construct a Color3 from a Color4 by truncating.
+	 * Doxygen can't document this due to a circular dependency?
+	 */
 	explicit Color3( const class Color4 & c4 );
 	
+	//! Array operator
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 3 );
 		return rgb[i];
 	}
 	
+	//! Const array operator
 	const float & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 3 );
 		return rgb[i];
 	}
 	
+	//! Times operator
 	Color3 operator*( float x ) const
 	{
 		Color3 c( *this );
@@ -781,6 +945,7 @@ public:
 		return c;
 	}
 	
+	//! Add-equals operator
 	Color3 & operator+=( const Color3 & o )
 	{
 		for ( int x = 0; x < 3; x++ )
@@ -788,6 +953,7 @@ public:
 		return *this;
 	}
 	
+	//! Minus-equals operator
 	Color3 & operator-=( const Color3 & o )
 	{
 		for ( int x = 0; x < 3; x++ )
@@ -795,33 +961,44 @@ public:
 		return *this;
 	}
 	
+	//! Add operator
 	Color3 operator+( const Color3 & o ) const
 	{
 		Color3 c( *this );
 		return ( c += o );
 	}
 	
+	//! Minus operator
 	Color3 operator-( const Color3 & o ) const
 	{
 		Color3 c( *this );
 		return ( c -= o );
 	}
 	
+	//! Get the red component
 	float red() const { return rgb[0]; }
+	//! Get the green component
 	float green() const { return rgb[1]; }
+	//! Get the blue component
 	float blue() const { return rgb[2]; }
 	
+	//! Set the red component
 	void setRed( float r ) { rgb[0] = r; }
+	//! Set the green component
 	void setGreen( float g ) { rgb[1] = g; }
+	//! Set the blue component
 	void setBlue( float b ) { rgb[2] = b; }
 	
+	//! Set the color components
 	void setRGB( float r, float g, float b ) { rgb[0] = r; rgb[1] = g; rgb[2] = b; }
 	
+	//! Convert to QColor
 	QColor toQColor() const
 	{
 		return QColor::fromRgbF( clamp01( rgb[0] ), clamp01( rgb[1] ), clamp01( rgb[2] ) );
 	}
 	
+	//! Set from QColor
 	void fromQColor( const QColor & c )
 	{
 		rgb[0] = c.redF();
@@ -829,6 +1006,7 @@ public:
 		rgb[2] = c.blueF();
 	}
 	
+	//! Set from vector
 	void fromVector3( const Vector3 & v )
 	{
 		rgb[0] = v[0];
@@ -836,6 +1014,7 @@ public:
 		rgb[2] = v[2];
 	}
 	
+	//! %Data accessor
 	const float * data() const { return rgb; }
 	
 protected:
@@ -845,26 +1024,34 @@ protected:
 	friend class NifOStream;
 };
 
+//! A 4 value color (RGBA)
 class Color4
 {
 public:
+	//! Default constructor
 	Color4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
+	//! Constructor
 	explicit Color4( const Color3 & c, float alpha = 1.0 ) { rgba[0] = c[0]; rgba[1] = c[1]; rgba[2] = c[2]; rgba[3] = alpha; }
+	//! Constructor
 	explicit Color4( const QColor & c ) { fromQColor( c ); }
+	//! Constructor
 	Color4( float r, float g, float b, float a ) { setRGBA( r, g, b, a ); }
 	
+	//! Array operator
 	float & operator[]( unsigned int i )
 	{
 		Q_ASSERT( i < 4 );
 		return rgba[ i ];
 	}
 	
+	//! Const array operator
 	const float & operator[]( unsigned int i ) const
 	{
 		Q_ASSERT( i < 4 );
 		return rgba[ i ];
 	}
 	
+	//! Times operator
 	Color4 operator*( float x ) const
 	{
 		Color4 c( *this );
@@ -875,6 +1062,7 @@ public:
 		return c;
 	}
 	
+	//! Add-equals operator
 	Color4 & operator+=( const Color4 & o )
 	{
 		for ( int x = 0; x < 4; x++ )
@@ -882,6 +1070,7 @@ public:
 		return *this;
 	}
 	
+	//! Minus-equals operator
 	Color4 & operator-=( const Color4 & o )
 	{
 		for ( int x = 0; x < 4; x++ )
@@ -889,40 +1078,54 @@ public:
 		return *this;
 	}
 	
+	//! Add operator
 	Color4 operator+( const Color4 & o ) const
 	{
 		Color4 c( *this );
 		return ( c += o );
 	}
 	
+	//! Minus operator
 	Color4 operator-( const Color4 & o ) const
 	{
 		Color4 c( *this );
 		return ( c -= o );
 	}
 	
+	//! Equality operator
 	bool operator==( const Color4 & c ) const
 	{
 		return rgba[0] == c.rgba[0] && rgba[1] == c.rgba[1] && rgba[2] == c.rgba[2] && rgba[3] == c.rgba[3];
 	}
 	
+	//! Get the red component
 	float red() const { return rgba[0]; }
+	//! Get the green component
 	float green() const { return rgba[1]; }
+	//! Get the blue component
 	float blue() const { return rgba[2]; }
+	//! Get the alpha component
 	float alpha() const { return rgba[3]; }
 	
+	//! Set the red component
 	void setRed( float r ) { rgba[0] = r; }
+	//! Set the green component
 	void setGreen( float g ) { rgba[1] = g; }
+	//! Set the blue component
 	void setBlue( float b ) { rgba[2] = b; }
+	//! Set the alpha component
 	void setAlpha( float a ) { rgba[3] = a; }
 	
+	//! Set the color components
 	void setRGBA( float r, float g, float b, float a ) { rgba[ 0 ] = r; rgba[ 1 ] = g; rgba[ 2 ] = b; rgba[ 3 ] = a; }
 
+	//! Convert to QColor
 	QColor toQColor() const
 	{
 		return QColor::fromRgbF( clamp01( rgba[0] ), clamp01( rgba[1] ), clamp01( rgba[2] ), clamp01( rgba[3] ) );
 	}
 	
+	//! Set from QColor
 	void fromQColor( const QColor & c )
 	{
 		rgba[0] = c.redF();
@@ -931,8 +1134,10 @@ public:
 		rgba[3] = c.alphaF();
 	}
 	
+	//! %Data accessor
 	const float * data() const { return rgba; }
 	
+	//! Alpha blend
 	Color4 blend( float alpha ) const
 	{
 		Color4 c( *this );
@@ -947,6 +1152,7 @@ protected:
 	friend class NifOStream;
 };
 
+// This refuses to document properly in doxygen.
 inline Color3::Color3( const Color4 & c4 )
 {
 	rgb[0] = c4[0];
@@ -957,7 +1163,7 @@ inline Color3::Color3( const Color4 & c4 )
 
 //! A fixed length vector of type T.
 /*!
- * Data is allocated into a vector portion and the data section.
+ * %Data is allocated into a vector portion and the data section.
  * The vector simply points to appropriate places in the data section.
  * @param   T   Type of Vector
  */
@@ -1079,7 +1285,7 @@ public:
 		element(index1, index2) = value;
 	}
 
-	//! Swap contents with another APRFixedMatrix
+	//! Swap contents with another FixedMatrix
 	/*!
 	 *  @param[in,out]  other   Other vector to swap with
 	 */
@@ -1092,9 +1298,11 @@ public:
 
 private:
 	T* v_; //!< Vector data
-	int len0, len1; //!< length
+	int len0; //!< Length in first dimension
+	int len1; //!< Length in second dimension
 };
 
+//! 
 typedef FixedMatrix<char> ByteMatrix;
 
 #endif
