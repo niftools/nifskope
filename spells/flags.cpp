@@ -26,7 +26,18 @@ public:
 	//! Node / Property types on which flags are applicable
 	enum FlagType
 	{
-		Alpha, Billboard, Controller, Node, RigidBody, Shape, Stencil, VertexColor, ZBuffer, BSX, None
+		Alpha,
+		Billboard,
+		Controller,
+		MatColControl,
+		Node,
+		RigidBody,
+		Shape,
+		Stencil,
+		VertexColor,
+		ZBuffer,
+		BSX,
+		None
 	};
 	
 	//! Find the index of flags relative to a given NIF index
@@ -64,7 +75,13 @@ public:
 			else if ( name == "NiBillboardNode" )
 				return Billboard;
 			else if ( nif->inherits( name, "NiTimeController" ) )
+			{
+				if ( name == "NiMaterialColorController" )
+				{
+					return MatColControl;
+				}
 				return Controller;
+			}
 			else if ( name == "NiNode" )
 				return Node;
 			else if ( name == "bhkRigidBody" || name == "bhkRigidBodyT" )
@@ -102,6 +119,9 @@ public:
 				break;
 			case Controller:
 				controllerFlags( nif, iFlags );
+				break;
+			case MatColControl:
+				matColControllerFlags( nif, iFlags );
 				break;
 			case Node:
 				nodeFlags( nif, iFlags );
@@ -442,7 +462,18 @@ public:
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 		
 		QComboBox * cmbMode = dlgCombo( vbox, Spell::tr("Billboard Mode"), billboardModes );
-		cmbMode->setCurrentIndex( flags >> 5 & 3 );
+		// Billboard Mode is an enum as of 10.1.0.0
+		if ( nif->checkVersion( 0x0A010000, 0 ) )
+		{
+			// this value doesn't exist before 10.1.0.0
+			// ROTATE_ABOUT_UP2 is too hard to put in and possibly meaningless
+			cmbMode->addItem( Spell::tr("Rigid Face Center") );
+			cmbMode->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Billboard Mode" ) );
+		}
+		else
+		{
+			cmbMode->setCurrentIndex( flags >> 5 & 3 );
+		}
 		
 		dlgButtons( &dlg, vbox );
 		
@@ -450,8 +481,15 @@ public:
 		{
 			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 1 : 0 );
 			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1);
-			flags = flags & 0xff9f | ( cmbMode->currentIndex() << 5 );
-			flags = flags & 0xfff7 | 8; // seems to always be set but has no known effect
+			if ( nif->checkVersion( 0x0A010000, 0 ) )
+			{
+				nif->set<int>( nif->getBlock( index ), "Billboard Mode", cmbMode->currentIndex() );
+			}
+			else
+			{
+				flags = flags & 0xff9f | ( cmbMode->currentIndex() << 5 );
+				flags = flags & 0xfff7 | 8; // seems to always be set but has no known effect
+			}
 			nif->set<int>( index, flags );
 		}
 	}
@@ -610,6 +648,63 @@ public:
 				flags = flags & 0xffcf | ( cmbVert->currentIndex() << 4 );
 				nif->set<int>( index, flags );
 			}
+		}
+	}
+	
+	//! Set flags on a MaterialColorController
+	void matColControllerFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QCheckBox * chkActive = dlgCheck( vbox, Spell::tr("Active") );
+		chkActive->setChecked( flags & 8 );
+		
+		QStringList loopModes = QStringList()
+			<< Spell::tr("Cycle")
+			<< Spell::tr("Reverse")
+			<< Spell::tr("Clamp");
+
+		QComboBox * cmbLoop = dlgCombo( vbox, Spell::tr("Loop Mode"), loopModes );
+		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
+
+		QStringList targetColor = QStringList()
+			<< Spell::tr("Ambient")
+			<< Spell::tr("Diffuse")
+			<< Spell::tr("Specular")
+			<< Spell::tr("Emissive");
+
+		QComboBox * cmbColor = dlgCombo( vbox, Spell::tr("Target Color"), targetColor );
+		// Target Color enum exists as of 10.1.0.0
+		if ( nif->checkVersion( 0x0A010000, 0 ) )
+		{
+			cmbColor->setCurrentIndex( nif->get<int>( nif->getBlock( index ), "Target Color" ) );
+		}
+		else
+		{
+			cmbColor->setCurrentIndex( flags >> 4 & 3 );
+		}
+		
+		dlgButtons( &dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = flags & 0xfff7 | ( chkActive->isChecked() ? 8 : 0 );
+			flags = flags & 0xfff9 | cmbLoop->currentIndex() << 1;
+
+			if ( nif->checkVersion( 0x0A010000, 0 ) )
+			{
+				nif->set<int>( nif->getBlock( index ), "Target Color", cmbColor->currentIndex() );
+			}
+			else
+			{
+				flags = flags & 0xffcf | cmbColor->currentIndex() << 4;
+			}
+
+			nif->set<int>( index, flags );
 		}
 	}
 	

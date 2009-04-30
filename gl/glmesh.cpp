@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QDebug>
 
+//! \file glmesh.cpp Mesh, MorphController, UVController
+
 //! A Controller of Mesh geometry
 class MorphController : public Controller
 {
@@ -141,7 +143,7 @@ public:
 		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
 		QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
 
-		// Suspect that this is U trans, V trans, U scale, V scale
+		// U trans, V trans, U scale, V scale
 		// see NiUVData compound in nif.xml
 		float val[4] = { 0.0, 0.0, 1.0, 1.0 };
 		if ( uvGroups.isValid() )
@@ -150,16 +152,16 @@ public:
 			{
 				interpolate( val[i], uvGroups.child( i, 0 ), ctrlTime( time ), luv );
 			}
-			// adjust coords
+			// adjust coords; verified in SceneImmerse
 			for ( int i = 0; i < target->coords[0].size(); i++ )
 			{
 				// operating on pointers makes this too complicated, so we don't
 				Vector2 current = target->coords[0][i];
-				current += Vector2( val[0], val[1] );
-				// scaling/tiling? not correct yet; unsure of order wrt. translation
+				// scaling/tiling applied before translation
 				// Note that scaling is relative to center!
 				current += Vector2( -0.5, -0.5 );
 				current = Vector2( current[0] * val[2], current[1] * val[3] );
+				current += Vector2( -val[0], val[1] );
 				current += Vector2( 0.5, 0.5 );
 				target->coords[0][i] = current;
 			}

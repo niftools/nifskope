@@ -15,6 +15,9 @@ changes since 1.0.19:
  * display of NiUVController for UV transformations
  * Add "Move Down" option to Texture Folders list
  * display of NiVisController
+ * fixed display of NiMaterialColorController for versions < 10.1.0.0 and
+   added flags editor
+ * display of BSBounds (displayed with Havok)
 
 changes since 1.0.18:
  * Spells:

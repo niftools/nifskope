@@ -39,6 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSharedData>
 #include <QVector>
 
+//! \file nifitem.h NifItem, NifBlock, NifData, NifSharedData
+
 class NifSharedData : public QSharedData
 {
 	friend class NifData;
@@ -66,8 +68,8 @@ class NifSharedData : public QSharedData
 	quint32  ver2;
 	QString  text;
 	Expression condexpr;
-   QString  vercond;
-   Expression verexpr;
+	QString  vercond;
+	Expression verexpr;
 };
 
 class NifData
@@ -93,8 +95,8 @@ public:
 	inline quint32 ver2() const			{ return d->ver2; }
 	inline const QString & text() const	{ return d->text; }
 	inline const Expression & condexpr() const	{ return d->condexpr; }
-   inline const QString & vercond() const	{ return d->vercond; }
-   inline const Expression & verexpr() const	{ return d->verexpr; }
+	inline const QString & vercond() const	{ return d->vercond; }
+	inline const Expression & verexpr() const	{ return d->verexpr; }
 	
 	void setName( const QString & name )	{ d->name = name; }
 	void setType( const QString & type )	{ d->type = type; }
@@ -109,10 +111,10 @@ public:
 	void setVer1( quint32 ver1 )			{ d->ver1 = ver1; }
 	void setVer2( quint32 ver2 )			{ d->ver2 = ver2; }
 	void setText( const QString & text )	{ d->text = text; }
-   void setVerCond( const QString & cond )	{ 
-      d->vercond = cond; 
-      d->verexpr = Expression(cond); 
-   }
+	void setVerCond( const QString & cond )	{ 
+		d->vercond = cond; 
+		d->verexpr = Expression(cond); 
+	}
 
 protected:
 	QSharedDataPointer<NifSharedData> d;
@@ -252,8 +254,8 @@ public:
 	inline quint32  ver2() const	{	return itemData.ver2();	}
 	inline QString  text() const	{	return itemData.text();	}
 	inline const Expression& condexpr() const	{	return itemData.condexpr();	}
-   inline QString  vercond() const	{	return itemData.vercond();	}
-   inline const Expression& verexpr() const	{	return itemData.verexpr();	}
+	inline QString  vercond() const	{	return itemData.vercond();	}
+	inline const Expression& verexpr() const	{	return itemData.verexpr();	}
 	
 	inline void setName( const QString & name )	{	itemData.setName( name );	}
 	inline void setType( const QString & type )	{	itemData.setType( type );	}
@@ -265,7 +267,7 @@ public:
 	inline void setVer1( int v1 )					{	itemData.setVer1( v1 );		}
 	inline void setVer2( int v2 )					{	itemData.setVer2( v2 );		}
 	inline void setText( const QString & text )	{	itemData.setText( text );	}
-   inline void setVerCond( const QString & cond )	{	itemData.setVerCond( cond );	}
+	inline void setVerCond( const QString & cond )	{	itemData.setVerCond( cond );	}
 	
 	inline bool evalVersion( quint32 v )
 	{

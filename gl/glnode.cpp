@@ -1343,16 +1343,49 @@ void Node::drawHavok()
 		glLoadMatrix( scene->view );
 		glMultMatrix( worldTrans() );
 		glMultMatrix( bt );
-
+		
 		glColor( Color3( 1.0f, 0.0f, 0.0f ) );
 		glLineWidth( 1.0f );
 		glDisable( GL_LIGHTING );
 		// This doesn't always display correctly
 		drawBox( rad - bt.translation, - rad - bt.translation);
-
+		
 		glPopMatrix();
 	}
+	
+	// Draw BSBound dimensions
+	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
+	
+	if ( iExtraDataList.isValid() )
+	{
+		for ( int d = 0; d < nif->rowCount( iExtraDataList ); d++ )
+		{
+			QModelIndex iBound = nif->getBlock( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
+			if ( ! iBound.isValid() )
+				continue;
+			
+			Vector3 center = nif->get<Vector3>( iBound, "Center" );
+			Vector3 dim = nif->get<Vector3>( iBound, "Dimensions" );
+			
+			/*
+			qWarning() << center[0] << center[1] << center[2];
+			qWarning() << dim[0] << dim[1] << dim[2];
+			*/
+			
+			glPushMatrix();
+			glLoadMatrix( scene->view );
+			glMultMatrix( worldTrans() );
+			
+			glColor( Color3( 1.0f, 0.0f, 0.0f ) );
+			glLineWidth( 1.0f );
+			glDisable( GL_LIGHTING );
+			drawBox( dim + center, -dim + center );
 
+			glPopMatrix();
+
+		}
+	}
+	
 	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 	if ( ! iObject.isValid() )
 		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );

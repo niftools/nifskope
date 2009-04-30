@@ -118,8 +118,9 @@ public:
 	
 	//! Get an item as a NifValue.
 	NifValue getValue( const QModelIndex & index ) const;
-	//! Get an item as a NifValue by name.
-	NifValue getValue( const QModelIndex & parent, const QString & name ) const;
+	/* Not implemented? */
+	// Get an item as a NifValue by name.
+	//NifValue getValue( const QModelIndex & parent, const QString & name ) const;
 	
 	//! Set an item from a NifValue.
 	bool setValue( const QModelIndex & index, const NifValue & v );

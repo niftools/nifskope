@@ -706,6 +706,7 @@ protected:
 	int lAlpha;
 };
 
+//! Controller for color values in a MaterialProperty
 class MaterialColorController : public Controller
 {
 public:
@@ -743,18 +744,26 @@ public:
 	{
 		if ( Controller::update( nif, index ) )
 		{
-			tColor = nif->get<int>( iBlock, "Target Color" );
+			if ( nif->checkVersion( 0x0A010000, 0 ) )
+			{
+				tColor = nif->get<int>( iBlock, "Target Color" );
+			}
+			else
+			{
+				tColor = ( ( nif->get<int>( iBlock, "Flags" ) >> 4 ) & 7 );
+			}
 			return true;
 		}
 		return false;
 	}
 	
 protected:
-	QPointer<MaterialProperty> target;
+	QPointer<MaterialProperty> target; //!< The MaterialProperty being controlled
 	
-	int lColor;
-	int tColor;
+	int lColor; //!< Last interpolation time
+	int tColor; //!< The color slot being controlled
 	
+	//! Color slots that can be controlled
 	enum {
 		tAmbient = 0,
 		tDiffuse = 1,

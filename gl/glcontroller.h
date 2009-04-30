@@ -37,6 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QPointer>
 
+//! \file glcontroller.h Controller, Interpolator and subclasses
+
 class Scene;
 class Node;
 class Controller;

@@ -137,7 +137,8 @@ public:
 
 	//! A struct holding information about a enumeration
 	struct EnumOptions {
-		EnumType t; QHash<quint32, QPair<QString, QString> > o;
+		EnumType t; //!< The enumeration type
+		QHash<quint32, QPair<QString, QString> > o; //!< The enumeration dictionary as a value, a name and a description
 	};
 
 	//! Register an enum type.
