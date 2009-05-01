@@ -18,6 +18,7 @@ changes since 1.0.19:
  * fixed display of NiMaterialColorController for versions < 10.1.0.0 and
    added flags editor
  * display of BSBounds (displayed with Havok)
+ * highlighting of strips
 
 changes since 1.0.18:
  * Spells:

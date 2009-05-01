@@ -712,7 +712,8 @@ void Mesh::drawSelection() const
 	}
 	
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" 
-	  || n == "UV Sets" || n == "Tangents" || n == "Binormals" )
+	  || n == "UV Sets" || n == "Tangents" || n == "Binormals"
+	  || n == "Points" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
@@ -857,7 +858,7 @@ void Mesh::drawSelection() const
 			glEnd();
 		}
 	}
-	if ( n == "Faces" || n == "Strips" )
+	if ( n == "Faces" || n == "Strips" || n == "Strip Lengths" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glLineWidth( 1.5f );
@@ -873,6 +874,33 @@ void Mesh::drawSelection() const
 				
 				if ( a != b && b != c && c != a )
 				{
+					glBegin( GL_LINE_STRIP );
+					glVertex( transVerts.value( a ) );
+					glVertex( transVerts.value( b ) );
+					glVertex( transVerts.value( c ) );
+					glVertex( transVerts.value( a ) );
+					glEnd();
+				}
+				
+				a = b;
+				b = c;
+			}
+		}
+		if ( i >= 0 )
+		{
+			QVector<quint16> strip = tristrips[i];
+			
+			quint16 a = strip.value( 0 );
+			quint16 b = strip.value( 1 );
+			
+			for ( int v = 2; v < strip.count(); v++ )
+			{
+				quint16 c = strip[v];
+				
+				if ( a != b && b != c && c != a )
+				{
+					glDepthFunc( GL_ALWAYS );
+					glHighlightColor();
 					glBegin( GL_LINE_STRIP );
 					glVertex( transVerts.value( a ) );
 					glVertex( transVerts.value( b ) );
