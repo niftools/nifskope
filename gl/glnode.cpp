@@ -1330,25 +1330,26 @@ void Node::drawHavok()
 	if ( nif->get<bool>( iBlock, "Has Bounding Box" ) == true )
 	{
 		QModelIndex iBox = nif->getIndex( iBlock, "Bounding Box" );
-
+		
 		Transform bt;
-
+		
 		bt.translation = nif->get<Vector3>( iBox, "Translation" );
 		bt.rotation = nif->get<Matrix>( iBox, "Rotation" );
 		bt.scale = 1.0f;
-
+		
 		Vector3 rad = nif->get<Vector3>( iBox, "Radius" );
-
+		
 		glPushMatrix();
 		glLoadMatrix( scene->view );
-		glMultMatrix( worldTrans() );
+		// The Morrowind construction set seems to completely ignore the node transform
+		//glMultMatrix( worldTrans() );
 		glMultMatrix( bt );
 		
 		glColor( Color3( 1.0f, 0.0f, 0.0f ) );
 		glLineWidth( 1.0f );
 		glDisable( GL_LIGHTING );
-		// This doesn't always display correctly
-		drawBox( rad - bt.translation, - rad - bt.translation);
+		glLoadName( nodeId );
+		drawBox( rad, -rad );
 		
 		glPopMatrix();
 	}
@@ -1367,18 +1368,15 @@ void Node::drawHavok()
 			Vector3 center = nif->get<Vector3>( iBound, "Center" );
 			Vector3 dim = nif->get<Vector3>( iBound, "Dimensions" );
 			
-			/*
-			qWarning() << center[0] << center[1] << center[2];
-			qWarning() << dim[0] << dim[1] << dim[2];
-			*/
-			
 			glPushMatrix();
 			glLoadMatrix( scene->view );
+			// Not sure if world transform is taken into account
 			glMultMatrix( worldTrans() );
 			
 			glColor( Color3( 1.0f, 0.0f, 0.0f ) );
 			glLineWidth( 1.0f );
 			glDisable( GL_LIGHTING );
+			glLoadName( nif->getBlockNumber( iBound ) );
 			drawBox( dim + center, -dim + center );
 
 			glPopMatrix();

@@ -712,8 +712,7 @@ void Mesh::drawSelection() const
 	}
 	
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" 
-	  || n == "UV Sets" || n == "Tangents" || n == "Binormals"
-	  || n == "Points" )
+	  || n == "UV Sets" || n == "Tangents" || n == "Binormals" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
@@ -727,6 +726,47 @@ void Mesh::drawSelection() const
 			glHighlightColor();
 			glBegin( GL_POINTS );
 			glVertex( transVerts.value( i ) );
+			glEnd();
+		}
+	}
+	if ( n == "Points" )
+	{
+		glDepthFunc( GL_LEQUAL );
+		glNormalColor();
+		glBegin( GL_POINTS);
+		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
+		QModelIndex points = nif->getIndex( iData, "Points" );
+		if ( points.isValid() )
+		{
+			for ( int j = 0; j < nif->rowCount( points ); j++ )
+			{
+				QModelIndex iPoints = points.child( j, 0 );
+				for ( int k = 0; k < nif->rowCount( iPoints ); k++ )
+				{
+					glVertex( transVerts.value( nif->get<quint16>( iPoints.child( k, 0 ) ) ) );
+				}
+
+			}
+		}
+		glEnd();
+		if ( i >= 0 )
+		{
+			glDepthFunc( GL_ALWAYS );
+			glHighlightColor();
+			glBegin( GL_POINTS );
+			QModelIndex iPoints = points.child( i, 0 );
+			if ( nif->isArray( scene->currentIndex ) )
+			{
+				for ( int j = 0; j < nif->rowCount( iPoints ); j++ )
+				{
+					glVertex( transVerts.value( nif->get<quint16>( iPoints.child( j, 0 ) ) ) );
+				}
+			}
+			else
+			{
+				iPoints = scene->currentIndex.parent();
+				glVertex( transVerts.value( nif->get<quint16>( iPoints.child( i, 0 ) ) ) );
+			}
 			glEnd();
 		}
 	}
@@ -886,7 +926,7 @@ void Mesh::drawSelection() const
 				b = c;
 			}
 		}
-		if ( i >= 0 )
+		if ( i >= 0 && !tristrips.isEmpty() )
 		{
 			QVector<quint16> strip = tristrips[i];
 			

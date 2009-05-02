@@ -227,9 +227,14 @@ public:
 
 			file = TexCache::stripPath( file, nif->getFolder() );
 			if (setExternal)
+			{
 				nif->set<int>( iBlock, "Use External", 1 );
-			if ( nif->checkVersion( 0x0A010000, 0 ) )
-				iFile = nif->getIndex( iBlock, "File Name" );
+				// update the "File Name" block reference, since it changes when we set Use External
+				if ( nif->checkVersion( 0x0A010000, 0 ) && nif->isNiBlock( iBlock, "NiSourceTexture" )  )
+				{
+					iFile = nif->getIndex( iBlock, "File Name" );
+				}
+			}
 			nif->set<QString>( iFile, file.replace( "/", "\\" ) );
 		}
 		return idx;
