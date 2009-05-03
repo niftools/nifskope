@@ -19,6 +19,7 @@ changes since 1.0.19:
    added flags editor
  * display of BSBounds (displayed with Havok)
  * highlighting of strips
+ * UV editing of textures other than the base texture
 
 changes since 1.0.18:
  * Spells:

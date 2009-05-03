@@ -3,7 +3,6 @@ To do:
 - Verify this TODO list
 - Copy/Paste from 20.0.0.5 to 20.2.0.7 does not work as expected
 - Size update not calculated correctly after string edits and array edits
-- String Palette editing?
 - Initialise arrays from XML defaults
 - Multitexturing of particles (eg. Tribunal.bsa\meshes\i\act_rockslide01.nif)
 - doxygen documentation of all classes and files

@@ -86,6 +86,8 @@ protected slots:
 	
 protected slots:
 	void nifDataChanged( const QModelIndex & );
+	void getTexSlots();
+	void selectTexSlot();
 	
 private:
 	QList< int > selection;
@@ -133,6 +135,15 @@ private:
 
 	QPointer<NifModel> nif;
 	QPersistentModelIndex iShape, iShapeData, iTexCoords;
+
+	QMenu * menuTexSelect;
+	QActionGroup * texSlotGroup;
+	QStringList validTexs;
+	QList<QAction*> * texActions;
+
+	QStringList texnames;
+	int currentTexSlot;
+	bool setTexCoords();
 
 	GLdouble glViewRect[4];
 

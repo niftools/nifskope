@@ -81,6 +81,16 @@ static GLdouble glGridD = GRIDSIZE * glUnit;
 UVWidget::UVWidget( QWidget * parent )
 	: QGLWidget( QGLFormat( QGL::SampleBuffers ), parent, 0, Qt::Tool | Qt::WindowStaysOnTopHint ), undoStack( new QUndoStack( this ) )
 {
+	texnames = QStringList()
+		<< "Base Texture"
+		<< "Dark Texture"
+		<< "Detail Texture"
+		<<"Gloss Texture"
+		<<"Glow Texture"
+		<<"Bump Map Texture"
+		<<"Decal 0 Texture"
+		<<"Decal 1 Texture";
+
 	setWindowTitle( tr("UV Editor") );
 	setFocusPolicy( Qt::StrongFocus );
 	
@@ -136,7 +146,22 @@ UVWidget::UVWidget( QWidget * parent )
 	aTextureBlend->setChecked( true );
 	connect( aTextureBlend, SIGNAL( toggled( bool ) ), this, SLOT( updateGL() ) );
 	addAction( aTextureBlend );
-	
+
+	QAction * aTexSlot = new QAction( tr( "Select Texture Slot..." ), this );
+	connect( aTexSlot, SIGNAL( triggered() ), this, SLOT( selectTexSlot() ) );
+	//addAction( aTexSlot );
+
+	texSlotGroup = new QActionGroup( this );
+	connect( texSlotGroup, SIGNAL( triggered( QAction * ) ), this, SLOT( selectTexSlot() ) );
+
+	texActions = new QList<QAction *>();
+
+	menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
+	addAction( menuTexSelect->menuAction() );
+	connect( menuTexSelect, SIGNAL( aboutToShow() ), this, SLOT( getTexSlots() ) );
+
+	currentTexSlot = 0;	
+
 	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( updateGL() ) );
 }
 
@@ -219,6 +244,12 @@ void UVWidget::paintGL()
 		glEnable( GL_BLEND );
 	else
 		glDisable( GL_BLEND );
+
+	if( !texfile.isEmpty() )
+		bindTexture( texfile );
+	else
+		bindTexture( texsource );
+
 
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
@@ -788,62 +819,29 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		{
 			return false;
 		}
-		
-		texcoords = nif->getArray< Vector2 >( iTexCoords );
-		
-		QVector< Triangle > tris;
-		
-		if( nif->isNiBlock( iShapeData, "NiTriShapeData" ) )
-		{
-			tris = nif->getArray< Triangle >( iShapeData, "Triangles" );
-		}
-		else if( nif->isNiBlock( iShapeData, "NiTriStripsData" ) )
-		{
-			QModelIndex iPoints = nif->getIndex( iShapeData, "Points" );
-			if( iPoints.isValid() )
-			{
-				for( int r = 0; r < nif->rowCount( iPoints ); r++ )
-				{
-					tris += triangulate( nif->getArray< quint16 >( iPoints.child( r, 0 ) ) );
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else
+
+		if ( ! setTexCoords() )
 		{
 			return false;
 		}
-
-		QVectorIterator< Triangle > itri( tris );
-		while ( itri.hasNext() )
-		{
-			const Triangle & t = itri.next();
-			
-			int fIdx = faces.size();
-			faces.append( face( fIdx, t[0], t[1], t[2] ) );
-			
-			for( int i = 0; i < 3; i++ )
-			{
-				texcoords2faces.insertMulti( t[i], fIdx );
-			}
-		}
+		
 	}
-
+		
 	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )
 		{
-			QModelIndex iBaseTex = nif->getIndex( iTexProp, "Base Texture" );
-			if( iBaseTex.isValid() )
+			QModelIndex iTex = nif->getIndex( iTexProp, texnames[currentTexSlot] );
+			if( iTex.isValid() )
 			{
-				QModelIndex iTexSource = nif->getBlock( nif->getLink( iBaseTex, "Source" ) );
+				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTex, "Source" ) );
 				if( iTexSource.isValid() )
 				{
 					//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+					//int texUVset = nif->get<int>( iTex, "UV Set" );
+					//qWarning() << "Use UV set " << texUVset;
+					//qWarning() << nif->getIndex( iShapeData, "UV Sets" ).child( texUVset, 0 );
 					texsource = iTexSource;
 					return true;
 				}
@@ -886,6 +884,52 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	}
 
 	return false;
+}
+
+bool UVWidget::setTexCoords()
+{
+	texcoords = nif->getArray< Vector2 >( iTexCoords );
+
+	QVector< Triangle > tris;
+
+	if( nif->isNiBlock( iShapeData, "NiTriShapeData" ) )
+	{
+		tris = nif->getArray< Triangle >( iShapeData, "Triangles" );
+	}
+	else if( nif->isNiBlock( iShapeData, "NiTriStripsData" ) )
+	{
+		QModelIndex iPoints = nif->getIndex( iShapeData, "Points" );
+		if( iPoints.isValid() )
+		{
+			for( int r = 0; r < nif->rowCount( iPoints ); r++ )
+			{
+				tris += triangulate( nif->getArray< quint16 >( iPoints.child( r, 0 ) ) );
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	QVectorIterator< Triangle > itri( tris );
+	while ( itri.hasNext() )
+	{
+		const Triangle & t = itri.next();
+
+		int fIdx = faces.size();
+		faces.append( face( fIdx, t[0], t[1], t[2] ) );
+
+		for( int i = 0; i < 3; i++ )
+		{
+			texcoords2faces.insertMulti( t[i], fIdx );
+		}
+	}
+	return true;
 }
 
 void UVWidget::updateNif()
@@ -1092,4 +1136,145 @@ protected:
 void UVWidget::moveSelection( double moveX, double moveY )
 {
 	undoStack->push( new UVWMoveCommand( this, moveX, moveY ) );
+}
+
+void UVWidget::getTexSlots()
+{
+	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+	{
+		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
+		if( iTexProp.isValid() )
+		{
+			foreach( QString name, texnames )
+			{
+				if ( nif->get<bool>( iTexProp, QString( "Has %1" ).arg( name ) ) )
+				{
+					if ( validTexs.indexOf( name ) == -1 )
+					{
+						validTexs << name;
+						QAction * temp;
+						menuTexSelect->addAction( temp = new QAction( name, this ) );
+						texSlotGroup->addAction( temp );
+						temp->setCheckable( true );
+						texActions->append( temp );
+						if ( name == texnames[currentTexSlot] )
+						{
+							temp->setChecked( true );
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// This is the old one that produced a dialog box
+/*
+void UVWidget::selectTexSlot()
+{
+	QDialog dlg;
+	QVBoxLayout * vbox = new QVBoxLayout;
+	dlg.setLayout( vbox );
+
+	vbox->addWidget( new QLabel( tr( "Texture Slot" ) ) );
+	
+	QComboBox * set = new QComboBox;
+	QModelIndex iUVs = nif->getIndex( iShapeData, "UV Sets" );
+
+	QStringList validTexs = QStringList();
+
+	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+	{
+		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
+		if( iTexProp.isValid() )
+		{
+			foreach( QString name, texnames )
+			{
+				if ( nif->get<bool>( iTexProp, QString( "Has %1" ).arg( name ) ) )
+				{
+					set->addItem( name );
+					validTexs << name;
+				}
+			}
+		}
+	}
+					
+	set->setCurrentIndex( validTexs.indexOf( texnames[currentTexSlot] ) );
+
+	vbox->addWidget( set );
+
+	QHBoxLayout * hbox = new QHBoxLayout;
+	vbox->addLayout( hbox );
+
+	QPushButton * btAccept = new QPushButton( tr("OK") );
+	hbox->addWidget( btAccept );
+	connect( btAccept, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+
+	QPushButton * btReject = new QPushButton( tr("Cancel") );
+	hbox->addWidget( btReject );
+	connect( btReject, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+
+	if ( dlg.exec() == QDialog::Accepted )
+	{
+		//qWarning() << "Selected texture " << set->currentIndex();
+		//qWarning() << "corresponding to " << texnames.indexOf( validTexs[set->currentIndex()] );
+		currentTexSlot = texnames.indexOf( validTexs[set->currentIndex()] );
+		foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+		{
+			QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
+			if( iTexProp.isValid() )
+			{
+				QModelIndex iTex = nif->getIndex( iTexProp, texnames[currentTexSlot] );
+				if( iTex.isValid() )
+				{
+					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTex, "Source" ) );
+					if( iTexSource.isValid() )
+					{
+						//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+						int texUVset = nif->get<int>( iTex, "UV Set" );
+						//qWarning() << "Use UV set " << texUVset;
+						iTexCoords = nif->getIndex( iShapeData, "UV Sets" ).child( texUVset, 0 );
+						//qWarning() << iTexCoords;
+						texsource = iTexSource;
+						setTexCoords();
+						updateGL();
+						return;
+					}
+				}
+			}
+		}
+
+
+
+	}
+
+}
+*/
+
+void UVWidget::selectTexSlot()
+{
+	QString selected = texSlotGroup->checkedAction()->text();
+	currentTexSlot = texnames.indexOf( selected );
+	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+	{
+		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
+		if( iTexProp.isValid() )
+		{
+			QModelIndex iTex = nif->getIndex( iTexProp, texnames[currentTexSlot] );
+			if( iTex.isValid() )
+			{
+				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTex, "Source" ) );
+				if( iTexSource.isValid() )
+				{
+					int texUVset = nif->get<int>( iTex, "UV Set" );
+					iTexCoords = nif->getIndex( iShapeData, "UV Sets" ).child( texUVset, 0 );
+					texsource = iTexSource;
+					setTexCoords();
+					updateGL();
+					return;
+				}
+			}
+		}
+	}
+
 }
