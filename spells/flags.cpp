@@ -584,7 +584,7 @@ public:
 				flags = flags & 0xff8f | ( cmbZFail->currentIndex() << 4 );
 				flags = flags & 0xfc7f | ( cmbPass->currentIndex() << 7 );
 				flags = flags & 0xf3ff | ( cmbDrawMode->currentIndex() << 10 );
-				flags = flags & 0xcfff | ( cmbFunc->currentIndex() << 12 );
+				flags = flags & 0x8fff | ( cmbFunc->currentIndex() << 12 );
 				nif->set<int>( index, flags );
 			}
 		}
