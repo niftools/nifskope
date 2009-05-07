@@ -197,7 +197,7 @@ void NifEditBox::applyData()
 NifFloatSlider::NifFloatSlider( NifModel * nif, const QModelIndex & index, float min, float max )
 	: NifEditBox( nif, index )
 {
-	getLayout()->addWidget( slider = new FloatSlider() );
+	getLayout()->addWidget( slider = new FloatSlider( Qt::Horizontal, true, false ) );
 	slider->setRange( min, max );
 	connect( slider, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
 }

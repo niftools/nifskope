@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QWidget>
 #include <QTextEdit>
 
-//! \file valueedit.h Value editing widgets
+//! \file valueedit.h ValueEdit and other widgets
 
 class QDoubleSpinBox;
 class QLabel;
@@ -68,39 +68,58 @@ public slots:
 	void childResized( QResizeEvent * e );
 	
 protected:
+	//! Resizes the underlying widget
 	void resizeEditor();
+	//! Resize event handler
 	void resizeEvent( QResizeEvent * e );
 
 private:
+	//! The type of the value being edited
 	NifValue::Type typ;
 	
+	//! The underlying editing widget
 	QWidget * edit;
 };
 
 //! An editing widget for a vector.
-class VectorEdit : public QWidget
+class VectorEdit : public ValueEdit
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	VectorEdit( QWidget * parent = 0 );
 	
+	//! Vector4 being edited
 	Q_PROPERTY( Vector4 vector4 READ getVector4 WRITE setVector4 STORED false );
+	//! Vector3 being edited
 	Q_PROPERTY( Vector3 vector3 READ getVector3 WRITE setVector3 STORED false );
+	//! Vector2 being edited
 	Q_PROPERTY( Vector2 vector2 READ getVector2 WRITE setVector2 STORED false );
 	
+	//! Accessor for the Vector4
 	Vector4 getVector4() const;
+	//! Accessor for the Vector3
 	Vector3 getVector3() const;
+	//! Accessor for the Vector2
 	Vector2 getVector2() const;
 
 signals:
+	//! Signal emitted when the vector is edited
+	/**
+	 * Used in NifEditBox implementations for real-time updating.
+	 */
 	void sigEdited();
 
 public slots:
+	//! Sets the Vector4
 	void setVector4( const Vector4 & );
+	//! Sets the Vector3
 	void setVector3( const Vector3 & );
+	//! Sets the Vector2
 	void setVector2( const Vector2 & );
 
 protected slots:
+	//! Signal adapter; emits sigEdited()
 	void sltChanged();
 
 private:
@@ -114,7 +133,7 @@ private:
 	bool setting;
 };
 
-class ColorEdit : public QWidget
+class ColorEdit : public ValueEdit
 {
 	Q_OBJECT
 public:
@@ -142,7 +161,7 @@ private:
 	bool setting;
 };
 
-class RotationEdit : public QWidget
+class RotationEdit : public ValueEdit
 {
 	Q_OBJECT
 public:
@@ -180,7 +199,7 @@ private:
 	bool setting;
 };
 
-class TriangleEdit : public QWidget
+class TriangleEdit : public ValueEdit
 {
 	Q_OBJECT
 public:
@@ -199,7 +218,7 @@ private:
 	QSpinBox * v3;
 };
 
-
+//! A text editing widget used by ValueEdit
 class TextEdit : public QTextEdit
 {
 	Q_OBJECT

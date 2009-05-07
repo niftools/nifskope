@@ -57,14 +57,14 @@ NifTreeView::~NifTreeView()
 
 void NifTreeView::setModel( QAbstractItemModel * model )
 {
-	if ( nif && EvalConditions )
+	if ( nif )
 		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
 
 	nif = qobject_cast<BaseModel*>( model );
 	
 	QTreeView::setModel( model );
 	
-	if ( nif && EvalConditions )
+	if ( nif )
 		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
 }
 
@@ -90,12 +90,14 @@ void NifTreeView::setEvalConditions( bool c )
 	
 	if ( nif )
 	{
-		if ( EvalConditions )
-			connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
-		else
-			disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
+		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
+	}
+	else
+	{
+		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
 	}
 	
+	updateConditions();
 	doItemsLayout();
 }
 
@@ -133,12 +135,49 @@ void NifTreeView::drawBranches( QPainter * painter, const QRect & rect, const QM
 
 void NifTreeView::updateConditions()
 {
-	if ( EvalConditions )
+	/*
+	if ( EvalConditions && nif )
 	{
 		if ( isIndexHidden( currentIndex() ) )
 			setCurrentIndex( QModelIndex() );
-		doItemsLayout();
+
+		for( int r = 0; r < model()->rowCount( currentIndex() ); r++ )
+		{
+			QModelIndex child = model()->index( r, 0, currentIndex() );
+			setRowHidden( r, currentIndex(), ! nif->evalVersion( child ) );
+		}
 	}
+	else
+	{
+		for( int r = 0; r < model()->rowCount( currentIndex() ); r++ )
+		{
+			QModelIndex child = model()->index( r, 0, currentIndex() );
+			setRowHidden( r, currentIndex(), false );
+		}
+	}*/
+
+	updateConditionRecurse( rootIndex() );
+	
+	doItemsLayout();
+}
+
+void NifTreeView::updateConditionRecurse( const QModelIndex & index )
+{
+	/*
+	if ( model()->rowCount( index ) == 0 )
+	{
+		setRowHidden( index.row(), index.parent(), (EvalConditions && ! nif->evalVersion( index, true ) ) );
+	}
+	*/
+	//else
+	//{
+	for ( int r = 0; r < model()->rowCount( index ); r++ )
+	{
+		QModelIndex child = model()->index( r, 0, index );
+		updateConditionRecurse( child );
+	}
+	setRowHidden( index.row(), index.parent(), (EvalConditions && ! nif->evalVersion( index, false ) ) );
+	//}
 }
 
 void NifTreeView::keyPressEvent( QKeyEvent * e )
@@ -196,6 +235,10 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex & last )
 {
 	QTreeView::currentChanged( current, last );
+	if ( nif )
+	{
+		updateConditions();
+	}
 	emit sigCurrentIndexChanged( currentIndex() );
 }
 

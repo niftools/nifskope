@@ -243,6 +243,7 @@ public:
 				}
 			}
 			cedit->setEditText( NifValue::enumOptionName(t, value) );
+			cedit->setCurrentIndex( cedit->findText( NifValue::enumOptionName( t, value ) ) );
 		}
 		else if ( ledit )
 		{

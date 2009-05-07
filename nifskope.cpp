@@ -293,6 +293,13 @@ NifSkope::NifSkope()
 	gListMode->addAction( aList );
 	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
+
+	aCondition = new QAction( tr("Hide Version Mismatched Rows"), this );
+	aCondition->setCheckable( true );
+	aCondition->setChecked( false );
+	// use toggled to enable startup values to take effect
+	connect( aCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
+	connect( aCondition, SIGNAL( toggled( bool ) ), kfmtree, SLOT( setEvalConditions( bool ) ) );
 	
 	aSelectFont = new QAction( tr("Select Font ..."), this );
 	connect( aSelectFont, SIGNAL( triggered() ), this, SLOT( sltSelectFont() ) );
@@ -352,25 +359,25 @@ NifSkope::NifSkope()
 	
 	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
-	dTree->setWidget( tree );	
+	dTree->setWidget( tree );
 	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
 	dTree->toggleViewAction()->setChecked( false );
 	dTree->setVisible( false );
 
 	dKfm = new QDockWidget( tr("KFM") );
 	dKfm->setObjectName( "KfmDock" );
-	dKfm->setWidget( kfmtree );	
+	dKfm->setWidget( kfmtree );
 	dKfm->toggleViewAction()->setShortcut( Qt::Key_F4 );
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
 
 #ifndef DISABLE_INSPECTIONVIEWER
-   dInsp = new QDockWidget( tr("Inspect") );
-   dInsp->setObjectName( "InspectDock" );
-   dInsp->setWidget( inspect );	
-   //dInsp->toggleViewAction()->setShortcut( Qt::ALT + Qt::Key_Enter );
-   dInsp->toggleViewAction()->setChecked( false );
-   dInsp->setVisible( false );
+	dInsp = new QDockWidget( tr("Inspect") );
+	dInsp->setObjectName( "InspectDock" );
+	dInsp->setWidget( inspect );
+	//dInsp->toggleViewAction()->setShortcut( Qt::ALT + Qt::Key_Enter );
+	dInsp->toggleViewAction()->setChecked( false );
+	dInsp->setVisible( false );
 #endif
 
 	addDockWidget( Qt::BottomDockWidgetArea, dRefr );
@@ -379,7 +386,7 @@ NifSkope::NifSkope()
 	addDockWidget( Qt::RightDockWidgetArea, dKfm );
 
 #ifndef DISABLE_INSPECTIONVIEWER
-   addDockWidget( Qt::RightDockWidgetArea, dInsp, Qt::Vertical );
+	addDockWidget( Qt::RightDockWidgetArea, dInsp, Qt::Vertical );
 #endif
 
 	/* ******** */
@@ -387,12 +394,12 @@ NifSkope::NifSkope()
 	// tool bars
 
 	// begin Load & Save toolbar
-	tool = new QToolBar( tr("Load & Save") );
+	tool = new QToolBar( tr("Load && Save") );
 	tool->setObjectName( "toolbar" );
 	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-		
+	
 	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" << "*.nifcache" << "*.texcache" );
-
+	
 	// create the load portion of the toolbar
 	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft, QKeySequence::Open ) );
 	lineLoad->setFilter( fileExtensions );
@@ -463,7 +470,7 @@ NifSkope::NifSkope()
 	mView->addAction( dList->toggleViewAction() );
 	mView->addAction( dTree->toggleViewAction() );
 	mView->addAction( dKfm->toggleViewAction() );
-   mView->addAction( dInsp->toggleViewAction() );
+	mView->addAction( dInsp->toggleViewAction() );
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );
@@ -476,6 +483,7 @@ NifSkope::NifSkope()
 	mView->addSeparator();
 	mView->addAction( aHierarchy );
 	mView->addAction( aList );
+	mView->addAction( aCondition );
 	mView->addSeparator();
 	mView->addAction( aSelectFont );
 	
@@ -500,7 +508,7 @@ NifSkope::NifSkope()
 	connect( mExport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
 	connect( mImport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
 
-   connect( Options::get(), SIGNAL( sigLocaleChanged() ), this, SLOT( sltLocaleChanged() ) );
+	connect( Options::get(), SIGNAL( sigLocaleChanged() ), this, SLOT( sltLocaleChanged() ) );
   
 }
 
@@ -549,11 +557,12 @@ void NifSkope::restore( const QSettings & settings )
 		aHierarchy->setChecked( true );
 	setListMode();
 	
+	aCondition->setChecked( settings.value( "hide condition zero", false ).toBool() );
 	restoreHeader( "list sizes", settings, list->header() );
 	restoreHeader( "tree sizes", settings, tree->header() );
 	restoreHeader( "kfmtree sizes", settings, kfmtree->header() );
 
-	ogl->restore( settings );	
+	ogl->restore( settings );
 
 	QVariant fontVar = settings.value( "viewFont" );
 	if ( fontVar.canConvert<QFont>() )
@@ -580,11 +589,11 @@ void NifSkope::save( QSettings & settings ) const
 	settings.setValue( "last save", lineSave->text() );
 	settings.setValue( "auto sanitize", aSanitize->isChecked() );
 	
-	settings.setValue(	"list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
-	saveHeader( "list sizes", settings, list->header() );
+	settings.setValue( "list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
+	settings.setValue( "hide condition zero", aCondition->isChecked() );
 
+	saveHeader( "list sizes", settings, list->header() );
 	saveHeader( "tree sizes", settings, tree->header() );
-	
 	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );

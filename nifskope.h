@@ -242,6 +242,7 @@ private:
 	QActionGroup * gListMode;
 	QAction * aList;
 	QAction * aHierarchy;
+	QAction * aCondition;
 	
 	QAction * aSelectFont;
 	
@@ -316,10 +317,11 @@ public slots:
  * Programming</a> paradigm.
  *
  * The main application is present in the NifSkope class; rendering takes place
- * via GLView.
- *
- * A NIF is internally represented as a NifModel; blocks are referenced by
- * means of QModelIndex and QPersistentModelIndex.
+ * via GLView.  A central feature of Qt is the
+ * <a href="http://doc.trolltech.com/latest/signalsandslots.html">Signals and Slots</a>
+ * mechanism, which is used extensively to build the GUI.  A NIF is internally represented
+ * as a NifModel, and blocks are referenced by means of QModelIndex and
+ * QPersistentModelIndex.
  *
  * Various "magic" functions can be performed on a NIF via the Spell system;
  * this is probably a good place to start if you want to learn about how a NIF

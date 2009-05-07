@@ -20,6 +20,7 @@ changes since 1.0.19:
  * display of BSBounds (displayed with Havok)
  * highlighting of strips
  * UV editing of textures other than the base texture
+ * re-add hiding of rows not applicable to the current version
 
 changes since 1.0.18:
  * Spells:

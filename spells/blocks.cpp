@@ -200,12 +200,12 @@ public:
 		if ( act ) {
 			// insert block
 			QModelIndex newindex = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
-			// do some stuff with the new block
+			// Set values that can't be handled by defaults in nif.xml
 			if ( act->text() == "BSXFlags" ) {
 				nif->set<QString>( nif->getIndex( newindex, "Name" ), "BSX" );
 			}
-			else if ( ( act->text() == "NiStencilProperty" ) && ( nif->checkVersion(0x14010003, 0))) {
-				nif->set<unsigned short>( nif->getIndex( newindex, "Flags" ), 19840 );
+			else if ( act->text() == "BSBound" ) {
+				nif->set<QString>( nif->getIndex( newindex, "Name" ), "BBX" );
 			}
 			// return index to new block
 			return newindex;
@@ -244,6 +244,7 @@ public:
 		{
 			QPersistentModelIndex iParent = index;
 			QModelIndex iProperty = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+			
 			addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) );
 			return iProperty;
 		}
@@ -364,6 +365,15 @@ public:
 		{
 			QPersistentModelIndex iParent = index;
 			QModelIndex iExtra = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+			
+			// fixup
+			if ( act->text() == "BSXFlags" ) {
+				nif->set<QString>( nif->getIndex( iExtra, "Name" ), "BSX" );
+			}
+			else if ( act->text() == "BSBound" ) {
+				nif->set<QString>( nif->getIndex( iExtra, "Name" ), "BBX" );
+			}
+			
 			addLink( nif, iParent, "Extra Data List", nif->getBlockNumber( iExtra ) );
 			return iExtra;
 		}

@@ -74,8 +74,25 @@ extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width
  */
 extern bool texCanLoad( const QString & filepath );
 
+//! Save pixel data to a DDS file
+/*!
+ * \param index Reference to pixel data
+ * \param filepath The filepath to write
+ * \param width The width of the texture
+ * \param height The height of the texture
+ * \param mipmaps The number of mipmaps present
+ * \return true if the save was successful, false otherwise
+ */
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps );
 
+//! Save pixel data to a TGA file
+/*!
+ * \param index Reference to pixel data
+ * \param filepath The filepath to write
+ * \param width The width of the texture
+ * \param height The height of the texture
+ * \return true if the save was successful, false otherwise
+ */
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height );
 
 #endif

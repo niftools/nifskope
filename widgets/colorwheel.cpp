@@ -130,7 +130,7 @@ void ColorWheel::setColor( const QColor & c )
 	if ( h >= 1.0 || h < 0.0 ) h = 0.0;
 	if ( S > 1.0 || S < 0.0 ) S = 1.0;
 	if ( V > 1.0 || S < 0.0 ) V = 1.0;
-	if ( h != 0.0 ) H = h;
+	H = h;
 	update();
 	emit sigColor( c );
 }

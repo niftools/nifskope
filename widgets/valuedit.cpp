@@ -412,7 +412,7 @@ void ValueEdit::resizeEvent( QResizeEvent * )
 	resizeEditor();
 }
 
-ColorEdit::ColorEdit( QWidget * parent ) : QWidget( parent )
+ColorEdit::ColorEdit( QWidget * parent ) : ValueEdit( parent )
 {
 	QHBoxLayout * lay = new QHBoxLayout;
 	lay->setMargin( 0 );
@@ -484,7 +484,7 @@ Color3 ColorEdit::getColor3() const
 }
 
 
-VectorEdit::VectorEdit( QWidget * parent ) : QWidget( parent )
+VectorEdit::VectorEdit( QWidget * parent ) : ValueEdit( parent )
 {
 	QHBoxLayout * lay = new QHBoxLayout( this );
 	lay->setMargin( 0 );
@@ -575,7 +575,7 @@ Vector2 VectorEdit::getVector2() const
 }
 
 
-RotationEdit::RotationEdit( QWidget * parent ) : QWidget( parent ), mode( mAuto ), setting( false )
+RotationEdit::RotationEdit( QWidget * parent ) : ValueEdit( parent ), mode( mAuto ), setting( false )
 {
 	actMode = new QAction( this );
 	connect( actMode, SIGNAL( triggered() ), this, SLOT( switchMode() ) );
@@ -757,7 +757,7 @@ void RotationEdit::sltChanged()
 }
 
 
-TriangleEdit::TriangleEdit( QWidget * parent ) : QWidget( parent )
+TriangleEdit::TriangleEdit( QWidget * parent ) : ValueEdit( parent )
 {
 	QHBoxLayout * lay = new QHBoxLayout( this );
 	lay->setMargin( 0 );

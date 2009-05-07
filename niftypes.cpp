@@ -46,6 +46,9 @@ QString NumOrMinMax( float val, char f, int prec )
 	else if( val == FLT_MAX )
 		return "<float_max>";
 	
+	if( *(quint32*)&val == 0x80000000 )
+		return QString( "-%1" ).arg( QString::number( val, f, prec ) );
+	
 	return QString::number( val, f, prec );
 }
 

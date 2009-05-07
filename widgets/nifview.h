@@ -71,6 +71,7 @@ public slots:
 
 protected slots:
 	void updateConditions();
+	void updateConditionRecurse( const QModelIndex & index );
 	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
 	
 	//! Scroll to index; connected to expanded()

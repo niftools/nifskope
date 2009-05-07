@@ -42,9 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*! \file gltexloaders.cpp
  * \brief Texture loading functions.
  *
- * Can load textures from:
- * - filename
- * - pixel data
+ * Textures can be loaded from a filename (in any supported format) or raw
+ * pixel data. They can also be exported from raw pixel data to TGA or DDS.
  *
  * Supported formats:
  * - DDS
@@ -1365,11 +1364,14 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 
 	glPixelStorei( GL_PACK_ALIGNMENT, 1 );
 	glPixelStorei( GL_PACK_SWAP_BYTES, GL_FALSE );
+	
 	// This is very dodgy and is mainly to avoid having to run through convertToRGBA
+	// It also won't work with DXT compressed or palletised textures
 	/*
 	if( nif->get<quint32>( index, "Pixel Format" ) == 0 ) {
 		glGetTexImage( GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, data );
-	} else { //if( nif->get<quint32>( index, "Pixel Format") == 1 ) {
+	}
+	else if( nif->get<quint32>( index, "Pixel Format") == 1 ) {
 		glGetTexImage( GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, data );
 	}*/
 

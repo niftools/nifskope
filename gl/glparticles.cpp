@@ -135,11 +135,11 @@ public:
 			QModelIndex iParticles = nif->getIndex( iBlock, "Particles" );
 			if ( iParticles.isValid() )
 			{
-				emitMax = nif->get<int>( iParticles, "Num Particles" );
-				int active = nif->get<int>( iParticles, "Num Valid" );
-				iParticles = nif->getIndex( iParticles, "Particles" );
-				if ( iParticles.isValid() )
-				{
+				emitMax = nif->get<int>( iBlock, "Num Particles" );
+				int active = nif->get<int>( iBlock, "Num Valid" );
+				//iParticles = nif->getIndex( iParticles, "Particles" );
+				//if ( iParticles.isValid() )
+				//{
 					for ( int p = 0; p < active && p < nif->rowCount( iParticles ); p++ )
 					{
 						Particle particle;
@@ -149,7 +149,7 @@ public:
 						particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Last Time" );
 						particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
 					}
-				}
+				//}
 			}
 			
 			if ( ( nif->get<int>( iBlock, "Emit Flags" ) & 1 ) == 0 )
