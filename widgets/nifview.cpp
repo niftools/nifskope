@@ -42,6 +42,7 @@ NifTreeView::NifTreeView() : QTreeView()
 {
 	nif = 0;
 	EvalConditions = false;
+	RealTimeEval = false;
 	
 	setUniformRowHeights( true );
 	setAlternatingRowColors( true );
@@ -58,14 +59,14 @@ NifTreeView::~NifTreeView()
 void NifTreeView::setModel( QAbstractItemModel * model )
 {
 	if ( nif )
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
+		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
 
 	nif = qobject_cast<BaseModel*>( model );
 	
 	QTreeView::setModel( model );
 	
-	if ( nif )
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
+	if ( nif && EvalConditions && RealTimeEval )
+		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
 }
 
 void NifTreeView::setRootIndex( const QModelIndex & index )
@@ -88,16 +89,37 @@ void NifTreeView::setEvalConditions( bool c )
 	
 	EvalConditions = c;
 	
-	if ( nif )
+	if ( nif && EvalConditions && RealTimeEval )
 	{
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
+		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
 	}
 	else
 	{
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions() ) );
+		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
 	}
-	
-	updateConditions();
+
+	// refresh
+	updateConditionRecurse( rootIndex() );
+	doItemsLayout();
+}
+
+void NifTreeView::setRealTime( bool c )
+{
+	if ( RealTimeEval == c )
+		return;
+
+	RealTimeEval = c;
+
+	if ( nif && EvalConditions && RealTimeEval )
+	{
+		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+	}
+	else
+	{
+		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+	}
+
+	updateConditionRecurse( rootIndex() );
 	doItemsLayout();
 }
 
@@ -133,31 +155,9 @@ void NifTreeView::drawBranches( QPainter * painter, const QRect & rect, const QM
 		QTreeView::drawBranches( painter, rect, index );
 }
 
-void NifTreeView::updateConditions()
+void NifTreeView::updateConditions( const QModelIndex & topLeft, const QModelIndex & bottomRight )
 {
-	/*
-	if ( EvalConditions && nif )
-	{
-		if ( isIndexHidden( currentIndex() ) )
-			setCurrentIndex( QModelIndex() );
-
-		for( int r = 0; r < model()->rowCount( currentIndex() ); r++ )
-		{
-			QModelIndex child = model()->index( r, 0, currentIndex() );
-			setRowHidden( r, currentIndex(), ! nif->evalVersion( child ) );
-		}
-	}
-	else
-	{
-		for( int r = 0; r < model()->rowCount( currentIndex() ); r++ )
-		{
-			QModelIndex child = model()->index( r, 0, currentIndex() );
-			setRowHidden( r, currentIndex(), false );
-		}
-	}*/
-
-	updateConditionRecurse( rootIndex() );
-	
+	updateConditionRecurse( topLeft.parent() );
 	doItemsLayout();
 }
 
@@ -235,9 +235,9 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex & last )
 {
 	QTreeView::currentChanged( current, last );
-	if ( nif )
+	if ( nif && EvalConditions )
 	{
-		updateConditions();
+		updateConditionRecurse( rootIndex() );
 	}
 	emit sigCurrentIndexChanged( currentIndex() );
 }

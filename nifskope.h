@@ -243,6 +243,7 @@ private:
 	QAction * aList;
 	QAction * aHierarchy;
 	QAction * aCondition;
+	QAction * aRCondition;
 	
 	QAction * aSelectFont;
 	

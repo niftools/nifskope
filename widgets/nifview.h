@@ -50,7 +50,7 @@ public:
 	//! Expand all branches
 	void setAllExpanded( const QModelIndex & index, bool e );
 	
-	//! EvalConditions
+	//! Accessor for EvalConditions
 	bool evalConditions() const { return EvalConditions; }
 	//! Is a row hidden?
     bool isRowHidden(int row, const QModelIndex &parent) const;
@@ -61,17 +61,26 @@ public:
 	QSize sizeHint() const { return QSize( 400, 400 ); }
 
 signals:
+	//! Signal emmited when the current index changes; probably connected to NifSkope::select()
 	void sigCurrentIndexChanged( const QModelIndex & );
 
 public slots:
+	//! Sets the root index
 	void setRootIndex( const QModelIndex & index );
+	//! Clear the root index; probably conncted to NifSkope::dList
 	void clearRootIndex();
 	
+	//! Sets version evaluation conditions
 	void setEvalConditions( bool );
+	//! Sets real-time version condition evalutation (slow)
+	void setRealTime( bool );
 
 protected slots:
-	void updateConditions();
+	//! Updates version conditions (connect to dataChanged)
+	void updateConditions( const QModelIndex & topLeft, const QModelIndex & bottomRight );
+	//! Recursively updates version conditions
 	void updateConditionRecurse( const QModelIndex & index );
+	//! Called when the current index changes
 	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
 	
 	//! Scroll to index; connected to expanded()
@@ -84,6 +93,7 @@ protected:
 	QStyleOptionViewItem viewOptions() const;
 	
 	bool EvalConditions;
+	bool RealTimeEval;
 	
 	class BaseModel * nif;
 };

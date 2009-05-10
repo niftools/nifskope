@@ -191,7 +191,7 @@ NifSkope::NifSkope()
 	
 	// this view shows the block list
 	list = new NifTreeView;
-	list->setModel( nif );
+	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate( book ) );
 	list->header()->setStretchLastSection( true );
 	list->header()->setMinimumSectionSize( 100 );
@@ -297,6 +297,16 @@ NifSkope::NifSkope()
 	aCondition = new QAction( tr("Hide Version Mismatched Rows"), this );
 	aCondition->setCheckable( true );
 	aCondition->setChecked( false );
+	
+	aRCondition = new QAction( tr("Realtime Row Version Updating (slow)"), this );
+	aRCondition->setCheckable( true );
+	aRCondition->setChecked( false );
+	aRCondition->setEnabled( false );
+
+	connect( aCondition, SIGNAL( toggled( bool ) ), aRCondition, SLOT( setEnabled( bool ) ) );
+	connect( aRCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setRealTime( bool ) ) );
+	connect( aRCondition, SIGNAL( toggled( bool ) ), kfmtree, SLOT( setRealTime( bool ) ) );
+	
 	// use toggled to enable startup values to take effect
 	connect( aCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
 	connect( aCondition, SIGNAL( toggled( bool ) ), kfmtree, SLOT( setEvalConditions( bool ) ) );
@@ -481,9 +491,14 @@ NifSkope::NifSkope()
 			mTools->addAction( tb->toggleViewAction() );
 	}
 	mView->addSeparator();
-	mView->addAction( aHierarchy );
-	mView->addAction( aList );
-	mView->addAction( aCondition );
+	QMenu * mBlockList = new QMenu( tr("Block List") );
+	mView->addMenu( mBlockList );
+	mBlockList->addAction( aHierarchy );
+	mBlockList->addAction( aList );
+	QMenu * mBlockDetails = new QMenu( tr("Block Details") );
+	mView->addMenu( mBlockDetails );
+	mBlockDetails->addAction( aCondition );
+	mBlockDetails->addAction( aRCondition );
 	mView->addSeparator();
 	mView->addAction( aSelectFont );
 	
@@ -558,6 +573,7 @@ void NifSkope::restore( const QSettings & settings )
 	setListMode();
 	
 	aCondition->setChecked( settings.value( "hide condition zero", false ).toBool() );
+	aRCondition->setChecked( settings.value( "realtime condition updating", false ).toBool() );
 	restoreHeader( "list sizes", settings, list->header() );
 	restoreHeader( "tree sizes", settings, tree->header() );
 	restoreHeader( "kfmtree sizes", settings, kfmtree->header() );
@@ -591,6 +607,7 @@ void NifSkope::save( QSettings & settings ) const
 	
 	settings.setValue( "list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
 	settings.setValue( "hide condition zero", aCondition->isChecked() );
+	settings.setValue( "realtime condition updating", aRCondition->isChecked() );
 
 	saveHeader( "list sizes", settings, list->header() );
 	saveHeader( "tree sizes", settings, tree->header() );
@@ -709,7 +726,7 @@ void NifSkope::setListMode()
 			list->setColumnHidden( NifModel::CondCol, true );
 			list->setColumnHidden( NifModel::Ver1Col, true );
 			list->setColumnHidden( NifModel::Ver2Col, true );
-         list->setColumnHidden( NifModel::VerCondCol, true );
+			list->setColumnHidden( NifModel::VerCondCol, true );
 			head->resizeSection( 0, s0 );
 			head->resizeSection( 1, s1 );
 		}
