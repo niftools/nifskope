@@ -39,6 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "dds/DirectDrawSurface.h"
 #include "nifmodel.h"
 
+#include <QDebug>
+
 /*! \file gltexloaders.cpp
  * \brief Texture loading functions.
  *
@@ -224,6 +226,7 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 	}
 }
 
+//! Load raw pixel data
 int texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 mask[], bool flipV = false, bool flipH = false, bool rle = false )
 {
 	if ( bytespp * 8 != bpp || bpp > 32 || bpp < 8 )
@@ -281,6 +284,7 @@ int texLoadRaw( QIODevice & f, int width, int height, int num_mipmaps, int bpp, 
 	return m;
 }
 
+//! Load a palettised texture
 int texLoadPal( QIODevice & f, int width, int height, int num_mipmaps, int bpp, int bytespp, const quint32 colormap[], bool flipV, bool flipH, bool rle )
 {
 	if ( bpp != 8 || bytespp != 1 )
@@ -465,6 +469,7 @@ void flipDXT5Blocks(DXTColorBlock_t *Block, int NumBlocks)
 	}
 }
 
+//! Flip DXT blocks vertically (not used in software decompression)
 void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 {
 	int linesize, j;
@@ -515,7 +520,17 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 	}
 }
 
-
+//! Load a DXT compressed DDS texture from file
+/*!
+ * \param f File to load from
+ * \param null Format
+ * \param null Block size
+ * \param null Width
+ * \param null Height
+ * \param mipmaps The number of mipmaps to read
+ * \param null Flip
+ * \return The total number of mipmaps
+ */
 GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
 {
 /*
@@ -663,6 +678,13 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 	}
 }
 
+//! Load a DXT compressed texture
+/*!
+ * \param hdr Description of the texture
+ * \param pixels The pixel data
+ * \param size The size of the texture
+ * \return The total number of mipmaps
+ */
 GLuint texLoadDXT( DDSFormat &hdr, const quint8 *pixels, uint size )
 {
 	int m = 0;
@@ -836,11 +858,13 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 	return 0;
 }
 
+//! Return value as a 32-bit value; possibly replace with <a href="http://doc.trolltech.com/latest/qtendian.html">QtEndian</a> functions?
 quint32 get32( quint8 * x )
 {
 	return *( (quint32 *) x );
 }
 
+//! Return value as a 16-bit value; possibly replace with <a href="http://doc.trolltech.com/latest/qtendian.html">QtEndian</a> functions?
 quint16 get16( quint8 * x )
 {
 	return *( (quint16 *) x );
@@ -878,6 +902,7 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 				return texLoadRaw( f, width, height, 1, bpp, 3, BMP_RGBA_MASK, true );
 			}
 			break;
+		// Since when can a BMP contain DXT compressed textures?
 		case FOURCC_DXT5:
 			texformat += " (DXT5)";
 			return texLoadDXT( f, compression, width, height, 1, true );
@@ -1038,7 +1063,7 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 	return ok;
 }
 
-
+//! Load NiPixelData from a NifModel
 GLuint texLoadNIF( QIODevice & f, QString & texformat ) {
 	GLuint mipmaps = 0;
 
@@ -1101,6 +1126,7 @@ bool texCanLoad( const QString & filepath )
 		);
 }
 
+// (public function, documented in gltexloaders.h)
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
@@ -1138,14 +1164,14 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	QFile f( filename );
 	if ( ! f.open( QIODevice::WriteOnly ) )
 	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
 		return false;
 	}
 	
 	qint64 writeBytes = f.write( (char *) "DDS ", 4 );
 	if ( writeBytes != 4 )
 	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
 		return false;
 	}
 	
@@ -1335,7 +1361,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
 		return false;
 	}
-
+	
 	// write pixel data
 	writeBytes = f.write( buf.data(), buf.size() );
 	if ( writeBytes != buf.size() )
@@ -1343,10 +1369,11 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
 		return false;
 	}
-
+	
 	return true;
 }
 
+// (public function, documented in gltexloaders.h)
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
 {
 	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
@@ -1396,7 +1423,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	QFile f( filename );
 	if ( ! f.open( QIODevice::WriteOnly ) )
 	{
-		qWarning() << "exportTexture(" << filename << ") : could not open file";
+		qWarning() << "texSaveTGA(" << filename << ") : could not open file";
 		free( data );
 		return false;
 	}
@@ -1428,7 +1455,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	qint64 writeBytes = f.write( (char *) hdr, 18 );
 	if ( writeBytes != 18 )
 	{
-		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
 		free( data );
 		return false;
 	}
@@ -1436,7 +1463,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *) data, s );
 	if ( writeBytes != s )
 	{
-		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
 		free( data );
 		return false;
 	}
@@ -1444,12 +1471,150 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *) footer, 26 );
 	if ( writeBytes != 26 )
 	{
-		qWarning() << "exportTexture(" << filename << ") : failed to write file";
+		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
 		free( data );
 		return false;
 	}
-
 	
 	free( data );
+	return true;
+}
+
+// (public function, documented in gltexloaders.h)
+bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
+{
+	// Work out the extension and format
+	// If DDS raw, DXT1 or DXT5, copy directly from texture
+	qWarning() << "texSaveNIF: saving" << filepath << "to" << iData;
+
+	QFile f( filepath );
+	if ( ! f.open( QIODevice::ReadOnly ) )
+		throw QString( "could not open file" );
+
+	if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) )
+	{
+		NifModel pix;
+		
+		if ( ! pix.load( f ) )
+			throw QString( "failed to load NiPixelData from file" );
+		
+		QPersistentModelIndex iPixData;
+		iPixData = pix.getBlock( 0, "NiPixelData" );
+		if ( ! iPixData.isValid() )
+			throw QString( "Texture .nifs should only have NiPixelData blocks" );
+
+		nif->set<int>( iData, "Pixel Format", pix.get<int>( iPixData, "Pixel Format" ) );
+
+		if ( nif->checkVersion( 0, 0x0A020000 ) && pix.checkVersion( 0, 0x0A020000 ) )
+		{
+			nif->set<quint32>( iData, "Red Mask", pix.get<quint32>( iPixData, "Red Mask" ) );
+			nif->set<quint32>( iData, "Green Mask", pix.get<quint32>( iPixData, "Green Mask" ) );
+			nif->set<quint32>( iData, "Blue Mask", pix.get<quint32>( iPixData, "Blue Mask" ) );
+			nif->set<quint32>( iData, "Alpha Mask", pix.get<quint32>( iPixData, "Alpha Mask" ) );
+			nif->set<quint8>( iData, "Bits Per Pixel", pix.get<quint8>( iPixData, "Bits Per Pixel" ) );
+			
+			QModelIndex unknownSrc;
+			QModelIndex unknownDest;
+			
+			unknownSrc = pix.getIndex( iPixData, "Unknown 3 Bytes" );
+			unknownDest = nif->getIndex( iData, "Unknown 3 Bytes" );
+			
+			for ( int i = 0; i < pix.rowCount( unknownSrc ); i++ )
+			{
+				nif->set<quint8>( unknownDest.child( i, 0 ), pix.get<quint8>( unknownSrc.child( i, 0 ) ));
+			}
+			
+			unknownSrc = pix.getIndex( iPixData, "Unknown 8 Bytes" );
+			unknownDest = nif->getIndex( iData, "Unknown 8 Bytes" );
+			
+			for ( int i = 0; i < pix.rowCount( unknownSrc ); i++ )
+			{
+				nif->set<quint8>( unknownDest.child( i, 0 ), pix.get<quint8>( unknownSrc.child( i, 0 ) ));
+			}
+
+			if ( nif->checkVersion( 0x0A010000, 0x0A020000 ) && pix.checkVersion( 0x0A010000, 0x0A020000 ) )
+			{
+				nif->set<quint32>( iData, "Unknown Int", pix.get<quint32>( iPixData, "Unknown Int" ) );
+			}
+		}
+		else if ( nif->checkVersion( 0x14000004, 0 ) && pix.checkVersion( 0x14000004, 0 ) )
+		{
+			nif->set<quint8>( iData, "Bits Per Pixel", pix.get<quint8>( iPixData, "Bits Per Pixel" ) );
+			nif->set<int>( iData, "Unknown Int 2", pix.get<int>( iPixData, "Unknown Int 2" ) );
+			nif->set<quint32>( iData, "Unknown Int 3", pix.get<quint32>( iPixData, "Unknown Int 3" ) );
+			nif->set<quint16>( iData, "Flags", pix.get<quint16>( iPixData, "Flags" ) );
+			nif->set<quint32>( iData, "Unknown Int 4", pix.get<quint32>( iPixData, "Unknown Int 4" ) );
+			
+			if ( nif->checkVersion( 0x14030006, 0 ) && pix.checkVersion( 0x14030006, 0 ) )
+			{
+				nif->set<quint8>( iData, "Unknown Byte 1", pix.get<quint8>( iPixData, "Unknown Byte 1" ) );
+			}
+			
+			QModelIndex srcChannels = pix.getIndex( iPixData, "Channels" );
+			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
+
+			for ( int i = 0; i < 4; i++ )
+			{
+				qWarning() << "Channel" << i;
+				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
+				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
+				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
+				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
+
+				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ));
+				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ));
+				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" ));
+				nif->set<quint8>( destChannels.child( i, 0 ), "Unknown Byte 1", pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" ));
+			}
+			
+			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
+			
+		}
+		
+		// ignore palette for now; what uses these?
+
+/*
+        <add name="Palette" type="Ref" template="NiPalette">Link to NiPalette, for 8-bit textures.</add>
+    </niobject>
+*/
+		
+		nif->set<quint32>( iData, "Num Mipmaps", pix.get<quint32>( iPixData, "Num Mipmaps" ) );
+		nif->set<quint32>( iData, "Bytes Per Pixel", pix.get<quint32>( iPixData, "Bytes Per Pixel" ) );
+
+		QModelIndex srcMipMaps = pix.getIndex( iPixData, "Mipmaps" );
+		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
+		nif->updateArray( destMipMaps );
+
+		for ( int i = 0; i < pix.rowCount( srcMipMaps ); i++ )
+		{
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Width", pix.get<quint32>( srcMipMaps.child( i, 0 ), "Width" ) );
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Height", pix.get<quint32>( srcMipMaps.child( i, 0 ), "Height" ) );
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Offset", pix.get<quint32>( srcMipMaps.child( i, 0 ), "Offset" ) );
+		}
+
+		nif->set<quint32>( iData, "Num Pixels", pix.get<quint32>( iPixData, "Num Pixels" ) );
+
+		QModelIndex srcPixelData = pix.getIndex( iPixData, "Pixel Data" );
+		QModelIndex destPixelData = nif->getIndex( iData, "Pixel Data" );
+
+		for ( int i = 0; i < pix.rowCount( srcPixelData ); i++ )
+		{
+			nif->updateArray( destPixelData.child( i, 0 ) );
+			nif->set<QByteArray>( destPixelData.child( i, 0 ), "Pixel Data", pix.get<QByteArray>( srcPixelData.child( i, 0 ), "Pixel Data" ) );
+		}
+
+		//nif->set<>( iData, "", pix.get<>( iPixData, "" ) );
+		//nif->set<>( iData, "", pix.get<>( iPixData, "" ) );
+
+
+	}
+	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
+	{
+		qWarning() << "Can either copy from GL buffer or file";
+	}
+	else if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
+	{
+		qWarning() << "Will copy from DDS data";
+	}
 	return true;
 }
