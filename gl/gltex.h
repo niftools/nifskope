@@ -42,6 +42,8 @@ class QFileSystemWatcher;
 
 class GroupBox;
 
+//! \file gltex.h TexCache etc. header
+
 //! A class for handling OpenGL textures.
 /*!
  * This class stores information on all loaded textures, and watches the texture files.
@@ -78,7 +80,7 @@ class TexCache : public QObject
 		//! Save the texture as a file
 		bool saveAsFile( const QModelIndex & index, QString & savepath );
 		//! Save the texture as pixel data (not implemented yet)
-		bool savePixelData( const QModelIndex & index );
+		bool savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 	};
 	
 public:
@@ -98,7 +100,7 @@ public:
 	//! Export pixel data to a file
 	bool exportFile( const QModelIndex & iSource, QString & filepath );
 	//! Import pixel data from a file (not implemented yet)
-	bool importFile( const QModelIndex & iSource );
+	bool importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 	
 	//! Find a texture based on its filename
 	static QString find( const QString & file, const QString & nifFolder );

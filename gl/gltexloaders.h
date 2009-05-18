@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
+//! \file gltexloaders.h Texture loading functions header
+
 //! A function for loading textures.
 /*!
  * Loads a texture pointed to by filepath.
@@ -94,5 +96,12 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
  * \return true if the save was successful, false otherwise
  */
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height );
+
+//! Save a file to pixel data
+/*!
+ * \param filepath The source texture to convert
+ * \param iData The pixel data to write
+ */
+bool texSaveNIF( class NifModel * nif, const QString & filepath, QModelIndex & iData );
 
 #endif

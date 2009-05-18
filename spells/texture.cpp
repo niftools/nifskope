@@ -771,6 +771,10 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
+		if ( ! ( nif->checkVersion( 0, 0x0A020000 ) || nif->checkVersion( 0x14000004, 0 ) ) )
+		{
+			return false;
+		}
 		QModelIndex iBlock = nif->getBlock( index );
 		if ( !( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 1 ))
 		{
@@ -791,12 +795,33 @@ public:
 		tex->setNifFolder( nif->getFolder() );
 		if ( tex->bind( index ) )
 		{
+			qWarning() << "spEmbedTexture: Embedding texture " << index;
+
+			int blockNum = nif->getBlockNumber( index );
+			nif->insertNiBlock( "NiPixelData", blockNum+1 );
+			QPersistentModelIndex iSourceTexture = nif->getBlock( blockNum, "NiSourceTexture" );
+			QModelIndex iPixelData = nif->getBlock( blockNum+1, "NiPixelData" );
+
+			qWarning() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
+			
 			// write this function
-			//tex->importFile( index );
+			if ( tex->importFile( nif, iSourceTexture, iPixelData ) )
+			{
+				nif->set<int>( iSourceTexture, "Use External", 0 );
+				nif->set<int>( iSourceTexture, "Unknown Byte", 1 );
+				nif->setLink( iSourceTexture, "Pixel Data", blockNum+1 );
+			}
+			else
+			{
+				qWarning() << "Could not save texture";
+				// delete block?
+			}
 		}
 		return index;
 	}
 };
 
-//REGISTER_SPELL( spEmbedTexture )
+#ifndef QT_NO_DEBUG
+REGISTER_SPELL( spEmbedTexture )
+#endif
 
