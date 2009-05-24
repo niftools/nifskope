@@ -65,10 +65,13 @@ class GLView : public QGLWidget
 {
 	Q_OBJECT
 
+	//! Constructor
 	GLView( const QGLFormat & format, const QGLWidget * shareWidget = 0 );
+	//! Destructor
 	~GLView();
 	
 public:
+	//! Static instance
 	static GLView * create();
 	
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
@@ -106,7 +109,9 @@ public:
 	QAction * aViewPerspective;
 	QAction * aViewUser;
 	QAction * aViewUserSave;
-
+	
+	QAction * aPrintView;
+	
 	QAction * aAnimate;
 	QAction * aAnimPlay;
 	QAction * aAnimLoop;
@@ -114,14 +119,14 @@ public:
 	
 	QToolBar * tAnim;
 	QComboBox * animGroups;
-    FloatSlider * sldTime;
+	FloatSlider * sldTime;
 
 	QToolBar * tView;
 	
 	void	save( QSettings & );
 	void	restore( const QSettings & );
 
-   Scene * getScene();
+	Scene * getScene();
 
 public slots:
 	void setNif( NifModel * );
@@ -143,14 +148,17 @@ signals:
 	void paintUpdate();
 
 protected:
+	//! Sets up the OpenGL rendering context, defines display lists, etc.
 	void initializeGL();
 	int  pickGL( int x, int y );
+	//! Sets up the OpenGL viewport, projection, etc.
 	void resizeGL( int width, int height );
 	void glProjection( int x = -1, int y = -1 );
 
 #ifdef USE_GL_QPAINTER
 	void paintEvent( QPaintEvent * );
 #else
+	//! Renders the OpenGL scene.
 	void paintGL();
 #endif
 	
@@ -179,7 +187,7 @@ private slots:
 	void checkActions();
 	void viewAction( QAction * );
 
-   void sceneUpdate();
+	void sceneUpdate();
 
 private:
 	QAction * checkedViewAction() const;
@@ -230,6 +238,7 @@ private:
 	QPoint popPos;
 protected slots:
 	void popMenu();
+	void savePixmap();
 };
 
 #endif

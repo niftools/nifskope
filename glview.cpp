@@ -52,6 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/gltex.h"
 #include "options.h"
 
+#include "widgets/fileselect.h"
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
@@ -117,7 +118,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	scene = new Scene( textures );
 	connect( textures, SIGNAL( sigRefresh() ), this, SLOT( update() ) );
-
+	
 	timer = new QTimer(this);
 	timer->setInterval( 1000 / FPS );
 	timer->start();
@@ -146,13 +147,12 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewSide->setCheckable( true );
 	aViewSide->setShortcut( Qt::Key_F7 );
 	grpView->addAction( aViewSide );
-
+	
 	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr("User"), grpView );
 	aViewUser->setToolTip( tr("Restore the view as it was when Save User View was activated") );
 	aViewUser->setCheckable( true );
 	aViewUser->setShortcut( Qt::Key_F8 );
 	grpView->addAction( aViewUser );
-
 	
 	aViewWalk = new QAction( QIcon( ":/btn/viewWalk" ), tr("Walk"), grpView );
 	aViewWalk->setToolTip( tr("Enable walk mode") );
@@ -177,13 +177,20 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewUserSave->setShortcut( Qt::CTRL + Qt::Key_F9 );
 	connect( aViewUserSave, SIGNAL( triggered() ), this, SLOT( sltSaveUserView() ) );
 	
+#ifndef USE_GL_QPAINTER
+#ifndef QT_NO_DEBUG
+	aPrintView = new QAction( tr("Save View To File..."), this );
+	connect( aPrintView, SIGNAL( triggered() ), this, SLOT( savePixmap() ) );
+#endif // QT_NO_DEBUG
+#endif // USE_GL_QPAINTER
+	
 	aAnimate = new QAction( tr("&Animations"), this );
 	aAnimate->setToolTip( tr("enables evaluation of animation controllers") );
 	aAnimate->setCheckable( true );
 	aAnimate->setChecked( true );
 	connect( aAnimate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
 	addAction( aAnimate );
-
+	
 	aAnimPlay = new QAction( QIcon( ":/btn/play" ), tr("&Play"), this );
 	aAnimPlay->setCheckable( true );
 	aAnimPlay->setChecked( true );
@@ -210,7 +217,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	tAnim->addAction( aAnimPlay );
 	
-    sldTime = new FloatSlider( Qt::Horizontal, true, true );
+	sldTime = new FloatSlider( Qt::Horizontal, true, true );
 	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
 	connect( this, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
 	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );
@@ -236,21 +243,20 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	connect( Options::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
 	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
-   connect( Options::get(), SIGNAL( materialOverridesChanged() ), this, SLOT( sceneUpdate() ) );
-   
-
+	connect( Options::get(), SIGNAL( materialOverridesChanged() ), this, SLOT( sceneUpdate() ) );
+	
 #ifdef Q_OS_LINUX
 	// extra whitespace for linux
 	QWidget * extraspace = new QWidget();
 	extraspace->setFixedWidth(5);
 	tAnim->addWidget( extraspace );
 #endif
-
+	
 	tView = new QToolBar( tr("View") );
 	tView->setObjectName( "ViewTool" );
 	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	tView->setIconSize( QSize( 16, 16 ) );
-
+	
 	tView->addAction( aViewTop );
 	tView->addAction( aViewFront );
 	tView->addAction( aViewSide );
@@ -291,6 +297,12 @@ QMenu * GLView::createMenu() const
 	m->addAction( aViewPerspective );
 	m->addAction( aViewUserSave );
 	m->addSeparator();
+#ifndef USE_GL_QPAINTER
+#ifndef QT_NO_DEBUG
+	m->addAction( aPrintView );
+	m->addSeparator();
+#endif // QT_NO_DEBUG
+#endif // USE_GL_QPAINTER
 	m->addActions( Options::actions() );
 	return m;
 }
@@ -526,7 +538,7 @@ void GLView::paintGL()
 		fpscnt = 0;
 	}
 	
-   emit paintUpdate();
+	emit paintUpdate();
 
 #ifdef USE_GL_QPAINTER
 	// draw text on top using QPainter
@@ -569,7 +581,7 @@ typedef void (Scene::*DrawFunc)(void);
 	
 int indexAt( GLuint *buffer, NifModel *model, Scene *scene, QList<DrawFunc> drawFunc, int cycle )
 {
-   Q_UNUSED(model);
+	Q_UNUSED(model);
 	glRenderMode( GL_SELECT );	
 	glInitNames();
 	glPushName( 0 );
@@ -662,7 +674,7 @@ void GLView::resizeGL(int width, int height)
 /*
  *  NifModel stuff
  */
- 
+
 void GLView::setNif( NifModel * nif )
 {
 	if ( model )
@@ -755,8 +767,8 @@ void GLView::modelDestroyed()
 
 void GLView::sceneUpdate()
 {
-   scene->update( model, QModelIndex() );
-   update();
+	scene->update( model, QModelIndex() );
+	update();
 }
 
 
@@ -764,7 +776,7 @@ void GLView::sltTime( float t )
 {
 	time = t;
 	update();
-   emit sigTime( time, scene->timeMin(), scene->timeMax() );
+	emit sigTime( time, scene->timeMin(), scene->timeMax() );
 }
 
 void GLView::sltSequence( const QString & seqname )
@@ -1284,7 +1296,7 @@ void GLView::dropEvent( QDropEvent * e )
 
 void GLView::dragLeaveEvent( QDragLeaveEvent * e )
 {
-   Q_UNUSED(e);
+	Q_UNUSED(e);
 	if ( iDragTarget.isValid() )
 	{
 		model->set<QString>( iDragTarget, fnDragTexOrg );
@@ -1296,5 +1308,66 @@ void GLView::dragLeaveEvent( QDragLeaveEvent * e )
 
 Scene* GLView::getScene()
 {
-    return scene;
+	return scene;
+}
+
+void GLView::savePixmap()
+{
+	QDialog dlg;
+	QGridLayout * lay = new QGridLayout;
+	dlg.setLayout( lay );
+	
+	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr("File"), QBoxLayout::RightToLeft );
+	file->setFilter( QStringList() << "*.bmp *.jpg *.png" << "*.bmp" << "*.jpg" << "*.png" );
+	file->setFile( model->getFolder() + "/" );
+	lay->addWidget( file, 0, 0, 1, -1 );
+
+	QCheckBox * autoSize = new QCheckBox( tr("Use View Size") );
+	lay->addWidget( autoSize, 1, 0, 1, -1 );
+
+	QSpinBox * pixWidth = new QSpinBox;
+	pixWidth->setRange( 0, 10000 );
+	pixWidth->setValue( width() );
+	lay->addWidget( new QLabel( tr("Width") ), 2, 0, 1, 1 );
+	lay->addWidget( pixWidth, 2, 1, 1, 1 );
+	
+	QSpinBox * pixHeight = new QSpinBox;
+	pixHeight->setRange( 0, 10000 );
+	pixHeight->setValue( height() );
+	lay->addWidget( new QLabel( tr("Height") ), 3, 0, 1, 1 );
+	lay->addWidget( pixHeight, 3, 1, 1, 1 );
+
+	connect( autoSize, SIGNAL( toggled( bool ) ), pixWidth, SLOT( setDisabled( bool ) ) );
+	connect( autoSize, SIGNAL( toggled( bool ) ), pixHeight, SLOT( setDisabled( bool ) ) );
+
+	QSpinBox * pixQuality = new QSpinBox;
+	pixQuality->setRange( -1, 100 );
+	pixQuality->setSingleStep( 10 );
+	pixQuality->setValue( 80 );
+	pixQuality->setSpecialValueText( tr("Automatic") );
+	lay->addWidget( new QLabel( tr("Quality") ), 4, 0, 1, 1 );
+	lay->addWidget( pixQuality, 4, 1, 1, 1 );
+
+	QHBoxLayout * hBox = new QHBoxLayout;
+	QPushButton * btnOk = new QPushButton( tr("OK" ) );
+	QPushButton * btnCancel = new QPushButton( tr("Cancel" ) );
+	hBox->addWidget( btnOk );
+	hBox->addWidget( btnCancel );
+	lay->addLayout( hBox, 5, 0, 1, -1 );
+
+	connect( btnOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+	connect( btnCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+
+	if ( dlg.exec() != QDialog::Accepted )
+		return;
+
+	// do stuff
+	int tempWidth = autoSize->isChecked() ? width() : pixWidth->value();
+	int tempHeight = autoSize->isChecked() ? height() : pixHeight->value();
+	qWarning() << "Saving" << file->file() << "with width" << tempWidth << "height" << tempHeight << "quality" << pixQuality->value();
+
+
+	// This dies for some reason! When compiled in release mode it throws an unhandled exception, and in debug mode it has shader issues
+	QPixmap temp = QGLWidget::renderPixmap( tempWidth, tempHeight );
+	temp.save( file->file(), 0, pixQuality->value() );
 }
