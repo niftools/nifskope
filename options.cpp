@@ -392,14 +392,15 @@ Options::Options()
       QList<QColor> lightDefaults( QList<QColor>() << QColor::fromRgbF( .4, .4, .4 ) << QColor::fromRgbF( .8, .8, .8 ) << QColor::fromRgbF( 1, 1, 1 ) );
       for ( int l = 0; l < 3; l++ )
       {
-         ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
-         wheel->setSizeHint( QSize( 105, 105 ) );
-         connect( wheel, SIGNAL( sigColorEdited( const QColor & ) ), this, SIGNAL( sigChanged() ) );
-         LightColor[l] = wheel;
-
-         colorPage->pushLayout( lightNames[l], Qt::Vertical );
-         colorPage->addWidget( wheel );
-         colorPage->popLayout();
+			ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
+			wheel->setSizeHint( QSize( 105, 105 ) );
+			wheel->setAlpha( false );
+			connect( wheel, SIGNAL( sigColorEdited( const QColor & ) ), this, SIGNAL( sigChanged() ) );
+			LightColor[l] = wheel;
+			
+			colorPage->pushLayout( lightNames[l], Qt::Vertical );
+			colorPage->addWidget( wheel );
+			colorPage->popLayout();
       }
 
       colorPage->popLayout();
@@ -467,15 +468,19 @@ Options::Options()
 
          if ( c != 0 )
          {
-            alpha[ c ] = new AlphaSlider( Qt::Vertical );
-            alpha[ c ]->setValue( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>().alphaF() );
-            alpha[ c ]->setColor( wheel->getColor() );
-            connect( alpha[ c ], SIGNAL( valueChanged( float ) ), this, SIGNAL( sigChanged() ) );
-            connect( wheel, SIGNAL( sigColor( const QColor & ) ), alpha[ c ], SLOT( setColor( const QColor & ) ) );
-            colorPage->addWidget( alpha[ c ] );
+			alpha[ c ] = new AlphaSlider( Qt::Vertical );
+			alpha[ c ]->setValue( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>().alphaF() );
+			alpha[ c ]->setColor( wheel->getColor() );
+			connect( alpha[ c ], SIGNAL( valueChanged( float ) ), this, SIGNAL( sigChanged() ) );
+			connect( wheel, SIGNAL( sigColor( const QColor & ) ), alpha[ c ], SLOT( setColor( const QColor & ) ) );
+			connect( alpha[ c ], SIGNAL( valueChanged( float ) ), wheel, SLOT( setAlphaValue( float ) ) );
+			colorPage->addWidget( alpha[ c ] );
          }
-         else
-            alpha[ c ] = 0;
+		else
+		{
+			alpha[ c ] = 0;
+			wheel->setAlpha( false );
+		}
 
          colorPage->popLayout();
       }
@@ -501,6 +506,7 @@ Options::Options()
       {
          ColorWheel * wheel = new ColorWheel( cfg.value( names[l], defaults[l] ).value<QColor>() );
          wheel->setSizeHint( QSize( 105, 105 ) );
+			wheel->setAlpha( false );
          connect( wheel, SIGNAL( sigColorEdited( const QColor & ) ), this, SIGNAL( materialOverridesChanged() ) );
          matColors[l] = wheel;
 

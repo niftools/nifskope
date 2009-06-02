@@ -389,6 +389,7 @@ void AlphaSlider::setColor( const QColor & c )
 	color1 = c;
 	color0.setAlphaF( 0.0 );
 	color1.setAlphaF( 1.0 );
+	setValue( c.alphaF() );
 	
 	update();
 }

@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QContextMenuEvent>
 #include <QDialog>
 #include <QIcon>
+#include <QLabel>
 #include <QLayout>
 #include <QPainter>
 #include <QPixmap>
@@ -105,6 +106,7 @@ ColorWheel::ColorWheel( const QColor & c, QWidget * parent ) : QWidget( parent )
 	H = c.hueF();
 	S = c.saturationF();
 	V = c.valueF();
+	A = c.alphaF();
 	if ( H >= 1.0 || H < 0.0 ) H = 0.0;
 	if ( S > 1.0 || S < 0.0 ) S = 1.0;
 	if ( V > 1.0 || S < 0.0 ) V = 1.0;
@@ -119,7 +121,7 @@ QIcon ColorWheel::getIcon()
 
 QColor ColorWheel::getColor() const
 {
-	return QColor::fromHsvF( H, S, V );
+	return QColor::fromHsvF( H, S, V, A );
 }
 
 void ColorWheel::setColor( const QColor & c )
@@ -127,12 +129,28 @@ void ColorWheel::setColor( const QColor & c )
 	double h = c.hueF();
 	S = c.saturationF();
 	V = c.valueF();
+	A = c.alphaF();
 	if ( h >= 1.0 || h < 0.0 ) h = 0.0;
 	if ( S > 1.0 || S < 0.0 ) S = 1.0;
 	if ( V > 1.0 || S < 0.0 ) V = 1.0;
 	H = h;
 	update();
 	emit sigColor( c );
+}
+
+bool ColorWheel::getAlpha() const
+{
+	return isAlpha;
+}
+
+void ColorWheel::setAlpha( const bool & b )
+{
+	isAlpha = b;
+}
+
+void ColorWheel::setAlphaValue( const float & f )
+{
+	A = f;
 }
 
 QSize ColorWheel::sizeHint() const
@@ -280,13 +298,21 @@ void ColorWheel::contextMenuEvent( QContextMenuEvent * e )
 		act->setIcon( QIcon( pix ) );
 		menu->addAction( act );
 	}
-	
+
+	QAction * hex = new QAction( tr("Hex Edit..."), this );
+	menu->addSeparator();
+	menu->addAction( hex );
+	connect( hex, SIGNAL( triggered() ), this, SLOT( chooseHex() ) );
+
 	if ( QAction * act = menu->exec( e->globalPos() ) )
 	{
-		setColor( QColor( act->text() ) );
-		emit sigColorEdited( getColor() );
+		if ( act != hex )
+		{
+			setColor( QColor( act->text() ) );
+			emit sigColorEdited( getColor() );
+		}
 	}
-	
+
 	delete menu;
 }
 
@@ -338,14 +364,17 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 	ColorWheel * hsv = new ColorWheel;
 	hsv->setColor( c );
 	grid->addWidget( hsv, 0, 0, 1, 2 );
+	hsv->setAlpha( alphaEnable );
 	
 	AlphaSlider * alpha = new AlphaSlider;
 	alpha->setColor( c );
 	alpha->setValue( c.alphaF() );
+	hsv->setAlphaValue( c.alphaF() );
 	alpha->setOrientation( Qt::Vertical );
 	alpha->setVisible( alphaEnable );
 	grid->addWidget( alpha, 0, 2 );
 	connect( hsv, SIGNAL( sigColor( const QColor & ) ), alpha, SLOT( setColor( const QColor & ) ) );
+	connect( alpha, SIGNAL( valueChanged( float ) ), hsv, SLOT( setAlphaValue( float ) ) );
 	
 	QHBoxLayout * hbox = new QHBoxLayout;
 	grid->addLayout( hbox, 1, 0, 1, 3 );
@@ -374,4 +403,60 @@ Color3 ColorWheel::choose( const Color3 & c, QWidget * parent )
 Color4 ColorWheel::choose( const Color4 & c, QWidget * parent )
 {
 	return Color4( choose( c.toQColor(), true, parent ) );
+}
+
+void ColorWheel::chooseHex()
+{
+	QDialog * dlg = new QDialog();
+	ColorSpinBox * r, * g, * b, * a;
+	QGridLayout * grid = new QGridLayout;
+	dlg->setLayout( grid );
+	
+	//: Red
+	grid->addWidget( new QLabel( tr( "R" ) ), 0, 0, 1, 1 );
+	grid->addWidget( r = new ColorSpinBox(), 0, 1, 1, 1 );
+	r->setSingleStep( 1 );
+	r->setRange( 0, 255 );
+	r->setValue( getColor().red() );
+	
+	//: Green
+	grid->addWidget( new QLabel( tr( "G" ) ), 0, 2, 1, 1 );
+	grid->addWidget( g = new ColorSpinBox(), 0, 3, 1, 1 );
+	g->setSingleStep( 1 );
+	g->setRange( 0, 255 );
+	g->setValue( getColor().green() );
+	
+	//: Blue
+	grid->addWidget( new QLabel( tr( "B" ) ), 0, 4, 1, 1 );
+	grid->addWidget( b = new ColorSpinBox(), 0, 5, 1, 1 );
+	b->setSingleStep( 1 );
+	b->setRange( 0, 255 );
+	b->setValue( getColor().blue() );
+	
+	QLabel * alphaLabel;
+	//: Alpha
+	grid->addWidget( alphaLabel = new QLabel( tr( "A" ) ), 0, 6, 1, 1 );
+	grid->addWidget( a = new ColorSpinBox(), 0, 7, 1, 1 );
+	a->setSingleStep( 1 );
+	a->setRange( 0, 255 );
+	a->setValue( getColor().alpha() );
+	alphaLabel->setVisible( getAlpha() );
+	a->setVisible( getAlpha() );
+	
+	QHBoxLayout * hBox = new QHBoxLayout;
+	QPushButton * btnOk = new QPushButton( tr("OK" ) );
+	QPushButton * btnCancel = new QPushButton( tr("Cancel" ) );
+	hBox->addWidget( btnOk );
+	hBox->addWidget( btnCancel );
+	grid->addLayout( hBox, 1, 0, 1, -1 );
+	
+	connect( btnOk, SIGNAL( clicked() ), dlg, SLOT( accept() ) );
+	connect( btnCancel, SIGNAL( clicked() ), dlg, SLOT( reject() ) );
+	
+	if ( dlg->exec() == QDialog::Accepted )
+	{
+		const QColor temp( r->value(), g->value(), b->value(), a->value() );
+		setColor( temp );
+		emit sigColorEdited( temp );
+	}
 }

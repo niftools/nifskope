@@ -34,12 +34,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define COLORWHEEL_H
 
 #include <QColor>
+#include <QSpinBox>
+#include <QRegExpValidator>
 #include <QSlider>
 #include <QWidget>
+
+//! \file colorwheel.h ColorWheel, ColorSpinBox
 
 class Color3;
 class Color4;
 
+//! A color selection widget using the HSV model
 class ColorWheel : public QWidget
 {
 	Q_OBJECT
@@ -56,6 +61,7 @@ public:
 	Q_PROPERTY( QColor color READ getColor WRITE setColor NOTIFY sigColor USER true )
 	
 	QColor getColor() const;
+	bool getAlpha() const;
 	
 	QSize sizeHint() const;
 	QSize minimumSizeHint() const;
@@ -70,6 +76,9 @@ signals:
 	
 public slots:
 	void setColor( const QColor & );
+	void setAlpha( const bool & );
+	void setAlphaValue( const float & );
+	void chooseHex();
 	
 protected:
 	void paintEvent( QPaintEvent * e );
@@ -80,7 +89,9 @@ protected:
 	void setColor( int x, int y );
 
 private:
-	double H, S, V;
+	double H, S, V, A;
+
+	bool isAlpha;
 	
 	enum {
 		Nope, Circle, Triangle
@@ -89,6 +100,31 @@ private:
 	QSize sHint;
 
 	static QIcon * icon;
+};
+
+class ColorSpinBox : public QSpinBox
+{
+public:
+	ColorSpinBox( QWidget * parent ) : QSpinBox( parent ) {}
+	ColorSpinBox() : QSpinBox() {}
+	
+protected:
+
+	QString textFromValue( int d ) const
+	{
+		return QString::number( d, 16 );
+	}
+	
+	int valueFromText( const QString & text ) const
+	{
+		bool ok;
+		return( text.toInt( &ok, 16 ) );
+	}
+	
+	QValidator::State validate( QString & input, int & pos ) const
+	{
+		return QRegExpValidator( QRegExp( "[0-9A-Fa-f]{0,2}" ), 0 ).validate( input, pos );
+	}
 };
 
 #endif
