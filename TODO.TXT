@@ -8,4 +8,5 @@ To do:
 - doxygen documentation of all classes and files
 - Diplay all particle systems
 - Clean up SVN log entries, check all old builds
+- Check i18n of strings, use QLocale for numbers
 

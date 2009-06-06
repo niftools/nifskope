@@ -161,32 +161,52 @@ public:
 		dlg.setLayout( vbox );
 		
 		// See glBlendFunc; ONE and ZERO appear to swapped from where they should be (not to mention missing values before SATURATE)
-		QStringList blendModes = QStringList() <<
-			"One" << "Zero" << "Src Color" << "Inv Src Color" << "Dst Color" << "Inv Dst Color" << "Src Alpha" << "Inv Src Alpha" <<
-			"Dst Alpha" << "Inv Dst Alpha" << "Src Alpha Saturate";
+		QStringList blendModes = QStringList()
+			<< Spell::tr("One")
+			<< Spell::tr("Zero")
+			<< Spell::tr("Src Color")
+			<< Spell::tr("Inv Src Color")
+			<< Spell::tr("Dst Color")
+			<< Spell::tr("Inv Dst Color")
+			<< Spell::tr("Src Alpha")
+			<< Spell::tr("Inv Src Alpha")
+			<< Spell::tr("Dst Alpha")
+			<< Spell::tr("Inv Dst Alpha")
+			<< Spell::tr("Src Alpha Saturate");
 		// ALWAYS and NEVER are swapped from where they should be; see glAlphaFunc
-		QStringList testModes = QStringList() <<
-			"Always" << "Less" << "Equal" << "Less or Equal" << "Greater" << "Not Equal" << "Greater or Equal" << "Never";
+		QStringList testModes = QStringList()
+			<< Spell::tr("Always")
+			<< Spell::tr("Less")
+			<< Spell::tr("Equal")
+			<< Spell::tr("Less or Equal")
+			<< Spell::tr("Greater")
+			<< Spell::tr("Not Equal")
+			<< Spell::tr("Greater or Equal")
+			<< Spell::tr("Never");
 		
-		QCheckBox * chkBlend = dlgCheck( vbox, "Enable Blending" );
+		QCheckBox * chkBlend = dlgCheck( vbox, Spell::tr("Enable Blending") );
 		chkBlend->setChecked( flags & 1 );
 		
-		QComboBox * cmbSrc = dlgCombo( vbox, "Source Blend Mode", blendModes, chkBlend );
+		/*
+		 * The enabling/disabling of blend modes and test functions that was here until r4745
+		 * disallows setting values that have been reported to otherwise work.
+		 */
+		QComboBox * cmbSrc = dlgCombo( vbox, Spell::tr("Source Blend Mode"), blendModes );
 		cmbSrc->setCurrentIndex( flags >> 1 & 0x0f );
 		
-		QComboBox * cmbDst = dlgCombo( vbox, "Destination Blend Mode", blendModes, chkBlend );
+		QComboBox * cmbDst = dlgCombo( vbox, Spell::tr("Destination Blend Mode"), blendModes );
 		cmbDst->setCurrentIndex( flags >> 5 & 0x0f );
 		
-		QCheckBox * chkTest = dlgCheck( vbox, "Enable Testing" );
+		QCheckBox * chkTest = dlgCheck( vbox, Spell::tr("Enable Testing") );
 		chkTest->setChecked( flags & ( 1 << 9 ) );
 		
-		QComboBox * cmbTest = dlgCombo( vbox, "Alpha Test Function", testModes, chkTest );
+		QComboBox * cmbTest = dlgCombo( vbox, Spell::tr("Alpha Test Function"), testModes );
 		cmbTest->setCurrentIndex( flags >> 10 & 0x07 );
 		
-		QSpinBox * spnTest = dlgSpin( vbox, "Alpha Test Threshold", 0x00, 0xff, chkTest );
+		QSpinBox * spnTest = dlgSpin( vbox, Spell::tr("Alpha Test Threshold"), 0x00, 0xff );
 		spnTest->setValue( nif->get<int>( nif->getBlock( index ), "Threshold" ) );
 		
-		QCheckBox * chkSort = dlgCheck( vbox, "No Sorter" );
+		QCheckBox * chkSort = dlgCheck( vbox, Spell::tr("No Sorter") );
 		chkSort->setChecked( ( flags & 0x2000 ) != 0 );
 		
 		dlgButtons( &dlg, vbox );
@@ -197,17 +217,17 @@ public:
 			if ( chkBlend->isChecked() )
 			{
 				flags |= 1;
-				flags = flags & 0xffe1 | cmbSrc->currentIndex() << 1;
-				flags = flags & 0xfe1f | cmbDst->currentIndex() << 5;
 			}
+			flags = flags & 0xffe1 | cmbSrc->currentIndex() << 1;
+			flags = flags & 0xfe1f | cmbDst->currentIndex() << 5;
 			
 			flags = flags & 0xe1ff;
 			if ( chkTest->isChecked() )
 			{
 				flags |= 0x0200;
-				flags = flags & 0xe3ff | ( cmbTest->currentIndex() << 10 );
-				nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
 			}
+			flags = flags & 0xe3ff | ( cmbTest->currentIndex() << 10 );
+			nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
 			
 			flags = flags & 0xdfff | ( chkSort->isChecked() ? 0x2000 : 0 );
 			
@@ -224,13 +244,19 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
-		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
+		QCheckBox * chkHidden = dlgCheck( vbox, Spell::tr("Hidden") );
 		chkHidden->setChecked( flags & 1 );
 		
-		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", QStringList() << "None" << "Triangles" << "Bounding Box" << "Continue" );
+		QStringList collideModes = QStringList()
+			<< Spell::tr("None")
+			<< Spell::tr("Triangles")
+			<< Spell::tr("Bounding Box")
+			<< Spell::tr("Continue");
+		
+		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr("Collision Detection"), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 		
-		QCheckBox * chkSkin = dlgCheck( vbox, "Skin Influence" );
+		QCheckBox * chkSkin = dlgCheck( vbox, Spell::tr("Skin Influence") );
 		chkSkin->setChecked( ! ( flags & 8 ) );
 		
 		dlgButtons( &dlg, vbox );
@@ -253,10 +279,15 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
-		QCheckBox * chkActive = dlgCheck( vbox, "Active" );
+		QCheckBox * chkActive = dlgCheck( vbox, Spell::tr("Active") );
 		chkActive->setChecked( flags & 8 );
+			
+		QStringList loopModes = QStringList()
+			<< Spell::tr("Cycle")
+			<< Spell::tr("Reverse")
+			<< Spell::tr("Clamp");
 		
-		QComboBox * cmbLoop = dlgCombo( vbox, "Loop Mode", QStringList() << "Cycle" << "Reverse" << "Clamp" );
+		QComboBox * cmbLoop = dlgCombo( vbox, Spell::tr("Loop Mode"), loopModes );
 		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
 		
 		dlgButtons( &dlg, vbox );
@@ -277,14 +308,14 @@ public:
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout( &dlg );
 		
-		QCheckBox * chkLinked = dlgCheck( vbox, "Linked" );
+		QCheckBox * chkLinked = dlgCheck( vbox, Spell::tr("Linked") );
 		chkLinked->setChecked( flags & 0x80 );
-		QCheckBox * chkNoCol  = dlgCheck( vbox, "No Collision" );
+		QCheckBox * chkNoCol  = dlgCheck( vbox, Spell::tr("No Collision") );
 		chkNoCol->setChecked( flags & 0x40 );
-		QCheckBox * chkScaled = dlgCheck( vbox, "Scaled" );
+		QCheckBox * chkScaled = dlgCheck( vbox, Spell::tr("Scaled") );
 		chkScaled->setChecked( flags & 0x20 );
 		
-		QSpinBox * spnPartNo = dlgSpin( vbox, "Part Number", 0, 0x1f, chkLinked );
+		QSpinBox * spnPartNo = dlgSpin( vbox, Spell::tr("Part Number"), 0, 0x1f, chkLinked );
 		spnPartNo->setValue( flags & 0x1f );
 		
 		dlgButtons( &dlg, vbox );
@@ -309,16 +340,22 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
-		QCheckBox * chkHidden = dlgCheck( vbox, "Hidden" );
+		QCheckBox * chkHidden = dlgCheck( vbox, Spell::tr("Hidden") );
 		chkHidden->setChecked( flags & 0x01 );
 		
-		QComboBox * cmbCollision = dlgCombo( vbox, "Collision Detection", QStringList() << "None" << "Triangles" << "Bounding Box" << "Continue" );
+		QStringList collideModes = QStringList()
+			<< Spell::tr("None")
+			<< Spell::tr("Triangles")
+			<< Spell::tr("Bounding Box")
+			<< Spell::tr("Continue");
+		
+		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr("Collision Detection"), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 		
 		QCheckBox * chkShadow = 0;
 		if ( nif->checkVersion( 0x04000002, 0x04000002 ) )
 		{
-			chkShadow = dlgCheck( vbox, "Shadow" );
+			chkShadow = dlgCheck( vbox, Spell::tr("Shadow") );
 			chkShadow->setChecked( flags & 0x40 );
 		}
 		
@@ -343,10 +380,10 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 		
-		QCheckBox * chkEnable = dlgCheck( vbox, "Enable Z Buffer" );
+		QCheckBox * chkEnable = dlgCheck( vbox, Spell::tr("Enable Z Buffer") );
 		chkEnable->setChecked( flags & 1 );
 		
-		QCheckBox * chkROnly = dlgCheck( vbox, "Z Buffer Read Only" );
+		QCheckBox * chkROnly = dlgCheck( vbox, Spell::tr("Z Buffer Read Only") );
 		chkROnly->setChecked( ( flags & 2 ) == 0 );
 		
 		// ALWAYS and NEVER are swapped, otherwise values match glDepthFunc 
