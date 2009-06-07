@@ -81,7 +81,7 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
-* Wed Apr 22 2009 amorilia - 1.0.20-1
+* Sun Jun 7 2009 amorilia - 1.0.20-1
 - updated to Qt 4.5.0
 - fix tooltips display for nif.xml annotations
 - Paste Block/Branch spells now set Controller and Target links when pasting controller blocks, and updates Effects array when pasting an effect block
@@ -91,6 +91,13 @@ rm -rf $RPM_BUILD_ROOT
 - performance improvements when attaching animation
 - set sequence controller NiMultiTargetTransformController when importing kfs
 - display of NiUVController for UV transformations
+- Add "Move Down" option to Texture Folders list
+- display of NiVisController
+- fixed display of NiMaterialColorController for versions < 10.1.0.0 and added flags editor
+- display of BSBounds (displayed with Havok), tweaks to display of Bounding Box, added a "Edit Bounds" spell
+- highlighting of strips
+- UV editing of textures other than the base texture
+- re-add hiding of rows not applicable to the current version
 * Thu Mar 26 2009 amorilia - 1.0.19-1
 - fixed "Multi Apply Mode" spell [ niftools-Bugs-2475705 ]
 - shortcut keys for "Copy Branch" and "Paste Branch"
