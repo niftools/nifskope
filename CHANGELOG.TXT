@@ -1,6 +1,8 @@
  == CHANGELOG ==
 
-This is version 1.0.20 of NifSkope.
+This is version 1.0.21 of NifSkope.
+
+changes since 1.0.20:
 
 changes since 1.0.19:
  * updated to Qt 4.5.0
