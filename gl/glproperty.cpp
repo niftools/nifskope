@@ -291,13 +291,15 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
 				switch ( nif->get<int>( iTex, "Filter Mode" ) )
 				{
-					case 0:		textures[t].filter = GL_NEAREST;		break;
-					case 1:		textures[t].filter = GL_LINEAR;		break;
-					case 2:		textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;		break;
-					case 3:		textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;		break;
-					case 4:		textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;		break;
-					case 5:		textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;		break;
-					default:	textures[t].filter = GL_LINEAR;		break;
+					// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
+					// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
+					case 0:		textures[t].filter = GL_NEAREST; 					break; // nearest
+					case 1:		textures[t].filter = GL_LINEAR;						break; // bilinear
+					case 2:		textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;		break; // trilinear
+					case 3:		textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;		break; // nearest from nearest
+					case 4:		textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;		break; // interpolate from nearest
+					case 5:		textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;		break; // bilinear from nearest
+					default:	textures[t].filter = GL_LINEAR;						break;
 				}
 				switch ( nif->get<int>( iTex, "Clamp Mode" ) )
 				{
@@ -352,7 +354,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0 );
 		}
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? textures[id].filter : GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textures[id].wrapT );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );

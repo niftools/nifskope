@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltexloaders.h"
 #include <QtOpenGL>
 #include "dds/dds_api.h"
-#include "dds/DirectDrawSurface.h"
+#include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
 #include "nifmodel.h"
 
 #include <QDebug>
@@ -47,11 +47,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Textures can be loaded from a filename (in any supported format) or raw
  * pixel data. They can also be exported from raw pixel data to TGA or DDS.
  *
- * Supported formats:
- * - DDS
+ * Supported read formats:
+ * - DDS (RAW, DXTn, 8-bit palette)
  * - TGA
  * - BMP
- * - NIF
+ * - NIF (RGB8, RGBA8, PAL8, DXT1, DXT5)
+ *
+ * Supported write formats:
+ * - TGA (32-bit) from NIF
+ * - DDS (RGB, RGBA, DXT1, DXT5) from NIF
+ * - NIF from NIF (matching versions only, experimental)
  *
  */
 
@@ -662,6 +667,20 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 		
 		return texLoadDXT( f, glFormat, blockSize, ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
 	}
+	else if ( ddsHeader.ddsPixelFormat.dwFlags & 0x20 ) // DDPF_PALETTEINDEXED8
+	{
+		texformat += " (PAL)";
+		
+		// Palette format: 256 RGBA quads (1024 bytes), starting after header
+		
+		quint32 colormap[256];
+		if ( f.read( (char *)colormap, 4*256 ) != 4*256 )
+			throw QString( "unexpected EOF" );
+
+		return texLoadPal( f, ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount,
+				ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
+				(const quint32 *) colormap, false, false, false );
+	}
 	else
 	{
 		texformat += " (RAW)";
@@ -1019,6 +1038,7 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 		case 2: // PX_FMT_PAL8
 			{
 				texformat += " (PAL8)";
+				// Read the NiPalette entries; change this if we change NiPalette in nif.xml
 				QModelIndex iPalette = nif->getBlock( nif->getLink( iData, "Palette" ) );
 				if (iPalette.isValid()) {
 					QVector<quint32> map;
@@ -1198,7 +1218,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	bool hasMipMaps = ( mipmaps > 1 );
 	
 	header[pos++] = ( (hasMipMaps ? 1 : 0) << 1 ) // 1 bit reserved, mipmapcount
-			| ( (compressed ? 1 : 0) << 3 ); // linearsize, 3 bits reserved, depth = 0
+			| ( (compressed ? 1 : 0) << 3 ); // 1 bit reserved, linearsize, 3 bits reserved, depth = 0
 	
 	pos++;
 	
@@ -1570,8 +1590,13 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
 			
 		}
+		else
+		{
+			qWarning() << "NIF versions are incompatible, cannot copy pixel data";
+			return false;
+		}
 		
-		// ignore palette for now; what uses these?
+		// ignore palette for now; what uses these? theoretically they don't exist past 4.2.2.0
 
 /*
         <add name="Palette" type="Ref" template="NiPalette">Link to NiPalette, for 8-bit textures.</add>
@@ -1611,10 +1636,65 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
 	{
 		qWarning() << "Can either copy from GL buffer or file";
+		return false;
 	}
 	else if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
 	{
 		qWarning() << "Will copy from DDS data";
+		DDSFormat ddsHeader;
+		char tag[4];
+		f.read(&tag[0], 4);
+		if ( strncmp( tag,"DDS ", 4 ) != 0 || f.read((char *) &ddsHeader, sizeof(DDSFormat)) != sizeof( DDSFormat ) )
+			throw QString( "not a DDS file" );
+
+		qWarning() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
+		qWarning() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
+		if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
+		{
+			switch ( ddsHeader.ddsPixelFormat.dwFourCC )
+			{
+				case FOURCC_DXT1:
+					qWarning() << "DXT1";
+					nif->set<uint>( iData, "Pixel Format", 4 );
+					break;
+				case FOURCC_DXT5:
+					qWarning() << "DXT5";
+					nif->set<uint>( iData, "Pixel Format", 5 );
+					break;
+				default:
+					qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwFourCC << "FourCC";
+					return false;
+					break;
+			}
+		}
+		else
+		{
+			qWarning() << "RAW";
+			// switch on BPP
+			//nif->set<uint>( iData, "Pixel Format", 0 );
+			switch( ddsHeader.ddsPixelFormat.dwBPP )
+			{
+				case 24:
+					nif->set<uint>( iData, "Pixel Format", 0 );
+					break;
+				case 32:
+					nif->set<uint>( iData, "Pixel Format", 1 );
+					break;
+				default:
+					qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwBPP << "BPP";
+					return false;
+					break;
+			}
+		}
+
+		qWarning() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
+		qWarning() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
+		qWarning() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
+		qWarning() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
+		qWarning() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
+
+
+		return false;
 	}
 	return true;
 }
