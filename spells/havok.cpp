@@ -319,8 +319,9 @@ public:
 		
 		// *** THIS SOMETIMES CRASHES NIFSKOPE        ***
 		// *** UNCOMMENT WHEN BRANCH REMOVER IS FIXED ***
-		//spRemoveBranch BranchRemover;
-		//BranchRemover.castIfApplicable( nif, iShape );
+		// See issue #2508255
+		spRemoveBranch BranchRemover;
+		BranchRemover.castIfApplicable( nif, iShape );
 		
 		return iPackedShape;
 	}
