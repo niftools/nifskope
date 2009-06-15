@@ -5,6 +5,7 @@ This is version 1.0.21 of NifSkope.
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures
  * added variable mipmap filtering display for NiTexturingProperty
+ * added "Mesh->Flip Faces" spell
 
 changes since 1.0.19:
  * updated to Qt 4.5.0

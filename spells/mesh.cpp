@@ -6,200 +6,42 @@
 
 #include <cfloat>
 
-class spFlipTexCoords : public Spell
+// Brief description is deliberately not autolinked to class Spell
+/*! \file mesh.cpp
+ * \brief Mesh spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Find shape data of triangle geometry
+static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
 {
-public:
-	QString name() const { return Spell::tr("Flip UV"); }
-	QString page() const { return Spell::tr("Mesh"); }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return nif->itemType( index ).toLower() == "texcoord" || nif->inherits( index, "NiTriBasedGeomData" );
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		QModelIndex idx = index;
-		if ( nif->itemType( index ).toLower() != "texcoord" )
-		{
-			idx = nif->getIndex( nif->getBlock( index ), "UV Sets" );
-		}
-		QMenu menu;
-		static const char * const flipCmds[3] = { "S = 1.0 - S", "T = 1.0 - T", "S <=> T" };
-		for ( int c = 0; c < 3; c++ )
-			menu.addAction( flipCmds[c] );
+	QModelIndex iShape = nif->getBlock( index );
+	if ( nif->isNiBlock( iShape, "NiTriBasedGeomData" ) )
+		iShape = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
+	if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+		if ( nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriBasedGeomData" ).isValid() )
+			return iShape;
+	return QModelIndex();
+}
 
-		QAction * act = menu.exec( QCursor::pos() );
-		if ( act ) {
-			for ( int c = 0; c < 3; c++ )
-				if ( act->text() == flipCmds[c] )
-					flip( nif, idx, c );
-		}
-
-		return index;
-	}
-
-	void flip( NifModel * nif, const QModelIndex & index, int f )
-	{
-		if ( nif->isArray( index ) )
-		{
-			QModelIndex idx = index.child( 0, 0 );
-			if ( idx.isValid() )
-			{
-				if ( nif->isArray( idx ) )
-					flip( nif, idx, f );
-				else
-				{
-					QVector<Vector2> tc = nif->getArray<Vector2>( index );
-					for ( int c = 0; c < tc.count(); c++ )
-						flip( tc[c], f );
-					nif->setArray<Vector2>( index, tc );
-				}
-			}
-		}
-		else
-		{
-			Vector2 v = nif->get<Vector2>( index );
-			flip( v, f );
-			nif->set<Vector2>( index, v );
-		}
-	}
-
-	void flip( Vector2 & v, int f )
-	{
-		switch ( f )
-		{
-			case 0:
-				v[0] = 1.0 - v[0];
-				break;
-			case 1:
-				v[1] = 1.0 - v[1];
-				break;
-			default:
-				{
-					float x = v[0];
-					v[0] = v[1];
-					v[1] = x;
-				}	break;
-		}
-	}
-};
-
-REGISTER_SPELL( spFlipTexCoords )
-
-
-class spFlipFace : public Spell
+//! Find triangle geometry
+/*!
+ * Subtly different to getShape(); that requires
+ * <tt>nif->getBlock( nif->getLink( getShape( nif, index ), "Data" ) );</tt>
+ * to return the same result.
+ */
+static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & index )
 {
-public:
-	QString name() const { return Spell::tr("Flip Face"); }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return ( nif->getValue( index ).type() == NifValue::tTriangle )
-			|| ( nif->isArray( index ) && nif->getValue( index.child( 0, 0 ) ).type() == NifValue::tTriangle );
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		if ( nif->isArray( index ) )
-		{
-			QVector<Triangle> tris = nif->getArray<Triangle>( index );
-			for ( int t = 0; t < tris.count(); t++ )
-				tris[t].flip();
-			nif->setArray<Triangle>( index, tris );
-		}
-		else
-		{
-			Triangle t = nif->get<Triangle>( index );
-			t.flip();
-			nif->set<Triangle>( index, t );
-		}
-		return index;
-	}
-};
+	QModelIndex iData = nif->getBlock( index );
+	if ( nif->isNiBlock( index, "NiTriShape" ) )
+		iData = nif->getBlock( nif->getLink( index, "Data" ) );
+	if ( nif->isNiBlock( iData, "NiTriShapeData" ) )
+		return iData;
+	else return QModelIndex();
+}
 
-REGISTER_SPELL( spFlipFace )
-
-
-class spPruneRedundantTriangles : public Spell
-{
-public:
-	QString name() const { return Spell::tr("Prune Triangles"); }
-	QString page() const { return Spell::tr("Mesh"); }
-	
-	static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & index )
-	{
-		QModelIndex iData = nif->getBlock( index );
-		if ( nif->isNiBlock( index, "NiTriShape" ) )
-			iData = nif->getBlock( nif->getLink( index, "Data" ) );
-		if ( nif->isNiBlock( iData, "NiTriShapeData" ) )
-			return iData;
-		else return QModelIndex();
-	}
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
-	{
-		return getTriShapeData( nif, index ).isValid();
-	}
-	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
-	{
-		QModelIndex iData = getTriShapeData( nif, index );
-		
-		QList<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" ).toList();
-		int cnt = 0;
-		
-		int i = 0;
-		while ( i < tris.count() )
-		{
-			const Triangle & t = tris[i];
-			if ( t[0] == t[1] || t[1] == t[2] || t[2] == t[0] )
-			{
-				tris.removeAt( i );
-				cnt++;
-			}
-			else
-				i++;
-		}
-		
-		i = 0;
-		while ( i < tris.count() )
-		{
-			const Triangle & t = tris[i];
-			
-			int j = i + 1;
-			while ( j < tris.count() )
-			{
-				const Triangle & r = tris[j];
-				
-				if ( ( t[0] == r[0] && t[1] == r[1] && t[2] == r[2] )
-					|| ( t[0] == r[1] && t[1] == r[2] && t[2] == r[0] )
-					|| ( t[0] == r[2] && t[1] == r[0] && t[2] == r[1] ) )
-				{
-					tris.removeAt( j );
-					cnt++;
-				}
-				else
-					j++;
-			}
-			i++;
-		}
-		
-		if ( cnt > 0 )
-		{
-			qWarning() << QString( Spell::tr("%1 triangles removed") ).arg( cnt );
-			nif->set<int>( iData, "Num Triangles", tris.count() );
-			nif->set<int>( iData, "Num Triangle Points", tris.count() * 3 );
-			nif->updateArray( iData, "Triangles" );
-			nif->setArray<Triangle>( iData, "Triangles", tris.toVector() );
-		}
-		return index;
-	}
-};
-
-REGISTER_SPELL( spPruneRedundantTriangles )
-
-
+//! Removes elements of the specified type from an array
 template <typename T> static void removeFromArray( QVector<T> & array, QMap<quint16, bool> map )
 {
 	for ( int x = array.count() - 1; x >= 0; x-- )
@@ -209,6 +51,7 @@ template <typename T> static void removeFromArray( QVector<T> & array, QMap<quin
 	}
 }
 
+//! Removes waste vertices from the specified data and shape
 static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, const QModelIndex & iShape )
 {
 	try
@@ -375,23 +218,225 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 	}
 }
 
+//! Flip texture UV coordinates
+class spFlipTexCoords : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Flip UV"); }
+	QString page() const { return Spell::tr("Mesh"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->itemType( index ).toLower() == "texcoord" || nif->inherits( index, "NiTriBasedGeomData" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex idx = index;
+		if ( nif->itemType( index ).toLower() != "texcoord" )
+		{
+			idx = nif->getIndex( nif->getBlock( index ), "UV Sets" );
+		}
+		QMenu menu;
+		static const char * const flipCmds[3] = { "S = 1.0 - S", "T = 1.0 - T", "S <=> T" };
+		for ( int c = 0; c < 3; c++ )
+			menu.addAction( flipCmds[c] );
 
+		QAction * act = menu.exec( QCursor::pos() );
+		if ( act ) {
+			for ( int c = 0; c < 3; c++ )
+				if ( act->text() == flipCmds[c] )
+					flip( nif, idx, c );
+		}
+
+		return index;
+	}
+
+	//! Flips UV data in a model index
+	void flip( NifModel * nif, const QModelIndex & index, int f )
+	{
+		if ( nif->isArray( index ) )
+		{
+			QModelIndex idx = index.child( 0, 0 );
+			if ( idx.isValid() )
+			{
+				if ( nif->isArray( idx ) )
+					flip( nif, idx, f );
+				else
+				{
+					QVector<Vector2> tc = nif->getArray<Vector2>( index );
+					for ( int c = 0; c < tc.count(); c++ )
+						flip( tc[c], f );
+					nif->setArray<Vector2>( index, tc );
+				}
+			}
+		}
+		else
+		{
+			Vector2 v = nif->get<Vector2>( index );
+			flip( v, f );
+			nif->set<Vector2>( index, v );
+		}
+	}
+
+	//! Flips UV data in a vector
+	void flip( Vector2 & v, int f )
+	{
+		switch ( f )
+		{
+			case 0:
+				v[0] = 1.0 - v[0];
+				break;
+			case 1:
+				v[1] = 1.0 - v[1];
+				break;
+			default:
+				{
+					float x = v[0];
+					v[0] = v[1];
+					v[1] = x;
+				}	break;
+		}
+	}
+};
+
+REGISTER_SPELL( spFlipTexCoords )
+
+//! Flips triangle faces, individually or in the selected array
+class spFlipFace : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Flip Face"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ( nif->getValue( index ).type() == NifValue::tTriangle )
+			|| ( nif->isArray( index ) && nif->getValue( index.child( 0, 0 ) ).type() == NifValue::tTriangle );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		if ( nif->isArray( index ) )
+		{
+			QVector<Triangle> tris = nif->getArray<Triangle>( index );
+			for ( int t = 0; t < tris.count(); t++ )
+				tris[t].flip();
+			nif->setArray<Triangle>( index, tris );
+		}
+		else
+		{
+			Triangle t = nif->get<Triangle>( index );
+			t.flip();
+			nif->set<Triangle>( index, t );
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spFlipFace )
+
+//! Flips all faces of a triangle based mesh
+class spFlipAllFaces : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Flip Faces"); }
+	QString page() const { return Spell::tr("Mesh"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return getTriShapeData( nif, index ).isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = getTriShapeData( nif, index );
+
+		QVector<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" );
+		for ( int t = 0; t < tris.count(); t++ )
+			tris[t].flip();
+		nif->setArray<Triangle>( iData, "Triangles", tris );
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spFlipAllFaces )
+
+//! Removes redundant triangles from a mesh
+class spPruneRedundantTriangles : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Prune Triangles"); }
+	QString page() const { return Spell::tr("Mesh"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return getTriShapeData( nif, index ).isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex iData = getTriShapeData( nif, index );
+		
+		QList<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" ).toList();
+		int cnt = 0;
+		
+		int i = 0;
+		while ( i < tris.count() )
+		{
+			const Triangle & t = tris[i];
+			if ( t[0] == t[1] || t[1] == t[2] || t[2] == t[0] )
+			{
+				tris.removeAt( i );
+				cnt++;
+			}
+			else
+				i++;
+		}
+		
+		i = 0;
+		while ( i < tris.count() )
+		{
+			const Triangle & t = tris[i];
+			
+			int j = i + 1;
+			while ( j < tris.count() )
+			{
+				const Triangle & r = tris[j];
+				
+				if ( ( t[0] == r[0] && t[1] == r[1] && t[2] == r[2] )
+					|| ( t[0] == r[1] && t[1] == r[2] && t[2] == r[0] )
+					|| ( t[0] == r[2] && t[1] == r[0] && t[2] == r[1] ) )
+				{
+					tris.removeAt( j );
+					cnt++;
+				}
+				else
+					j++;
+			}
+			i++;
+		}
+		
+		if ( cnt > 0 )
+		{
+			qWarning() << QString( Spell::tr("%1 triangles removed") ).arg( cnt );
+			nif->set<int>( iData, "Num Triangles", tris.count() );
+			nif->set<int>( iData, "Num Triangle Points", tris.count() * 3 );
+			nif->updateArray( iData, "Triangles" );
+			nif->setArray<Triangle>( iData, "Triangles", tris.toVector() );
+		}
+		return index;
+	}
+};
+
+REGISTER_SPELL( spPruneRedundantTriangles )
+
+//! Removes duplicate vertices from a mesh
 class spRemoveDuplicateVertices : public Spell
 {
 public:
 	QString name() const { return Spell::tr("Remove Duplicate Vertices"); }
 	QString page() const { return Spell::tr("Mesh"); }
-	
-	static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
-	{
-		QModelIndex iShape = nif->getBlock( index );
-		if ( nif->isNiBlock( iShape, "NiTriBasedGeomData" ) )
-			iShape = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
-		if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
-			if ( nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriBasedGeomData" ).isValid() )
-				return iShape;
-		return QModelIndex();
-	}
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -502,7 +547,7 @@ public:
 
 REGISTER_SPELL( spRemoveDuplicateVertices )
 
-
+//! Removes unused vertices
 class spRemoveWasteVertices : public Spell
 {
 public:
@@ -511,12 +556,12 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return spRemoveDuplicateVertices::getShape( nif, index ).isValid();
+		return getShape( nif, index ).isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iShape = spRemoveDuplicateVertices::getShape( nif, index );
+		QModelIndex iShape = getShape( nif, index );
 		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 		
 		removeWasteVertices( nif, iData, iShape );
@@ -527,7 +572,9 @@ public:
 
 REGISTER_SPELL( spRemoveWasteVertices )
 
-
+/*
+ * spUpdateCenterRadius
+ */
 bool spUpdateCenterRadius::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	return nif->getBlock( index, "NiGeometryData" ).isValid();
@@ -596,4 +643,4 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 	return index;
 }
 
-REGISTER_SPELL( spUpdateCenterRadius );
+REGISTER_SPELL( spUpdateCenterRadius )
