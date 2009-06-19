@@ -429,11 +429,14 @@ class TexFlipController : public Controller
 public:
 	TexFlipController( TexturingProperty * prop, const QModelIndex & index )
 		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 ) {}
+
+	TexFlipController( TextureProperty * prop, const QModelIndex & index )
+		: Controller ( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 ) {}
 	
 	void update( float time )
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
-		if ( ! ( target && active && iSources.isValid() && nif ) )
+		if ( ! ( ( target || oldTarget ) && active && iSources.isValid() && nif ) )
 			return;
 		
 		float r = 0;
@@ -443,7 +446,15 @@ public:
 		else if ( flipDelta > 0 )
 			r = ctrlTime( time ) / flipDelta;
 		
-		target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiSourceTexture" );
+		// TexturingProperty
+		if ( target )
+		{
+			target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiSourceTexture" );
+		}
+		else if ( oldTarget )
+		{
+			oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiImage" );
+		}
 	}
 	
 	bool update( const NifModel * nif, const QModelIndex & index )
@@ -453,7 +464,14 @@ public:
 			flipDelta = nif->get<float>( iBlock, "Delta" );
 			flipSlot = nif->get<int>( iBlock, "Texture Slot" );
 			
-			iSources = nif->getIndex( iBlock, "Sources" );
+			if ( nif->checkVersion( 0x04000000, 0 ) )
+			{
+				iSources = nif->getIndex( iBlock, "Sources" );
+			}
+			else
+			{
+				iSources = nif->getIndex( iBlock, "Images" );
+			}
 			return true;
 		}
 		return false;
@@ -461,6 +479,7 @@ public:
 	
 protected:
 	QPointer<TexturingProperty> target;
+	QPointer<TextureProperty> oldTarget;
 	
 	float	flipDelta;
 	int		flipSlot;
@@ -630,6 +649,17 @@ QString TextureProperty::fileName() const
 	if ( nif && iImage.isValid() )
 		return nif->get<QString>( iImage, "File Name" );
 	return QString();
+}
+
+
+void TextureProperty::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	if ( nif->itemName( iController ) == "NiFlipController" )
+	{
+		Controller * ctrl = new TexFlipController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
 }
 
 void glProperty( TextureProperty * p )

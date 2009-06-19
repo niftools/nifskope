@@ -248,6 +248,10 @@ public:
 
 protected:
 	QPersistentModelIndex iImage;
+
+	void setController( const NifModel * nif, const QModelIndex & controller );
+
+	friend class TexFlipController;
 };
 
 REGISTER_PROPERTY( TextureProperty, Texture )
