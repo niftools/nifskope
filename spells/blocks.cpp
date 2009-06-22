@@ -60,13 +60,8 @@ static void delLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 	}
 }
 
-//! Link one block to another
-/*!
- * @param nif The model
- * @param index The block to link to (becomes parent)
- * @param iBlock The block to link (becomes child)
- */
-static void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
+// documented in blocks.h
+void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
 {
 	if ( nif->isLink( index ) && nif->inherits( iBlock, nif->itemTmplt( index ) ) )
 	{

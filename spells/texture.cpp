@@ -1,4 +1,7 @@
 
+#include "blocks.h"
+#include "texture.h"
+
 #include "../spellbook.h"
 #include "../gl/gltex.h"
 
@@ -746,7 +749,7 @@ public:
 			// Qt uses "/" regardless of platform
 			file.append( "/" + nif->get<QString>( index, "File Name" ) );
 		}
-		QString filename = QFileDialog::getSaveFileName( 0, "Export texture", file, "*.dds *.tga" );
+		QString filename = QFileDialog::getSaveFileName( 0, Spell::tr("Export texture"), file, "*.dds *.tga" );
 		if ( ! filename.isEmpty() ) {
 			if ( tex->exportFile( index, filename ) )
 			{
@@ -815,6 +818,10 @@ public:
 			{
 				qWarning() << "Could not save texture";
 				// delete block?
+				/*
+				nif->removeNiBlock( blockNum+1 );
+				nif->set<int>( iSourceTexture, "Use External", 1 );
+				*/
 			}
 		}
 		return index;
@@ -824,4 +831,162 @@ public:
 #ifndef QT_NO_DEBUG
 REGISTER_SPELL( spEmbedTexture )
 #endif
+
+TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent ) : QDialog( parent )
+{
+	this->nif = nif;
+	baseIndex = index;
+
+	grid = new QGridLayout;
+	setLayout( grid );
+	
+	listmodel = new QStringListModel;
+	listview = new QListView;
+	listview->setModel( listmodel );
+	
+	QButtonGroup * actgrp = new QButtonGroup( this );
+	connect( actgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureAction( int ) ) );
+	int btnid = 0;
+	foreach ( QString tfaname, QStringList() << Spell::tr("Add Textures") << Spell::tr("Remove Texture") << Spell::tr("Move Up") << Spell::tr("Move Down") )
+	{
+		QPushButton * bt = new QPushButton( tfaname );
+		textureButtons[btnid] = bt;
+		actgrp->addButton( bt, btnid++ );
+		grid->addWidget( bt, 0, btnid, 1, 1 );
+	}
+	
+	grid->addWidget( listview, 1, 0, 1, 0 );
+
+	connect( listview->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
+			this, SLOT( texIndex( const QModelIndex & ) ) );
+	texIndex( listview->currentIndex() );
+
+	QHBoxLayout * hbox1 = new QHBoxLayout();
+	hbox1->addWidget( startTime = new NifFloatEdit( nif, nif->getIndex( baseIndex, "Start Time" ), 0 ) );
+	hbox1->addWidget( stopTime = new NifFloatEdit( nif, nif->getIndex( baseIndex, "Stop Time" ), 0 ) );
+	grid->addLayout( hbox1, 2, 0, 1, 0 );
+
+	QHBoxLayout * hbox2 = new QHBoxLayout();
+	QPushButton * ok = new QPushButton( Spell::tr("OK"), this );
+	hbox2->addWidget( ok );
+	connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	QPushButton * cancel = new QPushButton( Spell::tr("Cancel"), this );
+	hbox2->addWidget( cancel );
+	connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	grid->addLayout( hbox2, 3, 0, 1, 0 );
+}
+
+void TexFlipDialog::textureAction( int i )
+{
+	QModelIndex idx = listview->currentIndex();
+	switch ( i )
+	{
+		case 0: // add
+			flipnames = QFileDialog::getOpenFileNames( this, Spell::tr("Choose texture file(s)"), nif->getFolder(), "*.dds *.tga *.bmp" );
+			listmodel->setStringList( listmodel->stringList() << flipnames );
+			break;
+		case 1: // remove
+			if ( idx.isValid() )
+			{
+				listmodel->removeRow( idx.row(), QModelIndex() );
+			}
+		case 2:
+			if ( idx.isValid() && idx.row() > 0 )
+			{	// move up
+				QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
+				QVariant v = listmodel->data( idx, Qt::EditRole );
+				listmodel->setData( idx, listmodel->data( xdi, Qt::EditRole ), Qt::EditRole );
+				listmodel->setData( xdi, v, Qt::EditRole );
+				listview->setCurrentIndex( xdi );
+			}
+			break;
+		case 3:
+			if ( idx.isValid() && idx.row() < listmodel->rowCount() - 1 )
+			{	// move down
+				QModelIndex xdi = idx.sibling( idx.row() + 1, 0 );
+				QVariant v = listmodel->data( idx, Qt::EditRole );
+				listmodel->setData( idx, listmodel->data( xdi, Qt::EditRole ), Qt::EditRole );
+				listmodel->setData( xdi, v, Qt::EditRole );
+				listview->setCurrentIndex( xdi );
+			}
+			break;
+	}
+}
+
+void TexFlipDialog::texIndex( const QModelIndex & idx )
+{
+	textureButtons[0]->setEnabled( true );
+	textureButtons[1]->setEnabled( idx.isValid() );
+	textureButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
+	textureButtons[3]->setEnabled( idx.isValid() && ( idx.row() < listmodel->rowCount() - 1 ) );
+}
+
+QStringList TexFlipDialog::flipList()
+{
+	return listmodel->stringList();
+}
+
+//! Insert and manage TexFlipController
+/*!
+ * TODO: update for version conditions, add version to edit existing flip
+ */
+class spTextureFlipper : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Add Flip Controller"); }
+	QString page() const { return Spell::tr("Texture"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		// also check NiTextureProperty?
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return block.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		// attach a NiFlipController
+		QModelIndex flipController = nif->insertNiBlock( "NiFlipController", nif->getBlockNumber( index ) + 1 );
+		blockLink( nif, index, flipController );
+		
+		// select sources
+		TexFlipDialog * texFlip = new TexFlipDialog( nif, flipController );
+		
+		if ( texFlip->exec() != QDialog::Accepted )
+		{
+			nif->removeNiBlock( nif->getBlockNumber( flipController ) );
+			return index;
+		}
+		
+		QStringList flipNames = texFlip->flipList();
+		
+		if ( flipNames.size() == 0 )
+		{
+			nif->removeNiBlock( nif->getBlockNumber( flipController ) );
+			return index;
+		}
+		
+		//qWarning() << "Adding" << flipNames.size() << "textures";
+
+		nif->set<int>( flipController, "Num Sources", flipNames.size() );
+		nif->updateArray( flipController, "Sources" );
+
+		for( int i = 0; i < flipNames.size(); i++ )
+		{
+			QString name = TexCache::stripPath( flipNames.at(i), nif->getFolder() );
+			//qWarning() << "Adding" << name;
+			QModelIndex sourceTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( flipController ) + i + 1 );
+			nif->set<QString>( sourceTex, "File Name", name );
+			nif->setLink( nif->getIndex( flipController, "Sources" ).child( i, 0 ), nif->getBlockNumber( sourceTex ) );
+		}
+
+		nif->set<float>( flipController, "Frequency", 1 );
+		nif->set<quint16>( flipController, "Flags", 8 );
+		nif->set<float>( flipController, "Delta", ( nif->get<float>( flipController, "Stop Time" ) - nif->get<float>( flipController, "Start Time" ) ) / flipNames.size() );
+		
+		return flipController;
+	}
+};
+
+REGISTER_SPELL( spTextureFlipper )
 

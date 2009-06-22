@@ -22,4 +22,12 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index );
 };
 
+//! Link one block to another
+/*!
+ * @param nif The model
+ * @param index The block to link to (becomes parent)
+ * @param iBlock The block to link (becomes child)
+ */
+void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock );
+
 #endif
