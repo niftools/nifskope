@@ -144,10 +144,12 @@ public:
 					{
 						Particle particle;
 						particle.velocity = nif->get<Vector3>( iParticles.child( p, 0 ), "Velocity" );
-						particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Life Time" );
-						particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Life Span" );
-						particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Last Time" );
+						particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Lifetime" );
+						particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Lifespan" );
+						particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Timestamp" );
 						particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
+						// Display saved particle start on initial load
+						list.append( particle );
 					}
 				//}
 			}
@@ -347,7 +349,8 @@ void Particles::update( const NifModel * nif, const QModelIndex & index )
 			if ( ! iChild.isValid() ) continue;
 			QString name = nif->itemName( iChild );
 			
-			if ( name == "NiParticlesData" || name == "NiRotatingParticlesData" || name == "NiAutoNormalParticlesData" )
+			//if ( name == "NiParticlesData" || name == "NiRotatingParticlesData" || name == "NiAutoNormalParticlesData" )
+			if ( nif->inherits( iChild, "NiParticlesData" ) )
 			{
 				iData = iChild;
 				upData = true;

@@ -40,11 +40,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 #include <QReadWriteLock>
 
+//! \file nifmodel.h NifModel
+
 //! Base class for nif models.
 class NifModel : public BaseModel
 {
 Q_OBJECT
 public:
+	//! Constructor
 	NifModel( QObject * parent = 0 );
 	
 	// call this once on startup to load the XML descriptions
@@ -54,72 +57,100 @@ public:
 	// when creating NifModels from outside the main thread protect them with a QReadLocker (see the XML check spell for an example)
 	static QReadWriteLock XMLlock;
 	
-	// clear model data
+	// clear model data; implements BaseModel
 	void clear();
 	
-	// generic load and save to and from QIODevice
+	// generic load and save to and from QIODevice; implements BaseModel
 	bool load( QIODevice & device );
 	bool save( QIODevice & device ) const;
 	
+	//! Load from QIODevice and index
 	bool load( QIODevice & device, const QModelIndex & );
+	//! Save to QIODevice and index
 	bool save( QIODevice & device, const QModelIndex & ) const;
 	
+	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32,qint32> & map );
+	//! Loads the header from a filename
 	bool loadHeaderOnly( const QString & fname );
 	
-	// this returns the the estimated file offset of the model index
+	//! Returns the the estimated file offset of the model index
 	int fileOffset( const QModelIndex & ) const;
 
-	// this returns the estimate file size of the model index
+	//! Returns the estimated file size of the model index
 	int blockSize( const QModelIndex & ) const;
+	//! Returns the estimated file size of the item
 	int blockSize( NifItem * parent ) const;
+	//! Returns the estimated file size of the stream
 	int blockSize( NifItem * parent, NifSStream& stream ) const;
 
-	// checks if the nif pointed to by filepath contains the  specified block id in its header and is of the specified version
-	// will not open the full file to look for block types
+	//! Checks if the specified file contains the specified block ID in its header and is of the specified version
+	/*!
+	 * Note that it will not open the full file to look for block types, only the header
+	 *
+	 * \param filepath The nif to check
+	 * \param blockId The block to check for
+	 * \param The version to check for
+	 */
 	static bool earlyRejection( const QString & filepath, const QString & blockId, quint32 version );
 	
-	// returns the model index of the NiHeader
+	//! Returns the model index of the NiHeader
 	QModelIndex getHeader() const;
-	// this updates the header infos ( num blocks etc. )
+	//! Updates the header infos ( num blocks etc. )
 	void updateHeader();
 	
+	//! Returns the model index of the NiFooter
 	QModelIndex getFooter() const;
+	//! Updates the footer info (num root links etc. )
 	void updateFooter();
 
+	//! Set delayed updating of model links
 	bool holdUpdates(bool value);
 
-	// insert or append ( row == -1 ) a new NiBlock
+	//! Insert or append ( row == -1 ) a new NiBlock
 	QModelIndex insertNiBlock( const QString & identifier, int row = -1, bool fast = false );
-	// remove a block from the list
+	//! Remove a block from the list
 	void removeNiBlock( int blocknum );
-	// move a block in the list
+	//! Move a block in the list
 	void moveNiBlock( int src, int dst );
-	// return the block name
+	//! Return the block name
 	QString getBlockName( const QModelIndex & ) const;
-	// return the block type
+	//! Return the block type
 	QString getBlockType( const QModelIndex & ) const;
-	// returns the block number
+	//! Return the block number
 	int getBlockNumber( const QModelIndex & ) const;
-	// returns the parent block ( optional: check if it is of type name )
-	QModelIndex getBlock( const QModelIndex &, const QString & name = QString() ) const;
-	// returns the parent block/header
+	//! Returns the parent block
+	/**
+	 * \param The model index to get the parent of
+	 * \param name Optional: the type to check for
+	 * \return The index of the parent block
+	 */
+	QModelIndex getBlock( const QModelIndex & idx, const QString & name = QString() ) const;
+	//! Returns the parent block or header
 	QModelIndex getBlockOrHeader( const QModelIndex & ) const;
-	// get the NiBlock at index x ( optional: check if it is of type name )
+	//! Get the NiBlock at a given index
+	/**
+	 * \param x The index to get the block for
+	 * \param name Optional: the type to check for
+	 */
 	QModelIndex getBlock( int x, const QString & name = QString() ) const;
-	// get the number of NiBlocks
+	//! Get the number of NiBlocks
 	int getBlockCount() const;
-	// returns true if the index is a niblock ( optional: check if it is the specified type of block )
+	//! Check if a given index is a NiBlock
+	/**
+	 * \param index The index to check
+	 * \param name Optional: the type to check for
+	 */
 	bool isNiBlock( const QModelIndex & index, const QString & name = QString() ) const;
-	// returns a list with all known NiXXX ids
+	//! Returns a list with all known NiXXX ids
 	static QStringList allNiBlocks();
-	// is name a NiBlock identifier?
+	//! Determine if a value is a NiBlock identifier
 	static bool isNiBlock( const QString & name );
-	// reorders the blocks according to a list of new block numbers
+	//! Reorders the blocks according to a list of new block numbers
 	void reorderBlocks( const QVector<qint32> & order );
-	// moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
+	//! Moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
 	QMap<qint32,qint32> moveAllNiBlocks( NifModel * targetnif, bool update = true );
-	// convert a block from one type to another
+	//! Convert a block from one type to another
 	void convertNiBlock( const QString & identifier, const QModelIndex& index , bool fast = false );
 	
 	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
@@ -172,6 +203,7 @@ public:
 	// QAbstractModel interface
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
+	//! Resets the model to its original state in any attached views.
 	void reset();
 	
 	// removes an item from the model
@@ -204,7 +236,7 @@ protected:
 
 	bool		updateArrayItem( NifItem * array, bool fast );
 	bool		updateByteArrayItem( NifItem * array, bool fast );
-   bool     updateArrays( NifItem * parent, bool fast );
+	bool     updateArrays( NifItem * parent, bool fast );
 	
 	NifItem *	getHeaderItem() const;
 	NifItem *	getFooterItem() const;
@@ -246,7 +278,7 @@ protected:
 	void mapLinks( NifItem * parent, const QMap<qint32,qint32> & map );
 	void updateModel( UpdateType value = utAll );
 	
-   static void updateStrings(NifModel *src, NifModel* tgt, NifItem *item);
+	static void updateStrings(NifModel *src, NifModel* tgt, NifItem *item);
 	bool assignString( NifItem * parent, const QString & string, bool replace = false );
 
 
@@ -266,7 +298,7 @@ protected:
 	template <typename T> bool set( NifItem * item, const T & d );
 
 	friend class NifXmlHandler;
-   friend class NifModelEval;
+	friend class NifModelEval;
 }; // class NifModel
 
 

@@ -44,6 +44,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <climits>
 
+//! \file floatslider.cpp FloatSlider et. al. implementation
+
 #define VAL_HEIGHT 12
 
 FloatSliderEditBox::FloatSliderEditBox( QWidget * parent )

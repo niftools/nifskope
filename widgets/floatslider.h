@@ -36,14 +36,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QWidget>
 #include <QFrame>
 
+//! \file floatslider.h FloatSlider, FloatSliderEditBox, AlphaSlider
+
 class FloatEdit;
 
+//! Frame used by FloatSlider
 class FloatSliderEditBox : public QFrame
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	FloatSliderEditBox( QWidget * = NULL );
 
+	//! Adds a widget to the internal layout
 	void addWidget( QWidget * );
 
 public slots:
@@ -52,23 +57,33 @@ public slots:
 	void focusChanged( QWidget *, QWidget * );
 };
 
+//! A value slider widget for floating-point values
 class FloatSlider : public QWidget
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	FloatSlider( Qt::Orientation = Qt::Horizontal, bool = false, bool = false );
 	
+	//! Gets the value of the widget
 	float value() const { return val; }
-
+	
+	//! Gets the minimum value of the widget
 	float minimum() const { return min; }
+	//! Gets the maximum value of the widget
 	float maximum() const { return max; }
-
+	
+	//! Find the orientation of the widget
 	Qt::Orientation orientation() const { return ori; }
+	//! Set the orientation of the widget
 	void setOrientation( Qt::Orientation o );
-
+	
+	//! Add an editor widget to the float slider frame
 	void addEditor( QWidget * );
 	
+	//! The recommended size of the widget; reimplemented from QWidget
 	QSize sizeHint() const;
+	//! The recommended minimum size of the widget; reimplemented from QWidget 
 	QSize minimumSizeHint() const;
 	
 signals:
@@ -101,6 +116,10 @@ protected:
 	FloatSliderEditBox * editBox;
 };
 
+//! A slider for a alpha value in a Color4.
+/*!
+ * Draws with a gradient of the colour that the alpha value relates to.
+ */
 class AlphaSlider : public FloatSlider
 {
 	Q_OBJECT

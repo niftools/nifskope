@@ -48,7 +48,9 @@ class Interpolator;
 class Controller
 {
 public:
+	//! Constructor
 	Controller( const QModelIndex & index );
+	//! Destructor
 	virtual ~Controller() {}
 	
 	float start;
@@ -56,28 +58,39 @@ public:
 	float phase;
 	float frequency;
 	
+	//! Extrapolation type
 	enum Extrapolation {
 		Cyclic = 0, Reverse = 1, Constant = 2
 	} extrapolation;
 	
 	bool active;
 	
+	//! Set sequence name for animation groups
 	virtual void setSequence( const QString & seqname );
 	
+	//! Update for specified time
 	virtual void update( float time ) = 0;
 	
+	//! Update for model and index
 	virtual bool update( const NifModel * nif, const QModelIndex & index );
 	
+	//! Set the interpolator
 	virtual void setInterpolator( const QModelIndex & iInterpolator );
 	
+	//! Find the model index of the controller
 	QModelIndex index() const { return iBlock; }
 	
+	//! Find the type of the controller
 	virtual QString typeId() const;
 	
+	//! Determine the controller time based on the specified time
 	float ctrlTime( float time ) const;
 	
+	//! Interpolate based on a value, data, an array name, the time, and the last index?
 	template <typename T> static bool interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex );
+	//! Interpolate based on a value, an array, the time, and the last index?
 	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
+	//! Unknown function
 	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
 	
 protected:
