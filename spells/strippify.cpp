@@ -75,6 +75,10 @@ class spStrippify : public Spell
 			copyValue<int>( nif, iStripData, iData, "Has Normals" );
 			copyArray<Vector3>( nif, iStripData, iData, "Normals" );
 			
+			copyValue<int>( nif, iStripData, iData, "TSpace Flag" );
+			copyArray<Vector3>( nif, iStripData, iData, "Binormals" );
+			copyArray<Vector3>( nif, iStripData, iData, "Tangents" );
+			
 			copyValue<int>( nif, iStripData, iData, "Has Vertex Colors" );
 			copyArray<Color4>( nif, iStripData, iData, "Vertex Colors" );
 			
@@ -220,6 +224,10 @@ class spTriangulate : public Spell
 			
 			copyValue<int>( nif, iTriData, iStripData, "Has Normals" );
 			copyArray<Vector3>( nif, iTriData, iStripData, "Normals" );
+			
+			copyValue<int>( nif, iTriData, iStripData, "TSpace Flag" );
+			copyArray<Vector3>( nif, iTriData, iStripData, "Binormals" );
+			copyArray<Vector3>( nif, iTriData, iStripData, "Tangents" );
 			
 			copyValue<int>( nif, iTriData, iStripData, "Has Vertex Colors" );
 			copyArray<Color4>( nif, iTriData, iStripData, "Vertex Colors" );

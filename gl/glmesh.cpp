@@ -822,9 +822,9 @@ void Mesh::drawSelection() const
 		for ( int j = 0; j < transVerts.count() && j < transTangents.count(); j++ )
 		{
 			glVertex( transVerts.value( j ) );
-			glVertex( transVerts.value( j ) + transTangents.value( j ) * normalScale );
+			glVertex( transVerts.value( j ) + transTangents.value( j ) * normalScale * 2 );
 			glVertex( transVerts.value( j ) );
-			glVertex( transVerts.value( j ) - transTangents.value( j ) * normalScale );
+			glVertex( transVerts.value( j ) - transTangents.value( j ) * normalScale / 2 );
 		}
 		glEnd();
 
@@ -834,9 +834,9 @@ void Mesh::drawSelection() const
 			glHighlightColor();
 			glBegin( GL_LINES );
 			glVertex( transVerts.value( i ) );
-			glVertex( transVerts.value( i ) + transTangents.value( i ) * normalScale );
+			glVertex( transVerts.value( i ) + transTangents.value( i ) * normalScale * 2);
 			glVertex( transVerts.value( i ) );
-			glVertex( transVerts.value( i ) - transTangents.value( i ) * normalScale );
+			glVertex( transVerts.value( i ) - transTangents.value( i ) * normalScale / 2 );
 			glEnd();
 		}
 	}
@@ -853,9 +853,9 @@ void Mesh::drawSelection() const
 		for ( int j = 0; j < transVerts.count() && j < transBinormals.count(); j++ )
 		{
 			glVertex( transVerts.value( j ) );
-			glVertex( transVerts.value( j ) + transBinormals.value( j ) * normalScale );
+			glVertex( transVerts.value( j ) + transBinormals.value( j ) * normalScale * 2 );
 			glVertex( transVerts.value( j ) );
-			glVertex( transVerts.value( j ) - transBinormals.value( j ) * normalScale );
+			glVertex( transVerts.value( j ) - transBinormals.value( j ) * normalScale / 2 );
 		}
 		glEnd();
 
@@ -865,9 +865,9 @@ void Mesh::drawSelection() const
 			glHighlightColor();
 			glBegin( GL_LINES );
 			glVertex( transVerts.value( i ) );
-			glVertex( transVerts.value( i ) + transBinormals.value( i ) * normalScale );
+			glVertex( transVerts.value( i ) + transBinormals.value( i ) * normalScale * 2);
 			glVertex( transVerts.value( i ) );
-			glVertex( transVerts.value( i ) - transBinormals.value( i ) * normalScale );
+			glVertex( transVerts.value( i ) - transBinormals.value( i ) * normalScale / 2 );
 			glEnd();
 		}
 	}
