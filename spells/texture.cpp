@@ -844,6 +844,7 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 	listview = new QListView;
 	listview->setModel( listmodel );
 	
+	// texture action group; see options.cpp
 	QButtonGroup * actgrp = new QButtonGroup( this );
 	connect( actgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureAction( int ) ) );
 	int btnid = 0;
@@ -855,7 +856,9 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 		grid->addWidget( bt, 0, btnid, 1, 1 );
 	}
 	
+	// add the list view and set up members
 	grid->addWidget( listview, 1, 0, 1, 0 );
+	listFromNif();
 
 	connect( listview->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
 			this, SLOT( texIndex( const QModelIndex & ) ) );
@@ -865,6 +868,9 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 	hbox1->addWidget( startTime = new NifFloatEdit( nif, nif->getIndex( baseIndex, "Start Time" ), 0 ) );
 	hbox1->addWidget( stopTime = new NifFloatEdit( nif, nif->getIndex( baseIndex, "Stop Time" ), 0 ) );
 	grid->addLayout( hbox1, 2, 0, 1, 0 );
+
+	startTime->updateData( nif );
+	stopTime->updateData( nif );
 
 	QHBoxLayout * hbox2 = new QHBoxLayout();
 	QPushButton * ok = new QPushButton( Spell::tr("OK"), this );
@@ -926,10 +932,105 @@ QStringList TexFlipDialog::flipList()
 	return listmodel->stringList();
 }
 
-//! Insert and manage TexFlipController
+void TexFlipDialog::listFromNif()
+{
+	// update string list
+	int numSources = nif->get<int>( baseIndex, "Num Sources" );
+	QModelIndex sources = nif->getIndex( baseIndex, "Sources" );
+	
+	if ( nif->rowCount( sources ) != numSources )
+	{
+		qWarning() << "Number of sources does not match!";
+		return;
+	}
+
+	QStringList sourceFiles;
+	for ( int i = 0; i < numSources; i++ )
+	{
+		QModelIndex source = nif->getBlock( nif->getLink( sources.child( i, 0 ) ) );
+		sourceFiles << nif->get<QString>( source, "File Name" );
+	}
+	
+	listmodel->setStringList( sourceFiles );
+}
+
+//! Edit TexFlipController
 /*!
- * TODO: update for version conditions, add version to edit existing flip
+ * TODO: update for version conditions, preserve properties on existing textures
  */
+class spEditFlipper : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Edit Flip Controller"); }
+	QString page() const { return Spell::tr("Texture"); }
+ 	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ( nif->getBlockName( index ) == "NiFlipController" );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex flipController = index;
+		TexFlipDialog * texFlip = new TexFlipDialog( nif, flipController );
+		
+		if ( texFlip->exec() != QDialog::Accepted )
+		{
+			return QModelIndex();
+		}
+		
+		QStringList flipNames = texFlip->flipList();
+		
+		if ( flipNames.size() == 0 )
+		{
+			//nif->removeNiBlock( nif->getBlockNumber( flipController ) );
+			return index;
+		}
+
+		// TODO: use a map here to delete missing textures and preserve existing properties
+		
+		QModelIndex sources = nif->getIndex( flipController, "Sources" );
+		if ( nif->get<int>( flipController, "Num Sources" ) > flipNames.size() )
+		{
+			// delete blocks
+			qWarning() << "Found" << flipNames.size() << "textures, have" << nif->get<int>( flipController, "Num Sources" );
+			for ( int i = flipNames.size(); i < nif->get<int>( flipController, "Num Sources" ); i++ )
+			{
+				qWarning() << "Deleting" << nif->getLink( sources.child( i, 0 ) );
+				nif->removeNiBlock( nif->getLink( sources.child( i, 0 ) ) );
+			}
+		}
+		
+		nif->set<int>( flipController, "Num Sources", flipNames.size() );
+		nif->updateArray( sources );
+		
+		for( int i = 0; i < flipNames.size(); i++ )
+		{
+			QString name = TexCache::stripPath( flipNames.at(i), nif->getFolder() );
+			QModelIndex sourceTex;
+			if( nif->getLink( sources.child( i, 0 ) ) == -1 )
+			{
+				sourceTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( flipController ) + i + 1 );
+				nif->setLink( sources.child( i, 0 ), nif->getBlockNumber( sourceTex ) );
+			}
+			else
+			{
+				sourceTex = nif->getBlock( nif->getLink( sources.child( i, 0 ) ) );
+			}
+			nif->set<QString>( sourceTex, "File Name", name );
+		}
+		
+		nif->set<float>( flipController, "Frequency", 1 );
+		nif->set<quint16>( flipController, "Flags", 8 );
+		nif->set<float>( flipController, "Delta", ( nif->get<float>( flipController, "Stop Time" ) - nif->get<float>( flipController, "Start Time" ) ) / flipNames.size() );
+		
+		return index;
+	}
+};
+
+REGISTER_SPELL( spEditFlipper )
+
+//! Insert and manage TexFlipController
 class spTextureFlipper : public Spell
 {
 public:
@@ -949,44 +1050,10 @@ public:
 		QModelIndex flipController = nif->insertNiBlock( "NiFlipController", nif->getBlockNumber( index ) + 1 );
 		blockLink( nif, index, flipController );
 		
-		// select sources
-		TexFlipDialog * texFlip = new TexFlipDialog( nif, flipController );
-		
-		if ( texFlip->exec() != QDialog::Accepted )
-		{
-			nif->removeNiBlock( nif->getBlockNumber( flipController ) );
-			return index;
-		}
-		
-		QStringList flipNames = texFlip->flipList();
-		
-		if ( flipNames.size() == 0 )
-		{
-			nif->removeNiBlock( nif->getBlockNumber( flipController ) );
-			return index;
-		}
-		
-		//qWarning() << "Adding" << flipNames.size() << "textures";
+		spEditFlipper flipEdit;
 
-		nif->set<int>( flipController, "Num Sources", flipNames.size() );
-		nif->updateArray( flipController, "Sources" );
-
-		for( int i = 0; i < flipNames.size(); i++ )
-		{
-			QString name = TexCache::stripPath( flipNames.at(i), nif->getFolder() );
-			//qWarning() << "Adding" << name;
-			QModelIndex sourceTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( flipController ) + i + 1 );
-			nif->set<QString>( sourceTex, "File Name", name );
-			nif->setLink( nif->getIndex( flipController, "Sources" ).child( i, 0 ), nif->getBlockNumber( sourceTex ) );
-		}
-
-		nif->set<float>( flipController, "Frequency", 1 );
-		nif->set<quint16>( flipController, "Flags", 8 );
-		nif->set<float>( flipController, "Delta", ( nif->get<float>( flipController, "Stop Time" ) - nif->get<float>( flipController, "Start Time" ) ) / flipNames.size() );
-		
-		return flipController;
+		return flipEdit.cast( nif, flipController );
 	}
 };
 
 REGISTER_SPELL( spTextureFlipper )
-

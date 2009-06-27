@@ -147,10 +147,6 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aTextureBlend, SIGNAL( toggled( bool ) ), this, SLOT( updateGL() ) );
 	addAction( aTextureBlend );
 
-	QAction * aTexSlot = new QAction( tr( "Select Texture Slot..." ), this );
-	connect( aTexSlot, SIGNAL( triggered() ), this, SLOT( selectTexSlot() ) );
-	//addAction( aTexSlot );
-
 	texSlotGroup = new QActionGroup( this );
 	connect( texSlotGroup, SIGNAL( triggered( QAction * ) ), this, SLOT( selectTexSlot() ) );
 
@@ -1167,89 +1163,6 @@ void UVWidget::getTexSlots()
 		}
 	}
 }
-
-// This is the old one that produced a dialog box
-/*
-void UVWidget::selectTexSlot()
-{
-	QDialog dlg;
-	QVBoxLayout * vbox = new QVBoxLayout;
-	dlg.setLayout( vbox );
-
-	vbox->addWidget( new QLabel( tr( "Texture Slot" ) ) );
-	
-	QComboBox * set = new QComboBox;
-	QModelIndex iUVs = nif->getIndex( iShapeData, "UV Sets" );
-
-	QStringList validTexs = QStringList();
-
-	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
-	{
-		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
-		if( iTexProp.isValid() )
-		{
-			foreach( QString name, texnames )
-			{
-				if ( nif->get<bool>( iTexProp, QString( "Has %1" ).arg( name ) ) )
-				{
-					set->addItem( name );
-					validTexs << name;
-				}
-			}
-		}
-	}
-					
-	set->setCurrentIndex( validTexs.indexOf( texnames[currentTexSlot] ) );
-
-	vbox->addWidget( set );
-
-	QHBoxLayout * hbox = new QHBoxLayout;
-	vbox->addLayout( hbox );
-
-	QPushButton * btAccept = new QPushButton( tr("OK") );
-	hbox->addWidget( btAccept );
-	connect( btAccept, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-
-	QPushButton * btReject = new QPushButton( tr("Cancel") );
-	hbox->addWidget( btReject );
-	connect( btReject, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
-
-	if ( dlg.exec() == QDialog::Accepted )
-	{
-		//qWarning() << "Selected texture " << set->currentIndex();
-		//qWarning() << "corresponding to " << texnames.indexOf( validTexs[set->currentIndex()] );
-		currentTexSlot = texnames.indexOf( validTexs[set->currentIndex()] );
-		foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
-		{
-			QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
-			if( iTexProp.isValid() )
-			{
-				QModelIndex iTex = nif->getIndex( iTexProp, texnames[currentTexSlot] );
-				if( iTex.isValid() )
-				{
-					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTex, "Source" ) );
-					if( iTexSource.isValid() )
-					{
-						//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
-						int texUVset = nif->get<int>( iTex, "UV Set" );
-						//qWarning() << "Use UV set " << texUVset;
-						iTexCoords = nif->getIndex( iShapeData, "UV Sets" ).child( texUVset, 0 );
-						//qWarning() << iTexCoords;
-						texsource = iTexSource;
-						setTexCoords();
-						updateGL();
-						return;
-					}
-				}
-			}
-		}
-
-
-
-	}
-
-}
-*/
 
 void UVWidget::selectTexSlot()
 {

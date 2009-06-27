@@ -34,6 +34,7 @@ protected:
 protected slots:
 	void textureAction( int i );
 	void texIndex( const QModelIndex & idx );
+	void listFromNif();
 
 };
  
