@@ -997,7 +997,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		Q_UNUSED(nif);
-		return ( ! index.isValid() || ! index.parent().isValid() );
+		return index.isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
