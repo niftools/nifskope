@@ -1566,8 +1566,12 @@ bool NifModel::load( QIODevice & device )
 						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
 						blktyp = get<QString>( index( blktypidx & 0x7FFF, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
 						
-						if ( version < 0x0a020000 )
-							device.read( 4 );
+						if ( version < 0x0a020000 ) {
+						  int dummy;
+						  device.read( (char *) &dummy, 4 );
+						  if (dummy != 0)
+						    msg(Message() << tr("non-zero block separator (%1) preceeding block %2").arg(dummy).arg(blktyp));
+						};
 
 						// for version 20.2.0.? and above the block size is stored in the header
 						if (!ignoreSize && version >= 0x14020000)
