@@ -1460,7 +1460,7 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 bool NifModel::setHeaderString( const QString & s )
 {
  	//msg( DbgMsg() << s );
-	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) || s.startsWith( "NDSNIF" ) ) )
+	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) || s.startsWith( "NDSNIF" ) || s.startsWith( "NS" ) ) )
 	{
 		msg( Message() << tr("this is not a NIF") );
 		return false;
@@ -1491,6 +1491,12 @@ bool NifModel::setHeaderString( const QString & s )
 			return false;
 		}
 		
+		return true;
+	}
+	else if ( s.startsWith( "NS" ) )
+	{
+		// Dodgy version for NeoSteam
+		version = 0x0a010000;
 		return true;
 	}
 	else
