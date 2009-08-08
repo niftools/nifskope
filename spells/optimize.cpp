@@ -55,6 +55,11 @@ public:
 					else if ( nif->get<QString>( iBlock, "Name" ).contains( "Default" ) )
 						nif->set<QString>( iBlock, "Name", "Default" );
 				}
+				if ( nif->inherits( iBlock, "BSShaderProperty" ) )
+				{
+					// these need to be unique
+					continue;
+				}
 				if ( nif->inherits( iBlock, "NiProperty" ) || nif->inherits( iBlock, "NiSourceTexture" ) )
 				{
 					QBuffer data;

@@ -8,6 +8,8 @@ changes since 1.0.20:
  * added "Mesh->Flip Faces" spell
  * added "Texture->Add Flip Controller", "Texture->Edit Flip Controller"
    spells
+ * "Combine Properties" spell will not combine properties that inherit
+   BSShaderProperty since they need to be unique
 
 changes since 1.0.19:
  * updated to Qt 4.5.0

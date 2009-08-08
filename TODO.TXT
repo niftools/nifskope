@@ -6,7 +6,7 @@ To do:
 - Initialise arrays from XML defaults
 - Multitexturing of particles (eg. Tribunal.bsa\meshes\i\act_rockslide01.nif, Bloodmoon.bsa\meshes\w\w_art_ice_mace.nif)
 - doxygen documentation of all classes and files
-- Diplay all particle systems
+- Diplay all particle systems (eg. Florensia)
 - Clean up SVN log entries, check all old builds
 - Check i18n of strings, use QLocale for numbers
 
