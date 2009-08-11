@@ -91,7 +91,11 @@ public:
 			}
 			else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() )
 			{
-			name = "bhkLimitedHingeConstraint";
+				name = "bhkLimitedHingeConstraint";
+			}
+			else if ( nif->getIndex( iConstraint, "Hinge" ).isValid() )
+			{
+				name = "bhkHingeConstraint";
 			}
 		}
 		
@@ -121,6 +125,13 @@ public:
 				return index;
 		}
 		
+		if ( name == "bhkHingeConstraint" )
+		{
+			iConstraint = nif->getIndex( iConstraint, "Hinge" );
+			if ( ! iConstraint.isValid() )
+				return index;
+		}
+
 		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * 7.0;
 		pivot = transA * pivot;
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / 7.0;

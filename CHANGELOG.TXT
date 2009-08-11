@@ -10,6 +10,8 @@ changes since 1.0.20:
    spells
  * "Combine Properties" spell will not combine properties that inherit
    BSShaderProperty since they need to be unique
+ * fixed A -> B spell for bhkHingeConstraint (issue #2835485 reported by
+   nexekho)
 
 changes since 1.0.19:
  * updated to Qt 4.5.0
