@@ -272,7 +272,7 @@ public:
 						data = NifData(
 							list.value( "name" ),
 							type,
-							list.value( "template" ),
+							list.value( "template" ).replace("\\x01", "\x01"), // replace control characters
 							NifValue( NifValue::type( type ) ),
 							list.value( "arg" ),
 							list.value( "arr1" ),
