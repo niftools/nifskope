@@ -161,8 +161,40 @@ int BaseModel::evaluateString( NifItem * array, const QString & text ) const
 			r = right.toInt( &ok );
 			if ( ! ok )
 			{
-				msg( Message() << tr("failed to get array size for array ") << array->name() );
-				return 0;
+				NifItem * dim1 = parent;
+				NifItem * dim2 = NULL;
+				
+				while ( right == "ARG" )
+				{
+					if ( ! dim1->parent() )	return 0;
+					right = dim1->arg();
+					dim1 = dim1->parent();
+				}
+				
+				dim2 = getItem( dim1, right );
+				if ( ! dim2 )
+				{
+					dim2 = getItem( dim1, QString("../" + right) ); // XXX very hackish; someone please implement a proper expression parser :)
+					if ( ! dim2 )
+					{
+						msg( Message() << tr("failed to get array size for array") << array->name() );
+						return 0;
+					}
+				}
+		
+				dim1 = dim2;
+				if ( dim1->childCount() == 0 )
+					r = dim1->value().toCount();
+				else
+				{
+					NifItem * item = dim1->child( array->row() );
+					if ( item )
+						r = item->value().toCount();
+					else {
+						msg( Message() << tr("failed to get array size for array ") << array->name() );
+						return 0;
+					};
+				}
 			}
 		}
 		
