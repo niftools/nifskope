@@ -1616,7 +1616,7 @@ bool NifModel::load( QIODevice & device )
 					{
 						// unable to seek to location... abort
 						if (device.seek(curpos + size))
-							msg( Message() << tr("device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5").arg( c ).arg( blktyp ).arg(curpos).arg(pos).arg(curpos+size).toAscii() );
+							msg( Message() << tr("device position incorrect after block number %1 (%2) at 0x%3 ended at 0x%4 (expected 0x%5)").arg( c ).arg( blktyp ).arg(QString::number(curpos, 16)).arg(QString::number(pos, 16)).arg(QString::number(curpos+size, 16)).toAscii() );
 						else
 							throw tr("failed to reposition device at block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( root->child( c )->name() );
 
