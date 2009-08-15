@@ -95,8 +95,8 @@ int BaseModel::evaluateString( NifItem * array, const QString & text ) const
 	{
 		QString left, right;
 		
-		static const char * const exp[] = { " | ", " & ", " / ", " + ", " - " };
-		static const int num_exp = 5;
+		static const char * const exp[] = { " | ", " & ", " / ", " + ", " - ", " * " };
+		static const int num_exp = 6;
 		
 		int c;
 		for ( c = 0; c < num_exp; c++ )
@@ -205,6 +205,7 @@ int BaseModel::evaluateString( NifItem * array, const QString & text ) const
 			case 2: d1 /= r; break;
 			case 3: d1 += r; break;
 			case 4: d1 -= r; break;
+			case 5: d1 *= r; break;
 		}
 	}
 	
