@@ -1565,6 +1565,8 @@ bool NifModel::load( QIODevice & device )
 						//   the upper bit or the blocktypeindex seems to be related to PhysX
 						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
 						blktyp = get<QString>( index( blktypidx & 0x7FFF, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+						// convert control characters (so far, only \x01)
+						blktyp.replace("\\x01", "\x01");
 						// note: some 10.0.1.0 version nifs from Oblivion in certain distributions seem to be missing
 						//       these four bytes on the havok blocks
 						//       (see for instance meshes/architecture/basementsections/ungrdltraphingedoor.nif)
@@ -1600,11 +1602,15 @@ bool NifModel::load( QIODevice & device )
 						}
 					}
 					else
+					{
+						msg( Message() << tr("warning: block %1 (%2) not inserted!").arg(c).arg(blktyp) );
 						throw tr("encountered unknown block (%1)").arg( blktyp );
+					}
 				}
 				catch ( QString err )
 				{
 					// version 20.3.0.3 can mostly recover from some failures because it store block sizes
+					// XXX FIXME: if isNiBlock returned false, block numbering will be screwed up!!
 					if (size == UINT_MAX)
 						throw err;
 				}
