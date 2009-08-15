@@ -9,9 +9,11 @@ changes since 1.0.20:
  * added "Texture->Add Flip Controller", "Texture->Edit Flip Controller"
    spells
  * "Combine Properties" spell will not combine properties that inherit
-   BSShaderProperty since they need to be unique
+   BSShaderProperty since they need to be unique (reported by Saiden)
  * fixed A -> B spell for bhkHingeConstraint (issue #2835485 reported by
    nexekho)
+ * selection highligting fixes for bhkPackedNiTriStripsShape (triangles and
+   normals)
 
 changes since 1.0.19:
  * updated to Qt 4.5.0

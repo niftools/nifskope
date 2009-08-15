@@ -1057,11 +1057,23 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						for ( int t = 0; t < nif->rowCount( iTris ); t++ )
 							DrawTriangleIndex(verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t);
 					}
-					else
+					else if ( nif->isCompound( nif->getBlockType( scene->currentIndex ) ) )
 					{
 						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
 						DrawTriangleSelection(verts, tri );
 						DrawTriangleIndex(verts, tri, i);
+					}
+					else if ( nif->getBlockName( scene->currentIndex ) == "Normal" )
+					{
+						Triangle tri = nif->get<Triangle>( scene->currentIndex.parent(), "Triangle" );
+						Vector3 triCentre = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
+						glLineWidth( 1.5f );
+						glDepthFunc( GL_ALWAYS );
+						glHighlightColor();
+						glBegin( GL_LINES );
+						glVertex( triCentre );
+						glVertex( triCentre + nif->get<Vector3>( scene->currentIndex ) );
+						glEnd();
 					}
 				}
 			}
