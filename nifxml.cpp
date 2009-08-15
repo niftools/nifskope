@@ -178,10 +178,12 @@ public:
 						}
 						else
 						{
-							if ( x == tagCompound && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
+							QString id = list.value( "name" );
+							// replace control characters
+							id.replace("\\x01", "\x01");
+							if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
 								err( tr("compound %1 is already registered as internal type").arg( list.value( "name" ) ) );
 							
-							QString id = list.value( "name" );
 							if ( id.isEmpty() )
 								err( tr("compound and niblocks must have a name") );
 							
@@ -189,7 +191,7 @@ public:
 								err( tr("multiple declarations of %1").arg(id) );
 							
 							if ( ! blk ) blk = new NifBlock;
-							blk->id = list.value( "name" );
+							blk->id = id;
 							blk->abstract = ( list.value( "abstract" ) == "1" );
 							
 							if ( x == tagBlock )
