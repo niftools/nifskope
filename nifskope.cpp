@@ -371,9 +371,7 @@ NifSkope::NifSkope()
 	dTree->setObjectName( "TreeDock" );
 	dTree->setWidget( tree );
 	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
-	dTree->toggleViewAction()->setChecked( false );
-	dTree->setVisible( false );
-
+    
 	dKfm = new QDockWidget( tr("KFM") );
 	dKfm->setObjectName( "KfmDock" );
 	dKfm->setWidget( kfmtree );
