@@ -193,7 +193,7 @@ public:
 	static QString version2string( quint32 );
 	static quint32 version2number( const QString & );
 	
-	// check wether the current nif file version lies in the range since~until
+	//! Check whether the current nif file version lies in the range [since, until]
 	bool checkVersion( quint32 since, quint32 until ) const;
 
 	QString getVersion() const { return version2string( version ); }

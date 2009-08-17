@@ -55,7 +55,7 @@ public:
 					else if ( nif->get<QString>( iBlock, "Name" ).contains( "Default" ) )
 						nif->set<QString>( iBlock, "Name", "Default" );
 				}
-				if ( nif->inherits( iBlock, "BSShaderProperty" ) )
+				if ( nif->inherits( iBlock, "BSShaderProperty" ) || nif->isNiBlock( iBlock, "BSShaderTextureSet") )
 				{
 					// these need to be unique
 					continue;

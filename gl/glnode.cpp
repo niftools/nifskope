@@ -1186,8 +1186,30 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 axleA( Vector3::crossproduct( axleA1, axleA2 ) );
 		
 		const Vector3 axleB( nif->get<Vector4>( iHinge, "Axle B" ) );
+		
 		const Vector3 axleB1( axleB[1], axleB[2], axleB[0] );
 		const Vector3 axleB2( Vector3::crossproduct( axleB, axleB1 ) );
+		
+		/*
+		 * This should be correct but is visually strange...
+		 *
+		Vector3 axleB1temp;
+		Vector3 axleB2temp;
+		
+		if ( nif->checkVersion( 0, 0x14000002 ) )
+		{
+			Vector3 axleB1temp( axleB[1], axleB[2], axleB[0] );
+			Vector3 axleB2temp( Vector3::crossproduct( axleB, axleB1temp ) );
+		}
+		else if ( nif->checkVersion( 0x14020007, 0 ) )
+		{
+			Vector3 axleB1temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B1" ) );
+			Vector3 axleB2temp( nif->get<Vector4>( iHinge, "Perp2 Axle In B2" ) );
+		}
+		
+		const Vector3 axleB1( axleB1temp );
+		const Vector3 axleB2( axleB2temp );
+		*/
 		
 		const float minAngle = - PI;
 		const float maxAngle = + PI;
