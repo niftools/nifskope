@@ -211,12 +211,12 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 		}
 	}
 	
-	if ( iInterpolator.isValid() && iInterpolator == index )
+	if ( iInterpolator.isValid() && (iInterpolator == index) )
 	{
 		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
 	}
 	
-	return ( index.isValid() && index == iBlock || index == iInterpolator || index == iData );
+	return (index.isValid() && ((index == iBlock) || (index == iInterpolator) || (index == iData)));
 }
 
 float Controller::ctrlTime( float time ) const
