@@ -110,7 +110,8 @@ int generateMipMaps( int m )
 			{
 				for ( int b = 0; b < 4; b++ )
 				{
-					*dst++ = ( *(src+xo) + *(src+yo) + *(src+xo+yo) + *src++ ) / 4;
+					*dst++ = ( *(src+xo) + *(src+yo) + *(src+xo+yo) + *src) / 4;
+					src++;
 				}
 				src += xo;
 			}
