@@ -41,14 +41,23 @@ const float Matrix4::identity[16] = { 1.0, 0.0, 0.0, 0.0,  0.0, 1.0, 0.0, 0.0,  
 
 QString NumOrMinMax( float val, char f, int prec )
 {
+	// minimum or maximum
 	if( val == -FLT_MAX )
 		return "<float_min>";
 	else if( val == FLT_MAX )
 		return "<float_max>";
 	
-	if( *(quint32*)&val == 0x80000000 )
+	// display 0x80000000 as -0.0
+	union flt_int {
+		float f;
+		quint32 i;
+	};
+	flt_int _val;
+	_val.f = val;
+	if( _val.i == 0x80000000 )
 		return QString( "-%1" ).arg( QString::number( val, f, prec ) );
-	
+
+	// usual case
 	return QString::number( val, f, prec );
 }
 
