@@ -5,6 +5,7 @@ set NAME=nifskope
 set VERSION=1.0.21
 set REVISION=
 
+rem get revision via svnversion
 for %%i in (svnversion.exe) do IF EXIST "%%~$PATH:i" set SVNVERSION=%%~$PATH:i
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%SystemDrive%\svn\bin\svnversion.exe
 IF NOT EXIST "%SVNVERSION%" set SVNVERSION=%PROGRAMFILES%\TortoiseSVN\bin\svnversion.exe
@@ -15,9 +16,18 @@ for %%i in (sed.exe) do IF EXIST "%%~$PATH:i" set SED=%%~$PATH:i
 for %%i in (SubWCRev.exe) do IF EXIST "%%~$PATH:i" set SUBWCREV=%%~$PATH:i
 IF NOT EXIST "%SUBWCREV%" set SUBWCREV=%PROGRAMFILES%\TortoiseSVN\bin\SubWCRev.exe
 IF NOT EXIST "%SUBWCREV%" set SUBWCREV=%PROGRAMFILES%\SubWCRev\SubWCRev.exe
+rem get revision via sed + SubWCRev
 IF NOT "%SED%" == "" (
     IF NOT "%SUBWCREV%" == "" (
         "%SUBWCREV%" .. -f | %SED% "s#Last committed at revision ##pg" -n > %TEMP%\nifskope.svnrev
+        for /f %%j in (%TEMP%\nifskope.svnrev) do set REVISION=%%j
+        del /q %TEMP%\nifskope.svnrev
+    )
+)
+rem get revision via SubWCRev
+IF "%SED%" == "" (
+    IF NOT "%SUBWCREV%" == "" (
+        "%SUBWCREV%" .. nifskope.svnrev.in %TEMP%\nifskope.svnrev
         for /f %%j in (%TEMP%\nifskope.svnrev) do set REVISION=%%j
         del /q %TEMP%\nifskope.svnrev
     )
