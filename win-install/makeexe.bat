@@ -33,6 +33,7 @@ del doc\*.html
 
 for %%i in (python.exe) do IF EXIST "%%~$PATH:i" set PYTHON=%%~$PATH:i
 IF NOT EXIST "%PYTHON%" set PYTHON=\Python25\python.exe
+IF NOT EXIST "%PYTHON%" set PYTHON=\Python26\python.exe
 "%PYTHON%" nifxml_doc.py
 
 if EXIST "%QTDIR%\bin\lrelease.exe" (
