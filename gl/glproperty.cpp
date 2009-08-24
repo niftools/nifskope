@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "glcontroller.h"
 #include "glscene.h"
-#include "options.h"
+#include "../options.h"
 
 //! \file glproperty.cpp Property, subclasses and controllers
 

@@ -44,9 +44,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QGroupBox>
 #include <QTextEdit>
 
-#include "nifmodel.h"
-#include "gl/glscene.h"
-#include "gl/glnode.h"
+#include "../nifmodel.h"
+#include "../gl/glscene.h"
+#include "../gl/glnode.h"
 
 //! \file inspect.cpp InspectView and InspectViewInternal
 

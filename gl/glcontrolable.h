@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLCONTROLABLE_H
 #define GLCONTROLABLE_H
 
-#include "nifmodel.h"
+#include "../nifmodel.h"
 
 class Controller;
 

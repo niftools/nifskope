@@ -48,7 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "glscene.h"
 #include "glproperty.h"
-#include "options.h"
+#include "../options.h"
 
 bool shader_initialized = false;
 bool shader_ready = false;

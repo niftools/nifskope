@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "glparticles.h"
 #include "gltex.h"
-#include "options.h"
+#include "../options.h"
 
 //! \file glscene.cpp Scene management
 

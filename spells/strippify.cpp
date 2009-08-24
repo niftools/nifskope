@@ -1,4 +1,4 @@
-#include "spellbook.h"
+#include "../spellbook.h"
 
 #include "../NvTriStrip/qtwrapper.h"
 

@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FEEDBACK_TIME 1200
 
 #include "fileselect.h"
-#include "config.h"
+#include "../config.h"
 
 #include <QAction>
 #include <QApplication>

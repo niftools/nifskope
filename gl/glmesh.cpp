@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "glcontroller.h"
 #include "gltools.h"
-#include "options.h"
+#include "../options.h"
 
 #include <GL/glext.h>
 

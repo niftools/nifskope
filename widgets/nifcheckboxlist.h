@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFCHECKBOXLIST_H
 #define NIFCHECKBOXLIST_H
 
-#include "nifvalue.h"
+#include "../nifvalue.h"
 
 #include <QWidget>
 #include <QComboBox>

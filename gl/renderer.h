@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GLee.h"
 #include <QtOpenGL>
 
-#include "nifmodel.h"
+#include "../nifmodel.h"
 
 class Mesh;
 class PropertyList;
