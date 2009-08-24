@@ -160,6 +160,12 @@ public:
 		// is the block already added?
 		if (newblocks.contains(block))
 			return;
+		// special case: add bhkConstraint entities before bhkConstraint
+		// (these are actually links, not refs)
+		QModelIndex iBlock(nif->getBlock(block));
+		if (nif->inherits(iBlock, "bhkConstraint"))
+			foreach (qint32 entity, nif->getLinkArray(iBlock, "Entities"))
+				addTree(nif, entity, newblocks);
 		// add all children of block that should be before block
 		foreach (qint32 child, nif->getChildLinks(block))
 			if (childBeforeParent(nif, child))
