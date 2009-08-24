@@ -16,7 +16,9 @@ changes since 1.0.20:
  * selection highligting fixes for bhkPackedNiTriStripsShape (triangles and
    normals)
  * added support for KrazyRain and Zorsis blocks (control characters etc.)
-
+ * synced block order algorithm with pyffi (fixes the "falling signs" bug in
+   Oblivion)
+ 
 changes since 1.0.19:
  * updated to Qt 4.5.0
  * fix tooltips display for nif.xml annotations
