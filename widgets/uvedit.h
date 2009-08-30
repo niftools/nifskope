@@ -45,6 +45,7 @@ class QUndoStack;
 class TexCache;
 class Vector2;
 
+//! Displays and allows editing of UV coordinate data
 class UVWidget : public QGLWidget
 {
 	Q_OBJECT
@@ -53,17 +54,28 @@ protected:
 	~UVWidget();
 	
 public:
+	//! Creates the UV editor widget
 	static UVWidget * createEditor( NifModel * nif, const QModelIndex & index );
-
+	
+	//! Sets the NIF data
 	bool setNifData( NifModel * nif, const QModelIndex & index );
 	
+	//! From QWidget; the recommended size of the widget
 	QSize sizeHint() const;
+	//! From QWidget; the minimum size of the widget
 	QSize minimumSizeHint() const;
 	
+	//! Sets the size hint
 	void setSizeHint( const QSize & s );
 	
 	int heightForWidth( int width ) const;
 	
+	enum EditingMode {
+		None,
+		Move,
+		Scale
+	} editmode;
+
 protected:
 	void initializeGL();
 	void resizeGL( int width, int height );
@@ -83,6 +95,7 @@ protected slots:
 	void selectFaces();
 	void selectConnected();
 	void moveSelection( double dx, double dy );
+	void scaleSelection();
 	
 protected slots:
 	void nifDataChanged( const QModelIndex & );
@@ -90,6 +103,7 @@ protected slots:
 	void selectTexSlot();
 	
 private:
+	//! List of selected vertices
 	QList< int > selection;
 
 	QRect selectRect;
@@ -141,7 +155,9 @@ private:
 	QStringList validTexs;
 	QList<QAction*> * texActions;
 
+	//! Names of texture slots
 	QStringList texnames;
+	//! Texture slot currently being operated on
 	int currentTexSlot;
 	bool setTexCoords();
 
@@ -157,6 +173,7 @@ private:
 	
 	friend class UVWSelectCommand;
 	friend class UVWMoveCommand;
+	friend class UVWScaleCommand;
 	
 	QAction * aTextureBlend;
 };

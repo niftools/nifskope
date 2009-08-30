@@ -9,4 +9,6 @@ To do:
 - Display all particle systems (eg. Florensia)
 - Clean up SVN log entries, check all old builds
 - Check i18n of strings, use QLocale for numbers
+- Fix constraints display and spells
+- Implement scaling of UV data
 

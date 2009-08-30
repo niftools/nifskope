@@ -81,15 +81,15 @@ static GLdouble glGridD = GRIDSIZE * glUnit;
 UVWidget::UVWidget( QWidget * parent )
 	: QGLWidget( QGLFormat( QGL::SampleBuffers ), parent, 0, Qt::Tool | Qt::WindowStaysOnTopHint ), undoStack( new QUndoStack( this ) )
 {
-	texnames = QStringList()
+	texnames = QStringList() // these are not translated since they are pulled from nif.xml
 		<< "Base Texture"
 		<< "Dark Texture"
 		<< "Detail Texture"
-		<<"Gloss Texture"
-		<<"Glow Texture"
-		<<"Bump Map Texture"
-		<<"Decal 0 Texture"
-		<<"Decal 1 Texture";
+		<< "Gloss Texture"
+		<< "Glow Texture"
+		<< "Bump Map Texture"
+		<< "Decal 0 Texture"
+		<< "Decal 1 Texture";
 
 	setWindowTitle( tr("UV Editor") );
 	setFocusPolicy( Qt::StrongFocus );
@@ -136,7 +136,13 @@ UVWidget::UVWidget( QWidget * parent )
 	QAction * aSelectConnected = new QAction( tr( "Select &Connected" ), this );
 	connect( aSelectConnected, SIGNAL( triggered() ), this, SLOT( selectConnected() ) );
 	addAction( aSelectConnected );
-
+	
+#ifndef QT_NO_DEBUG
+	QAction * aScaleSelection = new QAction( tr( "Scale &Selected" ), this );
+	connect( aScaleSelection, SIGNAL( triggered() ), this, SLOT( scaleSelection() ) );
+	addAction( aScaleSelection );
+#endif
+	
 	aSep = new QAction( this );
 	aSep->setSeparator( true );
 	addAction( aSep );
@@ -828,18 +834,25 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )
 		{
-			QModelIndex iTex = nif->getIndex( iTexProp, texnames[currentTexSlot] );
-			if( iTex.isValid() )
+			while ( currentTexSlot < texnames.size() )
 			{
-				QModelIndex iTexSource = nif->getBlock( nif->getLink( iTex, "Source" ) );
-				if( iTexSource.isValid() )
+				QModelIndex iTex = nif->getIndex( iTexProp, texnames[currentTexSlot] );
+				if( iTex.isValid() )
 				{
-					//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
-					//int texUVset = nif->get<int>( iTex, "UV Set" );
-					//qWarning() << "Use UV set " << texUVset;
-					//qWarning() << nif->getIndex( iShapeData, "UV Sets" ).child( texUVset, 0 );
-					texsource = iTexSource;
-					return true;
+					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTex, "Source" ) );
+					if( iTexSource.isValid() )
+					{
+						//texfile = TexCache::find( nif->get<QString>( iTexSource, "File Name" ) , nif->getFolder() );
+						//int texUVset = nif->get<int>( iTex, "UV Set" );
+						//qWarning() << "Use UV set " << texUVset;
+						//qWarning() << nif->getIndex( iShapeData, "UV Sets" ).child( texUVset, 0 );
+						texsource = iTexSource;
+						return true;
+					}
+				}
+				else
+				{
+					currentTexSlot++;
 				}
 			}
 		}
@@ -1191,3 +1204,36 @@ void UVWidget::selectTexSlot()
 	}
 
 }
+
+class UVWScaleCommand : public QUndoCommand
+{
+public:
+	UVWScaleCommand( UVWidget * w ) : QUndoCommand(), uvw( w )
+	{
+		setText( "Scale" );
+	}
+	
+	void redo()
+	{
+		Vector2 centre;
+		foreach( int i, uvw->selection )
+		{
+			centre += uvw->texcoords[i];
+		}
+
+		centre /= uvw->selection.size();
+		
+		qWarning() << centre[0] << centre[1];
+	}
+
+protected:
+	UVWidget * uvw;
+};
+
+void UVWidget::scaleSelection()
+{
+	undoStack->push( new UVWScaleCommand( this ) );
+}
+
+// insert state/flag for scaling mode
+// get difference in mouse coords, scale everything around centre
