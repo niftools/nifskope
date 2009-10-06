@@ -151,6 +151,7 @@ template <typename T> inline T * Node::findProperty() const
 	return 0;
 }
 
+//! A Node with levels of detail
 class LODNode : public Node
 {
 public:
@@ -168,6 +169,7 @@ protected:
 	Vector3 center;
 };
 
+//! A Node that always faces the camera
 class BillboardNode : public Node
 {
 public:

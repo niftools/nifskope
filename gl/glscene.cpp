@@ -154,6 +154,10 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	{
 		node = new Mesh( this, iNode );
 	}
+	else if ( nif->checkVersion( 0x14050000, 0 ) && nif->itemName( iNode ) == "NiMesh" )
+	{
+		node = new Mesh( this, iNode );
+	}
 	//else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
 	else if ( nif->inherits( iNode, "NiParticles" ) ) // ... where did AParticleSystem go?
 	{

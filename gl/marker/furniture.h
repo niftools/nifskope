@@ -30,6 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+//! \file furniture.h Furniture markers for drawFurnitureMarker()
+
 #include "../glmarker.h"
 
 static const float FurnitureMarker01Verts[] = 

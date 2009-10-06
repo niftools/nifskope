@@ -11,4 +11,5 @@ To do:
 - Check i18n of strings, use QLocale for numbers
 - Fix constraints display and spells
 - Implement scaling of UV data
+- Investigate splitting a Morrowind anim.nif to xAnim.nif and xAnim.kf
 
