@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.20
+Version:        1.0.21
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 
@@ -81,6 +81,18 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Fri Oct 9 2009 amorilia - 1.0.21-1
+- added support for displaying 8-bit palettised DDS textures
+- added variable mipmap filtering display for NiTexturingProperty
+- added "Mesh->Flip Faces" spell
+- added "Texture->Add Flip Controller", "Texture->Edit Flip Controller" spells
+- added support for reading NeoSteam headers
+- "Combine Properties" spell will not combine properties that inherit BSShaderProperty since they need to be unique (reported by Saiden)
+- fixed A -> B spell for bhkHingeConstraint (issue #2835485 reported by nexekho)
+- selection highligting fixes for bhkPackedNiTriStripsShape (triangles and normals)
+- added support for KrazyRain and Zorsis blocks (control characters etc.)
+- synced block order algorithm with pyffi (fixes the "falling signs" bug in Oblivion)
+- allow UV editing of meshes without a base texture
 * Sun Jun 7 2009 amorilia - 1.0.20-1
 - updated to Qt 4.5.0
 - fix tooltips display for nif.xml annotations
