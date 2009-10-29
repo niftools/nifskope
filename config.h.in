@@ -51,6 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Add versions to this list (most recent first) whenever incrementing NIFSKOPE_VERSION
  */
 const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList()
+		<< "NifSkope-1.0.21"
 		<< "NifSkope-1.0.20"
 		<< "NifSkope-1.0.19"
 		<< "NifSkope-1.0.18"
@@ -70,7 +71,7 @@ const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList()
 		<< "NifSkope");
 
 //! A string describing the version of nifskope
-#define NIFSKOPE_VERSION "1.0.21"
+#define NIFSKOPE_VERSION "1.0.22"
 
 //! The repository revision number; generated with TortoiseSVN's SubWCRev.exe
 #define NIFSKOPE_REVISION "$WCREV$"

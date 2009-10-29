@@ -1,7 +1,7 @@
 %define desktop_vendor niftools
 
 Name:           nifskope
-Version:        1.0.21
+Version:        1.0.22
 Release:        1%{?dist}
 Summary:        A tool for analyzing and editing NetImmerse/Gamebryo files
 

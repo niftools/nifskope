@@ -1,6 +1,8 @@
  == CHANGELOG ==
 
-This is version 1.0.21 of NifSkope.
+This is version 1.0.22 of NifSkope.
+
+changes since 1.0.21:
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures

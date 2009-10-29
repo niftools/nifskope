@@ -2,7 +2,7 @@ rem Quick build script to create the installer for release.
 @echo on
 setlocal
 set NAME=nifskope
-set VERSION=1.0.21
+set VERSION=1.0.22
 set REVISION=
 
 rem get revision via svnversion
