@@ -1663,6 +1663,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 					nif->set<uint>( iData, "Pixel Format", 5 );
 					break;
 				default:
+					// don't know how eg. DXT3 can be stored in NIF
 					qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwFourCC << "FourCC";
 					return false;
 					break;
@@ -1682,6 +1683,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 					nif->set<uint>( iData, "Pixel Format", 1 );
 					break;
 				default:
+					// theoretically could have a palettised DDS in 8bpp
 					qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwBPP << "BPP";
 					return false;
 					break;
@@ -1694,8 +1696,155 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		qWarning() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
 		qWarning() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
 
+		// Note that these might not match what's expected; hopefully the loader function is smart
+		if( nif->checkVersion( 0, 0x0A020000 ) )
+		{
+			nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
+			nif->set<uint>( iData, "Red Mask", ddsHeader.ddsPixelFormat.dwRMask );
+			nif->set<uint>( iData, "Green Mask", ddsHeader.ddsPixelFormat.dwGMask );
+			nif->set<uint>( iData, "Blue Mask", ddsHeader.ddsPixelFormat.dwBMask );
+			nif->set<uint>( iData, "Alpha Mask", ddsHeader.ddsPixelFormat.dwAMask );
 
-		return false;
+			quint8 unk8bytes24[] = { 96,8,130,0,0,65,0,0 };
+            quint8 unk8bytes32[] = { 129,8,130,32,0,65,12,0 };
+			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
+			for ( int i = 0; i < 8; i++ )
+			{
+				if ( ddsHeader.ddsPixelFormat.dwBPP == 24 )
+				{
+					nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes24[i] );
+				}
+				else if ( ddsHeader.ddsPixelFormat.dwBPP == 32 )
+				{
+					nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes32[i] );
+				}
+			}
+		}
+		else if( nif->checkVersion( 0x14000004, 0 ) )
+		{
+			// set stuff
+			nif->set<qint32>( iData, "Unknown Int 2", -1 ); // probably a link to something
+			nif->set<quint8>( iData, "Flags", 1 );
+			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
+			// DXT1, DXT5
+			if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
+			{
+				for ( int i = 0; i < 4; i++ )
+				{
+					if( i == 0 )
+					{
+						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 4 ); // compressed
+						nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 4 ); // compressed
+					}
+					else
+					{
+						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 19 ); // empty
+						nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 5 ); // empty
+					}
+					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 0 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Unknown Byte 1", 1 );
+				}
+			}
+			else
+			{
+				for ( int i = 0; i < 3; i++ )
+				{
+					nif->set<quint32>( destChannels.child( i, 0 ), "Type", i ); // red, green, blue
+					nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
+					nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
+					nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
+				}
+				if ( ddsHeader.ddsPixelFormat.dwBPP == 32 )
+				{
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 3 ); // alpha
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 0 ); // fixed
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Bits Per Channel", 8 );
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Unknown Byte 1", 0 );
+				}
+				else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 )
+				{
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 19 ); // empty
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 5 ); // empty
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Bits Per Channel", 0 );
+					nif->set<quint32>( destChannels.child( 3, 0 ), "Unknown Byte 1", 0 );
+				}
+			}
+		}
+
+		// generate mipmap sizes and offsets
+		qWarning() << "Mipmap count: " << ddsHeader.dwMipMapCount;
+		nif->set<quint32>( iData, "Num Mipmaps", ddsHeader.dwMipMapCount );
+		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
+		nif->updateArray( destMipMaps );
+		
+		nif->set<quint32>( iData, "Bytes Per Pixel", ddsHeader.ddsPixelFormat.dwBPP / 8 );
+
+		int mipmapWidth = ddsHeader.dwWidth;
+		int mipmapHeight = ddsHeader.dwHeight;
+		int mipmapOffset = 0;
+
+		for ( quint32 i = 0; i < ddsHeader.dwMipMapCount; i ++ )
+		{
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Width", mipmapWidth );
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Height", mipmapHeight );
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Offset", mipmapOffset );
+			
+			if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
+			{
+				if ( ddsHeader.ddsPixelFormat.dwFourCC == FOURCC_DXT1 )
+				{
+					mipmapOffset += max( 8, ( mipmapWidth * mipmapHeight / 2 ) );
+				}
+				else if ( ddsHeader.ddsPixelFormat.dwFourCC == FOURCC_DXT5 )
+				{
+					mipmapOffset += max( 16, ( mipmapWidth * mipmapHeight ) );
+				}
+			}
+			else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 )
+			{
+				mipmapOffset += ( mipmapWidth * mipmapHeight * 3 );
+			}
+			else if ( ddsHeader.ddsPixelFormat.dwBPP == 32 )
+			{
+				mipmapOffset += ( mipmapWidth * mipmapHeight * 4 );
+			}
+			mipmapWidth = max( 1, mipmapWidth / 2 );
+			mipmapHeight = max( 1, mipmapHeight / 2 );
+		}
+		
+		nif->set<quint32>( iData, "Num Pixels", mipmapOffset );
+		
+		// finally, copy the data...
+
+		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
+		nif->updateArray( iPixelData );
+		QModelIndex iFaceData = iPixelData.child( 0, 0 );
+		nif->updateArray( iFaceData );
+		
+		f.seek( 4 + ddsHeader.dwSize );
+		qWarning() << "Reading from " << f.pos();
+		
+		QByteArray ddsData = f.read( mipmapOffset );
+		
+		qWarning() << "Read " << ddsData.size() << " bytes of" << f.size() << ", now at" << f.pos();
+		if ( ddsData.size() != mipmapOffset )
+		{
+			qWarning() << "Unexpected EOF";
+			return false;
+		}
+		
+		nif->set<QByteArray>( iFaceData, "Pixel Data", ddsData );
+
+		/*
+		QByteArray result = nif->get<QByteArray>( iFaceData, "Pixel Data" );
+		for ( int i = 0; i < 16; i++ )
+		{
+			qWarning() << "Comparing byte " << i << ": result " << (quint8)result[i] << ", original " << (quint8)ddsData[i];
+		}
+		*/
+		
+		// return true once perfected
+		//return false;
 	}
 	return true;
 }

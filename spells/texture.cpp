@@ -765,7 +765,7 @@ public:
 
 REGISTER_SPELL( spExportTexture )
 
-//! Pack a texture to NiPixelData (not implemented yet)
+//! Pack a texture to NiPixelData (not fully implemented yet)
 class spEmbedTexture : public Spell
 {
 public:
@@ -807,12 +807,17 @@ public:
 
 			qWarning() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
 			
-			// write this function
+			// finish writing this function
 			if ( tex->importFile( nif, iSourceTexture, iPixelData ) )
 			{
+				QString tempFileName = nif->get<QString>( iSourceTexture, "File Name" );
 				nif->set<int>( iSourceTexture, "Use External", 0 );
 				nif->set<int>( iSourceTexture, "Unknown Byte", 1 );
 				nif->setLink( iSourceTexture, "Pixel Data", blockNum+1 );
+				if( nif->checkVersion( 0x0A010000, 0 ) )
+				{
+					nif->set<QString>( iSourceTexture, "File Name", TexCache::stripPath( tempFileName, nif->getFolder() ) );
+				}
 			}
 			else
 			{
