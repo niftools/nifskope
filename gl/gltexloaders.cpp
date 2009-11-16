@@ -1084,22 +1084,22 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 	return ok;
 }
 
-//! Load NiPixelData from a NifModel
+//! Load NiPixelData or NiPersistentSrcTextureRendererData from a NifModel
 GLuint texLoadNIF( QIODevice & f, QString & texformat ) {
 	GLuint mipmaps = 0;
 
 	NifModel pix;
 
 	if ( ! pix.load( f ) )
-		throw QString( "failed to load NiPixelData from file" );
+		throw QString( "failed to load pixel data from file" );
 
 	QPersistentModelIndex iRoot;
 
 	foreach ( qint32 l, pix.getRootLinks() )
 	{
-		QModelIndex iData = pix.getBlock( l, "NiPixelData" );
-		if ( ! iData.isValid() )
-			throw QString( "this is not a normal .nif file; there should be only NiPixelDatas as root blocks" );
+		QModelIndex iData = pix.getBlock( l, "ATextureRenderData" );
+		if ( ! iData.isValid() || iData == QModelIndex() )
+			throw QString( "this is not a normal .nif file; there should be only pixel data as root blocks" );
 
 		GLuint width, height;
 		texLoad(iData, texformat, width, height, mipmaps);
@@ -1519,6 +1519,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		if ( ! pix.load( f ) )
 			throw QString( "failed to load NiPixelData from file" );
 		
+		// possibly update this to ATextureRenderData...
 		QPersistentModelIndex iPixData;
 		iPixData = pix.getBlock( 0, "NiPixelData" );
 		if ( ! iPixData.isValid() )
