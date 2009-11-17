@@ -3,6 +3,7 @@
 This is version 1.0.22 of NifSkope.
 
 changes since 1.0.21:
+ * updated to Qt 4.5.3
  * added support for NiPersistentSrcTextureRendererData textures (alternate
    form of NiPixelData)
  * allow hexadecimal values in nif.xml enumeration options
