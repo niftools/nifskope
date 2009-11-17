@@ -392,7 +392,9 @@ public:
 				if ( blk )	blk->types.append( data );
 				break;
 			case tagOption:
-				if ( ! NifValue::registerEnumOption( typId, optId, optVal.toInt(), optTxt ) )
+				bool ok;
+				quint32 optValInt = optVal.toInt( &ok, 0 );
+				if ( ! ok || ! NifValue::registerEnumOption( typId, optId, optValInt, optTxt ) )
 					err( tr("failed to register enum option") );
 				break;
 			case tagBasic:
