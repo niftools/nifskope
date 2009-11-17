@@ -452,7 +452,7 @@ public:
 	//! Checks that a template type is valid
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE" || NifModel::blocks.contains( data.temp() );
+		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE" || NifModel::blocks.contains( data.temp() ) || NifModel::compounds.contains( data.temp() );
 	}
 	
 	//! Reimplemented from QXmlContentHandler
