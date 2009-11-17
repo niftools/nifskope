@@ -392,10 +392,12 @@ public:
 				if ( blk )	blk->types.append( data );
 				break;
 			case tagOption:
-				bool ok;
-				quint32 optValInt = optVal.toInt( &ok, 0 );
-				if ( ! ok || ! NifValue::registerEnumOption( typId, optId, optValInt, optTxt ) )
-					err( tr("failed to register enum option") );
+				{
+					bool ok;
+					quint32 optValInt = optVal.toInt( &ok, 0 );
+					if ( ! ok || ! NifValue::registerEnumOption( typId, optId, optValInt, optTxt ) )
+						err( tr("failed to register enum option") );
+				}
 				break;
 			case tagBasic:
 			case tagEnum:
@@ -480,9 +482,9 @@ public:
 			foreach ( NifData data, blk->types )
 			{
 				if ( ! checkType( data ) )
-					err( tr("niobject %1 refers to unknown type ").arg(key).arg(data.type()) );
+					err( tr("niobject %1 refers to unknown type %2").arg(key).arg(data.type()) );
 				if ( ! checkTemp( data ) )
-					err( tr("niobject %1 refers to unknown template type ").arg(key).arg(data.temp()) );
+					err( tr("niobject %1 refers to unknown template type %2").arg(key).arg(data.temp()) );
 			}
 		}
 		
