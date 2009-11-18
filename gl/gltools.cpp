@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtOpenGL>
 
+//! \file gltools.cpp GL helper functions
 
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {
@@ -608,3 +609,4 @@ void renderText(double x, double y, double z, const QString & str)
 	glCallLists(cstr.size(), GL_UNSIGNED_BYTE, cstr.constData());
 	glPopAttrib();
 }
+

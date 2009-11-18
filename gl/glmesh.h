@@ -55,6 +55,7 @@ public:
 	
 	bool isHidden() const;
 	
+	//! The bounds of the mesh?
 	BoundSphere bounds() const;
 	
 	QString textStats() const;
@@ -62,21 +63,44 @@ public:
 protected:	
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	
-	QPersistentModelIndex iData, iSkin, iSkinData, iSkinPart, iTangentData;
-	bool upData, upSkin;
+	//! Shape data
+	QPersistentModelIndex iData;
+	//! Skin instance
+	QPersistentModelIndex iSkin;
+	//! Skin data
+	QPersistentModelIndex iSkinData;
+	//! Skin partition
+	QPersistentModelIndex iSkinPart;
+	//! Tangent data
+	QPersistentModelIndex iTangentData;
+	//! Unsure - does the data need updating?
+	bool upData;
+	//! Unsure - does teh skin data need updating?
+	bool upSkin;
 	
+	//! Vertices
 	QVector<Vector3> verts;
+	//! Normals
 	QVector<Vector3> norms;
+	//! Vertex colors
 	QVector<Color4>  colors;
+	//! Tangents
 	QVector<Vector3> tangents;
+	//! Binormals
 	QVector<Vector3> binormals;
 	
+	//! UV coordinate sets
 	QList< QVector<Vector2> > coords;
 	
+	//! Transformed vertices
 	QVector<Vector3> transVerts;
+	//! Transformed normals
 	QVector<Vector3> transNorms;
+	//! Transformed colors (alpha-blended)
 	QVector<Color4> transColors;
+	//! Transformed tangents
 	QVector<Vector3> transTangents;
+	//! Transformed binormals
 	QVector<Vector3> transBinormals;
 	
 	int skelRoot;

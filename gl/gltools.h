@@ -37,6 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../niftypes.h"
 
+//! \file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
+
+//! A bounding sphere for an object, typically a Mesh
 class BoundSphere
 {
 public:
@@ -59,6 +62,7 @@ public:
 	friend BoundSphere operator*( const Transform & t, const BoundSphere & s );
 };
 
+//! A vertex, weight pair
 class VertexWeight
 {
 public:
@@ -71,6 +75,7 @@ public:
 	float weight;
 };
 
+//! A set of vertices weighted to a bone
 class BoneWeights
 {
 public:
@@ -84,6 +89,7 @@ public:
 	QVector<VertexWeight> weights;
 };
 
+//! A skin partition
 class SkinPartition
 {
 public:

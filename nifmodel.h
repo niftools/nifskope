@@ -165,8 +165,13 @@ public:
 
 	// is it a child or parent link?
 	bool isLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
-	// this returns a block number if the index is a valid link
+	//! Return a block number if the index is a valid link
 	qint32 getLink( const QModelIndex & index ) const;
+	//! Get the block number of a link
+	/**
+	 * @param parent The parent of the link
+	 * @param name The name of the link
+	 */
 	int getLink( const QModelIndex & parent, const QString & name ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & array ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & parent, const QString & name ) const;
