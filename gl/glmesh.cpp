@@ -228,6 +228,26 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	
 	if ( iBlock == index )
 	{
+		// NiMesh presents a problem because we are almost guaranteed to have multiple "data" blocks
+		// for eg. vertices, indices, normals, texture data etc.
+#ifndef QT_NO_DEBUG
+		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
+		{
+			qWarning() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
+			iData = nif->getIndex( iBlock, "Datas" );
+			if ( iData.isValid() )
+			{
+				qWarning() << "Got " << nif->rowCount( iData ) << " rows of data";
+				upData = true;
+			}
+			else
+			{
+				qWarning() << "Did not find data in NiMesh ???";
+			}
+			return;
+		}
+#endif
+		
 		foreach ( int link, nif->getChildLinks( id() ) )
 		{
 			QModelIndex iChild = nif->getBlock( link );
@@ -306,6 +326,39 @@ void Mesh::transform()
 	if ( upData )
 	{
 		upData = false;
+		
+		// update for NiMesh
+#ifndef QT_NO_DEBUG
+		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
+		{
+			// do stuff
+			qWarning() << "Haven't worked out how to find things yet";
+			for ( int i = 0; i < nif->rowCount( iData ); i ++ )
+			{
+				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
+				qWarning() << "Data stream: " << stream;
+				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
+				qWarning() << "Submeshes: " << numSubmeshes;
+				QPersistentModelIndex submeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
+				for ( int j = 0; j < numSubmeshes; j++ )
+				{
+					qWarning() << "Submesh map: " << nif->get<ushort>( submeshMap.child( j, 0 ) );
+				}
+				QPersistentModelIndex dataStream = nif->getBlock( stream );
+				quint32 numRegions = nif->get<quint32>( dataStream, "Num Regions");
+				QPersistentModelIndex regions = nif->getIndex( dataStream, "Regions" );
+				if ( regions.isValid() )
+				{
+					qWarning() << numRegions << " regions in this stream";
+					for( quint32 j = 0; j < numRegions; j++ )
+					{
+						qWarning() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
+						qWarning() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
+					}
+				}
+			}
+		}
+#endif
 		
 		verts = nif->getArray<Vector3>( iData, "Vertices" );
 		norms = nif->getArray<Vector3>( iData, "Normals" );
