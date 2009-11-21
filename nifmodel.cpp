@@ -1589,6 +1589,13 @@ bool NifModel::load( QIODevice & device )
 						blktyp = device.read( len );
 					}
 					
+					// Hack for NiMesh data streams
+					if ( blktyp.startsWith( "NiDataStream\x01" ) )
+					{
+						// eventually initialise usage and access flags from here too
+						blktyp = "NiDataStream";
+					}
+					
 					if ( isNiBlock( blktyp ) )
 					{
 						//msg( DbgMsg() << "loading block" << c << ":" << blktyp );
