@@ -52,32 +52,35 @@ public:
 		tWord = 2,
 		tFlags = 3,
 		tStringOffset = 4,
-		tBlockTypeIndex = 5,
-		tInt = 6,
-		tLink = 7,
-		tUpLink = 8,
-		tFloat = 9,
-		tString = 10,
-		tText = 11,
-		tShortString = 12,
-		tFilePath = 13,
-		tHeaderString = 14,
-		tLineString = 15,
-		tColor3 = 16,
-		tColor4 = 17,
-		tVector3 = 18,
-		tQuat = 19,
-		tQuatXYZW = 20,
-		tMatrix = 21,
-		tMatrix4 = 22,
-		tVector2 = 23,
-		tVector4 = 24,
-		tTriangle = 25,
-		tFileVersion = 26,
-		tByteArray = 27,
-		tStringPalette = 28,
-		tShort = 29,
-		tUInt = 30,
+		tStringIndex = 5,
+		tBlockTypeIndex = 6,
+		tInt = 7,
+		tShort = 8,
+		tUInt = 9,
+		tLink = 10,
+		tUpLink = 11,
+		tFloat = 12,
+		tSizedString = 13,
+		tText = 15,
+		tShortString = 16,
+		tHeaderString = 18,
+		tLineString = 19,
+		tChar8String = 20,
+		tColor3 = 21,
+		tColor4 = 22,
+		tVector3 = 23,
+		tQuat = 24,
+		tQuatXYZW = 25,
+		tMatrix = 26,
+		tMatrix4 = 27,
+		tVector2 = 28,
+		tVector4 = 29,
+		tTriangle = 30,
+		tFileVersion = 31,
+		tByteArray = 32,
+		tStringPalette = 33,
+		tString = 34,
+		tFilePath = 35,
 
 		tNone = 0xff
 	};
@@ -116,14 +119,14 @@ public:
 	
 	bool isValid() const { return typ != tNone; }
 	bool isColor() const { return typ == tColor3 || typ == tColor4; }
-	bool isCount() const { return (typ >= tBool && typ <= tInt) || (typ >= tShort && typ <= tUInt); }
+	bool isCount() const { return (typ >= tBool && typ <= tUInt); }
 	bool isFlags() const { return typ == tFlags; }
 	bool isFloat() const { return typ == tFloat; }
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	bool isMatrix() const { return typ == tMatrix; }
 	bool isMatrix4() const { return typ == tMatrix4; }
 	bool isQuat() const { return typ == tQuat || typ == tQuatXYZW; }
-	bool isString() const { return typ >= tString && typ <= tLineString; }
+	bool isString() const { return typ >= tSizedString && typ <= tChar8String; }
 	bool isVector4() const { return typ == tVector4; }
 	bool isVector3() const { return typ == tVector3; }
 	bool isVector2() const { return typ == tVector2; }
@@ -268,7 +271,7 @@ template <> inline bool NifValue::set( const Color4 & x ) { return setType( tCol
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
 template <> inline bool NifValue::set( const QString & x )
 {
-	if ( isString() )
+	if ( isString() && val.data != NULL )
 	{
 		*static_cast<QString*>( val.data ) = x;
 		return true;
@@ -311,6 +314,7 @@ template <> inline bool NifValue::ask( QString * ) const { return isString(); }
 template <> inline bool NifValue::ask( QByteArray * ) const { return isByteArray(); }
 
 class BaseModel;
+class NifItem;
 
 class NifIStream
 {
@@ -327,6 +331,7 @@ private:
 	
 	bool bool32bit;
 	bool linkAdjust;
+	bool stringAdjust;
 };
 
 class NifOStream
@@ -344,6 +349,7 @@ private:
 	
 	bool bool32bit;
 	bool linkAdjust;
+	bool stringAdjust;
 };
 
 class NifSStream
@@ -359,6 +365,7 @@ private:
 	void init();
 	
 	bool bool32bit;
+	bool stringAdjust;
 };
 
 

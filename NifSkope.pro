@@ -14,7 +14,7 @@ CONFIG += fsengine
 # uncomment this if you want the text stats gl option
 #DEFINES += USE_GL_QPAINTER
 
-DESTDIR = ./
+DESTDIR = .
 
 HEADERS += \
     niftypes.h \

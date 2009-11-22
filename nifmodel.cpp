@@ -309,6 +309,11 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 		msg( Message() << "array" << array->name() << "much too large" );
 		return false;
 	}
+	else if ( d1 < 0 )
+	{
+		msg( Message() << "array" << array->name() << "invalid" );
+		return false;
+	}
 
 	int rows = array->childCount();
 	if ( d1 > rows )
@@ -771,6 +776,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		QModelIndex buddy;
 		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
 			buddy = getIndex( index, "File Name" );
+		else if ( item->name() == "NiStringExtraData" )
+			buddy = getIndex( index, "String Data" );
 		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
@@ -783,11 +790,22 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
       QModelIndex buddy;
       if ( item->name() == "Controlled Blocks" )
       {
-         buddy = getIndex( index, "Node Name Offset" );
-         if ( buddy.isValid() )
-            buddy = buddy.sibling( buddy.row(), index.column() );
-         if ( buddy.isValid() )
-            return data( buddy, role );
+		  if (version >= 0x14010003)
+		  {
+			  buddy = getIndex( index, "Node Name" );
+			  if ( buddy.isValid() )
+				  buddy = buddy.sibling( buddy.row(), index.column() );
+			  if ( buddy.isValid() )
+				  return data( buddy, role );
+		  }
+		  else if (version <= 0x14000005)
+		  {
+			  buddy = getIndex( index, "Node Name Offset" );
+			  if ( buddy.isValid() )
+				  buddy = buddy.sibling( buddy.row(), index.column() );
+			  if ( buddy.isValid() )
+				  return data( buddy, role );
+		  }
       }
    }
 
@@ -818,7 +836,13 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				}	break;
 				case ValueCol:
 				{
-					if ( item->value().type() == NifValue::tStringOffset )
+					QString type = item->type();
+					const NifValue& value = item->value();
+					if (value.type() == NifValue::tString || value.type() == NifValue::tFilePath)
+					{
+						return this->string(index);
+					}
+					else if ( item->value().type() == NifValue::tStringOffset )
 					{
 						int ofs = item->value().get<int>();
 						if ( ofs < 0 || ofs == 0x0000FFFF )
@@ -838,6 +862,18 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return QString( "<palette not found>" );
 						}
 					}
+					else if ( item->value().type() == NifValue::tStringIndex )
+					{
+						int idx = item->value().get<int>();
+						if (idx == -1)
+							return QString();
+						NifItem * header = getHeaderItem();
+						QModelIndex stringIndex = createIndex( header->row(), 0, header );
+						QString string = get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+						if ( idx >= 0 )
+							return QString( "%2 [%1]").arg( idx ).arg( string );
+						return QString( "%1 - <index invalid>" ).arg( idx );
+                    }
 					else if ( item->value().type() == NifValue::tBlockTypeIndex )
 					{
 						int idx = item->value().get<int>();
@@ -907,7 +943,15 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			{
 				case NameCol:	return item->name();
 				case TypeCol:	return item->type();
-				case ValueCol:	return item->value().toVariant();
+				case ValueCol:	
+				{
+					const NifValue& value = item->value();
+					if (value.type() == NifValue::tString || value .type() == NifValue::tFilePath)
+					{
+						return string(index);
+					}
+					return item->value().toVariant();
+				}
 				case ArgCol:	return item->arg();
 				case Arr1Col:	return item->arr1();
 				case Arr2Col:	return item->arr2();
@@ -976,6 +1020,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 									.arg( f, 4, 16, QChar( '0' ) )
 									.arg( f, 16, 2, QChar( '0' ) );
 							}
+						case NifValue::tStringIndex:
+							return QString( "0x%1" )
+								.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 						case NifValue::tStringOffset:
 							return QString( "0x%1" )
 								.arg( item->value().toCount(), 8, 16, QChar( '0' ) );
@@ -1065,14 +1112,25 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 			item->setType( value.toString() );
 			break;
 		case NifModel::ValueCol:
-			item->value().fromVariant( value );
-			if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
 			{
-				updateLinks();
-				updateFooter();
-				emit linksChanged();
-			}
-			break;
+				QString type = item->type();
+				NifValue& val = item->value();
+				if (val.type() == NifValue::tString || val.type() == NifValue::tFilePath)
+				{
+					val.changeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
+					assignString(index, value.toString(), true);
+				}
+				else
+				{
+					//item->value().fromVariant( value );
+					if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() )
+					{
+						updateLinks();
+						updateFooter();
+						emit linksChanged();
+					}
+				}
+			}	break;
 		case NifModel::ArgCol:
 			item->setArg( value.toString() );
 			break;
@@ -1226,6 +1284,7 @@ bool NifModel::load( QIODevice & device )
 	
 	try
 	{
+		qint64 curpos = device.pos();
 		if ( version >= 0x0303000d )
 		{
 			// read in the NiBlocks
@@ -1237,34 +1296,66 @@ bool NifModel::load( QIODevice & device )
 					throw QString( "unexpected EOF during load" );
 				
 				QString blktyp;
-				
-				if ( version >= 0x0a000000 )
+				quint32 size = UINT_MAX;
+				try
 				{
-					// block types are stored in the header for versions above 10.x.x.x
-					int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
-					blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+					if ( version >= 0x0a000000 )
+					{
+						// block types are stored in the header for versions above 10.x.x.x
+						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
+						blktyp = get<QString>( index( blktypidx, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+						
+						if ( version < 0x0a020000 )
+							device.read( 4 );
+
+						// for version 20.3.0.3 and above the block size is stored in the header
+						if (version >= 0x14030003)
+							size = get<quint32>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Size" ) ) );
+					}
+					else
+					{
+						int len;
+						device.read( (char *) &len, 4 );
+						if ( len < 2 || len > 80 )
+							throw QString( "next block does not start with a NiString" );
+						blktyp = device.read( len );
+					}
 					
-					if ( version < 0x0a020000 )
-						device.read( 4 );
+					if ( isNiBlock( blktyp ) )
+					{
+						msg( DbgMsg() << "loading block" << c << ":" << blktyp );
+						insertNiBlock( blktyp, -1, true );
+						if ( ! load( root->child( c+1 ), stream, true ) ) 
+							throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+					}
+					else
+						throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 				}
-				else
+				catch ( QString err )
 				{
-					int len;
-					device.read( (char *) &len, 4 );
-					if ( len < 2 || len > 80 )
-						throw QString( "next block does not start with a NiString" );
-					blktyp = device.read( len );
+					// version 20.3.0.3 can mostly recover from some failures because it store block sizes
+					if (size == UINT_MAX)
+						throw err;
 				}
-				
-				if ( isNiBlock( blktyp ) )
+				// Check device position and emit warning if location is not expected
+				if (size != UINT_MAX)
 				{
-					msg( DbgMsg() << "loading block" << c << ":" << blktyp );
-					insertNiBlock( blktyp, -1, true );
-					if ( ! load( root->child( c+1 ), stream, true ) ) 
-						throw QString( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+					qint64 pos = device.pos();
+					if ((curpos + size) != pos)
+					{
+						// unable to seek to location... abort
+						if (device.seek(curpos + size))
+							qWarning( tr("device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5").arg( c ).arg( blktyp ).arg(curpos).arg(pos).arg(curpos+size).toAscii() );
+						else
+							throw QString( "failed to reposition device at block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
+
+						curpos = device.pos();
+					}
+					else
+					{
+						curpos = pos;
+					}
 				}
-				else
-					throw QString( "encountered unknown block (%1)" ).arg( blktyp );
 			}
 			
 			// read in the footer
@@ -1935,3 +2026,129 @@ int NifModel::getParent( int block ) const
 	}
 	return parent;
 }
+
+QString NifModel::string( const QModelIndex & index, bool extraInfo ) const
+{
+	NifValue v = getValue( index );
+	if (v.type() == NifValue::tSizedString)
+		return BaseModel::get<QString>( index );
+
+	if (getVersionNumber() >= 0x14010003)
+	{
+		QModelIndex iIndex;
+		int idx = -1;
+		if (v.type() == NifValue::tStringIndex)
+			idx = get<int>( index );
+		else if (!v.isValid())
+			idx = get<int>( getIndex( index, "Index" ) );
+		if (idx == -1)
+		{
+			return QString();
+		}
+		else if ( idx >= 0 )
+		{
+			NifItem * header = this->getHeaderItem();
+			QModelIndex stringIndex = createIndex( header->row(), 0, header );
+			if ( stringIndex.isValid() )
+			{
+				QString string = BaseModel::get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+				if (extraInfo)
+					string = QString( "%2 [%1]").arg( idx ).arg( string );
+				return string;
+			}
+			else
+			{
+				return QString( "%1 - <index invalid>" ).arg( idx );
+			}
+		}
+	}
+	else
+	{
+		if (v.type() == NifValue::tNone)
+		{
+			QModelIndex iIndex = getIndex( index, "String" );
+			if (iIndex.isValid())
+				return BaseModel::get<QString>( iIndex );
+		}
+		else
+		{
+			return BaseModel::get<QString>( index );		
+		}
+	}
+	return QString();
+}
+
+QString NifModel::string( const QModelIndex & index, const QString & name, bool extraInfo ) const
+{
+	return string( getIndex(index, name), extraInfo );
+}
+
+
+bool NifModel::assignString( const QModelIndex & index, const QString & string, bool replace)
+{
+	NifValue v = getValue( index );
+
+	if (getVersionNumber() >= 0x14010003)
+	{
+		QModelIndex iIndex;
+		int idx = -1;
+		if (v.type() == NifValue::tStringIndex)
+			idx = get<int>( iIndex = index );
+		else if (!v.isValid())
+			idx = get<int>( iIndex = getIndex( index, "Index" ) );
+		else
+			return BaseModel::set<QString>( index, string );
+
+		QModelIndex header = getHeader();
+		int nstrings = get<int>( header, "Num Strings" );
+		if ( string.isEmpty() ) 
+		{
+			if (replace && idx >= 0 && idx < nstrings)
+			{
+				// TODO: Can we remove the string safely here?
+			}
+			return set<int>( iIndex, 0xffffffff );
+		}
+		// Simply replace the string
+		QModelIndex iArray = getIndex( header, "Strings" );
+		if (replace && idx >= 0 && idx < nstrings)
+		{
+			return BaseModel::set<QString>(iArray.child(idx, 0), string);
+		}
+
+		QVector<QString> stringVector = getArray<QString>( iArray );
+		idx = stringVector.indexOf(string);
+		// Already exists.  Just update the Index
+		if (idx >= 0 && idx < stringVector.size())
+		{
+			return set<int>( iIndex, idx );
+		}
+		else // append string to end of list
+		{
+			set<uint>( header, "Num Strings", nstrings+1);
+			updateArray(header, "Strings");
+			QModelIndex iArray = getIndex( header, "Strings" );
+			BaseModel::set<QString>(iArray.child(nstrings, 0), string);
+
+			return set<int>( iIndex, nstrings );
+		}
+	}
+	else // handle the older simpler strings
+	{
+		if (v.type() == NifValue::tNone)
+		{
+			return BaseModel::set<QString>( getIndex( index, "String" ), string );
+		}
+		else
+		{
+			return BaseModel::set<QString>( index, string );
+		}
+	}
+	return false;
+}
+
+bool NifModel::assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace )
+{
+	return assignString( getIndex(index, name), string, replace );
+}
+

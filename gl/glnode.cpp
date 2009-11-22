@@ -272,17 +272,31 @@ public:
 						
 						QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
 						
-						QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
-						QString nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
-						idx = nif->getIndex( iCB, "Property Type Offset" );
-						QString proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
-						idx = nif->getIndex( iCB, "Controller Type Offset" );
-						QString ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
-						idx = nif->getIndex( iCB, "Variable Offset 1" );
-						QString var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
-						idx = nif->getIndex( iCB, "Variable Offset 2" );
-						QString var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
-						
+						QString nodename = nif->get<QString>( iCB, "Node Name" );
+						if ( nodename.isEmpty() ) {
+							QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
+							nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						}
+						QString proptype = nif->get<QString>( iCB, "Property Type" );
+						if ( proptype.isEmpty() ) {
+							QModelIndex idx = nif->getIndex( iCB, "Property Type Offset" );
+							proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						}
+						QString ctrltype = nif->get<QString>( iCB, "Controller Type" );
+						if ( ctrltype.isEmpty() ) {
+							QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
+							ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						}
+						QString var1 = nif->get<QString>( iCB, "Variable 1" );
+						if ( var1.isEmpty() ) {
+							QModelIndex idx = nif->getIndex( iCB, "Variable Offset 1" );
+							var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						}
+						QString var2 = nif->get<QString>( iCB, "Variable 2" );
+						if ( var2.isEmpty() ) {
+							QModelIndex idx = nif->getIndex( iCB, "Variable Offset 2" );
+							var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+						}
 						Node * node = target->findChild( nodename );
 						if ( ! node )
 							continue;
@@ -871,7 +885,8 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	else if ( name == "bhkTransformShape" || name == "bhkConvexTransformShape" )
 	{
 		glPushMatrix();
-		glMultMatrix( nif->get<Matrix4>( iShape, "Transform" ) );
+		Matrix4 tm = nif->get<Matrix4>( iShape, "Transform" );
+		glMultMatrix( tm );
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack );
 		glPopMatrix();
 	}
