@@ -225,8 +225,8 @@ bool KfmModel::loadXML()
 {
 	QDir dir( QApplication::applicationDirPath() );
 	QString fname;
-	if ( dir.exists( "../../docsys/kfm.xml" ) )
-		fname = dir.filePath( "../../docsys/kfm.xml" );
+	if ( dir.exists( "../docsys/kfm.xml" ) )
+		fname = dir.filePath( "../docsys/kfm.xml" );
 	else
 		fname = dir.filePath( "kfm.xml" );
 	QString result = KfmModel::parseXmlDescription( fname );

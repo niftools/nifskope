@@ -156,11 +156,6 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
 			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
 		}
-		else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) )
-		{
-			QModelIndex iSource = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
-			texfn = TexCache::find( nif->get<QString>( iSource, "File Name" ), nif->getFolder() );
-		}
 	}
 	
 	//if ( ! texfn.isEmpty() )
