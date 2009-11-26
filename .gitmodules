@@ -1,0 +1,3 @@
+[submodule "docsys"]
+	path = docsys
+	url = git://github.com/amorilia/nifdocsys.git
