@@ -224,6 +224,7 @@ bool KfmModel::loadXML()
 			<< "kfm.xml"
 			<< "../docsys/kfm.xml"
 			<< "../../docsys/kfm.xml"
+			<< "docsys/kfmxml/kfm.xml"
 			<< "/usr/share/nifskope/kfm.xml" );
 	foreach( QString str, xmlList )
 	{

@@ -515,6 +515,7 @@ bool NifModel::loadXML()
 			<< "nif.xml"
 			<< "../docsys/nif.xml"
 			<< "../../docsys/nif.xml"
+			<< "docsys/nifxml/nif.xml"
 			<< "/usr/share/nifskope/nif.xml" );
 	foreach( QString str, xmlList )
 	{
