@@ -1992,6 +1992,10 @@ int NifModel::blockSize( NifItem * parent, NifSStream& stream ) const
 	for ( int row = 0; row < parent->childCount(); row++ )
 	{
 		NifItem * child = parent->child( row );
+		if ( child->isAbstract() )
+		{
+			continue;
+		}
 		if ( evalCondition( child ) )
 		{
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
