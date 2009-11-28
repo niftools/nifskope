@@ -179,6 +179,7 @@ public:
 						else
 						{
 							QString id = list.value( "name" );
+							// fancy things for NiMesh data streams
 							// replace control characters
 							id.replace("\\x01", "\x01");
 							if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
@@ -279,8 +280,13 @@ public:
 							list.value( "arr2" ),
 							list.value( "cond" ),
 							NifModel::version2number( list.value( "ver1" ) ),
-							NifModel::version2number( list.value( "ver2" ) )
+							NifModel::version2number( list.value( "ver2" ) ),
+							( list.value( "abstract" ) == "1" )
 						);
+						if ( data.isAbstract() )
+						{
+							data.value.setAbstract( true );
+						}
 						QString defval = list.value( "default" );
 						if ( ! defval.isEmpty() )
 						{

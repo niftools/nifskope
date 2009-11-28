@@ -41,21 +41,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file nifitem.h NifItem, NifBlock, NifData, NifSharedData
 
+//! Shared data for NifData.
+/**
+ * See QSharedDataPointer for details on data sharing in Qt;
+ * <a href="http://doc.trolltech.org/latest/shared.html">shared classes</a>
+ * give pointer efficiency to classes.
+ */
 class NifSharedData : public QSharedData
 {
 	friend class NifData;
 	
-	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2 )
-		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr(c) {}
+	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs )
+		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr(c), isAbstract( abs ) {}
 
 	NifSharedData( const QString & n, const QString & t )
-		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ) {}
+		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
 	
 	NifSharedData( const QString & n, const QString & t, const QString & txt )
-		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), text( txt ) {}
+		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), text( txt ), isAbstract( false ) {}
 	
 	NifSharedData()
-		: QSharedData(), ver1( 0 ), ver2( 0 ) {}
+		: QSharedData(), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
 	
 	QString  name;
 	QString  type;
@@ -70,13 +76,15 @@ class NifSharedData : public QSharedData
 	Expression condexpr;
 	QString  vercond;
 	Expression verexpr;
+	bool isAbstract;
 };
 
+//! Holds the data for a NifItem
 class NifData
 {
 public:
-	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2 )
-		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2 ) ), value( val ) {}
+	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2, bool isAbstract = false )
+		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract ) ), value( val ) {}
 	
 	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
 		: d( new NifSharedData( name, type, text ) ) {}
@@ -84,19 +92,34 @@ public:
 	NifData()
 		: d( new NifSharedData() ) {}
 	
+	//! Get the name of the data.
 	inline const QString & name() const	{ return d->name; }
+	//! Get the type of the data.
 	inline const QString & type() const	{ return d->type; }
+	//! Get the template type of the data.
 	inline const QString & temp() const	{ return d->temp; }
+	//! Get the argument of the data.
 	inline const QString & arg() const	{ return d->arg; }
+	//! Get the first array length of the data.
 	inline const QString & arr1() const	{ return d->arr1; }
+	//! Get the second array length of the data.
 	inline const QString & arr2() const	{ return d->arr2; }
+	//! Get the condition attribute of the data.
 	inline const QString & cond() const	{ return d->cond; }
+	//! Get the earliest version of the data.
 	inline quint32 ver1() const			{ return d->ver1; }
+	//! Get the latest version of the data.
 	inline quint32 ver2() const			{ return d->ver2; }
+	//! Get the text description of the data.
 	inline const QString & text() const	{ return d->text; }
+	//! Get the condition attribute of the data, as an expression.
 	inline const Expression & condexpr() const	{ return d->condexpr; }
+	//! Get the version condtion attribute of the data.
 	inline const QString & vercond() const	{ return d->vercond; }
+	//! Get the version condtion attribute of the data, as an expression.
 	inline const Expression & verexpr() const	{ return d->verexpr; }
+	//! Get the abstract attribute of the data.
+	inline const bool & isAbstract() const	{ return d->isAbstract; }
 	
 	void setName( const QString & name )	{ d->name = name; }
 	void setType( const QString & type )	{ d->type = type; }
@@ -133,7 +156,7 @@ struct NifBlock
 	QList<NifData> types;
 };
 
-
+//! An item which contains NifData
 class NifItem
 {
 public:
@@ -240,9 +263,12 @@ public:
 		childItems.clear();
 	}
 
+	//! Return the value of the item data (const version)
 	inline const NifValue & value() const	{ return itemData.value; }
+	//! Return the value of the item data
 	inline NifValue & value()	{ return itemData.value; }
 
+	//! Return the name of the data
 	inline QString  name() const	{	return itemData.name();	}
 	inline QString  type() const	{	return itemData.type();	}
 	inline QString  temp() const	{	return itemData.temp();	}
@@ -256,6 +282,7 @@ public:
 	inline const Expression& condexpr() const	{	return itemData.condexpr();	}
 	inline QString  vercond() const	{	return itemData.vercond();	}
 	inline const Expression& verexpr() const	{	return itemData.verexpr();	}
+	inline const bool & isAbstract() const	{ return itemData.isAbstract(); }
 	
 	inline void setName( const QString & name )	{	itemData.setName( name );	}
 	inline void setType( const QString & type )	{	itemData.setType( type );	}

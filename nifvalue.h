@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 #include "niftypes.h"
 
+//! \file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
 
 //! A generic class used for storing a value of any type.
 /*!
@@ -172,7 +173,7 @@ public:
 
 	
 	//! Initialize the value to nothing, type tNone.
-	NifValue() { typ = tNone; }
+	NifValue() { typ = tNone; isAbstract = false; }
 	//! Initialize the value to a default value of the specified type.
 	NifValue( Type t );
 	//! Copy constructor.
@@ -188,6 +189,9 @@ public:
 	 * Note that if Type is the same as originally, then the data is not cleared.
 	 */
 	void changeType( Type );
+
+	//! Set the abstract flag on this value.
+	void setAbstract( bool );
 	
 	//! Assignment. Performs a deep copy of the data.
 	void operator=( const NifValue & other );
@@ -235,21 +239,52 @@ public:
 	//! Check if the type of the data is a byte matrix.
 	bool isByteMatrix() const { return typ == tByteMatrix; }
 	
+	//! Return the value of the data as a QColor, if applicable.
 	QColor toColor() const;
+	//! Return the value of the data as a count.
 	quint32 toCount() const;
+	//! Return the value of the data as a float.
 	float toFloat() const;
+	//! Return the value of the data as a link, if applicable.
 	qint32 toLink() const;
+	//! Return the value of the data as a file version, if applicable.
 	quint32 toFileVersion() const;
 
+	//! Return a string which represents the value of the data.
 	QString toString() const;
+	//! See the documentation of QVariant for details.
 	QVariant toVariant() const;
 	
+	//! Set this value to a count.
+	/**
+	 * \return True if applicable, false otherwise
+	 */
 	bool setCount( quint32 );
+	//! Set this value to a float.
+	/**
+	 * \return True if applicable, false otherwise
+	 */
 	bool setFloat( float );
+	//! Set this value to a link.
+	/**
+	 * \return True if applicable, false otherwise
+	 */
 	bool setLink( int );
+	//! Set this value to a file version.
+	/**
+	 * \return True if applicable, false otherwise
+	 */
 	bool setFileVersion( quint32 );
 	
+	//! Set this value from a string.
+	/**
+	 * \return True if applicable, false otherwise
+	 */
 	bool fromString( const QString & );
+	//! Set this value from a QVariant.
+	/**
+	 * \return True if applicable, false otherwise
+	 */
 	bool fromVariant( const QVariant & );
 
 	//! Check whether the data can be converted to something of type T.
@@ -277,6 +312,9 @@ protected:
 	//! The data value.
 	Value val;
 	
+	//! If the value represents an abstract field. Does not seem to be reliably initialised yet.
+	bool isAbstract;
+
 	//! Get the data as an object of type T.
 	/*!
 	 * If the type t is not equal to the actual type of the data, then return T(). Serves
@@ -314,6 +352,8 @@ protected:
 	friend class NifOStream;
 	friend class NifSStream;
 };
+
+inline void NifValue::setAbstract( bool flag ) { isAbstract = flag; }
 
 inline quint32 NifValue::toCount() const {
 #ifdef WIN32
@@ -475,6 +515,7 @@ template <> inline bool NifValue::ask( QByteArray * ) const { return isByteArray
 class BaseModel;
 class NifItem;
 
+//! An input stream that reads a file into a model
 class NifIStream
 {
 	Q_DECLARE_TR_FUNCTIONS(NifIStream)

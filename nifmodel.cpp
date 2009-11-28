@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTime>
 #include <QSettings>
 
+#include <QDebug>
+
 //! \file nifmodel.cpp NifModel implementation, NifModelEval
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
@@ -286,10 +288,25 @@ void NifModel::updateHeader()
 		for ( int r = 1; r < root->childCount() - 1; r++ )
 		{
 			NifItem * block = root->child( r );
-			
+
+			/*
 			if ( ! blocktypes.contains( block->name() ) )
 				blocktypes.append( block->name() );
 			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
+			*/
+
+			// NiMesh hack
+			QString blockName = block->name();
+			qWarning() << blockName;
+			if ( blockName == "NiDataStream" )
+			{
+				blockName = QString("NiDataStream\x01%1\x01%2").arg( block->child( "Usage" )->value().get<int>() ).arg( block->child( "Access" )->value().get<int>() );
+				qWarning() << "Changing blockname to " << blockName;
+			}
+
+			if ( ! blocktypes.contains( blockName ) )
+				blocktypes.append( blockName );
+			blocktypeindices.append( blocktypes.indexOf( blockName ) );
 
          if (version >= 0x14020000 && idxBlockSize )
             updateArrays(block, false);
@@ -1590,20 +1607,41 @@ bool NifModel::load( QIODevice & device )
 					}
 					
 					// Hack for NiMesh data streams
+					qint32 dataStreamUsage = -1;
+					qint32 dataStreamAccess = -1;
 					if ( blktyp.startsWith( "NiDataStream\x01" ) )
 					{
-						// eventually initialise usage and access flags from here too
-						blktyp = "NiDataStream";
+						QStringList splitStream = blktyp.split("\x01");
+						blktyp = splitStream[0];
+						bool ok;
+						dataStreamUsage = splitStream[1].toInt( &ok );
+						if ( ! ok )
+						{
+							throw tr("Unknown NiDataStream");
+						}
+						dataStreamAccess = splitStream[2].toInt( &ok );
+						if ( ! ok )
+						{
+							throw tr("Unknown NiDataStream");
+						}
+#ifndef QT_NO_DEBUG
+						qWarning() << "Loaded NiDataStream with usage " << dataStreamUsage << " access " << dataStreamAccess;
+#endif
 					}
 					
 					if ( isNiBlock( blktyp ) )
 					{
 						//msg( DbgMsg() << "loading block" << c << ":" << blktyp );
-						insertNiBlock( blktyp, -1, true );
+						QModelIndex newBlock = insertNiBlock( blktyp, -1, true );
 						if ( ! load( root->child( c+1 ), stream, true ) ) 
 						{
 							NifItem * child = root->child( c );
 							throw tr("failed to load block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( child ? child->name() : prevblktyp );
+						}
+						if ( blktyp == "NiDataStream" )
+						{
+							set<qint32>( newBlock, "Usage", dataStreamUsage );
+							set<qint32>( newBlock, "Access", dataStreamAccess );
 						}
 					}
 					else
@@ -1985,6 +2023,14 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 	{
 		NifItem * child = parent->child( row );
 		
+		if ( child->isAbstract() )
+		{
+#ifndef QT_NO_DEBUG
+			// qWarning() << "Not loading abstract item " << child->name();
+#endif
+			continue;
+		}
+
 		if ( evalCondition( child ) )
 		{
 			if ( ! child->arr1().isEmpty() )
@@ -2017,6 +2063,15 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 	for ( int row = 0; row < parent->childCount(); row++ )
 	{
 		NifItem * child = parent->child( row );
+		
+		if ( child->isAbstract() )
+		{
+#ifndef QT_NO_DEBUG
+			qWarning() << "Not saving abstract item " << child->name();
+#endif
+			continue;
+		}
+		
 		if ( evalCondition( child ) )
 		{
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )

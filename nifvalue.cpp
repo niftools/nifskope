@@ -288,7 +288,7 @@ const NifValue::EnumOptions& NifValue::enumOptionData( const QString & eid )
 }
 
 	
-NifValue::NifValue( Type t ) : typ( tNone )
+NifValue::NifValue( Type t ) : typ( tNone ), isAbstract( false )
 {
 	changeType( t );
 }
