@@ -179,9 +179,6 @@ public:
 						else
 						{
 							QString id = list.value( "name" );
-							// fancy things for NiMesh data streams
-							// replace control characters
-							id.replace("\\x01", "\x01");
 							if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
 								err( tr("compound %1 is already registered as internal type").arg( list.value( "name" ) ) );
 							

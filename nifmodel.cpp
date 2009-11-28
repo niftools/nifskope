@@ -1582,6 +1582,8 @@ bool NifModel::load( QIODevice & device )
 						//   the upper bit or the blocktypeindex seems to be related to PhysX
 						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
 						blktyp = get<QString>( index( blktypidx & 0x7FFF, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+						// convert control characters (so far, only \x01)
+						blktyp.replace("\\x01", "\x01");
 						// note: some 10.0.1.0 version nifs from Oblivion in certain distributions seem to be missing
 						//       these four bytes on the havok blocks
 						//       (see for instance meshes/architecture/basementsections/ungrdltraphingedoor.nif)
