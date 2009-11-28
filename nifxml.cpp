@@ -197,7 +197,7 @@ public:
 							
 							if ( x == tagBlock )
 							{
-								blk->ancestor = QString(list.value( "inherit" )).replace("\\x01", "\x01");
+								blk->ancestor = list.value( "inherit" );
 								if ( ! blk->ancestor.isEmpty() )
 								{
 									if ( ! NifModel::blocks.contains( blk->ancestor ) )
