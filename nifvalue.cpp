@@ -287,8 +287,8 @@ const NifValue::EnumOptions& NifValue::enumOptionData( const QString & eid )
 	return enumMap[eid];
 }
 
-	
-NifValue::NifValue( Type t ) : typ( tNone ), isAbstract( false )
+// documented in nifvalue.h
+NifValue::NifValue( Type t ) : typ( tNone ), abstract( false )
 {
 	changeType( t );
 }

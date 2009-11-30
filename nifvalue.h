@@ -171,10 +171,9 @@ public:
 	//! Get list of all options that have been registered for the given enum type.
 	static const EnumOptions& enumOptionData( const QString & eid );
 
-	
-	//! Initialize the value to nothing, type tNone.
-	NifValue() { typ = tNone; isAbstract = false; }
-	//! Initialize the value to a default value of the specified type.
+	//! Constructor - initialize the value to nothing, type tNone.
+	NifValue() { typ = tNone; abstract = false; }
+	//! Constructor - initialize the value to a default value of the specified type.
 	NifValue( Type t );
 	//! Copy constructor.
 	NifValue( const NifValue & other );
@@ -190,8 +189,11 @@ public:
 	 */
 	void changeType( Type );
 
+	//! Get the abstract flag on this value. Does not seem to be reliably initialised yet.
+	inline bool isAbstract() { return abstract; }
+
 	//! Set the abstract flag on this value.
-	void setAbstract( bool );
+	inline void setAbstract( bool flag ) { abstract = flag; }
 	
 	//! Assignment. Performs a deep copy of the data.
 	void operator=( const NifValue & other );
@@ -313,7 +315,7 @@ protected:
 	Value val;
 	
 	//! If the value represents an abstract field. Does not seem to be reliably initialised yet.
-	bool isAbstract;
+	bool abstract;
 
 	//! Get the data as an object of type T.
 	/*!
@@ -352,8 +354,6 @@ protected:
 	friend class NifOStream;
 	friend class NifSStream;
 };
-
-inline void NifValue::setAbstract( bool flag ) { isAbstract = flag; }
 
 inline quint32 NifValue::toCount() const {
 #ifdef WIN32

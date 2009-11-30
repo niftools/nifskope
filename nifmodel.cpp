@@ -38,11 +38,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QByteArray>
 #include <QColor>
+#include <QDebug>
 #include <QFile>
 #include <QTime>
 #include <QSettings>
-
-#include <QDebug>
 
 //! \file nifmodel.cpp NifModel implementation, NifModelEval
 
@@ -297,11 +296,15 @@ void NifModel::updateHeader()
 
 			// NiMesh hack
 			QString blockName = block->name();
-			qWarning() << blockName;
+#ifndef QT_NO_DEBUG
+			qWarning() << "Updating header with " << blockName;
+#endif
 			if ( blockName == "NiDataStream" )
 			{
 				blockName = QString("NiDataStream\x01%1\x01%2").arg( block->child( "Usage" )->value().get<int>() ).arg( block->child( "Access" )->value().get<int>() );
+#ifndef QT_NO_DEBUG
 				qWarning() << "Changing blockname to " << blockName;
+#endif
 			}
 
 			if ( ! blocktypes.contains( blockName ) )
@@ -1638,6 +1641,7 @@ bool NifModel::load( QIODevice & device )
 							NifItem * child = root->child( c );
 							throw tr("failed to load block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( child ? child->name() : prevblktyp );
 						}
+						// NiMesh hack
 						if ( blktyp == "NiDataStream" )
 						{
 							set<qint32>( newBlock, "Usage", dataStreamUsage );
@@ -1771,6 +1775,9 @@ bool NifModel::save( QIODevice & device ) const
 		emit sigProgress( c+1, rowCount( QModelIndex() ) );
 
 		//msg( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
+#ifndef QT_NO_DEBUG
+		qWarning() << "saving block " << c << ": " << itemName( index( c, 0 ) );
+#endif
 		if ( itemType( index( c, 0 ) ) == "NiBlock" )
 		{
 			if ( version > 0x0a000000 )
@@ -1992,10 +1999,15 @@ int NifModel::blockSize( NifItem * parent, NifSStream& stream ) const
 	for ( int row = 0; row < parent->childCount(); row++ )
 	{
 		NifItem * child = parent->child( row );
+
 		if ( child->isAbstract() )
 		{
+#ifndef QT_NO_DEBUG
+			// qWarning() << "Not counting abstract item " << child->name();
+#endif
 			continue;
 		}
+
 		if ( evalCondition( child ) )
 		{
 			if ( ! child->arr1().isEmpty() || ! child->arr2().isEmpty() || child->childCount() > 0 )
