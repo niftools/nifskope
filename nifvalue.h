@@ -95,19 +95,19 @@ public:
 		tFileVersion = 31,
 		tByteArray = 32,
 		tStringPalette = 33,
-		tString = 34, // not a regular string: an integer for nif versions 20.1.0.3 and up
-		tFilePath = 35, // not a string: requires special handling for slash/backslash etc.
+		tString = 34, //!< not a regular string: an integer for nif versions 20.1.0.3 and up
+		tFilePath = 35, //!< not a string: requires special handling for slash/backslash etc.
 		tByteMatrix = 36,
 		tBlob = 37,
-
+		
 		tNone = 0xff
 	};
-
+	
 	enum EnumType
 	{
-		eNone,    // Not an enum
-		eDefault, // Standard enum
-		eFlags,   // bitflag enum
+		eNone,    //!< Not an enum
+		eDefault, //!< Standard enum
+		eFlags,   //!< bitflag enum
 	};
 	
 	// *** apparently not used ***
@@ -135,13 +135,13 @@ public:
 	 * corresponding to the internal string.
 	 */
 	static bool registerAlias( const QString & alias, const QString & internal );
-
+	
 	//! A struct holding information about a enumeration
 	struct EnumOptions {
 		EnumType t; //!< The enumeration type
 		QHash<quint32, QPair<QString, QString> > o; //!< The enumeration dictionary as a value, a name and a description
 	};
-
+	
 	//! Register an enum type.
 	static bool registerEnumType( const QString & eid, EnumType eTyp );
 	//! Register an option for an enum type.
@@ -170,7 +170,7 @@ public:
 	static EnumType enumType( const QString & eid );
 	//! Get list of all options that have been registered for the given enum type.
 	static const EnumOptions& enumOptionData( const QString & eid );
-
+	
 	//! Constructor - initialize the value to nothing, type tNone.
 	NifValue() { typ = tNone; abstract = false; }
 	//! Constructor - initialize the value to a default value of the specified type.
@@ -188,7 +188,7 @@ public:
 	 * Note that if Type is the same as originally, then the data is not cleared.
 	 */
 	void changeType( Type );
-
+	
 	//! Get the abstract flag on this value. Does not seem to be reliably initialised yet.
 	inline bool isAbstract() { return abstract; }
 
@@ -251,7 +251,7 @@ public:
 	qint32 toLink() const;
 	//! Return the value of the data as a file version, if applicable.
 	quint32 toFileVersion() const;
-
+	
 	//! Return a string which represents the value of the data.
 	QString toString() const;
 	//! See the documentation of QVariant for details.
@@ -262,16 +262,19 @@ public:
 	 * \return True if applicable, false otherwise
 	 */
 	bool setCount( quint32 );
+	
 	//! Set this value to a float.
 	/**
 	 * \return True if applicable, false otherwise
 	 */
 	bool setFloat( float );
+	
 	//! Set this value to a link.
 	/**
 	 * \return True if applicable, false otherwise
 	 */
 	bool setLink( int );
+	
 	//! Set this value to a file version.
 	/**
 	 * \return True if applicable, false otherwise
@@ -283,13 +286,14 @@ public:
 	 * \return True if applicable, false otherwise
 	 */
 	bool fromString( const QString & );
+	
 	//! Set this value from a QVariant.
 	/**
 	 * \return True if applicable, false otherwise
 	 */
 	bool fromVariant( const QVariant & );
-
-	//! Check whether the data can be converted to something of type T.
+	
+	//! Check whether the data is of type T.
 	template <typename T> bool ask( T * t = 0 ) const;
 	//! Get the data in the form of something of type T.
 	template <typename T> T get() const;
@@ -316,7 +320,7 @@ protected:
 	
 	//! If the value represents an abstract field. Does not seem to be reliably initialised yet.
 	bool abstract;
-
+	
 	//! Get the data as an object of type T.
 	/*!
 	 * If the type t is not equal to the actual type of the data, then return T(). Serves
@@ -332,8 +336,8 @@ protected:
 	
 	//! A dictionary yielding the Type from a type string.
 	static QHash<QString, Type>	typeMap;
-
-	//! A dictionary yielding the enumaration dictionary from a string.
+	
+	//! A dictionary yielding the enumeration dictionary from a string.
 	/*!
 	 * Enums are stored as mappings from quint32 to pairs of strings, where
 	 * the first string in the pair is the enumerant string, and the second
@@ -355,6 +359,7 @@ protected:
 	friend class NifSStream;
 };
 
+// documented above; should this really be inlined?
 inline quint32 NifValue::toCount() const {
 #ifdef WIN32
 	if ( isCount() )
@@ -367,13 +372,20 @@ inline quint32 NifValue::toCount() const {
 #endif
 	return 0;
 }
+// documented above
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
+// documented above
 inline qint32 NifValue::toLink() const { if ( isLink() ) return val.i32; else return -1; }
+// documented above
 inline quint32 NifValue::toFileVersion() const { if ( isFileVersion() ) return val.u32; else return 0; }
 
+// documented above
 inline bool NifValue::setCount( quint32 c ) { if ( isCount() ) { val.u32 = c; return true; } else return false; }
+// documented above
 inline bool NifValue::setFloat( float f ) { if ( isFloat() ) { val.f32 = f; return true; } else return false; }
+// documented above
 inline bool NifValue::setLink( int l ) { if ( isLink() ) { val.i32 = l; return true; } else return false; }
+// documented above
 inline bool NifValue::setFileVersion( quint32 v ) { if ( isFileVersion() ) { val.u32 = v; return true; } else return false; }
 
 template <typename T> inline T NifValue::getType( Type t ) const
@@ -448,21 +460,39 @@ template <> inline ByteMatrix* NifValue::get() const
 		return NULL;
 }
 
+//! Set the data from a boolean. Return true if successful.
 template <> inline bool NifValue::set( const bool & b ) { return setCount( b ); }
+//! Set the data from an integer. Return true if successful.
 template <> inline bool NifValue::set( const int & i ) { return setCount( i ); }
+//! Set the data from an unsigned integer. Return true if successful.
 template <> inline bool NifValue::set( const quint32 & i ) { return setCount( i ); }
+//! Set the data from a short. Return true if successful.
 template <> inline bool NifValue::set( const qint16 & i ) { return setCount( i ); }
+//! Set the data from an unsigned short. Return true if successful.
 template <> inline bool NifValue::set( const quint16 & i ) { return setCount( i ); }
+//! Set the data from an unsigned byte. Return true if successful.
 template <> inline bool NifValue::set( const quint8 & i ) { return setCount( i ); }
+//! Set the data from a float. Return true if successful.
 template <> inline bool NifValue::set( const float & f ) { return setFloat( f ); }
+//! Set the data from a Matrix. Return true if successful.
 template <> inline bool NifValue::set( const Matrix & x ) { return setType( tMatrix, x ); }
+//! Set the data from a Matrix4. Return true if successful.
 template <> inline bool NifValue::set( const Matrix4 & x ) { return setType( tMatrix4, x ); }
+//! Set the data from a Vector4. Return true if successful.
 template <> inline bool NifValue::set( const Vector4 & x ) { return setType( tVector4, x ); }
+//! Set the data from a Vector3. Return true if successful.
 template <> inline bool NifValue::set( const Vector3 & x ) { return setType( tVector3, x ); }
+//! Set the data from a Vector2. Return true if successful.
 template <> inline bool NifValue::set( const Vector2 & x ) { return setType( tVector2, x ); }
+//! Set the data from a Color3. Return true if successful.
 template <> inline bool NifValue::set( const Color3 & x ) { return setType( tColor3, x ); }
+//! Set the data from a Color4. Return true if successful.
 template <> inline bool NifValue::set( const Color4 & x ) { return setType( tColor4, x ); }
+//! Set the data from a Triangle. Return true if successful.
 template <> inline bool NifValue::set( const Triangle & x ) { return setType( tTriangle, x ); }
+
+// should this really be inlined?
+//! Set the data from a string. Return true if successful.
 template <> inline bool NifValue::set( const QString & x )
 {
 	if ( isString() )
@@ -477,6 +507,9 @@ template <> inline bool NifValue::set( const QString & x )
 	}
 	return false;
 }
+
+// should this really be inlined?
+//! Set the data from a byte array. Return true if successful.
 template <> inline bool NifValue::set( const QByteArray & x )
 {
 	if ( isByteArray() )
@@ -486,6 +519,9 @@ template <> inline bool NifValue::set( const QByteArray & x )
 	}
 	return false;
 }
+
+// should this really be inlined?
+//! Set the data from a quaternion. Return true if successful.
 template <> inline bool NifValue::set( const Quat & x )
 {
 	if ( isQuat() )
@@ -496,81 +532,121 @@ template <> inline bool NifValue::set( const Quat & x )
 	return false;
 }
 
+//! Check whether the data is a boolean.
 template <> inline bool NifValue::ask( bool * ) const { return isCount(); }
+//! Check whether the data is an integer.
 template <> inline bool NifValue::ask( int * ) const { return isCount(); }
+//! Check whether the data is a short.
 template <> inline bool NifValue::ask( short * ) const { return isCount(); }
+//! Check whether the data is a float.
 template <> inline bool NifValue::ask( float * ) const { return isFloat(); }
+//! Check whether the data is a Matrix.
 template <> inline bool NifValue::ask( Matrix * ) const { return type() == tMatrix; }
+//! Check whether the data is a Matrix4.
 template <> inline bool NifValue::ask( Matrix4 * ) const { return type() == tMatrix4; }
+//! Check whether the data is a quaternion.
 template <> inline bool NifValue::ask( Quat * ) const { return isQuat(); }
+//! Check whether the data is a Vector4.
 template <> inline bool NifValue::ask( Vector4 * ) const { return type() == tVector4; }
+//! Check whether the data is a Vector3.
 template <> inline bool NifValue::ask( Vector3 * ) const { return type() == tVector3; }
+//! Check whether the data is a Vector2.
 template <> inline bool NifValue::ask( Vector2 * ) const { return type() == tVector2; }
+//! Check whether the data is a Color3.
 template <> inline bool NifValue::ask( Color3 * ) const { return type() == tColor3; }
+//! Check whether the data is a Color4.
 template <> inline bool NifValue::ask( Color4 * ) const { return type() == tColor4; }
+//! Check whether the data is a Triangle.
 template <> inline bool NifValue::ask( Triangle * ) const { return type() == tTriangle; }
+//! Check whether the data is a string.
 template <> inline bool NifValue::ask( QString * ) const { return isString(); }
+//! Check whether the data is a byte array.
 template <> inline bool NifValue::ask( QByteArray * ) const { return isByteArray(); }
 
 class BaseModel;
 class NifItem;
 
-//! An input stream that reads a file into a model
+//! An input stream that reads a file into a model.
 class NifIStream
 {
 	Q_DECLARE_TR_FUNCTIONS(NifIStream)
 
 public:
+	//! Constructor.
 	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d ) { init(); }
 	
+	//! Reads a NifValue from the underlying device. Returns true if successful.
 	bool read( NifValue & );
 
 private:
+	//! The model that data is being read into.
 	BaseModel * model;
+	//! The underlying device that data is being read from.
 	QIODevice * device;
 	
+	//! Initialises the stream.
 	void init();
 	
+	//! Whether a boolean is 32-bit.
 	bool bool32bit;
+	//! Whether link adjustment is required.
 	bool linkAdjust;
+	//! Whether string adjustment is required.
 	bool stringAdjust;
 
+	//! The maximum length of a string that can be read.
 	int maxLength;
 };
 
+//! An output stream that writes a model to a file.
 class NifOStream
 {
 	Q_DECLARE_TR_FUNCTIONS(NifOStream)
 
 public:
+	//! Constructor.
 	NifOStream( const BaseModel * n, QIODevice * d ) : model( n ), device( d ) { init(); }
 	
+	//! Writes a NifValue to the underlying device. Returns true if successful.
 	bool write( const NifValue & );
 
 private:
+	//! The model that data is being read from.
 	const BaseModel * model;
+	//! The underlying device that data is being written to.
 	QIODevice * device;
 	
+	//! Initialises the stream.
 	void init();
 	
+	//! Whether a boolean is 32-bit.
 	bool bool32bit;
+	//! Whether link adjustment is required.
 	bool linkAdjust;
+	//! Whether string adjustment is required.
 	bool stringAdjust;
 };
 
+//! A stream that determines the size of values in a model.
 class NifSStream
 {
 public:
+	//! Constructor.
 	NifSStream( const BaseModel * n ) : model( n ) { init(); }
 	
+	//! Determine the size of a given NifValue.
 	int size( const NifValue & );
 	
 private:
+	//! The model that values are being sized for.
 	const BaseModel * model;
 	
+	//! Initialises the stream.
 	void init();
 	
+	//! Whether booleans are 32-bit or not.
 	bool bool32bit;
+	//! Whether string adjustment is required.
 	bool stringAdjust;
 };
 

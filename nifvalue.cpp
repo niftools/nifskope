@@ -38,6 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QHash>
 #include <QSettings>
 
+//! \file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
+
 /*
  *  NifValue
  */
@@ -287,7 +289,6 @@ const NifValue::EnumOptions& NifValue::enumOptionData( const QString & eid )
 	return enumMap[eid];
 }
 
-// documented in nifvalue.h
 NifValue::NifValue( Type t ) : typ( tNone ), abstract( false )
 {
 	changeType( t );
