@@ -81,16 +81,16 @@ rm -f ~/rpmbuild/SOURCES/nifskope-$VERSION.tar.bz2
 mkdir nifskope-$VERSION
 
 # copy xml files
-cd ../../docsys
-cp nif.xml kfm.xml ../nifskope/linux-install/nifskope-$VERSION
-cd ../nifskope/linux-install
+cd ../docsys
+cp nifxml/nif.xml kfmxml/kfm.xml ../linux-install/nifskope-$VERSION
+cd ../linux-install
 
 # copy docsys files
-cd ../../docsys
+cd ../docsys
 rm -f doc/*.html
 python nifxml_doc.py
-cp --parents doc/*.html doc/docsys.css doc/favicon.ico ../nifskope/linux-install/nifskope-$VERSION
-cd ../nifskope/linux-install
+cp --parents doc/*.html doc/docsys.css doc/favicon.ico ../linux-install/nifskope-$VERSION
+cd ../linux-install
 
 # run config script
 cd ..
