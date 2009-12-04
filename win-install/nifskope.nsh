@@ -211,11 +211,11 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\README.TXT
   File ..\CHANGELOG.TXT
   File ..\LICENSE.TXT
-  File ..\..\docsys\nif.xml
-  File ..\..\docsys\kfm.xml
+  File ..\docsys\nifxml\nif.xml
+  File ..\docsys\kfmxml\kfm.xml
   File nif_file.ico
   File ..\style.qss
-  File ..\..\contrib\niflib\NifMopp\NifMopp.dll
+  File ..\NifMopp.dll
   
   ; Install shaders
   SetOutPath $INSTDIR\shaders
@@ -229,11 +229,11 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\lang\*.qm
 
   ; Install reference manual
-  ; run ..\..\docsys\nifxml_doc.py to update the HTML files before compiling the install script
+  ; run ..\docsys\nifxml_doc.py to update the HTML files before compiling the install script
   SetOutPath $INSTDIR\doc
-  File ..\..\docsys\doc\*.html
-  File ..\..\docsys\doc\docsys.css
-  File ..\..\docsys\doc\favicon.ico
+  File ..\docsys\doc\*.html
+  File ..\docsys\doc\docsys.css
+  File ..\docsys\doc\favicon.ico
 
   ; Install shortcuts
   SetOutPath $INSTDIR
