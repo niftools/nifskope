@@ -440,7 +440,7 @@ void Mesh::transform()
 		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), "NiSkinData" );
 		
 		skelRoot = nif->getLink( iSkin, "Skeleton Root" );
-		skelTrans = Transform( nif, iSkinData );
+		skelTrans = Transform( nif, nif->getIndex( iSkinData, "Skin Transform" ) );
 		
 		bones = nif->getLinkArray( iSkin, "Bones" );
 		

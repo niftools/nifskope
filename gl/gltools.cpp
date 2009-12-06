@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b )
 {
-	trans = Transform( nif, index );
+	trans = Transform( nif, nif->getIndex( index, "Skin Transform" ) );
 	center = nif->get<Vector3>( index, "Center" );
 	radius = nif->get<float>( index, "Radius" );
 	bone = b;
