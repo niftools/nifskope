@@ -2,6 +2,14 @@
 
 #include <QDebug>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file misc.cpp
+ * \brief Miscellaneous helper spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Update an array if eg. the size has changed
 class spUpdateArray : public Spell
 {
 public:
@@ -52,6 +60,7 @@ public:
 
 REGISTER_SPELL( spUpdateArray )
 
+//! Updates the header of the NifModel
 class spUpdateHeader : public Spell
 {
 public:
@@ -72,6 +81,7 @@ public:
 
 REGISTER_SPELL( spUpdateHeader )
 
+//! Updates the footer of the NifModel
 class spUpdateFooter : public Spell
 {
 public:
@@ -92,6 +102,7 @@ public:
 
 REGISTER_SPELL( spUpdateFooter )
 
+//! Follows a link
 class spFollowLink : public Spell
 {
 public:
@@ -116,6 +127,7 @@ public:
 
 REGISTER_SPELL( spFollowLink )
 
+//! Estimates the file offset of an item in a model
 class spFileOffset : public Spell
 {
 public:
@@ -136,6 +148,7 @@ public:
 
 REGISTER_SPELL( spFileOffset )
 
+//! Removes empty links from a link array
 class spCollapseArray : public Spell
 {
 public:
@@ -176,3 +189,4 @@ public:
 };
 
 REGISTER_SPELL( spCollapseArray )
+

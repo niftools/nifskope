@@ -2,6 +2,13 @@
 
 #include "../widgets/nifeditors.h"
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file material.cpp
+ * \brief Material editing spells (spMaterialEdit)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 /* XPM */
 static char * mat42_xpm[] = {
 "64 64 43 1",
@@ -82,6 +89,7 @@ static char * mat42_xpm[] = {
 
 QIcon * mat42_xpm_icon = 0;
 
+//! Edit a material
 class spMaterialEdit : public Spell
 {
 public:
@@ -123,3 +131,4 @@ public:
 };
 
 REGISTER_SPELL( spMaterialEdit )
+

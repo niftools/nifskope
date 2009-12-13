@@ -2,6 +2,17 @@
 
 #include <QDebug>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file morphctrl.cpp
+ * \brief Morph controller spells (spMorphFrameSave)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Saves the current morph position.
+/**
+ * Does not seem to work properly? MorphController may need updating.
+ */
 class spMorphFrameSave : public Spell
 {
 public:
@@ -10,7 +21,8 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return checkMorpher( nif, index ) && listFrames( nif, index ).count() > 0;
+		return nif->isNiBlock( index, "NiGeomMorpherController" ) && nif->checkVersion( 0x0a010000, 0 )
+			&& getMeshData( nif, index ).isValid() && listFrames( nif, index ).count() > 0;
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -59,12 +71,8 @@ public:
 		
 		return index;
 	}
-
-	bool checkMorpher( const NifModel * nif, const QModelIndex & index )
-	{
-		return nif->isNiBlock( index, "NiGeomMorpherController" ) && nif->checkVersion( 0x0a010000, 0 ) && getMeshData( nif, index ).isValid();
-	}
 	
+	//! Helper function to get the Mesh data
 	QModelIndex getMeshData( const NifModel * nif, const QModelIndex & iMorpher )
 	{
 		QModelIndex iMesh = nif->getBlock( nif->getParent( nif->getBlockNumber( iMorpher ) ) );
@@ -80,16 +88,19 @@ public:
 			return QModelIndex();
 	}
 	
+	//! Helper function to get the morph data
 	QModelIndex getMorphData( const NifModel * nif, const QModelIndex & iMorpher )
 	{
 		return nif->getBlock( nif->getLink( iMorpher, "Data" ), "NiMorphData" );
 	}
 	
+	//! Helper function to get the morph frame array
 	QModelIndex getFrameArray( const NifModel * nif, const QModelIndex & iMorpher )
 	{
 		return nif->getIndex( getMorphData( nif, iMorpher ), "Morphs" );
 	}
 	
+	//! Helper function to get the list of morph frames
 	QStringList listFrames( const NifModel * nif, const QModelIndex & iMorpher )
 	{
 		QModelIndex iFrames = getFrameArray( nif, iMorpher );
@@ -109,3 +120,4 @@ public:
 };
 
 REGISTER_SPELL( spMorphFrameSave )
+

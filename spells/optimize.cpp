@@ -334,6 +334,7 @@ public:
 		return iParent;
 	}
 	
+	//! Determine if two shapes are identical
 	bool matches( const NifModel * nif, QModelIndex iTriA, QModelIndex iTriB )
 	{
 		if ( iTriA == iTriB || nif->itemName( iTriA ) != nif->itemName( iTriB )
@@ -384,6 +385,7 @@ public:
 		return dataMatches( nif, iDataA, iDataB );
 	}
 	
+	//! Determines if two sets of shape data are identical
 	bool dataMatches( const NifModel * nif, QModelIndex iDataA, QModelIndex iDataB )
 	{
 		if ( iDataA == iDataB )
@@ -403,8 +405,9 @@ public:
 		return true;
 	}
 	
+	//! Combines meshes a and b ( a += b )
 	void combine( NifModel * nif, QModelIndex iTriA, QModelIndex iTriB )
-	{	// combine meshes a and b ( a += b )
+	{
 		nif->set<quint32>( iTriB, "Flags", nif->get<quint32>( iTriB, "Flags" ) | 1 );
 		
 		QModelIndex iDataA = nif->getBlock( nif->getLink( iTriA, "Data" ), "NiTriBasedGeomData" );

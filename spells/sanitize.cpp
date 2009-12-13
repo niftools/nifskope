@@ -2,6 +2,16 @@
 
 #include <QDebug>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file sanitize.cpp
+ * \brief Sanity spells
+ *
+ * These spells are called by SpellBook::sanitize.
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Reorders and removes empty members from link arrays
 class spSanitizeLinkArrays : public Spell
 {
 public:
@@ -90,7 +100,7 @@ public:
 
 REGISTER_SPELL( spSanitizeLinkArrays )
 
-
+//! Fixes texture path names and options
 class spAdjustTextureSources : public Spell
 {
 public:
@@ -130,6 +140,7 @@ public:
 
 REGISTER_SPELL( spAdjustTextureSources )
 
+//! Reorders blocks
 class spSanitizeBlockOrder : public Spell
 {
 public:
@@ -223,6 +234,7 @@ public:
 
 REGISTER_SPELL( spSanitizeBlockOrder )
 
+//! Checks that links are correct
 class spSanityCheckLinks : public Spell
 {
 public:
@@ -298,3 +310,4 @@ public:
 };
 
 REGISTER_SPELL( spSanityCheckLinks )
+

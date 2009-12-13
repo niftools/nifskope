@@ -2,6 +2,14 @@
 
 #include "../widgets/colorwheel.h"
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file color.cpp
+ * \brief Color editing spells (spChooseColor)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Choose a color using a ColorWheel
 class spChooseColor : public Spell
 {
 public:
@@ -26,5 +34,4 @@ public:
 };
 
 REGISTER_SPELL( spChooseColor )
-
 

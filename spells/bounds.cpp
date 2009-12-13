@@ -3,6 +3,13 @@
 
 #include <QDebug>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file bounds.cpp
+ * \brief Bounding box editing spells (spEditBounds)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 //! Edit a bounding box
 class spEditBounds : public Spell
 {

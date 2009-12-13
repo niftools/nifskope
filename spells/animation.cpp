@@ -3,6 +3,13 @@
 #include <QDebug>
 #include <QFileDialog>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file animation.cpp
+ * \brief Animation editing spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 //! Attach a .KF to a .NIF
 /*!
  * This only works for 10.0.1.0 onwards; prior to then a NiSequenceStreamHelper or NiSequence can be a root block.

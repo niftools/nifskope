@@ -3,6 +3,16 @@
 
 #include <QDebug>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file moppcode.cpp
+ * \brief Havok MOPP spells
+ *
+ * Note that this code only works on the Windows platform due an external
+ * dependency on the Havok SDK, with which NifMopp.dll is compiled.
+ *
+ * Most classes here inherit from the Spell class.
+ */
+
 // Need to include headers before testing this
 #ifdef Q_OS_WIN32
 
@@ -12,6 +22,7 @@ extern "C" void * __stdcall LoadLibraryA( const char * lpModuleName );
 extern "C" void * __stdcall GetProcAddress ( void * hModule, const char * lpProcName);
 extern "C" void __stdcall FreeLibrary( void * lpModule );
 
+//! Interface to the external MOPP library
 class HavokMoppCode
 {
 private:
@@ -110,7 +121,7 @@ public:
 	}
 } TheHavokCode;
 
-//! Update Havok MOPP
+//! Update Havok MOPP for a given shape
 class spMoppCode : public Spell
 {
 public:
@@ -222,6 +233,7 @@ public:
 
 REGISTER_SPELL( spMoppCode )
 
+//! Update MOPP code on all shapes in this model
 class spAllMoppCodes : public Spell
 {
 public:

@@ -8,6 +8,13 @@
 #include <QListWidget>
 #include <QPushButton>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file headerstring.cpp
+ * \brief Header string editing spells (spEditStringIndex)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 /* XPM */
 static char * txt_xpm[] = {
 "32 32 36 1",
@@ -54,6 +61,7 @@ static char * txt_xpm[] = {
 
 static QIcon * txt_xpm_icon = 0;
 
+//! Edit the index of a header string
 class spEditStringIndex : public Spell
 {
 public:
@@ -98,7 +106,7 @@ public:
 		QDialog dlg;
 		
 		QLabel * lb = new QLabel( & dlg );
-		lb->setText( "Select a string or enter a new one" );
+		lb->setText( Spell::tr("Select a string or enter a new one") );
 		
 		QListWidget * lw = new QListWidget( & dlg );
 		lw->addItems( strings );
@@ -111,10 +119,10 @@ public:
 		QObject::connect( lw, SIGNAL( itemActivated( QListWidgetItem * ) ), & dlg, SLOT( accept() ) );
 		QObject::connect( le, SIGNAL( returnPressed() ), & dlg, SLOT( accept() ) );
 		
-		QPushButton * bo = new QPushButton( "Ok", & dlg );
+		QPushButton * bo = new QPushButton( Spell::tr("Ok"), & dlg );
 		QObject::connect( bo, SIGNAL( clicked() ), & dlg, SLOT( accept() ) );
 		
-		QPushButton * bc = new QPushButton( "Cancel", & dlg );
+		QPushButton * bc = new QPushButton( Spell::tr("Cancel"), & dlg );
 		QObject::connect( bc, SIGNAL( clicked() ), & dlg, SLOT( reject() ) );
 		
 		QGridLayout * grid = new QGridLayout;
@@ -129,7 +137,7 @@ public:
 			return index;
 		
 		nif->set<QString>( index, le->text() );
-	
+		
 		return index;
 	}
 };

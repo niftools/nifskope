@@ -8,6 +8,14 @@
 #include <QLayout>
 #include <QPushButton>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file normals.cpp
+ * \brief Vertex normal spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! Recalculates and faces the normals of a mesh
 class spFaceNormals : public Spell
 {
 public:
@@ -105,6 +113,7 @@ public:
 
 REGISTER_SPELL( spFlipNormals )
 
+//! Smooths the normals of a mesh
 class spSmoothNormals : public Spell
 {
 public:
@@ -199,6 +208,10 @@ public:
 
 REGISTER_SPELL( spSmoothNormals )
 
+//! Normalises any single Vector3 or array.
+/**
+ * Most used on Normals, Binormals and Tangents.
+ */
 class spNormalize : public Spell
 {
 public:
@@ -230,3 +243,4 @@ public:
 };
 
 REGISTER_SPELL( spNormalize )
+

@@ -16,11 +16,24 @@
 
 #define SKEL_DAT ":/res/spells/skel.dat"
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file skeleton.cpp
+ * \brief Skeleton spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
+//! An attempt at providing a qDebug stream operator for Vector3
+/**
+ * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
+ * for how this is supposed to work.
+ */
 QDebug operator<<( QDebug dbg, const Vector3 & v )
 {
 	return dbg << v[0] << v[1] << v[2];
 }
 
+//! A map of bone names to their transforms
 typedef QMap<QString,Transform> TransMap;
 
 //! "Fix" a v4.0.0.2 skeleton
@@ -230,6 +243,7 @@ public:
 
 //REGISTER_SPELL( spScanSkeleton )
 
+//! Unknown; unused?
 template <> inline bool qMapLessThanKey<Triangle>(const Triangle &s1, const Triangle &s2)
 {
 	int d = 0;
@@ -238,6 +252,8 @@ template <> inline bool qMapLessThanKey<Triangle>(const Triangle &s1, const Tria
 	if (d == 0) d = (s1[2] - s2[2]);
 	return d < 0; 
 }
+
+//! Rotate a Triangle
 inline void qRotate(Triangle &t)
 {
 	if (t[1] < t[0] && t[1] < t[2]) {
@@ -269,6 +285,7 @@ public:
 	
 	typedef QPair<int,float> boneweight;
 	
+	//! Helper for sorting a boneweight list
 	struct boneweight_equivalence {
 		bool operator()(const boneweight& lhs, const boneweight& rhs) {
 			if (lhs.second == 0.0) {
@@ -286,7 +303,7 @@ public:
 		}
 	};
 
-
+	//! A bone and Triangle set
 	typedef struct {
 		QList<int> bones;
 		QVector<Triangle> triangles;
@@ -299,6 +316,7 @@ public:
 		return cast( nif, iBlock, mbpp, mbpv, make_strips );
 	}
 	
+	//! Cast with extra parameters
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock, int & maxBonesPerPartition, int & maxBonesPerVertex, bool make_strips, bool pad = false )
 	{
 		QPersistentModelIndex iShape = iBlock;
@@ -1434,3 +1452,4 @@ public:
 };
 
 REGISTER_SPELL( spMirrorSkeleton )
+

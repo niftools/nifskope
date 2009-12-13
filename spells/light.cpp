@@ -2,6 +2,13 @@
 
 #include "../widgets/nifeditors.h"
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file light.cpp
+ * \brief Light editing spells (spLightEdit)
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 /* XPM */
 static char * light42_xpm[] = {
 "24 24 43 1",
@@ -42,6 +49,7 @@ static char * light42_xpm[] = {
 
 QIcon * light42_xpm_icon = 0;
 
+//! Edit the parameters of a light object
 class spLightEdit : public Spell
 {
 public:
@@ -92,3 +100,4 @@ public:
 };
 
 REGISTER_SPELL( spLightEdit )
+

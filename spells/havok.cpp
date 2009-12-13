@@ -6,6 +6,13 @@
 
 #include <QDebug>
 
+// Brief description is deliberately not autolinked to class Spell
+/*! \file havok.cpp
+ * \brief Havok spells
+ *
+ * All classes here inherit from the Spell class.
+ */
+
 //Wz didn't provide enough code for this to work.  I don't see any reason QHull can't be put on SVN, but he seems to have changed
 //the parameters of the example compute_convex_hull function, so I'll just leave it defined out until someone has a chance to dig
 //into it or provide an alternative implementation without QHull.
@@ -62,7 +69,7 @@ public:
 REGISTER_SPELL( spCreateCVS );
 #endif
 
-
+//! Transforms Havok constraints
 class spConstraintHelper : public Spell
 {
 public:
@@ -190,7 +197,7 @@ public:
 
 REGISTER_SPELL( spConstraintHelper )
 
-
+//! Calculates Havok spring lengths
 class spStiffSpringHelper : public Spell
 {
 public:
@@ -231,7 +238,7 @@ public:
 
 REGISTER_SPELL( spStiffSpringHelper )
 
-
+//! Packs Havok strips
 class spPackHavokStrips : public Spell
 {
 public:
