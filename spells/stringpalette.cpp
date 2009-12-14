@@ -197,17 +197,61 @@ public:
 
 REGISTER_SPELL( spEditStringOffset )
 
-StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QModelIndex & index, QWidget * parent)
+StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent) : QDialog( parent )
 {
 	this->nif = nif;
 	iPalette = index;
-
+	
+	listview = new QListView;
+	listmodel = new QStringListModel;
+	listview->setModel( listmodel );
+	
 	grid = new QGridLayout;
 	setLayout( grid );
+	
+	search = new QLineEdit( this );
+	replace = new QLineEdit( this );
+	
+	QLabel * title = new QLabel( this );
+	title->setText( Spell::tr( "Entries in the string palette" ) );
+	QLabel * subTitle = new QLabel( this );
+	subTitle->setText( Spell::tr( "Enter a pair of regular expressions to search and replace" ) );
+	QLabel * searchText = new QLabel( this );
+	searchText->setText( Spell::tr( "Search:" ) );
+	QLabel * replaceText = new QLabel( this );
+	replaceText->setText( Spell::tr( "Replace:" ) );
+	
+	QPushButton * ok = new QPushButton( Spell::tr( "Ok" ), this );
+	QPushButton * cancel = new QPushButton( Spell::tr( "Cancel" ), this );
+	QPushButton * preview = new QPushButton( Spell::tr( "Preview" ), this );
+	
+	QObject::connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	QObject::connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	QObject::connect( preview, SIGNAL( clicked() ), this, SLOT( stringlistRegex() ) );
+	
+	grid->addWidget( title, 0, 0, 1, 3 );
+	grid->addWidget( listview, 1, 0, 1, 3 );
+	grid->addWidget( subTitle, 2, 0, 1, 3 );
+	grid->addWidget( searchText, 3, 0, 1, 1 );
+	grid->addWidget( search, 3, 1, 1, 2 );
+	grid->addWidget( replaceText, 4, 0, 1, 1 );
+	grid->addWidget( replace, 4, 1, 1, 2 );
+	grid->addWidget( ok, 5, 0, 1, 1 );
+	grid->addWidget( cancel, 5, 1, 1, 1 );
+	grid->addWidget( preview, 5, 2, 1, 1 );
+}
+
+void StringPaletteRegexDialog::setStringList( QStringList & list )
+{
+	originalList = new QStringList( list );
+	listmodel->setStringList( list );
 }
 
 void StringPaletteRegexDialog::stringlistRegex()
 {
+	QRegExp replacer( search->text() );
+	listmodel->setStringList( * originalList );
+	listmodel->setStringList( listmodel->stringList().replaceInStrings( replacer, replace->text() ) );
 }
 
 //! Edit a string palette entry and update all references
@@ -234,12 +278,12 @@ public:
 		qWarning() << "This block uses " << iPalette;
 		
 		// display entries in current string palette, in order they appear
-		QDialog dlg;
+		StringPaletteRegexDialog * sprd = new StringPaletteRegexDialog( nif, iPalette );
 		
 		QByteArray bytes = nif->get<QByteArray>( iPalette, "Palette" );
 		
 		// map of old indices to strings
-		// QMap is always sorted by key
+		// QMap is always sorted by key, in this case the indices
 		QMap<int, QString> oldPalette;
 		int x = 0;
 		while ( x < bytes.count() )
@@ -258,43 +302,9 @@ public:
 		
 		QStringList oldEntries = oldPalette.values();
 		
-		QLabel * title = new QLabel( & dlg );
-		title->setText( Spell::tr( "Entries in the string palette" ) );
-		QLabel * subTitle = new QLabel( & dlg );
-		subTitle->setText( Spell::tr( "Enter a pair of regular expressions to search and replace" ) );
-
-		// consider using a QListView and QStringListModel here for ease of QStringList regex
-		QListView * listview = new QListView;
-		QStringListModel * listmodel = new QStringListModel;
-		listview->setModel( listmodel );
-		listmodel->setStringList( oldEntries );
-
-		//QListWidget * listwidget = new QListWidget( & dlg );
-		//listwidget->addItems( oldEntries );
-
-		QLabel * searchText = new QLabel( & dlg );
-		searchText->setText( Spell::tr( "Search:" ) );
-		QLineEdit * search = new QLineEdit( & dlg );
-		QLabel * replaceText = new QLabel( & dlg );
-		replaceText->setText( Spell::tr( "Replace:" ) );
-		QLineEdit * replace = new QLineEdit( & dlg );
-
-		//QObject::connect( listwidget, SIGNAL( currentTextChanged( const QString & ) ), oldText, SLOT( setText( const QString & ) ) );
-
-		QPushButton * preview = new QPushButton( Spell::tr( "Preview" ), & dlg );
+		sprd->setStringList( oldEntries );
 		
-		QGridLayout * grid = new QGridLayout;
-		dlg.setLayout( grid );
-		//grid->addWidget( listwidget, 0, 0, 1, 1 );
-		grid->addWidget( title, 0, 0, 1, 3 );
-		grid->addWidget( listview, 1, 0, 1, 3 );
-		grid->addWidget( subTitle, 2, 0, 1, 3 );
-		grid->addWidget( searchText, 3, 0, 1, 1 );
-		grid->addWidget( search, 3, 1, 1, 2 );
-		grid->addWidget( replaceText, 4, 0, 1, 1 );
-		grid->addWidget( replace, 4, 1, 1, 2 );
-		grid->addWidget( preview, 5, 1, 1, 1 );
-		dlg.exec();
+		sprd->exec();
 		
 		// perform regex replacement
 

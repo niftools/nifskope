@@ -16,17 +16,21 @@ class StringPaletteRegexDialog : public QDialog
 {
 	Q_OBJECT
 public:
-	StringPaletteRegexDialog( NifModel * nif, QModelIndex & index, QWidget * parent = 0 );
+	StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent = 0 );
 
 protected:
 	NifModel * nif;
-	QModelIndex iPalette;
-	QStringListModel * listmodel;
+	QPersistentModelIndex iPalette;
 	QListView * listview;
+	QStringListModel * listmodel;
+	QStringList * originalList;
 	QGridLayout * grid;
+	QLineEdit * search;
+	QLineEdit * replace;
 
-protected slots:
+public slots:
 	void stringlistRegex();
+	void setStringList( QStringList & list );
 
 };
 
