@@ -1,12 +1,23 @@
 #include "../spellbook.h"
 
+#include "stringpalette.h"
+
 #include <QDebug>
 #include <QDialog>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
+#include <QListView>
 #include <QListWidget>
 #include <QPushButton>
+#include <QStringListModel>
+
+// Brief description is deliberately not autolinked to class Spell
+/*! \file stringpalette.cpp
+ * \brief String palette editing spells
+ *
+ * All classes here inherit from the Spell class.
+ */
 
 /* XPM */
 static char * txt_xpm[] = {
@@ -54,6 +65,7 @@ static char * txt_xpm[] = {
 
 QIcon * txt_xpm_icon = 0;
 
+//! Edit a single offset into a string palette.
 class spEditStringOffset : public Spell
 {
 public:
@@ -69,12 +81,12 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->getValue( index ).type() == NifValue::tStringOffset && getStringPalette( nif ).isValid();
+		return nif->getValue( index ).type() == NifValue::tStringOffset && getStringPalette( nif, index ).isValid();
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iPalette = getStringPalette( nif );
+		QModelIndex iPalette = getStringPalette( nif, index );
 		
 		QMap<QString, int> strings = readStringPalette( nif, iPalette );
 		QString string = getString( strings, nif->get<int>( index ) );
@@ -82,7 +94,7 @@ public:
 		QDialog dlg;
 		
 		QLabel * lb = new QLabel( & dlg );
-		lb->setText( "Select a string or enter a new one" );
+		lb->setText( Spell::tr("Select a string or enter a new one") );
 		
 		QListWidget * lw = new QListWidget( & dlg );
 		lw->addItems( strings.keys() );
@@ -95,10 +107,10 @@ public:
 		QObject::connect( lw, SIGNAL( itemActivated( QListWidgetItem * ) ), & dlg, SLOT( accept() ) );
 		QObject::connect( le, SIGNAL( returnPressed() ), & dlg, SLOT( accept() ) );
 		
-		QPushButton * bo = new QPushButton( "Ok", & dlg );
+		QPushButton * bo = new QPushButton( Spell::tr("Ok"), & dlg );
 		QObject::connect( bo, SIGNAL( clicked() ), & dlg, SLOT( accept() ) );
 		
-		QPushButton * bc = new QPushButton( "Cancel", & dlg );
+		QPushButton * bc = new QPushButton( Spell::tr("Cancel"), & dlg );
 		QObject::connect( bc, SIGNAL( clicked() ), & dlg, SLOT( reject() ) );
 		
 		QGridLayout * grid = new QGridLayout;
@@ -117,23 +129,17 @@ public:
 		return index;
 	}
 	
-	static QModelIndex getStringPalette( const NifModel * nif )
+	//! Gets the string palette referred to by this string offset
+	static QModelIndex getStringPalette( const NifModel * nif, const QModelIndex & index )
 	{
-		QModelIndex iPalette;
-		for ( int n = 0; n < nif->getBlockCount(); n++ )
-		{
-			QModelIndex idx = nif->getBlock( n, "NiStringPalette" );
-			if ( idx.isValid() )
-			{
-				if ( ! iPalette.isValid() )
-					iPalette = idx;
-				else
-					return QModelIndex();
-			}
-		}
-		return iPalette;
+		QModelIndex iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
+		if ( iPalette.isValid() )
+			return iPalette;
+		
+		return QModelIndex();
 	}
 	
+	//! Reads a string palette and returns a map of strings to indices
 	static QMap<QString,int> readStringPalette( const NifModel * nif, const QModelIndex & iPalette )
 	{
 		QByteArray bytes = nif->get<QByteArray>( iPalette, "Palette" );
@@ -148,6 +154,7 @@ public:
 		return strings;
 	}
 	
+	//! Gets a particular string from a string palette
 	static QString getString( const QMap<QString,int> strings, int ofs )
 	{
 		if ( ofs >= 0 )
@@ -163,6 +170,13 @@ public:
 		return QString();
 	}
 	
+	//! Add a string to a string palette or find the index of it if it exists
+	/**
+	 * \param nif The model the string palette is in
+	 * \param iPalette The index of the string palette
+	 * \param string The string to add or find
+	 * \return The index of the string in the palette
+	 */
 	static int addString( NifModel * nif, const QModelIndex & iPalette, const QString & string )
 	{
 		if ( string.isEmpty() )
@@ -182,4 +196,153 @@ public:
 };
 
 REGISTER_SPELL( spEditStringOffset )
+
+StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QModelIndex & index, QWidget * parent)
+{
+	this->nif = nif;
+	iPalette = index;
+
+	grid = new QGridLayout;
+	setLayout( grid );
+}
+
+void StringPaletteRegexDialog::stringlistRegex()
+{
+}
+
+//! Edit a string palette entry and update all references
+class spEditStringEntries : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Replace Entries"); }
+	QString page() const { return Spell::tr("String Palette"); }
+	
+	bool instant() const { return false; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		// is this enough?
+		return nif->inherits( index, "NiSequence" ) && nif->checkVersion( 0x0A020000, 0x14000005 );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		// string offset is used in ControllerLink which exists in NiSequence
+		// a single palette could be share by multiple NiSequences
+		
+		QPersistentModelIndex iPalette = nif->getBlock( nif->getLink( index, "String Palette" ) );
+		qWarning() << "This block uses " << iPalette;
+		
+		// display entries in current string palette, in order they appear
+		QDialog dlg;
+		
+		QByteArray bytes = nif->get<QByteArray>( iPalette, "Palette" );
+		
+		// map of old indices to strings
+		// QMap is always sorted by key
+		QMap<int, QString> oldPalette;
+		int x = 0;
+		while ( x < bytes.count() )
+		{
+			QString s( & bytes.data()[x] );
+			oldPalette.insert( x, s );
+			x += s.length() + 1;
+		}
+		
+		QList<int> oldIndices = oldPalette.keys();
+		
+		for ( int i = 0; i < oldIndices.size(); i++ )
+		{
+			qWarning() << "Index " << i << ": " << oldPalette.value( oldIndices[i] );
+		}
+		
+		QStringList oldEntries = oldPalette.values();
+		
+		QLabel * title = new QLabel( & dlg );
+		title->setText( Spell::tr( "Entries in the string palette" ) );
+		QLabel * subTitle = new QLabel( & dlg );
+		subTitle->setText( Spell::tr( "Enter a pair of regular expressions to search and replace" ) );
+
+		// consider using a QListView and QStringListModel here for ease of QStringList regex
+		QListView * listview = new QListView;
+		QStringListModel * listmodel = new QStringListModel;
+		listview->setModel( listmodel );
+		listmodel->setStringList( oldEntries );
+
+		//QListWidget * listwidget = new QListWidget( & dlg );
+		//listwidget->addItems( oldEntries );
+
+		QLabel * searchText = new QLabel( & dlg );
+		searchText->setText( Spell::tr( "Search:" ) );
+		QLineEdit * search = new QLineEdit( & dlg );
+		QLabel * replaceText = new QLabel( & dlg );
+		replaceText->setText( Spell::tr( "Replace:" ) );
+		QLineEdit * replace = new QLineEdit( & dlg );
+
+		//QObject::connect( listwidget, SIGNAL( currentTextChanged( const QString & ) ), oldText, SLOT( setText( const QString & ) ) );
+
+		QPushButton * preview = new QPushButton( Spell::tr( "Preview" ), & dlg );
+		
+		QGridLayout * grid = new QGridLayout;
+		dlg.setLayout( grid );
+		//grid->addWidget( listwidget, 0, 0, 1, 1 );
+		grid->addWidget( title, 0, 0, 1, 3 );
+		grid->addWidget( listview, 1, 0, 1, 3 );
+		grid->addWidget( subTitle, 2, 0, 1, 3 );
+		grid->addWidget( searchText, 3, 0, 1, 1 );
+		grid->addWidget( search, 3, 1, 1, 2 );
+		grid->addWidget( replaceText, 4, 0, 1, 1 );
+		grid->addWidget( replace, 4, 1, 1, 2 );
+		grid->addWidget( preview, 5, 1, 1, 1 );
+		dlg.exec();
+		
+		// perform regex replacement
+
+		
+
+		// build map between old and new indices
+		
+		
+		// find all NiSequence blocks in the current model
+		QList<QPersistentModelIndex> sequenceList;
+		for ( int i = 0; i < nif->getBlockCount(); i++ )
+		{
+			QPersistentModelIndex current = nif->getBlock( i, "NiSequence" );
+			if ( current.isValid() )
+			{
+				sequenceList.append( current );
+			}
+		}
+		qWarning() << sequenceList;
+		
+		// find their string palettes
+		QList<QPersistentModelIndex> sequenceUpdateList;
+		QListIterator<QPersistentModelIndex> sequenceListIterator( sequenceList );
+		while ( sequenceListIterator.hasNext() )
+		{
+			QPersistentModelIndex temp = sequenceListIterator.next();
+			QPersistentModelIndex tempPalette = nif->getBlock( nif->getLink( temp, "String Palette" ) );
+			qWarning() << "Sequence " << temp << " uses " << tempPalette;
+			if ( iPalette == tempPalette )
+			{
+				qWarning() << "Identical to this sequence palette!";
+				sequenceUpdateList.append( temp );
+			}
+		}
+		
+		QListIterator<QPersistentModelIndex> sequenceUpdateIterator( sequenceUpdateList );
+		while ( sequenceUpdateIterator.hasNext() )
+		{
+			QPersistentModelIndex temp = sequenceUpdateIterator.next();
+			qWarning() << "Need to update " << temp;
+		}
+		
+		// update all references to that palette
+		return index;
+	}
+};
+
+#ifndef QT_NO_DEBUG
+REGISTER_SPELL( spEditStringEntries )
+#endif
 
