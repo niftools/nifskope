@@ -275,8 +275,9 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		// is this enough?
-		return nif->inherits( index, "NiSequence" ) && nif->checkVersion( 0x0A020000, 0x14000005 );
+		return nif->inherits( index, "NiSequence" )
+			&& nif->getBlock( nif->getLink( index, "String Palette" ) ).isValid()
+			&& nif->checkVersion( 0x0A020000, 0x14000005 );
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -288,6 +289,16 @@ public:
 #ifndef QT_NO_DEBUG
 		qWarning() << "This block uses " << iPalette;
 #endif
+		if ( ! iPalette.isValid() )
+		{
+			iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
+			
+			if ( ! iPalette.isValid() )
+			{
+				qWarning() << Spell::tr( "Cannot find string palette" );
+				return QModelIndex();
+			}
+		}
 		
 		// display entries in current string palette, in order they appear
 		StringPaletteRegexDialog * sprd = new StringPaletteRegexDialog( nif, iPalette );
@@ -350,13 +361,16 @@ public:
 		for ( int i = 0; i < newOffsets.size(); i++ )
 		{
 			qWarning() << "New index " << i << ": " << newPalette.value( newOffsets[i] );
-			qWarning() << "Old offset: " << oldOffsets[i] << " maps to " << newOffsets[i];
 		}
 #endif
 		
 		// build map between old and new offsets
-		
-		/*
+		QMap<int, int> offsetMap;
+		for ( int i = 0; i < oldOffsets.size(); i++ )
+		{
+			offsetMap.insert( oldOffsets[i], newOffsets[i] );
+			qWarning() << "Old offset: " << oldOffsets[i] << " maps to " << newOffsets[i];
+		}
 		
 		// find all NiSequence blocks in the current model
 		QList<QPersistentModelIndex> sequenceList;
@@ -368,7 +382,10 @@ public:
 				sequenceList.append( current );
 			}
 		}
-		qWarning() << sequenceList;
+		
+#ifndef QT_NO_DEBUG
+		qWarning() << "Found sequences " << sequenceList;
+#endif
 		
 		// find their string palettes
 		QList<QPersistentModelIndex> sequenceUpdateList;
@@ -385,16 +402,42 @@ public:
 			}
 		}
 		
+		// update all references to that palette
 		QListIterator<QPersistentModelIndex> sequenceUpdateIterator( sequenceUpdateList );
 		while ( sequenceUpdateIterator.hasNext() )
 		{
-			QPersistentModelIndex temp = sequenceUpdateIterator.next();
-			qWarning() << "Need to update " << temp;
-		}
+			QPersistentModelIndex nextBlock = sequenceUpdateIterator.next();
+			qWarning() << "Need to update " << nextBlock;
 
-		*/
+			QPersistentModelIndex blocks = nif->getIndex( nextBlock, "Controlled Blocks" );
+			for ( int i = 0; i < nif->rowCount( blocks ); i++ )
+			{
+				QPersistentModelIndex thisBlock = blocks.child( i, 0 );
+				for ( int j = 0; j < nif->rowCount( thisBlock ); j++ )
+				{
+					if( nif->getValue( thisBlock.child( j, 0 ) ).type() == NifValue::tStringOffset )
+					{
+						// we shouldn't ever exceed the limit of an int, even though the type
+						// is properly a uint
+						int oldValue = nif->get<int>( thisBlock.child( j, 0 ) );
+						qWarning() << "Index " << thisBlock.child( j, 0 )
+							<< " is a string offset with name "
+							<< nif->itemName( thisBlock.child( j, 0 ) )
+							<< " and value "
+							<< nif->get<int>( thisBlock.child( j, 0 ) );
+						if ( oldValue != -1 )
+						{
+							int newValue = offsetMap.value( oldValue );
+							nif->set<int>( thisBlock.child( j, 0 ), newValue );
+						}
+					}
+				}
+			}
+		}
 		
-		// update all references to that palette
+		// update the palette itself
+		nif->set<QByteArray>( iPalette, "Palette", bytes );
+		
 		return index;
 	}
 };
