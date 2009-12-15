@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QStringListModel>
 
@@ -369,7 +370,7 @@ public:
 		for ( int i = 0; i < oldOffsets.size(); i++ )
 		{
 			offsetMap.insert( oldOffsets[i], newOffsets[i] );
-			qWarning() << "Old offset: " << oldOffsets[i] << " maps to " << newOffsets[i];
+			//qWarning() << "Old offset: " << oldOffsets[i] << " maps to " << newOffsets[i];
 		}
 		
 		// find all NiSequence blocks in the current model
@@ -394,20 +395,21 @@ public:
 		{
 			QPersistentModelIndex temp = sequenceListIterator.next();
 			QPersistentModelIndex tempPalette = nif->getBlock( nif->getLink( temp, "String Palette" ) );
-			qWarning() << "Sequence " << temp << " uses " << tempPalette;
+			//qWarning() << "Sequence " << temp << " uses " << tempPalette;
 			if ( iPalette == tempPalette )
 			{
-				qWarning() << "Identical to this sequence palette!";
+				//qWarning() << "Identical to this sequence palette!";
 				sequenceUpdateList.append( temp );
 			}
 		}
 		
 		// update all references to that palette
 		QListIterator<QPersistentModelIndex> sequenceUpdateIterator( sequenceUpdateList );
+		int numRefsUpdated = 0;
 		while ( sequenceUpdateIterator.hasNext() )
 		{
 			QPersistentModelIndex nextBlock = sequenceUpdateIterator.next();
-			qWarning() << "Need to update " << nextBlock;
+			//qWarning() << "Need to update " << nextBlock;
 
 			QPersistentModelIndex blocks = nif->getIndex( nextBlock, "Controlled Blocks" );
 			for ( int i = 0; i < nif->rowCount( blocks ); i++ )
@@ -420,15 +422,18 @@ public:
 						// we shouldn't ever exceed the limit of an int, even though the type
 						// is properly a uint
 						int oldValue = nif->get<int>( thisBlock.child( j, 0 ) );
+#ifndef QT_NO_DEBUG
 						qWarning() << "Index " << thisBlock.child( j, 0 )
 							<< " is a string offset with name "
 							<< nif->itemName( thisBlock.child( j, 0 ) )
 							<< " and value "
 							<< nif->get<int>( thisBlock.child( j, 0 ) );
+#endif
 						if ( oldValue != -1 )
 						{
 							int newValue = offsetMap.value( oldValue );
 							nif->set<int>( thisBlock.child( j, 0 ), newValue );
+							numRefsUpdated++;
 						}
 					}
 				}
@@ -437,12 +442,13 @@ public:
 		
 		// update the palette itself
 		nif->set<QByteArray>( iPalette, "Palette", bytes );
+
+		QMessageBox::information( 0, "NifSkope",
+				Spell::tr( "Updated %1 offsets in %2 sequences" ).arg( numRefsUpdated ).arg( sequenceUpdateList.size() ) );
 		
 		return index;
 	}
 };
 
-#ifndef QT_NO_DEBUG
 REGISTER_SPELL( spEditStringEntries )
-#endif
 
