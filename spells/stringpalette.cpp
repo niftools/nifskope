@@ -139,7 +139,7 @@ public:
 		return QModelIndex();
 	}
 	
-	//! Reads a string palette and returns a map of strings to indices
+	//! Reads a string palette and returns a map of strings to offsets
 	static QMap<QString,int> readStringPalette( const NifModel * nif, const QModelIndex & iPalette )
 	{
 		QByteArray bytes = nif->get<QByteArray>( iPalette, "Palette" );
@@ -197,6 +197,7 @@ public:
 
 REGISTER_SPELL( spEditStringOffset )
 
+// documented in stringpalette.h
 StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent) : QDialog( parent )
 {
 	this->nif = nif;
@@ -241,12 +242,21 @@ StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentM
 	grid->addWidget( preview, 5, 2, 1, 1 );
 }
 
+// documented in stringpalette.h
 void StringPaletteRegexDialog::setStringList( QStringList & list )
 {
 	originalList = new QStringList( list );
 	listmodel->setStringList( list );
 }
 
+// documented in stringpalette.h
+QStringList StringPaletteRegexDialog::getStringList()
+{
+	stringlistRegex();
+	return listmodel->stringList();
+}
+
+// documented in stringpalette.h
 void StringPaletteRegexDialog::stringlistRegex()
 {
 	QRegExp replacer( search->text() );
@@ -275,15 +285,17 @@ public:
 		// a single palette could be share by multiple NiSequences
 		
 		QPersistentModelIndex iPalette = nif->getBlock( nif->getLink( index, "String Palette" ) );
+#ifndef QT_NO_DEBUG
 		qWarning() << "This block uses " << iPalette;
+#endif
 		
 		// display entries in current string palette, in order they appear
 		StringPaletteRegexDialog * sprd = new StringPaletteRegexDialog( nif, iPalette );
 		
 		QByteArray bytes = nif->get<QByteArray>( iPalette, "Palette" );
 		
-		// map of old indices to strings
-		// QMap is always sorted by key, in this case the indices
+		// map of old offsets to strings
+		// QMap is always sorted by key, in this case the offsets
 		QMap<int, QString> oldPalette;
 		int x = 0;
 		while ( x < bytes.count() )
@@ -293,25 +305,58 @@ public:
 			x += s.length() + 1;
 		}
 		
-		QList<int> oldIndices = oldPalette.keys();
+		QList<int> oldOffsets = oldPalette.keys();
 		
-		for ( int i = 0; i < oldIndices.size(); i++ )
+#ifndef QT_NO_DEBUG
+		for ( int i = 0; i < oldOffsets.size(); i++ )
 		{
-			qWarning() << "Index " << i << ": " << oldPalette.value( oldIndices[i] );
+			qWarning() << "Index " << i << ": " << oldPalette.value( oldOffsets[i] );
 		}
+#endif
 		
 		QStringList oldEntries = oldPalette.values();
 		
 		sprd->setStringList( oldEntries );
 		
-		sprd->exec();
+		// display dialog
+		if ( sprd->exec() != QDialog::Accepted )
+		{
+			return index;
+		}
 		
-		// perform regex replacement
-
+		// get replaced entries
+		QStringList newEntries = sprd->getStringList();
 		
-
-		// build map between old and new indices
+		//qWarning() << newEntries;
 		
+		// rebuild palette
+		bytes.clear();
+		x = 0;
+		
+		QMap<int, QString> newPalette;
+		
+		for ( int i = 0; i < newEntries.size(); i++ )
+		{
+			QString s = newEntries.at( i );
+			newPalette.insert( x, s );
+			bytes += s;
+			bytes.append( '\0' );
+			x += ( s.length() + 1 );
+		}
+		
+		QList<int> newOffsets = newPalette.keys();
+		
+#ifndef QT_NO_DEBUG
+		for ( int i = 0; i < newOffsets.size(); i++ )
+		{
+			qWarning() << "New index " << i << ": " << newPalette.value( newOffsets[i] );
+			qWarning() << "Old offset: " << oldOffsets[i] << " maps to " << newOffsets[i];
+		}
+#endif
+		
+		// build map between old and new offsets
+		
+		/*
 		
 		// find all NiSequence blocks in the current model
 		QList<QPersistentModelIndex> sequenceList;
@@ -346,6 +391,8 @@ public:
 			QPersistentModelIndex temp = sequenceUpdateIterator.next();
 			qWarning() << "Need to update " << temp;
 		}
+
+		*/
 		
 		// update all references to that palette
 		return index;
