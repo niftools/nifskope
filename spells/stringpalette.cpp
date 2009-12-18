@@ -217,7 +217,13 @@ StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentM
 	QLabel * title = new QLabel( this );
 	title->setText( Spell::tr( "Entries in the string palette" ) );
 	QLabel * subTitle = new QLabel( this );
-	subTitle->setText( Spell::tr( "Enter a pair of regular expressions to search and replace" ) );
+	subTitle->setText( Spell::tr( "Enter a pair of regular expressions to search and replace." ) );
+	QLabel * refText = new QLabel( this );
+	refText->setText(
+		Spell::tr( "See <a href='%1'>%2</a> for syntax." )
+		.arg( "http://doc.trolltech.com/latest/qregexp.html" )
+		.arg( "http://doc.trolltech.com/latest/qregexp.html" )
+	);
 	QLabel * searchText = new QLabel( this );
 	searchText->setText( Spell::tr( "Search:" ) );
 	QLabel * replaceText = new QLabel( this );
@@ -231,16 +237,24 @@ StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentM
 	QObject::connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
 	QObject::connect( preview, SIGNAL( clicked() ), this, SLOT( stringlistRegex() ) );
 	
-	grid->addWidget( title, 0, 0, 1, 3 );
-	grid->addWidget( listview, 1, 0, 1, 3 );
-	grid->addWidget( subTitle, 2, 0, 1, 3 );
-	grid->addWidget( searchText, 3, 0, 1, 1 );
-	grid->addWidget( search, 3, 1, 1, 2 );
-	grid->addWidget( replaceText, 4, 0, 1, 1 );
-	grid->addWidget( replace, 4, 1, 1, 2 );
-	grid->addWidget( ok, 5, 0, 1, 1 );
-	grid->addWidget( cancel, 5, 1, 1, 1 );
-	grid->addWidget( preview, 5, 2, 1, 1 );
+	int currentRow = 0;
+	grid->addWidget( title, currentRow, 0, 1, 3 );
+	currentRow++;
+	grid->addWidget( listview, currentRow, 0, 1, 3 );
+	currentRow++;
+	grid->addWidget( subTitle, currentRow, 0, 1, 3 );
+	currentRow++;
+	grid->addWidget( refText, currentRow, 0, 1, 3 );
+	currentRow++;
+	grid->addWidget( searchText, currentRow, 0, 1, 1 );
+	grid->addWidget( search, currentRow, 1, 1, 2 );
+	currentRow++;
+	grid->addWidget( replaceText, currentRow, 0, 1, 1 );
+	grid->addWidget( replace, currentRow, 1, 1, 2 );
+	currentRow++;
+	grid->addWidget( ok, currentRow, 0, 1, 1 );
+	grid->addWidget( cancel, currentRow, 1, 1, 1 );
+	grid->addWidget( preview, currentRow, 2, 1, 1 );
 }
 
 // documented in stringpalette.h
@@ -319,13 +333,6 @@ public:
 		
 		QList<int> oldOffsets = oldPalette.keys();
 		
-#ifndef QT_NO_DEBUG
-		for ( int i = 0; i < oldOffsets.size(); i++ )
-		{
-			qWarning() << "Index " << i << ": " << oldPalette.value( oldOffsets[i] );
-		}
-#endif
-		
 		QStringList oldEntries = oldPalette.values();
 		
 		sprd->setStringList( oldEntries );
@@ -345,32 +352,23 @@ public:
 		bytes.clear();
 		x = 0;
 		
-		QMap<int, QString> newPalette;
+		QMap<int, int> offsetMap;
 		
 		for ( int i = 0; i < newEntries.size(); i++ )
 		{
 			QString s = newEntries.at( i );
-			newPalette.insert( x, s );
-			bytes += s;
-			bytes.append( '\0' );
-			x += ( s.length() + 1 );
-		}
-		
-		QList<int> newOffsets = newPalette.keys();
-		
-#ifndef QT_NO_DEBUG
-		for ( int i = 0; i < newOffsets.size(); i++ )
-		{
-			qWarning() << "New index " << i << ": " << newPalette.value( newOffsets[i] );
-		}
-#endif
-		
-		// build map between old and new offsets
-		QMap<int, int> offsetMap;
-		for ( int i = 0; i < oldOffsets.size(); i++ )
-		{
-			offsetMap.insert( oldOffsets[i], newOffsets[i] );
-			//qWarning() << "Old offset: " << oldOffsets[i] << " maps to " << newOffsets[i];
+			if ( s.length() == 0 )
+			{
+				// set references to empty
+				offsetMap.insert( oldOffsets[i], -1 );
+			}
+			else
+			{
+				offsetMap.insert( oldOffsets[i], x );
+				bytes += s;
+				bytes.append( '\0' );
+				x += ( s.length() + 1 );
+			}
 		}
 		
 		// find all NiSequence blocks in the current model
