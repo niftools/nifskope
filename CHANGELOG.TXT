@@ -7,7 +7,8 @@ changes since 1.0.21:
  * added support for NiPersistentSrcTextureRendererData textures (alternate
    form of NiPixelData)
  * allow hexadecimal values in nif.xml enumeration options
- * added "String Palette->Replace Entries" spell for NiSequence blocks
+ * added "String Palette->Replace Entries" spell for NiSequence blocks, and
+   "Animation->Edit String Palettes" helper
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures

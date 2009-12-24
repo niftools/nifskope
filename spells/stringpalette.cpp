@@ -408,7 +408,7 @@ public:
 		{
 			QPersistentModelIndex nextBlock = sequenceUpdateIterator.next();
 			//qWarning() << "Need to update " << nextBlock;
-
+			
 			QPersistentModelIndex blocks = nif->getIndex( nextBlock, "Controlled Blocks" );
 			for ( int i = 0; i < nif->rowCount( blocks ); i++ )
 			{
@@ -440,7 +440,7 @@ public:
 		
 		// update the palette itself
 		nif->set<QByteArray>( iPalette, "Palette", bytes );
-
+		
 		QMessageBox::information( 0, "NifSkope",
 				Spell::tr( "Updated %1 offsets in %2 sequences" ).arg( numRefsUpdated ).arg( sequenceUpdateList.size() ) );
 		
@@ -450,3 +450,71 @@ public:
 
 REGISTER_SPELL( spEditStringEntries )
 
+//! Batch helper for spEditStringEntries
+class spStringPaletteLister : public Spell
+{
+public:
+	QString name() const { return Spell::tr( "Edit String Palettes" ); }
+	QString page() const { return Spell::tr( "Animation" ); }
+	
+	bool instant() const { return false; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return ( ! index.isValid() && nif->checkVersion( 0x0A020000, 0x14000005 ) );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		QMap<QString, QModelIndex> sequenceMap;
+		
+		QList<QModelIndex> sequenceList;
+		for ( int i = 0; i < nif->getBlockCount(); i++ )
+		{
+			QModelIndex current = nif->getBlock( i, "NiSequence" );
+			if ( current.isValid() )
+			{
+				sequenceList.append( current );
+				QString key = QString( "%1 %2" ).arg( current.row(), 4, 10, QChar('0') ).arg( nif->get<QString>( current, "Name" ) );
+				sequenceMap.insert( key , current );
+			}
+		}
+		
+		// consider using QInputDialog::getItem() here, but this works
+		QDialog dlg;
+		
+		QGridLayout * grid = new QGridLayout;
+		dlg.setLayout( grid );
+		int currentRow = 0;
+		
+		QLabel * title = new QLabel( & dlg );
+		title->setText( Spell::tr( "Select an animation sequence to edit the string palette for" ) );
+		grid->addWidget( title, currentRow, 0, 1, 2 );
+		currentRow++;
+		
+		QListWidget * listWidget = new QListWidget( & dlg );
+		listWidget->addItems( sequenceMap.keys() );
+		QObject::connect( listWidget, SIGNAL( itemActivated( QListWidgetItem * ) ), & dlg, SLOT( accept() ) );
+		grid->addWidget( listWidget, currentRow, 0, 1, 2 );
+		currentRow++;
+		
+		QPushButton * ok = new QPushButton( Spell::tr( "Ok" ), & dlg );
+		QObject::connect( ok, SIGNAL( clicked() ), & dlg, SLOT( accept() ) );
+		grid->addWidget( ok, currentRow, 0, 1, 1 );
+		
+		QPushButton * cancel = new QPushButton( Spell::tr( "Cancel" ), & dlg );
+		QObject::connect( cancel, SIGNAL( clicked() ), & dlg, SLOT( reject() ) );
+		grid->addWidget( cancel, currentRow, 1, 1, 1 );
+		
+		if ( dlg.exec() != QDialog::Accepted )
+			return QModelIndex();
+		
+		spEditStringEntries * caster = new spEditStringEntries();
+		
+		caster->cast( nif, sequenceMap.value( listWidget->currentItem()->text() ) );
+		
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spStringPaletteLister )
