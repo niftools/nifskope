@@ -211,6 +211,8 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   File ..\README.TXT
   File ..\CHANGELOG.TXT
   File ..\LICENSE.TXT
+  ; copied by makeexe.bat
+  File ..\Qhull_COPYING.TXT
   File ..\docsys\nifxml\nif.xml
   File ..\docsys\kfmxml\kfm.xml
   File nif_file.ico
