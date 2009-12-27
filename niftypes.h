@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QColor>
 #include <QApplication>
+#include <QDebug>
 #include <cfloat>
 #include <cmath>
 
@@ -166,6 +167,17 @@ protected:
 	friend class NifIStream;
 	friend class NifOStream;
 };
+
+//! An attempt at providing a qDebug stream operator for Vector2
+/**
+ * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
+ * for how this is supposed to work.
+ */
+inline QDebug &operator<<( QDebug dbg, Vector2 v )
+{
+	dbg.nospace() << "(" << v[0] << ", " << v[1] << ")";
+	return dbg.space();
+}
 
 //! A vector of 3 floats
 class Vector3
@@ -369,6 +381,17 @@ protected:
 	friend class NifOStream;
 };
 
+//! An attempt at providing a qDebug stream operator for Vector3
+/**
+ * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
+ * for how this is supposed to work.
+ */
+inline QDebug &operator<<( QDebug dbg, Vector3 v )
+{
+	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
+	return dbg.space();
+}
+
 //! A vector of 4 floats
 class Vector4
 {
@@ -550,6 +573,17 @@ protected:
 	friend class NifIStream;
 	friend class NifOStream;
 };
+
+//! An attempt at providing a qDebug stream operator for Vector2
+/**
+ * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
+ * for how this is supposed to work.
+ */
+inline QDebug &operator<<( QDebug dbg, Vector4 v )
+{
+	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ")";
+	return dbg.space();
+}
 
 // This refuses to document properly in doxygen.
 inline Vector3::Vector3( const Vector4 & v4 )

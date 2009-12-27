@@ -23,16 +23,6 @@
  * All classes here inherit from the Spell class.
  */
 
-//! An attempt at providing a qDebug stream operator for Vector3
-/**
- * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
- * for how this is supposed to work.
- */
-QDebug operator<<( QDebug dbg, const Vector3 & v )
-{
-	return dbg << v[0] << v[1] << v[2];
-}
-
 //! A map of bone names to their transforms
 typedef QMap<QString,Transform> TransMap;
 
