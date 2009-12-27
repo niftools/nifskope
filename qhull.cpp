@@ -35,6 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <math.h>
 
+#include <QDebug>
+
 extern "C"
 {
 #include "qhull/src/qhull_a.h"
@@ -53,7 +55,7 @@ extern "C"
 #include "qhull/src/geom2.c"
 };
 
-QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts )
+QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms )
 {  
 	QVector<Triangle> tris;
 	
@@ -103,11 +105,16 @@ QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts )
 		FORALLfacets {
 			/* from poly2.c */
 			vertices = qh_facet3vertex (facet);
+			Vector4 hullNorm( facet->normal[0], facet->normal[1], facet->normal[2], facet->offset );
+			hullNorms.append( hullNorm );
 			if (qh_setsize (vertices) == 3) {
 				Triangle tri;
 				int i = 0;
 				FOREACHvertex_(vertices) {
 					tri[i++] = qh_pointid(vertex->point);
+					/* find the hull vertices */
+					Vector4 hullVert( vertex->point[0], vertex->point[1], vertex->point[2], 0 );
+					hullVerts.append( hullVert );
 				}
 				tris.push_back(tri);
 			}

@@ -47,8 +47,25 @@ public:
 		/* get the verts of our mesh */
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		
+		// to store results
+		QVector<Vector4> hullVerts, hullNorms;
+		
 		/* make a convex hull from it */
-		compute_convex_hull( verts );
+		compute_convex_hull( verts, hullVerts, hullNorms );
+
+		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
+		
+		// need to sort these and remove duplicates, but the basic concept works
+		foreach( Vector4 vert, hullVerts )
+		{
+			convex_verts.append( vert / 7.0 );
+		}
+		
+		// need to sort these and remove duplicates, but the basic concept works
+		foreach( Vector4 norm, hullNorms )
+		{
+			convex_norms.append( Vector4( Vector3( norm ), norm[3] / 7.0 ) );
+		}
 		
 		/* create the CVS block */
 		QModelIndex iCVS = nif->insertNiBlock( "bhkConvexVerticesShape" );
@@ -59,9 +76,9 @@ public:
 		nif->setArray<Vector4>( iCVS, "Vertices", convex_verts );
 		
 		/* set CVS norms */
-		nif->set<uint>( iCVS, "Num Half-Spaces", convex_norms.count() );
-		nif->updateArray( iCVS, "Half-Spaces" );
-		nif->setArray<Vector4>( iCVS, "Half-Spaces", convex_norms );
+		nif->set<uint>( iCVS, "Num Normals", convex_norms.count() );
+		nif->updateArray( iCVS, "Normals" );
+		nif->setArray<Vector4>( iCVS, "Normals", convex_norms );
 		
 		return iCVS;
 	}

@@ -39,6 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! Computes a convex hull using <a href="http://www.qhull.org">Qhull</a>,
 //! Copyright (c) 1993-2003 The Geometry Center.
-QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts );
+QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms );
 
 #endif
