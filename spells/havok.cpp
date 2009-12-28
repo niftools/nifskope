@@ -19,6 +19,7 @@
 #ifdef USE_QHULL
 
 #include "../qhull.h"
+#include <QMap>
 
 class spCreateCVS : public Spell
 {
@@ -55,16 +56,38 @@ public:
 
 		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
 		
-		// need to sort these and remove duplicates, but the basic concept works
+		// sort and remove duplicates
+		QMap<QString, Vector4> sortedVerts;
 		foreach( Vector4 vert, hullVerts )
 		{
-			convex_verts.append( vert / 7.0 );
+			vert /= 7.0;
+			QString name = QString( "%1 %2 %3" ).arg( vert[0] ).arg( vert[1] ).arg( vert[2] );
+			if( ! sortedVerts.contains( name ) )
+			{
+				sortedVerts.insert( name, vert );
+				qWarning() << "Inserted " << name;
+			}
+		}
+		foreach( QString vertName, sortedVerts.keys() )
+		{
+			convex_verts.append( sortedVerts.value( vertName ) );
 		}
 		
-		// need to sort these and remove duplicates, but the basic concept works
+		// sort and remove duplicates
+		QMap<QString, Vector4> sortedNorms;
 		foreach( Vector4 norm, hullNorms )
 		{
-			convex_norms.append( Vector4( Vector3( norm ), norm[3] / 7.0 ) );
+			norm = Vector4( Vector3( norm ), norm[3] / 7.0 );
+			QString name = QString( "%1 %2 %3 %4" ).arg( norm[0] ).arg( norm[1] ).arg( norm[2] ).arg( norm[3] );
+			if( ! sortedNorms.contains( name ) )
+			{
+				sortedNorms.insert( name, norm );
+				qWarning() << "Inserted " << name;
+			}
+		}
+		foreach( QString normName, sortedNorms.keys() )
+		{
+			convex_norms.append( sortedNorms.value( normName ) );
 		}
 		
 		/* create the CVS block */
