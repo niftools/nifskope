@@ -102,6 +102,7 @@ public:
 			qDeleteAll( morph );
 			morph.clear();
 			
+			// update this for 20.2.0.7, when we have a MorphWeight array in Interpolator Weights
 			QModelIndex iInterpolators = nif->getIndex( iBlock, "Interpolators" );
 			
 			QModelIndex midx = nif->getIndex( iData, "Morphs" );
@@ -333,18 +334,42 @@ void Mesh::transform()
 		{
 			// do stuff
 			qWarning() << "Haven't worked out how to find things yet";
+			// mesh primitive type
+			qWarning() << "Mesh uses" << NifValue::enumOptionName( "MeshPrimitiveType", nif->get<uint>( iData, "Primitive Type" ) );
 			for ( int i = 0; i < nif->rowCount( iData ); i ++ )
 			{
+				// each data reference is to a single data stream
 				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
 				qWarning() << "Data stream: " << stream;
+				// can have multiple submeshes, unsure of exact meaning
 				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
 				qWarning() << "Submeshes: " << numSubmeshes;
 				QPersistentModelIndex submeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
 				for ( int j = 0; j < numSubmeshes; j++ )
 				{
-					qWarning() << "Submesh map: " << nif->get<ushort>( submeshMap.child( j, 0 ) );
+					qWarning() << "Submesh" << j << "maps to region" << nif->get<ushort>( submeshMap.child( j, 0 ) );
 				}
+				// each stream can have multiple components, and each has a starting index
+				QMap<uint, QString> componentIndexMap;
+				int numComponents = nif->get<int>( iData.child( i, 0 ), "Num Components" );
+				qWarning() << "Components: " << numComponents;
+				// semantics determine the usage
+				QPersistentModelIndex componentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
+				for( int j = 0; j < numComponents; j++ )
+				{
+					QString name = nif->get<QString>( componentSemantics.child( j, 0 ), "Name" );
+					uint index = nif->get<uint>( componentSemantics.child( j, 0 ), "Index" );
+					qWarning() << "Component" << name << "at position" << index << "of component" << j << "in stream" << stream;
+					componentIndexMap.insert( j, QString( "%1 %2").arg( name ).arg( index ) );
+				}
+				
+				// now the data stream itself...
 				QPersistentModelIndex dataStream = nif->getBlock( stream );
+				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( dataStream, "Data" ).child( 0, 0 ) );
+				QDataStream streamReader( &streamData, QIODevice::ReadOnly );
+				// we should probably check the header here, but we expect things to be little endian
+				streamReader.setByteOrder( QDataStream::LittleEndian );
+				// each region exists within the data stream at the specified index
 				quint32 numRegions = nif->get<quint32>( dataStream, "Num Regions");
 				QPersistentModelIndex regions = nif->getIndex( dataStream, "Regions" );
 				if ( regions.isValid() )
@@ -355,6 +380,83 @@ void Mesh::transform()
 						qWarning() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
 						qWarning() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
 					}
+				}
+				uint numStreamComponents = nif->get<uint>( dataStream, "Num Components" );
+				qWarning() << "Stream has" << numStreamComponents << "components";
+				QPersistentModelIndex streamComponents = nif->getIndex( dataStream, "Component Formats" );
+				for( uint j = 0; j < numStreamComponents; j++ )
+				{
+					uint compFormat = nif->get<uint>( streamComponents.child( j, 0 ) );
+					QString compName = NifValue::enumOptionName( "ComponentFormat", compFormat );
+					qWarning() << "Component format is" << compName;
+					QString compNameIndex = componentIndexMap.value( j );
+					QString compType = compNameIndex.split( " " )[0];
+					uint startIndex = compNameIndex.split( " " )[1].toUInt();
+					qWarning() << "This component contains" << compType << "starting at index" << startIndex;
+					// consider using either switch statements or something nicer
+					if( compType == "INDEX" )
+					{
+						qWarning() << "Vertex index data:";
+						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
+						{
+							if( compName == "F_UINT32_1" )
+							{
+								quint32 temp;
+								streamReader >> temp;
+								qWarning() << temp;
+							}
+							else if( compName == "F_UINT16_1" )
+							{
+								quint16 temp;
+								streamReader >> temp;
+								qWarning() << temp;
+							}
+						}
+					}
+					else if( compType == "POSITION" )
+					{
+						qWarning() << "Vertex data:";
+						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
+						{
+							if( compName == "F_FLOAT32_3" )
+							{
+								float x, y, z;
+								streamReader >> x >> y >> z;
+								Vector3 temp( x, y, z );
+								qWarning() << temp;
+							}
+						}
+					}
+					else if( compType == "NORMAL" )
+					{
+						qWarning() << "Normal data:";
+						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
+						{
+							if( compName == "F_FLOAT32_3" )
+							{
+								float x, y, z;
+								streamReader >> x >> y >> z;
+								Vector3 temp( x, y, z );
+								qWarning() << temp;
+							}
+						}
+					}
+					else if( compType == "TEXCOORD" )
+					{
+						qWarning() << "UV data:";
+						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
+						{
+							if( compName == "F_FLOAT32_2" )
+							{
+								float x, y;
+								streamReader >> x >> y;
+								Vector2 temp( x, y );
+								qWarning() << temp;
+							}
+						}
+					}
+
+
 				}
 			}
 		}
