@@ -102,20 +102,36 @@ public:
 			qDeleteAll( morph );
 			morph.clear();
 			
-			// update this for 20.2.0.7, when we have a MorphWeight array in Interpolator Weights
-			QModelIndex iInterpolators = nif->getIndex( iBlock, "Interpolators" );
-			
 			QModelIndex midx = nif->getIndex( iData, "Morphs" );
 			for ( int r = 0; r < nif->rowCount( midx ); r++ )
 			{
+				QModelIndex iInterpolators, iInterpolatorWeights;
+				if( nif->checkVersion( 0, 0x14020006 ) )
+				{
+					iInterpolators = nif->getIndex( iBlock, "Interpolators" );
+				}
+				else if( nif->checkVersion( 0, 0x14020007 ) )
+				{
+					iInterpolatorWeights = nif->getIndex( iBlock, "Interpolator Weights" );
+				}
+				
 				QModelIndex iKey = midx.child( r, 0 );
 				
 				MorphKey * key = new MorphKey;
 				key->index = 0;
+				// this is ugly...
 				if ( iInterpolators.isValid() )
+				{
 					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				}
+				else if( iInterpolatorWeights.isValid() )
+				{
+					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				}
 				else
+				{
 					key->iFrames = iKey;
+				}
 				key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
 				
 				morph.append( key );
