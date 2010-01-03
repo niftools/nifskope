@@ -34,6 +34,7 @@ public:
 		RigidBody,
 		Shape,
 		Stencil,
+		TexDesc,
 		VertexColor,
 		ZBuffer,
 		BSX,
@@ -60,6 +61,10 @@ public:
 			iFlags = iFlags.sibling( iFlags.row(), NifModel::ValueCol );
 			if ( index == iFlags )
 				return iFlags;
+		}
+		else if ( nif->itemName( index ) == "Flags" && nif->itemType( index.parent() ) == "TexDesc" )
+		{
+			return index;
 		}
 		return QModelIndex();
 	}
@@ -90,6 +95,8 @@ public:
 				return Shape;
 			else if ( name == "NiStencilProperty" )
 				return Stencil;
+			else if ( nif->itemType( index.parent() ) == "TexDesc" )
+				return TexDesc;
 			else if ( name == "NiVertexColorProperty" )
 				return VertexColor;
 			else if ( name == "NiZBufferProperty" )
@@ -134,6 +141,9 @@ public:
 				break;
 			case Stencil:
 				stencilFlags( nif, iFlags );
+				break;
+			case TexDesc:
+				texDescFlags( nif, iFlags );
 				break;
 			case VertexColor:
 				vertexColorFlags( nif, iFlags );
@@ -740,7 +750,45 @@ public:
 			{
 				flags = flags & 0xffcf | cmbColor->currentIndex() << 4;
 			}
+			
+			nif->set<int>( index, flags );
+		}
+	}
+	
+	void texDescFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint16 flags = nif->get<int>( index );
+		
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		QStringList clampModes = QStringList()
+			<< Spell::tr("Clamp Both")
+			<< Spell::tr("Clamp S Wrap T")
+			<< Spell::tr("Wrap S Clamp T")
+			<< Spell::tr("Wrap Both");
+		
+		QComboBox * cmbClamp = dlgCombo( vbox, Spell::tr("Clamp Mode"), clampModes );
+		cmbClamp->setCurrentIndex( ( flags & 0xF000 ) >> 0x0C );
+		
+		QStringList filterModes = QStringList()
+			<< Spell::tr("FILTER_NEAREST")
+			<< Spell::tr("FILTER_BILERP")
+			<< Spell::tr("FILTER_TRILERP")
+			<< Spell::tr("FILTER_NEAREST_MIPNEAREST")
+			<< Spell::tr("FILTER_NEAREST_MIPLERP")
+			<< Spell::tr("FILTER_BILERP_MIPNEAREST");
 
+		QComboBox * cmbFilter = dlgCombo( vbox, Spell::tr("Filter Mode"), filterModes );
+		cmbFilter->setCurrentIndex( ( flags & 0x0F00 ) >> 0x08 );
+		
+		dlgButtons( & dlg, vbox );
+		
+		if ( dlg.exec() == QDialog::Accepted )
+		{
+			flags = flags & 0x0FFF | ( cmbClamp->currentIndex() << 0x0C );
+			flags = flags & 0xF0FF | ( cmbFilter->currentIndex() << 0x08 );
 			nif->set<int>( index, flags );
 		}
 	}
