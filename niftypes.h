@@ -928,6 +928,17 @@ protected:
 	friend class NifOStream;
 };
 
+//! An attempt at providing a qDebug stream operator for Triangle
+/**
+ * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
+ * for how this is supposed to work.
+ */
+inline QDebug &operator<<( QDebug dbg, Triangle t )
+{
+	dbg.nospace() << "(" << t[0] << "," << t[1] << "," << t[2] << ")";
+	return dbg.space();
+}
+
 //! Clamps a float to have a value between 0 and 1 inclusive
 inline float clamp01( float a )
 {

@@ -109,9 +109,14 @@ protected:
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
 	
+	//! Triangles
 	QVector<Triangle> triangles;
+	//! Strip points
 	QList< QVector<quint16> > tristrips;
+	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
+	//! Triangle indices
+	QVector<quint16> indices;
 	
 	bool transformRigid;
 	

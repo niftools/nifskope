@@ -224,6 +224,7 @@ void Mesh::clear()
 	weights.clear();
 	partitions.clear();
 	sortedTriangles.clear();
+	indices.clear();
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
@@ -349,9 +350,10 @@ void Mesh::transform()
 		{
 #ifndef QT_NO_DEBUG
 			// do stuff
-			qWarning() << "Haven't worked out how to find things yet";
+			qWarning() << "Entering NiMesh decoding...";
 			// mesh primitive type
-			qWarning() << "Mesh uses" << NifValue::enumOptionName( "MeshPrimitiveType", nif->get<uint>( iData, "Primitive Type" ) );
+			QString meshPrimitiveType = NifValue::enumOptionName( "MeshPrimitiveType", nif->get<uint>( iData, "Primitive Type" ) );
+			qWarning() << "Mesh uses" << meshPrimitiveType;
 			for ( int i = 0; i < nif->rowCount( iData ); i ++ )
 			{
 				// each data reference is to a single data stream
@@ -382,12 +384,16 @@ void Mesh::transform()
 				// now the data stream itself...
 				QPersistentModelIndex dataStream = nif->getBlock( stream );
 				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( dataStream, "Data" ).child( 0, 0 ) );
+				QBuffer streamBuffer( &streamData );
+				streamBuffer.open( QIODevice::ReadOnly );
+				// probably won't use this
 				QDataStream streamReader( &streamData, QIODevice::ReadOnly );
 				// we should probably check the header here, but we expect things to be little endian
 				streamReader.setByteOrder( QDataStream::LittleEndian );
 				// each region exists within the data stream at the specified index
 				quint32 numRegions = nif->get<quint32>( dataStream, "Num Regions");
 				QPersistentModelIndex regions = nif->getIndex( dataStream, "Regions" );
+				quint32 totalIndices = 0;
 				if ( regions.isValid() )
 				{
 					qWarning() << numRegions << " regions in this stream";
@@ -395,120 +401,118 @@ void Mesh::transform()
 					{
 						qWarning() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
 						qWarning() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
+						totalIndices += nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
 					}
+					qWarning() << totalIndices << "total indices in" << numRegions << "regions";
 				}
 				uint numStreamComponents = nif->get<uint>( dataStream, "Num Components" );
 				qWarning() << "Stream has" << numStreamComponents << "components";
 				QPersistentModelIndex streamComponents = nif->getIndex( dataStream, "Component Formats" );
-				// stream components appear to be interleaved, which means we need to rework this
+				// stream components are interleaved, so we need to know their type before we read them
+				QList<uint> typeList;
 				for( uint j = 0; j < numStreamComponents; j++ )
 				{
 					uint compFormat = nif->get<uint>( streamComponents.child( j, 0 ) );
 					QString compName = NifValue::enumOptionName( "ComponentFormat", compFormat );
 					qWarning() << "Component format is" << compName;
+					qWarning() << "Stored as a" << compName.split( "_" )[1];
+					typeList.append( compFormat - 1 );
+					
+					// this can probably wait until we're reading the stream values
 					QString compNameIndex = componentIndexMap.value( j );
 					QString compType = compNameIndex.split( " " )[0];
 					uint startIndex = compNameIndex.split( " " )[1].toUInt();
-					qWarning() << "This component contains" << compType << "starting at index" << startIndex;
-					// consider using either switch statements or something nicer
-					if( compType == "INDEX" )
+					qWarning() << "Component" << j << "contains" << compType << "starting at index" << startIndex;
+
+					// try and sort out texcoords here...
+					if( compType == "TEXCOORD" )
 					{
-						qWarning() << "Vertex index data:";
-						int triPoint = 0;
-						int pointA, pointB, pointC;
-						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
-						{
-							if( compName == "F_UINT32_1" )
-							{
-								quint32 temp;
-								streamReader >> temp;
-								qWarning() << temp;
-								if( triPoint == 0 )
-								{
-									pointA = temp;
-								}
-								if( triPoint == 1 )
-								{
-									pointB = temp;
-								}
-								if( triPoint == 2 )
-								{
-									pointC = temp;
-									Triangle tempTri( pointA, pointB, pointC );
-									triangles.append( tempTri );
-									qWarning() << "Adding triangle";
-								}
-								triPoint = (triPoint + 1) % 3;
-							}
-							else if( compName == "F_UINT16_1" )
-							{
-								quint16 temp;
-								streamReader >> temp;
-								qWarning() << temp;
-								if( triPoint == 0 )
-								{
-									pointA = temp;
-								}
-								if( triPoint == 1 )
-								{
-									pointB = temp;
-								}
-								if( triPoint == 2 )
-								{
-									pointC = temp;
-									Triangle tempTri( pointA, pointB, pointC );
-									triangles.append( tempTri );
-									qWarning() << "Adding triangle";
-								}
-								triPoint = (triPoint + 1) % 3;
-							}
-						}
-					}
-					else if( compType == "POSITION" )
-					{
-						qWarning() << "Vertex data:";
-						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
-						{
-							if( compName == "F_FLOAT32_3" )
-							{
-								float x, y, z;
-								streamReader >> x >> y >> z;
-								Vector3 temp( x, y, z );
-								qWarning() << temp;
-								verts.append( temp );
-							}
-						}
-					}
-					else if( compType == "NORMAL" )
-					{
-						qWarning() << "Normal data:";
-						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
-						{
-							if( compName == "F_FLOAT32_3" )
-							{
-								float x, y, z;
-								streamReader >> x >> y >> z;
-								Vector3 temp( x, y, z );
-								qWarning() << temp;
-							}
-						}
-					}
-					else if( compType == "TEXCOORD" )
-					{
-						qWarning() << "UV data:";
 						QVector<Vector2> tempCoords;
-						for( uint k = startIndex; k < ( startIndex + nif->get<quint32>( regions.child( j, 0 ), "Num Indices" ) ); k++ )
+						coords.append( tempCoords );
+						qWarning() << "Assigning coordinate set" << startIndex;
+					}
+
+				}	
+				
+				// for each component
+				// get the length
+				// get the underlying type (will probably need OpenEXR to deal with float16 types)
+				// read that type in, k times, where k is the length of the vector
+				// start index will not be 0 if eg. multiple UV maps, but hopefully we don't have multiple components
+				
+				for( uint j = 0; j < totalIndices; j++ )
+				{
+					for( uint k = 0; k < numStreamComponents; k++ )
+					{
+						int typeLength = ( ( typeList[k] & 0x000F0000 ) >> 0x10 );
+						int typeSize = ( ( typeList[k] & 0x00000F00 ) >> 0x08 );
+						qWarning() << "Reading" << typeLength << "values" << typeSize << "bytes";
+
+						NifIStream tempInput( new NifModel, &streamBuffer );
+						QList<NifValue> values;
+						NifValue tempValue;
+						// if we had the right types, we could read in Vector etc. and not have the mess below
+						switch( ( typeList[k] & 0x00000FF0 ) >> 0x04 )
 						{
-							if( compName == "F_FLOAT32_2" )
+							case 0x10:
+								tempValue.changeType( NifValue::tByte );
+								break;
+							case 0x21:
+								tempValue.changeType( NifValue::tShort );
+								break;
+							case 0x42:
+								tempValue.changeType( NifValue::tInt );
+								break;
+							case 0x43:
+								tempValue.changeType( NifValue::tFloat );
+								break;
+						}
+						for( int l = 0; l < typeLength; l++ )
+						{
+							tempInput.read( tempValue );
+							values.append( tempValue );
+							qWarning() << tempValue.toString();
+						}
+						QString compType = componentIndexMap.value( k ).split( " " )[0];
+						qWarning() << "Will store this value in" << compType;
+						// the mess begins...
+						if( NifValue::enumOptionName( "ComponentFormat", (typeList[k] + 1 ) ) == "F_FLOAT32_3" )
+						{
+							Vector3 tempVect3( values[0].toFloat(), values[1].toFloat(), values[2].toFloat() );
+							if( compType == "POSITION" )
 							{
-								float x, y;
-								streamReader >> x >> y;
-								Vector2 temp( x, y );
-								tempCoords.append( temp );
-								qWarning() << temp;
+								verts.append( tempVect3 );
+							}
+							else if( compType == "NORMAL" )
+							{
+								norms.append( tempVect3 );
 							}
 						}
-						coords.append( tempCoords );
+						else if( compType == "INDEX" )
+						{
+							indices.append( values[0].toCount() );
+						}
+						else if( compType == "TEXCOORD" )
+						{
+							Vector2 tempVect2( values[0].toFloat(), values[1].toFloat() );
+							quint32 coordSet = componentIndexMap.value( k ).split( " " )[1].toUInt();
+							qWarning() << "Need to append" << tempVect2 << "to texcoords" << coordSet;
+							QVector<Vector2> currentSet = coords[coordSet];
+							currentSet.append( tempVect2 );
+							coords[coordSet] = currentSet;
+						}
+					}
+				}
+
+				// build triangles, strips etc.
+				if( meshPrimitiveType == "MESH_PRIMITIVE_TRIANGLES" )
+				{
+					for( int k = 0; k < indices.size(); )
+					{
+						Triangle tempTri( indices[k], indices[k+1], indices[k+2] );
+						qWarning() << "Inserting triangle" << tempTri;
+						triangles.append( tempTri );
+						k = k+3;
 					}
 				}
 			}
