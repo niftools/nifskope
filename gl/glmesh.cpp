@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2009, NIF File Format Library and Tools
+Copyright (c) 2005-2010, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -13,7 +13,7 @@ are met:
 2. Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-3. The name of the NIF File Format Library and Tools projectmay not be
+3. The name of the NIF File Format Library and Tools project may not be
    used to endorse or promote products derived from this software
    without specific prior written permission.
 
@@ -102,19 +102,36 @@ public:
 			qDeleteAll( morph );
 			morph.clear();
 			
-			QModelIndex iInterpolators = nif->getIndex( iBlock, "Interpolators" );
-			
 			QModelIndex midx = nif->getIndex( iData, "Morphs" );
 			for ( int r = 0; r < nif->rowCount( midx ); r++ )
 			{
+				QModelIndex iInterpolators, iInterpolatorWeights;
+				if( nif->checkVersion( 0, 0x14020006 ) )
+				{
+					iInterpolators = nif->getIndex( iBlock, "Interpolators" );
+				}
+				else if( nif->checkVersion( 0, 0x14020007 ) )
+				{
+					iInterpolatorWeights = nif->getIndex( iBlock, "Interpolator Weights" );
+				}
+				
 				QModelIndex iKey = midx.child( r, 0 );
 				
 				MorphKey * key = new MorphKey;
 				key->index = 0;
+				// this is ugly...
 				if ( iInterpolators.isValid() )
+				{
 					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				}
+				else if( iInterpolatorWeights.isValid() )
+				{
+					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+				}
 				else
+				{
 					key->iFrames = iKey;
+				}
 				key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
 				
 				morph.append( key );
@@ -207,6 +224,7 @@ void Mesh::clear()
 	weights.clear();
 	partitions.clear();
 	sortedTriangles.clear();
+	indices.clear();
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
@@ -328,25 +346,54 @@ void Mesh::transform()
 		upData = false;
 		
 		// update for NiMesh
-#ifndef QT_NO_DEBUG
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
 		{
+#ifndef QT_NO_DEBUG
 			// do stuff
-			qWarning() << "Haven't worked out how to find things yet";
+			qWarning() << "Entering NiMesh decoding...";
+			// mesh primitive type
+			QString meshPrimitiveType = NifValue::enumOptionName( "MeshPrimitiveType", nif->get<uint>( iData, "Primitive Type" ) );
+			qWarning() << "Mesh uses" << meshPrimitiveType;
 			for ( int i = 0; i < nif->rowCount( iData ); i ++ )
 			{
+				// each data reference is to a single data stream
 				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
 				qWarning() << "Data stream: " << stream;
+				// can have multiple submeshes, unsure of exact meaning
 				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
 				qWarning() << "Submeshes: " << numSubmeshes;
 				QPersistentModelIndex submeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
 				for ( int j = 0; j < numSubmeshes; j++ )
 				{
-					qWarning() << "Submesh map: " << nif->get<ushort>( submeshMap.child( j, 0 ) );
+					qWarning() << "Submesh" << j << "maps to region" << nif->get<ushort>( submeshMap.child( j, 0 ) );
 				}
+				// each stream can have multiple components, and each has a starting index
+				QMap<uint, QString> componentIndexMap;
+				int numComponents = nif->get<int>( iData.child( i, 0 ), "Num Components" );
+				qWarning() << "Components: " << numComponents;
+				// semantics determine the usage
+				QPersistentModelIndex componentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
+				for( int j = 0; j < numComponents; j++ )
+				{
+					QString name = nif->get<QString>( componentSemantics.child( j, 0 ), "Name" );
+					uint index = nif->get<uint>( componentSemantics.child( j, 0 ), "Index" );
+					qWarning() << "Component" << name << "at position" << index << "of component" << j << "in stream" << stream;
+					componentIndexMap.insert( j, QString( "%1 %2").arg( name ).arg( index ) );
+				}
+				
+				// now the data stream itself...
 				QPersistentModelIndex dataStream = nif->getBlock( stream );
+				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( dataStream, "Data" ).child( 0, 0 ) );
+				QBuffer streamBuffer( &streamData );
+				streamBuffer.open( QIODevice::ReadOnly );
+				// probably won't use this
+				QDataStream streamReader( &streamData, QIODevice::ReadOnly );
+				// we should probably check the header here, but we expect things to be little endian
+				streamReader.setByteOrder( QDataStream::LittleEndian );
+				// each region exists within the data stream at the specified index
 				quint32 numRegions = nif->get<quint32>( dataStream, "Num Regions");
 				QPersistentModelIndex regions = nif->getIndex( dataStream, "Regions" );
+				quint32 totalIndices = 0;
 				if ( regions.isValid() )
 				{
 					qWarning() << numRegions << " regions in this stream";
@@ -354,81 +401,196 @@ void Mesh::transform()
 					{
 						qWarning() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
 						qWarning() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
+						totalIndices += nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
+					}
+					qWarning() << totalIndices << "total indices in" << numRegions << "regions";
+				}
+				uint numStreamComponents = nif->get<uint>( dataStream, "Num Components" );
+				qWarning() << "Stream has" << numStreamComponents << "components";
+				QPersistentModelIndex streamComponents = nif->getIndex( dataStream, "Component Formats" );
+				// stream components are interleaved, so we need to know their type before we read them
+				QList<uint> typeList;
+				for( uint j = 0; j < numStreamComponents; j++ )
+				{
+					uint compFormat = nif->get<uint>( streamComponents.child( j, 0 ) );
+					QString compName = NifValue::enumOptionName( "ComponentFormat", compFormat );
+					qWarning() << "Component format is" << compName;
+					qWarning() << "Stored as a" << compName.split( "_" )[1];
+					typeList.append( compFormat - 1 );
+					
+					// this can probably wait until we're reading the stream values
+					QString compNameIndex = componentIndexMap.value( j );
+					QString compType = compNameIndex.split( " " )[0];
+					uint startIndex = compNameIndex.split( " " )[1].toUInt();
+					qWarning() << "Component" << j << "contains" << compType << "starting at index" << startIndex;
+
+					// try and sort out texcoords here...
+					if( compType == "TEXCOORD" )
+					{
+						QVector<Vector2> tempCoords;
+						coords.append( tempCoords );
+						qWarning() << "Assigning coordinate set" << startIndex;
+					}
+
+				}	
+				
+				// for each component
+				// get the length
+				// get the underlying type (will probably need OpenEXR to deal with float16 types)
+				// read that type in, k times, where k is the length of the vector
+				// start index will not be 0 if eg. multiple UV maps, but hopefully we don't have multiple components
+				
+				for( uint j = 0; j < totalIndices; j++ )
+				{
+					for( uint k = 0; k < numStreamComponents; k++ )
+					{
+						int typeLength = ( ( typeList[k] & 0x000F0000 ) >> 0x10 );
+						int typeSize = ( ( typeList[k] & 0x00000F00 ) >> 0x08 );
+						qWarning() << "Reading" << typeLength << "values" << typeSize << "bytes";
+
+						NifIStream tempInput( new NifModel, &streamBuffer );
+						QList<NifValue> values;
+						NifValue tempValue;
+						// if we had the right types, we could read in Vector etc. and not have the mess below
+						switch( ( typeList[k] & 0x00000FF0 ) >> 0x04 )
+						{
+							case 0x10:
+								tempValue.changeType( NifValue::tByte );
+								break;
+							case 0x21:
+								tempValue.changeType( NifValue::tShort );
+								break;
+							case 0x42:
+								tempValue.changeType( NifValue::tInt );
+								break;
+							case 0x43:
+								tempValue.changeType( NifValue::tFloat );
+								break;
+						}
+						for( int l = 0; l < typeLength; l++ )
+						{
+							tempInput.read( tempValue );
+							values.append( tempValue );
+							qWarning() << tempValue.toString();
+						}
+						QString compType = componentIndexMap.value( k ).split( " " )[0];
+						qWarning() << "Will store this value in" << compType;
+						// the mess begins...
+						if( NifValue::enumOptionName( "ComponentFormat", (typeList[k] + 1 ) ) == "F_FLOAT32_3" )
+						{
+							Vector3 tempVect3( values[0].toFloat(), values[1].toFloat(), values[2].toFloat() );
+							if( compType == "POSITION" )
+							{
+								verts.append( tempVect3 );
+							}
+							else if( compType == "NORMAL" )
+							{
+								norms.append( tempVect3 );
+							}
+						}
+						else if( compType == "INDEX" )
+						{
+							indices.append( values[0].toCount() );
+						}
+						else if( compType == "TEXCOORD" )
+						{
+							Vector2 tempVect2( values[0].toFloat(), values[1].toFloat() );
+							quint32 coordSet = componentIndexMap.value( k ).split( " " )[1].toUInt();
+							qWarning() << "Need to append" << tempVect2 << "to texcoords" << coordSet;
+							QVector<Vector2> currentSet = coords[coordSet];
+							currentSet.append( tempVect2 );
+							coords[coordSet] = currentSet;
+						}
+					}
+				}
+
+				// build triangles, strips etc.
+				if( meshPrimitiveType == "MESH_PRIMITIVE_TRIANGLES" )
+				{
+					for( int k = 0; k < indices.size(); )
+					{
+						Triangle tempTri( indices[k], indices[k+1], indices[k+2] );
+						qWarning() << "Inserting triangle" << tempTri;
+						triangles.append( tempTri );
+						k = k+3;
 					}
 				}
 			}
-		}
 #endif
-		
-		verts = nif->getArray<Vector3>( iData, "Vertices" );
-		norms = nif->getArray<Vector3>( iData, "Normals" );
-		colors = nif->getArray<Color4>( iData, "Vertex Colors" );
-		tangents = nif->getArray<Vector3>( iData, "Tangents" );
-		binormals = nif->getArray<Vector3>( iData, "Binormals" );
-		
-		if ( norms.count() < verts.count() ) norms.clear();
-		if ( colors.count() < verts.count() ) colors.clear();
-		
-		coords.clear();
-		QModelIndex uvcoord = nif->getIndex( iData, "UV Sets" );
-		if ( ! uvcoord.isValid() ) uvcoord = nif->getIndex( iData, "UV Sets 2" );
-		if ( uvcoord.isValid() )
-		{
-			for ( int r = 0; r < nif->rowCount( uvcoord ); r++ )
-			{
-				QVector<Vector2> tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
-				if ( tc.count() < verts.count() ) tc.clear();
-				coords.append( tc );
-			}
-		}
-		
-		if ( nif->itemName( iData ) == "NiTriShapeData" )
-		{
-			triangles = nif->getArray<Triangle>( iData, "Triangles" );
-			tristrips.clear();
-		}
-		else if ( nif->itemName( iData ) == "NiTriStripsData" )
-		{
-			tristrips.clear();
-			QModelIndex points = nif->getIndex( iData, "Points" );
-			if ( points.isValid() )
-			{
-				for ( int r = 0; r < nif->rowCount( points ); r++ )
-					tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
-			}
-			else
-				qWarning() << nif->itemName( iData ) << "(" << nif->getBlockNumber( iData ) << ") 'points' array not found";
-			triangles.clear();
 		}
 		else
 		{
-			triangles.clear();
-			tristrips.clear();
-		}
-		
-		QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
-		if ( iExtraData.isValid() )
-		{
-			for ( int e = 0; e < nif->rowCount( iExtraData ); e++ )
+			
+			verts = nif->getArray<Vector3>( iData, "Vertices" );
+			norms = nif->getArray<Vector3>( iData, "Normals" );
+			colors = nif->getArray<Color4>( iData, "Vertex Colors" );
+			tangents = nif->getArray<Vector3>( iData, "Tangents" );
+			binormals = nif->getArray<Vector3>( iData, "Binormals" );
+			
+			if ( norms.count() < verts.count() ) norms.clear();
+			if ( colors.count() < verts.count() ) colors.clear();
+			
+			coords.clear();
+			QModelIndex uvcoord = nif->getIndex( iData, "UV Sets" );
+			if ( ! uvcoord.isValid() ) uvcoord = nif->getIndex( iData, "UV Sets 2" );
+			if ( uvcoord.isValid() )
 			{
-				QModelIndex iExtra = nif->getBlock( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
-				if ( nif->get<QString>( iExtra, "Name" ) == "Tangent space (binormal & tangent vectors)" )
+				for ( int r = 0; r < nif->rowCount( uvcoord ); r++ )
 				{
-					iTangentData = iExtra;
-					QByteArray data = nif->get<QByteArray>( iExtra, "Binary Data" );
-					if ( data.count() == verts.count() * 4 * 3 * 2 )
-					{
-						tangents.resize( verts.count() );
-						binormals.resize( verts.count() );
-						Vector3 * t = (Vector3 *) data.data();
-						for ( int c = 0; c < verts.count(); c++ )
-							tangents[c] = *t++;
-						for ( int c = 0; c < verts.count(); c++ )
-							binormals[c] = *t++;
-					}
+					QVector<Vector2> tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
+					if ( tc.count() < verts.count() ) tc.clear();
+					coords.append( tc );
 				}
 			}
-		}	
+			
+			if ( nif->itemName( iData ) == "NiTriShapeData" )
+			{
+				triangles = nif->getArray<Triangle>( iData, "Triangles" );
+				tristrips.clear();
+			}
+			else if ( nif->itemName( iData ) == "NiTriStripsData" )
+			{
+				tristrips.clear();
+				QModelIndex points = nif->getIndex( iData, "Points" );
+				if ( points.isValid() )
+				{
+					for ( int r = 0; r < nif->rowCount( points ); r++ )
+						tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
+				}
+				else
+					qWarning() << nif->itemName( iData ) << "(" << nif->getBlockNumber( iData ) << ") 'points' array not found";
+				triangles.clear();
+			}
+			else
+			{
+				triangles.clear();
+				tristrips.clear();
+			}
+			
+			QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
+			if ( iExtraData.isValid() )
+			{
+				for ( int e = 0; e < nif->rowCount( iExtraData ); e++ )
+				{
+					QModelIndex iExtra = nif->getBlock( nif->getLink( iExtraData.child( e, 0 ) ), "NiBinaryExtraData" );
+					if ( nif->get<QString>( iExtra, "Name" ) == "Tangent space (binormal & tangent vectors)" )
+					{
+						iTangentData = iExtra;
+						QByteArray data = nif->get<QByteArray>( iExtra, "Binary Data" );
+						if ( data.count() == verts.count() * 4 * 3 * 2 )
+						{
+							tangents.resize( verts.count() );
+							binormals.resize( verts.count() );
+							Vector3 * t = (Vector3 *) data.data();
+							for ( int c = 0; c < verts.count(); c++ )
+								tangents[c] = *t++;
+							for ( int c = 0; c < verts.count(); c++ )
+								binormals[c] = *t++;
+						}
+					}
+				}
+			}	
+		}
 	}
 	
 	if ( upSkin )

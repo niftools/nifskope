@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2009, NIF File Format Library and Tools
+Copyright (c) 2005-2010, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -13,7 +13,7 @@ are met:
 2. Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-3. The name of the NIF File Format Library and Tools projectmay not be
+3. The name of the NIF File Format Library and Tools project may not be
    used to endorse or promote products derived from this software
    without specific prior written permission.
 
@@ -927,6 +927,17 @@ protected:
 	friend class NifIStream;
 	friend class NifOStream;
 };
+
+//! An attempt at providing a qDebug stream operator for Triangle
+/**
+ * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
+ * for how this is supposed to work.
+ */
+inline QDebug &operator<<( QDebug dbg, Triangle t )
+{
+	dbg.nospace() << "(" << t[0] << "," << t[1] << "," << t[2] << ")";
+	return dbg.space();
+}
 
 //! Clamps a float to have a value between 0 and 1 inclusive
 inline float clamp01( float a )
