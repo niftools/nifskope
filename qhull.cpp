@@ -41,7 +41,7 @@ extern "C"
 {
 #include "qhull/src/qhull_a.h"
 
-#include "qhull/src/qhull.c"
+#include "qhull/src/libqhull.c"
 #include "qhull/src/mem.c"
 #include "qhull/src/qset.c"
 #include "qhull/src/geom.c"
