@@ -432,7 +432,7 @@ public:
 			{
 				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
 			}
-
+			
 			if( nif->checkVersion( 0x14010003, 0 ) || setFlags != 0 && setFlags->isChecked() )
 			{
 				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
@@ -714,16 +714,16 @@ public:
 			<< Spell::tr("Cycle")
 			<< Spell::tr("Reverse")
 			<< Spell::tr("Clamp");
-
+		
 		QComboBox * cmbLoop = dlgCombo( vbox, Spell::tr("Loop Mode"), loopModes );
 		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
-
+		
 		QStringList targetColor = QStringList()
 			<< Spell::tr("Ambient")
 			<< Spell::tr("Diffuse")
 			<< Spell::tr("Specular")
 			<< Spell::tr("Emissive");
-
+		
 		QComboBox * cmbColor = dlgCombo( vbox, Spell::tr("Target Color"), targetColor );
 		// Target Color enum exists as of 10.1.0.0
 		if ( nif->checkVersion( 0x0A010000, 0 ) )
@@ -741,7 +741,7 @@ public:
 		{
 			flags = flags & 0xfff7 | ( chkActive->isChecked() ? 8 : 0 );
 			flags = flags & 0xfff9 | cmbLoop->currentIndex() << 1;
-
+			
 			if ( nif->checkVersion( 0x0A010000, 0 ) )
 			{
 				nif->set<int>( nif->getBlock( index ), "Target Color", cmbColor->currentIndex() );
@@ -755,6 +755,7 @@ public:
 		}
 	}
 	
+	//! Set flags on a TexDesc struct
 	void texDescFlags( NifModel * nif, const QModelIndex & index )
 	{
 		quint16 flags = nif->get<int>( index );
@@ -779,7 +780,7 @@ public:
 			<< Spell::tr("FILTER_NEAREST_MIPNEAREST")
 			<< Spell::tr("FILTER_NEAREST_MIPLERP")
 			<< Spell::tr("FILTER_BILERP_MIPNEAREST");
-
+		
 		QComboBox * cmbFilter = dlgCombo( vbox, Spell::tr("Filter Mode"), filterModes );
 		cmbFilter->setCurrentIndex( ( flags & 0x0F00 ) >> 0x08 );
 		
@@ -842,7 +843,7 @@ public:
 	 * \param max The maximum value of the spinbox
 	 * \param chk A checkbox that enables or disables this spinbox
 	 * \return A pointer to the spinbox
-	 */	
+	 */
 	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = 0 )
 	{
 		vbox->addWidget( new QLabel( name ) );
