@@ -53,6 +53,10 @@ extern "C"
 #include "qhull/src/user.c"
 #include "qhull/src/poly2.c"
 #include "qhull/src/geom2.c"
+#include "qhull/src/userprintf.c"
+#include "qhull/src/usermem.c"
+#include "qhull/src/random.c"
+#include "qhull/src/rboxlib.c"
 };
 
 QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms )
