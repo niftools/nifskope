@@ -1480,7 +1480,11 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 bool NifModel::setHeaderString( const QString & s )
 {
  	//msg( DbgMsg() << s );
-	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) || s.startsWith( "NDSNIF" ) || s.startsWith( "NS" ) ) )
+	if ( ! ( s.startsWith( "NetImmerse File Format" ) || s.startsWith( "Gamebryo" ) // official
+		|| s.startsWith( "NDSNIF" ) // altantica
+		|| s.startsWith( "NS" ) // neosteam
+		|| s.startsWith( "Joymaster HS1 Object Format - (JMI)" ) // howling sword, uses .jmi extension
+		) )
 	{
 		msg( Message() << tr("this is not a NIF") );
 		return false;

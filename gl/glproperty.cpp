@@ -289,7 +289,19 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 			{
 				textures[t].iSource = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
 				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
-				switch ( nif->get<int>( iTex, "Filter Mode" ) )
+				int filterMode = 0, clampMode = 0;
+				if( nif->checkVersion( 0, 0x14000005 ) )
+				{
+					filterMode = nif->get<int>( iTex, "Filter Mode" );
+					clampMode = nif->get<int>( iTex, "Clamp Mode" );
+				}
+				else if( nif->checkVersion( 0x14010003, 0 ) )
+				{
+					filterMode = ( ( nif->get<ushort>( iTex, "Flags" ) & 0x0F00 ) >> 0x08 );
+					clampMode = ( ( nif->get<ushort>(iTex, "Flags" ) & 0xF000 ) >> 0x0C );
+				}
+				
+				switch ( filterMode )
 				{
 					// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
 					// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
@@ -301,7 +313,7 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 					case 5:		textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;		break; // bilinear from nearest
 					default:	textures[t].filter = GL_LINEAR;						break;
 				}
-				switch ( nif->get<int>( iTex, "Clamp Mode" ) )
+				switch ( clampMode )
 				{
 					case 0:		textures[t].wrapS = GL_CLAMP;	textures[t].wrapT = GL_CLAMP;	break;
 					case 1:		textures[t].wrapS = GL_CLAMP;	textures[t].wrapT = GL_REPEAT;	break;
@@ -366,7 +378,8 @@ bool TexturingProperty::bind( int id, const QString & fname )
 			// around (-center, -center)
 			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
 			
-			glRotatef( textures[id].rotation, 0, 0, 1 );
+			// rotation appears to be in radians
+			glRotatef( (textures[id].rotation * 180.0 / PI ), 0, 0, 1 );
 			// It appears that the scaling here is relative to center
 			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
 			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );

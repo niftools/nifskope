@@ -106,11 +106,11 @@ public:
 			for ( int r = 0; r < nif->rowCount( midx ); r++ )
 			{
 				QModelIndex iInterpolators, iInterpolatorWeights;
-				if( nif->checkVersion( 0, 0x14020006 ) )
+				if( nif->checkVersion( 0, 0x14000005 ) )
 				{
 					iInterpolators = nif->getIndex( iBlock, "Interpolators" );
 				}
-				else if( nif->checkVersion( 0, 0x14020007 ) )
+				else if( nif->checkVersion( 0x14010003, 0 ) )
 				{
 					iInterpolatorWeights = nif->getIndex( iBlock, "Interpolator Weights" );
 				}
