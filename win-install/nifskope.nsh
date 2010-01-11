@@ -161,6 +161,7 @@ KfaAssocNoBackup:
   ; write out the file association details for NetImmerseFile
   WriteRegStr HKCR ".nif" "" "NetImmerseFile"
   WriteRegStr HKCR ".nifcache" "" "NetImmerseFile"
+  WriteRegStr HKCR ".jmi" "" "NetImmerseFile"
   WriteRegStr HKCR ".kf" "" "NetImmerseAnim"
   WriteRegStr HKCR ".kfa" "" "NetImmerseAnim"
   WriteRegStr HKCR ".kfm" "" "NetImmerseAnimMgr"
