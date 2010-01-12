@@ -55,13 +55,18 @@ public:
 		compute_convex_hull( verts, hullVerts, hullNorms );
 
 		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
-		
+		// rounding factor
+		float roundFactor = 1000.0;
+
 		// sort and remove duplicates
 		QMap<QString, Vector4> sortedVerts;
 		foreach( Vector4 vert, hullVerts )
 		{
+			QString name = QString( "%1 %2 %3" )
+				.arg( (int) ( vert[0] * roundFactor ) )
+				.arg( (int) ( vert[1] * roundFactor ) )
+				.arg( (int) ( vert[2] * roundFactor ) );
 			vert /= 7.0;
-			QString name = QString( "%1 %2 %3" ).arg( vert[0] ).arg( vert[1] ).arg( vert[2] );
 			if( ! sortedVerts.contains( name ) )
 			{
 				sortedVerts.insert( name, vert );
@@ -77,8 +82,12 @@ public:
 		QMap<QString, Vector4> sortedNorms;
 		foreach( Vector4 norm, hullNorms )
 		{
+			QString name = QString( "%1 %2 %3 %4" )
+				.arg( (int) ( norm[0] * roundFactor ) )
+				.arg( (int) ( norm[1] * roundFactor ) )
+				.arg( (int) ( norm[2] * roundFactor ) )
+				.arg( (int) ( norm[3] * roundFactor ) );
 			norm = Vector4( Vector3( norm ), norm[3] / 7.0 );
-			QString name = QString( "%1 %2 %3 %4" ).arg( norm[0] ).arg( norm[1] ).arg( norm[2] ).arg( norm[3] );
 			if( ! sortedNorms.contains( name ) )
 			{
 				sortedNorms.insert( name, norm );
@@ -102,6 +111,9 @@ public:
 		nif->set<uint>( iCVS, "Num Normals", convex_norms.count() );
 		nif->updateArray( iCVS, "Normals" );
 		nif->setArray<Vector4>( iCVS, "Normals", convex_norms );
+
+		// set radius, arrow detection [0, 0, -0, 0, 0, -0]
+		// create bhkCollisionObject, bhkRigidBody
 		
 		return iCVS;
 	}
