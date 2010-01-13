@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 
 #include <QDebug>
+#include <QByteArray>
 
 extern "C"
 {
@@ -59,7 +60,11 @@ extern "C"
 #include "qhull/src/rboxlib.c"
 };
 
-QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms )
+//! \file qhull.cpp An interface to Qhull, http://www.qhull.org
+
+// TODO: investigate the C++ interfaces to Qhull; the Qt interface requires GCC 4.3
+
+QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms, float roundError )
 {  
 	QVector<Triangle> tris;
 	
@@ -71,11 +76,14 @@ QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Ve
 	coordT *points=0;
 	/* True if qhull should free points in qh_freeqhull() or reallocation */
 	boolT ismalloc=0;
-	/* option flags for qhull, see qh_opt.htm
+	/* option flags for qhull, see qh-quick.htm
 	 * i: print vertices incident to each facet
 	 * Qt: produce triangulated output
+	 * En: max roundoff
 	 */
-	char flags[]= "qhull i Qt";
+	QString tempFlags = QString( "qhull i Qt E%1" ).arg( roundError );
+	QByteArray flagsChar = tempFlags.toLatin1();
+	char* flags = flagsChar.data();
 	/* output from qh_produce_output()
 	 * use NULL to skip qh_produce_output()
 	 */

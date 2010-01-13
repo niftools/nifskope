@@ -19,7 +19,12 @@
 #ifdef USE_QHULL
 
 #include "../qhull.h"
+#include <QDialog>
+#include <QDoubleSpinBox>
+#include <QLabel>
 #include <QMap>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 class spCreateCVS : public Spell
 {
@@ -50,9 +55,33 @@ public:
 		
 		// to store results
 		QVector<Vector4> hullVerts, hullNorms;
+
+		// ask for precision
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+		
+		vbox->addWidget( new QLabel( Spell::tr( "Enter the maximum roundoff error to use" ) ) );
+		vbox->addWidget( new QLabel( Spell::tr( "Larger values will give a less precise but better performing hull" ) ) );
+		
+		QDoubleSpinBox * precSpin = new QDoubleSpinBox;
+		precSpin->setRange( 0, 5 );
+		precSpin->setDecimals( 3 );
+		precSpin->setSingleStep( 0.01 );
+		precSpin->setValue( 0.05 );
+		vbox->addWidget( precSpin );
+
+		QPushButton * ok = new QPushButton;
+		ok->setText( Spell::tr( "Ok" ) );
+		vbox->addWidget( ok );
+		
+		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		
+		// for the moment we don't care if the user can cancel
+		dlg.exec();
 		
 		/* make a convex hull from it */
-		compute_convex_hull( verts, hullVerts, hullNorms );
+		compute_convex_hull( verts, hullVerts, hullNorms, (float) precSpin->value() );
 
 		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
 		// rounding factor

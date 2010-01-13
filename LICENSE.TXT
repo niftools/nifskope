@@ -34,8 +34,9 @@ The Windows build of NifSkope uses Havok(R) for the generation of mopp code.
 All Rights Reserved.  See www.havok.com for details.
 
 NifSkope uses Qhull for the generation of convex hulls, from www.qhull.org.
-Copyright (c) 1993-2003 The Geometry Center, modified by amorilia; see
-http://github.com/amorilia/qhull and Qhull_COPYING.txt for details.
+Copyright (c) 1993-2010 C.B. Barber and The Geometry Center; see
+Qhull_COPYING.txt for details and http://github.com/amorilia/qhull for the
+source tree currently in use.
 
 NOTICE
 
