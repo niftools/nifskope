@@ -3,4 +3,4 @@
 	url = git://niftools.git.sourceforge.net/gitroot/niftools/nifdocsys
 [submodule "qhull"]
 	path = qhull
-	url = git://github.com/amorilia/qhull.git
+	url = git://gitorious.org/qhull/qhull.git
