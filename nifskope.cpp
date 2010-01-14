@@ -143,13 +143,14 @@ void NifSkope::migrateSettings() const
 void NifSkope::about()
 {
 	QString text = tr(
-	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse '.nif' files.</p>"
+	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
 	"<p>NifSkope is based on NifTool's XML file format specification. "
-	"For more informations visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
+	"For more information visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
 	"<p>NifSkope is free software available under a BSD license. "
-	"The source is available via <a href='https://niftools.svn.sourceforge.net/svnroot/niftools/trunk/nifskope'>svn</a>"
-	" on <a href='http://sourceforge.net'>SourceForge</a>.</p>"
-	"<p>The most recent version of NifSkope can always be downloaded from the <a href='http://sourceforge.net/project/showfiles.php?group_id=149157'>"
+	"The source is available via <a href='http://niftools.git.sourceforge.net/git/gitweb.cgi?p=niftools/nifskope'>git</a> "
+	"(<a href='git://niftools.git.sourceforge.net/gitroot/niftools/nifskope'>clone</a>) on <a href='http://sourceforge.net'>SourceForge</a>. "
+	"Instructions on compiling NifSkope are available on the <a href='http://niftools.sourceforge.net/wiki/NifSkope/Compile'>NifTools wiki</a>.</p>"
+	"<p>The most recent version of NifSkope can always be downloaded from the <a href='https://sourceforge.net/projects/niftools/files/nifskope/'>"
 	"NifTools SourceForge Project page</a>.</p>"
 // only the windows build uses havok
 // (Q_OS_WIN32 is also defined on win64)
