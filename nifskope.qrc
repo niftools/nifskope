@@ -11,6 +11,7 @@
         <file alias="link">resources/img_link.png</file>
         <file alias="flag">resources/img_flag.png</file>
 		<file alias="havok_logo">resources/havok_logo.png</file>
+		<file alias="qhull_logo">resources/qhull_cone.gif</file>
     </qresource>
     <qresource prefix="/btn">
         <file alias="play">resources/button_play.png</file>

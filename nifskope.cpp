@@ -161,6 +161,11 @@ void NifSkope::about()
 	"All Rights Reserved. "
 	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>"
 #endif
+	"<center><img src=':/img/qhull_logo' /></center>"
+	"<p>NifSkope uses Qhull for the generation of convex hulls. "
+	"Copyright(c) 1993-2010  C.B. Barber and The Geometry Center. "
+	"Qhull is free software and may be obtained from <a href='http://www.qhull.org'>www.qhull.org</a>. "
+	"See Qhull_COPYING.txt for details."
 	);
 
 	QMessageBox mb( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION), text, QMessageBox::Information,
