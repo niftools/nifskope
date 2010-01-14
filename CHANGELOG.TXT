@@ -9,7 +9,9 @@ changes since 1.0.21:
  * allow hexadecimal values in nif.xml enumeration options
  * added "String Palette->Replace Entries" spell for NiSequence blocks, and
    "Animation->Edit String Palettes" helper
- * Fix display of Fallout 3 morph animations
+ * fixed display of Fallout 3 morph animations (NiGeomMorpherController)
+ * support reading nifs which use the JMI extension and header
+ * added "Node->Attach Parent Node" (suggested by vurt2)
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures

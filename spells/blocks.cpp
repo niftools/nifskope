@@ -1277,3 +1277,64 @@ public:
 };
 
 REGISTER_SPELL( spSortBlockNames )
+
+//! Attach a Node as a parent of the current block
+class spAttachParentNode : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Attach Parent Node"); }
+	QString page() const { return Spell::tr("Node"); }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return nif->isNiBlock( index );
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		// find our current block number
+		int thisBlockNumber = nif->getBlockNumber( index );
+		// find our parent; most functions won't break if it doesn't exist,
+		// so we don't care if it doesn't exist
+		QModelIndex iParent = nif->getBlock( nif->getParent( thisBlockNumber ) );
+		
+		// find our index into the parent children array
+		QVector<int> parentChildLinks = nif->getLinkArray( iParent, "Children" );
+		int thisBlockIndex = parentChildLinks.indexOf( thisBlockNumber );
+		
+		// attach a new node
+		// basically spAttachNode limited to NiNode and without the auto-attachment
+		QMenu menu;
+		QStringList ids = nif->allNiBlocks();
+		ids.sort();
+		foreach ( QString id, ids )
+			if ( nif->inherits( id, "NiNode" ) )
+				menu.addAction( id );
+		
+		QModelIndex attachedNode;
+		
+		QAction * act = menu.exec( QCursor::pos() );
+		if ( act )
+		{
+			attachedNode = nif->insertNiBlock( act->text(), thisBlockNumber );
+		}
+		else
+		{
+			return index;
+		}
+		
+		// the attached node pushes this block down one row
+		int attachedNodeNumber = thisBlockNumber++;
+		
+		// replace this block with the attached node
+		nif->setLink( nif->getIndex( iParent, "Children" ).child( thisBlockIndex, 0 ), attachedNodeNumber );
+		
+		// attach ourselves to the attached node
+		addLink( nif, attachedNode, "Children", thisBlockNumber );
+		
+		return attachedNode;
+	}
+};
+
+REGISTER_SPELL( spAttachParentNode )
+
