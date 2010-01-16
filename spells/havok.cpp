@@ -26,6 +26,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+//! Creates a convex hull
 class spCreateCVS : public Spell
 {
 public:
@@ -84,48 +85,45 @@ public:
 		compute_convex_hull( verts, hullVerts, hullNorms, (float) precSpin->value() );
 
 		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
-		// rounding factor
-		float roundFactor = 1000.0;
-
-		// sort and remove duplicates
-		QMap<QString, Vector4> sortedVerts;
+		
+		// sort and remove duplicate vertices
+		QList<Vector4> sortedVerts;
 		foreach( Vector4 vert, hullVerts )
 		{
-			QString name = QString( "%1 %2 %3" )
-				.arg( (int) ( vert[0] * roundFactor ) )
-				.arg( (int) ( vert[1] * roundFactor ) )
-				.arg( (int) ( vert[2] * roundFactor ) );
 			vert /= 7.0;
-			if( ! sortedVerts.contains( name ) )
+			if( ! sortedVerts.contains( vert ) )
 			{
-				sortedVerts.insert( name, vert );
-				qWarning() << "Inserted " << name;
+				sortedVerts.append( vert );
+				qWarning() << "Inserted " << vert;
 			}
 		}
-		foreach( QString vertName, sortedVerts.keys() )
+		qSort( sortedVerts );
+		QListIterator<Vector4> vertIter( sortedVerts );
+		while( vertIter.hasNext() )
 		{
-			convex_verts.append( sortedVerts.value( vertName ) );
+			Vector4 sorted = vertIter.next();
+			qWarning() << "Sorted value:" << sorted;
+			convex_verts.append( sorted );
 		}
 		
-		// sort and remove duplicates
-		QMap<QString, Vector4> sortedNorms;
+		// sort and remove duplicate normals
+		QList<Vector4> sortedNorms;
 		foreach( Vector4 norm, hullNorms )
 		{
-			QString name = QString( "%1 %2 %3 %4" )
-				.arg( (int) ( norm[0] * roundFactor ) )
-				.arg( (int) ( norm[1] * roundFactor ) )
-				.arg( (int) ( norm[2] * roundFactor ) )
-				.arg( (int) ( norm[3] * roundFactor ) );
 			norm = Vector4( Vector3( norm ), norm[3] / 7.0 );
-			if( ! sortedNorms.contains( name ) )
+			if( ! sortedNorms.contains( norm ) )
 			{
-				sortedNorms.insert( name, norm );
-				qWarning() << "Inserted " << name;
+				sortedNorms.append( norm );
+				qWarning() << "Inserted " << norm;
 			}
 		}
-		foreach( QString normName, sortedNorms.keys() )
+		qSort( sortedNorms );
+		QListIterator<Vector4> normIter( sortedNorms );
+		while( normIter.hasNext() )
 		{
-			convex_norms.append( sortedNorms.value( normName ) );
+			Vector4 sorted = normIter.next();
+			qWarning() << "Sorted value:" << sorted;
+			convex_norms.append( sorted );
 		}
 		
 		/* create the CVS block */
@@ -141,10 +139,61 @@ public:
 		nif->updateArray( iCVS, "Normals" );
 		nif->setArray<Vector4>( iCVS, "Normals", convex_norms );
 
-		// set radius, arrow detection [0, 0, -0, 0, 0, -0]
-		// create bhkCollisionObject, bhkRigidBody
+		// TODO: set radius, arrow detection [0, 0, -0, 0, 0, -0]
+
+		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) );
+
+		qWarning() << "Parent is" << iParent;
+
+		QModelIndex collisionLink = nif->getIndex( iParent, "Collision Object" );
+
+		qWarning() << "Collision link" << collisionLink << "is a link:" << nif->isLink( collisionLink );
+
+		QModelIndex collisionObject = nif->getBlock( nif->getLink( collisionLink ) );
+
+		qWarning() << "Collision object is" << collisionObject;
+
+		// create bhkCollisionObject
+		if( ! collisionObject.isValid() )
+		{
+			qWarning() << "Collision object is empty, inserting one";
+			collisionObject = nif->insertNiBlock( "bhkCollisionObject" );
+
+			nif->setLink( collisionLink, nif->getBlockNumber( collisionObject ) );
+			nif->setLink( collisionObject, "Target", nif->getBlockNumber( iParent ) );
+		}
+
+		QModelIndex rigidBodyLink = nif->getIndex( collisionObject, "Body" );
+
+		qWarning() << "Rigid body link" << rigidBodyLink;
+
+		QModelIndex rigidBody = nif->getBlock( nif->getLink( rigidBodyLink ) );
+
+		// create bhkRigidBody
+		if( ! rigidBody.isValid() )
+		{
+			qWarning() << "Rigid body is empty, inserting one";
+			rigidBody = nif->insertNiBlock( "bhkRigidBody" );
+
+			nif->setLink( rigidBodyLink, nif->getBlockNumber( rigidBody ) );
+		}
 		
-		return iCVS;
+		QModelIndex shapeLink = nif->getIndex( rigidBody, "Shape" );
+
+		qWarning() << "Shape link" << shapeLink;
+
+		QModelIndex shape = nif->getBlock( nif->getLink( shapeLink ) );
+
+		// set link and delete old one
+		nif->setLink( shapeLink, nif->getBlockNumber( iCVS ) );
+
+		if( shape.isValid() )
+		{
+			spRemoveBranch BranchRemover;
+			BranchRemover.castIfApplicable( nif, shape );
+		}
+		
+		return index;
 	}
 };
 

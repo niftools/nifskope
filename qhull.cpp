@@ -60,10 +60,11 @@ extern "C"
 #include "qhull/src/rboxlib.c"
 };
 
-//! \file qhull.cpp An interface to Qhull, http://www.qhull.org
+//! \file qhull.cpp Computes a convex hull
 
 // TODO: investigate the C++ interfaces to Qhull; the Qt interface requires GCC 4.3
 
+//! An interface to <a href="http://www.qhull.org">Qhull</a> for generating Havok-compatible convex shapes
 QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms, float roundError )
 {  
 	QVector<Triangle> tris;

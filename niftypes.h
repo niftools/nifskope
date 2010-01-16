@@ -179,6 +179,19 @@ inline QDebug &operator<<( QDebug dbg, Vector2 v )
 	return dbg.space();
 }
 
+//! Operator to allow Vector2 to be used as a sorting key.
+inline bool operator<( const Vector2 v1, const Vector2 v2 )
+{
+	if( v1[0] != v2[0] )
+	{
+		return v1[0] < v2[0];
+	}
+	else
+	{
+		return v1[1] < v2[1];
+	}
+}
+
 //! A vector of 3 floats
 class Vector3
 {	
@@ -392,6 +405,26 @@ inline QDebug &operator<<( QDebug dbg, Vector3 v )
 	return dbg.space();
 }
 
+//! Operator to allow Vector3 to be used as a sorting key.
+inline bool operator<( const Vector3 v1, const Vector3 v2 )
+{
+	if( v1[0] != v2[0] )
+	{
+		return v1[0] < v2[0];
+	}
+	else
+	{
+		if( v1[1] != v2[1] )
+		{
+			return v1[1] < v2[1];
+		}
+		else
+		{
+			return v1[2] < v2[2];
+		}
+	}
+}
+
 //! A vector of 4 floats
 class Vector4
 {
@@ -585,7 +618,34 @@ inline QDebug &operator<<( QDebug dbg, Vector4 v )
 	return dbg.space();
 }
 
-// This refuses to document properly in doxygen.
+//! Operator to allow Vector4 to be used as a sorting key.
+inline bool operator<( const Vector4 v1, const Vector4 v2 )
+{
+	if( v1[0] != v2[0] )
+	{
+		return v1[0] < v2[0];
+	}
+	else
+	{
+		if( v1[1] != v2[1] )
+		{
+			return v1[1] < v2[1];
+		}
+		else
+		{
+			if( v1[2] != v2[2] )
+			{
+				return v1[2] < v2[2];
+			}
+			else
+			{
+				return v1[3] < v2[3];
+			}
+		}
+	}
+}
+
+// This doesn't seem to document properly in doxygen.
 inline Vector3::Vector3( const Vector4 & v4 )
 {
 	xyz[0] = v4[0];
