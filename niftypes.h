@@ -152,6 +152,19 @@ public:
 		return xy[i];
 	}
 	
+	//! Comparison function for lexicographic sorting
+	static bool lexLessThan( const Vector2 & v1, const Vector2 & v2 )
+	{
+		if( v1[0] != v2[0] )
+		{
+			return v1[0] < v2[0];
+		}
+		else
+		{
+			return v1[1] < v2[1];
+		}
+	}
+	
 	//! %Data accessor
 	const float * data() const
 	{
@@ -177,19 +190,6 @@ inline QDebug &operator<<( QDebug dbg, Vector2 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ")";
 	return dbg.space();
-}
-
-//! Operator to allow Vector2 to be used as a sorting key.
-inline bool operator<( const Vector2 v1, const Vector2 v2 )
-{
-	if( v1[0] != v2[0] )
-	{
-		return v1[0] < v2[0];
-	}
-	else
-	{
-		return v1[1] < v2[1];
-	}
 }
 
 //! A vector of 3 floats
@@ -356,6 +356,26 @@ public:
 			return acos( dot );
 	}
 	
+	//! Comparison function for lexicographic sorting
+	static bool lexLessThan( const Vector3 & v1, const Vector3 & v2 )
+	{
+		if( v1[0] != v2[0] )
+		{
+			return v1[0] < v2[0];
+		}
+		else
+		{
+			if( v1[1] != v2[1] )
+			{
+				return v1[1] < v2[1];
+			}
+			else
+			{
+				return v1[2] < v2[2];
+			}
+		}
+	}
+	
 	//! Size a vector to a minimum bound
 	void boundMin( const Vector3 & v )
 	{
@@ -403,26 +423,6 @@ inline QDebug &operator<<( QDebug dbg, Vector3 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
 	return dbg.space();
-}
-
-//! Operator to allow Vector3 to be used as a sorting key.
-inline bool operator<( const Vector3 v1, const Vector3 v2 )
-{
-	if( v1[0] != v2[0] )
-	{
-		return v1[0] < v2[0];
-	}
-	else
-	{
-		if( v1[1] != v2[1] )
-		{
-			return v1[1] < v2[1];
-		}
-		else
-		{
-			return v1[2] < v2[2];
-		}
-	}
 }
 
 //! A vector of 4 floats
@@ -583,6 +583,33 @@ public:
 			return (float)acos( dot );
 	}
 	
+	//! Comparison function for lexicographic sorting
+	static bool lexLessThan( const Vector4 & v1, const Vector4 & v2 )
+	{
+		if( v1[0] != v2[0] )
+		{
+			return v1[0] < v2[0];
+		}
+		else
+		{
+			if( v1[1] != v2[1] )
+			{
+				return v1[1] < v2[1];
+			}
+			else
+			{
+				if( v1[2] != v2[2] )
+				{
+					return v1[2] < v2[2];
+				}
+				else
+				{
+					return v1[3] < v2[3];
+				}
+			}
+		}
+	}
+	
 	//! %Data accessor
 	const float * data() const { return xyzw; }
 	
@@ -618,34 +645,7 @@ inline QDebug &operator<<( QDebug dbg, Vector4 v )
 	return dbg.space();
 }
 
-//! Operator to allow Vector4 to be used as a sorting key.
-inline bool operator<( const Vector4 v1, const Vector4 v2 )
-{
-	if( v1[0] != v2[0] )
-	{
-		return v1[0] < v2[0];
-	}
-	else
-	{
-		if( v1[1] != v2[1] )
-		{
-			return v1[1] < v2[1];
-		}
-		else
-		{
-			if( v1[2] != v2[2] )
-			{
-				return v1[2] < v2[2];
-			}
-			else
-			{
-				return v1[3] < v2[3];
-			}
-		}
-	}
-}
-
-// This doesn't seem to document properly in doxygen.
+// This doesn't seem to document properly in Doxygen.
 inline Vector3::Vector3( const Vector4 & v4 )
 {
 	xyz[0] = v4[0];
