@@ -152,6 +152,19 @@ public:
 		return xy[i];
 	}
 	
+	//! Comparison function for lexicographic sorting
+	static bool lexLessThan( const Vector2 & v1, const Vector2 & v2 )
+	{
+		if( v1[0] != v2[0] )
+		{
+			return v1[0] < v2[0];
+		}
+		else
+		{
+			return v1[1] < v2[1];
+		}
+	}
+	
 	//! %Data accessor
 	const float * data() const
 	{
@@ -341,6 +354,26 @@ public:
 			return (float)(PI/2);
 		else
 			return acos( dot );
+	}
+	
+	//! Comparison function for lexicographic sorting
+	static bool lexLessThan( const Vector3 & v1, const Vector3 & v2 )
+	{
+		if( v1[0] != v2[0] )
+		{
+			return v1[0] < v2[0];
+		}
+		else
+		{
+			if( v1[1] != v2[1] )
+			{
+				return v1[1] < v2[1];
+			}
+			else
+			{
+				return v1[2] < v2[2];
+			}
+		}
 	}
 	
 	//! Size a vector to a minimum bound
@@ -550,6 +583,33 @@ public:
 			return (float)acos( dot );
 	}
 	
+	//! Comparison function for lexicographic sorting
+	static bool lexLessThan( const Vector4 & v1, const Vector4 & v2 )
+	{
+		if( v1[0] != v2[0] )
+		{
+			return v1[0] < v2[0];
+		}
+		else
+		{
+			if( v1[1] != v2[1] )
+			{
+				return v1[1] < v2[1];
+			}
+			else
+			{
+				if( v1[2] != v2[2] )
+				{
+					return v1[2] < v2[2];
+				}
+				else
+				{
+					return v1[3] < v2[3];
+				}
+			}
+		}
+	}
+	
 	//! %Data accessor
 	const float * data() const { return xyzw; }
 	
@@ -585,7 +645,7 @@ inline QDebug &operator<<( QDebug dbg, Vector4 v )
 	return dbg.space();
 }
 
-// This refuses to document properly in doxygen.
+// This doesn't seem to document properly in Doxygen.
 inline Vector3::Vector3( const Vector4 & v4 )
 {
 	xyz[0] = v4[0];
