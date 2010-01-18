@@ -97,7 +97,7 @@ public:
 				qWarning() << "Inserted " << vert;
 			}
 		}
-		qSort( sortedVerts );
+		qSort( sortedVerts.begin(), sortedVerts.end(), Vector4::lexLessThan );
 		QListIterator<Vector4> vertIter( sortedVerts );
 		while( vertIter.hasNext() )
 		{
@@ -117,7 +117,7 @@ public:
 				qWarning() << "Inserted " << norm;
 			}
 		}
-		qSort( sortedNorms );
+		qSort( sortedNorms.begin(), sortedNorms.end(), Vector4::lexLessThan );
 		QListIterator<Vector4> normIter( sortedNorms );
 		while( normIter.hasNext() )
 		{
