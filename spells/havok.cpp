@@ -1,10 +1,18 @@
 #include "../spellbook.h"
+#include "../qhull.h"
 
 #include "../NvTriStrip/qtwrapper.h"
 
 #include "blocks.h"
 
 #include <QDebug>
+#include <QDialog>
+#include <QDoubleSpinBox>
+#include <QLabel>
+#include <QMap>
+#include <QPushButton>
+#include <QVBoxLayout>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file havok.cpp
@@ -13,20 +21,7 @@
  * All classes here inherit from the Spell class.
  */
 
-//Wz didn't provide enough code for this to work.  I don't see any reason QHull can't be put on SVN, but he seems to have changed
-//the parameters of the example compute_convex_hull function, so I'll just leave it defined out until someone has a chance to dig
-//into it or provide an alternative implementation without QHull.
-#ifdef USE_QHULL
-
-#include "../qhull.h"
-#include <QDialog>
-#include <QDoubleSpinBox>
-#include <QLabel>
-#include <QMap>
-#include <QPushButton>
-#include <QVBoxLayout>
-
-//! Creates a convex hull
+//! Creates a convex hull using Qhull
 class spCreateCVS : public Spell
 {
 public:
@@ -56,7 +51,7 @@ public:
 		
 		// to store results
 		QVector<Vector4> hullVerts, hullNorms;
-
+		
 		// ask for precision
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -71,7 +66,7 @@ public:
 		precSpin->setSingleStep( 0.01 );
 		precSpin->setValue( 0.05 );
 		vbox->addWidget( precSpin );
-
+		
 		QPushButton * ok = new QPushButton;
 		ok->setText( Spell::tr( "Ok" ) );
 		vbox->addWidget( ok );
@@ -83,7 +78,7 @@ public:
 		
 		/* make a convex hull from it */
 		compute_convex_hull( verts, hullVerts, hullNorms, (float) precSpin->value() );
-
+		
 		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
 		
 		// sort and remove duplicate vertices
@@ -94,7 +89,6 @@ public:
 			if( ! sortedVerts.contains( vert ) )
 			{
 				sortedVerts.append( vert );
-				qWarning() << "Inserted " << vert;
 			}
 		}
 		qSort( sortedVerts.begin(), sortedVerts.end(), Vector4::lexLessThan );
@@ -102,7 +96,6 @@ public:
 		while( vertIter.hasNext() )
 		{
 			Vector4 sorted = vertIter.next();
-			qWarning() << "Sorted value:" << sorted;
 			convex_verts.append( sorted );
 		}
 		
@@ -114,7 +107,6 @@ public:
 			if( ! sortedNorms.contains( norm ) )
 			{
 				sortedNorms.append( norm );
-				qWarning() << "Inserted " << norm;
 			}
 		}
 		qSort( sortedNorms.begin(), sortedNorms.end(), Vector4::lexLessThan );
@@ -122,7 +114,6 @@ public:
 		while( normIter.hasNext() )
 		{
 			Vector4 sorted = normIter.next();
-			qWarning() << "Sorted value:" << sorted;
 			convex_norms.append( sorted );
 		}
 		
@@ -138,55 +129,44 @@ public:
 		nif->set<uint>( iCVS, "Num Normals", convex_norms.count() );
 		nif->updateArray( iCVS, "Normals" );
 		nif->setArray<Vector4>( iCVS, "Normals", convex_norms );
-
-		// TODO: set radius, arrow detection [0, 0, -0, 0, 0, -0]
-
+		
+		// radius is always 0.1?
+		nif->set<float>( iCVS, "Radius", 0.1 );
+		
+		// for arrow detection: [0, 0, -0, 0, 0, -0]
+		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 2, 0 ), -0.0 );
+		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 5, 0 ), -0.0 );
+		
 		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) );
-
-		qWarning() << "Parent is" << iParent;
-
 		QModelIndex collisionLink = nif->getIndex( iParent, "Collision Object" );
-
-		qWarning() << "Collision link" << collisionLink << "is a link:" << nif->isLink( collisionLink );
-
 		QModelIndex collisionObject = nif->getBlock( nif->getLink( collisionLink ) );
-
-		qWarning() << "Collision object is" << collisionObject;
-
+		
 		// create bhkCollisionObject
 		if( ! collisionObject.isValid() )
 		{
-			qWarning() << "Collision object is empty, inserting one";
 			collisionObject = nif->insertNiBlock( "bhkCollisionObject" );
-
+			
 			nif->setLink( collisionLink, nif->getBlockNumber( collisionObject ) );
 			nif->setLink( collisionObject, "Target", nif->getBlockNumber( iParent ) );
 		}
-
+		
 		QModelIndex rigidBodyLink = nif->getIndex( collisionObject, "Body" );
-
-		qWarning() << "Rigid body link" << rigidBodyLink;
-
 		QModelIndex rigidBody = nif->getBlock( nif->getLink( rigidBodyLink ) );
-
+		
 		// create bhkRigidBody
 		if( ! rigidBody.isValid() )
 		{
-			qWarning() << "Rigid body is empty, inserting one";
 			rigidBody = nif->insertNiBlock( "bhkRigidBody" );
-
+			
 			nif->setLink( rigidBodyLink, nif->getBlockNumber( rigidBody ) );
 		}
 		
 		QModelIndex shapeLink = nif->getIndex( rigidBody, "Shape" );
-
-		qWarning() << "Shape link" << shapeLink;
-
 		QModelIndex shape = nif->getBlock( nif->getLink( shapeLink ) );
-
+		
 		// set link and delete old one
 		nif->setLink( shapeLink, nif->getBlockNumber( iCVS ) );
-
+		
 		if( shape.isValid() )
 		{
 			spRemoveBranch BranchRemover;
@@ -198,7 +178,6 @@ public:
 };
 
 REGISTER_SPELL( spCreateCVS );
-#endif
 
 //! Transforms Havok constraints
 class spConstraintHelper : public Spell
