@@ -9,9 +9,9 @@
 #include <QDialog>
 #include <QDoubleSpinBox>
 #include <QLabel>
+#include <QLayout>
 #include <QMap>
 #include <QPushButton>
-#include <QVBoxLayout>
 
 
 // Brief description is deliberately not autolinked to class Spell
@@ -64,17 +64,27 @@ public:
 		precSpin->setRange( 0, 5 );
 		precSpin->setDecimals( 3 );
 		precSpin->setSingleStep( 0.01 );
-		precSpin->setValue( 0.05 );
+		precSpin->setValue( 0.25 );
 		vbox->addWidget( precSpin );
+		
+		QHBoxLayout * hbox = new QHBoxLayout;
+		vbox->addLayout( hbox );
 		
 		QPushButton * ok = new QPushButton;
 		ok->setText( Spell::tr( "Ok" ) );
-		vbox->addWidget( ok );
+		hbox->addWidget( ok );
+		
+		QPushButton * cancel = new QPushButton;
+		cancel->setText( Spell::tr("Cancel") );
+		hbox->addWidget( cancel );
 		
 		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( cancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
 		
-		// for the moment we don't care if the user can cancel
-		dlg.exec();
+		if( dlg.exec() != QDialog::Accepted )
+		{
+			return index;
+		}
 		
 		/* make a convex hull from it */
 		compute_convex_hull( verts, hullVerts, hullNorms, (float) precSpin->value() );
@@ -169,10 +179,11 @@ public:
 		
 		if( shape.isValid() )
 		{
-			spRemoveBranch BranchRemover;
-			BranchRemover.castIfApplicable( nif, shape );
+			// cheaper than calling spRemoveBranch
+			nif->removeNiBlock( nif->getBlockNumber( shape ) );
 		}
 		
+		// returning iCVS here can crash NifSkope if a child array is selected
 		return index;
 	}
 };
