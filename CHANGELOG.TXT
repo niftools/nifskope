@@ -12,6 +12,7 @@ changes since 1.0.21:
  * fixed display of Fallout 3 morph animations (NiGeomMorpherController)
  * support reading nifs which use the JMI extension and header
  * added "Node->Attach Parent Node" (suggested by vurt2)
+ * added "Havok->Create Convex Shape" using Qhull and old code by wz
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures

@@ -13,13 +13,15 @@
 #include <QMap>
 #include <QPushButton>
 
-
 // Brief description is deliberately not autolinked to class Spell
 /*! \file havok.cpp
  * \brief Havok spells
  *
  * All classes here inherit from the Spell class.
  */
+
+//! For Havok coordinate transforms
+static const float havokConst = 7.0;
 
 //! Creates a convex hull using Qhull
 class spCreateCVS : public Spell
@@ -30,7 +32,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if( !nif->inherits( index, "NiTriBasedGeom" ) )
+		if( ! nif->inherits( index, "NiTriBasedGeom" ) || ! nif->checkVersion( 0x0A000100, 0 ) )
 			return false;
 		
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
@@ -89,13 +91,11 @@ public:
 		/* make a convex hull from it */
 		compute_convex_hull( verts, hullVerts, hullNorms, (float) precSpin->value() );
 		
-		// consider moving the magic Havok scaling constant of 7.0 into qhull.cpp
-		
 		// sort and remove duplicate vertices
 		QList<Vector4> sortedVerts;
 		foreach( Vector4 vert, hullVerts )
 		{
-			vert /= 7.0;
+			vert /= havokConst;
 			if( ! sortedVerts.contains( vert ) )
 			{
 				sortedVerts.append( vert );
@@ -113,7 +113,7 @@ public:
 		QList<Vector4> sortedNorms;
 		foreach( Vector4 norm, hullNorms )
 		{
-			norm = Vector4( Vector3( norm ), norm[3] / 7.0 );
+			norm = Vector4( Vector3( norm ), norm[3] / havokConst );
 			if( ! sortedNorms.contains( norm ) )
 			{
 				sortedNorms.append( norm );
@@ -188,7 +188,7 @@ public:
 	}
 };
 
-REGISTER_SPELL( spCreateCVS );
+REGISTER_SPELL( spCreateCVS )
 
 //! Transforms Havok constraints
 class spConstraintHelper : public Spell
@@ -260,9 +260,9 @@ public:
 				return index;
 		}
 
-		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * 7.0;
+		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * havokConst;
 		pivot = transA * pivot;
-		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / 7.0;
+		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
 		nif->set<Vector4>( iConstraint, "Pivot B", Vector4( pivot[0], pivot[1], pivot[2], 0 ) );
 		
 		if ( name == "bhkLimitedHingeConstraint" )
