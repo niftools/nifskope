@@ -1463,7 +1463,9 @@ void Node::drawHavok()
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene );
 
 	glLoadName( nif->getBlockNumber( iBody ) );
-	drawAxes( nif->get<Vector3>( iBody, "Center" ), 0.2f );
+	glDepthFunc( GL_ALWAYS );
+	drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 0.2f );
+	glDepthFunc( GL_LEQUAL );
 	
 	glPopMatrix();
 	
