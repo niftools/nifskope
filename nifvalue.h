@@ -360,18 +360,9 @@ protected:
 };
 
 // documented above; should this really be inlined?
-inline quint32 NifValue::toCount() const {
-#ifdef WIN32
-	if ( isCount() )
-		return val.u32;
-	else if( isFloat() )
-		return *(quint32*)&val.f32;
-#else
-	if ( isCount() || isFloat() )
-		return val.u32; // GCC only allows type punning via union (http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Optimize-Options.html#index-fstrict_002daliasing-550)
-#endif
-	return 0;
-}
+// GCC only allows type punning via union (http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Optimize-Options.html#index-fstrict_002daliasing-550)
+// This also works on GCC 3.4.5
+inline quint32 NifValue::toCount() const { if ( isCount() || isFloat() ) return val.u32; else return 0; }
 // documented above
 inline float NifValue::toFloat() const { if ( isFloat() ) return val.f32; else return 0.0; }
 // documented above
