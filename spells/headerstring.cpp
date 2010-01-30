@@ -16,7 +16,7 @@
  */
 
 /* XPM */
-static char * txt_xpm[] = {
+static char const * txt_xpm[] = {
 "32 32 36 1",
 " 	c None",
 ".	c #FFFFFF","+	c #000000","@	c #BDBDBD","#	c #717171","$	c #252525",

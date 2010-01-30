@@ -33,7 +33,7 @@
  */
 
 /* XPM */
-static char * tex42_xpm[] = {
+static char const * tex42_xpm[] = {
 	"80 80 43 1",
 	" 	c None",
 	".	c #29194A","+	c #2D1D37","@	c #2F2528","#	c #333018",

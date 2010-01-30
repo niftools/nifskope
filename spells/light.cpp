@@ -10,7 +10,7 @@
  */
 
 /* XPM */
-static char * light42_xpm[] = {
+static char const * light42_xpm[] = {
 "24 24 43 1",
 " 	c None",
 ".	c #000100","+	c #0E0D02","@	c #111401","#	c #151500","$	c #191903",

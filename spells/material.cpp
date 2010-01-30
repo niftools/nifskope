@@ -10,7 +10,7 @@
  */
 
 /* XPM */
-static char * mat42_xpm[] = {
+static char const * mat42_xpm[] = {
 "64 64 43 1",
 " 	c None",
 ".	c #866A36","+	c #856E33","@	c #817333","#	c #836F45","$	c #8B6D3E",

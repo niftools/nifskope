@@ -17,7 +17,7 @@
 #include <QSettings>
 
 /* XPM */
-static char * transform_xpm[] = {
+static char const * transform_xpm[] = {
 "64 64 6 1",
 " 	c None",
 ".	c #1800FF",
