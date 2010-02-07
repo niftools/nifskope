@@ -281,8 +281,8 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 	
 	if ( iBlock.isValid() && iBlock == property )
 	{
-		static const char * texnames[8] = { "Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Map Texture", "Decal 0 Texture", "Decal Texture 1" };
-		for ( int t = 0; t < 8; t++ )
+		static const char * texnames[numTextures] = { "Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Map Texture", "Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture", "Decal 3 Texture" };
+		for ( int t = 0; t < numTextures; t++ )
 		{
 			QModelIndex iTex = nif->getIndex( property, texnames[t] );
 			if ( iTex.isValid() )
@@ -349,7 +349,7 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 bool TexturingProperty::bind( int id, const QString & fname )
 {
 	GLuint mipmaps = 0;
-	if ( id >= 0 && id <= 7 )
+	if ( id >= 0 && id <= (numTextures - 1) )
 	{
 		if ( !fname.isEmpty() )
 			mipmaps = scene->bindTexture(  fname );
@@ -416,7 +416,7 @@ bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoo
 
 QString TexturingProperty::fileName( int id ) const
 {
-	if ( id >= 0 && id <= 7 )
+	if ( id >= 0 && id <= (numTextures - 1) )
 	{
 		QModelIndex iSource = textures[ id ].iSource;
 		const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
@@ -429,7 +429,7 @@ QString TexturingProperty::fileName( int id ) const
 
 int TexturingProperty::coordSet( int id ) const
 {
-	if ( id >= 0 && id <= 7 )
+	if ( id >= 0 && id <= (numTextures - 1) )
 	{
 		return textures[id].coordset;
 	}
@@ -594,6 +594,8 @@ int TexturingProperty::getId( const QString & texname )
 		hash.insert( "bumpmap", 5 );
 		hash.insert( "decal0", 6 );
 		hash.insert( "decal1", 7 );
+		hash.insert( "decal2", 8 );
+		hash.insert( "decal3", 9 );
 	}
 	if ( hash.contains( texname ) )
 		return hash[ texname ];

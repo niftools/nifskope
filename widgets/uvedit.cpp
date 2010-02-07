@@ -89,7 +89,9 @@ UVWidget::UVWidget( QWidget * parent )
 		<< "Glow Texture"
 		<< "Bump Map Texture"
 		<< "Decal 0 Texture"
-		<< "Decal 1 Texture";
+		<< "Decal 1 Texture"
+		<< "Decal 2 Texture"
+		<< "Decal 3 Texture";
 
 	setWindowTitle( tr("UV Editor") );
 	setFocusPolicy( Qt::StrongFocus );

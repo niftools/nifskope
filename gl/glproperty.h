@@ -179,6 +179,9 @@ protected:
 
 REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
 
+//! Number of textures; base + dark + detail + gloss + glow + bump + 4 decals
+#define numTextures 10
+
 //! A Property that specifies (multi-)texturing
 class TexturingProperty : public Property
 {
@@ -218,7 +221,7 @@ public:
 	static int getId( const QString & id );
 	
 protected:
-	TexDesc	textures[8];
+	TexDesc	textures[numTextures];
 
 	void setController( const NifModel * nif, const QModelIndex & controller );
 	

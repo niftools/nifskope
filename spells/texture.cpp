@@ -441,6 +441,69 @@ public:
 
 REGISTER_SPELL( spAddDecal0Map )
 
+//! Adds a Decal 1 texture
+class spAddDecal1Map : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Add Decal 1 Map"); }
+	QString page() const { return Spell::tr("Texture"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 1 Texture" ) == 0 ); 
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		return addTexture( nif, index, "Decal 1 Texture" );
+	}
+};
+
+REGISTER_SPELL( spAddDecal1Map )
+
+//! Adds a Decal 2 texture
+class spAddDecal2Map : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Add Decal 2 Map"); }
+	QString page() const { return Spell::tr("Texture"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 2 Texture" ) == 0 ); 
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		return addTexture( nif, index, "Decal 2 Texture" );
+	}
+};
+
+REGISTER_SPELL( spAddDecal2Map )
+
+//! Adds a Decal 3 texture
+class spAddDecal3Map : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Add Decal 3 Map"); }
+	QString page() const { return Spell::tr("Texture"); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 3 Texture" ) == 0 ); 
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	{
+		return addTexture( nif, index, "Decal 3 Texture" );
+	}
+};
+
+REGISTER_SPELL( spAddDecal3Map )
+
 //! Wrap a value between 0 and 1
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
