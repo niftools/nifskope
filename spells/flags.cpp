@@ -450,10 +450,10 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout( & dlg );
 		
 		QStringList flagNames( QStringList()
-			<< Spell::tr( "Enable Animation" ) // 1
+			<< Spell::tr( "Enable Havok" ) // 1
 			<< Spell::tr( "Enable Collision" ) // 2
 			<< Spell::tr( "Is Skeleton Nif (?)" ) // 4
-			<< Spell::tr( "Unidentified Flag (?)" ) // 8
+			<< Spell::tr( "Enable Animation" ) // 8
 			<< Spell::tr( "FlameNodes Present" ) // 16
 			<< Spell::tr( "EditorMarkers Present" ) // 32
 		);
@@ -462,7 +462,7 @@ public:
 		int x = 0;
 		foreach ( QString flagName, flagNames )
 		{
-			chkBoxes << dlgCheck( vbox, QString( "%1 (%2)" ).arg( flagName ).arg( 1 << x ) );
+			chkBoxes << dlgCheck( vbox, QString( "%1: %2 (%3)" ).arg( Spell::tr( "Bit %1" ).arg( x ) ).arg( flagName ).arg( 1 << x ) );
 			chkBoxes.last()->setChecked( flags & ( 1 << x ) );
 			x++;
 		}
