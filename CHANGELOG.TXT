@@ -16,6 +16,7 @@ changes since 1.0.21:
    number of texture units in your graphics card may limit how many textures
    can be displayed simultaneously
  * added UV coordinate set selection / duplication to UV editor context menu
+ * updated BSXFlags bit descriptions
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures
