@@ -861,14 +861,14 @@ public:
 		tex->setNifFolder( nif->getFolder() );
 		if ( tex->bind( index ) )
 		{
-			qWarning() << "spEmbedTexture: Embedding texture " << index;
+			//qWarning() << "spEmbedTexture: Embedding texture " << index;
 
 			int blockNum = nif->getBlockNumber( index );
 			nif->insertNiBlock( "NiPixelData", blockNum+1 );
 			QPersistentModelIndex iSourceTexture = nif->getBlock( blockNum, "NiSourceTexture" );
 			QModelIndex iPixelData = nif->getBlock( blockNum+1, "NiPixelData" );
 
-			qWarning() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
+			//qWarning() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
 			
 			// finish writing this function
 			if ( tex->importFile( nif, iSourceTexture, iPixelData ) )
@@ -901,9 +901,7 @@ public:
 	}
 };
 
-#ifndef QT_NO_DEBUG
 REGISTER_SPELL( spEmbedTexture )
-#endif
 
 TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent ) : QDialog( parent )
 {

@@ -72,6 +72,8 @@ static const quint32 TGA_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x
 static const quint32 TGA_RGB_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
 //! Mask for BMP RGBA (identical to TGA RGB)
 static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
+//! Inverse mask for RGBA
+static const quint32 RGBA_INV_MASK[4] = { 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000 };
 
 //! Unknown 8 bytes for 24-bit NiPixelData
 static const quint8 unk8bytes24[] = { 96,8,130,0,0,65,0,0 };
@@ -1515,7 +1517,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 {
 	// Work out the extension and format
 	// If DDS raw, DXT1 or DXT5, copy directly from texture
-	qWarning() << "texSaveNIF: saving" << filepath << "to" << iData;
+	//qWarning() << "texSaveNIF: saving" << filepath << "to" << iData;
 	
 	QFile f( filepath );
 	if ( ! f.open( QIODevice::ReadOnly ) )
@@ -1590,11 +1592,13 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			// copy channels
 			for ( int i = 0; i < 4; i++ )
 			{
+#ifndef QT_NO_DEBUG
 				qWarning() << "Channel" << i;
 				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
 				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
 				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
 				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
+#endif
 
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ));
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ));
@@ -1650,7 +1654,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	}
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
 	{
-		qWarning() << "Copying from GL buffer";
+		//qWarning() << "Copying from GL buffer";
 		
 		GLuint width, height, mipmaps;
 		QString format;
@@ -1658,7 +1662,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		// fastest way to get parameters and ensure texture is active
 		if ( texLoad( filepath, format, width, height, mipmaps ) )
 		{
-			qWarning() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
+			//qWarning() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
+		}
+		else
+		{
+			qWarning() << "Error importing texture" << filepath;
+			return false;
 		}
 		
 		// set texture as RGBA
@@ -1667,11 +1676,10 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		if( nif->checkVersion( 0, 0x0A020000 ) )
 		{
 			// set masks
-			// yes, the mask is not quite RGBA...
-			nif->set<quint32>( iData, "Blue Mask", TGA_RGBA_MASK[0] );
-			nif->set<quint32>( iData, "Green Mask", TGA_RGBA_MASK[1] );
-			nif->set<quint32>( iData, "Red Mask", TGA_RGBA_MASK[2] );
-			nif->set<quint32>( iData, "Alpha Mask", TGA_RGBA_MASK[3] );
+			nif->set<quint32>( iData, "Red Mask", RGBA_INV_MASK[0] );
+			nif->set<quint32>( iData, "Green Mask", RGBA_INV_MASK[1] );
+			nif->set<quint32>( iData, "Blue Mask", RGBA_INV_MASK[2] );
+			nif->set<quint32>( iData, "Alpha Mask", RGBA_INV_MASK[3] );
 			
 			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
 			for ( int i = 0; i < 8; i++ )
@@ -1719,11 +1727,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			mipmapData.resize( mipmapSize );
 			
 			glGetTexImage( GL_TEXTURE_2D, i, GL_RGBA, GL_UNSIGNED_BYTE, mipmapData.data() );
-			qWarning() << "Copying mipmap" << i << "," << mipmapSize << "bytes";
+			//qWarning() << "Copying mipmap" << i << "," << mipmapSize << "bytes";
 			
 			pixelData.append( mipmapData );
 			
-			qWarning() << "Now have" << pixelData.size() << "bytes of pixel data";
+			//qWarning() << "Now have" << pixelData.size() << "bytes of pixel data";
 			
 			// generate next offset, resize
 			mipmapOffset += mipmapWidth * mipmapHeight * 4;
@@ -1746,25 +1754,27 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	}
 	else if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
 	{
-		qWarning() << "Will copy from DDS data";
+		//qWarning() << "Will copy from DDS data";
 		DDSFormat ddsHeader;
 		char tag[4];
 		f.read(&tag[0], 4);
 		if ( strncmp( tag,"DDS ", 4 ) != 0 || f.read((char *) &ddsHeader, sizeof(DDSFormat)) != sizeof( DDSFormat ) )
 			throw QString( "not a DDS file" );
 
+#ifndef QT_NO_DEBUG
 		qWarning() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
 		qWarning() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
+#endif
 		if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
 		{
 			switch ( ddsHeader.ddsPixelFormat.dwFourCC )
 			{
 				case FOURCC_DXT1:
-					qWarning() << "DXT1";
+					//qWarning() << "DXT1";
 					nif->set<uint>( iData, "Pixel Format", 4 );
 					break;
 				case FOURCC_DXT5:
-					qWarning() << "DXT5";
+					//qWarning() << "DXT5";
 					nif->set<uint>( iData, "Pixel Format", 5 );
 					break;
 				default:
@@ -1776,7 +1786,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		}
 		else
 		{
-			qWarning() << "RAW";
+			//qWarning() << "RAW";
 			// switch on BPP
 			//nif->set<uint>( iData, "Pixel Format", 0 );
 			switch( ddsHeader.ddsPixelFormat.dwBPP )
@@ -1797,11 +1807,13 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			}
 		}
 
+#ifndef QT_NO_DEBUG
 		qWarning() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
 		qWarning() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
 		qWarning() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
 		qWarning() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
 		qWarning() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
+#endif
 
 		// Note that these might not match what's expected; hopefully the loader function is smart
 		if( nif->checkVersion( 0, 0x0A020000 ) )
@@ -1855,9 +1867,27 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			else
 			{
 				nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
+				// set RGB mask separately
 				for ( int i = 0; i < 3; i++ )
 				{
-					nif->set<quint32>( destChannels.child( i, 0 ), "Type", i ); // red, green, blue
+					if( ddsHeader.ddsPixelFormat.dwRMask == RGBA_INV_MASK[i] )
+					{
+						//qWarning() << "red channel" << i;
+						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 0 );
+					}
+					else if( ddsHeader.ddsPixelFormat.dwGMask == RGBA_INV_MASK[i] )
+					{
+						//qWarning() << "green channel" << i;
+						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 1 );
+					}
+					else if( ddsHeader.ddsPixelFormat.dwBMask == RGBA_INV_MASK[i] )
+					{
+						//qWarning() << "blue channel" << i;
+						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 2 );
+					}
+				}
+				for ( int i = 0; i < 3; i++ )
+				{
 					nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
 					nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
 					nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
@@ -1880,7 +1910,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		}
 
 		// generate mipmap sizes and offsets
-		qWarning() << "Mipmap count: " << ddsHeader.dwMipMapCount;
+		//qWarning() << "Mipmap count: " << ddsHeader.dwMipMapCount;
 		nif->set<quint32>( iData, "Num Mipmaps", ddsHeader.dwMipMapCount );
 		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
 		nif->updateArray( destMipMaps );
@@ -1930,11 +1960,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		nif->updateArray( iFaceData );
 		
 		f.seek( 4 + ddsHeader.dwSize );
-		qWarning() << "Reading from " << f.pos();
+		//qWarning() << "Reading from " << f.pos();
 		
 		QByteArray ddsData = f.read( mipmapOffset );
 		
-		qWarning() << "Read " << ddsData.size() << " bytes of" << f.size() << ", now at" << f.pos();
+		//qWarning() << "Read " << ddsData.size() << " bytes of" << f.size() << ", now at" << f.pos();
 		if ( ddsData.size() != mipmapOffset )
 		{
 			qWarning() << "Unexpected EOF";

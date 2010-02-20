@@ -495,7 +495,7 @@ bool TexCache::importFile( NifModel * nif, const QModelIndex & iSource, QModelIn
 		if( nif->get<quint8>( iSource, "Use External" ) == 1 )
 		{
 			QString filename = nif->get<QString>( iSource, "File Name" );
-			qWarning() << "TexCache::importFile: Texture has filename (from NIF) " << filename;
+			//qWarning() << "TexCache::importFile: Texture has filename (from NIF) " << filename;
 			Tex * tx = textures.value( filename );
 			return tx->savePixelData( nif, iSource, iData );
 		}
@@ -542,7 +542,7 @@ bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 bool TexCache::Tex::savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData )
 {
 	// gltexloaders function goes here
-	qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
+	//qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
 	return texSaveNIF( nif, filepath, iData );
 }
 
