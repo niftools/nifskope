@@ -60,6 +60,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
+//! Shift amounts for RGBA conversion
+static const int rgbashift[4] = { 0, 8, 16, 24 };
+//! Mask for TGA greyscale
+static const quint32 TGA_L_MASK[4] = { 0xff, 0xff, 0xff, 0x00 };
+//! Mask for TGA greyscale with alpha
+static const quint32 TGA_LA_MASK[4] = { 0x00ff, 0x00ff, 0x00ff, 0xff00 };
+//! Mask for TGA RGBA
+static const quint32 TGA_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
+//! Mask for TGA RGB
+static const quint32 TGA_RGB_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
+//! Mask for BMP RGBA (identical to TGA RGB)
+static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
+
+//! Unknown 8 bytes for 24-bit NiPixelData
+static const quint8 unk8bytes24[] = { 96,8,130,0,0,65,0,0 };
+//! Unknown 8 bytes for 32-bit NiPixelData
+static const quint8 unk8bytes32[] = { 129,8,130,32,0,65,12,0 };
+
 //! Check whether a number is a power of two.
 bool isPowerOfTwo( unsigned int x )
 {
@@ -184,8 +202,6 @@ void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint3
 {
 	memset( pixl, 0, w * h * 4 );
 
-	static const int rgbashift[4] = { 0, 8, 16, 24 };
-	
 	for ( int a = 0; a < 4; a++ )
 	{
 		if ( mask[a] )
@@ -839,7 +855,6 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 			if ( hdr[2] == TGA_GREY_RLE )
 				texformat += " (RLE)";
 			
-			static const quint32 TGA_L_MASK[4] = { 0xff, 0xff, 0xff, 0x00 };
 			return texLoadRaw( f, width, height, 1, 8, 1, TGA_L_MASK, flipV, flipH, hdr[2] == TGA_GREY_RLE );
 		}
 		else if ( depth == 16 )
@@ -848,7 +863,6 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 			if ( hdr[2] == TGA_GREY_RLE )
 				texformat += " (RLE)";
 			
-			static const quint32 TGA_LA_MASK[4] = { 0x00ff, 0x00ff, 0x00ff, 0xff00 };
 			return texLoadRaw( f, width, height, 1, 16, 2, TGA_LA_MASK, flipV, flipH, hdr[2] == TGA_GREY_RLE );
 		}
 		break;
@@ -860,7 +874,6 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 			if ( hdr[2] == TGA_GREY_RLE )
 				texformat += " (RLE)";
 			
-			static const quint32 TGA_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
 			return texLoadRaw( f, width, height, 1, 32, 4, TGA_RGBA_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
 		}
 		else if ( depth == 24 )
@@ -869,7 +882,6 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 			if ( hdr[2] == TGA_COLOR_RLE )
 				texformat += " (RLE)";
 			
-			static const quint32 TGA_RGB_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
 			return texLoadRaw( f, width, height, 1, 24, 3, TGA_RGB_MASK, flipV, flipH, hdr[2] == TGA_COLOR_RLE );
 		}
 		break;
@@ -918,7 +930,6 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 		case 0:
 			if ( bpp == 24 )
 			{
-				static const quint32 BMP_RGBA_MASK[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000 };
 				return texLoadRaw( f, width, height, 1, bpp, 3, BMP_RGBA_MASK, true );
 			}
 			break;
@@ -1425,8 +1436,6 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 
 	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixl );
 	
-	static const quint32 TGA_RGBA_MASK_INV[4] = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
-
 	//quint32 mask[4] = { 0x00000000, 0x00000000, 0x00000000, 0x00000000 };
 	/*
 	if ( nif->getVersionNumber() < 0x14000004 ) {
@@ -1437,7 +1446,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	}
 	*/
 
-	convertToRGBA( pixl, width, height, 4, TGA_RGBA_MASK_INV, true, false, data );
+	convertToRGBA( pixl, width, height, 4, TGA_RGBA_MASK, true, false, data );
 	
 	free( pixl );
 	
@@ -1507,13 +1516,14 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	// Work out the extension and format
 	// If DDS raw, DXT1 or DXT5, copy directly from texture
 	qWarning() << "texSaveNIF: saving" << filepath << "to" << iData;
-
+	
 	QFile f( filepath );
 	if ( ! f.open( QIODevice::ReadOnly ) )
 		throw QString( "could not open file" );
-
+	
 	if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) )
 	{
+		// NIF-to-NIF copy
 		NifModel pix;
 		
 		if ( ! pix.load( f ) )
@@ -1524,11 +1534,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		iPixData = pix.getBlock( 0, "NiPixelData" );
 		if ( ! iPixData.isValid() )
 			throw QString( "Texture .nifs should only have NiPixelData blocks" );
-
+		
 		nif->set<int>( iData, "Pixel Format", pix.get<int>( iPixData, "Pixel Format" ) );
-
+		
 		if ( nif->checkVersion( 0, 0x0A020000 ) && pix.checkVersion( 0, 0x0A020000 ) )
 		{
+			// copy masks
 			nif->set<quint32>( iData, "Red Mask", pix.get<quint32>( iPixData, "Red Mask" ) );
 			nif->set<quint32>( iData, "Green Mask", pix.get<quint32>( iPixData, "Green Mask" ) );
 			nif->set<quint32>( iData, "Blue Mask", pix.get<quint32>( iPixData, "Blue Mask" ) );
@@ -1538,6 +1549,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			QModelIndex unknownSrc;
 			QModelIndex unknownDest;
 			
+			// 2 sets of unknown bytes
 			unknownSrc = pix.getIndex( iPixData, "Unknown 3 Bytes" );
 			unknownDest = nif->getIndex( iData, "Unknown 3 Bytes" );
 			
@@ -1574,7 +1586,8 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			
 			QModelIndex srcChannels = pix.getIndex( iPixData, "Channels" );
 			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
-
+			
+			// copy channels
 			for ( int i = 0; i < 4; i++ )
 			{
 				qWarning() << "Channel" << i;
@@ -1637,8 +1650,99 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	}
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
 	{
-		qWarning() << "Can either copy from GL buffer or file";
-		return false;
+		qWarning() << "Copying from GL buffer";
+		
+		GLuint width, height, mipmaps;
+		QString format;
+		
+		// fastest way to get parameters and ensure texture is active
+		if ( texLoad( filepath, format, width, height, mipmaps ) )
+		{
+			qWarning() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
+		}
+		
+		// set texture as RGBA
+		nif->set<quint32>( iData, "Pixel Format", 1 );
+		nif->set<quint32>( iData, "Bits Per Pixel", 32 );
+		if( nif->checkVersion( 0, 0x0A020000 ) )
+		{
+			// set masks
+			// yes, the mask is not quite RGBA...
+			nif->set<quint32>( iData, "Blue Mask", TGA_RGBA_MASK[0] );
+			nif->set<quint32>( iData, "Green Mask", TGA_RGBA_MASK[1] );
+			nif->set<quint32>( iData, "Red Mask", TGA_RGBA_MASK[2] );
+			nif->set<quint32>( iData, "Alpha Mask", TGA_RGBA_MASK[3] );
+			
+			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
+			for ( int i = 0; i < 8; i++ )
+			{
+				nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes32[i] );
+			}
+		}
+		else if( nif->checkVersion( 0x14000004, 0 ) )
+		{
+			// set stuff
+			nif->set<qint32>( iData, "Unknown Int 2", -1 ); // probably a link to something
+			nif->set<quint8>( iData, "Flags", 1 );
+			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
+			
+			for ( int i = 0; i < 4; i++ )
+			{
+				nif->set<quint32>( destChannels.child( i, 0 ), "Type", i ); // red, green, blue, alpha
+				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
+				nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
+				nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
+			}
+		}
+		
+		nif->set<quint32>( iData, "Num Mipmaps", mipmaps );
+		nif->set<quint32>( iData, "Bytes Per Pixel", 4 );
+		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
+		nif->updateArray( destMipMaps );
+		
+		QByteArray pixelData;
+		
+		int mipmapWidth = width;
+		int mipmapHeight = height;
+		int mipmapOffset = 0;
+		
+		// generate sizes and copy mipmap to NIF
+		for ( uint i = 0; i < mipmaps; i++ )
+		{
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Width", mipmapWidth );
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Height", mipmapHeight );
+			nif->set<quint32>( destMipMaps.child( i, 0 ), "Offset", mipmapOffset );
+			
+			quint32 mipmapSize = mipmapWidth * mipmapHeight * 4;
+			
+			QByteArray mipmapData;
+			mipmapData.resize( mipmapSize );
+			
+			glGetTexImage( GL_TEXTURE_2D, i, GL_RGBA, GL_UNSIGNED_BYTE, mipmapData.data() );
+			qWarning() << "Copying mipmap" << i << "," << mipmapSize << "bytes";
+			
+			pixelData.append( mipmapData );
+			
+			qWarning() << "Now have" << pixelData.size() << "bytes of pixel data";
+			
+			// generate next offset, resize
+			mipmapOffset += mipmapWidth * mipmapHeight * 4;
+			mipmapWidth = max( 1, mipmapWidth / 2 );
+			mipmapHeight = max( 1, mipmapHeight / 2 );
+		}
+		
+		// set total pixel size
+		nif->set<quint32>( iData, "Num Pixels", mipmapOffset );
+		
+		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
+		nif->updateArray( iPixelData );
+		QModelIndex iFaceData = iPixelData.child( 0, 0 );
+		nif->updateArray( iFaceData );
+		
+		nif->set<QByteArray>( iFaceData, "Pixel Data", pixelData );
+		
+		// return true once perfected
+		//return false;
 	}
 	else if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
 	{
@@ -1678,9 +1782,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			switch( ddsHeader.ddsPixelFormat.dwBPP )
 			{
 				case 24:
+					// RGB
 					nif->set<uint>( iData, "Pixel Format", 0 );
 					break;
 				case 32:
+					// RGBA
 					nif->set<uint>( iData, "Pixel Format", 1 );
 					break;
 				default:
@@ -1706,8 +1812,6 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<uint>( iData, "Blue Mask", ddsHeader.ddsPixelFormat.dwBMask );
 			nif->set<uint>( iData, "Alpha Mask", ddsHeader.ddsPixelFormat.dwAMask );
 
-			quint8 unk8bytes24[] = { 96,8,130,0,0,65,0,0 };
-            quint8 unk8bytes32[] = { 129,8,130,32,0,65,12,0 };
 			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
 			for ( int i = 0; i < 8; i++ )
 			{
@@ -1730,6 +1834,8 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			// DXT1, DXT5
 			if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC )
 			{
+				// compressed
+				nif->set<uint>( iData, "Bits Per Pixel", 0 );
 				for ( int i = 0; i < 4; i++ )
 				{
 					if( i == 0 )
@@ -1748,6 +1854,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			}
 			else
 			{
+				nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
 				for ( int i = 0; i < 3; i++ )
 				{
 					nif->set<quint32>( destChannels.child( i, 0 ), "Type", i ); // red, green, blue

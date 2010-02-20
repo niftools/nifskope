@@ -874,12 +874,17 @@ public:
 			if ( tex->importFile( nif, iSourceTexture, iPixelData ) )
 			{
 				QString tempFileName = nif->get<QString>( iSourceTexture, "File Name" );
+				tempFileName = TexCache::stripPath( tempFileName, nif->getFolder() );
 				nif->set<int>( iSourceTexture, "Use External", 0 );
 				nif->set<int>( iSourceTexture, "Unknown Byte", 1 );
 				nif->setLink( iSourceTexture, "Pixel Data", blockNum+1 );
 				if( nif->checkVersion( 0x0A010000, 0 ) )
 				{
-					nif->set<QString>( iSourceTexture, "File Name", TexCache::stripPath( tempFileName, nif->getFolder() ) );
+					nif->set<QString>( iSourceTexture, "File Name", tempFileName );
+				}
+				else
+				{
+					nif->set<QString>( index, "Name", tempFileName );
 				}
 			}
 			else
