@@ -18,6 +18,7 @@ changes since 1.0.21:
  * added UV coordinate set selection / duplication to UV editor context menu
  * updated BSXFlags bit descriptions
  * re-add NiPixelData texture import ("Texture->Embed" spell)
+ * installer also registers .texcache (Empire Earth II external NiPixelData files)
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures
