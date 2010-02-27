@@ -796,7 +796,20 @@ public:
 		QModelIndex iBlock = nif->getBlock( index );
 		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 0 )
 		{
-			return true;
+			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
+			if ( iData.isValid() )
+			{
+				return true;
+			}
+		}
+		else if ( nif->inherits( iBlock, "ATextureRenderData" ) )
+		{
+			int thisBlockNumber = nif->getBlockNumber( index );
+			QModelIndex iParent = nif->getBlock( nif->getParent( thisBlockNumber ) );
+			if( ! iParent.isValid() )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -805,21 +818,39 @@ public:
 	{
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
-		tex->bind( index );
-		QString file = nif->getFolder();
-		if ( nif->checkVersion( 0x0A010000, 0 ) )
+		QModelIndex iBlock = nif->getBlock( index );
+		if ( nif->inherits( iBlock, "NiSourceTexture" ) )
 		{
-			// Qt uses "/" regardless of platform
-			file.append( "/" + nif->get<QString>( index, "File Name" ) );
-		}
-		QString filename = QFileDialog::getSaveFileName( 0, Spell::tr("Export texture"), file, "*.dds *.tga" );
-		if ( ! filename.isEmpty() ) {
-			if ( tex->exportFile( index, filename ) )
+			tex->bind( index );
+			QString file = nif->getFolder();
+			if ( nif->checkVersion( 0x0A010000, 0 ) )
 			{
-				nif->set<int>( index, "Use External", 1 );
-				filename = TexCache::stripPath( filename, nif->getFolder() );
-				nif->set<QString>( index, "File Name", filename );
-				tex->bind( filename );
+				// Qt uses "/" regardless of platform
+				file.append( "/" + nif->get<QString>( index, "File Name" ) );
+			}
+			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
+			QString filename = QFileDialog::getSaveFileName( 0, Spell::tr("Export texture"), file, "*.dds *.tga" );
+			if ( ! filename.isEmpty() )
+			{
+				if ( tex->exportFile( iData, filename ) )
+				{
+					nif->set<int>( index, "Use External", 1 );
+					filename = TexCache::stripPath( filename, nif->getFolder() );
+					nif->set<QString>( index, "File Name", filename );
+					tex->bind( filename );
+				}
+			}
+			return index;
+		}
+		else if ( nif->inherits( iBlock, "ATextureRenderData" ) )
+		{
+			TexCache * tex = new TexCache();
+			tex->setNifFolder( nif->getFolder() );
+			QString file = nif->getFolder();
+			QString filename = QFileDialog::getSaveFileName( 0, Spell::tr("Export texture"), file, "*.dds *.tga" );
+			if ( ! filename.isEmpty() )
+			{
+				tex->exportFile( index, filename );
 			}
 		}
 		return index;
@@ -828,7 +859,7 @@ public:
 
 REGISTER_SPELL( spExportTexture )
 
-//! Pack a texture to NiPixelData (not fully implemented yet)
+//! Pack a texture to NiPixelData
 class spEmbedTexture : public Spell
 {
 public:

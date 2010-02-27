@@ -79,7 +79,7 @@ class TexCache : public QObject
 
 		//! Save the texture as a file
 		bool saveAsFile( const QModelIndex & index, QString & savepath );
-		//! Save the texture as pixel data (not implemented yet)
+		//! Save the texture as pixel data
 		bool savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 	};
 	

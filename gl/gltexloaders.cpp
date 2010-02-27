@@ -1137,7 +1137,7 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 		mipmaps = texLoadTGA( f, format );
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
 		mipmaps = texLoadBMP( f, format );
-	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) )
+	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) || filepath.endsWith( ".texcache", Qt::CaseInsensitive ))
 		mipmaps = texLoadNIF( f, format );
 	else
 		throw QString( "unknown texture format" );
@@ -1155,8 +1155,9 @@ bool texCanLoad( const QString & filepath )
 	return i.exists() && i.isReadable() && 
 		(  filepath.endsWith( ".dds", Qt::CaseInsensitive )
 		|| filepath.endsWith( ".tga", Qt::CaseInsensitive )
-		|| filepath.endsWith( ".bmp", Qt::CaseInsensitive ) 
-		|| filepath.endsWith( ".nif", Qt::CaseInsensitive ) 		
+		|| filepath.endsWith( ".bmp", Qt::CaseInsensitive )
+		|| filepath.endsWith( ".nif", Qt::CaseInsensitive )
+		|| filepath.endsWith( ".texcache", Qt::CaseInsensitive )
 		);
 }
 
@@ -1523,7 +1524,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	if ( ! f.open( QIODevice::ReadOnly ) )
 		throw QString( "could not open file" );
 	
-	if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) )
+	if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) || filepath.endsWith( ".texcache", Qt::CaseInsensitive ) )
 	{
 		// NIF-to-NIF copy
 		NifModel pix;
