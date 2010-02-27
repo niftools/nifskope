@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QLayout>
 #include <QMap>
+#include <QMessageBox>
 #include <QPushButton>
 
 // Brief description is deliberately not autolinked to class Spell
@@ -182,6 +183,8 @@ public:
 			// cheaper than calling spRemoveBranch
 			nif->removeNiBlock( nif->getBlockNumber( shape ) );
 		}
+		
+		QMessageBox::information( 0, "NifSkope", Spell::tr( "Created hull with %1 vertices, %2 normals" ).arg( convex_verts.count() ).arg( convex_norms.count() ) );
 		
 		// returning iCVS here can crash NifSkope if a child array is selected
 		return index;
