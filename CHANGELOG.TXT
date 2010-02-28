@@ -12,6 +12,15 @@ changes since 1.0.21:
  * fixed display of Fallout 3 morph animations (NiGeomMorpherController)
  * support reading nifs which use the JMI extension and header
  * added "Node->Attach Parent Node" (suggested by vurt2)
+ * fix display of multiple decal textures (reported by Axel) - note that the
+   number of texture units in your graphics card may limit how many textures
+   can be displayed simultaneously
+ * added UV coordinate set selection / duplication to UV editor context menu
+ * updated BSXFlags bit descriptions
+ * re-add NiPixelData texture import ("Texture->Embed" spell)
+ * load .texcache (Empire Earth II / III external NiPixelData files) and allow
+   direct texture export; installer also registers .texcache and .pcpatch
+   (unknown 8-bit 1-dimensional textures?) extensions
  * added "Havok->Create Convex Shape" using Qhull and old code by wz
 
 changes since 1.0.20:

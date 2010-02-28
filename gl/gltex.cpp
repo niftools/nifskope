@@ -171,9 +171,9 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 		filename.remove( 0, 1 );
 	
 	QStringList extensions;
-	extensions << ".tga" << ".dds" << ".bmp" << ".nif";
+	extensions << ".tga" << ".dds" << ".bmp" << ".nif" << ".texcache";
 #ifndef Q_OS_WIN
-	extensions << ".TGA" << ".DDS" << ".BMP" << ".NIF";
+	extensions << ".TGA" << ".DDS" << ".BMP" << ".NIF" << ."TEXCACHE";
 #endif
 	bool replaceExt = false;
 	if ( Options::textureAlternatives() )
@@ -474,17 +474,12 @@ QString TexCache::info( const QModelIndex& iSource )
 
 bool TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
-	if ( nif && iSource.isValid() ) {
-		if( nif->get<quint8>( iSource, "Use External" ) == 0 ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( iSource, "Pixel Data" ) );
-			if (iData.isValid()) {
-				Tex * tx = embedTextures.value( iData );
-				return tx->saveAsFile( iData, filepath );
-			}
-		}
+	Tex * tx = embedTextures.value( iSource );
+	if (tx == NULL){
+		tx = new Tex();
+		tx->id = 0;
 	}
-	return false;
+	return tx->saveAsFile( iSource, filepath );
 }
 
 bool TexCache::importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData )
@@ -495,7 +490,7 @@ bool TexCache::importFile( NifModel * nif, const QModelIndex & iSource, QModelIn
 		if( nif->get<quint8>( iSource, "Use External" ) == 1 )
 		{
 			QString filename = nif->get<QString>( iSource, "File Name" );
-			qWarning() << "TexCache::importFile: Texture has filename (from NIF) " << filename;
+			//qWarning() << "TexCache::importFile: Texture has filename (from NIF) " << filename;
 			Tex * tx = textures.value( filename );
 			return tx->savePixelData( nif, iSource, iData );
 		}
@@ -530,8 +525,9 @@ void TexCache::Tex::load()
 
 bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 {
+	texLoad( index, format, width, height, mipmaps );
+	
 	if ( savepath.toLower().endsWith( ".tga" ) ) {
-		glBindTexture( GL_TEXTURE_2D, id );
 		return texSaveTGA( index, savepath, width, height );
 	} else {
 		return texSaveDDS( index, savepath, width, height, mipmaps );
@@ -542,7 +538,7 @@ bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 bool TexCache::Tex::savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData )
 {
 	// gltexloaders function goes here
-	qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
+	//qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
 	return texSaveNIF( nif, filepath, iData );
 }
 

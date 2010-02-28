@@ -99,8 +99,18 @@ protected slots:
 	
 protected slots:
 	void nifDataChanged( const QModelIndex & );
+	//! Build the texture slots menu
 	void getTexSlots();
+	//! Select a texture slot
 	void selectTexSlot();
+	//! Build the coordinate sets menu
+	void getCoordSets();
+	//! Select a coordinate set
+	void selectCoordSet();
+	//! Change the coordinate set in use
+	void changeCoordSet( int setToUse );
+	//! Duplicate a coordinate set
+	void duplicateCoordSet();
 	
 private:
 	//! List of selected vertices
@@ -110,7 +120,7 @@ private:
 	QList<QPoint> selectPoly;
 	int selectCycle;
 	
-	
+	//! A UV face
 	struct face {
 		int index;
 		
@@ -127,39 +137,53 @@ private:
 	QMap< int, int > texcoords2faces;
 	
 	QSize sHint;
-
+	
 	TexCache * textures;
 	QString texfile;
 	QModelIndex texsource;
-
+	
 	void drawTexCoords();
 	
 	void setupViewport( int width, int height );
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
 	bool bindTexture( const QModelIndex & iSource );
-
+	
 	QVector<int> indices( const QPoint & p ) const;
 	QVector<int> indices( const QRegion & r ) const;
 	
 	QPoint mapFromContents( const Vector2 & v ) const;
 	Vector2 mapToContents( const QPoint & p ) const;
-
+	
 	void updateNif();
-
+	
 	QPointer<NifModel> nif;
-	QPersistentModelIndex iShape, iShapeData, iTexCoords;
-
+	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex;
+	
+	//! Submenu for texture slot selection
 	QMenu * menuTexSelect;
+	//! Group that holds texture slot selection actions
 	QActionGroup * texSlotGroup;
+	//! List of valid textures
 	QStringList validTexs;
-	QList<QAction*> * texActions;
-
+	//! Texture slot selection actions; unused?
+	//QList<QAction*> * texActions;
+	
 	//! Names of texture slots
 	QStringList texnames;
 	//! Texture slot currently being operated on
 	int currentTexSlot;
+	//! Read texcoords from the nif
 	bool setTexCoords();
+	//! Coordinate set currently in use
+	int currentCoordSet;
+	
+	//! Submenu for coordinate set selection
+	QMenu * coordSetSelect;
+	//! Group that holds coordinate set actions
+	QActionGroup * coordSetGroup;
+	//! Action to trigger duplication of current coordinate set
+	QAction * aDuplicateCoords;
 
 	GLdouble glViewRect[4];
 

@@ -12,6 +12,10 @@ Known Issues and Workarounds
 * On some graphic cards textures show up black or distorted. If this happens,
   uncheck "Shaders" in NifSkope's settings.
 
+* Models with multiple texture maps may appear to be missing some textures,
+  but they will become visible when some texture maps are disabled. This is
+  due to the limited number of texture units in graphics hardware.
+
 * If one of NifSkope's windows disappears due to moving it to a location
   outside of the desktop view, close NifSkope and remove the NifSkope settings
   by deleting the registry key(s)

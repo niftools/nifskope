@@ -221,10 +221,8 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		QModelIndex iTangents = nif->getIndex( iData, "Tangents" );
 		nif->updateArray(iBinorms);
 		nif->updateArray(iTangents);
-      // Apparently the binormals and tangents are swapped according to some users
-      //  I observed this but was not sure it mattered, apparently it does.
-		nif->setArray(iBinorms, tan);
-		nif->setArray(iTangents, bin);
+		nif->setArray(iBinorms, bin);
+		nif->setArray(iTangents, tan);
 	}
 	return iShape;
 }
