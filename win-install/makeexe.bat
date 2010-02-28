@@ -29,6 +29,9 @@ if EXIST "%QTDIR%\bin\lrelease.exe" (
     popd
 )
 
+rem copy qhull's COPYING.TXT
+copy ..\qhull\COPYING.TXT ..\Qhull_COPYING.TXT
+
 cd ..\win-install
 
 if exist "%PROGRAMFILES%\NSIS\makensis.exe" "%PROGRAMFILES%\NSIS\makensis.exe" /v3 %NAME%-mingw-dynamic.nsi

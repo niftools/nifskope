@@ -1,6 +1,8 @@
-NIFSKOPE LICENSE
+/***** BEGIN LICENSE BLOCK *****
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools.
+BSD License
+
+Copyright (c) 2005-2010, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -26,20 +28,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+***** END LICENCE BLOCK *****/
 
-CREDITS
+#ifndef _QHULL_H
+#define _QHULL_H
 
-The Windows build of NifSkope uses Havok(R) for the generation of mopp code.
-(C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). 
-All Rights Reserved.  See www.havok.com for details.
+#include <QVector>
 
-NifSkope uses Qhull for the generation of convex hulls, from www.qhull.org.
-Copyright (c) 1993-2010 C.B. Barber and The Geometry Center; see
-Qhull_COPYING.txt for details and http://github.com/amorilia/qhull for the
-source tree currently in use.
+#include "niftypes.h"
 
-NOTICE
+//! \file qhull.h Header for computing a convex hull
 
-Parts of NifSkope (i.e. included libraries) might be subject to
-other licenses. This license only applies to original NifSkope
-sources.
+//! Computes a convex hull using <a href="http://www.qhull.org">Qhull</a>,
+//! Copyright (c) 1993-2010 C.B. Barber and The Geometry Center.
+QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts,
+		QVector<Vector4>& hullVerts,
+		QVector<Vector4>& hullNorms,
+		float roundError = 0 );
+
+#endif

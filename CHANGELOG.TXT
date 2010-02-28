@@ -21,6 +21,7 @@ changes since 1.0.21:
  * load .texcache (Empire Earth II / III external NiPixelData files) and allow
    direct texture export; installer also registers .texcache and .pcpatch
    (unknown 8-bit 1-dimensional textures?) extensions
+ * added "Havok->Create Convex Shape" using Qhull and old code by wz
 
 changes since 1.0.20:
  * added support for displaying 8-bit palettised DDS textures
