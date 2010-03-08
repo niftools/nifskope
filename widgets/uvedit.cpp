@@ -43,6 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <GL/glext.h>
 
 #include <QCursor>
+#include <QInputDialog>
 #include <QTimer>
 #include <QUndoStack>
 
@@ -50,6 +51,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GRIDSIZE 16.0
 #define GRIDSEGS 4
 #define ZOOMUNIT 64.0
+#define MINZOOM 0.1
+#define MAXZOOM 20.0
 
 UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 {
@@ -92,18 +95,18 @@ UVWidget::UVWidget( QWidget * parent )
 		<< "Decal 1 Texture"
 		<< "Decal 2 Texture"
 		<< "Decal 3 Texture";
-
+	
 	setWindowTitle( tr("UV Editor") );
 	setFocusPolicy( Qt::StrongFocus );
 	
 	textures = new TexCache( this );
-
+	
 	zoom = 1.2;
-
+	
 	pos = QPoint( 0, 0 );
-
+	
 	mousePos = QPoint( -1000, -1000 );
-
+	
 	setCursor( QCursor( Qt::CrossCursor ) );
 	setMouseTracking( true );
 	
@@ -139,11 +142,10 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aSelectConnected, SIGNAL( triggered() ), this, SLOT( selectConnected() ) );
 	addAction( aSelectConnected );
 	
-#ifndef QT_NO_DEBUG
 	QAction * aScaleSelection = new QAction( tr( "Scale &Selected" ), this );
+	aScaleSelection->setShortcut( QKeySequence( "Alt+S" ) );
 	connect( aScaleSelection, SIGNAL( triggered() ), this, SLOT( scaleSelection() ) );
 	addAction( aScaleSelection );
-#endif
 	
 	aSep = new QAction( this );
 	aSep->setSeparator( true );
@@ -154,25 +156,23 @@ UVWidget::UVWidget( QWidget * parent )
 	aTextureBlend->setChecked( true );
 	connect( aTextureBlend, SIGNAL( toggled( bool ) ), this, SLOT( updateGL() ) );
 	addAction( aTextureBlend );
-
+	
 	coordSetGroup = new QActionGroup( this );
 	connect( coordSetGroup, SIGNAL( triggered( QAction * ) ), this, SLOT( selectCoordSet() ) );
-
+	
 	coordSetSelect = new QMenu( tr( "Select Coordinate Set" ) );
 	addAction( coordSetSelect->menuAction() );
 	connect( coordSetSelect, SIGNAL( aboutToShow() ), this, SLOT( getCoordSets() ) );
-
+	
 	texSlotGroup = new QActionGroup( this );
 	connect( texSlotGroup, SIGNAL( triggered( QAction * ) ), this, SLOT( selectTexSlot() ) );
-
-	//texActions = new QList<QAction *>();
-
+	
 	menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
 	addAction( menuTexSelect->menuAction() );
 	connect( menuTexSelect, SIGNAL( aboutToShow() ), this, SLOT( getTexSlots() ) );
-
-	currentTexSlot = 0;	
-
+	
+	currentTexSlot = 0;
+	
 	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( updateGL() ) );
 }
 
@@ -306,42 +306,54 @@ void UVWidget::paintGL()
 	for( int i = glGridMinX; i < glGridMaxX; i++ )
 	{
 		GLdouble glGridPos = glGridD * i;
-
-		if( ( i % GRIDSEGS ) == 0 ) {
+		
+		if( ( i % ( GRIDSEGS * GRIDSEGS ) ) == 0 ) {
+			glLineWidth( 1.4f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.4f );
+		}
+		else if( zoom > ( GRIDSEGS * GRIDSEGS / 2.0 ) ) {
+			continue;
+		}
+		else if( ( i % GRIDSEGS ) == 0 ) {
 			glLineWidth( 1.2f );
 			glColor4f( 1.0f, 1.0f, 1.0f, 0.2f );
 		}
-		else if( zoom > 2.0 ) {
+		else if( zoom > ( GRIDSEGS / 2.0 ) ) {
 			continue;
 		}
-
-		glVertex2d( glGridPos, glViewRect[2] );
-		glVertex2d( glGridPos, glViewRect[3] );
-
-		if( ( i % GRIDSEGS ) == 0 ) {
+		else {
 			glLineWidth( 0.8f );
 			glColor4f( 1.0f, 1.0f, 1.0f, 0.1f );
 		}
+		
+		glVertex2d( glGridPos, glViewRect[2] );
+		glVertex2d( glGridPos, glViewRect[3] );
 	}
 	for( int i = glGridMinY; i < glGridMaxY; i++ )
 	{
 		GLdouble glGridPos = glGridD * i;
-
-		if( ( i % GRIDSEGS ) == 0 ) {
+		
+		if( ( i % ( GRIDSEGS * GRIDSEGS ) ) == 0 ) {
+			glLineWidth( 1.4f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.4f );
+		}
+		else if( zoom > ( GRIDSEGS * GRIDSEGS / 2.0 ) ) {
+			continue;
+		}
+		else if( ( i % GRIDSEGS ) == 0 ) {
 			glLineWidth( 1.2f );
 			glColor4f( 1.0f, 1.0f, 1.0f, 0.2f );
 		}
-		else if( zoom > 2.0 ) {
+		else if( zoom > ( GRIDSEGS / 2.0 ) ) {
 			continue;
 		}
-
-		glVertex2d( glViewRect[0], glGridPos );
-		glVertex2d( glViewRect[1], glGridPos );
-
-		if( ( i % GRIDSEGS ) == 0 ) {
+		else {
 			glLineWidth( 0.8f );
 			glColor4f( 1.0f, 1.0f, 1.0f, 0.1f );
 		}
+		
+		glVertex2d( glViewRect[0], glGridPos );
+		glVertex2d( glViewRect[1], glGridPos );
 	}
 	glEnd();
 
@@ -677,14 +689,14 @@ void UVWidget::mousePressEvent( QMouseEvent * e )
 			}
 		}
 	}
-
+	
 	updateGL();
 }
 
 void UVWidget::mouseMoveEvent( QMouseEvent * e )
 {
 	QPoint dPos( e->pos() - mousePos );
-
+	
 	switch ( e->buttons() )
 	{
 		case Qt::LeftButton:
@@ -706,20 +718,20 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 			pos += zoom * QPointF( dPos.x(), -dPos.y() );
 			updateViewRect( width(), height() );
 			
-			setCursor( QCursor( Qt::OpenHandCursor ) );
+			setCursor( QCursor( Qt::ClosedHandCursor ) );
 			
 			break;
 			
 		case Qt::RightButton:
 			zoom *= 1.0 + ( dPos.y() / ZOOMUNIT );
 			
-			if ( zoom < 0.1 )
+			if ( zoom < MINZOOM )
 			{
-				zoom = 0.1;
+				zoom = MINZOOM;
 			}
-			else if ( zoom > 10.0 )
+			else if ( zoom > MAXZOOM )
 			{
-				zoom = 10.0;
+				zoom = MAXZOOM;
 			}
 			
 			updateViewRect( width(), height() );
@@ -731,7 +743,7 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 		default:
 			if ( indices( e->pos() ).count() )
 			{
-				setCursor( QCursor( Qt::ArrowCursor ) );
+				setCursor( QCursor( Qt::PointingHandCursor ) );
 			}
 			else
 			{
@@ -739,9 +751,9 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 			}
 			return;
 	}
-
+	
 	mousePos = e->pos();
-
+	
 	updateGL();
 }
 
@@ -767,7 +779,7 @@ void UVWidget::mouseReleaseEvent( QMouseEvent * e )
 		default:
 			break;
 	}
-
+	
 	if ( indices( e->pos() ).count() )
 	{
 		setCursor( QCursor( Qt::ArrowCursor ) );
@@ -785,23 +797,21 @@ void UVWidget::wheelEvent( QWheelEvent * e )
 	switch( e->modifiers()) {
 		case Qt::NoModifier:
 			zoom *= 1.0 + ( e->delta() / 8.0 ) / ZOOMUNIT;
-
-			if( zoom < 0.1 ) {
-				zoom = 0.1;
+			
+			if( zoom < MINZOOM ) {
+				zoom = MINZOOM;
 			}
-			else if( zoom > 10.0 ) {
-				zoom = 10.0;
+			else if( zoom > MAXZOOM ) {
+				zoom = MAXZOOM;
 			}
-
+			
 			updateViewRect( width(), height() );
-
+			
 			break;
 	}
-
+	
 	updateGL();
 }
-
-
 
 bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 {
@@ -819,9 +829,9 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	connect( nif, SIGNAL( destroyed() ), this, SLOT( close() ) );
 	connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
 	connect( nif, SIGNAL( rowsRemoved( const QModelIndex &, int, int ) ), this, SLOT( nifDataChanged( const QModelIndex ) ) );
-
+	
 	textures->setNifFolder( nif->getFolder() );
-
+	
 	iShapeData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 	if( nif->inherits( iShapeData, "NiTriBasedGeomData" ) )
 	{
@@ -830,7 +840,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		{
 			return false;
 		}
-
+		
 		if ( ! setTexCoords() )
 		{
 			return false;
@@ -899,7 +909,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			}
 		}
 	}
-
+	
 	return false;
 }
 
@@ -1155,6 +1165,103 @@ void UVWidget::moveSelection( double moveX, double moveY )
 	undoStack->push( new UVWMoveCommand( this, moveX, moveY ) );
 }
 
+// For mouse-driven scaling: insert state/flag for scaling mode
+// get difference in mouse coords, scale everything around centre
+
+//! A class to perform scaling of UV coordinates
+class UVWScaleCommand : public QUndoCommand
+{
+public:
+	UVWScaleCommand( UVWidget * w, float s ) : QUndoCommand(), uvw( w ), scale( s )
+	{
+		setText( "Scale" );
+	}
+	
+	int id() const
+	{
+		return 2;
+	}
+	
+	bool mergeWith( const QUndoCommand * cmd )
+	{
+		if ( cmd->id() == id() )
+		{
+			scale *= static_cast<const UVWScaleCommand*>( cmd )->scale;
+			return true;
+		}
+		return false;
+	}
+	
+	void redo()
+	{
+		Vector2 centre;
+		foreach( int i, uvw->selection )
+		{
+			centre += uvw->texcoords[i];
+		}
+		
+		centre /= uvw->selection.size();
+		
+		//qWarning() << "Scaling around" << centre[0] << centre[1];
+		
+		// there is probably a better way to do this, using QPoint, QPolygon, QMatrix etc.
+		
+		// generate unit vectors and scale
+		foreach( int i, uvw->selection )
+		{
+			Vector2 temp = uvw->texcoords[i] - centre;
+			//qWarning() << "Vector" << uvw->texcoords[i] << "to centre is" << temp;
+			
+			//float length = sqrt( pow( temp[0], 2 ) + pow( temp[1], 2 ) );
+			//qWarning() << "Coordinate" << i << "is" << length << "from centre";
+			
+			//temp /= length;
+			//qWarning() << "Unit vector is" << temp;
+			temp *= scale;
+			//qWarning() << "Scaled vector is" << temp;
+			
+			//qWarning() << "Result is" << centre + temp;
+			uvw->texcoords[i] = centre + temp;
+		}
+		uvw->updateNif();
+		uvw->updateGL();
+	}
+	
+	void undo()
+	{
+		Vector2 centre;
+		foreach( int i, uvw->selection )
+		{
+			centre += uvw->texcoords[i];
+		}
+		
+		centre /= uvw->selection.size();
+		
+		foreach( int i, uvw->selection )
+		{
+			Vector2 temp = uvw->texcoords[i] - centre;
+			temp /= scale;
+			uvw->texcoords[i] = centre + temp;
+		}
+		uvw->updateNif();
+		uvw->updateGL();
+	}
+
+protected:
+	UVWidget * uvw;
+	float scale;
+};
+
+void UVWidget::scaleSelection()
+{
+	bool ok;
+	float scaleFactor = QInputDialog::getDouble( this, "NifSkope", tr( "Enter scaling factor" ), 1.0, 0.001, 10.0, 2, &ok );
+	if( ok )
+	{
+		undoStack->push( new UVWScaleCommand( this, scaleFactor ) );
+	}
+}
+
 void UVWidget::getTexSlots()
 {
 	menuTexSelect->clear();
@@ -1278,35 +1385,3 @@ void UVWidget::duplicateCoordSet()
 	connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
 }
 
-class UVWScaleCommand : public QUndoCommand
-{
-public:
-	UVWScaleCommand( UVWidget * w ) : QUndoCommand(), uvw( w )
-	{
-		setText( "Scale" );
-	}
-	
-	void redo()
-	{
-		Vector2 centre;
-		foreach( int i, uvw->selection )
-		{
-			centre += uvw->texcoords[i];
-		}
-
-		centre /= uvw->selection.size();
-		
-		qWarning() << centre[0] << centre[1];
-	}
-
-protected:
-	UVWidget * uvw;
-};
-
-void UVWidget::scaleSelection()
-{
-	undoStack->push( new UVWScaleCommand( this ) );
-}
-
-// insert state/flag for scaling mode
-// get difference in mouse coords, scale everything around centre

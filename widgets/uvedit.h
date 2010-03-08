@@ -68,8 +68,10 @@ public:
 	//! Sets the size hint
 	void setSizeHint( const QSize & s );
 	
+	//! Returns the preferred height for this widget, given the width w.
 	int heightForWidth( int width ) const;
 	
+	//! For future use in realtime mouse-driven scaling
 	enum EditingMode {
 		None,
 		Move,
@@ -86,15 +88,25 @@ protected:
 	void mouseMoveEvent( QMouseEvent * e );
 	void wheelEvent( QWheelEvent * e );
 
+// should this be public slots?
 protected slots:
+	//! Does the selection contain this vertex?
 	bool isSelected( int index );
+	//! Select a vertex
 	void select( int index, bool yes = true );
+	//! Select a region containing vertices
 	void select( const QRegion & r, bool add = true );
+	//! Select all
 	void selectAll();
+	//! Select none
 	void selectNone();
+	//! Select faces that use the currently selected vertices
 	void selectFaces();
+	//! Select vertices connected to the currently selected vertices
 	void selectConnected();
+	//! Move the selection by the specified vector
 	void moveSelection( double dx, double dy );
+	//! Scale the selection
 	void scaleSelection();
 	
 protected slots:
@@ -166,8 +178,6 @@ private:
 	QActionGroup * texSlotGroup;
 	//! List of valid textures
 	QStringList validTexs;
-	//! Texture slot selection actions; unused?
-	//QList<QAction*> * texActions;
 	
 	//! Names of texture slots
 	QStringList texnames;

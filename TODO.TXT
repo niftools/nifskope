@@ -7,9 +7,9 @@ To do:
 - Multitexturing of particles (eg. Tribunal.bsa\meshes\i\act_rockslide01.nif, Bloodmoon.bsa\meshes\w\w_art_ice_mace.nif)
 - doxygen documentation of all classes and files
 - Display all particle systems (eg. Florensia)
-- Clean up SVN log entries, check all old builds
+- Tag old releases
 - Check i18n of strings, use QLocale for numbers
 - Fix constraints display and spells
-- Implement scaling of UV data
+- Implement realtime mouse-driven scaling of UV data
 - Investigate splitting a Morrowind anim.nif to xAnim.nif and xAnim.kf
 

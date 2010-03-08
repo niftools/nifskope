@@ -15,7 +15,10 @@ changes since 1.0.21:
  * fix display of multiple decal textures (reported by Axel) - note that the
    number of texture units in your graphics card may limit how many textures
    can be displayed simultaneously
- * added UV coordinate set selection / duplication to UV editor context menu
+ * UV editor:
+  - added coordinate set selection / duplication to context menu
+  - added scaling of selected vertices to context menu & shortcut
+  - increased maximum zoom level, reworked grid lines and cursors
  * updated BSXFlags bit descriptions
  * re-add NiPixelData texture import ("Texture->Embed" spell)
  * load .texcache (Empire Earth II / III external NiPixelData files) and allow
