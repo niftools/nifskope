@@ -35,8 +35,7 @@ All Rights Reserved.  See www.havok.com for details.
 
 NifSkope uses Qhull for the generation of convex hulls, from www.qhull.org.
 Copyright (c) 1993-2010 C.B. Barber and The Geometry Center; see
-Qhull_COPYING.txt for details and http://github.com/amorilia/qhull for the
-source tree currently in use.
+Qhull_COPYING.txt for details and http://gitorious.org/qhull/ for the source.
 
 NOTICE
 
