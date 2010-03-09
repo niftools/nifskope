@@ -108,6 +108,8 @@ protected slots:
 	void moveSelection( double dx, double dy );
 	//! Scale the selection
 	void scaleSelection();
+	//! Rotate the selection
+	void rotateSelection();
 	
 protected slots:
 	void nifDataChanged( const QModelIndex & );
@@ -208,6 +210,7 @@ private:
 	friend class UVWSelectCommand;
 	friend class UVWMoveCommand;
 	friend class UVWScaleCommand;
+	friend class UVWRotateCommand;
 	
 	QAction * aTextureBlend;
 };

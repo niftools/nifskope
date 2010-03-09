@@ -147,6 +147,11 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aScaleSelection, SIGNAL( triggered() ), this, SLOT( scaleSelection() ) );
 	addAction( aScaleSelection );
 	
+	QAction * aRotateSelection = new QAction( tr( "&Rotate Selected" ), this );
+	aRotateSelection->setShortcut( QKeySequence( "Alt+R" ) );
+	connect( aRotateSelection, SIGNAL( triggered() ), this, SLOT( rotateSelection() ) );
+	addAction( aRotateSelection );
+	
 	aSep = new QAction( this );
 	aSep->setSeparator( true );
 	addAction( aSep );
@@ -1259,6 +1264,112 @@ void UVWidget::scaleSelection()
 	if( ok )
 	{
 		undoStack->push( new UVWScaleCommand( this, scaleFactor ) );
+	}
+}
+
+//! A class to perform rotation of UV coordinates
+class UVWRotateCommand : public QUndoCommand
+{
+public:
+	UVWRotateCommand( UVWidget * w, float r ) : QUndoCommand(), uvw( w ), rotation( r )
+	{
+		setText( "Rotation" );
+	}
+	
+	int id() const
+	{
+		return 3;
+	}
+	
+	bool mergeWith( const QUndoCommand * cmd )
+	{
+		if ( cmd->id() == id() )
+		{
+			rotation += static_cast<const UVWRotateCommand*>( cmd )->rotation;
+			rotation -= 360.0 * (int)( rotation / 360.0 );
+			return true;
+		}
+		return false;
+	}
+	
+	void redo()
+	{
+		Vector2 centre;
+		foreach( int i, uvw->selection )
+		{
+			centre += uvw->texcoords[i];
+		}
+		centre /= uvw->selection.size();
+		
+		foreach( int i, uvw->selection )
+		{
+			uvw->texcoords[i] -= centre;
+		}
+		
+		Matrix rotMatrix;
+		rotMatrix.fromEuler( 0, 0, ( rotation * PI / 180.0 ) );
+		
+		foreach( int i, uvw->selection )
+		{
+			Vector3 temp( uvw->texcoords[i], 0 );
+			temp = rotMatrix * temp;
+			uvw->texcoords[i] = Vector2( temp[0], temp[1] );
+		}
+		
+		foreach( int i, uvw->selection )
+		{
+			uvw->texcoords[i] += centre;
+		}
+		
+		uvw->updateNif();
+		uvw->updateGL();
+	}
+	
+	void undo()
+	{
+		Vector2 centre;
+		foreach( int i, uvw->selection )
+		{
+			centre += uvw->texcoords[i];
+		}
+		centre /= uvw->selection.size();
+		
+		foreach( int i, uvw->selection )
+		{
+			uvw->texcoords[i] -= centre;
+		}
+		
+		Matrix rotMatrix;
+		rotMatrix.fromEuler( 0, 0, -( rotation * PI / 180.0 ) );
+		
+		foreach( int i, uvw->selection )
+		{
+			Vector3 temp( uvw->texcoords[i], 0 );
+			temp = rotMatrix * temp;
+			uvw->texcoords[i] = Vector2( temp[0], temp[1] );
+		}
+		
+		foreach( int i, uvw->selection )
+		{
+			uvw->texcoords[i] += centre;
+		}
+		
+		uvw->updateNif();
+		uvw->updateGL();
+	}
+	
+protected:
+	UVWidget * uvw;
+	float rotation;
+};
+
+void UVWidget::rotateSelection()
+{
+	bool ok;
+	float rotateFactor = QInputDialog::getDouble( this, "NifSkope", tr( "Enter rotation angle" ), 0.0, -360.0, 360.0, 2, &ok );
+	if( ok )
+	{
+		undoStack->push( new UVWRotateCommand( this, rotateFactor ) );
 	}
 }
 
