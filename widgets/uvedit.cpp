@@ -43,6 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <GL/glext.h>
 
 #include <QCursor>
+#include <QDialog>
 #include <QInputDialog>
 #include <QTimer>
 #include <QUndoStack>
@@ -53,6 +54,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ZOOMUNIT 64.0
 #define MINZOOM 0.1
 #define MAXZOOM 20.0
+#define MINSCALE 0.001
+#define MAXSCALE 10.0
+#define MAXTRANS 10.0
 
 UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 {
@@ -142,7 +146,7 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aSelectConnected, SIGNAL( triggered() ), this, SLOT( selectConnected() ) );
 	addAction( aSelectConnected );
 	
-	QAction * aScaleSelection = new QAction( tr( "Scale &Selected" ), this );
+	QAction * aScaleSelection = new QAction( tr( "&Scale and Translate Selected" ), this );
 	aScaleSelection->setShortcut( QKeySequence( "Alt+S" ) );
 	connect( aScaleSelection, SIGNAL( triggered() ), this, SLOT( scaleSelection() ) );
 	addAction( aScaleSelection );
@@ -1177,7 +1181,7 @@ void UVWidget::moveSelection( double moveX, double moveY )
 class UVWScaleCommand : public QUndoCommand
 {
 public:
-	UVWScaleCommand( UVWidget * w, float s ) : QUndoCommand(), uvw( w ), scale( s )
+	UVWScaleCommand( UVWidget * w, float sX, float sY ) : QUndoCommand(), uvw( w ), scaleX( sX ), scaleY( sY )
 	{
 		setText( "Scale" );
 	}
@@ -1191,7 +1195,8 @@ public:
 	{
 		if ( cmd->id() == id() )
 		{
-			scale *= static_cast<const UVWScaleCommand*>( cmd )->scale;
+			scaleX *= static_cast<const UVWScaleCommand*>( cmd )->scaleX;
+			scaleY *= static_cast<const UVWScaleCommand*>( cmd )->scaleY;
 			return true;
 		}
 		return false;
@@ -1204,30 +1209,24 @@ public:
 		{
 			centre += uvw->texcoords[i];
 		}
-		
 		centre /= uvw->selection.size();
 		
-		//qWarning() << "Scaling around" << centre[0] << centre[1];
-		
-		// there is probably a better way to do this, using QPoint, QPolygon, QMatrix etc.
-		
-		// generate unit vectors and scale
 		foreach( int i, uvw->selection )
 		{
-			Vector2 temp = uvw->texcoords[i] - centre;
-			//qWarning() << "Vector" << uvw->texcoords[i] << "to centre is" << temp;
-			
-			//float length = sqrt( pow( temp[0], 2 ) + pow( temp[1], 2 ) );
-			//qWarning() << "Coordinate" << i << "is" << length << "from centre";
-			
-			//temp /= length;
-			//qWarning() << "Unit vector is" << temp;
-			temp *= scale;
-			//qWarning() << "Scaled vector is" << temp;
-			
-			//qWarning() << "Result is" << centre + temp;
-			uvw->texcoords[i] = centre + temp;
+			uvw->texcoords[i] -= centre;
 		}
+		
+		foreach( int i, uvw->selection )
+		{
+			Vector2 temp( uvw->texcoords[i] );
+			uvw->texcoords[i] = Vector2( temp[0] * scaleX, temp[1] * scaleY );
+		}
+		
+		foreach( int i, uvw->selection )
+		{
+			uvw->texcoords[i] += centre;
+		}
+		
 		uvw->updateNif();
 		uvw->updateGL();
 	}
@@ -1239,32 +1238,141 @@ public:
 		{
 			centre += uvw->texcoords[i];
 		}
-		
 		centre /= uvw->selection.size();
 		
 		foreach( int i, uvw->selection )
 		{
-			Vector2 temp = uvw->texcoords[i] - centre;
-			temp /= scale;
-			uvw->texcoords[i] = centre + temp;
+			uvw->texcoords[i] -= centre;
 		}
+		
+		foreach( int i, uvw->selection )
+		{
+			Vector2 temp( uvw->texcoords[i] );
+			uvw->texcoords[i] = Vector2( temp[0] / scaleX, temp[1] / scaleY );
+		}
+		
+		foreach( int i, uvw->selection )
+		{
+			uvw->texcoords[i] += centre;
+		}
+		
 		uvw->updateNif();
 		uvw->updateGL();
 	}
-
+	
 protected:
 	UVWidget * uvw;
-	float scale;
+	float scaleX, scaleY;
 };
 
 void UVWidget::scaleSelection()
 {
-	bool ok;
-	float scaleFactor = QInputDialog::getDouble( this, "NifSkope", tr( "Enter scaling factor" ), 1.0, 0.001, 10.0, 2, &ok );
-	if( ok )
+	ScalingDialog * scaleDialog = new ScalingDialog( this );
+	
+	if( scaleDialog->exec() == QDialog::Accepted )
 	{
-		undoStack->push( new UVWScaleCommand( this, scaleFactor ) );
+		// order does not matter here, since we scale around the center
+		// don't perform identity transforms
+		if( ! ( scaleDialog->getXScale() == 1.0 && scaleDialog->getYScale() == 1.0 ) )
+		{
+			undoStack->push( new UVWScaleCommand( this, scaleDialog->getXScale(), scaleDialog->getYScale() ) );
+		}
+		
+		if( ! ( scaleDialog->getXMove() == 0.0 && scaleDialog->getYMove() == 0.0 ) )
+		{
+			undoStack->push( new UVWMoveCommand( this, scaleDialog->getXMove(), scaleDialog->getYMove() ) );
+		}
 	}
+}
+
+ScalingDialog::ScalingDialog( QWidget * parent ) : QDialog( parent )
+{
+	grid = new QGridLayout;
+	setLayout( grid );
+	int currentRow = 0;
+	
+	grid->addWidget( new QLabel( tr( "Enter scaling factors" ) ), currentRow, 0, 1, -1 );
+	currentRow++;
+	
+	grid->addWidget( new QLabel( "X: " ), currentRow, 0, 1, 1 );
+	spinXScale = new QDoubleSpinBox;
+	spinXScale->setValue( 1.0 );
+	spinXScale->setRange( MINSCALE, MAXSCALE );
+	grid->addWidget( spinXScale, currentRow, 1, 1, 1 );
+	
+	grid->addWidget( new QLabel( "Y: " ), currentRow, 2, 1, 1 );
+	spinYScale = new QDoubleSpinBox;
+	spinYScale->setValue( 1.0 );
+	spinYScale->setRange( MINSCALE, MAXSCALE );
+	grid->addWidget( spinYScale, currentRow, 3, 1, 1 );
+	currentRow++;
+	
+	uniform = new QCheckBox;
+	connect( uniform, SIGNAL( toggled( bool ) ), this, SLOT( setUniform( bool ) ) );
+	uniform->setChecked( true );
+	grid->addWidget( uniform, currentRow, 0, 1, 1 );
+	grid->addWidget( new QLabel( tr( "Uniform scaling" ) ), currentRow, 1, 1, -1 );
+	currentRow++;
+	
+	grid->addWidget( new QLabel( tr( "Enter translation amounts" ) ), currentRow, 0, 1, -1 );
+	currentRow++;
+	
+	grid->addWidget( new QLabel( "X: " ), currentRow, 0, 1, 1 );
+	spinXMove = new QDoubleSpinBox;
+	spinXMove->setValue( 0.0 );
+	spinXMove->setRange( -MAXTRANS, MAXTRANS );
+	grid->addWidget( spinXMove, currentRow, 1, 1, 1 );
+	
+	grid->addWidget( new QLabel( "Y: " ), currentRow, 2, 1, 1 );
+	spinYMove = new QDoubleSpinBox;
+	spinYMove->setValue( 0.0 );
+	spinYMove->setRange( -MAXTRANS, MAXTRANS );
+	grid->addWidget( spinYMove, currentRow, 3, 1, 1 );
+	currentRow++;
+	
+	QPushButton * ok = new QPushButton( tr( "OK" ) );
+	grid->addWidget( ok, currentRow, 0, 1, 2 );
+	connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	
+	QPushButton * cancel = new QPushButton( tr( "Cancel" ) );
+	grid->addWidget( cancel, currentRow, 2, 1, 2 );
+	connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+}
+
+float ScalingDialog::getXScale()
+{
+	return spinXScale->value();
+}
+
+float ScalingDialog::getYScale()
+{
+	return spinYScale->value();
+}
+
+void ScalingDialog::setUniform( bool status )
+{
+	if( status == true )
+	{
+		connect( spinXScale, SIGNAL( valueChanged( double ) ), spinYScale, SLOT( setValue( double ) ) );
+		spinYScale->setEnabled( false );
+		spinYScale->setValue( spinXScale->value() );
+	}
+	else
+	{
+		disconnect( spinXScale, SIGNAL( valueChanged( double ) ), spinYScale, SLOT( setValue( double ) ) );
+		spinYScale->setEnabled( true );
+	}
+}
+
+// 1 unit corresponds to 2 grid squares
+float ScalingDialog::getXMove()
+{
+	return spinXMove->value() / 2.0;
+}
+
+float ScalingDialog::getYMove()
+{
+	return spinYMove->value() / 2.0;
 }
 
 //! A class to perform rotation of UV coordinates
@@ -1393,7 +1501,6 @@ void UVWidget::getTexSlots()
 						menuTexSelect->addAction( temp = new QAction( name, this ) );
 						texSlotGroup->addAction( temp );
 						temp->setCheckable( true );
-						//texActions->append( temp );
 						if ( name == texnames[currentTexSlot] )
 						{
 							temp->setChecked( true );

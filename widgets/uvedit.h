@@ -215,4 +215,34 @@ private:
 	QAction * aTextureBlend;
 };
 
+//! Dialog for getting scaling factors
+class ScalingDialog : public QDialog
+{
+	Q_OBJECT
+public:
+	ScalingDialog( QWidget * parent = 0 );
+	
+protected:
+	/*
+	QVBoxLayout * vbox;
+	QHBoxLayout * hbox;
+	QHBoxLayout * btnbox;
+	*/
+	QGridLayout * grid;
+	QDoubleSpinBox * spinXScale;
+	QDoubleSpinBox * spinYScale;
+	QCheckBox * uniform;
+	QDoubleSpinBox * spinXMove;
+	QDoubleSpinBox * spinYMove;
+	
+public slots:
+	float getXScale();
+	float getYScale();
+	float getXMove();
+	float getYMove();
+	
+protected slots:
+	void setUniform( bool status );
+};
+
 #endif

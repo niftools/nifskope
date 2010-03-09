@@ -17,7 +17,8 @@ changes since 1.0.21:
    can be displayed simultaneously
  * UV editor:
   - added coordinate set selection / duplication to context menu
-  - added rotation and scaling of selected vertices to context menu & shortcut
+  - added rotation and scaling / translation of selected vertices to context
+    menu with respective shortcuts (suggested by psymoniser and snowfox)
   - increased maximum zoom level, reworked grid lines and cursors
  * updated BSXFlags bit descriptions
  * re-add NiPixelData texture import ("Texture->Embed" spell)
