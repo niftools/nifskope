@@ -54,7 +54,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ZOOMUNIT 64.0
 #define MINZOOM 0.1
 #define MAXZOOM 20.0
-#define MINSCALE 0.001
 #define MAXSCALE 10.0
 #define MAXTRANS 10.0
 
@@ -1297,13 +1296,13 @@ ScalingDialog::ScalingDialog( QWidget * parent ) : QDialog( parent )
 	grid->addWidget( new QLabel( "X: " ), currentRow, 0, 1, 1 );
 	spinXScale = new QDoubleSpinBox;
 	spinXScale->setValue( 1.0 );
-	spinXScale->setRange( MINSCALE, MAXSCALE );
+	spinXScale->setRange( -MAXSCALE, MAXSCALE );
 	grid->addWidget( spinXScale, currentRow, 1, 1, 1 );
 	
 	grid->addWidget( new QLabel( "Y: " ), currentRow, 2, 1, 1 );
 	spinYScale = new QDoubleSpinBox;
 	spinYScale->setValue( 1.0 );
-	spinYScale->setRange( MINSCALE, MAXSCALE );
+	spinYScale->setRange( -MAXSCALE, MAXSCALE );
 	grid->addWidget( spinYScale, currentRow, 3, 1, 1 );
 	currentRow++;
 	
