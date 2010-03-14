@@ -173,7 +173,7 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	QStringList extensions;
 	extensions << ".tga" << ".dds" << ".bmp" << ".nif" << ".texcache";
 #ifndef Q_OS_WIN
-	extensions << ".TGA" << ".DDS" << ".BMP" << ".NIF" << ."TEXCACHE";
+	extensions << ".TGA" << ".DDS" << ".BMP" << ".NIF" << ".TEXCACHE";
 #endif
 	bool replaceExt = false;
 	if ( Options::textureAlternatives() )
