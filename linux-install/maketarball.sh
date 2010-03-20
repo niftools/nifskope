@@ -71,7 +71,38 @@ FILES="NifSkope.pro \
     nifexpr.cpp
     nifexpr.h
     lang/*.ts
-    lang/*.qm"
+    lang/*.qm
+    qhull.h
+    qhull.cpp
+    qhull/COPYING.txt
+    qhull/src/qhull_a.h
+    qhull/src/libqhull.c
+    qhull/src/mem.c
+    qhull/src/qset.c
+    qhull/src/geom.c
+    qhull/src/merge.c
+    qhull/src/poly.c
+    qhull/src/io.c
+    qhull/src/stat.c
+    qhull/src/global.c
+    qhull/src/user.c
+    qhull/src/poly2.c
+    qhull/src/geom2.c
+    qhull/src/userprintf.c
+    qhull/src/usermem.c
+    qhull/src/random.c
+    qhull/src/rboxlib.c
+    qhull/src/libqhull.h
+    qhull/src/stat.h
+    qhull/src/random.h
+    qhull/src/mem.h
+    qhull/src/geom.h
+    qhull/src/merge.h
+    qhull/src/poly.h
+    qhull/src/io.h
+    qhull/src/user.h
+    qhull/src/qset.h
+    resources/qhull_cone.gif"
 
 # clean old tarball
 rm -rf nifskope-$VERSION
