@@ -81,6 +81,23 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sat Mar 20 2010 amorilia - 1.0.22-1
+- updated to Qt 4.5.3
+- added support for NiPersistentSrcTextureRendererData textures (alternate form of NiPixelData)
+- allow hexadecimal values in nif.xml enumeration options
+- added "String Palette->Replace Entries" spell for NiSequence blocks, and "Animation->Edit String Palettes" helper
+- fixed display of Fallout 3 morph animations (NiGeomMorpherController)
+- support reading nifs which use the JMI extension and header
+- added "Node->Attach Parent Node" (suggested by vurt2)
+- fix display of multiple decal textures (reported by Axel) - note that the number of texture units in your graphics card may limit how many textures can be displayed simultaneously
+- UV editor:
+  + added coordinate set selection / duplication to context menu
+  + added rotation and scaling / translation of selected vertices to context menu with respective shortcuts (suggested by psymoniser and snowfox)
+  + increased maximum zoom level, reworked grid lines and cursors
+- updated BSXFlags bit descriptions
+- re-add NiPixelData texture import ("Texture->Embed" spell)
+- load .texcache (Empire Earth II / III external NiPixelData files) and allow direct texture export; installer also registers .texcache and .pcpatch (unknown 8-bit 1-dimensional textures?) extensions
+- added "Havok->Create Convex Shape" using Qhull and old code by wz
 * Fri Oct 9 2009 amorilia - 1.0.21-1
 - added support for displaying 8-bit palettised DDS textures
 - added variable mipmap filtering display for NiTexturingProperty
