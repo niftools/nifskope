@@ -264,8 +264,8 @@ protected:
 	
 	bool		evalVersion( NifItem * item, bool chkParents = false ) const;
 
-	// nif file version
-	quint32		version;
+	//! NIF file version
+	quint32 version;
 	
 	QHash< int, QList<int> >	childLinks;
 	QHash< int, QList<int> >	parentLinks;

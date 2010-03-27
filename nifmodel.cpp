@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QTime>
 #include <QSettings>
+#include <QtEndian>
 
 //! \file nifmodel.cpp NifModel implementation, NifModelEval
 
@@ -2069,6 +2070,15 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 			{
 				if ( ! stream.read( child->value() ) )
 					return false;
+			}
+		}
+		
+		// this value is always little-endian
+		if( child->name() == "Num Blocks" )
+		{
+			if( version >= 0x14000004 && get<quint8>( getHeaderItem(), "Endian Type" ) == 0 )
+			{
+				child->value().setCount( qFromBigEndian( child->value().toCount() ) );
 			}
 		}
 	}

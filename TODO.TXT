@@ -12,4 +12,8 @@ To do:
 - Fix constraints display and spells
 - Implement realtime mouse-driven scaling of UV data
 - Investigate splitting a Morrowind anim.nif to xAnim.nif and xAnim.kf
+- Fix endianness!!! Use QDataStream >> with custom operators
+- Link "Update Center/Radius" spell from NiTriShape, not just the data
+- Call "Update Center/Radius" spell automatically when scaling vertices or as sanitize spell
+- Fix minor bugs in UV editor when data is shared across multiple shapes
 

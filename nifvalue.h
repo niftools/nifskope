@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFVALUE_H
 #define NIFVALUE_H
 
-
+#include <QDataStream>
 #include <QIODevice>
 #include <QPair>
 #include <QVariant>
@@ -191,7 +191,7 @@ public:
 	
 	//! Get the abstract flag on this value. Does not seem to be reliably initialised yet.
 	inline bool isAbstract() { return abstract; }
-
+	
 	//! Set the abstract flag on this value.
 	inline void setAbstract( bool flag ) { abstract = flag; }
 	
@@ -564,16 +564,21 @@ class NifIStream
 
 public:
 	//! Constructor.
-	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d ) { init(); }
+	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d )
+	{
+		init();
+	}
 	
 	//! Reads a NifValue from the underlying device. Returns true if successful.
 	bool read( NifValue & );
-
+	
 private:
 	//! The model that data is being read into.
 	BaseModel * model;
 	//! The underlying device that data is being read from.
 	QIODevice * device;
+	//! The data stream that is wrapped around the device (simplifies endian conversion)
+	QDataStream * dataStream;
 	
 	//! Initialises the stream.
 	void init();
@@ -584,7 +589,9 @@ private:
 	bool linkAdjust;
 	//! Whether string adjustment is required.
 	bool stringAdjust;
-
+	//! Whether the model is big-endian
+	bool bigEndian;
+	
 	//! The maximum length of a string that can be read.
 	int maxLength;
 };
@@ -616,6 +623,8 @@ private:
 	bool linkAdjust;
 	//! Whether string adjustment is required.
 	bool stringAdjust;
+	//! Whether the model is big-endian
+	bool bigEndian;
 };
 
 //! A stream that determines the size of values in a model.

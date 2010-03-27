@@ -795,44 +795,58 @@ bool NifIStream::read( NifValue & val )
 		case NifValue::tBool:
 			val.val.u32 = 0;
 			if ( bool32bit )
-				return device->read( (char *) &val.val.u32, 4 ) == 4;
+				*dataStream >> val.val.u32;
 			else
-				return device->read( (char *) &val.val.u08, 1 ) == 1;
+				*dataStream >> val.val.u08;
+			return ( dataStream->status() == QDataStream::Ok );
 		case NifValue::tByte:
 			val.val.u32 = 0;
-			return device->read( (char *) &val.val.u08, 1 ) == 1;
+			*dataStream >> val.val.u08;
+			return ( dataStream->status() == QDataStream::Ok );
 		case NifValue::tWord:
 		case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
 			val.val.u32 = 0;
-			return device->read( (char *) &val.val.u16, 2 ) == 2;
+			*dataStream >> val.val.u16;
+			return ( dataStream->status() == QDataStream::Ok );
 		case NifValue::tStringOffset:
 		case NifValue::tInt:
 		case NifValue::tUInt:
-			return device->read( (char *) &val.val.u32, 4 ) == 4;
+			*dataStream >> val.val.u32;
+			return ( dataStream->status() == QDataStream::Ok );
 		case NifValue::tStringIndex:
-			return device->read( (char *) &val.val.u32, 4 ) == 4;
+			*dataStream >> val.val.u32;
+			return ( dataStream->status() == QDataStream::Ok );
 		case NifValue::tLink:
 		case NifValue::tUpLink:
 		{
-			if ( device->read( (char *) &val.val.i32, 4 ) )
-			{
-				if ( linkAdjust )
-					val.val.i32--;
-				return true;
-			}
-			else
-				return false;
+			*dataStream >> val.val.i32;
+			if ( linkAdjust )
+				val.val.i32--;
+			return ( dataStream->status() == QDataStream::Ok );
 		}
 		case NifValue::tFloat:
-			return device->read( (char *) &val.val.f32, 4 ) == 4;
+			*dataStream >> val.val.f32;
+			return ( dataStream->status() == QDataStream::Ok );
 		case NifValue::tVector3:
-			return device->read( (char *) static_cast<Vector3*>( val.val.data )->xyz, 12 ) == 12;
+		{
+			Vector3 * v = static_cast<Vector3*>( val.val.data );
+			*dataStream >> *v;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tVector4:
-			return device->read( (char *) static_cast<Vector4*>( val.val.data )->xyzw, 16 ) == 16;
+		{
+			Vector4 * v = static_cast<Vector4*>( val.val.data );
+			*dataStream >> *v;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tTriangle:
-			return device->read( (char *) static_cast<Triangle*>( val.val.data )->v, 6 ) == 6;
+		{
+			Triangle * t = static_cast<Triangle*>( val.val.data );
+			*dataStream >> *t;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tQuat:
 			return device->read( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
 		case NifValue::tQuatXYZW:
@@ -853,8 +867,9 @@ bool NifIStream::read( NifValue & val )
 		case NifValue::tSizedString:
 		{
 			int len;
-			device->read( (char *) &len, 4 );
-			if ( len > maxLength || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long>"); return false; }
+			//device->read( (char *) &len, 4 );
+			*dataStream >> len;
+			if ( len > maxLength || len < 0 ) { *static_cast<QString*>( val.val.data ) = tr("<string too long (0x%1)>").arg(len, 0, 16); return false; }
 			QByteArray string = device->read( len );
 			if ( string.size() != len ) return false;
 			//string.replace( "\r", "\\r" );
@@ -949,6 +964,13 @@ bool NifIStream::read( NifValue & val )
 			if ( device->read( (char *) &val.val.u32, 4 ) != 4 )	return false;
 			//bool x = model->setVersion( val.val.u32 );
 			//init();
+			if( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14000004 )
+			{
+				bool littleEndian;
+				device->peek( (char *) &littleEndian, 1 );
+				bigEndian = !littleEndian;
+				if( bigEndian ) { dataStream->setByteOrder( QDataStream::BigEndian ); }
+			}
 			return true;
 		}
 		case NifValue::tString:
@@ -1012,6 +1034,12 @@ void NifIStream::init()
 	bool32bit =  ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
 	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
 	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
+	bigEndian = false; // set when tFileVersion is read
+	dataStream = new QDataStream( device );
+	dataStream->setByteOrder( QDataStream::LittleEndian );
+#if QT_VERSION >= 0x040600
+	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
+#endif
 	NIFSKOPE_QSETTINGS(cfg);
 	maxLength = cfg.value("maximum string length", 0x8000).toInt();
 	//maxLength = Options::maxStringLength();

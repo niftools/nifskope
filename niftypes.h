@@ -181,7 +181,7 @@ protected:
 	friend class NifOStream;
 };
 
-//! An attempt at providing a qDebug stream operator for Vector2
+//! An attempt at providing a QDebug stream operator for Vector2
 /**
  * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
  * for how this is supposed to work.
@@ -194,7 +194,7 @@ inline QDebug &operator<<( QDebug dbg, Vector2 v )
 
 //! A vector of 3 floats
 class Vector3
-{	
+{
 	Q_DECLARE_TR_FUNCTIONS(Vector3)
 
 public:
@@ -412,9 +412,11 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+	
+	friend QDataStream & operator>>( QDataStream & ds, Vector3 & v );
 };
 
-//! An attempt at providing a qDebug stream operator for Vector3
+//! An attempt at providing a QDebug stream operator for Vector3
 /**
  * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
  * for how this is supposed to work.
@@ -423,6 +425,13 @@ inline QDebug &operator<<( QDebug dbg, Vector3 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
 	return dbg.space();
+}
+
+//! A stream operator for reading in a Vector3
+inline QDataStream & operator>>( QDataStream & ds, Vector3 & v )
+{
+	ds >> v.xyz[0] >> v.xyz[1] >> v.xyz[2];
+	return ds;
 }
 
 //! A vector of 4 floats
@@ -632,9 +641,11 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+	
+	friend QDataStream & operator>>( QDataStream & ds, Vector4 & v );
 };
 
-//! An attempt at providing a qDebug stream operator for Vector2
+//! An attempt at providing a QDebug stream operator for Vector2
 /**
  * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
  * for how this is supposed to work.
@@ -643,6 +654,13 @@ inline QDebug &operator<<( QDebug dbg, Vector4 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ")";
 	return dbg.space();
+}
+
+//! A stream operator for reading in a Vector4
+inline QDataStream & operator>>( QDataStream & ds, Vector4 & v )
+{
+	ds >> v.xyzw[0] >> v.xyzw[1] >> v.xyzw[2] >> v.xyzw[3];
+	return ds;
 }
 
 // This doesn't seem to document properly in Doxygen.
@@ -925,7 +943,7 @@ public:
 	Matrix rotation;
 	Vector3 translation;
 	float scale;
-
+	
 	friend QDataStream & operator<<( QDataStream & ds, const Transform & t );
 	friend QDataStream & operator>>( QDataStream & ds, Transform & t );
 	
@@ -986,9 +1004,11 @@ protected:
 	quint16 v[3];
 	friend class NifIStream;
 	friend class NifOStream;
+	
+	friend QDataStream & operator>>( QDataStream & ds, Triangle & t );
 };
 
-//! An attempt at providing a qDebug stream operator for Triangle
+//! An attempt at providing a QDebug stream operator for Triangle
 /**
  * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
  * for how this is supposed to work.
@@ -997,6 +1017,13 @@ inline QDebug &operator<<( QDebug dbg, Triangle t )
 {
 	dbg.nospace() << "(" << t[0] << "," << t[1] << "," << t[2] << ")";
 	return dbg.space();
+}
+
+//! A stream operator for reading in a Triangle
+inline QDataStream & operator>>( QDataStream & ds, Triangle & t )
+{
+	ds >> t.v[0] >> t.v[1] >> t.v[2];
+	return ds;
 }
 
 //! Clamps a float to have a value between 0 and 1 inclusive
