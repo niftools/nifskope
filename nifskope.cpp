@@ -116,17 +116,19 @@ void NifSkope::migrateSettings() const
 	// check for older nifskope settings
 	for (QStringList::ConstIterator it = NIFSKOPE_OLDERVERSIONS.begin(); it != NIFSKOPE_OLDERVERSIONS.end(); ++it ) {
 		QSettings oldcfg( "NifTools", *it );
-		// check for non-binary missing keys and copy them from old settings
+		// check for missing keys and copy them from old settings
 		QStringList keys = oldcfg.allKeys();
 		for (QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key) {
 			//qDebug() << "checking" << *key << oldcfg.value(*key).type(); 
 			switch (oldcfg.value(*key).type()) {
 				case QVariant::Bool:
-				case QVariant::Int:
-				case QVariant::UInt:
+				case QVariant::ByteArray:
+				case QVariant::Color:
 				case QVariant::Double:
+				case QVariant::Int:
 				case QVariant::String:
 				case QVariant::StringList:
+				case QVariant::UInt:
 					// copy settings for these types
 					copySettings(cfg, oldcfg, *key);
 				default:
