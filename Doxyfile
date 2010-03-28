@@ -31,7 +31,7 @@ PROJECT_NAME           = NifSkope
 # This could be handy for archiving the generated documentation or 
 # if some version control system is used.
 
-PROJECT_NUMBER         = 1.0.22
+PROJECT_NUMBER         = 1.1.0
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) 
 # base path where the generated documentation will be put. 
@@ -1065,7 +1065,7 @@ SKIP_FUNCTION_MACROS   = YES
 # If a tag file is not located in the directory in which doxygen 
 # is run, you must also specify the path to the tagfile here.
 
-TAGFILES               = "qt.tag = http://doc.trolltech.com/latest"
+TAGFILES               = "qt.tag = http://qt.nokia.com/doc/4.6/"
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create 
 # a tag file that is based on the input files it reads.

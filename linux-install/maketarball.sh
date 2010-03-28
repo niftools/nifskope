@@ -11,7 +11,7 @@
 
 # and the rpm will reside in ~/rpmbuild/RPMS
 
-VERSION=1.0.22
+VERSION=1.1.0
 
 FILES="NifSkope.pro \
     TODO.TXT \
