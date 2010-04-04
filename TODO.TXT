@@ -16,4 +16,6 @@ To do:
 - Link "Update Center/Radius" spell from NiTriShape, not just the data
 - Call "Update Center/Radius" spell automatically when scaling vertices or as sanitize spell
 - Fix minor bugs in UV editor when data is shared across multiple shapes
+- Track down all qWarning() uses where QMessageBox is more appropriate
+- Use qAssert more often for debugging
 

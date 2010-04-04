@@ -672,6 +672,9 @@ void Mesh::transformShapes()
 				for ( int v = 0; v < part.vertexMap.count(); v++ )
 				{
 					int vindex = part.vertexMap[ v ];
+					if( vindex < 0 || vindex > transVerts.count() )
+						break;
+					
 					if ( transVerts[vindex] == Vector3() )
 					{
 						for ( int w = 0; w < part.numWeightsPerVertex; w++ )
