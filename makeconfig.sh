@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 wcrev=`git log -1 --pretty=format:%h`
 if [[ -e config.h ]]; then
