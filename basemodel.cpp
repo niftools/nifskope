@@ -95,6 +95,7 @@ int BaseModel::evaluateString( NifItem * array, const QString & text ) const
 	{
 		QString left, right;
 		
+		// TODO: work out how to deal with brackets...
 		static const char * const exp[] = { " | ", " & ", " / ", " + ", " - ", " * " };
 		static const int num_exp = 6;
 		

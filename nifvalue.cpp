@@ -793,31 +793,41 @@ bool NifIStream::read( NifValue & val )
 	switch ( val.type() )
 	{
 		case NifValue::tBool:
+		{
 			val.val.u32 = 0;
 			if ( bool32bit )
 				*dataStream >> val.val.u32;
 			else
 				*dataStream >> val.val.u08;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tByte:
+		{
 			val.val.u32 = 0;
 			*dataStream >> val.val.u08;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tWord:
 		case NifValue::tShort:
 		case NifValue::tFlags:
 		case NifValue::tBlockTypeIndex:
+		{
 			val.val.u32 = 0;
 			*dataStream >> val.val.u16;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tStringOffset:
 		case NifValue::tInt:
 		case NifValue::tUInt:
+		{
 			*dataStream >> val.val.u32;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tStringIndex:
+		{
 			*dataStream >> val.val.u32;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tLink:
 		case NifValue::tUpLink:
 		{
@@ -827,8 +837,10 @@ bool NifIStream::read( NifValue & val )
 			return ( dataStream->status() == QDataStream::Ok );
 		}
 		case NifValue::tFloat:
+		{
 			*dataStream >> val.val.f32;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tVector3:
 		{
 			Vector3 * v = static_cast<Vector3*>( val.val.data );
@@ -848,7 +860,11 @@ bool NifIStream::read( NifValue & val )
 			return ( dataStream->status() == QDataStream::Ok );
 		}
 		case NifValue::tQuat:
-			return device->read( (char *) static_cast<Quat*>( val.val.data )->wxyz, 16 ) == 16;
+		{
+			Quat * q = static_cast<Quat*>( val.val.data );
+			*dataStream >> *q;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tQuatXYZW:
 		{
 			Quat * q = static_cast<Quat*>( val.val.data );
@@ -859,11 +875,19 @@ bool NifIStream::read( NifValue & val )
 		case NifValue::tMatrix4:
 			return device->read( (char *) static_cast<Matrix4*>( val.val.data )->m, 64 ) == 64;
 		case NifValue::tVector2:
-			return device->read( (char *) static_cast<Vector2*>( val.val.data )->xy, 8 ) == 8;
+		{
+			Vector2 * v = static_cast<Vector2*>( val.val.data );
+			*dataStream >> *v;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tColor3:
 			return device->read( (char *) static_cast<Color3*>( val.val.data )->rgb, 12 ) == 12;
 		case NifValue::tColor4:
-			return device->read( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
+		{
+			Color4 * c = static_cast<Color4*>( val.val.data );
+			*dataStream >> *c;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
 		case NifValue::tSizedString:
 		{
 			int len;
@@ -1017,12 +1041,13 @@ bool NifIStream::read( NifValue & val )
 		}
 
 		case NifValue::tBlob:
+		{
 			if ( val.val.data ) {
 				QByteArray* array = static_cast<QByteArray*>( val.val.data );
 				return device->read( array->data(), array->size() ) == array->size();
 			}
 			return false;
-
+		}
 		case NifValue::tNone:
 			return true;
 	}

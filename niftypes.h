@@ -179,6 +179,8 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+	
+	friend QDataStream & operator>>( QDataStream & ds, Vector2 & v );
 };
 
 //! An attempt at providing a QDebug stream operator for Vector2
@@ -190,6 +192,13 @@ inline QDebug &operator<<( QDebug dbg, Vector2 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ")";
 	return dbg.space();
+}
+
+//! A stream operator for reading in a Vector2
+inline QDataStream & operator>>( QDataStream & ds, Vector2 & v )
+{
+	ds >> v.xy[0] >> v.xy[1];
+	return ds;
 }
 
 //! A vector of 3 floats
@@ -761,7 +770,16 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+
+	friend QDataStream & operator>>( QDataStream & ds, Quat & q );
 };
+
+//! A stream operator for reading in a Quat
+inline QDataStream & operator>>( QDataStream & ds, Quat & q )
+{
+	ds >> q.wxyz[0] >> q.wxyz[1] >> q.wxyz[2] >> q.wxyz[3];
+	return ds;
+}
 
 //! A 3 by 3 matrix
 class Matrix
@@ -1282,6 +1300,8 @@ protected:
 	
 	friend class NifIStream;
 	friend class NifOStream;
+
+	friend QDataStream & operator>>( QDataStream & ds, Color4 & c );
 };
 
 // This refuses to document properly in doxygen.
@@ -1292,6 +1312,12 @@ inline Color3::Color3( const Color4 & c4 )
 	rgb[2] = c4[2];
 }
 
+//! A stream operator for reading in a Color4
+inline QDataStream & operator>>( QDataStream & ds, Color4 & c )
+{
+	ds >> c.rgba[0] >> c.rgba[1] >> c.rgba[2] >> c.rgba[3];
+	return ds;
+}
 
 //! A fixed length vector of type T.
 /*!
