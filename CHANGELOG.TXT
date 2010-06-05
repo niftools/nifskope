@@ -5,6 +5,8 @@ This is version 1.1.0 of NifSkope.
 changes since 1.0.22:
  * updated to Qt 4.6.2
  * import window state and lighting settings from previous versions
+ * better support for big-endian files
+ * increased the number of decimal places for rotations (suggested by Ghogiel)
 
 changes since 1.0.21:
  * updated to Qt 4.5.3

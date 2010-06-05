@@ -656,29 +656,29 @@ QString NifValue::toString() const
 		case tVector2:
 		{
 			Vector2 * v = static_cast<Vector2*>( val.data );
-
+			
 			return QString( "X %1 Y %2" )
-				.arg( NumOrMinMax( (*v)[0], 'f', 4 ) )
-				.arg( NumOrMinMax( (*v)[1], 'f', 4 ) );
+				.arg( NumOrMinMax( (*v)[0], 'f', VECTOR_DECIMALS ) )
+				.arg( NumOrMinMax( (*v)[1], 'f', VECTOR_DECIMALS ) );
 		}
 		case tVector3:
 		{
 			Vector3 * v = static_cast<Vector3*>( val.data );
-
+			
 			return QString( "X %1 Y %2 Z %3" )
-				.arg( NumOrMinMax( (*v)[0], 'f', 4 ) )
-				.arg( NumOrMinMax( (*v)[1], 'f', 4 ) )
-				.arg( NumOrMinMax( (*v)[2], 'f', 4 ) );
+				.arg( NumOrMinMax( (*v)[0], 'f', VECTOR_DECIMALS ) )
+				.arg( NumOrMinMax( (*v)[1], 'f', VECTOR_DECIMALS ) )
+				.arg( NumOrMinMax( (*v)[2], 'f', VECTOR_DECIMALS ) );
 		}
 		case tVector4:
 		{
 			Vector4 * v = static_cast<Vector4*>( val.data );
-
+			
 			return QString( "X %1 Y %2 Z %3 W %4" )
-				.arg( NumOrMinMax( (*v)[0], 'f', 4 ) )
-				.arg( NumOrMinMax( (*v)[1], 'f', 4 ) )
-				.arg( NumOrMinMax( (*v)[2], 'f', 4 ) )
-				.arg( NumOrMinMax( (*v)[3], 'f', 4 ) );
+				.arg( NumOrMinMax( (*v)[0], 'f', VECTOR_DECIMALS ) )
+				.arg( NumOrMinMax( (*v)[1], 'f', VECTOR_DECIMALS ) )
+				.arg( NumOrMinMax( (*v)[2], 'f', VECTOR_DECIMALS ) )
+				.arg( NumOrMinMax( (*v)[3], 'f', VECTOR_DECIMALS ) );
 		}
 		case tMatrix:
 		case tQuat:
@@ -697,9 +697,9 @@ QString NifValue::toString() const
 			}
 			
 			return ( pre + QString( "Y %1 P %2 R %3" ) + suf )
-				.arg( NumOrMinMax( x / PI * 180, 'f', 1 ) )
-				.arg( NumOrMinMax( y / PI * 180, 'f', 1 ) )
-				.arg( NumOrMinMax( z / PI * 180, 'f', 1 ) );
+				.arg( NumOrMinMax( x / PI * 180, 'f', ROTATION_COARSE) )
+				.arg( NumOrMinMax( y / PI * 180, 'f', ROTATION_COARSE ) )
+				.arg( NumOrMinMax( z / PI * 180, 'f', ROTATION_COARSE ) );
 		}
 		case tMatrix4:
 		{

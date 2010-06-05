@@ -421,27 +421,27 @@ ColorEdit::ColorEdit( QWidget * parent ) : ValueEdit( parent )
 	
 	lay->addWidget( new CenterLabel( "R" ), 1 );
 	lay->addWidget( r = new QDoubleSpinBox, 5 );
-	r->setDecimals( 3 );
+	r->setDecimals( COLOR_DECIMALS );
 	r->setRange( 0, 1 );
-	r->setSingleStep( 0.01 );
+	r->setSingleStep( COLOR_STEP );
 	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( new CenterLabel( "G" ), 1 );
 	lay->addWidget( g = new QDoubleSpinBox, 5 );
-	g->setDecimals( 3 );
+	g->setDecimals( COLOR_DECIMALS );
 	g->setRange( 0, 1 );
-	g->setSingleStep( 0.01 );
+	g->setSingleStep( COLOR_STEP );
 	connect( g, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( new CenterLabel( "B" ), 1 );
 	lay->addWidget( b = new QDoubleSpinBox, 5 );
-	b->setDecimals( 3 );
+	b->setDecimals( COLOR_DECIMALS );
 	b->setRange( 0, 1 );
-	b->setSingleStep( 0.01 );
+	b->setSingleStep( COLOR_STEP );
 	connect( b, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( al = new CenterLabel( "A" ), 1 );
 	lay->addWidget( a = new QDoubleSpinBox, 5 );
-	a->setDecimals( 3 );
+	a->setDecimals( COLOR_DECIMALS );
 	a->setRange( 0, 1 );
-	a->setSingleStep( 0.01 );
+	a->setSingleStep( COLOR_STEP );
 	connect( a, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
 	setting = false;
@@ -483,7 +483,6 @@ Color3 ColorEdit::getColor3() const
 	return Color3( r->value(), g->value(), b->value() );
 }
 
-
 VectorEdit::VectorEdit( QWidget * parent ) : ValueEdit( parent )
 {
 	QHBoxLayout * lay = new QHBoxLayout( this );
@@ -494,23 +493,23 @@ VectorEdit::VectorEdit( QWidget * parent ) : ValueEdit( parent )
 	
 	lay->addWidget( xl = new CenterLabel( "X" ), 1 );
 	lay->addWidget( x = new QDoubleSpinBox, 5 );
-	x->setDecimals( 4 );
-	x->setRange( - 100000000, + 100000000 );
+	x->setDecimals( VECTOR_DECIMALS );
+	x->setRange( - VECTOR_RANGE, + VECTOR_RANGE );
 	connect( x, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( yl = new CenterLabel( "Y" ), 1 );
 	lay->addWidget( y = new QDoubleSpinBox, 5 );
-	y->setDecimals( 4 );
-	y->setRange( - 100000000, + 100000000 );
+	y->setDecimals( VECTOR_DECIMALS );
+	y->setRange( - VECTOR_RANGE, + VECTOR_RANGE );
 	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( zl = new CenterLabel( "Z" ), 1 );
 	lay->addWidget( z = new QDoubleSpinBox, 5 );
-	z->setDecimals( 4 );
-	z->setRange( - 100000000, + 100000000 );
+	z->setDecimals( VECTOR_DECIMALS );
+	z->setRange( - VECTOR_RANGE, + VECTOR_RANGE );
 	connect( z, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	lay->addWidget( wl = new CenterLabel( "W" ), 1 );
 	lay->addWidget( w = new QDoubleSpinBox, 5 );
-	w->setDecimals( 4 );
-	w->setRange( - 100000000, + 100000000 );
+	w->setDecimals( VECTOR_DECIMALS );
+	w->setRange( - VECTOR_RANGE, + VECTOR_RANGE );
 	connect( w, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
 	
 	/*
@@ -626,7 +625,7 @@ void RotationEdit::setupMode()
 				for ( int x = 0; x < 4; x++ )
 				{
 					l[x]->setText( labs.value( x ) );
-					v[x]->setDecimals( 1 );
+					v[x]->setDecimals( ROTATION_COARSE );
 					v[x]->setRange( - 360, + 360 );
 					v[x]->setSingleStep( 1 );
 					l[x]->setHidden( x == 3 );
@@ -642,13 +641,13 @@ void RotationEdit::setupMode()
 					l[x]->setText( labs.value( x ) );
 					if ( x == 0 )
 					{
-						v[x]->setDecimals( 1 );
+						v[x]->setDecimals( ROTATION_COARSE );
 						v[x]->setRange( - 360, + 360 );
 						v[x]->setSingleStep( 1 );
 					}
 					else
 					{
-						v[x]->setDecimals( 5 );
+						v[x]->setDecimals( ROTATION_FINE );
 						v[x]->setRange( - 1.0, + 1.0 );
 						v[x]->setSingleStep( 0.1 );
 					}

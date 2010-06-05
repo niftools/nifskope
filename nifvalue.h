@@ -43,6 +43,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
 
+// if there is demand for it, consider moving these into Options
+//! Number of decimals when editing vector types (Vector2, Vector3, Vector4)
+#define VECTOR_DECIMALS 4
+//! Maximum/minimum range when editing vector types (Vector2, Vector3, Vector4)
+#define VECTOR_RANGE 100000000
+//! Number of decimals when editing Quat rotations in Euler mode
+#define ROTATION_COARSE 2
+//! Number of decimals when editing Quat rotations in Axis-Angle mode
+#define ROTATION_FINE 5
+//! Number of decimals when editing color types (Color3, Color4)
+#define COLOR_DECIMALS 3
+//! Increment when editing color types (Color3, Color4)
+#define COLOR_STEP 0.01
+
 //! A generic class used for storing a value of any type.
 /*!
  * The NifValue::Type enum lists all supported types.
