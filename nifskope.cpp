@@ -106,13 +106,15 @@ void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const QSt
 	if ((!cfg.contains(name)) && oldcfg.contains(name)) {
 		//qDebug() << "copying nifskope setting" << name;
 		cfg.setValue(name, oldcfg.value(name));
-	};
-};
+	}
+}
 
 void NifSkope::migrateSettings() const
 {
 	// load current nifskope settings
 	NIFSKOPE_QSETTINGS(cfg);
+	// do nothing if already migrated; this prevents re-importing of corrupt / otherwise not-working values
+	if( cfg.contains( "migrated" ) ) return;
 	// check for older nifskope settings
 	for (QStringList::ConstIterator it = NIFSKOPE_OLDERVERSIONS.begin(); it != NIFSKOPE_OLDERVERSIONS.end(); ++it ) {
 		QSettings oldcfg( "NifTools", *it );
@@ -133,10 +135,11 @@ void NifSkope::migrateSettings() const
 					copySettings(cfg, oldcfg, *key);
 				default:
 					; // do nothing
-			};
-		};
-	};
-};
+			}
+		}
+	}
+	cfg.setValue( "migrated", 1 );
+}
 
 /*
  * main GUI window
@@ -1297,15 +1300,15 @@ int main( int argc, char * argv[] )
 			style.close();
 		}
 	}
-
-   NIFSKOPE_QSETTINGS(cfg);
-   cfg.beginGroup( "Settings" );
-   SetAppLocale( cfg.value( "Language", "en" ).toLocale() );
-   cfg.endGroup();
+	
+	NIFSKOPE_QSETTINGS(cfg);
+	cfg.beginGroup( "Settings" );
+	SetAppLocale( cfg.value( "Language", "en" ).toLocale() );
+	cfg.endGroup();
 	 
 	NifModel::loadXML();
 	KfmModel::loadXML();
-
+	
 	QString fname;
 	bool reuseSession = true;
 	for (int i=1; i<argc; ++i)
