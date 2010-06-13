@@ -43,6 +43,7 @@ SetCompressor /SOLID lzma
 !macro InstallHook
   ; pack dll files
   SetOutPath $INSTDIR
+  File ..\release\libgcc_s_dw2-1.dll
   File ..\release\mingwm10.dll
   File ..\release\QtCore4.dll
   File ..\release\QtGui4.dll
