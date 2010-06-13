@@ -995,6 +995,11 @@ bool NifIStream::read( NifValue & val )
 				bigEndian = !littleEndian;
 				if( bigEndian ) { dataStream->setByteOrder( QDataStream::BigEndian ); }
 			}
+			// hack for neosteam
+			if ( val.val.u32 == 0x08F35232 )
+			{
+				val.val.u32 = 0x0a010000;
+			}
 			return true;
 		}
 		case NifValue::tString:
@@ -1089,9 +1094,22 @@ bool NifOStream::write( const NifValue & val )
 		case NifValue::tStringOffset:
 		case NifValue::tInt:
 		case NifValue::tUInt:
-		case NifValue::tFileVersion:
 		case NifValue::tStringIndex:
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
+		case NifValue::tFileVersion:
+		{
+			// hack for neosteam
+			if( NifModel* mdl = static_cast<NifModel*>(const_cast<BaseModel*>(model)) )
+			{
+				QString headerString = mdl->getItem( mdl->getHeaderItem(), "Header String" )->value().toString();
+				quint32 version = 0x08F35232;
+				return device->write( (char *) &version, 4 ) == 4;
+			}
+			else
+			{
+				return device->write( (char *) &val.val.u32, 4 ) == 4;
+			}
+		}
 		case NifValue::tLink:
 		case NifValue::tUpLink:
 			if ( ! linkAdjust )

@@ -304,6 +304,7 @@ protected:
 
 	friend class NifXmlHandler;
 	friend class NifModelEval;
+	friend class NifOStream;
 }; // class NifModel
 
 

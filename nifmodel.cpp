@@ -1771,9 +1771,9 @@ bool NifModel::save( QIODevice & device ) const
 		mdl->updateHeader();
 		mdl->updateFooter();
 	}
-
+	
 	emit sigProgress( 0, rowCount( QModelIndex() ) );
-
+	
 	for ( int c = 0; c < rowCount( QModelIndex() ); c++ )
 	{
 		emit sigProgress( c+1, rowCount( QModelIndex() ) );
