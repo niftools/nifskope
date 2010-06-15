@@ -248,7 +248,7 @@ public:
 		while( true ) {
 			dp += f->read( &n, sizeof( char ) );
 
-			if( n == NULL ) {
+			if( n == 0 ) {
 				break;
 			}
 
@@ -551,7 +551,7 @@ private:
 		char n = 0x01;
 		int nl = 0;
 
-		while( n != NULL )
+		while( n != 0 )
 		{
 			if( !f->getChar( &n ) ) {
 				break;

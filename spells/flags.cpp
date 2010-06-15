@@ -228,18 +228,18 @@ public:
 			{
 				flags |= 1;
 			}
-			flags = flags & 0xffe1 | cmbSrc->currentIndex() << 1;
-			flags = flags & 0xfe1f | cmbDst->currentIndex() << 5;
+			flags = ( flags & 0xffe1 ) | ( cmbSrc->currentIndex() << 1 );
+			flags = ( flags & 0xfe1f ) | ( cmbDst->currentIndex() << 5 );
 			
 			flags = flags & 0xe1ff;
 			if ( chkTest->isChecked() )
 			{
 				flags |= 0x0200;
 			}
-			flags = flags & 0xe3ff | ( cmbTest->currentIndex() << 10 );
+			flags = ( flags & 0xe3ff ) | ( cmbTest->currentIndex() << 10 );
 			nif->set<int>( nif->getBlock( index ), "Threshold", spnTest->value() );
 			
-			flags = flags & 0xdfff | ( chkSort->isChecked() ? 0x2000 : 0 );
+			flags = ( flags & 0xdfff ) | ( chkSort->isChecked() ? 0x2000 : 0 );
 			
 			nif->set<int>( index, flags );
 		}
@@ -273,9 +273,9 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 1 : 0 );
-			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1 );
-			flags = flags & 0xfff7 | ( chkSkin->isChecked() ? 0 : 8 );
+			flags = ( flags & 0xfffe ) | ( chkHidden->isChecked() ? 1 : 0 );
+			flags = ( flags & 0xfff9 ) | ( cmbCollision->currentIndex() << 1 );
+			flags = ( flags & 0xfff7 ) | ( chkSkin->isChecked() ? 0 : 8 );
 			nif->set<int>( index, flags );
 		}
 	}
@@ -304,8 +304,8 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0xfff7 | ( chkActive->isChecked() ? 8 : 0 );
-			flags = flags & 0xfff9 | cmbLoop->currentIndex() << 1;
+			flags = ( flags & 0xfff7 ) | ( chkActive->isChecked() ? 8 : 0 );
+			flags = ( flags & 0xfff9 ) | ( cmbLoop->currentIndex() << 1 );
 			nif->set<int>( index, flags );
 		}
 	}
@@ -332,10 +332,10 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0x7f | ( chkLinked->isChecked() ? 0x80 : 0 );
-			flags = flags & 0xbf | ( chkNoCol->isChecked() ? 0x40 : 0 );
-			flags = flags & 0xdf | ( chkScaled->isChecked() ? 0x20 : 0 );
-			flags = flags & 0xe0 | ( chkLinked->isChecked() ? spnPartNo->value() : 0 );
+			flags = ( flags & 0x7f ) | ( chkLinked->isChecked() ? 0x80 : 0 );
+			flags = ( flags & 0xbf ) | ( chkNoCol->isChecked() ? 0x40 : 0 );
+			flags = ( flags & 0xdf ) | ( chkScaled->isChecked() ? 0x20 : 0 );
+			flags = ( flags & 0xe0 ) | ( chkLinked->isChecked() ? spnPartNo->value() : 0 );
 			nif->set<int>( index, flags );
 			nif->set<int>( index.parent(), "Col Filter Copy", flags );
 		}
@@ -373,10 +373,12 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 0x01 : 0 );
-			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1 );
+			flags = ( flags & 0xfffe ) | ( chkHidden->isChecked() ? 0x01 : 0 );
+			flags = ( flags & 0xfff9 ) | ( cmbCollision->currentIndex() << 1 );
 			if ( chkShadow )
-				flags = flags & 0xffbf | ( chkShadow->isChecked() ? 0x40 : 0 );
+			{
+				flags = ( flags & 0xffbf ) | ( chkShadow->isChecked() ? 0x40 : 0 );
+			}
 			nif->set<int>( index, flags );
 		}
 	}
@@ -426,16 +428,16 @@ public:
 		// and function conflict... perhaps set flags regardless?
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
-			flags = flags & 0xfffd | ( chkROnly->isChecked() ? 0 : 2 );
+			flags = ( flags & 0xfffe ) | ( chkEnable->isChecked() ? 1 : 0 );
+			flags = ( flags & 0xfffd ) | ( chkROnly->isChecked() ? 0 : 2 );
 			if ( nif->checkVersion( 0x0401000C, 0x14000005 ) )
 			{
 				nif->set<int>( nif->getBlock( index ), "Function", cmbFunc->currentIndex() );
 			}
 			
-			if( nif->checkVersion( 0x14010003, 0 ) || setFlags != 0 && setFlags->isChecked() )
+			if( nif->checkVersion( 0x14010003, 0 ) || ( setFlags != 0 && setFlags->isChecked() ) )
 			{
-				flags = flags & 0xffe3 | ( cmbFunc->currentIndex() << 2 );
+				flags = ( flags & 0xffe3 ) | ( cmbFunc->currentIndex() << 2 );
 			}
 			nif->set<int>( index, flags );
 		}
@@ -474,7 +476,7 @@ public:
 			x = 0;
 			foreach ( QCheckBox * chk, chkBoxes )
 			{
-				flags = flags & ( ~ ( 1 << x ) ) | ( chk->isChecked() ? 1 << x : 0 );
+				flags = ( flags & ( ~ ( 1 << x ) ) ) | ( chk->isChecked() ? 1 << x : 0 );
 				x++;
 			}
 			nif->set<int>( index, flags );
@@ -526,16 +528,16 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0xfffe | ( chkHidden->isChecked() ? 1 : 0 );
-			flags = flags & 0xfff9 | ( cmbCollision->currentIndex() << 1);
+			flags = ( flags & 0xfffe ) | ( chkHidden->isChecked() ? 1 : 0 );
+			flags = ( flags & 0xfff9 ) | ( cmbCollision->currentIndex() << 1);
 			if ( nif->checkVersion( 0x0A010000, 0 ) )
 			{
 				nif->set<int>( nif->getBlock( index ), "Billboard Mode", cmbMode->currentIndex() );
 			}
 			else
 			{
-				flags = flags & 0xff9f | ( cmbMode->currentIndex() << 5 );
-				flags = flags & 0xfff7 | 8; // seems to always be set but has no known effect
+				flags = ( flags & 0xff9f ) | ( cmbMode->currentIndex() << 5 );
+				flags = ( flags & 0xfff7 ) | 8; // seems to always be set but has no known effect
 			}
 			nif->set<int>( index, flags );
 		}
@@ -626,12 +628,12 @@ public:
 			}
 			else
 			{
-				flags = flags & 0xfffe | ( chkEnable->isChecked() ? 1 : 0 );
-				flags = flags & 0xfff1 | ( cmbFail->currentIndex() << 1 );
-				flags = flags & 0xff8f | ( cmbZFail->currentIndex() << 4 );
-				flags = flags & 0xfc7f | ( cmbPass->currentIndex() << 7 );
-				flags = flags & 0xf3ff | ( cmbDrawMode->currentIndex() << 10 );
-				flags = flags & 0x8fff | ( cmbFunc->currentIndex() << 12 );
+				flags = ( flags & 0xfffe ) | ( chkEnable->isChecked() ? 1 : 0 );
+				flags = ( flags & 0xfff1 ) | ( cmbFail->currentIndex() << 1 );
+				flags = ( flags & 0xff8f ) | ( cmbZFail->currentIndex() << 4 );
+				flags = ( flags & 0xfc7f ) | ( cmbPass->currentIndex() << 7 );
+				flags = ( flags & 0xf3ff ) | ( cmbDrawMode->currentIndex() << 10 );
+				flags = ( flags & 0x8fff ) | ( cmbFunc->currentIndex() << 12 );
 				nif->set<int>( index, flags );
 			}
 		}
@@ -689,10 +691,10 @@ public:
 				nif->set<int>( nif->getBlock( index ), "Vertex Mode", cmbVert->currentIndex() );
 			}
 			
-			if( nif->checkVersion( 0x14010003, 0 ) || setFlags != 0 && setFlags->isChecked() )
+			if( nif->checkVersion( 0x14010003, 0 ) || ( setFlags != 0 && setFlags->isChecked() ) )
 			{
-				flags = flags & 0xfff7 | ( cmbLight->currentIndex() << 3 );
-				flags = flags & 0xffcf | ( cmbVert->currentIndex() << 4 );
+				flags = ( flags & 0xfff7 ) | ( cmbLight->currentIndex() << 3 );
+				flags = ( flags & 0xffcf ) | ( cmbVert->currentIndex() << 4 );
 				nif->set<int>( index, flags );
 			}
 		}
@@ -739,8 +741,8 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0xfff7 | ( chkActive->isChecked() ? 8 : 0 );
-			flags = flags & 0xfff9 | cmbLoop->currentIndex() << 1;
+			flags = ( flags & 0xfff7 ) | ( chkActive->isChecked() ? 8 : 0 );
+			flags = ( flags & 0xfff9 ) | ( cmbLoop->currentIndex() << 1 );
 			
 			if ( nif->checkVersion( 0x0A010000, 0 ) )
 			{
@@ -748,7 +750,7 @@ public:
 			}
 			else
 			{
-				flags = flags & 0xffcf | cmbColor->currentIndex() << 4;
+				flags = ( flags & 0xffcf ) | ( cmbColor->currentIndex() << 4 );
 			}
 			
 			nif->set<int>( index, flags );
@@ -788,8 +790,8 @@ public:
 		
 		if ( dlg.exec() == QDialog::Accepted )
 		{
-			flags = flags & 0x0FFF | ( cmbClamp->currentIndex() << 0x0C );
-			flags = flags & 0xF0FF | ( cmbFilter->currentIndex() << 0x08 );
+			flags = ( flags & 0x0FFF ) | ( cmbClamp->currentIndex() << 0x0C );
+			flags = ( flags & 0xF0FF ) | ( cmbFilter->currentIndex() << 0x08 );
 			nif->set<int>( index, flags );
 		}
 	}
