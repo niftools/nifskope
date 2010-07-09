@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+//! \file bsa.cpp BSA and structs
 
 #include "bsa.h"
 
@@ -38,48 +39,52 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 
 /* Default header data */
-#define MW_BSAHEADER_FILEID	0x00000100
-#define OB_BSAHEADER_FILEID	0x00415342 /* "BSA\0" */
-#define OB_BSAHEADER_VERSION	0x67
-#define F3_BSAHEADER_VERSION	0x68
+#define MW_BSAHEADER_FILEID  0x00000100
+#define OB_BSAHEADER_FILEID  0x00415342 /* "BSA\0" */
+#define OB_BSAHEADER_VERSION 0x67
+#define F3_BSAHEADER_VERSION 0x68
 
 /* Archive flags */
-#define OB_BSAARCHIVE_PATHNAMES	1
-#define OB_BSAARCHIVE_FILENAMES	2
-#define OB_BSAARCHIVE_COMPRESSFILES	4
+#define OB_BSAARCHIVE_PATHNAMES 0x0001
+#define OB_BSAARCHIVE_FILENAMES 0x0002
+#define OB_BSAARCHIVE_COMPRESSFILES 0x0004
 #define F3_BSAARCHIVE_PREFIXFULLFILENAMES 0x0100
 
 /* File flags */
-#define OB_BSAFILE_NIF	0x0001
-#define OB_BSAFILE_DDS	0x0002
-#define OB_BSAFILE_XML	0x0004
-#define OB_BSAFILE_WAV	0x0008
-#define OB_BSAFILE_MP3	0x0010
-#define OB_BSAFILE_TXT	0x0020
-#define OB_BSAFILE_HTML	0x0020
-#define OB_BSAFILE_BAT	0x0020
-#define OB_BSAFILE_SCC	0x0020
-#define OB_BSAFILE_SPT	0x0040
-#define OB_BSAFILE_TEX	0x0080
-#define OB_BSAFILE_FNT	0x0080
-#define OB_BSAFILE_CTL	0x0100
+#define OB_BSAFILE_NIF  0x0001
+#define OB_BSAFILE_DDS  0x0002
+#define OB_BSAFILE_XML  0x0004
+#define OB_BSAFILE_WAV  0x0008
+#define OB_BSAFILE_MP3  0x0010
+#define OB_BSAFILE_TXT  0x0020
+#define OB_BSAFILE_HTML 0x0020
+#define OB_BSAFILE_BAT  0x0020
+#define OB_BSAFILE_SCC  0x0020
+#define OB_BSAFILE_SPT  0x0040
+#define OB_BSAFILE_TEX  0x0080
+#define OB_BSAFILE_FNT  0x0080
+#define OB_BSAFILE_CTL  0x0100
 
 /* Bitmasks for the size field in the header */
-#define OB_BSAFILE_SIZEMASK       0x3fffffff
-#define OB_BSAFILE_FLAGMASK       0xC0000000
+#define OB_BSAFILE_SIZEMASK 0x3fffffff
+#define OB_BSAFILE_FLAGMASK 0xC0000000
 
 /* Record flags */
-#define OB_BSAFILE_FLAG_COMPRESS  0xC0000000
+#define OB_BSAFILE_FLAG_COMPRESS 0xC0000000
 
+//! The header of an Oblivion BSA.
+/**
+ * Follows OB_BSAHEADER_FILEID and OB_BSAHEADER_VERSION.
+ */
 struct OBBSAHeader
 {
-	quint32		FolderRecordOffset;
-	quint32		ArchiveFlags;
-	quint32		FolderCount;
-	quint32		FileCount;
-	quint32		FolderNameLength;
-	quint32		FileNameLength;
-	quint32		FileFlags;
+	quint32 FolderRecordOffset; //!< Offset of beginning of folder records
+	quint32 ArchiveFlags; //!< Archive flags
+	quint32 FolderCount; //!< Total number of folder records (OBBSAFolderInfo)
+	quint32 FileCount; //!< Total number of file records (OBBSAFileInfo)
+	quint32 FolderNameLength; //!< Total length of folder names
+	quint32 FileNameLength; //!< Total length of file names
+	quint32 FileFlags; //!< File flags
 
 	friend QDebug operator<<( QDebug dbg, const OBBSAHeader & head )
 	{
@@ -95,60 +100,75 @@ struct OBBSAHeader
 	
 };
 
+//! Info for a file inside an Oblivion BSA
 struct OBBSAFileInfo
 {
-	quint64 hash;
-	quint32 sizeFlags;
-	quint32 offset;
+	quint64 hash; //!< Hash of the filename
+	quint32 sizeFlags; //!< Size of the data, possibly with OB_BSAFILE_FLAG_COMPRESS set
+	quint32 offset; //!< Offset to raw file data
 };
 
+//! Info for a folder inside an Oblivion BSA
 struct OBBSAFolderInfo
 {
-	quint64 hash;
-	quint32 fileCount;
-	quint32 offset;
+	quint64 hash; //!< Hash of the folder name
+	quint32 fileCount; //!< Number of files in folder
+	quint32 offset; //!< Offset to name of this folder
 };
 
-
+//! The header of a Morrowind BSA
 struct MWBSAHeader
 {
-	quint32 HashOffset;
-	quint32 FileCount;
+	quint32 HashOffset; //!< Offset of hash table minus header size (12)
+	quint32 FileCount; //!< Number of files in the archive
 };
 
+//! The file size and offset of an entry in a Morrowind BSA
 struct MWBSAFileSizeOffset
 {
-	quint32 size;
-	quint32 offset;
+	quint32 size; //!< The size of the file
+	quint32 offset; //!< The offset of the file
 };
 
-
+// see bsa.h
 quint32 BSA::BSAFile::size() const
 {
 	return sizeFlags & OB_BSAFILE_SIZEMASK;
 }
+
+// see bsa.h
 bool BSA::BSAFile::compressed() const
 {
 	return sizeFlags & OB_BSAFILE_FLAG_COMPRESS;
 }
 
-static bool BSAReadString( QAbstractFileEngine & bsa, QString & s )
+//! Reads a foldername sized string (length + null-terminated string) from the BSA
+static bool BSAReadSizedString( QAbstractFileEngine & bsa, QString & s )
 {
+	//qDebug() << "BSA is at" << bsa.pos();
 	quint8 len;
 	if ( bsa.read( (char *) & len, 1 ) != 1 )
+	{
+		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
 		return false;
+	}
+	//qDebug() << "folder string length is" << len;
 	
-	QByteArray b( len, 0 );
+	QByteArray b( len, char(0) );
 	if ( bsa.read( b.data(), len ) == len )
 	{
 		s = b;
+		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
 		return true;
 	}
 	else
+	{
+		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
 		return false;
+	}
 }
 
-
+// see bsa.h
 BSA::BSA( const QString & filename )
 	: FSArchiveFile(), bsa( filename ), status( "initialized" )
 {
@@ -166,11 +186,13 @@ BSA::BSA( const QString & filename )
 	qDebug() << "BSA" << bsaName << bsaBase << bsaPath;
 }
 
+// see bsa.h
 BSA::~BSA()
 {
 	close();
 }
 
+// see bsa.h
 bool BSA::canOpen( const QString & fn )
 {
 	QFSFileEngine f( fn );
@@ -181,6 +203,7 @@ bool BSA::canOpen( const QString & fn )
 		if ( f.read( (char *) & magic, sizeof( magic ) ) != 4 )
 			return false;
 		
+		//qDebug() << "Magic:" << QString::number( magic, 16 );
 		if ( magic == OB_BSAHEADER_FILEID )
 		{
 			if ( f.read( (char *) & version, sizeof( version ) ) != 4 )
@@ -195,6 +218,7 @@ bool BSA::canOpen( const QString & fn )
 	return false;
 }
 
+// see bsa.h
 bool BSA::open()
 {
 	QMutexLocker lock( & bsaMutex );
@@ -226,17 +250,17 @@ bool BSA::open()
 				throw QString( "header flags" );
 			
 			compressToggle = header.ArchiveFlags & OB_BSAARCHIVE_COMPRESSFILES;
-
-         if (version == F3_BSAHEADER_VERSION) {
-            namePrefix = header.ArchiveFlags & F3_BSAARCHIVE_PREFIXFULLFILENAMES;
-         } else {
-            namePrefix = false;
-         }
+			
+			if (version == F3_BSAHEADER_VERSION) {
+				namePrefix = header.ArchiveFlags & F3_BSAARCHIVE_PREFIXFULLFILENAMES;
+			} else {
+				namePrefix = false;
+			}
 			
 			if ( ! bsa.seek( header.FolderRecordOffset + header.FolderNameLength + header.FolderCount * ( 1 + sizeof( OBBSAFolderInfo ) ) + header.FileCount * sizeof( OBBSAFileInfo ) ) )
 				throw QString( "file name seek" );
 			
-			QByteArray fileNames( header.FileNameLength, 0 );
+			QByteArray fileNames( header.FileNameLength, char(0) );
 			if ( bsa.read( fileNames.data(), header.FileNameLength ) != header.FileNameLength )
 				throw QString( "file name read" );
 			quint32 fileNameIndex = 0;
@@ -254,15 +278,20 @@ bool BSA::open()
 			
 			foreach ( OBBSAFolderInfo folderInfo, folderInfos )
 			{
+				// useless?
 				/*
-				qDebug() << file.pos() << folderInfos[c].offset;
-				if ( folderInfos[c].offset < header.FileNameLength || ! file.seek( folderInfos[c].offset - header.FileNameLength ) )
+				qDebug() << __LINE__ << "position" << bsa.pos() << "offset" << folderInfo.offset;
+				if ( folderInfo.offset < header.FileNameLength || ! bsa.seek( folderInfo.offset - header.FileNameLength ) )
 					throw QString( "folder content seek" );
 				*/
 				
+				
 				QString folderName;
-				if ( ! BSAReadString( bsa, folderName ) || folderName.isEmpty() )
+				if ( ! BSAReadSizedString( bsa, folderName ) || folderName.isEmpty() )
+				{
+					//qDebug() << "folderName" << folderName;
 					throw QString( "folder name read" );
+				}
 				
 				// qDebug() << folderName;
 				
@@ -296,24 +325,32 @@ bool BSA::open()
 			if ( bsa.read( (char *) & header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header" );
 			
-
+			
 			compressToggle = false;
-         namePrefix = false;
-
+			namePrefix = false;
+			
+			// header is 12 bytes, hash table is 8 bytes per entry
 			quint32 dataOffset = 12 + header.HashOffset + header.FileCount * 8;
 			
+			// file size/offset table
 			QVector<MWBSAFileSizeOffset> sizeOffset( header.FileCount );
 			if ( bsa.read( (char *) sizeOffset.data(), header.FileCount * sizeof( MWBSAFileSizeOffset ) ) != header.FileCount * sizeof( MWBSAFileSizeOffset ) )
 				throw QString( "file size/offset" );
 			
+			// filename offset table
 			QVector<quint32> nameOffset( header.FileCount );
 			if ( bsa.read( (char *) nameOffset.data(), header.FileCount * sizeof( quint32 ) ) != header.FileCount * sizeof( quint32 ) )
 				throw QString( "file name offset" );
 			
+			// filenames. size is given by ( HashOffset - ( 8 * number of file/size offsets) - ( 4 * number of filenames) )
+			// i.e. ( HashOffset - ( 12 * number of files ) )
 			QByteArray fileNames;
 			fileNames.resize( header.HashOffset - 12 * header.FileCount );
 			if ( bsa.read( (char *) fileNames.data(), header.HashOffset - 12 * header.FileCount ) != header.HashOffset - 12 * header.FileCount )
 				throw QString( "file names" );
+
+			// table of 8 bytes of hash values follow, but we don't need to know what they are
+			// file data follows that, which is fetched by fileContents
 			
 			for ( quint32 c = 0; c < header.FileCount; c++ )
 			{
@@ -345,6 +382,7 @@ bool BSA::open()
 	return true;
 }
 
+// see bsa.h
 void BSA::close()
 {
 	QMutexLocker lock( & bsaMutex );
@@ -357,6 +395,7 @@ void BSA::close()
 	folders.clear();
 }
 
+// see bsa.h
 qint64 BSA::fileSize( const QString & fn ) const
 {
 	// note: lazy size count (not accurate for compressed files)
@@ -367,6 +406,7 @@ qint64 BSA::fileSize( const QString & fn ) const
 	return 0;
 }
 
+// see bsa.h
 bool BSA::fileContents( const QString & fn, QByteArray & content )
 {
 	if ( const BSAFile * file = getFile( fn ) )
@@ -374,14 +414,14 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 		QMutexLocker lock( & bsaMutex );
 		if ( bsa.seek( file->offset ) )
 		{
-         quint64 filesz = file->size();
-         bool ok = true;
-         if (namePrefix) {
-            char len;
-            ok = bsa.read(&len, 1);
-            filesz -= len;
-            if (ok) ok = bsa.seek( file->offset + 1 + len );
-         }
+			qint64 filesz = file->size();
+			bool ok = true;
+			if (namePrefix) {
+				char len;
+				ok = bsa.read(&len, 1);
+				filesz -= len;
+				if (ok) ok = bsa.seek( file->offset + 1 + len );
+			}
 			content.resize( filesz );
 			if ( ok && bsa.read( content.data(), filesz ) == filesz )
 			{
@@ -402,6 +442,7 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 	return false;
 }
 
+// see bsa.h
 QString BSA::absoluteFilePath( const QString & fn ) const
 {
 	if ( hasFile(fn) ) {
@@ -410,6 +451,7 @@ QString BSA::absoluteFilePath( const QString & fn ) const
 	return QString();
 }
 
+// see bsa.h
 QStringList BSA::entryList( const QString & fn, QDir::Filters filters ) const
 {
 	if ( const BSAFolder * folder = getFolder( fn ) )
@@ -433,6 +475,7 @@ QStringList BSA::entryList( const QString & fn, QDir::Filters filters ) const
 	return QStringList();
 }
 
+// see bsa.h
 bool BSA::stripBasePath( QString & p ) const
 {
 	QString base = bsaPath;
@@ -447,6 +490,7 @@ bool BSA::stripBasePath( QString & p ) const
 	return false;
 }
 
+// see bsa.h
 BSA::BSAFolder * BSA::insertFolder( QString name )
 {
 	if ( name.isEmpty() )
@@ -478,6 +522,7 @@ BSA::BSAFolder * BSA::insertFolder( QString name )
 	return folder;
 }
 
+// see bsa.h
 BSA::BSAFile * BSA::insertFile( BSAFolder * folder, QString name, quint32 sizeFlags, quint32 offset )
 {
 	name = name.toLower();
@@ -490,6 +535,7 @@ BSA::BSAFile * BSA::insertFile( BSAFolder * folder, QString name, quint32 sizeFl
 	return file;
 }
 
+// see bsa.h
 const BSA::BSAFolder * BSA::getFolder( QString fn ) const
 {
 	if ( fn.isEmpty() )
@@ -498,6 +544,7 @@ const BSA::BSAFolder * BSA::getFolder( QString fn ) const
 		return folders.value( fn );
 }
 
+// see bsa.h
 const BSA::BSAFile * BSA::getFile( QString fn ) const
 {
 	QString folderName;
@@ -515,27 +562,33 @@ const BSA::BSAFile * BSA::getFile( QString fn ) const
 		return 0;
 }
 
+// see bsa.h
 bool BSA::hasFile( const QString & fn ) const
 {
 	return getFile( fn );
 }
 
+// see bsa.h
 bool BSA::hasFolder( const QString & fn ) const
 {
 	return getFolder( fn );
 }
 
+// see bsa.h
 uint BSA::ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const
 {
 	return bsa.ownerId( type );
 }
 
+// see bsa.h
 QString BSA::owner( const QString &, QAbstractFileEngine::FileOwner type ) const
 {
 	return bsa.owner( type );
 }
 
+// see bsa.h
 QDateTime BSA::fileTime( const QString &, QAbstractFileEngine::FileTime type ) const
 {
 	return bsa.fileTime( type );
 }
+

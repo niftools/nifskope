@@ -34,86 +34,179 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BSA_H
 #define BSA_H
 
-
 #include "fsengine.h"
 
-
+#include <QAbstractFileEngineIterator>
 #include <QFSFileEngine>
 #include <QHash>
 #include <QMutex>
 
+//! \file bsa.h BSA file
 
+//! A Bethesda Software Archive file
+/*!
+ * See <a href="http://www.uesp.net/wiki/Main_Page">The UESP</a> for descriptions of the
+ * <a href="http://www.uesp.net/wiki/Tes3Mod:BSA_File_Format">Morrowind format</a> and the
+ * <a href="http://www.uesp.net/wiki/Tes4Mod:BSA_File_Format">Oblivion format</a>.
+ *
+ * \sa MWBSAHeader, MWBSAFileSizeOffset, OBBSAHeader, OBBSAFileInfo, OBBSAFolderInfo
+ */
 class BSA : public FSArchiveFile
 {
 public:
+	//! Constructor; creates a %BSA from the given file path.
 	BSA( const QString & filePath );
+	//! Destructor; closes the file.
 	~BSA();
 	
+	//! Opens the %BSA file
 	bool open();
+	//! Closes the %BSA file
 	void close();
 	
+	//! Returns BSA::bsaPath.
 	QString path() const { return bsaPath; }
+	//! Returns BSA::bsaBase.
 	QString base() const { return bsaBase; }
+	//! Returns BSA::bsaName.
 	QString name() const { return bsaName; }
 	
+	//! \copybrief FSArchiveFile::stripBasePath()
 	bool stripBasePath( QString & ) const;
 	
+	//! Whether the specified folder exists or not
 	bool hasFolder( const QString & ) const;
-	QStringList entryList( const QString &, QDir::Filters ) const;
+	//! Returns a list of files or folders as requested
+	/*!
+	 * Called by FSArchiveEngine::entryList().
+	 * \param fn The folder to search in
+	 * \param filters Whether to look for files or folders
+	 */
+	QStringList entryList( const QString & fn, QDir::Filters filters ) const;
 	
+	//! Whether the specified file exists or not
 	bool hasFile( const QString & ) const;
+	//! Returns the size of the file per BSAFile::size().
 	qint64 fileSize( const QString & ) const;
+	//! Returns the contents of the specified file
+	/*!
+	* \param fn The filename to get the contents for
+	* \param content Reference to the byte array that holds the file contents
+	* \return True if successful
+	*/
 	bool fileContents( const QString &, QByteArray & );
 	
+	//! See QFSFileEngine::ownerId().
 	uint ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const;
+	//! See QFSFileEngine::owner().
 	QString owner( const QString &, QAbstractFileEngine::FileOwner type ) const;
+	//! See QFSFileEngine::fileTime().
 	QDateTime fileTime( const QString &, QAbstractFileEngine::FileTime type ) const;
+	//! See QFileInfo::absoluteFilePath().
 	QString absoluteFilePath( const QString & ) const;
-
+	
+	//! Whether the given file can be opened as a %BSA or not
 	static bool canOpen( const QString & );
 	
+	//! Returns BSA::status.
 	QString statusText() const { return status; }
 
 protected:
+	//! A file inside a BSA
 	struct BSAFile
 	{
-		quint32 sizeFlags;
-		quint32 offset;
+		quint32 sizeFlags; //!< The size of the file in the BSA
+		quint32 offset; //!< The offset of the file in the BSA
 		
+		//! The size of the file inside the BSA
 		quint32 size() const;
+		//! Whether the file is compressed inside the BSA
 		bool compressed() const;
 	};
 	
+	//! A folder inside a BSA
 	struct BSAFolder
 	{
+		//! Constructor
 		BSAFolder() : parent( 0 ) {}
+		//! Destructor
 		~BSAFolder() { qDeleteAll( children ); qDeleteAll( files ); }
 		
-		BSAFolder * parent;
-		QHash<QString, BSAFolder*> children;
-		QHash<QString, BSAFile*> files;
+		BSAFolder * parent; //!< The parent item
+		QHash<QString, BSAFolder*> children; //!< A map of child folders
+		QHash<QString, BSAFile*> files; //!< A map of files inside the folder
 	};
 	
+	//! Recursive function to generate the tree structure of folders inside a %BSA
 	BSAFolder * insertFolder( QString name );
+	//! Inserts a file into the structure of a %BSA
 	BSAFile * insertFile( BSAFolder * folder, QString name, quint32 sizeFlags, quint32 offset );
 	
+	//! Gets the specified folder, or the root folder if not found
 	const BSAFolder * getFolder( QString fn ) const;
+	//! Gets the specified file, or null if not found
 	const BSAFile * getFile( QString fn ) const;
 	
+	//! The engine which reads the %BSA from a file
 	QFSFileEngine bsa;
+	//! Mutual exclusion handler
 	QMutex bsaMutex;
 	
+	//! The absolute name of the file, e.g. "d:/temp/test.bsa"
 	QString bsaPath;
+	//! The base path of the file, e.g. "d:/temp"
 	QString bsaBase;
+	//! The name of the file, e.g. "test.bsa"
 	QString bsaName;
 	
+	//! Map of folders inside a %BSA
 	QHash<QString, BSAFolder*> folders;
+	//! The root folder
 	BSAFolder root;
 	
+	//! Error string for exception handling
 	QString status;
 	
+	//! Whether the %BSA is compressed
 	bool compressToggle;
-   bool namePrefix;
+	//! Whether Fallout 3 names are prefixed with an extra string
+	bool namePrefix;
+};
+
+//! Iterator for a BSA file. Not implemented yet.
+class BSAIterator : public QAbstractFileEngineIterator
+{
+public:
+	BSAIterator( QDir::Filters filters, const QStringList & nameFilters )
+		: QAbstractFileEngineIterator( filters, nameFilters )
+	{
+	}
+
+	~BSAIterator() {}
+	
+	//! Whether there are any files left in the list
+	bool hasNext() const
+	{
+		return false;
+	}
+	
+	//! Info on the file currently in the list
+	QFileInfo currentFileInfo() const
+	{
+		return QFileInfo();
+	}
+	
+	//! Name of the file currently in the list
+	QString currentFileName() const
+	{
+		return QString();
+	}
+	
+	//! Return the name of the next file in the list
+	QString next()
+	{
+		return QString();
+	}
 };
 
 #endif

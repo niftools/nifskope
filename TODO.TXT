@@ -18,5 +18,7 @@ To do:
 - Fix minor bugs in UV editor when data is shared across multiple shapes
 - Track down all qWarning() uses where QMessageBox is more appropriate
 - Use qAssert more often for debugging
-- Fix BSA support (broken by Qt 4.6.2)
+- Fix BSA support (broken by Qt 4.6.2, see http://bugreports.qt.nokia.com/browse/QTBUG-10333)
+- Force combine spells, etc. - see #3012991
+- Investigate adding a QScriptEngine for spells
 
