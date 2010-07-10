@@ -52,7 +52,7 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
     // repository directory, as in linux build).
     if( ! docFolderPresent ) {
         docFolder.setPath( qApp->applicationDirPath() );
-        docFolder.cd( "../docsys" );
+        docFolder.cd( "docsys" );
         docFolderPresent = docFolder.exists( "doc" );
     }
     
@@ -60,7 +60,7 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
     // nifskope/release repository directory, as in windows build).
     if( ! docFolderPresent ) {
         docFolder.setPath( qApp->applicationDirPath() );
-        docFolder.cd( "../../docsys" );
+        docFolder.cd( "../docsys" );
         docFolderPresent = docFolder.exists( "doc" );
     }
     
