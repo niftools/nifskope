@@ -443,24 +443,43 @@ Transform operator*( const Transform & t1, const Transform & t2 )
 
 bool Transform::canConstruct( const NifModel * nif, const QModelIndex & parent )
 {
-	return nif && parent.isValid() && nif->getIndex( parent, "Rotation" ).isValid()
-		&& nif->getIndex( parent, "Translation" ).isValid()
-		&& nif->getIndex( parent, "Scale" ).isValid();
+	QModelIndex skinTransform = nif->getIndex( parent, "Skin Transform" );
+	return nif && (
+		(
+			parent.isValid() && nif->getIndex( parent, "Rotation" ).isValid()
+			&& nif->getIndex( parent, "Translation" ).isValid()
+			&& nif->getIndex( parent, "Scale" ).isValid()
+		) || (
+			skinTransform.isValid() && nif->getIndex( skinTransform, "Rotation" ).isValid()
+			&& nif->getIndex( skinTransform, "Translation" ).isValid()
+			&& nif->getIndex( skinTransform, "Scale" ).isValid()
+		)
+	);
 }
 
 
 Transform::Transform( const NifModel * nif, const QModelIndex & transform )
 {
-	rotation = nif->get<Matrix>( transform, "Rotation" );
-	translation = nif->get<Vector3>( transform, "Translation" );
-	scale = nif->get<float>( transform, "Scale" );
+	QModelIndex skinTransform = nif->getIndex( transform, "Skin Transform" );
+	if( !skinTransform.isValid() )
+	{
+		skinTransform = transform;
+	}
+	rotation = nif->get<Matrix>( skinTransform, "Rotation" );
+	translation = nif->get<Vector3>( skinTransform, "Translation" );
+	scale = nif->get<float>( skinTransform, "Scale" );
 }
 
 void Transform::writeBack( NifModel * nif, const QModelIndex & transform ) const
 {
-	nif->set<Matrix>( transform, "Rotation", rotation );
-	nif->set<Vector3>( transform, "Translation", translation );
-	nif->set<float>( transform, "Scale", scale );
+	QModelIndex skinTransform = nif->getIndex( transform, "Skin Transform" );
+	if( !skinTransform.isValid() )
+	{
+		skinTransform = transform;
+	}
+	nif->set<Matrix>( skinTransform, "Rotation", rotation );
+	nif->set<Vector3>( skinTransform, "Translation", translation );
+	nif->set<float>( skinTransform, "Scale", scale );
 }
 
 QString Transform::toString() const
