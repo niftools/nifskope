@@ -1,4 +1,5 @@
 #include "../spellbook.h"
+#include "misc.h"
 
 #include <QDebug>
 
@@ -59,44 +60,27 @@ public:
 				}
 			}
 			
+			spCollapseArray arrayCollapser;
+			
 			// remove empty property links
 			QModelIndex iNumProperties = nif->getIndex( iBlock, "Num Properties" );
 			QModelIndex iProperties = nif->getIndex( iBlock, "Properties" );
-			CollapseArray(nif, iNumProperties, iProperties);
-
+			arrayCollapser.numCollapser( nif, iNumProperties, iProperties );
+			
 			// remove empty extra data links
 			QModelIndex iNumExtraData = nif->getIndex( iBlock, "Num Extra Data List" );
 			QModelIndex iExtraData = nif->getIndex( iBlock, "Extra Data List" );
-			CollapseArray(nif, iNumExtraData, iExtraData);
-
+			arrayCollapser.numCollapser( nif, iNumExtraData, iExtraData );
+			
 			// remove empty modifier links (NiParticleSystem crashes Oblivion for those)
 			QModelIndex iNumModifiers = nif->getIndex( iBlock, "Num Modifiers" );
 			QModelIndex iModifiers = nif->getIndex( iBlock, "Modifiers" );
-			CollapseArray(nif, iNumModifiers, iModifiers);
+			arrayCollapser.numCollapser( nif, iNumModifiers, iModifiers );
 		}
 		return QModelIndex();
 	}
 
-	void CollapseArray( NifModel * nif, QModelIndex &iNumElem, QModelIndex &iArray )
-	{
-		if ( iNumElem.isValid() && iArray.isValid() )
-		{
-			QVector<qint32> links;
-			for ( int r = 0; r < nif->rowCount( iArray ); r++ )
-			{
-				qint32 l = nif->getLink( iArray.child( r, 0 ) );
-				if ( l >= 0 ) links.append( l );
-			}
-			if ( links.count() < nif->rowCount( iArray ) )
-			{
-				nif->set<int>( iNumElem, links.count() );
-				nif->updateArray( iArray );
-				nif->setLinkArray( iArray, links );
-			}
-		}
-	}
 };
-
 
 REGISTER_SPELL( spSanitizeLinkArrays )
 

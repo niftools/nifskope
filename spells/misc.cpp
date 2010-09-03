@@ -1,4 +1,4 @@
-#include "../spellbook.h"
+#include "misc.h"
 
 #include <QDebug>
 
@@ -148,45 +148,47 @@ public:
 
 REGISTER_SPELL( spFileOffset )
 
-//! Removes empty links from a link array
-class spCollapseArray : public Spell
+// definitions for spCollapseArray moved to misc.h
+bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-public:
-	QString name() const { return Spell::tr( "Collapse" ); }
-	QString page() const { return Spell::tr( "Array" ); }
-
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	if ( nif->isArray(index) && nif->evalCondition( index ) && index.isValid() &&
+			( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
 	{
-		if ( nif->isArray(index) && nif->evalCondition( index ) && index.isValid() &&
-				( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
-		{
-			// copy from spUpdateArray when that changes
-			return true;
-		}
-		return false;
+		// copy from spUpdateArray when that changes
+		return true;
 	}
+	return false;
+}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+QModelIndex spCollapseArray::cast( NifModel * nif, const QModelIndex & index )
+{
+	nif->updateArray( index );
+	// There's probably an easier way of doing this hiding in NifModel somewhere
+	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+	QModelIndex size = nif->getIndex( nif->getBlock( index.parent() ), item->arr1() );
+	QModelIndex array = static_cast<QModelIndex>( index );
+	return numCollapser( nif, size, array );
+}
+
+QModelIndex spCollapseArray::numCollapser( NifModel * nif, QModelIndex &iNumElem, QModelIndex &iArray )
+{
+	if ( iNumElem.isValid() && iArray.isValid() )
 	{
-		nif->updateArray( index );
-		// There's probably an easier way of doing this hiding in NifModel somewhere
-		NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-		QModelIndex size = nif->getIndex( nif->getBlock( index.parent() ), item->arr1() );
 		QVector<qint32> links;
-		for ( int r = 0; r < nif->rowCount( index ); r++ )
+		for ( int r = 0; r < nif->rowCount( iArray ); r++ )
 		{
-			qint32 l = nif->getLink( index.child( r, 0 ) );
+			qint32 l = nif->getLink( iArray.child( r, 0 ) );
 			if ( l >= 0 ) links.append( l );
 		}
-		if ( links.count() < nif->rowCount( index ) )
+		if ( links.count() < nif->rowCount( iArray ) )
 		{
-			nif->set<int>( size, links.count() );
-			nif->updateArray( index );
-			nif->setLinkArray( index, links );
+			nif->set<int>( iNumElem, links.count() );
+			nif->updateArray( iArray );
+			nif->setLinkArray( iArray, links );
 		}
-		return index;
 	}
-};
+	return iArray;
+}
 
 REGISTER_SPELL( spCollapseArray )
 

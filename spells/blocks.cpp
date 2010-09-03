@@ -775,7 +775,7 @@ public:
 
 REGISTER_SPELL( spPasteBranch2 )
 
-// majority of spRemoveBranch moved to blocks.h
+// definitions for spRemoveBranch moved to blocks.h
 bool spRemoveBranch::isApplicable( const NifModel * nif, const QModelIndex & iBlock )
 {
 	int ix = nif->getBlockNumber( iBlock );

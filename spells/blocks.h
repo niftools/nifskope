@@ -30,4 +30,4 @@ public:
  */
 void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock );
 
-#endif
+#endif // SP_BLOCKS_H
