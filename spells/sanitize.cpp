@@ -12,19 +12,25 @@
  * All classes here inherit from the Spell class.
  */
 
-//! Reorders and removes empty members from link arrays
-class spSanitizeLinkArrays : public Spell
+//! Reorders blocks to put shapes before nodes (for Oblivion / FO3)
+class spReorderLinks : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Adjust Link Arrays"); }
+	QString name() const { return Spell::tr("Reorder Link Arrays"); }
 	QString page() const { return Spell::tr("Sanitize"); }
 	bool sanity() const { return true; }
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return (! index.isValid() && ( nif->getVersionNumber() >= 0x14000005 ) );
+		return (! index.isValid() && ( nif->getVersionNumber() >= 0x14000004 ) );
 	}
 	
+	//! Comparator for link sort.
+	/**
+	 * If booleans of the pair are not equal, sort based on the first boolean.
+	 * For spReorderLinks this will determine a sort of geometry before nodes
+	 * in the children links array.
+	 */
 	static bool compareChildLinks( QPair<qint32, bool> a, QPair<qint32, bool> b )
 	{
 		return a.second != b.second ? a.second : a.first < b.first;
@@ -36,7 +42,6 @@ public:
 		{
 			QModelIndex iBlock = nif->getBlock( n );
 			
-			// reorder children (tribasedgeom first)
 			QModelIndex iNumChildren = nif->getIndex( iBlock, "Num Children" );
 			QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
 			if ( iNumChildren.isValid() && iChildren.isValid() )
@@ -46,7 +51,9 @@ public:
 				{
 					qint32 l = nif->getLink( iChildren.child( r, 0 ) );
 					if ( l >= 0 )
+					{
 						links.append( QPair<qint32, bool>( l, nif->inherits( nif->getBlock( l ), "NiTriBasedGeom" ) ) );
+					}
 				}
 				
 				qStableSort( links.begin(), links.end(), compareChildLinks );
@@ -54,13 +61,46 @@ public:
 				for ( int r = 0; r < links.count(); r++ )
 				{
 					if ( links[r].first != nif->getLink( iChildren.child( r, 0 ) ) )
+					{
 						nif->setLink( iChildren.child( r, 0 ), links[r].first );
-					nif->set<int>( iNumChildren, links.count() );
-					nif->updateArray( iChildren );
+					}
 				}
+				// update child count & array even if there are no rows (i.e. prune empty children)
+				nif->set<int>( iNumChildren, links.count() );
+				nif->updateArray( iChildren );
 			}
+		}
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spReorderLinks )
+
+//! Removes empty members from link arrays
+class spSanitizeLinkArrays : public Spell
+{
+public:
+	QString name() const { return Spell::tr("Collapse Link Arrays"); }
+	QString page() const { return Spell::tr("Sanitize"); }
+	bool sanity() const { return true; }
+	
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	{
+		return !index.isValid();
+	}
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	{
+		for ( int n = 0; n < nif->getBlockCount(); n++ )
+		{
+			QModelIndex iBlock = nif->getBlock( n );
 			
 			spCollapseArray arrayCollapser;
+
+			// remove empty children links
+			QModelIndex iNumChildren = nif->getIndex( iBlock, "Num Children" );
+			QModelIndex iChildren = nif->getIndex( iBlock, "Children" );
+			arrayCollapser.numCollapser( nif, iNumChildren, iChildren );
 			
 			// remove empty property links
 			QModelIndex iNumProperties = nif->getIndex( iBlock, "Num Properties" );

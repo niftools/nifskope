@@ -7,6 +7,11 @@ changes since 1.0.22:
  * import window state and lighting settings from previous versions
  * better support for big-endian files
  * increased the number of decimal places for rotations (suggested by Ghogiel)
+ * Split "Adjust Link Arrays" spell:
+  - "Reorder Link Arrays" which now works for versions 20.0.0.4 onwards and
+    removes empty links (fixes issue #3037165)
+  - "Collapse Link Arrays" which removes all empty links and works for all
+    versions
 
 changes since 1.0.21:
  * updated to Qt 4.5.3
