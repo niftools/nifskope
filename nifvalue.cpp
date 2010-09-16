@@ -1098,11 +1098,19 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) &val.val.u32, 4 ) == 4;
 		case NifValue::tFileVersion:
 		{
-			// hack for neosteam
 			if( NifModel* mdl = static_cast<NifModel*>(const_cast<BaseModel*>(model)) )
 			{
 				QString headerString = mdl->getItem( mdl->getHeaderItem(), "Header String" )->value().toString();
-				quint32 version = 0x08F35232;
+				quint32 version;
+				// hack for neosteam
+				if( headerString.startsWith( "NS" ) )
+				{
+					version = 0x08F35232;
+				}
+				else
+				{
+					version = val.val.u32;
+				}
 				return device->write( (char *) &version, 4 ) == 4;
 			}
 			else
