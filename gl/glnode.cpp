@@ -1035,7 +1035,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				}
 			}
 
-			// Handle Selection
+			// Handle Selection of hkPackedNiTriStripsData
 			if (scene->currentBlock == iData )
 			{
 				int i = -1;
@@ -1074,6 +1074,51 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						glVertex( triCentre );
 						glVertex( triCentre + nif->get<Vector3>( scene->currentIndex ) );
 						glEnd();
+					}
+				}
+			}
+			// Handle Selection of bhkPackedNiTriStripsShape
+			else if ( scene->currentBlock == iShape )
+			{
+				int i = -1;
+				QString n = scene->currentIndex.data( Qt::DisplayRole ).toString();
+				QModelIndex iParent = scene->currentIndex.parent();
+				if ( iParent.isValid() && iParent != iShape )
+				{
+					n = iParent.data( Qt::DisplayRole ).toString();
+					i = scene->currentIndex.row();
+				}
+				//qDebug() << n;
+				// n == "Sub Shapes" if the array is selected and if an element of the array is selected
+				// iParent != iShape only for the elements of the array
+				if (( n == "Sub Shapes" ) && ( iParent != iShape )) {
+					// get subshape vertex indices
+					QModelIndex iSubShapes = iParent;
+					QModelIndex iSubShape = scene->currentIndex;
+					int start_vertex = 0;
+					int end_vertex = 0;
+					for (int subshape = 0; subshape < nif->rowCount(iSubShapes); subshape++) {
+						QModelIndex iCurrentSubShape = iSubShapes.child(subshape, 0);
+						int num_vertices = nif->get<int>( iCurrentSubShape, "Num Vertices" );
+						//qDebug() << num_vertices;
+						end_vertex += num_vertices;
+						if ( iCurrentSubShape == iSubShape ) {
+							break;
+						} else {
+							start_vertex += num_vertices;
+						}
+					}
+					// highlight the triangles of the subshape
+					for ( int t = 0; t < nif->rowCount( iTris ); t++ ) {
+						Triangle tri = nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" );
+						if ((start_vertex <= tri[0]) && (tri[0] < end_vertex)) {
+							if ((start_vertex <= tri[1]) && (tri[1] < end_vertex) && (start_vertex <= tri[2]) && (tri[2] < end_vertex)) {
+								DrawTriangleSelection(verts, tri );
+								DrawTriangleIndex(verts, tri, t);
+							} else {
+								qWarning() << "triangle with multiple materials?" << t;
+							}
+						}
 					}
 				}
 			}
