@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-
 #ifndef BSA_H
 #define BSA_H
 
@@ -41,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QHash>
 #include <QMutex>
 
-//! \file bsa.h BSA file
+//! \file bsa.h BSA file, BSAIterator
 
 //! A Bethesda Software Archive file
 /*!
@@ -72,7 +71,13 @@ public:
 	QString name() const { return bsaName; }
 	
 	//! \copybrief FSArchiveFile::stripBasePath()
-	bool stripBasePath( QString & ) const;
+	/*!
+	 * In this case, strips bsaPath from the provided string.
+	 * 
+	 * @param p the string to strip the base path from
+	 * @return true if the path was stripped, false otherwise
+	 */
+	bool stripBasePath( QString & p ) const;
 	
 	//! Whether the specified folder exists or not
 	bool hasFolder( const QString & ) const;
@@ -171,42 +176,64 @@ protected:
 	bool compressToggle;
 	//! Whether Fallout 3 names are prefixed with an extra string
 	bool namePrefix;
+	
+	//! An iterator that has access to the %BSA
+	friend class BSAIterator;
 };
 
-//! Iterator for a BSA file. Not implemented yet.
+//! Iterator for a BSA file.
 class BSAIterator : public QAbstractFileEngineIterator
 {
 public:
-	BSAIterator( QDir::Filters filters, const QStringList & nameFilters )
-		: QAbstractFileEngineIterator( filters, nameFilters )
-	{
-	}
+	//! Constructor
+	BSAIterator( QDir::Filters filters, const QStringList & nameFilters, BSA * archive, QString & base );
 
-	~BSAIterator() {}
+	//! Destructor
+	~BSAIterator();
 	
-	//! Whether there are any files left in the list
-	bool hasNext() const
-	{
-		return false;
-	}
+	//! Whether there are any entries left in the list
+	/*!
+	 * \return true if next() can be called
+	 */
+	bool hasNext() const;
 	
-	//! Info on the file currently in the list
-	QFileInfo currentFileInfo() const
-	{
-		return QFileInfo();
-	}
+	//! Name of the entry currently in the list
+	QString currentFileName() const;
 	
-	//! Name of the file currently in the list
-	QString currentFileName() const
+	//! Gets the next entry in the list
+	/*!
+	 * \return the name of the next entry in the list
+	 */
+	QString next();
+
+	//! Return the current file path
+	QString currentFilePath() const;
+
+	//! Return the path for the iterator
+	QString path() const;
+
+protected:
+	//! The type of the current entry
+	enum CurrentEntry
 	{
-		return QString();
-	}
-	
-	//! Return the name of the next file in the list
-	QString next()
-	{
-		return QString();
-	}
+		File, //!< Current entry is a file
+		Folder, //!< Current entry is a folder
+		None //!< No current entry has been set
+	} current;
+
+private:
+	//! The BSA that is being iterated over
+	BSA * archive;
+	//! The current folder inside the BSA
+	BSA::BSAFolder * currentFolder;
+	//! The list of files known by the iterator
+	QStringList fileList;
+	//! The list of folders known by the iterator
+	QStringList folderList;
+	//! The index of the iterator in the list of files
+	qint32 fileIndex;
+	//! The index of the iterator in the list of folders
+	qint32 folderIndex;
 };
 
 #endif

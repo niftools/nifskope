@@ -34,9 +34,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ARCHIVEENGINE_H
 #define ARCHIVEENGINE_H
 
-
 #include <QAbstractFileEngine>
 #include <QAbstractFileEngineHandler>
+#include <QFSFileEngine>
 #if (QT_VERSION >= QT_VERSION_CHECK(4, 4, 0))
 #include <QAtomicInt>
 #else
@@ -45,23 +45,44 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define QAtomicInt QAtomic
 #endif
 
+// only use the overlay engine before Qt 4.6
+#if (QT_VERSION < QT_VERSION_CHECK(4, 6, 0))
+#define OVERLAYS_ENABLED
+#endif
 
+#ifdef OVERLAYS_ENABLED
+//! Registers FSOverlayEngine with the application.
 class FSOverlayHandler : public QAbstractFileEngineHandler
 {
 public:
+	//! Registers the file engine handler with the application.
+	/*!
+	 * \param filename The file to create an overlay engine for
+	 * \return FSOverlayEngine
+	 */
 	QAbstractFileEngine * create( const QString & fileName ) const;
 };
+#endif // OVERLAYS_ENABLED
 
-
+//! Provides a way to register an FSArchiveEngine with the application.
 class FSArchiveHandler : public QAbstractFileEngineHandler
 {
 public:
+	//! Opens a BSA for the specified file
 	static FSArchiveHandler * openArchive( const QString & );
 	
 public:
+	//! Constructor
 	FSArchiveHandler( class FSArchiveFile * a );
+	//! Destructor
 	~FSArchiveHandler();
 	
+	//! Creates a file engine for the specified filename.
+	/*!
+	 * \param filename The file to create a file engine for
+	 * \return A FSArchiveEngine if the filename is a BSA, 0 otherwise
+	 * \sa QAbstractFileEngineHandler
+	 */
 	QAbstractFileEngine * create( const QString & filename ) const;
 	FSArchiveFile * getArchive() { return archive; }
 
@@ -69,10 +90,39 @@ protected:
 	class FSArchiveFile * archive;
 };
 
+//! Overlay engine which hooks FSArchiveEngine into normal directory traversal.
+/*!
+ * Not sure why this is needed; the documentation for QFSFileEngine says "by
+ * subclassing this class, you can alter its behavior slightly, without
+ * having to write a complete QAbstractFileEngine subclass"; but that is what
+ * FSArchiveEngine is. Perhaps there is a performance gain by having the overlay?
+ */
+class FSOverlayEngine : public QFSFileEngine
+{
+public:
+	//! Constructor.
+	/*!
+	 * \param filename The path to construct a file engine for
+	 */
+	FSOverlayEngine( const QString & filename );
+	
+	//! Gets a list of files in the @FSOverlayEngine's directory; see QAbstractFileEngine::entryList().
+	/*!
+	 * note: as of Qt 4.6 (undocumented as yet), this is not called by QDir,
+	 * and an iterator must be provided instead.
+	 */
+	QStringList entryList( QDir::Filters filters, const QStringList & nameFilters ) const;
+	
+	//! Gets the applicable flags for the current file; see QAbstractFileEngine::fileFlags().
+	FileFlags fileFlags( FileFlags type ) const;
 
+};
+
+//! A file system archive
 class FSArchiveFile
 {
 public:
+	//! Constructor
 	FSArchiveFile() : ref( 0 ) {}
 	virtual ~FSArchiveFile() {}
 	
@@ -83,6 +133,7 @@ public:
 	virtual QString name() const = 0;
 	virtual QString path() const = 0;
 	
+	//! Strips the archive file path from a path possibly inside the file
 	virtual bool stripBasePath( QString & ) const = 0;
 	
 	virtual bool hasFolder( const QString & ) const = 0;
@@ -98,12 +149,11 @@ public:
 	virtual QDateTime fileTime( const QString &, QAbstractFileEngine::FileTime type ) const = 0;
 
 protected:
+	//! A reference counter for an implicitly shared class
 	QAtomicInt ref;
 	
 	friend class FSArchiveHandler;
 	friend class FSArchiveEngine;
 };
-
-
 
 #endif

@@ -30,95 +30,99 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-
 #include "fsengine.h"
 #include "bsa.h"
 
-
 #include <QDateTime>
 #include <QDebug>
-#include <QFSFileEngine>
 #include <QMap>
 #include <QMutex>
 #include <QRegExp>
 #include <QStringList>
 
+//! \file fsengine.cpp File system engine implementations
 
+#ifdef OVERLAYS_ENABLED
+//! Maps directories in the filesystem to BSAs that can be opened by FSArchiveEngine.
 static QMap<QString,QStringList> overlayDirs;
+//! Mutual exclusion handler for overlayDirs
 static QMutex overlayMutex;
 
-
-class FSOverlayEngine : public QFSFileEngine
+// see fsengine.h
+FSOverlayEngine::FSOverlayEngine( const QString & filename )
+	: QFSFileEngine( filename )
+{}
+	
+// see fsengine.h
+QStringList FSOverlayEngine::entryList( QDir::Filters filters, const QStringList & nameFilters ) const
 {
-public:
-	FSOverlayEngine( const QString & filename )
-		: QFSFileEngine( filename )
-	{}
+	QStringList entries = QFSFileEngine::entryList( filters, nameFilters );
 	
-	QStringList entryList( QDir::Filters filters, const QStringList & nameFilters ) const
+	if ( filters.testFlag( QDir::Dirs ) || filters.testFlag( QDir::AllDirs ) )
 	{
-		QStringList entries = QFSFileEngine::entryList( filters, nameFilters );
+		QMutexLocker lock( & overlayMutex );
 		
-		if ( filters.testFlag( QDir::Dirs ) || filters.testFlag( QDir::AllDirs ) )
+		QString dirname = fileName( AbsoluteName );
+		if ( ! caseSensitive() )
+			dirname = dirname.toLower();
+		
+		if ( overlayDirs.contains( dirname ) )
 		{
-			QMutexLocker lock( & overlayMutex );
+			QStringList list = overlayDirs.value( dirname );
+#ifndef QT_NO_DEBUG
+			qDebug() << dirname << "overlay" << list;
+#endif
 			
-			QString dirname = fileName( AbsoluteName );
-			if ( ! caseSensitive() )
-				dirname = dirname.toLower();
-			
-			if ( overlayDirs.contains( dirname ) )
+			foreach ( QString x, list )
 			{
-				QStringList list = overlayDirs.value( dirname );
-				qDebug() << dirname << "overlay" << list;
-				
-				foreach ( QString x, list )
+				if ( ! entries.contains( x ) )
 				{
-					if ( ! entries.contains( x ) )
-					{
-						entries += x;
-					}
+					entries += x;
 				}
 			}
 		}
-		
-		return entries;
 	}
 	
-	FileFlags fileFlags( FileFlags type = FileInfoAll ) const
-	{
-		FileFlags x = QFSFileEngine::fileFlags( type );
-		
-		if ( type.testFlag( DirectoryType ) )
-		{
-			QMutexLocker lock( & overlayMutex );
-			
-			QString base = fileName( AbsolutePathName );
-			if ( ! caseSensitive() )
-				base = base.toLower();
-			
-			//qDebug() << "base" << base;
-			
-			if ( overlayDirs.contains( base ) )
-			{
-				QString name = fileName( BaseName );
-				if ( ! caseSensitive() )
-					name = name.toLower();
-				
-				//qDebug() << "name" << name;
-				
-				if ( overlayDirs[ base ].contains( name ) )
-				{
-					x |= DirectoryType;
-					qDebug() << "flags |= Dir";
-				}
-			}
-		}
-		
-		return x;
-	}
-};
+	return entries;
+}
 
+// see fsengine.h
+FileFlags FSOverlayEngine::fileFlags( FileFlags type = FileInfoAll ) const
+{
+	FileFlags x = QFSFileEngine::fileFlags( type );
+	
+	if ( type.testFlag( DirectoryType ) )
+	{
+		QMutexLocker lock( & overlayMutex );
+		
+		QString base = fileName( AbsolutePathName );
+		if ( ! caseSensitive() )
+			base = base.toLower();
+		
+		//qDebug() << "base" << base;
+		
+		if ( overlayDirs.contains( base ) )
+		{
+			QString name = fileName( BaseName );
+			if ( ! caseSensitive() )
+				name = name.toLower();
+			
+			//qDebug() << "name" << name;
+			
+			if ( overlayDirs[ base ].contains( name ) )
+			{
+				x |= DirectoryType;
+#ifndef QT_NO_DEBUG
+				qDebug() << "flags |= Dir";
+#endif
+			}
+		}
+	}
+	
+	return x;
+}
+
+// see fsengine.h
 QAbstractFileEngine * FSOverlayHandler::create( const QString & fileName ) const
 {
 	if ( fileName.startsWith( ":" ) )
@@ -126,9 +130,9 @@ QAbstractFileEngine * FSOverlayHandler::create( const QString & fileName ) const
 	else
 		return new FSOverlayEngine( fileName );
 }
+#endif // OVERLAYS_ENABLED
 
-
-
+// see fsengine.h
 FSArchiveHandler * FSArchiveHandler::openArchive( const QString & fn )
 {
 	if ( BSA::canOpen( fn ) )
@@ -142,12 +146,18 @@ FSArchiveHandler * FSArchiveHandler::openArchive( const QString & fn )
 	return 0;
 }
 
-
+//! A custom file engine for FSArchiveFile
+/*!
+ * This allows BSA files to masquerade as directories in the file system.
+ */
 class FSArchiveEngine : public QAbstractFileEngine
 {
+	//! The archive being read
 	FSArchiveFile * archive;
 	
+	//! The original path requested
 	QString orgFilePath;
+	//! The relative path requested
 	QString relFilePath;
 	
 	QIODevice::OpenMode fileMode;
@@ -155,6 +165,12 @@ class FSArchiveEngine : public QAbstractFileEngine
 	qint64 filePos;
 	
 public:
+	//! Constructor
+	/*!
+	 * \param a The archive to use
+	 * \param org The original path requested
+	 * \param rel The relative path inside the archive
+	 */
 	FSArchiveEngine( FSArchiveFile * a, const QString & org, const QString & rel ) : QAbstractFileEngine()
 	{
 		archive = a;
@@ -166,15 +182,19 @@ public:
 		orgFilePath = org;
 		relFilePath = rel;
 		
-		qDebug() << "archive engine" << relFilePath;
+#ifndef QT_NO_DEBUG
+		qDebug() << "archive engine: org" << orgFilePath << "rel" << relFilePath;
+#endif
 	}
 	
+	//! Destructor
 	~FSArchiveEngine()
 	{
 		if ( ! archive->ref.deref() )
 			delete archive;
 	}
 	
+	//! Gets the applicable flags for the current file; see QAbstractFileEngine::fileFlags().
 	FileFlags fileFlags( FileFlags type = FileInfoAll ) const
 	{
 		FileFlags flags( 0 );
@@ -196,6 +216,11 @@ public:
 		return flags;
 	}
 	
+	//! Gets a list of files in the @FSArchiveEngine's directory; see QAbstractFileEngine::entryList().
+	/*!
+	 * Note: as of Qt 4.6 (undocumented as yet), this is not called by QDir; beginEntryList() is used
+	 * instead.
+	 */
 	QStringList entryList( QDir::Filters filters, const QStringList & nameFilters ) const
 	{
 		QStringList list;
@@ -234,14 +259,30 @@ public:
 		
 		return list;
 	}
+
+#if (QT_VERSION >= QT_VERSION_CHECK(4, 6, 0))
+	//! Returns an iterator to for QDirIterator to use; supersedes entryList().
+	BSAIterator* beginEntryList( QDir::Filters filters, const QStringList &filterNames)
+	{
+		//qDebug() << "entered FSArchiveEngine::beginEntryList with filterNames" << filterNames;
+		return new BSAIterator( filters, filterNames, (BSA*)archive, relFilePath );
+	}
+#endif
 	
+	//! Supposedly sets the file name to operate on; null implementation.
 	void setFileName( const QString & fn )
 	{
+#ifndef QT_NO_DEBUG
 		qDebug() << "bsa engine set file name" << fn;
+#endif
 	}
 	
+	//! Returns the current file name.
 	QString fileName( FileName type ) const
 	{
+#ifndef QT_NO_DEBUG
+		qDebug() << "entered FSArchiveEngine::fileName";
+#endif
 		switch ( type )
 		{
 			case BaseName:
@@ -250,7 +291,9 @@ public:
 					int x = bn.lastIndexOf( "/" );
 					if ( x >= 0 )
 						bn.remove( 0, x + 1 );
+#ifndef QT_NO_DEBUG
 					qDebug() << "name" << bn;
+#endif
 					return bn;
 				}	break;
 			case PathName:
@@ -259,7 +302,9 @@ public:
 					int x = pn.lastIndexOf( "/" );
 					if ( x >= 0 )
 						pn = pn.left( x );
+#ifndef QT_NO_DEBUG
 					qDebug() << "path" << pn;
+#endif
 					return pn;
 				}	break;
 			case AbsolutePathName:
@@ -270,7 +315,9 @@ public:
 					int x = pn.lastIndexOf( "/" );
 					if ( x >= 0 )
 						pn = pn.left( x );
+#ifndef QT_NO_DEBUG
 					qDebug() << "abspath" << pn;
+#endif
 					return pn;
 				}	break;
 			default:
@@ -279,15 +326,18 @@ public:
 		return orgFilePath;
 	}
 	
+	//! Whether the current file has a relative path; null implementation.
 	bool isRelativePath() const
 	{
 		// todo
 		return false;
 	}
 	
+	//! Opens the current file in the specified mode.
 	bool open( QIODevice::OpenMode mode )
 	{
-		if ( fileMode != QIODevice::NotOpen || mode != QIODevice::ReadOnly )
+		//qDebug() << "entering FSArchiveEngine::open with mode" << mode;
+		if ( fileMode != QIODevice::NotOpen || !( mode & QIODevice::ReadOnly ) )
 			return false;
 		
 		if ( archive->fileContents( relFilePath, fileData ) )
@@ -300,6 +350,7 @@ public:
 			return false;
 	}
 	
+	//! Closes the current file.
 	bool close()
 	{
 		if ( fileMode != QIODevice::NotOpen )
@@ -313,6 +364,7 @@ public:
 			return false;
 	}
 	
+	//! Gets the size of the current file.
 	qint64 size() const
 	{
 		if ( fileMode == QIODevice::NotOpen )
@@ -321,6 +373,7 @@ public:
 			return fileData.size();
 	}
 	
+	//! Seeks to the specified position.
 	bool seek( qint64 ofs )
 	{
 		if ( fileMode != QIODevice::NotOpen && ofs >= 0 && ofs < fileData.size() )
@@ -331,11 +384,13 @@ public:
 		return false;
 	}
 	
+	//! Returns the current position offset.
 	qint64 pos() const
 	{
 		return filePos;
 	}
 	
+	//! Reads a line of data.
 	qint64 readLine( char * data, qint64 maxlen )
 	{
 		qint64 numread = 0;
@@ -351,6 +406,7 @@ public:
 		return numread;
 	}
 	
+	//! Reads a block of data.
 	qint64 read( char * data, qint64 maxlen )
 	{
 		qint64 numread = fileData.size() - filePos;
@@ -361,6 +417,10 @@ public:
 		return numread;
 	}
 	
+	//! Writes a line of data.
+	/*!
+	 * As yet, BSA writing has not been implemented in NifSkope.
+	 */
 	qint64 write( const char * data, qint64 len )
 	{
 		Q_UNUSED(len);
@@ -368,42 +428,50 @@ public:
 		return -1;
 	}
 	
+	//! Returns the file handle; see QAbstractFileEngine::handle().
 	int handle() const
 	{
 		return 0;
 	}
 	
+	//! Flushes the open file.
 	bool flush()
 	{
 		return true;
 	}
 	
+	//! See BSA::ownerID().
 	uint ownerId( FileOwner type ) const
 	{
 		return archive->ownerId( relFilePath, type );
 	}
 	
+	//! See BSA::owner().
 	QString owner( FileOwner type ) const
 	{
 		return archive->owner( relFilePath, type );
 	}
 	
+	//! See BSA::fileTime().
 	QDateTime fileTime( FileTime type ) const
 	{
 		return archive->fileTime( relFilePath, type );
 	}
 	
+	//! Supposedly copies the current file; null implementation.
 	bool copy( const QString & newFile )
 	{
 		Q_UNUSED(newFile);
 		return false;
 	}
 	
+	//! Whether the file engine disallows random access.
 	bool isSequential() const
 	{
 		return false;
 	}
 	
+	//! Whether the file engine is case sensitive.
 	bool caseSensitive() const
 	{
 		return false;
@@ -419,27 +487,34 @@ public:
 };
 
 
+// see fsengine.h
 FSArchiveHandler::FSArchiveHandler( FSArchiveFile * a )
 	: QAbstractFileEngineHandler()
 {
 	archive = a;
 	archive->ref.ref();
 	
+#ifdef OVERLAYS_ENABLED
 	QMutexLocker lock( & overlayMutex );
 	
 	overlayDirs[ archive->base() ].append( archive->name() );
+#endif
 }
 
+// see fsengine.h
 FSArchiveHandler::~FSArchiveHandler()
 {
+#ifdef OVERLAYS_ENABLED
 	QMutexLocker lock( & overlayMutex );
 	
 	overlayDirs[ archive->base() ].removeAll( archive->name() );
+#endif
 	
 	if ( ! archive->ref.deref() )
 		delete archive;
 }
 
+// see fsengine.h
 QAbstractFileEngine * FSArchiveHandler::create( const QString & filename ) const
 {
 	QString fn = filename.toLower();
@@ -455,15 +530,22 @@ QAbstractFileEngine * FSArchiveHandler::create( const QString & filename ) const
 #include <QLineEdit>
 #include <QTreeView>
 
-int texmain( int argc, char * argv[] )
+//! Test program
+int main( int argc, char * argv[] )
 {
 	QApplication app( argc, argv );
 	
-	QString fn = "E:\\Valve\\Steam\\SteamApps\\common\\fallout 3\\Data\\Fallout - Textures.bsa"; //"g:\\nif\\mw\\data files\\bsa.bsa"; //"f:\\data\\Oblivion - Misc.bsa";
+	QString fn = "test.bsa";
+	// QString fn = "E:\\Valve\\Steam\\SteamApps\\common\\fallout 3\\Data\\Fallout - Textures.bsa";
+	// QString fn = "g:\\nif\\mw\\data files\\bsa.bsa";
+	// QString fn = "f:\\data\\Oblivion - Misc.bsa";
+	
 	if ( argc > 1 )
 		fn = argv[ argc - 1 ];
 	
+#ifdef OVERLAYS_ENABLED
 	FSOverlayHandler overlayHandler;
+#endif
 	
 	if ( FSArchiveHandler::openArchive( fn ) )
 	{

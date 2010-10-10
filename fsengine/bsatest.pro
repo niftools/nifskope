@@ -11,3 +11,5 @@ DESTDIR = ./
 
 HEADERS += *.h
 SOURCES += *.cpp
+
+# vim: set filetype=config : 

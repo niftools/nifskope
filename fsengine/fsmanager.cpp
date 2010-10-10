@@ -65,7 +65,9 @@ QList <FSArchiveFile *> FSManager::archiveList()
 FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )
 {
+#ifdef OVERLAYS_ENABLED
 	overlay = new FSOverlayHandler;
+#endif
 	
 	QSettings cfg;
 	cfg.beginGroup( "fsengine" );
@@ -88,7 +90,9 @@ FSManager::FSManager( QObject * parent )
 FSManager::~FSManager()
 {
 	qDeleteAll( archives );
+#ifdef OVERLAYS_ENABLED
 	delete overlay;
+#endif
 }
 
 QStringList FSManager::autodetectArchives()
@@ -130,22 +134,22 @@ QStringList FSManager::autodetectArchives()
 		}
 	}
 
-   {
-      QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", QSettings::NativeFormat );
-      QString dataPath = reg.value( "Installed Path" ).toString();
-      if ( ! dataPath.isEmpty() )
-      {
-         if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
-            dataPath += "/";
-         dataPath += "Data";
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", QSettings::NativeFormat );
+		QString dataPath = reg.value( "Installed Path" ).toString();
+		if ( ! dataPath.isEmpty() )
+		{
+			if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
+				dataPath += "/";
+			dataPath += "Data";
 
-         QFSFileEngine fs( dataPath );
-         foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
-         {
-            list << dataPath + "/" + fn;
-         }
-      }
-   }
+			QFSFileEngine fs( dataPath );
+			foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
+			{
+				list << dataPath + "/" + fn;
+			}
+		}
+	}
 #endif
 
 	return list;

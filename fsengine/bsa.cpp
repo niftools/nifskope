@@ -30,8 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-//! \file bsa.cpp BSA and structs
-
 #include "bsa.h"
 
 #include <QByteArray>
@@ -39,41 +37,42 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 
 /* Default header data */
-#define MW_BSAHEADER_FILEID  0x00000100
-#define OB_BSAHEADER_FILEID  0x00415342 /* "BSA\0" */
-#define OB_BSAHEADER_VERSION 0x67
-#define F3_BSAHEADER_VERSION 0x68
+#define MW_BSAHEADER_FILEID  0x00000100 //!< Magic for Morrowind BSA
+#define OB_BSAHEADER_FILEID  0x00415342 //!< Magic for Oblivion BSA, the literal string "BSA\0".
+#define OB_BSAHEADER_VERSION 0x67 //!< Version number of an Oblivion BSA
+#define F3_BSAHEADER_VERSION 0x68 //!< Version number of a Fallout 3 BSA
 
 /* Archive flags */
-#define OB_BSAARCHIVE_PATHNAMES 0x0001
-#define OB_BSAARCHIVE_FILENAMES 0x0002
-#define OB_BSAARCHIVE_COMPRESSFILES 0x0004
-#define F3_BSAARCHIVE_PREFIXFULLFILENAMES 0x0100
+#define OB_BSAARCHIVE_PATHNAMES           0x0001 //!< Whether the BSA has names for paths
+#define OB_BSAARCHIVE_FILENAMES           0x0002 //!< Whether the BSA has names for files
+#define OB_BSAARCHIVE_COMPRESSFILES       0x0004 //!< Whether the files are compressed
+#define F3_BSAARCHIVE_PREFIXFULLFILENAMES 0x0100 //!< Whether the name is prefixed to the data?
 
 /* File flags */
-#define OB_BSAFILE_NIF  0x0001
-#define OB_BSAFILE_DDS  0x0002
-#define OB_BSAFILE_XML  0x0004
-#define OB_BSAFILE_WAV  0x0008
-#define OB_BSAFILE_MP3  0x0010
-#define OB_BSAFILE_TXT  0x0020
-#define OB_BSAFILE_HTML 0x0020
-#define OB_BSAFILE_BAT  0x0020
-#define OB_BSAFILE_SCC  0x0020
-#define OB_BSAFILE_SPT  0x0040
-#define OB_BSAFILE_TEX  0x0080
-#define OB_BSAFILE_FNT  0x0080
-#define OB_BSAFILE_CTL  0x0100
+#define OB_BSAFILE_NIF  0x0001 //!< Set when the BSA contains NIF files
+#define OB_BSAFILE_DDS  0x0002 //!< Set when the BSA contains DDS files
+#define OB_BSAFILE_XML  0x0004 //!< Set when the BSA contains XML files
+#define OB_BSAFILE_WAV  0x0008 //!< Set when the BSA contains WAV files
+#define OB_BSAFILE_MP3  0x0010 //!< Set when the BSA contains MP3 files
+#define OB_BSAFILE_TXT  0x0020 //!< Set when the BSA contains TXT files
+#define OB_BSAFILE_HTML 0x0020 //!< Set when the BSA contains HTML files
+#define OB_BSAFILE_BAT  0x0020 //!< Set when the BSA contains BAT files
+#define OB_BSAFILE_SCC  0x0020 //!< Set when the BSA contains SCC files
+#define OB_BSAFILE_SPT  0x0040 //!< Set when the BSA contains SPT files
+#define OB_BSAFILE_TEX  0x0080 //!< Set when the BSA contains TEX files
+#define OB_BSAFILE_FNT  0x0080 //!< Set when the BSA contains FNT files
+#define OB_BSAFILE_CTL  0x0100 //!< Set when the BSA contains CTL files
 
 /* Bitmasks for the size field in the header */
-#define OB_BSAFILE_SIZEMASK 0x3fffffff
-#define OB_BSAFILE_FLAGMASK 0xC0000000
+#define OB_BSAFILE_SIZEMASK 0x3fffffff //!< Bit mask with OBBSAFileInfo::sizeFlags to get the size of the file
 
 /* Record flags */
-#define OB_BSAFILE_FLAG_COMPRESS 0xC0000000
+#define OB_BSAFILE_FLAG_COMPRESS 0xC0000000 //!< Bit mask with OBBSAFileInfo::sizeFlags to get the compression status
+
+//! \file bsa.cpp OBBSAHeader / \link OBBSAFileInfo FileInfo\endlink / \link OBBSAFolderInfo FolderInfo\endlink; MWBSAHeader, MWBSAFileSizeOffset
 
 //! The header of an Oblivion BSA.
-/**
+/*!
  * Follows OB_BSAHEADER_FILEID and OB_BSAHEADER_VERSION.
  */
 struct OBBSAHeader
@@ -409,6 +408,7 @@ qint64 BSA::fileSize( const QString & fn ) const
 // see bsa.h
 bool BSA::fileContents( const QString & fn, QByteArray & content )
 {
+	//qDebug() << "entering fileContents for" << fn;
 	if ( const BSAFile * file = getFile( fn ) )
 	{
 		QMutexLocker lock( & bsaMutex );
@@ -454,6 +454,7 @@ QString BSA::absoluteFilePath( const QString & fn ) const
 // see bsa.h
 QStringList BSA::entryList( const QString & fn, QDir::Filters filters ) const
 {
+	//qDebug() << "entered BSA::entryList with name" << fn;
 	if ( const BSAFolder * folder = getFolder( fn ) )
 	{
 		QStringList entries;
@@ -462,13 +463,16 @@ QStringList BSA::entryList( const QString & fn, QDir::Filters filters ) const
 		
 		if ( filters.testFlag( QDir::Dirs ) || filters.testFlag( QDir::AllDirs ) )
 		{
+			//qDebug() << "filtering for directories";
 			entries += folder->children.keys();
 		}
 		
 		if ( filters.testFlag( QDir::Files ) )
 		{
+			//qDebug() << "filtering for files";
 			entries += folder->files.keys();
 		}
+		//qDebug() << "entryList:" << entries;
 		
 		return entries;
 	}
@@ -590,5 +594,135 @@ QString BSA::owner( const QString &, QAbstractFileEngine::FileOwner type ) const
 QDateTime BSA::fileTime( const QString &, QAbstractFileEngine::FileTime type ) const
 {
 	return bsa.fileTime( type );
+}
+
+// see bsa.h
+// TODO: rework this to use the BSA::entryList code
+BSAIterator::BSAIterator( QDir::Filters filters, const QStringList & nameFilters, BSA * archive, QString & base )
+	: QAbstractFileEngineIterator( filters, nameFilters ), current( None ), archive( archive ), fileIndex( -1 ), folderIndex ( -1 )
+{
+	archive->ref.ref();
+	//qDebug() << "Entered BSAIterator with filters" << filters << "names" << nameFilters << "base" << base; 
+	//qDebug() << "Archive is" << archive->path();
+	//qDebug() << "Path is" << path() << "currentFilePath is" << currentFilePath();
+	
+	/*
+	if ( filters.testFlag( QDir::Dirs ) || filters.testFlag( QDir::AllDirs ) )
+	{
+		qDebug() << "Requested directories";
+	}
+
+	if ( filters.testFlag( QDir::Files ) )
+	{
+		qDebug() << "Requested files";
+	}
+	*/
+
+	currentFolder = const_cast<BSA::BSAFolder*>( archive->getFolder( base ) );
+	
+	folderList += currentFolder->children.keys();
+	//qDebug() << "Child folders" << folderList;
+	fileList += currentFolder->files.keys();
+	//qDebug() << "Child files" << fileList;
+
+	/*
+	foreach( QString bsaKey, folderList )
+	{
+		qDebug() << "adding files from" << bsaKey;
+		foreach( QString eachFile, archive->folders.value( bsaKey )->files.keys() )
+		{
+			QString temp = bsaKey + "/" + eachFile;
+			qDebug() << "adding" << temp;
+			fileList += temp;
+		}
+	}
+	*/
+}
+
+// see bsa.h
+BSAIterator::~BSAIterator()
+{
+	//qDebug() << "Deleting BSAIterator";
+	if ( ! archive->ref.deref() )
+		delete archive;
+}
+
+// see bsa.h
+bool BSAIterator::hasNext() const
+{
+	//qDebug() << "Entered BSAIterator::hasNext";
+	//qDebug() << "fileIndex" << fileIndex << "folderIndex" << folderIndex;
+	return ( fileIndex < ( fileList.size() - 1 ) || folderIndex < ( folderList.size() - 1 ) );
+}
+
+// precondition: hasNext() is true
+// see bsa.h
+QString BSAIterator::currentFileName() const
+{
+	//qDebug() << "Entered BSAIterator::currentFileName";
+	if( current == File )
+	{
+		//qDebug() << "currentFileName: file" << fileList.at( fileIndex );
+		return fileList.at( fileIndex );
+	}
+	else if( current == Folder )
+	{
+		//qDebug() << "currentFileName: folder" << folderList.at( folderIndex );
+		return folderList.at( folderIndex );
+	}
+	else
+	{
+		//qDebug() << "no current file";
+		return QString();
+	}
+}
+
+// precondition: hasNext() is true
+// postCondition: we return the name of the next file
+// see bsa.h
+QString BSAIterator::next()
+{
+	//qDebug() << "Entered BSAIterator::next";
+	//qDebug() << "At" << fileIndex << "of" << fileList.size() << "files";
+	//qDebug() << "At" << folderIndex << "of" << folderList.size() << "folders";
+	if( folderIndex < folderList.size() - 1 )
+	{
+		//qDebug() << "getting next folder";
+		current = Folder;
+		folderIndex++;
+		QString nextFolder = folderList.at( folderIndex );
+		//qDebug() << "next folder is" << nextFolder;
+		return nextFolder;
+	}
+	else if( fileIndex < fileList.size() - 1 )
+	{
+		//qDebug() << "getting next file";
+		current = File;
+		fileIndex++;
+		QString nextFolder = fileList.at( fileIndex );
+		//qDebug() << "next file is" << nextFolder;
+		return nextFolder;
+	}
+	else
+	{
+		//qDebug() << "no next, not sure how we got here";
+		current = None;
+		return QString();
+	}
+}
+
+// see bsa.h
+QString BSAIterator::currentFilePath() const
+{
+	//qDebug() << "Entered BSAIterator::currentFilePath";
+	return QAbstractFileEngineIterator::currentFilePath();
+}
+
+// see bsa.h
+QString BSAIterator::path() const
+{
+	//qDebug() << "Entered BSAIterator::path";
+	return archive->bsaPath;
+	//return QAbstractFileEngineIterator::path();
 }
 
