@@ -18,8 +18,9 @@
 
 // This code is only intended to be run with Win32 platform.
 
+extern "C" void * __stdcall SetDllDirectoryA( const char * lpPathName );
 extern "C" void * __stdcall LoadLibraryA( const char * lpModuleName );
-extern "C" void * __stdcall GetProcAddress ( void * hModule, const char * lpProcName);
+extern "C" void * __stdcall GetProcAddress ( void * hModule, const char * lpProcName );
 extern "C" void __stdcall FreeLibrary( void * lpModule );
 
 //! Interface to the external MOPP library
@@ -51,6 +52,7 @@ public:
 	{
 		if (hMoppLib == NULL)
 		{
+			SetDllDirectoryA( QCoreApplication::applicationDirPath().toLocal8Bit() );
 			hMoppLib = LoadLibraryA( "NifMopp.dll" );
 			GenerateMoppCode = (fnGenerateMoppCode)GetProcAddress( hMoppLib, "GenerateMoppCode" );
 			RetrieveMoppCode = (fnRetrieveMoppCode)GetProcAddress( hMoppLib, "RetrieveMoppCode" );

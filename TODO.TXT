@@ -20,4 +20,5 @@ To do:
 - Use qAssert more often for debugging
 - Force combine spells, etc. - see #3012991
 - Investigate adding a QScriptEngine for spells
+- support 20.5.0.0+ NIFs using new NiDataStream format (compile in debug mode to see existing support)
 
