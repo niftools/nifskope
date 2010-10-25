@@ -44,8 +44,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QStringListModel>
 
-
+//! Global BSA file manager
 static FSManager *theFSManager = NULL;
+// see fsmanager.h
 FSManager* FSManager::get() 
 {
 	if (theFSManager == NULL)
@@ -53,6 +54,7 @@ FSManager* FSManager::get()
 	return theFSManager;
 }
 
+// see fsmanager.h
 QList <FSArchiveFile *> FSManager::archiveList()
 {
 	QList<FSArchiveFile *> archives;
@@ -62,6 +64,7 @@ QList <FSArchiveFile *> FSManager::archiveList()
 	return archives;
 }
 
+// see fsmanager.h
 FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )
 {
@@ -87,6 +90,7 @@ FSManager::FSManager( QObject * parent )
 	}
 }
 
+// see fsmanager.h
 FSManager::~FSManager()
 {
 	qDeleteAll( archives );
@@ -95,73 +99,48 @@ FSManager::~FSManager()
 #endif
 }
 
+// see fsmanager.h
+QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
+{
+	QStringList list;
+	QSettings reg( regKey, QSettings::NativeFormat );
+	QString dataPath = reg.value( "Installed Path" ).toString();
+	if ( ! dataPath.isEmpty() )
+	{
+		if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
+			dataPath += "/";
+		dataPath += dataDir;
+		QFSFileEngine fs( dataPath );
+		foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
+		{
+			list << dataPath + "/" + fn;
+		}
+	}
+	return list;
+}
+
 QStringList FSManager::autodetectArchives()
 {
 	QStringList list;
 	
 #ifdef Q_OS_WIN32
-	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
-		QString dataPath = reg.value( "Installed Path" ).toString();
-		if ( ! dataPath.isEmpty() )
-		{
-			if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
-				dataPath += "/";
-			dataPath += "Data";
-			
-			QFSFileEngine fs( dataPath );
-			foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
-			{
-				list << dataPath + "/" + fn;
-			}
-		}
-	}
-	
-	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
-		QString dataPath = reg.value( "Installed Path" ).toString();
-		if ( ! dataPath.isEmpty() )
-		{
-			if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
-				dataPath += "/";
-			dataPath += "Data Files";
-			
-			QFSFileEngine fs( dataPath );
-			foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
-			{
-				list << dataPath + "/" + fn;
-			}
-		}
-	}
-
-	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", QSettings::NativeFormat );
-		QString dataPath = reg.value( "Installed Path" ).toString();
-		if ( ! dataPath.isEmpty() )
-		{
-			if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
-				dataPath += "/";
-			dataPath += "Data";
-
-			QFSFileEngine fs( dataPath );
-			foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
-			{
-				list << dataPath + "/" + fn;
-			}
-		}
-	}
+	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", "Data Files" );
+	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", "Data" );
+	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", "Data" );
+	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV", "Data" );
 #endif
-
+	
 	return list;
 }
 
+// see fsmanager.h
 void FSManager::selectArchives()
 {
 	FSSelector select( this );
 	select.exec();
 }
 
-
+// see fsmanager.h
 FSSelector::FSSelector( FSManager * m )
 	: QDialog(), manager( m )
 {

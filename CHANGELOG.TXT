@@ -14,6 +14,7 @@ changes since 1.0.22:
   - "Collapse Link Arrays" which removes all empty links and works for all
     versions
  * highlight subshape selection in bhkPackedNiTriStripsShape
+ * add Fallout New Vegas to game texture auto-detection
 
 changes since 1.0.21:
  * updated to Qt 4.5.3

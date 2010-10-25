@@ -51,14 +51,19 @@ class FSManager : public QObject
 {
 	Q_OBJECT
 public:
+	//! Gets the global file system manager
 	static FSManager * get();
+	//! Gets the list of globally registered BSA files
 	static QList<FSArchiveFile *> archiveList();
 
 protected:
+	//! Constructor
 	FSManager( QObject * parent = NULL );
+	//! Destructor
 	~FSManager();
 
 public slots:
+	//! Launches a FSSelector dialog
 	void selectArchives();
 	
 protected:
@@ -68,17 +73,22 @@ protected:
 	QMap<QString, FSArchiveHandler *> archives;
 	bool automatic;
 	
+	//! Builds a list of global BSAs on Windows platforms
 	static QStringList autodetectArchives();
+	//! Helper function to build a list of BSAs
+	static QStringList regPathBSAList( QString regKey, QString dataDir );
 	
 	friend class FSSelector;
 };
 
-
+//! Interface dialog for FSManager
 class FSSelector : public QDialog
 {
 	Q_OBJECT
 public:
+	//! Constructor
 	FSSelector( FSManager * m );
+	//! Destructor
 	~FSSelector();
 	
 protected slots:
