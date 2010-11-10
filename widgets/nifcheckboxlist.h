@@ -82,12 +82,8 @@ public:
 	virtual ~CheckBoxList();
 	bool eventFilter(QObject *object, QEvent *event);
 	virtual void paintEvent(QPaintEvent *);
-	void SetDisplayText(QString text);
-	QString GetDisplayText() const;
-
+	
 	virtual void updateText() {}
-private:
-	QString m_DisplayText;
 };    
 
 //////////////////////////////////////////////////////////////////////////

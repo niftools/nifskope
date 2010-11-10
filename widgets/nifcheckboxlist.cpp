@@ -40,8 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QValidator>
 #include <QDebug>
 
-CheckBoxList::CheckBoxList(QWidget *widget )
-:QComboBox(widget),m_DisplayText(0)
+CheckBoxList::CheckBoxList( QWidget *widget )
+	: QComboBox( widget )
 {
 	// set delegate items view
 	view()->setItemDelegate(new CheckBoxListDelegate(this));
@@ -83,28 +83,14 @@ void CheckBoxList::paintEvent(QPaintEvent *)
 	// draw the combobox frame, focusrect and selected etc.
 	QStyleOptionComboBox opt;
 	initStyleOption(&opt);
-
+	
 	if (opt.currentText.isEmpty())
 		updateText();
-	//if (m_DisplayText.isEmpty())
-	//	m_DisplayText = opt.currentText;
-	//opt.currentText = m_DisplayText;
-
+	
 	painter.drawComplexControl(QStyle::CC_ComboBox, opt);
 
 	// draw the icon and text
 	painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
-}
-
-
-void CheckBoxList::SetDisplayText(QString text)
-{
-	m_DisplayText = text;
-}
-
-QString CheckBoxList::GetDisplayText() const
-{
-	return m_DisplayText;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -231,7 +217,6 @@ void NifCheckBoxList::updateText()
 		}
 	}
 	this->setEditText( displayText );
-	this->SetDisplayText( displayText );
 }
 
 
