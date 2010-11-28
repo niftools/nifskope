@@ -513,13 +513,14 @@ bool NifModel::loadXML()
 {
 	QDir dir( QApplication::applicationDirPath() );
 	QString fname = dir.filePath( "nif.xml" ); // last resort
-	// Try local copy first, docsys, relative from nifskope/release, linux data dir
+        // Try local copy first, docsys, relative from nifskope/release, relative from ../nifskope-build/release, linux data dir
 	QStringList xmlList( QStringList()
 			<< "nif.xml"
-			<< "../docsys/nif.xml"
-			<< "../../docsys/nif.xml"
-			<< "docsys/nifxml/nif.xml"
-			<< "../docsys/nifxml/nif.xml"
+                        << "docsys/nifxml/nif.xml"
+                        << "../docsys/nifxml/nif.xml"
+                        << "../../docsys/nifxml/nif.xml"
+                        << "../nifskope/docsys/nifxml/nif.xml"
+                        << "../../nifskope/docsys/nifxml/nif.xml"
 			<< "/usr/share/nifskope/nif.xml" );
 	foreach( QString str, xmlList )
 	{
