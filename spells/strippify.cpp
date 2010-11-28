@@ -84,6 +84,7 @@ class spStrippify : public Spell
 			
 			copyValue<int>( nif, iStripData, iData, "Has UV" );
 			copyValue<int>( nif, iStripData, iData, "Num UV Sets" );
+			copyValue<int>( nif, iStripData, iData, "BS Num UV Sets" );
 			copyValue<int>( nif, iStripData, iData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iStripData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iData, "UV Sets" );
@@ -234,6 +235,7 @@ class spTriangulate : public Spell
 			
 			copyValue<int>( nif, iTriData, iStripData, "Has UV" );
 			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets" );
+			copyValue<int>( nif, iTriData, iStripData, "BS Num UV Sets" );
 			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iTriData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iStripData, "UV Sets" );
