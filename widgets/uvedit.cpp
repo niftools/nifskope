@@ -1545,7 +1545,7 @@ void UVWidget::getCoordSets()
 	
 	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
 	
-	for ( uint i = 0; i < numUvSets; i++ )
+        for ( int i = 0; i < numUvSets; i++ )
 	{
 		QAction * temp;
 		coordSetSelect->addAction( temp = new QAction( QString( "%1" ).arg( i ), this ) );
