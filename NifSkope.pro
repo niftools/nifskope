@@ -33,7 +33,6 @@ HEADERS += \
     gl/glcontrolable.h \
     gl/glcontroller.h \
     gl/GLee.h \
-    gl/glext.h \
     gl/glmarker.h \
     gl/glmesh.h \
     gl/glnode.h \
