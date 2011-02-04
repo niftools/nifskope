@@ -210,7 +210,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   
   ; Install NifSkope
   SetOutPath $INSTDIR
-  File ..\release\NifSkope.exe
+  File ..\..\NifSkope-build-desktop\release\NifSkope.exe
   File ..\README.TXT
   File ..\CHANGELOG.TXT
   File ..\LICENSE.TXT

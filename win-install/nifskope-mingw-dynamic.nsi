@@ -43,13 +43,13 @@ SetCompressor /SOLID lzma
 !macro InstallHook
   ; pack dll files
   SetOutPath $INSTDIR
-  File ..\release\libgcc_s_dw2-1.dll
-  File ..\release\mingwm10.dll
-  File ..\release\QtCore4.dll
-  File ..\release\QtGui4.dll
-  File ..\release\QtNetwork4.dll
-  File ..\release\QtOpenGL4.dll
-  File ..\release\QtXml4.dll
+  File ..\..\NifSkope-build-desktop\release\libgcc_s_dw2-1.dll
+  File ..\..\NifSkope-build-desktop\release\mingwm10.dll
+  File ..\..\NifSkope-build-desktop\release\QtCore4.dll
+  File ..\..\NifSkope-build-desktop\release\QtGui4.dll
+  File ..\..\NifSkope-build-desktop\release\QtNetwork4.dll
+  File ..\..\NifSkope-build-desktop\release\QtOpenGL4.dll
+  File ..\..\NifSkope-build-desktop\release\QtXml4.dll
 !macroend
 
 !include "nifskope.nsh"
