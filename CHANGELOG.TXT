@@ -18,6 +18,7 @@ changes since 1.0.22:
  * add Fallout New Vegas to game texture auto-detection
  * updated to GLee 5.4.0
  * nif.xml updates for Divinity 2 and Fallout New Vegas
+ * OpenGL fix for ATI/AMD graphics cards (contributed by corwin)
 
 changes since 1.0.21:
  * updated to Qt 4.5.3
