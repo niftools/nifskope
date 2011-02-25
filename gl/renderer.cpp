@@ -338,13 +338,14 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 		if ( result != GL_TRUE )
 		{
 			GLint logLen = 0;
-			glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
+			glGetProgramiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			if (logLen != 0)
 			{
 				char * log = new char[ logLen ];
-				glGetShaderInfoLog( id, logLen, 0, log );
+				glGetProgramInfoLog( id, logLen, 0, log );
 				QString errlog( log );
 				delete[] log;
+				id = 0;
 				throw errlog;
 			}
 		}
