@@ -333,7 +333,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 		
 		GLint result;
 		
-		glGetShaderiv( id, GL_LINK_STATUS, & result );
+		glGetProgramiv( id, GL_LINK_STATUS, & result );
 		
 		if ( result != GL_TRUE )
 		{
