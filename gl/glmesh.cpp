@@ -852,8 +852,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	else
 		glColor( Color3( 1.0f, 0.2f, 1.0f ) );
 	
-	
-	shader = scene->renderer.setupProgram( this, shader );
+	GLint r_mode;
+	glGetIntegerv (GL_RENDER_MODE, &r_mode);
+	if (r_mode == GL_RENDER)
+		shader = scene->renderer.setupProgram( this, shader );
 	
 	
 	// render the triangles
@@ -865,8 +867,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	
 	for ( int s = 0; s < tristrips.count(); s++ )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
-	
-	scene->renderer.stopProgram();
+
+	glGetIntegerv (GL_RENDER_MODE, &r_mode);
+	if (r_mode == GL_RENDER)	
+		scene->renderer.stopProgram();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_NORMAL_ARRAY );
