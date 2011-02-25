@@ -1593,7 +1593,7 @@ bool NifModel::load( QIODevice & device )
 						// note: some 10.0.1.0 version nifs from Oblivion in certain distributions seem to be missing
 						//		 these four bytes on the havok blocks
 						//		 (see for instance meshes/architecture/basementsections/ungrdltraphingedoor.nif)
-						if ((version < 0x0a020000) and (!blktyp.startsWith("bhk"))) {
+						if ((version < 0x0a020000) && (!blktyp.startsWith("bhk"))) {
 						  int dummy;
 						  device.read( (char *) &dummy, 4 );
 						  if (dummy != 0)
