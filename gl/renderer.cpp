@@ -68,7 +68,7 @@ bool Renderer::initialize( const QGLContext * cx )
             shader_ready = true;
         }
 #endif
-        qWarning() << "shader support" << shader_ready;
+        //qWarning() << "shader support" << shader_ready;
         shader_initialized = true;
     }
     return shader_ready;
