@@ -66,17 +66,8 @@ float get_max_anisotropy()
 
 void initializeTextureUnits( const QGLContext * context )
 {
-	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
-	//foreach ( QString e, extensions.split( " " ) )
-	//	qWarning() << e;
-	
-	//if (!extensions.contains("GL_ARB_texture_compression"))
-	//	qWarning() << "texture compression not supported, some textures may not load";
-
-	// *** check disabled: software decompression is supported ***
-	//if (!extensions.contains("GL_EXT_texture_compression_s3tc"))
-	//	qWarning() << "S3TC texture compression not supported, some textures may not load";
-
+	// detect maximum number of texture slots
+	// (todo: should we use GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB or similar?)
 	if ( GLEE_ARB_multitexture )
 	{
 		glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
@@ -95,23 +86,24 @@ void initializeTextureUnits( const QGLContext * context )
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, & max_anisotropy );
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
 	}
+	else
+	{
+		max_anisotropy = 0;
+	};
 }
 
 bool activateTextureUnit( int stage )
 {
 	if ( num_texture_units <= 1 )
 		return ( stage == 0 );
-	
+
+	// num_texture_units > 1 can only happen if GLEE_ARB_multitexture is true
+	// so glActiveTexture and glClientActiveTexture are supported
 	if ( stage < num_texture_units )
 	{
-		if (GLEE_ARB_texture_compression )
-		{
-			glActiveTexture( GL_TEXTURE0 + stage );
-			glClientActiveTexture( GL_TEXTURE0 + stage );	
-			return true;
-		}
-		else
-			qWarning( "texture compression not supported" );
+		glActiveTexture( GL_TEXTURE0 + stage );
+		glClientActiveTexture( GL_TEXTURE0 + stage );	
+		return true;
 	}
 	return false;
 }
@@ -124,6 +116,8 @@ void resetTextureUnits()
 		return;
 	}
 	
+	// num_texture_units > 1 can only happen if GLEE_ARB_multitexture is true
+	// so glActiveTexture and glClientActiveTexture are supported
 	for ( int x = num_texture_units-1; x >= 0; x-- )
 	{
 		glActiveTexture( GL_TEXTURE0 + x );
