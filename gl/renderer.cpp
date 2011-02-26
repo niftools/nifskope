@@ -53,20 +53,25 @@ bool shader_ready = false;
 
 bool Renderer::initialize( const QGLContext * cx )
 {
-	if ( shader_initialized )
-		return shader_ready;
-	
-	shader_initialized = true;
-	
-	QString extensions( (const char *) glGetString(GL_EXTENSIONS) );
-	//qDebug() << extensions << "\n";
-	
-	if ( !GLEE_ARB_shading_language_100|| ! GLEE_ARB_shader_objects || ! GLEE_ARB_vertex_shader || !GLEE_ARB_fragment_shader)
+    if ( !shader_initialized )
+    {
+#ifdef DISABLE_SHADERS
+        shader_ready = false;
+#else
+        if (!GLEE_ARB_shading_language_100
+             || !GLEE_ARB_shader_objects
+             || !GLEE_ARB_vertex_shader
+             || !GLEE_ARB_fragment_shader)
 	{
-		return false;
-	}
-	shader_ready = true;
-	return true;
+            shader_ready = false;
+        } else {
+            shader_ready = true;
+        }
+#endif
+        qWarning() << "shader support" << shader_ready;
+        shader_initialized = true;
+    }
+    return shader_ready;
 }
 
 bool Renderer::hasShaderSupport()
