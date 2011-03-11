@@ -14,6 +14,8 @@ IF NOT "%REVISION%" == "" set VERSION=%VERSION%.%REVISION%
 del %NAME%-%VERSION%-windows.exe > nul
 
 echo !define VERSION "%VERSION%" > nifversion.nsh
+echo !define BUILD_RELEASE_FOLDER "..\..\NifSkope-build-desktop\release" >> nifversion.nsh
+echo !define DLL_RELEASE_FOLDER "..\..\NifSkope-build-desktop\release" >> nifversion.nsh
 
 cd ..\docsys
 del doc\*.html
