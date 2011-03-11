@@ -255,12 +255,8 @@ void Scene::drawShapes()
 
 void Scene::drawNodes()
 {
-	GLint r_mode;
-	glGetIntegerv (GL_RENDER_MODE, &r_mode);
-	if (r_mode == GL_RENDER) {
-		foreach ( Node * node, roots.list() )
-			node->draw();
-	}
+	foreach ( Node * node, roots.list() )
+		node->draw();
 }
 
 void Scene::drawHavok()

@@ -788,7 +788,7 @@ void Node::draw()
 {
 	if ( isHidden() )
 		return;
-	
+
 	glLoadName( nodeId );
 	
 	glEnable( GL_DEPTH_TEST );
@@ -805,7 +805,11 @@ void Node::draw()
 	glNormalColor();
 	
 	glPointSize( 8.5 );
-	glLineWidth( 2.5 );
+
+	GLint r_mode;
+	glGetIntegerv (GL_RENDER_MODE, &r_mode);
+	if (r_mode == GL_RENDER)
+		glLineWidth( 2.5 );
 	
 	Vector3 a = viewTrans().translation;
 	Vector3 b = a;
