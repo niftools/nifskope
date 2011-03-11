@@ -58,14 +58,15 @@ bool Renderer::initialize( const QGLContext * cx )
 #ifdef DISABLE_SHADERS
         shader_ready = false;
 #else
-        if (!GLEE_ARB_shading_language_100
-             || !GLEE_ARB_shader_objects
-             || !GLEE_ARB_vertex_shader
-             || !GLEE_ARB_fragment_shader)
-	{
-            shader_ready = false;
-        } else {
+        // check for OpenGL 2.0
+        // (we don't use the extension API but the 2.0 API for shaders)
+        if (GLEE_VERSION_2_0)
+        {
             shader_ready = true;
+        }
+        else
+        {
+            shader_ready = false;
         }
 #endif
         //qWarning() << "shader support" << shader_ready;
