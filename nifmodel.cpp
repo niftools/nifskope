@@ -492,8 +492,7 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	// Special case for very large arrays that are opaque in nature.
 	//  Typical array handling has very poor performance with these arrays
 	if ( NifValue::type( array->type() ) == NifValue::tBlob )  {
-		if ( updateByteArrayItem(array, fast) )
-			return true;
+		return updateByteArrayItem(array, fast);
 	}
 
 	if ( d1 > 1024 * 1024 * 8 ) {
