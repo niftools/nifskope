@@ -200,12 +200,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
   WriteRegStr HKCR "NetImmerseAnimMgr\shell\edit\command" "" '$INSTDIR\NifSkope.exe "%1"'
 
   ; Cleanup old dll files
-  Delete $INSTDIR\mingwm10.dll
-  Delete $INSTDIR\QtCore4.dll
-  Delete $INSTDIR\QtGui4.dll
-  Delete $INSTDIR\QtNetwork4.dll
-  Delete $INSTDIR\QtOpenGL4.dll
-  Delete $INSTDIR\QtXml4.dll
+  Delete $INSTDIR\*.dll
   Delete $INSTDIR\Copyright.txt
   
   ; Install NifSkope
