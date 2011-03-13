@@ -2072,8 +2072,8 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 			}
 		}
 		
-		// this value is always little-endian
-		if( child->name() == "Num Blocks" )
+		// these values are always little-endian
+		if( (child->name() == "Num Blocks") || (child->name() == "User Version") || (child->name() == "User Version 2") )
 		{
 			if( version >= 0x14000004 && get<quint8>( getHeaderItem(), "Endian Type" ) == 0 )
 			{
