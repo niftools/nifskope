@@ -1,5 +1,12 @@
 NAME=nifskope
-VERSION=1.1.0.`git log -1 --pretty=format:%h`
+VERSION=1.1.0
+wcrev=`git log -1 --pretty=format:%h`
+if [ "$1" == "" ]
+then
+    extversion=${VERSION}.${wcrev}
+else
+    extversion=${VERSION}-$1.${wcrev}
+fi
 
 rm nifskope-*.exe
 echo !define VERSION \"${VERSION}\" > nifversion.nsh
@@ -19,3 +26,5 @@ cp ../qhull/COPYING.txt ../Qhull_COPYING.TXT
 cd ../win-install
 
 makensis -V3 ${NAME}-fedora-mingw-dynamic.nsi
+mv "${NAME}-${VERSION}-windows.exe" "${NAME}-${extversion}-windows.exe"
+
