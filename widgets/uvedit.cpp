@@ -196,7 +196,7 @@ void UVWidget::initializeGL()
 	initializeTextureUnits( context() );
 
 	glShadeModel( GL_SMOOTH );
-	glShadeModel( GL_LINE_SMOOTH );
+	//glShadeModel( GL_LINE_SMOOTH );
 
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glEnable( GL_BLEND );

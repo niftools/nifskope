@@ -425,7 +425,9 @@ void Particles::drawShapes( NodeList * draw2nd )
 		return;
 	}
 
-	glLoadName( nodeId );
+	//glLoadName( nodeId );
+	// TODO: I don't know what calls this method, because it was not called so far,
+	// so I just disabled the GL_SELECT helper
 	
 	// Disable texturing,  texturing properties will reenable if applicable
 	glDisable( GL_TEXTURE_2D );

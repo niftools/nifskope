@@ -117,7 +117,9 @@ public:
 	Controller * findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 );
 
 	virtual QString textStats() const;
-	
+
+	static int SELECTING;
+
 protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & controller );
 

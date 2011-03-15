@@ -813,8 +813,12 @@ void Mesh::drawShapes( NodeList * draw2nd )
 {
 	if ( isHidden() || !Options::drawMeshes() )
 		return;
-	
-	glLoadName( nodeId );
+
+	//glLoadName( nodeId ); - disabled glRenderMode( GL_SELECT );
+	if (Node::SELECTING) {
+		int s_nodeId = ID2COLORKEY( nodeId );
+		glColor4ubv( (GLubyte *)&s_nodeId );
+	}
 	
 	// draw transparent meshes during second run
 	
@@ -838,38 +842,34 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, transVerts.data() );
 	
-	if ( transNorms.count() )
-	{
-		glEnableClientState( GL_NORMAL_ARRAY );
-		glNormalPointer( GL_FLOAT, 0, transNorms.data() );
+	if (!Node::SELECTING) {
+		if ( transNorms.count() )
+		{
+			glEnableClientState( GL_NORMAL_ARRAY );
+			glNormalPointer( GL_FLOAT, 0, transNorms.data() );
+		}
+	
+		if ( transColors.count() )
+		{
+			glEnableClientState( GL_COLOR_ARRAY );
+			glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
+		}
+		else
+			glColor( Color3( 1.0f, 0.2f, 1.0f ) );
 	}
 	
-	if ( transColors.count() )
-	{
-		glEnableClientState( GL_COLOR_ARRAY );
-		glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
-	}
-	else
-		glColor( Color3( 1.0f, 0.2f, 1.0f ) );
-	
-	GLint r_mode;
-	glGetIntegerv (GL_RENDER_MODE, &r_mode);
-	if (r_mode == GL_RENDER)
+	if (!Node::SELECTING)
 		shader = scene->renderer.setupProgram( this, shader );
 	
-	
 	// render the triangles
-
 	if ( sortedTriangles.count() )
 		glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.data() );
 	
 	// render the tristrips
-	
 	for ( int s = 0; s < tristrips.count(); s++ )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
 
-	glGetIntegerv (GL_RENDER_MODE, &r_mode);
-	if (r_mode == GL_RENDER)	
+	if (!Node::SELECTING)
 		scene->renderer.stopProgram();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
