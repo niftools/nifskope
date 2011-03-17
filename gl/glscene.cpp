@@ -241,6 +241,9 @@ void Scene::drawShapes()
 		foreach ( Node * node, roots.list() )
 			node->drawShapes( &draw2nd );
 		
+		if ( draw2nd.list().count() > 0 )
+			drawSelection ();// for transparency pass
+
 		draw2nd.sort();
 		
 		foreach ( Node * node, draw2nd.list() )
