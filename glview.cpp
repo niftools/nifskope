@@ -642,7 +642,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel *model, Scene *scene, QList<DrawFunc> 
 		(scene->*df)();
 	}
 	Node::SELECTING = 0;
-/*	
+/*
 	// get the back buffer into a bitmap file
 	//		/
 	//	 --/ GL_DEBUG /----

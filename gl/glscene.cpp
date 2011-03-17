@@ -276,6 +276,8 @@ void Scene::drawFurn()
 
 void Scene::drawSelection() const
 {
+	if (Node::SELECTING)
+		return;// do not render the selection when selecting
 	foreach ( Node * node, nodes.list() )
 		node->drawSelection();
 }
