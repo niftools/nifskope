@@ -915,7 +915,7 @@ void DrawTriangleIndex( QVector<Vector3> const &verts, Triangle const &tri, int 
 	renderText(c, QString("%1").arg(index));
 }
 
-void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene )
+void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene, const float origin_color3fv[3] )
 {
 	if ( ! nif || ! iShape.isValid() || stack.contains( iShape ) )
 		return;
@@ -932,7 +932,19 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		{
 			for ( int r = 0; r < nif->rowCount( iShapes ); r++ )
 			{
-				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene );
+				if ( !Node::SELECTING ) {
+					if ( scene->currentBlock == nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ) ) {// fix: add selected visual to havok meshes
+						glHighlightColor();
+						glLineWidth( 2.5 );
+					}
+					else {
+						if ( scene->currentBlock != iShape) {// allow group highlighting
+							glLineWidth( 1.0 );
+							glColor3fv( origin_color3fv );
+						}
+					}
+				}
+				drawHvkShape( nif, nif->getBlock( nif->getLink( iShapes.child( r, 0 ) ) ), stack, scene, origin_color3fv );
 			}
 		}
 	}
@@ -941,7 +953,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		glPushMatrix();
 		Matrix4 tm = nif->get<Matrix4>( iShape, "Transform" );
 		glMultMatrix( tm );
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene );
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 		glPopMatrix();
 	}
 	else if ( name == "bhkSphereShape" )
@@ -1047,7 +1059,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	}
 	else if ( name == "bhkMoppBvTreeShape" )
 	{
-		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene );
+		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 	}
 	else if ( name == "bhkPackedNiTriStripsShape" )
 	{
@@ -1582,7 +1594,8 @@ void Node::drawHavok()
 		{ 0.0f, 1.0f, 1.0f }
 	};
 	
-	glColor3fv( colors[ nif->get<int>( iBody, "Layer" ) & 7 ] );
+	int color_index = nif->get<int>( iBody, "Layer" ) & 7;
+	glColor3fv( colors[ color_index ] );
 	if ( !Node::SELECTING )
 		if ( scene->currentBlock == nif->getBlock( nif->getLink( iBody, "Shape" ) ) ) {// fix: add selected visual to havok meshes
 			glHighlightColor(); // TODO: proposal: I do not recommend mimicking the Open GL API
@@ -1595,7 +1608,7 @@ void Node::drawHavok()
 	QStack<QModelIndex> shapeStack;
 	if (Node::SELECTING)
 		glLineWidth( 5 );// make selection click a little more easy
-	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene );
+	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
 	//glLoadName( nif->getBlockNumber( iBody ) );
 	if (Node::SELECTING) {
