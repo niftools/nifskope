@@ -1059,6 +1059,16 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	}
 	else if ( name == "bhkMoppBvTreeShape" )
 	{
+		if ( !Node::SELECTING ) {
+			if ( scene->currentBlock == nif->getBlock( nif->getLink( iShape, "Shape" ) ) ) {// fix: add selected visual to havok meshes
+				glHighlightColor();
+				glLineWidth( 1.5f );// taken from "DrawTriangleSelection"
+			}
+			else {
+				glLineWidth( 1.0 );
+				glColor3fv( origin_color3fv );
+			}
+		}
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 	}
 	else if ( name == "bhkPackedNiTriStripsShape" )
