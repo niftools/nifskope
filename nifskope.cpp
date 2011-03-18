@@ -289,7 +289,7 @@ NifSkope::NifSkope()
 	aShredder = new QAction( tr("XML Checker" ), this );
 	connect( aShredder, SIGNAL( triggered() ), this, SLOT( sltShredder() ) );
 	aQuit = new QAction( tr("&Quit"), this );
-	connect( aQuit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
+	connect( aQuit, SIGNAL( triggered() ), this, SLOT( close() ) );
 	
 	aList = new QAction( tr("Show Blocks in List"), this );
 	aList->setCheckable( true );
@@ -1110,6 +1110,8 @@ void myMessageOutput(QtMsgType type, const char *msg)
 		case QtFatalMsg:
 			qDefaultMsgHandler( type, msg );
 			QMessageBox::critical( 0, QMessageBox::tr("Fatal Error"), msg );
+			// TODO: the above causes stack overflow when
+			// "ASSERT: "testAttribute(Qt::WA_WState_Created)" in file kernel\qapplication_win.cpp, line 3699"
 			abort();
 	}
 }
