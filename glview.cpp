@@ -748,14 +748,26 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	glViewport( 0, 0, width(), height() );
 	glProjection( pos.x(), pos.y() );
 
-	//GLuint	buffer[512];
-	//glSelectBuffer( 512, buffer );
-	
 	int choose;
+
+	QList<DrawFunc> df;
+	
+	if ( Options::drawHavok() )
+		df << &Scene::drawHavok;
+	if ( Options::drawNodes() )
+		df << &Scene::drawNodes;
+	if ( Options::drawFurn() )
+		df << &Scene::drawFurn;
+	df << &Scene::drawShapes;
+	
+	choose = ::indexAt(model, scene, df, cycle, pos ); 
+
 	if ( Options::drawFurn() )
 	{		
-		choose = ::indexAt( /*buffer,*/ model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle, pos ); 
-		if ( choose != -1 )
+		// TODO: find out a better way to check if "furn" was mouse-clicked
+		int furnchoose = ::indexAt( model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle, pos ); 
+		if ( choose != -1 && furnchoose != -1// something hit && something2 is "furn"
+			&& choose == furnchoose) // the "furn" was hit
 		{
 			glPopAttrib();
 			glMatrixMode(GL_MODELVIEW);
@@ -763,20 +775,10 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
 			
-			QModelIndex parent = model->index( 3, 0, model->getBlock( choose&0x0ffff ) );
-			return model->index( choose>>16, 0, parent );
+			QModelIndex parent = model->index( 3, 0, model->getBlock( furnchoose&0x0ffff ) );
+			return model->index( furnchoose>>16, 0, parent );
 		}
 	}
-	
-	QList<DrawFunc> df;
-	
-	if ( Options::drawHavok() )
-		df << &Scene::drawHavok;
-	if ( Options::drawNodes() )
-		df << &Scene::drawNodes;
-	df << &Scene::drawShapes;
-	
-	choose = ::indexAt( /*buffer,*/ model, scene, df, cycle, pos ); 
 
 	glPopAttrib();
 	glMatrixMode(GL_MODELVIEW);

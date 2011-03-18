@@ -1746,7 +1746,7 @@ void Node::drawFurn()
 	glMultMatrix( viewTrans() );
 	
 	for ( int p = 0; p < nif->rowCount( iExtraDataList ); p++ )
-	{// TODO: never seen Furn in nifs, so there may be a need of a fix here later
+	{// DONE: never seen Furn in nifs, so there may be a need of a fix here later - saw one, fixed a bug
 		QModelIndex iFurnMark = nif->getBlock( nif->getLink( iExtraDataList.child( p, 0 ) ), "BSFurnitureMarker" );
 		if ( ! iFurnMark.isValid() )
 			continue;
