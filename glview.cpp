@@ -30,6 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+// test change by corwinn
+
 // include these before GLee.h to avoid linux compile error
 #include <QActionGroup>
 #include <QComboBox>
