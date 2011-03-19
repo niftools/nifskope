@@ -1813,10 +1813,42 @@ QString Node::textStats() const
 
 BoundSphere Node::bounds() const
 {
-	if ( Options::drawNodes() || Options::drawHavok() )// fix: allow for Havok meshes to render correctly
-		return BoundSphere( worldTrans().translation, 0 );
-	else
-		return BoundSphere();
+	BoundSphere boundsphere;
+	// the node itself
+	if ( Options::drawNodes() || Options::drawHavok() ) {
+		boundsphere |= BoundSphere( worldTrans().translation, 0 );
+	}
+
+	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
+	if ( ! ( iBlock.isValid() && nif ) )
+		return boundsphere;
+
+	// old style collision bounding box
+	if ( nif->get<bool>( iBlock, "Has Bounding Box" ) == true )
+	{
+		QModelIndex iBox = nif->getIndex( iBlock, "Bounding Box" );
+		Vector3 trans = nif->get<Vector3>( iBox, "Translation" );
+		Vector3 rad = nif->get<Vector3>( iBox, "Radius" );
+		boundsphere |= BoundSphere(trans, rad.length());
+	}
+	
+	// BSBound collision bounding box
+	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
+	
+	if ( iExtraDataList.isValid() )
+	{
+		for ( int d = 0; d < nif->rowCount( iExtraDataList ); d++ )
+		{
+			QModelIndex iBound = nif->getBlock( nif->getLink( iExtraDataList.child( d, 0 ) ), "BSBound" );
+			if ( ! iBound.isValid() )
+				continue;
+			
+			Vector3 center = nif->get<Vector3>( iBound, "Center" );
+			Vector3 dim = nif->get<Vector3>( iBound, "Dimensions" );
+			boundsphere |= BoundSphere(center, dim.length());
+		}
+	}
+	return boundsphere;
 }
 
 
