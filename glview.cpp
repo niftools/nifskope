@@ -81,13 +81,15 @@ GLView * GLView::create()
 		if ( v ) share = v;
 	
 	QGLFormat fmt;
+	fmt.setDoubleBuffer(true);
+	fmt.setRgba(true);
 	if ( share )
 		fmt = share->format();
 	else
 		fmt.setSampleBuffers( Options::antialias() );
 	
 	views.append( QPointer<GLView>( new GLView( fmt, share ) ) );
-	
+
 	return views.last();
 }
 
@@ -341,10 +343,15 @@ void GLView::glProjection( int x, int y )
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	if ( x >= 0 && y >= 0 )
+	/*if ( x >= 0 && y >= 0 )
 	{
-		gluPickMatrix( (GLdouble) x, (GLdouble) (viewport[3]-y), 5.0f, 5.0f, viewport);
-	}
+		//gluPickMatrix( (GLdouble) x, (GLdouble) (viewport[3]-y), 10.0f, 10.0f, viewport);
+		// commented out because:
+		//  1. It damages "glPointSize" & "glLineWidth" proven by "glReadPixels"
+		//  2. It will be no longer needed
+		// It doesn't affect glRenderMode( GL_SELECT )
+		// "WinXP", "Catalyst" 10.10, HD 4850
+	} - disabled glRenderMode( GL_SELECT );*/
 	
 	BoundSphere bs = scene->view * scene->bounds();
 	if ( Options::drawAxes() )
@@ -359,6 +366,15 @@ void GLView::glProjection( int x, int y )
 	{
 		if ( nr < 1.0 ) nr = 1.0;
 		if ( fr < 2.0 ) fr = 2.0;
+		if (nr > fr) {// add: swap them when needed
+			GLfloat tmp = nr;
+			nr = fr;
+			fr = tmp;
+		}
+		if ((fr - nr) < 0.00001f) {// add: ensure distance
+			nr = 1.0;
+			fr = 2.0;
+		}
 		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * nr;
 		GLdouble w2 = h2 * aspect;
 		glFrustum( - w2, + w2, - h2, + h2, nr, fr );
@@ -411,7 +427,7 @@ void GLView::paintGL()
 		textures->setNifFolder( model->getFolder() );
 		scene->make( model );
 		scene->transform( Transform(), scene->timeMin() );
-		axis = scene->bounds().radius * 1.4;
+		axis = scene->bounds().radius < 0 ? 1 : scene->bounds().radius * 1.4;// fix: the axis appearance when there is no scene yet
 		if ( axis == 0 ) axis = 1;
 		
 		if ( time < scene->timeMin() || time > scene->timeMax() )
@@ -478,7 +494,7 @@ void GLView::paintGL()
 		glDepthFunc( GL_LESS );
 		glDisable( GL_TEXTURE_2D );
 		glDisable( GL_NORMALIZE );
-		glLineWidth( 1.2f );
+		glLineWidth( 2.0f );
 		
 		glPushMatrix();
 		glLoadMatrix( viewTrans );
@@ -509,6 +525,20 @@ void GLView::paintGL()
 
 	// Initialize Rendering Font 
 	glListBase(fontDisplayListBase(QFont(), 2000));
+
+	// color-key slect debug for non-meshes
+	/*//glDisable( GL_MULTISAMPLE );
+	glDisable( GL_LINE_SMOOTH );
+	glDisable (GL_TEXTURE_2D);
+	glDisable (GL_BLEND);
+	glDisable (GL_DITHER);
+	glDisable (GL_LIGHTING);
+	glShadeModel (GL_FLAT);
+	glDisable (GL_FOG);
+	//glDisable (GL_MULTISAMPLE_ARB);
+	// To limit selection to visible surfaces, depth testing should be enabled.
+	glEnable (GL_DEPTH_TEST);
+	glDepthFunc (GL_LEQUAL);*/
 
 	// draw the model
 	scene->draw();
@@ -579,10 +609,104 @@ bool compareHits( const QPair< GLuint, GLuint > & a, const QPair< GLuint, GLuint
 
 typedef void (Scene::*DrawFunc)(void);
 	
-int indexAt( GLuint *buffer, NifModel *model, Scene *scene, QList<DrawFunc> drawFunc, int cycle )
+int indexAt( /*GLuint *buffer,*/ NifModel *model, Scene *scene, QList<DrawFunc> drawFunc, int cycle, const QPoint & pos )
 {
 	Q_UNUSED(model);
-	glRenderMode( GL_SELECT );	
+	// Modifying this to a color-key O(1) selection
+	// because Open GL 3.0 says glRenderMode is deprecated
+	// and because ATI opengl API implementation of GL_SELECT corrupts NifSkope memory
+	// Caution: this works in 32 bit frmae buffer modes only.
+	//
+	// State is stored by the caller.
+	// Prepare the back color buffer for sharp edges and no shading.
+	// Texturing, blending, dithering, lighting and smooth shading should be disabled
+	// The back color buffer can be used for the drawing operations to keep the drawing
+	// operations invisible to the user.
+	glDisable( GL_MULTISAMPLE );
+	glDisable( GL_LINE_SMOOTH );
+	glDisable (GL_TEXTURE_2D);
+	glDisable (GL_BLEND);
+	glDisable (GL_DITHER);
+	glDisable (GL_LIGHTING);
+	glShadeModel (GL_FLAT);
+	glDisable (GL_FOG);
+	//glDisable (GL_MULTISAMPLE_ARB);
+	// ro limit selection to visible surfaces, depth testing should be enabled.
+	glEnable (GL_DEPTH_TEST);
+	glDepthFunc (GL_LEQUAL);
+	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// rasterize the scene
+	Node::SELECTING = 1;
+	foreach ( DrawFunc df, drawFunc ) {
+		glDrawBuffer (GL_BACK);
+		(scene->*df)();
+	}
+	Node::SELECTING = 0;
+/*
+	// get the back buffer into a bitmap file
+	//		/
+	//	 --/ GL_DEBUG /----
+	//				 /
+    GLint vp[4];
+    glGetIntegerv (GL_VIEWPORT, vp);
+	FILE *ttt =  fopen ("select.bmp", "w+");
+	if (ttt) {
+		// BMP header
+		fwrite ("BM", 1, 2, ttt);					// 2
+		int filesize = 14 + 40 + (vp[2] * vp[3] * 4);
+		short u16 = 0; fwrite (&filesize, sizeof(int), 1, ttt);		// 4
+		fwrite (&u16, 2, 1, ttt);					// 2 - reserved 1
+		fwrite (&u16, 2, 1, ttt);					// 2 - reserved 2
+		int bmp_ofs = 14+40; fwrite (&bmp_ofs, sizeof(int), 1, ttt);	// 4
+		// DIB 1
+		int dib_size = 40; fwrite (&dib_size, sizeof(int), 1, ttt);	// 4
+		int bufw = vp[2]; fwrite (&bufw, sizeof(int), 1, ttt);		// 4
+		int bufh = vp[3]; fwrite (&bufh, sizeof(int), 1, ttt);		// 4
+		short bitplanes = 1; fwrite (&bitplanes, 2, 1, ttt);		// 2
+		short bpp = 32; fwrite (&bpp, 2, 1, ttt);					// 2
+		int compression = 0; fwrite (&compression, sizeof(int), 1, ttt);				// 4
+		int bmp_size = (vp[2] * vp[3] * 4);	fwrite (&bmp_size, sizeof(int), 1, ttt);	// 4
+		int hres = 0; fwrite (&hres, sizeof(int), 1, ttt);								// 4
+		int vres = 0; fwrite (&vres, sizeof(int), 1, ttt);								// 4
+		int color_pal_num = 0; fwrite (&color_pal_num, sizeof(int), 1, ttt);			// 4
+		int important_color_num = 0; fwrite (&important_color_num, sizeof(int), 1, ttt);// 4
+		// bmp
+		unsigned char *pixel_buf = (unsigned char *) malloc (bmp_size);
+		if (pixel_buf) {
+			memset (&pixel_buf[0], 0, bmp_size);
+			//glReadBuffer (GL_FRONT);
+			glReadBuffer (GL_BACK);
+			//glFinish ();
+			glReadPixels (0, 0, bufw, bufh, GL_RGBA, GL_UNSIGNED_BYTE, &pixel_buf[0]);
+			for (int  i = 0; i < bmp_size / 4; i++) {
+				int r = pixel_buf[(i*4)+0];
+				int g = pixel_buf[(i*4)+1];
+				int b = pixel_buf[(i*4)+2];
+				int a = pixel_buf[(i*4)+3];
+				pixel_buf[(i*4)+0] = b;
+				//pixel_buf[(i*4)+1] = b;
+				pixel_buf[(i*4)+2] = r;
+				//pixel_buf[(i*4)+3] = r;
+			}
+			fwrite (pixel_buf, 1, bmp_size, ttt);
+		}
+		fclose (ttt);
+	}
+*/
+	// Get the color key
+	unsigned char pixel[4] = {0, 0, 0, 0};
+    GLint viewport[4];
+    glGetIntegerv (GL_VIEWPORT, viewport);
+	glReadBuffer (GL_BACK);
+    glReadPixels (pos.x(), viewport[3] - pos.y(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+	//int a = pixel[3] << 3*8;
+	int a = pixel[2] << 2*8;
+	a |= pixel[1] << 1*8;
+	a |= pixel[0] << 0*8;
+	//qDebug() << a << " " << pixel[0] << " " << pixel[1] << " " << pixel[2] << " " << pixel[3];
+	return COLORKEY2ID( a );
+	/* the previous select method
+	glRenderMode( GL_SELECT );
 	glInitNames();
 	glPushName( 0 );
 	
@@ -605,6 +729,7 @@ int indexAt( GLuint *buffer, NifModel *model, Scene *scene, QList<DrawFunc> draw
 	}
 	
 	return -1;
+	*/
 }
 
 QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
@@ -623,14 +748,26 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	glViewport( 0, 0, width(), height() );
 	glProjection( pos.x(), pos.y() );
 
-	GLuint	buffer[512];
-	glSelectBuffer( 512, buffer );
-	
 	int choose;
+
+	QList<DrawFunc> df;
+	
+	if ( Options::drawHavok() )
+		df << &Scene::drawHavok;
+	if ( Options::drawNodes() )
+		df << &Scene::drawNodes;
+	if ( Options::drawFurn() )
+		df << &Scene::drawFurn;
+	df << &Scene::drawShapes;
+	
+	choose = ::indexAt(model, scene, df, cycle, pos ); 
+
 	if ( Options::drawFurn() )
 	{		
-		choose = ::indexAt( buffer, model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle ); 
-		if ( choose != -1 )
+		// TODO: find out a better way to check if "furn" was mouse-clicked
+		int furnchoose = ::indexAt( model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle, pos ); 
+		if ( choose != -1 && furnchoose != -1// something hit && something2 is "furn"
+			&& choose == furnchoose) // the "furn" was hit
 		{
 			glPopAttrib();
 			glMatrixMode(GL_MODELVIEW);
@@ -638,20 +775,10 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
 			
-			QModelIndex parent = model->index( 3, 0, model->getBlock( choose&0x0ffff ) );
-			return model->index( choose>>16, 0, parent );
+			QModelIndex parent = model->index( 3, 0, model->getBlock( furnchoose&0x0ffff ) );
+			return model->index( furnchoose>>16, 0, parent );
 		}
 	}
-	
-	QList<DrawFunc> df;
-	
-	if ( Options::drawHavok() )
-		df << &Scene::drawHavok;
-	if ( Options::drawNodes() )
-		df << &Scene::drawNodes;
-	df << &Scene::drawShapes;
-	
-	choose = ::indexAt( buffer, model, scene, df, cycle ); 
 
 	glPopAttrib();
 	glMatrixMode(GL_MODELVIEW);
