@@ -551,7 +551,8 @@ bool UVWidget::bindTexture( const QString & filename )
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
 	}
 
-	if ( mipmaps = textures->bind( filename ) )
+	mipmaps = textures->bind( filename );
+	if (mipmaps)
 	{
 		if ( max_anisotropy > 0.0f )
 		{
@@ -590,7 +591,8 @@ bool UVWidget::bindTexture( const QModelIndex & iSource )
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
 	}
 
-	if ( mipmaps = textures->bind( iSource ) )
+	mipmaps = textures->bind( iSource );
+	if (mipmaps)
 	{
 		if ( max_anisotropy > 0.0f )
 		{
