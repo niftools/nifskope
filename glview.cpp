@@ -615,7 +615,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel *model, Scene *scene, QList<DrawFunc> 
 	// Modifying this to a color-key O(1) selection
 	// because Open GL 3.0 says glRenderMode is deprecated
 	// and because ATI opengl API implementation of GL_SELECT corrupts NifSkope memory
-	// Caution: this works in 32 bit frmae buffer modes only.
+	// Caution: this works in 32 bit frame buffer modes only.
 	//
 	// State is stored by the caller.
 	// Prepare the back color buffer for sharp edges and no shading.

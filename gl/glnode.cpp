@@ -1485,7 +1485,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
- // Proposal: Make them go to their own classes in different cpp files
+ // Idea: Make them go to their own classes in different cpp files
 	foreach ( Node * node, children.list() )
 		node->drawHavok();
 	
@@ -1608,7 +1608,7 @@ void Node::drawHavok()
 	glColor3fv( colors[ color_index ] );
 	if ( !Node::SELECTING )
 		if ( scene->currentBlock == nif->getBlock( nif->getLink( iBody, "Shape" ) ) ) {// fix: add selected visual to havok meshes
-			glHighlightColor(); // TODO: proposal: I do not recommend mimicking the Open GL API
+			glHighlightColor(); // TODO: idea: I do not recommend mimicking the Open GL API
 								// It confuses the one who reads the code. And the Open GL API is
 								// in constant development.
 			glLineWidth( 2.5 );
