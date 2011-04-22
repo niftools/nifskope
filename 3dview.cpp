@@ -46,7 +46,7 @@ NifSkopeQt3D::NifSkopeQt3D(QWidget *): QWidget (NULL)
 
 	// TODO: their place is not here. It is a 3d renderer window. It has nothing
 	// to do with toolbars, foobars or anything like that. But leave them here for
-	// now to finish the extraction og GLView
+	// now to finish the extraction of GLView
 	tAnim = new QToolBar( tr("Animation") );
 	tAnim->setObjectName( "AnimTool" );
 	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
