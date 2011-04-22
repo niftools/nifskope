@@ -45,7 +45,7 @@ class NifTreeView;
 class ReferenceBrowser;
 class InspectView;
 
-class GLView;
+class NifSkopeQt3D;
 class FileSelector;
  
 class QModelIndex;
@@ -208,7 +208,7 @@ private:
 	InspectView * inspect;
 	
 	//! The main window
-	GLView * ogl;
+	NifSkopeQt3D * ogl;
 	
 	bool selecting;
 	bool initialShowEvent;

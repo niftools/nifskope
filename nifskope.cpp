@@ -74,7 +74,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/refrbrowser.h"
 #include "widgets/inspect.h"
 
-#include "glview.h"
+#include "3dview.h"
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 #include "widgets/copyfnam.h"
@@ -253,13 +253,13 @@ NifSkope::NifSkope()
 #endif
 
 
-	// open gl
-	setCentralWidget( ogl = GLView::create() );
+	// 3d view
+	setCentralWidget( ogl = NifSkopeQt3D::create() );
 	ogl->setNif( nif );
-	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
-			this, SLOT( select( const QModelIndex & ) ) );
-	connect( ogl, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-		this, SLOT( contextMenu( const QPoint & ) ) );
+//	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
+//			this, SLOT( select( const QModelIndex & ) ) );
+//	connect( ogl, SIGNAL( customContextMenuRequested( const QPoint & ) ),
+//		this, SLOT( contextMenu( const QPoint & ) ) );
 
 #ifndef DISABLE_INSPECTIONVIEWER
    // this browser shows the state of the current selected item
@@ -269,9 +269,9 @@ NifSkope::NifSkope()
    inspect->setScene( ogl->getScene() );
    connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
       inspect, SLOT( updateSelection( const QModelIndex & ) ) );
-   connect( ogl, SIGNAL( sigTime( float, float, float ) ),
-      inspect, SLOT( updateTime( float, float, float ) ) );
-   connect( ogl, SIGNAL( paintUpdate() ), inspect, SLOT( refresh() ) );
+//   connect( ogl, SIGNAL( sigTime( float, float, float ) ),
+//      inspect, SLOT( updateTime( float, float, float ) ) );
+//   connect( ogl, SIGNAL( paintUpdate() ), inspect, SLOT( refresh() ) );
 #endif
 	// actions
 

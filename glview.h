@@ -34,6 +34,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLVIEW
 
 // must come before GLee.h for linux
+//#include <OGRE/ogre.h>
+//#include <OgreRoot.h>
+//#include <OGRE/OgreCamera.h>
+//#include <OGRE/OgreSceneManager.h>
+//#include <OGRE/OgreRenderWindow.h>
+
 #include <QCache>
 #include <QDateTime>
 #include <QFile>
