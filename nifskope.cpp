@@ -74,7 +74,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/refrbrowser.h"
 #include "widgets/inspect.h"
 
-#include "3dview.h"
+//renderer selector - for now
+//#include "3dview.h"
+#include "3dview_OGRE.h"
+//---------------------------
+
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 #include "widgets/copyfnam.h"
@@ -254,7 +258,10 @@ NifSkope::NifSkope()
 
 
 	// 3d view
-	setCentralWidget( ogl = NifSkopeQt3D::create() );
+	ogl = NifSkopeOgre3D::create();
+	setCentralWidget( ogl );
+	((NifSkopeOgre3D*)ogl)->go();
+
 	ogl->setNif( nif );
 //	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
 //			this, SLOT( select( const QModelIndex & ) ) );

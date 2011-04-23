@@ -31,12 +31,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "3dview.h"
+#include "3dview_OGRE.h"
 // 1.add Qt ...
 //#include <QtGui>
 
-NifSkopeQt3D *NifSkopeQt3D::create()
+NifSkopeQt3D *NifSkopeQt3D::create(int id)
 {
-	return new NifSkopeQt3D();
+	if (id == 1) {
+		return NifSkopeOgre3D::create();
+	} else
+		return new NifSkopeQt3D();
 }
 NifSkopeQt3D::NifSkopeQt3D(QWidget *): QWidget (NULL)
 {

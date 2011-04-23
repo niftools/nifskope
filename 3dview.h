@@ -44,7 +44,7 @@ class Scene;
 class NifSkopeQt3D: public QWidget
 {
 public:
-	static NifSkopeQt3D * create();
+	static NifSkopeQt3D * create(int id);// TOOD: think about "factory"
 	NifSkopeQt3D( QWidget *parent = NULL );
 	void paintEvent( QPaintEvent * );
 	QPaintEngine *paintEngine() const;

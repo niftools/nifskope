@@ -39,14 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cfloat>
 #include <cmath>
 
-#ifndef PI
-#ifdef M_PI
-#define PI M_PI
-#else
-//! This is only defined if we can't find M_PI, which should be in stdlib's %math.h
-#define PI 3.1416f
-#endif
-#endif
+const float PI = 3.1416f;
 
 //! \file niftypes.h Type definitions and functions
 
