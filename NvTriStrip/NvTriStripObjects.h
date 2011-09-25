@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <vector>
 #include <list>
+#include <cstddef> // NULL
 #include "VertexCache.h"
 
 /////////////////////////////////////////////////////////////////////////////////
