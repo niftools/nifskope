@@ -8,6 +8,12 @@ CONFIG += qt release thread warn_on
 
 CONFIG += fsengine
 
+INCLUDEPATH += $${OGRE_INC}
+LIBS += -L$${OGRE_LIB} -lOgreMain
+# OGRE requires boost c++ libraries
+INCLUDEPATH += $${BOOST_INC}
+
+
 # uncomment this if you want all the messages to be logged to stdout
 #CONFIG += console
 
@@ -46,6 +52,8 @@ HEADERS += \
     gl/marker/furniture.h \
     gl/renderer.h \
     glview.h \
+	3dview.h \
+	3dview_OGRE.h \
     hacking.h \
     importex/3ds.h \
     kfmmodel.h \
@@ -120,6 +128,8 @@ SOURCES += \
     gl/gltools.cpp \
     gl/renderer.cpp \
     glview.cpp \
+	3dview.cpp \
+	3dview_OGRE.cpp \
     importex/3ds.cpp \
     importex/importex.cpp \
     importex/obj.cpp \

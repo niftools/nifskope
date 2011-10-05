@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <vector>
 #include <list>
+#include <cstddef> // NULL undefined under msys - strange TODO: in vs its in string.h
 #include "VertexCache.h"
 
 /////////////////////////////////////////////////////////////////////////////////
