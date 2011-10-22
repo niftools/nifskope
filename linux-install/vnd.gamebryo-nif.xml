@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="application/vnd.gamebryo-nif">  
+  <comment>Gamebryo (NetImmerse) game engine mesh</comment>
+  <glob-deleteall/>
+  <glob pattern="*.nif"/>
+</mime-type>
