@@ -5,6 +5,6 @@ Exec=nifskope
 Icon=nifskope.png
 Terminal=false
 Type=Application
-Categories=Graphics;
+Categories=Graphics;3DGraphics;Qt;
 Encoding=UTF-8
-
+MimeType=application/vnd.gamebryo-nif;application/vnd.gamebryo-kf;application/vnd.gamebryo-kfm

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="application/vnd.gamebryo-kf">  
+  <comment>Gamebryo game engine animation</comment>
+  <glob-deleteall/>
+  <glob pattern="*.kf"/>
+</mime-type>
