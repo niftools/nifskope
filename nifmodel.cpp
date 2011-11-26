@@ -1317,6 +1317,16 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		}	return QVariant();
 		case Qt::BackgroundColorRole:
 		{
+			// "notify" about an invalid index in "Triangles"
+			// TODO: checkbox, "show invalid only"
+			if ( column == ValueCol && item->value().type() == NifValue::tTriangle ) {
+				NifItem *nv = getItemX( item, "Num Vertices" );
+				quint32 nvc = nv->value().toCount();
+				Triangle t = item->value().get<Triangle>();
+				if (t[0] >= nvc || t[1] >= nvc || t[2] >= nvc)
+					return QColor::fromRgb(240, 210, 210);
+			}
+
 			if ( column == ValueCol && item->value().isColor() )
 			{
 				return item->value().toColor();

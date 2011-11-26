@@ -545,7 +545,30 @@ void Mesh::transform()
 			
 			if ( nif->itemName( iData ) == "NiTriShapeData" )
 			{
-				triangles = nif->getArray<Triangle>( iData, "Triangles" );
+				// check indexes
+				// TODO: check other indexes as well
+				QVector<Triangle> ftriangles = nif->getArray<Triangle>( iData, "Triangles" );
+				triangles.clear ();
+				int inv_idx = 0;
+				int inv_cnt = 0;
+				for (int i = 0; i < ftriangles.count (); i++) {
+					Triangle t = ftriangles[i];
+					inv_idx = 0;
+					for (int j = 0; j < 3; j++)
+						if (t[j] >= verts.count ()) {
+							inv_idx = 1;
+							break;
+						}
+					if (!inv_idx)
+						triangles.append (t);
+				}
+				inv_cnt = ftriangles.count () - triangles.count ();
+				ftriangles.clear ();
+				if (inv_cnt > 0) {
+					int block_idx = nif->getBlockNumber (nif->getIndex( iData, "Triangles"));
+					qWarning() << "Error: " << inv_cnt << " invalid index(es) in block #"
+						<< block_idx << " NiTriShapeData.Triangles";
+				}
 				tristrips.clear();
 			}
 			else if ( nif->itemName( iData ) == "NiTriStripsData" )
