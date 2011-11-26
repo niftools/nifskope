@@ -45,7 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 template<typename T>
 inline void
-swap(T & a, T & b)
+dds_swap(T & a, T & b)
 {
   T tmp = a;
   a = b;
