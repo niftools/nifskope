@@ -75,33 +75,33 @@ FILES="NifSkope.pro \
     qhull.h
     qhull.cpp
     qhull/COPYING.txt
-    qhull/src/qhull_a.h
-    qhull/src/libqhull.c
-    qhull/src/mem.c
-    qhull/src/qset.c
-    qhull/src/geom.c
-    qhull/src/merge.c
-    qhull/src/poly.c
-    qhull/src/io.c
-    qhull/src/stat.c
-    qhull/src/global.c
-    qhull/src/user.c
-    qhull/src/poly2.c
-    qhull/src/geom2.c
-    qhull/src/userprintf.c
-    qhull/src/usermem.c
-    qhull/src/random.c
-    qhull/src/rboxlib.c
-    qhull/src/libqhull.h
-    qhull/src/stat.h
-    qhull/src/random.h
-    qhull/src/mem.h
-    qhull/src/geom.h
-    qhull/src/merge.h
-    qhull/src/poly.h
-    qhull/src/io.h
-    qhull/src/user.h
-    qhull/src/qset.h
+    qhull/src/libqhull/qhull_a.h
+    qhull/src/libqhull/libqhull.c
+    qhull/src/libqhull/mem.c
+    qhull/src/libqhull/qset.c
+    qhull/src/libqhull/geom.c
+    qhull/src/libqhull/merge.c
+    qhull/src/libqhull/poly.c
+    qhull/src/libqhull/io.c
+    qhull/src/libqhull/stat.c
+    qhull/src/libqhull/global.c
+    qhull/src/libqhull/user.c
+    qhull/src/libqhull/poly2.c
+    qhull/src/libqhull/geom2.c
+    qhull/src/libqhull/userprintf.c
+    qhull/src/libqhull/usermem.c
+    qhull/src/libqhull/random.c
+    qhull/src/libqhull/rboxlib.c
+    qhull/src/libqhull/libqhull.h
+    qhull/src/libqhull/stat.h
+    qhull/src/libqhull/random.h
+    qhull/src/libqhull/mem.h
+    qhull/src/libqhull/geom.h
+    qhull/src/libqhull/merge.h
+    qhull/src/libqhull/poly.h
+    qhull/src/libqhull/io.h
+    qhull/src/libqhull/user.h
+    qhull/src/libqhull/qset.h
     resources/qhull_cone.gif"
 
 # clean old tarball
