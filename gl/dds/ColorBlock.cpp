@@ -330,6 +330,6 @@ void ColorBlock::sortColorsByAbsoluteValue()
 				cmax = cb;
 			}
 		}
-		swap( m_color[a], m_color[max] );
+		dds_swap( m_color[a], m_color[max] );
 	}
 }

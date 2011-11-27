@@ -204,14 +204,14 @@ void BlockDXT1::setIndices(int * idx)
 /// Flip DXT1 block vertically.
 inline void BlockDXT1::flip4()
 {
-	swap(row[0], row[3]);
-	swap(row[1], row[2]);
+	dds_swap(row[0], row[3]);
+	dds_swap(row[1], row[2]);
 }
 
 /// Flip half DXT1 block vertically.
 inline void BlockDXT1::flip2()
 {
-	swap(row[0], row[1]);
+	dds_swap(row[0], row[1]);
 }
 
 
@@ -251,14 +251,14 @@ void AlphaBlockDXT3::decodeBlock(ColorBlock * block) const
 /// Flip DXT3 alpha block vertically.
 void AlphaBlockDXT3::flip4()
 {
-	swap(row[0], row[3]);
-	swap(row[1], row[2]);
+	dds_swap(row[0], row[3]);
+	dds_swap(row[1], row[2]);
 }
 
 /// Flip half DXT3 alpha block vertically.
 void AlphaBlockDXT3::flip2()
 {
-	swap(row[0], row[1]);
+	dds_swap(row[0], row[1]);
 }
 
 /// Flip DXT3 block vertically.
@@ -535,14 +535,14 @@ void BlockCTX1::setIndices(int * idx)
 /// Flip CTX1 block vertically.
 inline void BlockCTX1::flip4()
 {
-	swap(row[0], row[3]);
-	swap(row[1], row[2]);
+	dds_swap(row[0], row[3]);
+	dds_swap(row[1], row[2]);
 }
 
 /// Flip half CTX1 block vertically.
 inline void BlockCTX1::flip2()
 {
-	swap(row[0], row[1]);
+	dds_swap(row[0], row[1]);
 }
 
 void mem_read(Stream & mem, BlockDXT1 & block)
