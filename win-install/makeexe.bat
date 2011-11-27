@@ -2,7 +2,7 @@ rem Quick build script to create the installer for release.
 @echo on
 setlocal
 set NAME=nifskope
-set VERSION=1.1.0
+set VERSION=1.1.1
 set REVISION=
 
 rem get revision via git - needs to exist in path since it could be installed (almost) anywhere
