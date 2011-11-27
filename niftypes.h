@@ -699,6 +699,27 @@ public:
 		wxyz[2] = y;
 		wxyz[3] = z;
 	}
+
+	void normalize ()
+	{
+		float mag = (
+			(wxyz[0]*wxyz[0]) +
+			(wxyz[1]*wxyz[1]) +
+			(wxyz[2]*wxyz[2]) +
+			(wxyz[3]*wxyz[3]));
+		wxyz[0] /= mag;
+		wxyz[1] /= mag;
+		wxyz[2] /= mag;
+		wxyz[3] /= mag;
+	}
+
+	void negate ()
+	{
+		wxyz[0] = -wxyz[0];
+		wxyz[1] = -wxyz[1];
+		wxyz[2] = -wxyz[2];
+		wxyz[3] = -wxyz[3];
+	}
 	
 	//! Array operator
 	float & operator[]( unsigned int i )
