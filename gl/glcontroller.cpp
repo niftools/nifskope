@@ -431,6 +431,8 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 				{
 					Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );
 					Quat v2 = nif->get<Quat>( frames.child( next, 0 ), "Value" );
+					if (Quat::dotproduct( v1, v2 ) < 0)
+						v1.negate ();// don't take the long path
 					Quat v3 = Quat::slerp(x, v1, v2);
 					/*
 					Quat v4;
