@@ -30,8 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifdef QT_OPENGL_LIB
-
 // include before GLee.h to avoid compile error on linux
 #include <QDebug>
 #include <QDir>
@@ -534,5 +532,3 @@ bool TexCache::Tex::savePixelData( NifModel * nif, const QModelIndex & iSource, 
 	//qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
 	return texSaveNIF( nif, filepath, iData );
 }
-
-#endif

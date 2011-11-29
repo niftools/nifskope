@@ -1,6 +1,24 @@
  == CHANGELOG ==
 
-This is version 1.1.0 of NifSkope.
+This is version 1.1.0-RC1 of NifSkope.
+
+ * made material editor dialog window modal
+ * Update for new qhull
+ * fix: quat. rotation keys linear interpolation issue
+ * Fix for Qt 4.8.0: naming clash with dds_swap
+ * fix: added handling of invalid "Triangles" indexes
+ * fix: Skyrim textures are visible
+ * Fixed NvTriStripObjects build error on gcc
+ * fix: File->Quit was not storing the program settings
+ * fix: bhkPackedNiTriStripsShape highlighting now works
+ * fix: furniture below shapes is now correctly mouse
+ * fix: transpaarency no longer hides selected fragments
+ * fix: highlighting of bhkListShape. Also, group highlighting now works
+ * Changed interactive selection approach
+ * Fix for user version in big endian nifs
+ * Require OpenGL 2.0 (this fixes a crash on older hardware)
+ * fixed nifskope crash on mouse left click in the opengl context window
+ * many more ...
 
 changes since 1.0.22:
  * updated to Qt 4.6.2
