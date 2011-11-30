@@ -942,12 +942,12 @@ void Mesh::drawSelection() const
 	}
 	else if ( scene->currentBlock == iData || scene->currentBlock == iSkinPart )
 	{
-		n = scene->currentIndex.data( Qt::DisplayRole ).toString();
+		n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
 		
 		QModelIndex iParent = scene->currentIndex.parent();
 		if ( iParent.isValid() && iParent != iData )
 		{
-			n = iParent.data( Qt::DisplayRole ).toString();
+			n = iParent.data( NifSkopeDisplayRole ).toString();
 			i = scene->currentIndex.row();
 		}
 	}

@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QObject>
 #include "widgets/groupbox.h"
 
-#define NifSkopeBlockNameRole (Qt::UserRole + 42)
+#define NifSkopeDisplayRole (Qt::UserRole + 42)
 
 //! \file options.h Options class
 

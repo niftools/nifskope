@@ -1057,30 +1057,23 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		}
 	}
 
-
+	bool ndr = role == NifSkopeDisplayRole;
+	if (role == NifSkopeDisplayRole)
+		role = Qt::DisplayRole;
 	switch ( role )
 	{
-		case NifSkopeBlockNameRole:
-		{
-			switch ( column )
-			{
-				case NameCol:
-				{
-					QString a = "";
-					if ( itemType( index ) == "NiBlock" )
-						a = QString::number( getBlockNumber( index ) ) + " ";
-					return a + item->name();
-				}	break;
-				default: return QVariant();
-			}
-		}	break;
 		case Qt::DisplayRole:
 		{
 			switch ( column )
 			{
 				case NameCol:
 				{
-					return item->name();
+					if (ndr)
+						return item->name();
+					QString a = "";
+					if ( itemType( index ) == "NiBlock" )
+						a = QString::number( getBlockNumber( index ) ) + " ";
+					return a + item->name();
 				}	break;
 				case TypeCol:
 				{

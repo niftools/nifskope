@@ -276,27 +276,27 @@ public:
 						QString nodename = nif->get<QString>( iCB, "Node Name" );
 						if ( nodename.isEmpty() ) {
 							QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
-							nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+							nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 						}
 						QString proptype = nif->get<QString>( iCB, "Property Type" );
 						if ( proptype.isEmpty() ) {
 							QModelIndex idx = nif->getIndex( iCB, "Property Type Offset" );
-							proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+							proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 						}
 						QString ctrltype = nif->get<QString>( iCB, "Controller Type" );
 						if ( ctrltype.isEmpty() ) {
 							QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
-							ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+							ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 						}
 						QString var1 = nif->get<QString>( iCB, "Variable 1" );
 						if ( var1.isEmpty() ) {
 							QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
-							var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+							var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 						}
 						QString var2 = nif->get<QString>( iCB, "Variable 2" );
 						if ( var2.isEmpty() ) {
 							QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
-							var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+							var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 						}
 						Node * node = target->findChild( nodename );
 						if ( ! node )
@@ -1101,11 +1101,11 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			if (scene->currentBlock == iData )
 			{
 				int i = -1;
-				QString n = scene->currentIndex.data( Qt::DisplayRole ).toString();
+				QString n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
 				QModelIndex iParent = scene->currentIndex.parent();
 				if ( iParent.isValid() && iParent != iData )
 				{
-					n = iParent.data( Qt::DisplayRole ).toString();
+					n = iParent.data( NifSkopeDisplayRole ).toString();
 					i = scene->currentIndex.row();
 				}
 				if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
@@ -1143,11 +1143,11 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			else if ( scene->currentBlock == iShape )
 			{
 				int i = -1;
-				QString n = scene->currentIndex.data( Qt::DisplayRole ).toString();
+				QString n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
 				QModelIndex iParent = scene->currentIndex.parent();
 				if ( iParent.isValid() && iParent != iShape )
 				{
-					n = iParent.data( Qt::DisplayRole ).toString();
+					n = iParent.data( NifSkopeDisplayRole ).toString();
 					i = scene->currentIndex.row();
 				}
 				//qDebug() << n;

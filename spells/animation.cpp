@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <QFileDialog>
 
+#include "../options.h"
+
 // Brief description is deliberately not autolinked to class Spell
 /*! \file animation.cpp
  * \brief Animation editing spells
@@ -90,7 +92,7 @@ public:
 						QString nodeName = kf.string( iCtrlBlcks.child( r, 0 ), "Node Name", false );
 						if (nodeName.isEmpty()) {
 							QModelIndex iNodeName = kf.getIndex( iCtrlBlcks.child( r, 0 ), "Node Name Offset" );
-							nodeName = iNodeName.sibling( iNodeName.row(), NifModel::ValueCol ).data( Qt::DisplayRole ).toString();
+							nodeName = iNodeName.sibling( iNodeName.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 						}
 						QModelIndex iCtrlNode = findChildNode( nif, iRoot, nodeName );
 						if ( iCtrlNode.isValid() )
