@@ -47,6 +47,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QPainter>
 #include <QListView>
 
+#include "options.h"
+
 extern void qt_format_text(const QFont& font, const QRectF &_r,
                            int tf, const QString& str, QRectF *brect,
                            int tabstops, int* tabarray, int tabarraylen,
@@ -123,7 +125,7 @@ public:
 	
 	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 	{
-		QString text = index.data( Qt::DisplayRole ).toString();
+		QString text = index.data( NifSkopeBlockNameRole ).toString();
 		QString deco = index.data( Qt::DecorationRole ).toString();
 		
 		QString user = index.data( Qt::UserRole ).toString();

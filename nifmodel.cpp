@@ -1060,7 +1060,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 	switch ( role )
 	{
-		case Qt::DisplayRole:
+		case NifSkopeBlockNameRole:
 		{
 			switch ( column )
 			{
@@ -1070,6 +1070,17 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					if ( itemType( index ) == "NiBlock" )
 						a = QString::number( getBlockNumber( index ) ) + " ";
 					return a + item->name();
+				}	break;
+				default: return QVariant();
+			}
+		}	break;
+		case Qt::DisplayRole:
+		{
+			switch ( column )
+			{
+				case NameCol:
+				{
+					return item->name();
 				}	break;
 				case TypeCol:
 				{
