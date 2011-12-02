@@ -1057,7 +1057,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		}
 	}
 
-
+	bool ndr = role == NifSkopeDisplayRole;
+	if (role == NifSkopeDisplayRole)
+		role = Qt::DisplayRole;
 	switch ( role )
 	{
 		case Qt::DisplayRole:
@@ -1066,7 +1068,12 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			{
 				case NameCol:
 				{
-					return item->name();
+					if (ndr)
+						return item->name();
+					QString a = "";
+					if ( itemType( index ) == "NiBlock" )
+						a = QString::number( getBlockNumber( index ) ) + " ";
+					return a + item->name();
 				}	break;
 				case TypeCol:
 				{
@@ -1183,8 +1190,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			switch ( column )
 			{
 				case NameCol:
-					if ( itemType( index ) == "NiBlock" )
-						return QString::number( getBlockNumber( index ) );
+ 					// (QColor, QIcon or QPixmap) as stated in the docs
+					/*if ( itemType( index ) == "NiBlock" )
+						return QString::number( getBlockNumber( index ) );*/
+					return QVariant();
 				default:
 					return QVariant();
 			}

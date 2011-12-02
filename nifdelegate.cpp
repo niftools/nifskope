@@ -47,6 +47,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QPainter>
 #include <QListView>
 
+#include "options.h"
+
 extern void qt_format_text(const QFont& font, const QRectF &_r,
                            int tf, const QString& str, QRectF *brect,
                            int tabstops, int* tabarray, int tabarraylen,
@@ -123,7 +125,11 @@ public:
 	
 	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 	{
-		QString text = index.data( Qt::DisplayRole ).toString();
+		int namerole = NifSkopeDisplayRole;
+		namerole = (index.isValid() && index.column() == 0) ?
+ 			Qt::DisplayRole : NifSkopeDisplayRole;
+		
+		QString text = index.data( namerole ).toString();
 		QString deco = index.data( Qt::DecorationRole ).toString();
 		
 		QString user = index.data( Qt::UserRole ).toString();
@@ -174,7 +180,7 @@ public:
 
 	QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 	{
-		QString text = index.data( Qt::DisplayRole ).toString();
+		QString text = index.data( NifSkopeDisplayRole ).toString();
 		QRect textRect( 0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing() * (text.count(QLatin1Char('\n')) + 1) );
 		return textRect.size();
 	}
@@ -192,7 +198,7 @@ public:
 			NifValue nv = v.value<NifValue>();
 			if ( nv.isCount() && index.column() == NifModel::ValueCol )
 			{
-				NifValue::EnumType type = NifValue::enumType( index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString() );
+				NifValue::EnumType type = NifValue::enumType( index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString() );
 				if ( type == NifValue::eFlags) {
 					w = new NifCheckBoxList( parent );
 				} else if ( type == NifValue::eDefault) {
@@ -228,7 +234,7 @@ public:
 		else if ( cedit && v.canConvert<NifValue>() && v.value<NifValue>().isCount() )
 		{
 			cedit->clear();
-			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString();
+			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
 			const NifValue::EnumOptions& eo = NifValue::enumOptionData( t );
 			quint32 value = v.value<NifValue>().toCount();
 			QHashIterator< quint32, QPair< QString, QString > > it( eo.o );
@@ -265,7 +271,7 @@ public:
 		}
 		else if ( cedit )
 		{
-			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( Qt::DisplayRole ).toString();
+			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
 			QVariant v = index.data( Qt::EditRole );
 			bool ok;
 			quint32 x = NifValue::enumOptionValue( t, cedit->currentText(), &ok );

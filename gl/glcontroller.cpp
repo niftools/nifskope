@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontroller.h"
 #include "glscene.h"
-
+#include "../options.h"
 /*
  *  Controllable
  */
@@ -167,7 +167,7 @@ Controller::Controller( const QModelIndex & index ) : iBlock( index )
 QString Controller::typeId() const
 {
 	if ( iBlock.isValid() )
-		return iBlock.data( Qt::DisplayRole ).toString();
+		return iBlock.data( NifSkopeDisplayRole ).toString();
 	return QString();
 }
 

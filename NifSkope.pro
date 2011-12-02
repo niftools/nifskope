@@ -62,18 +62,17 @@ HEADERS += \
     NvTriStrip/qtwrapper.h \
     NvTriStrip/VertexCache.h \
     options.h \
-    qhull/src/geom.h \
-    qhull/src/io.h \
-    qhull/src/libqhull.h \
-    qhull/src/mem.h \
-    qhull/src/merge.h \
-    qhull/src/poly.h \
-    qhull/src/qhull.h \
-    qhull/src/qhull_a.h \
-    qhull/src/qset.h \
-    qhull/src/random.h \
-    qhull/src/stat.h \
-    qhull/src/user.h \
+    qhull/src/libqhull/geom.h \
+    qhull/src/libqhull/io.h \
+    qhull/src/libqhull/libqhull.h \
+    qhull/src/libqhull/mem.h \
+    qhull/src/libqhull/merge.h \
+    qhull/src/libqhull/poly.h \
+    qhull/src/libqhull/qhull_a.h \
+    qhull/src/libqhull/qset.h \
+    qhull/src/libqhull/random.h \
+    qhull/src/libqhull/stat.h \
+    qhull/src/libqhull/user.h \
     qhull.h \
     spellbook.h \
     spells/blocks.h \

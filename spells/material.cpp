@@ -124,6 +124,7 @@ public:
 		me->popLayout();
 		me->add( new NifFloatSlider( nif, nif->getIndex( iMaterial, "Alpha" ), 0.0, 1.0 ) );
 		me->add( new NifFloatSlider( nif, nif->getIndex( iMaterial, "Glossiness" ), 0.0, 100.0 ) );
+		me->setWindowModality(Qt::ApplicationModal);
 		me->show();
 		
 		return index;

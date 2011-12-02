@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QValidator>
 #include <QDebug>
 
+#include "../options.h"
+
 CheckBoxList::CheckBoxList( QWidget *widget )
 	: QComboBox( widget )
 {
@@ -109,7 +111,7 @@ void CheckBoxListDelegate::paint( QPainter *painter, const QStyleOptionViewItem 
 {
 	//Get item data
 	bool value = index.data(Qt::UserRole).toBool();
-	QString text = index.data(Qt::DisplayRole).toString();
+	QString text = index.data(NifSkopeDisplayRole).toString();
 
 	// fill style options with item data
 	const QStyle *style = QApplication::style();
@@ -136,7 +138,7 @@ void CheckBoxListDelegate::setEditorData( QWidget *editor, const QModelIndex &in
 {
 	//set editor data
 	QCheckBox *myEditor = static_cast<QCheckBox*>(editor);
-	myEditor->setText(index.data(Qt::DisplayRole).toString());
+	myEditor->setText(index.data(NifSkopeDisplayRole).toString());
 	myEditor->setChecked(index.data(Qt::UserRole).toBool());
 }
 
@@ -148,7 +150,7 @@ void CheckBoxListDelegate::setModelData( QWidget *editor, QAbstractItemModel *mo
 
 	//set model data
 	QMap<int,QVariant> data;
-	data.insert(Qt::DisplayRole,myEditor->text());
+	data.insert(NifSkopeDisplayRole,myEditor->text());
 	data.insert(Qt::UserRole,value);
 	model->setItemData(index,data);
 }
@@ -203,7 +205,7 @@ void NifCheckBoxList::updateText()
 {
 	QString displayText;
 	for (int i=0; i < count(); ++i) {
-		QString txt = this->itemData(i, Qt::DisplayRole).toString();
+		QString txt = this->itemData(i, NifSkopeDisplayRole).toString();
 
 		// dont bother updating if user entered number non-zero
 		bool ok = false;
@@ -239,7 +241,7 @@ void NifCheckBoxList::parseText( const QString& text )
 
 		QRegExp re(str);
 		for (int i=0; i < count(); ++i) {
-			QString txt = this->itemData(i, Qt::DisplayRole).toString();
+			QString txt = this->itemData(i, NifSkopeDisplayRole).toString();
 			this->setItemData(i, re.exactMatch(txt), Qt::UserRole);
 		}
 		this->setEditText( text );

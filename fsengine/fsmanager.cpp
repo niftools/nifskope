@@ -44,6 +44,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QStringListModel>
 
+#include "../options.h"
+
 //! Global BSA file manager
 static FSManager *theFSManager = NULL;
 // see fsmanager.h
@@ -219,7 +221,7 @@ void FSSelector::sltAdd()
 
 void FSSelector::sltDel()
 {
-	QString an = view->currentIndex().data( Qt::DisplayRole ).toString();
+	QString an = view->currentIndex().data( NifSkopeDisplayRole ).toString();
 	
 	if ( FSArchiveHandler * a = manager->archives.take( an ) )
 	{
