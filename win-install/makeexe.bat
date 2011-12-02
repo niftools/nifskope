@@ -1,5 +1,6 @@
 rem Quick build script to create the installer for release.
 rem Run this batch file from buildenv, see https://github.com/amorilia/buildenv
+rem Call it as "buildenv.bat C:\Python27 mingw 32 workspace"
 @echo on
 setlocal
 set NAME=nifskope
@@ -23,19 +24,16 @@ del doc\*.html
 
 python nifxml_doc.py
 
-if EXIST "%QTDIR%\bin\lrelease.exe" (
-    pushd ..\lang
-    for %%i in (*.ts) do call "%QTDIR%\bin\lrelease.exe" %%i
-    popd
-)
+pushd ..\lang
+for %%i in (*.ts) do call lrelease.exe %%i
+popd
 
 rem copy qhull's COPYING.TXT
 copy ..\qhull\COPYING.TXT ..\Qhull_COPYING.TXT
 
 cd ..\win-install
 
-if exist "%PROGRAMFILES%\NSIS\makensis.exe" "%PROGRAMFILES%\NSIS\makensis.exe" /v3 %NAME%-mingw-dynamic.nsi
-if exist "%PROGRAMFILES(x86)%\NSIS\makensis.exe" "%PROGRAMFILES(x86)%\NSIS\makensis.exe" /v3 %NAME%-mingw-dynamic.nsi
+makensis.exe /v3 %NAME%-mingw-dynamic.nsi
 
 REM pause
 endlocal
