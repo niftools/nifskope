@@ -1,4 +1,5 @@
 rem Quick build script to create the installer for release.
+rem Run this batch file from buildenv, see https://github.com/amorilia/buildenv
 @echo on
 setlocal
 set NAME=nifskope
@@ -15,15 +16,12 @@ del %NAME%-%VERSION%-windows.exe > nul
 
 echo !define VERSION "%VERSION%" > nifversion.nsh
 echo !define BUILD_RELEASE_FOLDER "..\..\NifSkope-build-desktop\release" >> nifversion.nsh
-echo !define DLL_RELEASE_FOLDER "..\..\NifSkope-build-desktop\release" >> nifversion.nsh
+echo !define DLL_RELEASE_FOLDER "%QTDIR%\bin" >> nifversion.nsh
 
 cd ..\docsys
 del doc\*.html
 
-for %%i in (python.exe) do IF EXIST "%%~$PATH:i" set PYTHON=%%~$PATH:i
-IF NOT EXIST "%PYTHON%" set PYTHON=\Python25\python.exe
-IF NOT EXIST "%PYTHON%" set PYTHON=\Python26\python.exe
-"%PYTHON%" nifxml_doc.py
+python nifxml_doc.py
 
 if EXIST "%QTDIR%\bin\lrelease.exe" (
     pushd ..\lang
