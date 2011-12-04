@@ -64,6 +64,15 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
         docFolderPresent = docFolder.exists( "doc" );
     }
     
+    // Again, try the docsys path when build dir != source dir
+    // which is default in recent versions of Qt SDK,
+    // i.e. "shadow build" option in Qt Creator.
+    if( ! docFolderPresent ) {
+	docFolder.setPath( qApp->applicationDirPath() );
+	docFolder.cd( "../../nifskope/docsys" );
+	docFolderPresent = docFolder.exists( "doc" );
+    }
+
     // Try the /usr/share/nifskope path, for linux install.
     if ( ! docFolderPresent ) {
         docFolder.cd( "/usr/share/nifskope" );
