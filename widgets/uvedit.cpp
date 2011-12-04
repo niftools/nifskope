@@ -221,10 +221,11 @@ void UVWidget::initializeGL()
 	glTexCoordPointer( 2, GL_SHORT, 0, texArray );
 
 	// check for errors
-	GLenum err;
-	while ( ( err = glGetError() ) != GL_NO_ERROR ) {
-		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
-	}
+	// XXX disabled: gluErrorString not in GLee or QtOpenGL
+	//GLenum err;
+	//while ( ( err = glGetError() ) != GL_NO_ERROR ) {
+	//	qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
+	//}
 }
 
 void UVWidget::resizeGL( int width, int height )
