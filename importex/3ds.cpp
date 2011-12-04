@@ -1,11 +1,3 @@
-#include "3ds.h"
-
-#include "../spellbook.h"
-
-#include "../NvTriStrip/qtwrapper.h"
-
-#include "../gl/gltex.h"
-
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
@@ -14,7 +6,16 @@
 #include <QString>
 #include <QApplication>
 
+#include "../gl/gltex.h"
+
+#include "../spellbook.h"
+
+#include "../NvTriStrip/qtwrapper.h"
+
+
 #define tr(x) QApplication::tr("3dsImport", x)
+
+#include "3ds.h"
 
 
 struct objPoint

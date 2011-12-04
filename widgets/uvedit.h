@@ -33,11 +33,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UVEDIT_H
 #define UVEDIT_H
 
-#include <QtOpenGL>
-
 #include <QList>
 #include <QMap>
 #include <QString>
+#include <QtCore> // avoids compile errors due to header order
+#include <QtGui> // avoids compile errors due to header order
+
+#include "../gl/GLee.h"
+#include <QtOpenGL>
+
+#undef None // resolves conflict with EditingMode enum
 
 class NifModel;
 class QModelIndex;
