@@ -33,12 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEX_H
 #define GLTEX_H
 
-#include <QtOpenGL>
-
 #include "../niftypes.h"
+
+#include "GLee.h"
 
 class QAction;
 class QFileSystemWatcher;
+class QGLContext;
 
 class GroupBox;
 

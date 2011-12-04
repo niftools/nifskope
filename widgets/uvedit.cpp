@@ -30,6 +30,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+
+#include <QCursor>
+#include <QDialog>
+#include <QInputDialog>
+#include <QTimer>
+#include <QUndoStack>
+
 #include "uvedit.h"
 
 #include "../nifmodel.h"
@@ -40,13 +47,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../NvTriStrip/qtwrapper.h"
 
 #include <math.h>
-#include <GL/glext.h>
-
-#include <QCursor>
-#include <QDialog>
-#include <QInputDialog>
-#include <QTimer>
-#include <QUndoStack>
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0
@@ -221,10 +221,11 @@ void UVWidget::initializeGL()
 	glTexCoordPointer( 2, GL_SHORT, 0, texArray );
 
 	// check for errors
-	GLenum err;
-	while ( ( err = glGetError() ) != GL_NO_ERROR ) {
-		qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
-	}
+	// XXX disabled: gluErrorString not in GLee or QtOpenGL
+	//GLenum err;
+	//while ( ( err = glGetError() ) != GL_NO_ERROR ) {
+	//	qDebug() << "GL ERROR (init) : " << (const char *) gluErrorString( err );
+	//}
 }
 
 void UVWidget::resizeGL( int width, int height )
