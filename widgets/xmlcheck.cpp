@@ -391,7 +391,7 @@ void TestThread::run()
 		{	// lock the XML lock
 			QReadLocker lck( lock );
 			
-			if (  model == &nif && NifModel::earlyRejection( filepath, blockMatch, verMatch ) )
+			if (  model == &nif && nif.earlyRejection( filepath, blockMatch, verMatch ) )
 			{
 				bool loaded = model->loadFromFile( filepath );
 				
@@ -404,7 +404,7 @@ void TestThread::run()
 					{
 						//In case early rejection failed, such as if this is an older file without the block types in the header
 						//note if any of these blocks types match the specified one.
-						if ( blockMatch.isEmpty() == false && NifModel::inherits( nif.getBlockName( nif.getBlock(b) ), blockMatch ) ) {
+						if ( blockMatch.isEmpty() == false && nif.inherits( nif.getBlockName( nif.getBlock(b) ), blockMatch ) ) {
 							blk_match = true;
 						}
 						messages += checkLinks( &nif, nif.getBlock( b ), kf );

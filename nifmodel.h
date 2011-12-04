@@ -92,7 +92,7 @@ public:
 	 * \param blockId The block to check for
 	 * \param The version to check for
 	 */
-	static bool earlyRejection( const QString & filepath, const QString & blockId, quint32 version );
+	bool earlyRejection( const QString & filepath, const QString & blockId, quint32 version );
 	
 	//! Returns the model index of the NiHeader
 	QModelIndex getHeader() const;
@@ -142,9 +142,9 @@ public:
 	 * \param name Optional: the type to check for
 	 */
 	bool isNiBlock( const QModelIndex & index, const QString & name = QString() ) const;
-	//! Returns a list with all known NiXXX ids
+	//! Returns a list with all known NiXXX ids (<niobject abstract="0">)
 	static QStringList allNiBlocks();
-	//! Determine if a value is a NiBlock identifier
+	//! Determine if a value is a NiBlock identifier (<niobject abstract="0">).
 	static bool isNiBlock( const QString & name );
 	//! Reorders the blocks according to a list of new block numbers
 	void reorderBlocks( const QVector<qint32> & order );
@@ -182,12 +182,14 @@ public:
 	
 	void mapLinks( const QMap<qint32,qint32> & map );
 	
-	// is it a compound type?
+	//! Is name a compound type?
 	static bool isCompound( const QString & name );
-	// is name an ancestor identifier?
+	//! Is name an ancestor identifier (<niobject abstract="1">)?
 	static bool isAncestor( const QString & name );
-	// returns true if name inherits ancestor
-	static bool inherits( const QString & name, const QString & ancestor );
+	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
+	bool isAncestorOrNiBlock( const QString & name ) const; // virtual so not static
+	//! Returns true if name inherits ancestor.
+	bool inherits( const QString & name, const QString & ancestor ) const; // virtual so not static
 	// returns true if the block containing index inherits ancestor
 	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
 	
@@ -315,6 +317,11 @@ inline QStringList NifModel::allNiBlocks()
 		if ( ! blk->abstract )
 			lst.append( blk->id );
 	return lst;
+}
+
+inline bool NifModel::isAncestorOrNiBlock( const QString & name ) const
+{
+	return blocks.contains( name );
 }
 
 inline bool NifModel::isNiBlock( const QString & name )

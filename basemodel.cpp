@@ -663,17 +663,29 @@ public:
 		if ( v.type() == QVariant::String ) {
 			QString left = v.toString();
 			const NifItem * i = item;
+			// resolve "ARG"
 			while ( left == "ARG" ) {
 				if ( ! i->parent() )	return false;
 				i = i->parent();
 				left = i->arg();
 			}
-			i = model->getItem( i->parent(), left );
-			if (i) {
-				if ( i->value().isCount() )
-					return QVariant( i->value().toCount() );
-				else if ( i->value().isFileVersion() )
-					return QVariant( i->value().toFileVersion() );
+			// resolve reference to sibling
+			const NifItem * sibling = model->getItem( i->parent(), left );
+			if (sibling) {
+				if ( sibling->value().isCount() )
+					return QVariant( sibling->value().toCount() );
+				else if ( sibling->value().isFileVersion() )
+					return QVariant( sibling->value().toFileVersion() );
+			}
+			// resolve reference to block type
+			// is the condition string a type?
+			if (model->isAncestorOrNiBlock(left)) {
+				// get the type of the current block
+				const NifItem * block = i;
+				while (block->parent() && block->parent()->parent() ) {
+					block = block->parent();
+				};
+				return QVariant(model->inherits(block->name(), left));
 			}
 			return QVariant(0);
 		}

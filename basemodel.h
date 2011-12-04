@@ -156,7 +156,14 @@ public:
 	bool evalCondition( const QModelIndex & idx, bool chkParents = false ) const;
 	//! Evaluate version.
 	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
-	
+	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
+	virtual bool isAncestorOrNiBlock( const QString & /*name*/ ) const { return false; };
+	//! Returns true if name inherits ancestor.
+	virtual bool inherits( const QString & /*name*/, const QString & /*ancestor*/ ) const { return false; };
+	// This is here to avoid compiler confusion with QObject::inherits.
+	bool inherits ( const char * className ) const {
+		return QObject::inherits(className);
+	}
 	//! Get version as a string
 	virtual QString getVersion() const = 0;
 	//! Get version as a number
