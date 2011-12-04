@@ -220,4 +220,7 @@ console {
 
 TRANSLATIONS += lang/NifSkope_de.ts lang/NifSkope_fr.ts
 
+# hack to make things work under Qt 4.8
+DEFINES += QGLFUNCTIONS_H
+
 # vim: set filetype=config : 
