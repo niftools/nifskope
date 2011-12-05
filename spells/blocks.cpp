@@ -263,7 +263,17 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "NiAVObject" );
+		if ( nif->itemType( index ) != "NiBlock" ) return false;
+		if ( nif->getUserVersion < 12 )
+		{
+			// not Skyrim
+			return nif->inherits( index, "NiAVObject" );
+		}
+		else
+		{
+			// Skyrim
+			return nif->inherits( index, "NiGeometry" );
+		}
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
