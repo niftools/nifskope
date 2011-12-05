@@ -26,16 +26,48 @@
  * @param array The name of the link array
  * @param link A reference to the block to insert into the link array
  */
-static void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+static bool addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
 {
 	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
 	QModelIndex iArray = nif->getIndex( iParent, array );
-	if ( iSize.isValid() && iArray.isValid() )
+	if ( iSize.isValid() && (iSize.flags() & Qt::ItemIsEnabled) )
 	{
-		int numlinks = nif->get<int>( iSize );
-		nif->set<int>( iSize, numlinks + 1 );
-		nif->updateArray( iArray );
-		nif->setLink( iArray.child( numlinks, 0 ), link );
+		// size is valid: dynamically sized array?
+		if ( iArray.isValid() && ( iArray.flags() & Qt::ItemIsEnabled ) )
+		{
+			int numlinks = nif->get<int>( iSize );
+			nif->set<int>( iSize, numlinks + 1 );
+			nif->updateArray( iArray );
+			nif->setLink( iArray.child( numlinks, 0 ), link );
+			return true;
+		}
+		else
+		{
+			// no clue what this is, fail
+			return false;
+		}
+	}
+	else if ( iArray.isValid() && ( iArray.flags() & Qt::ItemIsEnabled ) )
+	{
+		// static array, find a empty entry and insert link there
+		NifItem * item = static_cast<NifItem*>( iArray.internalPointer() );
+		if ( nif->isArray( iArray ) && item )
+		{
+			for ( int c = 0; c < item->childCount(); c++ )
+			{
+				if ( item->child( c )->value().toLink() == -1 )
+				{
+					nif->setLink( iArray.child( c, 0), link );
+					return true;
+				}
+			}
+		}
+		// failed in some way, either array not valid or no empty entry found
+		return false;
+	}
+	else
+	{
+		return false;
 	}
 }
 
