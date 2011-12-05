@@ -281,8 +281,13 @@ public:
 		{
 			QPersistentModelIndex iParent = index;
 			QModelIndex iProperty = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
-			
-			addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) );
+			if ( !addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) ) ) {
+				// try Skyrim
+				if ( !addLink( nif, iParent, "BS Properties", nif->getBlockNumber( iProperty ) ) )
+				{
+					qWarning() << "failed to attach property block; perhaps the array is full?";
+				}
+			}
 			return iProperty;
 		}
 		else
