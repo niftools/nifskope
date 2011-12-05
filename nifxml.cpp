@@ -260,19 +260,15 @@ public:
 								err( "failed to locate alias " + nstype );
 							type = nstype;
 						}
-
+						
 						if ( type == "KeyArray" ) type = "ns keyarray";
 						else if ( type == "VectorKeyArray" ) type = "ns keyvecarray";
 						else if ( type == "TypedVectorKeyArray" ) type = "ns keyvecarraytyp";
 						else if ( type == "RotationKeyArray" ) type = "ns keyrotarray";
-
-						QString name = list.value( "name" );
-						QString nsname = list.value( "nifskopename" );
-						if (!nsname.isEmpty()) name = nsname;
-
+						
 						// now allocate
 						data = NifData(
-							name,
+							list.value( "name" ),
 							type,
 							list.value( "template" ),
 							NifValue( NifValue::type( type ) ),
