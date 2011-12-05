@@ -93,6 +93,8 @@ static void delLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 }
 
 // documented in blocks.h
+// XXX at the moment, we don't care if this fails or not...
+// XXX probably should return a bool?
 void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
 {
 	if ( nif->isLink( index ) && nif->inherits( iBlock, nif->itemTmplt( index ) ) )
@@ -109,7 +111,15 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 	}
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiProperty" ) )
 	{
-		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
+		// Skyrim note: this will fail if "Properties" is not enabled
+		if ( !addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) ) )
+		{
+			// "Properties" was not enabled: try Skyrim style "BS Properties"
+			if ( nif->inherits( index, "NiGeometry" ) )
+			{
+				addLink( nif, index, "BS Properties", nif->getBlockNumber( iBlock ) );
+			}
+		}
 	}
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiExtraData" ) )
 	{
