@@ -580,6 +580,9 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 		foreach ( qint32 l, nif->getLinkArray( iBlock, "Properties" ) )
 			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
 				newProps.add( p );
+		foreach ( qint32 l, nif->getLinkArray( iBlock, "BS Properties" ) )
+			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
+				newProps.add( p );
 		properties = newProps;
 		
 		children.clear();
