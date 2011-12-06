@@ -434,6 +434,7 @@ public:
 		nif->updateArray( iSubShapes );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Layer", 1 );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Num Vertices", vertices.count() );
+		nif->set<int>( iSubShapes.child( 0, 0 ), "Material", nif->get<int>( iShape, "Material" ) );
 		nif->setArray<float>( iPackedShape, "Unknown Floats", QVector<float>() << 0.0f << 0.0f << 0.1f << 0.0f << 1.0f << 1.0f << 1.0f << 1.0f << 0.1f );
 		nif->set<float>( iPackedShape, "Scale", 1.0f );
 		nif->setArray<float>( iPackedShape, "Unknown Floats 2", QVector<float>() << 1.0f << 1.0f << 1.0f );
