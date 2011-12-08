@@ -630,11 +630,13 @@ void Mesh::transform()
 		bones = nif->getLinkArray( iSkin, "Bones" );
 		
 		QModelIndex idxBones = nif->getIndex( iSkinData, "Bone List" );
-		if ( idxBones.isValid() )
+		unsigned char hvw = nif->get<unsigned char> (iSkinData, "Has Vertex Weights");
+		int vcnt = hvw ? 0 : verts.count();
+		if ( idxBones.isValid() /*&& hvw*/ )
 		{
 			for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ )
 			{
-				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ] ) );
+				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ], vcnt) );
 			}
 		}
 		

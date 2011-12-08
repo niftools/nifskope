@@ -80,7 +80,7 @@ class BoneWeights
 {
 public:
 	BoneWeights() { bone = 0; }
-	BoneWeights( const NifModel * nif, const QModelIndex & index, int b );
+	BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt = 0 );
 	
 	Transform trans;
 	Vector3 center; float radius;
