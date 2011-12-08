@@ -179,6 +179,12 @@ void NifSkope::about()
 	mb.exec();
 }
 
+void NifSkope::sltResetBlockDetails()
+{
+	if (tree)
+		tree->clearRootIndex();
+}
+
 NifSkope::NifSkope()
 	: QMainWindow(), selecting( false ), initialShowEvent( true )
 {
@@ -376,7 +382,7 @@ NifSkope::NifSkope()
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
 	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
-	connect( dList->toggleViewAction(), SIGNAL( toggled( bool ) ), tree, SLOT( clearRootIndex() ) );
+	connect( dList->toggleViewAction(), SIGNAL( triggered() ), tree, SLOT( clearRootIndex() ) );
 	
 	dTree = new QDockWidget( tr("Block Details") );
 	dTree->setObjectName( "TreeDock" );
@@ -447,12 +453,28 @@ NifSkope::NifSkope()
 
 	addToolBar( Qt::TopToolBarArea, tool );
 	// end Load & Save toolbar
-	
+
 	// begin OpenGL toolbars
 	foreach ( QToolBar * tb, ogl->toolbars() ) {
 		addToolBar( Qt::TopToolBarArea, tb );
 	}
 	// end OpenGL toolbars
+
+	// begin View toolbar
+	QToolBar *tView = new QToolBar( tr("View") );
+	tView->setObjectName( tr("tView") );
+	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	QAction *aResetBlockDetails = new QAction( tr("Reset Block Details"), this);
+	connect( aResetBlockDetails, SIGNAL( triggered() ), this, SLOT( sltResetBlockDetails() ) );
+	tView->addAction( aResetBlockDetails );
+	tView->addSeparator();
+	tView->addAction( dRefr->toggleViewAction() );
+	tView->addAction( dList->toggleViewAction() );
+	tView->addAction( dTree->toggleViewAction() );
+	tView->addAction( dKfm->toggleViewAction() );
+	tView->addAction( dInsp->toggleViewAction() );
+	addToolBar( Qt::TopToolBarArea, tView );
+	// end View toolbars
 
 	/* ********* */
 	
@@ -485,11 +507,7 @@ NifSkope::NifSkope()
 	mFile->addAction( aQuit );
 	
 	QMenu * mView = new QMenu( tr("&View") );
-	mView->addAction( dRefr->toggleViewAction() );
-	mView->addAction( dList->toggleViewAction() );
-	mView->addAction( dTree->toggleViewAction() );
-	mView->addAction( dKfm->toggleViewAction() );
-	mView->addAction( dInsp->toggleViewAction() );
+	mView->addActions (tView->actions ());
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr("&Toolbars") );
 	mView->addMenu( mTools );
@@ -508,6 +526,7 @@ NifSkope::NifSkope()
 	mView->addMenu( mBlockDetails );
 	mBlockDetails->addAction( aCondition );
 	mBlockDetails->addAction( aRCondition );
+	mBlockDetails->addAction( aResetBlockDetails );
 	mView->addSeparator();
 	mView->addAction( aSelectFont );
 	
