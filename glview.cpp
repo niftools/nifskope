@@ -254,7 +254,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tAnim->addWidget( extraspace );
 #endif
 	
-	tView = new QToolBar( tr("View") );
+	tView = new QToolBar( tr("Render View") );
 	tView->setObjectName( "ViewTool" );
 	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	tView->setIconSize( QSize( 16, 16 ) );

@@ -127,6 +127,9 @@ public slots:
 	
 	//! Display the "About NifSkope" window.
 	void about();
+
+	//! Reset "block details"
+	void sltResetBlockDetails();
 	
 protected slots:
 	//! Select a NIF index
