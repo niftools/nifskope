@@ -1030,6 +1030,8 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			buddy = getIndex( index, "File Name" );
 		else if ( item->name() == "NiStringExtraData" )
 			buddy = getIndex( index, "String Data" );
+		//else if ( item->name() == "NiTransformInterpolator" && role == Qt::DisplayRole)
+		//	return QString(tr("TODO: find out who is referring me"));
 		else
 			buddy = getIndex( index, "Name" );
 		if ( buddy.isValid() )
