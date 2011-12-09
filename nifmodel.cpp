@@ -1019,6 +1019,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 	int column = index.column();
 
+	bool ndr = role == NifSkopeDisplayRole;
+	if (role == NifSkopeDisplayRole)
+		role = Qt::DisplayRole;
+
 	if ( column == ValueCol && item->parent() == root && item->type() == "NiBlock" )
 	{
 		QModelIndex buddy;
@@ -1057,9 +1061,6 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		}
 	}
 
-	bool ndr = role == NifSkopeDisplayRole;
-	if (role == NifSkopeDisplayRole)
-		role = Qt::DisplayRole;
 	switch ( role )
 	{
 		case Qt::DisplayRole:
