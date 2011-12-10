@@ -11,6 +11,7 @@ changes since 1.1.0:
  * material fix for pack strips spell (issue #3413668)
  * fix for property attach spell for Skyrim (issue #3451054)
  * fix for resource files that could not be removed (issue #3452880)
+ * fix for node names in ControllerLink blocks (issue #3453556)
 
 changes since 1.1.0-RC1:
  * block number is visible
