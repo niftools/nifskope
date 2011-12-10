@@ -221,8 +221,7 @@ void FSSelector::sltAdd()
 
 void FSSelector::sltDel()
 {
-	QString an = view->currentIndex().data( NifSkopeDisplayRole ).toString();
-	
+	QString an = view->currentIndex().data( Qt::DisplayRole ).toString();
 	if ( FSArchiveHandler * a = manager->archives.take( an ) )
 	{
 		delete a;
