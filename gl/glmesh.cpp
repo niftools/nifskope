@@ -230,6 +230,8 @@ void Mesh::clear()
 	transColors.clear();
 	transTangents.clear();
 	transBinormals.clear();
+
+	double_sided = false;
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
@@ -521,9 +523,46 @@ void Mesh::transform()
 		else
 		{
 			
+			// Handle some vertex color animation - the static part.
+			// The elegant way requires TODO: property system (glproperty.h,
+			// glproperty.cpp, renderer.cpp, etc.) complete refactoring.
+			// Refer to "nif.xml" for "SF_Vertex_Animation", "PROP_LightingShaderProperty" and "FLAG_ShaderFlags"
+#define SF_Vertex_Animation 29
+#define SF_Double_Sided 4
+#define PROP_LightingShaderProperty "BSLightingShaderProperty"
+#define FLAG_ShaderFlags "Shader Flags 2"
+			bool alphaisanim = false;
+			double_sided = false;
+			if ( nif->checkVersion( 0x14020007, 0 ) && nif->itemName( iBlock ) == "NiTriShape" )
+			{
+				QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" );
+				for (int i = 0; i < props.count(); i++)
+				{
+					QModelIndex iProp = nif->getBlock( props[i], PROP_LightingShaderProperty );
+					if (iProp.isValid())
+					{
+						// TODO: check that it exists at all
+						unsigned int sf2 = nif->get<unsigned int>(iProp, FLAG_ShaderFlags);
+						// using nifvalue.cpp line ~211
+						double_sided = sf2 & (1 << SF_Double_Sided);
+						if (sf2 & (1 << SF_Vertex_Animation)) {
+							alphaisanim = true;
+							break;
+						}
+					}
+				}
+			}
+#undef PROP_LightingShaderProperty
+#undef FLAG_ShaderFlags
+#undef SF_Double_Sided
+#undef SF_Vertex_Animation
+			
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 			norms = nif->getArray<Vector3>( iData, "Normals" );
 			colors = nif->getArray<Color4>( iData, "Vertex Colors" );
+			if (alphaisanim)
+				for (int i = 0; i < colors.count(); i++)
+					colors[i].setRGBA(colors[i].red(), colors[i].green(), colors[i].blue(), 1);
 			tangents = nif->getArray<Vector3>( iData, "Tangents" );
 			binormals = nif->getArray<Vector3>( iData, "Binormals" );
 			
@@ -886,6 +925,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if (!Node::SELECTING)
 		shader = scene->renderer.setupProgram( this, shader );
 	
+	if (double_sided)
+		glDisable( GL_CULL_FACE );
+
 	// render the triangles
 	if ( sortedTriangles.count() )
 		glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.data() );
@@ -893,6 +935,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	// render the tristrips
 	for ( int s = 0; s < tristrips.count(); s++ )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
+
+	if (double_sided)
+		glEnable( GL_CULL_FACE );
 
 	if (!Node::SELECTING)
 		scene->renderer.stopProgram();
