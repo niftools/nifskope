@@ -8,6 +8,7 @@ changes since 1.1.0:
  * hierarchy fix for NiParticlesData and derived blocks
  * support for Qt 4.8 RC1
  * another qhull update
+ * material fix for pack strips spell (issue #3413668)
 
 changes since 1.1.0-RC1:
  * block number is visible
