@@ -2,9 +2,9 @@
 Name=NifSkope
 Comment=Edit nif files
 Exec=nifskope
-Icon=nifskope.png
+Icon=nifskope
 Terminal=false
 Type=Application
 Categories=Graphics;3DGraphics;Qt;
 Encoding=UTF-8
-MimeType=application/vnd.gamebryo-nif;application/vnd.gamebryo-kf;application/vnd.gamebryo-kfm
+MimeType=application/vnd.gamebryo-nif;application/vnd.gamebryo-kf;application/vnd.gamebryo-kfm;

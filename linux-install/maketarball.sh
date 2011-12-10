@@ -89,6 +89,7 @@ FILES="NifSkope.pro \
     qhull/src/libqhull/poly2.c
     qhull/src/libqhull/geom2.c
     qhull/src/libqhull/userprintf.c
+    qhull/src/libqhull/userprintf_rbox.c
     qhull/src/libqhull/usermem.c
     qhull/src/libqhull/random.c
     qhull/src/libqhull/rboxlib.c
