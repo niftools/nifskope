@@ -689,23 +689,31 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			
 			ObjMaterial mtl = omaterials.value( it.key() );
 			
-			if ( iMaterial.isValid() == false || first_tri_shape == false )
+			// add material property, for non-Skyrim versions
+			if ( nif->getUserVersion() < 12 )
 			{
-				iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
+				if ( iMaterial.isValid() == false || first_tri_shape == false )
+				{
+					iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
+				}
+				nif->set<QString>( iMaterial, "Name", it.key() );
+				nif->set<Color3>( iMaterial, "Ambient Color", mtl.Ka );
+				nif->set<Color3>( iMaterial, "Diffuse Color", mtl.Kd );
+				nif->set<Color3>( iMaterial, "Specular Color", mtl.Ks );
+				nif->set<Color3>( iMaterial, "Emissive Color", Color3( 0, 0, 0 ) );
+				nif->set<float>( iMaterial, "Alpha", mtl.d );
+				nif->set<float>( iMaterial, "Glossiness", mtl.Ns );
+
+				addLink( nif, iShape, "Properties", nif->getBlockNumber( iMaterial ) );
 			}
-			nif->set<QString>( iMaterial, "Name", it.key() );
-			nif->set<Color3>( iMaterial, "Ambient Color", mtl.Ka );
-			nif->set<Color3>( iMaterial, "Diffuse Color", mtl.Kd );
-			nif->set<Color3>( iMaterial, "Specular Color", mtl.Ks );
-			nif->set<Color3>( iMaterial, "Emissive Color", Color3( 0, 0, 0 ) );
-			nif->set<float>( iMaterial, "Alpha", mtl.d );
-			nif->set<float>( iMaterial, "Glossiness", mtl.Ns );
-			
-			addLink( nif, iShape, "Properties", nif->getBlockNumber( iMaterial ) );
 			
 			if ( ! mtl.map_Kd.isEmpty() )
 			{
-				if ( nif->getVersionNumber() >= 0x0303000D )
+				if ( nif -> getUserVersion() >= 12)
+				{
+					// Skyrim, nothing here yet
+				}
+				else if ( nif->getVersionNumber() >= 0x0303000D )
 				{
 					//Newer versions use NiTexturingProperty and NiSourceTexture
 					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType(iTexProp) != "NiTexturingProperty" )

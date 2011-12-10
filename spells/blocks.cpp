@@ -26,16 +26,48 @@
  * @param array The name of the link array
  * @param link A reference to the block to insert into the link array
  */
-static void addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+static bool addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
 {
 	QModelIndex iSize = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
 	QModelIndex iArray = nif->getIndex( iParent, array );
-	if ( iSize.isValid() && iArray.isValid() )
+	if ( iSize.isValid() && (iSize.flags() & Qt::ItemIsEnabled) )
 	{
-		int numlinks = nif->get<int>( iSize );
-		nif->set<int>( iSize, numlinks + 1 );
-		nif->updateArray( iArray );
-		nif->setLink( iArray.child( numlinks, 0 ), link );
+		// size is valid: dynamically sized array?
+		if ( iArray.isValid() && ( iArray.flags() & Qt::ItemIsEnabled ) )
+		{
+			int numlinks = nif->get<int>( iSize );
+			nif->set<int>( iSize, numlinks + 1 );
+			nif->updateArray( iArray );
+			nif->setLink( iArray.child( numlinks, 0 ), link );
+			return true;
+		}
+		else
+		{
+			// no clue what this is, fail
+			return false;
+		}
+	}
+	else if ( iArray.isValid() && ( iArray.flags() & Qt::ItemIsEnabled ) )
+	{
+		// static array, find a empty entry and insert link there
+		NifItem * item = static_cast<NifItem*>( iArray.internalPointer() );
+		if ( nif->isArray( iArray ) && item )
+		{
+			for ( int c = 0; c < item->childCount(); c++ )
+			{
+				if ( item->child( c )->value().toLink() == -1 )
+				{
+					nif->setLink( iArray.child( c, 0), link );
+					return true;
+				}
+			}
+		}
+		// failed in some way, either array not valid or no empty entry found
+		return false;
+	}
+	else
+	{
+		return false;
 	}
 }
 
@@ -61,6 +93,8 @@ static void delLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 }
 
 // documented in blocks.h
+// XXX at the moment, we don't care if this fails or not...
+// XXX probably should return a bool?
 void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
 {
 	if ( nif->isLink( index ) && nif->inherits( iBlock, nif->itemTmplt( index ) ) )
@@ -77,7 +111,15 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 	}
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiProperty" ) )
 	{
-		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
+		// Skyrim note: this will fail if "Properties" is not enabled
+		if ( !addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) ) )
+		{
+			// "Properties" was not enabled: try Skyrim style "BS Properties"
+			if ( nif->inherits( index, "NiGeometry" ) )
+			{
+				addLink( nif, index, "BS Properties", nif->getBlockNumber( iBlock ) );
+			}
+		}
 	}
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiExtraData" ) )
 	{
@@ -221,7 +263,17 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return nif->itemType( index ) == "NiBlock" && nif->inherits( index, "NiAVObject" );
+		if ( nif->itemType( index ) != "NiBlock" ) return false;
+		if ( nif->getUserVersion() < 12 )
+		{
+			// not Skyrim
+			return nif->inherits( index, "NiAVObject" );
+		}
+		else
+		{
+			// Skyrim
+			return nif->inherits( index, "NiGeometry" );
+		}
 	}
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -239,8 +291,13 @@ public:
 		{
 			QPersistentModelIndex iParent = index;
 			QModelIndex iProperty = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
-			
-			addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) );
+			if ( !addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) ) ) {
+				// try Skyrim
+				if ( !addLink( nif, iParent, "BS Properties", nif->getBlockNumber( iProperty ) ) )
+				{
+					qWarning() << "failed to attach property block; perhaps the array is full?";
+				}
+			}
 			return iProperty;
 		}
 		else
