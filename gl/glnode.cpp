@@ -1627,11 +1627,12 @@ void Node::drawHavok()
 	if (Node::SELECTING) {
 		int s_nodeId = ID2COLORKEY (nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
-	}
-	else {
 		glDepthFunc( GL_ALWAYS );
 		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 0.2f );
 		glDepthFunc( GL_LEQUAL );
+	}
+	else {
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 0.2f );
 	}
 	
 	glPopMatrix();

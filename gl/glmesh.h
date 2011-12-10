@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Mesh : public Node
 {
 public:
-	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
+	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {double_sided = false;}
 	
 	void clear();
 	void update( const NifModel * nif, const QModelIndex & );
@@ -128,6 +128,8 @@ protected:
 	friend class MorphController;
 	friend class UVController;
 	friend class Renderer;
+
+	bool double_sided;
 };
 
 #endif
