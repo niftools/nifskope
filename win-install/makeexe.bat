@@ -7,6 +7,7 @@ setlocal
 
 set NAME=nifskope
 set VERSION=1.1.1
+if not "%1" == "" set VERSION=%VERSION%-%1
 set REVISION=
 
 rem Check that required tools are in PATH
