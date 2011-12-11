@@ -1039,7 +1039,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		if ( buddy.isValid() )
 			return data( buddy, role );
 	}
-	else if ( column == ValueCol && item->parent() != root && item->type() == "ControllerLink" && role == NifSkopeDisplayRole )
+	else if ( column == ValueCol && item->parent() != root && item->type() == "ControllerLink" && role == Qt::DisplayRole )
 	{
 		QModelIndex buddy;
 		if ( item->name() == "Controlled Blocks" )
