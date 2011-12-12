@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "basemodel.h"
 #include "niftypes.h"
+#include "options.h"
 
 #include <QByteArray>
 #include <QColor>
@@ -361,7 +362,10 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 		return QVariant();
 	
 	int column = index.column();
-	
+
+	if (role == NifSkopeDisplayRole)
+		role = Qt::DisplayRole;
+
 	switch ( role )
 	{
 		case Qt::DisplayRole:
