@@ -989,6 +989,7 @@ void Mesh::drawSelection() const
 	}
 	else if ( scene->currentBlock == iData || scene->currentBlock == iSkinPart )
 	{
+		bool fooo = scene->currentIndex.isValid();
 		n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
 		
 		QModelIndex iParent = scene->currentIndex.parent();
