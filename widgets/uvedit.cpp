@@ -901,6 +901,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			{
 				// TODO: use the BSShaderTextureSet
 				iTexProp = nif->getBlock( l, "BSShaderPPLightingProperty" );
+				if( !iTexProp.isValid() )
+					iTexProp = nif->getBlock( l, "BSLightingShaderProperty" );
 				if( iTexProp.isValid() )
 				{
 					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );
