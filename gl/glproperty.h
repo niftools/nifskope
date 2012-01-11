@@ -400,6 +400,7 @@ public:
 protected:
    //QVector<QString> textures;
    QPersistentModelIndex iTextureSet;
+   QPersistentModelIndex iSourceTexture;
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
