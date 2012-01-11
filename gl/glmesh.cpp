@@ -530,6 +530,7 @@ void Mesh::transform()
 #define SF_Vertex_Animation 29
 #define SF_Double_Sided 4
 #define PROP_LightingShaderProperty "BSLightingShaderProperty"
+#define PROP_BSEffectShaderProperty "BSEffectShaderProperty"
 #define FLAG_ShaderFlags "Shader Flags 2"
 			bool alphaisanim = false;
 			double_sided = false;
@@ -549,9 +550,17 @@ void Mesh::transform()
 							alphaisanim = true;
 							break;
 						}
+					} else
+					{
+						// enalble double_sided by default for BSEffectShaderProperty
+						// TODO: update when the double_sided flag for BSEffectShaderProperty is found
+						iProp = nif->getBlock( props[i], PROP_BSEffectShaderProperty );
+						if (iProp.isValid())
+							double_sided = true;
 					}
 				}
 			}
+#undef PROP_BSEffectShaderProperty
 #undef PROP_LightingShaderProperty
 #undef FLAG_ShaderFlags
 #undef SF_Double_Sided
