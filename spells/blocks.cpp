@@ -79,6 +79,18 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 	{
 		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
 	}
+	/*
+	*	Temporary workaround for non-NiProperty properties
+	*/
+	else if ( nif->getBlockName( iBlock ) == "BSLightingShaderProperty" )
+	{
+		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
+	}
+	else if ( nif->inherits( iBlock, "BSShaderProperty") )
+	{
+		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
+	}
+
 	else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiExtraData" ) )
 	{
 		addLink( nif, index, "Extra Data List", nif->getBlockNumber( iBlock ) );
