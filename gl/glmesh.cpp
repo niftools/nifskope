@@ -553,7 +553,7 @@ void Mesh::transform()
 						}
 					} else
 					{
-						// enalble double_sided by for BSEffectShaderProperty
+						// enable double_sided for BSEffectShaderProperty
 						iProp = nif->getBlock( props[i], PROP_BSEffectShaderProperty );
 						if (iProp.isValid())
 						{
