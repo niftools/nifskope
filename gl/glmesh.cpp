@@ -935,7 +935,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		shader = scene->renderer.setupProgram( this, shader );
 	
 	if (double_sided)
+	{
+		glDepthMask( GL_FALSE );
 		glDisable( GL_CULL_FACE );
+	}
 
 	// render the triangles
 	if ( sortedTriangles.count() )
@@ -946,7 +949,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
 
 	if (double_sided)
+	{
 		glEnable( GL_CULL_FACE );
+		glDepthMask( GL_TRUE );
+	}
 
 	if (!Node::SELECTING)
 		scene->renderer.stopProgram();
