@@ -535,6 +535,7 @@ void Mesh::transform()
 #define FLAG_EffectShaderFlags1 "Effect Shader Flags 1"
 			bool alphaisanim = false;
 			double_sided = false;
+			double_sided_es = false;
 			if ( nif->checkVersion( 0x14020007, 0 ) && nif->itemName( iBlock ) == "NiTriShape" )
 			{
 				QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" );
@@ -558,7 +559,7 @@ void Mesh::transform()
 						if (iProp.isValid())
 						{
 							unsigned int sf1 = nif->get<unsigned int>(iProp, FLAG_EffectShaderFlags1);
-							double_sided = sf1 & (1 << SF_Double_Sided);
+							double_sided_es = sf1 & (1 << SF_Double_Sided);
 						}
 					}
 				}
@@ -938,9 +939,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if (!Node::SELECTING)
 		shader = scene->renderer.setupProgram( this, shader );
 	
-	if (double_sided)
+	if (double_sided || double_sided_es)
 	{
-		glDepthMask( GL_FALSE );
+		if (double_sided_es)// TODO: reintroduce sorting if need be
+			glDepthMask( GL_FALSE );
 		glDisable( GL_CULL_FACE );
 	}
 
@@ -952,10 +954,11 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	for ( int s = 0; s < tristrips.count(); s++ )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
 
-	if (double_sided)
+	if (double_sided || double_sided_es)
 	{
 		glEnable( GL_CULL_FACE );
-		glDepthMask( GL_TRUE );
+		if (double_sided_es)
+			glDepthMask( GL_TRUE );
 	}
 
 	if (!Node::SELECTING)
