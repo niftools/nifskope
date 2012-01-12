@@ -616,7 +616,7 @@ void Node::makeParent( Node * newParent )
 void Node::setController( const NifModel * nif, const QModelIndex & iController )
 {
 	QString cname = nif->itemName( iController );
-	if ( cname == "NiTransformController" )
+	if ( cname == "NiTransformController"/*  || cname == "NiBoneLODController"*/ )
 	{
 		Controller * ctrl = new TransformController( this, iController );
 		ctrl->update( nif, iController );
