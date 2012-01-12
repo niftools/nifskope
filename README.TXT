@@ -4,7 +4,7 @@
  
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
-This is version 1.1.0-RC4 of NifSkope.
+This is version 1.1.0-RC5 of NifSkope.
 
 Known Issues and Workarounds
 ----------------------------

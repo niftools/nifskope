@@ -1,9 +1,19 @@
  == CHANGELOG ==
 
-This is version 1.1.0-RC4 of NifSkope.
+This is version 1.1.0-RC5 of NifSkope.
 
 changes planned for 1.1.1:
  * adding Skyrim support
+
+changes since 1.1.0-RC5:
+* Fix: .kf attaching for 10.0.1.0 - renaming the fields in "nif.xml" works as well
+* Fix: double_sided rendering issue
+* Add: SF_Double_Sided handling for "BSEffectShaderProperty"
+* Fix #3468080: property "paste" now works for non-NiProperty blocks
+* Fix #3471254: temporary set global template for some properties
+* Fix: rendering of double-sided + alpha unsorted triangles issue
+* Add: "BSEffectShaderProperty" - initial support
+* Add: unknown properties are now reported by the property factory
 
 changes since 1.1.0-RC4:
  * Added support for "BSLightingShaderProperty" in the UV editor and exporter
