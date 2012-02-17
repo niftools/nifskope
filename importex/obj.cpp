@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../gl/gltex.h"
 
-#define tr(x) QApplication::tr("ObjImport", x)
+#define tr(x) QApplication::tr(x)
 
 /*
  *  .OBJ EXPORT
@@ -62,7 +62,7 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 	foreach ( Vector3 v, verts )
 	{
 		v = t * v;
-		obj << "v " << v[0] << " " << v[1] << " " << v[2] << "\r\n";
+		obj << "v " << qSetRealNumberPrecision(17) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
 	}
 	
 	// copy texcoords
@@ -452,7 +452,10 @@ static void readMtlLib( const QString & fname, QMap< QString, ObjMaterial > & om
 		}
 		else if ( t.value( 0 ) == "map_Kd" )
 		{
+			// handle spaces in filenames
 			mtl.map_Kd = t.value( 1 );
+			for (int i = 2; i < t.size (); i++)
+				mtl.map_Kd += " " + t.value( i );
 		}
 	}
 	if ( ! mtlid.isEmpty() )
@@ -476,7 +479,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	// If no existing node is selected, create a group node.  Otherwise use selected node
 	QPersistentModelIndex iNode, iShape, iMaterial, iData, iTexProp, iTexSource;
 	QModelIndex iBlock = nif->getBlock( index );
-
+	bool cBSShaderPPLightingProperty = false;
 	//Be sure the user hasn't clicked on a NiTriStrips object
 	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiTriStrips" )
 	{
@@ -506,6 +509,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			{
 				QModelIndex temp = nif->getBlock( *it );
 				QString type = nif->itemName( temp );
+				if ( type == "BSShaderPPLightingProperty" )
+				{
+					cBSShaderPPLightingProperty = true;
+				}
 				if ( type == "NiMaterialProperty" )
 				{
 					iMaterial = temp;
@@ -676,13 +683,18 @@ void importObj( NifModel * nif, const QModelIndex & index )
 		if ( it.key() != "collision" )
 		{
 			//If we are on the first shape, and one was selected in the 3D view, use the existing one
+			bool newiShape = false;
 			if ( iShape.isValid() == false || first_tri_shape == false )
 			{
 				iShape = nif->insertNiBlock( "NiTriShape" );
+				newiShape = true;
 			}
 
-			nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
-			addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
+			if (newiShape)// don't change a name what already exists; // don't add duplicates
+			{
+				nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
+				addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
+			}
 			
 			if ( !omaterials.contains( it.key() ) )
 				qWarning() << "material" << it.key() << "not found in mtllib";
@@ -692,19 +704,24 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			// add material property, for non-Skyrim versions
 			if ( nif->getUserVersion() < 12 )
 			{
+				bool newiMaterial = false;
 				if ( iMaterial.isValid() == false || first_tri_shape == false )
 				{
 					iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
+					newiMaterial = true;
 				}
-				nif->set<QString>( iMaterial, "Name", it.key() );
+				if (newiMaterial)// don't affect a property  that is already there - that name is generated above on export and it has nothign to do with the stored name
+					nif->set<QString>( iMaterial, "Name", it.key() );
 				nif->set<Color3>( iMaterial, "Ambient Color", mtl.Ka );
 				nif->set<Color3>( iMaterial, "Diffuse Color", mtl.Kd );
 				nif->set<Color3>( iMaterial, "Specular Color", mtl.Ks );
-				nif->set<Color3>( iMaterial, "Emissive Color", Color3( 0, 0, 0 ) );
+				if (newiMaterial)// don't affect a property  that is already there
+					nif->set<Color3>( iMaterial, "Emissive Color", Color3( 0, 0, 0 ) );
 				nif->set<float>( iMaterial, "Alpha", mtl.d );
 				nif->set<float>( iMaterial, "Glossiness", mtl.Ns );
 
-				addLink( nif, iShape, "Properties", nif->getBlockNumber( iMaterial ) );
+				if (newiMaterial)// don't add property that is already there
+					addLink( nif, iShape, "Properties", nif->getBlockNumber( iMaterial ) );
 			}
 			
 			if ( ! mtl.map_Kd.isEmpty() )
@@ -718,29 +735,39 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					//Newer versions use NiTexturingProperty and NiSourceTexture
 					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType(iTexProp) != "NiTexturingProperty" )
 					{
-						iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
+						if (!cBSShaderPPLightingProperty) // no need of NiTexturingProperty when BSShaderPPLightingProperty is present
+							iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					}
-					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
-					
-					nif->set<int>( iTexProp, "Has Base Texture", 1 );
-					QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
-					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
-					nif->set<int>( iBaseMap, "Filter Mode", 2 );
+					QModelIndex iBaseMap;
+					if (!cBSShaderPPLightingProperty)
+					{// no need of NiTexturingProperty when BSShaderPPLightingProperty is present
+						addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
+
+						nif->set<int>( iTexProp, "Has Base Texture", 1 );
+						iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
+						nif->set<int>( iBaseMap, "Clamp Mode", 3 );
+						nif->set<int>( iBaseMap, "Filter Mode", 2 );
+					}
 					
 					if ( iTexSource.isValid() == false || first_tri_shape == false || nif->itemType(iTexSource) != "NiSourceTexture" )
 					{
-						iTexSource = nif->insertNiBlock( "NiSourceTexture" );
+						if (!cBSShaderPPLightingProperty)
+							iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
-					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
+					if (!cBSShaderPPLightingProperty)// no need of NiTexturingProperty when BSShaderPPLightingProperty is present
+						nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
 					
-					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
-					nif->set<int>( iTexSource, "Use Mipmaps", 2 );
-					nif->set<int>( iTexSource, "Alpha Format", 3 );
-					nif->set<int>( iTexSource, "Unknown Byte", 1 );
-					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
+					if (!cBSShaderPPLightingProperty)
+					{// no need of NiTexturingProperty when BSShaderPPLightingProperty is present
+						nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
+						nif->set<int>( iTexSource, "Use Mipmaps", 2 );
+						nif->set<int>( iTexSource, "Alpha Format", 3 );
+						nif->set<int>( iTexSource, "Unknown Byte", 1 );
+						nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
 					
-					nif->set<int>( iTexSource, "Use External", 1 );
-					nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+						nif->set<int>( iTexSource, "Use External", 1 );
+						nif->set<QString>( iTexSource, "File Name", TexCache::stripPath( mtl.map_Kd, nif->getFolder() ) );
+					}
 				} else {
 					//Older versions use NiTextureProperty and NiImage
 					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType(iTexProp) != "NiTextureProperty" )
@@ -808,8 +835,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->updateArray( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals", norms );
 			nif->set<int>( iData, "Has UV", 1 );
-			nif->set<int>( iData, "Num UV Sets", 1 );
-			nif->set<int>( iData, "Num UV Sets 2", 1 );
+			int cNumUVSets = nif->get<int>( iData, "Num UV Sets");// keep things the way they are
+			nif->set<int>( iData, "Num UV Sets", 1 | cNumUVSets );// keep things the way they are
+			nif->set<int>( iData, "Num UV Sets 2", 1 | cNumUVSets );// keep things the way they are
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 			if ( ! iTexCo.isValid() )
 				iTexCo = nif->getIndex( iData, "UV Sets 2" );
@@ -823,10 +851,31 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->updateArray( iData, "Triangles" );
 			nif->setArray<Triangle>( iData, "Triangles", triangles );
 			
+			// "find me a center": see nif.xml for details
+			// TODO: extract to a method somewhere...
 			Vector3 center;
-			foreach ( Vector3 v, verts )
-				center += v;
-			if ( verts.count() > 0 ) center /= verts.count();
+			if ( verts.count() > 0 )
+			{
+				Vector3 min, max;
+				min[0] = verts[0][0];
+				min[1] = verts[0][1];
+				min[2] = verts[0][2];
+				max[0] = min[0];
+				max[1] = min[1];
+				max[2] = min[2];
+				foreach ( Vector3 v, verts )
+				{
+					if (v[0] < min[0]) min[0] = v[0];
+					if (v[1] < min[1]) min[1] = v[1];
+					if (v[2] < min[2]) min[2] = v[2];
+					if (v[0] > max[0]) max[0] = v[0];
+					if (v[1] > max[1]) max[1] = v[1];
+					if (v[2] > max[2]) max[2] = v[2];
+				}
+				center[0] = min[0] + ((max[0] - min[0])/2);
+				center[1] = min[1] + ((max[1] - min[1])/2);
+				center[2] = min[2] + ((max[2] - min[2])/2);
+			}
 			nif->set<Vector3>( iData, "Center", center );
 			float radius = 0;
 			foreach ( Vector3 v, verts )
