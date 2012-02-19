@@ -536,7 +536,7 @@ void Mesh::transform()
 			bool alphaisanim = false;
 			double_sided = false;
 			double_sided_es = false;
-			if ( nif->checkVersion( 0x14020007, 0 ) && nif->itemName( iBlock ) == "NiTriShape" )
+			if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom") )
 			{
 				QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" );
 				for (int i = 0; i < props.count(); i++)
