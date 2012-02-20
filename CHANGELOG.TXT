@@ -1,9 +1,11 @@
  == CHANGELOG ==
 
-This is version 1.1.0-RC5 of NifSkope.
+This is version 1.1.0-RC6 of NifSkope.
 
-changes planned for 1.1.1:
- * adding Skyrim support
+changes since 1.1.0-RC6:
+* Added initial support for "BSLODTriShape" - its being rendered
+* Fixed a lot of stuff regarding .obj import when BSShaderPPLightingProperty is present
+* Fix: Handling of spaces in .mtl files filename
 
 changes since 1.1.0-RC5:
 * Fix: .kf attaching for 10.0.1.0 - renaming the fields in "nif.xml" works as well
