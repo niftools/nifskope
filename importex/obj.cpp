@@ -817,11 +817,11 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					if ( ix == points.count() )
 					{
 						points.append( p );
-						verts.append( overts.value( p.v ) );
-						norms.append( onorms.value( p.n ) );
-						texco.append( otexco.value( p.t ) );
+						verts.append( overts.value( ix ) );
+						norms.append( onorms.value( ix ) );
+						texco.append( otexco.value( ix ) );
 					}
-					tri[t] = ix;
+					tri[t] = p.v;
 				}
 				
 				triangles.append( tri );
