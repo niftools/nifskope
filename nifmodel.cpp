@@ -1333,6 +1333,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			// TODO: checkbox, "show invalid only"
 			if ( column == ValueCol && item->value().type() == NifValue::tTriangle ) {
 				NifItem *nv = getItemX( item, "Num Vertices" );
+				if (!nv)
+					nv = getItemX( item, "Num Triangles" );
+				if (!nv)
+					return QVariant();
 				quint32 nvc = nv->value().toCount();
 				Triangle t = item->value().get<Triangle>();
 				if (t[0] >= nvc || t[1] >= nvc || t[2] >= nvc)
