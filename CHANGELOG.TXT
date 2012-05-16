@@ -18,7 +18,7 @@ changes since 1.1.0-RC7:
 * Fix: fixed #3525690 NifSkope Crash: MoppBvTree Triangles
 * Fix: blocked invalid memory access when "triangles" is empty
 * Fix: stopped triangle reordering on .obj import into "FO:NV" "NiTriShape"
-* nif,xml: bhkCompressedMeshShape: merged "skyfox", "ttl296" and probably other peoples work
+* nif.xml: bhkCompressedMeshShape: merged "skyfox", "ttl296" and probably other peoples work
 
 changes since 1.1.0-RC6:
 * Added initial support for "BSLODTriShape" - its being rendered
