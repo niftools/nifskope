@@ -382,7 +382,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 	{
 		NifItem * child = item->child( c );
 
-		if ( child->name() == name && evalCondition( child ) )
+		if ( child && child->name() == name && evalCondition( child ) )
 			return child;
 	}
 
@@ -1332,11 +1332,11 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			// "notify" about an invalid index in "Triangles"
 			// TODO: checkbox, "show invalid only"
 			if ( column == ValueCol && item->value().type() == NifValue::tTriangle ) {
-				NifItem *nv = getItemX( item, "Num Vertices" );
-				if (!nv)
-					nv = getItemX( item, "Num Triangles" );
-				if (!nv)
+				NifItem *nv = findItemX( item, "Num Vertices" );
+				if (!nv) {
+					qWarning() << "Num Vertices is null";
 					return QVariant();
+				}
 				quint32 nvc = nv->value().toCount();
 				Triangle t = item->value().get<Triangle>();
 				if (t[0] >= nvc || t[1] >= nvc || t[2] >= nvc)

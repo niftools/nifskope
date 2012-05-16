@@ -615,6 +615,9 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 	return 0;
 }
 
+/*
+*  Uses implicit load order
+*/
 NifItem * BaseModel::getItemX( NifItem * item, const QString & name ) const
 {
 	if ( ! item || ! item->parent() )	return 0;
@@ -629,6 +632,17 @@ NifItem * BaseModel::getItemX( NifItem * item, const QString & name ) const
 	}
 	
 	return getItemX( parent, name );
+}
+
+NifItem * BaseModel::findItemX( NifItem * item, const QString & name ) const
+{
+	while (item) {
+		NifItem *r = getItem (item, name);
+		if (r)
+			return r;
+		item = item->parent();
+	}
+	return 0;
 }
 
 QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & name ) const
