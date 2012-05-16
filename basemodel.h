@@ -247,6 +247,8 @@ protected:
 	virtual NifItem *	getItem( NifItem * parent, const QString & name ) const;
 	//! Get an item by name
 	NifItem *	getItemX( NifItem * item, const QString & name ) const; // find upwards
+	//! Find an item by name
+	NifItem *	findItemX( NifItem * item, const QString & name ) const;
 	
 	//! Get an item by name
 	template <typename T> T get( NifItem * parent, const QString & name ) const;
