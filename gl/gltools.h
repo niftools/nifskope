@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTOOLS_H
 #define GLTOOLS_H
 
-#include <QtOpenGL>
+#include <QGLContext>
 
 #include "../niftypes.h"
 

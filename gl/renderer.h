@@ -36,8 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtCore/QtCore> // extra include to avoid compile error
 #include <QtGui/QtGui>   // dito
 
-#include "GLee.h"
-#include <QtOpenGL>
+#include "GLee.h" 
+#include <QGLContext>
 
 #include "../nifmodel.h"
 

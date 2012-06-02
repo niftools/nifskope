@@ -47,6 +47,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../NvTriStrip/qtwrapper.h"
 
 #include <math.h>
+#include <GL/glext.h>
+#include <GL/glu.h>
+
+#include <QCursor>
+#include <QDialog>
+#include <QInputDialog>
+#include <QTimer>
+#include <QUndoStack>
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0

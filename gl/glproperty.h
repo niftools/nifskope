@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtGui/QtGui>   // dito
 
 #include "GLee.h"
-#include <QtOpenGL>
+#include <QGLContext>
 
 #include "glcontrolable.h"
 

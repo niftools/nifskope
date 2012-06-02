@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gl/GLee.h"
 #include <QtOpenGL>
+#include <GL/glu.h>
 
 #include "glview.h"
 
