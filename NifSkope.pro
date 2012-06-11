@@ -8,6 +8,10 @@ CONFIG += qt release thread warn_on
 
 CONFIG += fsengine
 
+macx{
+        LIBS += -framework CoreFoundation
+}
+
 # uncomment this if you want all the messages to be logged to stdout
 #CONFIG += console
 

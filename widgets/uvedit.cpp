@@ -40,8 +40,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../NvTriStrip/qtwrapper.h"
 
 #include <math.h>
-#include <GL/glext.h>
-#include <GL/glu.h>
+#ifdef __APPLE__
+     #include <OPENGL/glext.h>
+    #include <OPENGL/glu.h>
+#else
+     #include <GL/glext.h>
+    #include <GL/glu.h>
+#endif
+
 
 #include <QCursor>
 #include <QDialog>
