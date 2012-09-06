@@ -58,6 +58,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * DONE:
  * + models and texture works, tested multiple dae supported software (except rotation)
  * + added NifLODNode as "NifNode"
+ * + Now using matrix to translate/rotate/size, still rotate is not exactly in place in multi layer (node) models.
  * SCHEMA TESTING:
  * xmllint --noout --schema http://www.khronos.org/files/collada_schema_1_4_1.xsd ~/file.dae
  *
@@ -490,48 +491,27 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			QDomElement node = doc.createElement("node");
 			node.setAttribute("id", QString("nifid_%1-matrix").arg(idx) );
 			parentNode.appendChild(node);
-/*
-			// matrix move
-			// TODO: check why not working!
+			// matrix
+			// FIXME use matrix if possible
+			float scale = nif->get<float>( iBlock, "Scale" );
+			Vector3 scales;
+			scales[0]=scale;
+			scales[1]=scale;
+			scales[2]=scale;
 			Matrix4 m4;
-			m4.compose(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ), nif->get<Vector3>( iBlock, "Scale" ) );
+			m4.compose(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ), scales );
 			const float *e = m4.data(); // vector array
 			QDomElement matrix = doc.createElement("matrix");
 			matrix.setAttribute("sid", "matrix");
 			matrix.appendChild( doc.createTextNode(
 				QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14 %15 %16")
-					.arg(e[0]).arg(e[1]).arg(e[2]).arg(e[3])
-					.arg(e[4]).arg(e[5]).arg(e[6]).arg(e[7])
-					.arg(e[8]).arg(e[9]).arg(e[10]).arg(e[11])
-					.arg(e[12]).arg(e[13]).arg(e[14]).arg(e[15])
+					.arg(e[0],0,'f',6).arg(e[1],0,'f',6).arg(e[2],0,'f',6).arg(e[12],0,'f',6)
+					.arg(e[4],0,'f',6).arg(e[5],0,'f',6).arg(e[6],0,'f',6).arg(e[13],0,'f',6)
+					.arg(e[8],0,'f',6).arg(e[9],0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
+					.arg(e[3],0,'f',6).arg(e[7],0,'f',6).arg(e[11],0,'f',6).arg(e[15],0,'f',6)
 				)
 			);
-			node.appendChild(matrix);*/
-
-			// Node translate
-			Vector3 trans = nif->get<Vector3>( iBlock, "Translation" );
-			node.appendChild(textElement("translate",QString("%1 %2 %3").arg(trans[0],0,'f',6).arg(trans[1],0,'f',6).arg(trans[2],0,'f',6)));
-			// Node rotate
-			Matrix rot = nif->get<Matrix>( iBlock, "Rotation" );
-			Vector3 xyz;
-			float a;
-			rot.toQuat().toAxisAngle(xyz,a);
-			QDomElement rotate;
-			rotate = doc.createElement("rotate");
-			rotate.setAttribute("sid","rotateZ");
-			rotate.appendChild(doc.createTextNode(QString("0 0 1 %1").arg( (xyz[2]*a*180/PI),0,'f',6 )));
-			node.appendChild(rotate);
-			rotate = doc.createElement("rotate");
-			rotate.setAttribute("sid","rotateY");
-			rotate.appendChild(doc.createTextNode(QString("0 1 0 %1").arg( (xyz[1]*a*180/PI),0,'f',6 )));
-			node.appendChild(rotate);
-			rotate = doc.createElement("rotate");
-			rotate.setAttribute("sid","rotateX");
-			rotate.appendChild(doc.createTextNode(QString("1 0 0 %1").arg( (xyz[0]*a*180/PI),0,'f',6 )));
-			node.appendChild(rotate);
-			// Node scale
-			float scale =  nif->get<float>( iBlock, "Scale" );
-			node.appendChild(textSidElement("scale",QString("%1 %2 %3").arg(scale,0,'f',6).arg(scale,0,'f',6).arg(scale,0,'f',6)));
+			node.appendChild(matrix);
 
 			// attach structure and material to node structure
 			QDomElement instanceGeometry = doc.createElement("instance_geometry");
@@ -569,64 +549,35 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 	QModelIndex iBlock = nif->getBlock( idx );
 	QDomElement node = doc.createElement("node");
 	node.setAttribute("name",  nif->get<QString>( iBlock, "Name" ).replace(" ","_") );
-	node.setAttribute("id", QString("nifid_%1").arg(idx) );
-/*
+	node.setAttribute("id", QString("nifid_%1_node").arg(idx) );
+
 	// matrix
-	// FIXME use matrix if possible
+	float scale = nif->get<float>( iBlock, "Scale" );
+	Vector3 scales;
+	scales[0]=scale;
+	scales[1]=scale;
+	scales[2]=scale;
 	Matrix4 m4;
-	m4.compose(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ), nif->get<Vector3>( iBlock, "Scale" ) );
+	m4.compose(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ), scales );
 	const float *e = m4.data(); // vector array
 	QDomElement matrix = doc.createElement("matrix");
 	matrix.setAttribute("sid", "matrix");
 	matrix.appendChild( doc.createTextNode(
 		QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14 %15 %16")
-			.arg(e[0]).arg(e[1]).arg(e[2]).arg(e[3])
-			.arg(e[4]).arg(e[5]).arg(e[6]).arg(e[7])
-			.arg(e[8]).arg(e[9]).arg(e[10]).arg(e[11])
-			.arg(e[12]).arg(e[13]).arg(e[14]).arg(e[15])
+			.arg(e[0],0,'f',6).arg(e[1],0,'f',6).arg(e[2],0,'f',6).arg(e[12],0,'f',6)
+			.arg(e[4],0,'f',6).arg(e[5],0,'f',6).arg(e[6],0,'f',6).arg(e[13],0,'f',6)
+			.arg(e[8],0,'f',6).arg(e[9],0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
+			.arg(e[3],0,'f',6).arg(e[7],0,'f',6).arg(e[11],0,'f',6).arg(e[15],0,'f',6)
 		)
 	);
-	node.appendChild(matrix);*/
-
-	// Node translate
-	Vector3 trans = nif->get<Vector3>( iBlock, "Translation" );
-	node.appendChild(textSidElement("translate",QString("%1 %2 %3").arg(trans[0],0,'f',6).arg(trans[1],0,'f',6).arg(trans[2],0,'f',6)));
-
-	// Node rotate
-	// TODO not working correctly!
-	/*
-     <rotate sid="rotateZ">0 0 1 -180</rotate>
-     <rotate sid="rotateY">0 1 0 -89.029</rotate>
-     <rotate sid="rotateX">1 0 0 -90.0001</rotate>
-    */
-	Matrix rot = nif->get<Matrix>( iBlock, "Rotation" );
-	Vector3 xyz;
-	float a;
-	Quat q = rot.toQuat();
-	q.toAxisAngle(xyz,a);
-	QDomElement rotate;
-	rotate = doc.createElement("rotate");
-	rotate.setAttribute("sid","rotateZ");
-	rotate.appendChild(doc.createTextNode(QString("0 0 1 %1").arg( ( (a*180/PI)*xyz[2]),0,'f',6 )));
-	node.appendChild(rotate);
-	rotate = doc.createElement("rotate");
-	rotate.setAttribute("sid","rotateY");
-	rotate.appendChild(doc.createTextNode(QString("0 1 0 %1").arg( ( (a*180/PI)*xyz[1]),0,'f',6 )));
-	node.appendChild(rotate);
-	rotate = doc.createElement("rotate");
-	rotate.setAttribute("sid","rotateX");
-	rotate.appendChild(doc.createTextNode(QString("1 0 0 %1").arg( ( (a*180/PI)*xyz[0]),0,'f',6 )));
-	node.appendChild(rotate);
-	// Node scale
-	float scale =  nif->get<float>( iBlock, "Scale" );
-	node.appendChild(textSidElement("scale",QString("%1 %2 %3").arg(scale,0,'f',6).arg(scale,0,'f',6).arg(scale,0,'f',6)));
+	node.appendChild(matrix);
 
 	// parent attach and new loop
 	parentNode.appendChild(node);
 	foreach ( int l,nif->getChildLinks(idx) ) {
 		QModelIndex iChild = nif->getBlock( l );
 		QString type = nif->getBlockName(iChild);
-		qDebug() << "TYPE:" << type;
+//		qDebug() << "TYPE:" << type;
 		if ( type == QString("NiNode") )
 			attachNiNode(nif,node,l);
 		if ( type == QString("NiLODNode") )
@@ -690,7 +641,7 @@ void exportCol( const NifModel * nif ) {
 	while ( ! roots.empty() ) {
 		int idx = roots.takeFirst();
 		QModelIndex iBlock = nif->getBlock( idx );
-		qDebug() << nif->getBlockName(iBlock);
+//		qDebug() << nif->getBlockName(iBlock);
 		// get more if NiNode
 		if ( nif->isNiBlock( iBlock, "NiNode" )  )
 			attachNiNode(nif,lv,idx);
