@@ -1,0 +1,13 @@
+diff --git a/src/libqhull/mem.h b/src/libqhull/mem.h
+index b891444..b7b0a81 100644
+--- a/src/libqhull/mem.h
++++ b/src/libqhull/mem.h
+@@ -80,6 +80,8 @@ Trace short and quick memory allocations at T5
+ */
+ #if _MSC_VER && defined(_WIN64)
+ typedef long long ptr_intT;
++#elif defined(__MINGW32__) && defined(_WIN64) 
++typedef long long ptr_intT;
+ #else
+ typedef long ptr_intT;
+ #endif
