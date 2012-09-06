@@ -37,11 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../niftypes.h"
 
-#include "GLee.h"
-
 class QAction;
 class QFileSystemWatcher;
-class QGLContext;
 
 class GroupBox;
 
