@@ -1,3 +1,19 @@
+
+#include "blocks.h"
+#include "texture.h"
+
+#include "../spellbook.h"
+#include "../gl/gltex.h"
+
+#include "../config.h"
+
+#include "../widgets/fileselect.h"
+#include "../widgets/uvedit.h"
+
+#include "../NvTriStrip/qtwrapper.h"
+
+#include <QGLPixelBuffer>
+
 #include <QComboBox>
 #include <QDialog>
 #include <QDirModel>
@@ -8,23 +24,6 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QTreeView>
-
-#include "blocks.h"
-#include "texture.h"
-
-#include "../spellbook.h"
-
-#include "../config.h"
-
-#include "../NvTriStrip/qtwrapper.h"
-
-#include "../widgets/fileselect.h"
-
-#include "../widgets/uvedit.h"
-#include "../gl/gltex.h"
-
-#include "../gl/GLee.h"
-#include <QGLPixelBuffer>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file texture.cpp

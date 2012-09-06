@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools
+Copyright (c) 2005-2012, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,13 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-
-#include <QCursor>
-#include <QDialog>
-#include <QInputDialog>
-#include <QTimer>
-#include <QUndoStack>
-
 #include "uvedit.h"
 
 #include "../nifmodel.h"
@@ -47,6 +40,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../NvTriStrip/qtwrapper.h"
 
 #include <math.h>
+#include <GL/glext.h>
+#include <GL/glu.h>
+
+#include <QCursor>
+#include <QDialog>
+#include <QInputDialog>
+#include <QTimer>
+#include <QUndoStack>
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0
@@ -901,6 +902,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			{
 				// TODO: use the BSShaderTextureSet
 				iTexProp = nif->getBlock( l, "BSShaderPPLightingProperty" );
+				if( !iTexProp.isValid() )
+					iTexProp = nif->getBlock( l, "BSLightingShaderProperty" );
 				if( iTexProp.isValid() )
 				{
 					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );

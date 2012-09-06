@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools
+Copyright (c) 2005-2012, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -247,6 +247,8 @@ protected:
 	virtual NifItem *	getItem( NifItem * parent, const QString & name ) const;
 	//! Get an item by name
 	NifItem *	getItemX( NifItem * item, const QString & name ) const; // find upwards
+	//! Find an item by name
+	NifItem *	findItemX( NifItem * item, const QString & name ) const;
 	
 	//! Get an item by name
 	template <typename T> T get( NifItem * parent, const QString & name ) const;

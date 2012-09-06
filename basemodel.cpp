@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools
+Copyright (c) 2005-2012, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "basemodel.h"
 #include "niftypes.h"
+#include "options.h"
 
 #include <QByteArray>
 #include <QColor>
@@ -360,7 +361,10 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 		return QVariant();
 	
 	int column = index.column();
-	
+
+	if (role == NifSkopeDisplayRole)
+		role = Qt::DisplayRole;
+
 	switch ( role )
 	{
 		case Qt::DisplayRole:
@@ -610,6 +614,9 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 	return 0;
 }
 
+/*
+*  Uses implicit load order
+*/
 NifItem * BaseModel::getItemX( NifItem * item, const QString & name ) const
 {
 	if ( ! item || ! item->parent() )	return 0;
@@ -624,6 +631,17 @@ NifItem * BaseModel::getItemX( NifItem * item, const QString & name ) const
 	}
 	
 	return getItemX( parent, name );
+}
+
+NifItem * BaseModel::findItemX( NifItem * item, const QString & name ) const
+{
+	while (item) {
+		NifItem *r = getItem (item, name);
+		if (r)
+			return r;
+		item = item->parent();
+	}
+	return 0;
 }
 
 QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & name ) const

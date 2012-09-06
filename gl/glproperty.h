@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools
+Copyright (c) 2005-2012, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtGui/QtGui>   // dito
 
 #include "GLee.h"
-#include <QtOpenGL>
+#include <QGLContext>
 
 #include "glcontrolable.h"
 
@@ -400,6 +400,7 @@ public:
 protected:
    //QVector<QString> textures;
    QPersistentModelIndex iTextureSet;
+   QPersistentModelIndex iSourceTexture;
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )

@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools
+Copyright (c) 2005-2012, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -150,7 +150,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 		else
 			node = new Node( this, iNode );
 	}
-	else if ( nif->itemName( iNode ) == "NiTriShape" || nif->itemName( iNode ) == "NiTriStrips" )
+	else if ( nif->itemName( iNode ) == "NiTriShape" || nif->itemName( iNode ) == "NiTriStrips" || nif->inherits( iNode, "NiTriBasedGeom") )
 	{
 		node = new Mesh( this, iNode );
 	}

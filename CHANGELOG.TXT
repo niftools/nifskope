@@ -1,8 +1,8 @@
  == CHANGELOG ==
 
-This is version 1.1.1 of NifSkope.
+This is version 1.1.0-RC7 of NifSkope.
 
-changes since 1.1.0:
+changes planned for 1.1.1:
  * added Skyrim support
  * hierarchy fix for BSShaderProperty and derived blocks
  * hierarchy fix for NiParticlesData and derived blocks
@@ -13,20 +13,60 @@ changes since 1.1.0:
  * fix for resource files that could not be removed (issue #3452880)
  * fix for node names in ControllerLink blocks (issue #3453556)
 
+changes since 1.1.0-RC7:
+* Add: protective check to increase robustness
+* Fix: fixed #3525690 NifSkope Crash: MoppBvTree Triangles
+* Fix: blocked invalid memory access when "triangles" is empty
+* Fix: stopped triangle reordering on .obj import into "FO:NV" "NiTriShape"
+* nif.xml: bhkCompressedMeshShape: merged "skyfox", "ttl296" and probably other peoples work
+
+changes since 1.1.0-RC6:
+* Added initial support for "BSLODTriShape" - its being rendered
+* Fixed a lot of stuff regarding .obj import when BSShaderPPLightingProperty is present
+* Fix: Handling of spaces in .mtl files filename
+
+changes since 1.1.0-RC5:
+* Fix: .kf attaching for 10.0.1.0 - renaming the fields in "nif.xml" works as well
+* Fix: double_sided rendering issue
+* Add: SF_Double_Sided handling for "BSEffectShaderProperty"
+* Fix #3468080: property "paste" now works for non-NiProperty blocks
+* Fix #3471254: temporary set global template for some properties
+* Fix: rendering of double-sided + alpha unsorted triangles issue
+* Add: "BSEffectShaderProperty" - initial support
+* Add: unknown properties are now reported by the property factory
+
+changes since 1.1.0-RC4:
+ * Added support for "BSLightingShaderProperty" in the UV editor and exporter
+
+changes since 1.1.0-RC3:
+ * Fixed two regressions
+
+changes since 1.1.0-RC2:
+ * Fix: "havok material" no longer resets to "HAV_MAT_STONE" when packing strips
+ * Modified "havok" axes visibility
+ * Enabled double-sided rendering when specific flag specifies it
+ * Initial handling of unknown (possibly animation) alpha component of
+   NiTriShape vertex colors
+ * Fix: two regressions
+ * Added View Toolbar and new action - "reset block details"
+ * Fix: restoring the main window no longer resets "block details"
+ * Automatic vertex weighting initial support
+ * BSTreeNode initial support
+
 changes since 1.1.0-RC1:
  * block number is visible
  * made material editor dialog window modal
  * Update for new qhull
- * fix: quat. rotation keys linear interpolation issue
+ * Fix: quat. rotation keys linear interpolation issue
  * Fix for Qt 4.8.0: naming clash with dds_swap
- * fix: added handling of invalid "Triangles" indexes
- * fix: Skyrim textures are visible
+ * Fix: added handling of invalid "Triangles" indexes
+ * Fix: Skyrim textures are visible
  * Fixed NvTriStripObjects build error on gcc
- * fix: File->Quit was not storing the program settings
- * fix: bhkPackedNiTriStripsShape highlighting now works
- * fix: furniture below shapes is now correctly mouse
- * fix: transpaarency no longer hides selected fragments
- * fix: highlighting of bhkListShape. Also, group highlighting now works
+ * Fix: File->Quit was not storing the program settings
+ * Fix: bhkPackedNiTriStripsShape highlighting now works
+ * Fix: furniture below shapes is now correctly mouse
+ * Fix: transpaarency no longer hides selected fragments
+ * Fix: highlighting of bhkListShape. Also, group highlighting now works
  * Changed interactive selection approach
  * Fix for user version in big endian nifs
  * Require OpenGL 2.0 (this fixes a crash on older hardware)

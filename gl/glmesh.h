@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2010, NIF File Format Library and Tools
+Copyright (c) 2005-2012, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Mesh : public Node
 {
 public:
-	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {double_sided = false;}
+	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {double_sided = false; double_sided_es = false;}
 	
 	void clear();
 	void update( const NifModel * nif, const QModelIndex & );
@@ -130,6 +130,7 @@ protected:
 	friend class Renderer;
 
 	bool double_sided;
+	bool double_sided_es;
 };
 
 #endif
