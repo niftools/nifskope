@@ -1,0 +1,16 @@
+# generated ones
+config.h
+Makefile
+moc_*.cpp
+qrc_*.cpp
+
+# compiled 
+*.o
+
+# eclipse project
+.project
+.cproject
+.settings
+
+# binary
+NifSkope
