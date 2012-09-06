@@ -358,7 +358,8 @@ QSize FloatSlider::sizeHint() const
 		h = w;
 		w = x;
     }
-    return style()->sizeFromContents( QStyle::CT_Slider, &opt, QSize( w, h ), this ).expandedTo( QApplication::globalStrut() );
+    return QSize( w, h );
+    //return style()->sizeFromContents( QStyle::CT_Slider, &opt, QSize( w, h ), this ).expandedTo( QApplication::globalStrut() );
 }
 
 QSize FloatSlider::minimumSizeHint() const
