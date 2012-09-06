@@ -30,30 +30,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "uvedit.h"
+#include <QtCore>
+#include <QtGui>
 
 #include "../nifmodel.h"
 #include "../niftypes.h"
 #include "../options.h"
+#include "../NvTriStrip/qtwrapper.h"
+
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"
-#include "../NvTriStrip/qtwrapper.h"
+#include "uvedit.h"
 
 #include <math.h>
 #ifdef __APPLE__
-     #include <OPENGL/glext.h>
     #include <OPENGL/glu.h>
 #else
-     #include <GL/glext.h>
     #include <GL/glu.h>
 #endif
 
-
-#include <QCursor>
-#include <QDialog>
-#include <QInputDialog>
-#include <QTimer>
-#include <QUndoStack>
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0

@@ -4,8 +4,6 @@
 
 #include "../NvTriStrip/qtwrapper.h"
 
-#include "../gl/gltex.h"
-
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
@@ -13,6 +11,8 @@
 #include <QSettings>
 #include <QString>
 #include <QApplication>
+
+#include "../gl/gltex.h"
 
 #define tr(x) QApplication::tr("3dsImport", x)
 
