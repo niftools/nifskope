@@ -43,10 +43,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/GLee.h"
 #include <QtOpenGL>
 #ifdef __APPLE__
-    #include <OpenGL/gl.h>
     #include <OpenGL/glu.h>
 #else
-    #include <GL/gl.h>
+    #include <GL/glu.h>
 #endif
 
 #include "glview.h"
