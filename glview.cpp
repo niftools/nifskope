@@ -335,10 +335,10 @@ void GLView::initializeGL()
 		updateShaders();
 
 	// check for errors
-	// XXX disabled: gluErrorString not in GLee or QtOpenGL
-	//GLenum err;
-	//while ( ( err = glGetError() ) != GL_NO_ERROR )
-	//	qDebug() << tr("GL ERROR (init) : ") << (const char *) gluErrorString( err );
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << tr("GL ERROR (init) : ") << (const char *) gluErrorString( err );
 }
 
 void GLView::glProjection( int x, int y )
@@ -557,10 +557,10 @@ void GLView::paintGL()
 	glPopMatrix();
 	
 	// check for errors
-	// XXX disabled: gluErrorString not in GLee or QtOpenGL
-	//GLenum err;
-	//while ( ( err = glGetError() ) != GL_NO_ERROR )
-	//	qDebug() << tr("GL ERROR (paint) : ") << (const char *) gluErrorString( err );
+	
+	GLenum err;
+	while ( ( err = glGetError() ) != GL_NO_ERROR )
+		qDebug() << tr("GL ERROR (paint): ") << (const char *) gluErrorString( err );
 	
 	// update fps counter
 	if ( fpsacc > 1.0 && fpscnt )
