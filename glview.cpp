@@ -30,18 +30,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-// include these before GLee.h to avoid linux compile error
-#include <QActionGroup>
-#include <QComboBox>
-#include <QMenu>
-#include <QTimer>
-#include <QToolBar>
-#include <QToolButton>
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
-
+#include <QtCore>
+#include <QtGui>
 #include "gl/GLee.h"
-#include <QtOpenGL>
+#include <QGLContext>
 #ifdef __APPLE__
     #include <OpenGL/glu.h>
 #else
