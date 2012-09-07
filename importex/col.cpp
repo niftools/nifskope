@@ -46,11 +46,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../gl/gltex.h"
 
+#include "../config.h"
+
 #define tr(x) QApplication::tr(x)
 
 /**
  * TODO LIST:
- * - NiTriStrips to attachNiShape
  * - handle NiTriShapeData better way
  * - build own functions for translation/rotate/scale as used multiple times or try to use <matrix> instead
  * - multiple UV mapping to Collada Node (now only one added)
@@ -59,6 +60,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * + models and texture works, tested multiple dae supported software (except rotation)
  * + added NifLODNode as "NifNode"
  * + Now using matrix to translate/rotate/size, still rotate is not exactly in place in multi layer (node) models.
+ * + Vertex Colors now added to export
+ * + NiTriStrips to attachNiShape
  * SCHEMA TESTING:
  * xmllint --noout --schema http://www.khronos.org/files/collada_schema_1_4_1.xsd ~/file.dae
  *
@@ -91,7 +94,95 @@ QDomElement dateElement(QString type,QDateTime time) {
 }
 
 /**
- *  create UV map array with (nif)index and row (multiple UV for one mesh)
+ * create matrix element
+ * @param trans Translation
+ * @param rot  Rotation
+ * @param scale Scale
+ * @return QDomElement
+ * NOTE: translation need to be in OpenGL way and currently swapped in printing (12 <-> 3,13 <-> 7,11 <-> 14)
+ * TODO: figure why rotations are not exactly in place
+ * <matrix>
+ *   1.000000 0.000000 0.000000 20.290175
+ *   0.000000 1.000000 0.000000 37.955944
+ *   0.000000 0.000000 1.000000 -0.000000
+ *   0.000000 0.000000 0.000000 1.000000
+ * </matrix>
+ */
+QDomElement matrixElement(Vector3 trans,Matrix rot,float scale) {
+	QDomElement element = doc.createElement("matrix");
+	Vector3 scales;
+	scales[0]=scale; // scale X
+	scales[1]=scale; // scale Y
+	scales[2]=scale; // scale Z
+	Matrix4 m4;
+	m4.compose(trans,rot, scales );
+	const float *e = m4.data(); // array
+	element.setAttribute("sid", "matrix");
+	element.appendChild( doc.createTextNode(
+		QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14 %15 %16")
+			.arg(e[0] ,0,'f',6).arg(e[1] ,0,'f',6).arg(e[2] ,0,'f',6).arg(e[12],0,'f',6)
+			.arg(e[4] ,0,'f',6).arg(e[5] ,0,'f',6).arg(e[6] ,0,'f',6).arg(e[13],0,'f',6)
+			.arg(e[8] ,0,'f',6).arg(e[9] ,0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
+			.arg(e[3] ,0,'f',6).arg(e[7] ,0,'f',6).arg(e[11],0,'f',6).arg(e[15],0,'f',6)
+		)
+	);
+	return element;
+}
+
+/**
+ * create color map array with (nif)index
+ * @param colors array of polygon colors
+ * @param idx nif index
+ * @return QDomElement
+ */
+QDomElement colorMapElement(QVector<Color4> colors,int idx) {
+	QDomElement source = doc.createElement("source");
+	source.setAttribute("id",QString("nifid_%1-lib_colors").arg(idx));
+
+	QDomElement float_array = doc.createElement("float_array");
+	float_array.setAttribute("id",QString("nifid_%1-lib_colors-array").arg(idx));
+	float_array.setAttribute("count", (colors.size()*4) );
+	source.appendChild(float_array);
+
+	QString text("");
+	foreach ( Color4 v, colors )
+		text.append(QString("%1 %2 %3 %4 ").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]));
+	float_array.appendChild( doc.createTextNode(text) );
+
+	QDomElement technique_common = doc.createElement("technique_common");
+	source.appendChild(technique_common);
+
+	QDomElement accessor = doc.createElement("accessor");
+	accessor.setAttribute("source",QString("#nifid_%1-lib_colors-array").arg(idx));
+	accessor.setAttribute("count",colors.size());
+	accessor.setAttribute("stride","4");
+	technique_common.appendChild(accessor);
+	QDomElement param;
+
+	param = doc.createElement("param");
+	param.setAttribute("name","R");
+	param.setAttribute("type","float");
+	accessor.appendChild(param);
+
+	param = doc.createElement("param");
+	param.setAttribute("name","G");
+	param.setAttribute("type","float");
+	accessor.appendChild(param);
+
+	param = doc.createElement("param");
+	param.setAttribute("name","B");
+	param.setAttribute("type","float");
+	accessor.appendChild(param);
+
+	param = doc.createElement("param");
+	param.setAttribute("name","A");
+	param.setAttribute("type","float");
+	accessor.appendChild(param);
+	return source;
+}
+
+/**
+ * create UV map array with (nif)index and row (multiple UV for one mesh)
  * @param verts array of polygon positions (X;Y;Z)
  * @param idx nif index
  * @param row UV row number
@@ -100,25 +191,32 @@ QDomElement dateElement(QString type,QDateTime time) {
 QDomElement uvMapElement(QVector<Vector2> uvMap,int idx,int row) {
 	QDomElement source = doc.createElement("source");
 	source.setAttribute("id",QString("nifid_%1-lib-UV%2").arg(idx).arg(row));
+
 	QDomElement float_array = doc.createElement("float_array");
 	float_array.setAttribute("id",QString("nifid_%1-lib-UV%2-array").arg(idx).arg(row));
 	float_array.setAttribute("count", (uvMap.size()*2) );
 	source.appendChild(float_array);
-	QString uvText("\n");
+
+	QString uvText("");
 	foreach ( Vector2 v, uvMap )
-		uvText.append(QString("%1 %2\n").arg(v[0]).arg(v[1]));
+		uvText.append(QString("%1 %2 ").arg(v[0]).arg(v[1]));
 	float_array.appendChild( doc.createTextNode(uvText) );
+
 	QDomElement technique_common = doc.createElement("technique_common");
 	source.appendChild(technique_common);
+
 	QDomElement accessor = doc.createElement("accessor");
 	accessor.setAttribute("source",QString("#nifid_%1-lib-UV%2-array").arg(idx).arg(row));
 	accessor.setAttribute("count",uvMap.size());
 	accessor.setAttribute("stride","2");
 	technique_common.appendChild(accessor);
-	QDomElement param = doc.createElement("param");
+	QDomElement param;
+
+	param = doc.createElement("param");
 	param.setAttribute("name","S");
 	param.setAttribute("type","float");
 	accessor.appendChild(param);
+
 	param = doc.createElement("param");
 	param.setAttribute("name","T");
 	param.setAttribute("type","float");
@@ -127,7 +225,7 @@ QDomElement uvMapElement(QVector<Vector2> uvMap,int idx,int row) {
 }
 
 /**
- *  create positions array with (nif)index
+ * create positions array with (nif)index
  * @param verts array of polygon positions (X;Y;Z)
  * @param idx nif index
  * @return QDomElement
@@ -135,29 +233,37 @@ QDomElement uvMapElement(QVector<Vector2> uvMap,int idx,int row) {
 QDomElement positionsElement(QVector<Vector3> verts,int idx) {
 	QDomElement source = doc.createElement("source");
 	source.setAttribute("id",QString("nifid_%1-lib-Position").arg(idx));
+
 	QDomElement float_array = doc.createElement("float_array");
 	float_array.setAttribute("id",QString("nifid_%1-lib-Position-array").arg(idx));
 	float_array.setAttribute("count", (verts.size()*3) );
 	source.appendChild(float_array);
-	QString posText("\n");
+
+	QString posText("");
 	foreach ( Vector3 v, verts )
-		posText.append(QString("%1 %2 %3\n").arg(v[0],0,'f',6).arg(v[1],0,'f',6).arg(v[2],0,'f',6));
+		posText.append(QString("%1 %2 %3 ").arg(v[0],0,'f',6).arg(v[1],0,'f',6).arg(v[2],0,'f',6));
 	float_array.appendChild( doc.createTextNode(posText) );
+
 	QDomElement technique_common = doc.createElement("technique_common");
 	source.appendChild(technique_common);
+
 	QDomElement accessor = doc.createElement("accessor");
 	accessor.setAttribute("source",QString("#nifid_%1-lib-Position-array").arg(idx));
 	accessor.setAttribute("count",verts.size());
 	accessor.setAttribute("stride","3");
 	technique_common.appendChild(accessor);
-	QDomElement param = doc.createElement("param");
+	QDomElement param;
+
+	param = doc.createElement("param");
 	param.setAttribute("name","X");
 	param.setAttribute("type","float");
 	accessor.appendChild(param);
+
 	param = doc.createElement("param");
 	param.setAttribute("name","Y");
 	param.setAttribute("type","float");
 	accessor.appendChild(param);
+
 	param = doc.createElement("param");
 	param.setAttribute("name","Z");
 	param.setAttribute("type","float");
@@ -166,7 +272,7 @@ QDomElement positionsElement(QVector<Vector3> verts,int idx) {
 }
 
 /**
- *  create normals array with (nif)index
+ * create normals array with (nif)index
  * @param normals array of normals
  * @param idx nif index
  * @return QDomElement
@@ -176,14 +282,15 @@ QDomElement normalsElement(QVector<Vector3> normals,int idx) {
 	if ( normals.size() > 0 ) {
 		source = doc.createElement("source");
 		source.setAttribute("id",QString("nifid_%1-lib-Normal0").arg(idx));
+
 		QDomElement float_array = doc.createElement("float_array");
 		float_array.setAttribute("id",QString("nifid_%1-lib-Normal0-array").arg(idx));
 		float_array.setAttribute("count", (normals.size()*3) );
 		source.appendChild(float_array);
 
-		QString norText("\n");
+		QString norText("");
 		foreach ( Vector3 v, normals )
-			norText.append(QString("%1 %2 %3\n").arg(v[0],0,'f',6).arg(v[1],0,'f',6).arg(v[2],0,'f',6));
+			norText.append(QString("%1 %2 %3 ").arg(v[0],0,'f',6).arg(v[1],0,'f',6).arg(v[2],0,'f',6));
 		float_array.appendChild( doc.createTextNode(norText) );
 		QDomElement technique_common = doc.createElement("technique_common");
 		source.appendChild(technique_common);
@@ -296,6 +403,7 @@ QDomElement colorTextureElement(QString name,QString texcoord) {
 void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 	bool haveVertex = false;
 	bool haveNormal = false;
+	bool haveColors = false;
 	bool haveUV = false;
 	QModelIndex iBlock = nif->getBlock( idx );
 	QDomElement textureBaseTexture;
@@ -398,7 +506,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			// transparency
 			blinn.appendChild( colorElement("transparent", Color3(1.0f,1.0f,1.0f)));
 			blinn.appendChild( effectElement("transparency" , nif->get<float>( iProp, "Alpha" ) ) );
-		} else if ( nif->isNiBlock( iProp, "NiTriShapeData" ) ) {
+		} else if ( nif->isNiBlock( iProp, "NiTriShapeData" ) ||  nif->isNiBlock( iProp, "NiTriStripsData" ) ) {
 			QDomElement geometry = doc.createElement("geometry");
 			geometry.setAttribute("id",QString("nifid_%1-lib").arg(idx));
 			geometry.setAttribute("name",QString("%1-lib").arg(nif->get<QString>( iBlock, "Name" ).replace(" ","_") ) );
@@ -407,16 +515,16 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			geometry.appendChild(mesh);
 
 			// Position
-			QVector<Vector3> verts = nif->getArray<Vector3>( iProp, "Vertices" );
-			mesh.appendChild( positionsElement(verts,idx) );
-			if ( verts.size() > 0 )
+			if ( nif->get<bool>( iProp, "Has Vertices") == true) {
 				haveVertex = true;
+				mesh.appendChild( positionsElement(nif->getArray<Vector3>( iProp, "Vertices" ),idx) );
+			}
 
 			// Normals
-			QVector<Vector3> normals = nif->getArray<Vector3>( iProp, "Normals" );
-			mesh.appendChild( normalsElement( normals , idx ) );
-			if ( normals.size() >  0 )
+			if ( nif->get<bool>( iProp, "Has Normals") == true) {
 				haveNormal = true;
+				mesh.appendChild( normalsElement( nif->getArray<Vector3>( iProp, "Normals" ) , idx ) );
+			}
 
 			// UV maps
 			QModelIndex iUV = nif->getIndex( iProp, "UV Sets" );
@@ -427,6 +535,12 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				mesh.appendChild(uvMapElement(uvMap,idx,row));
 				if ( uvMap.size() > 0 )
 					haveUV = true;
+			}
+
+			// vertex color
+			if ( nif->get<bool>( iProp, "Has Vertex Colors") == true) {
+				mesh.appendChild(colorMapElement(nif->getArray<Color4>( iProp, "Vertex Colors" ),idx) );
+				haveColors=true;
 			}
 
 			// vertices
@@ -466,8 +580,27 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				input.setAttribute("source",QString("#nifid_%1-lib-UV0").arg(idx));
 				triangles.appendChild(input);
 			}
-			QVector<Triangle> tri = nif->getArray<Triangle>( iProp, "Triangles" );
-			int c=0;
+			if ( haveColors == true ) {
+				input = doc.createElement("input");
+				input.setAttribute("semantic","COLOR");
+				input.setAttribute("offset",x++);
+				input.setAttribute("source",QString("#nifid_%1-lib_color").arg(idx));
+				triangles.appendChild(input);
+			}
+			// Polygon structure array
+			QVector<Triangle> tri;
+			if ( nif->get<bool>( iProp, "Has Triangles") == true) {
+				tri = nif->getArray<Triangle>( iProp, "Triangles" );
+			} else {
+				// try build Triangle:s from points
+				QModelIndex iPoints = nif->getIndex( iProp, "Points" );
+				if ( iPoints.isValid() ) {
+					QList< QVector<quint16> > strips;
+					for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+						strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+					tri = triangulate( strips );
+				}
+			}
 			QDomElement p = doc.createElement("p");
 			QString triText;
 			foreach ( Triangle v, tri ) {
@@ -475,14 +608,17 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				if ( haveVertex == true )	triText.append( QString("%1 ").arg(v[0]) );
 				if ( haveNormal == true )	triText.append( QString("%1 ").arg(v[0]) );
 				if ( haveUV == true )		triText.append( QString("%1 ").arg(v[0]) );
+				if ( haveColors == true )	triText.append( QString("%1 ").arg(v[0]) );
 
 				if ( haveVertex == true )	triText.append( QString("%1 ").arg(v[1]) );
 				if ( haveNormal == true )	triText.append( QString("%1 ").arg(v[1]) );
 				if ( haveUV == true )		triText.append( QString("%1 ").arg(v[1]) );
+				if ( haveColors == true )	triText.append( QString("%1 ").arg(v[1]) );
 
 				if ( haveVertex == true )	triText.append( QString("%1 ").arg(v[2]) );
 				if ( haveNormal == true )	triText.append( QString("%1 ").arg(v[2]) );
 				if ( haveUV == true )		triText.append( QString("%1 ").arg(v[2]) );
+				if ( haveColors == true )	triText.append( QString("%1 ").arg(v[2]) );
 			}
 			p.appendChild( doc.createTextNode(triText) );
 			triangles.appendChild(p);
@@ -491,27 +627,9 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			QDomElement node = doc.createElement("node");
 			node.setAttribute("id", QString("nifid_%1-matrix").arg(idx) );
 			parentNode.appendChild(node);
+
 			// matrix
-			// FIXME use matrix if possible
-			float scale = nif->get<float>( iBlock, "Scale" );
-			Vector3 scales;
-			scales[0]=scale;
-			scales[1]=scale;
-			scales[2]=scale;
-			Matrix4 m4;
-			m4.compose(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ), scales );
-			const float *e = m4.data(); // vector array
-			QDomElement matrix = doc.createElement("matrix");
-			matrix.setAttribute("sid", "matrix");
-			matrix.appendChild( doc.createTextNode(
-				QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14 %15 %16")
-					.arg(e[0],0,'f',6).arg(e[1],0,'f',6).arg(e[2],0,'f',6).arg(e[12],0,'f',6)
-					.arg(e[4],0,'f',6).arg(e[5],0,'f',6).arg(e[6],0,'f',6).arg(e[13],0,'f',6)
-					.arg(e[8],0,'f',6).arg(e[9],0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
-					.arg(e[3],0,'f',6).arg(e[7],0,'f',6).arg(e[11],0,'f',6).arg(e[15],0,'f',6)
-				)
-			);
-			node.appendChild(matrix);
+			node.appendChild(matrixElement(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ),nif->get<float>( iBlock, "Scale" )));
 
 			// attach structure and material to node structure
 			QDomElement instanceGeometry = doc.createElement("instance_geometry");
@@ -543,7 +661,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 }
 
 /**
- *
+ * Node "tree" looping
  */
 void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 	QModelIndex iBlock = nif->getBlock( idx );
@@ -552,38 +670,24 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 	node.setAttribute("id", QString("nifid_%1_node").arg(idx) );
 
 	// matrix
-	float scale = nif->get<float>( iBlock, "Scale" );
-	Vector3 scales;
-	scales[0]=scale;
-	scales[1]=scale;
-	scales[2]=scale;
-	Matrix4 m4;
-	m4.compose(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ), scales );
-	const float *e = m4.data(); // vector array
-	QDomElement matrix = doc.createElement("matrix");
-	matrix.setAttribute("sid", "matrix");
-	matrix.appendChild( doc.createTextNode(
-		QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14 %15 %16")
-			.arg(e[0],0,'f',6).arg(e[1],0,'f',6).arg(e[2],0,'f',6).arg(e[12],0,'f',6)
-			.arg(e[4],0,'f',6).arg(e[5],0,'f',6).arg(e[6],0,'f',6).arg(e[13],0,'f',6)
-			.arg(e[8],0,'f',6).arg(e[9],0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
-			.arg(e[3],0,'f',6).arg(e[7],0,'f',6).arg(e[11],0,'f',6).arg(e[15],0,'f',6)
-		)
-	);
-	node.appendChild(matrix);
+	node.appendChild(matrixElement(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ),nif->get<float>( iBlock, "Scale" )));
 
 	// parent attach and new loop
 	parentNode.appendChild(node);
 	foreach ( int l,nif->getChildLinks(idx) ) {
 		QModelIndex iChild = nif->getBlock( l );
 		QString type = nif->getBlockName(iChild);
-//		qDebug() << "TYPE:" << type;
 		if ( type == QString("NiNode") )
 			attachNiNode(nif,node,l);
-		if ( type == QString("NiLODNode") )
+		else if ( type == QString("NiLODNode") )
 			attachNiNode(nif,node,l);
-		if ( type == QString("NiTriShape") )
+		else if ( type == QString("NiTriShape") )
 			attachNiShape(nif,node,l);
+		else if ( type == QString("NiTriStrips") )
+			attachNiShape(nif,node,l);
+		else {
+			qDebug() << "NO FUNC:" << type;
+		}
 	}
 }
 
@@ -617,7 +721,7 @@ void exportCol( const NifModel * nif ) {
 	QDomElement contributor = doc.createElement("contributor");
 	asset.appendChild(contributor);
 	contributor.appendChild(doc.createElement("author"));
-	contributor.appendChild(textElement("authoring_tool","NifSkope"));
+	contributor.appendChild(textElement("authoring_tool",QString("NifSkope %1").arg(NIFSKOPE_VERSION) ));
 	contributor.appendChild(doc.createElement("comments"));
 	asset.appendChild(dateElement("created", QDateTime::currentDateTime() ) );
 	asset.appendChild(dateElement("modified", QDateTime::currentDateTime() ) );
@@ -641,7 +745,6 @@ void exportCol( const NifModel * nif ) {
 	while ( ! roots.empty() ) {
 		int idx = roots.takeFirst();
 		QModelIndex iBlock = nif->getBlock( idx );
-//		qDebug() << nif->getBlockName(iBlock);
 		// get more if NiNode
 		if ( nif->isNiBlock( iBlock, "NiNode" )  )
 			attachNiNode(nif,lv,idx);
