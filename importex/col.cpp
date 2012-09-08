@@ -399,7 +399,27 @@ QDomElement colorTextureElement(QString name,QString texcoord) {
 }
 
 
-QDomElement textureElement(QDomElement profile,QFileInfo textureFile,int idx,QString channel) {
+QDomElement textureElement(QDomElement effect,QFileInfo textureFile,int idx,QString channel) {
+	// surface
+	QDomElement newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",QString("nifid_%1-surface").arg(idx));
+	effect.appendChild(newparam);
+	QDomElement surface = doc.createElement("surface");
+	surface.setAttribute("type","2D");
+	newparam.appendChild(surface);
+	QDomElement init_from = doc.createElement("init_from");
+	surface.appendChild(init_from);
+	init_from.appendChild( doc.createTextNode( QString("nifid_%1_image").arg(idx) ) );
+
+	// sampler
+	newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",QString("nifid_%1-sampler").arg(idx));
+	effect.appendChild(newparam);
+	QDomElement sampler2D = doc.createElement("sampler2D");
+	newparam.appendChild(sampler2D);
+	QDomElement source = doc.createElement("source");
+	sampler2D.appendChild(source);
+	source.appendChild( doc.createTextNode( QString("nifid_%1-surface").arg(idx) ) );
 
 	// ImageLibrary
 	QDomElement image = doc.createElement("image");
@@ -418,27 +438,6 @@ QDomElement textureElement(QDomElement profile,QFileInfo textureFile,int idx,QSt
 	QDomElement instance = doc.createElement("instance_effect");
 	instance.setAttribute("url",QString("#nifid_%1-effect").arg(idx));
 	material.appendChild(instance);
-
-	// surface
-	QDomElement newparam = doc.createElement("newparam");
-	newparam.setAttribute("sid",QString("nifid_%1-surface").arg(idx));
-	profile.appendChild(newparam);
-	QDomElement surface = doc.createElement("surface");
-	surface.setAttribute("type","2D");
-	newparam.appendChild(surface);
-	QDomElement init_from = doc.createElement("init_from");
-	surface.appendChild(init_from);
-	init_from.appendChild( doc.createTextNode( QString("nifid_%1_image").arg(idx) ) );
-
-	// sampler
-	newparam = doc.createElement("newparam");
-	newparam.setAttribute("sid",QString("nifid_%1-sampler").arg(idx));
-	profile.appendChild(newparam);
-	QDomElement sampler2D = doc.createElement("sampler2D");
-	newparam.appendChild(sampler2D);
-	QDomElement source = doc.createElement("source");
-	sampler2D.appendChild(source);
-	source.appendChild( doc.createTextNode( QString("nifid_%1-surface").arg(idx) ) );
 
 	// return "sampler"
 	return colorTextureElement(QString("nifid_%1-sampler").arg(idx),channel);
@@ -502,7 +501,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				profile = doc.createElement("profile_COMMON");
 			QModelIndex iTexture = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
 			if ( iTexture.isValid() )
-				textureBaseTexture = textureElement(profile,TexCache::find( nif->get<QString>( iTexture, "File Name" ),nif->getFolder() ),idx,"CHANNEL0");
+				textureBaseTexture = textureElement(effect,TexCache::find( nif->get<QString>( iTexture, "File Name" ),nif->getFolder() ),idx,"CHANNEL0");
 
 		} else if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) ) {
 			if ( ! effect.isElement() ) {
