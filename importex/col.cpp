@@ -53,10 +53,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  * TODO LIST:
  * - handle NiTriShapeData better way
- * - build own functions for translation/rotate/scale as used multiple times or try to use <matrix> instead
  * - multiple UV mapping to Collada Node (now only one added)
  * - build regexp for xml id and names
+ * - matrix function change break one model (not show anything), need to check why
+ * - all "name" attributes with QRegExp("\\W")
  * DONE:
+ * + textureElement function for image handling and hooking
+ * + added NiTextureProperty
+ * + changed matrix order
  * + models and texture works, tested multiple dae supported software (except rotation)
  * + added NifLODNode as "NifNode"
  * + Now using matrix to translate/rotate/size, still rotate is not exactly in place in multi layer (node) models.
@@ -93,14 +97,14 @@ QDomElement dateElement(QString type,QDateTime time) {
 	return source;
 }
 
+
 /**
  * create matrix element
  * @param trans Translation
  * @param rot  Rotation
  * @param scale Scale
  * @return QDomElement
- * NOTE: translation need to be in OpenGL way and currently swapped in printing (12 <-> 3,13 <-> 7,11 <-> 14)
- * TODO: figure why rotations are not exactly in place
+ * NOTE: translation need to be in OpenGL way
  * <matrix>
  *   1.000000 0.000000 0.000000 20.290175
  *   0.000000 1.000000 0.000000 37.955944
@@ -119,10 +123,10 @@ QDomElement matrixElement(Vector3 trans,Matrix rot,float scale) {
 	const float *e = m4.data(); // array
 	element.setAttribute("sid", "matrix");
 	element.appendChild( doc.createTextNode(
-		QString("%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14 %15 %16")
-			.arg(e[0] ,0,'f',6).arg(e[1] ,0,'f',6).arg(e[2] ,0,'f',6).arg(e[12],0,'f',6)
-			.arg(e[4] ,0,'f',6).arg(e[5] ,0,'f',6).arg(e[6] ,0,'f',6).arg(e[13],0,'f',6)
-			.arg(e[8] ,0,'f',6).arg(e[9] ,0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
+		QString("\n%1 %2 %3 %4\n%5 %6 %7 %8\n%9 %10 %11 %12\n%13 %14 %15 %16\n")
+			.arg(e[0] ,0,'f',6).arg(e[4] ,0,'f',6).arg(e[8] ,0,'f',6).arg(e[12],0,'f',6)
+			.arg(e[1] ,0,'f',6).arg(e[5] ,0,'f',6).arg(e[9] ,0,'f',6).arg(e[13],0,'f',6)
+			.arg(e[2] ,0,'f',6).arg(e[6] ,0,'f',6).arg(e[10],0,'f',6).arg(e[14],0,'f',6)
 			.arg(e[3] ,0,'f',6).arg(e[7] ,0,'f',6).arg(e[11],0,'f',6).arg(e[15],0,'f',6)
 		)
 	);
@@ -394,6 +398,52 @@ QDomElement colorTextureElement(QString name,QString texcoord) {
 	return textureBaseTexture;
 }
 
+
+QDomElement textureElement(QDomElement profile,QFileInfo textureFile,int idx,QString channel) {
+
+	// ImageLibrary
+	QDomElement image = doc.createElement("image");
+	image.setAttribute("name",QString("Map_%1").arg(QFileInfo(textureFile.baseName()).baseName()));
+	image.setAttribute("id",QString("nifid_%1_image").arg(idx));
+	QDomElement initFrom = doc.createElement("init_from");
+	initFrom.appendChild( doc.createTextNode( QString("%1%2").arg( (textureFile.isAbsolute()?"":"./") ).arg(textureFile.filePath()) ) );
+	image.appendChild(initFrom);
+	libraryImages.appendChild(image);
+
+	// LibraryMaterials
+	QDomElement material = doc.createElement("material");
+	material.setAttribute("name",QString("Material_%1").arg(textureFile.baseName()));
+	material.setAttribute("id",QString("nifid_%1-material").arg(idx));
+	libraryMaterials.appendChild(material);
+	QDomElement instance = doc.createElement("instance_effect");
+	instance.setAttribute("url",QString("#nifid_%1-effect").arg(idx));
+	material.appendChild(instance);
+
+	// surface
+	QDomElement newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",QString("nifid_%1-surface").arg(idx));
+	profile.appendChild(newparam);
+	QDomElement surface = doc.createElement("surface");
+	surface.setAttribute("type","2D");
+	newparam.appendChild(surface);
+	QDomElement init_from = doc.createElement("init_from");
+	surface.appendChild(init_from);
+	init_from.appendChild( doc.createTextNode( QString("nifid_%1_image").arg(idx) ) );
+
+	// sampler
+	newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",QString("nifid_%1-sampler").arg(idx));
+	profile.appendChild(newparam);
+	QDomElement sampler2D = doc.createElement("sampler2D");
+	newparam.appendChild(sampler2D);
+	QDomElement source = doc.createElement("source");
+	sampler2D.appendChild(source);
+	source.appendChild( doc.createTextNode( QString("nifid_%1-surface").arg(idx) ) );
+
+	// return "sampler"
+	return colorTextureElement(QString("nifid_%1-sampler").arg(idx),channel);
+}
+
 /**
  * extract shape to dom structures
  * TODO: WIP and do major cleanup and re-structuring .. tons of crap "definitions" and boilerplate
@@ -407,6 +457,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 	bool haveUV = false;
 	QModelIndex iBlock = nif->getBlock( idx );
 	QDomElement textureBaseTexture;
+	QDomElement textureDarkTexture;
 	QDomElement input;
 	// effect
 	QDomElement effect;
@@ -421,49 +472,38 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 			if ( ! profile.isElement() )
 				profile = doc.createElement("profile_COMMON");
-			QModelIndex iBase = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
-			if ( iBase.isValid() ) {
-				QFileInfo textureFile = TexCache::find( nif->get<QString>( iBase, "File Name" ), nif->getFolder() );
-				// ImageLibrary
-				QDomElement image = doc.createElement("image");
-				image.setAttribute("name",QString("Map_%1").arg(QFileInfo(textureFile.baseName()).baseName()));
-				image.setAttribute("id",QString("nifid_%1_image").arg(idx));
-				QDomElement initFrom = doc.createElement("init_from");
-				initFrom.appendChild( doc.createTextNode( QString("%1%2").arg( (textureFile.isAbsolute()?"":"./") ).arg(textureFile.filePath()) ) );
-				image.appendChild(initFrom);
-				libraryImages.appendChild(image);
-				// LibraryMaterials
-				QDomElement material = doc.createElement("material");
-				material.setAttribute("name",QString("Material_%1").arg(textureFile.baseName()));
-				material.setAttribute("id",QString("nifid_%1-material").arg(idx));
-				libraryMaterials.appendChild(material);
-				QDomElement instance = doc.createElement("instance_effect");
-				instance.setAttribute("url",QString("#nifid_%1-effect").arg(idx));
-				material.appendChild(instance);
-				// surface
-				QDomElement newparam = doc.createElement("newparam");
-				newparam.setAttribute("sid",QString("nifid_%1-surface").arg(idx));
-				profile.appendChild(newparam);
-				QDomElement surface = doc.createElement("surface");
-				surface.setAttribute("type","2D");
-				newparam.appendChild(surface);
-				QDomElement init_from = doc.createElement("init_from");
-				surface.appendChild(init_from);
-				init_from.appendChild( doc.createTextNode( QString("nifid_%1_image").arg(idx) ) );
+			// base texture
+			QModelIndex iTexture = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Base Texture" ), "Source" ), "NiSourceTexture" );
+			if ( iTexture.isValid() )
+				textureBaseTexture = textureElement(profile,TexCache::find( nif->get<QString>( iTexture, "File Name" ),nif->getFolder() ),idx,"CHANNEL0");
 
-				// sampler
-				newparam = doc.createElement("newparam");
-				newparam.setAttribute("sid",QString("nifid_%1-sampler").arg(idx));
-				profile.appendChild(newparam);
-				QDomElement sampler2D = doc.createElement("sampler2D");
-				newparam.appendChild(sampler2D);
-				QDomElement source = doc.createElement("source");
-				sampler2D.appendChild(source);
-				source.appendChild( doc.createTextNode( QString("nifid_%1-surface").arg(idx) ) );
+/*			// dark texture ("like reverse light map")
+			// TODO: can't have multiple diffuse textures, need to find profile? like?
+          	  <extra>
+            	<technique profile="OpenCOLLADA3dsMax">
+              	  <gloss>
+                	<texture texture="a_cliff_dirt_02_jpg-sampler" texcoord="CHANNEL1"/>
+              	  </gloss>
+            	</technique>
+          	  </extra>
 
-				// attach texture to "diffuse"
-				textureBaseTexture = colorTextureElement(QString("nifid_%1-sampler").arg(idx),"CHANNEL0");
+//			if ( nif->get<bool>( iProp, "Has Dark Texture") == true) {
+//				QModelIndex iTexture = nif->getBlock( nif->getLink( nif->getIndex( iProp, "Dark Texture" ), "Source" ), "NiSourceTexture" );
+//				textureDarkTexture = textureElement(profile,iTexture,TexCache::find( nif->get<QString>( iTexture, "File Name" ),nif->getFolder() ),idx,"CHANNEL1");
+//			}
+*/
+		} else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) ) {
+			qDebug() << "NiTextureProperty";
+			if ( ! effect.isElement() ) {
+				effect = doc.createElement("effect");
+				effect.setAttribute("id",QString("nifid_%1-effect").arg(idx));
 			}
+			if ( ! profile.isElement() )
+				profile = doc.createElement("profile_COMMON");
+			QModelIndex iTexture = nif->getBlock( nif->getLink( iProp, "Image" ), "NiImage" );
+			if ( iTexture.isValid() )
+				textureBaseTexture = textureElement(profile,TexCache::find( nif->get<QString>( iTexture, "File Name" ),nif->getFolder() ),idx,"CHANNEL0");
+
 		} else if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) ) {
 			if ( ! effect.isElement() ) {
 				effect = doc.createElement("effect");
@@ -476,40 +516,39 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			effect.setAttribute("name",QString("Material_%1-effect").arg( name ));
 			// technique
 			QDomElement technique = doc.createElement("technique");
-			technique.setAttribute("sid","standard");
+			technique.setAttribute("sid","COMMON");
 			profile.appendChild(technique);
 			// phong
-			QDomElement blinn = doc.createElement("blinn");
-			technique.appendChild(blinn);
+			QDomElement phong = doc.createElement("phong");
+			technique.appendChild(phong);
 			// emission
-			blinn.appendChild( colorElement("emission", nif->get<Color3>( iProp, "Emissive Color" ) ));
+			phong.appendChild( colorElement("emission", nif->get<Color3>( iProp, "Emissive Color" ) ));
 			// ambient
-			blinn.appendChild( colorElement("ambient", nif->get<Color3>( iProp, "Ambient Color" ) ));
+			phong.appendChild( colorElement("ambient", nif->get<Color3>( iProp, "Ambient Color" ) ));
 			// diffuse with texture
 			if ( ! textureBaseTexture.isElement() )
-				blinn.appendChild(colorElement("diffuse", nif->get<Color3>( iProp, "Diffuse Color" ) ) );
+				phong.appendChild(colorElement("diffuse", nif->get<Color3>( iProp, "Diffuse Color" ) ) );
 			else {
 				QDomElement diffuse = doc.createElement("diffuse");
 				diffuse.appendChild(textureBaseTexture);
-				blinn.appendChild(diffuse);
+				if (textureDarkTexture.isElement()) // attach dark texture // TODO: not going to work
+					diffuse.appendChild(textureDarkTexture);
+				phong.appendChild(diffuse);
 			}
-//			<texture texture="a_cliff_dirt_02_dds-sampler" texcoord="CHANNEL1"/>
-//			diffuse.appendChild(textureBaseTexture);
-//			blinn.appendChild(diffuse);
 			// specular
-			blinn.appendChild( colorElement("specular", nif->get<Color3>( iProp, "Specular Color" ) ));
+			phong.appendChild( colorElement("specular", nif->get<Color3>( iProp, "Specular Color" ) ));
 			// shininess
-			blinn.appendChild( effectElement("shininess" , nif->get<float>( iProp, "Glossiness" ) ) );
+			phong.appendChild( effectElement("shininess" , nif->get<float>( iProp, "Glossiness" ) ) );
 			// reflective
-			blinn.appendChild( colorElement("reflective", Color3(0.0f,0.0f,0.0f)));
-			blinn.appendChild( effectElement("reflectivity" ,1.0f ) );
+			phong.appendChild( colorElement("reflective", Color3(0.0f,0.0f,0.0f)));
+			phong.appendChild( effectElement("reflectivity" ,1.0f ) );
 			// transparency
-			blinn.appendChild( colorElement("transparent", Color3(1.0f,1.0f,1.0f)));
-			blinn.appendChild( effectElement("transparency" , nif->get<float>( iProp, "Alpha" ) ) );
+			phong.appendChild( colorElement("transparent", Color3(1.0f,1.0f,1.0f)));
+			phong.appendChild( effectElement("transparency" , nif->get<float>( iProp, "Alpha" ) ) );
 		} else if ( nif->isNiBlock( iProp, "NiTriShapeData" ) ||  nif->isNiBlock( iProp, "NiTriStripsData" ) ) {
 			QDomElement geometry = doc.createElement("geometry");
 			geometry.setAttribute("id",QString("nifid_%1-lib").arg(idx));
-			geometry.setAttribute("name",QString("%1-lib").arg(nif->get<QString>( iBlock, "Name" ).replace(" ","_") ) );
+			geometry.setAttribute("name",QString("%1-lib").arg(nif->get<QString>( iBlock, "Name" ).replace(QRegExp("\\W"),"_") ) );
 			libraryGeometries.appendChild(geometry);
 			QDomElement mesh = doc.createElement("mesh");
 			geometry.appendChild(mesh);
@@ -578,6 +617,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				input.setAttribute("semantic","TEXCOORD");
 				input.setAttribute("offset",x++);
 				input.setAttribute("source",QString("#nifid_%1-lib-UV0").arg(idx));
+				input.setAttribute("set","0");
 				triangles.appendChild(input);
 			}
 			if ( haveColors == true ) {
@@ -589,18 +629,15 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 			// Polygon structure array
 			QVector<Triangle> tri;
-			if ( nif->get<bool>( iProp, "Has Triangles") == true) {
+			QModelIndex iPoints = nif->getIndex( iProp, "Points" );
+			if ( iPoints.isValid() ) {
+				QList< QVector<quint16> > strips;
+				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+					strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+				tri = triangulate( strips );
+			} else
 				tri = nif->getArray<Triangle>( iProp, "Triangles" );
-			} else {
-				// try build Triangle:s from points
-				QModelIndex iPoints = nif->getIndex( iProp, "Points" );
-				if ( iPoints.isValid() ) {
-					QList< QVector<quint16> > strips;
-					for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-						strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
-					tri = triangulate( strips );
-				}
-			}
+
 			QDomElement p = doc.createElement("p");
 			QString triText;
 			foreach ( Triangle v, tri ) {
@@ -652,6 +689,8 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				bind_vertex_input.setAttribute("input_set","0");
 				instanceMaterial.appendChild(bind_vertex_input);
 			}
+		} else {
+//			qDebug() << "NOT_USED_PROPERTY:" << nif->getBlockName(iProp);
 		}
 		if ( effect.isElement() )
 			effect.appendChild(profile);
@@ -666,8 +705,10 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 	QModelIndex iBlock = nif->getBlock( idx );
 	QDomElement node = doc.createElement("node");
-	node.setAttribute("name",  nif->get<QString>( iBlock, "Name" ).replace(" ","_") );
-	node.setAttribute("id", QString("nifid_%1_node").arg(idx) );
+	QString nodeName = nif->get<QString>( iBlock, "Name" ).replace(" ","_");
+	QString nodeID = QString("nifid_%1_node").arg(idx);
+	node.setAttribute("name",  (nodeName.isEmpty()?nodeID:nodeName) );
+	node.setAttribute("id", nodeID );
 
 	// matrix
 	node.appendChild(matrixElement(nif->get<Vector3>( iBlock, "Translation" ),nif->get<Matrix>( iBlock, "Rotation" ),nif->get<float>( iBlock, "Scale" )));
@@ -681,12 +722,10 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 			attachNiNode(nif,node,l);
 		else if ( type == QString("NiLODNode") )
 			attachNiNode(nif,node,l);
-		else if ( type == QString("NiTriShape") )
-			attachNiShape(nif,node,l);
-		else if ( type == QString("NiTriStrips") )
+		else if ( type == QString("NiTriShape") || type == QString("NiTriStrips") )
 			attachNiShape(nif,node,l);
 		else {
-			qDebug() << "NO FUNC:" << type;
+//			qDebug() << "NO_FUNC:" << type;
 		}
 	}
 }
