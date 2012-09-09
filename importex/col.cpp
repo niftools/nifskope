@@ -755,13 +755,14 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 	}
 }
 
-void exportCol( const NifModel * nif ) {
+void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
 	QList<int> roots = nif->getRootLinks();
 	QString question;
 	QSettings settings;
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "col" );
-	QString fname = QFileDialog::getSaveFileName( 0, tr("Choose a .DAE file for export"), settings.value( "File Name" ).toString(), "*.dae" );
+
+	QString fname = QFileDialog::getSaveFileName( 0, tr("Choose a .DAE file for export"), QString("%1%2.dae").arg(settings.value("Path").toString()).arg(fileInfo.baseName()) , "*.dae" );
 	if ( fname.isEmpty() )
 		return;
 	while ( fname.endsWith( ".dae", Qt::CaseInsensitive ) )
@@ -771,9 +772,6 @@ void exportCol( const NifModel * nif ) {
 		qWarning() << "could not open " << fobj.fileName() << " for write access";
 		return;
 	}
-	int i = fname.lastIndexOf( "/" );
-	if ( i >= 0 )
-		fname = fname.remove( 0, i+1 );
 	doc.clear();
 	QDomElement root = doc.createElement("COLLADA");
 	root.setAttribute("xmlns","http://www.collada.org/2005/11/COLLADASchema");
@@ -819,7 +817,8 @@ void exportCol( const NifModel * nif ) {
 	ivl.setAttribute("url","#NifRootScene");
 	scene.appendChild(ivl);
 	fobj.write(doc.toString().toAscii());
-	settings.setValue( "File Name", fobj.fileName() );
+	settings.setValue( "Path", QString("%1/").arg(QFileInfo(fobj.fileName()).path()) );
 	QTextStream sobj( &fobj ); // let's save xml
+	fobj.close();
 }
 

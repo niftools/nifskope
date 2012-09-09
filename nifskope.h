@@ -99,6 +99,11 @@ public:
 	 * \param settings The QSettings object to restore the settings from.
 	 */
 	void restore( const QSettings & settings );
+	//! Get Loaded filename
+	/*!
+	 * \return QString of loaded filename
+	 */
+	QString getLoadFileName();
 	
 public slots:
 	//! Set the lineLoad string and load a nif, kf, or kfm file.

@@ -40,10 +40,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMenu>
 #include <QModelIndex>
 #include <QDockWidget>
+#include <QFileInfo>
 
 
 void exportObj( const NifModel * nif, const QModelIndex & index );
-void exportCol( const NifModel * nif );
+void exportCol( const NifModel * nif, QFileInfo );
 void importObj( NifModel * nif, const QModelIndex & index );
 void import3ds( NifModel * nif, const QModelIndex & index );
 
@@ -92,5 +93,5 @@ void NifSkope::sltImportExport( QAction * a )
 	else if ( a->text() == tr( "Import .3DS" ) )
 		import3ds( nif, index );
 	else if ( a->text() == tr( "Export .DAE" ) )
-		exportCol( nif );
+		exportCol( nif, this->getLoadFileName() );
 }
