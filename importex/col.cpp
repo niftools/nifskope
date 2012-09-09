@@ -56,6 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * - build regexp for xml id and names
  * - all "name" attributes with QRegExp("\\W")
  * - find models with other textures (than base + dark)
+ * - sampler only once if same texture used multiple times for material
  * DONE:
  * + now skips "deleted" nodes correctly
  * + first "multitexture" testing (diffuse + dark)
@@ -74,10 +75,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // "globals"
 QDomDocument doc("");
-QDomElement libraryImages = doc.createElement("library_images");
-QDomElement libraryMaterials = doc.createElement("library_materials");
-QDomElement libraryEffects = doc.createElement("library_effects");
-QDomElement libraryGeometries = doc.createElement("library_geometries");
+QDomElement libraryImages;
+QDomElement libraryMaterials;
+QDomElement libraryEffects;
+QDomElement libraryGeometries;
+
+
+QVector<int> textureIds;
 
 QDomElement textElement(QString type,QString text) {
 	QDomElement source = doc.createElement(type);
@@ -439,14 +443,17 @@ QDomElement textureElement(const NifModel * nif,QDomElement effect,QModelIndex c
 		sampler2D.appendChild(source);
 		source.appendChild( doc.createTextNode( QString("nifid_%1-surface").arg(texIdx) ) );
 
-		// ImageLibrary
-		QDomElement image = doc.createElement("image");
-		image.setAttribute("name",QString("Map_%1").arg(QFileInfo(textureFile.baseName()).baseName()));
-		image.setAttribute("id",QString("nifid_%1_image").arg(texIdx));
-		QDomElement initFrom = doc.createElement("init_from");
-		initFrom.appendChild( doc.createTextNode( QString("%1%2").arg( (textureFile.isAbsolute()?"":"./") ).arg(textureFile.filePath()) ) );
-		image.appendChild(initFrom);
-		libraryImages.appendChild(image);
+		// add to ImageLibrary if id don't exists yet
+		if ( ! textureIds.contains(texIdx) ) {
+			textureIds.append(texIdx);
+			QDomElement image = doc.createElement("image");
+			image.setAttribute("name",QString("Map_%1").arg(QFileInfo(textureFile.baseName()).baseName()));
+			image.setAttribute("id",QString("nifid_%1_image").arg(texIdx));
+			QDomElement initFrom = doc.createElement("init_from");
+			initFrom.appendChild( doc.createTextNode( QString("%1%2").arg( (textureFile.isAbsolute()?"":"./") ).arg(textureFile.filePath()) ) );
+			image.appendChild(initFrom);
+			libraryImages.appendChild(image);
+		}
 
 		// LibraryMaterials
 /*
@@ -481,6 +488,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 	QModelIndex iBlock = nif->getBlock( idx );
 	QDomElement textureBaseTexture;
 	QDomElement textureDarkTexture;
+	QDomElement textureGlowTexture;
 	QDomElement input;
 	// effect
 	QDomElement effect;
@@ -495,10 +503,12 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 			if ( ! profile.isElement() )
 				profile = doc.createElement("profile_COMMON");
-			// base texture
+			// base texture = map diffuse
 			textureBaseTexture = textureElement(nif,profile,nif->getIndex( iProp, "Base Texture" ),idx);
-			// dark texture ("like reverse light map")
+			// dark texture ("like reverse light map") = map specular (not good, but at least somewhere)
 			textureDarkTexture = textureElement(nif,profile,nif->getIndex( iProp, "Dark Texture" ),idx);
+			// glow texture = map emission
+			textureGlowTexture = textureElement(nif,profile,nif->getIndex( iProp, "Glow Texture" ),idx);
 
 		} else if ( nif->inherits( iProp, "NiTextureProperty" ) ) {
 			qDebug() << "NiTextureProperty";
@@ -539,7 +549,13 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			QDomElement phong = doc.createElement("phong");
 			technique.appendChild(phong);
 			// library_effects -> effect -> technique ->phong -> emission
-			phong.appendChild( colorElement("emission", nif->get<Color3>( iProp, "Emissive Color" ) ));
+			if ( ! textureGlowTexture.isElement() )
+				phong.appendChild( colorElement("emission", nif->get<Color3>( iProp, "Emissive Color" ) ));
+			else {
+				QDomElement emission = doc.createElement("emission");
+				emission.appendChild(textureGlowTexture);
+				phong.appendChild(emission);
+			}
 			// ambient
 			phong.appendChild( colorElement("ambient", nif->get<Color3>( iProp, "Ambient Color" ) ));
 			// diffuse with texture
@@ -769,7 +785,13 @@ void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
 		qWarning() << "could not open " << fobj.fileName() << " for write access";
 		return;
 	}
+	// clean dom and init global elemets
 	doc.clear();
+	libraryImages = doc.createElement("library_images");
+	libraryMaterials = doc.createElement("library_materials");
+	libraryEffects = doc.createElement("library_effects");
+	libraryGeometries = doc.createElement("library_geometries");
+	// root
 	QDomElement root = doc.createElement("COLLADA");
 	root.setAttribute("xmlns","http://www.collada.org/2005/11/COLLADASchema");
 	root.setAttribute("version","1.4.0");
