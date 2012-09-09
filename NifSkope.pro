@@ -130,6 +130,7 @@ SOURCES += \
     importex/3ds.cpp \
     importex/importex.cpp \
     importex/obj.cpp \
+    importex/col.cpp \
     kfmmodel.cpp \
     kfmxml.cpp \
     message.cpp \

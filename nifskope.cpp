@@ -1274,6 +1274,10 @@ void NifSkope::sltLocaleChanged()
    mb.exec();
 }
 
+QString NifSkope::getLoadFileName() {
+	return lineLoad->text();
+}
+
 /*
  *  main
  */

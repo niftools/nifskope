@@ -40,17 +40,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMenu>
 #include <QModelIndex>
 #include <QDockWidget>
+#include <QFileInfo>
 
 
 void exportObj( const NifModel * nif, const QModelIndex & index );
+void exportCol( const NifModel * nif, QFileInfo );
 void importObj( NifModel * nif, const QModelIndex & index );
-
 void import3ds( NifModel * nif, const QModelIndex & index );
 
 
 void NifSkope::fillImportExportMenus()
 {
 	mExport->addAction( tr( "Export .OBJ" ) );
+	mExport->addAction( tr( "Export .DAE" ) );
 	mImport->addAction( tr( "Import .3DS" ) );
 	mImport->addAction( tr( "Import .OBJ" ) );
 }
@@ -90,4 +92,6 @@ void NifSkope::sltImportExport( QAction * a )
 		importObj( nif, index );
 	else if ( a->text() == tr( "Import .3DS" ) )
 		import3ds( nif, index );
+	else if ( a->text() == tr( "Export .DAE" ) )
+		exportCol( nif, this->getLoadFileName() );
 }
