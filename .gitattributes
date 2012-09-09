@@ -1,0 +1,4 @@
+*.sh	eol=lf
+*.bat	eol=crlf
+*.cpp	eol=auto
+*.h	eol=auto
