@@ -488,7 +488,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 	QDomElement profile;
 	foreach ( qint32 link, nif->getChildLinks(idx) ) {
 		QModelIndex iProp = nif->getBlock( link );
-		if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) ) {
+		if ( nif->inherits( iProp, "NiTexturingProperty" ) ) {
 			if ( ! effect.isElement() ) {
 				effect = doc.createElement("effect");
 				effect.setAttribute("id",QString("nifid_%1-effect").arg(idx));
@@ -500,7 +500,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			// dark texture ("like reverse light map")
 			textureDarkTexture = textureElement(nif,profile,nif->getIndex( iProp, "Dark Texture" ),idx);
 
-		} else if ( nif->isNiBlock( iProp, "NiTextureProperty" ) ) {
+		} else if ( nif->inherits( iProp, "NiTextureProperty" ) ) {
 			qDebug() << "NiTextureProperty";
 			if ( ! effect.isElement() ) {
 				effect = doc.createElement("effect");
@@ -510,7 +510,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				profile = doc.createElement("profile_COMMON");
 			textureBaseTexture = textureElement(nif,profile,iProp,idx);
 
-		} else if ( nif->isNiBlock( iProp, "NiMaterialProperty" ) ) {
+		} else if ( nif->inherits( iProp, "NiMaterialProperty" ) ) {
 			haveMaterial = true;
 			QString name = nif->get<QString>( iProp, "Name" ).replace(" ","_");
 			// library_materials -> material
@@ -566,7 +566,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			// transparency
 			phong.appendChild( colorElement("transparent", Color3(1.0f,1.0f,1.0f)));
 			phong.appendChild( effectElement("transparency" , nif->get<float>( iProp, "Alpha" ) ) );
-		} else if ( nif->isNiBlock( iProp, "NiTriShapeData" ) ||  nif->isNiBlock( iProp, "NiTriStripsData" ) ) {
+		} else if ( nif->inherits( iProp, "NiTriBasedGeomData" ) ) {
 			QDomElement geometry = doc.createElement("geometry");
 			geometry.setAttribute("id",QString("nifid_%1-lib").arg(idx));
 			geometry.setAttribute("name",QString("%1-lib").arg(nif->get<QString>( iBlock, "Name" ).replace(QRegExp("\\W"),"_") ) );
@@ -741,12 +741,9 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 	foreach ( int l,nif->getChildLinks(idx) ) {
 		QModelIndex iChild = nif->getBlock( l );
 		if ( iChild.isValid() ) {
-			QString type = nif->getBlockName(iChild);
-			if ( type == QString("NiNode") )
+			if ( nif->inherits( iChild, "NiNode" ) )
 				attachNiNode(nif,node,l);
-			else if ( type == QString("NiLODNode") )
-				attachNiNode(nif,node,l);
-			else if ( type == QString("NiTriShape") || type == QString("NiTriStrips") )
+			else if ( nif->inherits( iChild, "NiTriBasedGeom") )
 				attachNiShape(nif,node,l);
 			else {
 //				qDebug() << "NO_FUNC:" << type;
@@ -808,7 +805,7 @@ void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
 		int idx = roots.takeFirst();
 		QModelIndex iBlock = nif->getBlock( idx );
 		// get more if NiNode
-		if ( nif->isNiBlock( iBlock, "NiNode" )  )
+		if ( nif->inherits( iBlock, "NiNode" )  )
 			attachNiNode(nif,lv,idx);
 	}
 	QDomElement scene = doc.createElement("scene");
