@@ -1,19 +1,18 @@
  == CHANGELOG ==
 
-This is version 1.1.0-RC7 of NifSkope.
-
-changes planned for 1.1.1:
- * added Skyrim support
- * hierarchy fix for BSShaderProperty and derived blocks
- * hierarchy fix for NiParticlesData and derived blocks
- * support for Qt 4.8 RC1
- * another qhull update
- * material fix for pack strips spell (issue #3413668)
- * fix for property attach spell for Skyrim (issue #3451054)
- * fix for resource files that could not be removed (issue #3452880)
- * fix for node names in ControllerLink blocks (issue #3453556)
+This is version 1.1.0-RC8 of NifSkope.
 
 changes since 1.1.0-RC7:
+* Collada export (contributed by mharj).
+* Mac compile fixes.
+* Hierarchy fix for BSShaderProperty and derived blocks.
+* Hierarchy fix for NiParticlesData and derived blocks.
+* Support for Qt 4.8.
+* Qhull update.
+* Material fix for pack strips spell (issue #3413668).
+* Fix for property attach spell for Skyrim (issue #3451054).
+* Fix for resource files that could not be removed (issue #3452880).
+* Fix for node names in ControllerLink blocks (issue #3453556).
 * Add: protective check to increase robustness
 * Fix: fixed #3525690 NifSkope Crash: MoppBvTree Triangles
 * Fix: blocked invalid memory access when "triangles" is empty
