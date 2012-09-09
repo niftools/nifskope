@@ -56,6 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * - build regexp for xml id and names
  * - all "name" attributes with QRegExp("\\W")
  * - find models with other textures (than base + dark)
+ * - sampler only once if same texture used multiple times for material
  * DONE:
  * + now skips "deleted" nodes correctly
  * + first "multitexture" testing (diffuse + dark)
