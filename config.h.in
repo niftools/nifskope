@@ -71,7 +71,7 @@ const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList()
 		<< "NifSkope");
 
 //! A string describing the version of nifskope
-#define NIFSKOPE_VERSION "1.1.1"
+#define NIFSKOPE_VERSION "$VERSION$"
 
 //! The repository revision number; generated with TortoiseSVN's SubWCRev.exe
 #define NIFSKOPE_REVISION "$WCREV$"
