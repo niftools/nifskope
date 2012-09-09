@@ -52,6 +52,15 @@ SetCompressor /SOLID lzma
   File ${DLL_RELEASE_FOLDER}\QtNetwork4.dll
   File ${DLL_RELEASE_FOLDER}\QtOpenGL4.dll
   File ${DLL_RELEASE_FOLDER}\QtXml4.dll
+  SetOutPath $INSTDIR\imageformats
+  File ${DLL_RELEASE_FOLDER}\qgif4.dll
+  File ${DLL_RELEASE_FOLDER}\qico4.dll
+  File ${DLL_RELEASE_FOLDER}\qjpeg4.dll
+  File ${DLL_RELEASE_FOLDER}\qmng4.dll
+  File ${DLL_RELEASE_FOLDER}\qsvg4.dll
+  File ${DLL_RELEASE_FOLDER}\qtga4.dll
+  File ${DLL_RELEASE_FOLDER}\qtiff4.dll
+
 !macroend
 
 !include "nifskope.nsh"
