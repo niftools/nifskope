@@ -36,11 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltools.h"
 #include "../options.h"
 
-#ifdef __APPLE__
-    #include <gl/GLee.h>
-#else
-    #include <GL/glext.h>
-#endif
+#include "GLee.h"
 
 #include <QDebug>
 

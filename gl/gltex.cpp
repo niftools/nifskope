@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "GLee.h"
 
-#include <QtOpenGL>
+#include <QGLContext>
 
 #include "glscene.h"
 #include "gltex.h"

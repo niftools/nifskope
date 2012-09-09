@@ -33,6 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEX_H
 #define GLTEX_H
 
+#include <QtCore>
+#include <QtGui>
+#include "GLee.h"
 #include <QGLContext>
 
 #include "../niftypes.h"

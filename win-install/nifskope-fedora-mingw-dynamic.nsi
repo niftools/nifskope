@@ -44,10 +44,9 @@ SetCompressor /SOLID lzma
   ; pack dll files
   SetOutPath $INSTDIR
   File ${DLL_RELEASE_FOLDER}\libgcc_s_sjlj-1.dll
-  File ${DLL_RELEASE_FOLDER}\libpng14-14.dll
+  File ${DLL_RELEASE_FOLDER}\libpng15-15.dll
   File ${DLL_RELEASE_FOLDER}\libstdc++-6.dll
   File ${DLL_RELEASE_FOLDER}\zlib1.dll
-  File ${DLL_RELEASE_FOLDER}\mingwm10.dll
   File ${DLL_RELEASE_FOLDER}\QtCore4.dll
   File ${DLL_RELEASE_FOLDER}\QtGui4.dll
   File ${DLL_RELEASE_FOLDER}\QtNetwork4.dll

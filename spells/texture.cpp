@@ -1,29 +1,21 @@
+#include <QtCore>
+#include <QtGui>
+#include "../gl/GLee.h"
+#include <QGLContext>
 
 #include "blocks.h"
 #include "texture.h"
 
 #include "../spellbook.h"
-#include "../gl/gltex.h"
 
 #include "../config.h"
 
-#include "../widgets/fileselect.h"
-#include "../widgets/uvedit.h"
 
 #include "../NvTriStrip/qtwrapper.h"
 
-#include <QGLPixelBuffer>
-
-#include <QComboBox>
-#include <QDialog>
-#include <QDirModel>
-#include <QImage>
-#include <QLayout>
-#include <QLineEdit>
-#include <QMessageBox>
-#include <QPainter>
-#include <QPushButton>
-#include <QTreeView>
+#include "../widgets/fileselect.h"
+#include "../widgets/uvedit.h"
+#include "../gl/gltex.h"
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file texture.cpp

@@ -11,7 +11,7 @@ fi
 rm nifskope-*.exe
 echo !define VERSION \"${VERSION}\" > nifversion.nsh
 echo !define BUILD_RELEASE_FOLDER \"../release\" >> nifversion.nsh
-echo !define DLL_RELEASE_FOLDER \"/usr/i686-pc-mingw32/sys-root/mingw/bin\" >> nifversion.nsh
+echo !define DLL_RELEASE_FOLDER \"/usr/i686-w64-mingw32/sys-root/mingw/bin\" >> nifversion.nsh
 
 cd ../docsys
 rm doc/*.html

@@ -36,8 +36,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../NvTriStrip/qtwrapper.h"
 
-#include "../gl/gltex.h"
-
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
@@ -45,6 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QTextStream>
 #include <QApplication>
+
+#include "../gl/gltex.h"
 
 #define tr(x) QApplication::tr(x)
 
