@@ -1,5 +1,3 @@
-// NOTE: Run makeconfig.sh on this file
-
 /***** BEGIN LICENSE BLOCK *****
 
 BSD License
@@ -72,9 +70,6 @@ const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList()
 
 //! A string describing the version of nifskope
 #define NIFSKOPE_VERSION "@VERSION@"
-
-//! The repository revision number; generated with TortoiseSVN's SubWCRev.exe
-#define NIFSKOPE_REVISION "@WCREV@"
 
 //! Create or use a QSettings variable for nifskope
 #define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope-"NIFSKOPE_VERSION )

@@ -26,6 +26,16 @@ macx{
 # On Linux you may need CONFIG += debug_and_release debug_and_release_target
 DESTDIR = .
 
+# build NIFSKOPE_REVISION macro
+unix {
+	system(git --version > /dev/null 2>&1):DEFINES += NIFSKOPE_REVISION=\\\"$$system(git log -1 --pretty=format:%h)\\\"
+	else:DEFINES += NIFSKOPE_REVISION=\\\"(unknown)\\\"
+}
+win32 {
+        system(git --version > NUL 2>&1):DEFINES += NIFSKOPE_REVISION=\\\"$$system(git log -1 --pretty=format:%h)\\\"
+        else:DEFINES += NIFSKOPE_REVISION=\\\"(unknown)\\\"
+}
+
 HEADERS += \
     basemodel.h \
     config.h \

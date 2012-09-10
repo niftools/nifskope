@@ -1,5 +1,4 @@
 # generated ones
-config.h
 Makefile
 moc_*.cpp
 qrc_*.cpp
