@@ -7,5 +7,5 @@ if [[ -e config.h ]]; then
         exit
     fi
 fi
-sed 's/\$WCREV\$/'${wcrev}'/' config.h.in > config.h
+#sed 's/\$WCREV\$/'${wcrev}'/' config.h.in > config.h
 
