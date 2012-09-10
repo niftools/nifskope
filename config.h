@@ -1,5 +1,3 @@
-// NOTE: Run makeconfig.sh on this file
-
 /***** BEGIN LICENSE BLOCK *****
 
 BSD License
