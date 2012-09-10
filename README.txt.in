@@ -4,10 +4,15 @@
  
 NifSkope is a tool for analyzing and editing NetImmerse files (.nif)
 
-This is version 1.1.0-RC7 of NifSkope.
+This is version @VERSION@ of NifSkope.
 
 Known Issues and Workarounds
 ----------------------------
+
+* Do not install nifskope whilst blender is running.
+
+* Be warned that collada export is still very experimental. It may, or
+  may not, work for you.
 
 * On some graphic cards textures show up black or distorted. If this happens,
   uncheck "Shaders" in NifSkope's settings.

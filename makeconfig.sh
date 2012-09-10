@@ -1,11 +1,8 @@
 #!/bin/bash
 
+version=`cat VERSION`
 wcrev=`git log -1 --pretty=format:%h`
-if [[ -e config.h ]]; then
-    grep ${wcrev} config.h > /dev/null
-    if [[ $? == 0 ]]; then
-        exit
-    fi
-fi
-sed 's/\$WCREV\$/'${wcrev}'/' config.h.in > config.h
-
+cat config.h.in | sed 's/@WCREV@/'${wcrev}'/' | sed 's/@VERSION@/'${version}'/' > config.h
+cat Doxyfile.in | sed 's/@WCREV@/'${wcrev}'/' | sed 's/@VERSION@/'${version}'/' > Doxyfile
+cat README.txt.in | sed 's/@WCREV@/'${wcrev}'/' | sed 's/@VERSION@/'${version}'/' > README.txt
+cat linux-install/nifskope.spec.in | sed 's/@WCREV@/'${wcrev}'/' | sed 's/@VERSION@/'${version}'/' > linux-install/nifskope.spec

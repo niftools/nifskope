@@ -1,5 +1,5 @@
 NAME=nifskope
-VERSION=1.1.1
+VERSION=`cat ../VERSION`
 wcrev=`git log -1 --pretty=format:%h`
 if [ "$1" == "" ]
 then

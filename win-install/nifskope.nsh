@@ -201,6 +201,7 @@ NifAssocSkip: ; make sure we write the correct install path to NifSkope, so we m
 
   ; Cleanup old dll files
   Delete $INSTDIR\*.dll
+  Delete $INSTDIR\imageformats\*.dll
   Delete $INSTDIR\Copyright.txt
   
   ; Install NifSkope
@@ -325,10 +326,12 @@ KfaAssocNoOwn:
   Delete "$INSTDIR\doc\*.*"
   Delete "$INSTDIR\shaders\*.*"
   Delete "$INSTDIR\lang\*.*"
+  Delete "$INSTDIR\imageformats\*.*"
   Delete "$INSTDIR\*.*"
   RMDir "$INSTDIR\doc"
   RMDir "$INSTDIR\shaders"
   RMDir "$INSTDIR\lang"
+  RMDir "$INSTDIR\imageformats"
   RMDir "$INSTDIR"
 
   ; remove links in start menu
