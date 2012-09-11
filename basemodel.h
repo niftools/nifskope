@@ -268,8 +268,6 @@ protected:
 	virtual bool		evalVersion( NifItem * item, bool chkParents = false ) const = 0;
 	//! Evaluate conditions
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
-	//! Evaluate conditions
-	bool		evalConditionHelper( NifItem * item, const QString & cond ) const;
 	
 	//! Convert a version number to a string
 	virtual QString ver2str( quint32 ) const = 0;
