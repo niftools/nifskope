@@ -328,6 +328,12 @@ public:
 		return childItems.value( row );
 	}
 	
+	//! Return the child item at the specified row
+	const NifItem * child( int row ) const
+	{
+		return childItems.value( row );
+	}
+	
 	//! Return the child item with the specified name
 	NifItem * child( const QString & name )
 	{
@@ -337,8 +343,17 @@ public:
 		return 0;
 	}
 	
+	//! Return the child item with the specified name
+	const NifItem * child( const QString & name ) const
+	{
+		foreach ( const NifItem * child, childItems )
+			if ( child->name() == name )
+				return child;
+		return 0;
+	}
+	
 	//! Return a count of the number of child items
-	int childCount()
+	int childCount() const
 	{
 		return childItems.count();
 	}

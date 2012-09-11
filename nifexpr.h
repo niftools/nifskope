@@ -115,6 +115,11 @@ public:
       return evaluateValue(convert).toBool();
    }
 
+   template <class F>
+   int evaluateUInt( const F& convert ) const
+   {
+      return evaluateValue(convert).toUInt();
+   }
 private:
    static Operator operatorFromString(const QString& str);
    void partition(const QString & cond, int offset = 0);
