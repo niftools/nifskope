@@ -513,7 +513,6 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			textureGlowTexture = textureElement(nif,profile,nif->getIndex( iProp, "Glow Texture" ),idx);
 
 		} else if ( nif->inherits( iProp, "NiTextureProperty" ) ) {
-			qDebug() << "NiTextureProperty";
 			if ( ! effect.isElement() ) {
 				effect = doc.createElement("effect");
 				effect.setAttribute("id",QString("nifid_%1-effect").arg(idx));
@@ -521,8 +520,15 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			if ( ! profile.isElement() )
 				profile = doc.createElement("profile_COMMON");
 			textureBaseTexture = textureElement(nif,profile,iProp,idx);
-
-		} else if ( nif->inherits( iProp, "NiMaterialProperty" ) ) {
+		} else if ( nif->inherits( iProp, "NiMaterialProperty" ) || nif->inherits( iProp, "BSLightingShaderProperty" ) ) {
+			// BSLightingShaderProperty inherits textures .. so it's bit ugly hack
+			QModelIndex iTextures = nif->getBlock( nif->getLink( iProp, "Texture Set" ) );
+			if ( iTextures.isValid() ) {
+				int tCount = nif->get<int>( iTextures, "Num Textures" );
+				QVector<QString> textures = nif->getArray<QString>( iTextures, "Textures" );
+//				qDebug() << textures.at(0);
+			}
+			// Material parameters
 			haveMaterial = true;
 			QString name = nif->get<QString>( iProp, "Name" ).replace(" ","_");
 			// library_materials -> material
@@ -731,7 +737,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				instanceMaterial.appendChild(bind_vertex_input);
 			}
 		} else {
-//			qDebug() << "NOT_USED_PROPERTY:" << nif->getBlockName(iProp);
+			qDebug() << "NOT_USED_PROPERTY:" << nif->getBlockName(iProp);
 		}
 		if ( effect.isElement() )
 			effect.appendChild(profile);
