@@ -26,6 +26,9 @@ macx{
 # On Linux you may need CONFIG += debug_and_release debug_and_release_target
 DESTDIR = .
 
+# NIFSKOPE_VERSION macro
+DEFINES += NIFSKOPE_VERSION=\\\"$$cat(VERSION)\\\"
+
 # build NIFSKOPE_REVISION macro
 unix {
 	system(git --version > /dev/null 2>&1):DEFINES += NIFSKOPE_REVISION=\\\"$$system(git log -1 --pretty=format:%h)\\\"

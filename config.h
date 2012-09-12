@@ -68,9 +68,6 @@ const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList()
 		<< "NifSkope-1.0.5"
 		<< "NifSkope");
 
-//! A string describing the version of nifskope
-#define NIFSKOPE_VERSION "@VERSION@"
-
 //! Create or use a QSettings variable for nifskope
 #define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope-"NIFSKOPE_VERSION )
 
