@@ -207,8 +207,10 @@ QDomElement uvMapElement(QVector<Vector2> uvMap,int idx,int row) {
 	source.appendChild(float_array);
 
 	QString uvText("");
+        // we have to flip the second UV coordinate because nif uses
+        // different convention from collada
 	foreach ( Vector2 v, uvMap )
-		uvText.append(QString("%1 %2 ").arg(v[0]).arg(v[1]));
+		uvText.append(QString("%1 %2 ").arg(v[0]).arg(1.0 - v[1]));
 	float_array.appendChild( doc.createTextNode(uvText) );
 
 	QDomElement technique_common = doc.createElement("technique_common");
