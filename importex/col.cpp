@@ -445,7 +445,7 @@ QDomElement textureArrayElement(QString file,QDomElement effect,qint32 idx,QStri
 		libraryImages.appendChild(image);
 	}
 	// return "sampler"
-	ret = colorTextureElement(QString("nifid_%1_%2-sampler").arg(idx).arg(type),QString("CHANNEL0"));
+	ret = colorTextureElement(QString("nifid_%1_%2-sampler").arg(idx).arg(type),QString("UVSET0"));
 	return ret;
 }
 
@@ -503,7 +503,7 @@ QDomElement textureElement(const NifModel * nif,QDomElement effect,QModelIndex c
 		// TODO: bind_vertex_input should also built here?
 
 		// return "sampler"
-		ret = colorTextureElement(QString("nifid_%1-sampler").arg(texIdx),QString("CHANNEL%1").arg(uvSet));
+		ret = colorTextureElement(QString("nifid_%1-sampler").arg(texIdx),QString("UVSET%1").arg(uvSet));
 	}
 	return ret;
 }
@@ -598,7 +598,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 			if ( ! profile.isElement() )
 				profile = doc.createElement("profile_COMMON");
-			effect.setAttribute("name",QString("%1").arg( name ));
+			effect.setAttribute("name",(name.isEmpty()?QString("nifid_%1-effect").arg(idx):QString("%1").arg(name) ) );
 
 			// library_effects -> effect -> technique
 			QDomElement technique = doc.createElement("technique");
@@ -721,7 +721,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				input = doc.createElement("input");
 				input.setAttribute("semantic","COLOR");
 				input.setAttribute("offset",x++);
-				input.setAttribute("source",QString("#nifid_%1-lib_color").arg(idx));
+				input.setAttribute("source",QString("#nifid_%1-lib_colors").arg(idx));
 				triangles.appendChild(input);
 			}
 			// Polygon structure array
@@ -774,14 +774,14 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			QDomElement techniqueCommon = doc.createElement("technique_common");
 			bindMaterial.appendChild(techniqueCommon);
 			QDomElement instanceMaterial = doc.createElement("instance_material");
-			instanceMaterial.setAttribute("symbol",QString("nifid_%1-material").arg(idx));
+			instanceMaterial.setAttribute("symbol",QString("material_nifid_%1").arg(idx));
 			instanceMaterial.setAttribute("target",QString("#nifid_%1-material").arg(idx));
 			techniqueCommon.appendChild(instanceMaterial);
 			//	<bind_vertex_input semantic="CHANNEL1" input_semantic="TEXCOORD" input_set="0"/>
 			// TODO: check if this is correct way!
 			for(int i=0;i<haveUV;i++) {
 				QDomElement bind_vertex_input = doc.createElement("bind_vertex_input");
-				bind_vertex_input.setAttribute("semantic",QString("CHANNEL%1").arg(i));
+				bind_vertex_input.setAttribute("semantic",QString("UVSET%1").arg(i));
 				bind_vertex_input.setAttribute("input_semantic","TEXCOORD");
 				bind_vertex_input.setAttribute("input_set",QString("%1").arg(i));
 				instanceMaterial.appendChild(bind_vertex_input);
