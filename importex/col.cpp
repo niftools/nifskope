@@ -662,15 +662,8 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 
 			// UV maps
+			int uvCount = (nif->get<int>( iProp, "Num UV Sets") & 63) | (nif->get<int>( iProp, "BS Num UV Sets") & 1);
 			QModelIndex iUV = nif->getIndex( iProp, "UV Sets" );
-			int uvCount = nif->get<int>( iProp, "Num UV Sets");
-			if ( ! iUV.isValid() )
-				iUV = nif->getIndex( iProp, "UV Sets 2" );
-
-			if ( iUV.isValid() && nif->get<int>( iProp, "BS Num UV Sets") == 4097 ) // Skyrim
-				uvCount = 1;
-
-
 			for(int row=0;row <  uvCount ; row++ ) {
 				QVector<Vector2> uvMap = nif->getArray<Vector2>( iUV.child( row, 0 ) );
 				mesh.appendChild(uvMapElement(uvMap,idx,row));
