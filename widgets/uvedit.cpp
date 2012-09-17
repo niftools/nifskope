@@ -860,7 +860,9 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		
 	}
 		
-	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+	foreach( qint32 l,
+                 nif->getLinkArray( iShape, "Properties" )
+                 + nif->getLinkArray( iShape, "BS Properties" ))
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )
@@ -1490,7 +1492,9 @@ void UVWidget::getTexSlots()
 {
 	menuTexSelect->clear();
 	validTexs.clear();
-	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+	foreach( qint32 l,
+                 nif->getLinkArray( iShape, "Properties" )
+                 + nif->getLinkArray( iShape, "BS Properties" ) )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )
@@ -1521,7 +1525,9 @@ void UVWidget::selectTexSlot()
 {
 	QString selected = texSlotGroup->checkedAction()->text();
 	currentTexSlot = texnames.indexOf( selected );
-	foreach( qint32 l, nif->getLinkArray( iShape, "Properties" ) )
+	foreach( qint32 l,
+                 nif->getLinkArray( iShape, "Properties" )
+                 + nif->getLinkArray( iShape, "BS Properties" ) )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 		if( iTexProp.isValid() )

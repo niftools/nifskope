@@ -166,8 +166,6 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 	if ( vercond.isEmpty() )
 		return true;
 
-	QString vercond2 = item->verexpr().toString();
-
 	NifModelEval functor(this, getHeaderItem());
 	return item->verexpr().evaluateBool(functor);
 }

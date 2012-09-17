@@ -538,7 +538,9 @@ void Mesh::transform()
 			double_sided_es = false;
 			if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom") )
 			{
-				QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" );
+				QVector<qint32> props =
+				  nif->getLinkArray( iBlock, "Properties" )
+				  + nif->getLinkArray( iBlock, "BS Properties" );
 				for (int i = 0; i < props.count(); i++)
 				{
 					QModelIndex iProp = nif->getBlock( props[i], PROP_LightingShaderProperty );

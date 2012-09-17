@@ -82,6 +82,7 @@ QDomElement libraryGeometries;
 
 
 QVector<int> textureIds;
+QVector<QString> textureNames;
 
 QDomElement textElement(QString type,QString text) {
 	QDomElement source = doc.createElement(type);
@@ -207,8 +208,10 @@ QDomElement uvMapElement(QVector<Vector2> uvMap,int idx,int row) {
 	source.appendChild(float_array);
 
 	QString uvText("");
+        // we have to flip the second UV coordinate because nif uses
+        // different convention from collada
 	foreach ( Vector2 v, uvMap )
-		uvText.append(QString("%1 %2 ").arg(v[0]).arg(v[1]));
+		uvText.append(QString("%1 %2 ").arg(v[0]).arg(1.0 - v[1]));
 	float_array.appendChild( doc.createTextNode(uvText) );
 
 	QDomElement technique_common = doc.createElement("technique_common");
@@ -403,6 +406,48 @@ QDomElement colorTextureElement(QString name,QString texcoord) {
 	return textureBaseTexture;
 }
 
+/**
+ *
+ * TODO: bit hack-ish
+ */
+QDomElement textureArrayElement(QString file,QDomElement effect,qint32 idx,QString type) {
+	QDomElement ret;
+	file.replace("\\","/");
+	// surface
+	QDomElement newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",QString("nifid_%1_%2-surface").arg(idx).arg(type));
+	effect.appendChild(newparam);
+	QDomElement surface = doc.createElement("surface");
+	surface.setAttribute("type","2D");
+	newparam.appendChild(surface);
+	QDomElement init_from = doc.createElement("init_from");
+	surface.appendChild(init_from);
+	init_from.appendChild( doc.createTextNode( QString("nifid_%1_%2_image").arg(idx).arg(type) ) );
+	// sampler
+	newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",QString("nifid_%1_%2-sampler").arg(idx).arg(type));
+	effect.appendChild(newparam);
+	QDomElement sampler2D = doc.createElement("sampler2D");
+	newparam.appendChild(sampler2D);
+	QDomElement source = doc.createElement("source");
+	sampler2D.appendChild(source);
+	source.appendChild( doc.createTextNode( QString("nifid_%1_%2-surface").arg(idx).arg(type) ) );
+
+	QString tIdName = QString("nifid_%1_%2_image").arg(idx).arg(type);
+	if ( ! textureNames.contains(tIdName) ) {
+		textureNames.append(tIdName);
+		QDomElement image = doc.createElement("image");
+		image.setAttribute("name",QString("Map_%1").arg( QFileInfo(file).baseName() ) );
+		image.setAttribute("id",tIdName);
+		QDomElement initFrom = doc.createElement("init_from");
+		initFrom.appendChild( doc.createTextNode( file ) );
+		image.appendChild(initFrom);
+		libraryImages.appendChild(image);
+	}
+	// return "sampler"
+	ret = colorTextureElement(QString("nifid_%1_%2-sampler").arg(idx).arg(type),QString("UVSET0"));
+	return ret;
+}
 
 /**
  *
@@ -455,20 +500,10 @@ QDomElement textureElement(const NifModel * nif,QDomElement effect,QModelIndex c
 			libraryImages.appendChild(image);
 		}
 
-		// LibraryMaterials
-/*
-		QDomElement material = doc.createElement("material");
-		material.setAttribute("name",QString("Material_%1").arg(textureFile.baseName()));
-		material.setAttribute("id",QString("nifid_%1-material").arg(idx));
-		libraryMaterials.appendChild(material);
-		QDomElement instance = doc.createElement("instance_effect");
-		instance.setAttribute("url",QString("#nifid_%1-effect").arg(idx));
-		material.appendChild(instance);
-*/
 		// TODO: bind_vertex_input should also built here?
 
 		// return "sampler"
-		ret = colorTextureElement(QString("nifid_%1-sampler").arg(texIdx),QString("CHANNEL%1").arg(uvSet));
+		ret = colorTextureElement(QString("nifid_%1-sampler").arg(texIdx),QString("UVSET%1").arg(uvSet));
 	}
 	return ret;
 }
@@ -511,7 +546,6 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			textureGlowTexture = textureElement(nif,profile,nif->getIndex( iProp, "Glow Texture" ),idx);
 
 		} else if ( nif->inherits( iProp, "NiTextureProperty" ) ) {
-			qDebug() << "NiTextureProperty";
 			if ( ! effect.isElement() ) {
 				effect = doc.createElement("effect");
 				effect.setAttribute("id",QString("nifid_%1-effect").arg(idx));
@@ -519,8 +553,33 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			if ( ! profile.isElement() )
 				profile = doc.createElement("profile_COMMON");
 			textureBaseTexture = textureElement(nif,profile,iProp,idx);
-
-		} else if ( nif->inherits( iProp, "NiMaterialProperty" ) ) {
+		} else if ( nif->inherits( iProp, "NiMaterialProperty" ) || nif->inherits( iProp, "BSLightingShaderProperty" ) ) {
+			if ( ! effect.isElement() ) {
+				effect = doc.createElement("effect");
+				effect.setAttribute("id",QString("nifid_%1-effect").arg(idx));
+			}
+			if ( ! profile.isElement() )
+				profile = doc.createElement("profile_COMMON");
+			// BSLightingShaderProperty inherits textures .. so it's bit ugly hack
+			// 0 = diffuse, 1 = normal
+			qint32 subIdx = nif->getLink( iProp, "Texture Set" );
+			QModelIndex iTextures = nif->getBlock( subIdx );
+			if ( iTextures.isValid() ) {
+				int tCount = nif->get<int>( iTextures, "Num Textures" );
+				QVector<QString> textures = nif->getArray<QString>( iTextures, "Textures" );
+				if ( ! textures.at(0).isEmpty()  )
+					textureBaseTexture = textureArrayElement(textures.at(0),profile,subIdx,"base");
+				// TODO: add normal map
+				/*	<extra>
+						<technique profile="FCOLLADA">
+							<bump>
+								<texture texture="sid-of-some-param-sampler" texcoord="symbolic_name_to_bind_from_shader"/>
+							</bump>
+						</technique>
+					</extra>
+				*/
+			}
+			// Material parameters
 			haveMaterial = true;
 			QString name = nif->get<QString>( iProp, "Name" ).replace(" ","_");
 			// library_materials -> material
@@ -539,7 +598,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 			if ( ! profile.isElement() )
 				profile = doc.createElement("profile_COMMON");
-			effect.setAttribute("name",QString("%1").arg( name ));
+			effect.setAttribute("name",(name.isEmpty()?QString("nifid_%1-effect").arg(idx):QString("%1").arg(name) ) );
 
 			// library_effects -> effect -> technique
 			QDomElement technique = doc.createElement("technique");
@@ -603,10 +662,9 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			}
 
 			// UV maps
+			int uvCount = (nif->get<int>( iProp, "Num UV Sets") & 63) | (nif->get<int>( iProp, "BS Num UV Sets") & 1);
 			QModelIndex iUV = nif->getIndex( iProp, "UV Sets" );
-			if ( ! iUV.isValid() )
-				iUV = nif->getIndex( iProp, "UV Sets 2" );
-			for(int row=0;row <  nif->get<int>( iProp, "Num UV Sets") ; row++ ) {
+			for(int row=0;row <  uvCount ; row++ ) {
 				QVector<Vector2> uvMap = nif->getArray<Vector2>( iUV.child( row, 0 ) );
 				mesh.appendChild(uvMapElement(uvMap,idx,row));
 				if ( uvMap.size() > 0 )
@@ -663,7 +721,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				input = doc.createElement("input");
 				input.setAttribute("semantic","COLOR");
 				input.setAttribute("offset",x++);
-				input.setAttribute("source",QString("#nifid_%1-lib_color").arg(idx));
+				input.setAttribute("source",QString("#nifid_%1-lib_colors").arg(idx));
 				triangles.appendChild(input);
 			}
 			// Polygon structure array
@@ -716,20 +774,20 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			QDomElement techniqueCommon = doc.createElement("technique_common");
 			bindMaterial.appendChild(techniqueCommon);
 			QDomElement instanceMaterial = doc.createElement("instance_material");
-			instanceMaterial.setAttribute("symbol",QString("nifid_%1-material").arg(idx));
+			instanceMaterial.setAttribute("symbol",QString("material_nifid_%1").arg(idx));
 			instanceMaterial.setAttribute("target",QString("#nifid_%1-material").arg(idx));
 			techniqueCommon.appendChild(instanceMaterial);
 			//	<bind_vertex_input semantic="CHANNEL1" input_semantic="TEXCOORD" input_set="0"/>
 			// TODO: check if this is correct way!
 			for(int i=0;i<haveUV;i++) {
 				QDomElement bind_vertex_input = doc.createElement("bind_vertex_input");
-				bind_vertex_input.setAttribute("semantic",QString("CHANNEL%1").arg(i));
+				bind_vertex_input.setAttribute("semantic",QString("UVSET%1").arg(i));
 				bind_vertex_input.setAttribute("input_semantic","TEXCOORD");
 				bind_vertex_input.setAttribute("input_set",QString("%1").arg(i));
 				instanceMaterial.appendChild(bind_vertex_input);
 			}
 		} else {
-//			qDebug() << "NOT_USED_PROPERTY:" << nif->getBlockName(iProp);
+			qDebug() << "NOT_USED_PROPERTY:" << nif->getBlockName(iProp);
 		}
 		if ( effect.isElement() )
 			effect.appendChild(profile);
@@ -785,6 +843,10 @@ void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
 		qWarning() << "could not open " << fobj.fileName() << " for write access";
 		return;
 	}
+	// clear texture ID list
+	textureIds.clear();
+	// clear texture name list (if slot based)
+	textureNames.clear();
 	// clean dom and init global elemets
 	doc.clear();
 	libraryImages = doc.createElement("library_images");

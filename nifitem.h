@@ -53,7 +53,7 @@ class NifSharedData : public QSharedData
 	
 	//! Constructor.
 	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs )
-		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr(c), isAbstract( abs ) {}
+		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr(c), arr1expr(a1), isAbstract( abs ) {}
 	
 	//! Constructor.
 	NifSharedData( const QString & n, const QString & t )
@@ -89,6 +89,8 @@ class NifSharedData : public QSharedData
 	QString  text;
 	//! Condition as an expression.
 	Expression condexpr;
+	//! First array length as an expression.
+	Expression arr1expr;
 	//! Version condition.
 	QString  vercond;
 	//! Version condition as an expression.
@@ -135,6 +137,8 @@ public:
 	inline const QString & text() const	{ return d->text; }
 	//! Get the condition attribute of the data, as an expression.
 	inline const Expression & condexpr() const	{ return d->condexpr; }
+	//! Get the first array length of the data, as an expression.
+	inline const Expression & arr1expr() const	{ return d->arr1expr; }
 	//! Get the version condition attribute of the data.
 	inline const QString & vercond() const	{ return d->vercond; }
 	//! Get the version condition attribute of the data, as an expression.
@@ -151,7 +155,10 @@ public:
 	//! Sets the argument of the data.
 	void setArg( const QString & arg )		{ d->arg = arg; }
 	//! Sets the first array length of the data.
-	void setArr1( const QString & arr1 )	{ d->arr1 = arr1; }
+	void setArr1( const QString & arr1 )	{
+		d->arr1 = arr1;
+		d->arr1expr = Expression(arr1);
+        }
 	//! Sets the second array length of the data.
 	void setArr2( const QString & arr2 )	{ d->arr2 = arr2; }
 	//! Sets the condition attribute of the data.
@@ -321,6 +328,12 @@ public:
 		return childItems.value( row );
 	}
 	
+	//! Return the child item at the specified row
+	const NifItem * child( int row ) const
+	{
+		return childItems.value( row );
+	}
+	
 	//! Return the child item with the specified name
 	NifItem * child( const QString & name )
 	{
@@ -330,8 +343,17 @@ public:
 		return 0;
 	}
 	
+	//! Return the child item with the specified name
+	const NifItem * child( const QString & name ) const
+	{
+		foreach ( const NifItem * child, childItems )
+			if ( child->name() == name )
+				return child;
+		return 0;
+	}
+	
 	//! Return a count of the number of child items
-	int childCount()
+	int childCount() const
 	{
 		return childItems.count();
 	}
@@ -370,6 +392,8 @@ public:
 	inline QString  text() const	{	return itemData.text();	}
 	//! Return the condition attribute of the data, as an expression
 	inline const Expression& condexpr() const	{	return itemData.condexpr();	}
+	//! Return the arr1 attribute of the data, as an expression
+	inline const Expression& arr1expr() const	{	return itemData.arr1expr();	}
 	//! Return the version condition attribute of the data
 	inline QString  vercond() const	{	return itemData.vercond();	}
 	//! Return the version condition attribute of the data, as an expression

@@ -241,7 +241,7 @@ protected:
 	//! Get the size of an array
 	int			getArraySize( NifItem * array ) const;
 	//! Evaluate a string for an array
-	int			evaluateString( NifItem * array, const QString & text ) const;
+	int			evaluateInt( NifItem * item, const Expression & expr) const;
 	
 	//! Get an item
 	virtual NifItem *	getItem( NifItem * parent, const QString & name ) const;
@@ -268,8 +268,6 @@ protected:
 	virtual bool		evalVersion( NifItem * item, bool chkParents = false ) const = 0;
 	//! Evaluate conditions
 	bool		evalCondition( NifItem * item, bool chkParents = false ) const;
-	//! Evaluate conditions
-	bool		evalConditionHelper( NifItem * item, const QString & cond ) const;
 	
 	//! Convert a version number to a string
 	virtual QString ver2str( quint32 ) const = 0;

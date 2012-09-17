@@ -139,7 +139,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
    // Check for left group
    int lstartpos=-1, lendpos=-1, ostartpos=-1, oendpos=-1, rstartpos=-1, rendpos=-1;
    //QRegExp tokens("\b(!=|==|>=|<=|>|<|\\&|\+|-|\\&\\&|\\|\\||\(|\)|[a-zA-Z0-9][a-zA-Z0-9_ \\?]*[a-zA-Z0-9_\\?]?)\b");
-   QRegExp reOps("(!=|==|>=|<=|>|<|\\&|\\+|-|\\&\\&|\\|\\|)");
+   QRegExp reOps("(!=|==|>=|<=|>|<|\\&|\\||\\+|-|\\&\\&|\\|\\|)");
    QRegExp reLParen("^\\s*\\(.*");
    pos = reLParen.indexIn(cond,offset, QRegExp::CaretAtOffset);
    if (pos != -1) {
