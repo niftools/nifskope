@@ -4,7 +4,7 @@ TARGET   = NifSkope
 
 QT += xml opengl network
 
-CONFIG += qt release thread warn_on
+CONFIG += qt debug_and_release thread warn_on
 
 CONFIG += fsengine
 

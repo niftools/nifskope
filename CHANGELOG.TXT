@@ -1,6 +1,11 @@
  == CHANGELOG ==
 
-This is version 1.1.0-RC8 of NifSkope.
+This is version 1.1.0 of NifSkope.
+
+changes since 1.1.0-RC8:
+* Collada export fixes for Skyrim and Blender (contributed by mharj).
+* Various small bug fixes in the xml.
+* Fix uv editor for Skyrim nifs.
 
 changes since 1.1.0-RC7:
 * Collada export (contributed by mharj).
