@@ -1,5 +1,7 @@
 # generated ones
 Makefile
+Makefile.Debug
+Makefile.Release
 moc_*.cpp
 qrc_*.cpp
 
@@ -13,3 +15,9 @@ qrc_*.cpp
 
 # binary
 NifSkope
+
+# VC build dirs
+release
+debug
+# VC debug file
+vc100.pdb
