@@ -14,8 +14,10 @@
 VERSION=`cat ../VERSION`
 
 FILES="NifSkope.pro \
+    makeconfig.sh \
+    VERSION \
     TODO.TXT \
-    README.TXT \
+    README.txt \
     CHANGELOG.TXT \
     LICENSE.TXT \
     style.qss \
