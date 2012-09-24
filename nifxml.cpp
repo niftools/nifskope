@@ -336,7 +336,7 @@ public:
 						if ( optId.isEmpty() || optVal.isEmpty() )
 							err( tr("option defintion must have a name and a value") );
 						bool ok;
-						optVal.toInt( &ok, 0 );
+						optVal.toUInt( &ok, 0 );
 						if ( ! ok )
 							err( tr("option value error (only integers please)") );
 						break;
@@ -397,7 +397,7 @@ public:
 			case tagOption:
 				{
 					bool ok;
-					quint32 optValInt = optVal.toInt( &ok, 0 );
+					quint32 optValInt = optVal.toUInt( &ok, 0 );
 					if ( ! ok || ! NifValue::registerEnumOption( typId, optId, optValInt, optTxt ) )
 						err( tr("failed to register enum option") );
 				}
