@@ -59,7 +59,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc README.TXT CHANGELOG.TXT LICENSE.TXT TODO.TXT
+%doc README.txt CHANGELOG.TXT LICENSE.TXT TODO.TXT
 %dir %{_datadir}/nifskope
 %dir %{_datadir}/nifskope/shaders
 %dir %{_datadir}/nifskope/doc
@@ -81,6 +81,80 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Mon Oct 1 2012 amorilia - 1.1.1-1
+- Fix unsigned int enum issue.
+* Tue Sep 18 2012 amorilia - 1.1.0-1
+- Collada export fixes for Skyrim and Blender (contributed by mharj).
+- Various small bug fixes in the xml.
+- Fix uv editor for Skyrim nifs.
+- Collada export (contributed by mharj).
+- Mac compile fixes.
+- Hierarchy fix for BSShaderProperty and derived blocks.
+- Hierarchy fix for NiParticlesData and derived blocks.
+- Support for Qt 4.8.
+- Qhull update.
+- Material fix for pack strips spell (issue #3413668).
+- Fix for property attach spell for Skyrim (issue #3451054).
+- Fix for resource files that could not be removed (issue #3452880).
+- Fix for node names in ControllerLink blocks (issue #3453556).
+- Add: protective check to increase robustness
+- Fix: fixed #3525690 NifSkope Crash: MoppBvTree Triangles
+- Fix: blocked invalid memory access when "triangles" is empty
+- Fix: stopped triangle reordering on .obj import into "FO:NV" "NiTriShape"
+- nif.xml: bhkCompressedMeshShape: merged "skyfox", "ttl296" and probably other peoples work
+- Added initial support for "BSLODTriShape" - its being rendered
+- Fixed a lot of stuff regarding .obj import when BSShaderPPLightingProperty is present
+- Fix: Handling of spaces in .mtl files filename
+- Fix: .kf attaching for 10.0.1.0 - renaming the fields in "nif.xml" works as well
+- Fix: double_sided rendering issue
+- Add: SF_Double_Sided handling for "BSEffectShaderProperty"
+- Fix #3468080: property "paste" now works for non-NiProperty blocks
+- Fix #3471254: temporary set global template for some properties
+- Fix: rendering of double-sided + alpha unsorted triangles issue
+- Add: "BSEffectShaderProperty" - initial support
+- Add: unknown properties are now reported by the property factory
+- Added support for "BSLightingShaderProperty" in the UV editor and exporter
+- Fixed two regressions
+- Fix: "havok material" no longer resets to "HAV_MAT_STONE" when packing strips
+- Modified "havok" axes visibility
+- Enabled double-sided rendering when specific flag specifies it
+- Initial handling of unknown (possibly animation) alpha component of
+   NiTriShape vertex colors
+- Fix: two regressions
+- Added View Toolbar and new action - "reset block details"
+- Fix: restoring the main window no longer resets "block details"
+- Automatic vertex weighting initial support
+- BSTreeNode initial support
+- block number is visible
+- made material editor dialog window modal
+- Update for new qhull
+- Fix: quat. rotation keys linear interpolation issue
+- Fix for Qt 4.8.0: naming clash with dds_swap
+- Fix: added handling of invalid "Triangles" indexes
+- Fix: Skyrim textures are visible
+- Fixed NvTriStripObjects build error on gcc
+- Fix: File->Quit was not storing the program settings
+- Fix: bhkPackedNiTriStripsShape highlighting now works
+- Fix: furniture below shapes is now correctly mouse
+- Fix: transpaarency no longer hides selected fragments
+- Fix: highlighting of bhkListShape. Also, group highlighting now works
+- Changed interactive selection approach
+- Fix for user version in big endian nifs
+- Require OpenGL 2.0 (this fixes a crash on older hardware)
+- fixed nifskope crash on mouse left click in the opengl context window
+- updated to Qt 4.6.2
+- reworked BSA code for Qt 4.6 changes
+- import window state and lighting settings from previous versions
+- better support for big-endian files
+- increased the number of decimal places for rotations (suggested by Ghogiel)
+- Split "Adjust Link Arrays" spell: "Reorder Link Arrays" which now works for versions 20.0.0.4 onwards and removes empty links (fixes issue #3037165); "Collapse Link Arrays" which removes all empty links and works for all versions
+- fix for corrupt version write
+- highlight subshape selection in bhkPackedNiTriStripsShape
+- add Fallout New Vegas to game texture auto-detection
+- updated to GLee 5.4.0
+- nif.xml updates for Divinity 2 and Fallout New Vegas
+- OpenGL fix for ATI/AMD graphics cards (contributed by corwin)
+- bounds calculations for OpenGL view now take BSBounds and old style bounding boxes into account
 * Sat Mar 20 2010 amorilia - 1.0.22-1
 - updated to Qt 4.5.3
 - added support for NiPersistentSrcTextureRendererData textures (alternate form of NiPixelData)
