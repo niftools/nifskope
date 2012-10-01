@@ -81,6 +81,8 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Mon Oct 1 2012 amorilia - 1.1.1-1
+- Fix unsigned int enum issue.
 * Tue Sep 18 2012 amorilia - 1.1.0-1
 - Collada export fixes for Skyrim and Blender (contributed by mharj).
 - Various small bug fixes in the xml.
