@@ -1,6 +1,9 @@
  == CHANGELOG ==
 
-This is version 1.1.1 of NifSkope.
+This is version 1.1.2 of NifSkope.
+
+changes since 1.1.1:
+* When combining material properties, keep original material names as much as possible (reported by koniption).
 
 changes since 1.1.0:
 * Fix unsigned int enum issue.
