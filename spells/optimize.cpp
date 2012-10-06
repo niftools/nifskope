@@ -48,8 +48,10 @@ public:
 			for ( qint32 b = 0; b < nif->getBlockCount(); b++ )
 			{
 				QModelIndex iBlock = nif->getBlock( b );
+				QString original_material_name;
 				if ( nif->isNiBlock( iBlock, "NiMaterialProperty" ) )
 				{
+					original_material_name = nif->get<QString>( iBlock, "Name" );
 					if ( nif->get<QString>( iBlock, "Name" ).contains( "Material" ) )
 						nif->set<QString>( iBlock, "Name", "Material" );
 					else if ( nif->get<QString>( iBlock, "Name" ).contains( "Default" ) )
@@ -67,6 +69,11 @@ public:
 					data.write( nif->itemName( iBlock ).toAscii() );
 					nif->save( data, iBlock );
 					props.insert( b, data.buffer() );
+				}
+				// restore name
+				if ( nif->isNiBlock( iBlock, "NiMaterialProperty" ) )
+				{
+					nif->set<QString>( iBlock, "Name", original_material_name );
 				}
 			}
 			
