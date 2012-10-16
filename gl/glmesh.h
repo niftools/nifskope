@@ -86,8 +86,8 @@ protected:
 	QVector<Color4>  colors;
 	//! Tangents
 	QVector<Vector3> tangents;
-	//! Binormals
-	QVector<Vector3> binormals;
+	//! Bitangents
+	QVector<Vector3> bitangents;
 	
 	//! UV coordinate sets
 	QList< QVector<Vector2> > coords;
@@ -100,8 +100,8 @@ protected:
 	QVector<Color4> transColors;
 	//! Transformed tangents
 	QVector<Vector3> transTangents;
-	//! Transformed binormals
-	QVector<Vector3> transBinormals;
+	//! Transformed bitangents
+	QVector<Vector3> transBitangents;
 	
 	int skelRoot;
 	Transform skelTrans;

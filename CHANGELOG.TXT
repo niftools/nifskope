@@ -8,6 +8,7 @@ changes since 1.1.1:
 * Skyrim material updates (contributed by ttl296).
 * Skyrim body part updates.
 * Document sane defaults for Skyrim bhkRigidBody "Unknown 7 Shorts" (reported by ttl296).
+* Rename: binormals are now more accurately called bitangents.
 
 changes since 1.1.0:
 * Fix unsigned int enum issue.
