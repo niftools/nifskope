@@ -80,7 +80,6 @@ QDomElement libraryMaterials;
 QDomElement libraryEffects;
 QDomElement libraryGeometries;
 
-
 QVector<int> textureIds;
 QVector<QString> textureNames;
 
@@ -103,6 +102,42 @@ QDomElement dateElement(QString type,QDateTime time) {
 	return source;
 }
 
+
+void addLibraryImages(int idx,QString type,QString file) {
+	file.replace("\\","/"); // nix way
+	QDomElement image = doc.createElement("image");
+	image.setAttribute("id",QString("nifid_%1_%2_image").arg(idx).arg(type));
+	image.setAttribute("name",QFileInfo(file).baseName());
+	QDomElement init_from = doc.createElement("init_from");
+	init_from.appendChild(doc.createTextNode(file));
+	image.appendChild(init_from);
+	libraryImages.appendChild(image);
+}
+
+void addSufaceSample(QDomElement profile,int idx,QString type) {
+	QString surfaceSid 	= QString("nifid_%1_%2-surface").arg(idx).arg(type);
+	QString samplerSid 	= QString("nifid_%1_%2-sampler").arg(idx).arg(type);
+	QString imageId 	= QString("nifid_%1_%2_image").arg(idx).arg(type);
+	// surface
+	QDomElement newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",surfaceSid);
+	QDomElement surface = doc.createElement("surface");
+	surface.setAttribute("type","2D");
+	newparam.appendChild(surface);
+	QDomElement init_from = doc.createElement("init_from");
+	init_from.appendChild(doc.createTextNode( imageId ) );
+	surface.appendChild(init_from);
+	profile.appendChild(newparam);
+	// sampler
+	newparam = doc.createElement("newparam");
+	newparam.setAttribute("sid",samplerSid);
+	QDomElement sampler = doc.createElement("sampler2D");
+	newparam.appendChild(sampler);
+	QDomElement source = doc.createElement("source");
+	source.appendChild(doc.createTextNode( surfaceSid ) );
+	sampler.appendChild(source);
+	profile.appendChild(newparam);
+}
 
 /**
  * create matrix element
@@ -521,6 +556,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 	bool haveMaterial = false;
 	int haveUV = 0;
 	QModelIndex iBlock = nif->getBlock( idx );
+	QDomElement extra;
 	QDomElement textureBaseTexture;
 	QDomElement textureDarkTexture;
 	QDomElement textureGlowTexture;
@@ -544,6 +580,8 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			textureDarkTexture = textureElement(nif,profile,nif->getIndex( iProp, "Dark Texture" ),idx);
 			// glow texture = map emission
 			textureGlowTexture = textureElement(nif,profile,nif->getIndex( iProp, "Glow Texture" ),idx);
+
+			// TODO: Shader Textures array and mapping (for DAoC check NiIntegerExtraData for order)
 
 		} else if ( nif->inherits( iProp, "NiTextureProperty" ) ) {
 			if ( ! effect.isElement() ) {
@@ -569,15 +607,22 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				QVector<QString> textures = nif->getArray<QString>( iTextures, "Textures" );
 				if ( ! textures.at(0).isEmpty()  )
 					textureBaseTexture = textureArrayElement(textures.at(0),profile,subIdx,"base");
-				// TODO: add normal map
-				/*	<extra>
-						<technique profile="FCOLLADA">
-							<bump>
-								<texture texture="sid-of-some-param-sampler" texcoord="symbolic_name_to_bind_from_shader"/>
-							</bump>
-						</technique>
-					</extra>
-				*/
+				/* add normal map with FCOLLADA profile
+				 * could also be gloss as per nif.xml? */
+				if ( ! textures.at(1).isEmpty()  ) {
+					addLibraryImages(subIdx,"normal",textures.at(1));
+					addSufaceSample(profile,subIdx,"normal");
+					extra = doc.createElement("extra");
+					QDomElement extraTechnique = doc.createElement("technique");
+					extraTechnique.setAttribute("profile","FCOLLADA");
+					extra.appendChild(extraTechnique);
+					QDomElement extraTechniqueBump = doc.createElement("bump");
+					extraTechnique.appendChild(extraTechniqueBump);
+					QDomElement extraTechniqueBumpTexture = doc.createElement("texture");
+					extraTechniqueBumpTexture.setAttribute("texture",QString("nifid_%1_normal-sampler").arg(subIdx));
+					extraTechniqueBumpTexture.setAttribute("texcoord","UVSET0"); // TODO: something better?
+					extraTechniqueBump.appendChild(extraTechniqueBumpTexture);
+				}
 			}
 			// Material parameters
 			haveMaterial = true;
@@ -641,6 +686,9 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			// transparency
 			phong.appendChild( colorElement("transparent", Color3(1.0f,1.0f,1.0f)));
 			phong.appendChild( effectElement("transparency" , nif->get<float>( iProp, "Alpha" ) ) );
+
+			if ( extra.isElement() )
+				profile.appendChild(extra);
 		} else if ( nif->inherits( iProp, "NiTriBasedGeomData" ) ) {
 			QDomElement geometry = doc.createElement("geometry");
 			geometry.setAttribute("id",QString("nifid_%1-lib").arg(idx));
