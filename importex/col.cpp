@@ -581,6 +581,8 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			// glow texture = map emission
 			textureGlowTexture = textureElement(nif,profile,nif->getIndex( iProp, "Glow Texture" ),idx);
 
+			// TODO: Shader Textures array and mapping (for DAoC check NiIntegerExtraData for order)
+
 		} else if ( nif->inherits( iProp, "NiTextureProperty" ) ) {
 			if ( ! effect.isElement() ) {
 				effect = doc.createElement("effect");
@@ -605,7 +607,8 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 				QVector<QString> textures = nif->getArray<QString>( iTextures, "Textures" );
 				if ( ! textures.at(0).isEmpty()  )
 					textureBaseTexture = textureArrayElement(textures.at(0),profile,subIdx,"base");
-				// TODO: add normal map with FCOLLADA
+				/* add normal map with FCOLLADA profile
+				 * could also be gloss as per nif.xml? */
 				if ( ! textures.at(1).isEmpty()  ) {
 					addLibraryImages(subIdx,"normal",textures.at(1));
 					addSufaceSample(profile,subIdx,"normal");
