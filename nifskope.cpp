@@ -840,8 +840,8 @@ void NifSkope::load()
 			lineLoad->setText( niffile.filePath() );
 			lineSave->setText( niffile.filePath() );
 		}
-		
-		setWindowTitle( "NifSkope - " + niffile.fileName() );
+
+		setWindowTitle( niffile.fileName() + " - NifSkope");
 	}
 	
 	ogl->tAnim->setEnabled( true );
@@ -901,7 +901,7 @@ void NifSkope::save()
 			lineSave->setState(FileSelector::stSuccess);
 		}
 
-		setWindowTitle( "NifSkope - " + nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) );
+		setWindowTitle( nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) + " - NifSkope" );
 	}
 	setEnabled( true );
 
