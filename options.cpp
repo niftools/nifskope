@@ -366,10 +366,11 @@ Options::Options()
 
       texPage->addWidget( CullExpr = new QLineEdit( cfg.value( "Cull Expression", "^collidee|^shadowcaster|^\\!LoD_cullme|^footprint" ).toString() ) );
       CullExpr->setToolTip( tr("Enter a regular expression. Nodes which names match the expression will be hidden") );
-      CullExpr->setEnabled( CullByID->isChecked() );
+// 	  leave RegExp input open as both rendering and collada cull sharing this
+//    CullExpr->setEnabled( CullByID->isChecked() );
+      CullExpr->setEnabled( true );
       connect( CullExpr, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
-      connect( CullByID, SIGNAL( toggled( bool ) ), CullExpr, SLOT( setEnabled( bool ) ) );
-
+//    connect( CullByID, SIGNAL( toggled( bool ) ), CullExpr, SLOT( setEnabled( bool ) ) );
 
       texPage->popLayout();
       texPage->popLayout();
@@ -531,6 +532,18 @@ Options::Options()
 
       cfg.endGroup();
    }
+
+   GroupBox *exportPage;
+   tab->addTab( exportPage = new GroupBox(Qt::Vertical), tr("Export"));
+   {
+	   cfg.beginGroup( "Export Settings" );
+	   colladaCull = new QCheckBox("Enable culling for Collada export ", exportPage);
+	   colladaCull->setChecked( cfg.value("collada_culling",false).toBool() );
+	   colladaCull->setMinimumSize ( QSize( 200, 15 ) );
+	   connect( colladaCull, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	   cfg.endGroup();
+   }
+
    // set render page as default
    tab->setCurrentWidget( texPage );
 
@@ -648,6 +661,10 @@ void Options::save()
 	//cfg.setValue( "Maximum String Length", maxStringLength() );
 
 	cfg.endGroup(); // Settings
+
+	cfg.beginGroup( "Export Settings" );
+	cfg.setValue( "collada_culling", colladaCullEnabled() );
+	cfg.endGroup(); // Export Settings
 }
 
 void Options::textureFolderAutoDetect()
@@ -1064,3 +1081,7 @@ int Options::maxStringLength()
 	return get()->StringLength->value();
 }
 */
+
+bool Options::colladaCullEnabled() {
+	return get()->colladaCull->isChecked();
+}

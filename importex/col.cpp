@@ -48,6 +48,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../config.h"
 
+#include "../options.h"
+
 #define tr(x) QApplication::tr(x)
 
 /**
@@ -79,6 +81,8 @@ QDomElement libraryImages;
 QDomElement libraryMaterials;
 QDomElement libraryEffects;
 QDomElement libraryGeometries;
+bool culling;
+QRegExp cullRegExp;
 
 QVector<int> textureIds;
 QVector<QString> textureNames;
@@ -848,7 +852,11 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
  * Node "tree" looping
  */
 void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
+
 	QModelIndex iBlock = nif->getBlock( idx );
+	if ( culling && ! cullRegExp.isEmpty() && nif->get<QString>( iBlock, "Name" ).contains(cullRegExp)  )
+		return;
+
 	QDomElement node = doc.createElement("node");
 	QString nodeName = nif->get<QString>( iBlock, "Name" ).replace(" ","_");
 	QString nodeID = QString("nifid_%1_node").arg(idx);
@@ -875,6 +883,9 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 }
 
 void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
+	culling = Options::get()->colladaCullEnabled();
+	cullRegExp = Options::get()->cullExpression();
+
 	QList<int> roots = nif->getRootLinks();
 	QString question;
 	QSettings settings;
