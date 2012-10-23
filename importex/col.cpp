@@ -854,6 +854,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 
 	QModelIndex iBlock = nif->getBlock( idx );
+	// export culling
 	if ( culling && ! cullRegExp.isEmpty() && nif->get<QString>( iBlock, "Name" ).contains(cullRegExp)  )
 		return;
 
@@ -883,7 +884,7 @@ void attachNiNode (const NifModel * nif,QDomElement parentNode,int idx) {
 }
 
 void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
-	culling = Options::get()->colladaCullEnabled();
+	culling = Options::get()->exportCullEnabled();
 	cullRegExp = Options::get()->cullExpression();
 
 	QList<int> roots = nif->getRootLinks();

@@ -537,10 +537,10 @@ Options::Options()
    tab->addTab( exportPage = new GroupBox(Qt::Vertical), tr("Export"));
    {
 	   cfg.beginGroup( "Export Settings" );
-	   colladaCull = new QCheckBox("Enable culling for Collada export ", exportPage);
-	   colladaCull->setChecked( cfg.value("collada_culling",false).toBool() );
-	   colladaCull->setMinimumSize ( QSize( 200, 15 ) );
-	   connect( colladaCull, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	   exportCull = new QCheckBox("Use 'Cull Nodes by Name' rendering option to cull nodes on export", exportPage);
+	   exportCull->setChecked( cfg.value("export_culling",false).toBool() );
+	   exportCull->setMinimumSize ( QSize( 500, 15 ) );
+	   connect( exportCull, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
 	   cfg.endGroup();
    }
 
@@ -663,7 +663,7 @@ void Options::save()
 	cfg.endGroup(); // Settings
 
 	cfg.beginGroup( "Export Settings" );
-	cfg.setValue( "collada_culling", colladaCullEnabled() );
+	cfg.setValue( "export_culling", exportCullEnabled() );
 	cfg.endGroup(); // Export Settings
 }
 
@@ -1082,6 +1082,6 @@ int Options::maxStringLength()
 }
 */
 
-bool Options::colladaCullEnabled() {
-	return get()->colladaCull->isChecked();
+bool Options::exportCullEnabled() {
+	return get()->exportCull->isChecked();
 }

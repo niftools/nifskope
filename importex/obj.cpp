@@ -46,7 +46,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../gl/gltex.h"
 
+#include "../options.h"
+
 #define tr(x) QApplication::tr(x)
+
+// "globals"
+bool objCulling;
+QRegExp objCullRegExp;
+
 
 /*
  *  .OBJ EXPORT
@@ -214,6 +221,9 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 
 static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
 {
+	// export culling
+	if ( objCulling && ! objCullRegExp.isEmpty() && nif->get<QString>( iNode, "Name" ).contains(objCullRegExp)  )
+		return;
 	t = t * Transform( nif, iNode );
 	foreach ( int l, nif->getChildLinks( nif->getBlockNumber( iNode ) ) )
 	{
@@ -292,6 +302,9 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 
 void exportObj( const NifModel * nif, const QModelIndex & index )
 {
+	objCulling = Options::get()->exportCullEnabled();
+	objCullRegExp = Options::get()->cullExpression();
+	
 	//--Determine how the file will export, and be sure the user wants to continue--//
 	QList<int> roots;
 	QModelIndex iBlock = nif->getBlock( index );
