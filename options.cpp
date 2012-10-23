@@ -537,10 +537,11 @@ Options::Options()
    tab->addTab( exportPage = new GroupBox(Qt::Vertical), tr("Export"));
    {
 	   cfg.beginGroup( "Export Settings" );
-	   exportCull = new QCheckBox("Use 'Cull Nodes by Name' rendering option to cull nodes on export", exportPage);
+	   exportPage->pushLayout( tr("Export Settings"), Qt::Vertical, 1 );
+	   exportPage->addWidget( exportCull = new QCheckBox( tr("Use 'Cull Nodes by Name' rendering option to cull nodes on export") ),1,Qt::AlignTop);
 	   exportCull->setChecked( cfg.value("export_culling",false).toBool() );
-	   exportCull->setMinimumSize ( QSize( 500, 15 ) );
 	   connect( exportCull, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	   exportPage->popLayout();
 	   cfg.endGroup();
    }
 
