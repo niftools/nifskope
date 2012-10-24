@@ -554,6 +554,7 @@ QDomElement textureElement(const NifModel * nif,QDomElement effect,QModelIndex c
  * FIXME: handle multiple UV maps in <polygons> .. find example!
  */
 void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
+
 	bool haveVertex = false;
 	bool haveNormal = false;
 	bool haveColors = false;
@@ -569,6 +570,11 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 	QDomElement effect;
 	// profile
 	QDomElement profile;
+
+	// export culling
+	if ( culling && ! cullRegExp.isEmpty() && nif->get<QString>( iBlock, "Name" ).contains(cullRegExp)  )
+		return;
+
 	foreach ( qint32 link, nif->getChildLinks(idx) ) {
 		QModelIndex iProp = nif->getBlock( link );
 		if ( nif->inherits( iProp, "NiTexturingProperty" ) ) {
