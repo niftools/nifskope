@@ -141,6 +141,10 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 	Color3 mata, matd, mats;
 	float matt = 1.0, matg = 33.0;
 	
+	// export culling
+	if ( objCulling && ! objCullRegExp.isEmpty() && nif->get<QString>( iShape, "Name" ).contains(objCullRegExp)  )
+		return;
+
 	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) )
 	{
 		QModelIndex iProp = nif->getBlock( link );
