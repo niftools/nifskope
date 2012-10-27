@@ -63,6 +63,8 @@ class QUdpSocket;
 
 #include "message.h"
 
+#include "ui/about_dialog.h"
+
 //! \file nifskope.h The main header for NifSkope
 
 //! The main application class for NifSkope. 
@@ -183,6 +185,8 @@ private:
 	void initDockWidgets();
 	void initToolBars();
 	void initMenu();
+
+    QWidget *aboutDialog;
 	
 	void setViewFont( const QFont & );
 
