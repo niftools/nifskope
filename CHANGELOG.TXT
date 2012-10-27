@@ -5,10 +5,13 @@ This is version 1.1.2 of NifSkope.
 changes since 1.1.1:
 * When combining material properties, keep original material names as much as possible (reported by koniption).
 * Fix display of transformed havok shapes (reported by koniption).
-* Skyrim material updates (contributed by ttl296).
+* Skyrim material updates (contributed by ttl269).
 * Skyrim body part updates.
 * Document sane defaults for Skyrim bhkRigidBody "Unknown 7 Shorts" (reported by ttl296).
 * Rename: binormals are now more accurately called bitangents.
+* Collada export improvements (contributed by mharj).
+* Support node culling by regular expression in collada/obj export (contributed by mharj).
+* Fix block order of bhkCompressedMeshShapeData (reported by ttl269).
 
 changes since 1.1.0:
 * Fix unsigned int enum issue.
@@ -33,7 +36,7 @@ changes since 1.1.0-RC7:
 * Fix: fixed #3525690 NifSkope Crash: MoppBvTree Triangles
 * Fix: blocked invalid memory access when "triangles" is empty
 * Fix: stopped triangle reordering on .obj import into "FO:NV" "NiTriShape"
-* nif.xml: bhkCompressedMeshShape: merged "skyfox", "ttl296" and probably other peoples work
+* nif.xml: bhkCompressedMeshShape: merged "skyfox", "ttl269" and probably other peoples work
 
 changes since 1.1.0-RC6:
 * Added initial support for "BSLODTriShape" - its being rendered
