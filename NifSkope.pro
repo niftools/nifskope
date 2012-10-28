@@ -29,7 +29,6 @@ DEFINES += NIFSKOPE_VERSION=\\\"$$cat(VERSION)\\\"
 
 # build NIFSKOPE_REVISION macro
 exists(.git/config):DEFINES += NIFSKOPE_REVISION=\\\"$$system(git log -1 --pretty=format:%h)\\\"
-else:DEFINES += NIFSKOPE_REVISION=\\\"unknown\\\"
 
 HEADERS += \
     basemodel.h \
