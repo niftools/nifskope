@@ -26,7 +26,7 @@ make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__install} -Dp -m0755 nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
+%{__install} -Dp -m0755 release/nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
 %{__install} -Dp -m0644 nifskope.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/nifskope.png
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
