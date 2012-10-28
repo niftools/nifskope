@@ -144,12 +144,6 @@ void NifSkope::migrateSettings() const
 /*
  * main GUI window
  */
-
-void NifSkope::about()
-{
-    aboutDialog->show();
-}
-
 void NifSkope::sltResetBlockDetails()
 {
 	if (tree)
@@ -325,7 +319,7 @@ NifSkope::NifSkope()
 	connect( aNifToolsDownloads, SIGNAL( triggered() ), this, SLOT( openURL() ) );
 
 	aNifSkope = new QAction( tr("About &NifSkope"), this );
-	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
+    connect( aNifSkope, SIGNAL( triggered() ), aboutDialog, SLOT( open() ) );
 	
 	aAboutQt = new QAction( tr("About &Qt"), this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );

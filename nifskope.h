@@ -132,9 +132,6 @@ public slots:
 	//! A slot for starting the XML checker.
 	void sltShredder();
 	
-	//! Display the "About NifSkope" window.
-	void about();
-
 	//! Reset "block details"
 	void sltResetBlockDetails();
 	
@@ -186,6 +183,7 @@ private:
 	void initToolBars();
 	void initMenu();
 
+    //! "About NifSkope" dialog.
     QWidget *aboutDialog;
 	
 	void setViewFont( const QFont & );

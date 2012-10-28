@@ -3,7 +3,6 @@
 AboutDialog::AboutDialog(QWidget *parent)
     : QDialog(parent) {
     ui.setupUi(this);
-    this->setFixedSize(600,400);
     this->setWindowTitle( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION) );
     QString text = tr(
     "<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
