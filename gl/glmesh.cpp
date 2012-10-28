@@ -218,7 +218,7 @@ void Mesh::clear()
 	colors.clear();
 	coords.clear();
 	tangents.clear();
-	binormals.clear();
+	bitangents.clear();
 	triangles.clear();
 	tristrips.clear();
 	weights.clear();
@@ -229,7 +229,7 @@ void Mesh::clear()
 	transNorms.clear();
 	transColors.clear();
 	transTangents.clear();
-	transBinormals.clear();
+	transBitangents.clear();
 
 	double_sided = false;
 }
@@ -580,7 +580,7 @@ void Mesh::transform()
 				for (int i = 0; i < colors.count(); i++)
 					colors[i].setRGBA(colors[i].red(), colors[i].green(), colors[i].blue(), 1);
 			tangents = nif->getArray<Vector3>( iData, "Tangents" );
-			binormals = nif->getArray<Vector3>( iData, "Binormals" );
+			bitangents = nif->getArray<Vector3>( iData, "Bitangents" );
 			
 			if ( norms.count() < verts.count() ) norms.clear();
 			if ( colors.count() < verts.count() ) colors.clear();
@@ -658,12 +658,12 @@ void Mesh::transform()
 						if ( data.count() == verts.count() * 4 * 3 * 2 )
 						{
 							tangents.resize( verts.count() );
-							binormals.resize( verts.count() );
+							bitangents.resize( verts.count() );
 							Vector3 * t = (Vector3 *) data.data();
 							for ( int c = 0; c < verts.count(); c++ )
 								tangents[c] = *t++;
 							for ( int c = 0; c < verts.count(); c++ )
-								binormals[c] = *t++;
+								bitangents[c] = *t++;
 						}
 					}
 				}
@@ -731,8 +731,8 @@ void Mesh::transformShapes()
 		transNorms.fill( Vector3() );
 		transTangents.resize( tangents.count() );
 		transTangents.fill( Vector3() );
-		transBinormals.resize( binormals.count() );
-		transBinormals.fill( Vector3() );
+		transBitangents.resize( bitangents.count() );
+		transBitangents.fill( Vector3() );
 		
 		Node * root = findParent( skelRoot );
 		
@@ -768,8 +768,8 @@ void Mesh::transformShapes()
 								transNorms[vindex] += trans.rotation * norms[ vindex ] * weight.second;
 							if ( tangents.count() > vindex )
 								transTangents[vindex] += trans.rotation * tangents[ vindex ] * weight.second;
-							if ( binormals.count() > vindex )
-								transBinormals[vindex] += trans.rotation * binormals[ vindex ] * weight.second;
+							if ( bitangents.count() > vindex )
+								transBitangents[vindex] += trans.rotation * bitangents[ vindex ] * weight.second;
 						}
 					}
 				}
@@ -794,8 +794,8 @@ void Mesh::transformShapes()
 						transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
 					if ( transTangents.count() > vw.vertex )
 						transTangents[ vw.vertex ] += natrix * tangents[ vw.vertex ] * vw.weight;
-					if ( transBinormals.count() > vw.vertex )
-						transBinormals[ vw.vertex ] += natrix * binormals[ vw.vertex ] * vw.weight;
+					if ( transBitangents.count() > vw.vertex )
+						transBitangents[ vw.vertex ] += natrix * bitangents[ vw.vertex ] * vw.weight;
 				}
 			}
 		}
@@ -804,8 +804,8 @@ void Mesh::transformShapes()
 			transNorms[n].normalize();
 		for ( int t = 0; t < transTangents.count(); t++ )
 			transTangents[t].normalize();
-		for ( int t = 0; t < transBinormals.count(); t++ )
-			transBinormals[t].normalize();
+		for ( int t = 0; t < transBitangents.count(); t++ )
+			transBitangents[t].normalize();
 		
 		bndSphere = BoundSphere( transVerts );
 		bndSphere.applyInv( viewTrans() );
@@ -816,7 +816,7 @@ void Mesh::transformShapes()
 		transVerts = verts;
 		transNorms = norms;
 		transTangents = tangents;
-		transBinormals = binormals;
+		transBitangents = bitangents;
 	}
 	
 	/*
@@ -1028,7 +1028,7 @@ void Mesh::drawSelection() const
 	}
 	
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" 
-	  || n == "UV Sets" || n == "Tangents" || n == "Binormals" )
+	  || n == "UV Sets" || n == "Tangents" || n == "Bitangents" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
@@ -1104,12 +1104,12 @@ void Mesh::drawSelection() const
 		
 		if ( n == "TSpace" )
 		{
-			for ( int j = 0; j < transVerts.count() && j < transTangents.count() && j < transBinormals.count(); j++ )
+			for ( int j = 0; j < transVerts.count() && j < transTangents.count() && j < transBitangents.count(); j++ )
 			{
 				glVertex( transVerts.value( j ) );
 				glVertex( transVerts.value( j ) + transTangents.value( j ) * normalScale );
 				glVertex( transVerts.value( j ) );
-				glVertex( transVerts.value( j ) + transBinormals.value( j ) * normalScale );
+				glVertex( transVerts.value( j ) + transBitangents.value( j ) * normalScale );
 			}
 		}
 		
@@ -1156,7 +1156,7 @@ void Mesh::drawSelection() const
 			glEnd();
 		}
 	}
-	if ( n == "Binormals" )
+	if ( n == "Bitangents" )
 	{
 		glDepthFunc( GL_LEQUAL );
 		glNormalColor();
@@ -1166,12 +1166,12 @@ void Mesh::drawSelection() const
 		if ( normalScale < 0.1f ) normalScale = 0.1f;
 
 		glBegin( GL_LINES );
-		for ( int j = 0; j < transVerts.count() && j < transBinormals.count(); j++ )
+		for ( int j = 0; j < transVerts.count() && j < transBitangents.count(); j++ )
 		{
 			glVertex( transVerts.value( j ) );
-			glVertex( transVerts.value( j ) + transBinormals.value( j ) * normalScale * 2 );
+			glVertex( transVerts.value( j ) + transBitangents.value( j ) * normalScale * 2 );
 			glVertex( transVerts.value( j ) );
-			glVertex( transVerts.value( j ) - transBinormals.value( j ) * normalScale / 2 );
+			glVertex( transVerts.value( j ) - transBitangents.value( j ) * normalScale / 2 );
 		}
 		glEnd();
 
@@ -1181,9 +1181,9 @@ void Mesh::drawSelection() const
 			glHighlightColor();
 			glBegin( GL_LINES );
 			glVertex( transVerts.value( i ) );
-			glVertex( transVerts.value( i ) + transBinormals.value( i ) * normalScale * 2);
+			glVertex( transVerts.value( i ) + transBitangents.value( i ) * normalScale * 2);
 			glVertex( transVerts.value( i ) );
-			glVertex( transVerts.value( i ) - transBinormals.value( i ) * normalScale / 2 );
+			glVertex( transVerts.value( i ) - transBitangents.value( i ) * normalScale / 2 );
 			glEnd();
 		}
 	}

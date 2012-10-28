@@ -955,7 +955,12 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	{
 		glPushMatrix();
 		Matrix4 tm = nif->get<Matrix4>( iShape, "Transform" );
-		glMultMatrix( tm );
+		// TODO find a better way to apply tm
+		Transform t;
+		Vector3 s;
+		tm.decompose(t.translation, t.rotation, s);
+		t.scale = (s[0] + s[1] + s[2]) / 3.0; // assume uniform
+		glMultMatrix( t );
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 		glPopMatrix();
 	}

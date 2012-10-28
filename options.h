@@ -156,6 +156,8 @@ public:
 	static QLocale translationLocale();
 	// Maximum string length (see NifIStream::init for the current usage)
 	//static int maxStringLength();
+	//! status of Collada Cull setting
+	static bool exportCullEnabled();
 	
 signals:
 	//! Signal emitted when a value changes
@@ -248,6 +250,10 @@ protected:
 	
 	QCheckBox * overrideMatCheck;
 	ColorWheel * matColors[4];
+
+	//////////////////////////////////////////////////////////////////////////
+	// Export Settings page
+	QCheckBox * exportCull;
 	
 	//////////////////////////////////////////////////////////////////////////
 	

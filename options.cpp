@@ -366,10 +366,11 @@ Options::Options()
 
       texPage->addWidget( CullExpr = new QLineEdit( cfg.value( "Cull Expression", "^collidee|^shadowcaster|^\\!LoD_cullme|^footprint" ).toString() ) );
       CullExpr->setToolTip( tr("Enter a regular expression. Nodes which names match the expression will be hidden") );
-      CullExpr->setEnabled( CullByID->isChecked() );
+// 	  leave RegExp input open as both rendering and collada cull sharing this
+//    CullExpr->setEnabled( CullByID->isChecked() );
+      CullExpr->setEnabled( true );
       connect( CullExpr, SIGNAL( textChanged( const QString & ) ), this, SIGNAL( sigChanged() ) );
-      connect( CullByID, SIGNAL( toggled( bool ) ), CullExpr, SLOT( setEnabled( bool ) ) );
-
+//    connect( CullByID, SIGNAL( toggled( bool ) ), CullExpr, SLOT( setEnabled( bool ) ) );
 
       texPage->popLayout();
       texPage->popLayout();
@@ -531,6 +532,19 @@ Options::Options()
 
       cfg.endGroup();
    }
+
+   GroupBox *exportPage;
+   tab->addTab( exportPage = new GroupBox(Qt::Vertical), tr("Export"));
+   {
+	   cfg.beginGroup( "Export Settings" );
+	   exportPage->pushLayout( tr("Export Settings"), Qt::Vertical, 1 );
+	   exportPage->addWidget( exportCull = new QCheckBox( tr("Use 'Cull Nodes by Name' rendering option to cull nodes on export") ),1,Qt::AlignTop);
+	   exportCull->setChecked( cfg.value("export_culling",false).toBool() );
+	   connect( exportCull, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+	   exportPage->popLayout();
+	   cfg.endGroup();
+   }
+
    // set render page as default
    tab->setCurrentWidget( texPage );
 
@@ -648,6 +662,10 @@ void Options::save()
 	//cfg.setValue( "Maximum String Length", maxStringLength() );
 
 	cfg.endGroup(); // Settings
+
+	cfg.beginGroup( "Export Settings" );
+	cfg.setValue( "export_culling", exportCullEnabled() );
+	cfg.endGroup(); // Export Settings
 }
 
 void Options::textureFolderAutoDetect()
@@ -1064,3 +1082,7 @@ int Options::maxStringLength()
 	return get()->StringLength->value();
 }
 */
+
+bool Options::exportCullEnabled() {
+	return get()->exportCull->isChecked();
+}

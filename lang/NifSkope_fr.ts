@@ -884,7 +884,7 @@
     </message>
     <message>
         <location filename="spells/tangentspace.cpp" line="65"/>
-        <source>need vertices, normals, texture coordinates and faces to calculate tangents and binormals</source>
+        <source>need vertices, normals, texture coordinates and faces to calculate tangents and bitangents</source>
         <translation>Pour calculer les tangentes et les binormales, il faut des sommets, des normales, des faces et des coordonnées de texture</translation>
     </message>
     <message>

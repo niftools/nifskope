@@ -22,7 +22,7 @@ bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & ind
 	if ( nif->getUserVersion() == 11 ) 
 		return true;
 
-	// 10.1.0.0 and greater can have tangents and binormals
+	// 10.1.0.0 and greater can have tangents and bitangents
 	if (  nif->checkVersion( 0x0A010000, 0 ) )
 		return true;
 
@@ -62,7 +62,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	
 	if ( verts.isEmpty() || norms.count() != verts.count() || texco.count() != verts.count() || triangles.isEmpty() )
 	{
-		qWarning() << Spell::tr( "need vertices, normals, texture coordinates and faces to calculate tangents and binormals" );
+		qWarning() << Spell::tr( "need vertices, normals, texture coordinates and faces to calculate tangents and bitangents" );
 		return iBlock;
 	}
 	
@@ -217,7 +217,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 			tspaceFlags = 0x10;
 		nif->set<int>( iShape, "TSpace Flag", tspaceFlags);
 		nif->set<int>( iShape, "Num UV Sets", numUVSets);
-		QModelIndex iBinorms = nif->getIndex( iData, "Binormals" );
+		QModelIndex iBinorms = nif->getIndex( iData, "Bitangents" );
 		QModelIndex iTangents = nif->getIndex( iData, "Tangents" );
 		nif->updateArray(iBinorms);
 		nif->updateArray(iTangents);
@@ -244,7 +244,7 @@ public:
 		if ( nif->getUserVersion() == 11 ) 
 			return true;
 
-		// 10.1.0.0 and greater can have tangents and binormals
+		// 10.1.0.0 and greater can have tangents and bitangents
 		if (  nif->checkVersion( 0x0A010000, 0 ) )
 			return true;
 

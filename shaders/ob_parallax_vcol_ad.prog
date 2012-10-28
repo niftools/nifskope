@@ -16,6 +16,6 @@ checkgroup end
 
 texcoords 0 base
 texcoords 1 tangents
-texcoords 2 binormals
+texcoords 2 bitangents
 
 shaders ob_vcolors_ad.vert ob_parallax.frag

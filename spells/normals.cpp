@@ -210,7 +210,7 @@ REGISTER_SPELL( spSmoothNormals )
 
 //! Normalises any single Vector3 or array.
 /**
- * Most used on Normals, Binormals and Tangents.
+ * Most used on Normals, Bitangents and Tangents.
  */
 class spNormalize : public Spell
 {
