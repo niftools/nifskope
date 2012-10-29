@@ -173,8 +173,13 @@ void NifSkope::about()
 	"See Qhull_COPYING.txt for details."
 	);
 
+#ifdef NIFSKOPE_REVISION
 	QMessageBox mb( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION), text, QMessageBox::Information,
 		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+#else
+	QMessageBox mb( tr("About NifSkope %1").arg(NIFSKOPE_VERSION), text, QMessageBox::Information,
+		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
+#endif
 	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
 	mb.exec();
 }

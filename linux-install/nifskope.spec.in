@@ -26,7 +26,7 @@ make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__install} -Dp -m0755 nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
+%{__install} -Dp -m0755 release/nifskope $RPM_BUILD_ROOT/%{_bindir}/nifskope
 %{__install} -Dp -m0644 nifskope.png $RPM_BUILD_ROOT/%{_datadir}/pixmaps/nifskope.png
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/doc
 %{__install} -d $RPM_BUILD_ROOT/%{_datadir}/nifskope/shaders
@@ -81,6 +81,16 @@ rm -rf $RPM_BUILD_ROOT
 %{!?_without_freedesktop:%{_datadir}/applications/%{desktop_vendor}-nifskope.desktop}
 
 %changelog
+* Sun Oct 28 2012 amorilia - 1.1.2-1
+- When combining material properties, keep original material names as much as possible (reported by koniption).
+- Fix display of transformed havok shapes (reported by koniption).
+- Skyrim material updates (contributed by ttl269).
+- Skyrim body part updates.
+- Document sane defaults for Skyrim bhkRigidBody "Unknown 7 Shorts" (reported by ttl296).
+- Rename: binormals are now more accurately called bitangents.
+- Collada export improvements (contributed by mharj).
+- Support node culling by regular expression in collada/obj export (contributed by mharj).
+- Fix block order of bhkCompressedMeshShapeData (reported by ttl269).
 * Mon Oct 1 2012 amorilia - 1.1.1-1
 - Fix unsigned int enum issue.
 * Tue Sep 18 2012 amorilia - 1.1.0-1

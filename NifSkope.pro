@@ -28,13 +28,26 @@ DESTDIR = .
 DEFINES += NIFSKOPE_VERSION=\\\"$$cat(VERSION)\\\"
 
 # build NIFSKOPE_REVISION macro
-unix {
-	system(git --version > /dev/null 2>&1):DEFINES += NIFSKOPE_REVISION=\\\"$$system(git log -1 --pretty=format:%h)\\\"
-	else:DEFINES += NIFSKOPE_REVISION=\\\"unknown\\\"
+GIT_HEAD = $$cat(.git/HEAD)
+# at this point GIT_HEAD either contains commit hash, or symbolic ref:
+# GIT_HEAD = 303c05416ecceb3368997c86676a6e63e968bc9b
+# GIT_HEAD = ref: refs/head/feature/blabla
+contains(GIT_HEAD, "ref:") {
+  # resolve symbolic ref
+  GIT_HEAD = .git/$$member(GIT_HEAD, 1)
+  # GIT_HEAD now points to the file containing hash,
+  # e.g. .git/refs/head/feature/blabla
+  exists($$GIT_HEAD) {
+    GIT_HEAD = $$cat($$GIT_HEAD)
+  } else {
+    clear(GIT_HEAD)
+  }
 }
-win32 {
-        system(git --version > NUL 2>&1):DEFINES += NIFSKOPE_REVISION=\\\"$$system(git log -1 --pretty=format:%h)\\\"
-        else:DEFINES += NIFSKOPE_REVISION=\\\"unknown\\\"
+count(GIT_HEAD, 1) {
+  # single component, hopefully the commit hash
+  # fetch first seven characters (abbreviated hash)
+  GIT_HEAD ~= s/^(.......).*/\\1/
+  DEFINES += NIFSKOPE_REVISION=\\\"$$GIT_HEAD\\\"
 }
 
 HEADERS += \
