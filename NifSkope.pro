@@ -46,7 +46,7 @@ contains(GIT_HEAD, "ref:") {
 count(GIT_HEAD, 1) {
   # single component, hopefully the commit hash
   # fetch first seven characters (abbreviated hash)
-  GIT_HEAD = $$find(GIT_HEAD, "^.......") # FIXME does not work for some reason
+  GIT_HEAD ~= s/^(.......).*/\\1/
   DEFINES += NIFSKOPE_REVISION=\\\"$$GIT_HEAD\\\"
 }
 
