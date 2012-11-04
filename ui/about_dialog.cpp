@@ -3,7 +3,11 @@
 AboutDialog::AboutDialog(QWidget *parent)
     : QDialog(parent) {
     ui.setupUi(this);
+#ifdef NIFSKOPE_REVISION
     this->setWindowTitle( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION) );
+#else
+    this->setWindowTitle( tr("About NifSkope %1").arg(NIFSKOPE_VERSION) );
+#endif
     QString text = tr(
     "<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
     "<p>NifSkope is based on NifTool's XML file format specification. "
