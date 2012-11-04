@@ -128,7 +128,8 @@ HEADERS += \
     widgets/refrbrowser.h \
     widgets/uvedit.h \
     widgets/valueedit.h \
-    widgets/xmlcheck.h
+    widgets/xmlcheck.h \
+    ui/about_dialog.h
 
 SOURCES += \
     basemodel.cpp \
@@ -209,10 +210,14 @@ SOURCES += \
     widgets/refrbrowser.cpp \
     widgets/uvedit.cpp \
     widgets/valueedit.cpp \
-    widgets/xmlcheck.cpp
+    widgets/xmlcheck.cpp \
+    ui/about_dialog.cpp
 
 RESOURCES += \
     nifskope.qrc
+
+FORMS += \
+	ui/about_dialog.ui
 
 fsengine {
     DEFINES += FSENGINE

@@ -4,6 +4,7 @@ Makefile.Debug
 Makefile.Release
 moc_*.cpp
 qrc_*.cpp
+ui_*.h
 
 # compiled 
 *.o
@@ -12,6 +13,9 @@ qrc_*.cpp
 .project
 .cproject
 .settings
+
+# qtcreator
+NifSkope.pro.user
 
 # binary
 NifSkope
