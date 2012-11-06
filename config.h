@@ -43,32 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Include this if you want to access the current version or persistent QSettings.
  */
 
-//! QSettings keys for older versions of nifskope
-/*!
- * Add versions to this list (most recent first) whenever incrementing NIFSKOPE_VERSION
- */
-const QStringList NIFSKOPE_OLDERVERSIONS = (QStringList()
-		<< "NifSkope-1.0.22"
-		<< "NifSkope-1.0.21"
-		<< "NifSkope-1.0.20"
-		<< "NifSkope-1.0.19"
-		<< "NifSkope-1.0.18"
-		<< "NifSkope-1.0.17"
-		<< "NifSkope-1.0.16"
-		<< "NifSkope-1.0.15"
-		<< "NifSkope-1.0.14"
-		<< "NifSkope-1.0.13"
-		<< "NifSkope-1.0.12"
-		<< "NifSkope-1.0.11"
-		<< "NifSkope-1.0.10"
-		<< "NifSkope-1.0.9"
-		<< "NifSkope-1.0.8"
-		<< "NifSkope-1.0.7"
-		<< "NifSkope-1.0.6"
-		<< "NifSkope-1.0.5"
-		<< "NifSkope");
-
 //! Create or use a QSettings variable for nifskope
-#define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope-"NIFSKOPE_VERSION )
+#define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope" )
 
 #endif
