@@ -5,6 +5,7 @@ This is version 1.1.3 of NifSkope.
 changes since 1.1.2:
 * Qmake getting git hash no longer relies on git executable.
 * Code refactor: xml for ui of about form.
+* Fix for registry entry proliferation (niftools issue #3584193, reported by neomonkeus).
 
 changes since 1.1.1:
 * When combining material properties, keep original material names as much as possible (reported by koniption).
