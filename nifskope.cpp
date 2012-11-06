@@ -101,46 +101,6 @@ FSManager * fsmanager = 0;
 
 //! \file nifskope.cpp The main file for NifSkope
 
-void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const
-{
-	if ((!cfg.contains(name)) && oldcfg.contains(name)) {
-		//qDebug() << "copying nifskope setting" << name;
-		cfg.setValue(name, oldcfg.value(name));
-	}
-}
-
-void NifSkope::migrateSettings() const
-{
-	// load current nifskope settings
-	NIFSKOPE_QSETTINGS(cfg);
-	// do nothing if already migrated; this prevents re-importing of corrupt / otherwise not-working values
-	if( cfg.contains( "migrated" ) ) return;
-	// check for older nifskope settings
-	for (QStringList::ConstIterator it = NIFSKOPE_OLDERVERSIONS.begin(); it != NIFSKOPE_OLDERVERSIONS.end(); ++it ) {
-		QSettings oldcfg( "NifTools", *it );
-		// check for missing keys and copy them from old settings
-		QStringList keys = oldcfg.allKeys();
-		for (QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key) {
-			//qDebug() << "checking" << *key << oldcfg.value(*key).type(); 
-			switch (oldcfg.value(*key).type()) {
-				case QVariant::Bool:
-				case QVariant::ByteArray:
-				case QVariant::Color:
-				case QVariant::Double:
-				case QVariant::Int:
-				case QVariant::String:
-				case QVariant::StringList:
-				case QVariant::UInt:
-					// copy settings for these types
-					copySettings(cfg, oldcfg, *key);
-				default:
-					; // do nothing
-			}
-		}
-	}
-	cfg.setValue( "migrated", 1 );
-}
-
 /*
  * main GUI window
  */
@@ -155,9 +115,6 @@ NifSkope::NifSkope()
 {
 	// init UI parts
 	aboutDialog = new AboutDialog(this);
-
-	// migrate settings from older versions of NifSkope
-	migrateSettings();
 
 	// create a new nif
 	nif = new NifModel( this );
