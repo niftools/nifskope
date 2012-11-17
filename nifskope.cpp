@@ -101,84 +101,30 @@ FSManager * fsmanager = 0;
 
 //! \file nifskope.cpp The main file for NifSkope
 
-void NifSkope::copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const
-{
-	if ((!cfg.contains(name)) && oldcfg.contains(name)) {
-		//qDebug() << "copying nifskope setting" << name;
-		cfg.setValue(name, oldcfg.value(name));
-	}
-}
-
 void NifSkope::migrateSettings() const
 {
 	// load current nifskope settings
 	NIFSKOPE_QSETTINGS(cfg);
-	// do nothing if already migrated; this prevents re-importing of corrupt / otherwise not-working values
-	if( cfg.contains( "migrated" ) ) return;
-	// check for older nifskope settings
-	for (QStringList::ConstIterator it = NIFSKOPE_OLDERVERSIONS.begin(); it != NIFSKOPE_OLDERVERSIONS.end(); ++it ) {
-		QSettings oldcfg( "NifTools", *it );
-		// check for missing keys and copy them from old settings
-		QStringList keys = oldcfg.allKeys();
+	// check if we are running a new version of nifskope
+	if (cfg.value("version").toString() != NIFSKOPE_VERSION) {
+		// check all keys and delete all binary ones
+		//to prevent portability problems between Qt versions
+		QStringList keys = cfg.allKeys();
 		for (QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key) {
-			//qDebug() << "checking" << *key << oldcfg.value(*key).type(); 
-			switch (oldcfg.value(*key).type()) {
-				case QVariant::Bool:
-				case QVariant::ByteArray:
-				case QVariant::Color:
-				case QVariant::Double:
-				case QVariant::Int:
-				case QVariant::String:
-				case QVariant::StringList:
-				case QVariant::UInt:
-					// copy settings for these types
-					copySettings(cfg, oldcfg, *key);
-				default:
-					; // do nothing
+			if (cfg.value(*key).type() == QVariant::ByteArray) {
+				qDebug() << "removing config setting" << *key
+				         << "whilst migrating settings from previous nifskope version";
+				cfg.remove(*key);
 			}
 		}
+		// set version key to current version
+		cfg.setValue("version", NIFSKOPE_VERSION);
 	}
-	cfg.setValue( "migrated", 1 );
 }
 
 /*
  * main GUI window
  */
-
-void NifSkope::about()
-{
-	QString text = tr(
-	"<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
-	"<p>NifSkope is based on NifTool's XML file format specification. "
-	"For more information visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
-	"<p>NifSkope is free software available under a BSD license. "
-	"The source is available via <a href='http://niftools.git.sourceforge.net/git/gitweb.cgi?p=niftools/nifskope'>git</a> "
-	"(<a href='git://niftools.git.sourceforge.net/gitroot/niftools/nifskope'>clone</a>) on <a href='http://sourceforge.net'>SourceForge</a>. "
-	"Instructions on compiling NifSkope are available on the <a href='http://niftools.sourceforge.net/wiki/NifSkope/Compile'>NifTools wiki</a>.</p>"
-	"<p>The most recent version of NifSkope can always be downloaded from the <a href='https://sourceforge.net/projects/niftools/files/nifskope/'>"
-	"NifTools SourceForge Project page</a>.</p>"
-// only the windows build uses havok
-// (Q_OS_WIN32 is also defined on win64)
-#ifdef Q_OS_WIN32
-	"<center><img src=':/img/havok_logo' /></center>"
-	"<p>NifSkope uses Havok(R) for the generation of mopp code. "
-	"(C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). "
-	"All Rights Reserved. "
-	"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>"
-#endif
-	"<center><img src=':/img/qhull_logo' /></center>"
-	"<p>NifSkope uses Qhull for the generation of convex hulls. "
-	"Copyright(c) 1993-2010  C.B. Barber and The Geometry Center. "
-	"Qhull is free software and may be obtained from <a href='http://www.qhull.org'>www.qhull.org</a>. "
-	"See Qhull_COPYING.txt for details."
-	);
-
-	QMessageBox mb( tr("About NifSkope %1 (revision %2)").arg(NIFSKOPE_VERSION).arg(NIFSKOPE_REVISION), text, QMessageBox::Information,
-		QMessageBox::Ok + QMessageBox::Default, 0, 0, this);
-	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
-	mb.exec();
-}
-
 void NifSkope::sltResetBlockDetails()
 {
 	if (tree)
@@ -188,6 +134,9 @@ void NifSkope::sltResetBlockDetails()
 NifSkope::NifSkope()
 	: QMainWindow(), selecting( false ), initialShowEvent( true )
 {
+	// init UI parts
+	aboutDialog = new AboutDialog(this);
+
 	// migrate settings from older versions of NifSkope
 	migrateSettings();
 
@@ -351,7 +300,7 @@ NifSkope::NifSkope()
 	connect( aNifToolsDownloads, SIGNAL( triggered() ), this, SLOT( openURL() ) );
 
 	aNifSkope = new QAction( tr("About &NifSkope"), this );
-	connect( aNifSkope, SIGNAL( triggered() ), this, SLOT( about() ) );
+    connect( aNifSkope, SIGNAL( triggered() ), aboutDialog, SLOT( open() ) );
 	
 	aAboutQt = new QAction( tr("About &Qt"), this );
 	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );

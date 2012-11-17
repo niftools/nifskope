@@ -63,6 +63,8 @@ class QUdpSocket;
 
 #include "message.h"
 
+#include "ui/about_dialog.h"
+
 //! \file nifskope.h The main header for NifSkope
 
 //! The main application class for NifSkope. 
@@ -130,9 +132,6 @@ public slots:
 	//! A slot for starting the XML checker.
 	void sltShredder();
 	
-	//! Display the "About NifSkope" window.
-	void about();
-
 	//! Reset "block details"
 	void sltResetBlockDetails();
 	
@@ -183,14 +182,11 @@ private:
 	void initDockWidgets();
 	void initToolBars();
 	void initMenu();
+
+    //! "About NifSkope" dialog.
+    QWidget *aboutDialog;
 	
 	void setViewFont( const QFont & );
-
-	//! Copy settings from one config to another, without overwriting keys.
-	/*!
-	 * This is a helper function for migrateSettings().
-	 */
-	void copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const;
 
 	//! Migrate settings from older versions of nifskope.
 	void migrateSettings() const;

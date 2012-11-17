@@ -72,6 +72,9 @@ FILES="NifSkope.pro \
     shaders/*.vert
     nifexpr.cpp
     nifexpr.h
+    ui/*.h
+    ui/*.cpp
+    ui/*.ui
     lang/*.ts
     lang/*.qm
     qhull.h
