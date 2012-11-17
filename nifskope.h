@@ -188,12 +188,6 @@ private:
 	
 	void setViewFont( const QFont & );
 
-	//! Copy settings from one config to another, without overwriting keys.
-	/*!
-	 * This is a helper function for migrateSettings().
-	 */
-	void copySettings(QSettings & cfg, const QSettings & oldcfg, const QString name) const;
-
 	//! Migrate settings from older versions of nifskope.
 	void migrateSettings() const;
 

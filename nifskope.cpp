@@ -101,6 +101,27 @@ FSManager * fsmanager = 0;
 
 //! \file nifskope.cpp The main file for NifSkope
 
+void NifSkope::migrateSettings() const
+{
+	// load current nifskope settings
+	NIFSKOPE_QSETTINGS(cfg);
+	// check if we are running a new version of nifskope
+	if(cfg.value("version").toString() != NIFSKOPE_VERSION) {
+		// check all keys and delete all binary ones
+		//to prevent portability problems between Qt versions
+		QStringList keys = cfg.allKeys();
+		for (QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key) {
+			if (cfg.value(*key).type() == QVariant::ByteArray) {
+				qDebug() << "removing config setting" << *key
+				         << "whilst migrating settings from previous nifskope version";
+				cfg.remove(*key);
+			}
+		}
+		// set version key to current version
+		cfg.setValue("version", NIFSKOPE_VERSION);
+	}
+}
+
 /*
  * main GUI window
  */
@@ -115,6 +136,9 @@ NifSkope::NifSkope()
 {
 	// init UI parts
 	aboutDialog = new AboutDialog(this);
+
+	// migrate settings from older versions of NifSkope
+	migrateSettings();
 
 	// create a new nif
 	nif = new NifModel( this );
