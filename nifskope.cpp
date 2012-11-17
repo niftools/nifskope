@@ -106,7 +106,7 @@ void NifSkope::migrateSettings() const
 	// load current nifskope settings
 	NIFSKOPE_QSETTINGS(cfg);
 	// check if we are running a new version of nifskope
-	if(cfg.value("version").toString() != NIFSKOPE_VERSION) {
+	if (cfg.value("version").toString() != NIFSKOPE_VERSION) {
 		// check all keys and delete all binary ones
 		//to prevent portability problems between Qt versions
 		QStringList keys = cfg.allKeys();
