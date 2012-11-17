@@ -9,7 +9,7 @@ AboutDialog::AboutDialog(QWidget *parent)
     this->setWindowTitle( tr("About NifSkope %1").arg(NIFSKOPE_VERSION) );
 #endif
     QString text = tr(
-    "<p style='white-space:pre'>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
+    "<p>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
     "<p>NifSkope is based on NifTool's XML file format specification. "
     "For more information visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
     "<p>NifSkope is free software available under a BSD license. "
