@@ -8,6 +8,7 @@ bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & ind
 {
 	QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 	if ( !( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
+		&& !( nif->isNiBlock( index, "BSLODTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
 		&& !( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) )
 		return false;
 

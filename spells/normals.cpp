@@ -25,7 +25,7 @@ public:
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex iData = nif->getBlock( index );
-		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
 			iData = nif->getBlock( nif->getLink( index, "Data" ) );
 		if ( nif->isNiBlock( iData, "NiTriShapeData" ) || nif->isNiBlock( iData, "NiTriStripsData" ) )
 			return iData;
