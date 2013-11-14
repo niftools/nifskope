@@ -116,7 +116,7 @@ void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAng
 void drawSphere( Vector3 c, float r, int sd = 8 );
 void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
 void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );
-void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals );
+void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals, float scale = 1.0f );
 void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd = 16, bool solid = false );
 void drawRail( const Vector3 &a, const Vector3 &b );
 

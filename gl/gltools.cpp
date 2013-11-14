@@ -561,15 +561,15 @@ void drawDashLine( Vector3 a, Vector3 b, int sd )
 	glEnd();
 }
 
-void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals )
+void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals, float scale )
 {
 	glBegin( GL_LINES );
 	for ( int i = 1; i < vertices.count(); i++ )
 	{
 		for ( int j = 0; j < i; j++ )
 		{
-			glVertex( vertices[i] );
-			glVertex( vertices[j] );
+			glVertex( vertices[i] * scale );
+			glVertex( vertices[j] * scale );
 		}
 	}
 	/*
