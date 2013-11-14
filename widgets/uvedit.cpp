@@ -922,6 +922,21 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 						}
 					}
 				}
+				else
+				{
+					iTexProp = nif->getBlock( l, "BSEffectShaderProperty");
+					if ( iTexProp.isValid() )
+					{
+						QString texture = nif->get<QString>(iTexProp, "Source Texture");
+						if ( texture != "" )
+						{
+							texfile = TexCache::find( texture, nif->getFolder() );
+							return true;
+						}
+
+						
+					}
+				}
 			}
 		}
 	}
