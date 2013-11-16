@@ -45,6 +45,15 @@ public:
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 		if( !iData.isValid() )
 			return index;
+
+		float havokScale = 1.0f;
+
+		if ( nif->getUserVersion() >= 12 )
+		{
+			havokScale = 10.0f;
+		}
+
+		havokScale *= havokConst;
 		
 		/* those will be filled with the CVS data */
 		QVector<Vector4> convex_verts, convex_norms;
@@ -96,7 +105,7 @@ public:
 		QList<Vector4> sortedVerts;
 		foreach( Vector4 vert, hullVerts )
 		{
-			vert /= havokConst;
+			vert /= havokScale;
 			if( ! sortedVerts.contains( vert ) )
 			{
 				sortedVerts.append( vert );
@@ -114,7 +123,7 @@ public:
 		QList<Vector4> sortedNorms;
 		foreach( Vector4 norm, hullNorms )
 		{
-			norm = Vector4( Vector3( norm ), norm[3] / havokConst );
+			norm = Vector4( Vector3( norm ), norm[3] / havokScale );
 			if( ! sortedNorms.contains( norm ) )
 			{
 				sortedNorms.append( norm );
@@ -142,7 +151,8 @@ public:
 		nif->setArray<Vector4>( iCVS, "Normals", convex_norms );
 		
 		// radius is always 0.1?
-		nif->set<float>( iCVS, "Radius", 0.1 );
+		// TODO: Figure out if radius is not arbitrarily set in vanilla NIFs
+		nif->set<float>( iCVS, "Radius", 0.1f );
 		
 		// for arrow detection: [0, 0, -0, 0, 0, -0]
 		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 2, 0 ), -0.0 );
