@@ -758,6 +758,10 @@ void Node::transform()
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 	if ( iBlock.isValid() && nif )
 	{
+
+		// Scale up for Skyrim
+		float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
+
 		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 		if ( ! iObject.isValid() )
 			iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
@@ -767,11 +771,11 @@ void Node::transform()
 			if ( iBody.isValid() )
 			{
 				Transform t;
-				t.scale = 7;
+				t.scale = 7.0f;
 				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) )
 				{
 					t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-					t.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 70.0f );
+					t.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7.0f * havokScale );
 				}
 				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), worldTrans() * t );
 			}
