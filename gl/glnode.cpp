@@ -1248,15 +1248,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
 			for ( int r = 0; r < nif->rowCount( iChunks ); r++ )
 			{
-				Vector4 translation = nif->get<Vector4>( iChunks.child(r, 0), "Translation" );
-				quint32 numVerts = nif->get<quint32>( iChunks.child(r, 0), "Num Vertices" );
-				QVector<quint16> verts = nif->getArray<quint16>( iChunks.child(r, 0), "Vertices" );
+				Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child(r, 0), "Translation" );
+				quint32 numOffsets = nif->get<quint32>( iChunks.child(r, 0), "Num Vertices" );
 				quint32 numIndices = nif->get<quint32>( iChunks.child(r, 0), "Num Indices" );
-				QVector<quint16> indices = nif->getArray<quint16>( iChunks.child(r, 0), "Indices" );
 				quint32 numStrips = nif->get<quint32>( iChunks.child(r, 0), "Num Strips" );
+				QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child(r, 0), "Vertices" );
+				QVector<quint16> indices = nif->getArray<quint16>( iChunks.child(r, 0), "Indices" );
 				QVector<quint16> strips = nif->getArray<quint16>( iChunks.child(r, 0), "Strips" );
 
-				QVector<Vector4> vertices(numVerts/3);
+				QVector<Vector4> vertices( numOffsets / 3 );
 
 				int numStripVerts = 0;
 				int offset = 0;
@@ -1266,9 +1266,9 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					numStripVerts += strips[v];
 				}
 
-				for ( int n = 0; n < ( (int)numVerts / 3 ); n++ )
+				for ( int n = 0; n < ( (int)numOffsets / 3 ); n++ )
 				{
-					vertices[n] = translation + Vector4(verts[3*n], verts[3*n+1], verts[3*n+2], 0) / 1000.0f;
+					vertices[n] = chunkOrigin + Vector4(offsets[3*n], offsets[3*n+1], offsets[3*n+2], 0) / 1000.0f;
 					vertices[n] *= havokScale;
 				}
 				
