@@ -93,7 +93,8 @@ static char const * transform_xpm[] = {
 bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "NiNode" )
-			|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" );
+			|| nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "BSLODTriShape" 
+			|| nif->itemName( index ) == "NiTriStrips" );
 }
 
 QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & index )
@@ -126,7 +127,7 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 	else
 	{
 		QModelIndex iData;
-		if ( nif->itemName( index ) == "NiTriShape") 
+		if ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "BSLODTriShape") 
 			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriShapeData" );
 		else if ( nif->itemName( index ) == "NiTriStrips" ) 
 			iData = nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );

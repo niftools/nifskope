@@ -125,7 +125,7 @@ QIcon * tex42_xpm_icon = 0;
 //! Find the reference to shape data from a model and index
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
-	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
 		return nif->getBlock( nif->getLink( index, "Data" ) );
 	else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
 		return index;
@@ -247,7 +247,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemName(index) == "NiTriShape" || nif->itemName(index) == "NiTriStrips" );
+		return ( nif->itemName(index) == "NiTriShape" || nif->itemName(index) == "NiTriStrips" || nif->itemName(index) == "BSLODTriShape" );
 
 		//QModelIndex iUVs = getUV( nif, index );
 		//return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;

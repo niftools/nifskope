@@ -758,6 +758,10 @@ void Node::transform()
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 	if ( iBlock.isValid() && nif )
 	{
+
+		// Scale up for Skyrim
+		float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
+
 		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 		if ( ! iObject.isValid() )
 			iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
@@ -767,11 +771,11 @@ void Node::transform()
 			if ( iBody.isValid() )
 			{
 				Transform t;
-				t.scale = 7;
+				t.scale = 7.0f;
 				if ( nif->isNiBlock( iBody, "bhkRigidBodyT" ) )
 				{
 					t.rotation.fromQuat( nif->get<Quat>( iBody, "Rotation" ) );
-					t.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7 );
+					t.translation = Vector3( nif->get<Vector4>( iBody, "Translation" ) * 7.0f * havokScale );
 				}
 				scene->bhkBodyTrans.insert( nif->getBlockNumber( iBody ), worldTrans() * t );
 			}
@@ -924,6 +928,9 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		return;
 	
 	stack.push( iShape );
+
+	// Scale up for Skyrim
+	float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
 	
 	//qWarning() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 	
@@ -959,6 +966,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		Transform t;
 		Vector3 s;
 		tm.decompose(t.translation, t.rotation, s);
+		t.translation *= havokScale;
 		t.scale = (s[0] + s[1] + s[2]) / 3.0; // assume uniform
 		glMultMatrix( t );
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
@@ -971,7 +979,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
-		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) );
+		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) * havokScale );
 	}
 	else if ( name == "bhkMultiSphereShape" )
 	{
@@ -994,7 +1002,8 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 		Vector3 v = nif->get<Vector3>( iShape, "Dimensions" );
-		drawBox( v, - v );
+		v *= havokScale;
+		drawBox( v, -v );
 	}
 	else if ( name == "bhkCapsuleShape" )
 	{
@@ -1003,7 +1012,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
-		drawCapsule( nif->get<Vector3>( iShape, "First Point" ), nif->get<Vector3>( iShape, "Second Point" ), nif->get<float>( iShape, "Radius" ) );
+		drawCapsule( nif->get<Vector3>( iShape, "First Point" ) * havokScale, nif->get<Vector3>( iShape, "Second Point" ) * havokScale, nif->get<float>( iShape, "Radius" ) * havokScale );
 	}
 	else if ( name == "bhkNiTriStripsShape" )
 	{
@@ -1026,6 +1035,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
 				
 				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+				glDisable(GL_CULL_FACE);
 				glBegin( GL_TRIANGLES );
 				
 				QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
@@ -1051,6 +1061,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				}
 				
 				glEnd();
+				glEnable(GL_CULL_FACE);
 				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 			}
 		}
@@ -1063,7 +1074,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
-		drawConvexHull( nif->getArray<Vector4>( iShape, "Vertices" ), nif->getArray<Vector4>( iShape, "Normals" ) );
+		drawConvexHull( nif->getArray<Vector4>( iShape, "Vertices" ), nif->getArray<Vector4>( iShape, "Normals" ), havokScale );
 	}
 	else if ( name == "bhkMoppBvTreeShape" )
 	{
@@ -1193,6 +1204,124 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 				}
 			}
 		}
+	}
+	else if ( name == "bhkCompressedMeshShape" )
+	{
+		glPushMatrix();
+		float s = 1.0f;
+		glScalef( s, s, s );
+
+		//glLoadName( nif->getBlockNumber( iShape ) );
+		if (Node::SELECTING) {
+			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
+			glColor4ubv( (GLubyte *)&s_nodeId );
+		}
+
+		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
+		Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0);
+
+		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+		if ( iData.isValid() )
+		{
+			QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
+			QModelIndex iBigTris = nif->getIndex( iData, "Big Tris" );
+
+			QVector<Vector4> verts = nif->getArray<Vector4>( iBigVerts );
+
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+			glDisable(GL_CULL_FACE);
+
+			for ( int r = 0; r < nif->rowCount( iBigTris ); r++ )
+			{
+				quint16 a = nif->get<quint16>( iBigTris.child(r, 0), "Triangle 1" );
+				quint16 b = nif->get<quint16>( iBigTris.child(r, 0), "Triangle 2" );
+				quint16 c = nif->get<quint16>( iBigTris.child(r, 0), "Triangle 3" );
+
+				glBegin( GL_TRIANGLES );
+
+				glVertex( verts[a] * havokScale );
+				glVertex( verts[b] * havokScale );
+				glVertex( verts[c] * havokScale );
+
+				glEnd();
+			}
+
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+			glEnable(GL_CULL_FACE);
+
+			QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
+			for ( int r = 0; r < nif->rowCount( iChunks ); r++ )
+			{
+				Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child(r, 0), "Translation" );
+				quint32 numOffsets = nif->get<quint32>( iChunks.child(r, 0), "Num Vertices" );
+				quint32 numIndices = nif->get<quint32>( iChunks.child(r, 0), "Num Indices" );
+				quint32 numStrips = nif->get<quint32>( iChunks.child(r, 0), "Num Strips" );
+				QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child(r, 0), "Vertices" );
+				QVector<quint16> indices = nif->getArray<quint16>( iChunks.child(r, 0), "Indices" );
+				QVector<quint16> strips = nif->getArray<quint16>( iChunks.child(r, 0), "Strips" );
+
+				QVector<Vector4> vertices( numOffsets / 3 );
+
+				int numStripVerts = 0;
+				int offset = 0;
+
+				for ( int v = 0; v < (int)numStrips; v++ ) 
+				{
+					numStripVerts += strips[v];
+				}
+
+				for ( int n = 0; n < ( (int)numOffsets / 3 ); n++ )
+				{
+					vertices[n] = chunkOrigin + Vector4(offsets[3*n], offsets[3*n+1], offsets[3*n+2], 0) / 1000.0f;
+					vertices[n] *= havokScale;
+				}
+				
+				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+				glDisable(GL_CULL_FACE);
+
+				// Stripped tris
+				for ( int s = 0; s < (int)numStrips; s++ )
+				{
+
+					for ( int idx = 0; idx < strips[s] - 2; idx++ )
+					{
+						
+						glBegin( GL_TRIANGLES );
+
+						glVertex( vertices[indices[offset + idx]] );
+						glVertex( vertices[indices[offset + idx + 1]] );
+						glVertex( vertices[indices[offset + idx + 2]] );
+
+						glEnd();
+						
+					}
+
+					offset += strips[s];
+
+				}
+				
+				// Non-stripped tris
+				for ( int f = 0; f < (int)(numIndices - offset); f+=3 )
+				{
+					glBegin( GL_TRIANGLES );
+
+					glVertex( vertices[indices[offset + f]] );
+					glVertex( vertices[indices[offset + f + 1]] );
+					glVertex( vertices[indices[offset + f + 2]] );
+
+					glEnd();
+
+				}
+									
+				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+				glEnable(GL_CULL_FACE);
+
+			}
+
+		}
+		
+		glPopMatrix();
+		
 	}
 	
 	stack.pop();
@@ -1343,8 +1472,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 axleB2( axleB2temp );
 		*/
 		
-		const float minAngle = - PI;
-		const float maxAngle = + PI;
+		const float minAngle = (float)-PI;
+		const float maxAngle = (float)+PI;
 		
 		glPushMatrix();
 		glMultMatrix( tBodies.value( 0 ) );
@@ -1456,7 +1585,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		Transform t;
 		float angle = atan2f( slidingAxis[1], slidingAxis[0] );
 		if ( slidingAxis[0] < 0.0001f && slidingAxis[1] < 0.0001f ) {
-			angle = PI / 2;
+			angle = (float)PI / 2.0f;
 		}
 
 		t.translation = d1;
@@ -1472,7 +1601,7 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 		/*draw second marker*/
 		t.translation = Vector3( minDistance < maxDistance ? ( d2 - d1 ).length() : 0.0f, 0.0f, 0.0f );
-		t.rotation.fromEuler( 0.0f, 0.0f, PI );
+		t.rotation.fromEuler( 0.0f, 0.0f, (float)PI );
 		glMultMatrix( t );
 
 		drawMarker( &BumperMarker01 );
