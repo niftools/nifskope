@@ -855,6 +855,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			int cNumUVSets = nif->get<int>( iData, "Num UV Sets");// keep things the way they are
 			nif->set<int>( iData, "Num UV Sets", 1 | cNumUVSets );// keep things the way they are
 			nif->set<int>( iData, "Num UV Sets 2", 1 | cNumUVSets );// keep things the way they are
+			nif->set<int>( iData, "BS Num UV Sets", 4097 );
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 			if ( ! iTexCo.isValid() )
 				iTexCo = nif->getIndex( iData, "UV Sets 2" );
