@@ -230,12 +230,12 @@
     <message>
         <location filename="nifmodel.cpp" line="178"/>
         <source>Unsupported &apos;Startup Version&apos; %1 specified, reverting to 20.0.0.5</source>
-        <translation type="unfinished"></translation>
+        <translation type="&apos;Version de Démarrage&apos; non supportée %1 spécifiée, retour en 20.0.0.5"></translation>
     </message>
     <message>
         <location filename="nifmodel.cpp" line="1567"/>
         <source>device position incorrect after block number %1 (%2) at %3 ended at %4 expected %5</source>
-        <translation type="unfinished"></translation>
+        <translation type="Position d&apos;objet incorrecte après bloc %1 (%2) à %3 Fin à %4 Attendue à %5"></translation>
     </message>
 </context>
 <context>
@@ -313,7 +313,7 @@
     <message>
         <location filename="nifskope.cpp" line="298"/>
         <source>NifSkope Help &amp;&amp; Bug Report &amp;Forum</source>
-        <translation>&amp;Forum d&apos;aide &amp;&amp; de rapport de bug de NifSkope</translation>
+        <translation>Aide de Nifskope &amp;&amp; report de bug</translation>
     </message>
     <message>
         <location filename="nifskope.cpp" line="302"/>
@@ -540,7 +540,7 @@
     <message>
         <location filename="spells/animation.cpp" line="41"/>
         <source>this is not a normal .kf file; there should be only NiControllerSequences as root blocks</source>
-        <translation>Il ne s&apos;agit pas d&apos;un fichier .KF normal; seul un bloc racine peut être un NiControllerSequence</translation>
+        <translation>Ceci n&apos;est pas un fichier .KF normal; seul NiControllerSequence peut être un bloc racine</translation>
     </message>
     <message>
         <location filename="spells/animation.cpp" line="47"/>
@@ -615,7 +615,7 @@
     <message>
         <location filename="spells/havok.cpp" line="227"/>
         <source>Pack Strips</source>
-        <translation type="unfinished"></translation>
+        <translation type="Packer Stripification"></translation>
     </message>
     <message>
         <location filename="spells/havok.cpp" line="228"/>
@@ -1006,7 +1006,7 @@
     <message>
         <location filename="spells/havok.cpp" line="186"/>
         <source>Calculate Spring Length</source>
-        <translation>Calculer le ressort</translation>
+        <translation>Calculer la longueur du ressort</translation>
     </message>
     <message>
         <location filename="spells/havok.cpp" line="187"/>
