@@ -178,7 +178,7 @@ void NifModel::clear()
 	insertType( root, NifData( "NiFooter", "Footer" ) );
 	version = version2number( Options::startupVersion() );
 	if( !isVersionSupported(version) ) {
-		msg( Message() << tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toAscii() );
+		msg( Message() << tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toLatin1() );
 		version = 0x14000005;
 	}
 	reset();
@@ -1697,7 +1697,7 @@ bool NifModel::load( QIODevice & device )
 					{
 						// unable to seek to location... abort
 						if (device.seek(curpos + size))
-							msg( Message() << tr("device position incorrect after block number %1 (%2) at 0x%3 ended at 0x%4 (expected 0x%5)").arg( c ).arg( blktyp ).arg(QString::number(curpos, 16)).arg(QString::number(pos, 16)).arg(QString::number(curpos+size, 16)).toAscii() );
+							msg( Message() << tr("device position incorrect after block number %1 (%2) at 0x%3 ended at 0x%4 (expected 0x%5)").arg( c ).arg( blktyp ).arg(QString::number(curpos, 16)).arg(QString::number(pos, 16)).arg(QString::number(curpos+size, 16)).toLatin1() );
 						else
 							throw tr("failed to reposition device at block number %1 (%2) previous block was %3").arg( c ).arg( blktyp ).arg( root->child( c )->name() );
 
@@ -1777,7 +1777,7 @@ bool NifModel::load( QIODevice & device )
 	}
 	catch ( QString err )
 	{
-		msg( Message() << err.toAscii().constData() );
+		msg( Message() << err.toLatin1().constData() );
 		reset();
 		return false;
 	}
@@ -1825,14 +1825,14 @@ bool NifModel::save( QIODevice & device ) const
 						QString string = "Top Level Object";
 						int len = string.length();
 						device.write( (char *) &len, 4 );
-						device.write( (const char *) string.toAscii(), len );
+						device.write( (const char *) string.toLatin1(), len );
 					}
 				}
 
 				QString string = itemName( index( c, 0 ) );
 				int len = string.length();
 				device.write( (char *) &len, 4 );
-				device.write( (const char *) string.toAscii(), len );
+				device.write( (const char *) string.toLatin1(), len );
 
 				if ( version < 0x0303000d )
 				{
@@ -1852,7 +1852,7 @@ bool NifModel::save( QIODevice & device ) const
 		QString string = "End Of File";
 		int len = string.length();
 		device.write( (char *) &len, 4 );
-		device.write( (const char *) string.toAscii(), len );
+		device.write( (const char *) string.toLatin1(), len );
 	}
 
 	return true;

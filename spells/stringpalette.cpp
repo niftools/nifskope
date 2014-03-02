@@ -189,7 +189,7 @@ public:
 		
 		QByteArray bytes = nif->get<QByteArray>( iPalette, "Palette" );
 		int ofs = bytes.count();
-		bytes += string.toAscii();
+		bytes += string.toLatin1();
 		bytes.append( '\0' );
 		nif->set<QByteArray>( iPalette, "Palette", bytes );
 		return ofs;

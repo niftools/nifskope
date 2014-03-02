@@ -214,7 +214,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 	}
 	catch ( QString e )
 	{
-		qWarning() << e.toAscii().data();
+		qWarning() << e.toLatin1().data();
 	}
 }
 
@@ -538,7 +538,7 @@ public:
 		}
 		catch ( QString e )
 		{
-			qWarning() << e.toAscii().data();
+			qWarning() << e.toLatin1().data();
 		}
 		
 		return index;

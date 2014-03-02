@@ -66,7 +66,7 @@ public:
 				{
 					QBuffer data;
 					data.open( QBuffer::WriteOnly );
-					data.write( nif->itemName( iBlock ).toAscii() );
+					data.write( nif->itemName( iBlock ).toLatin1() );
 					nif->save( data, iBlock );
 					props.insert( b, data.buffer() );
 				}

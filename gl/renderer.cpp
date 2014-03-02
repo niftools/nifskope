@@ -234,7 +234,7 @@ bool Renderer::Shader::load( const QString & filepath )
 	catch ( QString err )
 	{
 		status = false;
-		qWarning() << "error loading shader" << name << ":\r\n" << err.toAscii().data();
+		qWarning() << "error loading shader" << name << ":\r\n" << err.toLatin1().data();
 		return false;
 	}
 	status = true;
@@ -359,7 +359,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 	catch ( QString x )
 	{
 		status = false;
-		qWarning() << "error loading shader program " << name << ":\r\n" << x.toAscii().data();
+		qWarning() << "error loading shader program " << name << ":\r\n" << x.toLatin1().data();
 		return false;
 	}
 	status = true;

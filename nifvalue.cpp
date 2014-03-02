@@ -1156,7 +1156,7 @@ bool NifOStream::write( const NifValue & val )
 			return device->write( (char *) static_cast<Color4*>( val.val.data )->rgba, 16 ) == 16;
 		case NifValue::tSizedString:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			//string.replace( "\\r", "\r" );
 			//string.replace( "\\n", "\n" );
 			int len = string.size();
@@ -1166,7 +1166,7 @@ bool NifOStream::write( const NifValue & val )
 		}
 		case NifValue::tShortString:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
 			if ( string.size() > 254 )	string.resize( 254 );
@@ -1177,7 +1177,7 @@ bool NifOStream::write( const NifValue & val )
 		}
 		case NifValue::tText:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
@@ -1186,14 +1186,14 @@ bool NifOStream::write( const NifValue & val )
 		case NifValue::tHeaderString:
 		case NifValue::tLineString:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			if ( device->write( (const char *) string, string.length() ) != string.length() )
 				return false;
 			return ( device->write( "\n", 1 ) == 1 );
 		}
 		case NifValue::tChar8String:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			quint32 n = std::min<quint32>(8, string.length());
 			if ( device->write( (const char *) string, n ) != n )
 				return false;
@@ -1248,7 +1248,7 @@ bool NifOStream::write( const NifValue & val )
 				QByteArray string;
 				if( val.val.data != 0 )
 				{
-					string = static_cast<QString*>( val.val.data )->toAscii();
+					string = static_cast<QString*>( val.val.data )->toLatin1();
 				}
 				//string.replace( "\\r", "\r" );
 				//string.replace( "\\n", "\n" );
@@ -1323,14 +1323,14 @@ int NifSStream::size( const NifValue & val )
 			return 16;
 		case NifValue::tSizedString:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			//string.replace( "\\r", "\r" );
 			//string.replace( "\\n", "\n" );
 			return 4 + string.size();
 		}
 		case NifValue::tShortString:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			//string.replace( "\\r", "\r" );
 			//string.replace( "\\n", "\n" );
 			if ( string.size() > 254 )	string.resize( 254 );
@@ -1338,13 +1338,13 @@ int NifSStream::size( const NifValue & val )
 		}
 		case NifValue::tText:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			return 4 + string.size();
 		}
 		case NifValue::tHeaderString:
 		case NifValue::tLineString:
 		{
-			QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			return string.length() + 1;
 		}
 		case NifValue::tChar8String:
@@ -1375,7 +1375,7 @@ int NifSStream::size( const NifValue & val )
 			}
 			else
 			{
-				QByteArray string = static_cast<QString*>( val.val.data )->toAscii();
+				QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 				//string.replace( "\\r", "\r" );
 				//string.replace( "\\n", "\n" );
 				return 4 + string.size();

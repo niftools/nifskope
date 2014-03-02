@@ -963,7 +963,7 @@ void exportCol( const NifModel * nif,QFileInfo fileInfo ) {
 	QDomElement ivl = doc.createElement("instance_visual_scene");
 	ivl.setAttribute("url","#NifRootScene");
 	scene.appendChild(ivl);
-	fobj.write(doc.toString().toAscii());
+	fobj.write(doc.toString().toLatin1());
 	settings.setValue( "Path", QString("%1/").arg(QFileInfo(fobj.fileName()).path()) );
 	QTextStream sobj( &fobj ); // let's save xml
 	fobj.close();

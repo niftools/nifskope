@@ -986,7 +986,7 @@ void NifSkope::dispatchMessage( const Message & msg )
 			qCritical() << msg;
 			break;
 		case QtFatalMsg:
-			qFatal( QString( msg ).toAscii().data() );
+			qFatal( QString( msg ).toLatin1().data() );
 			break;
 		case QtWarningMsg:
 			qWarning() << msg;
