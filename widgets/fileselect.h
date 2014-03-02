@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QWidget>
 
 class QCompleter;
-class QDirModel;
+class QFileSystemModel;
 
 //! A widget for file selection, both via a browser window and via editing a string.
 /*!
@@ -116,7 +116,7 @@ protected:
 	QLineEdit * line;
 	QAction   * action;
 	
-	QDirModel * dirmdl;
+	QFileSystemModel * dirmdl;
 	QCompleter * completer;
 	QStringList fltr;
 	

@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QCompleter>
 #include <QContextMenuEvent>
-#include <QDirModel>
+#include <QFileSystemModel>
 #include <QFileDialog>
 #include <QLayout>
 #include <QMenu>
@@ -133,8 +133,9 @@ void FileSelector::setCompletionEnabled( bool x )
 				break;
 		}
 		
-		dirmdl = new QDirModel( fltr, fm, QDir::DirsFirst | QDir::Name, this );
-		dirmdl->setLazyChildCount( true );
+		dirmdl = new QFileSystemModel( this );
+		dirmdl->setRootPath( QDir::currentPath() );
+		dirmdl->setFilter( fm );
 		line->setCompleter( completer = new QCompleter( dirmdl, this ) );
 	}
 	else if ( ! x && dirmdl )
@@ -215,11 +216,16 @@ void FileSelector::browse()
 			break;
 		case LoadFile:
 			// Qt uses ;; as separator if multiple types are available
-			{ QStringList allfltr = fltr; allfltr.insert(0, fltr.join( " " ));
-			  x = QFileDialog::getOpenFileName( this, tr("Choose a file"), file(), allfltr.join( ";;" ) );
-			} break;
+			{
+				QStringList allfltr = fltr;
+				x = QFileDialog::getOpenFileName( this, tr("Choose a file"), file(), allfltr.join( ";;" ) );
+			}
+			break;
 		case SaveFile:
-			x = QFileDialog::getSaveFileName( this, tr("Choose a file"), file(), fltr.join( ";;" ) );
+			{
+				QStringList saveFltr = fltr; saveFltr.removeAt(0); // Remove "All Files"
+				x = QFileDialog::getSaveFileName( this, tr("Choose a file"), file(), saveFltr.join( ";;" ) );
+			}
 			break;
 	}
 	

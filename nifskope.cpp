@@ -375,7 +375,12 @@ NifSkope::NifSkope()
 	tool->setObjectName( "toolbar" );
 	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	
-	QStringList fileExtensions( QStringList() << "*.nif" << "*.kf" << "*.kfa" << "*.kfm" << "*.nifcache" << "*.texcache" << "*.pcpatch" << "*.jmi" );
+	QStringList fileExtensions;
+	fileExtensions << "All Files (*.nif *.kf *.kfa *.kfm *.nifcache *.texcache *.pcpatch *.jmi)"
+				   << "NIF (*.nif)" << "Keyframe (*.kf)"
+				   << "Keyframe Animation (*.kfa)" << "Keyframe Motion (*.kfm)"
+				   << "NIFCache (*.nifcache)" << "TEXCache (*.texcache)"
+				   << "PCPatch (*.pcpatch)" << "JMI (*.jmi)";
 	
 	// create the load portion of the toolbar
 	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr("&Load..."), QBoxLayout::RightToLeft, QKeySequence::Open ) );

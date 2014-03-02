@@ -1442,7 +1442,7 @@ void GLView::savePixmap()
 	dlg.setLayout( lay );
 	
 	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr("File"), QBoxLayout::RightToLeft );
-	file->setFilter( QStringList() << "*.bmp *.jpg *.png" << "*.bmp" << "*.jpg" << "*.png" );
+	file->setFilter( QStringList() << "Images (*.bmp *.jpg *.png)" << "BMP (*.bmp)" << "JPEG (*.jpg)" << "PNG (*.png)" );
 	file->setFile( model->getFolder() + "/" );
 	lay->addWidget( file, 0, 0, 1, -1 );
 

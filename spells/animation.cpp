@@ -35,7 +35,7 @@ public:
 		if (nif == NULL)
 			return index;
 
-		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr("Choose .kf file(s)"), nif->getFolder(), "*.kf" );
+		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr("Choose .kf file(s)"), nif->getFolder(), "Keyframe (*.kf)" );
 		foreach( QString kfname, kfnames )
 		{
 			try

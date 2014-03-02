@@ -205,11 +205,11 @@ void TestShredder::run()
 	
 	QStringList extensions;
 	if ( chkNif->isChecked() )
-		extensions << "*.nif" << "*.nifcache" << "*.texcache" << "*.pcpatch";
+		extensions << "NIF (*.nif)" << "NIFCache (*.nifcache)" << "TEXCache (*.texcache)" << "PCPatch (*.pcpatch)";
 	if ( chkKf->isChecked() )
-		extensions << "*.kf" << "*.kfa";
+		extensions << "Keyframe (*.kf)" << "Keyframe Animation (*.kfa)";
 	if ( chkKfm->isChecked() )
-		extensions << "*.kfm";
+		extensions << "Keyframe Motion (*.kfm)";
 	
 	queue.init( directory->text(), extensions, recursive->isChecked() );
 	
