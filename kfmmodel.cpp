@@ -85,14 +85,16 @@ bool KfmModel::evalVersion( NifItem * item, bool chkParents ) const
 
 void KfmModel::clear()
 {
+	beginResetModel();
 	folder = QString();
 	root->killChildren();
 	insertType( root, NifData( "Kfm", "Kfm" ) );
 	kfmroot = root->child( 0 );
 	version = 0x0200000b;
-	reset();
 	if ( kfmroot )
 		set<QString>( kfmroot, "Header String", ";Gamebryo KFM File Version 2.0.0.0b" );
+
+	endResetModel();
 }
 
 /*
@@ -245,7 +247,11 @@ bool KfmModel::load( QIODevice & device )
 		return false;
 	}
 	
-	reset();
+	// Qt5 port:
+	// begin/endResetModel() is already called above in clear()
+	// May not be necessary again, but doing so to mimic Qt4 codebase.
+	beginResetModel();
+	endResetModel();
 	return true;
 }
 

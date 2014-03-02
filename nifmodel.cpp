@@ -172,6 +172,7 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 
 void NifModel::clear()
 {
+	beginResetModel();
 	folder = QString();
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
@@ -181,7 +182,6 @@ void NifModel::clear()
 		msg( Message() << tr("Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5").arg( Options::startupVersion() ).toLatin1() );
 		version = 0x14000005;
 	}
-	reset();
 	NifItem * item = getItem( getHeaderItem(), "Version" );
 	if ( item ) item->value().setFileVersion( version );
 
@@ -213,6 +213,7 @@ void NifModel::clear()
 	}
 	lockUpdates = false;
 	needUpdates = utNone;
+	endResetModel();
 }
 
 /*
@@ -1465,8 +1466,9 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 
 void NifModel::reset()
 {
+	beginResetModel();
 	updateLinks();
-	BaseModel::reset();
+	endResetModel();
 }
 
 bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
