@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <cfloat>
 #include <cmath>
+#include <stdlib.h>
 
 #ifndef PI
 #ifdef M_PI
@@ -1361,7 +1362,7 @@ public:
 	FixedMatrix(int length1, int length2)
 	{
 		int length = length1*length2;
-		v_ = (T*)qMalloc(sizeof(T)*length);
+		v_ = (T*)malloc(sizeof(T)*length);
 		len0 = length1;
 		len1 = length2;
 	}
@@ -1372,13 +1373,13 @@ public:
 		int datalen = other.count();
 		len0 = other.count(0);
 		len1 = other.count(1);
-		v_ = (T*)qMalloc(sizeof(T) * datalen);
-		qMemCopy( array(), other.array(), datalen );
+		v_ = (T*)malloc(sizeof(T) * datalen);
+		memcpy( array(), other.array(), datalen );
 	}
 
 	//! Default Destructor
 	~FixedMatrix()
-	{ qFree(v_); }
+	{ free(v_); }
 
 	//! Copy Assignment
 	FixedMatrix& operator=(const FixedMatrix& other)         
