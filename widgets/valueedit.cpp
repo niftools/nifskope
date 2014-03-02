@@ -454,7 +454,7 @@ void ColorEdit::setColor4( const Color4 & v )
 	r->setValue( v[0] );
 	g->setValue( v[1] );
 	b->setValue( v[2] );
-	a->setValue( v[3] ); a->setShown( true ); al->setShown( true );
+	a->setValue( v[3] ); a->setVisible( true ); al->setVisible( true );
 	setting = false;
 }
 
@@ -528,8 +528,8 @@ void VectorEdit::setVector4( const Vector4 & v )
 	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
-	z->setValue( v[2] ); z->setShown( true ); zl->setShown( true );
-	w->setValue( v[3] ); w->setShown( true ); wl->setShown( true );
+	z->setValue( v[2] ); z->setVisible( true ); zl->setVisible( true );
+	w->setValue( v[3] ); w->setVisible( true ); wl->setVisible( true );
 	setting = false;
 }
 
@@ -538,7 +538,7 @@ void VectorEdit::setVector3( const Vector3 & v )
 	setting = true;
 	x->setValue( v[0] );
 	y->setValue( v[1] );
-	z->setValue( v[2] ); z->setShown( true ); zl->setShown( true );
+	z->setValue( v[2] ); z->setVisible( true ); zl->setVisible( true );
 	w->setValue( 0.0 ); w->setHidden( true ); wl->setHidden( true );
 	setting = false;
 }
