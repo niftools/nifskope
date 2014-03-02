@@ -1171,11 +1171,13 @@ void IPCsocket::openNif( const QString & url )
 }
 
 
-//! System locale override
+// TODO: This class was not used. QSystemLocale became private in Qt 5.
+// It appears this class was going to handle display of numbers.
+/*//! System locale override
 /**
  * Qt does not use the System Locale consistency so this basically forces all floating
  * numbers into C format but leaves all other local specific settings.
- */
+ *//*
 class NifSystemLocale : QSystemLocale
 {
 	virtual QVariant query(QueryType type, QVariant in) const
@@ -1190,7 +1192,7 @@ class NifSystemLocale : QSystemLocale
 			return QVariant();
 		}
 	}
-};
+};*/
 
 static QTranslator *mTranslator = NULL;
 
@@ -1248,8 +1250,6 @@ QString NifSkope::getLoadFileName() {
 //! The main program
 int main( int argc, char * argv[] )
 {
-	NifSystemLocale mLocale;
-
 	// set up the Qt Application
 	QApplication app( argc, argv );
 	app.setOrganizationName( "NifTools" );
