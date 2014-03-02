@@ -1160,9 +1160,9 @@ void IPCsocket::execCommand( const QString & cmd )
 	}
 }
 
-void IPCsocket::openNif( const QUrl & url )
+void IPCsocket::openNif( const QString & url )
 {
-	NifSkope::createWindow( url.toString( url.scheme() == "nif" ? QUrl::RemoveScheme : QUrl::None ) );
+	NifSkope::createWindow( url );
 }
 
 
@@ -1319,41 +1319,7 @@ int main( int argc, char * argv[] )
    if ( !fname.isEmpty() )
 	{
 		//Getting a NIF file name from the OS
-		fname = QDir::current().filePath( app.argv()[ app.argc() - 1 ] );
-
-#ifdef Q_OS_WIN32
-		//Windows passes an ugly 8.3 file path as an argument, so use a WinAPI function to fix that
-		wchar_t full[MAX_PATH];
-		wchar_t * temp_name = new wchar_t[fname.size() + 1];
-
-		fname.toWCharArray( temp_name );
-		temp_name[fname.size()] = 0; //The above function doesn't seem to write a null character, so add it.
-
-		//Ensure that input is a full path, even if a partial one was given on the command line
-		DWORD ret = GetFullPathNameW( temp_name, MAX_PATH, full, NULL );
-
-		if ( ret != 0 )
-		{
-			delete [] temp_name;
-			temp_name = new wchar_t[MAX_PATH];
-
-			//Finally get the full long file name version of the path
-			ret = GetLongPathNameW( full, temp_name, MAX_PATH );
-			
-			//Copy the name back to the QString variable that Qt uses
-			if ( ret != 0 )
-			{
-				//GetLongPath succeeded
-				fname = QString::fromWCharArray( temp_name);
-			} else
-			{
-				//GetLongPath failed, use result from GetFullPathName function
-				fname = QString::fromWCharArray( full );
-			}
-		}
-
-		delete [] temp_name;
-#endif
+		fname = QDir::current().filePath( argv[ argc - 1 ] );
 	}
 
 	if ( !reuseSession ) {

@@ -279,7 +279,7 @@ public slots:
 	void execCommand( const QString & cmd );
 	
 	//! Opens a NIF from a URL
-	void openNif( const QUrl & );
+	void openNif(const QString & );
 
 protected slots:
 	void processDatagram();
