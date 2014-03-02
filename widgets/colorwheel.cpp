@@ -115,7 +115,7 @@ ColorWheel::ColorWheel( const QColor & c, QWidget * parent ) : QWidget( parent )
 QIcon ColorWheel::getIcon()
 {
 	if ( ! icon )
-		icon = new QIcon(  hsv42_xpm  );
+		icon = new QIcon(  QPixmap(hsv42_xpm)  );
 	return *icon;
 }
 

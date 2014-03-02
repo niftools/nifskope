@@ -274,7 +274,7 @@ public:
 	QIcon icon() const
 	{
 		if ( ! transform_xpm_icon )
-			transform_xpm_icon = new QIcon( transform_xpm );
+			transform_xpm_icon = new QIcon( QPixmap(transform_xpm) );
 		return *transform_xpm_icon;
 	}
 	

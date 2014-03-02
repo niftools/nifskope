@@ -98,7 +98,7 @@ public:
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
-		if ( ! mat42_xpm_icon ) mat42_xpm_icon = new QIcon( mat42_xpm );
+		if ( ! mat42_xpm_icon ) mat42_xpm_icon = new QIcon( QPixmap(mat42_xpm) );
 		return *mat42_xpm_icon;
 	}
 	

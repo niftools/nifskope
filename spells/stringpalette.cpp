@@ -75,7 +75,7 @@ public:
 	QIcon icon() const
 	{
 		if ( ! txt_xpm_icon )
-			txt_xpm_icon = new QIcon( txt_xpm );
+			txt_xpm_icon = new QIcon( QPixmap(txt_xpm) );
 		return *txt_xpm_icon;
 	}
 	bool instant() const { return true; }
