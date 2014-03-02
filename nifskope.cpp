@@ -86,6 +86,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  include "windows.h"
 #endif
 
+#if QT_VERSION >= 0x050000
+#  define QT_WA(unicode, ansi) unicode
+#endif
 
 #ifdef FSENGINE
 
@@ -1045,8 +1048,14 @@ void qDefaultMsgHandler(QtMsgType t, const char* str)
 #endif
 
 //! Application-wide debug and warning message handler
+#if QT_VERSION >= 0x050000
+void myMessageOutput(QtMsgType type, const QMessageLogContext &, const QString & str)
+{
+	QByteArray msg = str.toLocal8Bit();
+#else
 void myMessageOutput(QtMsgType type, const char *msg)
 {
+#endif
 	static const QString editFailed ( "edit: editing failed" );
 	static const QString accessWidgetRect ( "QAccessibleWidget::rect" );
 	switch (type)
@@ -1245,7 +1254,11 @@ int main( int argc, char * argv[] )
 	// install message handler
 	qRegisterMetaType<Message>( "Message" );
 #ifndef NO_MESSAGEHANDLER
+#if QT_VERSION >= 0x050000
+	qInstallMessageHandler( myMessageOutput );
+#else
 	qInstallMsgHandler( myMessageOutput );
+#endif
 #endif
 	
 	// if there is a style sheet present then load it
