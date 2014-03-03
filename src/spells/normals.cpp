@@ -1,6 +1,6 @@
 #include "../spellbook.h"
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../NvTriStripwrapper.h"
 
 #include <QDialog>
 #include <QDoubleSpinBox>

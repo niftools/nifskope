@@ -11,7 +11,7 @@
 #include "../config.h"
 
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../NvTriStripwrapper.h"
 
 #include "../widgets/fileselect.h"
 #include "../widgets/uvedit.h"

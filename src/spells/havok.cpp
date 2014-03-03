@@ -1,7 +1,7 @@
 #include "../spellbook.h"
 #include "../qhull.h"
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../NvTriStripwrapper.h"
 
 #include "blocks.h"
 

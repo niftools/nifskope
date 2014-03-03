@@ -46,8 +46,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltex.h"
 #include "gltexloaders.h"
 #include "../options.h"
-#include "../fsengine/fsmanager.h"
-#include "../fsengine/fsengine.h"
+#include <fsengine/fsmanager.h>
+#include <fsengine/fsengine.h>
 
 //! \file gltex.cpp TexCache management
 

@@ -37,7 +37,7 @@ int Node::SELECTING = 0;
 #include "glcontroller.h"
 #include "../options.h"
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../nvtristripwrapper.h"
 
 #include "marker/furniture.h"
 #include "marker/constraints.h"

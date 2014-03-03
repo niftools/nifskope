@@ -2,7 +2,7 @@
 
 #include "../spellbook.h"
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../nvtristripwrapper.h"
 
 #include <QDebug>
 #include <QFile>

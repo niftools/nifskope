@@ -1,7 +1,7 @@
 #ifndef NVTRISTRIP_WRAPPER_H
 #define NVTRISTRIP_WRAPPER_H
 
-#include "../niftypes.h"
+#include "niftypes.h"
 
 #include <QList>
 #include <QVector>

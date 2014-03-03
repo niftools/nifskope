@@ -92,7 +92,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef FSENGINE
 
-#include "fsengine/fsmanager.h"
+#include <fsengine/fsmanager.h>
 
 FSManager * fsmanager = 0;
 

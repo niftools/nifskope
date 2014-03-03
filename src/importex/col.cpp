@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../NvTriStripwrapper.h"
 
 #include "../gl/gltex.h"
 

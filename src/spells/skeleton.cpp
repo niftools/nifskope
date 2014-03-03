@@ -4,7 +4,7 @@
 
 #include "../gl/gltools.h"
 
-#include "../NvTriStrip/qtwrapper.h"
+#include "../NvTriStripwrapper.h"
 
 #include <QDebug>
 #include <QFile>
@@ -14,7 +14,7 @@
 #include <QPushButton>
 #include <QSpinBox>
 
-#define SKEL_DAT ":/res/spells/skel.dat"
+#define SKEL_DAT ":/res/skel.dat"
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file skeleton.cpp

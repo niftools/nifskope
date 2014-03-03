@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../nifmodel.h"
 #include "../niftypes.h"
 #include "../options.h"
-#include "../NvTriStrip/qtwrapper.h"
+#include "../NvTriStripwrapper.h"
 
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"

@@ -1,4 +1,4 @@
-#include "qtwrapper.h"
+#include "nvtristripwrapper.h"
 
 #include "NvTriStrip.h"
 

@@ -40,25 +40,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern "C"
 {
-#include "qhull/src/libqhull/qhull_a.h"
+#include <libqhull/qhull_a.h>
 
-#include "qhull/src/libqhull/libqhull.c"
-#include "qhull/src/libqhull/mem.c"
-#include "qhull/src/libqhull/qset.c"
-#include "qhull/src/libqhull/geom.c"
-#include "qhull/src/libqhull/merge.c"
-#include "qhull/src/libqhull/poly.c"
-#include "qhull/src/libqhull/io.c"
-#include "qhull/src/libqhull/stat.c"
-#include "qhull/src/libqhull/global.c"
-#include "qhull/src/libqhull/user.c"
-#include "qhull/src/libqhull/poly2.c"
-#include "qhull/src/libqhull/geom2.c"
-#include "qhull/src/libqhull/userprintf.c"
-#include "qhull/src/libqhull/userprintf_rbox.c"
-#include "qhull/src/libqhull/usermem.c"
-#include "qhull/src/libqhull/random.c"
-#include "qhull/src/libqhull/rboxlib.c"
+#include <libqhull/libqhull.c>
+#include <libqhull/mem.c>
+#include <libqhull/qset.c>
+#include <libqhull/geom.c>
+#include <libqhull/merge.c>
+#include <libqhull/poly.c>
+#include <libqhull/io.c>
+#include <libqhull/stat.c>
+#include <libqhull/global.c>
+#include <libqhull/user.c>
+#include <libqhull/poly2.c>
+#include <libqhull/geom2.c>
+#include <libqhull/userprintf.c>
+#include <libqhull/userprintf_rbox.c>
+#include <libqhull/usermem.c>
+#include <libqhull/random.c>
+#include <libqhull/rboxlib.c>
 };
 
 //! \file qhull.cpp Computes a convex hull
