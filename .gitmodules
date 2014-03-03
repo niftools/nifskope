@@ -2,5 +2,5 @@
 	path = docsys
 	url = git://niftools.git.sourceforge.net/gitroot/niftools/nifdocsys
 [submodule "qhull"]
-	path = qhull
+	path = lib/qhull
 	url = git://gitorious.org/qhull/qhull.git
