@@ -144,19 +144,12 @@ TexCache::~TexCache()
 	//flush();
 }
 
-QString TexCache::find( const QString & file, const QString & nifdir )
+QString TexCache::find( const QString & file, const QString & nifdir, QByteArray & data )
 {
 	if ( file.isEmpty() )
 		return QString();
 
-#ifndef Q_OS_WIN
-	/* convert nif path backslash into forward slash */
-	/* also check for both original name and lower case name */
-	QString filename_orig = QString(file).replace( "\\", "/" );;
-	QString filename = file.toLower().replace( "\\", "/" );
-#else
-	QString filename = file.toLower();
-#endif
+	QString filename = QDir::toNativeSeparators(file);
 
 	while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
 		filename.remove( 0, 1 );
@@ -176,9 +169,6 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 				extensions.removeAll( ext );
 				extensions.prepend( ext );
 				filename = filename.left( filename.length() - ext.length() );
-#ifndef Q_OS_WIN
-				filename_orig = filename_orig.left( filename_orig.length() - ext.length() );
-#endif
 				replaceExt = true;
 				break;
 			}
@@ -191,9 +181,6 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 	{
 		if ( replaceExt ) {
 			filename += ext;
-#ifndef Q_OS_WIN
-			filename_orig += ext;
-#endif
 		}
 		
 		foreach ( QString folder, Options::textureFolders() )
@@ -203,65 +190,43 @@ QString TexCache::find( const QString & file, const QString & nifdir )
 			}
 			
 			dir.setPath( folder );
-#ifndef Q_OS_WIN
-			//qWarning() << folder << filename;
-#endif
 			if ( dir.exists( filename ) ) {
 				filename = dir.filePath( filename );
-				// fix separators
-#ifdef Q_OS_WIN
-				filename.replace("/", "\\");
-#else
-				filename.replace("\\", "/");
-#endif
 				return filename;
 			}
-#ifndef Q_OS_WIN
-			//qWarning() << folder << filename_orig;
-			if ( dir.exists( filename_orig ) ) {
-				filename = dir.filePath( filename_orig );
-				// fix separators
-#ifdef Q_OS_WIN
-				filename.replace("/", "\\");
-#else
-				filename.replace("\\", "/");
-#endif
-				return filename;
-			}
-#endif
 		}
 
-		// Search through archives last and return archive annotated name
-		//   which will be removed by any handlers
+#ifdef FSENGINE
+		// Search through archives last, and load any requested textures into memory.
 		foreach ( FSArchiveFile* archive, FSManager::archiveList() ) {
 			if ( archive ) {
-				QString fullname = archive->absoluteFilePath( filename.toLower().replace( "\\", "/" ) );
-				if (!fullname.isEmpty()) {
-#ifdef Q_OS_WIN
-					fullname.replace("/", "\\");
-#else
-					fullname.replace("\\", "/");
-#endif
-					return fullname;
+
+				filename = QDir::fromNativeSeparators(filename.toLower());
+
+				if ( archive->hasFile(filename) ) {
+
+					QByteArray outData;
+					//qDebug() << "Extracting " << filename;
+					archive->fileContents(filename, outData);
+
+					if ( !outData.isEmpty() ) {
+						data = outData;
+
+						return file;
+					}
 				}
 			}
 		}
+#endif
 		
 		if ( replaceExt ) {
 			filename = filename.left( filename.length() - ext.length() );
-#ifndef Q_OS_WIN
-			filename_orig = filename_orig.left( filename_orig.length() - ext.length() );
-#endif
 		} else
 			break;
 	}
 	
 	// fix separators
-#ifdef Q_OS_WIN
-	filename.replace("/", "\\");
-#else
-	filename.replace("\\", "/");
-#endif
+	filename = QDir::toNativeSeparators(filename);
 
 	if ( replaceExt )
 		return filename + extensions.value( 0 );
@@ -348,14 +313,21 @@ int TexCache::bind( const QString & fname )
 		tx = new Tex;
 		tx->filename = fname;
 		tx->id = 0;
+		tx->data = QByteArray();
 		tx->mipmaps = 0;
 		tx->reload = false;
 		
 		textures.insert( tx->filename, tx );
 	}
+
+	QByteArray outData;
 	
 	if ( tx->filepath.isEmpty() || tx->reload )
-		tx->filepath = find( tx->filename, nifFolder );
+		tx->filepath = find( tx->filename, nifFolder, outData );
+
+	if ( !outData.isEmpty() ) {
+		tx->data = outData;
+	}
 	
 	if ( ! tx->id || tx->reload )
 	{
@@ -506,7 +478,7 @@ void TexCache::Tex::load()
 	
 	try
 	{
-		texLoad( filepath, format, width, height, mipmaps );
+		texLoad( filepath, format, width, height, mipmaps, data );
 	}
 	catch ( QString e )
 	{

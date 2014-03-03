@@ -49,7 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * \param mipmaps Contains the number of mipmaps on successful load.
  * \return true if the load was successful, false otherwise.
  */
-extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
+extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data = QByteArray() );
 
 //! A function for loading textures.
 /*!

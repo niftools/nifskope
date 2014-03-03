@@ -1123,13 +1123,25 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat ) {
 
 
 // (public function, documented in gltexloaders.h)
-bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
+bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data )
 {
 	width = height = mipmaps = 0;
 	
-	QFile f( filepath );
+	if ( data.isEmpty() ) {
+		QFile tmpF( filepath );
+		if ( ! tmpF.open( QIODevice::ReadOnly ) )
+			throw QString( "could not open file" );
+
+		data = tmpF.readAll();
+
+		tmpF.close();
+
+		if ( data.isEmpty() ) return false;
+	}
+
+	QBuffer f( &data );
 	if ( ! f.open( QIODevice::ReadOnly ) )
-		throw QString( "could not open file" );
+		throw QString( "could not open buffer" );
 	
 	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
 		mipmaps = texLoadDDS( f, format );
@@ -1141,6 +1153,8 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 		mipmaps = texLoadNIF( f, format );
 	else
 		throw QString( "unknown texture format" );
+
+	f.close();
 	
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *) & width );
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *) & height );

@@ -62,6 +62,8 @@ class TexCache : public QObject
 		QString filename;
 		//! The texture file path.
 		QString filepath;
+		//! The texture data (if not in the filesystem)
+		QByteArray data;
 		//! ID for use with GL texture functions
 		GLuint id;
 		//! Width of the texture
@@ -106,7 +108,7 @@ public:
 	bool importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 	
 	//! Find a texture based on its filename
-	static QString find( const QString & file, const QString & nifFolder );
+	static QString find( const QString & file, const QString & nifFolder, QByteArray & data = QByteArray() );
 	//! Remove the path from a filename
 	static QString stripPath( const QString & file, const QString & nifFolder );
 	//! Checks whether the given file can be loaded
