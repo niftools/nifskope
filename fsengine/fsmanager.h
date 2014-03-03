@@ -89,6 +89,7 @@ protected slots:
 	void sltAuto( bool );
 	void sltAdd();
 	void sltDel();
+	void sltDelAll();
 	
 protected:
 	FSManager * manager;
@@ -99,6 +100,7 @@ protected:
 	class QCheckBox * chkAuto;
 	class QPushButton * btAdd;
 	class QPushButton * btDel;
+	class QPushButton * btDelAll;
 };
 
 

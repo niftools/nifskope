@@ -158,12 +158,17 @@ FSSelector::FSSelector( FSManager * m )
 	btDel = new QPushButton( "Remove", this );
 	btDel->setDisabled( manager->automatic );
 	connect( btDel, SIGNAL( clicked() ), this, SLOT( sltDel() ) );
+
+	btDelAll = new QPushButton( "Remove All", this );
+	btDelAll->setDisabled( manager->automatic );
+	connect( btDelAll, SIGNAL( clicked() ), this, SLOT( sltDelAll() ) );
 	
 	QGridLayout * grid = new QGridLayout( this );
 	grid->addWidget( chkAuto, 0, 0, 1, 2 );
 	grid->addWidget( view, 1, 0, 1, 2 );
 	grid->addWidget( btAdd, 2, 0, 1, 1 );
 	grid->addWidget( btDel, 2, 1, 1, 1 );
+	grid->addWidget( btDelAll, 2, 2, 1, 1 );
 }
 
 FSSelector::~FSSelector()
@@ -196,11 +201,12 @@ void FSSelector::sltAuto( bool x )
 	
 	btAdd->setDisabled( x );
 	btDel->setDisabled( x );
+	btDelAll->setDisabled( x );
 }
 
 void FSSelector::sltAdd()
 {
-	QStringList list = QFileDialog::getOpenFileNames( this, "Select resource files to add", QString(), "*.bsa" );
+	QStringList list = QFileDialog::getOpenFileNames( this, "Select resource files to add", QString(), "BSA (*.bsa)" );
 	
 	foreach ( QString an, list )
 	{
@@ -223,3 +229,10 @@ void FSSelector::sltDel()
 	model->setStringList( manager->archives.keys() );
 }
 
+void FSSelector::sltDelAll()
+{
+	qDeleteAll( manager->archives );
+	manager->archives.clear();
+
+	model->setStringList( QStringList() );
+}
