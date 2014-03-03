@@ -681,6 +681,33 @@ void Options::textureFolderAutoDetect()
 
 #ifdef Q_OS_WIN32
 
+	// Skyrim
+	{
+		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim", QSettings::NativeFormat );
+		QDir dir( reg.value( "Installed Path" ).toString() );
+		if ( dir.exists() && dir.cd( "Data" ) )
+		{
+			game_list.append( "TES5: Skyrim\n" );
+
+			list.append( dir.path() );
+
+			dir.setNameFilters( QStringList() << "*.bsa" );
+			dir.setFilter( QDir::Dirs );
+			foreach ( QString dn, dir.entryList() )
+				list << dir.filePath( dn );
+
+#ifndef FSENGINE
+			if ( ! dir.cd( "Textures" ) )
+			{
+				QMessageBox::information( dialog, "NifSkope",
+					tr("<p>The texture folder was not found.</p>"
+					"<p>This may be because you haven't extracted the archive files yet.<br>"
+					"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>") );
+			}
+#endif
+		}
+	}
+
 	// Oblivion
 	{
 		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
