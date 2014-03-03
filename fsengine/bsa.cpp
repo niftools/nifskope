@@ -35,6 +35,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QByteArray>
 #include <QDateTime>
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 
 /* Default header data */
 #define MW_BSAHEADER_FILEID  0x00000100 //!< Magic for Morrowind BSA
@@ -142,7 +145,7 @@ bool BSA::BSAFile::compressed() const
 }
 
 //! Reads a foldername sized string (length + null-terminated string) from the BSA
-static bool BSAReadSizedString( QAbstractFileEngine & bsa, QString & s )
+static bool BSAReadSizedString( QFile & bsa, QString & s )
 {
 	//qDebug() << "BSA is at" << bsa.pos();
 	quint8 len;
@@ -169,20 +172,11 @@ static bool BSAReadSizedString( QAbstractFileEngine & bsa, QString & s )
 
 // see bsa.h
 BSA::BSA( const QString & filename )
-	: FSArchiveFile(), bsa( filename ), status( "initialized" )
+	: FSArchiveFile(), bsa( filename ), bsaInfo( QFileInfo(filename) ), status( "initialized" )
 {
-	bsaPath = bsa.fileName( QAbstractFileEngine::AbsoluteName );
-	bsaBase = bsa.fileName( QAbstractFileEngine::AbsolutePathName );
-	bsaName = bsa.fileName( QAbstractFileEngine::BaseName );
-	
-	if ( ! bsa.caseSensitive() )
-	{
-		bsaPath = bsaPath.toLower();
-		bsaBase = bsaBase.toLower();
-		bsaName = bsaName.toLower();
-	}
-	
-	qDebug() << "BSA" << bsaName << bsaBase << bsaPath;
+	bsaPath = bsaInfo.absolutePath() + QDir::separator() + bsaInfo.fileName();
+	bsaBase = bsaInfo.absolutePath();
+	bsaName = bsaInfo.fileName();
 }
 
 // see bsa.h
@@ -194,7 +188,7 @@ BSA::~BSA()
 // see bsa.h
 bool BSA::canOpen( const QString & fn )
 {
-	QFSFileEngine f( fn );
+	QFile f( fn );
 	if ( f.open( QIODevice::ReadOnly ) )
 	{
 		quint32 magic, version;
@@ -264,7 +258,7 @@ bool BSA::open()
 				throw QString( "file name read" );
 			quint32 fileNameIndex = 0;
 			
-			// qDebug() << file.pos() - header.FileNameLength << fileNames;
+			//qDebug() << bsa.pos() - header.FileNameLength << fileNames;
 			
 			if ( ! bsa.seek( header.FolderRecordOffset ) )
 				throw QString( "folder info seek" );
@@ -452,49 +446,6 @@ QString BSA::absoluteFilePath( const QString & fn ) const
 }
 
 // see bsa.h
-QStringList BSA::entryList( const QString & fn, QDir::Filters filters ) const
-{
-	//qDebug() << "entered BSA::entryList with name" << fn;
-	if ( const BSAFolder * folder = getFolder( fn ) )
-	{
-		QStringList entries;
-		
-		// todo: filter
-		
-		if ( filters.testFlag( QDir::Dirs ) || filters.testFlag( QDir::AllDirs ) )
-		{
-			//qDebug() << "filtering for directories";
-			entries += folder->children.keys();
-		}
-		
-		if ( filters.testFlag( QDir::Files ) )
-		{
-			//qDebug() << "filtering for files";
-			entries += folder->files.keys();
-		}
-		//qDebug() << "entryList:" << entries;
-		
-		return entries;
-	}
-	return QStringList();
-}
-
-// see bsa.h
-bool BSA::stripBasePath( QString & p ) const
-{
-	QString base = bsaPath;
-	
-	if ( p.startsWith( base ) )
-	{
-		p.remove( 0, base.length() );
-		if ( p.startsWith( "/" ) )
-			p.remove( 0, 1 );
-		return true;
-	}
-	return false;
-}
-
-// see bsa.h
 BSA::BSAFolder * BSA::insertFolder( QString name )
 {
 	if ( name.isEmpty() )
@@ -560,10 +511,15 @@ const BSA::BSAFile * BSA::getFile( QString fn ) const
 		fileName = fn.right( fn.length() - p - 1 );
 	}
 	
-	if ( const BSAFolder * folder = getFolder( folderName ) )
+	// TODO: Multiple matches occur and user has no say which version gets loaded
+	// When it comes to the AUTO feature, should give preference to certain BSAs
+	// or take the newest and or highest quality version.
+	if ( const BSAFolder * folder = getFolder( folderName ) ) {
 		return folder->files.value( fileName );
-	else
+	}
+	else {
 		return 0;
+	}
 }
 
 // see bsa.h
@@ -579,150 +535,19 @@ bool BSA::hasFolder( const QString & fn ) const
 }
 
 // see bsa.h
-uint BSA::ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const
+uint BSA::ownerId( const QString & ) const
 {
-	return bsa.ownerId( type );
+	return bsaInfo.ownerId( );
 }
 
 // see bsa.h
-QString BSA::owner( const QString &, QAbstractFileEngine::FileOwner type ) const
+QString BSA::owner( const QString & ) const
 {
-	return bsa.owner( type );
+	return bsaInfo.owner( );
 }
 
 // see bsa.h
-QDateTime BSA::fileTime( const QString &, QAbstractFileEngine::FileTime type ) const
+QDateTime BSA::fileTime( const QString & ) const
 {
-	return bsa.fileTime( type );
+	return bsaInfo.created( );
 }
-
-// see bsa.h
-// TODO: rework this to use the BSA::entryList code
-BSAIterator::BSAIterator( QDir::Filters filters, const QStringList & nameFilters, BSA * archive, QString & base )
-	: QAbstractFileEngineIterator( filters, nameFilters ), current( None ), archive( archive ), fileIndex( -1 ), folderIndex ( -1 )
-{
-	archive->ref.ref();
-	//qDebug() << "Entered BSAIterator with filters" << filters << "names" << nameFilters << "base" << base; 
-	//qDebug() << "Archive is" << archive->path();
-	//qDebug() << "Path is" << path() << "currentFilePath is" << currentFilePath();
-	
-	/*
-	if ( filters.testFlag( QDir::Dirs ) || filters.testFlag( QDir::AllDirs ) )
-	{
-		qDebug() << "Requested directories";
-	}
-
-	if ( filters.testFlag( QDir::Files ) )
-	{
-		qDebug() << "Requested files";
-	}
-	*/
-
-	currentFolder = const_cast<BSA::BSAFolder*>( archive->getFolder( base ) );
-	
-	folderList += currentFolder->children.keys();
-	//qDebug() << "Child folders" << folderList;
-	fileList += currentFolder->files.keys();
-	//qDebug() << "Child files" << fileList;
-
-	/*
-	foreach( QString bsaKey, folderList )
-	{
-		qDebug() << "adding files from" << bsaKey;
-		foreach( QString eachFile, archive->folders.value( bsaKey )->files.keys() )
-		{
-			QString temp = bsaKey + "/" + eachFile;
-			qDebug() << "adding" << temp;
-			fileList += temp;
-		}
-	}
-	*/
-}
-
-// see bsa.h
-BSAIterator::~BSAIterator()
-{
-	//qDebug() << "Deleting BSAIterator";
-	if ( ! archive->ref.deref() )
-		delete archive;
-}
-
-// see bsa.h
-bool BSAIterator::hasNext() const
-{
-	//qDebug() << "Entered BSAIterator::hasNext";
-	//qDebug() << "fileIndex" << fileIndex << "folderIndex" << folderIndex;
-	return ( fileIndex < ( fileList.size() - 1 ) || folderIndex < ( folderList.size() - 1 ) );
-}
-
-// precondition: hasNext() is true
-// see bsa.h
-QString BSAIterator::currentFileName() const
-{
-	//qDebug() << "Entered BSAIterator::currentFileName";
-	if( current == File )
-	{
-		//qDebug() << "currentFileName: file" << fileList.at( fileIndex );
-		return fileList.at( fileIndex );
-	}
-	else if( current == Folder )
-	{
-		//qDebug() << "currentFileName: folder" << folderList.at( folderIndex );
-		return folderList.at( folderIndex );
-	}
-	else
-	{
-		//qDebug() << "no current file";
-		return QString();
-	}
-}
-
-// precondition: hasNext() is true
-// postCondition: we return the name of the next file
-// see bsa.h
-QString BSAIterator::next()
-{
-	//qDebug() << "Entered BSAIterator::next";
-	//qDebug() << "At" << fileIndex << "of" << fileList.size() << "files";
-	//qDebug() << "At" << folderIndex << "of" << folderList.size() << "folders";
-	if( folderIndex < folderList.size() - 1 )
-	{
-		//qDebug() << "getting next folder";
-		current = Folder;
-		folderIndex++;
-		QString nextFolder = folderList.at( folderIndex );
-		//qDebug() << "next folder is" << nextFolder;
-		return nextFolder;
-	}
-	else if( fileIndex < fileList.size() - 1 )
-	{
-		//qDebug() << "getting next file";
-		current = File;
-		fileIndex++;
-		QString nextFolder = fileList.at( fileIndex );
-		//qDebug() << "next file is" << nextFolder;
-		return nextFolder;
-	}
-	else
-	{
-		//qDebug() << "no next, not sure how we got here";
-		current = None;
-		return QString();
-	}
-}
-
-// see bsa.h
-QString BSAIterator::currentFilePath() const
-{
-	//qDebug() << "Entered BSAIterator::currentFilePath";
-	return QAbstractFileEngineIterator::currentFilePath();
-}
-
-// see bsa.h
-QString BSAIterator::path() const
-{
-	//qDebug() << "Entered BSAIterator::path";
-	return archive->bsaPath;
-	//return QAbstractFileEngineIterator::path();
-}
-

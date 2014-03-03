@@ -37,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QCheckBox>
 #include <QFileDialog>
-#include <QFSFileEngine>
 #include <QLayout>
 #include <QListView>
 #include <QPushButton>
@@ -70,10 +69,6 @@ QList <FSArchiveFile *> FSManager::archiveList()
 FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )
 {
-#ifdef OVERLAYS_ENABLED
-	overlay = new FSOverlayHandler;
-#endif
-	
 	QSettings cfg;
 	cfg.beginGroup( "fsengine" );
 	
@@ -96,9 +91,6 @@ FSManager::FSManager( QObject * parent )
 FSManager::~FSManager()
 {
 	qDeleteAll( archives );
-#ifdef OVERLAYS_ENABLED
-	delete overlay;
-#endif
 }
 
 // see fsmanager.h
@@ -112,10 +104,10 @@ QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 		if ( ! dataPath.endsWith( '/' ) && ! dataPath.endsWith( '\\' ) )
 			dataPath += "/";
 		dataPath += dataDir;
-		QFSFileEngine fs( dataPath );
-		foreach ( QString fn, fs.entryList( QDir::Files, QStringList() << "*.bsa" ) )
+		QDir fs( dataPath );
+		foreach ( QString fn, fs.entryList( QStringList() << "*.bsa", QDir::Files ) )
 		{
-			list << dataPath + "/" + fn;
+			list << dataPath + QDir::separator() + fn;
 		}
 	}
 	return list;

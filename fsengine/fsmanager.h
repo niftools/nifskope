@@ -40,9 +40,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMap>
 
 
-#ifdef OVERLAYS_ENABLED
-class FSOverlayHandler;
-#endif
 class FSArchiveHandler;
 class FSArchiveFile;
 
@@ -67,9 +64,6 @@ public slots:
 	void selectArchives();
 	
 protected:
-#ifdef OVERLAYS_ENABLED
-	FSOverlayHandler * overlay;
-#endif
 	QMap<QString, FSArchiveHandler *> archives;
 	bool automatic;
 	

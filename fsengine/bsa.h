@@ -35,8 +35,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "fsengine.h"
 
-#include <QAbstractFileEngineIterator>
-#include <QFSFileEngine>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QHash>
 #include <QMutex>
 
@@ -70,24 +71,8 @@ public:
 	//! Returns BSA::bsaName.
 	QString name() const { return bsaName; }
 	
-	//! \copybrief FSArchiveFile::stripBasePath()
-	/*!
-	 * In this case, strips bsaPath from the provided string.
-	 * 
-	 * @param p the string to strip the base path from
-	 * @return true if the path was stripped, false otherwise
-	 */
-	bool stripBasePath( QString & p ) const;
-	
 	//! Whether the specified folder exists or not
 	bool hasFolder( const QString & ) const;
-	//! Returns a list of files or folders as requested
-	/*!
-	 * Called by FSArchiveEngine::entryList().
-	 * \param fn The folder to search in
-	 * \param filters Whether to look for files or folders
-	 */
-	QStringList entryList( const QString & fn, QDir::Filters filters ) const;
 	
 	//! Whether the specified file exists or not
 	bool hasFile( const QString & ) const;
@@ -101,12 +86,12 @@ public:
 	*/
 	bool fileContents( const QString &, QByteArray & );
 	
-	//! See QFSFileEngine::ownerId().
-	uint ownerId( const QString &, QAbstractFileEngine::FileOwner type ) const;
-	//! See QFSFileEngine::owner().
-	QString owner( const QString &, QAbstractFileEngine::FileOwner type ) const;
-	//! See QFSFileEngine::fileTime().
-	QDateTime fileTime( const QString &, QAbstractFileEngine::FileTime type ) const;
+	//! See QFileInfo::ownerId().
+	uint ownerId( const QString & ) const;
+	//! See QFileInfo::owner().
+	QString owner( const QString & ) const;
+	//! See QFileInfo::created().
+	QDateTime fileTime( const QString & ) const;
 	//! See QFileInfo::absoluteFilePath().
 	QString absoluteFilePath( const QString & ) const;
 	
@@ -152,8 +137,11 @@ protected:
 	//! Gets the specified file, or null if not found
 	const BSAFile * getFile( QString fn ) const;
 	
-	//! The engine which reads the %BSA from a file
-	QFSFileEngine bsa;
+	//! The %BSA file
+	QFile bsa;
+	//! File info for the %BSA
+	QFileInfo bsaInfo;
+
 	//! Mutual exclusion handler
 	QMutex bsaMutex;
 	
@@ -176,64 +164,6 @@ protected:
 	bool compressToggle;
 	//! Whether Fallout 3 names are prefixed with an extra string
 	bool namePrefix;
-	
-	//! An iterator that has access to the %BSA
-	friend class BSAIterator;
-};
-
-//! Iterator for a BSA file.
-class BSAIterator : public QAbstractFileEngineIterator
-{
-public:
-	//! Constructor
-	BSAIterator( QDir::Filters filters, const QStringList & nameFilters, BSA * archive, QString & base );
-
-	//! Destructor
-	~BSAIterator();
-	
-	//! Whether there are any entries left in the list
-	/*!
-	 * \return true if next() can be called
-	 */
-	bool hasNext() const;
-	
-	//! Name of the entry currently in the list
-	QString currentFileName() const;
-	
-	//! Gets the next entry in the list
-	/*!
-	 * \return the name of the next entry in the list
-	 */
-	QString next();
-
-	//! Return the current file path
-	QString currentFilePath() const;
-
-	//! Return the path for the iterator
-	QString path() const;
-
-protected:
-	//! The type of the current entry
-	enum CurrentEntry
-	{
-		File, //!< Current entry is a file
-		Folder, //!< Current entry is a folder
-		None //!< No current entry has been set
-	} current;
-
-private:
-	//! The BSA that is being iterated over
-	BSA * archive;
-	//! The current folder inside the BSA
-	BSA::BSAFolder * currentFolder;
-	//! The list of files known by the iterator
-	QStringList fileList;
-	//! The list of folders known by the iterator
-	QStringList folderList;
-	//! The index of the iterator in the list of files
-	qint32 fileIndex;
-	//! The index of the iterator in the list of folders
-	qint32 folderIndex;
 };
 
 #endif
