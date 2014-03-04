@@ -383,17 +383,8 @@ void Renderer::updateShaders()
 	releaseShaders();
 	
 	QDir dir( QApplication::applicationDirPath() );
-	if ( 0 == dir.dirName().compare("Release",Qt::CaseInsensitive) 
-		||0 == dir.dirName().compare("Debug",Qt::CaseInsensitive) 
-		)
-	{
-		dir.cd( ".." );
-	}
-	
 	if ( dir.exists( "shaders" ) )
 		dir.cd( "shaders" );
-	else if ( dir.exists( "/usr/share/nifskope/shaders" ) )
-		dir.cd( "/usr/share/nifskope/shaders" );
 	
 // linux does not want to load the shaders so disable them for now
 #ifdef WIN32
