@@ -1,208 +1,227 @@
+###############################
+## BUILD OPTIONS
+###############################
+
 TEMPLATE = app
-LANGUAGE = C++
 TARGET   = NifSkope
 
 QT += xml opengl network
+greaterThan(QT_MAJOR_VERSION, 4) {
+	QT += widgets
+}
 
-CONFIG += qt debug_and_release debug_and_release_target thread warn_on
+CONFIG -= thread_off
+CONFIG *= thread
 
+# Dependencies
 CONFIG += fsengine nvtristrip qhull
 
-INCLUDEPATH += lib
+# Debug/Release options
+CONFIG(debug, debug|release) {
+	CONFIG += console
+	DEFINES += NO_MESSAGEHANDLER # TODO: Possibly get rid of
+} else {
+	CONFIG -= console
+}
+# TODO: Get rid of this define
+#	uncomment this if you want the text stats gl option
+#	DEFINES += USE_GL_QPAINTER
 
-unix:!macx {
-                LIBS += -lGLU
+INCLUDEPATH += lib .
+
+TRANSLATIONS += \
+	lang/NifSkope_de.ts \
+	lang/NifSkope_fr.ts
+
+# VERSION
+VER = $$cat(build/VERSION)
+
+
+###############################
+## OUTPUT DIRECTORIES
+###############################
+
+build_pass {
+	# build_pass is necessary
+	# Otherwise it will create empty .moc, .ui, etc. dirs on the drive root
+	Debug:   DESTDIR = $${OUT_PWD}/debug
+	Release: DESTDIR = $${OUT_PWD}/release
+
+	# INTERMEDIATE FILES
+	UI_DIR = $${DESTDIR}/../.ui
+	MOC_DIR = $${DESTDIR}/../.moc
+	RCC_DIR = $${DESTDIR}/../.qrc
+	OBJECTS_DIR = $${DESTDIR}/../.obj
 }
 
-macx{
-        LIBS += -framework CoreFoundation
-}
+###############################
+## INCLUDES
+###############################
 
-# uncomment this if you want all the messages to be logged to stdout
-#CONFIG += console
+include(NifSkope_functions.pri)
+include(NifSkope_targets.pri)
 
-# uncomment this if you want the text stats gl option
-#DEFINES += USE_GL_QPAINTER
 
-DESTDIR = .
-
-# NIFSKOPE_VERSION macro
-DEFINES += NIFSKOPE_VERSION=\\\"$$cat(VERSION)\\\"
-
-# build NIFSKOPE_REVISION macro
-GIT_HEAD = $$cat(.git/HEAD)
-# at this point GIT_HEAD either contains commit hash, or symbolic ref:
-# GIT_HEAD = 303c05416ecceb3368997c86676a6e63e968bc9b
-# GIT_HEAD = ref: refs/head/feature/blabla
-contains(GIT_HEAD, "ref:") {
-  # resolve symbolic ref
-  GIT_HEAD = .git/$$member(GIT_HEAD, 1)
-  # GIT_HEAD now points to the file containing hash,
-  # e.g. .git/refs/head/feature/blabla
-  exists($$GIT_HEAD) {
-    GIT_HEAD = $$cat($$GIT_HEAD)
-  } else {
-    clear(GIT_HEAD)
-  }
-}
-count(GIT_HEAD, 1) {
-  # single component, hopefully the commit hash
-  # fetch first seven characters (abbreviated hash)
-  GIT_HEAD ~= s/^(.......).*/\\1/
-  DEFINES += NIFSKOPE_REVISION=\\\"$$GIT_HEAD\\\"
-}
+###############################
+## PROJECT SCOPES
+###############################
 
 HEADERS += \
-    src/basemodel.h \
-    src/config.h \
-    src/gl/dds/BlockDXT.h \
-    src/gl/dds/Color.h \
-    src/gl/dds/ColorBlock.h \
-    src/gl/dds/Common.h \
-    src/gl/dds/dds_api.h \
-    src/gl/dds/DirectDrawSurface.h \
-    src/gl/dds/Image.h \
-    src/gl/dds/PixelFormat.h \
-    src/gl/dds/Stream.h \
-    src/gl/glcontrolable.h \
-    src/gl/glcontroller.h \
-    src/gl/GLee.h \
-    src/gl/glmarker.h \
-    src/gl/glmesh.h \
-    src/gl/glnode.h \
-    src/gl/glparticles.h \
-    src/gl/glproperty.h \
-    src/gl/glscene.h \
-    src/gl/gltex.h \
-    src/gl/gltexloaders.h \
-    src/gl/gltools.h \
-    src/gl/marker/constraints.h \
-    src/gl/marker/furniture.h \
-    src/gl/renderer.h \
-    src/glview.h \
-    src/hacking.h \
-    src/importex/3ds.h \
-    src/kfmmodel.h \
-    src/message.h \
-    src/nifexpr.h \
-    src/nifitem.h \
-    src/nifmodel.h \
-    src/nifproxy.h \
-    src/nifskope.h \
-    src/niftypes.h \
-    src/nifvalue.h \
-    src/nvtristripwrapper.h \
-    src/options.h \
-    src/qhull.h \
-    src/spellbook.h \
-    src/spells/blocks.h \
-    src/spells/mesh.h \
-    src/spells/misc.h \
-    src/spells/skeleton.h \
-    src/spells/stringpalette.h \
-    src/spells/tangentspace.h \
-    src/spells/texture.h \
-    src/spells/transform.h \
-    src/widgets/colorwheel.h \
-    src/widgets/copyfnam.h \
-    src/widgets/fileselect.h \
-    src/widgets/floatedit.h \
-    src/widgets/floatslider.h \
-    src/widgets/groupbox.h \
-    src/widgets/inspect.h \
-    src/widgets/nifcheckboxlist.h \
-    src/widgets/nifeditors.h \
-    src/widgets/nifview.h \
-    src/widgets/refrbrowser.h \
-    src/widgets/uvedit.h \
-    src/widgets/valueedit.h \
-    src/widgets/xmlcheck.h \
-    src/ui/about_dialog.h
+	src/basemodel.h \
+	src/config.h \
+	src/gl/dds/BlockDXT.h \
+	src/gl/dds/Color.h \
+	src/gl/dds/ColorBlock.h \
+	src/gl/dds/Common.h \
+	src/gl/dds/dds_api.h \
+	src/gl/dds/DirectDrawSurface.h \
+	src/gl/dds/Image.h \
+	src/gl/dds/PixelFormat.h \
+	src/gl/dds/Stream.h \
+	src/gl/glcontrolable.h \
+	src/gl/glcontroller.h \
+	src/gl/GLee.h \
+	src/gl/glmarker.h \
+	src/gl/glmesh.h \
+	src/gl/glnode.h \
+	src/gl/glparticles.h \
+	src/gl/glproperty.h \
+	src/gl/glscene.h \
+	src/gl/gltex.h \
+	src/gl/gltexloaders.h \
+	src/gl/gltools.h \
+	src/gl/marker/constraints.h \
+	src/gl/marker/furniture.h \
+	src/gl/renderer.h \
+	src/glview.h \
+	src/hacking.h \
+	src/importex/3ds.h \
+	src/kfmmodel.h \
+	src/message.h \
+	src/nifexpr.h \
+	src/nifitem.h \
+	src/nifmodel.h \
+	src/nifproxy.h \
+	src/nifskope.h \
+	src/niftypes.h \
+	src/nifvalue.h \
+	src/nvtristripwrapper.h \
+	src/options.h \
+	src/qhull.h \
+	src/spellbook.h \
+	src/spells/blocks.h \
+	src/spells/mesh.h \
+	src/spells/misc.h \
+	src/spells/skeleton.h \
+	src/spells/stringpalette.h \
+	src/spells/tangentspace.h \
+	src/spells/texture.h \
+	src/spells/transform.h \
+	src/widgets/colorwheel.h \
+	src/widgets/copyfnam.h \
+	src/widgets/fileselect.h \
+	src/widgets/floatedit.h \
+	src/widgets/floatslider.h \
+	src/widgets/groupbox.h \
+	src/widgets/inspect.h \
+	src/widgets/nifcheckboxlist.h \
+	src/widgets/nifeditors.h \
+	src/widgets/nifview.h \
+	src/widgets/refrbrowser.h \
+	src/widgets/uvedit.h \
+	src/widgets/valueedit.h \
+	src/widgets/xmlcheck.h \
+	src/ui/about_dialog.h
 
 SOURCES += \
-    src/basemodel.cpp \
-    src/gl/dds/BlockDXT.cpp \
-    src/gl/dds/ColorBlock.cpp \
-    src/gl/dds/dds_api.cpp \
-    src/gl/dds/DirectDrawSurface.cpp \
-    src/gl/dds/Image.cpp \
-    src/gl/dds/Stream.cpp \
-    src/gl/glcontroller.cpp \
-    src/gl/GLee.cpp \
-    src/gl/glmarker.cpp \
-    src/gl/glmesh.cpp \
-    src/gl/glnode.cpp \
-    src/gl/glparticles.cpp \
-    src/gl/glproperty.cpp \
-    src/gl/glscene.cpp \
-    src/gl/gltex.cpp \
-    src/gl/gltexloaders.cpp \
-    src/gl/gltools.cpp \
-    src/gl/renderer.cpp \
-    src/glview.cpp \
-    src/importex/3ds.cpp \
-    src/importex/importex.cpp \
-    src/importex/obj.cpp \
-    src/importex/col.cpp \
-    src/kfmmodel.cpp \
-    src/kfmxml.cpp \
-    src/message.cpp \
-    src/nifdelegate.cpp \
-    src/nifexpr.cpp \
-    src/nifmodel.cpp \
-    src/nifproxy.cpp \
-    src/nifskope.cpp \
-    src/niftypes.cpp \
-    src/nifvalue.cpp \
-    src/nifxml.cpp \
-    src/nvtristripwrapper.cpp \
-    src/options.cpp \
-    src/qhull.cpp \
-    src/spellbook.cpp \
-    src/spells/animation.cpp \
-    src/spells/blocks.cpp \
-    src/spells/bounds.cpp \
-    src/spells/color.cpp \
-    src/spells/flags.cpp \
-    src/spells/fo3only.cpp \
-    src/spells/havok.cpp \
-    src/spells/headerstring.cpp \
-    src/spells/light.cpp \
-    src/spells/material.cpp \
-    src/spells/mesh.cpp \
-    src/spells/misc.cpp \
-    src/spells/moppcode.cpp \
-    src/spells/morphctrl.cpp \
-    src/spells/normals.cpp \
-    src/spells/optimize.cpp \
-    src/spells/sanitize.cpp \
-    src/spells/skeleton.cpp \
-    src/spells/stringpalette.cpp \
-    src/spells/strippify.cpp \
-    src/spells/tangentspace.cpp \
-    src/spells/texture.cpp \
-    src/spells/transform.cpp \
-    src/widgets/colorwheel.cpp \
-    src/widgets/copyfnam.cpp \
-    src/widgets/fileselect.cpp \
-    src/widgets/floatedit.cpp \
-    src/widgets/floatslider.cpp \
-    src/widgets/groupbox.cpp \
-    src/widgets/inspect.cpp \
-    src/widgets/nifcheckboxlist.cpp \
-    src/widgets/nifeditors.cpp \
-    src/widgets/nifview.cpp \
-    src/widgets/refrbrowser.cpp \
-    src/widgets/uvedit.cpp \
-    src/widgets/valueedit.cpp \
-    src/widgets/xmlcheck.cpp \
-    src/ui/about_dialog.cpp
+	src/basemodel.cpp \
+	src/gl/dds/BlockDXT.cpp \
+	src/gl/dds/ColorBlock.cpp \
+	src/gl/dds/dds_api.cpp \
+	src/gl/dds/DirectDrawSurface.cpp \
+	src/gl/dds/Image.cpp \
+	src/gl/dds/Stream.cpp \
+	src/gl/glcontroller.cpp \
+	src/gl/GLee.cpp \
+	src/gl/glmarker.cpp \
+	src/gl/glmesh.cpp \
+	src/gl/glnode.cpp \
+	src/gl/glparticles.cpp \
+	src/gl/glproperty.cpp \
+	src/gl/glscene.cpp \
+	src/gl/gltex.cpp \
+	src/gl/gltexloaders.cpp \
+	src/gl/gltools.cpp \
+	src/gl/renderer.cpp \
+	src/glview.cpp \
+	src/importex/3ds.cpp \
+	src/importex/importex.cpp \
+	src/importex/obj.cpp \
+	src/importex/col.cpp \
+	src/kfmmodel.cpp \
+	src/kfmxml.cpp \
+	src/message.cpp \
+	src/nifdelegate.cpp \
+	src/nifexpr.cpp \
+	src/nifmodel.cpp \
+	src/nifproxy.cpp \
+	src/nifskope.cpp \
+	src/niftypes.cpp \
+	src/nifvalue.cpp \
+	src/nifxml.cpp \
+	src/nvtristripwrapper.cpp \
+	src/options.cpp \
+	src/qhull.cpp \
+	src/spellbook.cpp \
+	src/spells/animation.cpp \
+	src/spells/blocks.cpp \
+	src/spells/bounds.cpp \
+	src/spells/color.cpp \
+	src/spells/flags.cpp \
+	src/spells/fo3only.cpp \
+	src/spells/havok.cpp \
+	src/spells/headerstring.cpp \
+	src/spells/light.cpp \
+	src/spells/material.cpp \
+	src/spells/mesh.cpp \
+	src/spells/misc.cpp \
+	src/spells/moppcode.cpp \
+	src/spells/morphctrl.cpp \
+	src/spells/normals.cpp \
+	src/spells/optimize.cpp \
+	src/spells/sanitize.cpp \
+	src/spells/skeleton.cpp \
+	src/spells/stringpalette.cpp \
+	src/spells/strippify.cpp \
+	src/spells/tangentspace.cpp \
+	src/spells/texture.cpp \
+	src/spells/transform.cpp \
+	src/widgets/colorwheel.cpp \
+	src/widgets/copyfnam.cpp \
+	src/widgets/fileselect.cpp \
+	src/widgets/floatedit.cpp \
+	src/widgets/floatslider.cpp \
+	src/widgets/groupbox.cpp \
+	src/widgets/inspect.cpp \
+	src/widgets/nifcheckboxlist.cpp \
+	src/widgets/nifeditors.cpp \
+	src/widgets/nifview.cpp \
+	src/widgets/refrbrowser.cpp \
+	src/widgets/uvedit.cpp \
+	src/widgets/valueedit.cpp \
+	src/widgets/xmlcheck.cpp \
+	src/ui/about_dialog.cpp
 
 RESOURCES += \
-    res/nifskope.qrc
+	res/nifskope.qrc
 
 FORMS += \
 	src/ui/about_dialog.ui
+
+
+###############################
+## DEPENDENCY SCOPES
+###############################
 
 fsengine {
     DEFINES += FSENGINE
@@ -245,31 +264,126 @@ qhull {
 		lib/qhull/src/libqhull/user.h
 }
 
+
+###############################
+## COMPILER SCOPES
+###############################
+
 win32 {
-    # useful for MSVC2005
-    CONFIG += embed_manifest_exe
-    CONFIG -= flat
-
 	RC_FILE = res/icon.rc
-    DEFINES += EDIT_ON_ACTIVATE
-    
-    # Ignore specific errors that are very common in the code
-    # CFLAGS += /Zc:wchar_t-
-    # QMAKE_CFLAGS += /Zc:wchar_t- /wd4305
-    # QMAKE_CXXFLAGS += /Zc:forScope- /Zc:wchar_t- /wd4305 
-    
-    # add specific libraries to msvc builds
-    MSVCPROJ_LIBS += winmm.lib Ws2_32.lib imm32.lib
+	DEFINES += EDIT_ON_ACTIVATE
 }
 
-win32:console {
-    LIBS += -lqtmain
+*msvc* {
+	CONFIG *= embed_manifest_exe
+	CONFIG -= flat
 }
 
-console {
-    DEFINES += NO_MESSAGEHANDLER
+unix:!macx {
+	LIBS += -lGLU
 }
 
-TRANSLATIONS += lang/NifSkope_de.ts lang/NifSkope_fr.ts
+macx {
+	LIBS += -framework CoreFoundation
+}
+
+
+# Pre/Post Link in build_pass only
+build_pass {
+
+###############################
+## QMAKE_PRE_LINK
+###############################
+
+	# Find `sed` command
+	SED = $$getSed()
+
+	!isEmpty(SED) {
+		# Replace @VERSION@ with number from build/VERSION
+		# Copy build/README.md.in > README.md
+		QMAKE_PRE_LINK += $${SED} -e s/@VERSION@/$${VER}/ $${PWD}/build/README.md.in > $${PWD}/README.md $$escape_expand(\\n\\t)
+	}
+
+
+###############################
+## QMAKE_POST_LINK
+###############################
+
+	DEP += \
+		dep/NifMopp.dll
+
+	XML += \
+		build/docsys/nifxml/nif.xml \
+		build/docsys/kfmxml/kfm.xml
+
+	QSS += \
+		res/style.qss
+
+	QHULLTXT += \
+		lib/qhull/COPYING.txt
+
+	LANG += \
+		res/lang
+
+	SHADERS += \
+		res/shaders
+
+	READMES += \
+		*.md
+
+
+	copyDirs( $$SHADERS, shaders )
+	copyDirs( $$LANG, lang )
+	copyFiles( $$XML $$DEP $$QSS )
+
+	DDIR = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP})
+
+	# Copy Readmes and rename to TXT
+	copyFiles( $$READMES )
+	win32:QMAKE_POST_LINK += $$quote(del $${DDIR}*.txt) $$escape_expand(\\n\\t)
+	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}*.md *.txt) $$escape_expand(\\n\\t)
+
+	# Copy Qhull COPYING.TXT and rename
+	copyFiles( $$QHULLTXT )
+	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}COPYING.txt Qhull_COPYING.txt) $$escape_expand(\\n\\t)
+
+
+	win32:!static {
+		# Copy DLLs to build dir
+		copyFiles( $$QtBins(), "", true )
+	}
+
+} # end build_pass
+
+
+###############################
+## MACROS
+###############################
+
+# NIFSKOPE_VERSION macro
+DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
+
+# NIFSKOPE_REVISION macro
+GIT_HEAD = $$cat(.git/HEAD)
+# At this point GIT_HEAD either contains commit hash, or symbolic ref:
+#	GIT_HEAD = 303c05416ecceb3368997c86676a6e63e968bc9b
+#	GIT_HEAD = ref: refs/head/feature/blabla
+contains(GIT_HEAD, "ref:") {
+	# Resolve symbolic ref
+	GIT_HEAD = .git/$$member(GIT_HEAD, 1)
+	# GIT_HEAD now points to the file containing hash,
+	#	e.g. .git/refs/head/feature/blabla
+	exists($$GIT_HEAD) {
+		GIT_HEAD = $$cat($$GIT_HEAD)
+	} else {
+		clear(GIT_HEAD)
+	}
+}
+count(GIT_HEAD, 1) {
+	# Single component, hopefully the commit hash
+	# Fetch first seven characters (abbreviated hash)
+	GIT_HEAD ~= s/^(.......).*/\\1/
+	DEFINES += NIFSKOPE_REVISION=\\\"$$GIT_HEAD\\\"
+}
 
 # vim: set filetype=config : 
