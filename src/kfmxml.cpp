@@ -219,16 +219,13 @@ public:
 bool KfmModel::loadXML()
 {
 	QDir dir( QApplication::applicationDirPath() );
-	QString fname = dir.filePath( "kfm.xml" ); // last resort
-        // Try local copy first, docsys, relative from nifskope/release, relative from ../nifskope-build/release linux data dir
+	QString fname;
 	QStringList xmlList( QStringList()
 			<< "kfm.xml"
-                        << "docsys/kfmxml/kfm.xml"
-                        << "../docsys/kfmxml/kfm.xml"
-                        << "../../docsys/kfmxml/kfm.xml"
-                        << "../nifskope/docsys/kfmxml/kfm.xml"
-                        << "../../nifskope/docsys/kfmxml/kfm.xml"
-			<< "/usr/share/nifskope/kfm.xml" );
+#ifdef Q_OS_LINUX
+			<< "/usr/share/nifskope/kfm.xml"
+#endif
+	);
 	foreach( QString str, xmlList )
 	{
 		if ( dir.exists( str ) )

@@ -41,43 +41,15 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
     : QTextBrowser( parent )
 {
     nif = NULL;
-
-    // Search for reference documentation in different locations.
-
-    // First, try the application path, for windows install.
     docFolder.setPath( qApp->applicationDirPath() );
     docFolderPresent = docFolder.exists( "doc" );
-    
-    // Next, try the docsys path (if application is run from the nifskope
-    // repository directory, as in linux build).
-    if( ! docFolderPresent ) {
-        docFolder.setPath( qApp->applicationDirPath() );
-        docFolder.cd( "docsys" );
-        docFolderPresent = docFolder.exists( "doc" );
-    }
-    
-    // Again, try the docsys path (if application is run from the
-    // nifskope/release repository directory, as in windows build).
-    if( ! docFolderPresent ) {
-        docFolder.setPath( qApp->applicationDirPath() );
-        docFolder.cd( "../docsys" );
-        docFolderPresent = docFolder.exists( "doc" );
-    }
-    
-    // Again, try the docsys path when build dir != source dir
-    // which is default in recent versions of Qt SDK,
-    // i.e. "shadow build" option in Qt Creator.
-    if( ! docFolderPresent ) {
-	docFolder.setPath( qApp->applicationDirPath() );
-	docFolder.cd( "../../nifskope/docsys" );
-	docFolderPresent = docFolder.exists( "doc" );
-    }
 
-    // Try the /usr/share/nifskope path, for linux install.
+#ifdef Q_OS_LINUX
     if ( ! docFolderPresent ) {
         docFolder.cd( "/usr/share/nifskope" );
         docFolderPresent = docFolder.exists( "doc" );
     }
+#endif
     
     if( docFolderPresent ) {
         docFolder.cd( "doc" );
