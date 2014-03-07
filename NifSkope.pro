@@ -301,7 +301,7 @@ build_pass {
 	!isEmpty(SED) {
 		# Replace @VERSION@ with number from build/VERSION
 		# Copy build/README.md.in > README.md
-		QMAKE_PRE_LINK += $${SED} -e s/@VERSION@/$${VER}/ $${PWD}/build/README.md.in > $${PWD}/README.md $$escape_expand(\\n\\t)
+		QMAKE_PRE_LINK += $${SED} -e s/@VERSION@/$${VER}/ $${PWD}/build/README.md.in > $${PWD}/README.md $$nt
 	}
 
 
@@ -340,12 +340,12 @@ build_pass {
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES )
-	win32:QMAKE_POST_LINK += $$quote(del $${DDIR}*.txt) $$escape_expand(\\n\\t)
-	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}*.md *.txt) $$escape_expand(\\n\\t)
+	win32:QMAKE_POST_LINK += $$quote(del $${DDIR}*.txt) $$nt
+	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}*.md *.txt) $$nt
 
 	# Copy Qhull COPYING.TXT and rename
 	copyFiles( $$QHULLTXT )
-	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}COPYING.txt Qhull_COPYING.txt) $$escape_expand(\\n\\t)
+	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}COPYING.txt Qhull_COPYING.txt) $$nt
 
 
 	win32:!static {

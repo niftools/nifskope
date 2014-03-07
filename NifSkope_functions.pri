@@ -41,8 +41,8 @@ defineReplace(getSed) {
 
 
 # Format string for Qt DLL
+DLLEXT = $$quote(.dll)
 greaterThan(QT_MAJOR_VERSION, 4) {
-	DLLEXT = $$quote(.dll)
 	CONFIG(debug, debug|release) {
 		DLLSTRING = $$quote(Qt5%1d)
 	} else {
@@ -53,10 +53,9 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 		DLLSTRING = $$quote(Qt%1d)
 	} else {
 		DLLSTRING = $$quote(Qt%1)
-		# Easiest way to deal with the %1 > %14 issue
-		DLLEXT = $$quote(4.dll)
-
 	}
+	# Easiest way to deal with the %1 > %14 issue
+	DLLEXT = $$quote(4.dll)
 }
 
 # Returns list of absolute paths to Qt DLLs required by project
@@ -89,22 +88,23 @@ defineTest(copyFiles) {
 	}
 
 	for(FILE, files) {
-		FILEABS = $${PWD}$${QMAKE_DIR_SEP}$${FILE}
+		fileabs = $${PWD}$${QMAKE_DIR_SEP}$${FILE}
 		$$abs {
-			FILEABS = $${FILE}
+			fileabs = $${FILE}
 		}
 
-		DDIR = $${DESTDIR}$${QMAKE_DIR_SEP}$${subdir}
+		ddir = $${DESTDIR}$${QMAKE_DIR_SEP}$${subdir}
 
 		# Replace slashes in paths with backslashes for Windows
-		win32:FILEABS ~= s,/,$${QMAKE_DIR_SEP},g
-		win32:DDIR ~= s,/,$${QMAKE_DIR_SEP},g
+		fileabs = $$syspath($${fileabs})
+		ddir = $$syspath($${ddir})
 
-		QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${DDIR} $$QMAKE_MKDIR $${DDIR} $$nt
-		QMAKE_POST_LINK += $$QMAKE_COPY $${FILEABS} $${DDIR} $$nt
+		QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+		QMAKE_POST_LINK += $$QMAKE_COPY $${fileabs} $${ddir} $$nt
 	}
 
 	export(QMAKE_POST_LINK)
+	unset(ddir)
 }
 
 # Copies the given dirs to the destination directory
@@ -126,20 +126,21 @@ defineTest(copyDirs) {
 	}
 
 	for(DIR, dirs) {
-		DIRABS = $${PWD}$${QMAKE_DIR_SEP}$${DIR}
+		dirabs = $${PWD}$${QMAKE_DIR_SEP}$${DIR}
 		$$abs {
-			DIRABS = $${FILE}
+			dirabs = $${FILE}
 		}
 
-		DDIR = $${DESTDIR}$${QMAKE_DIR_SEP}$${subdir}
+		ddir = $${DESTDIR}$${QMAKE_DIR_SEP}$${subdir}
 
 		# Replace slashes in paths with backslashes for Windows
-		win32:DIRABS ~= s,/,$${QMAKE_DIR_SEP},g
-		win32:DDIR ~= s,/,$${QMAKE_DIR_SEP},g
+		dirabs = $$syspath($${dirabs})
+		ddir = $$syspath($${ddir})
 
-		QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${DDIR} $$QMAKE_MKDIR $${DDIR} $$nt
-		QMAKE_POST_LINK += $$QMAKE_COPY_DIR $${DIRABS} $${DDIR} $$nt
+		QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+		QMAKE_POST_LINK += $$QMAKE_COPY_DIR $${dirabs} $${ddir} $$nt
 	}
 
 	export(QMAKE_POST_LINK)
+	unset(ddir)
 }
