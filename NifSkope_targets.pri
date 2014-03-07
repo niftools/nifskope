@@ -100,13 +100,13 @@ SED = $$getSed()
 !isEmpty(SED) {
 
 doxygen.commands += $${SED} -e \"s/@VERSION@/$${VER}/g;\
-								s/@OUTPUT@/$${OUTPUT}/g;\
-								s/@INPUT@/$${INPUT}/g;\
-								s/@GENERATE_QHP@/$${GENERATE_QHP}/g;\
-								s/@HAVE_DOT@/$${HAVE_DOT}/g;\
-								s/@DOT_PATH@/$${DOT_PATH}/g;\
-								s/@QT_INSTALL_BINS@/$${BINS}/g\" \
-					$${doxyfilein} > $${doxyfile} $$nt
+                                 s/@OUTPUT@/$${OUTPUT}/g;\
+                                 s/@INPUT@/$${INPUT}/g;\
+                                 s/@GENERATE_QHP@/$${GENERATE_QHP}/g;\
+                                 s/@HAVE_DOT@/$${HAVE_DOT}/g;\
+                                 s/@DOT_PATH@/$${DOT_PATH}/g;\
+                                 s/@QT_INSTALL_BINS@/$${BINS}/g\" \
+                    $${doxyfilein} > $${doxyfile} $$nt
 
 # Run Doxygen
 doxygen.commands += doxygen $${doxyfile} $$nt

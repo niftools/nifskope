@@ -224,16 +224,16 @@ FORMS += \
 ###############################
 
 fsengine {
-    DEFINES += FSENGINE
+	DEFINES += FSENGINE
 	INCLUDEPATH += lib/fsengine
-    HEADERS += \
-        lib/fsengine/bsa.h \
-        lib/fsengine/fsengine.h \
-        lib/fsengine/fsmanager.h
-    SOURCES += \
-        lib/fsengine/bsa.cpp \
-        lib/fsengine/fsengine.cpp \
-        lib/fsengine/fsmanager.cpp
+	HEADERS += \
+		lib/fsengine/bsa.h \
+		lib/fsengine/fsengine.h \
+		lib/fsengine/fsmanager.h
+	SOURCES += \
+		lib/fsengine/bsa.cpp \
+		lib/fsengine/fsengine.cpp \
+		lib/fsengine/fsmanager.cpp
 }
 
 nvtristrip {
