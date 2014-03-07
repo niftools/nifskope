@@ -329,7 +329,11 @@ build_pass {
 		res/shaders
 
 	READMES += \
-		*.md
+		CHANGELOG.md \
+		CONTRIBUTORS.md \
+		LICENSE.md \
+		README.md \
+		TROUBLESHOOTING.md
 
 
 	copyDirs( $$SHADERS, shaders )
@@ -339,18 +343,14 @@ build_pass {
 	DDIR = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP})
 
 	# Copy Readmes and rename to TXT
-	copyFiles( $$READMES )
-	win32:QMAKE_POST_LINK += $$quote(del $${DDIR}*.txt) $$nt
-	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}*.md *.txt) $$nt
+	copyFiles( $$READMES,,,, md:txt )
 
 	# Copy Qhull COPYING.TXT and rename
-	copyFiles( $$QHULLTXT )
-	win32:QMAKE_POST_LINK += $$quote(rename $${DDIR}COPYING.txt Qhull_COPYING.txt) $$nt
-
+	copyFiles( $$QHULLTXT,,, Qhull_COPYING.txt )
 
 	win32:!static {
 		# Copy DLLs to build dir
-		copyFiles( $$QtBins(), "", true )
+		copyFiles( $$QtBins(),, true )
 	}
 
 } # end build_pass

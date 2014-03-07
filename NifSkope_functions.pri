@@ -80,6 +80,14 @@ defineTest(copyFiles) {
 	files = $$1
 	subdir = $$2
 	abs = $$3
+	rename = $$4 # for renaming ONE file, no wildcards
+	regexp = $$5 # for file extension renaming, no wildcards
+
+	!isEmpty(rename):!isEmpty(regexp):message(WARNING: Cannot use both 4th and 5th param of copyFiles)
+
+	unset(oldext)
+	unset(newext)
+	unset(newfile)
 
 	# If `abs` wasn't passed in, make it false
 	# (For whatever reason true/false don't pass in as true/false
@@ -93,20 +101,25 @@ defineTest(copyFiles) {
 		subdir = $${subdir}$${QMAKE_DIR_SEP}
 	}
 
+	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
+	QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+
 	for(FILE, files) {
 		fileabs = $${PWD}$${QMAKE_DIR_SEP}$${FILE}
 		$$abs {
 			fileabs = $${FILE}
 		}
 
-		ddir = $${DESTDIR}$${QMAKE_DIR_SEP}$${subdir}
+		!isEmpty(regexp) {
+			oldext = $$section(regexp, :, 0, 0)
+			newext = $$section(regexp, :, 1, 1)
+			newfile = $$section(FILE, /, -1)
+			newfile ~= s,.$${oldext},.$${newext},g
+		}
 
-		# Replace slashes in paths with backslashes for Windows
 		fileabs = $$syspath($${fileabs})
-		ddir = $$syspath($${ddir})
 
-		QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
-		QMAKE_POST_LINK += $$QMAKE_COPY $${fileabs} $${ddir} $$nt
+		QMAKE_POST_LINK += $$QMAKE_COPY $${fileabs} $${ddir}$${rename}$${newfile} $$nt
 	}
 
 	export(QMAKE_POST_LINK)
@@ -131,19 +144,17 @@ defineTest(copyDirs) {
 		subdir = $${subdir}$${QMAKE_DIR_SEP}
 	}
 
+	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
+	QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+
 	for(DIR, dirs) {
 		dirabs = $${PWD}$${QMAKE_DIR_SEP}$${DIR}
 		$$abs {
 			dirabs = $${FILE}
 		}
 
-		ddir = $${DESTDIR}$${QMAKE_DIR_SEP}$${subdir}
-
-		# Replace slashes in paths with backslashes for Windows
 		dirabs = $$syspath($${dirabs})
-		ddir = $$syspath($${ddir})
 
-		QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
 		QMAKE_POST_LINK += $$QMAKE_COPY_DIR $${dirabs} $${ddir} $$nt
 	}
 
