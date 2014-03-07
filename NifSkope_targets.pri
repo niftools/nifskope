@@ -72,11 +72,25 @@ doxygen.target = doxygen
 doxyfile = $$syspath($${OUT_PWD}/Doxyfile)
 doxyfilein = $$syspath($${PWD}/build/Doxyfile.in)
 
+# Paths
+qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator.exe)
+dot = $$syspath(C:/Program Files (x86)/Graphviz2.37/bin) # TODO
+
 # Doxyfile.in Replacements
+
 INPUT = $$re_escape($$syspath($${PWD}/src))
-GENERATE_QHP = NO # TODO
-HAVE_DOT = NO # TODO
-DOT_PATH = "" # TODO #$$re_escape($$syspath("C:/Program Files (x86)/Graphviz2.37/bin"))
+OUTPUT = $$re_escape($$syspath($${OUT_PWD}/apidocs))
+
+GENERATE_QHP = NO
+exists($$qhgen):GENERATE_QHP = YES
+
+HAVE_DOT = NO
+DOT_PATH = ""
+exists($$dot) {
+	HAVE_DOT = YES
+	DOT_PATH = \\\"$$re_escape($${dot})\\\"
+}
+
 BINS = $$re_escape($$syspath($$[QT_INSTALL_BINS]))
 
 # Find `sed` command
@@ -85,7 +99,9 @@ SED = $$getSed()
 # Parse Doxyfile.in
 !isEmpty(SED) {
 
-doxygen.commands += $${SED} -e \"s/@VERSION@/$${VER}/g;s/@INPUT@/$${INPUT}/g;\
+doxygen.commands += $${SED} -e \"s/@VERSION@/$${VER}/g;\
+								s/@OUTPUT@/$${OUTPUT}/g;\
+								s/@INPUT@/$${INPUT}/g;\
 								s/@GENERATE_QHP@/$${GENERATE_QHP}/g;\
 								s/@HAVE_DOT@/$${HAVE_DOT}/g;\
 								s/@DOT_PATH@/$${DOT_PATH}/g;\
@@ -121,6 +137,7 @@ unset(doxyfilein)
 unset(doxyfile)
 
 unset(INPUT)
+unset(OUTPUT)
 unset(GENERATE_QHP)
 unset(HAVE_DOT)
 unset(DOT_PATH)
