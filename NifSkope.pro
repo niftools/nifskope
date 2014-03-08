@@ -33,8 +33,31 @@ TRANSLATIONS += \
 	lang/NifSkope_de.ts \
 	lang/NifSkope_fr.ts
 
-# VERSION
-VER = $$cat(build/VERSION)
+
+###############################
+## INCLUDES
+###############################
+
+include(NifSkope_functions.pri)
+include(NifSkope_targets.pri)
+
+
+###############################
+## MACROS
+###############################
+
+# Nifskope Version
+VER = $$getVersion()
+# Nifskope Revision
+REVISION = $$getRevision()
+
+# NIFSKOPE_VERSION macro
+DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
+
+# NIFSKOPE_REVISION macro
+!isEmpty(REVISION) {
+	DEFINES += NIFSKOPE_REVISION=\\\"$${REVISION}\\\"
+}
 
 
 ###############################
@@ -53,13 +76,6 @@ build_pass {
 	RCC_DIR = $${DESTDIR}/../.qrc
 	OBJECTS_DIR = $${DESTDIR}/../.obj
 }
-
-###############################
-## INCLUDES
-###############################
-
-include(NifSkope_functions.pri)
-include(NifSkope_targets.pri)
 
 
 ###############################
@@ -249,7 +265,7 @@ nvtristrip {
 }
 
 qhull {
-	INCLUDEPATH += lib/qhull/src/
+	INCLUDEPATH += lib/qhull/src
 	HEADERS += \
 		lib/qhull/src/libqhull/geom.h \
 		lib/qhull/src/libqhull/io.h \
@@ -340,8 +356,6 @@ build_pass {
 	copyDirs( $$LANG, lang )
 	copyFiles( $$XML $$DEP $$QSS )
 
-	DDIR = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP})
-
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
 
@@ -354,36 +368,5 @@ build_pass {
 	}
 
 } # end build_pass
-
-
-###############################
-## MACROS
-###############################
-
-# NIFSKOPE_VERSION macro
-DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
-
-# NIFSKOPE_REVISION macro
-GIT_HEAD = $$cat(.git/HEAD)
-# At this point GIT_HEAD either contains commit hash, or symbolic ref:
-#	GIT_HEAD = 303c05416ecceb3368997c86676a6e63e968bc9b
-#	GIT_HEAD = ref: refs/head/feature/blabla
-contains(GIT_HEAD, "ref:") {
-	# Resolve symbolic ref
-	GIT_HEAD = .git/$$member(GIT_HEAD, 1)
-	# GIT_HEAD now points to the file containing hash,
-	#	e.g. .git/refs/head/feature/blabla
-	exists($$GIT_HEAD) {
-		GIT_HEAD = $$cat($$GIT_HEAD)
-	} else {
-		clear(GIT_HEAD)
-	}
-}
-count(GIT_HEAD, 1) {
-	# Single component, hopefully the commit hash
-	# Fetch first seven characters (abbreviated hash)
-	GIT_HEAD ~= s/^(.......).*/\\1/
-	DEFINES += NIFSKOPE_REVISION=\\\"$$GIT_HEAD\\\"
-}
 
 # vim: set filetype=config : 
