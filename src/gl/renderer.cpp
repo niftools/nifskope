@@ -385,6 +385,10 @@ void Renderer::updateShaders()
 	QDir dir( QApplication::applicationDirPath() );
 	if ( dir.exists( "shaders" ) )
 		dir.cd( "shaders" );
+#ifdef Q_OS_LINUX
+	else if ( dir.exists( "/usr/share/nifskope/shaders" ) )
+		dir.cd( "/usr/share/nifskope/shaders" );
+#endif
 	
 // linux does not want to load the shaders so disable them for now
 #ifdef WIN32
