@@ -80,6 +80,7 @@ dot = $$syspath(C:/Program Files (x86)/Graphviz2.37/bin) # TODO
 
 INPUT = $$re_escape($$syspath($${PWD}/src))
 OUTPUT = $$re_escape($$syspath($${OUT_PWD}/apidocs))
+ROOT = $$re_escape($$syspath($${PWD}))
 
 GENERATE_QHP = NO
 exists($$qhgen):GENERATE_QHP = YES
@@ -88,7 +89,7 @@ HAVE_DOT = NO
 DOT_PATH = ""
 exists($$dot) {
 	HAVE_DOT = YES
-	DOT_PATH = \\\"$$re_escape($${dot})\\\"
+	DOT_PATH = $$re_escape($${dot})
 }
 
 BINS = $$re_escape($$syspath($$[QT_INSTALL_BINS]))
@@ -99,9 +100,12 @@ SED = $$getSed()
 # Parse Doxyfile.in
 !isEmpty(SED) {
 
-doxygen.commands += $${SED} -e \"s/@VERSION@/$${VER}/g;\
+doxygen.commands += $${SED} -e \"s/@VERSION@/$$getVersion()/g;\
+                                 s/@REVISION@/$$getRevision()/g;\
                                  s/@OUTPUT@/$${OUTPUT}/g;\
                                  s/@INPUT@/$${INPUT}/g;\
+                                 s/@PWD@/$${ROOT}/g;\
+                                 s/@QT_VER@/$$QtHex()/g;\
                                  s/@GENERATE_QHP@/$${GENERATE_QHP}/g;\
                                  s/@HAVE_DOT@/$${HAVE_DOT}/g;\
                                  s/@DOT_PATH@/$${DOT_PATH}/g;\
@@ -138,6 +142,7 @@ unset(doxyfile)
 
 unset(INPUT)
 unset(OUTPUT)
+unset(ROOT)
 unset(GENERATE_QHP)
 unset(HAVE_DOT)
 unset(DOT_PATH)
