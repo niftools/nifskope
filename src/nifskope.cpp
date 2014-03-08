@@ -1263,11 +1263,12 @@ int main( int argc, char * argv[] )
 	
 	// if there is a style sheet present then load it
 	QDir qssDir( QApplication::applicationDirPath() );
-	// Check app dir, relative from nifskope/release, linux data dir
 	QStringList qssList( QStringList()
 			<< "style.qss"
-			<< "../style.qss"
-			<< "/usr/share/nifskope/style.qss" );
+#ifdef Q_OS_LINUX
+			<< "/usr/share/nifskope/style.qss"
+#endif
+	);
 	QString qssName;
 	foreach( QString str, qssList )
 	{
