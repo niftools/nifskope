@@ -70,7 +70,7 @@ doxygen.target = doxygen
 
 # Vars
 doxyfile = $$syspath($${OUT_PWD}/Doxyfile)
-doxyfilein = $$syspath($${PWD}/build/Doxyfile.in)
+doxyfilein = $$syspath($${PWD}/build/doxygen/Doxyfile.in)
 
 # Paths
 qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator.exe)
