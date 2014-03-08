@@ -188,7 +188,7 @@ private:
 	
 	void setViewFont( const QFont & );
 
-	//! Migrate settings from older versions of nifskope.
+	//! Migrate settings from older versions of NifSkope.
 	void migrateSettings() const;
 
 	//! Stores the nif file in memory.

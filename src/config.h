@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Include this if you want to access the current version or persistent QSettings.
  */
 
-//! Create or use a QSettings variable for nifskope
+//! Create or use a QSettings variable for NifSkope
 #define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope" )
 
 #endif

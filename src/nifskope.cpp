@@ -106,9 +106,9 @@ FSManager * fsmanager = 0;
 
 void NifSkope::migrateSettings() const
 {
-	// load current nifskope settings
+	// load current NifSkope settings
 	NIFSKOPE_QSETTINGS(cfg);
-	// check if we are running a new version of nifskope
+	// check if we are running a new version of NifSkope
 	if (cfg.value("version").toString() != NIFSKOPE_VERSION) {
 		// check all keys and delete all binary ones
 		//to prevent portability problems between Qt versions
@@ -116,7 +116,7 @@ void NifSkope::migrateSettings() const
 		for (QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key) {
 			if (cfg.value(*key).type() == QVariant::ByteArray) {
 				qDebug() << "removing config setting" << *key
-				         << "whilst migrating settings from previous nifskope version";
+				         << "whilst migrating settings from previous NifSkope version";
 				cfg.remove(*key);
 			}
 		}
@@ -1228,8 +1228,8 @@ void NifSkope::sltLocaleChanged()
 {
    SetAppLocale( Options::get()->translationLocale() );
 
-   QMessageBox mb( "Nifskope", 
-      tr("Nifskope must be restarted for this setting to take full effect."), QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, qApp->activeWindow());
+   QMessageBox mb( "NifSkope",
+      tr("NifSkope must be restarted for this setting to take full effect."), QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, qApp->activeWindow());
    mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
    mb.exec();
 }

@@ -3,7 +3,7 @@
 /*!
  * \mainpage NifSkope API Documentation
  *
- * A concise description of nifskope's inner workings should come here, with
+ * A concise description of NifSkope's inner workings should come here, with
  * pointers to get people started.
  *
  * The <a href="annotated.html">class list</a> and

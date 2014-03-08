@@ -46,9 +46,9 @@ include(NifSkope_targets.pri)
 ## MACROS
 ###############################
 
-# Nifskope Version
+# NifSkope Version
 VER = $$getVersion()
-# Nifskope Revision
+# NifSkope Revision
 REVISION = $$getRevision()
 
 # NIFSKOPE_VERSION macro
