@@ -18,10 +18,16 @@ CONFIG += fsengine nvtristrip qhull
 
 # Debug/Release options
 CONFIG(debug, debug|release) {
+	# Debug Options
 	CONFIG += console
-	DEFINES += NO_MESSAGEHANDLER # TODO: Possibly get rid of
+	# Exits after qWarning() for easy backtrace
+	#DEFINES += QT_FATAL_WARNINGS
 } else {
+	# Release Options
 	CONFIG -= console
+	DEFINES += QT_NO_DEBUG_OUPUT
+	# TODO: Clean up qWarnings first before using
+	#DEFINES += QT_NO_WARNING_OUTPUT
 }
 # TODO: Get rid of this define
 #	uncomment this if you want the text stats gl option

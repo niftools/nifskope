@@ -1253,7 +1253,7 @@ int main( int argc, char * argv[] )
 	
 	// install message handler
 	qRegisterMetaType<Message>( "Message" );
-#ifndef NO_MESSAGEHANDLER
+#ifdef QT_NO_DEBUG
 #if QT_VERSION >= 0x050000
 	qInstallMessageHandler( myMessageOutput );
 #else
