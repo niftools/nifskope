@@ -30,15 +30,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
-#include "GLee.h"
 #include "gltexloaders.h"
-#include <QtOpenGL>
+
 #include "dds/dds_api.h"
 #include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
 #include "../nifmodel.h"
 
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtWidgets>   // dito
 #include <QDebug>
 
 /*! \file gltexloaders.cpp

@@ -30,8 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <QtCore>
-#include <QtGui>
+#include "uvedit.h"
 
 #include "../nifmodel.h"
 #include "../niftypes.h"
@@ -40,15 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"
-#include "uvedit.h"
-
-#include <math.h>
-#ifdef __APPLE__
-    #include <OPENGL/glu.h>
-#else
-    #include <GL/glu.h>
-#endif
-
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0
@@ -195,7 +185,7 @@ void UVWidget::initializeGL()
 {
 	glMatrixMode( GL_MODELVIEW );
 
-	initializeTextureUnits( context() );
+	initializeTextureUnits( context()->contextHandle() );
 
 	glShadeModel( GL_SMOOTH );
 	//glShadeModel( GL_LINE_SMOOTH );

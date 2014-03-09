@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glmarker.h"
 
-#include <QtOpenGL>
+#include <QOpenGLContext>
 
 void drawMarker( const GLMarker * marker )
 {

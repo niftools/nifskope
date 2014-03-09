@@ -33,10 +33,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UVEDIT_H
 #define UVEDIT_H
 
-#include <QtCore>
-#include <QtGui>
-#include "../gl/GLee.h"
-#include <QGLContext>
+#include <QOpenGLContext>
+// TODO: Determine the necessity of this
+// Appears to be used solely for gluErrorString
+// There may be some Qt alternative
+#ifdef __APPLE__
+	#include <OPENGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
+
+#include <QGLWidget>
+
+#include <QtCore/QtCore>
+#include <QtWidgets>
+
+#include <math.h>
 
 class NifModel;
 class TexCache;

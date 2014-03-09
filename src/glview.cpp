@@ -30,19 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <QtCore>
-#include <QtGui>
-#include "gl/GLee.h"
-#include <QGLContext>
-#ifdef __APPLE__
-    #include <OpenGL/glu.h>
-#else
-    #include <GL/glu.h>
-#endif
-
 #include "glview.h"
-
-#include <math.h>
 
 #include "nifmodel.h"
 #include "gl/glscene.h"
@@ -53,7 +41,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
-#define FPS 25
+
+// TODO: Make this platform independent (Half monitor refresh rate)
+#define FPS 30
 
 #define FOV 45.0
 
@@ -84,6 +74,35 @@ GLView * GLView::create()
 		fmt = share->format();
 	else
 		fmt.setSampleBuffers( Options::antialias() );
+
+	fmt.setVersion(2, 1);
+	// Ignored if version < 3.2
+	//fmt.setProfile(QGLFormat::CoreProfile);
+	/*
+	// TODO:  As I create New Windows, the format changes
+	 1st
+		QGLFormat(options QFlags(0x1|0x2|0x4|0x20|0x80|0x200|0x400) , plane  0 , depthBu
+		fferSize  -1 , accumBufferSize  -1 , stencilBufferSize  -1 , redBufferSize  -1 ,
+		greenBufferSize  -1 , blueBufferSize  -1 , alphaBufferSize  -1 , samples  -1 ,
+		swapInterval  -1 , majorVersion  2 , minorVersion  0 , profile  0 )
+		QObject(0x0)
+
+	 2nd
+		QGLFormat(options QFlags(0x1|0x2|0x4|0x8|0x20|0x80|0x200|0x400) , plane  0 , dep
+		thBufferSize  24 , accumBufferSize  -1 , stencilBufferSize  8 , redBufferSize  8
+		, greenBufferSize  8 , blueBufferSize  8 , alphaBufferSize  8 , samples  4 , sw
+		apInterval  -1 , majorVersion  4 , minorVersion  3 , profile  0 )
+		GLView(0x3b4f250)
+
+	 3rd
+		QGLFormat(options QFlags(0x1|0x2|0x4|0x8|0x20|0x80|0x200|0x400) , plane  0 , dep
+		thBufferSize  24 , accumBufferSize  -1 , stencilBufferSize  8 , redBufferSize  8
+		, greenBufferSize  8 , blueBufferSize  8 , alphaBufferSize  8 , samples  4 , sw
+		apInterval  -1 , majorVersion  4 , minorVersion  3 , profile  1 )
+		GLView(0x622a238)
+	*/
+	//qDebug() << fmt;
+	//qDebug() << share;
 	
 	views.append( QPointer<GLView>( new GLView( fmt, share ) ) );
 
@@ -93,6 +112,20 @@ GLView * GLView::create()
 GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	: QGLWidget( format, 0, shareWidget )
 {
+	// Make the context current on this window
+	makeCurrent();
+
+	// Create an OpenGL context
+	m_context = context()->contextHandle();
+
+	// Obtain a functions object and resolve all entry points
+	m_funcs = m_context->functions();
+	if ( !m_funcs ) {
+		qWarning( "Could not obtain OpenGL functions" );
+		exit( 1 );
+	}
+	m_funcs->initializeOpenGLFunctions();
+
 	setFocusPolicy( Qt::ClickFocus );
 	setAttribute( Qt::WA_NoSystemBackground );
 	setAcceptDrops( true );
@@ -115,7 +148,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	
 	textures = new TexCache( this );
 	
-	scene = new Scene( textures );
+	scene = new Scene( textures, m_context, m_funcs );
 	connect( textures, SIGNAL( sigRefresh() ), this, SLOT( update() ) );
 	
 	timer = new QTimer(this);
@@ -320,16 +353,16 @@ void GLView::updateShaders()
 
 void GLView::initializeGL()
 {
-	initializeTextureUnits( context() );
-	
-	if ( Renderer::initialize( context() ) )
+	GLenum err;
+	initializeTextureUnits( m_context );
+
+	if ( scene->renderer->initialize() )
 		updateShaders();
 
 	// check for errors
 	
-	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << tr("GL ERROR (init) : ") << (const char *) gluErrorString( err );
+		qDebug() << tr("glview.cpp - GL ERROR (init) : ") << (const char *) gluErrorString( err );
 }
 
 void GLView::glProjection( int x, int y )
@@ -521,7 +554,8 @@ void GLView::paintGL()
 	glEnable( GL_LIGHTING );
 
 	// Initialize Rendering Font 
-	glListBase(fontDisplayListBase(QFont(), 2000));
+	// TODO: Seek alternative to fontDisplayListBase or determine if code is actually necessary
+	//glListBase(fontDisplayListBase(QFont(), 2000));
 
 	// color-key slect debug for non-meshes
 	/*//glDisable( GL_MULTISAMPLE );
@@ -551,7 +585,7 @@ void GLView::paintGL()
 	
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
-		qDebug() << tr("GL ERROR (paint): ") << (const char *) gluErrorString( err );
+		qDebug() << tr("glview.cpp - GL ERROR (paint): ") << (const char *) gluErrorString( err );
 	
 	// update fps counter
 	if ( fpsacc > 1.0 && fpscnt )
@@ -1355,6 +1389,7 @@ void GLView::setDistance( float x )
 	update();
 }
 
+// TODO: Probably needs to be fixed for Qt5, like other QUrl issues (i.e. openNif())
 void GLView::dragEnterEvent( QDragEnterEvent * e )
 {
 	if ( e->mimeData()->hasUrls() && e->mimeData()->urls().count() == 1 )

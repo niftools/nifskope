@@ -33,6 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
+#include <QOpenGLContext>
+
+#include <QtCore/QtCore>
+
 //! \file gltexloaders.h Texture loading functions header
 
 //! A function for loading textures.

@@ -36,8 +36,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltools.h"
 #include "../options.h"
 
-#include "GLee.h"
-
 #include <QDebug>
 
 //! \file glmesh.cpp Mesh, MorphController, UVController
@@ -939,7 +937,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	}
 	
 	if (!Node::SELECTING)
-		shader = scene->renderer.setupProgram( this, shader );
+		shader = scene->renderer->setupProgram( this, shader );
 	
 	if (double_sided || double_sided_es)
 	{
@@ -964,7 +962,7 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	}
 
 	if (!Node::SELECTING)
-		scene->renderer.stopProgram();
+		scene->renderer->stopProgram();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_NORMAL_ARRAY );

@@ -33,10 +33,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEX_H
 #define GLTEX_H
 
-#include <QtCore>
-#include <QtGui>
-#include "GLee.h"
-#include <QGLContext>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+
+#include <QtCore/QtCore>
+#include <QtWidgets>
 
 #include "../niftypes.h"
 
@@ -140,7 +141,7 @@ protected:
 
 float get_max_anisotropy();
 
-void initializeTextureUnits( const QGLContext * );	
+void initializeTextureUnits( const QOpenGLContext * );	
 
 bool activateTextureUnit( int x );
 void resetTextureUnits();	

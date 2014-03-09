@@ -30,16 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <QApplication>
-#include <QDebug>
-#include <QDir>
-#include <QFile>
-#include <QTextStream>
-
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
-#include "GLee.h"
-
 #include "renderer.h"
 
 #include "gltex.h"
@@ -48,11 +38,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "../options.h"
 
+#include <QApplication>
+#include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QTextStream>
+
+
 bool shader_initialized = false;
 bool shader_ready = false;
 
-bool Renderer::initialize( const QGLContext * cx )
+bool Renderer::initialize()
 {
+
     if ( !shader_initialized )
     {
 #ifdef DISABLE_SHADERS
@@ -60,7 +58,7 @@ bool Renderer::initialize( const QGLContext * cx )
 #else
         // check for OpenGL 2.0
         // (we don't use the extension API but the 2.0 API for shaders)
-        if (GLEE_VERSION_2_0)
+        if ( fn->hasOpenGLFeature(QOpenGLFunctions::Shaders) )
         {
             shader_ready = true;
         }
@@ -191,15 +189,16 @@ void Renderer::ConditionGroup::addCondition( Condition * c )
 	conditions.append( c );
 }
 
-Renderer::Shader::Shader( const QString & n, GLenum t ) : name( n ), id( 0 ), status( false ), type( t )
+Renderer::Shader::Shader(const QString & n, GLenum t, QOpenGLFunctions *fn)
+    : name( n ), id( 0 ), status( false ), type( t ), f( fn )
 {
-	id = glCreateShader( type );
+	id = f->glCreateShader( type );
 }
 
 Renderer::Shader::~Shader()
 {
 	if ( id )
-		glDeleteShader( id );
+		f->glDeleteShader( id );
 }
 
 bool Renderer::Shader::load( const QString & filepath )
@@ -213,19 +212,19 @@ bool Renderer::Shader::load( const QString & filepath )
 		QByteArray data = file.readAll();
 		
 		const char * src = data.constData();
-		
-		glShaderSource( id, 1, & src, 0 );
-		glCompileShader( id );
-		
+
+		f->glShaderSource( id, 1, & src, 0 );
+		f->glCompileShader( id );
+
 		GLint result;
-		glGetShaderiv( id, GL_COMPILE_STATUS, & result );
-		
+		f->glGetShaderiv( id, GL_COMPILE_STATUS, & result );
+
 		if ( result != GL_TRUE )
 		{
 			GLint logLen;
-			glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
+			f->glGetShaderiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			char * log = new char[ logLen ];
-			glGetShaderInfoLog( id, logLen, 0, log );
+			f->glGetShaderInfoLog( id, logLen, 0, log );
 			QString errlog( log );
 			delete[] log;
 			throw errlog;
@@ -241,15 +240,17 @@ bool Renderer::Shader::load( const QString & filepath )
 	return true;
 }
 
-Renderer::Program::Program( const QString & n ) : name( n ), id( 0 ), status( false )
+
+Renderer::Program::Program(const QString & n, QOpenGLFunctions *fn)
+    : name( n ), id( 0 ), status( false ), f( fn )
 {
-	id = glCreateProgram();
+	id = f->glCreateProgram();
 }
 
 Renderer::Program::~Program()
 {
 	if ( id )
-		glDeleteShader( id );
+		f->glDeleteShader( id );
 }
 
 bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
@@ -278,7 +279,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 					if ( shader )
 					{
 						if ( shader->status )
-							glAttachShader( id, shader->id );
+							f->glAttachShader( id, shader->id );
 						else
 							throw QString( "depends on shader %1 which was not compiled successful" ).arg( list[ i ] );
 					}
@@ -334,21 +335,21 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 				texcoords.insert( unit, id );
 			}
 		}
-		
-		glLinkProgram( id );
-		
+
+		f->glLinkProgram( id );
+
 		GLint result;
-		
-		glGetProgramiv( id, GL_LINK_STATUS, & result );
-		
+
+		f->glGetProgramiv( id, GL_LINK_STATUS, & result );
+
 		if ( result != GL_TRUE )
 		{
 			GLint logLen = 0;
-			glGetProgramiv( id, GL_INFO_LOG_LENGTH, & logLen );
+			f->glGetProgramiv( id, GL_INFO_LOG_LENGTH, & logLen );
 			if (logLen != 0)
 			{
 				char * log = new char[ logLen ];
-				glGetProgramInfoLog( id, logLen, 0, log );
+				f->glGetProgramInfoLog( id, logLen, 0, log );
 				QString errlog( log );
 				delete[] log;
 				id = 0;
@@ -366,7 +367,8 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 	return true;
 }
 
-Renderer::Renderer()
+Renderer::Renderer(QOpenGLContext *c , QOpenGLFunctions *f)
+    : cx( c ), fn( f )
 {
 }
 
@@ -395,7 +397,7 @@ void Renderer::updateShaders()
 	dir.setNameFilters( QStringList() << "*.vert" );
 	foreach ( QString name, dir.entryList() )
 	{
-		Shader * shader = new Shader( name, GL_VERTEX_SHADER );
+		Shader * shader = new Shader( name, GL_VERTEX_SHADER, fn );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
@@ -403,7 +405,7 @@ void Renderer::updateShaders()
 	dir.setNameFilters( QStringList() << "*.frag" );
 	foreach ( QString name, dir.entryList() )
 	{
-		Shader * shader = new Shader( name, GL_FRAGMENT_SHADER );
+		Shader * shader = new Shader( name, GL_FRAGMENT_SHADER, fn );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
@@ -411,7 +413,7 @@ void Renderer::updateShaders()
 	dir.setNameFilters( QStringList() << "*.prog" );
 	foreach ( QString name, dir.entryList() )
 	{
-		Program * program = new Program( name );
+		Program * program = new Program( name, fn );
 		program->load( dir.filePath( name ), this );
 		programs.insert( name, program );
 	}
@@ -466,8 +468,9 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 
 void Renderer::stopProgram()
 {
-	if ( shader_ready )
-		glUseProgram( 0 );
+	if ( shader_ready ) {
+		fn->glUseProgram( 0 );
+	}
 	resetTextureUnits();
 }
 
@@ -479,17 +482,17 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	
 	if ( ! prog->conditions.eval( nif, iBlocks ) )
 		return false;
-	
-	glUseProgram( prog->id );
-	
+
+	fn->glUseProgram( prog->id );
+
 	// texturing
 	
 	TexturingProperty * texprop = props.get< TexturingProperty >();
 	BSShaderLightingProperty * bsprop = props.get< BSShaderLightingProperty >();
 	
 	int texunit = 0;
-	
-	GLint uniBaseMap = glGetUniformLocation( prog->id, "BaseMap" );
+
+	GLint uniBaseMap = fn->glGetUniformLocation( prog->id, "BaseMap" );
 	if ( uniBaseMap >= 0 )
 	{
 		if ( ! texprop && ! bsprop )
@@ -500,12 +503,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		
 		if ( ( texprop && ! texprop->bind( 0 ) ) || ( bsprop && ! bsprop->bind( 0 ) ) )
 			return false;
-		
-		glUniform1i( uniBaseMap, texunit++ );
+
+		fn->glUniform1i( uniBaseMap, texunit++ );
 	}
-	
-	GLint uniNormalMap = glGetUniformLocation( prog->id, "NormalMap" );
-	
+
+	GLint uniNormalMap = fn->glGetUniformLocation( prog->id, "NormalMap" );
+
 	if ( uniNormalMap >= 0 )
 	{
 		if (texprop != NULL)
@@ -529,12 +532,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 1, fname ) ) )
 				return false;
 		}
-		
-		glUniform1i( uniNormalMap, texunit++ );
+
+		fn->glUniform1i( uniNormalMap, texunit++ );
 	}
-	
-	GLint uniGlowMap = glGetUniformLocation( prog->id, "GlowMap" );
-	
+
+	GLint uniGlowMap = fn->glGetUniformLocation( prog->id, "GlowMap" );
+
 	if ( uniGlowMap >= 0 )
 	{
 		if (texprop != NULL)
@@ -558,7 +561,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( !fname.isEmpty() && (! activateTextureUnit( texunit ) || ! bsprop->bind( 2, fname ) ) )
 				return false;
 		}
-		glUniform1i( uniGlowMap, texunit++ );
+
+		fn->glUniform1i( uniGlowMap, texunit++ );
 	}
 	
 	QMapIterator<int, QString> itx( prog->texcoords );

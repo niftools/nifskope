@@ -102,7 +102,6 @@ HEADERS += \
 	src/gl/dds/Stream.h \
 	src/gl/glcontrolable.h \
 	src/gl/glcontroller.h \
-	src/gl/GLee.h \
 	src/gl/glmarker.h \
 	src/gl/glmesh.h \
 	src/gl/glnode.h \
@@ -164,7 +163,6 @@ SOURCES += \
 	src/gl/dds/Image.cpp \
 	src/gl/dds/Stream.cpp \
 	src/gl/glcontroller.cpp \
-	src/gl/GLee.cpp \
 	src/gl/glmarker.cpp \
 	src/gl/glmesh.cpp \
 	src/gl/glnode.cpp \

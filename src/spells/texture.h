@@ -1,6 +1,8 @@
 #ifndef SPELL_TEXTURE_H
 #define SPELL_TEXTURE_H
 
+#include <QOpenGLContext>
+
 #include <QDialog>
 //#include <QDoubleSpinBox>
 #include <QFileDialog>

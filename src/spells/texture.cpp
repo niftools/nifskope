@@ -1,11 +1,6 @@
-#include <QtCore>
-#include <QtGui>
-#include "../gl/GLee.h"
-#include <QGLContext>
-
-#include "blocks.h"
 #include "texture.h"
 
+#include "blocks.h"
 #include "../spellbook.h"
 
 #include "../config.h"
@@ -16,6 +11,9 @@
 #include "../widgets/fileselect.h"
 #include "../widgets/uvedit.h"
 #include "../gl/gltex.h"
+
+#include <QtCore>
+#include <QtWidgets>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file texture.cpp

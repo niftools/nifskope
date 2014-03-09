@@ -33,21 +33,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLVIEW
 #define GLVIEW
 
-// must come before GLee.h for linux
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+// TODO: Determine the necessity of this
+// Appears to be used solely for gluErrorString
+// There may be some Qt alternative
+#ifdef __APPLE__
+    #include <OpenGL/glu.h>
+#else
+    #include <GL/glu.h>
+#endif
+
+#include <QGLWidget>
+#include <QGLFormat>
+
+#include "nifmodel.h"
+#include "widgets/floatedit.h"
+#include "widgets/floatslider.h"
+
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtWidgets>   // dito
+#include <QDebug>
 #include <QCache>
 #include <QDateTime>
 #include <QFile>
 #include <QStack>
 #include <QQueue>
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
 
-#include "gl/GLee.h"
-#include <QGLWidget>
-
-#include "nifmodel.h"
-#include "widgets/floatedit.h"
-#include "widgets/floatslider.h"
+#include <math.h>
 
 //! \file glview.h GLView class
 
@@ -73,7 +86,10 @@ class GLView : public QGLWidget
 public:
 	//! Static instance
 	static GLView * create();
-	
+
+	QOpenGLContext* m_context;
+	QOpenGLFunctions* m_funcs;
+
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 	
 	void move( float, float, float );

@@ -41,8 +41,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file glscene.cpp Scene management
 
-Scene::Scene( TexCache * texcache )
+Scene::Scene( TexCache * texcache , QOpenGLContext * context, QOpenGLFunctions * functions )
 {
+    renderer = new Renderer(context, functions);
+
 	currentBlock = currentIndex = QModelIndex();
 	animate = true;
 	
@@ -54,6 +56,7 @@ Scene::Scene( TexCache * texcache )
 
 Scene::~Scene()
 {
+	delete renderer;
 }
 
 void Scene::clear( bool flushTextures )

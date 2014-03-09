@@ -30,24 +30,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-// include before GLee.h to avoid compile error on linux
-#include <QDebug>
-#include <QDir>
-#include <QFileSystemWatcher>
-#include <QListView>
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
-
-#include "GLee.h"
-
-#include <QGLContext>
-
 #include "glscene.h"
 #include "gltex.h"
 #include "gltexloaders.h"
 #include "../options.h"
-#include <fsengine/fsmanager.h>
-#include <fsengine/fsengine.h>
+
+#ifdef FSENGINE
+#include "../fsengine/fsmanager.h"
+#include "../fsengine/fsengine.h"
+#endif
+
+#include <QDebug>
+#include <QDir>
+#include <QFileSystemWatcher>
+#include <QListView>
 
 //! \file gltex.cpp TexCache management
 
@@ -62,12 +58,13 @@ float get_max_anisotropy()
 	return max_anisotropy;
 }
 
-void initializeTextureUnits( const QGLContext * context )
+void initializeTextureUnits( const QOpenGLContext * context )
 {
-	// detect maximum number of texture slots
-	// (todo: should we use GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB or similar?)
-	if ( GLEE_ARB_multitexture )
+	if ( context->hasExtension("GL_ARB_multitexture") )
 	{
+		// TODO: This will always return 4 intentionally
+		// For shaders, should be GL_MAX_TEXTURE_IMAGE_UNITS_ARB, etc.
+
 		glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
 		if ( num_texture_units < 1 )
 			num_texture_units = 1;
@@ -78,8 +75,8 @@ void initializeTextureUnits( const QGLContext * context )
 		qWarning( "multitexturing not supported" );
 		num_texture_units = 1;
 	}
-	
-	if ( GLEE_EXT_texture_filter_anisotropic )
+
+	if ( context->hasExtension("GL_EXT_texture_filter_anisotropic") )
 	{
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, & max_anisotropy );
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
@@ -92,6 +89,11 @@ void initializeTextureUnits( const QGLContext * context )
 
 bool activateTextureUnit( int stage )
 {
+	PFNGLACTIVETEXTUREPROC glActiveTexture;
+	glActiveTexture = (PFNGLACTIVETEXTUREPROC) QOpenGLContext::currentContext()->getProcAddress("glActiveTexture");
+	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
+	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC) QOpenGLContext::currentContext()->getProcAddress("glClientActiveTexture");
+
 	if ( num_texture_units <= 1 )
 		return ( stage == 0 );
 
@@ -100,7 +102,7 @@ bool activateTextureUnit( int stage )
 	if ( stage < num_texture_units )
 	{
 		glActiveTexture( GL_TEXTURE0 + stage );
-		glClientActiveTexture( GL_TEXTURE0 + stage );	
+		glClientActiveTexture( GL_TEXTURE0 + stage );
 		return true;
 	}
 	return false;
@@ -108,6 +110,11 @@ bool activateTextureUnit( int stage )
 
 void resetTextureUnits()
 {
+	PFNGLACTIVETEXTUREPROC glActiveTexture;
+	glActiveTexture = (PFNGLACTIVETEXTUREPROC) QOpenGLContext::currentContext()->getProcAddress("glActiveTexture");
+	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
+	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC) QOpenGLContext::currentContext()->getProcAddress("glClientActiveTexture");
+
 	if ( num_texture_units <= 1 )
 	{
 		glDisable( GL_TEXTURE_2D );
@@ -185,6 +192,9 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		
 		foreach ( QString folder, Options::textureFolders() )
 		{
+			// TODO: Always search nifdir without requiring a relative entry
+			// in folders?  Not too intuitive to require ".\" in your texture folder list
+			// even if it is added by default.
 			if( folder.startsWith( "./" ) || folder.startsWith( ".\\" ) ) {
 				folder = nifdir + "/" + folder;
 			}

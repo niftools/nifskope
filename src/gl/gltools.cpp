@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 
-#include <QtOpenGL>
 
 //! \file gltools.cpp GL helper functions
 

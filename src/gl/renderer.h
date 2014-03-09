@@ -33,13 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
-
-#include "GLee.h" 
-#include <QGLContext>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 
 #include "../nifmodel.h"
+
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtWidgets>   // dito
 
 class Mesh;
 class PropertyList;
@@ -49,20 +49,25 @@ class Renderer
 {
 public:
 	//! Constructor
-	Renderer();
+	Renderer( QOpenGLContext *c , QOpenGLFunctions *f );
 	//! Destructor
 	~Renderer();
 	
 	//! Init from context?
-	static bool initialize( const QGLContext * );
+	bool initialize();
 	//! Whether the shaders are available
-	static bool hasShaderSupport();
+	bool hasShaderSupport();
 	
 	//! Updates shaders
 	void updateShaders();
 	//! Releases shaders
 	void releaseShaders();
 	
+	//! Context
+	QOpenGLContext* cx;
+	//! Context Functions
+	QOpenGLFunctions* fn;
+
 	//! Sets up rendering?
 	QString setupProgram( Mesh *, const QString & hint = QString() );
 	//! Stops rendering?
@@ -120,11 +125,12 @@ protected:
 	class Shader
 	{
 	public:
-		Shader( const QString & name, GLenum type );
+		Shader( const QString & name, GLenum type, QOpenGLFunctions* fn );
 		~Shader();
 		
 		bool load( const QString & filepath );
 		
+		QOpenGLFunctions* f;
 		QString	name;
 		GLuint	id;
 		bool	status;
@@ -136,11 +142,12 @@ protected:
 	class Program
 	{
 	public:
-		Program( const QString & name );
+		Program( const QString & name, QOpenGLFunctions* fn );
 		~Program();
 		
 		bool load( const QString & filepath, Renderer * );
 		
+		QOpenGLFunctions* f;
 		QString	name;
 		GLuint	id;
 		bool	status;

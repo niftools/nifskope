@@ -33,12 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSCENE_H
 #define GLSCENE_H
 
-#include <QRegExp>
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtGui/QtGui>   // dito
-
-#include "GLee.h"
-#include <QGLContext>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 
 #include "../nifmodel.h"
 
@@ -49,13 +45,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "renderer.h"
 
+#include <QtCore/QtCore> // extra include to avoid compile error
+#include <QtWidgets>   // dito
+#include <QRegExp>
+
 class Scene
 {
 public:
-	Scene( TexCache * texcache );
+	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions );
 	~Scene();
 	
-	void updateShaders() { renderer.updateShaders(); }
+	void updateShaders() { renderer->updateShaders(); }
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );
@@ -82,7 +82,7 @@ public:
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
 	
-	Renderer renderer;
+	Renderer* renderer;
 
 	NodeList nodes;
 	PropertyList properties;
