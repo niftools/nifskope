@@ -125,20 +125,10 @@ defineReplace(QtHex) {
 
 # Format string for Qt DLL
 DLLEXT = $$quote(.dll)
-greaterThan(QT_MAJOR_VERSION, 4) {
-	CONFIG(debug, debug|release) {
-		DLLSTRING = $$quote(Qt5%1d)
-	} else {
-		DLLSTRING = $$quote(Qt5%1)
-	}
+CONFIG(debug, debug|release) {
+	DLLSTRING = $$quote(Qt5%1d)
 } else {
-	CONFIG(debug, debug|release) {
-		DLLSTRING = $$quote(Qt%1d)
-	} else {
-		DLLSTRING = $$quote(Qt%1)
-	}
-	# Easiest way to deal with the %1 > %14 issue
-	DLLEXT = $$quote(4.dll)
+	DLLSTRING = $$quote(Qt5%1)
 }
 
 # Returns list of absolute paths to Qt DLLs required by project

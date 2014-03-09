@@ -5,13 +5,7 @@
 TEMPLATE = app
 TARGET   = NifSkope
 
-QT += xml opengl network
-greaterThan(QT_MAJOR_VERSION, 4) {
-	QT += widgets
-}
-
-CONFIG -= thread_off
-CONFIG *= thread
+QT += xml opengl network widgets
 
 # Dependencies
 CONFIG += fsengine nvtristrip qhull
@@ -20,8 +14,6 @@ CONFIG += fsengine nvtristrip qhull
 CONFIG(debug, debug|release) {
 	# Debug Options
 	CONFIG += console
-	# Exits after qWarning() for easy backtrace
-	#DEFINES += QT_FATAL_WARNINGS
 } else {
 	# Release Options
 	CONFIG -= console
@@ -295,7 +287,7 @@ win32 {
 }
 
 *msvc* {
-	CONFIG *= embed_manifest_exe
+	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
 }
 
