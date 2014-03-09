@@ -243,10 +243,11 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
 
 void NifProxyModel::reset()
 {
+	beginResetModel();
 	//qDebug() << "proxy reset";
 	root->killChildren();
 	updateRoot( true );
-	QAbstractItemModel::reset();
+	endResetModel();
 }
 
 void NifProxyModel::updateRoot( bool fast )
