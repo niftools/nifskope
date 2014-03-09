@@ -33,6 +33,31 @@ TRANSLATIONS += \
 
 
 ###############################
+## Test for Shadow Build
+###############################
+#	Qt Creator = shadow build
+#	Visual Studio = no shadow build
+
+SHADOWBUILD = true
+
+# Strips PWD (source) from OUT_PWD (build) to test if they are on the same path
+#	- contains() does not work
+#	- equals( PWD, $${OUT_PWD} ) is not sufficient
+REP = $$replace(OUT_PWD, $${PWD}, "")
+
+# Build dir is inside Source dir
+!equals( REP, $${OUT_PWD} ):SHADOWBUILD = false
+
+# Set OUT_PWD to ./bin so that qmake doesn't clutter PWD
+!$$SHADOWBUILD:OUT_PWD = $${_PRO_FILE_PWD_}/bin
+# Unfortunately w/ VS qmake still creates empty debug/release folders in PWD.
+# They are never used but get auto-generated anyway.
+# This setting does not help either:
+#	!$$SHADOWBUILD:DESTDIR = $${OUT_PWD}
+unset(REP)
+
+
+###############################
 ## INCLUDES
 ###############################
 
@@ -62,17 +87,28 @@ DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
 ## OUTPUT DIRECTORIES
 ###############################
 
+# build_pass is necessary
+# Otherwise it will create empty .moc, .ui, etc. dirs on the drive root
 build_pass {
-	# build_pass is necessary
-	# Otherwise it will create empty .moc, .ui, etc. dirs on the drive root
-	Debug:   DESTDIR = $${OUT_PWD}/debug
-	Release: DESTDIR = $${OUT_PWD}/release
+	Debug:   bld = debug
+	Release: bld = release
 
-	# INTERMEDIATE FILES
-	UI_DIR = $${DESTDIR}/../.ui
-	MOC_DIR = $${DESTDIR}/../.moc
-	RCC_DIR = $${DESTDIR}/../.qrc
-	OBJECTS_DIR = $${DESTDIR}/../.obj
+	equals( SHADOWBUILD, true ) {
+		# Qt Creator
+		DESTDIR = $${OUT_PWD}/$${bld}
+		# INTERMEDIATE FILES
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/
+	} else {
+		# Visual Studio
+		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${bld}
+		# INTERMEDIATE FILES
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${bld}
+	}
+
+	UI_DIR = $${INTERMEDIATE}/.ui
+	MOC_DIR = $${INTERMEDIATE}/.moc
+	RCC_DIR = $${INTERMEDIATE}/.qrc
+	OBJECTS_DIR = $${INTERMEDIATE}/.obj
 }
 
 
@@ -289,6 +325,15 @@ win32 {
 *msvc* {
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
+	# Multithreaded compiling for Visual Studio
+	QMAKE_CXXFLAGS_RELEASE += -MP
+	# Clean up .embed.manifest from release dir
+	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/NifSkope.exe.embed.manifest) $$nt
+}
+
+static:*msvc* {
+	# Relocate .lib and .exp files to keep release dir clean
+	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE})\\NifSkope.lib
 }
 
 unix:!macx {
@@ -364,5 +409,29 @@ build_pass {
 	}
 
 } # end build_pass
+
+
+# Build Messages
+# (Add `buildMessages` to CONFIG to use)
+buildMessages:build_pass {
+	CONFIG(debug, debug|release) {
+		message("Debug Mode")
+	} CONFIG(release, release|debug) {
+		message("Release Mode")
+	}
+
+	message(mkspec _______ $$QMAKESPEC)
+	message(cxxflags _____ $$QMAKE_CXXFLAGS)
+	message(arch _________ $$QMAKE_TARGET.arch)
+	message(src __________ $$PWD)
+	message(build ________ $$OUT_PWD)
+	message(Qt binaries __ $$[QT_INSTALL_BINS])
+
+	build_pass:equals( SHADOWBUILD, true ) {
+		message(Shadow build __ Yes)
+	}
+
+	#message($$CONFIG)
+}
 
 # vim: set filetype=config : 

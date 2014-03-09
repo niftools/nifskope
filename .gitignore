@@ -3,12 +3,14 @@
 .obj/
 .qrc/
 .ui/
+[Bb]in/
 [Dd]ebug/
 [Rr]elease/
 GeneratedFiles/
 Makefile
 Makefile.Debug
 Makefile.Release
+nifskope_plugin_import.cpp
 moc_*.cpp
 qrc_*.cpp
 ui_*.h
