@@ -1067,9 +1067,8 @@ void NifIStream::init()
 	bigEndian = false; // set when tFileVersion is read
 	dataStream = new QDataStream( device );
 	dataStream->setByteOrder( QDataStream::LittleEndian );
-#if QT_VERSION >= 0x040600
 	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
-#endif
+
 	NIFSKOPE_QSETTINGS(cfg);
 	maxLength = cfg.value("maximum string length", 0x8000).toInt();
 	//maxLength = Options::maxStringLength();

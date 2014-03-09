@@ -37,13 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 #include <QDateTime>
 
-#if (QT_VERSION >= QT_VERSION_CHECK(4, 4, 0))
 #include <QAtomicInt>
-#else
-// define QAtomicInt as QAtomic in older versions of qt
-#include <QSharedData>
-#define QAtomicInt QAtomic
-#endif
 
 
 //! Provides a way to register an FSArchiveEngine with the application.
