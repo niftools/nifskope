@@ -14,6 +14,7 @@ nifskope_plugin_import.cpp
 moc_*.cpp
 qrc_*.cpp
 ui_*.h
+*.tags
 
 # Intermediate 
 *.o
