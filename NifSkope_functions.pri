@@ -45,6 +45,31 @@ defineReplace(getSed) {
 	return($$sedbin)
 }
 
+
+# Get command for 7z
+defineReplace(get7z) {
+	_7zbin = ""
+
+	win32 {
+		_7zbin = C:/Program Files/7-Zip/7z.exe
+
+		!exists($$_7zbin) {
+			_7zbin = C:/Program Files (x86)/7-Zip/7z.exe
+		}
+		!exists($$_7zbin) {
+			return()
+		}
+	}
+
+	unix {
+		# TODO: Untested
+		_7zbin = $$system(which unzip 2>/dev/null)
+	}
+
+	return(\"$$_7zbin\")
+}
+
+
 _VERSION =
 _REVISION =
 

@@ -57,6 +57,9 @@ docs.CONFIG += recursive
 #    sed
 #     - Windows: http://gnuwin32.sourceforge.net/packages/sed.htm
 #    jom (or make/mingw32-make)
+#    To automatically extract tags.zip:
+#        7-zip (Windows)
+#        unzip (Linux)
 #
 # Usage:
 #    jom release-doxygen
@@ -75,6 +78,7 @@ doxyfilein = $$syspath($${PWD}/build/doxygen/Doxyfile.in)
 # Paths
 qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator.exe)
 dot = $$syspath(C:/Program Files (x86)/Graphviz2.37/bin) # TODO
+_7z = $$get7z()
 
 # Doxyfile.in Replacements
 
@@ -92,6 +96,7 @@ exists($$dot) {
 	DOT_PATH = $$re_escape($${dot})
 }
 
+TAGS = $$syspath($${PWD}/build/doxygen/tags)
 BINS = $$re_escape($$syspath($$[QT_INSTALL_BINS]))
 
 # Find `sed` command
@@ -99,6 +104,11 @@ SED = $$getSed()
 
 # Parse Doxyfile.in
 !isEmpty(SED) {
+
+!isEmpty(_7z) {
+    win32:doxygen.commands += $${_7z} x $${TAGS}$${QMAKE_DIR_SEP}tags.zip \"-o$${TAGS}\" -aoa $$nt
+    unix:doxygen.commands += $${_7z} $${TAGS}$${QMAKE_DIR_SEP}tags.zip -o -d $${TAGS} $$nt
+}
 
 doxygen.commands += $${SED} -e \"s/@VERSION@/$$getVersion()/g;\
                                  s/@REVISION@/$$getRevision()/g;\
@@ -147,3 +157,5 @@ unset(GENERATE_QHP)
 unset(HAVE_DOT)
 unset(DOT_PATH)
 unset(BINS)
+unset(TAGS)
+unset(_7z)
