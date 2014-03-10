@@ -317,23 +317,59 @@ qhull {
 ## COMPILER SCOPES
 ###############################
 
+QMAKE_CXXFLAGS_RELEASE -= -O
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O2
+
 win32 {
 	RC_FILE = res/icon.rc
 	DEFINES += EDIT_ON_ACTIVATE
 }
 
+# MSVC
+#  Both Visual Studio and Qt Creator
 *msvc* {
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
-	# Multithreaded compiling for Visual Studio
-	QMAKE_CXXFLAGS_RELEASE += -MP
-	# Clean up .embed.manifest from release dir
-	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/NifSkope.exe.embed.manifest) $$nt
+
+	# COMPILER FLAGS
+
+	#  Optimization flags
+	QMAKE_CXXFLAGS_RELEASE *= -O2
+	#  Multithreaded compiling for Visual Studio
+	QMAKE_CXXFLAGS += -MP
+	
+	# LINKER FLAGS
+
+	#  Manifest Embed
+	$$SHADOWBUILD {
+		# Qt Creator only
+		#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
+		CONFIG -= embed_manifest_exe
+		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
+	}
+
+	#  PDB location
+	QMAKE_LFLAGS_DEBUG += /PDB:$$syspath($${INTERMEDIATE}/nifskope.pdb)
+
+	#  Clean up .embed.manifest from release dir
+	#	Fallback for `Manifest Embed` above
+	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
 }
 
+
 static:*msvc* {
-	# Relocate .lib and .exp files to keep release dir clean
-	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE})\\NifSkope.lib
+	#  Relocate .lib and .exp files to keep release dir clean
+	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
+}
+
+
+# MinGW, GCC
+*-g++ {
+	# COMPILER FLAGS
+
+	#  Optimization flags
+	QMAKE_CXXFLAGS_RELEASE *= -O3
 }
 
 unix:!macx {
