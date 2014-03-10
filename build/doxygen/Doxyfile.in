@@ -787,7 +787,7 @@ FILE_PATTERNS          = *.c \
                          *.hpp \
                          *.cs \
                          *.markdown \
-                         *.md 
+                         *.md
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.
@@ -2032,7 +2032,7 @@ TAGFILES               = "@PWD@\build\doxygen\tags\qtconcurrent.tags=http://qt-p
                          "@PWD@\build\doxygen\tags\qtopengl.tags=http://qt-project.org/doc/qt-5/" \
                          "@PWD@\build\doxygen\tags\qtnetwork.tags=http://qt-project.org/doc/qt-5/" \
                          "@PWD@\build\doxygen\tags\qtwidgets.tags=http://qt-project.org/doc/qt-5/" \
-                         "@PWD@\build\doxygen\tags\qtxml.tags=http://qt-project.org/doc/qt-5/" 
+                         "@PWD@\build\doxygen\tags\qtxml.tags=http://qt-project.org/doc/qt-5/"
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to
