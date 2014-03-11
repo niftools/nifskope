@@ -1827,14 +1827,14 @@ bool NifModel::save( QIODevice & device ) const
 						QString string = "Top Level Object";
 						int len = string.length();
 						device.write( (char *) &len, 4 );
-						device.write( (const char *) string.toLatin1(), len );
+						device.write( string.toLatin1().constData(), len );
 					}
 				}
 
 				QString string = itemName( index( c, 0 ) );
 				int len = string.length();
 				device.write( (char *) &len, 4 );
-				device.write( (const char *) string.toLatin1(), len );
+				device.write( string.toLatin1().constData(), len );
 
 				if ( version < 0x0303000d )
 				{
@@ -1854,7 +1854,7 @@ bool NifModel::save( QIODevice & device ) const
 		QString string = "End Of File";
 		int len = string.length();
 		device.write( (char *) &len, 4 );
-		device.write( (const char *) string.toLatin1(), len );
+		device.write( string.toLatin1().constData(), len );
 	}
 
 	return true;

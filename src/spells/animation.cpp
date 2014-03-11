@@ -170,7 +170,7 @@ public:
 			}
 			catch ( QString e )
 			{
-				qWarning( e.toLatin1() );
+				qWarning( e.toLatin1().constData() );
 			}
 		}
 		return index;

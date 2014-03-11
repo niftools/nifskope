@@ -31,6 +31,16 @@ TRANSLATIONS += \
 	lang/NifSkope_de.ts \
 	lang/NifSkope_fr.ts
 
+# Require explicit
+DEFINES += \
+	QT_NO_CAST_FROM_BYTEARRAY \ # QByteArray deprecations
+	QT_NO_URL_CAST_FROM_STRING #\ # QUrl deprecations
+
+	# Useful for tracking down strings not using
+	#	QObject::tr() for translations.
+	# QT_NO_CAST_FROM_ASCII \
+	# QT_NO_CAST_TO_ASCII
+
 
 ###############################
 ## Test for Shadow Build

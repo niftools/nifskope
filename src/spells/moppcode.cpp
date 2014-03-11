@@ -52,7 +52,7 @@ public:
 	{
 		if (hMoppLib == NULL)
 		{
-			SetDllDirectoryA( QCoreApplication::applicationDirPath().toLocal8Bit() );
+			SetDllDirectoryA( QCoreApplication::applicationDirPath().toLocal8Bit().constData() );
 			hMoppLib = LoadLibraryA( "NifMopp.dll" );
 			GenerateMoppCode = (fnGenerateMoppCode)GetProcAddress( hMoppLib, "GenerateMoppCode" );
 			RetrieveMoppCode = (fnRetrieveMoppCode)GetProcAddress( hMoppLib, "RetrieveMoppCode" );

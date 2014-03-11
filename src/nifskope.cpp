@@ -1051,7 +1051,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &, const QString &
 	switch (type)
 	{
 		case QtDebugMsg:
-			qDefaultMsgHandler(type, msg);
+			qDefaultMsgHandler(type, msg.constData());
 			break;
 		case QtWarningMsg:
 			// workaround for Qt 4.2.2
@@ -1072,10 +1072,10 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &, const QString &
 				msgtarget->show();
 			}
 			msgtarget->append( msg );
-			qDefaultMsgHandler( type, msg );
+			qDefaultMsgHandler( type, msg.constData() );
 			break;
 		case QtFatalMsg:
-			qDefaultMsgHandler( type, msg );
+			qDefaultMsgHandler( type, msg.constData() );
 			QMessageBox::critical( 0, QMessageBox::tr("Fatal Error"), msg );
 			// TODO: the above causes stack overflow when
 			// "ASSERT: "testAttribute(Qt::WA_WState_Created)" in file kernel\qapplication_win.cpp, line 3699"

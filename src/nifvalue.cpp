@@ -1161,7 +1161,7 @@ bool NifOStream::write( const NifValue & val )
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
-			return device->write( (const char *) string, string.size() ) == string.size();
+			return device->write( string.constData(), string.size() ) == string.size();
 		}
 		case NifValue::tShortString:
 		{
@@ -1172,7 +1172,7 @@ bool NifOStream::write( const NifValue & val )
 			unsigned char len = string.size() + 1;
 			if ( device->write( (char *) &len, 1 ) != 1 )
 				return false;
-			return device->write( (const char *) string, len ) == len;
+			return device->write( string.constData(), len ) == len;
 		}
 		case NifValue::tText:
 		{
@@ -1180,13 +1180,13 @@ bool NifOStream::write( const NifValue & val )
 			int len = string.size();
 			if ( device->write( (char *) &len, 4 ) != 4 )
 				return false;
-			return device->write( (const char *) string, string.size() ) == string.size();
+			return device->write( (const char *) string.constData(), string.size() ) == string.size();
 		}
 		case NifValue::tHeaderString:
 		case NifValue::tLineString:
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
-			if ( device->write( (const char *) string, string.length() ) != string.length() )
+			if ( device->write( string.constData(), string.length() ) != string.length() )
 				return false;
 			return ( device->write( "\n", 1 ) == 1 );
 		}
@@ -1194,7 +1194,7 @@ bool NifOStream::write( const NifValue & val )
 		{
 			QByteArray string = static_cast<QString*>( val.val.data )->toLatin1();
 			quint32 n = std::min<quint32>(8, string.length());
-			if ( device->write( (const char *) string, n ) != n )
+			if ( device->write( string.constData(), n ) != n )
 				return false;
 			for ( quint32 i = n; i < 8; ++i)
 				if ( device->write( "\0", 1 ) != 1 ) return false;
@@ -1254,7 +1254,7 @@ bool NifOStream::write( const NifValue & val )
 				int len = string.size();
 				if ( device->write( (char *) &len, 4 ) != 4 )
 					return false;
-				return device->write( (const char *) string, string.size() ) == string.size();
+				return device->write( string.constData(), string.size() ) == string.size();
 			}
 		} 
 		case NifValue::tBlob:

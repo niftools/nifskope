@@ -141,7 +141,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		int ofs = nif->fileOffset( index );
-		qWarning( QString( "estimated file offset is %1 (0x%2)" ).arg( ofs ).arg( ofs, 0, 16 ).toLatin1() );
+		qWarning( QString( "estimated file offset is %1 (0x%2)" ).arg( ofs ).arg( ofs, 0, 16 ).toLatin1().constData() );
 		return index;
 	}
 };

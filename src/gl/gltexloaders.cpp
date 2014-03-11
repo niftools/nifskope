@@ -1411,7 +1411,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	}
 	
 	// write pixel data
-	writeBytes = f.write( buf.data(), buf.size() );
+	writeBytes = f.write( buf.data().constData(), buf.size() );
 	if ( writeBytes != buf.size() )
 	{
 		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
