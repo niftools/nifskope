@@ -1,261 +1,473 @@
+###############################
+## BUILD OPTIONS
+###############################
+
 TEMPLATE = app
-LANGUAGE = C++
 TARGET   = NifSkope
 
-QT += xml opengl network
+QT += xml opengl network widgets
 
-CONFIG += qt debug_and_release debug_and_release_target thread warn_on
+# Dependencies
+CONFIG += fsengine nvtristrip qhull
 
-CONFIG += fsengine
-
-unix:!macx {
-                LIBS += -lGLU
+# Debug/Release options
+CONFIG(debug, debug|release) {
+	# Debug Options
+	CONFIG += console
+} else {
+	# Release Options
+	CONFIG -= console
+	DEFINES += QT_NO_DEBUG_OUPUT
+	# TODO: Clean up qWarnings first before using
+	#DEFINES += QT_NO_WARNING_OUTPUT
 }
+# TODO: Get rid of this define
+#	uncomment this if you want the text stats gl option
+#	DEFINES += USE_GL_QPAINTER
 
-macx{
-        LIBS += -framework CoreFoundation
-}
+INCLUDEPATH += lib .
 
-# uncomment this if you want all the messages to be logged to stdout
-#CONFIG += console
+TRANSLATIONS += \
+	lang/NifSkope_de.ts \
+	lang/NifSkope_fr.ts
 
-# uncomment this if you want the text stats gl option
-#DEFINES += USE_GL_QPAINTER
 
-DESTDIR = .
+###############################
+## Test for Shadow Build
+###############################
+#	Qt Creator = shadow build
+#	Visual Studio = no shadow build
+
+SHADOWBUILD = true
+
+# Strips PWD (source) from OUT_PWD (build) to test if they are on the same path
+#	- contains() does not work
+#	- equals( PWD, $${OUT_PWD} ) is not sufficient
+REP = $$replace(OUT_PWD, $${PWD}, "")
+
+# Build dir is inside Source dir
+!equals( REP, $${OUT_PWD} ):SHADOWBUILD = false
+
+# Set OUT_PWD to ./bin so that qmake doesn't clutter PWD
+!$$SHADOWBUILD:OUT_PWD = $${_PRO_FILE_PWD_}/bin
+# Unfortunately w/ VS qmake still creates empty debug/release folders in PWD.
+# They are never used but get auto-generated anyway.
+# This setting does not help either:
+#	!$$SHADOWBUILD:DESTDIR = $${OUT_PWD}
+unset(REP)
+
+
+###############################
+## INCLUDES
+###############################
+
+include(NifSkope_functions.pri)
+include(NifSkope_targets.pri)
+
+
+###############################
+## MACROS
+###############################
+
+# NifSkope Version
+VER = $$getVersion()
+# NifSkope Revision
+REVISION = $$getRevision()
 
 # NIFSKOPE_VERSION macro
-DEFINES += NIFSKOPE_VERSION=\\\"$$cat(VERSION)\\\"
+DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
 
-# build NIFSKOPE_REVISION macro
-GIT_HEAD = $$cat(.git/HEAD)
-# at this point GIT_HEAD either contains commit hash, or symbolic ref:
-# GIT_HEAD = 303c05416ecceb3368997c86676a6e63e968bc9b
-# GIT_HEAD = ref: refs/head/feature/blabla
-contains(GIT_HEAD, "ref:") {
-  # resolve symbolic ref
-  GIT_HEAD = .git/$$member(GIT_HEAD, 1)
-  # GIT_HEAD now points to the file containing hash,
-  # e.g. .git/refs/head/feature/blabla
-  exists($$GIT_HEAD) {
-    GIT_HEAD = $$cat($$GIT_HEAD)
-  } else {
-    clear(GIT_HEAD)
-  }
+# NIFSKOPE_REVISION macro
+!isEmpty(REVISION) {
+	DEFINES += NIFSKOPE_REVISION=\\\"$${REVISION}\\\"
 }
-count(GIT_HEAD, 1) {
-  # single component, hopefully the commit hash
-  # fetch first seven characters (abbreviated hash)
-  GIT_HEAD ~= s/^(.......).*/\\1/
-  DEFINES += NIFSKOPE_REVISION=\\\"$$GIT_HEAD\\\"
+
+
+###############################
+## OUTPUT DIRECTORIES
+###############################
+
+# build_pass is necessary
+# Otherwise it will create empty .moc, .ui, etc. dirs on the drive root
+build_pass {
+	Debug:   bld = debug
+	Release: bld = release
+
+	equals( SHADOWBUILD, true ) {
+		# Qt Creator
+		DESTDIR = $${OUT_PWD}/$${bld}
+		# INTERMEDIATE FILES
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/
+	} else {
+		# Visual Studio
+		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${bld}
+		# INTERMEDIATE FILES
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${bld}
+	}
+
+	UI_DIR = $${INTERMEDIATE}/.ui
+	MOC_DIR = $${INTERMEDIATE}/.moc
+	RCC_DIR = $${INTERMEDIATE}/.qrc
+	OBJECTS_DIR = $${INTERMEDIATE}/.obj
 }
+
+
+###############################
+## PROJECT SCOPES
+###############################
 
 HEADERS += \
-    basemodel.h \
-    config.h \
-    gl/dds/BlockDXT.h \
-    gl/dds/Color.h \
-    gl/dds/ColorBlock.h \
-    gl/dds/Common.h \
-    gl/dds/dds_api.h \
-    gl/dds/DirectDrawSurface.h \
-    gl/dds/Image.h \
-    gl/dds/PixelFormat.h \
-    gl/dds/Stream.h \
-    gl/glcontrolable.h \
-    gl/glcontroller.h \
-    gl/GLee.h \
-    gl/glmarker.h \
-    gl/glmesh.h \
-    gl/glnode.h \
-    gl/glparticles.h \
-    gl/glproperty.h \
-    gl/glscene.h \
-    gl/gltex.h \
-    gl/gltexloaders.h \
-    gl/gltools.h \
-    gl/marker/constraints.h \
-    gl/marker/furniture.h \
-    gl/renderer.h \
-    glview.h \
-    hacking.h \
-    importex/3ds.h \
-    kfmmodel.h \
-    message.h \
-    nifexpr.h \
-    nifitem.h \
-    nifmodel.h \
-    nifproxy.h \
-    nifskope.h \
-    niftypes.h \
-    nifvalue.h \
-    NvTriStrip/NvTriStrip.h \
-    NvTriStrip/NvTriStripObjects.h \
-    NvTriStrip/qtwrapper.h \
-    NvTriStrip/VertexCache.h \
-    options.h \
-    qhull/src/libqhull/geom.h \
-    qhull/src/libqhull/io.h \
-    qhull/src/libqhull/libqhull.h \
-    qhull/src/libqhull/mem.h \
-    qhull/src/libqhull/merge.h \
-    qhull/src/libqhull/poly.h \
-    qhull/src/libqhull/qhull_a.h \
-    qhull/src/libqhull/qset.h \
-    qhull/src/libqhull/random.h \
-    qhull/src/libqhull/stat.h \
-    qhull/src/libqhull/user.h \
-    qhull.h \
-    spellbook.h \
-    spells/blocks.h \
-    spells/mesh.h \
-    spells/misc.h \
-    spells/skeleton.h \
-    spells/stringpalette.h \
-    spells/tangentspace.h \
-    spells/texture.h \
-    spells/transform.h \
-    widgets/colorwheel.h \
-    widgets/copyfnam.h \
-    widgets/fileselect.h \
-    widgets/floatedit.h \
-    widgets/floatslider.h \
-    widgets/groupbox.h \
-    widgets/inspect.h \
-    widgets/nifcheckboxlist.h \
-    widgets/nifeditors.h \
-    widgets/nifview.h \
-    widgets/refrbrowser.h \
-    widgets/uvedit.h \
-    widgets/valueedit.h \
-    widgets/xmlcheck.h \
-    ui/about_dialog.h
+	src/basemodel.h \
+	src/config.h \
+	src/gl/dds/BlockDXT.h \
+	src/gl/dds/Color.h \
+	src/gl/dds/ColorBlock.h \
+	src/gl/dds/Common.h \
+	src/gl/dds/dds_api.h \
+	src/gl/dds/DirectDrawSurface.h \
+	src/gl/dds/Image.h \
+	src/gl/dds/PixelFormat.h \
+	src/gl/dds/Stream.h \
+	src/gl/glcontrolable.h \
+	src/gl/glcontroller.h \
+	src/gl/glmarker.h \
+	src/gl/glmesh.h \
+	src/gl/glnode.h \
+	src/gl/glparticles.h \
+	src/gl/glproperty.h \
+	src/gl/glscene.h \
+	src/gl/gltex.h \
+	src/gl/gltexloaders.h \
+	src/gl/gltools.h \
+	src/gl/marker/constraints.h \
+	src/gl/marker/furniture.h \
+	src/gl/renderer.h \
+	src/glview.h \
+	src/hacking.h \
+	src/importex/3ds.h \
+	src/kfmmodel.h \
+	src/message.h \
+	src/nifexpr.h \
+	src/nifitem.h \
+	src/nifmodel.h \
+	src/nifproxy.h \
+	src/nifskope.h \
+	src/niftypes.h \
+	src/nifvalue.h \
+	src/nvtristripwrapper.h \
+	src/options.h \
+	src/qhull.h \
+	src/spellbook.h \
+	src/spells/blocks.h \
+	src/spells/mesh.h \
+	src/spells/misc.h \
+	src/spells/skeleton.h \
+	src/spells/stringpalette.h \
+	src/spells/tangentspace.h \
+	src/spells/texture.h \
+	src/spells/transform.h \
+	src/widgets/colorwheel.h \
+	src/widgets/copyfnam.h \
+	src/widgets/fileselect.h \
+	src/widgets/floatedit.h \
+	src/widgets/floatslider.h \
+	src/widgets/groupbox.h \
+	src/widgets/inspect.h \
+	src/widgets/nifcheckboxlist.h \
+	src/widgets/nifeditors.h \
+	src/widgets/nifview.h \
+	src/widgets/refrbrowser.h \
+	src/widgets/uvedit.h \
+	src/widgets/valueedit.h \
+	src/widgets/xmlcheck.h \
+	src/ui/about_dialog.h
 
 SOURCES += \
-    basemodel.cpp \
-    gl/dds/BlockDXT.cpp \
-    gl/dds/ColorBlock.cpp \
-    gl/dds/dds_api.cpp \
-    gl/dds/DirectDrawSurface.cpp \
-    gl/dds/Image.cpp \
-    gl/dds/Stream.cpp \
-    gl/glcontroller.cpp \
-    gl/GLee.cpp \
-    gl/glmarker.cpp \
-    gl/glmesh.cpp \
-    gl/glnode.cpp \
-    gl/glparticles.cpp \
-    gl/glproperty.cpp \
-    gl/glscene.cpp \
-    gl/gltex.cpp \
-    gl/gltexloaders.cpp \
-    gl/gltools.cpp \
-    gl/renderer.cpp \
-    glview.cpp \
-    importex/3ds.cpp \
-    importex/importex.cpp \
-    importex/obj.cpp \
-    importex/col.cpp \
-    kfmmodel.cpp \
-    kfmxml.cpp \
-    message.cpp \
-    nifdelegate.cpp \
-    nifexpr.cpp \
-    nifmodel.cpp \
-    nifproxy.cpp \
-    nifskope.cpp \
-    niftypes.cpp \
-    nifvalue.cpp \
-    nifxml.cpp \
-    NvTriStrip/NvTriStrip.cpp \
-    NvTriStrip/NvTriStripObjects.cpp \
-    NvTriStrip/qtwrapper.cpp \
-    NvTriStrip/VertexCache.cpp \
-    options.cpp \
-    qhull.cpp \
-    spellbook.cpp \
-    spells/animation.cpp \
-    spells/blocks.cpp \
-    spells/bounds.cpp \
-    spells/color.cpp \
-    spells/flags.cpp \
-    spells/fo3only.cpp \
-    spells/havok.cpp \
-    spells/headerstring.cpp \
-    spells/light.cpp \
-    spells/material.cpp \
-    spells/mesh.cpp \
-    spells/misc.cpp \
-    spells/moppcode.cpp \
-    spells/morphctrl.cpp \
-    spells/normals.cpp \
-    spells/optimize.cpp \
-    spells/sanitize.cpp \
-    spells/skeleton.cpp \
-    spells/stringpalette.cpp \
-    spells/strippify.cpp \
-    spells/tangentspace.cpp \
-    spells/texture.cpp \
-    spells/transform.cpp \
-    widgets/colorwheel.cpp \
-    widgets/copyfnam.cpp \
-    widgets/fileselect.cpp \
-    widgets/floatedit.cpp \
-    widgets/floatslider.cpp \
-    widgets/groupbox.cpp \
-    widgets/inspect.cpp \
-    widgets/nifcheckboxlist.cpp \
-    widgets/nifeditors.cpp \
-    widgets/nifview.cpp \
-    widgets/refrbrowser.cpp \
-    widgets/uvedit.cpp \
-    widgets/valueedit.cpp \
-    widgets/xmlcheck.cpp \
-    ui/about_dialog.cpp
+	src/basemodel.cpp \
+	src/gl/dds/BlockDXT.cpp \
+	src/gl/dds/ColorBlock.cpp \
+	src/gl/dds/dds_api.cpp \
+	src/gl/dds/DirectDrawSurface.cpp \
+	src/gl/dds/Image.cpp \
+	src/gl/dds/Stream.cpp \
+	src/gl/glcontroller.cpp \
+	src/gl/glmarker.cpp \
+	src/gl/glmesh.cpp \
+	src/gl/glnode.cpp \
+	src/gl/glparticles.cpp \
+	src/gl/glproperty.cpp \
+	src/gl/glscene.cpp \
+	src/gl/gltex.cpp \
+	src/gl/gltexloaders.cpp \
+	src/gl/gltools.cpp \
+	src/gl/renderer.cpp \
+	src/glview.cpp \
+	src/importex/3ds.cpp \
+	src/importex/importex.cpp \
+	src/importex/obj.cpp \
+	src/importex/col.cpp \
+	src/kfmmodel.cpp \
+	src/kfmxml.cpp \
+	src/message.cpp \
+	src/nifdelegate.cpp \
+	src/nifexpr.cpp \
+	src/nifmodel.cpp \
+	src/nifproxy.cpp \
+	src/nifskope.cpp \
+	src/niftypes.cpp \
+	src/nifvalue.cpp \
+	src/nifxml.cpp \
+	src/nvtristripwrapper.cpp \
+	src/options.cpp \
+	src/qhull.cpp \
+	src/spellbook.cpp \
+	src/spells/animation.cpp \
+	src/spells/blocks.cpp \
+	src/spells/bounds.cpp \
+	src/spells/color.cpp \
+	src/spells/flags.cpp \
+	src/spells/fo3only.cpp \
+	src/spells/havok.cpp \
+	src/spells/headerstring.cpp \
+	src/spells/light.cpp \
+	src/spells/material.cpp \
+	src/spells/mesh.cpp \
+	src/spells/misc.cpp \
+	src/spells/moppcode.cpp \
+	src/spells/morphctrl.cpp \
+	src/spells/normals.cpp \
+	src/spells/optimize.cpp \
+	src/spells/sanitize.cpp \
+	src/spells/skeleton.cpp \
+	src/spells/stringpalette.cpp \
+	src/spells/strippify.cpp \
+	src/spells/tangentspace.cpp \
+	src/spells/texture.cpp \
+	src/spells/transform.cpp \
+	src/widgets/colorwheel.cpp \
+	src/widgets/copyfnam.cpp \
+	src/widgets/fileselect.cpp \
+	src/widgets/floatedit.cpp \
+	src/widgets/floatslider.cpp \
+	src/widgets/groupbox.cpp \
+	src/widgets/inspect.cpp \
+	src/widgets/nifcheckboxlist.cpp \
+	src/widgets/nifeditors.cpp \
+	src/widgets/nifview.cpp \
+	src/widgets/refrbrowser.cpp \
+	src/widgets/uvedit.cpp \
+	src/widgets/valueedit.cpp \
+	src/widgets/xmlcheck.cpp \
+	src/ui/about_dialog.cpp
 
 RESOURCES += \
-    nifskope.qrc
+	res/nifskope.qrc
 
 FORMS += \
-	ui/about_dialog.ui
+	src/ui/about_dialog.ui
+
+
+###############################
+## DEPENDENCY SCOPES
+###############################
 
 fsengine {
-    DEFINES += FSENGINE
-    HEADERS += \
-        fsengine/bsa.h \
-        fsengine/fsengine.h \
-        fsengine/fsmanager.h
-    SOURCES += \
-        fsengine/bsa.cpp \
-        fsengine/fsengine.cpp \
-        fsengine/fsmanager.cpp
+	DEFINES += FSENGINE
+	INCLUDEPATH += lib/fsengine
+	HEADERS += \
+		lib/fsengine/bsa.h \
+		lib/fsengine/fsengine.h \
+		lib/fsengine/fsmanager.h
+	SOURCES += \
+		lib/fsengine/bsa.cpp \
+		lib/fsengine/fsengine.cpp \
+		lib/fsengine/fsmanager.cpp
 }
+
+nvtristrip {
+	INCLUDEPATH += lib/NvTriStrip
+	HEADERS += \
+		lib/NvTriStrip/NvTriStrip.h \
+		lib/NvTriStrip/NvTriStripObjects.h \
+		lib/NvTriStrip/VertexCache.h
+	SOURCES += \
+		lib/NvTriStrip/NvTriStrip.cpp \
+		lib/NvTriStrip/NvTriStripObjects.cpp \
+		lib/NvTriStrip/VertexCache.cpp
+}
+
+qhull {
+	INCLUDEPATH += lib/qhull/src
+	HEADERS += \
+		lib/qhull/src/libqhull/geom.h \
+		lib/qhull/src/libqhull/io.h \
+		lib/qhull/src/libqhull/libqhull.h \
+		lib/qhull/src/libqhull/mem.h \
+		lib/qhull/src/libqhull/merge.h \
+		lib/qhull/src/libqhull/poly.h \
+		lib/qhull/src/libqhull/qhull_a.h \
+		lib/qhull/src/libqhull/qset.h \
+		lib/qhull/src/libqhull/random.h \
+		lib/qhull/src/libqhull/stat.h \
+		lib/qhull/src/libqhull/user.h
+}
+
+
+###############################
+## COMPILER SCOPES
+###############################
+
+QMAKE_CXXFLAGS_RELEASE -= -O
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O2
 
 win32 {
-    # useful for MSVC2005
-    CONFIG += embed_manifest_exe
-    CONFIG -= flat
-
-    RC_FILE = icon.rc
-    DEFINES += EDIT_ON_ACTIVATE
-    
-    # Ignore specific errors that are very common in the code
-    # CFLAGS += /Zc:wchar_t-
-    # QMAKE_CFLAGS += /Zc:wchar_t- /wd4305
-    # QMAKE_CXXFLAGS += /Zc:forScope- /Zc:wchar_t- /wd4305 
-    
-    # add specific libraries to msvc builds
-    MSVCPROJ_LIBS += winmm.lib Ws2_32.lib imm32.lib
+	RC_FILE = res/icon.rc
+	DEFINES += EDIT_ON_ACTIVATE
 }
 
-win32:console {
-    LIBS += -lqtmain
+# MSVC
+#  Both Visual Studio and Qt Creator
+*msvc* {
+	# So VCProj Filters do not flatten headers/source
+	CONFIG -= flat
+
+	# COMPILER FLAGS
+
+	#  Optimization flags
+	QMAKE_CXXFLAGS_RELEASE *= -O2
+	#  Multithreaded compiling for Visual Studio
+	QMAKE_CXXFLAGS += -MP
+	
+	# LINKER FLAGS
+
+	#  Manifest Embed
+	$$SHADOWBUILD {
+		# Qt Creator only
+		#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
+		CONFIG -= embed_manifest_exe
+		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
+	}
+
+	#  PDB location
+	QMAKE_LFLAGS_DEBUG += /PDB:$$syspath($${INTERMEDIATE}/nifskope.pdb)
+
+	#  Clean up .embed.manifest from release dir
+	#	Fallback for `Manifest Embed` above
+	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
 }
 
-console {
-    DEFINES += NO_MESSAGEHANDLER
+
+static:*msvc* {
+	#  Relocate .lib and .exp files to keep release dir clean
+	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
 }
 
-TRANSLATIONS += lang/NifSkope_de.ts lang/NifSkope_fr.ts
+
+# MinGW, GCC
+*-g++ {
+	# COMPILER FLAGS
+
+	#  Optimization flags
+	QMAKE_CXXFLAGS_RELEASE *= -O3
+}
+
+unix:!macx {
+	LIBS += -lGLU
+}
+
+macx {
+	LIBS += -framework CoreFoundation
+}
+
+
+# Pre/Post Link in build_pass only
+build_pass {
+
+###############################
+## QMAKE_PRE_LINK
+###############################
+
+	# Find `sed` command
+	SED = $$getSed()
+
+	!isEmpty(SED) {
+		# Replace @VERSION@ with number from build/VERSION
+		# Copy build/README.md.in > README.md
+		QMAKE_PRE_LINK += $${SED} -e s/@VERSION@/$${VER}/ $${PWD}/build/README.md.in > $${PWD}/README.md $$nt
+	}
+
+
+###############################
+## QMAKE_POST_LINK
+###############################
+
+	DEP += \
+		dep/NifMopp.dll
+
+	XML += \
+		build/docsys/nifxml/nif.xml \
+		build/docsys/kfmxml/kfm.xml
+
+	QSS += \
+		res/style.qss
+
+	QHULLTXT += \
+		lib/qhull/COPYING.txt
+
+	LANG += \
+		res/lang
+
+	SHADERS += \
+		res/shaders
+
+	READMES += \
+		CHANGELOG.md \
+		CONTRIBUTORS.md \
+		LICENSE.md \
+		README.md \
+		TROUBLESHOOTING.md
+
+
+	copyDirs( $$SHADERS, shaders )
+	copyDirs( $$LANG, lang )
+	copyFiles( $$XML $$DEP $$QSS )
+
+	# Copy Readmes and rename to TXT
+	copyFiles( $$READMES,,,, md:txt )
+
+	# Copy Qhull COPYING.TXT and rename
+	copyFiles( $$QHULLTXT,,, Qhull_COPYING.txt )
+
+	win32:!static {
+		# Copy DLLs to build dir
+		copyFiles( $$QtBins(),, true )
+	}
+
+} # end build_pass
+
+
+# Build Messages
+# (Add `buildMessages` to CONFIG to use)
+buildMessages:build_pass {
+	CONFIG(debug, debug|release) {
+		message("Debug Mode")
+	} CONFIG(release, release|debug) {
+		message("Release Mode")
+	}
+
+	message(mkspec _______ $$QMAKESPEC)
+	message(cxxflags _____ $$QMAKE_CXXFLAGS)
+	message(arch _________ $$QMAKE_TARGET.arch)
+	message(src __________ $$PWD)
+	message(build ________ $$OUT_PWD)
+	message(Qt binaries __ $$[QT_INSTALL_BINS])
+
+	build_pass:equals( SHADOWBUILD, true ) {
+		message(Shadow build __ Yes)
+	}
+
+	#message($$CONFIG)
+}
 
 # vim: set filetype=config : 

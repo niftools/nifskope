@@ -1,27 +1,65 @@
-# generated ones
+# Generated
+.moc/
+.obj/
+.qrc/
+.ui/
+[Bb]in/
+[Dd]ebug/
+[Rr]elease/
+GeneratedFiles/
 Makefile
 Makefile.Debug
 Makefile.Release
+nifskope_plugin_import.cpp
 moc_*.cpp
 qrc_*.cpp
 ui_*.h
+*.tags
 
-# compiled 
+# Intermediate 
 *.o
+*.obj
+*.bak
+*.ilk
+*.log
+*.tmp
 
-# eclipse project
+# Eclipse project
 .project
 .cproject
 .settings
 
-# qtcreator
+# Qt Creator
 NifSkope.pro.user
 
-# binary
+# Binaries
 NifSkope
+NifSkope.exe
 
-# VC build dirs
-release
-debug
-# VC debug file
+# VC Project
+*.cd
+*.filters
+*.sln
+*.sln.docstates
+*.suo
+*.vcxproj
+*.vcxproj.user
+*.vcproj
+*.vcproj.user
+*.vspscc
+*.vssscc
+
+# VC Cache
+ipch/
+*.aps
+*.cachefile
+*.ncb
+*.opensdf
+*.sdf
+
+# VC Debug
 vc100.pdb
+
+# OS
+[Tt]humbs.db
+*.DS_Store
