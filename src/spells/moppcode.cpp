@@ -1,7 +1,5 @@
-
 #include "../spellbook.h"
 
-#include <QDebug>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file moppcode.cpp

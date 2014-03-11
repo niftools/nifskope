@@ -33,9 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTOOLS_H
 #define GLTOOLS_H
 
+#include "../niftypes.h"
+
 #include <QOpenGLContext>
 
-#include "../niftypes.h"
 
 //! \file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
 

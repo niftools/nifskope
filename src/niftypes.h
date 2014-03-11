@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QColor>
 #include <QApplication>
 #include <QDebug>
+
 #include <cfloat>
 #include <cmath>
 #include <stdlib.h>
@@ -49,14 +50,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #endif
 
-//! \file niftypes.h Type definitions and functions
 
-//! Format a float with out of range values
-QString NumOrMinMax( float val, char f = 'g', int prec = 6 );
+//! \file niftypes.h Type definitions and functions
 
 class NifModel;
 class QModelIndex;
 class QDataStream;
+
+//! Format a float with out of range values
+QString NumOrMinMax( float val, char f = 'g', int prec = 6 );
 
 /*
  * Perhaps look at introducing a parent class for all of the vector/matrix types to improve abstraction?

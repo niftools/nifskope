@@ -3,6 +3,7 @@
 
 #include "../spellbook.h"
 
+
 // Brief description is deliberately not autolinked to class Spell
 /*! \file blocks.h
  * \brief Block spells header

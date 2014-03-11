@@ -2,6 +2,7 @@
 
 #include "../widgets/colorwheel.h"
 
+
 // Brief description is deliberately not autolinked to class Spell
 /*! \file color.cpp
  * \brief Color editing spells (spChooseColor)

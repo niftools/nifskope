@@ -33,18 +33,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFCHECKBOXLIST_H
 #define NIFCHECKBOXLIST_H
 
+#include "../nifmodel.h"
 #include "../nifvalue.h"
 
-#include <QWidget>
-#include <QComboBox>
-#include <QCheckBox>
-#include <QLineEdit>
-#include <QItemDelegate>
-#include <QPointer>
 #include <QApplication>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QItemDelegate>
+#include <QLineEdit>
+#include <QPointer>
 #include <QStandardItem>
+#include <QWidget>
 
-#include "../nifmodel.h"
 
 // Original Implementation by:  da-crystal
 //   http://da-crystal.net/GCMS/blog/checkboxlist-in-qt/
@@ -75,7 +75,7 @@ public:
 
 class CheckBoxList: public QComboBox
 {
-	Q_OBJECT;
+	Q_OBJECT
  
 public:
 	CheckBoxList(QWidget *widget = 0);
@@ -101,7 +101,7 @@ protected:
 	virtual void focusOutEvent(QFocusEvent * e);
 
 private:
-	Q_DISABLE_COPY(NifCheckListBoxEditor);
+	Q_DISABLE_COPY(NifCheckListBoxEditor)
 	bool inFocus;
 };
 
@@ -117,7 +117,7 @@ public:
 	virtual void fixup(QString &) const;
 
 private:
-	Q_DISABLE_COPY(NifCheckBoxListValidator);
+	Q_DISABLE_COPY(NifCheckBoxListValidator)
 	NifCheckListBoxEditor* edit;
 };
 
@@ -125,7 +125,7 @@ private:
 
 class NifCheckBoxList : public CheckBoxList
 {
-	Q_OBJECT;
+	Q_OBJECT
 public:
 	NifCheckBoxList(QWidget *widget = 0);
 	virtual ~NifCheckBoxList();

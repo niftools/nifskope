@@ -36,9 +36,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basemodel.h"
 
 #include <QHash>
+#include <QReadWriteLock>
 #include <QStack>
 #include <QStringList>
-#include <QReadWriteLock>
+
 
 //! \file nifmodel.h NifModel
 

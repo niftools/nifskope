@@ -1,19 +1,19 @@
 #include "texture.h"
-
-#include "blocks.h"
-#include "../spellbook.h"
-
 #include "../config.h"
 
-
-#include "../NvTriStripwrapper.h"
-
+#include "blocks.h"
+#include "../nvtristripwrapper.h"
+#include "../spellbook.h"
+#include "../gl/gltex.h"
 #include "../widgets/fileselect.h"
 #include "../widgets/uvedit.h"
-#include "../gl/gltex.h"
 
-#include <QtCore>
-#include <QtWidgets>
+#include <QButtonGroup>
+#include <QComboBox>
+#include <QLabel>
+#include <QPushButton>
+#include <QSettings>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file texture.cpp

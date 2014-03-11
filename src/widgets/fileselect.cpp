@@ -30,9 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-// how long the visual save/load feedback is visible
-#define FEEDBACK_TIME 1200
-
 #include "fileselect.h"
 #include "../config.h"
 
@@ -43,11 +40,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileSystemModel>
 #include <QFileDialog>
 #include <QLayout>
+#include <QLineEdit>
 #include <QMenu>
 #include <QSettings>
 #include <QThread>
 #include <QTimer>
 #include <QToolButton>
+
+// how long the visual save/load feedback is visible
+#define FEEDBACK_TIME 1200
+
 
 CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of Filenames", parent )
 {

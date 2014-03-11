@@ -31,9 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "niftypes.h"
+
 #include "nifmodel.h"
 
 #include <QStringList>
+
 
 const float Quat::identity[4] = { 1.0, 0.0, 0.0, 0.0 };
 const float Matrix::identity[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };

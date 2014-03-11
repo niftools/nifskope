@@ -35,11 +35,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAction>
 #include <QBoxLayout>
-#include <QLineEdit>
 #include <QWidget>
 
 class QCompleter;
 class QFileSystemModel;
+class QLineEdit;
 
 //! A widget for file selection, both via a browser window and via editing a string.
 /*!

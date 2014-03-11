@@ -35,8 +35,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifvalue.h"
 
-#include <QWidget>
 #include <QTextEdit>
+#include <QWidget>
+
 
 //! \file valueedit.h ValueEdit and other widgets
 
@@ -53,7 +54,7 @@ public:
 	ValueEdit( QWidget * parent = 0 );
 	
 	//! The value being edited?
-	Q_PROPERTY( NifValue value READ getValue WRITE setValue USER true );
+	Q_PROPERTY( NifValue value READ getValue WRITE setValue USER true )
 	
 	//! Accessor for value
 	NifValue getValue() const;
@@ -90,11 +91,11 @@ public:
 	VectorEdit( QWidget * parent = 0 );
 	
 	//! Vector4 being edited
-	Q_PROPERTY( Vector4 vector4 READ getVector4 WRITE setVector4 STORED false );
+	Q_PROPERTY( Vector4 vector4 READ getVector4 WRITE setVector4 STORED false )
 	//! Vector3 being edited
-	Q_PROPERTY( Vector3 vector3 READ getVector3 WRITE setVector3 STORED false );
+	Q_PROPERTY( Vector3 vector3 READ getVector3 WRITE setVector3 STORED false )
 	//! Vector2 being edited
-	Q_PROPERTY( Vector2 vector2 READ getVector2 WRITE setVector2 STORED false );
+	Q_PROPERTY( Vector2 vector2 READ getVector2 WRITE setVector2 STORED false )
 	
 	//! Accessor for the Vector4
 	Vector4 getVector4() const;
@@ -139,8 +140,8 @@ class ColorEdit : public ValueEdit
 public:
 	ColorEdit( QWidget * parent = 0 );
 	
-	Q_PROPERTY( Color4 color4 READ getColor4 WRITE setColor4 STORED false );
-	Q_PROPERTY( Color3 color3 READ getColor3 WRITE setColor3 STORED false );
+	Q_PROPERTY( Color4 color4 READ getColor4 WRITE setColor4 STORED false )
+	Q_PROPERTY( Color3 color3 READ getColor3 WRITE setColor3 STORED false )
 	
 	Color4 getColor4() const;
 	Color3 getColor3() const;
@@ -167,8 +168,8 @@ class RotationEdit : public ValueEdit
 public:
 	RotationEdit( QWidget * parent = 0 );
 	
-	Q_PROPERTY( Matrix matrix READ getMatrix WRITE setMatrix STORED false );
-	Q_PROPERTY( Quat quat READ getQuat WRITE setQuat STORED false );
+	Q_PROPERTY( Matrix matrix READ getMatrix WRITE setMatrix STORED false )
+	Q_PROPERTY( Quat quat READ getQuat WRITE setQuat STORED false )
 	
 	Matrix getMatrix() const;
 	Quat getQuat() const;
@@ -205,7 +206,7 @@ class TriangleEdit : public ValueEdit
 public:
 	TriangleEdit( QWidget * parent = 0 );
 	
-	Q_PROPERTY( Triangle triangle READ getTriangle WRITE setTriangle STORED false );
+	Q_PROPERTY( Triangle triangle READ getTriangle WRITE setTriangle STORED false )
 	
 	Triangle getTriangle() const;
 	

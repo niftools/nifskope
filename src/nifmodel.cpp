@@ -31,18 +31,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
-#include "niftypes.h"
-#include "options.h"
 #include "config.h"
+#include "options.h"
+
+#include "niftypes.h"
 #include "spellbook.h"
 
 #include <QByteArray>
 #include <QColor>
 #include <QDebug>
 #include <QFile>
-#include <QTime>
 #include <QSettings>
+#include <QTime>
 #include <QtEndian>
+
 
 //! \file nifmodel.cpp NifModel implementation, NifModelEval
 

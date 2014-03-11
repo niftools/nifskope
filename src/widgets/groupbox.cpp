@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "groupbox.h"
 
+
 GroupBox::GroupBox( Qt::Orientation o ) : QGroupBox()
 {
    lay.push( new QBoxLayout( o2d( o ), this ) );

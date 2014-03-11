@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCache>
 #include <QDir>
 
+
 //! \file spellbook.cpp SpellBook implementation
 
 QList<Spell*> & SpellBook::spells()

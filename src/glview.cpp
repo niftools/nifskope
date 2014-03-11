@@ -31,31 +31,46 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glview.h"
+#include "options.h"
 
 #include "nifmodel.h"
 #include "gl/glscene.h"
 #include "gl/gltex.h"
-#include "options.h"
-
 #include "widgets/fileselect.h"
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
+#include <QActionGroup>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDialog>
+#include <QLabel>
+#include <QKeyEvent>
+#include <QMenu>
+#include <QMimeData>
+#include <QMouseEvent>
+#include <QPushButton>
+#include <QSettings>
+#include <QSpinBox>
+#include <QTimer>
+#include <QToolBar>
+
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <QGLFormat>
 
 // TODO: Make this platform independent (Half monitor refresh rate)
 #define FPS 30
-
 #define FOV 45.0
-
 #define MOV_SPD 350
 #define ROT_SPD 45
-
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif 
+
 
 //! \file glview.cpp GLView implementation
 

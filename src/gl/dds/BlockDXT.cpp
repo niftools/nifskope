@@ -61,9 +61,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Common.h"
-#include "Stream.h"
-#include "ColorBlock.h"
+
 #include "BlockDXT.h"
+#include "ColorBlock.h"
+#include "Stream.h"
+
 
 /*----------------------------------------------------------------------------
 	BlockDXT1

@@ -30,17 +30,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-
-
+#include "../nifmodel.h"
+#include "../nifproxy.h"
 #include "../nifskope.h"
 #include "../widgets/nifview.h"
-#include "../nifproxy.h"
-#include "../nifmodel.h"
 
-#include <QMenu>
-#include <QModelIndex>
 #include <QDockWidget>
 #include <QFileInfo>
+#include <QMenu>
+#include <QModelIndex>
 
 
 void exportObj( const NifModel * nif, const QModelIndex & index );

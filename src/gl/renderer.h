@@ -33,16 +33,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
-#include <QOpenGLContext>
-#include <QOpenGLFunctions>
-
 #include "../nifmodel.h"
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtWidgets>   // dito
 
 class Mesh;
 class PropertyList;
+
+class QOpenGLContext;
+class QOpenGLFunctions;
+
+typedef unsigned int GLenum;
+typedef unsigned int GLuint;
 
 //! Manages rendering and shaders?
 class Renderer

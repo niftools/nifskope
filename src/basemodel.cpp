@@ -31,8 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "basemodel.h"
-#include "niftypes.h"
 #include "options.h"
+
+#include "niftypes.h"
 
 #include <QByteArray>
 #include <QColor>

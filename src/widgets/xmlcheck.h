@@ -1,6 +1,8 @@
 #ifndef SPELL_DEBUG_H
 #define SPELL_DEBUG_H
 
+#include "../message.h"
+
 #include <QWidget>
 #include <QThread>
 #include <QMutex>
@@ -8,7 +10,6 @@
 #include <QDateTime>
 #include <QWaitCondition>
 
-#include "../message.h"
 
 class QCheckBox;
 class QGroupBox;

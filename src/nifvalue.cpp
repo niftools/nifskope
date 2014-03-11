@@ -31,12 +31,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifvalue.h"
-#include "nifmodel.h"
 #include "config.h"
 //#include "options.h"
 
+#include "nifmodel.h"
+
+#include <QDataStream>
 #include <QHash>
+#include <QIODevice>
 #include <QSettings>
+
 
 //! \file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
 

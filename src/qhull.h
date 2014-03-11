@@ -33,9 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _QHULL_H
 #define _QHULL_H
 
+#include "niftypes.h"
+
 #include <QVector>
 
-#include "niftypes.h"
 
 //! \file qhull.h Header for computing a convex hull
 

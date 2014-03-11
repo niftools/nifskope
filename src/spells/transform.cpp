@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QSettings>
 
+
 /* XPM */
 static char const * transform_xpm[] = {
 "64 64 6 1",

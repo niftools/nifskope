@@ -30,24 +30,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "options.h"
+
+#include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
-#include "kfmmodel.h"
-
-#include <QItemDelegate>
-
 #include "spellbook.h"
-
 #include "widgets/valueedit.h"
 #include "widgets/nifcheckboxlist.h"
 
 #include <QComboBox>
+#include <QItemDelegate>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QListView>
 
-#include "options.h"
 
 extern void qt_format_text(const QFont& font, const QRectF &_r,
                            int tf, const QString& str, QRectF *brect,

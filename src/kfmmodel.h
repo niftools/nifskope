@@ -36,8 +36,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basemodel.h"
 
 #include <QHash>
-#include <QStringList>
 #include <QReadWriteLock>
+#include <QStringList>
+
 
 class KfmModel : public BaseModel
 {

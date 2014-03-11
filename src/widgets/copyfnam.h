@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QRect>
 #include <QWidget>
 
+
 class CopyFilename : public QWidget
 {
 	Q_OBJECT

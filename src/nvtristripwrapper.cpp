@@ -1,6 +1,7 @@
 #include "nvtristripwrapper.h"
 
-#include "NvTriStrip.h"
+#include <NvTriStrip.h>
+
 
 QList< QVector<quint16> > stripify( QVector<Triangle> triangles, bool stitch )
 {

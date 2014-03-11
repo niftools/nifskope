@@ -32,13 +32,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltexloaders.h"
 
+#include "../nifmodel.h"
 #include "dds/dds_api.h"
 #include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
-#include "../nifmodel.h"
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtWidgets>   // dito
+#include <QBuffer>
 #include <QDebug>
+#include <QFile>
+#include <QFileInfo>
+#include <QModelIndex>
+#include <QOpenGLContext>
+#include <QString>
+#include <QtEndian>
+
 
 /*! \file gltexloaders.cpp
  * \brief Texture loading functions.

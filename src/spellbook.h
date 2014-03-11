@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QCoreApplication>
 #include <QMenu>
 
+
 //! \file spellbook.h Spell, SpellBook and Librarian
 
 //! Register a Spell using a Librarian

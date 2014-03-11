@@ -31,13 +31,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glscene.h"
+#include "../options.h"
 
 #include "glcontroller.h"
-#include "glnode.h"
 #include "glmesh.h"
+#include "glnode.h"
 #include "glparticles.h"
 #include "gltex.h"
-#include "../options.h"
+
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+
 
 //! \file glscene.cpp Scene management
 

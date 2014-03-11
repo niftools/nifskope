@@ -1,13 +1,13 @@
 #include "../spellbook.h"
 
-#include <QBuffer>
-#include <QDebug>
-#include <QMessageBox>
-
 #include "blocks.h"
 #include "mesh.h"
 #include "tangentspace.h"
 #include "transform.h"
+
+#include <QBuffer>
+#include <QMessageBox>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file optimize.cpp

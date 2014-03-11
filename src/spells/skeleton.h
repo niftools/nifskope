@@ -1,8 +1,9 @@
 #ifndef SPELL_SKELETON_H
 #define SPELL_SKELETON_H
 
-#include <QDialog>
 #include <QCheckBox>
+#include <QDialog>
+
 
 //! \file skeleton.h SkinPartitionDialog
 

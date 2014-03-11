@@ -30,25 +30,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-
+#include "../options.h"
 
 #include "../nifmodel.h"
+#include "../nvtristripwrapper.h"
+#include "../gl/gltex.h"
 
-#include "../NvTriStripwrapper.h"
-
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
 #include <QTextStream>
-#include <QApplication>
-
-#include "../gl/gltex.h"
-
-#include "../options.h"
 
 #define tr(x) QApplication::tr(x)
+
 
 // "globals"
 bool objCulling;
@@ -58,8 +55,6 @@ QRegExp objCullRegExp;
 /*
  *  .OBJ EXPORT
  */
-
-
 
 static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStream & obj, int ofs[1], Transform t )
 {

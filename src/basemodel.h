@@ -33,16 +33,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BaseModel_H
 #define BaseModel_H
 
-#include <QAbstractItemModel>
+#include "message.h"
+#include "nifitem.h"
+#include "niftypes.h"
 
+#include <QAbstractItemModel>
 #include <QIODevice>
 
+
 class QAbstractItemDelegate;
-
-#include "niftypes.h"
-#include "nifitem.h"
-
-#include "message.h"
 
 //! \file basemodel.h BaseModel
 

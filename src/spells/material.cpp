@@ -2,6 +2,7 @@
 
 #include "../widgets/nifeditors.h"
 
+
 // Brief description is deliberately not autolinked to class Spell
 /*! \file material.cpp
  * \brief Material editing spells (spMaterialEdit)

@@ -33,13 +33,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFVALUE_H
 #define NIFVALUE_H
 
-#include <QDataStream>
-#include <QIODevice>
-#include <QPair>
-#include <QVariant>
-#include <QHash>
-#include <QString>
 #include "niftypes.h"
+
+#include <QHash>
+#include <QPair>
+#include <QString>
+#include <QVariant>
+
+
+class QDataStream;
+class QIODevice;
 
 //! \file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
 

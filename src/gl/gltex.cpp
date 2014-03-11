@@ -30,10 +30,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "glscene.h"
 #include "gltex.h"
-#include "gltexloaders.h"
 #include "../options.h"
+
+#include "glscene.h"
+#include "gltexloaders.h"
 
 #ifdef FSENGINE
 #include "../fsengine/fsmanager.h"
@@ -44,6 +45,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDir>
 #include <QFileSystemWatcher>
 #include <QListView>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+
 
 //! \file gltex.cpp TexCache management
 

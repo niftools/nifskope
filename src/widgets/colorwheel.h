@@ -34,10 +34,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define COLORWHEEL_H
 
 #include <QColor>
-#include <QSpinBox>
 #include <QRegExpValidator>
 #include <QSlider>
+#include <QSpinBox>
 #include <QWidget>
+
 
 //! \file colorwheel.h ColorWheel, ColorSpinBox
 

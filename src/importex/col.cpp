@@ -30,27 +30,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "../config.h"
+#include "../options.h"
+
+#include "../nifmodel.h"
+#include "../nvtristripwrapper.h"
+#include "../gl/gltex.h"
+
+#include <QApplication>
 #include <QDebug>
+#include <QDateTime>
+#include <QDomDocument>
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
 #include <QTextStream>
-#include <QApplication>
-#include <QDomDocument>
-#include <QDateTime>
-
-#include "../nifmodel.h"
-
-#include "../NvTriStripwrapper.h"
-
-#include "../gl/gltex.h"
-
-#include "../config.h"
-
-#include "../options.h"
 
 #define tr(x) QApplication::tr(x)
+
 
 /**
  * TODO LIST:

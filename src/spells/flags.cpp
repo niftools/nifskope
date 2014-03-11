@@ -1,12 +1,13 @@
 #include "../spellbook.h"
 
-#include <QDialog>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDialog>
 #include <QLabel>
 #include <QLayout>
 #include <QPushButton>
 #include <QSpinBox>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file flags.cpp

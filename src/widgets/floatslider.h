@@ -33,8 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FLOATSLIDER_H
 #define FLOATSLIDER_H
 
-#include <QWidget>
 #include <QFrame>
+#include <QWidget>
+
 
 //! \file floatslider.h FloatSlider, FloatSliderEditBox, AlphaSlider
 

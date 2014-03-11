@@ -36,6 +36,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glcontrolable.h"
 #include "glproperty.h"
 
+#include <QPointer>
+
+
 class Node;
 
 class NodeList

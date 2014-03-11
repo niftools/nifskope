@@ -1,6 +1,12 @@
 #ifndef IMPORT_3DS_H
 #define IMPORT_3DS_H
 
+#include <QFile>
+#include <QList>
+#include <QMap>
+#include <QMapIterator>
+#include <QString>
+
 // Chunk Type definitions
 #define NULL_CHUNK			0x0000
 #define M3D_VERSION			0x0002
@@ -85,15 +91,10 @@
 
 #define FACE_FLAG_ONESIDE	0x0400
 
-#include <QFile>
-#include <QList>
-#include <QMap>
-#include <QMapIterator>
-#include <QString>
-
 #ifdef _MSC_VER  /* Microsoft Visual C++ */
 #pragma warning( disable : 4189 )  /* local variable is initialized but not referenced */
 #endif
+
 
 class Chunk {
 public:

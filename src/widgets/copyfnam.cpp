@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMouseEvent>
 #include <QPainter>
 
+
 CopyFilename::CopyFilename( QWidget * parent )
 	: QWidget( parent )
 {

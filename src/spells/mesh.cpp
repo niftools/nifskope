@@ -1,10 +1,10 @@
 #include "mesh.h"
 
-#include <QDebug>
 #include <QDialog>
 #include <QGridLayout>
 
 #include <cfloat>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file mesh.cpp

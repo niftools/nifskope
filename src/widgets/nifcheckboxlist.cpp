@@ -31,16 +31,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifcheckboxlist.h"
+#include "../options.h"
 
+#include <QAbstractItemView>
 #include <QAction>
 #include <QContextMenuEvent>
-#include <QAbstractItemView>
-#include <QStylePainter>
-#include <QLineEdit>
-#include <QValidator>
 #include <QDebug>
+#include <QLineEdit>
+#include <QStylePainter>
+#include <QValidator>
 
-#include "../options.h"
 
 CheckBoxList::CheckBoxList( QWidget *widget )
 	: QComboBox( widget )

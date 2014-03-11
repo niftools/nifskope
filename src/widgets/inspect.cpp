@@ -32,21 +32,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "inspect.h"
 
-#include <QApplication>
-#include <QFileInfo>
-#include <QDialog>
-#include <QLabel>
-#include <QLayout>
-#include <QLineEdit>
-#include <QListWidget>
-#include <QPushButton>
-#include <QCheckBox>
-#include <QGroupBox>
-#include <QTextEdit>
-
 #include "../nifmodel.h"
 #include "../gl/glscene.h"
 #include "../gl/glnode.h"
+
+#include <QCheckBox>
+#include <QDialog>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLayout>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QTextEdit>
+
 
 //! \file inspect.cpp InspectView and InspectViewInternal
 

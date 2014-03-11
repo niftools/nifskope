@@ -1,9 +1,8 @@
 #include "../spellbook.h"
+#include "../options.h"
 
-#include <QDebug>
 #include <QFileDialog>
 
-#include "../options.h"
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file animation.cpp

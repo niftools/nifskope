@@ -1,8 +1,6 @@
+#include "stringpalette.h"
 #include "../spellbook.h"
 
-#include "stringpalette.h"
-
-#include <QDebug>
 #include <QDialog>
 #include <QLabel>
 #include <QLayout>
@@ -12,6 +10,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QStringListModel>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file stringpalette.cpp

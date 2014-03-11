@@ -1,7 +1,7 @@
 #include "../spellbook.h"
+
 #include "../widgets/nifeditors.h"
 
-#include <QDebug>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file bounds.cpp

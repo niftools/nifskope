@@ -2,6 +2,7 @@
 
 #include "../widgets/nifeditors.h"
 
+
 // Brief description is deliberately not autolinked to class Spell
 /*! \file light.cpp
  * \brief Light editing spells (spLightEdit)

@@ -1,7 +1,6 @@
 #include "../spellbook.h"
 #include "misc.h"
 
-#include <QDebug>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file sanitize.cpp

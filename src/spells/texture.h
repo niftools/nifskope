@@ -1,7 +1,7 @@
 #ifndef SPELL_TEXTURE_H
 #define SPELL_TEXTURE_H
 
-#include <QOpenGLContext>
+#include "../widgets/nifeditors.h"
 
 #include <QDialog>
 //#include <QDoubleSpinBox>
@@ -10,7 +10,6 @@
 #include <QListView>
 #include <QStringListModel>
 
-#include "../widgets/nifeditors.h"
 
 class NifModel;
 

@@ -1,6 +1,7 @@
 #include "../spellbook.h"
 
-#include "../NvTriStripwrapper.h"
+#include "../nvtristripwrapper.h"
+
 
 // TODO: Move these to blocks.h / misc.h / wherever
 template <typename T> void copyArray( NifModel * nif, const QModelIndex & iDst, const QModelIndex & iSrc )

@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QTreeView>
 
+
 //! Widget for showing a nif file as tree, list, or block details.
 class NifTreeView : public QTreeView
 {

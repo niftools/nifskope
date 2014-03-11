@@ -34,11 +34,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFPROXYMODEL_H
 
 #include <QAbstractItemModel>
-
 #include <QList>
 
-class NifModel;
 
+class NifModel;
 class NifProxyItem;
 
 class NifProxyModel : public QAbstractItemModel

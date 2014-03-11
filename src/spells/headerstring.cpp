@@ -1,12 +1,12 @@
 #include "../spellbook.h"
 
-#include <QDebug>
 #include <QDialog>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file headerstring.cpp

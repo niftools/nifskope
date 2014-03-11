@@ -10,6 +10,7 @@
 #include <QMimeData>
 #include <QSettings>
 
+
 // Brief description is deliberately not autolinked to class Spell
 /*! \file blocks.cpp
  * \brief Block manipulation spells

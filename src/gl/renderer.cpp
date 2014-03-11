@@ -31,17 +31,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "renderer.h"
-
-#include "gltex.h"
-#include "glmesh.h"
-#include "glscene.h"
-#include "glproperty.h"
 #include "../options.h"
+
+#include "glmesh.h"
+#include "glproperty.h"
+#include "glscene.h"
+#include "gltex.h"
 
 #include <QApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <QTextStream>
 
 

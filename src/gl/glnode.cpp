@@ -30,21 +30,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "glscene.h"
-#include "glmarker.h"
 #include "glnode.h"
-int Node::SELECTING = 0;
-#include "glcontroller.h"
 #include "../options.h"
 
-#include "../nvtristripwrapper.h"
+#include "glcontroller.h"
+#include "glmarker.h"
+#include "glscene.h"
 
 #include "marker/furniture.h"
 #include "marker/constraints.h"
+#include "../nvtristripwrapper.h"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif
+
+
+int Node::SELECTING = 0;
 
 class TransformController : public Controller
 {

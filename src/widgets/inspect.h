@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDialog>
 #include <QPersistentModelIndex>
 
+
 //! \file inspect.h InspectView class
 
 class NifModel;

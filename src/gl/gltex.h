@@ -33,18 +33,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEX_H
 #define GLTEX_H
 
-#include <QOpenGLContext>
-#include <QOpenGLFunctions>
-
-#include <QtCore/QtCore>
-#include <QtWidgets>
-
 #include "../niftypes.h"
+
+
+class GroupBox;
 
 class QAction;
 class QFileSystemWatcher;
+class QOpenGLContext;
 
-class GroupBox;
+typedef unsigned int GLuint;
 
 //! \file gltex.h TexCache etc. header
 

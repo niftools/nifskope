@@ -1,12 +1,9 @@
+#include "skeleton.h"
 #include "../spellbook.h"
 
-#include "skeleton.h"
-
+#include "../nvtristripwrapper.h"
 #include "../gl/gltools.h"
 
-#include "../NvTriStripwrapper.h"
-
-#include <QDebug>
 #include <QFile>
 #include <QGridLayout>
 #include <QLabel>
@@ -15,6 +12,7 @@
 #include <QSpinBox>
 
 #define SKEL_DAT ":/res/skel.dat"
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file skeleton.cpp

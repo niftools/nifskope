@@ -33,7 +33,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UVEDIT_H
 #define UVEDIT_H
 
-#include <QOpenGLContext>
+#include <QGLWidget>
+
+#include <QActionGroup>
+#include <QCheckBox>
+#include <QDialog>
+#include <QDoubleSpinBox>
+#include <QGridLayout>
+#include <QModelIndex>
+#include <QMenu>
+#include <QPointer>
+#include <QUndoStack>
+
+#include <math.h>
+
 // TODO: Determine the necessity of this
 // Appears to be used solely for gluErrorString
 // There may be some Qt alternative
@@ -43,12 +56,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include <GL/glu.h>
 #endif
 
-#include <QGLWidget>
-
-#include <QtCore/QtCore>
-#include <QtWidgets>
-
-#include <math.h>
 
 class NifModel;
 class TexCache;

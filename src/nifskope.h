@@ -33,37 +33,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFSKOPE_H
 #define NIFSKOPE_H
 
+#include "message.h"
+#include "ui/about_dialog.h"
+
 #include <QMainWindow>
 #include <QProgressDialog>
 
 #define NIFSKOPE_IPC_PORT 12583
 
-class NifModel;
-class NifProxyModel;
-class KfmModel;
-class NifTreeView;
-class ReferenceBrowser;
-class InspectView;
 
 class GLView;
+
 class FileSelector;
- 
-class QModelIndex;
+class InspectView;
+class KfmModel;
+class NifModel;
+class NifProxyModel;
+class NifTreeView;
+class ReferenceBrowser;
 
 class QAction;
 class QActionGroup;
+class QLocale;
+class QModelIndex;
 class QSettings;
 class QSlider;
 class QSpinBox;
 class QTextEdit;
 class QTranslator;
-class QLocale;
-
 class QUdpSocket;
-
-#include "message.h"
-
-#include "ui/about_dialog.h"
 
 //! \file nifskope.h The main header for NifSkope
 

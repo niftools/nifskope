@@ -1,12 +1,13 @@
 #include "../spellbook.h"
 
-#include "../NvTriStripwrapper.h"
+#include "../nvtristripwrapper.h"
 
 #include <QDialog>
 #include <QDoubleSpinBox>
 #include <QLabel>
 #include <QLayout>
 #include <QPushButton>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file normals.cpp

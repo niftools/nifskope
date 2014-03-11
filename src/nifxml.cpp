@@ -33,9 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "niftypes.h"
 
-#include <QtXml>
 #include <QApplication>
 #include <QMessageBox>
+#include <QtXml>
 
 //! \file nifxml.cpp NifXmlHandler, NifModel XML
 

@@ -33,21 +33,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSCENE_H
 #define GLSCENE_H
 
-#include <QOpenGLContext>
-#include <QOpenGLFunctions>
-
 #include "../nifmodel.h"
 
 #include "glnode.h"
 #include "glproperty.h"
 #include "gltex.h"
 #include "gltools.h"
-
 #include "renderer.h"
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtWidgets>   // dito
 #include <QRegExp>
+
+
+class QOpenGLContext;
+class QOpenGLFunctions;
 
 class Scene
 {

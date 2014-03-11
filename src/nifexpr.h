@@ -34,8 +34,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFEXPR_H
 #pragma once
 
-#include <QVariant>
 #include <QString>
+#include <QVariant>
+
 
 class Expression
 {

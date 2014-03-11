@@ -1,16 +1,14 @@
 #include "xmlcheck.h"
+#include "../config.h"
 
 #include "../kfmmodel.h"
 #include "../nifmodel.h"
-#include "../config.h"
-
 #include "fileselect.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
-#include <QDebug>
 #include <QDir>
 #include <QGroupBox>
 #include <QLabel>

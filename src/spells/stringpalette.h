@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include <QStringListModel>
 
+
 //! \file stringpalette.h StringPaletteRegexDialog
 
 class NifModel;

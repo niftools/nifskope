@@ -31,6 +31,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "options.h"
+#include "config.h"
+
+#include "widgets/colorwheel.h"
+#include "widgets/fileselect.h"
+#include "widgets/floatslider.h"
+#include "widgets/groupbox.h"
 
 #include <QAction>
 #include <QButtonGroup>
@@ -55,12 +61,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QComboBox>
 #include <QApplication>
 
-#include "config.h"
-
-#include "widgets/colorwheel.h"
-#include "widgets/fileselect.h"
-#include "widgets/floatslider.h"
-#include "widgets/groupbox.h"
 
 //! \file options.cpp SmallListView and Options implementation
 

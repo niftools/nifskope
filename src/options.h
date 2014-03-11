@@ -33,16 +33,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-#include <QObject>
 #include "widgets/groupbox.h"
+
+#include <QObject>
 
 #define NifSkopeDisplayRole (Qt::UserRole + 42)
 
+
 //! \file options.h Options class
+
+class AlphaSlider;
+class ColorWheel;
+class FileSelector;
+class GroupBox;
 
 class QAbstractButton;
 class QAction;
 class QColor;
+class QComboBox;
 class QCheckBox;
 class QDialog;
 class QLineEdit;
@@ -53,12 +61,6 @@ class QSpinBox;
 class QStringListModel;
 class QTabWidget;
 class QTimer;
-class QComboBox;
-
-class AlphaSlider;
-class ColorWheel;
-class FileSelector;
-class GroupBox;
 
 //! Global options menu and dialog
 class Options : public QObject

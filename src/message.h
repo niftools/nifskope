@@ -1,8 +1,9 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include <QString>
 #include <QMetaType>
+#include <QString>
+
 
 class Message
 {

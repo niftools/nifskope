@@ -31,9 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "qhull.h"
-#include <algorithm>
-#include <functional>
-#include <math.h>
 
 #include <QDebug>
 #include <QByteArray>
@@ -59,7 +56,12 @@ extern "C"
 #include <libqhull/usermem.c>
 #include <libqhull/random.c>
 #include <libqhull/rboxlib.c>
-};
+}
+
+#include <algorithm>
+#include <functional>
+#include <math.h>
+
 
 //! \file qhull.cpp Computes a convex hull
 

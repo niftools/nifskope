@@ -35,7 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 
-#include <QPointer>
 
 //! \file glcontroller.h Controller, Interpolator and subclasses
 

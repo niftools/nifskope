@@ -1,18 +1,16 @@
 #include "3ds.h"
 
-#include "../spellbook.h"
-
 #include "../nvtristripwrapper.h"
+#include "../spellbook.h"
+#include "../gl/gltex.h"
 
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
 #include <QString>
-#include <QApplication>
-
-#include "../gl/gltex.h"
 
 #define tr(x) QApplication::tr("3dsImport", x)
 

@@ -31,14 +31,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "uvedit.h"
+#include "../options.h"
 
 #include "../nifmodel.h"
 #include "../niftypes.h"
-#include "../options.h"
-#include "../NvTriStripwrapper.h"
-
+#include "../nvtristripwrapper.h"
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"
+
+#include <QInputDialog>
+#include <QLabel>
+#include <QMouseEvent>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <QPushButton>
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0
@@ -48,6 +54,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAXZOOM 20.0
 #define MAXSCALE 10.0
 #define MAXTRANS 10.0
+
 
 UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 {

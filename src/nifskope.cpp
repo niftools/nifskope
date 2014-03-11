@@ -30,19 +30,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-// MinGW hack to ensure that GetLongPathNameW is defined
-#ifdef WIN32 
-#  ifdef __GNUC__
-#    define WINVER 0x0500
-#  endif
-#endif
-
 #include "nifskope.h"
 #include "config.h"
+#include "options.h"
+
+#include "glview.h"
+#include "kfmmodel.h"
+#include "nifmodel.h"
+#include "nifproxy.h"
+#include "spellbook.h"
+#include "widgets/copyfnam.h"
+#include "widgets/fileselect.h"
+#include "widgets/nifview.h"
+#include "widgets/refrbrowser.h"
+#include "widgets/inspect.h"
+#include "widgets/xmlcheck.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QByteArray>
+#include <QComboBox>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
@@ -67,36 +74,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 #include <QTreeView>
 
-#include "kfmmodel.h"
-#include "nifmodel.h"
-#include "nifproxy.h"
-#include "widgets/nifview.h"
-#include "widgets/refrbrowser.h"
-#include "widgets/inspect.h"
-
-#include "glview.h"
-#include "spellbook.h"
-#include "widgets/fileselect.h"
-#include "widgets/copyfnam.h"
-#include "widgets/xmlcheck.h"
-#include "options.h"
+#ifdef FSENGINE
+#include <fsengine/fsmanager.h>
+FSManager * fsmanager = 0;
+#endif
 
 #ifdef WIN32
 #  define WINDOWS_LEAN_AND_MEAN
 #  include "windows.h"
 #endif
 
-#ifdef FSENGINE
-
-#include <fsengine/fsmanager.h>
-
-FSManager * fsmanager = 0;
-
-#endif
-
 // hackish workaround to undefine symbols from extra includes
 #undef None
 #undef Bool
+
 
 //! \file nifskope.cpp The main file for NifSkope
 

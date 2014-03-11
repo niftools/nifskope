@@ -33,13 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLPROPERTY_H
 #define GLPROPERTY_H
 
-#include <QOpenGLContext>
-#include <QGLWidget>
-
 #include "glcontrolable.h"
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtWidgets>   // dito
+
+typedef unsigned int GLenum;
+typedef int GLint;
+typedef unsigned int GLuint;
+typedef float GLfloat;
 
 //! \file glproperty.h Property classes
 

@@ -33,12 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFEDITORS_H
 #define NIFEDITORS_H
 
+#include "../nifmodel.h"
+
 #include <QBoxLayout>
 #include <QGroupBox>
 #include <QPointer>
 #include <QStack>
 
-#include "../nifmodel.h"
 
 class NifEditBox : public QGroupBox
 {

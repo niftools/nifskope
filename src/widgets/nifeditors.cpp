@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifeditors.h"
 
 #include "../nifmodel.h"
-
 #include "colorwheel.h"
 #include "floatslider.h"
 #include "valueedit.h"
@@ -43,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLineEdit>
 #include <QPushButton>
 #include <QTimer>
+
 
 NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAndForget )
 	: QWidget(), nif( n ), iBlock( i )

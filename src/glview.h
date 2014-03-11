@@ -33,34 +33,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLVIEW
 #define GLVIEW
 
-#include <QOpenGLContext>
-#include <QOpenGLFunctions>
-// TODO: Determine the necessity of this
-// Appears to be used solely for gluErrorString
-// There may be some Qt alternative
-#ifdef __APPLE__
-    #include <OpenGL/glu.h>
-#else
-    #include <GL/glu.h>
-#endif
-
-#include <QGLWidget>
-#include <QGLFormat>
-
 #include "nifmodel.h"
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtWidgets>   // dito
-#include <QDebug>
-#include <QCache>
 #include <QDateTime>
+#include <QDebug>
 #include <QFile>
-#include <QStack>
-#include <QQueue>
+#include <QGLWidget>
 
 #include <math.h>
+
+// TODO: Determine the necessity of this
+// Appears to be used solely for gluErrorString
+// There may be some Qt alternative
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
+
 
 //! \file glview.h GLView class
 
@@ -68,7 +60,10 @@ class Scene;
 
 class QActionGroup;
 class QComboBox;
+class QGLFormat;
 class QMenu;
+class QOpenGLContext;
+class QOpenGLFunctions;
 class QSettings;
 class QToolBar;
 class QTimer;

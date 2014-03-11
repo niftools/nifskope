@@ -37,14 +37,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
+#include <QResizeEvent>
+#include <QScrollBar>
 #include <QSpinBox>
+#include <QTextCursor>
 #include <QTextEdit>
 #include <QToolButton>
-#include <QScrollBar>
-#include <QResizeEvent>
-#include <QTextCursor>
 
 #include "floatedit.h"
+
 
 //! \file valueedit.cpp Value edit widget implementations
 

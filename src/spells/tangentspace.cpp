@@ -1,8 +1,7 @@
 #include "tangentspace.h"
 
-#include "../NvTriStripwrapper.h"
+#include "../nvtristripwrapper.h"
 
-#include <QDebug>
 
 bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & index )
 {

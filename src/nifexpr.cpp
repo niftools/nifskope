@@ -31,7 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifexpr.h"
+
 #include "basemodel.h"
+
 
 static bool matchGroup(const QString & cond, int offset, int& startpos, int& endpos)
 {

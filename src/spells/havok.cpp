@@ -1,11 +1,9 @@
 #include "../spellbook.h"
-#include "../qhull.h"
-
-#include "../NvTriStripwrapper.h"
 
 #include "blocks.h"
+#include "../nvtristripwrapper.h"
+#include "../qhull.h"
 
-#include <QDebug>
 #include <QDialog>
 #include <QDoubleSpinBox>
 #include <QLabel>
@@ -13,6 +11,7 @@
 #include <QMap>
 #include <QMessageBox>
 #include <QPushButton>
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file havok.cpp
