@@ -494,6 +494,7 @@ QDomElement textureArrayElement(QString file,QDomElement effect,qint32 idx,QStri
  */
 
 QDomElement textureElement(const NifModel * nif,QDomElement effect,QModelIndex childNode,int idx) {
+	Q_UNUSED(nif); Q_UNUSED(idx);
 	QDomElement ret;
 	qint32 texIdx = nif->getLink( childNode, "Source" );
 	QModelIndex iTexture = nif->getBlock(texIdx, "NiSourceTexture" );
@@ -614,6 +615,7 @@ void attachNiShape (const NifModel * nif,QDomElement parentNode,int idx) {
 			QModelIndex iTextures = nif->getBlock( subIdx );
 			if ( iTextures.isValid() ) {
 				int tCount = nif->get<int>( iTextures, "Num Textures" );
+				Q_UNUSED(tCount);
 				QVector<QString> textures = nif->getArray<QString>( iTextures, "Textures" );
 				if ( ! textures.at(0).isEmpty()  )
 					textureBaseTexture = textureArrayElement(textures.at(0),profile,subIdx,"base");

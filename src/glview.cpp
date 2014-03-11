@@ -367,6 +367,7 @@ void GLView::initializeGL()
 
 void GLView::glProjection( int x, int y )
 {
+	Q_UNUSED(x); Q_UNUSED(y)
 	GLint	viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 	GLdouble aspect = (GLdouble) viewport[2] / (GLdouble) viewport[3];
@@ -642,7 +643,7 @@ typedef void (Scene::*DrawFunc)(void);
 	
 int indexAt( /*GLuint *buffer,*/ NifModel *model, Scene *scene, QList<DrawFunc> drawFunc, int cycle, const QPoint & pos )
 {
-	Q_UNUSED(model);
+	Q_UNUSED(model); Q_UNUSED(cycle);
 	// Modifying this to a color-key O(1) selection
 	// because Open GL 3.0 says glRenderMode is deprecated
 	// and because ATI opengl API implementation of GL_SELECT corrupts NifSkope memory

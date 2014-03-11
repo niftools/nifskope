@@ -653,6 +653,7 @@ public:
 	
 	QModelIndex cast( NifModel *nif, const QModelIndex &index )
 	{
+		Q_UNUSED(index);
 		QStringList modes;
 		modes << "Replace" <<  "Decal" << "Modulate" << "Hilight" << "Hilight2";
 		

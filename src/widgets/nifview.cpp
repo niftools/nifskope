@@ -157,6 +157,7 @@ void NifTreeView::drawBranches( QPainter * painter, const QRect & rect, const QM
 
 void NifTreeView::updateConditions( const QModelIndex & topLeft, const QModelIndex & bottomRight )
 {
+	Q_UNUSED(bottomRight);
 	updateConditionRecurse( topLeft.parent() );
 	doItemsLayout();
 }

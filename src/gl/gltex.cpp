@@ -510,6 +510,7 @@ bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 
 bool TexCache::Tex::savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData )
 {
+	Q_UNUSED(iSource);
 	// gltexloaders function goes here
 	//qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
 	return texSaveNIF( nif, filepath, iData );

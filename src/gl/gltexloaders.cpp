@@ -1424,6 +1424,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 // (public function, documented in gltexloaders.h)
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
 {
+	Q_UNUSED(index);
 	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
 	QString filename = filepath;
 	if ( ! filename.toLower().endsWith( ".tga" ) )

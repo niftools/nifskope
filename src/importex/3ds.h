@@ -91,6 +91,10 @@
 #include <QMapIterator>
 #include <QString>
 
+#ifdef _MSC_VER  /* Microsoft Visual C++ */
+#pragma warning( disable : 4189 )  /* local variable is initialized but not referenced */
+#endif
+
 class Chunk {
 public:
 

@@ -466,6 +466,7 @@ public:
 	
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
+		Q_UNUSED(index);
 		QMap<QString, QModelIndex> sequenceMap;
 		
 		QList<QModelIndex> sequenceList;

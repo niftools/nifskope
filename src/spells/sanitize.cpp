@@ -86,6 +86,7 @@ public:
 	
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
+		Q_UNUSED(nif);
 		return !index.isValid();
 	}
 	
