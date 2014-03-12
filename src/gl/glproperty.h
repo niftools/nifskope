@@ -383,28 +383,28 @@ REGISTER_PROPERTY( StencilProperty, Stencil )
 class BSShaderLightingProperty : public Property
 {
 public:
-   BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-   Type type() const { return ShaderLighting; }
-   QString typeId() const { return "BSShaderLightingProperty"; }
+	Type type() const { return ShaderLighting; }
+	QString typeId() const { return "BSShaderLightingProperty"; }
 
-   void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block );
 
-   friend void glProperty( BSShaderLightingProperty * );
+	friend void glProperty( BSShaderLightingProperty * );
 
-   bool bind( int id, const QString & fname = QString() );
-   bool bind( int id, const QList< QVector<Vector2> > & texcoords );
-   bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
+	bool bind( int id, const QString & fname = QString() );
+	bool bind( int id, const QList< QVector<Vector2> > & texcoords );
+	bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
 
-   QString fileName( int id ) const;
-   //int coordSet( int id ) const;
+	QString fileName( int id ) const;
+	//int coordSet( int id ) const;
 
-   static int getId( const QString & id );
+	static int getId( const QString & id );
 
 protected:
-   //QVector<QString> textures;
-   QPersistentModelIndex iTextureSet;
-   QPersistentModelIndex iSourceTexture;
+	//QVector<QString> textures;
+	QPersistentModelIndex iTextureSet;
+	QPersistentModelIndex iSourceTexture;
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )

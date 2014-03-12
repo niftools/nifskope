@@ -97,7 +97,7 @@ public:
 	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
 	
 protected:
-   friend class Interpolator;
+	friend class Interpolator;
 
 	QPersistentModelIndex iBlock;
 	QPersistentModelIndex iInterpolator;
@@ -119,45 +119,45 @@ template <typename T> bool Controller::interpolate( T & value, const QModelIndex
 class Interpolator : public QObject
 {
 public:
-   Interpolator(Controller *owner);
+	Interpolator(Controller *owner);
 
-   virtual bool update( const NifModel * nif, const QModelIndex & index );
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
 
 protected:
-   QPersistentModelIndex GetControllerData();
-   Controller *parent;
+	QPersistentModelIndex GetControllerData();
+	Controller *parent;
 };
 
 class TransformInterpolator : public Interpolator
 {
 public:
-   TransformInterpolator(Controller *owner);
+	TransformInterpolator(Controller *owner);
 
-   virtual bool update( const NifModel * nif, const QModelIndex & index );
-   virtual bool updateTransform(Transform& tm, float time);
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
+	virtual bool updateTransform(Transform& tm, float time);
 
 protected:
-   QPersistentModelIndex iTranslations, iRotations, iScales;
-   int lTrans, lRotate, lScale;
+	QPersistentModelIndex iTranslations, iRotations, iScales;
+	int lTrans, lRotate, lScale;
 };
 
 class BSplineTransformInterpolator : public TransformInterpolator
 {
 public:
-   BSplineTransformInterpolator( Controller *owner );
+	BSplineTransformInterpolator( Controller *owner );
 
-   virtual bool update( const NifModel * nif, const QModelIndex & index );
-   virtual bool updateTransform(Transform& tm, float time);
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
+	virtual bool updateTransform(Transform& tm, float time);
 
 protected:
-   float start, stop;
-   QPersistentModelIndex iControl, iSpline, iBasis;
-   QPersistentModelIndex lTrans, lRotate, lScale;
-   uint lTransOff, lRotateOff, lScaleOff;
-   float lTransMult, lRotateMult, lScaleMult;
-   float lTransBias, lRotateBias, lScaleBias;
-   uint nCtrl;
-   int degree;
+	float start, stop;
+	QPersistentModelIndex iControl, iSpline, iBasis;
+	QPersistentModelIndex lTrans, lRotate, lScale;
+	uint lTransOff, lRotateOff, lScaleOff;
+	float lTransMult, lRotateMult, lScaleMult;
+	float lTransBias, lRotateBias, lScaleBias;
+	uint nCtrl;
+	int degree;
 };
 
 

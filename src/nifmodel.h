@@ -238,46 +238,52 @@ signals:
 	void linksChanged();
 
 protected:
-	void		insertAncestor( NifItem * parent, const QString & identifier, int row = -1 );
-	void		insertType( NifItem * parent, const NifData & data, int row = -1 );
-	NifItem *	insertBranch( NifItem * parent, const NifData & data, int row = -1 );
+	void insertAncestor( NifItem * parent, const QString & identifier, int row = -1 );
+	void insertType( NifItem * parent, const NifData & data, int row = -1 );
+	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	bool		updateArrayItem( NifItem * array, bool fast );
-	bool		updateByteArrayItem( NifItem * array, bool fast );
-	bool     updateArrays( NifItem * parent, bool fast );
+	bool updateArrayItem( NifItem * array, bool fast );
+	bool updateByteArrayItem( NifItem * array, bool fast );
+	bool updateArrays( NifItem * parent, bool fast );
 	
-	NifItem *	getHeaderItem() const;
-	NifItem *	getFooterItem() const;
-	NifItem *	getBlockItem( int ) const;
-	NifItem *	getItem( NifItem * parent, const QString & name ) const;
+	NifItem * getHeaderItem() const;
+	NifItem * getFooterItem() const;
+	NifItem * getBlockItem( int ) const;
+	NifItem * getItem( NifItem * parent, const QString & name ) const;
 
-	bool		load( NifItem * parent, NifIStream & stream, bool fast = true );
-	bool		save( NifItem * parent, NifOStream & stream ) const;
-	bool		fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
+	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool save( NifItem * parent, NifOStream & stream ) const;
+	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
 	
-	bool		setItemValue( NifItem * item, const NifValue & v );
+	bool setItemValue( NifItem * item, const NifValue & v );
 	
-	bool		itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
-	int			getBlockNumber( NifItem * item ) const;
+	bool itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
+	int getBlockNumber( NifItem * item ) const;
 	
-	bool		setHeaderString( const QString & );
+	bool setHeaderString( const QString & );
 	
-	QString		ver2str( quint32 v ) const { return version2string( v ); }
-	quint32		str2ver( QString s ) const { return version2number( s ); }
+	QString ver2str( quint32 v ) const { return version2string( v ); }
+	quint32 str2ver( QString s ) const { return version2number( s ); }
 	
-	bool		evalVersion( NifItem * item, bool chkParents = false ) const;
+	bool evalVersion( NifItem * item, bool chkParents = false ) const;
 
 	//! NIF file version
 	quint32 version;
 	
-	QHash< int, QList<int> >	childLinks;
-	QHash< int, QList<int> >	parentLinks;
-	QList< int >				rootLinks;
+	QHash< int, QList<int> > childLinks;
+	QHash< int, QList<int> > parentLinks;
+	QList< int > rootLinks;
 
-	bool                        lockUpdates;
+	bool lockUpdates;
 
-	enum UpdateType { utNone = 0, utHeader = 0x1, utLinks = 0x2, utFooter= 0x4, utAll = 0x7 };
-	UpdateType                  needUpdates;
+	enum UpdateType {
+		utNone = 0,
+		utHeader = 0x1,
+		utLinks = 0x2,
+		utFooter= 0x4,
+		utAll = 0x7
+	};
+	UpdateType needUpdates;
 	
 	void updateLinks( int block = -1 );
 	void updateLinks( int block, NifItem * parent );
@@ -291,10 +297,10 @@ protected:
 
 
 	// XML structures
-	static QList<quint32>		supportedVersions;
+	static QList<quint32> supportedVersions;
 	
-	static QHash<QString,NifBlock*>		compounds;
-	static QHash<QString,NifBlock*>		blocks;
+	static QHash<QString,NifBlock*> compounds;
+	static QHash<QString,NifBlock*> blocks;
 	
 	//! Parse the XML file using a NifXmlHandler
 	static QString parseXmlDescription( const QString & filename );
@@ -366,51 +372,63 @@ inline bool NifModel::itemIsLink( NifItem * item, bool * isChildLink ) const
 {
 	if ( isChildLink )
 		*isChildLink = ( item->value().type() == NifValue::tLink );
+
 	return item->value().isLink();
 }
 
 inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
 {
-	return ( ( since == 0 || since <= version ) && ( until == 0 || version <= until ) );
+	return (    ( since == 0 || since <= version )
+			 && ( until == 0 || version <= until )
+	);
 }
 
 
 // Overrides for get and set templates.
-template <typename T> inline T NifModel::get( const QModelIndex & index ) const {
+template <typename T> inline T NifModel::get( const QModelIndex & index ) const
+{
 	return BaseModel::get<T>( index );
 }
 
-template <typename T> inline T NifModel::get( NifItem * item ) const {
+template <typename T> inline T NifModel::get( NifItem * item ) const
+{
 	return BaseModel::get<T>( item );
 }
 
-template <typename T> inline T NifModel::get( NifItem * parent, const QString & name ) const {
+template <typename T> inline T NifModel::get( NifItem * parent, const QString & name ) const
+{
 	return BaseModel::get<T>(parent, name);
 }
 
-template <typename T> inline T NifModel::get( const QModelIndex & parent, const QString & name ) const {
+template <typename T> inline T NifModel::get( const QModelIndex & parent, const QString & name ) const
+{
 	return BaseModel::get<T>(parent, name);
 }
 
-template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & d ) {
+template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & d )
+{
 	return BaseModel::set<T>( index, d );
 }
 
-template <typename T> inline bool NifModel::set( NifItem * item, const T & d ) {
+template <typename T> inline bool NifModel::set( NifItem * item, const T & d )
+{
 	return BaseModel::set<T>( item, d );
 }
 
-template <typename T> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const T & d ){
+template <typename T> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const T & d )
+{
 	return BaseModel::set<T>(parent, name, d);
 }
 
-template <typename T> inline bool NifModel::set( NifItem * parent, const QString & name, const T & d ) {
+template <typename T> inline bool NifModel::set( NifItem * parent, const QString & name, const T & d )
+{
 	return BaseModel::set<T>(parent, name, d);
 }
 
 
 // QString overloads for the get and set templates
-template <> inline QString NifModel::get( const QModelIndex & index ) const {
+template <> inline QString NifModel::get( const QModelIndex & index ) const
+{
 	return this->string( index );
 }
 

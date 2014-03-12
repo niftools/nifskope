@@ -161,7 +161,7 @@ public:
 	void setArr1( const QString & arr1 )	{
 		d->arr1 = arr1;
 		d->arr1expr = Expression(arr1);
-        }
+		}
 	//! Sets the second array length of the data.
 	void setArr2( const QString & arr2 )	{ d->arr2 = arr2; }
 	//! Sets the condition attribute of the data.
