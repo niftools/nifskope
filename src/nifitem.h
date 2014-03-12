@@ -36,7 +36,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifexpr.h"
 #include "nifvalue.h"
 
-#include <QSharedData>
+#include <QSharedData> // Inherited
+#include <QPointer>
+#include <QString>
 #include <QVector>
 
 

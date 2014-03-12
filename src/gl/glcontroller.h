@@ -35,6 +35,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 
+#include <QObject> // Inherited
+#include <QPersistentModelIndex>
+#include <QString>
+
 
 //! \file glcontroller.h Controller, Interpolator and subclasses
 

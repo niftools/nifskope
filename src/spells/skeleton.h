@@ -1,12 +1,12 @@
 #ifndef SPELL_SKELETON_H
 #define SPELL_SKELETON_H
 
-#include <QCheckBox>
-#include <QDialog>
+#include <QDialog> // Inherited
 
 
 //! \file skeleton.h SkinPartitionDialog
 
+class QCheckBox;
 class QSpinBox;
 
 //! Dialog box for skin partitions

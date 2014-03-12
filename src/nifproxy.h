@@ -33,8 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFPROXYMODEL_H
 #define NIFPROXYMODEL_H
 
-#include <QAbstractItemModel>
+#include <QAbstractItemModel> // Inherited
 #include <QList>
+#include <QModelIndex>
+#include <QVariant>
 
 
 class NifModel;

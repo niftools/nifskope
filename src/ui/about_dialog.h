@@ -3,6 +3,9 @@
 
 #include "ui_about_dialog.h"
 
+#include <QDialog>
+
+
 class AboutDialog : public QDialog {
     Q_OBJECT
 

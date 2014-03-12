@@ -6,13 +6,18 @@
 #include "../spellbook.h"
 #include "../gl/gltex.h"
 #include "../widgets/fileselect.h"
+#include "../widgets/nifeditors.h"
 #include "../widgets/uvedit.h"
 
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QFileDialog>
+#include <QGridLayout>
 #include <QLabel>
+#include <QListView>
 #include <QPushButton>
 #include <QSettings>
+#include <QStringListModel>
 
 
 // Brief description is deliberately not autolinked to class Spell

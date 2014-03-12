@@ -39,8 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/valueedit.h"
 #include "widgets/nifcheckboxlist.h"
 
+#include <QItemDelegate> // Inherited
 #include <QComboBox>
-#include <QItemDelegate>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>

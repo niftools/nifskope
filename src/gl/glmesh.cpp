@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "../options.h"
 
-#include "glcontroller.h"
+#include "glcontroller.h" // Inherited
 #include "glscene.h"
 #include "gltools.h"
 

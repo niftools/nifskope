@@ -37,8 +37,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifitem.h"
 #include "niftypes.h"
 
-#include <QAbstractItemModel>
+#include <QAbstractItemModel> // Inherited
 #include <QIODevice>
+#include <QString>
+#include <QVariant>
+#include <QVector>
 
 
 class QAbstractItemDelegate;

@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glparticles.h"
 
-#include "glcontroller.h"
+#include "glcontroller.h" // Inherited
 #include "glscene.h"
 
 #include <math.h>

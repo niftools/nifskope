@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FLOATEDIT_H
 #define FLOATEDIT_H
 
-#include <QDoubleValidator>
-#include <QLineEdit>
+#include <QDoubleValidator> // Inherited
+#include <QLineEdit>        // Inherited
 
 
 class FloatValidator : public QDoubleValidator

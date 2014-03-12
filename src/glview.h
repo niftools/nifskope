@@ -37,27 +37,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
+#include <QGLWidget> // Inherited
 #include <QDateTime>
-#include <QDebug>
-#include <QFile>
-#include <QGLWidget>
+#include <QPersistentModelIndex>
 
 #include <math.h>
-
-// TODO: Determine the necessity of this
-// Appears to be used solely for gluErrorString
-// There may be some Qt alternative
-#ifdef __APPLE__
-	#include <OpenGL/glu.h>
-#else
-	#include <GL/glu.h>
-#endif
 
 
 //! \file glview.h GLView class
 
 class Scene;
 
+class QAction;
 class QActionGroup;
 class QComboBox;
 class QGLFormat;

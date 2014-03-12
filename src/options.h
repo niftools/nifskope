@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "widgets/groupbox.h"
 
-#include <QObject>
+#include <QObject> // Inherited
 
 #define NifSkopeDisplayRole (Qt::UserRole + 42)
 
@@ -61,6 +61,11 @@ class QSpinBox;
 class QStringListModel;
 class QTabWidget;
 class QTimer;
+
+//! Gets the color normally used for drawing from Options::nlColor()
+#define glNormalColor() glColor( Color4( Options::nlColor() ) )
+//! Gets the color used for highlighting from Options::hlColor()
+#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
 
 //! Global options menu and dialog
 class Options : public QObject
@@ -265,9 +270,6 @@ protected:
 	bool showMeshes;
 };
 
-//! Gets the color normally used for drawing from Options::nlColor()
-#define glNormalColor() glColor( Color4( Options::nlColor() ) )
-//! Gets the color used for highlighting from Options::hlColor()
-#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
+
 
 #endif

@@ -35,6 +35,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../niftypes.h"
 
+#include <QObject> // Inherited
+#include <QByteArray>
+#include <QHash>
+#include <QPersistentModelIndex>
+#include <QString>
+
 
 class GroupBox;
 

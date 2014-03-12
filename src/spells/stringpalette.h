@@ -1,19 +1,19 @@
 #ifndef SPELL_STRINGPALETTE_H
 #define SPELL_STRINGPALETTE_H
 
-#include <QDialog>
-#include <QLabel>
-#include <QLayout>
-#include <QLineEdit>
-#include <QListView>
-#include <QListWidget>
-#include <QPushButton>
-#include <QStringListModel>
+#include <QDialog> // Inherited
+#include <QPersistentModelIndex>
 
 
 //! \file stringpalette.h StringPaletteRegexDialog
 
 class NifModel;
+
+class QGridLayout;
+class QLineEdit;
+class QListView;
+class QStringListModel;
+class QWidget;
 
 //! String palette QRegExp dialog for spEditStringEntries
 class StringPaletteRegexDialog : public QDialog

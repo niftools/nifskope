@@ -37,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 
 #include <QDataStream>
-#include <QHash>
 #include <QIODevice>
 #include <QSettings>
 

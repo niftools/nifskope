@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFMODEL_H
 #define NIFMODEL_H
 
-#include "basemodel.h"
+#include "basemodel.h" // Inherited
 
 #include <QHash>
 #include <QReadWriteLock>

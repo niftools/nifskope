@@ -33,7 +33,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLPROPERTY_H
 #define GLPROPERTY_H
 
-#include "glcontrolable.h"
+#include "glcontrolable.h" // Inherited
+
+#include <QHash>
+#include <QPersistentModelIndex>
+#include <QString>
 
 
 typedef unsigned int GLenum;

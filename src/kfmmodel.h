@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KFMMODEL_H
 #define KFMMODEL_H
 
-#include "basemodel.h"
+#include "basemodel.h" // Inherited
 
 #include <QHash>
 #include <QReadWriteLock>

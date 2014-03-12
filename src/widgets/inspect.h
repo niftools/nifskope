@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INSPECT_H
 #define INSPECT_H
 
-#include <QDialog>
+#include <QDialog> // Inherited
 #include <QPersistentModelIndex>
 
 

@@ -4,6 +4,7 @@
 #include "../nvtristripwrapper.h"
 #include "../gl/gltools.h"
 
+#include <QCheckBox>
 #include <QFile>
 #include <QGridLayout>
 #include <QLabel>

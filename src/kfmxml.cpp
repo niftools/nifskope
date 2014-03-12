@@ -32,9 +32,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kfmmodel.h"
 
+#include <QtXml> // QXmlDefaultHandler Inherited
 #include <QApplication>
 #include <QMessageBox>
-#include <QtXml>
 
 #define err( X ) { errorStr = X; return false; }
 

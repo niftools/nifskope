@@ -3,8 +3,8 @@
 
 #include "../message.h"
 
-#include <QWidget>
-#include <QThread>
+#include <QThread> // Inherited
+#include <QWidget> // Inherited
 #include <QMutex>
 #include <QQueue>
 #include <QDateTime>

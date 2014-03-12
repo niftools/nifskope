@@ -36,11 +36,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../nifmodel.h"
 #include "../nifvalue.h"
 
+#include <QComboBox>     // Inherited
+#include <QItemDelegate> // Inherited
+#include <QLineEdit>     // Inherited
+#include <QValidator>    // Inherited
 #include <QApplication>
 #include <QCheckBox>
-#include <QComboBox>
-#include <QItemDelegate>
-#include <QLineEdit>
 #include <QPointer>
 #include <QStandardItem>
 #include <QWidget>

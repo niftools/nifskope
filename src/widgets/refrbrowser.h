@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REFRBROWSER_H
 #define REFRBROWSER_H
 
+#include <QTextBrowser> // Inherited
 #include <QDir>
-#include <QTextBrowser>
 
 
 class NifModel;

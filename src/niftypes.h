@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFTYPES_H
 #define NIFTYPES_H
 
-#include <QColor>
 #include <QApplication>
+#include <QColor>
 #include <QDebug>
 
 #include <cfloat>
@@ -54,8 +54,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file niftypes.h Type definitions and functions
 
 class NifModel;
-class QModelIndex;
 class QDataStream;
+class QModelIndex;
 
 //! Format a float with out of range values
 QString NumOrMinMax( float val, char f = 'g', int prec = 6 );

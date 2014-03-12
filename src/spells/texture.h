@@ -1,17 +1,16 @@
 #ifndef SPELL_TEXTURE_H
 #define SPELL_TEXTURE_H
 
-#include "../widgets/nifeditors.h"
-
-#include <QDialog>
-//#include <QDoubleSpinBox>
-#include <QFileDialog>
-#include <QGridLayout>
-#include <QListView>
-#include <QStringListModel>
+#include <QDialog> // Inherited
+#include <QModelIndex>
 
 
+class NifFloatEdit;
 class NifModel;
+class QGridLayout;
+class QListView;
+class QPushButton;
+class QStringListModel;
 
 //! Texture selection dialog for TexFlipController
 class TexFlipDialog : public QDialog

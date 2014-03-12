@@ -33,9 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FILESELECT_H
 #define FILESELECT_H
 
-#include <QAction>
+#include <QAction> // Inherited
+#include <QWidget> // Inherited
 #include <QBoxLayout>
-#include <QWidget>
+
 
 class QCompleter;
 class QFileSystemModel;

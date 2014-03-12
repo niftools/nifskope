@@ -35,8 +35,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 
+#include <QGroupBox> // Inherited
+#include <QWidget>   // Inherited
 #include <QBoxLayout>
-#include <QGroupBox>
 #include <QPointer>
 #include <QStack>
 

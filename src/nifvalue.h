@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "niftypes.h"
 
+#include <QByteArray>
 #include <QHash>
 #include <QPair>
 #include <QString>

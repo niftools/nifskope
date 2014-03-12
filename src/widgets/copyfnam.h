@@ -33,9 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COPYFNAM_H
 #define COPYFNAM_H
 
+#include <QWidget> // Inherited
 #include <QImage>
 #include <QRect>
-#include <QWidget>
 
 
 class CopyFilename : public QWidget

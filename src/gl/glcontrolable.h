@@ -35,8 +35,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifmodel.h"
 
-class Controller;
+#include <QObject> // Inherited
+#include <QList>
+#include <QPersistentModelIndex>
+#include <QString>
 
+
+class Controller;
 class Scene;
 
 //! Anything capable of having a Controller

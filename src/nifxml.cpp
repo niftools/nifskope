@@ -33,9 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "niftypes.h"
 
+#include <QtXml> // QXmlDefaultHandler Inherited
 #include <QApplication>
 #include <QMessageBox>
-#include <QtXml>
+
 
 //! \file nifxml.cpp NifXmlHandler, NifModel XML
 
@@ -43,9 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define err( X ) { errorStr = X; return false; }
 
 QReadWriteLock					NifModel::XMLlock;
-
 QList<quint32>					NifModel::supportedVersions;
-
 QHash<QString,NifBlock*>		NifModel::compounds;
 QHash<QString,NifBlock*>		NifModel::blocks;
 

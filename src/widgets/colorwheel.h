@@ -33,11 +33,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COLORWHEEL_H
 #define COLORWHEEL_H
 
+#include <QSpinBox> // Inherited
+#include <QWidget>  // Inherited
 #include <QColor>
 #include <QRegExpValidator>
 #include <QSlider>
-#include <QSpinBox>
-#include <QWidget>
 
 
 //! \file colorwheel.h ColorWheel, ColorSpinBox

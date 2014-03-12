@@ -35,12 +35,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../nifvalue.h"
 
-#include <QTextEdit>
-#include <QWidget>
+#include <QTextEdit> // Inherited
+#include <QWidget>   // Inherited
 
 
 //! \file valueedit.h ValueEdit and other widgets
 
+class QAction;
 class QDoubleSpinBox;
 class QLabel;
 class QSpinBox;

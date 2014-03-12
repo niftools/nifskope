@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <QStringList>
+//#include <QStringList>
 
 
 /*! \file config.h

@@ -41,7 +41,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltools.h"
 #include "renderer.h"
 
-#include <QRegExp>
+#include <QHash>
+#include <QMap>
+#include <QPersistentModelIndex>
+#include <QStack>
+#include <QStringList>
 
 
 class QOpenGLContext;

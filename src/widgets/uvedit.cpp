@@ -39,12 +39,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../gl/gltex.h"
 #include "../gl/gltools.h"
 
+#include <QUndoStack> // QUndoCommand Inherited
+#include <QActionGroup>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QGridLayout>
 #include <QInputDialog>
 #include <QLabel>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QPushButton>
+
+// TODO: Determine the necessity of this
+// Appears to be used solely for gluErrorString
+// There may be some Qt alternative
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
 
 #define BASESIZE 512.0
 #define GRIDSIZE 16.0

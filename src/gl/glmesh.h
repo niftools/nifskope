@@ -33,8 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLMESH_H
 #define GLMESH_H
 
-#include "glnode.h"
+#include "glnode.h" // Inherited
 #include "gltools.h"
+
+#include <QPersistentModelIndex>
+#include <QVector>
+#include <QString>
 
 
 //! \file glmesh.h Mesh class

@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/floatslider.h"
 #include "widgets/groupbox.h"
 
+#include <QListView> // Inherited
 #include <QAction>
 #include <QButtonGroup>
 #include <QCheckBox>
@@ -49,7 +50,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QEvent>
 #include <QLabel>
 #include <QLineEdit>
-#include <QListView>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRadioButton>

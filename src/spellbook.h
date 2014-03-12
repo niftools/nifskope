@@ -35,8 +35,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
+#include <QMenu> // Inherited
 #include <QCoreApplication>
-#include <QMenu>
+#include <QHash>
+#include <QIcon>
+#include <QKeySequence>
+#include <QList>
+#include <QMap>
+#include <QPersistentModelIndex>
+#include <QString>
 
 
 //! \file spellbook.h Spell, SpellBook and Librarian

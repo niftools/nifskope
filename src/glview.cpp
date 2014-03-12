@@ -43,6 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QActionGroup>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDebug>
 #include <QDialog>
 #include <QLabel>
 #include <QKeyEvent>
@@ -58,6 +59,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QGLFormat>
+
+// TODO: Determine the necessity of this
+// Appears to be used solely for gluErrorString
+// There may be some Qt alternative
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+	#include <GL/glu.h>
+#endif
 
 // TODO: Make this platform independent (Half monitor refresh rate)
 #define FPS 30

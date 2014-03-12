@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GROUPBOX_H
 #define GROUPBOX_H
 
+#include <QGroupBox> // Inherited
 #include <QBoxLayout>
-#include <QGroupBox>
 #include <QStack>
 
 

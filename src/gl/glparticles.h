@@ -33,7 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLPARTICLES_H
 #define GLPARTICLES_H
 
-#include "glnode.h"
+#include "glnode.h" // Inherited
+
+#include <QPersistentModelIndex>
+#include <QVector>
 
 
 class Particles : public Node

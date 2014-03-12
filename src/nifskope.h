@@ -36,15 +36,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "message.h"
 #include "ui/about_dialog.h"
 
-#include <QMainWindow>
-#include <QProgressDialog>
+#include <QMainWindow>     // Inherited
+#include <QObject>         // Inherited
+#include <QProgressDialog> // Inherited
 
 #define NIFSKOPE_IPC_PORT 12583
 
 
-class GLView;
-
 class FileSelector;
+class GLView;
 class InspectView;
 class KfmModel;
 class NifModel;

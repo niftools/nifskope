@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFTREEVIEW_H
 #define NIFTREEVIEW_H
 
-#include <QTreeView>
+#include <QTreeView> // Inherited
 
 
 //! Widget for showing a nif file as tree, list, or block details.
