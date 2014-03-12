@@ -84,10 +84,6 @@ FSManager * fsmanager = 0;
 #  include "windows.h"
 #endif
 
-// hackish workaround to undefine symbols from extra includes
-#undef None
-#undef Bool
-
 
 //! \file nifskope.cpp The main file for NifSkope
 
