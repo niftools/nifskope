@@ -1,7 +1,7 @@
 #include "transform.h"
-#include "../config.h"
+#include "config.h"
 
-#include "../widgets/nifeditors.h"
+#include "widgets/nifeditors.h"
 
 #include <QApplication>
 #include <QBuffer>

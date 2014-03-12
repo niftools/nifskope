@@ -1,7 +1,7 @@
 #ifndef TANGENTSPACE_H
 #define TANGENTSPACE_H
 
-#include "../spellbook.h"
+#include "spellbook.h"
 
 
 //! Calculates tangents and bitangents

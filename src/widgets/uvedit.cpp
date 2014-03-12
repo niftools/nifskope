@@ -31,13 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "uvedit.h"
-#include "../options.h"
+#include "options.h"
 
-#include "../nifmodel.h"
-#include "../niftypes.h"
-#include "../nvtristripwrapper.h"
-#include "../gl/gltex.h"
-#include "../gl/gltools.h"
+#include "nifmodel.h"
+#include "niftypes.h"
+#include "nvtristripwrapper.h"
+#include "gl/gltex.h"
+#include "gl/gltools.h"
 
 #include <QUndoStack> // QUndoCommand Inherited
 #include <QActionGroup>

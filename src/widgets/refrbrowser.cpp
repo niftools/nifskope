@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QFileInfo>
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
 ReferenceBrowser::ReferenceBrowser( QWidget * parent )
     : QTextBrowser( parent )

@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFCHECKBOXLIST_H
 #define NIFCHECKBOXLIST_H
 
-#include "../nifmodel.h"
-#include "../nifvalue.h"
+#include "nifmodel.h"
+#include "nifvalue.h"
 
 #include <QComboBox>     // Inherited
 #include <QItemDelegate> // Inherited

@@ -25,7 +25,7 @@ CONFIG(debug, debug|release) {
 #	uncomment this if you want the text stats gl option
 #	DEFINES += USE_GL_QPAINTER
 
-INCLUDEPATH += lib .
+INCLUDEPATH += src lib
 
 TRANSLATIONS += \
 	lang/NifSkope_de.ts \

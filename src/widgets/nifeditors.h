@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFEDITORS_H
 #define NIFEDITORS_H
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
 #include <QGroupBox> // Inherited
 #include <QWidget>   // Inherited

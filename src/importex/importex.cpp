@@ -30,10 +30,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "../nifmodel.h"
-#include "../nifproxy.h"
-#include "../nifskope.h"
-#include "../widgets/nifview.h"
+#include "nifmodel.h"
+#include "nifproxy.h"
+#include "nifskope.h"
+#include "widgets/nifview.h"
 
 #include <QDockWidget>
 #include <QFileInfo>

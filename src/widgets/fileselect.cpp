@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "fileselect.h"
-#include "../config.h"
+#include "config.h"
 
 #include <QAction>
 #include <QApplication>

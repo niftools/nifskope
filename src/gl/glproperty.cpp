@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
-#include "../options.h"
+#include "options.h"
 
 #include "glcontroller.h" // Inherited
 #include "glscene.h"

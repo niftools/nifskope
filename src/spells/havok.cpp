@@ -1,8 +1,8 @@
-#include "../spellbook.h"
+#include "spellbook.h"
 
 #include "blocks.h"
-#include "../nvtristripwrapper.h"
-#include "../qhull.h"
+#include "nvtristripwrapper.h"
+#include "qhull.h"
 
 #include <QDialog>
 #include <QDoubleSpinBox>

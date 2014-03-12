@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glcontroller.h"
-#include "../options.h"
+#include "options.h"
 
 #include "glscene.h"
 

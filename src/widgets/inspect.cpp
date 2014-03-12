@@ -32,9 +32,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "inspect.h"
 
-#include "../nifmodel.h"
-#include "../gl/glscene.h"
-#include "../gl/glnode.h"
+#include "nifmodel.h"
+#include "gl/glscene.h"
+#include "gl/glnode.h"
 
 #include <QCheckBox>
 #include <QDialog>

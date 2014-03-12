@@ -1,8 +1,8 @@
 #include "skeleton.h"
-#include "../spellbook.h"
+#include "spellbook.h"
 
-#include "../nvtristripwrapper.h"
-#include "../gl/gltools.h"
+#include "nvtristripwrapper.h"
+#include "gl/gltools.h"
 
 #include <QCheckBox>
 #include <QFile>

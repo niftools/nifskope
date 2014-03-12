@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "../glmarker.h"
+#include "gl/glmarker.h"
 
 static const float BumperMarker01Verts[] = 
 {

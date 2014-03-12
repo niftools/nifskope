@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifeditors.h"
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 #include "colorwheel.h"
 #include "floatslider.h"
 #include "valueedit.h"

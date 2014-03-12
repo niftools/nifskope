@@ -31,7 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "colorwheel.h"
+
 #include "floatslider.h"
+#include "niftypes.h"
 
 #include <QContextMenuEvent>
 #include <QDialog>
@@ -44,7 +46,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMenu>
 #include <QMouseEvent>
 
-#include "../niftypes.h"
 
 /* XPM */
 static const char * const hsv42_xpm[] = {

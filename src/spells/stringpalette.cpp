@@ -1,5 +1,5 @@
 #include "stringpalette.h"
-#include "../spellbook.h"
+#include "spellbook.h"
 
 #include <QDialog>
 #include <QLabel>

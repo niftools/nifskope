@@ -1,8 +1,8 @@
 #include "xmlcheck.h"
-#include "../config.h"
+#include "config.h"
 
-#include "../kfmmodel.h"
-#include "../nifmodel.h"
+#include "kfmmodel.h"
+#include "nifmodel.h"
 #include "fileselect.h"
 
 #include <QAction>

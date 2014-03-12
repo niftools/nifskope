@@ -1,7 +1,7 @@
 #ifndef SP_TRANSFORM_H
 #define SP_TRANSFORM_H
 
-#include "../spellbook.h"
+#include "spellbook.h"
 
 class spApplyTransformation : public Spell
 {

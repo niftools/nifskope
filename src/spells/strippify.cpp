@@ -1,6 +1,6 @@
-#include "../spellbook.h"
+#include "spellbook.h"
 
-#include "../nvtristripwrapper.h"
+#include "nvtristripwrapper.h"
 
 
 // TODO: Move these to blocks.h / misc.h / wherever

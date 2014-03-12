@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltools.h"
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
 
 //! \file gltools.cpp GL helper functions

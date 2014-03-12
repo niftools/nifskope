@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSCENE_H
 #define GLSCENE_H
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
 #include "glnode.h"
 #include "glproperty.h"

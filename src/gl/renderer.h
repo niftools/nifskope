@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
 
 class Mesh;

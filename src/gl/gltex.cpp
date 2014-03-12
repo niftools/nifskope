@@ -31,14 +31,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "gltex.h"
-#include "../options.h"
+#include "options.h"
 
 #include "glscene.h"
 #include "gltexloaders.h"
 
 #ifdef FSENGINE
-#include "../fsengine/fsmanager.h"
-#include "../fsengine/fsengine.h"
+#include <fsengine/fsengine.h>
+#include <fsengine/fsmanager.h>
 #endif
 
 #include <QDebug>

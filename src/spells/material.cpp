@@ -1,6 +1,6 @@
-#include "../spellbook.h"
+#include "spellbook.h"
 
-#include "../widgets/nifeditors.h"
+#include "widgets/nifeditors.h"
 
 
 // Brief description is deliberately not autolinked to class Spell

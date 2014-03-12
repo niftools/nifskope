@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file furniture.h Furniture markers for drawFurnitureMarker()
 
-#include "../glmarker.h"
+#include "gl/glmarker.h"
 
 static const float FurnitureMarker01Verts[] = 
 {

@@ -1,7 +1,7 @@
 #ifndef SP_MESH_H
 #define SP_MESH_H
 
-#include "../spellbook.h"
+#include "spellbook.h"
 
 
 //! \file mesh.h Mesh spell headers

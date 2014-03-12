@@ -1,7 +1,7 @@
 #ifndef SPELL_DEBUG_H
 #define SPELL_DEBUG_H
 
-#include "../message.h"
+#include "message.h"
 
 #include <QThread> // Inherited
 #include <QWidget> // Inherited

@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glnode.h"
-#include "../options.h"
+#include "options.h"
 
 #include "glcontroller.h" // Inherited
 #include "glmarker.h"
@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "marker/furniture.h"
 #include "marker/constraints.h"
-#include "../nvtristripwrapper.h"
+#include "nvtristripwrapper.h"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385

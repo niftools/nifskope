@@ -1,7 +1,7 @@
 #ifndef SP_BLOCKS_H
 #define SP_BLOCKS_H
 
-#include "../spellbook.h"
+#include "spellbook.h"
 
 
 // Brief description is deliberately not autolinked to class Spell

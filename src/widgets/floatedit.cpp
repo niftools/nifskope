@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "floatedit.h"
-#include "../nifvalue.h"
+#include "nifvalue.h"
 
 #include <QAction>
 #include <QContextMenuEvent>
