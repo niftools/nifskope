@@ -534,11 +534,12 @@ public:
 	{
 		Q_UNUSED(index);
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime )
+		if ( mime ) {
 			foreach ( QString form, mime->formats() ) {
 				if ( ! acceptFormat( form, nif ).isEmpty() )
 					return true;
 			}
+		}
 
 		return false;
 	}
@@ -589,11 +590,12 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime )
+		if ( mime ) {
 			foreach ( QString form, mime->formats() ) {
 				if ( ! acceptFormat( form, nif, index ).isEmpty() )
 					return true;
 			}
+		}
 
 		return false;
 	}
@@ -731,11 +733,12 @@ public:
 		if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
 			return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( index.isValid() && mime )
+		if ( index.isValid() && mime ) {
 			foreach ( QString form, mime->formats() ) {
 				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
 					return true;
 			}
+		}
 
 		return false;
 	}
@@ -844,11 +847,12 @@ public:
 		//if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
 		//	return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( mime && ! index.isValid() )
+		if ( mime && ! index.isValid() ) {
 			foreach ( QString form, mime->formats() ) {
 				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
 					return true;
 			}
+		}
 
 		return false;
 	}

@@ -126,10 +126,11 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 
 void Controllable::transform()
 {
-	if ( scene->animate )
+	if ( scene->animate ) {
 		foreach ( Controller * controller, controllers ) {
 			controller->update( scene->time );
 		}
+	}
 }
 
 void Controllable::timeBounds( float & tmin, float & tmax )

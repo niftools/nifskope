@@ -844,8 +844,9 @@ void Node::draw()
 	glVertex( b );
 	glEnd();
 
-	foreach ( Node * node, children.list() )
+	foreach ( Node * node, children.list() ) {
 		node->draw();
+	}
 }
 
 void Node::drawSelection() const

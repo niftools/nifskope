@@ -648,8 +648,9 @@ void GLView::paintGL()
 		{
 			QString stats = scene->textStats();
 			QStringList lines = stats.split( "\n" );
-			foreach ( QString line, lines )
+			foreach ( QString line, lines ) {
 				painter.drawText( 10, y++ * ls, line );
+			}
 		}
 	}
 	
@@ -768,8 +769,9 @@ int indexAt( /*GLuint *buffer,*/ NifModel *model, Scene *scene, QList<DrawFunc> 
 	glInitNames();
 	glPushName( 0 );
 	
-	foreach ( DrawFunc df, drawFunc )
+	foreach ( DrawFunc df, drawFunc ) {
 		(scene->*df)();
+	}
 		
 	GLint hits = glRenderMode( GL_RENDER );
 	if ( hits > 0 )

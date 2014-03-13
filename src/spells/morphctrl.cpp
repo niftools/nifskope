@@ -32,12 +32,13 @@ public:
 		QMenu menu;
 		QStringList frameList = listFrames( nif, index );
 		
-		if ( nif->get<int>( iMeshData, "Num Vertices" ) != nif->get<int>( iMorphData, "Num Vertices" ) )
+		if ( nif->get<int>( iMeshData, "Num Vertices" ) != nif->get<int>( iMorphData, "Num Vertices" ) ) {
 			menu.addAction( frameList.first() );
-		else
+		} else {
 			foreach ( QString f, frameList ) {
 				menu.addAction( f );
 			}
+		}
 		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
