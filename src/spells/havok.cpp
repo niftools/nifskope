@@ -423,8 +423,9 @@ public:
 					tri[2] += vertices.count();
 				}
 				
-				foreach ( Vector3 v, vrts )
+				foreach ( Vector3 v, vrts ) {
 					vertices += v / 7;
+				}
 				triangles += tris;
 				normals += nrms;
 			}

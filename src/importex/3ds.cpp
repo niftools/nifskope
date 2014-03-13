@@ -732,8 +732,9 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			nif->setArray<Triangle>( iData, "Triangles", triangles );
 			
 			Vector3 center;
-			foreach ( Vector3 v,  mesh->vertices )
+			foreach ( Vector3 v,  mesh->vertices ) {
 				center += v;
+			}
 			if (  mesh->vertices.count() > 0 ) center /=  mesh->vertices.count();
 			nif->set<Vector3>( iData, "Center", center );
 			float radius = 0;

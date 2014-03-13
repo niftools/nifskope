@@ -171,8 +171,9 @@ public:
 		
 		spStrippify Stripper;
 		
-		foreach ( QModelIndex idx, iTriShapes )
+		foreach ( QModelIndex idx, iTriShapes ) {
 			Stripper.castIfApplicable( nif, idx );
+		}
 		
 		return QModelIndex();
 	}

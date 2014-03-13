@@ -192,8 +192,9 @@ QDomElement colorMapElement(QVector<Color4> colors,int idx) {
 	source.appendChild(float_array);
 
 	QString text("");
-	foreach ( Color4 v, colors )
+	foreach ( Color4 v, colors ) {
 		text.append(QString("%1 %2 %3 %4 ").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]));
+	}
 	float_array.appendChild( doc.createTextNode(text) );
 
 	QDomElement technique_common = doc.createElement("technique_common");
@@ -247,8 +248,9 @@ QDomElement uvMapElement(QVector<Vector2> uvMap,int idx,int row) {
 	QString uvText("");
         // we have to flip the second UV coordinate because nif uses
         // different convention from collada
-	foreach ( Vector2 v, uvMap )
+	foreach ( Vector2 v, uvMap ) {
 		uvText.append(QString("%1 %2 ").arg(v[0]).arg(1.0 - v[1]));
+	}
 	float_array.appendChild( doc.createTextNode(uvText) );
 
 	QDomElement technique_common = doc.createElement("technique_common");
@@ -289,8 +291,9 @@ QDomElement positionsElement(QVector<Vector3> verts,int idx) {
 	source.appendChild(float_array);
 
 	QString posText("");
-	foreach ( Vector3 v, verts )
+	foreach ( Vector3 v, verts ) {
 		posText.append(QString("%1 %2 %3 ").arg(v[0],0,'f',6).arg(v[1],0,'f',6).arg(v[2],0,'f',6));
+	}
 	float_array.appendChild( doc.createTextNode(posText) );
 
 	QDomElement technique_common = doc.createElement("technique_common");
@@ -338,8 +341,9 @@ QDomElement normalsElement(QVector<Vector3> normals,int idx) {
 		source.appendChild(float_array);
 
 		QString norText("");
-		foreach ( Vector3 v, normals )
+		foreach ( Vector3 v, normals ) {
 			norText.append(QString("%1 %2 %3 ").arg(v[0],0,'f',6).arg(v[1],0,'f',6).arg(v[2],0,'f',6));
+		}
 		float_array.appendChild( doc.createTextNode(norText) );
 		QDomElement technique_common = doc.createElement("technique_common");
 		source.appendChild(technique_common);

@@ -89,8 +89,9 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		QVector<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" );
 		foreach ( Triangle tri, tris )
 		{
-			for ( int t = 0; t < 3; t++ )
+			for ( int t = 0; t < 3; t++ ) {
 				used.insert( tri[t], true );
+			}
 		}
 		
 		QList< QVector< quint16 > > strips;
@@ -98,8 +99,9 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
 		{
 			strips << nif->getArray<quint16>( iPoints.child( r, 0 ) );
-			foreach ( quint16 p, strips.last() )
+			foreach ( quint16 p, strips.last() ) {
 				used.insert( p, true );
+			}
 		}
 		
 		// remove them

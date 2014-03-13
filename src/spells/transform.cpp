@@ -228,10 +228,12 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
-		if ( Transform::canConstruct( nif, index ) && mime )
-			foreach ( QString form, mime->formats() )
+		if ( Transform::canConstruct( nif, index ) && mime ) {
+			foreach ( QString form, mime->formats() ) {
 				if ( form == "nifskope/transform" )
 					return true;
+			}
+		}
 		
 		return false;
 	}

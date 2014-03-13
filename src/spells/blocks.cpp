@@ -185,24 +185,28 @@ static qint32 getBlockByName( NifModel * nif, const QString & tn )
 static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block )
 {
 	if ( ! blocks.contains( block ) ) blocks.append( block );
-	foreach ( qint32 link, nif->getChildLinks( block ) )
+	foreach ( qint32 link, nif->getChildLinks( block ) ) {
 		populateBlocks( blocks, nif, link );
+	}
 }
 
 //! Remove the children from the specified block
 static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
 {
 	QList<QPersistentModelIndex> iChildren;
-	foreach ( quint32 link, nif->getChildLinks( nif->getBlockNumber( iBlock ) ) )
+	foreach ( quint32 link, nif->getChildLinks( nif->getBlockNumber( iBlock ) ) ) {
 		iChildren.append( nif->getBlock( link ) );
+	}
 
 	foreach ( QPersistentModelIndex iChild, iChildren )
-		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
+		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) ) {
 			removeChildren( nif, iChild );
+		}
 
 	foreach ( QPersistentModelIndex iChild, iChildren )
-		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) )
+		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) ) {
 			nif->removeNiBlock( nif->getBlockNumber( iChild ) );
+		}
 }
 
 //! Insert an unattached block
@@ -243,8 +247,9 @@ public:
 		}
 		
 		QMenu menu;
-		foreach ( QMenu * m, map )
+		foreach ( QMenu * m, map ) {
 			menu.addMenu( m );
+		}
 		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act ) {
@@ -294,9 +299,10 @@ public:
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
-		foreach ( QString id, ids )
+		foreach ( QString id, ids ) {
 			if ( nif->inherits( id, "NiProperty" ) )
 				menu.addAction( id );
+		}
 		if ( menu.actions().isEmpty() )
 			return index;
 		QAction * act = menu.exec( QCursor::pos() );
@@ -337,9 +343,10 @@ public:
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
-		foreach ( QString id, ids )
+		foreach ( QString id, ids ) {
 			if ( nif->inherits( id, "NiAVObject" ) && ! nif->inherits( id, "NiDynamicEffect" ) )
 				menu.addAction( id );
+		}
 		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
@@ -373,9 +380,11 @@ public:
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
-		foreach ( QString id, ids )
-			if ( nif->inherits( id, "NiDynamicEffect" ) )
-				menu.addAction( id );
+		foreach ( QString id, ids ) {
+			 if ( nif->inherits( id, "NiDynamicEffect" ) )
+				 menu.addAction( id );
+		}
+
 		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
@@ -422,9 +431,11 @@ public:
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
-		foreach ( QString id, ids )
+		foreach ( QString id, ids ) {
 			if ( nif->inherits( id, "NiExtraData" ) )
 				menu.addAction( id );
+		}
+
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act )
 		{
@@ -524,9 +535,11 @@ public:
 		Q_UNUSED(index);
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
-			foreach ( QString form, mime->formats() )
+			foreach ( QString form, mime->formats() ) {
 				if ( ! acceptFormat( form, nif ).isEmpty() )
 					return true;
+			}
+
 		return false;
 	}
 	
@@ -577,9 +590,11 @@ public:
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime )
-			foreach ( QString form, mime->formats() )
+			foreach ( QString form, mime->formats() ) {
 				if ( ! acceptFormat( form, nif, index ).isEmpty() )
 					return true;
+			}
+
 		return false;
 	}
 	
@@ -717,9 +732,11 @@ public:
 			return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( index.isValid() && mime )
-			foreach ( QString form, mime->formats() )
+			foreach ( QString form, mime->formats() ) {
 				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
 					return true;
+			}
+
 		return false;
 	}
 	
@@ -828,9 +845,11 @@ public:
 		//	return false;
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 		if ( mime && ! index.isValid() )
-			foreach ( QString form, mime->formats() )
+			foreach ( QString form, mime->formats() ) {
 				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
 					return true;
+			}
+
 		return false;
 	}
 
@@ -1025,11 +1044,13 @@ public:
 		// add the link itself
 		branch << link;
 		// add all its children, grandchildren, ...
-		foreach (quint32 child, nif->getChildLinks(link))
+		foreach (quint32 child, nif->getChildLinks(link)) {
 			// check that child is not in branch to avoid infinite recursion
 			if (!branch.contains(child))
-				// it's not in there yet so add the child and grandchildren etc...
+			// it's not in there yet so add the child and grandchildren etc...
 				branch << getBranch(nif, child);
+		}
+
 		// done, so return result
 		return branch;
 	}
@@ -1101,8 +1122,9 @@ public:
 		}
 		
 		QMenu menu;
-		foreach ( QMenu * m, map )
+		foreach ( QMenu * m, map ) {
 			menu.addMenu( m );
+		}
 		
 		QAction * act = menu.exec( QCursor::pos() );
 		if ( act ) {
@@ -1378,9 +1400,10 @@ public:
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
-		foreach ( QString id, ids )
+		foreach ( QString id, ids ) {
 			if ( nif->inherits( id, "NiNode" ) )
 				menu.addAction( id );
+		}
 		
 		QModelIndex attachedNode;
 		

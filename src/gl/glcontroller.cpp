@@ -127,8 +127,9 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 void Controllable::transform()
 {
 	if ( scene->animate )
-		foreach ( Controller * controller, controllers )
+		foreach ( Controller * controller, controllers ) {
 			controller->update( scene->time );
+		}
 }
 
 void Controllable::timeBounds( float & tmin, float & tmax )
@@ -149,8 +150,9 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 
 void Controllable::setSequence( const QString & seqname )
 {
-	foreach ( Controller * ctrl, controllers )
+	foreach ( Controller * ctrl, controllers ) {
 		ctrl->setSequence( seqname );
+	}
 }
 
 

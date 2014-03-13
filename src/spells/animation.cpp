@@ -161,8 +161,9 @@ public:
 				if ( ! missingNodes.isEmpty() )
 				{
 					qWarning() << Spell::tr("The following controlled nodes were not found in the nif:");
-					foreach ( QString nn, missingNodes )
+					foreach ( QString nn, missingNodes ) {
 						qWarning() << nn;
+					}
 				}
 
 				//return iRoot;
@@ -251,9 +252,10 @@ public:
 		
 		QVector<qint32> links = nif->getLinkArray( iArray );
 		
-		foreach ( QModelIndex iBlock, iBlocks )
+		foreach ( QModelIndex iBlock, iBlocks ) {
 			if ( ! links.contains( nif->getBlockNumber( iBlock ) ) )
 				links.append( nif->getBlockNumber( iBlock ) );
+		}
 		
 		nif->set<int>( iNum, links.count() );
 		nif->updateArray( iArray );

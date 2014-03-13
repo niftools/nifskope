@@ -74,8 +74,9 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 		iUV = nif->getIndex( iData, "UV Sets 2" );
 	
 	QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
-	foreach( Vector2 t, texco )
+	foreach( Vector2 t, texco ) {
 		obj << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
+	}
 	
 	// copy normals
 	
@@ -945,8 +946,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->setArray<Vector3>( iData, "Normals", norms );
 			
 			Vector3 center;
-			foreach ( Vector3 v, verts )
+			foreach ( Vector3 v, verts ) {
 				center += v;
+			}
 			if ( verts.count() > 0 ) center /= verts.count();
 			nif->set<Vector3>( iData, "Center", center );
 			float radius = 0;

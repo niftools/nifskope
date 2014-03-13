@@ -90,22 +90,28 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 		if ( ! block.isValid() )
 			return;
 		
-		foreach ( Property * prop, properties.list() )
+		foreach ( Property * prop, properties.list() ) {
 			prop->update( nif, block );
+		}
 		
-		foreach ( Node * node, nodes.list() )
+		foreach ( Node * node, nodes.list() ) {
 			node->update( nif, block );
+		}
+
 	}
 	else
 	{
 		properties.validate();
 		nodes.validate();
 		
-		foreach ( Node * n, nodes.list() )
+		foreach ( Node * n, nodes.list() ) {
 			n->update( nif, QModelIndex() );
-		foreach ( Property * p, properties.list() )
+		}
+
+		foreach ( Property * p, properties.list() ) {
 			p->update( nif, QModelIndex() );
-		
+		}
+
 		roots.clear();
 		foreach ( int link, nif->getRootLinks() )
 		{
@@ -200,10 +206,12 @@ void Scene::setSequence( const QString & seqname )
 {
 	animGroup = seqname;
 	
-	foreach ( Node * node, nodes.list() )
+	foreach ( Node * node, nodes.list() ) {
 		node->setSequence( seqname );
-	foreach ( Property * prop, properties.list() )
+	}
+	foreach ( Property * prop, properties.list() ) {
 		prop->setSequence( seqname );
+	}
 	
 	timeBoundsValid = false;
 }
@@ -217,13 +225,15 @@ void Scene::transform( const Transform & trans, float time )
 	viewTrans.clear();
 	bhkBodyTrans.clear();
 	
-	foreach ( Property * prop, properties.list() )
+	foreach ( Property * prop, properties.list() ) {
 		prop->transform();
-	
-	foreach ( Node * node, roots.list() )
+	}
+	foreach ( Node * node, roots.list() ) {
 		node->transform();
-	foreach ( Node * node, roots.list() )
+	}
+	foreach ( Node * node, roots.list() ) {
 		node->transformShapes();
+	}
 
 	sceneBoundsValid = false;
 
@@ -250,48 +260,55 @@ void Scene::drawShapes()
 	{
 		NodeList draw2nd;
 		
-		foreach ( Node * node, roots.list() )
+		foreach ( Node * node, roots.list() ) {
 			node->drawShapes( &draw2nd );
+		}
 		
 		if ( draw2nd.list().count() > 0 )
 			drawSelection ();// for transparency pass
 
 		draw2nd.sort();
 		
-		foreach ( Node * node, draw2nd.list() )
+		foreach ( Node * node, draw2nd.list() ) {
 			node->drawShapes();
+		}
 	}
 	else
 	{
-		foreach ( Node * node, roots.list() )
+		foreach ( Node * node, roots.list() ) {
 			node->drawShapes();
+		}
 	}
 }
 
 void Scene::drawNodes()
 {
-	foreach ( Node * node, roots.list() )
+	foreach ( Node * node, roots.list() ) {
 		node->draw();
+	}
 }
 
 void Scene::drawHavok()
 {
-	foreach ( Node * node, roots.list() )
+	foreach ( Node * node, roots.list() ) {
 		node->drawHavok();
+	}
 }
 
 void Scene::drawFurn()
 {
-	foreach ( Node * node, roots.list() )
+	foreach ( Node * node, roots.list() ) {
 		node->drawFurn();
+	}
 }
 
 void Scene::drawSelection() const
 {
 	if (Node::SELECTING)
 		return;// do not render the selection when selecting
-	foreach ( Node * node, nodes.list() )
+	foreach ( Node * node, nodes.list() ) {
 		node->drawSelection();
+	}
 }
 
 BoundSphere Scene::bounds() const
@@ -314,10 +331,12 @@ void Scene::updateTimeBounds() const
 	if ( ! nodes.list().isEmpty() )
 	{
 		tMin = +1000000000; tMax = -1000000000;
-		foreach ( Node * node, nodes.list() )
+		foreach ( Node * node, nodes.list() ) {
 			node->timeBounds( tMin, tMax );
-		foreach ( Property * prop, properties.list() )
+		}
+		foreach ( Property * prop, properties.list() ) {
 			prop->timeBounds( tMin, tMax );
+		}
 	}
 	else
 		tMin = tMax = 0;

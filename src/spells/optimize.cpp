@@ -101,8 +101,9 @@ public:
 				nif->mapLinks( map );
 				QList<qint32> l = map.keys();
 				qSort( l.begin(), l.end(), qGreater<qint32>() );
-				foreach ( qint32 b, l )
+				foreach ( qint32 b, l ) {
 					nif->removeNiBlock( b );
+				}
 			}
 			
 		} while ( ! map.isEmpty() );

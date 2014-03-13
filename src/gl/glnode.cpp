@@ -436,15 +436,17 @@ NodeList::~NodeList()
 
 void NodeList::clear()
 {
-	foreach( Node * n, nodes )
+	foreach( Node * n, nodes ) {
 		del( n );
+	}
 }
 
 NodeList & NodeList::operator=( const NodeList & other )
 {
 	clear();
-	foreach ( Node * n, other.list() )
+	foreach ( Node * n, other.list() ) {
 		add( n );
+	}
 	return *this;
 }
 
@@ -579,12 +581,15 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 	if ( iBlock == index || ! index.isValid() )
 	{
 		PropertyList newProps;
-		foreach ( qint32 l, nif->getLinkArray( iBlock, "Properties" ) )
+		foreach ( qint32 l, nif->getLinkArray( iBlock, "Properties" ) ) {
 			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
 				newProps.add( p );
-		foreach ( qint32 l, nif->getLinkArray( iBlock, "BS Properties" ) )
+		}
+
+		foreach ( qint32 l, nif->getLinkArray( iBlock, "BS Properties" ) ) {
 			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
 				newProps.add( p );
+		}
 		properties = newProps;
 		
 		children.clear();
@@ -784,14 +789,16 @@ void Node::transform()
 		}
 	}
 	
-	foreach ( Node * node, children.list() )
+	foreach ( Node * node, children.list() ) {
 		node->transform();
+	}
 }
 
 void Node::transformShapes()
 {
-	foreach ( Node * node, children.list() )
+	foreach ( Node * node, children.list() ) {
 		node->transformShapes();
+	}
 }
 
 void Node::draw()
@@ -1625,8 +1632,9 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 void Node::drawHavok()
 {// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
  // Idea: Make them go to their own classes in different cpp files
-	foreach ( Node * node, children.list() )
+	foreach ( Node * node, children.list() ) {
 		node->drawHavok();
+	}
 	
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 	if ( ! ( iBlock.isValid() && nif ) )
@@ -1863,8 +1871,9 @@ void drawFurnitureMarker( const NifModel *nif, const QModelIndex &iPosition )
 
 void Node::drawFurn()
 {
-	foreach ( Node * node, children.list() )
+	foreach ( Node * node, children.list() ) {
 		node->drawFurn();
+	}
 
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 	if ( ! ( iBlock.isValid() && nif ) )
@@ -2037,8 +2046,9 @@ void LODNode::transform()
 		
 	if ( ranges.isEmpty() )
 	{
-		foreach ( Node * child, children.list() )
+		foreach ( Node * child, children.list() ) {
 			child->flags.node.hidden = true;
+		}
 		children.list().first()->flags.node.hidden = false;
 		return;
 	}

@@ -195,8 +195,9 @@ void TestShredder::run()
 	if ( ! btRun->isChecked() )
 		return;
 	
-	foreach ( TestThread * thread, threads )
+	foreach ( TestThread * thread, threads ) {
 		thread->wait();
+	}
 	
 	text->clear();
 	label->setHidden( true );
@@ -234,9 +235,10 @@ void TestShredder::threadFinished()
 {
 	if ( queue.isEmpty() )
 	{
-		foreach ( TestThread * thread, threads )
+		foreach ( TestThread * thread, threads ) {
 			if ( thread->isRunning() )
 				return;
+		}
 		
 		btRun->setChecked( false );
 		
@@ -270,8 +272,9 @@ void TestShredder::chooseBlock()
 	}
 
 	QMenu menu;
-	foreach ( QMenu * m, map )
+	foreach ( QMenu * m, map ) {
 		menu.addMenu( m );
+	}
 	
 	QAction * act = menu.exec( QCursor::pos() );
 	if ( act )
@@ -280,12 +283,12 @@ void TestShredder::chooseBlock()
 
 void TestShredder::closeEvent( QCloseEvent * e )
 {
-	foreach ( TestThread * thread, threads )
-		if ( thread->isRunning() )
-		{
+	foreach ( TestThread * thread, threads ) {
+		if ( thread->isRunning() ) {
 			e->ignore();
 			queue.clear();
 		}
+	}
 }
 
 /*
@@ -300,15 +303,17 @@ QQueue<QString> FileQueue::make( const QString & dname, const QStringList & exte
 	if ( recursive )
 	{
 		dir.setFilter( QDir::Dirs );
-		foreach ( QString d, dir.entryList() )
+		foreach ( QString d, dir.entryList() ) {
 			if ( d != "." && d != ".." )
 				queue += make( dir.filePath( d ), extensions, true );
+		}
 	}
 	
 	dir.setFilter( QDir::Files );
 	dir.setNameFilters( extensions );
-	foreach ( QString f, dir.entryList() )
+	foreach ( QString f, dir.entryList() ) {
 		queue.enqueue( dir.filePath( f ) );
+	}
 	
 	return queue;
 }

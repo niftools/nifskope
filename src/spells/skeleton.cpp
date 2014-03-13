@@ -532,8 +532,9 @@ public:
 							if ( weights[tri[t]].count() == 1 )
 								nono.append( weights[tri[t]].first().first );
 							
-							foreach ( boneweight bw, weights[ tri[t] ] )
+							foreach ( boneweight bw, weights[ tri[t] ] ) {
 								sum[ bw.first ] += bw.second;
+							}
 						}
 						
 						// select the bone to remove

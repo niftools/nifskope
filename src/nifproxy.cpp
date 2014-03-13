@@ -146,8 +146,9 @@ public:
 	QList<int> childBlocks() const
 	{
 		QList<int> blocks;
-		foreach ( NifProxyItem * item, childItems )
+		foreach ( NifProxyItem * item, childItems ) {
 			blocks.append( item->block() );
+		}
 		return blocks;
 	}
 	
@@ -435,8 +436,9 @@ QList<QModelIndex> NifProxyModel::mapFrom( const QModelIndex & idx ) const
 	
 	QList<NifProxyItem*> items;
 	root->findAllItems( blockNumber, items );
-	foreach( NifProxyItem * item, items )
+	foreach( NifProxyItem * item, items ) {
 		indices.append( createIndex( item->row(), idx.column() != NifModel::NameCol ? 1 : 0, item ) );
+	}
 	
 	return indices;
 }
@@ -480,8 +482,9 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 	if ( begin == end )
 	{
 		QList<QModelIndex> indices = mapFrom( begin );
-		foreach ( QModelIndex idx, indices )
+		foreach ( QModelIndex idx, indices ) {
 			emit dataChanged( idx, idx );
+		}
 		return;
 	}
 	else if ( begin.parent() == end.parent() )
@@ -492,8 +495,9 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 			for ( int c = qMin( begin.column(), end.column() ); c < m; c++ )
 			{
 				QList<QModelIndex> indices = mapFrom( begin.sibling( begin.row(), c ) );
-				foreach ( QModelIndex idx, indices )
+				foreach ( QModelIndex idx, indices ) {
 					emit dataChanged( idx, idx );
+				}
 			}
 			return;
 		}
@@ -503,8 +507,9 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 			for ( int r = qMin( begin.row(), end.row() ); r < m; r++ )
 			{
 				QList<QModelIndex> indices = mapFrom( begin.sibling( r, begin.column() ) );
-				foreach ( QModelIndex idx, indices )
+				foreach ( QModelIndex idx, indices ) {
 					emit dataChanged( idx, idx );
+				}
 			}
 			return;
 		}

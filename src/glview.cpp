@@ -89,8 +89,9 @@ GLView * GLView::create()
 	static QList< QPointer<GLView> > views;
 	
 	QGLWidget * share = 0;
-	foreach ( QPointer<GLView> v, views )
+	foreach ( QPointer<GLView> v, views ) {
 		if ( v ) share = v;
+	}
 	
 	QGLFormat fmt;
 	fmt.setDoubleBuffer(true);
@@ -1358,9 +1359,10 @@ void GLView::restore( const QSettings & settings )
 	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
 	checkActions();
 	QString viewAct = settings.value( "view action", "Front" ).toString();
-	foreach ( QAction * act, grpView->actions() )
+	foreach ( QAction * act, grpView->actions() ) {
 		if ( act->text() == viewAct )
 			viewAction( act );
+	}
 	//settings.endGroup();
 }
 

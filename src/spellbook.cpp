@@ -79,8 +79,9 @@ SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * recei
 	sltNif( nif );
 	
 	// fill in the known spells
-	foreach ( Spell * spell, spells() )
+	foreach ( Spell * spell, spells() ) {
 		newSpellRegistered( spell );
+	}
 	
 	// set the current index
 	sltIndex( index );
@@ -232,9 +233,11 @@ Spell * SpellBook::lookup( const QKeySequence & hotkey )
 {
 	if ( hotkey.isEmpty() )
 		return 0;
-	foreach ( Spell * spell, spells() )
+	foreach ( Spell * spell, spells() ) {
 		if ( spell->hotkey() == hotkey )
 			return spell;
+	}
+
 	return 0;
 }
 

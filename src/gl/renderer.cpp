@@ -172,16 +172,18 @@ bool Renderer::ConditionGroup::eval( const NifModel * nif, const QList<QModelInd
 	
 	if ( isOrGroup() )
 	{
-		foreach ( Condition * cond, conditions )
+		foreach ( Condition * cond, conditions ) {
 			if ( cond->eval( nif, iBlocks ) )
 				return true;
+		}
 		return false;
 	}
 	else
 	{
-		foreach ( Condition * cond, conditions )
+		foreach ( Condition * cond, conditions ) {
 			if ( ! cond->eval( nif, iBlocks ) )
 				return false;
+		}
 		return true;
 	}
 }
@@ -447,8 +449,9 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	QList<QModelIndex> iBlocks;
 	iBlocks << mesh->index();
 	iBlocks << mesh->iData;
-	foreach ( Property * p, props.list() )
+	foreach ( Property * p, props.list() ) {
 		iBlocks.append( p->index() );
+	}
 	
 	if ( ! hint.isEmpty() )
 	{

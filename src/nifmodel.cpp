@@ -593,8 +593,9 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 
 		branch->prepareInsert( block->types.count() );
 
-		foreach ( NifData data, block->types )
+		foreach ( NifData data, block->types ) {
 			insertType( branch, data );
+		}
 
 		if ( ! fast )
 		{
@@ -758,8 +759,9 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 
 	// then insert them again in the new order
 	beginInsertRows( QModelIndex(), 1, temp.count() );
-	foreach ( qint32 n, blockMap )
+	foreach ( qint32 n, blockMap ) {
 		root->insertChild( temp[ n ], root->childCount()-1 );
+	}
 	endInsertRows();
 
 	mapLinks( root, linkMap );
@@ -894,8 +896,9 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 			insertAncestor( parent, ancestor->ancestor );
 		//parent->insertChild( NifData( identifier, "Abstract" ) );
 		parent->prepareInsert( ancestor->types.count() );
-		foreach ( NifData data, ancestor->types )
+		foreach ( NifData data, ancestor->types ) {
 			insertType( parent, data );
+		}
 	}
 	else
 		msg( Message() << tr("unknown ancestor %1").arg(identifier) );
@@ -946,8 +949,9 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 	{
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
-		foreach ( NifData d, compound->types )
+		foreach ( NifData d, compound->types ) {
 			insertType( branch, d );
+		}
 	}
 	else
 	{
@@ -2677,8 +2681,9 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex& in
 				if (n > 0) {
 					beginInsertRows( index, cn, cn+n-1 );
 					branch->prepareInsert( n );
-					foreach ( NifData data, block->types )
+					foreach ( NifData data, block->types ) {
 						insertType( branch, data );
+					}
 					endInsertRows();
 				}
 			}

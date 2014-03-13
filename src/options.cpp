@@ -688,8 +688,9 @@ void Options::textureFolderAutoDetect()
 
 			dir.setNameFilters( QStringList() << "*.bsa" );
 			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() )
+			foreach ( QString dn, dir.entryList() ) {
 				list << dir.filePath( dn );
+			}
 
 #ifndef FSENGINE
 			if ( ! dir.cd( "Textures" ) )
@@ -715,8 +716,9 @@ void Options::textureFolderAutoDetect()
 			
 			dir.setNameFilters( QStringList() << "*.bsa" );
 			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() )
+			foreach ( QString dn, dir.entryList() ) {
 				list << dir.filePath( dn );
+			}
 				
 #ifndef FSENGINE
 			if ( ! dir.cd( "Textures" ) )
@@ -743,8 +745,9 @@ void Options::textureFolderAutoDetect()
 			
 			dir.setNameFilters( QStringList() << "*.bsa" );
 			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() )
+			foreach ( QString dn, dir.entryList() ) {
 				list << dir.filePath( dn ) << dir.filePath( dn ) + "/Textures";
+			}
 		}
 	}
 
@@ -805,8 +808,10 @@ void Options::textureFolderAutoDetect()
 
          dir.setNameFilters( QStringList() << "*.bsa" );
          dir.setFilter( QDir::Dirs );
-         foreach ( QString dn, dir.entryList() )
-            list << dir.filePath( dn );
+		 foreach ( QString dn, dir.entryList() ) {
+			list << dir.filePath( dn );
+		 }
+
 
 #ifndef FSENGINE
          if ( ! dir.cd( "Textures" ) )

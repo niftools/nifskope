@@ -320,9 +320,10 @@ protected:
 inline QStringList NifModel::allNiBlocks()
 {
 	QStringList lst;
-	foreach ( NifBlock * blk, blocks )
+	foreach ( NifBlock * blk, blocks ) {
 		if ( ! blk->abstract )
 			lst.append( blk->id );
+	}
 	return lst;
 }
 
