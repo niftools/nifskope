@@ -159,7 +159,8 @@ public:
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
-		if ( !tex42_xpm_icon ) tex42_xpm_icon = new QIcon( QPixmap( tex42_xpm ) );
+		if ( !tex42_xpm_icon )
+			tex42_xpm_icon = new QIcon( QPixmap( tex42_xpm ) );
 
 		return *tex42_xpm_icon;
 	}
@@ -1016,7 +1017,6 @@ void TexFlipDialog::textureAction( int i )
 			listmodel->setData( xdi, v, Qt::EditRole );
 			listview->setCurrentIndex( xdi );
 		}
-
 		break;
 	case 3:
 
@@ -1028,7 +1028,6 @@ void TexFlipDialog::textureAction( int i )
 			listmodel->setData( xdi, v, Qt::EditRole );
 			listview->setCurrentIndex( xdi );
 		}
-
 		break;
 	}
 }

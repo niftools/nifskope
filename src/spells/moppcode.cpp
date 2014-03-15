@@ -44,7 +44,8 @@ public:
 
 	~HavokMoppCode()
 	{
-		if ( hMoppLib ) FreeLibrary( hMoppLib );
+		if ( hMoppLib )
+			FreeLibrary( hMoppLib );
 	}
 
 	bool Initialize()

@@ -329,7 +329,8 @@ public:
 		for ( int c = row; c < row + count; c++ ) {
 			NifItem * item = childItems.value( c );
 
-			if ( item ) delete item;
+			if ( item )
+				delete item;
 		}
 
 		childItems.remove( row, count );

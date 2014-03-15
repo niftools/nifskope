@@ -153,7 +153,8 @@ public:
 
 	NifProxyItem * findItem( int b, bool scanParents = true )
 	{
-		if ( blockNumber == b ) return this;
+		if ( blockNumber == b )
+			return this;
 
 		foreach ( NifProxyItem * child, childItems ) {
 			if ( child->blockNumber == b )

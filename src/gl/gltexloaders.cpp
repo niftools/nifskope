@@ -535,9 +535,7 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 			flipDXT1Blocks( bottom, xblocks );
 			SwapMem( bottom, top, linesize );
 		}
-
 		break;
-
 	case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
 		linesize = xblocks * 16;
 
@@ -548,7 +546,6 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 			flipDXT3Blocks( bottom, xblocks );
 			SwapMem( bottom, top, linesize );
 		}
-
 		break;
 	case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
 		linesize = xblocks * 16;
@@ -560,7 +557,6 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 			flipDXT5Blocks( bottom, xblocks );
 			SwapMem( bottom, top, linesize );
 		}
-
 		break;
 	default:
 		return;
@@ -1052,13 +1048,17 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 
 					switch ( type ) {
 					case 0:
-						mask[i] = m << (bpc * 0); break;     //Green
+						mask[i] = m << (bpc * 0);
+						break;     // Green
 					case 1:
-						mask[i] = m << (bpc * 1); break;     //Blue
+						mask[i] = m << (bpc * 1);
+						break;     // Blue
 					case 2:
-						mask[i] = m << (bpc * 2); break;     //Red
+						mask[i] = m << (bpc * 2);
+						break;     // Red
 					case 3:
-						mask[i] = m << (bpc * 3); break;     //Red
+						mask[i] = m << (bpc * 3);
+						break;     // Red
 					}
 				}
 			}
@@ -1434,13 +1434,17 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 
 				switch ( type ) {
 				case 0:
-					mask[i] = m << (bpc * 0); break;         //Green
+					mask[i] = m << (bpc * 0);
+					break;         // Green
 				case 1:
-					mask[i] = m << (bpc * 1); break;         //Blue
+					mask[i] = m << (bpc * 1);
+					break;         // Blue
 				case 2:
-					mask[i] = m << (bpc * 2); break;         //Red
+					mask[i] = m << (bpc * 2);
+					break;         // Red
 				case 3:
-					mask[i] = m << (bpc * 3); break;         //Red
+					mask[i] = m << (bpc * 3);
+					break;         // Red
 				}
 			}
 		}

@@ -60,7 +60,8 @@ public:
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
-		if ( !light42_xpm_icon ) light42_xpm_icon = new QIcon( QPixmap( light42_xpm ) );
+		if ( !light42_xpm_icon )
+			light42_xpm_icon = new QIcon( QPixmap( light42_xpm ) );
 
 		return *light42_xpm_icon;
 	}

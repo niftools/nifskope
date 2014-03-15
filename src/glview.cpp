@@ -425,9 +425,9 @@ void GLView::glProjection( int x, int y )
 	//qWarning() << nr << fr;
 
 	if ( aViewPerspective->isChecked() || aViewWalk->isChecked() ) {
+
 		if ( nr < 1.0 )
 			nr = 1.0;
-
 		if ( fr < 2.0 )
 			fr = 2.0;
 
@@ -762,9 +762,8 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
     }
 */
 	// Get the color key
-	unsigned char pixel[4] = {
-		0, 0, 0, 0
-	};
+	unsigned char pixel[4] = { 0, 0, 0, 0 };
+
 	GLint viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 	glReadBuffer( GL_BACK );
@@ -840,8 +839,9 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 		// TODO: find out a better way to check if "furn" was mouse-clicked
 		int furnchoose = ::indexAt( model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle, pos );
 
-		if ( choose != -1 && furnchoose != -1 // something hit && something2 is "furn"
-		     && choose == furnchoose )        // the "furn" was hit
+		if ( choose != -1
+			 && furnchoose != -1        // something hit && something2 is "furn"
+			 && choose == furnchoose )  // the "furn" was hit
 		{
 			glPopAttrib();
 			glMatrixMode( GL_MODELVIEW );
@@ -1152,47 +1152,27 @@ void GLView::advanceGears()
 		update();
 	}
 
-	if ( kbd[ Qt::Key_Up ] )
-		rotate( -ROT_SPD * dT, 0, 0 );
+	// Rotation
+	if ( kbd[ Qt::Key_Up ] )    rotate( -ROT_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_Down ] )  rotate( +ROT_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_Left ] )  rotate( 0, 0, -ROT_SPD * dT );
+	if ( kbd[ Qt::Key_Right ] ) rotate( 0, 0, +ROT_SPD * dT );
 
-	if ( kbd[ Qt::Key_Down ] )
-		rotate( +ROT_SPD * dT, 0, 0 );
+	// Movement
+	if ( kbd[ Qt::Key_A ] ) move( +MOV_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_D ] ) move( -MOV_SPD * dT, 0, 0 );
+	if ( kbd[ Qt::Key_W ] ) move( 0, 0, +MOV_SPD * dT );
+	if ( kbd[ Qt::Key_S ] ) move( 0, 0, -MOV_SPD * dT );
+	if ( kbd[ Qt::Key_F ] ) move( 0, +MOV_SPD * dT, 0 );
+	if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
 
-	if ( kbd[ Qt::Key_Left ] )
-		rotate( 0, 0, -ROT_SPD * dT );
+	// Zoom
+	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist * 1.0 / 1.1 );
+	if ( kbd[ Qt::Key_E ] ) setDistance( Dist * 1.1 );
 
-	if ( kbd[ Qt::Key_Right ] )
-		rotate( 0, 0, +ROT_SPD * dT );
-
-	if ( kbd[ Qt::Key_A ] )
-		move( +MOV_SPD * dT, 0, 0 );
-
-	if ( kbd[ Qt::Key_D ] )
-		move( -MOV_SPD * dT, 0, 0 );
-
-	if ( kbd[ Qt::Key_W ] )
-		move( 0, 0, +MOV_SPD * dT );
-
-	if ( kbd[ Qt::Key_S ] )
-		move( 0, 0, -MOV_SPD * dT );
-
-	if ( kbd[ Qt::Key_F ] )
-		move( 0, +MOV_SPD * dT, 0 );
-
-	if ( kbd[ Qt::Key_R ] )
-		move( 0, -MOV_SPD * dT, 0 );
-
-	if ( kbd[ Qt::Key_Q ] )
-		setDistance( Dist * 1.0 / 1.1 );
-
-	if ( kbd[ Qt::Key_E ] )
-		setDistance( Dist * 1.1 );
-
-	if ( kbd[ Qt::Key_PageUp ] )
-		zoom( 1.1f );
-
-	if ( kbd[ Qt::Key_PageDown ] )
-		zoom( 1 / 1.1f );
+	// Focal Length
+	if ( kbd[ Qt::Key_PageUp ] )   zoom( 1.1f );
+	if ( kbd[ Qt::Key_PageDown ] ) zoom( 1 / 1.1f );
 
 	if ( mouseMov[0] != 0 || mouseMov[1] != 0 || mouseMov[2] != 0 ) {
 		move( mouseMov[0], mouseMov[1], mouseMov[2] );

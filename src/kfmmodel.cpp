@@ -204,14 +204,9 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 					d.value.changeType( NifValue::type( tmp ) );
 				}
 
-				if ( d.arg() == "ARG" )
-					d.setArg( data.arg() );
-
-				if ( d.arr1() == "ARG" )
-					d.setArr1( arg );
-
-				if ( d.arr2() == "ARG" )
-					d.setArr2( arg );
+				if ( d.arg() == "ARG" )  d.setArg( data.arg() );
+				if ( d.arr1() == "ARG" ) d.setArr1( arg );
+				if ( d.arr2() == "ARG" ) d.setArr2( arg );
 
 				if ( d.cond().contains( "ARG" ) ) {
 					QString x = d.cond(); x.replace( x.indexOf( "ARG" ), 5, arg ); d.setCond( x );
@@ -219,136 +214,137 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 
 				insertType( branch, d );
 			}
-		} else
+		} else {
 			foreach ( NifData d, compound->types ) {
 				insertType( branch, d );
 			}
-			} else
-				parent->insertChild( data, at );
-
+		}
+	} else {
+		parent->insertChild( data, at );
 	}
+}
 
 
 /*
  *  item value functions
  */
 
-	bool KfmModel::setItemValue( NifItem * item, const NifValue & val )
-	{
-		item->value() = val;
-		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
-		return true;
-	}
+bool KfmModel::setItemValue( NifItem * item, const NifValue & val )
+{
+	item->value() = val;
+	emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+	return true;
+}
 
 /*
  *  load and save
  */
 
-	bool KfmModel::setHeaderString( const QString & s )
-	{
-		//msg( DbgMsg() << s << s.right( s.length() - 27 ) );
-		if ( s.startsWith( ";Gamebryo KFM File Version " ) ) {
-			version = version2number( s.right( s.length() - 27 ) );
+bool KfmModel::setHeaderString( const QString & s )
+{
+	//msg( DbgMsg() << s << s.right( s.length() - 27 ) );
+	if ( s.startsWith( ";Gamebryo KFM File Version " ) ) {
+		version = version2number( s.right( s.length() - 27 ) );
 
-			if ( isVersionSupported( version ) ) {
-				return true;
-			} else {
-				msg( Message() << tr( "version" ) << version2string( version ) << tr( "not supported yet" ) );
-				return false;
-			}
+		if ( isVersionSupported( version ) ) {
+			return true;
 		} else {
-			msg( Message() << tr( "this is not a KFM" ) );
+			msg( Message() << tr( "version" ) << version2string( version ) << tr( "not supported yet" ) );
 			return false;
 		}
+	} else {
+		msg( Message() << tr( "this is not a KFM" ) );
+		return false;
+	}
+}
+
+bool KfmModel::load( QIODevice & device )
+{
+	clear();
+
+	NifIStream stream( this, &device );
+
+	if ( !kfmroot || !load( kfmroot, stream, true ) ) {
+		msg( Message() << tr( "failed to load kfm file (%1)" ).arg( version ) );
+		return false;
 	}
 
-	bool KfmModel::load( QIODevice & device )
-	{
-		clear();
+	// Qt5 port:
+	// begin/endResetModel() is already called above in clear()
+	// May not be necessary again, but doing so to mimic Qt4 codebase.
+	beginResetModel();
+	endResetModel();
+	return true;
+}
 
-		NifIStream stream( this, &device );
+bool KfmModel::save( QIODevice & device ) const
+{
+	NifOStream stream( this, &device );
 
-		if ( !kfmroot || !load( kfmroot, stream, true ) ) {
-			msg( Message() << tr( "failed to load kfm file (%1)" ).arg( version ) );
-			return false;
-		}
-
-		// Qt5 port:
-		// begin/endResetModel() is already called above in clear()
-		// May not be necessary again, but doing so to mimic Qt4 codebase.
-		beginResetModel();
-		endResetModel();
-		return true;
+	if ( !kfmroot || save( kfmroot, stream ) ) {
+		msg( Message() << tr( "failed to write kfm file" ) );
+		return false;
 	}
 
-	bool KfmModel::save( QIODevice & device ) const
-	{
-		NifOStream stream( this, &device );
+	return true;
+}
 
-		if ( !kfmroot || save( kfmroot, stream ) ) {
-			msg( Message() << tr( "failed to write kfm file" ) );
-			return false;
-		}
+bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
+{
+	if ( !parent )
+		return false;
 
-		return true;
-	}
+	for ( int row = 0; row < parent->childCount(); row++ ) {
+		NifItem * child = parent->child( row );
 
-	bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
-	{
-		if ( !parent )
-			return false;
+		if ( evalCondition( child ) ) {
+			if ( !child->arr1().isEmpty() ) {
+				if ( !updateArrayItem( child, fast ) )
+					return false;
 
-		for ( int row = 0; row < parent->childCount(); row++ ) {
-			NifItem * child = parent->child( row );
-
-			if ( evalCondition( child ) ) {
-				if ( !child->arr1().isEmpty() ) {
-					if ( !updateArrayItem( child, fast ) )
-						return false;
-
-					if ( !load( child, stream, fast ) )
-						return false;
-				} else if ( child->childCount() > 0 ) {
-					if ( !load( child, stream, fast ) )
-						return false;
-				} else {
-					if ( !stream.read( child->value() ) )
-						return false;
-				}
+				if ( !load( child, stream, fast ) )
+					return false;
+			} else if ( child->childCount() > 0 ) {
+				if ( !load( child, stream, fast ) )
+					return false;
+			} else {
+				if ( !stream.read( child->value() ) )
+					return false;
 			}
 		}
-
-		return true;
 	}
 
-	bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
-	{
-		if ( !parent )
-			return false;
+	return true;
+}
 
-		for ( int row = 0; row < parent->childCount(); row++ ) {
-			NifItem * child = parent->child( row );
+bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
+{
+	if ( !parent )
+		return false;
 
-			if ( evalCondition( child ) ) {
-				if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-					if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-						msg( Message() << child->name() << tr( "array size mismatch" ) );
+	for ( int row = 0; row < parent->childCount(); row++ ) {
+		NifItem * child = parent->child( row );
 
-					if ( !save( child, stream ) )
-						return false;
-				} else {
-					if ( !stream.write( child->value() ) )
-						return false;
-				}
+		if ( evalCondition( child ) ) {
+			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
+				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
+					msg( Message() << child->name() << tr( "array size mismatch" ) );
+
+				if ( !save( child, stream ) )
+					return false;
+			} else {
+				if ( !stream.write( child->value() ) )
+					return false;
 			}
 		}
-
-		return true;
 	}
 
-	NifItem * KfmModel::insertBranch( NifItem * parentItem, const NifData & data, int at )
-	{
-		NifItem * item = parentItem->insertChild( data, at );
-		item->value().changeType( NifValue::tNone );
-		return item;
-	}
+	return true;
+}
+
+NifItem * KfmModel::insertBranch( NifItem * parentItem, const NifData & data, int at )
+{
+	NifItem * item = parentItem->insertChild( data, at );
+	item->value().changeType( NifValue::tNone );
+	return item;
+}

@@ -702,7 +702,6 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 		} else {
 			moveSelection( glUnit * zoom * dPos.x(), glUnit * zoom * dPos.y() );
 		}
-
 		break;
 
 	case Qt::MidButton:
@@ -735,7 +734,6 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 		} else {
 			setCursor( QCursor( Qt::CrossCursor ) );
 		}
-
 		return;
 	}
 

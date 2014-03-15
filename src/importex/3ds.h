@@ -281,45 +281,36 @@ private:
 	{
 		switch ( h.t & 0xf000 ) {
 		case 0x0000:
-
 			switch ( h.t ) {
 			case M3D_VERSION:
 			case M3D_KFVERSION:
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case COLOR_F:
 			case LIN_COLOR_F:
 				adddata( sizeof( ChunkTypeFloat3 ) );
 				break;
-
 			case COLOR_24:
 			case LIN_COLOR_24:
 				adddata();
 				break;
-
 			case INT_PERCENTAGE:
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case FLOAT_PERCENTAGE:
 				adddata( sizeof( ChunkTypeFloat ) );
 				break;
-
 			case MASTER_SCALE:
 				adddata( sizeof( ChunkTypeFloat ) );
 				break;
 			}
-
 			break;
 
 		case 0x3000:
-
 			switch ( h.t ) {
 			case DEFAULT_VIEW:
 				addchildren();
 				break;
-
 			case VIEW_TOP:
 			case VIEW_BOTTOM:
 			case VIEW_LEFT:
@@ -329,84 +320,68 @@ private:
 			case VIEW_USER:
 				adddata();
 				break;
-
 			case VIEW_CAMERA:
 				addname();
 				adddata();
 				break;
-
 			case MDATA:
 				addchildren();
 				break;
 			}
-
 			break;
 
 		case 0x4000:
-
 			switch ( h.t ) {
 			case NAMED_OBJECT:
 				addname();
 				adddata();
 				addchildren();
 				break;
-
 			case N_TRI_OBJECT:
 				addchildren();
 				break;
-
 			case POINT_ARRAY:
 				addcount( sizeof( ChunkTypeFloat3 ) );
 				adddata();
 				break;
-
 			case POINT_FLAG_ARRAY:
 				addcount( sizeof( ChunkTypeShort ) );
 				adddata();
 				break;
-
 			case FACE_ARRAY:
 				addcount( sizeof( ChunkTypeFaceArray ) );
 				adddata();
 				addchildren();
 				break;
-
 			case MSH_MAT_GROUP:
 				addname();
 				addcount( sizeof( ChunkTypeShort ) );
 				adddata();
 				break;
-
 			case TEX_VERTS:
 				addcount( sizeof( ChunkTypeFloat2 ) );
 				adddata();
 				break;
-
 			case MESH_MATRIX:
 				adddata( sizeof( ChunkTypeMeshMatrix ) );
 				break;
-
 			case M3DMAGIC:
 				addchildren();
 				break;
 			}
-
 			break;
 
 		case 0xa000:
-
 			switch ( h.t ) {
 			case MAT_NAME:
 				addname();
 				adddata();
 				break;
-
 			case MAT_AMBIENT:
 			case MAT_DIFFUSE:
 			case MAT_SPECULAR:
 				addchildren();
 				break;
-
 			case MAT_SHININESS:
 			case MAT_SHIN2PCT:
 			case MAT_SHIN3PCT:
@@ -416,15 +391,12 @@ private:
 			case MAT_SELF_ILPCT:
 				addchildren();
 				break;
-
 			case MAT_WIRESIZE:
 				adddata( sizeof( ChunkTypeFloat ) );
 				break;
-
 			case MAT_SHADING:
 				adddata( sizeof( ChunkTypeShort) );
 				break;
-
 			case MAT_TEXMAP:
 			case MAT_SPECMAP:
 			case MAT_OPACMAP:
@@ -432,77 +404,63 @@ private:
 			case MAT_BUMPMAP:
 				addchildren();
 				break;
-
 			case MAT_MAPNAME:
 				addname();
 				adddata();
 				break;
-
 			case MATERIAL:
 				addchildren();
 				break;
 			}
-
 			break;
 
 		case 0xb000:
-
 			switch ( h.t ) {
 			case KFDATA:
 				addchildren();
 				break;
-
 			case KFHDR:
 				adddata( sizeof( ChunkTypeShort ) );
 				addname();
 				adddata( sizeof( ChunkTypeShort ) );
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case KFSEG:
 				adddata( sizeof( ChunkTypeLong ) );
 				adddata( sizeof( ChunkTypeLong ) );
 				break;
-
 			case KFCURTIME:
 				adddata( sizeof( ChunkTypeLong ) );
 				break;
-
 			case OBJECT_NODE_TAG:
 				addchildren();
 				break;
-
 			case NODE_ID:
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case NODE_HDR:
 				addname();
 				adddata( sizeof( ChunkTypeShort ) );
 				adddata( sizeof( ChunkTypeShort ) );
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case PIVOT:
 				adddata( sizeof( ChunkTypeFloat ) );
 				adddata( sizeof( ChunkTypeFloat ) );
 				adddata( sizeof( ChunkTypeFloat ) );
 				break;
-
 			case POS_TRACK_TAG:
 				adddata( sizeof( ChunkTypeShort ) );
 				adddata( sizeof( ChunkTypeShort[4] ) );
 				addcount( sizeof( ChunkTypeKfPos ) );
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case ROT_TRACK_TAG:
 				adddata( sizeof( ChunkTypeShort ) );
 				adddata( sizeof( ChunkTypeShort[4] ) );
 				addcount( sizeof( ChunkTypeKfRot ) );
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
-
 			case SCL_TRACK_TAG:
 				adddata( sizeof( ChunkTypeShort ) );
 				adddata( sizeof( ChunkTypeShort[4] ) );
@@ -510,7 +468,6 @@ private:
 				adddata( sizeof( ChunkTypeShort ) );
 				break;
 			}
-
 			break;
 		}
 	}

@@ -224,8 +224,9 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 		if ( replaceExt ) {
 			filename = filename.left( filename.length() - ext.length() );
-		} else
+		} else {
 			break;
+		}
 	}
 
 	// fix separators

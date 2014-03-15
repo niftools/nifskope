@@ -308,34 +308,49 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 					clampMode  = ( ( nif->get<ushort>( iTex, "Flags" ) & 0xF000 ) >> 0x0C );
 				}
 
-				switch ( filterMode ) {
 				// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
 				// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
+				switch ( filterMode ) {
 				case 0:
-					textures[t].filter = GL_NEAREST;                    break;             // nearest
+					textures[t].filter = GL_NEAREST;
+					break;             // nearest
 				case 1:
-					textures[t].filter = GL_LINEAR;                     break;             // bilinear
+					textures[t].filter = GL_LINEAR;
+					break;             // bilinear
 				case 2:
-					textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;       break;             // trilinear
+					textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;
+					break;             // trilinear
 				case 3:
-					textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;     break;             // nearest from nearest
+					textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;
+					break;             // nearest from nearest
 				case 4:
-					textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;      break;             // interpolate from nearest
+					textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;
+					break;             // interpolate from nearest
 				case 5:
-					textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;      break;             // bilinear from nearest
+					textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;
+					break;             // bilinear from nearest
 				default:
-					textures[t].filter = GL_LINEAR;                     break;
+					textures[t].filter = GL_LINEAR;
+					break;
 				}
 
 				switch ( clampMode ) {
 				case 0:
-					textures[t].wrapS = GL_CLAMP;   textures[t].wrapT = GL_CLAMP;   break;
+					textures[t].wrapS = GL_CLAMP;
+					textures[t].wrapT = GL_CLAMP;
+					break;
 				case 1:
-					textures[t].wrapS = GL_CLAMP;   textures[t].wrapT = GL_REPEAT;  break;
+					textures[t].wrapS = GL_CLAMP;
+					textures[t].wrapT = GL_REPEAT;
+					break;
 				case 2:
-					textures[t].wrapS = GL_REPEAT;  textures[t].wrapT = GL_CLAMP;   break;
+					textures[t].wrapS = GL_REPEAT;
+					textures[t].wrapT = GL_CLAMP;
+					break;
 				default:
-					textures[t].wrapS = GL_REPEAT;  textures[t].wrapT = GL_REPEAT;  break;
+					textures[t].wrapS = GL_REPEAT;
+					textures[t].wrapT = GL_REPEAT;
+					break;
 				}
 
 				textures[t].hasTransform = nif->get<int>( iTex, "Has Texture Transform" );
@@ -453,16 +468,20 @@ class TexFlipController : public Controller
 {
 public:
 	TexFlipController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 ) {}
+		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 )
+	{
+	}
 
 	TexFlipController( TextureProperty * prop, const QModelIndex & index )
-		: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 ) {}
+		: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 )
+	{
+	}
 
 	void update( float time )
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
 
-		if ( !( ( target || oldTarget ) && active && iSources.isValid() && nif ) )
+		if ( !( (target || oldTarget) && active && iSources.isValid() && nif ) )
 			return;
 
 		float r = 0;

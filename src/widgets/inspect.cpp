@@ -104,29 +104,14 @@ public:
 
 InspectViewInternal::~InspectViewInternal()
 {
-	if ( nameLabel != 0 )
-		delete nameLabel;
-
-	if ( nameText != 0 )
-		delete nameText;
-
-	if ( typeLabel != 0 )
-		delete typeLabel;
-
-	if ( typeText != 0 )
-		delete typeText;
-
-	if ( timeLabel != 0 )
-		delete timeLabel;
-
-	if ( timeText != 0 )
-		delete timeText;
-
-	if ( localCheck != 0 )
-		delete localCheck;
-
-	if ( posGroup != 0 )
-		delete posGroup;
+	if ( nameLabel != 0 )  delete nameLabel;
+	if ( nameText != 0 )   delete nameText;
+	if ( typeLabel != 0 )  delete typeLabel;
+	if ( typeText != 0 )   delete typeText;
+	if ( timeLabel != 0 )  delete timeLabel;
+	if ( timeText != 0 )   delete timeText;
+	if ( localCheck != 0 ) delete localCheck;
+	if ( posGroup != 0 )   delete posGroup;
 
 	/*if(posXLabel != 0) delete posXLabel;
 	  if(posXText != 0) delete posXText;
@@ -135,11 +120,8 @@ InspectViewInternal::~InspectViewInternal()
 	  if(posZLabel != 0) delete posZLabel;
 	  if(posZText != 0) delete posZText;*/
 
-	if ( invertCheck != 0 )
-		delete invertCheck;
-
-	if ( rotEulGroup != 0 )
-		delete rotEulGroup;
+	if ( invertCheck != 0 ) delete invertCheck;
+	if ( rotEulGroup != 0 ) delete rotEulGroup;
 
 	//if(rotGroup != 0) delete rotGroup;
 	/*if(rotWLabel != 0) delete rotWLabel;
@@ -159,19 +141,11 @@ InspectViewInternal::~InspectViewInternal()
 	  if(eulZLabel != 0) delete eulZLabel;
 	  if(eulZText != 0) delete eulZText;*/
 
-	if ( matGroup != 0 )
-		delete matGroup;
-
+	if ( matGroup != 0 )   delete matGroup;
 	//if(matText != 0) delete matText;
-
-	if ( lenLabel != 0 )
-		delete lenLabel;
-
-	if ( lenText != 0 )
-		delete lenText;
-
-	if ( refreshBtn != 0 )
-		delete refreshBtn;
+	if ( lenLabel != 0 )   delete lenLabel;
+	if ( lenText != 0 )    delete lenText;
+	if ( refreshBtn != 0 ) delete refreshBtn;
 }
 
 InspectView::InspectView( QWidget * parent, Qt::WindowFlags f )

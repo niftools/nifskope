@@ -620,21 +620,18 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					QStringList lst = t.value( i == 0 ? 1 : j + i ).split( "/" );
 
 					int v = lst.value( 0 ).toInt();
-
 					if ( v < 0 )
 						v += overts.count();
 					else
 						v--;
 
 					int t = lst.value( 1 ).toInt();
-
 					if ( t < 0 )
 						v += otexco.count();
 					else
 						t--;
 
 					int n = lst.value( 2 ).toInt();
-
 					if ( n < 0 )
 						n += onorms.count();
 					else
@@ -851,25 +848,18 @@ void importObj( NifModel * nif, const QModelIndex & index )
 				max[0] = min[0];
 				max[1] = min[1];
 				max[2] = min[2];
+
 				foreach ( Vector3 v, verts ) {
-					if ( v[0] < min[0] )
-						min[0] = v[0];
 
-					if ( v[1] < min[1] )
-						min[1] = v[1];
+					if ( v[0] < min[0] ) min[0] = v[0];
+					if ( v[1] < min[1] ) min[1] = v[1];
+					if ( v[2] < min[2] ) min[2] = v[2];
 
-					if ( v[2] < min[2] )
-						min[2] = v[2];
-
-					if ( v[0] > max[0] )
-						max[0] = v[0];
-
-					if ( v[1] > max[1] )
-						max[1] = v[1];
-
-					if ( v[2] > max[2] )
-						max[2] = v[2];
+					if ( v[0] > max[0] ) max[0] = v[0];
+					if ( v[1] > max[1] ) max[1] = v[1];
+					if ( v[2] > max[2] ) max[2] = v[2];
 				}
+
 				center[0] = min[0] + ( (max[0] - min[0]) / 2 );
 				center[1] = min[1] + ( (max[1] - min[1]) / 2 );
 				center[2] = min[2] + ( (max[2] - min[2]) / 2 );

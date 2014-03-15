@@ -354,23 +354,18 @@ void ColorWheel::setColor( int x, int y )
 		c -= c / 5;
 		V  = ( p.y() + c ) / ( c + c / 2 );
 
-		if ( V < 0.0 )
-			V = 0;
-
-		if ( V > 1.0 )
-			V = 1.0;
+		if ( V < 0.0 ) V = 0;
+		if ( V > 1.0 ) V = 1.0;
 
 		if ( V > 0 ) {
 			double h = V * ( c + c / 2 ) / ( 2.0 * sin( 60.0 / 180.0 * pi ) );
 			S = ( p.x() + h ) / ( h * 2 );
 
-			if ( S < 0.0 )
-				S = 0.0;
-
-			if ( S > 1.0 )
-				S = 1.0;
-		} else
+			if ( S < 0.0 ) S = 0.0;
+			if ( S > 1.0 ) S = 1.0;
+		} else {
 			S = 1.0;
+		}
 
 		update();
 		emit sigColor( getColor() );
@@ -413,8 +408,9 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 		QColor color = hsv->getColor();
 		color.setAlphaF( alpha->value() );
 		return color;
-	} else
+	} else {
 		return c;
+	}
 }
 
 Color3 ColorWheel::choose( const Color3 & c, QWidget * parent )

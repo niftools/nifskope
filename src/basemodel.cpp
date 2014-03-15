@@ -673,7 +673,8 @@ public:
 
 			// resolve "ARG"
 			while ( left == "ARG" ) {
-				if ( !i->parent() ) return false;
+				if ( !i->parent() )
+					return false;
 
 				i = i->parent();
 				left = i->arg();

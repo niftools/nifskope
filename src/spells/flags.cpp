@@ -165,7 +165,8 @@ public:
 	{
 		quint16 flags = nif->get<int>( index );
 
-		if ( !flags ) flags = 0xed;
+		if ( !flags )
+			flags = 0xed;
 
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;
@@ -484,7 +485,8 @@ public:
 	{
 		quint16 flags = nif->get<int>( index );
 
-		if ( !flags ) flags = 0x8;
+		if ( !flags )
+			flags = 0x8;
 
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout;

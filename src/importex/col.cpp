@@ -855,41 +855,27 @@ void attachNiShape ( const NifModel * nif, QDomElement parentNode, int idx )
 			QString triText;
 			foreach ( Triangle v, tri ) {
 				// TODO: add multiple UV
-				if ( haveVertex == true )
-					triText.append( QString( "%1 " ).arg( v[0] ) );
-
-				if ( haveNormal == true )
-					triText.append( QString( "%1 " ).arg( v[0] ) );
+				if ( haveVertex == true ) triText.append( QString( "%1 " ).arg( v[0] ) );
+				if ( haveNormal == true ) triText.append( QString( "%1 " ).arg( v[0] ) );
 
 				for ( int i = 0; i < haveUV; i++ )
 					triText.append( QString( "%1 " ).arg( v[0] ) );
 
-				if ( haveColors == true )
-					triText.append( QString( "%1 " ).arg( v[0] ) );
-
-				if ( haveVertex == true )
-					triText.append( QString( "%1 " ).arg( v[1] ) );
-
-				if ( haveNormal == true )
-					triText.append( QString( "%1 " ).arg( v[1] ) );
+				if ( haveColors == true ) triText.append( QString( "%1 " ).arg( v[0] ) );
+				if ( haveVertex == true ) triText.append( QString( "%1 " ).arg( v[1] ) );
+				if ( haveNormal == true ) triText.append( QString( "%1 " ).arg( v[1] ) );
 
 				for ( int i = 0; i < haveUV; i++ )
 					triText.append( QString( "%1 " ).arg( v[1] ) );
 
-				if ( haveColors == true )
-					triText.append( QString( "%1 " ).arg( v[1] ) );
-
-				if ( haveVertex == true )
-					triText.append( QString( "%1 " ).arg( v[2] ) );
-
-				if ( haveNormal == true )
-					triText.append( QString( "%1 " ).arg( v[2] ) );
+				if ( haveColors == true ) triText.append( QString( "%1 " ).arg( v[1] ) );
+				if ( haveVertex == true ) triText.append( QString( "%1 " ).arg( v[2] ) );
+				if ( haveNormal == true ) triText.append( QString( "%1 " ).arg( v[2] ) );
 
 				for ( int i = 0; i < haveUV; i++ )
 					triText.append( QString( "%1 " ).arg( v[2] ) );
 
-				if ( haveColors == true )
-					triText.append( QString( "%1 " ).arg( v[2] ) );
+				if ( haveColors == true ) triText.append( QString( "%1 " ).arg( v[2] ) );
 			}
 			p.appendChild( doc.createTextNode( triText ) );
 			triangles.appendChild( p );

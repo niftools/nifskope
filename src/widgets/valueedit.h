@@ -196,8 +196,7 @@ private:
 	enum
 	{
 		mAuto, mEuler, mAxis
-	}
-	mode;
+	} mode;
 
 	QLabel * l[4];
 	QDoubleSpinBox * v[4];

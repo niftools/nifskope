@@ -38,7 +38,8 @@ class spStrippify : public Spell
 		QPersistentModelIndex idx = index;
 		QPersistentModelIndex iData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriShapeData" );
 
-		if ( !iData.isValid() ) return idx;
+		if ( !iData.isValid() )
+			return idx;
 
 		QVector<Triangle> triangles;
 		QModelIndex iTriangles = nif->getIndex( iData, "Triangles" );
@@ -197,13 +198,15 @@ class spTriangulate : public Spell
 		QPersistentModelIndex idx = index;
 		QPersistentModelIndex iStripData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriStripsData" );
 
-		if ( !iStripData.isValid() ) return idx;
+		if ( !iStripData.isValid() )
+			return idx;
 
 		QList<QVector<quint16> > strips;
 
 		QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
 
-		if ( !iPoints.isValid() ) return idx;
+		if ( !iPoints.isValid() )
+			return idx;
 
 		for ( int s = 0; s < nif->rowCount( iPoints ); s++ ) {
 			QVector<quint16> strip;
@@ -374,7 +377,8 @@ public:
 
 		QVector<quint16> strip = nif->getArray<quint16>( iPoints.child( 0, 0 ) );
 
-		if ( strip.size() <= 3 ) return index;
+		if ( strip.size() <= 3 )
+			return index;
 
 		QList<QVector<quint16> > strips;
 		QVector<quint16> scratch;

@@ -65,8 +65,7 @@ public:
 	enum Extrapolation
 	{
 		Cyclic = 0, Reverse = 1, Constant = 2
-	}
-	extrapolation;
+	} extrapolation;
 
 	bool active;
 

@@ -1174,10 +1174,7 @@ static void SetAppLocale( QLocale curLocale )
 
 	if ( !directory.cd( "lang" ) ) {
 #ifdef Q_OS_LINUX
-
-		if ( !directory.cd( "/usr/share/nifskope/lang" ) ) {
-		}
-
+	if ( !directory.cd( "/usr/share/nifskope/lang" ) ) {}
 #endif
 	}
 
@@ -1207,7 +1204,10 @@ void NifSkope::sltLocaleChanged()
 	SetAppLocale( Options::get()->translationLocale() );
 
 	QMessageBox mb( "NifSkope",
-	                tr( "NifSkope must be restarted for this setting to take full effect." ), QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0, qApp->activeWindow() );
+	                tr( "NifSkope must be restarted for this setting to take full effect." ),
+	                QMessageBox::Information, QMessageBox::Ok + QMessageBox::Default, 0, 0,
+	                qApp->activeWindow()
+	);
 	mb.setIconPixmap( QPixmap( ":/res/nifskope.png" ) );
 	mb.exec();
 }
@@ -1240,9 +1240,9 @@ int main( int argc, char * argv[] )
 	QDir qssDir( QApplication::applicationDirPath() );
 	QStringList qssList( QStringList()
 	                     << "style.qss"
-		#ifdef Q_OS_LINUX
+#ifdef Q_OS_LINUX
 	                     << "/usr/share/nifskope/style.qss"
-		#endif
+#endif
 	);
 	QString qssName;
 	foreach ( QString str, qssList ) {

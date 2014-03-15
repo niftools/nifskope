@@ -245,29 +245,13 @@ void ColorBlock::boundsRange( Color32 * start, Color32 * end ) const
 	Color32 maxColor( 0, 0, 0 );
 
 	for ( uint i = 0; i < 16; i++ ) {
-		if ( m_color[i].r < minColor.r ) {
-			minColor.r = m_color[i].r;
-		}
+		if ( m_color[i].r < minColor.r ) { minColor.r = m_color[i].r; }
+		if ( m_color[i].g < minColor.g ) { minColor.g = m_color[i].g; }
+		if ( m_color[i].b < minColor.b ) { minColor.b = m_color[i].b; }
 
-		if ( m_color[i].g < minColor.g ) {
-			minColor.g = m_color[i].g;
-		}
-
-		if ( m_color[i].b < minColor.b ) {
-			minColor.b = m_color[i].b;
-		}
-
-		if ( m_color[i].r > maxColor.r ) {
-			maxColor.r = m_color[i].r;
-		}
-
-		if ( m_color[i].g > maxColor.g ) {
-			maxColor.g = m_color[i].g;
-		}
-
-		if ( m_color[i].b > maxColor.b ) {
-			maxColor.b = m_color[i].b;
-		}
+		if ( m_color[i].r > maxColor.r ) { maxColor.r = m_color[i].r; }
+		if ( m_color[i].g > maxColor.g ) { maxColor.g = m_color[i].g; }
+		if ( m_color[i].b > maxColor.b ) { maxColor.b = m_color[i].b; }
 	}
 
 	// Offset range by 1/16 of the extents
@@ -295,37 +279,15 @@ void ColorBlock::boundsRangeAlpha( Color32 * start, Color32 * end ) const
 	Color32 maxColor( 0, 0, 0, 0 );
 
 	for ( uint i = 0; i < 16; i++ ) {
-		if ( m_color[i].r < minColor.r ) {
-			minColor.r = m_color[i].r;
-		}
+		if ( m_color[i].r < minColor.r ) { minColor.r = m_color[i].r; }
+		if ( m_color[i].g < minColor.g ) { minColor.g = m_color[i].g; }
+		if ( m_color[i].b < minColor.b ) { minColor.b = m_color[i].b; }
+		if ( m_color[i].a < minColor.a ) { minColor.a = m_color[i].a; }
 
-		if ( m_color[i].g < minColor.g ) {
-			minColor.g = m_color[i].g;
-		}
-
-		if ( m_color[i].b < minColor.b ) {
-			minColor.b = m_color[i].b;
-		}
-
-		if ( m_color[i].a < minColor.a ) {
-			minColor.a = m_color[i].a;
-		}
-
-		if ( m_color[i].r > maxColor.r ) {
-			maxColor.r = m_color[i].r;
-		}
-
-		if ( m_color[i].g > maxColor.g ) {
-			maxColor.g = m_color[i].g;
-		}
-
-		if ( m_color[i].b > maxColor.b ) {
-			maxColor.b = m_color[i].b;
-		}
-
-		if ( m_color[i].a > maxColor.a ) {
-			maxColor.a = m_color[i].a;
-		}
+		if ( m_color[i].r > maxColor.r ) { maxColor.r = m_color[i].r; }
+		if ( m_color[i].g > maxColor.g ) { maxColor.g = m_color[i].g; }
+		if ( m_color[i].b > maxColor.b ) { maxColor.b = m_color[i].b; }
+		if ( m_color[i].a > maxColor.a ) { maxColor.a = m_color[i].a; }
 	}
 
 	// Offset range by 1/16 of the extents

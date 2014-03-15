@@ -183,7 +183,6 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = fe;
 		}
 		break;
-
 	case NifValue::tText:
 	case NifValue::tSizedString:
 		{

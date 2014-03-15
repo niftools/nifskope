@@ -80,9 +80,10 @@ public:
 			MorphKey * key = morph[i];
 
 			if ( interpolate( x, key->iFrames, time, key->index ) ) {
-				if ( x < 0 ) x = 0;
-
-				if ( x > 1 ) x = 1;
+				if ( x < 0 )
+					x = 0;
+				if ( x > 1 )
+					x = 1;
 
 				if ( x != 0 && target->verts.count() == key->verts.count() ) {
 					for ( int v = 0; v < target->verts.count(); v++ )

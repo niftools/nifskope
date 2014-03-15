@@ -51,9 +51,11 @@ BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b
 			QModelIndex idx = idxWeights.child( c, 0 );
 			weights.append( VertexWeight( nif->get<int>( idx, "Index" ), nif->get<float>( idx, "Weight" ) ) );
 		}
-	} else // create artificial ones, TODO: should they weight nothing* instead?
+	} else {
+		// create artificial ones, TODO: should they weight nothing* instead?
 		for ( int c = 0; c < vcnt; c++ )
 			weights.append( VertexWeight( c, 1.0f ) );
+	}
 
 
 }

@@ -138,7 +138,8 @@ public:
 		if ( !user.isEmpty() ) {
 			Spell * spell = SpellBook::lookup( user );
 
-			if ( spell ) icon = spell->icon();
+			if ( spell )
+				icon = spell->icon();
 		}
 
 		QStyleOptionViewItem opt = option;
@@ -216,7 +217,8 @@ public:
 			w = le;
 		}
 
-		if ( w ) w->installEventFilter( const_cast<NifDelegate *>( this ) );
+		if ( w )
+			w->installEventFilter( const_cast<NifDelegate *>( this ) );
 
 		return w;
 	}

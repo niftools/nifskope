@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "dds_api.h"
 #include "Stream.h"
 #include "DirectDrawSurface.h"
-#include <stdio.h>                  // printf
+#include <stdio.h> // printf
 
 int is_a_dds( unsigned char * mem ) // note: use at most first 8 bytes
 {

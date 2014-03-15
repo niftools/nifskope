@@ -234,16 +234,12 @@ public:
 //! Unknown; unused?
 template <> inline bool qMapLessThanKey<Triangle>( const Triangle & s1, const Triangle & s2 )
 {
+	// TODO: This function makes no sense. Doxygen comments seem to think it's unused.
 	int d = 0;
 
-	if ( d == 0 )
-		d = (s1[0] - s2[0]);
-
-	if ( d == 0 )
-		d = (s1[1] - s2[1]);
-
-	if ( d == 0 )
-		d = (s1[2] - s2[2]);
+	if ( d == 0 ) d = (s1[0] - s2[0]);
+	if ( d == 0 ) d = (s1[1] - s2[1]);
+	if ( d == 0 ) d = (s1[2] - s2[2]);
 
 	return d < 0;
 }
@@ -464,7 +460,8 @@ public:
 				for ( quint32 i = 0; i < nparts; ++i ) {
 					QModelIndex iPart = iPartData.child( i, 0 );
 
-					if ( !iPart.isValid() ) continue;
+					if ( !iPart.isValid() )
+						continue;
 
 					if ( nif->get<uint>( iPart, "Body Part" ) == 0 /* Torso */ ) {
 						defaultPart = i;
@@ -481,7 +478,8 @@ public:
 				for ( quint32 i = 0; i < nskinparts; ++i ) {
 					QModelIndex iPart = iPartData.child( i, 0 );
 
-					if ( !iPart.isValid() ) continue;
+					if ( !iPart.isValid() )
+						continue;
 
 					quint32 finalPart = qMin( nparts - 1, i );
 
@@ -1236,8 +1234,9 @@ public:
 		if ( nif->getLink( index, "Controller" ) != -1 ) {
 			int keyframeResponse = QMessageBox::question( 0, Spell::tr( "Mirror Armature" ), Spell::tr( "Do you wish to flip or delete animation?" ), Spell::tr( "Flip" ), Spell::tr( "Delete" ), Spell::tr( "Cancel" ) );
 
-			if ( keyframeResponse == 2 ) return index;
-			else if ( keyframeResponse == 1 ) {
+			if ( keyframeResponse == 2 ) {
+				return index;
+			} else if ( keyframeResponse == 1 ) {
 				// delete blocks
 				int n = 0;
 
@@ -1368,11 +1367,13 @@ public:
 			// weirdness with rounding, sometimes...? probably "good enough" for 99% of cases
 			QModelIndex iSkinData = nif->getBlock( nif->getLink( iSkinInstance, "Data" ), "NiSkinData" );
 
-			if ( !iSkinData.isValid() ) return;
+			if ( !iSkinData.isValid() )
+				return;
 
 			QModelIndex iBones = nif->getIndex( iSkinData, "Bone List" );
 
-			if ( !iBones.isValid() ) return;
+			if ( !iBones.isValid() )
+				return;
 
 			for ( int b = 0; b < nif->rowCount( iBones ); b++ ) {
 				QModelIndex iBone = iBones.child( b, 0 );
@@ -1405,7 +1406,8 @@ public:
 		// do stuff
 		QModelIndex keyframeData = nif->getBlock( nif->getLink( index, "Data" ), "NiKeyframeData" );
 
-		if ( !keyframeData.isValid() ) return;
+		if ( !keyframeData.isValid() )
+			return;
 
 		QModelIndex iQuats = nif->getIndex( keyframeData, "Quaternion Keys" );
 

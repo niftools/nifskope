@@ -144,14 +144,17 @@ public:
 	 */
 	bool startElement( const QString &, const QString &, const QString & tagid, const QXmlAttributes & list )
 	{
-		if ( depth >= 8 ) err( tr( "error maximum nesting level exceeded" ) );
+		if ( depth >= 8 )
+			err( tr( "error maximum nesting level exceeded" ) );
 
 		Tag x = tags.value( tagid );
 
-		if ( x == tagNone ) err( tr( "error unknown element '%1'" ).arg( tagid ) );
+		if ( x == tagNone )
+			err( tr( "error unknown element '%1'" ).arg( tagid ) );
 
 		if ( depth == 0 ) {
-			if ( x != tagFile ) err( tr( "this is not a niftoolsxml file" ) );
+			if ( x != tagFile )
+				err( tr( "this is not a niftoolsxml file" ) );
 
 			push( x );
 			return true;
@@ -188,7 +191,8 @@ public:
 						if ( NifModel::compounds.contains( id ) || NifModel::blocks.contains( id ) )
 							err( tr( "multiple declarations of %1" ).arg( id ) );
 
-						if ( !blk ) blk = new NifBlock;
+						if ( !blk )
+							blk = new NifBlock;
 
 						blk->id = id;
 						blk->abstract = ( list.value( "abstract" ) == "1" );
@@ -258,7 +262,8 @@ public:
 			break;
 		case tagCompound:
 
-			if ( x != tagAdd ) err( tr( "only add tags allowed in compound type declaration" ) );
+			if ( x != tagAdd )
+				err( tr( "only add tags allowed in compound type declaration" ) );
 
 		case tagBlock:
 			push( x );
@@ -279,10 +284,14 @@ public:
 						type = nstype;
 					}
 
-					if ( type == "KeyArray" ) type = "ns keyarray";
-					else if ( type == "VectorKeyArray" ) type = "ns keyvecarray";
-					else if ( type == "TypedVectorKeyArray" ) type = "ns keyvecarraytyp";
-					else if ( type == "RotationKeyArray" ) type = "ns keyrotarray";
+					if ( type == "KeyArray" )
+						type = "ns keyarray";
+					else if ( type == "VectorKeyArray" )
+						type = "ns keyvecarray";
+					else if ( type == "TypedVectorKeyArray" )
+						type = "ns keyvecarraytyp";
+					else if ( type == "RotationKeyArray" )
+						type = "ns keyrotarray";
 
 					// now allocate
 					data = NifData(
@@ -390,11 +399,13 @@ public:
 	 */
 	bool endElement( const QString &, const QString &, const QString & tagid )
 	{
-		if ( depth <= 0 ) err( tr( "mismatching end element tag for element %1" ).arg( tagid ) );
+		if ( depth <= 0 )
+			err( tr( "mismatching end element tag for element %1" ).arg( tagid ) );
 
 		Tag x = tags.value( tagid );
 
-		if ( pop() != x ) err( tr( "mismatching end element tag for element %1" ).arg( tagid ) );
+		if ( pop() != x )
+			err( tr( "mismatching end element tag for element %1" ).arg( tagid ) );
 
 		switch ( x ) {
 		case tagCompound:
@@ -430,7 +441,8 @@ public:
 			break;
 		case tagAdd:
 
-			if ( blk ) blk->types.append( data );
+			if ( blk )
+				blk->types.append( data );
 
 			break;
 		case tagOption:
@@ -548,7 +560,8 @@ public:
 	//! Exception handler
 	bool fatalError( const QXmlParseException & exception )
 	{
-		if ( errorStr.isEmpty() ) errorStr = "Syntax error";
+		if ( errorStr.isEmpty() )
+			errorStr = "Syntax error";
 
 		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
 		return false;

@@ -941,29 +941,14 @@ void DirectDrawSurface::printInfo() const
 	/* printf("FOURCC: %c%c%c%c\n", ((unsigned char *)&header.fourcc)[0], ((unsigned char *)&header.fourcc)[1], ((unsigned char *)&header.fourcc)[2], ((unsigned char *)&header.fourcc)[3]); */
 	printf( "Flags: 0x%.8X\n", header.flags );
 
-	if ( header.flags & DDSD_CAPS )
-		printf( "\tDDSD_CAPS\n" );
-
-	if ( header.flags & DDSD_PIXELFORMAT )
-		printf( "\tDDSD_PIXELFORMAT\n" );
-
-	if ( header.flags & DDSD_WIDTH )
-		printf( "\tDDSD_WIDTH\n" );
-
-	if ( header.flags & DDSD_HEIGHT )
-		printf( "\tDDSD_HEIGHT\n" );
-
-	if ( header.flags & DDSD_DEPTH )
-		printf( "\tDDSD_DEPTH\n" );
-
-	if ( header.flags & DDSD_PITCH )
-		printf( "\tDDSD_PITCH\n" );
-
-	if ( header.flags & DDSD_LINEARSIZE )
-		printf( "\tDDSD_LINEARSIZE\n" );
-
-	if ( header.flags & DDSD_MIPMAPCOUNT )
-		printf( "\tDDSD_MIPMAPCOUNT\n" );
+	if ( header.flags & DDSD_CAPS )        printf( "\tDDSD_CAPS\n" );
+	if ( header.flags & DDSD_PIXELFORMAT ) printf( "\tDDSD_PIXELFORMAT\n" );
+	if ( header.flags & DDSD_WIDTH )       printf( "\tDDSD_WIDTH\n" );
+	if ( header.flags & DDSD_HEIGHT )      printf( "\tDDSD_HEIGHT\n" );
+	if ( header.flags & DDSD_DEPTH )       printf( "\tDDSD_DEPTH\n" );
+	if ( header.flags & DDSD_PITCH )       printf( "\tDDSD_PITCH\n" );
+	if ( header.flags & DDSD_LINEARSIZE )  printf( "\tDDSD_LINEARSIZE\n" );
+	if ( header.flags & DDSD_MIPMAPCOUNT ) printf( "\tDDSD_MIPMAPCOUNT\n" );
 
 	printf( "Height: %d\n", header.height );
 	printf( "Width: %d\n", header.width );
@@ -980,35 +965,16 @@ void DirectDrawSurface::printInfo() const
 	/* printf("\tSize: %d\n", header.pf.size); */
 	printf( "\tFlags: 0x%.8X\n", header.pf.flags );
 
-	if ( header.pf.flags & DDPF_RGB )
-		printf( "\t\tDDPF_RGB\n" );
-
-	if ( header.pf.flags & DDPF_FOURCC )
-		printf( "\t\tDDPF_FOURCC\n" );
-
-	if ( header.pf.flags & DDPF_ALPHAPIXELS )
-		printf( "\t\tDDPF_ALPHAPIXELS\n" );
-
-	if ( header.pf.flags & DDPF_ALPHA )
-		printf( "\t\tDDPF_ALPHA\n" );
-
-	if ( header.pf.flags & DDPF_PALETTEINDEXED1 )
-		printf( "\t\tDDPF_PALETTEINDEXED1\n" );
-
-	if ( header.pf.flags & DDPF_PALETTEINDEXED2 )
-		printf( "\t\tDDPF_PALETTEINDEXED2\n" );
-
-	if ( header.pf.flags & DDPF_PALETTEINDEXED4 )
-		printf( "\t\tDDPF_PALETTEINDEXED4\n" );
-
-	if ( header.pf.flags & DDPF_PALETTEINDEXED8 )
-		printf( "\t\tDDPF_PALETTEINDEXED8\n" );
-
-	if ( header.pf.flags & DDPF_ALPHAPREMULT )
-		printf( "\t\tDDPF_ALPHAPREMULT\n" );
-
-	if ( header.pf.flags & DDPF_NORMAL )
-		printf( "\t\tDDPF_NORMAL\n" );
+	if ( header.pf.flags & DDPF_RGB )             printf( "\t\tDDPF_RGB\n" );
+	if ( header.pf.flags & DDPF_FOURCC )          printf( "\t\tDDPF_FOURCC\n" );
+	if ( header.pf.flags & DDPF_ALPHAPIXELS )     printf( "\t\tDDPF_ALPHAPIXELS\n" );
+	if ( header.pf.flags & DDPF_ALPHA )           printf( "\t\tDDPF_ALPHA\n" );
+	if ( header.pf.flags & DDPF_PALETTEINDEXED1 ) printf( "\t\tDDPF_PALETTEINDEXED1\n" );
+	if ( header.pf.flags & DDPF_PALETTEINDEXED2 ) printf( "\t\tDDPF_PALETTEINDEXED2\n" );
+	if ( header.pf.flags & DDPF_PALETTEINDEXED4 ) printf( "\t\tDDPF_PALETTEINDEXED4\n" );
+	if ( header.pf.flags & DDPF_PALETTEINDEXED8 ) printf( "\t\tDDPF_PALETTEINDEXED8\n" );
+	if ( header.pf.flags & DDPF_ALPHAPREMULT )    printf( "\t\tDDPF_ALPHAPREMULT\n" );
+	if ( header.pf.flags & DDPF_NORMAL )          printf( "\t\tDDPF_NORMAL\n" );
 
 	printf( "\tFourCC: '%c%c%c%c'\n", ( (header.pf.fourcc >> 0) & 0xFF ), ( (header.pf.fourcc >> 8) & 0xFF ), ( (header.pf.fourcc >> 16) & 0xFF ), ( (header.pf.fourcc >> 24) & 0xFF ) );
 	printf( "\tBit count: %d\n", header.pf.bitcount );
@@ -1020,42 +986,26 @@ void DirectDrawSurface::printInfo() const
 	printf( "Caps:\n" );
 	printf( "\tCaps 1: 0x%.8X\n", header.caps.caps1 );
 
-	if ( header.caps.caps1 & DDSCAPS_COMPLEX )
-		printf( "\t\tDDSCAPS_COMPLEX\n" );
-
-	if ( header.caps.caps1 & DDSCAPS_TEXTURE )
-		printf( "\t\tDDSCAPS_TEXTURE\n" );
-
-	if ( header.caps.caps1 & DDSCAPS_MIPMAP )
-		printf( "\t\tDDSCAPS_MIPMAP\n" );
+	if ( header.caps.caps1 & DDSCAPS_COMPLEX ) printf( "\t\tDDSCAPS_COMPLEX\n" );
+	if ( header.caps.caps1 & DDSCAPS_TEXTURE ) printf( "\t\tDDSCAPS_TEXTURE\n" );
+	if ( header.caps.caps1 & DDSCAPS_MIPMAP )  printf( "\t\tDDSCAPS_MIPMAP\n" );
 
 	printf( "\tCaps 2: 0x%.8X\n", header.caps.caps2 );
 
-	if ( header.caps.caps2 & DDSCAPS2_VOLUME )
+	if ( header.caps.caps2 & DDSCAPS2_VOLUME ) {
 		printf( "\t\tDDSCAPS2_VOLUME\n" );
-	else if ( header.caps.caps2 & DDSCAPS2_CUBEMAP ) {
+	} else if ( header.caps.caps2 & DDSCAPS2_CUBEMAP ) {
 		printf( "\t\tDDSCAPS2_CUBEMAP\n" );
 
 		if ( (header.caps.caps2 & DDSCAPS2_CUBEMAP_ALL_FACES) == DDSCAPS2_CUBEMAP_ALL_FACES )
 			printf( "\t\tDDSCAPS2_CUBEMAP_ALL_FACES\n" );
 		else {
-			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEX )
-				printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEX\n" );
-
-			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEX )
-				printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEX\n" );
-
-			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEY )
-				printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEY\n" );
-
-			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEY )
-				printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEY\n" );
-
-			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEZ )
-				printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEZ\n" );
-
-			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEZ )
-				printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEZ\n" );
+			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEX ) printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEX\n" );
+			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEX ) printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEX\n" );
+			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEY ) printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEY\n" );
+			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEY ) printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEY\n" );
+			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEZ ) printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEZ\n" );
+			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEZ ) printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEZ\n" );
 		}
 	}
 

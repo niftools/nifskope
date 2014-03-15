@@ -87,8 +87,7 @@ public:
 		None,
 		Move,
 		Scale
-	}
-	editmode;
+	} editmode;
 
 protected:
 	void initializeGL();

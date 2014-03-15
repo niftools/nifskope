@@ -875,7 +875,6 @@ void Options::textureFolderAction( int id )
 			// remove folder
 			TexFolderModel->removeRow( idx.row(), QModelIndex() );
 		}
-
 		break;
 	case 2:
 
@@ -887,7 +886,6 @@ void Options::textureFolderAction( int id )
 			TexFolderModel->setData( xdi, v, Qt::EditRole );
 			TexFolderView->setCurrentIndex( xdi );
 		}
-
 		break;
 	case 3:
 
@@ -899,7 +897,6 @@ void Options::textureFolderAction( int id )
 			TexFolderModel->setData( xdi, v, Qt::EditRole );
 			TexFolderView->setCurrentIndex( xdi );
 		}
-
 		break;
 	}
 }

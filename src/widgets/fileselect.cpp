@@ -245,7 +245,6 @@ void FileSelector::activate()
 			setState( stError );
 			return;
 		}
-
 		break;
 	case SaveFile:
 
@@ -253,7 +252,6 @@ void FileSelector::activate()
 			setState( stError );
 			return;
 		}
-
 		break;
 	case Folder:
 
@@ -261,7 +259,6 @@ void FileSelector::activate()
 			setState( stError );
 			return;
 		}
-
 		break;
 	}
 

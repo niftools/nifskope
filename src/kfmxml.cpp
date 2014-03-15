@@ -77,14 +77,17 @@ public:
 
 	bool startElement( const QString &, const QString &, const QString & name, const QXmlAttributes & list )
 	{
-		if ( depth >= 8 ) err( tr( "error maximum nesting level exceeded" ) );
+		if ( depth >= 8 )
+			err( tr( "error maximum nesting level exceeded" ) );
 
 		int x = elements.indexOf( name );
 
-		if ( x < 0 ) err( tr( "error unknown element" ) + " '" + name + "'" );
+		if ( x < 0 )
+			err( tr( "error unknown element" ) + " '" + name + "'" );
 
 		if ( depth == 0 ) {
-			if ( x != 0 ) err( tr( "this is not a niftoolsxml file" ) );
+			if ( x != 0 )
+				err( tr( "this is not a niftoolsxml file" ) );
 
 			push( x );
 			return true;
@@ -95,7 +98,8 @@ public:
 		switch ( current() ) {
 		case 0:
 
-			if ( !( x == 1 || x == 2 ) ) err( tr( "expected compound or version got %1 instead" ).arg( name ) );
+			if ( !( x == 1 || x == 2 ) )
+				err( tr( "expected compound or version got %1 instead" ).arg( name ) );
 
 			push( x );
 
@@ -114,7 +118,8 @@ public:
 				if ( x == 2 && NifValue::isValid( NifValue::type( list.value( "name" ) ) ) )
 					err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
 
-				if ( !blk ) blk = new NifBlock;
+				if ( !blk )
+					blk = new NifBlock;
 
 				blk->id = list.value( "name" );
 				break;
@@ -141,9 +146,11 @@ public:
 				    ( list.value( "abstract" ) == "1" )
 				);
 
-				if ( data.name().isEmpty() || data.type().isEmpty() ) err( tr( "add needs at least name and type attributes" ) );
+				if ( data.name().isEmpty() || data.type().isEmpty() )
+					err( tr( "add needs at least name and type attributes" ) );
 
-				if ( blk ) blk->types.append( data );
+				if ( blk )
+					blk->types.append( data );
 			} else
 				err( tr( "only add tags allowed in compound type declaration" ) );
 
@@ -159,11 +166,13 @@ public:
 
 	bool endElement( const QString &, const QString &, const QString & name )
 	{
-		if ( depth <= 0 ) err( tr( "mismatching end element tag for element " ) + name );
+		if ( depth <= 0 )
+			err( tr( "mismatching end element tag for element " ) + name );
 
 		int x = elements.indexOf( name );
 
-		if ( pop() != x ) err( tr( "mismatching end element tag for element " ) + elements.value( current() ) );
+		if ( pop() != x )
+			err( tr( "mismatching end element tag for element " ) + elements.value( current() ) );
 
 		switch ( x ) {
 		case 2:
@@ -224,7 +233,8 @@ public:
 	}
 	bool fatalError( const QXmlParseException & exception )
 	{
-		if ( errorStr.isEmpty() ) errorStr = tr( "Syntax error" );
+		if ( errorStr.isEmpty() )
+			errorStr = tr( "Syntax error" );
 
 		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
 		return false;

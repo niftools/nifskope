@@ -264,7 +264,8 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif->itemType( index ) != "NiBlock" ) return false;
+		if ( nif->itemType( index ) != "NiBlock" )
+			return false;
 
 		if ( nif->getUserVersion() < 12 ) {
 			// not Skyrim

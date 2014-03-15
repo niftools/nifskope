@@ -98,8 +98,7 @@ private:
 	enum
 	{
 		Nope, Circle, Triangle
-	}
-	pressed;
+	} pressed;
 
 	QSize sHint;
 

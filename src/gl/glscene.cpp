@@ -163,9 +163,14 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 			node = new BillboardNode( this, iNode );
 		else
 			node = new Node( this, iNode );
-	} else if ( nif->itemName( iNode ) == "NiTriShape" || nif->itemName( iNode ) == "NiTriStrips" || nif->inherits( iNode, "NiTriBasedGeom" ) ) {
+	} else if ( nif->itemName( iNode ) == "NiTriShape"
+				|| nif->itemName( iNode ) == "NiTriStrips"
+				|| nif->inherits( iNode, "NiTriBasedGeom" ) )
+	{
 		node = new Mesh( this, iNode );
-	} else if ( nif->checkVersion( 0x14050000, 0 ) && nif->itemName( iNode ) == "NiMesh" ) {
+	} else if ( nif->checkVersion( 0x14050000, 0 )
+				&& nif->itemName( iNode ) == "NiMesh" )
+	{
 		node = new Mesh( this, iNode );
 	}
 	//else if ( nif->inherits( iNode, "AParticleNode" ) || nif->inherits( iNode, "AParticleSystem" ) )
@@ -244,10 +249,8 @@ void Scene::draw()
 
 	if ( Options::drawNodes() )
 		drawNodes();
-
 	if ( Options::drawHavok() )
 		drawHavok();
-
 	if ( Options::drawFurn() )
 		drawFurn();
 

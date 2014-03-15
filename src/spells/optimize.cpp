@@ -351,7 +351,8 @@ public:
 			return false;
 
 		foreach ( qint32 l, nif->getChildLinks( nif->getBlockNumber( iTriA ) ) ) {
-			if ( lPrpsA.contains( l ) ) continue;
+			if ( lPrpsA.contains( l ) )
+				continue;
 
 			QModelIndex iBlock = nif->getBlock( l );
 

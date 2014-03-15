@@ -204,10 +204,8 @@ void TestShredder::run()
 
 	if ( chkNif->isChecked() )
 		extensions << "NIF (*.nif)" << "NIFCache (*.nifcache)" << "TEXCache (*.texcache)" << "PCPatch (*.pcpatch)";
-
 	if ( chkKf->isChecked() )
 		extensions << "Keyframe (*.kf)" << "Keyframe Animation (*.kfa)";
-
 	if ( chkKfm->isChecked() )
 		extensions << "Keyframe Motion (*.kfm)";
 
@@ -257,16 +255,12 @@ void TestShredder::chooseBlock()
 
 		if ( id.startsWith( "Ni" ) )
 			x = QString( "Ni&" ) + id.mid( 2, 1 ) + "...";
-
 		if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
 			x = "Havok";
-
 		if ( id.startsWith( "BS" ) || id == "AvoidNode" || id == "RootCollisionNode" )
 			x = "Bethesda";
-
 		if ( id.startsWith( "Fx" ) )
 			x = "Firaxis";
-
 		if ( !map.contains( x ) )
 			map[ x ] = new QMenu( x );
 
@@ -407,8 +401,8 @@ void TestThread::run()
 
 				if ( loaded && model == &nif )
 					for ( int b = 0; b < nif.getBlockCount(); b++ ) {
-						//In case early rejection failed, such as if this is an older file without the block types in the header
-						//note if any of these blocks types match the specified one.
+						// In case early rejection failed, such as if this is an older file without the block types in the header
+						// note if any of these blocks types match the specified one.
 						if ( blockMatch.isEmpty() == false && nif.inherits( nif.getBlockName( nif.getBlock( b ) ), blockMatch ) ) {
 							blk_match = true;
 						}
@@ -416,12 +410,9 @@ void TestThread::run()
 						messages += checkLinks( &nif, nif.getBlock( b ), kf );
 					}
 
-
-
 				bool rep = reportAll;
 
-				//Don't show anything if block match is on but the requested type wasn't found & we're in block match mode
-
+				// Don't show anything if block match is on but the requested type wasn't found & we're in block match mode
 				if ( blockMatch.isEmpty() == true || blk_match == true ) {
 					foreach ( Message msg, messages ) {
 						if ( msg.type() != QtDebugMsg ) {
@@ -469,8 +460,8 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 			qint32 l = nif->getLink( idx );
 
 			if ( l < 0 ) {
-				//This is not really an error
-				//if ( ! child && ! kf )
+				// This is not really an error
+				// if ( ! child && ! kf )
 				//	messages.append( Message() << tr("unassigned parent link") << linkId( nif, idx ) );
 			} else if ( l >= nif->getBlockCount() )
 				messages.append( Message() << tr( "invalid link" ) << linkId( nif, idx ) );

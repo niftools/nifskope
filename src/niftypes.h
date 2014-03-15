@@ -386,18 +386,14 @@ public:
 	void boundMin( const Vector3 & v )
 	{
 		if ( v[0] < xyz[0] ) xyz[0] = v[0];
-
 		if ( v[1] < xyz[1] ) xyz[1] = v[1];
-
 		if ( v[2] < xyz[2] ) xyz[2] = v[2];
 	}
 	//! Size a vector to a maximum bound
 	void boundMax( const Vector3 & v )
 	{
 		if ( v[0] > xyz[0] ) xyz[0] = v[0];
-
 		if ( v[1] > xyz[1] ) xyz[1] = v[1];
-
 		if ( v[2] > xyz[2] ) xyz[2] = v[2];
 	}
 
