@@ -7,6 +7,9 @@ TARGET   = NifSkope
 
 QT += xml opengl network widgets
 
+# C++11 Support
+CONFIG += c++11
+
 # Dependencies
 CONFIG += fsengine nvtristrip qhull
 
@@ -338,7 +341,9 @@ win32 {
 
 # MSVC
 #  Both Visual Studio and Qt Creator
-*msvc* {
+#  Recommended: msvc2012 or higher
+#              (msvc2010 not tested)
+*msvc201* {
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
 
@@ -352,9 +357,13 @@ win32 {
 	# LINKER FLAGS
 
 	#  Manifest Embed
-	$$SHADOWBUILD {
+	#    msvc2012 only (when /MANIFEST:embed was introduced)
+	*msvc2012:$$SHADOWBUILD {
 		# Qt Creator only
 		#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
+		#	Check status of bug: https://bugreports.qt-project.org/browse/QTBUG-37363
+		#	                     https://codereview.qt-project.org/#change,80782
+		#	... So that this may removed later.
 		CONFIG -= embed_manifest_exe
 		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
 	}
@@ -367,19 +376,28 @@ win32 {
 	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
 }
 
+# MSVC < 2010
+*msvc200* {
+	# Throw up a warning
+	message( WARNING: Project file does not support MSVC 2008 or lower )
+}
 
-static:*msvc* {
+static:*msvc201* {
 	#  Relocate .lib and .exp files to keep release dir clean
 	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
 }
 
 
 # MinGW, GCC
+#  Recommended: GCC 4.8.1+
 *-g++ {
+
 	# COMPILER FLAGS
 
 	#  Optimization flags
 	QMAKE_CXXFLAGS_RELEASE *= -O3
+	# C++11 Support
+	QMAKE_CXXFLAGS_RELEASE *= -std=c++11
 }
 
 unix:!macx {
