@@ -61,7 +61,6 @@ CheckBoxList::CheckBoxList( QWidget * widget )
 
 CheckBoxList::~CheckBoxList()
 {
-	;
 }
 
 

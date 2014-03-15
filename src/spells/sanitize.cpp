@@ -243,15 +243,11 @@ public:
 			addTree( nif, *rootblock_iter, newblocks );
 		}
 
-		;
-
 		// check whether all blocks have been added
 		if ( nif->getBlockCount() != newblocks.size() ) {
 			qWarning() << "failed to sanitize blocks order, corrupt nif tree?";
 			return QModelIndex();
 		}
-
-		;
 
 		// invert mapping
 		QVector<qint32> order( nif->getBlockCount() );

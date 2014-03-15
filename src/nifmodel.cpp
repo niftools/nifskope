@@ -1752,8 +1752,6 @@ bool NifModel::load( QIODevice & device )
 								msg( Message() << tr( "non-zero block separator (%1) preceeding block %2" ).arg( dummy ).arg( blktyp ) );
 						}
 
-						;
-
 						// for version 20.2.0.? and above the block size is stored in the header
 						if ( !ignoreSize && version >= 0x14020000 )
 							size = get<quint32>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Size" ) ) );

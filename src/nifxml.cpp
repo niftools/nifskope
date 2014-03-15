@@ -202,8 +202,6 @@ public:
 							}
 						}
 					}
-
-					;
 				}
 				break;
 			case tagBasic:

@@ -869,8 +869,6 @@ uint DirectDrawSurface::blockSize() const
 		return 16;
 	}
 
-	;
-
 	// Not a block image.
 	return 0;
 }
@@ -904,8 +902,6 @@ uint DirectDrawSurface::mipmapSize( uint mipmap ) const
 		printf( "DDS: mipmap format not supported\n" );
 		return (0);
 	}
-
-	;
 }
 
 uint DirectDrawSurface::faceSize() const

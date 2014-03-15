@@ -85,8 +85,6 @@ void initializeTextureUnits( const QOpenGLContext * context )
 	} else {
 		max_anisotropy = 0;
 	}
-
-	;
 }
 
 bool activateTextureUnit( int stage )

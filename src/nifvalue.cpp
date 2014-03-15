@@ -765,8 +765,7 @@ QString NifValue::toString() const
 			return QString( "%1 bytes  [%2 x %3]" )
 			       .arg( array->count() )
 			       .arg( array->count( 0 ) )
-			       .arg( array->count( 1 ) )
-			;
+				   .arg( array->count( 1 ) );
 		}
 	case tFileVersion:
 		return NifModel::version2string( val.u32 );
@@ -786,8 +785,7 @@ QString NifValue::toString() const
 		{
 			QByteArray * array = static_cast<QByteArray *>( val.data );
 			return QString( "%1 bytes" )
-			       .arg( array->size() )
-			;
+				   .arg( array->size() );
 		}
 	default:
 		return QString();

@@ -63,8 +63,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 	       || t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 	       || t == NifValue::tColor3 || t == NifValue::tColor4
 	       || t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
-	       || t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt
-	;
+	       || t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt;
 }
 
 class CenterLabel : public QLabel

@@ -53,7 +53,6 @@ unsigned int mem_read( Stream & mem, unsigned long long & i )
 		return (0);
 	}
 
-	;
 	memcpy( &i, mem.mem + mem.pos, 8 ); // @@ todo: make sure little endian
 	mem.pos += 8;
 	return (8);
@@ -66,7 +65,6 @@ unsigned int mem_read( Stream & mem, unsigned int & i )
 		return (0);
 	}
 
-	;
 	memcpy( &i, mem.mem + mem.pos, 4 ); // @@ todo: make sure little endian
 	mem.pos += 4;
 	return (4);
@@ -79,7 +77,6 @@ unsigned int mem_read( Stream & mem, unsigned short & i )
 		return (0);
 	}
 
-	;
 	memcpy( &i, mem.mem + mem.pos, 2 ); // @@ todo: make sure little endian
 	mem.pos += 2;
 	return (2);
@@ -92,7 +89,6 @@ unsigned int mem_read( Stream & mem, unsigned char & i )
 		return (0);
 	}
 
-	;
 	i = (mem.mem + mem.pos)[0];
 	mem.pos += 1;
 	return (1);
@@ -105,7 +101,6 @@ unsigned int mem_read( Stream & mem, unsigned char * i, unsigned int cnt )
 		return (0);
 	}
 
-	;
 	memcpy( i, mem.mem + mem.pos, cnt );
 	mem.pos += cnt;
 	return (cnt);

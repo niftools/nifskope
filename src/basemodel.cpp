@@ -712,7 +712,6 @@ public:
 					block = block->parent();
 				}
 
-				;
 				return QVariant( model->inherits( block->name(), left ) );
 			}
 
