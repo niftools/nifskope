@@ -56,15 +56,15 @@ class Scene
 public:
 	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions );
 	~Scene();
-	
+
 	void updateShaders() { renderer->updateShaders(); }
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );
 	void make( NifModel * nif, int blockNumber, QStack<int> & nodestack );
-	
+
 	void update( const NifModel * nif, const QModelIndex & index );
-	
+
 	void transform( const Transform & trans, float time = 0.0 );
 
 	void draw();
@@ -73,47 +73,47 @@ public:
 	void drawHavok();
 	void drawFurn();
 	void drawSelection() const;
-	
+
 	void setSequence( const QString & seqname );
-	
+
 	QString textStats();
-	
+
 	int bindTexture( const QString & fname );
 	int bindTexture( const QModelIndex & index );
-		
+
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
-	
-	Renderer* renderer;
+
+	Renderer * renderer;
 
 	NodeList nodes;
 	PropertyList properties;
 
 	NodeList roots;
 
-	mutable QHash<int,Transform> worldTrans;
-	mutable QHash<int,Transform> viewTrans;
-	mutable QHash<int,Transform> bhkBodyTrans;
-	
+	mutable QHash<int, Transform> worldTrans;
+	mutable QHash<int, Transform> viewTrans;
+	mutable QHash<int, Transform> bhkBodyTrans;
+
 	Transform view;
-	
+
 	bool animate;
-	
+
 	float time;
 
 	QString animGroup;
 	QStringList animGroups;
-	QMap<QString, QMap<QString,float> > animTags;
-	
+	QMap<QString, QMap<QString, float> > animTags;
+
 	TexCache * textures;
-	
+
 	QPersistentModelIndex currentBlock;
 	QPersistentModelIndex currentIndex;
-	
+
 	BoundSphere bounds() const;
-	
-	float	timeMin() const;
-	float	timeMax() const;
+
+	float timeMin() const;
+	float timeMax() const;
 
 protected:
 	mutable bool sceneBoundsValid, timeBoundsValid;

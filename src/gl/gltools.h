@@ -48,18 +48,18 @@ public:
 	BoundSphere( const BoundSphere & );
 	BoundSphere( const Vector3 & center, float radius );
 	BoundSphere( const QVector<Vector3> & vertices );
-	
-	Vector3	center;
-	float	radius;
-	
+
+	Vector3 center;
+	float radius;
+
 	BoundSphere & operator=( const BoundSphere & );
 	BoundSphere & operator|=( const BoundSphere & );
-	
+
 	BoundSphere operator|( const BoundSphere & o );
-	
+
 	BoundSphere & apply( const Transform & t );
 	BoundSphere & applyInv( const Transform & t );
-	
+
 	friend BoundSphere operator*( const Transform & t, const BoundSphere & s );
 };
 
@@ -71,7 +71,7 @@ public:
 	{ vertex = 0; weight = 0.0; }
 	VertexWeight( int v, float w )
 	{ vertex = v; weight = w; }
-	
+
 	int vertex;
 	float weight;
 };
@@ -82,7 +82,7 @@ class BoneWeights
 public:
 	BoneWeights() { bone = 0; }
 	BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt = 0 );
-	
+
 	Transform trans;
 	Vector3 center; float radius;
 	Vector3 tcenter;
@@ -96,15 +96,15 @@ class SkinPartition
 public:
 	SkinPartition() { numWeightsPerVertex = 0; }
 	SkinPartition( const NifModel * nif, const QModelIndex & index );
-	
+
 	QVector<int> boneMap;
 	QVector<int> vertexMap;
-	
+
 	int numWeightsPerVertex;
-	QVector< QPair< int, float > > weights;
-	
-	QVector< Triangle > triangles;
-	QList< QVector< quint16 > > tristrips;
+	QVector<QPair<int, float> > weights;
+
+	QVector<Triangle> triangles;
+	QList<QVector<quint16> > tristrips;
 };
 
 void drawAxes( Vector3 c, float axis );
@@ -119,7 +119,7 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
 void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );
 void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals, float scale = 1.0f );
 void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd = 16, bool solid = false );
-void drawRail( const Vector3 &a, const Vector3 &b );
+void drawRail( const Vector3 & a, const Vector3 & b );
 
 inline void glTranslate( const Vector3 & v )
 {
@@ -193,24 +193,25 @@ inline void glMultMatrix( const Transform & t )
 
 
 inline GLuint glClosestMatch( GLuint * buffer, GLint hits )
-{	// a little helper function, returns the closest matching hit from the name buffer
-	GLuint	choose = buffer[ 3 ];
-	GLuint	depth = buffer[ 1 ];
-	for ( int loop = 1; loop < hits; loop++ )
-	{
-		if ( buffer[ loop * 4 + 1 ] < depth )
-		{
+{
+	// a little helper function, returns the closest matching hit from the name buffer
+	GLuint choose = buffer[ 3 ];
+	GLuint depth  = buffer[ 1 ];
+
+	for ( int loop = 1; loop < hits; loop++ ) {
+		if ( buffer[ loop * 4 + 1 ] < depth ) {
 			choose = buffer[ loop * 4 + 3 ];
-			depth = buffer[ loop * 4 + 1 ];
-		}       
+			depth  = buffer[ loop * 4 + 1 ];
+		}
 	}
+
 	return choose;
 }
 
-void renderText(double x, double y, double z, const QString & str);
-void renderText(const Vector3& c, const QString & str);
+void renderText( double x, double y, double z, const QString & str );
+void renderText( const Vector3 & c, const QString & str );
 
-#define ID2COLORKEY(id) (id + 1)
-#define COLORKEY2ID(id) (id - 1)
+#define ID2COLORKEY( id ) (id + 1)
+#define COLORKEY2ID( id ) (id - 1)
 
 #endif

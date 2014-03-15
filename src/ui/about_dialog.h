@@ -6,14 +6,15 @@
 #include <QDialog>
 
 
-class AboutDialog : public QDialog {
-    Q_OBJECT
+class AboutDialog : public QDialog
+{
+	Q_OBJECT
 
 public:
-    AboutDialog(QWidget *parent = 0);
+	AboutDialog( QWidget * parent = 0 );
 
 private:
-    Ui::AboutDialog ui;
+	Ui::AboutDialog ui;
 };
 
 

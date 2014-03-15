@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 GroupBox::GroupBox( Qt::Orientation o ) : QGroupBox()
 {
-   lay.push( new QBoxLayout( o2d( o ), this ) );
+	lay.push( new QBoxLayout( o2d( o ), this ) );
 }
 
 GroupBox::GroupBox( const QString & title, Qt::Orientation o ) : QGroupBox( title )
@@ -46,12 +46,12 @@ GroupBox::GroupBox( const QString & title, Qt::Orientation o ) : QGroupBox( titl
 GroupBox::~GroupBox()
 {
 }
-	
+
 void GroupBox::addWidget( QWidget * widget, int stretch, Qt::Alignment alignment )
 {
 	lay.top()->addWidget( widget, stretch, alignment );
 }
-	
+
 QWidget * GroupBox::pushLayout( const QString & name, Qt::Orientation o, int stretch, Qt::Alignment alignment )
 {
 	QGroupBox * grp = new QGroupBox( name );
@@ -77,13 +77,12 @@ void GroupBox::popLayout()
 
 QBoxLayout::Direction GroupBox::o2d( Qt::Orientation o )
 {
-	switch ( o )
-	{
-		case Qt::Vertical:
-			return QBoxLayout::TopToBottom;
-		case Qt::Horizontal:
-		default:
-			return QBoxLayout::LeftToRight;
+	switch ( o ) {
+	case Qt::Vertical:
+		return QBoxLayout::TopToBottom;
+	case Qt::Horizontal:
+	default:
+		return QBoxLayout::LeftToRight;
 	}
 }
 

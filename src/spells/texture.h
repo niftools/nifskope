@@ -16,6 +16,7 @@ class QStringListModel;
 class TexFlipDialog : public QDialog
 {
 	Q_OBJECT
+
 public:
 	TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent = 0 );
 	QStringList flipList();
@@ -35,7 +36,6 @@ protected slots:
 	void textureAction( int i );
 	void texIndex( const QModelIndex & idx );
 	void listFromNif();
-
 };
- 
+
 #endif

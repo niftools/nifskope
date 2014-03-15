@@ -14,25 +14,22 @@ class spUpdateArray : public Spell
 public:
 	QString name() const { return Spell::tr( "Update" ); }
 	QString page() const { return Spell::tr( "Array" ); }
-	QIcon icon() const { return  QIcon( ":/img/update" ); }
+	QIcon icon() const { return QIcon( ":/img/update" ); }
 	bool instant() const { return true; }
-	
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif->isArray(index) && nif->evalCondition( index ) )
-		{
+		if ( nif->isArray( index ) && nif->evalCondition( index ) ) {
 			//Check if array is of fixed size
-			NifItem * item = static_cast<NifItem*>( index.internalPointer() );
+			NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 			bool static1 = true;
 			bool static2 = true;
 
-			if ( item->arr1().isEmpty() == false )
-			{
+			if ( item->arr1().isEmpty() == false ) {
 				item->arr1().toInt( &static1 );
 			}
 
-			if ( item->arr2().isEmpty() == false )
-			{
+			if ( item->arr2().isEmpty() == false ) {
 				item->arr2().toInt( &static2 );
 			}
 
@@ -49,7 +46,7 @@ public:
 
 		return false;
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		nif->updateArray( index );
@@ -65,12 +62,12 @@ class spUpdateHeader : public Spell
 public:
 	QString name() const { return Spell::tr( "Update" ); }
 	QString page() const { return Spell::tr( "Header" ); }
-	
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getHeader() == nif->getBlockOrHeader( index ) );
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		nif->updateHeader();
@@ -86,12 +83,12 @@ class spUpdateFooter : public Spell
 public:
 	QString name() const { return Spell::tr( "Update" ); }
 	QString page() const { return Spell::tr( "Footer" ); }
-	
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getFooter() == nif->getBlockOrHeader( index ) );
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		nif->updateFooter();
@@ -107,16 +104,17 @@ class spFollowLink : public Spell
 public:
 	QString name() const { return Spell::tr( "Follow Link" ); }
 	bool instant() const { return true; }
-	QIcon icon() const { return  QIcon( ":/img/link" ); }
-	
+	QIcon icon() const { return QIcon( ":/img/link" ); }
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return nif->isLink( index ) && nif->getLink( index ) >= 0;
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex idx = nif->getBlock( nif->getLink( index ) );
+
 		if ( idx.isValid() )
 			return idx;
 		else
@@ -131,12 +129,12 @@ class spFileOffset : public Spell
 {
 public:
 	QString name() const { return Spell::tr( "File Offset" ); }
-	
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return nif && index.isValid();
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		int ofs = nif->fileOffset( index );
@@ -150,12 +148,13 @@ REGISTER_SPELL( spFileOffset )
 // definitions for spCollapseArray moved to misc.h
 bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-	if ( nif->isArray(index) && nif->evalCondition( index ) && index.isValid() &&
-			( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
+	if ( nif->isArray( index ) && nif->evalCondition( index ) && index.isValid()
+	     && ( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
 	{
 		// copy from spUpdateArray when that changes
 		return true;
 	}
+
 	return false;
 }
 
@@ -163,29 +162,31 @@ QModelIndex spCollapseArray::cast( NifModel * nif, const QModelIndex & index )
 {
 	nif->updateArray( index );
 	// There's probably an easier way of doing this hiding in NifModel somewhere
-	NifItem * item = static_cast<NifItem*>( index.internalPointer() );
-	QModelIndex size = nif->getIndex( nif->getBlock( index.parent() ), item->arr1() );
+	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
+	QModelIndex size  = nif->getIndex( nif->getBlock( index.parent() ), item->arr1() );
 	QModelIndex array = static_cast<QModelIndex>( index );
 	return numCollapser( nif, size, array );
 }
 
-QModelIndex spCollapseArray::numCollapser( NifModel * nif, QModelIndex &iNumElem, QModelIndex &iArray )
+QModelIndex spCollapseArray::numCollapser( NifModel * nif, QModelIndex & iNumElem, QModelIndex & iArray )
 {
-	if ( iNumElem.isValid() && iArray.isValid() )
-	{
+	if ( iNumElem.isValid() && iArray.isValid() ) {
 		QVector<qint32> links;
-		for ( int r = 0; r < nif->rowCount( iArray ); r++ )
-		{
+
+		for ( int r = 0; r < nif->rowCount( iArray ); r++ ) {
 			qint32 l = nif->getLink( iArray.child( r, 0 ) );
-			if ( l >= 0 ) links.append( l );
+
+			if ( l >= 0 )
+				links.append( l );
 		}
-		if ( links.count() < nif->rowCount( iArray ) )
-		{
+
+		if ( links.count() < nif->rowCount( iArray ) ) {
 			nif->set<int>( iNumElem, links.count() );
 			nif->updateArray( iArray );
 			nif->setLinkArray( iArray, links );
 		}
 	}
+
 	return iArray;
 }
 

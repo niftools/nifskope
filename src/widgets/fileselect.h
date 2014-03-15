@@ -56,13 +56,13 @@ class QLineEdit;
 class FileSelector : public QWidget
 {
 	Q_OBJECT
-	Q_PROPERTY(QString file READ file WRITE setFile NOTIFY sigEdited USER true)
-	Q_PROPERTY(QStringList filter READ filter WRITE setFilter)
-	Q_PROPERTY(Modes mode READ mode WRITE setMode)
-	Q_PROPERTY(States state READ state WRITE setState RESET rstState)
-	Q_ENUMS(Modes)
-	Q_ENUMS(States)
-	
+	Q_PROPERTY( QString file READ file WRITE setFile NOTIFY sigEdited USER true )
+	Q_PROPERTY( QStringList filter READ filter WRITE setFilter )
+	Q_PROPERTY( Modes mode READ mode WRITE setMode )
+	Q_PROPERTY( States state READ state WRITE setState RESET rstState )
+	Q_ENUMS( Modes )
+	Q_ENUMS( States )
+
 public:
 	enum Modes
 	{
@@ -73,21 +73,21 @@ public:
 	{
 		stNeutral = 0, stSuccess = 1, stError = 2
 	};
-	
+
 	FileSelector( Modes m, const QString & buttonText = "browse", QBoxLayout::Direction dir = QBoxLayout::LeftToRight, QKeySequence keySeq = QKeySequence::UnknownKey );
-	
+
 	QString text() const { return file(); }
 	QString file() const;
-	
+
 	void setFilter( const QStringList & f );
 	QStringList filter() const;
-	
+
 	Modes mode() const { return Mode; }
 	void setMode( Modes m ) { Mode = m; }
 
 	States state() const { return State; }
 	void setState( States );
-	
+
 signals:
 	void sigEdited( const QString & );
 	void sigActivated( const QString & );
@@ -99,38 +99,39 @@ public slots:
 	void setFile( const QString & );
 
 	void replaceText( const QString & );
-	
+
 	void setCompletionEnabled( bool );
-	
+
 protected slots:
 	void browse();
 	void activate();
-	
+
 protected:
 	bool eventFilter( QObject * o, QEvent * e );
-	
+
 	QAction * completionAction();
-	
+
 	Modes Mode;
 	States State;
 
 	QLineEdit * line;
-	QAction   * action;
-	
+	QAction * action;
+
 	QFileSystemModel * dirmdl;
 	QCompleter * completer;
 	QStringList fltr;
-	
+
 	QTimer * timer;
 };
 
 class CompletionAction : public QAction
 {
 	Q_OBJECT
+
 public:
 	CompletionAction( QObject * parent = 0 );
 	~CompletionAction();
-	
+
 protected slots:
 	void sltToggled( bool );
 };

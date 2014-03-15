@@ -40,22 +40,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class NifTreeView : public QTreeView
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	NifTreeView();
 	//! Destructor
 	~NifTreeView();
-	
+
 	//! Set the model used by the widget
 	void setModel( QAbstractItemModel * model );
 	//! Expand all branches
 	void setAllExpanded( const QModelIndex & index, bool e );
-	
+
 	//! Accessor for EvalConditions
 	bool evalConditions() const { return EvalConditions; }
 	//! Is a row hidden?
-    bool isRowHidden(int row, const QModelIndex &parent) const;
-	
+	bool isRowHidden( int row, const QModelIndex & parent ) const;
+
 	//! Minimum size
 	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
 	//! Default size
@@ -70,7 +71,7 @@ public slots:
 	void setRootIndex( const QModelIndex & index );
 	//! Clear the root index; probably conncted to NifSkope::dList
 	void clearRootIndex();
-	
+
 	//! Sets version evaluation conditions
 	void setEvalConditions( bool );
 	//! Sets real-time version condition evalutation (slow)
@@ -83,19 +84,19 @@ protected slots:
 	void updateConditionRecurse( const QModelIndex & index );
 	//! Called when the current index changes
 	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
-	
+
 	//! Scroll to index; connected to expanded()
 	void scrollExpand( const QModelIndex & index );
 
 protected:
-    void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const;
+	void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const;
 	void keyPressEvent( QKeyEvent * e );
-	
+
 	QStyleOptionViewItem viewOptions() const;
-	
+
 	bool EvalConditions;
 	bool RealTimeEval;
-	
+
 	class BaseModel * nif;
 };
 

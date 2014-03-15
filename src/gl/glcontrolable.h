@@ -67,13 +67,13 @@ public:
 
 protected:
 	//! Sets the Controller
-	virtual void setController( const NifModel * nif, const QModelIndex & iController ) { Q_UNUSED(nif); Q_UNUSED(iController); }
+	virtual void setController( const NifModel * nif, const QModelIndex & iController ) { Q_UNUSED( nif ); Q_UNUSED( iController ); }
 
 	Scene * scene;
 
 	QPersistentModelIndex iBlock;
 
-	QList<Controller*> controllers;
+	QList<Controller *> controllers;
 
 	QString name;
 

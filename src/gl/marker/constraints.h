@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gl/glmarker.h"
 
-static const float BumperMarker01Verts[] = 
+static const float BumperMarker01Verts[] =
 {
 	-0.653245f, 0.900000f, 1.213643f,
 	-0.653245f, -0.900000f, 1.213643f,
@@ -132,7 +132,7 @@ static const float BumperMarker01Verts[] =
 	-0.003245f, 0.787868f, 1.003643f,
 };
 
-static const unsigned short BumperMarker01Faces[] = 
+static const unsigned short BumperMarker01Faces[] =
 {
 	2, 3, 4,
 	5, 4, 3,
@@ -280,4 +280,6 @@ static const unsigned short BumperMarker01Faces[] =
 	94, 92, 95,
 };
 
-static const GLMarker BumperMarker01 = { 96, 144, BumperMarker01Verts, BumperMarker01Faces };
+static const GLMarker BumperMarker01 = {
+	96, 144, BumperMarker01Verts, BumperMarker01Faces
+};

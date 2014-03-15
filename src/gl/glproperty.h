@@ -53,12 +53,12 @@ class Property : public Controllable
 protected:
 	//! Protected constructor; see Controllable()
 	Property( Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), ref( 0 ) {}
-	
+
 	int ref;
-	
+
 	//! List of properties
 	friend class PropertyList;
-	
+
 public:
 	//! Creates a Property based on the specified index of the specified model
 	/*!
@@ -72,22 +72,22 @@ public:
 	{
 		Alpha, ZBuffer, Material, Texturing, Texture, Specular, Wireframe, VertexColor, Stencil, ShaderLighting
 	};
-	
+
 	virtual Type type() const = 0;
 	virtual QString typeId() const = 0;
-	
+
 	template <typename T> static Type _type();
 	template <typename T> T * cast()
 	{
 		if ( type() == _type<T>() )
-			return static_cast<T*>( this );
+			return static_cast<T *>( this );
 		else
 			return 0;
 	}
 };
 
 //! Associate a Property subclass with a Property::Type
-#define REGISTER_PROPERTY( CLASSNAME, TYPENAME ) template <> inline Property::Type Property::_type< CLASSNAME >() { return Property::TYPENAME; }
+#define REGISTER_PROPERTY( CLASSNAME, TYPENAME ) template <> inline Property::Type Property::_type<CLASSNAME>() { return Property::TYPENAME; }
 
 //! A list of \link Property Properties \endlink
 class PropertyList
@@ -96,33 +96,34 @@ public:
 	PropertyList();
 	PropertyList( const PropertyList & other );
 	~PropertyList();
-	
+
 	void add( Property * );
 	void del( Property * );
 	bool contains( Property * ) const;
-	
+
 	Property * get( const QModelIndex & idx ) const;
-	
+
 	template <typename T> T * get() const;
 	template <typename T> bool contains() const;
-	
+
 	void validate();
-	
+
 	void clear();
-	
+
 	PropertyList & operator=( const PropertyList & other );
-	
-	QList<Property*> list() const { return properties.values(); }
-	
+
+	QList<Property *> list() const { return properties.values(); }
+
 	void merge( const PropertyList & list );
-	
+
 protected:
-	QMultiHash<Property::Type, Property*> properties;
+	QMultiHash<Property::Type, Property *> properties;
 };
 
 template <typename T> inline T * PropertyList::get() const
 {
 	Property * p = properties.value( Property::_type<T>() );
+
 	if ( p )
 		return p->cast<T>();
 	else
@@ -139,22 +140,22 @@ class AlphaProperty : public Property
 {
 public:
 	AlphaProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Alpha; }
 	QString typeId() const { return "NiAlphaProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	bool blend() const { return alphaBlend; }
 	bool test() const { return alphaTest; }
 	bool sort() const { return alphaSort; }
-	
+
 	friend void glProperty( AlphaProperty * );
 
 protected:
 	bool alphaBlend, alphaTest, alphaSort;
 	GLenum alphaSrc, alphaDst, alphaFunc;
-	GLfloat alphaThreshold;	
+	GLfloat alphaThreshold;
 };
 
 REGISTER_PROPERTY( AlphaProperty, Alpha )
@@ -164,17 +165,17 @@ class ZBufferProperty : public Property
 {
 public:
 	ZBufferProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return ZBuffer; }
 	QString typeId() const { return "NiZBufferProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	bool test() const { return depthTest; }
 	bool mask() const { return depthMask; }
-	
+
 	friend void glProperty( ZBufferProperty * );
-	
+
 protected:
 	bool depthTest;
 	bool depthMask;
@@ -196,39 +197,40 @@ class TexturingProperty : public Property
 		GLenum filter;
 		GLint wrapS, wrapT;
 		int coordset;
-		
+
 		bool hasTransform;
-		
+
 		Vector2 translation;
 		Vector2 tiling;
-		float	rotation;
+		float rotation;
 		Vector2 center;
 	};
+
 public:
 	TexturingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Texturing; }
 	QString typeId() const { return "NiTexturingProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	friend void glProperty( TexturingProperty * );
-	
+
 	bool bind( int id, const QString & fname = QString() );
-	
-	bool bind( int id, const QList< QVector<Vector2> > & texcoords );
-	bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
-	
+
+	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
+	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
+
 	QString fileName( int id ) const;
 	int coordSet( int id ) const;
-	
+
 	static int getId( const QString & id );
-	
+
 protected:
-	TexDesc	textures[numTextures];
+	TexDesc textures[numTextures];
 
 	void setController( const NifModel * nif, const QModelIndex & controller );
-	
+
 	friend class TexFlipController;
 	friend class TexTransController;
 };
@@ -240,17 +242,17 @@ class TextureProperty : public Property
 {
 public:
 	TextureProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Texture; }
 	QString typeId() const { return "NiTextureProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	friend void glProperty( TextureProperty * );
-	
+
 	bool bind();
-	bool bind( const QList< QVector<Vector2> > & texcoords );
-	
+	bool bind( const QList<QVector<Vector2> > & texcoords );
+
 	QString fileName() const;
 
 protected:
@@ -268,23 +270,23 @@ class MaterialProperty : public Property
 {
 public:
 	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Material; }
 	QString typeId() const { return "NiMaterialProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
-	
+
 	GLfloat alphaValue() const { return alpha; }
-	
+
 protected:
 	Color4 ambient, diffuse, specular, emissive;
 	GLfloat shininess, alpha;
-   bool overridden;
+	bool overridden;
 
 	void setController( const NifModel * nif, const QModelIndex & controller );
-	
+
 	friend class AlphaController;
 	friend class MaterialColorController;
 };
@@ -296,14 +298,14 @@ class SpecularProperty : public Property
 {
 public:
 	SpecularProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Specular; }
 	QString typeId() const { return "NiSpecularProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & index );
-	
+
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
-	
+
 protected:
 	bool spec;
 };
@@ -315,14 +317,14 @@ class WireframeProperty : public Property
 {
 public:
 	WireframeProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Wireframe; }
 	QString typeId() const { return "NiWireframeProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & index );
-	
+
 	friend void glProperty( WireframeProperty * );
-	
+
 protected:
 	bool wire;
 };
@@ -334,17 +336,17 @@ class VertexColorProperty : public Property
 {
 public:
 	VertexColorProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return VertexColor; }
 	QString typeId() const { return "NiVertexColorProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & index );
-	
+
 	friend void glProperty( VertexColorProperty *, bool vertexcolors );
 
 protected:
-	int	lightmode;
-	int	vertexmode;
+	int lightmode;
+	int vertexmode;
 };
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
@@ -354,27 +356,27 @@ class StencilProperty : public Property
 {
 public:
 	StencilProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-	
+
 	Type type() const { return Stencil; }
 	QString typeId() const { return "NiStencilProperty"; }
-	
+
 	void update( const NifModel * nif, const QModelIndex & index );
-	
+
 	friend void glProperty( StencilProperty * );
 
 protected:
-	bool	stencil;
-	
-	GLenum	func;
-	GLint	ref;
-	GLuint	mask;
-	
-	GLenum	failop;
-	GLenum	zfailop;
-	GLenum	zpassop;
-	
-	bool	cullEnable;
-	GLenum	cullMode;
+	bool stencil;
+
+	GLenum func;
+	GLint ref;
+	GLuint mask;
+
+	GLenum failop;
+	GLenum zfailop;
+	GLenum zpassop;
+
+	bool cullEnable;
+	GLenum cullMode;
 };
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
@@ -393,8 +395,8 @@ public:
 	friend void glProperty( BSShaderLightingProperty * );
 
 	bool bind( int id, const QString & fname = QString() );
-	bool bind( int id, const QList< QVector<Vector2> > & texcoords );
-	bool bind( int id, const QList< QVector<Vector2> > & texcoords, int stage );
+	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
+	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
 
 	QString fileName( int id ) const;
 	//int coordSet( int id ) const;

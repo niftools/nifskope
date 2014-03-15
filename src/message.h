@@ -9,11 +9,11 @@ class Message
 {
 public:
 	Message( QtMsgType t = QtWarningMsg ) : typ( t ) {}
-	
+
 	template <typename T> Message & operator<<( T );
-	
-	operator QString () const { return s; }
-	
+
+	operator QString() const { return s; }
+
 	QtMsgType type() const { return typ; }
 
 protected:

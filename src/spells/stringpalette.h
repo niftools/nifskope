@@ -19,6 +19,7 @@ class QWidget;
 class StringPaletteRegexDialog : public QDialog
 {
 	Q_OBJECT
+
 public:
 	//! Constructor. Sets widgets and layout.
 	StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent = 0 );
@@ -48,7 +49,6 @@ public slots:
 	void setStringList( QStringList & list );
 	//! Get the modified string palette
 	QStringList getStringList();
-
 };
 
 #endif

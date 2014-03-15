@@ -53,56 +53,57 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class CheckBoxListDelegate : public QItemDelegate
 {
 public:
-    CheckBoxListDelegate(QObject *parent);
-	 ~CheckBoxListDelegate();
- 
-	void paint(QPainter *painter, const QStyleOptionViewItem &option,
-				  const QModelIndex &index) const;
- 
-    QWidget *createEditor(QWidget *parent,
-		 const QStyleOptionViewItem & option ,
-		 const QModelIndex & index ) const;
- 
-	 void setEditorData(QWidget *editor,
-										 const QModelIndex &index) const;
- 
-	 void setModelData(QWidget *editor, QAbstractItemModel *model,
-										const QModelIndex &index) const;
- 
-	 void updateEditorGeometry(QWidget *editor,
-		 const QStyleOptionViewItem &option, const QModelIndex &index ) const;
- };
- 
+	CheckBoxListDelegate( QObject * parent );
+	~CheckBoxListDelegate();
 
-class CheckBoxList: public QComboBox
+	void paint( QPainter * painter, const QStyleOptionViewItem & option,
+	            const QModelIndex & index ) const;
+
+	QWidget * createEditor( QWidget * parent,
+	                        const QStyleOptionViewItem & option,
+	                        const QModelIndex & index ) const;
+
+	void setEditorData( QWidget * editor,
+	                    const QModelIndex & index ) const;
+
+	void setModelData( QWidget * editor, QAbstractItemModel * model,
+	                   const QModelIndex & index ) const;
+
+	void updateEditorGeometry( QWidget * editor,
+	                           const QStyleOptionViewItem & option, const QModelIndex & index ) const;
+};
+
+
+class CheckBoxList : public QComboBox
 {
 	Q_OBJECT
- 
+
 public:
-	CheckBoxList(QWidget *widget = 0);
+	CheckBoxList( QWidget * widget = 0 );
 	virtual ~CheckBoxList();
-	bool eventFilter(QObject *object, QEvent *event);
-	virtual void paintEvent(QPaintEvent *);
-	
+	bool eventFilter( QObject * object, QEvent * event );
+	virtual void paintEvent( QPaintEvent * );
+
 	virtual void updateText() {}
-};    
+};
 
 //////////////////////////////////////////////////////////////////////////
 
 class NifCheckListBoxEditor : public QLineEdit
 {
 	Q_OBJECT
+
 public:
-	explicit NifCheckListBoxEditor(QWidget* parent);
+	explicit NifCheckListBoxEditor( QWidget * parent );
 
 	bool hasFocus() const;
 
 protected:
-	virtual void focusInEvent(QFocusEvent * e);
-	virtual void focusOutEvent(QFocusEvent * e);
+	virtual void focusInEvent( QFocusEvent * e );
+	virtual void focusOutEvent( QFocusEvent * e );
 
 private:
-	Q_DISABLE_COPY(NifCheckListBoxEditor)
+	Q_DISABLE_COPY( NifCheckListBoxEditor )
 	bool inFocus;
 };
 
@@ -111,15 +112,16 @@ private:
 class NifCheckBoxListValidator : public QValidator
 {
 	Q_OBJECT
-public:
-	explicit NifCheckBoxListValidator(NifCheckListBoxEditor* edit);
 
-	virtual State validate(QString &, int &) const;
-	virtual void fixup(QString &) const;
+public:
+	explicit NifCheckBoxListValidator( NifCheckListBoxEditor * edit );
+
+	virtual State validate( QString &, int & ) const;
+	virtual void fixup( QString & ) const;
 
 private:
-	Q_DISABLE_COPY(NifCheckBoxListValidator)
-	NifCheckListBoxEditor* edit;
+	Q_DISABLE_COPY( NifCheckBoxListValidator )
+	NifCheckListBoxEditor * edit;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,13 +129,14 @@ private:
 class NifCheckBoxList : public CheckBoxList
 {
 	Q_OBJECT
+
 public:
-	NifCheckBoxList(QWidget *widget = 0);
+	NifCheckBoxList( QWidget * widget = 0 );
 	virtual ~NifCheckBoxList();
 
 protected:
 	void updateText();
-	void parseText(const QString& text);
+	void parseText( const QString & text );
 
 private slots:
 	void sltDataChanged( const QModelIndex &, const QModelIndex & );

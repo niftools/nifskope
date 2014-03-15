@@ -3,7 +3,7 @@
 
 inline void space( QString & s )
 {
-	if ( ! s.isEmpty() )
+	if ( !s.isEmpty() )
 		s += " ";
 }
 

@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class CopyFilename : public QWidget
 {
 	Q_OBJECT
+
 public:
 	CopyFilename( QWidget * parent = NULL );
 

@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*
  *  Controllable
  */
- 
+
 Controllable::Controllable( Scene * s, const QModelIndex & i ) : scene( s ), iBlock( i )
 {
 }
@@ -52,20 +52,18 @@ Controllable::~Controllable()
 void Controllable::clear()
 {
 	name = QString();
-	
+
 	qDeleteAll( controllers );
 	controllers.clear();
 }
 
 Controller * Controllable::findController( const QString & ctrltype, const QString & var1, const QString & var2 )
 {
-	Q_UNUSED(var2); Q_UNUSED(var1);
+	Q_UNUSED( var2 ); Q_UNUSED( var1 );
 	Controller * ctrl = 0;
 
 	foreach ( Controller * c, controllers ) {
-
 		if ( c->typeId() == ctrltype ) {
-
 			if ( ctrl == 0 ) {
 				ctrl = c;
 			} else {
@@ -82,15 +80,16 @@ Controller * Controllable::findController( const QString & ctrltype, const QStri
 
 void Controllable::update( const NifModel * nif, const QModelIndex & i )
 {
-	if ( ! iBlock.isValid() ) {
+	if ( !iBlock.isValid() ) {
 		clear();
 		return;
 	}
-	
+
 	bool x = false;
-	
+
 	foreach ( Controller * ctrl, controllers ) {
 		ctrl->update( nif, i );
+
 		if ( ctrl->index() == i )
 			x = true;
 	}
@@ -98,7 +97,7 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 	if ( iBlock == i || x ) {
 		name = nif->get<QString>( iBlock, "Name" );
 		// sync the list of attached controllers
-		QList<Controller*> rem( controllers );
+		QList<Controller *> rem( controllers );
 		QModelIndex iCtrl = nif->getBlock( nif->getLink( iBlock, "Controller" ) );
 
 		while ( iCtrl.isValid() && nif->inherits( iCtrl, "NiTimeController" ) ) {
@@ -137,7 +136,7 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 {
 	if ( controllers.isEmpty() )
 		return;
-	
+
 	float mn = controllers.first()->start;
 	float mx = controllers.first()->stop;
 
@@ -169,19 +168,21 @@ QString Controller::typeId() const
 {
 	if ( iBlock.isValid() )
 		return iBlock.data( NifSkopeDisplayRole ).toString();
+
 	return QString();
 }
 
 void Controller::setSequence( const QString & seqname )
 {
-	Q_UNUSED(seqname);
+	Q_UNUSED( seqname );
 }
 
 void Controller::setInterpolator( const QModelIndex & index )
 {
 	iInterpolator = index;
-	
+
 	const NifModel * nif = static_cast<const NifModel *>( index.model() );
+
 	if ( nif )
 		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
 }
@@ -190,41 +191,44 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( iBlock.isValid() && iBlock == index ) {
 		start = nif->get<float>( index, "Start Time" );
-		stop = nif->get<float>( index, "Stop Time" );
+		stop  = nif->get<float>( index, "Stop Time" );
 		phase = nif->get<float>( index, "Phase" );
 		frequency = nif->get<float>( index, "Frequency" );
-		
+
 		int flags = nif->get<int>( index, "Flags" );
 		active = flags & 0x08;
-		extrapolation = (Extrapolation) ( ( flags & 0x06 ) >> 1 );
-		
+		extrapolation = (Extrapolation)( ( flags & 0x06 ) >> 1 );
+
 		QModelIndex idx = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
+
 		if ( idx.isValid() ) {
 			setInterpolator( idx );
 		} else {
 			idx = nif->getBlock( nif->getLink( iBlock, "Data" ) );
+
 			if ( idx.isValid() )
 				iData = idx;
 		}
 	}
-	
+
 	if ( iInterpolator.isValid() && ( iInterpolator == index ) )
 		iData = nif->getBlock( nif->getLink( iInterpolator, "Data" ) );
-	
+
 	return ( index.isValid() && ( ( index == iBlock ) || ( index == iInterpolator ) || ( index == iData ) ) );
 }
 
 float Controller::ctrlTime( float time ) const
 {
 	time = frequency * time + phase;
-	
+
 	if ( time >= start && time <= stop )
 		return time;
-	
+
 	switch ( extrapolation ) {
 	case Cyclic:
 		{
 			float delta = stop - start;
+
 			if ( delta <= 0 )
 				return start;
 
@@ -236,13 +240,14 @@ float Controller::ctrlTime( float time ) const
 	case Reverse:
 		{
 			float delta = stop - start;
+
 			if ( delta <= 0 )
 				return start;
 
 			float x = ( time - start ) / delta;
 			float y = ( x - floor( x ) ) * delta;
 
-			if ( ( ( (int) fabs( floor( x ) ) ) & 1 ) == 0 )
+			if ( ( ( (int)fabs( floor( x ) ) ) & 1 ) == 0 )
 				return start + y;
 			else
 				return stop - y;
@@ -252,8 +257,10 @@ float Controller::ctrlTime( float time ) const
 
 		if ( time < start )
 			return start;
+
 		if ( time > stop )
 			return stop;
+
 		return time;
 	}
 }
@@ -263,7 +270,6 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 	int count;
 
 	if ( array.isValid() && ( count = nif->rowCount( array ) ) > 0 ) {
-
 		if ( time <= nif->get<float>( array.child( 0, 0 ), "Time" ) ) {
 			i = j = 0;
 			x = 0.0;
@@ -277,10 +283,10 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 
 			return true;
 		}
-		
+
 		if ( i < 0 || i >= count )
 			i = 0;
-		
+
 		float tI = nif->get<float>( array.child( i, 0 ), "Time" );
 
 		if ( time > tI ) {
@@ -288,9 +294,10 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 			float tJ;
 
 			while ( time >= ( tJ = nif->get<float>( array.child( j, 0 ), "Time" ) ) ) {
-				i = j++;
+				i  = j++;
 				tI = tJ;
 			}
+
 			x = ( time - tI ) / ( tJ - tI );
 
 			return true;
@@ -299,9 +306,10 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 			float tJ;
 
 			while ( time <= ( tJ = nif->get<float>( array.child( j, 0 ), "Time" ) ) ) {
-				i = j--;
+				i  = j--;
 				tI = tJ;
 			}
+
 			x = ( time - tI ) / ( tJ - tI );
 
 			return true;
@@ -328,22 +336,23 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 		if ( Controller::timeIndex( time, nif, frames, last, next, x ) ) {
 			T v1 = nif->get<T>( frames.child( last, 0 ), "Value" );
 			T v2 = nif->get<T>( frames.child( next, 0 ), "Value" );
-			
+
 			switch ( nif->get<int>( array, "Interpolation" ) ) {
-				/*
-				case 2:
-				{
-					float t1 = nif->get<float>( frames.child( last, 0 ), "Forward" );
-					float t2 = nif->get<float>( frames.child( next, 0 ), "Backward" );
-					
-					float x2 = x * x;
-					float x3 = x2 * x;
-					
-					//x(t) = (2t^3 - 3t^2 + 1)*P1  + (-2t^3 + 3t^2)*P4 + (t^3 - 2t^2 + t)*R1 + (t^3 - t^2)*R4
-					value = ( 2 * x3 - 3 * x2 + 1 ) * v1 + ( - 2 * x3 + 3 * x2 ) * v2 + ( x3 - 2 * x2 + x ) * t1 + ( x3 - x2 ) * t2;
-				}	return true;
-				*/
+			/*
+			case 2:
+			{
+			    float t1 = nif->get<float>( frames.child( last, 0 ), "Forward" );
+			    float t2 = nif->get<float>( frames.child( next, 0 ), "Backward" );
+
+			    float x2 = x * x;
+			    float x3 = x2 * x;
+
+			    //x(t) = (2t^3 - 3t^2 + 1)*P1  + (-2t^3 + 3t^2)*P4 + (t^3 - 2t^2 + t)*R1 + (t^3 - t^2)*R4
+			    value = ( 2 * x3 - 3 * x2 + 1 ) * v1 + ( - 2 * x3 + 3 * x2 ) * v2 + ( x3 - 2 * x2 + x ) * t1 + ( x3 - x2 ) * t2;
+			}	return true;
+			*/
 			case 5:
+
 				if ( x < 0.5 )
 					value = v1;
 				else
@@ -356,7 +365,7 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 			}
 		}
 	}
-	
+
 	return false;
 }
 
@@ -418,6 +427,7 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 						r[s] = 0;
 						interpolate( r[s], subkeys.child( s, 0 ), time, last );
 					}
+
 					value = Matrix::euler( 0, 0, r[2] ) * Matrix::euler( 0, r[1], 0 ) * Matrix::euler( r[0], 0, 0 );
 
 					return true;
@@ -432,16 +442,17 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 					Quat v1 = nif->get<Quat>( frames.child( last, 0 ), "Value" );
 					Quat v2 = nif->get<Quat>( frames.child( next, 0 ), "Value" );
 
-					if (Quat::dotproduct( v1, v2 ) < 0)
-						v1.negate ();// don't take the long path
-					Quat v3 = Quat::slerp(x, v1, v2);
+					if ( Quat::dotproduct( v1, v2 ) < 0 )
+						v1.negate(); // don't take the long path
+
+					Quat v3 = Quat::slerp( x, v1, v2 );
 					/*
 					Quat v4;
 					float a = acos( Quat::dotproduct( v1, v2 ) );
 					if ( fabs( a ) >= 0.00005 )
 					{
-						float i = 1.0 / sin( a );
-						v4 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
+					    float i = 1.0 / sin( a );
+					    v4 = v1 * sin( ( 1.0 - x ) * a ) * i + v2 * sin( x * a ) * i;
 					}
 					*/
 					value.fromQuat( v3 );
@@ -464,20 +475,21 @@ Copyright 1994 by Keith Vertanen (vertankd@cda.mrs.umn.edu)
 Released to the public domain (your mileage may vary)
 
 Found at: Programmers Heaven (www.programmersheaven.com/zone3/cat415/6660.htm)
-Modified by: Theo 
+Modified by: Theo
 - reformat and convert doubles to floats
 - removed point structure in favor of arbitrary sized float array
 **********************************************************************/
 
 /*! Used to enable static arrays to be members of vectors */
-template<typename T>
-struct qarray {
+template <typename T>
+struct qarray
+{
 	qarray( const QModelIndex & array, uint off = 0 )
 		: array_( array ), off_( off )
 	{
 		nif_ = static_cast<const NifModel *>( array_.model() );
 	}
-	qarray( const qarray& other, uint off = 0 )
+	qarray( const qarray & other, uint off = 0 )
 		: nif_( other.nif_ ), array_( other.array_ ), off_( other.off_ + off )
 	{
 	}
@@ -491,7 +503,7 @@ struct qarray {
 	uint off_;
 };
 
-template<typename T>
+template <typename T>
 struct SplineTraits
 {
 	// Zero data
@@ -510,15 +522,17 @@ struct SplineTraits
 	// Compute point from short array and mult/bias
 	static T & Compute( T & v, qarray<short> & c, float mult )
 	{
-		float *vf = (float*)&v; // assume default data is a vector of floats. specialize if necessary.
-		for (int i=0; i<CountOf(); ++i)
-			vf[i] = vf[i] + (float(c[i]) / float(SHRT_MAX)) * mult;
+		float * vf = (float *)&v; // assume default data is a vector of floats. specialize if necessary.
+
+		for ( int i = 0; i < CountOf(); ++i )
+			vf[i] = vf[i] + ( float(c[i]) / float(SHRT_MAX) ) * mult;
 
 		return v;
 	}
 	static T & Adjust( T & v, float mult, float bias )
 	{
-		float * vf = (float*) & v; // assume default data is a vector of floats. specialize if necessary.
+		float * vf = (float *)&v;  // assume default data is a vector of floats. specialize if necessary.
+
 		for ( int i = 0; i < CountOf(); ++i )
 			vf[i] = vf[i] * mult + bias;
 
@@ -526,7 +540,7 @@ struct SplineTraits
 	}
 };
 
-template<> struct SplineTraits<Quat>
+template <> struct SplineTraits<Quat>
 {
 	static Quat & Init( Quat & v )
 	{
@@ -536,11 +550,12 @@ template<> struct SplineTraits<Quat>
 	static Quat & Compute( Quat & v, qarray<short> & c, float mult )
 	{
 		for ( int i = 0; i < CountOf(); ++i )
-			v[i] = v[i] + ( float( c[i] ) / float( SHRT_MAX ) ) * mult;
+			v[i] = v[i] + ( float(c[i]) / float(SHRT_MAX) ) * mult;
 
 		return v;
 	}
-	static Quat & Adjust( Quat & v, float mult, float bias ) {
+	static Quat & Adjust( Quat & v, float mult, float bias )
+	{
 		for ( int i = 0; i < CountOf(); ++i )
 			v[i] = v[i] * mult + bias;
 
@@ -549,7 +564,7 @@ template<> struct SplineTraits<Quat>
 };
 
 // calculate the blending value
-static float blend(int k, int t, int * u, float v)
+static float blend( int k, int t, int * u, float v )
 {
 	float value;
 
@@ -557,23 +572,22 @@ static float blend(int k, int t, int * u, float v)
 		// base case for the recursion
 		value = ( ( u[k] <= v ) && ( v < u[k + 1] ) ) ? 1.0f : 0.0f;
 	} else {
-
 		if ( ( u[k + t - 1] == u[k] ) && ( u[k + t] == u[k + 1] ) ) // check for divide by zero
 			value = 0;
-		else if ( u[k + t - 1] == u[k] ) // if a term's denominator is zero,use just the other
+		else if ( u[k + t - 1] == u[k] )                            // if a term's denominator is zero,use just the other
 			value = ( u[k + t] - v) / ( u[k + t] - u[k + 1] ) * blend( k + 1, t - 1, u, v );
 		else if ( u[k + t] == u[k + 1] )
 			value = (v - u[k]) / (u[k + t - 1] - u[k]) * blend( k, t - 1, u, v );
 		else
-			value = ( v - u[k] ) / ( u[k + t - 1] - u[k] ) * blend( k, t - 1, u, v ) +
-				( u[k + t] - v ) / ( u[k + t] - u[k + 1] ) * blend( k + 1 , t - 1, u, v );
+			value = ( v - u[k] ) / ( u[k + t - 1] - u[k] ) * blend( k, t - 1, u, v )
+			        + ( u[k + t] - v ) / ( u[k + t] - u[k + 1] ) * blend( k + 1, t - 1, u, v );
 	}
 
 	return value;
 }
 
 // figure out the knots
-static void compute_intervals(int * u, int n, int t)
+static void compute_intervals( int * u, int n, int t )
 {
 	for ( int j = 0; j <= n + t; j++ ) {
 		if ( j < t )
@@ -596,10 +610,11 @@ static void compute_point( int * u, int n, int t, float v, qarray<short> & contr
 		qarray<short> qa( control, k * l );
 		SplineTraits<T>::Compute( output, qa, blend( k, t, u, v ) );
 	}
+
 	SplineTraits<T>::Adjust( output, mult, bias );
 }
 
-template <typename T> 
+template <typename T>
 bool bsplineinterpolate( T & value, int degree, float interval, uint nctrl, const QModelIndex & array, uint off, float mult, float bias )
 {
 	if ( off == USHRT_MAX )
@@ -609,13 +624,14 @@ bool bsplineinterpolate( T & value, int degree, float interval, uint nctrl, cons
 	int t = degree + 1;
 	int n = nctrl - 1;
 	int l = SplineTraits<T>::CountOf();
-	if ( interval >= float( nctrl - degree ) ) {
+
+	if ( interval >= float(nctrl - degree) ) {
 		SplineTraits<T>::Init( value );
 		qarray<short> sa( subArray, n * l );
 		SplineTraits<T>::Compute( value, sa, 1.0f );
 		SplineTraits<T>::Adjust( value, mult, bias );
 	} else {
-		int *u = new int[ n + t + 1 ];
+		int * u = new int[ n + t + 1 ];
 		compute_intervals( u, n, t );
 		compute_point( u, n, t, interval, subArray, value, mult, bias );
 		delete [] u;
@@ -630,7 +646,7 @@ Interpolator::Interpolator( Controller * owner ) : parent( owner )
 
 bool Interpolator::update( const NifModel * nif, const QModelIndex & index )
 {
-	Q_UNUSED(nif); Q_UNUSED(index);
+	Q_UNUSED( nif ); Q_UNUSED( index );
 	return true;
 }
 QPersistentModelIndex Interpolator::GetControllerData()
@@ -650,8 +666,9 @@ bool TransformInterpolator::update( const NifModel * nif, const QModelIndex & in
 		iTranslations = nif->getIndex( iData, "Translations" );
 		iRotations = nif->getIndex( iData, "Rotations" );
 
-		if ( ! iRotations.isValid() )
+		if ( !iRotations.isValid() )
 			iRotations = iData;
+
 		iScales = nif->getIndex( iData, "Scales" );
 
 		return true;
@@ -678,16 +695,17 @@ BSplineTransformInterpolator::BSplineTransformInterpolator( Controller * owner )
 bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Interpolator::update( nif, index ) ) {
-		start   = nif->get<float>( index, "Start Time" );
-		stop    = nif->get<float>( index, "Stop Time" );
+		start = nif->get<float>( index, "Start Time" );
+		stop  = nif->get<float>( index, "Stop Time" );
 
 		iSpline = nif->getBlock( nif->getLink( index, "Spline Data" ) );
 		iBasis  = nif->getBlock( nif->getLink( index, "Basis Data" ) );
 
 		if ( iSpline.isValid() )
 			iControl = nif->getIndex( iSpline, "Short Control Points" );
+
 		if ( iBasis.isValid() )
-			nCtrl    = nif->get<uint>( iBasis, "Num Control Points" );
+			nCtrl = nif->get<uint>( iBasis, "Num Control Points" );
 
 		lTrans  = nif->getIndex( index, "Translation" );
 		lRotate = nif->getIndex( index, "Rotation" );
@@ -709,13 +727,14 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
 	return false;
 }
 
-bool BSplineTransformInterpolator::updateTransform(Transform & transform, float time)
+bool BSplineTransformInterpolator::updateTransform( Transform & transform, float time )
 {
-	float interval = ( ( time - start )/( stop - start ) ) * float( nCtrl - degree );
+	float interval = ( ( time - start ) / ( stop - start ) ) * float(nCtrl - degree);
 	Quat q = transform.rotation.toQuat();
 
 	if ( ::bsplineinterpolate<Quat>( q, degree, interval, nCtrl, iControl, lRotateOff, lRotateMult, lRotateBias ) )
 		transform.rotation.fromQuat( q );
+
 	::bsplineinterpolate<Vector3>( transform.translation, degree, interval, nCtrl, iControl, lTransOff, lTransMult, lTransBias );
 	::bsplineinterpolate<float>( transform.scale, degree, interval, nCtrl, iControl, lScaleOff, lScaleMult, lScaleBias );
 

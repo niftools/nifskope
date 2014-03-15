@@ -50,176 +50,173 @@ class Renderer
 {
 public:
 	//! Constructor
-	Renderer( QOpenGLContext *c , QOpenGLFunctions *f );
+	Renderer( QOpenGLContext * c, QOpenGLFunctions * f );
 	//! Destructor
 	~Renderer();
-	
+
 	//! Init from context?
 	bool initialize();
 	//! Whether the shaders are available
 	bool hasShaderSupport();
-	
+
 	//! Updates shaders
 	void updateShaders();
 	//! Releases shaders
 	void releaseShaders();
-	
+
 	//! Context
-	QOpenGLContext* cx;
+	QOpenGLContext * cx;
 	//! Context Functions
-	QOpenGLFunctions* fn;
+	QOpenGLFunctions * fn;
 
 	//! Sets up rendering?
 	QString setupProgram( Mesh *, const QString & hint = QString() );
 	//! Stops rendering?
 	void stopProgram();
-	
+
 protected:
 	class Condition
 	{
-	public:
+public:
 		Condition() {}
 		virtual ~Condition() {}
-		
+
 		virtual bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const = 0;
 	};
-	
+
 	class ConditionSingle : public Condition
 	{
-	public:
+public:
 		ConditionSingle( const QString & line, bool neg = false );
-		
+
 		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const;
-	
-	protected:
+
+protected:
 		QString left, right;
 		enum Type
 		{
 			NONE, EQ, NE, LE, GE, LT, GT, AND
 		};
 		Type comp;
-		static QHash<Type,QString> compStrs;
-		
+		static QHash<Type, QString> compStrs;
+
 		bool invert;
-		
+
 		QModelIndex getIndex( const NifModel * nif, const QList<QModelIndex> & iBlock, QString name ) const;
 		template <typename T> bool compare( T a, T b ) const;
 	};
-	
+
 	class ConditionGroup : public Condition
 	{
-	public:
+public:
 		ConditionGroup( bool o = false ) { _or = o; }
 		~ConditionGroup() { qDeleteAll( conditions ); }
-		
+
 		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const;
-		
+
 		void addCondition( Condition * c );
-		
+
 		bool isOrGroup() const { return _or; }
-		
-	protected:
-		QList<Condition*> conditions;
+
+protected:
+		QList<Condition *> conditions;
 		bool _or;
 	};
-	
+
 	class Shader
 	{
-	public:
-		Shader( const QString & name, GLenum type, QOpenGLFunctions* fn );
+public:
+		Shader( const QString & name, GLenum type, QOpenGLFunctions * fn );
 		~Shader();
-		
+
 		bool load( const QString & filepath );
-		
-		QOpenGLFunctions* f;
-		QString	name;
-		GLuint	id;
-		bool	status;
-		
-	protected:
-		GLenum	type;
+
+		QOpenGLFunctions * f;
+		QString name;
+		GLuint id;
+		bool status;
+
+protected:
+		GLenum type;
 	};
-	
+
 	class Program
 	{
-	public:
-		Program( const QString & name, QOpenGLFunctions* fn );
+public:
+		Program( const QString & name, QOpenGLFunctions * fn );
 		~Program();
-		
+
 		bool load( const QString & filepath, Renderer * );
-		
-		QOpenGLFunctions* f;
-		QString	name;
-		GLuint	id;
-		bool	status;
-		
+
+		QOpenGLFunctions * f;
+		QString name;
+		GLuint id;
+		bool status;
+
 		ConditionGroup conditions;
 		QMap<int, QString> texcoords;
-	};	
+	};
 
 	QMap<QString, Shader *> shaders;
 	QMap<QString, Program *> programs;
-	
+
 	friend class Program;
 
 	bool setupProgram( Program *, Mesh *, const PropertyList &, const QList<QModelIndex> & iBlocks );
-	void setupFixedFunction( Mesh *, const PropertyList & );	
+	void setupFixedFunction( Mesh *, const PropertyList & );
 };
 
 template <typename T> inline bool Renderer::ConditionSingle::compare( T a, T b ) const
 {
-	switch ( comp )
-	{
-		case EQ:
-			return a == b;
-		case NE:
-			return a != b;
-		case LE:
-			return a <= b;
-		case GE:
-			return a >= b;
-		case LT:
-			return a < b;
-		case GT:
-			return a > b;
-		case AND:
-			return a & b;
-		default:
-			return true;
+	switch ( comp ) {
+	case EQ:
+		return a == b;
+	case NE:
+		return a != b;
+	case LE:
+		return a <= b;
+	case GE:
+		return a >= b;
+	case LT:
+		return a < b;
+	case GT:
+		return a > b;
+	case AND:
+		return a & b;
+	default:
+		return true;
 	}
 }
 
 template <> inline bool Renderer::ConditionSingle::compare( float a, float b ) const
 {
-	switch ( comp )
-	{
-		case EQ:
-			return a == b;
-		case NE:
-			return a != b;
-		case LE:
-			return a <= b;
-		case GE:
-			return a >= b;
-		case LT:
-			return a < b;
-		case GT:
-			return a > b;
-		default:
-			return true;
+	switch ( comp ) {
+	case EQ:
+		return a == b;
+	case NE:
+		return a != b;
+	case LE:
+		return a <= b;
+	case GE:
+		return a >= b;
+	case LT:
+		return a < b;
+	case GT:
+		return a > b;
+	default:
+		return true;
 	}
 }
 
 template <> inline bool Renderer::ConditionSingle::compare( QString a, QString b ) const
 {
-	switch ( comp )
-	{
-		case EQ:
-			return a == b;
-		case NE:
-			return a != b;
-		default:
-			return false;
+	switch ( comp ) {
+	case EQ:
+		return a == b;
+	case NE:
+		return a != b;
+	default:
+		return false;
 	}
 }
 

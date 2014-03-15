@@ -42,20 +42,20 @@ class QModelIndex;
 
 class ReferenceBrowser : public QTextBrowser
 {
-    Q_OBJECT
-    
+	Q_OBJECT
+
 public:
-    ReferenceBrowser( QWidget * parent = NULL );
+	ReferenceBrowser( QWidget * parent = NULL );
 
 public slots:
-    void setNifModel( NifModel * );
-    void setSourceFile( const QString & );
-    void browse( const QModelIndex & );
+	void setNifModel( NifModel * );
+	void setSourceFile( const QString & );
+	void browse( const QModelIndex & );
 
 private:
-    NifModel * nif;
-    bool docFolderPresent;
-    QDir docFolder;
+	NifModel * nif;
+	bool docFolderPresent;
+	QDir docFolder;
 };
 
 #endif

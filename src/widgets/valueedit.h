@@ -50,16 +50,17 @@ class QSpinBox;
 class ValueEdit : public QWidget
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	ValueEdit( QWidget * parent = 0 );
-	
+
 	//! The value being edited?
 	Q_PROPERTY( NifValue value READ getValue WRITE setValue USER true )
-	
+
 	//! Accessor for value
 	NifValue getValue() const;
-	
+
 	//! Whether a value can be edited or not
 	static bool canEdit( NifValue::Type t );
 
@@ -68,7 +69,7 @@ public slots:
 	void setValue( const NifValue & v );
 	//! Resizes the widget if the child widget is resized
 	void childResized( QResizeEvent * e );
-	
+
 protected:
 	//! Resizes the underlying widget
 	void resizeEditor();
@@ -78,7 +79,7 @@ protected:
 private:
 	//! The type of the value being edited
 	NifValue::Type typ;
-	
+
 	//! The underlying editing widget
 	QWidget * edit;
 };
@@ -87,17 +88,18 @@ private:
 class VectorEdit : public ValueEdit
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	VectorEdit( QWidget * parent = 0 );
-	
+
 	//! Vector4 being edited
 	Q_PROPERTY( Vector4 vector4 READ getVector4 WRITE setVector4 STORED false )
 	//! Vector3 being edited
 	Q_PROPERTY( Vector3 vector3 READ getVector3 WRITE setVector3 STORED false )
 	//! Vector2 being edited
 	Q_PROPERTY( Vector2 vector2 READ getVector2 WRITE setVector2 STORED false )
-	
+
 	//! Accessor for the Vector4
 	Vector4 getVector4() const;
 	//! Accessor for the Vector3
@@ -129,31 +131,32 @@ private:
 	QDoubleSpinBox * y;
 	QDoubleSpinBox * z;
 	QDoubleSpinBox * w;
-	
+
 	QLabel * wl, * zl;
-	
+
 	bool setting;
 };
 
 class ColorEdit : public ValueEdit
 {
 	Q_OBJECT
+
 public:
 	ColorEdit( QWidget * parent = 0 );
-	
+
 	Q_PROPERTY( Color4 color4 READ getColor4 WRITE setColor4 STORED false )
 	Q_PROPERTY( Color3 color3 READ getColor3 WRITE setColor3 STORED false )
-	
+
 	Color4 getColor4() const;
 	Color3 getColor3() const;
-	
+
 signals:
 	void sigEdited();
 
 public slots:
 	void setColor4( const Color4 & );
 	void setColor3( const Color3 & );
-	
+
 protected slots:
 	void sltChanged();
 
@@ -166,51 +169,55 @@ private:
 class RotationEdit : public ValueEdit
 {
 	Q_OBJECT
+
 public:
 	RotationEdit( QWidget * parent = 0 );
-	
+
 	Q_PROPERTY( Matrix matrix READ getMatrix WRITE setMatrix STORED false )
 	Q_PROPERTY( Quat quat READ getQuat WRITE setQuat STORED false )
-	
+
 	Matrix getMatrix() const;
 	Quat getQuat() const;
 
 signals:
 	void sigEdited();
-	
+
 public slots:
 	void setMatrix( const Matrix & );
 	void setQuat( const Quat & );
 
 protected slots:
 	void sltChanged();
-	
+
 	void switchMode();
 	void setupMode();
 
 private:
-	enum {
+	enum
+	{
 		mAuto, mEuler, mAxis
-	} mode;
-	
+	}
+	mode;
+
 	QLabel * l[4];
 	QDoubleSpinBox * v[4];
-	
+
 	QAction * actMode;
-	
+
 	bool setting;
 };
 
 class TriangleEdit : public ValueEdit
 {
 	Q_OBJECT
+
 public:
 	TriangleEdit( QWidget * parent = 0 );
-	
+
 	Q_PROPERTY( Triangle triangle READ getTriangle WRITE setTriangle STORED false )
-	
+
 	Triangle getTriangle() const;
-	
+
 public slots:
 	void setTriangle( const Triangle & );
 
@@ -224,8 +231,9 @@ private:
 class TextEdit : public QTextEdit
 {
 	Q_OBJECT
+
 public:
-	TextEdit(const QString & str, QWidget *parent = 0);
+	TextEdit( const QString & str, QWidget * parent = 0 );
 	void CalcSize();
 
 signals:
@@ -236,7 +244,7 @@ public slots:
 
 protected:
 	void resizeEvent( QResizeEvent * e );
-	void keyPressEvent(QKeyEvent *e);
+	void keyPressEvent( QKeyEvent * e );
 };
 
 #endif

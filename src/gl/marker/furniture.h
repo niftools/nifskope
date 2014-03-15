@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gl/glmarker.h"
 
-static const float FurnitureMarker01Verts[] = 
+static const float FurnitureMarker01Verts[] =
 {
 	12.160423f, 3.242646f, 59.486294f,
 	-12.304700f, 3.242646f, 59.486294f,
@@ -204,9 +204,11 @@ static const unsigned short FurnitureMarker01Faces[] =
 	93, 95, 94
 };
 
-static const GLMarker FurnitureMarker01 = { 96, 66, FurnitureMarker01Verts, FurnitureMarker01Faces };
+static const GLMarker FurnitureMarker01 = {
+	96, 66, FurnitureMarker01Verts, FurnitureMarker01Faces
+};
 
-static const float FurnitureMarker03Verts[] = 
+static const float FurnitureMarker03Verts[] =
 {
 	12.160423f, 3.242646f, 59.486294f,
 	-12.304700f, 3.242646f, 59.486294f,
@@ -346,9 +348,11 @@ static const unsigned short FurnitureMarker03Faces[] =
 	72, 74, 70
 };
 
-static const GLMarker FurnitureMarker03 = { 76, 56, FurnitureMarker03Verts, FurnitureMarker03Faces };
+static const GLMarker FurnitureMarker03 = {
+	76, 56, FurnitureMarker03Verts, FurnitureMarker03Faces
+};
 
-static const float FurnitureMarker04Verts[] = 
+static const float FurnitureMarker04Verts[] =
 {
 	12.160423f, 3.242646f, 59.486294f,
 	-12.304700f, 3.242646f, 59.486294f,
@@ -488,9 +492,11 @@ static const unsigned short FurnitureMarker04Faces[] =
 	72, 74, 70
 };
 
-static const GLMarker FurnitureMarker04 = { 76, 56, FurnitureMarker04Verts, FurnitureMarker04Faces };
+static const GLMarker FurnitureMarker04 = {
+	76, 56, FurnitureMarker04Verts, FurnitureMarker04Faces
+};
 
-static const float FurnitureMarker11Verts[] = 
+static const float FurnitureMarker11Verts[] =
 {
 	12.160423f, 3.242646f, 59.486294f,
 	-12.304700f, 3.242645f, 59.486294f,
@@ -682,9 +688,11 @@ static const unsigned short FurnitureMarker11Faces[] =
 	105, 107, 106
 };
 
-static const GLMarker FurnitureMarker11 = { 108, 76, FurnitureMarker11Verts, FurnitureMarker11Faces };
+static const GLMarker FurnitureMarker11 = {
+	108, 76, FurnitureMarker11Verts, FurnitureMarker11Faces
+};
 
-static const float FurnitureMarker13Verts[] = 
+static const float FurnitureMarker13Verts[] =
 {
 	12.160423f, 3.242646f, 59.486294f,
 	-12.304700f, 3.242645f, 59.486294f,
@@ -876,9 +884,11 @@ static const unsigned short FurnitureMarker13Faces[] =
 	105, 107, 106
 };
 
-static const GLMarker FurnitureMarker13 = { 108, 76, FurnitureMarker13Verts, FurnitureMarker13Faces };
+static const GLMarker FurnitureMarker13 = {
+	108, 76, FurnitureMarker13Verts, FurnitureMarker13Faces
+};
 
-static const float FurnitureMarker14Verts[] = 
+static const float FurnitureMarker14Verts[] =
 {
 	12.160423f, 3.242646f, 59.486294f,
 	-12.304700f, 3.242645f, 59.486294f,
@@ -1070,4 +1080,6 @@ static const unsigned short FurnitureMarker14Faces[] =
 	105, 107, 106
 };
 
-static const GLMarker FurnitureMarker14 = { 108, 76, FurnitureMarker14Verts, FurnitureMarker14Faces };
+static const GLMarker FurnitureMarker14 = {
+	108, 76, FurnitureMarker14Verts, FurnitureMarker14Faces
+};

@@ -49,24 +49,24 @@ public:
 	NodeList();
 	NodeList( const NodeList & other );
 	~NodeList();
-	
+
 	void add( Node * );
 	void del( Node * );
-	
+
 	Node * get( const QModelIndex & idx ) const;
-	
+
 	void validate();
-	
+
 	void clear();
-	
+
 	NodeList & operator=( const NodeList & other );
-	
-	const QList<Node*> & list() const { return nodes; }
-	
+
+	const QList<Node *> & list() const { return nodes; }
+
 	void sort();
-	
+
 protected:
-	QList<Node*> nodes;
+	QList<Node *> nodes;
 };
 
 class Node : public Controllable
@@ -74,51 +74,50 @@ class Node : public Controllable
 	typedef union
 	{
 		quint16 bits;
-		
+
 		struct Node
 		{
 			bool hidden : 1;
 		} node;
-	
 	} NodeFlags;
-	
+
 public:
 	Node( Scene * scene, const QModelIndex & block );
-	
+
 	virtual void clear();
 	virtual void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	virtual void transform();
 	virtual void transformShapes();
-	
+
 	virtual void draw();
 	virtual void drawShapes( NodeList * draw2nd = 0 );
 	virtual void drawHavok();
 	virtual void drawFurn();
 	virtual void drawSelection() const;
-	
+
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;
 	virtual const Transform & localTrans() const { return local; }
 	virtual Transform localTransFrom( int parentNode ) const;
 	virtual Vector3 center() const;
-	
+
 	virtual bool isHidden() const;
-	bool isVisible() const { return ! isHidden(); }
-	
+	bool isVisible() const { return !isHidden(); }
+
 	int id() const { return nodeId; }
-	
-	Node	* findParent( int id ) const;
-	Node	* findChild( int id ) const;
-	Node	* findChild( const QString & name ) const;
-	Node	* parentNode() const { return parent; }
-	void	makeParent( Node * parent );
-	
+
+	Node * findParent( int id ) const;
+	Node * findChild( int id ) const;
+	Node * findChild( const QString & name ) const;
+	Node * parentNode() const { return parent; }
+	void makeParent( Node * parent );
+
 	virtual class BoundSphere bounds() const;
-	
+
 	template <typename T> T * findProperty() const;
 	void activeProperties( PropertyList & list ) const;
-	
+
 	Controller * findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 );
 
 	virtual QString textStats() const;
@@ -129,18 +128,18 @@ protected:
 	virtual void setController( const NifModel * nif, const QModelIndex & controller );
 
 	QPointer<Node> parent;
-	
+
 	int ref;
 
 	NodeList children;
 	PropertyList properties;
-	
+
 	int nodeId;
-	
+
 	Transform local;
 
 	NodeFlags flags;
-	
+
 	friend class KeyframeController;
 	friend class TransformController;
 	friend class ControllerManager;
@@ -153,8 +152,13 @@ protected:
 template <typename T> inline T * Node::findProperty() const
 {
 	T * prop = properties.get<T>();
-	if ( prop ) return prop;
-	if ( parent ) return parent->findProperty<T>();
+
+	if ( prop )
+		return prop;
+
+	if ( parent )
+		return parent->findProperty<T>();
+
 	return 0;
 }
 
@@ -163,16 +167,16 @@ class LODNode : public Node
 {
 public:
 	LODNode( Scene * scene, const QModelIndex & block );
-	
+
 	void clear();
 	void update( const NifModel * nif, const QModelIndex & block );
-	
+
 	void transform();
-	
+
 protected:
-	QList< QPair<float,float> > ranges;
+	QList<QPair<float, float> > ranges;
 	QPersistentModelIndex iData;
-	
+
 	Vector3 center;
 };
 
@@ -181,7 +185,7 @@ class BillboardNode : public Node
 {
 public:
 	BillboardNode( Scene * scene, const QModelIndex & block );
-	
+
 	virtual const Transform & viewTrans() const;
 };
 

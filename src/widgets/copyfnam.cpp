@@ -48,7 +48,7 @@ CopyFilename::CopyFilename( QWidget * parent )
 
 void CopyFilename::paintEvent( QPaintEvent * e )
 {
-   Q_UNUSED(e);
+	Q_UNUSED( e );
 	int w = this->width();
 	int h = this->height() / 2;
 
@@ -76,10 +76,9 @@ void CopyFilename::paintEvent( QPaintEvent * e )
 
 void CopyFilename::mousePressEvent( QMouseEvent * e )
 {
-	if( e->y() < ( this->height() / 2 ) ) {
+	if ( e->y() < ( this->height() / 2 ) ) {
 		emit( this->rightTriggered() );
-	}
-	else {
+	} else {
 		emit( this->leftTriggered() );
 	}
 }

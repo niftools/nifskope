@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 // Copyright NVIDIA Corporation 2007 -- Ignacio Castano <icastano@nvidia.com>
-// 
+//
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
 // files (the "Software"), to deal in the Software without
@@ -47,10 +47,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // copies of the Software, and to permit persons to whom the
 // Software is furnished to do so, subject to the following
 // conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -91,11 +91,11 @@ struct DDSCaps
 /// DDS file header for DX10.
 struct DDSHeader10
 {
-    uint dxgiFormat;
-    uint resourceDimension;
-    uint miscFlag;
-    uint arraySize;
-    uint reserved;
+	uint dxgiFormat;
+	uint resourceDimension;
+	uint miscFlag;
+	uint arraySize;
+	uint reserved;
 };
 
 /// DDS file header.
@@ -119,22 +119,22 @@ struct DDSHeader
 
 	// Helper methods.
 	DDSHeader();
-	
-	void setWidth(uint w);
-	void setHeight(uint h);
-	void setDepth(uint d);
-	void setMipmapCount(uint count);
+
+	void setWidth( uint w );
+	void setHeight( uint h );
+	void setDepth( uint d );
+	void setMipmapCount( uint count );
 	void setTexture2D();
 	void setTexture3D();
 	void setTextureCube();
-	void setLinearSize(uint size);
-	void setPitch(uint pitch);
-	void setFourCC(uint8 c0, uint8 c1, uint8 c2, uint8 c3);
-	void setPixelFormat(uint bitcount, uint rmask, uint gmask, uint bmask, uint amask);
-	void setDX10Format(uint format);
-	void setNormalFlag(bool b);
-	void setOffset(uint size);
-	
+	void setLinearSize( uint size );
+	void setPitch( uint pitch );
+	void setFourCC( uint8 c0, uint8 c1, uint8 c2, uint8 c3 );
+	void setPixelFormat( uint bitcount, uint rmask, uint gmask, uint bmask, uint amask );
+	void setDX10Format( uint format );
+	void setNormalFlag( bool b );
+	void setOffset( uint size );
+
 	bool hasDX10Header() const;
 };
 
@@ -142,13 +142,13 @@ struct DDSHeader
 class DirectDrawSurface
 {
 public:
-	DirectDrawSurface(const unsigned char *mem, uint size);
-	DirectDrawSurface(const DDSHeader &header, const unsigned char *mem, uint size);
+	DirectDrawSurface( const unsigned char * mem, uint size );
+	DirectDrawSurface( const DDSHeader & header, const unsigned char * mem, uint size );
 	~DirectDrawSurface();
-	
+
 	bool isValid() const;
 	bool isSupported() const;
-	
+
 	uint mipmapCount() const;
 	uint width() const;
 	uint height() const;
@@ -157,33 +157,32 @@ public:
 	bool isTexture3D() const;
 	bool isTextureCube() const;
 	bool hasAlpha() const; /* false for DXT1, true for all other DXTs */
-	
-	void mipmap(Image * img, uint f, uint m);
+
+	void mipmap( Image * img, uint f, uint m );
 	//	void mipmap(FloatImage * img, uint f, uint m);
-	
+
 	void printInfo() const;
 
 private:
-	
+
 	uint blockSize() const;
 	uint faceSize() const;
-	uint mipmapSize(uint m) const;
-	
-	uint offset(uint f, uint m);
-	
-	void readLinearImage(Image * img);
-	void readBlockImage(Image * img);
-	void readBlock(ColorBlock * rgba);
-	
-	
+	uint mipmapSize( uint m ) const;
+
+	uint offset( uint f, uint m );
+
+	void readLinearImage( Image * img );
+	void readBlockImage( Image * img );
+	void readBlock( ColorBlock * rgba );
+
 private:
 	Stream stream; // memory where DDS file resides
 	DDSHeader header;
 };
 
-void mem_read(Stream & mem, DDSPixelFormat & pf);
-void mem_read(Stream & mem, DDSCaps & caps);
-void mem_read(Stream & mem, DDSHeader & header);
-void mem_read(Stream & mem, DDSHeader10 & header);
+void mem_read( Stream & mem, DDSPixelFormat & pf );
+void mem_read( Stream & mem, DDSCaps & caps );
+void mem_read( Stream & mem, DDSHeader & header );
+void mem_read( Stream & mem, DDSHeader10 & header );
 
 #endif // _DDS_DIRECTDRAWSURFACE_H

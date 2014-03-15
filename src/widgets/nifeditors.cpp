@@ -51,12 +51,13 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 		this, SLOT( nifDataChanged( const QModelIndex &, const QModelIndex & ) ) );
 	connect( nif, SIGNAL( modelReset() ), this, SLOT( updateData() ) );
 	connect( nif, SIGNAL( destroyed() ), this, SLOT( nifDestroyed() ) );
-	
+
 	QVBoxLayout * layout = new QVBoxLayout();
 	setLayout( layout );
 	layouts.push( layout );
 
 	QModelIndex iName = nif->getIndex( iBlock, "Name" );
+
 	if ( iName.isValid() )
 		add( new NifLineEdit( nif, iName ) );
 
@@ -65,21 +66,21 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 	timer->setInterval( 0 );
 	timer->setSingleShot( true );
 
-	if ( fireAndForget )
-	{
+	if ( fireAndForget ) {
 		setAttribute( Qt::WA_DeleteOnClose );
-		
-		QPushButton * btAccept = new QPushButton( tr("Accept") );
+
+		QPushButton * btAccept = new QPushButton( tr( "Accept" ) );
 		connect( btAccept, SIGNAL( clicked() ), this, SLOT( close() ) );
 		layout->addWidget( btAccept );
 	}
-	
+
 	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
 }
 
 void NifBlockEditor::add( NifEditBox * box )
 {
 	editors.append( box );
+
 	if ( layouts.count() == 1 && testAttribute( Qt::WA_DeleteOnClose ) )
 		layouts.top()->insertWidget( layouts.top()->count() - 1, box );
 	else
@@ -88,25 +89,23 @@ void NifBlockEditor::add( NifEditBox * box )
 
 void NifBlockEditor::pushLayout( QBoxLayout * lay, const QString & name )
 {
-	if ( name.isEmpty() )
-	{
+	if ( name.isEmpty() ) {
 		if ( layouts.count() == 1 && testAttribute( Qt::WA_DeleteOnClose ) )
 			layouts.top()->insertLayout( layouts.top()->count() - 1, lay );
 		else
 			layouts.top()->addLayout( lay );
+
 		layouts.push( lay );
-	}
-	else
-	{
+	} else {
 		QGroupBox * group = new QGroupBox;
 		group->setTitle( name );
 		group->setLayout( lay );
-		
+
 		if ( layouts.count() == 1 && testAttribute( Qt::WA_DeleteOnClose ) )
 			layouts.top()->insertWidget( layouts.top()->count() - 1, group );
 		else
 			layouts.top()->addWidget( group );
-		
+
 		layouts.push( lay );
 	}
 }
@@ -126,41 +125,38 @@ void NifBlockEditor::nifDestroyed()
 {
 	nif = 0;
 	setDisabled( true );
+
 	if ( testAttribute( Qt::WA_DeleteOnClose ) )
 		close();
 }
 
 void NifBlockEditor::nifDataChanged( const QModelIndex & begin, const QModelIndex & end )
 {
-	if ( nif && iBlock.isValid() )
-	{
-		if ( nif->getBlockOrHeader( begin ) == iBlock || nif->getBlockOrHeader( end ) == iBlock )
-		{
-			if ( ! timer->isActive() )
+	if ( nif && iBlock.isValid() ) {
+		if ( nif->getBlockOrHeader( begin ) == iBlock || nif->getBlockOrHeader( end ) == iBlock ) {
+			if ( !timer->isActive() )
 				timer->start();
 		}
-	}
-	else
+	} else
 		nifDestroyed();
 }
 
 void NifBlockEditor::updateData()
 {
-	if ( nif && iBlock.isValid() )
-	{
+	if ( nif && iBlock.isValid() ) {
 		QString x = nif->itemName( iBlock );
 		QModelIndex iName = nif->getIndex( iBlock, "Name" );
+
 		if ( iName.isValid() )
 			x += " - " + nif->get<QString>( iName );
+
 		setWindowTitle( x );
-		
-		foreach ( NifEditBox * box, editors )
-		{
+
+		foreach ( NifEditBox * box, editors ) {
 			box->setEnabled( box->getIndex().isValid() );
 			box->updateData( nif );
 		}
-	}
-	else
+	} else
 		nifDestroyed();
 
 	if ( timer->isActive() )
@@ -177,18 +173,18 @@ NifEditBox::NifEditBox( NifModel * n, const QModelIndex & i )
 QLayout * NifEditBox::getLayout()
 {
 	QLayout * lay = QGroupBox::layout();
-	if ( ! lay )
-	{
+
+	if ( !lay ) {
 		lay = new QHBoxLayout;
 		setLayout( lay );
 	}
+
 	return lay;
 }
 
 void NifEditBox::applyData()
 {
-	if ( nif && index.isValid() )
-	{
+	if ( nif && index.isValid() ) {
 		applyData( nif );
 	}
 }
@@ -255,39 +251,32 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 	getLayout()->addWidget( color = new ColorWheel() );
 	color->setSizeHint( QSize( 140, 140 ) );
 	connect( color, SIGNAL( sigColor( const QColor & ) ), this, SLOT( applyData() ) );
-	if ( nif->getValue( index ).type() == NifValue::tColor4 )
-	{
+
+	if ( nif->getValue( index ).type() == NifValue::tColor4 ) {
 		getLayout()->addWidget( alpha = new AlphaSlider() );
 		connect( alpha, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
-	}
-	else
+	} else
 		alpha = 0;
 }
 
 void NifColorEdit::updateData( NifModel * nif )
 {
-	if ( alpha )
-	{
+	if ( alpha ) {
 		color->setColor( nif->get<Color4>( index ).toQColor() );
 		alpha->setValue( nif->get<Color4>( index )[3] );
-	}
-	else
-	{
+	} else {
 		color->setColor( nif->get<Color3>( index ).toQColor() );
 	}
 }
 
 void NifColorEdit::applyData( NifModel * nif )
 {
-	if ( alpha )
-	{
+	if ( alpha ) {
 		Color4 c4;
 		c4.fromQColor( color->getColor() );
 		c4[3] = alpha->value();
 		nif->set<Color4>( index, c4 );
-	}
-	else
-	{
+	} else {
 		Color3 c3;
 		c3.fromQColor( color->getColor() );
 		nif->set<Color3>( index, c3 );
@@ -304,6 +293,7 @@ NifVectorEdit::NifVectorEdit( NifModel * nif, const QModelIndex & index )
 void NifVectorEdit::updateData( NifModel * nif )
 {
 	NifValue val = nif->getValue( index );
+
 	if ( val.type() == NifValue::tVector3 )
 		vector->setVector3( val.get<Vector3>() );
 	else if ( val.type() == NifValue::tVector2 )
@@ -313,6 +303,7 @@ void NifVectorEdit::updateData( NifModel * nif )
 void NifVectorEdit::applyData( NifModel * nif )
 {
 	NifValue::Type type = nif->getValue( index ).type();
+
 	if ( type == NifValue::tVector3 )
 		nif->set<Vector3>( index, vector->getVector3() );
 	else if ( type == NifValue::tVector2 )
@@ -329,6 +320,7 @@ NifRotationEdit::NifRotationEdit( NifModel * nif, const QModelIndex & index )
 void NifRotationEdit::updateData( NifModel * nif )
 {
 	NifValue val = nif->getValue( index );
+
 	if ( val.type() == NifValue::tMatrix )
 		rotation->setMatrix( val.get<Matrix>() );
 	else if ( val.type() == NifValue::tQuat || val.type() == NifValue::tQuatXYZW )
@@ -338,6 +330,7 @@ void NifRotationEdit::updateData( NifModel * nif )
 void NifRotationEdit::applyData( NifModel * nif )
 {
 	NifValue::Type type = nif->getValue( index ).type();
+
 	if ( type == NifValue::tMatrix )
 		nif->set<Matrix>( index, rotation->getMatrix() );
 	else if ( type == NifValue::tQuat || type == NifValue::tQuatXYZW )
@@ -349,24 +342,24 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 {
 	QBoxLayout * vbox = new QVBoxLayout;
 	setLayout( vbox );
-	
+
 	QGroupBox * group = new QGroupBox;
 	vbox->addWidget( group );
-	group->setTitle( tr("Translation") );
+	group->setTitle( tr( "Translation" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( translation = new VectorEdit() );
 	connect( translation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
-	
+
 	group = new QGroupBox;
 	vbox->addWidget( group );
-	group->setTitle( tr("Rotation") );
+	group->setTitle( tr( "Rotation" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( rotation = new RotationEdit() );
 	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
-	
+
 	group = new QGroupBox;
 	vbox->addWidget( group );
-	group->setTitle( tr("Scale") );
+	group->setTitle( tr( "Scale" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( scale = new VectorEdit() );
 	connect( scale, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
@@ -376,13 +369,14 @@ void NifMatrix4Edit::updateData( NifModel * nif )
 {
 	if ( setting )
 		return;
+
 	Matrix4 mtx = nif->get<Matrix4>( index );
-	
+
 	Vector3 t, s;
 	Matrix r;
-	
+
 	mtx.decompose( t, r, s );
-	
+
 	translation->setVector3( t );
 	rotation->setMatrix( r );
 	scale->setVector3( s );

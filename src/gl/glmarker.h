@@ -37,8 +37,8 @@ struct GLMarker
 {
 	int nv;
 	int nf;
-	const float *verts;
-	const unsigned short *faces;
+	const float * verts;
+	const unsigned short * faces;
 };
 
 void drawMarker( const GLMarker * marker );

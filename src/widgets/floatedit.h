@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class FloatValidator : public QDoubleValidator
 {
 	Q_OBJECT
+
 public:
 	FloatValidator( QObject * parent = NULL )
 		: QDoubleValidator( parent )
@@ -57,9 +58,10 @@ public:
 class FloatEdit : public QLineEdit
 {
 	Q_OBJECT
+
 public:
 	FloatEdit( QWidget * = NULL );
-	
+
 	float value() const;
 
 	void setRange( float minimum, float maximum );
@@ -81,10 +83,10 @@ public slots:
 	void set( float val, float n, float x );
 	void setMin();
 	void setMax();
-	
+
 protected slots:
 	void edited();
-	
+
 protected:
 	float val;
 	FloatValidator * validator;

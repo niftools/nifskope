@@ -83,8 +83,8 @@ class TexCache : public QObject
 		QString format;
 		//! Status messages
 		QString status;
-		
-		//! Load the texture 
+
+		//! Load the texture
 		void load();
 
 		//! Save the texture as a file
@@ -92,62 +92,62 @@ class TexCache : public QObject
 		//! Save the texture as pixel data
 		bool savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 	};
-	
+
 public:
 	//! Constructor
 	TexCache( QObject * parent = 0 );
 	//! Destructor
 	~TexCache();
-	
+
 	//! Bind a texture from filename
 	int bind( const QString & fname );
 	//! Bind a texture from pixel data
 	int bind( const QModelIndex & iSource );
-	
+
 	//! Debug function for getting info about a texture
 	QString info( const QModelIndex & iSource );
-	
+
 	//! Export pixel data to a file
 	bool exportFile( const QModelIndex & iSource, QString & filepath );
 	//! Import pixel data from a file (not implemented yet)
 	bool importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
-	
+
 	//! Find a texture based on its filename
 	static QString find( const QString & file, const QString & nifFolder, QByteArray & data = QByteArray() );
 	//! Remove the path from a filename
 	static QString stripPath( const QString & file, const QString & nifFolder );
 	//! Checks whether the given file can be loaded
 	static bool canLoad( const QString & file );
-	
+
 signals:
 	void sigRefresh();
 
 public slots:
 	void flush();
-	
+
 	//! Set the folder to read textures from
 	/*!
 	 * If this is not set, relative paths won't resolve. The standard usage
 	 * is to give NifModel::getFolder() as the argument.
 	 */
 	void setNifFolder( const QString & );
-	
+
 protected slots:
 	void fileChanged( const QString & filepath );
-	
+
 protected:
-	QHash<QString,Tex*>	textures;
-	QHash<QModelIndex,Tex*>	embedTextures;
+	QHash<QString, Tex *> textures;
+	QHash<QModelIndex, Tex *> embedTextures;
 	QFileSystemWatcher * watcher;
-	
+
 	QString nifFolder;
 };
 
 float get_max_anisotropy();
 
-void initializeTextureUnits( const QOpenGLContext * );	
+void initializeTextureUnits( const QOpenGLContext * );
 
 bool activateTextureUnit( int x );
-void resetTextureUnits();	
+void resetTextureUnits();
 
 #endif

@@ -68,18 +68,18 @@ extern "C"
 // TODO: investigate the C++ interfaces to Qhull; the Qt interface requires GCC 4.3
 
 //! An interface to <a href="http://www.qhull.org">Qhull</a> for generating Havok-compatible convex shapes
-QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Vector4>& hullVerts, QVector<Vector4>& hullNorms, float roundError )
-{  
+QVector<Triangle> compute_convex_hull( const QVector<Vector3> & verts, QVector<Vector4> & hullVerts, QVector<Vector4> & hullNorms, float roundError )
+{
 	QVector<Triangle> tris;
-	
+
 	/* dimension of points */
-	int dim=3;
+	int dim = 3;
 	/* number of points */
-	int numpoints=0;
+	int numpoints = 0;
 	/* array of coordinates for each point */
-	coordT *points=0;
+	coordT * points = 0;
 	/* True if qhull should free points in qh_freeqhull() or reallocation */
-	boolT ismalloc=0;
+	boolT ismalloc = 0;
 	/* option flags for qhull, see qh-quick.htm
 	 * i: print vertices incident to each facet
 	 * Qt: produce triangulated output
@@ -87,62 +87,69 @@ QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts, QVector<Ve
 	 */
 	QString tempFlags = QString( "qhull i Qt E%1" ).arg( roundError );
 	QByteArray flagsChar = tempFlags.toLatin1();
-	char* flags = flagsChar.data();
+	char * flags = flagsChar.data();
 	/* output from qh_produce_output()
 	 * use NULL to skip qh_produce_output()
 	 */
-	FILE *outfile= stdout;
+	FILE * outfile = stdout;
 	/* error messages from qhull code */
-	FILE *errfile= stderr;
+	FILE * errfile = stderr;
 	/* 0 if no error from qhull */
 	int exitcode;
 	/* set by FORALLfacets */
-	facetT *facet;
+	facetT * facet;
 	/* memory remaining after qh_memfreeshort */
 	int curlong, totlong;
-	
+
 	/* vertexT is a struct containing coordinates etc. */
-	vertexT *vertex, **vertexp;
-	setT *vertices;
-	
+	vertexT * vertex, ** vertexp;
+	setT * vertices;
+
 	numpoints = verts.size();
 	points = new coordT[3 * verts.size()];
-	for (int i=0, n=verts.size(); i<n; ++i) {
-		points[i*3 + 0] = verts[i][0];
-		points[i*3 + 1] = verts[i][1];
-		points[i*3 + 2] = verts[i][2];
+
+	for ( int i = 0, n = verts.size(); i < n; ++i ) {
+		points[i * 3 + 0] = verts[i][0];
+		points[i * 3 + 1] = verts[i][1];
+		points[i * 3 + 2] = verts[i][2];
 	}
-	
+
 	/* initialize dim, numpoints, points[], ismalloc here */
-	exitcode= qh_new_qhull (dim, numpoints, points, ismalloc,
-		flags, outfile, errfile);
-	if (!exitcode) { /* if no error */ 
+	exitcode = qh_new_qhull( dim, numpoints, points, ismalloc,
+		flags, outfile, errfile );
+
+	if ( !exitcode ) {
+		/* if no error */
 		/* 'qh facet_list' contains the convex hull */
 		FORALLfacets {
 			/* from poly2.c */
-			vertices = qh_facet3vertex (facet);
+			vertices = qh_facet3vertex( facet );
 			Vector4 hullNorm( facet->normal[0], facet->normal[1], facet->normal[2], facet->offset );
 			hullNorms.append( hullNorm );
-			if (qh_setsize (vertices) == 3) {
+
+			if ( qh_setsize( vertices ) == 3 ) {
 				Triangle tri;
 				int i = 0;
-				FOREACHvertex_(vertices) {
-					tri[i++] = qh_pointid(vertex->point);
+				FOREACHvertex_( vertices ) {
+					tri[i++] = qh_pointid( vertex->point );
 					/* find the hull vertices */
 					Vector4 hullVert( vertex->point[0], vertex->point[1], vertex->point[2], 0 );
 					hullVerts.append( hullVert );
 				}
-				tris.push_back(tri);
+				tris.push_back( tri );
 			}
-			qh_settempfree(&vertices);
+
+			qh_settempfree( &vertices );
 		}
 	}
-	qh_freeqhull(!qh_ALL);  
-	qh_memfreeshort (&curlong, &totlong);
-	if (curlong || totlong)
-		fprintf (errfile, "qhull internal warning (main): did not free %d bytes of long memory (%d pieces)\n", 
-		totlong, curlong);
-	
+
+	qh_freeqhull( !qh_ALL );
+	qh_memfreeshort( &curlong, &totlong );
+
+	if ( curlong || totlong )
+		fprintf( errfile, "qhull internal warning (main): did not free %d bytes of long memory (%d pieces)\n",
+			totlong, curlong );
+
 	delete[] points;
 	return tris;
 };
