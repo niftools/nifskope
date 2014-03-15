@@ -943,8 +943,9 @@ void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 	if ( ix.isValid() ) {
 		scene->update( model, idx );
 		update();
-	} else
+	} else {
 		modelChanged();
+	}
 }
 
 void GLView::modelChanged()

@@ -172,10 +172,10 @@ public:
 						QString alias = list.value( "name" );
 						QString type  = list.value( "nifskopetype" );
 
-						if ( alias != type )
+						if ( alias != type ) {
 							if ( !NifValue::registerAlias( alias, type ) )
 								err( tr( "failed to register alias %1 for type %2" ).arg( alias ).arg( type ) );
-
+						}
 
 						typId  = alias;
 						typTxt = QString();
@@ -216,10 +216,10 @@ public:
 					if ( alias.isEmpty() || type.isEmpty() )
 						err( tr( "basic definition must have a name and a nifskopetype" ) );
 
-					if ( alias != type )
+					if ( alias != type ) {
 						if ( !NifValue::registerAlias( alias, type ) )
 							err( tr( "failed to register alias %1 for type %2" ).arg( alias ).arg( type ) );
-
+					}
 
 					typId  = alias;
 					typTxt = QString();
@@ -575,9 +575,9 @@ bool NifModel::loadXML()
 	QString fname;
 	QStringList xmlList( QStringList()
 	                     << "nif.xml"
-		#ifdef Q_OS_LINUX
+#ifdef Q_OS_LINUX
 	                     << "/usr/share/nifskope/nif.xml"
-		#endif
+#endif
 	);
 	foreach ( QString str, xmlList ) {
 		if ( dir.exists( str ) ) {

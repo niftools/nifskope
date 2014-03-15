@@ -76,32 +76,33 @@ public:
 		if ( nif->getValue( index ).isCount() ) {
 			QString name = nif->itemName( index.parent() );
 
-			if ( name == "NiAlphaProperty" )
+			if ( name == "NiAlphaProperty" ) {
 				return Alpha;
-			else if ( name == "NiBillboardNode" )
+			} else if ( name == "NiBillboardNode" ) {
 				return Billboard;
-			else if ( nif->inherits( name, "NiTimeController" ) ) {
+			} else if ( nif->inherits( name, "NiTimeController" ) ) {
 				if ( name == "NiMaterialColorController" ) {
 					return MatColControl;
 				}
 
 				return Controller;
-			} else if ( name == "NiNode" )
+			} else if ( name == "NiNode" ) {
 				return Node;
-			else if ( name == "bhkRigidBody" || name == "bhkRigidBodyT" )
+			} else if ( name == "bhkRigidBody" || name == "bhkRigidBodyT" ) {
 				return RigidBody;
-			else if ( name == "NiTriShape" || name == "NiTriStrips" )
+			} else if ( name == "NiTriShape" || name == "NiTriStrips" ) {
 				return Shape;
-			else if ( name == "NiStencilProperty" )
+			} else if ( name == "NiStencilProperty" ) {
 				return Stencil;
-			else if ( nif->itemType( index.parent() ) == "TexDesc" )
+			} else if ( nif->itemType( index.parent() ) == "TexDesc" ) {
 				return TexDesc;
-			else if ( name == "NiVertexColorProperty" )
+			} else if ( name == "NiVertexColorProperty" ) {
 				return VertexColor;
-			else if ( name == "NiZBufferProperty" )
+			} else if ( name == "NiZBufferProperty" ) {
 				return ZBuffer;
-			else if ( name == "BSXFlags" )
+			} else if ( name == "BSXFlags" ) {
 				return BSX;
+			}
 		}
 
 		return None;

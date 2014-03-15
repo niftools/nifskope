@@ -336,8 +336,9 @@ void Scene::updateTimeBounds() const
 		foreach ( Property * prop, properties.list() ) {
 			prop->timeBounds( tMin, tMax );
 		}
-	} else
+	} else {
 		tMin = tMax = 0;
+	}
 
 	timeBoundsValid = true;
 }

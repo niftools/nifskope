@@ -372,8 +372,9 @@ template <typename T> inline bool BaseModel::set( NifItem * item, const T & d )
 	if ( item->value().set( d ) ) {
 		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
 		return true;
-	} else
+	} else {
 		return false;
+	}
 }
 
 template <typename T> inline bool BaseModel::set( const QModelIndex & index, const T & d )

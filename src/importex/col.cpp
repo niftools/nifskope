@@ -848,8 +848,9 @@ void attachNiShape ( const NifModel * nif, QDomElement parentNode, int idx )
 					strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 
 				tri = triangulate( strips );
-			} else
+			} else {
 				tri = nif->getArray<Triangle>( iProp, "Triangles" );
+			}
 
 			QDomElement p = doc.createElement( "p" );
 			QString triText;

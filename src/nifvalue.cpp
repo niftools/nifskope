@@ -1285,9 +1285,10 @@ bool NifOStream::write( const NifValue & val )
 			if ( device->write( string.constData(), n ) != n )
 				return false;
 
-			for ( quint32 i = n; i < 8; ++i )
+			for ( quint32 i = n; i < 8; ++i ) {
 				if ( device->write( "\0", 1 ) != 1 )
 					return false;
+			}
 
 
 			return true;

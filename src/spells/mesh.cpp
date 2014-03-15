@@ -411,8 +411,9 @@ public:
 			if ( t[0] == t[1] || t[1] == t[2] || t[2] == t[0] ) {
 				tris.removeAt( i );
 				cnt++;
-			} else
+			} else {
 				i++;
+			}
 		}
 
 		i = 0;
@@ -431,8 +432,9 @@ public:
 				{
 					tris.removeAt( j );
 					cnt++;
-				} else
+				} else {
 					j++;
+				}
 			}
 
 			i++;

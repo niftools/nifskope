@@ -303,8 +303,9 @@ public:
 			}
 
 			return iProperty;
-		} else
+		} else {
 			return index;
+		}
 	}
 };
 
@@ -339,8 +340,9 @@ public:
 			QModelIndex iNode = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 			addLink( nif, iParent, "Children", nif->getBlockNumber( iNode ) );
 			return iNode;
-		} else
+		} else {
 			return index;
+		}
 	}
 };
 
@@ -389,8 +391,9 @@ public:
 			}
 
 			return iLight;
-		} else
+		} else {
 			return index;
+		}
 	}
 };
 
@@ -433,8 +436,9 @@ public:
 
 			addLink( nif, iParent, "Extra Data List", nif->getBlockNumber( iExtra ) );
 			return iExtra;
-		} else
+		} else {
 			return index;
+		}
 	}
 };
 

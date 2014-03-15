@@ -459,8 +459,9 @@ void NodeList::del( Node * n )
 
 		if ( n->ref <= cnt ) {
 			delete n;
-		} else
+		} else {
 			n->ref -= cnt;
+		}
 	}
 }
 
@@ -492,15 +493,15 @@ bool compareNodes( const Node * node1, const Node * node2 )
 	bool a1 = node1->findProperty<AlphaProperty>();
 	bool a2 = node2->findProperty<AlphaProperty>();
 
-	if ( a1 == a2 )
-		if ( a1 )
+	if ( a1 == a2 ) {
+		if ( a1 ) {
 			return ( node1->center()[2] < node2->center()[2] );
-		else
+		} else {
 			return ( node1->center()[2] > node2->center()[2] );
-
-
-	else
+		}
+	} else {
 		return a2;
+	}
 }
 
 void NodeList::sort()
@@ -1113,9 +1114,9 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 					i = scene->currentIndex.row();
 				}
 
-				if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" )
+				if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors" || n == "UV Sets" ) {
 					DrawVertexSelection( verts, i );
-				else if ( ( n == "Faces" || n == "Triangles" ) ) {
+				} else if ( ( n == "Faces" || n == "Triangles" ) ) {
 					if ( i == -1 ) {
 						glDepthFunc( GL_ALWAYS );
 						glHighlightColor();
@@ -1727,7 +1728,7 @@ void Node::drawHavok()
 	int color_index = nif->get<int>( iBody, "Layer" ) & 7;
 	glColor3fv( colors[ color_index ] );
 
-	if ( !Node::SELECTING )
+	if ( !Node::SELECTING ) {
 		if ( scene->currentBlock == nif->getBlock( nif->getLink( iBody, "Shape" ) ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor(); // TODO: idea: I do not recommend mimicking the Open GL API
@@ -1736,8 +1737,7 @@ void Node::drawHavok()
 			glLineWidth( 2.5 );
 			//glPointSize( 8.5 );
 		}
-
-
+	}
 
 	QStack<QModelIndex> shapeStack;
 

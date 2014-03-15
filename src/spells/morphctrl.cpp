@@ -85,8 +85,9 @@ public:
 				return iData;
 			else
 				return QModelIndex();
-		} else
+		} else {
 			return QModelIndex();
+		}
 	}
 
 	//! Helper function to get the morph data
@@ -114,8 +115,9 @@ public:
 			}
 
 			return list;
-		} else
+		} else {
 			return QStringList();
+		}
 	}
 };
 

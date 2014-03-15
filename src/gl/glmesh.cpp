@@ -282,8 +282,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				if ( !iSkin.isValid() ) {
 					iSkin  = iChild;
 					upSkin = true;
-				} else if ( iSkin != iChild )
+				} else if ( iSkin != iChild ) {
 					qWarning() << "shape block" << id() << "has multiple skin instances";
+				}
 			}
 		}
 	}
@@ -301,8 +302,9 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 		Controller * ctrl = new UVController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
-	} else
+	} else {
 		Node::setController( nif, iController );
+	}
 }
 
 bool Mesh::isHidden() const
@@ -623,8 +625,9 @@ void Mesh::transform()
 				if ( points.isValid() ) {
 					for ( int r = 0; r < nif->rowCount( points ); r++ )
 						tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
-				} else
+				} else {
 					qWarning() << nif->itemName( iData ) << "(" << nif->getBlockNumber( iData ) << ") 'points' array not found";
+				}
 
 				triangles.clear();
 			} else {
@@ -868,8 +871,9 @@ void Mesh::transformShapes()
 
 		for ( int c = 0; c < colors.count(); c++ )
 			transColors[c] = colors[c].blend( a );
-	} else
+	} else {
 		transColors = colors;
+	}
 }
 
 BoundSphere Mesh::bounds() const
@@ -923,8 +927,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		if ( transColors.count() ) {
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
-		} else
+		} else {
 			glColor( Color3( 1.0f, 0.2f, 1.0f ) );
+		}
 	}
 
 	if ( !Node::SELECTING )
@@ -972,7 +977,10 @@ void Mesh::drawSelection() const
 
 	if ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart
 	     && ( !iTangentData.isValid() || scene->currentBlock != iTangentData ) )
+	{
 		return;
+	}
+
 
 	if ( transformRigid ) {
 		glPushMatrix();

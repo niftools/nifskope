@@ -997,9 +997,9 @@ void DirectDrawSurface::printInfo() const
 	} else if ( header.caps.caps2 & DDSCAPS2_CUBEMAP ) {
 		printf( "\t\tDDSCAPS2_CUBEMAP\n" );
 
-		if ( (header.caps.caps2 & DDSCAPS2_CUBEMAP_ALL_FACES) == DDSCAPS2_CUBEMAP_ALL_FACES )
+		if ( (header.caps.caps2 & DDSCAPS2_CUBEMAP_ALL_FACES) == DDSCAPS2_CUBEMAP_ALL_FACES ) {
 			printf( "\t\tDDSCAPS2_CUBEMAP_ALL_FACES\n" );
-		else {
+		} else {
 			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEX ) printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEX\n" );
 			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_NEGATIVEX ) printf( "\t\tDDSCAPS2_CUBEMAP_NEGATIVEX\n" );
 			if ( header.caps.caps2 & DDSCAPS2_CUBEMAP_POSITIVEY ) printf( "\t\tDDSCAPS2_CUBEMAP_POSITIVEY\n" );

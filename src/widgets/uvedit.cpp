@@ -1015,8 +1015,9 @@ void UVWidget::select( int index, bool yes )
 	if ( yes ) {
 		if ( !selection.contains( index ) )
 			selection.append( index );
-	} else
+	} else {
 		selection.removeAll( index );
+	}
 
 	undoStack->push( new UVWSelectCommand( this, selection ) );
 }

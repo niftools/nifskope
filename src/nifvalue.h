@@ -418,40 +418,45 @@ inline bool NifValue::setCount( quint32 c )
 {
 	if ( isCount() ) {
 		val.u32 = c; return true;
-	} else
+	} else {
 		return false;
+	}
 }
 // documented above
 inline bool NifValue::setFloat( float f )
 {
 	if ( isFloat() ) {
 		val.f32 = f; return true;
-	} else
+	} else {
 		return false;
+	}
 }
 // documented above
 inline bool NifValue::setLink( int l )
 {
 	if ( isLink() ) {
 		val.i32 = l; return true;
-	} else
+	} else {
 		return false;
+	}
 }
 // documented above
 inline bool NifValue::setFileVersion( quint32 v )
 {
 	if ( isFileVersion() ) {
 		val.u32 = v; return true;
-	} else
+	} else {
 		return false;
+	}
 }
 
 template <typename T> inline T NifValue::getType( Type t ) const
 {
 	if ( typ == t )
 		return *static_cast<T *>( val.data ); // WARNING: this throws an exception if the type of v is not the original type by which val.data was initialized; the programmer must make sure that T matches t.
-	else
+	else {
 		return T();
+	}
 }
 
 template <typename T> inline bool NifValue::setType( Type t, T v )

@@ -51,35 +51,35 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 {
 	Property * property = 0;
 
-	if ( nif->isNiBlock( index, "NiAlphaProperty" ) )
+	if ( nif->isNiBlock( index, "NiAlphaProperty" ) ) {
 		property = new AlphaProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiZBufferProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiZBufferProperty" ) ) {
 		property = new ZBufferProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiTexturingProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiTexturingProperty" ) ) {
 		property = new TexturingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiTextureProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiTextureProperty" ) ) {
 		property = new TextureProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiMaterialProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiMaterialProperty" ) ) {
 		property = new MaterialProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiSpecularProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiSpecularProperty" ) ) {
 		property = new SpecularProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiWireframeProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiWireframeProperty" ) ) {
 		property = new WireframeProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiVertexColorProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiVertexColorProperty" ) ) {
 		property = new VertexColorProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiStencilProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiStencilProperty" ) ) {
 		property = new StencilProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSLightingShaderProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSLightingShaderProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( index.isValid() ) {
+	} else if ( index.isValid() ) {
 		NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 
 		if ( item )
@@ -156,8 +156,9 @@ void PropertyList::del( Property * p )
 
 			if ( --p->ref <= 0 )
 				delete p;
-		} else
+		} else {
 			++i;
+		}
 	}
 }
 
@@ -229,14 +230,16 @@ void glProperty( AlphaProperty * p )
 	if ( p && p->alphaBlend && Options::blending() ) {
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
-	} else
+	} else {
 		glDisable( GL_BLEND );
+	}
 
 	if ( p && p->alphaTest && Options::blending() ) {
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
-	} else
+	} else {
 		glDisable( GL_ALPHA_TEST );
+	}
 }
 
 void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
@@ -256,8 +259,9 @@ void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 			depthFunc = depthMap[ nif->get < int > ( iBlock, "Function" ) & 0x07 ];
 		} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
 			depthFunc = depthMap[ (flags >> 2 ) & 0x07 ];
-		} else
+		} else {
 			depthFunc = GL_LEQUAL;
+		}
 	}
 }
 
@@ -267,8 +271,9 @@ void glProperty( ZBufferProperty * p )
 		if ( p->depthTest ) {
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( p->depthFunc );
-		} else
+		} else {
 			glDisable( GL_DEPTH_TEST );
+		}
 
 		glDepthMask( p->depthMask ? GL_TRUE : GL_FALSE );
 	} else {
@@ -418,8 +423,9 @@ bool TexturingProperty::bind( int id, const QString & fname )
 
 		glMatrixMode( GL_MODELVIEW );
 		return true;
-	} else
+	} else {
 		return false;
+	}
 }
 
 bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )

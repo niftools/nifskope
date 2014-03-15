@@ -283,8 +283,9 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 							f->glAttachShader( id, shader->id );
 						else
 							throw QString( "depends on shader %1 which was not compiled successful" ).arg( list[ i ] );
-					} else
+					} else {
 						throw QString( "shader %1 not found" ).arg( list[ i ] );
+					}
 				}
 			} else if ( line.startsWith( "checkgroup" ) ) {
 				QStringList list = line.simplified().split( " " );
@@ -298,8 +299,9 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 						chkgrps.pop();
 					else
 						throw QString( "mismatching checkgroup end tag" );
-				} else
+				} else {
 					throw QString( "expected begin or end after checkgroup" );
+				}
 			} else if ( line.startsWith( "check" ) ) {
 				line = line.remove( 0, 5 ).trimmed();
 
@@ -588,8 +590,9 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( set >= 0 && set < mesh->coords.count() && mesh->coords[set].count() ) {
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 				glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
-			} else
+			} else {
 				return false;
+			}
 		} else if ( bsprop != NULL ) {
 			int txid = BSShaderLightingProperty::getId( itx.value() );
 
@@ -601,8 +604,9 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( set >= 0 && set < mesh->coords.count() && mesh->coords[set].count() ) {
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 				glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
-			} else
+			} else {
 				return false;
+			}
 		}
 	}
 

@@ -463,9 +463,9 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 				// This is not really an error
 				// if ( ! child && ! kf )
 				//	messages.append( Message() << tr("unassigned parent link") << linkId( nif, idx ) );
-			} else if ( l >= nif->getBlockCount() )
+			} else if ( l >= nif->getBlockCount() ) {
 				messages.append( Message() << tr( "invalid link" ) << linkId( nif, idx ) );
-			else {
+			} else {
 				QString tmplt = nif->itemTmplt( idx );
 
 				if ( !tmplt.isEmpty() ) {

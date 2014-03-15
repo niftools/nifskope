@@ -151,8 +151,9 @@ public:
 
 				if ( blk )
 					blk->types.append( data );
-			} else
+			} else {
 				err( tr( "only add tags allowed in compound type declaration" ) );
+			}
 
 			push( x );
 			break;
@@ -247,9 +248,9 @@ bool KfmModel::loadXML()
 	QString fname;
 	QStringList xmlList( QStringList()
 	                     << "kfm.xml"
-		#ifdef Q_OS_LINUX
+#ifdef Q_OS_LINUX
 	                     << "/usr/share/nifskope/kfm.xml"
-		#endif
+#endif
 	);
 	foreach ( QString str, xmlList ) {
 		if ( dir.exists( str ) ) {

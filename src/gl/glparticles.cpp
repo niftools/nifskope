@@ -217,8 +217,9 @@ public:
 
 				p.lasttime = localtime;
 				n++;
-			} else
+			} else {
 				list.remove( n );
+			}
 		}
 
 		if ( emitNode && emitNode->isVisible() && localtime >= emitStart && localtime <= emitStop ) {
@@ -366,8 +367,9 @@ void Particles::setController( const NifModel * nif, const QModelIndex & index )
 		Controller * ctrl = new ParticleController( this, index );
 		ctrl->update( nif, index );
 		controllers.append( ctrl );
-	} else
+	} else {
 		Node::setController( nif, index );
+	}
 }
 
 void Particles::transform()

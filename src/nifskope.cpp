@@ -609,8 +609,9 @@ void NifSkope::contextMenu( const QPoint & pos )
 	} else if ( sender() == ogl ) {
 		idx = ogl->indexAt( pos );
 		p = ogl->mapToGlobal( pos );
-	} else
+	} else {
 		return;
+	}
 
 	while ( idx.model() && idx.model()->inherits( "NifProxyModel" ) ) {
 		idx = qobject_cast<const NifProxyModel *>( idx.model() )->mapTo( idx );

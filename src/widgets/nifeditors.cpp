@@ -137,8 +137,9 @@ void NifBlockEditor::nifDataChanged( const QModelIndex & begin, const QModelInde
 			if ( !timer->isActive() )
 				timer->start();
 		}
-	} else
+	} else {
 		nifDestroyed();
+	}
 }
 
 void NifBlockEditor::updateData()
@@ -156,8 +157,9 @@ void NifBlockEditor::updateData()
 			box->setEnabled( box->getIndex().isValid() );
 			box->updateData( nif );
 		}
-	} else
+	} else {
 		nifDestroyed();
+	}
 
 	if ( timer->isActive() )
 		timer->stop();
@@ -255,8 +257,9 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 	if ( nif->getValue( index ).type() == NifValue::tColor4 ) {
 		getLayout()->addWidget( alpha = new AlphaSlider() );
 		connect( alpha, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
-	} else
+	} else {
 		alpha = 0;
+	}
 }
 
 void NifColorEdit::updateData( NifModel * nif )

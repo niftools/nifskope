@@ -112,8 +112,9 @@ template <typename T> bool Controller::interpolate( T & value, const QModelIndex
 	if ( nif && data.isValid() ) {
 		QModelIndex array = nif->getIndex( data, arrayid );
 		return interpolate( value, array, time, lastindex );
-	} else
+	} else {
 		return false;
+	}
 }
 
 class Interpolator : public QObject

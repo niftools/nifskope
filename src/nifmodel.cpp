@@ -170,10 +170,10 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 	if ( item == root )
 		return true;
 
-	if ( chkParents && item->parent() )
+	if ( chkParents && item->parent() ) {
 		if ( !evalVersion( item->parent(), true ) )
 			return false;
-
+	}
 
 
 	if ( !item->evalVersion( version ) )
@@ -367,10 +367,10 @@ void NifModel::updateHeader()
 			set<int>( idxBlockTypeIndices->child( r ), blocktypeindices.value( r ) );
 
 		// for version 20.2.0.? and above the block size is stored in the header
-		if ( version >= 0x14020000 && idxBlockSize )
+		if ( version >= 0x14020000 && idxBlockSize ) {
 			for ( int r = 0; r < idxBlockSize->childCount(); r++ )
 				set<quint32>( idxBlockSize->child( r ), blockSize( getBlockItem( r ) ) );
-
+		}
 
 
 		// For 20.1 and above strings are saved in the header.  Max String Length must be updated.
@@ -722,15 +722,13 @@ void NifModel::moveNiBlock( int src, int dst )
 
 	QMap<qint32, qint32> map;
 
-	if ( src < dst )
+	if ( src < dst ) {
 		for ( int l = src; l <= dst; l++ )
 			map.insert( l, l - 1 );
-
-
-	else
+	} else {
 		for ( int l = dst; l <= src; l++ )
 			map.insert( l, l + 1 );
-
+	}
 
 
 	map.insert( src, dst );
@@ -997,8 +995,9 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 		foreach ( NifData data, ancestor->types ) {
 			insertType( parent, data );
 		}
-	} else
+	} else {
 		msg( Message() << tr( "unknown ancestor %1" ).arg( identifier ) );
+	}
 }
 
 bool NifModel::inherits( const QString & name, const QString & aunty ) const
@@ -1138,14 +1137,15 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 	if ( column == ValueCol && item->parent() == root && item->type() == "NiBlock" ) {
 		QModelIndex buddy;
 
-		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
+		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" ) {
 			buddy = getIndex( index, "File Name" );
-		else if ( item->name() == "NiStringExtraData" )
+		} else if ( item->name() == "NiStringExtraData" ) {
 			buddy = getIndex( index, "String Data" );
 		//else if ( item->name() == "NiTransformInterpolator" && role == Qt::DisplayRole)
 		//	return QString(tr("TODO: find out who is referring me"));
-		else
+		} else {
 			buddy = getIndex( index, "Name" );
+		}
 
 		if ( buddy.isValid() )
 			buddy = buddy.sibling( buddy.row(), index.column() );
@@ -1273,8 +1273,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							} else {
 								return tr( "%1 <invalid>" ).arg( lnk );
 							}
-						} else
+						} else {
 							return tr( "None" );
+						}
 					} else if ( item->value().isCount() ) {
 						QString optId = NifValue::enumOptionName( item->type(), item->value().toCount() );
 
@@ -1627,8 +1628,9 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 		}
 
 		return true;
-	} else
+	} else {
 		return false;
+	}
 }
 
 
@@ -1657,9 +1659,9 @@ bool NifModel::setHeaderString( const QString & s )
 		v.remove( 0, p + 8 );
 
 		for ( int i = 0; i < v.length(); i++ ) {
-			if ( v[i].isDigit() || v[i] == QChar( '.' ) )
+			if ( v[i].isDigit() || v[i] == QChar( '.' ) ) {
 				continue;
-			else {
+			} else {
 				v = v.left( i );
 			}
 		}
@@ -1883,8 +1885,9 @@ bool NifModel::load( QIODevice & device )
 
 						if ( !load( root->child( c + 1 ), stream, true ) )
 							throw tr( "failed to load block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
-					} else
+					} else {
 						throw tr( "encountered unknown block (%1)" ).arg( blktyp );
+					}
 				}
 			}
 			catch ( QString err ) {
@@ -2469,8 +2472,9 @@ bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32
 		}
 
 		return true;
-	} else
+	} else {
 		return false;
+	}
 }
 
 bool NifModel::setLink( const QModelIndex & index, qint32 l )
@@ -2494,8 +2498,9 @@ bool NifModel::setLink( const QModelIndex & index, qint32 l )
 		}
 
 		return true;
-	} else
+	} else {
 		return false;
+	}
 }
 
 bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qint32> & links )
@@ -2633,9 +2638,9 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		NifItem * pItem;
 		int idx = -1;
 
-		if ( v.type() == NifValue::tStringIndex )
+		if ( v.type() == NifValue::tStringIndex ) {
 			idx = get<int>( pItem = item );
-		else if ( !v.isValid() ) {
+		} else if ( !v.isValid() ) {
 			pItem = getItem( item, "Index" );
 
 			if ( !pItem )
@@ -2645,8 +2650,9 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		} else if ( v.type() == NifValue::tSizedString && item->type() == "string" ) {
 			pItem = item;
 			idx = -1;
-		} else
+		} else {
 			return BaseModel::set<QString>( item, string );
+		}
 
 		QModelIndex header = getHeader();
 		int nstrings = get<int>( header, "Num Strings" );
