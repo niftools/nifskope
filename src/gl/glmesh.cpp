@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 #include "gltools.h"
 
+#include <QBuffer>
 #include <QDebug>
 
 
