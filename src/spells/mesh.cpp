@@ -141,10 +141,10 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		while ( itri.hasNext() ) {
 			Triangle & tri = itri.next();
 
-			for ( int t = 0; t < 3; t++ )
+			for ( int t = 0; t < 3; t++ ) {
 				if ( map.contains( tri[t] ) )
 					tri[t] = map[ tri[t] ];
-
+			}
 
 		}
 
@@ -264,10 +264,10 @@ public:
 		QAction * act = menu.exec( QCursor::pos() );
 
 		if ( act ) {
-			for ( int c = 0; c < 3; c++ )
+			for ( int c = 0; c < 3; c++ ) {
 				if ( act->text() == flipCmds[c] )
 					flip( nif, idx, c );
-
+			}
 
 		}
 
@@ -542,10 +542,10 @@ public:
 			while ( itri.hasNext() ) {
 				Triangle & t = itri.next();
 
-				for ( int p = 0; p < 3; p++ )
+				for ( int p = 0; p < 3; p++ ) {
 					if ( map.contains( t[p] ) )
 						t[p] = map.value( t[p] );
-
+				}
 
 			}
 

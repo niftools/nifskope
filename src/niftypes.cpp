@@ -274,10 +274,10 @@ Matrix Matrix::inverted () const
 	if ( fabs( d ) <= 0.0 )
 		return Matrix();
 
-	for ( int x = 0; x < 3; x++ )
+	for ( int x = 0; x < 3; x++ ) {
 		for ( int y = 0; y < 3; y++ )
 			i( x, y ) /= d;
-
+	}
 
 
 	return i;
@@ -319,10 +319,10 @@ void Matrix4::decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const
 
 	scale = Vector3( sqrt( mtx( 0, 0 ) ), sqrt( mtx( 1, 1 ) ), sqrt( mtx( 2, 2 ) ) );
 
-	for ( int i = 0; i < 3; i++ )
+	for ( int i = 0; i < 3; i++ ) {
 		for ( int j = 0; j < 3; j++ )
 			rot( i, j ) /= scale[ i ];
-
+	}
 
 }
 
@@ -337,10 +337,10 @@ void Matrix4::compose( const Vector3 & trans, const Matrix & rot, const Vector3 
 	m[3][1] = trans[1];
 	m[3][2] = trans[2];
 
-	for ( int i = 0; i < 3; i++ )
+	for ( int i = 0; i < 3; i++ ) {
 		for ( int j = 0; j < 3; j++ )
 			m[ i ][ j ] = rot( j, i ) * scale[ j ];
-
+	}
 
 }
 

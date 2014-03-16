@@ -809,10 +809,10 @@ public:
 	{
 		Matrix m3;
 
-		for ( int r = 0; r < 3; r++ )
+		for ( int r = 0; r < 3; r++ ) {
 			for ( int c = 0; c < 3; c++ )
 				m3.m[r][c] = m[r][0] * m2.m[0][c] + m[r][1] * m2.m[1][c] + m[r][2] * m2.m[2][c];
-
+		}
 
 		return m3;
 	}
@@ -882,10 +882,10 @@ public:
 	{
 		Matrix4 m3;
 
-		for ( int r = 0; r < 4; r++ )
+		for ( int r = 0; r < 4; r++ ) {
 			for ( int c = 0; c < 4; c++ )
 				m3.m[r][c] = m[r][0] * m2.m[0][c] + m[r][1] * m2.m[1][c] + m[r][2] * m2.m[2][c] + m[r][3] * m2.m[3][c];
-
+		}
 
 		return m3;
 	}

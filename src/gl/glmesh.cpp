@@ -603,11 +603,12 @@ void Mesh::transform()
 					Triangle t = ftriangles[i];
 					inv_idx = 0;
 
-					for ( int j = 0; j < 3; j++ )
+					for ( int j = 0; j < 3; j++ ) {
 						if ( t[j] >= verts.count() ) {
 							inv_idx = 1;
 							break;
 						}
+					}
 
 
 					if ( !inv_idx )

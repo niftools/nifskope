@@ -433,10 +433,10 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 
 static QString parentPrefix( const QString & x )
 {
-	for ( int c = 0; c < x.length(); c++ )
+	for ( int c = 0; c < x.length(); c++ ) {
 		if ( !x[c].isNumber() )
 			return QString( "../" ) + x;
-
+	}
 
 	return x;
 }
