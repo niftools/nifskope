@@ -213,13 +213,23 @@ QAbstractItemModel * NifProxyModel::model() const
 void NifProxyModel::setModel( QAbstractItemModel * model )
 {
 	if ( nif ) {
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-			this, SLOT( xDataChanged( const QModelIndex &, const QModelIndex & ) ) );
-		disconnect( nif, SIGNAL( headerDataChanged( Qt::Orientation, int, int ) ),
-			this, SLOT( xHeaderDataChanged( Qt::Orientation, int, int ) ) );
-		disconnect( nif, SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ), this, SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) ) );
-		disconnect( nif, SIGNAL( linksChanged() ),  this, SLOT( xLinksChanged() ) );
+		disconnect( nif,
+			SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
+			this,
+			SLOT( xDataChanged( const QModelIndex &, const QModelIndex & ) )
+		);
+		disconnect( nif,
+			SIGNAL( headerDataChanged( Qt::Orientation, int, int ) ),
+			this,
+			SLOT( xHeaderDataChanged( Qt::Orientation, int, int ) )
+		);
+		disconnect( nif,
+			SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ),
+			this,
+			SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) )
+		);
 
+		disconnect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
 		disconnect( nif, SIGNAL( modelReset() ), this, SLOT( reset() ) );
 		disconnect( nif, SIGNAL( layoutChanged() ), this, SIGNAL( layoutChanged() ) );
 	}
@@ -227,12 +237,23 @@ void NifProxyModel::setModel( QAbstractItemModel * model )
 	nif = qobject_cast<NifModel *>( model );
 
 	if ( nif ) {
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-			this, SLOT( xDataChanged( const QModelIndex &, const QModelIndex & ) ) );
-		connect( nif, SIGNAL( headerDataChanged( Qt::Orientation, int, int ) ),
-			this, SLOT( xHeaderDataChanged( Qt::Orientation, int, int ) ) );
+		connect( nif,
+			SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
+			this,
+			SLOT( xDataChanged( const QModelIndex &, const QModelIndex & ) )
+		);
+		connect( nif,
+			SIGNAL( headerDataChanged( Qt::Orientation, int, int ) ),
+			this,
+			SLOT( xHeaderDataChanged( Qt::Orientation, int, int ) )
+		);
+		connect( nif,
+			SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ),
+			this,
+			SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) )
+		);
+
 		connect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
-		connect( nif, SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ), this, SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) ) );
 		connect( nif, SIGNAL( modelReset() ), this, SLOT( reset() ) );
 		connect( nif, SIGNAL( layoutChanged() ), this, SIGNAL( layoutChanged() ) );
 	}
@@ -530,7 +551,8 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 			emit dataChanged( idx, idx );
 		}
 		return;
-	} else if ( begin.parent() == end.parent() ) {
+	}
+	if ( begin.parent() == end.parent() ) {
 		if ( begin.row() == end.row() ) {
 			int m = qMax( begin.column(), end.column() );
 
@@ -542,7 +564,8 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 			}
 
 			return;
-		} else if ( begin.column() == end.column() ) {
+		}
+		if ( begin.column() == end.column() ) {
 			int m = qMax( begin.row(), end.row() );
 
 			for ( int r = qMin( begin.row(), end.row() ); r < m; r++ ) {

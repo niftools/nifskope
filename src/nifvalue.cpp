@@ -47,55 +47,55 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  NifValue
  */
 
-QHash<QString, NifValue::Type>   NifValue::typeMap;
-QHash<QString, QString>      NifValue::typeTxt;
-QHash<QString, NifValue::EnumOptions>    NifValue::enumMap;
-QHash<QString, QString>      NifValue::aliasMap;
+QHash<QString, NifValue::Type>        NifValue::typeMap;
+QHash<QString, QString>               NifValue::typeTxt;
+QHash<QString, NifValue::EnumOptions> NifValue::enumMap;
+QHash<QString, QString>               NifValue::aliasMap;
 
 void NifValue::initialize()
 {
 	typeMap.clear();
 	typeTxt.clear();
 
-	typeMap.insert( "bool", NifValue::tBool );
-	typeMap.insert( "byte", NifValue::tByte );
-	typeMap.insert( "word", NifValue::tWord );
-	typeMap.insert( "short", NifValue::tShort );
-	typeMap.insert( "int", NifValue::tInt );
-	typeMap.insert( "flags", NifValue::tFlags );
+	typeMap.insert( "bool",   NifValue::tBool );
+	typeMap.insert( "byte",   NifValue::tByte );
+	typeMap.insert( "word",   NifValue::tWord );
+	typeMap.insert( "short",  NifValue::tShort );
+	typeMap.insert( "int",    NifValue::tInt );
+	typeMap.insert( "flags",  NifValue::tFlags );
 	typeMap.insert( "ushort", NifValue::tWord );
-	typeMap.insert( "uint", NifValue::tUInt );
-	typeMap.insert( "link", NifValue::tLink );
+	typeMap.insert( "uint",   NifValue::tUInt );
+	typeMap.insert( "link",   NifValue::tLink );
 	typeMap.insert( "uplink", NifValue::tUpLink );
-	typeMap.insert( "float", NifValue::tFloat );
+	typeMap.insert( "float",  NifValue::tFloat );
 	typeMap.insert( "sizedstring", NifValue::tSizedString );
-	typeMap.insert( "text", NifValue::tText );
+	typeMap.insert( "text",        NifValue::tText );
 	typeMap.insert( "shortstring", NifValue::tShortString );
-	typeMap.insert( "color3", NifValue::tColor3 );
-	typeMap.insert( "color4", NifValue::tColor4 );
-	typeMap.insert( "vector4", NifValue::tVector4 );
-	typeMap.insert( "vector3", NifValue::tVector3 );
-	typeMap.insert( "quat", NifValue::tQuat );
-	typeMap.insert( "quaternion", NifValue::tQuat );
+	typeMap.insert( "color3",      NifValue::tColor3 );
+	typeMap.insert( "color4",      NifValue::tColor4 );
+	typeMap.insert( "vector4",     NifValue::tVector4 );
+	typeMap.insert( "vector3",     NifValue::tVector3 );
+	typeMap.insert( "quat",        NifValue::tQuat );
+	typeMap.insert( "quaternion",  NifValue::tQuat );
 	typeMap.insert( "quaternion_wxyz", NifValue::tQuat );
 	typeMap.insert( "quaternion_xyzw", NifValue::tQuatXYZW );
-	typeMap.insert( "matrix33", NifValue::tMatrix );
-	typeMap.insert( "matrix44", NifValue::tMatrix4 );
-	typeMap.insert( "vector2", NifValue::tVector2 );
-	typeMap.insert( "triangle", NifValue::tTriangle );
-	typeMap.insert( "bytearray", NifValue::tByteArray );
-	typeMap.insert( "bytematrix", NifValue::tByteMatrix );
-	typeMap.insert( "fileversion", NifValue::tFileVersion );
-	typeMap.insert( "headerstring", NifValue::tHeaderString );
-	typeMap.insert( "linestring", NifValue::tLineString );
-	typeMap.insert( "stringpalette", NifValue::tStringPalette );
-	typeMap.insert( "stringoffset", NifValue::tStringOffset );
-	typeMap.insert( "stringindex", NifValue::tStringIndex );
+	typeMap.insert( "matrix33",       NifValue::tMatrix );
+	typeMap.insert( "matrix44",       NifValue::tMatrix4 );
+	typeMap.insert( "vector2",        NifValue::tVector2 );
+	typeMap.insert( "triangle",       NifValue::tTriangle );
+	typeMap.insert( "bytearray",      NifValue::tByteArray );
+	typeMap.insert( "bytematrix",     NifValue::tByteMatrix );
+	typeMap.insert( "fileversion",    NifValue::tFileVersion );
+	typeMap.insert( "headerstring",   NifValue::tHeaderString );
+	typeMap.insert( "linestring",     NifValue::tLineString );
+	typeMap.insert( "stringpalette",  NifValue::tStringPalette );
+	typeMap.insert( "stringoffset",   NifValue::tStringOffset );
+	typeMap.insert( "stringindex",    NifValue::tStringIndex );
 	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
-	typeMap.insert( "char8string", NifValue::tChar8String );
-	typeMap.insert( "string", NifValue::tString );
+	typeMap.insert( "char8string",    NifValue::tChar8String );
+	typeMap.insert( "string",   NifValue::tString );
 	typeMap.insert( "filepath", NifValue::tFilePath );
-	typeMap.insert( "blob", NifValue::tBlob );
+	typeMap.insert( "blob",     NifValue::tBlob );
 
 	enumMap.clear();
 }
@@ -659,17 +659,17 @@ QString NifValue::toString() const
 		{
 			Color3 * col = static_cast<Color3 *>( val.data );
 			return QString( "#%1%2%3" )
-			       .arg( (int)( col->red() * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( col->red() * 0xff ),   2, 16, QChar( '0' ) )
 			       .arg( (int)( col->green() * 0xff ), 2, 16, QChar( '0' ) )
-			       .arg( (int)( col->blue() * 0xff ), 2, 16, QChar( '0' ) );
+			       .arg( (int)( col->blue() * 0xff ),  2, 16, QChar( '0' ) );
 		}
 	case tColor4:
 		{
 			Color4 * col = static_cast<Color4 *>( val.data );
 			return QString( "#%1%2%3%4" )
-			       .arg( (int)( col->red() * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( col->red() * 0xff ),   2, 16, QChar( '0' ) )
 			       .arg( (int)( col->green() * 0xff ), 2, 16, QChar( '0' ) )
-			       .arg( (int)( col->blue() * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( col->blue() * 0xff ),  2, 16, QChar( '0' ) )
 			       .arg( (int)( col->alpha() * 0xff ), 2, 16, QChar( '0' ) );
 		}
 	case tVector2:
@@ -737,9 +737,9 @@ QString NifValue::toString() const
 			       .arg( t[0], 0, 'f', 3 )
 			       .arg( t[1], 0, 'f', 3 )
 			       .arg( t[2], 0, 'f', 3 )
-			       .arg( xr, 0, 'f', 3 )
-			       .arg( yr, 0, 'f', 3 )
-			       .arg( zr, 0, 'f', 3 )
+			       .arg( xr,   0, 'f', 3 )
+			       .arg( yr,   0, 'f', 3 )
+			       .arg( zr,   0, 'f', 3 )
 			       .arg( s[0], 0, 'f', 3 )
 			       .arg( s[1], 0, 'f', 3 )
 			       .arg( s[2], 0, 'f', 3 );
@@ -804,8 +804,8 @@ QColor NifValue::toColor() const
 
 void NifOStream::init()
 {
-	bool32bit  = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
+	bool32bit    = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
+	linkAdjust   = ( model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D );
 	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
 }
 
@@ -1141,10 +1141,11 @@ bool NifIStream::read( NifValue & val )
 
 void NifIStream::init()
 {
-	bool32bit  = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() < 0x0303000D );
+	bool32bit    = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
+	linkAdjust   = ( model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D );
 	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
-	bigEndian  = false; // set when tFileVersion is read
+	bigEndian    = false; // set when tFileVersion is read
+
 	dataStream = new QDataStream( device );
 	dataStream->setByteOrder( QDataStream::LittleEndian );
 	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
@@ -1479,12 +1480,11 @@ int NifSStream::size( const NifValue & val )
 		{
 			if ( stringAdjust ) {
 				return 4;
-			} else {
-				QByteArray string = static_cast<QString *>( val.val.data )->toLatin1();
-				//string.replace( "\\r", "\r" );
-				//string.replace( "\\n", "\n" );
-				return 4 + string.size();
 			}
+			QByteArray string = static_cast<QString *>( val.val.data )->toLatin1();
+			//string.replace( "\\r", "\r" );
+			//string.replace( "\\n", "\n" );
+			return 4 + string.size();
 		}
 
 	case NifValue::tBlob:

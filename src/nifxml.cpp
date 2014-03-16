@@ -43,10 +43,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! Set NifXmlHandler::errorStr and return
 #define err( X ) { errorStr = X; return false; }
 
-QReadWriteLock NifModel::XMLlock;
-QList<quint32>                  NifModel::supportedVersions;
-QHash<QString, NifBlock *>        NifModel::compounds;
-QHash<QString, NifBlock *>        NifModel::blocks;
+QReadWriteLock             NifModel::XMLlock;
+QList<quint32>             NifModel::supportedVersions;
+QHash<QString, NifBlock *> NifModel::compounds;
+QHash<QString, NifBlock *> NifModel::blocks;
 
 //! Parses nif.xml
 class NifXmlHandler : public QXmlDefaultHandler
@@ -306,7 +306,7 @@ public:
 						NifModel::version2number( list.value( "ver1" ) ),
 						NifModel::version2number( list.value( "ver2" ) ),
 						( list.value( "abstract" ) == "1" )
-					       );
+					);
 
 					if ( data.isAbstract() ) {
 						data.value.setAbstract( true );
@@ -326,7 +326,6 @@ public:
 					}
 
 					QString vercond = list.value( "vercond" );
-
 					QString userver = list.value( "userver" );
 
 					if ( !userver.isEmpty() ) {
@@ -409,14 +408,12 @@ public:
 
 		switch ( x ) {
 		case tagCompound:
-
 			if ( blk && !blk->id.isEmpty() && !blk->text.isEmpty() )
 				NifValue::setTypeDescription( blk->id, blk->text );
 			else if ( !typId.isEmpty() && !typTxt.isEmpty() )
 				NifValue::setTypeDescription( typId, typTxt );
 
 		case tagBlock:
-
 			if ( blk ) {
 				if ( blk->id.isEmpty() ) {
 					delete blk;
@@ -440,7 +437,6 @@ public:
 
 			break;
 		case tagAdd:
-
 			if ( blk )
 				blk->types.append( data );
 
@@ -476,7 +472,6 @@ public:
 			break;
 		case tagCompound:
 		case tagBlock:
-
 			if ( blk )
 				blk->text += s.trimmed();
 			else
@@ -504,13 +499,21 @@ public:
 	//! Checks that the type of the data is valid
 	bool checkType( const NifData & data )
 	{
-		return NifModel::compounds.contains( data.type() ) || NifValue::type( data.type() ) != NifValue::tNone || data.type() == "TEMPLATE";
+		return ( NifModel::compounds.contains( data.type() )
+		        || NifValue::type( data.type() ) != NifValue::tNone
+		        || data.type() == "TEMPLATE"
+		);
 	}
 
 	//! Checks that a template type is valid
 	bool checkTemp( const NifData & data )
 	{
-		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE" || NifModel::blocks.contains( data.temp() ) || NifModel::compounds.contains( data.temp() );
+		return ( data.temp().isEmpty()
+		        || NifValue::type( data.temp() ) != NifValue::tNone
+		        || data.temp() == "TEMPLATE"
+		        || NifModel::blocks.contains( data.temp() )
+		        || NifModel::compounds.contains( data.temp() )
+		);
 	}
 
 	//! Reimplemented from QXmlContentHandler
@@ -571,8 +574,8 @@ public:
 // documented in nifmodel.h
 bool NifModel::loadXML()
 {
-	QDir dir( QApplication::applicationDirPath() );
-	QString fname;
+	QDir        dir( QApplication::applicationDirPath() );
+	QString     fname;
 	QStringList xmlList( QStringList()
 	                     << "nif.xml"
 #ifdef Q_OS_LINUX
@@ -620,8 +623,11 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	reader.parse( source );
 
 	if ( !handler.errorString().isEmpty() ) {
-		qDeleteAll( compounds );    compounds.clear();
-		qDeleteAll( blocks );       blocks.clear();
+		qDeleteAll( compounds );
+		compounds.clear();
+
+		qDeleteAll( blocks );
+		blocks.clear();
 
 		supportedVersions.clear();
 	}

@@ -40,11 +40,9 @@ static bool addLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 			nif->updateArray( iArray );
 			nif->setLink( iArray.child( numlinks, 0 ), link );
 			return true;
-		} else {
-			// no clue what this is, fail
-			return false;
 		}
-	} else if ( iArray.isValid() && ( iArray.flags() & Qt::ItemIsEnabled ) ) {
+
+	} else if ( iArray.isValid() && (iArray.flags() & Qt::ItemIsEnabled) ) {
 		// static array, find a empty entry and insert link there
 		NifItem * item = static_cast<NifItem *>( iArray.internalPointer() );
 
@@ -56,12 +54,9 @@ static bool addLink( NifModel * nif, QModelIndex iParent, QString array, int lin
 				}
 			}
 		}
-
-		// failed in some way, either array not valid or no empty entry found
-		return false;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 //! Remove a link to a block from the specified link array

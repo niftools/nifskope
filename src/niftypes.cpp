@@ -286,19 +286,30 @@ Matrix Matrix::inverted () const
 QString Matrix::toHtml() const
 {
 	return QString( "<table>" )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" ).arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 ).arg( m[0][2], 0, 'f', 4 )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" ).arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 ).arg( m[1][2], 0, 'f', 4 )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" ).arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 ).arg( m[2][2], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" )
+	           .arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 ).arg( m[0][2], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" )
+	           .arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 ).arg( m[1][2], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td></tr>" )
+	           .arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 ).arg( m[2][2], 0, 'f', 4 )
 	       + QString( "</table>" );
 }
 
 QString Matrix4::toHtml() const
 {
 	return QString( "<table>" )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 ).arg( m[0][2], 0, 'f', 4 ).arg( m[0][3], 0, 'f', 4 )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 ).arg( m[1][2], 0, 'f', 4 ).arg( m[1][3], 0, 'f', 4 )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 ).arg( m[2][2], 0, 'f', 4 ).arg( m[2][3], 0, 'f', 4 )
-	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" ).arg( m[3][0], 0, 'f', 4 ).arg( m[3][1], 0, 'f', 4 ).arg( m[3][2], 0, 'f', 4 ).arg( m[3][3], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" )
+	           .arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 )
+	           .arg( m[0][2], 0, 'f', 4 ).arg( m[0][3], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" )
+	           .arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 )
+	           .arg( m[1][2], 0, 'f', 4 ).arg( m[1][3], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" )
+	           .arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 )
+	           .arg( m[2][2], 0, 'f', 4 ).arg( m[2][3], 0, 'f', 4 )
+	       + QString( "<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>" )
+	           .arg( m[3][0], 0, 'f', 4 ).arg( m[3][1], 0, 'f', 4 )
+	           .arg( m[3][2], 0, 'f', 4 ).arg( m[3][3], 0, 'f', 4 )
 	       + QString( "</table>" );
 }
 

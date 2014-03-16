@@ -128,12 +128,10 @@ public:
 	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 	{
 		int namerole = NifSkopeDisplayRole;
-		namerole = (index.isValid() && index.column() == 0) ?
-		           Qt::DisplayRole : NifSkopeDisplayRole;
+		namerole = (index.isValid() && index.column() == 0) ? Qt::DisplayRole : NifSkopeDisplayRole;
 
 		QString text = index.data( namerole ).toString();
 		QString deco = index.data( Qt::DecorationRole ).toString();
-
 		QString user = index.data( Qt::UserRole ).toString();
 		QIcon icon;
 
@@ -155,7 +153,7 @@ public:
 		}
 
 		opt.state |= QStyle::State_Active;
-		QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
+		QPalette::ColorGroup cg = ( opt.state & QStyle::State_Enabled ) ? QPalette::Normal : QPalette::Disabled;
 
 		QVariant color = index.data( Qt::BackgroundColorRole );
 
@@ -211,7 +209,7 @@ public:
 				}
 			}
 
-			if ( w == NULL && ValueEdit::canEdit( nv.type() ) )
+			if ( !w && ValueEdit::canEdit( nv.type() ) )
 				w = new ValueEdit( parent );
 		} else if ( v.type() == QVariant::String ) {
 			QLineEdit * le = new QLineEdit( parent );
@@ -299,7 +297,9 @@ public:
 
 	QRect textRect( const QStyleOptionViewItem & opt ) const
 	{
-		return QRect( QPoint( opt.rect.x() + opt.decorationSize.width(), opt.rect.y() ), QSize( opt.rect.width() - opt.decorationSize.width(), opt.rect.height() ) );
+		return QRect( QPoint( opt.rect.x() + opt.decorationSize.width(), opt.rect.y() ),
+		              QSize( opt.rect.width() - opt.decorationSize.width(), opt.rect.height() )
+		);
 	}
 };
 

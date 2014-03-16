@@ -697,7 +697,8 @@ public:
 		    (wxyz[0] * wxyz[0])
 		    + (wxyz[1] * wxyz[1])
 		    + (wxyz[2] * wxyz[2])
-		    + (wxyz[3] * wxyz[3]) );
+		    + (wxyz[3] * wxyz[3])
+		);
 		wxyz[0] /= mag;
 		wxyz[1] /= mag;
 		wxyz[2] /= mag;
@@ -810,8 +811,11 @@ public:
 		Matrix m3;
 
 		for ( int r = 0; r < 3; r++ ) {
-			for ( int c = 0; c < 3; c++ )
-				m3.m[r][c] = m[r][0] * m2.m[0][c] + m[r][1] * m2.m[1][c] + m[r][2] * m2.m[2][c];
+			for ( int c = 0; c < 3; c++ ) {
+				m3.m[r][c] = m[r][0] * m2.m[0][c]
+				           + m[r][1] * m2.m[1][c]
+				           + m[r][2] * m2.m[2][c];
+			}
 		}
 
 		return m3;
@@ -822,7 +826,8 @@ public:
 		return Vector3(
 			m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
 			m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
-			m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2] );
+			m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2]
+		);
 	}
 	//! %Element operator
 	float & operator()( unsigned int c, unsigned int d )
@@ -883,8 +888,12 @@ public:
 		Matrix4 m3;
 
 		for ( int r = 0; r < 4; r++ ) {
-			for ( int c = 0; c < 4; c++ )
-				m3.m[r][c] = m[r][0] * m2.m[0][c] + m[r][1] * m2.m[1][c] + m[r][2] * m2.m[2][c] + m[r][3] * m2.m[3][c];
+			for ( int c = 0; c < 4; c++ ) {
+				m3.m[r][c] = m[r][0] * m2.m[0][c]
+				           + m[r][1] * m2.m[1][c]
+				           + m[r][2] * m2.m[2][c]
+				           + m[r][3] * m2.m[3][c];
+			}
 		}
 
 		return m3;
@@ -895,7 +904,8 @@ public:
 		return Vector3(
 			m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2] + m[0][3],
 			m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2] + m[1][3],
-			m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2] + m[2][3] );
+			m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2] + m[2][3]
+		);
 	}
 	//! %Element operator
 	float & operator()( unsigned int c, unsigned int d )
@@ -1295,7 +1305,7 @@ public:
 	void setAlpha( float a ) { rgba[3] = a; }
 
 	//! Set the color components
-	void setRGBA( float r, float g, float b, float a ) { rgba[ 0 ] = r; rgba[ 1 ] = g; rgba[ 2 ] = b; rgba[ 3 ] = a; }
+	void setRGBA( float r, float g, float b, float a ) { rgba[0] = r; rgba[1] = g; rgba[2] = b; rgba[3] = a; }
 
 	//! Convert to QColor
 	QColor toQColor() const
@@ -1385,7 +1395,9 @@ public:
 
 	//! Default Destructor
 	~FixedMatrix()
-	{ free( v_ ); }
+	{
+		free( v_ );
+	}
 
 	//! Copy Assignment
 	FixedMatrix & operator=( const FixedMatrix & other )
