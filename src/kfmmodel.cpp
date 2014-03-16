@@ -253,10 +253,9 @@ bool KfmModel::setHeaderString( const QString & s )
 			msg( Message() << tr( "version" ) << version2string( version ) << tr( "not supported yet" ) );
 			return false;
 		}
-	} else {
-		msg( Message() << tr( "this is not a KFM" ) );
-		return false;
 	}
+	msg( Message() << tr( "this is not a KFM" ) );
+	return false;
 }
 
 bool KfmModel::load( QIODevice & device )
@@ -308,10 +307,10 @@ bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
 			} else if ( child->childCount() > 0 ) {
 				if ( !load( child, stream, fast ) )
 					return false;
-			} else {
-				if ( !stream.read( child->value() ) )
-					return false;
 			}
+
+			if ( !stream.read( child->value() ) )
+				return false;
 		}
 	}
 
@@ -333,10 +332,10 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 
 				if ( !save( child, stream ) )
 					return false;
-			} else {
-				if ( !stream.write( child->value() ) )
-					return false;
 			}
+
+			if ( !stream.write( child->value() ) )
+				return false;
 		}
 	}
 

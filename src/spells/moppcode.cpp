@@ -39,8 +39,10 @@ private:
 	fnGenerateMoppCodeWithSubshapes GenerateMoppCodeWithSubshapes;
 
 public:
-	HavokMoppCode() : hMoppLib( 0 ), GenerateMoppCode( 0 ), RetrieveMoppCode( 0 )
-		, RetrieveMoppScale( 0 ), RetrieveMoppOrigin( 0 ), GenerateMoppCodeWithSubshapes( 0 ) {}
+	HavokMoppCode() : hMoppLib( 0 ), GenerateMoppCode( 0 ), RetrieveMoppCode( 0 ), RetrieveMoppScale( 0 ),
+		  RetrieveMoppOrigin( 0 ), GenerateMoppCodeWithSubshapes( 0 )
+	{
+	}
 
 	~HavokMoppCode()
 	{
@@ -90,10 +92,10 @@ public:
 		return code;
 	}
 
-	QByteArray CalculateMoppCode( QVector<int> const & subShapesVerts
-	                              , QVector<Vector3> const & verts
-	                              , QVector<Triangle> const & tris
-	                              , Vector3 * origin, float * scale )
+	QByteArray CalculateMoppCode( QVector<int> const & subShapesVerts,
+	                              QVector<Vector3> const & verts,
+	                              QVector<Triangle> const & tris,
+	                              Vector3 * origin, float * scale )
 	{
 		QByteArray code;
 

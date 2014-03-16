@@ -97,11 +97,11 @@ quint32 NifModel::version2number( const QString & s )
 		quint32 v = 0;
 
 		if ( l.count() > 4 ) {
-			//Should probaby post a warning here or something.  Version # has more than 3 dots in it.
+			// Should probaby post a warning here or something.  Version # has more than 3 dots in it.
 			return 0;
 		} else if ( l.count() == 2 ) {
-			//This is an old style version number.  Take each digit following the first one at a time.
-			//The first one is the major version
+			// This is an old style version number.  Take each digit following the first one at a time.
+			// The first one is the major version
 			v += l[0].toInt() << (3 * 8);
 
 			if ( l[1].size() >= 1 ) {
@@ -117,19 +117,19 @@ quint32 NifModel::version2number( const QString & s )
 			}
 
 			return v;
-		} else {
-			//This is a new style version number with dots separating the digits
-			for ( int i = 0; i < 4 && i < l.count(); i++ ) {
-				v += l[i].toInt( 0, 10 ) << ( (3 - i) * 8 );
-			}
-
-			return v;
 		}
-	} else {
-		bool ok;
-		quint32 i = s.toUInt( &ok );
-		return ( i == 0xffffffff ? 0 : i );
+
+		// This is a new style version number with dots separating the digits
+		for ( int i = 0; i < 4 && i < l.count(); i++ ) {
+			v += l[i].toInt( 0, 10 ) << ( (3 - i) * 8 );
+		}
+
+		return v;
 	}
+
+	bool ok;
+	quint32 i = s.toUInt( &ok );
+	return ( i == 0xffffffff ? 0 : i );
 }
 
 // Helper class for evaluating condition expressions
@@ -256,8 +256,8 @@ QModelIndex NifModel::getFooter() const
 
 	if ( footer )
 		return createIndex( footer->row(), 0, footer );
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 void NifModel::updateFooter()
@@ -413,8 +413,8 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 
 		if ( left == ".." )
 			return getItem( item->parent(), right );
-		else
-			return getItem( getItem( item, left ), right );
+
+		return getItem( getItem( item, left ), right );
 	}
 
 	for ( int c = 0; c < item->childCount(); c++ ) {
@@ -682,10 +682,10 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 		}
 
 		return createIndex( branch->row(), 0, branch );
-	} else {
-		msg( Message() << tr( "unknown block %1" ).arg( identifier ) );
-		return QModelIndex();
 	}
+
+	msg( Message() << tr( "unknown block %1" ).arg( identifier ) );
+	return QModelIndex();
 }
 
 void NifModel::removeNiBlock( int blocknum )
@@ -945,8 +945,8 @@ QModelIndex NifModel::getBlock( int x, const QString & name ) const
 
 	if ( inherits( idx, name ) )
 		return idx;
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) const
@@ -956,8 +956,8 @@ bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) cons
 	if ( index.isValid() && item && item->parent() == root && getBlockNumber( item ) >= 0 ) {
 		if ( name.isEmpty() )
 			return true;
-		else
-			return item->name() == name;
+
+		return item->name() == name;
 	}
 
 	return false;
@@ -1195,16 +1195,16 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				break;
 			case TypeCol:
 				{
-					if ( !item->temp().isEmpty() ) {
+					if ( !item->temp().isEmpty() ){
 						NifItem * i = item;
 
 						while ( i && i->temp() == "TEMPLATE" )
 							i = i->parent();
 
 						return QString( "%1<%2>" ).arg( item->type() ).arg( i ? i->temp() : QString() );
-					} else {
-						return item->type();
 					}
+
+					return item->type();
 				}
 				break;
 			case ValueCol:
@@ -1214,9 +1214,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 					if ( value.type() == NifValue::tString || value.type() == NifValue::tFilePath ) {
 						return QString( this->string( index ) ).replace( "\n", " " ).replace( "\r", " " );
-					} else if ( item->value().type() == NifValue::tStringOffset ) {
+					}
+					else if ( item->value().type() == NifValue::tStringOffset )
+					{
 						int ofs = item->value().get<int>();
-
 						if ( ofs < 0 || ofs == 0x0000FFFF )
 							return QString( "<empty>" );
 
@@ -1228,14 +1229,15 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 							if ( ofs < bytes.count() )
 								return QString( &bytes.data()[ofs] );
-							else
-								return tr( "<offset invalid>" );
-						} else {
-							return tr( "<palette not found>" );
-						}
-					} else if ( item->value().type() == NifValue::tStringIndex ) {
-						int idx = item->value().get<int>();
 
+							return tr( "<offset invalid>" );
+						}
+
+						return tr( "<palette not found>" );
+					}
+					else if ( item->value().type() == NifValue::tStringIndex )
+					{
+						int idx = item->value().get<int>();
 						if ( idx == -1 )
 							return QString();
 
@@ -1247,7 +1249,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							return QString( "%2 [%1]" ).arg( idx ).arg( string );
 
 						return tr( "%1 - <index invalid>" ).arg( idx );
-					} else if ( item->value().type() == NifValue::tBlockTypeIndex ) {
+					}
+					else if ( item->value().type() == NifValue::tBlockTypeIndex )
+					{
+
 						int idx = item->value().get<int>();
 						int offset = idx & 0x7FFF;
 						NifItem * blocktypes = getItemX( item, "Block Types" );
@@ -1255,9 +1260,11 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 						if ( blocktyp )
 							return QString( "%2 [%1]" ).arg( idx ).arg( blocktyp->value().get<QString>() );
-						else
-							return tr( "%1 - <index invalid>" ).arg( idx );
-					} else if ( item->value().isLink() ) {
+
+						return tr( "%1 - <index invalid>" ).arg( idx );
+					}
+					else if ( item->value().isLink() )
+					{
 						int lnk = item->value().toLink();
 
 						if ( lnk >= 0 ) {
@@ -1268,24 +1275,26 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 								if ( block_name.isValid() && !get<QString>( block_name ).isEmpty() )
 									return QString( "%1 (%2)" ).arg( lnk ).arg( get<QString>( block_name ) );
-								else
-									return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
-							} else {
-								return tr( "%1 <invalid>" ).arg( lnk );
+
+								return QString( "%1 [%2]" ).arg( lnk ).arg( itemName( block ) );
 							}
-						} else {
-							return tr( "None" );
+
+							return tr( "%1 <invalid>" ).arg( lnk );
 						}
-					} else if ( item->value().isCount() ) {
+
+						return tr( "None" );
+					}
+					else if ( item->value().isCount() )
+					{
 						QString optId = NifValue::enumOptionName( item->type(), item->value().toCount() );
 
 						if ( optId.isEmpty() )
 							return item->value().toString();
-						else
-							return QString( "%1" ).arg( optId );
-					} else {
-						return item->value().toString().replace( "\n", " " ).replace( "\r", " " );
+
+						return QString( "%1" ).arg( optId );
 					}
+
+					return item->value().toString().replace( "\n", " " ).replace( "\r", " " );
 				}
 				break;
 			case ArgCol:
@@ -1628,9 +1637,9 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 		}
 
 		return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 
@@ -1678,10 +1687,10 @@ bool NifModel::setHeaderString( const QString & s )
 		// Dodgy version for NeoSteam
 		version = 0x0a010000;
 		return true;
-	} else {
-		msg( Message() << tr( "invalid header string" ) );
-		return false;
 	}
+
+	msg( Message() << tr( "invalid header string" ) );
+	return false;
 }
 
 bool NifModel::load( QIODevice & device )
@@ -2472,9 +2481,9 @@ bool NifModel::setLink( const QModelIndex & parent, const QString & name, qint32
 		}
 
 		return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 bool NifModel::setLink( const QModelIndex & index, qint32 l )
@@ -2498,9 +2507,9 @@ bool NifModel::setLink( const QModelIndex & index, qint32 l )
 		}
 
 		return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 bool NifModel::setLinkArray( const QModelIndex & iArray, const QVector<qint32> & links )
@@ -2560,8 +2569,8 @@ int NifModel::getParent( int block ) const
 		if ( childLinks.value( b ).contains( block ) ) {
 			if ( parent < 0 )
 				parent = b;
-			else
-				return -1;
+
+			return -1;
 		}
 	}
 
@@ -2584,9 +2593,7 @@ QString NifModel::string( const QModelIndex & index, bool extraInfo ) const
 		else if ( !v.isValid() )
 			idx = get<int>( getIndex( index, "Index" ) );
 
-		if ( idx == -1 ) {
-			return QString();
-		} else if ( idx >= 0 ) {
+		if ( idx >= 0 ) {
 			NifItem * header = this->getHeaderItem();
 			QModelIndex stringIndex = createIndex( header->row(), 0, header );
 
@@ -2597,20 +2604,20 @@ QString NifModel::string( const QModelIndex & index, bool extraInfo ) const
 					string = QString( "%2 [%1]" ).arg( idx ).arg( string );
 
 				return string;
-			} else {
-				return tr( "%1 - <index invalid>" ).arg( idx );
 			}
-		}
-	} else {
-		if ( v.type() == NifValue::tNone ) {
-			QModelIndex iIndex = getIndex( index, "String" );
 
-			if ( iIndex.isValid() )
-				return BaseModel::get<QString>( iIndex );
-		} else {
-			return BaseModel::get<QString>( index );
+			return tr( "%1 - <index invalid>" ).arg( idx );
 		}
+
+		return QString();
 	}
+
+	if ( v.type() != NifValue::tNone )
+		return BaseModel::get<QString>( index );
+
+	QModelIndex iIndex = getIndex( index, "String" );
+	if ( iIndex.isValid() )
+		return BaseModel::get<QString>( iIndex );
 
 	return QString();
 }

@@ -249,8 +249,8 @@ float Controller::ctrlTime( float time ) const
 
 			if ( ( ( (int)fabs( floor( x ) ) ) & 1 ) == 0 )
 				return start + y;
-			else
-				return stop - y;
+
+			return stop - y;
 		}
 	case Constant:
 	default:
@@ -313,12 +313,12 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 			x = ( time - tI ) / ( tJ - tI );
 
 			return true;
-		} else {
-			j = i;
-			x = 0.0;
-
-			return true;
 		}
+
+		j = i;
+		x = 0.0;
+
+		return true;
 	}
 
 	return false;

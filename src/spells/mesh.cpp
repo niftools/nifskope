@@ -44,8 +44,8 @@ static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & in
 
 	if ( nif->isNiBlock( iData, "NiTriShapeData" ) )
 		return iData;
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 //! Removes elements of the specified type from an array

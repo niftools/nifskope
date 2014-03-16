@@ -623,8 +623,8 @@ uint DirectDrawSurface::mipmapCount() const
 {
 	if ( header.flags & DDSD_MIPMAPCOUNT )
 		return header.mipmapcount;
-	else
-		return 1;
+
+	return 1;
 }
 
 
@@ -632,24 +632,24 @@ uint DirectDrawSurface::width() const
 {
 	if ( header.flags & DDSD_WIDTH )
 		return header.width;
-	else
-		return 1;
+
+	return 1;
 }
 
 uint DirectDrawSurface::height() const
 {
 	if ( header.flags & DDSD_HEIGHT )
 		return header.height;
-	else
-		return 1;
+
+	return 1;
 }
 
 uint DirectDrawSurface::depth() const
 {
 	if ( header.flags & DDSD_DEPTH )
 		return header.depth;
-	else
-		return 1;
+
+	return 1;
 }
 
 bool DirectDrawSurface::hasAlpha() const
@@ -658,9 +658,9 @@ bool DirectDrawSurface::hasAlpha() const
 		return false;
 	} else if ( header.pf.fourcc == FOURCC_DXT1 ) {
 		return false;
-	} else {
-		return true;
 	}
+
+	return true;
 }
 
 bool DirectDrawSurface::isTexture2D() const
@@ -898,10 +898,10 @@ uint DirectDrawSurface::mipmapSize( uint mipmap ) const
 		uint pitch = 4 * ( (w * byteCount + 3) / 4 );
 
 		return pitch * h * d;
-	} else {
-		printf( "DDS: mipmap format not supported\n" );
-		return (0);
 	}
+
+	printf( "DDS: mipmap format not supported\n" );
+	return (0);
 }
 
 uint DirectDrawSurface::faceSize() const

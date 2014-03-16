@@ -715,8 +715,8 @@ public:
 
 		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
 			return split.value( 2 );
-		else
-			return QString();
+
+		return QString();
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )

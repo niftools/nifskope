@@ -397,7 +397,8 @@ void GLView::initializeGL()
 
 void GLView::glProjection( int x, int y )
 {
-	Q_UNUSED( x ); Q_UNUSED( y )
+	Q_UNUSED( x ); Q_UNUSED( y );
+
 	GLint viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 	GLdouble aspect = (GLdouble)viewport[2] / (GLdouble)viewport[3];
@@ -1099,8 +1100,8 @@ QAction * GLView::checkedViewAction() const
 		return aViewWalk;
 	else if ( aViewUser->isChecked() )
 		return aViewUser;
-	else
-		return 0;
+
+	return 0;
 }
 
 void GLView::uncheckViewAction()

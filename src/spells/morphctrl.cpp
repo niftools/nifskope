@@ -83,11 +83,11 @@ public:
 
 			if ( nif->inherits( iData, "NiTriBasedGeomData" ) )
 				return iData;
-			else
-				return QModelIndex();
-		} else {
+
 			return QModelIndex();
 		}
+
+		return QModelIndex();
 	}
 
 	//! Helper function to get the morph data
@@ -115,9 +115,9 @@ public:
 			}
 
 			return list;
-		} else {
-			return QStringList();
 		}
+
+		return QStringList();
 	}
 };
 

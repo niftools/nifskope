@@ -330,8 +330,8 @@ QString FileQueue::dequeue()
 
 	if ( queue.isEmpty() )
 		return QString();
-	else
-		return queue.dequeue();
+
+	return queue.dequeue();
 }
 
 int FileQueue::count()

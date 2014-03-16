@@ -38,7 +38,9 @@ struct objMaterial
 	float alpha, glossiness;
 	QString map_Kd;
 
-	objMaterial() : name( "Untextured" ), alpha( 1.0f ), glossiness( 15.0f ) {}
+	objMaterial() : name( "Untextured" ), alpha( 1.0f ), glossiness( 15.0f )
+	{
+	}
 };
 
 struct objMatFace
@@ -59,7 +61,9 @@ struct objMesh
 	Vector3 pos;                    // The position to move the object to
 	Vector3 rot;                    // The angles to rotate the object
 
-	objMesh() : pos( 0.0f, 0.0f, 0.0f ), rot( 0.0f, 0.0f, 0.0f ) {}
+	objMesh() : pos( 0.0f, 0.0f, 0.0f ), rot( 0.0f, 0.0f, 0.0f )
+	{
+	}
 };
 
 struct objKeyframe
@@ -71,7 +75,8 @@ struct objKeyframe
 
 	objKeyframe()
 		: pos( 0.0f, 0.0f, 0.0f ), rotAngle( 0 ), rotAxis( 0.0f, 0.0f, 0.0f ), scale( 0.0f )
-	{}
+	{
+	}
 };
 
 struct objKfSequence
@@ -82,7 +87,9 @@ struct objKfSequence
 	Vector3 pivot;
 	QMap<short, objKeyframe> frames;
 
-	objKfSequence() : pivot( 0.0f, 0.0f, 0.0f ) {}
+	objKfSequence() : pivot( 0.0f, 0.0f, 0.0f )
+	{
+	}
 };
 
 static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 link )

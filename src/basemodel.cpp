@@ -241,8 +241,8 @@ bool BaseModel::setValue( const QModelIndex & parent, const QString & name, cons
 
 	if ( item )
 		return setItemValue( item, val );
-	else
-		return false;
+
+	return false;
 }
 
 
@@ -263,8 +263,8 @@ QModelIndex BaseModel::index( int row, int column, const QModelIndex & parent ) 
 
 	if ( childItem )
 		return createIndex( row, column, childItem );
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 QModelIndex BaseModel::parent( const QModelIndex & child ) const
@@ -684,16 +684,16 @@ public:
 			const NifItem * sibling = model->getItem( i->parent(), left );
 
 			if ( sibling ) {
-				if ( sibling->value().isCount() )
+				if ( sibling->value().isCount() ) {
 					return QVariant( sibling->value().toCount() );
-				else if ( sibling->value().isFileVersion() )
+				} else if ( sibling->value().isFileVersion() ) {
 					return QVariant( sibling->value().toFileVersion() );
 				// this is tricky to understand
 				// we check whether the reference is an array
 				// if so, we get the current item's row number (i->row())
 				// and get the sibling's child at that row number
 				// this is used for instance to describe array sizes of strips
-				else if ( sibling->childCount() > 0 ) {
+				} else if ( sibling->childCount() > 0 ) {
 					const NifItem * i2 = sibling->child( i->row() );
 
 					if ( i2 && i2->value().isCount() )

@@ -55,7 +55,9 @@ class MorphController : public Controller
 
 public:
 	MorphController( Mesh * mesh, const QModelIndex & index )
-		: Controller( index ), target( mesh ) {}
+		: Controller( index ), target( mesh )
+	{
+	}
 
 	~MorphController()
 	{
@@ -147,9 +149,13 @@ class UVController : public Controller
 {
 public:
 	UVController( Mesh * mesh, const QModelIndex & index )
-		: Controller( index ), target( mesh ) {}
+		: Controller( index ), target( mesh )
+	{
+	}
 
-	~UVController() {}
+	~UVController()
+	{
+	}
 
 	void update( float time )
 	{

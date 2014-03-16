@@ -378,8 +378,8 @@ QModelIndex NifProxyModel::index( int row, int column, const QModelIndex & paren
 
 	if ( childItem )
 		return createIndex( row, column, childItem );
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 QModelIndex NifProxyModel::parent( const QModelIndex & child ) const

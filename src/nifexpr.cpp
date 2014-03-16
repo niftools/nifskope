@@ -75,11 +75,11 @@ static quint32 version2number( const QString & s )
 		quint32 v = 0;
 
 		if ( l.count() > 4 ) {
-			//Should probaby post a warning here or something.  Version # has more than 3 dots in it.
+			// Should probaby post a warning here or something.  Version # has more than 3 dots in it.
 			return 0;
 		} else if ( l.count() == 2 ) {
-			//This is an old style version number.  Take each digit following the first one at a time.
-			//The first one is the major version
+			// This is an old style version number.  Take each digit following the first one at a time.
+			// The first one is the major version
 			v += l[0].toInt() << (3 * 8);
 
 			if ( l[1].size() >= 1 ) {
@@ -95,19 +95,19 @@ static quint32 version2number( const QString & s )
 			}
 
 			return v;
-		} else {
-			//This is a new style version number with dots separating the digits
-			for ( int i = 0; i < 4 && i < l.count(); i++ ) {
-				v += l[i].toInt( 0, 10 ) << ( (3 - i) * 8 );
-			}
-
-			return v;
 		}
-	} else {
-		bool ok;
-		quint32 i = s.toUInt( &ok );
-		return ( i == 0xffffffff ? 0 : i );
+
+		// This is a new style version number with dots separating the digits
+		for ( int i = 0; i < 4 && i < l.count(); i++ ) {
+			v += l[i].toInt( 0, 10 ) << ( (3 - i) * 8 );
+		}
+
+		return v;
 	}
+
+	bool ok;
+	quint32 i = s.toUInt( &ok );
+	return ( i == 0xffffffff ? 0 : i );
 }
 
 Expression::Operator Expression::operatorFromString( const QString & str )

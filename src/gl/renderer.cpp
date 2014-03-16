@@ -135,8 +135,8 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QLi
 		if ( nif->inherits( iBlock, blkid ) ) {
 			if ( childid.isEmpty() )
 				return iBlock;
-			else
-				return nif->getIndex( iBlock, childid );
+
+			return nif->getIndex( iBlock, childid );
 		}
 	}
 	return QModelIndex();

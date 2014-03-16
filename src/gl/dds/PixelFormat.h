@@ -75,10 +75,10 @@ inline uint convert( uint c, uint inbits, uint outbits )
 	} else if ( inbits >= outbits ) {
 		// truncate
 		return c >> (inbits - outbits);
-	} else {
-		// bitexpand
-		return ( c << (outbits - inbits) ) | convert( c, inbits, outbits - inbits );
 	}
+
+	// bitexpand
+	return ( c << (outbits - inbits) ) | convert( c, inbits, outbits - inbits );
 }
 
 // Get pixel component shift and size given its mask.

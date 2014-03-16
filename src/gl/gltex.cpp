@@ -234,8 +234,8 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	if ( replaceExt )
 		return filename + extensions.value( 0 );
-	else
-		return filename;
+
+	return filename;
 }
 
 /*!
@@ -500,11 +500,9 @@ bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 
 	if ( savepath.toLower().endsWith( ".tga" ) ) {
 		return texSaveTGA( index, savepath, width, height );
-	} else {
-		return texSaveDDS( index, savepath, width, height, mipmaps );
 	}
 
-	return false;
+	return texSaveDDS( index, savepath, width, height, mipmaps );
 }
 
 bool TexCache::Tex::savePixelData( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData )

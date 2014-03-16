@@ -842,14 +842,16 @@ void TextEdit::keyPressEvent( QKeyEvent * e )
 			    e->count()
 			);
 			QTextEdit::keyPressEvent( &newEvent );
-		} else if ( e->modifiers() == Qt::NoModifier ) {
-			e->ignore();
-		} else {
-			QTextEdit::keyPressEvent( e );
+			return;
 		}
-	} else {
-		QTextEdit::keyPressEvent( e );
+
+		if ( e->modifiers() == Qt::NoModifier ) {
+			e->ignore();
+			return;
+		}
 	}
+
+	QTextEdit::keyPressEvent( e );
 }
 
 void TextEdit::sltTextChanged()

@@ -385,32 +385,32 @@ inline quint32 NifValue::toCount() const
 {
 	if ( isCount() || isFloat() )
 		return val.u32;
-	else
-		return 0;
+
+	return 0;
 }
 // documented above
 inline float NifValue::toFloat() const
 {
 	if ( isFloat() )
 		return val.f32;
-	else
-		return 0.0;
+
+	return 0.0;
 }
 // documented above
 inline qint32 NifValue::toLink() const
 {
 	if ( isLink() )
 		return val.i32;
-	else
-		return -1;
+
+	return -1;
 }
 // documented above
 inline quint32 NifValue::toFileVersion() const
 {
 	if ( isFileVersion() )
 		return val.u32;
-	else
-		return 0;
+
+	return 0;
 }
 
 // documented above
@@ -418,45 +418,44 @@ inline bool NifValue::setCount( quint32 c )
 {
 	if ( isCount() ) {
 		val.u32 = c; return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 // documented above
 inline bool NifValue::setFloat( float f )
 {
 	if ( isFloat() ) {
 		val.f32 = f; return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 // documented above
 inline bool NifValue::setLink( int l )
 {
 	if ( isLink() ) {
 		val.i32 = l; return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 // documented above
 inline bool NifValue::setFileVersion( quint32 v )
 {
 	if ( isFileVersion() ) {
 		val.u32 = v; return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 template <typename T> inline T NifValue::getType( Type t ) const
 {
 	if ( typ == t )
 		return *static_cast<T *>( val.data ); // WARNING: this throws an exception if the type of v is not the original type by which val.data was initialized; the programmer must make sure that T matches t.
-	else {
-		return T();
-	}
+
+	return T();
 }
 
 template <typename T> inline bool NifValue::setType( Type t, T v )
@@ -542,36 +541,36 @@ template <> inline QString NifValue::get() const
 {
 	if ( isString() )
 		return *static_cast<QString *>( val.data );
-	else
-		return QString();
+
+	return QString();
 }
 template <> inline QByteArray NifValue::get() const
 {
 	if ( isByteArray() )
 		return *static_cast<QByteArray *>( val.data );
-	else
-		return QByteArray();
+
+	return QByteArray();
 }
 template <> inline QByteArray * NifValue::get() const
 {
 	if ( isByteArray() )
 		return static_cast<QByteArray *>( val.data );
-	else
-		return NULL;
+
+	return NULL;
 }
 template <> inline Quat NifValue::get() const
 {
 	if ( isQuat() )
 		return *static_cast<Quat *>( val.data );
-	else
-		return Quat();
+
+	return Quat();
 }
 template <> inline ByteMatrix * NifValue::get() const
 {
 	if ( isByteMatrix() )
 		return static_cast<ByteMatrix *>( val.data );
-	else
-		return NULL;
+
+	return NULL;
 }
 
 //! Set the data from a boolean. Return true if successful.

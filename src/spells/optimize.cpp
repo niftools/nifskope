@@ -82,12 +82,12 @@ public:
 					if ( x < y && ( !map.contains( y ) ) && props[x].size() == props[y].size() ) {
 						int c = 0;
 
-						while ( c < props[x].size() )
+						while ( c < props[x].size() ) {
 							if ( props[x][c] == props[y][c] )
 								c++;
 							else
 								break;
-
+						}
 
 						if ( c == props[x].size() )
 							map.insert( y, x );

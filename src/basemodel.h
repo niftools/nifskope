@@ -308,8 +308,8 @@ template <typename T> inline T BaseModel::get( NifItem * parent, const QString &
 
 	if ( item )
 		return item->value().get<T>();
-	else
-		return T();
+
+	return T();
 }
 
 template <typename T> inline T BaseModel::get( const QModelIndex & parent, const QString & name ) const
@@ -323,8 +323,8 @@ template <typename T> inline T BaseModel::get( const QModelIndex & parent, const
 
 	if ( item )
 		return item->value().get<T>();
-	else
-		return T();
+
+	return T();
 }
 
 template <typename T> inline bool BaseModel::set( NifItem * parent, const QString & name, const T & d )
@@ -333,8 +333,8 @@ template <typename T> inline bool BaseModel::set( NifItem * parent, const QStrin
 
 	if ( item )
 		return set( item, d );
-	else
-		return false;
+
+	return false;
 }
 
 template <typename T> inline bool BaseModel::set( const QModelIndex & parent, const QString & name, const T & d )
@@ -348,8 +348,8 @@ template <typename T> inline bool BaseModel::set( const QModelIndex & parent, co
 
 	if ( item )
 		return set( item, d );
-	else
-		return false;
+
+	return false;
 }
 
 template <typename T> inline T BaseModel::get( NifItem * item ) const
@@ -372,9 +372,9 @@ template <typename T> inline bool BaseModel::set( NifItem * item, const T & d )
 	if ( item->value().set( d ) ) {
 		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
 		return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 template <typename T> inline bool BaseModel::set( const QModelIndex & index, const T & d )

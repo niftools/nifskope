@@ -44,22 +44,22 @@ class spStrippify : public Spell
 		QVector<Triangle> triangles;
 		QModelIndex iTriangles = nif->getIndex( iData, "Triangles" );
 
-		if ( iTriangles.isValid() ) {
-			int skip = 0;
-
-			for ( int t = 0; t < nif->rowCount( iTriangles ); t++ ) {
-				Triangle tri = nif->get<Triangle>( iTriangles.child( t, 0 ) );
-
-				if ( tri[0] != tri[1] && tri[1] != tri[2] && tri[2] != tri[0] )
-					triangles.append( tri );
-				else
-					skip++;
-			}
-
-			//qWarning() << "num triangles" << triangles.count() << "skipped" << skip;
-		} else {
+		if ( !iTriangles.isValid() )
 			return idx;
+
+		int skip = 0;
+
+		for ( int t = 0; t < nif->rowCount( iTriangles ); t++ ) {
+			Triangle tri = nif->get<Triangle>( iTriangles.child( t, 0 ) );
+
+			if ( tri[0] != tri[1] && tri[1] != tri[2] && tri[2] != tri[0] )
+				triangles.append( tri );
+			else
+				skip++;
 		}
+
+		//qWarning() << "num triangles" << triangles.count() << "skipped" << skip;
+
 
 		QList<QVector<quint16> > strips = stripify( triangles );
 

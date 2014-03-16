@@ -393,7 +393,7 @@ public:
 	//! Return the template type of the data
 	inline QString temp() const {   return itemData.temp(); }
 	//! Return the argument attribute of the data
-	inline QString arg() const {   return itemData.arg();      }
+	inline QString arg()  const {   return itemData.arg();  }
 	//! Return the first array length of the data
 	inline QString arr1() const {   return itemData.arr1(); }
 	//! Return the second array length of the data
@@ -406,6 +406,7 @@ public:
 	inline quint32 ver2() const {   return itemData.ver2(); }
 	//! Return the description text of the data
 	inline QString text() const {   return itemData.text(); }
+
 	//! Return the condition attribute of the data, as an expression
 	inline const Expression & condexpr() const {   return itemData.condexpr(); }
 	//! Return the arr1 attribute of the data, as an expression
@@ -424,21 +425,23 @@ public:
 	//! Set the template type
 	inline void setTemp( const QString & temp ) {   itemData.setTemp( temp );   }
 	//! Set the argument attribute
-	inline void setArg( const QString & arg ) {   itemData.setArg( arg );     }
+	inline void setArg( const QString & arg )   {   itemData.setArg( arg );     }
 	//! Set the first array length
 	inline void setArr1( const QString & arr1 ) {   itemData.setArr1( arr1 );   }
 	//! Set the second array length
 	inline void setArr2( const QString & arr2 ) {   itemData.setArr2( arr2 );   }
 	//! Set the condition attribute
 	inline void setCond( const QString & cond ) {   itemData.setCond( cond );   }
+
 	//! Set the earliest version attribute
 	inline void setVer1( int v1 ) {   itemData.setVer1( v1 );     }
 	//! Set the latest version attribute
 	inline void setVer2( int v2 ) {   itemData.setVer2( v2 );     }
+
 	//! Set the description text
-	inline void setText( const QString & text ) {   itemData.setText( text );   }
+	inline void setText( const QString & text )    {   itemData.setText( text );    }
 	//! Set the version condition attribute
-	inline void setVerCond( const QString & cond ) {   itemData.setVerCond( cond );    }
+	inline void setVerCond( const QString & cond ) {   itemData.setVerCond( cond ); }
 
 	//! Determine if this item is present in the specified version
 	inline bool evalVersion( quint32 v )

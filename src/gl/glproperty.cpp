@@ -423,9 +423,9 @@ bool TexturingProperty::bind( int id, const QString & fname )
 
 		glMatrixMode( GL_MODELVIEW );
 		return true;
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
@@ -540,7 +540,9 @@ class TexTransController : public Controller
 {
 public:
 	TexTransController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 ) {}
+		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 )
+	{
+	}
 
 	void update( float time )
 	{
@@ -629,8 +631,8 @@ int TexturingProperty::getId( const QString & texname )
 
 	if ( hash.contains( texname ) )
 		return hash[ texname ];
-	else
-		return -1;
+
+	return -1;
 }
 
 void glProperty( TexturingProperty * p )
@@ -758,7 +760,9 @@ class AlphaController : public Controller
 {
 public:
 	AlphaController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lAlpha( 0 ) {}
+		: Controller( index ), target( prop ), lAlpha( 0 )
+	{
+	}
 
 	void update( float time )
 	{
@@ -785,7 +789,9 @@ class MaterialColorController : public Controller
 {
 public:
 	MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient ) {}
+		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
+	{
+	}
 
 	void update( float time )
 	{
@@ -1079,10 +1085,10 @@ bool BSShaderLightingProperty::bind( int id, const QList<QVector<Vector2> > & te
 		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
 		return true;
-	} else {
-		glDisable( GL_TEXTURE_2D );
-		return false;
 	}
+
+	glDisable( GL_TEXTURE_2D );
+	return false;
 }
 
 QString BSShaderLightingProperty::fileName( int id ) const
@@ -1123,7 +1129,7 @@ int BSShaderLightingProperty::getId( const QString & id )
 
 	if ( hash.contains( id ) )
 		return hash[ id ];
-	else
-		return -1;
+
+	return -1;
 }
 

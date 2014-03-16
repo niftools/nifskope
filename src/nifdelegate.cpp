@@ -57,7 +57,9 @@ class NifDelegate : public QItemDelegate
 	SpellBook * book;
 
 public:
-	NifDelegate( SpellBook * sb = 0 ) : QItemDelegate(), book( sb ) {}
+	NifDelegate( SpellBook * sb = 0 ) : QItemDelegate(), book( sb )
+	{
+	}
 
 	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index )
 	{

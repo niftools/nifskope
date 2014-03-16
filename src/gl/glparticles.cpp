@@ -64,7 +64,9 @@ class ParticleController : public Controller
 		short y;
 		short vertex;
 
-		Particle() : lifetime( 0 ), lifespan( 0 ) {}
+		Particle() : lifetime( 0 ), lifespan( 0 )
+		{
+		}
 	};
 	QVector<Particle> list;
 	struct Gravity
@@ -99,7 +101,9 @@ class ParticleController : public Controller
 
 public:
 	ParticleController( Particles * particles, const QModelIndex & index )
-		: Controller( index ), target( particles ) {}
+		: Controller( index ), target( particles )
+	{
+	}
 
 	bool update( const NifModel * nif, const QModelIndex & index )
 	{

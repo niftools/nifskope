@@ -81,8 +81,8 @@ public:
 	{
 		if ( type() == _type<T>() )
 			return static_cast<T *>( this );
-		else
-			return 0;
+
+		return 0;
 	}
 };
 
@@ -126,8 +126,8 @@ template <typename T> inline T * PropertyList::get() const
 
 	if ( p )
 		return p->cast<T>();
-	else
-		return 0;
+
+	return 0;
 }
 
 template <typename T> inline bool PropertyList::contains() const

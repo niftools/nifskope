@@ -263,6 +263,6 @@ QAction * SpellBook::exec( const QPoint & pos, QAction * act )
 {
 	if ( isEnabled() )
 		return QMenu::exec( pos, act );
-	else
-		return 0;
+
+	return 0;
 }

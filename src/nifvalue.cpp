@@ -798,8 +798,8 @@ QColor NifValue::toColor() const
 		return static_cast<Color3 *>( val.data )->toQColor();
 	else if ( type() == tColor4 )
 		return static_cast<Color4 *>( val.data )->toQColor();
-	else
-		return QColor();
+
+	return QColor();
 }
 
 void NifOStream::init()

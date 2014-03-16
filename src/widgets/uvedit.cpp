@@ -910,16 +910,16 @@ bool UVWidget::setTexCoords()
 	} else if ( nif->isNiBlock( iShapeData, "NiTriStripsData" ) ) {
 		QModelIndex iPoints = nif->getIndex( iShapeData, "Points" );
 
-		if ( iPoints.isValid() ) {
-			for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
-				tris += triangulate( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
-			}
-		} else {
+		if ( !iPoints.isValid() )
 			return false;
+
+		for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
+			tris += triangulate( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 		}
-	} else {
-		return false;
 	}
+
+	if ( tris.isEmpty() )
+		return false;
 
 	QVectorIterator<Triangle> itri( tris );
 

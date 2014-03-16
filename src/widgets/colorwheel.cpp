@@ -173,8 +173,8 @@ QSize ColorWheel::sizeHint() const
 {
 	if ( sHint.isValid() )
 		return sHint;
-	else
-		return QSize( 250, 250 );
+
+	return QSize( 250, 250 );
 }
 
 void ColorWheel::setSizeHint( const QSize & s )
@@ -408,9 +408,9 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 		QColor color = hsv->getColor();
 		color.setAlphaF( alpha->value() );
 		return color;
-	} else {
-		return c;
 	}
+
+	return c;
 }
 
 Color3 ColorWheel::choose( const Color3 & c, QWidget * parent )

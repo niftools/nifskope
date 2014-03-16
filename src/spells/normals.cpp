@@ -32,7 +32,8 @@ public:
 
 		if ( nif->isNiBlock( iData, "NiTriShapeData" ) || nif->isNiBlock( iData, "NiTriStripsData" ) )
 			return iData;
-		else return QModelIndex();
+
+		return QModelIndex();
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )

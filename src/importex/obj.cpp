@@ -411,7 +411,9 @@ struct ObjMaterial
 	float d, Ns;
 	QString map_Kd;
 
-	ObjMaterial() : d( 1.0 ), Ns( 31.0 ) {}
+	ObjMaterial() : d( 1.0 ), Ns( 31.0 )
+	{
+	}
 };
 
 static void readMtlLib( const QString & fname, QMap<QString, ObjMaterial> & omaterials )

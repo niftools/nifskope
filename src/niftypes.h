@@ -364,8 +364,8 @@ public:
 			return (float)PI;
 		else if ( dot == 0.0 )
 			return (float)(PI / 2);
-		else
-			return acos( dot );
+
+		return acos( dot );
 	}
 
 	//! Comparison function for lexicographic sorting
@@ -597,8 +597,8 @@ public:
 			return (float)PI;
 		else if ( dot == 0.0 )
 			return (float)PI / 2;
-		else
-			return (float)acos( dot );
+
+		return (float)acos( dot );
 	}
 
 	//! Comparison function for lexicographic sorting

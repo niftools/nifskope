@@ -52,7 +52,9 @@ class TransformController : public Controller
 {
 public:
 	TransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ) {}
+		: Controller( index ), target( node )
+	{
+	}
 
 	void update( float time )
 	{
@@ -101,7 +103,9 @@ class MultiTargetTransformController : public Controller
 
 public:
 	MultiTargetTransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ) {}
+		: Controller( index ), target( node )
+	{
+	}
 
 	void update( float time )
 	{
@@ -188,7 +192,9 @@ class ControllerManager : public Controller
 {
 public:
 	ControllerManager( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ) {}
+		: Controller( index ), target( node )
+	{
+	}
 
 	void update( float ) {}
 
@@ -332,7 +338,9 @@ class KeyframeController : public Controller
 {
 public:
 	KeyframeController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 ) {}
+		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 )
+	{
+	}
 
 	void update( float time )
 	{
@@ -374,7 +382,9 @@ class VisibilityController : public Controller
 {
 public:
 	VisibilityController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), visLast( 0 ) {}
+		: Controller( index ), target( node ), visLast( 0 )
+	{
+	}
 
 	void update( float time )
 	{
@@ -496,12 +506,11 @@ bool compareNodes( const Node * node1, const Node * node2 )
 	if ( a1 == a2 ) {
 		if ( a1 ) {
 			return ( node1->center()[2] < node2->center()[2] );
-		} else {
-			return ( node1->center()[2] > node2->center()[2] );
 		}
-	} else {
-		return a2;
+		return ( node1->center()[2] > node2->center()[2] );
 	}
+
+	return a2;
 }
 
 void NodeList::sort()
