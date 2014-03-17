@@ -307,10 +307,10 @@ bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
 			} else if ( child->childCount() > 0 ) {
 				if ( !load( child, stream, fast ) )
 					return false;
+			} else {
+				if ( !stream.read( child->value() ) )
+					return false;
 			}
-
-			if ( !stream.read( child->value() ) )
-				return false;
 		}
 	}
 
@@ -332,10 +332,10 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 
 				if ( !save( child, stream ) )
 					return false;
+			} else {
+				if ( !stream.write( child->value() ) )
+					return false;
 			}
-
-			if ( !stream.write( child->value() ) )
-				return false;
 		}
 	}
 
