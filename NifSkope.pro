@@ -31,8 +31,8 @@ CONFIG(debug, debug|release) {
 INCLUDEPATH += src lib
 
 TRANSLATIONS += \
-	lang/NifSkope_de.ts \
-	lang/NifSkope_fr.ts
+	res/lang/NifSkope_de.ts \
+	res/lang/NifSkope_fr.ts
 
 # Require explicit
 DEFINES += \
