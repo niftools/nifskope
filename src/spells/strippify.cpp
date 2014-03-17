@@ -303,8 +303,8 @@ public:
 	{
 		if ( nif->isNiBlock( index, "NiTriStrips" ) )
 			return nif->getBlock( nif->getLink( index, "Data" ), "NiTriStripsData" );
-		else
-			return nif->getBlock( index, "NiTriStripsData" );
+
+		return nif->getBlock( index, "NiTriStripsData" );
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )

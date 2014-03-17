@@ -42,8 +42,8 @@ QModelIndex KfmModel::getKFMroot() const
 {
 	if ( kfmroot )
 		return createIndex( 0, 0, kfmroot );
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 QString KfmModel::version2string( quint32 v )
@@ -87,8 +87,6 @@ bool KfmModel::evalVersion( NifItem * item, bool chkParents ) const
 	if ( chkParents && item->parent() )
 		if ( !evalVersion( item->parent(), true ) )
 			return false;
-
-
 
 	return item->evalVersion( version );
 }

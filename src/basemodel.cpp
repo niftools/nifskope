@@ -539,8 +539,8 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 
 		if ( itemArr1( index ).isEmpty() )
 			return flags | Qt::ItemIsEditable;
-		else
-			return flags;
+
+		return flags;
 
 	default:
 		return flags | Qt::ItemIsEditable;
@@ -582,8 +582,8 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 
 		if ( left == ".." )
 			return getItem( item->parent(), right );
-		else
-			return getItem( getItem( item, left ), right );
+
+		return getItem( getItem( item, left ), right );
 	}
 
 	for ( int c = 0; c < item->childCount(); c++ ) {
@@ -641,8 +641,8 @@ QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & nam
 
 	if ( item )
 		return createIndex( item->row(), 0, item );
-	else
-		return QModelIndex();
+
+	return QModelIndex();
 }
 
 /*

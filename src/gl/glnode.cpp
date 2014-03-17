@@ -1322,9 +1322,9 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		qint32 l = nif->getLink( iBodies.child( r, 0 ) );
 
 		if ( !scene->bhkBodyTrans.contains( l ) )
-			return;
-		else
-			tBodies.append( scene->bhkBodyTrans.value( l ) );
+			return; // TODO: Make sure this is not supposed to be continue;
+
+		tBodies.append( scene->bhkBodyTrans.value( l ) );
 	}
 
 	if ( tBodies.count() != 2 )

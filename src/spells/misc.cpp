@@ -117,8 +117,8 @@ public:
 
 		if ( idx.isValid() )
 			return idx;
-		else
-			return index;
+
+		return index;
 	}
 };
 

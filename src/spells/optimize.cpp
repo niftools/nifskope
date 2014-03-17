@@ -83,10 +83,9 @@ public:
 						int c = 0;
 
 						while ( c < props[x].size() ) {
-							if ( props[x][c] == props[y][c] )
-								c++;
-							else
+							if ( props[x][c] != props[y][c] )
 								break;
+							c++;
 						}
 
 						if ( c == props[x].size() )

@@ -672,8 +672,8 @@ bool compareHits( const QPair<GLuint, GLuint> & a, const QPair<GLuint, GLuint> &
 {
 	if ( a.second < b.second )
 		return true;
-	else
-		return false;
+
+	return false;
 }
 
 typedef void (Scene::* DrawFunc)( void );

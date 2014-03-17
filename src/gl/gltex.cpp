@@ -221,19 +221,18 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			}
 		}
 #endif
-
-		if ( replaceExt ) {
-			filename = filename.left( filename.length() - ext.length() );
-		} else {
+		if ( !replaceExt )
 			break;
-		}
+
+		// Remove file extension
+		filename = filename.left( filename.length() - ext.length() );
 	}
 
-	// fix separators
+	// Fix separators
 	filename = QDir::toNativeSeparators( filename );
 
 	if ( replaceExt )
-		return filename + extensions.value( 0 );
+		return filename + extensions.value( 0 ); // Restore original file extension
 
 	return filename;
 }
