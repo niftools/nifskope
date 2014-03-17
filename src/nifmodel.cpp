@@ -2567,10 +2567,8 @@ int NifModel::getParent( int block ) const
 
 	for ( int b = 0; b < getBlockCount(); b++ ) {
 		if ( childLinks.value( b ).contains( block ) ) {
-			if ( parent < 0 )
-				parent = b;
-
-			return -1;
+			parent = b;
+			break;
 		}
 	}
 
