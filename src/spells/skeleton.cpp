@@ -12,6 +12,8 @@
 #include <QPushButton>
 #include <QSpinBox>
 
+#include <algorithm> // std::sort
+
 #define SKEL_DAT ":/res/skel.dat"
 
 
@@ -399,7 +401,7 @@ public:
 
 				while ( it.hasNext() ) {
 					QList<boneweight> & lst = it.next();
-					qSort( lst.begin(), lst.end(), boneweight_equivalence() );
+					std::sort( lst.begin(), lst.end(), boneweight_equivalence() );
 
 					if ( lst.count() > maxBonesPerVertex )
 						c++;
@@ -804,7 +806,7 @@ public:
 				QModelIndex iPart = nif->getIndex( iSkinPart, "Skin Partition Blocks" ).child( p, 0 );
 
 				QList<int> bones = parts[p].bones;
-				qSort( bones );
+				std::sort( bones.begin(), bones.end() /*, std::less<int>()*/ );
 
 				// set partition flags for bs skin instance if present
 				if ( iBSSkinInstPartData.isValid() ) {
@@ -872,7 +874,7 @@ public:
 
 				while ( it.hasNext() ) {
 					QList<boneweight> & bw = it.next();
-					qSort( bw.begin(), bw.end(), boneweight_equivalence() );
+					std::sort( bw.begin(), bw.end(), boneweight_equivalence() );
 				}
 
 				nif->set<int>( iPart, "Num Vertices", vertices.count() );

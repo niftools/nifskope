@@ -1,6 +1,8 @@
 #include "spellbook.h"
 #include "misc.h"
 
+#include <algorithm> // std::stable_sort
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file sanitize.cpp
@@ -54,7 +56,7 @@ public:
 					}
 				}
 
-				qStableSort( links.begin(), links.end(), compareChildLinks );
+				std::stable_sort( links.begin(), links.end(), compareChildLinks );
 
 				for ( int r = 0; r < links.count(); r++ ) {
 					if ( links[r].first != nif->getLink( iChildren.child( r, 0 ) ) ) {

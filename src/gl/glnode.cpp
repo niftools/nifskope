@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "marker/constraints.h"
 #include "nvtristripwrapper.h"
 
+#include <algorithm> // std::stable_sort
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif
@@ -515,7 +517,7 @@ bool compareNodes( const Node * node1, const Node * node2 )
 
 void NodeList::sort()
 {
-	qStableSort( nodes.begin(), nodes.end(), compareNodes );
+	std::stable_sort( nodes.begin(), nodes.end(), compareNodes );
 }
 
 

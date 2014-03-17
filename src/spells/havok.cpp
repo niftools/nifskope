@@ -12,6 +12,8 @@
 #include <QMessageBox>
 #include <QPushButton>
 
+#include <algorithm> // std::sort
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file havok.cpp
@@ -108,7 +110,7 @@ public:
 				sortedVerts.append( vert );
 			}
 		}
-		qSort( sortedVerts.begin(), sortedVerts.end(), Vector4::lexLessThan );
+		std::sort( sortedVerts.begin(), sortedVerts.end(), Vector4::lexLessThan );
 		QListIterator<Vector4> vertIter( sortedVerts );
 
 		while ( vertIter.hasNext() ) {
@@ -125,7 +127,7 @@ public:
 				sortedNorms.append( norm );
 			}
 		}
-		qSort( sortedNorms.begin(), sortedNorms.end(), Vector4::lexLessThan );
+		std::sort( sortedNorms.begin(), sortedNorms.end(), Vector4::lexLessThan );
 		QListIterator<Vector4> normIter( sortedNorms );
 
 		while ( normIter.hasNext() ) {

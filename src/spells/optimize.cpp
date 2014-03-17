@@ -8,6 +8,9 @@
 #include <QBuffer>
 #include <QMessageBox>
 
+#include <algorithm> // std::sort
+#include <functional> //std::greater
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file optimize.cpp
@@ -98,7 +101,7 @@ public:
 				numRemoved += map.count();
 				nif->mapLinks( map );
 				QList<qint32> l = map.keys();
-				qSort( l.begin(), l.end(), qGreater<qint32>() );
+				std::sort( l.begin(), l.end(), std::greater<qint32>() );
 				foreach ( qint32 b, l ) {
 					nif->removeNiBlock( b );
 				}
@@ -346,8 +349,8 @@ public:
 		QVector<qint32> lPrpsA = nif->getLinkArray( iTriA, "Properties" );
 		QVector<qint32> lPrpsB = nif->getLinkArray( iTriB, "Properties" );
 
-		qSort( lPrpsA );
-		qSort( lPrpsB );
+		std::sort( lPrpsA.begin(), lPrpsA.end() /*, std::less<qint32>()*/ );
+		std::sort( lPrpsB.begin(), lPrpsB.end() /*, std::less<qint32>()*/ );
 
 		if ( lPrpsA != lPrpsB )
 			return false;

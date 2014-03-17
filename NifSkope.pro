@@ -37,7 +37,8 @@ TRANSLATIONS += \
 # Require explicit
 DEFINES += \
 	QT_NO_CAST_FROM_BYTEARRAY \ # QByteArray deprecations
-	QT_NO_URL_CAST_FROM_STRING #\ # QUrl deprecations
+	QT_NO_URL_CAST_FROM_STRING \ # QUrl deprecations
+	QT_DISABLE_DEPRECATED_BEFORE=0x050200 #\ # Disable all functions deprecated as of 5.2
 
 	# Useful for tracking down strings not using
 	#	QObject::tr() for translations.

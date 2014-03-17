@@ -10,6 +10,7 @@
 #include <QMimeData>
 #include <QSettings>
 
+#include <algorithm> // std::stable_sort
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file blocks.cpp
@@ -1348,7 +1349,7 @@ public:
 						links.append( QPair<QString, qint32>( nif->get<QString>( nif->getBlock( l ), "Name" ), l ) );
 				}
 
-				qStableSort( links.begin(), links.end() );
+				std::stable_sort( links.begin(), links.end() );
 
 				for ( int r = 0; r < links.count(); r++ ) {
 					if ( links[r].second != nif->getLink( iChildren.child( r, 0 ) ) )
