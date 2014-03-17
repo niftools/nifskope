@@ -336,9 +336,12 @@ public:
 	//! Determine if two shapes are identical
 	bool matches( const NifModel * nif, QModelIndex iTriA, QModelIndex iTriB )
 	{
-		if ( iTriA == iTriB || nif->itemName( iTriA ) != nif->itemName( iTriB )
+		if ( iTriA == iTriB
+			 || nif->itemName( iTriA ) != nif->itemName( iTriB )
 		     || nif->get<int>( iTriA, "Flags" ) != nif->get<int>( iTriB, "Flags" ) )
+		{
 			return false;
+		}
 
 		QVector<qint32> lPrpsA = nif->getLinkArray( iTriA, "Properties" );
 		QVector<qint32> lPrpsB = nif->getLinkArray( iTriB, "Properties" );
@@ -357,10 +360,8 @@ public:
 
 			if ( nif->isNiBlock( iBlock, "NiTriShapeData" ) )
 				continue;
-
 			if ( nif->isNiBlock( iBlock, "NiTriStripsData" ) )
 				continue;
-
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
 
@@ -376,10 +377,8 @@ public:
 
 			if ( nif->isNiBlock( iBlock, "NiTriShapeData" ) )
 				continue;
-
 			if ( nif->isNiBlock( iBlock, "NiTriStripsData" ) )
 				continue;
-
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
 

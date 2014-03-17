@@ -95,15 +95,22 @@ static char const * transform_xpm[] = {
 bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
 	return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "NiNode" )
-	                                                || nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "BSLODTriShape"
+	                                                || nif->itemName( index ) == "NiTriShape"
+	                                                || nif->itemName( index ) == "BSLODTriShape"
 	                                                || nif->itemName( index ) == "NiTriStrips" );
 }
 
 QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & index )
 {
 	if ( ( nif->getLink( index, "Controller" ) != -1 || nif->getLink( index, "Skin Instance" ) != -1 ) )
-		if ( QMessageBox::question( 0, Spell::tr( "Apply Transformation" ), Spell::tr( "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it." ), Spell::tr( "Try anyway" ), Spell::tr( "Cancel" ) ) != 0 )
+		if ( QMessageBox::question( 0, Spell::tr( "Apply Transformation" ),
+			Spell::tr( "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it." ),
+			Spell::tr( "Try anyway" ),
+			Spell::tr( "Cancel" ) ) != 0 )
+		{
 			return index;
+		}
+
 
 
 

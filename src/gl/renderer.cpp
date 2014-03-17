@@ -497,7 +497,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( !activateTextureUnit( texunit ) )
 			return false;
 
-		if ( ( texprop && !texprop->bind( 0 ) ) || ( bsprop && !bsprop->bind( 0 ) ) )
+		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0 )) )
 			return false;
 
 		fn->glUniform1i( uniBaseMap, texunit++ );
@@ -506,7 +506,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	GLint uniNormalMap = fn->glGetUniformLocation( prog->id, "NormalMap" );
 
 	if ( uniNormalMap >= 0 ) {
-		if ( texprop != NULL ) {
+		if ( texprop ) {
 			QString fname = texprop->fileName( 0 );
 
 			if ( fname.isEmpty() )
@@ -521,10 +521,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
 				return false;
-		} else if ( bsprop != NULL ) {
+		} else if ( bsprop ) {
 			QString fname = bsprop->fileName( 1 );
 
-			if ( !fname.isEmpty() && ( !activateTextureUnit( texunit ) || !bsprop->bind( 1, fname ) ) )
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
 				return false;
 		}
 
@@ -534,7 +534,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	GLint uniGlowMap = fn->glGetUniformLocation( prog->id, "GlowMap" );
 
 	if ( uniGlowMap >= 0 ) {
-		if ( texprop != NULL ) {
+		if ( texprop ) {
 			QString fname = texprop->fileName( 0 );
 
 			if ( fname.isEmpty() )
@@ -549,10 +549,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
 				return false;
-		} else if ( bsprop != NULL ) {
+		} else if ( bsprop ) {
 			QString fname = bsprop->fileName( 2 );
 
-			if ( !fname.isEmpty() && ( !activateTextureUnit( texunit ) || !bsprop->bind( 2, fname ) ) )
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
 				return false;
 		}
 
@@ -579,34 +579,30 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.data() );
-		} else if ( texprop != NULL ) {
+		} else if ( texprop ) {
 			int txid = TexturingProperty::getId( itx.value() );
-
 			if ( txid < 0 )
 				return false;
 
 			int set = texprop->coordSet( txid );
 
-			if ( set >= 0 && set < mesh->coords.count() && mesh->coords[set].count() ) {
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
-			} else {
+			if ( set < 0 || !(set < mesh->coords.count()) || !mesh->coords[set].count() )
 				return false;
-			}
-		} else if ( bsprop != NULL ) {
-			int txid = BSShaderLightingProperty::getId( itx.value() );
 
+			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+			glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
+		} else if ( bsprop ) {
+			int txid = BSShaderLightingProperty::getId( itx.value() );
 			if ( txid < 0 )
 				return false;
 
 			int set = 0;
 
-			if ( set >= 0 && set < mesh->coords.count() && mesh->coords[set].count() ) {
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
-			} else {
+			if ( set < 0 || !(set < mesh->coords.count()) || !mesh->coords[set].count() )
 				return false;
-			}
+
+			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+			glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
 		}
 	}
 

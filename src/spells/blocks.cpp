@@ -242,9 +242,9 @@ public:
 
 			// return index to new block
 			return newindex;
-		} else {
-			return index;
 		}
+
+		return index;
 	}
 };
 
@@ -262,13 +262,11 @@ public:
 		if ( nif->itemType( index ) != "NiBlock" )
 			return false;
 
-		if ( nif->getUserVersion() < 12 ) {
-			// not Skyrim
-			return nif->inherits( index, "NiAVObject" );
-		} else {
-			// Skyrim
-			return nif->inherits( index, "NiGeometry" );
-		}
+		if ( nif->getUserVersion() < 12 )
+			return nif->inherits( index, "NiAVObject" ); // Not Skyrim
+
+		// Skyrim
+		return nif->inherits( index, "NiGeometry" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -298,9 +296,9 @@ public:
 			}
 
 			return iProperty;
-		} else {
-			return index;
 		}
+
+		return index;
 	}
 };
 
@@ -335,9 +333,9 @@ public:
 			QModelIndex iNode = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 			addLink( nif, iParent, "Children", nif->getBlockNumber( iNode ) );
 			return iNode;
-		} else {
-			return index;
 		}
+
+		return index;
 	}
 };
 
@@ -386,9 +384,9 @@ public:
 			}
 
 			return iLight;
-		} else {
-			return index;
 		}
+
+		return index;
 	}
 };
 
@@ -431,9 +429,9 @@ public:
 
 			addLink( nif, iParent, "Extra Data List", nif->getBlockNumber( iExtra ) );
 			return iExtra;
-		} else {
-			return index;
-		}
+		} 
+
+		return index;
 	}
 };
 
@@ -739,7 +737,16 @@ public:
 			foreach ( QString form, mime->formats() ) {
 				QString v = acceptFormat( form, nif );
 
-				if ( !v.isEmpty() && ( v == nif->getVersion() || QMessageBox::question( 0, Spell::tr( "Paste Branch" ), Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( v ), Spell::tr( "Continue" ), Spell::tr( "Cancel" ) ) == 0 ) ) {
+				if ( !v.isEmpty()
+				    && ( v == nif->getVersion()
+					    || QMessageBox::question( 0, Spell::tr( "Paste Branch" ),
+					           Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
+					               .arg( nif->getVersion() ).arg( v ), Spell::tr( "Continue" ),
+					           Spell::tr( "Cancel" )
+						    ) == 0 
+				       )
+				   )
+				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( &data );
 
@@ -1355,9 +1362,9 @@ public:
 
 		if ( index.isValid() ) {
 			return index;
-		} else {
-			return QModelIndex();
-		}
+		} 
+
+		return QModelIndex();
 	}
 };
 
@@ -1401,11 +1408,10 @@ public:
 
 		QAction * act = menu.exec( QCursor::pos() );
 
-		if ( act ) {
-			attachedNode = nif->insertNiBlock( act->text(), thisBlockNumber );
-		} else {
+		if ( !act )
 			return index;
-		}
+
+		attachedNode = nif->insertNiBlock( act->text(), thisBlockNumber );
 
 		// the attached node pushes this block down one row
 		int attachedNodeNumber = thisBlockNumber++;

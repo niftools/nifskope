@@ -561,12 +561,12 @@ void Mesh::transform()
 			norms  = nif->getArray<Vector3>( iData, "Normals" );
 			colors = nif->getArray<Color4>( iData, "Vertex Colors" );
 
-			if ( alphaisanim )
+			if ( alphaisanim ) {
 				for ( int i = 0; i < colors.count(); i++ )
 					colors[i].setRGBA( colors[i].red(), colors[i].green(), colors[i].blue(), 1 );
+			}
 
-
-			tangents = nif->getArray<Vector3>( iData, "Tangents" );
+			tangents   = nif->getArray<Vector3>( iData, "Tangents" );
 			bitangents = nif->getArray<Vector3>( iData, "Bitangents" );
 
 			if ( norms.count() < verts.count() )
@@ -610,7 +610,6 @@ void Mesh::transform()
 							break;
 						}
 					}
-
 
 					if ( !inv_idx )
 						triangles.append( t );

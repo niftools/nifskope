@@ -10,7 +10,9 @@ bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & ind
 	if ( !( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
 	     && !( nif->isNiBlock( index, "BSLODTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
 	     && !( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) )
+	{
 		return false;
+	}
 
 	// early exit of normals are missing
 	if ( !nif->get<bool>( iData, "Has Normals" ) )
@@ -189,8 +191,8 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 
 			if ( iTSpace.isValid() && nif->get<QString>( iTSpace, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				break;
-			else
-				iTSpace = QModelIndex();
+
+			iTSpace = QModelIndex();
 		}
 
 		if ( !iTSpace.isValid() ) {

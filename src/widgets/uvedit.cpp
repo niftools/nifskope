@@ -285,7 +285,6 @@ void UVWidget::paintGL()
 	else
 		bindTexture( texsource );
 
-
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
 	glTranslatef( -1.0f, -1.0f, 0.0f );
@@ -312,9 +311,7 @@ void UVWidget::paintGL()
 
 	glPopMatrix();
 
-
 	// draw grid
-
 	glPushMatrix();
 	glLoadIdentity();
 
@@ -375,10 +372,7 @@ void UVWidget::paintGL()
 
 	glPopMatrix();
 
-
-
 	drawTexCoords();
-
 
 	glDisable( GL_DEPTH_TEST );
 	glDepthMask( GL_FALSE );
@@ -403,8 +397,6 @@ void UVWidget::paintGL()
 		}
 		glEnd();
 	}
-
-
 
 	glMatrixMode( GL_MODELVIEW );
 	glPopMatrix();
@@ -441,7 +433,6 @@ void UVWidget::drawTexCoords()
 	float z;
 
 	// draw triangle edges
-
 	for ( int i = 0; i < faces.size(); i++ ) {
 		glBegin( GL_LINE_LOOP );
 

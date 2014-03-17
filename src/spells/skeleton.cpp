@@ -1234,9 +1234,10 @@ public:
 		if ( nif->getLink( index, "Controller" ) != -1 ) {
 			int keyframeResponse = QMessageBox::question( 0, Spell::tr( "Mirror Armature" ), Spell::tr( "Do you wish to flip or delete animation?" ), Spell::tr( "Flip" ), Spell::tr( "Delete" ), Spell::tr( "Cancel" ) );
 
-			if ( keyframeResponse == 2 ) {
+			if ( keyframeResponse == 2 )
 				return index;
-			} else if ( keyframeResponse == 1 ) {
+
+			if ( keyframeResponse == 1 ) {
 				// delete blocks
 				int n = 0;
 

@@ -96,16 +96,15 @@ public:
 		QStringList strings;
 		QString string;
 
-		if ( nif->getValue( index ).type() == NifValue::tStringIndex && nif->checkVersion( 0x14010003, 0 ) ) {
-			QModelIndex header = nif->getHeader();
-			QVector<QString> stringVector = nif->getArray<QString>( header, "Strings" );
-			strings = stringVector.toList();
-
-			if ( offset >= 0 && offset < stringVector.size() )
-				string = stringVector.at( offset );
-		} else {
+		if ( nif->getValue( index ).type() != NifValue::tStringIndex || !nif->checkVersion( 0x14010003, 0 ) )
 			return index;
-		}
+
+		QModelIndex header = nif->getHeader();
+		QVector<QString> stringVector = nif->getArray<QString>( header, "Strings" );
+		strings = stringVector.toList();
+
+		if ( offset >= 0 && offset < stringVector.size() )
+			string = stringVector.at( offset );
 
 		QDialog dlg;
 

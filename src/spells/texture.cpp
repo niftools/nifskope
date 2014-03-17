@@ -131,7 +131,8 @@ QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
 		return nif->getBlock( nif->getLink( index, "Data" ) );
-	else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
+	
+	if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
 		return index;
 
 	return QModelIndex();
@@ -684,7 +685,7 @@ public:
 		dlg.resize( 300, 60 );
 		QComboBox * cbRep = new QComboBox( &dlg );
 		QComboBox * cbBy  = new QComboBox( &dlg );
-		QPushButton * btnOk = new QPushButton( "OK", &dlg );
+		QPushButton * btnOk     = new QPushButton( "OK", &dlg );
 		QPushButton * btnCancel = new QPushButton( "Cancel", &dlg );
 		cbRep->addItems( modes );
 		cbRep->setCurrentIndex( 2 );

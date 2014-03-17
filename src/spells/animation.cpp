@@ -218,12 +218,11 @@ public:
 			if ( iCtrl.isValid() ) {
 				if ( nif->inherits( iCtrl, ctrltype ) )
 					return iCtrl;
-				else {
-					iCtrl = findController( nif, iCtrl, ctrltype );
 
-					if ( iCtrl.isValid() )
-						return iCtrl;
-				}
+				iCtrl = findController( nif, iCtrl, ctrltype );
+
+				if ( iCtrl.isValid() )
+					return iCtrl;
 			}
 		}
 		return QModelIndex();
