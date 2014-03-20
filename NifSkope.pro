@@ -369,6 +369,9 @@ win32 {
 		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
 	}
 
+	#  Relocate .lib and .exp files to keep release dir clean
+	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
+
 	#  PDB location
 	QMAKE_LFLAGS_DEBUG += /PDB:$$syspath($${INTERMEDIATE}/nifskope.pdb)
 
@@ -381,11 +384,6 @@ win32 {
 *msvc200* {
 	# Throw up a warning
 	message( WARNING: Project file does not support MSVC 2008 or lower )
-}
-
-static:*msvc201* {
-	#  Relocate .lib and .exp files to keep release dir clean
-	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
 }
 
 
@@ -471,6 +469,12 @@ build_pass {
 	win32:!static {
 		# Copy DLLs to build dir
 		copyFiles( $$QtBins(),, true )
+
+		plugins += \
+			$$[QT_INSTALL_PLUGINS]/platforms/qminimal$${DLLEXT} \
+			$$[QT_INSTALL_PLUGINS]/platforms/qwindows$${DLLEXT}
+
+		copyFiles( $$plugins, platforms, true )
 	}
 
 } # end build_pass
