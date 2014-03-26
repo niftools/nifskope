@@ -105,10 +105,7 @@ NifValue::Type NifValue::type( const QString & id )
 	if ( typeMap.isEmpty() )
 		initialize();
 
-	if ( typeMap.contains( id ) )
-		return typeMap[id];
-
-	return tNone;
+	return typeMap.value( id, tNone );
 }
 
 void NifValue::setTypeDescription( const QString & typId, const QString & txt )
@@ -118,31 +115,35 @@ void NifValue::setTypeDescription( const QString & typId, const QString & txt )
 
 QString NifValue::typeDescription( const QString & typId )
 {
-	QString txt;
+	if ( !enumMap.contains( typId ) )
+		return QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId ).arg( typeTxt.value( typId ) );
 
-	if ( enumMap.contains( typId ) ) {
-		txt = QString( "<p><b>%1 (%2)</b><p>%3</p>" ).arg( typId ).arg( aliasMap.value( typId ) ).arg( typeTxt.value( typId ) );
-	} else {
-		txt = QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId ).arg( typeTxt.value( typId ) );
-	}
+	// Cache the generated HTML description
+	static QHash<QString, QString> txtCache;
 
-	if ( enumMap.contains( typId ) ) {
-		txt += "<p><table><tr><td><table>";
-		QHashIterator<quint32, QPair<QString, QString> > it( enumMap[ typId ].o );
-		int cnt = 0;
+	if ( txtCache.contains( typId ) )
+		return txtCache[typId];
+	
+	QString txt = QString( "<p><b>%1 (%2)</b><p>%3</p>" ).arg( typId ).arg( aliasMap.value( typId ) ).arg( typeTxt.value( typId ) );
 
-		while ( it.hasNext() ) {
-			if ( cnt++ > 30 ) {
-				cnt  = 0;
-				txt += "</table></td><td><table>";
-			}
+	// TODO: Definition lists are much faster but go off the screen
+	txt += "<dl>";
+	QHashIterator<quint32, QPair<QString, QString> > it( enumMap[ typId ].o );
+	int cnt = 0;
 
-			it.next();
-			txt += QString( "<tr><td>%2</td><td>%1</td><td>%3</td></tr>" ).arg( it.value().first ).arg( it.key() ).arg( it.value().second );
+	while ( it.hasNext() ) {
+		if ( cnt++ > 30 ) {
+			cnt  = 0;
+			txt += "</dl><dl>";
 		}
 
-		txt += "</table></td></tr></table></p>";
+		it.next();
+		txt += QString( "<dt>%2: %1</dt><dd>%3</dd>" ).arg( it.value().first ).arg( it.key() ).arg( it.value().second );
 	}
+
+	txt += "</dl>";
+
+	txtCache.insert( typId, txt );
 
 	return txt;
 }
@@ -199,7 +200,7 @@ bool NifValue::registerEnumType( const QString & eid, EnumType eTyp )
 
 NifValue::EnumType NifValue::enumType( const QString & eid )
 {
-	return enumMap.contains( eid ) ? enumMap.value( eid ).t : NifValue::eNone;
+	return enumMap.value( eid, { EnumType::eNone } ).t;
 }
 
 QString NifValue::enumOptionName( const QString & eid, quint32 val )

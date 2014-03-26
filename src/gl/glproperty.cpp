@@ -629,10 +629,7 @@ int TexturingProperty::getId( const QString & texname )
 		hash.insert( "decal3", 9 );
 	}
 
-	if ( hash.contains( texname ) )
-		return hash[ texname ];
-
-	return -1;
+	return hash.value( texname, -1 );
 }
 
 void glProperty( TexturingProperty * p )
@@ -1127,9 +1124,6 @@ int BSShaderLightingProperty::getId( const QString & id )
 		hash.insert( "decal1", 7 );
 	}
 
-	if ( hash.contains( id ) )
-		return hash[ id ];
-
-	return -1;
+	return hash.value( id, -1 );
 }
 
