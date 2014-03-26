@@ -98,7 +98,7 @@ protected:
 			NONE, EQ, NE, LE, GE, LT, GT, AND
 		};
 		Type comp;
-		static QHash<Type, QString> compStrs;
+		const static QHash<Type, QString> compStrs;
 
 		bool invert;
 

@@ -78,20 +78,18 @@ bool Renderer::hasShaderSupport()
 	return shader_ready;
 }
 
-QHash<Renderer::ConditionSingle::Type, QString> Renderer::ConditionSingle::compStrs;
+const QHash<Renderer::ConditionSingle::Type, QString> Renderer::ConditionSingle::compStrs{
+	{ EQ,  " == " },
+	{ NE,  " != " },
+	{ LE,  " <= " },
+	{ GE,  " >= " },
+	{ LT,  " < " },
+	{ GT,  " > " },
+	{ AND, " & " }
+};
 
 Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : invert( neg )
 {
-	if ( compStrs.isEmpty() ) {
-		compStrs.insert( EQ, " == " );
-		compStrs.insert( NE, " != " );
-		compStrs.insert( LE, " <= " );
-		compStrs.insert( GE, " >= " );
-		compStrs.insert( LT, " < " );
-		compStrs.insert( GT, " > " );
-		compStrs.insert( AND, " & " );
-	}
-
 	QHashIterator<Type, QString> i( compStrs );
 	int pos = -1;
 

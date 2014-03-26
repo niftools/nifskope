@@ -614,20 +614,18 @@ void TexturingProperty::setController( const NifModel * nif, const QModelIndex &
 
 int TexturingProperty::getId( const QString & texname )
 {
-	static QHash<QString, int> hash;
-
-	if ( hash.isEmpty() ) {
-		hash.insert( "base", 0 );
-		hash.insert( "dark", 1 );
-		hash.insert( "detail", 2 );
-		hash.insert( "gloss", 3 );
-		hash.insert( "glow", 4 );
-		hash.insert( "bumpmap", 5 );
-		hash.insert( "decal0", 6 );
-		hash.insert( "decal1", 7 );
-		hash.insert( "decal2", 8 );
-		hash.insert( "decal3", 9 );
-	}
+	const static QHash<QString, int> hash{
+		{ "base",   0 },
+		{ "dark",   1 },
+		{ "detail", 2 },
+		{ "gloss",  3 },
+		{ "glow",   4 },
+		{ "bumpmap", 5 },
+		{ "decal0", 6 },
+		{ "decal1", 7 },
+		{ "decal2", 8 },
+		{ "decal3", 9 }
+	};
 
 	return hash.value( texname, -1 );
 }
@@ -1111,18 +1109,16 @@ QString BSShaderLightingProperty::fileName( int id ) const
 
 int BSShaderLightingProperty::getId( const QString & id )
 {
-	static QHash<QString, int> hash;
-
-	if ( hash.isEmpty() ) {
-		hash.insert( "base", 0 );
-		hash.insert( "dark", 1 );
-		hash.insert( "detail", 2 );
-		hash.insert( "gloss", 3 );
-		hash.insert( "glow", 4 );
-		hash.insert( "bumpmap", 5 );
-		hash.insert( "decal0", 6 );
-		hash.insert( "decal1", 7 );
-	}
+	const static QHash<QString, int> hash{
+		{ "base",   0 },
+		{ "dark",   1 },
+		{ "detail", 2 },
+		{ "gloss",  3 },
+		{ "glow",   4 },
+		{ "bumpmap", 5 },
+		{ "decal0", 6 },
+		{ "decal1", 7 }
+	};
 
 	return hash.value( id, -1 );
 }
