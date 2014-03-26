@@ -78,32 +78,32 @@ public:
 	enum Type
 	{
 		// all count types should come between tBool and tUInt
-		tBool  = 0,
-		tByte  = 1,
-		tWord  = 2,
-		tFlags = 3,
+		tBool           = 0,
+		tByte           = 1,
+		tWord           = 2,
+		tFlags          = 3,
 		tStringOffset   = 4,
 		tStringIndex    = 5,
 		tBlockTypeIndex = 6,
-		tInt    = 7,
-		tShort  = 8,
-		tUInt   = 9,
+		tInt            = 7,
+		tShort          = 8,
+		tUInt           = 9,
 		//
 		tLink   = 10,
 		tUpLink = 11,
 		tFloat  = 12,
 		// all string types should come between tSizedString and tChar8String
-		tSizedString  = 13,
-		tText = 15,
-		tShortString  = 16,
-		tHeaderString = 18,
-		tLineString   = 19,
-		tChar8String  = 20,
+		tSizedString   = 13,
+		tText          = 15,
+		tShortString   = 16,
+		tHeaderString  = 18,
+		tLineString    = 19,
+		tChar8String   = 20,
 		//
 		tColor3        = 21,
 		tColor4        = 22,
 		tVector3       = 23,
-		tQuat = 24,
+		tQuat          = 24,
 		tQuatXYZW      = 25,
 		tMatrix        = 26,
 		tMatrix4       = 27,
@@ -116,9 +116,9 @@ public:
 		tString        = 34, //!< not a regular string: an integer for nif versions 20.1.0.3 and up
 		tFilePath      = 35, //!< not a string: requires special handling for slash/backslash etc.
 		tByteMatrix    = 36,
-		tBlob = 37,
+		tBlob          = 37,
 
-		tNone = 0xff
+		tNone          = 0xff
 	};
 
 	enum EnumType
