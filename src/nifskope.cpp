@@ -779,13 +779,6 @@ void NifSkope::load()
 	ogl->center();
 
 	setEnabled( true );
-
-	// work around for what is apparently a Qt 4.4.0 bug: force toolbar actions to enable again
-	aLineLoad->setEnabled( true );
-	aLineSave->setEnabled( true );
-	aCpFileName->setEnabled( true );
-	ogl->animGroups->setEnabled( true );
-	ogl->sldTime->setEnabled( true );
 }
 
 void ProgDlg::sltProgress( int x, int y )
@@ -832,13 +825,6 @@ void NifSkope::save()
 	}
 
 	setEnabled( true );
-
-	// work around for what is apparently a Qt 4.4.0 bug: force toolbar actions to enable again
-	aLineLoad->setEnabled( true );
-	aLineSave->setEnabled( true );
-	aCpFileName->setEnabled( true );
-	ogl->animGroups->setEnabled( true );
-	ogl->sldTime->setEnabled( true );
 }
 
 void NifSkope::copyFileNameLoadSave()
