@@ -939,7 +939,7 @@ class spMoveBlockUp : public Spell
 public:
 	QString name() const { return Spell::tr( "Move Up" ); }
 	QString page() const { return Spell::tr( "Block" ); }
-	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Up ); }
+	QKeySequence hotkey() const { return { Qt::CTRL + Qt::Key_Up }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -962,7 +962,7 @@ class spMoveBlockDown : public Spell
 public:
 	QString name() const { return Spell::tr( "Move Down" ); }
 	QString page() const { return Spell::tr( "Block" ); }
-	QKeySequence hotkey() const { return QKeySequence( Qt::CTRL + Qt::Key_Down ); }
+	QKeySequence hotkey() const { return { Qt::CTRL + Qt::Key_Down }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{

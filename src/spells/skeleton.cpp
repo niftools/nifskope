@@ -1282,7 +1282,7 @@ public:
 
 			// translation is a Vector3
 			// want [x,y,z] -> [x,y,-z]
-			tlocal.translation = Vector3( tlocal.translation[0], tlocal.translation[1], -tlocal.translation[2] );
+			tlocal.translation = { tlocal.translation[0], tlocal.translation[1], -tlocal.translation[2] };
 
 			// rotation is a Matrix, want to negate Y and P components - will get to R component in SkinInstance
 			// convert to Euler, then [Y,P,R] -> [-Y,-P,R]
@@ -1347,7 +1347,7 @@ public:
 
 			// fix centre Z - don't recalculate
 			Vector3 shapeCentre = nif->get<Vector3>( iData, "Center" );
-			shapeCentre = Vector3( shapeCentre[0], shapeCentre[1], -shapeCentre[2] );
+			shapeCentre = { shapeCentre[0], shapeCentre[1], -shapeCentre[2] };
 			nif->set<Vector3>( iData, "Center", shapeCentre );
 
 			// from spFlipFace

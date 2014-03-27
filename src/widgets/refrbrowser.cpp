@@ -62,7 +62,7 @@ ReferenceBrowser::ReferenceBrowser( QWidget * parent )
 		return;
 	}
 
-	setSearchPaths( QStringList() << docFolder.absolutePath() );
+	setSearchPaths( { docFolder.absolutePath() } );
 	setStyleSheet( "docsys.css" );
 	setSourceFile( "index.html" );
 }

@@ -400,8 +400,12 @@ Options::Options()
 
 		cfg.beginGroup( "Light0" );
 
-		QStringList lightNames( QStringList() << tr( "Ambient" ) << tr( "Diffuse" ) << tr( "Specular" ) );
-		QList<QColor> lightDefaults( QList<QColor>() << QColor::fromRgbF( .4, .4, .4 ) << QColor::fromRgbF( .8, .8, .8 ) << QColor::fromRgbF( 1, 1, 1 ) );
+		QStringList lightNames{ tr( "Ambient" ), tr( "Diffuse" ), tr( "Specular" ) };
+		QList<QColor> lightDefaults{
+			QColor::fromRgbF( .4, .4, .4 ),
+			QColor::fromRgbF( .8, .8, .8 ),
+			QColor::fromRgbF( 1, 1, 1 ) 
+		};
 
 		for ( int l = 0; l < 3; l++ ) {
 			ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
@@ -466,8 +470,12 @@ Options::Options()
 		colorPage->pushLayout( tr( "Colors" ), Qt::Horizontal );
 
 
-		QStringList colorNames( QStringList() << tr( "Background" ) << tr( "Foreground" ) << tr( "Highlight" ) );
-		QList<QColor> colorDefaults( QList<QColor>() << QColor::fromRgb( 0, 0, 0 ) << QColor::fromRgb( 255, 255, 255 ) << QColor::fromRgb( 255, 255, 0 ) );
+		QStringList colorNames{ tr( "Background" ), tr( "Foreground" ), tr( "Highlight" ) };
+		QList<QColor> colorDefaults{
+			QColor::fromRgb( 0, 0, 0 ),
+			QColor::fromRgb( 255, 255, 255 ),
+			QColor::fromRgb( 255, 255, 0 )
+		};
 
 		for ( int c = 0; c < 3; c++ ) {
 			colorPage->pushLayout( colorNames[c], Qt::Horizontal );
@@ -510,8 +518,13 @@ Options::Options()
 
 		cfg.beginGroup( "MatOver" );
 
-		QStringList names( QStringList() << tr( "Ambient" ) << tr( "Diffuse" ) << tr( "Specular" ) << tr( "Emissive" ) );
-		QList<QColor> defaults( QList<QColor>() << QColor::fromRgbF( 1, 1, 1 ) << QColor::fromRgbF( 1, 1, 1 ) << QColor::fromRgbF( 1, 1, 1 ) << QColor::fromRgbF( 1, 1, 1 ) );
+		QStringList names{ tr( "Ambient" ), tr( "Diffuse" ), tr( "Specular" ), tr( "Emissive" ) };
+		QList<QColor> defaults{
+			QColor::fromRgbF( 1, 1, 1 ),
+			QColor::fromRgbF( 1, 1, 1 ),
+			QColor::fromRgbF( 1, 1, 1 ),
+			QColor::fromRgbF( 1, 1, 1 )
+		};
 
 		for ( int l = 0; l < 4; l++ ) {
 			ColorWheel * wheel = new ColorWheel( cfg.value( names[l], defaults[l] ).value<QColor>() );
@@ -588,17 +601,17 @@ Options * Options::get()
 QList<QAction *> Options::actions()
 {
 	Options * opts = get();
-	return QList<QAction *>()
-	       << opts->aDrawAxes
-	       << opts->aDrawNodes
-	       << opts->aDrawHavok
-	       << opts->aDrawConstraints
-	       << opts->aDrawFurn
-	       << opts->aDrawHidden
-		#ifdef USE_GL_QPAINTER
-	       << opts->aDrawStats
-		#endif
-	       << opts->aSettings;
+	return { opts->aDrawAxes,
+			opts->aDrawNodes,
+			opts->aDrawHavok ,
+			opts->aDrawConstraints,
+			opts->aDrawFurn,
+			opts->aDrawHidden,
+#ifdef USE_GL_QPAINTER
+			opts->aDrawStats,
+#endif
+			opts->aSettings
+	};
 }
 
 void Options::save()

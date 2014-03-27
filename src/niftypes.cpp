@@ -315,7 +315,7 @@ QString Matrix4::toHtml() const
 
 void Matrix4::decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const
 {
-	trans = Vector3( m[ 3 ][ 0 ], m[ 3 ][ 1 ], m[ 3 ][ 2 ] );
+	trans = { m[3][0], m[3][1], m[3][2] };
 
 	Matrix rotT;
 
@@ -328,7 +328,7 @@ void Matrix4::decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const
 
 	Matrix mtx = rot * rotT;
 
-	scale = Vector3( sqrt( mtx( 0, 0 ) ), sqrt( mtx( 1, 1 ) ), sqrt( mtx( 2, 2 ) ) );
+	scale = { sqrt(mtx( 0, 0 )), sqrt(mtx( 1, 1 )), sqrt(mtx( 2, 2 )) };
 
 	for ( int i = 0; i < 3; i++ ) {
 		for ( int j = 0; j < 3; j++ )
@@ -376,7 +376,7 @@ void Quat::toAxisAngle( Vector3 & axis, float & angle ) const
 		axis[2] = wxyz[3];
 		axis /= sqrt( squaredLength );
 	} else {
-		axis  = Vector3( 1, 0, 0 );
+		axis = { 1, 0, 0 };
 		angle = 0;
 	}
 }

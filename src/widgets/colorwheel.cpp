@@ -174,7 +174,7 @@ QSize ColorWheel::sizeHint() const
 	if ( sHint.isValid() )
 		return sHint;
 
-	return QSize( 250, 250 );
+	return { 250, 250 };
 }
 
 void ColorWheel::setSizeHint( const QSize & s )
@@ -184,7 +184,7 @@ void ColorWheel::setSizeHint( const QSize & s )
 
 QSize ColorWheel::minimumSizeHint() const
 {
-	return QSize( 50, 50 );
+	return { 50, 50 };
 }
 
 int ColorWheel::heightForWidth( int width ) const

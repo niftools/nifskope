@@ -966,13 +966,13 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			QPersistentModelIndex iShape = nif->insertNiBlock( "bhkNiTriStripsShape" );
 
-			nif->setArray<float>( iShape, "Unknown Floats 1", QVector<float>() << 0.1f << 0.0f );
-			nif->setArray<int>( iShape, "Unknown Ints 1",  QVector<int>() << 0 << 0 << 0 << 0 << 1 );
-			nif->set<Vector3>( iShape, "Scale", Vector3( 1.0, 1.0, 1.0 ) );
+			nif->setArray<float>( iShape, "Unknown Floats 1", { 0.1f, 0.0f } );
+			nif->setArray<int>( iShape, "Unknown Ints 1", { 0, 0, 0, 0, 1 } );
+			nif->set<Vector3>( iShape, "Scale", { 1.0, 1.0, 1.0 } );
 			addLink( nif, iShape, "Strips Data", nif->getBlockNumber( iData ) );
 			nif->set<int>( iShape, "Num Data Layers", 1 );
 			nif->updateArray( iShape, "Data Layers" );
-			nif->setArray<int>( iShape, "Data Layers", QVector<int>() << 1 );
+			nif->setArray<int>( iShape, "Data Layers", { 1 } );
 
 			QPersistentModelIndex iBody = nif->insertNiBlock( "bhkRigidBody" );
 			nif->setLink( iBody, "Shape", nif->getBlockNumber( iShape ) );

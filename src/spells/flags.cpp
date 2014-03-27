@@ -174,28 +174,30 @@ public:
 		dlg.setLayout( vbox );
 
 		// See glBlendFunc; ONE and ZERO appear to swapped from where they should be (not to mention missing values before SATURATE)
-		QStringList blendModes = QStringList()
-		                         << Spell::tr( "One" )
-		                         << Spell::tr( "Zero" )
-		                         << Spell::tr( "Src Color" )
-		                         << Spell::tr( "Inv Src Color" )
-		                         << Spell::tr( "Dst Color" )
-		                         << Spell::tr( "Inv Dst Color" )
-		                         << Spell::tr( "Src Alpha" )
-		                         << Spell::tr( "Inv Src Alpha" )
-		                         << Spell::tr( "Dst Alpha" )
-		                         << Spell::tr( "Inv Dst Alpha" )
-		                         << Spell::tr( "Src Alpha Saturate" );
+		QStringList blendModes{
+			Spell::tr( "One" ),
+			Spell::tr( "Zero" ),
+			Spell::tr( "Src Color" ),
+			Spell::tr( "Inv Src Color" ),
+			Spell::tr( "Dst Color" ),
+			Spell::tr( "Inv Dst Color" ),
+			Spell::tr( "Src Alpha" ),
+			Spell::tr( "Inv Src Alpha" ),
+			Spell::tr( "Dst Alpha" ),
+			Spell::tr( "Inv Dst Alpha" ),
+			Spell::tr( "Src Alpha Saturate" )
+		};
 		// ALWAYS and NEVER are swapped from where they should be; see glAlphaFunc
-		QStringList testModes = QStringList()
-		                        << Spell::tr( "Always" )
-		                        << Spell::tr( "Less" )
-		                        << Spell::tr( "Equal" )
-		                        << Spell::tr( "Less or Equal" )
-		                        << Spell::tr( "Greater" )
-		                        << Spell::tr( "Not Equal" )
-		                        << Spell::tr( "Greater or Equal" )
-		                        << Spell::tr( "Never" );
+		QStringList testModes{
+			Spell::tr( "Always" ),
+			Spell::tr( "Less" ),
+			Spell::tr( "Equal" ),
+			Spell::tr( "Less or Equal" ),
+			Spell::tr( "Greater" ),
+			Spell::tr( "Not Equal" ),
+			Spell::tr( "Greater or Equal" ),
+			Spell::tr( "Never" )
+		};
 
 		QCheckBox * chkBlend = dlgCheck( vbox, Spell::tr( "Enable Blending" ) );
 		chkBlend->setChecked( flags & 1 );
@@ -261,11 +263,12 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, Spell::tr( "Hidden" ) );
 		chkHidden->setChecked( flags & 1 );
 
-		QStringList collideModes = QStringList()
-		                           << Spell::tr( "None" )
-		                           << Spell::tr( "Triangles" )
-		                           << Spell::tr( "Bounding Box" )
-		                           << Spell::tr( "Continue" );
+		QStringList collideModes{
+			Spell::tr( "None" ),
+			Spell::tr( "Triangles" ),
+			Spell::tr( "Bounding Box" ),
+			Spell::tr( "Continue" )
+		};
 
 		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr( "Collision Detection" ), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
@@ -295,10 +298,11 @@ public:
 		QCheckBox * chkActive = dlgCheck( vbox, Spell::tr( "Active" ) );
 		chkActive->setChecked( flags & 8 );
 
-		QStringList loopModes = QStringList()
-		                        << Spell::tr( "Cycle" )
-		                        << Spell::tr( "Reverse" )
-		                        << Spell::tr( "Clamp" );
+		QStringList loopModes{
+			Spell::tr( "Cycle" ),
+			Spell::tr( "Reverse" ),
+			Spell::tr( "Clamp" )
+		};
 
 		QComboBox * cmbLoop = dlgCombo( vbox, Spell::tr( "Loop Mode" ), loopModes );
 		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
@@ -354,11 +358,13 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, Spell::tr( "Hidden" ) );
 		chkHidden->setChecked( flags & 0x01 );
 
-		QStringList collideModes = QStringList()
-		                           << Spell::tr( "None" )
-		                           << Spell::tr( "Triangles" )
-		                           << Spell::tr( "Bounding Box" )
-		                           << Spell::tr( "Continue" );
+		QStringList collideModes{
+			Spell::tr( "None" ),
+			Spell::tr( "Triangles" ),
+			Spell::tr( "Bounding Box" ),
+			Spell::tr( "Continue" )
+		};
+
 
 		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr( "Collision Detection" ), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
@@ -400,15 +406,16 @@ public:
 		chkROnly->setChecked( ( flags & 2 ) == 0 );
 
 		// ALWAYS and NEVER are swapped, otherwise values match glDepthFunc
-		QStringList compareFunc = QStringList()
-		                          << Spell::tr( "Always" )           // 0
-		                          << Spell::tr( "Less" )             // 1
-		                          << Spell::tr( "Equal" )            // 2
-		                          << Spell::tr( "Less or Equal" )    // 3
-		                          << Spell::tr( "Greater" )          // 4
-		                          << Spell::tr( "Not Equal" )        // 5
-		                          << Spell::tr( "Greater or Equal" ) // 6
-		                          << Spell::tr( "Never" );           // 7
+		QStringList compareFunc{
+			Spell::tr( "Always" ),           // 0
+			Spell::tr( "Less" ),             // 1
+			Spell::tr( "Equal" ),            // 2
+			Spell::tr( "Less or Equal" ),    // 3
+			Spell::tr( "Greater" ),          // 4
+			Spell::tr( "Not Equal" ),        // 5
+			Spell::tr( "Greater or Equal" ), // 6
+			Spell::tr( "Never" )            // 7
+		};
 
 		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr( "Z Buffer Test Function" ), compareFunc, chkEnable );
 
@@ -452,14 +459,14 @@ public:
 		QDialog dlg;
 		QVBoxLayout * vbox = new QVBoxLayout( &dlg );
 
-		QStringList flagNames( QStringList()
-		                       << Spell::tr( "Enable Havok" )          // 1
-		                       << Spell::tr( "Enable Collision" )      // 2
-		                       << Spell::tr( "Is Skeleton Nif (?)" )   // 4
-		                       << Spell::tr( "Enable Animation" )      // 8
-		                       << Spell::tr( "FlameNodes Present" )    // 16
-		                       << Spell::tr( "EditorMarkers Present" ) // 32
-		);
+		QStringList flagNames{
+			Spell::tr( "Enable Havok" ),          // 1
+			Spell::tr( "Enable Collision" ),      // 2
+			Spell::tr( "Is Skeleton Nif (?)" ),   // 4
+			Spell::tr( "Enable Animation" ),      // 8
+			Spell::tr( "FlameNodes Present" ),    // 16
+			Spell::tr( "EditorMarkers Present" )  // 32
+		};
 
 		QList<QCheckBox *> chkBoxes;
 		int x = 0;
@@ -496,16 +503,19 @@ public:
 		QCheckBox * chkHidden = dlgCheck( vbox, Spell::tr( "Hidden" ) );
 		chkHidden->setChecked( flags & 1 );
 
-		QStringList collideModes = QStringList()
-		                           << Spell::tr( "None" )                  // 0
-		                           << Spell::tr( "Triangles" )             // 2
-		                           << Spell::tr( "Bounding Box" )          // 4
-		                           << Spell::tr( "Continue" );             // 6
-		QStringList billboardModes = QStringList()
-		                             << Spell::tr( "Always Face Camera" )  // 0
-		                             << Spell::tr( "Rotate About Up" )     // 32
-		                             << Spell::tr( "Rigid Face Camera" )   // 64
-		                             << Spell::tr( "Always Face Center" ); // 96
+		QStringList collideModes{
+			Spell::tr( "None" ),                // 0
+			Spell::tr( "Triangles" ),           // 2
+			Spell::tr( "Bounding Box" ),        // 4
+			Spell::tr( "Continue" ),            // 6
+		};
+
+		QStringList billboardModes{
+			Spell::tr( "Always Face Camera" ),  // 0
+			Spell::tr( "Rotate About Up" ),     // 32
+			Spell::tr( "Rigid Face Camera" ),   // 64
+			Spell::tr( "Always Face Center" )   // 96
+		};
 
 		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr( "Collision Detection" ), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
@@ -550,13 +560,15 @@ public:
 
 		QCheckBox * chkEnable = dlgCheck( vbox, Spell::tr( "Stencil Enable" ) );
 
-		QStringList stencilActions = QStringList()
-		                             << Spell::tr( "Keep" )      // 0
-		                             << Spell::tr( "Zero" )      // 1
-		                             << Spell::tr( "Replace" )   // 2
-		                             << Spell::tr( "Increment" ) // 3
-		                             << Spell::tr( "Decrement" ) // 4
-		                             << Spell::tr( "Invert" );   // 5
+		QStringList stencilActions{
+			Spell::tr( "Keep" ),      // 0
+			Spell::tr( "Zero" ),      // 1
+			Spell::tr( "Replace" ),   // 2
+			Spell::tr( "Increment" ), // 3
+			Spell::tr( "Decrement" ), // 4
+			Spell::tr( "Invert" )     // 5
+		};
+
 
 		QComboBox * cmbFail = dlgCombo( vbox, Spell::tr( "Fail Action" ), stencilActions );
 
@@ -564,24 +576,26 @@ public:
 
 		QComboBox * cmbPass = dlgCombo( vbox, Spell::tr( "Pass Action" ), stencilActions );
 
-		QStringList drawModes = QStringList()
-		                        << Spell::tr( "Counter clock wise or Both" ) // 0
-		                        << Spell::tr( "Draw counter clock wise" )    // 1
-		                        << Spell::tr( "Draw clock wise" )            // 2
-		                        << Spell::tr( "Draw Both" );                 // 3
+		QStringList drawModes{
+			Spell::tr( "Counter clock wise or Both" ), // 0
+			Spell::tr( "Draw counter clock wise" ),    // 1
+			Spell::tr( "Draw clock wise" ),            // 2
+			Spell::tr( "Draw Both" )                   // 3
+		};
 
 		QComboBox * cmbDrawMode = dlgCombo( vbox, Spell::tr( "Draw Mode" ), drawModes );
 
 		// Appears to match glStencilFunc
-		QStringList compareFunc = QStringList()
-		                          << Spell::tr( "Never" )            // 0
-		                          << Spell::tr( "Less" )             // 1
-		                          << Spell::tr( "Equal" )            // 2
-		                          << Spell::tr( "Less or Equal" )    // 3
-		                          << Spell::tr( "Greater" )          // 4
-		                          << Spell::tr( "Not Equal" )        // 5
-		                          << Spell::tr( "Greater or Equal" ) // 6
-		                          << Spell::tr( "Always" );          // 7
+		QStringList compareFunc{
+			Spell::tr( "Never" ),            // 0
+			Spell::tr( "Less" ),             // 1
+			Spell::tr( "Equal" ),            // 2
+			Spell::tr( "Less or Equal" ),    // 3
+			Spell::tr( "Greater" ),          // 4
+			Spell::tr( "Not Equal" ),        // 5
+			Spell::tr( "Greater or Equal" ), // 6
+			Spell::tr( "Always" )            // 7
+		};          
 
 		QComboBox * cmbFunc = dlgCombo( vbox, Spell::tr( "Stencil Function" ), compareFunc );
 
@@ -645,16 +659,18 @@ public:
 			setFlags->setChecked( flags != 0 );
 		}
 
-		QStringList lightMode = QStringList()
-		                        << Spell::tr( "Emissive" )
-		                        << Spell::tr( "Emissive + Ambient + Diffuse" );
+		QStringList lightMode{
+			Spell::tr( "Emissive" ),
+			Spell::tr( "Emissive + Ambient + Diffuse" )
+		};
 
 		QComboBox * cmbLight = dlgCombo( vbox, Spell::tr( "Lighting Mode" ), lightMode );
 
-		QStringList vertMode = QStringList()
-		                       << Spell::tr( "Source Ignore" )
-		                       << Spell::tr( "Source Emissive" )
-		                       << Spell::tr( "Source Ambient/Diffuse" );
+		QStringList vertMode{
+			Spell::tr( "Source Ignore" ),
+			Spell::tr( "Source Emissive" ),
+			Spell::tr( "Source Ambient/Diffuse" )
+		};
 
 		QComboBox * cmbVert = dlgCombo( vbox, Spell::tr( "Vertex Mode" ), vertMode );
 
@@ -695,19 +711,17 @@ public:
 		QCheckBox * chkActive = dlgCheck( vbox, Spell::tr( "Active" ) );
 		chkActive->setChecked( flags & 8 );
 
-		QStringList loopModes = QStringList()
-		                        << Spell::tr( "Cycle" )
-		                        << Spell::tr( "Reverse" )
-		                        << Spell::tr( "Clamp" );
+		QStringList loopModes{
+			Spell::tr( "Cycle" ), Spell::tr( "Reverse" ), Spell::tr( "Clamp" )
+		};
 
 		QComboBox * cmbLoop = dlgCombo( vbox, Spell::tr( "Loop Mode" ), loopModes );
 		cmbLoop->setCurrentIndex( flags >> 1 & 3 );
 
-		QStringList targetColor = QStringList()
-		                          << Spell::tr( "Ambient" )
-		                          << Spell::tr( "Diffuse" )
-		                          << Spell::tr( "Specular" )
-		                          << Spell::tr( "Emissive" );
+		QStringList targetColor{
+			Spell::tr( "Ambient" ), Spell::tr( "Diffuse" ),
+			Spell::tr( "Specular" ), Spell::tr( "Emissive" )
+		};
 
 		QComboBox * cmbColor = dlgCombo( vbox, Spell::tr( "Target Color" ), targetColor );
 
@@ -743,22 +757,24 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 
-		QStringList clampModes = QStringList()
-		                         << Spell::tr( "Clamp Both" )
-		                         << Spell::tr( "Clamp S Wrap T" )
-		                         << Spell::tr( "Wrap S Clamp T" )
-		                         << Spell::tr( "Wrap Both" );
+		QStringList clampModes{
+			Spell::tr( "Clamp Both" ),
+			Spell::tr( "Clamp S Wrap T" ),
+			Spell::tr( "Wrap S Clamp T" ),
+			Spell::tr( "Wrap Both" )
+		};
 
 		QComboBox * cmbClamp = dlgCombo( vbox, Spell::tr( "Clamp Mode" ), clampModes );
 		cmbClamp->setCurrentIndex( ( flags & 0xF000 ) >> 0x0C );
 
-		QStringList filterModes = QStringList()
-		                          << Spell::tr( "FILTER_NEAREST" )
-		                          << Spell::tr( "FILTER_BILERP" )
-		                          << Spell::tr( "FILTER_TRILERP" )
-		                          << Spell::tr( "FILTER_NEAREST_MIPNEAREST" )
-		                          << Spell::tr( "FILTER_NEAREST_MIPLERP" )
-		                          << Spell::tr( "FILTER_BILERP_MIPNEAREST" );
+		QStringList filterModes{
+			Spell::tr( "FILTER_NEAREST" ),
+			Spell::tr( "FILTER_BILERP" ),
+			Spell::tr( "FILTER_TRILERP" ),
+			Spell::tr( "FILTER_NEAREST_MIPNEAREST" ),
+			Spell::tr( "FILTER_NEAREST_MIPLERP" ),
+			Spell::tr( "FILTER_BILERP_MIPNEAREST" )
+		};
 
 		QComboBox * cmbFilter = dlgCombo( vbox, Spell::tr( "Filter Mode" ), filterModes );
 		cmbFilter->setCurrentIndex( ( flags & 0x0F00 ) >> 0x08 );

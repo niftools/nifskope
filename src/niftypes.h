@@ -350,7 +350,7 @@ public:
 	//! Find the cross product of two vectors
 	static Vector3 crossproduct( const Vector3 & a, const Vector3 & b )
 	{
-		return Vector3( a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0] );
+		return { a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0] };
 	}
 
 	//! Find the angle between two vectors

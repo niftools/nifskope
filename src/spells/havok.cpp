@@ -265,30 +265,30 @@ public:
 		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * havokConst;
 		pivot = transA * pivot;
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
-		nif->set<Vector4>( iConstraint, "Pivot B", Vector4( pivot[0], pivot[1], pivot[2], 0 ) );
+		nif->set<Vector4>( iConstraint, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
 
 		if ( name == "bhkLimitedHingeConstraint" ) {
 			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Axle A" ) );
 			axle = transA.rotation * axle;
 			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Axle B", Vector4( axle[0], axle[1], axle[2], 0 ) );
+			nif->set<Vector4>( iConstraint, "Axle B", { axle[0], axle[1], axle[2], 0 } );
 
 			axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2 Axle In A2" ) );
 			axle = transA.rotation * axle;
 			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Perp2 Axle In B2", Vector4( axle[0], axle[1], axle[2], 0 ) );
+			nif->set<Vector4>( iConstraint, "Perp2 Axle In B2", { axle[0], axle[1], axle[2], 0 } );
 		}
 
 		if ( name == "bhkRagdollConstraint" ) {
 			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Plane A" ) );
 			axle = transA.rotation * axle;
 			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Plane B", Vector4( axle[0], axle[1], axle[2], 0 ) );
+			nif->set<Vector4>( iConstraint, "Plane B", { axle[0], axle[1], axle[2], 0 } );
 
 			axle = Vector3( nif->get<Vector4>( iConstraint, "Twist A" ) );
 			axle = transA.rotation * axle;
 			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Twist B", Vector4( axle[0], axle[1], axle[2], 0 ) );
+			nif->set<Vector4>( iConstraint, "Twist B", { axle[0], axle[1], axle[2], 0 } );
 		}
 
 		return index;
@@ -429,9 +429,9 @@ public:
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Layer", 1 );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Num Vertices", vertices.count() );
 		nif->set<int>( iSubShapes.child( 0, 0 ), "Material", nif->get<int>( iShape, "Material" ) );
-		nif->setArray<float>( iPackedShape, "Unknown Floats", QVector<float>() << 0.0f << 0.0f << 0.1f << 0.0f << 1.0f << 1.0f << 1.0f << 1.0f << 0.1f );
+		nif->setArray<float>( iPackedShape, "Unknown Floats", { 0.0f, 0.0f, 0.1f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.1f } );
 		nif->set<float>( iPackedShape, "Scale", 1.0f );
-		nif->setArray<float>( iPackedShape, "Unknown Floats 2", QVector<float>() << 1.0f << 1.0f << 1.0f );
+		nif->setArray<float>( iPackedShape, "Unknown Floats 2", { 1.0f, 1.0f, 1.0f } );
 
 		QModelIndex iPackedData = nif->insertNiBlock( "hkPackedNiTriStripsData", nif->getBlockNumber( iPackedShape ) );
 		nif->setLink( iPackedShape, "Data", nif->getBlockNumber( iPackedData ) );

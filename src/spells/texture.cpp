@@ -539,7 +539,7 @@ class spTextureTemplate : public Spell
 		dlg.setLayout( lay );
 
 		FileSelector * file = new FileSelector( FileSelector::SaveFile, "File", QBoxLayout::RightToLeft );
-		file->setFilter( QStringList() << "Targa (*.tga)" );
+		file->setFilter( { "Targa (*.tga)" } );
 		lay->addWidget( file, 0, 0, 1, 2 );
 
 		lay->addWidget( new QLabel( "Size" ), 1, 0 );
@@ -678,8 +678,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		Q_UNUSED( index );
-		QStringList modes;
-		modes << "Replace" <<  "Decal" << "Modulate" << "Hilight" << "Hilight2";
+		QStringList modes{ "Replace", "Decal", "Modulate", "Hilight", "Hilight2" };
 
 		QDialog dlg;
 		dlg.resize( 300, 60 );

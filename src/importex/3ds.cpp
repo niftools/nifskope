@@ -355,8 +355,8 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					y = PointArray->read<float>();
 					z = PointArray->read<float>();
 
-					newMesh.vertices.append( Vector3( x, y, z ) );
-					newMesh.normals.append( Vector3( 0.0f, 0.0f, 1.0f ) );
+					newMesh.vertices.append( { x, y, z } );
+					newMesh.normals.append( { 0.0f, 0.0f, 1.0f } );
 				}
 			}
 
@@ -478,7 +478,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 				float y = Pivot->read<float>();
 				float z = Pivot->read<float>();
 
-				newKfSeq.pivot = Vector3( x, y, z );
+				newKfSeq.pivot = { x, y, z };
 			}
 
 			if ( Chunk * PosTrack = KfObj->getChild( POS_TRACK_TAG ) ) {
@@ -500,7 +500,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					float kfPosY = PosTrack->read<float>();
 					float kfPosZ = PosTrack->read<float>();
 
-					newKfSeq.frames[kfNum].pos = Vector3( kfPosX, kfPosY, kfPosZ );
+					newKfSeq.frames[kfNum].pos = { kfPosX, kfPosY, kfPosZ };
 				}
 			}
 
@@ -525,7 +525,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 					float kfAxisZ = RotTrack->read<float>();
 
 					newKfSeq.frames[kfNum].rotAngle = kfRotAngle;
-					newKfSeq.frames[kfNum].rotAxis  = Vector3( kfAxisX, kfAxisY, kfAxisZ );
+					newKfSeq.frames[kfNum].rotAxis = { kfAxisX, kfAxisY, kfAxisZ };
 				}
 			}
 

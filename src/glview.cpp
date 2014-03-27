@@ -347,7 +347,7 @@ GLView::~GLView()
 
 QList<QToolBar *> GLView::toolbars() const
 {
-	return QList<QToolBar *>() << tView << tAnim;
+	return { tView, tAnim };
 }
 
 QMenu * GLView::createMenu() const
@@ -842,7 +842,7 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	if ( Options::drawFurn() ) {
 		// TODO: find out a better way to check if "furn" was mouse-clicked
-		int furnchoose = ::indexAt( model, scene, QList<DrawFunc>() << &Scene::drawFurn, cycle, pos );
+		int furnchoose = ::indexAt( model, scene, { &Scene::drawFurn }, cycle, pos );
 
 		if ( choose != -1
 			 && furnchoose != -1        // something hit && something2 is "furn"
@@ -1417,7 +1417,7 @@ void GLView::zoom( float z )
 
 void GLView::setPosition( float x, float y, float z )
 {
-	Pos = Vector3( x, y, z );
+	Pos = { x, y, z };
 	update();
 }
 
@@ -1429,7 +1429,7 @@ void GLView::setPosition( Vector3 v )
 
 void GLView::setRotation( float x, float y, float z )
 {
-	Rot = Vector3( x, y, z );
+	Rot = { x, y, z };
 	update();
 }
 
@@ -1530,7 +1530,7 @@ void GLView::savePixmap()
 	dlg.setLayout( lay );
 
 	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::RightToLeft );
-	file->setFilter( QStringList() << "Images (*.bmp *.jpg *.png)" << "BMP (*.bmp)" << "JPEG (*.jpg)" << "PNG (*.png)" );
+	file->setFilter( { "Images (*.bmp *.jpg *.png)", "BMP (*.bmp)", "JPEG (*.jpg)", "PNG (*.png)" } );
 	file->setFile( model->getFolder() + "/" );
 	lay->addWidget( file, 0, 0, 1, -1 );
 

@@ -105,7 +105,7 @@ QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 			dataPath += "/";
 		dataPath += dataDir;
 		QDir fs( dataPath );
-		foreach ( QString fn, fs.entryList( QStringList() << "*.bsa", QDir::Files ) )
+		for ( const QString& fn : fs.entryList( { "*.bsa" }, QDir::Files ) )
 		{
 			list << dataPath + QDir::separator() + fn;
 		}

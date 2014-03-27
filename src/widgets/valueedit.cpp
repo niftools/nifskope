@@ -634,7 +634,7 @@ void RotationEdit::setupMode()
 	case mEuler:
 		{
 			actMode->setText( "Euler" );
-			QStringList labs( QStringList() << "Y" << "P" << "R" );
+			QStringList labs{ "Y", "P", "R" };
 
 			for ( int x = 0; x < 4; x++ ) {
 				l[x]->setText( labs.value( x ) );
@@ -649,7 +649,7 @@ void RotationEdit::setupMode()
 	case mAxis:
 		{
 			actMode->setText( "Axis" );
-			QStringList labs( QStringList() << "A" << "X" << "Y" << "Z" );
+			QStringList labs{ "A", "X", "Y", "Z" };
 
 			for ( int x = 0; x < 4; x++ ) {
 				l[x]->setText( labs.value( x ) );

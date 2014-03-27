@@ -48,11 +48,10 @@ class KfmXmlHandler : public QXmlDefaultHandler
 	Q_DECLARE_TR_FUNCTIONS( KfmXmlHandler )
 
 public:
-	KfmXmlHandler()
+	KfmXmlHandler() : depth( 0 ),
+		elements( { "niftoolsxml", "version", "compound", "add" } ),
+		blk( 0 )
 	{
-		depth = 0;
-		elements << "niftoolsxml" << "version" << "compound" << "add";
-		blk = 0;
 	}
 
 	int depth;

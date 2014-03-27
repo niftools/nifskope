@@ -390,21 +390,21 @@ void Renderer::updateShaders()
 
 // linux does not want to load the shaders so disable them for now
 #ifdef WIN32
-	dir.setNameFilters( QStringList() << "*.vert" );
+	dir.setNameFilters( { "*.vert" } );
 	for ( const QString& name : dir.entryList() ) {
 		Shader * shader = new Shader( name, GL_VERTEX_SHADER, fn );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
 
-	dir.setNameFilters( QStringList() << "*.frag" );
+	dir.setNameFilters( { "*.frag" } );
 	for ( const QString& name : dir.entryList() ) {
 		Shader * shader = new Shader( name, GL_FRAGMENT_SHADER, fn );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
 
-	dir.setNameFilters( QStringList() << "*.prog" );
+	dir.setNameFilters( { "*.prog" } );
 	for ( const QString& name : dir.entryList() ) {
 		Program * program = new Program( name, fn );
 		program->load( dir.filePath( name ), this );

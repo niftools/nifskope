@@ -58,9 +58,9 @@ public:
 	bool isRowHidden( int row, const QModelIndex & parent ) const;
 
 	//! Minimum size
-	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
+	QSize minimumSizeHint() const { return { 50, 50 }; }
 	//! Default size
-	QSize sizeHint() const { return QSize( 400, 200 ); }
+	QSize sizeHint() const { return { 400, 200 }; }
 
 signals:
 	//! Signal emmited when the current index changes; probably connected to NifSkope::select()

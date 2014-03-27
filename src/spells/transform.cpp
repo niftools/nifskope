@@ -362,7 +362,7 @@ public:
 			spn->setValue( 1.0 );
 			spn->setDecimals( 4 );
 			spn->setRange( -10e+4, 10e+4 );
-			grid->addWidget( new QLabel( ( QStringList() << "X" << "Y" << "Z" ).value( a ) ), a, 0 );
+			grid->addWidget( new QLabel( (QStringList{ "X", "Y", "Z" }).value( a ) ), a, 0 );
 			grid->addWidget( spn, a, 1 );
 		}
 

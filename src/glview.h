@@ -93,8 +93,8 @@ public:
 	bool highlight() const;
 	bool drawNodes() const;
 
-	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
-	QSize sizeHint() const { return QSize( 400, 400 ); }
+	QSize minimumSizeHint() const { return { 50, 50 }; }
+	QSize sizeHint() const { return { 400, 400 }; }
 
 	void center();
 
