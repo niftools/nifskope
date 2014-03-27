@@ -126,22 +126,22 @@ QString NifValue::typeDescription( const QString & typId )
 	
 	QString txt = QString( "<p><b>%1 (%2)</b><p>%3</p>" ).arg( typId ).arg( aliasMap.value( typId ) ).arg( typeTxt.value( typId ) );
 
-	// TODO: Definition lists are much faster but go off the screen
-	txt += "<dl>";
+	txt += "<table><tr><td><table>";
 	QMapIterator<quint32, QPair<QString, QString> > it( enumMap[ typId ].o );
 	int cnt = 0;
 
 	while ( it.hasNext() ) {
-		if ( cnt++ > 30 ) {
+		if ( cnt++ > 31 ) {
 			cnt  = 0;
-			txt += "</dl><dl>";
+			txt += "</table></td><td><table>";
 		}
 
 		it.next();
-		txt += QString( "<dt>%2: %1</dt><dd>%3</dd>" ).arg( it.value().first ).arg( it.key() ).arg( it.value().second );
+		txt += QString( "<tr><td><p style='white-space:pre'>%2 %1</p></td><td><p style='white-space:pre'>%3</p></td></tr>" )
+		       .arg( it.value().first ).arg( it.key() ).arg( it.value().second );
 	}
 
-	txt += "</dl>";
+	txt += "</table></td></tr></table>";
 
 	txtCache.insert( typId, txt );
 
