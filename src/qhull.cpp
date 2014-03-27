@@ -35,6 +35,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QByteArray>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+// Disable compiler warning
+#pragma warning(disable: 4005)
+// Disable Code Analysis warnings
+#pragma warning(disable: 6001)
+#pragma warning(disable: 6011)
+#pragma warning(disable: 6031)
+#pragma warning(disable: 6305)
+#pragma warning(disable: 6387)
+#pragma warning(disable: 28182)
+#pragma warning(disable: 28183)
+//	ALL_CODE_ANALYSIS_WARNINGS seems
+//	to no longer work as of msvc2013
+#endif
 extern "C"
 {
 #include <libqhull/qhull_a.h>
@@ -57,6 +72,9 @@ extern "C"
 #include <libqhull/random.c>
 #include <libqhull/rboxlib.c>
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include <algorithm>
 #include <functional>
