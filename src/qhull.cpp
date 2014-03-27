@@ -124,9 +124,13 @@ QVector<Triangle> compute_convex_hull( const QVector<Vector3> & verts, QVector<V
 	setT * vertices;
 
 	numpoints = verts.size();
-	points = new coordT[3 * verts.size()];
+	points = new coordT[3 * numpoints];
 
-	for ( int i = 0, n = verts.size(); i < n; ++i ) {
+	// Shut up Code Analysis C6011
+	if ( !points )
+		return QVector<Triangle>();
+
+	for ( int i = 0; i < numpoints; ++i ) {
 		points[i * 3 + 0] = verts[i][0];
 		points[i * 3 + 1] = verts[i][1];
 		points[i * 3 + 2] = verts[i][2];

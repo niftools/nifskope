@@ -9,6 +9,8 @@ QList<QVector<quint16> > stripify( QVector<Triangle> triangles, bool stitch )
 		return QList<QVector<quint16> >();
 
 	unsigned short * data = (unsigned short *)malloc( triangles.count() * 3 * sizeof( unsigned short ) );
+	if ( !data )
+		return QList<QVector<quint16> >();
 
 	for ( int t = 0; t < triangles.count(); t++ ) {
 		data[ t * 3 + 0 ] = triangles[t][0];

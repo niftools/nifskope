@@ -715,13 +715,14 @@ Node * Node::findParent( int id ) const
 Node * Node::findChild( int id ) const
 {
 	foreach ( Node * child, children.list() ) {
-		if ( child->nodeId == id )
-			return child;
+		if ( child ) {
+			if ( child->nodeId == id )
+				return child;
 
-		child = child->findChild( id );
-
-		if ( child )
-			return child;
+			child = child->findChild( id );
+			if ( child )
+				return child;
+		}
 	}
 	return 0;
 }

@@ -288,7 +288,7 @@ void TexCache::fileChanged( const QString & filepath )
 
 		Tex * tx = it.value();
 
-		if ( tx->filepath == filepath ) {
+		if ( tx && tx->filepath == filepath ) {
 			if ( QFile::exists( tx->filepath ) ) {
 				tx->reload = true;
 				emit sigRefresh();

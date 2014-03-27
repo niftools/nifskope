@@ -421,7 +421,7 @@ template <> bool Controller::interpolate( Matrix & value, const QModelIndex & ar
 				QModelIndex subkeys = nif->getIndex( array, "XYZ Rotations" );
 
 				if ( subkeys.isValid() ) {
-					float r[3];
+					float r[3] = {};
 
 					for ( int s = 0; s < 3 && s < nif->rowCount( subkeys ); s++ ) {
 						r[s] = 0;

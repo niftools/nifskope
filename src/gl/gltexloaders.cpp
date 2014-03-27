@@ -132,6 +132,9 @@ int generateMipMaps( int m )
 
 	// now generate the mipmaps until width is one or height is one.
 	while ( w > 1 || h > 1 ) {
+		// Shut up Code Analysis C6011
+		if ( !data )
+			break;
 		// the buffer overwrites itself to save memory
 		const quint8 * src = data;
 		quint8 * dst = data;
@@ -417,6 +420,9 @@ typedef struct
 void SwapMem( void * byte1, void * byte2, int size )
 {
 	unsigned char * tmp = (unsigned char *)malloc( sizeof(unsigned char) * size );
+	if ( !tmp )
+		return;
+
 	memcpy( tmp, byte1, size );
 	memcpy( byte1, byte2, size );
 	memcpy( byte2, tmp, size );
