@@ -103,7 +103,7 @@ public:
 
 		// sort and remove duplicate vertices
 		QList<Vector4> sortedVerts;
-		foreach ( Vector4 vert, hullVerts ) {
+		for ( Vector4 vert : hullVerts ) {
 			vert /= havokScale;
 
 			if ( !sortedVerts.contains( vert ) ) {
@@ -120,7 +120,7 @@ public:
 
 		// sort and remove duplicate normals
 		QList<Vector4> sortedNorms;
-		foreach ( Vector4 norm, hullNorms ) {
+		for ( Vector4 norm : hullNorms ) {
 			norm = Vector4( Vector3( norm ), norm[3] / havokScale );
 
 			if ( !sortedNorms.contains( norm ) ) {
@@ -378,7 +378,7 @@ public:
 		QVector<Triangle> triangles;
 		QVector<Vector3> normals;
 
-		foreach ( qint32 lData, nif->getLinkArray( iShape, "Strips Data" ) ) {
+		for ( const auto lData : nif->getLinkArray( iShape, "Strips Data" ) ) {
 			QModelIndex iData = nif->getBlock( lData, "NiTriStripsData" );
 
 			if ( iData.isValid() ) {
@@ -408,7 +408,7 @@ public:
 					tri[2] += vertices.count();
 				}
 
-				foreach ( Vector3 v, vrts ) {
+				for ( const Vector3& v : vrts ) {
 					vertices += v / 7;
 				}
 				triangles += tris;

@@ -204,14 +204,14 @@ public:
 		QModelIndex iBlock( nif->getBlock( block ) );
 
 		if ( nif->inherits( iBlock, "bhkConstraint" ) ) {
-			foreach ( qint32 entity, nif->getLinkArray( iBlock, "Entities" ) ) {
+			for ( const auto entity : nif->getLinkArray( iBlock, "Entities" ) ) {
 				addTree( nif, entity, newblocks );
 			}
 		}
 
 
 		// add all children of block that should be before block
-		foreach ( qint32 child, nif->getChildLinks( block ) ) {
+		for ( const auto child : nif->getChildLinks( block ) ) {
 			if ( childBeforeParent( nif, child ) )
 				addTree( nif, child, newblocks ); // now add this child and all of its children
 		}
@@ -219,7 +219,7 @@ public:
 		// add the block
 		newblocks.append( block );
 		// add all children of block that should be after block
-		foreach ( qint32 child, nif->getChildLinks( block ) ) {
+		for ( const auto child : nif->getChildLinks( block ) ) {
 			if ( !childBeforeParent( nif, child ) )
 				addTree( nif, child, newblocks ); // now add this child and all of its children
 		}

@@ -463,7 +463,7 @@ public:
 
 		QList<QCheckBox *> chkBoxes;
 		int x = 0;
-		foreach ( QString flagName, flagNames ) {
+		for ( const QString& flagName : flagNames ) {
 			chkBoxes << dlgCheck( vbox, QString( "%1: %2 (%3)" ).arg( Spell::tr( "Bit %1" ).arg( x ) ).arg( flagName ).arg( 1 << x ) );
 			chkBoxes.last()->setChecked( flags & ( 1 << x ) );
 			x++;
@@ -473,7 +473,7 @@ public:
 
 		if ( dlg.exec() == QDialog::Accepted ) {
 			x = 0;
-			foreach ( QCheckBox * chk, chkBoxes ) {
+			for ( QCheckBox * chk : chkBoxes ) {
 				flags = ( flags & ( ~( 1 << x ) ) ) | ( chk->isChecked() ? 1 << x : 0 );
 				x++;
 			}

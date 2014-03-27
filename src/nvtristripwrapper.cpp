@@ -75,7 +75,7 @@ QVector<Triangle> triangulate( QVector<quint16> strip )
 QVector<Triangle> triangulate( QList<QVector<quint16> > strips )
 {
 	QVector<Triangle> tris;
-	foreach ( QVector<quint16> strip, strips ) {
+	for ( const QVector<quint16>& strip : strips ) {
 		tris += triangulate( strip );
 	}
 	return tris;

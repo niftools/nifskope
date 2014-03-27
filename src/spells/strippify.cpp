@@ -125,7 +125,7 @@ class spStrippify : public Spell
 				nif->updateArray( iPoints );
 				int x = 0;
 				int z = 0;
-				foreach ( QVector<quint16> strip, strips ) {
+				for ( const QVector<quint16>& strip : strips ) {
 					nif->set<int>( iLengths.child( x, 0 ), strip.count() );
 					QModelIndex iStrip = iPoints.child( x, 0 );
 					nif->updateArray( iStrip );
@@ -173,7 +173,7 @@ public:
 
 		spStrippify Stripper;
 
-		foreach ( QModelIndex idx, iTriShapes ) {
+		for ( const QModelIndex& idx : iTriShapes ) {
 			Stripper.castIfApplicable( nif, idx );
 		}
 
@@ -333,7 +333,7 @@ public:
 		QVector<quint16> strip = strips.first();
 		strips.pop_front();
 
-		foreach ( QVector<quint16> s, strips ) {
+		for ( const QVector<quint16>& s : strips ) {
 			// TODO: optimize this
 			if ( strip.count() & 1 )
 				strip << strip.last() << s.first() << s.first() << s;

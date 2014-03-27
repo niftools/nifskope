@@ -80,7 +80,7 @@ SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * recei
 	sltNif( nif );
 
 	// fill in the known spells
-	foreach ( Spell * spell, spells() ) {
+	for ( Spell * spell : spells() ) {
 		newSpellRegistered( spell );
 	}
 
@@ -140,13 +140,13 @@ void SpellBook::checkActions()
 void SpellBook::checkActions( QMenu * menu, const QString & page )
 {
 	bool menuEnable = false;
-	foreach ( QAction * action, menu->actions() ) {
+	for ( QAction * action : menu->actions() ) {
 		if ( action->menu() ) {
 			checkActions( action->menu(), action->menu()->title() );
 			menuEnable |= action->menu()->isEnabled();
 			action->setVisible( action->menu()->isEnabled() );
 		} else {
-			foreach ( Spell * spell, spells() ) {
+			for ( Spell * spell : spells() ) {
 				if ( action->text() == spell->name() && page == spell->page() ) {
 					bool actionEnable = Nif && spell->isApplicable( Nif, Index );
 					action->setVisible( actionEnable );
@@ -165,7 +165,7 @@ void SpellBook::newSpellRegistered( Spell * spell )
 		Map.insert( addAction( spell->icon(), spell->name() ), spell );
 	} else {
 		QMenu * menu = 0;
-		foreach ( QAction * action, actions() ) {
+		for ( QAction * action : actions() ) {
 			if ( action->menu() && action->menu()->title() == spell->page() ) {
 				menu = action->menu();
 				break;
@@ -194,7 +194,7 @@ void SpellBook::registerSpell( Spell * spell )
 	if ( spell->sanity() )
 		sanitizers().append( spell );
 
-	foreach ( SpellBook * book, books() ) {
+	for ( SpellBook * book : books() ) {
 		book->newSpellRegistered( spell );
 	}
 }
@@ -213,7 +213,7 @@ Spell * SpellBook::lookup( const QString & id )
 		name = split.value( 1 );
 	}
 
-	foreach ( Spell * spell, hash().values( name ) ) {
+	for ( Spell * spell : hash().values( name ) ) {
 		if ( spell->page() == page )
 			return spell;
 	}
@@ -226,7 +226,7 @@ Spell * SpellBook::lookup( const QKeySequence & hotkey )
 	if ( hotkey.isEmpty() )
 		return 0;
 
-	foreach ( Spell * spell, spells() ) {
+	for ( Spell * spell : spells() ) {
 		if ( spell->hotkey() == hotkey )
 			return spell;
 	}
@@ -236,7 +236,7 @@ Spell * SpellBook::lookup( const QKeySequence & hotkey )
 
 Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
 {
-	foreach ( Spell * spell, instants() ) {
+	for ( Spell * spell : instants() ) {
 		if ( spell->isApplicable( nif, index ) )
 			return spell;
 	}
@@ -247,7 +247,7 @@ QModelIndex SpellBook::sanitize( NifModel * nif )
 {
 	QPersistentModelIndex ridx;
 
-	foreach ( Spell * spell, sanitizers() ) {
+	for ( Spell * spell : sanitizers() ) {
 		if ( spell->isApplicable( nif, QModelIndex() ) ) {
 			QModelIndex idx = spell->cast( nif, QModelIndex() );
 

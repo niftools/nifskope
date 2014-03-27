@@ -214,7 +214,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 				insertType( branch, d );
 			}
 		} else {
-			foreach ( NifData d, compound->types ) {
+			for ( const NifData& d : compound->types ) {
 				insertType( branch, d );
 			}
 		}

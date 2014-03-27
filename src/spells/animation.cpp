@@ -35,7 +35,7 @@ public:
 			return index;
 
 		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr( "Choose .kf file(s)" ), nif->getFolder(), "Keyframe (*.kf)" );
-		foreach ( QString kfname, kfnames ) {
+		for ( const QString& kfname : kfnames ) {
 			try
 			{
 				//QString kfname = QFileDialog::getOpenFileName( 0, Spell::tr("Choose a .kf file"), nif->getFolder(), "*.kf" );
@@ -55,7 +55,7 @@ public:
 
 				QPersistentModelIndex iRoot;
 
-				foreach ( qint32 l, kf.getRootLinks() ) {
+				for ( const auto l : kf.getRootLinks() ) {
 					QModelIndex iSeq = kf.getBlock( l, "NiControllerSequence" );
 
 					if ( !iSeq.isValid() )
@@ -83,7 +83,7 @@ public:
 				QList<qint32> seqLinks = kf.getRootLinks();
 				QStringList missingNodes;
 
-				foreach ( qint32 lSeq, kf.getRootLinks() ) {
+				for ( const auto lSeq : kf.getRootLinks() ) {
 					QModelIndex iSeq = kf.getBlock( lSeq, "NiControllerSequence" );
 
 					QList<QPersistentModelIndex> controlledNodes;
@@ -139,7 +139,7 @@ public:
 
 				QMap<qint32, qint32> map = kf.moveAllNiBlocks( nif );
 				int iMultiTransformerIdx = nif->getBlockNumber( iMultiTransformer );
-				foreach ( qint32 lSeq, seqLinks ) {
+				for ( const auto lSeq : seqLinks ) {
 					qint32 nSeq = map.value( lSeq );
 					int numSeq  = nif->get<int>( iCtrlManager, "Num Controller Sequences" );
 					nif->set<int>( iCtrlManager, "Num Controller Sequences", numSeq + 1 );
@@ -163,7 +163,7 @@ public:
 
 				if ( !missingNodes.isEmpty() ) {
 					qWarning() << Spell::tr( "The following controlled nodes were not found in the nif:" );
-					foreach ( QString nn, missingNodes ) {
+					for ( const QString& nn : missingNodes ) {
 						qWarning() << nn;
 					}
 				}
@@ -188,7 +188,7 @@ public:
 		if ( thisName == name )
 			return parent;
 
-		foreach ( qint32 l, nif->getChildLinks( nif->getBlockNumber( parent ) ) ) {
+		for ( const auto l : nif->getChildLinks( nif->getBlockNumber( parent ) ) ) {
 			QModelIndex child = findChildNode( nif, nif->getBlock( l ), name );
 
 			if ( child.isValid() )
@@ -200,7 +200,7 @@ public:
 
 	static QModelIndex findRootTarget( const NifModel * nif, const QString & name )
 	{
-		foreach ( qint32 l, nif->getRootLinks() ) {
+		for ( const auto l : nif->getRootLinks() ) {
 			QModelIndex root = findChildNode( nif, nif->getBlock( l ), name );
 
 			if ( root.isValid() )
@@ -212,7 +212,7 @@ public:
 
 	static QModelIndex findController( const NifModel * nif, const QModelIndex & node, const QString & ctrltype )
 	{
-		foreach ( qint32 l, nif->getChildLinks( nif->getBlockNumber( node ) ) ) {
+		for ( const auto l : nif->getChildLinks( nif->getBlockNumber( node ) ) ) {
 			QModelIndex iCtrl = nif->getBlock( l, "NiTimeController" );
 
 			if ( iCtrl.isValid() ) {
@@ -254,7 +254,7 @@ public:
 
 		QVector<qint32> links = nif->getLinkArray( iArray );
 
-		foreach ( QModelIndex iBlock, iBlocks ) {
+		for ( const QModelIndex& iBlock : iBlocks ) {
 			if ( !links.contains( nif->getBlockNumber( iBlock ) ) )
 				links.append( nif->getBlockNumber( iBlock ) );
 		}
@@ -274,7 +274,7 @@ public:
 
 		QList<QPersistentModelIndex> blocksToAdd;
 
-		foreach ( QPersistentModelIndex idx, iBlocks ) {
+		for ( const QPersistentModelIndex& idx : iBlocks ) {
 			QString name = nif->get<QString>( idx, "Name" );
 			int r;
 
@@ -290,7 +290,7 @@ public:
 		int r = nif->get<int>( iNum );
 		nif->set<int>( iNum, r + blocksToAdd.count() );
 		nif->updateArray( iArray );
-		foreach ( QPersistentModelIndex idx, blocksToAdd ) {
+		for ( const QPersistentModelIndex& idx : blocksToAdd ) {
 			nif->set<QString>( iArray.child( r, 0 ), "Name", nif->get<QString>( idx, "Name" ) );
 			nif->setLink( iArray.child( r, 0 ), "AV Object", nif->getBlockNumber( idx ) );
 			r++;

@@ -212,9 +212,9 @@ public:
 	bool endDocument()
 	{
 		// make a rough check of the maps
-		foreach ( QString key, KfmModel::compounds.keys() ) {
+		for ( const QString& key : KfmModel::compounds.keys() ) {
 			NifBlock * c = KfmModel::compounds.value( key );
-			foreach ( NifData data, c->types ) {
+			for ( const NifData& data : c->types ) {
 				if ( !checkType( data ) )
 					err( tr( "compound type %1 referes to unknown type %2" ).arg( key ).arg( data.type() ) );
 
@@ -252,7 +252,7 @@ bool KfmModel::loadXML()
 	                     << "/usr/share/nifskope/kfm.xml"
 #endif
 	);
-	foreach ( QString str, xmlList ) {
+	for ( const QString& str : xmlList ) {
 		if ( dir.exists( str ) ) {
 			fname = dir.filePath( str );
 			break;

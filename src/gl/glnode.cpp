@@ -118,7 +118,7 @@ public:
 
 		time = ctrlTime( time );
 
-		foreach ( TransformTarget tt, extraTargets ) {
+		for ( const TransformTarget& tt : extraTargets ) {
 			if ( tt.first && tt.second ) {
 				tt.second->updateTransform( tt.first->local, time );
 			}
@@ -133,7 +133,7 @@ public:
 				extraTargets.clear();
 
 				QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
-				foreach ( qint32 l, lTargets ) {
+				for ( const auto l : lTargets ) {
 					Node * node = scene->getNode( nif, nif->getBlock( l ) );
 
 					if ( node ) {
@@ -145,7 +145,7 @@ public:
 			return true;
 		}
 
-		foreach ( TransformTarget tt, extraTargets ) {
+		for ( const TransformTarget& tt : extraTargets ) {
 			// TODO: update the interpolators
 		}
 
@@ -208,7 +208,7 @@ public:
 			if ( target ) {
 				Scene * scene = target->scene;
 				QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
-				foreach ( qint32 l, lSequences ) {
+				for ( const auto l : lSequences ) {
 					QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
 
 					if ( iSeq.isValid() ) {
@@ -244,7 +244,7 @@ public:
 
 		if ( target && iBlock.isValid() && nif ) {
 			MultiTargetTransformController * multiTargetTransformer = 0;
-			foreach ( Controller * c, target->controllers ) {
+			for ( Controller * c : target->controllers ) {
 				if ( c->typeId() == "NiMultiTargetTransformController" ) {
 					multiTargetTransformer = static_cast<MultiTargetTransformController *>( c );
 					break;
@@ -252,7 +252,7 @@ public:
 			}
 
 			QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
-			foreach ( qint32 l, lSequences ) {
+			for ( const auto l : lSequences ) {
 				QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
 
 				if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname ) {
@@ -452,7 +452,7 @@ void NodeList::clear()
 NodeList & NodeList::operator=( const NodeList & other )
 {
 	clear();
-	foreach ( Node * n, other.list() ) {
+	for ( Node * n : other.list() ) {
 		add( n );
 	}
 	return *this;
@@ -481,7 +481,7 @@ void NodeList::del( Node * n )
 
 Node * NodeList::get( const QModelIndex & index ) const
 {
-	foreach ( Node * n, nodes ) {
+	for ( Node * n : nodes ) {
 		if ( n->index().isValid() && n->index() == index )
 			return n;
 	}
@@ -491,7 +491,7 @@ Node * NodeList::get( const QModelIndex & index ) const
 void NodeList::validate()
 {
 	QList<Node *> rem;
-	foreach ( Node * n, nodes ) {
+	for ( Node * n : nodes ) {
 		if ( !n->isValid() )
 			rem.append( n );
 	}
@@ -549,7 +549,7 @@ void Node::clear()
 Controller * Node::findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 )
 {
 	if ( proptype != "<empty>" && !proptype.isEmpty() ) {
-		foreach ( Property * prp, properties.list() ) {
+		for ( Property * prp : properties.list() ) {
 			if ( prp->typeId() == proptype ) {
 				return prp->findController( ctrltype, var1, var2 );
 			}
@@ -578,12 +578,12 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 
 	if ( iBlock == index || !index.isValid() ) {
 		PropertyList newProps;
-		foreach ( qint32 l, nif->getLinkArray( iBlock, "Properties" ) ) {
+		for ( const auto l : nif->getLinkArray( iBlock, "Properties" ) ) {
 			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
 				newProps.add( p );
 		}
 
-		foreach ( qint32 l, nif->getLinkArray( iBlock, "BS Properties" ) ) {
+		for ( const auto l : nif->getLinkArray( iBlock, "BS Properties" ) ) {
 			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
 				newProps.add( p );
 		}
@@ -716,7 +716,7 @@ Node * Node::findParent( int id ) const
 
 Node * Node::findChild( int id ) const
 {
-	foreach ( Node * child, children.list() ) {
+	for ( Node * child : children.list() ) {
 		if ( child ) {
 			if ( child->nodeId == id )
 				return child;
@@ -734,7 +734,7 @@ Node * Node::findChild( const QString & name ) const
 	if ( this->name == name )
 		return const_cast<Node *>( this );
 
-	foreach ( Node * child, children.list() ) {
+	for ( Node * child : children.list() ) {
 		Node * n = child->findChild( name );
 
 		if ( n )
@@ -788,14 +788,14 @@ void Node::transform()
 		}
 	}
 
-	foreach ( Node * node, children.list() ) {
+	for ( Node * node : children.list() ) {
 		node->transform();
 	}
 }
 
 void Node::transformShapes()
 {
-	foreach ( Node * node, children.list() ) {
+	for ( Node * node : children.list() ) {
 		node->transformShapes();
 	}
 }
@@ -843,7 +843,7 @@ void Node::draw()
 	glVertex( b );
 	glEnd();
 
-	foreach ( Node * node, children.list() ) {
+	for ( Node * node : children.list() ) {
 		node->draw();
 	}
 }
@@ -1619,7 +1619,7 @@ void Node::drawHavok()
 {
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
 	// Idea: Make them go to their own classes in different cpp files
-	foreach ( Node * node, children.list() ) {
+	for ( Node * node : children.list() ) {
 		node->drawHavok();
 	}
 
@@ -1773,7 +1773,7 @@ void Node::drawHavok()
 
 	glPopMatrix();
 
-	foreach ( qint32 l, nif->getLinkArray( iBody, "Constraints" ) ) {
+	for ( const auto l : nif->getLinkArray( iBody, "Constraints" ) ) {
 		QModelIndex iConstraint = nif->getBlock( l );
 
 		if ( nif->inherits( iConstraint, "bhkConstraint" ) )
@@ -1863,7 +1863,7 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 
 void Node::drawFurn()
 {
-	foreach ( Node * node, children.list() ) {
+	for ( Node * node : children.list() ) {
 		node->drawFurn();
 	}
 
@@ -1930,7 +1930,7 @@ void Node::drawShapes( NodeList * draw2nd )
 	if ( isHidden() )
 		return;
 
-	foreach ( Node * node, children.list() ) {
+	for ( Node * node : children.list() ) {
 		node->drawShapes( draw2nd );
 	}
 }
@@ -2040,7 +2040,7 @@ void LODNode::transform()
 		return;
 
 	if ( ranges.isEmpty() ) {
-		foreach ( Node * child, children.list() ) {
+		for ( Node * child : children.list() ) {
 			child->flags.node.hidden = true;
 		}
 		children.list().first()->flags.node.hidden = false;
@@ -2050,7 +2050,7 @@ void LODNode::transform()
 	float distance = ( viewTrans() * center ).length();
 
 	int c = 0;
-	foreach ( Node * child, children.list() ) {
+	for ( Node * child : children.list() ) {
 		if ( c < ranges.count() )
 			child->flags.node.hidden = !( ranges[c].first <= distance && distance < ranges[c].second );
 		else

@@ -288,7 +288,7 @@ public:
 
 	void moveParticle( Particle & p, float deltaTime )
 	{
-		foreach ( Gravity g, grav ) {
+		for ( Gravity g : grav ) {
 			switch ( g.type ) {
 			case 0:
 				p.velocity += g.direction * ( g.force * deltaTime );
@@ -348,7 +348,7 @@ void Particles::update( const NifModel * nif, const QModelIndex & index )
 	upData |= ( iData == index );
 
 	if ( iBlock == index ) {
-		foreach ( int link, nif->getChildLinks( id() ) ) {
+		for ( const auto link : nif->getChildLinks( id() ) ) {
 			QModelIndex iChild = nif->getBlock( link );
 
 			if ( !iChild.isValid() )
@@ -494,7 +494,7 @@ void Particles::drawShapes( NodeList * draw2nd )
 	};
 
 	int p = 0;
-	foreach ( Vector3 v, transVerts ) {
+	for ( Vector3 v : transVerts ) {
 		if ( p >= active )
 			break;
 

@@ -153,7 +153,7 @@ void NifBlockEditor::updateData()
 
 		setWindowTitle( x );
 
-		foreach ( NifEditBox * box, editors ) {
+		for ( NifEditBox * box : editors ) {
 			box->setEnabled( box->getIndex().isValid() );
 			box->updateData( nif );
 		}

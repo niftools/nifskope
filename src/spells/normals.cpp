@@ -62,7 +62,7 @@ public:
 
 
 		QVector<Vector3> norms( verts.count() );
-		foreach ( Triangle tri, triangles ) {
+		for ( const Triangle& tri : triangles ) {
 			Vector3 a = verts[ tri[0] ];
 			Vector3 b = verts[ tri[1] ];
 			Vector3 c = verts[ tri[2] ];

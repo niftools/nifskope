@@ -520,9 +520,9 @@ public:
 	bool endDocument()
 	{
 		// make a rough check of the maps
-		foreach ( QString key, NifModel::compounds.keys() ) {
+		for ( const QString& key : NifModel::compounds.keys() ) {
 			NifBlock * c = NifModel::compounds.value( key );
-			foreach ( NifData data, c->types ) {
+			for ( NifData data :c->types ) {
 				if ( !checkType( data ) )
 					err( tr( "compound type %1 refers to unknown type %2" ).arg( key ).arg( data.type() ) );
 
@@ -534,7 +534,7 @@ public:
 			}
 		}
 
-		foreach ( QString key, NifModel::blocks.keys() ) {
+		for ( const QString& key : NifModel::blocks.keys() ) {
 			NifBlock * blk = NifModel::blocks.value( key );
 
 			if ( !blk->ancestor.isEmpty() && !NifModel::blocks.contains( blk->ancestor ) )
@@ -543,7 +543,7 @@ public:
 			if ( blk->ancestor == key )
 				err( tr( "niobject %1 inherits itself" ).arg( key ) );
 
-			foreach ( NifData data, blk->types ) {
+			for ( const NifData& data : blk->types ) {
 				if ( !checkType( data ) )
 					err( tr( "niobject %1 refers to unknown type %2" ).arg( key ).arg( data.type() ) );
 
@@ -582,7 +582,7 @@ bool NifModel::loadXML()
 	                     << "/usr/share/nifskope/nif.xml"
 #endif
 	);
-	foreach ( QString str, xmlList ) {
+	for ( const QString& str : xmlList ) {
 		if ( dir.exists( str ) ) {
 			fname = dir.filePath( str );
 			break;

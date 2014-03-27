@@ -615,7 +615,7 @@ class spTextureTemplate : public Spell
 
 		bool wrp = wrap->currentIndex() == 0;
 
-		foreach ( Triangle t, tri ) {
+		for ( const Triangle& t : tri ) {
 			Vector2 v2[3];
 
 			for ( int i = 0; i < 3; i++ ) {
@@ -716,7 +716,7 @@ public:
 			indices << idx;
 		}
 
-		foreach ( QModelIndex idx, indices ) {
+		for ( const QModelIndex& idx : indices ) {
 			replaceApplyMode( nif, idx, cbRep->currentIndex(), cbBy->currentIndex() );
 		}
 
@@ -962,7 +962,11 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 	QButtonGroup * actgrp = new QButtonGroup( this );
 	connect( actgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureAction( int ) ) );
 	int btnid = 0;
-	foreach ( QString tfaname, QStringList() << Spell::tr( "Add Textures" ) << Spell::tr( "Remove Texture" ) << Spell::tr( "Move Up" ) << Spell::tr( "Move Down" ) ) {
+	for ( const QString& tfaname : QStringList{
+			Spell::tr( "Add Textures" ), Spell::tr( "Remove Texture" ),
+			Spell::tr( "Move Up" ), Spell::tr( "Move Down" )
+		} )
+	{
 		QPushButton * bt = new QPushButton( tfaname );
 		textureButtons[btnid] = bt;
 		actgrp->addButton( bt, btnid++ );

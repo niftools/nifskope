@@ -1162,7 +1162,7 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 
 	QPersistentModelIndex iRoot;
 
-	foreach ( qint32 l, pix.getRootLinks() ) {
+	for ( const auto l : pix.getRootLinks() ) {
 		QModelIndex iData = pix.getBlock( l, "ATextureRenderData" );
 
 		if ( !iData.isValid() || iData == QModelIndex() )

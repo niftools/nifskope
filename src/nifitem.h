@@ -351,7 +351,7 @@ public:
 	//! Return the child item with the specified name
 	NifItem * child( const QString & name )
 	{
-		foreach ( NifItem * child, childItems ) {
+		for ( NifItem * child : childItems ) {
 			if ( child->name() == name )
 				return child;
 		}
@@ -361,7 +361,7 @@ public:
 	//! Return the child item with the specified name
 	const NifItem * child( const QString & name ) const
 	{
-		foreach ( const NifItem * child, childItems ) {
+		for ( const NifItem * child : childItems ) {
 			if ( child->name() == name )
 				return child;
 		}
@@ -453,7 +453,7 @@ public:
 	template <typename T> QVector<T> getArray() const
 	{
 		QVector<T> array;
-		foreach ( NifItem * child, childItems ) {
+		for ( NifItem * child : childItems ) {
 			array.append( child->itemData.value.get<T>() );
 		}
 		return array;
@@ -463,7 +463,7 @@ public:
 	template <typename T> void setArray( const QVector<T> & array )
 	{
 		int x = 0;
-		foreach ( NifItem * child, childItems ) {
+		for ( NifItem * child : childItems ) {
 			child->itemData.value.set<T>( array.value( x++ ) );
 		}
 	}

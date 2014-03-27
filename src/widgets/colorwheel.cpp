@@ -305,7 +305,7 @@ void ColorWheel::contextMenuEvent( QContextMenuEvent * e )
 {
 	QMenu * menu = new QMenu( this );
 
-	foreach ( QString name, QColor::colorNames() ) {
+	for ( const QString& name : QColor::colorNames() ) {
 		QAction * act = new QAction( menu );
 		act->setText( name );
 		QPixmap pix( 16, 16 );

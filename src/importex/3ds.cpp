@@ -288,7 +288,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	QList<Chunk *> Materials = ModelData->getChildren( MATERIAL );
 	QList<Chunk *> Meshes = ModelData->getChildren( NAMED_OBJECT );
 
-	foreach ( Chunk * mat, Materials ) {
+	for ( Chunk * mat : Materials ) {
 		objMaterial newMat;
 
 		// material name
@@ -338,12 +338,12 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 		ObjMaterials.insert( newMat.name, newMat );
 	}
 
-	foreach ( Chunk * mesh, Meshes ) {
+	for ( Chunk * mesh : Meshes ) {
 		objMesh newMesh;
 
 		newMesh.name = mesh->readString();
 
-		foreach ( Chunk * TriObj, mesh->getChildren( N_TRI_OBJECT ) ) {
+		for ( Chunk * TriObj : mesh->getChildren( N_TRI_OBJECT ) ) {
 			Chunk * PointArray = TriObj->getChild( POINT_ARRAY );
 
 			if ( PointArray ) {
@@ -394,7 +394,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 				objMatFace newMatFace;
 
-				foreach ( Chunk * MatFaces, FaceArray->getChildren( MSH_MAT_GROUP ) ) {
+				for ( Chunk * MatFaces : FaceArray->getChildren( MSH_MAT_GROUP ) ) {
 					//Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
 					if ( MatFaces ) {
 						newMatFace.matName = MatFaces->readString();
@@ -458,7 +458,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			*/
 		}
 
-		foreach ( Chunk * KfObj, Keyframes->getChildren( OBJECT_NODE_TAG ) ) {
+		for ( Chunk * KfObj : Keyframes->getChildren( OBJECT_NODE_TAG ) ) {
 			objKfSequence newKfSeq;
 
 			if ( Chunk * NodeId = KfObj->getChild( NODE_ID ) ) {
@@ -683,7 +683,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			QVector<Triangle> triangles;
 			QVector<objPoint> points;
 
-			foreach ( short faceIndex, mesh->matfaces[i].subFaces ) {
+			for ( const auto faceIndex : mesh->matfaces[i].subFaces ) {
 				objFace face = mesh->faces[faceIndex];
 
 				Triangle tri;
@@ -720,7 +720,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			nif->setArray<Triangle>( iData, "Triangles", triangles );
 
 			Vector3 center;
-			foreach ( Vector3 v,  mesh->vertices ) {
+			for ( const Vector3& v : mesh->vertices ) {
 				center += v;
 			}
 
@@ -729,7 +729,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 			nif->set<Vector3>( iData, "Center", center );
 			float radius = 0;
-			foreach ( Vector3 v,  mesh->vertices ) {
+			for ( const Vector3& v : mesh->vertices ) {
 				float d = ( center - v ).length();
 
 				if ( d > radius )

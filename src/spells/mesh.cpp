@@ -96,7 +96,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		QMap<quint16, bool> used;
 
 		QVector<Triangle> tris = nif->getArray<Triangle>( iData, "Triangles" );
-		foreach ( Triangle tri, tris ) {
+		for ( const Triangle& tri : tris ) {
 			for ( int t = 0; t < 3; t++ ) {
 				used.insert( tri[t], true );
 			}
@@ -107,7 +107,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 
 		for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
 			strips << nif->getArray<quint16>( iPoints.child( r, 0 ) );
-			foreach ( quint16 p, strips.last() ) {
+			for ( const auto p : strips.last() ) {
 				used.insert( p, true );
 			}
 		}
@@ -638,7 +638,7 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 		float xMin( FLT_MAX ), xMax( -FLT_MAX );
 		float yMin( FLT_MAX ), yMax( -FLT_MAX );
 		float zMin( FLT_MAX ), zMax( -FLT_MAX );
-		foreach ( Vector3 v, verts ) {
+		for ( const Vector3& v : verts ) {
 			if ( v[0] < xMin )
 				xMin = v[0];
 			else if ( v[0] > xMax )
@@ -657,14 +657,14 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 
 		center = Vector3( xMin + xMax, yMin + yMax, zMin + zMax ) / 2;
 	} else {
-		foreach ( Vector3 v, verts ) {
+		for ( const Vector3& v : verts ) {
 			center += v;
 		}
 		center /= verts.count();
 	}
 
 	float d;
-	foreach ( Vector3 v, verts ) {
+	for ( const Vector3& v : verts ) {
 		if ( ( d = ( center - v ).length() ) > radius )
 			radius = d;
 	}

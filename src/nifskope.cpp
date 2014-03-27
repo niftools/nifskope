@@ -397,7 +397,7 @@ NifSkope::NifSkope()
 	// end Load & Save toolbar
 
 	// begin OpenGL toolbars
-	foreach ( QToolBar * tb, ogl->toolbars() ) {
+	for ( QToolBar * tb : ogl->toolbars() ) {
 		addToolBar( Qt::TopToolBarArea, tb );
 	}
 	// end OpenGL toolbars
@@ -454,7 +454,7 @@ NifSkope::NifSkope()
 	mView->addSeparator();
 	QMenu * mTools = new QMenu( tr( "&Toolbars" ) );
 	mView->addMenu( mTools );
-	foreach ( QObject * o, children() ) {
+	for ( QObject * o : children() ) {
 		QToolBar * tb = qobject_cast<QToolBar *>( o );
 
 		if ( tb )
@@ -1232,7 +1232,7 @@ int main( int argc, char * argv[] )
 #endif
 	);
 	QString qssName;
-	foreach ( QString str, qssList ) {
+	for ( const QString& str : qssList ) {
 		if ( qssDir.exists( str ) ) {
 			qssName = qssDir.filePath( str );
 			break;

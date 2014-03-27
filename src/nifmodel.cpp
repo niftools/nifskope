@@ -670,7 +670,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 
 		branch->prepareInsert( block->types.count() );
 
-		foreach ( NifData data, block->types ) {
+		for ( const NifData& data : block->types ) {
 			insertType( branch, data );
 		}
 
@@ -838,7 +838,7 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 
 	// then insert them again in the new order
 	beginInsertRows( QModelIndex(), 1, temp.count() );
-	foreach ( qint32 n, blockMap ) {
+	for ( const auto n : blockMap ) {
 		root->insertChild( temp[ n ], root->childCount() - 1 );
 	}
 	endInsertRows();
@@ -992,7 +992,7 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 
 		//parent->insertChild( NifData( identifier, "Abstract" ) );
 		parent->prepareInsert( ancestor->types.count() );
-		foreach ( NifData data, ancestor->types ) {
+		for ( const NifData& data : ancestor->types ) {
 			insertType( parent, data );
 		}
 	} else {
@@ -1052,7 +1052,7 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 	if ( compound ) {
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
-		foreach ( NifData d, compound->types ) {
+		for ( const NifData& d : compound->types ) {
 			insertType( branch, d );
 		}
 	} else {
@@ -2065,7 +2065,7 @@ bool NifModel::earlyRejection( const QString & filepath, const QString & blockId
 	if ( blockId.isEmpty() == true || version < 0x0A000100 ) {
 		blk_match = true;
 	} else {
-		foreach ( QString s, nif.getArray<QString>( nif.getHeader(), "Block Types" ) ) {
+		for ( const QString& s : nif.getArray<QString>( nif.getHeader(), "Block Types" ) ) {
 			if ( inherits( s, blockId ) ) {
 				blk_match = true;
 				break;
@@ -2314,7 +2314,7 @@ void NifModel::updateLinks( int block )
 		QByteArray hasrefs( n, 0 );
 
 		for ( int c = 0; c < n; c++ ) {
-			foreach ( int d, childLinks.value( c ) ) {
+			for ( const auto d : childLinks.value( c ) ) {
 				if ( d >= 0 && d < n )
 					hasrefs[d] = 1;
 			}
@@ -2359,7 +2359,7 @@ void NifModel::updateLinks( int block, NifItem * parent )
 void NifModel::checkLinks( int block, QStack<int> & parents )
 {
 	parents.push( block );
-	foreach ( int child, childLinks.value( block ) ) {
+	foreach ( const auto child, childLinks.value( block ) ) {
 		if ( parents.contains( child ) ) {
 			msg( Message() << tr( "infinite recursive link construct detected %1 -> %2" ).arg( block ).arg( child ) );
 			childLinks[block].removeAll( child );
@@ -2766,7 +2766,7 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 				ancestor = block->ancestor;
 			}
 
-			foreach ( QString ancestor, types ) {
+			for ( const QString& ancestor : types ) {
 				NifBlock * block = blocks.value( ancestor );
 
 				if ( !block )
@@ -2778,7 +2778,7 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 				if ( n > 0 ) {
 					beginInsertRows( index, cn, cn + n - 1 );
 					branch->prepareInsert( n );
-					foreach ( NifData data, block->types ) {
+					for ( const NifData& data : block->types ) {
 						insertType( branch, data );
 					}
 					endInsertRows();

@@ -62,7 +62,7 @@ Controller * Controllable::findController( const QString & ctrltype, const QStri
 	Q_UNUSED( var2 ); Q_UNUSED( var1 );
 	Controller * ctrl = 0;
 
-	foreach ( Controller * c, controllers ) {
+	for ( Controller * c : controllers ) {
 		if ( c->typeId() == ctrltype ) {
 			if ( ctrl == 0 ) {
 				ctrl = c;
@@ -87,7 +87,7 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 
 	bool x = false;
 
-	foreach ( Controller * ctrl, controllers ) {
+	for ( Controller * ctrl : controllers ) {
 		ctrl->update( nif, i );
 
 		if ( ctrl->index() == i )
@@ -103,7 +103,7 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 		while ( iCtrl.isValid() && nif->inherits( iCtrl, "NiTimeController" ) ) {
 			bool add = true;
 
-			foreach ( Controller * ctrl, controllers ) {
+			for ( Controller * ctrl : controllers ) {
 				if ( ctrl->index() == iCtrl ) {
 					add = false;
 					rem.removeAll( ctrl );
@@ -116,7 +116,7 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 			iCtrl = nif->getBlock( nif->getLink( iCtrl, "Next Controller" ) );
 		}
 
-		foreach ( Controller * ctrl, rem ) {
+		for ( Controller * ctrl : rem ) {
 			controllers.removeAll( ctrl );
 			delete ctrl;
 		}
@@ -126,7 +126,7 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 void Controllable::transform()
 {
 	if ( scene->animate ) {
-		foreach ( Controller * controller, controllers ) {
+		for ( Controller * controller : controllers ) {
 			controller->update( scene->time );
 		}
 	}
@@ -140,7 +140,7 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 	float mn = controllers.first()->start;
 	float mx = controllers.first()->stop;
 
-	foreach ( Controller * c, controllers ) {
+	for ( Controller * c : controllers ) {
 		mn = qMin( mn, c->start );
 		mx = qMax( mx, c->stop );
 	}
@@ -150,7 +150,7 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 
 void Controllable::setSequence( const QString & seqname )
 {
-	foreach ( Controller * ctrl, controllers ) {
+	for ( Controller * ctrl : controllers ) {
 		ctrl->setSequence( seqname );
 	}
 }

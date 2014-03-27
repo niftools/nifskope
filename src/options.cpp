@@ -181,7 +181,7 @@ Options::Options()
 		}
 
 		QRegExp fileRe( "NifSkope_(.*)\\.ts", Qt::CaseInsensitive );
-		foreach ( QString file, directory.entryList( QStringList( "NifSkope_*.ts" ), QDir::Files | QDir::NoSymLinks ) ) {
+		foreach ( const QString file, directory.entryList( QStringList( "NifSkope_*.ts" ), QDir::Files | QDir::NoSymLinks ) ) {
 			if ( fileRe.exactMatch( file ) ) {
 				QString localeText = fileRe.capturedTexts()[1];
 				QLocale fileLocale( localeText );
@@ -259,7 +259,8 @@ Options::Options()
 		QButtonGroup * tfactgrp = new QButtonGroup( this );
 		connect( tfactgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureFolderAction( int ) ) );
 		int tfaid = 0;
-		foreach ( QString tfaname, QStringList() << tr( "Add Folder" ) << tr( "Remove Folder" ) << tr( "Move Up" ) << tr( "Move Down" ) ) {
+		for ( const QString& tfaname : QStringList{ tr( "Add Folder" ), tr( "Remove Folder" ), tr( "Move Up" ), tr( "Move Down" ) } )
+		{
 			QPushButton * bt = new QPushButton( tfaname );
 			TexFolderButtons[tfaid] = bt;
 			tfactgrp->addButton( bt, tfaid++ );
@@ -452,7 +453,8 @@ Options::Options()
 		QButtonGroup * grp = new QButtonGroup( this );
 		connect( grp, SIGNAL( buttonClicked( int ) ), this, SLOT( activateLightPreset( int ) ) );
 		int psid = 0;
-		foreach ( QString psname, QStringList() << tr( "Sunny Day" ) << tr( "Dark Night" ) ) {
+		for ( const QString& psname : QStringList{ tr( "Sunny Day" ), tr( "Dark Night" ) } )
+		{
 			QPushButton * bt = new QPushButton( psname );
 			grp->addButton( bt, psid++ );
 			colorPage->addWidget( bt );
@@ -606,11 +608,12 @@ void Options::save()
 	NIFSKOPE_QSETTINGS( cfg );
 
 	// remove obsolete keys
-	foreach ( QString key, QStringList()
-		    << "texture folder" << "bg color" << "cull nodes by name" << "draw axis" << "draw furniture"
-		    << "draw havok" << "draw hidden" << "draw nodes" << "draw only textured meshes" << "draw stats"
-		    << "enable blending" << "enable shading" << "enable textures" << "highlight meshes" << "hl color"
-		    << "rotate" << "Render Settings/Misc Settings/Startup Version" )
+	for ( QString key : QStringList{
+			"texture folder", "bg color", "cull nodes by name", "draw axis",
+			"draw furniture", "draw havok", "draw hidden", "draw nodes", "draw only textured meshes",
+			"draw stats", "enable blending", "enable shading", "enable textures", "highlight meshes",
+			"hl color", "rotate", "Render Settings/Misc Settings/Startup Version"
+		} )
 	{
 		if ( cfg.contains( key ) )
 			cfg.remove( key );

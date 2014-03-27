@@ -89,7 +89,7 @@ GLView * GLView::create()
 	static QList<QPointer<GLView> > views;
 
 	QGLWidget * share = 0;
-	foreach ( QPointer<GLView> v, views ) {
+	for ( const QPointer<GLView>& v : views ) {
 		if ( v )
 			share = v;
 	}
@@ -662,7 +662,7 @@ void GLView::paintGL()
 		if ( Options::drawStats() ) {
 			QString stats = scene->textStats();
 			QStringList lines = stats.split( "\n" );
-			foreach ( QString line, lines ) {
+			for ( const QString& line : lines ) {
 				painter.drawText( 10, y++ *ls, line );
 			}
 		}
@@ -710,7 +710,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	// rasterize the scene
 	Node::SELECTING = 1;
-	foreach ( DrawFunc df, drawFunc ) {
+	for ( DrawFunc df : drawFunc ) {
 		glDrawBuffer( GL_BACK );
 		(scene->*df)();
 	}
@@ -1382,7 +1382,7 @@ void GLView::restore( const QSettings & settings )
 	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
 	checkActions();
 	QString viewAct = settings.value( "view action", "Front" ).toString();
-	foreach ( QAction * act, grpView->actions() ) {
+	for ( QAction * act : grpView->actions() ) {
 		if ( act->text() == viewAct )
 			viewAction( act );
 	}
@@ -1476,7 +1476,7 @@ void GLView::dragMoveEvent( QDragMoveEvent * e )
 	QModelIndex iObj = model->getBlock( indexAt( e->pos() ), "NiAVObject" );
 
 	if ( iObj.isValid() ) {
-		foreach ( qint32 l, model->getChildLinks( model->getBlockNumber( iObj ) ) ) {
+		for ( const auto l : model->getChildLinks( model->getBlockNumber( iObj ) ) ) {
 			QModelIndex iTxt = model->getBlock( l, "NiTexturingProperty" );
 
 			if ( iTxt.isValid() ) {

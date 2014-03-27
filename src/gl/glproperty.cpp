@@ -110,7 +110,7 @@ PropertyList::~PropertyList()
 
 void PropertyList::clear()
 {
-	foreach ( Property * p, properties ) {
+	for ( Property * p : properties ) {
 		if ( --p->ref <= 0 )
 			delete p;
 	}
@@ -120,7 +120,7 @@ void PropertyList::clear()
 PropertyList & PropertyList::operator=( const PropertyList & other )
 {
 	clear();
-	foreach ( Property * p, other.properties ) {
+	for ( Property * p : other.properties ) {
 		add( p );
 	}
 	return *this;
@@ -167,7 +167,7 @@ Property * PropertyList::get( const QModelIndex & index ) const
 	if ( !index.isValid() )
 		return 0;
 
-	foreach ( Property * p, properties ) {
+	for ( Property * p : properties ) {
 		if ( p->index() == index )
 			return p;
 	}
@@ -177,18 +177,18 @@ Property * PropertyList::get( const QModelIndex & index ) const
 void PropertyList::validate()
 {
 	QList<Property *> rem;
-	foreach ( Property * p, properties ) {
+	for ( Property * p : properties ) {
 		if ( !p->isValid() )
 			rem.append( p );
 	}
-	foreach ( Property * p, rem ) {
+	for ( Property * p : rem ) {
 		del( p );
 	}
 }
 
 void PropertyList::merge( const PropertyList & other )
 {
-	foreach ( Property * p, other.properties ) {
+	for ( Property * p : other.properties ) {
 		if ( !properties.contains( p->type() ) )
 			add( p );
 	}

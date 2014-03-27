@@ -186,7 +186,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 
 	if ( isOblivion ) {
 		QModelIndex iTSpace;
-		foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) ) {
+		for ( const auto link : nif->getChildLinks( nif->getBlockNumber( iShape ) ) ) {
 			iTSpace = nif->getBlock( link, "NiBinaryExtraData" );
 
 			if ( iTSpace.isValid() && nif->get<QString>( iTSpace, "Name" ) == "Tangent space (binormal & tangent vectors)" )
@@ -264,7 +264,7 @@ public:
 				indices << idx;
 		}
 
-		foreach ( QModelIndex idx, indices ) {
+		for ( const QModelIndex& idx : indices ) {
 			TSpacer.castIfApplicable( nif, idx );
 		}
 

@@ -276,7 +276,7 @@ public:
 				indices << idx;
 		}
 
-		foreach ( QModelIndex idx, indices ) {
+		for ( const QModelIndex& idx : indices ) {
 			TSpacer.castIfApplicable( nif, idx );
 		}
 

@@ -129,7 +129,7 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QLi
 		blkid = blkid.left( pos );
 	}
 
-	foreach ( QModelIndex iBlock, iBlocks ) {
+	for ( QModelIndex iBlock : iBlocks ) {
 		if ( nif->inherits( iBlock, blkid ) ) {
 			if ( childid.isEmpty() )
 				return iBlock;
@@ -170,13 +170,13 @@ bool Renderer::ConditionGroup::eval( const NifModel * nif, const QList<QModelInd
 		return true;
 
 	if ( isOrGroup() ) {
-		foreach ( Condition * cond, conditions ) {
+		for ( Condition * cond : conditions ) {
 			if ( cond->eval( nif, iBlocks ) )
 				return true;
 		}
 		return false;
 	} else {
-		foreach ( Condition * cond, conditions ) {
+		for ( Condition * cond : conditions ) {
 			if ( !cond->eval( nif, iBlocks ) )
 				return false;
 		}
@@ -391,21 +391,21 @@ void Renderer::updateShaders()
 // linux does not want to load the shaders so disable them for now
 #ifdef WIN32
 	dir.setNameFilters( QStringList() << "*.vert" );
-	foreach ( QString name, dir.entryList() ) {
+	for ( const QString& name : dir.entryList() ) {
 		Shader * shader = new Shader( name, GL_VERTEX_SHADER, fn );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
 
 	dir.setNameFilters( QStringList() << "*.frag" );
-	foreach ( QString name, dir.entryList() ) {
+	for ( const QString& name : dir.entryList() ) {
 		Shader * shader = new Shader( name, GL_FRAGMENT_SHADER, fn );
 		shader->load( dir.filePath( name ) );
 		shaders.insert( name, shader );
 	}
 
 	dir.setNameFilters( QStringList() << "*.prog" );
-	foreach ( QString name, dir.entryList() ) {
+	for ( const QString& name : dir.entryList() ) {
 		Program * program = new Program( name, fn );
 		program->load( dir.filePath( name ), this );
 		programs.insert( name, program );
@@ -437,7 +437,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	QList<QModelIndex> iBlocks;
 	iBlocks << mesh->index();
 	iBlocks << mesh->iData;
-	foreach ( Property * p, props.list() ) {
+	for ( Property * p : props.list() ) {
 		iBlocks.append( p->index() );
 	}
 
@@ -448,7 +448,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 			return hint;
 	}
 
-	foreach ( Program * program, programs ) {
+	for ( Program * program : programs ) {
 		if ( program->status && setupProgram( program, mesh, props, iBlocks ) )
 			return program->name;
 	}

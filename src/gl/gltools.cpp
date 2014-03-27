@@ -128,13 +128,13 @@ BoundSphere::BoundSphere( const QVector<Vector3> & verts )
 		radius = -1;
 	} else {
 		center = Vector3();
-		foreach ( Vector3 v, verts ) {
+		for ( const Vector3& v : verts ) {
 			center += v;
 		}
 		center /= verts.count();
 
 		radius = 0;
-		foreach ( Vector3 v, verts ) {
+		for ( const Vector3& v : verts ) {
 			float d = ( center - v ).squaredLength();
 
 			if ( d > radius )

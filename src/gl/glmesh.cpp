@@ -270,7 +270,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 #endif
 
-		foreach ( int link, nif->getChildLinks( id() ) ) {
+		for ( const auto link : nif->getChildLinks( id() ) ) {
 			QModelIndex iChild = nif->getBlock( link );
 
 			if ( !iChild.isValid() )
@@ -733,7 +733,7 @@ void Mesh::transformShapes()
 		Node * root = findParent( skelRoot );
 
 		if ( partitions.count() ) {
-			foreach ( SkinPartition part, partitions ) {
+			foreach ( const SkinPartition part, partitions ) {
 				QVector<Transform> boneTrans( part.boneMap.count() );
 
 				for ( int t = 0; t < boneTrans.count(); t++ ) {
@@ -774,7 +774,7 @@ void Mesh::transformShapes()
 			}
 		} else {
 			int x = 0;
-			foreach ( BoneWeights bw, weights ) {
+			foreach ( const BoneWeights bw, weights ) {
 				Transform trans = viewTrans() * skelTrans;
 				Node * bone = root ? root->findChild( bw.bone ) : 0;
 
@@ -787,7 +787,7 @@ void Mesh::transformShapes()
 					x++;
 
 				Matrix natrix = trans.rotation;
-				foreach ( VertexWeight vw, bw.weights ) {
+				for ( const VertexWeight& vw : bw.weights ) {
 					if ( transVerts.count() > vw.vertex )
 						transVerts[ vw.vertex ] += trans * verts[ vw.vertex ] * vw.weight;
 
@@ -1191,7 +1191,7 @@ void Mesh::drawSelection() const
 		glDepthFunc( GL_LEQUAL );
 		glLineWidth( 1.5f );
 		glNormalColor();
-		foreach ( Triangle tri, triangles ) {
+		for ( const Triangle& tri : triangles ) {
 			glBegin( GL_LINE_STRIP );
 			glVertex( transVerts.value( tri.v1() ) );
 			glVertex( transVerts.value( tri.v2() ) );
@@ -1217,7 +1217,7 @@ void Mesh::drawSelection() const
 		glDepthFunc( GL_LEQUAL );
 		glLineWidth( 1.5f );
 		glNormalColor();
-		foreach ( QVector<quint16> strip, tristrips ) {
+		for ( const QVector<quint16>& strip : tristrips ) {
 			quint16 a = strip.value( 0 );
 			quint16 b = strip.value( 1 );
 
@@ -1275,7 +1275,7 @@ void Mesh::drawSelection() const
 
 			QVector<int> vmap = partitions[c].vertexMap;
 
-			foreach ( Triangle tri, partitions[c].triangles ) {
+			for ( const Triangle& tri : partitions[c].triangles ) {
 				glBegin( GL_LINE_STRIP );
 				glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
 				glVertex( transVerts.value( vmap.value( tri.v2() ) ) );
@@ -1283,7 +1283,7 @@ void Mesh::drawSelection() const
 				glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
 				glEnd();
 			}
-			foreach ( QVector<quint16> strip, partitions[c].tristrips ) {
+			for ( const QVector<quint16>& strip : partitions[c].tristrips ) {
 				quint16 a = vmap.value( strip.value( 0 ) );
 				quint16 b = vmap.value( strip.value( 1 ) );
 

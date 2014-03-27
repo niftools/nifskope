@@ -59,7 +59,7 @@ FSManager* FSManager::get()
 QList <FSArchiveFile *> FSManager::archiveList()
 {
 	QList<FSArchiveFile *> archives;
-	foreach ( FSArchiveHandler* an, get()->archives.values() ){
+	for ( FSArchiveHandler* an : get()->archives.values() ) {
 		archives.append( an->getArchive() );
 	}
 	return archives;
@@ -80,7 +80,7 @@ FSManager::FSManager( QObject * parent )
 		list = autodetectArchives();
 	}
 	
-	foreach ( QString an, list )
+	for ( const QString an : list )
 	{
 		if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
 			archives.insert( an, a );
@@ -188,7 +188,7 @@ void FSSelector::sltAuto( bool x )
 		qDeleteAll( manager->archives );
 		manager->archives.clear();
 		
-		foreach ( QString an, manager->autodetectArchives() )
+		for ( const QString an : manager->autodetectArchives() )
 		{
 			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
 			{
@@ -210,7 +210,7 @@ void FSSelector::sltAdd()
 {
 	QStringList list = QFileDialog::getOpenFileNames( this, "Select resource files to add", QString(), "BSA (*.bsa)" );
 	
-	foreach ( QString an, list )
+	for ( const QString an : list )
 	{
 		if ( ! manager->archives.contains( an ) )
 			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )

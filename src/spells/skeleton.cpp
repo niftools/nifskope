@@ -65,7 +65,7 @@ public:
 			TransMap bones;
 			doBones( nif, index, Transform(), local, bones );
 
-			foreach ( int link, nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
+			for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 				QModelIndex iChild = nif->getBlock( link );
 
 				if ( iChild.isValid() ) {
@@ -93,7 +93,7 @@ public:
 
 			local.value( name ).writeBack( nif, index );
 
-			foreach ( int link, nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
+			for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 				QModelIndex iChild = nif->getBlock( link, "NiNode" );
 
 				if ( iChild.isValid() )
@@ -111,7 +111,7 @@ public:
 		if ( !name.startsWith( "Bip01" ) ) {
 			Transform tlocal( nif, index );
 
-			foreach ( int link, nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
+			for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 				QModelIndex iChild = nif->getBlock( link );
 
 				if ( iChild.isValid() ) {
@@ -221,7 +221,7 @@ public:
 			Transform local( nif, index );
 			stream << name << local << tparent * local;
 			qWarning() << name;
-			foreach ( int link, nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
+			for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 				QModelIndex iChild = nif->getBlock( link, "NiNode" );
 
 				if ( iChild.isValid() )
@@ -368,7 +368,7 @@ public:
 
 			int minBones, maxBones;
 			minBones = maxBones = weights.value( 0 ).count();
-			foreach ( QList<boneweight> list, weights ) {
+			for ( const QList<boneweight> list : weights ) {
 				if ( list.count() < minBones )
 					minBones = list.count();
 
@@ -411,7 +411,7 @@ public:
 					}
 
 					float totalWeight = 0;
-					foreach ( boneweight bw, lst ) {
+					for ( const auto bw : lst ) {
 						totalWeight += bw.second;
 					}
 
@@ -535,12 +535,13 @@ public:
 
 			int cnt = 0;
 
-			foreach ( Triangle tri, triangles ) {
+			for ( const Triangle& tri : triangles )
+			{
 				do {
 					tribones.clear();
 
 					for ( int c = 0; c < 3; c++ ) {
-						foreach ( boneweight bw, weights[tri[c]] ) {
+						for ( const auto bw : weights[tri[c]] ) {
 							if ( !tribones.contains( bw.first ) )
 								tribones.append( bw.first );
 						}
@@ -557,7 +558,7 @@ public:
 							if ( weights[tri[t]].count() == 1 )
 								nono.append( weights[tri[t]].first().first );
 
-							foreach ( boneweight bw, weights[ tri[t] ] ) {
+							for ( const auto bw : weights[tri[t]] ) {
 								sum[ bw.first ] += bw.second;
 							}
 						}
@@ -567,7 +568,7 @@ public:
 						float minWeight = 5.0;
 						int minBone = -1;
 
-						foreach ( int b, sum.keys() ) {
+						for ( const auto b : sum.keys() ) {
 							if ( !nono.contains( b ) && sum[b] < minWeight ) {
 								minWeight = sum[b];
 								minBone = b;
@@ -598,7 +599,8 @@ public:
 
 						for ( int t = 0; t < 3; t++ ) {
 							bool rem = false;
-							foreach ( int v, match.values( tri[t] ) ) {
+							for ( const auto v : match.values( tri[t] ) )
+							{
 								QList<boneweight> & bws = weights[ v ];
 								QMutableListIterator<boneweight> it( bws );
 
@@ -612,7 +614,7 @@ public:
 								}
 
 								float totalWeight = 0;
-								foreach ( boneweight bw, bws ) {
+								for ( const auto bw : bws ) {
 									totalWeight += bw.second;
 								}
 
@@ -662,7 +664,7 @@ public:
 						QList<int> tribones;
 
 						for ( int c = 0; c < 3; c++ ) {
-							foreach ( boneweight bw, weights[tri[c]] ) {
+							for ( const auto bw : weights[tri[c]] ) {
 								if ( !tribones.contains( bw.first ) )
 									tribones.append( bw.first );
 							}
@@ -693,7 +695,7 @@ public:
 						QList<int> tribones;
 
 						for ( int c = 0; c < 3; c++ ) {
-							foreach ( boneweight bw, weights[tri[c]] ) {
+							for ( const auto bw : weights[tri[c]] ) {
 								if ( !tribones.contains( bw.first ) )
 									tribones.append( bw.first );
 							}
@@ -722,7 +724,7 @@ public:
 								QList<int> tribones;
 
 								for ( int c = 0; c < 3; c++ ) {
-									foreach ( boneweight bw, weights[tri[c]] ) {
+									for ( const auto bw : weights[tri[c]] ) {
 										if ( !tribones.contains( bw.first ) )
 											tribones.append( bw.first );
 									}
@@ -822,7 +824,7 @@ public:
 
 				int idx = 0;
 				QVector<int> vidx( numVerts, -1 );
-				foreach ( Triangle tri, triangles ) {
+				for ( const Triangle& tri : triangles ) {
 					for ( int t = 0; t < 3; t++ ) {
 						int v = tri[t];
 
@@ -855,7 +857,7 @@ public:
 				if ( make_strips == true ) {
 					strips = stripify( triangles );
 
-					foreach ( QVector<quint16> strip, strips ) {
+					for ( const QVector<quint16>& strip : strips ) {
 						numTriangles += strip.count() - 2;
 					}
 				} else {
@@ -975,7 +977,7 @@ public:
 
 	static QList<int> mergeBones( QList<int> a, QList<int> b )
 	{
-		foreach ( int c, b ) {
+		for ( const auto c : b ) {
 			if ( !a.contains( c ) ) {
 				a.append( c );
 			}
@@ -985,7 +987,7 @@ public:
 
 	static bool containsBones( QList<int> a, QList<int> b )
 	{
-		foreach ( int c, b ) {
+		for ( const auto c : b ) {
 			if ( !a.contains( c ) )
 				return false;
 		}
@@ -1024,7 +1026,7 @@ public:
 		int mbpp = 0, mbpv = 0;
 		bool make_strips = false;
 
-		foreach ( QModelIndex idx, indices ) {
+		for ( const QModelIndex& idx : indices ) {
 			Partitioner.cast( nif, idx, mbpp, mbpv, make_strips );
 		}
 
@@ -1293,7 +1295,7 @@ public:
 		}
 
 		// traverse
-		foreach ( int link, nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
+		for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 			QModelIndex iChild = nif->getBlock( link );
 			QString childName  = nif->get<QString>( iChild, "Name" );
 

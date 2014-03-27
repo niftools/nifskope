@@ -172,7 +172,8 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 	bool replaceExt = false;
 
 	if ( Options::textureAlternatives() ) {
-		foreach ( QString ext, extensions ) {
+		for ( const QString ext : QStringList{ extensions } )
+		{
 			if ( filename.endsWith( ext ) ) {
 				extensions.removeAll( ext );
 				extensions.prepend( ext );
@@ -185,12 +186,12 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	// attempt to find the texture in one of the folders
 	QDir dir;
-	foreach ( QString ext, extensions ) {
+	for ( const QString& ext : extensions ) {
 		if ( replaceExt ) {
 			filename += ext;
 		}
 
-		foreach ( QString folder, Options::textureFolders() ) {
+		for ( QString folder : Options::textureFolders() ) {
 			// TODO: Always search nifdir without requiring a relative entry
 			// in folders?  Not too intuitive to require ".\" in your texture folder list
 			// even if it is added by default.
@@ -208,7 +209,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 #ifdef FSENGINE
 		// Search through archives last, and load any requested textures into memory.
-		foreach ( FSArchiveFile * archive, FSManager::archiveList() ) {
+		for ( FSArchiveFile * archive : FSManager::archiveList() ) {
 			if ( archive ) {
 				filename = QDir::fromNativeSeparators( filename.toLower() );
 
@@ -254,7 +255,7 @@ QString TexCache::stripPath( const QString & filepath, const QString & nifFolder
 	file = file.replace( "/", "\\" ).toLower();
 	QDir basePath;
 
-	foreach ( QString base, Options::textureFolders() ) {
+	for ( QString base : Options::textureFolders() ) {
 		if ( base.startsWith( "./" ) || base.startsWith( ".\\" ) ) {
 			base = nifFolder + "/" + base;
 		}
@@ -385,14 +386,14 @@ int TexCache::bind( const QModelIndex & iSource )
 
 void TexCache::flush()
 {
-	foreach ( Tex * tx, textures ) {
+	for ( Tex * tx : textures ) {
 		if ( tx->id )
 			glDeleteTextures( 1, &tx->id );
 	}
 	qDeleteAll( textures );
 	textures.clear();
 
-	foreach ( Tex * tx, embedTextures ) {
+	for ( Tex * tx : embedTextures ) {
 		if ( tx->id )
 			glDeleteTextures( 1, &tx->id );
 	}

@@ -53,7 +53,7 @@ public:
 
 	NifProxyItem * getLink( int link )
 	{
-		foreach ( NifProxyItem * item, childItems ) {
+		for ( NifProxyItem * item : childItems ) {
 			if ( item->block() == link )
 				return item;
 		}
@@ -63,7 +63,7 @@ public:
 	int rowLink( int link )
 	{
 		int row = 0;
-		foreach ( NifProxyItem * item, childItems ) {
+		for ( NifProxyItem * item : childItems ) {
 			if ( item->block() == link )
 				return row;
 
@@ -145,7 +145,7 @@ public:
 	QList<int> childBlocks() const
 	{
 		QList<int> blocks;
-		foreach ( NifProxyItem * item, childItems ) {
+		for ( NifProxyItem * item : childItems ) {
 			blocks.append( item->block() );
 		}
 		return blocks;
@@ -156,12 +156,12 @@ public:
 		if ( blockNumber == b )
 			return this;
 
-		foreach ( NifProxyItem * child, childItems ) {
+		for ( NifProxyItem * child : childItems ) {
 			if ( child->blockNumber == b )
 				return child;
 		}
 
-		foreach ( NifProxyItem * child, childItems ) {
+		for ( NifProxyItem * child : childItems ) {
 			if ( NifProxyItem * x = child->findItem( b, false ) )
 				return x;
 		}
@@ -181,7 +181,7 @@ public:
 
 	void findAllItems( int b, QList<NifProxyItem *> & list )
 	{
-		foreach ( NifProxyItem * item, childItems ) {
+		for ( NifProxyItem * item : childItems ) {
 			item->findAllItems( b, list );
 		}
 
@@ -288,7 +288,7 @@ void NifProxyModel::updateRoot( bool fast )
 
 	//qDebug() << "proxy update top level";
 
-	foreach ( NifProxyItem * item, root->childItems ) {
+	for ( NifProxyItem * item : root->childItems ) {
 		if ( !nif->getRootLinks().contains( item->block() ) ) {
 			int at = root->rowLink( item->block() );
 
@@ -302,7 +302,7 @@ void NifProxyModel::updateRoot( bool fast )
 		}
 	}
 
-	foreach ( int l, nif->getRootLinks() ) {
+	for ( const auto l : nif->getRootLinks() ) {
 		NifProxyItem * item = root->getLink( l );
 
 		if ( !item ) {
@@ -325,7 +325,7 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 
 	QList<int> parents( item->parentBlocks() );
 
-	foreach ( int l, item->childBlocks() ) {
+	for ( const auto l : item->childBlocks() ) {
 		if ( !( nif->getChildLinks( item->block() ).contains( l ) || nif->getParentLinks( item->block() ).contains( l ) ) ) {
 			int at = item->rowLink( l );
 
@@ -338,7 +338,7 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 				endRemoveRows();
 		}
 	}
-	foreach ( int l, nif->getChildLinks( item->block() ) ) {
+	for ( const auto l : nif->getChildLinks( item->block() ) ) {
 		NifProxyItem * child = item->getLink( l );
 
 		if ( !child ) {
@@ -359,7 +359,7 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 			qWarning() << tr( "infinite recursing link construct detected" ) << item->block() << "->" << child->block();
 		}
 	}
-	foreach ( int l, nif->getParentLinks( item->block() ) ) {
+	for ( const auto l : nif->getParentLinks( item->block() ) ) {
 		if ( !item->getLink( l ) ) {
 			int at = item->childCount();
 
@@ -494,7 +494,7 @@ QList<QModelIndex> NifProxyModel::mapFrom( const QModelIndex & idx ) const
 
 	QList<NifProxyItem *> items;
 	root->findAllItems( blockNumber, items );
-	foreach ( NifProxyItem * item, items ) {
+	for ( NifProxyItem * item : items ) {
 		indices.append( createIndex( item->row(), idx.column() != NifModel::NameCol ? 1 : 0, item ) );
 	}
 
@@ -547,7 +547,7 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 {
 	if ( begin == end ) {
 		QList<QModelIndex> indices = mapFrom( begin );
-		foreach ( QModelIndex idx, indices ) {
+		for ( const QModelIndex& idx : indices ) {
 			emit dataChanged( idx, idx );
 		}
 		return;
@@ -558,7 +558,7 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 
 			for ( int c = qMin( begin.column(), end.column() ); c < m; c++ ) {
 				QList<QModelIndex> indices = mapFrom( begin.sibling( begin.row(), c ) );
-				foreach ( QModelIndex idx, indices ) {
+				for ( const QModelIndex& idx : indices ) {
 					emit dataChanged( idx, idx );
 				}
 			}
@@ -570,7 +570,7 @@ void NifProxyModel::xDataChanged( const QModelIndex & begin, const QModelIndex &
 
 			for ( int r = qMin( begin.row(), end.row() ); r < m; r++ ) {
 				QList<QModelIndex> indices = mapFrom( begin.sibling( r, begin.column() ) );
-				foreach ( QModelIndex idx, indices ) {
+				for ( const QModelIndex& idx : indices ) {
 					emit dataChanged( idx, idx );
 				}
 			}
@@ -594,7 +594,7 @@ void NifProxyModel::xRowsAboutToBeRemoved( const QModelIndex & parent, int first
 		for ( int c = first; c <= last; c++ ) {
 			QList<NifProxyItem *> list;
 			root->findAllItems( c - 1, list );
-			foreach ( NifProxyItem * item, list ) {
+			for ( NifProxyItem * item : list ) {
 				QModelIndex idx = createIndex( item->row(), 0, item );
 				beginRemoveRows( idx.parent(), idx.row(), idx.row() );
 				item->parentItem->childItems.removeAll( item );

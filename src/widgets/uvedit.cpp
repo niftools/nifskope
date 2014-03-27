@@ -392,7 +392,7 @@ void UVWidget::paintGL()
 		glLoadIdentity();
 		glHighlightColor();
 		glBegin( GL_LINE_LOOP );
-		foreach ( QPoint p, selectPoly ) {
+		for ( const QPoint& p : selectPoly ) {
 			glVertex( mapToContents( p ) );
 		}
 		glEnd();
@@ -815,7 +815,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		}
 	}
 
-	foreach ( qint32 l,
+	for ( const auto l :
 		nif->getLinkArray( iShape, "Properties" )
 		+ nif->getLinkArray( iShape, "BS Properties" ) )
 	{
@@ -1017,7 +1017,7 @@ void UVWidget::select( int index, bool yes )
 void UVWidget::select( const QRegion & r, bool add )
 {
 	QList<int> selection( add ? this->selection : QList<int>() );
-	foreach ( int s, indices( r ) ) {
+	for ( const auto s : indices( r ) ) {
 		if ( !selection.contains( s ) )
 			selection.append( s );
 	}
@@ -1042,8 +1042,8 @@ void UVWidget::selectAll()
 void UVWidget::selectFaces()
 {
 	QList<int> selection = this->selection;
-	foreach ( int s, selection ) {
-		foreach ( int f, texcoords2faces.values( s ) ) {
+	for ( const auto s : QList<int>( selection ) ) {
+		for ( const auto f : texcoords2faces.values( s ) ) {
 			for ( int i = 0; i < 3; i++ ) {
 				if ( !selection.contains( faces[f].tc[i] ) )
 					selection.append( faces[f].tc[i] );
@@ -1060,8 +1060,8 @@ void UVWidget::selectConnected()
 
 	while ( more ) {
 		more = false;
-		foreach ( int s, selection ) {
-			foreach ( int f, texcoords2faces.values( s ) ) {
+		for ( const auto s : QList<int>( selection ) ) {
+			for ( const auto f :texcoords2faces.values( s ) ) {
 				for ( int i = 0; i < 3; i++ ) {
 					if ( !selection.contains( faces[f].tc[i] ) ) {
 						selection.append( faces[f].tc[i] );
@@ -1100,7 +1100,7 @@ public:
 
 	void redo()
 	{
-		foreach ( int tc, uvw->selection ) {
+		for ( const auto tc : uvw->selection ) {
 			uvw->texcoords[tc] += move;
 		}
 		uvw->updateNif();
@@ -1109,7 +1109,7 @@ public:
 
 	void undo()
 	{
-		foreach ( int tc, uvw->selection ) {
+		for ( const auto tc : uvw->selection ) {
 			uvw->texcoords[tc] -= move;
 		}
 		uvw->updateNif();
@@ -1157,21 +1157,21 @@ public:
 	void redo()
 	{
 		Vector2 centre;
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			centre += uvw->texcoords[i];
 		}
 		centre /= uvw->selection.size();
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] -= centre;
 		}
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			Vector2 temp( uvw->texcoords[i] );
 			uvw->texcoords[i] = Vector2( temp[0] * scaleX, temp[1] * scaleY );
 		}
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] += centre;
 		}
 
@@ -1182,21 +1182,21 @@ public:
 	void undo()
 	{
 		Vector2 centre;
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			centre += uvw->texcoords[i];
 		}
 		centre /= uvw->selection.size();
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] -= centre;
 		}
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			Vector2 temp( uvw->texcoords[i] );
 			uvw->texcoords[i] = Vector2( temp[0] / scaleX, temp[1] / scaleY );
 		}
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] += centre;
 		}
 
@@ -1341,25 +1341,25 @@ public:
 	void redo()
 	{
 		Vector2 centre;
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			centre += uvw->texcoords[i];
 		}
 		centre /= uvw->selection.size();
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] -= centre;
 		}
 
 		Matrix rotMatrix;
 		rotMatrix.fromEuler( 0, 0, ( rotation * PI / 180.0 ) );
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			Vector3 temp( uvw->texcoords[i], 0 );
 			temp = rotMatrix * temp;
 			uvw->texcoords[i] = Vector2( temp[0], temp[1] );
 		}
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] += centre;
 		}
 
@@ -1370,25 +1370,25 @@ public:
 	void undo()
 	{
 		Vector2 centre;
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			centre += uvw->texcoords[i];
 		}
 		centre /= uvw->selection.size();
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] -= centre;
 		}
 
 		Matrix rotMatrix;
 		rotMatrix.fromEuler( 0, 0, -( rotation * PI / 180.0 ) );
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			Vector3 temp( uvw->texcoords[i], 0 );
 			temp = rotMatrix * temp;
 			uvw->texcoords[i] = Vector2( temp[0], temp[1] );
 		}
 
-		foreach ( int i, uvw->selection ) {
+		for ( const auto i : uvw->selection ) {
 			uvw->texcoords[i] += centre;
 		}
 
@@ -1415,14 +1415,14 @@ void UVWidget::getTexSlots()
 {
 	menuTexSelect->clear();
 	validTexs.clear();
-	foreach ( qint32 l,
+	for ( const auto l :
 		nif->getLinkArray( iShape, "Properties" )
 		+ nif->getLinkArray( iShape, "BS Properties" ) )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 
 		if ( iTexProp.isValid() ) {
-			foreach ( QString name, texnames ) {
+			for ( const QString& name : texnames ) {
 				if ( nif->get<bool>( iTexProp, QString( "Has %1" ).arg( name ) ) ) {
 					if ( validTexs.indexOf( name ) == -1 ) {
 						validTexs << name;
@@ -1445,7 +1445,7 @@ void UVWidget::selectTexSlot()
 {
 	QString selected = texSlotGroup->checkedAction()->text();
 	currentTexSlot = texnames.indexOf( selected );
-	foreach ( qint32 l,
+	for ( const auto l :
 		nif->getLinkArray( iShape, "Properties" )
 		+ nif->getLinkArray( iShape, "BS Properties" ) )
 	{

@@ -193,7 +193,7 @@ void TestShredder::run()
 	if ( !btRun->isChecked() )
 		return;
 
-	foreach ( TestThread * thread, threads ) {
+	for ( TestThread * thread : threads ) {
 		thread->wait();
 	}
 
@@ -216,7 +216,7 @@ void TestShredder::run()
 	progress->setRange( 0, queue.count() );
 	progress->setValue( 0 );
 
-	foreach ( TestThread * thread, threads ) {
+	for ( TestThread * thread : threads ) {
 		thread->verMatch = NifModel::version2number( verMatch->text() );
 		thread->blockMatch = blockMatch->text();
 		thread->reportAll  = !repErr->isChecked();
@@ -232,7 +232,7 @@ void TestShredder::threadStarted()
 void TestShredder::threadFinished()
 {
 	if ( queue.isEmpty() ) {
-		foreach ( TestThread * thread, threads ) {
+		for ( TestThread * thread : threads ) {
 			if ( thread->isRunning() )
 				return;
 		}
@@ -250,7 +250,7 @@ void TestShredder::chooseBlock()
 	ids.sort();
 
 	QMap<QString, QMenu *> map;
-	foreach ( QString id, ids ) {
+	for ( const QString& id : ids ) {
 		QString x( "Other" );
 
 		if ( id.startsWith( "Ni" ) )
@@ -268,7 +268,7 @@ void TestShredder::chooseBlock()
 	}
 
 	QMenu menu;
-	foreach ( QMenu * m, map ) {
+	for ( QMenu * m : map ) {
 		menu.addMenu( m );
 	}
 
@@ -280,7 +280,7 @@ void TestShredder::chooseBlock()
 
 void TestShredder::closeEvent( QCloseEvent * e )
 {
-	foreach ( TestThread * thread, threads ) {
+	for ( TestThread * thread : threads ) {
 		if ( thread->isRunning() ) {
 			e->ignore();
 			queue.clear();
@@ -300,7 +300,7 @@ QQueue<QString> FileQueue::make( const QString & dname, const QStringList & exte
 
 	if ( recursive ) {
 		dir.setFilter( QDir::Dirs );
-		foreach ( QString d, dir.entryList() ) {
+		for ( const QString& d : dir.entryList() ) {
 			if ( d != "." && d != ".." )
 				queue += make( dir.filePath( d ), extensions, true );
 		}
@@ -308,7 +308,7 @@ QQueue<QString> FileQueue::make( const QString & dname, const QStringList & exte
 
 	dir.setFilter( QDir::Files );
 	dir.setNameFilters( extensions );
-	foreach ( QString f, dir.entryList() ) {
+	for ( const QString& f : dir.entryList() ) {
 		queue.enqueue( dir.filePath( f ) );
 	}
 
@@ -414,7 +414,7 @@ void TestThread::run()
 
 				// Don't show anything if block match is on but the requested type wasn't found & we're in block match mode
 				if ( blockMatch.isEmpty() == true || blk_match == true ) {
-					foreach ( Message msg, messages ) {
+					for ( const Message& msg : messages ) {
 						if ( msg.type() != QtDebugMsg ) {
 							result += "<br>" + msg;
 							rep |= true;

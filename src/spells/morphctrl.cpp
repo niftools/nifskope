@@ -35,7 +35,7 @@ public:
 		if ( nif->get<int>( iMeshData, "Num Vertices" ) != nif->get<int>( iMorphData, "Num Vertices" ) ) {
 			menu.addAction( frameList.first() );
 		} else {
-			foreach ( QString f, frameList ) {
+			for ( const QString& f : frameList ) {
 				menu.addAction( f );
 			}
 		}

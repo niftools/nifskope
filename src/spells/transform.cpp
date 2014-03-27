@@ -117,7 +117,7 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 	if ( nif->inherits( nif->itemName( index ), "NiNode" ) ) {
 		Transform tp( nif, index );
 		bool ok = false;
-		foreach ( int l, nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
+		for ( const auto l : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 			QModelIndex iChild = nif->getBlock( l );
 
 			if ( iChild.isValid() && nif->inherits( nif->itemName( iChild ), "NiAVObject" ) ) {
@@ -247,7 +247,7 @@ public:
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
 		if ( Transform::canConstruct( nif, index ) && mime ) {
-			foreach ( QString form, mime->formats() ) {
+			for ( const QString& form : mime->formats() ) {
 				if ( form == "nifskope/transform" )
 					return true;
 			}
@@ -261,7 +261,7 @@ public:
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
 		if ( mime ) {
-			foreach ( QString form, mime->formats() ) {
+			for ( const QString& form : mime->formats() ) {
 				if ( form == "nifskope/transform" ) {
 					QByteArray data = mime->data( form );
 					QBuffer buffer( &data );

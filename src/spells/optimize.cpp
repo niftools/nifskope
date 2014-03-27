@@ -80,8 +80,8 @@ public:
 				}
 			}
 
-			foreach ( qint32 x, props.keys() ) {
-				foreach ( qint32 y, props.keys() ) {
+			for ( const auto x : props.keys() ) {
+				for ( const auto y : props.keys() ) {
 					if ( x < y && ( !map.contains( y ) ) && props[x].size() == props[y].size() ) {
 						int c = 0;
 
@@ -102,7 +102,7 @@ public:
 				nif->mapLinks( map );
 				QList<qint32> l = map.keys();
 				std::sort( l.begin(), l.end(), std::greater<qint32>() );
-				foreach ( qint32 b, l ) {
+				for ( const auto b : l ) {
 					nif->removeNiBlock( b );
 				}
 			}
@@ -148,7 +148,7 @@ public:
 						QMap<qint32, qint32> map;
 
 						if ( nif->isNiBlock( iProp, "NiTexturingProperty" ) ) {
-							foreach ( qint32 sl, nif->getChildLinks( nif->getBlockNumber( iProp ) ) ) {
+							for ( const auto sl : nif->getChildLinks( nif->getBlockNumber( iProp ) ) ) {
 								QModelIndex iSrc = nif->getBlock( sl, "NiSourceTexture" );
 
 								if ( iSrc.isValid() && !map.contains( sl ) ) {
@@ -280,7 +280,7 @@ public:
 
 		QList<qint32> lTris;
 
-		foreach ( qint32 lChild, nif->getLinkArray( iParent, "Children" ) ) {
+		for ( const auto lChild : nif->getLinkArray( iParent, "Children" ) ) {
 			if ( nif->getParent( lChild ) == nif->getBlockNumber( iParent ) ) {
 				QModelIndex iChild = nif->getBlock( lChild );
 
@@ -294,11 +294,11 @@ public:
 		QMap<qint32, QList<qint32> > match;
 		QList<qint32> found;
 
-		foreach ( qint32 lTriA, lTris ) {
+		for ( const auto lTriA : lTris ) {
 			if ( found.contains( lTriA ) )
 				continue;
 
-			foreach ( qint32 lTriB, lTris ) {
+			for ( const auto lTriB : lTris ) {
 				if ( matches( nif, nif->getBlock( lTriA ), nif->getBlock( lTriB ) ) ) {
 					match[ lTriA ] << lTriB;
 					found << lTriB;
@@ -313,10 +313,10 @@ public:
 
 		QList<QPersistentModelIndex> remove;
 
-		foreach ( qint32 lTriA, match.keys() ) {
+		for ( const auto lTriA : match.keys() ) {
 			ApplyTransform.cast( nif, nif->getBlock( lTriA ) );
 
-			foreach ( qint32 lTriB, match[ lTriA ] ) {
+			for ( const auto lTriB : match[lTriA] ) {
 				ApplyTransform.cast( nif, nif->getBlock( lTriB ) );
 				combine( nif, nif->getBlock( lTriA ), nif->getBlock( lTriB ) );
 				remove << nif->getBlock( lTriB );
@@ -329,7 +329,7 @@ public:
 
 		spRemoveBranch BranchRemover;
 
-		foreach ( QModelIndex rem, remove ) {
+		for ( const QModelIndex& rem : remove ) {
 			BranchRemover.cast( nif, rem );
 		}
 
@@ -355,7 +355,7 @@ public:
 		if ( lPrpsA != lPrpsB )
 			return false;
 
-		foreach ( qint32 l, nif->getChildLinks( nif->getBlockNumber( iTriA ) ) ) {
+		for ( const auto l : nif->getChildLinks( nif->getBlockNumber( iTriA ) ) ) {
 			if ( lPrpsA.contains( l ) )
 				continue;
 
@@ -372,7 +372,7 @@ public:
 			return false;
 		}
 
-		foreach ( qint32 l, nif->getChildLinks( nif->getBlockNumber( iTriB ) ) ) {
+		for ( const auto l : nif->getChildLinks( nif->getBlockNumber( iTriB ) ) ) {
 			if ( lPrpsB.contains( l ) )
 				continue;
 
@@ -401,7 +401,7 @@ public:
 		if ( iDataA == iDataB )
 			return true;
 
-		foreach ( QString id, QStringList() << "Vertices" << "Normals" << "Vertex Colors" << "UV Sets" ) {
+		for ( const QString& id : QStringList{ "Vertices", "Normals", "Vertex Colors", "UV Sets" } ) {
 			QModelIndex iA = nif->getIndex( iDataA, id );
 			QModelIndex iB = nif->getIndex( iDataB, id );
 
