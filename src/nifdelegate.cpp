@@ -237,7 +237,7 @@ public:
 			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
 			const NifValue::EnumOptions & eo = NifValue::enumOptionData( t );
 			quint32 value = v.value<NifValue>().toCount();
-			QHashIterator<quint32, QPair<QString, QString> > it( eo.o );
+			QMapIterator<quint32, QPair<QString, QString> > it( eo.o );
 
 			while ( it.hasNext() ) {
 				it.next();

@@ -128,7 +128,7 @@ QString NifValue::typeDescription( const QString & typId )
 
 	// TODO: Definition lists are much faster but go off the screen
 	txt += "<dl>";
-	QHashIterator<quint32, QPair<QString, QString> > it( enumMap[ typId ].o );
+	QMapIterator<quint32, QPair<QString, QString> > it( enumMap[ typId ].o );
 	int cnt = 0;
 
 	while ( it.hasNext() ) {
@@ -164,7 +164,7 @@ bool NifValue::registerAlias( const QString & alias, const QString & original )
 
 bool NifValue::registerEnumOption( const QString & eid, const QString & oid, quint32 oval, const QString & otxt )
 {
-	QHash<quint32, QPair<QString, QString> > & e = enumMap[eid].o;
+	QMap<quint32, QPair<QString, QString> > & e = enumMap[eid].o;
 
 	if ( e.contains( oval ) )
 		return false;
@@ -178,7 +178,7 @@ QStringList NifValue::enumOptions( const QString & eid )
 	QStringList opts;
 
 	if ( enumMap.contains( eid ) ) {
-		QHashIterator<quint32, QPair<QString, QString> > it( enumMap[ eid ].o );
+		QMapIterator<quint32, QPair<QString, QString> > it( enumMap[ eid ].o );
 
 		while ( it.hasNext() ) {
 			it.next();
@@ -211,7 +211,7 @@ QString NifValue::enumOptionName( const QString & eid, quint32 val )
 		if ( eo.t == NifValue::eFlags ) {
 			QString text;
 			quint32 val2 = 0;
-			QHashIterator<quint32, QPair<QString, QString> > it( eo.o );
+			QMapIterator<quint32, QPair<QString, QString> > it( eo.o );
 
 			while ( it.hasNext() ) {
 				it.next();
@@ -256,7 +256,7 @@ quint32 NifValue::enumOptionValue( const QString & eid, const QString & oid, boo
 {
 	if ( enumMap.contains( eid ) ) {
 		EnumOptions & eo = enumMap[ eid ];
-		QHashIterator<quint32, QPair<QString, QString> > it( eo.o );
+		QMapIterator<quint32, QPair<QString, QString> > it( eo.o );
 
 		if ( eo.t == NifValue::eFlags ) {
 			if ( ok )
