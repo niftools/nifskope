@@ -131,7 +131,7 @@ NifSkope::NifSkope()
 
 	// create a new nif
 	nif = new NifModel( this );
-	connect( nif, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
+	connect( nif, &NifModel::sigMessage, this, &NifSkope::dispatchMessage );
 
 	SpellBook * book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
 
@@ -141,7 +141,7 @@ NifSkope::NifSkope()
 
 	// create a new kfm model
 	kfm = new KfmModel( this );
-	connect( kfm, SIGNAL( sigMessage( const Message & ) ), this, SLOT( dispatchMessage( const Message & ) ) );
+	connect( kfm, &KfmModel::sigMessage, this, &NifSkope::dispatchMessage );
 
 
 	// this view shows the block list
@@ -152,10 +152,8 @@ NifSkope::NifSkope()
 	list->header()->setMinimumSectionSize( 100 );
 	list->installEventFilter( this );
 
-	connect( list, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
-		this, SLOT( select( const QModelIndex & ) ) );
-	connect( list, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-		this, SLOT( contextMenu( const QPoint & ) ) );
+	connect( list, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
+	connect( list, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 	// this view shows the whole nif file or the block details
 	tree = new NifTreeView;
@@ -164,10 +162,8 @@ NifSkope::NifSkope()
 	tree->header()->setStretchLastSection( false );
 	tree->installEventFilter( this );
 
-	connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
-		this, SLOT( select( const QModelIndex & ) ) );
-	connect( tree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-		this, SLOT( contextMenu( const QPoint & ) ) );
+	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
+	connect( tree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 
 	// this view shows the whole kfm file
@@ -177,33 +173,29 @@ NifSkope::NifSkope()
 	kfmtree->header()->setStretchLastSection( false );
 	kfmtree->installEventFilter( this );
 
-	connect( kfmtree, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-		this, SLOT( contextMenu( const QPoint & ) ) );
+	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 	// this browser shows the reference of current node
 	refrbrwsr = new ReferenceBrowser;
 
 	refrbrwsr->setNifModel( nif );
-	connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
-		refrbrwsr, SLOT( browse( const QModelIndex & ) ) );
+	connect( tree, &NifTreeView::sigCurrentIndexChanged, refrbrwsr, &ReferenceBrowser::browse );
 
 #ifdef EDIT_ON_ACTIVATE
-	connect( list, SIGNAL( activated( const QModelIndex & ) ),
-		list, SLOT( edit( const QModelIndex & ) ) );
-	connect( tree, SIGNAL( activated( const QModelIndex & ) ),
-		tree, SLOT( edit( const QModelIndex & ) ) );
-	connect( kfmtree, SIGNAL( activated( const QModelIndex & ) ),
-		kfmtree, SLOT( edit( const QModelIndex & ) ) );
+	connect( list, &NifTreeView::activated,
+		list, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	connect( tree, &NifTreeView::activated,
+		tree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	connect( kfmtree, &NifTreeView::activated,
+		kfmtree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
 #endif
 
 
 	// open gl
 	setCentralWidget( ogl = GLView::create() );
 	ogl->setNif( nif );
-	connect( ogl, SIGNAL( clicked( const QModelIndex & ) ),
-		this, SLOT( select( const QModelIndex & ) ) );
-	connect( ogl, SIGNAL( customContextMenuRequested( const QPoint & ) ),
-		this, SLOT( contextMenu( const QPoint & ) ) );
+	connect( ogl, &GLView::clicked, this, &NifSkope::select );
+	connect( ogl, &GLView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 #ifndef DISABLE_INSPECTIONVIEWER
 	// this browser shows the state of the current selected item
@@ -211,11 +203,9 @@ NifSkope::NifSkope()
 	inspect = new InspectView;
 	inspect->setNifModel( nif );
 	inspect->setScene( ogl->getScene() );
-	connect( tree, SIGNAL( sigCurrentIndexChanged( const QModelIndex & ) ),
-		inspect, SLOT( updateSelection( const QModelIndex & ) ) );
-	connect( ogl, SIGNAL( sigTime( float, float, float ) ),
-		inspect, SLOT( updateTime( float, float, float ) ) );
-	connect( ogl, SIGNAL( paintUpdate() ), inspect, SLOT( refresh() ) );
+	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection);
+	connect( ogl, &GLView::sigTime, inspect, &InspectView::updateTime );
+	connect( ogl, &GLView::paintUpdate, inspect, &InspectView::refresh );
 #endif
 	// actions
 
@@ -223,17 +213,17 @@ NifSkope::NifSkope()
 	aSanitize->setCheckable( true );
 	aSanitize->setChecked( true );
 	aLoadXML = new QAction( tr( "Reload &XML" ), this );
-	connect( aLoadXML, SIGNAL( triggered() ), this, SLOT( loadXML() ) );
+	connect( aLoadXML, &QAction::triggered, this, &NifSkope::loadXML );
 	aReload = new QAction( tr( "&Reload XML + Nif" ), this );
 	aReload->setShortcut( Qt::ALT + Qt::Key_X );
-	connect( aReload, SIGNAL( triggered() ), this, SLOT( reload() ) );
+	connect( aReload, &QAction::triggered, this, &NifSkope::reload );
 	aWindow = new QAction( tr( "&New Window" ), this );
 	aWindow->setShortcut( QKeySequence::New );
-	connect( aWindow, SIGNAL( triggered() ), this, SLOT( sltWindow() ) );
+	connect( aWindow, &QAction::triggered, this, &NifSkope::sltWindow );
 	aShredder = new QAction( tr( "XML Checker" ), this );
-	connect( aShredder, SIGNAL( triggered() ), this, SLOT( sltShredder() ) );
+	connect( aShredder, &QAction::triggered, this, &NifSkope::sltShredder );
 	aQuit = new QAction( tr( "&Quit" ), this );
-	connect( aQuit, SIGNAL( triggered() ), this, SLOT( close() ) );
+	connect( aQuit, &QAction::triggered, this, &NifSkope::close );
 
 	aList = new QAction( tr( "Show Blocks in List" ), this );
 	aList->setCheckable( true );
@@ -244,7 +234,7 @@ NifSkope::NifSkope()
 	aHierarchy->setChecked( list->model() == proxy );
 
 	gListMode = new QActionGroup( this );
-	connect( gListMode, SIGNAL( triggered( QAction * ) ), this, SLOT( setListMode() ) );
+	connect( gListMode, &QActionGroup::triggered, this, &NifSkope::setListMode );
 	gListMode->addAction( aList );
 	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
@@ -258,47 +248,47 @@ NifSkope::NifSkope()
 	aRCondition->setChecked( false );
 	aRCondition->setEnabled( false );
 
-	connect( aCondition, SIGNAL( toggled( bool ) ), aRCondition, SLOT( setEnabled( bool ) ) );
-	connect( aRCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setRealTime( bool ) ) );
-	connect( aRCondition, SIGNAL( toggled( bool ) ), kfmtree, SLOT( setRealTime( bool ) ) );
+	connect( aCondition, &QAction::toggled, aRCondition, &QAction::setEnabled );
+	connect( aRCondition, &QAction::toggled, tree, &NifTreeView::setRealTime );
+	connect( aRCondition, &QAction::toggled, kfmtree, &NifTreeView::setRealTime );
 
 	// use toggled to enable startup values to take effect
-	connect( aCondition, SIGNAL( toggled( bool ) ), tree, SLOT( setEvalConditions( bool ) ) );
-	connect( aCondition, SIGNAL( toggled( bool ) ), kfmtree, SLOT( setEvalConditions( bool ) ) );
+	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setEvalConditions );
+	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setEvalConditions );
 
 	aSelectFont = new QAction( tr( "Select Font ..." ), this );
-	connect( aSelectFont, SIGNAL( triggered() ), this, SLOT( sltSelectFont() ) );
+	connect( aSelectFont, &QAction::triggered, this, &NifSkope::sltSelectFont );
 
 
 	/* help menu */
 
 	aHelpWebsite = new QAction( tr( "NifSkope Documentation && &Tutorials" ), this );
 	aHelpWebsite->setData( QUrl( "http://niftools.sourceforge.net/wiki/index.php/NifSkope" ) );
-	connect( aHelpWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+	connect( aHelpWebsite, &QAction::triggered, this, &NifSkope::openURL );
 
 	aHelpForum = new QAction( tr( "NifSkope Help && Bug Report &Forum" ), this );
 	aHelpForum->setData( QUrl( "http://niftools.sourceforge.net/forum/viewforum.php?f=24" ) );
-	connect( aHelpForum, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+	connect( aHelpForum, &QAction::triggered, this, &NifSkope::openURL );
 
 	aNifToolsWebsite = new QAction( tr( "NifTools &Wiki" ), this );
 	aNifToolsWebsite->setData( QUrl( "http://niftools.sourceforge.net" ) );
-	connect( aNifToolsWebsite, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+	connect( aNifToolsWebsite, &QAction::triggered, this, &NifSkope::openURL );
 
 	aNifToolsDownloads = new QAction( tr( "NifTools &Downloads" ), this );
 	aNifToolsDownloads->setData( QUrl( "http://sourceforge.net/project/showfiles.php?group_id=149157" ) );
-	connect( aNifToolsDownloads, SIGNAL( triggered() ), this, SLOT( openURL() ) );
+	connect( aNifToolsDownloads, &QAction::triggered, this, &NifSkope::openURL );
 
 	aNifSkope = new QAction( tr( "About &NifSkope" ), this );
 	connect( aNifSkope, SIGNAL( triggered() ), aboutDialog, SLOT( open() ) );
 
 	aAboutQt = new QAction( tr( "About &Qt" ), this );
-	connect( aAboutQt, SIGNAL( triggered() ), qApp, SLOT( aboutQt() ) );
+	connect( aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
 
 #ifdef FSENGINE
 
 	if ( fsmanager ) {
 		aResources = new QAction( tr( "Resource Files" ), this );
-		connect( aResources, SIGNAL( triggered() ), fsmanager, SLOT( selectArchives() ) );
+		connect( aResources, &QAction::triggered, fsmanager, &FSManager::selectArchives );
 	} else {
 		aResources = 0;
 	}
@@ -319,7 +309,7 @@ NifSkope::NifSkope()
 	dList->setObjectName( "ListDock" );
 	dList->setWidget( list );
 	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
-	connect( dList->toggleViewAction(), SIGNAL( triggered() ), tree, SLOT( clearRootIndex() ) );
+	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
 
 	dTree = new QDockWidget( tr( "Block Details" ) );
 	dTree->setObjectName( "TreeDock" );
@@ -369,21 +359,19 @@ NifSkope::NifSkope()
 	// create the load portion of the toolbar
 	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr( "&Load..." ), QBoxLayout::RightToLeft, QKeySequence::Open ) );
 	lineLoad->setFilter( fileExtensions );
-	connect( lineLoad, SIGNAL( sigActivated( const QString & ) ), this, SLOT( load() ) );
+	connect( lineLoad, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::load) );
 
 	// add the Load<=>Save filename copy widget
 	CopyFilename * cpFilename = new CopyFilename( this );
 	cpFilename->setObjectName( "fileCopyWidget" );
-	connect( cpFilename, SIGNAL( leftTriggered() ),
-		this, SLOT( copyFileNameSaveLoad() ) );
-	connect( cpFilename, SIGNAL( rightTriggered() ),
-		this, SLOT( copyFileNameLoadSave() ) );
+	connect( cpFilename, &CopyFilename::leftTriggered, this, &NifSkope::copyFileNameSaveLoad );
+	connect( cpFilename, &CopyFilename::rightTriggered, this, &NifSkope::copyFileNameLoadSave );
 	aCpFileName = tool->addWidget( cpFilename );
 
 	// create the save portion of the toolbar
 	aLineSave = tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr( "&Save As..." ), QBoxLayout::LeftToRight, QKeySequence::Save ) );
 	lineSave->setFilter( fileExtensions );
-	connect( lineSave, SIGNAL( sigActivated( const QString & ) ), this, SLOT( save() ) );
+	connect( lineSave, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::save) );
 
 #ifdef Q_OS_LINUX
 	// extra whitespace for linux
@@ -406,7 +394,7 @@ NifSkope::NifSkope()
 	tView->setObjectName( tr( "tView" ) );
 	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	QAction * aResetBlockDetails = new QAction( tr( "Reset Block Details" ), this );
-	connect( aResetBlockDetails, SIGNAL( triggered() ), this, SLOT( sltResetBlockDetails() ) );
+	connect( aResetBlockDetails, &QAction::triggered, this, &NifSkope::sltResetBlockDetails );
 	tView->addAction( aResetBlockDetails );
 	tView->addSeparator();
 	tView->addAction( dRefr->toggleViewAction() );
@@ -490,10 +478,10 @@ NifSkope::NifSkope()
 	menuBar()->addMenu( mAbout );
 
 	fillImportExportMenus();
-	connect( mExport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
-	connect( mImport, SIGNAL( triggered( QAction * ) ), this, SLOT( sltImportExport( QAction * ) ) );
+	connect( mExport, &QMenu::triggered, this, &NifSkope::sltImportExport );
+	connect( mImport, &QMenu::triggered, this, &NifSkope::sltImportExport );
 
-	connect( Options::get(), SIGNAL( sigLocaleChanged() ), this, SLOT( sltLocaleChanged() ) );
+	connect( Options::get(), &Options::sigLocaleChanged, this, &NifSkope::sltLocaleChanged );
 }
 
 NifSkope::~NifSkope()
@@ -757,7 +745,7 @@ void NifSkope::load()
 		prog.setRange( 0, 1 );
 		prog.setValue( 0 );
 		prog.setMinimumDuration( 2100 );
-		connect( nif, SIGNAL( sigProgress( int, int ) ), &prog, SLOT( sltProgress( int, int ) ) );
+		connect( nif, &NifModel::sigProgress, &prog, &ProgDlg::sltProgress );
 
 		lineLoad->rstState();
 		lineSave->rstState();
@@ -1082,7 +1070,7 @@ void IPCsocket::sendCommand( const QString & cmd )
 
 IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
 {
-	QObject::connect( socket, SIGNAL( readyRead() ), this, SLOT( processDatagram() ) );
+	QObject::connect( socket, &QUdpSocket::readyRead, this, &IPCsocket::processDatagram );
 
 #ifdef FSENGINE
 

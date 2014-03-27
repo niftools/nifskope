@@ -87,7 +87,7 @@ SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * recei
 	// set the current index
 	sltIndex( index );
 
-	connect( this, SIGNAL( triggered( QAction * ) ), this, SLOT( sltSpellTriggered( QAction * ) ) );
+	connect( this, &SpellBook::triggered, this, &SpellBook::sltSpellTriggered );
 
 	if ( receiver && member )
 		connect( this, SIGNAL( sigIndex( const QModelIndex & ) ), receiver, member );
@@ -113,13 +113,13 @@ void SpellBook::sltSpellTriggered( QAction * action )
 void SpellBook::sltNif( NifModel * nif )
 {
 	if ( Nif )
-		disconnect( Nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
+		disconnect( Nif, &NifModel::modelReset, this, static_cast<void (SpellBook::*)()>(&SpellBook::checkActions) );
 
 	Nif = nif;
 	Index = QModelIndex();
 
 	if ( Nif )
-		connect( Nif, SIGNAL( modelReset() ), this, SLOT( checkActions() ) );
+		connect( Nif, &NifModel::modelReset, this, static_cast<void (SpellBook::*)()>(&SpellBook::checkActions) );
 }
 
 void SpellBook::sltIndex( const QModelIndex & index )

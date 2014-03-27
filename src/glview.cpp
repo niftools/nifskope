@@ -179,17 +179,17 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	textures = new TexCache( this );
 
 	scene = new Scene( textures, m_context, m_funcs );
-	connect( textures, SIGNAL( sigRefresh() ), this, SLOT( update() ) );
+	connect( textures, &TexCache::sigRefresh, this, static_cast<void (GLView::*)()>(&GLView::update) );
 
 	timer = new QTimer( this );
 	timer->setInterval( 1000 / FPS );
 	timer->start();
-	connect( timer, SIGNAL( timeout() ), this, SLOT( advanceGears() ) );
+	connect( timer, &QTimer::timeout, this, &GLView::advanceGears );
 
 
 	grpView = new QActionGroup( this );
 	grpView->setExclusive( false );
-	connect( grpView, SIGNAL( triggered( QAction * ) ), this, SLOT( viewAction( QAction * ) ) );
+	connect( grpView, &QActionGroup::triggered, this, &GLView::viewAction );
 
 	aViewTop = new QAction( QIcon( ":/btn/viewTop" ), tr( "Top" ), grpView );
 	aViewTop->setToolTip( tr( "View from above" ) );
@@ -237,7 +237,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewUserSave = new QAction( tr( "Save User View" ), this );
 	aViewUserSave->setToolTip( tr( "Save current view rotation, position and distance" ) );
 	aViewUserSave->setShortcut( Qt::CTRL + Qt::Key_F9 );
-	connect( aViewUserSave, SIGNAL( triggered() ), this, SLOT( sltSaveUserView() ) );
+	connect( aViewUserSave, &QAction::triggered, this, &GLView::sltSaveUserView );
 
 #ifndef USE_GL_QPAINTER
 #ifndef QT_NO_DEBUG
@@ -250,13 +250,13 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aAnimate->setToolTip( tr( "enables evaluation of animation controllers" ) );
 	aAnimate->setCheckable( true );
 	aAnimate->setChecked( true );
-	connect( aAnimate, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	connect( aAnimate, &QAction::toggled, this, &GLView::checkActions );
 	addAction( aAnimate );
 
 	aAnimPlay = new QAction( QIcon( ":/btn/play" ), tr( "&Play" ), this );
 	aAnimPlay->setCheckable( true );
 	aAnimPlay->setChecked( true );
-	connect( aAnimPlay, SIGNAL( toggled( bool ) ), this, SLOT( checkActions() ) );
+	connect( aAnimPlay, &QAction::toggled, this, &GLView::checkActions );
 
 	aAnimLoop = new QAction( QIcon( ":/btn/loop" ), tr( "&Loop" ), this );
 	aAnimLoop->setCheckable( true );
@@ -273,25 +273,25 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 	tAnim->setIconSize( QSize( 16, 16 ) );
 
-	connect( aAnimate, SIGNAL( toggled( bool ) ), tAnim->toggleViewAction(), SLOT( setChecked( bool ) ) );
-	connect( aAnimate, SIGNAL( toggled( bool ) ), tAnim, SLOT( setVisible( bool ) ) );
-	connect( tAnim->toggleViewAction(), SIGNAL( toggled( bool ) ), aAnimate, SLOT( setChecked( bool ) ) );
+	connect( aAnimate, &QAction::toggled, tAnim->toggleViewAction(), &QAction::setChecked );
+	connect( aAnimate, &QAction::toggled, tAnim, &QToolBar::setVisible );
+	connect( tAnim->toggleViewAction(), &QAction::toggled, aAnimate, &QAction::setChecked );
 
 	tAnim->addAction( aAnimPlay );
 
 	sldTime = new FloatSlider( Qt::Horizontal, true, true );
 	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
-	connect( this, SIGNAL( sigTime( float, float, float ) ), sldTime, SLOT( set( float, float, float ) ) );
-	connect( sldTime, SIGNAL( valueChanged( float ) ), this, SLOT( sltTime( float ) ) );
+	connect( this, &GLView::sigTime, sldTime, &FloatSlider::set );
+	connect( sldTime, &FloatSlider::valueChanged, this, &GLView::sltTime );
 	tAnim->addWidget( sldTime );
 
 	FloatEdit * edtTime = new FloatEdit;
 	edtTime->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Maximum );
 
-	connect( this, SIGNAL( sigTime( float, float, float ) ), edtTime, SLOT( set( float, float, float ) ) );
-	connect( edtTime, SIGNAL( sigEdited( float ) ), this, SLOT( sltTime( float ) ) );
-	connect( sldTime, SIGNAL( valueChanged( float ) ), edtTime, SLOT( setValue( float ) ) );
-	connect( edtTime, SIGNAL( sigEdited( float ) ), sldTime, SLOT( setValue( float ) ) );
+	connect( this, &GLView::sigTime, edtTime, &FloatEdit::set );
+	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), this, &GLView::sltTime );
+	connect( sldTime, &FloatSlider::valueChanged, edtTime, &FloatEdit::setValue );
+	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), sldTime, &FloatSlider::setValue );
 	sldTime->addEditor( edtTime );
 
 	tAnim->addAction( aAnimLoop );
@@ -300,16 +300,17 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 
 	animGroups = new QComboBox();
 	animGroups->setMinimumWidth( 100 );
-	connect( animGroups, SIGNAL( activated( const QString & ) ), this, SLOT( sltSequence( const QString & ) ) );
+	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), this, &GLView::sltSequence );
 	tAnim->addWidget( animGroups );
 
 	// TODO: Connect to a less general signal for when texture paths are edited
 	//   or things that affect textures.  Not *any* Options update.
 	// This makes editing various options sluggish, like lighting color, background color
 	//   and even some LineEdits like "Cull Nodes by Name"
-	connect( Options::get(), SIGNAL( sigFlush3D() ), textures, SLOT( flush() ) );
-	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
-	connect( Options::get(), SIGNAL( materialOverridesChanged() ), this, SLOT( sceneUpdate() ) );
+	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
+	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
+	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
+
 
 #ifdef Q_OS_LINUX
 	// extra whitespace for linux
@@ -890,10 +891,10 @@ void GLView::setNif( NifModel * nif )
 	model = nif;
 
 	if ( model ) {
-		connect( model, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( dataChanged( const QModelIndex &, const QModelIndex & ) ) );
-		connect( model, SIGNAL( linksChanged() ), this, SLOT( modelLinked() ) );
-		connect( model, SIGNAL( modelReset() ), this, SLOT( modelChanged() ) );
-		connect( model, SIGNAL( destroyed() ), this, SLOT( modelDestroyed() ) );
+		connect( model, NifModel::dataChanged, this, &GLView::dataChanged );
+		connect( model, NifModel::linksChanged, this, &GLView::modelLinked );
+		connect( model, NifModel::modelReset, this, &GLView::modelChanged );
+		connect( model, NifModel::destroyed, this, &GLView::modelDestroyed );
 	}
 
 	doCompile = true;
@@ -1549,8 +1550,8 @@ void GLView::savePixmap()
 	lay->addWidget( new QLabel( tr( "Height" ) ), 3, 0, 1, 1 );
 	lay->addWidget( pixHeight, 3, 1, 1, 1 );
 
-	connect( autoSize, SIGNAL( toggled( bool ) ), pixWidth, SLOT( setDisabled( bool ) ) );
-	connect( autoSize, SIGNAL( toggled( bool ) ), pixHeight, SLOT( setDisabled( bool ) ) );
+	connect( autoSize, &QCheckBox::toggled, pixWidth, &QSpinBox::setDisabled );
+	connect( autoSize, &QCheckBox::toggled, pixHeight, &QSpinBox::setDisabled );
 
 	QSpinBox * pixQuality = new QSpinBox;
 	pixQuality->setRange( -1, 100 );
@@ -1567,8 +1568,8 @@ void GLView::savePixmap()
 	hBox->addWidget( btnCancel );
 	lay->addLayout( hBox, 5, 0, 1, -1 );
 
-	connect( btnOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-	connect( btnCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+	connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
+	connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 	if ( dlg.exec() != QDialog::Accepted )
 		return;

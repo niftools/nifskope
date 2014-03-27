@@ -801,7 +801,7 @@ public:
 		vbox->addWidget( box );
 
 		if ( chk ) {
-			QObject::connect( chk, SIGNAL( toggled( bool ) ), box, SLOT( setEnabled( bool ) ) );
+			QObject::connect( chk, &QCheckBox::toggled, box, &QCheckBox::setEnabled );
 			box->setEnabled( chk->isChecked() );
 		}
 
@@ -824,7 +824,7 @@ public:
 		cmb->addItems( items );
 
 		if ( chk ) {
-			QObject::connect( chk, SIGNAL( toggled( bool ) ), cmb, SLOT( setEnabled( bool ) ) );
+			QObject::connect( chk, &QCheckBox::toggled, cmb, &QComboBox::setEnabled );
 			cmb->setEnabled( chk->isChecked() );
 		}
 
@@ -848,7 +848,7 @@ public:
 		spn->setRange( min, max );
 
 		if ( chk ) {
-			QObject::connect( chk, SIGNAL( toggled( bool ) ), spn, SLOT( setEnabled( bool ) ) );
+			QObject::connect( chk, &QCheckBox::toggled, spn, &QSpinBox::setEnabled );
 			spn->setEnabled( chk->isChecked() );
 		}
 
@@ -867,11 +867,11 @@ public:
 
 		QPushButton * btAccept = new QPushButton( Spell::tr( "Accept" ) );
 		hbox->addWidget( btAccept );
-		QObject::connect( btAccept, SIGNAL( clicked() ), dlg, SLOT( accept() ) );
+		QObject::connect( btAccept, &QPushButton::clicked, dlg, &QDialog::accept );
 
 		QPushButton * btReject = new QPushButton( Spell::tr( "Cancel" ) );
 		hbox->addWidget( btReject );
-		QObject::connect( btReject, SIGNAL( clicked() ), dlg, SLOT( reject() ) );
+		QObject::connect( btReject, &QPushButton::clicked, dlg, &QDialog::reject );
 	}
 };
 

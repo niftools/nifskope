@@ -213,49 +213,23 @@ QAbstractItemModel * NifProxyModel::model() const
 void NifProxyModel::setModel( QAbstractItemModel * model )
 {
 	if ( nif ) {
-		disconnect( nif,
-			SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-			this,
-			SLOT( xDataChanged( const QModelIndex &, const QModelIndex & ) )
-		);
-		disconnect( nif,
-			SIGNAL( headerDataChanged( Qt::Orientation, int, int ) ),
-			this,
-			SLOT( xHeaderDataChanged( Qt::Orientation, int, int ) )
-		);
-		disconnect( nif,
-			SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ),
-			this,
-			SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) )
-		);
-
-		disconnect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
-		disconnect( nif, SIGNAL( modelReset() ), this, SLOT( reset() ) );
-		disconnect( nif, SIGNAL( layoutChanged() ), this, SIGNAL( layoutChanged() ) );
+		disconnect( nif, &NifModel::dataChanged, this, &NifProxyModel::xDataChanged );
+		disconnect( nif, &NifModel::headerDataChanged, this, &NifProxyModel::xHeaderDataChanged );
+		disconnect( nif, &NifModel::rowsAboutToBeRemoved, this, &NifProxyModel::xRowsAboutToBeRemoved );
+		disconnect( nif, &NifModel::linksChanged, this, &NifProxyModel::xLinksChanged );
+		disconnect( nif, &NifModel::modelReset, this, &NifProxyModel::reset );
+		disconnect( nif, &NifModel::layoutChanged, this, &NifProxyModel::layoutChanged );
 	}
 
 	nif = qobject_cast<NifModel *>( model );
 
 	if ( nif ) {
-		connect( nif,
-			SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-			this,
-			SLOT( xDataChanged( const QModelIndex &, const QModelIndex & ) )
-		);
-		connect( nif,
-			SIGNAL( headerDataChanged( Qt::Orientation, int, int ) ),
-			this,
-			SLOT( xHeaderDataChanged( Qt::Orientation, int, int ) )
-		);
-		connect( nif,
-			SIGNAL( rowsAboutToBeRemoved( const QModelIndex &, int, int ) ),
-			this,
-			SLOT( xRowsAboutToBeRemoved( const QModelIndex &, int, int ) )
-		);
-
-		connect( nif, SIGNAL( linksChanged() ), this, SLOT( xLinksChanged() ) );
-		connect( nif, SIGNAL( modelReset() ), this, SLOT( reset() ) );
-		connect( nif, SIGNAL( layoutChanged() ), this, SIGNAL( layoutChanged() ) );
+		connect( nif, &NifModel::dataChanged, this, &NifProxyModel::xDataChanged );
+		connect( nif, &NifModel::headerDataChanged, this, &NifProxyModel::xHeaderDataChanged );
+		connect( nif, &NifModel::rowsAboutToBeRemoved, this, &NifProxyModel::xRowsAboutToBeRemoved );
+		connect( nif, &NifModel::linksChanged, this, &NifProxyModel::xLinksChanged );
+		connect( nif, &NifModel::modelReset, this, &NifProxyModel::reset );
+		connect( nif, &NifModel::layoutChanged, this, &NifProxyModel::layoutChanged );
 	}
 
 	reset();
