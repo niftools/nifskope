@@ -303,7 +303,11 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	connect( animGroups, SIGNAL( activated( const QString & ) ), this, SLOT( sltSequence( const QString & ) ) );
 	tAnim->addWidget( animGroups );
 
-	connect( Options::get(), SIGNAL( sigChanged() ), textures, SLOT( flush() ) );
+	// TODO: Connect to a less general signal for when texture paths are edited
+	//   or things that affect textures.  Not *any* Options update.
+	// This makes editing various options sluggish, like lighting color, background color
+	//   and even some LineEdits like "Cull Nodes by Name"
+	connect( Options::get(), SIGNAL( sigFlush3D() ), textures, SLOT( flush() ) );
 	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( update() ) );
 	connect( Options::get(), SIGNAL( materialOverridesChanged() ), this, SLOT( sceneUpdate() ) );
 

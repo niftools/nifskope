@@ -274,6 +274,10 @@ Options::Options()
 		connect( TexFolderModel, SIGNAL( rowsRemoved( const QModelIndex &, int, int ) ), tEmit, SLOT( start() ) );
 		connect( TexFolderModel, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), tEmit, SLOT( start() ) );
 		connect( TexFolderModel, SIGNAL( modelReset() ), tEmit, SLOT( start() ) );
+		connect( TexFolderModel, SIGNAL( rowsInserted( const QModelIndex &, int, int ) ), this, SIGNAL( sigFlush3D() ) );
+		connect( TexFolderModel, SIGNAL( rowsRemoved( const QModelIndex &, int, int ) ), this, SIGNAL( sigFlush3D() ) );
+		connect( TexFolderModel, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SIGNAL( sigFlush3D() ) );
+		connect( TexFolderModel, SIGNAL( modelReset() ), this, SIGNAL( sigFlush3D() ) );
 
 		TexFolderView = new SmallListView;
 		texPage->addWidget( TexFolderView, 0 );
@@ -302,6 +306,7 @@ Options::Options()
 		TexAlternatives->setToolTip( tr( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" ) );
 		TexAlternatives->setChecked( cfg.value( "Texture Alternatives", true ).toBool() );
 		connect( TexAlternatives, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+		connect( TexAlternatives, SIGNAL( toggled( bool ) ), this, SIGNAL( sigFlush3D() ) );
 
 		texPage->popLayout();
 		texPage->popLayout();
@@ -320,12 +325,13 @@ Options::Options()
 		Textures->setToolTip( tr( "Enable textures" ) );
 		Textures->setChecked( cfg.value( "Texturing", true ).toBool() );
 		connect( Textures, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
+		connect( Textures, SIGNAL( toggled( bool ) ), this, SIGNAL( sigFlush3D() ) );
 
 		texPage->addWidget( Shaders = new QCheckBox( tr( "&Shaders" ) ) );
 		Shaders->setToolTip( tr( "Enable Shaders" ) );
 		Shaders->setChecked( cfg.value( "Enable Shaders", false ).toBool() );
 		connect( Shaders, SIGNAL( toggled( bool ) ), this, SIGNAL( sigChanged() ) );
-
+		connect( Shaders, SIGNAL( toggled( bool ) ), this, SIGNAL( sigFlush3D() ) );
 
 		texPage->popLayout();
 		texPage->pushLayout( tr( "Up Axis" ), Qt::Vertical );

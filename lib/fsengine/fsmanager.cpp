@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QStringListModel>
 
-//#include "../options.h"
+#include <options.h>
 
 //! Global BSA file manager
 static FSManager *theFSManager = NULL;
@@ -177,6 +177,8 @@ FSSelector::~FSSelector()
 	cfg.beginGroup( "fsengine" );
 	QStringList list( manager->automatic ? QStringList() << "AUTO" : manager->archives.keys() );
 	cfg.setValue( "archives", list );
+
+	emit Options::get()->sigFlush3D();
 }
 
 void FSSelector::sltAuto( bool x )

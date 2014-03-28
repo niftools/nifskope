@@ -171,6 +171,8 @@ public:
 signals:
 	//! Signal emitted when a value changes
 	void sigChanged();
+	//! Signal emitted when a value changes and needs to flush 3D data
+	void sigFlush3D();
 	//! Signal emitted when material overrides change
 	void materialOverridesChanged();
 	//! Signal emitted when the locale changes
