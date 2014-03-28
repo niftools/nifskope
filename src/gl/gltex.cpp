@@ -149,6 +149,11 @@ TexCache::~TexCache()
 	//flush();
 }
 
+QString TexCache::find( const QString & file, const QString & nifdir )
+{
+	return find( file, nifdir, *(new QByteArray()) );
+}
+
 QString TexCache::find( const QString & file, const QString & nifdir, QByteArray & data )
 {
 	if ( file.isEmpty() )

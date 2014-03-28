@@ -1175,7 +1175,11 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 	return mipmaps;
 }
 
-
+// (public function, documented in gltexloaders.h)
+bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
+{
+	return texLoad( filepath, format, width, height, mipmaps, *(new QByteArray()) );
+}
 // (public function, documented in gltexloaders.h)
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data )
 {

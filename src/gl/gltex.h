@@ -113,7 +113,8 @@ public:
 	bool importFile( NifModel * nif, const QModelIndex & iSource, QModelIndex & iData );
 
 	//! Find a texture based on its filename
-	static QString find( const QString & file, const QString & nifFolder, QByteArray & data = QByteArray() );
+	static QString find( const QString & file, const QString & nifFolder );
+	static QString find( const QString & file, const QString & nifFolder, QByteArray & data );
 	//! Remove the path from a filename
 	static QString stripPath( const QString & file, const QString & nifFolder );
 	//! Checks whether the given file can be loaded
