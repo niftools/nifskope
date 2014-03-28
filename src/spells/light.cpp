@@ -49,7 +49,7 @@ static char const * light42_xpm[] = {
 	"          ....          "
 };
 
-QIcon * light42_xpm_icon = 0;
+QIcon * light42_xpm_icon = nullptr;
 
 //! Edit the parameters of a light object
 class spLightEdit : public Spell

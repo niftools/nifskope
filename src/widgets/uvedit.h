@@ -60,7 +60,7 @@ class UVWidget : public QGLWidget
 	Q_OBJECT
 
 protected:
-	UVWidget( QWidget * parent = 0 );
+	UVWidget( QWidget * parent = nullptr );
 	~UVWidget();
 
 public:
@@ -234,7 +234,7 @@ class ScalingDialog : public QDialog
 	Q_OBJECT
 
 public:
-	ScalingDialog( QWidget * parent = 0 );
+	ScalingDialog( QWidget * parent = nullptr );
 
 protected:
 	/*

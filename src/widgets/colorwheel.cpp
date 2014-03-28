@@ -96,7 +96,7 @@ static const char * const hsv42_xpm[] = {
 
 #include <math.h>
 
-QIcon * ColorWheel::icon = 0;
+QIcon * ColorWheel::icon = nullptr;
 
 ColorWheel::ColorWheel( QWidget * parent ) : QWidget( parent )
 {

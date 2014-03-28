@@ -55,7 +55,7 @@ public:
 	void transform();
 	void transformShapes();
 
-	void drawShapes( NodeList * draw2nd = 0 );
+	void drawShapes( NodeList * draw2nd = nullptr );
 	void drawSelection() const;
 
 	bool isHidden() const;

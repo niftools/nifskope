@@ -129,7 +129,7 @@ class CompletionAction : public QAction
 	Q_OBJECT
 
 public:
-	CompletionAction( QObject * parent = 0 );
+	CompletionAction( QObject * parent = nullptr );
 	~CompletionAction();
 
 protected slots:

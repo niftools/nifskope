@@ -95,7 +95,7 @@ class TexCache : public QObject
 
 public:
 	//! Constructor
-	TexCache( QObject * parent = 0 );
+	TexCache( QObject * parent = nullptr );
 	//! Destructor
 	~TexCache();
 

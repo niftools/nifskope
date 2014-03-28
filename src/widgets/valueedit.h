@@ -53,7 +53,7 @@ class ValueEdit : public QWidget
 
 public:
 	//! Constructor
-	ValueEdit( QWidget * parent = 0 );
+	ValueEdit( QWidget * parent = nullptr );
 
 	//! The value being edited?
 	Q_PROPERTY( NifValue value READ getValue WRITE setValue USER true )
@@ -91,7 +91,7 @@ class VectorEdit : public ValueEdit
 
 public:
 	//! Constructor
-	VectorEdit( QWidget * parent = 0 );
+	VectorEdit( QWidget * parent = nullptr );
 
 	//! Vector4 being edited
 	Q_PROPERTY( Vector4 vector4 READ getVector4 WRITE setVector4 STORED false )
@@ -142,7 +142,7 @@ class ColorEdit : public ValueEdit
 	Q_OBJECT
 
 public:
-	ColorEdit( QWidget * parent = 0 );
+	ColorEdit( QWidget * parent = nullptr );
 
 	Q_PROPERTY( Color4 color4 READ getColor4 WRITE setColor4 STORED false )
 	Q_PROPERTY( Color3 color3 READ getColor3 WRITE setColor3 STORED false )
@@ -171,7 +171,7 @@ class RotationEdit : public ValueEdit
 	Q_OBJECT
 
 public:
-	RotationEdit( QWidget * parent = 0 );
+	RotationEdit( QWidget * parent = nullptr );
 
 	Q_PROPERTY( Matrix matrix READ getMatrix WRITE setMatrix STORED false )
 	Q_PROPERTY( Quat quat READ getQuat WRITE setQuat STORED false )
@@ -211,7 +211,7 @@ class TriangleEdit : public ValueEdit
 	Q_OBJECT
 
 public:
-	TriangleEdit( QWidget * parent = 0 );
+	TriangleEdit( QWidget * parent = nullptr );
 
 	Q_PROPERTY( Triangle triangle READ getTriangle WRITE setTriangle STORED false )
 
@@ -232,7 +232,7 @@ class TextEdit : public QTextEdit
 	Q_OBJECT
 
 public:
-	TextEdit( const QString & str, QWidget * parent = 0 );
+	TextEdit( const QString & str, QWidget * parent = nullptr );
 	void CalcSize();
 
 signals:

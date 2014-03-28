@@ -18,7 +18,7 @@ class TexFlipDialog : public QDialog
 	Q_OBJECT
 
 public:
-	TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent = 0 );
+	TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent = nullptr );
 	QStringList flipList();
 
 protected:

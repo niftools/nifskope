@@ -89,7 +89,7 @@ static char const * mat42_xpm[] = {
 	"                                                                "
 };
 
-QIcon * mat42_xpm_icon = 0;
+QIcon * mat42_xpm_icon = nullptr;
 
 //! Edit a material
 class spMaterialEdit : public Spell

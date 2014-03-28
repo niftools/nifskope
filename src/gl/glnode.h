@@ -91,7 +91,7 @@ public:
 	virtual void transformShapes();
 
 	virtual void draw();
-	virtual void drawShapes( NodeList * draw2nd = 0 );
+	virtual void drawShapes( NodeList * draw2nd = nullptr );
 	virtual void drawHavok();
 	virtual void drawFurn();
 	virtual void drawSelection() const;

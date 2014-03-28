@@ -51,14 +51,14 @@ class ColorWheel : public QWidget
 	Q_OBJECT
 
 public:
-	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = 0 );
-	static Color3 choose( const Color3 & color, QWidget * parent = 0 );
-	static Color4 choose( const Color4 & color, QWidget * parent = 0 );
+	static QColor choose( const QColor & color, bool alpha = true, QWidget * parent = nullptr );
+	static Color3 choose( const Color3 & color, QWidget * parent = nullptr );
+	static Color4 choose( const Color4 & color, QWidget * parent = nullptr );
 
 	static QIcon getIcon();
 
-	ColorWheel( QWidget * parent = 0 );
-	ColorWheel( const QColor & c, QWidget * parent = 0 );
+	ColorWheel( QWidget * parent = nullptr );
+	ColorWheel( const QColor & c, QWidget * parent = nullptr );
 
 	Q_PROPERTY( QColor color READ getColor WRITE setColor NOTIFY sigColor USER true )
 

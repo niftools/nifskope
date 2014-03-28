@@ -795,7 +795,7 @@ public:
 	 * \param chk A checkbox that enables or disables this checkbox
 	 * \return A pointer to the checkbox
 	 */
-	QCheckBox * dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = 0 )
+	QCheckBox * dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = nullptr )
 	{
 		QCheckBox * box = new QCheckBox( name );
 		vbox->addWidget( box );
@@ -816,7 +816,7 @@ public:
 	 * \param chk A checkbox that enables or disables this combobox
 	 * \return A pointer to the combobox
 	 */
-	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = 0 )
+	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = nullptr )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QComboBox * cmb = new QComboBox;
@@ -840,7 +840,7 @@ public:
 	 * \param chk A checkbox that enables or disables this spinbox
 	 * \return A pointer to the spinbox
 	 */
-	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = 0 )
+	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = nullptr )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QSpinBox * spn = new QSpinBox;

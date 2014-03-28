@@ -60,7 +60,7 @@ static char const * txt_xpm[] = {
 	"                                "
 };
 
-static QIcon * txt_xpm_icon = 0;
+static QIcon * txt_xpm_icon = nullptr;
 
 //! Edit the index of a header string
 class spEditStringIndex : public Spell

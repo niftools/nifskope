@@ -79,7 +79,7 @@ class CheckBoxList : public QComboBox
 	Q_OBJECT
 
 public:
-	CheckBoxList( QWidget * widget = 0 );
+	CheckBoxList( QWidget * widget = nullptr );
 	virtual ~CheckBoxList();
 	bool eventFilter( QObject * object, QEvent * event );
 	virtual void paintEvent( QPaintEvent * );
@@ -131,7 +131,7 @@ class NifCheckBoxList : public CheckBoxList
 	Q_OBJECT
 
 public:
-	NifCheckBoxList( QWidget * widget = 0 );
+	NifCheckBoxList( QWidget * widget = nullptr );
 	virtual ~NifCheckBoxList();
 
 protected:

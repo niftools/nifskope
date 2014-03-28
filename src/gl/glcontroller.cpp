@@ -60,7 +60,7 @@ void Controllable::clear()
 Controller * Controllable::findController( const QString & ctrltype, const QString & var1, const QString & var2 )
 {
 	Q_UNUSED( var2 ); Q_UNUSED( var1 );
-	Controller * ctrl = 0;
+	Controller * ctrl = nullptr;
 
 	for ( Controller * c : controllers ) {
 		if ( c->typeId() == ctrltype ) {

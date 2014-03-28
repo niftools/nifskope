@@ -22,7 +22,7 @@ class StringPaletteRegexDialog : public QDialog
 
 public:
 	//! Constructor. Sets widgets and layout.
-	StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent = 0 );
+	StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent = nullptr );
 
 protected:
 	//! Model used
