@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NifTreeView::NifTreeView() : QTreeView()
 {
-	nif = 0;
+	nif = nullptr;
 	EvalConditions = false;
 	RealTimeEval = false;
 
@@ -183,8 +183,8 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 	Spell * spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
 
 	if ( spell ) {
-		NifModel * nif = 0;
-		NifProxyModel * proxy = 0;
+		NifModel * nif = nullptr;
+		NifProxyModel * proxy = nullptr;
 
 		QPersistentModelIndex oldidx;
 

@@ -504,7 +504,7 @@ Options::Options()
 				connect( alpha[c], &AlphaSlider::valueChanged, wheel, &ColorWheel::setAlphaValue );
 				colorPage->addWidget( alpha[ c ] );
 			} else {
-				alpha[ c ] = 0;
+				alpha[c] = nullptr;
 				wheel->setAlpha( false );
 			}
 

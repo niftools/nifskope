@@ -76,7 +76,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef FSENGINE
 #include <fsengine/fsmanager.h>
-FSManager * fsmanager = 0;
+FSManager * fsmanager = nullptr;
 #endif
 
 #ifdef WIN32
@@ -291,7 +291,7 @@ NifSkope::NifSkope()
 		aResources = new QAction( tr( "Resource Files" ), this );
 		connect( aResources, &QAction::triggered, fsmanager, &FSManager::selectArchives );
 	} else {
-		aResources = 0;
+		aResources = nullptr;
 	}
 
 #endif
@@ -956,7 +956,7 @@ void NifSkope::dispatchMessage( const Message & msg )
 	}
 }
 
-QTextEdit * msgtarget = 0;
+QTextEdit * msgtarget = nullptr;
 
 
 #ifdef Q_OS_WIN32
@@ -1140,7 +1140,7 @@ class NifSystemLocale : QSystemLocale
     }
 };*/
 
-static QTranslator * mTranslator = NULL;
+static QTranslator * mTranslator = nullptr;
 
 //! Sets application locale and loads translation files
 static void SetAppLocale( QLocale curLocale )
@@ -1159,13 +1159,13 @@ static void SetAppLocale( QLocale curLocale )
 		fileName = directory.filePath( "NifSkope_" ) + curLocale.name().section( '_', 0, 0 );
 
 	if ( !QFile::exists( fileName + ".qm" ) ) {
-		if ( mTranslator != NULL ) {
+		if ( mTranslator ) {
 			qApp->removeTranslator( mTranslator );
 			delete mTranslator;
-			mTranslator = NULL;
+			mTranslator = nullptr;
 		}
 	} else {
-		if ( mTranslator == NULL ) {
+		if ( !mTranslator ) {
 			mTranslator = new QTranslator();
 			qApp->installTranslator( mTranslator );
 		}

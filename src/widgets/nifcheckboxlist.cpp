@@ -265,7 +265,7 @@ void NifCheckBoxList::sltEditingFinished()
 //////////////////////////////////////////////////////////////////////////
 
 NifCheckBoxListValidator::NifCheckBoxListValidator( NifCheckListBoxEditor * editor )
-	: QValidator( NULL ), edit( editor )
+	: QValidator( ), edit( editor )
 {
 }
 

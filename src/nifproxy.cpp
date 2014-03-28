@@ -197,7 +197,7 @@ public:
 NifProxyModel::NifProxyModel( QObject * parent ) : QAbstractItemModel( parent )
 {
 	root = new NifProxyItem( -1, 0 );
-	nif  = 0;
+	nif = nullptr;
 }
 
 NifProxyModel::~NifProxyModel()

@@ -99,7 +99,7 @@ void ValueEdit::setValue( const NifValue & v )
 	if ( edit ) {
 		// segfaults with Qt 4.5:
 		//delete edit;
-		edit = 0;
+		edit = nullptr;
 		resize( this->baseSize() );
 	}
 
@@ -294,7 +294,7 @@ void ValueEdit::setValue( const NifValue & v )
 		}
 		break;
 	default:
-		edit = 0;
+		edit = nullptr;
 		break;
 	}
 

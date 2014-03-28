@@ -151,7 +151,7 @@ InspectViewInternal::~InspectViewInternal()
 InspectView::InspectView( QWidget * parent, Qt::WindowFlags f )
 	: QDialog( parent, f )
 {
-	nif  = NULL;
+	nif  = nullptr;
 	impl = new InspectViewInternal;
 
 	impl->needUpdate = true;
@@ -327,13 +327,13 @@ void InspectView::updateSelection( const QModelIndex & select )
 {
 	impl->needUpdate = true;
 
-	if ( scene == NULL || nif == NULL ) {
+	if ( !scene || !nif ) {
 		clear();
 	} else {
 		selection = select;
 		Node * node = scene->getNode( nif, selection );
 
-		if ( node == NULL ) {
+		if ( !node ) {
 			clear();
 		} else {
 			refresh();
@@ -362,14 +362,14 @@ void InspectView::update()
 
 	impl->needUpdate = false;
 
-	if ( scene == NULL || nif == NULL || !selection.isValid() ) {
+	if ( !scene || !nif || !selection.isValid() ) {
 		clear();
 		return;
 	}
 
 	Node * node = scene->getNode( nif, selection );
 
-	if ( node == NULL ) {
+	if ( !node ) {
 		clear();
 		return;
 	}

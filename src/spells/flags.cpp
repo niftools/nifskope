@@ -369,7 +369,7 @@ public:
 		QComboBox * cmbCollision = dlgCombo( vbox, Spell::tr( "Collision Detection" ), collideModes );
 		cmbCollision->setCurrentIndex( flags >> 1 & 3 );
 
-		QCheckBox * chkShadow = 0;
+		QCheckBox * chkShadow = nullptr;
 
 		if ( nif->checkVersion( 0x04000002, 0x04000002 ) ) {
 			chkShadow = dlgCheck( vbox, Spell::tr( "Shadow" ) );
@@ -424,7 +424,7 @@ public:
 		else
 			cmbFunc->setCurrentIndex( ( flags >> 2 ) & 0x07 );
 
-		QCheckBox * setFlags = 0;
+		QCheckBox * setFlags = nullptr;
 
 		if ( nif->checkVersion( 0x0401000C, 0x14000005 ) ) {
 			setFlags = dlgCheck( vbox, Spell::tr( "Set Flags also" ) );
@@ -652,7 +652,7 @@ public:
 		dlg.setLayout( vbox );
 
 		// For versions < 20.1.0.3 (<= 20.0.0.5), give option to set flags regardless
-		QCheckBox * setFlags = 0;
+		QCheckBox * setFlags = nullptr;
 
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
 			setFlags = dlgCheck( vbox, Spell::tr( "Set Flags also" ) );

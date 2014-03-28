@@ -79,7 +79,7 @@ UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 	if ( !uvw->setNifData( nif, idx ) ) {
 		qWarning() << tr( "Could not load texture data for UV editor." );
 		delete uvw;
-		return NULL;
+		return nullptr;
 	}
 
 	uvw->show();

@@ -88,7 +88,7 @@ GLView * GLView::create()
 {
 	static QList<QPointer<GLView> > views;
 
-	QGLWidget * share = 0;
+	QGLWidget * share = nullptr;
 	for ( const QPointer<GLView>& v : views ) {
 		if ( v )
 			share = v;
@@ -167,7 +167,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	doCenter  = false;
 	doCompile = false;
 
-	model = 0;
+	model = nullptr;
 
 	time = 0.0;
 	lastTime = QTime::currentTime();

@@ -122,7 +122,7 @@ void NifBlockEditor::showEvent( QShowEvent * )
 
 void NifBlockEditor::nifDestroyed()
 {
-	nif = 0;
+	nif = nullptr;
 	setDisabled( true );
 
 	if ( testAttribute( Qt::WA_DeleteOnClose ) )
@@ -262,7 +262,7 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 		// TODO: Can't seem to figure out correct cast for new signal syntax
 		connect( alpha, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
 	} else {
-		alpha = 0;
+		alpha = nullptr;
 	}
 }
 

@@ -141,9 +141,9 @@ void FileSelector::setCompletionEnabled( bool x )
 	} else if ( !x && dirmdl ) {
 		line->setCompleter( 0 );
 		delete completer;
-		completer = 0;
+		completer = nullptr;
 		delete dirmdl;
-		dirmdl = 0;
+		dirmdl = nullptr;
 	}
 }
 

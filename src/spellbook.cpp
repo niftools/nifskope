@@ -164,7 +164,7 @@ void SpellBook::newSpellRegistered( Spell * spell )
 	if ( spell->page().isEmpty() ) {
 		Map.insert( addAction( spell->icon(), spell->name() ), spell );
 	} else {
-		QMenu * menu = 0;
+		QMenu * menu = nullptr;
 		for ( QAction * action : actions() ) {
 			if ( action->menu() && action->menu()->title() == spell->page() ) {
 				menu = action->menu();
