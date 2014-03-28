@@ -101,7 +101,7 @@ public:
 	static QColor hlColor();
 
 	//! Regular expression to use for culling
-	static QRegExp cullExpression();
+	static QRegularExpression cullExpression();
 	//! Whether to only draw textured shapes
 	static bool onlyTextured();
 

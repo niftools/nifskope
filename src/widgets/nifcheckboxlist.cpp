@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QContextMenuEvent>
 #include <QDebug>
 #include <QLineEdit>
+#include <QRegularExpression>
 #include <QStylePainter>
 #include <QValidator>
 
@@ -233,24 +234,26 @@ void NifCheckBoxList::parseText( const QString & text )
 	if ( !text.isEmpty() ) {
 		// Build RegEx for efficient search. Then set model to match
 		QString str;
-		QStringList list = text.split( QRegExp( "\\s*\\|\\s*" ), QString::SkipEmptyParts );
+		QStringList list = text.split( QRegularExpression( "\\s*\\|\\s*" ), QString::SkipEmptyParts );
 		QStringListIterator lit( list );
 
 		while ( lit.hasNext() ) {
 			if ( !str.isEmpty() )
 				str += "|";
 
-			str += QRegExp::escape( lit.next() );
+			str += QRegularExpression::escape( lit.next() );
 		}
 
 		str.insert( 0, '(' );
 		str.append( ')' );
 
-		QRegExp re( str );
+		// Note: Converting from QRegExp there is no `exactMatch`
+		// Using non-capturing group with \A and \z anchors
+		QRegularExpression re( str );
 
 		for ( int i = 0; i < count(); ++i ) {
 			QString txt = this->itemData( i, Qt::DisplayRole ).toString();
-			this->setItemData( i, re.exactMatch( txt ), Qt::UserRole );
+			this->setItemData( i, re.match( txt ).hasMatch(), Qt::UserRole );
 		}
 
 		this->setEditText( text );

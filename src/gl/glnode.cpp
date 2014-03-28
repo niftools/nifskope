@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "marker/constraints.h"
 #include "nvtristripwrapper.h"
 
+#include <QRegularExpression>
+
 #include <algorithm> // std::stable_sort
 
 #ifndef M_PI
@@ -749,7 +751,7 @@ bool Node::isHidden() const
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 
-	return !Options::cullExpression().isEmpty() && name.contains( Options::cullExpression() );
+	return !Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );
 }
 
 void Node::transform()

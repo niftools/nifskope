@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifexpr.h"
 
+#include <QDebug>
+
 //#include "basemodel.h"
 
 
@@ -152,57 +154,142 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	}
 
 	// Handle unary operators
-	QRegExp reUnary( "^\\s*!(.*)" );
-	pos = reUnary.indexIn( cond, offset, QRegExp::CaretAtOffset );
+	QRegularExpression reUnary( "^\\s*!(.*)" );
+	QRegularExpressionMatch reUnaryMatch = reUnary.match( cond, offset );
+	pos = reUnaryMatch.capturedStart();
+
+#ifndef QT_NO_DEBUG
+	int oldPos;
+	QRegExp reUnaryOld( "^\\s*!(.*)" );
+	oldPos = reUnaryOld.indexIn( cond, offset, QRegExp::CaretAtOffset );
+	//qDebug() << reUnaryOld.capturedTexts();
+	//qDebug() << reUnaryMatch.capturedTexts();
+	Q_ASSERT( pos == oldPos );
+	//Q_ASSERT( reUnaryOld.capturedTexts() == reUnaryMatch.capturedTexts() );
+#endif
 
 	if ( pos != -1 ) {
-		Expression e( reUnary.cap( 1 ).trimmed() );
+		Expression e( reUnaryMatch.captured( 1 ).trimmed() );
 		this->opcode = Expression::e_not;
 		this->rhs = QVariant::fromValue( e );
+#ifndef QT_NO_DEBUG
+		Expression e2( reUnaryOld.cap( 1 ).trimmed() );
+		Q_ASSERT( e.toString() == e2.toString() );
+#endif
 		return;
 	}
 
 	// Check for left group
 	int lstartpos = -1, lendpos = -1, ostartpos = -1, oendpos = -1, rstartpos = -1, rendpos = -1;
 	//QRegExp tokens("\b(!=|==|>=|<=|>|<|\\&|\+|-|\\&\\&|\\|\\||\(|\)|[a-zA-Z0-9][a-zA-Z0-9_ \\?]*[a-zA-Z0-9_\\?]?)\b");
-	QRegExp reOps( "(!=|==|>=|<=|>|<|\\&|\\||\\+|-|\\&\\&|\\|\\|)" );
-	QRegExp reLParen( "^\\s*\\(.*" );
-	pos = reLParen.indexIn( cond, offset, QRegExp::CaretAtOffset );
+
+	// TODO: Do we want single & and single | in here? Staring with
+	// Qt5 in QRegularExpression, I had to put the && and || before
+	// the single ones in order to get the correct match
+	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|\\&\\&|\\|\\||\\&|\\|)" );
+	QRegularExpression reLParen( "^\\s*\\(.*" );
+
+	QRegularExpressionMatch reLParenMatch = reLParen.match( cond, offset );
+	pos = reLParenMatch.capturedStart();
+
+#ifndef QT_NO_DEBUG
+	QRegExp reOpsOld( "(!=|==|>=|<=|>|<|\\&|\\||\\+|-|\\&\\&|\\|\\|)" );
+	QRegExp reLParenOld( "^\\s*\\(.*" );
+	oldPos = reLParenOld.indexIn( cond, offset, QRegExp::CaretAtOffset );
+	//QRegularExpression testOps( R"rx((!=|==|>=|<=|>|<|\+|-|\&\&|\|\||\&|\|))rx" );
+	//auto testStr = "what what && what what";
+	//auto testMatch = testOps.match( testStr, 0 );
+	//Q_ASSERT( testMatch.hasMatch() );
+	//Q_ASSERT( testMatch.captured( 0 ) == "&&" );
+	//qDebug() << "reLParenMatch captured: " << reLParenMatch.captured();
+	//qDebug() << reLParenMatch.hasMatch();
+	Q_ASSERT( pos == oldPos );
+#endif
 
 	if ( pos != -1 ) {
 		matchGroup( cond, pos, lstartpos, lendpos );
-		pos = reOps.indexIn( cond, lendpos + 1, QRegExp::CaretAtOffset );
+		QRegularExpressionMatch reOpsMatch = reOps.match( cond, lendpos + 1 );
+		pos = reOpsMatch.capturedStart();
+
+#ifndef QT_NO_DEBUG
+		//qDebug() << "Condition: " << cond;
+		//qDebug() << "Start Pos: " << lstartpos;
+		//qDebug() << "End Pos:   " << lendpos;
+		oldPos = reOpsOld.indexIn( cond, lendpos + 1, QRegExp::CaretAtOffset );
+		//qDebug() << "reOpsOld captured:      " << reOpsOld.capturedTexts();
+		//qDebug() << "cond length:         " << cond.length();
+		//qDebug() << "reOpsMatch captured: " << reOpsMatch.captured();
+		//qDebug() << "reOpsMatch match:    " << reOpsMatch.hasMatch();
+		Q_ASSERT( pos == oldPos );
+#endif
+
 		++lstartpos, --lendpos;
 
 		if ( pos != -1 ) {
 			ostartpos = pos;
-			oendpos = ostartpos + reOps.cap( 0 ).length();
+			oendpos = ostartpos + reOpsMatch.captured( 0 ).length();
+#ifndef QT_NO_DEBUG
+			int oendpos2 = ostartpos + reOpsOld.cap( 0 ).length();
+			//qDebug() << reOpsOld.capturedTexts();
+			//qDebug() << reOpsOld.cap( 0 );
+			//qDebug() << reOpsOld.cap( 0 ).length();
+			//qDebug() << reOpsMatch.capturedTexts();
+			//qDebug() << reOpsMatch.captured( 0 );
+			//qDebug() << reOpsMatch.captured( 0 ).length();
+			Q_ASSERT( oendpos == oendpos2 );
+#endif
 		} else {
 			partition( cond.mid( lstartpos, lendpos - lstartpos + 1 ) );
 			return;
 		}
 	} else {
-		pos = reOps.indexIn( cond, offset, QRegExp::CaretAtOffset );
-
+		QRegularExpressionMatch reOpsMatch = reOps.match( cond, offset );
+		pos = reOpsMatch.capturedStart();
+#ifndef QT_NO_DEBUG
+		oldPos = reOpsOld.indexIn( cond, offset, QRegExp::CaretAtOffset );
+		Q_ASSERT( pos == oldPos );
+#endif
 		if ( pos != -1 ) {
 			lstartpos = offset;
 			lendpos = pos - 1;
 			ostartpos = pos;
-			oendpos = ostartpos + reOps.cap( 0 ).length();
+			oendpos = ostartpos + reOpsMatch.captured( 0 ).length();
+#ifndef QT_NO_DEBUG
+			int oendpos2 = ostartpos + reOpsOld.cap( 0 ).length();
+			Q_ASSERT( oendpos == oendpos2 );
+#endif
 		} else {
-			static QRegExp reInt( "[-+]?[0-9]+" );
-			static QRegExp reUInt( "0[xX][0-9]+" );
-			static QRegExp reFloat( "^[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$" );
-			static QRegExp reVersion( "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" );
+#ifndef QT_NO_DEBUG
+			static QRegExp reIntOld( "[-+]?[0-9]+" );
+			static QRegExp reUIntOld( "0[xX][0-9]+" );
+			static QRegExp reFloatOld( "^[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$" );
+			static QRegExp reVersionOld( "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" );
+#endif
+			static QRegularExpression reInt( "\\A(?:[-+]?[0-9]+)\\z" );
+			static QRegularExpression reUInt( "\\A(?:0[xX][0-9]+)\\z" );
+			static QRegularExpression reFloat( "^[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$" );
+			static QRegularExpression reVersion( "\\A(?:[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)\\z" );
 
 			// termination
 			this->lhs.setValue( cond );
 
-			if ( reUInt.exactMatch( cond ) ) {
+			if ( reUInt.match( cond ).hasMatch() ) {
+#ifndef QT_NO_DEBUG
+				//qDebug() << "reUInt exact match";
+				Q_ASSERT( reUIntOld.exactMatch( cond ) );
+#endif
 				this->lhs.convert( QVariant::UInt );
-			} else if ( reInt.exactMatch( cond ) ) {
+			} else if ( reInt.match( cond ).hasMatch() ) {
+#ifndef QT_NO_DEBUG
+				//qDebug() << "reInt exact match";
+				Q_ASSERT( reIntOld.exactMatch( cond ) );
+#endif
 				this->lhs.convert( QVariant::Int );
-			} else if ( reVersion.exactMatch( cond ) ) {
+			} else if ( reVersion.match( cond ).hasMatch() ) {
+#ifndef QT_NO_DEBUG
+				//qDebug() << "reVersion exact match";
+				Q_ASSERT( reVersionOld.exactMatch( cond ) );
+#endif
 				this->lhs.setValue( version2number( cond ) );
 			}
 

@@ -53,6 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QSpinBox>
 #include <QStringListModel>
@@ -1023,9 +1024,9 @@ QColor Options::hlColor()
 }
 
 
-QRegExp Options::cullExpression()
+QRegularExpression Options::cullExpression()
 {
-	return get()->CullByID->isChecked() ? QRegExp( get()->CullExpr->text() ) : QRegExp();
+	return get()->CullByID->isChecked() ? QRegularExpression( get()->CullExpr->text() ) : QRegularExpression();
 }
 
 bool Options::onlyTextured()

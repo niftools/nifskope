@@ -8,6 +8,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QRegularExpression>
 #include <QSettings>
 
 #include <algorithm> // std::stable_sort
@@ -1006,7 +1007,7 @@ public:
 
 		settings.setValue( "match expression", match );
 
-		QRegExp exp( match );
+		QRegularExpression exp( match );
 
 		int n = 0;
 

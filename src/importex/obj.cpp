@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QTextStream>
 
@@ -49,7 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // "globals"
 bool objCulling;
-QRegExp objCullRegExp;
+QRegularExpression objCullRegExp;
 
 
 /*
@@ -139,7 +140,7 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 	float matt = 1.0, matg = 33.0;
 
 	// export culling
-	if ( objCulling && !objCullRegExp.isEmpty() && nif->get<QString>( iShape, "Name" ).contains( objCullRegExp ) )
+	if ( objCulling && !objCullRegExp.pattern().isEmpty() && nif->get<QString>( iShape, "Name" ).contains( objCullRegExp ) )
 		return;
 
 	foreach ( qint32 link, nif->getChildLinks( nif->getBlockNumber( iShape ) ) ) {
@@ -217,7 +218,7 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
 {
 	// export culling
-	if ( objCulling && !objCullRegExp.isEmpty() && nif->get<QString>( iNode, "Name" ).contains( objCullRegExp ) )
+	if ( objCulling && !objCullRegExp.pattern().isEmpty() && nif->get<QString>( iNode, "Name" ).contains( objCullRegExp ) )
 		return;
 
 	t = t * Transform( nif, iNode );

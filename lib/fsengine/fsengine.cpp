@@ -37,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QMap>
 #include <QMutex>
-#include <QRegExp>
 #include <QStringList>
 
 //! \file fsengine.cpp File system engine implementations

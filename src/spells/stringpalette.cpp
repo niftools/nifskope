@@ -9,6 +9,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QStringListModel>
 
 
@@ -279,7 +280,7 @@ QStringList StringPaletteRegexDialog::getStringList()
 // documented in stringpalette.h
 void StringPaletteRegexDialog::stringlistRegex()
 {
-	QRegExp replacer( search->text() );
+	QRegularExpression replacer( search->text() );
 	listmodel->setStringList( *originalList );
 	listmodel->setStringList( listmodel->stringList().replaceInStrings( replacer, replace->text() ) );
 }

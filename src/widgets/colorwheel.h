@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSpinBox> // Inherited
 #include <QWidget>  // Inherited
 #include <QColor>
-#include <QRegExpValidator>
+#include <QRegularExpression>
 #include <QSlider>
 
 
@@ -126,7 +126,7 @@ protected:
 
 	QValidator::State validate( QString & input, int & pos ) const
 	{
-		return QRegExpValidator( QRegExp( "[0-9A-Fa-f]{0,2}" ), 0 ).validate( input, pos );
+		return QRegularExpressionValidator( QRegularExpression( "[0-9A-Fa-f]{0,2}" ), 0 ).validate( input, pos );
 	}
 };
 

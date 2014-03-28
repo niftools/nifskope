@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QTextStream>
 
@@ -80,7 +81,7 @@ QDomElement libraryMaterials;
 QDomElement libraryEffects;
 QDomElement libraryGeometries;
 bool culling;
-QRegExp cullRegExp;
+QRegularExpression cullRegExp;
 
 QVector<int> textureIds;
 QVector<QString> textureNames;
@@ -599,7 +600,7 @@ void attachNiShape ( const NifModel * nif, QDomElement parentNode, int idx )
 	QDomElement profile;
 
 	// export culling
-	if ( culling && !cullRegExp.isEmpty() && nif->get<QString>( iBlock, "Name" ).contains( cullRegExp ) )
+	if ( culling && !cullRegExp.pattern().isEmpty() && nif->get<QString>( iBlock, "Name" ).contains( cullRegExp ) )
 		return;
 
 	foreach ( qint32 link, nif->getChildLinks( idx ) ) {
@@ -748,7 +749,7 @@ void attachNiShape ( const NifModel * nif, QDomElement parentNode, int idx )
 		} else if ( nif->inherits( iProp, "NiTriBasedGeomData" ) ) {
 			QDomElement geometry = doc.createElement( "geometry" );
 			geometry.setAttribute( "id", QString( "nifid_%1-lib" ).arg( idx ) );
-			geometry.setAttribute( "name", QString( "%1-lib" ).arg( nif->get<QString>( iBlock, "Name" ).replace( QRegExp( "\\W" ), "_" ) ) );
+			geometry.setAttribute( "name", QString( "%1-lib" ).arg( nif->get<QString>( iBlock, "Name" ).replace( QRegularExpression( "\\W" ), "_" ) ) );
 			libraryGeometries.appendChild( geometry );
 			QDomElement mesh = doc.createElement( "mesh" );
 			geometry.appendChild( mesh );
@@ -931,7 +932,7 @@ void attachNiNode ( const NifModel * nif, QDomElement parentNode, int idx )
 	QModelIndex iBlock = nif->getBlock( idx );
 
 	// export culling
-	if ( culling && !cullRegExp.isEmpty() && nif->get<QString>( iBlock, "Name" ).contains( cullRegExp ) )
+	if ( culling && !cullRegExp.pattern().isEmpty() && nif->get<QString>( iBlock, "Name" ).contains( cullRegExp ) )
 		return;
 
 	QDomElement node = doc.createElement( "node" );
