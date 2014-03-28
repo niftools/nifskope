@@ -357,7 +357,7 @@ int TexCache::bind( const QModelIndex & iSource )
 			if ( iData.isValid() ) {
 				Tex * tx = embedTextures.value( iData );
 
-				if ( tx == NULL ) {
+				if ( !tx ) {
 					tx = new Tex();
 					tx->id = 0;
 					tx->reload = false;
@@ -451,7 +451,7 @@ bool TexCache::exportFile( const QModelIndex & iSource, QString & filepath )
 {
 	Tex * tx = embedTextures.value( iSource );
 
-	if ( tx == NULL ) {
+	if ( !tx ) {
 		tx = new Tex();
 		tx->id = 0;
 	}

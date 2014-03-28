@@ -48,7 +48,7 @@ class FloatSliderEditBox : public QFrame
 
 public:
 	//! Constructor
-	FloatSliderEditBox( QWidget * = NULL );
+	FloatSliderEditBox( QWidget * = nullptr );
 
 	//! Adds a widget to the internal layout
 	void addWidget( QWidget * );

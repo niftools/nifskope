@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ReferenceBrowser::ReferenceBrowser( QWidget * parent )
 	: QTextBrowser( parent )
 {
-	nif = NULL;
+	nif = nullptr;
 	docFolder.setPath( qApp->applicationDirPath() );
 	docFolderPresent = docFolder.exists( "doc" );
 

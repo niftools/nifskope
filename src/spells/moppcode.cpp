@@ -52,7 +52,7 @@ public:
 
 	bool Initialize()
 	{
-		if ( hMoppLib == NULL ) {
+		if ( !hMoppLib ) {
 			SetDllDirectoryA( QCoreApplication::applicationDirPath().toLocal8Bit().constData() );
 			hMoppLib = LoadLibraryA( "NifMopp.dll" );
 			GenerateMoppCode   = (fnGenerateMoppCode)GetProcAddress( hMoppLib, "GenerateMoppCode" );
@@ -62,9 +62,7 @@ public:
 			GenerateMoppCodeWithSubshapes = (fnGenerateMoppCodeWithSubshapes)GetProcAddress( hMoppLib, "GenerateMoppCodeWithSubshapes" );
 		}
 
-		return ( NULL != GenerateMoppCode && NULL != RetrieveMoppCode
-		         && NULL != RetrieveMoppScale && NULL != RetrieveMoppOrigin
-		);
+		return (GenerateMoppCode && RetrieveMoppCode && RetrieveMoppScale && RetrieveMoppOrigin);
 	}
 
 	QByteArray CalculateMoppCode( QVector<Vector3> const & verts, QVector<Triangle> const & tris, Vector3 * origin, float * scale )
@@ -78,10 +76,10 @@ public:
 				code.resize( len );
 
 				if ( 0 != RetrieveMoppCode( len, code.data() ) ) {
-					if ( NULL != scale )
+					if ( scale )
 						RetrieveMoppScale( scale );
 
-					if ( NULL != origin )
+					if ( origin )
 						RetrieveMoppOrigin( origin );
 				} else {
 					code.clear();
@@ -102,7 +100,7 @@ public:
 		if ( Initialize() ) {
 			int len;
 
-			if ( GenerateMoppCodeWithSubshapes != NULL )
+			if ( GenerateMoppCodeWithSubshapes )
 				len = GenerateMoppCodeWithSubshapes( subShapesVerts.size(), &subShapesVerts[0], verts.size(), &verts[0], tris.size(), &tris[0] );
 			else
 				len = GenerateMoppCode( verts.size(), &verts[0], tris.size(), &tris[0] );
@@ -111,10 +109,10 @@ public:
 				code.resize( len );
 
 				if ( 0 != RetrieveMoppCode( len, code.data() ) ) {
-					if ( NULL != scale )
+					if ( scale )
 						RetrieveMoppScale( scale );
 
-					if ( NULL != origin )
+					if ( origin )
 						RetrieveMoppOrigin( origin );
 				} else {
 					code.clear();

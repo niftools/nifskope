@@ -43,7 +43,7 @@ class CopyFilename : public QWidget
 	Q_OBJECT
 
 public:
-	CopyFilename( QWidget * parent = NULL );
+	CopyFilename( QWidget * parent = nullptr );
 
 signals:
 	void leftTriggered();

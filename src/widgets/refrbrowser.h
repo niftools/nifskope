@@ -45,7 +45,7 @@ class ReferenceBrowser : public QTextBrowser
 	Q_OBJECT
 
 public:
-	ReferenceBrowser( QWidget * parent = NULL );
+	ReferenceBrowser( QWidget * parent = nullptr );
 
 public slots:
 	void setNifModel( NifModel * );

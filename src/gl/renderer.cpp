@@ -155,11 +155,11 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIn
 	if ( val.isString() )
 		return compare( val.toString(), right ) ^ invert;
 	else if ( val.isCount() )
-		return compare( val.toCount(), right.toUInt( NULL, 0 ) ) ^ invert;
+		return compare( val.toCount(), right.toUInt( nullptr, 0 ) ) ^ invert;
 	else if ( val.isFloat() )
 		return compare( val.toFloat(), (float)right.toDouble() ) ^ invert;
 	else if ( val.isFileVersion() )
-		return compare( val.toFileVersion(), right.toUInt( NULL, 0 ) ) ^ invert;
+		return compare( val.toFileVersion(), right.toUInt( nullptr, 0 ) ) ^ invert;
 
 	return false;
 }

@@ -31,7 +31,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		if ( nif == NULL )
+		if ( !nif )
 			return index;
 
 		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr( "Choose .kf file(s)" ), nif->getFolder(), "Keyframe (*.kf)" );

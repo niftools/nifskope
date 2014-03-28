@@ -1368,7 +1368,7 @@ class FixedMatrix
 {
 public:
 	//! Default Constructor:  Allocates empty vector
-	FixedMatrix() : v_( NULL ), len0( 0 ), len1( 0 )
+	FixedMatrix() : v_( nullptr ), len0( 0 ), len1( 0 )
 	{}
 
 	//! Size Constructor
