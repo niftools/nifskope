@@ -77,8 +77,8 @@ void FloatSliderEditBox::show( const QPoint & pos )
 	move( pos );
 	QWidget::show();
 	setFocus( Qt::PopupFocusReason );
-
-	connect( QApplication::instance(), SIGNAL( focusChanged( QWidget *, QWidget * ) ), this, SLOT( focusChanged( QWidget *, QWidget * ) ) );
+	// Leave as old signal syntax for now. Casting is too ugly here.
+	connect( QApplication::instance(), SIGNAL(focusChanged( QWidget *, QWidget * )), this, SLOT(focusChanged( QWidget *, QWidget * )) );
 }
 
 void FloatSliderEditBox::hide()
@@ -86,8 +86,8 @@ void FloatSliderEditBox::hide()
 	if ( !isVisible() ) {
 		return;
 	}
-
-	disconnect( QApplication::instance(), SIGNAL( focusChanged( QWidget *, QWidget * ) ), this, SLOT( focusChanged( QWidget *, QWidget * ) ) );
+	// Leave as old signal syntax for now. Casting is too ugly here.
+	disconnect( QApplication::instance(), SIGNAL(focusChanged( QWidget *, QWidget * )), this, SLOT(focusChanged( QWidget *, QWidget * )) );
 
 	QWidget::hide();
 }

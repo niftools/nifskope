@@ -279,6 +279,7 @@ NifSkope::NifSkope()
 	connect( aNifToolsDownloads, &QAction::triggered, this, &NifSkope::openURL );
 
 	aNifSkope = new QAction( tr( "About &NifSkope" ), this );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( aNifSkope, SIGNAL( triggered() ), aboutDialog, SLOT( open() ) );
 
 	aAboutQt = new QAction( tr( "About &Qt" ), this );

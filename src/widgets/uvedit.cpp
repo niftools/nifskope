@@ -141,29 +141,29 @@ UVWidget::UVWidget( QWidget * parent )
 
 	QAction * aSelectAll = new QAction( tr( "Select &All" ), this );
 	aSelectAll->setShortcut( QKeySequence::SelectAll );
-	connect( aSelectAll, SIGNAL( triggered() ), this, SLOT( selectAll() ) );
+	connect( aSelectAll, &QAction::triggered, this, &UVWidget::selectAll );
 	addAction( aSelectAll );
 
 	QAction * aSelectNone = new QAction( tr( "Select &None" ), this );
-	connect( aSelectNone, SIGNAL( triggered() ), this, SLOT( selectNone() ) );
+	connect( aSelectNone, &QAction::triggered, this, &UVWidget::selectNone );
 	addAction( aSelectNone );
 
 	QAction * aSelectFaces = new QAction( tr( "Select &Faces" ), this );
-	connect( aSelectFaces, SIGNAL( triggered() ), this, SLOT( selectFaces() ) );
+	connect( aSelectFaces, &QAction::triggered, this, &UVWidget::selectFaces );
 	addAction( aSelectFaces );
 
 	QAction * aSelectConnected = new QAction( tr( "Select &Connected" ), this );
-	connect( aSelectConnected, SIGNAL( triggered() ), this, SLOT( selectConnected() ) );
+	connect( aSelectConnected, &QAction::triggered, this, &UVWidget::selectConnected );
 	addAction( aSelectConnected );
 
 	QAction * aScaleSelection = new QAction( tr( "&Scale and Translate Selected" ), this );
 	aScaleSelection->setShortcut( QKeySequence( "Alt+S" ) );
-	connect( aScaleSelection, SIGNAL( triggered() ), this, SLOT( scaleSelection() ) );
+	connect( aScaleSelection, &QAction::triggered, this, &UVWidget::scaleSelection );
 	addAction( aScaleSelection );
 
 	QAction * aRotateSelection = new QAction( tr( "&Rotate Selected" ), this );
 	aRotateSelection->setShortcut( QKeySequence( "Alt+R" ) );
-	connect( aRotateSelection, SIGNAL( triggered() ), this, SLOT( rotateSelection() ) );
+	connect( aRotateSelection, &QAction::triggered, this, &UVWidget::rotateSelection );
 	addAction( aRotateSelection );
 
 	aSep = new QAction( this );
@@ -173,26 +173,26 @@ UVWidget::UVWidget( QWidget * parent )
 	aTextureBlend = new QAction( tr( "Texture Alpha Blending" ), this );
 	aTextureBlend->setCheckable( true );
 	aTextureBlend->setChecked( true );
-	connect( aTextureBlend, SIGNAL( toggled( bool ) ), this, SLOT( updateGL() ) );
+	connect( aTextureBlend, &QAction::toggled, this, &UVWidget::updateGL );
 	addAction( aTextureBlend );
 
 	coordSetGroup = new QActionGroup( this );
-	connect( coordSetGroup, SIGNAL( triggered( QAction * ) ), this, SLOT( selectCoordSet() ) );
+	connect( coordSetGroup, &QActionGroup::triggered, this, &UVWidget::selectCoordSet );
 
 	coordSetSelect = new QMenu( tr( "Select Coordinate Set" ) );
 	addAction( coordSetSelect->menuAction() );
-	connect( coordSetSelect, SIGNAL( aboutToShow() ), this, SLOT( getCoordSets() ) );
+	connect( coordSetSelect, &QMenu::aboutToShow, this, &UVWidget::getCoordSets );
 
 	texSlotGroup = new QActionGroup( this );
-	connect( texSlotGroup, SIGNAL( triggered( QAction * ) ), this, SLOT( selectTexSlot() ) );
+	connect( texSlotGroup, &QActionGroup::triggered, this, &UVWidget::selectTexSlot );
 
 	menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
 	addAction( menuTexSelect->menuAction() );
-	connect( menuTexSelect, SIGNAL( aboutToShow() ), this, SLOT( getTexSlots() ) );
+	connect( menuTexSelect, &QMenu::aboutToShow, this, &UVWidget::getTexSlots );
 
 	currentTexSlot = 0;
 
-	connect( Options::get(), SIGNAL( sigChanged() ), this, SLOT( updateGL() ) );
+	connect( Options::get(), &Options::sigChanged, this, &UVWidget::updateGL );
 }
 
 UVWidget::~UVWidget()
@@ -782,7 +782,13 @@ void UVWidget::wheelEvent( QWheelEvent * e )
 bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 {
 	if ( nif ) {
-		disconnect( nif );
+		// disconnect( nif ) may not work with new Qt5 syntax...
+		// it says the calls need to remain symmetric to the connect() ones.
+		// Otherwise, use QMetaObject::Connection
+		disconnect( nif, &NifModel::modelReset, this, &UVWidget::close );
+		disconnect( nif, &NifModel::destroyed, this, &UVWidget::close );
+		disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
+		disconnect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
 	}
 
 	undoStack->clear();
@@ -790,10 +796,10 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	nif = nifModel;
 	iShape = nifIndex;
 
-	connect( nif, SIGNAL( modelReset() ), this, SLOT( close() ) );
-	connect( nif, SIGNAL( destroyed() ), this, SLOT( close() ) );
-	connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
-	connect( nif, SIGNAL( rowsRemoved( const QModelIndex &, int, int ) ), this, SLOT( nifDataChanged( const QModelIndex ) ) );
+	connect( nif, &NifModel::modelReset, this, &UVWidget::close );
+	connect( nif, &NifModel::destroyed, this, &UVWidget::close );
+	connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
+	connect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
 
 	textures->setNifFolder( nif->getFolder() );
 
@@ -928,9 +934,9 @@ bool UVWidget::setTexCoords()
 void UVWidget::updateNif()
 {
 	if ( nif && iTexCoords.isValid() ) {
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
+		disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 		nif->setArray<Vector2>( iTexCoords, texcoords );
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
+		connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 	}
 }
 
@@ -1245,7 +1251,7 @@ ScalingDialog::ScalingDialog( QWidget * parent ) : QDialog( parent )
 	currentRow++;
 
 	uniform = new QCheckBox;
-	connect( uniform, SIGNAL( toggled( bool ) ), this, SLOT( setUniform( bool ) ) );
+	connect( uniform, &QCheckBox::toggled, this, &ScalingDialog::setUniform );
 	uniform->setChecked( true );
 	grid->addWidget( uniform, currentRow, 0, 1, 1 );
 	grid->addWidget( new QLabel( tr( "Uniform scaling" ) ), currentRow, 1, 1, -1 );
@@ -1269,11 +1275,11 @@ ScalingDialog::ScalingDialog( QWidget * parent ) : QDialog( parent )
 
 	QPushButton * ok = new QPushButton( tr( "OK" ) );
 	grid->addWidget( ok, currentRow, 0, 1, 2 );
-	connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	connect( ok, &QPushButton::clicked, this, &ScalingDialog::accept );
 
 	QPushButton * cancel = new QPushButton( tr( "Cancel" ) );
 	grid->addWidget( cancel, currentRow, 2, 1, 2 );
-	connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	connect( cancel, &QPushButton::clicked, this, &ScalingDialog::reject );
 }
 
 float ScalingDialog::getXScale()
@@ -1288,12 +1294,15 @@ float ScalingDialog::getYScale()
 
 void ScalingDialog::setUniform( bool status )
 {
+	// Cast QDoubleSpinBox slot
+	auto dsbValueChanged = static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged);
+
 	if ( status == true ) {
-		connect( spinXScale, SIGNAL( valueChanged( double ) ), spinYScale, SLOT( setValue( double ) ) );
+		connect( spinXScale, dsbValueChanged, spinYScale, &QDoubleSpinBox::setValue );
 		spinYScale->setEnabled( false );
 		spinYScale->setValue( spinXScale->value() );
 	} else {
-		disconnect( spinXScale, SIGNAL( valueChanged( double ) ), spinYScale, SLOT( setValue( double ) ) );
+		disconnect( spinXScale, dsbValueChanged, spinYScale, &QDoubleSpinBox::setValue );
 		spinYScale->setEnabled( true );
 	}
 }
@@ -1486,7 +1495,7 @@ void UVWidget::getCoordSets()
 	coordSetSelect->addSeparator();
 	aDuplicateCoords = new QAction( tr( "Duplicate current" ), this );
 	coordSetSelect->addAction( aDuplicateCoords );
-	connect( aDuplicateCoords, SIGNAL( triggered() ), this, SLOT( duplicateCoordSet() ) );
+	connect( aDuplicateCoords, &QAction::triggered, this, &UVWidget::duplicateCoordSet );
 }
 
 void UVWidget::selectCoordSet()
@@ -1518,7 +1527,7 @@ void UVWidget::changeCoordSet( int setToUse )
 void UVWidget::duplicateCoordSet()
 {
 	// this signal close the UVWidget
-	disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
+	disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 	// expand the UV Sets array and duplicate the current coordinates
 	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
 	nif->set<quint8>( iShapeData, "Num UV Sets", numUvSets + 1 );
@@ -1528,6 +1537,6 @@ void UVWidget::duplicateCoordSet()
 	// switch to that coordinate set
 	changeCoordSet( numUvSets );
 	// reconnect data changed signal
-	connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( nifDataChanged( const QModelIndex & ) ) );
+	connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 }
 

@@ -242,7 +242,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 #ifndef USE_GL_QPAINTER
 #ifndef QT_NO_DEBUG
 	aPrintView = new QAction( tr( "Save View To File..." ), this );
-	connect( aPrintView, SIGNAL( triggered() ), this, SLOT( savePixmap() ) );
+	connect( aPrintView, &QAction::triggered, this, &GLView::savePixmap );
 #endif // QT_NO_DEBUG
 #endif // USE_GL_QPAINTER
 
@@ -885,16 +885,22 @@ void GLView::resizeGL( int width, int height )
 void GLView::setNif( NifModel * nif )
 {
 	if ( model ) {
-		disconnect( model );
+		// disconnect( model ) may not work with new Qt5 syntax...
+		// it says the calls need to remain symmetric to the connect() ones.
+		// Otherwise, use QMetaObject::Connection
+		disconnect( model, &NifModel::dataChanged, this, &GLView::dataChanged );
+		disconnect( model, &NifModel::linksChanged, this, &GLView::modelLinked );
+		disconnect( model, &NifModel::modelReset, this, &GLView::modelChanged );
+		disconnect( model, &NifModel::destroyed, this, &GLView::modelDestroyed );
 	}
 
 	model = nif;
 
 	if ( model ) {
-		connect( model, NifModel::dataChanged, this, &GLView::dataChanged );
-		connect( model, NifModel::linksChanged, this, &GLView::modelLinked );
-		connect( model, NifModel::modelReset, this, &GLView::modelChanged );
-		connect( model, NifModel::destroyed, this, &GLView::modelDestroyed );
+		connect( model, &NifModel::dataChanged, this, &GLView::dataChanged );
+		connect( model, &NifModel::linksChanged, this, &GLView::modelLinked );
+		connect( model, &NifModel::modelReset, this, &GLView::modelChanged );
+		connect( model, &NifModel::destroyed, this, &GLView::modelDestroyed );
 	}
 
 	doCompile = true;

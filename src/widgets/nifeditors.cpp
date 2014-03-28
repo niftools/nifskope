@@ -47,10 +47,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAndForget )
 	: QWidget(), nif( n ), iBlock( i )
 {
-	connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-		this, SLOT( nifDataChanged( const QModelIndex &, const QModelIndex & ) ) );
-	connect( nif, SIGNAL( modelReset() ), this, SLOT( updateData() ) );
-	connect( nif, SIGNAL( destroyed() ), this, SLOT( nifDestroyed() ) );
+	connect( nif, &NifModel::dataChanged, this, &NifBlockEditor::nifDataChanged );
+	connect( nif, &NifModel::modelReset, this, &NifBlockEditor::updateData );
+	connect( nif, &NifModel::destroyed, this, &NifBlockEditor::nifDestroyed );
 
 	QVBoxLayout * layout = new QVBoxLayout();
 	setLayout( layout );
@@ -62,7 +61,7 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 		add( new NifLineEdit( nif, iName ) );
 
 	timer = new QTimer( this );
-	connect( timer, SIGNAL( timeout() ), this, SLOT( updateData() ) );
+	connect( timer, &QTimer::timeout, this, &NifBlockEditor::updateData );
 	timer->setInterval( 0 );
 	timer->setSingleShot( true );
 
@@ -70,7 +69,7 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 		setAttribute( Qt::WA_DeleteOnClose );
 
 		QPushButton * btAccept = new QPushButton( tr( "Accept" ) );
-		connect( btAccept, SIGNAL( clicked() ), this, SLOT( close() ) );
+		connect( btAccept, &QPushButton::clicked, this, &NifBlockEditor::close );
 		layout->addWidget( btAccept );
 	}
 
@@ -197,6 +196,7 @@ NifFloatSlider::NifFloatSlider( NifModel * nif, const QModelIndex & index, float
 {
 	getLayout()->addWidget( slider = new FloatSlider( Qt::Horizontal, true, false ) );
 	slider->setRange( min, max );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( slider, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
 }
 
@@ -216,6 +216,7 @@ NifFloatEdit::NifFloatEdit( NifModel * nif, const QModelIndex & index, float min
 	getLayout()->addWidget( spinbox = new QDoubleSpinBox() );
 	spinbox->setRange( min, max );
 	spinbox->setDecimals( 4 );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( spinbox, SIGNAL( valueChanged( double ) ), this, SLOT( applyData() ) );
 }
 
@@ -233,6 +234,7 @@ NifLineEdit::NifLineEdit( NifModel * nif, const QModelIndex & index )
 	: NifEditBox( nif, index )
 {
 	getLayout()->addWidget( line = new QLineEdit() );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( line, SIGNAL( textEdited( const QString & ) ), this, SLOT( applyData() ) );
 }
 
@@ -252,10 +254,12 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 {
 	getLayout()->addWidget( color = new ColorWheel() );
 	color->setSizeHint( QSize( 140, 140 ) );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( color, SIGNAL( sigColor( const QColor & ) ), this, SLOT( applyData() ) );
 
 	if ( nif->getValue( index ).type() == NifValue::tColor4 ) {
 		getLayout()->addWidget( alpha = new AlphaSlider() );
+		// TODO: Can't seem to figure out correct cast for new signal syntax
 		connect( alpha, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
 	} else {
 		alpha = 0;
@@ -290,6 +294,7 @@ NifVectorEdit::NifVectorEdit( NifModel * nif, const QModelIndex & index )
 	: NifEditBox( nif, index )
 {
 	getLayout()->addWidget( vector = new VectorEdit() );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( vector, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 }
 
@@ -317,6 +322,7 @@ NifRotationEdit::NifRotationEdit( NifModel * nif, const QModelIndex & index )
 	: NifEditBox( nif, index )
 {
 	getLayout()->addWidget( rotation = new RotationEdit() );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 }
 
@@ -351,6 +357,7 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 	group->setTitle( tr( "Translation" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( translation = new VectorEdit() );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( translation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 
 	group = new QGroupBox;
@@ -358,6 +365,7 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 	group->setTitle( tr( "Rotation" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( rotation = new RotationEdit() );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 
 	group = new QGroupBox;
@@ -365,6 +373,7 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 	group->setTitle( tr( "Scale" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( scale = new VectorEdit() );
+	// TODO: Can't seem to figure out correct cast for new signal syntax
 	connect( scale, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
 }
 

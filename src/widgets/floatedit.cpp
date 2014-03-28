@@ -77,17 +77,17 @@ FloatEdit::FloatEdit( QWidget * parent )
 	setValidator( validator = new FloatValidator( this ) );
 	validator->setDecimals( 4 );
 
-	connect( this, SIGNAL( editingFinished() ), this, SLOT( edited() ) );
+	connect( this, &FloatEdit::editingFinished, this, &FloatEdit::edited );
 
 	/*
 	    context menu
 	*/
 	actMin = new QAction( tr( "<float_min>" ), this );
-	connect( actMin, SIGNAL( triggered() ), this, SLOT( setMin() ) );
+	connect( actMin, &QAction::triggered, this, &FloatEdit::setMin );
 	addAction( actMin );
 
 	actMax = new QAction( tr( "<float_max>" ), this );
-	connect( actMax, SIGNAL( triggered() ), this, SLOT( setMax() ) );
+	connect( actMax, &QAction::triggered, this, &FloatEdit::setMax );
 	addAction( actMax );
 }
 

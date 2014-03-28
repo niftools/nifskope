@@ -57,7 +57,7 @@ CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of
 	setCheckable( true );
 	setChecked( cfg.value( "completion of file names", false ).toBool() );
 
-	connect( this, SIGNAL( toggled( bool ) ), this, SLOT( sltToggled( bool ) ) );
+	connect( this, &CompletionAction::toggled, this, &CompletionAction::sltToggled );
 }
 
 CompletionAction::~CompletionAction()
@@ -79,12 +79,12 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 
 	line = new QLineEdit( this );
 
-	connect( line, SIGNAL( textEdited( const QString & ) ), this, SIGNAL( sigEdited( const QString & ) ) );
-	connect( line, SIGNAL( returnPressed() ), this, SLOT( activate() ) );
+	connect( line, &QLineEdit::textEdited, this, &FileSelector::sigEdited );
+	connect( line, &QLineEdit::returnPressed , this, &FileSelector::activate );
 
 	action = new QAction( this );
 	action->setText( buttonText );
-	connect( action, SIGNAL( triggered() ), this, SLOT( browse() ) );
+	connect( action, &QAction::triggered, this, &FileSelector::browse );
 
 	if ( !keySeq.isEmpty() ) {
 		action->setShortcut( keySeq );
@@ -102,13 +102,13 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 
 	line->installEventFilter( this );
 
-	connect( completionAction(), SIGNAL( toggled( bool ) ), this, SLOT( setCompletionEnabled( bool ) ) );
+	connect( completionAction(), &QAction::toggled, this, &FileSelector::setCompletionEnabled );
 	setCompletionEnabled( completionAction()->isChecked() );
 
 	timer = new QTimer( this );
 	timer->setSingleShot( true );
 	timer->setInterval( FEEDBACK_TIME );
-	connect( timer, SIGNAL( timeout() ), this, SLOT( rstState() ) );
+	connect( timer, &QTimer::timeout, this, &FileSelector::rstState );
 }
 
 QAction * FileSelector::completionAction()

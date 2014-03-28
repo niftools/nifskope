@@ -49,7 +49,7 @@ NifTreeView::NifTreeView() : QTreeView()
 	setContextMenuPolicy( Qt::CustomContextMenu );
 	setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
 
-	connect( this, SIGNAL( expanded( const QModelIndex & ) ), this, SLOT( scrollExpand( const QModelIndex & ) ) );
+	connect( this, &NifTreeView::expanded, this, &NifTreeView::scrollExpand );
 }
 
 NifTreeView::~NifTreeView()
@@ -59,14 +59,14 @@ NifTreeView::~NifTreeView()
 void NifTreeView::setModel( QAbstractItemModel * model )
 {
 	if ( nif )
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 
 	nif = qobject_cast<BaseModel *>( model );
 
 	QTreeView::setModel( model );
 
 	if ( nif && EvalConditions && RealTimeEval )
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 }
 
 void NifTreeView::setRootIndex( const QModelIndex & index )
@@ -92,9 +92,9 @@ void NifTreeView::setEvalConditions( bool c )
 	EvalConditions = c;
 
 	if ( nif && EvalConditions && RealTimeEval ) {
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 	} else {
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 	}
 
 	// refresh
@@ -110,9 +110,9 @@ void NifTreeView::setRealTime( bool c )
 	RealTimeEval = c;
 
 	if ( nif && EvalConditions && RealTimeEval ) {
-		connect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 	} else {
-		disconnect( nif, SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ), this, SLOT( updateConditions( const QModelIndex &, const QModelIndex & ) ) );
+		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 	}
 
 	updateConditionRecurse( rootIndex() );

@@ -188,7 +188,7 @@ void ValueEdit::setValue( const NifValue & v )
 		{
 			TextEdit * te = new TextEdit( v.toString(), this );
 			te->resize( size() );
-			connect( te, SIGNAL( sigResized( QResizeEvent * ) ), this, SLOT( childResized( QResizeEvent * ) ) );
+			connect( te, &TextEdit::sigResized, this, &ValueEdit::childResized );
 			edit = te;
 		}
 		break;
@@ -432,30 +432,33 @@ ColorEdit::ColorEdit( QWidget * parent ) : ValueEdit( parent )
 	lay->setSpacing( 0 );
 	setLayout( lay );
 
+	// Cast QDoubleSpinBox slot
+	auto dsbValueChanged = static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged);
+
 	lay->addWidget( new CenterLabel( "R" ), 1 );
 	lay->addWidget( r = new QDoubleSpinBox, 5 );
 	r->setDecimals( COLOR_DECIMALS );
 	r->setRange( 0, 1 );
 	r->setSingleStep( COLOR_STEP );
-	connect( r, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( r, dsbValueChanged, this, &ColorEdit::sltChanged );
 	lay->addWidget( new CenterLabel( "G" ), 1 );
 	lay->addWidget( g = new QDoubleSpinBox, 5 );
 	g->setDecimals( COLOR_DECIMALS );
 	g->setRange( 0, 1 );
 	g->setSingleStep( COLOR_STEP );
-	connect( g, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( g, dsbValueChanged, this, &ColorEdit::sltChanged );
 	lay->addWidget( new CenterLabel( "B" ), 1 );
 	lay->addWidget( b = new QDoubleSpinBox, 5 );
 	b->setDecimals( COLOR_DECIMALS );
 	b->setRange( 0, 1 );
 	b->setSingleStep( COLOR_STEP );
-	connect( b, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( b, dsbValueChanged, this, &ColorEdit::sltChanged );
 	lay->addWidget( al = new CenterLabel( "A" ), 1 );
 	lay->addWidget( a = new QDoubleSpinBox, 5 );
 	a->setDecimals( COLOR_DECIMALS );
 	a->setRange( 0, 1 );
 	a->setSingleStep( COLOR_STEP );
-	connect( a, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( a, dsbValueChanged, this, &ColorEdit::sltChanged );
 
 	setting = false;
 	setFocusProxy( r );
@@ -505,26 +508,29 @@ VectorEdit::VectorEdit( QWidget * parent ) : ValueEdit( parent )
 
 	CenterLabel * xl, * yl;
 
+	// Cast QDoubleSpinBox slot
+	auto dsbValueChanged = static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged);
+
 	lay->addWidget( xl = new CenterLabel( "X" ), 1 );
 	lay->addWidget( x = new QDoubleSpinBox, 5 );
 	x->setDecimals( VECTOR_DECIMALS );
 	x->setRange( -VECTOR_RANGE, +VECTOR_RANGE );
-	connect( x, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( x, dsbValueChanged, this, &VectorEdit::sltChanged );
 	lay->addWidget( yl = new CenterLabel( "Y" ), 1 );
 	lay->addWidget( y = new QDoubleSpinBox, 5 );
 	y->setDecimals( VECTOR_DECIMALS );
 	y->setRange( -VECTOR_RANGE, +VECTOR_RANGE );
-	connect( y, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( y, dsbValueChanged, this, &VectorEdit::sltChanged );
 	lay->addWidget( zl = new CenterLabel( "Z" ), 1 );
 	lay->addWidget( z = new QDoubleSpinBox, 5 );
 	z->setDecimals( VECTOR_DECIMALS );
 	z->setRange( -VECTOR_RANGE, +VECTOR_RANGE );
-	connect( z, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( z, dsbValueChanged, this, &VectorEdit::sltChanged );
 	lay->addWidget( wl = new CenterLabel( "W" ), 1 );
 	lay->addWidget( w = new QDoubleSpinBox, 5 );
 	w->setDecimals( VECTOR_DECIMALS );
 	w->setRange( -VECTOR_RANGE, +VECTOR_RANGE );
-	connect( w, SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+	connect( w, dsbValueChanged, this, &VectorEdit::sltChanged );
 
 	/*
 	xl->setBuddy( x );
@@ -592,7 +598,7 @@ Vector2 VectorEdit::getVector2() const
 RotationEdit::RotationEdit( QWidget * parent ) : ValueEdit( parent ), mode( mAuto ), setting( false )
 {
 	actMode = new QAction( this );
-	connect( actMode, SIGNAL( triggered() ), this, SLOT( switchMode() ) );
+	connect( actMode, &QAction::triggered, this, &RotationEdit::switchMode );
 	QToolButton * btMode = new QToolButton( this );
 	btMode->setDefaultAction( actMode );
 
@@ -602,10 +608,13 @@ RotationEdit::RotationEdit( QWidget * parent ) : ValueEdit( parent ), mode( mAut
 
 	lay->addWidget( btMode, 2 );
 
+	// Cast QDoubleSpinBox slot
+	auto dsbValueChanged = static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged);
+
 	for ( int x = 0; x < 4; x++ ) {
 		lay->addWidget( l[x] = new CenterLabel, 1 );
 		lay->addWidget( v[x] = new QDoubleSpinBox, 5 );
-		connect( v[x], SIGNAL( valueChanged( double ) ), this, SLOT( sltChanged() ) );
+		connect( v[x], dsbValueChanged, this, &RotationEdit::sltChanged );
 	}
 
 	setFocusProxy( v[0] );
@@ -813,7 +822,7 @@ TextEdit::TextEdit( const QString & str, QWidget * parent ) : QTextEdit( parent 
 	setTabChangesFocus( true );
 	setPlainText( str );
 	CalcSize();
-	connect( this, SIGNAL( textChanged() ), this, SLOT( sltTextChanged() ) );
+	connect( this, &TextEdit::textChanged, this,  &TextEdit::sltTextChanged );
 
 	QTextCursor cursor = this->textCursor();
 	cursor.select( QTextCursor::LineUnderCursor );

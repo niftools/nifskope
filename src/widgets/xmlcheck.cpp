@@ -62,7 +62,7 @@ TestShredder::TestShredder()
 	chkKfm->setToolTip( tr( "Check .kfm files" ) );
 
 	QAction * aChoose = new QAction( tr( "Block Match" ), this );
-	connect( aChoose, SIGNAL( triggered() ), this, SLOT( chooseBlock() ) );
+	connect( aChoose, &QAction::triggered, this, &TestShredder::chooseBlock );
 	QToolButton * btChoose = new QToolButton( this );
 	btChoose->setDefaultAction( aChoose );
 
@@ -74,7 +74,7 @@ TestShredder::TestShredder()
 	count = new QSpinBox();
 	count->setRange( 1, 8 );
 	count->setValue( settings.value( "Threads", NUM_THREADS ).toInt() );
-	connect( count, SIGNAL( valueChanged( int ) ), this, SLOT( renumberThreads( int ) ) );
+	connect( count, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &TestShredder::renumberThreads );
 
 	//Version Check
 	verMatch = new QLineEdit( this );
@@ -91,13 +91,13 @@ TestShredder::TestShredder()
 
 	btRun = new QPushButton( tr( "run" ), this );
 	btRun->setCheckable( true );
-	connect( btRun, SIGNAL( clicked() ), this, SLOT( run() ) );
+	connect( btRun, &QPushButton::clicked, this, &TestShredder::run );
 
 	QPushButton * btXML = new QPushButton( tr( "Reload XML" ), this );
-	connect( btXML, SIGNAL( clicked() ), this, SLOT( xml() ) );
+	connect( btXML, &QPushButton::clicked, this, &TestShredder::xml );
 
 	QPushButton * btClose = new QPushButton( tr( "Close" ), this );
-	connect( btClose, SIGNAL( clicked() ), this, SLOT( close() ) );
+	connect( btClose, &QPushButton::clicked, this, &TestShredder::close );
 
 	QVBoxLayout * lay = new QVBoxLayout();
 	setLayout( lay );
@@ -165,9 +165,9 @@ void TestShredder::renumberThreads( int num )
 {
 	while ( threads.count() < num ) {
 		TestThread * thread = new TestThread( this, &queue );
-		connect( thread, SIGNAL( sigStart( const QString & ) ), this, SLOT( threadStarted() ) );
-		connect( thread, SIGNAL( sigReady( const QString & ) ), text, SLOT( append( const QString & ) ) );
-		connect( thread, SIGNAL( finished() ), this, SLOT( threadFinished() ) );
+		connect( thread, &TestThread::sigStart, this, &TestShredder::threadStarted );
+		connect( thread, &TestThread::sigReady, text, &QTextBrowser::append );
+		connect( thread, &TestThread::finished, this, &TestShredder::threadFinished );
 		threads.append( thread );
 
 		thread->blockMatch = blockMatch->text();

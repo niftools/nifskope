@@ -183,11 +183,8 @@ NifCheckBoxList::NifCheckBoxList( QWidget * widget /*= 0*/ )
 	// it just cool to have it as default ;)
 	view()->setAlternatingRowColors( true );
 
-	connect( model(), SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-		this, SLOT( sltDataChanged( const QModelIndex &, const QModelIndex & ) ) );
-
-	connect( edit, SIGNAL( editingFinished() ),
-		this, SLOT( sltEditingFinished() ) );
+	connect( model(), &QAbstractItemModel::dataChanged, this, &NifCheckBoxList::sltDataChanged );
+	connect( edit, &NifCheckListBoxEditor::editingFinished, this, &NifCheckBoxList::sltEditingFinished );
 }
 
 NifCheckBoxList::~NifCheckBoxList()

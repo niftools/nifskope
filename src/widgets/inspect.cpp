@@ -301,9 +301,9 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f )
 	grid->addWidget( impl->lenText,     8, 1 );
 	grid->addWidget( impl->refreshBtn,  9, 1 );
 
-	connect( impl->localCheck, SIGNAL( stateChanged( int ) ), this, SLOT( update() ) );
-	connect( impl->invertCheck, SIGNAL( stateChanged( int ) ), this, SLOT( update() ) );
-	connect( impl->refreshBtn, SIGNAL( clicked() ), this, SLOT( update() ) );
+	connect( impl->localCheck, &QCheckBox::stateChanged, this, &InspectView::update );
+	connect( impl->invertCheck, &QCheckBox::stateChanged, this, &InspectView::update );
+	connect( impl->refreshBtn, &QPushButton::clicked, this, &InspectView::update );
 }
 
 InspectView::~InspectView()
