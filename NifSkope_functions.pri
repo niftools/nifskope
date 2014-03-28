@@ -166,6 +166,12 @@ defineReplace(QtBins) {
 		list += $$sprintf($$[QT_INSTALL_BINS]/$${DLLSTRING}, $$m)$${DLLEXT}
 	}
 
+	*-g++ {
+		list += \
+			$$[QT_INSTALL_BINS]/icu*.dll \
+			$$[QT_INSTALL_BINS]/lib*.dll
+	}
+
 	return($$list)
 }
 
