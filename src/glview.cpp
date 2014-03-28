@@ -888,10 +888,7 @@ void GLView::setNif( NifModel * nif )
 		// disconnect( model ) may not work with new Qt5 syntax...
 		// it says the calls need to remain symmetric to the connect() ones.
 		// Otherwise, use QMetaObject::Connection
-		disconnect( model, &NifModel::dataChanged, this, &GLView::dataChanged );
-		disconnect( model, &NifModel::linksChanged, this, &GLView::modelLinked );
-		disconnect( model, &NifModel::modelReset, this, &GLView::modelChanged );
-		disconnect( model, &NifModel::destroyed, this, &GLView::modelDestroyed );
+		disconnect( model );
 	}
 
 	model = nif;

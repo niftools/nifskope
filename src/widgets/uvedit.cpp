@@ -198,6 +198,7 @@ UVWidget::UVWidget( QWidget * parent )
 UVWidget::~UVWidget()
 {
 	delete textures;
+	nif = nullptr;
 }
 
 void UVWidget::initializeGL()
@@ -785,10 +786,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		// disconnect( nif ) may not work with new Qt5 syntax...
 		// it says the calls need to remain symmetric to the connect() ones.
 		// Otherwise, use QMetaObject::Connection
-		disconnect( nif, &NifModel::modelReset, this, &UVWidget::close );
-		disconnect( nif, &NifModel::destroyed, this, &UVWidget::close );
-		disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
-		disconnect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
+		disconnect( nif );
 	}
 
 	undoStack->clear();

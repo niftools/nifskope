@@ -184,7 +184,7 @@ private:
 
 	void updateNif();
 
-	QPointer<NifModel> nif;
+	NifModel * nif;
 	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex;
 
 	//! Submenu for texture slot selection
