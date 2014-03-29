@@ -769,8 +769,8 @@ void Options::textureFolderAutoDetect()
 			"Installed Path",
 			"Data",
 			"TES V: Skyrim",
-			QStringList(), /* No subdirs */
-			QStringList() << ".bsa",
+			{},        /* No subdirs */
+			{ ".bsa" },
 			"Textures" /* Confirm Textures if no FSENGINE */
 		);
 	}
@@ -782,8 +782,8 @@ void Options::textureFolderAutoDetect()
 			"Installed Path",
 			"Data",
 			"Fallout: New Vegas",
-			QStringList(), /* No subdirs */
-			QStringList() << ".bsa",
+			{},        /* No subdirs */
+			{ ".bsa" },
 			"Textures" /* Confirm Textures if no FSENGINE */
 		);
 	}
@@ -795,8 +795,8 @@ void Options::textureFolderAutoDetect()
 			"Installed Path",
 			"Data",
 			"Fallout 3",
-			QStringList(), /* No subdirs */
-			QStringList() << ".bsa",
+			{},        /* No subdirs */
+			{ ".bsa" },
 			"Textures" /* Confirm Textures if no FSENGINE */
 		);
 	}
@@ -808,8 +808,8 @@ void Options::textureFolderAutoDetect()
 			"Installed Path",
 			"Data",
 			"TES IV: Oblivion",
-			QStringList(), /* No subdirs */
-			QStringList() << ".bsa",
+			{},        /* No subdirs */
+			{ ".bsa" },
 			"Textures" /* Confirm Textures if no FSENGINE */
 		);
 	}
@@ -821,8 +821,8 @@ void Options::textureFolderAutoDetect()
 			"Installed Path",
 			"Data",
 			"TES III: Morrowind",
-			QStringList() << "/Textures",
-			QStringList() << ".bsa"
+			{ "/Textures" },
+			{ ".bsa" }
 		);
 	}
 
@@ -838,8 +838,7 @@ void Options::textureFolderAutoDetect()
 
 	// Freedom Force
 	{
-		QStringList ffSubDirs;
-		ffSubDirs << "./textures" << "./skins/standard";
+		QStringList ffSubDirs{ "./textures", "./skins/standard" };
 
 		regTexturePath( list, game_list,
 			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR",
