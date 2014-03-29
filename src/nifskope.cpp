@@ -98,11 +98,11 @@ void NifSkope::migrateSettings() const
 		//to prevent portability problems between Qt versions
 		QStringList keys = cfg.allKeys();
 
-		for ( QStringList::ConstIterator key = keys.begin(); key != keys.end(); ++key ) {
-			if ( cfg.value( *key ).type() == QVariant::ByteArray ) {
-				qDebug() << "removing config setting" << *key
+		for ( const auto& key : keys ) {
+			if ( cfg.value( key ).type() == QVariant::ByteArray ) {
+				qDebug() << "removing config setting" << key
 				         << "whilst migrating settings from previous NifSkope version";
-				cfg.remove( *key );
+				cfg.remove( key );
 			}
 		}
 

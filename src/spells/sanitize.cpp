@@ -239,10 +239,9 @@ public:
 		QList<qint32> newblocks;
 
 		// add blocks recursively
-		for ( QList<qint32>::iterator rootblock_iter = rootblocks.begin();
-		      rootblock_iter != rootblocks.end(); rootblock_iter++ )
+		for ( const auto rootblock : rootblocks )
 		{
-			addTree( nif, *rootblock_iter, newblocks );
+			addTree( nif, rootblock, newblocks );
 		}
 
 		// check whether all blocks have been added

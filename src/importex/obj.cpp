@@ -504,9 +504,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 		//Find material, texture, and data objects
 		QList<int> children = nif->getChildLinks( nif->getBlockNumber( iShape ) );
 
-		for ( QList<int>::iterator it = children.begin(); it != children.end(); ++it ) {
-			if ( *it != -1 ) {
-				QModelIndex temp = nif->getBlock( *it );
+		for ( const auto child : children ) {
+			if ( child != -1 ) {
+				QModelIndex temp = nif->getBlock( child );
 				QString type = nif->itemName( temp );
 
 				if ( type == "BSShaderPPLightingProperty" ) {
@@ -521,10 +521,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 					iTexProp = temp;
 
 					//Search children of texture property for texture sources/images
-					QList<int> children = nif->getChildLinks( nif->getBlockNumber( iTexProp ) );
+					QList<int> chn = nif->getChildLinks( nif->getBlockNumber( iTexProp ) );
 
-					for ( QList<int>::iterator it = children.begin(); it != children.end(); ++it ) {
-						QModelIndex temp = nif->getBlock( *it );
+					for ( const auto c : chn ) {
+						QModelIndex temp = nif->getBlock( c );
 						QString type = nif->itemName( temp );
 
 						if ( (type == "NiSourceTexture") || (type == "NiImage") ) {
