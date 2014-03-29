@@ -675,6 +675,55 @@ void Options::save()
 	cfg.endGroup(); // Export Settings
 }
 
+bool regTexturePath( QStringList & gamePaths, QString & gameList, // Out Params
+                     const QString & regPath, const QString & regValue,
+                     const QString & gameFolder, const QString & gameName,
+                     QStringList gameSubDirs = QStringList(),
+                     QStringList gameArchiveFilters = QStringList(),
+                     QString confirmPath = QString() )
+{
+	QSettings reg( regPath, QSettings::NativeFormat );
+	QDir dir( reg.value( regValue ).toString() );
+
+	if ( dir.exists() && dir.cd( gameFolder ) ) {
+		gameList.append( gameName + "\n" );
+
+		gamePaths.append( dir.path() );
+		if ( !gameSubDirs.isEmpty() ) {
+			foreach ( QString sd, gameSubDirs ) {
+				gamePaths.append( dir.path() + sd );
+			}
+		}
+
+		if ( !gameArchiveFilters.isEmpty() ) {
+			dir.setNameFilters( gameArchiveFilters );
+			dir.setFilter( QDir::Dirs );
+			foreach( QString dn, dir.entryList() ) {
+				gamePaths << dir.filePath( dn );
+
+				if ( !gameSubDirs.isEmpty() ) {
+					foreach ( QString sd, gameSubDirs ) {
+						gamePaths << dir.filePath( dn ) + sd;
+					}
+				}
+			}
+		}
+#ifndef FSENGINE
+		if ( !confirmPath.isEmpty() ) {
+			if ( !dir.cd( confirmPath ) ) {
+				QMessageBox::information( dialog, "NifSkope",
+					tr( "<p>The texture folder was not found.</p>"
+					"<p>This may be because you haven't extracted the archive files yet.<br>"
+					"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" ) );
+				return false;
+			}
+		}
+#endif
+		return true;
+	}
+	return false;
+}
+
 void Options::textureFolderAutoDetect()
 {
 	//List to hold all games paths that were detected
@@ -690,169 +739,113 @@ void Options::textureFolderAutoDetect()
 
 	// Skyrim
 	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim", QSettings::NativeFormat );
-		QDir dir( reg.value( "Installed Path" ).toString() );
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim",
+			"Installed Path",
+			"Data",
+			"TES V: Skyrim",
+			QStringList(), /* No subdirs */
+			QStringList() << ".bsa",
+			"Textures" /* Confirm Textures if no FSENGINE */
+		);
+	}
 
-		if ( dir.exists() && dir.cd( "Data" ) ) {
-			game_list.append( "TES5: Skyrim\n" );
+	// Fallout: New Vegas
+	{
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV",
+			"Installed Path",
+			"Data",
+			"Fallout: New Vegas",
+			QStringList(), /* No subdirs */
+			QStringList() << ".bsa",
+			"Textures" /* Confirm Textures if no FSENGINE */
+		);
+	}
 
-			list.append( dir.path() );
-
-			dir.setNameFilters( QStringList() << "*.bsa" );
-			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() ) {
-				list << dir.filePath( dn );
-			}
-
-#ifndef FSENGINE
-
-			if ( !dir.cd( "Textures" ) ) {
-				QMessageBox::information( dialog, "NifSkope",
-					tr( "<p>The texture folder was not found.</p>"
-						"<p>This may be because you haven't extracted the archive files yet.<br>"
-						"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" ) );
-			}
-
-#endif
-		}
+	// Fallout 3
+	{
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3",
+			"Installed Path",
+			"Data",
+			"Fallout 3",
+			QStringList(), /* No subdirs */
+			QStringList() << ".bsa",
+			"Textures" /* Confirm Textures if no FSENGINE */
+		);
 	}
 
 	// Oblivion
 	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", QSettings::NativeFormat );
-		QDir dir( reg.value( "Installed Path" ).toString() );
-
-		if ( dir.exists() && dir.cd( "Data" ) ) {
-			game_list.append( "TES4: Oblivion\n" );
-
-			list.append( dir.path() );
-
-			dir.setNameFilters( QStringList() << "*.bsa" );
-			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() ) {
-				list << dir.filePath( dn );
-			}
-
-#ifndef FSENGINE
-
-			if ( !dir.cd( "Textures" ) ) {
-				QMessageBox::information( dialog, "NifSkope",
-					tr( "<p>The texture folder was not found.</p>"
-						"<p>This may be because you haven't extracted the archive files yet.<br>"
-						"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" ) );
-			}
-
-#endif
-		}
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion",
+			"Installed Path",
+			"Data",
+			"TES IV: Oblivion",
+			QStringList(), /* No subdirs */
+			QStringList() << ".bsa",
+			"Textures" /* Confirm Textures if no FSENGINE */
+		);
 	}
 
 	// Morrowind
 	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", QSettings::NativeFormat );
-		QDir dir( reg.value( "Installed Path" ).toString() );
-
-		if ( dir.exists() && dir.cd( "Data Files" ) ) {
-			game_list.append( "TES3: Morrowind\n" );
-
-			list.append( dir.path() );
-			list.append( dir.path() + "/Textures" );
-
-			dir.setNameFilters( QStringList() << "*.bsa" );
-			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() ) {
-				list << dir.filePath( dn ) << dir.filePath( dn ) + "/Textures";
-			}
-		}
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind",
+			"Installed Path",
+			"Data",
+			"TES III: Morrowind",
+			QStringList() << "/Textures",
+			QStringList() << ".bsa"
+		);
 	}
 
 	// CIV IV
 	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4", QSettings::NativeFormat );
-		QDir dir( reg.value( "INSTALLDIR" ).toString() );
-
-		if ( dir.exists() && dir.cd( "Assets/Art/shared" ) ) {
-			game_list.append( "Sid Meier's Civilization IV\n" );
-
-			list.append( dir.path() );
-		}
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4",
+			"INSTALLDIR",
+			"Assets/Art/shared",
+			"Sid Meier's Civilization IV"
+		);
 	}
 
 	// Freedom Force
-	list.append( "./textures" );
-	list.append( "./skins/standard" );
 	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR", QSettings::NativeFormat );
-		QDir dir( reg.value( "InstallDir" ).toString() );
+		QStringList ffSubDirs;
+		ffSubDirs << "./textures" << "./skins/standard";
 
-		if ( dir.exists() && dir.cd( "/Data/Art/library/area_specific/_textures" ) ) {
-			game_list.append( "Freedom Force vs. the Third Reich\n" );
-			list.append( dir.path() );
-		}
-	}
-	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force", QSettings::NativeFormat );
-		QDir dir( reg.value( "InstallDir" ).toString() );
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR",
+			"InstallDir",
+			"Data/Art/library/area_specific/_textures",
+			"Freedom Force vs. the Third Reich",
+			ffSubDirs
+		);
 
-		if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) ) {
-			game_list.append( "Freedom Force\n" );
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force",
+			"InstallDir",
+			"Data/Art/library/area_specific/_textures",
+			"Freedom Force",
+			ffSubDirs
+		);
 
-			list.append( dir.path() );
-		}
-	}
-	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo", QSettings::NativeFormat );
-		QDir dir( reg.value( "InstallDir" ).toString() );
-
-		if ( dir.exists() && dir.cd( "Data/Art/library/area_specific/_textures" ) ) {
-			game_list.append( "Freedom Force Demo\n" );
-
-			list.append( dir.path() );
-		}
-	}
-
-
-	// Fallout 3
-	{
-		QSettings reg( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", QSettings::NativeFormat );
-		QDir dir( reg.value( "Installed Path" ).toString() );
-
-		if ( dir.exists() && dir.cd( "Data" ) ) {
-			game_list.append( "Fallout 3\n" );
-
-			list.append( dir.path() );
-
-			dir.setNameFilters( QStringList() << "*.bsa" );
-			dir.setFilter( QDir::Dirs );
-			foreach ( QString dn, dir.entryList() ) {
-				list << dir.filePath( dn );
-			}
-
-
-#ifndef FSENGINE
-
-			if ( !dir.cd( "Textures" ) ) {
-				QMessageBox::information( dialog, "NifSkope",
-					tr( "<p>The texture folder was not found.</p>"
-						"<p>This may be because you haven't extracted the archive files yet.<br>"
-						"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" ) );
-			}
-
-#endif
-		}
+		regTexturePath( list, game_list,
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo",
+			"InstallDir",
+			"Data/Art/library/area_specific/_textures",
+			"Freedom Force Demo",
+			ffSubDirs
+		);
 	}
 
 #endif
 	//Set folder list box to contain the newly detected textures, along with the ones the user has already defined, ignoring any duplicates
+	list.removeDuplicates();
 
-	//Remove duplicates
-	QStringList finalList = TexFolderModel->stringList();
-
-	for ( QStringList::ConstIterator it = list.begin(); it != list.end(); ++it ) {
-		if ( finalList.contains( *it ) == false )
-			finalList << *it;
-	}
-
-	TexFolderModel->setStringList( finalList );
+	TexFolderModel->setStringList( list );
 	TexAlternatives->setChecked( false );
 	TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
 
