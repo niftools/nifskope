@@ -164,11 +164,11 @@ public:
 
 		QPushButton * btOk = new QPushButton;
 		btOk->setText( Spell::tr( "Smooth" ) );
-		QObject::connect( btOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( btOk, &QPushButton::clicked, &dlg, &QDialog::accept );
 
 		QPushButton * btCancel = new QPushButton;
 		btCancel->setText( Spell::tr( "Cancel" ) );
-		QObject::connect( btCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		QObject::connect( btCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 		grid->addWidget( btOk, 2, 0 );
 		grid->addWidget( btCancel, 2, 1 );

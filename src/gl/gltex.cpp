@@ -141,7 +141,7 @@ void resetTextureUnits()
 TexCache::TexCache( QObject * parent ) : QObject( parent )
 {
 	watcher = new QFileSystemWatcher( this );
-	connect( watcher, SIGNAL( fileChanged( const QString & ) ), this, SLOT( fileChanged( const QString & ) ) );
+	connect( watcher, &QFileSystemWatcher::fileChanged, this, &TexCache::fileChanged );
 }
 
 TexCache::~TexCache()

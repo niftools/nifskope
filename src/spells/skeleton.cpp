@@ -1045,7 +1045,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnVert->setMinimum( 1 );
 	spnVert->setMaximum( 8 );
 	spnVert->setValue( 4 );
-	connect( spnVert, SIGNAL( valueChanged( int ) ), this, SLOT( changed() ) );
+	connect( spnVert, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &SkinPartitionDialog::changed );
 
 	spnPart = new QSpinBox( this );
 	spnPart->setMinimum( 4 );
@@ -1055,12 +1055,12 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	ckTStrip = new QCheckBox( "&Stripify Triangles" );
 	ckTStrip->setChecked( true );
 	ckTStrip->setToolTip( "Determines whether the triangles in each partition will be arranged into strips or as a list of individual triangles.  Different gaems work best with one or the other." );
-	connect( ckTStrip, SIGNAL( clicked() ), this, SLOT( changed() ) );
+	connect( ckTStrip, &QCheckBox::clicked, this, &SkinPartitionDialog::changed );
 
 	ckPad = new QCheckBox( "&Pad Small Partitions" );
 	ckPad->setChecked( false );
 	ckPad->setToolTip( "Determines whether partitions that will have fewer than the selected maximum number of bones will have extra bones added to bring them up to that number." );
-	connect( ckPad, SIGNAL( clicked() ), this, SLOT( changed() ) );
+	connect( ckPad, &QCheckBox::clicked, this, &SkinPartitionDialog::changed );
 
 
 	QLabel * labVert = new QLabel( this );
@@ -1097,11 +1097,11 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 
 	QPushButton * btOk = new QPushButton( this );
 	btOk->setText( Spell::tr( "Ok" ) );
-	connect( btOk, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	connect( btOk, &QPushButton::clicked, this, &SkinPartitionDialog::accept );
 
 	QPushButton * btCancel = new QPushButton( this );
 	btCancel->setText( Spell::tr( "Cancel" ) );
-	connect( btCancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	connect( btCancel, &QPushButton::clicked, this, &SkinPartitionDialog::reject );
 
 	QGridLayout * grid = new QGridLayout( this );
 	grid->addWidget( labVert, 0, 0 );    grid->addWidget( spnVert, 0, 1 );

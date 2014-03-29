@@ -106,15 +106,15 @@ public:
 		le->setText( string );
 		le->setFocus();
 
-		QObject::connect( lw, SIGNAL( currentTextChanged( const QString & ) ), le, SLOT( setText( const QString & ) ) );
-		QObject::connect( lw, SIGNAL( itemActivated( QListWidgetItem * ) ), &dlg, SLOT( accept() ) );
-		QObject::connect( le, SIGNAL( returnPressed() ), &dlg, SLOT( accept() ) );
+		QObject::connect( lw, &QListWidget::currentTextChanged, le, &QLineEdit::setText );
+		QObject::connect( lw, &QListWidget::itemActivated, &dlg, &QDialog::accept );
+		QObject::connect( le, &QLineEdit::returnPressed, &dlg, &QDialog::accept );
 
 		QPushButton * bo = new QPushButton( Spell::tr( "Ok" ), &dlg );
-		QObject::connect( bo, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( bo, &QPushButton::clicked, &dlg, &QDialog::accept );
 
 		QPushButton * bc = new QPushButton( Spell::tr( "Cancel" ), &dlg );
-		QObject::connect( bc, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		QObject::connect( bc, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 		QGridLayout * grid = new QGridLayout;
 		dlg.setLayout( grid );
@@ -239,9 +239,9 @@ StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentM
 	QPushButton * cancel  = new QPushButton( Spell::tr( "Cancel" ), this );
 	QPushButton * preview = new QPushButton( Spell::tr( "Preview" ), this );
 
-	QObject::connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
-	QObject::connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
-	QObject::connect( preview, SIGNAL( clicked() ), this, SLOT( stringlistRegex() ) );
+	QObject::connect( ok, &QPushButton::clicked, this, &StringPaletteRegexDialog::accept );
+	QObject::connect( cancel, &QPushButton::clicked, this, &StringPaletteRegexDialog::reject );
+	QObject::connect( preview, &QPushButton::clicked, this, &StringPaletteRegexDialog::stringlistRegex );
 
 	int currentRow = 0;
 	grid->addWidget( title, currentRow, 0, 1, 3 );
@@ -495,16 +495,16 @@ public:
 
 		QListWidget * listWidget = new QListWidget( &dlg );
 		listWidget->addItems( sequenceMap.keys() );
-		QObject::connect( listWidget, SIGNAL( itemActivated( QListWidgetItem * ) ), &dlg, SLOT( accept() ) );
+		QObject::connect( listWidget, &QListWidget::itemActivated, &dlg, &QDialog::accept );
 		grid->addWidget( listWidget, currentRow, 0, 1, 2 );
 		currentRow++;
 
 		QPushButton * ok = new QPushButton( Spell::tr( "Ok" ), &dlg );
-		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
 		grid->addWidget( ok, currentRow, 0, 1, 1 );
 
 		QPushButton * cancel = new QPushButton( Spell::tr( "Cancel" ), &dlg );
-		QObject::connect( cancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		QObject::connect( cancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 		grid->addWidget( cancel, currentRow, 1, 1, 1 );
 
 		if ( dlg.exec() != QDialog::Accepted )

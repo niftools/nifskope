@@ -91,8 +91,8 @@ public:
 		cancel->setText( Spell::tr( "Cancel" ) );
 		hbox->addWidget( cancel );
 
-		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-		QObject::connect( cancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		QObject::connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
+		QObject::connect( cancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 		if ( dlg.exec() != QDialog::Accepted ) {
 			return index;

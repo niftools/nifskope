@@ -378,7 +378,7 @@ public:
 
 		QPushButton * btScale = new QPushButton( Spell::tr( "Scale" ) );
 		grid->addWidget( btScale, 4, 0, 1, 2 );
-		QObject::connect( btScale, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( btScale, &QPushButton::clicked, &dlg, &QDialog::accept );
 
 		if ( dlg.exec() != QDialog::Accepted )
 			return QModelIndex();

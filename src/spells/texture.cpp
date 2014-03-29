@@ -563,7 +563,7 @@ class spTextureTemplate : public Spell
 		wrap->addItem( "clamp" );
 
 		QPushButton * ok = new QPushButton( "Ok" );
-		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
 		lay->addWidget( ok, 4, 0, 1, 2 );
 
 		NIFSKOPE_QSETTINGS( settings );
@@ -702,8 +702,8 @@ public:
 		layout->addWidget( btnCancel, 2, 1 );
 		dlg.setLayout( layout );
 
-		QObject::connect( btnOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-		QObject::connect( btnCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		QObject::connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
+		QObject::connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 		if ( dlg.exec() != QDialog::Accepted )
 			return QModelIndex();
@@ -959,7 +959,7 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 
 	// texture action group; see options.cpp
 	QButtonGroup * actgrp = new QButtonGroup( this );
-	connect( actgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureAction( int ) ) );
+	connect( actgrp, static_cast<void (QButtonGroup::*)(int)>(&QButtonGroup::buttonClicked), this, &TexFlipDialog::textureAction );
 	int btnid = 0;
 	for ( const QString& tfaname : QStringList{
 			Spell::tr( "Add Textures" ), Spell::tr( "Remove Texture" ),
@@ -976,8 +976,7 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 	grid->addWidget( listview, 1, 0, 1, 0 );
 	listFromNif();
 
-	connect( listview->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
-		this, SLOT( texIndex( const QModelIndex & ) ) );
+	connect( listview->selectionModel(), &QItemSelectionModel::currentChanged, this, &TexFlipDialog::texIndex );
 	texIndex( listview->currentIndex() );
 
 	QHBoxLayout * hbox1 = new QHBoxLayout();
@@ -991,10 +990,10 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 	QHBoxLayout * hbox2 = new QHBoxLayout();
 	QPushButton * ok = new QPushButton( Spell::tr( "OK" ), this );
 	hbox2->addWidget( ok );
-	connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	connect( ok, &QPushButton::clicked, this, &TexFlipDialog::accept );
 	QPushButton * cancel = new QPushButton( Spell::tr( "Cancel" ), this );
 	hbox2->addWidget( cancel );
-	connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	connect( cancel, &QPushButton::clicked, this, &TexFlipDialog::reject );
 	grid->addLayout( hbox2, 3, 0, 1, 0 );
 }
 

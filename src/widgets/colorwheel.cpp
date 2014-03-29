@@ -320,7 +320,7 @@ void ColorWheel::contextMenuEvent( QContextMenuEvent * e )
 	QAction * hex = new QAction( tr( "Hex Edit..." ), this );
 	menu->addSeparator();
 	menu->addAction( hex );
-	connect( hex, SIGNAL( triggered() ), this, SLOT( chooseHex() ) );
+	connect( hex, &QAction::triggered, this, &ColorWheel::chooseHex );
 
 	if ( QAction * act = menu->exec( e->globalPos() ) ) {
 		if ( act != hex ) {
@@ -392,8 +392,8 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 	alpha->setOrientation( Qt::Vertical );
 	alpha->setVisible( alphaEnable );
 	grid->addWidget( alpha, 0, 2 );
-	connect( hsv, SIGNAL( sigColor( const QColor & ) ), alpha, SLOT( setColor( const QColor & ) ) );
-	connect( alpha, SIGNAL( valueChanged( float ) ), hsv, SLOT( setAlphaValue( float ) ) );
+	connect( hsv, &ColorWheel::sigColor, alpha, &AlphaSlider::setColor );
+	connect( alpha, &AlphaSlider::valueChanged, hsv, &ColorWheel::setAlphaValue );
 
 	QHBoxLayout * hbox = new QHBoxLayout;
 	grid->addLayout( hbox, 1, 0, 1, 3 );
@@ -401,8 +401,8 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 	hbox->addWidget( ok );
 	QPushButton * cancel = new QPushButton( "cancel" );
 	hbox->addWidget( cancel );
-	connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-	connect( cancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+	connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
+	connect( cancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 	if ( dlg.exec() == QDialog::Accepted ) {
 		QColor color = hsv->getColor();
@@ -468,8 +468,8 @@ void ColorWheel::chooseHex()
 	hBox->addWidget( btnCancel );
 	grid->addLayout( hBox, 1, 0, 1, -1 );
 
-	connect( btnOk, SIGNAL( clicked() ), dlg, SLOT( accept() ) );
-	connect( btnCancel, SIGNAL( clicked() ), dlg, SLOT( reject() ) );
+	connect( btnOk, &QPushButton::clicked, dlg, &QDialog::accept );
+	connect( btnCancel, &QPushButton::clicked, dlg, &QDialog::reject );
 
 	if ( dlg->exec() == QDialog::Accepted ) {
 		const QColor temp( r->value(), g->value(), b->value(), a->value() );

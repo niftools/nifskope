@@ -118,15 +118,15 @@ public:
 		le->setText( string );
 		le->setFocus();
 
-		QObject::connect( lw, SIGNAL( currentTextChanged( const QString & ) ), le, SLOT( setText( const QString & ) ) );
-		QObject::connect( lw, SIGNAL( itemActivated( QListWidgetItem * ) ), &dlg, SLOT( accept() ) );
-		QObject::connect( le, SIGNAL( returnPressed() ), &dlg, SLOT( accept() ) );
+		QObject::connect( lw, &QListWidget::currentTextChanged, le, &QLineEdit::setText );
+		QObject::connect( lw, &QListWidget::itemActivated, &dlg, &QDialog::accept );
+		QObject::connect( le, &QLineEdit::returnPressed, &dlg, &QDialog::accept );
 
 		QPushButton * bo = new QPushButton( Spell::tr( "Ok" ), &dlg );
-		QObject::connect( bo, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
+		QObject::connect( bo, &QPushButton::clicked, &dlg, &QDialog::accept );
 
 		QPushButton * bc = new QPushButton( Spell::tr( "Cancel" ), &dlg );
-		QObject::connect( bc, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
+		QObject::connect( bc, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 		QGridLayout * grid = new QGridLayout;
 		dlg.setLayout( grid );
