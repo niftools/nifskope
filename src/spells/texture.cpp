@@ -10,6 +10,8 @@
 #include "widgets/uvedit.h"
 
 #include <QButtonGroup>
+#include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QFileDialog>
 #include <QGridLayout>
@@ -539,7 +541,7 @@ class spTextureTemplate : public Spell
 		dlg.setLayout( lay );
 
 		FileSelector * file = new FileSelector( FileSelector::SaveFile, "File", QBoxLayout::RightToLeft );
-		file->setFilter( { "Targa (*.tga)" } );
+		file->setFilter( { "", "PNG (*.png)", "BMP (*.bmp)" } );
 		lay->addWidget( file, 0, 0, 1, 2 );
 
 		lay->addWidget( new QLabel( "Size" ), 1, 0 );
@@ -562,9 +564,17 @@ class spTextureTemplate : public Spell
 		wrap->addItem( "wrap" );
 		wrap->addItem( "clamp" );
 
+		lay->addWidget( new QLabel( "Antialias" ), 4, 0 );
+		QCheckBox * antialias = new QCheckBox;
+		lay->addWidget( antialias, 4, 1 );
+
+		lay->addWidget( new QLabel( "Wire Color" ), 5, 0 );
+		QPushButton * wireColor = new QPushButton;
+		lay->addWidget( wireColor, 5, 1 );
+
 		QPushButton * ok = new QPushButton( "Ok" );
 		QObject::connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
-		lay->addWidget( ok, 4, 0, 1, 2 );
+		lay->addWidget( ok, 6, 0, 1, 2 );
 
 		NIFSKOPE_QSETTINGS( settings );
 		settings.beginGroup( "spells" );
@@ -574,6 +584,25 @@ class spTextureTemplate : public Spell
 		wrap->setCurrentIndex( settings.value( "Wrap Mode", 0 ).toInt() );
 		size->setCurrentIndex( settings.value( "Image Size", 2 ).toInt() );
 		file->setText( settings.value( "File Name", "" ).toString() );
+		antialias->setChecked( settings.value( "Antialias", true ).toBool() );
+
+		QString colorARGB = settings.value( "Wire Color", "#FF000000" ).toString();
+		wireColor->setText( colorARGB );
+		QString bc = "background-color: ";
+		wireColor->setStyleSheet( bc + colorARGB );
+
+		QColorDialog * colorDlg = new QColorDialog;
+		QObject::connect( wireColor, &QPushButton::clicked, [&]()
+			{
+				QColor c = colorDlg->getColor( wireColor->text(), nullptr, "Wire Color", QColorDialog::ShowAlphaChannel );
+
+				if ( c.isValid() ) {
+					colorARGB = c.name( QColor::NameFormat::HexArgb );
+					wireColor->setText( colorARGB );
+					wireColor->setStyleSheet( bc + colorARGB );
+				}
+			}
+		);
 
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
@@ -581,6 +610,8 @@ class spTextureTemplate : public Spell
 		settings.setValue( "Wrap Mode", wrap->currentIndex() );
 		settings.setValue( "Image Size", size->currentIndex() );
 		settings.setValue( "File Name", file->text() );
+		settings.setValue( "Antialias", antialias->isChecked() );
+		settings.setValue( "Wire Color", colorARGB );
 
 		// get the selected coord set
 		QModelIndex iSet = iUVs.child( set->currentIndex(), 0 );
@@ -606,55 +637,63 @@ class spTextureTemplate : public Spell
 		// render the template image
 		quint16 s = size->currentText().toInt();
 
-		QImage img( s, s, QImage::Format_RGB32 );
+		QImage img( s, s, QImage::Format_ARGB32 );
 		QPainter pntr( &img );
 
-		pntr.fillRect( img.rect(), QColor( 0xff, 0xff, 0xff ) );
-		pntr.scale( s, s );
-		pntr.setPen( QColor( 0x10, 0x20, 0x30 ) );
+		img.fill( Qt::transparent );
+
+		pntr.setRenderHint( QPainter::Antialiasing, antialias->isChecked() );
+		pntr.fillRect( img.rect(), QColor( 0xff, 0xff, 0xff, 0 ) );
+		//pntr.scale( s, s ); // Seems to work differently in Qt 5
+		pntr.setPen( QColor( colorARGB ) );
 
 		bool wrp = wrap->currentIndex() == 0;
 
 		for ( const Triangle& t : tri ) {
-			Vector2 v2[3];
+
+			QPointF points[3];
 
 			for ( int i = 0; i < 3; i++ ) {
-				v2[i] = uv.value( t[i] );
+
+				float u, v;
+
+				u = uv.value( t[i] )[0];
+				v = uv.value( t[i] )[1];
 
 				if ( wrp ) {
-					v2[i][0] = wrap01f( v2[i][0] );
-					v2[i][1] = wrap01f( v2[i][1] );
+					u = wrap01f( u );
+					v = wrap01f( v );
 				}
+
+				// Scale points here instead of using pntr.scale()
+				QPointF point( u * s, v * s );
+
+				points[i] = point;
 			}
 
-			pntr.drawLine( QPointF( v2[0][0], v2[0][1] ), QPointF( v2[1][0], v2[1][1] ) );
-			pntr.drawLine( QPointF( v2[1][0], v2[1][1] ), QPointF( v2[2][0], v2[2][1] ) );
-			pntr.drawLine( QPointF( v2[2][0], v2[2][1] ), QPointF( v2[0][0], v2[0][1] ) );
+			pntr.drawPolygon( points, 3 );
 		}
 
 		// write the file
 		QString filename = file->text();
 
-		if ( !filename.endsWith( ".tga", Qt::CaseInsensitive ) )
-			filename.append( ".tga" );
+		// TODO: Fix FileSelector class so that this isn't necessary.
+		if ( !filename.endsWith( ".PNG", Qt::CaseInsensitive ) && !filename.endsWith( ".BMP", Qt::CaseInsensitive ) )
+			filename.append( ".png" );
 
-		quint8 hdr[18];
+		if ( filename.endsWith( ".PNG", Qt::CaseInsensitive ) ) {
+			// Transparent PNG
+			img.save( filename );
 
-		for ( int o = 0; o < 18; o++ )
-			hdr[o] = 0;
+		} else {
+			// Paint transparency onto bitmap with white background (Qt defaults to black)
+			QImage bmp( img.size(), QImage::Format_RGB32 );
+			bmp.fill( Qt::white );
+			QPainter bmpPntr( &bmp );
+			bmpPntr.drawImage( 0, 0, img );
 
-		hdr[02] = 2; // TGA_COLOR
-		hdr[12] = s % 256;
-		hdr[13] = s / 256;
-		hdr[14] = s % 256;
-		hdr[15] = s / 256;
-		hdr[16] = 32; // bpp
-		hdr[17] = 32; // flipV
-
-		QFile f( filename );
-
-		if ( !f.open( QIODevice::WriteOnly ) || f.write( (char *)hdr, 18 ) != 18 || f.write( (char *)img.bits(), s * s * 4 ) != s * s * 4 )
-			qWarning() << "exportTemplate(" << filename << ") : could not write file";
+			bmp.save( filename );
+		}
 
 		return index;
 	}
