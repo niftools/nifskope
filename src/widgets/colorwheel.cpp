@@ -390,8 +390,8 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 	alpha->setValue( c.alphaF() );
 	hsv->setAlphaValue( c.alphaF() );
 	alpha->setOrientation( Qt::Vertical );
-	alpha->setVisible( alphaEnable );
 	grid->addWidget( alpha, 0, 2 );
+	alpha->setVisible( alphaEnable );
 	connect( hsv, &ColorWheel::sigColor, alpha, &AlphaSlider::setColor );
 	connect( alpha, &AlphaSlider::valueChanged, hsv, &ColorWheel::setAlphaValue );
 
