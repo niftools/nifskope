@@ -786,7 +786,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		// disconnect( nif ) may not work with new Qt5 syntax...
 		// it says the calls need to remain symmetric to the connect() ones.
 		// Otherwise, use QMetaObject::Connection
-		disconnect( nif );
+		//disconnect( nif );
+		this->disconnect();
 	}
 
 	undoStack->clear();
@@ -794,10 +795,12 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	nif = nifModel;
 	iShape = nifIndex;
 
-	connect( nif, &NifModel::modelReset, this, &UVWidget::close );
-	connect( nif, &NifModel::destroyed, this, &UVWidget::close );
-	connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
-	connect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
+	if ( nif ) {
+		connect( nif, &NifModel::modelReset, this, &UVWidget::close );
+		connect( nif, &NifModel::destroyed, this, &UVWidget::close );
+		connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
+		connect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
+	}
 
 	textures->setNifFolder( nif->getFolder() );
 
