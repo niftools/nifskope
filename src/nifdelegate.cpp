@@ -251,7 +251,18 @@ public:
 			}
 
 			cedit->setEditText( NifValue::enumOptionName( t, value ) );
-			cedit->setCurrentIndex( cedit->findText( NifValue::enumOptionName( t, value ) ) );
+
+			if ( eo.t == NifValue::eFlags ) {
+				// Using setCurrentIndex on bitflag enums causes the QComboBox
+				// to break when only one option is selected. It returns something
+				// other than -1 and in doing so checked option's UI is inactive.
+				// See: https://github.com/niftools/nifskope/issues/51
+				cedit->setCurrentIndex( -1 );
+			} else {
+				cedit->setCurrentIndex( cedit->findText( NifValue::enumOptionName( t, value ) ) );
+			}
+				
+
 		} else if ( ledit ) {
 			ledit->setText( v.toString() );
 		}
