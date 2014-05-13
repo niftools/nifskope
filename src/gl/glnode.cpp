@@ -1951,7 +1951,7 @@ QString trans2string( Transform t )
 
 QString Node::textStats() const
 {
-	return QString( "%1\n\nglobal\n%2\nlocal\n%3\n" ).arg( name ).arg( trans2string( worldTrans() ) ).arg( trans2string( localTrans() ) );
+	return QString( "%1\n\nglobal\n%2\nlocal\n%3\n" ).arg( name, trans2string( worldTrans() ), trans2string( localTrans() ) );
 }
 
 BoundSphere Node::bounds() const

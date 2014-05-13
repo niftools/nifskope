@@ -157,7 +157,7 @@ public:
 			push( x );
 			break;
 		default:
-			err( tr( "error unhandled tag %1 in %2" ).arg( name ).arg( elements.value( current() ) ) );
+			err( tr( "error unhandled tag %1 in %2" ).arg( name, elements.value( current() ) ) );
 			break;
 		}
 
@@ -215,10 +215,10 @@ public:
 			NifBlock * c = KfmModel::compounds.value( key );
 			for ( const NifData& data : c->types ) {
 				if ( !checkType( data ) )
-					err( tr( "compound type %1 referes to unknown type %2" ).arg( key ).arg( data.type() ) );
+					err( tr( "compound type %1 referes to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key ).arg( data.temp() ) );
+					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
 
 				if ( data.type() == key )
 					err( tr( "compound type %1 contains itself" ).arg( key ) );

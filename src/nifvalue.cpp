@@ -116,7 +116,7 @@ void NifValue::setTypeDescription( const QString & typId, const QString & txt )
 QString NifValue::typeDescription( const QString & typId )
 {
 	if ( !enumMap.contains( typId ) )
-		return QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId ).arg( typeTxt.value( typId ) );
+		return QString( "<p><b>%1</b></p><p>%2</p>" ).arg( typId, typeTxt.value( typId ) );
 
 	// Cache the generated HTML description
 	static QHash<QString, QString> txtCache;
@@ -124,7 +124,7 @@ QString NifValue::typeDescription( const QString & typId )
 	if ( txtCache.contains( typId ) )
 		return txtCache[typId];
 	
-	QString txt = QString( "<p><b>%1 (%2)</b><p>%3</p>" ).arg( typId ).arg( aliasMap.value( typId ) ).arg( typeTxt.value( typId ) );
+	QString txt = QString( "<p><b>%1 (%2)</b><p>%3</p>" ).arg( typId, aliasMap.value( typId ), typeTxt.value( typId ) );
 
 	txt += "<table><tr><td><table>";
 	QMapIterator<quint32, QPair<QString, QString> > it( enumMap[ typId ].o );

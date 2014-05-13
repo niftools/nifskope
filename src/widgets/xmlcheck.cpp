@@ -394,7 +394,7 @@ void TestThread::run()
 			if ( model == &nif && nif.earlyRejection( filepath, blockMatch, verMatch ) ) {
 				bool loaded = model->loadFromFile( filepath );
 
-				QString result = QString( "<a href=\"nif:%1\">%1</a> (%2)" ).arg( filepath ).arg( model->getVersion() );
+				QString result = QString( "<a href=\"nif:%1\">%1</a> (%2)" ).arg( filepath, model->getVersion() );
 				QList<Message> messages = model->getMessages();
 
 				bool blk_match = false;
@@ -438,7 +438,7 @@ void TestThread::run()
 
 static QString linkId( const NifModel * nif, QModelIndex idx )
 {
-	QString id = QString( "%1 (%2)" ).arg( nif->itemName( idx ) ).arg( nif->itemTmplt( idx ) );
+	QString id = QString( "%1 (%2)" ).arg( nif->itemName( idx ), nif->itemTmplt( idx ) );
 
 	while ( idx.parent().isValid() ) {
 		idx = idx.parent();

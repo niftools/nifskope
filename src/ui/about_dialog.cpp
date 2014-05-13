@@ -5,7 +5,7 @@ AboutDialog::AboutDialog( QWidget * parent )
 {
 	ui.setupUi( this );
 #ifdef NIFSKOPE_REVISION
-	this->setWindowTitle( tr( "About NifSkope %1 (revision %2)" ).arg( NIFSKOPE_VERSION ).arg( NIFSKOPE_REVISION ) );
+	this->setWindowTitle( tr( "About NifSkope %1 (revision %2)" ).arg( NIFSKOPE_VERSION, NIFSKOPE_REVISION ) );
 #else
 	this->setWindowTitle( tr( "About NifSkope %1" ).arg( NIFSKOPE_VERSION ) );
 #endif

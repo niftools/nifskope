@@ -479,7 +479,7 @@ public:
 
 		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) ) {
 			QMimeData * mime = new QMimeData;
-			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->itemName( index ) ).arg( nif->getVersion() ), data );
+			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->itemName( index ), nif->getVersion() ), data );
 			QApplication::clipboard()->setMimeData( mime );
 		}
 

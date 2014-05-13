@@ -174,7 +174,7 @@ public:
 
 						if ( alias != type ) {
 							if ( !NifValue::registerAlias( alias, type ) )
-								err( tr( "failed to register alias %1 for type %2" ).arg( alias ).arg( type ) );
+								err( tr( "failed to register alias %1 for type %2" ).arg( alias, type ) );
 						}
 
 						typId  = alias;
@@ -218,7 +218,7 @@ public:
 
 					if ( alias != type ) {
 						if ( !NifValue::registerAlias( alias, type ) )
-							err( tr( "failed to register alias %1 for type %2" ).arg( alias ).arg( type ) );
+							err( tr( "failed to register alias %1 for type %2" ).arg( alias, type ) );
 					}
 
 					typId  = alias;
@@ -236,7 +236,7 @@ public:
 						err( tr( "enum definition must have a name and a known storage type" ) );
 
 					if ( !NifValue::registerAlias( typId, storage ) )
-						err( tr( "failed to register alias %1 for enum type %2" ).arg( storage ).arg( typId ) );
+						err( tr( "failed to register alias %1 for enum type %2" ).arg( storage, typId ) );
 
 					NifValue::EnumType flags = (x == tagBitFlag) ? NifValue::eFlags : NifValue::eDefault;
 					NifValue::registerEnumType( typId, flags );
@@ -524,10 +524,10 @@ public:
 			NifBlock * c = NifModel::compounds.value( key );
 			for ( NifData data :c->types ) {
 				if ( !checkType( data ) )
-					err( tr( "compound type %1 refers to unknown type %2" ).arg( key ).arg( data.type() ) );
+					err( tr( "compound type %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key ).arg( data.temp() ) );
+					err( tr( "compound type %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
 
 				if ( data.type() == key )
 					err( tr( "compound type %1 contains itself" ).arg( key ) );
@@ -538,17 +538,17 @@ public:
 			NifBlock * blk = NifModel::blocks.value( key );
 
 			if ( !blk->ancestor.isEmpty() && !NifModel::blocks.contains( blk->ancestor ) )
-				err( tr( "niobject %1 inherits unknown ancestor %2" ).arg( key ).arg( blk->ancestor ) );
+				err( tr( "niobject %1 inherits unknown ancestor %2" ).arg( key, blk->ancestor ) );
 
 			if ( blk->ancestor == key )
 				err( tr( "niobject %1 inherits itself" ).arg( key ) );
 
 			for ( const NifData& data : blk->types ) {
 				if ( !checkType( data ) )
-					err( tr( "niobject %1 refers to unknown type %2" ).arg( key ).arg( data.type() ) );
+					err( tr( "niobject %1 refers to unknown type %2" ).arg( key, data.type() ) );
 
 				if ( !checkTemp( data ) )
-					err( tr( "niobject %1 refers to unknown template type %2" ).arg( key ).arg( data.temp() ) );
+					err( tr( "niobject %1 refers to unknown template type %2" ).arg( key, data.temp() ) );
 			}
 		}
 

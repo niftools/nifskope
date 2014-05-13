@@ -1201,7 +1201,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						while ( i && i->temp() == "TEMPLATE" )
 							i = i->parent();
 
-						return QString( "%1<%2>" ).arg( item->type() ).arg( i ? i->temp() : QString() );
+						return QString( "%1<%2>" ).arg( item->type(), i ? i->temp() : QString() );
 					}
 
 					return item->type();
@@ -1677,7 +1677,7 @@ bool NifModel::setHeaderString( const QString & s )
 		version = version2number( v );
 
 		if ( !isVersionSupported( version ) ) {
-			msg( Message() << tr( "version %1 (%2) is not supported yet" ).arg( version2string( version ) ).arg( v ) );
+			msg( Message() << tr( "version %1 (%2) is not supported yet" ).arg( version2string( version ), v ) );
 			return false;
 		}
 
@@ -2726,7 +2726,7 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 		return;
 
 	if ( !inherits( btype, identifier ) && !inherits( identifier, btype ) ) {
-		msg( Message() << tr( "blocktype %1 and %2 are not related" ).arg( btype ).arg( identifier ) );
+		msg( Message() << tr( "blocktype %1 and %2 are not related" ).arg( btype, identifier ) );
 		return;
 	}
 

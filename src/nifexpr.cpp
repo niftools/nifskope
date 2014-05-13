@@ -334,29 +334,29 @@ QString Expression::toString() const
 	case Expression::e_not:
 		return QString( "!%1" ).arg( r );
 	case Expression::e_not_eq:
-		return QString( "(%1 != %2)" ).arg( l ).arg( r );
+		return QString( "(%1 != %2)" ).arg( l, r );
 	case Expression::e_eq:
-		return QString( "(%1 == %2)" ).arg( l ).arg( r );
+		return QString( "(%1 == %2)" ).arg( l, r );
 	case Expression::e_gte:
-		return QString( "(%1 >= %2)" ).arg( l ).arg( r );
+		return QString( "(%1 >= %2)" ).arg( l, r );
 	case Expression::e_lte:
-		return QString( "(%1 <= %2)" ).arg( l ).arg( r );
+		return QString( "(%1 <= %2)" ).arg( l, r );
 	case Expression::e_gt:
-		return QString( "(%1 > %2)" ).arg( l ).arg( r );
+		return QString( "(%1 > %2)" ).arg( l, r );
 	case Expression::e_lt:
-		return QString( "(%1 < %2)" ).arg( l ).arg( r );
+		return QString( "(%1 < %2)" ).arg( l, r );
 	case Expression::e_bit_and:
-		return QString( "(%1 & %2)" ).arg( l ).arg( r );
+		return QString( "(%1 & %2)" ).arg( l, r );
 	case Expression::e_bit_or:
-		return QString( "(%1 | %2)" ).arg( l ).arg( r );
+		return QString( "(%1 | %2)" ).arg( l, r );
 	case Expression::e_add:
-		return QString( "(%1 + %2)" ).arg( l ).arg( r );
+		return QString( "(%1 + %2)" ).arg( l, r );
 	case Expression::e_sub:
-		return QString( "(%1 - %2)" ).arg( l ).arg( r );
+		return QString( "(%1 - %2)" ).arg( l, r );
 	case Expression::e_bool_and:
-		return QString( "(%1 && %2)" ).arg( l ).arg( r );
+		return QString( "(%1 && %2)" ).arg( l, r );
 	case Expression::e_bool_or:
-		return QString( "(%1 || %2)" ).arg( l ).arg( r );
+		return QString( "(%1 || %2)" ).arg( l, r );
 	case Expression::e_nop:
 		return QString( "%1" ).arg( l );
 	}

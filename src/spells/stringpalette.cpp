@@ -226,9 +226,7 @@ StringPaletteRegexDialog::StringPaletteRegexDialog( NifModel * nif, QPersistentM
 	subTitle->setText( Spell::tr( "Enter a pair of regular expressions to search and replace." ) );
 	QLabel * refText = new QLabel( this );
 	refText->setText(
-		Spell::tr( "See <a href='%1'>%2</a> for syntax." )
-		.arg( "http://doc.trolltech.com/latest/qregexp.html" )
-		.arg( "http://doc.trolltech.com/latest/qregexp.html" )
+		Spell::tr( "See <a href='%1'>%2</a> for syntax." ).arg( "http://doc.trolltech.com/latest/qregexp.html", "http://doc.trolltech.com/latest/qregexp.html" )
 	);
 	QLabel * searchText = new QLabel( this );
 	searchText->setText( Spell::tr( "Search:" ) );

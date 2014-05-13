@@ -406,11 +406,12 @@ public:
 	//! Format as HTML
 	QString toHtml() const
 	{
-		return tr( "X %1 Y %2 Z %3\nlength %4" )
-		       .arg( NumOrMinMax( xyz[0] ) )
-		       .arg( NumOrMinMax( xyz[1] ) )
-		       .arg( NumOrMinMax( xyz[2] ) )
-		       .arg( length() );
+		return tr( "X %1 Y %2 Z %3\nlength %4" ).arg(
+		           NumOrMinMax( xyz[0] ),
+		           NumOrMinMax( xyz[1] ),
+		           NumOrMinMax( xyz[2] ),
+		           QString::number( length() )
+		       );
 	}
 
 protected:
@@ -628,12 +629,13 @@ public:
 	//! Format as HTML
 	QString toHtml() const
 	{
-		return tr( "X %1 Y %2 Z %3 W %4\nlength %5" )
-		       .arg( NumOrMinMax( xyzw[0] ) )
-		       .arg( NumOrMinMax( xyzw[1] ) )
-		       .arg( NumOrMinMax( xyzw[2] ) )
-		       .arg( NumOrMinMax( xyzw[3] ) )
-		       .arg( length() );
+		return tr( "X %1 Y %2 Z %3 W %4\nlength %5" ).arg(
+		           NumOrMinMax( xyzw[0] ),
+		           NumOrMinMax( xyzw[1] ),
+		           NumOrMinMax( xyzw[2] ),
+		           NumOrMinMax( xyzw[3] ),
+		           QString::number( length() )
+		       );
 	}
 
 protected:
@@ -772,11 +774,12 @@ public:
 	//! Format as HTML
 	QString toHtml() const
 	{
-		return tr( "W %1\nX %2\nY %3\nZ %4" )
-		       .arg( NumOrMinMax( wxyz[0] ) )
-		       .arg( NumOrMinMax( wxyz[1] ) )
-		       .arg( NumOrMinMax( wxyz[2] ) )
-		       .arg( NumOrMinMax( wxyz[3] ) );
+		return tr( "W %1\nX %2\nY %3\nZ %4" ).arg(
+		           NumOrMinMax( wxyz[0] ),
+		           NumOrMinMax( wxyz[1] ),
+		           NumOrMinMax( wxyz[2] ),
+		           NumOrMinMax( wxyz[3] )
+		       );
 	}
 
 protected:
