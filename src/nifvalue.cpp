@@ -263,7 +263,7 @@ quint32 NifValue::enumOptionValue( const QString & eid, const QString & oid, boo
 				*ok = true;
 
 			quint32 value = 0;
-			QStringList list = oid.split( QRegExp( "\\s*\\|\\s*" ), QString::SkipEmptyParts );
+			QStringList list = oid.split( QRegularExpression( "\\s*\\|\\s*" ), QString::SkipEmptyParts );
 			QStringListIterator lit( list );
 
 			while ( lit.hasNext() ) {

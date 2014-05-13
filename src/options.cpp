@@ -185,10 +185,12 @@ Options::Options()
 #endif
 		}
 
-		QRegExp fileRe( "NifSkope_(.*)\\.ts", Qt::CaseInsensitive );
+		QRegularExpression fileRe( "NifSkope_(.*)\\.ts", QRegularExpression::CaseInsensitiveOption );
+		
 		foreach ( const QString file, directory.entryList( QStringList( "NifSkope_*.ts" ), QDir::Files | QDir::NoSymLinks ) ) {
-			if ( fileRe.exactMatch( file ) ) {
-				QString localeText = fileRe.capturedTexts()[1];
+			QRegularExpressionMatch fileReMatch = fileRe.match( file );
+			if ( fileReMatch.hasMatch() ) {
+				QString localeText = fileReMatch.capturedTexts()[1];
 				QLocale fileLocale( localeText );
 
 				if ( RegionOpt->findData( fileLocale ) < 0 ) {
