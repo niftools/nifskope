@@ -2024,9 +2024,13 @@ void LODNode::update( const NifModel * nif, const QModelIndex & index )
 			iLevels = nif->getIndex( iBlock, "LOD Levels" );
 		}
 
-		if ( iLevels.isValid() )
-			for ( int r = 0; r < nif->rowCount( iLevels ); r++ )
-				ranges.append( qMakePair<float, float>( nif->get<float>( iLevels.child( r, 0 ), "Near Extent" ), nif->get<float>( iLevels.child( r, 0 ), "Far Extent" ) ) );
+		if ( iLevels.isValid() ) {
+			for ( int r = 0; r < nif->rowCount( iLevels ); r++ ) {
+				ranges.append( { nif->get<float>( iLevels.child( r, 0 ), "Near Extent" ),
+				                 nif->get<float>( iLevels.child( r, 0 ), "Far Extent" ) }
+				);
+			}
+		}
 
 
 	}
