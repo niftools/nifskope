@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glmesh.h"
+#include "config.h"
 #include "options.h"
 
 #include "glcontroller.h" // Inherited
@@ -39,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QBuffer>
 #include <QDebug>
+#include <QSettings>
 
 
 //! \file glmesh.cpp Mesh, MorphController, UVController
@@ -898,6 +900,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if ( isHidden() || !Options::drawMeshes() )
 		return;
 
+	auto nif = static_cast<const NifModel *>(iBlock.model());
+	
 	//glLoadName( nodeId ); - disabled glRenderMode( GL_SELECT );
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
@@ -949,9 +953,43 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glDisable( GL_CULL_FACE );
 	}
 
-	// render the triangles
-	if ( sortedTriangles.count() )
-		glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.data() );
+	auto bsLOD = nif->getBlock( iBlock, "BSLODTriShape" );
+	if ( !bsLOD.isValid() ) {
+
+		// render the triangles
+		if ( sortedTriangles.count() )
+			glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.data() );
+
+	} else {
+		auto lod0 = nif->get<uint>( bsLOD, "Level 0 Size" );
+		auto lod1 = nif->get<uint>( bsLOD, "Level 1 Size" );
+		auto lod2 = nif->get<uint>( bsLOD, "Level 2 Size" );
+
+		auto lod0tris = sortedTriangles.mid( 0, lod0 );
+		auto lod1tris = sortedTriangles.mid( lod0, lod1 );
+		auto lod2tris = sortedTriangles.mid( lod0 + lod1, lod2 );
+
+		NIFSKOPE_QSETTINGS( cfg );
+		cfg.beginGroup( "LOD" );
+		int lodLevel = cfg.value( "LOD Level", 2 ).toInt();
+		cfg.endGroup();
+
+		// render level 0 (always visible)
+		if ( lod0tris.count() )
+			glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.data() );
+
+		if ( lodLevel > 0 ) {
+			// render level 1
+			if ( lod1tris.count() )
+				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.data() );
+			
+			if ( lodLevel > 1 ) {
+				// render level 2
+				if ( lod2tris.count() )
+					glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.data() );
+			}
+		}
+	}
 
 	// render the tristrips
 	for ( int s = 0; s < tristrips.count(); s++ )

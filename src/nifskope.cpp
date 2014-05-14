@@ -406,6 +406,38 @@ NifSkope::NifSkope()
 	addToolBar( Qt::TopToolBarArea, tView );
 	// end View toolbars
 
+	// LOD Toolbar
+	QToolBar * tLOD = new QToolBar( "LOD" );
+
+	NIFSKOPE_QSETTINGS( cfg );
+	cfg.beginGroup( "LOD" );
+	int lodLevel = cfg.value( "LOD Level", 2 ).toInt();
+	cfg.setValue( "LOD Level", lodLevel );
+	cfg.endGroup();
+
+	QSlider * lodSlider = new QSlider( Qt::Horizontal );
+	lodSlider->setFocusPolicy( Qt::StrongFocus );
+	lodSlider->setTickPosition( QSlider::TicksBelow );
+	lodSlider->setTickInterval( 1 );
+	lodSlider->setSingleStep( 1 );
+	lodSlider->setMinimum( 0 );
+	lodSlider->setMaximum( 2 );
+	lodSlider->setValue( lodLevel );
+
+	tLOD->addWidget( lodSlider );
+
+	connect( lodSlider, &QSlider::valueChanged, []( int value )
+		{
+			NIFSKOPE_QSETTINGS( cfg );
+			cfg.beginGroup( "LOD" );
+			cfg.setValue( "LOD Level", value );
+			cfg.endGroup();
+		}
+	);
+	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
+
+	addToolBar( Qt::TopToolBarArea, tLOD );
+
 	/* ********* */
 
 	// menu
