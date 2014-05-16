@@ -1661,6 +1661,58 @@ void Node::drawHavok()
 		glPopMatrix();
 	}
 
+	// Draw BSMultiBound
+	auto iBSMultiBound = nif->getBlock( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
+	if ( iBSMultiBound.isValid() ) {
+
+		auto iBSMultiBoundData = nif->getBlock( nif->getLink( iBSMultiBound, "Data" ), "BSMultiBoundData" );
+		if ( iBSMultiBoundData.isValid() ) {
+
+			Vector3 a, b;
+
+			glPushMatrix();
+			glLoadMatrix( scene->view );
+			glMultMatrix( worldTrans() );
+
+			// BSMultiBoundAABB
+			if ( nif->isNiBlock( iBSMultiBoundData, "BSMultiBoundAABB" ) ) {
+				auto pos = nif->get<Vector3>( iBSMultiBoundData, "Position" );
+				auto extent = nif->get<Vector3>( iBSMultiBoundData, "Extent" );
+
+				a = pos + extent;
+				b = pos - extent;
+			}
+
+			// BSMultiBoundOBB
+			if ( nif->isNiBlock( iBSMultiBoundData, "BSMultiBoundOBB" ) ) {
+				auto center = nif->get<Vector3>( iBSMultiBoundData, "Center" );
+				auto size = nif->get<Vector3>( iBSMultiBoundData, "Size" );
+				auto matrix = nif->get<Matrix>( iBSMultiBoundData, "Rotation" );
+
+				a = size;
+				b = -size;
+
+				Transform t;
+				t.rotation = matrix;
+				t.translation = center;
+				glMultMatrix( t );
+			}
+			
+			if ( Node::SELECTING ) {
+				int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBSMultiBoundData ) );
+				glColor4ubv( (GLubyte *)&s_nodeId );
+				glLineWidth( 5 );
+			} else {
+				glColor( Color4( 1.0f, 1.0f, 1.0f, 0.6f ) );
+				glDisable( GL_LIGHTING );
+				glLineWidth( 1.0f );
+			}
+
+			drawBox( a, b );
+			glPopMatrix();
+		}
+	}
+
 	// Draw BSBound dimensions
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
 
