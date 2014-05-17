@@ -408,6 +408,8 @@ NifSkope::NifSkope()
 
 	// LOD Toolbar
 	QToolBar * tLOD = new QToolBar( "LOD" );
+	tLOD->setObjectName( tr( "tLOD" ) );
+	tLOD->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 
 	NIFSKOPE_QSETTINGS( cfg );
 	cfg.beginGroup( "LOD" );
