@@ -427,6 +427,7 @@ NifSkope::NifSkope()
 	lodSlider->setValue( lodLevel );
 
 	tLOD->addWidget( lodSlider );
+	tLOD->setEnabled( false );
 
 	connect( lodSlider, &QSlider::valueChanged, []( int value )
 		{
