@@ -438,6 +438,7 @@ NifSkope::NifSkope()
 		}
 	);
 	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
+	connect( nif, &NifModel::lodSliderChanged, [tLOD]( bool enabled ) { tLOD->setEnabled( enabled ); } );
 
 	addToolBar( Qt::TopToolBarArea, tLOD );
 

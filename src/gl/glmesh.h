@@ -48,6 +48,7 @@ class Mesh : public Node
 {
 public:
 	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) { double_sided = false; double_sided_es = false; }
+	~Mesh() { clear(); }
 
 	void clear();
 	void update( const NifModel * nif, const QModelIndex & );
@@ -134,6 +135,7 @@ protected:
 	friend class UVController;
 	friend class Renderer;
 
+	static bool isBSLODPresent;
 	bool double_sided;
 	bool double_sided_es;
 };
