@@ -246,6 +246,24 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;
 
+	bool hasBSLOD = false;
+	int n = 0;
+	while ( n < nif->getBlockCount() ) {
+		auto iBlock = nif->getBlock( n );
+		if ( nif->itemName( iBlock ) == "BSLODTriShape" ) {
+			hasBSLOD = true;
+			break;
+		}
+
+		n++;
+	}
+
+	for ( QWidget* widget : qApp->allWidgets() ) {
+		if ( widget->objectName() == "tLOD" ) {
+			widget->setEnabled( hasBSLOD );
+		}
+	}
+
 	upData |= ( iData == index ) || ( iTangentData == index );
 	upSkin |= ( iSkin == index );
 	upSkin |= ( iSkinData == index );
