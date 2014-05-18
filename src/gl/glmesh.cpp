@@ -212,6 +212,8 @@ protected:
  *  Mesh
  */
 
+bool Mesh::isBSLODPresent = false;
+
 void Mesh::clear()
 {
 	Node::clear();
@@ -236,6 +238,7 @@ void Mesh::clear()
 	transTangents.clear();
 	transBitangents.clear();
 
+	isBSLODPresent = false;
 	double_sided = false;
 }
 
@@ -246,22 +249,14 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;
 
-	bool hasBSLOD = false;
-	int n = 0;
-	while ( n < nif->getBlockCount() ) {
-		auto iBlock = nif->getBlock( n );
-		if ( nif->itemName( iBlock ) == "BSLODTriShape" ) {
-			hasBSLOD = true;
-			break;
+	if ( !isBSLODPresent ) {
+
+		if ( nif->isNiBlock( iBlock, "BSLODTriShape" ) ) {
+			isBSLODPresent = true;
+
 		}
 
-		n++;
-	}
-
-	for ( QWidget* widget : qApp->allWidgets() ) {
-		if ( widget->objectName() == "tLOD" ) {
-			widget->setEnabled( hasBSLOD );
-		}
+		emit nif->lodSliderChanged( isBSLODPresent );
 	}
 
 	upData |= ( iData == index ) || ( iTangentData == index );

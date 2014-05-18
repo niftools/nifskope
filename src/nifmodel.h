@@ -237,6 +237,7 @@ public:
 
 signals:
 	void linksChanged();
+	void lodSliderChanged( bool ) const;
 
 protected:
 	void insertAncestor( NifItem * parent, const QString & identifier, int row = -1 );
