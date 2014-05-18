@@ -1245,39 +1245,62 @@ int main( int argc, char * argv[] )
 	NifModel::loadXML();
 	KfmModel::loadXML();
 
-	QString fname;
+	QStack<QString> fnames;
 	bool reuseSession = true;
 
+	// EXE is being passed arguments
 	for ( int i = 1; i < argc; ++i ) {
 		char * arg = argv[i];
 
 		if ( arg && arg[0] == '-' ) {
+			// Command line arguments
+			// TODO: See QCommandLineParser for future
+			// expansion of command line abilities.
 			switch ( arg[1] ) {
 			case 'i':
 			case 'I':
+				// TODO: Figure out the point of this
 				reuseSession = false;
 				break;
 			}
 		} else {
-			fname = QDir::current().filePath( arg );
+			//qDebug() << "arg " << i << ": " << arg;
+			QString fname = QDir::current().filePath( arg );
+
+			if ( QFileInfo( fname ).exists() ) {
+				fnames.push( fname );
+			}
 		}
 	}
 
-	if ( !fname.isEmpty() ) {
-		//Getting a NIF file name from the OS
-		fname = QDir::current().filePath( argv[ argc - 1 ] );
+	// EXE is being opened directly
+	if ( fnames.isEmpty() ) {
+		fnames.push( QString() );
 	}
 
-	if ( !reuseSession ) {
-		NifSkope::createWindow( fname );
-		return app.exec();
-	}
+	if ( fnames.count() > 0 ) {
 
-	if ( IPCsocket * ipc = IPCsocket::create() ) {
-		ipc->execCommand( QString( "NifSkope::open %1" ).arg( fname ) );
-		return app.exec();
-	} else {
-		IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fname ) );
-		return 0;
+		// TODO: Figure out the point of this
+		if ( !reuseSession ) {
+			//qDebug() << "NifSkope createWindow";
+			NifSkope::createWindow( fnames.pop() );
+			return app.exec();
+		}
+
+		if ( IPCsocket * ipc = IPCsocket::create() ) {
+			//qDebug() << "IPCSocket exec";
+			ipc->execCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
+
+			while ( !fnames.isEmpty() ) {
+				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
+			}
+
+			return app.exec();
+		} else {
+			//qDebug() << "IPCSocket send";
+			IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
+			return 0;
+		}
+
 	}
 }
