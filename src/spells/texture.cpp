@@ -223,7 +223,7 @@ public:
 
 
 		// to avoid shortcut resolve bug take *.* as text filter
-		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file, "*.*" );
+		file = QFileDialog::getOpenFileName( qApp->activeWindow(), "Select a texture file", file, "*.*" );
 
 		if ( !file.isEmpty() ) {
 			// save path for future
