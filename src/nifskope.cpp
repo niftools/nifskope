@@ -681,6 +681,11 @@ void NifSkope::select( const QModelIndex & index )
 				tree->setRootIndex( root );
 
 			tree->setCurrentIndex( idx.sibling( idx.row(), 0 ) );
+
+			// Expand BSShaderTextureSet by default
+			//if ( root.child( 1, 0 ).data().toString() == "Textures" )
+			//	tree->expandAll();
+
 		} else {
 			if ( tree->rootIndex() != QModelIndex() )
 				tree->setRootIndex( QModelIndex() );
@@ -801,6 +806,12 @@ void NifSkope::load()
 
 	ogl->tAnim->setEnabled( true );
 	ogl->center();
+
+	// Expand BSShaderTextureSet by default
+	auto indices = nif->match( nif->index( 0, 0 ), Qt::DisplayRole, "Textures", -1, Qt::MatchRecursive );
+	for ( auto i : indices ) {
+		tree->expand( i );
+	}
 
 	setEnabled( true );
 }
