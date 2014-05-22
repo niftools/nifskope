@@ -882,7 +882,7 @@ public:
 			}
 
 			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
-			QString filename  = QFileDialog::getSaveFileName( 0, Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
+			QString filename  = QFileDialog::getSaveFileName( qApp->activeWindow(), Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
 
 			if ( !filename.isEmpty() ) {
 				if ( tex->exportFile( iData, filename ) ) {
@@ -898,7 +898,7 @@ public:
 			TexCache * tex = new TexCache();
 			tex->setNifFolder( nif->getFolder() );
 			QString file = nif->getFolder();
-			QString filename = QFileDialog::getSaveFileName( 0, Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
+			QString filename = QFileDialog::getSaveFileName( qApp->activeWindow(), Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
 
 			if ( !filename.isEmpty() ) {
 				tex->exportFile( index, filename );

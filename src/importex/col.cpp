@@ -972,7 +972,7 @@ void exportCol( const NifModel * nif, QFileInfo fileInfo )
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "col" );
 
-	QString fname = QFileDialog::getSaveFileName( 0, tr( "Choose a .DAE file for export" ), QString( "%1%2.dae" ).arg( settings.value( "Path" ).toString() ).arg( fileInfo.baseName() ), "COLLADA (*.dae)" );
+	QString fname = QFileDialog::getSaveFileName( qApp->activeWindow(), tr( "Choose a .DAE file for export" ), QString( "%1%2.dae" ).arg( settings.value( "Path" ).toString() ).arg( fileInfo.baseName() ), "COLLADA (*.dae)" );
 
 	if ( fname.isEmpty() )
 		return;
