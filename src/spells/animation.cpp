@@ -34,7 +34,7 @@ public:
 		if ( !nif )
 			return index;
 
-		QStringList kfnames = QFileDialog::getOpenFileNames( 0, Spell::tr( "Choose .kf file(s)" ), nif->getFolder(), "Keyframe (*.kf)" );
+		QStringList kfnames = QFileDialog::getOpenFileNames( qApp->activeWindow(), Spell::tr( "Choose .kf file(s)" ), nif->getFolder(), "Keyframe (*.kf)" );
 		for ( const QString& kfname : kfnames ) {
 			try
 			{
