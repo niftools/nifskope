@@ -243,7 +243,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "3ds" );
 
-	QString fname = QFileDialog::getOpenFileName( 0, tr( "Choose a .3ds file to import" ), settings.value( tr( "File Name" ) ).toString(), "3DS (*.3ds)" );
+	QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .3ds file to import" ), settings.value( tr( "File Name" ) ).toString(), "3DS (*.3ds)" );
 
 	if ( fname.isEmpty() ) {
 		return;
