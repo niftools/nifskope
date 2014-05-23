@@ -33,30 +33,33 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFEDITORS_H
 #define NIFEDITORS_H
 
+#include "nifmodel.h"
+
+#include <QGroupBox> // Inherited
+#include <QWidget>   // Inherited
 #include <QBoxLayout>
-#include <QGroupBox>
 #include <QPointer>
 #include <QStack>
 
-#include "../nifmodel.h"
 
 class NifEditBox : public QGroupBox
 {
 	Q_OBJECT
+
 public:
 	NifEditBox( NifModel * nif, const QModelIndex & index );
-	
+
 	virtual void updateData( NifModel * nif ) = 0;
-	virtual void applyData( NifModel * nif ) = 0;
-	
+	virtual void applyData( NifModel * nif )  = 0;
+
 	QModelIndex getIndex() const { return index; }
-	
+
 protected slots:
 	void applyData();
 
 protected:
 	QLayout * getLayout();
-	
+
 	QPointer<NifModel> nif;
 	QPersistentModelIndex index;
 };
@@ -64,36 +67,38 @@ protected:
 class NifBlockEditor : public QWidget
 {
 	Q_OBJECT
+
 public:
 	NifBlockEditor( NifModel * nif, const QModelIndex & block, bool fireAndForget = true );
-	
+
 	void add( NifEditBox * );
-	
+
 	void pushLayout( QBoxLayout *, const QString & name = QString() );
 	void popLayout();
-	
+
 	NifModel * getNif() { return nif; }
 
 protected slots:
 	void nifDataChanged( const QModelIndex &, const QModelIndex & );
 	void nifDestroyed();
 	void updateData();
-	
+
 protected:
 	void showEvent( QShowEvent * );
 
 	NifModel * nif;
 	QPersistentModelIndex iBlock;
-	
-	QList<NifEditBox*> editors;
-	QStack<QBoxLayout*> layouts;
-	
+
+	QList<NifEditBox *> editors;
+	QStack<QBoxLayout *> layouts;
+
 	class QTimer * timer;
 };
 
 class NifFloatSlider : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifFloatSlider( NifModel * nif, const QModelIndex & index, float min, float max );
 
@@ -107,9 +112,10 @@ protected:
 class NifFloatEdit : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifFloatEdit( NifModel * nif, const QModelIndex & index, float min = -10e8, float max = +10e8 );
-	
+
 	void updateData( NifModel * );
 	void applyData( NifModel * );
 
@@ -120,10 +126,11 @@ protected:
 class NifLineEdit : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifLineEdit( NifModel * nif, const QModelIndex & index );
-	
-	void updateData( NifModel * );	
+
+	void updateData( NifModel * );
 	void applyData( NifModel * );
 
 protected:
@@ -133,12 +140,13 @@ protected:
 class NifColorEdit : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifColorEdit( NifModel * nif, const QModelIndex & index );
-	
+
 	void updateData( NifModel * );
 	void applyData( NifModel * );
-	
+
 protected:
 	class ColorWheel * color;
 	class AlphaSlider * alpha;
@@ -147,12 +155,13 @@ protected:
 class NifVectorEdit : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifVectorEdit( NifModel * nif, const QModelIndex & index );
-	
+
 	void updateData( NifModel * );
 	void applyData( NifModel * );
-	
+
 protected:
 	class VectorEdit * vector;
 };
@@ -160,9 +169,10 @@ protected:
 class NifRotationEdit : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifRotationEdit( NifModel * nif, const QModelIndex & index );
-	
+
 	void updateData( NifModel * );
 	void applyData( NifModel * );
 
@@ -173,17 +183,18 @@ protected:
 class NifMatrix4Edit : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifMatrix4Edit( NifModel * nif, const QModelIndex & index );
-	
+
 	void updateData( NifModel * );
 	void applyData( NifModel * );
-	
+
 protected:
 	class VectorEdit * translation;
 	class RotationEdit * rotation;
 	class VectorEdit * scale;
-	
+
 	bool setting;
 };
 

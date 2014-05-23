@@ -33,17 +33,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FLOATEDIT_H
 #define FLOATEDIT_H
 
-#include <QDoubleValidator>
-#include <QLineEdit>
+#include <QDoubleValidator> // Inherited
+#include <QLineEdit>        // Inherited
+
 
 class FloatValidator : public QDoubleValidator
 {
 	Q_OBJECT
+
 public:
-	FloatValidator( QObject * parent = NULL )
+	FloatValidator( QObject * parent = nullptr )
 		: QDoubleValidator( parent )
 	{}
-	FloatValidator( double bottom, double top, int decimals, QObject * parent = NULL )
+	FloatValidator( double bottom, double top, int decimals, QObject * parent = nullptr )
 		: QDoubleValidator( bottom, top, decimals, parent )
 	{}
 
@@ -56,9 +58,10 @@ public:
 class FloatEdit : public QLineEdit
 {
 	Q_OBJECT
+
 public:
-	FloatEdit( QWidget * = NULL );
-	
+	FloatEdit( QWidget * = nullptr );
+
 	float value() const;
 
 	void setRange( float minimum, float maximum );
@@ -80,10 +83,10 @@ public slots:
 	void set( float val, float n, float x );
 	void setMin();
 	void setMax();
-	
+
 protected slots:
 	void edited();
-	
+
 protected:
 	float val;
 	FloatValidator * validator;

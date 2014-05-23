@@ -33,16 +33,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-#include <QObject>
 #include "widgets/groupbox.h"
+
+#include <QObject> // Inherited
 
 #define NifSkopeDisplayRole (Qt::UserRole + 42)
 
+
 //! \file options.h Options class
+
+class AlphaSlider;
+class ColorWheel;
+class FileSelector;
+class GroupBox;
 
 class QAbstractButton;
 class QAction;
 class QColor;
+class QComboBox;
 class QCheckBox;
 class QDialog;
 class QLineEdit;
@@ -53,50 +61,50 @@ class QSpinBox;
 class QStringListModel;
 class QTabWidget;
 class QTimer;
-class QComboBox;
 
-class AlphaSlider;
-class ColorWheel;
-class FileSelector;
-class GroupBox;
+//! Gets the color normally used for drawing from Options::nlColor()
+#define glNormalColor() glColor( Color4( Options::nlColor() ) )
+//! Gets the color used for highlighting from Options::hlColor()
+#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
 
 //! Global options menu and dialog
 class Options : public QObject
 {
 	Q_OBJECT
+
 public:
 	//! Global instance
 	static Options * get();
 	//! The list of currently enabled actions
-	static QList<QAction*> actions();
-	
+	static QList<QAction *> actions();
+
 	//! Texture folders
 	static QStringList textureFolders();
 	//! Whether to use alternative textures
 	static bool textureAlternatives();
-	
+
 	//! Whether to enable antialiasing
 	static bool antialias();
 	//! Whether to enable texturing
 	static bool texturing();
 	//! Whether to enable shaders
 	static bool shaders();
-	
+
 	//! Whether to enable blending
 	static bool blending() { return true; }
-	
+
 	//! The background color of the main view window
 	static QColor bgColor();
 	//! The colour to normally use for drawing
 	static QColor nlColor();
 	//! The colour to use when highlighting
 	static QColor hlColor();
-	
+
 	//! Regular expression to use for culling
-	static QRegExp cullExpression();
+	static QRegularExpression cullExpression();
 	//! Whether to only draw textured shapes
 	static bool onlyTextured();
-	
+
 	//! Whether to draw the axes
 	static bool drawAxes();
 	//! Whether to draw nodes
@@ -113,32 +121,33 @@ public:
 	static bool drawStats();
 	//! Whether to draw meshes
 	static bool drawMeshes();
-	
+
 	//! Whether to benchmark FPS
 	static bool benchmark();
-	
+
 	//! The possible axes
-	typedef enum {
+	typedef enum
+	{
 		ZAxis, YAxis, XAxis
 	} Axis;
-	
+
 	//! The axis defined as up
 	static Axis upAxis();
-	
+
 	//! The ambient lighting color
 	static QColor ambient();
 	//! The diffuse lighting color
 	static QColor diffuse();
 	//! The specular lighting color
 	static QColor specular();
-	
+
 	//! Whether to use frontal lighting
 	static bool lightFrontal();
 	//! The angle between the Z axis and the light
 	static int lightDeclination();
 	//! The angle between the X axis and the light
 	static int lightPlanarAngle();
-	
+
 	//! Whether to override material colors
 	static bool overrideMaterials();
 	//! The ambient color to override materials with
@@ -149,7 +158,7 @@ public:
 	static QColor overrideSpecular();
 	//! The emissive color to override materials with
 	static QColor overrideEmissive();
-	
+
 	//! The NIF version to use at start
 	static QString startupVersion();
 	//! The current translation locale
@@ -158,15 +167,17 @@ public:
 	//static int maxStringLength();
 	//! status of Collada Cull setting
 	static bool exportCullEnabled();
-	
+
 signals:
 	//! Signal emitted when a value changes
 	void sigChanged();
+	//! Signal emitted when a value changes and needs to flush 3D data
+	void sigFlush3D();
 	//! Signal emitted when material overrides change
 	void materialOverridesChanged();
 	//! Signal emitted when the locale changes
 	void sigLocaleChanged();
-	
+
 protected slots:
 	//! Texture folder button actions
 	void textureFolderAction( int );
@@ -176,23 +187,23 @@ protected slots:
 	void textureFolderAutoDetect();
 	//! Set lighting presets
 	void activateLightPreset( int );
-	
+
 public slots:
 	void save();
-	
+
 protected:
 	friend class TexturesPage;
 	friend class ColorsOptionPage;
 	friend class MaterialOverrideOptionPage;
-	
+
 	Options();
 	~Options();
-	
+
 	bool eventFilter( QObject * o, QEvent * e );
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// Menu
-	
+
 	QAction * aDrawAxes;
 	QAction * aDrawNodes;
 	QAction * aDrawHavok;
@@ -200,72 +211,69 @@ protected:
 	QAction * aDrawFurn;
 	QAction * aDrawHidden;
 	QAction * aDrawStats;
-	
+
 	QAction * aSettings;
-	
+
 	QTimer * tSave, * tEmit;
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// General Settings page
-	
+
 	QComboBox * RegionOpt;
 	QLineEdit * StartVer;
 	//QSpinBox * StringLength;
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// Rendering Settings page
-	
+
 	QStringListModel * TexFolderModel;
 	QListView * TexFolderView;
 	FileSelector * TexFolderSelect;
 	QCheckBox * TexAlternatives;
 	QAbstractButton * TexFolderButtons[4];
-	
+
 	QCheckBox * AntiAlias;
 	QCheckBox * Textures;
 	QCheckBox * Shaders;
-	
+
 	QCheckBox * CullNoTex;
 	QCheckBox * CullByID;
 	QLineEdit * CullExpr;
-	
+
 	QRadioButton * AxisX;
 	QRadioButton * AxisY;
 	QRadioButton * AxisZ;
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// Colors Settings page
-	
+
 	ColorWheel * colors[3];
 	AlphaSlider * alpha[3];
-	
+
 	ColorWheel * LightColor[3];
-	
+
 	QCheckBox * LightFrontal;
 	QSpinBox * LightDeclination;
 	QSpinBox * LightPlanarAngle;
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// Materials Settings page
-	
+
 	QCheckBox * overrideMatCheck;
 	ColorWheel * matColors[4];
 
 	//////////////////////////////////////////////////////////////////////////
 	// Export Settings page
 	QCheckBox * exportCull;
-	
+
 	//////////////////////////////////////////////////////////////////////////
-	
+
 	GroupBox * dialog;
-	QTabWidget *tab;
-	
+	QTabWidget * tab;
+
 	bool showMeshes;
 };
 
-//! Gets the color normally used for drawing from Options::nlColor()
-#define glNormalColor() glColor( Color4( Options::nlColor() ) )
-//! Gets the color used for highlighting from Options::hlColor()
-#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
+
 
 #endif

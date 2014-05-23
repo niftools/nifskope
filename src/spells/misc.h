@@ -1,7 +1,8 @@
 #ifndef SP_MISC_H
 #define SP_MISC_H
 
-#include "../spellbook.h"
+#include "spellbook.h"
+
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file misc.h
@@ -20,7 +21,7 @@ public:
 	bool isApplicable( const NifModel * nif, const QModelIndex & index );
 	QModelIndex cast( NifModel * nif, const QModelIndex & index );
 	// moved from sanitize.cpp
-	QModelIndex numCollapser( NifModel * nif, QModelIndex &iNumElem, QModelIndex &iArray );
+	QModelIndex numCollapser( NifModel * nif, QModelIndex & iNumElem, QModelIndex & iArray );
 };
 
 #endif // SP_MISC_H

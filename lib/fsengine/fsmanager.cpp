@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QStringListModel>
 
-//#include "../options.h"
+#include <options.h>
 
 //! Global BSA file manager
 static FSManager *theFSManager = NULL;
@@ -59,7 +59,7 @@ FSManager* FSManager::get()
 QList <FSArchiveFile *> FSManager::archiveList()
 {
 	QList<FSArchiveFile *> archives;
-	foreach ( FSArchiveHandler* an, get()->archives.values() ){
+	for ( FSArchiveHandler* an : get()->archives.values() ) {
 		archives.append( an->getArchive() );
 	}
 	return archives;
@@ -80,7 +80,7 @@ FSManager::FSManager( QObject * parent )
 		list = autodetectArchives();
 	}
 	
-	foreach ( QString an, list )
+	for ( const QString an : list )
 	{
 		if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
 			archives.insert( an, a );
@@ -105,7 +105,7 @@ QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 			dataPath += "/";
 		dataPath += dataDir;
 		QDir fs( dataPath );
-		foreach ( QString fn, fs.entryList( QStringList() << "*.bsa", QDir::Files ) )
+		for ( const QString& fn : fs.entryList( { "*.bsa" }, QDir::Files ) )
 		{
 			list << dataPath + QDir::separator() + fn;
 		}
@@ -177,6 +177,8 @@ FSSelector::~FSSelector()
 	cfg.beginGroup( "fsengine" );
 	QStringList list( manager->automatic ? QStringList() << "AUTO" : manager->archives.keys() );
 	cfg.setValue( "archives", list );
+
+	emit Options::get()->sigFlush3D();
 }
 
 void FSSelector::sltAuto( bool x )
@@ -186,7 +188,7 @@ void FSSelector::sltAuto( bool x )
 		qDeleteAll( manager->archives );
 		manager->archives.clear();
 		
-		foreach ( QString an, manager->autodetectArchives() )
+		for ( const QString an : manager->autodetectArchives() )
 		{
 			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
 			{
@@ -208,7 +210,7 @@ void FSSelector::sltAdd()
 {
 	QStringList list = QFileDialog::getOpenFileNames( this, "Select resource files to add", QString(), "BSA (*.bsa)" );
 	
-	foreach ( QString an, list )
+	for ( const QString an : list )
 	{
 		if ( ! manager->archives.contains( an ) )
 			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )

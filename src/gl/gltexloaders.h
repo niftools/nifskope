@@ -33,9 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
-#include <QOpenGLContext>
+#include <QByteArray>
 
-#include <QtCore/QtCore>
+
+class QModelIndex;
+class QString;
+
+typedef unsigned int GLuint;
 
 //! \file gltexloaders.h Texture loading functions header
 
@@ -53,7 +57,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * \param mipmaps Contains the number of mipmaps on successful load.
  * \return true if the load was successful, false otherwise.
  */
-extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data = QByteArray() );
+extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
+extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data );
 
 //! A function for loading textures.
 /*!

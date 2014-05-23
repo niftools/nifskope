@@ -33,9 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLCONTROLLER_H
 #define GLCONTROLLER_H
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
-#include <QPointer>
+#include <QObject> // Inherited
+#include <QPersistentModelIndex>
+#include <QString>
+
 
 //! \file glcontroller.h Controller, Interpolator and subclasses
 
@@ -52,49 +55,50 @@ public:
 	Controller( const QModelIndex & index );
 	//! Destructor
 	virtual ~Controller() {}
-	
+
 	float start;
 	float stop;
 	float phase;
 	float frequency;
-	
+
 	//! Extrapolation type
-	enum Extrapolation {
+	enum Extrapolation
+	{
 		Cyclic = 0, Reverse = 1, Constant = 2
 	} extrapolation;
-	
+
 	bool active;
-	
+
 	//! Set sequence name for animation groups
 	virtual void setSequence( const QString & seqname );
-	
+
 	//! Update for specified time
 	virtual void update( float time ) = 0;
-	
+
 	//! Update for model and index
 	virtual bool update( const NifModel * nif, const QModelIndex & index );
-	
+
 	//! Set the interpolator
 	virtual void setInterpolator( const QModelIndex & iInterpolator );
-	
+
 	//! Find the model index of the controller
 	QModelIndex index() const { return iBlock; }
-	
+
 	//! Find the type of the controller
 	virtual QString typeId() const;
-	
+
 	//! Determine the controller time based on the specified time
 	float ctrlTime( float time ) const;
-	
+
 	//! Interpolate based on a value, data, an array name, the time, and the last index?
 	template <typename T> static bool interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex );
 	//! Interpolate based on a value, an array, the time, and the last index?
-	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );	
+	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );
 	//! Unknown function
 	static bool timeIndex( float time, const NifModel * nif, const QModelIndex & array, int & i, int & j, float & x );
-	
+
 protected:
-   friend class Interpolator;
+	friend class Interpolator;
 
 	QPersistentModelIndex iBlock;
 	QPersistentModelIndex iInterpolator;
@@ -104,57 +108,57 @@ protected:
 template <typename T> bool Controller::interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex )
 {
 	const NifModel * nif = static_cast<const NifModel *>( data.model() );
-	if ( nif && data.isValid() )
-	{
+
+	if ( nif && data.isValid() ) {
 		QModelIndex array = nif->getIndex( data, arrayid );
 		return interpolate( value, array, time, lastindex );
 	}
-	else
-		return false;
+
+	return false;
 }
 
 class Interpolator : public QObject
 {
 public:
-   Interpolator(Controller *owner);
+	Interpolator( Controller * owner );
 
-   virtual bool update( const NifModel * nif, const QModelIndex & index );
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
 
 protected:
-   QPersistentModelIndex GetControllerData();
-   Controller *parent;
+	QPersistentModelIndex GetControllerData();
+	Controller * parent;
 };
 
 class TransformInterpolator : public Interpolator
 {
 public:
-   TransformInterpolator(Controller *owner);
+	TransformInterpolator( Controller * owner );
 
-   virtual bool update( const NifModel * nif, const QModelIndex & index );
-   virtual bool updateTransform(Transform& tm, float time);
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
+	virtual bool updateTransform( Transform & tm, float time );
 
 protected:
-   QPersistentModelIndex iTranslations, iRotations, iScales;
-   int lTrans, lRotate, lScale;
+	QPersistentModelIndex iTranslations, iRotations, iScales;
+	int lTrans, lRotate, lScale;
 };
 
 class BSplineTransformInterpolator : public TransformInterpolator
 {
 public:
-   BSplineTransformInterpolator( Controller *owner );
+	BSplineTransformInterpolator( Controller * owner );
 
-   virtual bool update( const NifModel * nif, const QModelIndex & index );
-   virtual bool updateTransform(Transform& tm, float time);
+	virtual bool update( const NifModel * nif, const QModelIndex & index );
+	virtual bool updateTransform( Transform & tm, float time );
 
 protected:
-   float start, stop;
-   QPersistentModelIndex iControl, iSpline, iBasis;
-   QPersistentModelIndex lTrans, lRotate, lScale;
-   uint lTransOff, lRotateOff, lScaleOff;
-   float lTransMult, lRotateMult, lScaleMult;
-   float lTransBias, lRotateBias, lScaleBias;
-   uint nCtrl;
-   int degree;
+	float start, stop;
+	QPersistentModelIndex iControl, iSpline, iBasis;
+	QPersistentModelIndex lTrans, lRotate, lScale;
+	uint lTransOff, lRotateOff, lScaleOff;
+	float lTransMult, lRotateMult, lScaleMult;
+	float lTransBias, lRotateBias, lScaleBias;
+	uint nCtrl;
+	int degree;
 };
 
 

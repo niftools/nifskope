@@ -1,19 +1,26 @@
 #include "texture.h"
+#include "config.h"
 
 #include "blocks.h"
-#include "../spellbook.h"
+#include "nvtristripwrapper.h"
+#include "spellbook.h"
+#include "gl/gltex.h"
+#include "widgets/fileselect.h"
+#include "widgets/nifeditors.h"
+#include "widgets/uvedit.h"
 
-#include "../config.h"
+#include <QButtonGroup>
+#include <QCheckBox>
+#include <QColorDialog>
+#include <QComboBox>
+#include <QFileDialog>
+#include <QGridLayout>
+#include <QLabel>
+#include <QListView>
+#include <QPushButton>
+#include <QSettings>
+#include <QStringListModel>
 
-
-#include "../NvTriStripwrapper.h"
-
-#include "../widgets/fileselect.h"
-#include "../widgets/uvedit.h"
-#include "../gl/gltex.h"
-
-#include <QtCore>
-#include <QtWidgets>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file texture.cpp
@@ -25,18 +32,18 @@
 /* XPM */
 static char const * tex42_xpm[] = {
 	"80 80 43 1",
-	" 	c None",
-	".	c #29194A","+	c #2D1D37","@	c #2F2528","#	c #333018",
-	"$	c #3C2D66","%	c #50521A","&	c #5B4E3C","*	c #5B4286",
-	"=	c #544885","-	c #584B70",";	c #64589D",">	c #67710F",
-	",	c #7558A4","'	c #6A619A",")	c #68658B","!	c #7264AA",
-	"~	c #7E78A5","{	c #8173B8","]	c #8274B1","^	c #8276AD",
-	"/	c #8A72C0","(	c #998F0F","_	c #83819C",":	c #908F97",
-	"<	c #9F80D1","[	c #9589BD","}	c #9885CE","|	c #9986C7",
-	"1	c #9D9E9D","2	c #9F9AB4","3	c #A992DC","4	c #B38FDD",
-	"5	c #AC9AD0","6	c #AF97DA","7	c #C2BD04","8	c #C1A1DC",
-	"9	c #BEA9DD","0	c #BABBBB","a	c #C1B8D2","b	c #CDB7DC",
-	"c	c #D5CAE0","d	c #D6D4D7",
+	"   c None",
+	".	c #29194A", "+	c #2D1D37", "@	c #2F2528", "#	c #333018",
+	"$	c #3C2D66", "%	c #50521A", "&	c #5B4E3C", "*	c #5B4286",
+	"=	c #544885", "-	c #584B70", ";	c #64589D", ">	c #67710F",
+	",	c #7558A4", "'	c #6A619A", ")	c #68658B", "!	c #7264AA",
+	"~	c #7E78A5", "{	c #8173B8", "]	c #8274B1", "^	c #8276AD",
+	"/	c #8A72C0", "(	c #998F0F", "_	c #83819C", ":	c #908F97",
+	"<	c #9F80D1", "[	c #9589BD", "}	c #9885CE", "|	c #9986C7",
+	"1	c #9D9E9D", "2	c #9F9AB4", "3	c #A992DC", "4	c #B38FDD",
+	"5	c #AC9AD0", "6	c #AF97DA", "7	c #C2BD04", "8	c #C1A1DC",
+	"9	c #BEA9DD", "0	c #BABBBB", "a	c #C1B8D2", "b	c #CDB7DC",
+	"c	c #D5CAE0", "d	c #D6D4D7",
 	"                                                                                ",
 	"                                                                                ",
 	"                                                                                ",
@@ -116,17 +123,20 @@ static char const * tex42_xpm[] = {
 	"                                      d[a11110                                  ",
 	"                                       a d000                                   ",
 	"                                       d  d                                     ",
-	"                                                                                "};
+	"                                                                                "
+};
 
-QIcon * tex42_xpm_icon = 0;
+QIcon * tex42_xpm_icon = nullptr;
 
 //! Find the reference to shape data from a model and index
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
 	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
 		return nif->getBlock( nif->getLink( index, "Data" ) );
-	else if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
+	
+	if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
 		return index;
+
 	return QModelIndex();
 }
 
@@ -135,11 +145,11 @@ QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
 {
 	QModelIndex iData = getData( nif, index );
 
-	if ( iData.isValid() )
-	{
+	if ( iData.isValid() ) {
 		QModelIndex iUVs = nif->getIndex( iData, "UV Sets" );
 		return iUVs;
 	}
+
 	return QModelIndex();
 }
 
@@ -147,20 +157,23 @@ QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
 class spChooseTexture : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Choose"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Choose" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
-		if ( ! tex42_xpm_icon ) tex42_xpm_icon = new QIcon( QPixmap(tex42_xpm) );
+		if ( !tex42_xpm_icon )
+			tex42_xpm_icon = new QIcon( QPixmap( tex42_xpm ) );
+
 		return *tex42_xpm_icon;
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
 	{
 		QModelIndex iBlock = nif->getBlock( idx );
-		if (  ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
-			&& ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
+
+		if ( ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 			return true;
 		else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" )
 			return true;
@@ -170,6 +183,7 @@ public:
 			return true;
 		else if ( nif->isNiBlock( iBlock, "TileShaderProperty" ) && nif->itemName( idx ) == "File Name" )
 			return true;
+
 		return false;
 	}
 
@@ -179,57 +193,57 @@ public:
 		QModelIndex iFile;
 		bool setExternal = false;
 
-		if (  ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
-			&& ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
+		if ( ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 		{
 			iFile = nif->getIndex( iBlock, "File Name" );
 			setExternal = true;
+		} else if ( nif->isNiBlock( iBlock, "BSShaderTextureSet" ) && nif->itemName( idx ) == "Textures" ) {
+			iFile = idx;
+		} else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" ) {
+			iFile = idx;
+		} else if ( nif->isNiBlock( iBlock, "SkyShaderProperty" ) && nif->itemName( idx ) == "File Name" ) {
+			iFile = idx;
+		} else if ( nif->isNiBlock( iBlock, "TileShaderProperty" ) && nif->itemName( idx ) == "File Name" ) {
+			iFile = idx;
 		}
-		else if ( nif->isNiBlock( iBlock, "BSShaderTextureSet" ) && nif->itemName( idx ) == "Textures" )
-			iFile = idx;
-		else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" )
-			iFile = idx;
-		else if ( nif->isNiBlock( iBlock, "SkyShaderProperty" ) && nif->itemName( idx ) == "File Name" )
-			iFile = idx;
-		else if ( nif->isNiBlock( iBlock, "TileShaderProperty" ) && nif->itemName( idx ) == "File Name" )
-			iFile = idx;
 
-		if (!iFile.isValid())
+		if ( !iFile.isValid() )
 			return idx;
 
 		QString file = TexCache::find( nif->get<QString>( iFile ), nif->getFolder() );
 
-		if ( ! QFile::exists(file) )
-		{
+		if ( !QFile::exists( file ) ) {
 			// if file not found in cache, use last texture path
-			NIFSKOPE_QSETTINGS(cfg);
-			QString defaulttexpath(cfg.value("last texture path", QVariant(QDir::homePath())).toString());
+			NIFSKOPE_QSETTINGS( cfg );
+			QString defaulttexpath( cfg.value( "last texture path", QVariant( QDir::homePath() ) ).toString() );
 			//file = QDir(defaulttexpath).filePath(file);
 			file = defaulttexpath;
 		}
 
 
 		// to avoid shortcut resolve bug take *.* as text filter
-		file = QFileDialog::getOpenFileName( 0, "Select a texture file", file, "*.*" );
+		file = QFileDialog::getOpenFileName( qApp->activeWindow(), "Select a texture file", file, "*.*" );
 
-		if ( ! file.isEmpty() )
-		{
+		if ( !file.isEmpty() ) {
 			// save path for future
-			NIFSKOPE_QSETTINGS(cfg);
-			cfg.setValue("last texture path", QVariant(QDir(file).absolutePath()));
+			NIFSKOPE_QSETTINGS( cfg );
+			cfg.setValue( "last texture path", QVariant( QDir( file ).absolutePath() ) );
 
 			file = TexCache::stripPath( file, nif->getFolder() );
-			if (setExternal)
-			{
+
+			if ( setExternal ) {
 				nif->set<int>( iBlock, "Use External", 1 );
+
 				// update the "File Name" block reference, since it changes when we set Use External
-				if ( nif->checkVersion( 0x0A010000, 0 ) && nif->isNiBlock( iBlock, "NiSourceTexture" )  )
-				{
+				if ( nif->checkVersion( 0x0A010000, 0 ) && nif->isNiBlock( iBlock, "NiSourceTexture" ) ) {
 					iFile = nif->getIndex( iBlock, "File Name" );
 				}
 			}
+
 			nif->set<QString>( iFile, file.replace( "/", "\\" ) );
 		}
+
 		return idx;
 	}
 };
@@ -240,12 +254,12 @@ REGISTER_SPELL( spChooseTexture )
 class spEditTexCoords : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Edit UV"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Edit UV" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		return ( nif->itemName(index) == "NiTriShape" || nif->itemName(index) == "NiTriStrips" || nif->itemName(index) == "BSLODTriShape" );
+		return ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" || nif->itemName( index ) == "BSLODTriShape" );
 
 		//QModelIndex iUVs = getUV( nif, index );
 		//return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
@@ -269,13 +283,18 @@ REGISTER_SPELL( spEditTexCoords )
 QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString & name )
 {
 	QModelIndex iTexProp = nif->getBlock( index, "NiTexturingProperty" );
-	if ( ! iTexProp.isValid() )	return index;
+
+	if ( !iTexProp.isValid() )
+		return index;
+
 	if ( nif->get<int>( iTexProp, "Texture Count" ) < 7 )
 		nif->set<int>( iTexProp, "Texture Count", 7 );
 
 	nif->set<int>( iTexProp, QString( "Has %1" ).arg( name ), 1 );
 	QPersistentModelIndex iTex = nif->getIndex( iTexProp, name );
-	if ( ! iTex.isValid() ) return index;
+
+	if ( !iTex.isValid() )
+		return index;
 
 	nif->set<int>( iTex, "Clamp Mode", 3 );
 	nif->set<int>( iTex, "Filter Mode", 3 );
@@ -300,13 +319,13 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 class spAddBaseMap : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Base Texture"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Base Texture" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Base Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Base Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -321,13 +340,13 @@ REGISTER_SPELL( spAddBaseMap )
 class spAddDarkMap : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Dark Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Dark Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Dark Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Dark Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -342,13 +361,13 @@ REGISTER_SPELL( spAddDarkMap )
 class spAddDetailMap : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Detail Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Detail Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Detail Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Detail Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -363,13 +382,13 @@ REGISTER_SPELL( spAddDetailMap )
 class spAddGlowMap : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Glow Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Glow Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Glow Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Glow Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -384,13 +403,13 @@ REGISTER_SPELL( spAddGlowMap )
 class spAddBumpMap : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Bump Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Bump Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Bump Map Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Bump Map Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -414,13 +433,13 @@ REGISTER_SPELL( spAddBumpMap )
 class spAddDecal0Map : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Decal 0 Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Decal 0 Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Decal 0 Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 0 Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -435,13 +454,13 @@ REGISTER_SPELL( spAddDecal0Map )
 class spAddDecal1Map : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Decal 1 Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Decal 1 Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Decal 1 Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 1 Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -456,13 +475,13 @@ REGISTER_SPELL( spAddDecal1Map )
 class spAddDecal2Map : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Decal 2 Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Decal 2 Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Decal 2 Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 2 Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -477,13 +496,13 @@ REGISTER_SPELL( spAddDecal2Map )
 class spAddDecal3Map : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Decal 3 Map"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Add Decal 3 Map" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
-		return ( block.isValid() && nif->get<int>( block, "Has Decal 3 Texture" ) == 0 ); 
+		return ( block.isValid() && nif->get<int>( block, "Has Decal 3 Texture" ) == 0 );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
@@ -500,8 +519,8 @@ REGISTER_SPELL( spAddDecal3Map )
 //! Saves the UV layout as a TGA
 class spTextureTemplate : public Spell
 {
-	QString name() const { return Spell::tr("Export Template"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Export Template" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
@@ -512,6 +531,7 @@ class spTextureTemplate : public Spell
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex iUVs = getUV( nif, index );
+
 		if ( nif->rowCount( iUVs ) <= 0 )
 			return index;
 
@@ -521,18 +541,20 @@ class spTextureTemplate : public Spell
 		dlg.setLayout( lay );
 
 		FileSelector * file = new FileSelector( FileSelector::SaveFile, "File", QBoxLayout::RightToLeft );
-		file->setFilter( QStringList() << "Targa (*.tga)" );
+		file->setFilter( { "", "PNG (*.png)", "BMP (*.bmp)" } );
 		lay->addWidget( file, 0, 0, 1, 2 );
 
 		lay->addWidget( new QLabel( "Size" ), 1, 0 );
 		QComboBox * size = new QComboBox;
 		lay->addWidget( size, 1, 1 );
+
 		for ( int i = 6; i < 12; i++ )
 			size->addItem( QString::number( 2 << i ) );
 
 		lay->addWidget( new QLabel( "Coord Set" ), 2, 0 );
 		QComboBox * set = new QComboBox;
 		lay->addWidget( set, 2, 1 );
+
 		for ( int i = 0; i < nif->rowCount( iUVs ); i++ )
 			set->addItem( QString( "set %1" ).arg( i ) );
 
@@ -542,11 +564,19 @@ class spTextureTemplate : public Spell
 		wrap->addItem( "wrap" );
 		wrap->addItem( "clamp" );
 
-		QPushButton * ok = new QPushButton( "Ok" );
-		QObject::connect( ok, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-		lay->addWidget( ok, 4, 0, 1, 2 );
+		lay->addWidget( new QLabel( "Antialias" ), 4, 0 );
+		QCheckBox * antialias = new QCheckBox;
+		lay->addWidget( antialias, 4, 1 );
 
-		NIFSKOPE_QSETTINGS(settings);
+		lay->addWidget( new QLabel( "Wire Color" ), 5, 0 );
+		QPushButton * wireColor = new QPushButton;
+		lay->addWidget( wireColor, 5, 1 );
+
+		QPushButton * ok = new QPushButton( "Ok" );
+		QObject::connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
+		lay->addWidget( ok, 6, 0, 1, 2 );
+
+		NIFSKOPE_QSETTINGS( settings );
 		settings.beginGroup( "spells" );
 		settings.beginGroup( page() );
 		settings.beginGroup( name() );
@@ -554,6 +584,25 @@ class spTextureTemplate : public Spell
 		wrap->setCurrentIndex( settings.value( "Wrap Mode", 0 ).toInt() );
 		size->setCurrentIndex( settings.value( "Image Size", 2 ).toInt() );
 		file->setText( settings.value( "File Name", "" ).toString() );
+		antialias->setChecked( settings.value( "Antialias", true ).toBool() );
+
+		QString colorARGB = settings.value( "Wire Color", "#FF000000" ).toString();
+		wireColor->setText( colorARGB );
+		QString bc = "background-color: ";
+		wireColor->setStyleSheet( bc + colorARGB );
+
+		QColorDialog * colorDlg = new QColorDialog;
+		QObject::connect( wireColor, &QPushButton::clicked, [&]()
+			{
+				QColor c = colorDlg->getColor( wireColor->text(), nullptr, "Wire Color", QColorDialog::ShowAlphaChannel );
+
+				if ( c.isValid() ) {
+					colorARGB = c.name( QColor::NameFormat::HexArgb );
+					wireColor->setText( colorARGB );
+					wireColor->setStyleSheet( bc + colorARGB );
+				}
+			}
+		);
 
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
@@ -561,6 +610,8 @@ class spTextureTemplate : public Spell
 		settings.setValue( "Wrap Mode", wrap->currentIndex() );
 		settings.setValue( "Image Size", size->currentIndex() );
 		settings.setValue( "File Name", file->text() );
+		settings.setValue( "Antialias", antialias->isChecked() );
+		settings.setValue( "Wire Color", colorARGB );
 
 		// get the selected coord set
 		QModelIndex iSet = iUVs.child( set->currentIndex(), 0 );
@@ -571,66 +622,78 @@ class spTextureTemplate : public Spell
 		// get the triangles
 		QModelIndex iData = getData( nif, index );
 		QModelIndex iPoints = nif->getIndex( iData, "Points" );
-		if ( iPoints.isValid() )
-		{
-			QList< QVector< quint16 > > strips;
+
+		if ( iPoints.isValid() ) {
+			QList<QVector<quint16> > strips;
+
 			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
 				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+
 			tri = triangulate( strips );
-		}
-		else
-		{
+		} else {
 			tri = nif->getArray<Triangle>( nif->getIndex( getData( nif, index ), "Triangles" ) );
 		}
 
 		// render the template image
 		quint16 s = size->currentText().toInt();
 
-		QImage img( s, s, QImage::Format_RGB32 );
+		QImage img( s, s, QImage::Format_ARGB32 );
 		QPainter pntr( &img );
 
-		pntr.fillRect( img.rect(), QColor( 0xff, 0xff, 0xff ) );
-		pntr.scale( s, s );
-		pntr.setPen( QColor( 0x10, 0x20, 0x30 ) );
+		img.fill( Qt::transparent );
+
+		pntr.setRenderHint( QPainter::Antialiasing, antialias->isChecked() );
+		pntr.fillRect( img.rect(), QColor( 0xff, 0xff, 0xff, 0 ) );
+		//pntr.scale( s, s ); // Seems to work differently in Qt 5
+		pntr.setPen( QColor( colorARGB ) );
 
 		bool wrp = wrap->currentIndex() == 0;
 
-		foreach ( Triangle t, tri )
-		{
-			Vector2 v2[3];
-			for ( int i = 0; i < 3; i++ )
-			{
-				v2[i] = uv.value( t[i] );
-				if ( wrp )
-				{
-					v2[i][0] = wrap01f( v2[i][0] );
-					v2[i][1] = wrap01f( v2[i][1] );
+		for ( const Triangle& t : tri ) {
+
+			QPointF points[3];
+
+			for ( int i = 0; i < 3; i++ ) {
+
+				float u, v;
+
+				u = uv.value( t[i] )[0];
+				v = uv.value( t[i] )[1];
+
+				if ( wrp ) {
+					u = wrap01f( u );
+					v = wrap01f( v );
 				}
+
+				// Scale points here instead of using pntr.scale()
+				QPointF point( u * s, v * s );
+
+				points[i] = point;
 			}
 
-			pntr.drawLine( QPointF( v2[0][0], v2[0][1] ), QPointF( v2[1][0], v2[1][1] ) );
-			pntr.drawLine( QPointF( v2[1][0], v2[1][1] ), QPointF( v2[2][0], v2[2][1] ) );
-			pntr.drawLine( QPointF( v2[2][0], v2[2][1] ), QPointF( v2[0][0], v2[0][1] ) );
+			pntr.drawPolygon( points, 3 );
 		}
 
 		// write the file
 		QString filename = file->text();
-		if ( ! filename.endsWith( ".tga", Qt::CaseInsensitive ) )
-			filename.append( ".tga" );
 
-		quint8 hdr[18];
-		for ( int o = 0; o < 18; o++ ) hdr[o] = 0;
-		hdr[02] = 2; // TGA_COLOR
-		hdr[12] = s % 256;
-		hdr[13] = s / 256;
-		hdr[14] = s % 256;
-		hdr[15] = s / 256;
-		hdr[16] = 32; // bpp
-		hdr[17] = 32; // flipV
+		// TODO: Fix FileSelector class so that this isn't necessary.
+		if ( !filename.endsWith( ".PNG", Qt::CaseInsensitive ) && !filename.endsWith( ".BMP", Qt::CaseInsensitive ) )
+			filename.append( ".png" );
 
-		QFile f( filename );
-		if ( ! f.open( QIODevice::WriteOnly ) || f.write( (char *) hdr, 18 ) != 18 || f.write( (char *) img.bits(), s * s * 4 ) != s * s * 4 )
-			qWarning() << "exportTemplate(" << filename << ") : could not write file";
+		if ( filename.endsWith( ".PNG", Qt::CaseInsensitive ) ) {
+			// Transparent PNG
+			img.save( filename );
+
+		} else {
+			// Paint transparency onto bitmap with white background (Qt defaults to black)
+			QImage bmp( img.size(), QImage::Format_RGB32 );
+			bmp.fill( Qt::white );
+			QPainter bmpPntr( &bmp );
+			bmpPntr.drawImage( 0, 0, img );
+
+			bmp.save( filename );
+		}
 
 		return index;
 	}
@@ -642,32 +705,32 @@ REGISTER_SPELL( spTextureTemplate )
 class spMultiApplyMode : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Multi Apply Mode"); }
-	QString page() const { return Spell::tr("Batch"); } 
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex &index )
+	QString name() const { return Spell::tr( "Multi Apply Mode" ); }
+	QString page() const { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		// Apply Mode field is defined in nifs up to version 20.0.0.5
-		return nif->checkVersion( 0, 0x14000005 ) && ! index.isValid();
+		return nif->checkVersion( 0, 0x14000005 ) && !index.isValid();
 	}
-	
-	QModelIndex cast( NifModel *nif, const QModelIndex &index )
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
-		QStringList modes;
-		modes << "Replace" <<  "Decal" << "Modulate" << "Hilight" << "Hilight2";
-		
+		Q_UNUSED( index );
+		QStringList modes{ "Replace", "Decal", "Modulate", "Hilight", "Hilight2" };
+
 		QDialog dlg;
 		dlg.resize( 300, 60 );
-		QComboBox *cbRep = new QComboBox( &dlg );
-		QComboBox *cbBy = new QComboBox( &dlg );
-		QPushButton *btnOk = new QPushButton( "OK", &dlg );
-		QPushButton *btnCancel = new QPushButton( "Cancel", &dlg );
+		QComboBox * cbRep = new QComboBox( &dlg );
+		QComboBox * cbBy  = new QComboBox( &dlg );
+		QPushButton * btnOk     = new QPushButton( "OK", &dlg );
+		QPushButton * btnCancel = new QPushButton( "Cancel", &dlg );
 		cbRep->addItems( modes );
 		cbRep->setCurrentIndex( 2 );
 		cbBy->addItems( modes );
 		cbBy->setCurrentIndex( 2 );
-		
-		QGridLayout *layout;
+
+		QGridLayout * layout;
 		layout = new QGridLayout;
 		layout->setSpacing( 20 );
 		layout->addWidget( new QLabel( "Replace", &dlg ), 0, 0, Qt::AlignBottom );
@@ -677,59 +740,55 @@ public:
 		layout->addWidget( btnOk, 2, 0 );
 		layout->addWidget( btnCancel, 2, 1 );
 		dlg.setLayout( layout );
-		
-		QObject::connect( btnOk, SIGNAL( clicked() ), &dlg, SLOT( accept() ) );
-		QObject::connect( btnCancel, SIGNAL( clicked() ), &dlg, SLOT( reject() ) );
-		
+
+		QObject::connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
+		QObject::connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
+
 		if ( dlg.exec() != QDialog::Accepted )
 			return QModelIndex();
-		
-		QList< QPersistentModelIndex > indices;
-		
-		for ( int n = 0; n < nif->getBlockCount(); n++ )
-		{
+
+		QList<QPersistentModelIndex> indices;
+
+		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
 			QModelIndex idx = nif->getBlock( n );
 			indices << idx;
 		}
-		
-		foreach ( QModelIndex idx, indices )
-		{
+
+		for ( const QModelIndex& idx : indices ) {
 			replaceApplyMode( nif, idx, cbRep->currentIndex(), cbBy->currentIndex() );
 		}
-		
+
 		return QModelIndex();
 	}
-	
+
 	//! Recursively replace the Apply Mode
-	void replaceApplyMode( NifModel *nif, const QModelIndex &index, int rep, int by )
+	void replaceApplyMode( NifModel * nif, const QModelIndex & index, int rep, int by )
 	{
 		if ( !index.isValid() )
 			return;
-		
-		if ( nif->inherits( index, "NiTexturingProperty" ) &&
-			nif->get<int>( index, "Apply Mode" ) == rep )
+
+		if ( nif->inherits( index, "NiTexturingProperty" )
+		     && nif->get<int>( index, "Apply Mode" ) == rep )
 			nif->set<int>( index, "Apply Mode", by );
-		
+
 		QModelIndex iChildren = nif->getIndex( index, "Children" );
 		QList<qint32> lChildren = nif->getChildLinks( nif->getBlockNumber( index ) );
-		if ( iChildren.isValid() )
-		{
-			for ( int c = 0; c < nif->rowCount( iChildren ); c++ )
-			{
+
+		if ( iChildren.isValid() ) {
+			for ( int c = 0; c < nif->rowCount( iChildren ); c++ ) {
 				qint32 link = nif->getLink( iChildren.child( c, 0 ) );
-				if ( lChildren.contains( link ) )
-				{
+
+				if ( lChildren.contains( link ) ) {
 					QModelIndex iChild = nif->getBlock( link );
 					replaceApplyMode( nif, iChild, rep, by );
 				}
 			}
 		}
-		
+
 		QModelIndex iProperties = nif->getIndex( index, "Properties" );
-		if ( iProperties.isValid() )
-		{
-			for ( int p = 0; p < nif->rowCount( iProperties ); p++ )
-			{
+
+		if ( iProperties.isValid() ) {
+			for ( int p = 0; p < nif->rowCount( iProperties ); p++ ) {
 				QModelIndex iProp = nif->getBlock( nif->getLink( iProperties.child( p, 0 ) ) );
 				replaceApplyMode( nif, iProp, rep, by );
 			}
@@ -743,14 +802,16 @@ REGISTER_SPELL( spMultiApplyMode )
 class spTexInfo : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Info"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Info" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex iBlock = nif->getBlock( index );
+
 		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) )
 			return true;
+
 		return false;
 	}
 
@@ -759,12 +820,14 @@ public:
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
 		int isExternal = nif->get<int>( index, "Use External" );
+
 		if ( isExternal ) {
-			QString filename = nif->get<QString>(index, "File Name");
+			QString filename = nif->get<QString>( index, "File Name" );
 			tex->bind( filename );
 		} else {
 			tex->bind( index );
 		}
+
 		qWarning() << tex->info( index );
 		return QModelIndex();
 	}
@@ -778,29 +841,28 @@ REGISTER_SPELL( spTexInfo )
 class spExportTexture : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Export"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Export" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex iBlock = nif->getBlock( index );
-		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 0 )
-		{
+
+		if ( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 0 ) {
 			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
-			if ( iData.isValid() )
-			{
+
+			if ( iData.isValid() ) {
 				return true;
 			}
-		}
-		else if ( nif->inherits( iBlock, "ATextureRenderData" ) )
-		{
+		} else if ( nif->inherits( iBlock, "ATextureRenderData" ) ) {
 			int thisBlockNumber = nif->getBlockNumber( index );
 			QModelIndex iParent = nif->getBlock( nif->getParent( thisBlockNumber ) );
-			if( ! iParent.isValid() )
-			{
+
+			if ( !iParent.isValid() ) {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -809,40 +871,40 @@ public:
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
 		QModelIndex iBlock = nif->getBlock( index );
-		if ( nif->inherits( iBlock, "NiSourceTexture" ) )
-		{
+
+		if ( nif->inherits( iBlock, "NiSourceTexture" ) ) {
 			tex->bind( index );
 			QString file = nif->getFolder();
-			if ( nif->checkVersion( 0x0A010000, 0 ) )
-			{
+
+			if ( nif->checkVersion( 0x0A010000, 0 ) ) {
 				// Qt uses "/" regardless of platform
 				file.append( "/" + nif->get<QString>( index, "File Name" ) );
 			}
+
 			QModelIndex iData = nif->getBlock( nif->getLink( index, "Pixel Data" ) );
-			QString filename = QFileDialog::getSaveFileName( 0, Spell::tr("Export texture"), file, "Textures (*.dds *.tga)" );
-			if ( ! filename.isEmpty() )
-			{
-				if ( tex->exportFile( iData, filename ) )
-				{
+			QString filename  = QFileDialog::getSaveFileName( qApp->activeWindow(), Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
+
+			if ( !filename.isEmpty() ) {
+				if ( tex->exportFile( iData, filename ) ) {
 					nif->set<int>( index, "Use External", 1 );
 					filename = TexCache::stripPath( filename, nif->getFolder() );
 					nif->set<QString>( index, "File Name", filename );
 					tex->bind( filename );
 				}
 			}
+
 			return index;
-		}
-		else if ( nif->inherits( iBlock, "ATextureRenderData" ) )
-		{
+		} else if ( nif->inherits( iBlock, "ATextureRenderData" ) ) {
 			TexCache * tex = new TexCache();
 			tex->setNifFolder( nif->getFolder() );
 			QString file = nif->getFolder();
-			QString filename = QFileDialog::getSaveFileName( 0, Spell::tr("Export texture"), file, "Textures (*.dds *.tga)" );
-			if ( ! filename.isEmpty() )
-			{
+			QString filename = QFileDialog::getSaveFileName( qApp->activeWindow(), Spell::tr( "Export texture" ), file, "Textures (*.dds *.tga)" );
+
+			if ( !filename.isEmpty() ) {
 				tex->exportFile( index, filename );
 			}
 		}
+
 		return index;
 	}
 };
@@ -853,26 +915,28 @@ REGISTER_SPELL( spExportTexture )
 class spEmbedTexture : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Embed"); }
-	QString page() const { return Spell::tr("Texture"); }
+	QString name() const { return Spell::tr( "Embed" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
-		if ( ! ( nif->checkVersion( 0, 0x0A020000 ) || nif->checkVersion( 0x14000004, 0 ) ) )
-		{
+		if ( !( nif->checkVersion( 0, 0x0A020000 ) || nif->checkVersion( 0x14000004, 0 ) ) ) {
 			return false;
 		}
+
 		QModelIndex iBlock = nif->getBlock( index );
-		if ( !( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 1 ))
-		{
+
+		if ( !( nif->isNiBlock( iBlock, "NiSourceTexture" ) && nif->get<int>( iBlock, "Use External" ) == 1 ) ) {
 			return false;
 		}
+
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
-		if ( tex->bind( nif->get<QString>( iBlock, "File Name" ) ) )
-		{
+
+		if ( tex->bind( nif->get<QString>( iBlock, "File Name" ) ) ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -880,36 +944,31 @@ public:
 	{
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
-		if ( tex->bind( index ) )
-		{
+
+		if ( tex->bind( index ) ) {
 			//qWarning() << "spEmbedTexture: Embedding texture " << index;
 
 			int blockNum = nif->getBlockNumber( index );
-			nif->insertNiBlock( "NiPixelData", blockNum+1 );
+			nif->insertNiBlock( "NiPixelData", blockNum + 1 );
 			QPersistentModelIndex iSourceTexture = nif->getBlock( blockNum, "NiSourceTexture" );
-			QModelIndex iPixelData = nif->getBlock( blockNum+1, "NiPixelData" );
+			QModelIndex iPixelData = nif->getBlock( blockNum + 1, "NiPixelData" );
 
 			//qWarning() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
-			
+
 			// finish writing this function
-			if ( tex->importFile( nif, iSourceTexture, iPixelData ) )
-			{
+			if ( tex->importFile( nif, iSourceTexture, iPixelData ) ) {
 				QString tempFileName = nif->get<QString>( iSourceTexture, "File Name" );
 				tempFileName = TexCache::stripPath( tempFileName, nif->getFolder() );
 				nif->set<int>( iSourceTexture, "Use External", 0 );
 				nif->set<int>( iSourceTexture, "Unknown Byte", 1 );
-				nif->setLink( iSourceTexture, "Pixel Data", blockNum+1 );
-				if( nif->checkVersion( 0x0A010000, 0 ) )
-				{
+				nif->setLink( iSourceTexture, "Pixel Data", blockNum + 1 );
+
+				if ( nif->checkVersion( 0x0A010000, 0 ) ) {
 					nif->set<QString>( iSourceTexture, "File Name", tempFileName );
-				}
-				else
-				{
+				} else {
 					nif->set<QString>( index, "Name", tempFileName );
 				}
-			}
-			else
-			{
+			} else {
 				qWarning() << "Could not save texture";
 				// delete block?
 				/*
@@ -918,6 +977,7 @@ public:
 				*/
 			}
 		}
+
 		return index;
 	}
 };
@@ -931,29 +991,31 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 
 	grid = new QGridLayout;
 	setLayout( grid );
-	
+
 	listmodel = new QStringListModel;
-	listview = new QListView;
+	listview  = new QListView;
 	listview->setModel( listmodel );
-	
+
 	// texture action group; see options.cpp
 	QButtonGroup * actgrp = new QButtonGroup( this );
-	connect( actgrp, SIGNAL( buttonClicked( int ) ), this, SLOT( textureAction( int ) ) );
+	connect( actgrp, static_cast<void (QButtonGroup::*)(int)>(&QButtonGroup::buttonClicked), this, &TexFlipDialog::textureAction );
 	int btnid = 0;
-	foreach ( QString tfaname, QStringList() << Spell::tr("Add Textures") << Spell::tr("Remove Texture") << Spell::tr("Move Up") << Spell::tr("Move Down") )
+	for ( const QString& tfaname : QStringList{
+			Spell::tr( "Add Textures" ), Spell::tr( "Remove Texture" ),
+			Spell::tr( "Move Up" ), Spell::tr( "Move Down" )
+		} )
 	{
 		QPushButton * bt = new QPushButton( tfaname );
 		textureButtons[btnid] = bt;
 		actgrp->addButton( bt, btnid++ );
 		grid->addWidget( bt, 0, btnid, 1, 1 );
 	}
-	
+
 	// add the list view and set up members
 	grid->addWidget( listview, 1, 0, 1, 0 );
 	listFromNif();
 
-	connect( listview->selectionModel(), SIGNAL( currentChanged( const QModelIndex &, const QModelIndex & ) ),
-			this, SLOT( texIndex( const QModelIndex & ) ) );
+	connect( listview->selectionModel(), &QItemSelectionModel::currentChanged, this, &TexFlipDialog::texIndex );
 	texIndex( listview->currentIndex() );
 
 	QHBoxLayout * hbox1 = new QHBoxLayout();
@@ -965,49 +1027,52 @@ TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * par
 	stopTime->updateData( nif );
 
 	QHBoxLayout * hbox2 = new QHBoxLayout();
-	QPushButton * ok = new QPushButton( Spell::tr("OK"), this );
+	QPushButton * ok = new QPushButton( Spell::tr( "OK" ), this );
 	hbox2->addWidget( ok );
-	connect( ok, SIGNAL( clicked() ), this, SLOT( accept() ) );
-	QPushButton * cancel = new QPushButton( Spell::tr("Cancel"), this );
+	connect( ok, &QPushButton::clicked, this, &TexFlipDialog::accept );
+	QPushButton * cancel = new QPushButton( Spell::tr( "Cancel" ), this );
 	hbox2->addWidget( cancel );
-	connect( cancel, SIGNAL( clicked() ), this, SLOT( reject() ) );
+	connect( cancel, &QPushButton::clicked, this, &TexFlipDialog::reject );
 	grid->addLayout( hbox2, 3, 0, 1, 0 );
 }
 
 void TexFlipDialog::textureAction( int i )
 {
 	QModelIndex idx = listview->currentIndex();
-	switch ( i )
-	{
-		case 0: // add
-			flipnames = QFileDialog::getOpenFileNames( this, Spell::tr("Choose texture file(s)"), nif->getFolder(), "Textures (*.dds *.tga *.bmp)" );
-			listmodel->setStringList( listmodel->stringList() << flipnames );
-			break;
-		case 1: // remove
-			if ( idx.isValid() )
-			{
-				listmodel->removeRow( idx.row(), QModelIndex() );
-			}
-		case 2:
-			if ( idx.isValid() && idx.row() > 0 )
-			{	// move up
-				QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
-				QVariant v = listmodel->data( idx, Qt::EditRole );
-				listmodel->setData( idx, listmodel->data( xdi, Qt::EditRole ), Qt::EditRole );
-				listmodel->setData( xdi, v, Qt::EditRole );
-				listview->setCurrentIndex( xdi );
-			}
-			break;
-		case 3:
-			if ( idx.isValid() && idx.row() < listmodel->rowCount() - 1 )
-			{	// move down
-				QModelIndex xdi = idx.sibling( idx.row() + 1, 0 );
-				QVariant v = listmodel->data( idx, Qt::EditRole );
-				listmodel->setData( idx, listmodel->data( xdi, Qt::EditRole ), Qt::EditRole );
-				listmodel->setData( xdi, v, Qt::EditRole );
-				listview->setCurrentIndex( xdi );
-			}
-			break;
+
+	switch ( i ) {
+	case 0:     // add
+		flipnames = QFileDialog::getOpenFileNames( this, Spell::tr( "Choose texture file(s)" ), nif->getFolder(), "Textures (*.dds *.tga *.bmp)" );
+		listmodel->setStringList( listmodel->stringList() << flipnames );
+		break;
+	case 1:     // remove
+
+		if ( idx.isValid() ) {
+			listmodel->removeRow( idx.row(), QModelIndex() );
+		}
+
+	case 2:
+
+		if ( idx.isValid() && idx.row() > 0 ) {
+			// move up
+			QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
+			QVariant v = listmodel->data( idx, Qt::EditRole );
+			listmodel->setData( idx, listmodel->data( xdi, Qt::EditRole ), Qt::EditRole );
+			listmodel->setData( xdi, v, Qt::EditRole );
+			listview->setCurrentIndex( xdi );
+		}
+		break;
+	case 3:
+
+		if ( idx.isValid() && idx.row() < listmodel->rowCount() - 1 ) {
+			// move down
+			QModelIndex xdi = idx.sibling( idx.row() + 1, 0 );
+			QVariant v = listmodel->data( idx, Qt::EditRole );
+			listmodel->setData( idx, listmodel->data( xdi, Qt::EditRole ), Qt::EditRole );
+			listmodel->setData( xdi, v, Qt::EditRole );
+			listview->setCurrentIndex( xdi );
+		}
+		break;
 	}
 }
 
@@ -1029,20 +1094,19 @@ void TexFlipDialog::listFromNif()
 	// update string list
 	int numSources = nif->get<int>( baseIndex, "Num Sources" );
 	QModelIndex sources = nif->getIndex( baseIndex, "Sources" );
-	
-	if ( nif->rowCount( sources ) != numSources )
-	{
+
+	if ( nif->rowCount( sources ) != numSources ) {
 		qWarning() << "Number of sources does not match!";
 		return;
 	}
 
 	QStringList sourceFiles;
-	for ( int i = 0; i < numSources; i++ )
-	{
+
+	for ( int i = 0; i < numSources; i++ ) {
 		QModelIndex source = nif->getBlock( nif->getLink( sources.child( i, 0 ) ) );
 		sourceFiles << nif->get<QString>( source, "File Name" );
 	}
-	
+
 	listmodel->setStringList( sourceFiles );
 }
 
@@ -1053,69 +1117,65 @@ void TexFlipDialog::listFromNif()
 class spEditFlipper : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Edit Flip Controller"); }
-	QString page() const { return Spell::tr("Texture"); }
- 	
+	QString name() const { return Spell::tr( "Edit Flip Controller" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		return ( nif->getBlockName( index ) == "NiFlipController" );
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		QModelIndex flipController = index;
 		TexFlipDialog * texFlip = new TexFlipDialog( nif, flipController );
-		
-		if ( texFlip->exec() != QDialog::Accepted )
-		{
+
+		if ( texFlip->exec() != QDialog::Accepted ) {
 			return QModelIndex();
 		}
-		
+
 		QStringList flipNames = texFlip->flipList();
-		
-		if ( flipNames.size() == 0 )
-		{
+
+		if ( flipNames.size() == 0 ) {
 			//nif->removeNiBlock( nif->getBlockNumber( flipController ) );
 			return index;
 		}
 
 		// TODO: use a map here to delete missing textures and preserve existing properties
-		
+
 		QModelIndex sources = nif->getIndex( flipController, "Sources" );
-		if ( nif->get<int>( flipController, "Num Sources" ) > flipNames.size() )
-		{
+
+		if ( nif->get<int>( flipController, "Num Sources" ) > flipNames.size() ) {
 			// delete blocks
 			qWarning() << "Found" << flipNames.size() << "textures, have" << nif->get<int>( flipController, "Num Sources" );
-			for ( int i = flipNames.size(); i < nif->get<int>( flipController, "Num Sources" ); i++ )
-			{
+
+			for ( int i = flipNames.size(); i < nif->get<int>( flipController, "Num Sources" ); i++ ) {
 				qWarning() << "Deleting" << nif->getLink( sources.child( i, 0 ) );
 				nif->removeNiBlock( nif->getLink( sources.child( i, 0 ) ) );
 			}
 		}
-		
+
 		nif->set<int>( flipController, "Num Sources", flipNames.size() );
 		nif->updateArray( sources );
-		
-		for( int i = 0; i < flipNames.size(); i++ )
-		{
-			QString name = TexCache::stripPath( flipNames.at(i), nif->getFolder() );
+
+		for ( int i = 0; i < flipNames.size(); i++ ) {
+			QString name = TexCache::stripPath( flipNames.at( i ), nif->getFolder() );
 			QModelIndex sourceTex;
-			if( nif->getLink( sources.child( i, 0 ) ) == -1 )
-			{
+
+			if ( nif->getLink( sources.child( i, 0 ) ) == -1 ) {
 				sourceTex = nif->insertNiBlock( "NiSourceTexture", nif->getBlockNumber( flipController ) + i + 1 );
 				nif->setLink( sources.child( i, 0 ), nif->getBlockNumber( sourceTex ) );
-			}
-			else
-			{
+			} else {
 				sourceTex = nif->getBlock( nif->getLink( sources.child( i, 0 ) ) );
 			}
+
 			nif->set<QString>( sourceTex, "File Name", name );
 		}
-		
+
 		nif->set<float>( flipController, "Frequency", 1 );
 		nif->set<quint16>( flipController, "Flags", 8 );
 		nif->set<float>( flipController, "Delta", ( nif->get<float>( flipController, "Stop Time" ) - nif->get<float>( flipController, "Start Time" ) ) / flipNames.size() );
-		
+
 		return index;
 	}
 };
@@ -1126,22 +1186,22 @@ REGISTER_SPELL( spEditFlipper )
 class spTextureFlipper : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Add Flip Controller"); }
-	QString page() const { return Spell::tr("Texture"); }
-	
+	QString name() const { return Spell::tr( "Add Flip Controller" ); }
+	QString page() const { return Spell::tr( "Texture" ); }
+
 	bool isApplicable( const NifModel * nif, const QModelIndex & index )
 	{
 		// also check NiTextureProperty?
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return block.isValid();
 	}
-	
+
 	QModelIndex cast( NifModel * nif, const QModelIndex & index )
 	{
 		// attach a NiFlipController
 		QModelIndex flipController = nif->insertNiBlock( "NiFlipController", nif->getBlockNumber( index ) + 1 );
 		blockLink( nif, index, flipController );
-		
+
 		spEditFlipper flipEdit;
 
 		return flipEdit.cast( nif, flipController );

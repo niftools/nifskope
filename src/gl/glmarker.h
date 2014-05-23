@@ -35,10 +35,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct GLMarker
 {
-     int nv;
-     int nf;
-     const float *verts;
-     const unsigned short *faces;
+	int nv;
+	int nf;
+	const float * verts;
+	const unsigned short * faces;
 };
 
 void drawMarker( const GLMarker * marker );

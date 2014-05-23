@@ -33,8 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FLOATSLIDER_H
 #define FLOATSLIDER_H
 
-#include <QWidget>
-#include <QFrame>
+#include <QFrame>  // Inherited
+#include <QWidget> // Inherited
+
 
 //! \file floatslider.h FloatSlider, FloatSliderEditBox, AlphaSlider
 
@@ -44,9 +45,10 @@ class FloatEdit;
 class FloatSliderEditBox : public QFrame
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
-	FloatSliderEditBox( QWidget * = NULL );
+	FloatSliderEditBox( QWidget * = nullptr );
 
 	//! Adds a widget to the internal layout
 	void addWidget( QWidget * );
@@ -61,31 +63,32 @@ public slots:
 class FloatSlider : public QWidget
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	FloatSlider( Qt::Orientation = Qt::Horizontal, bool = false, bool = false );
-	
+
 	//! Gets the value of the widget
 	float value() const { return val; }
-	
+
 	//! Gets the minimum value of the widget
 	float minimum() const { return min; }
 	//! Gets the maximum value of the widget
 	float maximum() const { return max; }
-	
+
 	//! Find the orientation of the widget
 	Qt::Orientation orientation() const { return ori; }
 	//! Set the orientation of the widget
 	void setOrientation( Qt::Orientation o );
-	
+
 	//! Add an editor widget to the float slider frame
 	void addEditor( QWidget * );
-	
+
 	//! The recommended size of the widget; reimplemented from QWidget
 	QSize sizeHint() const;
-	//! The recommended minimum size of the widget; reimplemented from QWidget 
+	//! The recommended minimum size of the widget; reimplemented from QWidget
 	QSize minimumSizeHint() const;
-	
+
 signals:
 	void valueChanged( float );
 
@@ -93,22 +96,22 @@ public slots:
 	void setValue( float val );
 	void setRange( float min, float max );
 	void set( float val, float min, float max );
-	
+
 protected:
 	void setValueUser( float val );
-	
+
 	void paintEvent( QPaintEvent * );
 	void mousePressEvent( QMouseEvent * );
 	void mouseMoveEvent( QMouseEvent * );
 	void mouseReleaseEvent( QMouseEvent * );
-	
+
 	float mapToValue( const QPoint & p ) const;
-	
+
 	class QStyleOptionSlider getStyleOption() const;
-	
+
 	float val, min, max;
 	Qt::Orientation ori;
-	
+
 	bool pressed;
 	bool showVal;
 	bool editVal;
@@ -123,17 +126,18 @@ protected:
 class AlphaSlider : public FloatSlider
 {
 	Q_OBJECT
+
 public:
 	AlphaSlider( Qt::Orientation o = Qt::Horizontal );
-	
+
 	QSize sizeHint() const;
-	
+
 public slots:
 	void setColor( const QColor & c );
-	
+
 protected:
 	void paintEvent( QPaintEvent * e );
-	
+
 	QColor color0;
 	QColor color1;
 };

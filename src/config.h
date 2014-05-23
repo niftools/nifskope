@@ -30,12 +30,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-// defines
-
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <QStringList>
+//#include <QStringList>
+
 
 /*! \file config.h
  * \brief Configuration info
@@ -44,6 +43,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 //! Create or use a QSettings variable for NifSkope
-#define NIFSKOPE_QSETTINGS(config) QSettings config( "NifTools", "NifSkope" )
+#define NIFSKOPE_QSETTINGS( config ) QSettings config( "NifTools", "NifSkope" )
 
 #endif

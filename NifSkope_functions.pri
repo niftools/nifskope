@@ -149,11 +149,12 @@ defineReplace(QtHex) {
 }
 
 # Format string for Qt DLL
-DLLEXT = $$quote(.dll)
+
+DLLSTRING = $$quote(Qt5%1)
 CONFIG(debug, debug|release) {
-	DLLSTRING = $$quote(Qt5%1d)
+	DLLEXT = $$quote(d.dll)
 } else {
-	DLLSTRING = $$quote(Qt5%1)
+	DLLEXT = $$quote(.dll)
 }
 
 # Returns list of absolute paths to Qt DLLs required by project
@@ -164,6 +165,13 @@ defineReplace(QtBins) {
 	for(m, modules) {
 		list += $$sprintf($$[QT_INSTALL_BINS]/$${DLLSTRING}, $$m)$${DLLEXT}
 	}
+
+	*-g++ {
+		list += \
+			$$[QT_INSTALL_BINS]/icu*.dll \
+			$$[QT_INSTALL_BINS]/lib*.dll
+	}
+
 	return($$list)
 }
 
@@ -188,9 +196,6 @@ defineTest(copyFiles) {
 		abs = false
 	} else {
 		abs = true
-	}
-	!isEmpty(subdir) {
-		subdir = $${subdir}$${QMAKE_DIR_SEP}
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
@@ -231,9 +236,6 @@ defineTest(copyDirs) {
 		abs = false
 	} else {
 		abs = true
-	}
-	!isEmpty(subdir) {
-		subdir = $${subdir}$${QMAKE_DIR_SEP}
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})

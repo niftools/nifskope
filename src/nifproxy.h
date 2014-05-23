@@ -33,38 +33,40 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFPROXYMODEL_H
 #define NIFPROXYMODEL_H
 
-#include <QAbstractItemModel>
-
+#include <QAbstractItemModel> // Inherited
 #include <QList>
+#include <QModelIndex>
+#include <QVariant>
+
 
 class NifModel;
-
 class NifProxyItem;
 
 class NifProxyModel : public QAbstractItemModel
 {
 	Q_OBJECT
+
 public:
 	NifProxyModel( QObject * parent = 0 );
 	~NifProxyModel();
-	
-    virtual void setModel(QAbstractItemModel *model);
-    QAbstractItemModel *model() const;
+
+	virtual void setModel( QAbstractItemModel * model );
+	QAbstractItemModel * model() const;
 
 	QModelIndex index( int row, int col, const QModelIndex & parent ) const;
 	QModelIndex parent( const QModelIndex & index ) const;
-	
+
 	Qt::ItemFlags flags( const QModelIndex & index ) const;
-	
-	int columnCount( const QModelIndex & index ) const { Q_UNUSED(index); return 2; }
+
+	int columnCount( const QModelIndex & index ) const { Q_UNUSED( index ); return 2; }
 	int rowCount( const QModelIndex & index ) const;
-	
+
 	bool hasChildren( const QModelIndex & index ) const
 	{ return rowCount( index ) > 0; }
-	
+
 	QVariant data( const QModelIndex & index, int role ) const;
 	bool setData( const QModelIndex & index, const QVariant & v, int role );
-	
+
 	QVariant headerData( int section, Qt::Orientation o, int role ) const;
 
 	QModelIndex mapTo( const QModelIndex & index ) const;
@@ -72,22 +74,22 @@ public:
 
 public slots:
 	void reset();
-	
+
 protected slots:
 	void xDataChanged( const QModelIndex &, const QModelIndex & );
 	void xHeaderDataChanged( Qt::Orientation, int, int );
 	void xRowsAboutToBeRemoved( const QModelIndex &, int, int );
-	
+
 	void xLinksChanged();
-	
+
 protected:
 	QList<QModelIndex> mapFrom( const QModelIndex & index ) const;
-	
+
 	void updateRoot( bool fast );
 	void updateItem( NifProxyItem * item, bool fast );
-	
+
 	NifModel * nif;
-	
+
 	NifProxyItem * root;
 };
 

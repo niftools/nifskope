@@ -10,6 +10,7 @@ QToolTip
     border-radius: 5px;
     padding: 4px;
     background: ghostwhite;
+	font-size: 10px;
 }
 
 /*

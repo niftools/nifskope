@@ -33,41 +33,39 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFSKOPE_H
 #define NIFSKOPE_H
 
-#include <QMainWindow>
-#include <QProgressDialog>
+#include "message.h"
+#include "ui/about_dialog.h"
+
+#include <QMainWindow>     // Inherited
+#include <QObject>         // Inherited
+#include <QProgressDialog> // Inherited
 
 #define NIFSKOPE_IPC_PORT 12583
 
+
+class FileSelector;
+class GLView;
+class InspectView;
+class KfmModel;
 class NifModel;
 class NifProxyModel;
-class KfmModel;
 class NifTreeView;
 class ReferenceBrowser;
-class InspectView;
-
-class GLView;
-class FileSelector;
- 
-class QModelIndex;
 
 class QAction;
 class QActionGroup;
+class QLocale;
+class QModelIndex;
 class QSettings;
 class QSlider;
 class QSpinBox;
 class QTextEdit;
 class QTranslator;
-class QLocale;
-
 class QUdpSocket;
-
-#include "message.h"
-
-#include "ui/about_dialog.h"
 
 //! \file nifskope.h The main header for NifSkope
 
-//! The main application class for NifSkope. 
+//! The main application class for NifSkope.
 /*!
  * This class encapsulates the main NifSkope window. It has members for saving
  * and restoring settings, loading and saving nif files, loading an xml
@@ -76,13 +74,14 @@ class QUdpSocket;
  */
 class NifSkope : public QMainWindow
 {
-Q_OBJECT
+	Q_OBJECT
+
 public:
 	//! Constructor
 	NifSkope();
 	//! Destructor
 	~NifSkope();
-	
+
 	//! Create and initialize a new NifSkope application window.
 	/*!
 	 * \param fname The name of the file to load in the new NifSkope window.
@@ -96,7 +95,7 @@ public:
 	 */
 	void save( QSettings & settings ) const;
 
-	//! Restore NifSkope application settings. 
+	//! Restore NifSkope application settings.
 	/*!
 	 * \param settings The QSettings object to restore the settings from.
 	 */
@@ -106,7 +105,7 @@ public:
 	 * \return QString of loaded filename
 	 */
 	QString getLoadFileName();
-	
+
 public slots:
 	//! Set the lineLoad string and load a nif, kf, or kfm file.
 	/*!
@@ -119,46 +118,46 @@ public slots:
 
 	//! Save a nif, kf, or kfm file, taking the file path from the lineSave widget.
 	void save();
-	
+
 	//! Reparse the nif.xml and kfm.xml files.
 	void loadXML();
 
 	//! Reparse the nif.xml and kfm.xml files and reload the current file.
 	void reload();
-	
+
 	//! A slot that creates a new NifSkope application window.
 	void sltWindow();
 
 	//! A slot for starting the XML checker.
 	void sltShredder();
-	
+
 	//! Reset "block details"
 	void sltResetBlockDetails();
-	
+
 protected slots:
 	//! Select a NIF index
 	void select( const QModelIndex & );
-	
+
 	//! Display a context menu at the specified position
 	void contextMenu( const QPoint & pos );
-	
+
 	//! Set the list mode
 	void setListMode();
-	
+
 	//! Select the font to use
 	void sltSelectFont();
-	
+
 	//! Send a Message
 	void dispatchMessage( const Message & msg );
-	
+
 	//! Override the view font
 	void overrideViewFont();
-	
+
 	//! Copy file name from load to save
 	void copyFileNameLoadSave();
 	//! Copy file name from save to load
 	void copyFileNameSaveLoad();
-	
+
 	//! Sets Import/Export menus
 	/*!
 	 * see importex/importex.cpp
@@ -166,26 +165,26 @@ protected slots:
 	void fillImportExportMenus();
 	//! Perform Import or Export
 	void sltImportExport( QAction * action );
-	
+
 	//! Open a URL using the system handler
 	void openURL();
-	
+
 	//! Change system locale and notify user that restart may be required
 	void sltLocaleChanged();
-	
+
 protected:
 	void closeEvent( QCloseEvent * e );
 	bool eventFilter( QObject * o, QEvent * e );
-	
+
 private:
 	void initActions();
 	void initDockWidgets();
 	void initToolBars();
 	void initMenu();
 
-    //! "About NifSkope" dialog.
-    QWidget *aboutDialog;
-	
+	//! "About NifSkope" dialog.
+	QWidget * aboutDialog;
+
 	void setViewFont( const QFont & );
 
 	//! Migrate settings from older versions of NifSkope.
@@ -197,7 +196,7 @@ private:
 	NifProxyModel * proxy;
 	//! Stores the kfm file in memory.
 	KfmModel * kfm;
-	
+
 	//! This view shows the block list.
 	NifTreeView * list;
 	//! This view shows the whole nif file or the block details.
@@ -210,47 +209,47 @@ private:
 
 	//! Transform inspect view
 	InspectView * inspect;
-	
+
 	//! The main window
 	GLView * ogl;
-	
+
 	bool selecting;
 	bool initialShowEvent;
-	
+
 	FileSelector * lineLoad;
 	FileSelector * lineSave;
-	
+
 	QDockWidget * dList;
 	QDockWidget * dTree;
 	QDockWidget * dKfm;
 	QDockWidget * dRefr;
 	QDockWidget * dInsp;
-	
+
 	QToolBar * tool;
-	
+
 	QAction * aSanitize;
 	QAction * aLoadXML;
 	QAction * aReload;
 	QAction * aWindow;
 	QAction * aShredder;
 	QAction * aQuit;
-	
+
 	QAction * aLineLoad;
 	QAction * aLineSave;
 	QAction * aCpFileName;
-	
+
 #ifdef FSENGINE
 	QAction * aResources;
 #endif
-	
+
 	QActionGroup * gListMode;
 	QAction * aList;
 	QAction * aHierarchy;
 	QAction * aCondition;
 	QAction * aRCondition;
-	
+
 	QAction * aSelectFont;
-	
+
 	QAction * aHelpWebsite;
 	QAction * aHelpForum;
 	QAction * aNifToolsWebsite;
@@ -267,27 +266,28 @@ private:
 class IPCsocket : public QObject
 {
 	Q_OBJECT
+
 public:
 	//! Creates a socket
 	static IPCsocket * create();
-	
+
 	//! Sends a command
 	static void sendCommand( const QString & cmd );
 
 public slots:
 	//! Acts on a command
 	void execCommand( const QString & cmd );
-	
+
 	//! Opens a NIF from a URL
-	void openNif(const QString & );
+	void openNif( const QString & );
 
 protected slots:
 	void processDatagram();
-	
+
 protected:
 	IPCsocket( QUdpSocket * );
 	~IPCsocket();
-	
+
 	QUdpSocket * socket;
 };
 
@@ -295,6 +295,7 @@ protected:
 class ProgDlg : public QProgressDialog
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	ProgDlg() {}

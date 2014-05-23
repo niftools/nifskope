@@ -35,13 +35,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
+#include <QMenu> // Inherited
 #include <QCoreApplication>
-#include <QMenu>
+#include <QHash>
+#include <QIcon>
+#include <QKeySequence>
+#include <QList>
+#include <QMap>
+#include <QPersistentModelIndex>
+#include <QString>
+
 
 //! \file spellbook.h Spell, SpellBook and Librarian
 
 //! Register a Spell using a Librarian
-#define REGISTER_SPELL( SPELL ) static Librarian __##SPELL##__ ( new SPELL );
+#define REGISTER_SPELL( SPELL ) static Librarian __ ## SPELL ## __( new SPELL );
 
 //! Flexible context menu magic functions.
 class Spell
@@ -51,7 +59,7 @@ public:
 	Spell() {}
 	//! Destructor
 	virtual ~Spell() {}
-	
+
 	//! Name of spell
 	virtual QString name() const = 0;
 	//! Context sub-menu that the spell appears on
@@ -69,7 +77,7 @@ public:
 
 	//! Determine if/when the spell can be cast
 	virtual bool isApplicable( const NifModel * nif, const QModelIndex & index ) = 0;
-	
+
 	//! Cast (apply) the spell
 	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;
 
@@ -79,7 +87,7 @@ public:
 		if ( isApplicable( nif, index ) )
 			cast( nif, index );
 	}
-	
+
 	//! i18n wrapper for various strings
 	/*!
 	 * Note that we don't use QObject::tr() because that doesn't provide
@@ -95,37 +103,38 @@ public:
 class SpellBook : public QMenu
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	SpellBook( NifModel * nif, const QModelIndex & index = QModelIndex(), QObject * receiver = 0, const char * member = 0 );
 	//! Destructor
 	~SpellBook();
-	
+
 	//! From QMenu: Pops up the menu so that the action <i>act</i> will be at the specified global position <i>pos</i>
 	QAction * exec( const QPoint & pos, QAction * act = 0 );
-	
+
 	//! Register spell with appropriate books
 	static void registerSpell( Spell * spell );
-	
+
 	//! Locate spell by name
 	static Spell * lookup( const QString & id );
 	//! Locate spell by hotkey
 	static Spell * lookup( const QKeySequence & hotkey );
 	//! Locate instant spells by datatype
 	static Spell * instant( const NifModel * nif, const QModelIndex & index );
-	
+
 	//! Cast all sanitizing spells
 	static QModelIndex sanitize( NifModel * nif );
-	
+
 public slots:
 	void sltNif( NifModel * nif );
-	
+
 	void sltIndex( const QModelIndex & index );
-	
+
 	void cast( NifModel * nif, const QModelIndex & index, Spell * spell );
-	
+
 	void checkActions();
-	
+
 signals:
 	void sigIndex( const QModelIndex & index );
 
@@ -135,17 +144,17 @@ protected slots:
 protected:
 	NifModel * Nif;
 	QPersistentModelIndex Index;
-	QMap<QAction*,Spell*> Map;
-	
+	QMap<QAction *, Spell *> Map;
+
 	void newSpellRegistered( Spell * spell );
 	void checkActions( QMenu * menu, const QString & page );
-	
+
 private:
-	static QList<Spell*> & spells();
-	static QList<SpellBook*> & books();
-	static QMultiHash<QString, Spell*> & hash();
-	static QList<Spell*> & instants();
-	static QList<Spell*> & sanitizers();
+	static QList<Spell *> & spells();
+	static QList<SpellBook *> & books();
+	static QMultiHash<QString, Spell *> & hash();
+	static QList<Spell *> & instants();
+	static QList<Spell *> & sanitizers();
 };
 
 //! SpellBook manager

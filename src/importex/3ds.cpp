@@ -1,26 +1,24 @@
 #include "3ds.h"
 
-#include "../spellbook.h"
+#include "nvtristripwrapper.h"
+#include "spellbook.h"
+#include "gl/gltex.h"
 
-#include "../nvtristripwrapper.h"
-
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
 #include <QString>
-#include <QApplication>
 
-#include "../gl/gltex.h"
-
-#define tr(x) QApplication::tr("3dsImport", x)
+#define tr( x ) QApplication::tr( "3dsImport", x )
 
 
 struct objPoint
 {
 	int v, t, n;
-	
+
 	bool operator==( const objPoint & other ) const
 	{
 		return v == other.v && t == other.t && n == other.n;
@@ -39,30 +37,37 @@ struct objMaterial
 	Color3 Ka, Kd, Ks;
 	float alpha, glossiness;
 	QString map_Kd;
-	
-	objMaterial() : name( "Untextured" ), alpha( 1.0f ), glossiness( 15.0f ) {}
+
+	objMaterial() : name( "Untextured" ), alpha( 1.0f ), glossiness( 15.0f )
+	{
+	}
 };
 
-struct objMatFace {
+struct objMatFace
+{
 	QString matName;
-	QVector< short > subFaces;
+	QVector<short> subFaces;
 };
 
 // The 3ds file can be made up of several objects
-struct objMesh {
-	QString name;					// The object name
-	QVector<Vector3> vertices;		// The array of vertices
-	QVector<Vector3> normals;		// The array of the normals for the vertices
-	QVector<Vector2> texcoords;		// The array of texture coordinates for the vertices
-	QVector<objFace> faces;			// The array of face indices
-	QVector<objMatFace> matfaces;	// The array of materials for this mesh
-	Vector3 pos;					// The position to move the object to
-	Vector3 rot;					// The angles to rotate the object
+struct objMesh
+{
+	QString name;                   // The object name
+	QVector<Vector3> vertices;      // The array of vertices
+	QVector<Vector3> normals;       // The array of the normals for the vertices
+	QVector<Vector2> texcoords;     // The array of texture coordinates for the vertices
+	QVector<objFace> faces;         // The array of face indices
+	QVector<objMatFace> matfaces;   // The array of materials for this mesh
+	Vector3 pos;                    // The position to move the object to
+	Vector3 rot;                    // The angles to rotate the object
 
-	objMesh() : pos( 0.0f, 0.0f, 0.0f ), rot( 0.0f, 0.0f, 0.0f ) {}
+	objMesh() : pos( 0.0f, 0.0f, 0.0f ), rot( 0.0f, 0.0f, 0.0f )
+	{
+	}
 };
 
-struct objKeyframe {
+struct objKeyframe
+{
 	Vector3 pos;
 	float rotAngle;
 	Vector3 rotAxis;
@@ -70,23 +75,27 @@ struct objKeyframe {
 
 	objKeyframe()
 		: pos( 0.0f, 0.0f, 0.0f ), rotAngle( 0 ), rotAxis( 0.0f, 0.0f, 0.0f ), scale( 0.0f )
-	{}
+	{
+	}
 };
 
-struct objKfSequence {
+struct objKfSequence
+{
 	short objectId;
 	QString objectName;
 	long startTime, endTime, curTime;
 	Vector3 pivot;
-	QMap< short, objKeyframe > frames;
+	QMap<short, objKeyframe> frames;
 
-	objKfSequence() : pivot( 0.0f, 0.0f, 0.0f ) {}
+	objKfSequence() : pivot( 0.0f, 0.0f, 0.0f )
+	{
+	}
 };
 
 static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 link )
 {
 	QModelIndex iArray = nif->getIndex( iBlock, name );
-	QModelIndex iSize = nif->getIndex( iBlock, QString( "Num %1" ).arg( name ) );
+	QModelIndex iSize  = nif->getIndex( iBlock, QString( "Num %1" ).arg( name ) );
 	int numIndices = nif->get<int>( iSize );
 	nif->set<int>( iSize, numIndices + 1 );
 	nif->updateArray( iArray );
@@ -102,24 +111,28 @@ static Color3 GetColorFromChunk( Chunk * cnk )
 	Chunk * ColorChunk;
 
 	ColorChunk = cnk->getChild( COLOR_F );
-	if( !ColorChunk ) {
+
+	if ( !ColorChunk ) {
 		ColorChunk = cnk->getChild( LIN_COLOR_F );
 	}
-	if( ColorChunk ) {
-		r = ColorChunk->read< float >();
-		g = ColorChunk->read< float >();
-		b = ColorChunk->read< float >();
+
+	if ( ColorChunk ) {
+		r = ColorChunk->read<float>();
+		g = ColorChunk->read<float>();
+		b = ColorChunk->read<float>();
 	}
 
 	ColorChunk = cnk->getChild( COLOR_24 );
-	if( !ColorChunk ) {
+
+	if ( !ColorChunk ) {
 		ColorChunk = cnk->getChild( LIN_COLOR_24 );
 	}
-	if( ColorChunk ) {
-		r = (float)( ColorChunk->read< unsigned char >() ) / 255.0f;
-		g = (float)( ColorChunk->read< unsigned char >() ) / 255.0f;
-		b = (float)( ColorChunk->read< unsigned char >() ) / 255.0f;
-	}		
+
+	if ( ColorChunk ) {
+		r = (float)( ColorChunk->read<unsigned char>() ) / 255.0f;
+		g = (float)( ColorChunk->read<unsigned char>() ) / 255.0f;
+		b = (float)( ColorChunk->read<unsigned char>() ) / 255.0f;
+	}
 
 	return Color3( r, g, b );
 }
@@ -129,13 +142,15 @@ static float GetPercentageFromChunk( Chunk * cnk )
 	float f = 0.0f;
 
 	Chunk * PercChunk = cnk->getChild( FLOAT_PERCENTAGE );
-	if( PercChunk ) {
-		f = PercChunk->read< float >();
+
+	if ( PercChunk ) {
+		f = PercChunk->read<float>();
 	}
 
 	PercChunk = cnk->getChild( INT_PERCENTAGE );
-	if( PercChunk ) {
-		f = (float)( PercChunk->read< unsigned short >() / 255.0f );
+
+	if ( PercChunk ) {
+		f = (float)( PercChunk->read<unsigned short>() / 255.0f );
 	}
 
 	return f;
@@ -144,7 +159,6 @@ static float GetPercentageFromChunk( Chunk * cnk )
 
 void import3ds( NifModel * nif, const QModelIndex & index )
 {
-
 	//--Determine how the file will import, and be sure the user wants to continue--//
 
 	// If no existing node is selected, create a group node.  Otherwise use selected node
@@ -152,54 +166,45 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	QModelIndex iBlock = nif->getBlock( index );
 
 	//Be sure the user hasn't clicked on a NiTriStrips object
-	if ( iBlock.isValid() && nif->itemName(iBlock) == "NiTriStrips" )
-	{
-		int result = QMessageBox::information( 0, tr("Import OBJ"), tr("You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate") );
+	if ( iBlock.isValid() && nif->itemName( iBlock ) == "NiTriStrips" ) {
+		int result = QMessageBox::information( 0, tr( "Import OBJ" ), tr( "You cannot import an OBJ file over a NiTriStrips object.  Please convert it to a NiTriShape object first by right-clicking and choosing Mesh > Triangulate" ) );
 		return;
 	}
 
-	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" )
-	{
+	if ( iBlock.isValid() && nif->itemName( index ) == "NiNode" ) {
 		iNode = index;
-	}
-	else if ( iBlock.isValid() && nif->itemName( index ) == "NiTriShape" )
-	{
+	} else if ( iBlock.isValid() && nif->itemName( index ) == "NiTriShape" ) {
 		iShape = index;
 		//Find parent of NiTriShape
 		int par_num = nif->getParent( nif->getBlockNumber( index ) );
-		if ( par_num != -1 )
-		{
+
+		if ( par_num != -1 ) {
 			iNode = nif->getBlock( par_num );
 		}
 
 		//Find material, texture, and data objects
-		QList<int> children = nif->getChildLinks( nif->getBlockNumber(iShape) );
-		for( QList<int>::iterator it = children.begin(); it != children.end(); ++it )
-		{
-			if ( *it != -1 )
-			{
-				QModelIndex temp = nif->getBlock( *it );
+		QList<int> children = nif->getChildLinks( nif->getBlockNumber( iShape ) );
+
+		for ( const auto child : children ) {
+			if ( child != -1 ) {
+				QModelIndex temp = nif->getBlock( child );
 				QString type = nif->itemName( temp );
-				if ( type == "NiMaterialProperty" )
-				{
+
+				if ( type == "NiMaterialProperty" ) {
 					iMaterial = temp;
-				}
-				else if ( type == "NiTriShapeData" )
-				{
+				} else if ( type == "NiTriShapeData" ) {
 					iData = temp;
-				}
-				else if ( (type == "NiTexturingProperty") || (type == "NiTextureProperty") )
-				{
+				} else if ( (type == "NiTexturingProperty") || (type == "NiTextureProperty") ) {
 					iTexProp = temp;
 
 					//Search children of texture property for texture sources/images
-					QList<int> children = nif->getChildLinks( nif->getBlockNumber(iTexProp) );
-					for( QList<int>::iterator it = children.begin(); it != children.end(); ++it )
-					{
-						QModelIndex temp = nif->getBlock( *it );
+					QList<int> chn = nif->getChildLinks( nif->getBlockNumber( iTexProp ) );
+
+					for ( const auto c : chn ) {
+						QModelIndex temp = nif->getBlock( c );
 						QString type = nif->itemName( temp );
-						if ( (type == "NiSourceTexture") || (type == "NiImage") )
-						{
+
+						if ( (type == "NiSourceTexture") || (type == "NiImage") ) {
 							iTexSource = temp;
 						}
 					}
@@ -210,23 +215,18 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 	QString question;
 
-	if ( iNode.isValid() == true )
-	{
-		if ( iShape.isValid() == true )
-		{
-			question = tr("NiTriShape selected.  The first imported mesh will replace the selected one.");
+	if ( iNode.isValid() == true ) {
+		if ( iShape.isValid() == true ) {
+			question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
+		} else {
+			question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
 		}
-		else
-		{
-			question = tr("NiNode selected.  Meshes will be attached to the selected node.");
-		}
-	}
-	else
-	{
-		question = tr("No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file.");
+	} else {
+		question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
 	}
 
-	int result = QMessageBox::question( 0, tr("Import 3DS"), question, QMessageBox::Ok, QMessageBox::Cancel );
+	int result = QMessageBox::question( 0, tr( "Import 3DS" ), question, QMessageBox::Ok, QMessageBox::Cancel );
+
 	if ( result == QMessageBox::Cancel ) {
 		return;
 	}
@@ -235,136 +235,143 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	//--Read the file--//
 
 	float ObjScale;
-	QVector< objMesh > ObjMeshes;
-	QMap< QString, objMaterial > ObjMaterials;
-	QMap< QString, objKfSequence > ObjKeyframes;
+	QVector<objMesh> ObjMeshes;
+	QMap<QString, objMaterial> ObjMaterials;
+	QMap<QString, objKfSequence> ObjKeyframes;
 
 	QSettings settings;
 	settings.beginGroup( "import-export" );
 	settings.beginGroup( "3ds" );
-	
-	QString fname = QFileDialog::getOpenFileName( 0, tr("Choose a .3ds file to import"), settings.value( tr("File Name") ).toString(), "3DS (*.3ds)" );
+
+	QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .3ds file to import" ), settings.value( tr( "File Name" ) ).toString(), "3DS (*.3ds)" );
+
 	if ( fname.isEmpty() ) {
 		return;
 	}
-	
+
 	QFile fobj( fname );
-	if ( !fobj.open( QIODevice::ReadOnly ) )
-	{
-		qWarning() << tr("Could not open %1 for read access").arg( fobj.fileName() );
+
+	if ( !fobj.open( QIODevice::ReadOnly ) ) {
+		qWarning() << tr( "Could not open %1 for read access" ).arg( fobj.fileName() );
 		return;
 	}
-	
+
 	Chunk * FileChunk = Chunk::LoadFile( &fobj );
-	if( !FileChunk ) {
-		qWarning() << tr("Could not get 3ds data");
+
+	if ( !FileChunk ) {
+		qWarning() << tr( "Could not get 3ds data" );
 		return;
 	}
 
 	Chunk * Model = FileChunk->getChild( M3DMAGIC );
-	if( !Model ) {
-		qWarning() << tr("Could not get 3ds model");
+
+	if ( !Model ) {
+		qWarning() << tr( "Could not get 3ds model" );
 		return;
 	}
 
 	Chunk * ModelData = Model->getChild( MDATA );
-	if( !ModelData ) {
-		qWarning() << tr("Could not get 3ds model data");
+
+	if ( !ModelData ) {
+		qWarning() << tr( "Could not get 3ds model data" );
 		return;
 	}
 
 	Chunk * MasterScale = ModelData->getChild( MASTER_SCALE );
-	if( MasterScale ) {
-		ObjScale = MasterScale->read< float >();
-	}
-	else {
+
+	if ( MasterScale ) {
+		ObjScale = MasterScale->read<float>();
+	} else {
 		ObjScale = 1.0f;
 	}
 
-	QList< Chunk * > Materials = ModelData->getChildren( MATERIAL );
-	QList< Chunk * > Meshes = ModelData->getChildren( NAMED_OBJECT );
+	QList<Chunk *> Materials = ModelData->getChildren( MATERIAL );
+	QList<Chunk *> Meshes = ModelData->getChildren( NAMED_OBJECT );
 
-	foreach( Chunk * mat, Materials )
-	{
+	for ( Chunk * mat : Materials ) {
 		objMaterial newMat;
 
 		// material name
 		Chunk * matName = mat->getChild( MAT_NAME );
-		if( matName ) {
+
+		if ( matName ) {
 			newMat.name = matName->readString();
 		}
 
 		// material colors
 		Chunk * matColor = mat->getChild( MAT_AMBIENT );
-		if( matColor ) {
+
+		if ( matColor ) {
 			newMat.Ka = GetColorFromChunk( matColor );
 		}
 
 		matColor = mat->getChild( MAT_DIFFUSE );
-		if( matColor ) {
+
+		if ( matColor ) {
 			newMat.Kd = GetColorFromChunk( matColor );
 		}
 
 		matColor = mat->getChild( MAT_SPECULAR );
-		if( matColor ) {
+
+		if ( matColor ) {
 			newMat.Ks = GetColorFromChunk( matColor );
 		}
 
 		// material textures
 		Chunk * matTexture = mat->getChild( MAT_TEXMAP );
-		if( matTexture ) {
+
+		if ( matTexture ) {
 			Chunk * matTexProperty = matTexture->getChild( MAT_MAPNAME );
-			if( matTexProperty ) {
+
+			if ( matTexProperty ) {
 				newMat.map_Kd = matTexProperty->readString();
 			}
 		}
 
 		// material alpha
 		Chunk * matAlpha = mat->getChild( MAT_TRANSPARENCY );
-		if( matAlpha ) {
+
+		if ( matAlpha ) {
 			newMat.alpha = 1.0f - GetPercentageFromChunk( matAlpha );
 		}
 
 		ObjMaterials.insert( newMat.name, newMat );
 	}
 
-	foreach( Chunk * mesh, Meshes )
-	{
+	for ( Chunk * mesh : Meshes ) {
 		objMesh newMesh;
 
 		newMesh.name = mesh->readString();
 
-		foreach( Chunk * TriObj, mesh->getChildren( N_TRI_OBJECT ) )
-		{
+		for ( Chunk * TriObj : mesh->getChildren( N_TRI_OBJECT ) ) {
 			Chunk * PointArray = TriObj->getChild( POINT_ARRAY );
-			if( PointArray ) {
-				unsigned short nPoints = PointArray->read< unsigned short >();
 
-				for( unsigned short i = 0; i < nPoints; i++ )
-				{
+			if ( PointArray ) {
+				unsigned short nPoints = PointArray->read<unsigned short>();
+
+				for ( unsigned short i = 0; i < nPoints; i++ ) {
 					float x, y, z;
-					x = PointArray->read< float >();
-					y = PointArray->read< float >();
-					z = PointArray->read< float >();
+					x = PointArray->read<float>();
+					y = PointArray->read<float>();
+					z = PointArray->read<float>();
 
-					newMesh.vertices.append( Vector3( x, y, z ) );
-					newMesh.normals.append( Vector3( 0.0f, 0.0f, 1.0f ) );
+					newMesh.vertices.append( { x, y, z } );
+					newMesh.normals.append( { 0.0f, 0.0f, 1.0f } );
 				}
 			}
 
 			Chunk * FaceArray = TriObj->getChild( FACE_ARRAY );
-			if( FaceArray ) {
 
-				unsigned short nFaces = FaceArray->read< unsigned short >();
+			if ( FaceArray ) {
+				unsigned short nFaces = FaceArray->read<unsigned short>();
 
-				for( unsigned short i = 0; i < nFaces; i++ )
-				{
+				for ( unsigned short i = 0; i < nFaces; i++ ) {
 					Chunk::ChunkTypeFaceArray f;
 
-					f.vertex1	= FaceArray->read< unsigned short >();
-					f.vertex2	= FaceArray->read< unsigned short >();
-					f.vertex3	= FaceArray->read< unsigned short >();
-					f.flags		= FaceArray->read< unsigned short >();
+					f.vertex1 = FaceArray->read<unsigned short>();
+					f.vertex2 = FaceArray->read<unsigned short>();
+					f.vertex3 = FaceArray->read<unsigned short>();
+					f.flags = FaceArray->read<unsigned short>();
 
 					objFace newFace;
 
@@ -376,28 +383,26 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 					Vector3 n1 = newMesh.vertices[newFace.v2] - newMesh.vertices[newFace.v1];
 					Vector3 n2 = newMesh.vertices[newFace.v3] - newMesh.vertices[newFace.v1];
-					Vector3 FaceNormal = Vector3::crossproduct(n1, n2);
+					Vector3 FaceNormal = Vector3::crossproduct( n1, n2 );
 					FaceNormal.normalize();
 					newMesh.normals[newFace.v1] += FaceNormal;
 					newMesh.normals[newFace.v2] += FaceNormal;
 					newMesh.normals[newFace.v3] += FaceNormal;
 
 					newMesh.faces.append( newFace );
-
 				}
 
 				objMatFace newMatFace;
 
-				foreach( Chunk * MatFaces, FaceArray->getChildren( MSH_MAT_GROUP ) )
-				{
+				for ( Chunk * MatFaces : FaceArray->getChildren( MSH_MAT_GROUP ) ) {
 					//Chunk * MatFaces = FaceArray->getChild( MSH_MAT_GROUP );
-					if( MatFaces ) {
+					if ( MatFaces ) {
 						newMatFace.matName = MatFaces->readString();
 
-						unsigned short nFaces = MatFaces->read< unsigned short >();
+						unsigned short nFaces = MatFaces->read<unsigned short>();
 
-						for( unsigned short i = 0; i < nFaces; i++ ) {
-							unsigned short FaceNum = MatFaces->read< unsigned short >();
+						for ( unsigned short i = 0; i < nFaces; i++ ) {
+							unsigned short FaceNum = MatFaces->read<unsigned short>();
 							newMatFace.subFaces.append( FaceNum );
 						}
 
@@ -407,23 +412,21 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			}
 
 			Chunk * TexVerts = TriObj->getChild( TEX_VERTS );
-			if( TexVerts ) {
-				unsigned short nVerts = TexVerts->read< unsigned short >();
 
-				for( unsigned short i = 0; i < nVerts; i++ )
-				{
+			if ( TexVerts ) {
+				unsigned short nVerts = TexVerts->read<unsigned short>();
+
+				for ( unsigned short i = 0; i < nVerts; i++ ) {
 					float x, y;
-					x = TexVerts->read< float >();
-					y = TexVerts->read< float >();
+					x = TexVerts->read<float>();
+					y = TexVerts->read<float>();
 
 					newMesh.texcoords.append( Vector2( x, -y ) );
 				}
 			}
-
 		}
 
-		for( int i = 0; i < newMesh.normals.size(); i++ )
-		{
+		for ( int i = 0; i < newMesh.normals.size(); i++ ) {
 			newMesh.normals[i].normalize();
 		}
 
@@ -431,17 +434,15 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	}
 
 	Chunk * Keyframes = Model->getChild( KFDATA );
-	if( Keyframes ) {
-		if( Chunk * KfHdr = Keyframes->getChild( KFHDR ) )
-		{
 
+	if ( Keyframes ) {
+		if ( Chunk * KfHdr = Keyframes->getChild( KFHDR ) ) {
 		}
 
-		QList< Chunk * > KfSegs = Keyframes->getChildren( KFSEG );
-		QList< Chunk * > KfCurTimes = Keyframes->getChildren( KFCURTIME );
+		QList<Chunk *> KfSegs = Keyframes->getChildren( KFSEG );
+		QList<Chunk *> KfCurTimes = Keyframes->getChildren( KFCURTIME );
 
-		for( int i = 0; i < KfSegs.size(); i++ )
-		{
+		for ( int i = 0; i < KfSegs.size(); i++ ) {
 			/*
 			Chunk::ChunkData * rawData = KfSegs[i]->getData();
 			newKfSeg.startTime = *( (long *) rawData );
@@ -457,101 +458,97 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			*/
 		}
 
-		foreach( Chunk * KfObj, Keyframes->getChildren( OBJECT_NODE_TAG ) )
-		{
+		for ( Chunk * KfObj : Keyframes->getChildren( OBJECT_NODE_TAG ) ) {
 			objKfSequence newKfSeq;
-			
-			if( Chunk * NodeId = KfObj->getChild( NODE_ID ) ) {
-				newKfSeq.objectId = NodeId->read< unsigned short >();
+
+			if ( Chunk * NodeId = KfObj->getChild( NODE_ID ) ) {
+				newKfSeq.objectId = NodeId->read<unsigned short>();
 			}
 
-			if( Chunk * NodeHdr = KfObj->getChild( NODE_HDR ) ) {
+			if ( Chunk * NodeHdr = KfObj->getChild( NODE_HDR ) ) {
 				newKfSeq.objectName = NodeHdr->readString();
 
-				unsigned short Flags1 = NodeHdr->read< unsigned short >();
-				unsigned short Flags2 = NodeHdr->read< unsigned short >();
-				unsigned short Hierarchy = NodeHdr->read< unsigned short >();
+				unsigned short Flags1 = NodeHdr->read<unsigned short>();
+				unsigned short Flags2 = NodeHdr->read<unsigned short>();
+				unsigned short Hierarchy = NodeHdr->read<unsigned short>();
 			}
 
-			if( Chunk * Pivot = KfObj->getChild( PIVOT ) ) {
-				float x = Pivot->read< float >();
-				float y = Pivot->read< float >();
-				float z = Pivot->read< float >();
+			if ( Chunk * Pivot = KfObj->getChild( PIVOT ) ) {
+				float x = Pivot->read<float>();
+				float y = Pivot->read<float>();
+				float z = Pivot->read<float>();
 
-				newKfSeq.pivot = Vector3( x, y, z );
+				newKfSeq.pivot = { x, y, z };
 			}
 
-			if( Chunk * PosTrack = KfObj->getChild( POS_TRACK_TAG ) ) {
-				unsigned short flags = PosTrack->read< unsigned short >();
+			if ( Chunk * PosTrack = KfObj->getChild( POS_TRACK_TAG ) ) {
+				unsigned short flags = PosTrack->read<unsigned short>();
 
-				unsigned short unknown1 = PosTrack->read< unsigned short >();
-				unsigned short unknown2 = PosTrack->read< unsigned short >();
-				unsigned short unknown3 = PosTrack->read< unsigned short >();
-				unsigned short unknown4 = PosTrack->read< unsigned short >();
+				unsigned short unknown1 = PosTrack->read<unsigned short>();
+				unsigned short unknown2 = PosTrack->read<unsigned short>();
+				unsigned short unknown3 = PosTrack->read<unsigned short>();
+				unsigned short unknown4 = PosTrack->read<unsigned short>();
 
-				unsigned short keys = PosTrack->read< unsigned short >();
-				
-				unsigned short unknown = PosTrack->read< unsigned short >();
+				unsigned short keys = PosTrack->read<unsigned short>();
 
-				for( int key = 0; key < keys; key++ )
-				{
-					unsigned short kfNum = PosTrack->read< unsigned short >();
-					unsigned long kfUnknown = PosTrack->read< unsigned long >();
-					float kfPosX = PosTrack->read< float >();
-					float kfPosY = PosTrack->read< float >();
-					float kfPosZ = PosTrack->read< float >();
+				unsigned short unknown = PosTrack->read<unsigned short>();
 
-					newKfSeq.frames[kfNum].pos = Vector3( kfPosX, kfPosY, kfPosZ );
+				for ( int key = 0; key < keys; key++ ) {
+					unsigned short kfNum = PosTrack->read<unsigned short>();
+					unsigned long kfUnknown = PosTrack->read<unsigned long>();
+					float kfPosX = PosTrack->read<float>();
+					float kfPosY = PosTrack->read<float>();
+					float kfPosZ = PosTrack->read<float>();
+
+					newKfSeq.frames[kfNum].pos = { kfPosX, kfPosY, kfPosZ };
 				}
 			}
 
-			if( Chunk * RotTrack = KfObj->getChild( ROT_TRACK_TAG ) ) {
-				unsigned short flags = RotTrack->read< unsigned short >();
+			if ( Chunk * RotTrack = KfObj->getChild( ROT_TRACK_TAG ) ) {
+				unsigned short flags = RotTrack->read<unsigned short>();
 
-				unsigned short unknown1 = RotTrack->read< unsigned short >();
-				unsigned short unknown2 = RotTrack->read< unsigned short >();
-				unsigned short unknown3 = RotTrack->read< unsigned short >();
-				unsigned short unknown4 = RotTrack->read< unsigned short >();
+				unsigned short unknown1 = RotTrack->read<unsigned short>();
+				unsigned short unknown2 = RotTrack->read<unsigned short>();
+				unsigned short unknown3 = RotTrack->read<unsigned short>();
+				unsigned short unknown4 = RotTrack->read<unsigned short>();
 
-				unsigned short keys = RotTrack->read< unsigned short >();
-				
-				unsigned short unknown = RotTrack->read< unsigned short >();
+				unsigned short keys = RotTrack->read<unsigned short>();
 
-				for( unsigned short key = 0; key < keys; key++ )
-				{
-					unsigned short kfNum = RotTrack->read< unsigned short >();
-					unsigned long kfUnknown = RotTrack->read< unsigned long >();
-					float kfRotAngle = RotTrack->read< float >();
-					float kfAxisX = RotTrack->read< float >();
-					float kfAxisY = RotTrack->read< float >();
-					float kfAxisZ = RotTrack->read< float >();
-					
+				unsigned short unknown = RotTrack->read<unsigned short>();
+
+				for ( unsigned short key = 0; key < keys; key++ ) {
+					unsigned short kfNum = RotTrack->read<unsigned short>();
+					unsigned long kfUnknown = RotTrack->read<unsigned long>();
+					float kfRotAngle = RotTrack->read<float>();
+					float kfAxisX = RotTrack->read<float>();
+					float kfAxisY = RotTrack->read<float>();
+					float kfAxisZ = RotTrack->read<float>();
+
 					newKfSeq.frames[kfNum].rotAngle = kfRotAngle;
-					newKfSeq.frames[kfNum].rotAxis = Vector3( kfAxisX, kfAxisY, kfAxisZ );
+					newKfSeq.frames[kfNum].rotAxis = { kfAxisX, kfAxisY, kfAxisZ };
 				}
 			}
 
-			if( Chunk * SclTrack = KfObj->getChild( SCL_TRACK_TAG ) ) {
-				unsigned short flags = SclTrack->read< unsigned short >();
+			if ( Chunk * SclTrack = KfObj->getChild( SCL_TRACK_TAG ) ) {
+				unsigned short flags = SclTrack->read<unsigned short>();
 
-				unsigned short unknown1 = SclTrack->read< unsigned short >();
-				unsigned short unknown2 = SclTrack->read< unsigned short >();
-				unsigned short unknown3 = SclTrack->read< unsigned short >();
-				unsigned short unknown4 = SclTrack->read< unsigned short >();
+				unsigned short unknown1 = SclTrack->read<unsigned short>();
+				unsigned short unknown2 = SclTrack->read<unsigned short>();
+				unsigned short unknown3 = SclTrack->read<unsigned short>();
+				unsigned short unknown4 = SclTrack->read<unsigned short>();
 
-				unsigned short keys = SclTrack->read< unsigned short >();
-				
-				unsigned short unknown = SclTrack->read< unsigned short >();
+				unsigned short keys = SclTrack->read<unsigned short>();
 
-				for( unsigned short key = 0; key < keys; key++ )
-				{
-					unsigned short kfNum = SclTrack->read< unsigned short >();
-					unsigned long kfUnknown = SclTrack->read< unsigned long >();
-					float kfSclX = SclTrack->read< float >();
-					float kfSclY = SclTrack->read< float >();
-					float kfSclZ = SclTrack->read< float >();
+				unsigned short unknown = SclTrack->read<unsigned short>();
 
-					newKfSeq.frames[kfNum].scale =	( kfSclX + kfSclY + kfSclZ ) / 3.0f;
+				for ( unsigned short key = 0; key < keys; key++ ) {
+					unsigned short kfNum = SclTrack->read<unsigned short>();
+					unsigned long kfUnknown = SclTrack->read<unsigned long>();
+					float kfSclX = SclTrack->read<float>();
+					float kfSclY = SclTrack->read<float>();
+					float kfSclZ = SclTrack->read<float>();
+
+					newKfSeq.frames[kfNum].scale = ( kfSclX + kfSclY + kfSclZ ) / 3.0f;
 				}
 			}
 
@@ -563,8 +560,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 	//--Translate file structures into NIF ones--//
 
-	if ( iNode.isValid() == false )
-	{
+	if ( iNode.isValid() == false ) {
 		iNode = nif->insertNiBlock( "NiNode" );
 		nif->set<QString>( iNode, "Name", "Scene Root" );
 	}
@@ -573,16 +569,16 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	iRoot = iNode;
 
 	// create a NiTriShape foreach material in the object
-	for(int objIndex = 0; objIndex < ObjMeshes.size(); objIndex++) {
+	for ( int objIndex = 0; objIndex < ObjMeshes.size(); objIndex++ ) {
 		objMesh * mesh = &ObjMeshes[objIndex];
 
-		
+
 
 		// create group node if there is more than 1 material
 		bool groupNode = false;
 		QPersistentModelIndex iNode = iRoot;
-		if ( mesh->matfaces.size() > 1 )
-		{
+
+		if ( mesh->matfaces.size() > 1 ) {
 			groupNode = true;
 
 			iNode = nif->insertNiBlock( "NiNode" );
@@ -591,37 +587,33 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 		}
 
 		int shapecount = 0;
-		for( int i = 0; i < mesh->matfaces.size(); i++ )
-		{
+
+		for ( int i = 0; i < mesh->matfaces.size(); i++ ) {
 			if ( !ObjMaterials.contains( mesh->matfaces[i].matName ) ) {
-				qWarning() << tr("Material '%1' not found in list!").arg( mesh->matfaces[i].matName );
+				qWarning() << tr( "Material '%1' not found in list!" ).arg( mesh->matfaces[i].matName );
 			}
 
 			objMaterial * mat = &ObjMaterials[mesh->matfaces[i].matName];
 
-			if ( iShape.isValid() == false || objIndex != 0 )
-			{
+			if ( iShape.isValid() == false || objIndex != 0 ) {
 				iShape = nif->insertNiBlock( "NiTriShape" );
 			}
-			if ( groupNode )
-			{
+
+			if ( groupNode ) {
 				nif->set<QString>( iShape, "Name", QString( "%1:%2" ).arg( nif->get<QString>( iNode, "Name" ) ).arg( shapecount++ ) );
 				addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
-			}
-			else
-			{
+			} else {
 				nif->set<QString>( iShape, "Name", mesh->name );
 				addLink( nif, iRoot, "Children", nif->getBlockNumber( iShape ) );
 			}
-			
+
 
 			// add material property, for non-Skyrim versions
-			if ( nif->getUserVersion() < 12 )
-			{
-				if ( iMaterial.isValid() == false || objIndex != 0 )
-				{
+			if ( nif->getUserVersion() < 12 ) {
+				if ( iMaterial.isValid() == false || objIndex != 0 ) {
 					iMaterial = nif->insertNiBlock( "NiMaterialProperty" );
 				}
+
 				nif->set<QString>( iMaterial, "Name", mat->name );
 				nif->set<Color3>( iMaterial, "Ambient Color", mat->Ka );
 				nif->set<Color3>( iMaterial, "Diffuse Color", mat->Kd );
@@ -633,82 +625,74 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 				addLink( nif, iShape, "Properties", nif->getBlockNumber( iMaterial ) );
 			}
 
-			if ( !mat->map_Kd.isEmpty() )
-			{
-				if ( nif -> getUserVersion() >= 12 )
-				{
+			if ( !mat->map_Kd.isEmpty() ) {
+				if ( nif->getUserVersion() >= 12 ) {
 					// Skyrim, nothing here yet
-				}
-				else if ( nif->getVersionNumber() >= 0x0303000D )
-				{
+				} else if ( nif->getVersionNumber() >= 0x0303000D ) {
 					//Newer versions use NiTexturingProperty and NiSourceTexture
-					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType(iTexProp) != "NiTexturingProperty" )
-					{
+					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType( iTexProp ) != "NiTexturingProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTexturingProperty" );
 					}
+
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
-					
+
 					nif->set<int>( iTexProp, "Has Base Texture", 1 );
 					QModelIndex iBaseMap = nif->getIndex( iTexProp, "Base Texture" );
 					nif->set<int>( iBaseMap, "Clamp Mode", 3 );
 					nif->set<int>( iBaseMap, "Filter Mode", 2 );
-					
-					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType(iTexSource) != "NiSourceTexture" )
-					{
+
+					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType( iTexSource ) != "NiSourceTexture" ) {
 						iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
+
 					nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
-					
+
 					nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
 					nif->set<int>( iTexSource, "Use Mipmaps", 2 );
 					nif->set<int>( iTexSource, "Alpha Format", 3 );
 					nif->set<int>( iTexSource, "Unknown Byte", 1 );
 					nif->set<int>( iTexSource, "Unknown Byte 2", 1 );
-					
+
 					nif->set<int>( iTexSource, "Use External", 1 );
 					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
-				}
-				else
-				{
+				} else {
 					//Older versions use NiTextureProperty and NiImage
-					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType(iTexProp) != "NiTextureProperty" )
-					{
+					if ( iTexProp.isValid() == false || objIndex != 0 || nif->itemType( iTexProp ) != "NiTextureProperty" ) {
 						iTexProp = nif->insertNiBlock( "NiTextureProperty" );
 					}
+
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iTexProp ) );
-					
-					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType(iTexSource) != "NiImage" )
-					{
+
+					if ( iTexSource.isValid() == false || objIndex != 0 || nif->itemType( iTexSource ) != "NiImage" ) {
 						iTexSource = nif->insertNiBlock( "NiImage" );
 					}
 
 					nif->setLink( iTexProp, "Image", nif->getBlockNumber( iTexSource ) );
-					
+
 					nif->set<int>( iTexSource, "External", 1 );
 					nif->set<QString>( iTexSource, "File Name", mat->map_Kd );
 				}
 			}
-			
-			if ( iData.isValid() == false || objIndex != 0 )
-			{
+
+			if ( iData.isValid() == false || objIndex != 0 ) {
 				iData = nif->insertNiBlock( "NiTriShapeData" );
 			}
+
 			nif->setLink( iShape, "Data", nif->getBlockNumber( iData ) );
-			
-			QVector< Triangle > triangles;
-			QVector< objPoint > points;
-			
-			foreach( short faceIndex, mesh->matfaces[i].subFaces )
-			{
+
+			QVector<Triangle> triangles;
+			QVector<objPoint> points;
+
+			for ( const auto faceIndex : mesh->matfaces[i].subFaces ) {
 				objFace face = mesh->faces[faceIndex];
 
 				Triangle tri;
-				
+
 				tri.set( face.v1, face.v2, face.v3 );
 
 				triangles.append( tri );
 			}
-			
+
 			nif->set<int>( iData, "Num Vertices", mesh->vertices.count() );
 			nif->set<int>( iData, "Has Vertices", 1 );
 			nif->updateArray( iData, "Vertices" );
@@ -720,40 +704,47 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 			nif->set<int>( iData, "Num UV Sets", 1 );
 			nif->set<int>( iData, "Num UV Sets 2", 1 );
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
+
 			if ( !iTexCo.isValid() ) {
 				iTexCo = nif->getIndex( iData, "UV Sets 2" );
 			}
+
 			nif->updateArray( iTexCo );
 			nif->updateArray( iTexCo.child( 0, 0 ) );
 			nif->setArray<Vector2>( iTexCo.child( 0, 0 ),  mesh->texcoords );
-			
+
 			nif->set<int>( iData, "Has Triangles", 1 );
 			nif->set<int>( iData, "Num Triangles", triangles.count() );
 			nif->set<int>( iData, "Num Triangle Points", triangles.count() * 3 );
 			nif->updateArray( iData, "Triangles" );
 			nif->setArray<Triangle>( iData, "Triangles", triangles );
-			
+
 			Vector3 center;
-			foreach ( Vector3 v,  mesh->vertices )
+			for ( const Vector3& v : mesh->vertices ) {
 				center += v;
-			if (  mesh->vertices.count() > 0 ) center /=  mesh->vertices.count();
+			}
+
+			if ( mesh->vertices.count() > 0 )
+				center /= mesh->vertices.count();
+
 			nif->set<Vector3>( iData, "Center", center );
 			float radius = 0;
-			foreach ( Vector3 v,  mesh->vertices )
-			{
+			for ( const Vector3& v : mesh->vertices ) {
 				float d = ( center - v ).length();
-				if ( d > radius ) radius = d;
+
+				if ( d > radius )
+					radius = d;
 			}
 			nif->set<float>( iData, "Radius", radius );
-			
+
 			nif->set<int>( iData, "Unknown Short 2", 0x4000 );
 		}
 
 		// set up a controller for animated objects
 	}
-	
+
 	settings.setValue( "File Name", fname );
-	
+
 	nif->reset();
 	return;
 }

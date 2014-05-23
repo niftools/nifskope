@@ -33,15 +33,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COPYFNAM_H
 #define COPYFNAM_H
 
+#include <QWidget> // Inherited
 #include <QImage>
 #include <QRect>
-#include <QWidget>
+
 
 class CopyFilename : public QWidget
 {
 	Q_OBJECT
+
 public:
-	CopyFilename( QWidget * parent = NULL );
+	CopyFilename( QWidget * parent = nullptr );
 
 signals:
 	void leftTriggered();

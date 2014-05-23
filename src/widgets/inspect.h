@@ -33,8 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INSPECT_H
 #define INSPECT_H
 
-#include <QDialog>
+#include <QDialog> // Inherited
 #include <QPersistentModelIndex>
+
 
 //! \file inspect.h InspectView class
 
@@ -47,28 +48,29 @@ class Scene;
 class InspectView : public QDialog
 {
 	Q_OBJECT
+
 public:
-	explicit InspectView(QWidget *parent = 0, Qt::WindowFlags f = 0);
+	explicit InspectView( QWidget * parent = 0, Qt::WindowFlags f = 0 );
 	~InspectView();
-	
-	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
-	QSize sizeHint() const { return QSize( 400, 400 ); }
-	
+
+	QSize minimumSizeHint() const { return { 50, 50 }; }
+	QSize sizeHint() const { return { 400, 400 }; }
+
 	void setNifModel( NifModel * );
 	void setScene( Scene * );
-	
+
 	void clear();
-	
-	virtual void setVisible(bool visible);
-	
+
+	virtual void setVisible( bool visible );
+
 public slots:
 	void updateSelection( const QModelIndex & );
 	void refresh();
 	void updateTime( float t, float mn, float mx );
 	void update();
-	
+
 private:
-	InspectViewInternal *impl;
+	InspectViewInternal * impl;
 	NifModel * nif;
 	Scene * scene;
 	QPersistentModelIndex selection;

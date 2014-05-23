@@ -30,17 +30,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "nifmodel.h"
+#include "nifproxy.h"
+#include "nifskope.h"
+#include "widgets/nifview.h"
 
-
-#include "../nifskope.h"
-#include "../widgets/nifview.h"
-#include "../nifproxy.h"
-#include "../nifmodel.h"
-
-#include <QMenu>
-#include <QModelIndex>
 #include <QDockWidget>
 #include <QFileInfo>
+#include <QMenu>
+#include <QModelIndex>
 
 
 void exportObj( const NifModel * nif, const QModelIndex & index );
@@ -63,29 +61,20 @@ void NifSkope::sltImportExport( QAction * a )
 
 
 	//Get the currently selected NiBlock index in the list or tree view
-	if ( dList->isVisible() )
-	{
-		if ( list->model() == proxy )
-		{
+	if ( dList->isVisible() ) {
+		if ( list->model() == proxy ) {
 			index = proxy->mapTo( list->currentIndex() );
-		}
-		else if ( list->model() == nif )
-		{
+		} else if ( list->model() == nif ) {
 			index = list->currentIndex();
 		}
-	}
-	else if ( dTree->isVisible() )
-	{
-		if ( tree->model() == proxy )
-		{
+	} else if ( dTree->isVisible() ) {
+		if ( tree->model() == proxy ) {
 			index = proxy->mapTo( tree->currentIndex() );
-		}
-		else if ( tree->model() == nif )
-		{
+		} else if ( tree->model() == nif ) {
 			index = tree->currentIndex();
 		}
 	}
-	
+
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif, index );
 	else if ( a->text() == tr( "Import .OBJ" ) )

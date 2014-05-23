@@ -39,7 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DDPF_FOURCC                0x00000004
 
 // DDS format structure
-struct DDSFormat {
+struct DDSFormat
+{
 	uint32 dwSize;
 	uint32 dwFlags;
 	uint32 dwHeight;
@@ -48,7 +49,8 @@ struct DDSFormat {
 	uint32 dummy1;
 	uint32 dwMipMapCount;
 	uint32 dummy2[11];
-	struct {
+	struct
+	{
 		uint32 dwSize;
 		uint32 dwFlags;
 		uint32 dwFourCC;
@@ -57,7 +59,8 @@ struct DDSFormat {
 		uint32 dwGMask;
 		uint32 dwBMask;
 		uint32 dwAMask;
-	} ddsPixelFormat;
+	}
+	ddsPixelFormat;
 };
 
 // compressed texture pixel formats
@@ -73,20 +76,20 @@ struct DDSFormat {
  * Caller must make sure that mem contains at least 8 bytes.
  * \return 1 if it is a DDS file, 0 otherwise.
  */
-int is_a_dds(unsigned char *mem); /* use only first 8 bytes of mem */
+int is_a_dds( unsigned char * mem ); /* use only first 8 bytes of mem */
 
 
 //! Load a DDS file.
 /*!
  * \return 0 if load failed, or pointer to Image object otherwise. The caller is responsible for destructing the image object (using delete).
  */
-Image * load_dds(unsigned char *mem, int size, int face = 0, int mipmap = 0);
+Image * load_dds( unsigned char * mem, int size, int face = 0, int mipmap = 0 );
 
 
 //! Load a DDS file.
 /*!
 * \return 0 if load failed, or pointer to Image object otherwise. The caller is responsible for destructing the image object (using delete).
 */
-Image * load_dds(const unsigned char *mem, int size, int face, int mipmap, DDSFormat* format);
+Image * load_dds( const unsigned char * mem, int size, int face, int mipmap, DDSFormat * format );
 
 #endif /* __DDS_API_H */

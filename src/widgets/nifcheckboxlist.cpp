@@ -31,169 +31,164 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifcheckboxlist.h"
+#include "options.h"
 
+#include <QAbstractItemView>
 #include <QAction>
 #include <QContextMenuEvent>
-#include <QAbstractItemView>
-#include <QStylePainter>
-#include <QLineEdit>
-#include <QValidator>
 #include <QDebug>
+#include <QLineEdit>
+#include <QRegularExpression>
+#include <QStylePainter>
+#include <QValidator>
 
-#include "../options.h"
 
-CheckBoxList::CheckBoxList( QWidget *widget )
+CheckBoxList::CheckBoxList( QWidget * widget )
 	: QComboBox( widget )
 {
 	// set delegate items view
-	view()->setItemDelegate(new CheckBoxListDelegate(this));
+	view()->setItemDelegate( new CheckBoxListDelegate( this ) );
 
 	// Enable editing on items view
-	view()->setEditTriggers(QAbstractItemView::CurrentChanged);
+	view()->setEditTriggers( QAbstractItemView::CurrentChanged );
 
 	// set "CheckBoxList::eventFilter" as event filter for items view
-	view()->viewport()->installEventFilter(this);
+	view()->viewport()->installEventFilter( this );
 
 	// it just cool to have it as default ;)
-	view()->setAlternatingRowColors(true);
+	view()->setAlternatingRowColors( true );
 }
 
 
 CheckBoxList::~CheckBoxList()
 {
-	;
 }
 
 
-bool CheckBoxList::eventFilter(QObject *object, QEvent *event)
+bool CheckBoxList::eventFilter( QObject * object, QEvent * event )
 {
 	// don't close items view after we release the mouse button
 	// by simple eating MouseButtonRelease in viewport of items view
-	if(event->type() == QEvent::MouseButtonRelease && object==view()->viewport())
-	{
+	if ( event->type() == QEvent::MouseButtonRelease && object == view()->viewport() ) {
 		return true;
 	}
-	return QComboBox::eventFilter(object,event);
+
+	return QComboBox::eventFilter( object, event );
 }
 
 
-void CheckBoxList::paintEvent(QPaintEvent *)
+void CheckBoxList::paintEvent( QPaintEvent * )
 {
-	QStylePainter painter(this);
-	painter.setPen(palette().color(QPalette::Text));
+	QStylePainter painter( this );
+	painter.setPen( palette().color( QPalette::Text ) );
 
 	// draw the combobox frame, focusrect and selected etc.
 	QStyleOptionComboBox opt;
-	initStyleOption(&opt);
-	
-	if (opt.currentText.isEmpty())
+	initStyleOption( &opt );
+
+	if ( opt.currentText.isEmpty() )
 		updateText();
-	
-	painter.drawComplexControl(QStyle::CC_ComboBox, opt);
+
+	painter.drawComplexControl( QStyle::CC_ComboBox, opt );
 
 	// draw the icon and text
-	painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
+	painter.drawControl( QStyle::CE_ComboBoxLabel, opt );
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-CheckBoxListDelegate::CheckBoxListDelegate( QObject *parent ) : QItemDelegate(parent)
+CheckBoxListDelegate::CheckBoxListDelegate( QObject * parent ) : QItemDelegate( parent )
 {
 	//view()->setItemDelegate(new MyDelegate(this));
 	//view()->setEditTriggers(QAbstractItemView::CurrentChanged);
 }
 CheckBoxListDelegate::~CheckBoxListDelegate()
 {
-
 }
 
-void CheckBoxListDelegate::paint( QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index ) const
+void CheckBoxListDelegate::paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 {
 	//Get item data
-	bool value = index.data(Qt::UserRole).toBool();
-	QString text = index.data(Qt::DisplayRole).toString();
+	bool value = index.data( Qt::UserRole ).toBool();
+	QString text = index.data( Qt::DisplayRole ).toString();
 
 	// fill style options with item data
-	const QStyle *style = QApplication::style();
+	const QStyle * style = QApplication::style();
 	QStyleOptionButton opt;
 	opt.state |= value ? QStyle::State_On : QStyle::State_Off;
 	opt.state |= QStyle::State_Enabled;
-	opt.text = text;
-	opt.rect = option.rect;
+	opt.text   = text;
+	opt.rect   = option.rect;
 
 	// draw item data as CheckBox
-	style->drawControl(QStyle::CE_CheckBox,&opt,painter);
+	style->drawControl( QStyle::CE_CheckBox, &opt, painter );
 }
 
-QWidget * CheckBoxListDelegate::createEditor( QWidget *parent, const QStyleOptionViewItem & option , const QModelIndex & index ) const
+QWidget * CheckBoxListDelegate::createEditor( QWidget * parent, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 {
-	Q_UNUSED(index);
-	Q_UNUSED(option);
+	Q_UNUSED( index );
+	Q_UNUSED( option );
 	// create check box as our editor
-	QCheckBox *editor = new QCheckBox(parent);
+	QCheckBox * editor = new QCheckBox( parent );
 	return editor;
 }
 
-void CheckBoxListDelegate::setEditorData( QWidget *editor, const QModelIndex &index ) const
+void CheckBoxListDelegate::setEditorData( QWidget * editor, const QModelIndex & index ) const
 {
 	//set editor data
-	QCheckBox *myEditor = static_cast<QCheckBox*>(editor);
-	myEditor->setText(index.data(Qt::DisplayRole).toString());
-	myEditor->setChecked(index.data(Qt::UserRole).toBool());
+	QCheckBox * myEditor = static_cast<QCheckBox *>(editor);
+	myEditor->setText( index.data( Qt::DisplayRole ).toString() );
+	myEditor->setChecked( index.data( Qt::UserRole ).toBool() );
 }
 
-void CheckBoxListDelegate::setModelData( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
+void CheckBoxListDelegate::setModelData( QWidget * editor, QAbstractItemModel * model, const QModelIndex & index ) const
 {
 	//get the value from the editor (CheckBox)
-	QCheckBox *myEditor = static_cast<QCheckBox*>(editor);
+	QCheckBox * myEditor = static_cast<QCheckBox *>(editor);
 	bool value = myEditor->isChecked();
 
 	//set model data
-	QMap<int,QVariant> data;
-	data.insert(Qt::DisplayRole,myEditor->text());
-	data.insert(Qt::UserRole,value);
-	model->setItemData(index,data);
+	QMap<int, QVariant> data;
+	data.insert( Qt::DisplayRole, myEditor->text() );
+	data.insert( Qt::UserRole, value );
+	model->setItemData( index, data );
 }
 
-void CheckBoxListDelegate::updateEditorGeometry( QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index ) const
+void CheckBoxListDelegate::updateEditorGeometry( QWidget * editor, const QStyleOptionViewItem & option, const QModelIndex & index ) const
 {
-	Q_UNUSED(index);
-	editor->setGeometry(option.rect);
+	Q_UNUSED( index );
+	editor->setGeometry( option.rect );
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-NifCheckBoxList::NifCheckBoxList( QWidget *widget /*= 0*/ )
-	: CheckBoxList(widget)
+NifCheckBoxList::NifCheckBoxList( QWidget * widget /*= 0*/ )
+	: CheckBoxList( widget )
 {
 	// Make editable
-	NifCheckListBoxEditor *edit = new NifCheckListBoxEditor(this);
-	validator = new NifCheckBoxListValidator(edit);
-	edit->setValidator(validator);
-	setLineEdit(edit);
+	NifCheckListBoxEditor * edit = new NifCheckListBoxEditor( this );
+	validator = new NifCheckBoxListValidator( edit );
+	edit->setValidator( validator );
+	setLineEdit( edit );
 
 	// set delegate items view
-	view()->setItemDelegate(new CheckBoxListDelegate(this));
+	view()->setItemDelegate( new CheckBoxListDelegate( this ) );
 
 	// Enable editing on items view
-	view()->setEditTriggers(QAbstractItemView::CurrentChanged);
+	view()->setEditTriggers( QAbstractItemView::CurrentChanged );
 
 	// set "CheckBoxList::eventFilter" as event filter for items view
-	view()->viewport()->installEventFilter(this);
+	view()->viewport()->installEventFilter( this );
 
 	// it just cool to have it as default ;)
-	view()->setAlternatingRowColors(true);
+	view()->setAlternatingRowColors( true );
 
-	connect( model(), SIGNAL( dataChanged( const QModelIndex &, const QModelIndex & ) ),
-		this, SLOT( sltDataChanged( const QModelIndex &, const QModelIndex & ) ) );
-
-	connect( edit, SIGNAL( editingFinished() ), 
-		this, SLOT( sltEditingFinished() ) );
+	connect( model(), &QAbstractItemModel::dataChanged, this, &NifCheckBoxList::sltDataChanged );
+	connect( edit, &NifCheckListBoxEditor::editingFinished, this, &NifCheckBoxList::sltEditingFinished );
 }
 
 NifCheckBoxList::~NifCheckBoxList()
 {
-
 }
 
 void NifCheckBoxList::sltDataChanged( const QModelIndex &, const QModelIndex & )
@@ -204,46 +199,60 @@ void NifCheckBoxList::sltDataChanged( const QModelIndex &, const QModelIndex & )
 void NifCheckBoxList::updateText()
 {
 	QString displayText;
-	for (int i=0; i < count(); ++i) {
-		QString txt = this->itemData(i, Qt::DisplayRole).toString();
+
+	for ( int i = 0; i < count(); ++i ) {
+		QString txt = this->itemData( i, Qt::DisplayRole ).toString();
 
 		// dont bother updating if user entered number non-zero
 		bool ok = false;
-		quint32 val = txt.toULong(&ok, 0);
-		if (ok && !val) return;
+		quint32 val = txt.toULong( &ok, 0 );
 
-		bool checked = this->itemData(i, Qt::UserRole).toBool();
-		if (checked) {
-			if (!displayText.isEmpty()) displayText += " | ";
+		if ( ok && !val )
+			return;
+
+		bool checked = this->itemData( i, Qt::UserRole ).toBool();
+
+		if ( checked ) {
+			if ( !displayText.isEmpty() )
+				displayText += " | ";
+
 			displayText += txt;
 		}
 	}
+
 	this->setEditText( displayText );
 }
 
 
-void NifCheckBoxList::parseText( const QString& text )
+void NifCheckBoxList::parseText( const QString & text )
 {
 	// set flag to accept next editTextChanged request
 	//  normally this gets called by setCurrentIndex which is undesirable.
-	if (!text.isEmpty())
-	{
+	if ( !text.isEmpty() ) {
 		// Build RegEx for efficient search. Then set model to match
 		QString str;
-		QStringList list = text.split(QRegExp("\\s*\\|\\s*"), QString::SkipEmptyParts);
-		QStringListIterator lit(list);
-		while ( lit.hasNext() ) {
-			if (!str.isEmpty()) str += "|";
-			str += QRegExp::escape(lit.next());
-		}
-		str.insert(0, '(');
-		str.append(')');
+		QStringList list = text.split( QRegularExpression( "\\s*\\|\\s*" ), QString::SkipEmptyParts );
+		QStringListIterator lit( list );
 
-		QRegExp re(str);
-		for (int i=0; i < count(); ++i) {
-			QString txt = this->itemData(i, Qt::DisplayRole).toString();
-			this->setItemData(i, re.exactMatch(txt), Qt::UserRole);
+		while ( lit.hasNext() ) {
+			if ( !str.isEmpty() )
+				str += "|";
+
+			str += QRegularExpression::escape( lit.next() );
 		}
+
+		str.insert( 0, '(' );
+		str.append( ')' );
+
+		// Note: Converting from QRegExp there is no `exactMatch`
+		// Using non-capturing group with \A and \z anchors
+		QRegularExpression re( str );
+
+		for ( int i = 0; i < count(); ++i ) {
+			QString txt = this->itemData( i, Qt::DisplayRole ).toString();
+			this->setItemData( i, re.match( txt ).hasMatch(), Qt::UserRole );
+		}
+
 		this->setEditText( text );
 	}
 }
@@ -251,38 +260,38 @@ void NifCheckBoxList::parseText( const QString& text )
 void NifCheckBoxList::sltEditingFinished()
 {
 	QString text = this->lineEdit()->text();
-	parseText(text);
+	parseText( text );
 }
 //////////////////////////////////////////////////////////////////////////
 
-NifCheckBoxListValidator::NifCheckBoxListValidator( NifCheckListBoxEditor * editor)
-	: QValidator(NULL), edit(editor)
+NifCheckBoxListValidator::NifCheckBoxListValidator( NifCheckListBoxEditor * editor )
+	: QValidator( ), edit( editor )
 {
 }
 
 void NifCheckBoxListValidator::fixup( QString & text ) const
 {
-	Q_UNUSED(text);
+	Q_UNUSED( text );
 }
 
 QValidator::State NifCheckBoxListValidator::validate( QString & text, int & ) const
 {
-	Q_UNUSED(text);
+	Q_UNUSED( text );
 	//qDebug() << "NifCheckBoxListValidator::validate: " << edit->hasFocus() << "," << text;
-	return (edit->hasFocus()) ? QValidator::Acceptable : QValidator::Intermediate;
+	return ( edit->hasFocus() ) ? QValidator::Acceptable : QValidator::Intermediate;
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-NifCheckListBoxEditor::NifCheckListBoxEditor( QWidget* parent)
-	: QLineEdit(parent)
+NifCheckListBoxEditor::NifCheckListBoxEditor( QWidget * parent )
+	: QLineEdit( parent )
 {
 	inFocus = false;
 }
 
 void NifCheckListBoxEditor::focusInEvent( QFocusEvent * )
 {
-	inFocus = true;	
+	inFocus = true;
 }
 
 void NifCheckListBoxEditor::focusOutEvent( QFocusEvent * )
