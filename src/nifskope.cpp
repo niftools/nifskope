@@ -813,6 +813,9 @@ void NifSkope::load()
 		tree->expand( i );
 	}
 
+	// Scroll panel back to top
+	tree->scrollTo( nif->index( 0, 0 ) );
+
 	setEnabled( true );
 }
 
