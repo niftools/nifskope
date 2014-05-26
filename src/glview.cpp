@@ -705,107 +705,40 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 	glShadeModel( GL_FLAT );
 	glDisable( GL_FOG );
 	//glDisable (GL_MULTISAMPLE_ARB);
-	// ro limit selection to visible surfaces, depth testing should be enabled.
+	// To limit selection to visible surfaces, depth testing should be enabled.
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LEQUAL );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	// rasterize the scene
+
+	// Rasterize the scene
 	Node::SELECTING = 1;
 	for ( DrawFunc df : drawFunc ) {
 		glDrawBuffer( GL_BACK );
 		(scene->*df)();
 	}
 	Node::SELECTING = 0;
-/*
-    // get the back buffer into a bitmap file
-    //		/
-    //	 --/ GL_DEBUG /----
-    //				 /
-    GLint vp[4];
-    glGetIntegerv (GL_VIEWPORT, vp);
-    FILE *ttt =  fopen ("select.bmp", "w+");
-    if (ttt) {
-        // BMP header
-        fwrite ("BM", 1, 2, ttt);					// 2
-        int filesize = 14 + 40 + (vp[2] * vp[3] * 4);
-        short u16 = 0; fwrite (&filesize, sizeof(int), 1, ttt);		// 4
-        fwrite (&u16, 2, 1, ttt);					// 2 - reserved 1
-        fwrite (&u16, 2, 1, ttt);					// 2 - reserved 2
-        int bmp_ofs = 14+40; fwrite (&bmp_ofs, sizeof(int), 1, ttt);	// 4
-        // DIB 1
-        int dib_size = 40; fwrite (&dib_size, sizeof(int), 1, ttt);	// 4
-        int bufw = vp[2]; fwrite (&bufw, sizeof(int), 1, ttt);		// 4
-        int bufh = vp[3]; fwrite (&bufh, sizeof(int), 1, ttt);		// 4
-        short bitplanes = 1; fwrite (&bitplanes, 2, 1, ttt);		// 2
-        short bpp = 32; fwrite (&bpp, 2, 1, ttt);					// 2
-        int compression = 0; fwrite (&compression, sizeof(int), 1, ttt);				// 4
-        int bmp_size = (vp[2] * vp[3] * 4);	fwrite (&bmp_size, sizeof(int), 1, ttt);	// 4
-        int hres = 0; fwrite (&hres, sizeof(int), 1, ttt);								// 4
-        int vres = 0; fwrite (&vres, sizeof(int), 1, ttt);								// 4
-        int color_pal_num = 0; fwrite (&color_pal_num, sizeof(int), 1, ttt);			// 4
-        int important_color_num = 0; fwrite (&important_color_num, sizeof(int), 1, ttt);// 4
-        // bmp
-        unsigned char *pixel_buf = (unsigned char *) malloc (bmp_size);
-        if (pixel_buf) {
-            memset (&pixel_buf[0], 0, bmp_size);
-            //glReadBuffer (GL_FRONT);
-            glReadBuffer (GL_BACK);
-            //glFinish ();
-            glReadPixels (0, 0, bufw, bufh, GL_RGBA, GL_UNSIGNED_BYTE, &pixel_buf[0]);
-            for (int  i = 0; i < bmp_size / 4; i++) {
-                int r = pixel_buf[(i*4)+0];
-                int g = pixel_buf[(i*4)+1];
-                int b = pixel_buf[(i*4)+2];
-                int a = pixel_buf[(i*4)+3];
-                pixel_buf[(i*4)+0] = b;
-                //pixel_buf[(i*4)+1] = b;
-                pixel_buf[(i*4)+2] = r;
-                //pixel_buf[(i*4)+3] = r;
-            }
-            fwrite (pixel_buf, 1, bmp_size, ttt);
-        }
-        fclose (ttt);
-    }
-*/
+
 	// Get the color key
-	unsigned char pixel[4] = { 0, 0, 0, 0 };
+	unsigned char pixel[3] = { 0, 0, 0 };
 
 	GLint viewport[4];
 	glGetIntegerv( GL_VIEWPORT, viewport );
 	glReadBuffer( GL_BACK );
 	glReadPixels( pos.x(), viewport[3] - pos.y(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel );
-	//int a = pixel[3] << 3*8;
-	int a = pixel[2] << 2 * 8;
-	a |= pixel[1] << 1 * 8;
-	a |= pixel[0] << 0 * 8;
-	//qDebug() << a << " " << pixel[0] << " " << pixel[1] << " " << pixel[2] << " " << pixel[3];
+
+	// Encode RGB to Int
+	int a;
+	a |= pixel[0] << 0;  // R
+	a |= pixel[1] << 8;  // G
+	a |= pixel[2] << 16; // B
+
+	// Decode:
+	// R = (id & 0x000000FF) >> 0
+	// G = (id & 0x0000FF00) >> 8
+	// B = (id & 0x00FF0000) >> 16
+
+	qDebug() << "Key:" << a << " R" << pixel[0] << " G" << pixel[1] << " B" << pixel[2];
 	return COLORKEY2ID( a );
-	/* the previous select method
-	glRenderMode( GL_SELECT );
-	glInitNames();
-	glPushName( 0 );
-
-	foreach ( DrawFunc df, drawFunc ) {
-	    (scene->*df)();
-	}
-
-	GLint hits = glRenderMode( GL_RENDER );
-	if ( hits > 0 )
-	{
-	    QList< QPair< GLuint, GLuint > > hitList;
-
-	    for ( int l = 0; l < hits; l++ )
-	    {
-	        hitList << QPair< GLuint, GLuint >( buffer[ l * 4 + 3 ], buffer[ l * 4 + 1 ] );
-	    }
-
-	    qSort( hitList.begin(), hitList.end(), compareHits );
-
-	    return hitList.value( cycle % hits ).first;
-	}
-
-	return -1;
-	*/
 }
 
 QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
@@ -840,6 +773,11 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	df << &Scene::drawShapes;
 
 	choose = ::indexAt( model, scene, df, cycle, pos );
+
+#ifndef QT_NO_DEBUG
+	QImage colorBuffer = grabFrameBuffer();
+	colorBuffer.save( "colorbuffer.png", "PNG" );
+#endif
 
 	if ( Options::drawFurn() ) {
 		// TODO: find out a better way to check if "furn" was mouse-clicked
