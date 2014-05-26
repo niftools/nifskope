@@ -1003,6 +1003,8 @@ void GLView::viewAction( QAction * act )
 		aViewFront->setChecked( false );
 		aViewSide->setChecked( false );
 		aViewUser->setChecked( true );
+		cfg.endGroup();
+		cfg.endGroup();
 	}
 
 	update();
@@ -1037,6 +1039,8 @@ void GLView::sltSaveUserView()
 	cfg.setValue( "PosZ", Pos[2] );
 	cfg.setValue( "Dist", Dist );
 	viewAction( aViewUser );
+	cfg.endGroup();
+	cfg.endGroup();
 }
 
 QAction * GLView::checkedViewAction() const
