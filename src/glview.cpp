@@ -719,7 +719,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 	glReadPixels( pos.x(), viewport[3] - pos.y(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel );
 
 	// Encode RGB to Int
-	int a;
+	int a = 0;
 	a |= pixel[0] << 0;  // R
 	a |= pixel[1] << 8;  // G
 	a |= pixel[2] << 16; // B
