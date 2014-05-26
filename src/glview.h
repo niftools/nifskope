@@ -105,6 +105,7 @@ public:
 	QAction * aViewUser;
 	QAction * aViewUserSave;
 	QAction * aPrintView;
+	QAction * aColorKeyDebug;
 	QAction * aAnimate;
 	QAction * aAnimPlay;
 	QAction * aAnimLoop;

@@ -218,6 +218,12 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aPrintView = new QAction( tr( "Save View To File..." ), this );
 	connect( aPrintView, &QAction::triggered, this, &GLView::saveImage );
 
+#ifndef QT_NO_DEBUG
+	aColorKeyDebug = new QAction( tr( "Color Key Debug" ), this );
+	aColorKeyDebug->setCheckable( true );
+	aColorKeyDebug->setChecked( false );
+#endif
+
 	aAnimate = new QAction( tr( "&Animations" ), this );
 	aAnimate->setToolTip( tr( "enables evaluation of animation controllers" ) );
 	aAnimate->setCheckable( true );
@@ -534,20 +540,26 @@ void GLView::paintGL()
 	// TODO: Seek alternative to fontDisplayListBase or determine if code is actually necessary
 	//glListBase(fontDisplayListBase(QFont(), 2000));
 
-	/*// Color Key debug
-	glDisable( GL_MULTISAMPLE );
-	glDisable( GL_LINE_SMOOTH );
-	glDisable( GL_TEXTURE_2D );
-	glDisable( GL_BLEND );
-	glDisable( GL_DITHER );
-	glDisable( GL_LIGHTING );
-	glShadeModel( GL_FLAT );
-	glDisable( GL_FOG );
-	glDisable (GL_MULTISAMPLE_ARB);
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc( GL_LEQUAL );
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	Node::SELECTING = 1;*/
+#ifndef QT_NO_DEBUG
+	// Color Key debug
+	if ( aColorKeyDebug->isChecked() ) {
+		glDisable( GL_MULTISAMPLE );
+		glDisable( GL_LINE_SMOOTH );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_BLEND );
+		glDisable( GL_DITHER );
+		glDisable( GL_LIGHTING );
+		glShadeModel( GL_FLAT );
+		glDisable( GL_FOG );
+		glDisable( GL_MULTISAMPLE_ARB );
+		glEnable( GL_DEPTH_TEST );
+		glDepthFunc( GL_LEQUAL );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		Node::SELECTING = 1;
+	} else {
+		Node::SELECTING = 0;
+	}
+#endif
 
 	// Draw the model
 	scene->draw();
@@ -917,6 +929,9 @@ QMenu * GLView::createMenu() const
 	m->addAction( aViewUserSave );
 	m->addSeparator();
 	m->addAction( aPrintView );
+#ifndef QT_NO_DEBUG
+	m->addAction( aColorKeyDebug );
+#endif
 	m->addSeparator();
 	m->addActions( Options::actions() );
 	return m;
