@@ -69,6 +69,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include <GL/glu.h>
 #endif
 
+// TODO: Make these options user configurable.
 // TODO: Make this platform independent (Half monitor refresh rate)
 #define FPS 30
 #define FOV 45.0
@@ -106,31 +107,6 @@ GLView * GLView::create()
 	fmt.setVersion( 2, 1 );
 	// Ignored if version < 3.2
 	//fmt.setProfile(QGLFormat::CoreProfile);
-	/*
-	// TODO:  As I create New Windows, the format changes
-	 1st
-	    QGLFormat(options QFlags(0x1|0x2|0x4|0x20|0x80|0x200|0x400) , plane  0 , depthBu
-	    fferSize  -1 , accumBufferSize  -1 , stencilBufferSize  -1 , redBufferSize  -1 ,
-	    greenBufferSize  -1 , blueBufferSize  -1 , alphaBufferSize  -1 , samples  -1 ,
-	    swapInterval  -1 , majorVersion  2 , minorVersion  0 , profile  0 )
-	    QObject(0x0)
-
-	 2nd
-	    QGLFormat(options QFlags(0x1|0x2|0x4|0x8|0x20|0x80|0x200|0x400) , plane  0 , dep
-	    thBufferSize  24 , accumBufferSize  -1 , stencilBufferSize  8 , redBufferSize  8
-	    , greenBufferSize  8 , blueBufferSize  8 , alphaBufferSize  8 , samples  4 , sw
-	    apInterval  -1 , majorVersion  4 , minorVersion  3 , profile  0 )
-	    GLView(0x3b4f250)
-
-	 3rd
-	    QGLFormat(options QFlags(0x1|0x2|0x4|0x8|0x20|0x80|0x200|0x400) , plane  0 , dep
-	    thBufferSize  24 , accumBufferSize  -1 , stencilBufferSize  8 , redBufferSize  8
-	    , greenBufferSize  8 , blueBufferSize  8 , alphaBufferSize  8 , samples  4 , sw
-	    apInterval  -1 , majorVersion  4 , minorVersion  3 , profile  1 )
-	    GLView(0x622a238)
-	*/
-	//qDebug() << fmt;
-	//qDebug() << share;
 
 	views.append( QPointer<GLView>( new GLView( fmt, share ) ) );
 
@@ -402,15 +378,6 @@ void GLView::glProjection( int x, int y )
 
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity();
-	/*if ( x >= 0 && y >= 0 )
-	{
-	    //gluPickMatrix( (GLdouble) x, (GLdouble) (viewport[3]-y), 10.0f, 10.0f, viewport);
-	    // commented out because:
-	    //  1. It damages "glPointSize" & "glLineWidth" proven by "glReadPixels"
-	    //  2. It will be no longer needed
-	    // It doesn't affect glRenderMode( GL_SELECT )
-	    // "WinXP", "Catalyst" 10.10, HD 4850
-	} - disabled glRenderMode( GL_SELECT );*/
 
 	BoundSphere bs = scene->view * scene->bounds();
 
@@ -678,9 +645,9 @@ typedef void (Scene::* DrawFunc)( void );
 int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc> drawFunc, int cycle, const QPoint & pos )
 {
 	Q_UNUSED( model ); Q_UNUSED( cycle );
-	// Modifying this to a color-key O(1) selection
-	// because Open GL 3.0 says glRenderMode is deprecated
-	// and because ATI opengl API implementation of GL_SELECT corrupts NifSkope memory
+	// Color Key O(1) selection
+	//	Open GL 3.0 says glRenderMode is deprecated
+	//	ATI OpenGL API implementation of GL_SELECT corrupts NifSkope memory
 	// Caution: this works in 32 bit frame buffer modes only.
 	//
 	// State is stored by the caller.
