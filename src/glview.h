@@ -241,7 +241,7 @@ private:
 
 protected slots:
 	void popMenu();
-	void savePixmap();
+	void saveImage();
 };
 
 #endif

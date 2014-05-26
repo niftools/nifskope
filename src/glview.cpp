@@ -242,7 +242,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 #ifndef USE_GL_QPAINTER
 #ifndef QT_NO_DEBUG
 	aPrintView = new QAction( tr( "Save View To File..." ), this );
-	connect( aPrintView, &QAction::triggered, this, &GLView::savePixmap );
+	connect( aPrintView, &QAction::triggered, this, &GLView::saveImage );
 #endif // QT_NO_DEBUG
 #endif // USE_GL_QPAINTER
 
@@ -1465,7 +1465,7 @@ Scene * GLView::getScene()
 	return scene;
 }
 
-void GLView::savePixmap()
+void GLView::saveImage()
 {
 	QDialog dlg;
 	QGridLayout * lay = new QGridLayout;
@@ -1476,38 +1476,20 @@ void GLView::savePixmap()
 	file->setFile( model->getFolder() + "/" );
 	lay->addWidget( file, 0, 0, 1, -1 );
 
-	QCheckBox * autoSize = new QCheckBox( tr( "Use View Size" ) );
-	lay->addWidget( autoSize, 1, 0, 1, -1 );
-
-	QSpinBox * pixWidth = new QSpinBox;
-	pixWidth->setRange( 0, 10000 );
-	pixWidth->setValue( width() );
-	lay->addWidget( new QLabel( tr( "Width" ) ), 2, 0, 1, 1 );
-	lay->addWidget( pixWidth, 2, 1, 1, 1 );
-
-	QSpinBox * pixHeight = new QSpinBox;
-	pixHeight->setRange( 0, 10000 );
-	pixHeight->setValue( height() );
-	lay->addWidget( new QLabel( tr( "Height" ) ), 3, 0, 1, 1 );
-	lay->addWidget( pixHeight, 3, 1, 1, 1 );
-
-	connect( autoSize, &QCheckBox::toggled, pixWidth, &QSpinBox::setDisabled );
-	connect( autoSize, &QCheckBox::toggled, pixHeight, &QSpinBox::setDisabled );
-
 	QSpinBox * pixQuality = new QSpinBox;
 	pixQuality->setRange( -1, 100 );
 	pixQuality->setSingleStep( 10 );
 	pixQuality->setValue( 80 );
 	pixQuality->setSpecialValueText( tr( "Automatic" ) );
-	lay->addWidget( new QLabel( tr( "Quality" ) ), 4, 0, 1, 1 );
-	lay->addWidget( pixQuality, 4, 1, 1, 1 );
+	lay->addWidget( new QLabel( tr( "Quality" ) ), 1, 0, 1, 1 );
+	lay->addWidget( pixQuality, 1, 1, 1, 1 );
 
 	QHBoxLayout * hBox  = new QHBoxLayout;
 	QPushButton * btnOk = new QPushButton( tr( "OK" ) );
 	QPushButton * btnCancel = new QPushButton( tr( "Cancel" ) );
 	hBox->addWidget( btnOk );
 	hBox->addWidget( btnCancel );
-	lay->addLayout( hBox, 5, 0, 1, -1 );
+	lay->addLayout( hBox, 2, 0, 1, -1 );
 
 	connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
 	connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
@@ -1515,13 +1497,9 @@ void GLView::savePixmap()
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
 
-	// do stuff
-	int tempWidth  = autoSize->isChecked() ? width() : pixWidth->value();
-	int tempHeight = autoSize->isChecked() ? height() : pixHeight->value();
-	qWarning() << "Saving" << file->file() << "with width" << tempWidth << "height" << tempHeight << "quality" << pixQuality->value();
+	qWarning() << "Saving" << file->file();
 
-
-	// This dies for some reason! When compiled in release mode it throws an unhandled exception, and in debug mode it has shader issues
-	QPixmap temp = QGLWidget::renderPixmap( tempWidth, tempHeight );
-	temp.save( file->file(), 0, pixQuality->value() );
+	glReadBuffer( GL_FRONT );
+	QImage img = grabFrameBuffer();
+	img.save( file->file(), 0, pixQuality->value() );
 }
