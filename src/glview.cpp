@@ -1497,7 +1497,7 @@ void GLView::saveImage()
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
 
-	qWarning() << "Saving" << file->file();
+	qDebug() << "Saving" << file->file();
 
 	glReadBuffer( GL_FRONT );
 	QImage img = grabFrameBuffer();
