@@ -550,7 +550,7 @@ void GLView::paintGL()
 	glEnable( GL_LIGHT0 );
 	glEnable( GL_LIGHTING );
 
-	if ( doMultisampling )
+	if ( Options::antialias() && doMultisampling )
 		glEnable( GL_MULTISAMPLE_ARB );
 
 	// Initialize Rendering Font
