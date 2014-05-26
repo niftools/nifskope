@@ -283,7 +283,6 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
 	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
 
-
 #ifdef Q_OS_LINUX
 	// extra whitespace for linux
 	QWidget * extraspace = new QWidget();
@@ -318,40 +317,25 @@ GLView::~GLView()
 	delete scene;
 }
 
-QList<QToolBar *> GLView::toolbars() const
+
+/* 
+ * Scene
+ */
+
+Scene * GLView::getScene()
 {
-	return { tView, tAnim };
+	return scene;
 }
 
-QMenu * GLView::createMenu() const
+void GLView::sceneUpdate()
 {
-	QMenu * m = new QMenu( tr( "&Render" ) );
-	m->addAction( aViewTop );
-	m->addAction( aViewFront );
-	m->addAction( aViewSide );
-	m->addAction( aViewWalk );
-	m->addAction( aViewUser );
-	m->addSeparator();
-	m->addAction( aViewFlip );
-	m->addAction( aViewPerspective );
-	m->addAction( aViewUserSave );
-	m->addSeparator();
-	m->addAction( aPrintView );
-	m->addSeparator();
-	m->addActions( Options::actions() );
-	return m;
-}
-
-void GLView::updateShaders()
-{
-	makeCurrent();
-	scene->updateShaders();
+	scene->update( model, QModelIndex() );
 	update();
 }
 
 
 /*
- *  OpenGL stuff
+ *  OpenGL
  */
 
 void GLView::initializeGL()
@@ -362,10 +346,16 @@ void GLView::initializeGL()
 	if ( scene->renderer->initialize() )
 		updateShaders();
 
-	// check for errors
-
+	// Check for errors
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
 		qDebug() << tr( "glview.cpp - GL ERROR (init) : " ) << (const char *)gluErrorString( err );
+}
+
+void GLView::updateShaders()
+{
+	makeCurrent();
+	scene->updateShaders();
+	update();
 }
 
 void GLView::glProjection( int x, int y )
@@ -387,10 +377,8 @@ void GLView::glProjection( int x, int y )
 	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
 	GLdouble fr = fabs( bs.center[2] ) + bs.radius * 1.2;
 
-	//qWarning() << nr << fr;
-
 	if ( aViewPerspective->isChecked() || aViewWalk->isChecked() ) {
-
+		// Perspective View
 		if ( nr < 1.0 )
 			nr = 1.0;
 		if ( fr < 2.0 )
@@ -413,6 +401,7 @@ void GLView::glProjection( int x, int y )
 		GLdouble w2 = h2 * aspect;
 		glFrustum( -w2, +w2, -h2, +h2, nr, fr );
 	} else {
+		// Orthographic View
 		GLdouble h2 = Dist / Zoom;
 		GLdouble w2 = h2 * aspect;
 		glOrtho( -w2, +w2, -h2, +h2, nr, fr );
@@ -420,12 +409,6 @@ void GLView::glProjection( int x, int y )
 
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity();
-}
-
-void GLView::center()
-{
-	doCenter = true;
-	update();
 }
 
 #ifdef USE_GL_QPAINTER
@@ -440,21 +423,19 @@ void GLView::paintEvent( QPaintEvent * event )
 void GLView::paintGL()
 {
 #endif
-	// save gl state for later use by qpainter
-
+	// Save GL state
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
 	glMatrixMode( GL_MODELVIEW );
 	glPushMatrix();
 
+	// Clear Viewport
 	glViewport( 0, 0, width(), height() );
 	qglClearColor( Options::bgColor() );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	glShadeModel( GL_SMOOTH );
 
-	// compile the model
-
+	// Compile the model
 	if ( doCompile ) {
 		textures->setNifFolder( model->getFolder() );
 		scene->make( model );
@@ -476,17 +457,14 @@ void GLView::paintGL()
 		doCompile = false;
 	}
 
-	// center the model
-
+	// Center the model
 	if ( doCenter ) {
 		viewAction( checkedViewAction() );
 		doCenter = false;
 	}
 
-	// transform the scene
-
+	// Transform the scene
 	Matrix ap;
-
 	if ( Options::upAxis() == Options::YAxis ) {
 		ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
 		ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
@@ -507,14 +485,11 @@ void GLView::paintGL()
 
 	scene->transform( viewTrans, time );
 
-	// setup projection mode
-
+	// Setup projection mode
 	glProjection();
-
 	glLoadIdentity();
 
-	// draw the axis
-
+	// Draw the axes
 	if ( Options::drawAxes() ) {
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
@@ -535,8 +510,7 @@ void GLView::paintGL()
 		glPopMatrix();
 	}
 
-	// setup light
-
+	// Setup light
 	Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
 
 	if ( !Options::lightFrontal() ) {
@@ -547,6 +521,7 @@ void GLView::paintGL()
 		lightDir = Vector4( viewTrans.rotation * v, 0.0 );
 	}
 
+	glShadeModel( GL_SMOOTH );
 	glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
 	glLightfv( GL_LIGHT0, GL_AMBIENT, Color4( Options::ambient() ).data() );
 	glLightfv( GL_LIGHT0, GL_DIFFUSE, Color4( Options::diffuse() ).data() );
@@ -559,38 +534,37 @@ void GLView::paintGL()
 	// TODO: Seek alternative to fontDisplayListBase or determine if code is actually necessary
 	//glListBase(fontDisplayListBase(QFont(), 2000));
 
-	// color-key slect debug for non-meshes
-	/*//glDisable( GL_MULTISAMPLE );
+	/*// Color Key debug
+	glDisable( GL_MULTISAMPLE );
 	glDisable( GL_LINE_SMOOTH );
-	glDisable (GL_TEXTURE_2D);
-	glDisable (GL_BLEND);
-	glDisable (GL_DITHER);
-	glDisable (GL_LIGHTING);
-	glShadeModel (GL_FLAT);
-	glDisable (GL_FOG);
-	//glDisable (GL_MULTISAMPLE_ARB);
-	// To limit selection to visible surfaces, depth testing should be enabled.
-	glEnable (GL_DEPTH_TEST);
-	glDepthFunc (GL_LEQUAL);*/
+	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_BLEND );
+	glDisable( GL_DITHER );
+	glDisable( GL_LIGHTING );
+	glShadeModel( GL_FLAT );
+	glDisable( GL_FOG );
+	glDisable (GL_MULTISAMPLE_ARB);
+	glEnable( GL_DEPTH_TEST );
+	glDepthFunc( GL_LEQUAL );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	Node::SELECTING = 1;*/
 
-	// draw the model
+	// Draw the model
 	scene->draw();
 
-	// restore gl state
+	// Restore GL state
 	glPopAttrib();
 	glMatrixMode( GL_MODELVIEW );
 	glPopMatrix();
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();
 
-	// check for errors
-
+	// Check for errors
 	GLenum err;
-
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
 		qDebug() << tr( "glview.cpp - GL ERROR (paint): " ) << (const char *)gluErrorString( err );
-
-	// update fps counter
+	
+	// Update FPS counter
 	if ( fpsacc > 1.0 && fpscnt ) {
 		fpsacc /= fpscnt;
 
@@ -632,12 +606,9 @@ void GLView::paintGL()
 #endif
 }
 
-bool compareHits( const QPair<GLuint, GLuint> & a, const QPair<GLuint, GLuint> & b )
+void GLView::resizeGL( int width, int height )
 {
-	if ( a.second < b.second )
-		return true;
-
-	return false;
+	glViewport( 0, 0, width, height );
 }
 
 typedef void (Scene::* DrawFunc)( void );
@@ -663,8 +634,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 	glDisable( GL_LIGHTING );
 	glShadeModel( GL_FLAT );
 	glDisable( GL_FOG );
-	//glDisable (GL_MULTISAMPLE_ARB);
-	// To limit selection to visible surfaces, depth testing should be enabled.
+	glDisable (GL_MULTISAMPLE_ARB);
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LEQUAL );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -769,14 +739,70 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	return QModelIndex();
 }
 
-void GLView::resizeGL( int width, int height )
+void GLView::center()
 {
-	glViewport( 0, 0, width, height );
+	doCenter = true;
+	update();
 }
 
+void GLView::move( float x, float y, float z )
+{
+	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
+	update();
+}
+
+void GLView::rotate( float x, float y, float z )
+{
+	Rot += Vector3( x, y, z );
+	uncheckViewAction();
+	update();
+}
+
+void GLView::zoom( float z )
+{
+	Zoom *= z;
+
+	if ( Zoom < ZOOM_MIN )
+		Zoom = ZOOM_MIN;
+
+	if ( Zoom > ZOOM_MAX )
+		Zoom = ZOOM_MAX;
+
+	update();
+}
+
+void GLView::setDistance( float x )
+{
+	Dist = x;
+	update();
+}
+
+void GLView::setPosition( float x, float y, float z )
+{
+	Pos = { x, y, z };
+	update();
+}
+
+void GLView::setPosition( Vector3 v )
+{
+	Pos = v;
+	update();
+}
+
+void GLView::setRotation( float x, float y, float z )
+{
+	Rot = { x, y, z };
+	update();
+}
+
+void GLView::setZoom( float z )
+{
+	Zoom = z;
+	update();
+}
 
 /*
- *  NifModel stuff
+ *  NifModel
  */
 
 void GLView::setNif( NifModel * nif )
@@ -872,30 +898,34 @@ void GLView::modelDestroyed()
 	setNif( 0 );
 }
 
-void GLView::sceneUpdate()
+
+/*
+ * UI
+ */
+
+QMenu * GLView::createMenu() const
 {
-	scene->update( model, QModelIndex() );
-	update();
+	QMenu * m = new QMenu( tr( "&Render" ) );
+	m->addAction( aViewTop );
+	m->addAction( aViewFront );
+	m->addAction( aViewSide );
+	m->addAction( aViewWalk );
+	m->addAction( aViewUser );
+	m->addSeparator();
+	m->addAction( aViewFlip );
+	m->addAction( aViewPerspective );
+	m->addAction( aViewUserSave );
+	m->addSeparator();
+	m->addAction( aPrintView );
+	m->addSeparator();
+	m->addActions( Options::actions() );
+	return m;
 }
 
-
-void GLView::sltTime( float t )
+QList<QToolBar *> GLView::toolbars() const
 {
-	time = t;
-	update();
-	emit sigTime( time, scene->timeMin(), scene->timeMax() );
+	return{ tView, tAnim };
 }
-
-void GLView::sltSequence( const QString & seqname )
-{
-	animGroups->setCurrentIndex( scene->animGroups.indexOf( seqname ) );
-	scene->setSequence( seqname );
-	time = scene->timeMin();
-	emit sigTime( time, scene->timeMin(), scene->timeMax() );
-	update();
-}
-
-
 
 void GLView::viewAction( QAction * act )
 {
@@ -975,6 +1005,22 @@ void GLView::viewAction( QAction * act )
 		aViewUser->setChecked( true );
 	}
 
+	update();
+}
+
+void GLView::sltTime( float t )
+{
+	time = t;
+	update();
+	emit sigTime( time, scene->timeMin(), scene->timeMax() );
+}
+
+void GLView::sltSequence( const QString & seqname )
+{
+	animGroups->setCurrentIndex( scene->animGroups.indexOf( seqname ) );
+	scene->setSequence( seqname );
+	time = scene->timeMin();
+	emit sigTime( time, scene->timeMin(), scene->timeMax() );
 	update();
 }
 
@@ -1092,147 +1138,6 @@ void GLView::advanceGears()
 	}
 }
 
-void GLView::keyPressEvent( QKeyEvent * event )
-{
-	switch ( event->key() ) {
-	case Qt::Key_Up:
-	case Qt::Key_Down:
-	case Qt::Key_Left:
-	case Qt::Key_Right:
-	case Qt::Key_PageUp:
-	case Qt::Key_PageDown:
-	case Qt::Key_A:
-	case Qt::Key_D:
-	case Qt::Key_W:
-	case Qt::Key_S:
-	case Qt::Key_R:
-	case Qt::Key_F:
-	case Qt::Key_Q:
-	case Qt::Key_E:
-		kbd[ event->key() ] = true;
-		break;
-	case Qt::Key_Escape:
-		doCompile = true;
-
-		if ( !aViewWalk->isChecked() )
-			doCenter = true;
-
-		update();
-		break;
-	case Qt::Key_C:
-		{
-			Node * node = scene->getNode( model, scene->currentBlock );
-
-			if ( node != 0 ) {
-				BoundSphere bs = node->bounds();
-
-				this->setPosition( -bs.center );
-
-				if ( bs.radius > 0 ) {
-					setDistance( bs.radius * 1.5f );
-				}
-			}
-		}
-		break;
-	default:
-		event->ignore();
-		break;
-	}
-}
-
-void GLView::keyReleaseEvent( QKeyEvent * event )
-{
-	switch ( event->key() ) {
-	case Qt::Key_Up:
-	case Qt::Key_Down:
-	case Qt::Key_Left:
-	case Qt::Key_Right:
-	case Qt::Key_PageUp:
-	case Qt::Key_PageDown:
-	case Qt::Key_A:
-	case Qt::Key_D:
-	case Qt::Key_W:
-	case Qt::Key_S:
-	case Qt::Key_R:
-	case Qt::Key_F:
-	case Qt::Key_Q:
-	case Qt::Key_E:
-		kbd[ event->key() ] = false;
-		break;
-	default:
-		event->ignore();
-		break;
-	}
-}
-
-void GLView::focusOutEvent( QFocusEvent * )
-{
-	kbd.clear();
-}
-
-void GLView::mousePressEvent( QMouseEvent * event )
-{
-	lastPos = event->pos();
-
-	if ( ( pressPos - event->pos() ).manhattanLength() <= 3 )
-		cycleSelect++;
-	else
-		cycleSelect = 0;
-
-	pressPos = event->pos();
-}
-
-void GLView::mouseReleaseEvent( QMouseEvent * event )
-{
-	if ( !( model && ( pressPos - event->pos() ).manhattanLength() <= 3 ) )
-		return;
-
-	QModelIndex idx = indexAt( event->pos(), cycleSelect );
-	scene->currentBlock = model->getBlock( idx );
-	scene->currentIndex = idx.sibling( idx.row(), 0 );
-
-	if ( idx.isValid() ) {
-		emit clicked( idx );
-	}
-
-	update();
-}
-
-void GLView::mouseMoveEvent( QMouseEvent * event )
-{
-	int dx = event->x() - lastPos.x();
-	int dy = event->y() - lastPos.y();
-
-	if ( event->buttons() & Qt::LeftButton ) {
-		mouseRot += Vector3( dy * .5, 0, dx * .5 );
-	} else if ( event->buttons() & Qt::MidButton ) {
-		float d = axis / ( qMax( width(), height() ) + 1 );
-		mouseMov += Vector3( dx * d, -dy * d, 0 );
-	} else if ( event->buttons() & Qt::RightButton ) {
-		setDistance( Dist - (dx + dy) * ( axis / ( qMax( width(), height() ) + 1 ) ) );
-	}
-
-	lastPos = event->pos();
-}
-
-void GLView::mouseDoubleClickEvent( QMouseEvent * )
-{
-	/*
-	doCompile = true;
-	if ( ! aViewWalk->isChecked() )
-	    doCenter = true;
-	update();
-	*/
-}
-
-void GLView::wheelEvent( QWheelEvent * event )
-{
-	if ( aViewWalk->isChecked() )
-		mouseMov += Vector3( 0, 0, event->delta() );
-	else
-		setDistance( Dist * ( event->delta() < 0 ? 1.0 / 0.8 : 0.8 ) );
-}
-
 void GLView::checkActions()
 {
 	scene->animate = aAnimate->isChecked();
@@ -1246,6 +1151,11 @@ void GLView::checkActions()
 
 	update();
 }
+
+
+/*
+ * Settings
+ */
 
 void GLView::save( QSettings & settings )
 {
@@ -1279,63 +1189,50 @@ void GLView::restore( const QSettings & settings )
 	//settings.endGroup();
 }
 
-void GLView::move( float x, float y, float z )
+void GLView::saveImage()
 {
-	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
-	update();
+	QDialog dlg;
+	QGridLayout * lay = new QGridLayout;
+	dlg.setLayout( lay );
+
+	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::RightToLeft );
+	file->setFilter( { "Images (*.bmp *.jpg *.png)", "BMP (*.bmp)", "JPEG (*.jpg)", "PNG (*.png)" } );
+	file->setFile( model->getFolder() + "/" );
+	lay->addWidget( file, 0, 0, 1, -1 );
+
+	QSpinBox * pixQuality = new QSpinBox;
+	pixQuality->setRange( -1, 100 );
+	pixQuality->setSingleStep( 10 );
+	pixQuality->setValue( 80 );
+	pixQuality->setSpecialValueText( tr( "Automatic" ) );
+	lay->addWidget( new QLabel( tr( "Quality" ) ), 1, 0, 1, 1 );
+	lay->addWidget( pixQuality, 1, 1, 1, 1 );
+
+	QHBoxLayout * hBox  = new QHBoxLayout;
+	QPushButton * btnOk = new QPushButton( tr( "OK" ) );
+	QPushButton * btnCancel = new QPushButton( tr( "Cancel" ) );
+	hBox->addWidget( btnOk );
+	hBox->addWidget( btnCancel );
+	lay->addLayout( hBox, 2, 0, 1, -1 );
+
+	connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
+	connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
+
+	if ( dlg.exec() != QDialog::Accepted )
+		return;
+
+	qDebug() << "Saving" << file->file();
+
+	glReadBuffer( GL_FRONT );
+	QImage img = grabFrameBuffer();
+	img.save( file->file(), 0, pixQuality->value() );
 }
 
-void GLView::rotate( float x, float y, float z )
-{
-	Rot += Vector3( x, y, z );
-	uncheckViewAction();
-	update();
-}
 
-void GLView::zoom( float z )
-{
-	Zoom *= z;
+/* 
+ * QWidget Event Handlers 
+ */
 
-	if ( Zoom < ZOOM_MIN )
-		Zoom = ZOOM_MIN;
-
-	if ( Zoom > ZOOM_MAX )
-		Zoom = ZOOM_MAX;
-
-	update();
-}
-
-void GLView::setPosition( float x, float y, float z )
-{
-	Pos = { x, y, z };
-	update();
-}
-
-void GLView::setPosition( Vector3 v )
-{
-	Pos = v;
-	update();
-}
-
-void GLView::setRotation( float x, float y, float z )
-{
-	Rot = { x, y, z };
-	update();
-}
-
-void GLView::setZoom( float z )
-{
-	Zoom = z;
-	update();
-}
-
-void GLView::setDistance( float x )
-{
-	Dist = x;
-	update();
-}
-
-// TODO: Probably needs to be fixed for Qt5, like other QUrl issues (i.e. openNif())
 void GLView::dragEnterEvent( QDragEnterEvent * e )
 {
 	if ( e->mimeData()->hasUrls() && e->mimeData()->urls().count() == 1 ) {
@@ -1353,6 +1250,17 @@ void GLView::dragEnterEvent( QDragEnterEvent * e )
 	}
 
 	e->ignore();
+}
+
+void GLView::dragLeaveEvent( QDragLeaveEvent * e )
+{
+	Q_UNUSED( e );
+
+	if ( iDragTarget.isValid() ) {
+		model->set<QString>( iDragTarget, fnDragTexOrg );
+		iDragTarget = QModelIndex();
+		fnDragTex = fnDragTexOrg = QString();
+	}
 }
 
 void GLView::dragMoveEvent( QDragMoveEvent * e )
@@ -1396,58 +1304,143 @@ void GLView::dropEvent( QDropEvent * e )
 	e->accept();
 }
 
-void GLView::dragLeaveEvent( QDragLeaveEvent * e )
+void GLView::focusOutEvent( QFocusEvent * )
 {
-	Q_UNUSED( e );
+	kbd.clear();
+}
 
-	if ( iDragTarget.isValid() ) {
-		model->set<QString>( iDragTarget, fnDragTexOrg );
-		iDragTarget = QModelIndex();
-		fnDragTex = fnDragTexOrg = QString();
+void GLView::keyPressEvent( QKeyEvent * event )
+{
+	switch ( event->key() ) {
+	case Qt::Key_Up:
+	case Qt::Key_Down:
+	case Qt::Key_Left:
+	case Qt::Key_Right:
+	case Qt::Key_PageUp:
+	case Qt::Key_PageDown:
+	case Qt::Key_A:
+	case Qt::Key_D:
+	case Qt::Key_W:
+	case Qt::Key_S:
+	case Qt::Key_R:
+	case Qt::Key_F:
+	case Qt::Key_Q:
+	case Qt::Key_E:
+		kbd[event->key()] = true;
+		break;
+	case Qt::Key_Escape:
+		doCompile = true;
+
+		if ( !aViewWalk->isChecked() )
+			doCenter = true;
+
+		update();
+		break;
+	case Qt::Key_C:
+	{
+		Node * node = scene->getNode( model, scene->currentBlock );
+
+		if ( node != 0 ) {
+			BoundSphere bs = node->bounds();
+
+			this->setPosition( -bs.center );
+
+			if ( bs.radius > 0 ) {
+				setDistance( bs.radius * 1.5f );
+			}
+		}
+	}
+		break;
+	default:
+		event->ignore();
+		break;
 	}
 }
 
-
-Scene * GLView::getScene()
+void GLView::keyReleaseEvent( QKeyEvent * event )
 {
-	return scene;
+	switch ( event->key() ) {
+	case Qt::Key_Up:
+	case Qt::Key_Down:
+	case Qt::Key_Left:
+	case Qt::Key_Right:
+	case Qt::Key_PageUp:
+	case Qt::Key_PageDown:
+	case Qt::Key_A:
+	case Qt::Key_D:
+	case Qt::Key_W:
+	case Qt::Key_S:
+	case Qt::Key_R:
+	case Qt::Key_F:
+	case Qt::Key_Q:
+	case Qt::Key_E:
+		kbd[event->key()] = false;
+		break;
+	default:
+		event->ignore();
+		break;
+	}
 }
 
-void GLView::saveImage()
+void GLView::mouseDoubleClickEvent( QMouseEvent * )
 {
-	QDialog dlg;
-	QGridLayout * lay = new QGridLayout;
-	dlg.setLayout( lay );
+	/*
+	doCompile = true;
+	if ( ! aViewWalk->isChecked() )
+	doCenter = true;
+	update();
+	*/
+}
 
-	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::RightToLeft );
-	file->setFilter( { "Images (*.bmp *.jpg *.png)", "BMP (*.bmp)", "JPEG (*.jpg)", "PNG (*.png)" } );
-	file->setFile( model->getFolder() + "/" );
-	lay->addWidget( file, 0, 0, 1, -1 );
+void GLView::mouseMoveEvent( QMouseEvent * event )
+{
+	int dx = event->x() - lastPos.x();
+	int dy = event->y() - lastPos.y();
 
-	QSpinBox * pixQuality = new QSpinBox;
-	pixQuality->setRange( -1, 100 );
-	pixQuality->setSingleStep( 10 );
-	pixQuality->setValue( 80 );
-	pixQuality->setSpecialValueText( tr( "Automatic" ) );
-	lay->addWidget( new QLabel( tr( "Quality" ) ), 1, 0, 1, 1 );
-	lay->addWidget( pixQuality, 1, 1, 1, 1 );
+	if ( event->buttons() & Qt::LeftButton ) {
+		mouseRot += Vector3( dy * .5, 0, dx * .5 );
+	} else if ( event->buttons() & Qt::MidButton ) {
+		float d = axis / (qMax( width(), height() ) + 1);
+		mouseMov += Vector3( dx * d, -dy * d, 0 );
+	} else if ( event->buttons() & Qt::RightButton ) {
+		setDistance( Dist - (dx + dy) * (axis / (qMax( width(), height() ) + 1)) );
+	}
 
-	QHBoxLayout * hBox  = new QHBoxLayout;
-	QPushButton * btnOk = new QPushButton( tr( "OK" ) );
-	QPushButton * btnCancel = new QPushButton( tr( "Cancel" ) );
-	hBox->addWidget( btnOk );
-	hBox->addWidget( btnCancel );
-	lay->addLayout( hBox, 2, 0, 1, -1 );
+	lastPos = event->pos();
+}
 
-	connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
-	connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
+void GLView::mousePressEvent( QMouseEvent * event )
+{
+	lastPos = event->pos();
 
-	if ( dlg.exec() != QDialog::Accepted )
+	if ( (pressPos - event->pos()).manhattanLength() <= 3 )
+		cycleSelect++;
+	else
+		cycleSelect = 0;
+
+	pressPos = event->pos();
+}
+
+void GLView::mouseReleaseEvent( QMouseEvent * event )
+{
+	if ( !(model && (pressPos - event->pos()).manhattanLength() <= 3) )
 		return;
 
-	qDebug() << "Saving" << file->file();
+	QModelIndex idx = indexAt( event->pos(), cycleSelect );
+	scene->currentBlock = model->getBlock( idx );
+	scene->currentIndex = idx.sibling( idx.row(), 0 );
 
-	glReadBuffer( GL_FRONT );
-	QImage img = grabFrameBuffer();
-	img.save( file->file(), 0, pixQuality->value() );
+	if ( idx.isValid() ) {
+		emit clicked( idx );
+	}
+
+	update();
+}
+
+void GLView::wheelEvent( QWheelEvent * event )
+{
+	if ( aViewWalk->isChecked() )
+		mouseMov += Vector3( 0, 0, event->delta() );
+	else
+		setDistance( Dist * (event->delta() < 0 ? 1.0 / 0.8 : 0.8) );
 }
