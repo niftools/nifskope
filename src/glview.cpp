@@ -120,17 +120,17 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	makeCurrent();
 
 	// Create an OpenGL context
-	m_context = context()->contextHandle();
+	glContext = context()->contextHandle();
 
 	// Obtain a functions object and resolve all entry points
-	m_funcs = m_context->functions();
+	glFuncs = glContext->functions();
 
-	if ( !m_funcs ) {
+	if ( !glFuncs ) {
 		qWarning( "Could not obtain OpenGL functions" );
 		exit( 1 );
 	}
 
-	m_funcs->initializeOpenGLFunctions();
+	glFuncs->initializeOpenGLFunctions();
 
 	setFocusPolicy( Qt::ClickFocus );
 	setAttribute( Qt::WA_NoSystemBackground );
@@ -154,7 +154,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 
 	textures = new TexCache( this );
 
-	scene = new Scene( textures, m_context, m_funcs );
+	scene = new Scene( textures, glContext, glFuncs );
 	connect( textures, &TexCache::sigRefresh, this, static_cast<void (GLView::*)()>(&GLView::update) );
 
 	timer = new QTimer( this );
@@ -357,7 +357,7 @@ void GLView::updateShaders()
 void GLView::initializeGL()
 {
 	GLenum err;
-	initializeTextureUnits( m_context );
+	initializeTextureUnits( glContext );
 
 	if ( scene->renderer->initialize() )
 		updateShaders();

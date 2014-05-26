@@ -73,8 +73,8 @@ public:
 	//! Static instance
 	static GLView * create();
 
-	QOpenGLContext * m_context;
-	QOpenGLFunctions * m_funcs;
+	QOpenGLContext * glContext;
+	QOpenGLFunctions * glFuncs;
 
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 
