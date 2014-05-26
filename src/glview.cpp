@@ -239,12 +239,8 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	aViewUserSave->setShortcut( Qt::CTRL + Qt::Key_F9 );
 	connect( aViewUserSave, &QAction::triggered, this, &GLView::sltSaveUserView );
 
-#ifndef USE_GL_QPAINTER
-#ifndef QT_NO_DEBUG
 	aPrintView = new QAction( tr( "Save View To File..." ), this );
 	connect( aPrintView, &QAction::triggered, this, &GLView::saveImage );
-#endif // QT_NO_DEBUG
-#endif // USE_GL_QPAINTER
 
 	aAnimate = new QAction( tr( "&Animations" ), this );
 	aAnimate->setToolTip( tr( "enables evaluation of animation controllers" ) );
@@ -364,12 +360,8 @@ QMenu * GLView::createMenu() const
 	m->addAction( aViewPerspective );
 	m->addAction( aViewUserSave );
 	m->addSeparator();
-#ifndef USE_GL_QPAINTER
-#ifndef QT_NO_DEBUG
 	m->addAction( aPrintView );
 	m->addSeparator();
-#endif // QT_NO_DEBUG
-#endif // USE_GL_QPAINTER
 	m->addActions( Options::actions() );
 	return m;
 }
