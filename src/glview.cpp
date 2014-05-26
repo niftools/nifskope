@@ -98,6 +98,7 @@ GLView * GLView::create()
 	QGLFormat fmt;
 	fmt.setDoubleBuffer( true );
 	fmt.setRgba( true );
+	fmt.setSamples( Options::antialias() ? 16 : 0 );
 
 	if ( share )
 		fmt = share->format();
@@ -142,6 +143,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 
 	doCenter  = false;
 	doCompile = false;
+	doMultisampling = Options::antialias();
 
 	model = nullptr;
 
@@ -347,6 +349,18 @@ void GLView::sceneUpdate()
 void GLView::initializeGL()
 {
 	GLenum err;
+	
+	if ( Options::antialias() ) {
+		if ( !glContext->hasExtension( "GL_EXT_framebuffer_multisample" ) ) {
+			doMultisampling = false;
+			//qWarning() << "System does not support multisampling";
+		} /* else {
+			GLint maxSamples;
+			glGetIntegerv( GL_MAX_SAMPLES, &maxSamples );
+			qDebug() << "Max samples:" << maxSamples;
+		}*/
+	}
+
 	initializeTextureUnits( glContext );
 
 	if ( scene->renderer->initialize() )
@@ -535,6 +549,9 @@ void GLView::paintGL()
 	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
 	glEnable( GL_LIGHT0 );
 	glEnable( GL_LIGHTING );
+
+	if ( doMultisampling )
+		glEnable( GL_MULTISAMPLE_ARB );
 
 	// Initialize Rendering Font
 	// TODO: Seek alternative to fontDisplayListBase or determine if code is actually necessary

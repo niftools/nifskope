@@ -206,6 +206,7 @@ private:
 
 	bool doCompile;
 	bool doCenter;
+	bool doMultisampling;
 
 	QAction * checkedViewAction() const;
 	void uncheckViewAction();
