@@ -240,7 +240,6 @@ private:
 	QPoint popPos;
 
 protected slots:
-	void popMenu();
 	void saveImage();
 };
 

@@ -135,7 +135,7 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	setFocusPolicy( Qt::ClickFocus );
 	setAttribute( Qt::WA_NoSystemBackground );
 	setAcceptDrops( true );
-	//setContextMenuPolicy( Qt::CustomContextMenu );
+	setContextMenuPolicy( Qt::CustomContextMenu );
 
 	Zoom = 1.0;
 	zInc = 1;
@@ -1196,17 +1196,6 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 	}
 
 	update();
-
-	if ( event->button() == Qt::RightButton ) {
-		// workaround for Qt 4.2.2 ( QMainWindow Menu pops out of nowhere )
-		popPos = event->pos();
-		QTimer::singleShot( 0, this, SLOT( popMenu() ) );
-	}
-}
-
-void GLView::popMenu()
-{
-	emit customContextMenuRequested( popPos );
 }
 
 void GLView::mouseMoveEvent( QMouseEvent * event )
