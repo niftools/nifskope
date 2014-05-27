@@ -529,25 +529,9 @@ QVector<int> UVWidget::indices( const QRegion & region ) const
 bool UVWidget::bindTexture( const QString & filename )
 {
 	GLuint mipmaps = 0;
-	GLfloat max_anisotropy = get_max_anisotropy(); // init from gltex
-
-	QString extensions( (const char *)glGetString( GL_EXTENSIONS ) );
-
-	if ( extensions.contains( "GL_EXT_texture_filter_anisotropic" ) ) {
-		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
-		//qWarning() << "maximum anisotropy" << max_anisotropy;
-	}
-
 	mipmaps = textures->bind( filename );
 
 	if ( mipmaps ) {
-		if ( max_anisotropy > 0.0f ) {
-			if ( Options::antialias() )
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
-			else
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f );
-		}
-
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
@@ -567,25 +551,9 @@ bool UVWidget::bindTexture( const QString & filename )
 bool UVWidget::bindTexture( const QModelIndex & iSource )
 {
 	GLuint mipmaps = 0;
-	GLfloat max_anisotropy = get_max_anisotropy(); // init from gltex
-
-	QString extensions( (const char *)glGetString( GL_EXTENSIONS ) );
-
-	if ( extensions.contains( "GL_EXT_texture_filter_anisotropic" ) ) {
-		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
-		//qWarning() << "maximum anisotropy" << max_anisotropy;
-	}
-
 	mipmaps = textures->bind( iSource );
 
 	if ( mipmaps ) {
-		if ( max_anisotropy > 0.0f ) {
-			if ( Options::antialias() )
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
-			else
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f );
-		}
-
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );

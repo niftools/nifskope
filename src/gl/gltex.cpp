@@ -79,7 +79,7 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		num_texture_units = 1;
 	}
 
-	if ( context->hasExtension( "GL_EXT_texture_filter_anisotropic" ) ) {
+	if ( Options::antialias() && context->hasExtension( "GL_EXT_texture_filter_anisotropic" ) ) {
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
 	} else {
@@ -342,6 +342,8 @@ int TexCache::bind( const QString & fname )
 	}
 
 	glBindTexture( GL_TEXTURE_2D, tx->id );
+	if ( get_max_anisotropy() > 0 )
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
 
 	return tx->mipmaps;
 }
@@ -374,6 +376,9 @@ int TexCache::bind( const QModelIndex & iSource )
 				}
 
 				glBindTexture( GL_TEXTURE_2D, tx->id );
+				if ( get_max_anisotropy() > 0 )
+					glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
+
 				return tx->mipmaps;
 			}
 		} else if ( !nif->get<QString>( iSource, "File Name" ).isEmpty() ) {
