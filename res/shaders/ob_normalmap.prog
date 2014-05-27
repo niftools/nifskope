@@ -13,7 +13,10 @@ checkgroup begin or
 checkgroup end
 
 checkgroup begin or
-	check NiTriBasedGeomData/Has Vertex Colors == 0
+	checkgroup begin and
+		check NiTriBasedGeomData/Has Vertex Colors == 0
+		check BSLightingShaderProperty/Skyrim Shader Type != 2
+	checkgroup end
 	checkgroup begin
 		check NiVertexColorProperty/Vertex Mode == 0
 		check NiVertexColorProperty/Lighting Mode == 1
