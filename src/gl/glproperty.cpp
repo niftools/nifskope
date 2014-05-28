@@ -235,10 +235,13 @@ void glProperty( AlphaProperty * p )
 	}
 
 	if ( p && p->alphaTest && Options::blending() ) {
+		glPolygonOffset( -1.0f, -1.0f );
+		glEnable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
 	} else {
 		glDisable( GL_ALPHA_TEST );
+		glDisable( GL_POLYGON_OFFSET_FILL );
 	}
 }
 
