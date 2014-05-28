@@ -805,7 +805,6 @@ void Node::draw()
 	if ( isHidden() )
 		return;
 
-	//glLoadName( nodeId ); - disabled glRenderMode( GL_SELECT );
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
 		glColor4ubv( (GLubyte *)&s_nodeId );
@@ -853,7 +852,6 @@ void Node::drawSelection() const
 	if ( scene->currentBlock != iBlock || !Options::drawNodes() )
 		return;
 
-	//glLoadName( nodeId ); - disabled glRenderMode( GL_SELECT );
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
 		glColor4ubv( (GLubyte *)&s_nodeId );
@@ -981,7 +979,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 		glPopMatrix();
 	} else if ( name == "bhkSphereShape" ) {
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -989,7 +986,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 		drawSphere( Vector3(), nif->get<float>( iShape, "Radius" ) * havokScale );
 	} else if ( name == "bhkMultiSphereShape" ) {
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1001,7 +997,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			drawSphere( nif->get<Vector3>( iSpheres.child( r, 0 ), "Center" ), nif->get<float>( iSpheres.child( r, 0 ), "Radius" ) );
 		}
 	} else if ( name == "bhkBoxShape" ) {
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1011,7 +1006,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		v *= havokScale;
 		drawBox( v, -v );
 	} else if ( name == "bhkCapsuleShape" ) {
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1023,7 +1017,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		float s = 1.0f / 7.0f;
 		glScalef( s, s, s );
 
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1071,7 +1064,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 		glPopMatrix();
 	} else if ( name == "bhkConvexVerticesShape" ) {
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1092,7 +1084,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
 	} else if ( name == "bhkPackedNiTriStripsShape" ) {
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1209,7 +1200,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		float s = 1.0f;
 		glScalef( s, s, s );
 
-		//glLoadName( nif->getBlockNumber( iShape ) );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1338,7 +1328,6 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 	Color3 color_a( 0.8f, 0.6f, 0.0f );
 	Color3 color_b( 0.6f, 0.8f, 0.0f );
 
-	//glLoadName( nif->getBlockNumber( iConstraint ) );
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iConstraint ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1646,7 +1635,6 @@ void Node::drawHavok()
 		//glMultMatrix( worldTrans() );
 		glMultMatrix( bt );
 
-		//glLoadName( nodeId );
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1731,7 +1719,6 @@ void Node::drawHavok()
 			// Not sure if world transform is taken into account
 			glMultMatrix( worldTrans() );
 
-			//glLoadName( nif->getBlockNumber( iBound ) );
 			if ( Node::SELECTING ) {
 				int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBound ) );
 				glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1812,7 +1799,6 @@ void Node::drawHavok()
 
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
-	//glLoadName( nif->getBlockNumber( iBody ) );
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
@@ -1891,7 +1877,6 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 
 	float roll = float(orient) / 6284.0 * 2.0 * (-M_PI);
 
-	//glLoadName( ( nif->getBlockNumber( iPosition ) & 0xffff ) | ( ( iPosition.row() & 0xffff ) << 16 ) ); - disabled glRenderMode( GL_SELECT );
 	if ( Node::SELECTING ) {
 		// TODO: not tested! need nif files what contain that
 		GLint id = ( nif->getBlockNumber( iPosition ) & 0xffff ) | ( ( iPosition.row() & 0xffff ) << 16 );

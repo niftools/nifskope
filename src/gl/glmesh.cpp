@@ -915,7 +915,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 
 	auto nif = static_cast<const NifModel *>(iBlock.model());
 	
-	//glLoadName( nodeId ); - disabled glRenderMode( GL_SELECT );
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
 		glColor4ubv( (GLubyte *)&s_nodeId );
