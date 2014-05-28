@@ -71,7 +71,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // TODO: Make these options user configurable.
 // TODO: Make this platform independent (Half monitor refresh rate)
-#define FPS 30
+#define FPS 60
 #define FOV 45.0
 #define MOV_SPD 350
 #define ROT_SPD 45
