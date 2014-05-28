@@ -1,11 +1,12 @@
-
-comment normal mapping, vertex colors -> ambient&diffuse
+# normal mapping, vertex colors -> ambient&diffuse
 
 checkgroup begin or
+	# Fallout 3 and later
 	checkgroup begin and
 		check HEADER/Version >= 0x14020007
 		check HEADER/User Version >= 11
-	checkgroup end  
+	checkgroup end
+
 	checkgroup begin
 		check NiTexturingProperty/Apply Mode == 2
 		check NiTriBasedGeom/Has Shader == 0
@@ -13,14 +14,18 @@ checkgroup begin or
 checkgroup end
 
 checkgroup begin or
+	# Skyrim
+	checkgroup begin and
+		check BSLightingShaderProperty/Skyrim Shader Type != 2
+		check NiTriBasedGeomData/Has Vertex Colors == 1
+	checkgroup end
+
+	# Fallout 3
 	checkgroup begin and
 		check BSShaderPPLightingProperty
 		check NiTriBasedGeomData/Has Vertex Colors == 1
 	checkgroup end
-	checkgroup begin and
-		check NiTriBasedGeomData/Has Vertex Colors == 1
-		check BSLightingShaderProperty/Skyrim Shader Type != 2
-	checkgroup end
+
 	checkgroup begin
 		check NiVertexColorProperty/Vertex Mode == 2
 		check NiVertexColorProperty/Lighting Mode == 1
