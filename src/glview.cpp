@@ -58,6 +58,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QOpenGLFramebufferObject>
 #include <QGLFormat>
 
 // TODO: Determine the necessity of this
@@ -642,28 +643,43 @@ void GLView::resizeGL( int width, int height )
 
 typedef void (Scene::* DrawFunc)( void );
 
-int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc> drawFunc, int cycle, const QPoint & pos )
+int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc> drawFunc, int cycle, const QPoint & pos, int & furn )
 {
 	Q_UNUSED( model ); Q_UNUSED( cycle );
 	// Color Key O(1) selection
 	//	Open GL 3.0 says glRenderMode is deprecated
 	//	ATI OpenGL API implementation of GL_SELECT corrupts NifSkope memory
-	// Caution: this works in 32 bit frame buffer modes only.
 	//
-	// State is stored by the caller.
-	// Prepare the back color buffer for sharp edges and no shading.
-	// Texturing, blending, dithering, lighting and smooth shading should be disabled
-	// The back color buffer can be used for the drawing operations to keep the drawing
-	// operations invisible to the user.
+	// Create FBO for sharp edges and no shading.
+	// Texturing, blending, dithering, lighting and smooth shading should be disabled.
+	// The FBO can be used for the drawing operations to keep the drawing operations invisible to the user.
+
+	GLint viewport[4];
+	glGetIntegerv( GL_VIEWPORT, viewport );
+
+	// Create new FBO with multisampling disabled
+	QOpenGLFramebufferObjectFormat fboFmt;
+	fboFmt.setTextureTarget( GL_TEXTURE_2D );
+	fboFmt.setInternalTextureFormat( GL_RGB32F_ARB );
+	fboFmt.setAttachment( QOpenGLFramebufferObject::Attachment::CombinedDepthStencil );
+
+	QOpenGLFramebufferObject fbo( viewport[2], viewport[3], fboFmt );
+	fbo.bind();
+
+	glEnable( GL_LIGHTING );
 	glDisable( GL_MULTISAMPLE );
+	glDisable( GL_MULTISAMPLE_ARB );
 	glDisable( GL_LINE_SMOOTH );
+	glDisable( GL_POINT_SMOOTH );
+	glDisable( GL_POLYGON_SMOOTH );
+	glDisable( GL_TEXTURE_1D );
 	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_TEXTURE_3D );
 	glDisable( GL_BLEND );
 	glDisable( GL_DITHER );
+	glDisable( GL_FOG );
 	glDisable( GL_LIGHTING );
 	glShadeModel( GL_FLAT );
-	glDisable( GL_FOG );
-	glDisable (GL_MULTISAMPLE_ARB);
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LEQUAL );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -671,37 +687,49 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 	// Rasterize the scene
 	Node::SELECTING = 1;
 	for ( DrawFunc df : drawFunc ) {
-		glDrawBuffer( GL_BACK );
 		(scene->*df)();
 	}
 	Node::SELECTING = 0;
 
-	// Get the color key
-	unsigned char pixel[3] = { 0, 0, 0 };
+	fbo.release();
 
-	GLint viewport[4];
-	glGetIntegerv( GL_VIEWPORT, viewport );
-	glReadBuffer( GL_BACK );
-	glReadPixels( pos.x(), viewport[3] - pos.y(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel );
+	QImage img( fbo.toImage() );
+	QColor pixel = img.pixel( pos );
+
+#ifndef QT_NO_DEBUG
+	img.save( "fbo.png" );
+#endif
 
 	// Encode RGB to Int
 	int a = 0;
-	a |= pixel[0] << 0;  // R
-	a |= pixel[1] << 8;  // G
-	a |= pixel[2] << 16; // B
+	a |= pixel.red()   << 0;
+	a |= pixel.green() << 8;
+	a |= pixel.blue()  << 16;
 
 	// Decode:
 	// R = (id & 0x000000FF) >> 0
 	// G = (id & 0x0000FF00) >> 8
 	// B = (id & 0x00FF0000) >> 16
 
-	qDebug() << "Key:" << a << " R" << pixel[0] << " G" << pixel[1] << " B" << pixel[2];
-	return COLORKEY2ID( a );
+	int choose = COLORKEY2ID( a );
+
+	// Pick BSFurnitureMarker
+	if ( choose > 0 ) {
+		auto furnBlock = model->getBlock( model->index( 3, 0, model->getBlock( choose & 0x0ffff ) ), "BSFurnitureMarker" );
+
+		if ( furnBlock.isValid() ) {
+			furn = choose >> 16;
+			choose &= 0x0ffff;
+		}
+	}
+
+	//qDebug() << "Key:" << a << " R" << pixel.red() << " G" << pixel.green() << " B" << pixel.blue();
+	return choose;
 }
 
 QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 {
-	if ( !( model && isVisible() && height() ) )
+	if ( !(model && isVisible() && height()) )
 		return QModelIndex();
 
 	makeCurrent();
@@ -714,8 +742,6 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	glViewport( 0, 0, width(), height() );
 	glProjection( pos.x(), pos.y() );
-
-	int choose;
 
 	QList<DrawFunc> df;
 
@@ -730,31 +756,8 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	df << &Scene::drawShapes;
 
-	choose = ::indexAt( model, scene, df, cycle, pos );
-
-#ifndef QT_NO_DEBUG
-	QImage colorBuffer = grabFrameBuffer();
-	colorBuffer.save( "colorbuffer.png", "PNG" );
-#endif
-
-	if ( Options::drawFurn() ) {
-		// TODO: find out a better way to check if "furn" was mouse-clicked
-		int furnchoose = ::indexAt( model, scene, { &Scene::drawFurn }, cycle, pos );
-
-		if ( choose != -1
-			 && furnchoose != -1        // something hit && something2 is "furn"
-			 && choose == furnchoose )  // the "furn" was hit
-		{
-			glPopAttrib();
-			glMatrixMode( GL_MODELVIEW );
-			glPopMatrix();
-			glMatrixMode( GL_PROJECTION );
-			glPopMatrix();
-
-			QModelIndex parent = model->index( 3, 0, model->getBlock( furnchoose & 0x0ffff ) );
-			return model->index( furnchoose >> 16, 0, parent );
-		}
-	}
+	int choose = -1, furn = -1;
+	choose = ::indexAt( model, scene, df, cycle, pos, /*out*/ furn );
 
 	glPopAttrib();
 	glMatrixMode( GL_MODELVIEW );
@@ -762,10 +765,19 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();
 
-	if ( choose != -1 )
-		return model->getBlock( choose );
+	QModelIndex chooseIndex;
 
-	return QModelIndex();
+	if ( choose != -1 ) {
+		// Block Index
+		chooseIndex = model->getBlock( choose );
+
+		if ( furn != -1 ) {
+			// Furniture Row @ Block Index
+			chooseIndex = model->index( furn, 0, model->index( 3, 0, chooseIndex ) );
+		}			
+	}
+
+	return chooseIndex;
 }
 
 void GLView::center()
