@@ -470,11 +470,16 @@ build_pass {
 		# Copy DLLs to build dir
 		copyFiles( $$QtBins(),, true )
 
-		plugins += \
+		platforms += \
 			$$[QT_INSTALL_PLUGINS]/platforms/qminimal$${DLLEXT} \
 			$$[QT_INSTALL_PLUGINS]/platforms/qwindows$${DLLEXT}
+		
+		imageformats += \
+			$$[QT_INSTALL_PLUGINS]/imageformats/qjpeg$${DLLEXT} \
+			$$[QT_INSTALL_PLUGINS]/imageformats/qtga$${DLLEXT}
 
-		copyFiles( $$plugins, platforms, true )
+		copyFiles( $$platforms, platforms, true )
+		copyFiles( $$imageformats, imageformats, true )
 	}
 
 } # end build_pass
