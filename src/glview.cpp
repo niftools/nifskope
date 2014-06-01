@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glview.h"
+#include "config.h"
 #include "options.h"
 
 #include "nifmodel.h"
@@ -45,12 +46,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QComboBox>
 #include <QDebug>
 #include <QDialog>
+#include <QDir>
 #include <QLabel>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QSettings>
 #include <QSpinBox>
 #include <QTimer>
@@ -1242,19 +1245,55 @@ void GLView::saveImage()
 	QDialog dlg;
 	QGridLayout * lay = new QGridLayout;
 	dlg.setLayout( lay );
+	dlg.setMinimumWidth( 400 );
 
-	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::RightToLeft );
-	file->setFilter( { "Images (*.bmp *.jpg *.png)", "BMP (*.bmp)", "JPEG (*.jpg)", "PNG (*.png)" } );
-	file->setFile( model->getFolder() + "/" );
+	QString date = QDateTime::currentDateTime().toString( "yyyyMMdd_HH-mm-ss" );
+	QString name = model->getFilename();
+
+	QString nifFolder = model->getFolder();
+	QString filename = name + (!name.isEmpty() ? "_" : "") + date + ".jpg";
+
+	// Default: NifSkope directory
+	// TODO: User-configurable default screenshot path in Options
+	QString nifskopePath = "screenshots/" + filename;
+	// Absolute: NIF directory
+	QString nifPath = nifFolder + (!nifFolder.isEmpty() ? "/" : "") + filename;
+
+	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::LeftToRight );
+	file->setFilter( { "Images (*.jpg *.png *.bmp)", "JPEG (*.jpg)", "PNG (*.png)", "BMP (*.bmp)" } );
+	file->setFile( nifskopePath );
 	lay->addWidget( file, 0, 0, 1, -1 );
+	
+	QRadioButton * nifskopeDir = new QRadioButton( tr( "NifSkope Directory" ), this );
+	nifskopeDir->setChecked( true );
+	nifskopeDir->setToolTip( tr( "Save to NifSkope screenshots directory" ) );
 
+	QRadioButton * niffileDir = new QRadioButton( tr( "NIF Directory" ), this );
+	niffileDir->setChecked( false );
+	niffileDir->setDisabled( nifFolder.isEmpty() );
+	niffileDir->setToolTip( tr( "Save to NIF file directory" ) );
+
+	lay->addWidget( nifskopeDir, 1, 0, 1, 1 );
+	lay->addWidget( niffileDir, 1, 1, 1, 1 );
+
+	// Save JPEG Quality
+	NIFSKOPE_QSETTINGS( cfg );
+	cfg.beginGroup( "JPEG" );
+	int jpegQuality = cfg.value( "Quality", 91 ).toInt();
+	cfg.setValue( "Quality", jpegQuality );
+	cfg.endGroup();
+
+	QHBoxLayout * pixBox = new QHBoxLayout;
+	pixBox->setAlignment( Qt::AlignRight );
 	QSpinBox * pixQuality = new QSpinBox;
 	pixQuality->setRange( -1, 100 );
 	pixQuality->setSingleStep( 10 );
-	pixQuality->setValue( 80 );
-	pixQuality->setSpecialValueText( tr( "Automatic" ) );
-	lay->addWidget( new QLabel( tr( "Quality" ) ), 1, 0, 1, 1 );
-	lay->addWidget( pixQuality, 1, 1, 1, 1 );
+	pixQuality->setValue( jpegQuality );
+	pixQuality->setSpecialValueText( tr( "Auto" ) );
+	pixQuality->setMaximumWidth( pixQuality->minimumSizeHint().width() );
+	pixBox->addWidget( new QLabel( tr( "JPEG Quality" ) ) );
+	pixBox->addWidget( pixQuality );
+	lay->addLayout( pixBox, 1, 2, Qt::AlignRight );
 
 	QHBoxLayout * hBox  = new QHBoxLayout;
 	QPushButton * btnOk = new QPushButton( tr( "OK" ) );
@@ -1263,17 +1302,47 @@ void GLView::saveImage()
 	hBox->addWidget( btnCancel );
 	lay->addLayout( hBox, 2, 0, 1, -1 );
 
-	connect( btnOk, &QPushButton::clicked, &dlg, &QDialog::accept );
+	// Set FileSelector to NifSkope dir (relative)
+	connect( nifskopeDir, &QRadioButton::clicked, [&]()
+		{
+			file->setText( nifskopePath );
+			file->setFile( nifskopePath );
+		}
+	);
+	// Set FileSelector to NIF File dir (absolute)
+	connect( niffileDir, &QRadioButton::clicked, [&]()
+		{
+			file->setText( nifPath );
+			file->setFile( nifPath );
+		}
+	);
+
+	// Validate on OK
+	connect( btnOk, &QPushButton::clicked, [&]() 
+		{
+			// Save JPEG Quality
+			cfg.beginGroup( "JPEG" );
+			cfg.setValue( "Quality", pixQuality->value() );
+			cfg.endGroup();
+
+			// TODO: Set up creation of screenshots directory in Options
+			if ( nifskopeDir->isChecked() ) {
+				QDir workingDir;
+				workingDir.mkpath( "screenshots" );
+			}
+
+			QImage img = grabFrameBuffer();
+			if ( img.save( file->file(), 0, pixQuality->value() ) ) {
+				dlg.accept();
+			} else {
+				qWarning() << "Could not save to file. Please check the filepath and extension are valid.";
+			}
+		}
+	);
 	connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
 
 	if ( dlg.exec() != QDialog::Accepted )
 		return;
-
-	qDebug() << "Saving" << file->file();
-
-	glReadBuffer( GL_FRONT );
-	QImage img = grabFrameBuffer();
-	img.save( file->file(), 0, pixQuality->value() );
 }
 
 
