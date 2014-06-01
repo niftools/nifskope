@@ -191,6 +191,8 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 void NifModel::clear()
 {
 	beginResetModel();
+	fileinfo = QFileInfo();
+	filename = QString();
 	folder = QString();
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );

@@ -94,6 +94,8 @@ bool KfmModel::evalVersion( NifItem * item, bool chkParents ) const
 void KfmModel::clear()
 {
 	beginResetModel();
+	fileinfo = QFileInfo();
+	filename = QString();
 	folder = QString();
 	root->killChildren();
 	insertType( root, NifData( "Kfm", "Kfm" ) );

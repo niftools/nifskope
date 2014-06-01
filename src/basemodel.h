@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 
 #include <QAbstractItemModel> // Inherited
+#include <QFileInfo>
 #include <QIODevice>
 #include <QString>
 #include <QVariant>
@@ -82,6 +83,20 @@ public:
 	 * \return The folder of the last file that was loaded with loadFromFile.
 	 */
 	QString getFolder() const { return folder; }
+
+	//! If the model was loaded from a file then getFilename returns the filename.
+	/*!
+	* This function is used to resolve external resources.
+	* \return The filename (without extension) of the last file that was loaded with loadFromFile.
+	*/
+	QString getFilename() const { return filename; }
+
+	//! If the model was loaded from a file then getFileInfo returns a QFileInfo object.
+	/*!
+	* This function is used to resolve external resources.
+	* \return The file info of the last file that was loaded with loadFromFile.
+	*/
+	QFileInfo getFileInfo() const { return fileinfo; }
 
 	//! Return true if the index pointed to is an array.
 	/*!
@@ -287,6 +302,12 @@ protected:
 
 	//! The filepath of the model
 	QString folder;
+
+	//! The filename of the model
+	QString filename;
+
+	//! The file info for the model
+	QFileInfo fileinfo;
 
 	//! The messaging mode
 	MsgMode msgMode;

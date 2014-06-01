@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QByteArray>
 #include <QColor>
 #include <QFile>
+#include <QFileInfo>
 #include <QTime>
 
 //! \file basemodel.cpp BaseModel and BaseModelEval
@@ -551,12 +552,18 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
  *  load and save
  */
 
-bool BaseModel::loadFromFile( const QString & filename )
+bool BaseModel::loadFromFile( const QString & file )
 {
-	QFile f( filename );
-	bool x = f.open( QIODevice::ReadOnly ) && load( f );
-	folder = filename.left( qMax( filename.lastIndexOf( "\\" ), filename.lastIndexOf( "/" ) ) );
-	return x;
+	QFile f( file );
+	if ( f.open( QIODevice::ReadOnly ) && load( f ) ) {
+		fileinfo = QFileInfo( f );
+		filename = fileinfo.baseName();
+		folder = fileinfo.absolutePath();
+
+		return true;
+	}
+
+	return false;
 }
 
 bool BaseModel::saveToFile( const QString & filename ) const
