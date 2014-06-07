@@ -194,7 +194,8 @@ HEADERS += \
 	src/widgets/uvedit.h \
 	src/widgets/valueedit.h \
 	src/widgets/xmlcheck.h \
-	src/ui/about_dialog.h
+	src/ui/about_dialog.h \
+	src/version.h
 
 SOURCES += \
 	src/basemodel.cpp \
@@ -272,7 +273,8 @@ SOURCES += \
 	src/widgets/uvedit.cpp \
 	src/widgets/valueedit.cpp \
 	src/widgets/xmlcheck.cpp \
-	src/ui/about_dialog.cpp
+	src/ui/about_dialog.cpp \
+	src/version.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
