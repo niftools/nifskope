@@ -241,15 +241,20 @@ QList<int> NifSkopeVersion::versionParts( const QString & ver, int parts /* = 7 
 
 bool NifSkopeVersion::formatVersion( const QString & ver, QList<int> & verNums, int parts )
 {
+	QString v = ver;
+
+	if ( ver.isEmpty() )
+		v = "0.0.0";
+
 	if ( parts > 7 || parts < 2 )
 		parts = 3;
 
-	QStringList verParts = ver.split( "." );
+	QStringList verParts = v.split( "." );
 	QList<int> rawVersionNums;
 
 	// The version string must at least have one period e.g. "1.2"
 	if ( verParts.count() < 2 )
-		return false;
+		verParts = QStringList( { "0", "0", "0" } );
 
 	QString major = verParts[0];
 	QString minor = verParts[1];

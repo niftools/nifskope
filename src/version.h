@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VERSION_H
 #define VERSION_H
 
+#include <QHash>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -230,5 +231,49 @@ protected:
  *	
  */
 QDebug operator<<(QDebug dbg, const NifSkopeVersion & ver);
+
+
+static const QHash<QString, QString> migrateTo1_2 = {
+		{ "Export Settings/export_culling", "Export Settings/Export Culling" },
+		{ "auto sanitize", "File/Auto Sanitize" },
+		{ "last load", "File/Last Load" }, { "last save", "File/Last Save" },
+		{ "fsengine/archives", "FSEngine/Archives" },
+		{ "enable animations", "GLView/Enable Animations" }, { "LOD/LOD Level", "GLView/LOD Level" },
+		{ "loop animation", "GLView/Loop Animation" }, { "perspective", "GLView/Perspective" },
+		{ "play animation", "GLView/Play Animation" }, { "switch animation", "GLView/Switch Animation" },
+		{ "view action", "GLView/View Action" },
+		{ "JPEG/Quality", "JPEG/Quality" },
+		{ "Render Settings/Anti Aliasing", "Render Settings/Anti Aliasing" }, { "Render Settings/Background", "Render Settings/Background" },
+		{ "Render Settings/Cull Expression", "Render Settings/Cull Expression" }, { "Render Settings/Cull Nodes By Name", "Render Settings/Cull Nodes By Name" },
+		{ "Render Settings/Cull Non Textured", "Render Settings/Cull Non Textured" }, { "Render Settings/Draw Axes", "Render Settings/Draw Axes" },
+		{ "Render Settings/Draw Collision Geometry", "Render Settings/Draw Collision Geometry" }, { "Render Settings/Draw Constraints", "Render Settings/Draw Constraints" },
+		{ "Render Settings/Draw Furniture Markers", "Render Settings/Draw Furniture Markers" }, { "Render Settings/Draw Nodes", "Render Settings/Draw Nodes" },
+		{ "Render Settings/Enable Shaders", "Render Settings/Enable Shaders" }, { "Render Settings/Foreground", "Render Settings/Foreground" },
+		{ "Render Settings/Handle Length", "Render Settings/Handle Length" }, { "Render Settings/Highlight", "Render Settings/Highlight" },
+		{ "Render Settings/Light0/Ambient", "Render Settings/Light0/Ambient" }, { "Render Settings/Light0/Declination", "Render Settings/Light0/Declination" },
+		{ "Render Settings/Light0/Diffuse", "Render Settings/Light0/Diffuse" }, { "Render Settings/Light0/Frontal", "Render Settings/Light0/Frontal" },
+		{ "Render Settings/Light0/Planar Angle", "Render Settings/Light0/Planar Angle" }, { "Render Settings/Light0/Specular", "Render Settings/Light0/Specular" },
+		{ "Render Settings/MatOver/Ambient", "Render Settings/MatOver/Ambient" }, { "Render Settings/MatOver/Diffuse", "Render Settings/MatOver/Diffuse" },
+		{ "Render Settings/MatOver/Emmissive", "Render Settings/MatOver/Emissive" }, { "Render Settings/MatOver/Specular", "Render Settings/MatOver/Specular" },
+		{ "Render Settings/Show Hidden Objects", "Render Settings/Show Hidden Objects" }, { "Render Settings/Show Stats", "Render Settings/Show Stats" },
+		{ "Render Settings/Texture Alternatives", "Render Settings/Texture Alternatives" }, { "Render Settings/Texture Folders", "Render Settings/Texture Folders" },
+		{ "Render Settings/Texturing", "Render Settings/Texturing" }, { "Render Settings/Up Axis", "Render Settings/Up Axis" },
+		{ "Settings/Language", "Settings/Language" }, { "Settings/Startup Version", "Settings/Startup Version" },
+		{ "hide condition zero", "UI/Hide Mismatched Rows" }, { "realtime condition updating", "UI/Realtime Condition Updating" },
+		{ "XML Checker/Directory", "XML Checker/Directory" }, { "XML Checker/Recursive", "XML Checker/Recursive" },
+		{ "XML Checker/Threads", "XML Checker/Threads" }, { "XML Checker/check kf", "XML Checker/Check KF" },
+		{ "XML Checker/check kfm", "XML Checker/Check KFM" }, { "XML Checker/check nif", "XML Checker/Check NIF" },
+		{ "XML Checker/report errors only", "XML Checker/Report Errors Only" },
+		{ "import-export/3ds/File Name", "Import-Export/3DS/File Name" }, { "import-export/obj/File Name", "Import-Export/OBJ/File Name" },
+		{ "spells/Block/Remove By Id/match expression", "Spells/Block/Remove By Id/Match Expression" },
+		{ "last texture path", "Spells/Texture/Choose/Last Texture Path" },
+		{ "spells/Texture/Export Template/Antialias", "Spells/Texture/Export Template/Antialias" },
+		{ "spells/Texture/Export Template/File Name", "Spells/Texture/Export Template/File Name" },
+		{ "spells/Texture/Export Template/Image Size", "Spells/Texture/Export Template/Image Size" },
+		{ "spells/Texture/Export Template/Wire Color", "Spells/Texture/Export Template/Wire Color" },
+		{ "spells/Texture/Export Template/Wrap Mode", "Spells/Texture/Export Template/Wrap Mode" },
+		{ "version", "Version" }
+};
+
 
 #endif
