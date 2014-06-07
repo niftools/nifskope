@@ -981,10 +981,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		auto lod1tris = sortedTriangles.mid( lod0, lod1 );
 		auto lod2tris = sortedTriangles.mid( lod0 + lod1, lod2 );
 
-		NIFSKOPE_QSETTINGS( cfg );
-		cfg.beginGroup( "LOD" );
-		int lodLevel = cfg.value( "LOD Level", 2 ).toInt();
-		cfg.endGroup();
+		QSettings cfg;
+		int lodLevel = cfg.value( "GLView/LOD Level", 2 ).toInt();
 
 		// render level 0 (always visible)
 		if ( lod0tris.count() )

@@ -331,8 +331,8 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 	//--Allow the user to select the file--//
 
 	QSettings settings;
-	settings.beginGroup( "import-export" );
-	settings.beginGroup( "obj" );
+	settings.beginGroup( "Import-Export" );
+	settings.beginGroup( "OBJ" );
 
 	QString fname = QFileDialog::getSaveFileName( qApp->activeWindow(), tr( "Choose a .OBJ file for export" ), settings.value( "File Name" ).toString(), "OBJ (*.obj)" );
 
@@ -382,6 +382,9 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 	}
 
 	settings.setValue( "File Name", fobj.fileName() );
+
+	settings.endGroup(); // OBJ
+	settings.endGroup(); // Import-Export
 }
 
 
@@ -557,8 +560,8 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	//--Read the file--//
 
 	QSettings settings;
-	settings.beginGroup( "import-export" );
-	settings.beginGroup( "obj" );
+	settings.beginGroup( "Import-Export" );
+	settings.beginGroup( "OBJ" );
 
 	QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .OBJ file to import" ), settings.value( "File Name" ).toString(), "OBJ (*.obj)" );
 
@@ -992,6 +995,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	qDeleteAll( ofaces );
 
 	settings.setValue( "File Name", fname );
+
+	settings.endGroup(); // OBJ
+	settings.endGroup(); // Import-Export
 
 	nif->reset();
 }

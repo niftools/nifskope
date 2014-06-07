@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CONFIG_H
 
 //#include <QStringList>
+//#include "version.h"
 
 
 /*! \file config.h
@@ -43,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 //! Create or use a QSettings variable for NifSkope
-#define NIFSKOPE_QSETTINGS( config ) QSettings config( "NifTools", "NifSkope" )
+//#define NIFSKOPE_QSETTINGS( config ) QSettings config
+
 
 #endif

@@ -1210,34 +1210,29 @@ void GLView::checkActions()
 
 void GLView::save( QSettings & settings )
 {
-	//settings.beginGroup( "OpenGL" );
-	settings.setValue( "enable animations", aAnimate->isChecked() );
-	settings.setValue( "play animation", aAnimPlay->isChecked() );
-	settings.setValue( "loop animation", aAnimLoop->isChecked() );
-	settings.setValue( "switch animation", aAnimSwitch->isChecked() );
-	settings.setValue( "perspective", aViewPerspective->isChecked() );
+	settings.setValue( "GLView/Enable Animations", aAnimate->isChecked() );
+	settings.setValue( "GLView/Play Animation", aAnimPlay->isChecked() );
+	settings.setValue( "GLView/Loop Animation", aAnimLoop->isChecked() );
+	settings.setValue( "GLView/Switch Animation", aAnimSwitch->isChecked() );
+	settings.setValue( "GLView/Perspective", aViewPerspective->isChecked() );
 
 	if ( checkedViewAction() )
-		settings.setValue( "view action", checkedViewAction()->text() );
-
-	//settings.endGroup();
+		settings.setValue( "GLView/View Action", checkedViewAction()->text() );
 }
 
 void GLView::restore( const QSettings & settings )
 {
-	//settings.beginGroup( "OpenGL" );
-	aAnimate->setChecked( settings.value( "enable animations", true ).toBool() );
-	aAnimPlay->setChecked( settings.value( "play animation", true ).toBool() );
-	aAnimLoop->setChecked( settings.value( "loop animation", true ).toBool() );
-	aAnimSwitch->setChecked( settings.value( "switch animation", true ).toBool() );
-	aViewPerspective->setChecked( settings.value( "perspective", true ).toBool() );
+	aAnimate->setChecked( settings.value( "GLView/Enable Animations", true ).toBool() );
+	aAnimPlay->setChecked( settings.value( "GLView/Play Animation", true ).toBool() );
+	aAnimLoop->setChecked( settings.value( "GLView/Loop Animation", true ).toBool() );
+	aAnimSwitch->setChecked( settings.value( "GLView/Switch Animation", true ).toBool() );
+	aViewPerspective->setChecked( settings.value( "GLView/Perspective", true ).toBool() );
 	checkActions();
-	QString viewAct = settings.value( "view action", "Front" ).toString();
+	QString viewAct = settings.value( "GLView/View Action", "Front" ).toString();
 	for ( QAction * act : grpView->actions() ) {
 		if ( act->text() == viewAct )
 			viewAction( act );
 	}
-	//settings.endGroup();
 }
 
 void GLView::saveImage()
@@ -1277,11 +1272,9 @@ void GLView::saveImage()
 	lay->addWidget( niffileDir, 1, 1, 1, 1 );
 
 	// Save JPEG Quality
-	NIFSKOPE_QSETTINGS( cfg );
-	cfg.beginGroup( "JPEG" );
-	int jpegQuality = cfg.value( "Quality", 91 ).toInt();
-	cfg.setValue( "Quality", jpegQuality );
-	cfg.endGroup();
+	QSettings cfg;
+	int jpegQuality = cfg.value( "JPEG/Quality", 91 ).toInt();
+	cfg.setValue( "JPEG/Quality", jpegQuality );
 
 	QHBoxLayout * pixBox = new QHBoxLayout;
 	pixBox->setAlignment( Qt::AlignRight );
@@ -1321,9 +1314,7 @@ void GLView::saveImage()
 	connect( btnOk, &QPushButton::clicked, [&]() 
 		{
 			// Save JPEG Quality
-			cfg.beginGroup( "JPEG" );
-			cfg.setValue( "Quality", pixQuality->value() );
-			cfg.endGroup();
+			cfg.setValue( "JPEG/Quality", pixQuality->value() );
 
 			// TODO: Set up creation of screenshots directory in Options
 			if ( nifskopeDir->isChecked() ) {

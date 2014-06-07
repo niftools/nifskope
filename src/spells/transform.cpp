@@ -366,14 +366,12 @@ public:
 			grid->addWidget( spn, a, 1 );
 		}
 
-		NIFSKOPE_QSETTINGS( settings );
-		settings.beginGroup( "spells" );
-		settings.beginGroup( page() );
-		settings.beginGroup( name() );
+		QSettings settings;
+		QString key = QString( "%1/%2/%3/Scale Normals" ).arg( "Spells", page(), name() );
 
 		QCheckBox * chkNormals = new QCheckBox( Spell::tr( "Scale Normals" ) );
 
-		chkNormals->setChecked( settings.value( "scale normals", true ).toBool() );
+		chkNormals->setChecked( settings.value( key, true ).toBool() );
 		grid->addWidget( chkNormals, 3, 1 );
 
 		QPushButton * btScale = new QPushButton( Spell::tr( "Scale" ) );
@@ -383,7 +381,7 @@ public:
 		if ( dlg.exec() != QDialog::Accepted )
 			return QModelIndex();
 
-		settings.setValue( "scale normals", chkNormals->isChecked() );
+		settings.setValue( key, chkNormals->isChecked() );
 
 		QModelIndex iData = nif->getBlock( nif->getLink( nif->getBlock( index ), "Data" ), "NiGeometryData" );
 

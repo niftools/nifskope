@@ -62,6 +62,8 @@ class QStringListModel;
 class QTabWidget;
 class QTimer;
 
+class NifSkopeVersion;
+
 //! Gets the color normally used for drawing from Options::nlColor()
 #define glNormalColor() glColor( Color4( Options::nlColor() ) )
 //! Gets the color used for highlighting from Options::hlColor()
@@ -77,6 +79,8 @@ public:
 	static Options * get();
 	//! The list of currently enabled actions
 	static QList<QAction *> actions();
+
+	static QString getDisplayVersion();
 
 	//! Texture folders
 	static QStringList textureFolders();
@@ -201,6 +205,9 @@ protected:
 
 	bool eventFilter( QObject * o, QEvent * e );
 
+	// NifSkope Version formatted for display
+	NifSkopeVersion * version;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Menu
 
@@ -273,7 +280,5 @@ protected:
 
 	bool showMeshes;
 };
-
-
 
 #endif

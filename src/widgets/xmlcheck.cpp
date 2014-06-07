@@ -39,7 +39,7 @@ TestShredder * TestShredder::create()
 TestShredder::TestShredder()
 	: QWidget()
 {
-	NIFSKOPE_QSETTINGS( settings );
+	QSettings settings;
 	settings.beginGroup( "XML Checker" );
 
 	directory = new FileSelector( FileSelector::Folder, "Dir", QBoxLayout::RightToLeft );
@@ -50,15 +50,15 @@ TestShredder::TestShredder()
 	recursive->setToolTip( tr( "Recurse into sub directories" ) );
 
 	chkNif = new QCheckBox( tr( "*.nif" ), this );
-	chkNif->setChecked( settings.value( "check nif", true ).toBool() );
+	chkNif->setChecked( settings.value( "Check NIF", true ).toBool() );
 	chkNif->setToolTip( tr( "Check .nif files" ) );
 
 	chkKf = new QCheckBox( tr( "*.kf(a)" ), this );
-	chkKf->setChecked( settings.value( "check kf", true ).toBool() );
+	chkKf->setChecked( settings.value( "Check KF", true ).toBool() );
 	chkKf->setToolTip( tr( "Check .kf files" ) );
 
 	chkKfm = new QCheckBox( tr( "*.kfm" ), this );
-	chkKfm->setChecked( settings.value( "check kfm", true ).toBool() );
+	chkKfm->setChecked( settings.value( "Check KFM", true ).toBool() );
 	chkKfm->setToolTip( tr( "Check .kfm files" ) );
 
 	QAction * aChoose = new QAction( tr( "Block Match" ), this );
@@ -69,7 +69,7 @@ TestShredder::TestShredder()
 	blockMatch = new QLineEdit( this );
 
 	repErr = new QCheckBox( tr( "report errors only" ), this );
-	repErr->setChecked( settings.value( "report errors only", true ).toBool() );
+	repErr->setChecked( settings.value( "Report Errors Only", true ).toBool() );
 
 	count = new QSpinBox();
 	count->setRange( 1, 8 );
@@ -133,20 +133,24 @@ TestShredder::TestShredder()
 	hbox->addWidget( btClose );
 
 	renumberThreads( count->value() );
+
+	settings.endGroup();
 }
 
 TestShredder::~TestShredder()
 {
-	NIFSKOPE_QSETTINGS( settings );
+	QSettings settings;
 	settings.beginGroup( "XML Checker" );
 
 	settings.setValue( "Directory", directory->text() );
 	settings.setValue( "Recursive", recursive->isChecked() );
-	settings.setValue( "check nif", chkNif->isChecked() );
-	settings.setValue( "check kf", chkKf->isChecked() );
-	settings.setValue( "check kfm", chkKfm->isChecked() );
-	settings.setValue( "report errors only", repErr->isChecked() );
+	settings.setValue( "Check NIF", chkNif->isChecked() );
+	settings.setValue( "Check KF", chkKf->isChecked() );
+	settings.setValue( "Check KFM", chkKfm->isChecked() );
+	settings.setValue( "Report Errors Only", repErr->isChecked() );
 	settings.setValue( "Threads", count->value() );
+
+	settings.endGroup();
 
 	queue.clear();
 }

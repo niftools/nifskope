@@ -240,8 +240,8 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	QMap<QString, objKfSequence> ObjKeyframes;
 
 	QSettings settings;
-	settings.beginGroup( "import-export" );
-	settings.beginGroup( "3ds" );
+	settings.beginGroup( "Import-Export" );
+	settings.beginGroup( "3DS" );
 
 	QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .3ds file to import" ), settings.value( tr( "File Name" ) ).toString(), "3DS (*.3ds)" );
 
@@ -744,6 +744,9 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	}
 
 	settings.setValue( "File Name", fname );
+
+	settings.endGroup(); // 3DS
+	settings.endGroup(); // Import-Export
 
 	nif->reset();
 	return;

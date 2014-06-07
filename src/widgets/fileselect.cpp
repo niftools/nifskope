@@ -53,7 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of Filenames", parent )
 {
-	NIFSKOPE_QSETTINGS( cfg );
+	QSettings cfg;
 	setCheckable( true );
 	setChecked( cfg.value( "completion of file names", false ).toBool() );
 
@@ -66,7 +66,7 @@ CompletionAction::~CompletionAction()
 
 void CompletionAction::sltToggled( bool )
 {
-	NIFSKOPE_QSETTINGS( cfg );
+	QSettings cfg;
 	cfg.setValue( tr( "completion of file names" ), isChecked() );
 }
 

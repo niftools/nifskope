@@ -969,8 +969,8 @@ void exportCol( const NifModel * nif, QFileInfo fileInfo )
 	QList<int> roots = nif->getRootLinks();
 	QString question;
 	QSettings settings;
-	settings.beginGroup( "import-export" );
-	settings.beginGroup( "col" );
+	settings.beginGroup( "Import-Export" );
+	settings.beginGroup( "COLLADA" );
 
 	QString fname = QFileDialog::getSaveFileName( qApp->activeWindow(), tr( "Choose a .DAE file for export" ), QString( "%1%2.dae" ).arg( settings.value( "Path" ).toString() ).arg( fileInfo.baseName() ), "COLLADA (*.dae)" );
 
@@ -1048,5 +1048,8 @@ void exportCol( const NifModel * nif, QFileInfo fileInfo )
 	settings.setValue( "Path", QString( "%1/" ).arg( QFileInfo( fobj.fileName() ).path() ) );
 	QTextStream sobj( &fobj ); // let's save xml
 	fobj.close();
+
+	settings.endGroup(); // COLLADA
+	settings.endGroup(); // Import-Export
 }
 

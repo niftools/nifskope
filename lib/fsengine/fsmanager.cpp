@@ -70,10 +70,8 @@ FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )
 {
 	QSettings cfg;
-	cfg.beginGroup( "fsengine" );
-	
-	QStringList list = cfg.value( "archives", QStringList() ).toStringList();
-	
+	QStringList list = cfg.value( "FSEngine/Archives", QStringList() ).toStringList();
+
 	if ( list.size() == 1 && list.first() == "AUTO" )
 	{
 		automatic = true;
@@ -174,9 +172,8 @@ FSSelector::FSSelector( FSManager * m )
 FSSelector::~FSSelector()
 {
 	QSettings cfg;
-	cfg.beginGroup( "fsengine" );
 	QStringList list( manager->automatic ? QStringList() << "AUTO" : manager->archives.keys() );
-	cfg.setValue( "archives", list );
+	cfg.setValue( "FSEngine/Archives", list );
 
 	emit Options::get()->sigFlush3D();
 }

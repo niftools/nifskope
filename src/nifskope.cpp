@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifskope.h"
-#include "config.h"
+#include "version.h"
 #include "options.h"
 
 #include "glview.h"
@@ -89,25 +89,105 @@ FSManager * fsmanager = nullptr;
 
 void NifSkope::migrateSettings() const
 {
-	// load current NifSkope settings
-	NIFSKOPE_QSETTINGS( cfg );
+	// IMPORTANT:
+	//	Do not make any calls to Options:: until after all migration code.
+	//	Static calls to Options:: still create the options instance and inits
+	//	the various widgets with incorrect values. Once you close the app, 
+	//	the settings you migrated get overwritten with the default values.
 
-	// check if we are running a new version of NifSkope
-	if ( cfg.value( "version" ).toString() != NIFSKOPE_VERSION ) {
-		// check all keys and delete all binary ones
-		//to prevent portability problems between Qt versions
+	// Load current NifSkope settings
+	QSettings cfg;
+	// Load pre-1.2 NifSkope settings
+	QSettings cfg1_1( "NifTools", "NifSkope" );
+
+	// Current version strings
+	QString curVer = NIFSKOPE_VERSION;
+	QString curQtVer = QT_VERSION_STR;
+	QString curDisplayVer = NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true );
+
+	bool doMigration = false;
+
+	// New Install, no need to migrate anything
+	if ( !cfg.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
+		// QSettings constructor creates an empty folder, so clear it. 
+		cfg1_1.clear();
+
+		// Set version values
+		cfg.setValue( "Version", curVer );
+		cfg.setValue( "Qt Version", curQtVer );
+		cfg.setValue( "Display Version", curDisplayVer );
+
+		return;
+	}
+
+	// Forward dec for prevVer which either comes from `cfg` or `cfg1_1`
+	QString prevVer;
+	QString prevQtVer = cfg.value( "Qt Version" ).toString();
+	QString prevDisplayVer = cfg.value( "Display Version" ).toString();
+
+	// Set full granularity for version comparisons
+	NifSkopeVersion::setNumParts( 7 );
+
+	// Check for Existing 1.1 Migration
+	if ( !cfg1_1.value( "migrated" ).isValid() ) {
+		// Old install has not been migrated yet
+
+		// Get prevVer from pre-1.2 settings
+		prevVer = cfg1_1.value( "version" ).toString();
+
+		NifSkopeVersion tmp( prevVer );
+		if ( tmp < "1.2.0" )
+			doMigration = true;
+	} else {
+		// Get prevVer from post-1.2 settings
+		prevVer = cfg.value( "Version" ).toString();
+	}
+
+	NifSkopeVersion oldVersion( prevVer );
+	NifSkopeVersion newVersion( curVer );
+
+	// Migrate from 1.1.x to 1.2
+	if ( doMigration && (oldVersion < "1.2.0") ) {
+		// Port old key values to new key names
+		QHash<QString, QString>::const_iterator i;
+		for ( i = migrateTo1_2.begin(); i != migrateTo1_2.end(); ++i ) {
+			QVariant val = cfg1_1.value( i.key() );
+
+			if ( val.isValid() ) {
+				cfg.setValue( i.value(), val );
+			}
+		}
+
+		// Set `migrated` flag in legacy QSettings
+		cfg1_1.setValue( "migrated", true );
+	}
+
+	// Check NifSkope Version
+	//	Assure full granularity here
+	NifSkopeVersion::setNumParts( 7 );
+	if ( oldVersion != newVersion ) {
+		// Set new Version
+		cfg.setValue( "Version", curVer );
+
+		if ( prevDisplayVer != curDisplayVer )
+			cfg.setValue( "Display Version", curDisplayVer );
+	}
+
+	// Check Qt Version
+	if ( curQtVer != prevQtVer ) {
+		// Check all keys and delete all QByteArrays
+		// to prevent portability problems between Qt versions
 		QStringList keys = cfg.allKeys();
 
 		for ( const auto& key : keys ) {
 			if ( cfg.value( key ).type() == QVariant::ByteArray ) {
-				qDebug() << "removing config setting" << key
-				         << "whilst migrating settings from previous NifSkope version";
+				qDebug() << "Removing Qt version-specific settings" << key
+					<< "while migrating settings from previous version";
 				cfg.remove( key );
 			}
 		}
 
-		// set version key to current version
-		cfg.setValue( "version", NIFSKOPE_VERSION );
+		cfg.setValue( "Qt Version", curQtVer );
 	}
 }
 
@@ -411,11 +491,9 @@ NifSkope::NifSkope()
 	tLOD->setObjectName( tr( "tLOD" ) );
 	tLOD->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 
-	NIFSKOPE_QSETTINGS( cfg );
-	cfg.beginGroup( "LOD" );
-	int lodLevel = cfg.value( "LOD Level", 2 ).toInt();
-	cfg.setValue( "LOD Level", lodLevel );
-	cfg.endGroup();
+	QSettings cfg;
+	int lodLevel = cfg.value( "GLView/LOD Level", 2 ).toInt();
+	cfg.setValue( "GLView/LOD Level", lodLevel );
 
 	QSlider * lodSlider = new QSlider( Qt::Horizontal );
 	lodSlider->setFocusPolicy( Qt::StrongFocus );
@@ -431,10 +509,8 @@ NifSkope::NifSkope()
 
 	connect( lodSlider, &QSlider::valueChanged, []( int value )
 		{
-			NIFSKOPE_QSETTINGS( cfg );
-			cfg.beginGroup( "LOD" );
-			cfg.setValue( "LOD Level", value );
-			cfg.endGroup();
+			QSettings cfg;
+			cfg.setValue( "GLView/LOD Level", value );
 		}
 	);
 	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
@@ -527,7 +603,7 @@ NifSkope::~NifSkope()
 
 void NifSkope::closeEvent( QCloseEvent * e )
 {
-	NIFSKOPE_QSETTINGS( settings );
+	QSettings settings;
 	save( settings );
 
 	QMainWindow::closeEvent( e );
@@ -556,29 +632,29 @@ void restoreHeader( const QString & name, const QSettings & settings, QHeaderVie
 
 void NifSkope::restore( const QSettings & settings )
 {
-	restoreGeometry( settings.value( "window geometry" ).toByteArray() );
-	restoreState( settings.value( "window state" ).toByteArray(), 0x073 );
+	restoreGeometry( settings.value( "UI/Window Geometry" ).toByteArray() );
+	restoreState( settings.value( "UI/Window State" ).toByteArray(), 0x073 );
 
-	lineLoad->setText( settings.value( "last load", QString( "" ) ).toString() );
-	lineSave->setText( settings.value( "last save", QString( "" ) ).toString() );
-	aSanitize->setChecked( settings.value( "auto sanitize", true ).toBool() );
+	lineLoad->setText( settings.value( "File/Last Load", QString( "" ) ).toString() );
+	lineSave->setText( settings.value( "File/Last Save", QString( "" ) ).toString() );
+	aSanitize->setChecked( settings.value( "File/Auto Sanitize", true ).toBool() );
 
-	if ( settings.value( "list mode", "hirarchy" ).toString() == "list" )
+	if ( settings.value( "UI/List Mode", "hierarchy" ).toString() == "list" )
 		aList->setChecked( true );
 	else
 		aHierarchy->setChecked( true );
 
 	setListMode();
 
-	aCondition->setChecked( settings.value( "hide condition zero", false ).toBool() );
-	aRCondition->setChecked( settings.value( "realtime condition updating", false ).toBool() );
-	restoreHeader( "list sizes", settings, list->header() );
-	restoreHeader( "tree sizes", settings, tree->header() );
-	restoreHeader( "kfmtree sizes", settings, kfmtree->header() );
+	aCondition->setChecked( settings.value( "UI/Hide Mismatched Rows", false ).toBool() );
+	aRCondition->setChecked( settings.value( "UI/Realtime Condition Updating", false ).toBool() );
+	restoreHeader( "UI/List Sizes", settings, list->header() );
+	restoreHeader( "UI/Tree Sizes", settings, tree->header() );
+	restoreHeader( "UI/Kfmtree Sizes", settings, kfmtree->header() );
 
 	ogl->restore( settings );
 
-	QVariant fontVar = settings.value( "viewFont" );
+	QVariant fontVar = settings.value( "UI/View Font" );
 
 	if ( fontVar.canConvert<QFont>() )
 		setViewFont( fontVar.value<QFont>() );
@@ -599,20 +675,20 @@ void saveHeader( const QString & name, QSettings & settings, QHeaderView * heade
 
 void NifSkope::save( QSettings & settings ) const
 {
-	settings.setValue( "window state", saveState( 0x073 ) );
-	settings.setValue( "window geometry", saveGeometry() );
+	settings.setValue( "UI/Window State", saveState( 0x073 ) );
+	settings.setValue( "UI/Window Geometry", saveGeometry() );
 
-	settings.setValue( "last load", lineLoad->text() );
-	settings.setValue( "last save", lineSave->text() );
-	settings.setValue( "auto sanitize", aSanitize->isChecked() );
+	settings.setValue( "File/Last Load", lineLoad->text() );
+	settings.setValue( "File/Last Save", lineSave->text() );
+	settings.setValue( "File/Auto Sanitize", aSanitize->isChecked() );
 
-	settings.setValue( "list mode", ( gListMode->checkedAction() == aList ? "list" : "hirarchy" ) );
-	settings.setValue( "hide condition zero", aCondition->isChecked() );
-	settings.setValue( "realtime condition updating", aRCondition->isChecked() );
+	settings.setValue( "UI/List Mode", ( gListMode->checkedAction() == aList ? "list" : "hierarchy" ) );
+	settings.setValue( "UI/Hide Mismatched Rows", aCondition->isChecked() );
+	settings.setValue( "UI/Realtime Condition Updating", aRCondition->isChecked() );
 
-	saveHeader( "list sizes", settings, list->header() );
-	saveHeader( "tree sizes", settings, tree->header() );
-	saveHeader( "kfmtree sizes", settings, kfmtree->header() );
+	saveHeader( "UI/List Sizes", settings, list->header() );
+	saveHeader( "UI/Tree Sizes", settings, tree->header() );
+	saveHeader( "UI/Kfmtree Sizes", settings, kfmtree->header() );
 
 	ogl->save( settings );
 
@@ -780,7 +856,6 @@ void NifSkope::load()
 	if ( !niffile.isFile() ) {
 		nif->clear();
 		lineLoad->setState( FileSelector::stError );
-		setWindowTitle( "NifSkope" );
 	} else {
 		ProgDlg prog;
 		prog.setLabelText( tr( "loading nif..." ) );
@@ -801,7 +876,7 @@ void NifSkope::load()
 			lineSave->setText( niffile.filePath() );
 		}
 
-		setWindowTitle( niffile.fileName() + " - NifSkope" );
+		setWindowTitle( niffile.fileName() );
 	}
 
 	ogl->tAnim->setEnabled( true );
@@ -859,7 +934,7 @@ void NifSkope::save()
 			lineSave->setState( FileSelector::stSuccess );
 		}
 
-		setWindowTitle( nifname.right( nifname.length() - nifname.lastIndexOf( '/' ) - 1 ) + " - NifSkope" );
+		setWindowTitle( nif->getFileInfo().fileName() );
 	}
 
 	setEnabled( true );
@@ -916,7 +991,7 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 {
 	NifSkope * skope = new NifSkope;
 	skope->setAttribute( Qt::WA_DeleteOnClose );
-	NIFSKOPE_QSETTINGS( settings );
+	QSettings settings;
 	skope->restore( settings );
 	skope->show();
 
@@ -953,7 +1028,7 @@ void NifSkope::sltSelectFont()
 
 	setViewFont( fnt );
 	QSettings settings;
-	settings.setValue( "viewFont", fnt );
+	settings.setValue( "UI/View Font", fnt );
 }
 
 void NifSkope::setViewFont( const QFont & font )
@@ -980,7 +1055,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 void NifSkope::overrideViewFont()
 {
 	QSettings settings;
-	QVariant var = settings.value( "viewFont" );
+	QVariant var = settings.value( "UI/View Font" );
 
 	if ( var.canConvert<QFont>() ) {
 		setViewFont( var.value<QFont>() );
@@ -1252,8 +1327,10 @@ int main( int argc, char * argv[] )
 	// set up the Qt Application
 	QApplication app( argc, argv );
 	app.setOrganizationName( "NifTools" );
-	app.setApplicationName( "NifSkope" );
-	app.setOrganizationDomain( "niftools.sourceforge.net" );
+	app.setOrganizationDomain( "niftools.org" );
+	app.setApplicationName( "NifSkope " + NifSkopeVersion::rawToMajMin( NIFSKOPE_VERSION ) );
+	app.setApplicationVersion( NIFSKOPE_VERSION );
+	app.setApplicationDisplayName( "NifSkope " + NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true ) );
 
 	// install message handler
 	qRegisterMetaType<Message>( "Message" );
@@ -1287,7 +1364,7 @@ int main( int argc, char * argv[] )
 		}
 	}
 
-	NIFSKOPE_QSETTINGS( cfg );
+	QSettings cfg;
 	cfg.beginGroup( "Settings" );
 	SetAppLocale( cfg.value( "Language", "en" ).toLocale() );
 	cfg.endGroup();
@@ -1354,3 +1431,4 @@ int main( int argc, char * argv[] )
 
 	}
 }
+

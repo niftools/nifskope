@@ -213,10 +213,14 @@ public:
 
 		QString file = TexCache::find( nif->get<QString>( iFile ), nif->getFolder() );
 
+		QSettings settings;
+		QString key = QString( "%1/%2/%3/Last Texture Path" ).arg( "Spells", page(), name() );
+
 		if ( !QFile::exists( file ) ) {
 			// if file not found in cache, use last texture path
-			NIFSKOPE_QSETTINGS( cfg );
-			QString defaulttexpath( cfg.value( "last texture path", QVariant( QDir::homePath() ) ).toString() );
+
+
+			QString defaulttexpath( settings.value( key, QVariant( QDir::homePath() ) ).toString() );
 			//file = QDir(defaulttexpath).filePath(file);
 			file = defaulttexpath;
 		}
@@ -227,8 +231,7 @@ public:
 
 		if ( !file.isEmpty() ) {
 			// save path for future
-			NIFSKOPE_QSETTINGS( cfg );
-			cfg.setValue( "last texture path", QVariant( QDir( file ).absolutePath() ) );
+			settings.setValue( key, QVariant( QDir( file ).absolutePath() ) );
 
 			file = TexCache::stripPath( file, nif->getFolder() );
 
@@ -576,17 +579,18 @@ class spTextureTemplate : public Spell
 		QObject::connect( ok, &QPushButton::clicked, &dlg, &QDialog::accept );
 		lay->addWidget( ok, 6, 0, 1, 2 );
 
-		NIFSKOPE_QSETTINGS( settings );
-		settings.beginGroup( "spells" );
-		settings.beginGroup( page() );
-		settings.beginGroup( name() );
+		QSettings settings;
+		QString keyGroup = QString( "%1/%2/%3/" ).arg( "Spells", page(), name() );
 
-		wrap->setCurrentIndex( settings.value( "Wrap Mode", 0 ).toInt() );
-		size->setCurrentIndex( settings.value( "Image Size", 2 ).toInt() );
-		file->setText( settings.value( "File Name", "" ).toString() );
-		antialias->setChecked( settings.value( "Antialias", true ).toBool() );
+		// Key formatter, avoid lots of beginGroup() and endGroup() this way
+		auto k = [&keyGroup]( const QString& key ) { return QString( "%1%2" ).arg( keyGroup, key ); };
 
-		QString colorARGB = settings.value( "Wire Color", "#FF000000" ).toString();
+		wrap->setCurrentIndex( settings.value( k( "Wrap Mode" ), 0 ).toInt() );
+		size->setCurrentIndex( settings.value( k( "Image Size" ), 2 ).toInt() );
+		file->setText( settings.value( k( "File Name" ), "" ).toString() );
+		antialias->setChecked( settings.value( k( "Antialias" ), true ).toBool() );
+
+		QString colorARGB = settings.value( k( "Wire Color" ), "#FF000000" ).toString();
 		wireColor->setText( colorARGB );
 		QString bc = "background-color: ";
 		wireColor->setStyleSheet( bc + colorARGB );
@@ -607,11 +611,11 @@ class spTextureTemplate : public Spell
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
 
-		settings.setValue( "Wrap Mode", wrap->currentIndex() );
-		settings.setValue( "Image Size", size->currentIndex() );
-		settings.setValue( "File Name", file->text() );
-		settings.setValue( "Antialias", antialias->isChecked() );
-		settings.setValue( "Wire Color", colorARGB );
+		settings.setValue( k( "Wrap Mode" ), wrap->currentIndex() );
+		settings.setValue( k( "Image Size" ), size->currentIndex() );
+		settings.setValue( k( "File Name" ), file->text() );
+		settings.setValue( k( "Antialias" ), antialias->isChecked() );
+		settings.setValue( k( "Wire Color" ), colorARGB );
 
 		// get the selected coord set
 		QModelIndex iSet = iUVs.child( set->currentIndex(), 0 );

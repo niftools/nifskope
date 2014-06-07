@@ -994,19 +994,17 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & )
 	{
-		NIFSKOPE_QSETTINGS( settings );
-		settings.beginGroup( "spells" );
-		settings.beginGroup( page() );
-		settings.beginGroup( name() );
+		QSettings settings;
+		QString key = QString( "%1/%2/%3/Match Expression" ).arg( "Spells", page(), name() );
 
 		bool ok = true;
 		QString match = QInputDialog::getText( 0, Spell::tr( "Remove Blocks by Id" ), Spell::tr( "Enter a regular expression:" ), QLineEdit::Normal,
-			settings.value( "match expression", "^BS|^NiBS|^bhk|^hk" ).toString(), &ok );
+			settings.value( key, "^BS|^NiBS|^bhk|^hk" ).toString(), &ok );
 
 		if ( !ok )
 			return QModelIndex();
 
-		settings.setValue( "match expression", match );
+		settings.setValue( key, match );
 
 		QRegularExpression exp( match );
 

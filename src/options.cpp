@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "options.h"
 #include "config.h"
+#include "version.h"
 
 #include "widgets/colorwheel.h"
 #include "widgets/fileselect.h"
@@ -48,6 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDialog>
 #include <QDir>
 #include <QEvent>
+#include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -74,7 +76,9 @@ public:
 
 Options::Options()
 {
-	NIFSKOPE_QSETTINGS( cfg );
+	version = new NifSkopeVersion( NIFSKOPE_VERSION );
+
+	QSettings cfg;
 	cfg.beginGroup( "Render Settings" );
 
 	showMeshes = cfg.value( "Draw Meshes", true ).toBool();
@@ -104,7 +108,7 @@ Options::Options()
 	aDrawAxes = new QAction( tr( "Draw &Axes" ), this );
 	aDrawAxes->setToolTip( tr( "draw xyz-Axes" ) );
 	aDrawAxes->setCheckable( true );
-	aDrawAxes->setChecked( cfg.value( "Draw AXes", true ).toBool() );
+	aDrawAxes->setChecked( cfg.value( "Draw Axes", true ).toBool() );
 	connect( aDrawAxes, &QAction::toggled, this, &Options::sigChanged );
 
 	aDrawNodes = new QAction( tr( "Draw &Nodes" ), this );
@@ -572,7 +576,7 @@ Options::Options()
 		cfg.beginGroup( "Export Settings" );
 		exportPage->pushLayout( tr( "Export Settings" ), Qt::Vertical, 1 );
 		exportPage->addWidget( exportCull = new QCheckBox( tr( "Use 'Cull Nodes by Name' rendering option to cull nodes on export" ) ), 1, Qt::AlignTop );
-		exportCull->setChecked( cfg.value( "export_culling", false ).toBool() );
+		exportCull->setChecked( cfg.value( "Export Culling", false ).toBool() );
 		connect( exportCull, &QCheckBox::toggled, this, &Options::sigChanged );
 		exportPage->popLayout();
 		cfg.endGroup();
@@ -629,77 +633,59 @@ void Options::save()
 {
 	tSave->stop();
 
-	NIFSKOPE_QSETTINGS( cfg );
-
-	// remove obsolete keys
-	for ( QString key : QStringList{
-			"texture folder", "bg color", "cull nodes by name", "draw axis",
-			"draw furniture", "draw havok", "draw hidden", "draw nodes", "draw only textured meshes",
-			"draw stats", "enable blending", "enable shading", "enable textures", "highlight meshes",
-			"hl color", "rotate", "Render Settings/Misc Settings/Startup Version"
-		} )
-	{
-		if ( cfg.contains( key ) )
-			cfg.remove( key );
-	}
+	QSettings cfg;
 
 	cfg.beginGroup( "Render Settings" );
 
-	cfg.setValue( "Texture Folders", textureFolders() );
-	cfg.setValue( "Texture Alternatives", textureAlternatives() );
+		cfg.setValue( "Texture Folders", textureFolders() );
+		cfg.setValue( "Texture Alternatives", textureAlternatives() );
 
-	cfg.setValue( "Draw Axes", drawAxes() );
-	cfg.setValue( "Draw Nodes", drawNodes() );
-	cfg.setValue( "Draw Collision Geometry", drawHavok() );
-	cfg.setValue( "Draw Constraints", drawConstraints() );
-	cfg.setValue( "Draw Furniture Markers", drawFurn() );
-	cfg.setValue( "Show Hidden Objects", drawHidden() );
-	cfg.setValue( "Show Stats", drawStats() );
+		cfg.setValue( "Draw Axes", drawAxes() );
+		cfg.setValue( "Draw Nodes", drawNodes() );
+		cfg.setValue( "Draw Collision Geometry", drawHavok() );
+		cfg.setValue( "Draw Constraints", drawConstraints() );
+		cfg.setValue( "Draw Furniture Markers", drawFurn() );
+		cfg.setValue( "Show Hidden Objects", drawHidden() );
+		cfg.setValue( "Show Stats", drawStats() );
 
-	cfg.setValue( "Background", bgColor() );
-	cfg.setValue( "Foreground", nlColor() );
-	cfg.setValue( "Highlight", hlColor() );
+		cfg.setValue( "Background", bgColor() );
+		cfg.setValue( "Foreground", nlColor() );
+		cfg.setValue( "Highlight", hlColor() );
 
-	cfg.setValue( "Anti Aliasing", antialias() );
-	cfg.setValue( "Texturing", texturing() );
-	cfg.setValue( "Enable Shaders", shaders() );
+		cfg.setValue( "Anti Aliasing", antialias() );
+		cfg.setValue( "Texturing", texturing() );
+		cfg.setValue( "Enable Shaders", shaders() );
 
-	cfg.setValue( "Cull Nodes By Name", CullByID->isChecked() );
-	cfg.setValue( "Cull Expression", CullExpr->text() );
-	cfg.setValue( "Cull Non Textured", onlyTextured() );
+		cfg.setValue( "Cull Nodes By Name", CullByID->isChecked() );
+		cfg.setValue( "Cull Expression", CullExpr->text() );
+		cfg.setValue( "Cull Non Textured", onlyTextured() );
 
-	cfg.setValue( "Up Axis", AxisX->isChecked() ? "X" : AxisY->isChecked() ? "Y" : "Z" );
+		cfg.setValue( "Up Axis", AxisX->isChecked() ? "X" : AxisY->isChecked() ? "Y" : "Z" );
 
-	cfg.beginGroup( "Light0" );
-	cfg.setValue( "Ambient", ambient() );
-	cfg.setValue( "Diffuse", diffuse() );
-	cfg.setValue( "Specular", specular() );
-	cfg.setValue( "Frontal", lightFrontal() );
-	cfg.setValue( "Declination", lightDeclination() );
-	cfg.setValue( "Planar Angle", lightPlanarAngle() );
-	cfg.endGroup();
+		// Light0 group
+		cfg.setValue( "Light0/Ambient", ambient() );
+		cfg.setValue( "Light0/Diffuse", diffuse() );
+		cfg.setValue( "Light0/Specular", specular() );
+		cfg.setValue( "Light0/Frontal", lightFrontal() );
+		cfg.setValue( "Light0/Declination", lightDeclination() );
+		cfg.setValue( "Light0/Planar Angle", lightPlanarAngle() );
 
-	cfg.beginGroup( "MatOver" );
-	cfg.setValue( "Ambient", overrideAmbient() );
-	cfg.setValue( "Diffuse", overrideDiffuse() );
-	cfg.setValue( "Specular", overrideSpecular() );
-	cfg.setValue( "Emmissive", overrideEmissive() );
-	cfg.endGroup();
+		// MatOver group
+		cfg.setValue( "MatOver/Ambient", overrideAmbient() );
+		cfg.setValue( "MatOver/Diffuse", overrideDiffuse() );
+		cfg.setValue( "MatOver/Specular", overrideSpecular() );
+		cfg.setValue( "MatOver/Emissive", overrideEmissive() );
 
 	cfg.endGroup(); // Render Settings
 
-	cfg.beginGroup( "Settings" );
-
-	cfg.setValue( "Language", translationLocale() );
-	cfg.setValue( "Startup Version", startupVersion() );
+	// Settings group
+	cfg.setValue( "Settings/Language", translationLocale() );
+	cfg.setValue( "Settings/Startup Version", startupVersion() );
 	// If we want to make this more accessible
-	//cfg.setValue( "Maximum String Length", maxStringLength() );
+	//cfg.setValue( "Settings/Maximum String Length", maxStringLength() );
 
-	cfg.endGroup(); // Settings
-
-	cfg.beginGroup( "Export Settings" );
-	cfg.setValue( "export_culling", exportCullEnabled() );
-	cfg.endGroup(); // Export Settings
+	// Export Settings group
+	cfg.setValue( "Export Settings/Export Culling", exportCullEnabled() );
 }
 
 bool regTexturePath( QStringList & gamePaths, QString & gameList, // Out Params
@@ -735,17 +721,6 @@ bool regTexturePath( QStringList & gamePaths, QString & gameList, // Out Params
 				}
 			}
 		}
-#ifndef FSENGINE
-		if ( !confirmPath.isEmpty() ) {
-			if ( !dir.cd( confirmPath ) ) {
-				QMessageBox::information( dialog, "NifSkope",
-					tr( "<p>The texture folder was not found.</p>"
-					"<p>This may be because you haven't extracted the archive files yet.<br>"
-					"<a href='http://cs.elderscrolls.com/constwiki/index.php/BSA_Unpacker_Tutorial'>Here</a>, it is explained how to do that.</p>" ) );
-				return false;
-			}
-		}
-#endif
 		return true;
 	}
 	return false;
@@ -1150,4 +1125,10 @@ int Options::maxStringLength()
 bool Options::exportCullEnabled()
 {
 	return get()->exportCull->isChecked();
+}
+
+
+QString Options::getDisplayVersion()
+{
+	return get()->version->displayVersion;
 }
