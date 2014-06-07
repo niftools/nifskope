@@ -87,118 +87,10 @@ FSManager * fsmanager = nullptr;
 
 //! \file nifskope.cpp The main file for NifSkope
 
-void NifSkope::migrateSettings() const
-{
-	// IMPORTANT:
-	//	Do not make any calls to Options:: until after all migration code.
-	//	Static calls to Options:: still create the options instance and inits
-	//	the various widgets with incorrect values. Once you close the app, 
-	//	the settings you migrated get overwritten with the default values.
-
-	// Load current NifSkope settings
-	QSettings cfg;
-	// Load pre-1.2 NifSkope settings
-	QSettings cfg1_1( "NifTools", "NifSkope" );
-
-	// Current version strings
-	QString curVer = NIFSKOPE_VERSION;
-	QString curQtVer = QT_VERSION_STR;
-	QString curDisplayVer = NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true );
-
-	bool doMigration = false;
-
-	// New Install, no need to migrate anything
-	if ( !cfg.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
-		// QSettings constructor creates an empty folder, so clear it. 
-		cfg1_1.clear();
-
-		// Set version values
-		cfg.setValue( "Version", curVer );
-		cfg.setValue( "Qt Version", curQtVer );
-		cfg.setValue( "Display Version", curDisplayVer );
-
-		return;
-	}
-
-	// Forward dec for prevVer which either comes from `cfg` or `cfg1_1`
-	QString prevVer;
-	QString prevQtVer = cfg.value( "Qt Version" ).toString();
-	QString prevDisplayVer = cfg.value( "Display Version" ).toString();
-
-	// Set full granularity for version comparisons
-	NifSkopeVersion::setNumParts( 7 );
-
-	// Check for Existing 1.1 Migration
-	if ( !cfg1_1.value( "migrated" ).isValid() ) {
-		// Old install has not been migrated yet
-
-		// Get prevVer from pre-1.2 settings
-		prevVer = cfg1_1.value( "version" ).toString();
-
-		NifSkopeVersion tmp( prevVer );
-		if ( tmp < "1.2.0" )
-			doMigration = true;
-	} else {
-		// Get prevVer from post-1.2 settings
-		prevVer = cfg.value( "Version" ).toString();
-	}
-
-	NifSkopeVersion oldVersion( prevVer );
-	NifSkopeVersion newVersion( curVer );
-
-	// Migrate from 1.1.x to 1.2
-	if ( doMigration && (oldVersion < "1.2.0") ) {
-		// Port old key values to new key names
-		QHash<QString, QString>::const_iterator i;
-		for ( i = migrateTo1_2.begin(); i != migrateTo1_2.end(); ++i ) {
-			QVariant val = cfg1_1.value( i.key() );
-
-			if ( val.isValid() ) {
-				cfg.setValue( i.value(), val );
-			}
-		}
-
-		// Set `migrated` flag in legacy QSettings
-		cfg1_1.setValue( "migrated", true );
-	}
-
-	// Check NifSkope Version
-	//	Assure full granularity here
-	NifSkopeVersion::setNumParts( 7 );
-	if ( oldVersion != newVersion ) {
-		// Set new Version
-		cfg.setValue( "Version", curVer );
-
-		if ( prevDisplayVer != curDisplayVer )
-			cfg.setValue( "Display Version", curDisplayVer );
-	}
-
-	// Check Qt Version
-	if ( curQtVer != prevQtVer ) {
-		// Check all keys and delete all QByteArrays
-		// to prevent portability problems between Qt versions
-		QStringList keys = cfg.allKeys();
-
-		for ( const auto& key : keys ) {
-			if ( cfg.value( key ).type() == QVariant::ByteArray ) {
-				qDebug() << "Removing Qt version-specific settings" << key
-					<< "while migrating settings from previous version";
-				cfg.remove( key );
-			}
-		}
-
-		cfg.setValue( "Qt Version", curQtVer );
-	}
-}
 
 /*
  * main GUI window
  */
-void NifSkope::sltResetBlockDetails()
-{
-	if ( tree )
-		tree->clearRootIndex();
-}
 
 NifSkope::NifSkope()
 	: QMainWindow(), selecting( false ), initialShowEvent( true )
@@ -901,6 +793,12 @@ void ProgDlg::sltProgress( int x, int y )
 	qApp->processEvents();
 }
 
+void NifSkope::sltResetBlockDetails()
+{
+	if ( tree )
+		tree->clearRootIndex();
+}
+
 void NifSkope::save()
 {
 	// write to file
@@ -1432,3 +1330,107 @@ int main( int argc, char * argv[] )
 	}
 }
 
+
+void NifSkope::migrateSettings() const
+{
+	// IMPORTANT:
+	//	Do not make any calls to Options:: until after all migration code.
+	//	Static calls to Options:: still create the options instance and inits
+	//	the various widgets with incorrect values. Once you close the app, 
+	//	the settings you migrated get overwritten with the default values.
+
+	// Load current NifSkope settings
+	QSettings cfg;
+	// Load pre-1.2 NifSkope settings
+	QSettings cfg1_1( "NifTools", "NifSkope" );
+
+	// Current version strings
+	QString curVer = NIFSKOPE_VERSION;
+	QString curQtVer = QT_VERSION_STR;
+	QString curDisplayVer = NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true );
+
+	bool doMigration = false;
+
+	// New Install, no need to migrate anything
+	if ( !cfg.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
+		// QSettings constructor creates an empty folder, so clear it. 
+		cfg1_1.clear();
+
+		// Set version values
+		cfg.setValue( "Version", curVer );
+		cfg.setValue( "Qt Version", curQtVer );
+		cfg.setValue( "Display Version", curDisplayVer );
+
+		return;
+	}
+
+	// Forward dec for prevVer which either comes from `cfg` or `cfg1_1`
+	QString prevVer;
+	QString prevQtVer = cfg.value( "Qt Version" ).toString();
+	QString prevDisplayVer = cfg.value( "Display Version" ).toString();
+
+	// Set full granularity for version comparisons
+	NifSkopeVersion::setNumParts( 7 );
+
+	// Check for Existing 1.1 Migration
+	if ( !cfg1_1.value( "migrated" ).isValid() ) {
+		// Old install has not been migrated yet
+
+		// Get prevVer from pre-1.2 settings
+		prevVer = cfg1_1.value( "version" ).toString();
+
+		NifSkopeVersion tmp( prevVer );
+		if ( tmp < "1.2.0" )
+			doMigration = true;
+	} else {
+		// Get prevVer from post-1.2 settings
+		prevVer = cfg.value( "Version" ).toString();
+	}
+
+	NifSkopeVersion oldVersion( prevVer );
+	NifSkopeVersion newVersion( curVer );
+
+	// Migrate from 1.1.x to 1.2
+	if ( doMigration && (oldVersion < "1.2.0") ) {
+		// Port old key values to new key names
+		QHash<QString, QString>::const_iterator i;
+		for ( i = migrateTo1_2.begin(); i != migrateTo1_2.end(); ++i ) {
+			QVariant val = cfg1_1.value( i.key() );
+
+			if ( val.isValid() ) {
+				cfg.setValue( i.value(), val );
+			}
+		}
+
+		// Set `migrated` flag in legacy QSettings
+		cfg1_1.setValue( "migrated", true );
+	}
+
+	// Check NifSkope Version
+	//	Assure full granularity here
+	NifSkopeVersion::setNumParts( 7 );
+	if ( oldVersion != newVersion ) {
+		// Set new Version
+		cfg.setValue( "Version", curVer );
+
+		if ( prevDisplayVer != curDisplayVer )
+			cfg.setValue( "Display Version", curDisplayVer );
+	}
+
+	// Check Qt Version
+	if ( curQtVer != prevQtVer ) {
+		// Check all keys and delete all QByteArrays
+		// to prevent portability problems between Qt versions
+		QStringList keys = cfg.allKeys();
+
+		for ( const auto& key : keys ) {
+			if ( cfg.value( key ).type() == QVariant::ByteArray ) {
+				qDebug() << "Removing Qt version-specific settings" << key
+					<< "while migrating settings from previous version";
+				cfg.remove( key );
+			}
+		}
+
+		cfg.setValue( "Qt Version", curQtVer );
+	}
+}
