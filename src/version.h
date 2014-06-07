@@ -71,6 +71,7 @@ class NifSkopeVersion final
 
 public:
 	NifSkopeVersion( const QString & ver );
+	NifSkopeVersion( const NifSkopeVersion & other );
 	~NifSkopeVersion();
 
 	//! Raw string as stored in VERSION file or registry

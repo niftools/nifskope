@@ -41,8 +41,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Number of version parts (Default = 3)
 int NifSkopeVersion::numParts = 3;
 
-NifSkopeVersion::NifSkopeVersion(const QString & ver)
+NifSkopeVersion::NifSkopeVersion( const QString & ver )
 	: rawVersion( ver ), displayVersion( rawToDisplay( ver, true ) )
+{
+
+}
+
+NifSkopeVersion::NifSkopeVersion( const NifSkopeVersion & other )
+	: rawVersion( other.rawVersion ), displayVersion( other.displayVersion )
 {
 
 }
@@ -422,11 +428,11 @@ bool NifSkopeVersion::operator!=(const NifSkopeVersion & other) const
 	verParts2 = versionParts( other.rawVersion, numParts );
 
 	for ( int i = 0; i < numParts; i++ ) {
-		if ( verParts1[i] == verParts2[i] )
-			return false;
+		if ( verParts1[i] != verParts2[i] )
+			return true;
 	}
 
-	return true;
+	return false;
 }
 
 bool NifSkopeVersion::operator>( const NifSkopeVersion & other ) const
