@@ -90,7 +90,7 @@ public:
 #define REGISTER_PROPERTY( CLASSNAME, TYPENAME ) template <> inline Property::Type Property::_type<CLASSNAME>() { return Property::TYPENAME; }
 
 //! A list of \link Property Properties \endlink
-class PropertyList
+class PropertyList final
 {
 public:
 	PropertyList();
@@ -136,13 +136,13 @@ template <typename T> inline bool PropertyList::contains() const
 }
 
 //! A Property that specifies alpha blending
-class AlphaProperty : public Property
+class AlphaProperty final : public Property
 {
 public:
 	AlphaProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Alpha; }
-	QString typeId() const { return "NiAlphaProperty"; }
+	Type type() const override final { return Alpha; }
+	QString typeId() const override final { return "NiAlphaProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 
@@ -161,13 +161,13 @@ protected:
 REGISTER_PROPERTY( AlphaProperty, Alpha )
 
 //! A Property that specifies depth testing
-class ZBufferProperty : public Property
+class ZBufferProperty final : public Property
 {
 public:
 	ZBufferProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return ZBuffer; }
-	QString typeId() const { return "NiZBufferProperty"; }
+	Type type() const override final { return ZBuffer; }
+	QString typeId() const override final { return "NiZBufferProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 
@@ -188,7 +188,7 @@ REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
 #define numTextures 10
 
 //! A Property that specifies (multi-)texturing
-class TexturingProperty : public Property
+class TexturingProperty final : public Property
 {
 	//! The properties of each texture slot
 	struct TexDesc
@@ -209,8 +209,8 @@ class TexturingProperty : public Property
 public:
 	TexturingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Texturing; }
-	QString typeId() const { return "NiTexturingProperty"; }
+	Type type() const override final { return Texturing; }
+	QString typeId() const override final { return "NiTexturingProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 
@@ -238,13 +238,13 @@ protected:
 REGISTER_PROPERTY( TexturingProperty, Texturing )
 
 //! A Property that specifies a texture
-class TextureProperty : public Property
+class TextureProperty final : public Property
 {
 public:
 	TextureProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Texture; }
-	QString typeId() const { return "NiTextureProperty"; }
+	Type type() const override final { return Texture; }
+	QString typeId() const override final { return "NiTextureProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 
@@ -266,13 +266,13 @@ protected:
 REGISTER_PROPERTY( TextureProperty, Texture )
 
 //! A Property that specifies a material
-class MaterialProperty : public Property
+class MaterialProperty final : public Property
 {
 public:
 	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Material; }
-	QString typeId() const { return "NiMaterialProperty"; }
+	Type type() const override final { return Material; }
+	QString typeId() const override final { return "NiMaterialProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 
@@ -294,13 +294,13 @@ protected:
 REGISTER_PROPERTY( MaterialProperty, Material )
 
 //! A Property that specifies specularity
-class SpecularProperty : public Property
+class SpecularProperty final : public Property
 {
 public:
 	SpecularProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Specular; }
-	QString typeId() const { return "NiSpecularProperty"; }
+	Type type() const override final { return Specular; }
+	QString typeId() const override final { return "NiSpecularProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & index );
 
@@ -313,13 +313,13 @@ protected:
 REGISTER_PROPERTY( SpecularProperty, Specular )
 
 //! A Property that specifies wireframe drawing
-class WireframeProperty : public Property
+class WireframeProperty final : public Property
 {
 public:
 	WireframeProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Wireframe; }
-	QString typeId() const { return "NiWireframeProperty"; }
+	Type type() const override final { return Wireframe; }
+	QString typeId() const override final { return "NiWireframeProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & index );
 
@@ -332,13 +332,13 @@ protected:
 REGISTER_PROPERTY( WireframeProperty, Wireframe )
 
 //! A Property that specifies vertex color handling
-class VertexColorProperty : public Property
+class VertexColorProperty final : public Property
 {
 public:
 	VertexColorProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return VertexColor; }
-	QString typeId() const { return "NiVertexColorProperty"; }
+	Type type() const override final { return VertexColor; }
+	QString typeId() const override final { return "NiVertexColorProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & index );
 
@@ -352,13 +352,13 @@ protected:
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
 
 //! A Property that specifies stencil testing
-class StencilProperty : public Property
+class StencilProperty final : public Property
 {
 public:
 	StencilProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return Stencil; }
-	QString typeId() const { return "NiStencilProperty"; }
+	Type type() const override final { return Stencil; }
+	QString typeId() const override final { return "NiStencilProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & index );
 
@@ -382,13 +382,13 @@ protected:
 REGISTER_PROPERTY( StencilProperty, Stencil )
 
 //! A Property that specifies shader lighting (Bethesda-specific)
-class BSShaderLightingProperty : public Property
+class BSShaderLightingProperty final : public Property
 {
 public:
 	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const { return ShaderLighting; }
-	QString typeId() const { return "BSShaderLightingProperty"; }
+	Type type() const override final { return ShaderLighting; }
+	QString typeId() const override final { return "BSShaderLightingProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 

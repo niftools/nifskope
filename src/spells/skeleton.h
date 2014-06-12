@@ -10,7 +10,7 @@ class QCheckBox;
 class QSpinBox;
 
 //! Dialog box for skin partitions
-class SkinPartitionDialog : public QDialog
+class SkinPartitionDialog final : public QDialog
 {
 	Q_OBJECT
 

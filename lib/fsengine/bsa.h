@@ -51,7 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * \sa MWBSAHeader, MWBSAFileSizeOffset, OBBSAHeader, OBBSAFileInfo, OBBSAFolderInfo
  */
-class BSA : public FSArchiveFile
+class BSA final : public FSArchiveFile
 {
 public:
 	//! Constructor; creates a %BSA from the given file path.
@@ -60,40 +60,40 @@ public:
 	~BSA();
 	
 	//! Opens the %BSA file
-	bool open();
+	bool open() override final;
 	//! Closes the %BSA file
-	void close();
+	void close() override final;
 	
 	//! Returns BSA::bsaPath.
-	QString path() const { return bsaPath; }
+	QString path() const override final { return bsaPath; }
 	//! Returns BSA::bsaBase.
-	QString base() const { return bsaBase; }
+	QString base() const override final { return bsaBase; }
 	//! Returns BSA::bsaName.
-	QString name() const { return bsaName; }
+	QString name() const override final { return bsaName; }
 	
 	//! Whether the specified folder exists or not
-	bool hasFolder( const QString & ) const;
+	bool hasFolder( const QString & ) const override final;
 	
 	//! Whether the specified file exists or not
-	bool hasFile( const QString & ) const;
+	bool hasFile( const QString & ) const override final;
 	//! Returns the size of the file per BSAFile::size().
-	qint64 fileSize( const QString & ) const;
+	qint64 fileSize( const QString & ) const override final;
 	//! Returns the contents of the specified file
 	/*!
 	* \param fn The filename to get the contents for
 	* \param content Reference to the byte array that holds the file contents
 	* \return True if successful
 	*/
-	bool fileContents( const QString &, QByteArray & );
+	bool fileContents( const QString &, QByteArray & ) override final;
 	
 	//! See QFileInfo::ownerId().
-	uint ownerId( const QString & ) const;
+	uint ownerId( const QString & ) const override final;
 	//! See QFileInfo::owner().
-	QString owner( const QString & ) const;
+	QString owner( const QString & ) const override final;
 	//! See QFileInfo::created().
-	QDateTime fileTime( const QString & ) const;
+	QDateTime fileTime( const QString & ) const override final;
 	//! See QFileInfo::absoluteFilePath().
-	QString absoluteFilePath( const QString & ) const;
+	QString absoluteFilePath( const QString & ) const override final;
 	
 	//! Whether the given file can be opened as a %BSA or not
 	static bool canOpen( const QString & );

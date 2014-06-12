@@ -134,7 +134,7 @@ class TransformInterpolator : public Interpolator
 public:
 	TransformInterpolator( Controller * owner );
 
-	virtual bool update( const NifModel * nif, const QModelIndex & index );
+	bool update( const NifModel * nif, const QModelIndex & index ) override;
 	virtual bool updateTransform( Transform & tm, float time );
 
 protected:
@@ -147,8 +147,8 @@ class BSplineTransformInterpolator : public TransformInterpolator
 public:
 	BSplineTransformInterpolator( Controller * owner );
 
-	virtual bool update( const NifModel * nif, const QModelIndex & index );
-	virtual bool updateTransform( Transform & tm, float time );
+	bool update( const NifModel * nif, const QModelIndex & index ) override;
+	bool updateTransform( Transform & tm, float time ) override;
 
 protected:
 	float start, stop;

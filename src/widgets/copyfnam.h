@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QRect>
 
 
-class CopyFilename : public QWidget
+class CopyFilename final : public QWidget
 {
 	Q_OBJECT
 
@@ -50,8 +50,8 @@ signals:
 	void rightTriggered();
 
 protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
+	void paintEvent( QPaintEvent * e ) override final;
+	void mousePressEvent( QMouseEvent * e ) override final;
 
 	// QPushButton * leftBtnCopyFilename;
 	// QPushButton * rightBtnCopyFilename;

@@ -13,7 +13,7 @@ class QPushButton;
 class QStringListModel;
 
 //! Texture selection dialog for TexFlipController
-class TexFlipDialog : public QDialog
+class TexFlipDialog final : public QDialog
 {
 	Q_OBJECT
 

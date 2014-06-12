@@ -64,7 +64,7 @@ protected:
 	QPersistentModelIndex index;
 };
 
-class NifBlockEditor : public QWidget
+class NifBlockEditor final : public QWidget
 {
 	Q_OBJECT
 
@@ -84,7 +84,7 @@ protected slots:
 	void updateData();
 
 protected:
-	void showEvent( QShowEvent * );
+	void showEvent( QShowEvent * ) override final;
 
 	NifModel * nif;
 	QPersistentModelIndex iBlock;
@@ -95,100 +95,100 @@ protected:
 	class QTimer * timer;
 };
 
-class NifFloatSlider : public NifEditBox
+class NifFloatSlider final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifFloatSlider( NifModel * nif, const QModelIndex & index, float min, float max );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class FloatSlider * slider;
 };
 
-class NifFloatEdit : public NifEditBox
+class NifFloatEdit final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifFloatEdit( NifModel * nif, const QModelIndex & index, float min = -10e8, float max = +10e8 );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class QDoubleSpinBox * spinbox;
 };
 
-class NifLineEdit : public NifEditBox
+class NifLineEdit final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifLineEdit( NifModel * nif, const QModelIndex & index );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class QLineEdit * line;
 };
 
-class NifColorEdit : public NifEditBox
+class NifColorEdit final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifColorEdit( NifModel * nif, const QModelIndex & index );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class ColorWheel * color;
 	class AlphaSlider * alpha;
 };
 
-class NifVectorEdit : public NifEditBox
+class NifVectorEdit final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifVectorEdit( NifModel * nif, const QModelIndex & index );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class VectorEdit * vector;
 };
 
-class NifRotationEdit : public NifEditBox
+class NifRotationEdit final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifRotationEdit( NifModel * nif, const QModelIndex & index );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class RotationEdit * rotation;
 };
 
-class NifMatrix4Edit : public NifEditBox
+class NifMatrix4Edit final : public NifEditBox
 {
 	Q_OBJECT
 
 public:
 	NifMatrix4Edit( NifModel * nif, const QModelIndex & index );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class VectorEdit * translation;

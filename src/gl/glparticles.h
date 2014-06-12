@@ -44,18 +44,18 @@ class Particles : public Node
 public:
 	Particles( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 
-	void clear();
-	void update( const NifModel * nif, const QModelIndex & );
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & ) override;
+	void transform() override;
 
-	void transform();
-	void transformShapes();
+	void transformShapes() override;
 
-	void drawShapes( NodeList * draw2nd = nullptr );
+	void drawShapes( NodeList * draw2nd = nullptr ) override;
 
-	BoundSphere bounds() const;
+	BoundSphere bounds() const override;
 
 protected:
-	void setController( const NifModel * nif, const QModelIndex & controller );
+	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
 	QPersistentModelIndex iData;
 	bool upData;

@@ -50,24 +50,24 @@ public:
 	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) { double_sided = false; double_sided_es = false; }
 	~Mesh() { clear(); }
 
-	void clear();
-	void update( const NifModel * nif, const QModelIndex & );
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & ) override;
+	void transform() override;
 
-	void transform();
-	void transformShapes();
+	void transformShapes() override;
 
-	void drawShapes( NodeList * draw2nd = nullptr );
-	void drawSelection() const;
+	void drawShapes( NodeList * draw2nd = nullptr ) override;
+	void drawSelection() const override;
 
-	bool isHidden() const;
+	bool isHidden() const override;
 
 	//! The bounds of the mesh?
-	BoundSphere bounds() const;
+	BoundSphere bounds() const override;
 
-	QString textStats() const;
+	QString textStats() const override;
 
 protected:
-	void setController( const NifModel * nif, const QModelIndex & controller );
+	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
 	//! Shape data
 	QPersistentModelIndex iData;

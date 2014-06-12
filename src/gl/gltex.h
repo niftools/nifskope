@@ -56,7 +56,7 @@ typedef unsigned int GLuint;
 /*!
  * This class stores information on all loaded textures, and watches the texture files.
  */
-class TexCache : public QObject
+class TexCache final : public QObject
 {
 	Q_OBJECT
 

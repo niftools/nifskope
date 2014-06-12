@@ -50,27 +50,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Original Implementation by:  da-crystal
 //   http://da-crystal.net/GCMS/blog/checkboxlist-in-qt/
 
-class CheckBoxListDelegate : public QItemDelegate
+class CheckBoxListDelegate final : public QItemDelegate
 {
 public:
 	CheckBoxListDelegate( QObject * parent );
 	~CheckBoxListDelegate();
 
 	void paint( QPainter * painter, const QStyleOptionViewItem & option,
-	            const QModelIndex & index ) const;
+	            const QModelIndex & index ) const override final;
 
 	QWidget * createEditor( QWidget * parent,
 	                        const QStyleOptionViewItem & option,
-	                        const QModelIndex & index ) const;
+							const QModelIndex & index ) const override final;
 
 	void setEditorData( QWidget * editor,
-	                    const QModelIndex & index ) const;
+	                    const QModelIndex & index ) const override final;
 
 	void setModelData( QWidget * editor, QAbstractItemModel * model,
-	                   const QModelIndex & index ) const;
+	                   const QModelIndex & index ) const override final;
 
 	void updateEditorGeometry( QWidget * editor,
-	                           const QStyleOptionViewItem & option, const QModelIndex & index ) const;
+	                           const QStyleOptionViewItem & option, const QModelIndex & index ) const override final;
 };
 
 
@@ -81,15 +81,15 @@ class CheckBoxList : public QComboBox
 public:
 	CheckBoxList( QWidget * widget = nullptr );
 	virtual ~CheckBoxList();
-	bool eventFilter( QObject * object, QEvent * event );
-	virtual void paintEvent( QPaintEvent * );
+	bool eventFilter( QObject * object, QEvent * event ) override final;
+	void paintEvent( QPaintEvent * ) override final;
 
 	virtual void updateText() {}
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-class NifCheckListBoxEditor : public QLineEdit
+class NifCheckListBoxEditor final : public QLineEdit
 {
 	Q_OBJECT
 
@@ -99,8 +99,8 @@ public:
 	bool hasFocus() const;
 
 protected:
-	virtual void focusInEvent( QFocusEvent * e );
-	virtual void focusOutEvent( QFocusEvent * e );
+	void focusInEvent( QFocusEvent * e ) override final;
+	void focusOutEvent( QFocusEvent * e ) override final;
 
 private:
 	Q_DISABLE_COPY( NifCheckListBoxEditor )
@@ -109,15 +109,15 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-class NifCheckBoxListValidator : public QValidator
+class NifCheckBoxListValidator final : public QValidator
 {
 	Q_OBJECT
 
 public:
 	explicit NifCheckBoxListValidator( NifCheckListBoxEditor * edit );
 
-	virtual State validate( QString &, int & ) const;
-	virtual void fixup( QString & ) const;
+	State validate( QString &, int & ) const override final;
+	void fixup( QString & ) const override final;
 
 private:
 	Q_DISABLE_COPY( NifCheckBoxListValidator )
@@ -135,7 +135,7 @@ public:
 	virtual ~NifCheckBoxList();
 
 protected:
-	void updateText();
+	void updateText() override final;
 	void parseText( const QString & text );
 
 private slots:

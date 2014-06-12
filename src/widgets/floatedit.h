@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QLineEdit>        // Inherited
 
 
-class FloatValidator : public QDoubleValidator
+class FloatValidator final : public QDoubleValidator
 {
 	Q_OBJECT
 
@@ -49,13 +49,13 @@ public:
 		: QDoubleValidator( bottom, top, decimals, parent )
 	{}
 
-	QValidator::State validate ( QString & input, int & pos ) const;
+	QValidator::State validate( QString & input, int & pos ) const override final;
 
 	bool canMin() const;
 	bool canMax() const;
 };
 
-class FloatEdit : public QLineEdit
+class FloatEdit final : public QLineEdit
 {
 	Q_OBJECT
 
@@ -70,7 +70,7 @@ public:
 	bool isMax() const;
 
 protected:
-	void contextMenuEvent( class QContextMenuEvent * event );
+	void contextMenuEvent( class QContextMenuEvent * event ) override final;
 
 signals:
 	void sigEdited( float );

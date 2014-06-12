@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Node;
 
-class NodeList
+class NodeList final
 {
 public:
 	NodeList();
@@ -84,10 +84,11 @@ class Node : public Controllable
 public:
 	Node( Scene * scene, const QModelIndex & block );
 
-	virtual void clear();
-	virtual void update( const NifModel * nif, const QModelIndex & block );
+	// Inherited from Controllable
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & block ) override;
+	void transform() override;
 
-	virtual void transform();
 	virtual void transformShapes();
 
 	virtual void draw();
@@ -125,7 +126,7 @@ public:
 	static int SELECTING;
 
 protected:
-	virtual void setController( const NifModel * nif, const QModelIndex & controller );
+	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
 	QPointer<Node> parent;
 
@@ -168,10 +169,10 @@ class LODNode : public Node
 public:
 	LODNode( Scene * scene, const QModelIndex & block );
 
-	void clear();
-	void update( const NifModel * nif, const QModelIndex & block );
-
-	void transform();
+	// Inherited from Node, Controllable
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & block ) override;
+	void transform() override;
 
 protected:
 	QList<QPair<float, float> > ranges;

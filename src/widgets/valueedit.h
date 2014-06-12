@@ -74,7 +74,7 @@ protected:
 	//! Resizes the underlying widget
 	void resizeEditor();
 	//! Resize event handler
-	void resizeEvent( QResizeEvent * e );
+	void resizeEvent( QResizeEvent * e ) override;
 
 private:
 	//! The type of the value being edited
@@ -85,7 +85,7 @@ private:
 };
 
 //! An editing widget for a vector.
-class VectorEdit : public ValueEdit
+class VectorEdit final : public ValueEdit
 {
 	Q_OBJECT
 
@@ -137,7 +137,7 @@ private:
 	bool setting;
 };
 
-class ColorEdit : public ValueEdit
+class ColorEdit final : public ValueEdit
 {
 	Q_OBJECT
 
@@ -166,7 +166,7 @@ private:
 	bool setting;
 };
 
-class RotationEdit : public ValueEdit
+class RotationEdit final : public ValueEdit
 {
 	Q_OBJECT
 
@@ -206,7 +206,7 @@ private:
 	bool setting;
 };
 
-class TriangleEdit : public ValueEdit
+class TriangleEdit final : public ValueEdit
 {
 	Q_OBJECT
 
@@ -227,7 +227,7 @@ private:
 };
 
 //! A text editing widget used by ValueEdit
-class TextEdit : public QTextEdit
+class TextEdit final : public QTextEdit
 {
 	Q_OBJECT
 
@@ -242,8 +242,8 @@ public slots:
 	void sltTextChanged();
 
 protected:
-	void resizeEvent( QResizeEvent * e );
-	void keyPressEvent( QKeyEvent * e );
+	void resizeEvent( QResizeEvent * e ) override final;
+	void keyPressEvent( QKeyEvent * e ) override final;
 };
 
 #endif

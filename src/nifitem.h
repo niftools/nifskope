@@ -50,7 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * <a href="http://doc.trolltech.org/latest/shared.html">shared classes</a>
  * give pointer efficiency to classes.
  */
-class NifSharedData : public QSharedData
+class NifSharedData final : public QSharedData
 {
 	friend class NifData;
 

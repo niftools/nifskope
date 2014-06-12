@@ -24,7 +24,7 @@ class QVBoxLayout;
 
 class FileSelector;
 
-class FileQueue
+class FileQueue final
 {
 public:
 	FileQueue() {}
@@ -44,7 +44,7 @@ protected:
 	QQueue<QString> queue;
 };
 
-class TestThread : public QThread
+class TestThread final : public QThread
 {
 	Q_OBJECT
 
@@ -61,7 +61,7 @@ signals:
 	void sigReady( const QString & result );
 
 protected:
-	void run();
+	void run() override final;
 
 	QList<Message> checkLinks( const class NifModel * nif, const class QModelIndex & iParent, bool kf );
 
@@ -71,7 +71,7 @@ protected:
 };
 
 //! The XML checker widget.
-class TestShredder : public QWidget
+class TestShredder final : public QWidget
 {
 	Q_OBJECT
 
@@ -92,7 +92,7 @@ protected slots:
 	void renumberThreads( int );
 
 protected:
-	void closeEvent( QCloseEvent * );
+	void closeEvent( QCloseEvent * ) override final;
 
 	FileSelector * directory;
 	QLineEdit * blockMatch;

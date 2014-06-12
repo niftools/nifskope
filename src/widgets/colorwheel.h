@@ -46,7 +46,7 @@ class Color3;
 class Color4;
 
 //! A color selection widget using the HSV model
-class ColorWheel : public QWidget
+class ColorWheel final : public QWidget
 {
 	Q_OBJECT
 
@@ -65,12 +65,12 @@ public:
 	QColor getColor() const;
 	bool getAlpha() const;
 
-	QSize sizeHint() const;
-	QSize minimumSizeHint() const;
+	QSize sizeHint() const override final;
+	QSize minimumSizeHint() const override final;
 
 	void setSizeHint( const QSize & s );
 
-	int heightForWidth( int width ) const;
+	int heightForWidth( int width ) const override final;
 
 signals:
 	void sigColor( const QColor & );
@@ -83,10 +83,10 @@ public slots:
 	void chooseHex();
 
 protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
-	void contextMenuEvent( QContextMenuEvent * e );
+	void paintEvent( QPaintEvent * e ) override final;
+	void mousePressEvent( QMouseEvent * e ) override final;
+	void mouseMoveEvent( QMouseEvent * e ) override final;
+	void contextMenuEvent( QContextMenuEvent * e ) override final;
 
 	void setColor( int x, int y );
 
@@ -105,7 +105,7 @@ private:
 	static QIcon * icon;
 };
 
-class ColorSpinBox : public QSpinBox
+class ColorSpinBox final : public QSpinBox
 {
 public:
 	ColorSpinBox( QWidget * parent ) : QSpinBox( parent ) {}
@@ -113,18 +113,18 @@ public:
 
 protected:
 
-	QString textFromValue( int d ) const
+	QString textFromValue( int d ) const override final
 	{
 		return QString::number( d, 16 );
 	}
 
-	int valueFromText( const QString & text ) const
+	int valueFromText( const QString & text ) const override final
 	{
 		bool ok;
 		return ( text.toInt( &ok, 16 ) );
 	}
 
-	QValidator::State validate( QString & input, int & pos ) const
+	QValidator::State validate( QString & input, int & pos ) const override final
 	{
 		return QRegularExpressionValidator( QRegularExpression( "[0-9A-Fa-f]{0,2}" ), 0 ).validate( input, pos );
 	}

@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
 
 //! A bounding sphere for an object, typically a Mesh
-class BoundSphere
+class BoundSphere final
 {
 public:
 	BoundSphere();
@@ -64,7 +64,7 @@ public:
 };
 
 //! A vertex, weight pair
-class VertexWeight
+class VertexWeight final
 {
 public:
 	VertexWeight()
@@ -77,7 +77,7 @@ public:
 };
 
 //! A set of vertices weighted to a bone
-class BoneWeights
+class BoneWeights final
 {
 public:
 	BoneWeights() { bone = 0; }
@@ -91,7 +91,7 @@ public:
 };
 
 //! A skin partition
-class SkinPartition
+class SkinPartition final
 {
 public:
 	SkinPartition() { numWeightsPerVertex = 0; }

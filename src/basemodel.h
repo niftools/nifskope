@@ -175,9 +175,9 @@ public:
 	//! Evaluate version.
 	bool evalVersion( const QModelIndex & idx, bool chkParents = false ) const;
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
-	virtual bool isAncestorOrNiBlock( const QString & /*name*/ ) const { return false; };
+	virtual bool isAncestorOrNiBlock( const QString & /*name*/ ) const { return false; }
 	//! Returns true if name inherits ancestor.
-	virtual bool inherits( const QString & /*name*/, const QString & /*ancestor*/ ) const { return false; };
+	virtual bool inherits( const QString & /*name*/, const QString & /*ancestor*/ ) const { return false; }
 	// This is here to avoid compiler confusion with QObject::inherits.
 	bool inherits ( const char * className ) const
 	{
@@ -209,34 +209,34 @@ public:
 	/*!
 	 * \see QAbstractItemModel::createIndex()
 	 */
-	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
+	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const override;
 	//! Finds the parent of the specified index
-	QModelIndex parent( const QModelIndex & index ) const;
+	QModelIndex parent( const QModelIndex & index ) const override;
 
 	//! Finds the number of rows
-	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
+	int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
 	//! Finds the number of columns
-	int columnCount( const QModelIndex & parent = QModelIndex() ) const { Q_UNUSED( parent ); return NumColumns; }
+	int columnCount( const QModelIndex & parent = QModelIndex() ) const override { Q_UNUSED( parent ); return NumColumns; }
 
 	//! Finds the data associated with an index
 	/*!
 	 * \param index The index to find data for
 	 * \param role The Qt::ItemDataRole to get data for
 	 */
-	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
+	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
 	//! Sets data associated with an index
 	/*!
 	 * \param index The index to set data for
 	 * \param value The data to set
 	 * \param role The Qt::ItemDataRole to use
 	 */
-	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
+	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole ) override;
 
 	//! Get the header data for a section
-	QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const;
+	QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
 
 	//! Finds the flags for an index
-	Qt::ItemFlags flags( const QModelIndex & index ) const;
+	Qt::ItemFlags flags( const QModelIndex & index ) const override;
 
 	//! Message mode
 	enum MsgMode

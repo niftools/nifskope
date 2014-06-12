@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class NifModel;
 class QModelIndex;
 
-class ReferenceBrowser : public QTextBrowser
+class ReferenceBrowser final : public QTextBrowser
 {
 	Q_OBJECT
 

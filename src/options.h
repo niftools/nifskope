@@ -70,7 +70,7 @@ class NifSkopeVersion;
 #define glHighlightColor() glColor( Color4( Options::hlColor() ) )
 
 //! Global options menu and dialog
-class Options : public QObject
+class Options final : public QObject
 {
 	Q_OBJECT
 
@@ -203,7 +203,7 @@ protected:
 	Options();
 	~Options();
 
-	bool eventFilter( QObject * o, QEvent * e );
+	bool eventFilter( QObject * o, QEvent * e ) override final;
 
 	// NifSkope Version formatted for display
 	NifSkopeVersion * version;

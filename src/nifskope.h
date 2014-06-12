@@ -72,7 +72,7 @@ class QUdpSocket;
  * description, widgets for the various subwindows, menu's, and a socket by
  * which NifSkope can communicate with itself.
  */
-class NifSkope : public QMainWindow
+class NifSkope final : public QMainWindow
 {
 	Q_OBJECT
 
@@ -173,8 +173,8 @@ protected slots:
 	void sltLocaleChanged();
 
 protected:
-	void closeEvent( QCloseEvent * e );
-	bool eventFilter( QObject * o, QEvent * e );
+	void closeEvent( QCloseEvent * e ) override final;
+	bool eventFilter( QObject * o, QEvent * e ) override final;
 
 private:
 	void initActions();
@@ -263,7 +263,7 @@ private:
 };
 
 //! UDP communication between instances
-class IPCsocket : public QObject
+class IPCsocket final : public QObject
 {
 	Q_OBJECT
 
@@ -292,7 +292,7 @@ protected:
 };
 
 //! Progress dialog
-class ProgDlg : public QProgressDialog
+class ProgDlg final : public QProgressDialog
 {
 	Q_OBJECT
 

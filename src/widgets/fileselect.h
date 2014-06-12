@@ -53,7 +53,7 @@ class QLineEdit;
  *
  * Emits sigEdited when the string is edited.
  */
-class FileSelector : public QWidget
+class FileSelector final : public QWidget
 {
 	Q_OBJECT
 	Q_PROPERTY( QString file READ file WRITE setFile NOTIFY sigEdited USER true )
@@ -107,7 +107,7 @@ protected slots:
 	void activate();
 
 protected:
-	bool eventFilter( QObject * o, QEvent * e );
+	bool eventFilter( QObject * o, QEvent * e ) override final;
 
 	QAction * completionAction();
 

@@ -100,7 +100,7 @@ public:
 };
 
 //! Spell menu
-class SpellBook : public QMenu
+class SpellBook final : public QMenu
 {
 	Q_OBJECT
 
@@ -158,7 +158,7 @@ private:
 };
 
 //! SpellBook manager
-class Librarian
+class Librarian final
 {
 public:
 	//! Contructor.

@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class NifModel;
 class NifProxyItem;
 
-class NifProxyModel : public QAbstractItemModel
+class NifProxyModel final : public QAbstractItemModel
 {
 	Q_OBJECT
 
@@ -50,24 +50,24 @@ public:
 	NifProxyModel( QObject * parent = 0 );
 	~NifProxyModel();
 
-	virtual void setModel( QAbstractItemModel * model );
+	void setModel( QAbstractItemModel * model );
 	QAbstractItemModel * model() const;
 
-	QModelIndex index( int row, int col, const QModelIndex & parent ) const;
-	QModelIndex parent( const QModelIndex & index ) const;
+	QModelIndex index( int row, int col, const QModelIndex & parent ) const override final;
+	QModelIndex parent( const QModelIndex & index ) const override final;
 
-	Qt::ItemFlags flags( const QModelIndex & index ) const;
+	Qt::ItemFlags flags( const QModelIndex & index ) const override final;
 
-	int columnCount( const QModelIndex & index ) const { Q_UNUSED( index ); return 2; }
-	int rowCount( const QModelIndex & index ) const;
+	int columnCount( const QModelIndex & index ) const override final { Q_UNUSED( index ); return 2; }
+	int rowCount( const QModelIndex & index ) const override final;
 
-	bool hasChildren( const QModelIndex & index ) const
+	bool hasChildren( const QModelIndex & index ) const override final
 	{ return rowCount( index ) > 0; }
 
-	QVariant data( const QModelIndex & index, int role ) const;
-	bool setData( const QModelIndex & index, const QVariant & v, int role );
+	QVariant data( const QModelIndex & index, int role ) const override final;
+	bool setData( const QModelIndex & index, const QVariant & v, int role ) override final;
 
-	QVariant headerData( int section, Qt::Orientation o, int role ) const;
+	QVariant headerData( int section, Qt::Orientation o, int role ) const override final;
 
 	QModelIndex mapTo( const QModelIndex & index ) const;
 	QModelIndex mapFrom( const QModelIndex & index, const QModelIndex & ref ) const;

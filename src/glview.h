@@ -60,7 +60,7 @@ class QToolBar;
 class QTimer;
 
 //! The model view window
-class GLView : public QGLWidget
+class GLView final : public QGLWidget
 {
 	Q_OBJECT
 
@@ -120,8 +120,8 @@ public:
 	QMenu * createMenu() const;
 	QList<QToolBar *> toolbars() const;
 
-	virtual QSize minimumSizeHint() const { return { 50, 50 }; }
-	virtual QSize sizeHint() const { return { 400, 400 }; }
+	QSize minimumSizeHint() const override final { return { 50, 50 }; }
+	QSize sizeHint() const override final { return { 400, 400 }; }
 
 	// Settings
 
@@ -143,31 +143,31 @@ signals:
 
 protected:
 	//! Sets up the OpenGL rendering context, defines display lists, etc.
-	virtual void initializeGL();
+	void initializeGL() override final;
 	//! Sets up the OpenGL viewport, projection, etc.
-	virtual void resizeGL( int width, int height );
+	void resizeGL( int width, int height ) override final;
 #ifdef USE_GL_QPAINTER
-	virtual void paintEvent( QPaintEvent * );
+	void paintEvent( QPaintEvent * ) override final;
 #else
 	//! Renders the OpenGL scene.
-	virtual void paintGL();
+	void paintGL() override final;
 #endif
 	void glProjection( int x = -1, int y = -1 );
 
 	// QWidget Event Handlers
 
-	virtual void dragEnterEvent( QDragEnterEvent * );
-	virtual void dragLeaveEvent( QDragLeaveEvent * );
-	virtual void dragMoveEvent( QDragMoveEvent * );
-	virtual void dropEvent( QDropEvent * );
-	virtual void focusOutEvent( QFocusEvent * );
-	virtual void keyPressEvent( QKeyEvent * );
-	virtual void keyReleaseEvent( QKeyEvent * );
-	virtual void mouseDoubleClickEvent( QMouseEvent * );
-	virtual void mouseMoveEvent( QMouseEvent * );
-	virtual void mousePressEvent( QMouseEvent * );
-	virtual void mouseReleaseEvent( QMouseEvent * );
-	virtual void wheelEvent( QWheelEvent * );
+	void dragEnterEvent( QDragEnterEvent * ) override final;
+	void dragLeaveEvent( QDragLeaveEvent * ) override final;
+	void dragMoveEvent( QDragMoveEvent * ) override final;
+	void dropEvent( QDropEvent * ) override final;
+	void focusOutEvent( QFocusEvent * ) override final;
+	void keyPressEvent( QKeyEvent * ) override final;
+	void keyReleaseEvent( QKeyEvent * ) override final;
+	void mouseDoubleClickEvent( QMouseEvent * ) override final;
+	void mouseMoveEvent( QMouseEvent * ) override final;
+	void mousePressEvent( QMouseEvent * ) override final;
+	void mouseReleaseEvent( QMouseEvent * ) override final;
+	void wheelEvent( QWheelEvent * ) override final;
 
 protected slots:
 	void saveImage();

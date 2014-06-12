@@ -16,7 +16,7 @@ class QStringListModel;
 class QWidget;
 
 //! String palette QRegularExpression dialog for spEditStringEntries
-class StringPaletteRegexDialog : public QDialog
+class StringPaletteRegexDialog final : public QDialog
 {
 	Q_OBJECT
 

@@ -55,7 +55,7 @@ class QUndoStack;
 #undef None // conflicts with Qt
 
 //! Displays and allows editing of UV coordinate data
-class UVWidget : public QGLWidget
+class UVWidget final : public QGLWidget
 {
 	Q_OBJECT
 
@@ -71,15 +71,15 @@ public:
 	bool setNifData( NifModel * nif, const QModelIndex & index );
 
 	//! From QWidget; the recommended size of the widget
-	QSize sizeHint() const;
+	QSize sizeHint() const override final;
 	//! From QWidget; the minimum size of the widget
-	QSize minimumSizeHint() const;
+	QSize minimumSizeHint() const override final;
 
 	//! Sets the size hint
 	void setSizeHint( const QSize & s );
 
 	//! Returns the preferred height for this widget, given the width w.
-	int heightForWidth( int width ) const;
+	int heightForWidth( int width ) const override final;
 
 	//! For future use in realtime mouse-driven scaling
 	enum EditingMode
@@ -90,14 +90,14 @@ public:
 	} editmode;
 
 protected:
-	void initializeGL();
-	void resizeGL( int width, int height );
-	void paintGL();
+	void initializeGL() override final;
+	void resizeGL( int width, int height ) override final;
+	void paintGL() override final;
 
-	void mousePressEvent( QMouseEvent * e );
-	void mouseReleaseEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
-	void wheelEvent( QWheelEvent * e );
+	void mousePressEvent( QMouseEvent * e ) override final;
+	void mouseReleaseEvent( QMouseEvent * e ) override final;
+	void mouseMoveEvent( QMouseEvent * e ) override final;
+	void wheelEvent( QWheelEvent * e ) override final;
 
 // should this be public slots?
 
@@ -229,7 +229,7 @@ private:
 };
 
 //! Dialog for getting scaling factors
-class ScalingDialog : public QDialog
+class ScalingDialog final : public QDialog
 {
 	Q_OBJECT
 

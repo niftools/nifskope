@@ -84,12 +84,12 @@ public:
 		virtual bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const = 0;
 	};
 
-	class ConditionSingle : public Condition
+	class ConditionSingle final : public Condition
 	{
 public:
 		ConditionSingle( const QString & line, bool neg = false );
 
-		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const;
+		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const override final;
 
 protected:
 		QString left, right;
@@ -106,13 +106,13 @@ protected:
 		template <typename T> bool compare( T a, T b ) const;
 	};
 
-	class ConditionGroup : public Condition
+	class ConditionGroup final : public Condition
 	{
 public:
 		ConditionGroup( bool o = false ) { _or = o; }
 		~ConditionGroup() { qDeleteAll( conditions ); }
 
-		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const;
+		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const override final;
 
 		void addCondition( Condition * c );
 

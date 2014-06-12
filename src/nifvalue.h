@@ -769,7 +769,7 @@ class BaseModel;
 class NifItem;
 
 //! An input stream that reads a file into a model.
-class NifIStream
+class NifIStream final
 {
 	Q_DECLARE_TR_FUNCTIONS( NifIStream )
 
@@ -808,7 +808,7 @@ private:
 };
 
 //! An output stream that writes a model to a file.
-class NifOStream
+class NifOStream final
 {
 	Q_DECLARE_TR_FUNCTIONS( NifOStream )
 
@@ -839,7 +839,7 @@ private:
 };
 
 //! A stream that determines the size of values in a model.
-class NifSStream
+class NifSStream final
 {
 public:
 	//! Constructor.

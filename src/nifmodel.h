@@ -44,7 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file nifmodel.h NifModel
 
 //! Base class for nif models.
-class NifModel : public BaseModel
+class NifModel final : public BaseModel
 {
 	Q_OBJECT
 
@@ -60,11 +60,11 @@ public:
 	static QReadWriteLock XMLlock;
 
 	// clear model data; implements BaseModel
-	void clear();
+	void clear() override final;
 
 	// generic load and save to and from QIODevice; implements BaseModel
-	bool load( QIODevice & device );
-	bool save( QIODevice & device ) const;
+	bool load( QIODevice & device ) override final;
+	bool save( QIODevice & device ) const override final;
 
 	//! Load from QIODevice and index
 	bool load( QIODevice & device, const QModelIndex & );
@@ -189,9 +189,9 @@ public:
 	//! Is name an ancestor identifier (<niobject abstract="1">)?
 	static bool isAncestor( const QString & name );
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
-	bool isAncestorOrNiBlock( const QString & name ) const;                // virtual so not static
+	bool isAncestorOrNiBlock( const QString & name ) const override final;                // virtual so not static
 	//! Returns true if name inherits ancestor.
-	bool inherits( const QString & name, const QString & ancestor ) const; // virtual so not static
+	bool inherits( const QString & name, const QString & ancestor ) const override final; // virtual so not static
 	// returns true if the block containing index inherits ancestor
 	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
 
@@ -210,13 +210,13 @@ public:
 	quint32 getUserVersion() const { return get<int>( getHeader(), "User Version" ); }
 
 	// QAbstractModel interface
-	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
-	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole );
+	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override final;
+	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole ) override final;
 	//! Resets the model to its original state in any attached views.
 	void reset();
 
 	// removes an item from the model
-	bool removeRows( int row, int count, const QModelIndex & parent );
+	bool removeRows( int row, int count, const QModelIndex & parent ) override final;
 
 	QString string( const QModelIndex & index, bool extraInfo = false ) const;
 	QString string( const QModelIndex & index, const QString & name, bool extraInfo = false ) const;
@@ -244,30 +244,30 @@ protected:
 	void insertType( NifItem * parent, const NifData & data, int row = -1 );
 	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	bool updateArrayItem( NifItem * array, bool fast );
+	bool updateArrayItem( NifItem * array, bool fast ) override final;
 	bool updateByteArrayItem( NifItem * array, bool fast );
 	bool updateArrays( NifItem * parent, bool fast );
 
 	NifItem * getHeaderItem() const;
 	NifItem * getFooterItem() const;
 	NifItem * getBlockItem( int ) const;
-	NifItem * getItem( NifItem * parent, const QString & name ) const;
+	NifItem * getItem( NifItem * parent, const QString & name ) const override final;
 
 	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
 	bool save( NifItem * parent, NifOStream & stream ) const;
 	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
 
-	bool setItemValue( NifItem * item, const NifValue & v );
+	bool setItemValue( NifItem * item, const NifValue & v ) override final;
 
 	bool itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
 	int getBlockNumber( NifItem * item ) const;
 
-	bool setHeaderString( const QString & );
+	bool setHeaderString( const QString & ) override final;
 
-	QString ver2str( quint32 v ) const { return version2string( v ); }
-	quint32 str2ver( QString s ) const { return version2number( s ); }
+	QString ver2str( quint32 v ) const override final { return version2string( v ); }
+	quint32 str2ver( QString s ) const override final { return version2number( s ); }
 
-	bool evalVersion( NifItem * item, bool chkParents = false ) const;
+	bool evalVersion( NifItem * item, bool chkParents = false ) const override final;
 
 	//! NIF file version
 	quint32 version;

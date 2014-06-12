@@ -12,14 +12,14 @@
  */
 
 //! Removes empty links from a link array
-class spCollapseArray : public Spell
+class spCollapseArray final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Collapse" ); }
-	QString page() const { return Spell::tr( "Array" ); }
+	QString name() const override final { return Spell::tr( "Collapse" ); }
+	QString page() const override final { return Spell::tr( "Array" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index );
-	QModelIndex cast( NifModel * nif, const QModelIndex & index );
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final;
 	// moved from sanitize.cpp
 	QModelIndex numCollapser( NifModel * nif, QModelIndex & iNumElem, QModelIndex & iArray );
 };

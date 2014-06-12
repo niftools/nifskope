@@ -51,7 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class QOpenGLContext;
 class QOpenGLFunctions;
 
-class Scene
+class Scene final
 {
 public:
 	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions );

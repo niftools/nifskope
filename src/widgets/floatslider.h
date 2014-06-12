@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class FloatEdit;
 
 //! Frame used by FloatSlider
-class FloatSliderEditBox : public QFrame
+class FloatSliderEditBox final : public QFrame
 {
 	Q_OBJECT
 
@@ -100,10 +100,10 @@ public slots:
 protected:
 	void setValueUser( float val );
 
-	void paintEvent( QPaintEvent * );
-	void mousePressEvent( QMouseEvent * );
-	void mouseMoveEvent( QMouseEvent * );
-	void mouseReleaseEvent( QMouseEvent * );
+	void paintEvent( QPaintEvent * ) override;
+	void mousePressEvent( QMouseEvent * ) override;
+	void mouseMoveEvent( QMouseEvent * ) override;
+	void mouseReleaseEvent( QMouseEvent * ) override;
 
 	float mapToValue( const QPoint & p ) const;
 
@@ -123,20 +123,20 @@ protected:
 /*!
  * Draws with a gradient of the colour that the alpha value relates to.
  */
-class AlphaSlider : public FloatSlider
+class AlphaSlider final : public FloatSlider
 {
 	Q_OBJECT
 
 public:
 	AlphaSlider( Qt::Orientation o = Qt::Horizontal );
 
-	QSize sizeHint() const;
+	QSize sizeHint() const override final;
 
 public slots:
 	void setColor( const QColor & c );
 
 protected:
-	void paintEvent( QPaintEvent * e );
+	void paintEvent( QPaintEvent * e ) override final;
 
 	QColor color0;
 	QColor color1;
