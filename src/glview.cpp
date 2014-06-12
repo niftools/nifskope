@@ -1289,7 +1289,7 @@ void GLView::saveImage()
 	lay->addLayout( pixBox, 1, 2, Qt::AlignRight );
 
 	QHBoxLayout * hBox  = new QHBoxLayout;
-	QPushButton * btnOk = new QPushButton( tr( "OK" ) );
+	QPushButton * btnOk = new QPushButton( tr( "Save" ) );
 	QPushButton * btnCancel = new QPushButton( tr( "Cancel" ) );
 	hBox->addWidget( btnOk );
 	hBox->addWidget( btnCancel );
