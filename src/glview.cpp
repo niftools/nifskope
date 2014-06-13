@@ -1239,6 +1239,7 @@ void GLView::saveImage()
 {
 	QDialog dlg;
 	QGridLayout * lay = new QGridLayout;
+	dlg.setWindowTitle( tr( "Save View" ) );
 	dlg.setLayout( lay );
 	dlg.setMinimumWidth( 400 );
 
