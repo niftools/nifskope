@@ -12,19 +12,19 @@
 /**
  * Does not seem to work properly? MorphController may need updating.
  */
-class spMorphFrameSave : public Spell
+class spMorphFrameSave final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Save Vertices To Frame" ); }
-	QString page() const { return Spell::tr( "Morph" ); }
+	QString name() const override final { return Spell::tr( "Save Vertices To Frame" ); }
+	QString page() const override final { return Spell::tr( "Morph" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index, "NiGeomMorpherController" ) && nif->checkVersion( 0x0a010000, 0 )
 		       && getMeshData( nif, index ).isValid() && listFrames( nif, index ).count() > 0;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iMeshData  = getMeshData( nif, index );
 		QModelIndex iMorphData = getMorphData( nif, index );

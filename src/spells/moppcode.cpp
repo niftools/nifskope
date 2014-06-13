@@ -126,13 +126,13 @@ public:
 TheHavokCode;
 
 //! Update Havok MOPP for a given shape
-class spMoppCode : public Spell
+class spMoppCode final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Update MOPP Code" ); }
-	QString page() const { return Spell::tr( "Havok" ); }
+	QString name() const override final { return Spell::tr( "Update MOPP Code" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( nif->getUserVersion() != 10 && nif->getUserVersion() != 11 )
 			return false;
@@ -149,7 +149,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		if ( !TheHavokCode.Initialize() ) {
 			qWarning() << Spell::tr( "unable to locate the NifMopp.dll library" );
@@ -240,13 +240,13 @@ public:
 REGISTER_SPELL( spMoppCode )
 
 //! Update MOPP code on all shapes in this model
-class spAllMoppCodes : public Spell
+class spAllMoppCodes final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Update All MOPP Code" ); }
-	QString page() const { return Spell::tr( "Batch" ); }
+	QString name() const override final { return Spell::tr( "Update All MOPP Code" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
 		if ( nif->getUserVersion() != 10 && nif->getUserVersion() != 11 )
 			return false;
@@ -261,7 +261,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		QList<QPersistentModelIndex> indices;
 

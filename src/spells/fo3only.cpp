@@ -9,16 +9,16 @@
  */
 
 //! Set the name of the NiGeometryData node to parent name or zero
-class spFO3FixShapeDataName : public Spell
+class spFO3FixShapeDataName final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Fix Geometry Data Names" ); }
-	QString page() const { return Spell::tr( "Sanitize" ); }
+	QString name() const override final { return Spell::tr( "Fix Geometry Data Names" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
 	bool sanity() const { return true; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Valid if nothing or NiGeometryData-based node is selected
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		//if ( !index.isValid() )
 		//	return false;
@@ -29,7 +29,7 @@ public:
 		return !index.isValid() || nif->getBlock( index, "NiGeometryData" ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( index.isValid() && nif->getBlock( index, "NiGeometryData" ).isValid() ) {
 			nif->set<int>( index, "Unknown ID", 0 );

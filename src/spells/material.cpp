@@ -92,11 +92,11 @@ static char const * mat42_xpm[] = {
 QIcon * mat42_xpm_icon = nullptr;
 
 //! Edit a material
-class spMaterialEdit : public Spell
+class spMaterialEdit final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Material" ); }
-	QString page() const { return Spell::tr( "" ); }
+	QString name() const override final { return Spell::tr( "Material" ); }
+	QString page() const override final { return Spell::tr( "" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -106,14 +106,14 @@ public:
 		return *mat42_xpm_icon;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iBlock  = nif->getBlock( index, "NiMaterialProperty" );
 		QModelIndex sibling = index.sibling( index.row(), 0 );
 		return index.isValid() && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iMaterial = nif->getBlock( index );
 		NifBlockEditor * me = new NifBlockEditor( nif, iMaterial );

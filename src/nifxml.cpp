@@ -49,7 +49,7 @@ QHash<QString, NifBlock *> NifModel::compounds;
 QHash<QString, NifBlock *> NifModel::blocks;
 
 //! Parses nif.xml
-class NifXmlHandler : public QXmlDefaultHandler
+class NifXmlHandler final : public QXmlDefaultHandler
 {
 //	Q_DECLARE_TR_FUNCTIONS(NifXmlHandler)
 
@@ -142,7 +142,7 @@ public:
 	 * \param tagid Qualified name
 	 * \param list Attributes
 	 */
-	bool startElement( const QString &, const QString &, const QString & tagid, const QXmlAttributes & list )
+	bool startElement( const QString &, const QString &, const QString & tagid, const QXmlAttributes & list ) override final
 	{
 		if ( depth >= 8 )
 			err( tr( "error maximum nesting level exceeded" ) );
@@ -396,7 +396,7 @@ public:
 	 * \param localName (unused)
 	 * \param tagid Qualified name
 	 */
-	bool endElement( const QString &, const QString &, const QString & tagid )
+	bool endElement( const QString &, const QString &, const QString & tagid ) override final
 	{
 		if ( depth <= 0 )
 			err( tr( "mismatching end element tag for element %1" ).arg( tagid ) );
@@ -465,7 +465,7 @@ public:
 	/*!
 	 * \param s The character data
 	 */
-	bool characters( const QString & s )
+	bool characters( const QString & s ) override final
 	{
 		switch ( current() ) {
 		case tagVersion:
@@ -517,7 +517,7 @@ public:
 	}
 
 	//! Reimplemented from QXmlContentHandler
-	bool endDocument()
+	bool endDocument() override final
 	{
 		// make a rough check of the maps
 		for ( const QString& key : NifModel::compounds.keys() ) {
@@ -556,12 +556,12 @@ public:
 	}
 
 	//! Reimplemented from QXmlContentHandler
-	QString errorString() const
+	QString errorString() const override final
 	{
 		return errorStr;
 	}
 	//! Exception handler
-	bool fatalError( const QXmlParseException & exception )
+	bool fatalError( const QXmlParseException & exception ) override final
 	{
 		if ( errorStr.isEmpty() )
 			errorStr = "Syntax error";

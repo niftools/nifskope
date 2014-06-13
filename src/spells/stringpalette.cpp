@@ -68,11 +68,11 @@ static char const * txt_xpm[] = {
 QIcon * txt_xpm_icon = nullptr;
 
 //! Edit a single offset into a string palette.
-class spEditStringOffset : public Spell
+class spEditStringOffset final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit String Offset" ); }
-	QString page() const { return Spell::tr( "" ); }
+	QString name() const override final { return Spell::tr( "Edit String Offset" ); }
+	QString page() const override final { return Spell::tr( "" ); }
 	QIcon icon() const
 	{
 		if ( !txt_xpm_icon )
@@ -82,12 +82,12 @@ public:
 	}
 	bool instant() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->getValue( index ).type() == NifValue::tStringOffset && getStringPalette( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iPalette = getStringPalette( nif, index );
 
@@ -284,22 +284,22 @@ void StringPaletteRegexDialog::stringlistRegex()
 }
 
 //! Edit a string palette entry and update all references
-class spEditStringEntries : public Spell
+class spEditStringEntries final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Replace Entries" ); }
-	QString page() const { return Spell::tr( "String Palette" ); }
+	QString name() const override final { return Spell::tr( "Replace Entries" ); }
+	QString page() const override final { return Spell::tr( "String Palette" ); }
 
 	bool instant() const { return false; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->inherits( index, "NiSequence" )
 		       && nif->getBlock( nif->getLink( index, "String Palette" ) ).isValid()
 		       && nif->checkVersion( 0x0A020000, 0x14000005 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// string offset is used in ControllerLink which exists in NiSequence
 		// a single palette could be share by multiple NiSequences
@@ -449,20 +449,20 @@ public:
 REGISTER_SPELL( spEditStringEntries )
 
 //! Batch helper for spEditStringEntries
-class spStringPaletteLister : public Spell
+class spStringPaletteLister final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit String Palettes" ); }
-	QString page() const { return Spell::tr( "Animation" ); }
+	QString name() const override final { return Spell::tr( "Edit String Palettes" ); }
+	QString page() const override final { return Spell::tr( "Animation" ); }
 
 	bool instant() const { return false; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( !index.isValid() && nif->checkVersion( 0x0A020000, 0x14000005 ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( index );
 		QMap<QString, QModelIndex> sequenceMap;

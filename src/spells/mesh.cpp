@@ -236,18 +236,18 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 }
 
 //! Flip texture UV coordinates
-class spFlipTexCoords : public Spell
+class spFlipTexCoords final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Flip UV" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Flip UV" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->itemType( index ).toLower() == "texcoord" || nif->inherits( index, "NiTriBasedGeomData" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex idx = index;
 
@@ -323,18 +323,18 @@ public:
 REGISTER_SPELL( spFlipTexCoords )
 
 //! Flips triangle faces, individually or in the selected array
-class spFlipFace : public Spell
+class spFlipFace final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Flip Face" ); }
+	QString name() const override final { return Spell::tr( "Flip Face" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getValue( index ).type() == NifValue::tTriangle )
 		       || ( nif->isArray( index ) && nif->getValue( index.child( 0, 0 ) ).type() == NifValue::tTriangle );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( nif->isArray( index ) ) {
 			QVector<Triangle> tris = nif->getArray<Triangle>( index );
@@ -356,18 +356,18 @@ public:
 REGISTER_SPELL( spFlipFace )
 
 //! Flips all faces of a triangle based mesh
-class spFlipAllFaces : public Spell
+class spFlipAllFaces final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Flip Faces" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Flip Faces" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return getTriShapeData( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = getTriShapeData( nif, index );
 
@@ -385,18 +385,18 @@ public:
 REGISTER_SPELL( spFlipAllFaces )
 
 //! Removes redundant triangles from a mesh
-class spPruneRedundantTriangles : public Spell
+class spPruneRedundantTriangles final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Prune Triangles" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Prune Triangles" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return getTriShapeData( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = getTriShapeData( nif, index );
 
@@ -455,18 +455,18 @@ public:
 REGISTER_SPELL( spPruneRedundantTriangles )
 
 //! Removes duplicate vertices from a mesh
-class spRemoveDuplicateVertices : public Spell
+class spRemoveDuplicateVertices final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Remove Duplicate Vertices" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Remove Duplicate Vertices" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return getShape( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		try
 		{
@@ -583,18 +583,18 @@ public:
 REGISTER_SPELL( spRemoveDuplicateVertices )
 
 //! Removes unused vertices
-class spRemoveWasteVertices : public Spell
+class spRemoveWasteVertices final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Remove Unused Vertices" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Remove Unused Vertices" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return getShape( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iShape = getShape( nif, index );
 		QModelIndex iData  = nif->getBlock( nif->getLink( iShape, "Data" ) );

@@ -52,11 +52,11 @@ static char const * light42_xpm[] = {
 QIcon * light42_xpm_icon = nullptr;
 
 //! Edit the parameters of a light object
-class spLightEdit : public Spell
+class spLightEdit final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Light" ); }
-	QString page() const { return Spell::tr( "" ); }
+	QString name() const override final { return Spell::tr( "Light" ); }
+	QString page() const override final { return Spell::tr( "" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -66,14 +66,14 @@ public:
 		return *light42_xpm_icon;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iBlock  = nif->getBlock( index );
 		QModelIndex sibling = index.sibling( index.row(), 0 );
 		return index.isValid() && nif->inherits( iBlock, "NiLight" ) && ( iBlock == sibling || nif->getIndex( iBlock, "Name" ) == sibling );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iLight = nif->getBlock( index );
 

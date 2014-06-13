@@ -43,7 +43,7 @@ QReadWriteLock KfmModel::XMLlock;
 QList<quint32>                  KfmModel::supportedVersions;
 QHash<QString, NifBlock *>        KfmModel::compounds;
 
-class KfmXmlHandler : public QXmlDefaultHandler
+class KfmXmlHandler final : public QXmlDefaultHandler
 {
 	Q_DECLARE_TR_FUNCTIONS( KfmXmlHandler )
 
@@ -74,7 +74,7 @@ public:
 		return stack[--depth];
 	}
 
-	bool startElement( const QString &, const QString &, const QString & name, const QXmlAttributes & list )
+	bool startElement( const QString &, const QString &, const QString & name, const QXmlAttributes & list ) override final
 	{
 		if ( depth >= 8 )
 			err( tr( "error maximum nesting level exceeded" ) );
@@ -164,7 +164,7 @@ public:
 		return true;
 	}
 
-	bool endElement( const QString &, const QString &, const QString & name )
+	bool endElement( const QString &, const QString &, const QString & name ) override final
 	{
 		if ( depth <= 0 )
 			err( tr( "mismatching end element tag for element " ) + name );
@@ -208,7 +208,7 @@ public:
 		return data.temp().isEmpty() || NifValue::type( data.temp() ) != NifValue::tNone || data.temp() == "TEMPLATE";
 	}
 
-	bool endDocument()
+	bool endDocument() override final
 	{
 		// make a rough check of the maps
 		for ( const QString& key : KfmModel::compounds.keys() ) {
@@ -227,11 +227,11 @@ public:
 		return true;
 	}
 
-	QString errorString() const
+	QString errorString() const override final
 	{
 		return errorStr;
 	}
-	bool fatalError( const QXmlParseException & exception )
+	bool fatalError( const QXmlParseException & exception ) override final
 	{
 		if ( errorStr.isEmpty() )
 			errorStr = tr( "Syntax error" );

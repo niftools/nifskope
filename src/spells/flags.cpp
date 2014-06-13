@@ -17,10 +17,10 @@
  */
 
 //! Edit flags
-class spEditFlags : public Spell
+class spEditFlags final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Flags" ); }
+	QString name() const override final { return Spell::tr( "Flags" ); }
 	bool instant() const { return true; }
 	QIcon icon() const { return QIcon( ":/img/flag" ); }
 
@@ -108,12 +108,12 @@ public:
 		return None;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return queryType( nif, getFlagIndex( nif, index ) ) != None;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iFlags = getFlagIndex( nif, index );
 

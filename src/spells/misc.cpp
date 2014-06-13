@@ -9,15 +9,15 @@
  */
 
 //! Update an array if eg. the size has changed
-class spUpdateArray : public Spell
+class spUpdateArray final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Update" ); }
-	QString page() const { return Spell::tr( "Array" ); }
+	QString name() const override final { return Spell::tr( "Update" ); }
+	QString page() const override final { return Spell::tr( "Array" ); }
 	QIcon icon() const { return QIcon( ":/img/update" ); }
 	bool instant() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( nif->isArray( index ) && nif->evalCondition( index ) ) {
 			//Check if array is of fixed size
@@ -47,7 +47,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		nif->updateArray( index );
 		return index;
@@ -57,18 +57,18 @@ public:
 REGISTER_SPELL( spUpdateArray )
 
 //! Updates the header of the NifModel
-class spUpdateHeader : public Spell
+class spUpdateHeader final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Update" ); }
-	QString page() const { return Spell::tr( "Header" ); }
+	QString name() const override final { return Spell::tr( "Update" ); }
+	QString page() const override final { return Spell::tr( "Header" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getHeader() == nif->getBlockOrHeader( index ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		nif->updateHeader();
 		return index;
@@ -78,18 +78,18 @@ public:
 REGISTER_SPELL( spUpdateHeader )
 
 //! Updates the footer of the NifModel
-class spUpdateFooter : public Spell
+class spUpdateFooter final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Update" ); }
-	QString page() const { return Spell::tr( "Footer" ); }
+	QString name() const override final { return Spell::tr( "Update" ); }
+	QString page() const override final { return Spell::tr( "Footer" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getFooter() == nif->getBlockOrHeader( index ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		nif->updateFooter();
 		return index;
@@ -99,19 +99,19 @@ public:
 REGISTER_SPELL( spUpdateFooter )
 
 //! Follows a link
-class spFollowLink : public Spell
+class spFollowLink final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Follow Link" ); }
+	QString name() const override final { return Spell::tr( "Follow Link" ); }
 	bool instant() const { return true; }
 	QIcon icon() const { return QIcon( ":/img/link" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isLink( index ) && nif->getLink( index ) >= 0;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex idx = nif->getBlock( nif->getLink( index ) );
 
@@ -125,17 +125,17 @@ public:
 REGISTER_SPELL( spFollowLink )
 
 //! Estimates the file offset of an item in a model
-class spFileOffset : public Spell
+class spFileOffset final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "File Offset" ); }
+	QString name() const override final { return Spell::tr( "File Offset" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		int ofs = nif->fileOffset( index );
 		qWarning( QString( "estimated file offset is %1 (0x%2)" ).arg( ofs ).arg( ofs, 0, 16 ).toLatin1().constData() );

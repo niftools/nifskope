@@ -930,7 +930,7 @@ bool UVWidget::isSelected( int index )
 	return selection.contains( index );
 }
 
-class UVWSelectCommand : public QUndoCommand
+class UVWSelectCommand final : public QUndoCommand
 {
 public:
 	UVWSelectCommand( UVWidget * w, const QList<int> & nSel ) : QUndoCommand(), uvw( w ), newSelection( nSel )
@@ -938,12 +938,12 @@ public:
 		setText( "Select" );
 	}
 
-	int id() const
+	int id() const override final
 	{
 		return 0;
 	}
 
-	bool mergeWith( const QUndoCommand * cmd )
+	bool mergeWith( const QUndoCommand * cmd ) override final
 	{
 		if ( cmd->id() == id() ) {
 			newSelection = static_cast<const UVWSelectCommand *>( cmd )->newSelection;
@@ -953,14 +953,14 @@ public:
 		return false;
 	}
 
-	void redo()
+	void redo() override final
 	{
 		oldSelection = uvw->selection;
 		uvw->selection = newSelection;
 		uvw->updateGL();
 	}
 
-	void undo()
+	void undo() override final
 	{
 		uvw->selection = oldSelection;
 		uvw->updateGL();
@@ -1046,7 +1046,7 @@ void UVWidget::selectConnected()
 	undoStack->push( new UVWSelectCommand( this, selection ) );
 }
 
-class UVWMoveCommand : public QUndoCommand
+class UVWMoveCommand final : public QUndoCommand
 {
 public:
 	UVWMoveCommand( UVWidget * w, double dx, double dy ) : QUndoCommand(), uvw( w ), move( dx, dy )
@@ -1054,12 +1054,12 @@ public:
 		setText( "Move" );
 	}
 
-	int id() const
+	int id() const override final
 	{
 		return 1;
 	}
 
-	bool mergeWith( const QUndoCommand * cmd )
+	bool mergeWith( const QUndoCommand * cmd ) override final
 	{
 		if ( cmd->id() == id() ) {
 			move += static_cast<const UVWMoveCommand *>( cmd )->move;
@@ -1069,7 +1069,7 @@ public:
 		return false;
 	}
 
-	void redo()
+	void redo() override final
 	{
 		for ( const auto tc : uvw->selection ) {
 			uvw->texcoords[tc] += move;
@@ -1078,7 +1078,7 @@ public:
 		uvw->updateGL();
 	}
 
-	void undo()
+	void undo() override final
 	{
 		for ( const auto tc : uvw->selection ) {
 			uvw->texcoords[tc] -= move;
@@ -1101,7 +1101,7 @@ void UVWidget::moveSelection( double moveX, double moveY )
 // get difference in mouse coords, scale everything around centre
 
 //! A class to perform scaling of UV coordinates
-class UVWScaleCommand : public QUndoCommand
+class UVWScaleCommand final : public QUndoCommand
 {
 public:
 	UVWScaleCommand( UVWidget * w, float sX, float sY ) : QUndoCommand(), uvw( w ), scaleX( sX ), scaleY( sY )
@@ -1109,12 +1109,12 @@ public:
 		setText( "Scale" );
 	}
 
-	int id() const
+	int id() const override final
 	{
 		return 2;
 	}
 
-	bool mergeWith( const QUndoCommand * cmd )
+	bool mergeWith( const QUndoCommand * cmd ) override final
 	{
 		if ( cmd->id() == id() ) {
 			scaleX *= static_cast<const UVWScaleCommand *>( cmd )->scaleX;
@@ -1125,7 +1125,7 @@ public:
 		return false;
 	}
 
-	void redo()
+	void redo() override final
 	{
 		Vector2 centre;
 		for ( const auto i : uvw->selection ) {
@@ -1150,7 +1150,7 @@ public:
 		uvw->updateGL();
 	}
 
-	void undo()
+	void undo() override final
 	{
 		Vector2 centre;
 		for ( const auto i : uvw->selection ) {
@@ -1288,7 +1288,7 @@ float ScalingDialog::getYMove()
 }
 
 //! A class to perform rotation of UV coordinates
-class UVWRotateCommand : public QUndoCommand
+class UVWRotateCommand final : public QUndoCommand
 {
 public:
 	UVWRotateCommand( UVWidget * w, float r ) : QUndoCommand(), uvw( w ), rotation( r )
@@ -1296,12 +1296,12 @@ public:
 		setText( "Rotation" );
 	}
 
-	int id() const
+	int id() const override final
 	{
 		return 3;
 	}
 
-	bool mergeWith( const QUndoCommand * cmd )
+	bool mergeWith( const QUndoCommand * cmd ) override final
 	{
 		if ( cmd->id() == id() ) {
 			rotation += static_cast<const UVWRotateCommand *>( cmd )->rotation;
@@ -1312,7 +1312,7 @@ public:
 		return false;
 	}
 
-	void redo()
+	void redo() override final
 	{
 		Vector2 centre;
 		for ( const auto i : uvw->selection ) {
@@ -1341,7 +1341,7 @@ public:
 		uvw->updateGL();
 	}
 
-	void undo()
+	void undo() override final
 	{
 		Vector2 centre;
 		for ( const auto i : uvw->selection ) {

@@ -185,19 +185,19 @@ static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock
 }
 
 //! Insert an unattached block
-class spInsertBlock : public Spell
+class spInsertBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Insert" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Insert" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( nif );
 		return ( !index.isValid() || !index.parent().isValid() );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
@@ -253,13 +253,13 @@ public:
 REGISTER_SPELL( spInsertBlock )
 
 //! Attach a Property to a block
-class spAttachProperty : public Spell
+class spAttachProperty final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Attach Property" ); }
-	QString page() const { return Spell::tr( "Node" ); }
+	QString name() const override final { return Spell::tr( "Attach Property" ); }
+	QString page() const override final { return Spell::tr( "Node" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( nif->itemType( index ) != "NiBlock" )
 			return false;
@@ -271,7 +271,7 @@ public:
 		return nif->inherits( index, "NiGeometry" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
@@ -307,18 +307,18 @@ public:
 REGISTER_SPELL( spAttachProperty )
 
 //! Attach a Node to a block
-class spAttachNode : public Spell
+class spAttachNode final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Attach Node" ); }
-	QString page() const { return Spell::tr( "Node" ); }
+	QString name() const override final { return Spell::tr( "Attach Node" ); }
+	QString page() const override final { return Spell::tr( "Node" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index ) && nif->inherits( index, "NiNode" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
@@ -344,18 +344,18 @@ public:
 REGISTER_SPELL( spAttachNode )
 
 //! Attach a dynamic effect (4/5 are lights) to a block
-class spAttachLight : public Spell
+class spAttachLight final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Attach Effect" ); }
-	QString page() const { return Spell::tr( "Node" ); }
+	QString name() const override final { return Spell::tr( "Attach Effect" ); }
+	QString page() const override final { return Spell::tr( "Node" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index ) && nif->inherits( index, "NiNode" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
@@ -395,18 +395,18 @@ public:
 REGISTER_SPELL( spAttachLight )
 
 //! Attach extra data to a block
-class spAttachExtraData : public Spell
+class spAttachExtraData final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Attach Extra Data" ); }
-	QString page() const { return Spell::tr( "Node" ); }
+	QString name() const override final { return Spell::tr( "Attach Extra Data" ); }
+	QString page() const override final { return Spell::tr( "Node" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index ) && nif->inherits( index, "NiObjectNET" ) && nif->checkVersion( 0x0a000100, 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QMenu menu;
 		QStringList ids = nif->allNiBlocks();
@@ -440,18 +440,18 @@ public:
 REGISTER_SPELL( spAttachExtraData )
 
 //! Remove a block
-class spRemoveBlock : public Spell
+class spRemoveBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Remove" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Remove" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index ) && nif->getBlockNumber( index ) >= 0;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		nif->removeNiBlock( nif->getBlockNumber( index ) );
 		return QModelIndex();
@@ -461,18 +461,18 @@ public:
 REGISTER_SPELL( spRemoveBlock )
 
 //! Copy a block to the clipboard
-class spCopyBlock : public Spell
+class spCopyBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Copy" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Copy" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QByteArray data;
 		QBuffer buffer( &data );
@@ -490,11 +490,11 @@ public:
 REGISTER_SPELL( spCopyBlock )
 
 //! Paste a block from the clipboard
-class spPasteBlock : public Spell
+class spPasteBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Paste" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Paste" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
@@ -512,7 +512,7 @@ public:
 		return format.split( "/" ).value( 2 );
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( index );
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
@@ -527,7 +527,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
@@ -556,11 +556,11 @@ public:
 REGISTER_SPELL( spPasteBlock )
 
 //! Paste a block from the clipboard over another
-class spPasteOverBlock : public Spell
+class spPasteOverBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Paste Over" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Paste Over" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
 	QString acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
 	{
@@ -572,7 +572,7 @@ public:
 		return QString();
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
@@ -586,7 +586,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
@@ -613,19 +613,19 @@ public:
 REGISTER_SPELL( spPasteOverBlock )
 
 //! Copy a branch (a block and its descendents) to the clipboard
-class spCopyBranch : public Spell
+class spCopyBranch final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Copy Branch" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Copy Branch" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Copy ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QList<qint32> blocks;
 		populateBlocks( blocks, nif, nif->getBlockNumber( index ) );
@@ -696,11 +696,11 @@ public:
 REGISTER_SPELL( spCopyBranch )
 
 //! Paste a branch from the clipboard
-class spPasteBranch : public Spell
+class spPasteBranch final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Paste Branch" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Paste Branch" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 	// Doesn't work unless the menu entry is unique
 	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Paste ); }
 
@@ -715,7 +715,7 @@ public:
 		return QString();
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( index.isValid() && !nif->isNiBlock( index ) && !nif->isLink( index ) )
 			return false;
@@ -732,7 +732,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
@@ -822,11 +822,11 @@ REGISTER_SPELL( spPasteBranch )
  * spPasteBranch and neglecting to link the blocks; now it calls
  * spPasteBranch with a bogus index.
  */
-class spPasteBranch2 : public Spell
+class spPasteBranch2 final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Paste At End" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Paste At End" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 	// hotkey() won't work here, probably because the context menu is not available
 
 	QString acceptFormat( const QString & format, const NifModel * nif )
@@ -840,7 +840,7 @@ public:
 		return QString();
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		//if ( index.isValid() && ! nif->isNiBlock( index ) && ! nif->isLink( index ) )
 		//	return false;
@@ -856,7 +856,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( index );
 		spPasteBranch paster;
@@ -885,19 +885,19 @@ QModelIndex spRemoveBranch::cast( NifModel * nif, const QModelIndex & index )
 REGISTER_SPELL( spRemoveBranch )
 
 //! Convert descendents to siblings?
-class spFlattenBranch : public Spell
+class spFlattenBranch final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Flatten Branch" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Flatten Branch" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ), "NiNode" );
 		return nif->inherits( index, "NiNode" ) && iParent.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iNode )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iNode ) override final
 	{
 		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iNode ) ), "NiNode" );
 		doNode( nif, iNode, iParent, Transform() );
@@ -934,19 +934,19 @@ public:
 REGISTER_SPELL( spFlattenBranch )
 
 //! Move a block up in the NIF
-class spMoveBlockUp : public Spell
+class spMoveBlockUp final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Move Up" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Move Up" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 	QKeySequence hotkey() const { return { Qt::CTRL + Qt::Key_Up }; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index ) && nif->getBlockNumber( index ) > 0;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		int ix = nif->getBlockNumber( iBlock );
 		nif->moveNiBlock( ix, ix - 1 );
@@ -957,19 +957,19 @@ public:
 REGISTER_SPELL( spMoveBlockUp )
 
 //! Move a block down in the NIF
-class spMoveBlockDown : public Spell
+class spMoveBlockDown final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Move Down" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Move Down" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 	QKeySequence hotkey() const { return { Qt::CTRL + Qt::Key_Down }; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index ) && nif->getBlockNumber( index ) < nif->getBlockCount() - 1;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		int ix = nif->getBlockNumber( iBlock );
 		nif->moveNiBlock( ix, ix + 1 );
@@ -980,19 +980,19 @@ public:
 REGISTER_SPELL( spMoveBlockDown )
 
 //! Remove blocks by regex
-class spRemoveBlocksById : public Spell
+class spRemoveBlocksById final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Remove By Id" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Remove By Id" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( nif );
 		return !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		QSettings settings;
 		QString key = QString( "%1/%2/%3/Match Expression" ).arg( "Spells", page(), name() );
@@ -1026,13 +1026,13 @@ public:
 REGISTER_SPELL( spRemoveBlocksById )
 
 //! Remove all blocks except a given branch
-class spCropToBranch : public Spell
+class spCropToBranch final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Crop To Branch" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Crop To Branch" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index );
 	}
@@ -1055,7 +1055,7 @@ public:
 		return branch;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// construct list of block numbers of all blocks in this branch of index
 		QList<quint32> branch = getBranch( nif, nif->getBlockNumber( index ) );
@@ -1081,19 +1081,19 @@ public:
 REGISTER_SPELL( spCropToBranch )
 
 //! Convert block types
-class spConvertBlock : public Spell
+class spConvertBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Convert" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Convert" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( nif );
 		return index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
@@ -1144,18 +1144,18 @@ public:
 REGISTER_SPELL( spConvertBlock )
 
 //! Duplicate a block in place
-class spDuplicateBlock : public Spell
+class spDuplicateBlock final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Duplicate" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Duplicate" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// from spCopyBlock
 		QByteArray data;
@@ -1179,18 +1179,18 @@ public:
 REGISTER_SPELL( spDuplicateBlock )
 
 //! Duplicate a branch in place
-class spDuplicateBranch : public Spell
+class spDuplicateBranch final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Duplicate Branch" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Duplicate Branch" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// from spCopyBranch
 		QList<qint32> blocks;
@@ -1314,19 +1314,19 @@ public:
 REGISTER_SPELL( spDuplicateBranch )
 
 //! Sort blocks by name
-class spSortBlockNames : public Spell
+class spSortBlockNames final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Sort By Name" ); }
-	QString page() const { return Spell::tr( "Block" ); }
+	QString name() const override final { return Spell::tr( "Sort By Name" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( nif );
 		return ( !index.isValid() || !index.parent().isValid() );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
 			QModelIndex iBlock = nif->getBlock( n );
@@ -1373,18 +1373,18 @@ public:
 REGISTER_SPELL( spSortBlockNames )
 
 //! Attach a Node as a parent of the current block
-class spAttachParentNode : public Spell
+class spAttachParentNode final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Attach Parent Node" ); }
-	QString page() const { return Spell::tr( "Node" ); }
+	QString name() const override final { return Spell::tr( "Attach Parent Node" ); }
+	QString page() const override final { return Spell::tr( "Node" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// find our current block number
 		int thisBlockNumber = nif->getBlockNumber( index );

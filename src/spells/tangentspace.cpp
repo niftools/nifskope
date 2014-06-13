@@ -229,13 +229,13 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 
 REGISTER_SPELL( spTangentSpace )
 
-class spAllTangentSpaces : public Spell
+class spAllTangentSpaces final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Update All Tangent Spaces" ); }
-	QString page() const { return Spell::tr( "Batch" ); }
+	QString name() const override final { return Spell::tr( "Update All Tangent Spaces" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
 		if ( !nif || idx.isValid() )
 			return false;
@@ -251,7 +251,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		QList<QPersistentModelIndex> indices;
 

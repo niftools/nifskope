@@ -28,18 +28,18 @@
 typedef QMap<QString, Transform> TransMap;
 
 //! "Fix" a v4.0.0.2 skeleton
-class spFixSkeleton : public Spell
+class spFixSkeleton final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Fix Bip01" ); }
-	QString page() const { return Spell::tr( "Skeleton" ); }
+	QString name() const override final { return Spell::tr( "Fix Bip01" ); }
+	QString page() const override final { return Spell::tr( "Skeleton" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" ); //&& QFile::exists( SKEL_DAT ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QFile file( SKEL_DAT );
 
@@ -189,18 +189,18 @@ public:
 REGISTER_SPELL( spFixSkeleton )
 
 //! Read skeleton data for use in Fix Skeleton
-class spScanSkeleton : public Spell
+class spScanSkeleton final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Scan Bip01" ); }
-	QString page() const { return Spell::tr( "Skeleton" ); }
+	QString name() const override final { return Spell::tr( "Scan Bip01" ); }
+	QString page() const override final { return Spell::tr( "Skeleton" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" && nif->get<QString>( index, "Name" ) == "Bip01" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QFile file( SKEL_DAT );
 
@@ -257,13 +257,13 @@ inline void qRotate( Triangle & t )
 }
 
 //! Make skin partition
-class spSkinPartition : public Spell
+class spSkinPartition final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Make Skin Partition" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Make Skin Partition" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & iShape )
+	bool isApplicable( const NifModel * nif, const QModelIndex & iShape ) override final
 	{
 		if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( iShape, "NiTriStrips" ) ) {
 			QModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
@@ -306,7 +306,7 @@ public:
 		QVector<Triangle> triangles;
 	} Partition;
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		int mbpp = 0, mbpv = 0;
 		bool make_strips = false;
@@ -998,18 +998,18 @@ public:
 REGISTER_SPELL( spSkinPartition )
 
 //! Make all skin partitions
-class spAllSkinPartitions : public Spell
+class spAllSkinPartitions final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Make All Skin Partitions" ); }
-	QString page() const { return Spell::tr( "Batch" ); }
+	QString name() const override final { return Spell::tr( "Make All Skin Partitions" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( index );
 		QList<QPersistentModelIndex> indices;
@@ -1137,18 +1137,18 @@ bool SkinPartitionDialog::padPartitions()
 }
 
 //! Fix bone bounds
-class spFixBoneBounds : public Spell
+class spFixBoneBounds final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Fix Bone Bounds" ); }
-	QString page() const { return Spell::tr( "Skeleton" ); }
+	QString name() const override final { return Spell::tr( "Fix Bone Bounds" ); }
+	QString page() const override final { return Spell::tr( "Skeleton" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index, "NiSkinData" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iSkinData )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iSkinData ) override final
 	{
 		QModelIndex iSkinInstance = nif->getBlock( nif->getParent( nif->getBlockNumber( iSkinData ) ), "NiSkinInstance" );
 		QModelIndex iMesh = nif->getBlock( nif->getParent( nif->getBlockNumber( iSkinInstance ) ) );
@@ -1221,19 +1221,19 @@ REGISTER_SPELL( spFixBoneBounds )
 /*!
  * Renames nodes, flips translations and rotations, flips meshes, flips skin data.
  */
-class spMirrorSkeleton : public Spell
+class spMirrorSkeleton final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Mirror armature" ); }
-	QString page() const { return Spell::tr( "Skeleton" ); }
+	QString name() const override final { return Spell::tr( "Mirror armature" ); }
+	QString page() const override final { return Spell::tr( "Skeleton" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getVersion() == "4.0.0.2" && nif->itemType( index ) == "NiBlock" )
 		       && ( ( nif->get<QString>( index, "Name" ).startsWith( "Bip01 L" ) ) || ( nif->get<QString>( index, "Name" ).startsWith( "Bip01 R" ) ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( nif->getLink( index, "Controller" ) != -1 ) {
 			int keyframeResponse = QMessageBox::question( 0, Spell::tr( "Mirror Armature" ), Spell::tr( "Do you wish to flip or delete animation?" ), Spell::tr( "Flip" ), Spell::tr( "Delete" ), Spell::tr( "Cancel" ) );

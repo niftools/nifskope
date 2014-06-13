@@ -27,18 +27,18 @@
  * \sa spCombiTris
  * \sa spUniqueProps
  */
-class spCombiProps : public Spell
+class spCombiProps final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Combine Properties" ); }
-	QString page() const { return Spell::tr( "Optimize" ); }
+	QString name() const override final { return Spell::tr( "Combine Properties" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		int numRemoved = 0;
 		QMap<qint32, QByteArray> props;
@@ -120,18 +120,18 @@ REGISTER_SPELL( spCombiProps )
  * \sa spDuplicateBlock
  * \sa spCombiProps
  */
-class spUniqueProps : public Spell
+class spUniqueProps final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Split Properties" ); }
-	QString page() const { return Spell::tr( "Optimize" ); }
+	QString name() const override final { return Spell::tr( "Split Properties" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		for ( int b = 0; b < nif->getBlockCount(); b++ ) {
 			QModelIndex iAVObj = nif->getBlock( b, "NiAVObject" );
@@ -192,18 +192,18 @@ REGISTER_SPELL( spUniqueProps )
  * them, there's not much that can be done to prevent a NIF that won't work
  * ingame.
  */
-class spRemoveBogusNodes : public Spell
+class spRemoveBogusNodes final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Remove Bogus Nodes" ); }
-	QString page() const { return Spell::tr( "Optimize" ); }
+	QString name() const override final { return Spell::tr( "Remove Bogus Nodes" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( index );
 		bool removed;
@@ -258,18 +258,18 @@ REGISTER_SPELL( spRemoveBogusNodes )
  * spCombiProps for why that can fail) or non-geometry children (extra data,
  * skin instance etc.).
  */
-class spCombiTris : public Spell
+class spCombiTris final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Combine Shapes" ); }
-	QString page() const { return Spell::tr( "Optimize" ); }
+	QString name() const override final { return Spell::tr( "Combine Shapes" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && nif->isNiBlock( index, "NiNode" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// join meshes which share properties and parent
 		// ( animated ones are left untouched )

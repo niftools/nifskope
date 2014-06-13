@@ -18,18 +18,18 @@
  * the block which the corresponding NiKeyframeController should attach to.
  * See Node (gl/glnode.cpp) for how controllers are handled
  */
-class spAttachKf : public Spell
+class spAttachKf final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Attach .KF" ); }
-	QString page() const { return Spell::tr( "Animation" ); }
+	QString name() const override final { return Spell::tr( "Attach .KF" ); }
+	QString page() const override final { return Spell::tr( "Animation" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( !nif )
 			return index;
@@ -309,13 +309,13 @@ REGISTER_SPELL( spAttachKf )
  * Also, since Quaternions can't store tangents (or can they?), quadratic
  * keys are out, leaving linear and tension-bias-continuity to be converted.
  */
-class spConvertQuatsToEulers : public Spell
+class spConvertQuatsToEulers final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Convert Quat- to ZYX-Rotations" ); }
-	QString page() const { return Spell::tr( "Animation" ); }
+	QString name() const override final { return Spell::tr( "Convert Quat- to ZYX-Rotations" ); }
+	QString page() const override final { return Spell::tr( "Animation" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iBlock = nif->getBlock( index, "NiKeyframeData" );
 		return iBlock.isValid() && nif->get<int>( iBlock, "Rotation Type" ) != 4;

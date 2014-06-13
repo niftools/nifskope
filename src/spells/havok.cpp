@@ -26,13 +26,13 @@
 static const float havokConst = 7.0;
 
 //! Creates a convex hull using Qhull
-class spCreateCVS : public Spell
+class spCreateCVS final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Create Convex Shape" ); }
-	QString page() const { return Spell::tr( "Havok" ); }
+	QString name() const override final { return Spell::tr( "Create Convex Shape" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( !nif->inherits( index, "NiTriBasedGeom" ) || !nif->checkVersion( 0x0A000100, 0 ) )
 			return false;
@@ -41,7 +41,7 @@ public:
 		return iData.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
@@ -199,13 +199,13 @@ public:
 REGISTER_SPELL( spCreateCVS )
 
 //! Transforms Havok constraints
-class spConstraintHelper : public Spell
+class spConstraintHelper final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "A -> B" ); }
-	QString page() const { return Spell::tr( "Havok" ); }
+	QString name() const override final { return Spell::tr( "A -> B" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && (
 		    nif->isNiBlock( nif->getBlock( index ), "bhkMalleableConstraint" )
@@ -215,7 +215,7 @@ public:
 		    || nif->isNiBlock( nif->getBlock( index ), "bhkPrismaticConstraint" ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iConstraint = nif->getBlock( index );
 		QString name = nif->itemName( iConstraint );
@@ -319,18 +319,18 @@ public:
 REGISTER_SPELL( spConstraintHelper )
 
 //! Calculates Havok spring lengths
-class spStiffSpringHelper : public Spell
+class spStiffSpringHelper final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Calculate Spring Length" ); }
-	QString page() const { return Spell::tr( "Havok" ); }
+	QString name() const override final { return Spell::tr( "Calculate Spring Length" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
 		return nif && nif->isNiBlock( nif->getBlock( idx ), "bhkStiffSpringConstraint" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
+	QModelIndex cast( NifModel * nif, const QModelIndex & idx ) override final
 	{
 		QModelIndex iConstraint = nif->getBlock( idx );
 
@@ -359,18 +359,18 @@ public:
 REGISTER_SPELL( spStiffSpringHelper )
 
 //! Packs Havok strips
-class spPackHavokStrips : public Spell
+class spPackHavokStrips final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Pack Strips" ); }
-	QString page() const { return Spell::tr( "Havok" ); }
+	QString name() const override final { return Spell::tr( "Pack Strips" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
 		return nif->isNiBlock( idx, "bhkNiTriStripsShape" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock )
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		QPersistentModelIndex iShape( iBlock );
 

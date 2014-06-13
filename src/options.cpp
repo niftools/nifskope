@@ -68,10 +68,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file options.cpp SmallListView and Options implementation
 
 //! Helper class for Options::TexFolderView
-class SmallListView : public QListView
+class SmallListView final : public QListView
 {
 public:
-	QSize sizeHint() const { return minimumSizeHint(); }
+	QSize sizeHint() const override final { return minimumSizeHint(); }
 };
 
 Options::Options()

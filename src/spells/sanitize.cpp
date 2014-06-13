@@ -14,14 +14,14 @@
  */
 
 //! Reorders blocks to put shapes before nodes (for Oblivion / FO3)
-class spReorderLinks : public Spell
+class spReorderLinks final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Reorder Link Arrays" ); }
-	QString page() const { return Spell::tr( "Sanitize" ); }
+	QString name() const override final { return Spell::tr( "Reorder Link Arrays" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
 	bool sanity() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( !index.isValid() && ( nif->getVersionNumber() >= 0x14000004 ) );
 	}
@@ -37,7 +37,7 @@ public:
 		return a.second != b.second ? a.second : a.first < b.first;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
 			QModelIndex iBlock = nif->getBlock( n );
@@ -77,20 +77,20 @@ public:
 REGISTER_SPELL( spReorderLinks )
 
 //! Removes empty members from link arrays
-class spSanitizeLinkArrays : public Spell
+class spSanitizeLinkArrays final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Collapse Link Arrays" ); }
-	QString page() const { return Spell::tr( "Sanitize" ); }
+	QString name() const override final { return Spell::tr( "Collapse Link Arrays" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
 	bool sanity() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( nif );
 		return !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
 			QModelIndex iBlock = nif->getBlock( n );
@@ -125,19 +125,19 @@ public:
 REGISTER_SPELL( spSanitizeLinkArrays )
 
 //! Fixes texture path names and options
-class spAdjustTextureSources : public Spell
+class spAdjustTextureSources final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Adjust Texture Sources" ); }
-	QString page() const { return Spell::tr( "Sanitize" ); }
+	QString name() const override final { return Spell::tr( "Adjust Texture Sources" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
 	bool sanity() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
 			QModelIndex iTexSrc = nif->getBlock( i, "NiSourceTexture" );
@@ -166,14 +166,14 @@ public:
 REGISTER_SPELL( spAdjustTextureSources )
 
 //! Reorders blocks
-class spSanitizeBlockOrder : public Spell
+class spSanitizeBlockOrder final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Reorder Blocks" ); }
-	QString page() const { return Spell::tr( "Sanitize" ); }
+	QString name() const override final { return Spell::tr( "Reorder Blocks" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
 	bool sanity() const { return true; }
 
-	bool isApplicable( const NifModel *, const QModelIndex & index )
+	bool isApplicable( const NifModel *, const QModelIndex & index ) override final
 	{
 		// all files
 		return !index.isValid();
@@ -225,7 +225,7 @@ public:
 		}
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		// list of root blocks
 		QList<qint32> rootblocks = nif->getRootLinks();
@@ -269,20 +269,20 @@ public:
 REGISTER_SPELL( spSanitizeBlockOrder )
 
 //! Checks that links are correct
-class spSanityCheckLinks : public Spell
+class spSanityCheckLinks final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Check Links" ); }
-	QString page() const { return Spell::tr( "Sanitize" ); }
+	QString name() const override final { return Spell::tr( "Check Links" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
 	bool sanity() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( nif );
 		return !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		for ( int b = 0; b < nif->getBlockCount(); b++ ) {
 			QModelIndex iBlock = nif->getBlock( b );

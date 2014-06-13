@@ -63,11 +63,11 @@ static char const * txt_xpm[] = {
 static QIcon * txt_xpm_icon = nullptr;
 
 //! Edit the index of a header string
-class spEditStringIndex : public Spell
+class spEditStringIndex final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit String Index" ); }
-	QString page() const { return Spell::tr( "" ); }
+	QString name() const override final { return Spell::tr( "Edit String Index" ); }
+	QString page() const override final { return Spell::tr( "" ); }
 	QIcon icon() const
 	{
 		if ( !txt_xpm_icon )
@@ -77,7 +77,7 @@ public:
 	}
 	bool instant() const { return true; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		NifValue::Type type = nif->getValue( index ).type();
 
@@ -90,7 +90,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		int offset = nif->get<int>( index );
 		QStringList strings;

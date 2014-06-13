@@ -11,13 +11,13 @@
  */
 
 //! Edit a bounding box
-class spEditBounds : public Spell
+class spEditBounds final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit" ); }
-	QString page() const { return Spell::tr( "Bounds" ); }
+	QString name() const override final { return Spell::tr( "Edit" ); }
+	QString page() const override final { return Spell::tr( "Bounds" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return (nif->itemName( index ) == "BSBound")
 		       || (nif->itemName( index.parent() ) == "BSBound" )
@@ -26,7 +26,7 @@ public:
 		       || (nif->itemName( index.parent() ) == "Bounding Box");
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
 

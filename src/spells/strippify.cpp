@@ -23,17 +23,17 @@ template <typename T> void copyValue( NifModel * nif, const QModelIndex & iDst, 
 }
 
 
-class spStrippify : public Spell
+class spStrippify final : public Spell
 {
-	QString name() const { return Spell::tr( "Stripify" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Stripify" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->checkVersion( 0x0a000000, 0 ) && nif->isNiBlock( index, "NiTriShape" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QPersistentModelIndex idx = index;
 		QPersistentModelIndex iData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriShapeData" );
@@ -149,18 +149,18 @@ class spStrippify : public Spell
 REGISTER_SPELL( spStrippify )
 
 
-class spStrippifyAll : public Spell
+class spStrippifyAll final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Stripify all TriShapes" ); }
-	QString page() const { return Spell::tr( "Optimize" ); }
+	QString name() const override final { return Spell::tr( "Stripify all TriShapes" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->checkVersion( 0x0a000000, 0 ) && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & )
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
 		QList<QPersistentModelIndex> iTriShapes;
 
@@ -184,17 +184,17 @@ public:
 REGISTER_SPELL( spStrippifyAll )
 
 
-class spTriangulate : public Spell
+class spTriangulate final : public Spell
 {
-	QString name() const { return Spell::tr( "Triangulate" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Triangulate" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->isNiBlock( index, "NiTriStrips" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QPersistentModelIndex idx = index;
 		QPersistentModelIndex iStripData = nif->getBlock( nif->getLink( idx, "Data" ), "NiTriStripsData" );
@@ -293,11 +293,11 @@ class spTriangulate : public Spell
 REGISTER_SPELL( spTriangulate )
 
 
-class spStichStrips : public Spell
+class spStichStrips final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Stich Strips" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Stich Strips" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
 	static QModelIndex getStripsData( const NifModel * nif, const QModelIndex & index )
 	{
@@ -307,13 +307,13 @@ public:
 		return nif->getBlock( index, "NiTriStripsData" );
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = getStripsData( nif, index );
 		return iData.isValid() && nif->get<int>( iData, "Num Strips" ) > 1;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = getStripsData( nif, index );
 		QModelIndex iLength = nif->getIndex( iData, "Strip Lengths" );
@@ -355,19 +355,19 @@ public:
 REGISTER_SPELL( spStichStrips )
 
 
-class spUnstichStrips : public Spell
+class spUnstichStrips final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Unstich Strips" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Unstich Strips" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = spStichStrips::getStripsData( nif, index );
 		return iData.isValid() && nif->get<int>( iData, "Num Strips" ) == 1;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = spStichStrips::getStripsData( nif, index );
 		QModelIndex iLength = nif->getIndex( iData, "Strip Lengths" );

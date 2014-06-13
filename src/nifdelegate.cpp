@@ -52,7 +52,7 @@ extern void qt_format_text( const QFont & font, const QRectF & _r,
                             int tabstops, int * tabarray, int tabarraylen,
                             QPainter * painter );
 
-class NifDelegate : public QItemDelegate
+class NifDelegate final : public QItemDelegate
 {
 	SpellBook * book;
 
@@ -61,7 +61,7 @@ public:
 	{
 	}
 
-	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index )
+	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index ) override final
 	{
 		Q_ASSERT( event );
 		Q_ASSERT( model );
@@ -125,7 +125,7 @@ public:
 		return false;
 	}
 
-	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
+	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const override final
 	{
 		int namerole = NifSkopeDisplayRole;
 		namerole = (index.isValid() && index.column() == 0) ? Qt::DisplayRole : NifSkopeDisplayRole;
@@ -179,14 +179,14 @@ public:
 		painter->restore();
 	}
 
-	QSize sizeHint( const QStyleOptionViewItem & option, const QModelIndex & index ) const
+	QSize sizeHint( const QStyleOptionViewItem & option, const QModelIndex & index ) const override final
 	{
 		QString text = index.data( NifSkopeDisplayRole ).toString();
 		QRect textRect( 0, 0, option.fontMetrics.width( text ), option.fontMetrics.lineSpacing() * (text.count( QLatin1Char( '\n' ) ) + 1) );
 		return textRect.size();
 	}
 
-	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const
+	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const override final
 	{
 		if ( !index.isValid() )
 			return 0;
@@ -223,7 +223,7 @@ public:
 		return w;
 	}
 
-	void setEditorData( QWidget * editor, const QModelIndex & index ) const
+	void setEditorData( QWidget * editor, const QModelIndex & index ) const override final
 	{
 		ValueEdit * vedit = qobject_cast<ValueEdit *>( editor );
 		QComboBox * cedit = qobject_cast<QComboBox *>( editor );
@@ -268,7 +268,7 @@ public:
 		}
 	}
 
-	void setModelData( QWidget * editor, QAbstractItemModel * model, const QModelIndex & index ) const
+	void setModelData( QWidget * editor, QAbstractItemModel * model, const QModelIndex & index ) const override final
 	{
 		Q_ASSERT( model );
 		ValueEdit * vedit = qobject_cast<ValueEdit *>( editor );

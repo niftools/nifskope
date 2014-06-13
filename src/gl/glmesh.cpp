@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file glmesh.cpp Mesh, MorphController, UVController
 
 //! A Controller of Mesh geometry
-class MorphController : public Controller
+class MorphController final : public Controller
 {
 	//! A representation of Mesh geometry morphs
 	struct MorphKey
@@ -67,7 +67,7 @@ public:
 		qDeleteAll( morph );
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( target && iData.isValid() && active && morph.count() > 1 ) )
 			return;
@@ -100,7 +100,7 @@ public:
 		target->upBounds = true;
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			qDeleteAll( morph );
@@ -148,7 +148,7 @@ protected:
 };
 
 //! A Controller of UV data in a Mesh
-class UVController : public Controller
+class UVController final : public Controller
 {
 public:
 	UVController( Mesh * mesh, const QModelIndex & index )
@@ -160,7 +160,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
 		QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
@@ -191,7 +191,7 @@ public:
 		target->upData = true;
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			// do stuff here

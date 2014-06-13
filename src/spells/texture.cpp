@@ -154,11 +154,11 @@ QModelIndex getUV( const NifModel * nif, const QModelIndex & index )
 }
 
 //! Selects a texture filename
-class spChooseTexture : public Spell
+class spChooseTexture final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Choose" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Choose" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -168,7 +168,7 @@ public:
 		return *tex42_xpm_icon;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & idx )
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
 		QModelIndex iBlock = nif->getBlock( idx );
 
@@ -187,7 +187,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & idx )
+	QModelIndex cast( NifModel * nif, const QModelIndex & idx ) override final
 	{
 		QModelIndex iBlock = nif->getBlock( idx );
 		QModelIndex iFile;
@@ -254,13 +254,13 @@ public:
 REGISTER_SPELL( spChooseTexture )
 
 //! Opens a UVWidget to edit texture coordinates
-class spEditTexCoords : public Spell
+class spEditTexCoords final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit UV" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Edit UV" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" || nif->itemName( index ) == "BSLODTriShape" );
 
@@ -268,7 +268,7 @@ public:
 		//return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		UVWidget::createEditor( nif, index );
 		return index;
@@ -319,19 +319,19 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 }
 
 //! Adds a Base texture
-class spAddBaseMap : public Spell
+class spAddBaseMap final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Base Texture" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Base Texture" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Base Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Base Texture" );
 	}
@@ -340,19 +340,19 @@ public:
 REGISTER_SPELL( spAddBaseMap )
 
 //! Adds a Dark texture
-class spAddDarkMap : public Spell
+class spAddDarkMap final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Dark Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Dark Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Dark Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Dark Texture" );
 	}
@@ -361,19 +361,19 @@ public:
 REGISTER_SPELL( spAddDarkMap )
 
 //! Adds a Detail texture
-class spAddDetailMap : public Spell
+class spAddDetailMap final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Detail Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Detail Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Detail Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Detail Texture" );
 	}
@@ -382,19 +382,19 @@ public:
 REGISTER_SPELL( spAddDetailMap )
 
 //! Adds a Glow texture
-class spAddGlowMap : public Spell
+class spAddGlowMap final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Glow Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Glow Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Glow Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Glow Texture" );
 	}
@@ -403,19 +403,19 @@ public:
 REGISTER_SPELL( spAddGlowMap )
 
 //! Adds a Bump texture
-class spAddBumpMap : public Spell
+class spAddBumpMap final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Bump Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Bump Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Bump Map Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iSrcTex = addTexture( nif, index, "Bump Map Texture" );
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
@@ -433,19 +433,19 @@ public:
 REGISTER_SPELL( spAddBumpMap )
 
 //! Adds a Decal 0 texture
-class spAddDecal0Map : public Spell
+class spAddDecal0Map final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Decal 0 Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Decal 0 Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 0 Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Decal 0 Texture" );
 	}
@@ -454,19 +454,19 @@ public:
 REGISTER_SPELL( spAddDecal0Map )
 
 //! Adds a Decal 1 texture
-class spAddDecal1Map : public Spell
+class spAddDecal1Map final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Decal 1 Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Decal 1 Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 1 Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Decal 1 Texture" );
 	}
@@ -475,19 +475,19 @@ public:
 REGISTER_SPELL( spAddDecal1Map )
 
 //! Adds a Decal 2 texture
-class spAddDecal2Map : public Spell
+class spAddDecal2Map final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Decal 2 Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Decal 2 Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 2 Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Decal 2 Texture" );
 	}
@@ -496,19 +496,19 @@ public:
 REGISTER_SPELL( spAddDecal2Map )
 
 //! Adds a Decal 3 texture
-class spAddDecal3Map : public Spell
+class spAddDecal3Map final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Decal 3 Map" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Decal 3 Map" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return ( block.isValid() && nif->get<int>( block, "Has Decal 3 Texture" ) == 0 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		return addTexture( nif, index, "Decal 3 Texture" );
 	}
@@ -520,18 +520,18 @@ REGISTER_SPELL( spAddDecal3Map )
 #define wrap01f( X ) ( X > 1 ? X - floor( X ) : X < 0 ? X - floor( X ) : X )
 
 //! Saves the UV layout as a TGA
-class spTextureTemplate : public Spell
+class spTextureTemplate final : public Spell
 {
-	QString name() const { return Spell::tr( "Export Template" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Export Template" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iUVs = getUV( nif, index );
 		return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iUVs = getUV( nif, index );
 
@@ -706,19 +706,19 @@ class spTextureTemplate : public Spell
 REGISTER_SPELL( spTextureTemplate )
 
 //! Global search and replace of texturing apply modes
-class spMultiApplyMode : public Spell
+class spMultiApplyMode final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Multi Apply Mode" ); }
-	QString page() const { return Spell::tr( "Batch" ); }
+	QString name() const override final { return Spell::tr( "Multi Apply Mode" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		// Apply Mode field is defined in nifs up to version 20.0.0.5
 		return nif->checkVersion( 0, 0x14000005 ) && !index.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		Q_UNUSED( index );
 		QStringList modes{ "Replace", "Decal", "Modulate", "Hilight", "Hilight2" };
@@ -803,13 +803,13 @@ public:
 REGISTER_SPELL( spMultiApplyMode )
 
 //! Debug function - display information about a texture
-class spTexInfo : public Spell
+class spTexInfo final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Info" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Info" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iBlock = nif->getBlock( index );
 
@@ -819,7 +819,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
@@ -842,13 +842,13 @@ REGISTER_SPELL( spTexInfo )
 #endif
 
 //! Export a packed NiPixelData texture
-class spExportTexture : public Spell
+class spExportTexture final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Export" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Export" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iBlock = nif->getBlock( index );
 
@@ -870,7 +870,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
@@ -916,13 +916,13 @@ public:
 REGISTER_SPELL( spExportTexture )
 
 //! Pack a texture to NiPixelData
-class spEmbedTexture : public Spell
+class spEmbedTexture final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Embed" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Embed" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( !( nif->checkVersion( 0, 0x0A020000 ) || nif->checkVersion( 0x14000004, 0 ) ) ) {
 			return false;
@@ -944,7 +944,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		TexCache * tex = new TexCache();
 		tex->setNifFolder( nif->getFolder() );
@@ -1118,18 +1118,18 @@ void TexFlipDialog::listFromNif()
 /*!
  * TODO: update for version conditions, preserve properties on existing textures
  */
-class spEditFlipper : public Spell
+class spEditFlipper final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit Flip Controller" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Edit Flip Controller" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getBlockName( index ) == "NiFlipController" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex flipController = index;
 		TexFlipDialog * texFlip = new TexFlipDialog( nif, flipController );
@@ -1187,20 +1187,20 @@ public:
 REGISTER_SPELL( spEditFlipper )
 
 //! Insert and manage TexFlipController
-class spTextureFlipper : public Spell
+class spTextureFlipper final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Add Flip Controller" ); }
-	QString page() const { return Spell::tr( "Texture" ); }
+	QString name() const override final { return Spell::tr( "Add Flip Controller" ); }
+	QString page() const override final { return Spell::tr( "Texture" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		// also check NiTextureProperty?
 		QModelIndex block = nif->getBlock( index, "NiTexturingProperty" );
 		return block.isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		// attach a NiFlipController
 		QModelIndex flipController = nif->insertNiBlock( "NiFlipController", nif->getBlockNumber( index ) + 1 );

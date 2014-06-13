@@ -66,25 +66,25 @@ bool ValueEdit::canEdit( NifValue::Type t )
 	       || t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt;
 }
 
-class CenterLabel : public QLabel
+class CenterLabel final : public QLabel
 {
 public:
 	CenterLabel( const QString & txt ) : QLabel( txt ) { setAlignment( Qt::AlignCenter ); }
 	CenterLabel() : QLabel() { setAlignment( Qt::AlignCenter ); }
 };
 
-class UIntSpinBox : public QSpinBox
+class UIntSpinBox final : public QSpinBox
 {
 public:
 	UIntSpinBox( QWidget * parent ) : QSpinBox( parent ) { setRange( INT_MIN, INT_MAX ); }
 
 protected:
-	QString textFromValue( int i ) const
+	QString textFromValue( int i ) const override final
 	{
 		return QString::number( (unsigned int)i );
 	}
 
-	int valueFromText( const QString & text ) const
+	int valueFromText( const QString & text ) const override final
 	{
 		// until we convert to a QLineEdit, this lets us put in numbers between
 		// INT_MAX and 2*INT_MAX by entering them as a signed value

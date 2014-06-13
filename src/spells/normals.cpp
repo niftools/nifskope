@@ -17,11 +17,11 @@
  */
 
 //! Recalculates and faces the normals of a mesh
-class spFaceNormals : public Spell
+class spFaceNormals final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Face Normals" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Face Normals" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
 	static QModelIndex getShapeData( const NifModel * nif, const QModelIndex & index )
 	{
@@ -36,12 +36,12 @@ public:
 		return QModelIndex();
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return getShapeData( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = getShapeData( nif, index );
 
@@ -88,19 +88,19 @@ public:
 REGISTER_SPELL( spFaceNormals )
 
 //! Flip normals of a mesh, without recalculating them.
-class spFlipNormals : public Spell
+class spFlipNormals final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Flip Normals" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Flip Normals" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
 		return ( iData.isValid() && nif->get<bool>( iData, "Has Normals" ) );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
 
@@ -118,18 +118,18 @@ public:
 REGISTER_SPELL( spFlipNormals )
 
 //! Smooths the normals of a mesh
-class spSmoothNormals : public Spell
+class spSmoothNormals final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Smooth Normals" ); }
-	QString page() const { return Spell::tr( "Mesh" ); }
+	QString name() const override final { return Spell::tr( "Smooth Normals" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return spFaceNormals::getShapeData( nif, index ).isValid();
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
 
@@ -215,18 +215,18 @@ REGISTER_SPELL( spSmoothNormals )
 /**
  * Most used on Normals, Bitangents and Tangents.
  */
-class spNormalize : public Spell
+class spNormalize final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Normalize" ); }
+	QString name() const override final { return Spell::tr( "Normalize" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return ( nif->getValue( index ).type() == NifValue::tVector3 )
 		       || ( nif->isArray( index ) && nif->getValue( index.child( 0, 0 ) ).type() == NifValue::tVector3 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( nif->isArray( index ) ) {
 			QVector<Vector3> norms = nif->getArray<Vector3>( index );

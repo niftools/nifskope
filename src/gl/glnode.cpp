@@ -52,7 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int Node::SELECTING = 0;
 
-class TransformController : public Controller
+class TransformController final : public Controller
 {
 public:
 	TransformController( Node * node, const QModelIndex & index )
@@ -60,7 +60,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( active && target ) )
 			return;
@@ -72,7 +72,7 @@ public:
 		}
 	}
 
-	void setInterpolator( const QModelIndex & iBlock )
+	void setInterpolator( const QModelIndex & iBlock ) override final
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
@@ -101,7 +101,7 @@ protected:
 	QPointer<TransformInterpolator> interpolator;
 };
 
-class MultiTargetTransformController : public Controller
+class MultiTargetTransformController final : public Controller
 {
 	typedef QPair<QPointer<Node>, QPointer<TransformInterpolator> > TransformTarget;
 
@@ -111,7 +111,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( active && target ) )
 			return;
@@ -125,7 +125,7 @@ public:
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			if ( target ) {
@@ -192,7 +192,7 @@ protected:
 	QList<TransformTarget> extraTargets;
 };
 
-class ControllerManager : public Controller
+class ControllerManager final : public Controller
 {
 public:
 	ControllerManager( Node * node, const QModelIndex & index )
@@ -200,9 +200,9 @@ public:
 	{
 	}
 
-	void update( float ) {}
+	void update( float ) override final {}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			if ( target ) {
@@ -238,7 +238,7 @@ public:
 		return false;
 	}
 
-	void setSequence( const QString & seqname )
+	void setSequence( const QString & seqname ) override final
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
@@ -338,7 +338,7 @@ protected:
 	QPointer<Node> target;
 };
 
-class KeyframeController : public Controller
+class KeyframeController final : public Controller
 {
 public:
 	KeyframeController( Node * node, const QModelIndex & index )
@@ -358,7 +358,7 @@ public:
 		interpolate( target->local.scale, iScales, time, lScale );
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			iTranslations = nif->getIndex( iData, "Translations" );
@@ -382,7 +382,7 @@ protected:
 	int lTrans, lRotate, lScale;
 };
 
-class VisibilityController : public Controller
+class VisibilityController final : public Controller
 {
 public:
 	VisibilityController( Node * node, const QModelIndex & index )
@@ -390,7 +390,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( active && target ) )
 			return;
@@ -404,7 +404,7 @@ public:
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			// iData already points to the NiVisData

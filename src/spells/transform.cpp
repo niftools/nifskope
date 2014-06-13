@@ -184,18 +184,18 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 
 REGISTER_SPELL( spApplyTransformation )
 
-class spClearTransformation : public Spell
+class spClearTransformation final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Clear" ); }
-	QString page() const { return Spell::tr( "Transform" ); }
+	QString name() const override final { return Spell::tr( "Clear" ); }
+	QString page() const override final { return Spell::tr( "Transform" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return Transform::canConstruct( nif, index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		Transform tp;
 		tp.writeBack( nif, index );
@@ -205,18 +205,18 @@ public:
 
 REGISTER_SPELL( spClearTransformation )
 
-class spCopyTransformation : public Spell
+class spCopyTransformation final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Copy" ); }
-	QString page() const { return Spell::tr( "Transform" ); }
+	QString name() const override final { return Spell::tr( "Copy" ); }
+	QString page() const override final { return Spell::tr( "Transform" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return Transform::canConstruct( nif, index );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QByteArray data;
 		QBuffer buffer( &data );
@@ -236,13 +236,13 @@ public:
 
 REGISTER_SPELL( spCopyTransformation )
 
-class spPasteTransformation : public Spell
+class spPasteTransformation final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Paste" ); }
-	QString page() const { return Spell::tr( "Transform" ); }
+	QString name() const override final { return Spell::tr( "Paste" ); }
+	QString page() const override final { return Spell::tr( "Transform" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
@@ -256,7 +256,7 @@ public:
 		return false;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		const QMimeData * mime = QApplication::clipboard()->mimeData();
 
@@ -285,11 +285,11 @@ REGISTER_SPELL( spPasteTransformation )
 
 QIcon * transform_xpm_icon = 0;
 
-class spEditTransformation : public Spell
+class spEditTransformation final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Edit" ); }
-	QString page() const { return Spell::tr( "Transform" ); }
+	QString name() const override final { return Spell::tr( "Edit" ); }
+	QString page() const override final { return Spell::tr( "Transform" ); }
 	bool instant() const { return true; }
 	QIcon icon() const
 	{
@@ -299,7 +299,7 @@ public:
 		return *transform_xpm_icon;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Transform::canConstruct( nif, index ) )
 			return true;
@@ -312,7 +312,7 @@ public:
 		return ( nif->getValue( iTransform ).type() == NifValue::tMatrix4 );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		NifBlockEditor * edit = new NifBlockEditor( nif, nif->getBlock( index ) );
 
@@ -337,18 +337,18 @@ public:
 REGISTER_SPELL( spEditTransformation )
 
 
-class spScaleVertices : public Spell
+class spScaleVertices final : public Spell
 {
 public:
-	QString name() const { return Spell::tr( "Scale Vertices" ); }
-	QString page() const { return Spell::tr( "Transform" ); }
+	QString name() const override final { return Spell::tr( "Scale Vertices" ); }
+	QString page() const override final { return Spell::tr( "Transform" ); }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index )
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->inherits( index, "NiGeometry" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QDialog dlg;
 

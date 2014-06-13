@@ -466,7 +466,7 @@ int TexturingProperty::coordSet( int id ) const
 }
 
 //! Controller for source textures in a TexturingProperty
-class TexFlipController : public Controller
+class TexFlipController final : public Controller
 {
 public:
 	TexFlipController( TexturingProperty * prop, const QModelIndex & index )
@@ -479,7 +479,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
 
@@ -501,7 +501,7 @@ public:
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			flipDelta = nif->get<float>( iBlock, "Delta" );
@@ -532,7 +532,7 @@ protected:
 };
 
 //! Controller for transformations in a TexturingProperty
-class TexTransController : public Controller
+class TexTransController final : public Controller
 {
 public:
 	TexTransController( TexturingProperty * prop, const QModelIndex & index )
@@ -540,7 +540,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( target && active ) )
 			return;
@@ -574,7 +574,7 @@ public:
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			texSlot = nif->get<int>( iBlock, "Texture Slot" );
@@ -747,7 +747,7 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 }
 
 //! Controller for alpha values in a MaterialProperty
-class AlphaController : public Controller
+class AlphaController final : public Controller
 {
 public:
 	AlphaController( MaterialProperty * prop, const QModelIndex & index )
@@ -755,7 +755,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( active && target ) )
 			return;
@@ -776,7 +776,7 @@ protected:
 };
 
 //! Controller for color values in a MaterialProperty
-class MaterialColorController : public Controller
+class MaterialColorController final : public Controller
 {
 public:
 	MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
@@ -784,7 +784,7 @@ public:
 	{
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( active && target ) )
 			return;
@@ -810,7 +810,7 @@ public:
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( Controller::update( nif, index ) ) {
 			if ( nif->checkVersion( 0x0A010000, 0 ) ) {

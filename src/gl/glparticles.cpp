@@ -51,7 +51,7 @@ Vector3 random( Vector3 v )
 	return v;
 }
 
-class ParticleController : public Controller
+class ParticleController final : public Controller
 {
 	struct Particle
 	{
@@ -105,7 +105,7 @@ public:
 	{
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		if ( !target )
 			return false;
@@ -197,7 +197,7 @@ public:
 		return false;
 	}
 
-	void update( float time )
+	void update( float time ) override final
 	{
 		if ( !( target && active ) )
 			return;
