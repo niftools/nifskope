@@ -938,6 +938,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 
 	// setup array pointers
 
+	// Render polygon fill slightly behind alpha transparency and wireframe
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	glPolygonOffset( 1.0f, 2.0f );
+
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, transVerts.data() );
 
@@ -1019,6 +1023,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	glDisableClientState( GL_NORMAL_ARRAY );
 	glDisableClientState( GL_COLOR_ARRAY );
 
+	glDisable( GL_POLYGON_OFFSET_FILL );
+
 	if ( transformRigid )
 		glPopMatrix();
 }
@@ -1052,6 +1058,8 @@ void Mesh::drawSelection() const
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_ALPHA_TEST );
 
+	glDisable( GL_CULL_FACE );
+
 	glLineWidth( 1.0 );
 	glPointSize( 3.5 );
 
@@ -1073,11 +1081,16 @@ void Mesh::drawSelection() const
 		n = "TSpace";
 	}
 
+	glDepthFunc( GL_LEQUAL );
+	glNormalColor();
+
+	glPolygonMode( GL_FRONT_AND_BACK, GL_POINT );
+	glEnable( GL_POINT_SMOOTH );
+	glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
+
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors"
 	     || n == "UV Sets" || n == "Tangents" || n == "Bitangents" )
 	{
-		glDepthFunc( GL_LEQUAL );
-		glNormalColor();
 		glBegin( GL_POINTS );
 
 		for ( int j = 0; j < transVerts.count(); j++ )
@@ -1095,8 +1108,6 @@ void Mesh::drawSelection() const
 	}
 
 	if ( n == "Points" ) {
-		glDepthFunc( GL_LEQUAL );
-		glNormalColor();
 		glBegin( GL_POINTS );
 		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
 		QModelIndex points = nif->getIndex( iData, "Points" );
@@ -1132,10 +1143,11 @@ void Mesh::drawSelection() const
 		}
 	}
 
-	if ( n == "Normals" || n == "TSpace" ) {
-		glDepthFunc( GL_LEQUAL );
-		glNormalColor();
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	glEnable( GL_LINE_SMOOTH );
+	glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
 
+	if ( n == "Normals" || n == "TSpace" ) {
 		float normalScale = bounds().radius / 20;
 
 		if ( normalScale < 0.1f )
@@ -1170,9 +1182,6 @@ void Mesh::drawSelection() const
 	}
 
 	if ( n == "Tangents" ) {
-		glDepthFunc( GL_LEQUAL );
-		glNormalColor();
-
 		float normalScale = bounds().radius / 20;
 		normalScale /= 2.0f;
 
@@ -1203,9 +1212,6 @@ void Mesh::drawSelection() const
 	}
 
 	if ( n == "Bitangents" ) {
-		glDepthFunc( GL_LEQUAL );
-		glNormalColor();
-
 		float normalScale = bounds().radius / 20;
 		normalScale /= 2.0f;
 
@@ -1236,35 +1242,35 @@ void Mesh::drawSelection() const
 	}
 
 	if ( n == "Faces" || n == "Triangles" ) {
-		glDepthFunc( GL_LEQUAL );
 		glLineWidth( 1.5f );
-		glNormalColor();
+
 		for ( const Triangle& tri : triangles ) {
-			glBegin( GL_LINE_STRIP );
+			glBegin( GL_TRIANGLES );
 			glVertex( transVerts.value( tri.v1() ) );
 			glVertex( transVerts.value( tri.v2() ) );
 			glVertex( transVerts.value( tri.v3() ) );
-			glVertex( transVerts.value( tri.v1() ) );
+			//glVertex( transVerts.value( tri.v1() ) );
 			glEnd();
 		}
 
 		if ( i >= 0 ) {
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 			glDepthFunc( GL_ALWAYS );
 			glHighlightColor();
 			Triangle tri = triangles.value( i );
-			glBegin( GL_LINE_STRIP );
+			glBegin( GL_TRIANGLES );
 			glVertex( transVerts.value( tri.v1() ) );
 			glVertex( transVerts.value( tri.v2() ) );
 			glVertex( transVerts.value( tri.v3() ) );
-			glVertex( transVerts.value( tri.v1() ) );
+			//glVertex( transVerts.value( tri.v1() ) );
 			glEnd();
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		}
 	}
 
 	if ( n == "Faces" || n == "Strips" || n == "Strip Lengths" ) {
-		glDepthFunc( GL_LEQUAL );
 		glLineWidth( 1.5f );
-		glNormalColor();
+
 		for ( const QVector<quint16>& strip : tristrips ) {
 			quint16 a = strip.value( 0 );
 			quint16 b = strip.value( 1 );
@@ -1313,7 +1319,6 @@ void Mesh::drawSelection() const
 	}
 
 	if ( n == "Skin Partition Blocks" ) {
-		glDepthFunc( GL_LEQUAL );
 
 		for ( int c = 0; c < partitions.count(); c++ ) {
 			if ( c == i )
