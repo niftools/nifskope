@@ -3,14 +3,18 @@
 
 #include "ui_about_dialog.h"
 
-class AboutDialog : public QDialog {
-    Q_OBJECT
+#include <QDialog>
+
+
+class AboutDialog : public QDialog
+{
+	Q_OBJECT
 
 public:
-    AboutDialog(QWidget *parent = 0);
+	AboutDialog( QWidget * parent = nullptr );
 
 private:
-    Ui::AboutDialog ui;
+	Ui::AboutDialog ui;
 };
 
 

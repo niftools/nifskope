@@ -31,14 +31,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
-#include "glcontroller.h"
+#include "options.h"
+
+#include "glcontroller.h" // Inherited
 #include "glscene.h"
-#include "../options.h"
+
+#include <QOpenGLContext>
+
 
 //! \file glproperty.cpp Property, subclasses and controllers
 
 //! Helper function that checks texture sets
-bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
+bool checkSet( int s, const QList<QVector<Vector2> > & texcoords )
 {
 	return s >= 0 && s < texcoords.count() && texcoords[s].count();
 }
@@ -46,47 +50,47 @@ bool checkSet( int s, const QList< QVector< Vector2 > > & texcoords )
 Property * Property::create( Scene * scene, const NifModel * nif, const QModelIndex & index )
 {
 	Property * property = 0;
-	
-	if ( nif->isNiBlock( index, "NiAlphaProperty" ) )
+
+	if ( nif->isNiBlock( index, "NiAlphaProperty" ) ) {
 		property = new AlphaProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiZBufferProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiZBufferProperty" ) ) {
 		property = new ZBufferProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiTexturingProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiTexturingProperty" ) ) {
 		property = new TexturingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiTextureProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiTextureProperty" ) ) {
 		property = new TextureProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiMaterialProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiMaterialProperty" ) ) {
 		property = new MaterialProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiSpecularProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiSpecularProperty" ) ) {
 		property = new SpecularProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiWireframeProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiWireframeProperty" ) ) {
 		property = new WireframeProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiVertexColorProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiVertexColorProperty" ) ) {
 		property = new VertexColorProperty( scene, index );
-	else if ( nif->isNiBlock( index, "NiStencilProperty" ) )
+	} else if ( nif->isNiBlock( index, "NiStencilProperty" ) ) {
 		property = new StencilProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSLightingShaderProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSLightingShaderProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) )
+	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
-	else if (index.isValid())
-	{
+	} else if ( index.isValid() ) {
 		NifItem * item = static_cast<NifItem *>( index.internalPointer() );
-		if (item)
+
+		if ( item )
 			qWarning() << "Unknown property: " << item->name();
 		else
 			qWarning() << "Unknown property: I can't determine its name";
 	}
-	
+
 	if ( property )
 		property->update( nif, index );
-	
+
 	return property;
 }
 
@@ -106,59 +110,64 @@ PropertyList::~PropertyList()
 
 void PropertyList::clear()
 {
-	foreach( Property * p, properties )
+	for ( Property * p : properties ) {
 		if ( --p->ref <= 0 )
 			delete p;
+	}
 	properties.clear();
 }
 
 PropertyList & PropertyList::operator=( const PropertyList & other )
 {
 	clear();
-	foreach ( Property * p, other.properties )
+	for ( Property * p : other.properties ) {
 		add( p );
+	}
 	return *this;
 }
 
 bool PropertyList::contains( Property * p ) const
 {
-	if ( ! p )	return false;
+	if ( !p )
+		return false;
+
 	QList<Property *> props = properties.values( p->type() );
 	return props.contains( p );
 }
 
 void PropertyList::add( Property * p )
 {
-	if ( p && ! contains( p ) )
-	{
-		++ p->ref;
+	if ( p && !contains( p ) ) {
+		++p->ref;
 		properties.insert( p->type(), p );
 	}
 }
 
 void PropertyList::del( Property * p )
 {
-	if ( ! p )	return;
-	
-	QHash<Property::Type, Property*>::iterator i = properties.find( p->type() );
-	while ( i != properties.end() && i.key() == p->type() )
-	{
-		if ( i.value() == p )
-		{
+	if ( !p )
+		return;
+
+	QHash<Property::Type, Property *>::iterator i = properties.find( p->type() );
+
+	while ( i != properties.end() && i.key() == p->type() ) {
+		if ( i.value() == p ) {
 			i = properties.erase( i );
+
 			if ( --p->ref <= 0 )
 				delete p;
-		}
-		else
+		} else {
 			++i;
+		}
 	}
 }
 
 Property * PropertyList::get( const QModelIndex & index ) const
 {
-	if ( ! index.isValid() )	return 0;
-	foreach ( Property * p, properties )
-	{
+	if ( !index.isValid() )
+		return 0;
+
+	for ( Property * p : properties ) {
 		if ( p->index() == index )
 			return p;
 	}
@@ -168,77 +177,80 @@ Property * PropertyList::get( const QModelIndex & index ) const
 void PropertyList::validate()
 {
 	QList<Property *> rem;
-	foreach ( Property * p, properties )
-		if ( ! p->isValid() )
+	for ( Property * p : properties ) {
+		if ( !p->isValid() )
 			rem.append( p );
-	foreach ( Property * p, rem )
+	}
+	for ( Property * p : rem ) {
 		del( p );
+	}
 }
 
 void PropertyList::merge( const PropertyList & other )
 {
-	foreach ( Property * p, other.properties )
-		if ( ! properties.contains( p->type() ) )
+	for ( Property * p : other.properties ) {
+		if ( !properties.contains( p->type() ) )
 			add( p );
+	}
 }
 
 void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 {
 	Property::update( nif, block );
-	
-	if ( iBlock.isValid() && iBlock == block )
-	{
+
+	if ( iBlock.isValid() && iBlock == block ) {
 		unsigned short flags = nif->get<int>( iBlock, "Flags" );
-		
+
 		alphaBlend = flags & 1;
-		
+
 		static const GLenum blendMap[16] = {
 			GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
 			GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
 			GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA_SATURATE, GL_ONE,
 			GL_ONE, GL_ONE, GL_ONE, GL_ONE
 		};
-		
+
 		alphaSrc = blendMap[ ( flags >> 1 ) & 0x0f ];
 		alphaDst = blendMap[ ( flags >> 5 ) & 0x0f ];
-		
+
 		static const GLenum testMap[8] = {
 			GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_NEVER
 		};
-		
+
 		alphaTest = flags & ( 1 << 9 );
 		alphaFunc = testMap[ ( flags >> 10 ) & 0x7 ];
 		alphaThreshold = nif->get<int>( iBlock, "Threshold" ) / 255.0;
-		
+
 		alphaSort = ( flags & 0x2000 ) == 0;
 	}
 }
 
 void glProperty( AlphaProperty * p )
 {
-	if ( p && p->alphaBlend && Options::blending() )
-	{
+	if ( p && p->alphaBlend && Options::blending() ) {
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
-	}
-	else
+	} else {
 		glDisable( GL_BLEND );
-	
-	if ( p && p->alphaTest && Options::blending() )
-	{
+	}
+
+	if ( p && p->alphaTest && Options::blending() ) {
+		//glEnable( GL_POLYGON_OFFSET_FILL );
+		//glPolygonOffset( -1.0f, -1.0f );
+		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
-	}
-	else
+	} else {
 		glDisable( GL_ALPHA_TEST );
+		//glDisable( GL_POLYGON_OFFSET_FILL );
+	}
 }
 
 void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 {
 	Property::update( nif, block );
-	
-	if ( iBlock.isValid() && iBlock == block )
-	{
+
+	if ( iBlock.isValid() && iBlock == block ) {
 		int flags = nif->get<int>( iBlock, "Flags" );
 		depthTest = flags & 1;
 		depthMask = flags & 2;
@@ -247,35 +259,28 @@ void ZBufferProperty::update( const NifModel * nif, const QModelIndex & block )
 		};
 
 		// This was checking version 0x10000001 ?
-		if ( nif->checkVersion( 0x04010012, 0x14000005 ) )
-		{
-			depthFunc = depthMap[ nif->get<int>( iBlock, "Function" ) & 0x07 ];
-		}
-		else if ( nif->checkVersion( 0x14010003, 0 ) )
-		{
+		if ( nif->checkVersion( 0x04010012, 0x14000005 ) ) {
+			depthFunc = depthMap[ nif->get < int > ( iBlock, "Function" ) & 0x07 ];
+		} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
 			depthFunc = depthMap[ (flags >> 2 ) & 0x07 ];
-		}
-		else
+		} else {
 			depthFunc = GL_LEQUAL;
+		}
 	}
 }
 
 void glProperty( ZBufferProperty * p )
 {
-	if ( p ) 
-	{
-		if ( p->depthTest )
-		{
+	if ( p ) {
+		if ( p->depthTest ) {
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( p->depthFunc );
-		}
-		else
+		} else {
 			glDisable( GL_DEPTH_TEST );
-		
+		}
+
 		glDepthMask( p->depthMask ? GL_TRUE : GL_FALSE );
-	}
-	else
-	{
+	} else {
 		glEnable( GL_DEPTH_TEST );
 		glDepthFunc( GL_LESS );
 		glDepthMask( GL_TRUE );
@@ -284,74 +289,94 @@ void glProperty( ZBufferProperty * p )
 }
 
 /*
-	TexturingProperty
+    TexturingProperty
 */
 
 void TexturingProperty::update( const NifModel * nif, const QModelIndex & property )
 {
 	Property::update( nif, property );
-	
-	if ( iBlock.isValid() && iBlock == property )
-	{
-		static const char * texnames[numTextures] = { "Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Map Texture", "Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture", "Decal 3 Texture" };
-		for ( int t = 0; t < numTextures; t++ )
-		{
+
+	if ( iBlock.isValid() && iBlock == property ) {
+		static const char * texnames[numTextures] = {
+			"Base Texture", "Dark Texture", "Detail Texture", "Gloss Texture", "Glow Texture", "Bump Map Texture", "Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture", "Decal 3 Texture"
+		};
+
+		for ( int t = 0; t < numTextures; t++ ) {
 			QModelIndex iTex = nif->getIndex( property, texnames[t] );
-			if ( iTex.isValid() )
-			{
-				textures[t].iSource = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
+
+			if ( iTex.isValid() ) {
+				textures[t].iSource  = nif->getBlock( nif->getLink( iTex, "Source" ), "NiSourceTexture" );
 				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
 				int filterMode = 0, clampMode = 0;
-				if( nif->checkVersion( 0, 0x14000005 ) )
-				{
+
+				if ( nif->checkVersion( 0, 0x14000005 ) ) {
 					filterMode = nif->get<int>( iTex, "Filter Mode" );
-					clampMode = nif->get<int>( iTex, "Clamp Mode" );
-				}
-				else if( nif->checkVersion( 0x14010003, 0 ) )
-				{
+					clampMode  = nif->get<int>( iTex, "Clamp Mode" );
+				} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
 					filterMode = ( ( nif->get<ushort>( iTex, "Flags" ) & 0x0F00 ) >> 0x08 );
-					clampMode = ( ( nif->get<ushort>(iTex, "Flags" ) & 0xF000 ) >> 0x0C );
+					clampMode  = ( ( nif->get<ushort>( iTex, "Flags" ) & 0xF000 ) >> 0x0C );
 				}
-				
-				switch ( filterMode )
-				{
-					// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
-					// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
-					case 0:		textures[t].filter = GL_NEAREST; 					break; // nearest
-					case 1:		textures[t].filter = GL_LINEAR;						break; // bilinear
-					case 2:		textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;		break; // trilinear
-					case 3:		textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;		break; // nearest from nearest
-					case 4:		textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;		break; // interpolate from nearest
-					case 5:		textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;		break; // bilinear from nearest
-					default:	textures[t].filter = GL_LINEAR;						break;
+
+				// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
+				// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
+				switch ( filterMode ) {
+				case 0:
+					textures[t].filter = GL_NEAREST;
+					break;             // nearest
+				case 1:
+					textures[t].filter = GL_LINEAR;
+					break;             // bilinear
+				case 2:
+					textures[t].filter = GL_LINEAR_MIPMAP_LINEAR;
+					break;             // trilinear
+				case 3:
+					textures[t].filter = GL_NEAREST_MIPMAP_NEAREST;
+					break;             // nearest from nearest
+				case 4:
+					textures[t].filter = GL_NEAREST_MIPMAP_LINEAR;
+					break;             // interpolate from nearest
+				case 5:
+					textures[t].filter = GL_LINEAR_MIPMAP_NEAREST;
+					break;             // bilinear from nearest
+				default:
+					textures[t].filter = GL_LINEAR;
+					break;
 				}
-				switch ( clampMode )
-				{
-					case 0:		textures[t].wrapS = GL_CLAMP;	textures[t].wrapT = GL_CLAMP;	break;
-					case 1:		textures[t].wrapS = GL_CLAMP;	textures[t].wrapT = GL_REPEAT;	break;
-					case 2:		textures[t].wrapS = GL_REPEAT;	textures[t].wrapT = GL_CLAMP;	break;
-					default:	textures[t].wrapS = GL_REPEAT;	textures[t].wrapT = GL_REPEAT;	break;
+
+				switch ( clampMode ) {
+				case 0:
+					textures[t].wrapS = GL_CLAMP;
+					textures[t].wrapT = GL_CLAMP;
+					break;
+				case 1:
+					textures[t].wrapS = GL_CLAMP;
+					textures[t].wrapT = GL_REPEAT;
+					break;
+				case 2:
+					textures[t].wrapS = GL_REPEAT;
+					textures[t].wrapT = GL_CLAMP;
+					break;
+				default:
+					textures[t].wrapS = GL_REPEAT;
+					textures[t].wrapT = GL_REPEAT;
+					break;
 				}
-				
+
 				textures[t].hasTransform = nif->get<int>( iTex, "Has Texture Transform" );
-				if ( textures[t].hasTransform )
-				{
+
+				if ( textures[t].hasTransform ) {
 					textures[t].translation = nif->get<Vector2>( iTex, "Translation" );
 					textures[t].tiling = nif->get<Vector2>( iTex, "Tiling" );
 					textures[t].rotation = nif->get<float>( iTex, "W Rotation" );
 					textures[t].center = nif->get<Vector2>( iTex, "Center Offset" );
-				}
-				else
-				{
+				} else {
 					// we don't really need to set these since they won't be applied in bind() unless hasTransform is set
 					textures[t].translation = Vector2();
 					textures[t].tiling = Vector2( 1.0, 1.0 );
 					textures[t].rotation = 0.0;
 					textures[t].center = Vector2( 0.5, 0.5 );
 				}
-			}
-			else
-			{
+			} else {
 				textures[t].iSource = QModelIndex();
 			}
 		}
@@ -361,22 +386,16 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 bool TexturingProperty::bind( int id, const QString & fname )
 {
 	GLuint mipmaps = 0;
-	if ( id >= 0 && id <= (numTextures - 1) )
-	{
+
+	if ( id >= 0 && id <= (numTextures - 1) ) {
 		if ( !fname.isEmpty() )
-			mipmaps = scene->bindTexture(  fname );
-		else 
+			mipmaps = scene->bindTexture( fname );
+		else
 			mipmaps = scene->bindTexture( textures[ id ].iSource );
-		if (mipmaps == 0)
+
+		if ( mipmaps == 0 )
 			return false;
-		
-		if ( get_max_anisotropy() > 0 )
-		{
-			if ( Options::antialias() )
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
-			else
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0 );
-		}
+
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? textures[id].filter : GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
@@ -384,209 +403,206 @@ bool TexturingProperty::bind( int id, const QString & fname )
 		glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 		glMatrixMode( GL_TEXTURE );
 		glLoadIdentity();
-		if ( textures[id].hasTransform )
-		{
+
+		if ( textures[id].hasTransform ) {
 			// Sign order is important here: get it backwards and we rotate etc.
 			// around (-center, -center)
 			glTranslatef( textures[id].center[0], textures[id].center[1], 0 );
-			
+
 			// rotation appears to be in radians
 			glRotatef( (textures[id].rotation * 180.0 / PI ), 0, 0, 1 );
 			// It appears that the scaling here is relative to center
 			glScalef( textures[id].tiling[0], textures[id].tiling[1], 1 );
 			glTranslatef( textures[id].translation[0], textures[id].translation[1], 0 );
 
-			glTranslatef( - textures[id].center[0], - textures[id].center[1], 0 );
+			glTranslatef( -textures[id].center[0], -textures[id].center[1], 0 );
 		}
+
 		glMatrixMode( GL_MODELVIEW );
 		return true;
 	}
-	else
-		return false;
+
+	return false;
 }
 
-bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords )
+bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
 {
-	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) )
-	{
+	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) ) {
 		glEnable( GL_TEXTURE_2D );
 		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ textures[id].coordset ].data() );
 		return true;
-	}
-	else
-	{
+	} else {
 		glDisable( GL_TEXTURE_2D );
 		return false;
 	}
 }
 
-bool TexturingProperty::bind( int id, const QList< QVector< Vector2 > > & texcoords, int stage )
+bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords, int stage )
 {
 	return ( activateTextureUnit( stage ) && bind( id, texcoords ) );
 }
 
 QString TexturingProperty::fileName( int id ) const
 {
-	if ( id >= 0 && id <= (numTextures - 1) )
-	{
-		QModelIndex iSource = textures[ id ].iSource;
+	if ( id >= 0 && id <= (numTextures - 1) ) {
+		QModelIndex iSource  = textures[ id ].iSource;
 		const NifModel * nif = qobject_cast<const NifModel *>( iSource.model() );
+
 		if ( nif && iSource.isValid() ) {
 			return nif->get<QString>( iSource, "File Name" );
 		}
 	}
+
 	return QString();
 }
 
 int TexturingProperty::coordSet( int id ) const
 {
-	if ( id >= 0 && id <= (numTextures - 1) )
-	{
+	if ( id >= 0 && id <= (numTextures - 1) ) {
 		return textures[id].coordset;
 	}
+
 	return -1;
 }
 
 //! Controller for source textures in a TexturingProperty
-class TexFlipController : public Controller
+class TexFlipController final : public Controller
 {
 public:
 	TexFlipController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 ) {}
+		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 )
+	{
+	}
 
 	TexFlipController( TextureProperty * prop, const QModelIndex & index )
-		: Controller ( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 ) {}
-	
-	void update( float time )
+		: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 )
+	{
+	}
+
+	void update( float time ) override final
 	{
 		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
-		if ( ! ( ( target || oldTarget ) && active && iSources.isValid() && nif ) )
+
+		if ( !( (target || oldTarget) && active && iSources.isValid() && nif ) )
 			return;
-		
+
 		float r = 0;
-		
+
 		if ( iData.isValid() )
 			interpolate( r, iData, "Data", ctrlTime( time ), flipLast );
 		else if ( flipDelta > 0 )
 			r = ctrlTime( time ) / flipDelta;
-		
+
 		// TexturingProperty
-		if ( target )
-		{
-			target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiSourceTexture" );
-		}
-		else if ( oldTarget )
-		{
-			oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int) r, 0 ) ), "NiImage" );
+		if ( target ) {
+			target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
+		} else if ( oldTarget ) {
+			oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
 		}
 	}
-	
-	bool update( const NifModel * nif, const QModelIndex & index )
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( Controller::update( nif, index ) )
-		{
+		if ( Controller::update( nif, index ) ) {
 			flipDelta = nif->get<float>( iBlock, "Delta" );
-			flipSlot = nif->get<int>( iBlock, "Texture Slot" );
-			
-			if ( nif->checkVersion( 0x04000000, 0 ) )
-			{
+			flipSlot  = nif->get<int>( iBlock, "Texture Slot" );
+
+			if ( nif->checkVersion( 0x04000000, 0 ) ) {
 				iSources = nif->getIndex( iBlock, "Sources" );
-			}
-			else
-			{
+			} else {
 				iSources = nif->getIndex( iBlock, "Images" );
 			}
+
 			return true;
 		}
+
 		return false;
 	}
-	
+
 protected:
 	QPointer<TexturingProperty> target;
 	QPointer<TextureProperty> oldTarget;
-	
-	float	flipDelta;
-	int		flipSlot;
-	
-	int		flipLast;
-	
+
+	float flipDelta;
+	int flipSlot;
+
+	int flipLast;
+
 	QPersistentModelIndex iSources;
 };
 
 //! Controller for transformations in a TexturingProperty
-class TexTransController : public Controller
+class TexTransController final : public Controller
 {
 public:
 	TexTransController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 ) {}
-	
-	void update( float time )
+		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 )
 	{
-		if ( ! ( target && active ) )
+	}
+
+	void update( float time ) override final
+	{
+		if ( !( target && active ) )
 			return;
-		
-		TexturingProperty::TexDesc * tex = & target->textures[ texSlot & 7 ];
-		
+
+		TexturingProperty::TexDesc * tex = &target->textures[ texSlot & 7 ];
+
 		float val;
-		if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) )
-		{
+
+		if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) ) {
 			// If desired, we could force display even if texture transform was disabled:
 			// tex->hasTransform = true;
 			// however "Has Texture Transform" doesn't exist until 10.1.0.0, and neither does
 			// NiTextureTransformController - so we won't bother
-			switch ( texOP )
-			{
-				case 0:
-					tex->translation[0] = val;
-					break;
-				case 1:
-					tex->translation[1] = val;
-					break;
-				case 2:
-					tex->rotation = val;
-					break;
-				case 3:
-					tex->tiling[0] = val;
-					break;
-				case 4:
-					tex->tiling[1] = val;
-					break;
+			switch ( texOP ) {
+			case 0:
+				tex->translation[0] = val;
+				break;
+			case 1:
+				tex->translation[1] = val;
+				break;
+			case 2:
+				tex->rotation = val;
+				break;
+			case 3:
+				tex->tiling[0] = val;
+				break;
+			case 4:
+				tex->tiling[1] = val;
+				break;
 			}
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( Controller::update( nif, index ) )
-		{
+		if ( Controller::update( nif, index ) ) {
 			texSlot = nif->get<int>( iBlock, "Texture Slot" );
 			texOP = nif->get<int>( iBlock, "Operation" );
 			return true;
 		}
+
 		return false;
 	}
-	
+
 protected:
 	QPointer<TexturingProperty> target;
-	
-	int		texSlot;
-	int		texOP;
-	
-	int		lX;
+
+	int texSlot;
+	int texOP;
+
+	int lX;
 };
 
 //! Set the appropriate Controller
 void TexturingProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
-	if ( nif->itemName( iController ) == "NiFlipController" )
-	{
+	if ( nif->itemName( iController ) == "NiFlipController" ) {
 		Controller * ctrl = new TexFlipController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
-	}
-	else if ( nif->itemName( iController ) == "NiTextureTransformController" )
-	{
+	} else if ( nif->itemName( iController ) == "NiTextureTransformController" ) {
 		Controller * ctrl = new TexTransController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
@@ -595,52 +611,45 @@ void TexturingProperty::setController( const NifModel * nif, const QModelIndex &
 
 int TexturingProperty::getId( const QString & texname )
 {
-	static QHash<QString, int> hash;
-	if ( hash.isEmpty() )
-	{
-		hash.insert( "base", 0 );
-		hash.insert( "dark", 1 );
-		hash.insert( "detail", 2 );
-		hash.insert( "gloss", 3 );
-		hash.insert( "glow", 4 );
-		hash.insert( "bumpmap", 5 );
-		hash.insert( "decal0", 6 );
-		hash.insert( "decal1", 7 );
-		hash.insert( "decal2", 8 );
-		hash.insert( "decal3", 9 );
-	}
-	if ( hash.contains( texname ) )
-		return hash[ texname ];
-	else
-		return -1;
+	const static QHash<QString, int> hash{
+		{ "base",   0 },
+		{ "dark",   1 },
+		{ "detail", 2 },
+		{ "gloss",  3 },
+		{ "glow",   4 },
+		{ "bumpmap", 5 },
+		{ "decal0", 6 },
+		{ "decal1", 7 },
+		{ "decal2", 8 },
+		{ "decal3", 9 }
+	};
+
+	return hash.value( texname, -1 );
 }
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && Options::texturing() && p->bind( 0 ) )
-	{
+	if ( p && Options::texturing() && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
 
 /*
-	TextureProperty
+    TextureProperty
 */
 
 void TextureProperty::update( const NifModel * nif, const QModelIndex & property )
 {
 	Property::update( nif, property );
-	
-	if ( iBlock.isValid() && iBlock == property )
-	{
+
+	if ( iBlock.isValid() && iBlock == property ) {
 		iImage = nif->getBlock( nif->getLink( iBlock, "Image" ), "NiImage" );
 	}
 }
 
 bool TextureProperty::bind()
 {
-	if ( GLuint mipmaps = scene->bindTexture( fileName() ) )
-	{
+	if ( GLuint mipmaps = scene->bindTexture( fileName() ) ) {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -651,20 +660,18 @@ bool TextureProperty::bind()
 		glMatrixMode( GL_MODELVIEW );
 		return true;
 	}
+
 	return false;
 }
 
-bool TextureProperty::bind( const QList< QVector< Vector2 > > & texcoords )
+bool TextureProperty::bind( const QList<QVector<Vector2> > & texcoords )
 {
-	if ( checkSet( 0, texcoords ) && bind() )
-	{
+	if ( checkSet( 0, texcoords ) && bind() ) {
 		glEnable( GL_TEXTURE_2D );
 		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
 		return true;
-	}
-	else
-	{
+	} else {
 		glDisable( GL_TEXTURE_2D );
 		return false;
 	}
@@ -673,16 +680,17 @@ bool TextureProperty::bind( const QList< QVector< Vector2 > > & texcoords )
 QString TextureProperty::fileName() const
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iImage.model() );
+
 	if ( nif && iImage.isValid() )
 		return nif->get<QString>( iImage, "File Name" );
+
 	return QString();
 }
 
 
 void TextureProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
-	if ( nif->itemName( iController ) == "NiFlipController" )
-	{
+	if ( nif->itemName( iController ) == "NiFlipController" ) {
 		Controller * ctrl = new TexFlipController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
@@ -691,157 +699,156 @@ void TextureProperty::setController( const NifModel * nif, const QModelIndex & i
 
 void glProperty( TextureProperty * p )
 {
-	if ( p && Options::texturing() && p->bind() )
-	{
+	if ( p && Options::texturing() && p->bind() ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
 
 /*
-	MaterialProperty
+    MaterialProperty
 */
 
 void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 {
 	Property::update( nif, index );
 
-	if ( iBlock.isValid() && iBlock == index )
-	{
+	if ( iBlock.isValid() && iBlock == index ) {
 		alpha = nif->get<float>( index, "Alpha" );
-		if ( alpha < 0.0 ) alpha = 0.0;
-		if ( alpha > 1.0 ) alpha = 1.0;
-		
-		ambient = Color4( nif->get<Color3>( index, "Ambient Color" ) );
-		diffuse = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
+
+		if ( alpha < 0.0 )
+			alpha = 0.0;
+
+		if ( alpha > 1.0 )
+			alpha = 1.0;
+
+		ambient  = Color4( nif->get<Color3>( index, "Ambient Color" ) );
+		diffuse  = Color4( nif->get<Color3>( index, "Diffuse Color" ) );
 		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
 		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
-		
+
 		shininess = nif->get<float>( index, "Glossiness" );
 	}
-	
+
 	// special case to force refresh of materials
 	bool overrideMaterials = Options::overrideMaterials();
-	if ( overridden && !overrideMaterials && iBlock.isValid() )
-	{
-		ambient = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
-		diffuse = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
+
+	if ( overridden && !overrideMaterials && iBlock.isValid() ) {
+		ambient  = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
+		diffuse  = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
 		specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
 		emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
-	} 
-	else if ( overrideMaterials  )
-	{
-		ambient = Color4( Options::overrideAmbient() );
-		diffuse = Color4( Options::overrideDiffuse() );
+	} else if ( overrideMaterials ) {
+		ambient  = Color4( Options::overrideAmbient() );
+		diffuse  = Color4( Options::overrideDiffuse() );
 		specular = Color4( Options::overrideSpecular() );
 		emissive = Color4( Options::overrideEmissive() );
 	}
-	overridden = overrideMaterials;
 
+	overridden = overrideMaterials;
 }
 
 //! Controller for alpha values in a MaterialProperty
-class AlphaController : public Controller
+class AlphaController final : public Controller
 {
 public:
 	AlphaController( MaterialProperty * prop, const QModelIndex & index )
-			: Controller( index ), target( prop ), lAlpha( 0 ) {}
-	
-	void update( float time )
+		: Controller( index ), target( prop ), lAlpha( 0 )
 	{
-		if ( ! ( active && target ) )
+	}
+
+	void update( float time ) override final
+	{
+		if ( !( active && target ) )
 			return;
-		
+
 		interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
-		
+
 		if ( target->alpha < 0 )
 			target->alpha = 0;
+
 		if ( target->alpha > 1 )
 			target->alpha = 1;
 	}
-	
+
 protected:
 	QPointer<MaterialProperty> target;
-	
+
 	int lAlpha;
 };
 
 //! Controller for color values in a MaterialProperty
-class MaterialColorController : public Controller
+class MaterialColorController final : public Controller
 {
 public:
 	MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient ) {}
-	
-	void update( float time )
+		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
 	{
-		if ( ! ( active && target ) )
+	}
+
+	void update( float time ) override final
+	{
+		if ( !( active && target ) )
 			return;
-		
+
 		Vector3 v3;
 		interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
-		
+
 		Color4 color( Color3( v3 ), 1.0 );
-		
-		switch ( tColor )
-		{
-			case tAmbient:
-				target->ambient = color;
-				break;
-			case tDiffuse:
-				target->diffuse = color;
-				break;
-			case tSpecular:
-				target->specular = color;
-				break;
-			case tSelfIllum:
-				target->emissive = color;
-				break;
+
+		switch ( tColor ) {
+		case tAmbient:
+			target->ambient = color;
+			break;
+		case tDiffuse:
+			target->diffuse = color;
+			break;
+		case tSpecular:
+			target->specular = color;
+			break;
+		case tSelfIllum:
+			target->emissive = color;
+			break;
 		}
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index )
+	bool update( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( Controller::update( nif, index ) )
-		{
-			if ( nif->checkVersion( 0x0A010000, 0 ) )
-			{
+		if ( Controller::update( nif, index ) ) {
+			if ( nif->checkVersion( 0x0A010000, 0 ) ) {
 				tColor = nif->get<int>( iBlock, "Target Color" );
-			}
-			else
-			{
+			} else {
 				tColor = ( ( nif->get<int>( iBlock, "Flags" ) >> 4 ) & 7 );
 			}
+
 			return true;
 		}
+
 		return false;
 	}
-	
+
 protected:
 	QPointer<MaterialProperty> target; //!< The MaterialProperty being controlled
-	
-	int lColor; //!< Last interpolation time
-	int tColor; //!< The color slot being controlled
-	
+
+	int lColor;                        //!< Last interpolation time
+	int tColor;                        //!< The color slot being controlled
+
 	//! Color slots that can be controlled
-	enum {
-		tAmbient = 0,
-		tDiffuse = 1,
-		tSpecular = 2,
+	enum
+	{
+		tAmbient   = 0,
+		tDiffuse   = 1,
+		tSpecular  = 2,
 		tSelfIllum = 3
 	};
-	
 };
 
 void MaterialProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
-	if ( nif->itemName( iController ) == "NiAlphaController" )
-	{
+	if ( nif->itemName( iController ) == "NiAlphaController" ) {
 		Controller * ctrl = new AlphaController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
-	}
-	else if ( nif->itemName( iController ) == "NiMaterialColorController" )
-	{
+	} else if ( nif->itemName( iController ) == "NiMaterialColorController" ) {
 		Controller * ctrl = new MaterialColorController( this, iController );
 		ctrl->update( nif, iController );
 		controllers.append( ctrl );
@@ -850,25 +857,19 @@ void MaterialProperty::setController( const NifModel * nif, const QModelIndex & 
 
 void glProperty( MaterialProperty * p, SpecularProperty * s )
 {
-	if ( p )
-	{
+	if ( p ) {
 		glMaterial( GL_FRONT_AND_BACK, GL_AMBIENT, p->ambient.blend( p->alpha ) );
 		glMaterial( GL_FRONT_AND_BACK, GL_DIFFUSE, p->diffuse.blend( p->alpha ) );
 		glMaterial( GL_FRONT_AND_BACK, GL_EMISSION, p->emissive.blend( p->alpha ) );
-		
-		if ( ! s || s->spec )
-		{
-			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, p->shininess );
+
+		if ( !s || s->spec ) {
+			glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, p->shininess );
 			glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, p->specular.blend( p->alpha ) );
-		}
-		else
-		{
+		} else {
 			glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 0.0 );
 			glMaterial( GL_FRONT_AND_BACK, GL_SPECULAR, Color4( 0.0, 0.0, 0.0, p->alpha ) );
 		}
-	}
-	else
-	{
+	} else {
 		Color4 a( 0.4f, 0.4f, 0.4f, 1.0f );
 		Color4 d( 0.8f, 0.8f, 0.8f, 1.0f );
 		Color4 s( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -882,8 +883,8 @@ void glProperty( MaterialProperty * p, SpecularProperty * s )
 void SpecularProperty::update( const NifModel * nif, const QModelIndex & block )
 {
 	Property::update( nif, block );
-	if ( iBlock.isValid() && iBlock == block )
-	{
+
+	if ( iBlock.isValid() && iBlock == block ) {
 		spec = nif->get<int>( iBlock, "Flags" ) != 0;
 	}
 }
@@ -891,21 +892,18 @@ void SpecularProperty::update( const NifModel * nif, const QModelIndex & block )
 void WireframeProperty::update( const NifModel * nif, const QModelIndex & block )
 {
 	Property::update( nif, block );
-	if ( iBlock.isValid() && iBlock == block )
-	{
+
+	if ( iBlock.isValid() && iBlock == block ) {
 		wire = nif->get<int>( iBlock, "Flags" ) != 0;
 	}
 }
 
 void glProperty( WireframeProperty * p )
 {
-	if ( p && p->wire )
-	{
+	if ( p && p->wire ) {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		glLineWidth( 1.0 );
-	}
-	else
-	{
+	} else {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	}
 }
@@ -913,8 +911,8 @@ void glProperty( WireframeProperty * p )
 void VertexColorProperty::update( const NifModel * nif, const QModelIndex & block )
 {
 	Property::update( nif, block );
-	if ( iBlock.isValid() && iBlock == block )
-	{
+
+	if ( iBlock.isValid() && iBlock == block ) {
 		vertexmode = nif->get<int>( iBlock, "Vertex Mode" );
 		// 0 : source ignore
 		// 1 : source emissive
@@ -928,33 +926,30 @@ void VertexColorProperty::update( const NifModel * nif, const QModelIndex & bloc
 void glProperty( VertexColorProperty * p, bool vertexcolors )
 {
 	// FIXME
-	
-	if ( ! vertexcolors )
-	{
+
+	if ( !vertexcolors ) {
 		glDisable( GL_COLOR_MATERIAL );
 		glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
 		return;
 	}
-	
-	if ( p )
-	{
+
+	if ( p ) {
 		//if ( p->lightmode )
 		{
-			switch ( p->vertexmode )
-			{
-				case 0:
-					glDisable( GL_COLOR_MATERIAL );
-					glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
-					return;
-				case 1:
-					glEnable( GL_COLOR_MATERIAL );
-					glColorMaterial( GL_FRONT_AND_BACK, GL_EMISSION );
-					return;
-				case 2:
-				default:
-					glEnable( GL_COLOR_MATERIAL );
-					glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
-					return;
+			switch ( p->vertexmode ) {
+			case 0:
+				glDisable( GL_COLOR_MATERIAL );
+				glColor( Color4( 1.0, 1.0, 1.0, 1.0 ) );
+				return;
+			case 1:
+				glEnable( GL_COLOR_MATERIAL );
+				glColorMaterial( GL_FRONT_AND_BACK, GL_EMISSION );
+				return;
+			case 2:
+			default:
+				glEnable( GL_COLOR_MATERIAL );
+				glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+				return;
 			}
 		}
 		//else
@@ -962,9 +957,7 @@ void glProperty( VertexColorProperty * p, bool vertexcolors )
 		//	glDisable( GL_LIGHTING );
 		//	glDisable( GL_COLOR_MATERIAL );
 		//}
-	}
-	else
-	{
+	} else {
 		glEnable( GL_COLOR_MATERIAL );
 		glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
 	}
@@ -973,48 +966,43 @@ void glProperty( VertexColorProperty * p, bool vertexcolors )
 void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 {
 	Property::update( nif, block );
-	if ( iBlock.isValid() && iBlock == block )
-	{
+
+	if ( iBlock.isValid() && iBlock == block ) {
 		//static const GLenum functions[8] = { GL_NEVER, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_ALWAYS };
 		//static const GLenum operations[8] = { GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT, GL_KEEP, GL_KEEP };
-		
+
 		// ! glFrontFace( GL_CCW )
-		if ( nif->checkVersion( 0, 0x14000005 ) )
-		{
-			switch ( nif->get<int>( iBlock, "Draw Mode" ) )
-			{
-				case 2:
-					cullEnable = true;
-					cullMode = GL_FRONT;
-					break;
-				case 3:
-					cullEnable = false;
-					cullMode = GL_BACK;
-					break;
-				case 1:
-				default:
-					cullEnable = true;
-					cullMode = GL_BACK;
-					break;
+		if ( nif->checkVersion( 0, 0x14000005 ) ) {
+			switch ( nif->get<int>( iBlock, "Draw Mode" ) ) {
+			case 2:
+				cullEnable = true;
+				cullMode = GL_FRONT;
+				break;
+			case 3:
+				cullEnable = false;
+				cullMode = GL_BACK;
+				break;
+			case 1:
+			default:
+				cullEnable = true;
+				cullMode = GL_BACK;
+				break;
 			}
-		}
-		else
-		{
-			switch ( ( nif->get<int>( iBlock, "Flags" ) >> 10 ) & 3 )
-			{
-				case 2:
-					cullEnable = true;
-					cullMode = GL_FRONT;
-					break;
-				case 3:
-					cullEnable = false;
-					cullMode = GL_BACK;
-					break;
-				case 1:
-				default:
-					cullEnable = true;
-					cullMode = GL_BACK;
-					break;
+		} else {
+			switch ( ( nif->get<int>( iBlock, "Flags" ) >> 10 ) & 3 ) {
+			case 2:
+				cullEnable = true;
+				cullMode = GL_FRONT;
+				break;
+			case 3:
+				cullEnable = false;
+				cullMode = GL_BACK;
+				break;
+			case 1:
+			default:
+				cullEnable = true;
+				cullMode = GL_BACK;
+				break;
 			}
 		}
 	}
@@ -1022,42 +1010,39 @@ void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 
 void glProperty( StencilProperty * p )
 {
-	if ( p )
-	{
+	if ( p ) {
 		if ( p->cullEnable )
 			glEnable( GL_CULL_FACE );
 		else
 			glDisable( GL_CULL_FACE );
+
 		glCullFace( p->cullMode );
-	}
-	else
-	{
+	} else {
 		glEnable( GL_CULL_FACE );
 		glCullFace( GL_BACK );
 	}
 }
 
 /*
-	BSShaderLightingProperty
+    BSShaderLightingProperty
 */
 
 void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex & property )
 {
 	Property::update( nif, property );
 
-	if ( iBlock.isValid() && iBlock == property )
-	{
+	if ( iBlock.isValid() && iBlock == property ) {
 		iTextureSet = nif->getBlock( nif->getLink( iBlock, "Texture Set" ), "BSShaderTextureSet" );
+
 		// handle niobject name="BSEffectShaderProperty...
-		if (!iTextureSet.isValid())
+		if ( !iTextureSet.isValid() )
 			iSourceTexture = iBlock;
 	}
 }
 
 void glProperty( BSShaderLightingProperty * p )
 {
-	if ( p && Options::texturing() && p->bind( 0 ) )
-	{
+	if ( p && Options::texturing() && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -1065,11 +1050,13 @@ void glProperty( BSShaderLightingProperty * p )
 bool BSShaderLightingProperty::bind( int id, const QString & fname )
 {
 	GLuint mipmaps = 0;
+
 	if ( !fname.isEmpty() )
-		mipmaps = scene->bindTexture(  fname );
-	else 
-		mipmaps = scene->bindTexture( this->fileName(id) );
-	if (mipmaps == 0)
+		mipmaps = scene->bindTexture( fname );
+	else
+		mipmaps = scene->bindTexture( this->fileName( id ) );
+
+	if ( mipmaps == 0 )
 		return false;
 
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -1083,59 +1070,53 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname )
 	return true;
 }
 
-bool BSShaderLightingProperty::bind( int id, const QList< QVector<Vector2> > & texcoords )
+bool BSShaderLightingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
 {
-	if ( checkSet( 0, texcoords ) && bind(id) )
-	{
+	if ( checkSet( 0, texcoords ) && bind( id ) ) {
 		glEnable( GL_TEXTURE_2D );
 		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		glTexCoordPointer( 2, GL_FLOAT, 0, texcoords[ 0 ].data() );
 		return true;
 	}
-	else
-	{
-		glDisable( GL_TEXTURE_2D );
-		return false;
-	}
+
+	glDisable( GL_TEXTURE_2D );
+	return false;
 }
 
 QString BSShaderLightingProperty::fileName( int id ) const
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
-	if ( nif && iTextureSet.isValid() )
-	{
+
+	if ( nif && iTextureSet.isValid() ) {
 		int nTextures = nif->get<int>( iTextureSet, "Num Textures" );
 		QModelIndex iTextures = nif->getIndex( iTextureSet, "Textures" );
-		if (id >= 0 && id < nTextures)
+
+		if ( id >= 0 && id < nTextures )
 			return nif->get<QString>( iTextures.child( id, 0 ) );
-	}
-	else
-	{
+	} else {
 		// handle niobject name="BSEffectShaderProperty...
 		nif = qobject_cast<const NifModel *>( iSourceTexture.model() );
-		if (nif && iSourceTexture.isValid())
-			return nif->get<QString>(iSourceTexture, "Source Texture");
+
+		if ( nif && iSourceTexture.isValid() )
+			return nif->get<QString>( iSourceTexture, "Source Texture" );
 	}
+
 	return QString();
 }
 
 int BSShaderLightingProperty::getId( const QString & id )
 {
-	static QHash<QString, int> hash;
-	if ( hash.isEmpty() )
-	{
-		hash.insert( "base", 0 );
-		hash.insert( "dark", 1 );
-		hash.insert( "detail", 2 );
-		hash.insert( "gloss", 3 );
-		hash.insert( "glow", 4 );
-		hash.insert( "bumpmap", 5 );
-		hash.insert( "decal0", 6 );
-		hash.insert( "decal1", 7 );
-	}
-	if ( hash.contains( id ) )
-		return hash[ id ];
-	else
-		return -1;
+	const static QHash<QString, int> hash{
+		{ "base",   0 },
+		{ "dark",   1 },
+		{ "detail", 2 },
+		{ "gloss",  3 },
+		{ "glow",   4 },
+		{ "bumpmap", 5 },
+		{ "decal0", 6 },
+		{ "decal1", 7 }
+	};
+
+	return hash.value( id, -1 );
 }
 

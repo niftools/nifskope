@@ -7,6 +7,9 @@ TARGET   = NifSkope
 
 QT += xml opengl network widgets
 
+# C++11 Support
+CONFIG += c++11
+
 # Dependencies
 CONFIG += fsengine nvtristrip qhull
 
@@ -25,11 +28,22 @@ CONFIG(debug, debug|release) {
 #	uncomment this if you want the text stats gl option
 #	DEFINES += USE_GL_QPAINTER
 
-INCLUDEPATH += lib .
+INCLUDEPATH += src lib
 
 TRANSLATIONS += \
-	lang/NifSkope_de.ts \
-	lang/NifSkope_fr.ts
+	res/lang/NifSkope_de.ts \
+	res/lang/NifSkope_fr.ts
+
+# Require explicit
+DEFINES += \
+	QT_NO_CAST_FROM_BYTEARRAY \ # QByteArray deprecations
+	QT_NO_URL_CAST_FROM_STRING \ # QUrl deprecations
+	QT_DISABLE_DEPRECATED_BEFORE=0x050200 #\ # Disable all functions deprecated as of 5.2
+
+	# Useful for tracking down strings not using
+	#	QObject::tr() for translations.
+	# QT_NO_CAST_FROM_ASCII \
+	# QT_NO_CAST_TO_ASCII
 
 
 ###############################
@@ -180,7 +194,8 @@ HEADERS += \
 	src/widgets/uvedit.h \
 	src/widgets/valueedit.h \
 	src/widgets/xmlcheck.h \
-	src/ui/about_dialog.h
+	src/ui/about_dialog.h \
+	src/version.h
 
 SOURCES += \
 	src/basemodel.cpp \
@@ -258,7 +273,8 @@ SOURCES += \
 	src/widgets/uvedit.cpp \
 	src/widgets/valueedit.cpp \
 	src/widgets/xmlcheck.cpp \
-	src/ui/about_dialog.cpp
+	src/ui/about_dialog.cpp \
+	src/version.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
@@ -328,7 +344,9 @@ win32 {
 
 # MSVC
 #  Both Visual Studio and Qt Creator
-*msvc* {
+#  Recommended: msvc2012 or higher
+#              (msvc2010 not tested)
+*msvc201* {
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
 
@@ -342,12 +360,19 @@ win32 {
 	# LINKER FLAGS
 
 	#  Manifest Embed
-	$$SHADOWBUILD {
+	#    msvc2012 only (when /MANIFEST:embed was introduced)
+	*msvc2012:$$SHADOWBUILD {
 		# Qt Creator only
 		#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
+		#	Check status of bug: https://bugreports.qt-project.org/browse/QTBUG-37363
+		#	                     https://codereview.qt-project.org/#change,80782
+		#	... So that this may removed later.
 		CONFIG -= embed_manifest_exe
 		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
 	}
+
+	#  Relocate .lib and .exp files to keep release dir clean
+	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
 
 	#  PDB location
 	QMAKE_LFLAGS_DEBUG += /PDB:$$syspath($${INTERMEDIATE}/nifskope.pdb)
@@ -357,19 +382,23 @@ win32 {
 	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
 }
 
-
-static:*msvc* {
-	#  Relocate .lib and .exp files to keep release dir clean
-	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
+# MSVC < 2010
+*msvc200* {
+	# Throw up a warning
+	message( WARNING: Project file does not support MSVC 2008 or lower )
 }
 
 
 # MinGW, GCC
+#  Recommended: GCC 4.8.1+
 *-g++ {
+
 	# COMPILER FLAGS
 
 	#  Optimization flags
 	QMAKE_CXXFLAGS_RELEASE *= -O3
+	# C++11 Support
+	QMAKE_CXXFLAGS_RELEASE *= -std=c++11
 }
 
 unix:!macx {
@@ -442,6 +471,17 @@ build_pass {
 	win32:!static {
 		# Copy DLLs to build dir
 		copyFiles( $$QtBins(),, true )
+
+		platforms += \
+			$$[QT_INSTALL_PLUGINS]/platforms/qminimal$${DLLEXT} \
+			$$[QT_INSTALL_PLUGINS]/platforms/qwindows$${DLLEXT}
+		
+		imageformats += \
+			$$[QT_INSTALL_PLUGINS]/imageformats/qjpeg$${DLLEXT} \
+			$$[QT_INSTALL_PLUGINS]/imageformats/qtga$${DLLEXT}
+
+		copyFiles( $$platforms, platforms, true )
+		copyFiles( $$imageformats, imageformats, true )
 	}
 
 } # end build_pass

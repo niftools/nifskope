@@ -33,106 +33,110 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFCHECKBOXLIST_H
 #define NIFCHECKBOXLIST_H
 
-#include "../nifvalue.h"
+#include "nifmodel.h"
+#include "nifvalue.h"
 
-#include <QWidget>
-#include <QComboBox>
-#include <QCheckBox>
-#include <QLineEdit>
-#include <QItemDelegate>
-#include <QPointer>
+#include <QComboBox>     // Inherited
+#include <QItemDelegate> // Inherited
+#include <QLineEdit>     // Inherited
+#include <QValidator>    // Inherited
 #include <QApplication>
+#include <QCheckBox>
+#include <QPointer>
 #include <QStandardItem>
+#include <QWidget>
 
-#include "../nifmodel.h"
 
 // Original Implementation by:  da-crystal
 //   http://da-crystal.net/GCMS/blog/checkboxlist-in-qt/
 
-class CheckBoxListDelegate : public QItemDelegate
+class CheckBoxListDelegate final : public QItemDelegate
 {
 public:
-    CheckBoxListDelegate(QObject *parent);
-	 ~CheckBoxListDelegate();
- 
-	void paint(QPainter *painter, const QStyleOptionViewItem &option,
-				  const QModelIndex &index) const;
- 
-    QWidget *createEditor(QWidget *parent,
-		 const QStyleOptionViewItem & option ,
-		 const QModelIndex & index ) const;
- 
-	 void setEditorData(QWidget *editor,
-										 const QModelIndex &index) const;
- 
-	 void setModelData(QWidget *editor, QAbstractItemModel *model,
-										const QModelIndex &index) const;
- 
-	 void updateEditorGeometry(QWidget *editor,
-		 const QStyleOptionViewItem &option, const QModelIndex &index ) const;
- };
- 
+	CheckBoxListDelegate( QObject * parent );
+	~CheckBoxListDelegate();
 
-class CheckBoxList: public QComboBox
+	void paint( QPainter * painter, const QStyleOptionViewItem & option,
+	            const QModelIndex & index ) const override final;
+
+	QWidget * createEditor( QWidget * parent,
+	                        const QStyleOptionViewItem & option,
+							const QModelIndex & index ) const override final;
+
+	void setEditorData( QWidget * editor,
+	                    const QModelIndex & index ) const override final;
+
+	void setModelData( QWidget * editor, QAbstractItemModel * model,
+	                   const QModelIndex & index ) const override final;
+
+	void updateEditorGeometry( QWidget * editor,
+	                           const QStyleOptionViewItem & option, const QModelIndex & index ) const override final;
+};
+
+
+class CheckBoxList : public QComboBox
 {
-	Q_OBJECT;
- 
+	Q_OBJECT
+
 public:
-	CheckBoxList(QWidget *widget = 0);
+	CheckBoxList( QWidget * widget = nullptr );
 	virtual ~CheckBoxList();
-	bool eventFilter(QObject *object, QEvent *event);
-	virtual void paintEvent(QPaintEvent *);
-	
+	bool eventFilter( QObject * object, QEvent * event ) override final;
+	void paintEvent( QPaintEvent * ) override final;
+
 	virtual void updateText() {}
-};    
+};
 
 //////////////////////////////////////////////////////////////////////////
 
-class NifCheckListBoxEditor : public QLineEdit
+class NifCheckListBoxEditor final : public QLineEdit
 {
 	Q_OBJECT
+
 public:
-	explicit NifCheckListBoxEditor(QWidget* parent);
+	explicit NifCheckListBoxEditor( QWidget * parent );
 
 	bool hasFocus() const;
 
 protected:
-	virtual void focusInEvent(QFocusEvent * e);
-	virtual void focusOutEvent(QFocusEvent * e);
+	void focusInEvent( QFocusEvent * e ) override final;
+	void focusOutEvent( QFocusEvent * e ) override final;
 
 private:
-	Q_DISABLE_COPY(NifCheckListBoxEditor);
+	Q_DISABLE_COPY( NifCheckListBoxEditor )
 	bool inFocus;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-class NifCheckBoxListValidator : public QValidator
+class NifCheckBoxListValidator final : public QValidator
 {
 	Q_OBJECT
-public:
-	explicit NifCheckBoxListValidator(NifCheckListBoxEditor* edit);
 
-	virtual State validate(QString &, int &) const;
-	virtual void fixup(QString &) const;
+public:
+	explicit NifCheckBoxListValidator( NifCheckListBoxEditor * edit );
+
+	State validate( QString &, int & ) const override final;
+	void fixup( QString & ) const override final;
 
 private:
-	Q_DISABLE_COPY(NifCheckBoxListValidator);
-	NifCheckListBoxEditor* edit;
+	Q_DISABLE_COPY( NifCheckBoxListValidator )
+	NifCheckListBoxEditor * edit;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class NifCheckBoxList : public CheckBoxList
 {
-	Q_OBJECT;
+	Q_OBJECT
+
 public:
-	NifCheckBoxList(QWidget *widget = 0);
+	NifCheckBoxList( QWidget * widget = nullptr );
 	virtual ~NifCheckBoxList();
 
 protected:
-	void updateText();
-	void parseText(const QString& text);
+	void updateText() override final;
+	void parseText( const QString & text );
 
 private slots:
 	void sltDataChanged( const QModelIndex &, const QModelIndex & );

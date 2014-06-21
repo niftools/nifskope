@@ -33,8 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLMESH_H
 #define GLMESH_H
 
-#include "glnode.h"
+#include "glnode.h" // Inherited
 #include "gltools.h"
+
+#include <QPersistentModelIndex>
+#include <QVector>
+#include <QString>
+
 
 //! \file glmesh.h Mesh class
 
@@ -42,27 +47,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Mesh : public Node
 {
 public:
-	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) {double_sided = false; double_sided_es = false;}
-	
-	void clear();
-	void update( const NifModel * nif, const QModelIndex & );
-	
-	void transform();
-	void transformShapes();
-	
-	void drawShapes( NodeList * draw2nd = 0 );
-	void drawSelection() const;
-	
-	bool isHidden() const;
-	
+	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) { double_sided = false; double_sided_es = false; }
+	~Mesh() { clear(); }
+
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & ) override;
+	void transform() override;
+
+	void transformShapes() override;
+
+	void drawShapes( NodeList * draw2nd = nullptr ) override;
+	void drawSelection() const override;
+
+	bool isHidden() const override;
+
 	//! The bounds of the mesh?
-	BoundSphere bounds() const;
-	
-	QString textStats() const;
-	
-protected:	
-	void setController( const NifModel * nif, const QModelIndex & controller );
-	
+	BoundSphere bounds() const override;
+
+	QString textStats() const override;
+
+protected:
+	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+
 	//! Shape data
 	QPersistentModelIndex iData;
 	//! Skin instance
@@ -77,7 +83,7 @@ protected:
 	bool upData;
 	//! Unsure - does teh skin data need updating?
 	bool upSkin;
-	
+
 	//! Vertices
 	QVector<Vector3> verts;
 	//! Normals
@@ -88,10 +94,10 @@ protected:
 	QVector<Vector3> tangents;
 	//! Bitangents
 	QVector<Vector3> bitangents;
-	
+
 	//! UV coordinate sets
-	QList< QVector<Vector2> > coords;
-	
+	QList<QVector<Vector2> > coords;
+
 	//! Transformed vertices
 	QVector<Vector3> transVerts;
 	//! Transformed normals
@@ -102,33 +108,34 @@ protected:
 	QVector<Vector3> transTangents;
 	//! Transformed bitangents
 	QVector<Vector3> transBitangents;
-	
+
 	int skelRoot;
 	Transform skelTrans;
 	QVector<int> bones;
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
-	
+
 	//! Triangles
 	QVector<Triangle> triangles;
 	//! Strip points
-	QList< QVector<quint16> > tristrips;
+	QList<QVector<quint16> > tristrips;
 	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
 	//! Triangle indices
 	QVector<quint16> indices;
-	
+
 	bool transformRigid;
-	
+
 	mutable BoundSphere bndSphere;
 	mutable bool upBounds;
-	
+
 	QString shader;
-	
+
 	friend class MorphController;
 	friend class UVController;
 	friend class Renderer;
 
+	static bool isBSLODPresent;
 	bool double_sided;
 	bool double_sided_es;
 };

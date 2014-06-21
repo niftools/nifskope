@@ -30,11 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-// how long the visual save/load feedback is visible
-#define FEEDBACK_TIME 1200
-
 #include "fileselect.h"
-#include "../config.h"
+#include "config.h"
 
 #include <QAction>
 #include <QApplication>
@@ -43,19 +40,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileSystemModel>
 #include <QFileDialog>
 #include <QLayout>
+#include <QLineEdit>
 #include <QMenu>
 #include <QSettings>
 #include <QThread>
 #include <QTimer>
 #include <QToolButton>
 
+// how long the visual save/load feedback is visible
+#define FEEDBACK_TIME 1200
+
+
 CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of Filenames", parent )
 {
-	NIFSKOPE_QSETTINGS(cfg);
+	QSettings cfg;
 	setCheckable( true );
 	setChecked( cfg.value( "completion of file names", false ).toBool() );
 
-	connect( this, SIGNAL( toggled( bool ) ), this, SLOT( sltToggled( bool ) ) );
+	connect( this, &CompletionAction::toggled, this, &CompletionAction::sltToggled );
 }
 
 CompletionAction::~CompletionAction()
@@ -64,8 +66,8 @@ CompletionAction::~CompletionAction()
 
 void CompletionAction::sltToggled( bool )
 {
-	NIFSKOPE_QSETTINGS(cfg);
-	cfg.setValue( tr("completion of file names"), isChecked() );
+	QSettings cfg;
+	cfg.setValue( tr( "completion of file names" ), isChecked() );
 }
 
 FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::Direction dir, QKeySequence keySeq )
@@ -74,38 +76,39 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	QBoxLayout * lay = new QBoxLayout( dir, this );
 	lay->setMargin( 0 );
 	setLayout( lay );
-	
+
 	line = new QLineEdit( this );
 
-	connect( line, SIGNAL( textEdited( const QString & ) ), this, SIGNAL( sigEdited( const QString & ) ) );
-	connect( line, SIGNAL( returnPressed() ), this, SLOT( activate() ) );
-	
+	connect( line, &QLineEdit::textEdited, this, &FileSelector::sigEdited );
+	connect( line, &QLineEdit::returnPressed , this, &FileSelector::activate );
+
 	action = new QAction( this );
 	action->setText( buttonText );
-	connect( action, SIGNAL( triggered() ), this, SLOT( browse() ) );
-	if ( ! keySeq.isEmpty() )
-	{
+	connect( action, &QAction::triggered, this, &FileSelector::browse );
+
+	if ( !keySeq.isEmpty() ) {
 		action->setShortcut( keySeq );
 	}
+
 	addAction( action );
-	
+
 	QToolButton * button = new QToolButton( this );
 	button->setDefaultAction( action );
-	
+
 	lay->addWidget( line );
 	lay->addWidget( button );
-	
+
 	// setFocusProxy( line );
-	
+
 	line->installEventFilter( this );
-	
-	connect( completionAction(), SIGNAL( toggled( bool ) ), this, SLOT( setCompletionEnabled( bool ) ) );
+
+	connect( completionAction(), &QAction::toggled, this, &FileSelector::setCompletionEnabled );
 	setCompletionEnabled( completionAction()->isChecked() );
-	
+
 	timer = new QTimer( this );
 	timer->setSingleShot( true );
 	timer->setInterval( FEEDBACK_TIME );
-	connect( timer, SIGNAL( timeout() ), this, SLOT( rstState() ) );
+	connect( timer, &QTimer::timeout, this, &FileSelector::rstState );
 }
 
 QAction * FileSelector::completionAction()
@@ -116,35 +119,31 @@ QAction * FileSelector::completionAction()
 
 void FileSelector::setCompletionEnabled( bool x )
 {
-	if ( x && ! dirmdl )
-	{
+	if ( x && !dirmdl ) {
 		QDir::Filters fm;
-		
-		switch ( Mode )
-		{
-			case LoadFile:
-				fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
-				break;
-			case SaveFile:
-				fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
-				break;
-			case Folder:
-				fm = QDir::AllDirs | QDir::NoDotAndDotDot;
-				break;
+
+		switch ( Mode ) {
+		case LoadFile:
+			fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
+			break;
+		case SaveFile:
+			fm = QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot;
+			break;
+		case Folder:
+			fm = QDir::AllDirs | QDir::NoDotAndDotDot;
+			break;
 		}
-		
+
 		dirmdl = new QFileSystemModel( this );
 		dirmdl->setRootPath( QDir::currentPath() );
 		dirmdl->setFilter( fm );
 		line->setCompleter( completer = new QCompleter( dirmdl, this ) );
-	}
-	else if ( ! x && dirmdl )
-	{
+	} else if ( !x && dirmdl ) {
 		line->setCompleter( 0 );
 		delete completer;
-		completer = 0;
+		completer = nullptr;
 		delete dirmdl;
-		dirmdl = 0;
+		dirmdl = nullptr;
 	}
 }
 
@@ -166,12 +165,12 @@ void FileSelector::setText( const QString & x )
 void FileSelector::setState( States s )
 {
 	State = s;
-	
+
 	if ( State != stNeutral )
 		timer->start();
 	else
 		timer->stop();
-	
+
 	// reload style sheet to refresh State property selector
 	// qApp is a macro to the global QApplication instance
 	QString styletmp = qApp->styleSheet();
@@ -196,6 +195,7 @@ void FileSelector::replaceText( const QString & x )
 void FileSelector::setFilter( const QStringList & fltr )
 {
 	this->fltr = fltr;
+
 	if ( dirmdl )
 		dirmdl->setNameFilters( fltr );
 }
@@ -208,29 +208,27 @@ QStringList FileSelector::filter() const
 void FileSelector::browse()
 {
 	QString x;
-	
-	switch ( Mode )
-	{
-		case Folder:
-			x = QFileDialog::getExistingDirectory( this, tr("Choose a folder"), file() );
-			break;
-		case LoadFile:
-			// Qt uses ;; as separator if multiple types are available
-			{
-				QStringList allfltr = fltr;
-				x = QFileDialog::getOpenFileName( this, tr("Choose a file"), file(), allfltr.join( ";;" ) );
-			}
-			break;
-		case SaveFile:
-			{
-				QStringList saveFltr = fltr; saveFltr.removeAt(0); // Remove "All Files"
-				x = QFileDialog::getSaveFileName( this, tr("Choose a file"), file(), saveFltr.join( ";;" ) );
-			}
-			break;
+
+	switch ( Mode ) {
+	case Folder:
+		x = QFileDialog::getExistingDirectory( this, tr( "Choose a folder" ), file() );
+		break;
+	case LoadFile:
+		// Qt uses ;; as separator if multiple types are available
+		{
+			QStringList allfltr = fltr;
+			x = QFileDialog::getOpenFileName( this, tr( "Choose a file" ), file(), allfltr.join( ";;" ) );
+		}
+		break;
+	case SaveFile:
+		{
+			QStringList saveFltr = fltr; saveFltr.removeAt( 0 );   // Remove "All Files"
+			x = QFileDialog::getSaveFileName( this, tr( "Choose a file" ), file(), saveFltr.join( ";;" ) );
+		}
+		break;
 	}
-	
-	if ( ! x.isEmpty() )
-	{
+
+	if ( !x.isEmpty() ) {
 		line->setText( x );
 		activate();
 	}
@@ -239,44 +237,46 @@ void FileSelector::browse()
 void FileSelector::activate()
 {
 	QFileInfo inf( file() );
-	
-	switch ( Mode )
-	{
-		case LoadFile:
-			if ( ! inf.isFile() ) {
-				setState( stError );
-				return;
-			}
-			break;
-		case SaveFile:
-			if ( inf.isDir() ) {
-				setState( stError );
-				return;
-			}
-			break;
-		case Folder:
-			if ( ! inf.isDir() ) {
-				setState( stError );
-				return;
-			}
-			break;
+
+	switch ( Mode ) {
+	case LoadFile:
+
+		if ( !inf.isFile() ) {
+			setState( stError );
+			return;
+		}
+		break;
+	case SaveFile:
+
+		if ( inf.isDir() ) {
+			setState( stError );
+			return;
+		}
+		break;
+	case Folder:
+
+		if ( !inf.isDir() ) {
+			setState( stError );
+			return;
+		}
+		break;
 	}
+
 	emit sigActivated( file() );
 }
 
 bool FileSelector::eventFilter( QObject * o, QEvent * e )
 {
-	if ( o == line && e->type() == QEvent::ContextMenu )
-	{
-		QContextMenuEvent * event = static_cast<QContextMenuEvent*>( e );
-		
+	if ( o == line && e->type() == QEvent::ContextMenu ) {
+		QContextMenuEvent * event = static_cast<QContextMenuEvent *>( e );
+
 		QMenu * menu = line->createStandardContextMenu();
 		menu->addSeparator();
 		menu->addAction( completionAction() );
-		menu->exec(event->globalPos());
+		menu->exec( event->globalPos() );
 		delete menu;
 		return true;
 	}
-	
+
 	return QWidget::eventFilter( o, e );
 }

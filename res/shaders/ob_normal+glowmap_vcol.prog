@@ -1,4 +1,4 @@
-# normal mapping, vertex colors -> ambient&diffuse
+# normal + glow mapping, vertex colors -> ignore, material emissive color -> ignore
 
 checkgroup begin or
 	# Fallout 3 and later
@@ -16,18 +16,13 @@ checkgroup end
 checkgroup begin or
 	# Skyrim
 	checkgroup begin and
-		check BSLightingShaderProperty/Skyrim Shader Type != 2
-		check NiTriBasedGeomData/Has Vertex Colors == 1
-	checkgroup end
-
-	# Fallout 3
-	checkgroup begin and
-		check BSShaderPPLightingProperty
+		check BSLightingShaderProperty/Skyrim Shader Type == 2
 		check NiTriBasedGeomData/Has Vertex Colors == 1
 	checkgroup end
 
 	checkgroup begin
-		check NiVertexColorProperty/Vertex Mode == 2
+		check NiTriBasedGeomData/Has Vertex Colors == 0
+		check NiVertexColorProperty/Vertex Mode == 1
 		check NiVertexColorProperty/Lighting Mode == 1
 	checkgroup end
 checkgroup end
@@ -36,4 +31,4 @@ texcoords 0 base
 texcoords 1 tangents
 texcoords 2 bitangents
 
-shaders ob_vcolors_ad.vert ob_normalmap_vcol_ad.frag
+shaders ob_glowmap.vert ob_normalglowmap.frag

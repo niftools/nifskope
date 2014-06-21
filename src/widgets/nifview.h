@@ -33,32 +33,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFTREEVIEW_H
 #define NIFTREEVIEW_H
 
-#include <QTreeView>
+#include <QTreeView> // Inherited
+
 
 //! Widget for showing a nif file as tree, list, or block details.
-class NifTreeView : public QTreeView
+class NifTreeView final : public QTreeView
 {
 	Q_OBJECT
+
 public:
 	//! Constructor
 	NifTreeView();
 	//! Destructor
 	~NifTreeView();
-	
+
 	//! Set the model used by the widget
-	void setModel( QAbstractItemModel * model );
+	void setModel( QAbstractItemModel * model ) override final;
 	//! Expand all branches
 	void setAllExpanded( const QModelIndex & index, bool e );
-	
+
 	//! Accessor for EvalConditions
 	bool evalConditions() const { return EvalConditions; }
 	//! Is a row hidden?
-    bool isRowHidden(int row, const QModelIndex &parent) const;
-	
+	bool isRowHidden( int row, const QModelIndex & parent ) const;
+
 	//! Minimum size
-	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
+	QSize minimumSizeHint() const override final { return { 50, 50 }; }
 	//! Default size
-	QSize sizeHint() const { return QSize( 400, 200 ); }
+	QSize sizeHint() const override final { return { 400, 200 }; }
 
 signals:
 	//! Signal emmited when the current index changes; probably connected to NifSkope::select()
@@ -69,7 +71,7 @@ public slots:
 	void setRootIndex( const QModelIndex & index );
 	//! Clear the root index; probably conncted to NifSkope::dList
 	void clearRootIndex();
-	
+
 	//! Sets version evaluation conditions
 	void setEvalConditions( bool );
 	//! Sets real-time version condition evalutation (slow)
@@ -82,19 +84,19 @@ protected slots:
 	void updateConditionRecurse( const QModelIndex & index );
 	//! Called when the current index changes
 	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
-	
+
 	//! Scroll to index; connected to expanded()
 	void scrollExpand( const QModelIndex & index );
 
 protected:
-    void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const;
-	void keyPressEvent( QKeyEvent * e );
-	
-	QStyleOptionViewItem viewOptions() const;
-	
+	void drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const override final;
+	void keyPressEvent( QKeyEvent * e ) override final;
+
+	QStyleOptionViewItem viewOptions() const override final;
+
 	bool EvalConditions;
 	bool RealTimeEval;
-	
+
 	class BaseModel * nif;
 };
 

@@ -33,17 +33,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _QHULL_H
 #define _QHULL_H
 
+#include "niftypes.h"
+
 #include <QVector>
 
-#include "niftypes.h"
 
 //! \file qhull.h Header for computing a convex hull
 
 //! Computes a convex hull using <a href="http://www.qhull.org">Qhull</a>,
 //! Copyright (c) 1993-2010 C.B. Barber and The Geometry Center.
-QVector<Triangle> compute_convex_hull( const QVector<Vector3>& verts,
-		QVector<Vector4>& hullVerts,
-		QVector<Vector4>& hullNorms,
-		float roundError = 0 );
+QVector<Triangle> compute_convex_hull( const QVector<Vector3> & verts,
+                                       QVector<Vector4> & hullVerts,
+                                       QVector<Vector4> & hullNorms,
+                                       float roundError = 0 );
 
 #endif

@@ -1,13 +1,31 @@
+# normal mapping, vertex colors -> emissive
 
-comment normal mapping, vertex colors -> emissive
+checkgroup begin or
+	# Fallout 3 and later
+	checkgroup begin and
+		check HEADER/Version >= 0x14020007
+		check HEADER/User Version >= 11
+	checkgroup end
 
-check NiTexturingProperty/Apply Mode == 2
-check NiTriBasedGeom/Has Shader == 0
+	checkgroup begin
+		check NiTexturingProperty/Apply Mode == 2
+		check NiTriBasedGeom/Has Shader == 0
+	checkgroup end
+checkgroup end
 
-checkgroup begin
-	check NiTriBasedGeomData/Has Vertex Colors != 0
-	check NiVertexColorProperty/Vertex Mode == 1
-	check NiVertexColorProperty/Lighting Mode == 1
+checkgroup begin or
+	# Skyrim
+	checkgroup begin and
+		check not NiAlphaProperty
+		check BSEffectShaderProperty/Emissive Multiple >= 1
+		check NiTriBasedGeomData/Has Vertex Colors == 1
+	checkgroup end
+
+	checkgroup begin
+		check NiTriBasedGeomData/Has Vertex Colors != 0
+		check NiVertexColorProperty/Vertex Mode == 1
+		check NiVertexColorProperty/Lighting Mode == 1
+	checkgroup end
 checkgroup end
 
 texcoords 0 base

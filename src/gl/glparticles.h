@@ -33,37 +33,41 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLPARTICLES_H
 #define GLPARTICLES_H
 
-#include "glnode.h"
+#include "glnode.h" // Inherited
+
+#include <QPersistentModelIndex>
+#include <QVector>
+
 
 class Particles : public Node
 {
 public:
 	Particles( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
-	
-	void clear();
-	void update( const NifModel * nif, const QModelIndex & );
-	
-	void transform();
-	void transformShapes();
-	
-	void drawShapes( NodeList * draw2nd = 0 );
-	
-	BoundSphere bounds() const;
+
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & ) override;
+	void transform() override;
+
+	void transformShapes() override;
+
+	void drawShapes( NodeList * draw2nd = nullptr ) override;
+
+	BoundSphere bounds() const override;
 
 protected:
-	void setController( const NifModel * nif, const QModelIndex & controller );
-	
+	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+
 	QPersistentModelIndex iData;
 	bool upData;
-	
+
 	QVector<Vector3> verts;
 	QVector<Color4> colors;
 	QVector<float> sizes;
 	QVector<Vector3> transVerts;
-	
+
 	int active;
 	float size;
-	
+
 	friend class ParticleController;
 };
 

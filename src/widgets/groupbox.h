@@ -33,25 +33,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GROUPBOX_H
 #define GROUPBOX_H
 
+#include <QGroupBox> // Inherited
 #include <QBoxLayout>
-#include <QGroupBox>
 #include <QStack>
 
-class GroupBox : public QGroupBox
+
+class GroupBox final : public QGroupBox
 {
-	QStack<QBoxLayout*> lay;
+	QStack<QBoxLayout *> lay;
+
 public:
-   GroupBox( Qt::Orientation o );
+	GroupBox( Qt::Orientation o );
 	GroupBox( const QString & title, Qt::Orientation o );
 	~GroupBox();
-	
+
 	void addWidget( QWidget * widget, int stretch = 0, Qt::Alignment alignment = 0 );
-	
+
 	QWidget * pushLayout( const QString & name, Qt::Orientation o, int stretch = 0, Qt::Alignment alignment = 0 );
 	void pushLayout( Qt::Orientation o, int stretch = 0 );
-	
+
 	void popLayout();
-	
+
 	static QBoxLayout::Direction o2d( Qt::Orientation o );
 };
 

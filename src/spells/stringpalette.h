@@ -1,26 +1,28 @@
 #ifndef SPELL_STRINGPALETTE_H
 #define SPELL_STRINGPALETTE_H
 
-#include <QDialog>
-#include <QLabel>
-#include <QLayout>
-#include <QLineEdit>
-#include <QListView>
-#include <QListWidget>
-#include <QPushButton>
-#include <QStringListModel>
+#include <QDialog> // Inherited
+#include <QPersistentModelIndex>
+
 
 //! \file stringpalette.h StringPaletteRegexDialog
 
 class NifModel;
 
-//! String palette QRegExp dialog for spEditStringEntries
-class StringPaletteRegexDialog : public QDialog
+class QGridLayout;
+class QLineEdit;
+class QListView;
+class QStringListModel;
+class QWidget;
+
+//! String palette QRegularExpression dialog for spEditStringEntries
+class StringPaletteRegexDialog final : public QDialog
 {
 	Q_OBJECT
+
 public:
 	//! Constructor. Sets widgets and layout.
-	StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent = 0 );
+	StringPaletteRegexDialog( NifModel * nif, QPersistentModelIndex & index, QWidget * parent = nullptr );
 
 protected:
 	//! Model used
@@ -47,7 +49,6 @@ public slots:
 	void setStringList( QStringList & list );
 	//! Get the modified string palette
 	QStringList getStringList();
-
 };
 
 #endif

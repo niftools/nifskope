@@ -49,45 +49,45 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class Image
 {
 public:
-	
-	enum Format 
+
+	enum Format
 	{
 		Format_RGB,
 		Format_ARGB,
 	};
-	
+
 	Image();
 	~Image();
-	
-	void allocate(uint w, uint h);
+
+	void allocate( uint w, uint h );
 	/*
 	bool load(const char * name);
-	
+
 	void wrap(void * data, uint w, uint h);
 	void unwrap();
 	*/
-	
+
 	uint width() const;
 	uint height() const;
-	
-	const Color32 * scanline(uint h) const;
-	Color32 * scanline(uint h);
-	
+
+	const Color32 * scanline( uint h ) const;
+	Color32 * scanline( uint h );
+
 	const Color32 * pixels() const;
 	Color32 * pixels();
-	
-	const Color32 & pixel(uint idx) const;
-	Color32 & pixel(uint idx);
-	
-	const Color32 & pixel(uint x, uint y) const;
-	Color32 & pixel(uint x, uint y);
-	
+
+	const Color32 & pixel( uint idx ) const;
+	Color32 & pixel( uint idx );
+
+	const Color32 & pixel( uint x, uint y ) const;
+	Color32 & pixel( uint x, uint y );
+
 	Format format() const;
-	void setFormat(Format f);
-	
+	void setFormat( Format f );
+
 private:
 	void free();
-	
+
 private:
 	uint m_width;
 	uint m_height;
@@ -96,14 +96,14 @@ private:
 };
 
 
-inline const Color32 & Image::pixel(uint x, uint y) const
+inline const Color32 & Image::pixel( uint x, uint y ) const
 {
-	return pixel(y * width() + x);
+	return pixel( y * width() + x );
 }
 
-inline Color32 & Image::pixel(uint x, uint y)
+inline Color32 & Image::pixel( uint x, uint y )
 {
-	return pixel(y * width() + x);
+	return pixel( y * width() + x );
 }
 
 #endif // _DDS_IMAGE_H

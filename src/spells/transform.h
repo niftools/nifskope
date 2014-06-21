@@ -1,16 +1,16 @@
 #ifndef SP_TRANSFORM_H
 #define SP_TRANSFORM_H
 
-#include "../spellbook.h"
+#include "spellbook.h"
 
-class spApplyTransformation : public Spell
+class spApplyTransformation final : public Spell
 {
 public:
-	QString name() const { return Spell::tr("Apply"); }
-	QString page() const { return Spell::tr("Transform"); }
-	
-	bool isApplicable( const NifModel * nif, const QModelIndex & index );
-	QModelIndex cast( NifModel * nif, const QModelIndex & index );
+	QString name() const override final { return Spell::tr( "Apply" ); }
+	QString page() const override final { return Spell::tr( "Transform" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final;
 };
 
 #endif

@@ -33,79 +33,81 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KFMMODEL_H
 #define KFMMODEL_H
 
-#include "basemodel.h"
+#include "basemodel.h" // Inherited
 
 #include <QHash>
-#include <QStringList>
 #include <QReadWriteLock>
+#include <QStringList>
 
-class KfmModel : public BaseModel
+
+class KfmModel final : public BaseModel
 {
-Q_OBJECT
+	Q_OBJECT
+
 public:
 	KfmModel( QObject * parent = 0 );
-	
+
 	// call this once on startup to load the XML descriptions
 	static bool loadXML();
 
 	// when creating kfmmodels from outside the main thread better protect them with a QReadLocker
 	static QReadWriteLock XMLlock;
-	
+
 	// clear model data
-	void clear();
-	
+	void clear() override final;
+
 	// generic load and save to and from QIODevice
-	bool load( QIODevice & device );
-	bool save( QIODevice & device ) const;
-	
+	bool load( QIODevice & device ) override final;
+	bool save( QIODevice & device ) const override final;
+
 	// is it a compound type?
 	static bool isCompound( const QString & name );
-	
+
 	QModelIndex getKFMroot() const;
-	
+
 	// is this version supported ?
 	static bool isVersionSupported( quint32 );
-	
+
 	// version conversion
 	static QString version2string( quint32 );
 	static quint32 version2number( const QString & );
-	
+
 	// check wether the current nif file version lies in the range since~until
 	bool checkVersion( quint32 since, quint32 until ) const;
 
-	QString getVersion() const { return version2string( version ); }
-	quint32 getVersionNumber() const { return version; }
-	
+	QString getVersion() const override final { return version2string( version ); }
+	quint32 getVersionNumber() const override final { return version; }
+
 	static QAbstractItemDelegate * createDelegate();
 
 protected:
-	void		insertType( NifItem * parent, const NifData & data, int row = -1 );
-	NifItem *	insertBranch( NifItem * parent, const NifData & data, int row = -1 );
+	void insertType( NifItem * parent, const NifData & data, int row = -1 );
+	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	bool		updateArrayItem( NifItem * array, bool fast );
-	
-	bool		load( NifItem * parent, NifIStream & stream, bool fast = true );
-	bool		save( NifItem * parent, NifOStream & stream ) const;
-	
-	bool		setItemValue( NifItem * item, const NifValue & v );
-	
-	bool		setHeaderString( const QString & );
-	
-	bool		evalVersion( NifItem * item, bool chkParents = false ) const;
+	bool updateArrayItem( NifItem * array, bool fast ) override final;
 
-	QString		ver2str( quint32 v ) const { return version2string( v ); }
-	quint32		str2ver( QString s ) const { return version2number( s ); }
-	
+	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool save( NifItem * parent, NifOStream & stream ) const;
+
+	bool setItemValue( NifItem * item, const NifValue & v ) override final;
+
+	bool setHeaderString( const QString & ) override final;
+
+	bool evalVersion( NifItem * item, bool chkParents = false ) const override final;
+
+	QString ver2str( quint32 v ) const override final { return version2string( v ); }
+	quint32 str2ver( QString s ) const override final { return version2number( s ); }
+
 	// kfm file version
-	quint32		version;
-	
-	NifItem	* kfmroot;
-	
+	quint32 version;
+
+	NifItem * kfmroot;
+
 	// XML structures
-	static QList<quint32>		supportedVersions;
-	
-	static QHash<QString,NifBlock*>		compounds;
-	
+	static QList<quint32> supportedVersions;
+
+	static QHash<QString, NifBlock *> compounds;
+
 	static QString parseXmlDescription( const QString & filename );
 
 	friend class KfmXmlHandler;

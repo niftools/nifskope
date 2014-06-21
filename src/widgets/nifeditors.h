@@ -33,157 +33,168 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFEDITORS_H
 #define NIFEDITORS_H
 
+#include "nifmodel.h"
+
+#include <QGroupBox> // Inherited
+#include <QWidget>   // Inherited
 #include <QBoxLayout>
-#include <QGroupBox>
 #include <QPointer>
 #include <QStack>
 
-#include "../nifmodel.h"
 
 class NifEditBox : public QGroupBox
 {
 	Q_OBJECT
+
 public:
 	NifEditBox( NifModel * nif, const QModelIndex & index );
-	
+
 	virtual void updateData( NifModel * nif ) = 0;
-	virtual void applyData( NifModel * nif ) = 0;
-	
+	virtual void applyData( NifModel * nif )  = 0;
+
 	QModelIndex getIndex() const { return index; }
-	
+
 protected slots:
 	void applyData();
 
 protected:
 	QLayout * getLayout();
-	
+
 	QPointer<NifModel> nif;
 	QPersistentModelIndex index;
 };
 
-class NifBlockEditor : public QWidget
+class NifBlockEditor final : public QWidget
 {
 	Q_OBJECT
+
 public:
 	NifBlockEditor( NifModel * nif, const QModelIndex & block, bool fireAndForget = true );
-	
+
 	void add( NifEditBox * );
-	
+
 	void pushLayout( QBoxLayout *, const QString & name = QString() );
 	void popLayout();
-	
+
 	NifModel * getNif() { return nif; }
 
 protected slots:
 	void nifDataChanged( const QModelIndex &, const QModelIndex & );
 	void nifDestroyed();
 	void updateData();
-	
+
 protected:
-	void showEvent( QShowEvent * );
+	void showEvent( QShowEvent * ) override final;
 
 	NifModel * nif;
 	QPersistentModelIndex iBlock;
-	
-	QList<NifEditBox*> editors;
-	QStack<QBoxLayout*> layouts;
-	
+
+	QList<NifEditBox *> editors;
+	QStack<QBoxLayout *> layouts;
+
 	class QTimer * timer;
 };
 
-class NifFloatSlider : public NifEditBox
+class NifFloatSlider final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifFloatSlider( NifModel * nif, const QModelIndex & index, float min, float max );
 
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class FloatSlider * slider;
 };
 
-class NifFloatEdit : public NifEditBox
+class NifFloatEdit final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifFloatEdit( NifModel * nif, const QModelIndex & index, float min = -10e8, float max = +10e8 );
-	
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class QDoubleSpinBox * spinbox;
 };
 
-class NifLineEdit : public NifEditBox
+class NifLineEdit final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifLineEdit( NifModel * nif, const QModelIndex & index );
-	
-	void updateData( NifModel * );	
-	void applyData( NifModel * );
+
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class QLineEdit * line;
 };
 
-class NifColorEdit : public NifEditBox
+class NifColorEdit final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifColorEdit( NifModel * nif, const QModelIndex & index );
-	
-	void updateData( NifModel * );
-	void applyData( NifModel * );
-	
+
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
+
 protected:
 	class ColorWheel * color;
 	class AlphaSlider * alpha;
 };
 
-class NifVectorEdit : public NifEditBox
+class NifVectorEdit final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifVectorEdit( NifModel * nif, const QModelIndex & index );
-	
-	void updateData( NifModel * );
-	void applyData( NifModel * );
-	
+
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
+
 protected:
 	class VectorEdit * vector;
 };
 
-class NifRotationEdit : public NifEditBox
+class NifRotationEdit final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifRotationEdit( NifModel * nif, const QModelIndex & index );
-	
-	void updateData( NifModel * );
-	void applyData( NifModel * );
+
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
 
 protected:
 	class RotationEdit * rotation;
 };
 
-class NifMatrix4Edit : public NifEditBox
+class NifMatrix4Edit final : public NifEditBox
 {
 	Q_OBJECT
+
 public:
 	NifMatrix4Edit( NifModel * nif, const QModelIndex & index );
-	
-	void updateData( NifModel * );
-	void applyData( NifModel * );
-	
+
+	void updateData( NifModel * ) override final;
+	void applyData( NifModel * ) override final;
+
 protected:
 	class VectorEdit * translation;
 	class RotationEdit * rotation;
 	class VectorEdit * scale;
-	
+
 	bool setting;
 };
 

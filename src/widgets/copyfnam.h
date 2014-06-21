@@ -33,23 +33,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COPYFNAM_H
 #define COPYFNAM_H
 
+#include <QWidget> // Inherited
 #include <QImage>
 #include <QRect>
-#include <QWidget>
 
-class CopyFilename : public QWidget
+
+class CopyFilename final : public QWidget
 {
 	Q_OBJECT
+
 public:
-	CopyFilename( QWidget * parent = NULL );
+	CopyFilename( QWidget * parent = nullptr );
 
 signals:
 	void leftTriggered();
 	void rightTriggered();
 
 protected:
-	void paintEvent( QPaintEvent * e );
-	void mousePressEvent( QMouseEvent * e );
+	void paintEvent( QPaintEvent * e ) override final;
+	void mousePressEvent( QMouseEvent * e ) override final;
 
 	// QPushButton * leftBtnCopyFilename;
 	// QPushButton * rightBtnCopyFilename;

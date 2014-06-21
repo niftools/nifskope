@@ -1,25 +1,24 @@
 #ifndef SPELL_TEXTURE_H
 #define SPELL_TEXTURE_H
 
-#include <QOpenGLContext>
+#include <QDialog> // Inherited
+#include <QModelIndex>
 
-#include <QDialog>
-//#include <QDoubleSpinBox>
-#include <QFileDialog>
-#include <QGridLayout>
-#include <QListView>
-#include <QStringListModel>
 
-#include "../widgets/nifeditors.h"
-
+class NifFloatEdit;
 class NifModel;
+class QGridLayout;
+class QListView;
+class QPushButton;
+class QStringListModel;
 
 //! Texture selection dialog for TexFlipController
-class TexFlipDialog : public QDialog
+class TexFlipDialog final : public QDialog
 {
 	Q_OBJECT
+
 public:
-	TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent = 0 );
+	TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent = nullptr );
 	QStringList flipList();
 
 protected:
@@ -37,7 +36,6 @@ protected slots:
 	void textureAction( int i );
 	void texIndex( const QModelIndex & idx );
 	void listFromNif();
-
 };
- 
+
 #endif

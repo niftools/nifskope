@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 // Copyright NVIDIA Corporation 2007 -- Ignacio Castano <icastano@nvidia.com>
-// 
+//
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
 // files (the "Software"), to deal in the Software without
@@ -47,10 +47,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // copies of the Software, and to permit persons to whom the
 // Software is furnished to do so, subject to the following
 // conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -73,21 +73,22 @@ struct BlockDXT1
 {
 	Color16 col0;
 	Color16 col1;
-	union {
+	union
+	{
 		uint8 row[4];
 		uint indices;
 	};
 
 	bool isFourColorMode() const;
 
-	uint evaluatePalette(Color32 color_array[4]) const;
-	uint evaluatePaletteFast(Color32 color_array[4]) const;
-	void evaluatePalette3(Color32 color_array[4]) const;
-	void evaluatePalette4(Color32 color_array[4]) const;
-	
-	void decodeBlock(ColorBlock * block) const;
-	
-	void setIndices(int * idx);
+	uint evaluatePalette( Color32 color_array[4] ) const;
+	uint evaluatePaletteFast( Color32 color_array[4] ) const;
+	void evaluatePalette3( Color32 color_array[4] ) const;
+	void evaluatePalette4( Color32 color_array[4] ) const;
+
+	void decodeBlock( ColorBlock * block ) const;
+
+	void setIndices( int * idx );
 
 	void flip4();
 	void flip2();
@@ -103,8 +104,10 @@ inline bool BlockDXT1::isFourColorMode() const
 /// DXT3 alpha block with explicit alpha.
 struct AlphaBlockDXT3
 {
-	union {
-		struct {
+	union
+	{
+		struct
+		{
 			uint alpha0 : 4;
 			uint alpha1 : 4;
 			uint alpha2 : 4;
@@ -124,9 +127,9 @@ struct AlphaBlockDXT3
 		};
 		uint16 row[4];
 	};
-	
-	void decodeBlock(ColorBlock * block) const;
-	
+
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
@@ -137,9 +140,9 @@ struct BlockDXT3
 {
 	AlphaBlockDXT3 alpha;
 	BlockDXT1 color;
-	
-	void decodeBlock(ColorBlock * block) const;
-	
+
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
@@ -151,27 +154,27 @@ struct AlphaBlockDXT5
 	// uint64 unions do not compile on all platforms
 	/*
 	union {
-		struct {
-			uint64 alpha0 : 8;	// 8
-			uint64 alpha1 : 8;	// 16
-			uint64 bits0 : 3;		// 3 - 19
-			uint64 bits1 : 3; 	// 6 - 22
-			uint64 bits2 : 3; 	// 9 - 25
-			uint64 bits3 : 3;		// 12 - 28
-			uint64 bits4 : 3;		// 15 - 31
-			uint64 bits5 : 3;		// 18 - 34
-			uint64 bits6 : 3;		// 21 - 37
-			uint64 bits7 : 3;		// 24 - 40
-			uint64 bits8 : 3;		// 27 - 43
-			uint64 bits9 : 3; 	// 30 - 46
-			uint64 bitsA : 3; 	// 33 - 49
-			uint64 bitsB : 3;		// 36 - 52
-			uint64 bitsC : 3;		// 39 - 55
-			uint64 bitsD : 3;		// 42 - 58
-			uint64 bitsE : 3;		// 45 - 61
-			uint64 bitsF : 3;		// 48 - 64
-		};
-		uint64 u;
+	    struct {
+	        uint64 alpha0 : 8;	// 8
+	        uint64 alpha1 : 8;	// 16
+	        uint64 bits0 : 3;		// 3 - 19
+	        uint64 bits1 : 3;   // 6 - 22
+	        uint64 bits2 : 3;   // 9 - 25
+	        uint64 bits3 : 3;		// 12 - 28
+	        uint64 bits4 : 3;		// 15 - 31
+	        uint64 bits5 : 3;		// 18 - 34
+	        uint64 bits6 : 3;		// 21 - 37
+	        uint64 bits7 : 3;		// 24 - 40
+	        uint64 bits8 : 3;		// 27 - 43
+	        uint64 bits9 : 3;   // 30 - 46
+	        uint64 bitsA : 3;   // 33 - 49
+	        uint64 bitsB : 3;		// 36 - 52
+	        uint64 bitsC : 3;		// 39 - 55
+	        uint64 bitsD : 3;		// 42 - 58
+	        uint64 bitsE : 3;		// 45 - 61
+	        uint64 bitsF : 3;		// 48 - 64
+	    };
+	    uint64 u;
 	};
 	*/
 	uint64 u;
@@ -193,17 +196,17 @@ struct AlphaBlockDXT5
 	uint8 bitsD() const { return (u >> 55) & 0x7LL; };
 	uint8 bitsE() const { return (u >> 58) & 0x7LL; };
 	uint8 bitsF() const { return (u >> 61) & 0x7LL; };
-	
-	void evaluatePalette(uint8 alpha[8]) const;
-	void evaluatePalette8(uint8 alpha[8]) const;
-	void evaluatePalette6(uint8 alpha[8]) const;
-	void indices(uint8 index_array[16]) const;
 
-	uint index(uint index) const;
-	void setIndex(uint index, uint value);
-	
-	void decodeBlock(ColorBlock * block) const;
-	
+	void evaluatePalette( uint8 alpha[8] ) const;
+	void evaluatePalette8( uint8 alpha[8] ) const;
+	void evaluatePalette6( uint8 alpha[8] ) const;
+	void indices( uint8 index_array[16] ) const;
+
+	uint index( uint index ) const;
+	void setIndex( uint index, uint value );
+
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
@@ -214,9 +217,9 @@ struct BlockDXT5
 {
 	AlphaBlockDXT5 alpha;
 	BlockDXT1 color;
-	
-	void decodeBlock(ColorBlock * block) const;
-	
+
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
@@ -225,9 +228,9 @@ struct BlockDXT5
 struct BlockATI1
 {
 	AlphaBlockDXT5 alpha;
-	
-	void decodeBlock(ColorBlock * block) const;
-	
+
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
@@ -237,9 +240,9 @@ struct BlockATI2
 {
 	AlphaBlockDXT5 x;
 	AlphaBlockDXT5 y;
-	
-	void decodeBlock(ColorBlock * block) const;
-	
+
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
@@ -249,27 +252,28 @@ struct BlockCTX1
 {
 	uint8 col0[2];
 	uint8 col1[2];
-	union {
+	union
+	{
 		uint8 row[4];
 		uint indices;
 	};
 
-	void evaluatePalette(Color32 color_array[4]) const;
-	void setIndices(int * idx);
+	void evaluatePalette( Color32 color_array[4] ) const;
+	void setIndices( int * idx );
 
-	void decodeBlock(ColorBlock * block) const;
-	
+	void decodeBlock( ColorBlock * block ) const;
+
 	void flip4();
 	void flip2();
 };
 
-void mem_read(Stream & mem, BlockDXT1 & block);
-void mem_read(Stream & mem, AlphaBlockDXT3 & block);
-void mem_read(Stream & mem, BlockDXT3 & block);
-void mem_read(Stream & mem, AlphaBlockDXT5 & block);
-void mem_read(Stream & mem, BlockDXT5 & block);
-void mem_read(Stream & mem, BlockATI1 & block);
-void mem_read(Stream & mem, BlockATI2 & block);
-void mem_read(Stream & mem, BlockCTX1 & block);
+void mem_read( Stream & mem, BlockDXT1 & block );
+void mem_read( Stream & mem, AlphaBlockDXT3 & block );
+void mem_read( Stream & mem, BlockDXT3 & block );
+void mem_read( Stream & mem, AlphaBlockDXT5 & block );
+void mem_read( Stream & mem, BlockDXT5 & block );
+void mem_read( Stream & mem, BlockATI1 & block );
+void mem_read( Stream & mem, BlockATI2 & block );
+void mem_read( Stream & mem, BlockCTX1 & block );
 
 #endif // _DDS_BLOCKDXT_H

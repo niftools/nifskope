@@ -33,73 +33,74 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UVEDIT_H
 #define UVEDIT_H
 
-#include <QOpenGLContext>
-// TODO: Determine the necessity of this
-// Appears to be used solely for gluErrorString
-// There may be some Qt alternative
-#ifdef __APPLE__
-	#include <OPENGL/glu.h>
-#else
-	#include <GL/glu.h>
-#endif
-
-#include <QGLWidget>
-
-#include <QtCore/QtCore>
-#include <QtWidgets>
+#include <QGLWidget> // Inherited
+#include <QDialog>   // Inherited
+#include <QModelIndex>
+#include <QPointer>
 
 #include <math.h>
+
 
 class NifModel;
 class TexCache;
 class Vector2;
 
+class QActionGroup;
+class QCheckBox;
+class QDoubleSpinBox;
+class QGridLayout;
+class QMenu;
+class QUndoStack;
+
 #undef None // conflicts with Qt
 
 //! Displays and allows editing of UV coordinate data
-class UVWidget : public QGLWidget
+class UVWidget final : public QGLWidget
 {
 	Q_OBJECT
+
 protected:
-	UVWidget( QWidget * parent = 0 );
+	UVWidget( QWidget * parent = nullptr );
 	~UVWidget();
-	
+
 public:
 	//! Creates the UV editor widget
 	static UVWidget * createEditor( NifModel * nif, const QModelIndex & index );
-	
+
 	//! Sets the NIF data
 	bool setNifData( NifModel * nif, const QModelIndex & index );
-	
+
 	//! From QWidget; the recommended size of the widget
-	QSize sizeHint() const;
+	QSize sizeHint() const override final;
 	//! From QWidget; the minimum size of the widget
-	QSize minimumSizeHint() const;
-	
+	QSize minimumSizeHint() const override final;
+
 	//! Sets the size hint
 	void setSizeHint( const QSize & s );
-	
+
 	//! Returns the preferred height for this widget, given the width w.
-	int heightForWidth( int width ) const;
-	
+	int heightForWidth( int width ) const override final;
+
 	//! For future use in realtime mouse-driven scaling
-	enum EditingMode {
+	enum EditingMode
+	{
 		None,
 		Move,
 		Scale
 	} editmode;
 
 protected:
-	void initializeGL();
-	void resizeGL( int width, int height );
-	void paintGL();
+	void initializeGL() override final;
+	void resizeGL( int width, int height ) override final;
+	void paintGL() override final;
 
-	void mousePressEvent( QMouseEvent * e );
-	void mouseReleaseEvent( QMouseEvent * e );
-	void mouseMoveEvent( QMouseEvent * e );
-	void wheelEvent( QWheelEvent * e );
+	void mousePressEvent( QMouseEvent * e ) override final;
+	void mouseReleaseEvent( QMouseEvent * e ) override final;
+	void mouseMoveEvent( QMouseEvent * e ) override final;
+	void wheelEvent( QWheelEvent * e ) override final;
 
 // should this be public slots?
+
 protected slots:
 	//! Does the selection contain this vertex?
 	bool isSelected( int index );
@@ -121,7 +122,7 @@ protected slots:
 	void scaleSelection();
 	//! Rotate the selection
 	void rotateSelection();
-	
+
 protected slots:
 	void nifDataChanged( const QModelIndex & );
 	//! Build the texture slots menu
@@ -136,62 +137,63 @@ protected slots:
 	void changeCoordSet( int setToUse );
 	//! Duplicate a coordinate set
 	void duplicateCoordSet();
-	
+
 private:
 	//! List of selected vertices
-	QList< int > selection;
+	QList<int> selection;
 
 	QRect selectRect;
 	QList<QPoint> selectPoly;
 	int selectCycle;
-	
+
 	//! A UV face
-	struct face {
+	struct face
+	{
 		int index;
-		
+
 		int tc[3];
-		
+
 		bool contains( int v ) { return ( tc[0] == v || tc[1] == v || tc[2] == v ); }
-		
+
 		face() : index( -1 ) {}
 		face( int idx, int tc1, int tc2, int tc3 ) : index( idx ) { tc[0] = tc1; tc[1] = tc2; tc[2] = tc3; }
 	};
 
-	QVector< Vector2 > texcoords;
-	QVector< face > faces;
-	QMap< int, int > texcoords2faces;
-	
+	QVector<Vector2> texcoords;
+	QVector<face> faces;
+	QMap<int, int> texcoords2faces;
+
 	QSize sHint;
-	
+
 	TexCache * textures;
 	QString texfile;
 	QModelIndex texsource;
-	
+
 	void drawTexCoords();
-	
+
 	void setupViewport( int width, int height );
 	void updateViewRect( int width, int height );
 	bool bindTexture( const QString & filename );
 	bool bindTexture( const QModelIndex & iSource );
-	
+
 	QVector<int> indices( const QPoint & p ) const;
 	QVector<int> indices( const QRegion & r ) const;
-	
+
 	QPoint mapFromContents( const Vector2 & v ) const;
 	Vector2 mapToContents( const QPoint & p ) const;
-	
+
 	void updateNif();
-	
-	QPointer<NifModel> nif;
+
+	NifModel * nif;
 	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex;
-	
+
 	//! Submenu for texture slot selection
 	QMenu * menuTexSelect;
 	//! Group that holds texture slot selection actions
 	QActionGroup * texSlotGroup;
 	//! List of valid textures
 	QStringList validTexs;
-	
+
 	//! Names of texture slots
 	QStringList texnames;
 	//! Texture slot currently being operated on
@@ -200,7 +202,7 @@ private:
 	bool setTexCoords();
 	//! Coordinate set currently in use
 	int currentCoordSet;
-	
+
 	//! Submenu for coordinate set selection
 	QMenu * coordSetSelect;
 	//! Group that holds coordinate set actions
@@ -213,26 +215,27 @@ private:
 	QPointF pos;
 
 	QPoint mousePos;
-	
+
 	GLdouble zoom;
-	
+
 	QUndoStack * undoStack;
-	
+
 	friend class UVWSelectCommand;
 	friend class UVWMoveCommand;
 	friend class UVWScaleCommand;
 	friend class UVWRotateCommand;
-	
+
 	QAction * aTextureBlend;
 };
 
 //! Dialog for getting scaling factors
-class ScalingDialog : public QDialog
+class ScalingDialog final : public QDialog
 {
 	Q_OBJECT
+
 public:
-	ScalingDialog( QWidget * parent = 0 );
-	
+	ScalingDialog( QWidget * parent = nullptr );
+
 protected:
 	/*
 	QVBoxLayout * vbox;
@@ -245,13 +248,13 @@ protected:
 	QCheckBox * uniform;
 	QDoubleSpinBox * spinXMove;
 	QDoubleSpinBox * spinYMove;
-	
+
 public slots:
 	float getXScale();
 	float getYScale();
 	float getXMove();
 	float getYMove();
-	
+
 protected slots:
 	void setUniform( bool status );
 };

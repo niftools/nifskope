@@ -30,263 +30,271 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "options.h"
+
+#include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
-#include "kfmmodel.h"
-
-#include <QItemDelegate>
-
 #include "spellbook.h"
-
 #include "widgets/valueedit.h"
 #include "widgets/nifcheckboxlist.h"
 
+#include <QItemDelegate> // Inherited
 #include <QComboBox>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QListView>
 
-#include "options.h"
 
-extern void qt_format_text(const QFont& font, const QRectF &_r,
-                           int tf, const QString& str, QRectF *brect,
-                           int tabstops, int* tabarray, int tabarraylen,
-                           QPainter* painter);
+extern void qt_format_text( const QFont & font, const QRectF & _r,
+                            int tf, const QString & str, QRectF * brect,
+                            int tabstops, int * tabarray, int tabarraylen,
+                            QPainter * painter );
 
-class NifDelegate : public QItemDelegate
+class NifDelegate final : public QItemDelegate
 {
 	SpellBook * book;
+
 public:
-	NifDelegate( SpellBook * sb = 0) : QItemDelegate(), book( sb ) {}
-	
-	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index )
+	NifDelegate( SpellBook * sb = 0 ) : QItemDelegate(), book( sb )
+	{
+	}
+
+	virtual bool editorEvent( QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index ) override final
 	{
 		Q_ASSERT( event );
 		Q_ASSERT( model );
-		
-		switch ( event->type() )
-		{
-			case QEvent::MouseButtonPress:
-			case QEvent::MouseButtonRelease:
-				if ( static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton 
-					&& decoRect( option ).contains( static_cast<QMouseEvent*>(event)->pos() ) )
-				{
-					Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
-					if ( spell && ! spell->icon().isNull() )
-					{
-						if ( event->type() == QEvent::MouseButtonRelease )
-						{
-							NifModel * nif = 0;
-							QModelIndex buddy = index;
-							
-							if ( model->inherits( "NifModel" ) )
-							{
-								nif = static_cast<NifModel *>( model );
-							}
-							else if ( model->inherits( "NifProxyModel" ) )
-							{
-								NifProxyModel * proxy = static_cast<NifProxyModel*>( model );
-								nif = static_cast<NifModel *>( proxy->model() );
-								buddy = proxy->mapTo( index );
-							}
-							
-							if ( nif && spell->isApplicable( nif, buddy ) )
-							{
-								if ( book )
-									book->cast( nif, buddy, spell );
-								else
-									spell->cast( nif, buddy );
-							}
+
+		switch ( event->type() ) {
+		case QEvent::MouseButtonPress:
+		case QEvent::MouseButtonRelease:
+
+			if ( static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton
+			     && decoRect( option ).contains( static_cast<QMouseEvent *>(event)->pos() ) )
+			{
+				Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
+
+				if ( spell && !spell->icon().isNull() ) {
+					if ( event->type() == QEvent::MouseButtonRelease ) {
+						NifModel * nif = 0;
+						QModelIndex buddy = index;
+
+						if ( model->inherits( "NifModel" ) ) {
+							nif = static_cast<NifModel *>( model );
+						} else if ( model->inherits( "NifProxyModel" ) ) {
+							NifProxyModel * proxy = static_cast<NifProxyModel *>( model );
+							nif = static_cast<NifModel *>( proxy->model() );
+							buddy = proxy->mapTo( index );
 						}
+
+						if ( nif && spell->isApplicable( nif, buddy ) ) {
+							if ( book )
+								book->cast( nif, buddy, spell );
+							else
+								spell->cast( nif, buddy );
+						}
+					}
+
+					return true;
+				}
+			}
+
+			break;
+		case QEvent::MouseButtonDblClick:
+
+			if ( static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton ) {
+				QVariant v = model->data( index, Qt::EditRole );
+
+				if ( v.canConvert<NifValue>() ) {
+					NifValue nv = v.value<NifValue>();
+
+					if ( nv.type() == NifValue::tBool ) {
+						nv.set<int>( !nv.get<int>() );
+						model->setData( index, nv.toVariant(), Qt::EditRole );
 						return true;
 					}
-				}	break;
-			case QEvent::MouseButtonDblClick:
-				if ( static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton )
-				{
-					QVariant v = model->data( index, Qt::EditRole );
-					if ( v.canConvert<NifValue>() )
-					{
-						NifValue nv = v.value<NifValue>();
-						if ( nv.type() == NifValue::tBool )
-						{
-							nv.set<int>( ! nv.get<int>() );
-							model->setData( index, nv.toVariant(), Qt::EditRole );
-							return true;
-						}
-					}
-				}	break;
-			default:
-				break;
+				}
+			}
+
+			break;
+		default:
+			break;
 		}
+
 		return false;
 	}
-	
-	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const
+
+	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const override final
 	{
 		int namerole = NifSkopeDisplayRole;
-		namerole = (index.isValid() && index.column() == 0) ?
- 			Qt::DisplayRole : NifSkopeDisplayRole;
-		
+		namerole = (index.isValid() && index.column() == 0) ? Qt::DisplayRole : NifSkopeDisplayRole;
+
 		QString text = index.data( namerole ).toString();
 		QString deco = index.data( Qt::DecorationRole ).toString();
-		
 		QString user = index.data( Qt::UserRole ).toString();
 		QIcon icon;
-		if ( ! user.isEmpty() )
-		{
+
+		if ( !user.isEmpty() ) {
 			Spell * spell = SpellBook::lookup( user );
-			if ( spell ) icon = spell->icon();
+
+			if ( spell )
+				icon = spell->icon();
 		}
-		
+
 		QStyleOptionViewItem opt = option;
-		
+
 		QRect tRect = opt.rect;
 		QRect dRect;
-		
-		if ( ! icon.isNull() || ! deco.isEmpty() )
-		{
+
+		if ( !icon.isNull() || !deco.isEmpty() ) {
 			dRect = decoRect( opt );
 			tRect = textRect( opt );
 		}
-		
+
 		opt.state |= QStyle::State_Active;
-		QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-		
+		QPalette::ColorGroup cg = ( opt.state & QStyle::State_Enabled ) ? QPalette::Normal : QPalette::Disabled;
+
 		QVariant color = index.data( Qt::BackgroundColorRole );
+
 		if ( color.canConvert<QColor>() )
 			painter->fillRect( option.rect, color.value<QColor>() );
 		else if ( option.state & QStyle::State_Selected )
 			painter->fillRect( option.rect, option.palette.brush( cg, QPalette::Highlight ) );
-		
+
 		painter->save();
 		painter->setPen( opt.palette.color( cg, opt.state & QStyle::State_Selected ? QPalette::HighlightedText : QPalette::Text ) );
 		painter->setFont( opt.font );
-		
-		if ( ! icon.isNull() )
+
+		if ( !icon.isNull() )
 			icon.paint( painter, dRect );
-		else if ( ! deco.isEmpty() )
+		else if ( !deco.isEmpty() )
 			painter->drawText( dRect, opt.decorationAlignment, deco );
-		
-		if ( ! text.isEmpty() )
-		{
+
+		if ( !text.isEmpty() ) {
 			drawDisplay( painter, opt, tRect, text );
 			drawFocus( painter, opt, tRect );
 		}
-		
+
 		painter->restore();
 	}
 
-	QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+	QSize sizeHint( const QStyleOptionViewItem & option, const QModelIndex & index ) const override final
 	{
 		QString text = index.data( NifSkopeDisplayRole ).toString();
-		QRect textRect( 0, 0, option.fontMetrics.width(text), option.fontMetrics.lineSpacing() * (text.count(QLatin1Char('\n')) + 1) );
+		QRect textRect( 0, 0, option.fontMetrics.width( text ), option.fontMetrics.lineSpacing() * (text.count( QLatin1Char( '\n' ) ) + 1) );
 		return textRect.size();
 	}
 
-	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const
+	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const override final
 	{
-		if ( ! index.isValid() )
+		if ( !index.isValid() )
 			return 0;
-		
-		QVariant v = index.data( Qt::EditRole );
+
+		QVariant v  = index.data( Qt::EditRole );
 		QWidget * w = 0;
-		
-		if ( v.canConvert<NifValue>() )
-		{
+
+		if ( v.canConvert<NifValue>() ) {
 			NifValue nv = v.value<NifValue>();
-			if ( nv.isCount() && index.column() == NifModel::ValueCol )
-			{
+
+			if ( nv.isCount() && index.column() == NifModel::ValueCol ) {
 				NifValue::EnumType type = NifValue::enumType( index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString() );
-				if ( type == NifValue::eFlags) {
+
+				if ( type == NifValue::eFlags ) {
 					w = new NifCheckBoxList( parent );
-				} else if ( type == NifValue::eDefault) {
+				} else if ( type == NifValue::eDefault ) {
 					QComboBox * c = new QComboBox( parent );
 					w = c;
 					c->setEditable( true );
 				}
 			}
-			if ( w == NULL && ValueEdit::canEdit( nv.type() ) )
+
+			if ( !w && ValueEdit::canEdit( nv.type() ) )
 				w = new ValueEdit( parent );
-		}
-		else if ( v.type() == QVariant::String )
-		{
-			QLineEdit *le = new QLineEdit(parent);
-			le->setFrame(false);
+		} else if ( v.type() == QVariant::String ) {
+			QLineEdit * le = new QLineEdit( parent );
+			le->setFrame( false );
 			w = le;
 		}
-		if ( w ) w->installEventFilter( const_cast<NifDelegate *>( this ) );
+
+		if ( w )
+			w->installEventFilter( const_cast<NifDelegate *>( this ) );
+
 		return w;
 	}
-	
-	void setEditorData(QWidget *editor, const QModelIndex &index) const
+
+	void setEditorData( QWidget * editor, const QModelIndex & index ) const override final
 	{
-		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
-		QComboBox * cedit = qobject_cast<QComboBox*>( editor );
-		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
-		QVariant	v = index.data( Qt::EditRole );
-		
-		if ( vedit && v.canConvert<NifValue>() )
-		{
+		ValueEdit * vedit = qobject_cast<ValueEdit *>( editor );
+		QComboBox * cedit = qobject_cast<QComboBox *>( editor );
+		QLineEdit * ledit = qobject_cast<QLineEdit *>( editor );
+		QVariant v = index.data( Qt::EditRole );
+
+		if ( vedit && v.canConvert<NifValue>() ) {
 			vedit->setValue( v.value<NifValue>() );
-		}
-		else if ( cedit && v.canConvert<NifValue>() && v.value<NifValue>().isCount() )
-		{
+		} else if ( cedit && v.canConvert<NifValue>() && v.value<NifValue>().isCount() ) {
 			cedit->clear();
 			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
-			const NifValue::EnumOptions& eo = NifValue::enumOptionData( t );
+			const NifValue::EnumOptions & eo = NifValue::enumOptionData( t );
 			quint32 value = v.value<NifValue>().toCount();
-			QHashIterator< quint32, QPair< QString, QString > > it( eo.o );
-			while ( it.hasNext() )
-			{
+			QMapIterator<quint32, QPair<QString, QString> > it( eo.o );
+
+			while ( it.hasNext() ) {
 				it.next();
 				bool ok = false;
-				if (eo.t == NifValue::eFlags) {
-					cedit->addItem(it.value().first, ok = (value & (1 << it.key())) );
+
+				if ( eo.t == NifValue::eFlags ) {
+					cedit->addItem( it.value().first, ok = ( value & ( 1 << it.key() ) ) );
 				} else {
-					cedit->addItem(it.value().first, ok = (value == it.key()) );
+					cedit->addItem( it.value().first, ok = ( value == it.key() ) );
 				}
 			}
-			cedit->setEditText( NifValue::enumOptionName(t, value) );
-			cedit->setCurrentIndex( cedit->findText( NifValue::enumOptionName( t, value ) ) );
-		}
-		else if ( ledit )
-		{
+
+			cedit->setEditText( NifValue::enumOptionName( t, value ) );
+
+			if ( eo.t == NifValue::eFlags ) {
+				// Using setCurrentIndex on bitflag enums causes the QComboBox
+				// to break when only one option is selected. It returns something
+				// other than -1 and in doing so checked option's UI is inactive.
+				// See: https://github.com/niftools/nifskope/issues/51
+				cedit->setCurrentIndex( -1 );
+			} else {
+				cedit->setCurrentIndex( cedit->findText( NifValue::enumOptionName( t, value ) ) );
+			}
+				
+
+		} else if ( ledit ) {
 			ledit->setText( v.toString() );
 		}
 	}
-	
-	void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
+
+	void setModelData( QWidget * editor, QAbstractItemModel * model, const QModelIndex & index ) const override final
 	{
-		Q_ASSERT(model);
-		ValueEdit * vedit = qobject_cast<ValueEdit*>( editor );
-		QComboBox * cedit = qobject_cast<QComboBox*>( editor );
-		QLineEdit * ledit = qobject_cast<QLineEdit*>( editor );
+		Q_ASSERT( model );
+		ValueEdit * vedit = qobject_cast<ValueEdit *>( editor );
+		QComboBox * cedit = qobject_cast<QComboBox *>( editor );
+		QLineEdit * ledit = qobject_cast<QLineEdit *>( editor );
 		QVariant v;
-		if ( vedit )
-		{
+
+		if ( vedit ) {
 			v.setValue( vedit->getValue() );
 			model->setData( index, v, Qt::EditRole );
-		}
-		else if ( cedit )
-		{
-			QString t = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
+		} else if ( cedit ) {
+			QString t  = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
 			QVariant v = index.data( Qt::EditRole );
 			bool ok;
 			quint32 x = NifValue::enumOptionValue( t, cedit->currentText(), &ok );
-			if ( ! ok )
+
+			if ( !ok )
 				x = cedit->currentText().toUInt();
-			if ( v.canConvert<NifValue>() )
-			{
+
+			if ( v.canConvert<NifValue>() ) {
 				NifValue nv = v.value<NifValue>();
 				nv.setCount( x );
 				v.setValue( nv );
 				model->setData( index, v, Qt::EditRole );
 			}
-		}
-		else if ( ledit )
-		{
+		} else if ( ledit ) {
 			v.setValue( ledit->text() );
 			model->setData( index, v, Qt::EditRole );
 		}
@@ -297,12 +305,13 @@ public:
 		// allways upper left
 		return QRect( opt.rect.topLeft(), opt.decorationSize );
 	}
-	
+
 	QRect textRect( const QStyleOptionViewItem & opt ) const
 	{
-		return QRect( QPoint( opt.rect.x() + opt.decorationSize.width(), opt.rect.y() ), QSize( opt.rect.width() - opt.decorationSize.width(), opt.rect.height() ) );
+		return QRect( QPoint( opt.rect.x() + opt.decorationSize.width(), opt.rect.y() ),
+		              QSize( opt.rect.width() - opt.decorationSize.width(), opt.rect.height() )
+		);
 	}
-	
 };
 
 QAbstractItemDelegate * NifModel::createDelegate( SpellBook * book )

@@ -33,48 +33,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLVIEW
 #define GLVIEW
 
-#include <QOpenGLContext>
-#include <QOpenGLFunctions>
-// TODO: Determine the necessity of this
-// Appears to be used solely for gluErrorString
-// There may be some Qt alternative
-#ifdef __APPLE__
-    #include <OpenGL/glu.h>
-#else
-    #include <GL/glu.h>
-#endif
-
-#include <QGLWidget>
-#include <QGLFormat>
-
 #include "nifmodel.h"
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
-#include <QtCore/QtCore> // extra include to avoid compile error
-#include <QtWidgets>   // dito
-#include <QDebug>
-#include <QCache>
+#include <QGLWidget> // Inherited
 #include <QDateTime>
-#include <QFile>
-#include <QStack>
-#include <QQueue>
+#include <QPersistentModelIndex>
 
 #include <math.h>
+
 
 //! \file glview.h GLView class
 
 class Scene;
 
+class QAction;
 class QActionGroup;
 class QComboBox;
+class QGLFormat;
 class QMenu;
+class QOpenGLContext;
+class QOpenGLFunctions;
 class QSettings;
 class QToolBar;
 class QTimer;
 
 //! The model view window
-class GLView : public QGLWidget
+class GLView final : public QGLWidget
 {
 	Q_OBJECT
 
@@ -82,41 +68,34 @@ class GLView : public QGLWidget
 	GLView( const QGLFormat & format, const QGLWidget * shareWidget = 0 );
 	//! Destructor
 	~GLView();
-	
+
 public:
 	//! Static instance
 	static GLView * create();
 
-	QOpenGLContext* m_context;
-	QOpenGLFunctions* m_funcs;
+	QOpenGLContext * glContext;
+	QOpenGLFunctions * glFuncs;
 
-	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
-	
-	void move( float, float, float );
-	void setPosition( float, float, float );
-	void setPosition( Vector3 );
-	
-	void setDistance( float );
-	
-	void rotate( float, float, float );
-	void setRotation( float, float, float );
-	
-	void zoom( float );
-	void setZoom( float );
-	
-	bool highlight() const;
-	bool drawNodes() const;
-	
-	QSize minimumSizeHint() const { return QSize( 50, 50 ); }
-	QSize sizeHint() const { return QSize( 400, 400 ); }
+	Scene * getScene();
+	void updateShaders();
 
 	void center();
-	
-	QMenu * createMenu() const;
-	QList<QToolBar*> toolbars() const;
-	
+	void move( float, float, float );
+	void rotate( float, float, float );
+	void zoom( float );
+
+	void setDistance( float );
+	void setPosition( float, float, float );
+	void setPosition( Vector3 );
+	void setRotation( float, float, float );
+	void setZoom( float );
+
+	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
+
+	// UI
+
 	QActionGroup * grpView;
-	
+
 	QAction * aViewWalk;
 	QAction * aViewTop;
 	QAction * aViewFront;
@@ -125,136 +104,124 @@ public:
 	QAction * aViewPerspective;
 	QAction * aViewUser;
 	QAction * aViewUserSave;
-	
 	QAction * aPrintView;
-	
+	QAction * aColorKeyDebug;
 	QAction * aAnimate;
 	QAction * aAnimPlay;
 	QAction * aAnimLoop;
 	QAction * aAnimSwitch;
-	
+
 	QToolBar * tAnim;
+	QToolBar * tView;
+
 	QComboBox * animGroups;
 	FloatSlider * sldTime;
 
-	QToolBar * tView;
-	
-	void	save( QSettings & );
-	void	restore( const QSettings & );
+	QMenu * createMenu() const;
+	QList<QToolBar *> toolbars() const;
 
-	Scene * getScene();
+	QSize minimumSizeHint() const override final { return { 50, 50 }; }
+	QSize sizeHint() const override final { return { 400, 400 }; }
+
+	// Settings
+
+	void save( QSettings & );
+	void restore( const QSettings & );
 
 public slots:
 	void setNif( NifModel * );
-
 	void setCurrentIndex( const QModelIndex & );
 
 	void sltTime( float );
 	void sltSequence( const QString & );
-
-	void updateShaders();
-	
 	void sltSaveUserView();
-	
-signals: 
-	void clicked( const QModelIndex & );
-	
-	void sigTime( float t, float mn, float mx );
 
+signals:
+	void clicked( const QModelIndex & );
 	void paintUpdate();
+	void sigTime( float t, float mn, float mx );
 
 protected:
 	//! Sets up the OpenGL rendering context, defines display lists, etc.
-	void initializeGL();
-	int  pickGL( int x, int y );
+	void initializeGL() override final;
 	//! Sets up the OpenGL viewport, projection, etc.
-	void resizeGL( int width, int height );
-	void glProjection( int x = -1, int y = -1 );
-
+	void resizeGL( int width, int height ) override final;
 #ifdef USE_GL_QPAINTER
-	void paintEvent( QPaintEvent * );
+	void paintEvent( QPaintEvent * ) override final;
 #else
 	//! Renders the OpenGL scene.
-	void paintGL();
+	void paintGL() override final;
 #endif
-	
-	void mousePressEvent( QMouseEvent * );
-	void mouseReleaseEvent( QMouseEvent * );
-	void mouseDoubleClickEvent( QMouseEvent * );
-	void mouseMoveEvent( QMouseEvent * );
-	void wheelEvent( QWheelEvent * );
-	void keyPressEvent( QKeyEvent * );
-	void keyReleaseEvent( QKeyEvent * );
-	void focusOutEvent( QFocusEvent * );
-	
-	void dragEnterEvent( QDragEnterEvent * );
-	void dragMoveEvent( QDragMoveEvent * );
-	void dropEvent( QDropEvent * );
-	void dragLeaveEvent( QDragLeaveEvent * );
-	
-private slots:
-	void advanceGears();
-	
-	void modelChanged();
-	void modelLinked();
-	void modelDestroyed();
-	void dataChanged( const QModelIndex &, const QModelIndex & );
-	
-	void checkActions();
-	void viewAction( QAction * );
+	void glProjection( int x = -1, int y = -1 );
 
-	void sceneUpdate();
+	// QWidget Event Handlers
+
+	void dragEnterEvent( QDragEnterEvent * ) override final;
+	void dragLeaveEvent( QDragLeaveEvent * ) override final;
+	void dragMoveEvent( QDragMoveEvent * ) override final;
+	void dropEvent( QDropEvent * ) override final;
+	void focusOutEvent( QFocusEvent * ) override final;
+	void keyPressEvent( QKeyEvent * ) override final;
+	void keyReleaseEvent( QKeyEvent * ) override final;
+	void mouseDoubleClickEvent( QMouseEvent * ) override final;
+	void mouseMoveEvent( QMouseEvent * ) override final;
+	void mousePressEvent( QMouseEvent * ) override final;
+	void mouseReleaseEvent( QMouseEvent * ) override final;
+	void wheelEvent( QWheelEvent * ) override final;
+
+protected slots:
+	void saveImage();
 
 private:
+	NifModel * model;
+	Scene * scene;
+
+	class TexCache * textures;
+
+	float time;
+	QTime lastTime;
+	QTimer * timer;
+
+	int fpscnt;
+	float fpsact;
+	float fpsacc;
+
+	float Dist;
+	Vector3 Pos;
+	Vector3 Rot;
+	GLdouble Zoom;
+	GLdouble axis;
+	Transform viewTrans;
+	int zInc;
+	
+	QHash<int, bool> kbd;
+	QPoint lastPos;
+	QPoint pressPos;
+	Vector3 mouseMov;
+	Vector3 mouseRot;
+	int cycleSelect;
+
+	QPersistentModelIndex iDragTarget;
+	QString fnDragTex, fnDragTexOrg;
+
+	bool doCompile;
+	bool doCenter;
+	bool doMultisampling;
+
 	QAction * checkedViewAction() const;
 	void uncheckViewAction();
 
-	Vector3 Pos;
-	Vector3 Rot;
-	float	Dist;
-	
-	GLdouble Zoom;
-	
-	GLdouble axis;
-	
-	Transform viewTrans;
-	
-	int zInc;
-	
-	bool doCompile;
-	bool doCenter;
-	
-	QPoint lastPos;
-	QPoint pressPos;
-	
-	int cycleSelect;
-	
-	NifModel * model;
-	
-	Scene * scene;
-	
-	QTimer * timer;
-	
-	float time;
-	QTime lastTime;
-	
-	QHash<int,bool> kbd;
-	Vector3 mouseMov;
-	Vector3 mouseRot;
-	
-	int		fpscnt;
-	float	fpsact;
-	float	fpsacc;
-	
-	class TexCache * textures;
-	
-	QPersistentModelIndex iDragTarget;
-	QString fnDragTex, fnDragTexOrg;
-	
-	QPoint popPos;
-protected slots:
-	void popMenu();
-	void savePixmap();
+private slots:
+	void advanceGears();
+	void checkActions();
+	void viewAction( QAction * );
+
+	void dataChanged( const QModelIndex &, const QModelIndex & );
+	void modelChanged();
+	void modelLinked();
+	void modelDestroyed();
+
+	void sceneUpdate();
 };
 
 #endif

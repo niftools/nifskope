@@ -35,66 +35,68 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QFileInfo>
 
-#include "../nifmodel.h"
+#include "nifmodel.h"
 
 ReferenceBrowser::ReferenceBrowser( QWidget * parent )
-    : QTextBrowser( parent )
+	: QTextBrowser( parent )
 {
-    nif = NULL;
-    docFolder.setPath( qApp->applicationDirPath() );
-    docFolderPresent = docFolder.exists( "doc" );
+	nif = nullptr;
+	docFolder.setPath( qApp->applicationDirPath() );
+	docFolderPresent = docFolder.exists( "doc" );
 
 #ifdef Q_OS_LINUX
-    if ( ! docFolderPresent ) {
-        docFolder.cd( "/usr/share/nifskope" );
-        docFolderPresent = docFolder.exists( "doc" );
-    }
-#endif
-    
-    if( docFolderPresent ) {
-        docFolder.cd( "doc" );
-    }
 
-    if( ! docFolderPresent || ! QFileInfo( docFolder.filePath( "index.html" ) ).exists() )
-    {
-        setText( tr("Please install the reference documentation into the 'doc' folder.") );
-        return;
-    }
-        
-    setSearchPaths( QStringList() << docFolder.absolutePath() );
-    setStyleSheet( "docsys.css" );
-    setSourceFile( "index.html" );
+	if ( !docFolderPresent ) {
+		docFolder.cd( "/usr/share/nifskope" );
+		docFolderPresent = docFolder.exists( "doc" );
+	}
+
+#endif
+
+	if ( docFolderPresent ) {
+		docFolder.cd( "doc" );
+	}
+
+	if ( !docFolderPresent || !QFileInfo( docFolder.filePath( "index.html" ) ).exists() ) {
+		setText( tr( "Please install the reference documentation into the 'doc' folder." ) );
+		return;
+	}
+
+	setSearchPaths( { docFolder.absolutePath() } );
+	setStyleSheet( "docsys.css" );
+	setSourceFile( "index.html" );
 }
 
 void ReferenceBrowser::setNifModel( NifModel * nifModel )
 {
-    nif = nifModel;
+	nif = nifModel;
 }
 
 // TODO: Read documentation from ZIP files
 
 void ReferenceBrowser::setSourceFile( const QString & source )
 {
-    if( QFileInfo( docFolder.filePath( source ) ).exists() ) {
-        setSource( QUrl( source ) );
-    }
+	if ( QFileInfo( docFolder.filePath( source ) ).exists() ) {
+		setSource( QUrl( source ) );
+	}
 }
 
 void ReferenceBrowser::browse( const QModelIndex & index )
 {
-    if( !nif || !docFolderPresent ) {
-        return;
-    }
+	if ( !nif || !docFolderPresent ) {
+		return;
+	}
 
-    QString blockType = nif->getBlockType( index );
-    if( blockType == "NiBlock" ) {
-        blockType = nif->getBlockName( index );
-    }
+	QString blockType = nif->getBlockType( index );
 
-    if( ! QFileInfo( docFolder.filePath( "%1.html" ).arg( blockType ) ).exists() ) {
-        setText( tr("The reference file for '%1' could not be found.").arg( blockType ) );
-        return;
-    }
-    
-    setSourceFile( QString( "%1.html" ).arg( blockType ) );
+	if ( blockType == "NiBlock" ) {
+		blockType = nif->getBlockName( index );
+	}
+
+	if ( !QFileInfo( docFolder.filePath( "%1.html" ).arg( blockType ) ).exists() ) {
+		setText( tr( "The reference file for '%1' could not be found." ).arg( blockType ) );
+		return;
+	}
+
+	setSourceFile( QString( "%1.html" ).arg( blockType ) );
 }

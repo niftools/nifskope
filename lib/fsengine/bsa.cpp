@@ -269,7 +269,7 @@ bool BSA::open()
 			
 			quint32 totalFileCount = 0;
 			
-			foreach ( OBBSAFolderInfo folderInfo, folderInfos )
+			for ( const OBBSAFolderInfo folderInfo : folderInfos )
 			{
 				// useless?
 				/*
@@ -296,7 +296,7 @@ bool BSA::open()
 				if ( bsa.read( (char *) fileInfos.data(), fcnt * sizeof( OBBSAFileInfo ) ) != fcnt * sizeof( OBBSAFileInfo ) )
 					throw QString( "file info read" );
 				
-				foreach ( OBBSAFileInfo fileInfo, fileInfos )
+				for ( const OBBSAFileInfo fileInfo : fileInfos )
 				{
 					if ( fileNameIndex >= header.FileNameLength )
 						throw QString( "file name size" );
