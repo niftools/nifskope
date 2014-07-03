@@ -832,7 +832,11 @@ void NifSkope::save()
 			lineSave->setState( FileSelector::stSuccess );
 		}
 
-		setWindowTitle( nif->getFileInfo().fileName() );
+		// TODO: nif->getFileInfo() returns stale data
+		// Instead create tmp QFileInfo from lineSave text
+		// Future: updating file info stored in nif
+		QFileInfo finfo( nifname );
+		setWindowTitle( finfo.fileName() );
 	}
 
 	setEnabled( true );
