@@ -122,6 +122,8 @@ public:
 	template <typename T> QVector<T> getArray( const QModelIndex & iArray, const QString & name ) const;
 	//! Write a QVector to a model index array.
 	template <typename T> void setArray( const QModelIndex & iArray, const QVector<T> & array );
+	//! Write a value to a model index array.
+	template <typename T> void setArray( const QModelIndex & iArray, const T & val );
 	//! Write a QVector to a model index array by name.
 	template <typename T> void setArray( const QModelIndex & iArray, const QString & name, const QVector<T> & array );
 
@@ -429,6 +431,19 @@ template <typename T> inline void BaseModel::setArray( const QModelIndex & iArra
 
 	if ( isArray( iArray ) && item && iArray.model() == this ) {
 		item->setArray<T>( array );
+		int x = item->childCount() - 1;
+
+		if ( x >= 0 )
+			emit dataChanged( createIndex( 0, ValueCol, item->child( 0 ) ), createIndex( x, ValueCol, item->child( x ) ) );
+	}
+}
+
+template <typename T> inline void BaseModel::setArray( const QModelIndex & iArray, const T & val )
+{
+	NifItem * item = static_cast<NifItem *>(iArray.internalPointer());
+
+	if ( isArray( iArray ) && item && iArray.model() == this ) {
+		item->setArray<T>( val );
 		int x = item->childCount() - 1;
 
 		if ( x >= 0 )

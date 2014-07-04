@@ -468,6 +468,14 @@ public:
 		}
 	}
 
+	//! Set the child items from a single value
+	template <typename T> void setArray( const T & val )
+	{
+		for ( NifItem * child : childItems ) {
+			child->itemData.value.set<T>( val );
+		}
+	}
+
 private:
 	//! The data held by the item
 	NifData itemData;
