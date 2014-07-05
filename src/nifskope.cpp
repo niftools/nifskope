@@ -251,18 +251,11 @@ NifSkope::NifSkope()
 
 #ifndef DISABLE_INSPECTIONVIEWER
 	dInsp = ui->InspectDock;
-	//dInsp->toggleViewAction()->setShortcut( Qt::ALT + Qt::Key_Enter );
+	dInsp->setWidget( inspect );
 	dInsp->toggleViewAction()->setChecked( false );
 	dInsp->setVisible( false );
-#endif
-
-	//addDockWidget( Qt::BottomDockWidgetArea, dRefr );
-	//addDockWidget( Qt::LeftDockWidgetArea, dList );
-	//addDockWidget( Qt::BottomDockWidgetArea, dTree );
-	//addDockWidget( Qt::RightDockWidgetArea, dKfm );
-
-#ifndef DISABLE_INSPECTIONVIEWER
-	//addDockWidget( Qt::RightDockWidgetArea, dInsp, Qt::Vertical );
+#elif
+	removeDockWidget( ui->InspectDock );
 #endif
 
 	/* ******** */
@@ -270,9 +263,6 @@ NifSkope::NifSkope()
 	// tool bars
 
 	// begin Load & Save toolbar
-	//tool = new QToolBar( tr( "Load && Save" ) );
-	//tool->setObjectName( "toolbar" );
-	//tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 
 	QStringList fileExtensions{
 		"All Files (*.nif *.kf *.kfa *.kfm *.nifcache *.texcache *.pcpatch *.jmi)",
@@ -303,9 +293,6 @@ NifSkope::NifSkope()
 	extraspace->setFixedWidth( 5 );
 	ui->toolbar->addWidget( extraspace );
 #endif
-
-	//addToolBar( Qt::TopToolBarArea, tool );
-	//insertToolBar( ui->toolbar, tool );
 	// end Load & Save toolbar
 
 	// begin OpenGL toolbars
@@ -441,6 +428,8 @@ void NifSkope::restore( const QSettings & settings )
 
 	if ( fontVar.canConvert<QFont>() )
 		setViewFont( fontVar.value<QFont>() );
+
+	tabifyDockWidget( ui->InspectDock, ui->KfmDock );
 }
 
 //! Save view sizes to settings
@@ -787,7 +776,6 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 	QSettings settings;
 	skope->restore( settings );
 	skope->show();
-
 	skope->raise();
 
 	if ( !fname.isEmpty() ) {

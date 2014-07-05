@@ -47,11 +47,11 @@
    </attribute>
    <addaction name="aResetBlockDetails"/>
    <addaction name="separator"/>
-   <addaction name="aToggleHelp"/>
    <addaction name="aToggleBlockList"/>
    <addaction name="aToggleBlockDetails"/>
-   <addaction name="aToggleKfm"/>
    <addaction name="aToggleInspect"/>
+   <addaction name="aToggleKfm"/>
+   <addaction name="aToggleHelp"/>
   </widget>
   <widget class="QToolBar" name="tAnim">
    <property name="windowTitle">
@@ -815,6 +815,86 @@
     <hint type="destinationlabel">
      <x>511</x>
      <y>383</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleKfm</sender>
+   <signal>triggered()</signal>
+   <receiver>KfmDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>885</x>
+     <y>349</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleInspect</sender>
+   <signal>triggered()</signal>
+   <receiver>InspectDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>885</x>
+     <y>111</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleHelp</sender>
+   <signal>triggered()</signal>
+   <receiver>RefrDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>908</x>
+     <y>633</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleBlockList</sender>
+   <signal>triggered()</signal>
+   <receiver>ListDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>124</x>
+     <y>32</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>137</x>
+     <y>281</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleBlockDetails</sender>
+   <signal>triggered()</signal>
+   <receiver>TreeDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>396</x>
+     <y>633</y>
     </hint>
    </hints>
   </connection>
