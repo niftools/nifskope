@@ -280,7 +280,8 @@ RESOURCES += \
 	res/nifskope.qrc
 
 FORMS += \
-	src/ui/about_dialog.ui
+	src/ui/about_dialog.ui \
+	src/ui/nifskope.ui
 
 
 ###############################

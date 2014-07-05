@@ -34,6 +34,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "version.h"
 #include "options.h"
 
+#include "ui_nifskope.h"
+#include "ui/about_dialog.h"
+
 #include "glview.h"
 #include "kfmmodel.h"
 #include "nifmodel.h"
@@ -45,6 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/refrbrowser.h"
 #include "widgets/inspect.h"
 #include "widgets/xmlcheck.h"
+
 
 #include <QAction>
 #include <QApplication>
@@ -93,10 +97,12 @@ FSManager * fsmanager = nullptr;
  */
 
 NifSkope::NifSkope()
-	: QMainWindow(), selecting( false ), initialShowEvent( true )
+	: QMainWindow(), selecting( false ), initialShowEvent( true ), ui( new Ui::NifSkope )
 {
 	// init UI parts
 	aboutDialog = new AboutDialog( this );
+
+	ui->setupUi( this );
 
 	// migrate settings from older versions of NifSkope
 	migrateSettings();
@@ -117,21 +123,18 @@ NifSkope::NifSkope()
 
 
 	// this view shows the block list
-	list = new NifTreeView;
-	list->setModel( proxy );
+	list = ui->list;
+	ui->list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate( book ) );
-	list->header()->setStretchLastSection( true );
-	list->header()->setMinimumSectionSize( 100 );
 	list->installEventFilter( this );
 
 	connect( list, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
 	connect( list, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 	// this view shows the whole nif file or the block details
-	tree = new NifTreeView;
+	tree = ui->tree;
 	tree->setModel( nif );
 	tree->setItemDelegate( nif->createDelegate( book ) );
-	tree->header()->setStretchLastSection( false );
 	tree->installEventFilter( this );
 
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
@@ -139,10 +142,9 @@ NifSkope::NifSkope()
 
 
 	// this view shows the whole kfm file
-	kfmtree = new NifTreeView;
+	kfmtree = ui->kfmtree;
 	kfmtree->setModel( kfm );
 	kfmtree->setItemDelegate( kfm->createDelegate() );
-	kfmtree->header()->setStretchLastSection( false );
 	kfmtree->installEventFilter( this );
 
 	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
@@ -181,44 +183,26 @@ NifSkope::NifSkope()
 #endif
 	// actions
 
-	aSanitize = new QAction( tr( "&Auto Sanitize before Save" ), this );
-	aSanitize->setCheckable( true );
-	aSanitize->setChecked( true );
-	aLoadXML = new QAction( tr( "Reload &XML" ), this );
-	connect( aLoadXML, &QAction::triggered, this, &NifSkope::loadXML );
-	aReload = new QAction( tr( "&Reload XML + Nif" ), this );
-	aReload->setShortcut( Qt::ALT + Qt::Key_X );
-	connect( aReload, &QAction::triggered, this, &NifSkope::reload );
-	aWindow = new QAction( tr( "&New Window" ), this );
-	aWindow->setShortcut( QKeySequence::New );
-	connect( aWindow, &QAction::triggered, this, &NifSkope::sltWindow );
-	aShredder = new QAction( tr( "XML Checker" ), this );
-	connect( aShredder, &QAction::triggered, this, &NifSkope::sltShredder );
-	aQuit = new QAction( tr( "&Quit" ), this );
-	connect( aQuit, &QAction::triggered, this, &NifSkope::close );
+	aSanitize = ui->aSanitize;
 
-	aList = new QAction( tr( "Show Blocks in List" ), this );
-	aList->setCheckable( true );
+	ui->aWindow->setShortcut( QKeySequence::New );
+
+
+	aList = ui->aList;
 	aList->setChecked( list->model() == nif );
 
-	aHierarchy = new QAction( tr( "Show Blocks in Tree" ), this );
-	aHierarchy->setCheckable( true );
+	aHierarchy = ui->aHierarchy;
 	aHierarchy->setChecked( list->model() == proxy );
 
+	// Allow only List or Tree view be selected at once
 	gListMode = new QActionGroup( this );
-	connect( gListMode, &QActionGroup::triggered, this, &NifSkope::setListMode );
 	gListMode->addAction( aList );
 	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
+	connect( gListMode, &QActionGroup::triggered, this, &NifSkope::setListMode );
 
-	aCondition = new QAction( tr( "Hide Version Mismatched Rows" ), this );
-	aCondition->setCheckable( true );
-	aCondition->setChecked( false );
-
-	aRCondition = new QAction( tr( "Realtime Row Version Updating (slow)" ), this );
-	aRCondition->setCheckable( true );
-	aRCondition->setChecked( false );
-	aRCondition->setEnabled( false );
+	aCondition = ui->aCondition;
+	aRCondition = ui->aRCondition;
 
 	connect( aCondition, &QAction::toggled, aRCondition, &QAction::setEnabled );
 	connect( aRCondition, &QAction::toggled, tree, &NifTreeView::setRealTime );
@@ -228,90 +212,57 @@ NifSkope::NifSkope()
 	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setEvalConditions );
 	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setEvalConditions );
 
-	aSelectFont = new QAction( tr( "Select Font ..." ), this );
+	aSelectFont = ui->aSelectFont;
 	connect( aSelectFont, &QAction::triggered, this, &NifSkope::sltSelectFont );
 
 
 	/* help menu */
+	ui->aHelpWebsite->setData( QUrl( "http://niftools.sourceforge.net/wiki/index.php/NifSkope" ) );
+	ui->aHelpForum->setData( QUrl( "http://niftools.sourceforge.net/forum/viewforum.php?f=24" ) );
+	ui->aNifToolsWebsite->setData( QUrl( "http://niftools.sourceforge.net" ) );
+	ui->aNifToolsDownloads->setData( QUrl( "http://sourceforge.net/project/showfiles.php?group_id=149157" ) );
 
-	aHelpWebsite = new QAction( tr( "NifSkope Documentation && &Tutorials" ), this );
-	aHelpWebsite->setData( QUrl( "http://niftools.sourceforge.net/wiki/index.php/NifSkope" ) );
-	connect( aHelpWebsite, &QAction::triggered, this, &NifSkope::openURL );
-
-	aHelpForum = new QAction( tr( "NifSkope Help && Bug Report &Forum" ), this );
-	aHelpForum->setData( QUrl( "http://niftools.sourceforge.net/forum/viewforum.php?f=24" ) );
-	connect( aHelpForum, &QAction::triggered, this, &NifSkope::openURL );
-
-	aNifToolsWebsite = new QAction( tr( "NifTools &Wiki" ), this );
-	aNifToolsWebsite->setData( QUrl( "http://niftools.sourceforge.net" ) );
-	connect( aNifToolsWebsite, &QAction::triggered, this, &NifSkope::openURL );
-
-	aNifToolsDownloads = new QAction( tr( "NifTools &Downloads" ), this );
-	aNifToolsDownloads->setData( QUrl( "http://sourceforge.net/project/showfiles.php?group_id=149157" ) );
-	connect( aNifToolsDownloads, &QAction::triggered, this, &NifSkope::openURL );
-
-	aNifSkope = new QAction( tr( "About &NifSkope" ), this );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( aNifSkope, SIGNAL( triggered() ), aboutDialog, SLOT( open() ) );
-
-	aAboutQt = new QAction( tr( "About &Qt" ), this );
-	connect( aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
+	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
+	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
 
 #ifdef FSENGINE
-
 	if ( fsmanager ) {
-		aResources = new QAction( tr( "Resource Files" ), this );
-		connect( aResources, &QAction::triggered, fsmanager, &FSManager::selectArchives );
-	} else {
-		aResources = nullptr;
+		connect( ui->aResources, &QAction::triggered, fsmanager, &FSManager::selectArchives );
 	}
-
 #endif
 
-
 	// dock widgets
-
-	dRefr = new QDockWidget( tr( "Interactive Help" ) );
-	dRefr->setObjectName( "RefrDock" );
-	dRefr->setWidget( refrbrwsr );
+	dRefr = ui->RefrDock;
 	dRefr->toggleViewAction()->setShortcut( Qt::Key_F1 );
 	dRefr->toggleViewAction()->setChecked( false );
 	dRefr->setVisible( false );
 
-	dList = new QDockWidget( tr( "Block List" ) );
-	dList->setObjectName( "ListDock" );
-	dList->setWidget( list );
+	dList = ui->ListDock;
 	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
 	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
 
-	dTree = new QDockWidget( tr( "Block Details" ) );
-	dTree->setObjectName( "TreeDock" );
-	dTree->setWidget( tree );
+	dTree = ui->TreeDock;
 	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
 
-	dKfm = new QDockWidget( tr( "KFM" ) );
-	dKfm->setObjectName( "KfmDock" );
-	dKfm->setWidget( kfmtree );
+	dKfm = ui->KfmDock;
 	dKfm->toggleViewAction()->setShortcut( Qt::Key_F4 );
 	dKfm->toggleViewAction()->setChecked( false );
 	dKfm->setVisible( false );
 
 #ifndef DISABLE_INSPECTIONVIEWER
-	dInsp = new QDockWidget( tr( "Inspect" ) );
-	dInsp->setObjectName( "InspectDock" );
-	dInsp->setWidget( inspect );
+	dInsp = ui->InspectDock;
 	//dInsp->toggleViewAction()->setShortcut( Qt::ALT + Qt::Key_Enter );
 	dInsp->toggleViewAction()->setChecked( false );
 	dInsp->setVisible( false );
 #endif
 
-	addDockWidget( Qt::BottomDockWidgetArea, dRefr );
-	addDockWidget( Qt::LeftDockWidgetArea, dList );
-	addDockWidget( Qt::BottomDockWidgetArea, dTree );
-	addDockWidget( Qt::RightDockWidgetArea, dKfm );
+	//addDockWidget( Qt::BottomDockWidgetArea, dRefr );
+	//addDockWidget( Qt::LeftDockWidgetArea, dList );
+	//addDockWidget( Qt::BottomDockWidgetArea, dTree );
+	//addDockWidget( Qt::RightDockWidgetArea, dKfm );
 
 #ifndef DISABLE_INSPECTIONVIEWER
-	addDockWidget( Qt::RightDockWidgetArea, dInsp, Qt::Vertical );
+	//addDockWidget( Qt::RightDockWidgetArea, dInsp, Qt::Vertical );
 #endif
 
 	/* ******** */
@@ -319,9 +270,9 @@ NifSkope::NifSkope()
 	// tool bars
 
 	// begin Load & Save toolbar
-	tool = new QToolBar( tr( "Load && Save" ) );
-	tool->setObjectName( "toolbar" );
-	tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	//tool = new QToolBar( tr( "Load && Save" ) );
+	//tool->setObjectName( "toolbar" );
+	//tool->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
 
 	QStringList fileExtensions{
 		"All Files (*.nif *.kf *.kfa *.kfm *.nifcache *.texcache *.pcpatch *.jmi)",
@@ -330,7 +281,7 @@ NifSkope::NifSkope()
 	};
 
 	// create the load portion of the toolbar
-	aLineLoad = tool->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr( "&Load..." ), QBoxLayout::RightToLeft, QKeySequence::Open ) );
+	aLineLoad = ui->toolbar->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr( "&Load..." ), QBoxLayout::RightToLeft, QKeySequence::Open ) );
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::load) );
 
@@ -339,10 +290,10 @@ NifSkope::NifSkope()
 	cpFilename->setObjectName( "fileCopyWidget" );
 	connect( cpFilename, &CopyFilename::leftTriggered, this, &NifSkope::copyFileNameSaveLoad );
 	connect( cpFilename, &CopyFilename::rightTriggered, this, &NifSkope::copyFileNameLoadSave );
-	aCpFileName = tool->addWidget( cpFilename );
+	aCpFileName = ui->toolbar->addWidget( cpFilename );
 
 	// create the save portion of the toolbar
-	aLineSave = tool->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr( "&Save As..." ), QBoxLayout::LeftToRight, QKeySequence::Save ) );
+	aLineSave = ui->toolbar->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr( "&Save As..." ), QBoxLayout::LeftToRight, QKeySequence::Save ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::save) );
 
@@ -350,10 +301,11 @@ NifSkope::NifSkope()
 	// extra whitespace for linux
 	QWidget * extraspace = new QWidget();
 	extraspace->setFixedWidth( 5 );
-	tool->addWidget( extraspace );
+	ui->toolbar->addWidget( extraspace );
 #endif
 
-	addToolBar( Qt::TopToolBarArea, tool );
+	//addToolBar( Qt::TopToolBarArea, tool );
+	//insertToolBar( ui->toolbar, tool );
 	// end Load & Save toolbar
 
 	// begin OpenGL toolbars
@@ -362,21 +314,6 @@ NifSkope::NifSkope()
 	}
 	// end OpenGL toolbars
 
-	// begin View toolbar
-	QToolBar * tView = new QToolBar( tr( "View" ) );
-	tView->setObjectName( tr( "tView" ) );
-	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-	QAction * aResetBlockDetails = new QAction( tr( "Reset Block Details" ), this );
-	connect( aResetBlockDetails, &QAction::triggered, this, &NifSkope::sltResetBlockDetails );
-	tView->addAction( aResetBlockDetails );
-	tView->addSeparator();
-	tView->addAction( dRefr->toggleViewAction() );
-	tView->addAction( dList->toggleViewAction() );
-	tView->addAction( dTree->toggleViewAction() );
-	tView->addAction( dKfm->toggleViewAction() );
-	tView->addAction( dInsp->toggleViewAction() );
-	addToolBar( Qt::TopToolBarArea, tView );
-	// end View toolbars
 
 	// LOD Toolbar
 	QToolBar * tLOD = new QToolBar( "LOD" );
@@ -412,75 +349,28 @@ NifSkope::NifSkope()
 
 	/* ********* */
 
-	// menu
+	// Insert the Load/Save actions into the File menu
+	ui->mFile->insertActions( ui->aFileLoadDummy, lineLoad->actions() );
+	ui->mFile->insertActions( ui->aFileSaveDummy, lineSave->actions() );
 
-	// assemble the File menu
-	QMenu * mFile = new QMenu( tr( "&File" ) );
-	mFile->addActions( lineLoad->actions() );
-	mFile->addActions( lineSave->actions() );
-	mFile->addSeparator();
-	mFile->addMenu( mImport = new QMenu( tr( "Import" ) ) );
-	mFile->addMenu( mExport = new QMenu( tr( "Export" ) ) );
-	mFile->addSeparator();
-	mFile->addAction( aSanitize );
-	mFile->addSeparator();
-	mFile->addAction( aWindow );
-	mFile->addSeparator();
-	mFile->addAction( aLoadXML );
-	mFile->addAction( aReload );
-	mFile->addAction( aShredder );
-
-#ifdef FSENGINE
-
-	if ( aResources ) {
-		mFile->addSeparator();
-		mFile->addAction( aResources );
+#ifndef FSENGINE
+	if ( ui->aResources ) {
+		ui->mFile->removeAction( ui->aResources );
 	}
-
 #endif
-	mFile->addSeparator();
-	mFile->addAction( aQuit );
 
-	QMenu * mView = new QMenu( tr( "&View" ) );
-	mView->addActions( tView->actions() );
-	mView->addSeparator();
-	QMenu * mTools = new QMenu( tr( "&Toolbars" ) );
-	mView->addMenu( mTools );
+	// Populate Toolbars menu with all enabled toolbars
 	for ( QObject * o : children() ) {
 		QToolBar * tb = qobject_cast<QToolBar *>( o );
-
 		if ( tb )
-			mTools->addAction( tb->toggleViewAction() );
+			ui->mToolbars->addAction( tb->toggleViewAction() );
 	}
-	mView->addSeparator();
-	QMenu * mBlockList = new QMenu( tr( "Block List" ) );
-	mView->addMenu( mBlockList );
-	mBlockList->addAction( aHierarchy );
-	mBlockList->addAction( aList );
-	QMenu * mBlockDetails = new QMenu( tr( "Block Details" ) );
-	mView->addMenu( mBlockDetails );
-	mBlockDetails->addAction( aCondition );
-	mBlockDetails->addAction( aRCondition );
-	mBlockDetails->addAction( aResetBlockDetails );
-	mView->addSeparator();
-	mView->addAction( aSelectFont );
 
-	QMenu * mAbout = new QMenu( tr( "&Help" ) );
-	mAbout->addAction( dRefr->toggleViewAction() );
-	mAbout->addAction( aHelpWebsite );
-	mAbout->addAction( aHelpForum );
-	mAbout->addSeparator();
-	mAbout->addAction( aNifToolsWebsite );
-	mAbout->addAction( aNifToolsDownloads );
-	mAbout->addSeparator();
-	mAbout->addAction( aAboutQt );
-	mAbout->addAction( aNifSkope );
+	// Insert SpellBook class before Help
+	ui->menubar->insertMenu( ui->menubar->actions().at(3), book );
 
-	menuBar()->addMenu( mFile );
-	menuBar()->addMenu( mView );
-	menuBar()->addMenu( ogl->createMenu() );
-	menuBar()->addMenu( book );
-	menuBar()->addMenu( mAbout );
+	mExport = ui->menuExport;
+	mImport = ui->menuImport;
 
 	fillImportExportMenus();
 	connect( mExport, &QMenu::triggered, this, &NifSkope::sltImportExport );
@@ -491,6 +381,7 @@ NifSkope::NifSkope()
 
 NifSkope::~NifSkope()
 {
+	delete ui;
 }
 
 void NifSkope::closeEvent( QCloseEvent * e )
@@ -793,7 +684,7 @@ void ProgDlg::sltProgress( int x, int y )
 	qApp->processEvents();
 }
 
-void NifSkope::sltResetBlockDetails()
+void NifSkope::on_aResetBlockDetails_triggered()
 {
 	if ( tree )
 		tree->clearRootIndex();
@@ -860,12 +751,12 @@ void NifSkope::copyFileNameSaveLoad()
 	lineLoad->replaceText( lineSave->text() );
 }
 
-void NifSkope::sltWindow()
+void NifSkope::on_aWindow_triggered()
 {
 	createWindow();
 }
 
-void NifSkope::sltShredder()
+void NifSkope::on_aShredder_triggered()
 {
 	TestShredder::create();
 }
@@ -907,13 +798,13 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 	return skope;
 }
 
-void NifSkope::loadXML()
+void NifSkope::on_aLoadXML_triggered()
 {
 	NifModel::loadXML();
 	KfmModel::loadXML();
 }
 
-void NifSkope::reload()
+void NifSkope::on_aReload_triggered()
 {
 	if ( NifModel::loadXML() ) {
 		load();

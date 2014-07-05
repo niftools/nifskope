@@ -38,16 +38,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QKeyEvent>
 
-NifTreeView::NifTreeView() : QTreeView()
+NifTreeView::NifTreeView( QWidget * parent, Qt::WindowFlags flags ) : QTreeView()
 {
+	setParent( parent );
+
 	nif = nullptr;
 	EvalConditions = false;
 	RealTimeEval = false;
-
-	setUniformRowHeights( true );
-	setAlternatingRowColors( true );
-	setContextMenuPolicy( Qt::CustomContextMenu );
-	setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
 
 	connect( this, &NifTreeView::expanded, this, &NifTreeView::scrollExpand );
 }

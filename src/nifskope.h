@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFSKOPE_H
 
 #include "message.h"
-#include "ui/about_dialog.h"
 
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
@@ -42,6 +41,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define NIFSKOPE_IPC_PORT 12583
 
+namespace Ui {
+	class NifSkope;
+}
 
 class FileSelector;
 class GLView;
@@ -82,6 +84,8 @@ public:
 	//! Destructor
 	~NifSkope();
 
+	Ui::NifSkope * ui;
+
 	//! Create and initialize a new NifSkope application window.
 	/*!
 	 * \param fname The name of the file to load in the new NifSkope window.
@@ -120,19 +124,19 @@ public slots:
 	void save();
 
 	//! Reparse the nif.xml and kfm.xml files.
-	void loadXML();
+	void on_aLoadXML_triggered();
 
 	//! Reparse the nif.xml and kfm.xml files and reload the current file.
-	void reload();
+	void on_aReload_triggered();
 
 	//! A slot that creates a new NifSkope application window.
-	void sltWindow();
+	void on_aWindow_triggered();
 
 	//! A slot for starting the XML checker.
-	void sltShredder();
+	void on_aShredder_triggered();
 
 	//! Reset "block details"
-	void sltResetBlockDetails();
+	void on_aResetBlockDetails_triggered();
 
 protected slots:
 	//! Select a NIF index
@@ -228,11 +232,6 @@ private:
 	QToolBar * tool;
 
 	QAction * aSanitize;
-	QAction * aLoadXML;
-	QAction * aReload;
-	QAction * aWindow;
-	QAction * aShredder;
-	QAction * aQuit;
 
 	QAction * aLineLoad;
 	QAction * aLineSave;
@@ -249,14 +248,6 @@ private:
 	QAction * aRCondition;
 
 	QAction * aSelectFont;
-
-	QAction * aHelpWebsite;
-	QAction * aHelpForum;
-	QAction * aNifToolsWebsite;
-	QAction * aNifToolsDownloads;
-
-	QAction * aNifSkope;
-	QAction * aAboutQt;
 
 	QMenu * mExport;
 	QMenu * mImport;
