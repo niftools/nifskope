@@ -109,9 +109,8 @@ NifSkope::NifSkope()
 
 	// create a new nif
 	nif = new NifModel( this );
-	connect( nif, &NifModel::sigMessage, this, &NifSkope::dispatchMessage );
 
-	SpellBook * book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
+	auto book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
 
 	// create a new hierarchical proxy nif
 	proxy = new NifProxyModel( this );
@@ -119,8 +118,6 @@ NifSkope::NifSkope()
 
 	// create a new kfm model
 	kfm = new KfmModel( this );
-	connect( kfm, &KfmModel::sigMessage, this, &NifSkope::dispatchMessage );
-
 
 	// this view shows the block list
 	list = ui->list;
@@ -128,18 +125,11 @@ NifSkope::NifSkope()
 	list->setItemDelegate( nif->createDelegate( book ) );
 	list->installEventFilter( this );
 
-	connect( list, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
-	connect( list, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
-
 	// this view shows the whole nif file or the block details
 	tree = ui->tree;
 	tree->setModel( nif );
 	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->installEventFilter( this );
-
-	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
-	connect( tree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
-
 
 	// this view shows the whole kfm file
 	kfmtree = ui->kfmtree;
@@ -147,13 +137,19 @@ NifSkope::NifSkope()
 	kfmtree->setItemDelegate( kfm->createDelegate() );
 	kfmtree->installEventFilter( this );
 
-	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
-
 	// this browser shows the reference of current node
-	refrbrwsr = new ReferenceBrowser;
-
+	refrbrwsr = ui->refrBrowser;
 	refrbrwsr->setNifModel( nif );
+
+	connect( nif, &NifModel::sigMessage, this, &NifSkope::dispatchMessage );
+	connect( kfm, &KfmModel::sigMessage, this, &NifSkope::dispatchMessage );
+
+	connect( list, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
+	connect( list, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
+	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
+	connect( tree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, refrbrwsr, &ReferenceBrowser::browse );
+	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 #ifdef EDIT_ON_ACTIVATE
 	connect( list, &NifTreeView::activated,
