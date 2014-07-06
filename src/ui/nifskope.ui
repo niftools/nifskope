@@ -32,6 +32,34 @@
     <bool>false</bool>
    </attribute>
   </widget>
+  <widget class="QToolBar" name="tRender">
+   <property name="windowTitle">
+    <string>Render</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="aViewTop"/>
+   <addaction name="aViewFront"/>
+   <addaction name="aViewSide"/>
+   <addaction name="aViewUser"/>
+   <addaction name="aViewWalk"/>
+   <addaction name="separator"/>
+   <addaction name="aViewFlip"/>
+   <addaction name="aViewPerspective"/>
+  </widget>
   <widget class="QToolBar" name="tView">
    <property name="windowTitle">
     <string>View</string>
@@ -60,19 +88,37 @@
    <property name="allowedAreas">
     <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
    </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="aAnimPlay"/>
+   <addaction name="aAnimLoop"/>
+   <addaction name="aAnimSwitch"/>
   </widget>
-  <widget class="QToolBar" name="tRender">
-   <property name="windowTitle">
-    <string>Render</string>
+  <widget class="QToolBar" name="tLOD">
+   <property name="minimumSize">
+    <size>
+     <width>80</width>
+     <height>0</height>
+    </size>
    </property>
-   <property name="allowedAreas">
-    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+   <property name="maximumSize">
+    <size>
+     <width>80</width>
+     <height>16777215</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>LOD</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -170,6 +216,9 @@
     <addaction name="aViewPerspective"/>
     <addaction name="aViewUserSave"/>
     <addaction name="separator"/>
+    <addaction name="aPrintView"/>
+    <addaction name="aColorKeyDebug"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="mHelp">
     <property name="title">
@@ -195,6 +244,9 @@
    <property name="enabled">
     <bool>true</bool>
    </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
    <property name="windowTitle">
     <string>Inspect</string>
    </property>
@@ -204,6 +256,9 @@
    <widget class="QWidget" name="dockWidgetContents"/>
   </widget>
   <widget class="QDockWidget" name="TreeDock">
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
    <property name="windowTitle">
     <string>Block Details</string>
    </property>
@@ -213,7 +268,26 @@
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QVBoxLayout" name="treeLayout">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="bExpandAllTree">
+         <property name="maximumSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="NifTreeView" name="tree">
          <property name="contextMenuPolicy">
@@ -236,6 +310,9 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="RefrDock">
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
    <property name="windowTitle">
     <string>Interactive Help</string>
    </property>
@@ -245,6 +322,9 @@
    <widget class="QWidget" name="dockWidgetContents_3"/>
   </widget>
   <widget class="QDockWidget" name="ListDock">
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
    <property name="windowTitle">
     <string>Block List</string>
    </property>
@@ -254,7 +334,20 @@
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QVBoxLayout" name="listLayout">
+       <item>
+        <widget class="QPushButton" name="bExpandAllList">
+         <property name="maximumSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="NifTreeView" name="list">
          <property name="contextMenuPolicy">
@@ -277,6 +370,9 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="KfmDock">
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
    <property name="windowTitle">
     <string>KFM</string>
    </property>
@@ -286,7 +382,7 @@
    <widget class="QWidget" name="dockWidgetContents_6">
     <layout class="QVBoxLayout" name="verticalLayout_4">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <layout class="QVBoxLayout" name="kfmtreeLayout">
        <item>
         <widget class="NifTreeView" name="kfmtree">
          <property name="alternatingRowColors">
@@ -355,6 +451,9 @@
    </property>
   </action>
   <action name="aViewTop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewTop</normaloff>:/btn/viewTop</iconset>
@@ -362,8 +461,17 @@
    <property name="text">
     <string>Top</string>
    </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
   </action>
   <action name="aViewFront">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewFront</normaloff>:/btn/viewFront</iconset>
@@ -371,8 +479,14 @@
    <property name="text">
     <string>Front</string>
    </property>
+   <property name="shortcut">
+    <string>F6</string>
+   </property>
   </action>
   <action name="aViewSide">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewSide</normaloff>:/btn/viewSide</iconset>
@@ -380,8 +494,17 @@
    <property name="text">
     <string>Side</string>
    </property>
+   <property name="toolTip">
+    <string>View from the side</string>
+   </property>
+   <property name="shortcut">
+    <string>F7</string>
+   </property>
   </action>
   <action name="aViewUser">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewUser</normaloff>:/btn/viewUser</iconset>
@@ -389,8 +512,17 @@
    <property name="text">
     <string>User</string>
    </property>
+   <property name="toolTip">
+    <string>Restore the view as it was when Save User View was activated</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
+   </property>
   </action>
   <action name="aViewWalk">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewWalk</normaloff>:/btn/viewWalk</iconset>
@@ -398,8 +530,17 @@
    <property name="text">
     <string>Walk</string>
    </property>
+   <property name="toolTip">
+    <string>Enable walk mode</string>
+   </property>
+   <property name="shortcut">
+    <string>F9</string>
+   </property>
   </action>
   <action name="aViewFlip">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewFlip</normaloff>:/btn/viewFlip</iconset>
@@ -407,8 +548,17 @@
    <property name="text">
     <string>Flip</string>
    </property>
+   <property name="toolTip">
+    <string>Flip View from Front to Back, Top to Bottom, Side to Other Side</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
   </action>
   <action name="aViewPerspective">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewPers</normaloff>:/btn/viewPers</iconset>
@@ -416,10 +566,22 @@
    <property name="text">
     <string>Perspective</string>
    </property>
+   <property name="toolTip">
+    <string>Perspective View Transformation or Orthogonal View Transformation</string>
+   </property>
+   <property name="shortcut">
+    <string>F10</string>
+   </property>
   </action>
   <action name="aViewUserSave">
    <property name="text">
     <string>Save User View</string>
+   </property>
+   <property name="toolTip">
+    <string>Save current view rotation, position and distance</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F9</string>
    </property>
   </action>
   <action name="aFileLoadDummy">
@@ -540,20 +702,32 @@
    <property name="text">
     <string>NifSkope Documentation &amp;&amp; &amp;Tutorials</string>
    </property>
+   <property name="toolTip">
+    <string>http://niftools.sourceforge.net/wiki/index.php/NifSkope</string>
+   </property>
   </action>
   <action name="aHelpForum">
    <property name="text">
     <string>NifSkope Help &amp;&amp; Bug Report &amp;Forum</string>
+   </property>
+   <property name="toolTip">
+    <string>http://niftools.sourceforge.net/forum/viewforum.php?f=24</string>
    </property>
   </action>
   <action name="aNifToolsWebsite">
    <property name="text">
     <string>NifTools &amp;Wiki</string>
    </property>
+   <property name="toolTip">
+    <string>http://niftools.sourceforge.net</string>
+   </property>
   </action>
   <action name="aNifToolsDownloads">
    <property name="text">
     <string>NifTools &amp;Downloads</string>
+   </property>
+   <property name="toolTip">
+    <string>http://sourceforge.net/project/showfiles.php?group_id=149157</string>
    </property>
   </action>
   <action name="aAboutNifSkope">
@@ -564,6 +738,78 @@
   <action name="aAboutQt">
    <property name="text">
     <string>About &amp;Qt</string>
+   </property>
+  </action>
+  <action name="aPrintView">
+   <property name="text">
+    <string>Save View To File...</string>
+   </property>
+  </action>
+  <action name="aColorKeyDebug">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Color Key Debug</string>
+   </property>
+  </action>
+  <action name="aAnimate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Animations</string>
+   </property>
+   <property name="toolTip">
+    <string>enables evaluation of animation controllers</string>
+   </property>
+  </action>
+  <action name="aAnimPlay">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/play</normaloff>:/btn/play</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Play</string>
+   </property>
+  </action>
+  <action name="aAnimLoop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/loop</normaloff>:/btn/loop</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Loop</string>
+   </property>
+  </action>
+  <action name="aAnimSwitch">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/switch</normaloff>:/btn/switch</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Switch</string>
    </property>
   </action>
  </widget>
@@ -873,8 +1119,8 @@
    <slot>raise()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>124</x>
-     <y>32</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
      <x>137</x>
@@ -895,6 +1141,70 @@
     <hint type="destinationlabel">
      <x>396</x>
      <y>633</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bExpandAllTree</sender>
+   <signal>clicked()</signal>
+   <receiver>tree</receiver>
+   <slot>expandAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>19</x>
+     <y>555</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>378</x>
+     <y>654</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bExpandAllList</sender>
+   <signal>clicked()</signal>
+   <receiver>list</receiver>
+   <slot>expandAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>19</x>
+     <y>88</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>137</x>
+     <y>303</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bExpandAllList</sender>
+   <signal>clicked()</signal>
+   <receiver>list</receiver>
+   <slot>scrollToTop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>19</x>
+     <y>88</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>137</x>
+     <y>303</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bExpandAllTree</sender>
+   <signal>clicked()</signal>
+   <receiver>tree</receiver>
+   <slot>scrollToTop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>19</x>
+     <y>555</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>378</x>
+     <y>654</y>
     </hint>
    </hints>
   </connection>

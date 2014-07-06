@@ -97,13 +97,13 @@ public:
 	/*!
 	 * \param settings The QSettings object used to store the settings.
 	 */
-	void save( QSettings & settings ) const;
+	void saveSettings() const;
 
 	//! Restore NifSkope application settings.
 	/*!
 	 * \param settings The QSettings object to restore the settings from.
 	 */
-	void restore( const QSettings & settings );
+	void restoreSettings();
 	//! Get Loaded filename
 	/*!
 	 * \return QString of loaded filename
@@ -149,7 +149,7 @@ protected slots:
 	void setListMode();
 
 	//! Select the font to use
-	void sltSelectFont();
+	void on_aSelectFont_triggered();
 
 	//! Send a Message
 	void dispatchMessage( const Message & msg );

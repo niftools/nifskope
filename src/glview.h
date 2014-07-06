@@ -46,6 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file glview.h GLView class
 
+class NifSkope;
 class Scene;
 
 class QAction;
@@ -94,6 +95,9 @@ public:
 
 	// UI
 
+	void initUi( NifSkope * p );
+	NifSkope * nifskope;
+
 	QActionGroup * grpView;
 
 	QAction * aViewWalk;
@@ -103,8 +107,6 @@ public:
 	QAction * aViewFlip;
 	QAction * aViewPerspective;
 	QAction * aViewUser;
-	QAction * aViewUserSave;
-	QAction * aPrintView;
 	QAction * aColorKeyDebug;
 	QAction * aAnimate;
 	QAction * aAnimPlay;
@@ -117,16 +119,13 @@ public:
 	QComboBox * animGroups;
 	FloatSlider * sldTime;
 
-	QMenu * createMenu() const;
-	QList<QToolBar *> toolbars() const;
-
 	QSize minimumSizeHint() const override final { return { 50, 50 }; }
 	QSize sizeHint() const override final { return { 400, 400 }; }
 
 	// Settings
 
-	void save( QSettings & );
-	void restore( const QSettings & );
+	void saveSettings();
+	void restoreSettings();
 
 public slots:
 	void setNif( NifModel * );
@@ -134,7 +133,7 @@ public slots:
 
 	void sltTime( float );
 	void sltSequence( const QString & );
-	void sltSaveUserView();
+	void saveUserView();
 
 signals:
 	void clicked( const QModelIndex & );

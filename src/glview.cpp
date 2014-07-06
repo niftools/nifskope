@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #include "options.h"
 
+#include "ui_nifskope.h"
+#include "nifskope.h"
 #include "nifmodel.h"
 #include "gl/glscene.h"
 #include "gl/gltex.h"
@@ -137,11 +139,6 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 
 	glFuncs->initializeOpenGLFunctions();
 
-	setFocusPolicy( Qt::ClickFocus );
-	setAttribute( Qt::WA_NoSystemBackground );
-	setAcceptDrops( true );
-	setContextMenuPolicy( Qt::CustomContextMenu );
-
 	Zoom = 1.0;
 	zInc = 1;
 
@@ -167,161 +164,6 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	timer->setInterval( 1000 / FPS );
 	timer->start();
 	connect( timer, &QTimer::timeout, this, &GLView::advanceGears );
-
-
-	grpView = new QActionGroup( this );
-	grpView->setExclusive( false );
-	connect( grpView, &QActionGroup::triggered, this, &GLView::viewAction );
-
-	aViewTop = new QAction( QIcon( ":/btn/viewTop" ), tr( "Top" ), grpView );
-	aViewTop->setToolTip( tr( "View from above" ) );
-	aViewTop->setCheckable( true );
-	aViewTop->setShortcut( Qt::Key_F5 );
-	grpView->addAction( aViewTop );
-
-	aViewFront = new QAction( QIcon( ":/btn/viewFront" ), tr( "Front" ), grpView );
-	aViewFront->setToolTip( tr( "View from the front" ) );
-	aViewFront->setCheckable( true );
-	aViewFront->setChecked( true );
-	aViewFront->setShortcut( Qt::Key_F6 );
-	grpView->addAction( aViewFront );
-
-	aViewSide = new QAction( QIcon( ":/btn/viewSide" ), tr( "Side" ), grpView );
-	aViewSide->setToolTip( tr( "View from the side" ) );
-	aViewSide->setCheckable( true );
-	aViewSide->setShortcut( Qt::Key_F7 );
-	grpView->addAction( aViewSide );
-
-	aViewUser = new QAction( QIcon( ":/btn/viewUser" ), tr( "User" ), grpView );
-	aViewUser->setToolTip( tr( "Restore the view as it was when Save User View was activated" ) );
-	aViewUser->setCheckable( true );
-	aViewUser->setShortcut( Qt::Key_F8 );
-	grpView->addAction( aViewUser );
-
-	aViewWalk = new QAction( QIcon( ":/btn/viewWalk" ), tr( "Walk" ), grpView );
-	aViewWalk->setToolTip( tr( "Enable walk mode" ) );
-	aViewWalk->setCheckable( true );
-	aViewWalk->setShortcut( Qt::Key_F9 );
-	grpView->addAction( aViewWalk );
-
-	aViewFlip = new QAction( QIcon( ":/btn/viewFlip" ), tr( "Flip" ), this );
-	aViewFlip->setToolTip( tr( "Flip View from Front to Back, Top to Bottom, Side to Other Side" ) );
-	aViewFlip->setCheckable( true );
-	aViewFlip->setShortcut( Qt::Key_F11 );
-	grpView->addAction( aViewFlip );
-
-	aViewPerspective = new QAction( QIcon( ":/btn/viewPers" ), tr( "Perspective" ), this );
-	aViewPerspective->setToolTip( tr( "Perspective View Transformation or Orthogonal View Transformation" ) );
-	aViewPerspective->setCheckable( true );
-	aViewPerspective->setShortcut( Qt::Key_F10 );
-	grpView->addAction( aViewPerspective );
-
-	aViewUserSave = new QAction( tr( "Save User View" ), this );
-	aViewUserSave->setToolTip( tr( "Save current view rotation, position and distance" ) );
-	aViewUserSave->setShortcut( Qt::CTRL + Qt::Key_F9 );
-	connect( aViewUserSave, &QAction::triggered, this, &GLView::sltSaveUserView );
-
-	aPrintView = new QAction( tr( "Save View To File..." ), this );
-	connect( aPrintView, &QAction::triggered, this, &GLView::saveImage );
-
-#ifndef QT_NO_DEBUG
-	aColorKeyDebug = new QAction( tr( "Color Key Debug" ), this );
-	aColorKeyDebug->setCheckable( true );
-	aColorKeyDebug->setChecked( false );
-#endif
-
-	aAnimate = new QAction( tr( "&Animations" ), this );
-	aAnimate->setToolTip( tr( "enables evaluation of animation controllers" ) );
-	aAnimate->setCheckable( true );
-	aAnimate->setChecked( true );
-	connect( aAnimate, &QAction::toggled, this, &GLView::checkActions );
-	addAction( aAnimate );
-
-	aAnimPlay = new QAction( QIcon( ":/btn/play" ), tr( "&Play" ), this );
-	aAnimPlay->setCheckable( true );
-	aAnimPlay->setChecked( true );
-	connect( aAnimPlay, &QAction::toggled, this, &GLView::checkActions );
-
-	aAnimLoop = new QAction( QIcon( ":/btn/loop" ), tr( "&Loop" ), this );
-	aAnimLoop->setCheckable( true );
-	aAnimLoop->setChecked( true );
-
-	aAnimSwitch = new QAction( QIcon( ":/btn/switch" ), tr( "&Switch" ), this );
-	aAnimSwitch->setCheckable( true );
-	aAnimSwitch->setChecked( true );
-
-	// animation tool bar
-
-	tAnim = new QToolBar( tr( "Animation" ) );
-	tAnim->setObjectName( "AnimTool" );
-	tAnim->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-	tAnim->setIconSize( QSize( 16, 16 ) );
-
-	connect( aAnimate, &QAction::toggled, tAnim->toggleViewAction(), &QAction::setChecked );
-	connect( aAnimate, &QAction::toggled, tAnim, &QToolBar::setVisible );
-	connect( tAnim->toggleViewAction(), &QAction::toggled, aAnimate, &QAction::setChecked );
-
-	tAnim->addAction( aAnimPlay );
-
-	sldTime = new FloatSlider( Qt::Horizontal, true, true );
-	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
-	connect( this, &GLView::sigTime, sldTime, &FloatSlider::set );
-	connect( sldTime, &FloatSlider::valueChanged, this, &GLView::sltTime );
-	tAnim->addWidget( sldTime );
-
-	FloatEdit * edtTime = new FloatEdit;
-	edtTime->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Maximum );
-
-	connect( this, &GLView::sigTime, edtTime, &FloatEdit::set );
-	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), this, &GLView::sltTime );
-	connect( sldTime, &FloatSlider::valueChanged, edtTime, &FloatEdit::setValue );
-	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), sldTime, &FloatSlider::setValue );
-	sldTime->addEditor( edtTime );
-
-	tAnim->addAction( aAnimLoop );
-
-	tAnim->addAction( aAnimSwitch );
-
-	animGroups = new QComboBox();
-	animGroups->setMinimumWidth( 100 );
-	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), this, &GLView::sltSequence );
-	tAnim->addWidget( animGroups );
-
-	// TODO: Connect to a less general signal for when texture paths are edited
-	//   or things that affect textures.  Not *any* Options update.
-	// This makes editing various options sluggish, like lighting color, background color
-	//   and even some LineEdits like "Cull Nodes by Name"
-	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
-	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
-	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
-
-#ifdef Q_OS_LINUX
-	// extra whitespace for linux
-	QWidget * extraspace = new QWidget();
-	extraspace->setFixedWidth( 5 );
-	tAnim->addWidget( extraspace );
-#endif
-
-	tView = new QToolBar( tr( "Render View" ) );
-	tView->setObjectName( "ViewTool" );
-	tView->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
-	tView->setIconSize( QSize( 16, 16 ) );
-
-	tView->addAction( aViewTop );
-	tView->addAction( aViewFront );
-	tView->addAction( aViewSide );
-	tView->addAction( aViewUser );
-	tView->addAction( aViewWalk );
-	tView->addSeparator();
-	tView->addAction( aViewFlip );
-	tView->addAction( aViewPerspective );
-
-#ifdef Q_OS_LINUX
-	// extra whitespace for linux
-	extraspace = new QWidget();
-	extraspace->setFixedWidth( 5 );
-	tView->addWidget( extraspace );
-#endif
 }
 
 GLView::~GLView()
@@ -947,32 +789,101 @@ void GLView::modelDestroyed()
  * UI
  */
 
-QMenu * GLView::createMenu() const
+void GLView::initUi( NifSkope * p )
 {
-	QMenu * m = new QMenu( tr( "&Render" ) );
-	m->addAction( aViewTop );
-	m->addAction( aViewFront );
-	m->addAction( aViewSide );
-	m->addAction( aViewWalk );
-	m->addAction( aViewUser );
-	m->addSeparator();
-	m->addAction( aViewFlip );
-	m->addAction( aViewPerspective );
-	m->addAction( aViewUserSave );
-	m->addSeparator();
-	m->addAction( aPrintView );
-#ifndef QT_NO_DEBUG
-	m->addAction( aColorKeyDebug );
+	nifskope = p;
+	auto ui = nifskope->ui;
+
+	setFocusPolicy( Qt::ClickFocus );
+	setAttribute( Qt::WA_NoSystemBackground );
+	setAcceptDrops( true );
+	setContextMenuPolicy( Qt::CustomContextMenu );
+
+	aViewTop = ui->aViewTop;
+	aViewFront = ui->aViewFront;
+	aViewSide = ui->aViewSide;
+	aViewUser = ui->aViewUser;
+	aViewWalk = ui->aViewWalk;
+	aViewFlip = ui->aViewFlip;
+	aViewPerspective = ui->aViewPerspective;
+
+	grpView = new QActionGroup( this );
+	grpView->setExclusive( false );
+	grpView->addAction( aViewTop );
+	grpView->addAction( aViewFront );
+	grpView->addAction( aViewSide );
+	grpView->addAction( aViewUser );
+	grpView->addAction( aViewWalk );
+	grpView->addAction( aViewFlip );
+	grpView->addAction( aViewPerspective );
+	connect( grpView, &QActionGroup::triggered, this, &GLView::viewAction );
+
+	connect( ui->aViewUserSave, &QAction::triggered, this, &GLView::saveUserView );
+	connect( ui->aPrintView, &QAction::triggered, this, &GLView::saveImage );
+
+#ifdef QT_NO_DEBUG
+	ui->aColorKeyDebug->setDisabled( true );
+	ui->aColorKeyDebug->setVisible( false );
+#else
+	aColorKeyDebug = ui->aColorKeyDebug;
+	connect( aColorKeyDebug, &QAction::triggered, this, &GLView::paintGL );
 #endif
-	m->addSeparator();
-	m->addActions( Options::actions() );
-	return m;
+
+	aAnimate = ui->aAnimate;
+	aAnimPlay = ui->aAnimPlay;
+	aAnimLoop = ui->aAnimLoop;
+	aAnimSwitch = ui->aAnimSwitch;
+
+	connect( aAnimate, &QAction::toggled, this, &GLView::checkActions );
+	connect( aAnimPlay, &QAction::toggled, this, &GLView::checkActions );
+	addAction( aAnimate );
+	
+	// View tool bar
+	tView = ui->tView;
+
+	// Animation tool bar
+	tAnim = ui->tAnim;
+
+	connect( aAnimate, &QAction::toggled, tAnim->toggleViewAction(), &QAction::setChecked );
+	connect( aAnimate, &QAction::toggled, tAnim, &QToolBar::setVisible );
+	connect( tAnim->toggleViewAction(), &QAction::toggled, aAnimate, &QAction::setChecked );
+
+	// Animation timeline slider
+	sldTime = new FloatSlider( Qt::Horizontal, true, true );
+	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
+	connect( this, &GLView::sigTime, sldTime, &FloatSlider::set );
+	connect( sldTime, &FloatSlider::valueChanged, this, &GLView::sltTime );
+	
+
+	FloatEdit * edtTime = new FloatEdit;
+	edtTime->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Maximum );
+
+	connect( this, &GLView::sigTime, edtTime, &FloatEdit::set );
+	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), this, &GLView::sltTime );
+	connect( sldTime, &FloatSlider::valueChanged, edtTime, &FloatEdit::setValue );
+	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), sldTime, &FloatSlider::setValue );
+	sldTime->addEditor( edtTime );
+
+	// Animations
+	animGroups = new QComboBox();
+	animGroups->setMinimumWidth( 120 );
+	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), this, &GLView::sltSequence );
+
+	tAnim->addWidget( sldTime );
+	tAnim->addWidget( animGroups );
+
+	// TODO: Connect to a less general signal for when texture paths are edited
+	//   or things that affect textures.  Not *any* Options update.
+	// This makes editing various options sluggish, like lighting color, background color
+	//   and even some LineEdits like "Cull Nodes by Name"
+	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
+	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
+	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
+
+	
+	ui->mRender->addActions( Options::actions() );
 }
 
-QList<QToolBar *> GLView::toolbars() const
-{
-	return{ tView, tAnim };
-}
 
 void GLView::viewAction( QAction * act )
 {
@@ -1073,7 +984,7 @@ void GLView::sltSequence( const QString & seqname )
 	update();
 }
 
-void GLView::sltSaveUserView()
+void GLView::saveUserView()
 {
 	QSettings cfg;
 	cfg.beginGroup( "GLView" );
@@ -1208,8 +1119,9 @@ void GLView::checkActions()
  * Settings
  */
 
-void GLView::save( QSettings & settings )
+void GLView::saveSettings()
 {
+	QSettings settings;
 	settings.setValue( "GLView/Enable Animations", aAnimate->isChecked() );
 	settings.setValue( "GLView/Play Animation", aAnimPlay->isChecked() );
 	settings.setValue( "GLView/Loop Animation", aAnimLoop->isChecked() );
@@ -1220,8 +1132,9 @@ void GLView::save( QSettings & settings )
 		settings.setValue( "GLView/View Action", checkedViewAction()->text() );
 }
 
-void GLView::restore( const QSettings & settings )
+void GLView::restoreSettings()
 {
+	QSettings settings;
 	aAnimate->setChecked( settings.value( "GLView/Enable Animations", true ).toBool() );
 	aAnimPlay->setChecked( settings.value( "GLView/Play Animation", true ).toBool() );
 	aAnimLoop->setChecked( settings.value( "GLView/Loop Animation", true ).toBool() );

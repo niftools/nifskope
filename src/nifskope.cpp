@@ -1,4 +1,4 @@
-/***** BEGIN LICENSE BLOCK *****
+﻿/***** BEGIN LICENSE BLOCK *****
 
 BSD License
 
@@ -124,7 +124,7 @@ NifSkope::NifSkope()
 
 	// this view shows the block list
 	list = ui->list;
-	ui->list->setModel( proxy );
+	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate( book ) );
 	list->installEventFilter( this );
 
@@ -184,25 +184,24 @@ NifSkope::NifSkope()
 	// actions
 
 	aSanitize = ui->aSanitize;
+	aList = ui->aList;
+	aHierarchy = ui->aHierarchy;
+	aCondition = ui->aCondition;
+	aRCondition = ui->aRCondition;
+	aSelectFont = ui->aSelectFont;
 
 	ui->aWindow->setShortcut( QKeySequence::New );
 
-
-	aList = ui->aList;
 	aList->setChecked( list->model() == nif );
-
-	aHierarchy = ui->aHierarchy;
 	aHierarchy->setChecked( list->model() == proxy );
 
-	// Allow only List or Tree view be selected at once
+	// Allow only List or Tree view to be selected at once
 	gListMode = new QActionGroup( this );
 	gListMode->addAction( aList );
 	gListMode->addAction( aHierarchy );
 	gListMode->setExclusive( true );
 	connect( gListMode, &QActionGroup::triggered, this, &NifSkope::setListMode );
 
-	aCondition = ui->aCondition;
-	aRCondition = ui->aRCondition;
 
 	connect( aCondition, &QAction::toggled, aRCondition, &QAction::setEnabled );
 	connect( aRCondition, &QAction::toggled, tree, &NifTreeView::setRealTime );
@@ -211,16 +210,6 @@ NifSkope::NifSkope()
 	// use toggled to enable startup values to take effect
 	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setEvalConditions );
 	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setEvalConditions );
-
-	aSelectFont = ui->aSelectFont;
-	connect( aSelectFont, &QAction::triggered, this, &NifSkope::sltSelectFont );
-
-
-	/* help menu */
-	ui->aHelpWebsite->setData( QUrl( "http://niftools.sourceforge.net/wiki/index.php/NifSkope" ) );
-	ui->aHelpForum->setData( QUrl( "http://niftools.sourceforge.net/forum/viewforum.php?f=24" ) );
-	ui->aNifToolsWebsite->setData( QUrl( "http://niftools.sourceforge.net" ) );
-	ui->aNifToolsDownloads->setData( QUrl( "http://sourceforge.net/project/showfiles.php?group_id=149157" ) );
 
 	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
 	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
@@ -254,7 +243,7 @@ NifSkope::NifSkope()
 	dInsp->setWidget( inspect );
 	dInsp->toggleViewAction()->setChecked( false );
 	dInsp->setVisible( false );
-#elif
+#else
 	removeDockWidget( ui->InspectDock );
 #endif
 
@@ -295,17 +284,9 @@ NifSkope::NifSkope()
 #endif
 	// end Load & Save toolbar
 
-	// begin OpenGL toolbars
-	for ( QToolBar * tb : ogl->toolbars() ) {
-		addToolBar( Qt::TopToolBarArea, tb );
-	}
-	// end OpenGL toolbars
-
 
 	// LOD Toolbar
-	QToolBar * tLOD = new QToolBar( "LOD" );
-	tLOD->setObjectName( tr( "tLOD" ) );
-	tLOD->setAllowedAreas( Qt::TopToolBarArea | Qt::BottomToolBarArea );
+	QToolBar * tLOD = ui->tLOD;
 
 	QSettings cfg;
 	int lodLevel = cfg.value( "GLView/LOD Level", 2 ).toInt();
@@ -331,8 +312,6 @@ NifSkope::NifSkope()
 	);
 	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
 	connect( nif, &NifModel::lodSliderChanged, [tLOD]( bool enabled ) { tLOD->setEnabled( enabled ); } );
-
-	addToolBar( Qt::TopToolBarArea, tLOD );
 
 	/* ********* */
 
@@ -373,8 +352,7 @@ NifSkope::~NifSkope()
 
 void NifSkope::closeEvent( QCloseEvent * e )
 {
-	QSettings settings;
-	save( settings );
+	saveSettings();
 
 	QMainWindow::closeEvent( e );
 }
@@ -400,8 +378,9 @@ void restoreHeader( const QString & name, const QSettings & settings, QHeaderVie
 	}
 }
 
-void NifSkope::restore( const QSettings & settings )
+void NifSkope::restoreSettings()
 {
+	QSettings settings;
 	restoreGeometry( settings.value( "UI/Window Geometry" ).toByteArray() );
 	restoreState( settings.value( "UI/Window State" ).toByteArray(), 0x073 );
 
@@ -422,13 +401,16 @@ void NifSkope::restore( const QSettings & settings )
 	restoreHeader( "UI/Tree Sizes", settings, tree->header() );
 	restoreHeader( "UI/Kfmtree Sizes", settings, kfmtree->header() );
 
-	ogl->restore( settings );
+	ogl->initUi( this );
+	ogl->restoreSettings();
 
 	QVariant fontVar = settings.value( "UI/View Font" );
 
 	if ( fontVar.canConvert<QFont>() )
 		setViewFont( fontVar.value<QFont>() );
 
+
+	// Modify UI settings that cannot be set in Designer
 	tabifyDockWidget( ui->InspectDock, ui->KfmDock );
 }
 
@@ -445,8 +427,9 @@ void saveHeader( const QString & name, QSettings & settings, QHeaderView * heade
 	settings.setValue( name, b );
 }
 
-void NifSkope::save( QSettings & settings ) const
+void NifSkope::saveSettings() const
 {
+	QSettings settings;
 	settings.setValue( "UI/Window State", saveState( 0x073 ) );
 	settings.setValue( "UI/Window Geometry", saveGeometry() );
 
@@ -462,7 +445,7 @@ void NifSkope::save( QSettings & settings ) const
 	saveHeader( "UI/Tree Sizes", settings, tree->header() );
 	saveHeader( "UI/Kfmtree Sizes", settings, kfmtree->header() );
 
-	ogl->save( settings );
+	ogl->saveSettings();
 
 	Options::get()->save();
 }
@@ -760,7 +743,7 @@ void NifSkope::openURL()
 	if ( !aURL )
 		return;
 
-	QUrl URL = aURL->data().toUrl();
+	QUrl URL(aURL->toolTip());
 
 	if ( !URL.isValid() )
 		return;
@@ -773,8 +756,7 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 {
 	NifSkope * skope = new NifSkope;
 	skope->setAttribute( Qt::WA_DeleteOnClose );
-	QSettings settings;
-	skope->restore( settings );
+	skope->restoreSettings();
 	skope->show();
 	skope->raise();
 
@@ -799,7 +781,7 @@ void NifSkope::on_aReload_triggered()
 	}
 }
 
-void NifSkope::sltSelectFont()
+void NifSkope::on_aSelectFont_triggered()
 {
 	bool ok;
 	QFont fnt = QFontDialog::getFont( &ok, list->font(), this );
