@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFSKOPE_IPC_PORT 12583
 
 namespace Ui {
-	class NifSkope;
+	class MainWindow;
 }
 
 class FileSelector;
@@ -84,7 +84,7 @@ public:
 	//! Destructor
 	~NifSkope();
 
-	Ui::NifSkope * ui;
+	Ui::MainWindow * ui;
 
 	//! Create and initialize a new NifSkope application window.
 	/*!

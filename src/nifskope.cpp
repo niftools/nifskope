@@ -97,53 +97,58 @@ FSManager * fsmanager = nullptr;
  */
 
 NifSkope::NifSkope()
-	: QMainWindow(), selecting( false ), initialShowEvent( true ), ui( new Ui::NifSkope )
+	: QMainWindow(), selecting( false ), initialShowEvent( true ), ui( new Ui::MainWindow )
 {
-	// init UI parts
+	// Init UI
+	ui->setupUi( this );
+	
+	// Init Dialogs
 	aboutDialog = new AboutDialog( this );
 
-	ui->setupUi( this );
-
-	// migrate settings from older versions of NifSkope
+	// Migrate settings from older versions of NifSkope
 	migrateSettings();
 
-	// create a new nif
+	// Create models
+	/* ********************** */
+
 	nif = new NifModel( this );
-
-	auto book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
-
-	// create a new hierarchical proxy nif
 	proxy = new NifProxyModel( this );
 	proxy->setModel( nif );
 
-	// create a new kfm model
 	kfm = new KfmModel( this );
 
-	// this view shows the block list
+	auto book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
+
+	// Setup Views
+	/* ********************** */
+
+	// Block List
 	list = ui->list;
 	list->setModel( proxy );
 	list->setItemDelegate( nif->createDelegate( book ) );
 	list->installEventFilter( this );
 
-	// this view shows the whole nif file or the block details
+	// Block Details
 	tree = ui->tree;
 	tree->setModel( nif );
 	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->installEventFilter( this );
 
-	// this view shows the whole kfm file
+	// KFM
 	kfmtree = ui->kfmtree;
 	kfmtree->setModel( kfm );
 	kfmtree->setItemDelegate( kfm->createDelegate() );
 	kfmtree->installEventFilter( this );
 
-	// this browser shows the reference of current node
+	// Help Browser
 	refrbrwsr = ui->refrBrowser;
 	refrbrwsr->setNifModel( nif );
 
+	// Connect models with views
+	/* ********************** */
+
 	connect( nif, &NifModel::sigMessage, this, &NifSkope::dispatchMessage );
 	connect( kfm, &KfmModel::sigMessage, this, &NifSkope::dispatchMessage );
-
 	connect( list, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
 	connect( list, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
@@ -152,32 +157,37 @@ NifSkope::NifSkope()
 	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 #ifdef EDIT_ON_ACTIVATE
-	connect( list, &NifTreeView::activated,
-		list, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-	connect( tree, &NifTreeView::activated,
-		tree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-	connect( kfmtree, &NifTreeView::activated,
-		kfmtree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	connect( list, &NifTreeView::activated, list, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	connect( tree, &NifTreeView::activated, tree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	connect( kfmtree, &NifTreeView::activated, kfmtree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
 #endif
 
+	// Create GLView
+	/* ********************** */
 
-	// open gl
-	setCentralWidget( ogl = GLView::create() );
+	ogl = GLView::create();
 	ogl->setNif( nif );
-	connect( ogl, &GLView::clicked, this, &NifSkope::select );
-	connect( ogl, &GLView::customContextMenuRequested, this, &NifSkope::contextMenu );
-
-#ifndef DISABLE_INSPECTIONVIEWER
-	// this browser shows the state of the current selected item
-	//   currently for showing transform state of nodes at current time
+	
 	inspect = new InspectView;
 	inspect->setNifModel( nif );
 	inspect->setScene( ogl->getScene() );
-	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection);
+
+	connect( ogl, &GLView::clicked, this, &NifSkope::select );
+	connect( ogl, &GLView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( ogl, &GLView::sigTime, inspect, &InspectView::updateTime );
 	connect( ogl, &GLView::paintUpdate, inspect, &InspectView::refresh );
-#endif
-	// actions
+	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection );
+
+
+	/*
+	 * UI Init
+	 * **********************
+	 */
+
+	setCentralWidget( ogl );
+
+	// Set Actions
+	/* ********************** */
 
 	aSanitize = ui->aSanitize;
 	aList = ui->aList;
@@ -216,38 +226,32 @@ NifSkope::NifSkope()
 	}
 #endif
 
-	// dock widgets
+	// Dock Widgets
 	dRefr = ui->RefrDock;
-	dRefr->toggleViewAction()->setShortcut( Qt::Key_F1 );
-	dRefr->toggleViewAction()->setChecked( false );
-	dRefr->setVisible( false );
-
 	dList = ui->ListDock;
-	dList->toggleViewAction()->setShortcut( Qt::Key_F2 );
+	dTree = ui->TreeDock;
+	dInsp = ui->InspectDock;
+	dKfm = ui->KfmDock;
+
+	// Hide certain docks by default
+	dRefr->toggleViewAction()->setChecked( false );
+	dInsp->toggleViewAction()->setChecked( false );
+	dKfm->toggleViewAction()->setChecked( false );
+	
+	dRefr->setVisible( false );
+	dInsp->setVisible( false );
+	dKfm->setVisible( false );
+	
+	// Set Inspect widget
+	dInsp->setWidget( inspect );
+	
 	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
 
-	dTree = ui->TreeDock;
-	dTree->toggleViewAction()->setShortcut( Qt::Key_F3 );
 
-	dKfm = ui->KfmDock;
-	dKfm->toggleViewAction()->setShortcut( Qt::Key_F4 );
-	dKfm->toggleViewAction()->setChecked( false );
-	dKfm->setVisible( false );
+	// Toolbars
+	/* ********************** */
 
-#ifndef DISABLE_INSPECTIONVIEWER
-	dInsp = ui->InspectDock;
-	dInsp->setWidget( inspect );
-	dInsp->toggleViewAction()->setChecked( false );
-	dInsp->setVisible( false );
-#else
-	removeDockWidget( ui->InspectDock );
-#endif
-
-	/* ******** */
-
-	// tool bars
-
-	// begin Load & Save toolbar
+	// Load & Save toolbar
 
 	QStringList fileExtensions{
 		"All Files (*.nif *.kf *.kfa *.kfm *.nifcache *.texcache *.pcpatch *.jmi)",
@@ -255,30 +259,22 @@ NifSkope::NifSkope()
 		"NIFCache (*.nifcache)", "TEXCache (*.texcache)", "PCPatch (*.pcpatch)", "JMI (*.jmi)"
 	};
 
-	// create the load portion of the toolbar
+	// Load
 	aLineLoad = ui->toolbar->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr( "&Load..." ), QBoxLayout::RightToLeft, QKeySequence::Open ) );
 	lineLoad->setFilter( fileExtensions );
 	connect( lineLoad, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::load) );
 
-	// add the Load<=>Save filename copy widget
+	// Load<=>Save
 	CopyFilename * cpFilename = new CopyFilename( this );
 	cpFilename->setObjectName( "fileCopyWidget" );
 	connect( cpFilename, &CopyFilename::leftTriggered, this, &NifSkope::copyFileNameSaveLoad );
 	connect( cpFilename, &CopyFilename::rightTriggered, this, &NifSkope::copyFileNameLoadSave );
 	aCpFileName = ui->toolbar->addWidget( cpFilename );
 
-	// create the save portion of the toolbar
+	// Save
 	aLineSave = ui->toolbar->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr( "&Save As..." ), QBoxLayout::LeftToRight, QKeySequence::Save ) );
 	lineSave->setFilter( fileExtensions );
 	connect( lineSave, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::save) );
-
-#ifdef Q_OS_LINUX
-	// extra whitespace for linux
-	QWidget * extraspace = new QWidget();
-	extraspace->setFixedWidth( 5 );
-	ui->toolbar->addWidget( extraspace );
-#endif
-	// end Load & Save toolbar
 
 
 	// LOD Toolbar
@@ -309,7 +305,9 @@ NifSkope::NifSkope()
 	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
 	connect( nif, &NifModel::lodSliderChanged, [tLOD]( bool enabled ) { tLOD->setEnabled( enabled ); } );
 
-	/* ********* */
+	
+	// Menus
+	/* ********************** */
 
 	// Insert the Load/Save actions into the File menu
 	ui->mFile->insertActions( ui->aFileLoadDummy, lineLoad->actions() );
@@ -331,6 +329,7 @@ NifSkope::NifSkope()
 	// Insert SpellBook class before Help
 	ui->menubar->insertMenu( ui->menubar->actions().at(3), book );
 
+	// Insert Import/Export menus
 	mExport = ui->menuExport;
 	mImport = ui->menuImport;
 
