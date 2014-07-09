@@ -1,28 +1,35 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-	<qresource prefix="/res">
-		<file>nifskope.png</file>
-		<file>skel.dat</file>
-	</qresource>
-	<qresource prefix="/img">
-		<file alias="ArrowLeft.png">icon/arrow_left.png</file>
-		<file alias="ArrowRight.png">icon/arrow_right.png</file>
+<RCC>
+    <qresource prefix="/res">
+        <file>nifskope.png</file>
+        <file>skel.dat</file>
+    </qresource>
+    <qresource prefix="/img">
+        <file alias="ArrowLeft.png">icon/arrow_left.png</file>
+        <file alias="ArrowRight.png">icon/arrow_right.png</file>
         <file alias="update">icon/img_update.png</file>
         <file alias="link">icon/img_link.png</file>
         <file alias="flag">icon/img_flag.png</file>
-		<file alias="havok_logo">icon/havok_logo.png</file>
-		<file alias="qhull_logo">icon/qhull_cone.gif</file>
+        <file alias="havok_logo">icon/havok_logo.png</file>
+        <file alias="qhull_logo">icon/qhull_cone.gif</file>
+        <file>icon/handle.png</file>
     </qresource>
     <qresource prefix="/btn">
         <file alias="play">icon/button_play.png</file>
-        <file alias="loop">icon/button_loop.png</file>   
+        <file alias="loop">icon/button_loop.png</file>
         <file alias="switch">icon/button_switch.png</file>
-        <file alias="viewTop">icon/button_view_top.png</file>
-        <file alias="viewFront">icon/button_view_front.png</file>
-        <file alias="viewSide">icon/button_view_side.png</file>
         <file alias="viewWalk">icon/button_view_walk.png</file>
-        <file alias="viewUser">icon/button_view_user.png</file>
-        <file alias="viewFlip">icon/button_view_flip.png</file>
-        <file alias="viewPers">icon/button_view_pers.png</file>
+        <file alias="cubeTop16">icon/cube-top-16.png</file>
+        <file alias="cubeFront16">icon/cube-front-16.png</file>
+        <file alias="cubeSide16">icon/cube-side-16.png</file>
+        <file alias="viewFlip">icon/flip.png</file>
+        <file alias="cubeOrtho">icon/orthographic.png</file>
+        <file alias="cubePersp">icon/perspective.png</file>
+        <file alias="showAxes">icon/axes.png</file>
+        <file alias="showCollision">icon/collision-ball.png</file>
+        <file alias="showNodes">icon/node.png</file>
+        <file alias="showConstraints">icon/constraint.png</file>
+        <file alias="saveView">icon/save-view.png</file>
+        <file alias="loadView">icon/load-view.png</file>
+        <file alias="userViewActive">icon/view-active.png</file>
     </qresource>
 </RCC>

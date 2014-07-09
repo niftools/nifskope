@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>NifSkope</class>
- <widget class="QMainWindow" name="NifSkope">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,11 +11,30 @@
    </rect>
   </property>
   <widget class="QWidget" name="centralwidget"/>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>24</height>
+    </size>
+   </property>
+  </widget>
   <widget class="QToolBar" name="toolbar">
    <property name="minimumSize">
     <size>
-     <width>250</width>
+     <width>0</width>
      <height>0</height>
     </size>
    </property>
@@ -24,6 +43,12 @@
    </property>
    <property name="allowedAreas">
     <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -41,8 +66,8 @@
    </property>
    <property name="iconSize">
     <size>
-     <width>16</width>
-     <height>16</height>
+     <width>18</width>
+     <height>18</height>
     </size>
    </property>
    <attribute name="toolBarArea">
@@ -54,11 +79,17 @@
    <addaction name="aViewTop"/>
    <addaction name="aViewFront"/>
    <addaction name="aViewSide"/>
-   <addaction name="aViewUser"/>
-   <addaction name="aViewWalk"/>
-   <addaction name="separator"/>
    <addaction name="aViewFlip"/>
    <addaction name="aViewPerspective"/>
+   <addaction name="separator"/>
+   <addaction name="aViewWalk"/>
+   <addaction name="aViewUser"/>
+   <addaction name="aViewUserSave"/>
+   <addaction name="separator"/>
+   <addaction name="aShowCollision"/>
+   <addaction name="aShowAxes"/>
+   <addaction name="aShowNodes"/>
+   <addaction name="aShowConstraints"/>
   </widget>
   <widget class="QToolBar" name="tView">
    <property name="windowTitle">
@@ -105,9 +136,15 @@
    <addaction name="aAnimSwitch"/>
   </widget>
   <widget class="QToolBar" name="tLOD">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="minimumSize">
     <size>
-     <width>80</width>
+     <width>0</width>
      <height>0</height>
     </size>
    </property>
@@ -120,12 +157,22 @@
    <property name="windowTitle">
     <string>LOD</string>
    </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="aLODDummy"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -193,9 +240,19 @@
      <addaction name="aRCondition"/>
      <addaction name="aResetBlockDetails"/>
     </widget>
-    <addaction name="aResetBlockDetails"/>
-    <addaction name="separator"/>
+    <widget class="QMenu" name="menuShow">
+     <property name="title">
+      <string>Show</string>
+     </property>
+     <addaction name="aToggleBlockList"/>
+     <addaction name="aToggleBlockDetails"/>
+     <addaction name="aToggleKfm"/>
+     <addaction name="aToggleInspect"/>
+    </widget>
+    <addaction name="menuShow"/>
     <addaction name="mToolbars"/>
+    <addaction name="separator"/>
+    <addaction name="aResetBlockDetails"/>
     <addaction name="separator"/>
     <addaction name="menuBlock_List"/>
     <addaction name="menuBlock_Details"/>
@@ -209,11 +266,11 @@
     <addaction name="aViewTop"/>
     <addaction name="aViewFront"/>
     <addaction name="aViewSide"/>
-    <addaction name="aViewWalk"/>
-    <addaction name="aViewUser"/>
-    <addaction name="separator"/>
     <addaction name="aViewFlip"/>
     <addaction name="aViewPerspective"/>
+    <addaction name="aViewWalk"/>
+    <addaction name="separator"/>
+    <addaction name="aViewUser"/>
     <addaction name="aViewUserSave"/>
     <addaction name="separator"/>
     <addaction name="aPrintView"/>
@@ -266,50 +323,113 @@
     <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="topMargin">
+      <number>4</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
      <item>
-      <layout class="QVBoxLayout" name="treeLayout">
-       <property name="spacing">
-        <number>6</number>
+      <widget class="QFrame" name="treeButtonFrame">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="rightMargin">
-        <number>0</number>
+       <layout class="QGridLayout" name="treeButtonFrameLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>0</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="bExpandAllTree">
+          <property name="maximumSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="statusTip">
+           <string>Expand All</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="bCollapseAllTree">
+          <property name="maximumSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="statusTip">
+           <string>Collapse All</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="NifTreeView" name="tree">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
        </property>
-       <item>
-        <widget class="QPushButton" name="bExpandAllTree">
-         <property name="maximumSize">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="NifTreeView" name="tree">
-         <property name="contextMenuPolicy">
-          <enum>Qt::CustomContextMenu</enum>
-         </property>
-         <property name="alternatingRowColors">
-          <bool>true</bool>
-         </property>
-         <property name="uniformRowHeights">
-          <bool>true</bool>
-         </property>
-         <attribute name="headerStretchLastSection">
-          <bool>false</bool>
-         </attribute>
-        </widget>
-       </item>
-      </layout>
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
   </widget>
   <widget class="QDockWidget" name="RefrDock">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="allowedAreas">
     <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
    </property>
@@ -321,8 +441,27 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>3</number>
+     </property>
+     <property name="topMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>3</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
      <item>
-      <widget class="ReferenceBrowser" name="refrBrowser"/>
+      <widget class="ReferenceBrowser" name="refrBrowser">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -339,38 +478,104 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QVBoxLayout" name="verticalLayout_2">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="topMargin">
+      <number>4</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
      <item>
-      <layout class="QVBoxLayout" name="listLayout">
-       <item>
-        <widget class="QPushButton" name="bExpandAllList">
-         <property name="maximumSize">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="NifTreeView" name="list">
-         <property name="contextMenuPolicy">
-          <enum>Qt::CustomContextMenu</enum>
-         </property>
-         <property name="alternatingRowColors">
-          <bool>true</bool>
-         </property>
-         <property name="uniformRowHeights">
-          <bool>true</bool>
-         </property>
-         <attribute name="headerMinimumSectionSize">
-          <number>100</number>
-         </attribute>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QFrame" name="listButtonFrame">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" name="listButtonFrameLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="bExpandAllList">
+          <property name="maximumSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="statusTip">
+           <string>Expand All</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="bCollapseAllList">
+          <property name="maximumSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="statusTip">
+           <string>Collapse All</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="NifTreeView" name="list">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+       <attribute name="headerMinimumSectionSize">
+        <number>100</number>
+       </attribute>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -387,22 +592,36 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_6">
     <layout class="QVBoxLayout" name="verticalLayout_4">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="topMargin">
+      <number>4</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
      <item>
-      <layout class="QVBoxLayout" name="kfmtreeLayout">
-       <item>
-        <widget class="NifTreeView" name="kfmtree">
-         <property name="alternatingRowColors">
-          <bool>true</bool>
-         </property>
-         <property name="uniformRowHeights">
-          <bool>true</bool>
-         </property>
-         <attribute name="headerStretchLastSection">
-          <bool>false</bool>
-         </attribute>
-        </widget>
-       </item>
-      </layout>
+      <widget class="NifTreeView" name="kfmtree">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+       <attribute name="headerStretchLastSection">
+        <bool>false</bool>
+       </attribute>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -462,7 +681,7 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/viewTop</normaloff>:/btn/viewTop</iconset>
+     <normaloff>:/btn/cubeTop16</normaloff>:/btn/cubeTop16</iconset>
    </property>
    <property name="text">
     <string>Top</string>
@@ -480,7 +699,7 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/viewFront</normaloff>:/btn/viewFront</iconset>
+     <normaloff>:/btn/cubeFront16</normaloff>:/btn/cubeFront16</iconset>
    </property>
    <property name="text">
     <string>Front</string>
@@ -495,7 +714,7 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/viewSide</normaloff>:/btn/viewSide</iconset>
+     <normaloff>:/btn/cubeSide16</normaloff>:/btn/cubeSide16</iconset>
    </property>
    <property name="text">
     <string>Side</string>
@@ -513,13 +732,14 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/viewUser</normaloff>:/btn/viewUser</iconset>
+     <normaloff>:/btn/loadView</normaloff>
+     <normalon>:/btn/userViewActive</normalon>:/btn/loadView</iconset>
    </property>
    <property name="text">
-    <string>User</string>
+    <string>Load View</string>
    </property>
    <property name="toolTip">
-    <string>Restore the view as it was when Save User View was activated</string>
+    <string>Load View</string>
    </property>
    <property name="shortcut">
     <string>F8</string>
@@ -567,7 +787,8 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/viewPers</normaloff>:/btn/viewPers</iconset>
+     <normaloff>:/btn/cubeOrtho</normaloff>
+     <normalon>:/btn/cubePersp</normalon>:/btn/cubeOrtho</iconset>
    </property>
    <property name="text">
     <string>Perspective</string>
@@ -580,11 +801,15 @@
    </property>
   </action>
   <action name="aViewUserSave">
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/saveView</normaloff>:/btn/saveView</iconset>
+   </property>
    <property name="text">
-    <string>Save User View</string>
+    <string>Save View</string>
    </property>
    <property name="toolTip">
-    <string>Save current view rotation, position and distance</string>
+    <string>Save View</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+F9</string>
@@ -664,15 +889,24 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Block List</string>
    </property>
    <property name="toolTip">
     <string>Block List</string>
    </property>
+   <property name="shortcut">
+    <string>F2</string>
+   </property>
   </action>
   <action name="aToggleBlockDetails">
    <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
     <bool>true</bool>
    </property>
    <property name="text">
@@ -680,6 +914,9 @@
    </property>
    <property name="toolTip">
     <string>Block Details</string>
+   </property>
+   <property name="shortcut">
+    <string>F3</string>
    </property>
   </action>
   <action name="aToggleKfm">
@@ -691,6 +928,9 @@
    </property>
    <property name="toolTip">
     <string>KFM</string>
+   </property>
+   <property name="shortcut">
+    <string>F4</string>
    </property>
   </action>
   <action name="aToggleInspect">
@@ -818,6 +1058,74 @@
     <string>&amp;Switch</string>
    </property>
   </action>
+  <action name="aLODDummy">
+   <property name="text">
+    <string>LOD Dummy</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
+  </action>
+  <action name="aShowCollision">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/showCollision</normaloff>:/btn/showCollision</iconset>
+   </property>
+   <property name="text">
+    <string>Show Collision</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Collision</string>
+   </property>
+  </action>
+  <action name="aShowAxes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/showAxes</normaloff>:/btn/showAxes</iconset>
+   </property>
+   <property name="text">
+    <string>Show Axes</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Axes</string>
+   </property>
+  </action>
+  <action name="aShowNodes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/showNodes</normaloff>:/btn/showNodes</iconset>
+   </property>
+   <property name="text">
+    <string>Show Nodes</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Nodes</string>
+   </property>
+  </action>
+  <action name="aShowConstraints">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/showConstraints</normaloff>:/btn/showConstraints</iconset>
+   </property>
+   <property name="text">
+    <string>Show Constraints</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Constraints</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -862,8 +1170,8 @@
      <y>-1</y>
     </hint>
     <hint type="destinationlabel">
-     <x>137</x>
-     <y>278</y>
+     <x>99</x>
+     <y>327</y>
     </hint>
    </hints>
   </connection>
@@ -878,8 +1186,8 @@
      <y>-1</y>
     </hint>
     <hint type="destinationlabel">
-     <x>396</x>
-     <y>630</y>
+     <x>282</x>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
@@ -938,8 +1246,8 @@
    <slot>setChecked(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>137</x>
-     <y>278</y>
+     <x>99</x>
+     <y>327</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -954,8 +1262,8 @@
    <slot>setChecked(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>396</x>
-     <y>630</y>
+     <x>282</x>
+     <y>743</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>
@@ -998,7 +1306,7 @@
   <connection>
    <sender>aNifToolsWebsite</sender>
    <signal>triggered()</signal>
-   <receiver>NifSkope</receiver>
+   <receiver>MainWindow</receiver>
    <slot>openURL()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1014,7 +1322,7 @@
   <connection>
    <sender>aNifToolsDownloads</sender>
    <signal>triggered()</signal>
-   <receiver>NifSkope</receiver>
+   <receiver>MainWindow</receiver>
    <slot>openURL()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1030,7 +1338,7 @@
   <connection>
    <sender>aHelpForum</sender>
    <signal>triggered()</signal>
-   <receiver>NifSkope</receiver>
+   <receiver>MainWindow</receiver>
    <slot>openURL()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1046,7 +1354,7 @@
   <connection>
    <sender>aHelpWebsite</sender>
    <signal>triggered()</signal>
-   <receiver>NifSkope</receiver>
+   <receiver>MainWindow</receiver>
    <slot>openURL()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1062,7 +1370,7 @@
   <connection>
    <sender>aQuit</sender>
    <signal>triggered()</signal>
-   <receiver>NifSkope</receiver>
+   <receiver>MainWindow</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1134,8 +1442,8 @@
      <y>-1</y>
     </hint>
     <hint type="destinationlabel">
-     <x>137</x>
-     <y>281</y>
+     <x>99</x>
+     <y>330</y>
     </hint>
    </hints>
   </connection>
@@ -1150,8 +1458,24 @@
      <y>-1</y>
     </hint>
     <hint type="destinationlabel">
-     <x>396</x>
-     <y>633</y>
+     <x>282</x>
+     <y>743</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bExpandAllTree</sender>
+   <signal>clicked()</signal>
+   <receiver>tree</receiver>
+   <slot>scrollToTop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>19</x>
+     <y>573</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>277</x>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
@@ -1163,11 +1487,11 @@
    <hints>
     <hint type="sourcelabel">
      <x>19</x>
-     <y>555</y>
+     <y>573</y>
     </hint>
     <hint type="destinationlabel">
-     <x>378</x>
-     <y>654</y>
+     <x>277</x>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
@@ -1182,8 +1506,8 @@
      <y>88</y>
     </hint>
     <hint type="destinationlabel">
-     <x>137</x>
-     <y>303</y>
+     <x>94</x>
+     <y>351</y>
     </hint>
    </hints>
   </connection>
@@ -1198,24 +1522,72 @@
      <y>88</y>
     </hint>
     <hint type="destinationlabel">
-     <x>137</x>
-     <y>303</y>
+     <x>94</x>
+     <y>351</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>bExpandAllTree</sender>
+   <sender>bCollapseAllList</sender>
+   <signal>clicked()</signal>
+   <receiver>list</receiver>
+   <slot>collapseAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>41</x>
+     <y>83</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>94</x>
+     <y>332</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bCollapseAllList</sender>
+   <signal>clicked()</signal>
+   <receiver>list</receiver>
+   <slot>scrollToTop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>41</x>
+     <y>83</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>94</x>
+     <y>332</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bCollapseAllTree</sender>
+   <signal>clicked()</signal>
+   <receiver>tree</receiver>
+   <slot>collapseAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>50</x>
+     <y>573</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>277</x>
+     <y>743</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bCollapseAllTree</sender>
    <signal>clicked()</signal>
    <receiver>tree</receiver>
    <slot>scrollToTop()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>19</x>
-     <y>555</y>
+     <x>50</x>
+     <y>573</y>
     </hint>
     <hint type="destinationlabel">
-     <x>378</x>
-     <y>654</y>
+     <x>277</x>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
