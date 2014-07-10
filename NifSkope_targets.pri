@@ -9,7 +9,7 @@
 ## lupdate / lrelease
 ###############################
 
-#rules to generate ts
+# Make target for Updating .ts
 isEmpty(QMAKE_LUPDATE) {
 	win32: QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate.exe
 	unix {
@@ -23,9 +23,12 @@ updatets.input = _PRO_FILE_
 updatets.output = $$TRANSLATIONS
 updatets.commands = $$QMAKE_LUPDATE ${QMAKE_FILE_IN}
 updatets.CONFIG += no_link no_clean #target_predeps
-QMAKE_EXTRA_COMPILERS += updatets
+
+# Hide from Visual Studio as it continually runs lupdate
+$$SHADOWBUILD:QMAKE_EXTRA_COMPILERS += updatets
 
 
+# Make target for Releasing .ts->.qm
 isEmpty(QMAKE_LRELEASE) {
 	win32: QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease.exe
 	unix {
