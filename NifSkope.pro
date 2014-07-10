@@ -444,8 +444,8 @@ build_pass {
 	QHULLTXT += \
 		lib/qhull/COPYING.txt
 
-	LANG += \
-		res/lang
+	#LANG += \
+	#	res/lang
 
 	SHADERS += \
 		res/shaders
@@ -459,7 +459,7 @@ build_pass {
 
 
 	copyDirs( $$SHADERS, shaders )
-	copyDirs( $$LANG, lang )
+	#copyDirs( $$LANG, lang )
 	copyFiles( $$XML $$DEP $$QSS )
 
 	# Copy Readmes and rename to TXT
