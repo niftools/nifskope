@@ -6,6 +6,44 @@
 
 
 ###############################
+## lupdate / lrelease
+###############################
+
+#rules to generate ts
+isEmpty(QMAKE_LUPDATE) {
+	win32: QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate.exe
+	unix {
+		QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate
+	} else {
+		!exists($$QMAKE_LUPDATE) { QMAKE_LUPDATE = lupdate }
+	}
+}
+
+updatets.input = _PRO_FILE_
+updatets.output = $$TRANSLATIONS
+updatets.commands = $$QMAKE_LUPDATE ${QMAKE_FILE_IN}
+updatets.CONFIG += no_link no_clean #target_predeps
+QMAKE_EXTRA_COMPILERS += updatets
+
+
+isEmpty(QMAKE_LRELEASE) {
+	win32: QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease.exe
+	unix {
+		 QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease
+		!exists($$QMAKE_LRELEASE) { QMAKE_LRELEASE = lrelease }
+	} else {
+		!exists($$QMAKE_LRELEASE) { QMAKE_LRELEASE = lrelease }
+	}
+}
+updateqm.input = TRANSLATIONS
+updateqm.output = ${QMAKE_FILE_PATH}/${QMAKE_FILE_BASE}.qm
+updateqm.commands = $$QMAKE_LRELEASE ${QMAKE_FILE_IN} -qm $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
+updateqm.CONFIG += no_link  no_clean target_predeps
+QMAKE_EXTRA_COMPILERS += updateqm
+#PRE_TARGETDEPS += compiler_updateqm_make_all #will always link
+
+
+###############################
 ## Docsys
 ###############################
 # Creates NIF docs for NifSkope release
@@ -25,11 +63,7 @@ docs.target = docs
 # Vars
 docsys = $$syspath($${PWD}/build/docsys)
 indoc = doc$${QMAKE_DIR_SEP}
-out = $$syspath($${OUT_PWD})
-
-# Find out if release or debug because DESTDIR is blank
-exists($$out/debug/NifSkope.exe):outdoc = $$syspath($${out}/debug/doc)
-exists($$out/release/NifSkope.exe):outdoc = $$syspath($${out}/release/doc)
+outdoc = $$syspath($${DESTDIR}/doc)
 
 # COMMANDS
 

@@ -72,11 +72,10 @@ unset(REP)
 
 
 ###############################
-## INCLUDES
+## FUNCTIONS
 ###############################
 
 include(NifSkope_functions.pri)
-include(NifSkope_targets.pri)
 
 
 ###############################
@@ -124,6 +123,12 @@ build_pass {
 	RCC_DIR = $${INTERMEDIATE}/.qrc
 	OBJECTS_DIR = $${INTERMEDIATE}/.obj
 }
+
+###############################
+## TARGETS
+###############################
+
+include(NifSkope_targets.pri)
 
 
 ###############################
