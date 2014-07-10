@@ -72,11 +72,10 @@ unset(REP)
 
 
 ###############################
-## INCLUDES
+## FUNCTIONS
 ###############################
 
 include(NifSkope_functions.pri)
-include(NifSkope_targets.pri)
 
 
 ###############################
@@ -124,6 +123,12 @@ build_pass {
 	RCC_DIR = $${INTERMEDIATE}/.qrc
 	OBJECTS_DIR = $${INTERMEDIATE}/.obj
 }
+
+###############################
+## TARGETS
+###############################
+
+include(NifSkope_targets.pri)
 
 
 ###############################
@@ -445,8 +450,8 @@ build_pass {
 	QHULLTXT += \
 		lib/qhull/COPYING.txt
 
-	LANG += \
-		res/lang
+	#LANG += \
+	#	res/lang
 
 	SHADERS += \
 		res/shaders
@@ -460,7 +465,7 @@ build_pass {
 
 
 	copyDirs( $$SHADERS, shaders )
-	copyDirs( $$LANG, lang )
+	#copyDirs( $$LANG, lang )
 	copyFiles( $$XML $$DEP $$QSS )
 
 	# Copy Readmes and rename to TXT

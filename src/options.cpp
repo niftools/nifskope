@@ -189,9 +189,9 @@ Options::Options()
 #endif
 		}
 
-		QRegularExpression fileRe( "NifSkope_(.*)\\.ts", QRegularExpression::CaseInsensitiveOption );
-		
-		foreach ( const QString file, directory.entryList( QStringList( "NifSkope_*.ts" ), QDir::Files | QDir::NoSymLinks ) ) {
+		QRegularExpression fileRe( "NifSkope_(.*)\\.qm", QRegularExpression::CaseInsensitiveOption );
+
+		foreach ( const QString file, directory.entryList( QStringList( "NifSkope_*.qm" ), QDir::Files | QDir::NoSymLinks ) ) {
 			QRegularExpressionMatch fileReMatch = fileRe.match( file );
 			if ( fileReMatch.hasMatch() ) {
 				QString localeText = fileReMatch.capturedTexts()[1];
@@ -419,7 +419,7 @@ Options::Options()
 		QList<QColor> lightDefaults{
 			QColor::fromRgbF( .4, .4, .4 ),
 			QColor::fromRgbF( .8, .8, .8 ),
-			QColor::fromRgbF( 1, 1, 1 ) 
+			QColor::fromRgbF( 1, 1, 1 )
 		};
 
 		for ( int l = 0; l < 3; l++ ) {
