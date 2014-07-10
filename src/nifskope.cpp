@@ -1340,7 +1340,7 @@ void NifSkope::migrateSettings() const
 	// IMPORTANT:
 	//	Do not make any calls to Options:: until after all migration code.
 	//	Static calls to Options:: still create the options instance and inits
-	//	the various widgets with incorrect values. Once you close the app, 
+	//	the various widgets with incorrect values. Once you close the app,
 	//	the settings you migrated get overwritten with the default values.
 
 	// Load current NifSkope settings
@@ -1357,7 +1357,7 @@ void NifSkope::migrateSettings() const
 
 	// New Install, no need to migrate anything
 	if ( !cfg.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
-		// QSettings constructor creates an empty folder, so clear it. 
+		// QSettings constructor creates an empty folder, so clear it.
 		cfg1_1.clear();
 
 		// Set version values
