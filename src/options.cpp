@@ -102,7 +102,7 @@ Options::Options()
 
 	dialog = new GroupBox( "", Qt::Vertical );
 	dialog->setWindowTitle( tr( "Settings" ) );
-	dialog->setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
+	dialog->setWindowFlags( Qt::Window | Qt::WindowStaysOnTopHint );
 	dialog->installEventFilter( this );
 
 	aDrawAxes = new QAction( tr( "Draw &Axes" ), this );
@@ -616,16 +616,21 @@ Options * Options::get()
 QList<QAction *> Options::actions()
 {
 	Options * opts = get();
-	return { opts->aDrawAxes,
+
+	QAction * sep = new QAction( opts );
+	sep->setSeparator( true );
+
+	return{ opts->aSettings,
+			sep,
+			opts->aDrawAxes,
 			opts->aDrawNodes,
 			opts->aDrawHavok ,
 			opts->aDrawConstraints,
 			opts->aDrawFurn,
 			opts->aDrawHidden,
 #ifdef USE_GL_QPAINTER
-			opts->aDrawStats,
+			opts->aDrawStats
 #endif
-			opts->aSettings
 	};
 }
 

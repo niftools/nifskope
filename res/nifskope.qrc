@@ -31,5 +31,6 @@
         <file alias="saveView">icon/save-view.png</file>
         <file alias="loadView">icon/load-view.png</file>
         <file alias="userViewActive">icon/view-active.png</file>
+        <file alias="screenshot">icon/screenshot.png</file>
     </qresource>
 </RCC>

@@ -78,13 +78,14 @@
    </attribute>
    <addaction name="aViewTop"/>
    <addaction name="aViewFront"/>
-   <addaction name="aViewSide"/>
+   <addaction name="aViewLeft"/>
    <addaction name="aViewFlip"/>
    <addaction name="aViewPerspective"/>
    <addaction name="separator"/>
    <addaction name="aViewWalk"/>
    <addaction name="aViewUser"/>
    <addaction name="aViewUserSave"/>
+   <addaction name="aPrintView"/>
    <addaction name="separator"/>
    <addaction name="aShowCollision"/>
    <addaction name="aShowAxes"/>
@@ -254,6 +255,8 @@
     <addaction name="separator"/>
     <addaction name="aResetBlockDetails"/>
     <addaction name="separator"/>
+    <addaction name="aAnimate"/>
+    <addaction name="separator"/>
     <addaction name="menuBlock_List"/>
     <addaction name="menuBlock_Details"/>
     <addaction name="separator"/>
@@ -265,10 +268,11 @@
     </property>
     <addaction name="aViewTop"/>
     <addaction name="aViewFront"/>
-    <addaction name="aViewSide"/>
+    <addaction name="aViewLeft"/>
     <addaction name="aViewFlip"/>
     <addaction name="aViewPerspective"/>
     <addaction name="aViewWalk"/>
+    <addaction name="aViewCenter"/>
     <addaction name="separator"/>
     <addaction name="aViewUser"/>
     <addaction name="aViewUserSave"/>
@@ -292,9 +296,15 @@
     <addaction name="aAboutNifSkope"/>
     <addaction name="aAboutQt"/>
    </widget>
+   <widget class="QMenu" name="mOptions">
+    <property name="title">
+     <string>Options</string>
+    </property>
+   </widget>
    <addaction name="mFile"/>
    <addaction name="mView"/>
    <addaction name="mRender"/>
+   <addaction name="mOptions"/>
    <addaction name="mHelp"/>
   </widget>
   <widget class="QDockWidget" name="InspectDock">
@@ -686,8 +696,14 @@
    <property name="text">
     <string>Top</string>
    </property>
+   <property name="toolTip">
+    <string>Top View</string>
+   </property>
+   <property name="statusTip">
+    <string>Top View</string>
+   </property>
    <property name="shortcut">
-    <string>F5</string>
+    <string>T</string>
    </property>
   </action>
   <action name="aViewFront">
@@ -704,11 +720,17 @@
    <property name="text">
     <string>Front</string>
    </property>
+   <property name="toolTip">
+    <string>Front View</string>
+   </property>
+   <property name="statusTip">
+    <string>Front View</string>
+   </property>
    <property name="shortcut">
-    <string>F6</string>
+    <string>F</string>
    </property>
   </action>
-  <action name="aViewSide">
+  <action name="aViewLeft">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -717,13 +739,16 @@
      <normaloff>:/btn/cubeSide16</normaloff>:/btn/cubeSide16</iconset>
    </property>
    <property name="text">
-    <string>Side</string>
+    <string>Left</string>
    </property>
    <property name="toolTip">
-    <string>View from the side</string>
+    <string>Left View</string>
+   </property>
+   <property name="statusTip">
+    <string>Left View</string>
    </property>
    <property name="shortcut">
-    <string>F7</string>
+    <string>L</string>
    </property>
   </action>
   <action name="aViewUser">
@@ -739,6 +764,9 @@
     <string>Load View</string>
    </property>
    <property name="toolTip">
+    <string>Load View</string>
+   </property>
+   <property name="statusTip">
     <string>Load View</string>
    </property>
    <property name="shortcut">
@@ -757,16 +785,16 @@
     <string>Walk</string>
    </property>
    <property name="toolTip">
-    <string>Enable walk mode</string>
+    <string>Walk Mode</string>
+   </property>
+   <property name="statusTip">
+    <string>Walk Mode</string>
    </property>
    <property name="shortcut">
     <string>F9</string>
    </property>
   </action>
   <action name="aViewFlip">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
      <normaloff>:/btn/viewFlip</normaloff>:/btn/viewFlip</iconset>
@@ -775,7 +803,10 @@
     <string>Flip</string>
    </property>
    <property name="toolTip">
-    <string>Flip View from Front to Back, Top to Bottom, Side to Other Side</string>
+    <string>Flip View</string>
+   </property>
+   <property name="statusTip">
+    <string>Flip View</string>
    </property>
    <property name="shortcut">
     <string>F11</string>
@@ -794,10 +825,13 @@
     <string>Perspective</string>
    </property>
    <property name="toolTip">
-    <string>Perspective View Transformation or Orthogonal View Transformation</string>
+    <string>Perspective or Orthogonal View</string>
+   </property>
+   <property name="statusTip">
+    <string>Perspective or Orthogonal View</string>
    </property>
    <property name="shortcut">
-    <string>F10</string>
+    <string>P</string>
    </property>
   </action>
   <action name="aViewUserSave">
@@ -809,6 +843,9 @@
     <string>Save View</string>
    </property>
    <property name="toolTip">
+    <string>Save View</string>
+   </property>
+   <property name="statusTip">
     <string>Save View</string>
    </property>
    <property name="shortcut">
@@ -987,8 +1024,18 @@
    </property>
   </action>
   <action name="aPrintView">
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/screenshot</normaloff>:/btn/screenshot</iconset>
+   </property>
    <property name="text">
-    <string>Save View To File...</string>
+    <string>Screenshot</string>
+   </property>
+   <property name="toolTip">
+    <string>Screenshot</string>
+   </property>
+   <property name="statusTip">
+    <string>Screenshot</string>
    </property>
   </action>
   <action name="aColorKeyDebug">
@@ -1010,7 +1057,7 @@
     <string>&amp;Animations</string>
    </property>
    <property name="toolTip">
-    <string>enables evaluation of animation controllers</string>
+    <string>Enables Animation</string>
    </property>
   </action>
   <action name="aAnimPlay">
@@ -1018,7 +1065,7 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
@@ -1026,6 +1073,12 @@
    </property>
    <property name="text">
     <string>&amp;Play</string>
+   </property>
+   <property name="toolTip">
+    <string>Play Animation</string>
+   </property>
+   <property name="statusTip">
+    <string>Play Animation</string>
    </property>
   </action>
   <action name="aAnimLoop">
@@ -1042,6 +1095,12 @@
    <property name="text">
     <string>&amp;Loop</string>
    </property>
+   <property name="toolTip">
+    <string>Loop Animation</string>
+   </property>
+   <property name="statusTip">
+    <string>Loop Animation</string>
+   </property>
   </action>
   <action name="aAnimSwitch">
    <property name="checkable">
@@ -1056,6 +1115,12 @@
    </property>
    <property name="text">
     <string>&amp;Switch</string>
+   </property>
+   <property name="toolTip">
+    <string>Switch Animation</string>
+   </property>
+   <property name="statusTip">
+    <string>Switch Animation</string>
    </property>
   </action>
   <action name="aLODDummy">
@@ -1080,6 +1145,9 @@
    <property name="toolTip">
     <string>Show Collision</string>
    </property>
+   <property name="statusTip">
+    <string>Show Collision</string>
+   </property>
   </action>
   <action name="aShowAxes">
    <property name="checkable">
@@ -1093,6 +1161,9 @@
     <string>Show Axes</string>
    </property>
    <property name="toolTip">
+    <string>Show Axes</string>
+   </property>
+   <property name="statusTip">
     <string>Show Axes</string>
    </property>
   </action>
@@ -1110,6 +1181,9 @@
    <property name="toolTip">
     <string>Show Nodes</string>
    </property>
+   <property name="statusTip">
+    <string>Show Nodes</string>
+   </property>
   </action>
   <action name="aShowConstraints">
    <property name="checkable">
@@ -1124,6 +1198,23 @@
    </property>
    <property name="toolTip">
     <string>Show Constraints</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Constraints</string>
+   </property>
+  </action>
+  <action name="aViewCenter">
+   <property name="text">
+    <string>Center</string>
+   </property>
+   <property name="toolTip">
+    <string>Center Viewport on object</string>
+   </property>
+   <property name="statusTip">
+    <string>Center Viewport on object</string>
+   </property>
+   <property name="shortcut">
+    <string>Z</string>
    </property>
   </action>
  </widget>

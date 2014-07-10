@@ -123,6 +123,11 @@ GLView * GLView::create()
 GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	: QGLWidget( format, 0, shareWidget )
 {
+	setFocusPolicy( Qt::ClickFocus );
+	setAttribute( Qt::WA_NoSystemBackground );
+	setAcceptDrops( true );
+	setContextMenuPolicy( Qt::CustomContextMenu );
+
 	// Make the context current on this window
 	makeCurrent();
 
@@ -138,6 +143,9 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	}
 
 	glFuncs->initializeOpenGLFunctions();
+
+	view = viewDefault;
+	debugMode = false;
 
 	Zoom = 1.0;
 	zInc = 1;
@@ -164,6 +172,10 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 	timer->setInterval( 1000 / FPS );
 	timer->start();
 	connect( timer, &QTimer::timeout, this, &GLView::advanceGears );
+
+	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
+	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
+	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
 }
 
 GLView::~GLView()
@@ -243,7 +255,7 @@ void GLView::glProjection( int x, int y )
 	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
 	GLdouble fr = fabs( bs.center[2] ) + bs.radius * 1.2;
 
-	if ( aViewPerspective->isChecked() || aViewWalk->isChecked() ) {
+	if ( perspectiveMode || (view == viewWalk) ) {
 		// Perspective View
 		if ( nr < 1.0 )
 			nr = 1.0;
@@ -316,16 +328,16 @@ void GLView::paintGL()
 
 		emit sigTime( time, scene->timeMin(), scene->timeMax() );
 
-		animGroups->clear();
-		animGroups->addItems( scene->animGroups );
-		animGroups->setCurrentIndex( scene->animGroups.indexOf( scene->animGroup ) );
+		//animGroups->clear();
+		//animGroups->addItems( scene->animGroups );
+		//animGroups->setCurrentIndex( scene->animGroups.indexOf( scene->animGroup ) );
 
 		doCompile = false;
 	}
 
 	// Center the model
 	if ( doCenter ) {
-		viewAction( checkedViewAction() );
+		setCenter();
 		doCenter = false;
 	}
 
@@ -346,7 +358,7 @@ void GLView::paintGL()
 	viewTrans.rotation = viewTrans.rotation * ap;
 	viewTrans.translation = viewTrans.rotation * Pos;
 
-	if ( !aViewWalk->isChecked() )
+	if ( view != viewWalk )
 		viewTrans.translation[2] -= Dist * 2;
 
 	scene->transform( viewTrans, time );
@@ -372,6 +384,16 @@ void GLView::paintGL()
 		glLoadMatrix( viewTrans );
 
 		drawAxes( Vector3(), axis );
+
+		// Grid test
+		//glBegin( GL_LINES );
+		//for ( int i = 0; i <= 500; i += 50 ) {
+		//	glVertex3f( (float)i, 0.0f, 0.0f );
+		//	glVertex3f( (float)i, 500.0f, 0.0f );
+		//	glVertex3f( 0.0f, (float)i, 0.0f );
+		//	glVertex3f( 500.0f, (float)i, 0.0f );
+		//}
+		//glEnd();
 
 		glPopMatrix();
 	}
@@ -404,24 +426,25 @@ void GLView::paintGL()
 	//glListBase(fontDisplayListBase(QFont(), 2000));
 
 #ifndef QT_NO_DEBUG
+	// TODO: Reenable
 	// Color Key debug
-	if ( aColorKeyDebug->isChecked() ) {
-		glDisable( GL_MULTISAMPLE );
-		glDisable( GL_LINE_SMOOTH );
-		glDisable( GL_TEXTURE_2D );
-		glDisable( GL_BLEND );
-		glDisable( GL_DITHER );
-		glDisable( GL_LIGHTING );
-		glShadeModel( GL_FLAT );
-		glDisable( GL_FOG );
-		glDisable( GL_MULTISAMPLE_ARB );
-		glEnable( GL_DEPTH_TEST );
-		glDepthFunc( GL_LEQUAL );
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		Node::SELECTING = 1;
-	} else {
-		Node::SELECTING = 0;
-	}
+	//if ( aColorKeyDebug->isChecked() ) {
+	//	glDisable( GL_MULTISAMPLE );
+	//	glDisable( GL_LINE_SMOOTH );
+	//	glDisable( GL_TEXTURE_2D );
+	//	glDisable( GL_BLEND );
+	//	glDisable( GL_DITHER );
+	//	glDisable( GL_LIGHTING );
+	//	glShadeModel( GL_FLAT );
+	//	glDisable( GL_FOG );
+	//	glDisable( GL_MULTISAMPLE_ARB );
+	//	glEnable( GL_DEPTH_TEST );
+	//	glDepthFunc( GL_LEQUAL );
+	//	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	//	Node::SELECTING = 1;
+	//} else {
+	//	Node::SELECTING = 0;
+	//}
 #endif
 
 	// Draw the model
@@ -631,16 +654,34 @@ void GLView::center()
 	update();
 }
 
+void GLView::updateViewpoint()
+{
+	switch ( view ) {
+	case viewTop:
+	case viewBottom:
+	case viewLeft:
+	case viewRight:
+	case viewFront:
+	case viewBack:
+	case viewUser:
+		emit viewpointChanged();
+		break;
+	default:
+		break;
+	}
+}
+
 void GLView::move( float x, float y, float z )
 {
 	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
+	updateViewpoint();
 	update();
 }
 
 void GLView::rotate( float x, float y, float z )
 {
 	Rot += Vector3( x, y, z );
-	uncheckViewAction();
+	updateViewpoint();
 	update();
 }
 
@@ -655,6 +696,32 @@ void GLView::zoom( float z )
 		Zoom = ZOOM_MAX;
 
 	update();
+}
+
+void GLView::setProjection( bool isPersp )
+{
+	perspectiveMode = isPersp;
+	update();
+}
+
+void GLView::setCenter()
+{
+	qDebug() << "Setting center";
+
+	BoundSphere bs = scene->bounds();
+
+	if ( Options::drawAxes() )
+		bs |= BoundSphere( Vector3(), axis );
+
+	if ( bs.radius < 1 )
+		bs.radius = 1;
+
+	setDistance( bs.radius );
+	setZoom( 1.0 );
+
+	setPosition( Vector3() - bs.center );
+
+	setOrientation( view );
 }
 
 void GLView::setDistance( float x )
@@ -685,6 +752,75 @@ void GLView::setZoom( float z )
 {
 	Zoom = z;
 	update();
+}
+
+void GLView::setOrientation( GLView::ViewState state, bool recenter )
+{
+	if ( state == view )
+		return;
+
+	switch ( state ) {
+	case viewBottom:
+		setRotation( 180, 0, 0 ); // Bottom
+		break;
+	case viewTop:
+		setRotation( 0, 0, 0 ); // Top
+		break;
+	case viewBack:
+		setRotation( -90, 0, 0 ); // Back
+		break;
+	case viewFront:
+		setRotation( -90, 0, 180 ); // Front
+		break;
+	case viewRight:
+		setRotation( -90, 0, 90 ); // Right
+		break;
+	case viewLeft:
+		setRotation( -90, 0, -90 ); // Left
+		break;
+	default:
+		break;
+	}
+
+	view = state;
+
+	// Recenter
+	if ( recenter )
+		center();
+}
+
+void GLView::flipOrientation()
+{
+	ViewState tmp;
+
+	switch ( view ) {
+	case viewTop:
+		tmp = viewBottom;
+		break;
+	case viewBottom:
+		tmp = viewTop;
+		break;
+	case viewLeft:
+		tmp = viewRight;
+		break;
+	case viewRight:
+		tmp = viewLeft;
+		break;
+	case viewFront:
+		tmp = viewBack;
+		break;
+	case viewBack:
+		tmp = viewFront;
+		break;
+	case viewUser:
+	default:
+	{
+		// TODO: Flip any other view also?
+	}
+		break;
+	}
+
+	setOrientation( tmp, false );
 }
 
 /*
@@ -781,192 +917,13 @@ void GLView::modelLinked()
 
 void GLView::modelDestroyed()
 {
-	setNif( 0 );
+	setNif( nullptr );
 }
 
 
 /*
  * UI
  */
-
-void GLView::initUi( NifSkope * p )
-{
-	nifskope = p;
-	auto ui = nifskope->ui;
-
-	setFocusPolicy( Qt::ClickFocus );
-	setAttribute( Qt::WA_NoSystemBackground );
-	setAcceptDrops( true );
-	setContextMenuPolicy( Qt::CustomContextMenu );
-
-	aViewTop = ui->aViewTop;
-	aViewFront = ui->aViewFront;
-	aViewSide = ui->aViewSide;
-	aViewUser = ui->aViewUser;
-	aViewWalk = ui->aViewWalk;
-	aViewFlip = ui->aViewFlip;
-	aViewPerspective = ui->aViewPerspective;
-
-	grpView = new QActionGroup( this );
-	grpView->setExclusive( false );
-	grpView->addAction( aViewTop );
-	grpView->addAction( aViewFront );
-	grpView->addAction( aViewSide );
-	grpView->addAction( aViewUser );
-	grpView->addAction( aViewWalk );
-	grpView->addAction( aViewFlip );
-	grpView->addAction( aViewPerspective );
-	connect( grpView, &QActionGroup::triggered, this, &GLView::viewAction );
-
-	connect( ui->aViewUserSave, &QAction::triggered, this, &GLView::saveUserView );
-	connect( ui->aPrintView, &QAction::triggered, this, &GLView::saveImage );
-
-#ifdef QT_NO_DEBUG
-	ui->aColorKeyDebug->setDisabled( true );
-	ui->aColorKeyDebug->setVisible( false );
-#else
-	aColorKeyDebug = ui->aColorKeyDebug;
-	connect( aColorKeyDebug, &QAction::triggered, this, &GLView::paintGL );
-#endif
-
-	aAnimate = ui->aAnimate;
-	aAnimPlay = ui->aAnimPlay;
-	aAnimLoop = ui->aAnimLoop;
-	aAnimSwitch = ui->aAnimSwitch;
-
-	connect( aAnimate, &QAction::toggled, this, &GLView::checkActions );
-	connect( aAnimPlay, &QAction::toggled, this, &GLView::checkActions );
-	addAction( aAnimate );
-	
-	// View tool bar
-	tView = ui->tView;
-
-	// Animation tool bar
-	tAnim = ui->tAnim;
-
-	connect( aAnimate, &QAction::toggled, tAnim->toggleViewAction(), &QAction::setChecked );
-	connect( aAnimate, &QAction::toggled, tAnim, &QToolBar::setVisible );
-	connect( tAnim->toggleViewAction(), &QAction::toggled, aAnimate, &QAction::setChecked );
-
-	// Animation timeline slider
-	sldTime = new FloatSlider( Qt::Horizontal, true, true );
-	sldTime->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
-	connect( this, &GLView::sigTime, sldTime, &FloatSlider::set );
-	connect( sldTime, &FloatSlider::valueChanged, this, &GLView::sltTime );
-	
-
-	FloatEdit * edtTime = new FloatEdit;
-	edtTime->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Maximum );
-
-	connect( this, &GLView::sigTime, edtTime, &FloatEdit::set );
-	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), this, &GLView::sltTime );
-	connect( sldTime, &FloatSlider::valueChanged, edtTime, &FloatEdit::setValue );
-	connect( edtTime, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), sldTime, &FloatSlider::setValue );
-	sldTime->addEditor( edtTime );
-
-	// Animations
-	animGroups = new QComboBox();
-	animGroups->setMinimumWidth( 120 );
-	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), this, &GLView::sltSequence );
-
-	tAnim->addWidget( sldTime );
-	tAnim->addWidget( animGroups );
-
-	// TODO: Connect to a less general signal for when texture paths are edited
-	//   or things that affect textures.  Not *any* Options update.
-	// This makes editing various options sluggish, like lighting color, background color
-	//   and even some LineEdits like "Cull Nodes by Name"
-	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
-	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
-	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
-
-	
-	ui->mRender->addActions( Options::actions() );
-}
-
-
-void GLView::viewAction( QAction * act )
-{
-	BoundSphere bs = scene->bounds();
-
-	if ( Options::drawAxes() )
-		bs |= BoundSphere( Vector3(), axis );
-
-	if ( bs.radius < 1 )
-		bs.radius = 1;
-
-	setDistance( bs.radius );
-	setZoom( 1.0 );
-
-	if ( act == aViewWalk ) {
-		setRotation( -90, 0, 0 );
-		setPosition( Vector3() - scene->bounds().center );
-		setZoom( 1.0 );
-		aViewWalk->setChecked( true );
-		aViewTop->setChecked( false );
-		aViewFront->setChecked( false );
-		aViewSide->setChecked( false );
-		aViewUser->setChecked( false );
-	}
-
-	if ( !act || act == aViewFlip ) {
-		act = checkedViewAction();
-	}
-
-	if ( act != aViewWalk )
-		setPosition( Vector3() - bs.center );
-
-	if ( act == aViewTop ) {
-		if ( aViewFlip->isChecked() )
-			setRotation( 180, 0, 0 );
-		else
-			setRotation( 0, 0, 0 );
-
-		aViewWalk->setChecked( false );
-		aViewTop->setChecked( true );
-		aViewFront->setChecked( false );
-		aViewSide->setChecked( false );
-		aViewUser->setChecked( false );
-	} else if ( act == aViewFront ) {
-		if ( aViewFlip->isChecked() )
-			setRotation( -90, 0, 180 );
-		else
-			setRotation( -90, 0, 0 );
-
-		aViewWalk->setChecked( false );
-		aViewTop->setChecked( false );
-		aViewFront->setChecked( true );
-		aViewSide->setChecked( false );
-		aViewUser->setChecked( false );
-	} else if ( act == aViewSide ) {
-		if ( aViewFlip->isChecked() )
-			setRotation( -90, 0, -90 );
-		else
-			setRotation( -90, 0, 90 );
-
-		aViewWalk->setChecked( false );
-		aViewTop->setChecked( false );
-		aViewFront->setChecked( false );
-		aViewSide->setChecked( true );
-		aViewUser->setChecked( false );
-	} else if ( act == aViewUser ) {
-		QSettings cfg;
-		cfg.beginGroup( "GLView" );
-		cfg.beginGroup( "User View" );
-		setRotation( cfg.value( "RotX" ).toDouble(), cfg.value( "RotY" ).toDouble(), cfg.value( "RotZ" ).toDouble() );
-		setPosition( cfg.value( "PosX" ).toDouble(), cfg.value( "PosY" ).toDouble(), cfg.value( "PosZ" ).toDouble() );
-		setDistance( cfg.value( "Dist" ).toDouble() );
-		aViewWalk->setChecked( false );
-		aViewTop->setChecked( false );
-		aViewFront->setChecked( false );
-		aViewSide->setChecked( false );
-		aViewUser->setChecked( true );
-		cfg.endGroup();
-		cfg.endGroup();
-	}
-
-	update();
-}
 
 void GLView::sltTime( float t )
 {
@@ -977,7 +934,7 @@ void GLView::sltTime( float t )
 
 void GLView::sltSequence( const QString & seqname )
 {
-	animGroups->setCurrentIndex( scene->animGroups.indexOf( seqname ) );
+	//animGroups->setCurrentIndex( scene->animGroups.indexOf( seqname ) );
 	scene->setSequence( seqname );
 	time = scene->timeMin();
 	emit sigTime( time, scene->timeMin(), scene->timeMax() );
@@ -996,34 +953,22 @@ void GLView::saveUserView()
 	cfg.setValue( "PosY", Pos[1] );
 	cfg.setValue( "PosZ", Pos[2] );
 	cfg.setValue( "Dist", Dist );
-	viewAction( aViewUser );
 	cfg.endGroup();
 	cfg.endGroup();
 }
 
-QAction * GLView::checkedViewAction() const
+void GLView::loadUserView()
 {
-	if ( aViewTop->isChecked() )
-		return aViewTop;
-	else if ( aViewFront->isChecked() )
-		return aViewFront;
-	else if ( aViewSide->isChecked() )
-		return aViewSide;
-	else if ( aViewWalk->isChecked() )
-		return aViewWalk;
-	else if ( aViewUser->isChecked() )
-		return aViewUser;
-
-	return 0;
+	QSettings cfg;
+	cfg.beginGroup( "GLView" );
+	cfg.beginGroup( "User View" );
+	setRotation( cfg.value( "RotX" ).toDouble(), cfg.value( "RotY" ).toDouble(), cfg.value( "RotZ" ).toDouble() );
+	setPosition( cfg.value( "PosX" ).toDouble(), cfg.value( "PosY" ).toDouble(), cfg.value( "PosZ" ).toDouble() );
+	setDistance( cfg.value( "Dist" ).toDouble() );
+	cfg.endGroup();
+	cfg.endGroup();
 }
 
-void GLView::uncheckViewAction()
-{
-	QAction * act = checkedViewAction();
-
-	if ( act && act != aViewWalk )
-		act->setChecked( false );
-}
 
 void GLView::advanceGears()
 {
@@ -1047,25 +992,26 @@ void GLView::advanceGears()
 	if ( !isVisible() )
 		return;
 
-	if ( aAnimate->isChecked() && aAnimPlay->isChecked() && scene->timeMin() != scene->timeMax() ) {
-		time += dT;
-
-		if ( time > scene->timeMax() ) {
-			if ( aAnimSwitch->isChecked() && !scene->animGroups.isEmpty() ) {
-				int ix = scene->animGroups.indexOf( scene->animGroup );
-
-				if ( ++ix >= scene->animGroups.count() )
-					ix -= scene->animGroups.count();
-
-				sltSequence( scene->animGroups.value( ix ) );
-			} else if ( aAnimLoop->isChecked() ) {
-				time = scene->timeMin();
-			}
-		}
-
-		emit sigTime( time, scene->timeMin(), scene->timeMax() );
-		update();
-	}
+	// TODO: Reenable
+	//if ( aAnimate->isChecked() && aAnimPlay->isChecked() && scene->timeMin() != scene->timeMax() ) {
+	//	time += dT;
+	//
+	//	if ( time > scene->timeMax() ) {
+	//		if ( aAnimSwitch->isChecked() && !scene->animGroups.isEmpty() ) {
+	//			int ix = scene->animGroups.indexOf( scene->animGroup );
+	//
+	//			if ( ++ix >= scene->animGroups.count() )
+	//				ix -= scene->animGroups.count();
+	//
+	//			sltSequence( scene->animGroups.value( ix ) );
+	//		} else if ( aAnimLoop->isChecked() ) {
+	//			time = scene->timeMin();
+	//		}
+	//	}
+	//
+	//	emit sigTime( time, scene->timeMin(), scene->timeMax() );
+	//	update();
+	//}
 
 	// Rotation
 	if ( kbd[ Qt::Key_Up ] )    rotate( -ROT_SPD * dT, 0, 0 );
@@ -1078,8 +1024,8 @@ void GLView::advanceGears()
 	if ( kbd[ Qt::Key_D ] ) move( -MOV_SPD * dT, 0, 0 );
 	if ( kbd[ Qt::Key_W ] ) move( 0, 0, +MOV_SPD * dT );
 	if ( kbd[ Qt::Key_S ] ) move( 0, 0, -MOV_SPD * dT );
-	if ( kbd[ Qt::Key_F ] ) move( 0, +MOV_SPD * dT, 0 );
-	if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
+	//if ( kbd[ Qt::Key_F ] ) move( 0, +MOV_SPD * dT, 0 );
+	//if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
 
 	// Zoom
 	if ( kbd[ Qt::Key_Q ] ) setDistance( Dist * 1.0 / 1.1 );
@@ -1102,7 +1048,8 @@ void GLView::advanceGears()
 
 void GLView::checkActions()
 {
-	scene->animate = aAnimate->isChecked();
+	// TODO: Reenable
+	//scene->animate = aAnimate->isChecked();
 
 	lastTime = QTime::currentTime();
 
@@ -1114,39 +1061,6 @@ void GLView::checkActions()
 	update();
 }
 
-
-/*
- * Settings
- */
-
-void GLView::saveSettings()
-{
-	QSettings settings;
-	settings.setValue( "GLView/Enable Animations", aAnimate->isChecked() );
-	settings.setValue( "GLView/Play Animation", aAnimPlay->isChecked() );
-	settings.setValue( "GLView/Loop Animation", aAnimLoop->isChecked() );
-	settings.setValue( "GLView/Switch Animation", aAnimSwitch->isChecked() );
-	settings.setValue( "GLView/Perspective", aViewPerspective->isChecked() );
-
-	if ( checkedViewAction() )
-		settings.setValue( "GLView/View Action", checkedViewAction()->text() );
-}
-
-void GLView::restoreSettings()
-{
-	QSettings settings;
-	aAnimate->setChecked( settings.value( "GLView/Enable Animations", true ).toBool() );
-	aAnimPlay->setChecked( settings.value( "GLView/Play Animation", true ).toBool() );
-	aAnimLoop->setChecked( settings.value( "GLView/Loop Animation", true ).toBool() );
-	aAnimSwitch->setChecked( settings.value( "GLView/Switch Animation", true ).toBool() );
-	aViewPerspective->setChecked( settings.value( "GLView/Perspective", true ).toBool() );
-	checkActions();
-	QString viewAct = settings.value( "GLView/View Action", "Front" ).toString();
-	for ( QAction * act : grpView->actions() ) {
-		if ( act->text() == viewAct )
-			viewAction( act );
-	}
-}
 
 void GLView::saveImage()
 {
@@ -1344,8 +1258,8 @@ void GLView::keyPressEvent( QKeyEvent * event )
 	case Qt::Key_D:
 	case Qt::Key_W:
 	case Qt::Key_S:
-	case Qt::Key_R:
-	case Qt::Key_F:
+	//case Qt::Key_R:
+	//case Qt::Key_F:
 	case Qt::Key_Q:
 	case Qt::Key_E:
 		kbd[event->key()] = true;
@@ -1353,7 +1267,7 @@ void GLView::keyPressEvent( QKeyEvent * event )
 	case Qt::Key_Escape:
 		doCompile = true;
 
-		if ( !aViewWalk->isChecked() )
+		if ( view == viewWalk )
 			doCenter = true;
 
 		update();
@@ -1392,8 +1306,8 @@ void GLView::keyReleaseEvent( QKeyEvent * event )
 	case Qt::Key_D:
 	case Qt::Key_W:
 	case Qt::Key_S:
-	case Qt::Key_R:
-	case Qt::Key_F:
+	//case Qt::Key_R:
+	//case Qt::Key_F:
 	case Qt::Key_Q:
 	case Qt::Key_E:
 		kbd[event->key()] = false;
@@ -1461,7 +1375,7 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 
 void GLView::wheelEvent( QWheelEvent * event )
 {
-	if ( aViewWalk->isChecked() )
+	if ( view == viewWalk )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
 		setDistance( Dist * (event->delta() < 0 ? 1.0 / 0.8 : 0.8) );

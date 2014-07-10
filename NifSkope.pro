@@ -234,6 +234,7 @@ SOURCES += \
 	src/nifmodel.cpp \
 	src/nifproxy.cpp \
 	src/nifskope.cpp \
+	src/nifskope_ui.cpp \
 	src/niftypes.cpp \
 	src/nifvalue.cpp \
 	src/nifxml.cpp \

@@ -53,17 +53,22 @@ class NifModel;
 class NifProxyModel;
 class NifTreeView;
 class ReferenceBrowser;
+class SpellBook;
+
+class FSManager;
 
 class QAction;
 class QActionGroup;
 class QLocale;
 class QModelIndex;
+class QProgressBar;
 class QSettings;
 class QSlider;
 class QSpinBox;
 class QTextEdit;
 class QTranslator;
 class QUdpSocket;
+
 
 //! \file nifskope.h The main header for NifSkope
 
@@ -94,16 +99,11 @@ public:
 	static NifSkope * createWindow( const QString & fname = QString() );
 
 	//! Save NifSkope application settings.
-	/*!
-	 * \param settings The QSettings object used to store the settings.
-	 */
-	void saveSettings() const;
+	void saveUi() const;
 
-	//! Restore NifSkope application settings.
-	/*!
-	 * \param settings The QSettings object to restore the settings from.
-	 */
-	void restoreSettings();
+	//! Restore NifSkope UI settings.
+	void restoreUi();
+
 	//! Get Loaded filename
 	/*!
 	 * \return QString of loaded filename
@@ -138,6 +138,24 @@ public slots:
 	//! Reset "block details"
 	void on_aResetBlockDetails_triggered();
 
+	//! Select the font to use
+	void on_aSelectFont_triggered();
+
+	void on_tRender_actionTriggered( QAction * );
+
+	void on_aViewTop_triggered( bool );
+	void on_aViewFront_triggered( bool );
+	void on_aViewLeft_triggered( bool );
+	
+	void on_aViewCenter_triggered();
+	void on_aViewFlip_triggered( bool );
+	void on_aViewPerspective_toggled( bool );
+	void on_aViewWalk_triggered( bool );
+	
+	void on_aViewUser_toggled( bool );
+	void on_aViewUserSave_triggered( bool );
+
+
 protected slots:
 	//! Select a NIF index
 	void select( const QModelIndex & );
@@ -147,9 +165,6 @@ protected slots:
 
 	//! Set the list mode
 	void setListMode();
-
-	//! Select the font to use
-	void on_aSelectFont_triggered();
 
 	//! Send a Message
 	void dispatchMessage( const Message & msg );
@@ -208,6 +223,9 @@ private:
 	//! This view shows the KFM file, if any
 	NifTreeView * kfmtree;
 
+	//! Spellbook instance
+	SpellBook * book;
+
 	//! Help browser
 	ReferenceBrowser * refrbrwsr;
 
@@ -219,6 +237,8 @@ private:
 
 	bool selecting;
 	bool initialShowEvent;
+	
+	QProgressBar * progress = nullptr;
 
 	FileSelector * lineLoad;
 	FileSelector * lineSave;
@@ -280,24 +300,6 @@ protected:
 	~IPCsocket();
 
 	QUdpSocket * socket;
-};
-
-//! Progress dialog
-class ProgDlg final : public QProgressDialog
-{
-	Q_OBJECT
-
-public:
-	//! Constructor
-	ProgDlg() {}
-
-public slots:
-	//! Update progress
-	/*!
-	 * \param x The amount done
-	 * \param y The total amount
-	 */
-	void sltProgress( int x, int y );
 };
 
 #endif

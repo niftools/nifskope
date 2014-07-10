@@ -53,19 +53,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QAction>
 #include <QApplication>
 #include <QByteArray>
-#include <QComboBox>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
-#include <QDockWidget>
-#include <QFontDialog>
 #include <QFile>
 #include <QFileInfo>
-#include <QHeaderView>
 #include <QLocale>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QProgressBar>
 #include <QSettings>
 #include <QTextEdit>
 #include <QTimer>
@@ -80,7 +77,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef FSENGINE
 #include <fsengine/fsmanager.h>
-FSManager * fsmanager = nullptr;
 #endif
 
 #ifdef WIN32
@@ -117,7 +113,7 @@ NifSkope::NifSkope()
 
 	kfm = new KfmModel( this );
 
-	auto book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
+	book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
 
 	// Setup Views
 	/* ********************** */
@@ -157,26 +153,25 @@ NifSkope::NifSkope()
 	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 #ifdef EDIT_ON_ACTIVATE
-	connect( list, &NifTreeView::activated, list, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-	connect( tree, &NifTreeView::activated, tree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-	connect( kfmtree, &NifTreeView::activated, kfmtree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	// TODO: Determine necessity of this, appears redundant
+	//connect( list, &NifTreeView::activated, list, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	//connect( tree, &NifTreeView::activated, tree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
+	//connect( kfmtree, &NifTreeView::activated, kfmtree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
 #endif
 
 	// Create GLView
 	/* ********************** */
 
 	ogl = GLView::create();
+	ogl->setObjectName( "OGL1" );
 	ogl->setNif( nif );
+
+	// Create InspectView
+	/* ********************** */
 	
 	inspect = new InspectView;
 	inspect->setNifModel( nif );
 	inspect->setScene( ogl->getScene() );
-
-	connect( ogl, &GLView::clicked, this, &NifSkope::select );
-	connect( ogl, &GLView::customContextMenuRequested, this, &NifSkope::contextMenu );
-	connect( ogl, &GLView::sigTime, inspect, &InspectView::updateTime );
-	connect( ogl, &GLView::paintUpdate, inspect, &InspectView::refresh );
-	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection );
 
 
 	/*
@@ -187,155 +182,17 @@ NifSkope::NifSkope()
 	setCentralWidget( ogl );
 
 	// Set Actions
-	/* ********************** */
-
-	aSanitize = ui->aSanitize;
-	aList = ui->aList;
-	aHierarchy = ui->aHierarchy;
-	aCondition = ui->aCondition;
-	aRCondition = ui->aRCondition;
-	aSelectFont = ui->aSelectFont;
-
-	ui->aWindow->setShortcut( QKeySequence::New );
-
-	aList->setChecked( list->model() == nif );
-	aHierarchy->setChecked( list->model() == proxy );
-
-	// Allow only List or Tree view to be selected at once
-	gListMode = new QActionGroup( this );
-	gListMode->addAction( aList );
-	gListMode->addAction( aHierarchy );
-	gListMode->setExclusive( true );
-	connect( gListMode, &QActionGroup::triggered, this, &NifSkope::setListMode );
-
-
-	connect( aCondition, &QAction::toggled, aRCondition, &QAction::setEnabled );
-	connect( aRCondition, &QAction::toggled, tree, &NifTreeView::setRealTime );
-	connect( aRCondition, &QAction::toggled, kfmtree, &NifTreeView::setRealTime );
-
-	// use toggled to enable startup values to take effect
-	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setEvalConditions );
-	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setEvalConditions );
-
-	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
-	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
-
-#ifdef FSENGINE
-	if ( fsmanager ) {
-		connect( ui->aResources, &QAction::triggered, fsmanager, &FSManager::selectArchives );
-	}
-#endif
+	initActions();
 
 	// Dock Widgets
-	dRefr = ui->RefrDock;
-	dList = ui->ListDock;
-	dTree = ui->TreeDock;
-	dInsp = ui->InspectDock;
-	dKfm = ui->KfmDock;
-
-	// Hide certain docks by default
-	dRefr->toggleViewAction()->setChecked( false );
-	dInsp->toggleViewAction()->setChecked( false );
-	dKfm->toggleViewAction()->setChecked( false );
-	
-	dRefr->setVisible( false );
-	dInsp->setVisible( false );
-	dKfm->setVisible( false );
-	
-	// Set Inspect widget
-	dInsp->setWidget( inspect );
-	
-	connect( dList->toggleViewAction(), &QAction::triggered, tree, &NifTreeView::clearRootIndex );
-
+	initDockWidgets();
 
 	// Toolbars
-	/* ********************** */
+	initToolBars();
 
-	// Load & Save toolbar
-
-	QStringList fileExtensions{
-		"All Files (*.nif *.kf *.kfa *.kfm *.nifcache *.texcache *.pcpatch *.jmi)",
-		"NIF (*.nif)", "Keyframe (*.kf)", "Keyframe Animation (*.kfa)", "Keyframe Motion (*.kfm)",
-		"NIFCache (*.nifcache)", "TEXCache (*.texcache)", "PCPatch (*.pcpatch)", "JMI (*.jmi)"
-	};
-
-	// Load
-	aLineLoad = ui->toolbar->addWidget( lineLoad = new FileSelector( FileSelector::LoadFile, tr( "&Load..." ), QBoxLayout::RightToLeft, QKeySequence::Open ) );
-	lineLoad->setFilter( fileExtensions );
-	connect( lineLoad, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::load) );
-
-	// Load<=>Save
-	CopyFilename * cpFilename = new CopyFilename( this );
-	cpFilename->setObjectName( "fileCopyWidget" );
-	connect( cpFilename, &CopyFilename::leftTriggered, this, &NifSkope::copyFileNameSaveLoad );
-	connect( cpFilename, &CopyFilename::rightTriggered, this, &NifSkope::copyFileNameLoadSave );
-	aCpFileName = ui->toolbar->addWidget( cpFilename );
-
-	// Save
-	aLineSave = ui->toolbar->addWidget( lineSave = new FileSelector( FileSelector::SaveFile, tr( "&Save As..." ), QBoxLayout::LeftToRight, QKeySequence::Save ) );
-	lineSave->setFilter( fileExtensions );
-	connect( lineSave, &FileSelector::sigActivated, this, static_cast<void (NifSkope::*)()>(&NifSkope::save) );
-
-
-	// LOD Toolbar
-	QToolBar * tLOD = ui->tLOD;
-
-	QSettings cfg;
-	int lodLevel = cfg.value( "GLView/LOD Level", 2 ).toInt();
-	cfg.setValue( "GLView/LOD Level", lodLevel );
-
-	QSlider * lodSlider = new QSlider( Qt::Horizontal );
-	lodSlider->setFocusPolicy( Qt::StrongFocus );
-	lodSlider->setTickPosition( QSlider::TicksBelow );
-	lodSlider->setTickInterval( 1 );
-	lodSlider->setSingleStep( 1 );
-	lodSlider->setMinimum( 0 );
-	lodSlider->setMaximum( 2 );
-	lodSlider->setValue( lodLevel );
-
-	tLOD->addWidget( lodSlider );
-	tLOD->setEnabled( false );
-
-	connect( lodSlider, &QSlider::valueChanged, []( int value )
-		{
-			QSettings cfg;
-			cfg.setValue( "GLView/LOD Level", value );
-		}
-	);
-	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
-	connect( nif, &NifModel::lodSliderChanged, [tLOD]( bool enabled ) { tLOD->setEnabled( enabled ); } );
-
-	
 	// Menus
-	/* ********************** */
+	initMenu();
 
-	// Insert the Load/Save actions into the File menu
-	ui->mFile->insertActions( ui->aFileLoadDummy, lineLoad->actions() );
-	ui->mFile->insertActions( ui->aFileSaveDummy, lineSave->actions() );
-
-#ifndef FSENGINE
-	if ( ui->aResources ) {
-		ui->mFile->removeAction( ui->aResources );
-	}
-#endif
-
-	// Populate Toolbars menu with all enabled toolbars
-	for ( QObject * o : children() ) {
-		QToolBar * tb = qobject_cast<QToolBar *>( o );
-		if ( tb )
-			ui->mToolbars->addAction( tb->toggleViewAction() );
-	}
-
-	// Insert SpellBook class before Help
-	ui->menubar->insertMenu( ui->menubar->actions().at(3), book );
-
-	// Insert Import/Export menus
-	mExport = ui->menuExport;
-	mImport = ui->menuImport;
-
-	fillImportExportMenus();
-	connect( mExport, &QMenu::triggered, this, &NifSkope::sltImportExport );
-	connect( mImport, &QMenu::triggered, this, &NifSkope::sltImportExport );
 
 	connect( Options::get(), &Options::sigLocaleChanged, this, &NifSkope::sltLocaleChanged );
 }
@@ -347,129 +204,11 @@ NifSkope::~NifSkope()
 
 void NifSkope::closeEvent( QCloseEvent * e )
 {
-	saveSettings();
+	saveUi();
 
 	QMainWindow::closeEvent( e );
 }
 
-//! Resize views from settings
-void restoreHeader( const QString & name, const QSettings & settings, QHeaderView * header )
-{
-	QByteArray b = settings.value( name ).value<QByteArray>();
-
-	if ( b.isEmpty() )
-		return;
-
-	QDataStream d( &b, QIODevice::ReadOnly );
-	int s;
-	d >> s;
-
-	if ( s != header->count() )
-		return;
-
-	for ( int c = 0; c < header->count(); c++ ) {
-		d >> s;
-		header->resizeSection( c, s );
-	}
-}
-
-void NifSkope::restoreSettings()
-{
-	QSettings settings;
-	restoreGeometry( settings.value( "UI/Window Geometry" ).toByteArray() );
-	restoreState( settings.value( "UI/Window State" ).toByteArray(), 0x073 );
-
-	lineLoad->setText( settings.value( "File/Last Load", QString( "" ) ).toString() );
-	lineSave->setText( settings.value( "File/Last Save", QString( "" ) ).toString() );
-	aSanitize->setChecked( settings.value( "File/Auto Sanitize", true ).toBool() );
-
-	if ( settings.value( "UI/List Mode", "hierarchy" ).toString() == "list" )
-		aList->setChecked( true );
-	else
-		aHierarchy->setChecked( true );
-
-	setListMode();
-
-	aCondition->setChecked( settings.value( "UI/Hide Mismatched Rows", false ).toBool() );
-	aRCondition->setChecked( settings.value( "UI/Realtime Condition Updating", false ).toBool() );
-	restoreHeader( "UI/List Sizes", settings, list->header() );
-	restoreHeader( "UI/Tree Sizes", settings, tree->header() );
-	restoreHeader( "UI/Kfmtree Sizes", settings, kfmtree->header() );
-
-	ogl->initUi( this );
-	ogl->restoreSettings();
-
-	QVariant fontVar = settings.value( "UI/View Font" );
-
-	if ( fontVar.canConvert<QFont>() )
-		setViewFont( fontVar.value<QFont>() );
-
-
-	// Modify UI settings that cannot be set in Designer
-	tabifyDockWidget( ui->InspectDock, ui->KfmDock );
-}
-
-//! Save view sizes to settings
-void saveHeader( const QString & name, QSettings & settings, QHeaderView * header )
-{
-	QByteArray b;
-	QDataStream d( &b, QIODevice::WriteOnly );
-	d << header->count();
-
-	for ( int c = 0; c < header->count(); c++ )
-		d << header->sectionSize( c );
-
-	settings.setValue( name, b );
-}
-
-void NifSkope::saveSettings() const
-{
-	QSettings settings;
-	settings.setValue( "UI/Window State", saveState( 0x073 ) );
-	settings.setValue( "UI/Window Geometry", saveGeometry() );
-
-	settings.setValue( "File/Last Load", lineLoad->text() );
-	settings.setValue( "File/Last Save", lineSave->text() );
-	settings.setValue( "File/Auto Sanitize", aSanitize->isChecked() );
-
-	settings.setValue( "UI/List Mode", ( gListMode->checkedAction() == aList ? "list" : "hierarchy" ) );
-	settings.setValue( "UI/Hide Mismatched Rows", aCondition->isChecked() );
-	settings.setValue( "UI/Realtime Condition Updating", aRCondition->isChecked() );
-
-	saveHeader( "UI/List Sizes", settings, list->header() );
-	saveHeader( "UI/Tree Sizes", settings, tree->header() );
-	saveHeader( "UI/Kfmtree Sizes", settings, kfmtree->header() );
-
-	ogl->saveSettings();
-
-	Options::get()->save();
-}
-
-void NifSkope::contextMenu( const QPoint & pos )
-{
-	QModelIndex idx;
-	QPoint p = pos;
-
-	if ( sender() == tree ) {
-		idx = tree->indexAt( pos );
-		p = tree->mapToGlobal( pos );
-	} else if ( sender() == list ) {
-		idx = list->indexAt( pos );
-		p = list->mapToGlobal( pos );
-	} else if ( sender() == ogl ) {
-		idx = ogl->indexAt( pos );
-		p = ogl->mapToGlobal( pos );
-	} else {
-		return;
-	}
-
-	while ( idx.model() && idx.model()->inherits( "NifProxyModel" ) ) {
-		idx = qobject_cast<const NifProxyModel *>( idx.model() )->mapTo( idx );
-	}
-
-	SpellBook book( nif, idx, this, SLOT( select( const QModelIndex & ) ) );
-	book.exec( p );
-}
 
 void NifSkope::select( const QModelIndex & index )
 {
@@ -485,6 +224,11 @@ void NifSkope::select( const QModelIndex & index )
 		return;
 
 	selecting = true;
+
+	// TEST: Cast sender to GLView
+	//auto s = qobject_cast<GLView *>(sender());
+	//if ( s )
+	//	qDebug() << sender()->objectName();
 
 	if ( sender() != ogl ) {
 		ogl->setCurrentIndex( idx );
@@ -601,18 +345,26 @@ void NifSkope::load()
 			kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
 	}
 
-	ogl->tAnim->setEnabled( false );
+	ui->tAnim->setEnabled( false );
 
 	if ( !niffile.isFile() ) {
 		nif->clear();
 		lineLoad->setState( FileSelector::stError );
 	} else {
-		ProgDlg prog;
-		prog.setLabelText( tr( "loading nif..." ) );
-		prog.setRange( 0, 1 );
-		prog.setValue( 0 );
-		prog.setMinimumDuration( 2100 );
-		connect( nif, &NifModel::sigProgress, &prog, &ProgDlg::sltProgress );
+		progress = new QProgressBar( this );
+		progress->setRange( 0, 1 );
+		progress->setValue( 0 );
+		progress->setMaximumSize( 200, 18 );
+
+		// Process progress events
+		connect( nif, &NifModel::sigProgress, [this]( int c, int m ) {
+		
+			progress->setRange( 0, m );
+			progress->setValue( c );
+			qApp->processEvents();
+		} );
+
+		ui->statusbar->addPermanentWidget( progress );
 
 		lineLoad->rstState();
 		lineSave->rstState();
@@ -629,7 +381,12 @@ void NifSkope::load()
 		setWindowTitle( niffile.fileName() );
 	}
 
-	ogl->tAnim->setEnabled( true );
+	ui->mRender->setEnabled( true );
+
+	//ui->tAnim->setEnabled( true );
+	ui->tRender->setEnabled( true );
+
+	ogl->setOrientation( GLView::viewFront );
 	ogl->center();
 
 	// Expand BSShaderTextureSet by default
@@ -642,19 +399,6 @@ void NifSkope::load()
 	tree->scrollTo( nif->index( 0, 0 ) );
 
 	setEnabled( true );
-}
-
-void ProgDlg::sltProgress( int x, int y )
-{
-	setRange( 0, y );
-	setValue( x );
-	qApp->processEvents();
-}
-
-void NifSkope::on_aResetBlockDetails_triggered()
-{
-	if ( tree )
-		tree->clearRootIndex();
 }
 
 void NifSkope::save()
@@ -718,15 +462,7 @@ void NifSkope::copyFileNameSaveLoad()
 	lineLoad->replaceText( lineSave->text() );
 }
 
-void NifSkope::on_aWindow_triggered()
-{
-	createWindow();
-}
 
-void NifSkope::on_aShredder_triggered()
-{
-	TestShredder::create();
-}
 
 void NifSkope::openURL()
 {
@@ -746,79 +482,6 @@ void NifSkope::openURL()
 	QDesktopServices::openUrl( URL );
 }
 
-
-NifSkope * NifSkope::createWindow( const QString & fname )
-{
-	NifSkope * skope = new NifSkope;
-	skope->setAttribute( Qt::WA_DeleteOnClose );
-	skope->restoreSettings();
-	skope->show();
-	skope->raise();
-
-	if ( !fname.isEmpty() ) {
-		skope->lineLoad->setFile( fname );
-		QTimer::singleShot( 0, skope, SLOT( load() ) );
-	}
-
-	return skope;
-}
-
-void NifSkope::on_aLoadXML_triggered()
-{
-	NifModel::loadXML();
-	KfmModel::loadXML();
-}
-
-void NifSkope::on_aReload_triggered()
-{
-	if ( NifModel::loadXML() ) {
-		load();
-	}
-}
-
-void NifSkope::on_aSelectFont_triggered()
-{
-	bool ok;
-	QFont fnt = QFontDialog::getFont( &ok, list->font(), this );
-
-	if ( !ok )
-		return;
-
-	setViewFont( fnt );
-	QSettings settings;
-	settings.setValue( "UI/View Font", fnt );
-}
-
-void NifSkope::setViewFont( const QFont & font )
-{
-	list->setFont( font );
-	QFontMetrics metrics( list->font() );
-	list->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
-	tree->setFont( font );
-	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
-	kfmtree->setFont( font );
-	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
-	ogl->setFont( font );
-}
-
-bool NifSkope::eventFilter( QObject * o, QEvent * e )
-{
-	if ( e->type() == QEvent::Polish ) {
-		QTimer::singleShot( 0, this, SLOT( overrideViewFont() ) );
-	}
-
-	return QMainWindow::eventFilter( o, e );
-}
-
-void NifSkope::overrideViewFont()
-{
-	QSettings settings;
-	QVariant var = settings.value( "UI/View Font" );
-
-	if ( var.canConvert<QFont>() ) {
-		setViewFont( var.value<QFont>() );
-	}
-}
 
 void NifSkope::dispatchMessage( const Message & msg )
 {
@@ -955,13 +618,6 @@ void IPCsocket::sendCommand( const QString & cmd )
 IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
 {
 	QObject::connect( socket, &QUdpSocket::readyRead, this, &IPCsocket::processDatagram );
-
-#ifdef FSENGINE
-
-	if ( !fsmanager )
-		fsmanager = FSManager::get();
-
-#endif
 }
 
 IPCsocket::~IPCsocket()

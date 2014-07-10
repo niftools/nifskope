@@ -71,74 +71,73 @@ class GLView final : public QGLWidget
 	~GLView();
 
 public:
+	friend class NifSkope;
+
 	//! Static instance
 	static GLView * create();
 
 	QOpenGLContext * glContext;
 	QOpenGLFunctions * glFuncs;
 
+	void setNif( NifModel * );
+
 	Scene * getScene();
 	void updateShaders();
+
+	enum ViewState
+	{
+		viewDefault,
+		viewTop,
+		viewBottom,
+		viewLeft,
+		viewRight,
+		viewFront,
+		viewBack,
+		viewWalk,
+		viewUser
+	};
+
+	void updateViewpoint();
 
 	void center();
 	void move( float, float, float );
 	void rotate( float, float, float );
 	void zoom( float );
 
+	void setCenter();
 	void setDistance( float );
 	void setPosition( float, float, float );
 	void setPosition( Vector3 );
 	void setRotation( float, float, float );
 	void setZoom( float );
 
+	void setOrientation( GLView::ViewState, bool recenter = true );
+	void flipOrientation();
+
+	void setProjection( bool );
+
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 
 	// UI
 
-	void initUi( NifSkope * p );
-	NifSkope * nifskope;
-
-	QActionGroup * grpView;
-
-	QAction * aViewWalk;
-	QAction * aViewTop;
-	QAction * aViewFront;
-	QAction * aViewSide;
-	QAction * aViewFlip;
-	QAction * aViewPerspective;
-	QAction * aViewUser;
-	QAction * aColorKeyDebug;
-	QAction * aAnimate;
-	QAction * aAnimPlay;
-	QAction * aAnimLoop;
-	QAction * aAnimSwitch;
-
-	QToolBar * tAnim;
-	QToolBar * tView;
-
-	QComboBox * animGroups;
-	FloatSlider * sldTime;
+	//QComboBox * animGroups;
+	//FloatSlider * sldTime;
 
 	QSize minimumSizeHint() const override final { return { 50, 50 }; }
 	QSize sizeHint() const override final { return { 400, 400 }; }
 
-	// Settings
-
-	void saveSettings();
-	void restoreSettings();
-
 public slots:
-	void setNif( NifModel * );
 	void setCurrentIndex( const QModelIndex & );
-
 	void sltTime( float );
 	void sltSequence( const QString & );
 	void saveUserView();
+	void loadUserView();
 
 signals:
 	void clicked( const QModelIndex & );
 	void paintUpdate();
 	void sigTime( float t, float mn, float mx );
+	void viewpointChanged();
 
 protected:
 	//! Sets up the OpenGL rendering context, defines display lists, etc.
@@ -175,6 +174,10 @@ private:
 	NifModel * model;
 	Scene * scene;
 
+	ViewState view;
+	bool perspectiveMode;
+	bool debugMode;
+
 	class TexCache * textures;
 
 	float time;
@@ -207,13 +210,9 @@ private:
 	bool doCenter;
 	bool doMultisampling;
 
-	QAction * checkedViewAction() const;
-	void uncheckViewAction();
-
 private slots:
 	void advanceGears();
 	void checkActions();
-	void viewAction( QAction * );
 
 	void dataChanged( const QModelIndex &, const QModelIndex & );
 	void modelChanged();
