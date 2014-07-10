@@ -262,7 +262,9 @@ void NifProxyModel::updateRoot( bool fast )
 
 	//qDebug() << "proxy update top level";
 
-	for ( NifProxyItem * item : root->childItems ) {
+	// Make a copy to iterate over
+	auto items = root->childItems;
+	for ( NifProxyItem * item : items ) {
 		if ( !nif->getRootLinks().contains( item->block() ) ) {
 			int at = root->rowLink( item->block() );
 
