@@ -155,15 +155,15 @@ void NifSkope::initActions()
 	// Update Inspector widget with current index
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection );
 
-	// Remove Progress Bar after the mesh has finished loading
-	connect( ogl, &GLView::paintUpdate, [this]() {
-		if ( progress && (progress->value() == progress->maximum()) ) {
-		
-			ui->statusbar->removeWidget( progress );
-			delete progress;
-			progress = nullptr;
+	progress = new QProgressBar( ui->statusbar );
+	progress->setMaximumSize( 200, 18 );
+	progress->setVisible( false );
+
+	// Hide Progress Bar after it has reached 100%
+	connect( progress, &QProgressBar::valueChanged, [this]( int val ) {
+		if ( val == progress->maximum() ) {
+			QTimer::singleShot( 2500, progress, SLOT( hide() ) );
 		}
-			
 	} );
 }
 

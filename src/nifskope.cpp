@@ -351,10 +351,9 @@ void NifSkope::load()
 		nif->clear();
 		lineLoad->setState( FileSelector::stError );
 	} else {
-		progress = new QProgressBar( this );
+		progress->setVisible( true );
 		progress->setRange( 0, 1 );
 		progress->setValue( 0 );
-		progress->setMaximumSize( 200, 18 );
 
 		// Process progress events
 		connect( nif, &NifModel::sigProgress, [this]( int c, int m ) {
