@@ -12,6 +12,9 @@
         <file alias="havok_logo">icon/havok_logo.png</file>
         <file alias="qhull_logo">icon/qhull_cone.gif</file>
         <file>icon/handle.png</file>
+        <file alias="collapse">icon/collapse.png</file>
+        <file alias="expand">icon/expand.png</file>
+        <file alias="sizeGrip">icon/sizegrip.png</file>
     </qresource>
     <qresource prefix="/btn">
         <file alias="play">icon/button_play.png</file>
@@ -32,5 +35,10 @@
         <file alias="loadView">icon/load-view.png</file>
         <file alias="userViewActive">icon/view-active.png</file>
         <file alias="screenshot">icon/screenshot.png</file>
+        <file alias="save">icon/save.png</file>
+        <file alias="load">icon/load.png</file>
+        <file alias="saveView2">icon/save-view2.png</file>
+        <file alias="loadView2">icon/load-view2.png</file>
+        <file alias="loadDark">icon/load-dark.png</file>
     </qresource>
 </RCC>
