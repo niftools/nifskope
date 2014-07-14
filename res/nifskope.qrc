@@ -40,5 +40,9 @@
         <file alias="saveView2">icon/save-view2.png</file>
         <file alias="loadView2">icon/load-view2.png</file>
         <file alias="loadDark">icon/load-dark.png</file>
+        <file alias="bulb">icon/bulb.png</file>
+        <file alias="bulbOff">icon/bulb-off.png</file>
+        <file alias="textures">icon/textures.png</file>
+        <file alias="vertexColors">icon/vertex-colors.png</file>
     </qresource>
 </RCC>
