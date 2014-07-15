@@ -279,6 +279,35 @@ void drawBox( Vector3 a, Vector3 b )
 	glEnd();
 }
 
+void drawGrid( int s /* grid size */, int line /* line spacing */, int sub /* # subdivisions */ )
+{
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	glLineWidth( 1.0f );
+	glColor4f( 1.0f, 1.0f, 1.0f, 0.2f );
+
+	glBegin( GL_LINES );
+	for ( int i = -s; i <= s; i += line ) {
+		glVertex3f( i, -s, 0.0f );
+		glVertex3f( i, s, 0.0f );
+		glVertex3f( -s, i, 0.0f );
+		glVertex3f( s, i, 0.0f );
+	}
+	glEnd();
+
+	glColor4f( 1.0f, 1.0f, 1.0f, 0.1f );
+	glLineWidth( 0.25f );
+	glBegin( GL_LINES );
+	for ( int i = -s; i <= s; i += line/sub ) {
+		glVertex3f( i, -s, 0.0f );
+		glVertex3f( i, s, 0.0f );
+		glVertex3f( -s, i, 0.0f );
+		glVertex3f( s, i, 0.0f );
+	}
+	glEnd();
+	glDisable( GL_BLEND );
+}
+
 void drawCircle( Vector3 c, Vector3 n, float r, int sd )
 {
 	Vector3 x = Vector3::crossproduct( n, Vector3( n[1], n[2], n[0] ) );

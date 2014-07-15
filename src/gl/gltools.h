@@ -108,6 +108,7 @@ public:
 };
 
 void drawAxes( Vector3 c, float axis );
+void drawGrid( int s, int line, int sub );
 void drawBox( Vector3 a, Vector3 b );
 void drawCircle( Vector3 c, Vector3 n, float r, int sd = 16 );
 void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd = 8 );
