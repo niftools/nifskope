@@ -98,6 +98,8 @@ public:
 	*/
 	QFileInfo getFileInfo() const { return fileinfo; }
 
+	void refreshFileInfo( const QString & );
+
 	//! Return true if the index pointed to is an array.
 	/*!
 	 * \param array The index to check.

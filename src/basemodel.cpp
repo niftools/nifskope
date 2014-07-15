@@ -572,6 +572,13 @@ bool BaseModel::saveToFile( const QString & filename ) const
 	return f.open( QIODevice::WriteOnly ) && save( f );
 }
 
+void BaseModel::refreshFileInfo( const QString & f )
+{
+	fileinfo = QFileInfo( f );
+	filename = fileinfo.baseName();
+	folder = fileinfo.absolutePath();
+}
+
 /*
  *  searching
  */
