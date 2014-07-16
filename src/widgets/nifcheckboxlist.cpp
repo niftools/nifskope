@@ -193,6 +193,7 @@ NifCheckBoxList::~NifCheckBoxList()
 
 void NifCheckBoxList::sltDataChanged( const QModelIndex &, const QModelIndex & )
 {
+	emit dataChanged();
 	updateText();
 }
 

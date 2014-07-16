@@ -134,6 +134,9 @@ public:
 	NifCheckBoxList( QWidget * widget = nullptr );
 	virtual ~NifCheckBoxList();
 
+signals:
+	void dataChanged();
+
 protected:
 	void updateText() override final;
 	void parseText( const QString & text );
