@@ -381,14 +381,16 @@ protected:
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
 
+// TODO: This is an abstract class in the XML, other blocks inherit it
+//	such as BSLightingShaderProperty.
 //! A Property that specifies shader lighting (Bethesda-specific)
-class BSShaderLightingProperty final : public Property
+class BSShaderLightingProperty : public Property
 {
 public:
 	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
 	Type type() const override final { return ShaderLighting; }
-	QString typeId() const override final { return "BSShaderLightingProperty"; }
+	QString typeId() const override { return "BSShaderLightingProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block );
 
@@ -403,82 +405,6 @@ public:
 
 	static int getId( const QString & id );
 
-	enum SF1 : unsigned int
-	{
-		SLSF1_Specular					  = 1,	  // 0!
-		SLSF1_Skinned					  = 1<<1 ,  // 1
-		SLSF1_Temp_Refraction			  = 1<<2 ,  // 2
-		SLSF1_Vertex_Alpha				  = 1<<3 ,  // 3
-		SLSF1_Greyscale_To_PaletteColor   = 1<<4 ,  // 4
-		SLSF1_Greyscale_To_PaletteAlpha   = 1<<5 ,  // 5
-		SLSF1_Use_Falloff				  = 1<<6 ,  // 6
-		SLSF1_Environment_Mapping		  = 1<<7 ,  // 7
-		SLSF1_Recieve_Shadows			  = 1<<8 ,  // 8
-		SLSF1_Cast_Shadows				  = 1<<9 ,  // 9
-		SLSF1_Facegen_Detail_Map		  = 1<<10,  // 10
-		SLSF1_Parallax					  = 1<<11,  // 11
-		SLSF1_Model_Space_Normals		  = 1<<12,  // 12
-		SLSF1_Non_Projective_Shadows	  = 1<<13,  // 13
-		SLSF1_Landscape					  = 1<<14,  // 14
-		SLSF1_Refraction				  = 1<<15,  // 15!
-		SLSF1_Fire_Refraction			  = 1<<16,  // 16
-		SLSF1_Eye_Environment_Mapping	  = 1<<17,  // 17
-		SLSF1_Hair_Soft_Lighting		  = 1<<18,  // 18
-		SLSF1_Screendoor_Alpha_Fade		  = 1<<19,  // 19
-		SLSF1_Localmap_Hide_Secret		  = 1<<20,  // 20
-		SLSF1_FaceGen_RGB_Tint			  = 1<<21,  // 21
-		SLSF1_Own_Emit					  = 1<<22,  // 22
-		SLSF1_Projected_UV				  = 1<<23,  // 23
-		SLSF1_Multiple_Textures			  = 1<<24,  // 24
-		SLSF1_Remappable_Textures		  = 1<<25,  // 25
-		SLSF1_Decal						  = 1<<26,  // 26
-		SLSF1_Dynamic_Decal				  = 1<<27,  // 27
-		SLSF1_Parallax_Occlusion		  = 1<<28,  // 28
-		SLSF1_External_Emittance		  = 1<<29,  // 29
-		SLSF1_Soft_Effect				  = 1<<30,  // 30
-		SLSF1_ZBuffer_Test				  = (unsigned int)(1<<31),  // 31
-	};
-
-	SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
-
-	enum SF2 : unsigned int
-	{
-		SLSF2_ZBuffer_Write					= 1,	  // 0!
-		SLSF2_LOD_Landscape					= 1<<1 ,  // 1
-		SLSF2_LOD_Objects					= 1<<2 ,  // 2
-		SLSF2_No_Fade						= 1<<3 ,  // 3
-		SLSF2_Double_Sided					= 1<<4 ,  // 4
-		SLSF2_Vertex_Colors					= 1<<5 ,  // 5
-		SLSF2_Glow_Map						= 1<<6 ,  // 6
-		SLSF2_Assume_Shadowmask				= 1<<7 ,  // 7
-		SLSF2_Packed_Tangent				= 1<<8 ,  // 8
-		SLSF2_Multi_Index_Snow				= 1<<9 ,  // 9
-		SLSF2_Vertex_Lighting				= 1<<10,  // 10
-		SLSF2_Uniform_Scale					= 1<<11,  // 11
-		SLSF2_Fit_Slope						= 1<<12,  // 12
-		SLSF2_Billboard						= 1<<13,  // 13
-		SLSF2_No_LOD_Land_Blend				= 1<<14,  // 14
-		SLSF2_EnvMap_Light_Fade				= 1<<15,  // 15!
-		SLSF2_Wireframe						= 1<<16,  // 16
-		SLSF2_Weapon_Blood					= 1<<17,  // 17
-		SLSF2_Hide_On_Local_Map				= 1<<18,  // 18
-		SLSF2_Premult_Alpha					= 1<<19,  // 19
-		SLSF2_Cloud_LOD						= 1<<20,  // 20
-		SLSF2_Anisotropic_Lighting			= 1<<21,  // 21
-		SLSF2_No_Transparency_Multisampling	= 1<<22,  // 22
-		SLSF2_Unused01						= 1<<23,  // 23
-		SLSF2_Multi_Layer_Parallax			= 1<<24,  // 24
-		SLSF2_Soft_Lighting					= 1<<25,  // 25
-		SLSF2_Rim_Lighting					= 1<<26,  // 26
-		SLSF2_Back_Lighting					= 1<<27,  // 27
-		SLSF2_Unused02						= 1<<28,  // 28
-		SLSF2_Tree_Anim						= 1<<29,  // 29
-		SLSF2_Effect_Lighting				= 1<<30,  // 30
-		SLSF2_HD_LOD_Objects				= (unsigned int)(1<<31),  // 31
-	};
-
-	SF2 flags2; // = SF2( 0 | (1 << 14) );
-
 protected:
 	//QVector<QString> textures;
 	QPersistentModelIndex iTextureSet;
@@ -487,5 +413,101 @@ protected:
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
 
+
+//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+class BSLightingShaderProperty final : public BSShaderLightingProperty
+{
+public:
+	BSLightingShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index ) {}
+
+	QString typeId() const override final { return "BSLightingShaderProperty"; }
+
+	unsigned int getFlags1();
+	unsigned int getFlags2();
+
+	void setFlags1( unsigned int );
+	void setFlags2( unsigned int );
+
+	enum SF1 : unsigned int
+	{
+		SLSF1_Specular = 1,	    // 0!
+		SLSF1_Skinned = 1 << 1,  // 1
+		SLSF1_Temp_Refraction = 1 << 2,  // 2
+		SLSF1_Vertex_Alpha = 1 << 3,  // 3
+		SLSF1_Greyscale_To_PaletteColor = 1 << 4,  // 4
+		SLSF1_Greyscale_To_PaletteAlpha = 1 << 5,  // 5
+		SLSF1_Use_Falloff = 1 << 6,  // 6
+		SLSF1_Environment_Mapping = 1 << 7,  // 7
+		SLSF1_Recieve_Shadows = 1 << 8,  // 8
+		SLSF1_Cast_Shadows = 1 << 9,  // 9
+		SLSF1_Facegen_Detail_Map = 1 << 10,  // 10
+		SLSF1_Parallax = 1 << 11,  // 11
+		SLSF1_Model_Space_Normals = 1 << 12,  // 12
+		SLSF1_Non_Projective_Shadows = 1 << 13,  // 13
+		SLSF1_Landscape = 1 << 14,  // 14
+		SLSF1_Refraction = 1 << 15,  // 15!
+		SLSF1_Fire_Refraction = 1 << 16,  // 16
+		SLSF1_Eye_Environment_Mapping = 1 << 17,  // 17
+		SLSF1_Hair_Soft_Lighting = 1 << 18,  // 18
+		SLSF1_Screendoor_Alpha_Fade = 1 << 19,  // 19
+		SLSF1_Localmap_Hide_Secret = 1 << 20,  // 20
+		SLSF1_FaceGen_RGB_Tint = 1 << 21,  // 21
+		SLSF1_Own_Emit = 1 << 22,  // 22
+		SLSF1_Projected_UV = 1 << 23,  // 23
+		SLSF1_Multiple_Textures = 1 << 24,  // 24
+		SLSF1_Remappable_Textures = 1 << 25,  // 25
+		SLSF1_Decal = 1 << 26,  // 26
+		SLSF1_Dynamic_Decal = 1 << 27,  // 27
+		SLSF1_Parallax_Occlusion = 1 << 28,  // 28
+		SLSF1_External_Emittance = 1 << 29,  // 29
+		SLSF1_Soft_Effect = 1 << 30,  // 30
+		SLSF1_ZBuffer_Test = (unsigned int)(1 << 31),  // 31
+	};
+
+
+
+	enum SF2 : unsigned int
+	{
+		SLSF2_ZBuffer_Write = 1,	  // 0!
+		SLSF2_LOD_Landscape = 1 << 1,  // 1
+		SLSF2_LOD_Objects = 1 << 2,  // 2
+		SLSF2_No_Fade = 1 << 3,  // 3
+		SLSF2_Double_Sided = 1 << 4,  // 4
+		SLSF2_Vertex_Colors = 1 << 5,  // 5
+		SLSF2_Glow_Map = 1 << 6,  // 6
+		SLSF2_Assume_Shadowmask = 1 << 7,  // 7
+		SLSF2_Packed_Tangent = 1 << 8,  // 8
+		SLSF2_Multi_Index_Snow = 1 << 9,  // 9
+		SLSF2_Vertex_Lighting = 1 << 10,  // 10
+		SLSF2_Uniform_Scale = 1 << 11,  // 11
+		SLSF2_Fit_Slope = 1 << 12,  // 12
+		SLSF2_Billboard = 1 << 13,  // 13
+		SLSF2_No_LOD_Land_Blend = 1 << 14,  // 14
+		SLSF2_EnvMap_Light_Fade = 1 << 15,  // 15!
+		SLSF2_Wireframe = 1 << 16,  // 16
+		SLSF2_Weapon_Blood = 1 << 17,  // 17
+		SLSF2_Hide_On_Local_Map = 1 << 18,  // 18
+		SLSF2_Premult_Alpha = 1 << 19,  // 19
+		SLSF2_Cloud_LOD = 1 << 20,  // 20
+		SLSF2_Anisotropic_Lighting = 1 << 21,  // 21
+		SLSF2_No_Transparency_Multisampling = 1 << 22,  // 22
+		SLSF2_Unused01 = 1 << 23,  // 23
+		SLSF2_Multi_Layer_Parallax = 1 << 24,  // 24
+		SLSF2_Soft_Lighting = 1 << 25,  // 25
+		SLSF2_Rim_Lighting = 1 << 26,  // 26
+		SLSF2_Back_Lighting = 1 << 27,  // 27
+		SLSF2_Unused02 = 1 << 28,  // 28
+		SLSF2_Tree_Anim = 1 << 29,  // 29
+		SLSF2_Effect_Lighting = 1 << 30,  // 30
+		SLSF2_HD_LOD_Objects = (unsigned int)(1 << 31),  // 31
+	};
+
+protected:
+	SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
+	SF2 flags2; // = SF2( 0 | (1 << 14) );
+
+};
+
+REGISTER_PROPERTY( BSLightingShaderProperty, ShaderLighting )
 
 #endif
