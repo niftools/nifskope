@@ -202,7 +202,7 @@ void SpellBook::registerSpell( Spell * spell )
 Spell * SpellBook::lookup( const QString & id )
 {
 	if ( id.isEmpty() )
-		return 0;
+		return nullptr;
 
 	QString page;
 	QString name = id;
@@ -218,20 +218,20 @@ Spell * SpellBook::lookup( const QString & id )
 			return spell;
 	}
 
-	return 0;
+	return nullptr;
 }
 
 Spell * SpellBook::lookup( const QKeySequence & hotkey )
 {
 	if ( hotkey.isEmpty() )
-		return 0;
+		return nullptr;
 
 	for ( Spell * spell : spells() ) {
 		if ( spell->hotkey() == hotkey )
 			return spell;
 	}
 
-	return 0;
+	return nullptr;
 }
 
 Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
@@ -240,7 +240,7 @@ Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
 		if ( spell->isApplicable( nif, index ) )
 			return spell;
 	}
-	return 0;
+	return nullptr;
 }
 
 QModelIndex SpellBook::sanitize( NifModel * nif )
@@ -264,5 +264,5 @@ QAction * SpellBook::exec( const QPoint & pos, QAction * act )
 	if ( isEnabled() )
 		return QMenu::exec( pos, act );
 
-	return 0;
+	return nullptr;
 }

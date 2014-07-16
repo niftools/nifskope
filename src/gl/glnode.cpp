@@ -485,7 +485,7 @@ Node * NodeList::get( const QModelIndex & index ) const
 		if ( n->index().isValid() && n->index() == index )
 			return n;
 	}
-	return 0;
+	return nullptr;
 }
 
 void NodeList::validate()
@@ -554,7 +554,7 @@ Controller * Node::findController( const QString & proptype, const QString & ctr
 				return prp->findController( ctrltype, var1, var2 );
 			}
 		}
-		return 0;
+		return nullptr;
 	}
 
 	return Controllable::findController( ctrltype, var1, var2 );
@@ -726,7 +726,7 @@ Node * Node::findChild( int id ) const
 				return child;
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
 Node * Node::findChild( const QString & name ) const
@@ -740,7 +740,7 @@ Node * Node::findChild( const QString & name ) const
 		if ( n )
 			return n;
 	}
-	return 0;
+	return nullptr;
 }
 
 bool Node::isHidden() const

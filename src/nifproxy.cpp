@@ -57,7 +57,7 @@ public:
 			if ( item->block() == link )
 				return item;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	int rowLink( int link )
@@ -176,7 +176,7 @@ public:
 				return x;
 		}
 
-		return 0;
+		return nullptr;
 	}
 
 	void findAllItems( int b, QList<NifProxyItem *> & list )

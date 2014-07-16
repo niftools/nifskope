@@ -407,7 +407,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 		return getItem( getHeaderItem(), name.right( name.length() - 7 ) );
 
 	if ( !item || item == root )
-		return 0;
+		return nullptr;
 
 	int slash = name.indexOf( "/" );
 
@@ -428,7 +428,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 			return child;
 	}
 
-	return 0;
+	return nullptr;
 }
 
 /*
@@ -970,7 +970,7 @@ bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) cons
 NifItem * NifModel::getBlockItem( int x ) const
 {
 	if ( x < 0 || x >= getBlockCount() )
-		return 0;
+		return nullptr;
 
 	return root->child( x + 1 );
 }

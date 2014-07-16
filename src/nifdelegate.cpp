@@ -189,7 +189,7 @@ public:
 	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const override final
 	{
 		if ( !index.isValid() )
-			return 0;
+			return nullptr;
 
 		QVariant v  = index.data( Qt::EditRole );
 		QWidget * w = 0;

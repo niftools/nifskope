@@ -586,7 +586,7 @@ void BaseModel::refreshFileInfo( const QString & f )
 NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 {
 	if ( !item || item == root )
-		return 0;
+		return nullptr;
 
 	int slash = name.indexOf( "/" );
 
@@ -607,7 +607,7 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 			return child;
 	}
 
-	return 0;
+	return nullptr;
 }
 
 /*
@@ -641,7 +641,7 @@ NifItem * BaseModel::findItemX( NifItem * item, const QString & name ) const
 		item = item->parent();
 	}
 
-	return 0;
+	return nullptr;
 }
 
 QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & name ) const

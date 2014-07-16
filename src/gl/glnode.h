@@ -160,7 +160,7 @@ template <typename T> inline T * Node::findProperty() const
 	if ( parent )
 		return parent->findProperty<T>();
 
-	return 0;
+	return nullptr;
 }
 
 //! A Node with levels of detail

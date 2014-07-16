@@ -355,7 +355,7 @@ public:
 			if ( child->name() == name )
 				return child;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	//! Return the child item with the specified name
@@ -365,7 +365,7 @@ public:
 			if ( child->name() == name )
 				return child;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	//! Return a count of the number of child items
