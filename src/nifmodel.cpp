@@ -303,6 +303,8 @@ NifItem * NifModel::getHeaderItem() const
 
 void NifModel::updateHeader()
 {
+	emit beginUpdateHeader();
+
 	if ( lockUpdates ) {
 		needUpdates = UpdateType( needUpdates | utHeader );
 		return;
