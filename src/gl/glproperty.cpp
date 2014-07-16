@@ -70,7 +70,7 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 	} else if ( nif->isNiBlock( index, "NiStencilProperty" ) ) {
 		property = new StencilProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSLightingShaderProperty" ) ) {
-		property = new BSShaderLightingProperty( scene, index );
+		property = new BSLightingShaderProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) ) {
@@ -1119,4 +1119,29 @@ int BSShaderLightingProperty::getId( const QString & id )
 
 	return hash.value( id, -1 );
 }
+
+/*
+	BSLightingShaderProperty
+*/
+
+unsigned int BSLightingShaderProperty::getFlags1()
+{
+	return (unsigned int)flags1;
+}
+
+unsigned int BSLightingShaderProperty::getFlags2()
+{
+	return (unsigned int)flags2;
+}
+
+void BSLightingShaderProperty::setFlags1( unsigned int val )
+{
+	flags1 = SF1( val );
+}
+
+void BSLightingShaderProperty::setFlags2( unsigned int val )
+{
+	flags2 = SF2( val );
+}
+
 
