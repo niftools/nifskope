@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltools.h"
 #include "renderer.h"
 
+#include <QObject>
 #include <QHash>
 #include <QMap>
 #include <QPersistentModelIndex>
@@ -51,10 +52,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class QOpenGLContext;
 class QOpenGLFunctions;
 
-class Scene final
+class Scene final : public QObject
 {
+	Q_OBJECT
 public:
-	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions );
+	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions, QObject * parent = nullptr );
 	~Scene();
 
 	void updateShaders() { renderer->updateShaders(); }
@@ -84,6 +86,37 @@ public:
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
 
+	enum SceneOption
+	{
+		None = 0x0,
+		ShowAxes = 0x1,
+		ShowGrid = 0x2,
+		ShowNodes = 0x4,
+		ShowCollision = 0x8,
+		ShowConstraints = 0x10,
+		ShowMarkers = 0x20,
+		ShowDoubleSided = 0x40,
+		ShowVertexColors = 0x80,
+		UseTextures = 0x100,
+		UseShaders = 0x200,
+		DoBlending = 0x400,
+		DoMultisampling = 0x800,
+		DoLighting = 0x1000
+	};
+	Q_DECLARE_FLAGS( SceneOptions, SceneOption );
+
+	SceneOptions options;
+
+	enum LodLevel
+	{
+		Level0 = 0,
+		Level1 = 1,
+		Level2 = 2
+	};
+
+	LodLevel lodLevel;
+
+	
 	Renderer * renderer;
 
 	NodeList nodes;
@@ -114,6 +147,12 @@ public:
 
 	float timeMin() const;
 	float timeMax() const;
+signals:
+	void sceneUpdated();
+
+public slots:
+	void updateSceneOptions();
+	void updateLodLevel( int );
 
 protected:
 	mutable bool sceneBoundsValid, timeBoundsValid;
@@ -122,5 +161,7 @@ protected:
 
 	void updateTimeBounds() const;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::SceneOptions )
 
 #endif

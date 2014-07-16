@@ -39,13 +39,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glparticles.h"
 #include "gltex.h"
 
+#include <QAction>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 
 
 //! \file glscene.cpp Scene management
 
-Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions )
+Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions, QObject * parent ) :
+	QObject( parent )
 {
 	renderer = new Renderer( context, functions );
 
@@ -56,6 +58,10 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 	sceneBoundsValid = timeBoundsValid = false;
 
 	textures = texcache;
+
+	options = ( DoLighting | UseTextures | UseShaders | DoMultisampling | DoBlending | ShowVertexColors );
+
+	lodLevel = Level2;
 }
 
 Scene::~Scene()
@@ -125,6 +131,24 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 	}
 
 	timeBoundsValid = false;
+}
+
+void Scene::updateSceneOptions()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if ( action ) {
+	
+		auto opt = SceneOptions( action->data().toInt() );
+
+		options ^= opt;
+
+		emit sceneUpdated();
+	}
+}
+
+void Scene::updateLodLevel( int level )
+{
+	lodLevel = LodLevel( level );
 }
 
 void Scene::make( NifModel * nif, bool flushTextures )
@@ -247,11 +271,11 @@ void Scene::draw()
 {
 	drawShapes();
 
-	if ( Options::drawNodes() )
+	if ( options & ShowNodes )
 		drawNodes();
-	if ( Options::drawHavok() )
+	if ( options & ShowCollision )
 		drawHavok();
-	if ( Options::drawFurn() )
+	if ( options & ShowMarkers )
 		drawFurn();
 
 	drawSelection();
@@ -259,7 +283,7 @@ void Scene::draw()
 
 void Scene::drawShapes()
 {
-	if ( Options::blending() ) {
+	if ( options & DoBlending ) {
 		NodeList draw2nd;
 
 		for ( Node * node : roots.list() ) {
@@ -381,7 +405,7 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( !Options::texturing() || fname.isEmpty() )
+	if ( !(options & UseTextures) || fname.isEmpty() )
 		return 0;
 
 	return textures->bind( fname );
@@ -389,7 +413,7 @@ int Scene::bindTexture( const QString & fname )
 
 int Scene::bindTexture( const QModelIndex & iSource )
 {
-	if ( !Options::texturing() || !iSource.isValid() )
+	if ( !(options & UseTextures) || !iSource.isValid() )
 		return 0;
 
 	return textures->bind( iSource );
