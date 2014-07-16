@@ -436,7 +436,7 @@ public:
 		SLSF1_Parallax_Occlusion		  = 1<<28,  // 28
 		SLSF1_External_Emittance		  = 1<<29,  // 29
 		SLSF1_Soft_Effect				  = 1<<30,  // 30
-		SLSF1_ZBuffer_Test				  = 1<<31,  // 31
+		SLSF1_ZBuffer_Test				  = (unsigned int)(1<<31),  // 31
 	};
 
 	SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
@@ -474,7 +474,7 @@ public:
 		SLSF2_Unused02						= 1<<28,  // 28
 		SLSF2_Tree_Anim						= 1<<29,  // 29
 		SLSF2_Effect_Lighting				= 1<<30,  // 30
-		SLSF2_HD_LOD_Objects				= 1<<31,  // 31
+		SLSF2_HD_LOD_Objects				= (unsigned int)(1<<31),  // 31
 	};
 
 	SF2 flags2; // = SF2( 0 | (1 << 14) );
