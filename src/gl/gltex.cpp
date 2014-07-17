@@ -49,6 +49,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLFunctions>
 
 
+PFNGLACTIVETEXTUREPROC glActiveTexture;
+PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
+
 //! \file gltex.cpp TexCache management
 
 //! Number of texture units
@@ -83,14 +86,17 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
 		//qWarning() << "maximum anisotropy" << max_anisotropy;
 	}
+
+	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
+	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
 }
 
 bool activateTextureUnit( int stage )
 {
-	PFNGLACTIVETEXTUREPROC glActiveTexture;
-	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
-	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
+	//PFNGLACTIVETEXTUREPROC glActiveTexture;
+	//glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
+	//PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
+	//glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
 
 	if ( num_texture_units <= 1 )
 		return ( stage == 0 );
@@ -108,10 +114,10 @@ bool activateTextureUnit( int stage )
 
 void resetTextureUnits()
 {
-	PFNGLACTIVETEXTUREPROC glActiveTexture;
-	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
-	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
+	//PFNGLACTIVETEXTUREPROC glActiveTexture;
+	//glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
+	//PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
+	//glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
 
 	if ( num_texture_units <= 1 ) {
 		glDisable( GL_TEXTURE_2D );
