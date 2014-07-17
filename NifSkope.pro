@@ -351,16 +351,15 @@ win32 {
 
 # MSVC
 #  Both Visual Studio and Qt Creator
-#  Recommended: msvc2012 or higher
-#              (msvc2010 not tested)
-*msvc201* {
+#  Required: msvc2013 or higher
+*msvc2013 {
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
 
 	# COMPILER FLAGS
 
 	#  Optimization flags
-	QMAKE_CXXFLAGS_RELEASE *= -O2
+	QMAKE_CXXFLAGS_RELEASE *= -O2 -arch:SSE2 # SSE2 is the default, but make it explicit
 	#  Multithreaded compiling for Visual Studio
 	QMAKE_CXXFLAGS += -MP
 	
@@ -368,15 +367,15 @@ win32 {
 
 	#  Manifest Embed
 	#    msvc2012 only (when /MANIFEST:embed was introduced)
-	*msvc2012:$$SHADOWBUILD {
-		# Qt Creator only
-		#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
-		#	Check status of bug: https://bugreports.qt-project.org/browse/QTBUG-37363
-		#	                     https://codereview.qt-project.org/#change,80782
-		#	... So that this may removed later.
-		CONFIG -= embed_manifest_exe
-		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
-	}
+	#*msvc2012:$$SHADOWBUILD {
+	#	# Qt Creator only
+	#	#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
+	#	#	Check status of bug: https://bugreports.qt-project.org/browse/QTBUG-37363
+	#	#	                     https://codereview.qt-project.org/#change,80782
+	#	#	... So that this may removed later.
+	#	CONFIG -= embed_manifest_exe
+	#	QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
+	#}
 
 	#  Relocate .lib and .exp files to keep release dir clean
 	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
@@ -387,11 +386,9 @@ win32 {
 	#  Clean up .embed.manifest from release dir
 	#	Fallback for `Manifest Embed` above
 	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
-}
-
-# MSVC < 2010
-*msvc200* {
-	# Throw up a warning
+} else:*msvc201* {
+	# MSVC < 2010
+	#  Throw up a warning
 	message( WARNING: Project file does not support MSVC 2008 or lower )
 }
 
@@ -403,9 +400,15 @@ win32 {
 	# COMPILER FLAGS
 
 	#  Optimization flags
-	QMAKE_CXXFLAGS_RELEASE *= -O3
+	QMAKE_CXXFLAGS_DEBUG -= -O0 -g
+	QMAKE_CXXFLAGS_DEBUG *= -Og -g3
+	QMAKE_CXXFLAGS_RELEASE *= -O3 -mfpmath=sse
+
 	# C++11 Support
 	QMAKE_CXXFLAGS_RELEASE *= -std=c++11
+
+	#  Extension flags
+	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
 }
 
 unix:!macx {
