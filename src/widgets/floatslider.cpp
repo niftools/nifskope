@@ -239,15 +239,16 @@ QStyleOptionSlider FloatSlider::getStyleOption() const
 		opt.rect.adjust( (6 * w) / 10, VAL_HEIGHT, (-6 * w) / 10, 0 );
 	}
 
-	opt.maximum = INT_MAX - 1;
+	opt.maximum = INT_MAX;
 	opt.minimum = 0;
 	opt.orientation = ori;
 	opt.pageStep = 10;
 	opt.singleStep  = 1;
-	opt.sliderValue = ( max != min ) ? int(1.0f * ( val - min ) / ( max - min ) * opt.maximum) : 0;
+	opt.sliderValue = ( max != min ) ? int(1.0f * ( val - min ) / ( max - min ) * opt.maximum) - 1 : 0;
 	opt.sliderPosition = opt.sliderValue;
 	opt.tickPosition = QSlider::NoTicks;
 	opt.direction = Qt::LeftToRight;
+	opt.dialWrapping = false;
 
 	/* upside down for vertical slider; zero at bottom position */
 	opt.upsideDown = (ori == Qt::Vertical);
