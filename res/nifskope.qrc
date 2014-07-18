@@ -17,7 +17,6 @@
         <file alias="sizeGrip">icon/sizegrip.png</file>
     </qresource>
     <qresource prefix="/btn">
-        <file alias="play">icon/button_play.png</file>
         <file alias="loop">icon/button_loop.png</file>
         <file alias="switch">icon/button_switch.png</file>
         <file alias="viewWalk">icon/button_view_walk.png</file>
@@ -44,5 +43,7 @@
         <file alias="bulbOff">icon/bulb-off.png</file>
         <file alias="textures">icon/textures.png</file>
         <file alias="vertexColors">icon/vertex-colors.png</file>
+        <file alias="pause">icon/pause.png</file>
+        <file alias="play">icon/play.png</file>
     </qresource>
 </RCC>
