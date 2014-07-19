@@ -45,5 +45,7 @@
         <file alias="vertexColors">icon/vertex-colors.png</file>
         <file alias="pause">icon/pause.png</file>
         <file alias="play">icon/play.png</file>
+        <file alias="repeatAll">icon/repeat-all.png</file>
+        <file alias="repeatSingle">icon/repeat-single.png</file>
     </qresource>
 </RCC>
