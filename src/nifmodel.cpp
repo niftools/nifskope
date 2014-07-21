@@ -203,6 +203,7 @@ void NifModel::clear()
 		msg( Message() << tr( "Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5" ).arg( Options::startupVersion() ).toLatin1() );
 		version = 0x14000005;
 	}
+	endResetModel();
 
 	NifItem * item = getItem( getHeaderItem(), "Version" );
 
@@ -240,7 +241,6 @@ void NifModel::clear()
 
 	lockUpdates = false;
 	needUpdates = utNone;
-	endResetModel();
 }
 
 /*

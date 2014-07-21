@@ -101,11 +101,10 @@ void KfmModel::clear()
 	insertType( root, NifData( "Kfm", "Kfm" ) );
 	kfmroot = root->child( 0 );
 	version = 0x0200000b;
+	endResetModel();
 
 	if ( kfmroot )
 		set<QString>( kfmroot, "Header String", ";Gamebryo KFM File Version 2.0.0.0b" );
-
-	endResetModel();
 }
 
 /*
