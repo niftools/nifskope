@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "options.h"
 
+#include "glview.h"
 #include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
@@ -202,6 +203,14 @@ public:
 
 				if ( type == NifValue::eFlags ) {
 					w = new NifCheckBoxList( parent );
+
+					// Connect enum flags to GLView to update scene when changing flags
+					for ( auto child : qApp->activeWindow()->children() ) {
+						GLView * gl = qobject_cast<GLView *>(child);
+						if ( gl && gl->isValid() ) {
+							connect( qobject_cast<NifCheckBoxList *>(w), &NifCheckBoxList::dataChanged, gl, &GLView::flagsChanged );
+						}
+					}
 				} else if ( type == NifValue::eDefault ) {
 					QComboBox * c = new QComboBox( parent );
 					w = c;

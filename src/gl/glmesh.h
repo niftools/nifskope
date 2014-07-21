@@ -41,13 +41,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
+class BSLightingShaderProperty;
+
 //! \file glmesh.h Mesh class
 
 //! A mesh
 class Mesh : public Node
 {
 public:
-	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) { double_sided = false; double_sided_es = false; }
+	Mesh( Scene * s, const QModelIndex & b );
 	~Mesh() { clear(); }
 
 	void clear() override;
@@ -84,6 +86,9 @@ protected:
 	//! Unsure - does teh skin data need updating?
 	bool upSkin;
 
+	// Skyrim shader property
+	BSLightingShaderProperty * bslsp;
+
 	//! Vertices
 	QVector<Vector3> verts;
 	//! Normals
@@ -104,6 +109,9 @@ protected:
 	QVector<Vector3> transNorms;
 	//! Transformed colors (alpha-blended)
 	QVector<Color4> transColors;
+
+	QVector<Color4> transColorsNoAlpha;
+
 	//! Transformed tangents
 	QVector<Vector3> transTangents;
 	//! Transformed bitangents
@@ -138,6 +146,7 @@ protected:
 	static bool isBSLODPresent;
 	bool double_sided;
 	bool double_sided_es;
+	bool alphaisanim;
 };
 
 #endif

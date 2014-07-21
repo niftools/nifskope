@@ -12,18 +12,26 @@ void main( void )
 {
 	vec4 color = ColorEA;
 
-	vec4 normal = texture2D( NormalMap, gl_TexCoord[0].st );
-	normal.rgb = normal.rgb * 2.0 - 1.0;
-	
-	float NdotL = max( dot( normal.rgb, normalize( LightDir ) ), 0.0 );
-	
-	if ( NdotL > 0.0 )
+	// TODO: Temporary fix for no VCs with lighting turned off
+	//	I multiply the diffuse by 1000.0 so that I can check against it here
+	//	(The normal values are usually a max of 1.0)
+	if ( ColorD.r < 100.0 )
 	{
-		color += ColorD * NdotL;
-		float NdotHV = max( dot( normal.rgb, normalize( HalfVector ) ), 0.0 );
-		color += normal.a * gl_FrontMaterial.specular * gl_LightSource[0].specular * pow( NdotHV, gl_FrontMaterial.shininess );
+		vec4 normal = texture2D( NormalMap, gl_TexCoord[0].st );
+		// Contrast
+		normal.rgb = normal.rgb * 2.0 - 1.0;
+		
+		float NdotL = max( dot( normal.rgb, normalize( LightDir ) ), 0.0 );
+		
+		if ( NdotL > 0.0 )
+		{
+			color += ColorD * NdotL;
+			float NdotHV = max( dot( normal.rgb, normalize( HalfVector ) ), 0.0 );
+			// Disable spec for now, it ruins vertex color contribution and is incorrect
+			//color += normal.a * gl_FrontMaterial.specular * gl_LightSource[0].specular * pow( NdotHV, gl_FrontMaterial.shininess );
+		}
 	}
-	
+
 	color = min( color, 1.0 );
 	color.a = ColorD.a;
 	color *= texture2D( BaseMap, gl_TexCoord[0].st );

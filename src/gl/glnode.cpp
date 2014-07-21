@@ -849,7 +849,7 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	if ( scene->currentBlock != iBlock || !Options::drawNodes() )
+	if ( scene->currentBlock != iBlock || (scene->options & Scene::ShowNodes) )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -1303,7 +1303,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( !( nif && iConstraint.isValid() && scene && Options::drawConstraints() ) )
+	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
 		return;
 
 	QList<Transform> tBodies;
@@ -1995,8 +1995,10 @@ BoundSphere Node::bounds() const
 {
 	BoundSphere boundsphere;
 
+	auto opts = scene->options;
+
 	// the node itself
-	if ( Options::drawNodes() || Options::drawHavok() ) {
+	if ( (opts & Scene::ShowNodes) || (opts & Scene::ShowCollision) ) {
 		boundsphere |= BoundSphere( worldTrans().translation, 0 );
 	}
 

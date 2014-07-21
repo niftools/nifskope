@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
-#include "options.h"
+//#include "options.h"
 
 #include "glcontroller.h" // Inherited
 #include "glscene.h"
@@ -227,14 +227,14 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 
 void glProperty( AlphaProperty * p )
 {
-	if ( p && p->alphaBlend && Options::blending() ) {
+	if ( p && p->alphaBlend && (p->scene->options & Scene::DoBlending) ) {
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
 	} else {
 		glDisable( GL_BLEND );
 	}
 
-	if ( p && p->alphaTest && Options::blending() ) {
+	if ( p && p->alphaTest && (p->scene->options & Scene::DoBlending) ) {
 		//glEnable( GL_POLYGON_OFFSET_FILL );
 		//glPolygonOffset( -1.0f, -1.0f );
 		glDisable( GL_POLYGON_OFFSET_FILL );
@@ -629,7 +629,7 @@ int TexturingProperty::getId( const QString & texname )
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && Options::texturing() && p->bind( 0 ) ) {
+	if ( p && (p->scene->options & Scene::UseTextures) && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -699,7 +699,7 @@ void TextureProperty::setController( const NifModel * nif, const QModelIndex & i
 
 void glProperty( TextureProperty * p )
 {
-	if ( p && Options::texturing() && p->bind() ) {
+	if ( p && (p->scene->options & Scene::UseTextures) && p->bind() ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -730,21 +730,21 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 	}
 
 	// special case to force refresh of materials
-	bool overrideMaterials = Options::overrideMaterials();
+	//bool overrideMaterials = Options::overrideMaterials();
+	//
+	//if ( overridden && !overrideMaterials && iBlock.isValid() ) {
+	//	ambient  = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
+	//	diffuse  = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
+	//	specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
+	//	emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
+	//} else if ( overrideMaterials ) {
+	//	ambient  = Color4( Options::overrideAmbient() );
+	//	diffuse  = Color4( Options::overrideDiffuse() );
+	//	specular = Color4( Options::overrideSpecular() );
+	//	emissive = Color4( Options::overrideEmissive() );
+	//}
 
-	if ( overridden && !overrideMaterials && iBlock.isValid() ) {
-		ambient  = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
-		diffuse  = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
-		specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
-		emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
-	} else if ( overrideMaterials ) {
-		ambient  = Color4( Options::overrideAmbient() );
-		diffuse  = Color4( Options::overrideDiffuse() );
-		specular = Color4( Options::overrideSpecular() );
-		emissive = Color4( Options::overrideEmissive() );
-	}
-
-	overridden = overrideMaterials;
+	//overridden = overrideMaterials;
 }
 
 //! Controller for alpha values in a MaterialProperty
@@ -1042,7 +1042,7 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
 
 void glProperty( BSShaderLightingProperty * p )
 {
-	if ( p && Options::texturing() && p->bind( 0 ) ) {
+	if ( p && (p->scene->options & Scene::UseTextures) && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }

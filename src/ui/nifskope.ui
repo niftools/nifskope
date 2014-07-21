@@ -10,7 +10,11 @@
     <height>768</height>
    </rect>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+  </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -30,25 +34,113 @@
      <height>24</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#statusbar {
+padding: 0 0 0 0;
+margin: 0 0 0 0;
+border: 0px solid transparent;
+/*background: transparent;
+color: #0099ff;
+background: #0099ff;
+color: white;*/
+color: white;
+background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(67, 67, 67, 255), stop:0.039823 rgba(85, 85, 85, 255), stop:0.103245 rgba(102, 102, 102, 255), stop:0.171091 rgba(106, 106, 106, 255));
+}
+
+#statusbar QProgressBar {
+margin: 0px;
+padding: 0px;
+border: 0px solid transparent;
+text-align: center;
+color: white;
+font: 12px normal &quot;Segoe UI&quot;;
+background: transparent;
+}
+
+QProgressBar::chunk {
+background-color: #05B8CC;
+width: 20px;
+}
+
+QProgressBar::text {
+padding-bottom: 2px;
+margin-top: -2px;
+}
+
+#statusbar QSizeGrip {
+background: url(&quot;:/img/sizeGrip&quot;) no-repeat;
+width: 10px; height: 10px;
+}
+
+#statusbar::text {
+padding: 0 0 10px 0;
+margin: -3px 0 0 0;
+
+}
+
+#statusbar::item {
+border: 0px solid transparent;
+}
+#statusbar #filepathStatusbarWidget QLabel {
+/*color: #333333;*/
+color: white;
+padding: 0 0 1px 0;
+margin: -1px 0 0 0;
+font: 12px normal &quot;Segoe UI&quot;;
+}
+
+#statusbar QPushButton {
+padding: 0px; border: none; margin: 0px;
+}
+
+#statusbar #filepathStatusbarWidget QPushButton:pressed {
+margin-top: 1px; margin-left: 1px;
+background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0.139963 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 0));
+}
+
+#statusbar #filepathStatusbarWidget QPushButton:hover {
+background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0.139963 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 0));
+}</string>
+   </property>
   </widget>
-  <widget class="QToolBar" name="toolbar">
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>0</height>
-    </size>
+  <widget class="QToolBar" name="tFile">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="contextMenuPolicy">
+    <enum>Qt::PreventContextMenu</enum>
    </property>
    <property name="windowTitle">
-    <string>Load &amp;&amp; Save</string>
+    <string>File</string>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#tFile QToolButton { padding-left: 2px; padding-right: 10px; }</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
    </property>
    <property name="allowedAreas">
-    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+    <set>Qt::TopToolBarArea</set>
    </property>
    <property name="iconSize">
     <size>
-     <width>16</width>
-     <height>16</height>
+     <width>18</width>
+     <height>18</height>
     </size>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -56,6 +148,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="aOpenMenu"/>
+   <addaction name="aSaveMenu"/>
   </widget>
   <widget class="QToolBar" name="tRender">
    <property name="windowTitle">
@@ -87,6 +181,8 @@
    <addaction name="aViewUserSave"/>
    <addaction name="aPrintView"/>
    <addaction name="separator"/>
+   <addaction name="aLightMenu"/>
+   <addaction name="separator"/>
    <addaction name="aShowCollision"/>
    <addaction name="aShowAxes"/>
    <addaction name="aShowNodes"/>
@@ -114,6 +210,9 @@
    <addaction name="aToggleHelp"/>
   </widget>
   <widget class="QToolBar" name="tAnim">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="windowTitle">
     <string>Animation</string>
    </property>
@@ -122,8 +221,8 @@
    </property>
    <property name="iconSize">
     <size>
-     <width>16</width>
-     <height>16</height>
+     <width>18</width>
+     <height>18</height>
     </size>
    </property>
    <attribute name="toolBarArea">
@@ -198,27 +297,34 @@
       <string>Export</string>
      </property>
     </widget>
-    <addaction name="aFileLoadDummy"/>
-    <addaction name="aFileSaveDummy"/>
+    <widget class="QMenu" name="mRecentFiles">
+     <property name="title">
+      <string>Recent Files</string>
+     </property>
+     <addaction name="aDummyRecentFiles"/>
+    </widget>
+    <addaction name="aOpen"/>
+    <addaction name="aReload"/>
+    <addaction name="separator"/>
+    <addaction name="mRecentFiles"/>
+    <addaction name="separator"/>
+    <addaction name="aWindow"/>
+    <addaction name="separator"/>
+    <addaction name="aSave"/>
+    <addaction name="aSaveAs"/>
+    <addaction name="aSanitize"/>
     <addaction name="separator"/>
     <addaction name="menuImport"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
-    <addaction name="aSanitize"/>
-    <addaction name="separator"/>
-    <addaction name="aWindow"/>
-    <addaction name="separator"/>
     <addaction name="aLoadXML"/>
-    <addaction name="aReload"/>
     <addaction name="aShredder"/>
-    <addaction name="separator"/>
-    <addaction name="aResources"/>
     <addaction name="separator"/>
     <addaction name="aQuit"/>
    </widget>
    <widget class="QMenu" name="mView">
     <property name="title">
-     <string>&amp;View</string>
+     <string>View</string>
     </property>
     <widget class="QMenu" name="mToolbars">
      <property name="title">
@@ -259,8 +365,6 @@
     <addaction name="separator"/>
     <addaction name="menuBlock_List"/>
     <addaction name="menuBlock_Details"/>
-    <addaction name="separator"/>
-    <addaction name="aSelectFont"/>
    </widget>
    <widget class="QMenu" name="mRender">
     <property name="title">
@@ -280,6 +384,8 @@
     <addaction name="aPrintView"/>
     <addaction name="aColorKeyDebug"/>
     <addaction name="separator"/>
+    <addaction name="aTextures"/>
+    <addaction name="aVertexColors"/>
    </widget>
    <widget class="QMenu" name="mHelp">
     <property name="title">
@@ -300,6 +406,9 @@
     <property name="title">
      <string>Options</string>
     </property>
+    <addaction name="aSettings"/>
+    <addaction name="aResources"/>
+    <addaction name="aSelectFont"/>
    </widget>
    <addaction name="mFile"/>
    <addaction name="mView"/>
@@ -349,7 +458,7 @@
      <property name="bottomMargin">
       <number>0</number>
      </property>
-     <item>
+     <item alignment="Qt::AlignRight">
       <widget class="QFrame" name="treeButtonFrame">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -390,6 +499,19 @@
           <property name="text">
            <string/>
           </property>
+          <property name="icon">
+           <iconset resource="../../res/nifskope.qrc">
+            <normaloff>:/img/expand</normaloff>:/img/expand</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>18</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item row="0" column="1">
@@ -405,6 +527,19 @@
           </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../../res/nifskope.qrc">
+            <normaloff>:/img/collapse</normaloff>:/img/collapse</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>18</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -503,7 +638,7 @@
      <property name="bottomMargin">
       <number>0</number>
      </property>
-     <item>
+     <item alignment="Qt::AlignRight">
       <widget class="QFrame" name="listButtonFrame">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -544,6 +679,19 @@
           <property name="text">
            <string/>
           </property>
+          <property name="icon">
+           <iconset resource="../../res/nifskope.qrc">
+            <normaloff>:/img/expand</normaloff>:/img/expand</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>18</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item>
@@ -559,6 +707,19 @@
           </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../../res/nifskope.qrc">
+            <normaloff>:/img/collapse</normaloff>:/img/collapse</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>18</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -659,7 +820,10 @@
   </action>
   <action name="aReload">
    <property name="text">
-    <string>Reload XML + NIF</string>
+    <string>Reload</string>
+   </property>
+   <property name="toolTip">
+    <string>Reload XML &amp;&amp; NIF</string>
    </property>
    <property name="shortcut">
     <string>Alt+X</string>
@@ -681,6 +845,9 @@
    </property>
   </action>
   <action name="aResetBlockDetails">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Reset Block Details</string>
    </property>
@@ -757,8 +924,8 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/loadView</normaloff>
-     <normalon>:/btn/userViewActive</normalon>:/btn/loadView</iconset>
+     <normaloff>:/btn/loadView2</normaloff>
+     <normalon>:/btn/userViewActive</normalon>:/btn/loadView2</iconset>
    </property>
    <property name="text">
     <string>Load View</string>
@@ -837,7 +1004,7 @@
   <action name="aViewUserSave">
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/saveView</normaloff>:/btn/saveView</iconset>
+     <normaloff>:/btn/saveView2</normaloff>:/btn/saveView2</iconset>
    </property>
    <property name="text">
     <string>Save View</string>
@@ -853,14 +1020,20 @@
    </property>
   </action>
   <action name="aFileLoadDummy">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>aFileLoadDummy</string>
    </property>
    <property name="visible">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
   </action>
   <action name="aFileSaveDummy">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>aFileSaveDummy</string>
    </property>
@@ -868,7 +1041,7 @@
     <string>aFileSaveDummy</string>
    </property>
    <property name="visible">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
   </action>
   <action name="aHierarchy">
@@ -944,6 +1117,9 @@
     <bool>true</bool>
    </property>
    <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="text">
@@ -1069,7 +1245,8 @@
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/play</normaloff>:/btn/play</iconset>
+     <normaloff>:/btn/play</normaloff>
+     <normalon>:/btn/pause</normalon>:/btn/play</iconset>
    </property>
    <property name="text">
     <string>&amp;Play</string>
@@ -1086,11 +1263,11 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/loop</normaloff>:/btn/loop</iconset>
+     <normaloff>:/btn/repeatSingle</normaloff>:/btn/repeatSingle</iconset>
    </property>
    <property name="text">
     <string>&amp;Loop</string>
@@ -1107,11 +1284,11 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/switch</normaloff>:/btn/switch</iconset>
+     <normaloff>:/btn/repeatAll</normaloff>:/btn/repeatAll</iconset>
    </property>
    <property name="text">
     <string>&amp;Switch</string>
@@ -1215,6 +1392,177 @@
    </property>
    <property name="shortcut">
     <string>Z</string>
+   </property>
+  </action>
+  <action name="aSettings">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="aOpenMenu">
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/load</normaloff>:/btn/load</iconset>
+   </property>
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="toolTip">
+    <string>Open...</string>
+   </property>
+  </action>
+  <action name="aSaveMenu">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/save</normaloff>:/btn/save</iconset>
+   </property>
+   <property name="text">
+    <string>Save...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save...</string>
+   </property>
+  </action>
+  <action name="aSave">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="toolTip">
+    <string>Save File</string>
+   </property>
+  </action>
+  <action name="aSaveAs">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save File As</string>
+   </property>
+  </action>
+  <action name="aOpen">
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="toolTip">
+    <string>Open File</string>
+   </property>
+  </action>
+  <action name="aDummyRecentFiles">
+   <property name="text">
+    <string>aDummyRecentFiles</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
+  </action>
+  <action name="aLightMenu">
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/bulb</normaloff>:/btn/bulb</iconset>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="toolTip">
+    <string/>
+   </property>
+   <property name="statusTip">
+    <string>Lighting Options</string>
+   </property>
+  </action>
+  <action name="aTextures">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normalon>:/btn/textures</normalon>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Textures</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Textures</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Textures</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+T</string>
+   </property>
+  </action>
+  <action name="aVertexColors">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normalon>:/btn/vertexColors</normalon>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Vertex Colors</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Vertex Colors</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Vertex Colors</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+V</string>
+   </property>
+  </action>
+  <action name="aLighting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/bulbOff</normaloff>
+     <normalon>:/btn/bulb</normalon>:/btn/bulbOff</iconset>
+   </property>
+   <property name="text">
+    <string>Lighting</string>
+   </property>
+   <property name="toolTip">
+    <string>Lighting</string>
+   </property>
+   <property name="statusTip">
+    <string>Turn Lighting On/Off</string>
+   </property>
+  </action>
+  <action name="aFrontalLight">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Frontal</string>
+   </property>
+   <property name="toolTip">
+    <string>Frontal Lighting</string>
    </property>
   </action>
  </widget>

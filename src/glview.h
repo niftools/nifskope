@@ -66,7 +66,7 @@ class GLView final : public QGLWidget
 	Q_OBJECT
 
 	//! Constructor
-	GLView( const QGLFormat & format, const QGLWidget * shareWidget = 0 );
+	GLView( const QGLFormat & format, QWidget * parent, const QGLWidget * shareWidget = 0 );
 	//! Destructor
 	~GLView();
 
@@ -74,29 +74,64 @@ public:
 	friend class NifSkope;
 
 	//! Static instance
-	static GLView * create();
+	static GLView * create( NifSkope * );
 
 	QOpenGLContext * glContext;
 	QOpenGLFunctions * glFuncs;
+
+	float declination = 0;
+	float planarAngle = 0;
+	bool frontalLight = true;
+
+	enum AnimationStates
+	{
+		AnimDisabled = 0x0,
+		AnimEnabled = 0x1,
+		AnimPlay = 0x2,
+		AnimLoop = 0x4,
+		AnimSwitch = 0x8
+	};
+	Q_DECLARE_FLAGS( AnimationState, AnimationStates );
+
+	AnimationState animState;
+
+	enum ViewState
+	{
+		ViewDefault,
+		ViewTop,
+		ViewBottom,
+		ViewLeft,
+		ViewRight,
+		ViewFront,
+		ViewBack,
+		ViewWalk,
+		ViewUser
+	};
+
+	enum DebugMode
+	{
+		DbgNone = 0,
+		DbgColorPicker = 1,
+		DbgBounds = 2
+	};
+
+
+	enum VisModes
+	{
+		VisNone = 0x0,
+		VisLightPos = 0x1,
+		VisNormalsOnly = 0x2
+	};
+
+	Q_DECLARE_FLAGS( VisMode, VisModes );
+
+	VisMode visMode;
+
 
 	void setNif( NifModel * );
 
 	Scene * getScene();
 	void updateShaders();
-
-	enum ViewState
-	{
-		viewDefault,
-		viewTop,
-		viewBottom,
-		viewLeft,
-		viewRight,
-		viewFront,
-		viewBack,
-		viewWalk,
-		viewUser
-	};
-
 	void updateViewpoint();
 
 	void center();
@@ -116,12 +151,12 @@ public:
 
 	void setProjection( bool );
 
+	void setDebugMode( DebugMode );
+
+
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 
 	// UI
-
-	//QComboBox * animGroups;
-	//FloatSlider * sldTime;
 
 	QSize minimumSizeHint() const override final { return { 50, 50 }; }
 	QSize sizeHint() const override final { return { 400, 400 }; }
@@ -132,6 +167,13 @@ public slots:
 	void sltSequence( const QString & );
 	void saveUserView();
 	void loadUserView();
+	void declinationChanged( int );
+	void planarAngleChanged( int );
+	void frontalLightToggled( bool );
+	void flagsChanged();
+	void updateAnimationState();
+	void setVisMode( VisMode );
+	void unsetVisMode( VisMode );
 
 signals:
 	void clicked( const QModelIndex & );
@@ -139,11 +181,17 @@ signals:
 	void sigTime( float t, float mn, float mx );
 	void viewpointChanged();
 
+	void sequenceStopped();
+	void sequenceChanged( const QString & );
+	void sequencesUpdated();
+	void sequencesDisabled( bool );
+
 protected:
 	//! Sets up the OpenGL rendering context, defines display lists, etc.
 	void initializeGL() override final;
 	//! Sets up the OpenGL viewport, projection, etc.
 	void resizeGL( int width, int height ) override final;
+	void resizeEvent( QResizeEvent * event ) override final;
 #ifdef USE_GL_QPAINTER
 	void paintEvent( QPaintEvent * ) override final;
 #else
@@ -175,8 +223,8 @@ private:
 	Scene * scene;
 
 	ViewState view;
+	DebugMode debugMode;
 	bool perspectiveMode;
-	bool debugMode;
 
 	class TexCache * textures;
 
@@ -184,17 +232,15 @@ private:
 	QTime lastTime;
 	QTimer * timer;
 
-	int fpscnt;
-	float fpsact;
-	float fpsacc;
-
 	float Dist;
 	Vector3 Pos;
 	Vector3 Rot;
 	GLdouble Zoom;
 	GLdouble axis;
+	GLdouble grid;
 	Transform viewTrans;
-	int zInc;
+
+	GLdouble aspect;
 	
 	QHash<int, bool> kbd;
 	QPoint lastPos;
@@ -208,11 +254,12 @@ private:
 
 	bool doCompile;
 	bool doCenter;
-	bool doMultisampling;
+
+	QTimer * lightVisTimer;
+	int lightVisTimeout;
 
 private slots:
 	void advanceGears();
-	void checkActions();
 
 	void dataChanged( const QModelIndex &, const QModelIndex & );
 	void modelChanged();
@@ -221,5 +268,8 @@ private slots:
 
 	void sceneUpdate();
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( GLView::AnimationState )
+Q_DECLARE_OPERATORS_FOR_FLAGS( GLView::VisMode )
 
 #endif

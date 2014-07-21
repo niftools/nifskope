@@ -82,5 +82,5 @@ void NifSkope::sltImportExport( QAction * a )
 	else if ( a->text() == tr( "Import .3DS" ) )
 		import3ds( nif, index );
 	else if ( a->text() == tr( "Export .DAE" ) )
-		exportCol( nif, this->getLoadFileName() );
+		exportCol( nif, currentFile );
 }

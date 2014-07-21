@@ -176,6 +176,7 @@ HEADERS += \
 	src/nvtristripwrapper.h \
 	src/options.h \
 	src/qhull.h \
+	src/settings.h \
 	src/spellbook.h \
 	src/spells/blocks.h \
 	src/spells/mesh.h \
@@ -186,7 +187,6 @@ HEADERS += \
 	src/spells/texture.h \
 	src/spells/transform.h \
 	src/widgets/colorwheel.h \
-	src/widgets/copyfnam.h \
 	src/widgets/fileselect.h \
 	src/widgets/floatedit.h \
 	src/widgets/floatslider.h \
@@ -200,6 +200,7 @@ HEADERS += \
 	src/widgets/valueedit.h \
 	src/widgets/xmlcheck.h \
 	src/ui/about_dialog.h \
+	src/ui/settingsdialog.h \
 	src/version.h
 
 SOURCES += \
@@ -241,6 +242,7 @@ SOURCES += \
 	src/nvtristripwrapper.cpp \
 	src/options.cpp \
 	src/qhull.cpp \
+	src/settings.cpp \
 	src/spellbook.cpp \
 	src/spells/animation.cpp \
 	src/spells/blocks.cpp \
@@ -266,7 +268,6 @@ SOURCES += \
 	src/spells/texture.cpp \
 	src/spells/transform.cpp \
 	src/widgets/colorwheel.cpp \
-	src/widgets/copyfnam.cpp \
 	src/widgets/fileselect.cpp \
 	src/widgets/floatedit.cpp \
 	src/widgets/floatslider.cpp \
@@ -280,6 +281,7 @@ SOURCES += \
 	src/widgets/valueedit.cpp \
 	src/widgets/xmlcheck.cpp \
 	src/ui/about_dialog.cpp \
+	src/ui/settingsdialog.cpp \
 	src/version.cpp
 
 RESOURCES += \
@@ -287,7 +289,9 @@ RESOURCES += \
 
 FORMS += \
 	src/ui/about_dialog.ui \
-	src/ui/nifskope.ui
+	src/ui/nifskope.ui \
+	src/ui/settingsdialog.ui \
+	src/ui/settingsgeneral.ui
 
 
 ###############################

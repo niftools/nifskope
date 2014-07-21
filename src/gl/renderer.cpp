@@ -429,7 +429,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	PropertyList props;
 	mesh->activeProperties( props );
 
-	if ( !shader_ready || !Options::shaders() ) {
+	if ( !shader_ready /*|| !Options::shaders()*/ ) {
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );
 	}
@@ -483,6 +483,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	TexturingProperty * texprop = props.get<TexturingProperty>();
 	BSShaderLightingProperty * bsprop = props.get<BSShaderLightingProperty>();
+	// TODO: BSLSP has been split off from BSShaderLightingProperty so it needs
+	//	to be accessible from here
 
 	int texunit = 0;
 

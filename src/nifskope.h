@@ -37,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
-#include <QProgressDialog> // Inherited
 
 #define NIFSKOPE_IPC_PORT 12583
 
@@ -53,20 +52,17 @@ class NifModel;
 class NifProxyModel;
 class NifTreeView;
 class ReferenceBrowser;
+class SettingsDialog;
 class SpellBook;
-
-class FSManager;
 
 class QAction;
 class QActionGroup;
+class QComboBox;
 class QLocale;
 class QModelIndex;
 class QProgressBar;
-class QSettings;
-class QSlider;
-class QSpinBox;
-class QTextEdit;
-class QTranslator;
+class QStringList;
+class QTimer;
 class QUdpSocket;
 
 
@@ -98,30 +94,35 @@ public:
 	 */
 	static NifSkope * createWindow( const QString & fname = QString() );
 
+	static SettingsDialog * options();
+
+	static QStringList * fileExtensions;
+
 	//! Save NifSkope application settings.
 	void saveUi() const;
 
 	//! Restore NifSkope UI settings.
 	void restoreUi();
 
-	//! Get Loaded filename
-	/*!
-	 * \return QString of loaded filename
-	 */
-	QString getLoadFileName();
+signals:
+	void beginLoading();
+	void completeLoading( bool );
+	void beginSave();
+	void completeSave( bool );
 
 public slots:
-	//! Set the lineLoad string and load a nif, kf, or kfm file.
-	/*!
-	 * \param filepath The file to load.
-	 */
-	void load( const QString & filepath );
+	
+	void open();
+	void saveAs();
 
-	//! Load a nif, kf, or kfm file, taking the file path from the lineLoad widget.
 	void load();
-
-	//! Save a nif, kf, or kfm file, taking the file path from the lineSave widget.
 	void save();
+
+	void reload();
+
+	void enableUi();
+
+	void onLoadComplete( bool );
 
 	//! Reparse the nif.xml and kfm.xml files.
 	void on_aLoadXML_triggered();
@@ -155,6 +156,8 @@ public slots:
 	void on_aViewUser_toggled( bool );
 	void on_aViewUserSave_triggered( bool );
 
+	void on_aSettings_triggered();
+
 
 protected slots:
 	//! Select a NIF index
@@ -172,11 +175,6 @@ protected slots:
 	//! Override the view font
 	void overrideViewFont();
 
-	//! Copy file name from load to save
-	void copyFileNameLoadSave();
-	//! Copy file name from save to load
-	void copyFileNameSaveLoad();
-
 	//! Sets Import/Export menus
 	/*!
 	 * see importex/importex.cpp
@@ -191,8 +189,11 @@ protected slots:
 	//! Change system locale and notify user that restart may be required
 	void sltLocaleChanged();
 
+	void resizeDone();
+
 protected:
 	void closeEvent( QCloseEvent * e ) override final;
+	//void resizeEvent( QResizeEvent * event ) override final;
 	bool eventFilter( QObject * o, QEvent * e ) override final;
 
 private:
@@ -200,14 +201,30 @@ private:
 	void initDockWidgets();
 	void initToolBars();
 	void initMenu();
+	void initConnections();
+
+	void openFile( const QString & );
+	void saveFile( const QString & );
+
+	void openRecentFile();
+	void setCurrentFile( const QString & );
+	void clearCurrentFile();
+	void updateRecentFileActions();
+	void updateAllRecentFileActions();
+
+	QString strippedName( const QString & ) const;
 
 	//! "About NifSkope" dialog.
 	QWidget * aboutDialog;
+
+	SettingsDialog * settingsDlg;
 
 	void setViewFont( const QFont & );
 
 	//! Migrate settings from older versions of NifSkope.
 	void migrateSettings() const;
+
+	QString currentFile;
 
 	//! Stores the nif file in memory.
 	NifModel * nif;
@@ -235,13 +252,12 @@ private:
 	//! The main window
 	GLView * ogl;
 
+	QComboBox * animGroups;
+
 	bool selecting;
 	bool initialShowEvent;
 	
 	QProgressBar * progress = nullptr;
-
-	FileSelector * lineLoad;
-	FileSelector * lineSave;
 
 	QDockWidget * dList;
 	QDockWidget * dTree;
@@ -252,10 +268,6 @@ private:
 	QToolBar * tool;
 
 	QAction * aSanitize;
-
-	QAction * aLineLoad;
-	QAction * aLineSave;
-	QAction * aCpFileName;
 
 #ifdef FSENGINE
 	QAction * aResources;
@@ -271,6 +283,18 @@ private:
 
 	QMenu * mExport;
 	QMenu * mImport;
+
+	QAction * aRecentFilesSeparator;
+
+	enum { NumRecentFiles = 10 };
+	QAction * recentFileActs[NumRecentFiles];
+
+	QMenu * lightingWidget();
+	QWidget * filePathWidget( QWidget * );
+
+	bool isResizing;
+	QTimer * resizeTimer;
+	QImage buf;
 };
 
 //! UDP communication between instances

@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QSettings>
 
+#include <QOpenGLFunctions>
+
 
 //! \file glmesh.cpp Mesh, MorphController, UVController
 
@@ -212,6 +214,13 @@ protected:
  *  Mesh
  */
 
+Mesh::Mesh( Scene * s, const QModelIndex & b ) : Node( s, b )
+{
+	double_sided = false;
+	double_sided_es = false;
+	bslsp = nullptr;
+}
+
 bool Mesh::isBSLODPresent = false;
 
 void Mesh::clear()
@@ -219,6 +228,7 @@ void Mesh::clear()
 	Node::clear();
 
 	iData = iSkin = iSkinData = iSkinPart = iTangentData = QModelIndex();
+	bslsp = nullptr;
 
 	verts.clear();
 	norms.clear();
@@ -235,6 +245,7 @@ void Mesh::clear()
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
+	transColorsNoAlpha.clear();
 	transTangents.clear();
 	transBitangents.clear();
 
@@ -253,7 +264,6 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 		if ( nif->isNiBlock( iBlock, "BSLODTriShape" ) ) {
 			isBSLODPresent = true;
-
 		}
 
 		emit nif->lodSliderChanged( isBSLODPresent );
@@ -263,6 +273,52 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	upSkin |= ( iSkin == index );
 	upSkin |= ( iSkinData == index );
 	upSkin |= ( iSkinPart == index );
+
+
+	// Update SLSF_* Flags here when editing them in the Block Details
+	//	Otherwise the changes will not show up in the scene
+	alphaisanim = false;
+	double_sided = false;
+	//double_sided_es = false;
+	if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom" ) )
+	{
+		QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" ) + nif->getLinkArray( iBlock, "BS Properties" );
+	
+		for ( int i = 0; i < props.count(); i++ ) {
+			QModelIndex iProp = nif->getBlock( props[i], "BSLightingShaderProperty" );
+	
+			if ( iProp.isValid() ) {
+
+				if ( !bslsp )
+					bslsp = properties.get<BSLightingShaderProperty>();
+
+				if ( !bslsp )
+					break;
+
+				auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
+				auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
+
+				bslsp->setFlags1( sf1 );
+				bslsp->setFlags2( sf2 );
+
+				double_sided = bslsp->getFlags2() & BSLightingShaderProperty::SLSF2_Double_Sided;
+				
+				if ( bslsp->getFlags2() & BSLightingShaderProperty::SLSF2_Tree_Anim ) {
+					alphaisanim = true;
+					break;
+				}
+			} else {
+				// enable double_sided for BSEffectShaderProperty
+				iProp = nif->getBlock( props[i], "BSEffectShaderProperty" );
+	
+				if ( iProp.isValid() ) {
+					unsigned int sf1 = nif->get<unsigned int>( iProp, "Effect Shader Flags 1" );
+					double_sided_es = sf1 & (1<<4);
+				}
+			}
+		}
+	}
+
 
 	if ( iBlock == index ) {
 		// NiMesh presents a problem because we are almost guaranteed to have multiple "data" blocks
@@ -521,56 +577,6 @@ void Mesh::transform()
 
 #endif
 		} else {
-			// Handle some vertex color animation - the static part.
-			// The elegant way requires TODO: property system (glproperty.h,
-			// glproperty.cpp, renderer.cpp, etc.) complete refactoring.
-			// Refer to "nif.xml" for "SF_Vertex_Animation", "PROP_LightingShaderProperty" and "FLAG_ShaderFlags"
-#define SF_Vertex_Animation 29
-#define SF_Double_Sided 4
-#define PROP_LightingShaderProperty "BSLightingShaderProperty"
-#define PROP_BSEffectShaderProperty "BSEffectShaderProperty"
-#define FLAG_ShaderFlags "Shader Flags 2"
-#define FLAG_EffectShaderFlags1 "Effect Shader Flags 1"
-			bool alphaisanim = false;
-			double_sided = false;
-			double_sided_es = false;
-
-			if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom" ) ) {
-				QVector<qint32> props =
-				    nif->getLinkArray( iBlock, "Properties" )
-				    + nif->getLinkArray( iBlock, "BS Properties" );
-
-				for ( int i = 0; i < props.count(); i++ ) {
-					QModelIndex iProp = nif->getBlock( props[i], PROP_LightingShaderProperty );
-
-					if ( iProp.isValid() ) {
-						// TODO: check that it exists at all
-						unsigned int sf2 = nif->get<unsigned int>( iProp, FLAG_ShaderFlags );
-						// using nifvalue.cpp line ~211
-						double_sided = sf2 & (1 << SF_Double_Sided);
-
-						if ( sf2 & (1 << SF_Vertex_Animation) ) {
-							alphaisanim = true;
-							break;
-						}
-					} else {
-						// enable double_sided for BSEffectShaderProperty
-						iProp = nif->getBlock( props[i], PROP_BSEffectShaderProperty );
-
-						if ( iProp.isValid() ) {
-							unsigned int sf1 = nif->get<unsigned int>( iProp, FLAG_EffectShaderFlags1 );
-							double_sided_es = sf1 & (1 << SF_Double_Sided);
-						}
-					}
-				}
-			}
-
-#undef FLAG_EffectShaderFlags1
-#undef PROP_BSEffectShaderProperty
-#undef PROP_LightingShaderProperty
-#undef FLAG_ShaderFlags
-#undef SF_Double_Sided
-#undef SF_Vertex_Animation
 
 			verts  = nif->getArray<Vector3>( iData, "Vertices" );
 			norms  = nif->getArray<Vector3>( iData, "Normals" );
@@ -886,7 +892,6 @@ void Mesh::transformShapes()
 	//}
 
 	MaterialProperty * matprop = findProperty<MaterialProperty>();
-
 	if ( matprop && matprop->alphaValue() != 1.0 ) {
 		float a = matprop->alphaValue();
 		transColors.resize( colors.count() );
@@ -895,6 +900,19 @@ void Mesh::transformShapes()
 			transColors[c] = colors[c].blend( a );
 	} else {
 		transColors = colors;
+	}
+
+	if ( !bslsp )
+		bslsp = properties.get<BSLightingShaderProperty>();
+
+	if ( bslsp ) {
+		transColorsNoAlpha.resize( colors.count() );
+		if ( !(bslsp->getFlags1() & BSLightingShaderProperty::SLSF1_Vertex_Alpha) ) {
+			for ( int c = 0; c < colors.count(); c++ )
+				transColorsNoAlpha[c] = Color4( transColors[c].red(), transColors[c].green(), transColors[c].blue(), 1.0f );
+		} else {
+			transColorsNoAlpha.clear();
+		}
 	}
 }
 
@@ -936,6 +954,11 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glMultMatrix( viewTrans() );
 	}
 
+	//if ( !Node::SELECTING ) {
+	//	qDebug() << viewTrans().translation;
+		//qDebug() << Vector3( nif->get<Vector4>( iBlock, "Translation" ) );
+	//}
+
 	// setup array pointers
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
@@ -951,14 +974,19 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			glNormalPointer( GL_FLOAT, 0, transNorms.data() );
 		}
 
-		if ( transColors.count() ) {
+		if ( transColors.count()
+			&& ( scene->options & Scene::ShowVertexColors )
+			&& ( !bslsp || ( bslsp && (bslsp->getFlags2() & BSLightingShaderProperty::SLSF2_Vertex_Colors) ) ) )
+		{
 			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_FLOAT, 0, transColors.data() );
+			glColorPointer( 4, GL_FLOAT, 0, (transColorsNoAlpha.count()) ? transColorsNoAlpha.data() : transColors.data() );
 		} else {
-			glColor( Color3( 1.0f, 0.2f, 1.0f ) );
+			// TODO: Why was this pink before?
+			glColor( Color3( 1.0f, 1.0f, 1.0f ) );
 		}
 	}
 
+	// TODO: Hotspot.  See about optimizing this.
 	if ( !Node::SELECTING )
 		shader = scene->renderer->setupProgram( this, shader );
 
@@ -985,23 +1013,20 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		auto lod1tris = sortedTriangles.mid( lod0, lod1 );
 		auto lod2tris = sortedTriangles.mid( lod0 + lod1, lod2 );
 
-		QSettings cfg;
-		int lodLevel = cfg.value( "GLView/LOD Level", 2 ).toInt();
-
-		// render level 0 (always visible)
-		if ( lod0tris.count() )
-			glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.data() );
-
-		if ( lodLevel > 0 ) {
-			// render level 1
+		// If Level2, render all
+		// If Level1, also render Level0
+		switch ( scene->lodLevel ) {
+		case Scene::Level2:
+			if ( lod2tris.count() )
+				glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.data() );
+		case Scene::Level1:
 			if ( lod1tris.count() )
 				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.data() );
-			
-			if ( lodLevel > 1 ) {
-				// render level 2
-				if ( lod2tris.count() )
-					glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.data() );
-			}
+		case Scene::Level0:
+		default:
+			if ( lod0tris.count() )
+				glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.data() );
+			break;
 		}
 	}
 

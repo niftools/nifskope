@@ -75,9 +75,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include <GL/glu.h>
 #endif
 
-// TODO: Make these options user configurable.
-// TODO: Make this platform independent (Half monitor refresh rate)
+
+// NOTE: The FPS define is a frame limiter,
+//	NOT the guaranteed FPS in the viewport.
+//	Also the QTimer is integer milliseconds 
+//	so 60 will give you 1000/60 = 16, not 16.666
+//	therefore it's really 62.5FPS
 #define FPS 60
+
+
 #define FOV 45.0
 #define MOV_SPD 350
 #define ROT_SPD 45
@@ -91,7 +97,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file glview.cpp GLView implementation
 
-GLView * GLView::create()
+GLView * GLView::create( NifSkope * window )
 {
 	static QList<QPointer<GLView> > views;
 
@@ -106,25 +112,33 @@ GLView * GLView::create()
 	fmt.setRgba( true );
 	fmt.setSamples( Options::antialias() ? 16 : 0 );
 
-	if ( share )
+	// All new windows after the first window will share a format
+	if ( share ) {
 		fmt = share->format();
-	else
+	} else {
 		fmt.setSampleBuffers( Options::antialias() );
-
+	}
+		
+	// OpenGL version
 	fmt.setVersion( 2, 1 );
 	// Ignored if version < 3.2
 	//fmt.setProfile(QGLFormat::CoreProfile);
 
-	views.append( QPointer<GLView>( new GLView( fmt, share ) ) );
+	// V-Sync
+	fmt.setSwapInterval( 1 );
+
+	views.append( QPointer<GLView>( new GLView( fmt, window, share ) ) );
 
 	return views.last();
 }
 
-GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
-	: QGLWidget( format, 0, shareWidget )
+GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWidget )
+	: QGLWidget( format, p, shareWidget )
 {
 	setFocusPolicy( Qt::ClickFocus );
+	setAttribute( Qt::WA_PaintOnScreen );
 	setAttribute( Qt::WA_NoSystemBackground );
+	setAutoFillBackground( false );
 	setAcceptDrops( true );
 	setContextMenuPolicy( Qt::CustomContextMenu );
 
@@ -144,34 +158,35 @@ GLView::GLView( const QGLFormat & format, const QGLWidget * shareWidget )
 
 	glFuncs->initializeOpenGLFunctions();
 
-	view = viewDefault;
-	debugMode = false;
+	view = ViewDefault;
+	animState = AnimEnabled;
+	debugMode = DbgNone;
 
 	Zoom = 1.0;
-	zInc = 1;
 
 	doCenter  = false;
 	doCompile = false;
-	doMultisampling = Options::antialias();
 
 	model = nullptr;
 
 	time = 0.0;
 	lastTime = QTime::currentTime();
 
-	fpsact = 0.0;
-	fpsacc = 0.0;
-	fpscnt = 0;
-
 	textures = new TexCache( this );
 
 	scene = new Scene( textures, glContext, glFuncs );
 	connect( textures, &TexCache::sigRefresh, this, static_cast<void (GLView::*)()>(&GLView::update) );
+	connect( scene, &Scene::sceneUpdated, this, static_cast<void (GLView::*)()>(&GLView::update) );
 
 	timer = new QTimer( this );
 	timer->setInterval( 1000 / FPS );
 	timer->start();
 	connect( timer, &QTimer::timeout, this, &GLView::advanceGears );
+
+	lightVisTimeout = 1500;
+	lightVisTimer = new QTimer( this );
+	lightVisTimer->setSingleShot( true );
+	connect( lightVisTimer, &QTimer::timeout, [this]() { unsetVisMode( VisLightPos ); update(); } );
 
 	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
 	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
@@ -199,6 +214,24 @@ void GLView::sceneUpdate()
 	update();
 }
 
+void GLView::updateAnimationState()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if ( action ) {
+		auto opt = AnimationState( action->data().toInt() );
+
+		if ( action->isChecked() )
+			animState |= opt;
+		else
+			animState &= ~opt;
+
+		scene->animate = (animState & AnimEnabled);
+		lastTime = QTime::currentTime();
+
+		update();
+	}
+}
+
 
 /*
  *  OpenGL
@@ -208,9 +241,9 @@ void GLView::initializeGL()
 {
 	GLenum err;
 	
-	if ( Options::antialias() ) {
+	if ( scene->options & Scene::DoMultisampling ) {
 		if ( !glContext->hasExtension( "GL_EXT_framebuffer_multisample" ) ) {
-			doMultisampling = false;
+			scene->options &= ~Scene::DoMultisampling;
 			//qWarning() << "System does not support multisampling";
 		} /* else {
 			GLint maxSamples;
@@ -223,6 +256,12 @@ void GLView::initializeGL()
 
 	if ( scene->renderer->initialize() )
 		updateShaders();
+
+	// Initial viewport values
+	//	Made viewport and aspect member variables.
+	//	They were being updated every single frame instead of only when resizing.
+	//glGetIntegerv( GL_VIEWPORT, viewport );
+	aspect = (GLdouble)width() / (GLdouble)height();
 
 	// Check for errors
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
@@ -240,22 +279,22 @@ void GLView::glProjection( int x, int y )
 {
 	Q_UNUSED( x ); Q_UNUSED( y );
 
-	GLint viewport[4];
-	glGetIntegerv( GL_VIEWPORT, viewport );
-	GLdouble aspect = (GLdouble)viewport[2] / (GLdouble)viewport[3];
-
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity();
 
 	BoundSphere bs = scene->view * scene->bounds();
 
-	if ( Options::drawAxes() )
+	if ( scene->options & Scene::ShowAxes ) {
 		bs |= BoundSphere( scene->view * Vector3(), axis );
+
+		// Include grid in bounds
+		bs.radius = (bs.radius > 1024.0f) ? bs.radius : 1024.0f;
+	}
 
 	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
 	GLdouble fr = fabs( bs.center[2] ) + bs.radius * 1.2;
 
-	if ( perspectiveMode || (view == viewWalk) ) {
+	if ( perspectiveMode || (view == ViewWalk) ) {
 		// Perspective View
 		if ( nr < 1.0 )
 			nr = 1.0;
@@ -289,6 +328,13 @@ void GLView::glProjection( int x, int y )
 	glLoadIdentity();
 }
 
+
+// TODO: Temp materials
+static GLfloat mat_half[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+static GLfloat mat_full[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+static GLfloat mat_specular[] = { 0, 0, 0, 1.0f };
+static GLfloat mat_shininess[] = { 0 };
+
 #ifdef USE_GL_QPAINTER
 void GLView::paintEvent( QPaintEvent * event )
 {
@@ -309,29 +355,28 @@ void GLView::paintGL()
 	glPushMatrix();
 
 	// Clear Viewport
-	glViewport( 0, 0, width(), height() );
-	qglClearColor( Options::bgColor() );
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
+	//glViewport( 0, 0, width(), height() );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
+	
+	
 	// Compile the model
 	if ( doCompile ) {
 		textures->setNifFolder( model->getFolder() );
 		scene->make( model );
 		scene->transform( Transform(), scene->timeMin() );
-		axis = scene->bounds().radius < 0 ? 1 : scene->bounds().radius * 1.4; // fix: the axis appearance when there is no scene yet
+		axis = (scene->bounds().radius <= 0) ? 1 : scene->bounds().radius * 1.0; // fix: the axis appearance when there is no scene yet
 
-		if ( axis == 0 )
-			axis = 1;
+		if ( scene->timeMin() != scene->timeMax() ) {
+			if ( time < scene->timeMin() || time > scene->timeMax() )
+				time = scene->timeMin();
 
-		if ( time < scene->timeMin() || time > scene->timeMax() )
-			time = scene->timeMin();
+			emit sequencesUpdated();
 
+		} else if ( scene->timeMax() == 0 ) {
+			// No Animations in this NIF
+			emit sequencesDisabled( true );
+		}
 		emit sigTime( time, scene->timeMin(), scene->timeMax() );
-
-		//animGroups->clear();
-		//animGroups->addItems( scene->animGroups );
-		//animGroups->setCurrentIndex( scene->animGroups.indexOf( scene->animGroup ) );
-
 		doCompile = false;
 	}
 
@@ -343,22 +388,24 @@ void GLView::paintGL()
 
 	// Transform the scene
 	Matrix ap;
-	if ( Options::upAxis() == Options::YAxis ) {
-		ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
-		ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
-		ap( 2, 0 ) = 0; ap( 2, 1 ) = 1; ap( 2, 2 ) = 0;
-	} else if ( Options::upAxis() == Options::XAxis ) {
-		ap( 0, 0 ) = 0; ap( 0, 1 ) = 1; ap( 0, 2 ) = 0;
-		ap( 1, 0 ) = 0; ap( 1, 1 ) = 0; ap( 1, 2 ) = 1;
-		ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
-	}
+
+	// TODO: Redo for new Settings class
+	//if ( Options::upAxis() == Options::YAxis ) {
+	//	ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
+	//	ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
+	//	ap( 2, 0 ) = 0; ap( 2, 1 ) = 1; ap( 2, 2 ) = 0;
+	//} else if ( Options::upAxis() == Options::XAxis ) {
+	//	ap( 0, 0 ) = 0; ap( 0, 1 ) = 1; ap( 0, 2 ) = 0;
+	//	ap( 1, 0 ) = 0; ap( 1, 1 ) = 0; ap( 1, 2 ) = 1;
+	//	ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
+	//}
 
 	Transform viewTrans;
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
 	viewTrans.rotation = viewTrans.rotation * ap;
 	viewTrans.translation = viewTrans.rotation * Pos;
 
-	if ( view != viewWalk )
+	if ( view != ViewWalk )
 		viewTrans.translation[2] -= Dist * 2;
 
 	scene->transform( viewTrans, time );
@@ -367,8 +414,8 @@ void GLView::paintGL()
 	glProjection();
 	glLoadIdentity();
 
-	// Draw the axes
-	if ( Options::drawAxes() ) {
+	// Draw the axes and grid
+	if ( scene->options & Scene::ShowAxes ) {
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
 		glDisable( GL_LIGHTING );
@@ -385,66 +432,123 @@ void GLView::paintGL()
 
 		drawAxes( Vector3(), axis );
 
-		// Grid test
-		//glBegin( GL_LINES );
-		//for ( int i = 0; i <= 500; i += 50 ) {
-		//	glVertex3f( (float)i, 0.0f, 0.0f );
-		//	glVertex3f( (float)i, 500.0f, 0.0f );
-		//	glVertex3f( 0.0f, (float)i, 0.0f );
-		//	glVertex3f( 500.0f, (float)i, 0.0f );
-		//}
-		//glEnd();
+		// TODO: Configurable grid in Settings
+		// 1024 game units, major lines every 128, minor lines every 64
+		drawGrid( 1024, 128, 2 );
 
+		// Debug scene bounds
+#ifndef QT_NO_DEBUG
+		if ( debugMode == DbgBounds ) {
+			BoundSphere bs = scene->bounds();
+			bs |= BoundSphere( Vector3(), axis );
+			drawSphere( bs.center, bs.radius );
+		}
+#endif
 		glPopMatrix();
 	}
 
-	// Setup light
-	Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
 
-	if ( !Options::lightFrontal() ) {
-		float decl = Options::lightDeclination() / 180.0 * PI;
-		Vector3 v( sin( decl ), 0, cos( decl ) );
-		Matrix m; m.fromEuler( 0, 0, Options::lightPlanarAngle() / 180.0 * PI );
-		v = m * v;
-		lightDir = Vector4( viewTrans.rotation * v, 0.0 );
+	if ( scene->options & Scene::DoLighting ) {
+		// Setup light
+		Vector4 lightDir( 0.0, 0.0, 1.0, 0.0 );
+
+		if ( !frontalLight ) {
+			float decl = declination / 180.0 * PI;
+			Vector3 v( sin( decl ), 0, cos( decl ) );
+			Matrix m; m.fromEuler( 0, 0, planarAngle / 180.0 * PI );
+			v = m * v;
+			lightDir = Vector4( viewTrans.rotation * v, 0.0 );
+
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+			glEnable( GL_DEPTH_TEST );
+			glDepthMask( GL_TRUE );
+			glDepthFunc( GL_LESS );
+			glLineWidth( 2.0f );
+			glColor4f( 1.0f, 1.0f, 1.0f, 0.5f );
+
+
+			if ( visMode & VisLightPos ) {
+				glPushMatrix();
+				glLoadMatrix( viewTrans );
+
+				// Scale the distance a bit
+				float l = axis + 64.0;
+				l = (l < 128) ? axis * 1.5 : l;
+				l = (l > 2048) ? axis * 0.66 : l;
+				l = (l > 1024) ? axis * 0.75 : l;
+
+				drawDashLine( Vector3( 0, 0, 0 ), v * l, 30 );
+				drawSphere( v * l, axis / 10 );
+				glPopMatrix();
+				glDisable( GL_BLEND );
+			}
+		}
+
+		glShadeModel( GL_SMOOTH );
+		glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0 );
+		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_half );
+		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_full );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
+		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
+
+		// Necessary?
+		glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
+	} else {
+		float a = 0.5f; // Ambient brightness
+		float d = 0.5f; // Diffuse brightness
+		if ( scene->options & Scene::UseTextures ) {
+			a = 1.0f;
+			// Blow the vertex colors out until I can fix the shader
+			//	This gives me a very high ColorD value in the shaders
+			//	to compare to, so that I can turn off normals when ColorD.r > 1.0
+			d = 1000.0f;
+		} else if ( scene->options & Scene::ShowVertexColors ) {
+			a = 0.0f;
+			d = 0.1f;
+		}
+
+		GLfloat mat_diff[] = { d, d, d, 1.0f };
+		GLfloat mat_amb[] = { a, a, a, 1.0f };
+
+		glShadeModel( GL_SMOOTH );
+		glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0 );
+		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, mat_full );
+		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_full );
+		//glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, mat_full );
+		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
+		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
+		
+		//glMaterialfv( GL_FRONT, GL_AMBIENT, mat_full );
+		//glMaterialfv( GL_FRONT, GL_DIFFUSE, mat_amb );
+		//glMaterialfv( GL_FRONT, GL_SPECULAR, mat_specular );
 	}
 
-	glShadeModel( GL_SMOOTH );
-	glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
-	glLightfv( GL_LIGHT0, GL_AMBIENT, Color4( Options::ambient() ).data() );
-	glLightfv( GL_LIGHT0, GL_DIFFUSE, Color4( Options::diffuse() ).data() );
-	glLightfv( GL_LIGHT0, GL_SPECULAR, Color4( Options::specular() ).data() );
-	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
-	glEnable( GL_LIGHT0 );
-	glEnable( GL_LIGHTING );
-
-	if ( Options::antialias() && doMultisampling )
+	if ( scene->options & Scene::DoMultisampling )
 		glEnable( GL_MULTISAMPLE_ARB );
 
-	// Initialize Rendering Font
-	// TODO: Seek alternative to fontDisplayListBase or determine if code is actually necessary
-	//glListBase(fontDisplayListBase(QFont(), 2000));
-
 #ifndef QT_NO_DEBUG
-	// TODO: Reenable
 	// Color Key debug
-	//if ( aColorKeyDebug->isChecked() ) {
-	//	glDisable( GL_MULTISAMPLE );
-	//	glDisable( GL_LINE_SMOOTH );
-	//	glDisable( GL_TEXTURE_2D );
-	//	glDisable( GL_BLEND );
-	//	glDisable( GL_DITHER );
-	//	glDisable( GL_LIGHTING );
-	//	glShadeModel( GL_FLAT );
-	//	glDisable( GL_FOG );
-	//	glDisable( GL_MULTISAMPLE_ARB );
-	//	glEnable( GL_DEPTH_TEST );
-	//	glDepthFunc( GL_LEQUAL );
-	//	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	//	Node::SELECTING = 1;
-	//} else {
-	//	Node::SELECTING = 0;
-	//}
+	if ( debugMode == DbgColorPicker ) {
+		glDisable( GL_MULTISAMPLE );
+		glDisable( GL_LINE_SMOOTH );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_BLEND );
+		glDisable( GL_DITHER );
+		glDisable( GL_LIGHTING );
+		glShadeModel( GL_FLAT );
+		glDisable( GL_FOG );
+		glDisable( GL_MULTISAMPLE_ARB );
+		glEnable( GL_DEPTH_TEST );
+		glDepthFunc( GL_LEQUAL );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		Node::SELECTING = 1;
+	} else {
+		Node::SELECTING = 0;
+	}
 #endif
 
 	// Draw the model
@@ -461,53 +565,75 @@ void GLView::paintGL()
 	GLenum err;
 	while ( ( err = glGetError() ) != GL_NO_ERROR )
 		qDebug() << tr( "glview.cpp - GL ERROR (paint): " ) << (const char *)gluErrorString( err );
-	
-	// Update FPS counter
-	if ( fpsacc > 1.0 && fpscnt ) {
-		fpsacc /= fpscnt;
-
-		if ( fpsacc > 0.0001 )
-			fpsact = 1.0 / fpsacc;
-		else
-			fpsact = 10000;
-
-		fpsacc = 0;
-		fpscnt = 0;
-	}
 
 	emit paintUpdate();
 
+
 #ifdef USE_GL_QPAINTER
-	// draw text on top using QPainter
-
-	if ( Options::benchmark() || Options::drawStats() ) {
-		int ls = QFontMetrics( font() ).lineSpacing();
-		int y  = 1;
-
-		painter.setPen( Options::hlColor() );
-
-		if ( Options::benchmark() ) {
-			painter.drawText( 10, y++ *ls, QString( "FPS %1" ).arg( int(fpsact) ) );
-			y++;
-		}
-
-		if ( Options::drawStats() ) {
-			QString stats = scene->textStats();
-			QStringList lines = stats.split( "\n" );
-			for ( const QString& line : lines ) {
-				painter.drawText( 10, y++ *ls, line );
-			}
-		}
-	}
-
 	painter.end();
 #endif
 }
 
+
 void GLView::resizeGL( int width, int height )
 {
+	makeCurrent();
+	aspect = (GLdouble)width / (GLdouble)height;
 	glViewport( 0, 0, width, height );
+	qglClearColor( Options::bgColor() );
+
+	update();
 }
+
+void GLView::resizeEvent( QResizeEvent * e )
+{
+	// This function should never be called.
+	// Moved to NifSkope::eventFilter()
+}
+
+void GLView::flagsChanged()
+{
+	sceneUpdate();
+	update();
+}
+
+void GLView::frontalLightToggled( bool frontal )
+{
+	frontalLight = frontal;
+	update();
+}
+
+void GLView::declinationChanged( int decl )
+{
+	declination = float( decl / 2 );
+	lightVisTimer->start( lightVisTimeout );
+	setVisMode( VisLightPos );
+	update();
+}
+
+void GLView::planarAngleChanged( int angle )
+{
+	planarAngle = float( angle / 2 );
+	lightVisTimer->start( lightVisTimeout );
+	setVisMode( VisLightPos );
+	update();
+}
+
+void GLView::setDebugMode( DebugMode mode )
+{
+	debugMode = mode;
+}
+
+void GLView::setVisMode( VisMode mode )
+{
+	visMode |= mode;
+}
+
+void GLView::unsetVisMode( VisMode mode )
+{
+	visMode &= ~mode;
+}
+
 
 typedef void (Scene::* DrawFunc)( void );
 
@@ -550,6 +676,7 @@ int indexAt( /*GLuint *buffer,*/ NifModel * model, Scene * scene, QList<DrawFunc
 	glShadeModel( GL_FLAT );
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LEQUAL );
+	glClearColor( 0, 0, 0, 1 );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	// Rasterize the scene
@@ -613,13 +740,13 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	QList<DrawFunc> df;
 
-	if ( Options::drawHavok() )
+	if ( scene->options & Scene::ShowCollision )
 		df << &Scene::drawHavok;
 
-	if ( Options::drawNodes() )
+	if ( scene->options & Scene::ShowNodes )
 		df << &Scene::drawNodes;
 
-	if ( Options::drawFurn() )
+	if ( scene->options & Scene::ShowMarkers )
 		df << &Scene::drawFurn;
 
 	df << &Scene::drawShapes;
@@ -654,23 +781,6 @@ void GLView::center()
 	update();
 }
 
-void GLView::updateViewpoint()
-{
-	switch ( view ) {
-	case viewTop:
-	case viewBottom:
-	case viewLeft:
-	case viewRight:
-	case viewFront:
-	case viewBack:
-	case viewUser:
-		emit viewpointChanged();
-		break;
-	default:
-		break;
-	}
-}
-
 void GLView::move( float x, float y, float z )
 {
 	Pos += Matrix::euler( Rot[0] / 180 * PI, Rot[1] / 180 * PI, Rot[2] / 180 * PI ).inverted() * Vector3( x, y, z );
@@ -698,30 +808,37 @@ void GLView::zoom( float z )
 	update();
 }
 
-void GLView::setProjection( bool isPersp )
-{
-	perspectiveMode = isPersp;
-	update();
-}
-
 void GLView::setCenter()
 {
 	qDebug() << "Setting center";
 
-	BoundSphere bs = scene->bounds();
+	Node * node = scene->getNode( model, scene->currentBlock );
 
-	if ( Options::drawAxes() )
-		bs |= BoundSphere( Vector3(), axis );
+	if ( node != 0 ) {
+		BoundSphere bs = node->bounds();
 
-	if ( bs.radius < 1 )
-		bs.radius = 1;
+		this->setPosition( -bs.center );
 
-	setDistance( bs.radius );
-	setZoom( 1.0 );
+		if ( bs.radius > 0 ) {
+			setDistance( bs.radius * 1.5f );
+		}
+	} else {
+		BoundSphere bs = scene->bounds();
 
-	setPosition( Vector3() - bs.center );
+		//if ( scene->options & Scene::ShowAxes )
+		//	bs |= BoundSphere( Vector3(), axis );
 
-	setOrientation( view );
+		if ( bs.radius < 1 )
+			bs.radius = 1;
+
+		setDistance( bs.radius );
+		setZoom( 1.0 );
+
+		setPosition( Vector3() - bs.center );
+
+		setOrientation( view );
+	}
+
 }
 
 void GLView::setDistance( float x )
@@ -742,6 +859,12 @@ void GLView::setPosition( Vector3 v )
 	update();
 }
 
+void GLView::setProjection( bool isPersp )
+{
+	perspectiveMode = isPersp;
+	update();
+}
+
 void GLView::setRotation( float x, float y, float z )
 {
 	Rot = { x, y, z };
@@ -754,28 +877,63 @@ void GLView::setZoom( float z )
 	update();
 }
 
+
+void GLView::flipOrientation()
+{
+	ViewState tmp = ViewDefault;
+
+	switch ( view ) {
+	case ViewTop:
+		tmp = ViewBottom;
+		break;
+	case ViewBottom:
+		tmp = ViewTop;
+		break;
+	case ViewLeft:
+		tmp = ViewRight;
+		break;
+	case ViewRight:
+		tmp = ViewLeft;
+		break;
+	case ViewFront:
+		tmp = ViewBack;
+		break;
+	case ViewBack:
+		tmp = ViewFront;
+		break;
+	case ViewUser:
+	default:
+	{
+		// TODO: Flip any other view also?
+	}
+		break;
+	}
+
+	setOrientation( tmp, false );
+}
+
 void GLView::setOrientation( GLView::ViewState state, bool recenter )
 {
 	if ( state == view )
 		return;
 
 	switch ( state ) {
-	case viewBottom:
+	case ViewBottom:
 		setRotation( 180, 0, 0 ); // Bottom
 		break;
-	case viewTop:
+	case ViewTop:
 		setRotation( 0, 0, 0 ); // Top
 		break;
-	case viewBack:
+	case ViewBack:
 		setRotation( -90, 0, 0 ); // Back
 		break;
-	case viewFront:
+	case ViewFront:
 		setRotation( -90, 0, 180 ); // Front
 		break;
-	case viewRight:
+	case ViewRight:
 		setRotation( -90, 0, 90 ); // Right
 		break;
-	case viewLeft:
+	case ViewLeft:
 		setRotation( -90, 0, -90 ); // Left
 		break;
 	default:
@@ -789,39 +947,23 @@ void GLView::setOrientation( GLView::ViewState state, bool recenter )
 		center();
 }
 
-void GLView::flipOrientation()
+void GLView::updateViewpoint()
 {
-	ViewState tmp;
-
 	switch ( view ) {
-	case viewTop:
-		tmp = viewBottom;
+	case ViewTop:
+	case ViewBottom:
+	case ViewLeft:
+	case ViewRight:
+	case ViewFront:
+	case ViewBack:
+	case ViewUser:
+		emit viewpointChanged();
 		break;
-	case viewBottom:
-		tmp = viewTop;
-		break;
-	case viewLeft:
-		tmp = viewRight;
-		break;
-	case viewRight:
-		tmp = viewLeft;
-		break;
-	case viewFront:
-		tmp = viewBack;
-		break;
-	case viewBack:
-		tmp = viewFront;
-		break;
-	case viewUser:
 	default:
-	{
-		// TODO: Flip any other view also?
-	}
 		break;
 	}
-
-	setOrientation( tmp, false );
 }
+
 
 /*
  *  NifModel
@@ -934,13 +1076,20 @@ void GLView::sltTime( float t )
 
 void GLView::sltSequence( const QString & seqname )
 {
-	//animGroups->setCurrentIndex( scene->animGroups.indexOf( seqname ) );
+	// Update UI
+	QAction * action = qobject_cast<QAction *>(sender());
+	if ( !action ) {
+		// Called from self and not UI
+		emit sequenceChanged( seqname );
+	}
+	
 	scene->setSequence( seqname );
 	time = scene->timeMin();
 	emit sigTime( time, scene->timeMin(), scene->timeMax() );
 	update();
 }
 
+// TODO: Multiple user views, ala Recent Files
 void GLView::saveUserView()
 {
 	QSettings cfg;
@@ -969,50 +1118,51 @@ void GLView::loadUserView()
 	cfg.endGroup();
 }
 
-
 void GLView::advanceGears()
 {
 	QTime t  = QTime::currentTime();
 	float dT = lastTime.msecsTo( t ) / 1000.0;
-
-	if ( Options::benchmark() ) {
-		fpsacc += dT;
-		fpscnt++;
-		update();
-	}
-
-	if ( dT < 0 )
-		dT = 0;
-
-	if ( dT > 1.0 )
-		dT = 1.0;
+	dT = (dT < 0) ? 0 : ((dT > 1.0) ? 1.0 : dT);
 
 	lastTime = t;
 
 	if ( !isVisible() )
 		return;
 
-	// TODO: Reenable
-	//if ( aAnimate->isChecked() && aAnimPlay->isChecked() && scene->timeMin() != scene->timeMax() ) {
-	//	time += dT;
-	//
-	//	if ( time > scene->timeMax() ) {
-	//		if ( aAnimSwitch->isChecked() && !scene->animGroups.isEmpty() ) {
-	//			int ix = scene->animGroups.indexOf( scene->animGroup );
-	//
-	//			if ( ++ix >= scene->animGroups.count() )
-	//				ix -= scene->animGroups.count();
-	//
-	//			sltSequence( scene->animGroups.value( ix ) );
-	//		} else if ( aAnimLoop->isChecked() ) {
-	//			time = scene->timeMin();
-	//		}
-	//	}
-	//
-	//	emit sigTime( time, scene->timeMin(), scene->timeMax() );
-	//	update();
-	//}
+	if ( ( animState & AnimEnabled ) && ( animState & AnimPlay )
+		&& scene->timeMin() != scene->timeMax() )
+	{
+		time += dT;
 
+		if ( time > scene->timeMax() ) {
+			if ( ( animState & AnimSwitch ) && !scene->animGroups.isEmpty() ) {
+				int ix = scene->animGroups.indexOf( scene->animGroup );
+	
+				if ( ++ix >= scene->animGroups.count() )
+					ix -= scene->animGroups.count();
+	
+				sltSequence( scene->animGroups.value( ix ) );
+			} else if ( animState & AnimLoop ) {
+				time = scene->timeMin();
+			} else {
+				// Animation has completed and is not looping
+				//	or cycling through animations.
+				// Reset time and state and then inform UI it has stopped.
+				time = scene->timeMin();
+				animState &= ~AnimPlay;
+				emit sequenceStopped();
+			}
+		} else {
+			// Animation is not done yet
+		}
+
+		emit sigTime( time, scene->timeMin(), scene->timeMax() );
+		update();
+	}
+
+	// TODO: Some kind of input class for choosing the appropriate
+	// keys based on user preferences of what app they would like to
+	// emulate for the control scheme
 	// Rotation
 	if ( kbd[ Qt::Key_Up ] )    rotate( -ROT_SPD * dT, 0, 0 );
 	if ( kbd[ Qt::Key_Down ] )  rotate( +ROT_SPD * dT, 0, 0 );
@@ -1046,22 +1196,8 @@ void GLView::advanceGears()
 	}
 }
 
-void GLView::checkActions()
-{
-	// TODO: Reenable
-	//scene->animate = aAnimate->isChecked();
 
-	lastTime = QTime::currentTime();
-
-	if ( Options::benchmark() )
-		timer->setInterval( 0 );
-	else
-		timer->setInterval( 1000 / FPS );
-
-	update();
-}
-
-
+// TODO: Separate widget
 void GLView::saveImage()
 {
 	QDialog dlg;
@@ -1267,25 +1403,10 @@ void GLView::keyPressEvent( QKeyEvent * event )
 	case Qt::Key_Escape:
 		doCompile = true;
 
-		if ( view == viewWalk )
+		if ( view == ViewWalk )
 			doCenter = true;
 
 		update();
-		break;
-	case Qt::Key_C:
-	{
-		Node * node = scene->getNode( model, scene->currentBlock );
-
-		if ( node != 0 ) {
-			BoundSphere bs = node->bounds();
-
-			this->setPosition( -bs.center );
-
-			if ( bs.radius > 0 ) {
-				setDistance( bs.radius * 1.5f );
-			}
-		}
-	}
 		break;
 	default:
 		event->ignore();
@@ -1375,7 +1496,7 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 
 void GLView::wheelEvent( QWheelEvent * event )
 {
-	if ( view == viewWalk )
+	if ( view == ViewWalk )
 		mouseMov += Vector3( 0, 0, event->delta() );
 	else
 		setDistance( Dist * (event->delta() < 0 ? 1.0 / 0.8 : 0.8) );
