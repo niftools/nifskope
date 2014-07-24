@@ -105,29 +105,29 @@ Options::Options()
 	dialog->setWindowFlags( Qt::Window | Qt::WindowStaysOnTopHint );
 	dialog->installEventFilter( this );
 
-	aDrawAxes = new QAction( tr( "Draw &Axes" ), this );
-	aDrawAxes->setToolTip( tr( "draw xyz-Axes" ) );
-	aDrawAxes->setCheckable( true );
-	aDrawAxes->setChecked( cfg.value( "Draw Axes", true ).toBool() );
-	connect( aDrawAxes, &QAction::toggled, this, &Options::sigChanged );
-
-	aDrawNodes = new QAction( tr( "Draw &Nodes" ), this );
-	aDrawNodes->setToolTip( tr( "draw bones/nodes" ) );
-	aDrawNodes->setCheckable( true );
-	aDrawNodes->setChecked( cfg.value( "Draw Nodes", true ).toBool() );
-	connect( aDrawNodes, &QAction::toggled, this, &Options::sigChanged );
-
-	aDrawHavok = new QAction( tr( "Draw &Havok" ), this );
-	aDrawHavok->setToolTip( tr( "draw the havok shapes" ) );
-	aDrawHavok->setCheckable( true );
-	aDrawHavok->setChecked( cfg.value( "Draw Collision Geometry", true ).toBool() );
-	connect( aDrawHavok, &QAction::toggled, this, &Options::sigChanged );
-
-	aDrawConstraints = new QAction( tr( "Draw &Constraints" ), this );
-	aDrawConstraints->setToolTip( tr( "draw the havok constraints" ) );
-	aDrawConstraints->setCheckable( true );
-	aDrawConstraints->setChecked( cfg.value( "Draw Constraints", true ).toBool() );
-	connect( aDrawConstraints, &QAction::toggled, this, &Options::sigChanged );
+	//aDrawAxes = new QAction( tr( "Draw &Axes" ), this );
+	//aDrawAxes->setToolTip( tr( "draw xyz-Axes" ) );
+	//aDrawAxes->setCheckable( true );
+	//aDrawAxes->setChecked( cfg.value( "Draw Axes", true ).toBool() );
+	//connect( aDrawAxes, &QAction::toggled, this, &Options::sigChanged );
+	//
+	//aDrawNodes = new QAction( tr( "Draw &Nodes" ), this );
+	//aDrawNodes->setToolTip( tr( "draw bones/nodes" ) );
+	//aDrawNodes->setCheckable( true );
+	//aDrawNodes->setChecked( cfg.value( "Draw Nodes", true ).toBool() );
+	//connect( aDrawNodes, &QAction::toggled, this, &Options::sigChanged );
+	//
+	//aDrawHavok = new QAction( tr( "Draw &Havok" ), this );
+	//aDrawHavok->setToolTip( tr( "draw the havok shapes" ) );
+	//aDrawHavok->setCheckable( true );
+	//aDrawHavok->setChecked( cfg.value( "Draw Collision Geometry", true ).toBool() );
+	//connect( aDrawHavok, &QAction::toggled, this, &Options::sigChanged );
+	//
+	//aDrawConstraints = new QAction( tr( "Draw &Constraints" ), this );
+	//aDrawConstraints->setToolTip( tr( "draw the havok constraints" ) );
+	//aDrawConstraints->setCheckable( true );
+	//aDrawConstraints->setChecked( cfg.value( "Draw Constraints", true ).toBool() );
+	//connect( aDrawConstraints, &QAction::toggled, this, &Options::sigChanged );
 
 	aDrawFurn = new QAction( tr( "Draw &Furniture" ), this );
 	aDrawFurn->setToolTip( tr( "draw the furniture markers" ) );
@@ -141,11 +141,11 @@ Options::Options()
 	aDrawHidden->setChecked( cfg.value( "Show Hidden Objects", false ).toBool() );
 	connect( aDrawHidden, &QAction::toggled, this, &Options::sigChanged );
 
-	aDrawStats = new QAction( tr( "Show S&tats" ), this );
-	aDrawStats->setToolTip( tr( "display some statistics about the selected node" ) );
-	aDrawStats->setCheckable( true );
-	aDrawStats->setChecked( cfg.value( "Show Stats", false ).toBool() );
-	connect( aDrawStats, &QAction::toggled, this, &Options::sigChanged );
+	//aDrawStats = new QAction( tr( "Show S&tats" ), this );
+	//aDrawStats->setToolTip( tr( "display some statistics about the selected node" ) );
+	//aDrawStats->setCheckable( true );
+	//aDrawStats->setChecked( cfg.value( "Show Stats", false ).toBool() );
+	//connect( aDrawStats, &QAction::toggled, this, &Options::sigChanged );
 
 	aSettings = new QAction( tr( "&Settings..." ), this );
 	aSettings->setToolTip( tr( "show the settings dialog" ) );
@@ -410,78 +410,77 @@ Options::Options()
 		cfg.beginGroup( "Render Settings" );
 
 		colorPage->pushLayout( tr( "Light" ), Qt::Vertical );
-		colorPage->pushLayout( Qt::Horizontal );
+		//colorPage->pushLayout( Qt::Horizontal );
 
 
-		cfg.beginGroup( "Light0" );
+		//cfg.beginGroup( "Light0" );
+		//
+		//QStringList lightNames{ tr( "Ambient" ), tr( "Diffuse" ), tr( "Specular" ) };
+		//QList<QColor> lightDefaults{
+		//	QColor::fromRgbF( .4, .4, .4 ),
+		//	QColor::fromRgbF( .8, .8, .8 ),
+		//	QColor::fromRgbF( 1, 1, 1 )
+		//};
+		//
+		//for ( int l = 0; l < 3; l++ ) {
+		//	ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
+		//	wheel->setSizeHint( QSize( 105, 105 ) );
+		//	wheel->setAlpha( false );
+		//	connect( wheel, &ColorWheel::sigColorEdited, this, &Options::sigChanged );
+		//	LightColor[l] = wheel;
+		//
+		//	colorPage->pushLayout( lightNames[l], Qt::Vertical );
+		//	colorPage->addWidget( wheel );
+		//	colorPage->popLayout();
+		//}
+		//
+		//colorPage->popLayout();
+		//colorPage->pushLayout( Qt::Horizontal );
+		//
+		//colorPage->addWidget( LightFrontal = new QCheckBox( tr( "Frontal" ) ), 0 );
+		//LightFrontal->setToolTip( tr( "Lock light to camera position" ) );
+		//LightFrontal->setChecked( cfg.value( "Frontal", true ).toBool() );
+		//connect( LightFrontal, &QCheckBox::toggled, this, &Options::sigChanged );
+		//
+		//QWidget * pos = colorPage->pushLayout( tr( "Position" ), Qt::Horizontal, 1 );
+		//pos->setDisabled( LightFrontal->isChecked() );
+		//connect( LightFrontal, &QCheckBox::toggled, pos, &QWidget::setDisabled );
+		//
+		//colorPage->addWidget( new QLabel( tr( "Declination" ) ) );
+		//colorPage->addWidget( LightDeclination = new QSpinBox, 1 );
+		//LightDeclination->setMinimum( -180 );
+		//LightDeclination->setMaximum( +180 );
+		//LightDeclination->setSingleStep( 5 );
+		//LightDeclination->setWrapping( true );
+		//LightDeclination->setValue( cfg.value( "Declination", 0 ).toInt() );
+		//connect( LightDeclination, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
+		//
+		//colorPage->addWidget( new QLabel( tr( "Planar Angle" ) ) );
+		//colorPage->addWidget( LightPlanarAngle = new QSpinBox, 1 );
+		//LightPlanarAngle->setMinimum( -180 );
+		//LightPlanarAngle->setMaximum( +180 );
+		//LightPlanarAngle->setSingleStep( 5 );
+		//LightPlanarAngle->setWrapping( true );
+		//LightPlanarAngle->setValue( cfg.value( "Planar Angle", 0 ).toInt() );
+		//connect( LightPlanarAngle, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
+		//cfg.endGroup();
 
-		QStringList lightNames{ tr( "Ambient" ), tr( "Diffuse" ), tr( "Specular" ) };
-		QList<QColor> lightDefaults{
-			QColor::fromRgbF( .4, .4, .4 ),
-			QColor::fromRgbF( .8, .8, .8 ),
-			QColor::fromRgbF( 1, 1, 1 )
-		};
-
-		for ( int l = 0; l < 3; l++ ) {
-			ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
-			wheel->setSizeHint( QSize( 105, 105 ) );
-			wheel->setAlpha( false );
-			connect( wheel, &ColorWheel::sigColorEdited, this, &Options::sigChanged );
-			LightColor[l] = wheel;
-
-			colorPage->pushLayout( lightNames[l], Qt::Vertical );
-			colorPage->addWidget( wheel );
-			colorPage->popLayout();
-		}
-
-		colorPage->popLayout();
-		colorPage->pushLayout( Qt::Horizontal );
-
-		colorPage->addWidget( LightFrontal = new QCheckBox( tr( "Frontal" ) ), 0 );
-		LightFrontal->setToolTip( tr( "Lock light to camera position" ) );
-		LightFrontal->setChecked( cfg.value( "Frontal", true ).toBool() );
-		connect( LightFrontal, &QCheckBox::toggled, this, &Options::sigChanged );
-
-		QWidget * pos = colorPage->pushLayout( tr( "Position" ), Qt::Horizontal, 1 );
-		pos->setDisabled( LightFrontal->isChecked() );
-		connect( LightFrontal, &QCheckBox::toggled, pos, &QWidget::setDisabled );
-
-		colorPage->addWidget( new QLabel( tr( "Declination" ) ) );
-		colorPage->addWidget( LightDeclination = new QSpinBox, 1 );
-		LightDeclination->setMinimum( -180 );
-		LightDeclination->setMaximum( +180 );
-		LightDeclination->setSingleStep( 5 );
-		LightDeclination->setWrapping( true );
-		LightDeclination->setValue( cfg.value( "Declination", 0 ).toInt() );
-		connect( LightDeclination, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
-
-		colorPage->addWidget( new QLabel( tr( "Planar Angle" ) ) );
-		colorPage->addWidget( LightPlanarAngle = new QSpinBox, 1 );
-		LightPlanarAngle->setMinimum( -180 );
-		LightPlanarAngle->setMaximum( +180 );
-		LightPlanarAngle->setSingleStep( 5 );
-		LightPlanarAngle->setWrapping( true );
-		LightPlanarAngle->setValue( cfg.value( "Planar Angle", 0 ).toInt() );
-		connect( LightPlanarAngle, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
-
-		cfg.endGroup();
-
-		colorPage->popLayout();
-		colorPage->pushLayout( tr( "Presets" ), Qt::Horizontal );
-
-		QButtonGroup * grp = new QButtonGroup( this );
-		connect( grp, bgClicked, this, &Options::activateLightPreset );
-		int psid = 0;
-		for ( const QString& psname : QStringList{ tr( "Sunny Day" ), tr( "Dark Night" ) } )
-		{
-			QPushButton * bt = new QPushButton( psname );
-			grp->addButton( bt, psid++ );
-			colorPage->addWidget( bt );
-		}
-
-		colorPage->popLayout();
-		colorPage->popLayout();
-		colorPage->popLayout();
+		//colorPage->popLayout();
+		//colorPage->pushLayout( tr( "Presets" ), Qt::Horizontal );
+		//
+		//QButtonGroup * grp = new QButtonGroup( this );
+		//connect( grp, bgClicked, this, &Options::activateLightPreset );
+		//int psid = 0;
+		//for ( const QString& psname : QStringList{ tr( "Sunny Day" ), tr( "Dark Night" ) } )
+		//{
+		//	QPushButton * bt = new QPushButton( psname );
+		//	grp->addButton( bt, psid++ );
+		//	colorPage->addWidget( bt );
+		//}
+		//
+		//colorPage->popLayout();
+		//colorPage->popLayout();
+		//colorPage->popLayout();
 		colorPage->pushLayout( tr( "Colors" ), Qt::Horizontal );
 
 
@@ -521,7 +520,7 @@ Options::Options()
 
 		cfg.endGroup();
 	}
-	GroupBox * matPage;
+	/*GroupBox * matPage;
 	tab->addTab( matPage = new GroupBox( Qt::Vertical ), tr( "Materials" ) );
 	{
 		cfg.beginGroup( "Render Settings" );
@@ -568,7 +567,7 @@ Options::Options()
 		matPage->popLayout();
 
 		cfg.endGroup();
-	}
+	}*/
 
 	GroupBox * exportPage;
 	tab->addTab( exportPage = new GroupBox( Qt::Vertical ), tr( "Export" ) );
@@ -622,15 +621,12 @@ QList<QAction *> Options::actions()
 
 	return{ opts->aSettings,
 			sep,
-			opts->aDrawAxes,
-			opts->aDrawNodes,
-			opts->aDrawHavok ,
-			opts->aDrawConstraints,
+			//opts->aDrawAxes,
+			//opts->aDrawNodes,
+			//opts->aDrawHavok ,
+			//opts->aDrawConstraints,
 			opts->aDrawFurn,
-			opts->aDrawHidden,
-#ifdef USE_GL_QPAINTER
-			opts->aDrawStats
-#endif
+			opts->aDrawHidden
 	};
 }
 
@@ -645,20 +641,20 @@ void Options::save()
 		cfg.setValue( "Texture Folders", textureFolders() );
 		cfg.setValue( "Texture Alternatives", textureAlternatives() );
 
-		cfg.setValue( "Draw Axes", drawAxes() );
-		cfg.setValue( "Draw Nodes", drawNodes() );
-		cfg.setValue( "Draw Collision Geometry", drawHavok() );
-		cfg.setValue( "Draw Constraints", drawConstraints() );
+		//cfg.setValue( "Draw Axes", drawAxes() );
+		//cfg.setValue( "Draw Nodes", drawNodes() );
+		//cfg.setValue( "Draw Collision Geometry", drawHavok() );
+		//cfg.setValue( "Draw Constraints", drawConstraints() );
 		cfg.setValue( "Draw Furniture Markers", drawFurn() );
 		cfg.setValue( "Show Hidden Objects", drawHidden() );
-		cfg.setValue( "Show Stats", drawStats() );
+		//cfg.setValue( "Show Stats", drawStats() );
 
 		cfg.setValue( "Background", bgColor() );
 		cfg.setValue( "Foreground", nlColor() );
 		cfg.setValue( "Highlight", hlColor() );
 
 		cfg.setValue( "Anti Aliasing", antialias() );
-		cfg.setValue( "Texturing", texturing() );
+		//cfg.setValue( "Texturing", texturing() );
 		cfg.setValue( "Enable Shaders", shaders() );
 
 		cfg.setValue( "Cull Nodes By Name", CullByID->isChecked() );
@@ -668,18 +664,18 @@ void Options::save()
 		cfg.setValue( "Up Axis", AxisX->isChecked() ? "X" : AxisY->isChecked() ? "Y" : "Z" );
 
 		// Light0 group
-		cfg.setValue( "Light0/Ambient", ambient() );
-		cfg.setValue( "Light0/Diffuse", diffuse() );
-		cfg.setValue( "Light0/Specular", specular() );
-		cfg.setValue( "Light0/Frontal", lightFrontal() );
-		cfg.setValue( "Light0/Declination", lightDeclination() );
-		cfg.setValue( "Light0/Planar Angle", lightPlanarAngle() );
+		//cfg.setValue( "Light0/Ambient", ambient() );
+		//cfg.setValue( "Light0/Diffuse", diffuse() );
+		//cfg.setValue( "Light0/Specular", specular() );
+		//cfg.setValue( "Light0/Frontal", lightFrontal() );
+		//cfg.setValue( "Light0/Declination", lightDeclination() );
+		//cfg.setValue( "Light0/Planar Angle", lightPlanarAngle() );
 
 		// MatOver group
-		cfg.setValue( "MatOver/Ambient", overrideAmbient() );
-		cfg.setValue( "MatOver/Diffuse", overrideDiffuse() );
-		cfg.setValue( "MatOver/Specular", overrideSpecular() );
-		cfg.setValue( "MatOver/Emissive", overrideEmissive() );
+		//cfg.setValue( "MatOver/Ambient", overrideAmbient() );
+		//cfg.setValue( "MatOver/Diffuse", overrideDiffuse() );
+		//cfg.setValue( "MatOver/Specular", overrideSpecular() );
+		//cfg.setValue( "MatOver/Emissive", overrideEmissive() );
 
 	cfg.endGroup(); // Render Settings
 
@@ -917,25 +913,25 @@ void Options::textureFolderIndex( const QModelIndex & idx )
 	TexFolderButtons[3]->setEnabled( idx.isValid() && ( idx.row() < TexFolderModel->rowCount() - 1 ) );
 }
 
-void Options::activateLightPreset( int id )
-{
-	switch ( id ) {
-	case 0:     // sunny day
-		LightColor[0]->setColor( QColor::fromRgbF( 0.4, 0.4, 0.4 ) );
-		LightColor[1]->setColor( QColor::fromRgbF( 0.8, 0.8, 0.8 ) );
-		LightColor[2]->setColor( QColor::fromRgbF( 1.0, 1.0, 1.0 ) );
-		break;
-	case 1:     // dark night
-		LightColor[0]->setColor( QColor::fromRgbF( 0.2, 0.2, 0.25 ) );
-		LightColor[1]->setColor( QColor::fromRgbF( 0.1, 0.1, 0.1 ) );
-		LightColor[2]->setColor( QColor::fromRgbF( 0.1, 0.1, 0.1 ) );
-		break;
-	default:
-		return;
-	}
-
-	emit sigChanged();
-}
+//void Options::activateLightPreset( int id )
+//{
+//	switch ( id ) {
+//	case 0:     // sunny day
+//		LightColor[0]->setColor( QColor::fromRgbF( 0.4, 0.4, 0.4 ) );
+//		LightColor[1]->setColor( QColor::fromRgbF( 0.8, 0.8, 0.8 ) );
+//		LightColor[2]->setColor( QColor::fromRgbF( 1.0, 1.0, 1.0 ) );
+//		break;
+//	case 1:     // dark night
+//		LightColor[0]->setColor( QColor::fromRgbF( 0.2, 0.2, 0.25 ) );
+//		LightColor[1]->setColor( QColor::fromRgbF( 0.1, 0.1, 0.1 ) );
+//		LightColor[2]->setColor( QColor::fromRgbF( 0.1, 0.1, 0.1 ) );
+//		break;
+//	default:
+//		return;
+//	}
+//
+//	emit sigChanged();
+//}
 
 QStringList Options::textureFolders()
 {
@@ -947,20 +943,20 @@ bool Options::textureAlternatives()
 	return get()->TexAlternatives->isChecked();
 }
 
-Options::Axis Options::upAxis()
-{
-	return get()->AxisX->isChecked() ? XAxis : get()->AxisY->isChecked() ? YAxis : ZAxis;
-}
+//Options::Axis Options::upAxis()
+//{
+//	return get()->AxisX->isChecked() ? XAxis : get()->AxisY->isChecked() ? YAxis : ZAxis;
+//}
 
 bool Options::antialias()
 {
 	return get()->AntiAlias->isChecked();
 }
 
-bool Options::texturing()
-{
-	return get()->Textures->isChecked();
-}
+//bool Options::texturing()
+//{
+//	return get()->Textures->isChecked();
+//}
 
 bool Options::shaders()
 {
@@ -968,25 +964,25 @@ bool Options::shaders()
 }
 
 
-bool Options::drawAxes()
-{
-	return get()->aDrawAxes->isChecked();
-}
-
-bool Options::drawNodes()
-{
-	return get()->aDrawNodes->isChecked();
-}
-
-bool Options::drawHavok()
-{
-	return get()->aDrawHavok->isChecked();
-}
-
-bool Options::drawConstraints()
-{
-	return get()->aDrawConstraints->isChecked();
-}
+//bool Options::drawAxes()
+//{
+//	return get()->aDrawAxes->isChecked();
+//}
+//
+//bool Options::drawNodes()
+//{
+//	return get()->aDrawNodes->isChecked();
+//}
+//
+//bool Options::drawHavok()
+//{
+//	return get()->aDrawHavok->isChecked();
+//}
+//
+//bool Options::drawConstraints()
+//{
+//	return get()->aDrawConstraints->isChecked();
+//}
 
 bool Options::drawFurn()
 {
@@ -998,15 +994,15 @@ bool Options::drawHidden()
 	return get()->aDrawHidden->isChecked();
 }
 
-bool Options::drawStats()
-{
-	return get()->aDrawStats->isChecked();
-}
-
-bool Options::benchmark()
-{
-	return false;
-}
+//bool Options::drawStats()
+//{
+//	return get()->aDrawStats->isChecked();
+//}
+//
+//bool Options::benchmark()
+//{
+//	return false;
+//}
 
 
 QColor Options::bgColor()
@@ -1039,7 +1035,13 @@ bool Options::onlyTextured()
 	return get()->CullNoTex->isChecked();
 }
 
+QString Options::startupVersion()
+{
+	return get()->StartVer->text();
+};
 
+
+/*
 QColor Options::ambient()
 {
 	return get()->LightColor[ 0 ]->getColor();
@@ -1070,11 +1072,6 @@ int Options::lightPlanarAngle()
 	return get()->LightPlanarAngle->value();
 }
 
-QString Options::startupVersion()
-{
-	return get()->StartVer->text();
-};
-
 bool Options::overrideMaterials()
 {
 	return get()->overrideMatCheck->isChecked();
@@ -1098,7 +1095,7 @@ QColor Options::overrideSpecular()
 QColor Options::overrideEmissive()
 {
 	return get()->matColors[3]->getColor();
-}
+}*/
 
 /*!
  * This option is hidden in the registry and disabled by setting the key

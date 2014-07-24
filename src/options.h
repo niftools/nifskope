@@ -90,7 +90,7 @@ public:
 	//! Whether to enable antialiasing
 	static bool antialias();
 	//! Whether to enable texturing
-	static bool texturing();
+	//static bool texturing();
 	//! Whether to enable shaders
 	static bool shaders();
 
@@ -110,24 +110,24 @@ public:
 	static bool onlyTextured();
 
 	//! Whether to draw the axes
-	static bool drawAxes();
+	//static bool drawAxes();
 	//! Whether to draw nodes
-	static bool drawNodes();
+	//static bool drawNodes();
 	//! Whether to draw Havok shapes
-	static bool drawHavok();
+	//static bool drawHavok();
 	//! Whether to draw constraints
-	static bool drawConstraints();
+	//static bool drawConstraints();
 	//! Whether to draw furniture markers
 	static bool drawFurn();
 	//! Whether to draw hidden shapes
 	static bool drawHidden();
 	//! Whether to draw stats
-	static bool drawStats();
+	//static bool drawStats();
 	//! Whether to draw meshes
 	static bool drawMeshes();
 
 	//! Whether to benchmark FPS
-	static bool benchmark();
+	//static bool benchmark();
 
 	//! The possible axes
 	typedef enum
@@ -136,14 +136,14 @@ public:
 	} Axis;
 
 	//! The axis defined as up
-	static Axis upAxis();
+	//static Axis upAxis();
 
 	//! The ambient lighting color
-	static QColor ambient();
+	//static QColor ambient();
 	//! The diffuse lighting color
-	static QColor diffuse();
+	//static QColor diffuse();
 	//! The specular lighting color
-	static QColor specular();
+	//static QColor specular();
 
 	//! Whether to use frontal lighting
 	static bool lightFrontal();
@@ -153,15 +153,15 @@ public:
 	static int lightPlanarAngle();
 
 	//! Whether to override material colors
-	static bool overrideMaterials();
+	//static bool overrideMaterials();
 	//! The ambient color to override materials with
-	static QColor overrideAmbient();
+	//static QColor overrideAmbient();
 	//! The diffuse color to override materials with
-	static QColor overrideDiffuse();
+	//static QColor overrideDiffuse();
 	//! The specular color to override materials with
-	static QColor overrideSpecular();
+	//static QColor overrideSpecular();
 	//! The emissive color to override materials with
-	static QColor overrideEmissive();
+	//static QColor overrideEmissive();
 
 	//! The NIF version to use at start
 	static QString startupVersion();
@@ -190,7 +190,7 @@ protected slots:
 	//! Automatic detection of texture folders
 	void textureFolderAutoDetect();
 	//! Set lighting presets
-	void activateLightPreset( int );
+	//void activateLightPreset( int );
 
 public slots:
 	void save();
@@ -211,13 +211,13 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Menu
 
-	QAction * aDrawAxes;
-	QAction * aDrawNodes;
-	QAction * aDrawHavok;
-	QAction * aDrawConstraints;
+	//QAction * aDrawAxes;
+	//QAction * aDrawNodes;
+	//QAction * aDrawHavok;
+	//QAction * aDrawConstraints;
 	QAction * aDrawFurn;
 	QAction * aDrawHidden;
-	QAction * aDrawStats;
+	//QAction * aDrawStats;
 
 	QAction * aSettings;
 
@@ -257,17 +257,17 @@ protected:
 	ColorWheel * colors[3];
 	AlphaSlider * alpha[3];
 
-	ColorWheel * LightColor[3];
+	//ColorWheel * LightColor[3];
 
-	QCheckBox * LightFrontal;
-	QSpinBox * LightDeclination;
-	QSpinBox * LightPlanarAngle;
+	//QCheckBox * LightFrontal;
+	//QSpinBox * LightDeclination;
+	//QSpinBox * LightPlanarAngle;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Materials Settings page
 
-	QCheckBox * overrideMatCheck;
-	ColorWheel * matColors[4];
+	//QCheckBox * overrideMatCheck;
+	//ColorWheel * matColors[4];
 
 	//////////////////////////////////////////////////////////////////////////
 	// Export Settings page
