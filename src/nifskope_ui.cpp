@@ -147,13 +147,13 @@ void NifSkope::initActions()
 		DoLighting = 0x1000
 	*/
 
-	ui->aShowAxes->setData( 0x1 );
-	ui->aShowNodes->setData( 0x4 );
-	ui->aShowCollision->setData( 0x8 );
-	ui->aShowConstraints->setData( 0x10 );
-	ui->aVertexColors->setData( 0x80 );
-	ui->aTextures->setData( 0x100 );
-	ui->aLighting->setData( 0x1000 );
+	ui->aShowAxes->setData( Scene::ShowAxes );
+	ui->aShowNodes->setData( Scene::ShowNodes );
+	ui->aShowCollision->setData( Scene::ShowCollision );
+	ui->aShowConstraints->setData( Scene::ShowConstraints );
+	ui->aVertexColors->setData( Scene::ShowVertexColors );
+	ui->aTextures->setData( Scene::UseTextures );
+	ui->aLighting->setData( Scene::DoLighting );
 
 	connect( ui->aShowAxes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aShowNodes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
@@ -216,6 +216,10 @@ void NifSkope::initActions()
 		ogl->update();
 	} );
 #endif
+
+	connect( ui->aVisNormals, &QAction::triggered, [this]( bool checked ) {
+		ogl->setVisMode( Scene::VisNormalsOnly, checked );
+	} );
 
 	connect( ogl, &GLView::clicked, this, &NifSkope::select );
 	connect( ogl, &GLView::customContextMenuRequested, this, &NifSkope::contextMenu );
@@ -397,10 +401,10 @@ void NifSkope::initToolBars()
 		AnimSwitch = 0x8
 	};*/
 
-	ui->aAnimate->setData( 0x1 );
-	ui->aAnimPlay->setData( 0x2 );
-	ui->aAnimLoop->setData( 0x4 );
-	ui->aAnimSwitch->setData( 0x8 );
+	ui->aAnimate->setData( GLView::AnimEnabled );
+	ui->aAnimPlay->setData( GLView::AnimPlay );
+	ui->aAnimLoop->setData( GLView::AnimLoop );
+	ui->aAnimSwitch->setData( GLView::AnimSwitch );
 
 	connect( ui->aAnimate, &QAction::toggled, ogl, &GLView::updateAnimationState );
 	connect( ui->aAnimPlay, &QAction::triggered, ogl, &GLView::updateAnimationState );
@@ -440,7 +444,7 @@ void NifSkope::initToolBars()
 
 	connect( ogl, &GLView::sequenceStopped, ui->aAnimPlay, &QAction::toggle );
 	connect( ogl, &GLView::sequenceChanged, [this]( const QString & seqname ) {
-		animGroups->setCurrentIndex( ogl->scene->animGroups.indexOf( seqname ) );
+		animGroups->setCurrentIndex( ogl->getScene()->animGroups.indexOf( seqname ) );
 	} );
 
 	connect( ogl, &GLView::sequencesUpdated, [this, animGroupsAction]() {
@@ -448,8 +452,8 @@ void NifSkope::initToolBars()
 		ui->tAnim->show();
 
 		animGroups->clear();
-		animGroups->addItems( ogl->scene->animGroups );
-		animGroups->setCurrentIndex( ogl->scene->animGroups.indexOf( ogl->scene->animGroup ) );
+		animGroups->addItems( ogl->getScene()->animGroups );
+		animGroups->setCurrentIndex( ogl->getScene()->animGroups.indexOf( ogl->getScene()->animGroup ) );
 
 		if ( animGroups->count() == 0 ) {
 			animGroupsAction->setVisible( false );
@@ -511,7 +515,13 @@ QMenu * NifSkope::lightingWidget()
 
 	mLight->setStyleSheet(
 		R"qss(#mLight { background: #f5f5f5; padding: 8px; border: 1px solid #CCC; })qss"
-		);
+	);
+
+	auto onOffWidget = new QWidget;
+	onOffWidget->setContentsMargins( 0, 0, 0, 0 );
+	auto onOffLayout = new QHBoxLayout;
+	onOffLayout->setContentsMargins( 0, 0, 0, 0 );
+	onOffWidget->setLayout( onOffLayout );
 
 	auto chkLighting = new QToolButton( mLight );
 	chkLighting->setObjectName( "chkLighting" );
@@ -523,7 +533,7 @@ QMenu * NifSkope::lightingWidget()
 	//chkLighting->setText( "    " + ui->aLighting->text() ); // Resets during toggle
 	//chkLighting->setStatusTip( ui->aLighting->statusTip() ); Doesn't work
 	chkLighting->setStyleSheet( R"qss( 
-		#chkLighting { padding: 5px; padding-left: 18px; } /* Hackish padding */
+		#chkLighting { padding: 5px; } 
 	)qss" );
 
 	auto lightingOptionsWidget = new QWidgetAction( mLight );
@@ -545,46 +555,59 @@ QMenu * NifSkope::lightingWidget()
 	//chkFrontal->setStatusTip( ui->aFrontalLight->statusTip() ); Doesn't work
 	chkFrontal->setStyleSheet( R"qss( #chkFrontal { padding: 5px; } )qss" );
 
-	auto sldDeclination = new QSlider( Qt::Horizontal, chkFrontal );
-	sldDeclination->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
-	sldDeclination->setRange( -360, 360 );
-	sldDeclination->setSingleStep( 45 );
-	sldDeclination->setTickInterval( 180 );
-	sldDeclination->setTickPosition( QSlider::TicksBelow );
-	sldDeclination->setValue( 0 );  // Render Settings/Light0/Declination
-	//sldDeclination->setDisabled( true );
+	onOffLayout->addWidget( chkLighting );
+	onOffLayout->addWidget( chkFrontal );
 
-	auto sldPlanarAngle = new QSlider( Qt::Horizontal, chkFrontal );
-	sldPlanarAngle->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
-	sldPlanarAngle->setRange( -360, 360 );
-	sldPlanarAngle->setSingleStep( 45 );
-	sldPlanarAngle->setTickInterval( 180 );
-	sldPlanarAngle->setTickPosition( QSlider::TicksBelow );
-	sldPlanarAngle->setValue( 0 );  // Render Settings/Light0/Planar Angle
-	//sldPlanarAngle->setDisabled( true );
+	// Slider lambda
+	auto sld = [this]( QWidget * parent, const QString & img, int min, int max ) {
 
-	auto chkTextures = new QToolButton( mLight );
-	chkTextures->setObjectName( "chkTextures" );
-	chkTextures->setCheckable( true );
-	chkTextures->setChecked( true );
-	chkTextures->setDefaultAction( ui->aTextures );
-	chkTextures->setIconSize( QSize( 16, 16 ) );
-	//chkTextures->setStatusTip( ui->aTextures->statusTip() ); Doesn't work
-	chkTextures->setStyleSheet( R"qss( #chkTextures { padding: 3px 2px 2px 3px; } )qss" );
+		auto slider = new QSlider( Qt::Horizontal, parent );
+		slider->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
+		slider->setRange( min, max );
+		slider->setSingleStep( max / 4 );
+		slider->setTickInterval( max / 2 );
+		slider->setTickPosition( QSlider::TicksBelow );
+		slider->setValue( 0 );
+		slider->setStyleSheet( "background: transparent url(" + img + ");" + R"qss(
+				background-repeat: no-repeat;
+				background-position: left;
+				background-origin: margin;
+				background-clip: margin;
+				margin-left: 20px;
+			)qss" 
+		);
 
-	auto chkVertexColors = new QToolButton( mLight );
-	chkVertexColors->setObjectName( "chkVertexColors" );
-	chkVertexColors->setCheckable( true );
-	chkVertexColors->setChecked( true );
-	chkVertexColors->setDefaultAction( ui->aVertexColors );
-	chkVertexColors->setIconSize( QSize( 16, 16 ) );
-	//chkVertexColors->setStatusTip( ui->aTextures->statusTip() ); Doesn't work
-	chkVertexColors->setStyleSheet( R"qss( #chkVertexColors { padding: 3px 2px 2px 3px; } )qss" );
+		return slider;
+	};
+
+	// Lighting position, uses -720 to 720 and GLView divides it by 4
+	//	because QSlider uses integers and we'd like less choppy motion
+	auto sldDeclination = sld( chkFrontal, ":/btn/lightVertical", -720, 720 );
+	auto sldPlanarAngle = sld( chkFrontal, ":/btn/lightHorizontal", -720, 720 );
 
 
-	optionsLayout->addWidget( chkFrontal );
+	// Button lambda
+	auto btn = [this]( QAction * act, const QString & name, QMenu * menu ) {
+	
+		auto button = new QToolButton( menu );
+		button->setObjectName( name );
+		button->setCheckable( true );
+		button->setChecked( true );
+		button->setDefaultAction( act );
+		button->setIconSize( QSize( 16, 16 ) );
+		//button->setStatusTip( ui->aTextures->statusTip() ); Doesn't work
+		button->setStyleSheet( R"qss( padding: 3px 2px 2px 3px; )qss" );
+
+		return button;
+	};
+
+	auto chkTextures = btn( ui->aTextures, "chkTextures", mLight );
+	auto chkVertexColors = btn( ui->aVertexColors, "chkVertexColors", mLight );
+	auto chkNormalsOnly = btn( ui->aVisNormals, "chkNormalsOnly", mLight );
+
 	optionsLayout->addWidget( chkTextures );
 	optionsLayout->addWidget( chkVertexColors );
+	optionsLayout->addWidget( chkNormalsOnly );
 
 	lightingOptionsWidget->setDefaultWidget( optionsWidget );
 
@@ -623,7 +646,7 @@ QMenu * NifSkope::lightingWidget()
 
 	// Set up QWidgetActions so they can be added to a QMenu
 	auto lightingWidget = new QWidgetAction( mLight );
-	lightingWidget->setDefaultWidget( chkLighting );
+	lightingWidget->setDefaultWidget( onOffWidget );
 
 	auto lightingAngleWidget = new QWidgetAction( mLight );
 	lightingAngleWidget->setDefaultWidget( lightingGroup );
@@ -813,7 +836,7 @@ void NifSkope::setViewFont( const QFont & font )
 void NifSkope::resizeDone()
 {
 	isResizing = false;
-	qDebug() << "resizeDone" << isResizing;
+	//qDebug() << "resizeDone" << isResizing;
 	//qDebug() << sender();
 
 	ogl->setUpdatesEnabled( true );
@@ -821,7 +844,7 @@ void NifSkope::resizeDone()
 	// Testing of parent widget idea
 	//ogl->setVisible( true );
 
-	ogl->scene->animate = true;
+	ogl->getScene()->animate = true;
 	ogl->update();
 	ogl->resizeGL( ogl->width(), ogl->height() );
 }
@@ -861,7 +884,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	if ( e->type() == QEvent::Resize ) {
 
 		if ( !isResizing  && !resizeTimer->isActive() ) {
-			ogl->scene->animate = false;
+			ogl->getScene()->animate = false;
 			ogl->updateGL();
 			buf = ogl->grabFrameBuffer();
 

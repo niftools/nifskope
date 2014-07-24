@@ -386,6 +386,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="separator"/>
     <addaction name="aTextures"/>
     <addaction name="aVertexColors"/>
+    <addaction name="aVisNormals"/>
    </widget>
    <widget class="QMenu" name="mHelp">
     <property name="title">
@@ -1563,6 +1564,18 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="toolTip">
     <string>Frontal Lighting</string>
+   </property>
+  </action>
+  <action name="aVisNormals">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/normals</normaloff>:/btn/normals</iconset>
+   </property>
+   <property name="text">
+    <string>Normals Only</string>
    </property>
   </action>
  </widget>

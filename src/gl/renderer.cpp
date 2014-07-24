@@ -479,6 +479,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	fn->glUseProgram( prog->id );
 
+	auto opts = mesh->scene->options;
+	auto vis = mesh->scene->visMode;
+	QString diff;
+
+	if ( (opts & Scene::DoLighting) && (vis & Scene::VisNormalsOnly) )
+		diff = "white.dds";
+
 	// texturing
 
 	TexturingProperty * texprop = props.get<TexturingProperty>();
@@ -497,7 +504,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( !activateTextureUnit( texunit ) )
 			return false;
 
-		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0 )) )
+		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0, diff )) )
 			return false;
 
 		fn->glUniform1i( uniBaseMap, texunit++ );
