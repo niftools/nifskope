@@ -1207,11 +1207,11 @@ void GLView::advanceGears()
 // TODO: Separate widget
 void GLView::saveImage()
 {
-	QDialog dlg;
-	QGridLayout * lay = new QGridLayout;
-	dlg.setWindowTitle( tr( "Save View" ) );
-	dlg.setLayout( lay );
-	dlg.setMinimumWidth( 400 );
+	auto dlg = new QDialog( this );
+	QGridLayout * lay = new QGridLayout( dlg );
+	dlg->setWindowTitle( tr( "Save View" ) );
+	dlg->setLayout( lay );
+	dlg->setMinimumWidth( 400 );
 
 	QString date = QDateTime::currentDateTime().toString( "yyyyMMdd_HH-mm-ss" );
 	QString name = model->getFilename();
@@ -1226,18 +1226,25 @@ void GLView::saveImage()
 	QString nifPath = nifFolder + (!nifFolder.isEmpty() ? "/" : "") + filename;
 
 	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::LeftToRight );
+	file->setParent( dlg );
 	file->setFilter( { "Images (*.jpg *.png *.bmp)", "JPEG (*.jpg)", "PNG (*.png)", "BMP (*.bmp)" } );
 	file->setFile( nifskopePath );
 	lay->addWidget( file, 0, 0, 1, -1 );
+
+	auto grpDir = new QButtonGroup( dlg );
 	
-	QRadioButton * nifskopeDir = new QRadioButton( tr( "NifSkope Directory" ), this );
+	QRadioButton * nifskopeDir = new QRadioButton( tr( "NifSkope Directory" ), dlg );
 	nifskopeDir->setChecked( true );
 	nifskopeDir->setToolTip( tr( "Save to NifSkope screenshots directory" ) );
 
-	QRadioButton * niffileDir = new QRadioButton( tr( "NIF Directory" ), this );
+	QRadioButton * niffileDir = new QRadioButton( tr( "NIF Directory" ), dlg );
 	niffileDir->setChecked( false );
 	niffileDir->setDisabled( nifFolder.isEmpty() );
 	niffileDir->setToolTip( tr( "Save to NIF file directory" ) );
+
+	grpDir->addButton( nifskopeDir );
+	grpDir->addButton( niffileDir );
+	grpDir->setExclusive( true );
 
 	lay->addWidget( nifskopeDir, 1, 0, 1, 1 );
 	lay->addWidget( niffileDir, 1, 1, 1, 1 );
@@ -1249,32 +1256,79 @@ void GLView::saveImage()
 
 	QHBoxLayout * pixBox = new QHBoxLayout;
 	pixBox->setAlignment( Qt::AlignRight );
-	QSpinBox * pixQuality = new QSpinBox;
+	QSpinBox * pixQuality = new QSpinBox( dlg );
 	pixQuality->setRange( -1, 100 );
 	pixQuality->setSingleStep( 10 );
 	pixQuality->setValue( jpegQuality );
 	pixQuality->setSpecialValueText( tr( "Auto" ) );
 	pixQuality->setMaximumWidth( pixQuality->minimumSizeHint().width() );
-	pixBox->addWidget( new QLabel( tr( "JPEG Quality" ) ) );
+	pixBox->addWidget( new QLabel( tr( "JPEG Quality" ), dlg ) );
 	pixBox->addWidget( pixQuality );
 	lay->addLayout( pixBox, 1, 2, Qt::AlignRight );
 
-	QHBoxLayout * hBox  = new QHBoxLayout;
-	QPushButton * btnOk = new QPushButton( tr( "Save" ) );
-	QPushButton * btnCancel = new QPushButton( tr( "Cancel" ) );
+
+	// Image Size radio button lambda
+	auto btnSize = [dlg]( const QString & name ) {
+		auto btn = new QRadioButton( name, dlg );
+		btn->setCheckable( true );
+		
+		return btn;
+	};
+
+	// Get max viewport size for platform
+	GLint dims;
+	glGetIntegerv( GL_MAX_VIEWPORT_DIMS, &dims );
+	int maxSize = dims;
+
+	// Default size
+	auto btnOneX = btnSize( "1x" );
+	btnOneX->setChecked( true );
+	// Disable any of these that would exceed the max viewport size of the platform
+	auto btnTwoX = btnSize( "2x" );
+	btnTwoX->setDisabled( (width() * 2) > maxSize || (height() * 2) > maxSize );
+	auto btnFourX = btnSize( "4x" );
+	btnFourX->setDisabled( (width() * 4) > maxSize || (height() * 4) > maxSize );
+	auto btnEightX = btnSize( "8x" );
+	btnEightX->setDisabled( (width() * 8) > maxSize || (height() * 8) > maxSize );
+
+
+	auto grpBox = new QGroupBox( tr( "Image Size" ), dlg );
+	auto grpBoxLayout = new QHBoxLayout;
+	grpBoxLayout->addWidget( btnOneX );
+	grpBoxLayout->addWidget( btnTwoX );
+	grpBoxLayout->addWidget( btnFourX );
+	grpBoxLayout->addWidget( btnEightX );
+	grpBoxLayout->addWidget( new QLabel( "<b>Caution:</b><br/> 4x and 8x may be memory intensive.", dlg ) );
+	grpBoxLayout->addStretch( 1 );
+	grpBox->setLayout( grpBoxLayout );
+
+	auto grpSize = new QButtonGroup( dlg );
+	grpSize->addButton( btnOneX, 1 );
+	grpSize->addButton( btnTwoX, 2 );
+	grpSize->addButton( btnFourX, 4 );
+	grpSize->addButton( btnEightX, 8 );
+
+	grpSize->setExclusive( true );
+	
+	lay->addWidget( grpBox, 2, 0, 1, -1 );
+
+
+	QHBoxLayout * hBox = new QHBoxLayout;
+	QPushButton * btnOk = new QPushButton( tr( "Save" ), dlg );
+	QPushButton * btnCancel = new QPushButton( tr( "Cancel" ), dlg );
 	hBox->addWidget( btnOk );
 	hBox->addWidget( btnCancel );
-	lay->addLayout( hBox, 2, 0, 1, -1 );
+	lay->addLayout( hBox, 3, 0, 1, -1 );
 
 	// Set FileSelector to NifSkope dir (relative)
-	connect( nifskopeDir, &QRadioButton::clicked, [&]()
+	connect( nifskopeDir, &QRadioButton::clicked, [=]()
 		{
 			file->setText( nifskopePath );
 			file->setFile( nifskopePath );
 		}
 	);
 	// Set FileSelector to NIF File dir (absolute)
-	connect( niffileDir, &QRadioButton::clicked, [&]()
+	connect( niffileDir, &QRadioButton::clicked, [=]()
 		{
 			file->setText( nifPath );
 			file->setFile( nifPath );
@@ -1282,7 +1336,7 @@ void GLView::saveImage()
 	);
 
 	// Validate on OK
-	connect( btnOk, &QPushButton::clicked, [&]() 
+	connect( btnOk, &QPushButton::clicked, [=, &cfg]() 
 		{
 			// Save JPEG Quality
 			cfg.setValue( "JPEG/Quality", pixQuality->value() );
@@ -1293,18 +1347,59 @@ void GLView::saveImage()
 				workingDir.mkpath( "screenshots" );
 			}
 
-			QImage img = grabFrameBuffer();
-			if ( img.save( file->file(), 0, pixQuality->value() ) ) {
-				dlg.accept();
+			// Supersampling
+			int ss = grpSize->checkedId();
+
+			int w, h;
+
+			w = width();
+			h = height();
+
+			// Resize viewport for supersampling
+			if ( ss > 1 ) {
+				w *= ss;
+				h *= ss;
+
+				resizeGL( w, h );
+			}
+			
+			QOpenGLFramebufferObjectFormat fboFmt;
+			fboFmt.setTextureTarget( GL_TEXTURE_2D );
+			fboFmt.setInternalTextureFormat( GL_RGB );
+			fboFmt.setMipmap( false );
+			fboFmt.setAttachment( QOpenGLFramebufferObject::Attachment::Depth );
+			fboFmt.setSamples( 16 / ss );
+
+			QOpenGLFramebufferObject fbo( w, h, fboFmt );
+			fbo.bind();
+
+			update();
+			updateGL();
+
+			fbo.release();
+
+			QImage * img = new QImage(fbo.toImage());
+
+			// Return viewport to original size
+			if ( ss > 1 )
+				resizeGL( width(), height() );
+
+			
+			if ( img->save( file->file(), 0, pixQuality->value() ) ) {
+				dlg->accept();
 			} else {
 				qWarning() << "Could not save to file. Please check the filepath and extension are valid.";
 			}
+
+			delete img;
+			img = nullptr;
 		}
 	);
-	connect( btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject );
+	connect( btnCancel, &QPushButton::clicked, dlg, &QDialog::reject );
 
-	if ( dlg.exec() != QDialog::Accepted )
+	if ( dlg->exec() != QDialog::Accepted ) {
 		return;
+	}
 }
 
 
