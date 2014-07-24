@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLVIEW
 
 #include "nifmodel.h"
+#include "gl/glscene.h"
 #include "widgets/floatedit.h"
 #include "widgets/floatslider.h"
 
@@ -115,19 +116,6 @@ public:
 		DbgBounds = 2
 	};
 
-
-	enum VisModes
-	{
-		VisNone = 0x0,
-		VisLightPos = 0x1,
-		VisNormalsOnly = 0x2
-	};
-
-	Q_DECLARE_FLAGS( VisMode, VisModes );
-
-	VisMode visMode;
-
-
 	void setNif( NifModel * );
 
 	Scene * getScene();
@@ -143,13 +131,12 @@ public:
 	void setDistance( float );
 	void setPosition( float, float, float );
 	void setPosition( Vector3 );
+	void setProjection( bool );
 	void setRotation( float, float, float );
 	void setZoom( float );
 
 	void setOrientation( GLView::ViewState, bool recenter = true );
 	void flipOrientation();
-
-	void setProjection( bool );
 
 	void setDebugMode( DebugMode );
 
@@ -172,8 +159,7 @@ public slots:
 	void frontalLightToggled( bool );
 	void flagsChanged();
 	void updateAnimationState();
-	void setVisMode( VisMode );
-	void unsetVisMode( VisMode );
+	void setVisMode( Scene::VisMode, bool checked = true );
 
 signals:
 	void clicked( const QModelIndex & );
@@ -270,6 +256,5 @@ private slots:
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( GLView::AnimationState )
-Q_DECLARE_OPERATORS_FOR_FLAGS( GLView::VisMode )
 
 #endif

@@ -186,7 +186,7 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	lightVisTimeout = 1500;
 	lightVisTimer = new QTimer( this );
 	lightVisTimer->setSingleShot( true );
-	connect( lightVisTimer, &QTimer::timeout, [this]() { unsetVisMode( VisLightPos ); update(); } );
+	connect( lightVisTimer, &QTimer::timeout, [this]() { setVisMode( Scene::VisLightPos, false ); update(); } );
 
 	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
 	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
@@ -468,7 +468,7 @@ void GLView::paintGL()
 			glColor4f( 1.0f, 1.0f, 1.0f, 0.5f );
 
 
-			if ( visMode & VisLightPos ) {
+			if ( scene->visMode & Scene::VisLightPos ) {
 				glPushMatrix();
 				glLoadMatrix( viewTrans );
 
@@ -485,10 +485,19 @@ void GLView::paintGL()
 			}
 		}
 
+		auto mat_amb = mat_half;
+
+		if ( (scene->visMode & Scene::VisNormalsOnly) && (scene->options & Scene::UseTextures) ) {
+			mat_amb[0] = 0.1f;  mat_amb[1] = 0.1f; mat_amb[2] = 0.1f;
+		} else {
+			mat_amb[0] = 0.5f;  mat_amb[1] = 0.5f; mat_amb[2] = 0.5f;
+		}
+
+
 		glShadeModel( GL_SMOOTH );
 		glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
-		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_half );
+		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_full );
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
 		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
@@ -605,17 +614,17 @@ void GLView::frontalLightToggled( bool frontal )
 
 void GLView::declinationChanged( int decl )
 {
-	declination = float( decl / 2 );
+	declination = float(decl) / 4; // Divide by 4 because sliders are -720 <-> 720
 	lightVisTimer->start( lightVisTimeout );
-	setVisMode( VisLightPos );
+	setVisMode( Scene::VisLightPos, true );
 	update();
 }
 
 void GLView::planarAngleChanged( int angle )
 {
-	planarAngle = float( angle / 2 );
+	planarAngle = float(angle) / 4; // Divide by 4 because sliders are -720 <-> 720
 	lightVisTimer->start( lightVisTimeout );
-	setVisMode( VisLightPos );
+	setVisMode( Scene::VisLightPos, true );
 	update();
 }
 
@@ -624,16 +633,15 @@ void GLView::setDebugMode( DebugMode mode )
 	debugMode = mode;
 }
 
-void GLView::setVisMode( VisMode mode )
+void GLView::setVisMode( Scene::VisMode mode, bool checked )
 {
-	visMode |= mode;
-}
+	if ( checked )
+		scene->visMode |= mode;
+	else
+		scene->visMode &= ~mode;
 
-void GLView::unsetVisMode( VisMode mode )
-{
-	visMode &= ~mode;
+	update();
 }
-
 
 typedef void (Scene::* DrawFunc)( void );
 
@@ -810,11 +818,10 @@ void GLView::zoom( float z )
 
 void GLView::setCenter()
 {
-	qDebug() << "Setting center";
-
 	Node * node = scene->getNode( model, scene->currentBlock );
 
 	if ( node != 0 ) {
+		// Center on selected node
 		BoundSphere bs = node->bounds();
 
 		this->setPosition( -bs.center );
@@ -823,6 +830,7 @@ void GLView::setCenter()
 			setDistance( bs.radius * 1.5f );
 		}
 	} else {
+		// Center on entire mesh
 		BoundSphere bs = scene->bounds();
 
 		//if ( scene->options & Scene::ShowAxes )
@@ -838,7 +846,6 @@ void GLView::setCenter()
 
 		setOrientation( view );
 	}
-
 }
 
 void GLView::setDistance( float x )

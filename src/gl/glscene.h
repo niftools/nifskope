@@ -107,6 +107,17 @@ public:
 
 	SceneOptions options;
 
+	enum VisModes
+	{
+		VisNone = 0x0,
+		VisLightPos = 0x1,
+		VisNormalsOnly = 0x2
+	};
+
+	Q_DECLARE_FLAGS( VisMode, VisModes );
+
+	VisMode visMode;
+
 	enum LodLevel
 	{
 		Level0 = 0,
@@ -163,5 +174,7 @@ protected:
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::SceneOptions )
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::VisMode )
 
 #endif
