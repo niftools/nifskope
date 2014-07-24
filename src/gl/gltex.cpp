@@ -195,6 +195,20 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			filename += ext;
 		}
 
+		auto appdir = QDir::currentPath();
+		
+		// First search NIF root
+		dir.setPath( nifdir );
+		if ( dir.exists( filename ) ) {
+			return dir.filePath( filename );
+		}
+
+		// Next search NifSkope dir
+		dir.setPath( appdir );
+		if ( dir.exists( filename ) ) {
+			return dir.filePath( filename );
+		}
+
 		for ( QString folder : Options::textureFolders() ) {
 			// TODO: Always search nifdir without requiring a relative entry
 			// in folders?  Not too intuitive to require ".\" in your texture folder list
