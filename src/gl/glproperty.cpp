@@ -1124,6 +1124,16 @@ int BSShaderLightingProperty::getId( const QString & id )
 	BSLightingShaderProperty
 */
 
+void BSLightingShaderProperty::setShaderType( unsigned int t )
+{
+	shaderType = ShaderType( t );
+}
+
+BSLightingShaderProperty::ShaderType BSLightingShaderProperty::getShaderType()
+{
+	return shaderType;
+}
+
 unsigned int BSLightingShaderProperty::getFlags1()
 {
 	return (unsigned int)flags1;
@@ -1144,4 +1154,41 @@ void BSLightingShaderProperty::setFlags2( unsigned int val )
 	flags2 = SF2( val );
 }
 
+void BSLightingShaderProperty::setEmissive( Color3 color, float mult )
+{
+	emissiveColor = color;
+	emissiveMult = mult;
+}
+
+void BSLightingShaderProperty::setSpecular( Color3 color, float gloss, float strength )
+{
+	specularColor = color;
+	specularGloss = gloss;
+	specularStrength = strength;
+}
+
+Color3 BSLightingShaderProperty::getEmissiveColor()
+{
+	return emissiveColor;
+}
+
+Color3 BSLightingShaderProperty::getSpecularColor()
+{
+	return specularColor;
+}
+
+float BSLightingShaderProperty::getEmissiveMult()
+{
+	return emissiveMult;
+}
+
+float BSLightingShaderProperty::getSpecularGloss()
+{
+	return specularGloss;
+}
+
+float BSLightingShaderProperty::getSpecularStrength()
+{
+	return specularStrength;
+}
 

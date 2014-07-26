@@ -425,8 +425,53 @@ public:
 	unsigned int getFlags1();
 	unsigned int getFlags2();
 
+	Color3 getEmissiveColor();
+	Color3 getSpecularColor();
+
+	float getEmissiveMult();
+
+	float getSpecularGloss();
+	float getSpecularStrength();
+
+	void setShaderType( unsigned int );
+
 	void setFlags1( unsigned int );
 	void setFlags2( unsigned int );
+
+	void setEmissive( Color3 color, float mult = 1.0f );
+	void setSpecular( Color3 color, float glossiness = 80.0f, float strength = 1.0f );
+
+	bool hasGlowMap;
+	bool hasSoftlight;
+	bool hasBacklight;
+	bool hasRimlight;
+
+	enum ShaderType
+	{
+		ST_Default,
+		ST_EnvironmentMap,
+		ST_GlowShader,
+		ST_Heightmap,
+		ST_FaceTint,
+		ST_SkinTint,
+		ST_HairTint,
+		ST_ParallaxOccMaterial,
+		ST_WorldMultitexture,
+		ST_WorldMap1,
+		ST_Unknown10,
+		ST_MultiLayerParallax,
+		ST_Unknown12,
+		ST_WorldMap2,
+		ST_SparkleSnow,
+		ST_WorldMap3,
+		ST_EyeEnvmap,
+		ST_Unknown17,
+		ST_WorldMap4,
+		ST_WorldLODMultitexture
+	};
+
+	ShaderType getShaderType();
+
 
 	enum SF1 : unsigned int
 	{
@@ -505,6 +550,16 @@ public:
 protected:
 	SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
 	SF2 flags2; // = SF2( 0 | (1 << 14) );
+
+	ShaderType shaderType;
+
+	Color3 emissiveColor;
+	Color3 specularColor;
+
+	float emissiveMult;
+
+	float specularGloss;
+	float specularStrength;
 
 };
 
