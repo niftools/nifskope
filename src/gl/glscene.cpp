@@ -59,7 +59,7 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	textures = texcache;
 
-	options = ( DoLighting | UseTextures | UseShaders | DoMultisampling | DoBlending | ShowVertexColors );
+	options = ( DoLighting | UseTextures | DoMultisampling | DoBlending | ShowVertexColors );
 
 	lodLevel = Level2;
 

@@ -141,7 +141,7 @@ void NifSkope::initActions()
 		ShowDoubleSided = 0x40, // Not implemented
 		ShowVertexColors = 0x80,
 		UseTextures = 0x100,
-		UseShaders = 0x200, // Not implemented
+		DisableShaders = 0x200, // Not implemented
 		DoBlending = 0x400, // Not implemented
 		DoMultisampling = 0x800 // Not implemented
 		DoLighting = 0x1000
@@ -154,6 +154,7 @@ void NifSkope::initActions()
 	ui->aVertexColors->setData( Scene::ShowVertexColors );
 	ui->aTextures->setData( Scene::UseTextures );
 	ui->aLighting->setData( Scene::DoLighting );
+	ui->aDisableShading->setData( Scene::DisableShaders );
 
 	connect( ui->aShowAxes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aShowNodes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
@@ -162,7 +163,7 @@ void NifSkope::initActions()
 	connect( ui->aTextures, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aVertexColors, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aLighting, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-
+	connect( ui->aDisableShading, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 
 	// Setup blank QActions for Recent Files menus
 	for ( int i = 0; i < NumRecentFiles; ++i ) {

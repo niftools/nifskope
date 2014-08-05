@@ -98,7 +98,7 @@ public:
 		ShowDoubleSided = 0x40,
 		ShowVertexColors = 0x80,
 		UseTextures = 0x100,
-		UseShaders = 0x200,
+		DisableShaders = 0x200,
 		DoBlending = 0x400,
 		DoMultisampling = 0x800,
 		DoLighting = 0x1000
