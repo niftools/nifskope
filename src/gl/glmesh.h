@@ -89,6 +89,9 @@ protected:
 	// Skyrim shader property
 	BSLightingShaderProperty * bslsp;
 
+	// Skyrim effect shader property
+	BSEffectShaderProperty * bsesp;
+
 	//! Vertices
 	QVector<Vector3> verts;
 	//! Normals

@@ -219,6 +219,7 @@ Mesh::Mesh( Scene * s, const QModelIndex & b ) : Node( s, b )
 	double_sided = false;
 	double_sided_es = false;
 	bslsp = nullptr;
+	bsesp = nullptr;
 }
 
 bool Mesh::isBSLODPresent = false;
@@ -229,6 +230,7 @@ void Mesh::clear()
 
 	iData = iSkin = iSkinData = iSkinPart = iTangentData = QModelIndex();
 	bslsp = nullptr;
+	bsesp = nullptr;
 
 	verts.clear();
 	norms.clear();
@@ -295,25 +297,124 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				if ( !bslsp )
 					break;
 
+				auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
+					return bslsp->getFlags1() & flag;
+				};
+
+				auto hasSF2 = [this]( ShaderFlags::SF2 flag ) {
+					return bslsp->getFlags2() & flag;
+				};
+
+
+				auto st = nif->get<unsigned int>( iProp, "Skyrim Shader Type" );
+
 				auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
 				auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
 
+				bslsp->setShaderType( st );
 				bslsp->setFlags1( sf1 );
 				bslsp->setFlags2( sf2 );
 
-				double_sided = bslsp->getFlags2() & BSLightingShaderProperty::SLSF2_Double_Sided;
-				
-				if ( bslsp->getFlags2() & BSLightingShaderProperty::SLSF2_Tree_Anim ) {
-					alphaisanim = true;
-					break;
+				// TODO: Assure emissive props aren't used for other things without this shader type
+				if ( bslsp->getShaderType() & BSLightingShaderProperty::ST_GlowShader ) { 
+					auto emC = nif->get<Color3>( iProp, "Emissive Color" );
+					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
+					bslsp->setEmissive( emC, emM );
+				} else {
+					bslsp->setEmissive( Color3(0, 0, 0), 1.0f );
 				}
+
+				bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map );
+
+
+				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
+					auto spC = nif->get<Color3>( iProp, "Specular Color" );
+					auto spG = nif->get<float>( iProp, "Glossiness" );
+					auto spS = nif->get<float>( iProp, "Specular Strength" );
+					bslsp->setSpecular( spC, spG, spS );
+				} else {
+					bslsp->setSpecular( Color3(0, 0, 0), 0, 0 );
+				}
+
+				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
+				bslsp->hasRimlight  = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
+				bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
+
+				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
+				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
+
+				bslsp->setLightingEffect1( le1 );
+				bslsp->setLightingEffect2( le2 );
+
+				auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
+				auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
+
+				bslsp->setUvScale( uvScale[0], uvScale[1] );
+				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
+				
+				double_sided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+				
+				alphaisanim = hasSF2( ShaderFlags::SLSF2_Tree_Anim );
+				//break;
+
 			} else {
 				// enable double_sided for BSEffectShaderProperty
 				iProp = nif->getBlock( props[i], "BSEffectShaderProperty" );
 	
 				if ( iProp.isValid() ) {
-					unsigned int sf1 = nif->get<unsigned int>( iProp, "Effect Shader Flags 1" );
-					double_sided_es = sf1 & (1<<4);
+					if ( !bsesp )
+						bsesp = properties.get<BSEffectShaderProperty>();
+
+					if ( !bsesp )
+						break;
+
+					auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
+						return bsesp->getFlags1() & flag;
+					};
+
+					auto hasSF2 = [this]( ShaderFlags::SF2 flag ) {
+						return bsesp->getFlags2() & flag;
+					};
+
+					auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
+					auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
+
+					bsesp->setFlags1( sf1 );
+					bsesp->setFlags2( sf2 );
+
+					auto emC = nif->get<Color4>( iProp, "Emissive Color" );
+					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
+					bsesp->setEmissive( emC, emM );
+
+
+					bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
+					bsesp->hasGreyscaleMap = !nif->get<QString>( iProp, "Greyscale Texture" ).isEmpty();
+					bsesp->greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
+					bsesp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+
+					bsesp->useFalloff = hasSF1( ShaderFlags::SLSF1_Use_Falloff );
+
+					bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+					bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+
+					auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
+					auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
+
+					bsesp->setUvScale( uvScale[0], uvScale[1] );
+					bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
+
+					auto startA = nif->get<float>( iProp, "Falloff Start Angle" );
+					auto stopA = nif->get<float>( iProp, "Falloff Stop Angle" );
+					auto startO = nif->get<float>( iProp, "Falloff Start Opacity" );
+					auto stopO = nif->get<float>( iProp, "Falloff Stop Opacity" );
+					auto soft = nif->get<float>( iProp, "Soft Falloff Depth" );
+
+					bsesp->setFalloff( startA, stopA, startO, stopO, soft );
+
+					double_sided_es = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+
+					bsesp->doubleSided = double_sided_es;
 				}
 			}
 		}
@@ -902,18 +1003,32 @@ void Mesh::transformShapes()
 		transColors = colors;
 	}
 
-	if ( !bslsp )
-		bslsp = properties.get<BSLightingShaderProperty>();
+	//if ( !bslsp )
+	//	bslsp = properties.get<BSLightingShaderProperty>();
 
 	if ( bslsp ) {
 		transColorsNoAlpha.resize( colors.count() );
-		if ( !(bslsp->getFlags1() & BSLightingShaderProperty::SLSF1_Vertex_Alpha) ) {
+		if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
 			for ( int c = 0; c < colors.count(); c++ )
 				transColorsNoAlpha[c] = Color4( transColors[c].red(), transColors[c].green(), transColors[c].blue(), 1.0f );
 		} else {
 			transColorsNoAlpha.clear();
 		}
 	}
+
+	//if ( !bsesp )
+	//	bsesp = properties.get<BSEffectShaderProperty>();
+
+	//if ( bsesp ) {
+	//	transColorsNoAlpha.resize( colors.count() );
+	//	if ( !(bsesp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
+	//		//qDebug() << "No VA" << name;
+	//		for ( int c = 0; c < colors.count(); c++ )
+	//			transColorsNoAlpha[c] = Color4( transColors[c].red(), transColors[c].green(), transColors[c].blue(), 1.0f );
+	//	} else {
+	//		transColorsNoAlpha.clear();
+	//	}
+	//}
 }
 
 BoundSphere Mesh::bounds() const
@@ -959,6 +1074,9 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		//qDebug() << Vector3( nif->get<Vector4>( iBlock, "Translation" ) );
 	//}
 
+	// Debug axes
+	//drawAxes(Vector3(), 35.0);
+
 	// setup array pointers
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
@@ -974,9 +1092,15 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			glNormalPointer( GL_FLOAT, 0, transNorms.data() );
 		}
 
+		// Do VCs if legacy or if either bslsp or bsesp is set
+		bool doVCs = scene->options & Scene::DisableShaders
+			|| (!bslsp && !bsesp) 
+			|| (bslsp && (bslsp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors))
+			|| (bsesp && (bsesp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+
 		if ( transColors.count()
 			&& ( scene->options & Scene::ShowVertexColors )
-			&& ( !bslsp || ( bslsp && (bslsp->getFlags2() & BSLightingShaderProperty::SLSF2_Vertex_Colors) ) ) )
+			&& doVCs )
 		{
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, (transColorsNoAlpha.count()) ? transColorsNoAlpha.data() : transColors.data() );

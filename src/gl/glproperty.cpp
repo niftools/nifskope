@@ -74,7 +74,7 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 	} else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) ) {
-		property = new BSShaderLightingProperty( scene, index );
+		property = new BSEffectShaderProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
@@ -1095,10 +1095,16 @@ QString BSShaderLightingProperty::fileName( int id ) const
 			return nif->get<QString>( iTextures.child( id, 0 ) );
 	} else {
 		// handle niobject name="BSEffectShaderProperty...
-		nif = qobject_cast<const NifModel *>( iSourceTexture.model() );
+		nif = qobject_cast<const NifModel *>(iSourceTexture.model());
+		if ( id == 0 ) {
+			if ( nif && iSourceTexture.isValid() )
+				return nif->get<QString>( iSourceTexture, "Source Texture" );
+		}
 
-		if ( nif && iSourceTexture.isValid() )
-			return nif->get<QString>( iSourceTexture, "Source Texture" );
+		if ( id == 1 ) {
+			if ( nif && iSourceTexture.isValid() )
+				return nif->get<QString>( iSourceTexture, "Greyscale Texture" );
+		}
 	}
 
 	return QString();
@@ -1118,6 +1124,28 @@ int BSShaderLightingProperty::getId( const QString & id )
 	};
 
 	return hash.value( id, -1 );
+}
+
+UVScale BSShaderLightingProperty::getUvScale()
+{
+	return uvScale;
+}
+
+UVOffset BSShaderLightingProperty::getUvOffset()
+{
+	return uvOffset;
+}
+
+void BSShaderLightingProperty::setUvScale( float x, float y )
+{
+	uvScale.x = x;
+	uvScale.y = y;
+}
+
+void BSShaderLightingProperty::setUvOffset( float x, float y )
+{
+	uvOffset.x = x;
+	uvOffset.y = y;
 }
 
 /*
@@ -1146,12 +1174,12 @@ unsigned int BSLightingShaderProperty::getFlags2()
 
 void BSLightingShaderProperty::setFlags1( unsigned int val )
 {
-	flags1 = SF1( val );
+	flags1 = ShaderFlags::SF1( val );
 }
 
 void BSLightingShaderProperty::setFlags2( unsigned int val )
 {
-	flags2 = SF2( val );
+	flags2 = ShaderFlags::SF2( val );
 }
 
 void BSLightingShaderProperty::setEmissive( Color3 color, float mult )
@@ -1182,6 +1210,26 @@ float BSLightingShaderProperty::getEmissiveMult()
 	return emissiveMult;
 }
 
+float BSLightingShaderProperty::getLightingEffect1()
+{
+	return lightingEffect1;
+}
+
+float BSLightingShaderProperty::getLightingEffect2()
+{
+	return lightingEffect2;
+}
+
+void BSLightingShaderProperty::setLightingEffect1( float val )
+{
+	lightingEffect1 = val;
+}
+
+void BSLightingShaderProperty::setLightingEffect2( float val )
+{
+	lightingEffect2 = val;
+}
+
 float BSLightingShaderProperty::getSpecularGloss()
 {
 	return specularGloss;
@@ -1190,5 +1238,54 @@ float BSLightingShaderProperty::getSpecularGloss()
 float BSLightingShaderProperty::getSpecularStrength()
 {
 	return specularStrength;
+}
+
+/*
+	BSEffectShaderProperty
+*/
+
+unsigned int BSEffectShaderProperty::getFlags1()
+{
+	return (unsigned int)flags1;
+}
+
+unsigned int BSEffectShaderProperty::getFlags2()
+{
+	return (unsigned int)flags2;
+}
+
+void BSEffectShaderProperty::setFlags1( unsigned int val )
+{
+	flags1 = ShaderFlags::SF1( val );
+}
+
+void BSEffectShaderProperty::setFlags2( unsigned int val )
+{
+	flags2 = ShaderFlags::SF2( val );
+}
+
+void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
+{
+	emissiveColor = color;
+	emissiveMult = mult;
+}
+
+Color4 BSEffectShaderProperty::getEmissiveColor()
+{
+	return emissiveColor;
+}
+
+float BSEffectShaderProperty::getEmissiveMult()
+{
+	return emissiveMult;
+}
+
+void BSEffectShaderProperty::setFalloff( float startA, float stopA, float startO, float stopO, float soft )
+{
+	falloff.startAngle = startA;
+	falloff.stopAngle = stopA;
+	falloff.startOpacity = startO;
+	falloff.stopOpacity = stopO;
+	falloff.softDepth = soft;
 }
 

@@ -381,6 +381,19 @@ protected:
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
 
+
+struct UVScale
+{
+	float x = 1.0f;
+	float y = 1.0f;
+};
+
+struct UVOffset
+{
+	float x = 0.0f;
+	float y = 0.0f;
+};
+
 // TODO: This is an abstract class in the XML, other blocks inherit it
 //	such as BSLightingShaderProperty.
 //! A Property that specifies shader lighting (Bethesda-specific)
@@ -405,74 +418,27 @@ public:
 
 	static int getId( const QString & id );
 
+	void setUvScale( float, float );
+	void setUvOffset( float, float );
+
+	UVScale getUvScale();
+	UVOffset getUvOffset();
+
 protected:
 	//QVector<QString> textures;
 	QPersistentModelIndex iTextureSet;
 	QPersistentModelIndex iSourceTexture;
+
+	UVScale uvScale;
+	UVOffset uvOffset;
+
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
 
 
-//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
-class BSLightingShaderProperty final : public BSShaderLightingProperty
+namespace ShaderFlags
 {
-public:
-	BSLightingShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index ) {}
-
-	QString typeId() const override final { return "BSLightingShaderProperty"; }
-
-	unsigned int getFlags1();
-	unsigned int getFlags2();
-
-	Color3 getEmissiveColor();
-	Color3 getSpecularColor();
-
-	float getEmissiveMult();
-
-	float getSpecularGloss();
-	float getSpecularStrength();
-
-	void setShaderType( unsigned int );
-
-	void setFlags1( unsigned int );
-	void setFlags2( unsigned int );
-
-	void setEmissive( Color3 color, float mult = 1.0f );
-	void setSpecular( Color3 color, float glossiness = 80.0f, float strength = 1.0f );
-
-	bool hasGlowMap;
-	bool hasSoftlight;
-	bool hasBacklight;
-	bool hasRimlight;
-
-	enum ShaderType
-	{
-		ST_Default,
-		ST_EnvironmentMap,
-		ST_GlowShader,
-		ST_Heightmap,
-		ST_FaceTint,
-		ST_SkinTint,
-		ST_HairTint,
-		ST_ParallaxOccMaterial,
-		ST_WorldMultitexture,
-		ST_WorldMap1,
-		ST_Unknown10,
-		ST_MultiLayerParallax,
-		ST_Unknown12,
-		ST_WorldMap2,
-		ST_SparkleSnow,
-		ST_WorldMap3,
-		ST_EyeEnvmap,
-		ST_Unknown17,
-		ST_WorldMap4,
-		ST_WorldLODMultitexture
-	};
-
-	ShaderType getShaderType();
-
-
 	enum SF1 : unsigned int
 	{
 		SLSF1_Specular = 1,	    // 0!
@@ -509,8 +475,6 @@ public:
 		SLSF1_ZBuffer_Test = (unsigned int)(1 << 31),  // 31
 	};
 
-
-
 	enum SF2 : unsigned int
 	{
 		SLSF2_ZBuffer_Write = 1,	  // 0!
@@ -546,10 +510,85 @@ public:
 		SLSF2_Effect_Lighting = 1 << 30,  // 30
 		SLSF2_HD_LOD_Objects = (unsigned int)(1 << 31),  // 31
 	};
+}
+
+
+
+//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+class BSLightingShaderProperty final : public BSShaderLightingProperty
+{
+public:
+	BSLightingShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
+	{
+		emissiveMult = 1.0f;
+		emissiveColor = Color3( 0, 0, 0 );
+		
+		specularStrength = 1.0f;
+		specularColor = Color3( 1.0f, 1.0f, 1.0f );
+	}
+
+	QString typeId() const override final { return "BSLightingShaderProperty"; }
+
+	unsigned int getFlags1();
+	unsigned int getFlags2();
+
+	Color3 getEmissiveColor();
+	Color3 getSpecularColor();
+
+	float getEmissiveMult();
+
+	float getSpecularGloss();
+	float getSpecularStrength();
+
+	float getLightingEffect1();
+	float getLightingEffect2();
+
+	void setShaderType( unsigned int );
+
+	void setFlags1( unsigned int );
+	void setFlags2( unsigned int );
+
+	void setEmissive( Color3 color, float mult = 1.0f );
+	void setSpecular( Color3 color, float glossiness = 80.0f, float strength = 1.0f );
+
+	void setLightingEffect1( float );
+	void setLightingEffect2( float );
+
+
+	bool hasGlowMap;
+	bool hasSoftlight;
+	bool hasBacklight;
+	bool hasRimlight;
+
+	enum ShaderType
+	{
+		ST_Default,
+		ST_EnvironmentMap,
+		ST_GlowShader,
+		ST_Heightmap,
+		ST_FaceTint,
+		ST_SkinTint,
+		ST_HairTint,
+		ST_ParallaxOccMaterial,
+		ST_WorldMultitexture,
+		ST_WorldMap1,
+		ST_Unknown10,
+		ST_MultiLayerParallax,
+		ST_Unknown12,
+		ST_WorldMap2,
+		ST_SparkleSnow,
+		ST_WorldMap3,
+		ST_EyeEnvmap,
+		ST_Unknown17,
+		ST_WorldMap4,
+		ST_WorldLODMultitexture
+	};
+
+	ShaderType getShaderType();
 
 protected:
-	SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
-	SF2 flags2; // = SF2( 0 | (1 << 14) );
+	ShaderFlags::SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
+	ShaderFlags::SF2 flags2; // = SF2( 0 | (1 << 14) );
 
 	ShaderType shaderType;
 
@@ -561,8 +600,78 @@ protected:
 	float specularGloss;
 	float specularStrength;
 
+	float lightingEffect1;
+	float lightingEffect2;
+
 };
 
 REGISTER_PROPERTY( BSLightingShaderProperty, ShaderLighting )
+
+
+//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+class BSEffectShaderProperty final : public BSShaderLightingProperty
+{
+public:
+	BSEffectShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
+	{
+		hasSourceTexture = true;
+		hasGreyscaleMap = true;
+
+		greyscaleColor = false;
+		greyscaleAlpha = false;
+	}
+
+	QString typeId() const override final { return "BSEffectShaderProperty"; }
+
+	unsigned int getFlags1();
+	unsigned int getFlags2();
+
+	Color4 getEmissiveColor();
+	float getEmissiveMult();
+
+	void setFlags1( unsigned int );
+	void setFlags2( unsigned int );
+
+	void setEmissive( Color4 color, float mult = 1.0f );
+	void setFalloff( float, float, float, float, float );
+
+	bool doubleSided;
+
+	bool hasSourceTexture;
+	bool hasGreyscaleMap;
+	bool useFalloff;
+
+	bool greyscaleColor;
+	bool greyscaleAlpha;
+
+	bool vertexColors;
+	bool vertexAlpha;
+
+	struct Falloff
+	{
+		float startAngle = 1.0f;
+		float stopAngle = 0.0f;
+
+		float startOpacity = 1.0f;
+		float stopOpacity = 0.0f;
+
+		float softDepth = 1.0f;
+
+	};
+
+	Falloff falloff;
+
+protected:
+	ShaderFlags::SF1 flags1;
+	ShaderFlags::SF2 flags2;
+
+	Color4 emissiveColor;
+	float emissiveMult;
+
+
+	
+};
+
+REGISTER_PROPERTY( BSEffectShaderProperty, ShaderLighting )
 
 #endif
