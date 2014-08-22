@@ -29,6 +29,6 @@ void main( void )
 	ViewDir = tbnMatrix * -v.xyz;
 	LightDir = tbnMatrix * gl_LightSource[0].position.xyz;
 	
-	ColorEA = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
-	ColorD = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
+	//ColorEA = gl_FrontMaterial.emission + gl_Color * gl_LightSource[0].ambient;
+	ColorD = gl_Color;
 }

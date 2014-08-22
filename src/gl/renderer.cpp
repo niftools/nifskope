@@ -429,7 +429,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	PropertyList props;
 	mesh->activeProperties( props );
 
-	if ( !shader_ready /*|| !Options::shaders()*/ ) {
+	if ( !shader_ready || (mesh->scene->options & Scene::DisableShaders) ) {
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );
 	}
@@ -510,60 +510,212 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		fn->glUniform1i( uniBaseMap, texunit++ );
 	}
 
-	GLint uniNormalMap = fn->glGetUniformLocation( prog->id, "NormalMap" );
+	if ( !mesh->bsesp ) {
 
-	if ( uniNormalMap >= 0 ) {
-		if ( texprop ) {
-			QString fname = texprop->fileName( 0 );
+		GLint uniNormalMap = fn->glGetUniformLocation( prog->id, "NormalMap" );
 
-			if ( fname.isEmpty() )
-				return false;
+		if ( uniNormalMap >= 0 ) {
+			if ( texprop ) {
+				QString fname = texprop->fileName( 0 );
 
-			int pos = fname.indexOf( "_" );
+				if ( fname.isEmpty() )
+					return false;
 
-			if ( pos >= 0 )
-				fname = fname.left( pos ) + "_n.dds";
-			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-				fname = fname.insert( pos, "_n" );
+				int pos = fname.indexOf( "_" );
 
-			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
-				return false;
-		} else if ( bsprop ) {
-			QString fname = bsprop->fileName( 1 );
+				if ( pos >= 0 )
+					fname = fname.left( pos ) + "_n.dds";
+				else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
+					fname = fname.insert( pos, "_n" );
 
-			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
-				return false;
+				if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
+					return false;
+			} else if ( bsprop ) {
+				QString fname = bsprop->fileName( 1 );
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
+					return false;
+			}
+
+			fn->glUniform1i( uniNormalMap, texunit++ );
 		}
 
-		fn->glUniform1i( uniNormalMap, texunit++ );
+		GLint uniGlowMap = fn->glGetUniformLocation( prog->id, "GlowMap" );
+
+		if ( uniGlowMap >= 0 ) {
+			if ( texprop ) {
+				QString fname = texprop->fileName( 0 );
+
+				if ( fname.isEmpty() )
+					return false;
+
+				int pos = fname.indexOf( "_" );
+
+				if ( pos >= 0 )
+					fname = fname.left( pos ) + "_g.dds";
+				else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
+					fname = fname.insert( pos, "_g" );
+
+				if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
+					return false;
+			} else if ( bsprop ) {
+				QString fname = bsprop->fileName( 2 );
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
+					return false;
+			}
+
+			fn->glUniform1i( uniGlowMap, texunit++ );
+		}
+	} else {
+		// BSEffectShader textures
+		if ( mesh->bsesp->hasGreyscaleMap ) {
+			GLint uniGreyscaleMap = fn->glGetUniformLocation( prog->id, "GreyscaleMap" );
+			if ( uniGreyscaleMap >= 0 ) {
+
+				if ( !activateTextureUnit( texunit ) )
+					return false;
+
+				if ( bsprop && !bsprop->bind( 1 ) )
+					return false;
+
+				fn->glUniform1i( uniGreyscaleMap, texunit++ );
+			}
+		}
 	}
 
-	GLint uniGlowMap = fn->glGetUniformLocation( prog->id, "GlowMap" );
+	auto uni1f = [this, prog, mesh]( const char * var, float x ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform1f( uni, x );
+	};
 
-	if ( uniGlowMap >= 0 ) {
-		if ( texprop ) {
-			QString fname = texprop->fileName( 0 );
+	auto uni2f = [this, prog, mesh]( const char * var, float x, float y ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform2f( uni, x, y );
+	};
 
-			if ( fname.isEmpty() )
-				return false;
+	auto uni3f = [this, prog, mesh]( const char * var, float x, float y, float z ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform3f( uni, x, y, z );
+	};
 
-			int pos = fname.indexOf( "_" );
+	auto uni4f = [this, prog, mesh]( const char * var, float x, float y, float z, float w ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform4f( uni, x, y, z, w );
+	};
 
-			if ( pos >= 0 )
-				fname = fname.left( pos ) + "_g.dds";
-			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
-				fname = fname.insert( pos, "_g" );
+	auto uni1i = [this, prog, mesh]( const char * var, int val ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform1i( uni, val );
+	};
+	
 
-			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
-				return false;
-		} else if ( bsprop ) {
-			QString fname = bsprop->fileName( 2 );
+	// BSLightingShaderProperty
+	if ( mesh->bslsp ) {
+		uni1f( "lightingEffect1", mesh->bslsp->getLightingEffect1() );
+		uni1f( "lightingEffect2", mesh->bslsp->getLightingEffect2() );
 
-			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
-				return false;
+		// Rim & Soft params
+
+		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
+			GLint uniLightMask = fn->glGetUniformLocation( prog->id, "LightMask" );
+			if ( uniLightMask >= 0 ) {
+				QString fname = bsprop->fileName( 2 );
+				if ( fname.isEmpty() )
+					fname = "default_n.dds";
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
+					return false;
+
+				fn->glUniform1i( uniLightMask, texunit++ );
+			}
+
 		}
 
-		fn->glUniform1i( uniGlowMap, texunit++ );
+		uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
+		uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
+
+		// Backlight params
+
+		if ( mesh->bslsp->hasBacklight ) {
+		
+			GLint uniBackLightMap = fn->glGetUniformLocation( prog->id, "BacklightMap" );
+			if ( uniBackLightMap >= 0 ) {
+
+				QString fname = bsprop->fileName( 7 );
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 7, fname )) )
+					return false;
+
+				fn->glUniform1i( uniBackLightMap, texunit++ );
+			}
+		}
+
+		uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
+
+		// Glow params
+
+		uni1i( "hasGlowMap", mesh->bslsp->hasGlowMap );
+		
+		auto emC = mesh->bslsp->getEmissiveColor();
+		uni3f( "glowColor", emC.red(), emC.green(), emC.blue() );
+		uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
+
+		// Specular params
+
+		uni1f( "specGlossiness", mesh->bslsp->getSpecularGloss() );
+		uni1f( "specStrength", mesh->bslsp->getSpecularStrength() );
+
+		auto spec = mesh->bslsp->getSpecularColor();
+		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
+
+		if ( (mesh->scene->visMode & Scene::VisSilhouette) )
+			uni3f( "specColor", 0, 0, 0 );
+	}
+
+
+	// BSEffectShaderProperty
+	if ( mesh->bsesp ) {
+		uni1i( "doubleSided", mesh->bsesp->doubleSided );
+
+		auto uvS = mesh->bsesp->getUvScale();
+		uni2f( "uvScale", uvS.x, uvS.y );
+
+		auto uvO = mesh->bsesp->getUvOffset();
+		uni2f( "uvOffset", uvO.x, uvO.y );
+
+		uni1i( "hasSourceTexture", mesh->bsesp->hasSourceTexture );
+		uni1i( "hasGreyscaleMap", mesh->bsesp->hasGreyscaleMap );
+
+		uni1i( "greyscaleAlpha", mesh->bsesp->greyscaleAlpha );
+		uni1i( "greyscaleColor", mesh->bsesp->greyscaleColor );
+
+
+		uni1i( "useFalloff", mesh->bsesp->useFalloff );
+		uni1i( "vertexAlpha", mesh->bsesp->vertexAlpha );
+		uni1i( "vertexColors", mesh->bsesp->vertexColors );
+
+
+		// Glow params
+
+		auto emC = mesh->bsesp->getEmissiveColor();
+		uni4f( "glowColor", emC.red(), emC.green(), emC.blue(), emC.alpha() );
+		uni1f( "glowMult", mesh->bsesp->getEmissiveMult() );
+
+
+		// Falloff params
+
+		uni4f( "falloffParams",
+			mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
+			mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
+		);
+
+		uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
 	}
 
 	QMapIterator<int, QString> itx( prog->texcoords );

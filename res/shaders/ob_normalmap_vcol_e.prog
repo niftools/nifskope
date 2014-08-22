@@ -15,11 +15,10 @@ checkgroup end
 
 checkgroup begin or
 	# Skyrim
-	checkgroup begin and
-		check not NiAlphaProperty
-		check BSEffectShaderProperty/Emissive Multiple >= 1
-		check NiTriBasedGeomData/Has Vertex Colors == 1
-	checkgroup end
+	//checkgroup begin and
+	// 	check BSEffectShaderProperty
+	// 	check NiTriBasedGeomData/Has Vertex Colors == 1
+	//checkgroup end
 
 	checkgroup begin
 		check NiTriBasedGeomData/Has Vertex Colors != 0
