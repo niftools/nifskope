@@ -355,6 +355,9 @@ void GLView::paintGL()
 	glPushMatrix();
 
 	// Clear Viewport
+	if ( scene->visMode & Scene::VisSilhouette ) {
+		qglClearColor( QColor( 255, 255, 255, 255 ) );
+	}
 	//glViewport( 0, 0, width(), height() );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 	
@@ -430,7 +433,9 @@ void GLView::paintGL()
 		glPushMatrix();
 		glLoadMatrix( viewTrans );
 
-		drawAxes( Vector3(), axis );
+		// TODO: Better axes (they get in the way of some objects with their arrow size)
+		// Hide for the time being
+		//drawAxes( Vector3(), axis );
 
 		// TODO: Configurable grid in Settings
 		// 1024 game units, major lines every 128, minor lines every 64
@@ -499,7 +504,7 @@ void GLView::paintGL()
 		glEnable( GL_LIGHT0 );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_full );
-		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_full );
 		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
 
 		// Necessary?
@@ -509,10 +514,7 @@ void GLView::paintGL()
 		float d = 0.5f; // Diffuse brightness
 		if ( scene->options & Scene::UseTextures ) {
 			a = 1.0f;
-			// Blow the vertex colors out until I can fix the shader
-			//	This gives me a very high ColorD value in the shaders
-			//	to compare to, so that I can turn off normals when ColorD.r > 1.0
-			d = 1000.0f;
+			d = 1.0f;
 		} else if ( scene->options & Scene::ShowVertexColors ) {
 			a = 0.0f;
 			d = 0.1f;
@@ -534,6 +536,20 @@ void GLView::paintGL()
 		//glMaterialfv( GL_FRONT, GL_AMBIENT, mat_full );
 		//glMaterialfv( GL_FRONT, GL_DIFFUSE, mat_amb );
 		//glMaterialfv( GL_FRONT, GL_SPECULAR, mat_specular );
+	}
+
+	if ( scene->visMode & Scene::VisSilhouette ) {
+		GLfloat mat_diff[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		GLfloat mat_amb[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		glShadeModel( GL_FLAT );
+		glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0 );
+		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, mat_diff );
+		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_diff );
+		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
+		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
 	}
 
 	if ( scene->options & Scene::DoMultisampling )
@@ -1217,6 +1233,7 @@ void GLView::saveImage()
 	QString name = model->getFilename();
 
 	QString nifFolder = model->getFolder();
+	// TODO: Default extension in Settings
 	QString filename = name + (!name.isEmpty() ? "_" : "") + date + ".jpg";
 
 	// Default: NifSkope directory
@@ -1227,6 +1244,7 @@ void GLView::saveImage()
 
 	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::LeftToRight );
 	file->setParent( dlg );
+	// TODO: Default extension in Settings
 	file->setFilter( { "Images (*.jpg *.png *.bmp)", "JPEG (*.jpg)", "PNG (*.png)", "BMP (*.bmp)" } );
 	file->setFile( nifskopePath );
 	lay->addWidget( file, 0, 0, 1, -1 );
@@ -1585,12 +1603,41 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 	if ( !(model && (pressPos - event->pos()).manhattanLength() <= 3) )
 		return;
 
-	QModelIndex idx = indexAt( event->pos(), cycleSelect );
-	scene->currentBlock = model->getBlock( idx );
-	scene->currentIndex = idx.sibling( idx.row(), 0 );
+	auto mods = event->modifiers();
 
-	if ( idx.isValid() ) {
-		emit clicked( idx );
+	if ( !(mods & Qt::AltModifier) ) {
+		QModelIndex idx = indexAt( event->pos(), cycleSelect );
+		scene->currentBlock = model->getBlock( idx );
+		scene->currentIndex = idx.sibling( idx.row(), 0 );
+
+		if ( idx.isValid() ) {
+			emit clicked( idx );
+		}
+
+	} else {
+		// Color Picker / Eyedrop tool
+		QOpenGLFramebufferObjectFormat fboFmt;
+		fboFmt.setTextureTarget( GL_TEXTURE_2D );
+		fboFmt.setInternalTextureFormat( GL_RGB );
+		fboFmt.setMipmap( false );
+		fboFmt.setAttachment( QOpenGLFramebufferObject::Attachment::Depth );
+
+		QOpenGLFramebufferObject fbo( width(), height(), fboFmt );
+		fbo.bind();
+
+		update();
+		updateGL();
+
+		fbo.release();
+
+		QImage * img = new QImage( fbo.toImage() );
+
+		auto what = img->pixel( event->pos() );
+
+		qglClearColor( QColor( what ) );
+		// qDebug() << QColor( what );
+
+		delete img;
 	}
 
 	update();

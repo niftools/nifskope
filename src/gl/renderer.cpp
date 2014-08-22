@@ -429,7 +429,7 @@ QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
 	PropertyList props;
 	mesh->activeProperties( props );
 
-	if ( !shader_ready || (mesh->scene->options & Scene::DisableShaders) ) {
+	if ( !shader_ready || (mesh->scene->options & Scene::DisableShaders) || (mesh->scene->visMode & Scene::VisSilhouette) ) {
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );
 	}

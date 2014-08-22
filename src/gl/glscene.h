@@ -111,7 +111,8 @@ public:
 	{
 		VisNone = 0x0,
 		VisLightPos = 0x1,
-		VisNormalsOnly = 0x2
+		VisNormalsOnly = 0x2,
+		VisSilhouette = 0x4
 	};
 
 	Q_DECLARE_FLAGS( VisMode, VisModes );

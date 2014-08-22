@@ -387,6 +387,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="aTextures"/>
     <addaction name="aVertexColors"/>
     <addaction name="aVisNormals"/>
+    <addaction name="aSilhouette"/>
     <addaction name="aDisableShading"/>
    </widget>
    <widget class="QMenu" name="mHelp">
@@ -1578,6 +1579,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <property name="text">
     <string>Lighting Only</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+L</string>
+   </property>
   </action>
   <action name="aDisableShading">
    <property name="checkable">
@@ -1588,6 +1592,17 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="shortcut">
     <string>Alt+S</string>
+   </property>
+  </action>
+  <action name="aSilhouette">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Silhouette</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+D</string>
    </property>
   </action>
  </widget>

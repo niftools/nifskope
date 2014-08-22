@@ -141,7 +141,7 @@ void NifSkope::initActions()
 		ShowDoubleSided = 0x40, // Not implemented
 		ShowVertexColors = 0x80,
 		UseTextures = 0x100,
-		DisableShaders = 0x200, // Not implemented
+		DisableShaders = 0x200
 		DoBlending = 0x400, // Not implemented
 		DoMultisampling = 0x800 // Not implemented
 		DoLighting = 0x1000
@@ -163,7 +163,7 @@ void NifSkope::initActions()
 	connect( ui->aTextures, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aVertexColors, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aLighting, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aDisableShading, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
+	connect( ui->aDisableShading, &QAction::toggled, ogl->getScene(), &Scene::updateSceneOptions );
 
 	// Setup blank QActions for Recent Files menus
 	for ( int i = 0; i < NumRecentFiles; ++i ) {
@@ -217,6 +217,11 @@ void NifSkope::initActions()
 		ogl->update();
 	} );
 #endif
+
+	connect( ui->aSilhouette, &QAction::triggered, [this]( bool checked ) {
+		//ui->aDisableShading->setChecked( checked );
+		ogl->setVisMode( Scene::VisSilhouette, checked );
+	} );
 
 	connect( ui->aVisNormals, &QAction::triggered, [this]( bool checked ) {
 		ogl->setVisMode( Scene::VisNormalsOnly, checked );
