@@ -1828,75 +1828,182 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 	quint8 ref1 = nif->get<quint8>( iPosition, "Position Ref 1" );
 	quint8 ref2 = nif->get<quint8>( iPosition, "Position Ref 2" );
 
-	if ( ref1 != ref2 ) {
-		qDebug() << "Position Ref 1 and 2 are not equal!";
-		return;
+	const GLMarker * mark[5];
+	Vector3 flip[5];
+	Vector3 pos( 1, 1, 1 );
+	Vector3 neg( -1, 1, 1 );
+
+	float xOffset = 0.0f;
+	float zOffset = 0.0f;
+	float yOffset = 0.0f;
+	float roll;
+
+	int i = 0;
+
+	if ( ref1 == NULL ) {
+
+		// TODO: Figure out where Heading is actually used
+		float heading = nif->get<float>( iPosition, "Heading" );
+		quint16 type = nif->get<quint16>( iPosition, "Animation Type" );
+		int entry = nif->get<int>( iPosition, "Entry Properties" );
+
+		if ( type == NULL ) return;
+
+		// Sit=1, Sleep=2, Lean=3
+		// Front=1, Behind=2, Right=4, Left=8, Up=16(0x10)
+
+		switch ( type ) {
+		case 1:
+			// Sit Type
+
+			zOffset = -34.00f;
+
+			if ( entry & 0x1 ) {
+				// Chair Front
+				flip[i] = pos;
+				mark[i] = &ChairFront;
+				i++;
+			}
+			if ( entry & 0x2 ) {
+				// Chair Behind
+				flip[i] = pos;
+				mark[i] = &ChairBehind;
+				i++;
+			}
+			if ( entry & 0x4 ) {
+				// Chair Right
+				flip[i] = neg;
+				mark[i] = &ChairLeft;
+				i++;
+			}
+			if ( entry & 0x8 ) {
+				// Chair Left
+				flip[i] = pos;
+				mark[i] = &ChairLeft;
+				i++;
+			}
+			break;
+		case 2:
+			// Sleep Type
+
+			zOffset = -34.00f;
+
+			if ( entry & 0x1 ) {
+				// Bed Front
+				//flip[i] = pos;
+				//mark[i] = &FurnitureMarker03;
+				//i++;
+			}
+			if ( entry & 0x2 ) {
+				// Bed Behind
+				//flip[i] = pos;
+				//mark[i] = &FurnitureMarker04;
+				//i++;
+			}
+			if ( entry & 0x4 ) {
+				// Bed Right
+				flip[i] = neg;
+				mark[i] = &BedLeft;
+				i++;
+			}
+			if ( entry & 0x8 ) {
+				// Bed Left
+				flip[i] = pos;
+				mark[i] = &BedLeft;
+				i++;
+			}
+			if ( entry & 0x10 ) {
+				// Bed Up????
+				// This is sometimes used as a real bed position
+				// Other times it is a dummy
+				flip[i] = neg;
+				mark[i] = &BedLeft;
+				i++;
+			}
+			break;
+		case 3:
+			break;
+		default:
+			break;
+		}
+
+		roll = float( orient ) / 180.0 * M_PI;
+	} else {
+		if ( ref1 != ref2 ) {
+			qDebug() << "Position Ref 1 and 2 are not equal";
+			return;
+		}
+
+		switch ( ref1 ) {
+		case 1:
+			mark[0] = &FurnitureMarker01; // Single Bed
+			break;
+
+		case 2:
+			flip[0] = neg;
+			mark[0] = &FurnitureMarker01;
+			break;
+
+		case 3:
+			mark[0] = &FurnitureMarker03; // Ground Bed?
+			break;
+
+		case 4:
+			mark[0] = &FurnitureMarker04; // Ground Bed? Behind
+			break;
+
+		case 11:
+			mark[0] = &FurnitureMarker11; // Chair Left
+			break;
+
+		case 12:
+			flip[0] = neg;
+			mark[0] = &FurnitureMarker11;
+			break;
+
+		case 13:
+			mark[0] = &FurnitureMarker13; // Chair Behind
+			break;
+
+		case 14:
+			mark[0] = &FurnitureMarker14; // Chair Front
+			break;
+
+		default:
+			qDebug() << "Unknown furniture marker " << ref1;
+			return;
+		}
+
+		i = 1;
+
+		// TODO: FIX: This makes no sense
+		roll = float( orient ) / 6284.0 * 2.0 * (-M_PI);
 	}
-
-	Vector3 flip( 1, 1, 1 );
-	const GLMarker * mark;
-
-	switch ( ref1 ) {
-	case 1:
-		mark = &FurnitureMarker01;
-		break;
-
-	case 2:
-		flip[0] = -1;
-		mark = &FurnitureMarker01;
-		break;
-
-	case 3:
-		mark = &FurnitureMarker03;
-		break;
-
-	case 4:
-		mark = &FurnitureMarker04;
-		break;
-
-	case 11:
-		mark = &FurnitureMarker11;
-		break;
-
-	case 12:
-		flip[0] = -1;
-		mark = &FurnitureMarker11;
-		break;
-
-	case 13:
-		mark = &FurnitureMarker13;
-		break;
-
-	case 14:
-		mark = &FurnitureMarker14;
-		break;
-
-	default:
-		qDebug() << "Unknown furniture marker " << ref1 << "!";
-		return;
-	}
-
-	float roll = float(orient) / 6284.0 * 2.0 * (-M_PI);
 
 	if ( Node::SELECTING ) {
-		// TODO: not tested! need nif files what contain that
 		GLint id = ( nif->getBlockNumber( iPosition ) & 0xffff ) | ( ( iPosition.row() & 0xffff ) << 16 );
 		int s_nodeId = ID2COLORKEY( id );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 	}
 
-	glPushMatrix();
+	for ( int n = 0; n < i; n++ ) {
+		glPushMatrix();
 
-	Transform t;
-	t.rotation.fromEuler( 0, 0, roll );
-	t.translation = offs;
-	glMultMatrix( t );
+		Transform t;
+		t.rotation.fromEuler( 0, 0, roll );
+		t.translation = offs;
+		t.translation[0] += xOffset;
+		t.translation[1] += yOffset;
+		t.translation[2] += zOffset;
 
-	glScale( flip );
+		glMultMatrix( t );
 
-	drawMarker( mark );
+		glScale( flip[n] );
 
-	glPopMatrix();
+		drawMarker( mark[n] );
+
+		glPopMatrix();
+	}
 }
 
 void Node::drawFurn()
