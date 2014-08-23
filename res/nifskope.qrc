@@ -50,5 +50,8 @@
         <file alias="normals">icon/normals.png</file>
         <file alias="lightHorizontal">icon/light-rot-horizontal.png</file>
         <file alias="lightVertical">icon/light-rot-vertical.png</file>
+        <file alias="silhouette">icon/silhouette.png</file>
+        <file alias="specular">icon/specular.png</file>
+        <file alias="glow">icon/glow.png</file>
     </qresource>
 </RCC>
