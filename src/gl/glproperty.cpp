@@ -629,7 +629,7 @@ int TexturingProperty::getId( const QString & texname )
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && (p->scene->options & Scene::UseTextures) && p->bind( 0 ) ) {
+	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -699,7 +699,7 @@ void TextureProperty::setController( const NifModel * nif, const QModelIndex & i
 
 void glProperty( TextureProperty * p )
 {
-	if ( p && (p->scene->options & Scene::UseTextures) && p->bind() ) {
+	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind() ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -1042,7 +1042,7 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
 
 void glProperty( BSShaderLightingProperty * p )
 {
-	if ( p && (p->scene->options & Scene::UseTextures) && p->bind( 0 ) ) {
+	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }

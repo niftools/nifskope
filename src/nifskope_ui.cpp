@@ -132,27 +132,33 @@ void NifSkope::initActions()
 
 	// TODO: Assure Actions and Scene state are synced
 	// Set Data for Actions to pass onto Scene when clicking
-	/*	ShowAxes = 0x1,
-		ShowGrid = 0x2, // Not implemented
+	/*	
+		ShowAxes = 0x1,
+		ShowGrid = 0x2,
 		ShowNodes = 0x4,
 		ShowCollision = 0x8,
 		ShowConstraints = 0x10,
-		ShowMarkers = 0x20, // Not implemented
-		ShowDoubleSided = 0x40, // Not implemented
-		ShowVertexColors = 0x80,
-		UseTextures = 0x100,
-		DisableShaders = 0x200
-		DoBlending = 0x400, // Not implemented
-		DoMultisampling = 0x800 // Not implemented
-		DoLighting = 0x1000
+		ShowMarkers = 0x20,   // Not implemented
+		DoDoubleSided = 0x40, // Not implemented
+		DoVertexColors = 0x80,
+		DoSpecular = 0x100,
+		DoGlow = 0x200,
+		DoTexturing = 0x400,
+		DoBlending = 0x800,   // Not implemented
+		DoMultisampling = 0x1000, // Not implemented
+		DoLighting = 0x2000,
+		DisableShaders = 0x4000
 	*/
 
 	ui->aShowAxes->setData( Scene::ShowAxes );
 	ui->aShowNodes->setData( Scene::ShowNodes );
 	ui->aShowCollision->setData( Scene::ShowCollision );
 	ui->aShowConstraints->setData( Scene::ShowConstraints );
-	ui->aVertexColors->setData( Scene::ShowVertexColors );
-	ui->aTextures->setData( Scene::UseTextures );
+	
+	ui->aTextures->setData( Scene::DoTexturing );
+	ui->aVertexColors->setData( Scene::DoVertexColors );
+	ui->aSpecular->setData( Scene::DoSpecular );
+	ui->aGlow->setData( Scene::DoGlow );
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
 
@@ -162,6 +168,8 @@ void NifSkope::initActions()
 	connect( ui->aShowConstraints, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aTextures, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aVertexColors, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
+	connect( ui->aSpecular, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
+	connect( ui->aGlow, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aLighting, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aDisableShading, &QAction::toggled, ogl->getScene(), &Scene::updateSceneOptions );
 
@@ -636,6 +644,7 @@ QMenu * NifSkope::lightingWidget()
 
 	// Disable Frontal checkbox (and sliders) when no lighting
 	connect( chkLighting, &QToolButton::toggled, chkFrontal, &QToolButton::setEnabled );
+	connect( chkLighting, &QToolButton::toggled, ui->aVisNormals, &QAction::setEnabled );
 	connect( chkLighting, &QToolButton::toggled, [lightingGroup, chkFrontal]( bool checked ) {
 		if ( !chkFrontal->isChecked() ) {
 			// Don't enable the sliders if Frontal is checked

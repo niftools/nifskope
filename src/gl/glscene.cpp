@@ -59,7 +59,7 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	textures = texcache;
 
-	options = ( DoLighting | UseTextures | DoMultisampling | DoBlending | ShowVertexColors );
+	options = ( DoLighting | DoTexturing | DoMultisampling | DoBlending | DoVertexColors | DoSpecular | DoGlow );
 
 	lodLevel = Level2;
 
@@ -407,7 +407,7 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( !(options & UseTextures) || fname.isEmpty() )
+	if ( !(options & DoTexturing) || fname.isEmpty() )
 		return 0;
 
 	return textures->bind( fname );
@@ -415,7 +415,7 @@ int Scene::bindTexture( const QString & fname )
 
 int Scene::bindTexture( const QModelIndex & iSource )
 {
-	if ( !(options & UseTextures) || !iSource.isValid() )
+	if ( !(options & DoTexturing) || !iSource.isValid() )
 		return 0;
 
 	return textures->bind( iSource );

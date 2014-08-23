@@ -386,13 +386,17 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="separator"/>
     <addaction name="aTextures"/>
     <addaction name="aVertexColors"/>
+    <addaction name="aSpecular"/>
+    <addaction name="aGlow"/>
+    <addaction name="separator"/>
     <addaction name="aVisNormals"/>
     <addaction name="aSilhouette"/>
+    <addaction name="separator"/>
     <addaction name="aDisableShading"/>
    </widget>
    <widget class="QMenu" name="mHelp">
     <property name="title">
-     <string>&amp;Help</string>
+     <string>Help</string>
     </property>
     <addaction name="aToggleHelp"/>
     <addaction name="separator"/>
@@ -1567,6 +1571,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <property name="toolTip">
     <string>Frontal Lighting</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+F</string>
+   </property>
   </action>
   <action name="aVisNormals">
    <property name="checkable">
@@ -1577,6 +1584,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      <normaloff>:/btn/normals</normaloff>:/btn/normals</iconset>
    </property>
    <property name="text">
+    <string>Lighting Only</string>
+   </property>
+   <property name="statusTip">
     <string>Lighting Only</string>
    </property>
    <property name="shortcut">
@@ -1590,6 +1600,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <property name="text">
     <string>Disable Shading</string>
    </property>
+   <property name="statusTip">
+    <string>Disable Shading</string>
+   </property>
    <property name="shortcut">
     <string>Alt+S</string>
    </property>
@@ -1598,11 +1611,60 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/silhouette</normaloff>:/btn/silhouette</iconset>
+   </property>
    <property name="text">
     <string>Silhouette</string>
    </property>
+   <property name="statusTip">
+    <string>Silhouette Visualization</string>
+   </property>
    <property name="shortcut">
     <string>Alt+D</string>
+   </property>
+  </action>
+  <action name="aSpecular">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/specular</normaloff>:/btn/specular</iconset>
+   </property>
+   <property name="text">
+    <string>Specular</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Specular Highlights</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+H</string>
+   </property>
+  </action>
+  <action name="aGlow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/glow</normaloff>:/btn/glow</iconset>
+   </property>
+   <property name="text">
+    <string>Glow</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Glow Mapping</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+G</string>
    </property>
   </action>
  </widget>

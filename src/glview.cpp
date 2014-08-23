@@ -492,12 +492,14 @@ void GLView::paintGL()
 
 		auto mat_amb = mat_half;
 
-		if ( (scene->visMode & Scene::VisNormalsOnly) && (scene->options & Scene::UseTextures) ) {
+		if ( (scene->visMode & Scene::VisNormalsOnly)
+			&& (scene->options & Scene::DoTexturing)
+			&& !(scene->options & Scene::DisableShaders) )
+		{
 			mat_amb[0] = 0.1f;  mat_amb[1] = 0.1f; mat_amb[2] = 0.1f;
 		} else {
-			mat_amb[0] = 0.5f;  mat_amb[1] = 0.5f; mat_amb[2] = 0.5f;
+			mat_amb = mat_half;
 		}
-
 
 		glShadeModel( GL_SMOOTH );
 		glEnable( GL_LIGHTING );
@@ -510,31 +512,24 @@ void GLView::paintGL()
 		// Necessary?
 		glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
 	} else {
-		float a = 0.5f; // Ambient brightness
-		float d = 0.5f; // Diffuse brightness
-		if ( scene->options & Scene::UseTextures ) {
-			a = 1.0f;
-			d = 1.0f;
-		} else if ( scene->options & Scene::ShowVertexColors ) {
-			a = 0.0f;
-			d = 0.1f;
-		}
+		auto mat_amb = mat_half;
+		auto mat_diff = mat_full;
 
-		GLfloat mat_diff[] = { d, d, d, 1.0f };
-		GLfloat mat_amb[] = { a, a, a, 1.0f };
+		if ( scene->options & Scene::DisableShaders ) {
+			mat_amb = mat_specular;
+		} else {
+			mat_amb = mat_half;
+		}
 
 		glShadeModel( GL_SMOOTH );
 		glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
-		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, mat_full );
-		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_full );
-		//glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, mat_full );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
 		
 		//glMaterialfv( GL_FRONT, GL_AMBIENT, mat_full );
-		//glMaterialfv( GL_FRONT, GL_DIFFUSE, mat_amb );
+		//glMaterialfv( GL_FRONT, GL_DIFFUSE, mat_full );
 		//glMaterialfv( GL_FRONT, GL_SPECULAR, mat_specular );
 	}
 

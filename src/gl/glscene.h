@@ -95,13 +95,15 @@ public:
 		ShowCollision = 0x8,
 		ShowConstraints = 0x10,
 		ShowMarkers = 0x20,
-		ShowDoubleSided = 0x40,
-		ShowVertexColors = 0x80,
-		UseTextures = 0x100,
-		DisableShaders = 0x200,
-		DoBlending = 0x400,
-		DoMultisampling = 0x800,
-		DoLighting = 0x1000
+		DoDoubleSided = 0x40,
+		DoVertexColors = 0x80,
+		DoSpecular = 0x100,
+		DoGlow = 0x200,
+		DoTexturing = 0x400,
+		DoBlending = 0x800,
+		DoMultisampling = 0x1000,
+		DoLighting = 0x2000,
+		DisableShaders = 0x4000
 	};
 	Q_DECLARE_FLAGS( SceneOptions, SceneOption );
 

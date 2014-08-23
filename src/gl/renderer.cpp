@@ -533,6 +533,9 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			} else if ( bsprop ) {
 				QString fname = bsprop->fileName( 1 );
 
+				if ( !(opts & Scene::DoLighting) )
+					fname = "default_n.dds";
+
 				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
 					return false;
 			}
@@ -660,17 +663,24 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Glow params
 
-		uni1i( "hasGlowMap", mesh->bslsp->hasGlowMap );
+		if ( opts & Scene::DoGlow )
+			uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
+		else
+			uni1f( "glowMult", 0.0f );
 		
+		uni1i( "hasGlowMap", mesh->bslsp->hasGlowMap );
 		auto emC = mesh->bslsp->getEmissiveColor();
 		uni3f( "glowColor", emC.red(), emC.green(), emC.blue() );
-		uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
 
 		// Specular params
 
-		uni1f( "specGlossiness", mesh->bslsp->getSpecularGloss() );
-		uni1f( "specStrength", mesh->bslsp->getSpecularStrength() );
+		if ( (opts & Scene::DoSpecular) && !(opts & Scene::DisableShaders) )
+			uni1f( "specStrength", mesh->bslsp->getSpecularStrength() );
+		else
+			uni1f( "specStrength", 0.0 );
 
+		uni1f( "specGlossiness", mesh->bslsp->getSpecularGloss() );
+		
 		auto spec = mesh->bslsp->getSpecularColor();
 		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
 
