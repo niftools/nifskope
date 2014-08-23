@@ -498,7 +498,7 @@ void GLView::paintGL()
 		{
 			mat_amb[0] = 0.1f;  mat_amb[1] = 0.1f; mat_amb[2] = 0.1f;
 		} else {
-			mat_amb = mat_half;
+			mat_amb[0] = 0.5f;  mat_amb[1] = 0.5f; mat_amb[2] = 0.5f;
 		}
 
 		glShadeModel( GL_SMOOTH );
