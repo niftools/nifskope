@@ -53,5 +53,6 @@
         <file alias="silhouette">icon/silhouette.png</file>
         <file alias="specular">icon/specular.png</file>
         <file alias="glow">icon/glow.png</file>
+        <file alias="showMarkers">icon/marker.png</file>
     </qresource>
 </RCC>

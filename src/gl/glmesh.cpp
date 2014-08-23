@@ -1046,6 +1046,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if ( isHidden() || !Options::drawMeshes() )
 		return;
 
+	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
+	if ( !(scene->options & Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
+		return;
+
 	auto nif = static_cast<const NifModel *>(iBlock.model());
 	
 	if ( Node::SELECTING ) {

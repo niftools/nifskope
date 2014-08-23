@@ -154,7 +154,8 @@ void NifSkope::initActions()
 	ui->aShowNodes->setData( Scene::ShowNodes );
 	ui->aShowCollision->setData( Scene::ShowCollision );
 	ui->aShowConstraints->setData( Scene::ShowConstraints );
-	
+	ui->aShowMarkers->setData( Scene::ShowMarkers );
+
 	ui->aTextures->setData( Scene::DoTexturing );
 	ui->aVertexColors->setData( Scene::DoVertexColors );
 	ui->aSpecular->setData( Scene::DoSpecular );
@@ -166,6 +167,7 @@ void NifSkope::initActions()
 	connect( ui->aShowNodes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aShowCollision, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aShowConstraints, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
+	connect( ui->aShowMarkers, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aTextures, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aVertexColors, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
 	connect( ui->aSpecular, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );

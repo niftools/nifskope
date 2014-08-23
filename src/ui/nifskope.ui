@@ -187,6 +187,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <addaction name="aShowAxes"/>
    <addaction name="aShowNodes"/>
    <addaction name="aShowConstraints"/>
+   <addaction name="aShowMarkers"/>
   </widget>
   <widget class="QToolBar" name="tView">
    <property name="windowTitle">
@@ -1665,6 +1666,24 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="shortcut">
     <string>Alt+G</string>
+   </property>
+  </action>
+  <action name="aShowMarkers">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/showMarkers</normaloff>:/btn/showMarkers</iconset>
+   </property>
+   <property name="text">
+    <string>Show Markers</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Markers</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Markers</string>
    </property>
   </action>
  </widget>
