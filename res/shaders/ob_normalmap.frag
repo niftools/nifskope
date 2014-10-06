@@ -1,3 +1,5 @@
+#version 120
+
 uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
 uniform sampler2D LightMask;
