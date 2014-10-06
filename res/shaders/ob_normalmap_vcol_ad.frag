@@ -82,7 +82,7 @@ void main( void )
 		soft = vec3((1.0 - wrap) * (1.0 - NdotL));
 		soft = smoothstep( -1.0, 1.0, soft );
 
-		soft *= mask.rgb * pow(soft, 4.0/(lightingEffect1*lightingEffect1));
+		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
 		//soft *= smoothstep( -1.0, 0.0, soft );
 		//soft = mix( soft, color.rgb, gl_LightSource[0].ambient.rgb );
 		
