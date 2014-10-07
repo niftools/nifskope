@@ -484,7 +484,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	QString diff;
 
 	if ( (opts & Scene::DoLighting) && (vis & Scene::VisNormalsOnly) )
-		diff = "white.dds";
+		diff = "shaders/white.dds";
 
 	// texturing
 
@@ -534,7 +534,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				QString fname = bsprop->fileName( 1 );
 
 				if ( !(opts & Scene::DoLighting) )
-					fname = "default_n.dds";
+					fname = "shaders/default_n.dds";
 
 				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
 					return false;
@@ -630,7 +630,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( uniLightMask >= 0 ) {
 				QString fname = bsprop->fileName( 2 );
 				if ( fname.isEmpty() )
-					fname = "default_n.dds";
+					fname = "shaders/default_n.dds";
 
 				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
 					return false;
