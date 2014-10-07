@@ -163,7 +163,7 @@ FSSelector::FSSelector( FSManager * m )
 	
 	QGridLayout * grid = new QGridLayout( this );
 	grid->addWidget( chkAuto, 0, 0, 1, 2 );
-	grid->addWidget( view, 1, 0, 1, 2 );
+	grid->addWidget( view, 1, 0, 1, 3 );
 	grid->addWidget( btAdd, 2, 0, 1, 1 );
 	grid->addWidget( btDel, 2, 1, 1, 1 );
 	grid->addWidget( btDelAll, 2, 2, 1, 1 );
