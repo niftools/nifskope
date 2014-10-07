@@ -554,6 +554,8 @@ void NifSkope::load()
 			// Scroll panel back to top
 			tree->scrollTo( nif->index( 0, 0 ) );
 
+			select( nif->getHeader() );
+
 			emit completeLoading( true );
 		}
 	}

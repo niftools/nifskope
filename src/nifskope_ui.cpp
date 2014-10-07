@@ -757,7 +757,7 @@ void NifSkope::enableUi()
 	ui->aSaveMenu->setEnabled( true );
 	ui->aSave->setEnabled( true );
 	ui->aSaveAs->setEnabled( true );
-	ui->aResetBlockDetails->setEnabled( true );
+	ui->aHeader->setEnabled( true );
 
 	ui->mRender->setEnabled( true );
 	ui->tAnim->setEnabled( true );
@@ -1025,10 +1025,12 @@ void NifSkope::on_aShredder_triggered()
 	TestShredder::create();
 }
 
-void NifSkope::on_aResetBlockDetails_triggered()
+void NifSkope::on_aHeader_triggered()
 {
 	if ( tree )
 		tree->clearRootIndex();
+
+	select( nif->getHeader() );
 }
 
 

@@ -137,7 +137,7 @@ public slots:
 	void on_aShredder_triggered();
 
 	//! Reset "block details"
-	void on_aResetBlockDetails_triggered();
+	void on_aHeader_triggered();
 
 	//! Select the font to use
 	void on_aSelectFont_triggered();
