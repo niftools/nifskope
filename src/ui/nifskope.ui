@@ -202,10 +202,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="aHeader"/>
-   <addaction name="separator"/>
    <addaction name="aToggleBlockList"/>
    <addaction name="aToggleBlockDetails"/>
+   <addaction name="aToggleHeader"/>
    <addaction name="aToggleInspect"/>
    <addaction name="aToggleKfm"/>
    <addaction name="aToggleHelp"/>
@@ -354,13 +353,12 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      </property>
      <addaction name="aToggleBlockList"/>
      <addaction name="aToggleBlockDetails"/>
+     <addaction name="aToggleHeader"/>
      <addaction name="aToggleKfm"/>
      <addaction name="aToggleInspect"/>
     </widget>
     <addaction name="menuShow"/>
     <addaction name="mToolbars"/>
-    <addaction name="separator"/>
-    <addaction name="aHeader"/>
     <addaction name="separator"/>
     <addaction name="aAnimate"/>
     <addaction name="separator"/>
@@ -800,6 +798,52 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="HeaderDock">
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea|Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
+   <property name="windowTitle">
+    <string>Header</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5">
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="leftMargin">
+      <number>5</number>
+     </property>
+     <property name="topMargin">
+      <number>4</number>
+     </property>
+     <property name="rightMargin">
+      <number>5</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="NifTreeView" name="header">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
@@ -1689,6 +1733,17 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>Show Markers</string>
    </property>
   </action>
+  <action name="aToggleHeader">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Header</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2151,6 +2206,38 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <hint type="destinationlabel">
      <x>277</x>
      <y>743</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleHeader</sender>
+   <signal>triggered(bool)</signal>
+   <receiver>HeaderDock</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>979</x>
+     <y>635</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aToggleHeader</sender>
+   <signal>triggered()</signal>
+   <receiver>HeaderDock</receiver>
+   <slot>raise()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>979</x>
+     <y>635</y>
     </hint>
    </hints>
   </connection>

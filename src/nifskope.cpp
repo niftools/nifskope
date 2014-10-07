@@ -146,6 +146,13 @@ NifSkope::NifSkope()
 	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->installEventFilter( this );
 
+	// Block Details
+	header = ui->header;
+	header->setModel( nif );
+	header->setItemDelegate( nif->createDelegate( book ) );
+	header->installEventFilter( this );
+	header->header()->moveSection( 1, 2 );
+
 	// KFM
 	kfmtree = ui->kfmtree;
 	kfmtree->setModel( kfm );
@@ -294,6 +301,17 @@ void NifSkope::select( const QModelIndex & index )
 
 	if ( sender() != ogl ) {
 		ogl->setCurrentIndex( idx );
+	}
+
+	if ( sender() == ogl ) {
+		if ( dList->isVisible() )
+			dList->raise();
+	}
+
+	// Switch to Block Details tab if not selecting inside Header tab
+	if ( sender() != header ) {
+		if ( dTree->isVisible() )
+			dTree->raise();
 	}
 
 	if ( sender() != list ) {
@@ -555,6 +573,8 @@ void NifSkope::load()
 			tree->scrollTo( nif->index( 0, 0 ) );
 
 			select( nif->getHeader() );
+
+			header->setRootIndex( nif->getHeader() );
 
 			emit completeLoading( true );
 		}

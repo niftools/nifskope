@@ -265,8 +265,14 @@ void NifSkope::initDockWidgets()
 	dRefr = ui->RefrDock;
 	dList = ui->ListDock;
 	dTree = ui->TreeDock;
+	dHeader = ui->HeaderDock;
 	dInsp = ui->InspectDock;
 	dKfm = ui->KfmDock;
+
+	// Tabify List and Header
+	tabifyDockWidget( dList, dHeader );
+	// Raise List above Header
+	dList->raise();
 
 	// Hide certain docks by default
 	dRefr->toggleViewAction()->setChecked( false );
@@ -785,6 +791,7 @@ void NifSkope::saveUi() const
 
 	settings.setValue( "UI/List Header", list->header()->saveState() );
 	settings.setValue( "UI/Tree Header", tree->header()->saveState() );
+	settings.setValue( "UI/Header Header", header->header()->saveState() );
 	settings.setValue( "UI/Kfmtree Header", kfmtree->header()->saveState() );
 
 	settings.setValue( "GLView/Enable Animations", ui->aAnimate->isChecked() );
@@ -817,6 +824,7 @@ void NifSkope::restoreUi()
 
 	list->header()->restoreState( settings.value( "UI/List Header" ).toByteArray() );
 	tree->header()->restoreState( settings.value( "UI/Tree Header" ).toByteArray() );
+	header->header()->restoreState( settings.value( "UI/Header Header" ).toByteArray() );
 	kfmtree->header()->restoreState( settings.value( "UI/Kfmtree Header" ).toByteArray() );
 
 	ui->aAnimate->setChecked( settings.value( "GLView/Enable Animations", true ).toBool() );
@@ -845,6 +853,8 @@ void NifSkope::setViewFont( const QFont & font )
 	list->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	tree->setFont( font );
 	tree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
+	header->setFont( font );
+	header->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	kfmtree->setFont( font );
 	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	ogl->setFont( font );
@@ -957,6 +967,9 @@ void NifSkope::contextMenu( const QPoint & pos )
 	} else if ( sender() == list ) {
 		idx = list->indexAt( pos );
 		p = list->mapToGlobal( pos );
+	} else if ( sender() == header ) {
+		idx = header->indexAt( pos );
+		p = header->mapToGlobal( pos );
 	} else if ( sender() == ogl ) {
 		idx = ogl->indexAt( pos );
 		p = ogl->mapToGlobal( pos );

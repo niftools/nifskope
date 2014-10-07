@@ -237,6 +237,9 @@ private:
 	NifTreeView * list;
 	//! This view shows the whole nif file or the block details.
 	NifTreeView * tree;
+
+	NifTreeView * header;
+
 	//! This view shows the KFM file, if any
 	NifTreeView * kfmtree;
 
@@ -261,6 +264,7 @@ private:
 
 	QDockWidget * dList;
 	QDockWidget * dTree;
+	QDockWidget * dHeader;
 	QDockWidget * dKfm;
 	QDockWidget * dRefr;
 	QDockWidget * dInsp;
