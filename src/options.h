@@ -118,9 +118,9 @@ public:
 	//! Whether to draw constraints
 	//static bool drawConstraints();
 	//! Whether to draw furniture markers
-	static bool drawFurn();
+	//static bool drawFurn();
 	//! Whether to draw hidden shapes
-	static bool drawHidden();
+	//static bool drawHidden();
 	//! Whether to draw stats
 	//static bool drawStats();
 	//! Whether to draw meshes

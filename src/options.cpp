@@ -129,11 +129,11 @@ Options::Options()
 	//aDrawConstraints->setChecked( cfg.value( "Draw Constraints", true ).toBool() );
 	//connect( aDrawConstraints, &QAction::toggled, this, &Options::sigChanged );
 
-	aDrawFurn = new QAction( tr( "Draw &Furniture" ), this );
-	aDrawFurn->setToolTip( tr( "draw the furniture markers" ) );
-	aDrawFurn->setCheckable( true );
-	aDrawFurn->setChecked( cfg.value( "Draw Furniture Markers", true ).toBool() );
-	connect( aDrawFurn, &QAction::toggled, this, &Options::sigChanged );
+	//aDrawFurn = new QAction( tr( "Draw &Furniture" ), this );
+	//aDrawFurn->setToolTip( tr( "draw the furniture markers" ) );
+	//aDrawFurn->setCheckable( true );
+	//aDrawFurn->setChecked( cfg.value( "Draw Furniture Markers", true ).toBool() );
+	//connect( aDrawFurn, &QAction::toggled, this, &Options::sigChanged );
 
 	aDrawHidden = new QAction( tr( "Show Hid&den" ), this );
 	aDrawHidden->setToolTip( tr( "always draw nodes and meshes" ) );
@@ -619,15 +619,7 @@ QList<QAction *> Options::actions()
 	QAction * sep = new QAction( opts );
 	sep->setSeparator( true );
 
-	return{ opts->aSettings,
-			sep,
-			//opts->aDrawAxes,
-			//opts->aDrawNodes,
-			//opts->aDrawHavok ,
-			//opts->aDrawConstraints,
-			opts->aDrawFurn,
-			opts->aDrawHidden
-	};
+	return{ opts->aSettings, sep };
 }
 
 void Options::save()
@@ -645,8 +637,8 @@ void Options::save()
 		//cfg.setValue( "Draw Nodes", drawNodes() );
 		//cfg.setValue( "Draw Collision Geometry", drawHavok() );
 		//cfg.setValue( "Draw Constraints", drawConstraints() );
-		cfg.setValue( "Draw Furniture Markers", drawFurn() );
-		cfg.setValue( "Show Hidden Objects", drawHidden() );
+		//cfg.setValue( "Draw Furniture Markers", drawFurn() );
+		//cfg.setValue( "Show Hidden Objects", drawHidden() );
 		//cfg.setValue( "Show Stats", drawStats() );
 
 		cfg.setValue( "Background", bgColor() );
@@ -984,15 +976,15 @@ bool Options::shaders()
 //	return get()->aDrawConstraints->isChecked();
 //}
 
-bool Options::drawFurn()
-{
-	return get()->aDrawFurn->isChecked();
-}
-
-bool Options::drawHidden()
-{
-	return get()->aDrawHidden->isChecked();
-}
+//bool Options::drawFurn()
+//{
+//	return get()->aDrawFurn->isChecked();
+//}
+//
+//bool Options::drawHidden()
+//{
+//	return get()->aDrawHidden->isChecked();
+//}
 
 //bool Options::drawStats()
 //{

@@ -746,8 +746,8 @@ Node * Node::findChild( const QString & name ) const
 
 bool Node::isHidden() const
 {
-	if ( Options::drawHidden() )
-		return false;
+	//if ( Options::drawHidden() )
+	//	return false;
 
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
