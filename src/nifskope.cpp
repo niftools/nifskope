@@ -1084,7 +1084,7 @@ void NifSkope::migrateSettings() const
 
 	// Migrate lambda
 	//	Using a QHash of registry keys (stored in version.h), migrates from one version to another.
-	auto migrate = []( QSettings & migrateFrom, QSettings & migrateTo, static const QHash<QString, QString> migration ) {
+	auto migrate = []( QSettings & migrateFrom, QSettings & migrateTo, const QHash<QString, QString> migration ) {
 		QHash<QString, QString>::const_iterator i;
 		for ( i = migration.begin(); i != migration.end(); ++i ) {
 			QVariant val = migrateFrom.value( i.key() );
