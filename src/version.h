@@ -249,12 +249,7 @@ static const QHash<QString, QString> migrateTo1_2 = {
 		{ "Render Settings/Draw Collision Geometry", "Render Settings/Draw Collision Geometry" }, { "Render Settings/Draw Constraints", "Render Settings/Draw Constraints" },
 		{ "Render Settings/Draw Furniture Markers", "Render Settings/Draw Furniture Markers" }, { "Render Settings/Draw Nodes", "Render Settings/Draw Nodes" },
 		{ "Render Settings/Enable Shaders", "Render Settings/Enable Shaders" }, { "Render Settings/Foreground", "Render Settings/Foreground" },
-		{ "Render Settings/Handle Length", "Render Settings/Handle Length" }, { "Render Settings/Highlight", "Render Settings/Highlight" },
-		{ "Render Settings/Light0/Ambient", "Render Settings/Light0/Ambient" }, { "Render Settings/Light0/Declination", "Render Settings/Light0/Declination" },
-		{ "Render Settings/Light0/Diffuse", "Render Settings/Light0/Diffuse" }, { "Render Settings/Light0/Frontal", "Render Settings/Light0/Frontal" },
-		{ "Render Settings/Light0/Planar Angle", "Render Settings/Light0/Planar Angle" }, { "Render Settings/Light0/Specular", "Render Settings/Light0/Specular" },
-		{ "Render Settings/MatOver/Ambient", "Render Settings/MatOver/Ambient" }, { "Render Settings/MatOver/Diffuse", "Render Settings/MatOver/Diffuse" },
-		{ "Render Settings/MatOver/Emmissive", "Render Settings/MatOver/Emissive" }, { "Render Settings/MatOver/Specular", "Render Settings/MatOver/Specular" },
+		{ "Render Settings/Highlight", "Render Settings/Highlight" },
 		{ "Render Settings/Show Hidden Objects", "Render Settings/Show Hidden Objects" }, { "Render Settings/Show Stats", "Render Settings/Show Stats" },
 		{ "Render Settings/Texture Alternatives", "Render Settings/Texture Alternatives" }, { "Render Settings/Texture Folders", "Render Settings/Texture Folders" },
 		{ "Render Settings/Texturing", "Render Settings/Texturing" }, { "Render Settings/Up Axis", "Render Settings/Up Axis" },
@@ -273,6 +268,24 @@ static const QHash<QString, QString> migrateTo1_2 = {
 		{ "spells/Texture/Export Template/Wire Color", "Spells/Texture/Export Template/Wire Color" },
 		{ "spells/Texture/Export Template/Wrap Mode", "Spells/Texture/Export Template/Wrap Mode" },
 		{ "version", "Version" }
+};
+
+static const QHash<QString, QString> migrateTo2_0 = {
+		{ "Export Settings/Export Culling", "Export Settings/Export Culling" },
+		{ "File/Recent File List", "File/Recent File List" },
+		{ "File/Auto Sanitize", "File/Auto Sanitize" },
+		{ "File/Last Load", "File/Last Load" }, { "File/Last Save", "File/Last Save" },
+		{ "FSEngine/Archives", "FSEngine/Archives" },
+		{ "Render Settings/Anti Aliasing", "Render Settings/Anti Aliasing" },
+		{ "Render Settings/Texturing", "Render Settings/Texturing" }, 
+		{ "Render Settings/Enable Shaders", "Render Settings/Enable Shaders" },
+		{ "Render Settings/Background", "Render Settings/Background" },
+		{ "Render Settings/Foreground", "Render Settings/Foreground" },
+		{ "Render Settings/Highlight", "Render Settings/Highlight" },
+		{ "Render Settings/Texture Alternatives", "Render Settings/Texture Alternatives" },
+		{ "Render Settings/Texture Folders", "Render Settings/Texture Folders" },
+		{ "Render Settings/Up Axis", "Render Settings/Up Axis" },
+		{ "Settings/Language", "Settings/Language" }, { "Settings/Startup Version", "Settings/Startup Version" },
 };
 
 
