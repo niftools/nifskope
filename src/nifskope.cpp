@@ -145,6 +145,7 @@ NifSkope::NifSkope()
 	tree->setModel( nif );
 	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->installEventFilter( this );
+	tree->header()->moveSection( 1, 2 );
 
 	// Block Details
 	header = ui->header;
