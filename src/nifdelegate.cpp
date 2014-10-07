@@ -208,7 +208,10 @@ public:
 					for ( auto child : qApp->activeWindow()->children() ) {
 						GLView * gl = qobject_cast<GLView *>(child);
 						if ( gl && gl->isValid() ) {
-							connect( qobject_cast<NifCheckBoxList *>(w), &NifCheckBoxList::dataChanged, gl, &GLView::flagsChanged );
+
+							auto cbl = qobject_cast<NifCheckBoxList *>(w);
+							if ( cbl )
+								connect( cbl, &NifCheckBoxList::dataChanged, gl, &GLView::flagsChanged );
 						}
 					}
 				} else if ( type == NifValue::eDefault ) {
