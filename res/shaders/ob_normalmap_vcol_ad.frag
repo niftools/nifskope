@@ -48,7 +48,7 @@ void main( void )
 		// TODO: Attenuation?
 		
 		if ( RdotE > 0.0 ) {
-			spec = nmap.a * gl_LightSource[0].specular.rgb * specStrength * pow(RdotE, 0.8*specGlossiness);
+			spec = nmap.a * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness);
 			color.rgb += spec * specColor;
 		}
 	}

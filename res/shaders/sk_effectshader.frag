@@ -1,7 +1,7 @@
 #version 120
 
-highp uniform sampler2D BaseMap;
-highp uniform sampler2D GreyscaleMap;
+uniform sampler2D BaseMap;
+uniform sampler2D GreyscaleMap;
 
 uniform bool doubleSided;
 
@@ -39,13 +39,13 @@ vec4 colorLookup( float x, float y ) {
 
 void main( void )
 {
-	highp vec4 color;
+	vec4 color;
 	vec4 emissiveColor = glowColor;
 	float emissiveMult = glowMult;
 	
 	float alphaMult = emissiveColor.a * emissiveColor.a;
 	
-	highp vec3 normal = N;
+	vec3 normal = N;
 	//vec3 normal = normalize(cross(dFdy(v.xyz), dFdx(v.xyz)));
 	
 	//if ( !doubleSided && !gl_FrontFacing ) { return; }
@@ -60,7 +60,7 @@ void main( void )
 	float tmp2 = falloffDepth; // Unused right now
 	
 	// Falloff
-	highp float falloff = 1.0;
+	float falloff = 1.0;
 	if ( useFalloff ) {
 		//falloff = smoothstep( clamp(falloffParams.y * 2.0, 0.0, 2.0), clamp(falloffParams.x * 2.0, 0.0, 2.0), vec3(abs(E.b)));
 		
@@ -84,7 +84,7 @@ void main( void )
 		falloff = mix( max(falloffParams.w, 0.01), min(falloffParams.z, 0.99), falloff );
 	}
 	
-	highp vec4 baseMap;
+	vec4 baseMap;
 	//if ( hasSourceTexture ) {
 		baseMap = texture2D( BaseMap, gl_TexCoord[0].st * uvScale + uvOffset );
 
@@ -103,7 +103,7 @@ void main( void )
 
 	//}
 	
-	highp vec4 red, green, blue, alpha;
+	vec4 red, green, blue, alpha;
 	
 	
 
@@ -127,9 +127,9 @@ void main( void )
 		
 		
 		// Unknown if y- lookup needs "* falloff"
-		//highp vec4 luR = colorLookup( baseMap.r, ColorD.r * emissiveColor.r );
-		highp vec4 luG = colorLookup( baseMap.g, ColorD.g * falloff * emRGB  );
-		//highp vec4 luB = colorLookup( baseMap.b, ColorD.b * emissiveColor.b );
+		//vec4 luR = colorLookup( baseMap.r, ColorD.r * emissiveColor.r );
+		vec4 luG = colorLookup( baseMap.g, ColorD.g * falloff * emRGB  );
+		//vec4 luB = colorLookup( baseMap.b, ColorD.b * emissiveColor.b );
 		
 		
 		color.rgb = luG.rgb;
