@@ -511,8 +511,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
           <property name="flat">
@@ -540,8 +540,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
           <property name="flat">
@@ -691,8 +691,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
           <property name="flat">
@@ -720,8 +720,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
           <property name="flat">
