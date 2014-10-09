@@ -32,6 +32,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltools.h"
 
+#include <stack>
+#include <map>
+
 #include "nifmodel.h"
 
 
@@ -617,30 +620,254 @@ void drawDashLine( Vector3 a, Vector3 b, int sd )
 	glEnd();
 }
 
-void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals, float scale )
+//! Find the dot product of two vectors
+static float dotproduct( const Vector3 & v1, const Vector3 & v2 )
 {
-	glBegin( GL_LINES );
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+//! Find the cross product of two vectors
+static Vector3 crossproduct( const Vector3 & a, const Vector3 & b )
+{
+	return Vector3( a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0] );
+}
 
-	for ( int i = 1; i < vertices.count(); i++ ) {
-		for ( int j = 0; j < i; j++ ) {
-			glVertex( vertices[i] * scale );
-			glVertex( vertices[j] * scale );
+//! Generate triangles for convex hull
+static std::stack<std::vector<Vector3>> generateTris( const NifModel * nif, const QModelIndex & iShape, float scale )
+{
+	QVector<Vector4> vertices = nif->getArray<Vector4>( iShape, "Vertices" );
+	//QVector<Vector4> normals = nif->getArray<Vector4>( iShape, "Normals" );
+
+	Vector3 A, B, C, N, V;
+	float D;
+	int L, prev, eps;
+	bool good;
+
+	L = vertices.count();
+	std::vector<Vector3> P( L );
+	std::vector<Vector3> points( 3 );
+
+	std::stack<std::vector<Vector3>> tris;
+
+	// Convert QVector<Vector4> to std::vector<Vector3>
+	for ( int v = 0; v < L; v++ ) {
+		P[v] = Vector3( vertices[v] );
+	}
+
+	for ( int i = 0; i < L - 2; i++ ) {
+		A = P[i];
+
+		for ( int j = i + 1; j < L - 1; j++ ) {
+			B = P[j];
+
+			for ( int k = j + 1; k < L; k++ ) {
+				C = P[k];
+
+				prev = 0;
+				good = true;
+
+				N = crossproduct( (B - A), (C - A) );
+
+				for ( int p = 0; p < L; p++ ) {
+					V = P[p];
+
+					if ( (V == A) || (V == B) || (V == C) ) continue;
+
+					D = dotproduct( (V - A), N );
+
+					if ( D == 0 ) continue;
+
+					eps = (D > 0) ? 1 : -1;
+
+					if ( eps + prev == 0 ) {
+						good = false;
+						continue;
+					}
+
+					prev = eps;
+				}
+
+				if ( good ) {
+					// Append ABC
+					points[0] = A * scale;
+					points[1] = B * scale;
+					points[2] = C * scale;
+
+					tris.push( points );
+				}
+			}
 		}
 	}
 
-	/*
-	Vector3 c;
-	foreach ( Vector4 v, vertices )
-	    c += Vector3( v );
-	if ( vertices.count() )
-	    c /= vertices.count();
-	foreach ( Vector4 n, normals )
-	{
-	    glVertex( c + Vector3( n ) * ( n[3] ) );
-	    glVertex( c + Vector3( n ) * ( - 1 + n[3] ) );
+	return tris;
+}
+
+void drawConvexHull( const NifModel * nif, const QModelIndex & iShape, float scale, bool solid )
+{
+	static std::map<QModelIndex, std::stack<std::vector<Vector3>>> shapes;
+	std::stack<std::vector<Vector3>> shape;
+
+	shape = shapes[iShape];
+
+	if ( shape.empty() ) {
+		shape = generateTris( nif, iShape, scale );
+		shapes[iShape] = shape;
 	}
-	*/
+
+	glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+	glDisable( GL_CULL_FACE );
+	glBegin( GL_TRIANGLES );
+
+	while ( !shape.empty() ) {
+		// DRAW ABC
+		glVertex( shape.top()[0] );
+		glVertex( shape.top()[1] );
+		glVertex( shape.top()[2] );
+
+		shape.pop();
+	}
+
 	glEnd();
+	glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+	glEnable( GL_CULL_FACE );
+
+}
+
+void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid )
+{
+	QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
+	for ( int r = 0; r < nif->rowCount( iStrips ); r++ ) {
+		QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
+		if ( iStripData.isValid() ) {
+			QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
+
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+			glDisable( GL_CULL_FACE );
+			glBegin( GL_TRIANGLES );
+
+			QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
+			for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {	// draw the strips like they appear in the tescs
+				// (use the unstich strips spell to avoid the spider web effect)
+				QVector<quint16> strip = nif->getArray<quint16>( iPoints.child( r, 0 ) );
+				if ( strip.count() >= 3 ) {
+					quint16 a = strip[0];
+					quint16 b = strip[1];
+
+					for ( int x = 2; x < strip.size(); x++ ) {
+						quint16 c = strip[x];
+						glVertex( verts.value( a ) );
+						glVertex( verts.value( b ) );
+						glVertex( verts.value( c ) );
+						a = b;
+						b = c;
+					}
+				}
+			}
+
+			glEnd();
+			glEnable( GL_CULL_FACE );
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+		}
+	}
+}
+
+void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
+{
+	// Scale up for Skyrim
+	float havokScale = (nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
+
+	QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
+	Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
+
+	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	if ( iData.isValid() ) {
+		QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
+		QModelIndex iBigTris = nif->getIndex( iData, "Big Tris" );
+
+		QVector<Vector4> verts = nif->getArray<Vector4>( iBigVerts );
+
+		glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+		glDisable( GL_CULL_FACE );
+
+		for ( int r = 0; r < nif->rowCount( iBigTris ); r++ ) {
+			quint16 a = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 1" );
+			quint16 b = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 2" );
+			quint16 c = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 3" );
+
+			glBegin( GL_TRIANGLES );
+
+			glVertex( verts[a] * havokScale );
+			glVertex( verts[b] * havokScale );
+			glVertex( verts[c] * havokScale );
+
+			glEnd();
+		}
+
+		glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+		glEnable( GL_CULL_FACE );
+
+		QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
+		for ( int r = 0; r < nif->rowCount( iChunks ); r++ ) {
+			Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child( r, 0 ), "Translation" );
+			quint32 numOffsets = nif->get<quint32>( iChunks.child( r, 0 ), "Num Vertices" );
+			quint32 numIndices = nif->get<quint32>( iChunks.child( r, 0 ), "Num Indices" );
+			quint32 numStrips = nif->get<quint32>( iChunks.child( r, 0 ), "Num Strips" );
+			QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child( r, 0 ), "Vertices" );
+			QVector<quint16> indices = nif->getArray<quint16>( iChunks.child( r, 0 ), "Indices" );
+			QVector<quint16> strips = nif->getArray<quint16>( iChunks.child( r, 0 ), "Strips" );
+
+			QVector<Vector4> vertices( numOffsets / 3 );
+
+			int numStripVerts = 0;
+			int offset = 0;
+
+			for ( int v = 0; v < (int)numStrips; v++ ) {
+				numStripVerts += strips[v];
+			}
+
+			for ( int n = 0; n < ((int)numOffsets / 3); n++ ) {
+				vertices[n] = chunkOrigin + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
+				vertices[n] *= havokScale;
+			}
+
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+			glDisable( GL_CULL_FACE );
+
+			// Stripped tris
+			for ( int s = 0; s < (int)numStrips; s++ ) {
+
+				for ( int idx = 0; idx < strips[s] - 2; idx++ ) {
+
+					glBegin( GL_TRIANGLES );
+
+					glVertex( vertices[indices[offset + idx]] );
+					glVertex( vertices[indices[offset + idx + 1]] );
+					glVertex( vertices[indices[offset + idx + 2]] );
+
+					glEnd();
+
+				}
+
+				offset += strips[s];
+
+			}
+
+			// Non-stripped tris
+			for ( int f = 0; f < (int)(numIndices - offset); f += 3 ) {
+				glBegin( GL_TRIANGLES );
+
+				glVertex( vertices[indices[offset + f]] );
+				glVertex( vertices[indices[offset + f + 1]] );
+				glVertex( vertices[indices[offset + f + 2]] );
+
+				glEnd();
+
+			}
+
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+			glEnable( GL_CULL_FACE );
+
+		}
+	}
 }
 
 // Renders text using the font initialized in the primary view class

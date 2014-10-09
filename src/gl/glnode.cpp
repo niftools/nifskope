@@ -1023,45 +1023,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
+		drawNiTSS( nif, iShape );
 
-		for ( int r = 0; r < nif->rowCount( iStrips ); r++ ) {
-			QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
-
-			if ( iStripData.isValid() ) {
-				QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
-
-				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-				glDisable( GL_CULL_FACE );
-				glBegin( GL_TRIANGLES );
-
-				QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
-
-				for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
-					// draw the strips like they appear in the tescs
-					// (use the unstich strips spell to avoid the spider web effect)
-					QVector<quint16> strip = nif->getArray<quint16>( iPoints.child( r, 0 ) );
-
-					if ( strip.count() >= 3 ) {
-						quint16 a = strip[0];
-						quint16 b = strip[1];
-
-						for ( int x = 2; x < strip.size(); x++ ) {
-							quint16 c = strip[x];
-							glVertex( verts.value( a ) );
-							glVertex( verts.value( b ) );
-							glVertex( verts.value( c ) );
-							a = b;
-							b = c;
-						}
-					}
-				}
-
-				glEnd();
-				glEnable( GL_CULL_FACE );
-				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-			}
-		}
+		//if ( Options::getHavokState() == HAVOK_SOLID ) {
+		//	QColor c = Options::hlColor();
+		//	c.setAlphaF( 0.3 );
+		//	glColor( Color4( c ) );
+		//
+		//	drawNiTSS( nif, iShape, true );
+		//}
 
 		glPopMatrix();
 	} else if ( name == "bhkConvexVerticesShape" ) {
@@ -1070,7 +1040,16 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		drawConvexHull( nif->getArray<Vector4>( iShape, "Vertices" ), nif->getArray<Vector4>( iShape, "Normals" ), havokScale );
+		drawConvexHull( nif, iShape, havokScale );
+
+		//if ( Options::getHavokState() == HAVOK_SOLID ) {
+		//	QColor c = Options::hlColor();
+		//	c.setAlphaF( 0.3 );
+		//	glColor( Color4( c ) );
+		//
+		//	drawConvexHull( nif, iShape, havokScale, true );
+		//}
+
 	} else if ( name == "bhkMoppBvTreeShape" ) {
 		if ( !Node::SELECTING ) {
 			if ( scene->currentBlock == nif->getBlock( nif->getLink( iShape, "Shape" ) ) ) {
@@ -1206,95 +1185,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
-		Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
+		drawCMS( nif, iShape );
 
-		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
-
-		if ( iData.isValid() ) {
-			QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
-			QModelIndex iBigTris  = nif->getIndex( iData, "Big Tris" );
-
-			QVector<Vector4> verts = nif->getArray<Vector4>( iBigVerts );
-
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-			glDisable( GL_CULL_FACE );
-
-			for ( int r = 0; r < nif->rowCount( iBigTris ); r++ ) {
-				quint16 a = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 1" );
-				quint16 b = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 2" );
-				quint16 c = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 3" );
-
-				glBegin( GL_TRIANGLES );
-
-				glVertex( verts[a] * havokScale );
-				glVertex( verts[b] * havokScale );
-				glVertex( verts[c] * havokScale );
-
-				glEnd();
-			}
-
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-			glEnable( GL_CULL_FACE );
-
-			QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
-
-			for ( int r = 0; r < nif->rowCount( iChunks ); r++ ) {
-				Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child( r, 0 ), "Translation" );
-				quint32 numOffsets  = nif->get<quint32>( iChunks.child( r, 0 ), "Num Vertices" );
-				quint32 numIndices  = nif->get<quint32>( iChunks.child( r, 0 ), "Num Indices" );
-				quint32 numStrips = nif->get<quint32>( iChunks.child( r, 0 ), "Num Strips" );
-				QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child( r, 0 ), "Vertices" );
-				QVector<quint16> indices = nif->getArray<quint16>( iChunks.child( r, 0 ), "Indices" );
-				QVector<quint16> strips  = nif->getArray<quint16>( iChunks.child( r, 0 ), "Strips" );
-
-				QVector<Vector4> vertices( numOffsets / 3 );
-
-				int numStripVerts = 0;
-				int offset = 0;
-
-				for ( int v = 0; v < (int)numStrips; v++ ) {
-					numStripVerts += strips[v];
-				}
-
-				for ( int n = 0; n < ( (int)numOffsets / 3 ); n++ ) {
-					vertices[n]  = chunkOrigin + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
-					vertices[n] *= havokScale;
-				}
-
-				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-				glDisable( GL_CULL_FACE );
-
-				// Stripped tris
-				for ( int s = 0; s < (int)numStrips; s++ ) {
-					for ( int idx = 0; idx < strips[s] - 2; idx++ ) {
-						glBegin( GL_TRIANGLES );
-
-						glVertex( vertices[indices[offset + idx]] );
-						glVertex( vertices[indices[offset + idx + 1]] );
-						glVertex( vertices[indices[offset + idx + 2]] );
-
-						glEnd();
-					}
-
-					offset += strips[s];
-				}
-
-				// Non-stripped tris
-				for ( int f = 0; f < (int)(numIndices - offset); f += 3 ) {
-					glBegin( GL_TRIANGLES );
-
-					glVertex( vertices[indices[offset + f]] );
-					glVertex( vertices[indices[offset + f + 1]] );
-					glVertex( vertices[indices[offset + f + 2]] );
-
-					glEnd();
-				}
-
-				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-				glEnable( GL_CULL_FACE );
-			}
-		}
+		//if ( Options::getHavokState() == HAVOK_SOLID ) {
+		//	QColor c = Options::hlColor();
+		//	c.setAlphaF( 0.3 );
+		//	glColor( Color4( c ) );
+		//
+		//	drawCMS( nif, iShape, true );
+		//}
 
 		glPopMatrix();
 	}
