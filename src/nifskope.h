@@ -123,6 +123,7 @@ public slots:
 	void enableUi();
 
 	void onLoadComplete( bool );
+	void onSaveComplete( bool );
 
 	//! Reparse the nif.xml and kfm.xml files.
 	void on_aLoadXML_triggered();

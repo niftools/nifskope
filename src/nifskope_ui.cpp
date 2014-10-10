@@ -546,6 +546,7 @@ void NifSkope::initConnections()
 	} );
 
 	connect( this, &NifSkope::completeLoading, this, &NifSkope::onLoadComplete );
+	connect( this, &NifSkope::completeSave, this, &NifSkope::onSaveComplete );
 }
 
 
@@ -777,6 +778,13 @@ void NifSkope::onLoadComplete( bool success )
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
 
+void NifSkope::onSaveComplete( bool success )
+{
+	if ( success ) {
+		// Mark file as clean
+		nif->undoStack->setClean();
+	}
+}
 
 void NifSkope::enableUi()
 {
