@@ -733,6 +733,13 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 		//ui->statusbar->showMessage( tr("File Loaded Successfully"), 3000 );
 	} );
 
+	// Change Filepath on successful NIF save
+	connect( this, &NifSkope::completeSave, [this, filepathWidget, labelFilepath]( bool success ) {
+		filepathWidget->setVisible( success );
+		labelFilepath->setText( currentFile );
+		//ui->statusbar->showMessage( tr("File Saved Successfully"), 3000 );
+	} );
+
 	// Navigate to NIF in Explorer
 	connect( navigateToFilepath, &QPushButton::clicked, [this]() {
 #ifdef Q_OS_WIN

@@ -498,7 +498,7 @@ void NifSkope::saveAs()
 	QStringList ext = *fileExtensions;
 	ext.removeAt( 0 );
 
-	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absolutePath(), ext.join( ";;" ) );
+	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(), ext.join( ";;" ) );
 	if ( filename.isEmpty() )
 		return;
 
