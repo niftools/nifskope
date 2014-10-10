@@ -2831,3 +2831,33 @@ void NifModel::updateModel( UpdateType value )
 		emit linksChanged();
 }
 
+
+
+ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
+	const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model )
+	: QUndoCommand(), nif( model ), idx( index )
+{
+	oldValue = index.data( Qt::EditRole );
+	newValue = value;
+
+	auto oldTxt = index.data( Qt::DisplayRole ).toString();
+	auto newTxt = valueString;
+
+	setText( QApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
+}
+
+void ChangeValueCommand::redo()
+{
+	//qDebug() << "Redoing";
+	nif->setData( idx, newValue, Qt::EditRole );
+
+	//qDebug() << nif->data( idx ).toString();
+}
+
+void ChangeValueCommand::undo()
+{
+	//qDebug() << "Undoing";
+	nif->setData( idx, oldValue, Qt::EditRole );
+
+	//qDebug() << nif->data( idx ).toString();
+}

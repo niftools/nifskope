@@ -122,6 +122,25 @@ void NifSkope::initActions()
 	aRCondition = ui->aRCondition;
 	aSelectFont = ui->aSelectFont;
 
+	// Undo/Redo
+	undoAction = nif->undoStack->createUndoAction( this, tr( "&Undo" ) );
+	undoAction->setShortcut( QKeySequence::Undo );
+	undoAction->setIcon( QIcon( ":btn/undo" ) );
+	redoAction = nif->undoStack->createRedoAction( this, tr( "&Redo" ) );
+	redoAction->setShortcut( QKeySequence::Redo );
+	redoAction->setIcon( QIcon( ":btn/redo" ) );
+
+	ui->tFile->addAction( undoAction );
+	ui->tFile->addAction( redoAction );
+
+	connect( undoAction, &QAction::triggered, [this]( bool ) {
+		ogl->update();
+	} );
+
+	connect( redoAction, &QAction::triggered, [this]( bool ) {
+		ogl->update();
+	} );
+
 	//ui->aSave->setShortcut( QKeySequence::Save ); // Bad idea, goes against previous shortcuts
 	//ui->aSaveAs->setShortcut( QKeySequence::SaveAs ); // Bad idea, goes against previous shortcuts
 	ui->aWindow->setShortcut( QKeySequence::New );
@@ -751,6 +770,8 @@ void NifSkope::onLoadComplete( bool success )
 		setWindowFilePath( "" );
 		progress->reset();
 	}
+
+	nif->undoStack->clear();
 
 	// Hide Progress Bar
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );

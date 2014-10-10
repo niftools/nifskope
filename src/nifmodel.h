@@ -39,7 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QReadWriteLock>
 #include <QStack>
 #include <QStringList>
-
+#include <QUndoCommand>
+#include <QUndoStack>
 
 //! \file nifmodel.h NifModel
 
@@ -235,6 +236,8 @@ public:
 
 	static QAbstractItemDelegate * createDelegate( class SpellBook * );
 
+	QUndoStack * undoStack;
+
 signals:
 	void linksChanged();
 	void lodSliderChanged( bool ) const;
@@ -387,6 +390,18 @@ inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
 	         && ( until == 0 || version <= until )
 	          );
 }
+
+class ChangeValueCommand : public QUndoCommand
+{
+public:
+	ChangeValueCommand( const QModelIndex & index, const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model );
+	void redo();
+	void undo();
+private:
+	NifModel * nif;
+	QVariant newValue, oldValue;
+	QModelIndex idx;
+};
 
 
 // Overrides for get and set templates.

@@ -277,6 +277,9 @@ private:
 	QAction * aResources;
 #endif
 
+	QAction * undoAction;
+	QAction * redoAction;
+
 	QActionGroup * gListMode;
 	QAction * aList;
 	QAction * aHierarchy;

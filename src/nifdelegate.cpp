@@ -290,6 +290,14 @@ public:
 
 		if ( vedit ) {
 			v.setValue( vedit->getValue() );
+
+			if ( model->inherits( "NifModel" ) ) {
+				auto valueType = model->sibling( index.row(), 0, index ).data().toString();
+
+				auto nif = static_cast<NifModel *>(model);
+				nif->undoStack->push( new ChangeValueCommand( index, v, vedit->getValue().toString(), valueType, nif ) );
+			}
+
 			model->setData( index, v, Qt::EditRole );
 		} else if ( cedit ) {
 			QString t  = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();

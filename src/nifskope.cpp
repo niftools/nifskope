@@ -127,6 +127,9 @@ NifSkope::NifSkope()
 	proxy = new NifProxyModel( this );
 	proxy->setModel( nif );
 
+	// Setup QUndoStack
+	nif->undoStack = new QUndoStack( this );
+
 	kfm = new KfmModel( this );
 
 	book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
