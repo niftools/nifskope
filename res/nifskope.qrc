@@ -54,5 +54,7 @@
         <file alias="specular">icon/specular.png</file>
         <file alias="glow">icon/glow.png</file>
         <file alias="showMarkers">icon/marker.png</file>
+        <file alias="undo">icon/undo.png</file>
+        <file alias="redo">icon/redo.png</file>
     </qresource>
 </RCC>
