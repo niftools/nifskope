@@ -312,6 +312,14 @@ public:
 				NifValue nv = v.value<NifValue>();
 				nv.setCount( x );
 				v.setValue( nv );
+
+				if ( model->inherits( "NifModel" ) ) {
+					auto valueType = model->sibling( index.row(), 0, index ).data().toString();
+
+					auto nif = static_cast<NifModel *>(model);
+					nif->undoStack->push( new ToggleCheckBoxListCommand( index, v, valueType, nif ) );
+				}
+
 				model->setData( index, v, Qt::EditRole );
 			}
 		} else if ( ledit ) {

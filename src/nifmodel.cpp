@@ -2864,3 +2864,31 @@ void ChangeValueCommand::undo()
 
 	//qDebug() << nif->data( idx ).toString();
 }
+
+ToggleCheckBoxListCommand::ToggleCheckBoxListCommand( const QModelIndex & index,
+	const QVariant & value, const QString & valueType, NifModel * model )
+	: QUndoCommand(), nif( model ), idx( index )
+{
+	oldValue = index.data( Qt::EditRole );
+	newValue = value;
+
+	auto oldTxt = index.data( Qt::DisplayRole ).toString();
+
+	setText( QApplication::translate( "ToggleCheckBoxListCommand", "Modify %1" ).arg( valueType ) );
+}
+
+void ToggleCheckBoxListCommand::redo()
+{
+	//qDebug() << "Redoing";
+	nif->setData( idx, newValue, Qt::EditRole );
+
+	//qDebug() << nif->data( idx ).toString();
+}
+
+void ToggleCheckBoxListCommand::undo()
+{
+	//qDebug() << "Undoing";
+	nif->setData( idx, oldValue, Qt::EditRole );
+
+	//qDebug() << nif->data( idx ).toString();
+}

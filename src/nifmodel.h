@@ -403,6 +403,18 @@ private:
 	QModelIndex idx;
 };
 
+class ToggleCheckBoxListCommand : public QUndoCommand
+{
+public:
+	ToggleCheckBoxListCommand( const QModelIndex & index, const QVariant & value, const QString & valueType, NifModel * model );
+	void redo();
+	void undo();
+private:
+	NifModel * nif;
+	QVariant newValue, oldValue;
+	QModelIndex idx;
+};
+
 
 // Overrides for get and set templates.
 template <typename T> inline T NifModel::get( const QModelIndex & index ) const
