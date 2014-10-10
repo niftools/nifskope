@@ -2843,7 +2843,10 @@ ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
 	auto oldTxt = index.data( Qt::DisplayRole ).toString();
 	auto newTxt = valueString;
 
-	setText( QApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
+	if ( !newTxt.isEmpty() )
+		setText( QApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
+	else
+		setText( QApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
 }
 
 void ChangeValueCommand::redo()
