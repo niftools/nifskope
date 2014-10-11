@@ -104,6 +104,8 @@ public:
 	//! Restore NifSkope UI settings.
 	void restoreUi();
 
+	bool saveConfirm();
+
 signals:
 	void beginLoading();
 	void completeLoading( bool );

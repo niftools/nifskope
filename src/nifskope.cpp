@@ -53,6 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QAction>
 #include <QApplication>
 #include <QByteArray>
+#include <QCloseEvent>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
@@ -279,7 +280,14 @@ void NifSkope::closeEvent( QCloseEvent * e )
 {
 	saveUi();
 
-	QMainWindow::closeEvent( e );
+	if ( nif->undoStack->isClean() ) {
+		e->accept();
+		return;
+	}
+
+	saveConfirm();
+
+	e->accept();
 }
 
 
@@ -465,11 +473,28 @@ void NifSkope::clearCurrentFile()
 	updateAllRecentFileActions();
 }
 
+bool NifSkope::saveConfirm() {
+	if ( !nif->undoStack->isClean() ) {
+		QMessageBox::StandardButton response;
+		response = QMessageBox::question( this, tr( "Save Changes?" ), tr( "You have unsaved changes. Would you like to save them now?" ),
+			QMessageBox::Yes | QMessageBox::No );
+
+		if ( response == QMessageBox::Yes ) {
+			saveAs();
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void NifSkope::open()
 {
 	// Grab most recent filepath if blank window
 	auto path = nif->getFileInfo().absolutePath();
 	path = (path.isEmpty()) ? recentFileActs[0]->data().toString() : path;
+
+	saveConfirm();
 
 	QStringList files = QFileDialog::getOpenFileNames( this, tr( "Open File" ), path, fileExtensions->join( ";;" ) );
 	
@@ -521,6 +546,8 @@ void NifSkope::saveFile( const QString & filename )
 
 void NifSkope::openRecentFile()
 {
+	saveConfirm();
+
 	QAction * action = qobject_cast<QAction *>(sender());
 	if ( action )
 		openFile( action->data().toString() );
