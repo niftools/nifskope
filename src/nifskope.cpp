@@ -476,7 +476,7 @@ void NifSkope::clearCurrentFile()
 bool NifSkope::saveConfirm() {
 	if ( !nif->undoStack->isClean() ) {
 		QMessageBox::StandardButton response;
-		response = QMessageBox::question( this, tr( "Save Changes?" ), tr( "You have unsaved changes. Would you like to save them now?" ),
+		response = QMessageBox::question( this, tr( "Save Changes?" ), tr( "You have unsaved changes to %1. Would you like to save them now?" ).arg( nif->getFileInfo().baseName() ),
 			QMessageBox::Yes | QMessageBox::No );
 
 		if ( response == QMessageBox::Yes ) {
