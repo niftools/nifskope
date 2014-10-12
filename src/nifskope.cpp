@@ -329,7 +329,27 @@ void NifSkope::select( const QModelIndex & index )
 	if ( sender() != list ) {
 		if ( list->model() == proxy ) {
 			QModelIndex pidx = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
-			list->setCurrentIndex( pidx );
+			
+			// Fix for NiDefaultAVObjectPalette bug
+			//	mapFrom() stops at the first result for the given block number,
+			//	thus when clicking in the viewport, the actual NiTriShape is not selected
+			//	but the reference to it in NiDefaultAVObjectPalette.
+			if ( pidx.parent().data( Qt::DisplayRole ).toString().contains( "NiDefaultAVObjectPalette" ) ) {
+
+				// Find ALL QModelIndex which match the display string
+				for ( auto i : list->model()->match( list->model()->index( 0, 0 ), Qt::DisplayRole, pidx.data( Qt::DisplayRole ),
+					100, Qt::MatchRecursive ) )
+				{
+					// Skip if child of NiDefaultAVObjectPalette
+					if ( i.parent().data( Qt::DisplayRole ).toString().contains( "NiDefaultAVObjectPalette" ) )
+						continue;
+
+					list->setCurrentIndex( i );
+				}
+			} else {
+				list->setCurrentIndex( pidx );
+			}
+
 		} else if ( list->model() == nif ) {
 			list->setCurrentIndex( nif->getBlockOrHeader( idx ) );
 		}
