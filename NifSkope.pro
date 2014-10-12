@@ -200,6 +200,7 @@ HEADERS += \
 	src/widgets/valueedit.h \
 	src/widgets/xmlcheck.h \
 	src/ui/about_dialog.h \
+	src/ui/checkablemessagebox.h \
 	src/ui/settingsdialog.h \
 	src/version.h
 
@@ -281,6 +282,7 @@ SOURCES += \
 	src/widgets/valueedit.cpp \
 	src/widgets/xmlcheck.cpp \
 	src/ui/about_dialog.cpp \
+	src/ui/checkablemessagebox.cpp \
 	src/ui/settingsdialog.cpp \
 	src/version.cpp
 
@@ -289,6 +291,7 @@ RESOURCES += \
 
 FORMS += \
 	src/ui/about_dialog.ui \
+	src/ui/checkablemessagebox.ui \
 	src/ui/nifskope.ui \
 	src/ui/settingsdialog.ui \
 	src/ui/settingsgeneral.ui
