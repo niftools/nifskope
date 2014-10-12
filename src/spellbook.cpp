@@ -32,8 +32,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spellbook.h"
 
+#include "ui/checkablemessagebox.h"
+
 #include <QCache>
 #include <QDir>
+#include <QSettings>
 
 
 //! \file spellbook.cpp SpellBook implementation
@@ -100,8 +103,23 @@ SpellBook::~SpellBook()
 
 void SpellBook::cast( NifModel * nif, const QModelIndex & index, Spell * spell )
 {
-	if ( spell && spell->isApplicable( nif, index ) )
+	QSettings cfg;
+
+	bool suppressConfirm = cfg.value( "Settings/Suppress Undoable Confirmation", false ).toBool();
+	bool accepted = false;
+
+	QDialogButtonBox::StandardButton response = QDialogButtonBox::Yes;
+
+	if ( !suppressConfirm ) {
+		response = CheckableMessageBox::question( this, "Confirmation", "This action cannot currently be undone. Do you want to continue?", "Do not ask me again", &accepted );
+
+		if ( accepted )
+			cfg.setValue( "Settings/Suppress Undoable Confirmation", true );
+	}
+	
+	if ( (response == QDialogButtonBox::Yes) && spell && spell->isApplicable( nif, index ) ) {
 		emit sigIndex( spell->cast( nif, index ) );
+	}
 }
 
 void SpellBook::sltSpellTriggered( QAction * action )
