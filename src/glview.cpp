@@ -97,6 +97,135 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file glview.cpp GLView implementation
 
+
+
+GLGraphicsView::GLGraphicsView( QWidget * parent ) : QGraphicsView( parent )
+{
+	installEventFilter( parent );
+}
+
+GLGraphicsView::~GLGraphicsView() {}
+
+
+void GLGraphicsView::setupViewport( QWidget * viewport )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport);
+	if ( glWidget ) {
+		//glWidget->initializeGL();
+		//glWidget->installEventFilter( this );
+		//glWidget->updateGL();
+	}
+
+
+	QGraphicsView::setupViewport( viewport );
+}
+
+bool GLGraphicsView::eventFilter( QObject * o, QEvent * e )
+{
+	//GLView * glWidget = qobject_cast<GLView *>(o);
+	//if ( glWidget ) {
+	//
+	//}
+
+	return QGraphicsView::eventFilter( o, e );
+}
+
+void GLGraphicsView::paintEvent( QPaintEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->paintEvent( e );
+	}
+
+	QGraphicsView::paintEvent( e );
+}
+
+void GLGraphicsView::dragEnterEvent( QDragEnterEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->dragEnterEvent( e );
+	}
+}
+void GLGraphicsView::dragLeaveEvent( QDragLeaveEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->dragLeaveEvent( e );
+	}
+}
+void GLGraphicsView::dragMoveEvent( QDragMoveEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->dragMoveEvent( e );
+	}
+}
+void GLGraphicsView::dropEvent( QDropEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->dropEvent( e );
+	}
+}
+void GLGraphicsView::focusOutEvent( QFocusEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->focusOutEvent( e );
+	}
+}
+void GLGraphicsView::keyPressEvent( QKeyEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->keyPressEvent( e );
+	}
+}
+void GLGraphicsView::keyReleaseEvent( QKeyEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->keyReleaseEvent( e );
+	}
+}
+void GLGraphicsView::mouseDoubleClickEvent( QMouseEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->mouseDoubleClickEvent( e );
+	}
+}
+void GLGraphicsView::mouseMoveEvent( QMouseEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->mouseMoveEvent( e );
+	}
+}
+void GLGraphicsView::mousePressEvent( QMouseEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->mousePressEvent( e );
+	}
+}
+void GLGraphicsView::mouseReleaseEvent( QMouseEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->mouseReleaseEvent( e );
+	}
+}
+void GLGraphicsView::wheelEvent( QWheelEvent * e )
+{
+	GLView * glWidget = qobject_cast<GLView *>(viewport());
+	if ( glWidget ) {
+		glWidget->wheelEvent( e );
+	}
+}
+
+
 GLView * GLView::create( NifSkope * window )
 {
 	static QList<QPointer<GLView> > views;
@@ -108,17 +237,16 @@ GLView * GLView::create( NifSkope * window )
 	}
 
 	QGLFormat fmt;
-	fmt.setDoubleBuffer( true );
-	fmt.setRgba( true );
-	fmt.setSamples( Options::antialias() ? 16 : 0 );
+	
+	//fmt.setOverlay( true );
 
 	// All new windows after the first window will share a format
 	if ( share ) {
 		fmt = share->format();
 	} else {
-		fmt.setSampleBuffers( Options::antialias() );
+		fmt.setSampleBuffers( false );
 	}
-		
+	
 	// OpenGL version
 	fmt.setVersion( 2, 1 );
 	// Ignored if version < 3.2
@@ -126,6 +254,10 @@ GLView * GLView::create( NifSkope * window )
 
 	// V-Sync
 	fmt.setSwapInterval( 1 );
+	fmt.setDoubleBuffer( false );
+	//fmt.setSamples( Options::antialias() ? 8 : 0 );
+	fmt.setDirectRendering( true );
+	fmt.setRgba( true );
 
 	views.append( QPointer<GLView>( new GLView( fmt, window, share ) ) );
 
@@ -136,9 +268,9 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	: QGLWidget( format, p, shareWidget )
 {
 	setFocusPolicy( Qt::ClickFocus );
-	setAttribute( Qt::WA_PaintOnScreen );
-	setAttribute( Qt::WA_NoSystemBackground );
-	setAutoFillBackground( false );
+	//setAttribute( Qt::WA_PaintOnScreen );
+	//setAttribute( Qt::WA_NoSystemBackground );
+	//setAutoFillBackground( false );
 	setAcceptDrops( true );
 	setContextMenuPolicy( Qt::CustomContextMenu );
 
@@ -346,7 +478,10 @@ void GLView::paintEvent( QPaintEvent * event )
 #else
 void GLView::paintGL()
 {
+	QGLWidget::paintGL();
 #endif
+	
+
 	// Save GL state
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 	glMatrixMode( GL_PROJECTION );
@@ -597,6 +732,8 @@ void GLView::paintGL()
 
 void GLView::resizeGL( int width, int height )
 {
+	resize( width, height );
+
 	makeCurrent();
 	aspect = (GLdouble)width / (GLdouble)height;
 	glViewport( 0, 0, width, height );

@@ -232,8 +232,29 @@ NifSkope::NifSkope()
 	//qvbox->setContentsMargins( 0, 0, 0, 0 );
 	//
 	//center->installEventFilter( this );
+	
+	m_scene = new QGraphicsScene;
+	m_graphicsView = new GLGraphicsView( this );
+	
+	
+	m_graphicsView->setScene( m_scene );
+	m_graphicsView->setRenderHint( QPainter::Antialiasing );
+	m_graphicsView->setRenderHint( QPainter::SmoothPixmapTransform );
+	m_graphicsView->setCacheMode( QGraphicsView::CacheNone );
+	//m_graphicsView->setOptimizationFlags( QGraphicsView::DontSavePainterState | QGraphicsView::DontAdjustForAntialiasing );
+	m_graphicsView->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
+	m_graphicsView->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
+	//m_graphicsView->setSizeAdjustPolicy( QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents );
+	
+	setCentralWidget( m_graphicsView );
+	
+	m_graphicsView->setViewport( ogl );
+	m_graphicsView->setViewportUpdateMode( QGraphicsView::FullViewportUpdate );
+	
+	//m_scene->setSceneRect( m_graphicsView->rect() );
+	//m_graphicsView->fitInView( m_scene->sceneRect() );
 
-	setCentralWidget( ogl );
+	//setCentralWidget( ogl );
 	setContextMenuPolicy( Qt::NoContextMenu );
 
 	// Resize timer for eventFilter()

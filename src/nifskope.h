@@ -58,6 +58,8 @@ class SpellBook;
 class QAction;
 class QActionGroup;
 class QComboBox;
+class QGraphicsScene;
+class QGraphicsView;
 class QLocale;
 class QModelIndex;
 class QProgressBar;
@@ -257,6 +259,9 @@ private:
 
 	//! The main window
 	GLView * ogl;
+
+	QGraphicsScene * m_scene;
+	QGraphicsView * m_graphicsView;
 
 	QComboBox * animGroups;
 

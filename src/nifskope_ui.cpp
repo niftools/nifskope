@@ -902,14 +902,18 @@ void NifSkope::resizeDone()
 	//qDebug() << "resizeDone" << isResizing;
 	//qDebug() << sender();
 
+	ogl->show();
 	ogl->setUpdatesEnabled( true );
 	ogl->setDisabled( false );
 	// Testing of parent widget idea
 	//ogl->setVisible( true );
 
+	m_scene->setSceneRect( m_graphicsView->rect() );
+	m_graphicsView->fitInView( m_scene->sceneRect() );
+
 	ogl->getScene()->animate = true;
 	ogl->update();
-	ogl->resizeGL( ogl->width(), ogl->height() );
+	ogl->resizeGL( centralWidget()->width(), centralWidget()->height() );
 }
 
 
@@ -936,7 +940,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	//}
 
 	// Filter GLView
-	auto obj = qobject_cast<GLView *>(o);
+	auto obj = qobject_cast<GLGraphicsView *>(o);
 	if ( !obj )
 		return QMainWindow::eventFilter( o, e );
 
@@ -945,6 +949,9 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	// Begin resize timer
 	// Block all Resize Events to GLView
 	if ( e->type() == QEvent::Resize ) {
+		ogl->hide();
+		//m_scene->setSceneRect( m_graphicsView->rect() );
+		//m_graphicsView->fitInView( m_scene->sceneRect() );
 
 		if ( !isResizing  && !resizeTimer->isActive() ) {
 			ogl->getScene()->animate = false;

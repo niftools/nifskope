@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/floatslider.h"
 
 #include <QGLWidget> // Inherited
+#include <QGraphicsView>
 #include <QDateTime>
 #include <QPersistentModelIndex>
 
@@ -48,6 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file glview.h GLView class
 
 class NifSkope;
+class GLGraphicsView;
 class Scene;
 
 class QAction;
@@ -61,6 +63,7 @@ class QSettings;
 class QToolBar;
 class QTimer;
 
+
 //! The model view window
 class GLView final : public QGLWidget
 {
@@ -73,6 +76,7 @@ class GLView final : public QGLWidget
 
 public:
 	friend class NifSkope;
+	friend class GLGraphicsView;
 
 	//! Static instance
 	static GLView * create( NifSkope * );
@@ -256,5 +260,35 @@ private slots:
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( GLView::AnimationState )
+
+
+class GLGraphicsView : public QGraphicsView
+{
+	Q_OBJECT
+
+public:
+	GLGraphicsView( QWidget * parent );
+	~GLGraphicsView();
+
+protected slots:
+	virtual void setupViewport( QWidget * viewport );
+
+protected:
+	bool eventFilter( QObject * o, QEvent * e ) override final;
+	void dragEnterEvent( QDragEnterEvent * ) override final;
+	void dragLeaveEvent( QDragLeaveEvent * ) override final;
+	void dragMoveEvent( QDragMoveEvent * ) override final;
+	void dropEvent( QDropEvent * ) override final;
+	void focusOutEvent( QFocusEvent * ) override final;
+	void keyPressEvent( QKeyEvent * ) override final;
+	void keyReleaseEvent( QKeyEvent * ) override final;
+	void mouseDoubleClickEvent( QMouseEvent * ) override final;
+	void mouseMoveEvent( QMouseEvent * ) override final;
+	void mousePressEvent( QMouseEvent * ) override final;
+	void mouseReleaseEvent( QMouseEvent * ) override final;
+	void wheelEvent( QWheelEvent * ) override final;
+
+	void paintEvent( QPaintEvent * ) override final;
+};
 
 #endif
