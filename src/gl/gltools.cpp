@@ -35,6 +35,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stack>
 #include <map>
 
+#include <QMap>
+#include <QStack>
+#include <QVector>
+
 #include "nifmodel.h"
 
 
@@ -632,10 +636,13 @@ static Vector3 crossproduct( const Vector3 & a, const Vector3 & b )
 }
 
 //! Generate triangles for convex hull
-static std::stack<std::vector<Vector3>> generateTris( const NifModel * nif, const QModelIndex & iShape, float scale )
+static QVector<Vector3> generateTris( const NifModel * nif, const QModelIndex & iShape, float scale )
 {
 	QVector<Vector4> vertices = nif->getArray<Vector4>( iShape, "Vertices" );
 	//QVector<Vector4> normals = nif->getArray<Vector4>( iShape, "Normals" );
+
+	if ( vertices.isEmpty() )
+		return QVector<Vector3>();
 
 	Vector3 A, B, C, N, V;
 	float D;
@@ -643,12 +650,10 @@ static std::stack<std::vector<Vector3>> generateTris( const NifModel * nif, cons
 	bool good;
 
 	L = vertices.count();
-	std::vector<Vector3> P( L );
-	std::vector<Vector3> points( 3 );
+	QVector<Vector3> P( L );
+	QVector<Vector3> tris;
 
-	std::stack<std::vector<Vector3>> tris;
-
-	// Convert QVector<Vector4> to std::vector<Vector3>
+	// Convert Vector4 to Vector3
 	for ( int v = 0; v < L; v++ ) {
 		P[v] = Vector3( vertices[v] );
 	}
@@ -688,11 +693,7 @@ static std::stack<std::vector<Vector3>> generateTris( const NifModel * nif, cons
 
 				if ( good ) {
 					// Append ABC
-					points[0] = A * scale;
-					points[1] = B * scale;
-					points[2] = C * scale;
-
-					tris.push( points );
+					tris << (A*scale) << (B*scale) << (C*scale);
 				}
 			}
 		}
@@ -703,8 +704,8 @@ static std::stack<std::vector<Vector3>> generateTris( const NifModel * nif, cons
 
 void drawConvexHull( const NifModel * nif, const QModelIndex & iShape, float scale, bool solid )
 {
-	static std::map<QModelIndex, std::stack<std::vector<Vector3>>> shapes;
-	std::stack<std::vector<Vector3>> shape;
+	static QMap<QModelIndex, QVector<Vector3>> shapes;
+	QVector<Vector3> shape;
 
 	shape = shapes[iShape];
 
@@ -717,19 +718,16 @@ void drawConvexHull( const NifModel * nif, const QModelIndex & iShape, float sca
 	glDisable( GL_CULL_FACE );
 	glBegin( GL_TRIANGLES );
 
-	while ( !shape.empty() ) {
+	for ( int i = 0; i < shape.count(); i += 3 ) {
 		// DRAW ABC
-		glVertex( shape.top()[0] );
-		glVertex( shape.top()[1] );
-		glVertex( shape.top()[2] );
-
-		shape.pop();
+		glVertex( shape[i] );
+		glVertex( shape[i+1] );
+		glVertex( shape[i+2] );
 	}
 
 	glEnd();
 	glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
 	glEnable( GL_CULL_FACE );
-
 }
 
 void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid )
