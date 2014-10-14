@@ -939,7 +939,15 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 		if ( !isResizing  && !resizeTimer->isActive() ) {
 			ogl->getScene()->animate = false;
 			ogl->updateGL();
-			buf = ogl->grabFrameBuffer();
+
+			if ( buf.isNull() ) {
+				// Init initial buffer with solid color
+				//	Otherwise becomes random colors on release builds
+				buf = QImage( 10, 10, QImage::Format_ARGB32 );
+				buf.fill( Options::bgColor() );
+			} else {
+				buf = ogl->grabFrameBuffer();
+			}
 
 			ogl->setUpdatesEnabled( false );
 			ogl->setDisabled( true );
