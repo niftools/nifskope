@@ -952,7 +952,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	}
 
 	// Paint stored framebuffer over GLGraphicsView while resizing
-	if ( isResizing && e->type() == QEvent::Paint ) {
+	if ( !buf.isNull() && isResizing && e->type() == QEvent::Paint ) {
 		QPainter painter;
 		painter.begin( static_cast<QWidget *>(o) );
 		painter.drawImage( QRect( 0, 0, painter.device()->width(), painter.device()->height() ), buf );
