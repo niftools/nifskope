@@ -260,8 +260,8 @@ private:
 	//! The main window
 	GLView * ogl;
 
-	QGraphicsScene * m_scene;
-	QGraphicsView * m_graphicsView;
+	QGraphicsScene * graphicsScene;
+	QGraphicsView * graphicsView;
 
 	QComboBox * animGroups;
 

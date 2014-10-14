@@ -1237,8 +1237,10 @@ void Mesh::drawSelection() const
 	glNormalColor();
 
 	glPolygonMode( GL_FRONT_AND_BACK, GL_POINT );
-	glEnable( GL_POINT_SMOOTH );
-	glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
+
+	// TODO: Reenable as an alternative to MSAA when MSAA is not supported
+	//glEnable( GL_POINT_SMOOTH );
+	//glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
 
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors"
 	     || n == "UV Sets" || n == "Tangents" || n == "Bitangents" )
@@ -1296,8 +1298,10 @@ void Mesh::drawSelection() const
 	}
 
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-	glEnable( GL_LINE_SMOOTH );
-	glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
+
+	// TODO: Reenable as an alternative to MSAA when MSAA is not supported
+	//glEnable( GL_LINE_SMOOTH );
+	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
 
 	if ( n == "Normals" || n == "TSpace" ) {
 		float normalScale = bounds().radius / 20;

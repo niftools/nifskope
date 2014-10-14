@@ -257,7 +257,6 @@ void NifSkope::initActions()
 	} );
 
 	connect( ogl, &GLView::clicked, this, &NifSkope::select );
-	connect( ogl, &GLView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( ogl, &GLView::sigTime, inspect, &InspectView::updateTime );
 	connect( ogl, &GLView::paintUpdate, inspect, &InspectView::refresh );
 	connect( ogl, &GLView::viewpointChanged, [this]() {
@@ -268,6 +267,8 @@ void NifSkope::initActions()
 
 		ogl->setOrientation( GLView::ViewDefault, false );
 	} );
+
+	connect( graphicsView, &GLGraphicsView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 	// Update Inspector widget with current index
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection );
@@ -902,15 +903,13 @@ void NifSkope::resizeDone()
 	//qDebug() << "resizeDone" << isResizing;
 	//qDebug() << sender();
 
+	// Unhide GLView, update GLGraphicsView
 	ogl->show();
+	graphicsScene->setSceneRect( graphicsView->rect() );
+	graphicsView->fitInView( graphicsScene->sceneRect() );
+
 	ogl->setUpdatesEnabled( true );
 	ogl->setDisabled( false );
-	// Testing of parent widget idea
-	//ogl->setVisible( true );
-
-	m_scene->setSceneRect( m_graphicsView->rect() );
-	m_graphicsView->fitInView( m_scene->sceneRect() );
-
 	ogl->getScene()->animate = true;
 	ogl->update();
 	ogl->resizeGL( centralWidget()->width(), centralWidget()->height() );
@@ -924,22 +923,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	//	QTimer::singleShot( 0, this, SLOT( overrideViewFont() ) );
 	//}
 
-	// Testing of parent widget idea
-	//if ( o->objectName() == "centerWidget" ) {
-	//	// Paint stored framebuffer over GLView while resizing
-	//	if ( isResizing && e->type() == QEvent::Paint ) {
-	//		//qDebug() << "isResizing Paint";
-	//		QPainter painter;
-	//		painter.begin( static_cast<QWidget *>(o) );
-	//		painter.drawImage( QRect( 0, 0, painter.device()->width(), painter.device()->height() ), buf );
-	//		painter.end();
-	//
-	//		return true;
-	//	}
-	//	return QMainWindow::eventFilter( o, e );
-	//}
-
-	// Filter GLView
+	// Filter GLGraphicsView
 	auto obj = qobject_cast<GLGraphicsView *>(o);
 	if ( !obj )
 		return QMainWindow::eventFilter( o, e );
@@ -949,9 +933,8 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	// Begin resize timer
 	// Block all Resize Events to GLView
 	if ( e->type() == QEvent::Resize ) {
+		// Hide GLView
 		ogl->hide();
-		//m_scene->setSceneRect( m_graphicsView->rect() );
-		//m_graphicsView->fitInView( m_scene->sceneRect() );
 
 		if ( !isResizing  && !resizeTimer->isActive() ) {
 			ogl->getScene()->animate = false;
@@ -959,10 +942,6 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 			buf = ogl->grabFrameBuffer();
 
 			ogl->setUpdatesEnabled( false );
-
-			// Testing of parent widget idea
-			//ogl->setVisible( false );
-
 			ogl->setDisabled( true );
 
 			isResizing = true;
@@ -972,9 +951,8 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 		return true;
 	}
 
-	// Paint stored framebuffer over GLView while resizing
+	// Paint stored framebuffer over GLGraphicsView while resizing
 	if ( isResizing && e->type() == QEvent::Paint ) {
-		//qDebug() << "isResizing Paint";
 		QPainter painter;
 		painter.begin( static_cast<QWidget *>(o) );
 		painter.drawImage( QRect( 0, 0, painter.device()->width(), painter.device()->height() ), buf );
@@ -982,12 +960,6 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 
 		return true;
 	}
-
-	// Doesn't work. Won't update after resize finishes
-	//if ( isResizing && resizeTimer->isActive() && (e->type() == QEvent::UpdateLater || e->type() == QEvent::UpdateRequest) ) {
-	//	qDebug() << "isResizing UpdateLater";
-	//	return true;
-	//}
 
 	return QMainWindow::eventFilter( o, e );
 }
@@ -1013,9 +985,9 @@ void NifSkope::contextMenu( const QPoint & pos )
 	} else if ( sender() == header ) {
 		idx = header->indexAt( pos );
 		p = header->mapToGlobal( pos );
-	} else if ( sender() == ogl ) {
+	} else if ( sender() == graphicsView ) {
 		idx = ogl->indexAt( pos );
-		p = ogl->mapToGlobal( pos );
+		p = graphicsView->mapToGlobal( pos );
 	} else {
 		return;
 	}

@@ -221,40 +221,22 @@ NifSkope::NifSkope()
 	 * **********************
 	 */
 
-	// Testing parent widget, and disabling OGL entirely while resizing
-	//	then painting the buffer image to the parent widget background.
-	//QWidget * center = centralWidget();
-	//auto qvbox = new QVBoxLayout( center );
-	//center->setObjectName( "centerWidget" );
-	//center->setLayout( qvbox );
-	//qvbox->addWidget( ogl );
-	//center->setContentsMargins( 0, 0, 0, 0 );
-	//qvbox->setContentsMargins( 0, 0, 0, 0 );
-	//
-	//center->installEventFilter( this );
-	
-	m_scene = new QGraphicsScene;
-	m_graphicsView = new GLGraphicsView( this );
-	
-	
-	m_graphicsView->setScene( m_scene );
-	m_graphicsView->setRenderHint( QPainter::Antialiasing );
-	m_graphicsView->setRenderHint( QPainter::SmoothPixmapTransform );
-	m_graphicsView->setCacheMode( QGraphicsView::CacheNone );
-	//m_graphicsView->setOptimizationFlags( QGraphicsView::DontSavePainterState | QGraphicsView::DontAdjustForAntialiasing );
-	m_graphicsView->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
-	m_graphicsView->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
-	//m_graphicsView->setSizeAdjustPolicy( QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents );
-	
-	setCentralWidget( m_graphicsView );
-	
-	m_graphicsView->setViewport( ogl );
-	m_graphicsView->setViewportUpdateMode( QGraphicsView::FullViewportUpdate );
-	
-	//m_scene->setSceneRect( m_graphicsView->rect() );
-	//m_graphicsView->fitInView( m_scene->sceneRect() );
+	// Init Scene and View
+	graphicsScene = new QGraphicsScene;
+	graphicsView = new GLGraphicsView( this );
+	graphicsView->setScene( graphicsScene );
+	graphicsView->setRenderHint( QPainter::Antialiasing );
+	graphicsView->setRenderHint( QPainter::SmoothPixmapTransform );
+	graphicsView->setCacheMode( QGraphicsView::CacheNone );
+	graphicsView->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
+	graphicsView->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
+	//graphicsView->setOptimizationFlags( QGraphicsView::DontSavePainterState | QGraphicsView::DontAdjustForAntialiasing );
 
-	//setCentralWidget( ogl );
+	// Set central widget and viewport
+	setCentralWidget( graphicsView );
+	graphicsView->setViewport( ogl );
+	graphicsView->setViewportUpdateMode( QGraphicsView::NoViewportUpdate );
+	
 	setContextMenuPolicy( Qt::NoContextMenu );
 
 	// Resize timer for eventFilter()
