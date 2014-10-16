@@ -235,7 +235,7 @@ NifSkope::NifSkope()
 	// Set central widget and viewport
 	setCentralWidget( graphicsView );
 	graphicsView->setViewport( ogl );
-	graphicsView->setViewportUpdateMode( QGraphicsView::NoViewportUpdate );
+	graphicsView->setViewportUpdateMode( QGraphicsView::FullViewportUpdate );
 	
 	setContextMenuPolicy( Qt::NoContextMenu );
 

@@ -98,7 +98,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! \file glview.cpp GLView implementation
 
 
-GLGraphicsView::GLGraphicsView( QWidget * parent ) : QGraphicsView( parent )
+GLGraphicsView::GLGraphicsView( QWidget * parent ) : QGraphicsView()
 {
 	setContextMenuPolicy( Qt::CustomContextMenu );
 	setFocusPolicy( Qt::ClickFocus );
@@ -1694,14 +1694,29 @@ bool GLGraphicsView::eventFilter( QObject * o, QEvent * e )
 	return QGraphicsView::eventFilter( o, e );
 }
 
-void GLGraphicsView::paintEvent( QPaintEvent * e )
+//void GLGraphicsView::paintEvent( QPaintEvent * e )
+//{
+//	GLView * glWidget = qobject_cast<GLView *>(viewport());
+//	if ( glWidget ) {
+//	//	glWidget->paintEvent( e );
+//	}
+//
+//	QGraphicsView::paintEvent( e );
+//}
+
+void GLGraphicsView::drawForeground( QPainter * painter, const QRectF & rect )
+{
+	QGraphicsView::drawForeground( painter, rect );
+}
+
+void GLGraphicsView::drawBackground( QPainter * painter, const QRectF & rect )
 {
 	GLView * glWidget = qobject_cast<GLView *>(viewport());
 	if ( glWidget ) {
-		glWidget->paintEvent( e );
+		glWidget->updateGL();
 	}
 
-	QGraphicsView::paintEvent( e );
+	//QGraphicsView::drawBackground( painter, rect );
 }
 
 void GLGraphicsView::dragEnterEvent( QDragEnterEvent * e )

@@ -288,7 +288,9 @@ protected:
 	void mouseReleaseEvent( QMouseEvent * ) override final;
 	void wheelEvent( QWheelEvent * ) override final;
 
-	void paintEvent( QPaintEvent * ) override final;
+	//void paintEvent( QPaintEvent * ) override final;
+	void drawBackground( QPainter * painter, const QRectF & rect ) override final;
+	void drawForeground( QPainter * painter, const QRectF & rect ) override final;
 };
 
 #endif
