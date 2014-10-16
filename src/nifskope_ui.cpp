@@ -1005,7 +1005,9 @@ void NifSkope::contextMenu( const QPoint & pos )
 	}
 
 	SpellBook contextBook( nif, idx, this, SLOT( select( const QModelIndex & ) ) );
-	contextBook.exec( p );
+
+	if ( nif->flags( idx ) & Qt::ItemIsEditable )
+		contextBook.exec( p );
 }
 
 void NifSkope::overrideViewFont()

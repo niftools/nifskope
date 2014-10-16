@@ -180,13 +180,6 @@ NifSkope::NifSkope()
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, refrbrwsr, &ReferenceBrowser::browse );
 	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
-#ifdef EDIT_ON_ACTIVATE
-	// TODO: Determine necessity of this, appears redundant
-	connect( list, &NifTreeView::activated, list, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-	connect( tree, &NifTreeView::activated, tree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-	connect( kfmtree, &NifTreeView::activated, kfmtree, static_cast<void (NifTreeView::*)(const QModelIndex&)>(&NifTreeView::edit) );
-#endif
-
 	// Create GLView
 	/* ********************** */
 
@@ -765,20 +758,13 @@ void qDefaultMsgHandler( QtMsgType t, const char * str )
 void myMessageOutput( QtMsgType type, const QMessageLogContext &, const QString & str )
 {
 	QByteArray msg = str.toLocal8Bit();
-	static const QString editFailed( "edit: editing failed" );
-	static const QString accessWidgetRect( "QAccessibleWidget::rect" );
 
 	switch ( type ) {
 	case QtDebugMsg:
 		qDefaultMsgHandler( type, msg.constData() );
 		break;
 	case QtWarningMsg:
-
-		// workaround for Qt 4.2.2
-		if ( editFailed == msg )
-			return;
-		else if ( QString( msg ).startsWith( accessWidgetRect ) )
-			return;
+		break;
 
 	case QtCriticalMsg:
 

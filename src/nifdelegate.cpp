@@ -67,6 +67,11 @@ public:
 		Q_ASSERT( event );
 		Q_ASSERT( model );
 
+		// Ignore indices which are not editable
+		//	since this QItemDelegate bypasses the flags.
+		if ( !(model->flags( index ) & Qt::ItemIsEditable) )
+			return false;
+
 		switch ( event->type() ) {
 		case QEvent::MouseButtonPress:
 		case QEvent::MouseButtonRelease:
