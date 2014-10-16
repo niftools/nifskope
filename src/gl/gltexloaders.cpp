@@ -1688,13 +1688,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 			// copy channels
 			for ( int i = 0; i < 4; i++ ) {
-#ifndef QT_NO_DEBUG
-				qWarning() << "Channel" << i;
-				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
-				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
-				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
-				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
-#endif
+				qDebug() << "Channel" << i;
+				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
+				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
 
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ) );
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ) );
@@ -1840,10 +1838,8 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		if ( strncmp( tag, "DDS ", 4 ) != 0 || f.read( (char *)&ddsHeader, sizeof(DDSFormat) ) != sizeof( DDSFormat ) )
 			throw QString( "not a DDS file" );
 
-#ifndef QT_NO_DEBUG
-		qWarning() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
-		qWarning() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
-#endif
+		qDebug() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
+		qDebug() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
 
 		if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
 			switch ( ddsHeader.ddsPixelFormat.dwFourCC ) {
@@ -1882,13 +1878,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			}
 		}
 
-#ifndef QT_NO_DEBUG
-		qWarning() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
-		qWarning() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
-		qWarning() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
-		qWarning() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
-		qWarning() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
-#endif
+		qDebug() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
+		qDebug() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
+		qDebug() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
+		qDebug() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
+		qDebug() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
 
 		// Note that these might not match what's expected; hopefully the loader function is smart
 		if ( nif->checkVersion( 0, 0x0A020000 ) ) {

@@ -332,15 +332,11 @@ void NifModel::updateHeader()
 
 			// NiMesh hack
 			QString blockName = block->name();
-#ifndef QT_NO_DEBUG
-			qWarning() << "Updating header with " << blockName;
-#endif
+			qDebug() << "Updating header with " << blockName;
 
 			if ( blockName == "NiDataStream" ) {
 				blockName = QString( "NiDataStream\x01%1\x01%2" ).arg( block->child( "Usage" )->value().get<int>() ).arg( block->child( "Access" )->value().get<int>() );
-#ifndef QT_NO_DEBUG
-				qWarning() << "Changing blockname to " << blockName;
-#endif
+				qDebug() << "Changing blockname to " << blockName;
 			}
 
 			if ( !blocktypes.contains( blockName ) )
@@ -1799,9 +1795,7 @@ bool NifModel::load( QIODevice & device )
 							throw tr( "Unknown NiDataStream" );
 						}
 
-#ifndef QT_NO_DEBUG
-						qWarning() << "Loaded NiDataStream with usage " << dataStreamUsage << " access " << dataStreamAccess;
-#endif
+						qDebug() << "Loaded NiDataStream with usage " << dataStreamUsage << " access " << dataStreamAccess;
 					}
 
 					if ( isNiBlock( blktyp ) ) {
@@ -1941,9 +1935,7 @@ bool NifModel::save( QIODevice & device ) const
 		emit sigProgress( c + 1, rowCount( QModelIndex() ) );
 
 		//msg( DbgMsg() << "saving block" << c << ":" << itemName( index( c, 0 ) ) );
-#ifndef QT_NO_DEBUG
-		qWarning() << "saving block " << c << ": " << itemName( index( c, 0 ) );
-#endif
+		qDebug() << "saving block " << c << ": " << itemName( index( c, 0 ) );
 
 		if ( itemType( index( c, 0 ) ) == "NiBlock" ) {
 			if ( version > 0x0a000000 ) {
@@ -2149,9 +2141,7 @@ int NifModel::blockSize( NifItem * parent, NifSStream & stream ) const
 		NifItem * child = parent->child( row );
 
 		if ( child->isAbstract() ) {
-#ifndef QT_NO_DEBUG
-			// qWarning() << "Not counting abstract item " << child->name();
-#endif
+			//qDebug() << "Not counting abstract item " << child->name();
 			continue;
 		}
 
@@ -2184,9 +2174,7 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 		NifItem * child = parent->child( row );
 
 		if ( child->isAbstract() ) {
-#ifndef QT_NO_DEBUG
-			// qWarning() << "Not loading abstract item " << child->name();
-#endif
+			//qDebug() << "Not loading abstract item " << child->name();
 			continue;
 		}
 
@@ -2226,9 +2214,7 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 		NifItem * child = parent->child( row );
 
 		if ( child->isAbstract() ) {
-#ifndef QT_NO_DEBUG
-			qWarning() << "Not saving abstract item " << child->name();
-#endif
+			qDebug() << "Not saving abstract item " << child->name();
 			continue;
 		}
 
