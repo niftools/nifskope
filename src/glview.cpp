@@ -1245,7 +1245,7 @@ void GLView::advanceGears()
 // TODO: Separate widget
 void GLView::saveImage()
 {
-	auto dlg = new QDialog( this );
+	auto dlg = new QDialog( qApp->activeWindow() );
 	QGridLayout * lay = new QGridLayout( dlg );
 	dlg->setWindowTitle( tr( "Save View" ) );
 	dlg->setLayout( lay );
@@ -1376,9 +1376,10 @@ void GLView::saveImage()
 	);
 
 	// Validate on OK
-	connect( btnOk, &QPushButton::clicked, [=, &cfg]() 
+	connect( btnOk, &QPushButton::clicked, [&]() 
 		{
 			// Save JPEG Quality
+			QSettings cfg;
 			cfg.setValue( "JPEG/Quality", pixQuality->value() );
 
 			// TODO: Set up creation of screenshots directory in Options
