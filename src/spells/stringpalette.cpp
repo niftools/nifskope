@@ -305,9 +305,7 @@ public:
 		// a single palette could be share by multiple NiSequences
 
 		QPersistentModelIndex iPalette = nif->getBlock( nif->getLink( index, "String Palette" ) );
-#ifndef QT_NO_DEBUG
-		qWarning() << "This block uses " << iPalette;
-#endif
+		qDebug() << "This block uses " << iPalette;
 
 		if ( !iPalette.isValid() ) {
 			iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
@@ -381,9 +379,7 @@ public:
 			}
 		}
 
-#ifndef QT_NO_DEBUG
-		qWarning() << "Found sequences " << sequenceList;
-#endif
+		qDebug() << "Found sequences " << sequenceList;
 
 		// find their string palettes
 		QList<QPersistentModelIndex> sequenceUpdateList;

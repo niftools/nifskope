@@ -20,7 +20,7 @@ CONFIG(debug, debug|release) {
 } else {
 	# Release Options
 	CONFIG -= console
-	DEFINES += QT_NO_DEBUG_OUPUT
+	DEFINES += QT_NO_DEBUG_OUTPUT
 	# TODO: Clean up qWarnings first before using
 	#DEFINES += QT_NO_WARNING_OUTPUT
 }

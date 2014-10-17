@@ -528,23 +528,23 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 	if ( !index.isValid() )
 		return Qt::ItemIsEnabled;
 
-	Qt::ItemFlags flags = Qt::ItemIsSelectable;
+	Qt::ItemFlags flags;
 
 	if ( evalCondition( index, true ) )
-		flags |= Qt::ItemIsEnabled;
+		flags = (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
 	switch ( index.column() ) {
 	case TypeCol:
 		return flags;
+	case NameCol:
 	case ValueCol:
-
-		if ( itemArr1( index ).isEmpty() )
+		if ( evalCondition( index, true ) && itemArr1( index ).isEmpty() )
 			return flags | Qt::ItemIsEditable;
 
 		return flags;
 
 	default:
-		return flags | Qt::ItemIsEditable;
+		return flags;
 	}
 }
 
