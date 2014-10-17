@@ -427,14 +427,14 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 #ifndef QT_NO_DEBUG
 
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
-			qWarning() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
+			qDebug() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
 			iData = nif->getIndex( iBlock, "Datas" );
 
 			if ( iData.isValid() ) {
-				qWarning() << "Got " << nif->rowCount( iData ) << " rows of data";
+				qDebug() << "Got " << nif->rowCount( iData ) << " rows of data";
 				upData = true;
 			} else {
-				qWarning() << "Did not find data in NiMesh ???";
+				qDebug() << "Did not find data in NiMesh ???";
 			}
 
 			return;
@@ -517,35 +517,35 @@ void Mesh::transform()
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
 #ifndef QT_NO_DEBUG
 			// do stuff
-			qWarning() << "Entering NiMesh decoding...";
+			qDebug() << "Entering NiMesh decoding...";
 			// mesh primitive type
 			QString meshPrimitiveType = NifValue::enumOptionName( "MeshPrimitiveType", nif->get<uint>( iData, "Primitive Type" ) );
-			qWarning() << "Mesh uses" << meshPrimitiveType;
+			qDebug() << "Mesh uses" << meshPrimitiveType;
 
 			for ( int i = 0; i < nif->rowCount( iData ); i++ ) {
 				// each data reference is to a single data stream
 				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
-				qWarning() << "Data stream: " << stream;
+				qDebug() << "Data stream: " << stream;
 				// can have multiple submeshes, unsure of exact meaning
 				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
-				qWarning() << "Submeshes: " << numSubmeshes;
+				qDebug() << "Submeshes: " << numSubmeshes;
 				QPersistentModelIndex submeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
 
 				for ( int j = 0; j < numSubmeshes; j++ ) {
-					qWarning() << "Submesh" << j << "maps to region" << nif->get<ushort>( submeshMap.child( j, 0 ) );
+					qDebug() << "Submesh" << j << "maps to region" << nif->get<ushort>( submeshMap.child( j, 0 ) );
 				}
 
 				// each stream can have multiple components, and each has a starting index
 				QMap<uint, QString> componentIndexMap;
 				int numComponents = nif->get<int>( iData.child( i, 0 ), "Num Components" );
-				qWarning() << "Components: " << numComponents;
+				qDebug() << "Components: " << numComponents;
 				// semantics determine the usage
 				QPersistentModelIndex componentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
 
 				for ( int j = 0; j < numComponents; j++ ) {
 					QString name = nif->get<QString>( componentSemantics.child( j, 0 ), "Name" );
 					uint index = nif->get<uint>( componentSemantics.child( j, 0 ), "Index" );
-					qWarning() << "Component" << name << "at position" << index << "of component" << j << "in stream" << stream;
+					qDebug() << "Component" << name << "at position" << index << "of component" << j << "in stream" << stream;
 					componentIndexMap.insert( j, QString( "%1 %2" ).arg( name ).arg( index ) );
 				}
 
@@ -564,19 +564,19 @@ void Mesh::transform()
 				quint32 totalIndices = 0;
 
 				if ( regions.isValid() ) {
-					qWarning() << numRegions << " regions in this stream";
+					qDebug() << numRegions << " regions in this stream";
 
 					for ( quint32 j = 0; j < numRegions; j++ ) {
-						qWarning() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
-						qWarning() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
+						qDebug() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
+						qDebug() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
 						totalIndices += nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
 					}
 
-					qWarning() << totalIndices << "total indices in" << numRegions << "regions";
+					qDebug() << totalIndices << "total indices in" << numRegions << "regions";
 				}
 
 				uint numStreamComponents = nif->get<uint>( dataStream, "Num Components" );
-				qWarning() << "Stream has" << numStreamComponents << "components";
+				qDebug() << "Stream has" << numStreamComponents << "components";
 				QPersistentModelIndex streamComponents = nif->getIndex( dataStream, "Component Formats" );
 				// stream components are interleaved, so we need to know their type before we read them
 				QList<uint> typeList;
@@ -584,21 +584,21 @@ void Mesh::transform()
 				for ( uint j = 0; j < numStreamComponents; j++ ) {
 					uint compFormat  = nif->get<uint>( streamComponents.child( j, 0 ) );
 					QString compName = NifValue::enumOptionName( "ComponentFormat", compFormat );
-					qWarning() << "Component format is" << compName;
-					qWarning() << "Stored as a" << compName.split( "_" )[1];
+					qDebug() << "Component format is" << compName;
+					qDebug() << "Stored as a" << compName.split( "_" )[1];
 					typeList.append( compFormat - 1 );
 
 					// this can probably wait until we're reading the stream values
 					QString compNameIndex = componentIndexMap.value( j );
 					QString compType = compNameIndex.split( " " )[0];
 					uint startIndex  = compNameIndex.split( " " )[1].toUInt();
-					qWarning() << "Component" << j << "contains" << compType << "starting at index" << startIndex;
+					qDebug() << "Component" << j << "contains" << compType << "starting at index" << startIndex;
 
 					// try and sort out texcoords here...
 					if ( compType == "TEXCOORD" ) {
 						QVector<Vector2> tempCoords;
 						coords.append( tempCoords );
-						qWarning() << "Assigning coordinate set" << startIndex;
+						qDebug() << "Assigning coordinate set" << startIndex;
 					}
 				}
 
@@ -612,7 +612,7 @@ void Mesh::transform()
 					for ( uint k = 0; k < numStreamComponents; k++ ) {
 						int typeLength = ( ( typeList[k] & 0x000F0000 ) >> 0x10 );
 						int typeSize = ( ( typeList[k] & 0x00000F00 ) >> 0x08 );
-						qWarning() << "Reading" << typeLength << "values" << typeSize << "bytes";
+						qDebug() << "Reading" << typeLength << "values" << typeSize << "bytes";
 
 						NifIStream tempInput( new NifModel, &streamBuffer );
 						QList<NifValue> values;
@@ -637,11 +637,11 @@ void Mesh::transform()
 						for ( int l = 0; l < typeLength; l++ ) {
 							tempInput.read( tempValue );
 							values.append( tempValue );
-							qWarning() << tempValue.toString();
+							qDebug() << tempValue.toString();
 						}
 
 						QString compType = componentIndexMap.value( k ).split( " " )[0];
-						qWarning() << "Will store this value in" << compType;
+						qDebug() << "Will store this value in" << compType;
 
 						// the mess begins...
 						if ( NifValue::enumOptionName( "ComponentFormat", (typeList[k] + 1 ) ) == "F_FLOAT32_3" ) {
@@ -657,7 +657,7 @@ void Mesh::transform()
 						} else if ( compType == "TEXCOORD" ) {
 							Vector2 tempVect2( values[0].toFloat(), values[1].toFloat() );
 							quint32 coordSet = componentIndexMap.value( k ).split( " " )[1].toUInt();
-							qWarning() << "Need to append" << tempVect2 << "to texcoords" << coordSet;
+							qDebug() << "Need to append" << tempVect2 << "to texcoords" << coordSet;
 							QVector<Vector2> currentSet = coords[coordSet];
 							currentSet.append( tempVect2 );
 							coords[coordSet] = currentSet;
@@ -669,7 +669,7 @@ void Mesh::transform()
 				if ( meshPrimitiveType == "MESH_PRIMITIVE_TRIANGLES" ) {
 					for ( int k = 0; k < indices.size(); ) {
 						Triangle tempTri( indices[k], indices[k + 1], indices[k + 2] );
-						qWarning() << "Inserting triangle" << tempTri;
+						qDebug() << "Inserting triangle" << tempTri;
 						triangles.append( tempTri );
 						k = k + 3;
 					}

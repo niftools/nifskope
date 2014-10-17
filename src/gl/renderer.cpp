@@ -66,7 +66,7 @@ bool Renderer::initialize()
 		}
 
 #endif
-		//qWarning() << "shader support" << shader_ready;
+		//qDebug() << "shader support" << shader_ready;
 		shader_initialized = true;
 	}
 

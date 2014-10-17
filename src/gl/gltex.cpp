@@ -76,7 +76,7 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		if ( num_texture_units < 1 )
 			num_texture_units = 1;
 
-		//qWarning() << "texture units" << num_texture_units;
+		//qDebug() << "texture units" << num_texture_units;
 	} else {
 		qWarning( "multitexturing not supported" );
 		num_texture_units = 1;
@@ -84,7 +84,7 @@ void initializeTextureUnits( const QOpenGLContext * context )
 
 	if ( Options::antialias() && context->hasExtension( "GL_EXT_texture_filter_anisotropic" ) ) {
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
-		//qWarning() << "maximum anisotropy" << max_anisotropy;
+		//qDebug() << "maximum anisotropy" << max_anisotropy;
 	}
 
 	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
@@ -486,7 +486,7 @@ bool TexCache::importFile( NifModel * nif, const QModelIndex & iSource, QModelIn
 	if ( nif && iSource.isValid() ) {
 		if ( nif->get<quint8>( iSource, "Use External" ) == 1 ) {
 			QString filename = nif->get<QString>( iSource, "File Name" );
-			//qWarning() << "TexCache::importFile: Texture has filename (from NIF) " << filename;
+			//qDebug() << "TexCache::importFile: Texture has filename (from NIF) " << filename;
 			Tex * tx = textures.value( filename );
 			return tx->savePixelData( nif, iSource, iData );
 		}
@@ -535,6 +535,6 @@ bool TexCache::Tex::savePixelData( NifModel * nif, const QModelIndex & iSource, 
 {
 	Q_UNUSED( iSource );
 	// gltexloaders function goes here
-	//qWarning() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
+	//qDebug() << "TexCache::Tex:savePixelData: Packing" << iSource << "from file" << filepath << "to" << iData;
 	return texSaveNIF( nif, filepath, iData );
 }

@@ -532,7 +532,7 @@ public:
 				}
 			}
 
-			//qWarning() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
+			//qDebug() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
 
 			// adjust the faces
 

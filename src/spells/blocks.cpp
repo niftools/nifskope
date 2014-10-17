@@ -1059,7 +1059,7 @@ public:
 	{
 		// construct list of block numbers of all blocks in this branch of index
 		QList<quint32> branch = getBranch( nif, nif->getBlockNumber( index ) );
-		//qWarning() << branch; // DEBUG
+		//qDebug() << branch;
 		// remove non-branch blocks
 		int n = 0; // tracks the current block number in the new system (after some blocks have been removed already)
 		int m = 0; // tracks the block number in the old system i.e.  as they are numbered in the branch list

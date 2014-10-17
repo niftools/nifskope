@@ -108,7 +108,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		if ( fabs( r ) <= 10e-10 )
 		{
 		    //if ( skptricnt++ < 3 )
-		    //	qWarning() << t;
+		    //	qDebug() << t;
 		    continue;
 		}
 
@@ -142,7 +142,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		}
 	}
 
-	//qWarning() << "skipped triangles" << skptricnt;
+	//qDebug() << "skipped triangles" << skptricnt;
 
 	//int cnt = 0;
 
@@ -159,7 +159,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 			t[0] = n[1]; t[1] = n[2]; t[2] = n[0];
 			b = Vector3::crossproduct( n, t );
 			//if ( cnt++ < 3 )
-			//	qWarning() << i;
+			//	qDebug() << i;
 		} else {
 			t.normalize();
 			t = ( t - n * Vector3::dotproduct( n, t ) );
@@ -177,7 +177,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		//qDebug() << "";
 	}
 
-	//qWarning() << "unassigned vertices" << cnt;
+	//qDebug() << "unassigned vertices" << cnt;
 
 	bool isOblivion = false;
 

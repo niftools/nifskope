@@ -750,7 +750,7 @@ public:
 				parts.append( part );
 			}
 
-			//qWarning() << parts.count() << "small partitions";
+			//qDebug() << parts.count() << "small partitions";
 
 			// merge partitions
 
@@ -773,7 +773,7 @@ public:
 				}
 			}
 
-			//qWarning() << parts.count() << "partitions";
+			//qDebug() << parts.count() << "partitions";
 
 			// create the NiSkinPartition if it doesn't exist yet
 
@@ -1308,7 +1308,7 @@ public:
 
 			nif->set<QString>( iChild, "Name", childName );
 
-			//qWarning() << "Checking child: " << iChild;
+			//qDebug() << "Checking child: " << iChild;
 			if ( iChild.isValid() ) {
 				if ( nif->itemName( iChild ) == "NiNode" ) {
 					// repeat
@@ -1327,7 +1327,7 @@ public:
 
 	void doShapes( NifModel * nif, const QModelIndex & index )
 	{
-		//qWarning() << "Entering doShapes";
+		//qDebug() << "Entering doShapes";
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 		QModelIndex iSkinInstance = nif->getBlock( nif->getLink( index, "Skin Instance" ), "NiSkinInstance" );
 

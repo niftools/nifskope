@@ -237,7 +237,7 @@ bool BSA::open()
 			if ( bsa.read( (char *) & header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header size" );
 			
-			//qWarning() << bsaName << header;
+			//qDebug() << bsaName << header;
 			
 			if ( ( header.ArchiveFlags & OB_BSAARCHIVE_PATHNAMES ) == 0 || ( header.ArchiveFlags & OB_BSAARCHIVE_FILENAMES ) == 0 )
 				throw QString( "header flags" );

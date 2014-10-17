@@ -346,7 +346,7 @@ public:
 		// get replaced entries
 		QStringList newEntries = sprd->getStringList();
 
-		//qWarning() << newEntries;
+		//qDebug() << newEntries;
 
 		// rebuild palette
 		bytes.clear();
@@ -389,9 +389,9 @@ public:
 			QPersistentModelIndex temp = sequenceListIterator.next();
 			QPersistentModelIndex tempPalette = nif->getBlock( nif->getLink( temp, "String Palette" ) );
 
-			//qWarning() << "Sequence " << temp << " uses " << tempPalette;
+			//qDebug() << "Sequence " << temp << " uses " << tempPalette;
 			if ( iPalette == tempPalette ) {
-				//qWarning() << "Identical to this sequence palette!";
+				//qDebug() << "Identical to this sequence palette!";
 				sequenceUpdateList.append( temp );
 			}
 		}
@@ -402,7 +402,7 @@ public:
 
 		while ( sequenceUpdateIterator.hasNext() ) {
 			QPersistentModelIndex nextBlock = sequenceUpdateIterator.next();
-			//qWarning() << "Need to update " << nextBlock;
+			//qDebug() << "Need to update " << nextBlock;
 
 			QPersistentModelIndex blocks = nif->getIndex( nextBlock, "Controlled Blocks" );
 
@@ -414,13 +414,12 @@ public:
 						// we shouldn't ever exceed the limit of an int, even though the type
 						// is properly a uint
 						int oldValue = nif->get<int>( thisBlock.child( j, 0 ) );
-#ifndef QT_NO_DEBUG
-						qWarning() << "Index " << thisBlock.child( j, 0 )
+						qDebug() << "Index " << thisBlock.child( j, 0 )
 						           << " is a string offset with name "
 						           << nif->itemName( thisBlock.child( j, 0 ) )
 						           << " and value "
 						           << nif->get<int>( thisBlock.child( j, 0 ) );
-#endif
+
 
 						if ( oldValue != -1 ) {
 							int newValue = offsetMap.value( oldValue );

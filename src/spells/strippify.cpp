@@ -58,7 +58,7 @@ class spStrippify final : public Spell
 				skip++;
 		}
 
-		//qWarning() << "num triangles" << triangles.count() << "skipped" << skip;
+		//qDebug() << "num triangles" << triangles.count() << "skipped" << skip;
 
 
 		QList<QVector<quint16> > strips = stripify( triangles );

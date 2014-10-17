@@ -941,7 +941,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	// Scale up for Skyrim
 	float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
 
-	//qWarning() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
+	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 
 	QString name = nif->itemName( iShape );
 
@@ -1649,7 +1649,7 @@ void Node::drawHavok()
 	glMultMatrix( scene->bhkBodyTrans.value( nif->getBlockNumber( iBody ) ) );
 
 
-	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
+	//qDebug() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
 
 	if ( !Node::SELECTING ) {
 		glEnable( GL_DEPTH_TEST );

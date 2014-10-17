@@ -255,8 +255,7 @@ public:
 
 		for ( qint32 n = 0; n < newblocks.size(); n++ ) {
 			order[newblocks[n]] = n;
-			// DEBUG
-			//qWarning() << n << newblocks[n];
+			//qDebug() << n << newblocks[n];
 		}
 
 		// reorder the blocks
@@ -308,7 +307,7 @@ public:
 					/*
 					if ( ! child )
 					{
-					    qWarning() << "unassigned parent link";
+					    qDebug() << "unassigned parent link";
 					    return idx;
 					}
 					*/

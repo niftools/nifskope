@@ -265,7 +265,7 @@ void GLView::initializeGL()
 	if ( scene->options & Scene::DoMultisampling ) {
 		if ( !glContext->hasExtension( "GL_EXT_framebuffer_multisample" ) ) {
 			scene->options &= ~Scene::DoMultisampling;
-			//qWarning() << "System does not support multisampling";
+			//qDebug() << "System does not support multisampling";
 		} /* else {
 			GLint maxSamples;
 			glGetIntegerv( GL_MAX_SAMPLES, &maxSamples );
