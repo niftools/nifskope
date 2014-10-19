@@ -174,9 +174,6 @@ protected slots:
 	//! Set the list mode
 	void setListMode();
 
-	//! Send a Message
-	void dispatchMessage( const Message & msg );
-
 	//! Override the view font
 	void overrideViewFont();
 

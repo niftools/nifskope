@@ -171,8 +171,6 @@ NifSkope::NifSkope()
 	// Connect models with views
 	/* ********************** */
 
-	connect( nif, &NifModel::sigMessage, this, &NifSkope::dispatchMessage );
-	connect( kfm, &KfmModel::sigMessage, this, &NifSkope::dispatchMessage );
 	connect( list, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
 	connect( list, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
@@ -587,8 +585,7 @@ void NifSkope::load()
 	if ( niffile.suffix().compare( "kfm", Qt::CaseInsensitive ) == 0 ) {
 
 		if ( !kfm->loadFromFile( niffile.filePath() ) ) {
-			// TODO: New warning/message system
-			qWarning() << tr( "failed to load kfm from '%1'" ).arg( niffile.filePath() );
+			Message::critical( this, tr( "Failed to load %1" ).arg( niffile.filePath() ) );
 			emit completeLoading( false );
 		} else {
 			emit completeLoading( true );
@@ -600,13 +597,11 @@ void NifSkope::load()
 
 	if ( !niffile.isFile() ) {
 		nif->clear();
-		// TODO: New warning/message system
-		qWarning() << tr( "failed to load nif from '%1'" ).arg( niffile.filePath() );
+		Message::critical( this, tr( "Failed to load %1" ).arg( niffile.filePath() ) );
 		emit completeLoading( false );
 	} else {
 		if ( !nif->loadFromFile( niffile.filePath() ) ) {
-			// TODO: New warning/message system
-			qWarning() << tr( "failed to load nif from '%1'" ).arg( niffile.filePath() );
+			Message::critical( this, tr( "Failed to load %1" ).arg( niffile.filePath() ) );
 			emit completeLoading( false );
 		} else {
 
@@ -641,8 +636,7 @@ void NifSkope::save()
 	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) ) {
 
 		if ( !kfm->saveToFile( nifname ) ) {
-			// TODO: New warning/message system
-			qWarning() << tr( "failed to write kfm file" ) << nifname;
+			Message::critical( this, tr( "Failed to write %1" ).arg( nifname ) );
 			emit completeSave( false );
 		} else {
 			emit completeSave( true );
@@ -655,8 +649,7 @@ void NifSkope::save()
 		}
 
 		if ( !nif->saveToFile( nifname ) ) {
-			// TODO: New warning/message system
-			qWarning() << tr( "failed to write nif file " ) << nifname;
+			Message::critical( this, tr( "Failed to write %1" ).arg( nifname ) );
 			emit completeSave( false );
 		} else {
 			emit completeSave( true );
@@ -689,101 +682,29 @@ void NifSkope::openURL()
 }
 
 
-void NifSkope::dispatchMessage( const Message & msg )
-{
-	switch ( msg.type() ) {
-	case QtCriticalMsg:
-		qCritical() << msg;
-		break;
-	case QtFatalMsg:
-		qFatal( QString( msg ).toLatin1().data() );
-		break;
-	case QtWarningMsg:
-		qWarning() << msg;
-		break;
-	case QtDebugMsg:
-	default:
-		qDebug() << msg;
-		break;
-	}
-}
-
-QTextEdit * msgtarget = nullptr;
-
-
-#ifdef Q_OS_WIN32
-//! Windows mutex handling
-class QDefaultHandlerCriticalSection
-{
-	CRITICAL_SECTION cs;
-
-public:
-	QDefaultHandlerCriticalSection() { InitializeCriticalSection( &cs ); }
-	~QDefaultHandlerCriticalSection() { DeleteCriticalSection( &cs ); }
-	void lock() { EnterCriticalSection( &cs ); }
-	void unlock() { LeaveCriticalSection( &cs ); }
-};
-
-//! Application-wide debug and warning message handler internals
-static void qDefaultMsgHandler( QtMsgType t, const char * str )
-{
-	Q_UNUSED( t );
-	// OutputDebugString is not threadsafe.
-	// cannot use QMutex here, because qWarning()s in the QMutex
-	// implementation may cause this function to recurse
-	static QDefaultHandlerCriticalSection staticCriticalSection;
-
-	if ( !str )
-		str = "(null)";
-
-	staticCriticalSection.lock();
-	QString s( QString::fromLocal8Bit( str ) );
-	s += QLatin1String( "\n" );
-	OutputDebugStringW( (TCHAR *)s.utf16() );
-	staticCriticalSection.unlock();
-}
-#else
-// Doxygen won't find this unless you undef Q_OS_WIN32
-//! Application-wide debug and warning message handler internals
-void qDefaultMsgHandler( QtMsgType t, const char * str )
-{
-	if ( !str )
-		str = "(null)";
-
-	printf( "%s\n", str );
-}
-#endif
-
 //! Application-wide debug and warning message handler
-void myMessageOutput( QtMsgType type, const QMessageLogContext &, const QString & str )
+void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str )
 {
-	QByteArray msg = str.toLocal8Bit();
 
 	switch ( type ) {
 	case QtDebugMsg:
-		qDefaultMsgHandler( type, msg.constData() );
+		fprintf( stderr, "[Debug] %s\n", qPrintable( str ) );
 		break;
 	case QtWarningMsg:
+		fprintf( stderr, "[Warning] %s\n", qPrintable( str ) );
+
+		Message::message( qApp->activeWindow(), str, &context, QMessageBox::Warning );
+
 		break;
-
 	case QtCriticalMsg:
+		fprintf( stderr, "[Critical] %s\n", qPrintable( str ) );
 
-		if ( !msgtarget ) {
-			msgtarget = new QTextEdit;
-			msgtarget->setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
-		}
+		Message::message( qApp->activeWindow(), str, &context, QMessageBox::Critical );
 
-		if ( !msgtarget->isVisible() ) {
-			msgtarget->clear();
-			msgtarget->show();
-		}
-
-		msgtarget->append( msg );
-		qDefaultMsgHandler( type, msg.constData() );
 		break;
 	case QtFatalMsg:
-		qDefaultMsgHandler( type, msg.constData() );
-		QMessageBox::critical( 0, QMessageBox::tr( "Fatal Error" ), msg );
+		fprintf( stderr, "[Fatal] %s\n", qPrintable( str ) );
+		QMessageBox::critical( 0, QMessageBox::tr( "Fatal Error" ), qPrintable( str ) );
 		// TODO: the above causes stack overflow when
 		// "ASSERT: "testAttribute(Qt::WA_WState_Created)" in file kernel\qapplication_win.cpp, line 3699"
 		abort();
@@ -959,11 +880,8 @@ int main( int argc, char * argv[] )
 		a->setApplicationDisplayName( "NifSkope " + NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true ) );
 
 		// Register message handler
-		qRegisterMetaType<Message>( "Message" );
-
-#ifdef QT_NO_DEBUG
+		//qRegisterMetaType<Message>( "Message" );
 		qInstallMessageHandler( myMessageOutput );
-#endif
 
 		// Find stylesheet
 		QDir qssDir( QApplication::applicationDirPath() );

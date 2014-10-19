@@ -45,26 +45,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 BaseModel::BaseModel( QObject * parent ) : QAbstractItemModel( parent )
 {
-	msgMode = EmitMessages;
 	root = new NifItem( 0 );
 }
 
 BaseModel::~BaseModel()
 {
 	delete root;
-}
-
-void BaseModel::msg( const Message & m ) const
-{
-	switch ( msgMode ) {
-	case EmitMessages:
-		emit sigMessage( m );
-		return;
-	case CollectMessages:
-	default:
-		messages.append( m );
-		return;
-	}
 }
 
 

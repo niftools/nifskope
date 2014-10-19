@@ -242,20 +242,12 @@ public:
 	//! Finds the flags for an index
 	Qt::ItemFlags flags( const QModelIndex & index ) const override;
 
-	//! Message mode
-	enum MsgMode
-	{
-		EmitMessages, CollectMessages
-	};
-
-	//! Set the Message mode
-	void setMessageMode( MsgMode m ) { msgMode = m; }
 	//! Get Messages collected
-	QList<Message> getMessages() const { QList<Message> lst = messages; messages.clear(); return lst; }
+	QList<TestMessage> getMessages() const { QList<TestMessage> lst = messages; messages.clear(); return lst; }
 
 signals:
 	//! Messaging signal
-	void sigMessage( const Message & msg ) const;
+	void sigMessage( const TestMessage & msg ) const;
 	//! Progress signal
 	void sigProgress( int c, int m ) const;
 
@@ -313,13 +305,8 @@ protected:
 	//! The file info for the model
 	QFileInfo fileinfo;
 
-	//! The messaging mode
-	MsgMode msgMode;
 	//! A list of messages
-	mutable QList<Message> messages;
-
-	//! Handle a message
-	void msg( const Message & m ) const;
+	mutable QList<TestMessage> messages;
 
 	friend class NifIStream;
 	friend class NifOStream;

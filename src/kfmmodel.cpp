@@ -130,7 +130,9 @@ bool KfmModel::updateArrayItem( NifItem * array, bool fast )
 	int d1 = getArraySize( array );
 
 	if ( d1 > 1024 * 1024 * 8 ) {
-		msg( Message() << "array" << array->name() << "much too large" );
+		Message::critical( nullptr, tr( "Could not update array item." ),
+			tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 )
+		);
 		return false;
 	}
 
@@ -242,18 +244,17 @@ bool KfmModel::setItemValue( NifItem * item, const NifValue & val )
 
 bool KfmModel::setHeaderString( const QString & s )
 {
-	//msg( DbgMsg() << s << s.right( s.length() - 27 ) );
 	if ( s.startsWith( ";Gamebryo KFM File Version " ) ) {
 		version = version2number( s.right( s.length() - 27 ) );
 
 		if ( isVersionSupported( version ) ) {
 			return true;
 		} else {
-			msg( Message() << tr( "version" ) << version2string( version ) << tr( "not supported yet" ) );
+			Message::critical( nullptr, tr( "Version %1 is not supported." ).arg( version2string( version ) ) );
 			return false;
 		}
 	}
-	msg( Message() << tr( "this is not a KFM" ) );
+	Message::critical( nullptr, tr( "Could not open %1 because it is not a supported type." ).arg( fileinfo.fileName() ) );
 	return false;
 }
 
@@ -264,7 +265,9 @@ bool KfmModel::load( QIODevice & device )
 	NifIStream stream( this, &device );
 
 	if ( !kfmroot || !load( kfmroot, stream, true ) ) {
-		msg( Message() << tr( "failed to load kfm file (%1)" ).arg( version ) );
+		Message::critical( nullptr, tr( "The file could not be read. See Details for more information." ),
+			tr( "failed to load kfm file (%1)" ).arg( version2string( version ) )
+		);
 		return false;
 	}
 
@@ -281,7 +284,7 @@ bool KfmModel::save( QIODevice & device ) const
 	NifOStream stream( this, &device );
 
 	if ( !kfmroot || save( kfmroot, stream ) ) {
-		msg( Message() << tr( "failed to write kfm file" ) );
+		Message::critical( nullptr, tr( "Failed to write KFM file." ) );
 		return false;
 	}
 
@@ -326,8 +329,11 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 
 		if ( evalCondition( child ) ) {
 			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					msg( Message() << child->name() << tr( "array size mismatch" ) );
+				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+					Message::append( tr( "Warnings were generated while reading the blocks." ),
+						tr( "%1 array size mismatch" ).arg( child->name() )
+					);
+				}
 
 				if ( !save( child, stream ) )
 					return false;
