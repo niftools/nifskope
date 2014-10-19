@@ -162,9 +162,8 @@ public:
 					nif->holdUpdates( false );
 
 				if ( !missingNodes.isEmpty() ) {
-					qWarning() << Spell::tr( "The following controlled nodes were not found in the nif:" );
 					for ( const QString& nn : missingNodes ) {
-						qWarning() << nn;
+						Message::append( Spell::tr( "Errors occurred while attaching .KF" ), nn );
 					}
 				}
 
@@ -172,7 +171,7 @@ public:
 			}
 			catch ( QString e )
 			{
-				qWarning( e.toLatin1().constData() );
+				Message::append( Spell::tr( "Errors occurred while attaching .KF" ), e );
 			}
 		}
 		return index;

@@ -1168,7 +1168,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 								DrawTriangleSelection( verts, tri );
 								DrawTriangleIndex( verts, tri, t );
 							} else {
-								qWarning() << "triangle with multiple materials?" << t;
+								qDebug() << "triangle with multiple materials?" << t;
 							}
 						}
 					}

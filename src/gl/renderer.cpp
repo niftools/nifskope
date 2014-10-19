@@ -233,7 +233,7 @@ bool Renderer::Shader::load( const QString & filepath )
 	catch ( QString err )
 	{
 		status = false;
-		qWarning() << "error loading shader" << name << ":\r\n" << err.toLatin1().data();
+		Message::append( QObject::tr( "There were errors during shader compilation" ), QString( "%1:\r\n\r\n%2" ).arg( name ).arg( err ) );
 		return false;
 	}
 	status = true;
@@ -354,7 +354,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 	catch ( QString x )
 	{
 		status = false;
-		qWarning() << "error loading shader program " << name << ":\r\n" << x.toLatin1().data();
+		Message::append( QObject::tr( "There were errors during shader compilation" ), QString( "%1:\r\n\r\n%2" ).arg( name ).arg( x ) );
 		return false;
 	}
 	status = true;

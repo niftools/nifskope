@@ -234,7 +234,7 @@ public:
 		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
-			qWarning() << "coudn't find the bodies for this constraint";
+			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint." ) );
 			return index;
 		}
 
@@ -338,7 +338,7 @@ public:
 		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
-			qWarning() << "coudn't find the bodies for this constraint";
+			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint" ) );
 			return idx;
 		}
 
@@ -417,7 +417,7 @@ public:
 		}
 
 		if ( vertices.isEmpty() || triangles.isEmpty() ) {
-			qWarning() << Spell::tr( "no mesh data was found" );
+			Message::warning( nullptr, Spell::tr( "No mesh data was found." ) );
 			return iShape;
 		}
 

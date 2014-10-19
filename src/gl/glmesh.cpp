@@ -455,14 +455,18 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					iData  = iChild;
 					upData = true;
 				} else if ( iData != iChild ) {
-					qWarning() << "shape block" << id() << "has multiple data blocks";
+					Message::append( tr( "Warnings were generated while updating meshes." ),
+						tr( "Block %1 has multiple data blocks" ).arg( id() )
+					);
 				}
 			} else if ( nif->inherits( iChild, "NiSkinInstance" ) ) {
 				if ( !iSkin.isValid() ) {
 					iSkin  = iChild;
 					upSkin = true;
 				} else if ( iSkin != iChild ) {
-					qWarning() << "shape block" << id() << "has multiple skin instances";
+					Message::append( tr( "Warnings were generated while updating meshes." ),
+						tr( "Block %1 has multiple skin instances" ).arg( id() )
+					);
 				}
 			}
 		}
@@ -742,8 +746,9 @@ void Mesh::transform()
 
 				if ( inv_cnt > 0 ) {
 					int block_idx = nif->getBlockNumber( nif->getIndex( iData, "Triangles" ) );
-					qWarning() << "Error: " << inv_cnt << " invalid index(es) in block #"
-					           << block_idx << " NiTriShapeData.Triangles";
+					Message::append( tr( "Warnings were generated while rendering mesh." ),
+						tr( "Block %1: %2 invalid indices in NiTriShapeData.Triangles" ).arg( block_idx ).arg( inv_cnt )
+					);
 				}
 
 				tristrips.clear();
@@ -755,7 +760,11 @@ void Mesh::transform()
 					for ( int r = 0; r < nif->rowCount( points ); r++ )
 						tristrips.append( nif->getArray<quint16>( points.child( r, 0 ) ) );
 				} else {
-					qWarning() << nif->itemName( iData ) << "(" << nif->getBlockNumber( iData ) << ") 'points' array not found";
+					Message::append( tr( "Warnings were generated while rendering mesh." ),
+						tr( "Block %1: Invalid 'Points' array in %2" )
+						.arg( nif->getBlockNumber( iData ) )
+						.arg( nif->itemName( iData ) )
+					);
 				}
 
 				triangles.clear();

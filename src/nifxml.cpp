@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "message.h"
 #include "nifmodel.h"
 #include "niftypes.h"
 
@@ -566,7 +567,7 @@ public:
 		if ( errorStr.isEmpty() )
 			errorStr = "Syntax error";
 
-		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
+		errorStr.prepend( tr( "%1 XML parse error (line %2): " ).arg( "NIF" ).arg( exception.lineNumber() ) );
 		return false;
 	}
 };
@@ -591,7 +592,7 @@ bool NifModel::loadXML()
 	QString result = NifModel::parseXmlDescription( fname );
 
 	if ( !result.isEmpty() ) {
-		QMessageBox::critical( 0, "NifSkope", result );
+		Message::append( tr( "<b>Error loading XML</b><br/>You will need to reinstall the XML and restart the application." ), result, QMessageBox::Critical );
 		return false;
 	}
 
@@ -612,8 +613,11 @@ QString NifModel::parseXmlDescription( const QString & filename )
 
 	QFile f( filename );
 
+	if ( !f.exists() )
+		return tr( "nif.xml could not be found. Please install it and restart the application." );
+
 	if ( !f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return tr( "error: couldn't open xml description file: " ) + filename;
+		return tr( "Couldn't open NIF XML description file: %1" ).arg( filename );
 
 	NifXmlHandler handler;
 	QXmlSimpleReader reader;

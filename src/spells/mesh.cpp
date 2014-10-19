@@ -67,7 +67,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 
 		if ( !verts.count() ) {
-			throw QString( Spell::tr( "no vertices?" ) );
+			throw QString( Spell::tr( "No vertices" ) );
 		}
 
 		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
@@ -79,7 +79,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 			texco << nif->getArray<Vector2>( iUVSets.child( r, 0 ) );
 
 			if ( texco.last().count() != verts.count() )
-				throw QString( "uv array size differs" );
+				throw QString( Spell::tr( "UV array size differs" ) );
 		}
 
 		int numVerts = verts.count();
@@ -88,7 +88,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		     || ( norms.count() && norms.count() != numVerts )
 		     || ( colors.count() && colors.count() != numVerts ) )
 		{
-			throw QString( "vertex array size differs" );
+			throw QString( Spell::tr( "Vertex array size differs" ) );
 		}
 
 		// detect unused vertices
@@ -114,7 +114,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 
 		// remove them
 
-		qWarning() << "removing" << verts.count() - used.count() << "vertices";
+		Message::info( nullptr, Spell::tr( "Removed %1 vertices" ).arg( verts.count() - used.count() ) );
 
 		if ( verts.count() == used.count() )
 			return;
@@ -226,12 +226,12 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 
 		if ( iSkinPart.isValid() ) {
 			nif->removeNiBlock( nif->getBlockNumber( iSkinPart ) );
-			qWarning() << "the skin partition was removed, please add it again with the skin partition spell";
+			Message::warning( nullptr, Spell::tr( "The skin partition was removed, please regenerate it with the skin partition spell" ) );
 		}
 	}
 	catch ( QString e )
 	{
-		qWarning() << e.toLatin1().data();
+		Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 	}
 }
 
@@ -441,7 +441,7 @@ public:
 		}
 
 		if ( cnt > 0 ) {
-			qWarning() << QString( Spell::tr( "%1 triangles removed" ) ).arg( cnt );
+			Message::info( nullptr, Spell::tr( "Removed %1 triangles" ).arg( cnt ) );
 			nif->set<int>( iData, "Num Triangles", tris.count() );
 			nif->set<int>( iData, "Num Triangle Points", tris.count() * 3 );
 			nif->updateArray( iData, "Triangles" );
@@ -478,7 +478,7 @@ public:
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 
 			if ( !verts.count() )
-				throw QString( "no vertices?" );
+				throw QString( Spell::tr( "No vertices" ) );
 
 			QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
 			QVector<Color4> colors = nif->getArray<Color4>( iData, "Vertex Colors" );
@@ -489,7 +489,7 @@ public:
 				texco << nif->getArray<Vector2>( iUVSets.child( r, 0 ) );
 
 				if ( texco.last().count() != verts.count() )
-					throw QString( Spell::tr( "uv array size differs" ) );
+					throw QString( Spell::tr( "UV array size differs" ) );
 			}
 
 			int numVerts = verts.count();
@@ -498,7 +498,7 @@ public:
 			     || ( norms.count() && norms.count() != numVerts )
 			     || ( colors.count() && colors.count() != numVerts ) )
 			{
-				throw QString( Spell::tr( "vertex array size differs" ) );
+				throw QString( Spell::tr( "Vertex array size differs" ) );
 			}
 
 			// detect the dublicates
@@ -573,7 +573,7 @@ public:
 		}
 		catch ( QString e )
 		{
-			qWarning() << e.toLatin1().data();
+			Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 		}
 
 		return index;

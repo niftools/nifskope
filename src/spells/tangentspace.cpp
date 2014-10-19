@@ -67,7 +67,14 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	}
 
 	if ( verts.isEmpty() || norms.count() != verts.count() || texco.count() != verts.count() || triangles.isEmpty() ) {
-		qWarning() << Spell::tr( "need vertices, normals, texture coordinates and faces to calculate tangents and bitangents" );
+		Message::append( tr( "Update Tangent Spaces failed on one or more blocks." ),
+			tr( "Block %1: Insufficient information to calculate tangents and bitangents. V: %2, N: %3, Tex: %4, Tris: %5" )
+			.arg( nif->getBlockNumber( iBlock ) )
+			.arg( verts.count() )
+			.arg( norms.count() )
+			.arg( texco.count() )
+			.arg( triangles.count() )
+		);
 		return iBlock;
 	}
 

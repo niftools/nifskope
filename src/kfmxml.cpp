@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "message.h"
 #include "kfmmodel.h"
 
 #include <QtXml> // QXmlDefaultHandler Inherited
@@ -236,7 +237,7 @@ public:
 		if ( errorStr.isEmpty() )
 			errorStr = tr( "Syntax error" );
 
-		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
+		errorStr.prepend( tr( "%1 XML parse error (line %2): " ).arg( "KFM" ).arg( exception.lineNumber() ) );
 		return false;
 	}
 };
@@ -260,7 +261,7 @@ bool KfmModel::loadXML()
 	QString result = KfmModel::parseXmlDescription( fname );
 
 	if ( !result.isEmpty() ) {
-		QMessageBox::critical( 0, "NifSkope", result );
+		Message::append( tr( "<b>Error loading XML</b><br/>You will need to reinstall the XML and restart the application." ), result, QMessageBox::Critical );
 		return false;
 	}
 
@@ -276,8 +277,11 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 
 	QFile f( filename );
 
+	if ( !f.exists() )
+		return tr( "kfm.xml could not be found. Please install it and restart the application." );
+
 	if ( !f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return tr( "error: couldn't open xml description file: %1" ).arg( filename );
+		return tr( "Couldn't open KFM XML description file: %1" ).arg( filename );
 
 	KfmXmlHandler handler;
 	QXmlSimpleReader reader;

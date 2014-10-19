@@ -332,7 +332,9 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 		if ( !parents.contains( child->block() ) ) {
 			updateItem( child, fast );
 		} else {
-			qWarning() << tr( "infinite recursing link construct detected" ) << item->block() << "->" << child->block();
+			Message::append( tr( "Warnings were generated while reading NIF file." ),
+				tr( "infinite recursive link construct detected %1 -> %2" ).arg( item->block() ).arg( child->block() )
+			);
 		}
 	}
 	for ( const auto l : nif->getParentLinks( item->block() ) ) {
