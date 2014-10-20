@@ -274,14 +274,10 @@ void NifSkope::closeEvent( QCloseEvent * e )
 {
 	saveUi();
 
-	if ( nif->undoStack->isClean() ) {
+	if ( saveConfirm() )
 		e->accept();
-		return;
-	}
-
-	saveConfirm();
-
-	e->accept();
+	else
+		e->ignore();
 }
 
 
@@ -487,28 +483,14 @@ void NifSkope::clearCurrentFile()
 	updateAllRecentFileActions();
 }
 
-bool NifSkope::saveConfirm() {
-	if ( !nif->undoStack->isClean() ) {
-		QMessageBox::StandardButton response;
-		response = QMessageBox::question( this, tr( "Save Changes?" ), tr( "You have unsaved changes to %1. Would you like to save them now?" ).arg( nif->getFileInfo().baseName() ),
-			QMessageBox::Yes | QMessageBox::No );
-
-		if ( response == QMessageBox::Yes ) {
-			saveAs();
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void NifSkope::open()
 {
 	// Grab most recent filepath if blank window
 	auto path = nif->getFileInfo().absolutePath();
 	path = (path.isEmpty()) ? recentFileActs[0]->data().toString() : path;
 
-	saveConfirm();
+	if ( !saveConfirm() )
+		return;
 
 	QStringList files = QFileDialog::getOpenFileNames( this, tr( "Open File" ), path, fileExtensions->join( ";;" ) );
 	
@@ -560,7 +542,8 @@ void NifSkope::saveFile( const QString & filename )
 
 void NifSkope::openRecentFile()
 {
-	saveConfirm();
+	if ( !saveConfirm() )
+		return;
 
 	QAction * action = qobject_cast<QAction *>(sender());
 	if ( action )

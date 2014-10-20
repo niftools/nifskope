@@ -812,6 +812,27 @@ void NifSkope::onSaveComplete( bool success, QString & fname )
 	}
 }
 
+bool NifSkope::saveConfirm()
+{
+	if ( !nif->undoStack->isClean() ) {
+		QMessageBox::StandardButton response;
+		response = QMessageBox::question( this,
+			tr( "Save Changes?" ), tr( "You have unsaved changes to %1. Would you like to save them now?" ).arg( nif->getFileInfo().baseName() ),
+			QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel );
+
+		if ( response == QMessageBox::Yes ) {
+			saveAs();
+			return true;
+		} else if ( response == QMessageBox::No ) {
+			return true;
+		} else if ( response == QMessageBox::Cancel ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void NifSkope::enableUi()
 {
 	// Re-enable toolbars, actions, and menus
