@@ -53,7 +53,8 @@ void Message::message( QWidget * parent, const QString & str, const QMessageLogC
 	d.append( QString( "%1: %2\n" ).arg( "File" ).arg( context->file ) );
 	d.append( QString( "%1: %2\n" ).arg( "Function" ).arg( context->function ) );
 	d.append( QString( "%1: %2\n" ).arg( "Line" ).arg( context->line ) );
-	d.append( QString( "%1: %2" ).arg( "Category" ).arg( context->category ) );
+	d.append( QString( "%1: %2\n" ).arg( "Category" ).arg( context->category ) );
+	d.append( QString( "%1:\n\n%2" ).arg( "Message" ).arg( str ) );
 
 	message( parent, str, d, icon );
 }
