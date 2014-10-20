@@ -1244,7 +1244,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 
 	// can't dump palettised textures yet
 	if ( format == 2 ) {
-		qWarning() << "Texture format not supported";
+		qCCritical( nsIo ) << QObject::tr( "Texture format not supported" );
 		return false;
 	}
 
@@ -1277,14 +1277,14 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	QFile f( filename );
 
 	if ( !f.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
 	qint64 writeBytes = f.write( (char *)"DDS ", 4 );
 
 	if ( writeBytes != 4 ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
@@ -1488,7 +1488,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *)header, 124 );
 
 	if ( writeBytes != 124 ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
@@ -1496,7 +1496,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( buf.data().constData(), buf.size() );
 
 	if ( writeBytes != buf.size() ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
@@ -1553,7 +1553,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	QFile f( filename );
 
 	if ( !f.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "texSaveTGA(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not open %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1590,7 +1590,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	qint64 writeBytes = f.write( (char *)hdr, 18 );
 
 	if ( writeBytes != 18 ) {
-		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not write to %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1598,7 +1598,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *)data, s );
 
 	if ( writeBytes != s ) {
-		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not write to %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1606,7 +1606,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *)footer, 26 );
 
 	if ( writeBytes != 26 ) {
-		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not write to %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1702,7 +1702,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
 		} else {
-			qWarning() << "NIF versions are incompatible, cannot copy pixel data";
+			qCCritical( nsNif ) << QObject::tr( "NIF versions are incompatible, cannot copy pixel data" );
 			return false;
 		}
 
@@ -1748,7 +1748,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		if ( texLoad( filepath, format, width, height, mipmaps ) ) {
 			//qDebug() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
 		} else {
-			qWarning() << "Error importing texture" << filepath;
+			qCCritical( nsIo ) << QObject::tr( "Error importing %1" ).arg( filepath );
 			return false;
 		}
 
@@ -1853,7 +1853,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				break;
 			default:
 				// don't know how eg. DXT3 can be stored in NIF
-				qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwFourCC << "FourCC";
+				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddsPixelFormat.dwFourCC ).arg( "FourCC" );
 				return false;
 				break;
 			}
@@ -1872,7 +1872,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				break;
 			default:
 				// theoretically could have a palettised DDS in 8bpp
-				qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwBPP << "BPP";
+				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddsPixelFormat.dwBPP ).arg( "BPP" );
 				return false;
 				break;
 			}
@@ -2010,7 +2010,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		//qDebug() << "Read " << ddsData.size() << " bytes of" << f.size() << ", now at" << f.pos();
 		if ( ddsData.size() != mipmapOffset ) {
-			qWarning() << "Unexpected EOF";
+			qCCritical( nsIo ) << QObject::tr( "Unexpected EOF" );
 			return false;
 		}
 

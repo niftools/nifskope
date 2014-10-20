@@ -152,7 +152,7 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
 	{
 		if ( !TheHavokCode.Initialize() ) {
-			qWarning() << Spell::tr( "unable to locate the NifMopp.dll library" );
+			Message::critical( nullptr, Spell::tr( "Unable to locate NifMopp.dll" ) );
 			return iBlock;
 		}
 
@@ -161,7 +161,7 @@ public:
 		QModelIndex ibhkPackedNiTriStripsShape = nif->getBlock( nif->getLink( ibhkMoppBvTreeShape, "Shape" ) );
 
 		if ( !nif->isNiBlock( ibhkPackedNiTriStripsShape, "bhkPackedNiTriStripsShape" ) ) {
-			qWarning() << Spell::tr( "only bhkPackedNiTriStripsShape can be used with bhkMoppBvTreeShape Mopp code at this time" );
+			Message::warning( nullptr, Spell::tr( "Only bhkPackedNiTriStripsShape is supported at this time." ) );
 			return iBlock;
 		}
 
@@ -202,7 +202,9 @@ public:
 		}
 
 		if ( verts.isEmpty() || triangles.isEmpty() ) {
-			qWarning() << Spell::tr( "need vertices and faces to calculate mopp code" );
+			Message::critical( nullptr, Spell::tr( "Insufficient data to calculate MOPP code" ),
+				Spell::tr("Vertices: %1, Triangles: %2").arg( !verts.isEmpty() ).arg( !triangles.isEmpty() )
+			);
 			return iBlock;
 		}
 
@@ -211,7 +213,7 @@ public:
 		QByteArray moppcode = TheHavokCode.CalculateMoppCode( subshapeVerts, verts, triangles, &origin, &scale );
 
 		if ( moppcode.size() == 0 ) {
-			qWarning() << Spell::tr( "failed to generate mopp code" );
+			Message::critical( nullptr, Spell::tr( "Failed to generate MOPP code" ) );
 		} else {
 			QModelIndex iCodeOrigin = nif->getIndex( ibhkMoppBvTreeShape, "Origin" );
 			nif->set<Vector3>( iCodeOrigin, origin );

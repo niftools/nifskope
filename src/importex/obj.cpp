@@ -345,14 +345,14 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 	QFile fobj( fname + ".obj" );
 
 	if ( !fobj.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "could not open " << fobj.fileName() << " for write access";
+		qCCritical( nsIo ) << tr( "Failed to write %1" ).arg( fobj.fileName() );
 		return;
 	}
 
 	QFile fmtl( fname + ".mtl" );
 
 	if ( !fmtl.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "could not open " << fmtl.fileName() << " for write access";
+		qCCritical( nsIo ) << tr( "Failed to write %1" ).arg( fmtl.fileName() );
 		return;
 	}
 
@@ -425,7 +425,7 @@ static void readMtlLib( const QString & fname, QMap<QString, ObjMaterial> & omat
 	QFile file( fname );
 
 	if ( !file.open( QIODevice::ReadOnly ) ) {
-		qWarning() << "failed to open" << fname;
+		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fname );
 		return;
 	}
 
@@ -571,7 +571,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	QFile fobj( fname );
 
 	if ( !fobj.open( QIODevice::ReadOnly ) ) {
-		qWarning() << tr( "could not open " ) << fobj.fileName() << tr( " for read access" );
+		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fobj.fileName() );
 		return;
 	}
 
@@ -615,7 +615,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			onorms.append( Vector3( t.value( 1 ).toDouble(), t.value( 2 ).toDouble(), t.value( 3 ).toDouble() ) );
 		} else if ( t.value( 0 ) == "f" ) {
 			if ( t.count() > 5 ) {
-				qWarning() << "please triangulate your mesh before import";
+				qCCritical( nsNif ) << tr( "Please triangulate your mesh before import." );
 				return;
 			}
 
@@ -686,8 +686,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 				addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
 			}
 
-			if ( !omaterials.contains( it.key() ) )
-				qWarning() << "material" << it.key() << "not found in mtllib";
+			if ( !omaterials.contains( it.key() ) ) {
+				Message::append( tr( "Warnings were generated during OBJ import." ),
+					tr( "Material '%1' not found in mtllib." ).arg( it.key() ) );
+			}
 
 			ObjMaterial mtl = omaterials.value( it.key() );
 

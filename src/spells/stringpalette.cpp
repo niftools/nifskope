@@ -311,7 +311,7 @@ public:
 			iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
 
 			if ( !iPalette.isValid() ) {
-				qWarning() << Spell::tr( "Cannot find string palette" );
+				qCWarning( nsSpell ) << Spell::tr( "Cannot find string palette" );
 				return QModelIndex();
 			}
 		}

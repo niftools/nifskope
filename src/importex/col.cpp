@@ -983,7 +983,7 @@ void exportCol( const NifModel * nif, QFileInfo fileInfo )
 	QFile fobj( fname + ".dae" );
 
 	if ( !fobj.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "could not open " << fobj.fileName() << " for write access";
+		qCCritical( nsIo ) << tr( "Failed to write %1" ).arg( fobj.fileName() );
 		return;
 	}
 

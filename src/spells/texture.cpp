@@ -832,7 +832,7 @@ public:
 			tex->bind( index );
 		}
 
-		qWarning() << tex->info( index );
+		qDebug() << tex->info( index );
 		return QModelIndex();
 	}
 };
@@ -973,7 +973,7 @@ public:
 					nif->set<QString>( index, "Name", tempFileName );
 				}
 			} else {
-				qWarning() << "Could not save texture";
+				qCWarning( nsSpell ) << tr( "Could not save texture." );
 				// delete block?
 				/*
 				nif->removeNiBlock( blockNum+1 );
@@ -1100,7 +1100,7 @@ void TexFlipDialog::listFromNif()
 	QModelIndex sources = nif->getIndex( baseIndex, "Sources" );
 
 	if ( nif->rowCount( sources ) != numSources ) {
-		qWarning() << "Number of sources does not match!";
+		qCWarning( nsSpell ) << tr( "'Num Sources' does not match!" );
 		return;
 	}
 
@@ -1148,13 +1148,15 @@ public:
 		// TODO: use a map here to delete missing textures and preserve existing properties
 
 		QModelIndex sources = nif->getIndex( flipController, "Sources" );
+		int size = flipNames.size();
 
-		if ( nif->get<int>( flipController, "Num Sources" ) > flipNames.size() ) {
+		if ( nif->get<int>( flipController, "Num Sources" ) > size ) {
 			// delete blocks
-			qWarning() << "Found" << flipNames.size() << "textures, have" << nif->get<int>( flipController, "Num Sources" );
-
-			for ( int i = flipNames.size(); i < nif->get<int>( flipController, "Num Sources" ); i++ ) {
-				qWarning() << "Deleting" << nif->getLink( sources.child( i, 0 ) );
+			int num = nif->get<int>( flipController, "Num Sources" );
+			for ( int i = size; i < num; i++ ) {
+				Message::append( tr( "Found %1 textures, have %2" ).arg( size ).arg( num ),
+					tr( "Deleting %1" ).arg( nif->getLink( sources.child( i, 0 ) ) ), QMessageBox::Information
+				);
 				nif->removeNiBlock( nif->getLink( sources.child( i, 0 ) ) );
 			}
 		}

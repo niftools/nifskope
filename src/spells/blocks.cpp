@@ -293,7 +293,7 @@ public:
 			if ( !addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) ) ) {
 				// try Skyrim
 				if ( !addLink( nif, iParent, "BS Properties", nif->getBlockNumber( iProperty ) ) ) {
-					qWarning() << "failed to attach property block; perhaps the array is full?";
+					qCWarning( nsSpell ) << Spell::tr( "failed to attach property block; perhaps the array is full?" );
 				}
 			}
 

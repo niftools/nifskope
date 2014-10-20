@@ -220,7 +220,7 @@ public:
 		if ( name.startsWith( "Bip01" ) ) {
 			Transform local( nif, index );
 			stream << name << local << tparent * local;
-			qWarning() << name;
+			qDebug() << name;
 			for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 				QModelIndex iChild = nif->getBlock( link, "NiNode" );
 
@@ -421,7 +421,10 @@ public:
 					}
 				}
 
-				qWarning() << QString( Spell::tr( "reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" ) ).arg( c ).arg( maxBonesPerVertex ).arg( maxBones );
+				qCWarning( nsSpell ) << Spell::tr( "Reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" )
+					.arg( c )
+					.arg( maxBonesPerVertex )
+					.arg( maxBones );
 			}
 
 			maxBones = maxBonesPerVertex;
@@ -635,7 +638,7 @@ public:
 			}
 
 			if ( cnt > 0 )
-				qWarning() << QString( Spell::tr( "removed %1 bone influences" ) ).arg( cnt );
+				qCWarning( nsSpell ) << Spell::tr( "Removed %1 bone influences" ).arg( cnt );
 
 			// split the triangles into partitions
 
@@ -796,7 +799,7 @@ public:
 
 				// why is QList.count() signed? cast to squash warning
 				if ( nparts != (quint32)parts.count() ) {
-					qWarning() << "BSDismemberSkinInstance partition count does not match Skin Partition count.  Adjusting to fit.";
+					qCWarning( nsSpell ) << "BSDismemberSkinInstance partition count does not match Skin Partition count.  Adjusting to fit.";
 					nif->set<uint>( iSkinInst, "Num Partitions", parts.count() );
 					nif->updateArray( iSkinInst, "Partitions" );
 				}
@@ -1030,7 +1033,7 @@ public:
 			Partitioner.cast( nif, idx, mbpp, mbpv, make_strips );
 		}
 
-		qWarning() << QString( Spell::tr( "did %1 partitions" ) ).arg( indices.count() );
+		qCWarning( nsSpell ) << Spell::tr( "did %1 partitions" ).arg( indices.count() );
 
 		return QModelIndex();
 	}

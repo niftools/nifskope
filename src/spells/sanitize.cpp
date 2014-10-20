@@ -246,7 +246,7 @@ public:
 
 		// check whether all blocks have been added
 		if ( nif->getBlockCount() != newblocks.size() ) {
-			qWarning() << "failed to sanitize blocks order, corrupt nif tree?";
+			qCCritical( nsSpell ) << Spell::tr( "failed to sanitize blocks order, corrupt nif tree?" );
 			return QModelIndex();
 		}
 
@@ -312,7 +312,7 @@ public:
 					}
 					*/
 				} else if ( l >= nif->getBlockCount() ) {
-					qWarning() << "invalid link";
+					qCCritical( nsSpell ) << Spell::tr( "Invalid link '%1'." ).arg( QString::number(l) );
 					return idx;
 				} else {
 					QString tmplt = nif->itemTmplt( idx );
@@ -321,7 +321,7 @@ public:
 						QModelIndex iBlock = nif->getBlock( l );
 
 						if ( !nif->inherits( iBlock, tmplt ) ) {
-							qWarning() << "link points to wrong block type";
+							qCCritical( nsSpell ) << Spell::tr( "Link '%1' points to wrong block type." ).arg( QString::number(l) );
 							return idx;
 						}
 					}

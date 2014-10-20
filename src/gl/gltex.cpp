@@ -78,7 +78,7 @@ void initializeTextureUnits( const QOpenGLContext * context )
 
 		//qDebug() << "texture units" << num_texture_units;
 	} else {
-		qWarning( "multitexturing not supported" );
+		qCWarning( nsGl ) << QObject::tr( "Multitexturing not supported." );
 		num_texture_units = 1;
 	}
 

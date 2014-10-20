@@ -47,7 +47,7 @@ public:
 			int selFrame = frameList.indexOf( act->text() );
 
 			if ( selFrame == 0 ) {
-				qWarning() << "overriding base key frame, all other frames will be cleared";
+				qCWarning( nsSpell ) << Spell::tr( "overriding base key frame, all other frames will be cleared" );
 				nif->set<int>( iMorphData, "Num Vertices", nif->get<int>( iMeshData, "Num Vertices" ) );
 				QVector<Vector3> verts = nif->getArray<Vector3>( iMeshData, "Vertices" );
 				nif->updateArray( iFrames.child( 0, 0 ), "Vectors" );

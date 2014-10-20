@@ -368,7 +368,11 @@ public:
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
 
-			qWarning() << "Attached " << nif->itemName( iBlock ) << " prevents " << nif->get<QString>( iTriA, "Name" ) << " and " << nif->get<QString>( iTriB, "Name" ) << " from matching.";
+			qCWarning( nsSpell ) << Spell::tr( "Attached %1 prevents %2 and %3 from matching." )
+				.arg( nif->itemName( iBlock ) )
+				.arg( nif->get<QString>( iTriA, "Name" ) )
+				.arg( nif->get<QString>( iTriB, "Name" ) );
+
 			return false;
 		}
 
@@ -385,7 +389,11 @@ public:
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
 
-			qWarning() << "Attached " << nif->itemName( iBlock ) << " prevents " << nif->get<QString>( iTriA, "Name" ) << " and " << nif->get<QString>( iTriB, "Name" ) << " from matching.";
+			qCWarning( nsSpell ) << Spell::tr( "Attached %1 prevents %2 and %3 from matching." )
+				.arg( nif->itemName( iBlock ) )
+				.arg( nif->get<QString>( iTriA, "Name" ) )
+				.arg( nif->get<QString>( iTriB, "Name" ) );
+			
 			return false;
 		}
 

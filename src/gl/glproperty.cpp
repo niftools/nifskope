@@ -83,9 +83,9 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 		NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 
 		if ( item )
-			qWarning() << "Unknown property: " << item->name();
+			qCWarning( nsNif ) << tr( "Unknown property: %1" ).arg( item->name() );
 		else
-			qWarning() << "Unknown property: I can't determine its name";
+			qCWarning( nsNif ) << tr( "Unknown property: I can't determine its name" );
 	}
 
 	if ( property )
