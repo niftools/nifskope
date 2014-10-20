@@ -685,29 +685,21 @@ void NifSkope::openURL()
 //! Application-wide debug and warning message handler
 void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str )
 {
-
 	switch ( type ) {
 	case QtDebugMsg:
 		fprintf( stderr, "[Debug] %s\n", qPrintable( str ) );
 		break;
 	case QtWarningMsg:
 		fprintf( stderr, "[Warning] %s\n", qPrintable( str ) );
-
 		Message::message( qApp->activeWindow(), str, &context, QMessageBox::Warning );
-
 		break;
 	case QtCriticalMsg:
 		fprintf( stderr, "[Critical] %s\n", qPrintable( str ) );
-
 		Message::message( qApp->activeWindow(), str, &context, QMessageBox::Critical );
-
 		break;
 	case QtFatalMsg:
 		fprintf( stderr, "[Fatal] %s\n", qPrintable( str ) );
-		QMessageBox::critical( 0, QMessageBox::tr( "Fatal Error" ), qPrintable( str ) );
-		// TODO: the above causes stack overflow when
-		// "ASSERT: "testAttribute(Qt::WA_WState_Created)" in file kernel\qapplication_win.cpp, line 3699"
-		abort();
+		break;
 	}
 }
 
