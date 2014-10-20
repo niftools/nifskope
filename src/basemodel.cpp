@@ -541,10 +541,12 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 bool BaseModel::loadFromFile( const QString & file )
 {
 	QFile f( file );
-	if ( f.open( QIODevice::ReadOnly ) && load( f ) ) {
-		fileinfo = QFileInfo( f );
-		filename = fileinfo.baseName();
-		folder = fileinfo.absolutePath();
+	QFileInfo finfo( f );
+
+	if ( f.exists() && finfo.isFile() && f.open( QIODevice::ReadOnly ) && load( f ) ) {
+		fileinfo = finfo;
+		filename = finfo.baseName();
+		folder = finfo.absolutePath();
 
 		return true;
 	}

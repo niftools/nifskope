@@ -728,16 +728,16 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 	filepathWidget->setVisible( false );
 
 	// Show Filepath on successful NIF load
-	connect( this, &NifSkope::completeLoading, [this, filepathWidget, labelFilepath]( bool success ) {
+	connect( this, &NifSkope::completeLoading, [this, filepathWidget, labelFilepath]( bool success, QString & fname ) {
 		filepathWidget->setVisible( success );
-		labelFilepath->setText( currentFile );
+		labelFilepath->setText( fname );
 		//ui->statusbar->showMessage( tr("File Loaded Successfully"), 3000 );
 	} );
 
 	// Change Filepath on successful NIF save
-	connect( this, &NifSkope::completeSave, [this, filepathWidget, labelFilepath]( bool success ) {
+	connect( this, &NifSkope::completeSave, [this, filepathWidget, labelFilepath]( bool success, QString & fname ) {
 		filepathWidget->setVisible( success );
-		labelFilepath->setText( currentFile );
+		labelFilepath->setText( fname );
 		//ui->statusbar->showMessage( tr("File Saved Successfully"), 3000 );
 	} );
 
@@ -755,7 +755,7 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 }
 
 
-void NifSkope::onLoadComplete( bool success )
+void NifSkope::onLoadComplete( bool success, QString & fname )
 {
 	QApplication::restoreOverrideCursor();
 
@@ -763,15 +763,31 @@ void NifSkope::onLoadComplete( bool success )
 
 	int timeout = 2500;
 	if ( success ) {
-		
+		// Expand BSShaderTextureSet by default
+		auto indices = nif->match( nif->index( 0, 0 ), Qt::DisplayRole, "Textures", -1, Qt::MatchRecursive );
+		for ( auto i : indices ) {
+			tree->expand( i );
+		}
+
+		// Scroll panel back to top
+		tree->scrollTo( nif->index( 0, 0 ) );
+
+		select( nif->getHeader() );
+
+		header->setRootIndex( nif->getHeader() );
 		ogl->setOrientation( GLView::ViewFront );
 
 		enableUi();
 
 	} else {
+		// File failed to load
+		Message::critical( this, tr( "Failed to load %1" ).arg( fname ) );
+
+		nif->clear();
+		kfm->clear();
 		timeout = 0;
 
-		// File failed in some way, remove from Current Files
+		// Remove from Current Files
 		clearCurrentFile();
 
 		// Reset
@@ -786,9 +802,11 @@ void NifSkope::onLoadComplete( bool success )
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
 
-void NifSkope::onSaveComplete( bool success )
+void NifSkope::onSaveComplete( bool success, QString & fname )
 {
 	if ( success ) {
+		// Update if Save As results in filename change
+		setWindowFilePath( currentFile );
 		// Mark file as clean
 		nif->undoStack->setClean();
 	}

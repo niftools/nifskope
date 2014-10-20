@@ -110,9 +110,9 @@ public:
 
 signals:
 	void beginLoading();
-	void completeLoading( bool );
+	void completeLoading( bool, QString & );
 	void beginSave();
-	void completeSave( bool );
+	void completeSave( bool, QString & );
 
 public slots:
 	
@@ -126,8 +126,8 @@ public slots:
 
 	void enableUi();
 
-	void onLoadComplete( bool );
-	void onSaveComplete( bool );
+	void onLoadComplete( bool, QString & );
+	void onSaveComplete( bool, QString & );
 
 	//! Reparse the nif.xml and kfm.xml files.
 	void on_aLoadXML_triggered();

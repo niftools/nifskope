@@ -577,50 +577,20 @@ void NifSkope::load()
 {
 	emit beginLoading();
 
-	QFileInfo niffile( QDir::fromNativeSeparators( currentFile ) );
-	niffile.makeAbsolute();
+	QFileInfo f( QDir::fromNativeSeparators( currentFile ) );
+	f.makeAbsolute();
+
+	QString fname = f.filePath();
 
 	// TODO: This is rather poor in terms of file validation
 
-	if ( niffile.suffix().compare( "kfm", Qt::CaseInsensitive ) == 0 ) {
+	if ( f.suffix().compare( "kfm", Qt::CaseInsensitive ) == 0 ) {
+		emit completeLoading( kfm->loadFromFile( fname ), fname );
 
-		if ( !kfm->loadFromFile( niffile.filePath() ) ) {
-			Message::critical( this, tr( "Failed to load %1" ).arg( niffile.filePath() ) );
-			emit completeLoading( false );
-		} else {
-			emit completeLoading( true );
-		}
-
-		niffile.setFile( kfm->getFolder(),
-			kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
+		f.setFile( kfm->getFolder(), kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
 	}
 
-	if ( !niffile.isFile() ) {
-		nif->clear();
-		Message::critical( this, tr( "Failed to load %1" ).arg( niffile.filePath() ) );
-		emit completeLoading( false );
-	} else {
-		if ( !nif->loadFromFile( niffile.filePath() ) ) {
-			Message::critical( this, tr( "Failed to load %1" ).arg( niffile.filePath() ) );
-			emit completeLoading( false );
-		} else {
-
-			// Expand BSShaderTextureSet by default
-			auto indices = nif->match( nif->index( 0, 0 ), Qt::DisplayRole, "Textures", -1, Qt::MatchRecursive );
-			for ( auto i : indices ) {
-				tree->expand( i );
-			}
-
-			// Scroll panel back to top
-			tree->scrollTo( nif->index( 0, 0 ) );
-
-			select( nif->getHeader() );
-
-			header->setRootIndex( nif->getHeader() );
-
-			emit completeLoading( true );
-		}
-	}
+	emit completeLoading( nif->loadFromFile( fname ), fname );
 }
 
 void NifSkope::save()
@@ -629,18 +599,12 @@ void NifSkope::save()
 
 	setEnabled( false );
 
-	QString nifname = currentFile;
+	QString fname = currentFile;
 
 	// TODO: This is rather poor in terms of file validation
 
-	if ( nifname.endsWith( ".KFM", Qt::CaseInsensitive ) ) {
-
-		if ( !kfm->saveToFile( nifname ) ) {
-			Message::critical( this, tr( "Failed to write %1" ).arg( nifname ) );
-			emit completeSave( false );
-		} else {
-			emit completeSave( true );
-		}
+	if ( fname.endsWith( ".KFM", Qt::CaseInsensitive ) ) {
+		emit completeSave( kfm->saveToFile( fname ), fname );
 	} else {
 		if ( aSanitize->isChecked() ) {
 			QModelIndex idx = SpellBook::sanitize( nif );
@@ -648,13 +612,7 @@ void NifSkope::save()
 				select( idx );
 		}
 
-		if ( !nif->saveToFile( nifname ) ) {
-			Message::critical( this, tr( "Failed to write %1" ).arg( nifname ) );
-			emit completeSave( false );
-		} else {
-			emit completeSave( true );
-		}
-		setWindowFilePath( currentFile );
+		emit completeSave( nif->saveToFile( fname ), fname );
 	}
 	setEnabled( true );
 }
