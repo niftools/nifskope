@@ -111,7 +111,7 @@ void Message::info( QWidget * parent, const QString & str, const QString & err )
 
 static QMap<QString, QMessageBox *> messageBoxes;
 
-void Message::append( const QString & str, const QString & err, QMessageBox::Icon icon )
+void Message::append( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
 	// Create one box per error string, accumulate messages
 	auto box = messageBoxes[str];
@@ -122,12 +122,15 @@ void Message::append( const QString & str, const QString & err, QMessageBox::Ico
 		box->setDetailedText( box->detailedText().append( err + "\n" ) );
 	} else {
 		// Create new message box
-		auto msgBox = new QMessageBox( nullptr );
+		auto msgBox = new QMessageBox( parent );
+
+		// Keep message box on top if it does not have a parent
+		if ( !parent )
+			msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
 
 		msgBox->setText( str );
 		msgBox->setIcon( icon );
 		msgBox->setDetailedText( err + "\n" );
-		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
 		msgBox->open();
 
 		messageBoxes[str] = msgBox;
@@ -137,6 +140,10 @@ void Message::append( const QString & str, const QString & err, QMessageBox::Ico
 			msgBox->setDetailedText( "" );
 		} );
 	}
+}
+void Message::append( const QString & str, const QString & err, QMessageBox::Icon icon )
+{
+	append( nullptr, str, err, icon );
 }
 
 

@@ -27,6 +27,7 @@ public:
 	static void message( QWidget *, const QString &, const QMessageLogContext *, QMessageBox::Icon );
 
 	static void append( const QString &, const QString &, QMessageBox::Icon = QMessageBox::Warning );
+	static void append( QWidget *, const QString &, const QString &, QMessageBox::Icon = QMessageBox::Warning );
 
 	static void critical( QWidget *, const QString & );
 	static void critical( QWidget *, const QString &, const QString & );
