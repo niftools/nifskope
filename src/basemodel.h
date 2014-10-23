@@ -60,9 +60,12 @@ class BaseModel : public QAbstractItemModel
 
 public:
 	//! Constructor
-	BaseModel( QObject * parent = 0 );
+	BaseModel( QObject * parent = nullptr );
 	//! Destructor
 	~BaseModel();
+
+	//! Get parent window
+	QWidget * getWindow();
 
 	//! Clear model data.
 	virtual void clear() = 0;
@@ -292,6 +295,9 @@ protected:
 
 	//! Set the header string
 	virtual bool setHeaderString( const QString & ) = 0;
+	
+	//! NifSkope window the model belongs to
+	QWidget * parentWindow;
 
 	//! The root item
 	NifItem * root;

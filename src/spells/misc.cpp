@@ -138,7 +138,10 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		int ofs = nif->fileOffset( index );
-		Message::info( nullptr, Spell::tr( "Estimated file offset is %1 (0x%2)" ).arg( ofs ).arg( ofs, 0, 16 ) );
+		Message::info( nif->getWindow(),
+			Spell::tr( "Estimated file offset is %1 (0x%2)" ).arg( ofs ).arg( ofs, 0, 16 ),
+			Spell::tr( "Block: %1\nOffset: %2 (0x%3)" ).arg( index.data( Qt::DisplayRole ).toString() ).arg( ofs ).arg( ofs, 0, 16 )
+		);
 		return index;
 	}
 };

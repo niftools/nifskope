@@ -43,9 +43,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file basemodel.cpp BaseModel and BaseModelEval
 
-BaseModel::BaseModel( QObject * parent ) : QAbstractItemModel( parent )
+BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
 	root = new NifItem( 0 );
+	parentWindow = qobject_cast<QWidget *>(p);
 }
 
 BaseModel::~BaseModel()
@@ -53,6 +54,10 @@ BaseModel::~BaseModel()
 	delete root;
 }
 
+QWidget * BaseModel::getWindow()
+{
+	return parentWindow;
+}
 
 /*
  *  array functions
