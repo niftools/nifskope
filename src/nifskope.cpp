@@ -130,6 +130,12 @@ NifSkope::NifSkope()
 
 	// Setup QUndoStack
 	nif->undoStack = new QUndoStack( this );
+	// Setup Window Modified on data change
+	connect( nif, &NifModel::dataChanged, [this]( const QModelIndex &, const QModelIndex & ) {
+		// Only if UI is enabled (prevents asterisk from flashing during save/load)
+		if ( isEnabled() )
+			setWindowModified( true );
+	} );
 
 	kfm = new KfmModel( this );
 
