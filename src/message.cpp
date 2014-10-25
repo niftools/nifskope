@@ -26,9 +26,12 @@ void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon 
 {
 	auto msgBox = new QMessageBox( parent );
 
+	// Keep message box on top if it does not have a parent
+	if ( !parent )
+		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
+
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
-	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
 
 	msgBox->open();
 }
@@ -38,9 +41,12 @@ void Message::message( QWidget * parent, const QString & str, const QString & er
 {
 	auto msgBox = new QMessageBox( parent );
 
+	// Keep message box on top if it does not have a parent
+	if ( !parent )
+		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
+
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
-	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
 	msgBox->setDetailedText( err );
 
 	msgBox->open();
