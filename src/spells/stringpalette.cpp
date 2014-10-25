@@ -434,8 +434,7 @@ public:
 		// update the palette itself
 		nif->set<QByteArray>( iPalette, "Palette", bytes );
 
-		QMessageBox::information( 0, "NifSkope",
-			Spell::tr( "Updated %1 offsets in %2 sequences" ).arg( numRefsUpdated ).arg( sequenceUpdateList.size() ) );
+		Message::info( nullptr, Spell::tr( "Updated %1 offsets in %2 sequences" ).arg( numRefsUpdated ).arg( sequenceUpdateList.size() ) );
 
 		return index;
 	}

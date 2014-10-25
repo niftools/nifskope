@@ -189,7 +189,7 @@ public:
 			nif->removeNiBlock( nif->getBlockNumber( shape ) );
 		}
 
-		QMessageBox::information( 0, "NifSkope", Spell::tr( "Created hull with %1 vertices, %2 normals" ).arg( convex_verts.count() ).arg( convex_norms.count() ) );
+		Message::info( nullptr, Spell::tr( "Created hull with %1 vertices, %2 normals" ).arg( convex_verts.count() ).arg( convex_norms.count() ) );
 
 		// returning iCVS here can crash NifSkope if a child array is selected
 		return index;

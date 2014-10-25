@@ -108,7 +108,7 @@ public:
 			}
 		} while ( !map.isEmpty() );
 
-		QMessageBox::information( 0, "NifSkope", QString( "removed %1 properties" ).arg( numRemoved ) );
+		Message::info( nullptr, Spell::tr( "Removed %1 properties" ).arg( numRemoved ) );
 		return QModelIndex();
 	}
 };
@@ -244,7 +244,7 @@ public:
 		} while ( removed );
 
 		if ( cnt > 0 )
-			QMessageBox::information( 0, "NifSkope", QString( Spell::tr( "removed %1 nodes" ) ).arg( cnt ) );
+			Message::info( nullptr, Spell::tr( "Removed %1 nodes" ).arg( cnt ) );
 
 		return QModelIndex();
 	}

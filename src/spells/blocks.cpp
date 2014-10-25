@@ -653,7 +653,7 @@ public:
 						}
 					}
 
-					QMessageBox::information( 0, Spell::tr( "Copy Branch" ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
 						.arg( link )
 						.arg( nif->itemName( nif->getBlock( link ) ) )
 						.arg( block )
@@ -677,7 +677,7 @@ public:
 				ds << nif->itemName( nif->getBlock( block ) );
 
 				if ( !nif->save( buffer, nif->getBlock( block ) ) ) {
-					QMessageBox::information( 0, Spell::tr( "Copy Branch" ), Spell::tr( "failed to save block %1 %2." )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
 						.arg( block )
 						.arg( nif->itemName( nif->getBlock( block ) ) )
 					);
@@ -780,7 +780,7 @@ public:
 							if ( block >= 0 ) {
 								blockMap.insert( ipm.key(), block );
 							} else {
-								QMessageBox::information( 0, Spell::tr( "Paste Branch" ), Spell::tr( "failed to map parent link %1" )
+								Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
 									.arg( ipm.value() )
 								);
 								return index;
@@ -1219,7 +1219,7 @@ public:
 						}
 					}
 
-					QMessageBox::information( 0, Spell::tr( "Duplicate Branch" ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
 						.arg( link )
 						.arg( nif->itemName( nif->getBlock( link ) ) )
 						.arg( block )
@@ -1243,7 +1243,7 @@ public:
 				ds << nif->itemName( nif->getBlock( block ) );
 
 				if ( !nif->save( buffer, nif->getBlock( block ) ) ) {
-					QMessageBox::information( 0, Spell::tr( "Duplicate Branch" ), Spell::tr( "failed to save block %1 %2." )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
 						.arg( block )
 						.arg( nif->itemName( nif->getBlock( block ) ) )
 					);
@@ -1280,7 +1280,7 @@ public:
 				if ( block >= 0 ) {
 					blockMap.insert( ipm.key(), block );
 				} else {
-					QMessageBox::information( 0, Spell::tr( "Duplicate Branch" ), Spell::tr( "failed to map parent link %1" )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
 						.arg( ipm.value() )
 					);
 					return index;
