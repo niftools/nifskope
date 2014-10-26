@@ -55,6 +55,16 @@ void Message::message( QWidget * parent, const QString & str, const QString & er
 //! Static helper for installed message handler
 void Message::message( QWidget * parent, const QString & str, const QMessageLogContext * context, QMessageBox::Icon icon )
 {
+
+#ifdef QT_NO_DEBUG
+	if ( !QString( context->category ).startsWith( "nifskope", Qt::CaseInsensitive ) ) {
+		
+		// TODO: Log these into a log table widget like Qt Creator's issues tab
+
+		return;
+	}
+#endif
+
 	QString d;
 	d.append( QString( "%1: %2\n" ).arg( "File" ).arg( context->file ) );
 	d.append( QString( "%1: %2\n" ).arg( "Function" ).arg( context->function ) );
