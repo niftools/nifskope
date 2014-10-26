@@ -762,10 +762,6 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	// Re-enable window
 	setEnabled( true ); // IMPORTANT!
 
-	// Mark window as unmodified
-	setWindowModified( false );
-	nif->undoStack->clear();
-
 	int timeout = 2500;
 	if ( success ) {
 		// Expand BSShaderTextureSet by default
@@ -800,6 +796,10 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 		setWindowFilePath( "" );
 		progress->reset();
 	}
+
+	// Mark window as unmodified
+	setWindowModified( false );
+	nif->undoStack->clear();
 
 	// Hide Progress Bar
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
