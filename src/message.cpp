@@ -27,13 +27,16 @@ void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon 
 	auto msgBox = new QMessageBox( parent );
 
 	// Keep message box on top if it does not have a parent
-	if ( !parent )
-		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
+	//if ( !parent )
+	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
 
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
 
 	msgBox->open();
+
+	//if ( !parent )
+	msgBox->activateWindow();
 }
 
 //! Static helper for message box with detail text
@@ -42,14 +45,17 @@ void Message::message( QWidget * parent, const QString & str, const QString & er
 	auto msgBox = new QMessageBox( parent );
 
 	// Keep message box on top if it does not have a parent
-	if ( !parent )
-		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
+	//if ( !parent )
+	msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
 
 	msgBox->setText( str );
 	msgBox->setIcon( icon );
 	msgBox->setDetailedText( err );
 
 	msgBox->open();
+
+	//if ( !parent )
+	msgBox->activateWindow();
 }
 
 //! Static helper for installed message handler
@@ -141,13 +147,16 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 		auto msgBox = new QMessageBox( parent );
 
 		// Keep message box on top if it does not have a parent
-		if ( !parent )
-			msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint );
+		//if ( !parent )
+		msgBox->setWindowFlags( msgBox->windowFlags() | Qt::WindowStaysOnTopHint | Qt::Tool );
 
 		msgBox->setText( str );
 		msgBox->setIcon( icon );
 		msgBox->setDetailedText( err + "\n" );
 		msgBox->open();
+
+		//if ( !parent )
+		msgBox->activateWindow();
 
 		messageBoxes[str] = msgBox;
 
