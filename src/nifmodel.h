@@ -165,6 +165,7 @@ public:
 	QList<int> getParentLinks( int block ) const;
 	// return the parent block number or none (-1) if there is no parent or if there are multiple parents
 	int getParent( int block ) const;
+	int getParent( const QModelIndex & ) const;
 
 	// is it a child or parent link?
 	bool isLink( const QModelIndex & index, bool * ischildLink = 0 ) const;

@@ -2588,6 +2588,11 @@ int NifModel::getParent( int block ) const
 	return parent;
 }
 
+int NifModel::getParent( const QModelIndex & index ) const
+{
+	return getParent( getBlockNumber( index ) );
+}
+
 QString NifModel::string( const QModelIndex & index, bool extraInfo ) const
 {
 	NifValue v = getValue( index );
