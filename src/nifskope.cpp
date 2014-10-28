@@ -324,26 +324,36 @@ void NifSkope::select( const QModelIndex & index )
 
 	if ( sender() != list ) {
 		if ( list->model() == proxy ) {
-			QModelIndex pidx = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
-			
-			// Fix for NiDefaultAVObjectPalette bug
+			QModelIndex idxProxy = proxy->mapFrom( nif->getBlock( idx ), list->currentIndex() );
+
+			// Fix for NiDefaultAVObjectPalette (et al.) bug
 			//	mapFrom() stops at the first result for the given block number,
 			//	thus when clicking in the viewport, the actual NiTriShape is not selected
-			//	but the reference to it in NiDefaultAVObjectPalette.
-			if ( pidx.parent().data( Qt::DisplayRole ).toString().contains( "NiDefaultAVObjectPalette" ) ) {
+			//	but the reference to it in NiDefaultAVObjectPalette or other non-NiAVObjects.
 
+			// The true parent of the NIF block
+			QModelIndex blockParent = nif->index( nif->getParent( idx ) + 1, 0 );
+			QModelIndex blockParentProxy = proxy->mapFrom( blockParent, list->currentIndex() );
+			QString blockParentString = blockParentProxy.data( Qt::DisplayRole ).toString();
+
+			// The parent string for the proxy result (possibly incorrect)
+			QString proxyIdxParentString = idxProxy.parent().data( Qt::DisplayRole ).toString();
+
+			// Determine if proxy result is incorrect
+			if ( proxyIdxParentString != blockParentString ) {
 				// Find ALL QModelIndex which match the display string
-				for ( auto i : list->model()->match( list->model()->index( 0, 0 ), Qt::DisplayRole, pidx.data( Qt::DisplayRole ),
+				for ( const QModelIndex & i : list->model()->match( list->model()->index( 0, 0 ), Qt::DisplayRole, idxProxy.data( Qt::DisplayRole ),
 					100, Qt::MatchRecursive ) )
 				{
-					// Skip if child of NiDefaultAVObjectPalette
-					if ( i.parent().data( Qt::DisplayRole ).toString().contains( "NiDefaultAVObjectPalette" ) )
+					// Skip if child of NiDefaultAVObjectPalette, et al.
+					if ( i.parent().data( Qt::DisplayRole ).toString() != blockParentString )
 						continue;
 
 					list->setCurrentIndex( i );
 				}
 			} else {
-				list->setCurrentIndex( pidx );
+				// Proxy parent is already an ancestor of NiAVObject
+				list->setCurrentIndex( idxProxy );
 			}
 
 		} else if ( list->model() == nif ) {
