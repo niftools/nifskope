@@ -851,7 +851,7 @@ public:
 		return m[c][d];
 	}
 	//! Equality operator
-	bool operator==(const Matrix & other)
+	bool operator==( const Matrix & other ) const
 	{
 		for ( int i = 0; i < 3; i++ ) {
 			for ( int j = 0; j < 3; j++ ) {
@@ -940,7 +940,7 @@ public:
 		return m[c][d];
 	}
 	//! Equality operator
-	bool operator==(const Matrix4 & other)
+	bool operator==( const Matrix4 & other ) const
 	{
 		for ( int i = 0; i < 4; i++ ) {
 			for ( int j = 0; j < 4; j++ ) {
