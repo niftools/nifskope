@@ -832,6 +832,10 @@ int main( int argc, char * argv[] )
 		//qRegisterMetaType<Message>( "Message" );
 		qInstallMessageHandler( myMessageOutput );
 
+		// Register types
+		qRegisterMetaType<NifValue>( "NifValue" );
+		QMetaType::registerComparators<NifValue>();
+
 		// Find stylesheet
 		QDir qssDir( QApplication::applicationDirPath() );
 		QStringList qssList( QStringList()

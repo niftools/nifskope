@@ -296,6 +296,10 @@ public:
 		if ( vedit ) {
 			v.setValue( vedit->getValue() );
 
+			// Value is unchanged, do not push to Undo Stack or call setData()
+			if ( v == index.data( Qt::EditRole ) )
+				return;
+
 			if ( model->inherits( "NifModel" ) ) {
 				auto valueType = model->sibling( index.row(), 0, index ).data().toString();
 

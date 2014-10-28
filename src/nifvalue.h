@@ -217,6 +217,12 @@ public:
 	//! Assignment. Performs a deep copy of the data.
 	void operator=( const NifValue & other );
 
+	//! Custom comparator for QVariant::operator==()
+	bool operator==( const NifValue & other ) const;
+	//! Necessary for QMetaType::registerComparators(), but unused
+	bool operator<( const NifValue & ) const;
+
+
 	//! Get the type.
 	Type type() const { return typ; }
 

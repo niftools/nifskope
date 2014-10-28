@@ -516,6 +516,178 @@ void NifValue::operator=( const NifValue & other )
 	}
 }
 
+bool NifValue::operator==( const NifValue & other ) const
+{
+	switch ( typ ) {
+	case tByte:
+		return val.u08 == other.val.u08;
+
+	case tWord:
+	case tFlags:
+	case tStringOffset:
+	case tBlockTypeIndex:
+	case tShort:
+		return val.u16 == other.val.u16;
+
+	case tBool:
+	case tUInt:
+	case tStringIndex:
+	case tFileVersion:
+		return val.u32 == other.val.u32;
+
+	case tInt:
+	case tLink:
+	case tUpLink:
+		return val.i32 == other.val.i32;
+
+	case tFloat:
+		return val.f32 == other.val.f32;
+
+	case tString:
+	case tSizedString:
+	case tText:
+	case tShortString:
+	case tHeaderString:
+	case tLineString:
+	case tChar8String:
+	case tFilePath:
+	{
+		QString * s1 = static_cast<QString *>(val.data);
+		QString * s2 = static_cast<QString *>(other.val.data);
+
+		if ( !s1 || !s2 )
+			return false;
+
+		return *s1 == *s2;
+	}
+
+	case tColor3:
+	{
+		Color3 * c1 = static_cast<Color3 *>(val.data);
+		Color3 * c2 = static_cast<Color3 *>(other.val.data);
+
+		if ( !c1 || !c2 )
+			return false;
+
+		return c1->toQColor() == c2->toQColor();
+	}
+
+	case tColor4:
+	{
+		Color4 * c1 = static_cast<Color4 *>(val.data);
+		Color4 * c2 = static_cast<Color4 *>(other.val.data);
+
+		if ( !c1 || !c2 )
+			return false;
+
+		return c1->toQColor() == c2->toQColor();
+	}
+
+	case tVector2:
+	{
+		Vector2 * vec1 = static_cast<Vector2 *>(val.data);
+		Vector2 * vec2 = static_cast<Vector2 *>(other.val.data);
+
+		if ( !vec1 || !vec2 )
+			return false;
+
+		return *vec1 == *vec2;
+	}
+
+	case tVector3:
+	{
+		Vector3 * vec1 = static_cast<Vector3 *>(val.data);
+		Vector3 * vec2 = static_cast<Vector3 *>(other.val.data);
+
+		if ( !vec1 || !vec2 )
+			return false;
+
+		return *vec1 == *vec2;
+	}
+
+	case tVector4:
+	{
+		Vector4 * vec1 = static_cast<Vector4 *>(val.data);
+		Vector4 * vec2 = static_cast<Vector4 *>(other.val.data);
+
+		if ( !vec1 || !vec2 )
+			return false;
+
+		return *vec1 == *vec2;
+	}
+
+	case tQuat:
+	case tQuatXYZW:
+	{
+		Quat * quat1 = static_cast<Quat *>(val.data);
+		Quat * quat2 = static_cast<Quat *>(other.val.data);
+
+		if ( !quat1 || !quat2 )
+			return false;
+
+		return *quat1 == *quat2;
+	}
+
+	case tTriangle:
+	{
+		Triangle * tri1 = static_cast<Triangle *>(val.data);
+		Triangle * tri2 = static_cast<Triangle *>(other.val.data);
+
+		if ( !tri1 || !tri2 )
+			return false;
+
+		return *tri1 == *tri2;
+	}
+
+	case tByteArray:
+	case tByteMatrix:
+	case tStringPalette:
+	case tBlob:
+	{
+		QByteArray * a1 = static_cast<QByteArray *>(val.data);
+		QByteArray * a2 = static_cast<QByteArray *>(other.val.data);
+
+		if ( a1->isNull() || a2->isNull() )
+			return false;
+
+		return *a1 == *a2;
+	}
+
+	case tMatrix:
+	{
+		Matrix * m1 = static_cast<Matrix *>(val.data);
+		Matrix * m2 = static_cast<Matrix *>(other.val.data);
+
+		if ( !m1 || !m2 )
+			return false;
+
+		return *m1 == *m2;
+	}
+	case tMatrix4:
+	{
+		Matrix4 * m1 = static_cast<Matrix4 *>(val.data);
+		Matrix4 * m2 = static_cast<Matrix4 *>(other.val.data);
+
+		if ( !m1 || !m2 )
+			return false;
+
+		return *m1 == *m2;
+	}
+	case tNone:
+	default:
+		return false;
+	}
+
+	return false;
+}
+
+bool NifValue::operator<( const NifValue & other ) const
+{
+	Q_UNUSED( other );
+	return false;
+}
+
+
 QVariant NifValue::toVariant() const
 {
 	QVariant v;
