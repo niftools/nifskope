@@ -755,6 +755,12 @@ public:
 		Quat r( *this );
 		return ( r += q );
 	}
+	//! Equality operator
+	bool operator==( const Quat & other ) const
+	{
+		return (wxyz[0] == other.wxyz[0]) && (wxyz[1] == other.wxyz[1]) && (wxyz[2] == other.wxyz[2]) && (wxyz[3] == other.wxyz[3]);
+	}
+
 	//! Find the dot product of two quaternions
 	static float dotproduct( const Quat & q1, const Quat & q2 )
 	{
@@ -844,6 +850,17 @@ public:
 		Q_ASSERT( c < 3 && d < 3 );
 		return m[c][d];
 	}
+	//! Equality operator
+	bool operator==(const Matrix & other)
+	{
+		for ( int i = 0; i < 3; i++ ) {
+			for ( int j = 0; j < 3; j++ ) {
+				if ( m[i][j] != other.m[i][j] )
+					return false;
+			}
+		}
+		return true;
+	}
 
 	//! Find the inverted form
 	Matrix inverted() const;
@@ -921,6 +938,17 @@ public:
 	{
 		Q_ASSERT( c < 4 && d < 4 );
 		return m[c][d];
+	}
+	//! Equality operator
+	bool operator==(const Matrix4 & other)
+	{
+		for ( int i = 0; i < 4; i++ ) {
+			for ( int j = 0; j < 4; j++ ) {
+				if ( m[i][j] != other.m[i][j] )
+					return false;
+			}
+		}
+		return true;
 	}
 
 	// Not implemented; use decompose() instead
@@ -1049,6 +1077,12 @@ public:
 		t.v[1] += d;
 		t.v[2] += d;
 		return t;
+	}
+
+	//! Equality operator
+	bool operator==( const Triangle & other ) const
+	{
+		return (v[0] == other.v[0]) && (v[1] == other.v[1]) && (v[2] == other.v[2]);
 	}
 
 protected:
