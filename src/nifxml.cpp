@@ -322,7 +322,7 @@ public:
 						if ( ok ) {
 							data.value.setCount( enumVal );
 						} else {
-							data.value.fromString( defval );
+							data.value.setFromString( defval );
 						}
 					}
 

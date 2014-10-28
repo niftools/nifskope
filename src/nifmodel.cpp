@@ -1550,7 +1550,7 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 				val.changeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
 				assignString( index, value.toString(), true );
 			} else {
-				item->value().fromVariant( value );
+				item->value().setFromVariant( value );
 
 				if ( isLink( index ) && getBlockOrHeader( index ) != getFooter() ) {
 					updateLinks();

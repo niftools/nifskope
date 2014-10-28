@@ -338,11 +338,11 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tLineString:
 		case NifValue::tShortString:
 		case NifValue::tChar8String:
-			val.fromString( qobject_cast<QLineEdit *>( edit )->text() );
+			val.setFromString( qobject_cast<QLineEdit *>( edit )->text() );
 			break;
 		case NifValue::tSizedString:
 		case NifValue::tText:
-			val.fromString( qobject_cast<QTextEdit *>( edit )->toPlainText() );
+			val.setFromString( qobject_cast<QTextEdit *>( edit )->toPlainText() );
 			break;
 		case NifValue::tColor4:
 			val.set<Color4>( qobject_cast<ColorEdit *>( edit )->getColor4() );

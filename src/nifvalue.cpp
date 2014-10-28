@@ -523,7 +523,7 @@ QVariant NifValue::toVariant() const
 	return v;
 }
 
-bool NifValue::fromVariant( const QVariant & var )
+bool NifValue::setFromVariant( const QVariant & var )
 {
 	if ( var.canConvert<NifValue>() ) {
 		operator=( var.value<NifValue>() );
@@ -535,7 +535,7 @@ bool NifValue::fromVariant( const QVariant & var )
 	return false;
 }
 
-bool NifValue::fromString( const QString & s )
+bool NifValue::setFromString( const QString & s )
 {
 	bool ok;
 

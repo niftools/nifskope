@@ -442,7 +442,7 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 		item->setType( value.toString() );
 		break;
 	case BaseModel::ValueCol:
-		item->value().fromVariant( value );
+		item->value().setFromVariant( value );
 		break;
 	case BaseModel::ArgCol:
 		item->setArg( value.toString() );

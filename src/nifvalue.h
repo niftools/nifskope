@@ -304,13 +304,13 @@ public:
 	/**
 	 * \return True if applicable, false otherwise
 	 */
-	bool fromString( const QString & );
+	bool setFromString( const QString & );
 
 	//! Set this value from a QVariant.
 	/**
 	 * \return True if applicable, false otherwise
 	 */
-	bool fromVariant( const QVariant & );
+	bool setFromVariant( const QVariant & );
 
 	//! Check whether the data is of type T.
 	template <typename T> bool ask( T * t = 0 ) const;
