@@ -374,11 +374,13 @@ void NifSkope::initMenu()
 		if ( child->defaultAction() == ui->aSaveMenu ) {
 			child->setMenu( mSave );
 			child->setPopupMode( QToolButton::InstantPopup );
+			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
 		}
 
 		if ( child->defaultAction() == ui->aOpenMenu ) {
 			child->setMenu( mOpen );
 			child->setPopupMode( QToolButton::InstantPopup );
+			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
 		}
 	}
 
@@ -392,9 +394,9 @@ void NifSkope::initMenu()
 	for ( auto child : ui->tRender->findChildren<QToolButton *>() ) {
 
 		if ( child->defaultAction() == ui->aLightMenu ) {
-			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
 			child->setMenu( mLight );
 			child->setPopupMode( QToolButton::InstantPopup );
+			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
 		}
 	}
 
