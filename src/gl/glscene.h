@@ -165,7 +165,8 @@ signals:
 	void sceneUpdated();
 
 public slots:
-	void updateSceneOptions();
+	void updateSceneOptions( bool checked );
+	void updateSceneOptionsGroup( QAction * );
 	void updateLodLevel( int );
 
 protected:

@@ -235,13 +235,13 @@ void GLView::sceneUpdate()
 	update();
 }
 
-void GLView::updateAnimationState()
+void GLView::updateAnimationState( bool checked )
 {
 	QAction * action = qobject_cast<QAction *>(sender());
 	if ( action ) {
 		auto opt = AnimationState( action->data().toInt() );
 
-		if ( action->isChecked() )
+		if ( checked )
 			animState |= opt;
 		else
 			animState &= ~opt;

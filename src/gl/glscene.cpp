@@ -135,17 +135,22 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 	timeBoundsValid = false;
 }
 
-void Scene::updateSceneOptions()
+void Scene::updateSceneOptions( bool checked )
 {
 	QAction * action = qobject_cast<QAction *>(sender());
 	if ( action ) {
-	
-		auto opt = SceneOptions( action->data().toInt() );
-
-		options ^= opt;
-
+		options ^= SceneOptions( action->data().toInt() );
 		emit sceneUpdated();
 	}
+}
+
+void Scene::updateSceneOptionsGroup( QAction * action )
+{
+	if ( !action )
+		return;
+
+	options ^= SceneOptions( action->data().toInt() );
+	emit sceneUpdated();
 }
 
 void Scene::updateLodLevel( int level )

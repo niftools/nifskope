@@ -162,7 +162,7 @@ public slots:
 	void planarAngleChanged( int );
 	void frontalLightToggled( bool );
 	void flagsChanged();
-	void updateAnimationState();
+	void updateAnimationState( bool checked );
 	void setVisMode( Scene::VisMode, bool checked = true );
 
 signals:

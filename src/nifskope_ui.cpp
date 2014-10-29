@@ -157,7 +157,7 @@ void NifSkope::initActions()
 		ShowNodes = 0x4,
 		ShowCollision = 0x8,
 		ShowConstraints = 0x10,
-		ShowMarkers = 0x20,   // Not implemented
+		ShowMarkers = 0x20,
 		DoDoubleSided = 0x40, // Not implemented
 		DoVertexColors = 0x80,
 		DoSpecular = 0x100,
@@ -182,17 +182,22 @@ void NifSkope::initActions()
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
 
-	connect( ui->aShowAxes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aShowNodes, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aShowCollision, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aShowConstraints, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aShowMarkers, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aTextures, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aVertexColors, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aSpecular, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aGlow, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aLighting, &QAction::triggered, ogl->getScene(), &Scene::updateSceneOptions );
-	connect( ui->aDisableShading, &QAction::toggled, ogl->getScene(), &Scene::updateSceneOptions );
+	auto agroup = [this]( QVector<QAction *> actions, bool exclusive ) {
+		QActionGroup * ag = new QActionGroup( this );
+		for ( auto a : actions ) {
+			ag->addAction( a );
+		}
+
+		ag->setExclusive( exclusive );
+
+		return ag;
+	};
+
+	showActions = agroup( { ui->aShowAxes, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers }, false );
+	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
+
+	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aLighting, ui->aDisableShading }, false );
+	connect( shadingActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	// Setup blank QActions for Recent Files menus
 	for ( int i = 0; i < NumRecentFiles; ++i ) {
@@ -398,9 +403,6 @@ void NifSkope::initMenu()
 
 void NifSkope::initToolBars()
 {
-
-	//ui->tFile->setContextMenuPolicy( Qt::NoContextMenu );
-
 	// Disable without NIF loaded
 	ui->tRender->setEnabled( false );
 	ui->tRender->setContextMenuPolicy( Qt::ActionsContextMenu );
@@ -425,14 +427,7 @@ void NifSkope::initToolBars()
 
 	// Animate
 	connect( ui->aAnimate, &QAction::toggled, ui->tAnim, &QToolBar::setVisible );
-	//connect( ui->aAnimate, &QAction::toggled, ui->tAnim, &QToolBar::setEnabled );
 	connect( ui->tAnim, &QToolBar::visibilityChanged, ui->aAnimate, &QAction::setChecked );
-
-	//QActionGroup * grpAnim = new QActionGroup( this );
-	//grpAnim->addAction( ui->aAnimLoop );
-	//grpAnim->addAction( ui->aAnimSwitch );
-	//grpAnim->setExclusive( true );
-
 
 	/*enum AnimationStates
 	{
@@ -455,23 +450,21 @@ void NifSkope::initToolBars()
 
 	// Animation timeline slider
 	auto animSlider = new FloatSlider( Qt::Horizontal, true, true );
-	animSlider->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::MinimumExpanding );
+	auto animSliderEdit = new FloatEdit( ui->tAnim );
+
+	animSlider->addEditor( animSliderEdit );
 	animSlider->setParent( ui->tAnim );
 	animSlider->setMinimumWidth( 75 );
 	animSlider->setMaximumWidth( 150 );
+	animSlider->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::MinimumExpanding );
+
 	connect( ogl, &GLView::sigTime, animSlider, &FloatSlider::set );
-	connect( animSlider, &FloatSlider::valueChanged, ogl, &GLView::sltTime );
-
-
-	FloatEdit * animSliderEdit = new FloatEdit( ui->tAnim );
-	//animSliderEdit->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Maximum ); // Qt warning
-
 	connect( ogl, &GLView::sigTime, animSliderEdit, &FloatEdit::set );
-	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), ogl, &GLView::sltTime );
+	connect( animSlider, &FloatSlider::valueChanged, ogl, &GLView::sltTime );
 	connect( animSlider, &FloatSlider::valueChanged, animSliderEdit, &FloatEdit::setValue );
+	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), ogl, &GLView::sltTime );
 	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), animSlider, &FloatSlider::setValue );
-	animSlider->addEditor( animSliderEdit );
-
+	
 	// Animations
 	animGroups = new QComboBox( ui->tAnim );
 	animGroups->setMinimumWidth( 60 );
@@ -480,17 +473,14 @@ void NifSkope::initToolBars()
 	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), ogl, &GLView::sltSequence );
 
 	ui->tAnim->addWidget( animSlider );
-	auto animGroupsAction = ui->tAnim->addWidget( animGroups );
+	animGroupsAction = ui->tAnim->addWidget( animGroups );
 
 	connect( ogl, &GLView::sequencesDisabled, ui->tAnim, &QToolBar::hide );
-
 	connect( ogl, &GLView::sequenceStopped, ui->aAnimPlay, &QAction::toggle );
 	connect( ogl, &GLView::sequenceChanged, [this]( const QString & seqname ) {
 		animGroups->setCurrentIndex( ogl->getScene()->animGroups.indexOf( seqname ) );
 	} );
-
-	connect( ogl, &GLView::sequencesUpdated, [this, animGroupsAction]() {
-
+	connect( ogl, &GLView::sequencesUpdated, [this]() {
 		ui->tAnim->show();
 
 		animGroups->clear();
@@ -500,13 +490,11 @@ void NifSkope::initToolBars()
 		if ( animGroups->count() == 0 ) {
 			animGroupsAction->setVisible( false );
 			ui->aAnimSwitch->setVisible( false );
-		}
-		else {
+		} else {
 			ui->aAnimSwitch->setVisible( animGroups->count() != 1 );
 			animGroupsAction->setVisible( true );
 			animGroups->adjustSize();
 		}
-			
 	} );
 
 
@@ -538,13 +526,8 @@ void NifSkope::initConnections()
 {
 	connect( nif, &NifModel::beginUpdateHeader, this, &NifSkope::enableUi );
 
-	connect( this, &NifSkope::beginLoading, [this]() {
-		setEnabled( false );
-		ui->tAnim->setEnabled( false );
-
-		progress->setVisible( true );
-		progress->reset();
-	} );
+	connect( this, &NifSkope::beginLoading, this, &NifSkope::onLoadBegin );
+	connect( this, &NifSkope::beginSave, this, &NifSkope::onSaveBegin );
 
 	connect( this, &NifSkope::completeLoading, this, &NifSkope::onLoadComplete );
 	connect( this, &NifSkope::completeSave, this, &NifSkope::onSaveComplete );
@@ -754,6 +737,14 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 	return filepathWidget;
 }
 
+void NifSkope::onLoadBegin()
+{
+	setEnabled( false );
+	ui->tAnim->setEnabled( false );
+
+	progress->setVisible( true );
+	progress->reset();
+}
 
 void NifSkope::onLoadComplete( bool success, QString & fname )
 {
@@ -805,8 +796,15 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
 
+void NifSkope::onSaveBegin()
+{
+	setEnabled( false );
+}
+
 void NifSkope::onSaveComplete( bool success, QString & fname )
 {
+	setEnabled( true );
+
 	if ( success ) {
 		// Update if Save As results in filename change
 		setWindowFilePath( currentFile );
@@ -943,8 +941,6 @@ void NifSkope::setViewFont( const QFont & font )
 void NifSkope::resizeDone()
 {
 	isResizing = false;
-	//qDebug() << "resizeDone" << isResizing;
-	//qDebug() << sender();
 
 	// Unhide GLView, update GLGraphicsView
 	ogl->show();
@@ -1120,67 +1116,61 @@ void NifSkope::on_tRender_actionTriggered( QAction * action )
 
 }
 
-void NifSkope::on_aViewTop_triggered( bool wasChecked )
+void NifSkope::on_aViewTop_triggered( bool checked )
 {
-	if ( wasChecked ) {
+	if ( checked ) {
 		ogl->setOrientation( GLView::ViewTop );
 	}
 }
 
-void NifSkope::on_aViewFront_triggered( bool wasChecked )
+void NifSkope::on_aViewFront_triggered( bool checked )
 {
-	if ( wasChecked ) {
+	if ( checked ) {
 		ogl->setOrientation( GLView::ViewFront );
 	}
 }
 
-void NifSkope::on_aViewLeft_triggered( bool wasChecked )
+void NifSkope::on_aViewLeft_triggered( bool checked )
 {
-	if ( wasChecked ) {
+	if ( checked ) {
 		ogl->setOrientation( GLView::ViewLeft );
 	}
 }
 
 void NifSkope::on_aViewCenter_triggered()
 {
-	qDebug() << "Centering";
 	ogl->center();
 }
 
-void NifSkope::on_aViewFlip_triggered( bool wasChecked )
+void NifSkope::on_aViewFlip_triggered( bool checked )
 {
-	qDebug() << "Flipping";
 	ogl->flipOrientation();
-
 }
 
-void NifSkope::on_aViewPerspective_toggled( bool wasChecked ) {
-	ogl->setProjection( wasChecked );
-
-	//if ( wasChecked )
-	//	ui->aViewPerspective->setText( tr( "Perspective" ) );
-	//else
-	//	ui->aViewPerspective->setText( tr( "Orthographic" ) );
-}
-
-void NifSkope::on_aViewWalk_triggered( bool wasChecked )
+void NifSkope::on_aViewPerspective_toggled( bool checked )
 {
-	if ( wasChecked ) {
+	ogl->setProjection( checked );
+}
+
+void NifSkope::on_aViewWalk_triggered( bool checked )
+{
+	if ( checked ) {
 		ogl->setOrientation( GLView::ViewWalk );
 	}
 }
 
 
-void NifSkope::on_aViewUserSave_triggered( bool wasChecked )
+void NifSkope::on_aViewUserSave_triggered( bool checked )
 { 
+	Q_UNUSED( checked );
 	ogl->saveUserView();
 	ui->aViewUser->setChecked( true );
 }
 
 
-void NifSkope::on_aViewUser_toggled( bool wasChecked )
+void NifSkope::on_aViewUser_toggled( bool checked )
 {
-	if ( wasChecked ) {
+	if ( checked ) {
 		ogl->setOrientation( GLView::ViewUser, false );
 		ogl->loadUserView();
 	}
@@ -1189,5 +1179,6 @@ void NifSkope::on_aViewUser_toggled( bool wasChecked )
 void NifSkope::on_aSettings_triggered()
 {
 	settingsDlg->show();
-	qApp->setActiveWindow( settingsDlg->window() );
+	settingsDlg->raise();
+	settingsDlg->activateWindow();
 }

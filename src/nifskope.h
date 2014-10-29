@@ -126,6 +126,9 @@ public slots:
 
 	void enableUi();
 
+	void onLoadBegin();
+	void onSaveBegin();
+
 	void onLoadComplete( bool, QString & );
 	void onSaveComplete( bool, QString & );
 
@@ -261,6 +264,7 @@ private:
 	QGraphicsView * graphicsView;
 
 	QComboBox * animGroups;
+	QAction * animGroupsAction;
 
 	bool selecting;
 	bool initialShowEvent;
@@ -284,6 +288,9 @@ private:
 
 	QAction * undoAction;
 	QAction * redoAction;
+
+	QActionGroup * showActions;
+	QActionGroup * shadingActions;
 
 	QActionGroup * gListMode;
 	QAction * aList;

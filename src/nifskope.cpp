@@ -206,7 +206,6 @@ NifSkope::NifSkope()
 	progress->setVisible( false );
 
 	// Process progress events
-	// Define a connection in case it needs to be closed later
 	connect( nif, &NifModel::sigProgress, [this]( int c, int m ) {
 		progress->setRange( 0, m );
 		progress->setValue( c );
@@ -596,8 +595,6 @@ void NifSkope::save()
 {
 	emit beginSave();
 
-	setEnabled( false );
-
 	QString fname = currentFile;
 
 	// TODO: This is rather poor in terms of file validation
@@ -613,7 +610,6 @@ void NifSkope::save()
 
 		emit completeSave( nif->saveToFile( fname ), fname );
 	}
-	setEnabled( true );
 }
 
 
