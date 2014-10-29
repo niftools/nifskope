@@ -55,7 +55,7 @@ public:
 	QModelIndex getIndex() const { return index; }
 
 protected slots:
-	void applyData();
+	void sltApplyData();
 
 protected:
 	QLayout * getLayout();
