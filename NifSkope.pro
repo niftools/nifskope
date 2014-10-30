@@ -7,6 +7,12 @@ TARGET   = NifSkope
 
 QT += xml opengl network widgets
 
+# Require Qt 5.3 or higher
+contains(QT_VERSION, ^5\\.[0-2]\\..*) {
+	message("Cannot build NifSkope with Qt version $${QT_VERSION}")
+	error("Minimum required version is Qt 5.3")
+}
+
 # C++11 Support
 CONFIG += c++11
 
@@ -21,8 +27,6 @@ CONFIG(debug, debug|release) {
 	# Release Options
 	CONFIG -= console
 	DEFINES += QT_NO_DEBUG_OUTPUT
-	# TODO: Clean up qWarnings first before using
-	#DEFINES += QT_NO_WARNING_OUTPUT
 }
 # TODO: Get rid of this define
 #	uncomment this if you want the text stats gl option
@@ -38,7 +42,7 @@ TRANSLATIONS += \
 DEFINES += \
 	QT_NO_CAST_FROM_BYTEARRAY \ # QByteArray deprecations
 	QT_NO_URL_CAST_FROM_STRING \ # QUrl deprecations
-	QT_DISABLE_DEPRECATED_BEFORE=0x050200 #\ # Disable all functions deprecated as of 5.2
+	QT_DISABLE_DEPRECATED_BEFORE=0x050300 #\ # Disable all functions deprecated as of 5.3
 
 	# Useful for tracking down strings not using
 	#	QObject::tr() for translations.
@@ -46,30 +50,29 @@ DEFINES += \
 	# QT_NO_CAST_TO_ASCII
 
 
-###############################
-## Test for Shadow Build
-###############################
-#	Qt Creator = shadow build
-#	Visual Studio = no shadow build
+VISUALSTUDIO = false
+*msvc* {
+	######################################
+	## Detect Visual Studio vs Qt Creator
+	######################################
+	#	Qt Creator = shadow build
+	#	Visual Studio = no shadow build
 
-SHADOWBUILD = true
+	# Strips PWD (source) from OUT_PWD (build) to test if they are on the same path
+	#	- contains() does not work
+	#	- equals( PWD, $${OUT_PWD} ) is not sufficient
+	REP = $$replace(OUT_PWD, $${PWD}, "")
 
-# Strips PWD (source) from OUT_PWD (build) to test if they are on the same path
-#	- contains() does not work
-#	- equals( PWD, $${OUT_PWD} ) is not sufficient
-REP = $$replace(OUT_PWD, $${PWD}, "")
+	# Test if Build dir is outside Source dir
+	#	if REP == OUT_PWD, not Visual Studio
+	!equals( REP, $${OUT_PWD} ):VISUALSTUDIO = true
+	unset(REP)
 
-# Build dir is inside Source dir
-!equals( REP, $${OUT_PWD} ):SHADOWBUILD = false
-
-# Set OUT_PWD to ./bin so that qmake doesn't clutter PWD
-!$$SHADOWBUILD:OUT_PWD = $${_PRO_FILE_PWD_}/bin
-# Unfortunately w/ VS qmake still creates empty debug/release folders in PWD.
-# They are never used but get auto-generated anyway.
-# This setting does not help either:
-#	!$$SHADOWBUILD:DESTDIR = $${OUT_PWD}
-unset(REP)
-
+	# Set OUT_PWD to ./bin so that qmake doesn't clutter PWD
+	#	Unfortunately w/ VS qmake still creates empty debug/release folders in PWD.
+	#	They are never used but get auto-generated because of CONFIG += debug_and_release
+	$$VISUALSTUDIO:OUT_PWD = $${_PRO_FILE_PWD_}/bin
+}
 
 ###############################
 ## FUNCTIONS
@@ -106,16 +109,16 @@ build_pass {
 	Debug:   bld = debug
 	Release: bld = release
 
-	equals( SHADOWBUILD, true ) {
-		# Qt Creator
-		DESTDIR = $${OUT_PWD}/$${bld}
-		# INTERMEDIATE FILES
-		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/
-	} else {
+	win32:equals( VISUALSTUDIO, true ) {
 		# Visual Studio
 		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${bld}
 		# INTERMEDIATE FILES
 		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${bld}
+	} else {
+		# Qt Creator
+		DESTDIR = $${OUT_PWD}/$${bld}
+		# INTERMEDIATE FILES
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/
 	}
 
 	UI_DIR = $${INTERMEDIATE}/.ui
@@ -359,7 +362,19 @@ win32 {
 # MSVC
 #  Both Visual Studio and Qt Creator
 #  Required: msvc2013 or higher
-*msvc2013 {
+*msvc* {
+
+	# Grab _MSC_VER from the mkspecs that Qt was compiled with
+	#	e.g. VS2013 = 1800, VS2012 = 1700, VS2010 = 1600
+	_MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
+	_MSC_VER = $$split(_MSC_VER, =)
+	_MSC_VER = $$member(_MSC_VER, 1)
+
+	# Reject unsupported MSVC versions
+	!isEmpty(_MSC_VER):lessThan(_MSC_VER, 1800) {
+		error("NifSkope only supports MSVC 2013 or later. If this is too prohibitive you may use Qt Creator with MinGW.")
+	}
+
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
 
@@ -369,20 +384,8 @@ win32 {
 	QMAKE_CXXFLAGS_RELEASE *= -O2 -arch:SSE2 # SSE2 is the default, but make it explicit
 	#  Multithreaded compiling for Visual Studio
 	QMAKE_CXXFLAGS += -MP
-	
-	# LINKER FLAGS
 
-	#  Manifest Embed
-	#    msvc2012 only (when /MANIFEST:embed was introduced)
-	#*msvc2012:$$SHADOWBUILD {
-	#	# Qt Creator only
-	#	#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
-	#	#	Check status of bug: https://bugreports.qt-project.org/browse/QTBUG-37363
-	#	#	                     https://codereview.qt-project.org/#change,80782
-	#	#	... So that this may removed later.
-	#	CONFIG -= embed_manifest_exe
-	#	QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
-	#}
+	# LINKER FLAGS
 
 	#  Relocate .lib and .exp files to keep release dir clean
 	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
@@ -393,10 +396,6 @@ win32 {
 	#  Clean up .embed.manifest from release dir
 	#	Fallback for `Manifest Embed` above
 	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
-} else:*msvc201* {
-	# MSVC < 2010
-	#  Throw up a warning
-	message( WARNING: Project file does not support MSVC 2008 or lower )
 }
 
 
@@ -520,8 +519,8 @@ buildMessages:build_pass {
 	message(build ________ $$OUT_PWD)
 	message(Qt binaries __ $$[QT_INSTALL_BINS])
 
-	build_pass:equals( SHADOWBUILD, true ) {
-		message(Shadow build __ Yes)
+	build_pass:equals( VISUALSTUDIO, true ) {
+		message(Visual Studio __ Yes)
 	}
 
 	#message($$CONFIG)

@@ -25,7 +25,7 @@ updatets.commands = $$QMAKE_LUPDATE ${QMAKE_FILE_IN}
 updatets.CONFIG += no_link no_clean #target_predeps
 
 # Hide from Visual Studio as it continually runs lupdate
-$$SHADOWBUILD:QMAKE_EXTRA_COMPILERS += updatets
+!$$VISUALSTUDIO:QMAKE_EXTRA_COMPILERS += updatets
 
 
 # Make target for Releasing .ts->.qm
