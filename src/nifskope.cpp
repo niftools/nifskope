@@ -58,24 +58,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QLocale>
 #include <QLocalSocket>
-#include <QMenu>
-#include <QMenuBar>
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QSettings>
-#include <QTextEdit>
 #include <QTimer>
 #include <QToolBar>
 #include <QTranslator>
 #include <QUdpSocket>
 #include <QUrl>
-
-#include <QSplitter>
-
 
 #include <QListView>
 #include <QTreeView>
@@ -98,11 +91,6 @@ QStringList * NifSkope::fileExtensions = new QStringList( {
 	"NIFCache (*.nifcache)", "TEXCache (*.texcache)", "PCPatch (*.pcpatch)", "JMI (*.jmi)"
 } );
 
-
-//void NifSkope::resizeEvent( QResizeEvent * event )
-//{
-//	QMainWindow::resizeEvent( event );
-//}
 
 /*
  * main GUI window
@@ -468,6 +456,11 @@ void NifSkope::updateAllRecentFileActions()
 	}
 }
 
+QString NifSkope::getCurrentFile() const
+{
+	return currentFile;
+}
+
 void NifSkope::setCurrentFile( const QString & filename )
 {
 	currentFile = QDir::fromNativeSeparators( filename );
@@ -498,61 +491,12 @@ void NifSkope::clearCurrentFile()
 	updateAllRecentFileActions();
 }
 
-void NifSkope::open()
+void NifSkope::openFile( QString & file )
 {
-	// Grab most recent filepath if blank window
-	auto path = nif->getFileInfo().absolutePath();
-	path = (path.isEmpty()) ? recentFileActs[0]->data().toString() : path;
-
 	if ( !saveConfirm() )
 		return;
 
-	QStringList files = QFileDialog::getOpenFileNames( this, tr( "Open File" ), path, fileExtensions->join( ";;" ) );
-	
-	if ( files.isEmpty() )
-		return;
-
-	auto list = files;
-
-	// Open first file in current window if blank
-	//	or only one file selected.
-	if ( path.isEmpty() || list.count() == 1 ) {	
-		auto first = list.takeFirst();
-		if ( !first.isEmpty() )
-			openFile( first );
-	}
-
-	// Open any remaining files
-	for ( auto file : list ) {
-		NifSkope::createWindow( file );
-	}
-}
-
-void NifSkope::saveAs()
-{
-	// Remove "All Files" from beginning of list
-	QStringList ext = *fileExtensions;
-	ext.removeAt( 0 );
-
-	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(), ext.join( ";;" ) );
-	if ( filename.isEmpty() )
-		return;
-
-	setCurrentFile( filename );
-	save();
-}
-
-void NifSkope::openFile( const QString & filename )
-{
-	QApplication::setOverrideCursor( Qt::WaitCursor );
-
-	setCurrentFile( filename );
-	QTimer::singleShot( 0, this, SLOT( load() ) );
-}
-
-void NifSkope::saveFile( const QString & filename )
-{
-
+	loadFile( file );
 }
 
 void NifSkope::openRecentFile()
@@ -562,9 +506,37 @@ void NifSkope::openRecentFile()
 
 	QAction * action = qobject_cast<QAction *>(sender());
 	if ( action )
-		openFile( action->data().toString() );
+		loadFile( action->data().toString() );
 }
 
+void NifSkope::openFiles( QStringList & files )
+{
+	// Open first file in current window if blank
+	//	or only one file selected.
+	if ( getCurrentFile().isEmpty() || files.count() == 1 ) {
+		QString first = files.takeFirst();
+		if ( !first.isEmpty() )
+			loadFile( first );
+	}
+
+	for ( const QString & file : files ) {
+		NifSkope::createWindow( file );
+	}
+}
+
+void NifSkope::saveFile( const QString & filename )
+{
+	setCurrentFile( filename );
+	save();
+}
+
+void NifSkope::loadFile( const QString & filename )
+{
+	QApplication::setOverrideCursor( Qt::WaitCursor );
+
+	setCurrentFile( filename );
+	QTimer::singleShot( 0, this, SLOT( load() ) );
+}
 
 void NifSkope::reload()
 {

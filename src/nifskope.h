@@ -108,6 +108,8 @@ public:
 
 	bool saveConfirm();
 
+	QString getCurrentFile() const;
+
 signals:
 	void beginLoading();
 	void completeLoading( bool, QString & );
@@ -115,22 +117,10 @@ signals:
 	void completeSave( bool, QString & );
 
 public slots:
-	
-	void open();
-	void saveAs();
-
-	void load();
-	void save();
-
-	void reload();
+	void openFile( QString & );
+	void openFiles( QStringList & );
 
 	void enableUi();
-
-	void onLoadBegin();
-	void onSaveBegin();
-
-	void onLoadComplete( bool, QString & );
-	void onSaveComplete( bool, QString & );
 
 	//! Reparse the nif.xml and kfm.xml files.
 	void on_aLoadXML_triggered();
@@ -168,6 +158,20 @@ public slots:
 
 
 protected slots:
+	void openDlg();
+	void saveAsDlg();
+
+	void load();
+	void save();
+
+	void reload();
+
+	void onLoadBegin();
+	void onSaveBegin();
+
+	void onLoadComplete( bool, QString & );
+	void onSaveComplete( bool, QString & );
+
 	//! Select a NIF index
 	void select( const QModelIndex & );
 
@@ -208,7 +212,7 @@ private:
 	void initMenu();
 	void initConnections();
 
-	void openFile( const QString & );
+	void loadFile( const QString & );
 	void saveFile( const QString & );
 
 	void openRecentFile();

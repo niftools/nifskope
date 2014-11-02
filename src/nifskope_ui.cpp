@@ -63,6 +63,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QComboBox>
 #include <QDebug>
 #include <QDockWidget>
+#include <QFileDialog>
 #include <QFontDialog>
 #include <QHeaderView>
 #include <QMenu>
@@ -107,7 +108,7 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 	//qApp->setStyleSheet( "QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }" );
 
 	if ( !fname.isEmpty() ) {
-		skope->openFile( fname );
+		skope->loadFile( fname );
 	}
 
 	return skope;
@@ -145,9 +146,9 @@ void NifSkope::initActions()
 	//ui->aSaveAs->setShortcut( QKeySequence::SaveAs ); // Bad idea, goes against previous shortcuts
 	ui->aWindow->setShortcut( QKeySequence::New );
 
-	connect( ui->aOpen, &QAction::triggered, this, &NifSkope::open );
+	connect( ui->aOpen, &QAction::triggered, this, &NifSkope::openDlg );
 	connect( ui->aSave, &QAction::triggered, this, &NifSkope::save );  
-	connect( ui->aSaveAs, &QAction::triggered, this, &NifSkope::saveAs );
+	connect( ui->aSaveAs, &QAction::triggered, this, &NifSkope::saveAsDlg );
 
 	// TODO: Assure Actions and Scene state are synced
 	// Set Data for Actions to pass onto Scene when clicking
@@ -739,6 +740,21 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 	return filepathWidget;
 }
 
+
+void NifSkope::openDlg()
+{
+	// Grab most recent filepath if blank window
+	auto path = nif->getFileInfo().absolutePath();
+	path = (path.isEmpty()) ? recentFileActs[0]->data().toString() : path;
+
+	if ( !saveConfirm() )
+		return;
+
+	QStringList files = QFileDialog::getOpenFileNames( this, tr( "Open File" ), path, fileExtensions->join( ";;" ) );
+	if ( !files.isEmpty() )
+		openFiles( files );
+}
+
 void NifSkope::onLoadBegin()
 {
 	setEnabled( false );
@@ -798,6 +814,20 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
 
+
+void NifSkope::saveAsDlg()
+{
+	// Remove "All Files" from beginning of list
+	QStringList ext = *fileExtensions;
+	ext.removeAt( 0 );
+
+	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(), ext.join( ";;" ) );
+	if ( filename.isEmpty() )
+		return;
+
+	saveFile( filename );
+}
+
 void NifSkope::onSaveBegin()
 {
 	setEnabled( false );
@@ -825,7 +855,7 @@ bool NifSkope::saveConfirm()
 			QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::No );
 
 		if ( response == QMessageBox::Yes ) {
-			saveAs();
+			saveAsDlg();
 			return true;
 		} else if ( response == QMessageBox::No ) {
 			return true;
