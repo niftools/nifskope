@@ -98,7 +98,10 @@ public:
 
 	static SettingsDialog * options();
 
-	static QStringList * fileExtensions;
+	static const QList<QPair<QString, QString>> filetypes;
+
+	static QStringList fileExtensions();
+	static QString fileFilters( bool allFiles = true );
 
 	//! Save NifSkope application settings.
 	void saveUi() const;

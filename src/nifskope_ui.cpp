@@ -750,7 +750,7 @@ void NifSkope::openDlg()
 	if ( !saveConfirm() )
 		return;
 
-	QStringList files = QFileDialog::getOpenFileNames( this, tr( "Open File" ), path, fileExtensions->join( ";;" ) );
+	QStringList files = QFileDialog::getOpenFileNames( this, tr( "Open File" ), path, fileFilters() );
 	if ( !files.isEmpty() )
 		openFiles( files );
 }
@@ -817,11 +817,7 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 void NifSkope::saveAsDlg()
 {
-	// Remove "All Files" from beginning of list
-	QStringList ext = *fileExtensions;
-	ext.removeAt( 0 );
-
-	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(), ext.join( ";;" ) );
+	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(), fileFilters( false ) );
 	if ( filename.isEmpty() )
 		return;
 

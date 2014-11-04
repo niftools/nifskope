@@ -85,11 +85,40 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file nifskope.cpp The main file for NifSkope
 
-QStringList * NifSkope::fileExtensions = new QStringList( {
-	"All Files (*.nif *.kf *.kfa *.kfm *.nifcache *.texcache *.pcpatch *.jmi)",
-	"NIF (*.nif)", "Keyframe (*.kf)", "Keyframe Animation (*.kfa)", "Keyframe Motion (*.kfm)",
-	"NIFCache (*.nifcache)", "TEXCache (*.texcache)", "PCPatch (*.pcpatch)", "JMI (*.jmi)"
-} );
+
+const QList<QPair<QString, QString>> NifSkope::filetypes = {
+	// NIF types
+	{ "NIF", "nif" }, { "Bethesda Terrain", "btr" }, { "Bethesda Terrain Object", "bto" },
+	// KF types
+	{ "Keyframe", "kf" }, { "Keyframe Animation", "kfa" }, { "Keyframe Motion", "kfm" },
+	// Miscellaneous NIF types
+	{ "NIFCache", "nifcache" }, { "TEXCache", "texcache" }, { "PCPatch", "pcpatch" }, { "JMI", "jmi" }
+};
+
+QStringList NifSkope::fileExtensions()
+{
+	QStringList fileExts;
+	for ( int i = 0; i < filetypes.size(); i++ ) {
+		fileExts << filetypes.at( i ).second;
+	}
+
+	return fileExts;
+}
+
+QString NifSkope::fileFilters( bool allFiles )
+{
+	QStringList filters;
+
+	if ( allFiles ) {
+		filters << QString( "All Files (*.%1)" ).arg( fileExtensions().join( " *." ) );
+	}
+
+	for ( int i = 0; i < filetypes.size(); i++ ) {
+		filters << QString( "%1 (*.%2)" ).arg( filetypes.at( i ).first ).arg( filetypes.at( i ).second );
+	}
+
+	return filters.join( ";;" );
+}
 
 
 /*
