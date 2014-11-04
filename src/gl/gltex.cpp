@@ -165,6 +165,12 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	QString filename = QDir::toNativeSeparators( file );
 
+	// Temporary BTO/BTR file support
+	// TODO: Better implementation
+	if ( file.startsWith( "data\\textures\\terrain", Qt::CaseInsensitive ) ) {
+		filename.remove(0, 4);
+	}
+
 	while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
 		filename.remove( 0, 1 );
 
