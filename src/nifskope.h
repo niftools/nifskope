@@ -100,7 +100,17 @@ public:
 
 	static const QList<QPair<QString, QString>> filetypes;
 
+	//! List of all supported file extensions
 	static QStringList fileExtensions();
+
+	//! Return a file filter for a single extension
+	static QString fileFilter( const QString & );
+
+	/*! \brief Return a file filter for all supported extensions
+	 *
+	 * \param allFiles If true, file filter will be prepended with "All Files (*.nif *.btr ...)"
+	 *					so that all supported files will show at once. Used for Open File dialog.
+	 */
 	static QString fileFilters( bool allFiles = true );
 
 	//! Save NifSkope application settings.

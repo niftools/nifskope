@@ -817,7 +817,11 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 void NifSkope::saveAsDlg()
 {
-	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(), fileFilters( false ) );
+	QString filename = QFileDialog::getSaveFileName( this, tr( "Save File" ), nif->getFileInfo().absoluteFilePath(),
+		fileFilters( false ),
+		&fileFilter( nif->getFileInfo().suffix() )
+	);
+
 	if ( filename.isEmpty() )
 		return;
 

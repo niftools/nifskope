@@ -105,6 +105,19 @@ QStringList NifSkope::fileExtensions()
 	return fileExts;
 }
 
+QString NifSkope::fileFilter( const QString & ext )
+{
+	QString filter;
+
+	for ( int i = 0; i < filetypes.size(); i++ ) {
+		if ( filetypes.at( i ).second == ext ) {
+			filter = QString( "%1 (*.%2)" ).arg( filetypes.at( i ).first ).arg( filetypes.at( i ).second );
+		}
+	}
+
+	return filter;
+}
+
 QString NifSkope::fileFilters( bool allFiles )
 {
 	QStringList filters;
