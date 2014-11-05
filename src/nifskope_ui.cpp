@@ -851,7 +851,8 @@ bool NifSkope::saveConfirm()
 	if ( isWindowModified() || !nif->undoStack->isClean() ) {
 		QMessageBox::StandardButton response;
 		response = QMessageBox::question( this,
-			tr( "Save Changes?" ), tr( "You have unsaved changes to %1. Would you like to save them now?" ).arg( nif->getFileInfo().baseName() ),
+			tr( "Save Confirmation" ),
+			tr( "<h3><b>You have unsaved changes to %1.</b></h3>Would you like to save them now?" ).arg( nif->getFileInfo().completeBaseName() ),
 			QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::No );
 
 		if ( response == QMessageBox::Yes ) {
