@@ -1722,6 +1722,26 @@ void GLGraphicsView::drawBackground( QPainter * painter, const QRectF & rect )
 
 void GLGraphicsView::dragEnterEvent( QDragEnterEvent * e )
 {
+	// Intercept NIF files
+	if ( e->mimeData()->hasUrls() ) {
+		QList<QUrl> urls = e->mimeData()->urls();
+		for ( auto url : urls ) {
+			if ( url.scheme() == "file" ) {
+				QString fn = url.toLocalFile();
+				QFileInfo finfo( fn );
+				if ( finfo.exists() && NifSkope::fileExtensions().contains( finfo.suffix() ) ) {
+					draggedNifs << finfo.absoluteFilePath();
+				}
+			}
+		}
+
+		if ( !draggedNifs.isEmpty() ) {
+			e->accept();
+			return;
+		}
+	}
+
+	// Pass event on to viewport for any texture drag/drops
 	GLView * glWidget = qobject_cast<GLView *>(viewport());
 	if ( glWidget ) {
 		glWidget->dragEnterEvent( e );
@@ -1729,6 +1749,13 @@ void GLGraphicsView::dragEnterEvent( QDragEnterEvent * e )
 }
 void GLGraphicsView::dragLeaveEvent( QDragLeaveEvent * e )
 {
+	if ( !draggedNifs.isEmpty() ) {
+		draggedNifs.clear();
+		e->ignore();
+		return;
+	}
+
+	// Pass event on to viewport for any texture drag/drops
 	GLView * glWidget = qobject_cast<GLView *>(viewport());
 	if ( glWidget ) {
 		glWidget->dragLeaveEvent( e );
@@ -1736,6 +1763,12 @@ void GLGraphicsView::dragLeaveEvent( QDragLeaveEvent * e )
 }
 void GLGraphicsView::dragMoveEvent( QDragMoveEvent * e )
 {
+	if ( !draggedNifs.isEmpty() ) {
+		e->accept();
+		return;
+	}
+
+	// Pass event on to viewport for any texture drag/drops
 	GLView * glWidget = qobject_cast<GLView *>(viewport());
 	if ( glWidget ) {
 		glWidget->dragMoveEvent( e );
@@ -1743,6 +1776,18 @@ void GLGraphicsView::dragMoveEvent( QDragMoveEvent * e )
 }
 void GLGraphicsView::dropEvent( QDropEvent * e )
 {
+	if ( !draggedNifs.isEmpty() ) {
+		auto ns = qobject_cast<NifSkope *>(parentWidget());
+		if ( ns ) {
+			ns->openFiles( draggedNifs );
+		}
+
+		draggedNifs.clear();
+		e->accept();
+		return;
+	}
+
+	// Pass event on to viewport for any texture drag/drops
 	GLView * glWidget = qobject_cast<GLView *>(viewport());
 	if ( glWidget ) {
 		glWidget->dropEvent( e );
