@@ -1740,8 +1740,6 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 	int i = 0;
 
 	if ( ref1 == NULL ) {
-
-		// TODO: Figure out where Heading is actually used
 		float heading = nif->get<float>( iPosition, "Heading" );
 		quint16 type = nif->get<quint16>( iPosition, "Animation Type" );
 		int entry = nif->get<int>( iPosition, "Entry Properties" );
@@ -1826,7 +1824,7 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 			break;
 		}
 
-		roll = float( orient ) / 180.0 * M_PI;
+		roll = heading;
 	} else {
 		if ( ref1 != ref2 ) {
 			qDebug() << "Position Ref 1 and 2 are not equal";
