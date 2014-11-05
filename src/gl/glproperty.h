@@ -661,4 +661,40 @@ protected:
 
 REGISTER_PROPERTY( BSEffectShaderProperty, ShaderLighting )
 
+
+namespace WaterShaderFlags
+{
+	enum SF1 : unsigned int
+	{
+		SWSF1_UNKNOWN0 = 1,
+		SWSF1_Bypass_Refraction_Map = 1 << 1,
+		SWSF1_Water_Toggle = 1 << 2,
+		SWSF1_UNKNOWN3 = 1 << 3,
+		SWSF1_UNKNOWN4 = 1 << 4,
+		SWSF1_UNKNOWN5 = 1 << 5,
+		SWSF1_Highlight_Layer_Toggle = 1 << 6,
+		SWSF1_Enabled = 1 << 7
+	};
+}
+
+//! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
+class BSWaterShaderProperty final : public BSShaderLightingProperty
+{
+public:
+	BSWaterShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
+	{
+	}
+
+	QString typeId() const override final { return "BSWaterShaderProperty"; }
+
+	unsigned int getWaterShaderFlags();
+
+	void setWaterShaderFlags( unsigned int );
+
+protected:
+	WaterShaderFlags::SF1 waterShaderFlags;
+};
+
+REGISTER_PROPERTY( BSWaterShaderProperty, ShaderLighting )
+
 #endif

@@ -75,6 +75,8 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) ) {
 		property = new BSEffectShaderProperty( scene, index );
+	} else if ( nif->isNiBlock( index, "BSWaterShaderProperty" ) ) {
+		property = new BSWaterShaderProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
@@ -1268,5 +1270,20 @@ void BSEffectShaderProperty::setFalloff( float startA, float stopA, float startO
 	falloff.startOpacity = startO;
 	falloff.stopOpacity = stopO;
 	falloff.softDepth = soft;
+}
+
+
+/*
+	BSWaterShaderProperty
+*/
+
+unsigned int BSWaterShaderProperty::getWaterShaderFlags()
+{
+	return (unsigned int)waterShaderFlags;
+}
+
+void BSWaterShaderProperty::setWaterShaderFlags( unsigned int val )
+{
+	waterShaderFlags = WaterShaderFlags::SF1( val );
 }
 
