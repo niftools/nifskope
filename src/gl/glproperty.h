@@ -382,61 +382,6 @@ protected:
 REGISTER_PROPERTY( StencilProperty, Stencil )
 
 
-struct UVScale
-{
-	float x = 1.0f;
-	float y = 1.0f;
-};
-
-struct UVOffset
-{
-	float x = 0.0f;
-	float y = 0.0f;
-};
-
-// TODO: This is an abstract class in the XML, other blocks inherit it
-//	such as BSLightingShaderProperty.
-//! A Property that specifies shader lighting (Bethesda-specific)
-class BSShaderLightingProperty : public Property
-{
-public:
-	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
-
-	Type type() const override final { return ShaderLighting; }
-	QString typeId() const override { return "BSShaderLightingProperty"; }
-
-	void update( const NifModel * nif, const QModelIndex & block );
-
-	friend void glProperty( BSShaderLightingProperty * );
-
-	bool bind( int id, const QString & fname = QString() );
-	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
-	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
-
-	QString fileName( int id ) const;
-	//int coordSet( int id ) const;
-
-	static int getId( const QString & id );
-
-	void setUvScale( float, float );
-	void setUvOffset( float, float );
-
-	UVScale getUvScale();
-	UVOffset getUvOffset();
-
-protected:
-	//QVector<QString> textures;
-	QPersistentModelIndex iTextureSet;
-	QPersistentModelIndex iSourceTexture;
-
-	UVScale uvScale;
-	UVOffset uvOffset;
-
-};
-
-REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
-
-
 namespace ShaderFlags
 {
 	enum SF1 : unsigned int
@@ -513,6 +458,69 @@ namespace ShaderFlags
 }
 
 
+struct UVScale
+{
+	float x = 1.0f;
+	float y = 1.0f;
+};
+
+struct UVOffset
+{
+	float x = 0.0f;
+	float y = 0.0f;
+};
+
+// TODO: This is an abstract class in the XML, other blocks inherit it
+//	such as BSLightingShaderProperty.
+//! A Property that specifies shader lighting (Bethesda-specific)
+class BSShaderLightingProperty : public Property
+{
+public:
+	BSShaderLightingProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
+
+	Type type() const override final { return ShaderLighting; }
+	QString typeId() const override { return "BSShaderLightingProperty"; }
+
+	void update( const NifModel * nif, const QModelIndex & block );
+
+	friend void glProperty( BSShaderLightingProperty * );
+
+	bool bind( int id, const QString & fname = QString() );
+	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
+	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
+
+	QString fileName( int id ) const;
+	//int coordSet( int id ) const;
+
+	static int getId( const QString & id );
+
+	unsigned int getFlags1();
+	unsigned int getFlags2();
+
+	void setFlags1( unsigned int );
+	void setFlags2( unsigned int );
+
+	UVScale getUvScale();
+	UVOffset getUvOffset();
+
+	void setUvScale( float, float );
+	void setUvOffset( float, float );
+
+protected:
+	ShaderFlags::SF1 flags1;
+	ShaderFlags::SF2 flags2;
+
+	//QVector<QString> textures;
+	QPersistentModelIndex iTextureSet;
+	QPersistentModelIndex iSourceTexture;
+
+	UVScale uvScale;
+	UVOffset uvOffset;
+
+};
+
+REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
+
 
 //! A Property that inherits BSShaderLightingProperty (Skyrim-specific)
 class BSLightingShaderProperty final : public BSShaderLightingProperty
@@ -529,9 +537,6 @@ public:
 
 	QString typeId() const override final { return "BSLightingShaderProperty"; }
 
-	unsigned int getFlags1();
-	unsigned int getFlags2();
-
 	Color3 getEmissiveColor();
 	Color3 getSpecularColor();
 
@@ -544,9 +549,6 @@ public:
 	float getLightingEffect2();
 
 	void setShaderType( unsigned int );
-
-	void setFlags1( unsigned int );
-	void setFlags2( unsigned int );
 
 	void setEmissive( Color3 color, float mult = 1.0f );
 	void setSpecular( Color3 color, float glossiness = 80.0f, float strength = 1.0f );
@@ -587,9 +589,6 @@ public:
 	ShaderType getShaderType();
 
 protected:
-	ShaderFlags::SF1 flags1; // = SF1( 0 | (1 << 7) | (1 << 8) | (1 << 21) | (1 << 30) );
-	ShaderFlags::SF2 flags2; // = SF2( 0 | (1 << 14) );
-
 	ShaderType shaderType;
 
 	Color3 emissiveColor;
@@ -623,14 +622,8 @@ public:
 
 	QString typeId() const override final { return "BSEffectShaderProperty"; }
 
-	unsigned int getFlags1();
-	unsigned int getFlags2();
-
 	Color4 getEmissiveColor();
 	float getEmissiveMult();
-
-	void setFlags1( unsigned int );
-	void setFlags2( unsigned int );
 
 	void setEmissive( Color4 color, float mult = 1.0f );
 	void setFalloff( float, float, float, float, float );
@@ -662,14 +655,8 @@ public:
 	Falloff falloff;
 
 protected:
-	ShaderFlags::SF1 flags1;
-	ShaderFlags::SF2 flags2;
-
 	Color4 emissiveColor;
 	float emissiveMult;
-
-
-	
 };
 
 REGISTER_PROPERTY( BSEffectShaderProperty, ShaderLighting )

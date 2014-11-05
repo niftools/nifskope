@@ -1126,6 +1126,26 @@ int BSShaderLightingProperty::getId( const QString & id )
 	return hash.value( id, -1 );
 }
 
+unsigned int BSShaderLightingProperty::getFlags1()
+{
+	return (unsigned int)flags1;
+}
+
+unsigned int BSShaderLightingProperty::getFlags2()
+{
+	return (unsigned int)flags2;
+}
+
+void BSShaderLightingProperty::setFlags1( unsigned int val )
+{
+	flags1 = ShaderFlags::SF1( val );
+}
+
+void BSShaderLightingProperty::setFlags2( unsigned int val )
+{
+	flags2 = ShaderFlags::SF2( val );
+}
+
 UVScale BSShaderLightingProperty::getUvScale()
 {
 	return uvScale;
@@ -1160,26 +1180,6 @@ void BSLightingShaderProperty::setShaderType( unsigned int t )
 BSLightingShaderProperty::ShaderType BSLightingShaderProperty::getShaderType()
 {
 	return shaderType;
-}
-
-unsigned int BSLightingShaderProperty::getFlags1()
-{
-	return (unsigned int)flags1;
-}
-
-unsigned int BSLightingShaderProperty::getFlags2()
-{
-	return (unsigned int)flags2;
-}
-
-void BSLightingShaderProperty::setFlags1( unsigned int val )
-{
-	flags1 = ShaderFlags::SF1( val );
-}
-
-void BSLightingShaderProperty::setFlags2( unsigned int val )
-{
-	flags2 = ShaderFlags::SF2( val );
 }
 
 void BSLightingShaderProperty::setEmissive( Color3 color, float mult )
@@ -1244,25 +1244,6 @@ float BSLightingShaderProperty::getSpecularStrength()
 	BSEffectShaderProperty
 */
 
-unsigned int BSEffectShaderProperty::getFlags1()
-{
-	return (unsigned int)flags1;
-}
-
-unsigned int BSEffectShaderProperty::getFlags2()
-{
-	return (unsigned int)flags2;
-}
-
-void BSEffectShaderProperty::setFlags1( unsigned int val )
-{
-	flags1 = ShaderFlags::SF1( val );
-}
-
-void BSEffectShaderProperty::setFlags2( unsigned int val )
-{
-	flags2 = ShaderFlags::SF2( val );
-}
 
 void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
 {
