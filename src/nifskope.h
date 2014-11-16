@@ -38,7 +38,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
 
-#define NIFSKOPE_IPC_PORT 12583
+#if QT_NO_DEBUG
+#define NIFSKOPE_IPC_PORT 12584
+#else
+#define NIFSKOPE_IPC_PORT 12585
+#endif
 
 namespace Ui {
 	class MainWindow;
@@ -340,10 +344,10 @@ class IPCsocket final : public QObject
 
 public:
 	//! Creates a socket
-	static IPCsocket * create();
+	static IPCsocket * create( int port );
 
 	//! Sends a command
-	static void sendCommand( const QString & cmd );
+	static void sendCommand( const QString & cmd, int port );
 
 public slots:
 	//! Acts on a command

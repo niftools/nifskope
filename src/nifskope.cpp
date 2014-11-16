@@ -675,11 +675,11 @@ void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const 
  *  IPC socket
  */
 
-IPCsocket * IPCsocket::create()
+IPCsocket * IPCsocket::create( int port )
 {
 	QUdpSocket * udp = new QUdpSocket();
 
-	if ( udp->bind( QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT, QUdpSocket::DontShareAddress ) ) {
+	if ( udp->bind( QHostAddress( QHostAddress::LocalHost ), port, QUdpSocket::DontShareAddress ) ) {
 		IPCsocket * ipc = new IPCsocket( udp );
 		QDesktopServices::setUrlHandler( "nif", ipc, "openNif" );
 		return ipc;
@@ -688,10 +688,10 @@ IPCsocket * IPCsocket::create()
 	return nullptr;
 }
 
-void IPCsocket::sendCommand( const QString & cmd )
+void IPCsocket::sendCommand( const QString & cmd, int port )
 {
 	QUdpSocket udp;
-	udp.writeDatagram( (const char *)cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), NIFSKOPE_IPC_PORT );
+	udp.writeDatagram( (const char *)cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), port );
 }
 
 IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
@@ -882,6 +882,8 @@ int main( int argc, char * argv[] )
 		NifModel::loadXML();
 		KfmModel::loadXML();
 
+		int port = NIFSKOPE_IPC_PORT;
+
 		QStack<QString> fnames;
 		bool reuseSession = true;
 
@@ -923,19 +925,19 @@ int main( int argc, char * argv[] )
 				return a->exec();
 			} 
 		
-			if ( IPCsocket * ipc = IPCsocket::create() ) {
+			if ( IPCsocket * ipc = IPCsocket::create( port ) ) {
 				//qDebug() << "IPCSocket exec";
 				ipc->execCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
 
 				while ( !fnames.isEmpty() ) {
-					IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
+					IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
 				}
 
 				return a->exec();
 			} else {
 				//qDebug() << "IPCSocket send";
 				while ( !fnames.isEmpty() ) {
-					IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
+					IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
 				}
 				return 0;
 			}
