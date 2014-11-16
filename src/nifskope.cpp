@@ -54,6 +54,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QApplication>
 #include <QByteArray>
 #include <QCloseEvent>
+#include <QCommandLineParser>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
@@ -885,63 +886,52 @@ int main( int argc, char * argv[] )
 		int port = NIFSKOPE_IPC_PORT;
 
 		QStack<QString> fnames;
-		bool reuseSession = true;
 
-		// EXE is being passed arguments
-		for ( int i = 1; i < argc; ++i ) {
-			char * arg = argv[i];
+		// Command Line setup
+		QCommandLineParser parser;
+		parser.addHelpOption();
+		parser.addVersionOption();
 
-			if ( arg && arg[0] == '-' ) {
-				// Command line arguments
-				// TODO: See QCommandLineParser for future
-				// expansion of command line abilities.
-				switch ( arg[1] ) {
-				case 'i':
-				case 'I':
-					// TODO: Figure out the point of this
-					reuseSession = false;
-					break;
-				}
-			} else {
-				//qDebug() << "arg " << i << ": " << arg;
-				QString fname = QDir::current().filePath( arg );
+		// Add port option
+		QCommandLineOption portOption( {"p", "port"}, "Port NifSkope listens on", "port" );
+		parser.addOption( portOption );
 
-				if ( QFileInfo( fname ).exists() ) {
-					fnames.push( fname );
-				}
+		// Process options
+		parser.process( *a );
+
+		// Override port value
+		if ( parser.isSet( portOption ) )
+			port = parser.value( portOption ).toInt();
+
+		// Files were passed to NifSkope
+		for ( const QString & arg : parser.positionalArguments() ) {
+			QString fname = QDir::current().filePath( arg );
+
+			if ( QFileInfo( fname ).exists() ) {
+				fnames.push( fname );
 			}
 		}
 
-		// EXE is being opened directly
+		// No files were passed to NifSkope, push empty string
 		if ( fnames.isEmpty() ) {
 			fnames.push( QString() );
 		}
-
-		if ( fnames.count() > 0 ) {
-			// TODO: Figure out the point of this
-			if ( !reuseSession ) {
-				//qDebug() << "NifSkope createWindow";
-				NifSkope::createWindow( fnames.pop() );
-				return a->exec();
-			} 
 		
-			if ( IPCsocket * ipc = IPCsocket::create( port ) ) {
-				//qDebug() << "IPCSocket exec";
-				ipc->execCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
+		if ( IPCsocket * ipc = IPCsocket::create( port ) ) {
+			//qDebug() << "IPCSocket exec";
+			ipc->execCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
 
-				while ( !fnames.isEmpty() ) {
-					IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
-				}
-
-				return a->exec();
-			} else {
-				//qDebug() << "IPCSocket send";
-				while ( !fnames.isEmpty() ) {
-					IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
-				}
-				return 0;
+			while ( !fnames.isEmpty() ) {
+				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
 			}
 
+			return a->exec();
+		} else {
+			//qDebug() << "IPCSocket send";
+			while ( !fnames.isEmpty() ) {
+				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
+			}
+			return 0;
 		}
 	} else {
 		// Future command line batch tools here
