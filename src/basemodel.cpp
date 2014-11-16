@@ -529,7 +529,7 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 		return flags;
 	case NameCol:
 	case ValueCol:
-		if ( evalCondition( index, true ) && itemArr1( index ).isEmpty() )
+		if ( evalCondition( index, true ) )
 			return flags | Qt::ItemIsEditable;
 
 		return flags;
