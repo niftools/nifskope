@@ -199,7 +199,8 @@ defineTest(copyFiles) {
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
-	QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+	unix:QMAKE_POST_LINK += $$QMAKE_MKDIR_CMD $${ddir} $$nt
+	else:QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
 
 	for(FILE, files) {
 		fileabs = $${PWD}$${QMAKE_DIR_SEP}$${FILE}
@@ -239,7 +240,8 @@ defineTest(copyDirs) {
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
-	QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+	unix:QMAKE_POST_LINK += $$QMAKE_MKDIR_CMD $${ddir} $$nt
+	else:QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
 
 	for(DIR, dirs) {
 		dirabs = $${PWD}$${QMAKE_DIR_SEP}$${DIR}

@@ -23,9 +23,11 @@ win32:CONFIG += fsengine
 # Debug/Release options
 CONFIG(debug, debug|release) {
 	# Debug Options
+	BUILD = debug
 	CONFIG += console
 } else {
 	# Release Options
+	BUILD = release
 	CONFIG -= console
 	DEFINES += QT_NO_DEBUG_OUTPUT
 }
@@ -106,18 +108,15 @@ DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
 
 # build_pass is necessary
 # Otherwise it will create empty .moc, .ui, etc. dirs on the drive root
-build_pass {
-	Debug:   bld = debug
-	Release: bld = release
-
+build_pass|!debug_and_release {
 	win32:equals( VISUALSTUDIO, true ) {
 		# Visual Studio
-		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${bld}
+		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${BUILD}
 		# INTERMEDIATE FILES
-		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${bld}
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${BUILD}
 	} else {
 		# Qt Creator
-		DESTDIR = $${OUT_PWD}/$${bld}
+		DESTDIR = $${OUT_PWD}/$${BUILD}
 		# INTERMEDIATE FILES
 		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/
 	}
@@ -428,7 +427,7 @@ macx {
 
 
 # Pre/Post Link in build_pass only
-build_pass {
+build_pass|!debug_and_release {
 
 ###############################
 ## QMAKE_PRE_LINK
@@ -448,7 +447,7 @@ build_pass {
 ## QMAKE_POST_LINK
 ###############################
 
-	DEP += \
+	win32:DEP += \
 		dep/NifMopp.dll
 
 	XML += \
@@ -477,7 +476,8 @@ build_pass {
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
-	copyFiles( $$XML $$DEP $$QSS )
+	copyFiles( $$XML $$QSS )
+	win32:copyFiles( $$DEP )
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
@@ -506,7 +506,7 @@ build_pass {
 
 # Build Messages
 # (Add `buildMessages` to CONFIG to use)
-buildMessages:build_pass {
+buildMessages:build_pass|buildMessages:!debug_and_release {
 	CONFIG(debug, debug|release) {
 		message("Debug Mode")
 	} CONFIG(release, release|debug) {
