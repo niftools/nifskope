@@ -4,47 +4,37 @@
 # Note: dir or file in build dir cannot be named the same as the target
 # e.g. "docs" target will fail if a "docs" folder is in OUT_PWD
 
+win32:EXE = ".exe"
+else:EXE = ""
 
 ###############################
 ## lupdate / lrelease
 ###############################
 
-# Make target for Updating .ts
-isEmpty(QMAKE_LUPDATE) {
-	win32: QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate.exe
-	unix {
-		QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate
-	} else {
-		!exists($$QMAKE_LUPDATE) { QMAKE_LUPDATE = lupdate }
-	}
+QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate$${EXE}
+exists($$QMAKE_LUPDATE) {
+	# Make target for Updating .ts
+	updatets.target = updatets
+	updatets.commands = $$[QT_INSTALL_BINS]/lupdate $${_PRO_FILE_}
+	updatets.CONFIG += no_check_exist no_link no_clean
+
+	QMAKE_EXTRA_TARGETS += updatets
+} else {
+	message("lupdate could not be found, ignoring make target")
 }
 
-updatets.input = _PRO_FILE_
-updatets.output = $$TRANSLATIONS
-updatets.commands = $$QMAKE_LUPDATE ${QMAKE_FILE_IN}
-updatets.CONFIG += no_link no_clean #target_predeps
+QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease$${EXE}
+exists($$QMAKE_LRELEASE) {
+	# Build Step for Releasing .ts->.qm
+	updateqm.input = TRANSLATIONS
+	updateqm.output = $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
+	updateqm.commands = $$[QT_INSTALL_BINS]/lrelease ${QMAKE_FILE_IN} -qm $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
+	updateqm.CONFIG += no_check_exist no_link no_clean target_predeps
 
-# Hide from Visual Studio as it continually runs lupdate
-!$$VISUALSTUDIO:QMAKE_EXTRA_COMPILERS += updatets
-
-
-# Make target for Releasing .ts->.qm
-isEmpty(QMAKE_LRELEASE) {
-	win32: QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease.exe
-	unix {
-		 QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease
-		!exists($$QMAKE_LRELEASE) { QMAKE_LRELEASE = lrelease }
-	} else {
-		!exists($$QMAKE_LRELEASE) { QMAKE_LRELEASE = lrelease }
-	}
+	QMAKE_EXTRA_COMPILERS += updateqm
+} else {
+	message("lrelease could not be found, ignoring build step")
 }
-updateqm.input = TRANSLATIONS
-updateqm.output = ${QMAKE_FILE_PATH}/${QMAKE_FILE_BASE}.qm
-updateqm.commands = $$QMAKE_LRELEASE ${QMAKE_FILE_IN} -qm $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
-updateqm.CONFIG += no_link  no_clean target_predeps
-QMAKE_EXTRA_COMPILERS += updateqm
-#PRE_TARGETDEPS += compiler_updateqm_make_all #will always link
-
 
 ###############################
 ## Docsys
@@ -113,7 +103,7 @@ doxyfile = $$syspath($${OUT_PWD}/Doxyfile)
 doxyfilein = $$syspath($${PWD}/build/doxygen/Doxyfile.in)
 
 # Paths
-qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator.exe)
+qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator$${EXE})
 dot = $$syspath(C:/Program Files (x86)/Graphviz2.37/bin) # TODO
 _7z = $$get7z()
 
