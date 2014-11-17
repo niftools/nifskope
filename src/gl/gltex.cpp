@@ -48,9 +48,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 
-
-PFNGLACTIVETEXTUREPROC glActiveTexture;
-PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
+#ifdef WIN32
+PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
+PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB;
+#endif
 
 //! \file gltex.cpp TexCache management
 
@@ -86,26 +87,22 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
 		//qDebug() << "maximum anisotropy" << max_anisotropy;
 	}
-
-	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
+#ifdef WIN32
+	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTextureARB" );
+	glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTextureARB" );
+#endif
 }
 
 bool activateTextureUnit( int stage )
 {
-	//PFNGLACTIVETEXTUREPROC glActiveTexture;
-	//glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	//PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
-	//glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
-
 	if ( num_texture_units <= 1 )
 		return ( stage == 0 );
 
 	// num_texture_units > 1 can only happen if GLEE_ARB_multitexture is true
 	// so glActiveTexture and glClientActiveTexture are supported
 	if ( stage < num_texture_units ) {
-		glActiveTexture( GL_TEXTURE0 + stage );
-		glClientActiveTexture( GL_TEXTURE0 + stage );
+		glActiveTextureARB( GL_TEXTURE0 + stage );
+		glClientActiveTextureARB( GL_TEXTURE0 + stage );
 		return true;
 	}
 
@@ -114,11 +111,6 @@ bool activateTextureUnit( int stage )
 
 void resetTextureUnits()
 {
-	//PFNGLACTIVETEXTUREPROC glActiveTexture;
-	//glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	//PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
-	//glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
-
 	if ( num_texture_units <= 1 ) {
 		glDisable( GL_TEXTURE_2D );
 		return;
@@ -127,12 +119,12 @@ void resetTextureUnits()
 	// num_texture_units > 1 can only happen if GLEE_ARB_multitexture is true
 	// so glActiveTexture and glClientActiveTexture are supported
 	for ( int x = num_texture_units - 1; x >= 0; x-- ) {
-		glActiveTexture( GL_TEXTURE0 + x );
+		glActiveTextureARB( GL_TEXTURE0 + x );
 		glDisable( GL_TEXTURE_2D );
 		glMatrixMode( GL_TEXTURE );
 		glLoadIdentity();
 		glMatrixMode( GL_MODELVIEW );
-		glClientActiveTexture( GL_TEXTURE0 + x );
+		glClientActiveTextureARB( GL_TEXTURE0 + x );
 		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	}
 }
