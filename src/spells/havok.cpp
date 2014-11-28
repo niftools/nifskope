@@ -243,53 +243,46 @@ public:
 
 		if ( name == "bhkLimitedHingeConstraint" ) {
 			iConstraint = nif->getIndex( iConstraint, "Limited Hinge" );
-
-			if ( !iConstraint.isValid() )
-				return index;
-		}
-
-		if ( name == "bhkRagdollConstraint" ) {
+		} else if ( name == "bhkRagdollConstraint" ) {
 			iConstraint = nif->getIndex( iConstraint, "Ragdoll" );
-
-			if ( !iConstraint.isValid() )
-				return index;
-		}
-
-		if ( name == "bhkHingeConstraint" ) {
+		} else if ( name == "bhkHingeConstraint" ) {
 			iConstraint = nif->getIndex( iConstraint, "Hinge" );
-
-			if ( !iConstraint.isValid() )
-				return index;
 		}
+
+		if ( !iConstraint.isValid() )
+			return index;
 
 		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * havokConst;
 		pivot = transA * pivot;
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
 		nif->set<Vector4>( iConstraint, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
 
+		// TODO: bhkHingeConstraint
+		QString axleA, axleB, twistA, twistB;
 		if ( name == "bhkLimitedHingeConstraint" ) {
-			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Axle A" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Axle B", { axle[0], axle[1], axle[2], 0 } );
-
-			axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2 Axle In A2" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Perp2 Axle In B2", { axle[0], axle[1], axle[2], 0 } );
+			axleA = "Axle A";
+			axleB = "Axle B";
+			twistA = "Perp2 Axle In A2";
+			twistB = "Perp2 Axle In B2";
+		} else if ( name == "bhkRagdollConstraint" ) {
+			axleA = "Plane A";
+			axleB = "Plane B";
+			twistA = "Twist A";
+			twistB = "Twist B";
 		}
 
-		if ( name == "bhkRagdollConstraint" ) {
-			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Plane A" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Plane B", { axle[0], axle[1], axle[2], 0 } );
+		if ( axleA.isEmpty() || axleB.isEmpty() || twistA.isEmpty() || twistB.isEmpty() )
+			return index;
 
-			axle = Vector3( nif->get<Vector4>( iConstraint, "Twist A" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Twist B", { axle[0], axle[1], axle[2], 0 } );
-		}
+		Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, axleA ) );
+		axle = transA.rotation * axle;
+		axle = transB.rotation.inverted() * axle;
+		nif->set<Vector4>( iConstraint, axleB, { axle[0], axle[1], axle[2], 0 } );
+
+		axle = Vector3( nif->get<Vector4>( iConstraint, twistA ) );
+		axle = transA.rotation * axle;
+		axle = transB.rotation.inverted() * axle;
+		nif->set<Vector4>( iConstraint, twistB, { axle[0], axle[1], axle[2], 0 } );
 
 		return index;
 	}
