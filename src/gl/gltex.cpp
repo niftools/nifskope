@@ -87,11 +87,6 @@ void initializeTextureUnits( const QOpenGLContext * context )
 
 bool activateTextureUnit( int stage )
 {
-	PFNGLACTIVETEXTUREPROC glActiveTexture;
-	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
-	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
-
 	if ( num_texture_units <= 1 )
 		return ( stage == 0 );
 
@@ -108,11 +103,6 @@ bool activateTextureUnit( int stage )
 
 void resetTextureUnits()
 {
-	PFNGLACTIVETEXTUREPROC glActiveTexture;
-	glActiveTexture = (PFNGLACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTexture" );
-	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture;
-	glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTexture" );
-
 	if ( num_texture_units <= 1 ) {
 		glDisable( GL_TEXTURE_2D );
 		return;
