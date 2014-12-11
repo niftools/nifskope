@@ -173,16 +173,9 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 					"obj format does not support skinning. This mesh will be "
 					"exported statically in its bind pose, without skin weights." )
 			);
-		} else if ( nif->isNiBlock( iProp, "BSShaderNoLightingProperty" )
-		            || nif->isNiBlock( iProp, "SkyShaderProperty" )
-		            || nif->isNiBlock( iProp, "TileShaderProperty" )
-		)
-		{
+		} else if ( nif->isNiBlock( iProp, { "BSShaderNoLightingProperty", "SkyShaderProperty", "TileShaderProperty" } ) ) {
 			map_Kd = TexCache::find( nif->get<QString>( iProp, "File Name" ), nif->getFolder() );
-		} else if ( nif->isNiBlock( iProp, "BSShaderPPLightingProperty" )
-		            || nif->isNiBlock( iProp, "Lighting30ShaderProperty" )
-		)
-		{
+		} else if ( nif->isNiBlock( iProp, { "BSShaderPPLightingProperty", "Lighting30ShaderProperty" } ) ) {
 			QModelIndex iArray = nif->getIndex( nif->getBlock( nif->getLink( iProp, "Texture Set" ) ), "Textures" );
 			map_Kd = TexCache::find( nif->get<QString>( iArray.child( 0, 0 ) ), nif->getFolder() );
 		}
@@ -227,7 +220,7 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 
 		if ( nif->inherits( iChild, "NiNode" ) )
 			writeParent( nif, iChild, obj, mtl, ofs, t );
-		else if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
+		else if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
 		else if ( nif->inherits( iChild, "NiCollisionObject" ) ) {
 			QModelIndex iBody = nif->getBlock( nif->getLink( iChild, "Body" ) );
@@ -377,7 +370,7 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 
 		if ( nif->inherits( iBlock, "NiNode" ) )
 			writeParent( nif, iBlock, sobj, smtl, ofs, Transform() );
-		else if ( nif->isNiBlock( iBlock, "NiTriShape" ) || nif->isNiBlock( iBlock, "NiTriStrips" ) )
+		else if ( nif->isNiBlock( iBlock, { "NiTriShape", "NiTriStrips" } ) )
 			writeShape( nif, iBlock, sobj, smtl, ofs, Transform() );
 	}
 

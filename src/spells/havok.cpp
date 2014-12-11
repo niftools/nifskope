@@ -207,12 +207,10 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif && (
-		    nif->isNiBlock( nif->getBlock( index ), "bhkMalleableConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkRagdollConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkLimitedHingeConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkHingeConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkPrismaticConstraint" ) );
+		return nif && 
+			nif->isNiBlock( nif->getBlock( index ),
+				{ "bhkMalleableConstraint", "bhkRagdollConstraint", "bhkLimitedHingeConstraint", "bhkHingeConstraint", "bhkPrismaticConstraint" }
+			);
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final

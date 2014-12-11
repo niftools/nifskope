@@ -27,10 +27,10 @@ public:
 	{
 		QModelIndex iData = nif->getBlock( index );
 
-		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+		if ( nif->isNiBlock( index, { "NiTriShape", "BSLODTriShape", "NiTriStrips" } ) )
 			iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
-		if ( nif->isNiBlock( iData, "NiTriShapeData" ) || nif->isNiBlock( iData, "NiTriStripsData" ) )
+		if ( nif->isNiBlock( iData, { "NiTriShapeData", "NiTriStripsData" } ) )
 			return iData;
 
 		return QModelIndex();

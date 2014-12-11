@@ -131,10 +131,10 @@ QIcon * tex42_xpm_icon = nullptr;
 //! Find the reference to shape data from a model and index
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
-	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
+	if ( nif->isNiBlock( index, { "NiTriShape", "NiTriStrips", "BSLODTriShape" } ) )
 		return nif->getBlock( nif->getLink( index, "Data" ) );
 	
-	if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
+	if ( nif->isNiBlock( index, { "NiTriShapeData", "NiTriStripsData" } ) )
 		return index;
 
 	return QModelIndex();
@@ -172,7 +172,7 @@ public:
 	{
 		QModelIndex iBlock = nif->getBlock( idx );
 
-		if ( ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+		if ( nif->isNiBlock( iBlock, { "NiSourceTexture", "NiImage" } )
 		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 			return true;
 		else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" )
@@ -193,7 +193,7 @@ public:
 		QModelIndex iFile;
 		bool setExternal = false;
 
-		if ( ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+		if ( nif->isNiBlock( iBlock, { "NiSourceTexture", "NiImage" } )
 		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 		{
 			iFile = nif->getIndex( iBlock, "File Name" );

@@ -265,7 +265,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & iShape ) override final
 	{
-		if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( iShape, "NiTriStrips" ) ) {
+		if ( nif->isNiBlock( iShape, { "NiTriShape", "NiTriStrips" } ) ) {
 			QModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 
 			if ( iSkinInst.isValid() ) {

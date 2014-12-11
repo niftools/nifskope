@@ -284,7 +284,7 @@ public:
 			if ( nif->getParent( lChild ) == nif->getBlockNumber( iParent ) ) {
 				QModelIndex iChild = nif->getBlock( lChild );
 
-				if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
+				if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
 					lTris << lChild;
 			}
 		}

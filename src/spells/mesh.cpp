@@ -21,7 +21,7 @@ static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
 	if ( nif->isNiBlock( iShape, "NiTriBasedGeomData" ) )
 		iShape = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
 
-	if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+	if ( nif->isNiBlock( iShape, { "NiTriShape", "BSLODTriShape", "NiTriStrips" } ) )
 		if ( nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriBasedGeomData" ).isValid() )
 			return iShape;
 
@@ -39,7 +39,7 @@ static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & in
 {
 	QModelIndex iData = nif->getBlock( index );
 
-	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
+	if ( nif->isNiBlock( index, { "NiTriShape", "BSLODTriShape" } ) )
 		iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
 	if ( nif->isNiBlock( iData, "NiTriShapeData" ) )
