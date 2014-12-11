@@ -967,6 +967,16 @@ bool NifModel::isNiBlock( const QModelIndex & index, const QString & name ) cons
 	return false;
 }
 
+bool NifModel::isNiBlock( const QModelIndex & index, const QStringList & names ) const
+{
+	for ( const QString & name : names ) {
+		if ( isNiBlock( index, name ) )
+			return true;
+	}
+
+	return false;
+}
+
 NifItem * NifModel::getBlockItem( int x ) const
 {
 	if ( x < 0 || x >= getBlockCount() )

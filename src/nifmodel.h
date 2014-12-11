@@ -145,6 +145,8 @@ public:
 	 * \param name Optional: the type to check for
 	 */
 	bool isNiBlock( const QModelIndex & index, const QString & name = QString() ) const;
+	bool isNiBlock( const QModelIndex & index, const QStringList & names ) const;
+
 	//! Returns a list with all known NiXXX ids (<niobject abstract="0">)
 	static QStringList allNiBlocks();
 	//! Determine if a value is a NiBlock identifier (<niobject abstract="0">).
