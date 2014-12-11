@@ -15,7 +15,8 @@ QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate$${EXE}
 exists($$QMAKE_LUPDATE) {
 	# Make target for Updating .ts
 	updatets.target = updatets
-	updatets.commands = $$[QT_INSTALL_BINS]/lupdate $${_PRO_FILE_}
+	updatets.commands += cd $${_PRO_FILE_PWD_} $$nt
+	updatets.commands += $$[QT_INSTALL_BINS]/lupdate $${_PRO_FILE_} $$nt
 	updatets.CONFIG += no_check_exist no_link no_clean
 
 	QMAKE_EXTRA_TARGETS += updatets
@@ -28,7 +29,7 @@ exists($$QMAKE_LRELEASE) {
 	# Build Step for Releasing .ts->.qm
 	updateqm.input = TRANSLATIONS
 	updateqm.output = $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
-	updateqm.commands = $$[QT_INSTALL_BINS]/lrelease ${QMAKE_FILE_IN} -qm $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
+	updateqm.commands = $$[QT_INSTALL_BINS]/lrelease ${QMAKE_FILE_IN} -qm $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm) $$nt
 	updateqm.CONFIG += no_check_exist no_link no_clean target_predeps
 
 	QMAKE_EXTRA_COMPILERS += updateqm
