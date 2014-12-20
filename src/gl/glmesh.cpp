@@ -190,7 +190,7 @@ public:
 			}
 		}
 
-		target->upData = true;
+		target->updateData = true;
 	}
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final
@@ -271,10 +271,10 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 		emit nif->lodSliderChanged( isBSLODPresent );
 	}
 
-	upData |= ( iData == index ) || ( iTangentData == index );
-	upSkin |= ( iSkin == index );
-	upSkin |= ( iSkinData == index );
-	upSkin |= ( iSkinPart == index );
+	updateData |= ( iData == index ) || ( iTangentData == index );
+	updateSkin |= ( iSkin == index );
+	updateSkin |= ( iSkinData == index );
+	updateSkin |= ( iSkinPart == index );
 
 
 	// Update SLSF_* Flags here when editing them in the Block Details
@@ -432,7 +432,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 			if ( iData.isValid() ) {
 				qDebug() << "Got " << nif->rowCount( iData ) << " rows of data";
-				upData = true;
+				updateData = true;
 			} else {
 				qDebug() << "Did not find data in NiMesh ???";
 			}
@@ -453,7 +453,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 			if ( nif->inherits( iChild, "NiTriShapeData" ) || nif->inherits( iChild, "NiTriStripsData" ) ) {
 				if ( !iData.isValid() ) {
 					iData  = iChild;
-					upData = true;
+					updateData = true;
 				} else if ( iData != iChild ) {
 					Message::append( tr( "Warnings were generated while updating meshes." ),
 						tr( "Block %1 has multiple data blocks" ).arg( id() )
@@ -462,7 +462,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 			} else if ( nif->inherits( iChild, "NiSkinInstance" ) ) {
 				if ( !iSkin.isValid() ) {
 					iSkin  = iChild;
-					upSkin = true;
+					updateSkin = true;
 				} else if ( iSkin != iChild ) {
 					Message::append( tr( "Warnings were generated while updating meshes." ),
 						tr( "Block %1 has multiple skin instances" ).arg( id() )
@@ -472,7 +472,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 		}
 	}
 
-	upBounds |= upData;
+	upBounds |= updateData;
 }
 
 void Mesh::setController( const NifModel * nif, const QModelIndex & iController )
@@ -514,8 +514,8 @@ void Mesh::transform()
 		return;
 	}
 
-	if ( upData ) {
-		upData = false;
+	if ( updateData ) {
+		updateData = false;
 
 		// update for NiMesh
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
@@ -800,8 +800,8 @@ void Mesh::transform()
 		}
 	}
 
-	if ( upSkin ) {
-		upSkin = false;
+	if ( updateSkin ) {
+		updateSkin = false;
 		weights.clear();
 		partitions.clear();
 

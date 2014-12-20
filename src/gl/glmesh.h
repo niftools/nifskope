@@ -81,10 +81,10 @@ protected:
 	QPersistentModelIndex iSkinPart;
 	//! Tangent data
 	QPersistentModelIndex iTangentData;
-	//! Unsure - does the data need updating?
-	bool upData;
-	//! Unsure - does teh skin data need updating?
-	bool upSkin;
+	//! Does the data need updating?
+	bool updateData;
+	//! Does the skin data need updating?
+	bool updateSkin;
 
 	// Skyrim shader property
 	BSLightingShaderProperty * bslsp;
@@ -104,15 +104,15 @@ protected:
 	QVector<Vector3> bitangents;
 
 	//! UV coordinate sets
-	QList<QVector<Vector2> > coords;
+	QList<QVector<Vector2>> coords;
 
 	//! Transformed vertices
 	QVector<Vector3> transVerts;
 	//! Transformed normals
 	QVector<Vector3> transNorms;
-	//! Transformed colors (alpha-blended)
+	//! Transformed colors (alpha blended)
 	QVector<Color4> transColors;
-
+	//! Transformed colors (alpha removed)
 	QVector<Color4> transColorsNoAlpha;
 
 	//! Transformed tangents
