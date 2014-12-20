@@ -39,9 +39,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QObject>         // Inherited
 
 #if QT_NO_DEBUG
-#define NIFSKOPE_IPC_PORT 12584
+#define NIFSKOPE_IPC_PORT 12583
 #else
-#define NIFSKOPE_IPC_PORT 12585
+#define NIFSKOPE_IPC_PORT 12584
 #endif
 
 namespace Ui {
