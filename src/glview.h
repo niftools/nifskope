@@ -69,9 +69,7 @@ class GLView final : public QGLWidget
 {
 	Q_OBJECT
 
-	//! Constructor
 	GLView( const QGLFormat & format, QWidget * parent, const QGLWidget * shareWidget = 0 );
-	//! Destructor
 	~GLView();
 
 public:
@@ -154,21 +152,21 @@ public:
 
 public slots:
 	void setCurrentIndex( const QModelIndex & );
-	void sltTime( float );
-	void sltSequence( const QString & );
+	void setSceneTime( float );
+	void setSceneSequence( const QString & );
 	void saveUserView();
 	void loadUserView();
-	void declinationChanged( int );
-	void planarAngleChanged( int );
-	void frontalLightToggled( bool );
-	void flagsChanged();
+	void setDeclination( int );
+	void setPlanarAngle( int );
+	void setFrontalLight( bool );
+	void updateScene();
 	void updateAnimationState( bool checked );
 	void setVisMode( Scene::VisMode, bool checked = true );
 
 signals:
 	void clicked( const QModelIndex & );
 	void paintUpdate();
-	void sigTime( float t, float mn, float mx );
+	void sceneTimeChanged( float t, float mn, float mx );
 	void viewpointChanged();
 
 	void sequenceStopped();
@@ -255,8 +253,6 @@ private slots:
 	void modelChanged();
 	void modelLinked();
 	void modelDestroyed();
-
-	void sceneUpdate();
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( GLView::AnimationState )

@@ -263,7 +263,7 @@ void NifSkope::initActions()
 	} );
 
 	connect( ogl, &GLView::clicked, this, &NifSkope::select );
-	connect( ogl, &GLView::sigTime, inspect, &InspectView::updateTime );
+	connect( ogl, &GLView::sceneTimeChanged, inspect, &InspectView::updateTime );
 	connect( ogl, &GLView::paintUpdate, inspect, &InspectView::refresh );
 	connect( ogl, &GLView::viewpointChanged, [this]() {
 		ui->aViewTop->setChecked( false );
@@ -461,11 +461,11 @@ void NifSkope::initToolBars()
 	animSlider->setMaximumWidth( 150 );
 	animSlider->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::MinimumExpanding );
 
-	connect( ogl, &GLView::sigTime, animSlider, &FloatSlider::set );
-	connect( ogl, &GLView::sigTime, animSliderEdit, &FloatEdit::set );
-	connect( animSlider, &FloatSlider::valueChanged, ogl, &GLView::sltTime );
+	connect( ogl, &GLView::sceneTimeChanged, animSlider, &FloatSlider::set );
+	connect( ogl, &GLView::sceneTimeChanged, animSliderEdit, &FloatEdit::set );
+	connect( animSlider, &FloatSlider::valueChanged, ogl, &GLView::setSceneTime );
 	connect( animSlider, &FloatSlider::valueChanged, animSliderEdit, &FloatEdit::setValue );
-	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), ogl, &GLView::sltTime );
+	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), ogl, &GLView::setSceneTime );
 	connect( animSliderEdit, static_cast<void (FloatEdit::*)(float)>(&FloatEdit::sigEdited), animSlider, &FloatSlider::setValue );
 	
 	// Animations
@@ -473,7 +473,7 @@ void NifSkope::initToolBars()
 	animGroups->setMinimumWidth( 60 );
 	animGroups->setSizeAdjustPolicy( QComboBox::AdjustToContents );
 	animGroups->setSizePolicy( QSizePolicy::Fixed, QSizePolicy::Minimum );
-	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), ogl, &GLView::sltSequence );
+	connect( animGroups, static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::activated), ogl, &GLView::setSceneSequence );
 
 	ui->tAnim->addWidget( animSlider );
 	animGroupsAction = ui->tAnim->addWidget( animGroups );
@@ -669,9 +669,9 @@ QMenu * NifSkope::lightingWidget()
 
 	// Inform ogl of changes
 	//connect( chkLighting, &QCheckBox::toggled, ogl, &GLView::lightingToggled );
-	connect( sldDeclination, &QSlider::valueChanged, ogl, &GLView::declinationChanged );
-	connect( sldPlanarAngle, &QSlider::valueChanged, ogl, &GLView::planarAngleChanged );
-	connect( chkFrontal, &QToolButton::toggled, ogl, &GLView::frontalLightToggled );
+	connect( sldDeclination, &QSlider::valueChanged, ogl, &GLView::setDeclination );
+	connect( sldPlanarAngle, &QSlider::valueChanged, ogl, &GLView::setPlanarAngle );
+	connect( chkFrontal, &QToolButton::toggled, ogl, &GLView::setFrontalLight );
 
 
 	// Set up QWidgetActions so they can be added to a QMenu

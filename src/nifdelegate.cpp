@@ -216,7 +216,7 @@ public:
 
 							auto cbl = qobject_cast<NifCheckBoxList *>(w);
 							if ( cbl )
-								connect( cbl, &NifCheckBoxList::dataChanged, gl, &GLView::flagsChanged );
+								connect( cbl, &NifCheckBoxList::dataChanged, gl, &GLView::updateScene );
 						}
 					}
 				} else if ( type == NifValue::eDefault ) {

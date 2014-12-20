@@ -211,7 +211,7 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 
 	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
 	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
-	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::sceneUpdate );
+	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::updateScene );
 }
 
 GLView::~GLView()
@@ -229,7 +229,7 @@ Scene * GLView::getScene()
 	return scene;
 }
 
-void GLView::sceneUpdate()
+void GLView::updateScene()
 {
 	scene->update( model, QModelIndex() );
 	update();
@@ -402,7 +402,7 @@ void GLView::paintGL()
 			// No Animations in this NIF
 			emit sequencesDisabled( true );
 		}
-		emit sigTime( time, scene->timeMin(), scene->timeMax() );
+		emit sceneTimeChanged( time, scene->timeMin(), scene->timeMax() );
 		doCompile = false;
 	}
 
@@ -638,19 +638,13 @@ void GLView::resizeEvent( QResizeEvent * e )
 	// Moved to NifSkope::eventFilter()
 }
 
-void GLView::flagsChanged()
-{
-	sceneUpdate();
-	update();
-}
-
-void GLView::frontalLightToggled( bool frontal )
+void GLView::setFrontalLight( bool frontal )
 {
 	frontalLight = frontal;
 	update();
 }
 
-void GLView::declinationChanged( int decl )
+void GLView::setDeclination( int decl )
 {
 	declination = float(decl) / 4; // Divide by 4 because sliders are -720 <-> 720
 	lightVisTimer->start( lightVisTimeout );
@@ -658,7 +652,7 @@ void GLView::declinationChanged( int decl )
 	update();
 }
 
-void GLView::planarAngleChanged( int angle )
+void GLView::setPlanarAngle( int angle )
 {
 	planarAngle = float(angle) / 4; // Divide by 4 because sliders are -720 <-> 720
 	lightVisTimer->start( lightVisTimeout );
@@ -1112,14 +1106,14 @@ void GLView::modelDestroyed()
  * UI
  */
 
-void GLView::sltTime( float t )
+void GLView::setSceneTime( float t )
 {
 	time = t;
 	update();
-	emit sigTime( time, scene->timeMin(), scene->timeMax() );
+	emit sceneTimeChanged( time, scene->timeMin(), scene->timeMax() );
 }
 
-void GLView::sltSequence( const QString & seqname )
+void GLView::setSceneSequence( const QString & seqname )
 {
 	// Update UI
 	QAction * action = qobject_cast<QAction *>(sender());
@@ -1130,7 +1124,7 @@ void GLView::sltSequence( const QString & seqname )
 	
 	scene->setSequence( seqname );
 	time = scene->timeMin();
-	emit sigTime( time, scene->timeMin(), scene->timeMax() );
+	emit sceneTimeChanged( time, scene->timeMin(), scene->timeMax() );
 	update();
 }
 
@@ -1186,7 +1180,7 @@ void GLView::advanceGears()
 				if ( ++ix >= scene->animGroups.count() )
 					ix -= scene->animGroups.count();
 	
-				sltSequence( scene->animGroups.value( ix ) );
+				setSceneSequence( scene->animGroups.value( ix ) );
 			} else if ( animState & AnimLoop ) {
 				time = scene->timeMin();
 			} else {
@@ -1201,7 +1195,7 @@ void GLView::advanceGears()
 			// Animation is not done yet
 		}
 
-		emit sigTime( time, scene->timeMin(), scene->timeMax() );
+		emit sceneTimeChanged( time, scene->timeMin(), scene->timeMax() );
 		update();
 	}
 
