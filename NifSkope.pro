@@ -165,7 +165,6 @@ HEADERS += \
 	src/gl/marker/furniture.h \
 	src/gl/renderer.h \
 	src/glview.h \
-	src/hacking.h \
 	src/importex/3ds.h \
 	src/kfmmodel.h \
 	src/message.h \
