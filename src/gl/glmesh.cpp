@@ -99,7 +99,7 @@ public:
 			}
 		}
 
-		target->upBounds = true;
+		target->updateBounds = true;
 	}
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final
@@ -216,8 +216,7 @@ protected:
 
 Mesh::Mesh( Scene * s, const QModelIndex & b ) : Node( s, b )
 {
-	double_sided = false;
-	double_sided_es = false;
+	isDoubleSided = false;
 	bslsp = nullptr;
 	bsesp = nullptr;
 }
@@ -252,7 +251,7 @@ void Mesh::clear()
 	transBitangents.clear();
 
 	isBSLODPresent = false;
-	double_sided = false;
+	isDoubleSided = false;
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
@@ -276,12 +275,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	updateSkin |= ( iSkinData == index );
 	updateSkin |= ( iSkinPart == index );
 
+	isVertexAlphaAnimation = false;
+	isDoubleSided = false;
 
-	// Update SLSF_* Flags here when editing them in the Block Details
-	//	Otherwise the changes will not show up in the scene
-	alphaisanim = false;
-	double_sided = false;
-	//double_sided_es = false;
 	if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom" ) )
 	{
 		QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" ) + nif->getLinkArray( iBlock, "BS Properties" );
@@ -352,13 +348,12 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->setUvScale( uvScale[0], uvScale[1] );
 				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
 				
-				double_sided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+				isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
 				
-				alphaisanim = hasSF2( ShaderFlags::SLSF2_Tree_Anim );
+				isVertexAlphaAnimation = hasSF2( ShaderFlags::SLSF2_Tree_Anim );
 				//break;
 
 			} else {
-				// enable double_sided for BSEffectShaderProperty
 				iProp = nif->getBlock( props[i], "BSEffectShaderProperty" );
 	
 				if ( iProp.isValid() ) {
@@ -412,9 +407,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 					bsesp->setFalloff( startA, stopA, startO, stopO, soft );
 
-					double_sided_es = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+					isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
 
-					bsesp->doubleSided = double_sided_es;
+					bsesp->doubleSided = isDoubleSided;
 				}
 			}
 		}
@@ -472,7 +467,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 		}
 	}
 
-	upBounds |= updateData;
+	updateBounds |= updateData;
 }
 
 void Mesh::setController( const NifModel * nif, const QModelIndex & iController )
@@ -687,7 +682,7 @@ void Mesh::transform()
 			norms  = nif->getArray<Vector3>( iData, "Normals" );
 			colors = nif->getArray<Color4>( iData, "Vertex Colors" );
 
-			if ( alphaisanim ) {
+			if ( isVertexAlphaAnimation ) {
 				for ( int i = 0; i < colors.count(); i++ )
 					colors[i].setRGBA( colors[i].red(), colors[i].green(), colors[i].blue(), 1 );
 			}
@@ -807,8 +802,8 @@ void Mesh::transform()
 
 		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), "NiSkinData" );
 
-		skelRoot  = nif->getLink( iSkin, "Skeleton Root" );
-		skelTrans = Transform( nif, iSkinData );
+		skeletonRoot  = nif->getLink( iSkin, "Skeleton Root" );
+		skeletonTrans = Transform( nif, iSkinData );
 
 		bones = nif->getLinkArray( iSkin, "Bones" );
 
@@ -861,7 +856,7 @@ void Mesh::transformShapes()
 		transBitangents.resize( bitangents.count() );
 		transBitangents.fill( Vector3() );
 
-		Node * root = findParent( skelRoot );
+		Node * root = findParent( skeletonRoot );
 
 		if ( partitions.count() ) {
 			foreach ( const SkinPartition part, partitions ) {
@@ -869,10 +864,10 @@ void Mesh::transformShapes()
 
 				for ( int t = 0; t < boneTrans.count(); t++ ) {
 					Node * bone = root ? root->findChild( bones.value( part.boneMap[t] ) ) : 0;
-					boneTrans[ t ] = viewTrans() * skelTrans;
+					boneTrans[ t ] = viewTrans() * skeletonTrans;
 
 					if ( bone )
-						boneTrans[ t ] = boneTrans[ t ] * bone->localTransFrom( skelRoot ) * weights.value( part.boneMap[t] ).trans;
+						boneTrans[ t ] = boneTrans[ t ] * bone->localTransFrom( skeletonRoot ) * weights.value( part.boneMap[t] ).trans;
 
 					//if ( bone ) boneTrans[ t ] = bone->viewTrans() * weights.value( part.boneMap[t] ).trans;
 				}
@@ -906,11 +901,11 @@ void Mesh::transformShapes()
 		} else {
 			int x = 0;
 			foreach ( const BoneWeights bw, weights ) {
-				Transform trans = viewTrans() * skelTrans;
+				Transform trans = viewTrans() * skeletonTrans;
 				Node * bone = root ? root->findChild( bw.bone ) : 0;
 
 				if ( bone )
-					trans = trans * bone->localTransFrom( skelRoot ) * bw.trans;
+					trans = trans * bone->localTransFrom( skeletonRoot ) * bw.trans;
 
 				if ( bone )
 					weights[x++].tcenter = bone->viewTrans() * bw.center;
@@ -943,9 +938,9 @@ void Mesh::transformShapes()
 		for ( int t = 0; t < transBitangents.count(); t++ )
 			transBitangents[t].normalize();
 
-		bndSphere = BoundSphere( transVerts );
-		bndSphere.applyInv( viewTrans() );
-		upBounds = false;
+		boundSphere = BoundSphere( transVerts );
+		boundSphere.applyInv( viewTrans() );
+		updateBounds = false;
 	} else {
 		transVerts = verts;
 		transNorms = norms;
@@ -1042,12 +1037,12 @@ void Mesh::transformShapes()
 
 BoundSphere Mesh::bounds() const
 {
-	if ( upBounds ) {
-		upBounds  = false;
-		bndSphere = BoundSphere( verts );
+	if ( updateBounds ) {
+		updateBounds = false;
+		boundSphere = BoundSphere( verts );
 	}
 
-	return worldTrans() * bndSphere;
+	return worldTrans() * boundSphere;
 }
 
 void Mesh::drawShapes( NodeList * draw2nd )
@@ -1126,8 +1121,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	if ( !Node::SELECTING )
 		shader = scene->renderer->setupProgram( this, shader );
 
-	if ( double_sided || double_sided_es ) {
-		if ( double_sided_es ) // TODO: reintroduce sorting if need be
+	if ( isDoubleSided ) {
+		if ( bsesp ) // TODO: reintroduce sorting if need be
 			glDepthMask( GL_FALSE );
 
 		glDisable( GL_CULL_FACE );
@@ -1170,10 +1165,10 @@ void Mesh::drawShapes( NodeList * draw2nd )
 	for ( int s = 0; s < tristrips.count(); s++ )
 		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
 
-	if ( double_sided || double_sided_es ) {
+	if ( isDoubleSided ) {
 		glEnable( GL_CULL_FACE );
 
-		if ( double_sided_es )
+		if ( bsesp )
 			glDepthMask( GL_TRUE );
 	}
 

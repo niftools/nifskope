@@ -48,6 +48,10 @@ class BSLightingShaderProperty;
 //! A mesh
 class Mesh : public Node
 {
+	friend class MorphController;
+	friend class UVController;
+	friend class Renderer;
+
 public:
 	Mesh( Scene * s, const QModelIndex & b );
 	~Mesh() { clear(); }
@@ -63,12 +67,13 @@ public:
 
 	bool isHidden() const override;
 
-	//! The bounds of the mesh?
+	//! The bounds of the mesh
 	BoundSphere bounds() const override;
 
 	QString textStats() const override;
 
 protected:
+	//! Sets the Controller
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
 	//! Shape data
@@ -86,11 +91,16 @@ protected:
 	//! Does the skin data need updating?
 	bool updateSkin;
 
-	// Skyrim shader property
+	//! Holds the name of the shader, or "fixed function pipeline" if no shader
+	QString shader;
+	//! Skyrim shader property
 	BSLightingShaderProperty * bslsp;
-
-	// Skyrim effect shader property
+	//! Skyrim effect shader property
 	BSEffectShaderProperty * bsesp;
+	//! Is shader set to double sided?
+	bool isDoubleSided;
+	//! Is shader set to animate using vertex alphas?
+	bool isVertexAlphaAnimation;
 
 	//! Vertices
 	QVector<Vector3> verts;
@@ -102,10 +112,19 @@ protected:
 	QVector<Vector3> tangents;
 	//! Bitangents
 	QVector<Vector3> bitangents;
-
 	//! UV coordinate sets
 	QList<QVector<Vector2>> coords;
+	//! Triangles
+	QVector<Triangle> triangles;
+	//! Strip points
+	QList<QVector<quint16>> tristrips;
+	//! Sorted triangles
+	QVector<Triangle> sortedTriangles;
+	//! Triangle indices
+	QVector<quint16> indices;
 
+	//! Is the transform rigid or weighted?
+	bool transformRigid;
 	//! Transformed vertices
 	QVector<Vector3> transVerts;
 	//! Transformed normals
@@ -114,42 +133,21 @@ protected:
 	QVector<Color4> transColors;
 	//! Transformed colors (alpha removed)
 	QVector<Color4> transColorsNoAlpha;
-
 	//! Transformed tangents
 	QVector<Vector3> transTangents;
 	//! Transformed bitangents
 	QVector<Vector3> transBitangents;
 
-	int skelRoot;
-	Transform skelTrans;
+	int skeletonRoot;
+	Transform skeletonTrans;
 	QVector<int> bones;
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
 
-	//! Triangles
-	QVector<Triangle> triangles;
-	//! Strip points
-	QList<QVector<quint16> > tristrips;
-	//! Sorted triangles
-	QVector<Triangle> sortedTriangles;
-	//! Triangle indices
-	QVector<quint16> indices;
-
-	bool transformRigid;
-
-	mutable BoundSphere bndSphere;
-	mutable bool upBounds;
-
-	QString shader;
-
-	friend class MorphController;
-	friend class UVController;
-	friend class Renderer;
+	mutable BoundSphere boundSphere;
+	mutable bool updateBounds;
 
 	static bool isBSLODPresent;
-	bool double_sided;
-	bool double_sided_es;
-	bool alphaisanim;
 };
 
 #endif
