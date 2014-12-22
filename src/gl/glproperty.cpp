@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 //#include "options.h"
 
-#include "glcontroller.h" // Inherited
+
 #include "glscene.h"
 
 #include <QOpenGLContext>
@@ -468,134 +468,108 @@ int TexturingProperty::coordSet( int id ) const
 	return -1;
 }
 
-//! Controller for source textures in a TexturingProperty
-class TexFlipController final : public Controller
+
+TexFlipController::TexFlipController( TexturingProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 )
 {
-public:
-	TexFlipController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 )
-	{
-	}
+}
 
-	TexFlipController( TextureProperty * prop, const QModelIndex & index )
-		: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
-
-		if ( !( (target || oldTarget) && active && iSources.isValid() && nif ) )
-			return;
-
-		float r = 0;
-
-		if ( iData.isValid() )
-			interpolate( r, iData, "Data", ctrlTime( time ), flipLast );
-		else if ( flipDelta > 0 )
-			r = ctrlTime( time ) / flipDelta;
-
-		// TexturingProperty
-		if ( target ) {
-			target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
-		} else if ( oldTarget ) {
-			oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			flipDelta = nif->get<float>( iBlock, "Delta" );
-			flipSlot  = nif->get<int>( iBlock, "Texture Slot" );
-
-			if ( nif->checkVersion( 0x04000000, 0 ) ) {
-				iSources = nif->getIndex( iBlock, "Sources" );
-			} else {
-				iSources = nif->getIndex( iBlock, "Images" );
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<TexturingProperty> target;
-	QPointer<TextureProperty> oldTarget;
-
-	float flipDelta;
-	int flipSlot;
-
-	int flipLast;
-
-	QPersistentModelIndex iSources;
-};
-
-//! Controller for transformations in a TexturingProperty
-class TexTransController final : public Controller
+TexFlipController::TexFlipController( TextureProperty * prop, const QModelIndex & index )
+	: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 )
 {
-public:
-	TexTransController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 )
-	{
+}
+
+void TexFlipController::update( float time )
+{
+	const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
+
+	if ( !( (target || oldTarget) && active && iSources.isValid() && nif ) )
+		return;
+
+	float r = 0;
+
+	if ( iData.isValid() )
+		interpolate( r, iData, "Data", ctrlTime( time ), flipLast );
+	else if ( flipDelta > 0 )
+		r = ctrlTime( time ) / flipDelta;
+
+	// TexturingProperty
+	if ( target ) {
+		target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
+	} else if ( oldTarget ) {
+		oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
 	}
+}
 
-	void update( float time ) override final
-	{
-		if ( !( target && active ) )
-			return;
+bool TexFlipController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		flipDelta = nif->get<float>( iBlock, "Delta" );
+		flipSlot  = nif->get<int>( iBlock, "Texture Slot" );
 
-		TexturingProperty::TexDesc * tex = &target->textures[ texSlot & 7 ];
-
-		float val;
-
-		if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) ) {
-			// If desired, we could force display even if texture transform was disabled:
-			// tex->hasTransform = true;
-			// however "Has Texture Transform" doesn't exist until 10.1.0.0, and neither does
-			// NiTextureTransformController - so we won't bother
-			switch ( texOP ) {
-			case 0:
-				tex->translation[0] = val;
-				break;
-			case 1:
-				tex->translation[1] = val;
-				break;
-			case 2:
-				tex->rotation = val;
-				break;
-			case 3:
-				tex->tiling[0] = val;
-				break;
-			case 4:
-				tex->tiling[1] = val;
-				break;
-			}
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			texSlot = nif->get<int>( iBlock, "Texture Slot" );
-			texOP = nif->get<int>( iBlock, "Operation" );
-			return true;
+		if ( nif->checkVersion( 0x04000000, 0 ) ) {
+			iSources = nif->getIndex( iBlock, "Sources" );
+		} else {
+			iSources = nif->getIndex( iBlock, "Images" );
 		}
 
-		return false;
+		return true;
 	}
 
-protected:
-	QPointer<TexturingProperty> target;
+	return false;
+}
 
-	int texSlot;
-	int texOP;
 
-	int lX;
-};
+TexTransController::TexTransController( TexturingProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 )
+{
+}
+
+void TexTransController::update( float time )
+{
+	if ( !( target && active ) )
+		return;
+
+	TexturingProperty::TexDesc * tex = &target->textures[ texSlot & 7 ];
+
+	float val;
+
+	if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) ) {
+		// If desired, we could force display even if texture transform was disabled:
+		// tex->hasTransform = true;
+		// however "Has Texture Transform" doesn't exist until 10.1.0.0, and neither does
+		// NiTextureTransformController - so we won't bother
+		switch ( texOP ) {
+		case 0:
+			tex->translation[0] = val;
+			break;
+		case 1:
+			tex->translation[1] = val;
+			break;
+		case 2:
+			tex->rotation = val;
+			break;
+		case 3:
+			tex->tiling[0] = val;
+			break;
+		case 4:
+			tex->tiling[1] = val;
+			break;
+		}
+	}
+}
+
+bool TexTransController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		texSlot = nif->get<int>( iBlock, "Texture Slot" );
+		texOP = nif->get<int>( iBlock, "Operation" );
+		return true;
+	}
+
+	return false;
+}
+
 
 //! Set the appropriate Controller
 void TexturingProperty::setController( const NifModel * nif, const QModelIndex & iController )
@@ -749,100 +723,74 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 	//overridden = overrideMaterials;
 }
 
-//! Controller for alpha values in a MaterialProperty
-class AlphaController final : public Controller
+
+AlphaController::AlphaController( MaterialProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop ), lAlpha( 0 )
 {
-public:
-	AlphaController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lAlpha( 0 )
-	{
-	}
+}
 
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
-
-		if ( target->alpha < 0 )
-			target->alpha = 0;
-
-		if ( target->alpha > 1 )
-			target->alpha = 1;
-	}
-
-protected:
-	QPointer<MaterialProperty> target;
-
-	int lAlpha;
-};
-
-//! Controller for color values in a MaterialProperty
-class MaterialColorController final : public Controller
+void AlphaController::update( float time )
 {
-public:
-	MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
-	{
+	if ( !( active && target ) )
+		return;
+
+	interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
+
+	if ( target->alpha < 0 )
+		target->alpha = 0;
+
+	if ( target->alpha > 1 )
+		target->alpha = 1;
+}
+
+
+MaterialColorController::MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
+{
+}
+
+void MaterialColorController::update( float time )
+{
+	if ( !( active && target ) )
+		return;
+
+	Vector3 v3;
+	interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
+
+	Color4 color( Color3( v3 ), 1.0 );
+
+	switch ( tColor ) {
+	case tAmbient:
+		target->ambient = color;
+		break;
+	case tDiffuse:
+		target->diffuse = color;
+		break;
+	case tSpecular:
+		target->specular = color;
+		break;
+	case tSelfIllum:
+		target->emissive = color;
+		break;
 	}
+}
 
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		Vector3 v3;
-		interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
-
-		Color4 color( Color3( v3 ), 1.0 );
-
-		switch ( tColor ) {
-		case tAmbient:
-			target->ambient = color;
-			break;
-		case tDiffuse:
-			target->diffuse = color;
-			break;
-		case tSpecular:
-			target->specular = color;
-			break;
-		case tSelfIllum:
-			target->emissive = color;
-			break;
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			if ( nif->checkVersion( 0x0A010000, 0 ) ) {
-				tColor = nif->get<int>( iBlock, "Target Color" );
-			} else {
-				tColor = ( ( nif->get<int>( iBlock, "Flags" ) >> 4 ) & 7 );
-			}
-
-			return true;
+bool MaterialColorController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		if ( nif->checkVersion( 0x0A010000, 0 ) ) {
+			tColor = nif->get<int>( iBlock, "Target Color" );
+		} else {
+			tColor = ( ( nif->get<int>( iBlock, "Flags" ) >> 4 ) & 7 );
 		}
 
-		return false;
+		return true;
 	}
 
-protected:
-	QPointer<MaterialProperty> target; //!< The MaterialProperty being controlled
+	return false;
+}
 
-	int lColor;                        //!< Last interpolation time
-	int tColor;                        //!< The color slot being controlled
 
-	//! Color slots that can be controlled
-	enum
-	{
-		tAmbient   = 0,
-		tDiffuse   = 1,
-		tSpecular  = 2,
-		tSelfIllum = 3
-	};
-};
 
 void MaterialProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {

@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLNODE_H
 
 #include "glcontrolable.h" // Inherited
+#include "glcontroller.h" // Inherited
 #include "glproperty.h"
 
 #include <QList>
@@ -71,6 +72,14 @@ protected:
 
 class Node : public Controllable
 {
+	friend class ControllerManager;
+	friend class KeyframeController;
+	friend class MultiTargetTransformController;
+	friend class TransformController;
+	friend class VisibilityController;
+	friend class NodeList;
+	friend class LODNode;
+
 	typedef union
 	{
 		quint16 bits;
@@ -84,7 +93,6 @@ class Node : public Controllable
 public:
 	Node( Scene * scene, const QModelIndex & block );
 
-	// Inherited from Controllable
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
@@ -140,14 +148,6 @@ protected:
 	Transform local;
 
 	NodeFlags flags;
-
-	friend class KeyframeController;
-	friend class TransformController;
-	friend class ControllerManager;
-	friend class MultiTargetTransformController;
-	friend class VisibilityController;
-	friend class NodeList;
-	friend class LODNode;
 };
 
 template <typename T> inline T * Node::findProperty() const
@@ -190,6 +190,89 @@ public:
 	virtual const Transform & viewTrans() const;
 };
 
+
+class TransformController final : public Controller
+{
+public:
+	TransformController( Node * node, const QModelIndex & index );
+
+	void update( float time ) override final;
+
+	void setInterpolator( const QModelIndex & iBlock ) override final;
+
+protected:
+	QPointer<Node> target;
+	QPointer<TransformInterpolator> interpolator;
+};
+
+
+class MultiTargetTransformController final : public Controller
+{
+	typedef QPair<QPointer<Node>, QPointer<TransformInterpolator> > TransformTarget;
+
+public:
+	MultiTargetTransformController( Node * node, const QModelIndex & index );
+
+	void update( float time ) override final;
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+	bool setInterpolator( Node * node, const QModelIndex & iInterpolator );
+
+protected:
+	QPointer<Node> target;
+	QList<TransformTarget> extraTargets;
+};
+
+
+class ControllerManager final : public Controller
+{
+public:
+	ControllerManager( Node * node, const QModelIndex & index );
+
+	void update( float ) override final {}
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+	void setSequence( const QString & seqname ) override final;
+
+protected:
+	QPointer<Node> target;
+};
+
+
+class KeyframeController final : public Controller
+{
+public:
+	KeyframeController( Node * node, const QModelIndex & index );
+
+	void update( float time );
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+protected:
+	QPointer<Node> target;
+
+	QPersistentModelIndex iTranslations, iRotations, iScales;
+
+	int lTrans, lRotate, lScale;
+};
+
+class VisibilityController final : public Controller
+{
+public:
+	VisibilityController( Node * node, const QModelIndex & index );
+
+	void update( float time ) override final;
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+protected:
+	QPointer<Node> target;
+
+	//QPersistentModelIndex iKeys;
+
+	int visLast;
+};
+
 #endif
-
-

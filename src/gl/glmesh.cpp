@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #include "options.h"
 
-#include "glcontroller.h" // Inherited
+
 #include "glscene.h"
 #include "gltools.h"
 
@@ -47,167 +47,144 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file glmesh.cpp Mesh, MorphController, UVController
 
-//! A Controller of Mesh geometry
-class MorphController final : public Controller
-{
-	//! A representation of Mesh geometry morphs
-	struct MorphKey
-	{
-		QPersistentModelIndex iFrames;
-		QVector<Vector3> verts;
-		int index;
-	};
 
-public:
-	MorphController( Mesh * mesh, const QModelIndex & index )
-		: Controller( index ), target( mesh )
-	{
+MorphController::MorphController( Mesh * mesh, const QModelIndex & index )
+	: Controller( index ), target( mesh )
+{
+}
+
+MorphController::~MorphController()
+{
+	qDeleteAll( morph );
+}
+
+void MorphController::update( float time )
+{
+	if ( !( target && iData.isValid() && active && morph.count() > 1 ) )
+		return;
+
+	time = ctrlTime( time );
+
+	if ( target->verts.count() != morph[0]->verts.count() )
+		return;
+
+	target->verts = morph[0]->verts;
+
+	float x;
+
+	for ( int i = 1; i < morph.count(); i++ ) {
+		MorphKey * key = morph[i];
+
+		if ( interpolate( x, key->iFrames, time, key->index ) ) {
+			if ( x < 0 )
+				x = 0;
+			if ( x > 1 )
+				x = 1;
+
+			if ( x != 0 && target->verts.count() == key->verts.count() ) {
+				for ( int v = 0; v < target->verts.count(); v++ )
+					target->verts[v] += key->verts[v] * x;
+			}
+		}
 	}
 
-	~MorphController()
-	{
+	target->updateBounds = true;
+}
+
+bool MorphController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
 		qDeleteAll( morph );
-	}
+		morph.clear();
 
-	void update( float time ) override final
-	{
-		if ( !( target && iData.isValid() && active && morph.count() > 1 ) )
-			return;
+		QModelIndex midx = nif->getIndex( iData, "Morphs" );
 
-		time = ctrlTime( time );
+		for ( int r = 0; r < nif->rowCount( midx ); r++ ) {
+			QModelIndex iInterpolators, iInterpolatorWeights;
 
-		if ( target->verts.count() != morph[0]->verts.count() )
-			return;
-
-		target->verts = morph[0]->verts;
-
-		float x;
-
-		for ( int i = 1; i < morph.count(); i++ ) {
-			MorphKey * key = morph[i];
-
-			if ( interpolate( x, key->iFrames, time, key->index ) ) {
-				if ( x < 0 )
-					x = 0;
-				if ( x > 1 )
-					x = 1;
-
-				if ( x != 0 && target->verts.count() == key->verts.count() ) {
-					for ( int v = 0; v < target->verts.count(); v++ )
-						target->verts[v] += key->verts[v] * x;
-				}
-			}
-		}
-
-		target->updateBounds = true;
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			qDeleteAll( morph );
-			morph.clear();
-
-			QModelIndex midx = nif->getIndex( iData, "Morphs" );
-
-			for ( int r = 0; r < nif->rowCount( midx ); r++ ) {
-				QModelIndex iInterpolators, iInterpolatorWeights;
-
-				if ( nif->checkVersion( 0, 0x14000005 ) ) {
-					iInterpolators = nif->getIndex( iBlock, "Interpolators" );
-				} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
-					iInterpolatorWeights = nif->getIndex( iBlock, "Interpolator Weights" );
-				}
-
-				QModelIndex iKey = midx.child( r, 0 );
-
-				MorphKey * key = new MorphKey;
-				key->index = 0;
-
-				// this is ugly...
-				if ( iInterpolators.isValid() ) {
-					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
-				} else if ( iInterpolatorWeights.isValid() ) {
-					key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
-				} else {
-					key->iFrames = iKey;
-				}
-
-				key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
-
-				morph.append( key );
+			if ( nif->checkVersion( 0, 0x14000005 ) ) {
+				iInterpolators = nif->getIndex( iBlock, "Interpolators" );
+			} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
+				iInterpolatorWeights = nif->getIndex( iBlock, "Interpolator Weights" );
 			}
 
-			return true;
+			QModelIndex iKey = midx.child( r, 0 );
+
+			MorphKey * key = new MorphKey;
+			key->index = 0;
+
+			// this is ugly...
+			if ( iInterpolators.isValid() ) {
+				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolators.child( r, 0 ) ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+			} else if ( iInterpolatorWeights.isValid() ) {
+				key->iFrames = nif->getIndex( nif->getBlock( nif->getLink( nif->getBlock( nif->getLink( iInterpolatorWeights.child( r, 0 ), "Interpolator" ), "NiFloatInterpolator" ), "Data" ), "NiFloatData" ), "Data" );
+			} else {
+				key->iFrames = iKey;
+			}
+
+			key->verts = nif->getArray<Vector3>( nif->getIndex( iKey, "Vectors" ) );
+
+			morph.append( key );
 		}
 
-		return false;
+		return true;
 	}
 
-protected:
-	QPointer<Mesh> target;
-	QVector<MorphKey *>  morph;
-};
+	return false;
+}
 
-//! A Controller of UV data in a Mesh
-class UVController final : public Controller
+
+
+
+UVController::UVController( Mesh * mesh, const QModelIndex & index )
+	: Controller( index ), target( mesh )
 {
-public:
-	UVController( Mesh * mesh, const QModelIndex & index )
-		: Controller( index ), target( mesh )
-	{
-	}
+}
 
-	~UVController()
-	{
-	}
+UVController::~UVController()
+{
+}
 
-	void update( float time ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iData.model() );
-		QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
+void UVController::update( float time )
+{
+	const NifModel * nif = static_cast<const NifModel *>( iData.model() );
+	QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
 
-		// U trans, V trans, U scale, V scale
-		// see NiUVData compound in nif.xml
-		float val[4] = { 0.0, 0.0, 1.0, 1.0 };
+	// U trans, V trans, U scale, V scale
+	// see NiUVData compound in nif.xml
+	float val[4] = { 0.0, 0.0, 1.0, 1.0 };
 
-		if ( uvGroups.isValid() ) {
-			for ( int i = 0; i < 4 && i < nif->rowCount( uvGroups ); i++ ) {
-				interpolate( val[i], uvGroups.child( i, 0 ), ctrlTime( time ), luv );
-			}
-
-			// adjust coords; verified in SceneImmerse
-			for ( int i = 0; i < target->coords[0].size(); i++ ) {
-				// operating on pointers makes this too complicated, so we don't
-				Vector2 current = target->coords[0][i];
-				// scaling/tiling applied before translation
-				// Note that scaling is relative to center!
-				current += Vector2( -0.5, -0.5 );
-				current  = Vector2( current[0] * val[2], current[1] * val[3] );
-				current += Vector2( -val[0], val[1] );
-				current += Vector2( 0.5, 0.5 );
-				target->coords[0][i] = current;
-			}
+	if ( uvGroups.isValid() ) {
+		for ( int i = 0; i < 4 && i < nif->rowCount( uvGroups ); i++ ) {
+			interpolate( val[i], uvGroups.child( i, 0 ), ctrlTime( time ), luv );
 		}
 
-		target->updateData = true;
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			// do stuff here
-			return true;
+		// adjust coords; verified in SceneImmerse
+		for ( int i = 0; i < target->coords[0].size(); i++ ) {
+			// operating on pointers makes this too complicated, so we don't
+			Vector2 current = target->coords[0][i];
+			// scaling/tiling applied before translation
+			// Note that scaling is relative to center!
+			current += Vector2( -0.5, -0.5 );
+			current  = Vector2( current[0] * val[2], current[1] * val[3] );
+			current += Vector2( -val[0], val[1] );
+			current += Vector2( 0.5, 0.5 );
+			target->coords[0][i] = current;
 		}
-
-		return false;
 	}
 
-protected:
-	QPointer<Mesh> target;
+	target->updateData = true;
+}
 
-	int luv;
-};
+bool UVController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		// do stuff here
+		return true;
+	}
+
+	return false;
+}
 
 
 /*

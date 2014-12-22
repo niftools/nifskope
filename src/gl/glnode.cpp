@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glnode.h"
 #include "options.h"
 
-#include "glcontroller.h" // Inherited
 #include "glmarker.h"
 #include "glscene.h"
 
@@ -52,377 +51,334 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int Node::SELECTING = 0;
 
-class TransformController final : public Controller
+
+TransformController::TransformController( Node * node, const QModelIndex & index )
+	: Controller( index ), target( node )
 {
-public:
-	TransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node )
-	{
+}
+
+void TransformController::update( float time )
+{
+	if ( !( active && target ) )
+		return;
+
+	time = ctrlTime( time );
+
+	if ( interpolator ) {
+		interpolator->updateTransform( target->local, time );
 	}
+}
 
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
+void TransformController::setInterpolator( const QModelIndex & iBlock )
+{
+	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
-		time = ctrlTime( time );
+	if ( nif && iBlock.isValid() ) {
+		if ( interpolator ) {
+			delete interpolator;
+			interpolator = 0;
+		}
+
+		if ( nif->isNiBlock( iBlock, "NiBSplineCompTransformInterpolator" ) ) {
+			iInterpolator = iBlock;
+			interpolator  = new BSplineTransformInterpolator( this );
+		} else if ( nif->isNiBlock( iBlock, "NiTransformInterpolator" ) ) {
+			iInterpolator = iBlock;
+			interpolator  = new TransformInterpolator( this );
+		}
 
 		if ( interpolator ) {
-			interpolator->updateTransform( target->local, time );
+			interpolator->update( nif, iInterpolator );
 		}
 	}
+}
 
-	void setInterpolator( const QModelIndex & iBlock ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
-		if ( nif && iBlock.isValid() ) {
-			if ( interpolator ) {
-				delete interpolator;
-				interpolator = 0;
-			}
-
-			if ( nif->isNiBlock( iBlock, "NiBSplineCompTransformInterpolator" ) ) {
-				iInterpolator = iBlock;
-				interpolator  = new BSplineTransformInterpolator( this );
-			} else if ( nif->isNiBlock( iBlock, "NiTransformInterpolator" ) ) {
-				iInterpolator = iBlock;
-				interpolator  = new TransformInterpolator( this );
-			}
-
-			if ( interpolator ) {
-				interpolator->update( nif, iInterpolator );
-			}
-		}
-	}
-
-protected:
-	QPointer<Node> target;
-	QPointer<TransformInterpolator> interpolator;
-};
-
-class MultiTargetTransformController final : public Controller
+MultiTargetTransformController::MultiTargetTransformController( Node * node, const QModelIndex & index )
+	: Controller( index ), target( node )
 {
-	typedef QPair<QPointer<Node>, QPointer<TransformInterpolator> > TransformTarget;
+}
 
-public:
-	MultiTargetTransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node )
-	{
-	}
+void MultiTargetTransformController::update( float time )
+{
+	if ( !( active && target ) )
+		return;
 
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
+	time = ctrlTime( time );
 
-		time = ctrlTime( time );
-
-		for ( const TransformTarget& tt : extraTargets ) {
-			if ( tt.first && tt.second ) {
-				tt.second->updateTransform( tt.first->local, time );
-			}
+	for ( const TransformTarget& tt : extraTargets ) {
+		if ( tt.first && tt.second ) {
+			tt.second->updateTransform( tt.first->local, time );
 		}
 	}
+}
 
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			if ( target ) {
-				Scene * scene = target->scene;
-				extraTargets.clear();
+bool MultiTargetTransformController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		if ( target ) {
+			Scene * scene = target->scene;
+			extraTargets.clear();
 
-				QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
-				for ( const auto l : lTargets ) {
-					Node * node = scene->getNode( nif, nif->getBlock( l ) );
+			QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
+			for ( const auto l : lTargets ) {
+				Node * node = scene->getNode( nif, nif->getBlock( l ) );
 
-					if ( node ) {
-						extraTargets.append( TransformTarget( node, 0 ) );
-					}
+				if ( node ) {
+					extraTargets.append( TransformTarget( node, 0 ) );
 				}
+			}
+		}
+
+		return true;
+	}
+
+	for ( const TransformTarget& tt : extraTargets ) {
+		// TODO: update the interpolators
+	}
+
+	return false;
+}
+
+bool MultiTargetTransformController::setInterpolator( Node * node, const QModelIndex & iInterpolator )
+{
+	const NifModel * nif = static_cast<const NifModel *>( iInterpolator.model() );
+
+	if ( !nif || !iInterpolator.isValid() )
+		return false;
+
+	QMutableListIterator<TransformTarget> it( extraTargets );
+
+	while ( it.hasNext() ) {
+		it.next();
+
+		if ( it.value().first == node ) {
+			if ( it.value().second ) {
+				delete it.value().second;
+				it.value().second = 0;
+			}
+
+			if ( nif->isNiBlock( iInterpolator, "NiBSplineCompTransformInterpolator" ) ) {
+				it.value().second = new BSplineTransformInterpolator( this );
+			} else if ( nif->isNiBlock( iInterpolator, "NiTransformInterpolator" ) ) {
+				it.value().second = new TransformInterpolator( this );
+			}
+
+			if ( it.value().second ) {
+				it.value().second->update( nif, iInterpolator );
 			}
 
 			return true;
 		}
-
-		for ( const TransformTarget& tt : extraTargets ) {
-			// TODO: update the interpolators
-		}
-
-		return false;
 	}
 
-	bool setInterpolator( Node * node, const QModelIndex & iInterpolator )
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iInterpolator.model() );
+	return false;
+}
 
-		if ( !nif || !iInterpolator.isValid() )
-			return false;
 
-		QMutableListIterator<TransformTarget> it( extraTargets );
-
-		while ( it.hasNext() ) {
-			it.next();
-
-			if ( it.value().first == node ) {
-				if ( it.value().second ) {
-					delete it.value().second;
-					it.value().second = 0;
-				}
-
-				if ( nif->isNiBlock( iInterpolator, "NiBSplineCompTransformInterpolator" ) ) {
-					it.value().second = new BSplineTransformInterpolator( this );
-				} else if ( nif->isNiBlock( iInterpolator, "NiTransformInterpolator" ) ) {
-					it.value().second = new TransformInterpolator( this );
-				}
-
-				if ( it.value().second ) {
-					it.value().second->update( nif, iInterpolator );
-				}
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<Node> target;
-	QList<TransformTarget> extraTargets;
-};
-
-class ControllerManager final : public Controller
+ControllerManager::ControllerManager( Node * node, const QModelIndex & index )
+	: Controller( index ), target( node )
 {
-public:
-	ControllerManager( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node )
-	{
-	}
+}
 
-	void update( float ) override final {}
 
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			if ( target ) {
-				Scene * scene = target->scene;
-				QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
-				for ( const auto l : lSequences ) {
-					QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
-
-					if ( iSeq.isValid() ) {
-						QString name = nif->get<QString>( iSeq, "Name" );
-
-						if ( !scene->animGroups.contains( name ) ) {
-							scene->animGroups.append( name );
-
-							QMap<QString, float> tags = scene->animTags[ name ];
-
-							QModelIndex iKeys = nif->getBlock( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
-							QModelIndex iTags = nif->getIndex( iKeys, "Text Keys" );
-
-							for ( int r = 0; r < nif->rowCount( iTags ); r++ ) {
-								tags.insert( nif->get<QString>( iTags.child( r, 0 ), "Value" ), nif->get<float>( iTags.child( r, 0 ), "Time" ) );
-							}
-
-							scene->animTags[ name ] = tags;
-						}
-					}
-				}
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-	void setSequence( const QString & seqname ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-		if ( target && iBlock.isValid() && nif ) {
-			MultiTargetTransformController * multiTargetTransformer = 0;
-			for ( Controller * c : target->controllers ) {
-				if ( c->typeId() == "NiMultiTargetTransformController" ) {
-					multiTargetTransformer = static_cast<MultiTargetTransformController *>( c );
-					break;
-				}
-			}
-
-			QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
+bool ControllerManager::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		if ( target ) {
+			Scene * scene = target->scene;
+			QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
 			for ( const auto l : lSequences ) {
 				QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
 
-				if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname ) {
-					start = nif->get<float>( iSeq, "Start Time" );
-					stop  = nif->get<float>( iSeq, "Stop Time" );
-					phase = nif->get<float>( iSeq, "Phase" );
-					frequency = nif->get<float>( iSeq, "Frequency" );
+				if ( iSeq.isValid() ) {
+					QString name = nif->get<QString>( iSeq, "Name" );
 
-					QModelIndex iCtrlBlcks = nif->getIndex( iSeq, "Controlled Blocks" );
+					if ( !scene->animGroups.contains( name ) ) {
+						scene->animGroups.append( name );
 
-					for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ ) {
-						QModelIndex iCB = iCtrlBlcks.child( r, 0 );
+						QMap<QString, float> tags = scene->animTags[ name ];
 
-						QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
+						QModelIndex iKeys = nif->getBlock( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
+						QModelIndex iTags = nif->getIndex( iKeys, "Text Keys" );
 
-						QString nodename = nif->get<QString>( iCB, "Node Name" );
-
-						if ( nodename.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
-							nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+						for ( int r = 0; r < nif->rowCount( iTags ); r++ ) {
+							tags.insert( nif->get<QString>( iTags.child( r, 0 ), "Value" ), nif->get<float>( iTags.child( r, 0 ), "Time" ) );
 						}
 
-						QString proptype = nif->get<QString>( iCB, "Property Type" );
+						scene->animTags[ name ] = tags;
+					}
+				}
+			}
+		}
 
-						if ( proptype.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Property Type Offset" );
-							proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
+		return true;
+	}
 
-						QString ctrltype = nif->get<QString>( iCB, "Controller Type" );
+	return false;
+}
 
-						if ( ctrltype.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
-							ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
+void ControllerManager::setSequence( const QString & seqname )
+{
+	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
-						QString var1 = nif->get<QString>( iCB, "Variable 1" );
+	if ( target && iBlock.isValid() && nif ) {
+		MultiTargetTransformController * multiTargetTransformer = 0;
+		for ( Controller * c : target->controllers ) {
+			if ( c->typeId() == "NiMultiTargetTransformController" ) {
+				multiTargetTransformer = static_cast<MultiTargetTransformController *>( c );
+				break;
+			}
+		}
 
-						if ( var1.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
-							var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
+		QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
+		for ( const auto l : lSequences ) {
+			QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
 
-						QString var2 = nif->get<QString>( iCB, "Variable 2" );
+			if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname ) {
+				start = nif->get<float>( iSeq, "Start Time" );
+				stop  = nif->get<float>( iSeq, "Stop Time" );
+				phase = nif->get<float>( iSeq, "Phase" );
+				frequency = nif->get<float>( iSeq, "Frequency" );
 
-						if ( var2.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
-							var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
+				QModelIndex iCtrlBlcks = nif->getIndex( iSeq, "Controlled Blocks" );
 
-						Node * node = target->findChild( nodename );
+				for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ ) {
+					QModelIndex iCB = iCtrlBlcks.child( r, 0 );
 
-						if ( !node )
+					QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
+
+					QString nodename = nif->get<QString>( iCB, "Node Name" );
+
+					if ( nodename.isEmpty() ) {
+						QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
+						nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+					}
+
+					QString proptype = nif->get<QString>( iCB, "Property Type" );
+
+					if ( proptype.isEmpty() ) {
+						QModelIndex idx = nif->getIndex( iCB, "Property Type Offset" );
+						proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+					}
+
+					QString ctrltype = nif->get<QString>( iCB, "Controller Type" );
+
+					if ( ctrltype.isEmpty() ) {
+						QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
+						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+					}
+
+					QString var1 = nif->get<QString>( iCB, "Variable 1" );
+
+					if ( var1.isEmpty() ) {
+						QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
+						var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+					}
+
+					QString var2 = nif->get<QString>( iCB, "Variable 2" );
+
+					if ( var2.isEmpty() ) {
+						QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
+						var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
+					}
+
+					Node * node = target->findChild( nodename );
+
+					if ( !node )
+						continue;
+
+					if ( ctrltype == "NiTransformController" && multiTargetTransformer ) {
+						if ( multiTargetTransformer->setInterpolator( node, iInterpolator ) ) {
+							multiTargetTransformer->start = start;
+							multiTargetTransformer->stop  = stop;
+							multiTargetTransformer->phase = phase;
+							multiTargetTransformer->frequency = frequency;
 							continue;
-
-						if ( ctrltype == "NiTransformController" && multiTargetTransformer ) {
-							if ( multiTargetTransformer->setInterpolator( node, iInterpolator ) ) {
-								multiTargetTransformer->start = start;
-								multiTargetTransformer->stop  = stop;
-								multiTargetTransformer->phase = phase;
-								multiTargetTransformer->frequency = frequency;
-								continue;
-							}
 						}
+					}
 
-						Controller * ctrl = node->findController( proptype, ctrltype, var1, var2 );
+					Controller * ctrl = node->findController( proptype, ctrltype, var1, var2 );
 
-						if ( ctrl ) {
-							ctrl->start = start;
-							ctrl->stop  = stop;
-							ctrl->phase = phase;
-							ctrl->frequency = frequency;
+					if ( ctrl ) {
+						ctrl->start = start;
+						ctrl->stop  = stop;
+						ctrl->phase = phase;
+						ctrl->frequency = frequency;
 
-							ctrl->setInterpolator( iInterpolator );
-						}
+						ctrl->setInterpolator( iInterpolator );
 					}
 				}
 			}
 		}
 	}
+}
 
-protected:
-	QPointer<Node> target;
-};
 
-class KeyframeController final : public Controller
+KeyframeController::KeyframeController( Node * node, const QModelIndex & index )
+	: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 )
 {
-public:
-	KeyframeController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 )
-	{
-	}
+}
 
-	void update( float time )
-	{
-		if ( !( active && target ) )
-			return;
-
-		time = ctrlTime( time );
-
-		interpolate( target->local.rotation, iRotations, time, lRotate );
-		interpolate( target->local.translation, iTranslations, time, lTrans );
-		interpolate( target->local.scale, iScales, time, lScale );
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			iTranslations = nif->getIndex( iData, "Translations" );
-			iRotations = nif->getIndex( iData, "Rotations" );
-
-			if ( !iRotations.isValid() )
-				iRotations = iData;
-
-			iScales = nif->getIndex( iData, "Scales" );
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<Node> target;
-
-	QPersistentModelIndex iTranslations, iRotations, iScales;
-
-	int lTrans, lRotate, lScale;
-};
-
-class VisibilityController final : public Controller
+void KeyframeController::update( float time )
 {
-public:
-	VisibilityController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), visLast( 0 )
-	{
+	if ( !( active && target ) )
+		return;
+
+	time = ctrlTime( time );
+
+	interpolate( target->local.rotation, iRotations, time, lRotate );
+	interpolate( target->local.translation, iTranslations, time, lTrans );
+	interpolate( target->local.scale, iScales, time, lScale );
+}
+
+bool KeyframeController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		iTranslations = nif->getIndex( iData, "Translations" );
+		iRotations = nif->getIndex( iData, "Rotations" );
+
+		if ( !iRotations.isValid() )
+			iRotations = iData;
+
+		iScales = nif->getIndex( iData, "Scales" );
+		return true;
 	}
 
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
+	return false;
+}
 
-		time = ctrlTime( time );
 
-		bool isVisible;
+VisibilityController::VisibilityController( Node * node, const QModelIndex & index )
+	: Controller( index ), target( node ), visLast( 0 )
+{
+}
 
-		if ( interpolate( isVisible, iData, time, visLast ) ) {
-			target->flags.node.hidden = !isVisible;
-		}
+void VisibilityController::update( float time )
+{
+	if ( !( active && target ) )
+		return;
+
+	time = ctrlTime( time );
+
+	bool isVisible;
+
+	if ( interpolate( isVisible, iData, time, visLast ) ) {
+		target->flags.node.hidden = !isVisible;
+	}
+}
+
+bool VisibilityController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		// iData already points to the NiVisData
+		// note that nif.xml needs to have "Keys" not "Vis Keys" for interpolate() to work
+		//iKeys = nif->getIndex( iData, "Data" );
+		return true;
 	}
 
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			// iData already points to the NiVisData
-			// note that nif.xml needs to have "Keys" not "Vis Keys" for interpolate() to work
-			//iKeys = nif->getIndex( iData, "Data" );
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<Node> target;
-
-	//QPersistentModelIndex iKeys;
-
-	int visLast;
-};
+	return false;
+}
 
 /*
  *  Node list

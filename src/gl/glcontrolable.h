@@ -47,6 +47,8 @@ class Scene;
 //! Anything capable of having a Controller
 class Controllable : public QObject
 {
+	friend class ControllerManager;
+
 public:
 	Controllable( Scene * Scene, const QModelIndex & index );
 	virtual ~Controllable();
@@ -76,8 +78,6 @@ protected:
 	QList<Controller *> controllers;
 
 	QString name;
-
-	friend class ControllerManager;
 };
 
 #endif

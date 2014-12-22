@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glparticles.h"
 
-#include "glcontroller.h" // Inherited
+
 #include "glscene.h"
 
 #include <math.h>
@@ -51,279 +51,231 @@ Vector3 random( Vector3 v )
 	return v;
 }
 
-class ParticleController final : public Controller
+
+ParticleController::ParticleController( Particles * particles, const QModelIndex & index )
+	: Controller( index ), target( particles )
 {
-	struct Particle
-	{
-		Vector3 position;
-		Vector3 velocity;
-		Vector3 unknown;
-		float lifetime;
-		float lifespan;
-		float lasttime;
-		short y;
-		short vertex;
+}
 
-		Particle() : lifetime( 0 ), lifespan( 0 )
-		{
-		}
-	};
-	QVector<Particle> list;
-	struct Gravity
-	{
-		float force;
-		int type;
-		Vector3 position;
-		Vector3 direction;
-	};
-	QVector<Gravity> grav;
-
-	QPointer<Particles> target;
-
-	float emitStart, emitStop, emitRate, emitLast, emitAccu, emitMax;
-	QPointer<Node> emitNode;
-	Vector3 emitRadius;
-
-	float spd, spdRnd;
-	float ttl, ttlRnd;
-
-	float inc, incRnd;
-	float dec, decRnd;
-
-	float size;
-	float grow;
-	float fade;
-
-	float localtime;
-
-	QList<QPersistentModelIndex> iExtras;
-	QPersistentModelIndex iColorKeys;
-
-public:
-	ParticleController( Particles * particles, const QModelIndex & index )
-		: Controller( index ), target( particles )
-	{
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( !target )
-			return false;
-
-		if ( Controller::update( nif, index ) || ( index.isValid() && iExtras.contains( index ) ) ) {
-			emitNode   = target->scene->getNode( nif, nif->getBlock( nif->getLink( iBlock, "Emitter" ) ) );
-			emitStart  = nif->get<float>( iBlock, "Emit Start Time" );
-			emitStop   = nif->get<float>( iBlock, "Emit Stop Time" );
-			emitRate   = nif->get<float>( iBlock, "Emit Rate" );
-			emitRadius = nif->get<Vector3>( iBlock, "Start Random" );
-			emitAccu   = 0;
-			emitLast   = emitStart;
-
-			spd = nif->get<float>( iBlock, "Speed" );
-			spdRnd = nif->get<float>( iBlock, "Speed Random" );
-
-			ttl = nif->get<float>( iBlock, "Lifetime" );
-			ttlRnd = nif->get<float>( iBlock, "Lifetime Random" );
-
-			inc = nif->get<float>( iBlock, "Vertical Direction" );
-			incRnd = nif->get<float>( iBlock, "Vertical Angle" );
-
-			dec = nif->get<float>( iBlock, "Horizontal Direction" );
-			decRnd = nif->get<float>( iBlock, "Horizontal Angle" );
-
-			size = nif->get<float>( iBlock, "Size" );
-			grow = 0.0;
-			fade = 0.0;
-
-			list.clear();
-
-			QModelIndex iParticles = nif->getIndex( iBlock, "Particles" );
-
-			if ( iParticles.isValid() ) {
-				emitMax = nif->get<int>( iBlock, "Num Particles" );
-				int active = nif->get<int>( iBlock, "Num Valid" );
-
-				//iParticles = nif->getIndex( iParticles, "Particles" );
-				//if ( iParticles.isValid() )
-				//{
-				for ( int p = 0; p < active && p < nif->rowCount( iParticles ); p++ ) {
-					Particle particle;
-					particle.velocity = nif->get<Vector3>( iParticles.child( p, 0 ), "Velocity" );
-					particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Lifetime" );
-					particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Lifespan" );
-					particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Timestamp" );
-					particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
-					// Display saved particle start on initial load
-					list.append( particle );
-				}
-
-				//}
-			}
-
-			if ( ( nif->get<int>( iBlock, "Emit Flags" ) & 1 ) == 0 ) {
-				emitRate = emitMax / ( ttl + ttlRnd / 2 );
-			}
-
-			iExtras.clear();
-			grav.clear();
-			iColorKeys = QModelIndex();
-			QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Extra" ) );
-
-			while ( iExtra.isValid() ) {
-				iExtras.append( iExtra );
-
-				QString name = nif->itemName( iExtra );
-
-				if ( name == "NiParticleGrowFade" ) {
-					grow = nif->get<float>( iExtra, "Grow" );
-					fade = nif->get<float>( iExtra, "Fade" );
-				} else if ( name == "NiParticleColorModifier" ) {
-					iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
-				} else if ( name == "NiGravity" ) {
-					Gravity g;
-					g.force = nif->get<float>( iExtra, "Force" );
-					g.type  = nif->get<int>( iExtra, "Type" );
-					g.position  = nif->get<Vector3>( iExtra, "Position" );
-					g.direction = nif->get<Vector3>( iExtra, "Direction" );
-					grav.append( g );
-				}
-
-				iExtra = nif->getBlock( nif->getLink( iExtra, "Next Modifier" ) );
-			}
-
-			return true;
-		}
-
+bool ParticleController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( !target )
 		return false;
+
+	if ( Controller::update( nif, index ) || ( index.isValid() && iExtras.contains( index ) ) ) {
+		emitNode   = target->scene->getNode( nif, nif->getBlock( nif->getLink( iBlock, "Emitter" ) ) );
+		emitStart  = nif->get<float>( iBlock, "Emit Start Time" );
+		emitStop   = nif->get<float>( iBlock, "Emit Stop Time" );
+		emitRate   = nif->get<float>( iBlock, "Emit Rate" );
+		emitRadius = nif->get<Vector3>( iBlock, "Start Random" );
+		emitAccu   = 0;
+		emitLast   = emitStart;
+
+		spd = nif->get<float>( iBlock, "Speed" );
+		spdRnd = nif->get<float>( iBlock, "Speed Random" );
+
+		ttl = nif->get<float>( iBlock, "Lifetime" );
+		ttlRnd = nif->get<float>( iBlock, "Lifetime Random" );
+
+		inc = nif->get<float>( iBlock, "Vertical Direction" );
+		incRnd = nif->get<float>( iBlock, "Vertical Angle" );
+
+		dec = nif->get<float>( iBlock, "Horizontal Direction" );
+		decRnd = nif->get<float>( iBlock, "Horizontal Angle" );
+
+		size = nif->get<float>( iBlock, "Size" );
+		grow = 0.0;
+		fade = 0.0;
+
+		list.clear();
+
+		QModelIndex iParticles = nif->getIndex( iBlock, "Particles" );
+
+		if ( iParticles.isValid() ) {
+			emitMax = nif->get<int>( iBlock, "Num Particles" );
+			int active = nif->get<int>( iBlock, "Num Valid" );
+
+			//iParticles = nif->getIndex( iParticles, "Particles" );
+			//if ( iParticles.isValid() )
+			//{
+			for ( int p = 0; p < active && p < nif->rowCount( iParticles ); p++ ) {
+				Particle particle;
+				particle.velocity = nif->get<Vector3>( iParticles.child( p, 0 ), "Velocity" );
+				particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Lifetime" );
+				particle.lifespan = nif->get<float>( iParticles.child( p, 0 ), "Lifespan" );
+				particle.lasttime = nif->get<float>( iParticles.child( p, 0 ), "Timestamp" );
+				particle.vertex = nif->get<int>( iParticles.child( p, 0 ), "Vertex ID" );
+				// Display saved particle start on initial load
+				list.append( particle );
+			}
+
+			//}
+		}
+
+		if ( ( nif->get<int>( iBlock, "Emit Flags" ) & 1 ) == 0 ) {
+			emitRate = emitMax / ( ttl + ttlRnd / 2 );
+		}
+
+		iExtras.clear();
+		grav.clear();
+		iColorKeys = QModelIndex();
+		QModelIndex iExtra = nif->getBlock( nif->getLink( iBlock, "Particle Extra" ) );
+
+		while ( iExtra.isValid() ) {
+			iExtras.append( iExtra );
+
+			QString name = nif->itemName( iExtra );
+
+			if ( name == "NiParticleGrowFade" ) {
+				grow = nif->get<float>( iExtra, "Grow" );
+				fade = nif->get<float>( iExtra, "Fade" );
+			} else if ( name == "NiParticleColorModifier" ) {
+				iColorKeys = nif->getIndex( nif->getBlock( nif->getLink( iExtra, "Color Data" ), "NiColorData" ), "Data" );
+			} else if ( name == "NiGravity" ) {
+				Gravity g;
+				g.force = nif->get<float>( iExtra, "Force" );
+				g.type  = nif->get<int>( iExtra, "Type" );
+				g.position  = nif->get<Vector3>( iExtra, "Position" );
+				g.direction = nif->get<Vector3>( iExtra, "Direction" );
+				grav.append( g );
+			}
+
+			iExtra = nif->getBlock( nif->getLink( iExtra, "Next Modifier" ) );
+		}
+
+		return true;
 	}
 
-	void update( float time ) override final
-	{
-		if ( !( target && active ) )
-			return;
+	return false;
+}
 
-		localtime = ctrlTime( time );
+void ParticleController::update( float time )
+{
+	if ( !( target && active ) )
+		return;
 
-		int n = 0;
+	localtime = ctrlTime( time );
 
-		while ( n < list.count() ) {
-			Particle & p = list[n];
+	int n = 0;
 
-			float deltaTime = ( localtime > p.lasttime ? localtime - p.lasttime : 0 ); //( stop - start ) - p.lasttime + localtime );
+	while ( n < list.count() ) {
+		Particle & p = list[n];
 
-			p.lifetime += deltaTime;
+		float deltaTime = ( localtime > p.lasttime ? localtime - p.lasttime : 0 ); //( stop - start ) - p.lasttime + localtime );
 
-			if ( p.lifetime < p.lifespan && p.vertex < target->verts.count() ) {
-				p.position = target->verts[ p.vertex ];
+		p.lifetime += deltaTime;
 
-				for ( int i = 0; i < 4; i++ )
-					moveParticle( p, deltaTime / 4 );
+		if ( p.lifetime < p.lifespan && p.vertex < target->verts.count() ) {
+			p.position = target->verts[ p.vertex ];
 
-				p.lasttime = localtime;
-				n++;
-			} else {
-				list.remove( n );
-			}
-		}
+			for ( int i = 0; i < 4; i++ )
+				moveParticle( p, deltaTime / 4 );
 
-		if ( emitNode && emitNode->isVisible() && localtime >= emitStart && localtime <= emitStop ) {
-			float emitDelta = ( localtime > emitLast ? localtime - emitLast : 0 );
-			emitLast = localtime;
-
-			emitAccu += emitDelta * emitRate;
-
-			int num = int(emitAccu);
-
-			if ( num > 0 ) {
-				emitAccu -= num;
-
-				while ( num-- > 0 && list.count() < target->verts.count() ) {
-					Particle p;
-					startParticle( p );
-					list.append( p );
-				}
-			}
-		}
-
-		n = 0;
-
-		while ( n < list.count() ) {
-			Particle & p = list[n];
-			p.vertex = n;
-			target->verts[ n ] = p.position;
-
-			if ( n < target->sizes.count() )
-				sizeParticle( p, target->sizes[n] );
-
-			if ( n < target->colors.count() )
-				colorParticle( p, target->colors[n] );
-
+			p.lasttime = localtime;
 			n++;
+		} else {
+			list.remove( n );
 		}
-
-		target->active = list.count();
-		target->size = size;
 	}
 
-	void startParticle( Particle & p )
-	{
-		p.position  = random( emitRadius * 2 ) - emitRadius;
-		p.position += target->worldTrans().rotation.inverted() * ( emitNode->worldTrans().translation - target->worldTrans().translation );
+	if ( emitNode && emitNode->isVisible() && localtime >= emitStart && localtime <= emitStop ) {
+		float emitDelta = ( localtime > emitLast ? localtime - emitLast : 0 );
+		emitLast = localtime;
 
-		float i = inc + random( incRnd );
-		float d = dec + random( decRnd );
+		emitAccu += emitDelta * emitRate;
 
-		p.velocity = Vector3( rand() & 1 ? sin( i ) : -sin( i ), 0, cos( i ) );
+		int num = int(emitAccu);
 
-		Matrix m; m.fromEuler( 0, 0, rand() & 1 ? d : -d );
-		p.velocity = m * p.velocity;
+		if ( num > 0 ) {
+			emitAccu -= num;
 
-		p.velocity = p.velocity * ( spd + random( spdRnd ) );
-		p.velocity = target->worldTrans().rotation.inverted() * emitNode->worldTrans().rotation * p.velocity;
-
-		p.lifetime = 0;
-		p.lifespan = ttl + random( ttlRnd );
-		p.lasttime = localtime;
-	}
-
-	void moveParticle( Particle & p, float deltaTime )
-	{
-		for ( Gravity g : grav ) {
-			switch ( g.type ) {
-			case 0:
-				p.velocity += g.direction * ( g.force * deltaTime );
-				break;
-			case 1:
-				{
-					Vector3 dir = ( g.position - p.position );
-					dir.normalize();
-					p.velocity += dir * ( g.force * deltaTime );
-				}
-				break;
+			while ( num-- > 0 && list.count() < target->verts.count() ) {
+				Particle p;
+				startParticle( p );
+				list.append( p );
 			}
 		}
-		p.position += p.velocity * deltaTime;
 	}
 
-	void sizeParticle( Particle & p, float & size )
-	{
-		size = 1.0;
+	n = 0;
 
-		if ( grow > 0 && p.lifetime < grow )
-			size *= p.lifetime / grow;
+	while ( n < list.count() ) {
+		Particle & p = list[n];
+		p.vertex = n;
+		target->verts[ n ] = p.position;
 
-		if ( fade > 0 && p.lifespan - p.lifetime < fade )
-			size *= ( p.lifespan - p.lifetime ) / fade;
+		if ( n < target->sizes.count() )
+			sizeParticle( p, target->sizes[n] );
+
+		if ( n < target->colors.count() )
+			colorParticle( p, target->colors[n] );
+
+		n++;
 	}
 
-	void colorParticle( Particle & p, Color4 & color )
-	{
-		if ( iColorKeys.isValid() ) {
-			int i = 0;
-			interpolate( color, iColorKeys, p.lifetime / p.lifespan, i );
+	target->active = list.count();
+	target->size = size;
+}
+
+void ParticleController::startParticle( Particle & p )
+{
+	p.position  = random( emitRadius * 2 ) - emitRadius;
+	p.position += target->worldTrans().rotation.inverted() * ( emitNode->worldTrans().translation - target->worldTrans().translation );
+
+	float i = inc + random( incRnd );
+	float d = dec + random( decRnd );
+
+	p.velocity = Vector3( rand() & 1 ? sin( i ) : -sin( i ), 0, cos( i ) );
+
+	Matrix m; m.fromEuler( 0, 0, rand() & 1 ? d : -d );
+	p.velocity = m * p.velocity;
+
+	p.velocity = p.velocity * ( spd + random( spdRnd ) );
+	p.velocity = target->worldTrans().rotation.inverted() * emitNode->worldTrans().rotation * p.velocity;
+
+	p.lifetime = 0;
+	p.lifespan = ttl + random( ttlRnd );
+	p.lasttime = localtime;
+}
+
+void ParticleController::moveParticle( Particle & p, float deltaTime )
+{
+	for ( Gravity g : grav ) {
+		switch ( g.type ) {
+		case 0:
+			p.velocity += g.direction * ( g.force * deltaTime );
+			break;
+		case 1:
+			{
+				Vector3 dir = ( g.position - p.position );
+				dir.normalize();
+				p.velocity += dir * ( g.force * deltaTime );
+			}
+			break;
 		}
 	}
-};
+	p.position += p.velocity * deltaTime;
+}
+
+void ParticleController::sizeParticle( Particle & p, float & size )
+{
+	size = 1.0;
+
+	if ( grow > 0 && p.lifetime < grow )
+		size *= p.lifetime / grow;
+
+	if ( fade > 0 && p.lifespan - p.lifetime < fade )
+		size *= ( p.lifespan - p.lifetime ) / fade;
+}
+
+void ParticleController::colorParticle( Particle & p, Color4 & color )
+{
+	if ( iColorKeys.isValid() ) {
+		int i = 0;
+		interpolate( color, iColorKeys, p.lifetime / p.lifespan, i );
+	}
+}
+
 
 /*
  *  Particle
