@@ -37,19 +37,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /*
- *  Controllable
+ *  IControllable
  */
 
-Controllable::Controllable( Scene * s, const QModelIndex & i ) : scene( s ), iBlock( i )
+IControllable::IControllable( Scene * s, const QModelIndex & i ) : scene( s ), iBlock( i )
 {
 }
 
-Controllable::~Controllable()
+IControllable::~IControllable()
 {
 	qDeleteAll( controllers );
 }
 
-void Controllable::clear()
+void IControllable::clear()
 {
 	name = QString();
 
@@ -57,7 +57,7 @@ void Controllable::clear()
 	controllers.clear();
 }
 
-Controller * Controllable::findController( const QString & ctrltype, const QString & var1, const QString & var2 )
+Controller * IControllable::findController( const QString & ctrltype, const QString & var1, const QString & var2 )
 {
 	Q_UNUSED( var2 ); Q_UNUSED( var1 );
 	Controller * ctrl = nullptr;
@@ -78,7 +78,7 @@ Controller * Controllable::findController( const QString & ctrltype, const QStri
 }
 
 
-void Controllable::update( const NifModel * nif, const QModelIndex & i )
+void IControllable::update( const NifModel * nif, const QModelIndex & i )
 {
 	if ( !iBlock.isValid() ) {
 		clear();
@@ -123,7 +123,7 @@ void Controllable::update( const NifModel * nif, const QModelIndex & i )
 	}
 }
 
-void Controllable::transform()
+void IControllable::transform()
 {
 	if ( scene->animate ) {
 		for ( Controller * controller : controllers ) {
@@ -132,7 +132,7 @@ void Controllable::transform()
 	}
 }
 
-void Controllable::timeBounds( float & tmin, float & tmax )
+void IControllable::timeBounds( float & tmin, float & tmax )
 {
 	if ( controllers.isEmpty() )
 		return;
@@ -148,7 +148,7 @@ void Controllable::timeBounds( float & tmin, float & tmax )
 	tmax = qMax( tmax, mx );
 }
 
-void Controllable::setSequence( const QString & seqname )
+void IControllable::setSequence( const QString & seqname )
 {
 	for ( Controller * ctrl : controllers ) {
 		ctrl->setSequence( seqname );

@@ -157,7 +157,7 @@ void NodeList::sort()
  */
 
 
-Node::Node( Scene * s, const QModelIndex & index ) : Controllable( s, index ), parent( 0 ), ref( 0 )
+Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), parent( 0 ), ref( 0 )
 {
 	nodeId = 0;
 	flags.bits = 0;
@@ -165,7 +165,7 @@ Node::Node( Scene * s, const QModelIndex & index ) : Controllable( s, index ), p
 
 void Node::clear()
 {
-	Controllable::clear();
+	IControllable::clear();
 
 	nodeId = 0;
 	flags.bits = 0;
@@ -186,12 +186,12 @@ Controller * Node::findController( const QString & proptype, const QString & ctr
 		return nullptr;
 	}
 
-	return Controllable::findController( ctrltype, var1, var2 );
+	return IControllable::findController( ctrltype, var1, var2 );
 }
 
 void Node::update( const NifModel * nif, const QModelIndex & index )
 {
-	Controllable::update( nif, index );
+	IControllable::update( nif, index );
 
 	if ( !iBlock.isValid() ) {
 		clear();
@@ -386,7 +386,7 @@ bool Node::isHidden() const
 
 void Node::transform()
 {
-	Controllable::transform();
+	IControllable::transform();
 
 	// if there's a rigid body attached, then calculate and cache the body's transform
 	// (need this later in the drawing stage for the constraints)

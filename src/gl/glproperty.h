@@ -48,11 +48,11 @@ typedef float GLfloat;
 //! \file glproperty.h Property classes
 
 //! Controllable properties attached to nodes and meshes
-class Property : public Controllable
+class Property : public IControllable
 {
 protected:
-	//! Protected constructor; see Controllable()
-	Property( Scene * scene, const QModelIndex & index ) : Controllable( scene, index ), ref( 0 ) {}
+	//! Protected constructor; see IControllable()
+	Property( Scene * scene, const QModelIndex & index ) : IControllable( scene, index ), ref( 0 ) {}
 
 	int ref;
 

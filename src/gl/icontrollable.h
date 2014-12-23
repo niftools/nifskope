@@ -30,8 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#ifndef GLCONTROLABLE_H
-#define GLCONTROLABLE_H
+#ifndef ICONTROLLABLE_H
+#define ICONTROLLABLE_H
 
 #include "nifmodel.h"
 
@@ -45,13 +45,13 @@ class Controller;
 class Scene;
 
 //! Anything capable of having a Controller
-class Controllable : public QObject
+class IControllable : public QObject
 {
 	friend class ControllerManager;
 
 public:
-	Controllable( Scene * Scene, const QModelIndex & index );
-	virtual ~Controllable();
+	IControllable( Scene * Scene, const QModelIndex & index );
+	virtual ~IControllable();
 
 	QModelIndex index() const { return iBlock; }
 	virtual bool isValid() const { return iBlock.isValid(); }

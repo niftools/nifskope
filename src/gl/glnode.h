@@ -69,7 +69,7 @@ protected:
 	QList<Node *> nodes;
 };
 
-class Node : public Controllable
+class Node : public IControllable
 {
 	friend class ControllerManager;
 	friend class KeyframeController;
@@ -168,7 +168,7 @@ class LODNode : public Node
 public:
 	LODNode( Scene * scene, const QModelIndex & block );
 
-	// Inherited from Node, Controllable
+	// Inherited from Node, IControllable
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
