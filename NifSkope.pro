@@ -151,7 +151,6 @@ HEADERS += \
 	src/gl/dds/PixelFormat.h \
 	src/gl/dds/Stream.h \
 	src/gl/controllers.h \
-	src/gl/glcontrolable.h \
 	src/gl/glcontroller.h \
 	src/gl/glmarker.h \
 	src/gl/glmesh.h \
@@ -162,6 +161,7 @@ HEADERS += \
 	src/gl/gltex.h \
 	src/gl/gltexloaders.h \
 	src/gl/gltools.h \
+	src/gl/icontrollable.h \
 	src/gl/marker/constraints.h \
 	src/gl/marker/furniture.h \
 	src/gl/renderer.h \
