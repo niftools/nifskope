@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLPARTICLES_H
 
 #include "glnode.h" // Inherited
-#include "glcontroller.h" // Inherited
 
 #include <QPersistentModelIndex>
 #include <QVector>
@@ -42,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Particles : public Node
 {
+	friend class ParticleController;
+
 public:
 	Particles( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 
@@ -68,73 +69,7 @@ protected:
 
 	int active;
 	float size;
-
-	friend class ParticleController;
 };
 
-
-class ParticleController final : public Controller
-{
-	struct Particle
-	{
-		Vector3 position;
-		Vector3 velocity;
-		Vector3 unknown;
-		float lifetime;
-		float lifespan;
-		float lasttime;
-		short y;
-		short vertex;
-
-		Particle() : lifetime( 0 ), lifespan( 0 )
-		{
-		}
-	};
-	QVector<Particle> list;
-	struct Gravity
-	{
-		float force;
-		int type;
-		Vector3 position;
-		Vector3 direction;
-	};
-	QVector<Gravity> grav;
-
-	QPointer<Particles> target;
-
-	float emitStart, emitStop, emitRate, emitLast, emitAccu, emitMax;
-	QPointer<Node> emitNode;
-	Vector3 emitRadius;
-
-	float spd, spdRnd;
-	float ttl, ttlRnd;
-
-	float inc, incRnd;
-	float dec, decRnd;
-
-	float size;
-	float grow;
-	float fade;
-
-	float localtime;
-
-	QList<QPersistentModelIndex> iExtras;
-	QPersistentModelIndex iColorKeys;
-
-public:
-	ParticleController( Particles * particles, const QModelIndex & index );
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-	void update( float time ) override final;
-
-	void startParticle( Particle & p );
-
-	void moveParticle( Particle & p, float deltaTime );
-
-	void sizeParticle( Particle & p, float & size );
-
-	void colorParticle( Particle & p, Color4 & color );
-};
 
 #endif

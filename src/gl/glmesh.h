@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLMESH_H
 
 #include "glnode.h" // Inherited
-#include "glcontroller.h" // Inherited
 #include "gltools.h"
 
 #include <QPersistentModelIndex>
@@ -149,50 +148,6 @@ protected:
 	mutable bool updateBounds;
 
 	static bool isBSLODPresent;
-};
-
-
-//! A Controller of Mesh geometry
-class MorphController final : public Controller
-{
-	//! A representation of Mesh geometry morphs
-	struct MorphKey
-	{
-		QPersistentModelIndex iFrames;
-		QVector<Vector3> verts;
-		int index;
-	};
-
-public:
-	MorphController( Mesh * mesh, const QModelIndex & index );
-	~MorphController();
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<Mesh> target;
-	QVector<MorphKey *>  morph;
-};
-
-
-//! A Controller of UV data in a Mesh
-class UVController final : public Controller
-{
-public:
-	UVController( Mesh * mesh, const QModelIndex & index );
-
-	~UVController();
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<Mesh> target;
-
-	int luv;
 };
 
 

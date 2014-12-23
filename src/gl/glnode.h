@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLNODE_H
 
 #include "glcontrolable.h" // Inherited
-#include "glcontroller.h" // Inherited
 #include "glproperty.h"
 
 #include <QList>
@@ -190,89 +189,5 @@ public:
 	virtual const Transform & viewTrans() const;
 };
 
-
-class TransformController final : public Controller
-{
-public:
-	TransformController( Node * node, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-	void setInterpolator( const QModelIndex & iBlock ) override final;
-
-protected:
-	QPointer<Node> target;
-	QPointer<TransformInterpolator> interpolator;
-};
-
-
-class MultiTargetTransformController final : public Controller
-{
-	typedef QPair<QPointer<Node>, QPointer<TransformInterpolator> > TransformTarget;
-
-public:
-	MultiTargetTransformController( Node * node, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-	bool setInterpolator( Node * node, const QModelIndex & iInterpolator );
-
-protected:
-	QPointer<Node> target;
-	QList<TransformTarget> extraTargets;
-};
-
-
-class ControllerManager final : public Controller
-{
-public:
-	ControllerManager( Node * node, const QModelIndex & index );
-
-	void update( float ) override final {}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-	void setSequence( const QString & seqname ) override final;
-
-protected:
-	QPointer<Node> target;
-};
-
-
-class KeyframeController final : public Controller
-{
-public:
-	KeyframeController( Node * node, const QModelIndex & index );
-
-	void update( float time );
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<Node> target;
-
-	QPersistentModelIndex iTranslations, iRotations, iScales;
-
-	int lTrans, lRotate, lScale;
-};
-
-class VisibilityController final : public Controller
-{
-public:
-	VisibilityController( Node * node, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<Node> target;
-
-	//QPersistentModelIndex iKeys;
-
-	int visLast;
-};
 
 #endif

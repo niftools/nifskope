@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLPROPERTY_H
 
 #include "glcontrolable.h" // Inherited
-#include "glcontroller.h" // Inherited
 
 #include <QHash>
 #include <QPersistentModelIndex>
@@ -698,90 +697,5 @@ protected:
 
 REGISTER_PROPERTY( BSWaterShaderProperty, ShaderLighting )
 
-
-//! Controller for source textures in a TexturingProperty
-class TexFlipController final : public Controller
-{
-public:
-	TexFlipController( TexturingProperty * prop, const QModelIndex & index );
-
-	TexFlipController( TextureProperty * prop, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<TexturingProperty> target;
-	QPointer<TextureProperty> oldTarget;
-
-	float flipDelta;
-	int flipSlot;
-
-	int flipLast;
-
-	QPersistentModelIndex iSources;
-};
-
-//! Controller for transformations in a TexturingProperty
-class TexTransController final : public Controller
-{
-public:
-	TexTransController( TexturingProperty * prop, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<TexturingProperty> target;
-
-	int texSlot;
-	int texOP;
-
-	int lX;
-};
-
-
-//! Controller for alpha values in a MaterialProperty
-class AlphaController final : public Controller
-{
-public:
-	AlphaController( MaterialProperty * prop, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-protected:
-	QPointer<MaterialProperty> target;
-
-	int lAlpha;
-};
-
-
-//! Controller for color values in a MaterialProperty
-class MaterialColorController final : public Controller
-{
-public:
-	MaterialColorController( MaterialProperty * prop, const QModelIndex & index );
-
-	void update( float time ) override final;
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final;
-
-protected:
-	QPointer<MaterialProperty> target; //!< The MaterialProperty being controlled
-
-	int lColor;                        //!< Last interpolation time
-	int tColor;                        //!< The color slot being controlled
-
-	//! Color slots that can be controlled
-	enum
-	{
-		tAmbient = 0,
-		tDiffuse = 1,
-		tSpecular = 2,
-		tSelfIllum = 3
-	};
-};
 
 #endif
