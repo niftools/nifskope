@@ -150,6 +150,7 @@ HEADERS += \
 	src/gl/dds/Image.h \
 	src/gl/dds/PixelFormat.h \
 	src/gl/dds/Stream.h \
+	src/gl/controllers.h \
 	src/gl/glcontrolable.h \
 	src/gl/glcontroller.h \
 	src/gl/glmarker.h \
@@ -214,6 +215,7 @@ SOURCES += \
 	src/gl/dds/DirectDrawSurface.cpp \
 	src/gl/dds/Image.cpp \
 	src/gl/dds/Stream.cpp \
+	src/gl/controllers.cpp \
 	src/gl/glcontroller.cpp \
 	src/gl/glmarker.cpp \
 	src/gl/glmesh.cpp \
