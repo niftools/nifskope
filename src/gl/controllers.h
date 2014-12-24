@@ -312,6 +312,7 @@ protected:
 	QPersistentModelIndex iSources;
 };
 
+
 //! Controller for transformations in a TexturingProperty
 class TexTransController final : public Controller
 {

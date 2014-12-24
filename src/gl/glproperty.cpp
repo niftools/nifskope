@@ -622,75 +622,6 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 	//overridden = overrideMaterials;
 }
 
-
-AlphaController::AlphaController( MaterialProperty * prop, const QModelIndex & index )
-	: Controller( index ), target( prop ), lAlpha( 0 )
-{
-}
-
-void AlphaController::updateTime( float time )
-{
-	if ( !( active && target ) )
-		return;
-
-	interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
-
-	if ( target->alpha < 0 )
-		target->alpha = 0;
-
-	if ( target->alpha > 1 )
-		target->alpha = 1;
-}
-
-
-MaterialColorController::MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
-	: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
-{
-}
-
-void MaterialColorController::updateTime( float time )
-{
-	if ( !( active && target ) )
-		return;
-
-	Vector3 v3;
-	interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
-
-	Color4 color( Color3( v3 ), 1.0 );
-
-	switch ( tColor ) {
-	case tAmbient:
-		target->ambient = color;
-		break;
-	case tDiffuse:
-		target->diffuse = color;
-		break;
-	case tSpecular:
-		target->specular = color;
-		break;
-	case tSelfIllum:
-		target->emissive = color;
-		break;
-	}
-}
-
-bool MaterialColorController::update( const NifModel * nif, const QModelIndex & index )
-{
-	if ( Controller::update( nif, index ) ) {
-		if ( nif->checkVersion( 0x0A010000, 0 ) ) {
-			tColor = nif->get<int>( iBlock, "Target Color" );
-		} else {
-			tColor = ( ( nif->get<int>( iBlock, "Flags" ) >> 4 ) & 7 );
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-
-
 void MaterialProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
 	if ( nif->itemName( iController ) == "NiAlphaController" ) {
@@ -703,6 +634,7 @@ void MaterialProperty::setController( const NifModel * nif, const QModelIndex & 
 		controllers.append( ctrl );
 	}
 }
+
 
 void glProperty( MaterialProperty * p, SpecularProperty * s )
 {
