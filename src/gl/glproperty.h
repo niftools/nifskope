@@ -50,14 +50,13 @@ typedef float GLfloat;
 //! Controllable properties attached to nodes and meshes
 class Property : public IControllable
 {
+	friend class PropertyList;
+
 protected:
 	//! Protected constructor; see IControllable()
 	Property( Scene * scene, const QModelIndex & index ) : IControllable( scene, index ), ref( 0 ) {}
 
 	int ref;
-
-	//! List of properties
-	friend class PropertyList;
 
 public:
 	//! Creates a Property based on the specified index of the specified model
@@ -144,7 +143,7 @@ public:
 	Type type() const override final { return Alpha; }
 	QString typeId() const override final { return "NiAlphaProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block ) override final;
 
 	bool blend() const { return alphaBlend; }
 	bool test() const { return alphaTest; }
@@ -169,7 +168,7 @@ public:
 	Type type() const override final { return ZBuffer; }
 	QString typeId() const override final { return "NiZBufferProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block ) override final;
 
 	bool test() const { return depthTest; }
 	bool mask() const { return depthMask; }
@@ -190,6 +189,9 @@ REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
 //! A Property that specifies (multi-)texturing
 class TexturingProperty final : public Property
 {
+	friend class TexFlipController;
+	friend class TexTransController;
+
 	//! The properties of each texture slot
 	struct TexDesc
 	{
@@ -212,7 +214,7 @@ public:
 	Type type() const override final { return Texturing; }
 	QString typeId() const override final { return "NiTexturingProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block ) override final;
 
 	friend void glProperty( TexturingProperty * );
 
@@ -229,10 +231,7 @@ public:
 protected:
 	TexDesc textures[numTextures];
 
-	void setController( const NifModel * nif, const QModelIndex & controller );
-
-	friend class TexFlipController;
-	friend class TexTransController;
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 };
 
 REGISTER_PROPERTY( TexturingProperty, Texturing )
@@ -240,13 +239,15 @@ REGISTER_PROPERTY( TexturingProperty, Texturing )
 //! A Property that specifies a texture
 class TextureProperty final : public Property
 {
+	friend class TexFlipController;
+
 public:
 	TextureProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
 	Type type() const override final { return Texture; }
 	QString typeId() const override final { return "NiTextureProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block ) override final;
 
 	friend void glProperty( TextureProperty * );
 
@@ -258,9 +259,7 @@ public:
 protected:
 	QPersistentModelIndex iImage;
 
-	void setController( const NifModel * nif, const QModelIndex & controller );
-
-	friend class TexFlipController;
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 };
 
 REGISTER_PROPERTY( TextureProperty, Texture )
@@ -268,13 +267,16 @@ REGISTER_PROPERTY( TextureProperty, Texture )
 //! A Property that specifies a material
 class MaterialProperty final : public Property
 {
+	friend class AlphaController;
+	friend class MaterialColorController;
+
 public:
 	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
 	Type type() const override final { return Material; }
 	QString typeId() const override final { return "NiMaterialProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block ) override final;
 
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 
@@ -285,10 +287,7 @@ protected:
 	GLfloat shininess, alpha;
 	bool overridden;
 
-	void setController( const NifModel * nif, const QModelIndex & controller );
-
-	friend class AlphaController;
-	friend class MaterialColorController;
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 };
 
 REGISTER_PROPERTY( MaterialProperty, Material )
@@ -302,7 +301,7 @@ public:
 	Type type() const override final { return Specular; }
 	QString typeId() const override final { return "NiSpecularProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index );
+	void update( const NifModel * nif, const QModelIndex & index ) override final;
 
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 
@@ -321,7 +320,7 @@ public:
 	Type type() const override final { return Wireframe; }
 	QString typeId() const override final { return "NiWireframeProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index );
+	void update( const NifModel * nif, const QModelIndex & index ) override final;
 
 	friend void glProperty( WireframeProperty * );
 
@@ -340,7 +339,7 @@ public:
 	Type type() const override final { return VertexColor; }
 	QString typeId() const override final { return "NiVertexColorProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index );
+	void update( const NifModel * nif, const QModelIndex & index ) override final;
 
 	friend void glProperty( VertexColorProperty *, bool vertexcolors );
 
@@ -360,7 +359,7 @@ public:
 	Type type() const override final { return Stencil; }
 	QString typeId() const override final { return "NiStencilProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & index );
+	void update( const NifModel * nif, const QModelIndex & index ) override final;
 
 	friend void glProperty( StencilProperty * );
 
@@ -481,7 +480,7 @@ public:
 	Type type() const override final { return ShaderLighting; }
 	QString typeId() const override { return "BSShaderLightingProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block );
+	void update( const NifModel * nif, const QModelIndex & block ) override final;
 
 	friend void glProperty( BSShaderLightingProperty * );
 
