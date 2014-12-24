@@ -187,7 +187,7 @@ KeyframeController::KeyframeController( Node * node, const QModelIndex & index )
 {
 }
 
-void KeyframeController::update( float time )
+void KeyframeController::updateTime( float time )
 {
 	if ( !(active && target) )
 		return;
@@ -223,7 +223,7 @@ TransformController::TransformController( Node * node, const QModelIndex & index
 {
 }
 
-void TransformController::update( float time )
+void TransformController::updateTime( float time )
 {
 	if ( !(active && target) )
 		return;
@@ -267,7 +267,7 @@ MultiTargetTransformController::MultiTargetTransformController( Node * node, con
 {
 }
 
-void MultiTargetTransformController::update( float time )
+void MultiTargetTransformController::updateTime( float time )
 {
 	if ( !(active && target) )
 		return;
@@ -351,7 +351,7 @@ VisibilityController::VisibilityController( Node * node, const QModelIndex & ind
 {
 }
 
-void VisibilityController::update( float time )
+void VisibilityController::updateTime( float time )
 {
 	if ( !(active && target) )
 		return;
@@ -390,7 +390,7 @@ MorphController::~MorphController()
 	qDeleteAll( morph );
 }
 
-void MorphController::update( float time )
+void MorphController::updateTime( float time )
 {
 	if ( !(target && iData.isValid() && active && morph.count() > 1) )
 		return;
@@ -477,7 +477,7 @@ UVController::~UVController()
 {
 }
 
-void UVController::update( float time )
+void UVController::updateTime( float time )
 {
 	const NifModel * nif = static_cast<const NifModel *>(iData.model());
 	QModelIndex uvGroups = nif->getIndex( iData, "UV Groups" );
@@ -632,7 +632,7 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 	return false;
 }
 
-void ParticleController::update( float time )
+void ParticleController::updateTime( float time )
 {
 	if ( !(target && active) )
 		return;
@@ -771,7 +771,7 @@ TexFlipController::TexFlipController( TextureProperty * prop, const QModelIndex 
 {
 }
 
-void TexFlipController::update( float time )
+void TexFlipController::updateTime( float time )
 {
 	const NifModel * nif = static_cast<const NifModel *>(iSources.model());
 
@@ -818,7 +818,7 @@ TexTransController::TexTransController( TexturingProperty * prop, const QModelIn
 {
 }
 
-void TexTransController::update( float time )
+void TexTransController::updateTime( float time )
 {
 	if ( !(target && active) )
 		return;

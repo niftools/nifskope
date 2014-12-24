@@ -45,7 +45,7 @@ class ControllerManager final : public Controller
 public:
 	ControllerManager( Node * node, const QModelIndex & index );
 
-	void update( float ) override final {}
+	void updateTime( float ) override final {}
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -62,7 +62,7 @@ class KeyframeController final : public Controller
 public:
 	KeyframeController( Node * node, const QModelIndex & index );
 
-	void update( float time );
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -81,7 +81,7 @@ class TransformController final : public Controller
 public:
 	TransformController( Node * node, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	void setInterpolator( const QModelIndex & iBlock ) override final;
 
@@ -99,7 +99,7 @@ class MultiTargetTransformController final : public Controller
 public:
 	MultiTargetTransformController( Node * node, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -117,7 +117,7 @@ class VisibilityController final : public Controller
 public:
 	VisibilityController( Node * node, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -145,7 +145,7 @@ public:
 	MorphController( Mesh * mesh, const QModelIndex & index );
 	~MorphController();
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -163,7 +163,7 @@ public:
 
 	~UVController();
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -230,7 +230,7 @@ public:
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	void startParticle( Particle & p );
 
@@ -252,7 +252,7 @@ class AlphaController final : public Controller
 public:
 	AlphaController( MaterialProperty * prop, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 protected:
 	QPointer<MaterialProperty> target;
@@ -267,7 +267,7 @@ class MaterialColorController final : public Controller
 public:
 	MaterialColorController( MaterialProperty * prop, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -296,7 +296,7 @@ public:
 
 	TexFlipController( TextureProperty * prop, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
@@ -318,7 +318,7 @@ class TexTransController final : public Controller
 public:
 	TexTransController( TexturingProperty * prop, const QModelIndex & index );
 
-	void update( float time ) override final;
+	void updateTime( float time ) override final;
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 

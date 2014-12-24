@@ -73,7 +73,7 @@ public:
 	virtual void setSequence( const QString & seqname );
 
 	//! Update for specified time
-	virtual void update( float time ) = 0;
+	virtual void updateTime( float time ) = 0;
 
 	//! Update for model and index
 	virtual bool update( const NifModel * nif, const QModelIndex & index );

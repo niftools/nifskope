@@ -628,7 +628,7 @@ AlphaController::AlphaController( MaterialProperty * prop, const QModelIndex & i
 {
 }
 
-void AlphaController::update( float time )
+void AlphaController::updateTime( float time )
 {
 	if ( !( active && target ) )
 		return;
@@ -648,7 +648,7 @@ MaterialColorController::MaterialColorController( MaterialProperty * prop, const
 {
 }
 
-void MaterialColorController::update( float time )
+void MaterialColorController::updateTime( float time )
 {
 	if ( !( active && target ) )
 		return;

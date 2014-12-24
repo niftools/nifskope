@@ -127,7 +127,7 @@ void IControllable::transform()
 {
 	if ( scene->animate ) {
 		for ( Controller * controller : controllers ) {
-			controller->update( scene->time );
+			controller->updateTime( scene->time );
 		}
 	}
 }
