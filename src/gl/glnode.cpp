@@ -315,7 +315,7 @@ const Transform & Node::worldTrans() const
 	return scene->worldTrans[ nodeId ];
 }
 
-Transform Node::localTransFrom( int root ) const
+const Transform & Node::localTrans( int root ) const
 {
 	Transform trans;
 	const Node * node = this;
@@ -328,7 +328,7 @@ Transform Node::localTransFrom( int root ) const
 	return trans;
 }
 
-Vector3 Node::center() const
+const Vector3 Node::center() const
 {
 	// HACK: Temp fix for multiple alpha blended transparency which have the exact same origin/position from camera
 	return Vector3( worldTrans().translation[0], worldTrans().translation[1], worldTrans().translation[2] + 1000 / id() );

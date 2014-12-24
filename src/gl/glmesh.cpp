@@ -701,7 +701,7 @@ void Mesh::transformShapes()
 					boneTrans[ t ] = viewTrans() * skeletonTrans;
 
 					if ( bone )
-						boneTrans[ t ] = boneTrans[ t ] * bone->localTransFrom( skeletonRoot ) * weights.value( part.boneMap[t] ).trans;
+						boneTrans[ t ] = boneTrans[ t ] * bone->localTrans( skeletonRoot ) * weights.value( part.boneMap[t] ).trans;
 
 					//if ( bone ) boneTrans[ t ] = bone->viewTrans() * weights.value( part.boneMap[t] ).trans;
 				}
@@ -739,7 +739,7 @@ void Mesh::transformShapes()
 				Node * bone = root ? root->findChild( bw.bone ) : 0;
 
 				if ( bone )
-					trans = trans * bone->localTransFrom( skeletonRoot ) * bw.trans;
+					trans = trans * bone->localTrans( skeletonRoot ) * bw.trans;
 
 				if ( bone )
 					weights[x++].tcenter = bone->viewTrans() * bw.center;

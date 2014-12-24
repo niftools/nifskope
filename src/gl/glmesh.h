@@ -56,21 +56,27 @@ public:
 	Mesh( Scene * s, const QModelIndex & b );
 	~Mesh() { clear(); }
 
+	// IControllable
+
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & ) override;
 	void transform() override;
+
+	// end IControllable
+
+	// Node
 
 	void transformShapes() override;
 
 	void drawShapes( NodeList * draw2nd = nullptr ) override;
 	void drawSelection() const override;
 
-	bool isHidden() const override;
-
-	//! The bounds of the mesh
 	BoundSphere bounds() const override;
 
+	bool isHidden() const override;
 	QString textStats() const override;
+
+	// end Node
 
 protected:
 	//! Sets the Controller

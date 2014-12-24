@@ -92,9 +92,17 @@ class Node : public IControllable
 public:
 	Node( Scene * scene, const QModelIndex & block );
 
+	static int SELECTING;
+
+	int id() const { return nodeId; }
+
+	// IControllable
+
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
+
+	// end IControllable
 
 	virtual void transformShapes();
 
@@ -104,45 +112,40 @@ public:
 	virtual void drawFurn();
 	virtual void drawSelection() const;
 
+	virtual class BoundSphere bounds() const;
+	virtual const Vector3 center() const;
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;
 	virtual const Transform & localTrans() const { return local; }
-	virtual Transform localTransFrom( int parentNode ) const;
-	virtual Vector3 center() const;
+	virtual const Transform & localTrans( int parentNode ) const;
 
 	virtual bool isHidden() const;
+	virtual QString textStats() const;
+
 	bool isVisible() const { return !isHidden(); }
-
-	int id() const { return nodeId; }
-
-	Node * findParent( int id ) const;
+	
 	Node * findChild( int id ) const;
 	Node * findChild( const QString & name ) const;
+
+	Node * findParent( int id ) const;
 	Node * parentNode() const { return parent; }
 	void makeParent( Node * parent );
-
-	virtual class BoundSphere bounds() const;
 
 	template <typename T> T * findProperty() const;
 	void activeProperties( PropertyList & list ) const;
 
 	Controller * findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 );
 
-	virtual QString textStats() const;
-
-	static int SELECTING;
-
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
-	QPointer<Node> parent;
-
+	int nodeId;
 	int ref;
+
+	QPointer<Node> parent;
 
 	NodeList children;
 	PropertyList properties;
-
-	int nodeId;
 
 	Transform local;
 
@@ -168,10 +171,13 @@ class LODNode : public Node
 public:
 	LODNode( Scene * scene, const QModelIndex & block );
 
-	// Inherited from Node, IControllable
+	// IControllable
+
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
+
+	// end IControllable
 
 protected:
 	QList<QPair<float, float> > ranges;
@@ -186,7 +192,7 @@ class BillboardNode : public Node
 public:
 	BillboardNode( Scene * scene, const QModelIndex & block );
 
-	virtual const Transform & viewTrans() const;
+	const Transform & viewTrans() const override;
 };
 
 
