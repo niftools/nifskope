@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtEndian>
 
 
-//! \file nifmodel.cpp NifModel implementation, NifModelEval
+//! @file nifmodel.cpp NifModel implementation, NifModelEval
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {

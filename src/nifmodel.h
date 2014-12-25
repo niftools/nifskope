@@ -42,35 +42,57 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QUndoCommand>
 #include <QUndoStack>
 
-//! \file nifmodel.h NifModel
+//! @file nifmodel.h NifModel
 
 //! Base class for nif models.
 class NifModel final : public BaseModel
 {
 	Q_OBJECT
 
+	friend class NifXmlHandler;
+	friend class NifModelEval;
+	friend class NifOStream;
+
 public:
-	//! Constructor
 	NifModel( QObject * parent = 0 );
 
-	// call this once on startup to load the XML descriptions
 	//! Find and parse the XML file
 	static bool loadXML();
 
-	// when creating NifModels from outside the main thread protect them with a QReadLocker (see the XML check spell for an example)
+	//! When creating NifModels from outside the main thread protect them with a QReadLocker
 	static QReadWriteLock XMLlock;
 
-	// clear model data; implements BaseModel
-	void clear() override final;
+	// QAbstractItemModel
 
-	// generic load and save to and from QIODevice; implements BaseModel
+	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override final;
+	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole ) override final;
+	bool removeRows( int row, int count, const QModelIndex & parent ) override final;
+
+	// end QAbstractItemModel
+
+	// BaseModel
+	
+	void clear() override final;
 	bool load( QIODevice & device ) override final;
 	bool save( QIODevice & device ) const override final;
+
+	QString getVersion() const override final { return version2string( version ); }
+	quint32 getVersionNumber() const override final { return version; }
+
+	template <typename T> T get( const QModelIndex & index ) const;
+	template <typename T> bool set( const QModelIndex & index, const T & d );
+
+	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
+	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
+
+	// end BaseModel
 
 	//! Load from QIODevice and index
 	bool load( QIODevice & device, const QModelIndex & );
 	//! Save to QIODevice and index
 	bool save( QIODevice & device, const QModelIndex & ) const;
+	//! Resets the model to its original state in any attached views.
+	void reset();
 
 	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32, qint32> & map );
@@ -87,13 +109,13 @@ public:
 	//! Returns the estimated file size of the stream
 	int blockSize( NifItem * parent, NifSStream & stream ) const;
 
-	//! Checks if the specified file contains the specified block ID in its header and is of the specified version
-	/*!
+	/*! Checks if the specified file contains the specified block ID in its header and is of the specified version
+	 *
 	 * Note that it will not open the full file to look for block types, only the header
 	 *
-	 * \param filepath The nif to check
-	 * \param blockId The block to check for
-	 * \param The version to check for
+	 * @param filepath	The NIF to check
+	 * @param blockId	The block to check for
+	 * @param version	The version to check for
 	 */
 	bool earlyRejection( const QString & filepath, const QString & blockId, quint32 version );
 
@@ -122,29 +144,39 @@ public:
 	QString getBlockType( const QModelIndex & ) const;
 	//! Return the block number
 	int getBlockNumber( const QModelIndex & ) const;
-	//! Returns the parent block
-	/**
-	 * \param The model index to get the parent of
-	 * \param name Optional: the type to check for
-	 * \return The index of the parent block
+
+	/*! Get the NiBlock at a given index
+	 *
+	 * @param idx	The model index to get the parent of
+	 * @param name	Optional: the type to check for
 	 */
 	QModelIndex getBlock( const QModelIndex & idx, const QString & name = QString() ) const;
-	//! Returns the parent block or header
-	QModelIndex getBlockOrHeader( const QModelIndex & ) const;
-	//! Get the NiBlock at a given index
-	/**
-	 * \param x The index to get the block for
-	 * \param name Optional: the type to check for
+
+	/*! Get the NiBlock at a given index
+	 *
+	 * @param x		The integer index of the block
+	 * @param name	Optional: the type to check for
 	 */
 	QModelIndex getBlock( int x, const QString & name = QString() ) const;
+
+	//! Returns the parent block or header
+	QModelIndex getBlockOrHeader( const QModelIndex & ) const;
+
 	//! Get the number of NiBlocks
 	int getBlockCount() const;
-	//! Check if a given index is a NiBlock
-	/**
-	 * \param index The index to check
-	 * \param name Optional: the type to check for
+
+	/*! Check if a given index is a NiBlock
+	 *
+	 * @param index	The index to check
+	 * @param name	Optional: the type to check for
 	 */
 	bool isNiBlock( const QModelIndex & index, const QString & name = QString() ) const;
+
+	/*! Check if a given index is a NiBlock
+	 *
+	 * @param index	The index to check
+	 * @param names	A list of names to check
+	 */
 	bool isNiBlock( const QModelIndex & index, const QStringList & names ) const;
 
 	//! Returns a list with all known NiXXX ids (<niobject abstract="0">)
@@ -160,23 +192,29 @@ public:
 
 	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
 
-	// return the root blocks
 	QList<int> getRootLinks() const;
-	// return the list of block links
 	QList<int> getChildLinks( int block ) const;
 	QList<int> getParentLinks( int block ) const;
-	// return the parent block number or none (-1) if there is no parent or if there are multiple parents
-	int getParent( int block ) const;
-	int getParent( const QModelIndex & ) const;
 
-	// is it a child or parent link?
+	/*! Get parent
+	 * @return	Parent block number or -1 if there are zero or multiple parents.
+	 */
+	int getParent( int block ) const;
+
+	/*! Get parent
+	 * @return	Parent block number or -1 if there are zero or multiple parents.
+	 */
+	int getParent( const QModelIndex & index ) const;
+
+	//! Is it a child or parent link?
 	bool isLink( const QModelIndex & index, bool * ischildLink = 0 ) const;
 	//! Return a block number if the index is a valid link
 	qint32 getLink( const QModelIndex & index ) const;
-	//! Get the block number of a link
-	/**
-	 * @param parent The parent of the link
-	 * @param name The name of the link
+
+	/*! Get the block number of a link
+	 *
+	 * @param parent	The parent of the link
+	 * @param name		The name of the link
 	 */
 	int getLink( const QModelIndex & parent, const QString & name ) const;
 	QVector<qint32> getLinkArray( const QModelIndex & array ) const;
@@ -193,34 +231,22 @@ public:
 	//! Is name an ancestor identifier (<niobject abstract="1">)?
 	static bool isAncestor( const QString & name );
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
-	bool isAncestorOrNiBlock( const QString & name ) const override final;                // virtual so not static
+	bool isAncestorOrNiBlock( const QString & name ) const override final;
 	//! Returns true if name inherits ancestor.
-	bool inherits( const QString & name, const QString & ancestor ) const override final; // virtual so not static
+	bool inherits( const QString & name, const QString & ancestor ) const override final;
 	// returns true if the block containing index inherits ancestor
 	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
 
-	// is this version supported ?
+	//! Is this version supported?
 	static bool isVersionSupported( quint32 );
 
-	// version conversion
 	static QString version2string( quint32 );
 	static quint32 version2number( const QString & );
 
-	//! Check whether the current nif file version lies in the range [since, until]
+	//! Check whether the current NIF file version lies in the range [since, until]
 	bool checkVersion( quint32 since, quint32 until ) const;
 
-	QString getVersion() const { return version2string( version ); }
-	quint32 getVersionNumber() const { return version; }
 	quint32 getUserVersion() const { return get<int>( getHeader(), "User Version" ); }
-
-	// QAbstractModel interface
-	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override final;
-	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole ) override final;
-	//! Resets the model to its original state in any attached views.
-	void reset();
-
-	// removes an item from the model
-	bool removeRows( int row, int count, const QModelIndex & parent ) override final;
 
 	QString string( const QModelIndex & index, bool extraInfo = false ) const;
 	QString string( const QModelIndex & index, const QString & name, bool extraInfo = false ) const;
@@ -228,17 +254,10 @@ public:
 	bool assignString( const QModelIndex & index, const QString & string, bool replace = false );
 	bool assignString( const QModelIndex & index, const QString & name, const QString & string, bool replace = false );
 
-
-	// BaseModel Overrides
-	template <typename T> T get( const QModelIndex & index ) const;
-	template <typename T> bool set( const QModelIndex & index, const T & d );
-
-	template <typename T> T get( const QModelIndex & parent, const QString & name ) const;
-	template <typename T> bool set( const QModelIndex & parent, const QString & name, const T & v );
-
-
+	//! Create and return delegate for SpellBook
 	static QAbstractItemDelegate * createDelegate( class SpellBook * );
 
+	//! Undo Stack for changes to NifModel
 	QUndoStack * undoStack;
 
 signals:
@@ -247,34 +266,54 @@ signals:
 	void beginUpdateHeader();
 
 protected:
-	void insertAncestor( NifItem * parent, const QString & identifier, int row = -1 );
-	void insertType( NifItem * parent, const NifData & data, int row = -1 );
-	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
+	// BaseModel
 
-	bool updateArrayItem( NifItem * array, bool fast ) override final;
-	bool updateByteArrayItem( NifItem * array, bool fast );
-	bool updateArrays( NifItem * parent, bool fast );
-
-	NifItem * getHeaderItem() const;
-	NifItem * getFooterItem() const;
-	NifItem * getBlockItem( int ) const;
 	NifItem * getItem( NifItem * parent, const QString & name ) const override final;
-
-	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
-	bool save( NifItem * parent, NifOStream & stream ) const;
-	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
 
 	bool setItemValue( NifItem * item, const NifValue & v ) override final;
 
-	bool itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
-	int getBlockNumber( NifItem * item ) const;
-
-	bool setHeaderString( const QString & ) override final;
+	bool updateArrayItem( NifItem * array, bool fast ) override final;
 
 	QString ver2str( quint32 v ) const override final { return version2string( v ); }
 	quint32 str2ver( QString s ) const override final { return version2number( s ); }
 
 	bool evalVersion( NifItem * item, bool chkParents = false ) const override final;
+
+	bool setHeaderString( const QString & ) override final;
+
+	template <typename T> T get( NifItem * parent, const QString & name ) const;
+	template <typename T> T get( NifItem * item ) const;
+	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
+	template <typename T> bool set( NifItem * item, const T & d );
+
+	// end BaseModel
+
+	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool save( NifItem * parent, NifOStream & stream ) const;
+	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
+
+	NifItem * getHeaderItem() const;
+	NifItem * getFooterItem() const;
+	NifItem * getBlockItem( int ) const;
+
+	int getBlockNumber( NifItem * item ) const;
+	bool itemIsLink( NifItem * item, bool * ischildLink = 0 ) const;
+
+	void insertAncestor( NifItem * parent, const QString & identifier, int row = -1 );
+	void insertType( NifItem * parent, const NifData & data, int row = -1 );
+	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
+
+	bool updateByteArrayItem( NifItem * array, bool fast );
+	bool updateArrays( NifItem * parent, bool fast );
+
+	void updateLinks( int block = -1 );
+	void updateLinks( int block, NifItem * parent );
+	void checkLinks( int block, QStack<int> & parents );
+	void adjustLinks( NifItem * parent, int block, int delta );
+	void mapLinks( NifItem * parent, const QMap<qint32, qint32> & map );
+
+	static void updateStrings( NifModel * src, NifModel * tgt, NifItem * item );
+	bool assignString( NifItem * parent, const QString & string, bool replace = false );
 
 	//! NIF file version
 	quint32 version;
@@ -295,36 +334,45 @@ protected:
 	};
 	UpdateType needUpdates;
 
-	void updateLinks( int block = -1 );
-	void updateLinks( int block, NifItem * parent );
-	void checkLinks( int block, QStack<int> & parents );
-	void adjustLinks( NifItem * parent, int block, int delta );
-	void mapLinks( NifItem * parent, const QMap<qint32, qint32> & map );
 	void updateModel( UpdateType value = utAll );
-
-	static void updateStrings( NifModel * src, NifModel * tgt, NifItem * item );
-	bool assignString( NifItem * parent, const QString & string, bool replace = false );
-
-
-	// XML structures
-	static QList<quint32> supportedVersions;
-
-	static QHash<QString, NifBlock *> compounds;
-	static QHash<QString, NifBlock *> blocks;
 
 	//! Parse the XML file using a NifXmlHandler
 	static QString parseXmlDescription( const QString & filename );
 
-	// Get and Set template overloads from base model
-	template <typename T> T get( NifItem * parent, const QString & name ) const;
-	template <typename T> T get( NifItem * item ) const;
-	template <typename T> bool set( NifItem * parent, const QString & name, const T & d );
-	template <typename T> bool set( NifItem * item, const T & d );
+	// XML structures
+	static QList<quint32> supportedVersions;
+	static QHash<QString, NifBlock *> compounds;
+	static QHash<QString, NifBlock *> blocks;
+};
 
-	friend class NifXmlHandler;
-	friend class NifModelEval;
-	friend class NifOStream;
-}; // class NifModel
+
+class ChangeValueCommand : public QUndoCommand
+{
+public:
+	ChangeValueCommand( const QModelIndex & index, const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model );
+	void redo();
+	void undo();
+private:
+	NifModel * nif;
+	QVariant newValue, oldValue;
+	QModelIndex idx;
+};
+
+
+class ToggleCheckBoxListCommand : public QUndoCommand
+{
+public:
+	ToggleCheckBoxListCommand( const QModelIndex & index, const QVariant & value, const QString & valueType, NifModel * model );
+	void redo();
+	void undo();
+private:
+	NifModel * nif;
+	QVariant newValue, oldValue;
+	QModelIndex idx;
+};
+
+
+// Inlines
 
 
 inline QStringList NifModel::allNiBlocks()
@@ -389,37 +437,13 @@ inline bool NifModel::itemIsLink( NifItem * item, bool * isChildLink ) const
 
 inline bool NifModel::checkVersion( quint32 since, quint32 until ) const
 {
-	return ( ( since == 0 || since <= version )
-	         && ( until == 0 || version <= until )
-	          );
+	return (( since == 0 || since <= version ) && ( until == 0 || version <= until ));
 }
 
-class ChangeValueCommand : public QUndoCommand
-{
-public:
-	ChangeValueCommand( const QModelIndex & index, const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model );
-	void redo();
-	void undo();
-private:
-	NifModel * nif;
-	QVariant newValue, oldValue;
-	QModelIndex idx;
-};
 
-class ToggleCheckBoxListCommand : public QUndoCommand
-{
-public:
-	ToggleCheckBoxListCommand( const QModelIndex & index, const QVariant & value, const QString & valueType, NifModel * model );
-	void redo();
-	void undo();
-private:
-	NifModel * nif;
-	QVariant newValue, oldValue;
-	QModelIndex idx;
-};
+// Templates
 
 
-// Overrides for get and set templates.
 template <typename T> inline T NifModel::get( const QModelIndex & index ) const
 {
 	return BaseModel::get<T>( index );
@@ -460,8 +484,6 @@ template <typename T> inline bool NifModel::set( NifItem * parent, const QString
 	return BaseModel::set<T>( parent, name, d );
 }
 
-
-// QString overloads for the get and set templates
 template <> inline QString NifModel::get( const QModelIndex & index ) const
 {
 	return this->string( index );

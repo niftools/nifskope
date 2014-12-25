@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileInfo>
 #include <QTime>
 
-//! \file basemodel.cpp BaseModel and BaseModelEval
+//! @file basemodel.cpp BaseModel and BaseModelEval
 
 BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
