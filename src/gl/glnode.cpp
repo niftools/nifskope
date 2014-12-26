@@ -315,7 +315,7 @@ const Transform & Node::worldTrans() const
 	return scene->worldTrans[ nodeId ];
 }
 
-const Transform & Node::localTrans( int root ) const
+Transform Node::localTrans( int root ) const
 {
 	Transform trans;
 	const Node * node = this;

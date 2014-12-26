@@ -117,7 +117,7 @@ public:
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;
 	virtual const Transform & localTrans() const { return local; }
-	virtual const Transform & localTrans( int parentNode ) const;
+	virtual Transform localTrans( int parentNode ) const;
 
 	virtual bool isHidden() const;
 	virtual QString textStats() const;
