@@ -47,6 +47,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTextStream>
 
 
+//! @file renderer.cpp Renderer and child classes implementation
+
 bool shader_initialized = false;
 bool shader_ready = false;
 

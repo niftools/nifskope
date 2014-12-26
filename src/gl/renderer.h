@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 
 
+//! @file renderer.h Renderer, Renderer::ConditionSingle, Renderer::ConditionGroup, Renderer::Shader, Renderer::Program
+
 class Mesh;
 class PropertyList;
 
@@ -45,18 +47,18 @@ class QOpenGLFunctions;
 typedef unsigned int GLenum;
 typedef unsigned int GLuint;
 
-//! Manages rendering and shaders?
+//! Manages rendering and shaders
 class Renderer
 {
+	friend class Program;
+
 public:
-	//! Constructor
 	Renderer( QOpenGLContext * c, QOpenGLFunctions * f );
-	//! Destructor
 	~Renderer();
 
-	//! Init from context?
+	//! Set up shaders
 	bool initialize();
-	//! Whether the shaders are available
+	//! Whether shader support is available
 	bool hasShaderSupport();
 
 	//! Updates shaders
@@ -69,12 +71,13 @@ public:
 	//! Context Functions
 	QOpenGLFunctions * fn;
 
-	//! Sets up rendering?
+	//! Set up shader program
 	QString setupProgram( Mesh *, const QString & hint = QString() );
-	//! Stops rendering?
+	//! Stop shader program
 	void stopProgram();
 
 protected:
+	//! Base Condition class for shader programs
 	class Condition
 	{
 public:
@@ -84,6 +87,7 @@ public:
 		virtual bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const = 0;
 	};
 
+	//! Condition class for single conditions
 	class ConditionSingle final : public Condition
 	{
 public:
@@ -106,6 +110,7 @@ protected:
 		template <typename T> bool compare( T a, T b ) const;
 	};
 
+	//! Condition class for grouped conditions (OR or AND)
 	class ConditionGroup final : public Condition
 	{
 public:
@@ -123,6 +128,7 @@ protected:
 		bool _or;
 	};
 
+	//! Parsing and loading of .frag or .vert files
 	class Shader
 	{
 public:
@@ -140,6 +146,7 @@ protected:
 		GLenum type;
 	};
 
+	//! Parsing and loading of .prog files
 	class Program
 	{
 public:
@@ -160,11 +167,12 @@ public:
 	QMap<QString, Shader *> shaders;
 	QMap<QString, Program *> programs;
 
-	friend class Program;
-
 	bool setupProgram( Program *, Mesh *, const PropertyList &, const QList<QModelIndex> & iBlocks );
 	void setupFixedFunction( Mesh *, const PropertyList & );
 };
+
+
+// Templates
 
 template <typename T> inline bool Renderer::ConditionSingle::compare( T a, T b ) const
 {
