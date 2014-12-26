@@ -42,31 +42,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 
 
-//! \file nifitem.h NifItem, NifBlock, NifData, NifSharedData
+//! @file nifitem.h NifItem, NifBlock, NifData, NifSharedData
 
-//! Shared data for NifData.
-/**
- * See QSharedDataPointer for details on data sharing in Qt;
- * <a href="http://doc.trolltech.org/latest/shared.html">shared classes</a>
- * give pointer efficiency to classes.
+/*! Shared data for NifData.
+ *
+ * @see QSharedDataPointer
  */
 class NifSharedData final : public QSharedData
 {
 	friend class NifData;
 
-	//! Constructor.
 	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs )
 		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), isAbstract( abs ) {}
 
-	//! Constructor.
 	NifSharedData( const QString & n, const QString & t )
 		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
 
-	//! Constructor.
 	NifSharedData( const QString & n, const QString & t, const QString & txt )
 		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), text( txt ), isAbstract( false ) {}
 
-	//! Constructor.
 	NifSharedData()
 		: QSharedData(), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
 
@@ -106,15 +100,12 @@ class NifSharedData final : public QSharedData
 class NifData
 {
 public:
-	//! Constructor.
 	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2, bool isAbstract = false )
 		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract ) ), value( val ) {}
 
-	//! Constructor.
 	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
 		: d( new NifSharedData( name, type, text ) ) {}
 
-	//! Constructor.
 	NifData()
 		: d( new NifSharedData() ) {}
 
@@ -214,15 +205,12 @@ struct NifBlock
 class NifItem
 {
 public:
-	//! Constructor.
 	NifItem( NifItem * parent )
 		: parentItem( parent ) {}
 
-	//! Constructor.
 	NifItem( const NifData & data, NifItem * parent )
 		: itemData( data ), parentItem( parent ) {}
 
-	//! Destructor.
 	~NifItem()
 	{
 		qDeleteAll( childItems );
@@ -243,20 +231,20 @@ public:
 		return 0;
 	}
 
-	//! Allocate memory to insert child items
-	/*!
-	 * \param e The number of items to be inserted
+	/*! Allocate memory to insert child items
+	 *
+	 * @param e The number of items to be inserted
 	 */
 	void prepareInsert( int e )
 	{
 		childItems.reserve( childItems.count() + e );
 	}
 
-	//! Insert child data item
-	/*!
-	 * \param data The data to insert
-	 * \param at The position to insert at; append if not specified
-	 * \return An item containing the inserted data
+	/*! Insert child data item
+	 *
+	 * @param data	The data to insert
+	 * @param at	The position to insert at; append if not specified
+	 * @return		An item containing the inserted data
 	 */
 	NifItem * insertChild( const NifData & data, int at = -1 )
 	{
@@ -270,11 +258,11 @@ public:
 		return item;
 	}
 
-	//! Insert child item
-	/*!
-	 * \param child The data to insert
-	 * \param at The position to insert at; append if not specified
-	 * \return The row the child was inserted at
+	/*! Insert child item
+	 *
+	 * @param child The data to insert
+	 * @param at	The position to insert at; append if not specified
+	 * @return		The row the child was inserted at
 	 */
 	int insertChild( NifItem * child, int at = -1 )
 	{
@@ -288,10 +276,10 @@ public:
 		return child->row();
 	}
 
-	//! Take child item at row
-	/*!
-	 * \param row The row to take the item from
-	 * \return The child item that was removed
+	/*! Take child item at row
+	 *
+	 * @param row	The row to take the item from
+	 * @return		The child item that was removed
 	 */
 	NifItem * takeChild( int row )
 	{
@@ -305,9 +293,9 @@ public:
 		return item;
 	}
 
-	//! Remove child item at row
-	/*!
-	 * \param row The row to remove the item from
+	/*! Remove child item at row
+	 *
+	 * @param row The row to remove the item from
 	 */
 	void removeChild( int row )
 	{
@@ -319,10 +307,10 @@ public:
 		}
 	}
 
-	//! Remove several child items
-	/*!
-	 * \param row The row to start from
-	 * \param count The number of rows to delete
+	/*! Remove several child items
+	 *
+	 * @param row	The row to start from
+	 * @param count The number of rows to delete
 	 */
 	void removeChildren( int row, int count )
 	{
