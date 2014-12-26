@@ -43,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class BSLightingShaderProperty;
 
-//! \file glmesh.h Mesh class
+//! @file glmesh.h Mesh class
 
 //! A mesh
 class Mesh : public Node

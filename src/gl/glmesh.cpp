@@ -45,7 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLFunctions>
 
 
-//! \file glmesh.cpp Mesh
+//! @file glmesh.cpp Mesh
 
 
 Mesh::Mesh( Scene * s, const QModelIndex & b ) : Node( s, b )
