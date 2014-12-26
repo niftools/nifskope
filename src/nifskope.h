@@ -72,37 +72,44 @@ class QTimer;
 class QUdpSocket;
 
 
-//! \file nifskope.h The main header for NifSkope
+//! @file nifskope.h The main header for NifSkope
 
-//! The main application class for NifSkope.
-/*!
+/*! The main application class for NifSkope.
+ *
  * This class encapsulates the main NifSkope window. It has members for saving
- * and restoring settings, loading and saving nif files, loading an xml
- * description, widgets for the various subwindows, menu's, and a socket by
- * which NifSkope can communicate with itself.
+ * and restoring settings, loading and saving NIF files, loading an XML
+ * description, widgets for the various subwindows, menus, and a UDP socket
+ * with which NifSkope can communicate with itself.
  */
 class NifSkope final : public QMainWindow
 {
 	Q_OBJECT
 
 public:
-	//! Constructor
 	NifSkope();
-	//! Destructor
 	~NifSkope();
 
 	Ui::MainWindow * ui;
 
-	//! Create and initialize a new NifSkope application window.
-	/*!
-	 * \param fname The name of the file to load in the new NifSkope window.
-	 * \return The newly created NifSkope instance.
+	//! Save Confirm dialog
+	bool saveConfirm();
+	//! Save NifSkope application settings.
+	void saveUi() const;
+	//! Restore NifSkope UI settings.
+	void restoreUi();
+
+	//! Returns path of currently open file
+	QString getCurrentFile() const;
+
+	/*! Create and initialize a new NifSkope application window.
+	 *
+	 * @param fname The name of the file to load in the new NifSkope window.
+	 * @return		The newly created NifSkope instance.
 	 */
 	static NifSkope * createWindow( const QString & fname = QString() );
 
 	static SettingsDialog * options();
 
-	static const QList<QPair<QString, QString>> filetypes;
 
 	//! List of all supported file extensions
 	static QStringList fileExtensions();
@@ -110,22 +117,15 @@ public:
 	//! Return a file filter for a single extension
 	static QString fileFilter( const QString & );
 
-	/*! \brief Return a file filter for all supported extensions
+	/*! Return a file filter for all supported extensions.
 	 *
-	 * \param allFiles If true, file filter will be prepended with "All Files (*.nif *.btr ...)"
+	 * @param allFiles If true, file filter will be prepended with "All Files (*.nif *.btr ...)"
 	 *					so that all supported files will show at once. Used for Open File dialog.
 	 */
 	static QString fileFilters( bool allFiles = true );
 
-	//! Save NifSkope application settings.
-	void saveUi() const;
-
-	//! Restore NifSkope UI settings.
-	void restoreUi();
-
-	bool saveConfirm();
-
-	QString getCurrentFile() const;
+	//! A map of all the currently support filetypes to their file extensions.
+	static const QList<QPair<QString, QString>> filetypes;
 
 signals:
 	void beginLoading();
@@ -138,6 +138,8 @@ public slots:
 	void openFiles( QStringList & );
 
 	void enableUi();
+
+	// Automatic slots
 
 	//! Reparse the nif.xml and kfm.xml files.
 	void on_aLoadXML_triggered();
@@ -201,9 +203,9 @@ protected slots:
 	//! Override the view font
 	void overrideViewFont();
 
-	//! Sets Import/Export menus
-	/*!
-	 * see importex/importex.cpp
+	/*! Sets Import/Export menus
+	 *
+	 * @see importex/importex.cpp
 	 */
 	void fillImportExportMenus();
 	//! Perform Import or Export
@@ -215,6 +217,7 @@ protected slots:
 	//! Change system locale and notify user that restart may be required
 	void sltLocaleChanged();
 
+	//! Called after window resizing has stopped
 	void resizeDone();
 
 protected:
@@ -240,33 +243,36 @@ private:
 
 	QString strippedName( const QString & ) const;
 
-	//! "About NifSkope" dialog.
-	QWidget * aboutDialog;
-
-	SettingsDialog * settingsDlg;
+	QMenu * lightingWidget();
+	QWidget * filePathWidget( QWidget * );
 
 	void setViewFont( const QFont & );
 
 	//! Migrate settings from older versions of NifSkope.
 	void migrateSettings() const;
 
+	//! "About NifSkope" dialog.
+	QWidget * aboutDialog;
+
+	SettingsDialog * settingsDlg;
+
 	QString currentFile;
 
-	//! Stores the nif file in memory.
+	//! Stores the NIF file in memory.
 	NifModel * nif;
-	//! A hierarchical proxy for the nif file.
+	//! A hierarchical proxy for the NIF file.
 	NifProxyModel * proxy;
-	//! Stores the kfm file in memory.
+	//! Stores the KFM file in memory.
 	KfmModel * kfm;
 
 	//! This view shows the block list.
 	NifTreeView * list;
-	//! This view shows the whole nif file or the block details.
+	//! This view shows the block details.
 	NifTreeView * tree;
-
+	//! This view shows the file header.
 	NifTreeView * header;
 
-	//! This view shows the KFM file, if any
+	//! This view shows the KFM file, if any.
 	NifTreeView * kfmtree;
 
 	//! Spellbook instance
@@ -329,13 +335,11 @@ private:
 	enum { NumRecentFiles = 10 };
 	QAction * recentFileActs[NumRecentFiles];
 
-	QMenu * lightingWidget();
-	QWidget * filePathWidget( QWidget * );
-
 	bool isResizing;
 	QTimer * resizeTimer;
 	QImage buf;
 };
+
 
 //! UDP communication between instances
 class IPCsocket final : public QObject

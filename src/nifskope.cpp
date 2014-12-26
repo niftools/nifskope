@@ -84,7 +84,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-//! \file nifskope.cpp The main file for NifSkope
+//! @file nifskope.cpp The main file for NifSkope
 
 
 const QList<QPair<QString, QString>> NifSkope::filetypes = {
