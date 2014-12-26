@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
-//! \file glcontroller.h Controller, Interpolator and subclasses
+//! @file glcontroller.h Controller, Interpolator and subclasses
 
 
 //! Something which can be attached to anything Controllable
@@ -49,9 +49,7 @@ class Controller
 	friend class Interpolator;
 
 public:
-	//! Constructor
 	Controller( const QModelIndex & index );
-	//! Destructor
 	virtual ~Controller() {}
 
 	float start;
@@ -88,30 +86,30 @@ public:
 	//! Determine the controller time based on the specified time
 	float ctrlTime( float time ) const;
 
-	/* Interpolate given the index of an array
+	/*! Interpolate given the index of an array
 	 *
 	 * @param[out] value		The value being interpolated
-	 * @param[in] array			The array index
-	 * @param[in] time			The scene time
+	 * @param[in]  array		The array index
+	 * @param[in]  time			The scene time
 	 * @param[out] lastIndex	The last index
 	 */
 	template <typename T> static bool interpolate( T & value, const QModelIndex & array, float time, int & lastIndex );
 
-	/* Interpolate given an index and the array name
+	/*! Interpolate given an index and the array name
 	 *
 	 * @param[out] value		The value being interpolated
-	 * @param[in] data			The index which houses the array
-	 * @param[in] arrayid		The name of the array
-	 * @param[in] time			The scene time
+	 * @param[in]  data			The index which houses the array
+	 * @param[in]  arrayid		The name of the array
+	 * @param[in]  time			The scene time
 	 * @param[out] lastIndex	The last index
 	 */
 	template <typename T> static bool interpolate( T & value, const QModelIndex & data, const QString & arrayid, float time, int & lastindex );
 	
-	/* Returns the fraction of the way between two keyframes based on the scene time
+	/*! Returns the fraction of the way between two keyframes based on the scene time
 	 *
-	 * @param[in] inTime		The scene time
-	 * @param[in] nif			The NIF
-	 * @param[in] keysArray		The Keys array in the interpolator
+	 * @param[in]  inTime		The scene time
+	 * @param[in]  nif			The NIF
+	 * @param[in]  keysArray	The Keys array in the interpolator
 	 * @param[out] prevFrame	The previous row in the Keys array
 	 * @param[out] nextFrame	The next row in the Keys array
 	 * @param[out] fraction		The current distance between the prev and next frame, as a fraction
