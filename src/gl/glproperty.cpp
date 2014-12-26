@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 
 
-//! \file glproperty.cpp Property, subclasses
+//! @file glproperty.cpp Property, subclasses
 
 //! Helper function that checks texture sets
 bool checkSet( int s, const QList<QVector<Vector2> > & texcoords )

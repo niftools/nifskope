@@ -45,7 +45,7 @@ typedef int GLint;
 typedef unsigned int GLuint;
 typedef float GLfloat;
 
-//! \file glproperty.h Property classes
+//! @file glproperty.h Property classes
 
 //! Controllable properties attached to nodes and meshes
 class Property : public IControllable
@@ -59,10 +59,10 @@ protected:
 	int ref;
 
 public:
-	//! Creates a Property based on the specified index of the specified model
-	/*!
+	/*! Creates a Property based on the specified index of the specified model
+	 *
 	 * @param scene The Scene the property is in
-	 * @param nif The model
+	 * @param nif	The model
 	 * @param index The index NiProperty
 	 */
 	static Property * create( Scene * scene, const NifModel * nif, const QModelIndex & index );
@@ -88,7 +88,7 @@ public:
 //! Associate a Property subclass with a Property::Type
 #define REGISTER_PROPERTY( CLASSNAME, TYPENAME ) template <> inline Property::Type Property::_type<CLASSNAME>() { return Property::TYPENAME; }
 
-//! A list of \link Property Properties \endlink
+//! A list of [Properties](@ref Property)
 class PropertyList final
 {
 public:
@@ -469,8 +469,7 @@ struct UVOffset
 	float y = 0.0f;
 };
 
-// TODO: This is an abstract class in the XML, other blocks inherit it
-//	such as BSLightingShaderProperty.
+
 //! A Property that specifies shader lighting (Bethesda-specific)
 class BSShaderLightingProperty : public Property
 {
