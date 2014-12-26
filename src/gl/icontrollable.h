@@ -58,7 +58,7 @@ public:
 
 	virtual void clear();
 
-	virtual void update( const NifModel * nif, const QModelIndex & index );
+	virtual void update( const NifModel * nif, const QModelIndex & index ) = 0;
 
 	virtual void transform();
 
