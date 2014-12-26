@@ -46,8 +46,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtEndian>
 
 
-/*! \file gltexloaders.cpp
- * \brief Texture loading functions.
+/*! @file gltexloaders.cpp
+ * @brief Texture loading functions.
  *
  * Textures can be loaded from a filename (in any supported format) or raw
  * pixel data. They can also be exported from raw pixel data to TGA or DDS.
@@ -112,10 +112,10 @@ bool isPowerOfTwo( unsigned int x )
 	return ( x == 1 );
 }
 
-//! Completes mipmap sequence of the current active OpenGL texture.
-/*!
- * \param m Number of mipmaps that are already in the texture.
- * \return Total number of mipmaps.
+/*! Completes mipmap sequence of the current active OpenGL texture.
+ *
+ * @param m Number of mipmaps that are already in the texture.
+ * @return	Total number of mipmaps.
  */
 int generateMipMaps( int m )
 {
@@ -174,8 +174,8 @@ int generateMipMaps( int m )
 	return m;
 }
 
-//! Converts RLE-encoded data into pixel data.
-/*!
+/*! Converts RLE-encoded data into pixel data.
+ *
  * TGA in particular uses the PackBits format described at
  * http://en.wikipedia.org/wiki/PackBits and in the TGA spec.
  */
@@ -218,16 +218,16 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 	return true;
 }
 
-//! Convert pixels to RGBA
-/*!
- * \param data Pixels to convert
- * \param w Width of the image
- * \param h Height of the image
- * \param bytespp Number of bytes per pixel
- * \param mask Bitmask for pixel data
- * \param flipV Whether to flip the data vertically
- * \param flipH Whether to flip the data horizontally
- * \param pixl Pixels to output
+/*! Convert pixels to RGBA
+ *
+ * @param data		Pixels to convert
+ * @param w			Width of the image
+ * @param h			Height of the image
+ * @param bytespp	Number of bytes per pixel
+ * @param mask		Bitmask for pixel data
+ * @param flipV		Whether to flip the data vertically
+ * @param flipH		Whether to flip the data horizontally
+ * @param pixl		Pixels to output
  */
 void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint32 mask[], bool flipV, bool flipH, quint8 * pixl )
 {
@@ -569,16 +569,16 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 	}
 }
 
-//! Load a DXT compressed DDS texture from file
-/*!
- * \param f File to load from
- * \param null Format
- * \param null Block size
- * \param null Width
- * \param null Height
- * \param mipmaps The number of mipmaps to read
- * \param null Flip
- * \return The total number of mipmaps
+/*! Load a DXT compressed DDS texture from file
+ *
+ * @param f			File to load from
+ * @param null		Format
+ * @param null		Block size
+ * @param null		Width
+ * @param null		Height
+ * @param mipmaps	The number of mipmaps to read
+ * @param null		Flip
+ * @return			The total number of mipmaps
  */
 GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
 {
@@ -740,12 +740,12 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 	}
 }
 
-//! Load a DXT compressed texture
-/*!
- * \param hdr Description of the texture
- * \param pixels The pixel data
- * \param size The size of the texture
- * \return The total number of mipmaps
+/*! Load a DXT compressed texture
+ *
+ * @param hdr		Description of the texture
+ * @param pixels	The pixel data
+ * @param size		The size of the texture
+ * @return			The total number of mipmaps
  */
 GLuint texLoadDXT( DDSFormat & hdr, const quint8 * pixels, uint size )
 {
@@ -925,13 +925,13 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 	return 0;
 }
 
-//! Return value as a 32-bit value; possibly replace with <a href="http://doc.trolltech.com/latest/qtendian.html">QtEndian</a> functions?
+//! Return value as a 32-bit value; possibly replace with QtEndian functions?
 quint32 get32( quint8 * x )
 {
 	return *( (quint32 *)x );
 }
 
-//! Return value as a 16-bit value; possibly replace with <a href="http://doc.trolltech.com/latest/qtendian.html">QtEndian</a> functions?
+//! Return value as a 16-bit value; possibly replace with QtEndian functions?
 quint16 get16( quint8 * x )
 {
 	return *( (quint16 *)x );
@@ -1175,12 +1175,12 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 	return mipmaps;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	return texLoad( filepath, format, width, height, mipmaps, *(new QByteArray()) );
 }
-// (public function, documented in gltexloaders.h)
+
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data )
 {
 	width = height = mipmaps = 0;
@@ -1223,7 +1223,7 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	return mipmaps > 0;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texCanLoad( const QString & filepath )
 {
 	QFileInfo i( filepath );
@@ -1236,7 +1236,7 @@ bool texCanLoad( const QString & filepath )
 	       );
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
@@ -1503,7 +1503,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	return true;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
 {
 	Q_UNUSED( index );
@@ -1615,7 +1615,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	return true;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 {
 	// Work out the extension and format
