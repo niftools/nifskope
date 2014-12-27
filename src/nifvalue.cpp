@@ -41,16 +41,31 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 
 
-//! \file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
-
-/*
- *  NifValue
- */
+//! @file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
 
 QHash<QString, NifValue::Type>        NifValue::typeMap;
 QHash<QString, QString>               NifValue::typeTxt;
 QHash<QString, NifValue::EnumOptions> NifValue::enumMap;
 QHash<QString, QString>               NifValue::aliasMap;
+
+/*
+ *  NifValue
+ */
+
+NifValue::NifValue( Type t ) : typ( tNone ), abstract( false )
+{
+	changeType( t );
+}
+
+NifValue::NifValue( const NifValue & other ) : typ( tNone )
+{
+	operator=(other);
+}
+
+NifValue::~NifValue()
+{
+	clear();
+}
 
 void NifValue::initialize()
 {
@@ -312,21 +327,6 @@ quint32 NifValue::enumOptionValue( const QString & eid, const QString & oid, boo
 const NifValue::EnumOptions & NifValue::enumOptionData( const QString & eid )
 {
 	return enumMap[eid];
-}
-
-NifValue::NifValue( Type t ) : typ( tNone ), abstract( false )
-{
-	changeType( t );
-}
-
-NifValue::NifValue( const NifValue & other ) : typ( tNone )
-{
-	operator=( other );
-}
-
-NifValue::~NifValue()
-{
-	clear();
 }
 
 void NifValue::clear()
@@ -975,11 +975,24 @@ QColor NifValue::toColor() const
 	return QColor();
 }
 
-void NifOStream::init()
+/*
+ *  NifIStream
+ */
+
+void NifIStream::init()
 {
-	bool32bit    = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust   = ( model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D );
-	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
+	bool32bit = (model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002);
+	linkAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D);
+	stringAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003);
+	bigEndian = false; // set when tFileVersion is read
+
+	dataStream = new QDataStream( device );
+	dataStream->setByteOrder( QDataStream::LittleEndian );
+	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
+
+	QSettings cfg;
+	maxLength = cfg.value( "maximum string length", 0x8000 ).toInt();
+	//maxLength = Options::maxStringLength();
 }
 
 bool NifIStream::read( NifValue & val )
@@ -1312,20 +1325,16 @@ bool NifIStream::read( NifValue & val )
 	return false;
 }
 
-void NifIStream::init()
+
+/*
+ *  NifOStream
+ */
+
+void NifOStream::init()
 {
-	bool32bit    = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust   = ( model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D );
-	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
-	bigEndian    = false; // set when tFileVersion is read
-
-	dataStream = new QDataStream( device );
-	dataStream->setByteOrder( QDataStream::LittleEndian );
-	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
-
-	QSettings cfg;
-	maxLength = cfg.value( "maximum string length", 0x8000 ).toInt();
-	//maxLength = Options::maxStringLength();
+	bool32bit = (model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002);
+	linkAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D);
+	stringAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003);
 }
 
 bool NifOStream::write( const NifValue & val )
@@ -1548,6 +1557,11 @@ bool NifOStream::write( const NifValue & val )
 
 	return false;
 }
+
+
+/*
+ *  NifSStream
+ */
 
 void NifSStream::init()
 {
