@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
+//! @file gltex.h TexCache etc. header
+
 class GroupBox;
 
 class QAction;
@@ -50,10 +52,8 @@ class QOpenGLContext;
 
 typedef unsigned int GLuint;
 
-//! \file gltex.h TexCache etc. header
-
-//! A class for handling OpenGL textures.
-/*!
+/*! A class for handling OpenGL textures.
+ *
  * This class stores information on all loaded textures, and watches the texture files.
  */
 class TexCache final : public QObject
@@ -94,9 +94,7 @@ class TexCache final : public QObject
 	};
 
 public:
-	//! Constructor
 	TexCache( QObject * parent = nullptr );
-	//! Destructor
 	~TexCache();
 
 	//! Bind a texture from filename
@@ -126,8 +124,8 @@ signals:
 public slots:
 	void flush();
 
-	//! Set the folder to read textures from
-	/*!
+	/*! Set the folder to read textures from
+	 *
 	 * If this is not set, relative paths won't resolve. The standard usage
 	 * is to give NifModel::getFolder() as the argument.
 	 */

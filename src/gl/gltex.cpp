@@ -48,12 +48,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 
+
+//! @file gltex.cpp TexCache management
+
 #ifdef WIN32
 PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
 PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB;
 #endif
-
-//! \file gltex.cpp TexCache management
 
 //! Number of texture units
 GLint num_texture_units = 0;
@@ -131,8 +132,8 @@ void resetTextureUnits()
 
 
 /*
-    TexCache
-*/
+ *  TexCache
+ */
 
 TexCache::TexCache( QObject * parent ) : QObject( parent )
 {
@@ -494,8 +495,9 @@ bool TexCache::importFile( NifModel * nif, const QModelIndex & iSource, QModelIn
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-
+/*
+*  TexCache::Tex
+*/
 
 void TexCache::Tex::load()
 {
