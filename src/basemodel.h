@@ -45,7 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 
 
-//! @file basemodel.h BaseModel
+//! @file basemodel.h BaseModel, BaseModelEval
 
 class QAbstractItemDelegate;
 
@@ -318,6 +318,22 @@ protected:
 
 	//! A list of messages
 	mutable QList<TestMessage> messages;
+};
+
+
+//! Helper class for evaluating condition expressions
+class BaseModelEval
+{
+public:
+	//! Constructor
+	BaseModelEval( const BaseModel * model, const NifItem * item );
+
+	//! Evaluation function
+	QVariant operator()( const QVariant & v ) const;
+
+private:
+	const BaseModel * model;
+	const NifItem * item;
 };
 
 

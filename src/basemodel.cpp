@@ -41,7 +41,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileInfo>
 #include <QTime>
 
-//! @file basemodel.cpp BaseModel and BaseModelEval
+
+//! @file basemodel.cpp Abstract base class for NIF data models
+
+/*
+ *  BaseModel
+ */
 
 BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
@@ -656,80 +661,6 @@ QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & nam
  *  conditions and version
  */
 
-//! Helper class for evaluating condition expressions
-class BaseModelEval
-{
-public:
-	//! Model
-	const BaseModel * model;
-	//! Item
-	const NifItem * item;
-	//! Constructor
-	BaseModelEval( const BaseModel * model, const NifItem * item )
-	{
-		this->model = model;
-		this->item  = item;
-	}
-
-	//! Evaluation function
-	QVariant operator()( const QVariant & v ) const
-	{
-		if ( v.type() == QVariant::String ) {
-			QString left = v.toString();
-			const NifItem * i = item;
-
-			// resolve "ARG"
-			while ( left == "ARG" ) {
-				if ( !i->parent() )
-					return false;
-
-				i = i->parent();
-				left = i->arg();
-			}
-
-			// resolve reference to sibling
-			const NifItem * sibling = model->getItem( i->parent(), left );
-
-			if ( sibling ) {
-				if ( sibling->value().isCount() ) {
-					return QVariant( sibling->value().toCount() );
-				} else if ( sibling->value().isFileVersion() ) {
-					return QVariant( sibling->value().toFileVersion() );
-				// this is tricky to understand
-				// we check whether the reference is an array
-				// if so, we get the current item's row number (i->row())
-				// and get the sibling's child at that row number
-				// this is used for instance to describe array sizes of strips
-				} else if ( sibling->childCount() > 0 ) {
-					const NifItem * i2 = sibling->child( i->row() );
-
-					if ( i2 && i2->value().isCount() )
-						return QVariant( i2->value().toCount() );
-				} else {
-					qDebug() << ("can't convert " + left + " to a count");
-				}
-			}
-
-			// resolve reference to block type
-			// is the condition string a type?
-			if ( model->isAncestorOrNiBlock( left ) ) {
-				// get the type of the current block
-				const NifItem * block = i;
-
-				while ( block->parent() && block->parent()->parent() ) {
-					block = block->parent();
-				}
-
-				return QVariant( model->inherits( block->name(), left ) );
-			}
-
-			return QVariant( 0 );
-		}
-
-		return v;
-	}
-};
-
 int BaseModel::evaluateInt( NifItem * item, const Expression & expr ) const
 {
 	if ( !item || item == root )
@@ -764,7 +695,7 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 
 bool BaseModel::evalVersion( const QModelIndex & index, bool chkParents ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
+	NifItem * item = static_cast<NifItem *>(index.internalPointer());
 
 	if ( index.isValid() && index.model() == this && item )
 		return evalVersion( item, chkParents );
@@ -774,7 +705,7 @@ bool BaseModel::evalVersion( const QModelIndex & index, bool chkParents ) const
 
 bool BaseModel::evalCondition( const QModelIndex & index, bool chkParents ) const
 {
-	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
+	NifItem * item = static_cast<NifItem *>(index.internalPointer());
 
 	if ( index.isValid() && index.model() == this && item )
 		return evalCondition( item, chkParents );
@@ -782,3 +713,70 @@ bool BaseModel::evalCondition( const QModelIndex & index, bool chkParents ) cons
 	return false;
 }
 
+
+/*
+ *  BaseModelEval
+ */
+
+BaseModelEval::BaseModelEval( const BaseModel * model, const NifItem * item )
+{
+	this->model = model;
+	this->item  = item;
+}
+
+QVariant BaseModelEval::operator()(const QVariant & v) const
+{
+	if ( v.type() == QVariant::String ) {
+		QString left = v.toString();
+		const NifItem * i = item;
+
+		// resolve "ARG"
+		while ( left == "ARG" ) {
+			if ( !i->parent() )
+				return false;
+
+			i = i->parent();
+			left = i->arg();
+		}
+
+		// resolve reference to sibling
+		const NifItem * sibling = model->getItem( i->parent(), left );
+
+		if ( sibling ) {
+			if ( sibling->value().isCount() ) {
+				return QVariant( sibling->value().toCount() );
+			} else if ( sibling->value().isFileVersion() ) {
+				return QVariant( sibling->value().toFileVersion() );
+			// this is tricky to understand
+			// we check whether the reference is an array
+			// if so, we get the current item's row number (i->row())
+			// and get the sibling's child at that row number
+			// this is used for instance to describe array sizes of strips
+			} else if ( sibling->childCount() > 0 ) {
+				const NifItem * i2 = sibling->child( i->row() );
+
+				if ( i2 && i2->value().isCount() )
+					return QVariant( i2->value().toCount() );
+			} else {
+				qDebug() << ("can't convert " + left + " to a count");
+			}
+		}
+
+		// resolve reference to block type
+		// is the condition string a type?
+		if ( model->isAncestorOrNiBlock( left ) ) {
+			// get the type of the current block
+			const NifItem * block = i;
+
+			while ( block->parent() && block->parent()->parent() ) {
+				block = block->parent();
+			}
+
+			return QVariant( model->inherits( block->name(), left ) );
+		}
+
+		return QVariant( 0 );
+	}
+
+	return v;
+}
