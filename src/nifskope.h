@@ -72,7 +72,7 @@ class QTimer;
 class QUdpSocket;
 
 
-//! @file nifskope.h The main header for NifSkope
+//! @file nifskope.h NifSkope, IPCsocket
 
 /*! The main application class for NifSkope.
  *

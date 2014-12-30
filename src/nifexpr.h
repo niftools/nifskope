@@ -39,6 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 
 
+//! @file nifexpr.h Expression
+
 class Expression final
 {
 	enum Operator

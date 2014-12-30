@@ -41,9 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
-class BSLightingShaderProperty;
-
-//! @file glmesh.h Mesh class
+//! @file glmesh.h Mesh
 
 //! A mesh
 class Mesh : public Node

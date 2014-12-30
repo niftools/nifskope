@@ -37,6 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "basemodel.h"
 
 
+//! @file nifexpr.cpp Expression parsing for conditions defined in nif.xml.
+
 static bool matchGroup( const QString & cond, int offset, int & startpos, int & endpos )
 {
 	int scandepth = 0;

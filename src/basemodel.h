@@ -45,9 +45,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 
 
-class QAbstractItemDelegate;
-
 //! @file basemodel.h BaseModel
+
+class QAbstractItemDelegate;
 
 /*! Base class for NIF and KFM models, which store files in memory.
  *

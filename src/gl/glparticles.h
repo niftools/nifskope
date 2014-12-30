@@ -39,6 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 
 
+//! @file glparticles.h Particles
+
 class Particles : public Node
 {
 	friend class ParticleController;

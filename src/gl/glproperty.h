@@ -40,12 +40,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
+//! @file glproperty.h Property, PropertyList
+
 typedef unsigned int GLenum;
 typedef int GLint;
 typedef unsigned int GLuint;
 typedef float GLfloat;
-
-//! @file glproperty.h Property classes
 
 //! Controllable properties attached to nodes and meshes
 class Property : public IControllable

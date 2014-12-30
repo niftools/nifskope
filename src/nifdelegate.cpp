@@ -48,6 +48,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 
 
+//! @file nifdelegate.cpp NifDelegate
+
 extern void qt_format_text( const QFont & font, const QRectF & _r,
                             int tf, const QString & str, QRectF * brect,
                             int tabstops, int * tabarray, int tabarraylen,

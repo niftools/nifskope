@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 
 
+//! @file glcontroller.cpp Controllable management, Interpolation management
+
 /*
  *  IControllable
  */

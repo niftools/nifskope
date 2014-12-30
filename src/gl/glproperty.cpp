@@ -40,7 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 
 
-//! @file glproperty.cpp Property, subclasses
+//! @file glproperty.cpp Encapsulation of NiProperty blocks defined in nif.xml
 
 //! Helper function that checks texture sets
 bool checkSet( int s, const QList<QVector<Vector2> > & texcoords )

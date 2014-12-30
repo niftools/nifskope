@@ -80,6 +80,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStyleFactory>
 
 
+//! @file nifskope_ui.cpp UI logic for %NifSkope's main window.
+
 NifSkope * NifSkope::createWindow( const QString & fname )
 {
 	NifSkope * skope = new NifSkope;

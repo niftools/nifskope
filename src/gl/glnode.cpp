@@ -45,6 +45,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <algorithm> // std::stable_sort
 
+
+//! @file glnode.cpp Scene management for visible NiNodes and their children.
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif

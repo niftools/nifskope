@@ -40,8 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
-//! @file glcontroller.h Controller, Interpolator and subclasses
-
+//! @file glcontroller.h Controller, Interpolator, TransformInterpolator, BSplineTransformInterpolator
 
 //! Something which can be attached to anything Controllable
 class Controller

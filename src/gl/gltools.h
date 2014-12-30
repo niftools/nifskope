@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 
 
-//! \file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
+//! @file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
 
 //! A bounding sphere for an object, typically a Mesh
 class BoundSphere final

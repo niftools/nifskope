@@ -35,9 +35,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontroller.h" // Inherited
 
+
+//! @file controllers.h Controller subclasses
+
 class Mesh;
 class Node;
-
 
 //! Controller for `NiControllerManager` blocks
 class ControllerManager final : public Controller

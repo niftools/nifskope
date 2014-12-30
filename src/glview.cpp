@@ -95,7 +95,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-//! \file glview.cpp GLView implementation
+//! @file glview.cpp GLView implementation
 
 
 GLGraphicsView::GLGraphicsView( QWidget * parent ) : QGraphicsView()

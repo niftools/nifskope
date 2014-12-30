@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
+//! @file icontrollable.h IControllable interface
+
 class Controller;
 class Scene;
 

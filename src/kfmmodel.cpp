@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kfmmodel.h"
 
 
+//! @file kfmmodel.cpp KfmModel
+
 KfmModel::KfmModel( QObject * parent ) : BaseModel( parent )
 {
 	clear();

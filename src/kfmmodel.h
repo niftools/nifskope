@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 
 
+//! @file kfmmodel.h KfmModel
+
 class KfmModel final : public BaseModel
 {
 	Q_OBJECT
