@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtEndian>
 
 
-//! @file nifmodel.cpp NifModel implementation, NifModelEval
+//! @file nifmodel.cpp The NIF data model.
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
@@ -131,39 +131,6 @@ quint32 NifModel::version2number( const QString & s )
 	quint32 i = s.toUInt( &ok );
 	return ( i == 0xffffffff ? 0 : i );
 }
-
-// Helper class for evaluating condition expressions
-class NifModelEval
-{
-public:
-	const NifModel * model;
-	const NifItem * item;
-	NifModelEval( const NifModel * model, const NifItem * item )
-	{
-		this->model = model;
-		this->item  = item;
-	}
-
-	QVariant operator()( const QVariant & v ) const
-	{
-		if ( v.type() == QVariant::String ) {
-			QString left = v.toString();
-			NifItem * i  = const_cast<NifItem *>(item);
-			i = model->getItem( i, left );
-
-			if ( i ) {
-				if ( i->value().isCount() )
-					return QVariant( i->value().toCount() );
-				else if ( i->value().isFileVersion() )
-					return QVariant( i->value().toFileVersion() );
-			}
-
-			return QVariant( 0 );
-		}
-
-		return v;
-	}
-};
 
 bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 {
@@ -2857,6 +2824,40 @@ void NifModel::updateModel( UpdateType value )
 }
 
 
+/*
+ *  NifModelEval
+ */
+
+NifModelEval::NifModelEval( const NifModel * model, const NifItem * item )
+{
+	this->model = model;
+	this->item = item;
+}
+
+QVariant NifModelEval::operator()( const QVariant & v ) const
+{
+	if ( v.type() == QVariant::String ) {
+		QString left = v.toString();
+		NifItem * i = const_cast<NifItem *>(item);
+		i = model->getItem( i, left );
+
+		if ( i ) {
+			if ( i->value().isCount() )
+				return QVariant( i->value().toCount() );
+			else if ( i->value().isFileVersion() )
+				return QVariant( i->value().toFileVersion() );
+		}
+
+		return QVariant( 0 );
+	}
+
+	return v;
+}
+
+
+/*
+ *  ChangeValueCommand
+ */
 
 ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
 	const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model )
@@ -2889,6 +2890,11 @@ void ChangeValueCommand::undo()
 
 	//qDebug() << nif->data( idx ).toString();
 }
+
+
+/*
+ *  ToggleCheckBoxListCommand
+ */
 
 ToggleCheckBoxListCommand::ToggleCheckBoxListCommand( const QModelIndex & index,
 	const QVariant & value, const QString & valueType, NifModel * model )

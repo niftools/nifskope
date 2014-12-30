@@ -42,9 +42,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QUndoCommand>
 #include <QUndoStack>
 
-//! @file nifmodel.h NifModel
 
-//! Base class for nif models.
+//! @file nifmodel.h NifModel, NifModelEval, ChangeValueCommand, ToggleCheckBoxListCommand
+
+//! The main data model for the NIF file.
 class NifModel final : public BaseModel
 {
 	Q_OBJECT
@@ -343,6 +344,19 @@ protected:
 	static QList<quint32> supportedVersions;
 	static QHash<QString, NifBlock *> compounds;
 	static QHash<QString, NifBlock *> blocks;
+};
+
+
+//! Helper class for evaluating condition expressions
+class NifModelEval
+{
+public:
+	NifModelEval( const NifModel * model, const NifItem * item );
+
+	QVariant operator()( const QVariant & v ) const;
+private:
+	const NifModel * model;
+	const NifItem * item;
 };
 
 
