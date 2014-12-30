@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 
 
-//! \file glview.h GLView class
+//! @file glview.h GLView, GLGraphicsView
 
 class NifSkope;
 class GLGraphicsView;
@@ -64,18 +64,19 @@ class QToolBar;
 class QTimer;
 
 
-//! The model view window
+//! The main [Viewport](@ref viewport_details) class
 class GLView final : public QGLWidget
 {
 	Q_OBJECT
 
+	friend class NifSkope;
+	friend class GLGraphicsView;
+
+private:
 	GLView( const QGLFormat & format, QWidget * parent, const QGLWidget * shareWidget = 0 );
 	~GLView();
 
 public:
-	friend class NifSkope;
-	friend class GLGraphicsView;
-
 	//! Static instance
 	static GLView * create( NifSkope * );
 
