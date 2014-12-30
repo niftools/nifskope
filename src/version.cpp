@@ -35,8 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "QDebug"
 
 
-//! \file version.cpp
-
+//! @file version.cpp %NifSkope version number management
 
 // Number of version parts (Default = 3)
 int NifSkopeVersion::numParts = 3;
