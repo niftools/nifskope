@@ -37,6 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 
 
+//! @file niftypes.cpp Type functions
+
 const float Quat::identity[4] = {
 	1.0, 0.0, 0.0, 0.0
 };
