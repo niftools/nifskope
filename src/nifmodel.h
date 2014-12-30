@@ -364,8 +364,8 @@ class ChangeValueCommand : public QUndoCommand
 {
 public:
 	ChangeValueCommand( const QModelIndex & index, const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model );
-	void redo();
-	void undo();
+	void redo() override;
+	void undo() override;
 private:
 	NifModel * nif;
 	QVariant newValue, oldValue;
@@ -377,8 +377,8 @@ class ToggleCheckBoxListCommand : public QUndoCommand
 {
 public:
 	ToggleCheckBoxListCommand( const QModelIndex & index, const QVariant & value, const QString & valueType, NifModel * model );
-	void redo();
-	void undo();
+	void redo() override;
+	void undo() override;
 private:
 	NifModel * nif;
 	QVariant newValue, oldValue;
