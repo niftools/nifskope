@@ -492,14 +492,14 @@ public:
 
 	static int getId( const QString & id );
 
-	unsigned int getFlags1();
-	unsigned int getFlags2();
+	unsigned int getFlags1() const;
+	unsigned int getFlags2() const;
 
 	void setFlags1( unsigned int );
 	void setFlags2( unsigned int );
 
-	UVScale getUvScale();
-	UVOffset getUvOffset();
+	UVScale getUvScale() const;
+	UVOffset getUvOffset() const;
 
 	void setUvScale( float, float );
 	void setUvOffset( float, float );

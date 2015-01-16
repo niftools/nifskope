@@ -907,12 +907,12 @@ int BSShaderLightingProperty::getId( const QString & id )
 	return hash.value( id, -1 );
 }
 
-unsigned int BSShaderLightingProperty::getFlags1()
+unsigned int BSShaderLightingProperty::getFlags1() const
 {
 	return (unsigned int)flags1;
 }
 
-unsigned int BSShaderLightingProperty::getFlags2()
+unsigned int BSShaderLightingProperty::getFlags2() const
 {
 	return (unsigned int)flags2;
 }
@@ -927,12 +927,12 @@ void BSShaderLightingProperty::setFlags2( unsigned int val )
 	flags2 = ShaderFlags::SF2( val );
 }
 
-UVScale BSShaderLightingProperty::getUvScale()
+UVScale BSShaderLightingProperty::getUvScale() const
 {
 	return uvScale;
 }
 
-UVOffset BSShaderLightingProperty::getUvOffset()
+UVOffset BSShaderLightingProperty::getUvOffset() const
 {
 	return uvOffset;
 }
