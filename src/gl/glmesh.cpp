@@ -136,12 +136,12 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				};
 
 
-				auto st = nif->get<unsigned int>( iProp, "Skyrim Shader Type" );
+				auto shaderType = nif->get<unsigned int>( iProp, "Skyrim Shader Type" );
 
 				auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
 				auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
 
-				bslsp->setShaderType( st );
+				bslsp->setShaderType( shaderType );
 				bslsp->setFlags1( sf1 );
 				bslsp->setFlags2( sf2 );
 

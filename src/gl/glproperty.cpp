@@ -960,10 +960,10 @@ void BSShaderLightingProperty::setUvOffset( float x, float y )
 
 void BSLightingShaderProperty::setShaderType( unsigned int t )
 {
-	shaderType = ShaderType( t );
+	shaderType = ShaderFlags::ShaderType( t );
 }
 
-BSLightingShaderProperty::ShaderType BSLightingShaderProperty::getShaderType()
+ShaderFlags::ShaderType BSLightingShaderProperty::getShaderType()
 {
 	return shaderType;
 }

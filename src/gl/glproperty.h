@@ -454,6 +454,30 @@ namespace ShaderFlags
 		SLSF2_Effect_Lighting = 1 << 30,  // 30
 		SLSF2_HD_LOD_Objects = (unsigned int)(1 << 31),  // 31
 	};
+
+	enum ShaderType : unsigned int
+	{
+		ST_Default,
+		ST_EnvironmentMap,
+		ST_GlowShader,
+		ST_Heightmap,
+		ST_FaceTint,
+		ST_SkinTint,
+		ST_HairTint,
+		ST_ParallaxOccMaterial,
+		ST_WorldMultitexture,
+		ST_WorldMap1,
+		ST_Unknown10,
+		ST_MultiLayerParallax,
+		ST_Unknown12,
+		ST_WorldMap2,
+		ST_SparkleSnow,
+		ST_WorldMap3,
+		ST_EyeEnvmap,
+		ST_Unknown17,
+		ST_WorldMap4,
+		ST_WorldLODMultitexture
+	};
 }
 
 
@@ -562,34 +586,10 @@ public:
 	bool hasBacklight;
 	bool hasRimlight;
 
-	enum ShaderType
-	{
-		ST_Default,
-		ST_EnvironmentMap,
-		ST_GlowShader,
-		ST_Heightmap,
-		ST_FaceTint,
-		ST_SkinTint,
-		ST_HairTint,
-		ST_ParallaxOccMaterial,
-		ST_WorldMultitexture,
-		ST_WorldMap1,
-		ST_Unknown10,
-		ST_MultiLayerParallax,
-		ST_Unknown12,
-		ST_WorldMap2,
-		ST_SparkleSnow,
-		ST_WorldMap3,
-		ST_EyeEnvmap,
-		ST_Unknown17,
-		ST_WorldMap4,
-		ST_WorldLODMultitexture
-	};
-
-	ShaderType getShaderType();
+	ShaderFlags::ShaderType getShaderType();
 
 protected:
-	ShaderType shaderType;
+	ShaderFlags::ShaderType shaderType;
 
 	Color3 emissiveColor;
 	Color3 specularColor;
