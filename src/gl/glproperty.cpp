@@ -907,6 +907,11 @@ int BSShaderLightingProperty::getId( const QString & id )
 	return hash.value( id, -1 );
 }
 
+QPersistentModelIndex BSShaderLightingProperty::getTextureSet() const
+{
+	return iTextureSet;
+}
+
 unsigned int BSShaderLightingProperty::getFlags1() const
 {
 	return (unsigned int)flags1;

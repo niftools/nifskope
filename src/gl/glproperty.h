@@ -492,6 +492,8 @@ public:
 
 	static int getId( const QString & id );
 
+	QPersistentModelIndex getTextureSet() const;
+
 	unsigned int getFlags1() const;
 	unsigned int getFlags2() const;
 
