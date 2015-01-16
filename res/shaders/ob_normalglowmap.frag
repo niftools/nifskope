@@ -29,34 +29,31 @@ varying vec4 ColorD;
 
 void main( void )
 {
-	vec4 color = ColorEA;
-	vec3 emissiveColor = glowColor;
-	float emissiveMult = glowMult;
-	float spec = 0.0;
+	vec4 baseMap = texture2D( BaseMap, gl_TexCoord[0].st );
+	vec4 nmap = texture2D( NormalMap, gl_TexCoord[0].st );
 	
-	vec3 emissive = texture2D( GlowMap, gl_TexCoord[0].st ).rgb;
+	vec4 color;
+	color.rgb = baseMap.rgb;
+	
+	vec3 normal = normalize(nmap.rgb * 2.0 - 1.0);
+		
+	float spec = 0.0;
 	
 	// Skyrim
 	if ( hasGlowMap ) {
-		emissive *= emissiveMult * emissiveColor;
+		vec3 emissive = texture2D( GlowMap, gl_TexCoord[0].st ).rgb;
+		emissive *= glowMult * glowColor;
+		color.rgb += emissive;
 	}
 	
-	color.rgb += emissive;
-	
-	vec4 nmap = texture2D( NormalMap, gl_TexCoord[0].st );
-	vec3 normal = normalize(nmap.rgb * 2.0 - 1.0);
-
 	vec3 L = normalize(LightDir);
 	vec3 E = normalize(ViewDir);
 	vec3 R = reflect(-L, normal);
 	//vec3 H = normalize( L + E );
-	
 	float NdotL = max(dot(normal, L), 0.0);
 	
-	color += ColorD * NdotL;
-	color.a = ColorD.a;
-	vec4 baseMap = texture2D( BaseMap, gl_TexCoord[0].st );
-	color *= baseMap;
+	color.rgb *= ColorEA.rgb + ColorD.rgb * NdotL;
+	color.a = ColorD.a * baseMap.a;
 	
 	if ( NdotL > 0.0 && specStrength > 0.0 ) {
 		float RdotE = max( dot( R, E ), 0.0 );

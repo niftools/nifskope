@@ -141,22 +141,14 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
 				auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
 
+				// Get all textures for shader property
+				auto textures = nif->getArray<QString>( bslsp->getTextureSet(), "Textures" );
+
 				bslsp->setShaderType( shaderType );
 				bslsp->setFlags1( sf1 );
 				bslsp->setFlags2( sf2 );
 
-				// TODO: Assure emissive props aren't used for other things without this shader type
-				if ( bslsp->getShaderType() & BSLightingShaderProperty::ST_GlowShader ) { 
-					auto emC = nif->get<Color3>( iProp, "Emissive Color" );
-					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
-					bslsp->setEmissive( emC, emM );
-				} else {
-					bslsp->setEmissive( Color3(0, 0, 0), 1.0f );
-				}
-
-				bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map );
-
-
+				// Specular
 				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
 					auto spC = nif->get<Color3>( iProp, "Specular Color" );
 					auto spG = nif->get<float>( iProp, "Glossiness" );
@@ -164,6 +156,16 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					bslsp->setSpecular( spC, spG, spS );
 				} else {
 					bslsp->setSpecular( Color3(0, 0, 0), 0, 0 );
+				}
+
+				// Emissive
+				auto emC = nif->get<Color3>( iProp, "Emissive Color" );
+				auto emM = nif->get<float>( iProp, "Emissive Multiple" );
+				bslsp->setEmissive( emC, emM );
+
+				// Set glow map if shader meets requirements
+				if ( bslsp->getShaderType() & ShaderFlags::ST_GlowShader ) {
+					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.at( 2 ).isEmpty();
 				}
 
 				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
