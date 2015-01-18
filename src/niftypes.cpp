@@ -297,6 +297,16 @@ QString Matrix::toHtml() const
 	       + QString( "</table>" );
 }
 
+QString Matrix::toRaw() const
+{
+	return QString( "%1, %2, %3\r\n" )
+		.arg( m[0][0], 0, 'f', 4 ).arg( m[0][1], 0, 'f', 4 ).arg( m[0][2], 0, 'f', 4 )
+		+ QString( "%1, %2, %3\r\n" )
+		.arg( m[1][0], 0, 'f', 4 ).arg( m[1][1], 0, 'f', 4 ).arg( m[1][2], 0, 'f', 4 )
+		+ QString( "%1, %2, %3\r\n" )
+		.arg( m[2][0], 0, 'f', 4 ).arg( m[2][1], 0, 'f', 4 ).arg( m[2][2], 0, 'f', 4 );
+}
+
 QString Matrix4::toHtml() const
 {
 	return QString( "<table>" )

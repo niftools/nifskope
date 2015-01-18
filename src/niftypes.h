@@ -872,6 +872,9 @@ public:
 	//! Format as HTML
 	QString toHtml() const;
 
+	//! Format as raw text
+	QString toRaw() const;
+
 protected:
 	float m[3][3];
 	static const float identity[9];
