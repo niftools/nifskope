@@ -1,0 +1,22 @@
+# model space normal mapping
+
+checkgroup begin or
+	# Fallout 3 and later
+	checkgroup begin and
+		check HEADER/Version >= 0x14020007
+		check HEADER/User Version >= 11
+	checkgroup end
+checkgroup end
+
+checkgroup begin or
+	# Skyrim
+	checkgroup begin and
+		check NiTriBasedGeomData/Has Normals == 0
+	checkgroup end
+checkgroup end
+
+texcoords 0 base
+#texcoords 1 tangents
+#texcoords 2 bitangents
+
+shaders sk_msn.vert sk_msn.frag
