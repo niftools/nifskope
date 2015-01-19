@@ -79,9 +79,10 @@ void main( void )
 		}
 	}
 
+	vec3 backlight;
 	if ( hasBacklight ) {
-		vec3 backlight = texture2D( BacklightMap, gl_TexCoord[0].st ).rgb;
-		color.rgb += backlight * (1.0 - NdotL) * 0.66;
+		backlight = texture2D( BacklightMap, gl_TexCoord[0].st ).rgb;
+		color.rgb += baseMap.rgb * backlight * (1.0 - NdotL) * 0.66;
 	}
 
 	vec4 mask;
