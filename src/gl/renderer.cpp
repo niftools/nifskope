@@ -688,6 +688,23 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		if ( (mesh->scene->visMode & Scene::VisSilhouette) )
 			uni3f( "specColor", 0, 0, 0 );
+
+		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
+
+			uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
+
+			GLint uniSpecularMap = fn->glGetUniformLocation( prog->id, "SpecularMap" );
+			if ( uniSpecularMap >= 0 ) {
+
+				QString fname = bsprop->fileName( 7 );
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 7, fname )) )
+					return false;
+
+				fn->glUniform1i( uniSpecularMap, texunit++ );
+			}
+		}
+
 	}
 
 
