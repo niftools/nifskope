@@ -171,6 +171,8 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
 				bslsp->hasRimlight  = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
 				bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
+				bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
+				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.at( 7 ).isEmpty();
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );

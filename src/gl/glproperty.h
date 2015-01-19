@@ -585,6 +585,8 @@ public:
 	bool hasSoftlight;
 	bool hasBacklight;
 	bool hasRimlight;
+	bool hasModelSpaceNormals;
+	bool hasSpecularMap;
 
 	ShaderFlags::ShaderType getShaderType();
 
