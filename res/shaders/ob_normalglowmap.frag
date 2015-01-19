@@ -27,6 +27,18 @@ varying vec3 ViewDir;
 varying vec4 ColorEA;
 varying vec4 ColorD;
 
+vec3 tonemap(vec3 x)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+
+	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
 void main( void )
 {
 	vec4 baseMap = texture2D( BaseMap, gl_TexCoord[0].st );
@@ -39,11 +51,11 @@ void main( void )
 		
 	float spec = 0.0;
 	
+	vec3 emissive = texture2D( GlowMap, gl_TexCoord[0].st ).rgb;
+	
 	// Skyrim
 	if ( hasGlowMap ) {
-		vec3 emissive = texture2D( GlowMap, gl_TexCoord[0].st ).rgb;
-		emissive *= glowMult * glowColor;
-		color.rgb += emissive;
+		color.rgb += tonemap( baseMap.rgb * emissive.rgb * glowColor ) / tonemap( 1.0f / (vec3(glowMult) + 0.001f) );
 	}
 	
 	vec3 L = normalize(LightDir);
