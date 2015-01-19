@@ -18,6 +18,7 @@ checkgroup begin or
 	checkgroup begin and
 		check BSLightingShaderProperty/Skyrim Shader Type != 2
 		check NiTriBasedGeomData/Has Vertex Colors == 1
+		check NiTriBasedGeomData/Has Normals == 1
 	checkgroup end
 
 	# Fallout 3
