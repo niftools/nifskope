@@ -107,7 +107,10 @@ public:
 	QList<QVector<quint16> > tristrips;
 };
 
+QVector<int> sortAxes( QVector<float> axesDots );
+
 void drawAxes( Vector3 c, float axis );
+void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder = {2, 1, 0} );
 void drawGrid( int s, int line, int sub );
 void drawBox( Vector3 a, Vector3 b );
 void drawCircle( Vector3 c, Vector3 n, float r, int sd = 16 );

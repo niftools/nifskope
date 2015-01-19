@@ -34,6 +34,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stack>
 #include <map>
+#include <algorithm>
+#include <functional>
 
 #include <QMap>
 #include <QStack>
@@ -254,6 +256,94 @@ void drawAxes( Vector3 c, float axis )
 	glVertex3f( +arrow, -arrow, +axis - 3 * arrow );
 	glVertex3f( 0, 0, +axis );
 	glVertex3f( -arrow, -arrow, +axis - 3 * arrow );
+	glEnd();
+	glPopMatrix();
+}
+
+QVector<int> sortAxes( QVector<float> axesDots )
+{
+	QVector<float> dotsSorted = axesDots;
+	std::stable_sort( dotsSorted.begin(), dotsSorted.end() );
+
+	// Retrieve position of X, Y, Z axes in sorted list
+	auto x = axesDots.indexOf( dotsSorted[0] );
+	auto y = axesDots.indexOf( dotsSorted[1] );
+	auto z = axesDots.indexOf( dotsSorted[2] );
+
+	// When z == 1.0, x and y both == 0
+	if ( axesDots[2] == 1.0 ) {
+		x = 0;
+		y = 1;
+	}
+
+	return{ x, y, z };
+}
+
+void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder )
+{
+	glPushMatrix();
+	glTranslate( c );
+	GLfloat arrow = axis / 36.0;
+
+	glDisable( GL_LIGHTING );
+	glDepthFunc( GL_ALWAYS );
+	glLineWidth( 2.0f );
+	glBegin( GL_LINES );
+
+	// Render the X axis
+	std::function<void()> xAxis = [axis, arrow]() {
+		glColor3f( 1.0, 0.0, 0.0 );
+		glVertex3f( 0, 0, 0 );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, +arrow, +arrow );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, -arrow, +arrow );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, +arrow, -arrow );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, -arrow, -arrow );
+	};
+
+	// Render the Y axis
+	std::function<void()> yAxis = [axis, arrow]() {
+		glColor3f( 0.0, 1.0, 0.0 );
+		glVertex3f( 0, 0, 0 );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( +arrow, +axis - 3 * arrow, +arrow );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( -arrow, +axis - 3 * arrow, +arrow );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( +arrow, +axis - 3 * arrow, -arrow );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( -arrow, +axis - 3 * arrow, -arrow );
+	};
+
+	// Render the Z axis
+	std::function<void()> zAxis = [axis, arrow]() {
+		glColor3f( 0.0, 0.0, 1.0 );
+		glVertex3f( 0, 0, 0 );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( +arrow, +arrow, +axis - 3 * arrow );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( -arrow, +arrow, +axis - 3 * arrow );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( +arrow, -arrow, +axis - 3 * arrow );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( -arrow, -arrow, +axis - 3 * arrow );
+	};
+
+	// List of the lambdas
+	QVector<std::function<void()>> axes = { xAxis, yAxis, zAxis };
+
+	// Render the axes in the given order
+	//	e.g. {2, 1, 0} = zAxis(); yAxis(); xAxis();
+	for ( auto i : axesOrder ) {
+		axes[i]();
+	}
+
 	glEnd();
 	glPopMatrix();
 }
