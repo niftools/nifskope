@@ -16,7 +16,9 @@ checkgroup end
 checkgroup begin or
 	# Skyrim
 	checkgroup begin and
+		check BSLightingShaderProperty
 		check BSLightingShaderProperty/Skyrim Shader Type != 2
+		check BSLightingShaderProperty/Skyrim Shader Type != 11
 		check NiTriBasedGeomData/Has Vertex Colors == 1
 		check NiTriBasedGeomData/Has Normals == 1
 	checkgroup end

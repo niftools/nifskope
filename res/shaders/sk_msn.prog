@@ -11,6 +11,7 @@ checkgroup end
 checkgroup begin or
 	# Skyrim
 	checkgroup begin and
+		check BSLightingShaderProperty
 		check NiTriBasedGeomData/Has Normals == 0
 	checkgroup end
 checkgroup end
