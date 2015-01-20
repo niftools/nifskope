@@ -639,6 +639,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		uni1f( "lightingEffect1", mesh->bslsp->getLightingEffect1() );
 		uni1f( "lightingEffect2", mesh->bslsp->getLightingEffect2() );
 
+		auto uvS = mesh->bslsp->getUvScale();
+		uni2f( "uvScale", uvS.x, uvS.y );
+
+		auto uvO = mesh->bslsp->getUvOffset();
+		uni2f( "uvOffset", uvO.x, uvO.y );
+
 		// Rim & Soft params
 
 		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
@@ -759,6 +765,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		);
 
 		uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
+	}
+
+	// Defaults for uniforms in older meshes
+	if ( !mesh->bsesp && !mesh->bslsp ) {
+		uni2f( "uvScale", 1.0, 1.0 );
+		uni2f( "uvOffset", 0.0, 0.0 );
 	}
 
 	QMapIterator<int, QString> itx( prog->texcoords );

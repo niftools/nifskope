@@ -14,6 +14,9 @@ uniform vec3 specColor;
 uniform float specStrength;
 uniform float specGlossiness;
 
+uniform vec2 uvScale;
+uniform vec2 uvOffset;
+
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
@@ -41,8 +44,10 @@ vec3 tonemap(vec3 x)
 
 void main( void )
 {
-	vec4 baseMap = texture2D( BaseMap, gl_TexCoord[0].st );
-	vec4 nmap = texture2D( NormalMap, gl_TexCoord[0].st );
+	vec2 offset = gl_TexCoord[0].st * uvScale + uvOffset;
+	
+	vec4 baseMap = texture2D( BaseMap, offset );
+	vec4 nmap = texture2D( NormalMap, offset );
 	
 	vec4 color;
 	color.rgb = baseMap.rgb;
@@ -51,7 +56,7 @@ void main( void )
 		
 	float spec = 0.0;
 	
-	vec3 emissive = texture2D( GlowMap, gl_TexCoord[0].st ).rgb;
+	vec3 emissive = texture2D( GlowMap, offset ).rgb;
 	
 	// Skyrim
 	if ( hasGlowMap ) {
@@ -80,13 +85,13 @@ void main( void )
 	
 	vec3 backlight;
 	if ( hasBacklight ) {
-		backlight = texture2D( BacklightMap, gl_TexCoord[0].st ).rgb;
+		backlight = texture2D( BacklightMap, offset ).rgb;
 		color.rgb += baseMap.rgb * backlight * (1.0 - NdotL) * 0.66;
 	}
 	
 	vec4 mask;
 	if ( hasRimlight || hasSoftlight ) {
-		mask = texture2D( LightMask, gl_TexCoord[0].st );
+		mask = texture2D( LightMask, offset );
 	}
 	
 	float facing = dot(-L, E);

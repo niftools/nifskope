@@ -13,6 +13,9 @@ uniform float specGlossiness;
 uniform vec3 glowColor;
 uniform float glowMult;
 
+uniform vec2 uvScale;
+uniform vec2 uvOffset;
+
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
@@ -50,8 +53,10 @@ vec3 toGrayscale(vec3 color)
 
 void main( void )
 {
-	vec4 baseMap = texture2D( BaseMap, gl_TexCoord[0].st );
-	vec4 nmap = texture2D( NormalMap, gl_TexCoord[0].st );
+	vec2 offset = gl_TexCoord[0].st * uvScale + uvOffset;
+
+	vec4 baseMap = texture2D( BaseMap, offset );
+	vec4 nmap = texture2D( NormalMap, offset );
 	
 	vec4 color;
 	color.rgb = baseMap.rgb;
@@ -63,7 +68,7 @@ void main( void )
 	
 	float spec;
 	if ( hasSpecularMap && !hasBacklight ) {
-		spec = texture2D( SpecularMap, gl_TexCoord[0].st ).r;
+		spec = texture2D( SpecularMap, offset ).r;
 	} else {
 		spec = nmap.a;
 	}
@@ -99,13 +104,13 @@ void main( void )
 	}
 
 	if ( hasBacklight ) {
-		vec3 backlight = texture2D( BacklightMap, gl_TexCoord[0].st ).rgb;
+		vec3 backlight = texture2D( BacklightMap, offset ).rgb;
 		color.rgb += backlight * (1.0 - NdotL) * 0.66;
 	}
 
 	vec4 mask;
 	if ( hasRimlight || hasSoftlight ) {
-		mask = texture2D( LightMask, gl_TexCoord[0].st );
+		mask = texture2D( LightMask, offset );
 	}
 
 	float facing = dot(-L, E);
