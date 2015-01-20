@@ -168,6 +168,8 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.at( 2 ).isEmpty();
 				}
 
+				bslsp->hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+				bslsp->hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
 				bslsp->hasRimlight  = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
 				bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
@@ -530,6 +532,13 @@ void Mesh::transform()
 			verts  = nif->getArray<Vector3>( iData, "Vertices" );
 			norms  = nif->getArray<Vector3>( iData, "Normals" );
 			colors = nif->getArray<Color4>( iData, "Vertex Colors" );
+
+			// Detect if "Has Vertex Colors" is set to Yes in NiTriShape
+			//	Used to compare against SLSF2_Vertex_Colors
+			hasVertexColors = true;
+			if ( colors.length() == 0 ) {
+				hasVertexColors = false;
+			}
 
 			if ( isVertexAlphaAnimation ) {
 				for ( int i = 0; i < colors.count(); i++ )
@@ -961,8 +970,13 @@ void Mesh::drawShapes( NodeList * draw2nd )
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, (transColorsNoAlpha.count()) ? transColorsNoAlpha.data() : transColors.data() );
 		} else {
-			// TODO: Why was this pink before?
-			glColor( Color3( 1.0f, 1.0f, 1.0f ) );
+			if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
+				// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
+				//	yet "Has Vertex Colors" is not.
+				glColor( Color3( 0.0f, 0.0f, 0.0f ) );
+			} else {
+				glColor( Color3( 1.0f, 1.0f, 1.0f ) );
+			}
 		}
 	}
 

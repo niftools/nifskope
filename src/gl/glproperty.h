@@ -590,7 +590,8 @@ public:
 	void setOuterRefractionStrength( float );
 	void setOuterReflectionStrength( float );
 
-
+	bool hasVertexColors;
+	bool hasVertexAlpha;
 	bool hasGlowMap;
 	bool hasSoftlight;
 	bool hasBacklight;

@@ -105,6 +105,8 @@ protected:
 	bool isDoubleSided;
 	//! Is shader set to animate using vertex alphas?
 	bool isVertexAlphaAnimation;
+	//! Is "Has Vertex Colors" set to Yes
+	bool hasVertexColors;
 
 	//! Vertices
 	QVector<Vector3> verts;
