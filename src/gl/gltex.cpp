@@ -70,10 +70,7 @@ float get_max_anisotropy()
 void initializeTextureUnits( const QOpenGLContext * context )
 {
 	if ( context->hasExtension( "GL_ARB_multitexture" ) ) {
-		// TODO: This will always return 4 intentionally
-		// For shaders, should be GL_MAX_TEXTURE_IMAGE_UNITS_ARB, etc.
-
-		glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &num_texture_units );
+		glGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &num_texture_units );
 
 		if ( num_texture_units < 1 )
 			num_texture_units = 1;
@@ -99,9 +96,8 @@ bool activateTextureUnit( int stage )
 	if ( num_texture_units <= 1 )
 		return ( stage == 0 );
 
-	// num_texture_units > 1 can only happen if GLEE_ARB_multitexture is true
-	// so glActiveTexture and glClientActiveTexture are supported
 	if ( stage < num_texture_units ) {
+
 		glActiveTextureARB( GL_TEXTURE0 + stage );
 		glClientActiveTextureARB( GL_TEXTURE0 + stage );
 		return true;
@@ -110,16 +106,14 @@ bool activateTextureUnit( int stage )
 	return false;
 }
 
-void resetTextureUnits()
+void resetTextureUnits( int numTex )
 {
 	if ( num_texture_units <= 1 ) {
 		glDisable( GL_TEXTURE_2D );
 		return;
 	}
 
-	// num_texture_units > 1 can only happen if GLEE_ARB_multitexture is true
-	// so glActiveTexture and glClientActiveTexture are supported
-	for ( int x = num_texture_units - 1; x >= 0; x-- ) {
+	for ( int x = numTex - 1; x >= 0; x-- ) {
 		glActiveTextureARB( GL_TEXTURE0 + x );
 		glDisable( GL_TEXTURE_2D );
 		glMatrixMode( GL_TEXTURE );
