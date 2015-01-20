@@ -440,7 +440,7 @@ void GLView::paintGL()
 	glProjection();
 	glLoadIdentity();
 
-	// Draw the axes and grid
+	// Draw the grid
 	if ( scene->options & Scene::ShowAxes ) {
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
@@ -455,10 +455,6 @@ void GLView::paintGL()
 
 		glPushMatrix();
 		glLoadMatrix( viewTrans );
-
-		// TODO: Better axes (they get in the way of some objects with their arrow size)
-		// Hide for the time being
-		//drawAxes( Vector3(), axis );
 
 		// TODO: Configurable grid in Settings
 		// 1024 game units, major lines every 128, minor lines every 64
@@ -487,18 +483,18 @@ void GLView::paintGL()
 			v = m * v;
 			lightDir = Vector4( viewTrans.rotation * v, 0.0 );
 
-			glEnable( GL_BLEND );
-			glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-			glEnable( GL_DEPTH_TEST );
-			glDepthMask( GL_TRUE );
-			glDepthFunc( GL_LESS );
-			glLineWidth( 2.0f );
-			glColor4f( 1.0f, 1.0f, 1.0f, 0.5f );
-
-
 			if ( scene->visMode & Scene::VisLightPos ) {
+				glEnable( GL_BLEND );
+				glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+				glEnable( GL_DEPTH_TEST );
+				glDepthMask( GL_TRUE );
+				glDepthFunc( GL_LESS );
+
 				glPushMatrix();
 				glLoadMatrix( viewTrans );
+
+				glLineWidth( 2.0f );
+				glColor4f( 1.0f, 1.0f, 1.0f, 0.5f );
 
 				// Scale the distance a bit
 				float l = axis + 64.0;
@@ -596,6 +592,54 @@ void GLView::paintGL()
 
 	// Draw the model
 	scene->draw();
+
+	if ( scene->options & Scene::ShowAxes ) {
+		// Resize viewport to small corner of screen
+		int axesSize = std::min( width() / 10, 125 );
+		glViewport( 0, 0, axesSize, axesSize );
+
+		// Reset matrices
+		glMatrixMode( GL_PROJECTION );
+		glLoadIdentity();
+
+		// Square frustum
+		auto nr = 1.0;
+		auto fr = 250.0;
+		GLdouble h2 = tan( FOV / 360 * M_PI ) * nr;
+		GLdouble w2 = h2;
+		glFrustum( -w2, +w2, -h2, +h2, nr, fr );
+
+		// Reset matrices
+		glMatrixMode( GL_MODELVIEW );
+		glLoadIdentity();
+
+		glPushMatrix();
+
+		// Store and reset viewTrans translation
+		auto viewTransOrig = viewTrans.translation;
+
+		// Zoom out slightly
+		viewTrans.translation = { 0, 0, -150.0 };
+
+		// Load modified viewTrans
+		glLoadMatrix( viewTrans );
+
+		// Restore original viewTrans translation
+		viewTrans.translation = viewTransOrig;
+
+		// Find direction of axes
+		auto vtr = viewTrans.rotation;
+		QVector<float> axesDots = { vtr( 2, 0 ), vtr( 2, 1 ), vtr( 2, 2 ) };
+
+		drawAxesOverlay( { 0, 0, 0 }, 50.0, sortAxes( axesDots ) );
+
+		glPopMatrix();
+
+		// Restore viewport size
+		glViewport( 0, 0, width(), height() );
+		// Restore matrices
+		glProjection();
+	}
 
 	// Restore GL state
 	glPopAttrib();
