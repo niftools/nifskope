@@ -618,6 +618,20 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( uni >= 0 )
 			fn->glUniform1i( uni, val );
 	};
+
+	auto uni3m = [this, prog, mesh]( const char * var, Matrix val ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 ) {
+			fn->glUniformMatrix3fv( uni, 1, 0, val.data() );
+		}
+	};
+
+	auto uni4m = [this, prog, mesh]( const char * var, Matrix4 val ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 ) {
+			fn->glUniformMatrix4fv( uni, 1, 0, val.data() );
+		}
+	};
 	
 
 	// BSLightingShaderProperty
