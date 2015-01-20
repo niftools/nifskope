@@ -875,6 +875,9 @@ public:
 	//! Format as raw text
 	QString toRaw() const;
 
+	//! %Data accessor
+	const float * data() const { return (float *)m; }
+
 protected:
 	float m[3][3];
 	static const float identity[9];
