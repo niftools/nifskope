@@ -648,6 +648,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		// Rim & Soft params
 
 		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
+
+			uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
+			uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
+
 			GLint uniLightMask = fn->glGetUniformLocation( prog->id, "LightMask" );
 			if ( uniLightMask >= 0 ) {
 				QString fname = bsprop->fileName( 2 );
@@ -662,13 +666,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		}
 
-		uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
-		uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
-
 		// Backlight params
 
 		if ( mesh->bslsp->hasBacklight ) {
-		
+
+			uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
+
 			GLint uniBackLightMap = fn->glGetUniformLocation( prog->id, "BacklightMap" );
 			if ( uniBackLightMap >= 0 ) {
 
@@ -680,8 +683,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				fn->glUniform1i( uniBackLightMap, texunit++ );
 			}
 		}
-
-		uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
 
 		// Glow params
 
@@ -724,7 +725,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				fn->glUniform1i( uniSpecularMap, texunit++ );
 			}
 		}
-
 	}
 
 
