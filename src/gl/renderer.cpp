@@ -676,6 +676,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( uniBackLightMap >= 0 ) {
 
 				QString fname = bsprop->fileName( 7 );
+				if ( fname.isEmpty() )
+					fname = "shaders/default_n.dds";
 
 				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 7, fname )) )
 					return false;
