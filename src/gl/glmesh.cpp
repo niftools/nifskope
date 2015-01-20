@@ -173,6 +173,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
 				bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
 				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.at( 7 ).isEmpty();
+				bslsp->hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
@@ -185,6 +186,16 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 				bslsp->setUvScale( uvScale[0], uvScale[1] );
 				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
+
+				auto innerThickness = nif->get<float>( iProp, "Parallax Inner Layer Thickness" );
+				auto innerScale = nif->get<Vector2>( iProp, "Parallax Inner Layer Texture Scale" );
+				auto outerRefraction = nif->get<float>( iProp, "Parallax Refraction Scale" );
+				auto outerReflection = nif->get<float>( iProp, "Parallax Envmap Strength" );
+
+				bslsp->setInnerThickness( innerThickness );
+				bslsp->setInnerTextureScale( innerScale[0], innerScale[1] );
+				bslsp->setOuterRefractionStrength( outerRefraction );
+				bslsp->setOuterReflectionStrength( outerReflection );
 				
 				isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
 				

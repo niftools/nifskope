@@ -1026,6 +1026,47 @@ float BSLightingShaderProperty::getSpecularStrength()
 	return specularStrength;
 }
 
+float BSLightingShaderProperty::getInnerThickness()
+{
+	return innerThickness;
+}
+
+UVScale BSLightingShaderProperty::getInnerTextureScale()
+{
+	return innerTextureScale;
+}
+
+float BSLightingShaderProperty::getOuterRefractionStrength()
+{
+	return outerRefractionStrength;
+}
+
+float BSLightingShaderProperty::getOuterReflectionStrength()
+{
+	return outerReflectionStrength;
+}
+
+void BSLightingShaderProperty::setInnerThickness( float thickness )
+{
+	innerThickness = thickness;
+}
+
+void BSLightingShaderProperty::setInnerTextureScale( float x, float y )
+{
+	innerTextureScale.x = x;
+	innerTextureScale.y = y;
+}
+
+void BSLightingShaderProperty::setOuterRefractionStrength( float strength )
+{
+	outerRefractionStrength = strength;
+}
+
+void BSLightingShaderProperty::setOuterReflectionStrength( float strength )
+{
+	outerReflectionStrength = strength;
+}
+
 /*
 	BSEffectShaderProperty
 */

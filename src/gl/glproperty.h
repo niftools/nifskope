@@ -572,6 +572,11 @@ public:
 	float getLightingEffect1();
 	float getLightingEffect2();
 
+	float getInnerThickness();
+	UVScale getInnerTextureScale();
+	float getOuterRefractionStrength();
+	float getOuterReflectionStrength();
+
 	void setShaderType( unsigned int );
 
 	void setEmissive( Color3 color, float mult = 1.0f );
@@ -580,6 +585,11 @@ public:
 	void setLightingEffect1( float );
 	void setLightingEffect2( float );
 
+	void setInnerThickness( float );
+	void setInnerTextureScale( float, float );
+	void setOuterRefractionStrength( float );
+	void setOuterReflectionStrength( float );
+
 
 	bool hasGlowMap;
 	bool hasSoftlight;
@@ -587,6 +597,7 @@ public:
 	bool hasRimlight;
 	bool hasModelSpaceNormals;
 	bool hasSpecularMap;
+	bool hasMultiLayerParallax;
 
 	ShaderFlags::ShaderType getShaderType();
 
@@ -604,6 +615,11 @@ protected:
 	float lightingEffect1;
 	float lightingEffect2;
 
+	// Multi-layer properties
+	float innerThickness;
+	UVScale innerTextureScale;
+	float outerRefractionStrength;
+	float outerReflectionStrength;
 };
 
 REGISTER_PROPERTY( BSLightingShaderProperty, ShaderLighting )
