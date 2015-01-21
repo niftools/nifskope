@@ -56,5 +56,7 @@
         <file alias="showMarkers">icon/marker.png</file>
         <file alias="undo">icon/undo.png</file>
         <file alias="redo">icon/redo.png</file>
+        <file alias="sun">icon/sun.png</file>
+        <file alias="cloud">icon/cloud.png</file>
     </qresource>
 </RCC>
