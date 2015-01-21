@@ -135,6 +135,10 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					return bslsp->getFlags2() & flag;
 				};
 
+				auto isST = [this]( ShaderFlags::ShaderType st ) {
+					return bslsp->getShaderType() & st;
+				};
+
 
 				auto shaderType = nif->get<unsigned int>( iProp, "Skyrim Shader Type" );
 
@@ -176,6 +180,13 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
 				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
 				bslsp->hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
+				bslsp->hasCubeMap = (
+						isST( ShaderFlags::ST_EnvironmentMap ) 
+						|| isST( ShaderFlags::ST_EyeEnvmap )
+						|| isST( ShaderFlags::ST_MultiLayerParallax )
+					)
+					&& !textures.value( 4, "" ).isEmpty();
+				bslsp->hasEnvironmentMap = hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );

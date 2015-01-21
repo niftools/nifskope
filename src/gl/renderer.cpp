@@ -497,6 +497,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	int texunit = 0;
 
+	GLint baseWidth, baseHeight;
+
 	GLint uniBaseMap = fn->glGetUniformLocation( prog->id, "BaseMap" );
 
 	if ( uniBaseMap >= 0 ) {
@@ -508,6 +510,9 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0, diff )) )
 			return false;
+
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&baseWidth );
+		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&baseHeight );
 
 		fn->glUniform1i( uniBaseMap, texunit++ );
 	}
@@ -725,6 +730,37 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 					return false;
 
 				fn->glUniform1i( uniSpecularMap, texunit++ );
+			}
+		}
+
+		// Multi-Layer
+
+		if ( mesh->bslsp->hasMultiLayerParallax ) {
+
+			uni1i( "hasInnerMap", mesh->bslsp->hasMultiLayerParallax );
+
+			auto inS = mesh->bslsp->getInnerTextureScale();
+			uni2f( "innerScale", inS.x, inS.y );
+
+			uni1f( "innerThickness", mesh->bslsp->getInnerThickness() );
+
+			uni1f( "outerRefraction", mesh->bslsp->getOuterRefractionStrength() );
+			uni1f( "outerReflection", mesh->bslsp->getOuterReflectionStrength() );
+
+			uni1i( "baseWidth", baseWidth );
+			uni1i( "baseHeight", baseHeight );
+
+			GLint uniInnerMap = fn->glGetUniformLocation( prog->id, "InnerMap" );
+			if ( uniInnerMap >= 0 ) {
+
+				QString fname = bsprop->fileName( 6 );
+				if ( fname.isEmpty() )
+					fname = "shaders/default_n.dds";
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 6, fname )) )
+					return false;
+
+				fn->glUniform1i( uniInnerMap, texunit++ );
 			}
 		}
 	}
