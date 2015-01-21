@@ -208,37 +208,7 @@ public:
 			if ( nv.isCount() && index.column() == NifModel::ValueCol ) {
 				NifValue::EnumType type = NifValue::enumType( index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString() );
 
-				if ( type == NifValue::eFlags ) {
-					w = new NifCheckBoxList( parent );
-
-					// Connect enum flags to GLView to update scene when changing flags
-					//for ( auto child : qApp->activeWindow()->window()->children() ) {
-					//	GLView * gl = qobject_cast<GLView *>(child);
-					//	if ( gl && gl->isValid() ) {
-					//
-					//		auto cbl = qobject_cast<NifCheckBoxList *>(w);
-					//		if ( cbl )
-					//			connect( cbl, &NifCheckBoxList::dataChanged, gl, &GLView::updateScene );
-					//	}
-					//}
-
-					// Update scene when changing flags
-					//auto cbl = qobject_cast<NifCheckBoxList *>(w);
-					//if ( cbl ) {
-					//	connect( cbl, &NifCheckBoxList::dataChanged, []() {
-					//
-					//		for ( auto window : qApp->topLevelWidgets() ) {
-					//			for ( auto child : window->children() ) {
-					//				GLView * gl = qobject_cast<GLView *>(child);
-					//				if ( gl && gl->isValid() ) {
-					//					gl->updateScene();
-					//				}
-					//			}
-					//		}
-					//	} );
-					//}
-
-				} else if ( type == NifValue::eDefault ) {
+				if ( type == NifValue::eDefault ) {
 					QComboBox * c = new QComboBox( parent );
 					w = c;
 					c->setEditable( true );
