@@ -860,6 +860,12 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 
 	glEnable( GL_LIGHTING );
 
+	// Disable specular because it washes out vertex colors
+	//	at perpendicular viewing angles
+	float color[4] = { 0, 0, 0, 0 };
+	glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, color );
+
 	// setup blending
 
 	glProperty( props.get<AlphaProperty>() );
