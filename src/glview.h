@@ -83,6 +83,8 @@ public:
 	QOpenGLContext * glContext;
 	QOpenGLFunctions * glFuncs;
 
+	float brightness = 1.0;
+	float ambient = 0.5;
 	float declination = 0;
 	float planarAngle = 0;
 	bool frontalLight = true;
@@ -157,6 +159,8 @@ public slots:
 	void setSceneSequence( const QString & );
 	void saveUserView();
 	void loadUserView();
+	void setBrightness( int );
+	void setAmbient( int );
 	void setDeclination( int );
 	void setPlanarAngle( int );
 	void setFrontalLight( bool );

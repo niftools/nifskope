@@ -88,7 +88,7 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += baseMap.rgb * backlight * (1.0 - NdotL) * 0.66;
+		color.rgb += baseMap.rgb * backlight * (1.0 - NdotL) * gl_LightSource[0].diffuse.rgb;
 	}
 
 	vec4 mask;
@@ -130,5 +130,7 @@ void main( void )
 
 	//color = min( color, 1.0 );
 
+	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
+	
 	gl_FragColor = color;
 }

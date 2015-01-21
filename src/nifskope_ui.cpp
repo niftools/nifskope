@@ -590,7 +590,7 @@ QMenu * NifSkope::lightingWidget()
 	onOffLayout->addWidget( chkFrontal );
 
 	// Slider lambda
-	auto sld = [this]( QWidget * parent, const QString & img, int min, int max ) {
+	auto sld = [this]( QWidget * parent, const QString & img, int min, int max, int val ) {
 
 		auto slider = new QSlider( Qt::Horizontal, parent );
 		slider->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
@@ -598,7 +598,7 @@ QMenu * NifSkope::lightingWidget()
 		slider->setSingleStep( max / 4 );
 		slider->setTickInterval( max / 2 );
 		slider->setTickPosition( QSlider::TicksBelow );
-		slider->setValue( 0 );
+		slider->setValue( val );
 		slider->setStyleSheet( "background: transparent url(" + img + ");" + R"qss(
 				background-repeat: no-repeat;
 				background-position: left;
@@ -613,9 +613,13 @@ QMenu * NifSkope::lightingWidget()
 
 	// Lighting position, uses -720 to 720 and GLView divides it by 4
 	//	because QSlider uses integers and we'd like less choppy motion
-	auto sldDeclination = sld( chkFrontal, ":/btn/lightVertical", -720, 720 );
-	auto sldPlanarAngle = sld( chkFrontal, ":/btn/lightHorizontal", -720, 720 );
+	auto sldDeclination = sld( chkFrontal, ":/btn/lightVertical", -720, 720, 0 );
+	auto sldPlanarAngle = sld( chkFrontal, ":/btn/lightHorizontal", -720, 720, 0 );
+	auto sldBrightness = sld( chkFrontal, ":/btn/sun", 0, 1440, 720 );
+	auto sldAmbient = sld( chkFrontal, ":/btn/cloud", 0, 1440, 720 );
 
+	sldDeclination->setDisabled( true );
+	sldPlanarAngle->setDisabled( true );
 
 	// Button lambda
 	auto btn = [this]( QAction * act, const QString & name, QMenu * menu ) {
@@ -646,31 +650,37 @@ QMenu * NifSkope::lightingWidget()
 	lightingGroup->setObjectName( "lightingGroup" );
 	lightingGroup->setContentsMargins( 0, 0, 0, 0 );
 	lightingGroup->setStyleSheet( R"qss( #lightingGroup { padding: 0; border: none; } )qss" );
-	lightingGroup->setDisabled( true );
+	//lightingGroup->setDisabled( true );
 
 	auto lightingGroupVbox = new QVBoxLayout;
 	lightingGroupVbox->setContentsMargins( 0, 0, 0, 0 );
 	lightingGroupVbox->setSpacing( 0 );
 	lightingGroup->setLayout( lightingGroupVbox );
 
+	lightingGroupVbox->addWidget( sldBrightness );
+	lightingGroupVbox->addWidget( sldAmbient );
 	lightingGroupVbox->addWidget( sldDeclination );
 	lightingGroupVbox->addWidget( sldPlanarAngle );
 
 	// Disable lighting sliders when Frontal
-	connect( chkFrontal, &QToolButton::toggled, lightingGroup, &QGroupBox::setDisabled );
+	connect( chkFrontal, &QToolButton::toggled, sldDeclination, &QSlider::setDisabled );
+	connect( chkFrontal, &QToolButton::toggled, sldPlanarAngle, &QSlider::setDisabled );
 
 	// Disable Frontal checkbox (and sliders) when no lighting
 	connect( chkLighting, &QToolButton::toggled, chkFrontal, &QToolButton::setEnabled );
 	connect( chkLighting, &QToolButton::toggled, ui->aVisNormals, &QAction::setEnabled );
-	connect( chkLighting, &QToolButton::toggled, [lightingGroup, chkFrontal]( bool checked ) {
+	connect( chkLighting, &QToolButton::toggled, [sldDeclination, sldPlanarAngle, chkFrontal]( bool checked ) {
 		if ( !chkFrontal->isChecked() ) {
 			// Don't enable the sliders if Frontal is checked
-			lightingGroup->setEnabled( checked );
+			sldDeclination->setEnabled( checked );
+			sldDeclination->setEnabled( checked );
 		}
 	} );
 
 	// Inform ogl of changes
 	//connect( chkLighting, &QCheckBox::toggled, ogl, &GLView::lightingToggled );
+	connect( sldBrightness, &QSlider::valueChanged, ogl, &GLView::setBrightness );
+	connect( sldAmbient, &QSlider::valueChanged, ogl, &GLView::setAmbient );
 	connect( sldDeclination, &QSlider::valueChanged, ogl, &GLView::setDeclination );
 	connect( sldPlanarAngle, &QSlider::valueChanged, ogl, &GLView::setPlanarAngle );
 	connect( chkFrontal, &QToolButton::toggled, ogl, &GLView::setFrontalLight );

@@ -350,12 +350,6 @@ void GLView::glProjection( int x, int y )
 }
 
 
-// TODO: Temp materials
-static GLfloat mat_half[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-static GLfloat mat_full[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-static GLfloat mat_specular[] = { 0, 0, 0, 1.0f };
-static GLfloat mat_shininess[] = { 0 };
-
 #ifdef USE_GL_QPAINTER
 void GLView::paintEvent( QPaintEvent * event )
 {
@@ -471,6 +465,7 @@ void GLView::paintGL()
 		glPopMatrix();
 	}
 
+	GLfloat mat_spec[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	if ( scene->options & Scene::DoLighting ) {
 		// Setup light
@@ -509,47 +504,44 @@ void GLView::paintGL()
 			}
 		}
 
-		auto mat_amb = mat_half;
-
+		float amb = ambient;
 		if ( (scene->visMode & Scene::VisNormalsOnly)
 			&& (scene->options & Scene::DoTexturing)
 			&& !(scene->options & Scene::DisableShaders) )
 		{
-			mat_amb[0] = 0.1f;  mat_amb[1] = 0.1f; mat_amb[2] = 0.1f;
-		} else {
-			mat_amb[0] = 0.5f;  mat_amb[1] = 0.5f; mat_amb[2] = 0.5f;
+			amb = 0.1f;
 		}
-
-		glShadeModel( GL_SMOOTH );
-		glEnable( GL_LIGHTING );
-		glEnable( GL_LIGHT0 );
-		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
-		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_full );
-		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_full );
-		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
-
-		// Necessary?
-		glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
-	} else {
-		auto mat_amb = mat_half;
-		auto mat_diff = mat_full;
-
-		if ( scene->options & Scene::DisableShaders ) {
-			mat_amb = mat_specular;
-		} else {
-			mat_amb = mat_half;
-		}
+		
+		GLfloat mat_amb[] = { amb, amb, amb, 1.0f };
+		GLfloat mat_diff[] = { brightness, brightness, brightness, 1.0f };
+		
 
 		glShadeModel( GL_SMOOTH );
 		glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
-		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_diff );
+		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
+
+		// Necessary?
+		glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
+	} else {
+		float amb = 0.5f;
+		if ( scene->options & Scene::DisableShaders ) {
+			amb = 0.0f;
+		}
+
+		GLfloat mat_amb[] = { amb, amb, amb, 1.0f };
+		GLfloat mat_diff[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		
-		//glMaterialfv( GL_FRONT, GL_AMBIENT, mat_full );
-		//glMaterialfv( GL_FRONT, GL_DIFFUSE, mat_full );
-		//glMaterialfv( GL_FRONT, GL_SPECULAR, mat_specular );
+
+		glShadeModel( GL_SMOOTH );
+		glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0 );
+		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
+		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_spec );
 	}
 
 	if ( scene->visMode & Scene::VisSilhouette ) {
@@ -563,7 +555,7 @@ void GLView::paintGL()
 		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_diff );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
-		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_specular );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_spec );
 	}
 
 	if ( scene->options & Scene::DoMultisampling )
@@ -685,6 +677,22 @@ void GLView::resizeEvent( QResizeEvent * e )
 void GLView::setFrontalLight( bool frontal )
 {
 	frontalLight = frontal;
+	update();
+}
+
+void GLView::setBrightness( int value )
+{
+	if ( value > 900 ) {
+		value += pow(value - 900, 1.5);
+	}
+
+	brightness = float(value) / 720.0;
+	update();
+}
+
+void GLView::setAmbient( int value )
+{
+	ambient = float( value ) / 1440.0;
 	update();
 }
 
