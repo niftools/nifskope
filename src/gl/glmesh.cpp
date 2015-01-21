@@ -165,7 +165,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 				// Set glow map if shader meets requirements
 				if ( bslsp->getShaderType() & ShaderFlags::ST_GlowShader ) {
-					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.at( 2 ).isEmpty();
+					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
 				}
 
 				bslsp->hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
@@ -174,7 +174,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasRimlight  = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
 				bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
 				bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
-				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.at( 7 ).isEmpty();
+				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
 				bslsp->hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
