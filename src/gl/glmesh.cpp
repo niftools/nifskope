@@ -167,6 +167,8 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				auto emM = nif->get<float>( iProp, "Emissive Multiple" );
 				bslsp->setEmissive( emC, emM );
 
+				bslsp->hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
+
 				// Set glow map if shader meets requirements
 				if ( bslsp->getShaderType() & ShaderFlags::ST_GlowShader ) {
 					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();

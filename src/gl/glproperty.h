@@ -593,6 +593,7 @@ public:
 	bool hasVertexColors;
 	bool hasVertexAlpha;
 	bool hasGlowMap;
+	bool hasEmittance;
 	bool hasSoftlight;
 	bool hasBacklight;
 	bool hasRimlight;

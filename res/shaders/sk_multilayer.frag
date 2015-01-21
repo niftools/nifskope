@@ -22,6 +22,7 @@ uniform vec2 uvOffset;
 
 uniform float alpha;
 
+uniform bool hasEmit;
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
@@ -123,7 +124,7 @@ void main( void )
 	color.rgb = mix( color.rgb, baseMap.rgb, outerMix );
 	
 	// Emissive
-	if ( length(glowColor) > 0.0 && glowMult > 0.0 ) {
+	if ( hasEmit ) {
 		color.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / (vec3(glowMult) + 0.001f) );
 	}
 

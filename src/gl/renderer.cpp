@@ -693,11 +693,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Glow params
 
-		if ( opts & Scene::DoGlow )
+		if ( opts & Scene::DoGlow && mesh->bslsp->hasEmittance )
 			uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
 		else
 			uni1f( "glowMult", 0.0f );
 		
+		uni1i( "hasEmit", mesh->bslsp->hasEmittance );
 		uni1i( "hasGlowMap", mesh->bslsp->hasGlowMap );
 		auto emC = mesh->bslsp->getEmissiveColor();
 		uni3f( "glowColor", emC.red(), emC.green(), emC.blue() );

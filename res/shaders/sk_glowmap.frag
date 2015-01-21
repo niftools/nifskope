@@ -17,6 +17,7 @@ uniform float specGlossiness;
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
 
+uniform bool hasEmit;
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
@@ -71,7 +72,7 @@ void main( void )
 	color.rgb *= ColorEA.rgb + ColorD.rgb * NdotL;
 	color.a = ColorD.a;
 	
-	if ( hasGlowMap ) {
+	if ( hasEmit && hasGlowMap ) {
 		color.rgb += tonemap( baseMap.rgb * emissive.rgb * glowColor ) / tonemap( 1.0f / (vec3(glowMult) + 0.001f) );
 	}
 
