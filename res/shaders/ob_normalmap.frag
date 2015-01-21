@@ -66,12 +66,13 @@ void main( void )
 	//vec3 H = normalize( L + E );
 	float NdotL = max(dot(normal, L), 0.0);
 	
+	color.rgb *= ColorEA.rgb + ColorD.rgb * NdotL;
+	color.a = ColorD.a * baseMap.a;
+	
+	// Emissive
 	if ( length(glowColor) > 0.0 && glowMult > 0.0 ) {
 		color.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / (vec3(glowMult) + 0.001f) );
 	}
-
-	color.rgb *= ColorEA.rgb + ColorD.rgb * NdotL;
-	color.a = ColorD.a * baseMap.a;
 
 	if ( NdotL > 0.0 && specStrength > 0.0 ) {
 		float RdotE = max( dot( R, E ), 0.0 );
