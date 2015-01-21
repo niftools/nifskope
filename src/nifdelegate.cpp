@@ -223,20 +223,20 @@ public:
 					//}
 
 					// Update scene when changing flags
-					auto cbl = qobject_cast<NifCheckBoxList *>(w);
-					if ( cbl ) {
-						connect( cbl, &NifCheckBoxList::dataChanged, []() {
-
-							for ( auto window : qApp->topLevelWidgets() ) {
-								for ( auto child : window->children() ) {
-									GLView * gl = qobject_cast<GLView *>(child);
-									if ( gl && gl->isValid() ) {
-										gl->updateScene();
-									}
-								}
-							}
-						} );
-					}
+					//auto cbl = qobject_cast<NifCheckBoxList *>(w);
+					//if ( cbl ) {
+					//	connect( cbl, &NifCheckBoxList::dataChanged, []() {
+					//
+					//		for ( auto window : qApp->topLevelWidgets() ) {
+					//			for ( auto child : window->children() ) {
+					//				GLView * gl = qobject_cast<GLView *>(child);
+					//				if ( gl && gl->isValid() ) {
+					//					gl->updateScene();
+					//				}
+					//			}
+					//		}
+					//	} );
+					//}
 
 				} else if ( type == NifValue::eDefault ) {
 					QComboBox * c = new QComboBox( parent );
