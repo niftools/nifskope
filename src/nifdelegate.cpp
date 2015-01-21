@@ -212,15 +212,32 @@ public:
 					w = new NifCheckBoxList( parent );
 
 					// Connect enum flags to GLView to update scene when changing flags
-					for ( auto child : qApp->activeWindow()->children() ) {
-						GLView * gl = qobject_cast<GLView *>(child);
-						if ( gl && gl->isValid() ) {
+					//for ( auto child : qApp->activeWindow()->window()->children() ) {
+					//	GLView * gl = qobject_cast<GLView *>(child);
+					//	if ( gl && gl->isValid() ) {
+					//
+					//		auto cbl = qobject_cast<NifCheckBoxList *>(w);
+					//		if ( cbl )
+					//			connect( cbl, &NifCheckBoxList::dataChanged, gl, &GLView::updateScene );
+					//	}
+					//}
 
-							auto cbl = qobject_cast<NifCheckBoxList *>(w);
-							if ( cbl )
-								connect( cbl, &NifCheckBoxList::dataChanged, gl, &GLView::updateScene );
-						}
+					// Update scene when changing flags
+					auto cbl = qobject_cast<NifCheckBoxList *>(w);
+					if ( cbl ) {
+						connect( cbl, &NifCheckBoxList::dataChanged, []() {
+
+							for ( auto window : qApp->topLevelWidgets() ) {
+								for ( auto child : window->children() ) {
+									GLView * gl = qobject_cast<GLView *>(child);
+									if ( gl && gl->isValid() ) {
+										gl->updateScene();
+									}
+								}
+							}
+						} );
 					}
+
 				} else if ( type == NifValue::eDefault ) {
 					QComboBox * c = new QComboBox( parent );
 					w = c;
