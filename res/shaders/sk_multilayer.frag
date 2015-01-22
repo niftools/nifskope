@@ -122,7 +122,7 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += innerMap.rgb * backlight * (1.0 - NdotL) * (1.0 - baseMap.a) * gl_LightSource[0].diffuse.rgb;
+		color.rgb += innerMap.rgb * backlight * max(dot(normal, -L), 0.0) * (1.0 - baseMap.a) * gl_LightSource[0].diffuse.rgb;
 	}
 	
 	// Mix inner/outer layer based on fresnel

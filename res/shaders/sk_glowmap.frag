@@ -90,7 +90,7 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += baseMap.rgb * backlight * (1.0 - NdotL) * gl_LightSource[0].diffuse.rgb;
+		color.rgb += baseMap.rgb * backlight * max(dot(normal, -L), 0.0) * gl_LightSource[0].diffuse.rgb;
 	}
 
 	vec4 mask;
