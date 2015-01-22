@@ -118,28 +118,39 @@ void main( void )
 	vec4 innerMap = texture2D( InnerMap, parallax.xy * innerScale );
 	
 	vec4 color;
-	color.rgb = innerMap.rgb;
+	vec3 inner = innerMap.rgb;
+	vec3 outer = baseMap.rgb;
+	vec3 innerOuter;
 	
 	//vec4 cube = textureCube( CubeMap, R );
 	
+	outer *= ColorEA.rgb + (ColorD.rgb * NdotL);
+	inner *= ColorEA.rgb + (ColorD.rgb * NdotL);
+
+	color.a = ColorD.a;
+	
+	// Backlight
+	// 	Mixed with inner and outer map
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += innerMap.rgb * backlight * max(dot(normal, -L), 0.0) * (1.0 - baseMap.a) * gl_LightSource[0].diffuse.rgb;
+		backlight *= wrap * gl_LightSource[0].diffuse.rgb;
+		
+		inner += innerMap.rgb * backlight * (1.0 - baseMap.a);
+		outer += baseMap.rgb * backlight * baseMap.a;
 	}
 	
 	// Emissive
 	//	Mixed with outer map
 	if ( hasEmit ) {
-		baseMap.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / vec3(glowMult + 0.001f) );
+		outer += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / vec3(glowMult + 0.001f) );
 	}
 	
 	// Mix inner/outer layer based on fresnel
 	float outerMix = max( 1.0 - EdotN, baseMap.a );
-	color.rgb = mix( color.rgb, baseMap.rgb, outerMix );
-
-	color.rgb *= ColorEA.rgb + ColorD.rgb * NdotL;
-	color.a = ColorD.a;
+	innerOuter = mix( inner, outer, outerMix );
+	
+	color.rgb += innerOuter;
 
 	if ( NdotL > 0.0 && specStrength > 0.0 ) {
 		float RdotE = max( dot( R, E ), 0.0 );
