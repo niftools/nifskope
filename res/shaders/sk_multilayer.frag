@@ -110,7 +110,10 @@ void main( void )
 	//	Used to modulate the innerThickness
 	float innerMapAlpha = texture2D( InnerMap, offset ).a;
 	
-	vec3 parallax = ParallaxOffsetAndDepth( offset, innerScale, E, normal * outerRefraction, innerThickness * innerMapAlpha );
+	// Mix between the face normal and the normal map based on the refraction scale
+	vec3 mixedNormal = mix( vec3(0.0, 0.0, 1.0), normal, clamp( outerRefraction, 0.0, 1.0 ) );
+	
+	vec3 parallax = ParallaxOffsetAndDepth( offset, innerScale, E, mixedNormal, innerThickness * innerMapAlpha );
 	
 	vec4 innerMap = texture2D( InnerMap, parallax.xy * innerScale );
 	
