@@ -208,7 +208,9 @@ public:
 			if ( nv.isCount() && index.column() == NifModel::ValueCol ) {
 				NifValue::EnumType type = NifValue::enumType( index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString() );
 
-				if ( type == NifValue::eDefault ) {
+				if ( type == NifValue::eFlags ) {
+					w = new NifCheckBoxList( parent );
+				} else if ( type == NifValue::eDefault ) {
 					QComboBox * c = new QComboBox( parent );
 					w = c;
 					c->setEditable( true );
