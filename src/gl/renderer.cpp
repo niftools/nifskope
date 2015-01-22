@@ -497,7 +497,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	int texunit = 0;
 
-	GLint baseWidth, baseHeight;
+	//GLint baseWidth, baseHeight;
 
 	GLint uniBaseMap = fn->glGetUniformLocation( prog->id, "BaseMap" );
 
@@ -511,8 +511,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0, diff )) )
 			return false;
 
-		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&baseWidth );
-		glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&baseHeight );
+		//glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&baseWidth );
+		//glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&baseHeight );
 
 		fn->glUniform1i( uniBaseMap, texunit++ );
 	}
@@ -747,9 +747,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			uni1f( "outerRefraction", mesh->bslsp->getOuterRefractionStrength() );
 			uni1f( "outerReflection", mesh->bslsp->getOuterReflectionStrength() );
-
-			uni1i( "baseWidth", baseWidth );
-			uni1i( "baseHeight", baseHeight );
 
 			GLint uniInnerMap = fn->glGetUniformLocation( prog->id, "InnerMap" );
 			if ( uniInnerMap >= 0 ) {

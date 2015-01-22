@@ -76,7 +76,9 @@ vec3 ParallaxOffsetAndDepth( vec2 vTexCoord, vec2 vInnerScale, vec3 vViewTS, vec
 	float fTransDist = fLayerThickness / abs(vTransTS.z);
 	
 	// Texel size
-	vec2 vTexelSize = vec2( 1.0/(baseWidth * vInnerScale.x), 1.0/(baseHeight * vInnerScale.y) );
+	// 	Bethesda's version does indeed seem to assume 1024, which is why they
+	//	introduced the additional parameter.
+	vec2 vTexelSize = vec2( 1.0/(1024.0 * vInnerScale.x), 1.0/(1024.0 * vInnerScale.y) );
 	
 	// Inner layer’s texture coordinate due to parallax
 	vec2 vOffset = vTexelSize * fTransDist * vTransTS.xy;
@@ -104,7 +106,11 @@ void main( void )
 	float NdotL = max(dot(normal, L), 0.0);
 	float EdotN = dot( E, normal );
 	
-	vec3 parallax = ParallaxOffsetAndDepth( offset, innerScale, E, normal * outerRefraction, innerThickness );
+	// Sample the non-parallax offset alpha channel of the inner map
+	//	Used to modulate the innerThickness
+	float innerMapAlpha = texture2D( InnerMap, offset ).a;
+	
+	vec3 parallax = ParallaxOffsetAndDepth( offset, innerScale, E, normal * outerRefraction, innerThickness * innerMapAlpha );
 	
 	vec4 innerMap = texture2D( InnerMap, parallax.xy * innerScale );
 	
