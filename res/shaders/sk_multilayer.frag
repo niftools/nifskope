@@ -128,14 +128,15 @@ void main( void )
 		color.rgb += innerMap.rgb * backlight * max(dot(normal, -L), 0.0) * (1.0 - baseMap.a) * gl_LightSource[0].diffuse.rgb;
 	}
 	
+	// Emissive
+	//	Mixed with outer map
+	if ( hasEmit ) {
+		baseMap.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / vec3(glowMult + 0.001f) );
+	}
+	
 	// Mix inner/outer layer based on fresnel
 	float outerMix = max( 1.0 - EdotN, baseMap.a );
 	color.rgb = mix( color.rgb, baseMap.rgb, outerMix );
-	
-	// Emissive
-	if ( hasEmit ) {
-		color.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / (vec3(glowMult) + 0.001f) );
-	}
 
 	color.rgb *= ColorEA.rgb + ColorD.rgb * NdotL;
 	color.a = ColorD.a;
