@@ -17,7 +17,7 @@ contains(QT_VERSION, ^5\\.[0-2]\\..*) {
 CONFIG += c++11
 
 # Dependencies
-CONFIG += nvtristrip qhull
+CONFIG += nvtristrip qhull soil
 win32:CONFIG += fsengine
 
 # Debug/Release options
@@ -344,6 +344,22 @@ qhull {
 		lib/qhull/src/libqhull/random.h \
 		lib/qhull/src/libqhull/stat.h \
 		lib/qhull/src/libqhull/user.h
+}
+
+soil {
+    INCLUDEPATH += lib/soil
+    HEADERS += \
+        lib/soil/image_DXT.h \
+        lib/soil/image_helper.h \
+        lib/soil/SOIL.h \
+        lib/soil/stb_image_aug.h \
+        lib/soil/stbi_DDS_aug.h \
+        lib/soil/stbi_DDS_aug_c.h
+    SOURCES += \
+        lib/soil/image_DXT.c \
+        lib/soil/image_helper.c \
+        lib/soil/SOIL.c \
+        lib/soil/stb_image_aug.c
 }
 
 
