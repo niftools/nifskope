@@ -5,6 +5,7 @@ uniform sampler2D NormalMap;
 uniform sampler2D LightMask;
 uniform sampler2D BacklightMap;
 uniform sampler2D InnerMap;
+uniform sampler2D EnvironmentMap;
 uniform samplerCube CubeMap;
 
 uniform vec3 specColor;
@@ -125,7 +126,7 @@ void main( void )
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	
 	vec4 cube = textureCube( CubeMap, vec3( gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 ) ) );
-	
+	vec4 env = texture2D( EnvironmentMap, offset );
 	
 	vec4 color;
 	vec3 inner = innerMap.rgb;
@@ -163,7 +164,7 @@ void main( void )
 	color.rgb += innerOuter;
 	
 	// Environment
-	color.rgb += cube.rgb * outerReflection * diffuse;
+	color.rgb += cube.rgb * env.r * outerReflection * diffuse;
 
 	// Specular
 	float spec = 0.0;

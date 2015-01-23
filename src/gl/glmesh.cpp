@@ -189,6 +189,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					)
 					&& !textures.value( 4, "" ).isEmpty();
 				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
+				bslsp->hasEnvironmentMap |= bslsp->hasMultiLayerParallax;
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
