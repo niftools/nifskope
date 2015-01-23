@@ -398,6 +398,43 @@ int TexCache::bind( const QModelIndex & iSource )
 	return 0;
 }
 
+int TexCache::bindCube( const QString & fname )
+{
+	Tex * tx = textures.value( fname );
+
+	if ( !tx ) {
+		tx = new Tex;
+		tx->filename = fname;
+		tx->id = 0;
+		tx->data = QByteArray();
+		tx->mipmaps = 0;
+		tx->reload = false;
+
+		textures.insert( tx->filename, tx );
+	}
+
+	QByteArray outData;
+
+	if ( tx->filepath.isEmpty() || tx->reload )
+		tx->filepath = find( tx->filename, nifFolder, outData );
+
+	if ( !outData.isEmpty() ) {
+		tx->data = outData;
+	}
+
+	if ( !tx->id || tx->reload ) {
+		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() && (!watcher->files().contains( tx->filepath )) )
+			watcher->addPath( tx->filepath );
+
+		tx->loadCube();
+	}
+
+	glBindTexture( GL_TEXTURE_CUBE_MAP, tx->id );
+	glTexParameterf( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
+
+	return tx->mipmaps;
+}
+
 void TexCache::flush()
 {
 	for ( Tex * tx : textures ) {
@@ -507,6 +544,27 @@ void TexCache::Tex::load()
 	try
 	{
 		texLoad( filepath, format, width, height, mipmaps, data );
+	}
+	catch ( QString e )
+	{
+		status = e;
+	}
+}
+
+void TexCache::Tex::loadCube()
+{
+	if ( !id )
+		glGenTextures( 1, &id );
+
+	width = height = mipmaps = 0;
+	reload = false;
+	status = QString();
+
+	glBindTexture( GL_TEXTURE_CUBE_MAP, id );
+
+	try
+	{
+		texLoadCube( filepath, format, width, height, mipmaps, data, id );
 	}
 	catch ( QString e )
 	{

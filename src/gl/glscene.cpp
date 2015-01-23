@@ -426,4 +426,11 @@ int Scene::bindTexture( const QModelIndex & iSource )
 	return textures->bind( iSource );
 }
 
+int Scene::bindTextureCube( const QString & fname )
+{
+	if ( !(options & DoTexturing) || fname.isEmpty() )
+		return 0;
+
+	return textures->bindCube( fname );
+}
 

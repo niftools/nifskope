@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "dds/dds_api.h"
 #include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
+#include "SOIL.h"
 
 #include <QBuffer>
 #include <QDebug>
@@ -1221,6 +1222,63 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
 
 	return mipmaps > 0;
+}
+
+
+bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id )
+{
+	width = height = mipmaps = 0;
+
+	if ( data.isEmpty() ) {
+		QFile tmpF( filepath );
+
+		if ( !tmpF.open( QIODevice::ReadOnly ) )
+			throw QString( "could not open file" );
+
+		data = tmpF.readAll();
+
+		tmpF.close();
+
+		if ( data.isEmpty() )
+			return false;
+	}
+
+	bool success;
+	GLuint result;
+
+	QBuffer f( &data );
+	
+	if ( !f.open( QIODevice::ReadOnly ) )
+		throw QString( "could not open buffer" );
+	
+	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
+
+		result = SOIL_load_OGL_single_cubemap_from_memory(
+			(const unsigned char *)f.data().constData(),
+			f.data().size(),
+			SOIL_DDS_CUBEMAP_FACE_ORDER,
+			SOIL_LOAD_AUTO,
+			id,
+			SOIL_FLAG_MIPMAPS
+		);
+
+		if ( result == id ) {
+			success = true;
+
+			// Just fudge the mipmaps number
+			mipmaps = 6;
+		}
+	} else {
+		throw QString( "unsupported texture format" );
+	}
+		
+	
+	f.close();
+
+	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
+	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+
+	return success;
 }
 
 

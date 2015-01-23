@@ -765,6 +765,37 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				fn->glUniform1i( uniInnerMap, texunit++ );
 			}
 		}
+
+		if ( mesh->bslsp->hasCubeMap ) {
+			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
+			if ( uniCubeMap >= 0 ) {
+
+				QString fname = bsprop->fileName( 4 );
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bindCube( 4, fname )) )
+					return false;
+
+				fn->glUniform1i( uniCubeMap, texunit++ );
+			}
+
+			if ( mesh->bslsp->hasEnvironmentMap ) {
+
+				uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
+
+				GLint uniEnvMap = fn->glGetUniformLocation( prog->id, "EnvironmentMap" );
+				if ( uniEnvMap >= 0 ) {
+
+					QString fname = bsprop->fileName( 5 );
+					if ( fname.isEmpty() )
+						fname = "shaders/white.dds";
+
+					if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 5, fname )) )
+						return false;
+
+					fn->glUniform1i( uniEnvMap, texunit++ );
+				}
+			}
+		}
 	}
 
 

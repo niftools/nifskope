@@ -864,6 +864,28 @@ bool BSShaderLightingProperty::bind( int id, const QList<QVector<Vector2> > & te
 	return false;
 }
 
+bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
+{
+	GLuint result = 0;
+
+	if ( !fname.isEmpty() )
+		result = scene->bindTextureCube( fname );
+
+	if ( result == 0 )
+		return false;
+
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT );
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT );
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+	glMatrixMode( GL_TEXTURE );
+	glLoadIdentity();
+	glMatrixMode( GL_MODELVIEW );
+
+	return true;
+}
+
 QString BSShaderLightingProperty::fileName( int id ) const
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
@@ -1065,6 +1087,16 @@ void BSLightingShaderProperty::setOuterRefractionStrength( float strength )
 void BSLightingShaderProperty::setOuterReflectionStrength( float strength )
 {
 	outerReflectionStrength = strength;
+}
+
+float BSLightingShaderProperty::getEnvironmentReflection()
+{
+	return environmentReflection;
+}
+
+void BSLightingShaderProperty::setEnvironmentReflection( float strength )
+{
+	environmentReflection = strength;
 }
 
 /*

@@ -511,6 +511,8 @@ public:
 	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
 	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
 
+	bool bindCube( int id, const QString & fname = QString() );
+
 	QString fileName( int id ) const;
 	//int coordSet( int id ) const;
 
@@ -577,6 +579,8 @@ public:
 	float getOuterRefractionStrength();
 	float getOuterReflectionStrength();
 
+	float getEnvironmentReflection();
+
 	void setShaderType( unsigned int );
 
 	void setEmissive( Color3 color, float mult = 1.0f );
@@ -590,6 +594,8 @@ public:
 	void setOuterRefractionStrength( float );
 	void setOuterReflectionStrength( float );
 
+	void setEnvironmentReflection( float );
+
 	bool hasVertexColors;
 	bool hasVertexAlpha;
 	bool hasGlowMap;
@@ -600,6 +606,8 @@ public:
 	bool hasModelSpaceNormals;
 	bool hasSpecularMap;
 	bool hasMultiLayerParallax;
+	bool hasCubeMap;
+	bool hasEnvironmentMap;
 
 	ShaderFlags::ShaderType getShaderType();
 
@@ -616,6 +624,8 @@ protected:
 
 	float lightingEffect1;
 	float lightingEffect2;
+
+	float environmentReflection;
 
 	// Multi-layer properties
 	float innerThickness;

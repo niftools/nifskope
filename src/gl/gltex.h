@@ -87,6 +87,9 @@ class TexCache final : public QObject
 		//! Load the texture
 		void load();
 
+		//! Load the texture
+		void loadCube();
+
 		//! Save the texture as a file
 		bool saveAsFile( const QModelIndex & index, QString & savepath );
 		//! Save the texture as pixel data
@@ -101,6 +104,9 @@ public:
 	int bind( const QString & fname );
 	//! Bind a texture from pixel data
 	int bind( const QModelIndex & iSource );
+
+	//! Bind a texture from filename
+	int bindCube( const QString & fname );
 
 	//! Debug function for getting info about a texture
 	QString info( const QModelIndex & iSource );

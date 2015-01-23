@@ -38,6 +38,10 @@ varying vec3 ViewDir;
 varying vec4 ColorEA;
 varying vec4 ColorD;
 
+varying vec3 N;
+varying vec3 t;
+varying vec3 b;
+
 
 vec3 tonemap(vec3 x)
 {
@@ -116,6 +120,11 @@ void main( void )
 	
 	// Sample the inner map at the offset coords
 	vec4 innerMap = texture2D( InnerMap, parallax.xy * innerScale );
+
+	vec3 reflected = reflect( -E, normal );
+	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
+	
+	vec4 cube = textureCube( CubeMap, vec3( gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 ) ) );
 	
 	
 	vec4 color;
@@ -129,8 +138,6 @@ void main( void )
 
 	color.a = ColorD.a;
 	
-	
-	//vec4 cube = textureCube( CubeMap, R );
 	
 	// Backlight
 	// 	Mixed with inner and outer map
@@ -154,6 +161,9 @@ void main( void )
 	innerOuter = mix( inner, outer, outerMix );
 	
 	color.rgb += innerOuter;
+	
+	// Environment
+	color.rgb += cube.rgb * outerReflection * diffuse;
 
 	// Specular
 	float spec = 0.0;

@@ -60,6 +60,8 @@ typedef unsigned int GLuint;
 extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
 extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data );
 
+extern bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id );
+
 /*! A function for loading textures.
  *
  * Loads a texture pointed to by model index.
