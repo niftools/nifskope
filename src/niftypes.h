@@ -956,7 +956,7 @@ public:
 	//! Compose from translation, rotation and scale
 	void compose( const Vector3 & trans, const Matrix & rot, const Vector3 & scale );
 
-	//Matrix44 inverted() const;
+	Matrix4 inverted() const;
 
 	//! Format as HTML
 	QString toHtml() const;
