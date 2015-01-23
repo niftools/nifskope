@@ -650,6 +650,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		auto uvO = mesh->bslsp->getUvOffset();
 		uni2f( "uvOffset", uvO.x, uvO.y );
 
+		uni4m( "viewMatrix", mesh->viewTrans().toMatrix4() );
+		uni4m( "viewMatrixInverse", mesh->viewTrans().toMatrix4().inverted() );
+
+
 		// Rim & Soft params
 
 		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {

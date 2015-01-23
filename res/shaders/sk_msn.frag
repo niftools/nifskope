@@ -26,6 +26,9 @@ uniform bool hasSpecularMap;
 uniform float lightingEffect1;
 uniform float lightingEffect2;
 
+uniform mat4 viewMatrix;
+uniform mat4 viewMatrixInverse;
+
 varying vec3 v;
 
 varying vec3 LightDir;
@@ -61,8 +64,9 @@ void main( void )
 
 	vec3 normal = normalMap.rgb * 2.0 - 1.0;
 	
-	// TODO: R channel is not negated on landscape MSN
-	normal = vec3( -normal.r, normal.g, normal.b );
+	// Convert model space to view space
+	//	Swizzled G/B values!
+	normal = normalize( vec3( viewMatrix * vec4( normal.rbg, 0.0 )));
 	
 	// Face Normals
 	//vec3 X = dFdx(v);

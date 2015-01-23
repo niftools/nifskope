@@ -14,9 +14,9 @@ void main( void )
 	
 	v = vec3(gl_ModelViewMatrix * gl_Vertex);
 
-	ViewDir = gl_NormalMatrix * -v.xyz;
-	LightDir = gl_NormalMatrix * gl_LightSource[0].position.xyz;
+	ViewDir = -v.xyz;
+	LightDir = gl_LightSource[0].position.xyz;
 	
-	ColorEA = gl_FrontMaterial.emission + gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
-	ColorD = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
+	ColorEA = gl_FrontMaterial.emission + gl_Color * gl_LightSource[0].ambient;
+	ColorD = gl_Color * gl_LightSource[0].diffuse;
 }
