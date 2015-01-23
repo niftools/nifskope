@@ -874,6 +874,8 @@ bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
 	if ( result == 0 )
 		return false;
 
+	glEnable( GL_TEXTURE_CUBE_MAP_SEAMLESS );
+
 	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
