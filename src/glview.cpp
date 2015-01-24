@@ -49,6 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QDialog>
 #include <QDir>
+#include <QImageWriter>
 #include <QLabel>
 #include <QKeyEvent>
 #include <QMenu>
@@ -1313,7 +1314,7 @@ void GLView::saveImage()
 	FileSelector * file = new FileSelector( FileSelector::SaveFile, tr( "File" ), QBoxLayout::LeftToRight );
 	file->setParent( dlg );
 	// TODO: Default extension in Settings
-	file->setFilter( { "Images (*.jpg *.png *.bmp)", "JPEG (*.jpg)", "PNG (*.png)", "BMP (*.bmp)" } );
+	file->setFilter( { "Images (*.jpg *.png *.webp *.bmp)", "JPEG (*.jpg)", "PNG (*.png)", "WebP (*.webp)", "BMP (*.bmp)" } );
 	file->setFile( nifskopePath );
 	lay->addWidget( file, 0, 0, 1, -1 );
 
@@ -1337,7 +1338,7 @@ void GLView::saveImage()
 
 	// Save JPEG Quality
 	QSettings cfg;
-	int jpegQuality = cfg.value( "JPEG/Quality", 91 ).toInt();
+	int jpegQuality = cfg.value( "JPEG/Quality", 90 ).toInt();
 	cfg.setValue( "JPEG/Quality", jpegQuality );
 
 	QHBoxLayout * pixBox = new QHBoxLayout;
@@ -1471,8 +1472,23 @@ void GLView::saveImage()
 			if ( ss > 1 )
 				resizeGL( width(), height() );
 
-			
-			if ( img->save( file->file(), 0, pixQuality->value() ) ) {
+
+			QImageWriter writer( file->file() );
+
+			// Set Compression for formats that can use it
+			writer.setCompression( 1 );
+
+			// Handle JPEG/WebP Quality exclusively
+			//	PNG will not use compression if Quality is set
+			if ( file->file().endsWith( ".jpg", Qt::CaseInsensitive ) ) {
+				writer.setFormat( "jpg" );
+				writer.setQuality( 50 + pixQuality->value() / 2 );
+			} else if ( file->file().endsWith( ".webp", Qt::CaseInsensitive ) ) {
+				writer.setFormat( "webp" );
+				writer.setQuality( 75 + pixQuality->value() / 4 );
+			}
+
+			if ( writer.write( *img ) ) {
 				dlg->accept();
 			} else {
 				Message::critical( this, tr( "Could not save %1" ).arg( file->file() ) );
