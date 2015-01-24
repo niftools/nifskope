@@ -38,11 +38,161 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 
 
-//! @file nifproxy.cpp NifProxyModel, NifProxyItem
+class NifProxyItem
+{
+public:
+	NifProxyItem( int number, NifProxyItem * parent )
+	{
+		blockNumber = number;
+		parentItem  = parent;
+	}
+	~NifProxyItem()
+	{
+		qDeleteAll( childItems );
+	}
 
-/*
-*  NifProxyModel
-*/
+	NifProxyItem * getLink( int link )
+	{
+		for ( NifProxyItem * item : childItems ) {
+			if ( item->block() == link )
+				return item;
+		}
+		return nullptr;
+	}
+
+	int rowLink( int link )
+	{
+		int row = 0;
+		for ( NifProxyItem * item : childItems ) {
+			if ( item->block() == link )
+				return row;
+
+			row++;
+		}
+		return -1;
+	}
+
+	NifProxyItem * addLink( int link )
+	{
+		NifProxyItem * child = getLink( link );
+
+		if ( child ) {
+			return child;
+		} else {
+			child = new NifProxyItem( link, this );
+			childItems.append( child );
+			return child;
+		}
+	}
+
+	void delLink( int link )
+	{
+		NifProxyItem * child = getLink( link );
+
+		if ( child ) {
+			childItems.removeAll( child );
+			delete child;
+		}
+	}
+
+	NifProxyItem * parent() const
+	{
+		return parentItem;
+	}
+
+	NifProxyItem * child( int row )
+	{
+		return childItems.value( row );
+	}
+
+	int childCount()
+	{
+		return childItems.count();
+	}
+
+	void killChildren()
+	{
+		qDeleteAll( childItems );
+		childItems.clear();
+	}
+
+	int row() const
+	{
+		if ( parentItem )
+			return parentItem->childItems.indexOf( const_cast<NifProxyItem *>(this) );
+
+		return 0;
+	}
+
+	inline int block() const
+	{
+		return blockNumber;
+	}
+
+	QList<int> parentBlocks() const
+	{
+		QList<int> parents;
+		NifProxyItem * parent = parentItem;
+
+		while ( parent && parent->parentItem ) {
+			parents.append( parent->blockNumber );
+			parent = parent->parentItem;
+		}
+
+		return parents;
+	}
+
+	QList<int> childBlocks() const
+	{
+		QList<int> blocks;
+		for ( NifProxyItem * item : childItems ) {
+			blocks.append( item->block() );
+		}
+		return blocks;
+	}
+
+	NifProxyItem * findItem( int b, bool scanParents = true )
+	{
+		if ( blockNumber == b )
+			return this;
+
+		for ( NifProxyItem * child : childItems ) {
+			if ( child->blockNumber == b )
+				return child;
+		}
+
+		for ( NifProxyItem * child : childItems ) {
+			if ( NifProxyItem * x = child->findItem( b, false ) )
+				return x;
+		}
+
+		if ( parentItem && scanParents ) {
+			NifProxyItem * root = parentItem;
+
+			while ( root && root->parentItem )
+				root = root->parentItem;
+
+			if ( NifProxyItem * x = root->findItem( b, false ) )
+				return x;
+		}
+
+		return nullptr;
+	}
+
+	void findAllItems( int b, QList<NifProxyItem *> & list )
+	{
+		for ( NifProxyItem * item : childItems ) {
+			item->findAllItems( b, list );
+		}
+
+		if ( blockNumber == b )
+			list.append( this );
+	}
+
+	int blockNumber;
+	NifProxyItem * parentItem;
+	QList<NifProxyItem *> childItems;
+};
 
 NifProxyModel::NifProxyModel( QObject * parent ) : QAbstractItemModel( parent )
 {
@@ -113,7 +263,7 @@ void NifProxyModel::updateRoot( bool fast )
 	//qDebug() << "proxy update top level";
 
 	// Make a copy to iterate over
-	auto items = root->children();
+	auto items = root->childItems;
 	for ( NifProxyItem * item : items ) {
 		if ( !nif->getRootLinks().contains( item->block() ) ) {
 			int at = root->rowLink( item->block() );
@@ -425,143 +575,10 @@ void NifProxyModel::xRowsAboutToBeRemoved( const QModelIndex & parent, int first
 			for ( NifProxyItem * item : list ) {
 				QModelIndex idx = createIndex( item->row(), 0, item );
 				beginRemoveRows( idx.parent(), idx.row(), idx.row() );
-				item->parent()->children().removeAll( item );
+				item->parentItem->childItems.removeAll( item );
 				delete item;
 				endRemoveRows();
 			}
 		}
 	}
-}
-
-
-/* 
- *  NifProxyItem
- */
-
-NifProxyItem::NifProxyItem( int number, NifProxyItem * parent )
-{
-	blockNumber = number;
-	parentItem = parent;
-}
-NifProxyItem::~NifProxyItem()
-{
-	qDeleteAll( childItems );
-}
-
-int NifProxyItem::row() const
-{
-	if ( parentItem )
-		return parentItem->childItems.indexOf( const_cast<NifProxyItem *>(this) );
-
-	return 0;
-}
-
-NifProxyItem * NifProxyItem::getLink( int link ) const
-{
-	for ( NifProxyItem * item : childItems ) {
-		if ( item->block() == link )
-			return item;
-	}
-	return nullptr;
-}
-
-int NifProxyItem::rowLink( int link ) const
-{
-	int row = 0;
-	for ( NifProxyItem * item : childItems ) {
-		if ( item->block() == link )
-			return row;
-
-		row++;
-	}
-	return -1;
-}
-
-NifProxyItem * NifProxyItem::addLink( int link )
-{
-	NifProxyItem * child = getLink( link );
-
-	if ( child ) {
-		return child;
-	} else {
-		child = new NifProxyItem( link, this );
-		childItems.append( child );
-		return child;
-	}
-}
-
-void NifProxyItem::delLink( int link )
-{
-	NifProxyItem * child = getLink( link );
-
-	if ( child ) {
-		childItems.removeAll( child );
-		delete child;
-	}
-}
-
-void NifProxyItem::killChildren()
-{
-	qDeleteAll( childItems );
-	childItems.clear();
-}
-
-QList<int> NifProxyItem::parentBlocks() const
-{
-	QList<int> parents;
-	NifProxyItem * parent = parentItem;
-
-	while ( parent && parent->parentItem ) {
-		parents.append( parent->blockNumber );
-		parent = parent->parentItem;
-	}
-
-	return parents;
-}
-
-QList<int> NifProxyItem::childBlocks() const
-{
-	QList<int> blocks;
-	for ( NifProxyItem * item : childItems ) {
-		blocks.append( item->block() );
-	}
-	return blocks;
-}
-
-NifProxyItem * NifProxyItem::findItem( int b, bool scanParents )
-{
-	if ( blockNumber == b )
-		return this;
-
-	for ( NifProxyItem * child : childItems ) {
-		if ( child->blockNumber == b )
-			return child;
-	}
-
-	for ( NifProxyItem * child : childItems ) {
-		if ( NifProxyItem * x = child->findItem( b, false ) )
-			return x;
-	}
-
-	if ( parentItem && scanParents ) {
-		NifProxyItem * root = parentItem;
-
-		while ( root && root->parentItem )
-			root = root->parentItem;
-
-		if ( NifProxyItem * x = root->findItem( b, false ) )
-			return x;
-	}
-
-	return nullptr;
-}
-
-void NifProxyItem::findAllItems( int b, QList<NifProxyItem *> & list )
-{
-	for ( NifProxyItem * item : childItems ) {
-		item->findAllItems( b, list );
-	}
-
-	if ( blockNumber == b )
-		list.append( this );
 }

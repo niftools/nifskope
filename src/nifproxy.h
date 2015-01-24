@@ -39,8 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 
 
-//! @file nifproxy.h NifProxyModel, NifProxyItem
-
 class NifModel;
 class NifProxyItem;
 
@@ -94,70 +92,5 @@ protected:
 
 	NifProxyItem * root;
 };
-
-
-class NifProxyItem
-{
-public:
-	NifProxyItem( int number, NifProxyItem * parent );
-	~NifProxyItem();
-
-	int block() const;
-	int row() const;
-	int childCount() const;
-
-	NifProxyItem * parent() const;
-	NifProxyItem * child( int row ) const;
-	QList<NifProxyItem *> children() const;
-
-	QList<int> parentBlocks() const;
-	QList<int> childBlocks() const;
-
-	NifProxyItem * getLink( int link ) const;
-
-	int rowLink( int link ) const;
-
-	NifProxyItem * addLink( int link );
-
-	void delLink( int link );
-
-	void killChildren();
-
-	NifProxyItem * findItem( int b, bool scanParents = true );
-	void findAllItems( int b, QList<NifProxyItem *> & list );
-
-private:
-	int blockNumber;
-	NifProxyItem * parentItem;
-	QList<NifProxyItem *> childItems;
-};
-
-
-// Inlines
-
-inline int NifProxyItem::block() const
-{
-	return blockNumber;
-}
-
-inline int NifProxyItem::childCount() const
-{
-	return childItems.count();
-}
-
-inline NifProxyItem * NifProxyItem::parent() const
-{
-	return parentItem;
-}
-
-inline NifProxyItem * NifProxyItem::child( int row ) const
-{
-	return childItems.value( row );
-}
-
-inline QList<NifProxyItem *> NifProxyItem::children() const
-{
-	return childItems;
-}
 
 #endif
