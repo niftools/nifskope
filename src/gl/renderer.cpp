@@ -594,36 +594,42 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		}
 	}
 
+	// Sets a float
 	auto uni1f = [this, prog, mesh]( const char * var, float x ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 )
 			fn->glUniform1f( uni, x );
 	};
 
+	// Sets a vec2 (two floats)
 	auto uni2f = [this, prog, mesh]( const char * var, float x, float y ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 )
 			fn->glUniform2f( uni, x, y );
 	};
 
+	// Sets a vec3 (three floats)
 	auto uni3f = [this, prog, mesh]( const char * var, float x, float y, float z ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 )
 			fn->glUniform3f( uni, x, y, z );
 	};
 
+	// Sets a vec4 (four floats)
 	auto uni4f = [this, prog, mesh]( const char * var, float x, float y, float z, float w ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 )
 			fn->glUniform4f( uni, x, y, z, w );
 	};
 
+	// Sets an integer or boolean
 	auto uni1i = [this, prog, mesh]( const char * var, int val ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 )
 			fn->glUniform1i( uni, val );
 	};
 
+	// Sets a mat3 (3x3 matrix)
 	auto uni3m = [this, prog, mesh]( const char * var, Matrix val ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 ) {
@@ -631,12 +637,37 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		}
 	};
 
+	// Sets a mat4 (4x4 matrix)
 	auto uni4m = [this, prog, mesh]( const char * var, Matrix4 val ) {
 		GLint uni = fn->glGetUniformLocation( prog->id, var );
 		if ( uni >= 0 ) {
 			fn->glUniformMatrix4fv( uni, 1, 0, val.data() );
 		}
 	};
+
+	// Sets a sampler2D (texture sampler)
+	auto uniSampler = [this, prog, bsprop, &texunit]( const char * var, int textureSlot, QString alternate ) {
+		GLint uniSamp = fn->glGetUniformLocation( prog->id, var );
+		if ( uniSamp >= 0 ) {
+
+			QString fname = bsprop->fileName( textureSlot );
+			if ( fname.isEmpty() )
+				fname = alternate;
+
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( textureSlot, fname )) )
+				return false;
+
+			fn->glUniform1i( uniSamp, texunit++ );
+
+			return true;
+		}
+
+		return false;
+	};
+
+	QString white = "shaders/white.dds";
+	QString black = "shaders/black.dds";
+	QString default_n = "shaders/default_n.dds";
 	
 
 	// BSLightingShaderProperty
@@ -661,18 +692,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
 			uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
 
-			GLint uniLightMask = fn->glGetUniformLocation( prog->id, "LightMask" );
-			if ( uniLightMask >= 0 ) {
-				QString fname = bsprop->fileName( 2 );
-				if ( fname.isEmpty() )
-					fname = "shaders/default_n.dds";
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
-					return false;
-
-				fn->glUniform1i( uniLightMask, texunit++ );
-			}
-
+			if ( !uniSampler( "LightMask", 2, default_n ) )
+				return false;
 		}
 
 		// Backlight params
@@ -681,18 +702,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
 
-			GLint uniBackLightMap = fn->glGetUniformLocation( prog->id, "BacklightMap" );
-			if ( uniBackLightMap >= 0 ) {
-
-				QString fname = bsprop->fileName( 7 );
-				if ( fname.isEmpty() )
-					fname = "shaders/default_n.dds";
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 7, fname )) )
-					return false;
-
-				fn->glUniform1i( uniBackLightMap, texunit++ );
-			}
+			if ( !uniSampler( "BacklightMap", 7, default_n ) )
+				return false;
 		}
 
 		// Glow params
@@ -700,7 +711,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( opts & Scene::DoGlow && mesh->bslsp->hasEmittance )
 			uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
 		else
-			uni1f( "glowMult", 0.0f );
+			uni1f( "glowMult", 0 );
 		
 		uni1i( "hasEmit", mesh->bslsp->hasEmittance );
 		uni1i( "hasGlowMap", mesh->bslsp->hasGlowMap );
@@ -712,30 +723,22 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( (opts & Scene::DoSpecular) && !(opts & Scene::DisableShaders) )
 			uni1f( "specStrength", mesh->bslsp->getSpecularStrength() );
 		else
-			uni1f( "specStrength", 0.0 );
+			uni1f( "specStrength", 0 );
 
 		uni1f( "specGlossiness", mesh->bslsp->getSpecularGloss() );
 		
 		auto spec = mesh->bslsp->getSpecularColor();
 		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
 
-		if ( (mesh->scene->visMode & Scene::VisSilhouette) )
+		if ( (vis & Scene::VisSilhouette) )
 			uni3f( "specColor", 0, 0, 0 );
 
 		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
 
 			uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
 
-			GLint uniSpecularMap = fn->glGetUniformLocation( prog->id, "SpecularMap" );
-			if ( uniSpecularMap >= 0 ) {
-
-				QString fname = bsprop->fileName( 7 );
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 7, fname )) )
-					return false;
-
-				fn->glUniform1i( uniSpecularMap, texunit++ );
-			}
+			if ( !uniSampler( "SpecularMap", 7, default_n ) )
+				return false;
 		}
 
 		// Multi-Layer
@@ -752,18 +755,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			uni1f( "outerRefraction", mesh->bslsp->getOuterRefractionStrength() );
 			uni1f( "outerReflection", mesh->bslsp->getOuterReflectionStrength() );
 
-			GLint uniInnerMap = fn->glGetUniformLocation( prog->id, "InnerMap" );
-			if ( uniInnerMap >= 0 ) {
-
-				QString fname = bsprop->fileName( 6 );
-				if ( fname.isEmpty() )
-					fname = "shaders/default_n.dds";
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 6, fname )) )
-					return false;
-
-				fn->glUniform1i( uniInnerMap, texunit++ );
-			}
+			if ( !uniSampler( "InnerMap", 6, default_n ) )
+				return false;
 		}
 
 		if ( mesh->bslsp->hasCubeMap ) {
@@ -782,18 +775,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 				uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
 
-				GLint uniEnvMap = fn->glGetUniformLocation( prog->id, "EnvironmentMap" );
-				if ( uniEnvMap >= 0 ) {
-
-					QString fname = bsprop->fileName( 5 );
-					if ( fname.isEmpty() )
-						fname = "shaders/white.dds";
-
-					if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 5, fname )) )
-						return false;
-
-					fn->glUniform1i( uniEnvMap, texunit++ );
-				}
+				if ( !uniSampler( "EnvironmentMap", 5, white ) )
+					return false;
 			}
 		}
 	}
