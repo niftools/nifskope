@@ -37,17 +37,20 @@ varying vec3 ViewDir;
 varying vec4 ColorEA;
 varying vec4 ColorD;
 
+varying vec4 A;
+varying vec4 D;
+
 
 vec3 tonemap(vec3 x)
 {
-	float A = 0.15;
-	float B = 0.50;
-	float C = 0.10;
-	float D = 0.20;
-	float E = 0.02;
-	float F = 0.30;
+	float _A = 0.15;
+	float _B = 0.50;
+	float _C = 0.10;
+	float _D = 0.20;
+	float _E = 0.02;
+	float _F = 0.30;
 
-	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+	return ((x*(_A*x+_C*_B)+_D*_E)/(x*(_A*x+_B)+_D*_F))-_E/_F;
 }
 
 vec3 toGrayscale(vec3 color)
@@ -114,7 +117,7 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += baseMap.rgb * backlight * wrap * gl_LightSource[0].diffuse.rgb;
+		color.rgb += baseMap.rgb * backlight * wrap * D.rgb;
 	}
 
 	vec4 mask;
@@ -125,7 +128,7 @@ void main( void )
 	vec3 rim;
 	if ( hasRimlight ) {
 		rim = vec3((1.0 - NdotL) * (1.0 - EdotN));
-		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * gl_LightSource[0].diffuse.rgb * vec3(0.66);
+		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * D.rgb * vec3(0.66);
 		rim *= smoothstep( -0.5, 1.0, facing );
 		
 		color.rgb += rim;
@@ -138,7 +141,7 @@ void main( void )
 
 		// TODO: Very approximate, kind of arbitrary. There is surely a more correct way.
 		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
-		soft *= gl_LightSource[0].diffuse.rgb * gl_LightSource[0].ambient.rgb + (0.01 * lightingEffect1*lightingEffect1);
+		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
 
 		color.rgb += baseMap.rgb * soft;
 	}

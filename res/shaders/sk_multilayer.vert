@@ -10,6 +10,9 @@ varying vec3 t;
 varying vec3 b;
 varying vec3 v;
 
+varying vec4 A;
+varying vec4 D;
+
 void main( void )
 {
 	gl_Position = ftransform();
@@ -28,7 +31,10 @@ void main( void )
 	
 	ViewDir = tbnMatrix * -v.xyz;
 	LightDir = tbnMatrix * gl_LightSource[0].position.xyz;
-	
-	ColorEA = gl_FrontMaterial.emission + gl_Color * gl_LightSource[0].ambient;
-	ColorD = gl_Color * gl_LightSource[0].diffuse;
+
+	A = gl_LightSource[0].ambient;
+	D = gl_LightSource[0].diffuse;
+
+	ColorEA = gl_FrontMaterial.emission + gl_Color * A;
+	ColorD = gl_Color * D;
 }
