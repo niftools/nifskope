@@ -662,7 +662,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			return true;
 		}
 
-		return false;
+		return true;
 	};
 
 	QString white = "shaders/white.dds";
