@@ -163,7 +163,7 @@ void main( void )
 	//	Mixed with outer map
 	vec3 emissive;
 	if ( hasEmit ) {
-		emissive += albedo * glowColor * glowMult;
+		emissive += glowColor * glowMult;
 	}
 
 	// Backlight
@@ -172,7 +172,6 @@ void main( void )
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
 		backlight *= wrap * D.rgb;
-		backlight *= albedo;
 		
 		emissive += backlight;
 	}
@@ -202,10 +201,10 @@ void main( void )
 		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
 		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
 
-		emissive += albedo * soft;
+		emissive += soft;
 	}
 
-	color.rgb = (albedo * diffuse) + emissive + spec;
+	color.rgb = albedo * (diffuse + emissive) + spec;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
 	color.a = C.a * baseMap.a;
 	

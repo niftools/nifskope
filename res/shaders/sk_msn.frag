@@ -93,18 +93,16 @@ void main( void )
 	// Emissive
 	vec3 emissive;
 	if ( hasEmit ) {
-		emissive += albedo * glowColor * glowMult;
+		emissive += glowColor * glowMult;
 	}
 
 	// Specular
 	vec3 spec;
+	float s = texture2D( SpecularMap, offset ).r;
 	if ( NdotL > 0.0 && specStrength > 0.0 ) {
 		float RdotE = max( dot(R, E), 0.0 );
 		if ( RdotE > 0.0 ) {
-			float s;
-			if ( hasSpecularMap && !hasBacklight ) {
-				s = texture2D( SpecularMap, offset ).r;
-			} else {
+			if ( !hasSpecularMap || hasBacklight ) {
 				s = normalMap.a;
 			}
 			spec = vec3(s * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness));
@@ -115,7 +113,7 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		emissive += albedo * backlight * wrap * D.rgb;
+		emissive += backlight * wrap * D.rgb;
 	}
 
 	vec4 mask;
@@ -141,10 +139,10 @@ void main( void )
 		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
 		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
 
-		emissive += albedo * soft;
+		emissive += soft;
 	}
 
-	color.rgb = (albedo * diffuse) + spec + emissive;
+	color.rgb = albedo * (diffuse + emissive) + spec;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
 	color.a = C.a * baseMap.a;
 
