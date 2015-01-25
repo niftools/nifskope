@@ -172,7 +172,7 @@ void main( void )
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
 		backlight *= wrap * D.rgb;
-		backlight *= innerMap.rgb * C.rgb;
+		backlight *= albedo;
 		
 		emissive += backlight;
 	}
