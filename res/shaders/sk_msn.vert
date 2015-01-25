@@ -2,13 +2,12 @@
 varying vec3 LightDir;
 varying vec3 ViewDir;
 
-varying vec4 ColorEA;
-varying vec4 ColorD;
-
 varying vec3 v;
 
 varying vec4 A;
+varying vec4 C;
 varying vec4 D;
+
 
 void main( void )
 {
@@ -19,10 +18,8 @@ void main( void )
 
 	ViewDir = -v.xyz;
 	LightDir = gl_LightSource[0].position.xyz;
-	
-	A = gl_LightSource[0].ambient;
-	D = gl_LightSource[0].diffuse;
 
-	ColorEA = gl_FrontMaterial.emission + gl_Color * A;
-	ColorD = gl_Color * D;
+	A = gl_LightSource[0].ambient;
+	C = gl_Color;
+	D = gl_LightSource[0].diffuse;
 }

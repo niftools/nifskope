@@ -2,17 +2,15 @@
 
 uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
-uniform sampler2D GlowMap;
 uniform sampler2D LightMask;
 uniform sampler2D BacklightMap;
-
-uniform bool hasGlowMap;
-uniform vec3 glowColor;
-uniform float glowMult;
 
 uniform vec3 specColor;
 uniform float specStrength;
 uniform float specGlossiness;
+
+uniform vec3 glowColor;
+uniform float glowMult;
 
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
@@ -56,8 +54,7 @@ void main( void )
 
 	vec4 baseMap = texture2D( BaseMap, offset );
 	vec4 normalMap = texture2D( NormalMap, offset );
-	vec4 glowMap = texture2D( GlowMap, offset );
-
+	
 	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
 	
 	
@@ -76,14 +73,10 @@ void main( void )
 	vec3 diffuse = A.rgb + (D.rgb * NdotL);
 
 
-	// Emissive & Glow
+	// Emissive
 	vec3 emissive;
 	if ( hasEmit ) {
-		emissive += albedo  * glowColor * glowMult;
-		
-		if ( hasGlowMap ) {
-			emissive *= glowMap.rgb;
-		}
+		emissive += albedo * glowColor * glowMult;
 	}
 
 	// Specular
@@ -112,10 +105,10 @@ void main( void )
 		rim = vec3((1.0 - NdotL) * (1.0 - EdotN));
 		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * D.rgb * vec3(0.66);
 		rim *= smoothstep( -0.5, 1.0, facing );
-
+		
 		emissive += rim;
 	}
-
+	
 	vec3 soft;
 	if ( hasSoftlight ) {
 		soft = vec3((1.0 - wrap) * (1.0 - NdotL));

@@ -34,10 +34,8 @@ varying vec3 v;
 varying vec3 LightDir;
 varying vec3 ViewDir;
 
-varying vec4 ColorEA;
-varying vec4 ColorD;
-
 varying vec4 A;
+varying vec4 C;
 varying vec4 D;
 
 
@@ -85,39 +83,39 @@ void main( void )
 	float EdotN = max( dot(normal, E), 0.0 );
 	float wrap = max( dot(normal, -L), 0.0 );
 	float facing = max( dot(-L, E), 0.0 );
-	
+
 
 	vec4 color;
-	color.rgb = baseMap.rgb;
-	color.rgb *= ColorEA.rgb + (ColorD.rgb * NdotL);
-	color.a = ColorD.a * baseMap.a;
-	
-	
+	vec3 albedo = baseMap.rgb * C.rgb;
+	vec3 diffuse = A.rgb + (D.rgb * NdotL);
+
+
 	// Emissive
+	vec3 emissive;
 	if ( hasEmit ) {
-		color.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / vec3(glowMult + 0.001f) );
+		emissive += albedo * glowColor * glowMult;
 	}
 
 	// Specular
-	float spec;
-	if ( hasSpecularMap && !hasBacklight ) {
-		spec = texture2D( SpecularMap, offset ).r;
-	} else {
-		spec = normalMap.a;
-	}
-	
+	vec3 spec;
 	if ( NdotL > 0.0 && specStrength > 0.0 ) {
 		float RdotE = max( dot(R, E), 0.0 );
 		if ( RdotE > 0.0 ) {
-			spec *= gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness);
-			color.rgb += spec * specColor;
+			float s;
+			if ( hasSpecularMap && !hasBacklight ) {
+				s = texture2D( SpecularMap, offset ).r;
+			} else {
+				s = normalMap.a;
+			}
+			spec = vec3(s * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness));
+			spec *= specColor;
 		}
 	}
 
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += baseMap.rgb * backlight * wrap * D.rgb;
+		emissive += albedo * backlight * wrap * D.rgb;
 	}
 
 	vec4 mask;
@@ -131,7 +129,7 @@ void main( void )
 		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * D.rgb * vec3(0.66);
 		rim *= smoothstep( -0.5, 1.0, facing );
 		
-		color.rgb += rim;
+		emissive += rim;
 	}
 
 	vec3 soft;
@@ -143,10 +141,12 @@ void main( void )
 		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
 		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
 
-		color.rgb += baseMap.rgb * soft;
+		emissive += albedo * soft;
 	}
 
+	color.rgb = (albedo * diffuse) + spec + emissive;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
+	color.a = C.a * baseMap.a;
 
 	gl_FragColor = color;
 }

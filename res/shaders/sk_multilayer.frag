@@ -18,8 +18,6 @@ uniform float glowMult;
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
 
-uniform float alpha;
-
 uniform bool hasEmit;
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
@@ -33,13 +31,13 @@ uniform float innerThickness;
 uniform float outerRefraction;
 uniform float outerReflection;
 
+uniform mat4 worldMatrix;
+
 varying vec3 LightDir;
 varying vec3 ViewDir;
 
-varying vec4 ColorEA;
-varying vec4 ColorD;
-
 varying vec4 A;
+varying vec4 C;
 varying vec4 D;
 
 varying vec3 N;
@@ -127,58 +125,58 @@ void main( void )
 
 	vec3 reflected = reflect( -E, normal );
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
+	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 	
-	vec4 cube = textureCube( CubeMap, vec3( gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 ) ) );
 	vec4 env = texture2D( EnvironmentMap, offset );
-	
-	vec4 color;
-	vec3 inner = innerMap.rgb;
-	vec3 outer = baseMap.rgb;
-	vec3 innerOuter;
-	
-	vec3 diffuse = ColorEA.rgb + (ColorD.rgb * NdotL);
-	outer *= diffuse;
-	inner *= diffuse;
+	vec4 cube = textureCube( CubeMap, reflectedWS );
+	cube.rgb *= env.r * outerReflection * normalMap.a;
 
-	color.a = ColorD.a;
+
+	vec4 color;
+	vec3 albedo;
+	vec3 diffuse = A.rgb + (D.rgb * NdotL);
+	vec3 inner = innerMap.rgb * C.rgb;
+	vec3 outer = baseMap.rgb * C.rgb;
+
+
+	// Mix inner/outer layer based on fresnel
+	float outerMix = max( 1.0 - EdotN, baseMap.a );
+	albedo = mix( inner, outer, outerMix );
 	
-	
+	// Environment
+	albedo += cube.rgb;
+
+	// Specular
+	vec3 spec;
+	if ( NdotL > 0.0 && specStrength > 0.0 ) {
+		float RdotE = max( dot(R, E), 0.0 );
+		if ( RdotE > 0.0 ) {
+			spec = vec3(normalMap.a * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness));
+			spec *= specColor;
+		}
+	}
+
+	// Emissive
+	//	Mixed with outer map
+	vec3 emissive;
+	if ( hasEmit ) {
+		emissive += outer * glowColor * glowMult;
+		emissive *= outerMix;
+		
+		emissive += cube.rgb * glowColor * glowMult * (1.0 - outerMix);
+	}
+
 	// Backlight
 	// 	Mixed with inner and outer map
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
 		backlight *= wrap * D.rgb;
+		backlight *= innerMap.rgb * C.rgb;
 		
-		inner += innerMap.rgb * backlight * (1.0 - baseMap.a);
-		outer += baseMap.rgb * backlight * baseMap.a;
+		emissive += backlight;
 	}
-	
-	// Emissive
-	//	Mixed with outer map
-	if ( hasEmit ) {
-		outer += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / vec3(glowMult + 0.001f) );
-	}
-	
-	// Mix inner/outer layer based on fresnel
-	float outerMix = max( 1.0 - EdotN, baseMap.a );
-	innerOuter = mix( inner, outer, outerMix );
-	
-	color.rgb += innerOuter;
-	
-	// Environment
-	color.rgb += cube.rgb * env.r * outerReflection * diffuse;
 
-	// Specular
-	float spec = 0.0;
-	if ( NdotL > 0.0 && specStrength > 0.0 ) {
-		float RdotE = max( dot(R, E), 0.0 );
-		if ( RdotE > 0.0 ) {
-			spec = normalMap.a * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness);
-			color.rgb += spec * specColor;
-		}
-	}
-	
 	// TODO: Test rim and soft light mixing with inner/outer layer
 
 	vec4 mask;
@@ -192,7 +190,7 @@ void main( void )
 		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * D.rgb * vec3(0.66);
 		rim *= smoothstep( -0.5, 1.0, facing );
 		
-		color.rgb += rim;
+		emissive += rim;
 	}
 
 	vec3 soft;
@@ -204,11 +202,12 @@ void main( void )
 		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
 		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
 
-		color.rgb += baseMap.rgb * soft;
+		emissive += albedo * soft;
 	}
 
+	color.rgb += (albedo * diffuse) + emissive + spec;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
+	color.a = C.a * baseMap.a;
 	
 	gl_FragColor = color;
-	gl_FragColor.a *= alpha;
 }

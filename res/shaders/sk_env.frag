@@ -27,13 +27,13 @@ uniform float lightingEffect2;
 
 uniform float envReflection;
 
+uniform mat4 worldMatrix;
+
 varying vec3 LightDir;
 varying vec3 ViewDir;
 
-varying vec4 ColorEA;
-varying vec4 ColorD;
-
 varying vec4 A;
+varying vec4 C;
 varying vec4 D;
 
 varying vec3 N;
@@ -79,39 +79,39 @@ void main( void )
 
 	vec3 reflected = reflect( -E, normal );
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
+	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 	
-	vec4 cube = textureCube( CubeMap, vec3( gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 ) ) );
 	vec4 env = texture2D( EnvironmentMap, offset );
+	vec4 cube = textureCube( CubeMap, reflectedWS );
+	cube.rgb *= env.r * envReflection;
 
-	vec3 diffuse = A.rgb + (D.rgb * NdotL);
-	
 	vec4 color;
-	color.rgb = baseMap.rgb;
-	color.rgb *= ColorEA.rgb + (ColorD.rgb * NdotL);
-	color.a = ColorD.a * baseMap.a;
-	
+	vec3 albedo = baseMap.rgb * C.rgb;
+	vec3 diffuse = A.rgb + (D.rgb * NdotL);
+
 	// Environment
-	color.rgb += cube.rgb * env.r * envReflection * diffuse;
+	albedo += cube.rgb;
 	
 	// Emissive
+	vec3 emissive;
 	if ( hasEmit ) {
-		color.rgb += tonemap( baseMap.rgb * glowColor ) / tonemap( 1.0f / vec3(glowMult + 0.001f) );
+		emissive += albedo * glowColor * glowMult;
 	}
 
 	// Specular
-	float spec = 0.0;
+	vec3 spec;
 	if ( NdotL > 0.0 && specStrength > 0.0 ) {
 		float RdotE = max( dot(R, E), 0.0 );
 		if ( RdotE > 0.0 ) {
-			spec = normalMap.a * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness);
-			color.rgb += spec * specColor;
+			spec = vec3(normalMap.a * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness));
+			spec *= specColor;
 		}
 	}
 
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		color.rgb += baseMap.rgb * backlight * wrap * D.rgb;
+		emissive += albedo * backlight * wrap * D.rgb;
 	}
 
 	vec4 mask;
@@ -125,7 +125,7 @@ void main( void )
 		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * D.rgb * vec3(0.66);
 		rim *= smoothstep( -0.5, 1.0, facing );
 		
-		color.rgb += rim;
+		emissive += rim;
 	}
 	
 	vec3 soft;
@@ -137,10 +137,12 @@ void main( void )
 		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
 		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
 
-		color.rgb += baseMap.rgb * soft;
+		emissive += albedo * soft;
 	}
 
+	color.rgb = (albedo * diffuse) + spec + emissive;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
-	
+	color.a = C.a * baseMap.a;
+
 	gl_FragColor = color;
 }
