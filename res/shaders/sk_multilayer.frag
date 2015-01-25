@@ -31,6 +31,8 @@ uniform float innerThickness;
 uniform float outerRefraction;
 uniform float outerReflection;
 
+uniform bool useEnvMask;
+
 uniform mat4 worldMatrix;
 
 varying vec3 LightDir;
@@ -127,9 +129,17 @@ void main( void )
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 	
+
 	vec4 env = texture2D( EnvironmentMap, offset );
+	float envMask;
+	if ( useEnvMask ) {
+		envMask = env.r;
+	} else {
+		envMask = normalMap.a;
+	}
+
 	vec4 cube = textureCube( CubeMap, reflectedWS );
-	cube.rgb *= env.r * outerReflection * normalMap.a;
+	cube.rgb *= outerReflection * envMask;
 
 
 	vec4 color;
@@ -205,7 +215,7 @@ void main( void )
 		emissive += albedo * soft;
 	}
 
-	color.rgb += (albedo * diffuse) + emissive + spec;
+	color.rgb = (albedo * diffuse) + emissive + spec;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
 	color.a = C.a * baseMap.a;
 	

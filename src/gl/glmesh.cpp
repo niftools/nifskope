@@ -182,14 +182,20 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
 				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
 				bslsp->hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
+
+				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
+				bslsp->hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
+				bslsp->hasEnvironmentMap |= bslsp->hasMultiLayerParallax;
 				bslsp->hasCubeMap = (
 						isST( ShaderFlags::ST_EnvironmentMap ) 
 						|| isST( ShaderFlags::ST_EyeEnvmap )
 						|| isST( ShaderFlags::ST_MultiLayerParallax )
 					)
+					&& bslsp->hasEnvironmentMap
 					&& !textures.value( 4, "" ).isEmpty();
-				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
-				bslsp->hasEnvironmentMap |= bslsp->hasMultiLayerParallax;
+
+				bslsp->useEnvironmentMask = bslsp->hasEnvironmentMap && !textures.value( 5, "" ).isEmpty();
+
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
@@ -203,7 +209,12 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->setUvScale( uvScale[0], uvScale[1] );
 				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
 
-				auto envReflection = nif->get<float>( iProp, "Environment Map Scale" );
+				float envReflection;
+				if ( isST( ShaderFlags::ST_EnvironmentMap ) ) {
+					envReflection = nif->get<float>( iProp, "Environment Map Scale" );
+				} else if ( isST( ShaderFlags::ST_EyeEnvmap ) ) {
+					envReflection = nif->get<float>( iProp, "Eye Cubemap Scale" );
+				}
 
 				bslsp->setEnvironmentReflection( envReflection );
 

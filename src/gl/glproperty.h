@@ -608,6 +608,7 @@ public:
 	bool hasMultiLayerParallax;
 	bool hasCubeMap;
 	bool hasEnvironmentMap;
+	bool useEnvironmentMask;
 
 	ShaderFlags::ShaderType getShaderType();
 

@@ -25,6 +25,7 @@ uniform bool hasRimlight;
 uniform float lightingEffect1;
 uniform float lightingEffect2;
 
+uniform bool useEnvMask;
 uniform float envReflection;
 
 uniform mat4 worldMatrix;
@@ -80,10 +81,19 @@ void main( void )
 	vec3 reflected = reflect( -E, normal );
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
-	
+
+
 	vec4 env = texture2D( EnvironmentMap, offset );
+	float envMask;
+	if ( useEnvMask ) {
+		envMask = env.r;
+	} else {
+		envMask = normalMap.a;
+	}
+
 	vec4 cube = textureCube( CubeMap, reflectedWS );
-	cube.rgb *= env.r * envReflection;
+	cube.rgb *= envReflection * envMask;
+
 
 	vec4 color;
 	vec3 albedo = baseMap.rgb * C.rgb;
