@@ -31,7 +31,7 @@ uniform float innerThickness;
 uniform float outerRefraction;
 uniform float outerReflection;
 
-uniform bool useEnvMask;
+uniform float useEnvMask;
 
 uniform mat4 worldMatrix;
 
@@ -131,15 +131,8 @@ void main( void )
 	
 
 	vec4 env = texture2D( EnvironmentMap, offset );
-	float envMask;
-	if ( useEnvMask ) {
-		envMask = env.r;
-	} else {
-		envMask = normalMap.a;
-	}
-
 	vec4 cube = textureCube( CubeMap, reflectedWS );
-	cube.rgb *= outerReflection * envMask;
+	cube.rgb *= outerReflection * mix( normalMap.a, env.r, useEnvMask );
 
 
 	vec4 color;
@@ -170,10 +163,7 @@ void main( void )
 	//	Mixed with outer map
 	vec3 emissive;
 	if ( hasEmit ) {
-		emissive += outer * glowColor * glowMult;
-		emissive *= outerMix;
-		
-		emissive += cube.rgb * glowColor * glowMult * (1.0 - outerMix);
+		emissive += albedo * glowColor * glowMult;
 	}
 
 	// Backlight

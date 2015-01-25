@@ -25,7 +25,7 @@ uniform bool hasRimlight;
 uniform float lightingEffect1;
 uniform float lightingEffect2;
 
-uniform bool useEnvMask;
+uniform float useEnvMask;
 uniform float envReflection;
 
 uniform mat4 worldMatrix;
@@ -84,15 +84,8 @@ void main( void )
 
 
 	vec4 env = texture2D( EnvironmentMap, offset );
-	float envMask;
-	if ( useEnvMask ) {
-		envMask = env.r;
-	} else {
-		envMask = normalMap.a;
-	}
-
 	vec4 cube = textureCube( CubeMap, reflectedWS );
-	cube.rgb *= envReflection * envMask;
+	cube.rgb *= envReflection * mix( normalMap.a, env.r, useEnvMask );
 
 
 	vec4 color;

@@ -778,7 +778,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				fn->glUniform1i( uniCubeMap, texunit++ );
 			}
 
-			uni1i( "useEnvMask", mesh->bslsp->useEnvironmentMask );
+			uni1f( "useEnvMask", mesh->bslsp->useEnvironmentMask );
 			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
 
 			if ( !uniSampler( "EnvironmentMap", 5, white ) )
