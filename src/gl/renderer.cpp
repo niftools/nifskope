@@ -684,6 +684,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		uni4m( "viewMatrix", mesh->viewTrans().toMatrix4() );
 		uni4m( "viewMatrixInverse", mesh->viewTrans().toMatrix4().inverted() );
 
+		uni4m( "localMatrix", mesh->localTrans().toMatrix4() );
+		uni4m( "localMatrixInverse", mesh->localTrans().toMatrix4().inverted() );
+
+		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
+		uni4m( "worldMatrixInverse", mesh->worldTrans().toMatrix4().inverted() );
+
 
 		// Rim & Soft params
 
