@@ -152,7 +152,7 @@ void main( void )
 
 	// Specular
 	vec3 spec = specColor * specStrength * normalMap.a * pow(NdotH, specGlossiness);
-	spec *= gl_LightSource[0].diffuse.rgb;
+	spec *= D.rgb;
 
 	// Emissive
 	//	Mixed with outer map
@@ -166,9 +166,9 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		backlight *= NdotNegL * D.rgb;
+		backlight *= NdotNegL;
 		
-		emissive += backlight;
+		emissive += backlight * D.rgb;
 	}
 
 	// TODO: Test rim and soft light mixing with inner/outer layer
@@ -192,9 +192,9 @@ void main( void )
 		float wrap = (dot(normal, L) + lightingEffect1) / (1.0 + lightingEffect1);
 
 		soft = max( wrap, 0.0 ) * mask.rgb * smoothstep( 1.0, 0.0, NdotL );
-		soft *= D.rgb * sqrt( clamp( lightingEffect1, 0.0, 1.0 ) );
+		soft *= sqrt( clamp( lightingEffect1, 0.0, 1.0 ) );
 		
-		emissive += soft;
+		emissive += soft * D.rgb;
 	}
 
 	color.rgb = albedo * (diffuse + emissive) + spec;
