@@ -113,8 +113,7 @@ void main( void )
 	
 	float NdotL = max( dot(normal, L), 0.0 );
 	float EdotN = max( dot(normal, E), 0.0 );
-	
-	float wrap = max( dot(normal, -L), 0.0 );
+	float NdotNegL = max( dot(normal, -L), 0.0 );
 	float facing = max( dot(-L, E), 0.0 );
 	
 	
@@ -171,7 +170,7 @@ void main( void )
 	vec3 backlight;
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
-		backlight *= wrap * D.rgb;
+		backlight *= NdotNegL * D.rgb;
 		
 		emissive += backlight;
 	}
@@ -194,13 +193,11 @@ void main( void )
 
 	vec3 soft;
 	if ( hasSoftlight ) {
-		soft = vec3((1.0 - wrap) * (1.0 - NdotL));
-		soft = smoothstep( -1.0, 1.0, soft );
+		float wrap = (dot(normal, L) + lightingEffect1) / (1.0 + lightingEffect1);
 
-		// TODO: Very approximate, kind of arbitrary. There is surely a more correct way.
-		soft *= mask.rgb * pow(soft, vec3(4.0/(lightingEffect1*lightingEffect1)));
-		soft *= D.rgb * A.rgb + (0.01 * lightingEffect1*lightingEffect1);
-
+		soft = max( wrap, 0.0 ) * mask.rgb * smoothstep( 1.0, 0.0, NdotL );
+		soft *= D.rgb * sqrt( clamp( lightingEffect1, 0.0, 1.0 ) );
+		
 		emissive += soft;
 	}
 
