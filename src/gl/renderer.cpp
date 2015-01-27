@@ -693,10 +693,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Rim & Soft params
 
-		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
+		uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
+		uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
 
-			uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
-			uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
+		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
 
 			if ( !uniSampler( "LightMask", 2, default_n ) )
 				return false;
@@ -704,9 +704,9 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Backlight params
 
-		if ( mesh->bslsp->hasBacklight ) {
+		uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
 
-			uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
+		if ( mesh->bslsp->hasBacklight ) {
 
 			if ( !uniSampler( "BacklightMap", 7, default_n ) )
 				return false;
@@ -739,9 +739,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( (vis & Scene::VisSilhouette) )
 			uni3f( "specColor", 0, 0, 0 );
 
-		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
 
-			uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
+		uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
+
+		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
 
 			if ( !uniSampler( "SpecularMap", 7, default_n ) )
 				return false;
@@ -750,8 +751,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		// Multi-Layer
 
 		if ( mesh->bslsp->hasMultiLayerParallax ) {
-
-			uni1i( "hasInnerMap", mesh->bslsp->hasMultiLayerParallax );
 
 			auto inS = mesh->bslsp->getInnerTextureScale();
 			uni2f( "innerScale", inS.x, inS.y );
