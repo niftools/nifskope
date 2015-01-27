@@ -78,7 +78,6 @@ void main( void )
 	float NdotH = max( dot(normal, H), 0.0 );
 	float EdotN = max( dot(normal, E), 0.0 );
 	float NdotNegL = max( dot(normal, -L), 0.0 );
-	float facing = max( dot(-L, E), 0.0 );
 
 	vec3 reflected = reflect( -E, normal );
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
@@ -122,11 +121,10 @@ void main( void )
 
 	vec3 rim;
 	if ( hasRimlight ) {
-		rim = vec3((1.0 - NdotL) * (1.0 - EdotN));
-		rim = mask.rgb * pow(rim, vec3(lightingEffect2)) * D.rgb * vec3(0.66);
-		rim *= smoothstep( -0.5, 1.0, facing );
+		rim = mask.rgb * pow(vec3((1.0 - EdotN)), vec3(lightingEffect2));
+		rim *= smoothstep( -0.2, 1.0, dot(-L, E) );
 		
-		emissive += rim;
+		emissive += rim * D.rgb;
 	}
 	
 	vec3 soft;
