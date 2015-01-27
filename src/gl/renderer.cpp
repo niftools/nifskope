@@ -731,7 +731,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		else
 			uni1f( "specStrength", 0 );
 
-		uni1f( "specGlossiness", mesh->bslsp->getSpecularGloss() );
+		// Assure specular power does not break the shaders
+		auto gloss = mesh->bslsp->getSpecularGloss();
+		if ( gloss <= 0.0 ) {
+			gloss = 1.0;
+		}
+
+		uni1f( "specGlossiness", gloss );
 		
 		auto spec = mesh->bslsp->getSpecularColor();
 		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
