@@ -78,8 +78,10 @@ void main( void )
 	vec3 L = normalize(LightDir);
 	vec3 E = normalize(ViewDir);
 	vec3 R = reflect(-L, normal);
-
+	vec3 H = normalize( L + E );
+	
 	float NdotL = max( dot(normal, L), 0.0 );
+	float NdotH = max( dot(normal, H), 0.0 );
 	float EdotN = max( dot(normal, E), 0.0 );
 	float NdotNegL = max( dot(normal, -L), 0.0 );
 	float facing = max( dot(-L, E), 0.0 );
@@ -97,18 +99,15 @@ void main( void )
 	}
 
 	// Specular
-	vec3 spec;
+	
 	float s = texture2D( SpecularMap, offset ).r;
-	if ( NdotL > 0.0 && specStrength > 0.0 ) {
-		float RdotE = max( dot(R, E), 0.0 );
-		if ( RdotE > 0.0 ) {
-			if ( !hasSpecularMap || hasBacklight ) {
-				s = normalMap.a;
-			}
-			spec = vec3(s * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness));
-			spec *= specColor;
-		}
+	if ( !hasSpecularMap || hasBacklight ) {
+		s = normalMap.a;
 	}
+	
+	vec3 spec = specColor * specStrength * s * pow(NdotH, specGlossiness);
+	spec *= gl_LightSource[0].diffuse.rgb;
+
 
 	vec3 backlight;
 	if ( hasBacklight ) {

@@ -110,8 +110,10 @@ void main( void )
 	vec3 L = normalize(LightDir);
 	vec3 E = normalize(ViewDir);
 	vec3 R = reflect(-L, normal);
+	vec3 H = normalize( L + E );
 	
 	float NdotL = max( dot(normal, L), 0.0 );
+	float NdotH = max( dot(normal, H), 0.0 );
 	float EdotN = max( dot(normal, E), 0.0 );
 	float NdotNegL = max( dot(normal, -L), 0.0 );
 	float facing = max( dot(-L, E), 0.0 );
@@ -149,14 +151,8 @@ void main( void )
 	albedo += cube.rgb;
 
 	// Specular
-	vec3 spec;
-	if ( NdotL > 0.0 && specStrength > 0.0 ) {
-		float RdotE = max( dot(R, E), 0.0 );
-		if ( RdotE > 0.0 ) {
-			spec = vec3(normalMap.a * gl_LightSource[0].specular.r * specStrength * pow(RdotE, 0.8*specGlossiness));
-			spec *= specColor;
-		}
-	}
+	vec3 spec = specColor * specStrength * normalMap.a * pow(NdotH, specGlossiness);
+	spec *= gl_LightSource[0].diffuse.rgb;
 
 	// Emissive
 	//	Mixed with outer map
