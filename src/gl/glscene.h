@@ -107,7 +107,8 @@ public:
 		DoBlending = 0x800,
 		DoMultisampling = 0x1000,
 		DoLighting = 0x2000,
-		DisableShaders = 0x4000
+		DoCubeMapping = 0x4000,
+		DisableShaders = 0x8000
 	};
 	Q_DECLARE_FLAGS( SceneOptions, SceneOption );
 

@@ -169,7 +169,8 @@ void NifSkope::initActions()
 		DoBlending = 0x800,   // Not implemented
 		DoMultisampling = 0x1000, // Not implemented
 		DoLighting = 0x2000,
-		DisableShaders = 0x4000
+		DoCubeMapping = 0x4000,
+		DisableShaders = 0x8000
 	*/
 
 	ui->aShowAxes->setData( Scene::ShowAxes );
@@ -182,6 +183,7 @@ void NifSkope::initActions()
 	ui->aVertexColors->setData( Scene::DoVertexColors );
 	ui->aSpecular->setData( Scene::DoSpecular );
 	ui->aGlow->setData( Scene::DoGlow );
+	ui->aCubeMapping->setData( Scene::DoCubeMapping );
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
 
@@ -199,7 +201,7 @@ void NifSkope::initActions()
 	showActions = agroup( { ui->aShowAxes, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers }, false );
 	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
-	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aLighting, ui->aDisableShading }, false );
+	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );
 	connect( shadingActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	// Setup blank QActions for Recent Files menus

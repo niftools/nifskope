@@ -364,7 +364,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </widget>
    <widget class="QMenu" name="mRender">
     <property name="title">
-     <string>&amp;Render</string>
+     <string>Render</string>
     </property>
     <addaction name="aViewTop"/>
     <addaction name="aViewFront"/>
@@ -384,6 +384,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="aVertexColors"/>
     <addaction name="aSpecular"/>
     <addaction name="aGlow"/>
+    <addaction name="aCubeMapping"/>
     <addaction name="separator"/>
     <addaction name="aVisNormals"/>
     <addaction name="aSilhouette"/>
@@ -1739,6 +1740,27 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="text">
     <string>Header</string>
+   </property>
+  </action>
+  <action name="aCubeMapping">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/cubemap</normaloff>:/btn/cubemap</iconset>
+   </property>
+   <property name="text">
+    <string>Cube Mapping</string>
+   </property>
+   <property name="toolTip">
+    <string>Cube Mapping</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+R</string>
    </property>
   </action>
  </widget>

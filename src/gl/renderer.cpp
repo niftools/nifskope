@@ -770,7 +770,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				return false;
 		}
 
-		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap && (opts & Scene::DoLighting) ) {
+		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) ) {
 
 			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
 			if ( uniCubeMap >= 0 ) {
