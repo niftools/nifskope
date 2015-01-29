@@ -577,21 +577,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			fn->glUniform1i( uniGlowMap, texunit++ );
 		}
-	} else {
-		// BSEffectShader textures
-		if ( mesh->bsesp->hasGreyscaleMap ) {
-			GLint uniGreyscaleMap = fn->glGetUniformLocation( prog->id, "GreyscaleMap" );
-			if ( uniGreyscaleMap >= 0 ) {
-
-				if ( !activateTextureUnit( texunit ) )
-					return false;
-
-				if ( bsprop && !bsprop->bind( 1 ) )
-					return false;
-
-				fn->glUniform1i( uniGreyscaleMap, texunit++ );
-			}
-		}
 	}
 
 	// Sets a float
@@ -733,18 +718,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Assure specular power does not break the shaders
 		auto gloss = mesh->bslsp->getSpecularGloss();
-		if ( gloss <= 0.0 ) {
-			gloss = 1.0;
-		}
-
-		uni1f( "specGlossiness", gloss );
+		uni1f( "specGlossiness", (gloss > 0.0) ? gloss : 1.0 );
 		
 		auto spec = mesh->bslsp->getSpecularColor();
 		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
-
-		if ( (vis & Scene::VisSilhouette) )
-			uni3f( "specColor", 0, 0, 0 );
-
 
 		uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
 
@@ -841,6 +818,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		);
 
 		uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
+
+		// BSEffectShader textures
+		if ( mesh->bsesp->hasGreyscaleMap ) {
+			if ( !uniSampler( "GreyscaleMap", 1, "" ) )
+				return false;
+		}
 	}
 
 	// Defaults for uniforms in older meshes
