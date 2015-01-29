@@ -12,12 +12,7 @@ checkgroup begin or
 	# Skyrim
 	checkgroup begin and
 		check BSLightingShaderProperty
-		check BSLightingShaderProperty/Skyrim Shader Type != 1
-		check BSLightingShaderProperty/Skyrim Shader Type != 2
-		check BSLightingShaderProperty/Skyrim Shader Type != 3
-		check BSLightingShaderProperty/Skyrim Shader Type != 11
-		check BSLightingShaderProperty/Skyrim Shader Type != 16
-		#check NiTriBasedGeomData/Has Vertex Colors == 1
+		check BSLightingShaderProperty/Skyrim Shader Type == 3
 		check NiTriBasedGeomData/Has Normals == 1
 	checkgroup end
 checkgroup end
@@ -26,4 +21,4 @@ texcoords 0 base
 texcoords 1 tangents
 texcoords 2 bitangents
 
-shaders sk_default.vert sk_default.frag
+shaders sk_default.vert sk_parallax.frag

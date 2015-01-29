@@ -794,6 +794,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			//	removes reflections.
 			uni1f( "envReflection", 0 );
 		}
+
+		// Parallax
+
+		if ( mesh->bslsp->hasHeightMap ) {
+			if ( !uniSampler( "HeightMap", 3, "shaders/gray.dds" ) )
+				return false;
+		}
 	}
 
 

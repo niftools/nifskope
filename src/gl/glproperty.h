@@ -609,6 +609,7 @@ public:
 	bool hasCubeMap;
 	bool hasEnvironmentMap;
 	bool useEnvironmentMask;
+	bool hasHeightMap;
 
 	ShaderFlags::ShaderType getShaderType();
 

@@ -196,6 +196,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 				bslsp->useEnvironmentMask = bslsp->hasEnvironmentMap && !textures.value( 5, "" ).isEmpty();
 
+				bslsp->hasHeightMap = isST( ShaderFlags::ST_Heightmap );
+				bslsp->hasHeightMap |= hasSF1( ShaderFlags::SLSF1_Parallax ) && !textures.value( 3, "" ).isEmpty();
+
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
