@@ -714,7 +714,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Glow params
 
-		if ( opts & Scene::DoGlow && mesh->bslsp->hasEmittance )
+		if ( (opts & Scene::DoGlow) && (opts & Scene::DoLighting) && mesh->bslsp->hasEmittance )
 			uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
 		else
 			uni1f( "glowMult", 0 );
@@ -726,7 +726,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// Specular params
 
-		if ( (opts & Scene::DoSpecular) && !(opts & Scene::DisableShaders) )
+		if ( (opts & Scene::DoSpecular) && (opts & Scene::DoLighting) )
 			uni1f( "specStrength", mesh->bslsp->getSpecularStrength() );
 		else
 			uni1f( "specStrength", 0 );
@@ -770,7 +770,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				return false;
 		}
 
-		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap ) {
+		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap && (opts & Scene::DoLighting) ) {
 
 			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
 			if ( uniCubeMap >= 0 ) {
