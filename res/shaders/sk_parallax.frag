@@ -55,7 +55,7 @@ void main( void )
 	
 	vec3 E = normalize(ViewDir);
 	
-	float height = texture2D( HeightMap, offset );
+	float height = texture2D( HeightMap, offset ).r;
 	offset += E.xy * (height * 0.08 - 0.04); 
 
 	vec4 baseMap = texture2D( BaseMap, offset );
