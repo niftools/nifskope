@@ -22,6 +22,8 @@ uniform bool hasEmit;
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
+uniform bool hasCubeMap;
+uniform bool hasEnvMask;
 
 uniform float lightingEffect1;
 uniform float lightingEffect2;
@@ -30,8 +32,6 @@ uniform vec2 innerScale;
 uniform float innerThickness;
 uniform float outerRefraction;
 uniform float outerReflection;
-
-uniform float useEnvMask;
 
 uniform mat4 worldMatrix;
 
@@ -128,11 +128,6 @@ void main( void )
 	vec3 reflected = reflect( -E, normal );
 	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
-	
-
-	vec4 env = texture2D( EnvironmentMap, offset );
-	vec4 cube = textureCube( CubeMap, reflectedWS );
-	cube.rgb *= outerReflection * mix( normalMap.a, env.r, useEnvMask );
 
 
 	vec4 color;
@@ -145,9 +140,22 @@ void main( void )
 	// Mix inner/outer layer based on fresnel
 	float outerMix = max( 1.0 - EdotN, baseMap.a );
 	albedo = mix( inner, outer, outerMix );
-	
+
+
 	// Environment
-	albedo += cube.rgb;
+	if ( hasCubeMap ) {
+		vec4 cube = textureCube( CubeMap, reflectedWS );
+		cube.rgb *= outerReflection;
+		
+		if ( hasEnvMask ) {
+			vec4 env = texture2D( EnvironmentMap, offset );
+			cube.rgb *= env.r;
+		} else {
+			cube.rgb *= normalMap.a;
+		}
+
+		albedo += cube.rgb;
+	}
 
 	// Specular
 	vec3 spec = specColor * specStrength * normalMap.a * pow(NdotH, specGlossiness);

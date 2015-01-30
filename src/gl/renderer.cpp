@@ -747,7 +747,19 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 				return false;
 		}
 
+		// Environment Mapping
+
+		uni1i( "hasCubeMap", mesh->bslsp->hasCubeMap );
+		uni1i( "hasEnvMask", mesh->bslsp->useEnvironmentMask );
+
 		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) ) {
+
+			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
+
+			if ( mesh->bslsp->useEnvironmentMask ) {
+				if ( !uniSampler( "EnvironmentMap", 5, white ) )
+					return false;
+			}
 
 			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
 			if ( uniCubeMap >= 0 ) {
@@ -759,12 +771,6 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 				fn->glUniform1i( uniCubeMap, texunit++ );
 			}
-
-			uni1f( "useEnvMask", mesh->bslsp->useEnvironmentMask );
-			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
-
-			if ( !uniSampler( "EnvironmentMap", 5, white ) )
-				return false;
 		} else {
 			// In the case that the cube texture has already been bound,
 			//	but SLSF1_Environment_Mapping is not set, assure that it 
