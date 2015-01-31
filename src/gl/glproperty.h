@@ -480,6 +480,15 @@ namespace ShaderFlags
 	};
 }
 
+enum TexClampMode : unsigned int
+{
+	CLAMP_S_CLAMP_T	= 0,
+	CLAMP_S_WRAP_T	= 1,
+	WRAP_S_CLAMP_T	= 2,
+	WRAP_S_WRAP_T 	= 3,
+	MIRRORED_S_MIRRORED_T = 0xFF00
+};
+
 
 struct UVScale
 {
@@ -507,7 +516,7 @@ public:
 
 	friend void glProperty( BSShaderLightingProperty * );
 
-	bool bind( int id, const QString & fname = QString() );
+	bool bind( int id, const QString & fname = QString(), TexClampMode mode = TexClampMode::WRAP_S_WRAP_T );
 	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
 	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
 
@@ -532,6 +541,10 @@ public:
 	void setUvScale( float, float );
 	void setUvOffset( float, float );
 
+	TexClampMode getClampMode() const;
+
+	void setClampMode( uint mode );
+
 protected:
 	ShaderFlags::SF1 flags1;
 	ShaderFlags::SF2 flags2;
@@ -543,6 +556,7 @@ protected:
 	UVScale uvScale;
 	UVOffset uvOffset;
 
+	TexClampMode clampMode;
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )

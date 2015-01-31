@@ -212,6 +212,10 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->setUvScale( uvScale[0], uvScale[1] );
 				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
 
+				auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+
+				bslsp->setClampMode( clampMode );
+
 				float envReflection;
 				if ( isST( ShaderFlags::ST_EnvironmentMap ) ) {
 					envReflection = nif->get<float>( iProp, "Environment Map Scale" );
@@ -281,6 +285,10 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 					bsesp->setUvScale( uvScale[0], uvScale[1] );
 					bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
+
+					auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+
+					bsesp->setClampMode( clampMode );
 
 					auto startA = nif->get<float>( iProp, "Falloff Start Angle" );
 					auto stopA = nif->get<float>( iProp, "Falloff Stop Angle" );

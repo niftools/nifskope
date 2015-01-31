@@ -828,7 +828,7 @@ void glProperty( BSShaderLightingProperty * p )
 	}
 }
 
-bool BSShaderLightingProperty::bind( int id, const QString & fname )
+bool BSShaderLightingProperty::bind( int id, const QString & fname, TexClampMode mode )
 {
 	GLuint mipmaps = 0;
 
@@ -840,8 +840,32 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname )
 	if ( mipmaps == 0 )
 		return false;
 
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+
+	switch ( mode )
+	{
+	case TexClampMode::CLAMP_S_CLAMP_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+		break;
+	case TexClampMode::CLAMP_S_WRAP_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+		break;
+	case TexClampMode::WRAP_S_CLAMP_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+		break;
+	case TexClampMode::MIRRORED_S_MIRRORED_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT );
+		break;
+	case TexClampMode::WRAP_S_WRAP_T:
+	default:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+		break;
+	}
+
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
@@ -976,6 +1000,16 @@ void BSShaderLightingProperty::setUvOffset( float x, float y )
 {
 	uvOffset.x = x;
 	uvOffset.y = y;
+}
+
+TexClampMode BSShaderLightingProperty::getClampMode() const
+{
+	return clampMode;
+}
+
+void BSShaderLightingProperty::setClampMode( uint mode )
+{
+	clampMode = TexClampMode( mode );
 }
 
 /*

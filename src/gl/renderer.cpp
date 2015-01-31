@@ -495,6 +495,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	// TODO: BSLSP has been split off from BSShaderLightingProperty so it needs
 	//	to be accessible from here
 
+	TexClampMode clamp = TexClampMode::WRAP_S_WRAP_T;
+
+	if ( mesh->bslsp ) {
+		clamp = mesh->bslsp->getClampMode();
+	}
+
+
 	int texunit = 0;
 
 	//GLint baseWidth, baseHeight;
@@ -508,7 +515,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( !activateTextureUnit( texunit ) )
 			return false;
 
-		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0, diff )) )
+		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0, diff, clamp )) )
 			return false;
 
 		//glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&baseWidth );
@@ -517,67 +524,65 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		fn->glUniform1i( uniBaseMap, texunit++ );
 	}
 
-	if ( !mesh->bsesp ) {
+	GLint uniNormalMap = fn->glGetUniformLocation( prog->id, "NormalMap" );
 
-		GLint uniNormalMap = fn->glGetUniformLocation( prog->id, "NormalMap" );
+	if ( uniNormalMap >= 0 ) {
+		if ( texprop ) {
+			QString fname = texprop->fileName( 0 );
 
-		if ( uniNormalMap >= 0 ) {
-			if ( texprop ) {
-				QString fname = texprop->fileName( 0 );
+			if ( fname.isEmpty() )
+				return false;
 
-				if ( fname.isEmpty() )
-					return false;
+			int pos = fname.indexOf( "_" );
 
-				int pos = fname.indexOf( "_" );
+			if ( pos >= 0 )
+				fname = fname.left( pos ) + "_n.dds";
+			else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
+				fname = fname.insert( pos, "_n" );
 
-				if ( pos >= 0 )
-					fname = fname.left( pos ) + "_n.dds";
-				else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
-					fname = fname.insert( pos, "_n" );
+			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
+				return false;
+		} else if ( bsprop ) {
+			QString fname = bsprop->fileName( 1 );
 
-				if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
-					return false;
-			} else if ( bsprop ) {
-				QString fname = bsprop->fileName( 1 );
+			if ( !(opts & Scene::DoLighting) )
+				fname = "shaders/default_n.dds";
 
-				if ( !(opts & Scene::DoLighting) )
-					fname = "shaders/default_n.dds";
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
-					return false;
-			}
-
-			fn->glUniform1i( uniNormalMap, texunit++ );
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname, clamp )) )
+				return false;
 		}
 
-		GLint uniGlowMap = fn->glGetUniformLocation( prog->id, "GlowMap" );
-
-		if ( uniGlowMap >= 0 ) {
-			if ( texprop ) {
-				QString fname = texprop->fileName( 0 );
-
-				if ( fname.isEmpty() )
-					return false;
-
-				int pos = fname.indexOf( "_" );
-
-				if ( pos >= 0 )
-					fname = fname.left( pos ) + "_g.dds";
-				else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
-					fname = fname.insert( pos, "_g" );
-
-				if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
-					return false;
-			} else if ( bsprop ) {
-				QString fname = bsprop->fileName( 2 );
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
-					return false;
-			}
-
-			fn->glUniform1i( uniGlowMap, texunit++ );
-		}
+		fn->glUniform1i( uniNormalMap, texunit++ );
 	}
+
+	GLint uniGlowMap = fn->glGetUniformLocation( prog->id, "GlowMap" );
+
+	if ( uniGlowMap >= 0 ) {
+		if ( texprop ) {
+			QString fname = texprop->fileName( 0 );
+
+			if ( fname.isEmpty() )
+				return false;
+
+			int pos = fname.indexOf( "_" );
+
+			if ( pos >= 0 )
+				fname = fname.left( pos ) + "_g.dds";
+			else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
+				fname = fname.insert( pos, "_g" );
+
+			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
+				return false;
+		} else if ( bsprop ) {
+			QString fname = bsprop->fileName( 2 );
+
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname, clamp )) )
+				return false;
+		}
+
+		fn->glUniform1i( uniGlowMap, texunit++ );
+	}
+
 
 	// Sets a float
 	auto uni1f = [this, prog, mesh]( const char * var, float x ) {
@@ -631,7 +636,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	};
 
 	// Sets a sampler2D (texture sampler)
-	auto uniSampler = [this, prog, bsprop, &texunit]( const char * var, int textureSlot, QString alternate ) {
+	auto uniSampler = [this, prog, bsprop, &texunit]( const char * var, int textureSlot, QString alternate, TexClampMode clamp ) {
 		GLint uniSamp = fn->glGetUniformLocation( prog->id, var );
 		if ( uniSamp >= 0 ) {
 
@@ -639,7 +644,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			if ( fname.isEmpty() )
 				fname = alternate;
 
-			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( textureSlot, fname )) )
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( textureSlot, fname, clamp )) )
 				return false;
 
 			fn->glUniform1i( uniSamp, texunit++ );
@@ -683,7 +688,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
 
-			if ( !uniSampler( "LightMask", 2, default_n ) )
+			if ( !uniSampler( "LightMask", 2, default_n, clamp ) )
 				return false;
 		}
 
@@ -693,7 +698,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		if ( mesh->bslsp->hasBacklight ) {
 
-			if ( !uniSampler( "BacklightMap", 7, default_n ) )
+			if ( !uniSampler( "BacklightMap", 7, default_n, clamp ) )
 				return false;
 		}
 
@@ -727,7 +732,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
 
-			if ( !uniSampler( "SpecularMap", 7, default_n ) )
+			if ( !uniSampler( "SpecularMap", 7, default_n, clamp ) )
 				return false;
 		}
 
@@ -743,7 +748,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			uni1f( "outerRefraction", mesh->bslsp->getOuterRefractionStrength() );
 			uni1f( "outerReflection", mesh->bslsp->getOuterReflectionStrength() );
 
-			if ( !uniSampler( "InnerMap", 6, default_n ) )
+			if ( !uniSampler( "InnerMap", 6, default_n, clamp ) )
 				return false;
 		}
 
@@ -757,7 +762,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
 
 			if ( mesh->bslsp->useEnvironmentMask ) {
-				if ( !uniSampler( "EnvironmentMap", 5, white ) )
+				if ( !uniSampler( "EnvironmentMap", 5, white, clamp ) )
 					return false;
 			}
 
@@ -781,7 +786,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		// Parallax
 
 		if ( mesh->bslsp->hasHeightMap ) {
-			if ( !uniSampler( "HeightMap", 3, "shaders/gray.dds" ) )
+			if ( !uniSampler( "HeightMap", 3, "shaders/gray.dds", clamp ) )
 				return false;
 		}
 	}
@@ -789,6 +794,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	// BSEffectShaderProperty
 	if ( mesh->bsesp ) {
+
+		clamp = mesh->bsesp->getClampMode();
+		clamp = TexClampMode(clamp ^ TexClampMode::MIRRORED_S_MIRRORED_T);
+
+		if ( !uniSampler( "SourceTexture", 0, black, clamp ) )
+			return false;
+
 		uni1i( "doubleSided", mesh->bsesp->doubleSided );
 
 		auto uvS = mesh->bsesp->getUvScale();
@@ -827,7 +839,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		// BSEffectShader textures
 		if ( mesh->bsesp->hasGreyscaleMap ) {
-			if ( !uniSampler( "GreyscaleMap", 1, "" ) )
+			if ( !uniSampler( "GreyscaleMap", 1, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
 				return false;
 		}
 	}
