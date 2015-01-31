@@ -905,6 +905,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	glProperty( props.get<AlphaProperty>() );
 
+	// BSESP does not always need an NiAlphaProperty, and appears to override it at times
+	if ( mesh->bsesp && mesh->bsesp->getEmissiveColor().alpha() < 1.0 ) {
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	}
+
 	// setup vertex colors
 
 	//glProperty( props.get< VertexColorProperty >(), glIsEnabled( GL_COLOR_ARRAY ) );

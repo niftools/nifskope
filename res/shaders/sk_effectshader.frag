@@ -1,6 +1,6 @@
 #version 120
 
-uniform sampler2D BaseMap;
+uniform sampler2D SourceTexture;
 uniform sampler2D GreyscaleMap;
 
 uniform bool doubleSided;
@@ -26,122 +26,65 @@ uniform float falloffDepth;
 varying vec3 LightDir;
 varying vec3 ViewDir;
 
-//varying vec4 ColorEA;
-varying vec4 ColorD;
+varying vec4 C;
 
 varying vec3 N;
 varying vec3 v;
 
 vec4 colorLookup( float x, float y ) {
 	
-	return texture2D( GreyscaleMap, vec2( clamp(x, 0.01, 0.99), clamp(y, 0.01, 0.99)) );
+	return texture2D( GreyscaleMap, vec2( clamp(x, 0.0, 1.0), clamp(y, 0.0, 1.0)) );
 }
 
 void main( void )
 {
+	vec4 baseMap = texture2D( SourceTexture, gl_TexCoord[0].st * uvScale + uvOffset );
+	
 	vec4 color;
-	vec4 emissiveColor = glowColor;
-	float emissiveMult = glowMult;
-	
-	float alphaMult = emissiveColor.a * emissiveColor.a;
-	
+
 	vec3 normal = N;
-	//vec3 normal = normalize(cross(dFdy(v.xyz), dFdx(v.xyz)));
+	
+	// Reconstructed normal
+	//normal = normalize(cross(dFdy(v.xyz), dFdx(v.xyz)));
 	
 	//if ( !doubleSided && !gl_FrontFacing ) { return; }
 	
-	//vec3 L = normalize(LightDir);
 	vec3 E = normalize(ViewDir);
-	//vec3 R = reflect(-E, normal);
-	//vec3 H = normalize( L + E );
-	//float RdotE = abs(smoothstep(-1.0, 1.0, dot(R, E)));
-	
-	
+
 	float tmp2 = falloffDepth; // Unused right now
 	
 	// Falloff
 	float falloff = 1.0;
 	if ( useFalloff ) {
-		//falloff = smoothstep( clamp(falloffParams.y * 2.0, 0.0, 2.0), clamp(falloffParams.x * 2.0, 0.0, 2.0), vec3(abs(E.b)));
+		float startO = min(falloffParams.z, 1.0);
+		float stopO = max(falloffParams.w, 0.0);
 		
-		falloff = falloffParams.x;
-		
-		//if ( abs(E.b) < 0.5 ) 
-		//	color.a = 0.0;
-	
-		float startO = min(falloffParams.z, 0.99);
-		float stopO = max(falloffParams.w, 0.01);
-		
+		// TODO: When X and Y are both 0.0 or both 1.0 the effect is reversed.
+		falloff = smoothstep( falloffParams.y, falloffParams.x, abs(E.b));
 
-		if ( falloffParams.x < falloffParams.y ) {
-			falloff = smoothstep( falloffParams.y, falloffParams.x, abs(E.b));
-		} else if ( falloffParams.x > falloffParams.y ) {
-			falloff = smoothstep( falloffParams.y, falloffParams.x, abs(E.b));
-		}
-
-		//falloff = mix( falloffParams.y, falloffParams.x, abs(E.b));
-
-		falloff = mix( max(falloffParams.w, 0.01), min(falloffParams.z, 0.99), falloff );
+		falloff = mix( max(falloffParams.w, 0.0), min(falloffParams.z, 1.0), falloff );
 	}
 	
-	vec4 baseMap;
-	//if ( hasSourceTexture ) {
-		baseMap = texture2D( BaseMap, gl_TexCoord[0].st * uvScale + uvOffset );
+	float alphaMult = glowColor.a * glowColor.a;
+	
+	color.rgb = baseMap.rgb * C.rgb * glowColor.rgb;
+	color.a = baseMap.a * C.a * falloff * alphaMult;
 
-		// This is better for some 
-		color.rgb = clamp(baseMap.rgb, 0.00, 1.0) * ColorD.rgb * emissiveColor.rgb;
-		color.a = ColorD.a * baseMap.a * alphaMult;
-		color.a *= falloff;
-		color = clamp( color, 0.00, 1.0 );
-		
-		// This is better for others
-		color.rgb = clamp(baseMap.rgb, 0.00, 1.0) * ColorD.rgb * emissiveColor.rgb;
-		color.a = min( ColorD.a, baseMap.a );
-		//color *= emissiveColor;
-		color.a *= falloff * alphaMult;
-		color = clamp( color, 0.01, 1.0 );
-
-	//}
-	
-	vec4 red, green, blue, alpha;
-	
-	
-
-	
 	if ( greyscaleColor ) {
-	
-		if ( greyscaleAlpha ) {
-		
-			// "alphaMult" does not seem to be needed in x component
-			// Removing "alphaMult" from y component gives proper but too bright falloff on alterposprojectile's glass cubes
-			
-			alpha = colorLookup( min( ColorD.a, baseMap.a ), max( ColorD.a, baseMap.a ) * alphaMult * falloff );
+		// Only Red emissive channel is used
+		float emRGB = glowColor.r;
 
-			color.a = alpha.a;
-		}
-		
-		vec4 luA = colorLookup( color.a + baseMap.a, emissiveColor.a + baseMap.a);
-		
-		// Rest unused? Only R seems to affect anything
-		float emRGB = emissiveColor.r; //( emissiveColor.r + emissiveColor.g + emissiveColor.b ) * 0.33333;
-		
-		
-		// Unknown if y- lookup needs "* falloff"
-		//vec4 luR = colorLookup( baseMap.r, ColorD.r * emissiveColor.r );
-		vec4 luG = colorLookup( baseMap.g, ColorD.g * falloff * emRGB  );
-		//vec4 luB = colorLookup( baseMap.b, ColorD.b * emissiveColor.b );
-		
-		
+		vec4 luG = colorLookup( baseMap.g, C.g * falloff * emRGB );
+
 		color.rgb = luG.rgb;
+	}
+	
+	if ( greyscaleAlpha ) {
+		vec4 luA = colorLookup( baseMap.a, C.a * falloff * alphaMult );
 		
-		float ugh = 0.0;
-		if ( vertexAlpha && gl_FrontFacing )
-			ugh = luA.a;
-
-		color.a *= max( ugh, max( luG.a, ColorD.a ));
+		color.a = luA.a;
 	}
 
-	gl_FragColor.rgb = color.rgb * emissiveMult;
+	gl_FragColor.rgb = color.rgb * glowMult;
 	gl_FragColor.a = color.a;
-
 }
