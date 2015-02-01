@@ -624,6 +624,8 @@ public:
 	bool hasEnvironmentMap;
 	bool useEnvironmentMask;
 	bool hasHeightMap;
+	bool hasRefraction;
+	bool hasFireRefraction;
 
 	ShaderFlags::ShaderType getShaderType();
 

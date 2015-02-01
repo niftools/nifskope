@@ -199,6 +199,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasHeightMap = isST( ShaderFlags::ST_Heightmap );
 				bslsp->hasHeightMap |= hasSF1( ShaderFlags::SLSF1_Parallax ) && !textures.value( 3, "" ).isEmpty();
 
+				bslsp->hasRefraction = hasSF1( ShaderFlags::SLSF1_Refraction );
+				bslsp->hasFireRefraction = hasSF1( ShaderFlags::SLSF1_Fire_Refraction );
+
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
 				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
@@ -967,6 +970,8 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		draw2nd->add( this );
 		return;
 	}
+
+	// TODO: Option to hide Refraction and other post effects
 
 	// rigid mesh? then pass the transformation on to the gl layer
 

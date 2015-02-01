@@ -911,6 +911,11 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	}
 
+	if ( mesh->bslsp && mesh->bslsp->hasRefraction ) {
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	}
+
 	// setup vertex colors
 
 	//glProperty( props.get< VertexColorProperty >(), glIsEnabled( GL_COLOR_ARRAY ) );
