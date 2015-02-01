@@ -267,6 +267,15 @@ public:
 		Vector3 w( *this );
 		return w += v;
 	}
+
+	Vector3 & operator+( float s )
+	{
+		xyz[0] += s;
+		xyz[1] += s;
+		xyz[2] += s;
+		return *this;
+	}
+
 	//! Minus operator
 	Vector3 operator-( Vector3 v ) const
 	{
@@ -1178,6 +1187,15 @@ public:
 		return ( c += o );
 	}
 
+	Color3 operator+( float x ) const
+	{
+		Color3 c( *this );
+		c.rgb[0] += x;
+		c.rgb[1] += x;
+		c.rgb[2] += x;
+		return c;
+	}
+
 	//! Minus operator
 	Color3 operator-( const Color3 & o ) const
 	{
@@ -1297,6 +1315,16 @@ public:
 		return ( c += o );
 	}
 
+	Color4 operator+(float x) const
+	{
+		Color4 c( *this );
+		c.rgba[0] += x;
+		c.rgba[1] += x;
+		c.rgba[2] += x;
+		c.rgba[3] += x;
+		return c;
+	}
+
 	//! Minus operator
 	Color4 operator-( const Color4 & o ) const
 	{
@@ -1372,6 +1400,18 @@ inline Color3::Color3( const Color4 & c4 )
 	rgb[0] = c4[0];
 	rgb[1] = c4[1];
 	rgb[2] = c4[2];
+}
+
+inline QDebug & operator<<( QDebug dbg, Color3 c )
+{
+	dbg.nospace() << "(" << c[0] << ", " << c[1] << ", " << c[2] << ")";
+	return dbg.space();
+}
+
+inline QDebug & operator<<( QDebug dbg, Color4 c )
+{
+	dbg.nospace() << "(" << c[0] << ", " << c[1] << ", " << c[2] << ", " << c[3] << ")";
+	return dbg.space();
 }
 
 //! A stream operator for reading in a Color4
