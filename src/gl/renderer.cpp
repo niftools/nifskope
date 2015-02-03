@@ -982,6 +982,14 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 
 	glProperty( props.get<ZBufferProperty>() );
 
+	if ( !mesh->depthTest ) {
+		glDisable( GL_DEPTH_TEST );
+	}
+
+	if ( !mesh->depthWrite ) {
+		glDepthMask( GL_FALSE );
+	}
+
 	// setup stencil
 
 	glProperty( props.get<StencilProperty>() );
