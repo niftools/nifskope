@@ -108,6 +108,9 @@ protected:
 	//! Is "Has Vertex Colors" set to Yes
 	bool hasVertexColors;
 
+	bool depthTest = true;
+	bool depthWrite = true;
+
 	//! Vertices
 	QVector<Vector3> verts;
 	//! Normals

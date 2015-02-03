@@ -154,6 +154,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 				bslsp->setAlpha( nif->get<float>( iProp, "Alpha" ) );
 
+				depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+				depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+
 				// Specular
 				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
 					auto spC = nif->get<Color3>( iProp, "Specular Color" );
@@ -268,6 +271,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 					bsesp->setFlags1( sf1 );
 					bsesp->setFlags2( sf2 );
+
+					depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+					depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
 
 					auto emC = nif->get<Color4>( iProp, "Emissive Color" );
 					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
@@ -1032,9 +1038,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		shader = scene->renderer->setupProgram( this, shader );
 
 	if ( isDoubleSided ) {
-		if ( bsesp ) // TODO: reintroduce sorting if need be
-			glDepthMask( GL_FALSE );
-
 		glDisable( GL_CULL_FACE );
 	}
 
