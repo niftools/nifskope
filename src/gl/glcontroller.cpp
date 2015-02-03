@@ -328,6 +328,21 @@ bool Controller::timeIndex( float time, const NifModel * nif, const QModelIndex 
 
 			x = ( time - tI ) / ( tJ - tI );
 
+			// Quadratic Bug Fix
+
+			// Invert x
+			//	Previously, this branch was causing x to decrement from 1.0.
+			//	(This works fine for linear interpolation apparently)
+			x = 1.0 - x;
+			
+			// Swap I and J
+			//	With x inverted, we must swap I and J or the animation will reverse.
+			auto tmpI = i;
+			i = j;
+			j = tmpI;
+
+			// End Bug Fix
+
 			return true;
 		}
 
