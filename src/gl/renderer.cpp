@@ -665,6 +665,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		uni1f( "lightingEffect1", mesh->bslsp->getLightingEffect1() );
 		uni1f( "lightingEffect2", mesh->bslsp->getLightingEffect2() );
 
+		uni1f( "alpha", mesh->bslsp->getAlpha() );
+
 		auto uvS = mesh->bslsp->getUvScale();
 		uni2f( "uvScale", uvS.x, uvS.y );
 

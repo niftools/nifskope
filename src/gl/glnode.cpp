@@ -192,6 +192,22 @@ Controller * Node::findController( const QString & proptype, const QString & ctr
 	return IControllable::findController( ctrltype, var1, var2 );
 }
 
+Controller * Node::findController( const QString & proptype, const QModelIndex & index )
+{
+	Controller * c = nullptr;
+
+	for ( Property * prp : properties.list() ) {
+		if ( prp->typeId() == proptype ) {
+			if ( c )
+				break;
+
+			c = prp->findController( index );
+		}
+	}
+
+	return c;
+}
+
 void Node::update( const NifModel * nif, const QModelIndex & index )
 {
 	IControllable::update( nif, index );

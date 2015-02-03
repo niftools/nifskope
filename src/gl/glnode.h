@@ -138,6 +138,8 @@ public:
 
 	Controller * findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 );
 
+	Controller * findController( const QString & proptype, const QModelIndex & index );
+
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 

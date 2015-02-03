@@ -152,6 +152,8 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->setFlags1( sf1 );
 				bslsp->setFlags2( sf2 );
 
+				bslsp->setAlpha( nif->get<float>( iProp, "Alpha" ) );
+
 				// Specular
 				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
 					auto spC = nif->get<Color3>( iProp, "Specular Color" );

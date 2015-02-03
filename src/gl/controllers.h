@@ -126,8 +126,6 @@ public:
 protected:
 	QPointer<Node> target;
 
-	//QPersistentModelIndex iKeys;
-
 	int visLast;
 };
 
@@ -244,9 +242,12 @@ public:
 };
 
 
+class AlphaProperty;
 class MaterialProperty;
 class TexturingProperty;
 class TextureProperty;
+class BSEffectShaderProperty;
+class BSLightingShaderProperty;
 
 //! Controller for alpha values in a MaterialProperty
 class AlphaController final : public Controller
@@ -254,10 +255,13 @@ class AlphaController final : public Controller
 public:
 	AlphaController( MaterialProperty * prop, const QModelIndex & index );
 
+	AlphaController( AlphaProperty * prop, const QModelIndex & index );
+
 	void updateTime( float time ) override final;
 
 protected:
-	QPointer<MaterialProperty> target;
+	QPointer<MaterialProperty> materialProp;
+	QPointer<AlphaProperty> alphaProp;
 
 	int lAlpha;
 };
@@ -332,6 +336,108 @@ protected:
 	int texOP;
 
 	int lX;
+};
+
+namespace EffectFloat
+{
+	enum Variable
+	{
+		Emissive_Multiple = 0,
+		Falloff_Start_Angle = 1,
+		Falloff_Stop_Angle = 2,
+		Falloff_Start_Opacity = 3,
+		Falloff_Stop_Opacity = 4,
+		Alpha = 5,
+		U_Offset = 6,
+		U_Scale = 7,
+		V_Offset = 8,
+		V_Scale = 9
+	};
+}
+
+
+//! Controller for float values in a BSEffectShaderProperty
+class EffectFloatController final : public Controller
+{
+public:
+	EffectFloatController( BSEffectShaderProperty * prop, const QModelIndex & index );
+
+	void updateTime( float time ) override final;
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+protected:
+	QPointer<BSEffectShaderProperty> target;
+
+	EffectFloat::Variable variable;
+};
+
+
+//! Controller for color values in a BSEffectShaderProperty
+class EffectColorController final : public Controller
+{
+public:
+	EffectColorController( BSEffectShaderProperty * prop, const QModelIndex & index );
+
+	void updateTime( float time ) override final;
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+protected:
+	QPointer<BSEffectShaderProperty> target;
+
+	int variable;
+};
+
+namespace LightingFloat
+{
+	enum Variable
+	{
+		Refraction_Strength = 0,
+		Reflection_Strength = 8,
+		Glossiness = 9,
+		Specular_Strength = 10,
+		Emissive_Multiple = 11,
+		Alpha = 12,
+		U_Offset = 20,
+		U_Scale = 21,
+		V_Offset = 22,
+		V_Scale = 23
+	};
+}
+
+
+//! Controller for float values in a BSEffectShaderProperty
+class LightingFloatController final : public Controller
+{
+public:
+	LightingFloatController( BSLightingShaderProperty * prop, const QModelIndex & index );
+
+	void updateTime( float time ) override final;
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+protected:
+	QPointer<BSLightingShaderProperty> target;
+
+	LightingFloat::Variable variable;
+};
+
+
+//! Controller for color values in a BSEffectShaderProperty
+class LightingColorController final : public Controller
+{
+public:
+	LightingColorController( BSLightingShaderProperty * prop, const QModelIndex & index );
+
+	void updateTime( float time ) override final;
+
+	bool update( const NifModel * nif, const QModelIndex & index ) override final;
+
+protected:
+	QPointer<BSLightingShaderProperty> target;
+
+	int variable;
 };
 
 

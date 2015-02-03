@@ -66,10 +66,10 @@ Controller * IControllable::findController( const QString & ctrltype, const QStr
 
 	for ( Controller * c : controllers ) {
 		if ( c->typeId() == ctrltype ) {
-			if ( ctrl == 0 ) {
+			if ( !ctrl ) {
 				ctrl = c;
 			} else {
-				ctrl = 0;
+				ctrl = nullptr;
 				// TODO: eval var1 + var2 offset to determine which controller is targeted
 				break;
 			}
@@ -77,6 +77,16 @@ Controller * IControllable::findController( const QString & ctrltype, const QStr
 	}
 
 	return ctrl;
+}
+
+Controller * IControllable::findController( const QModelIndex & index )
+{
+	for ( Controller * c : controllers ) {
+		if ( c->index() == index )
+			return c;
+	}
+
+	return nullptr;
 }
 
 
@@ -200,6 +210,10 @@ bool Controller::update( const NifModel * nif, const QModelIndex & index )
 		int flags = nif->get<int>( index, "Flags" );
 		active = flags & 0x08;
 		extrapolation = (Extrapolation)( ( flags & 0x06 ) >> 1 );
+
+		// TODO: Bit 4 (16) - Plays entire animation backwards.
+		// TODO: Bit 5 (32) - Generally only set when sequences are present.
+		// TODO: Bit 6 (64) - Always seems to be set on Skyrim NIFs, unknown function.
 
 		QModelIndex idx = nif->getBlock( nif->getLink( iBlock, "Interpolator" ) );
 
@@ -340,21 +354,33 @@ template <typename T> bool interpolate( T & value, const QModelIndex & array, fl
 			T v2 = nif->get<T>( frames.child( next, 0 ), "Value" );
 
 			switch ( nif->get<int>( array, "Interpolation" ) ) {
-			/*
+			
 			case 2:
 			{
-			    float t1 = nif->get<float>( frames.child( last, 0 ), "Forward" );
-			    float t2 = nif->get<float>( frames.child( next, 0 ), "Backward" );
+				// Quadratic
+				/*
+					In general, for keyframe values v1 = 0, v2 = 1 it appears that
+					setting v1's corresponding "Backward" value to 1 and v2's
+					corresponding "Forward" to 1 results in a linear interpolation.
+				*/
 
-			    float x2 = x * x;
-			    float x3 = x2 * x;
+				// Tangent 1
+				float t1 = nif->get<float>( frames.child( last, 0 ), "Backward" );
+				// Tangent 2
+				float t2 = nif->get<float>( frames.child( next, 0 ), "Forward" );
 
-			    //x(t) = (2t^3 - 3t^2 + 1)*P1  + (-2t^3 + 3t^2)*P4 + (t^3 - 2t^2 + t)*R1 + (t^3 - t^2)*R4
-			    value = ( 2 * x3 - 3 * x2 + 1 ) * v1 + ( - 2 * x3 + 3 * x2 ) * v2 + ( x3 - 2 * x2 + x ) * t1 + ( x3 - x2 ) * t2;
+				float x2 = x * x;
+				float x3 = x2 * x;
+
+				// Cubic Hermite spline
+				//	x(t) = (2t^3 - 3t^2 + 1)P1  + (-2t^3 + 3t^2)P2 + (t^3 - 2t^2 + t)T1 + (t^3 - t^2)T2
+
+				value = v1 * (2.0f * x3 - 3.0f * x2 + 1.0f) + v2 * (-2.0f * x3 + 3.0f * x2) + t1 * (x3 - 2.0f * x2 + x) + t2 * (x3 - x2);
+
 			}	return true;
-			*/
+			
 			case 5:
-
+				// Constant
 				if ( x < 0.5 )
 					value = v1;
 				else

@@ -148,10 +148,15 @@ public:
 	bool blend() const { return alphaBlend; }
 	bool test() const { return alphaTest; }
 	bool sort() const { return alphaSort; }
+	float threshold() const { return alphaThreshold; }
+
+	void setThreshold( float );
 
 	friend void glProperty( AlphaProperty * );
 
 protected:
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+
 	bool alphaBlend, alphaTest, alphaSort;
 	GLenum alphaSrc, alphaDst, alphaFunc;
 	GLfloat alphaThreshold;
@@ -595,6 +600,8 @@ public:
 
 	float getEnvironmentReflection();
 
+	float getAlpha();
+
 	void setShaderType( unsigned int );
 
 	void setEmissive( Color3 color, float mult = 1.0f );
@@ -609,6 +616,8 @@ public:
 	void setOuterReflectionStrength( float );
 
 	void setEnvironmentReflection( float );
+
+	void setAlpha( float );
 
 	bool hasVertexColors;
 	bool hasVertexAlpha;
@@ -630,10 +639,14 @@ public:
 	ShaderFlags::ShaderType getShaderType();
 
 protected:
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+
 	ShaderFlags::ShaderType shaderType;
 
 	Color3 emissiveColor;
 	Color3 specularColor;
+
+	float alpha;
 
 	float emissiveMult;
 
@@ -703,6 +716,8 @@ public:
 	Falloff falloff;
 
 protected:
+	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
+
 	Color4 emissiveColor;
 	float emissiveMult;
 };

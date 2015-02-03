@@ -228,6 +228,20 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 	}
 }
 
+void AlphaProperty::setController( const NifModel * nif, const QModelIndex & controller )
+{
+	if ( nif->itemName( controller ) == "BSNiAlphaPropertyTestRefController" ) {
+		Controller * ctrl = new AlphaController( this, controller );
+		ctrl->update( nif, controller );
+		controllers.append( ctrl );
+	}
+}
+
+void AlphaProperty::setThreshold( float threshold )
+{
+	alphaThreshold = threshold;
+}
+
 void glProperty( AlphaProperty * p )
 {
 	if ( p && p->alphaBlend && (p->scene->options & Scene::DoBlending) ) {
@@ -1016,6 +1030,19 @@ void BSShaderLightingProperty::setClampMode( uint mode )
 	BSLightingShaderProperty
 */
 
+void BSLightingShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	if ( nif->itemName( iController ) == "BSLightingShaderPropertyFloatController" ) {
+		Controller * ctrl = new LightingFloatController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	} else if ( nif->itemName( iController ) == "BSLightingShaderPropertyColorController" ) {
+		Controller * ctrl = new LightingColorController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+}
+
 void BSLightingShaderProperty::setShaderType( unsigned int t )
 {
 	shaderType = ShaderFlags::ShaderType( t );
@@ -1135,10 +1162,33 @@ void BSLightingShaderProperty::setEnvironmentReflection( float strength )
 	environmentReflection = strength;
 }
 
+float BSLightingShaderProperty::getAlpha()
+{
+	return alpha;
+}
+
+void BSLightingShaderProperty::setAlpha( float opacity )
+{
+	alpha = opacity;
+}
+
+
 /*
 	BSEffectShaderProperty
 */
 
+void BSEffectShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	if ( nif->itemName( iController ) == "BSEffectShaderPropertyFloatController" ) {
+		Controller * ctrl = new EffectFloatController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	} else if ( nif->itemName( iController ) == "BSEffectShaderPropertyColorController" ) {
+		Controller * ctrl = new EffectColorController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+}
 
 void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
 {

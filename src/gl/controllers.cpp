@@ -113,6 +113,8 @@ void ControllerManager::setSequence( const QString & seqname )
 
 					QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
 
+					QModelIndex iController = nif->getBlock( nif->getLink( iCB, "Controller" ), "NiTimeController" );
+
 					QString nodename = nif->get<QString>( iCB, "Node Name" );
 
 					if ( nodename.isEmpty() ) {
@@ -161,6 +163,21 @@ void ControllerManager::setSequence( const QString & seqname )
 							multiTargetTransformer->frequency = frequency;
 							continue;
 						}
+					}
+
+					if ( ctrltype == "BSLightingShaderPropertyFloatController"
+						|| ctrltype == "BSLightingShaderPropertyColorController"
+						|| ctrltype == "BSEffectShaderPropertyFloatController"
+						|| ctrltype == "BSEffectShaderPropertyColorController"
+						|| ctrltype == "BSNiAlphaPropertyTestRefController" )
+					{
+						//qDebug() << node->name;
+
+						auto ctrl = node->findController( proptype, iController );
+						if ( ctrl ) {
+							ctrl->setInterpolator( iInterpolator );
+						}
+						continue;
 					}
 
 					Controller * ctrl = node->findController( proptype, ctrltype, var1, var2 );
@@ -360,7 +377,7 @@ void VisibilityController::updateTime( float time )
 
 	bool isVisible;
 
-	if ( interpolate( isVisible, iData, time, visLast ) ) {
+	if ( interpolate( isVisible, iData, "Data", time, visLast ) ) {
 		target->flags.node.hidden = !isVisible;
 	}
 }
@@ -368,9 +385,6 @@ void VisibilityController::updateTime( float time )
 bool VisibilityController::update( const NifModel * nif, const QModelIndex & index )
 {
 	if ( Controller::update( nif, index ) ) {
-		// iData already points to the NiVisData
-		// note that nif.xml needs to have "Keys" not "Vis Keys" for interpolate() to work
-		//iKeys = nif->getIndex( iData, "Data" );
 		return true;
 	}
 
@@ -760,25 +774,39 @@ void ParticleController::colorParticle( Particle & p, Color4 & color )
 }
 
 
+// `BSNiAlphaPropertyTestRefController`
+
+AlphaController::AlphaController( AlphaProperty * prop, const QModelIndex & index )
+	: Controller( index ), alphaProp( prop ), lAlpha( 0 )
+{
+}
+
 // `NiAlphaController`
 
 AlphaController::AlphaController( MaterialProperty * prop, const QModelIndex & index )
-	: Controller( index ), target( prop ), lAlpha( 0 )
+	: Controller( index ), materialProp( prop ), lAlpha( 0 )
 {
 }
 
 void AlphaController::updateTime( float time )
 {
-	if ( !(active && target) )
+	if ( !(active) )
 		return;
 
-	interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
+	if ( materialProp ) {
+		interpolate( materialProp->alpha, iData, "Data", ctrlTime( time ), lAlpha );
 
-	if ( target->alpha < 0 )
-		target->alpha = 0;
+		if ( materialProp->alpha < 0 )
+			materialProp->alpha = 0;
 
-	if ( target->alpha > 1 )
-		target->alpha = 1;
+		if ( materialProp->alpha > 1 )
+			materialProp->alpha = 1;
+	} else if ( alphaProp ) {
+		float threshold;
+
+		if ( interpolate( threshold, iData, "Data", ctrlTime( time ), lAlpha ) )
+			alphaProp->setThreshold( threshold / 255.0 );
+	}
 }
 
 
@@ -930,6 +958,217 @@ bool TexTransController::update( const NifModel * nif, const QModelIndex & index
 	if ( Controller::update( nif, index ) ) {
 		texSlot = nif->get<int>( iBlock, "Texture Slot" );
 		texOP = nif->get<int>( iBlock, "Operation" );
+		return true;
+	}
+
+	return false;
+}
+
+
+
+EffectFloatController::EffectFloatController( BSEffectShaderProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop )
+{
+}
+
+void EffectFloatController::updateTime( float time )
+{
+	if ( !(target && active) )
+		return;
+
+	float val;
+
+	int lIdx;
+
+	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
+		switch ( variable ) {
+		case EffectFloat::Emissive_Multiple:
+			target->setEmissive( target->getEmissiveColor(), val );
+			break;
+		case EffectFloat::Falloff_Start_Angle:
+			target->falloff.startAngle = val;
+			break;
+		case EffectFloat::Falloff_Stop_Angle:
+			target->falloff.stopAngle = val;
+			break;
+		case EffectFloat::Falloff_Start_Opacity:
+			target->falloff.startOpacity = val;
+			break;
+		case EffectFloat::Falloff_Stop_Opacity:
+			target->falloff.stopOpacity = val;
+			break;
+		case EffectFloat::Alpha:
+		{
+			auto c = target->getEmissiveColor();
+			auto m = target->getEmissiveMult();
+
+			target->setEmissive( Color4( c.red(), c.green(), c.blue(), val ), m );
+		}
+			break;
+		case EffectFloat::U_Offset:
+			target->setUvOffset( val, target->getUvOffset().y );
+			break;
+		case EffectFloat::U_Scale:
+			target->setUvScale( val, target->getUvScale().y );
+			break;
+		case EffectFloat::V_Offset:
+			target->setUvOffset( target->getUvOffset().x, val );
+			break;
+		case EffectFloat::V_Scale:
+			target->setUvScale( target->getUvScale().x, val );
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+bool EffectFloatController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		variable = EffectFloat::Variable( nif->get<int>( iBlock, "Type of Controlled Variable" ) );
+		return true;
+	}
+
+	return false;
+}
+
+
+EffectColorController::EffectColorController( BSEffectShaderProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop )
+{
+}
+
+void EffectColorController::updateTime( float time )
+{
+	if ( !(target && active) )
+		return;
+
+	Vector3 val;
+
+	int lIdx;
+
+	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
+		switch ( variable ) {
+		case 0:
+		{
+			auto c = target->getEmissiveColor();
+			auto m = target->getEmissiveMult();
+
+			target->setEmissive( Color4( val[0], val[1], val[2], c.alpha() ), m );
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+
+bool EffectColorController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		variable = nif->get<int>( iBlock, "Type of Controlled Color" );
+		return true;
+	}
+
+	return false;
+}
+
+
+LightingFloatController::LightingFloatController( BSLightingShaderProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop )
+{
+}
+
+void LightingFloatController::updateTime( float time )
+{
+	if ( !(target && active) )
+		return;
+
+	float val;
+
+	int lIdx;
+
+	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
+		switch ( variable ) {
+		case LightingFloat::Refraction_Strength:
+			break;
+		case LightingFloat::Reflection_Strength:
+			target->setEnvironmentReflection( val );
+			break;
+		case LightingFloat::Glossiness:
+			target->setSpecular( target->getSpecularColor(), val, target->getSpecularStrength() );
+			break;
+		case LightingFloat::Specular_Strength:
+			target->setSpecular( target->getSpecularColor(), target->getSpecularGloss(), val );
+			break;
+		case LightingFloat::Emissive_Multiple:
+			target->setEmissive( target->getEmissiveColor(), val );
+			break;
+		case LightingFloat::Alpha:
+			target->setAlpha( val );
+			break;
+		case LightingFloat::U_Offset:
+			target->setUvOffset( val, target->getUvOffset().y );
+			break;
+		case LightingFloat::U_Scale:
+			target->setUvScale( val, target->getUvScale().y );
+			break;
+		case LightingFloat::V_Offset:
+			target->setUvOffset( target->getUvOffset().x, val );
+			break;
+		case LightingFloat::V_Scale:
+			target->setUvScale( target->getUvScale().x, val );
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+bool LightingFloatController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		variable = LightingFloat::Variable(nif->get<int>( iBlock, "Type of Controlled Variable" ));
+		return true;
+	}
+
+	return false;
+}
+
+
+LightingColorController::LightingColorController( BSLightingShaderProperty * prop, const QModelIndex & index )
+	: Controller( index ), target( prop )
+{
+}
+
+void LightingColorController::updateTime( float time )
+{
+	if ( !(target && active) )
+		return;
+
+	Vector3 val;
+
+	int lIdx;
+
+	if ( interpolate( val, iData, "Data", ctrlTime( time ), lIdx ) ) {
+		switch ( variable ) {
+		case 0:
+			target->setSpecular( { val[0], val[1], val[2] }, target->getSpecularGloss(), target->getSpecularStrength() );
+			break;
+		case 1:
+			target->setEmissive( { val[0], val[1], val[2] }, target->getEmissiveMult() );
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+bool LightingColorController::update( const NifModel * nif, const QModelIndex & index )
+{
+	if ( Controller::update( nif, index ) ) {
+		variable = nif->get<int>( iBlock, "Type of Controlled Color" );
 		return true;
 	}
 
