@@ -287,9 +287,12 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					auto emC = nif->get<Color4>( iProp, "Emissive Color" );
 					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
 					bsesp->setEmissive( emC, emM );
-					
+
+					// For BSESP, let Alpha prop handle things
+					bool hasAlphaProp = findProperty<AlphaProperty>();
+
 					// Mesh alpha override
-					translucent = (bsesp->getAlpha() < 1.0);
+					translucent = (bsesp->getAlpha() < 1.0) && !hasAlphaProp;
 
 					// Draw mesh second
 					drawSecond |= translucent;
