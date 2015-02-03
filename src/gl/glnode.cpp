@@ -1615,13 +1615,13 @@ void Node::drawFurn()
 	glPopMatrix();
 }
 
-void Node::drawShapes( NodeList * draw2nd )
+void Node::drawShapes( NodeList * secondPass )
 {
 	if ( isHidden() )
 		return;
 
 	for ( Node * node : children.list() ) {
-		node->drawShapes( draw2nd );
+		node->drawShapes( secondPass );
 	}
 }
 

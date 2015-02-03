@@ -686,6 +686,8 @@ public:
 	Color4 getEmissiveColor();
 	float getEmissiveMult();
 
+	float getAlpha();
+
 	void setEmissive( Color4 color, float mult = 1.0f );
 	void setFalloff( float, float, float, float, float );
 

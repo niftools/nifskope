@@ -907,15 +907,12 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	glProperty( props.get<AlphaProperty>() );
 
-	// BSESP does not always need an NiAlphaProperty, and appears to override it at times
-	if ( mesh->bsesp && mesh->bsesp->getEmissiveColor().alpha() < 1.0 ) {
+	// BSESP/BSLSP do not always need an NiAlphaProperty, and appear to override it at times
+	if ( mesh->translucent ) {
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-	}
-
-	if ( mesh->bslsp && mesh->bslsp->hasRefraction ) {
-		glEnable( GL_BLEND );
-		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		// If mesh is alpha tested, override threshold
+		glAlphaFunc( GL_GREATER, 0.1 );
 	}
 
 	// setup vertex colors
@@ -935,7 +932,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		glDisable( GL_DEPTH_TEST );
 	}
 
-	if ( !mesh->depthWrite ) {
+	if ( !mesh->depthWrite || mesh->translucent ) {
 		glDepthMask( GL_FALSE );
 	}
 

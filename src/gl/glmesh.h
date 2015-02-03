@@ -66,7 +66,7 @@ public:
 
 	void transformShapes() override;
 
-	void drawShapes( NodeList * draw2nd = nullptr ) override;
+	void drawShapes( NodeList * secondPass = nullptr ) override;
 	void drawSelection() const override;
 
 	BoundSphere bounds() const override;
@@ -110,6 +110,8 @@ protected:
 
 	bool depthTest = true;
 	bool depthWrite = true;
+	bool drawSecond = false;
+	bool translucent = false;
 
 	//! Vertices
 	QVector<Vector3> verts;

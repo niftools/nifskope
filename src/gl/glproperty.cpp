@@ -1206,6 +1206,11 @@ float BSEffectShaderProperty::getEmissiveMult()
 	return emissiveMult;
 }
 
+float BSEffectShaderProperty::getAlpha()
+{
+	return emissiveColor.alpha();
+}
+
 void BSEffectShaderProperty::setFalloff( float startA, float stopA, float startO, float stopO, float soft )
 {
 	falloff.startAngle = startA;

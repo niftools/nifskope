@@ -157,6 +157,12 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
 				depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
 
+				// Mesh alpha override
+				translucent = (bslsp->getAlpha() < 1.0);
+
+				// Draw mesh second
+				drawSecond |= translucent;
+
 				// Specular
 				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
 					auto spC = nif->get<Color3>( iProp, "Specular Color" );
@@ -206,6 +212,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 				bslsp->hasRefraction = hasSF1( ShaderFlags::SLSF1_Refraction );
 				bslsp->hasFireRefraction = hasSF1( ShaderFlags::SLSF1_Fire_Refraction );
+
+				// Mesh alpha override
+				translucent |= bslsp->hasRefraction;
 
 
 				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
@@ -278,7 +287,12 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					auto emC = nif->get<Color4>( iProp, "Emissive Color" );
 					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
 					bsesp->setEmissive( emC, emM );
+					
+					// Mesh alpha override
+					translucent = (bsesp->getAlpha() < 1.0);
 
+					// Draw mesh second
+					drawSecond |= translucent;
 
 					bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
 					bsesp->hasGreyscaleMap = !nif->get<QString>( iProp, "Greyscale Texture" ).isEmpty();
@@ -954,7 +968,7 @@ BoundSphere Mesh::bounds() const
 	return worldTrans() * boundSphere;
 }
 
-void Mesh::drawShapes( NodeList * draw2nd )
+void Mesh::drawShapes( NodeList * secondPass )
 {
 	if ( isHidden() || !Options::drawMeshes() )
 		return;
@@ -970,12 +984,14 @@ void Mesh::drawShapes( NodeList * draw2nd )
 		glColor4ubv( (GLubyte *)&s_nodeId );
 	}
 
-	// draw transparent meshes during second run
+	// Draw translucent meshes in second pass
 
 	AlphaProperty * aprop = findProperty<AlphaProperty>();
 
-	if ( aprop && aprop->blend() && draw2nd ) {
-		draw2nd->add( this );
+	drawSecond |= (aprop && aprop->blend());
+
+	if ( secondPass && drawSecond ) {
+		secondPass->add( this );
 		return;
 	}
 
@@ -1080,9 +1096,6 @@ void Mesh::drawShapes( NodeList * draw2nd )
 
 	if ( isDoubleSided ) {
 		glEnable( GL_CULL_FACE );
-
-		if ( bsesp )
-			glDepthMask( GL_TRUE );
 	}
 
 	if ( !Node::SELECTING )

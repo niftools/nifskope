@@ -291,18 +291,18 @@ void Scene::draw()
 void Scene::drawShapes()
 {
 	if ( options & DoBlending ) {
-		NodeList draw2nd;
+		NodeList secondPass;
 
 		for ( Node * node : roots.list() ) {
-			node->drawShapes( &draw2nd );
+			node->drawShapes( &secondPass );
 		}
 
-		if ( draw2nd.list().count() > 0 )
+		if ( secondPass.list().count() > 0 )
 			drawSelection(); // for transparency pass
 
-		draw2nd.sort();
+		secondPass.sort();
 
-		for ( Node * node : draw2nd.list() ) {
+		for ( Node * node : secondPass.list() ) {
 			node->drawShapes();
 		}
 	} else {
