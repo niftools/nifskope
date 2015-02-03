@@ -14,6 +14,8 @@ uniform vec3 specColor;
 uniform float specStrength;
 uniform float specGlossiness;
 
+uniform float alpha;
+
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
 
@@ -127,4 +129,5 @@ void main( void )
 	color.a = C.a * baseMap.a;
 
 	gl_FragColor = color;
+	gl_FragColor.a *= alpha;
 }
