@@ -798,7 +798,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		clamp = mesh->bsesp->getClampMode();
 		clamp = TexClampMode(clamp ^ TexClampMode::MIRRORED_S_MIRRORED_T);
 
-		if ( !uniSampler( "SourceTexture", 0, black, clamp ) )
+		if ( !uniSampler( "SourceTexture", 0, white, clamp ) )
 			return false;
 
 		uni1i( "doubleSided", mesh->bsesp->doubleSided );
