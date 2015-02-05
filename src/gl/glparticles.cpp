@@ -132,15 +132,15 @@ BoundSphere Particles::bounds() const
 	return worldTrans() * sphere | Node::bounds();
 }
 
-void Particles::drawShapes( NodeList * draw2nd )
+void Particles::drawShapes( NodeList * secondPass, bool presort )
 {
 	if ( isHidden() )
 		return;
 
 	AlphaProperty * aprop = findProperty<AlphaProperty>();
 
-	if ( aprop && aprop->blend() && draw2nd ) {
-		draw2nd->add( this );
+	if ( aprop && aprop->blend() && secondPass ) {
+		secondPass->add( this );
 		return;
 	}
 

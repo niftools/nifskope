@@ -54,7 +54,7 @@ public:
 
 	void transformShapes() override;
 
-	void drawShapes( NodeList * draw2nd = nullptr ) override;
+	void drawShapes( NodeList * secondPass = nullptr, bool presort = false ) override;
 
 	BoundSphere bounds() const override;
 

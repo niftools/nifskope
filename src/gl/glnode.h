@@ -66,6 +66,7 @@ public:
 	const QList<Node *> & list() const { return nodes; }
 
 	void sort();
+	void alphaSort();
 
 protected:
 	QList<Node *> nodes;
@@ -109,7 +110,7 @@ public:
 	virtual void transformShapes();
 
 	virtual void draw();
-	virtual void drawShapes( NodeList * secondPass = nullptr );
+	virtual void drawShapes( NodeList * secondPass = nullptr, bool presort = false );
 	virtual void drawHavok();
 	virtual void drawFurn();
 	virtual void drawSelection() const;
@@ -125,6 +126,7 @@ public:
 	virtual QString textStats() const;
 
 	bool isVisible() const { return !isHidden(); }
+	bool isPresorted() const { return presorted; }
 	
 	Node * findChild( int id ) const;
 	Node * findChild( const QString & name ) const;
@@ -142,6 +144,8 @@ public:
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+
+	bool presorted = false;
 
 	int nodeId;
 	int ref;

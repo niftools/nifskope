@@ -971,7 +971,7 @@ BoundSphere Mesh::bounds() const
 	return worldTrans() * boundSphere;
 }
 
-void Mesh::drawShapes( NodeList * secondPass )
+void Mesh::drawShapes( NodeList * secondPass, bool presort )
 {
 	if ( isHidden() || !Options::drawMeshes() )
 		return;
@@ -986,6 +986,9 @@ void Mesh::drawShapes( NodeList * secondPass )
 		int s_nodeId = ID2COLORKEY( nodeId );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 	}
+
+	// BSOrderedNode
+	presorted |= presort;
 
 	// Draw translucent meshes in second pass
 

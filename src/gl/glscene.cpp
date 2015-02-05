@@ -300,7 +300,7 @@ void Scene::drawShapes()
 		if ( secondPass.list().count() > 0 )
 			drawSelection(); // for transparency pass
 
-		secondPass.sort();
+		secondPass.alphaSort();
 
 		for ( Node * node : secondPass.list() ) {
 			node->drawShapes();

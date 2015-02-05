@@ -134,16 +134,40 @@ void NodeList::validate()
 
 bool compareNodes( const Node * node1, const Node * node2 )
 {
-	// opaque meshes first (sorted from front to rear)
-	// then alpha enabled meshes (sorted from rear to front)
+	bool p1 = node1->isPresorted();
+	bool p2 = node2->isPresorted();
+
+	// Presort meshes
+	if ( p1 && p2 ) {
+		return node1->id() < node2->id();
+	}
+
+	return p2;
+}
+
+bool compareNodesAlpha( const Node * node1, const Node * node2 )
+{
+	// Presorted meshes override other sorting
+	// Opaque meshes on bottom (sorted from front to rear)
+	// Alpha enabled meshes on top (sorted from rear to front)
+
+	bool p1 = node1->isPresorted();
+	bool p2 = node2->isPresorted();
+
+	// Presort meshes
+	if ( p1 && p2 ) {
+		return node1->id() < node2->id();
+	}
+
 	bool a1 = node1->findProperty<AlphaProperty>();
 	bool a2 = node2->findProperty<AlphaProperty>();
 
+	float c1 = node1->center()[2];
+	float c2 = node2->center()[2];
+
+	// Alpha sort meshes
 	if ( a1 == a2 ) {
-		if ( a1 ) {
-			return ( node1->center()[2] < node2->center()[2] );
-		}
-		return ( node1->center()[2] > node2->center()[2] );
+		return (a1) ? (c1 < c2) : (c1 > c2);
 	}
 
 	return a2;
@@ -154,6 +178,10 @@ void NodeList::sort()
 	std::stable_sort( nodes.begin(), nodes.end(), compareNodes );
 }
 
+void NodeList::alphaSort()
+{
+	std::stable_sort( nodes.begin(), nodes.end(), compareNodesAlpha );
+}
 
 /*
  *	Node
@@ -1615,13 +1643,23 @@ void Node::drawFurn()
 	glPopMatrix();
 }
 
-void Node::drawShapes( NodeList * secondPass )
+void Node::drawShapes( NodeList * secondPass, bool presort )
 {
 	if ( isHidden() )
 		return;
 
+	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	
+	// BSOrderedNode support
+	//	Only set if true (|=) so that it propagates to all children
+	presort |= nif->getBlock( iBlock, "BSOrderedNode" ).isValid();
+
+	presorted = presort;
+	if ( presorted )
+		children.sort();
+
 	for ( Node * node : children.list() ) {
-		node->drawShapes( secondPass );
+		node->drawShapes( secondPass, presort );
 	}
 }
 
