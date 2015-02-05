@@ -115,6 +115,7 @@ public:
 	virtual void drawFurn();
 	virtual void drawSelection() const;
 
+	virtual float viewDepth() const;
 	virtual class BoundSphere bounds() const;
 	virtual const Vector3 center() const;
 	virtual const Transform & viewTrans() const;

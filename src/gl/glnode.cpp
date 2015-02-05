@@ -148,7 +148,6 @@ bool compareNodes( const Node * node1, const Node * node2 )
 bool compareNodesAlpha( const Node * node1, const Node * node2 )
 {
 	// Presorted meshes override other sorting
-	// Opaque meshes on bottom (sorted from front to rear)
 	// Alpha enabled meshes on top (sorted from rear to front)
 
 	bool p1 = node1->isPresorted();
@@ -162,12 +161,12 @@ bool compareNodesAlpha( const Node * node1, const Node * node2 )
 	bool a1 = node1->findProperty<AlphaProperty>();
 	bool a2 = node2->findProperty<AlphaProperty>();
 
-	float c1 = node1->center()[2];
-	float c2 = node2->center()[2];
+	float d1 = node1->viewDepth();
+	float d2 = node2->viewDepth();
 
 	// Alpha sort meshes
 	if ( a1 == a2 ) {
-		return (a1) ? (c1 < c2) : (c1 > c2);
+		return (d1 < d2);
 	}
 
 	return a2;
@@ -377,8 +376,12 @@ Transform Node::localTrans( int root ) const
 
 const Vector3 Node::center() const
 {
-	// HACK: Temp fix for multiple alpha blended transparency which have the exact same origin/position from camera
-	return Vector3( worldTrans().translation[0], worldTrans().translation[1], worldTrans().translation[2] + 1000 / id() );
+	return worldTrans().translation;
+}
+
+float Node::viewDepth() const
+{
+	return viewTrans().translation[2];
 }
 
 Node * Node::findParent( int id ) const
