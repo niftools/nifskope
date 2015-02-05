@@ -763,10 +763,8 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
 
-			if ( mesh->bslsp->useEnvironmentMask ) {
-				if ( !uniSampler( "EnvironmentMap", 5, white, clamp ) )
-					return false;
-			}
+			if ( !uniSampler( "EnvironmentMap", 5, white, clamp ) )
+				return false;
 
 			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
 			if ( uniCubeMap >= 0 ) {
