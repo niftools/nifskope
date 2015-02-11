@@ -136,7 +136,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				};
 
 				auto isST = [this]( ShaderFlags::ShaderType st ) {
-					return bslsp->getShaderType() & st;
+					return bslsp->getShaderType() == st;
 				};
 
 
