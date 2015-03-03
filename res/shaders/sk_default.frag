@@ -14,6 +14,8 @@ uniform float glowMult;
 
 uniform float alpha;
 
+uniform vec3 tintColor;
+
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
 
@@ -21,6 +23,7 @@ uniform bool hasEmit;
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
+uniform bool hasTintColor;
 
 uniform float lightingEffect1;
 uniform float lightingEffect2;
@@ -115,6 +118,10 @@ void main( void )
 		soft *= sqrt( clamp( lightingEffect1, 0.0, 1.0 ) );
 		
 		emissive += soft * D.rgb;
+	}
+	
+	if ( hasTintColor ) {
+		albedo *= tintColor;
 	}
 
 	color.rgb = albedo * (diffuse + emissive) + spec;

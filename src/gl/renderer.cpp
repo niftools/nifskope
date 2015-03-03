@@ -682,6 +682,23 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
 		uni4m( "worldMatrixInverse", mesh->worldTrans().toMatrix4().inverted() );
 
+		uni1i( "hasTintColor", mesh->bslsp->hasTintColor );
+		if ( mesh->bslsp->hasTintColor ) {
+			auto tC = mesh->bslsp->getTintColor();
+			uni3f( "tintColor", tC.red(), tC.green(), tC.blue() );
+		}
+
+		uni1i( "hasDetailMask", mesh->bslsp->hasDetailMask );
+		if ( mesh->bslsp->hasDetailMask ) {
+			if ( !uniSampler( "DetailMask", 3, black, clamp ) )
+				return false;
+		}
+
+		uni1i( "hasTintMask", mesh->bslsp->hasTintMask );
+		if ( mesh->bslsp->hasTintMask ) {
+			if ( !uniSampler( "TintMask", 6, white, clamp ) )
+				return false;
+		}
 
 		// Rim & Soft params
 

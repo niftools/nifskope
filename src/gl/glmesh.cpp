@@ -213,6 +213,21 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasRefraction = hasSF1( ShaderFlags::SLSF1_Refraction );
 				bslsp->hasFireRefraction = hasSF1( ShaderFlags::SLSF1_Fire_Refraction );
 
+				bslsp->hasTintColor = false;
+				bslsp->hasTintMask = isST( ShaderFlags::ST_FaceTint );
+				bslsp->hasDetailMask = bslsp->hasTintMask;
+
+				QString tint;
+				if ( isST( ShaderFlags::ST_HairTint ) )
+					tint = "Hair Tint Color";
+				else if ( isST( ShaderFlags::ST_SkinTint ) )
+					tint = "Skin Tint Color";
+
+				if ( !tint.isEmpty() ) {
+					bslsp->hasTintColor = true;
+					bslsp->setTintColor( nif->get<Color3>( iProp, tint ) );
+				}
+
 				// Mesh alpha override
 				translucent |= bslsp->hasRefraction;
 

@@ -1172,6 +1172,15 @@ void BSLightingShaderProperty::setAlpha( float opacity )
 	alpha = opacity;
 }
 
+Color3 BSLightingShaderProperty::getTintColor()
+{
+	return tintColor;
+}
+
+void BSLightingShaderProperty::setTintColor( Color3 c )
+{
+	tintColor = c;
+}
 
 /*
 	BSEffectShaderProperty

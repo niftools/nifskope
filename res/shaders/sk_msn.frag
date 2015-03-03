@@ -4,6 +4,8 @@ uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
 uniform sampler2D SpecularMap;
 uniform sampler2D LightMask;
+uniform sampler2D TintMask;
+uniform sampler2D DetailMask;
 uniform sampler2D BacklightMap;
 
 uniform vec3 specColor;
@@ -15,6 +17,8 @@ uniform float glowMult;
 
 uniform float alpha;
 
+uniform vec3 tintColor;
+
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
 
@@ -24,6 +28,9 @@ uniform bool hasBacklight;
 uniform bool hasRimlight;
 uniform bool hasModelSpaceNormals;
 uniform bool hasSpecularMap;
+uniform bool hasDetailMask;
+uniform bool hasTintMask;
+uniform bool hasTintColor;
 
 uniform float lightingEffect1;
 uniform float lightingEffect2;
@@ -56,6 +63,22 @@ vec3 tonemap(vec3 x)
 vec3 toGrayscale(vec3 color)
 {
 	return vec3(dot(vec3(0.3, 0.59, 0.11), color));
+}
+
+float overlay( float base, float blend )
+{
+	float result;
+	if ( base < 0.5 ) {
+		result = 2.0 * base * blend;
+	} else {
+		result = 1.0 - 2.0 * (1.0 - blend) * (1.0 - base);
+	}
+	return result;
+}
+
+vec3 overlay( vec3 ba, vec3 bl )
+{
+	return vec3( overlay(ba.r, bl.r), overlay(ba.g, bl.g), overlay( ba.b, bl.b ) );
 }
 
 void main( void )
@@ -140,7 +163,29 @@ void main( void )
 		
 		emissive += soft * D.rgb;
 	}
-
+	
+	vec3 detail;
+	if ( hasDetailMask ) {
+		detail = texture2D( DetailMask, offset ).rgb;
+		
+		albedo = overlay( albedo, detail );
+	}
+	
+	vec3 tint;
+	if ( hasTintMask ) {
+		tint = texture2D( TintMask, offset ).rgb;
+		
+		albedo = overlay( albedo, tint );
+	}
+	
+	if ( hasDetailMask ) {
+		albedo += albedo;
+	}
+	
+	if ( hasTintColor ) {
+		albedo *= tintColor;
+	}
+	
 	color.rgb = albedo * (diffuse + emissive) + spec;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
 	color.a = C.a * baseMap.a;

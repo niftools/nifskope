@@ -619,6 +619,9 @@ public:
 
 	void setAlpha( float );
 
+	Color3 getTintColor();
+	void setTintColor( Color3 );
+
 	bool hasVertexColors;
 	bool hasVertexAlpha;
 	bool hasGlowMap;
@@ -635,6 +638,9 @@ public:
 	bool hasHeightMap;
 	bool hasRefraction;
 	bool hasFireRefraction;
+	bool hasDetailMask;
+	bool hasTintMask;
+	bool hasTintColor;
 
 	ShaderFlags::ShaderType getShaderType();
 
@@ -645,6 +651,7 @@ protected:
 
 	Color3 emissiveColor;
 	Color3 specularColor;
+	Color3 tintColor;
 
 	float alpha;
 
