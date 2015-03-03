@@ -1385,7 +1385,10 @@ void Node::drawHavok()
 		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 2.0f );
 		glDepthFunc( GL_LEQUAL );
 	} else {
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 2.0f );
+		// Scale up for Skyrim
+		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
+
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 2.0f );
 	}
 
 	glPopMatrix();
