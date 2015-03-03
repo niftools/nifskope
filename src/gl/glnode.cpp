@@ -444,7 +444,7 @@ void Node::transform()
 
 	if ( iBlock.isValid() && nif ) {
 		// Scale up for Skyrim
-		float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
+		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 
@@ -618,7 +618,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	stack.push( iShape );
 
 	// Scale up for Skyrim
-	float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
+	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 

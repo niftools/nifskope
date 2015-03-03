@@ -48,11 +48,7 @@ public:
 		if ( !iData.isValid() )
 			return index;
 
-		float havokScale = 1.0f;
-
-		if ( nif->getUserVersion() >= 12 ) {
-			havokScale = 10.0f;
-		}
+		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 		havokScale *= havokConst;
 
