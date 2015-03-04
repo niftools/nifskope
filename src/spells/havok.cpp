@@ -76,6 +76,15 @@ public:
 		precSpin->setValue( 0.25 );
 		vbox->addWidget( precSpin );
 
+		vbox->addWidget( new QLabel( Spell::tr( "Collision Radius" ) ) );
+
+		QDoubleSpinBox * spnRadius = new QDoubleSpinBox;
+		spnRadius->setRange( 0, 0.5 );
+		spnRadius->setDecimals( 4 );
+		spnRadius->setSingleStep( 0.001 );
+		spnRadius->setValue( 0.05 );
+		vbox->addWidget( spnRadius );
+
 		QHBoxLayout * hbox = new QHBoxLayout;
 		vbox->addLayout( hbox );
 
@@ -146,7 +155,7 @@ public:
 
 		// radius is always 0.1?
 		// TODO: Figure out if radius is not arbitrarily set in vanilla NIFs
-		nif->set<float>( iCVS, "Radius", 0.1f );
+		nif->set<float>( iCVS, "Radius", spnRadius->value() );
 
 		// for arrow detection: [0, 0, -0, 0, 0, -0]
 		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 2, 0 ), -0.0 );
