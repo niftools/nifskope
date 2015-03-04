@@ -164,7 +164,7 @@ NifSkope::NifSkope()
 	// Setup Window Modified on data change
 	connect( nif, &NifModel::dataChanged, [this]( const QModelIndex &, const QModelIndex & ) {
 		// Only if UI is enabled (prevents asterisk from flashing during save/load)
-		if ( isEnabled() )
+		if ( !windowTitle().isEmpty() && isEnabled() )
 			setWindowModified( true );
 	} );
 
