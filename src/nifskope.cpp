@@ -213,6 +213,7 @@ NifSkope::NifSkope()
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, this, &NifSkope::select );
 	connect( tree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, refrbrwsr, &ReferenceBrowser::browse );
+	connect( header, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 	connect( kfmtree, &NifTreeView::customContextMenuRequested, this, &NifSkope::contextMenu );
 
 	// Create GLView
