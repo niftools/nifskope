@@ -57,6 +57,13 @@ public:
 
 		/* get the verts of our mesh */
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+		QVector<Vector3> vertsTrans;
+
+		// Offset by translation of NiTriShape
+		Vector3 trans = nif->get<Vector3>( index, "Translation" );
+		for ( auto v : verts ) {
+			vertsTrans.append( v + trans );
+		}
 
 		// to store results
 		QVector<Vector4> hullVerts, hullNorms;
@@ -104,7 +111,7 @@ public:
 		}
 
 		/* make a convex hull from it */
-		compute_convex_hull( verts, hullVerts, hullNorms, (float)precSpin->value() );
+		compute_convex_hull( vertsTrans, hullVerts, hullNorms, (float)precSpin->value() );
 
 		// sort and remove duplicate vertices
 		QList<Vector4> sortedVerts;
