@@ -690,13 +690,13 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 		uni1i( "hasDetailMask", mesh->bslsp->hasDetailMask );
 		if ( mesh->bslsp->hasDetailMask ) {
-			if ( !uniSampler( "DetailMask", 3, black, clamp ) )
+			if ( !uniSampler( "DetailMask", 3, "shaders/blankdetailmap.dds", clamp ) )
 				return false;
 		}
 
 		uni1i( "hasTintMask", mesh->bslsp->hasTintMask );
 		if ( mesh->bslsp->hasTintMask ) {
-			if ( !uniSampler( "TintMask", 6, white, clamp ) )
+			if ( !uniSampler( "TintMask", 6, "shaders/gray.dds", clamp ) )
 				return false;
 		}
 
