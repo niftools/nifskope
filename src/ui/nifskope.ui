@@ -379,6 +379,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="separator"/>
     <addaction name="aPrintView"/>
     <addaction name="aColorKeyDebug"/>
+    <addaction name="aBoundsDebug"/>
     <addaction name="separator"/>
     <addaction name="aTextures"/>
     <addaction name="aVertexColors"/>
@@ -1761,6 +1762,14 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="shortcut">
     <string>Alt+R</string>
+   </property>
+  </action>
+  <action name="aBoundsDebug">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Bounds Debug</string>
    </property>
   </action>
  </widget>

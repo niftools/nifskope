@@ -308,13 +308,12 @@ void GLView::glProjection( int x, int y )
 
 	if ( scene->options & Scene::ShowAxes ) {
 		bs |= BoundSphere( scene->view * Vector3(), axis );
-
-		// Include grid in bounds
-		bs.radius = (bs.radius > 1024.0f) ? bs.radius : 1024.0f;
 	}
 
-	GLdouble nr = fabs( bs.center[2] ) - bs.radius * 1.2;
-	GLdouble fr = fabs( bs.center[2] ) + bs.radius * 1.2;
+	float bounds = (bs.radius > 1024.0) ? bs.radius : 1024.0;
+
+	GLdouble nr = fabs( bs.center[2] ) - bounds * 1.5;
+	GLdouble fr = fabs( bs.center[2] ) + bounds * 1.5;
 
 	if ( perspectiveMode || (view == ViewWalk) ) {
 		// Perspective View
@@ -385,7 +384,7 @@ void GLView::paintGL()
 		textures->setNifFolder( model->getFolder() );
 		scene->make( model );
 		scene->transform( Transform(), scene->timeMin() );
-		axis = (scene->bounds().radius <= 0) ? 1 : scene->bounds().radius * 1.0; // fix: the axis appearance when there is no scene yet
+		axis = (scene->bounds().radius <= 0) ? 1024.0 : scene->bounds().radius;
 
 		if ( scene->timeMin() != scene->timeMax() ) {
 			if ( time < scene->timeMin() || time > scene->timeMax() )
@@ -455,16 +454,23 @@ void GLView::paintGL()
 		// 1024 game units, major lines every 128, minor lines every 64
 		drawGrid( 1024, 128, 2 );
 
-		// Debug scene bounds
-#ifndef QT_NO_DEBUG
-		if ( debugMode == DbgBounds ) {
-			BoundSphere bs = scene->bounds();
-			bs |= BoundSphere( Vector3(), axis );
-			drawSphere( bs.center, bs.radius );
-		}
-#endif
 		glPopMatrix();
 	}
+
+#ifndef QT_NO_DEBUG
+	// Debug scene bounds
+	glEnable( GL_DEPTH_TEST );
+	glDepthMask( GL_TRUE );
+	glDepthFunc( GL_LESS );
+	glPushMatrix();
+	glLoadMatrix( viewTrans );
+	if ( debugMode == DbgBounds ) {
+		BoundSphere bs = scene->bounds();
+		bs |= BoundSphere( Vector3(), axis );
+		drawSphere( bs.center, bs.radius );
+	}
+	glPopMatrix();
+#endif
 
 	GLfloat mat_spec[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -905,29 +911,26 @@ void GLView::setCenter()
 {
 	Node * node = scene->getNode( model, scene->currentBlock );
 
-	if ( node != 0 ) {
+	if ( node ) {
 		// Center on selected node
 		BoundSphere bs = node->bounds();
 
 		this->setPosition( -bs.center );
 
 		if ( bs.radius > 0 ) {
-			setDistance( bs.radius * 1.5f );
+			setDistance( bs.radius * 1.2 );
 		}
 	} else {
 		// Center on entire mesh
 		BoundSphere bs = scene->bounds();
 
-		//if ( scene->options & Scene::ShowAxes )
-		//	bs |= BoundSphere( Vector3(), axis );
-
 		if ( bs.radius < 1 )
-			bs.radius = 1;
+			bs.radius = 1024.0;
 
-		setDistance( bs.radius );
+		setDistance( bs.radius * 1.2 );
 		setZoom( 1.0 );
 
-		setPosition( Vector3() - bs.center );
+		setPosition( -bs.center );
 
 		setOrientation( view );
 	}

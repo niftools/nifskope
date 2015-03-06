@@ -246,14 +246,37 @@ void NifSkope::initActions()
 #ifdef QT_NO_DEBUG
 	ui->aColorKeyDebug->setDisabled( true );
 	ui->aColorKeyDebug->setVisible( false );
+	ui->aBoundsDebug->setDisabled( true );
+	ui->aBoundsDebug->setVisible( false );
 #else
+	QAction * debugNone = new QAction( this );
+
+	QActionGroup * debugActions = agroup( { debugNone, ui->aColorKeyDebug, ui->aBoundsDebug }, false );
 	connect( ui->aColorKeyDebug, &QAction::triggered, [this]( bool checked ) {
 		if ( checked )
 			ogl->setDebugMode( GLView::DbgColorPicker );
 		else
 			ogl->setDebugMode( GLView::DbgNone );
+		
+		ogl->update();
+	} );
+
+	connect( ui->aBoundsDebug, &QAction::triggered, [this]( bool checked ) {
+		if ( checked )
+			ogl->setDebugMode( GLView::DbgBounds );
+		else
+			ogl->setDebugMode( GLView::DbgNone );
 
 		ogl->update();
+	} );
+
+	connect( debugActions, &QActionGroup::triggered, [=]( QAction * action ) {
+		for ( auto a : debugActions->actions() ) {
+			if ( a == action )
+				continue;
+
+			a->setChecked( false );
+		}
 	} );
 #endif
 
