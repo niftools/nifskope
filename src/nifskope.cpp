@@ -792,6 +792,8 @@ static void SetAppLocale( QLocale curLocale )
 
 		mTranslator->load( fileName );
 	}
+
+	QLocale::setDefault( QLocale::C );
 }
 
 void NifSkope::sltLocaleChanged()
