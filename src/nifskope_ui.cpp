@@ -294,12 +294,6 @@ void NifSkope::initActions()
 
 	// Update Inspector widget with current index
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection );
-
-	
-	// Hide new Settings from Release for the time being
-#ifdef QT_NO_DEBUG
-	ui->aSettings->setVisible( false );
-#endif
 }
 
 void NifSkope::initDockWidgets()
