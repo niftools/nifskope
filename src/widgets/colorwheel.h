@@ -33,8 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COLORWHEEL_H
 #define COLORWHEEL_H
 
-#include <QSpinBox> // Inherited
-#include <QWidget>  // Inherited
+#include <QWidget>   // Inherited
+#include <QSpinBox>  // Inherited
+
 #include <QColor>
 #include <QRegularExpression>
 #include <QSlider>
@@ -103,6 +104,38 @@ private:
 	QSize sHint;
 
 	static QIcon * icon;
+};
+
+class QLabel;
+class QLineEdit;
+class QDoubleSpinBox;
+class QPushButton;
+
+class ColorLineEdit final : public QWidget
+{
+	Q_OBJECT
+
+public:
+	ColorLineEdit( QWidget * parent = nullptr );
+
+	QColor getColor() const;
+
+	void setWheel( ColorWheel *, const QString & = "" );
+	void setTitle( const QString & );
+	void setColor( const QColor & );
+
+public slots:
+	void setAlpha( float );
+
+private:
+	ColorWheel * wheel;
+	QLabel * title;
+	QLabel * lblColor;
+	QLineEdit * color;
+	QDoubleSpinBox * alpha;
+	QPushButton * btn;
+
+	bool hasAlpha;
 };
 
 class ColorSpinBox final : public QSpinBox
