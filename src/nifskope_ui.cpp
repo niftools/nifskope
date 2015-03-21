@@ -52,10 +52,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/inspect.h"
 #include "widgets/xmlcheck.h"
 
-#ifdef FSENGINE
-#include <fsengine/fsmanager.h>
-#endif
-
 #include <QAction>
 #include <QApplication>
 #include <QByteArray>
@@ -233,13 +229,6 @@ void NifSkope::initActions()
 
 	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
 	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
-
-#ifdef FSENGINE
-	auto fsm = FSManager::get();
-	if ( fsm ) {
-		connect( ui->aResources, &QAction::triggered, fsm, &FSManager::selectArchives );
-	}
-#endif
 
 	connect( ui->aPrintView, &QAction::triggered, ogl, &GLView::saveImage );
 

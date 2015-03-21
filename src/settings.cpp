@@ -8,6 +8,9 @@
 #include "ui_settingsrender.h"
 #include "ui_settingsresources.h"
 
+#include <fsengine/fsengine.h>
+#include <fsengine/fsmanager.h>
+
 #include <QComboBox>
 #include <QDebug>
 #include <QFileDialog>
@@ -405,6 +408,8 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 	ui->setupUi( this );
 	SettingsDialog::registerPage( parent, ui->name->text() );
 
+	archiveMgr = FSManager::get();
+
 	folders = new QStringListModel( this );
 	archives = new QStringListModel( this );
 
@@ -485,6 +490,14 @@ void SettingsResources::write()
 
 	settings.setValue( "Settings/Resources/Folders", folders->stringList() );
 	settings.setValue( "Settings/Resources/Archives", archives->stringList() );
+
+	// Sync FSManager to Archives list
+	archiveMgr->archives.clear();
+	for ( const QString an : archives->stringList() ) {
+		if ( !archiveMgr->archives.contains( an ) )
+			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
+				archiveMgr->archives.insert( an, a );
+	}
 
 	settings.setValue( "Settings/Resources/Alternate Extensions", ui->chkAlternateExt->isChecked() );
 
@@ -659,4 +672,13 @@ void SettingsResources::on_btnArchiveUp_clicked()
 
 void SettingsResources::on_btnArchiveAutoDetect_clicked()
 {
+	QStringList autoList = FSManager::autodetectArchives();
+
+	QStringList archivesNew = archives->stringList() + autoList;
+	archivesNew.removeDuplicates();
+
+	archives->setStringList( archivesNew );
+
+	ui->archivesList->setCurrentIndex( archives->index( 0, 0 ) );
+	modifyPane();
 }

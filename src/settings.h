@@ -7,6 +7,7 @@
 #include <QWidget>
 #include <QSettings>
 
+class FSManager;
 
 class QListWidgetItem;
 class QStringListModel;
@@ -105,6 +106,8 @@ public slots:
 
 private:
 	Ui::SettingsResources * ui;
+
+	FSManager * archiveMgr;
 
 	QStringListModel * folders;
 	QStringListModel * archives;

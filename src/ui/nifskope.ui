@@ -412,7 +412,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      <string>Options</string>
     </property>
     <addaction name="aSettings"/>
-    <addaction name="aResources"/>
     <addaction name="aSelectFont"/>
    </widget>
    <addaction name="mFile"/>
