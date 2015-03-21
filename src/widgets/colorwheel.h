@@ -135,7 +135,7 @@ private:
 	QDoubleSpinBox * alpha;
 	QPushButton * btn;
 
-	bool hasAlpha;
+	bool hasAlpha = false;
 };
 
 class ColorSpinBox final : public QSpinBox
