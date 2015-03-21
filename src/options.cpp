@@ -81,7 +81,7 @@ Options::Options()
 	QSettings cfg;
 	cfg.beginGroup( "Render Settings" );
 
-	showMeshes = cfg.value( "Draw Meshes", true ).toBool();
+	//showMeshes = cfg.value( "Draw Meshes", true ).toBool();
 
 	// Cast QTimer slot
 	auto tStart = static_cast<void (QTimer::*)()>(&QTimer::start);
@@ -250,106 +250,106 @@ Options::Options()
 	{
 		cfg.beginGroup( "Render Settings" );
 
-		texPage->pushLayout( tr( "Texture Folders" ), Qt::Vertical );
-		texPage->pushLayout( Qt::Horizontal );
+		//texPage->pushLayout( tr( "Texture Folders" ), Qt::Vertical );
+		//texPage->pushLayout( Qt::Horizontal );
 
 #ifdef Q_OS_WIN32
-		texPage->pushLayout( tr( "Auto Detect" ), Qt::Vertical );
-		QButtonGroup * tfgamegrp = new QButtonGroup( this );
-		connect( tfgamegrp, bgClicked, this, &Options::textureFolderAutoDetect );
-		QPushButton * bt = new QPushButton( tr( "Auto Detect\nGame Paths" ) );
-		tfgamegrp->addButton( bt );
-		texPage->addWidget( bt );
-
-		texPage->popLayout();
+		//texPage->pushLayout( tr( "Auto Detect" ), Qt::Vertical );
+		//QButtonGroup * tfgamegrp = new QButtonGroup( this );
+		//connect( tfgamegrp, bgClicked, this, &Options::textureFolderAutoDetect );
+		//QPushButton * bt = new QPushButton( tr( "Auto Detect\nGame Paths" ) );
+		//tfgamegrp->addButton( bt );
+		//texPage->addWidget( bt );
+		//
+		//texPage->popLayout();
 #endif
 
-		texPage->pushLayout( tr( "Custom" ), Qt::Vertical );
+		//texPage->pushLayout( tr( "Custom" ), Qt::Vertical );
+		//texPage->pushLayout( Qt::Horizontal );
+		//
+		//QButtonGroup * tfactgrp = new QButtonGroup( this );
+		//connect( tfactgrp, bgClicked, this, &Options::textureFolderAction );
+		//int tfaid = 0;
+		//for ( const QString& tfaname : QStringList{ tr( "Add Folder" ), tr( "Remove Folder" ), tr( "Move Up" ), tr( "Move Down" ) } )
+		//{
+		//	QPushButton * bt = new QPushButton( tfaname );
+		//	TexFolderButtons[tfaid] = bt;
+		//	tfactgrp->addButton( bt, tfaid++ );
+		//	texPage->addWidget( bt );
+		//}
+		//
+		//texPage->popLayout();
+		//
+		//
+		//
+		//TexFolderModel = new QStringListModel( this );
+		//TexFolderModel->setStringList( cfg.value( "Texture Folders" ).toStringList() );
+		//
+		//connect( TexFolderModel, &QStringListModel::rowsInserted, tEmit, tStart );
+		//connect( TexFolderModel, &QStringListModel::rowsRemoved, tEmit, tStart );
+		//connect( TexFolderModel, &QStringListModel::dataChanged, tEmit, tStart );
+		//connect( TexFolderModel, &QStringListModel::modelReset, tEmit, tStart );
+		//connect( TexFolderModel, &QStringListModel::rowsInserted, this, &Options::sigFlush3D );
+		//connect( TexFolderModel, &QStringListModel::rowsRemoved, this, &Options::sigFlush3D );
+		//connect( TexFolderModel, &QStringListModel::dataChanged, this, &Options::sigFlush3D );
+		//connect( TexFolderModel, &QStringListModel::modelReset, this, &Options::sigFlush3D );
+		//
+		//
+		//TexFolderView = new SmallListView;
+		//texPage->addWidget( TexFolderView, 0 );
+		//TexFolderView->setMinimumHeight( 105 );
+		//TexFolderView->setModel( TexFolderModel );
+		//TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+		//
+		//texPage->pushLayout( Qt::Horizontal );
+		//
+		//TexFolderSelect = new FileSelector( FileSelector::Folder, "Folder", QBoxLayout::RightToLeft );
+		//texPage->addWidget( TexFolderSelect );
+		//
+		//QDataWidgetMapper * TexFolderMapper = new QDataWidgetMapper( this );
+		//TexFolderMapper->setModel( TexFolderModel );
+		//TexFolderMapper->addMapping( TexFolderSelect, 0 );
+		//TexFolderMapper->setCurrentModelIndex( TexFolderView->currentIndex() );
+		//connect( TexFolderView->selectionModel(), &QItemSelectionModel::currentChanged,
+		//	TexFolderMapper, &QDataWidgetMapper::setCurrentModelIndex );
+		//connect( TexFolderSelect, &FileSelector::sigActivated, TexFolderMapper, &QDataWidgetMapper::submit );
+		//
+		//connect( TexFolderView->selectionModel(), &QItemSelectionModel::currentChanged,
+		//	this, &Options::textureFolderIndex );
+		//textureFolderIndex( TexFolderView->currentIndex() );
+		//
+		//texPage->addWidget( TexAlternatives = new QCheckBox( tr( "&Look for alternatives" ) ) );
+		//TexAlternatives->setToolTip( tr( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" ) );
+		//TexAlternatives->setChecked( cfg.value( "Texture Alternatives", true ).toBool() );
+		//connect( TexAlternatives, &QCheckBox::toggled, this, &Options::sigChanged );
+		//connect( TexAlternatives, &QCheckBox::toggled, this, &Options::sigFlush3D );
+		//
+		//texPage->popLayout();
+		//texPage->popLayout();
+		//texPage->popLayout();
+		//texPage->popLayout();
 		texPage->pushLayout( Qt::Horizontal );
-
-		QButtonGroup * tfactgrp = new QButtonGroup( this );
-		connect( tfactgrp, bgClicked, this, &Options::textureFolderAction );
-		int tfaid = 0;
-		for ( const QString& tfaname : QStringList{ tr( "Add Folder" ), tr( "Remove Folder" ), tr( "Move Up" ), tr( "Move Down" ) } )
-		{
-			QPushButton * bt = new QPushButton( tfaname );
-			TexFolderButtons[tfaid] = bt;
-			tfactgrp->addButton( bt, tfaid++ );
-			texPage->addWidget( bt );
-		}
-
-		texPage->popLayout();
-
-		
-
-		TexFolderModel = new QStringListModel( this );
-		TexFolderModel->setStringList( cfg.value( "Texture Folders" ).toStringList() );
-
-		connect( TexFolderModel, &QStringListModel::rowsInserted, tEmit, tStart );
-		connect( TexFolderModel, &QStringListModel::rowsRemoved, tEmit, tStart );
-		connect( TexFolderModel, &QStringListModel::dataChanged, tEmit, tStart );
-		connect( TexFolderModel, &QStringListModel::modelReset, tEmit, tStart );
-		connect( TexFolderModel, &QStringListModel::rowsInserted, this, &Options::sigFlush3D );
-		connect( TexFolderModel, &QStringListModel::rowsRemoved, this, &Options::sigFlush3D );
-		connect( TexFolderModel, &QStringListModel::dataChanged, this, &Options::sigFlush3D );
-		connect( TexFolderModel, &QStringListModel::modelReset, this, &Options::sigFlush3D );
+		//texPage->pushLayout( tr( "Render" ), Qt::Vertical );
 
 
-		TexFolderView = new SmallListView;
-		texPage->addWidget( TexFolderView, 0 );
-		TexFolderView->setMinimumHeight( 105 );
-		TexFolderView->setModel( TexFolderModel );
-		TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+		//texPage->addWidget( AntiAlias = new QCheckBox( tr( "&Anti Aliasing" ) ) );
+		//AntiAlias->setToolTip( tr( "Enable anti aliasing and anisotropic texture filtering if available.<br>You'll need to restart NifSkope for this setting to take effect.<br>" ) );
+		//AntiAlias->setChecked( cfg.value( "Anti Aliasing", true ).toBool() );
+		//connect( AntiAlias, &QCheckBox::toggled, this, &Options::sigChanged );
 
-		texPage->pushLayout( Qt::Horizontal );
+		//texPage->addWidget( Textures = new QCheckBox( tr( "&Textures" ) ) );
+		//Textures->setToolTip( tr( "Enable textures" ) );
+		//Textures->setChecked( cfg.value( "Texturing", true ).toBool() );
+		//connect( Textures, &QCheckBox::toggled, this, &Options::sigChanged );
+		//connect( Textures, &QCheckBox::toggled, this, &Options::sigFlush3D );
 
-		TexFolderSelect = new FileSelector( FileSelector::Folder, "Folder", QBoxLayout::RightToLeft );
-		texPage->addWidget( TexFolderSelect );
+		//texPage->addWidget( Shaders = new QCheckBox( tr( "&Shaders" ) ) );
+		//Shaders->setToolTip( tr( "Enable Shaders" ) );
+		//Shaders->setChecked( cfg.value( "Enable Shaders", true ).toBool() );
+		//connect( Shaders, &QCheckBox::toggled, this, &Options::sigChanged );
+		//connect( Shaders, &QCheckBox::toggled, this, &Options::sigFlush3D );
 
-		QDataWidgetMapper * TexFolderMapper = new QDataWidgetMapper( this );
-		TexFolderMapper->setModel( TexFolderModel );
-		TexFolderMapper->addMapping( TexFolderSelect, 0 );
-		TexFolderMapper->setCurrentModelIndex( TexFolderView->currentIndex() );
-		connect( TexFolderView->selectionModel(), &QItemSelectionModel::currentChanged,
-			TexFolderMapper, &QDataWidgetMapper::setCurrentModelIndex );
-		connect( TexFolderSelect, &FileSelector::sigActivated, TexFolderMapper, &QDataWidgetMapper::submit );
-
-		connect( TexFolderView->selectionModel(), &QItemSelectionModel::currentChanged,
-			this, &Options::textureFolderIndex );
-		textureFolderIndex( TexFolderView->currentIndex() );
-
-		texPage->addWidget( TexAlternatives = new QCheckBox( tr( "&Look for alternatives" ) ) );
-		TexAlternatives->setToolTip( tr( "If a texture was nowhere to be found<br>NifSkope will start looking for alternatives.<p style='white-space:pre'>texture.dds does not exist -> use texture.bmp instead</p>" ) );
-		TexAlternatives->setChecked( cfg.value( "Texture Alternatives", true ).toBool() );
-		connect( TexAlternatives, &QCheckBox::toggled, this, &Options::sigChanged );
-		connect( TexAlternatives, &QCheckBox::toggled, this, &Options::sigFlush3D );
-
-		texPage->popLayout();
-		texPage->popLayout();
-		texPage->popLayout();
-		texPage->popLayout();
-		texPage->pushLayout( Qt::Horizontal );
-		texPage->pushLayout( tr( "Render" ), Qt::Vertical );
-
-
-		texPage->addWidget( AntiAlias = new QCheckBox( tr( "&Anti Aliasing" ) ) );
-		AntiAlias->setToolTip( tr( "Enable anti aliasing and anisotropic texture filtering if available.<br>You'll need to restart NifSkope for this setting to take effect.<br>" ) );
-		AntiAlias->setChecked( cfg.value( "Anti Aliasing", true ).toBool() );
-		connect( AntiAlias, &QCheckBox::toggled, this, &Options::sigChanged );
-
-		texPage->addWidget( Textures = new QCheckBox( tr( "&Textures" ) ) );
-		Textures->setToolTip( tr( "Enable textures" ) );
-		Textures->setChecked( cfg.value( "Texturing", true ).toBool() );
-		connect( Textures, &QCheckBox::toggled, this, &Options::sigChanged );
-		connect( Textures, &QCheckBox::toggled, this, &Options::sigFlush3D );
-
-		texPage->addWidget( Shaders = new QCheckBox( tr( "&Shaders" ) ) );
-		Shaders->setToolTip( tr( "Enable Shaders" ) );
-		Shaders->setChecked( cfg.value( "Enable Shaders", true ).toBool() );
-		connect( Shaders, &QCheckBox::toggled, this, &Options::sigChanged );
-		connect( Shaders, &QCheckBox::toggled, this, &Options::sigFlush3D );
-
-		texPage->popLayout();
+		//texPage->popLayout();
 		texPage->pushLayout( tr( "Up Axis" ), Qt::Vertical );
 
 
@@ -404,122 +404,122 @@ Options::Options()
 		cfg.endGroup();
 	}
 
-	GroupBox * colorPage;
-	tab->addTab( colorPage = new GroupBox( Qt::Vertical ), tr( "Colors" ) );
-	{
-		cfg.beginGroup( "Render Settings" );
-
-		colorPage->pushLayout( tr( "Light" ), Qt::Vertical );
-		//colorPage->pushLayout( Qt::Horizontal );
-
-
-		//cfg.beginGroup( "Light0" );
-		//
-		//QStringList lightNames{ tr( "Ambient" ), tr( "Diffuse" ), tr( "Specular" ) };
-		//QList<QColor> lightDefaults{
-		//	QColor::fromRgbF( .4, .4, .4 ),
-		//	QColor::fromRgbF( .8, .8, .8 ),
-		//	QColor::fromRgbF( 1, 1, 1 )
-		//};
-		//
-		//for ( int l = 0; l < 3; l++ ) {
-		//	ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
-		//	wheel->setSizeHint( QSize( 105, 105 ) );
-		//	wheel->setAlpha( false );
-		//	connect( wheel, &ColorWheel::sigColorEdited, this, &Options::sigChanged );
-		//	LightColor[l] = wheel;
-		//
-		//	colorPage->pushLayout( lightNames[l], Qt::Vertical );
-		//	colorPage->addWidget( wheel );
-		//	colorPage->popLayout();
-		//}
-		//
-		//colorPage->popLayout();
-		//colorPage->pushLayout( Qt::Horizontal );
-		//
-		//colorPage->addWidget( LightFrontal = new QCheckBox( tr( "Frontal" ) ), 0 );
-		//LightFrontal->setToolTip( tr( "Lock light to camera position" ) );
-		//LightFrontal->setChecked( cfg.value( "Frontal", true ).toBool() );
-		//connect( LightFrontal, &QCheckBox::toggled, this, &Options::sigChanged );
-		//
-		//QWidget * pos = colorPage->pushLayout( tr( "Position" ), Qt::Horizontal, 1 );
-		//pos->setDisabled( LightFrontal->isChecked() );
-		//connect( LightFrontal, &QCheckBox::toggled, pos, &QWidget::setDisabled );
-		//
-		//colorPage->addWidget( new QLabel( tr( "Declination" ) ) );
-		//colorPage->addWidget( LightDeclination = new QSpinBox, 1 );
-		//LightDeclination->setMinimum( -180 );
-		//LightDeclination->setMaximum( +180 );
-		//LightDeclination->setSingleStep( 5 );
-		//LightDeclination->setWrapping( true );
-		//LightDeclination->setValue( cfg.value( "Declination", 0 ).toInt() );
-		//connect( LightDeclination, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
-		//
-		//colorPage->addWidget( new QLabel( tr( "Planar Angle" ) ) );
-		//colorPage->addWidget( LightPlanarAngle = new QSpinBox, 1 );
-		//LightPlanarAngle->setMinimum( -180 );
-		//LightPlanarAngle->setMaximum( +180 );
-		//LightPlanarAngle->setSingleStep( 5 );
-		//LightPlanarAngle->setWrapping( true );
-		//LightPlanarAngle->setValue( cfg.value( "Planar Angle", 0 ).toInt() );
-		//connect( LightPlanarAngle, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
-		//cfg.endGroup();
-
-		//colorPage->popLayout();
-		//colorPage->pushLayout( tr( "Presets" ), Qt::Horizontal );
-		//
-		//QButtonGroup * grp = new QButtonGroup( this );
-		//connect( grp, bgClicked, this, &Options::activateLightPreset );
-		//int psid = 0;
-		//for ( const QString& psname : QStringList{ tr( "Sunny Day" ), tr( "Dark Night" ) } )
-		//{
-		//	QPushButton * bt = new QPushButton( psname );
-		//	grp->addButton( bt, psid++ );
-		//	colorPage->addWidget( bt );
-		//}
-		//
-		//colorPage->popLayout();
-		//colorPage->popLayout();
-		//colorPage->popLayout();
-		colorPage->pushLayout( tr( "Colors" ), Qt::Horizontal );
-
-
-		QStringList colorNames{ tr( "Background" ), tr( "Foreground" ), tr( "Highlight" ) };
-		QList<QColor> colorDefaults{
-			QColor::fromRgb( 0, 0, 0 ),
-			QColor::fromRgb( 255, 255, 255 ),
-			QColor::fromRgb( 255, 255, 0 )
-		};
-
-		for ( int c = 0; c < 3; c++ ) {
-			colorPage->pushLayout( colorNames[c], Qt::Horizontal );
-
-			ColorWheel * wheel = new ColorWheel( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>() );
-			wheel->setSizeHint( QSize( 105, 105 ) );
-			connect( wheel, &ColorWheel::sigColorEdited, this, &Options::sigChanged );
-			colors[ c ] = wheel;
-			colorPage->addWidget( wheel );
-
-			if ( c != 0 ) {
-				alpha[ c ] = new AlphaSlider( Qt::Vertical );
-				alpha[ c ]->setValue( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>().alphaF() );
-				alpha[ c ]->setColor( wheel->getColor() );
-				connect( alpha[c], &AlphaSlider::valueChanged, this, &Options::sigChanged );
-				connect( wheel, &ColorWheel::sigColor, alpha[ c ], &AlphaSlider::setColor );
-				connect( alpha[c], &AlphaSlider::valueChanged, wheel, &ColorWheel::setAlphaValue );
-				colorPage->addWidget( alpha[ c ] );
-			} else {
-				alpha[c] = nullptr;
-				wheel->setAlpha( false );
-			}
-
-			colorPage->popLayout();
-		}
-
-		colorPage->popLayout();
-
-		cfg.endGroup();
-	}
+	//GroupBox * colorPage;
+	//tab->addTab( colorPage = new GroupBox( Qt::Vertical ), tr( "Colors" ) );
+	//{
+	//	cfg.beginGroup( "Render Settings" );
+	//
+	//	colorPage->pushLayout( tr( "Light" ), Qt::Vertical );
+	//	//colorPage->pushLayout( Qt::Horizontal );
+	//
+	//
+	//	//cfg.beginGroup( "Light0" );
+	//	//
+	//	//QStringList lightNames{ tr( "Ambient" ), tr( "Diffuse" ), tr( "Specular" ) };
+	//	//QList<QColor> lightDefaults{
+	//	//	QColor::fromRgbF( .4, .4, .4 ),
+	//	//	QColor::fromRgbF( .8, .8, .8 ),
+	//	//	QColor::fromRgbF( 1, 1, 1 )
+	//	//};
+	//	//
+	//	//for ( int l = 0; l < 3; l++ ) {
+	//	//	ColorWheel * wheel = new ColorWheel( cfg.value( lightNames[l], lightDefaults[l] ).value<QColor>() );
+	//	//	wheel->setSizeHint( QSize( 105, 105 ) );
+	//	//	wheel->setAlpha( false );
+	//	//	connect( wheel, &ColorWheel::sigColorEdited, this, &Options::sigChanged );
+	//	//	LightColor[l] = wheel;
+	//	//
+	//	//	colorPage->pushLayout( lightNames[l], Qt::Vertical );
+	//	//	colorPage->addWidget( wheel );
+	//	//	colorPage->popLayout();
+	//	//}
+	//	//
+	//	//colorPage->popLayout();
+	//	//colorPage->pushLayout( Qt::Horizontal );
+	//	//
+	//	//colorPage->addWidget( LightFrontal = new QCheckBox( tr( "Frontal" ) ), 0 );
+	//	//LightFrontal->setToolTip( tr( "Lock light to camera position" ) );
+	//	//LightFrontal->setChecked( cfg.value( "Frontal", true ).toBool() );
+	//	//connect( LightFrontal, &QCheckBox::toggled, this, &Options::sigChanged );
+	//	//
+	//	//QWidget * pos = colorPage->pushLayout( tr( "Position" ), Qt::Horizontal, 1 );
+	//	//pos->setDisabled( LightFrontal->isChecked() );
+	//	//connect( LightFrontal, &QCheckBox::toggled, pos, &QWidget::setDisabled );
+	//	//
+	//	//colorPage->addWidget( new QLabel( tr( "Declination" ) ) );
+	//	//colorPage->addWidget( LightDeclination = new QSpinBox, 1 );
+	//	//LightDeclination->setMinimum( -180 );
+	//	//LightDeclination->setMaximum( +180 );
+	//	//LightDeclination->setSingleStep( 5 );
+	//	//LightDeclination->setWrapping( true );
+	//	//LightDeclination->setValue( cfg.value( "Declination", 0 ).toInt() );
+	//	//connect( LightDeclination, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
+	//	//
+	//	//colorPage->addWidget( new QLabel( tr( "Planar Angle" ) ) );
+	//	//colorPage->addWidget( LightPlanarAngle = new QSpinBox, 1 );
+	//	//LightPlanarAngle->setMinimum( -180 );
+	//	//LightPlanarAngle->setMaximum( +180 );
+	//	//LightPlanarAngle->setSingleStep( 5 );
+	//	//LightPlanarAngle->setWrapping( true );
+	//	//LightPlanarAngle->setValue( cfg.value( "Planar Angle", 0 ).toInt() );
+	//	//connect( LightPlanarAngle, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &Options::sigChanged );
+	//	//cfg.endGroup();
+	//
+	//	//colorPage->popLayout();
+	//	//colorPage->pushLayout( tr( "Presets" ), Qt::Horizontal );
+	//	//
+	//	//QButtonGroup * grp = new QButtonGroup( this );
+	//	//connect( grp, bgClicked, this, &Options::activateLightPreset );
+	//	//int psid = 0;
+	//	//for ( const QString& psname : QStringList{ tr( "Sunny Day" ), tr( "Dark Night" ) } )
+	//	//{
+	//	//	QPushButton * bt = new QPushButton( psname );
+	//	//	grp->addButton( bt, psid++ );
+	//	//	colorPage->addWidget( bt );
+	//	//}
+	//	//
+	//	//colorPage->popLayout();
+	//	//colorPage->popLayout();
+	//	//colorPage->popLayout();
+	//	colorPage->pushLayout( tr( "Colors" ), Qt::Horizontal );
+	//
+	//
+	//	QStringList colorNames{ tr( "Background" ), tr( "Foreground" ), tr( "Highlight" ) };
+	//	QList<QColor> colorDefaults{
+	//		QColor::fromRgb( 0, 0, 0 ),
+	//		QColor::fromRgb( 255, 255, 255 ),
+	//		QColor::fromRgb( 255, 255, 0 )
+	//	};
+	//
+	//	for ( int c = 0; c < 3; c++ ) {
+	//		colorPage->pushLayout( colorNames[c], Qt::Horizontal );
+	//
+	//		ColorWheel * wheel = new ColorWheel( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>() );
+	//		wheel->setSizeHint( QSize( 105, 105 ) );
+	//		connect( wheel, &ColorWheel::sigColorEdited, this, &Options::sigChanged );
+	//		colors[ c ] = wheel;
+	//		colorPage->addWidget( wheel );
+	//
+	//		if ( c != 0 ) {
+	//			alpha[ c ] = new AlphaSlider( Qt::Vertical );
+	//			alpha[ c ]->setValue( cfg.value( colorNames[c], colorDefaults[c] ).value<QColor>().alphaF() );
+	//			alpha[ c ]->setColor( wheel->getColor() );
+	//			connect( alpha[c], &AlphaSlider::valueChanged, this, &Options::sigChanged );
+	//			connect( wheel, &ColorWheel::sigColor, alpha[ c ], &AlphaSlider::setColor );
+	//			connect( alpha[c], &AlphaSlider::valueChanged, wheel, &ColorWheel::setAlphaValue );
+	//			colorPage->addWidget( alpha[ c ] );
+	//		} else {
+	//			alpha[c] = nullptr;
+	//			wheel->setAlpha( false );
+	//		}
+	//
+	//		colorPage->popLayout();
+	//	}
+	//
+	//	colorPage->popLayout();
+	//
+	//	cfg.endGroup();
+	//}
 	/*GroupBox * matPage;
 	tab->addTab( matPage = new GroupBox( Qt::Vertical ), tr( "Materials" ) );
 	{
@@ -630,8 +630,8 @@ void Options::save()
 
 	cfg.beginGroup( "Render Settings" );
 
-		cfg.setValue( "Texture Folders", textureFolders() );
-		cfg.setValue( "Texture Alternatives", textureAlternatives() );
+		//cfg.setValue( "Texture Folders", textureFolders() );
+		//cfg.setValue( "Texture Alternatives", textureAlternatives() );
 
 		//cfg.setValue( "Draw Axes", drawAxes() );
 		//cfg.setValue( "Draw Nodes", drawNodes() );
@@ -641,13 +641,13 @@ void Options::save()
 		//cfg.setValue( "Show Hidden Objects", drawHidden() );
 		//cfg.setValue( "Show Stats", drawStats() );
 
-		cfg.setValue( "Background", bgColor() );
-		cfg.setValue( "Foreground", nlColor() );
-		cfg.setValue( "Highlight", hlColor() );
+		//cfg.setValue( "Background", bgColor() );
+		//cfg.setValue( "Foreground", nlColor() );
+		//cfg.setValue( "Highlight", hlColor() );
 
-		cfg.setValue( "Anti Aliasing", antialias() );
+		//cfg.setValue( "Anti Aliasing", antialias() );
 		//cfg.setValue( "Texturing", texturing() );
-		cfg.setValue( "Enable Shaders", shaders() );
+		//cfg.setValue( "Enable Shaders", shaders() );
 
 		cfg.setValue( "Cull Nodes By Name", CullByID->isChecked() );
 		cfg.setValue( "Cull Expression", CullExpr->text() );
@@ -681,229 +681,229 @@ void Options::save()
 	cfg.setValue( "Export Settings/Export Culling", exportCullEnabled() );
 }
 
-bool regTexturePath( QStringList & gamePaths, QString & gameList, // Out Params
-                     const QString & regPath, const QString & regValue,
-                     const QString & gameFolder, const QString & gameName,
-                     QStringList gameSubDirs = QStringList(),
-                     QStringList gameArchiveFilters = QStringList(),
-                     QString confirmPath = QString() )
-{
-	QSettings reg( regPath, QSettings::NativeFormat );
-	QDir dir( reg.value( regValue ).toString() );
+//bool regTexturePath( QStringList & gamePaths, QString & gameList, // Out Params
+//                     const QString & regPath, const QString & regValue,
+//                     const QString & gameFolder, const QString & gameName,
+//                     QStringList gameSubDirs = QStringList(),
+//                     QStringList gameArchiveFilters = QStringList(),
+//                     QString confirmPath = QString() )
+//{
+//	QSettings reg( regPath, QSettings::NativeFormat );
+//	QDir dir( reg.value( regValue ).toString() );
+//
+//	if ( dir.exists() && dir.cd( gameFolder ) ) {
+//		gameList.append( gameName + "\n" );
+//
+//		gamePaths.append( dir.path() );
+//		if ( !gameSubDirs.isEmpty() ) {
+//			foreach ( QString sd, gameSubDirs ) {
+//				gamePaths.append( dir.path() + sd );
+//			}
+//		}
+//
+//		if ( !gameArchiveFilters.isEmpty() ) {
+//			dir.setNameFilters( gameArchiveFilters );
+//			dir.setFilter( QDir::Dirs );
+//			foreach ( QString dn, dir.entryList() ) {
+//				gamePaths << dir.filePath( dn );
+//
+//				if ( !gameSubDirs.isEmpty() ) {
+//					foreach ( QString sd, gameSubDirs ) {
+//						gamePaths << dir.filePath( dn ) + sd;
+//					}
+//				}
+//			}
+//		}
+//		return true;
+//	}
+//	return false;
+//}
 
-	if ( dir.exists() && dir.cd( gameFolder ) ) {
-		gameList.append( gameName + "\n" );
+//void Options::textureFolderAutoDetect()
+//{
+//	//List to hold all games paths that were detected
+//	QStringList list;
+//
+//	//Generic "same directory" path should always be added
+//	list.append( "./" );
+//
+//	//String to hold the message box message
+//	QString game_list;
+//
+//#ifdef Q_OS_WIN32
+//
+//	// Skyrim
+//	{
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim",
+//			"Installed Path",
+//			"Data",
+//			"TES V: Skyrim",
+//			{},        /* No subdirs */
+//			{ ".bsa" },
+//			"Textures" /* Confirm Textures if no FSENGINE */
+//		);
+//	}
+//
+//	// Fallout: New Vegas
+//	{
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV",
+//			"Installed Path",
+//			"Data",
+//			"Fallout: New Vegas",
+//			{},        /* No subdirs */
+//			{ ".bsa" },
+//			"Textures" /* Confirm Textures if no FSENGINE */
+//		);
+//	}
+//
+//	// Fallout 3
+//	{
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3",
+//			"Installed Path",
+//			"Data",
+//			"Fallout 3",
+//			{},        /* No subdirs */
+//			{ ".bsa" },
+//			"Textures" /* Confirm Textures if no FSENGINE */
+//		);
+//	}
+//
+//	// Oblivion
+//	{
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion",
+//			"Installed Path",
+//			"Data",
+//			"TES IV: Oblivion",
+//			{},        /* No subdirs */
+//			{ ".bsa" },
+//			"Textures" /* Confirm Textures if no FSENGINE */
+//		);
+//	}
+//
+//	// Morrowind
+//	{
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind",
+//			"Installed Path",
+//			"Data",
+//			"TES III: Morrowind",
+//			{ "/Textures" },
+//			{ ".bsa" }
+//		);
+//	}
+//
+//	// CIV IV
+//	{
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4",
+//			"INSTALLDIR",
+//			"Assets/Art/shared",
+//			"Sid Meier's Civilization IV"
+//		);
+//	}
+//
+//	// Freedom Force
+//	{
+//		QStringList ffSubDirs{ "./textures", "./skins/standard" };
+//
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR",
+//			"InstallDir",
+//			"Data/Art/library/area_specific/_textures",
+//			"Freedom Force vs. the Third Reich",
+//			ffSubDirs
+//		);
+//
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force",
+//			"InstallDir",
+//			"Data/Art/library/area_specific/_textures",
+//			"Freedom Force",
+//			ffSubDirs
+//		);
+//
+//		regTexturePath( list, game_list,
+//			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo",
+//			"InstallDir",
+//			"Data/Art/library/area_specific/_textures",
+//			"Freedom Force Demo",
+//			ffSubDirs
+//		);
+//	}
+//
+//#endif
+//	//Set folder list box to contain the newly detected textures, along with the ones the user has already defined, ignoring any duplicates
+//	list.removeDuplicates();
+//
+//	TexFolderModel->setStringList( list );
+//	TexAlternatives->setChecked( false );
+//	TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+//
+//	//Announce result to user
+//	if ( game_list.size() == 0 ) {
+//		game_list = tr( "No supported games were detected.\nYour game may still work, you will just have to set the folders manually until an auto-detect routine is created." );
+//	} else {
+//		game_list = tr( "Successfully detected the following games:\n" ) + game_list;
+//	}
+//
+//	QMessageBox::information( dialog, "NifSkope", game_list );
+//}
 
-		gamePaths.append( dir.path() );
-		if ( !gameSubDirs.isEmpty() ) {
-			foreach ( QString sd, gameSubDirs ) {
-				gamePaths.append( dir.path() + sd );
-			}
-		}
+//void Options::textureFolderAction( int id )
+//{
+//	QModelIndex idx = TexFolderView->currentIndex();
+//
+//	switch ( id ) {
+//	case 0:
+//		// add folder
+//		TexFolderModel->insertRow( 0, QModelIndex() );
+//		TexFolderModel->setData( TexFolderModel->index( 0, 0, QModelIndex() ), tr( "Choose a folder" ), Qt::EditRole );
+//		TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
+//		break;
+//	case 1:
+//
+//		if ( idx.isValid() ) {
+//			// remove folder
+//			TexFolderModel->removeRow( idx.row(), QModelIndex() );
+//		}
+//		break;
+//	case 2:
+//
+//		if ( idx.isValid() && idx.row() > 0 ) {
+//			// move up
+//			QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
+//			QVariant v = TexFolderModel->data( idx, Qt::EditRole );
+//			TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
+//			TexFolderModel->setData( xdi, v, Qt::EditRole );
+//			TexFolderView->setCurrentIndex( xdi );
+//		}
+//		break;
+//	case 3:
+//
+//		if ( idx.isValid() && idx.row() < TexFolderModel->rowCount() - 1 ) {
+//			// move down
+//			QModelIndex xdi = idx.sibling( idx.row() + 1, 0 );
+//			QVariant v = TexFolderModel->data( idx, Qt::EditRole );
+//			TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
+//			TexFolderModel->setData( xdi, v, Qt::EditRole );
+//			TexFolderView->setCurrentIndex( xdi );
+//		}
+//		break;
+//	}
+//}
 
-		if ( !gameArchiveFilters.isEmpty() ) {
-			dir.setNameFilters( gameArchiveFilters );
-			dir.setFilter( QDir::Dirs );
-			foreach( QString dn, dir.entryList() ) {
-				gamePaths << dir.filePath( dn );
-
-				if ( !gameSubDirs.isEmpty() ) {
-					foreach ( QString sd, gameSubDirs ) {
-						gamePaths << dir.filePath( dn ) + sd;
-					}
-				}
-			}
-		}
-		return true;
-	}
-	return false;
-}
-
-void Options::textureFolderAutoDetect()
-{
-	//List to hold all games paths that were detected
-	QStringList list;
-
-	//Generic "same directory" path should always be added
-	list.append( "./" );
-
-	//String to hold the message box message
-	QString game_list;
-
-#ifdef Q_OS_WIN32
-
-	// Skyrim
-	{
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim",
-			"Installed Path",
-			"Data",
-			"TES V: Skyrim",
-			{},        /* No subdirs */
-			{ ".bsa" },
-			"Textures" /* Confirm Textures if no FSENGINE */
-		);
-	}
-
-	// Fallout: New Vegas
-	{
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV",
-			"Installed Path",
-			"Data",
-			"Fallout: New Vegas",
-			{},        /* No subdirs */
-			{ ".bsa" },
-			"Textures" /* Confirm Textures if no FSENGINE */
-		);
-	}
-
-	// Fallout 3
-	{
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3",
-			"Installed Path",
-			"Data",
-			"Fallout 3",
-			{},        /* No subdirs */
-			{ ".bsa" },
-			"Textures" /* Confirm Textures if no FSENGINE */
-		);
-	}
-
-	// Oblivion
-	{
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion",
-			"Installed Path",
-			"Data",
-			"TES IV: Oblivion",
-			{},        /* No subdirs */
-			{ ".bsa" },
-			"Textures" /* Confirm Textures if no FSENGINE */
-		);
-	}
-
-	// Morrowind
-	{
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind",
-			"Installed Path",
-			"Data",
-			"TES III: Morrowind",
-			{ "/Textures" },
-			{ ".bsa" }
-		);
-	}
-
-	// CIV IV
-	{
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Firaxis Games\\Sid Meier's Civilization 4",
-			"INSTALLDIR",
-			"Assets/Art/shared",
-			"Sid Meier's Civilization IV"
-		);
-	}
-
-	// Freedom Force
-	{
-		QStringList ffSubDirs{ "./textures", "./skins/standard" };
-
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\FFVTTR",
-			"InstallDir",
-			"Data/Art/library/area_specific/_textures",
-			"Freedom Force vs. the Third Reich",
-			ffSubDirs
-		);
-
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force",
-			"InstallDir",
-			"Data/Art/library/area_specific/_textures",
-			"Freedom Force",
-			ffSubDirs
-		);
-
-		regTexturePath( list, game_list,
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Irrational Games\\Freedom Force Demo",
-			"InstallDir",
-			"Data/Art/library/area_specific/_textures",
-			"Freedom Force Demo",
-			ffSubDirs
-		);
-	}
-
-#endif
-	//Set folder list box to contain the newly detected textures, along with the ones the user has already defined, ignoring any duplicates
-	list.removeDuplicates();
-
-	TexFolderModel->setStringList( list );
-	TexAlternatives->setChecked( false );
-	TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-
-	//Announce result to user
-	if ( game_list.size() == 0 ) {
-		game_list = tr( "No supported games were detected.\nYour game may still work, you will just have to set the folders manually until an auto-detect routine is created." );
-	} else {
-		game_list = tr( "Successfully detected the following games:\n" ) + game_list;
-	}
-
-	QMessageBox::information( dialog, "NifSkope", game_list );
-}
-
-void Options::textureFolderAction( int id )
-{
-	QModelIndex idx = TexFolderView->currentIndex();
-
-	switch ( id ) {
-	case 0:
-		// add folder
-		TexFolderModel->insertRow( 0, QModelIndex() );
-		TexFolderModel->setData( TexFolderModel->index( 0, 0, QModelIndex() ), tr( "Choose a folder" ), Qt::EditRole );
-		TexFolderView->setCurrentIndex( TexFolderModel->index( 0, 0, QModelIndex() ) );
-		break;
-	case 1:
-
-		if ( idx.isValid() ) {
-			// remove folder
-			TexFolderModel->removeRow( idx.row(), QModelIndex() );
-		}
-		break;
-	case 2:
-
-		if ( idx.isValid() && idx.row() > 0 ) {
-			// move up
-			QModelIndex xdi = idx.sibling( idx.row() - 1, 0 );
-			QVariant v = TexFolderModel->data( idx, Qt::EditRole );
-			TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
-			TexFolderModel->setData( xdi, v, Qt::EditRole );
-			TexFolderView->setCurrentIndex( xdi );
-		}
-		break;
-	case 3:
-
-		if ( idx.isValid() && idx.row() < TexFolderModel->rowCount() - 1 ) {
-			// move down
-			QModelIndex xdi = idx.sibling( idx.row() + 1, 0 );
-			QVariant v = TexFolderModel->data( idx, Qt::EditRole );
-			TexFolderModel->setData( idx, TexFolderModel->data( xdi, Qt::EditRole ), Qt::EditRole );
-			TexFolderModel->setData( xdi, v, Qt::EditRole );
-			TexFolderView->setCurrentIndex( xdi );
-		}
-		break;
-	}
-}
-
-void Options::textureFolderIndex( const QModelIndex & idx )
-{
-	TexFolderSelect->setEnabled( idx.isValid() );
-	TexFolderButtons[0]->setEnabled( true );
-	TexFolderButtons[1]->setEnabled( idx.isValid() );
-	TexFolderButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
-	TexFolderButtons[3]->setEnabled( idx.isValid() && ( idx.row() < TexFolderModel->rowCount() - 1 ) );
-}
+//void Options::textureFolderIndex( const QModelIndex & idx )
+//{
+//	TexFolderSelect->setEnabled( idx.isValid() );
+//	TexFolderButtons[0]->setEnabled( true );
+//	TexFolderButtons[1]->setEnabled( idx.isValid() );
+//	TexFolderButtons[2]->setEnabled( idx.isValid() && ( idx.row() > 0 ) );
+//	TexFolderButtons[3]->setEnabled( idx.isValid() && ( idx.row() < TexFolderModel->rowCount() - 1 ) );
+//}
 
 //void Options::activateLightPreset( int id )
 //{
@@ -925,35 +925,35 @@ void Options::textureFolderIndex( const QModelIndex & idx )
 //	emit sigChanged();
 //}
 
-QStringList Options::textureFolders()
-{
-	return get()->TexFolderModel->stringList();
-}
-
-bool Options::textureAlternatives()
-{
-	return get()->TexAlternatives->isChecked();
-}
+//QStringList Options::textureFolders()
+//{
+//	return get()->TexFolderModel->stringList();
+//}
+//
+//bool Options::textureAlternatives()
+//{
+//	return get()->TexAlternatives->isChecked();
+//}
 
 //Options::Axis Options::upAxis()
 //{
 //	return get()->AxisX->isChecked() ? XAxis : get()->AxisY->isChecked() ? YAxis : ZAxis;
 //}
 
-bool Options::antialias()
-{
-	return get()->AntiAlias->isChecked();
-}
+//bool Options::antialias()
+//{
+//	return get()->AntiAlias->isChecked();
+//}
 
 //bool Options::texturing()
 //{
 //	return get()->Textures->isChecked();
 //}
 
-bool Options::shaders()
-{
-	return get()->Shaders->isChecked();
-}
+//bool Options::shaders()
+//{
+//	return get()->Shaders->isChecked();
+//}
 
 
 //bool Options::drawAxes()
@@ -999,21 +999,28 @@ bool Options::shaders()
 
 QColor Options::bgColor()
 {
-	return get()->colors[ 0 ]->getColor();
+	//return get()->colors[ 0 ]->getColor();
+	QSettings settings;
+	return settings.value( "Settings/Render/Colors/Background" ).value<QColor>();
 }
 
 QColor Options::nlColor()
 {
-	QColor c = get()->colors[ 1 ]->getColor();
-	c.setAlphaF( get()->alpha[ 1 ]->value() );
-	return c;
+	//QColor c = get()->colors[ 1 ]->getColor();
+	//c.setAlphaF( get()->alpha[ 1 ]->value() );
+	//return c;
+	QSettings settings;
+	return settings.value( "Settings/Render/Colors/Wireframe" ).value<QColor>();
 }
 
 QColor Options::hlColor()
 {
-	QColor c = get()->colors[ 2 ]->getColor();
-	c.setAlphaF( get()->alpha[ 2 ]->value() );
-	return c;
+	//QColor c = get()->colors[ 2 ]->getColor();
+	//c.setAlphaF( get()->alpha[ 2 ]->value() );
+	//return c;
+
+	QSettings settings;
+	return settings.value( "Settings/Render/Colors/Highlight" ).value<QColor>();
 }
 
 
@@ -1093,10 +1100,10 @@ QColor Options::overrideEmissive()
  * This option is hidden in the registry and disabled by setting the key
  * Render Settings/Draw Meshes to false
  */
-bool Options::drawMeshes()
-{
-	return get()->showMeshes;
-}
+//bool Options::drawMeshes()
+//{
+//	return get()->showMeshes;
+//}
 
 QLocale Options::translationLocale()
 {
@@ -1122,7 +1129,7 @@ bool Options::exportCullEnabled()
 }
 
 
-QString Options::getDisplayVersion()
-{
-	return get()->version->displayVersion;
-}
+//QString Options::getDisplayVersion()
+//{
+//	return get()->version->displayVersion;
+//}

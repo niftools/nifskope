@@ -80,19 +80,19 @@ public:
 	//! The list of currently enabled actions
 	static QList<QAction *> actions();
 
-	static QString getDisplayVersion();
+	//static QString getDisplayVersion();
 
 	//! Texture folders
-	static QStringList textureFolders();
+	//static QStringList textureFolders();
 	//! Whether to use alternative textures
-	static bool textureAlternatives();
+	//static bool textureAlternatives();
 
 	//! Whether to enable antialiasing
-	static bool antialias();
+	//static bool antialias();
 	//! Whether to enable texturing
 	//static bool texturing();
 	//! Whether to enable shaders
-	static bool shaders();
+	//static bool shaders();
 
 	//! Whether to enable blending
 	static bool blending() { return true; }
@@ -124,7 +124,7 @@ public:
 	//! Whether to draw stats
 	//static bool drawStats();
 	//! Whether to draw meshes
-	static bool drawMeshes();
+	//static bool drawMeshes();
 
 	//! Whether to benchmark FPS
 	//static bool benchmark();
@@ -184,11 +184,11 @@ signals:
 
 protected slots:
 	//! Texture folder button actions
-	void textureFolderAction( int );
+	//void textureFolderAction( int );
 	//! Per-index texture folder options
-	void textureFolderIndex( const QModelIndex & );
+	//void textureFolderIndex( const QModelIndex & );
 	//! Automatic detection of texture folders
-	void textureFolderAutoDetect();
+	//void textureFolderAutoDetect();
 	//! Set lighting presets
 	//void activateLightPreset( int );
 
@@ -215,7 +215,7 @@ protected:
 	//QAction * aDrawNodes;
 	//QAction * aDrawHavok;
 	//QAction * aDrawConstraints;
-	QAction * aDrawFurn;
+	//QAction * aDrawFurn;
 	QAction * aDrawHidden;
 	//QAction * aDrawStats;
 
@@ -278,7 +278,7 @@ protected:
 	GroupBox * dialog;
 	QTabWidget * tab;
 
-	bool showMeshes;
+	//bool showMeshes;
 };
 
 #endif
