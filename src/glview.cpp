@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glview.h"
 #include "config.h"
-#include "options.h"
+#include "settings.h"
 
 #include "ui_nifskope.h"
 #include "nifskope.h"
@@ -49,6 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QDialog>
 #include <QDir>
+#include <QGroupBox>
 #include <QImageWriter>
 #include <QLabel>
 #include <QKeyEvent>
@@ -84,10 +85,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //	therefore it's really 62.5FPS
 #define FPS 60
 
-
-#define FOV 45.0
-#define MOV_SPD 350
-#define ROT_SPD 45
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
 
@@ -122,11 +119,14 @@ GLView * GLView::create( NifSkope * window )
 			share = v;
 	}
 
+	QSettings settings;
+	int aa = settings.value( "Settings/Render/General/Antialiasing", 4 ).toInt();
+
 	// All new windows after the first window will share a format
 	if ( share ) {
 		fmt = share->format();
 	} else {
-		fmt.setSampleBuffers( Options::antialias() );
+		fmt.setSampleBuffers( aa > 0 );
 	}
 	
 	// OpenGL version
@@ -138,7 +138,7 @@ GLView * GLView::create( NifSkope * window )
 	fmt.setSwapInterval( 1 );
 	fmt.setDoubleBuffer( true );
 
-	fmt.setSamples( Options::antialias() ? 16 : 0 );
+	fmt.setSamples( pow( 2, aa ) );
 
 	fmt.setDirectRendering( true );
 	fmt.setRgba( true );
@@ -196,6 +196,8 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 
 	textures = new TexCache( this );
 
+	updateSettings();
+
 	scene = new Scene( textures, glContext, glFuncs );
 	connect( textures, &TexCache::sigRefresh, this, static_cast<void (GLView::*)()>(&GLView::update) );
 	connect( scene, &Scene::sceneUpdated, this, static_cast<void (GLView::*)()>(&GLView::update) );
@@ -210,14 +212,30 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	lightVisTimer->setSingleShot( true );
 	connect( lightVisTimer, &QTimer::timeout, [this]() { setVisMode( Scene::VisLightPos, false ); update(); } );
 
-	connect( Options::get(), &Options::sigFlush3D, textures, &TexCache::flush );
-	connect( Options::get(), &Options::sigChanged, this, static_cast<void (GLView::*)()>(&GLView::update) );
-	connect( Options::get(), &Options::materialOverridesChanged, this, &GLView::updateScene );
+	connect( NifSkope::options(), &SettingsDialog::flush3D, textures, &TexCache::flush );
+	connect( NifSkope::options(), &SettingsDialog::update3D, [this]() {
+		updateSettings();
+		qglClearColor( cfg.background );
+		update();
+	} );
 }
 
 GLView::~GLView()
 {
 	delete scene;
+}
+
+void GLView::updateSettings()
+{
+	QSettings settings;
+	settings.beginGroup( "Settings/Render" );
+
+	cfg.background = settings.value( "Colors/Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	cfg.fov = settings.value( "General/Camera/Field Of View" ).toFloat();
+	cfg.moveSpd = settings.value( "General/Camera/Movement Speed" ).toFloat();
+	cfg.rotSpd = settings.value( "General/Camera/Rotation Speed" ).toFloat();
+
+	settings.endGroup();
 }
 
 
@@ -335,7 +353,7 @@ void GLView::glProjection( int x, int y )
 			fr = 2.0;
 		}
 
-		GLdouble h2 = tan( ( FOV / Zoom ) / 360 * M_PI ) * nr;
+		GLdouble h2 = tan( ( cfg.fov / Zoom ) / 360 * M_PI ) * nr;
 		GLdouble w2 = h2 * aspect;
 		glFrustum( -w2, +w2, -h2, +h2, nr, fr );
 	} else {
@@ -604,7 +622,7 @@ void GLView::paintGL()
 		// Square frustum
 		auto nr = 1.0;
 		auto fr = 250.0;
-		GLdouble h2 = tan( FOV / 360 * M_PI ) * nr;
+		GLdouble h2 = tan( cfg.fov / 360 * M_PI ) * nr;
 		GLdouble w2 = h2;
 		glFrustum( -w2, +w2, -h2, +h2, nr, fr );
 
@@ -670,7 +688,7 @@ void GLView::resizeGL( int width, int height )
 	makeCurrent();
 	aspect = (GLdouble)width / (GLdouble)height;
 	glViewport( 0, 0, width, height );
-	qglClearColor( Options::bgColor() );
+	qglClearColor( cfg.background );
 
 	update();
 }
@@ -1259,16 +1277,16 @@ void GLView::advanceGears()
 	// keys based on user preferences of what app they would like to
 	// emulate for the control scheme
 	// Rotation
-	if ( kbd[ Qt::Key_Up ] )    rotate( -ROT_SPD * dT, 0, 0 );
-	if ( kbd[ Qt::Key_Down ] )  rotate( +ROT_SPD * dT, 0, 0 );
-	if ( kbd[ Qt::Key_Left ] )  rotate( 0, 0, -ROT_SPD * dT );
-	if ( kbd[ Qt::Key_Right ] ) rotate( 0, 0, +ROT_SPD * dT );
+	if ( kbd[ Qt::Key_Up ] )    rotate( -cfg.rotSpd * dT, 0, 0 );
+	if ( kbd[ Qt::Key_Down ] )  rotate( +cfg.rotSpd * dT, 0, 0 );
+	if ( kbd[ Qt::Key_Left ] )  rotate( 0, 0, -cfg.rotSpd * dT );
+	if ( kbd[ Qt::Key_Right ] ) rotate( 0, 0, +cfg.rotSpd * dT );
 
 	// Movement
-	if ( kbd[ Qt::Key_A ] ) move( +MOV_SPD * dT, 0, 0 );
-	if ( kbd[ Qt::Key_D ] ) move( -MOV_SPD * dT, 0, 0 );
-	if ( kbd[ Qt::Key_W ] ) move( 0, 0, +MOV_SPD * dT );
-	if ( kbd[ Qt::Key_S ] ) move( 0, 0, -MOV_SPD * dT );
+	if ( kbd[ Qt::Key_A ] ) move( +cfg.moveSpd * dT, 0, 0 );
+	if ( kbd[ Qt::Key_D ] ) move( -cfg.moveSpd * dT, 0, 0 );
+	if ( kbd[ Qt::Key_W ] ) move( 0, 0, +cfg.moveSpd * dT );
+	if ( kbd[ Qt::Key_S ] ) move( 0, 0, -cfg.moveSpd * dT );
 	//if ( kbd[ Qt::Key_F ] ) move( 0, +MOV_SPD * dT, 0 );
 	//if ( kbd[ Qt::Key_R ] ) move( 0, -MOV_SPD * dT, 0 );
 

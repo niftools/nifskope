@@ -167,6 +167,7 @@ public slots:
 	void updateScene();
 	void updateAnimationState( bool checked );
 	void setVisMode( Scene::VisMode, bool checked = true );
+	void updateSettings();
 
 signals:
 	void clicked( const QModelIndex & );
@@ -250,6 +251,14 @@ private:
 
 	QTimer * lightVisTimer;
 	int lightVisTimeout;
+
+	struct Settings
+	{
+		QColor background;
+		float fov = 45.0;
+		float moveSpd = 350;
+		float rotSpd = 45;
+	} cfg;
 
 private slots:
 	void advanceGears();
