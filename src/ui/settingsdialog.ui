@@ -39,7 +39,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QFrame" name="frame_3">
+       <widget class="QFrame" name="categoryFrame">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="MinimumExpanding">
           <horstretch>0</horstretch>
@@ -84,8 +84,16 @@
 QListWidget::item { height: 20px; padding: 10px; color: #555555; border: 1px solid transparent;  }
 QListWidget::item::text { padding-left: 10px; background: transparent;  border: 1px solid transparent;  }
 QListWidget::item::text:focus { border: 1px solid transparent;  }
-QListWidget::item:selected { background: rgba(0, 203, 243, 255); border: 1px solid transparent;   }
-QListWidget::item:focus { border: 1px solid transparent; color: black;  }</string>
+QListWidget::item:focus { border: 1px solid transparent; color: black;  }
+
+QListWidget::item:hover { background: rgba(0, 153, 255, 32); border: 1px solid transparent; }
+QListWidget::item:selected { background: rgba(0, 153, 255, 128); border: 1px solid transparent;   }</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
            </property>
            <property name="uniformItemSizes">
             <bool>true</bool>
@@ -104,7 +112,7 @@ QListWidget::item:focus { border: 1px solid transparent; color: black;  }</strin
             <string notr="true">#restoreAllDefaults { background: transparent; border: 1px solid transparent; padding: 5px; }
 
 #restoreAllDefaults:hover:pressed { background: rgba(255, 255, 255, 255); }
-#restoreAllDefaults:hover:!pressed { background: rgba(0, 203, 243, 255); }</string>
+#restoreAllDefaults:hover:!pressed { background: rgba(0, 153, 255, 255); }</string>
            </property>
            <property name="text">
             <string>Restore All Defaults</string>
@@ -118,7 +126,7 @@ QListWidget::item:focus { border: 1px solid transparent; color: black;  }</strin
        </widget>
       </item>
       <item>
-       <widget class="QFrame" name="frame_2">
+       <widget class="QFrame" name="contentFrame">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
@@ -145,11 +153,37 @@ QListWidget::item:focus { border: 1px solid transparent; color: black;  }</strin
           <number>0</number>
          </property>
          <item>
-          <widget class="QStackedWidget" name="contentWidget">
+          <widget class="QStackedWidget" name="content">
            <property name="currentIndex">
             <number>-1</number>
            </property>
           </widget>
+         </item>
+         <item>
+          <widget class="QDialogButtonBox" name="submit">
+           <property name="standardButtons">
+            <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="statusBarLayout">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="leftMargin">
+            <number>1</number>
+           </property>
+           <property name="topMargin">
+            <number>1</number>
+           </property>
+           <property name="rightMargin">
+            <number>1</number>
+           </property>
+           <property name="bottomMargin">
+            <number>1</number>
+           </property>
+          </layout>
          </item>
         </layout>
        </widget>

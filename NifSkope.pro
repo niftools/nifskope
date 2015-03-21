@@ -298,7 +298,9 @@ FORMS += \
 	src/ui/checkablemessagebox.ui \
 	src/ui/nifskope.ui \
 	src/ui/settingsdialog.ui \
-	src/ui/settingsgeneral.ui
+    src/ui/settingsgeneral.ui \
+    src/ui/settingsrender.ui \
+    src/ui/settingsresources.ui
 
 
 ###############################
