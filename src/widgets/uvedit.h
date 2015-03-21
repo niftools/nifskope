@@ -99,9 +99,7 @@ protected:
 	void mouseMoveEvent( QMouseEvent * e ) override final;
 	void wheelEvent( QWheelEvent * e ) override final;
 
-// should this be public slots?
-
-protected slots:
+public slots:
 	//! Does the selection contain this vertex?
 	bool isSelected( int index );
 	//! Select a vertex
@@ -122,6 +120,8 @@ protected slots:
 	void scaleSelection();
 	//! Rotate the selection
 	void rotateSelection();
+
+	void updateSettings();
 
 protected slots:
 	void nifDataChanged( const QModelIndex & );
@@ -226,6 +226,13 @@ private:
 	friend class UVWRotateCommand;
 
 	QAction * aTextureBlend;
+
+	struct Settings
+	{
+		QColor background;
+		QColor highlight;
+		QColor wireframe;
+	} cfg;
 };
 
 //! Dialog for getting scaling factors

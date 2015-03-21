@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "uvedit.h"
-#include "options.h"
+#include "settings.h"
 
 #include "nifmodel.h"
 #include "niftypes.h"
@@ -192,13 +192,28 @@ UVWidget::UVWidget( QWidget * parent )
 
 	currentTexSlot = 0;
 
-	connect( Options::get(), &Options::sigChanged, this, &UVWidget::updateGL );
+	updateSettings();
+
+	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &UVWidget::updateSettings );
+	connect( NifSkope::options(), &SettingsDialog::update3D, this, &UVWidget::updateGL );
 }
 
 UVWidget::~UVWidget()
 {
 	delete textures;
 	nif = nullptr;
+}
+
+void UVWidget::updateSettings()
+{
+	QSettings settings;
+	settings.beginGroup( "Settings/Render/Colors/" );
+
+	cfg.background = settings.value( "Background" ).value<QColor>();
+	cfg.highlight = settings.value( "Highlight" ).value<QColor>();
+	cfg.wireframe = settings.value( "Wireframe" ).value<QColor>();
+
+	settings.endGroup();
 }
 
 void UVWidget::initializeGL()
@@ -219,7 +234,7 @@ void UVWidget::initializeGL()
 	glEnable( GL_MULTISAMPLE );
 	glDisable( GL_LIGHTING );
 
-	qglClearColor( Options::bgColor() );
+	qglClearColor( cfg.background );
 
 	if ( !texfile.isEmpty() )
 		bindTexture( texfile );
@@ -259,7 +274,7 @@ void UVWidget::paintGL()
 	glPushMatrix();
 	glLoadIdentity();
 
-	qglClearColor( Options::bgColor() );
+	qglClearColor( cfg.background );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	glDisable( GL_DEPTH_TEST );
@@ -376,7 +391,7 @@ void UVWidget::paintGL()
 
 	if ( !selectRect.isNull() ) {
 		glLoadIdentity();
-		glHighlightColor();
+		glColor( Color4( cfg.highlight ) );
 		glBegin( GL_LINE_LOOP );
 		glVertex( mapToContents( selectRect.topLeft() ) );
 		glVertex( mapToContents( selectRect.topRight() ) );
@@ -387,7 +402,7 @@ void UVWidget::paintGL()
 
 	if ( !selectPoly.isEmpty() ) {
 		glLoadIdentity();
-		glHighlightColor();
+		glColor( Color4( cfg.highlight ) );
 		glBegin( GL_LINE_LOOP );
 		for ( const QPoint& p : selectPoly ) {
 			glVertex( mapToContents( p ) );
@@ -414,9 +429,9 @@ void UVWidget::drawTexCoords()
 	glScalef( 1.0f, 1.0f, 1.0f );
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
-	Color4 nlColor( Options::nlColor() );
+	Color4 nlColor( cfg.wireframe );
 	nlColor.setAlpha( 0.5f );
-	Color4 hlColor( Options::hlColor() );
+	Color4 hlColor( cfg.highlight );
 	hlColor.setAlpha( 0.5f );
 
 	glLineWidth( 1.0f );
