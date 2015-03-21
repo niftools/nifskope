@@ -143,8 +143,16 @@ public:
 
 	Controller * findController( const QString & proptype, const QModelIndex & index );
 
+public slots:
+	void updateSettings();
+
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+
+	// Old Options API
+	//	TODO: Move away from the GL-like naming
+	void glHighlightColor() const;
+	void glNormalColor() const;
 
 	bool presorted = false;
 
@@ -159,6 +167,13 @@ protected:
 	Transform local;
 
 	NodeFlags flags;
+
+	struct Settings
+	{
+		QColor background;
+		QColor highlight;
+		QColor wireframe;
+	} cfg;
 };
 
 template <typename T> inline T * Node::findProperty() const

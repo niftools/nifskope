@@ -7,6 +7,9 @@
 #include <QWidget>
 #include <QSettings>
 
+
+#define NifSkopeDisplayRole (Qt::UserRole + 42)
+
 class FSManager;
 
 class QListWidgetItem;

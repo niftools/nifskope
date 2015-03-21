@@ -65,9 +65,9 @@ class QTimer;
 class NifSkopeVersion;
 
 //! Gets the color normally used for drawing from Options::nlColor()
-#define glNormalColor() glColor( Color4( Options::nlColor() ) )
+//#define glNormalColor() glColor( Color4( Options::nlColor() ) )
 //! Gets the color used for highlighting from Options::hlColor()
-#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
+//#define glHighlightColor() glColor( Color4( Options::hlColor() ) )
 
 //! Global options menu and dialog
 class Options final : public QObject
