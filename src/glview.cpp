@@ -435,7 +435,7 @@ void GLView::paintGL()
 	glLoadIdentity();
 
 	// Draw the grid
-	if ( scene->options & Scene::ShowAxes ) {
+	if ( scene->options & Scene::ShowGrid ) {
 		glDisable( GL_ALPHA_TEST );
 		glDisable( GL_BLEND );
 		glDisable( GL_LIGHTING );

@@ -170,6 +170,7 @@ void NifSkope::initActions()
 	*/
 
 	ui->aShowAxes->setData( Scene::ShowAxes );
+	ui->aShowGrid->setData( Scene::ShowGrid );
 	ui->aShowNodes->setData( Scene::ShowNodes );
 	ui->aShowCollision->setData( Scene::ShowCollision );
 	ui->aShowConstraints->setData( Scene::ShowConstraints );
@@ -194,11 +195,21 @@ void NifSkope::initActions()
 		return ag;
 	};
 
-	showActions = agroup( { ui->aShowAxes, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers }, false );
+	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers }, false );
 	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );
 	connect( shadingActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
+
+	// Sync actions to Scene state
+	for ( auto a : showActions->actions() ) {
+		a->setChecked( ogl->scene->options & a->data().toInt() );
+	}
+
+	// Sync actions to Scene state
+	for ( auto a : shadingActions->actions() ) {
+		a->setChecked( ogl->scene->options & a->data().toInt() );
+	}
 
 	// Setup blank QActions for Recent Files menus
 	for ( int i = 0; i < NumRecentFiles; ++i ) {
