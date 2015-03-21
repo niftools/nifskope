@@ -47,6 +47,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QSettings>
+
+#include <algorithm>
 
 
 //! @file gltex.cpp TexCache management
@@ -64,7 +67,10 @@ float max_anisotropy = 1.0f;
 //! Accessor function for glProperty etc.
 float get_max_anisotropy()
 {
-	return max_anisotropy;
+	QSettings settings;
+	float af = settings.value( "Settings/Render/General/Anisotropic Filtering", 4.0 ).toFloat();
+
+	return std::min( float(pow( 2.0f, af )), max_anisotropy );
 }
 
 void initializeTextureUnits( const QOpenGLContext * context )
@@ -81,7 +87,7 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		num_texture_units = 1;
 	}
 
-	if ( Options::antialias() && context->hasExtension( "GL_EXT_texture_filter_anisotropic" ) ) {
+	if ( context->hasExtension( "GL_EXT_texture_filter_anisotropic" ) ) {
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
 		//qDebug() << "maximum anisotropy" << max_anisotropy;
 	}
@@ -150,6 +156,8 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 	if ( file.isEmpty() )
 		return QString();
 
+	QSettings settings;
+
 	QString filename = QDir::toNativeSeparators( file );
 
 	// Temporary BTO/BTR file support
@@ -173,7 +181,8 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 #endif
 	bool replaceExt = false;
 
-	if ( Options::textureAlternatives() ) {
+	bool textureAlternatives = settings.value( "Settings/Resources/Alternate Extensions", false ).toBool();
+	if ( textureAlternatives ) {
 		for ( const QString ext : QStringList{ extensions } )
 		{
 			if ( filename.endsWith( ext ) ) {
@@ -207,7 +216,10 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			return dir.filePath( filename );
 		}
 
-		for ( QString folder : Options::textureFolders() ) {
+		
+		QStringList folders = settings.value( "Settings/Resources/Folders", QStringList() ).toStringList();
+
+		for ( QString folder : folders ) {
 			// TODO: Always search nifdir without requiring a relative entry
 			// in folders?  Not too intuitive to require ".\" in your texture folder list
 			// even if it is added by default.
@@ -271,7 +283,10 @@ QString TexCache::stripPath( const QString & filepath, const QString & nifFolder
 	file = file.replace( "/", "\\" ).toLower();
 	QDir basePath;
 
-	for ( QString base : Options::textureFolders() ) {
+	QSettings settings;
+	QStringList folders = settings.value( "Settings/Resources/Folders", QStringList() ).toStringList();
+
+	for ( QString base : folders ) {
 		if ( base.startsWith( "./" ) || base.startsWith( ".\\" ) ) {
 			base = nifFolder + "/" + base;
 		}
