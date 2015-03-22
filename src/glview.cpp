@@ -234,6 +234,7 @@ void GLView::updateSettings()
 	cfg.fov = settings.value( "General/Camera/Field Of View" ).toFloat();
 	cfg.moveSpd = settings.value( "General/Camera/Movement Speed" ).toFloat();
 	cfg.rotSpd = settings.value( "General/Camera/Rotation Speed" ).toFloat();
+	cfg.upAxis = settings.value( "General/Up Axis", 2 ).toInt();
 
 	settings.endGroup();
 }
@@ -432,16 +433,15 @@ void GLView::paintGL()
 	// Transform the scene
 	Matrix ap;
 
-	// TODO: Redo for new Settings class
-	//if ( Options::upAxis() == Options::YAxis ) {
-	//	ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
-	//	ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
-	//	ap( 2, 0 ) = 0; ap( 2, 1 ) = 1; ap( 2, 2 ) = 0;
-	//} else if ( Options::upAxis() == Options::XAxis ) {
-	//	ap( 0, 0 ) = 0; ap( 0, 1 ) = 1; ap( 0, 2 ) = 0;
-	//	ap( 1, 0 ) = 0; ap( 1, 1 ) = 0; ap( 1, 2 ) = 1;
-	//	ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
-	//}
+	if ( cfg.upAxis == YAxis ) {
+		ap( 0, 0 ) = 0; ap( 0, 1 ) = 0; ap( 0, 2 ) = 1;
+		ap( 1, 0 ) = 1; ap( 1, 1 ) = 0; ap( 1, 2 ) = 0;
+		ap( 2, 0 ) = 0; ap( 2, 1 ) = 1; ap( 2, 2 ) = 0;
+	} else if ( cfg.upAxis == XAxis ) {
+		ap( 0, 0 ) = 0; ap( 0, 1 ) = 1; ap( 0, 2 ) = 0;
+		ap( 1, 0 ) = 0; ap( 1, 1 ) = 0; ap( 1, 2 ) = 1;
+		ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
+	}
 
 	Transform viewTrans;
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
@@ -470,8 +470,13 @@ void GLView::paintGL()
 		glDisable( GL_NORMALIZE );
 		glLineWidth( 2.0f );
 
+		// Keep the grid "grounded" regardless of Up Axis
+		Transform gridTrans = viewTrans;
+		if ( cfg.upAxis != ZAxis )
+			gridTrans.rotation = viewTrans.rotation * ap.inverted();
+
 		glPushMatrix();
-		glLoadMatrix( viewTrans );
+		glLoadMatrix( gridTrans );
 
 		// TODO: Configurable grid in Settings
 		// 1024 game units, major lines every 128, minor lines every 64

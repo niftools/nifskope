@@ -121,6 +121,13 @@ public:
 		DbgBounds = 2
 	};
 
+	enum UpAxis
+	{
+		XAxis = 0,
+		YAxis = 1,
+		ZAxis = 2
+	};
+
 	void setNif( NifModel * );
 
 	Scene * getScene();
@@ -260,6 +267,8 @@ private:
 		float fov = 45.0;
 		float moveSpd = 350;
 		float rotSpd = 45;
+
+		int upAxis;
 	} cfg;
 
 private slots:
