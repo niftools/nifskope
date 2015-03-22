@@ -78,12 +78,12 @@ void SettingsPane::readPane( QWidget * w, QSettings & settings )
 		auto grp = qobject_cast<QGroupBox *>(c);
 		if ( grp ) {
 			QString name = grp->title();
-			if ( !name.isEmpty() )
+			if ( !name.isEmpty() && !grp->isFlat() )
 				settings.beginGroup( name );
 
 			readPane( grp, settings );
 
-			if ( !name.isEmpty() )
+			if ( !name.isEmpty() && !grp->isFlat() )
 				settings.endGroup();
 		}
 
@@ -174,12 +174,12 @@ void SettingsPane::writePane( QWidget * w, QSettings & settings )
 		auto grp = qobject_cast<QGroupBox *>(c);
 		if ( grp ) {
 			QString name = grp->title();
-			if ( !name.isEmpty() )
+			if ( !name.isEmpty() && !grp->isFlat() )
 				settings.beginGroup( name );
 
 			writePane( grp, settings );
 
-			if ( !name.isEmpty() )
+			if ( !name.isEmpty() && !grp->isFlat() )
 				settings.endGroup();
 		}
 
