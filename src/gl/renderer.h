@@ -48,8 +48,10 @@ typedef unsigned int GLenum;
 typedef unsigned int GLuint;
 
 //! Manages rendering and shaders
-class Renderer
+class Renderer : public QObject
 {
+	Q_OBJECT
+
 	friend class Program;
 
 public:
@@ -75,6 +77,9 @@ public:
 	QString setupProgram( Mesh *, const QString & hint = QString() );
 	//! Stop shader program
 	void stopProgram();
+
+public slots:
+	void updateSettings();
 
 protected:
 	//! Base Condition class for shader programs
@@ -169,6 +174,11 @@ public:
 
 	bool setupProgram( Program *, Mesh *, const PropertyList &, const QList<QModelIndex> & iBlocks );
 	void setupFixedFunction( Mesh *, const PropertyList & );
+
+	struct Settings
+	{
+		bool useShaders = true;
+	} cfg;
 };
 
 

@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "renderer.h"
-#include "options.h"
+#include "settings.h"
 
 #include "glmesh.h"
 #include "glproperty.h"
@@ -44,32 +44,29 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QSettings>
 #include <QTextStream>
 
 
 //! @file renderer.cpp Renderer and child classes implementation
 
 bool shader_initialized = false;
-bool shader_ready = false;
+bool shader_ready = true;
 
 bool Renderer::initialize()
 {
 	if ( !shader_initialized ) {
-#ifdef DISABLE_SHADERS
-		shader_ready = false;
-#else
 
 		// check for OpenGL 2.0
 		// (we don't use the extension API but the 2.0 API for shaders)
-		if ( fn->hasOpenGLFeature( QOpenGLFunctions::Shaders ) ) {
+		if ( cfg.useShaders && fn->hasOpenGLFeature( QOpenGLFunctions::Shaders ) ) {
 			shader_ready = true;
+			shader_initialized = true;
 		} else {
 			shader_ready = false;
 		}
 
-#endif
 		//qDebug() << "shader support" << shader_ready;
-		shader_initialized = true;
 	}
 
 	return shader_ready;
@@ -366,11 +363,30 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 Renderer::Renderer( QOpenGLContext * c, QOpenGLFunctions * f )
 	: cx( c ), fn( f )
 {
+	updateSettings();
+
+	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &Renderer::updateSettings );
 }
 
 Renderer::~Renderer()
 {
 	releaseShaders();
+}
+
+
+void Renderer::updateSettings()
+{
+	QSettings settings;
+
+	cfg.useShaders = settings.value( "Settings/Render/General/Use Shaders", true ).toBool();
+
+	bool prevStatus = shader_ready;
+
+	shader_ready = cfg.useShaders && fn->hasOpenGLFeature( QOpenGLFunctions::Shaders );
+	if ( !shader_initialized && shader_ready && !prevStatus ) {
+		updateShaders();
+		shader_initialized = true;
+	}
 }
 
 void Renderer::updateShaders()
