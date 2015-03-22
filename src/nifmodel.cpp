@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "config.h"
-#include "options.h"
+#include "settings.h"
 
 #include "niftypes.h"
 #include "spellbook.h"
@@ -50,7 +50,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
+	updateSettings();
+
 	clear();
+}
+
+void NifModel::updateSettings()
+{
+	QSettings settings;
+
+	cfg.startupVersion = settings.value( "Settings/Startup Version", "20.0.0.5" ).toString();
 }
 
 QString NifModel::version2string( quint32 v )
@@ -164,10 +173,10 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
-	version = version2number( Options::startupVersion() );
+	version = version2number( cfg.startupVersion );
 
 	if ( !supportedVersions.isEmpty() && !isVersionSupported( version ) ) {
-		Message::warning( nullptr, tr( "Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5" ).arg( Options::startupVersion() ) );
+		Message::warning( nullptr, tr( "Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5" ).arg( cfg.startupVersion ) );
 		version = 0x14000005;
 	}
 	endResetModel();
