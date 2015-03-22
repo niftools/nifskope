@@ -145,6 +145,8 @@ public:
 
 	void setDebugMode( DebugMode );
 
+	QColor clearColor() const;
+
 
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 

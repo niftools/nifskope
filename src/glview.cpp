@@ -238,6 +238,11 @@ void GLView::updateSettings()
 	settings.endGroup();
 }
 
+QColor GLView::clearColor() const
+{
+	return cfg.background;
+}
+
 
 /* 
  * Scene
