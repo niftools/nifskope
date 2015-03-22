@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifskope.h"
 #include "version.h"
-#include "options.h"
+#include "settings.h"
 
 #include "ui_nifskope.h"
 #include "ui/about_dialog.h"
@@ -61,6 +61,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFontDialog>
+#include <QGroupBox>
 #include <QHeaderView>
 #include <QMenu>
 #include <QMenuBar>
@@ -360,7 +361,7 @@ void NifSkope::initMenu()
 	// Insert SpellBook class before Help
 	ui->menubar->insertMenu( ui->menubar->actions().at( 3 ), book );
 
-	ui->mOptions->insertActions( ui->aResources, Options::actions() );
+	//ui->mOptions->insertActions( ui->aResources, Options::actions() );
 
 	// Insert Import/Export menus
 	mExport = ui->menuExport;
@@ -542,7 +543,7 @@ void NifSkope::initToolBars()
 	tLOD->setEnabled( false );
 
 	connect( lodSlider, &QSlider::valueChanged, ogl->getScene(), &Scene::updateLodLevel );
-	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
+	connect( lodSlider, &QSlider::valueChanged, ogl, &GLView::updateGL );
 	connect( nif, &NifModel::lodSliderChanged, [tLOD]( bool enabled ) { tLOD->setEnabled( enabled ); tLOD->setVisible( enabled ); } );
 }
 
@@ -942,7 +943,7 @@ void NifSkope::saveUi() const
 	//settings.setValue( "GLView/Switch Animation", ui->aAnimSwitch->isChecked() );
 	settings.setValue( "GLView/Perspective", ui->aViewPerspective->isChecked() );
 
-	Options::get()->save();
+	//Options::get()->save();
 }
 
 
@@ -1047,7 +1048,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 				// Init initial buffer with solid color
 				//	Otherwise becomes random colors on release builds
 				buf = QImage( 10, 10, QImage::Format_ARGB32 );
-				buf.fill( Options::bgColor() );
+				buf.fill( ogl->clearColor() );
 			} else {
 				buf = ogl->grabFrameBuffer();
 			}
