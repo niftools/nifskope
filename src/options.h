@@ -98,11 +98,11 @@ public:
 	static bool blending() { return true; }
 
 	//! The background color of the main view window
-	static QColor bgColor();
+	//static QColor bgColor();
 	//! The colour to normally use for drawing
-	static QColor nlColor();
+	//static QColor nlColor();
 	//! The colour to use when highlighting
-	static QColor hlColor();
+	//static QColor hlColor();
 
 	//! Regular expression to use for culling
 	static QRegularExpression cullExpression();
@@ -146,11 +146,11 @@ public:
 	//static QColor specular();
 
 	//! Whether to use frontal lighting
-	static bool lightFrontal();
+	//static bool lightFrontal();
 	//! The angle between the Z axis and the light
-	static int lightDeclination();
+	//static int lightDeclination();
 	//! The angle between the X axis and the light
-	static int lightPlanarAngle();
+	//static int lightPlanarAngle();
 
 	//! Whether to override material colors
 	//static bool overrideMaterials();
@@ -164,7 +164,7 @@ public:
 	//static QColor overrideEmissive();
 
 	//! The NIF version to use at start
-	static QString startupVersion();
+	//static QString startupVersion();
 	//! The current translation locale
 	static QLocale translationLocale();
 	// Maximum string length (see NifIStream::init for the current usage)

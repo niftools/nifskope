@@ -673,7 +673,7 @@ void Options::save()
 
 	// Settings group
 	cfg.setValue( "Settings/Language", translationLocale() );
-	cfg.setValue( "Settings/Startup Version", startupVersion() );
+	//cfg.setValue( "Settings/Startup Version", startupVersion() );
 	// If we want to make this more accessible
 	//cfg.setValue( "Settings/Maximum String Length", maxStringLength() );
 
@@ -997,31 +997,31 @@ void Options::save()
 //}
 
 
-QColor Options::bgColor()
-{
-	//return get()->colors[ 0 ]->getColor();
-	QSettings settings;
-	return settings.value( "Settings/Render/Colors/Background" ).value<QColor>();
-}
-
-QColor Options::nlColor()
-{
-	//QColor c = get()->colors[ 1 ]->getColor();
-	//c.setAlphaF( get()->alpha[ 1 ]->value() );
-	//return c;
-	QSettings settings;
-	return settings.value( "Settings/Render/Colors/Wireframe" ).value<QColor>();
-}
-
-QColor Options::hlColor()
-{
-	//QColor c = get()->colors[ 2 ]->getColor();
-	//c.setAlphaF( get()->alpha[ 2 ]->value() );
-	//return c;
-
-	QSettings settings;
-	return settings.value( "Settings/Render/Colors/Highlight" ).value<QColor>();
-}
+//QColor Options::bgColor()
+//{
+//	//return get()->colors[ 0 ]->getColor();
+//	QSettings settings;
+//	return settings.value( "Settings/Render/Colors/Background" ).value<QColor>();
+//}
+//
+//QColor Options::nlColor()
+//{
+//	//QColor c = get()->colors[ 1 ]->getColor();
+//	//c.setAlphaF( get()->alpha[ 1 ]->value() );
+//	//return c;
+//	QSettings settings;
+//	return settings.value( "Settings/Render/Colors/Wireframe" ).value<QColor>();
+//}
+//
+//QColor Options::hlColor()
+//{
+//	//QColor c = get()->colors[ 2 ]->getColor();
+//	//c.setAlphaF( get()->alpha[ 2 ]->value() );
+//	//return c;
+//
+//	QSettings settings;
+//	return settings.value( "Settings/Render/Colors/Highlight" ).value<QColor>();
+//}
 
 
 QRegularExpression Options::cullExpression()
@@ -1034,10 +1034,10 @@ bool Options::onlyTextured()
 	return get()->CullNoTex->isChecked();
 }
 
-QString Options::startupVersion()
-{
-	return get()->StartVer->text();
-};
+//QString Options::startupVersion()
+//{
+//	return get()->StartVer->text();
+//};
 
 
 /*
