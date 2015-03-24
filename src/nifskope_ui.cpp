@@ -880,7 +880,7 @@ void NifSkope::onSaveComplete( bool success, QString & fname )
 
 bool NifSkope::saveConfirm()
 {
-	if ( isWindowModified() || !nif->undoStack->isClean() ) {
+	if ( !cfg.suppressSaveConfirm && (isWindowModified() || !nif->undoStack->isClean()) ) {
 		QMessageBox::StandardButton response;
 		response = QMessageBox::question( this,
 			tr( "Save Confirmation" ),

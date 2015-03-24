@@ -41,6 +41,7 @@ public slots:
 signals:
 	void loadSettings();
 	void saveSettings();
+	void localeChanged();
 	void update3D();
 	void flush3D();
     

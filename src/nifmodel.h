@@ -352,6 +352,8 @@ private:
 	struct Settings
 	{
 		QString startupVersion;
+		int userVersion;
+		int userVersion2;
 	} cfg;
 };
 

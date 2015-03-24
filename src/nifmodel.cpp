@@ -59,7 +59,13 @@ void NifModel::updateSettings()
 {
 	QSettings settings;
 
-	cfg.startupVersion = settings.value( "Settings/Startup Version", "20.0.0.5" ).toString();
+	settings.beginGroup( "Settings/NIF/Startup Defaults" );
+
+	cfg.startupVersion = settings.value( "Version", "20.0.0.5" ).toString();
+	cfg.userVersion = settings.value( "User Version", "11" ).toInt();
+	cfg.userVersion2 = settings.value( "User Version 2", "11" ).toInt();
+
+	settings.endGroup();
 }
 
 QString NifModel::version2string( quint32 v )
@@ -198,10 +204,9 @@ void NifModel::clear()
 
 	set<QString>( getHeaderItem(), "Header String", header_string );
 
-	if ( version == 0x14000005 ) {
-		//Just set this if version is 20.0.0.5 for now.  Probably should be a separate option.
-		set<int>( getHeaderItem(), "User Version", 11 );
-		set<int>( getHeaderItem(), "User Version 2", 11 );
+	if ( version >= 0x14000005 ) {
+		set<int>( getHeaderItem(), "User Version", cfg.userVersion );
+		set<int>( getHeaderItem(), "User Version 2", cfg.userVersion2 );
 	}
 
 	//set<int>( getHeaderItem(), "Unknown Int 3", 11 );

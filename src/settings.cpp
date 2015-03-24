@@ -13,11 +13,14 @@
 
 #include <QComboBox>
 #include <QDebug>
+#include <QDir>
 #include <QFileDialog>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QLocale>
 #include <QMessageBox>
 #include <QRadioButton>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QStringListModel>
 #include <QTimer>
@@ -233,6 +236,41 @@ SettingsGeneral::SettingsGeneral( QWidget * parent ) :
 {
 	ui->setupUi( this );
 	SettingsDialog::registerPage( parent, ui->name->text() );
+
+	QLocale locale( "en" );
+	QString txtLang = QLocale::languageToString( locale.language() );
+
+	if ( locale.country() != QLocale::AnyCountry )
+		txtLang.append( " (" ).append( QLocale::countryToString( locale.country() ) ).append( ")" );
+
+	ui->language->addItem( txtLang, locale );
+	ui->language->setCurrentIndex( 0 );
+
+	QDir directory( QApplication::applicationDirPath() );
+
+	if ( !directory.cd( "lang" ) ) {
+#ifdef Q_OS_LINUX
+		directory.cd( "/usr/share/nifskope/lang" );
+#endif
+	}
+
+	QRegularExpression fileRe( "NifSkope_(.*)\\.qm", QRegularExpression::CaseInsensitiveOption );
+
+	for ( const QString file : directory.entryList( QStringList( "NifSkope_*.qm" ), QDir::Files | QDir::NoSymLinks ) )
+	{
+		QRegularExpressionMatch fileReMatch = fileRe.match( file );
+		if ( fileReMatch.hasMatch() ) {
+			QLocale fileLocale( fileReMatch.capturedTexts()[1] );
+			if ( ui->language->findData( fileLocale ) < 0 ) {
+				QString txtLang = QLocale::languageToString( fileLocale.language() );
+
+				if ( fileLocale.country() != QLocale::AnyCountry )
+					txtLang.append( " (" + QLocale::countryToString( fileLocale.country() ) + ")" );
+
+				ui->language->addItem( txtLang, fileLocale );
+			}
+		}
+	}
 }
 
 SettingsGeneral::~SettingsGeneral()
@@ -242,6 +280,21 @@ SettingsGeneral::~SettingsGeneral()
 
 void SettingsGeneral::read()
 {
+	QSettings settings;
+
+	settings.beginGroup( "Settings" );
+
+	for ( int i = 0; i < ui->general->count(); i++ ) {
+
+		auto w = ui->general->widget( i );
+
+		settings.beginGroup( ::humanize( w->objectName() ) );
+		readPane( w, settings );
+		settings.endGroup();
+	}
+
+	settings.endGroup();
+
 	setModified( false );
 }
 
@@ -249,6 +302,33 @@ void SettingsGeneral::write()
 {
 	if ( !isModified() )
 		return;
+
+	QSettings settings;
+
+	settings.beginGroup( "Settings" );
+
+	int langPrev = settings.value( "UI/Language", 0 ).toInt();
+
+	for ( int i = 0; i < ui->general->count(); i++ ) {
+
+		auto w = ui->general->widget( i );
+
+		settings.beginGroup( ::humanize( w->objectName() ) );
+		writePane( w, settings );
+		settings.endGroup();
+	}
+
+	int langCur = settings.value( "UI/Language", 0 ).toInt();
+
+	settings.endGroup();
+
+	// Set Locale
+	auto idx = ui->language->currentIndex();
+	settings.setValue( "Settings/Locale", ui->language->itemData( idx ).toLocale() );
+
+	if ( langPrev != langCur ) {
+		emit dlg->localeChanged();
+	}
 
 	setModified( false );
 }

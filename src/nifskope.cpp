@@ -152,6 +152,9 @@ NifSkope::NifSkope()
 	// Migrate settings from older versions of NifSkope
 	migrateSettings();
 
+	// Update Settings struct from registry
+	updateSettings();
+
 	// Create models
 	/* ********************** */
 
@@ -288,13 +291,26 @@ NifSkope::NifSkope()
 	// Connections (that are required to load after all other inits)
 	initConnections();
 
-	connect( Options::get(), &Options::sigLocaleChanged, this, &NifSkope::sltLocaleChanged );
+	connect( NifSkope::options(), &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
+	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &NifSkope::updateSettings );
 }
 
 NifSkope::~NifSkope()
 {
 	delete ui;
 	delete book;
+}
+
+void NifSkope::updateSettings()
+{
+	QSettings settings;
+
+	settings.beginGroup( "Settings" );
+
+	cfg.locale = settings.value( "Locale", "en" ).toLocale();
+	cfg.suppressSaveConfirm = settings.value( "UI/Suppress Save Confirmation", false ).toBool();
+
+	settings.endGroup();
 }
 
 
@@ -879,7 +895,7 @@ int main( int argc, char * argv[] )
 		// Set locale
 		QSettings cfg;
 		cfg.beginGroup( "Settings" );
-		SetAppLocale( cfg.value( "Language", "en" ).toLocale() );
+		SetAppLocale( cfg.value( "Locale", "en" ).toLocale() );
 		cfg.endGroup();
 
 		// Load XML files
