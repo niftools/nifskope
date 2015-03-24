@@ -291,8 +291,8 @@ NifSkope::NifSkope()
 	// Connections (that are required to load after all other inits)
 	initConnections();
 
-	connect( NifSkope::options(), &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
 	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &NifSkope::updateSettings );
+	connect( NifSkope::options(), &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
 }
 
 NifSkope::~NifSkope()
@@ -814,7 +814,7 @@ static void SetAppLocale( QLocale curLocale )
 
 void NifSkope::sltLocaleChanged()
 {
-	SetAppLocale( Options::get()->translationLocale() );
+	SetAppLocale( cfg.locale );
 
 	QMessageBox mb( "NifSkope",
 	                tr( "NifSkope must be restarted for this setting to take full effect." ),
