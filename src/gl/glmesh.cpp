@@ -322,6 +322,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 					bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
+					bsesp->hasWeaponBlood = hasSF2( ShaderFlags::SLSF2_Weapon_Blood );
 
 					auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
 					auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );

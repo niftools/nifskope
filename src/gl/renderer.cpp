@@ -853,6 +853,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		uni1i( "vertexAlpha", mesh->bsesp->vertexAlpha );
 		uni1i( "vertexColors", mesh->bsesp->vertexColors );
 
+		uni1i( "hasWeaponBlood", mesh->bsesp->hasWeaponBlood );
 
 		// Glow params
 

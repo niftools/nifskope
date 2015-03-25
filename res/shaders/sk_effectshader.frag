@@ -14,6 +14,8 @@ uniform bool useFalloff;
 uniform bool vertexColors;
 uniform bool vertexAlpha;
 
+uniform bool hasWeaponBlood;
+
 uniform vec4 glowColor;
 uniform float glowMult;
 
@@ -67,8 +69,16 @@ void main( void )
 	
 	float alphaMult = glowColor.a * glowColor.a;
 	
-	color.rgb = baseMap.rgb * C.rgb * glowColor.rgb;
-	color.a = baseMap.a * C.a * falloff * alphaMult;
+	color.rgb = baseMap.rgb;
+	color.a = baseMap.a;
+	
+	if ( hasWeaponBlood ) {
+		color.rgb = vec3( 1.0, 0.0, 0.0 ) * baseMap.r;
+		color.a = baseMap.a * baseMap.g;
+	}
+	
+	color.rgb *= C.rgb * glowColor.rgb;
+	color.a *= C.a * falloff * alphaMult;
 
 	if ( greyscaleColor ) {
 		// Only Red emissive channel is used
