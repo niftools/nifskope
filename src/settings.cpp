@@ -529,28 +529,10 @@ void SettingsResources::read()
 {
 	QSettings settings;
 
-	QVariant foldersVal = settings.value( "Settings/Resources/Folders" );
-	if ( foldersVal.isNull() ) {
-		// Temporary
-		QVariant migrate = settings.value( "Render Settings/Texture Folders" );
-		if ( !migrate.isNull() ) {
-			foldersVal = migrate;
-			settings.setValue( "Settings/Resources/Folders", migrate.toStringList() );
-		}
-	}
-
+	QVariant foldersVal = settings.value( "Settings/Resources/Folders", QStringList() );
 	folders->setStringList( foldersVal.toStringList() );
 
-	QVariant archivesVal = settings.value( "Settings/Resources/Archives" );
-	if ( archivesVal.isNull() ) {
-		// Temporary
-		QVariant migrate = settings.value( "FSEngine/Archives" );
-		if ( !migrate.isNull() ) {
-			archivesVal = migrate;
-			settings.setValue( "Settings/Resources/Archives", migrate.toStringList() );
-		}
-	}
-
+	QVariant archivesVal = settings.value( "Settings/Resources/Archives", QStringList() );
 	archives->setStringList( archivesVal.toStringList() );
 
 	ui->foldersList->setCurrentIndex( folders->index( 0, 0 ) );

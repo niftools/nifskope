@@ -1032,6 +1032,10 @@ void NifSkope::migrateSettings() const
 	bool migrateFrom1_1 = testMigration( cfg1_1, "1.2.0" );
 	bool migrateFrom1_2 = testMigration( cfg1_2, "2.0" );
 
+	if ( !migrateFrom1_1 && !migrateFrom1_2 ) {
+		prevVer = cfg.value( "Version" ).toString();
+	}
+
 	NifSkopeVersion oldVersion( prevVer );
 	NifSkopeVersion newVersion( curVer );
 
@@ -1057,6 +1061,44 @@ void NifSkope::migrateSettings() const
 
 		if ( prevDisplayVer != curDisplayVer )
 			cfg.setValue( "Display Version", curDisplayVer );
+
+		// Migrate to new Settings
+		if ( oldVersion <= NifSkopeVersion( "2.0.dev1" ) ) {
+			qDebug() << "Migrating to new Settings";
+
+			// Sanitize backslashes
+			auto sanitize = []( QVariant oldVal ) {
+				QStringList sanitized;
+				for ( const QString & archive : oldVal.toStringList() ) {
+					sanitized.append( QDir::fromNativeSeparators( archive ) );
+				}
+
+				return sanitized;
+			};
+
+			QVariant foldersVal = cfg.value( "Settings/Resources/Folders" );
+			if ( foldersVal.isNull() ) {
+				QVariant oldVal = cfg.value( "Render Settings/Texture Folders" );
+				if ( !oldVal.isNull() ) {
+					cfg.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
+				}
+			}
+
+			QVariant archivesVal = cfg.value( "Settings/Resources/Archives" );
+			if ( archivesVal.isNull() ) {
+				QVariant oldVal = cfg.value( "FSEngine/Archives" );
+				if ( !oldVal.isNull() ) {
+					cfg.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
+				}
+			}
+
+			// Remove old keys
+
+			cfg.remove( "FSEngine" );
+			cfg.remove( "Render Settings" );
+			cfg.remove( "Settings/Language" );
+			cfg.remove( "Settings/Startup Version" );
+		}
 	}
 
 	// Check Qt Version
