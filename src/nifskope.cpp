@@ -32,11 +32,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifskope.h"
 #include "version.h"
-#include "options.h"
+#include "settings.h"
 
 #include "ui_nifskope.h"
 #include "ui/about_dialog.h"
-#include "ui/settingsdialog.h"
 
 #include "glview.h"
 #include "gl/glscene.h"

@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "config.h"
-#include "options.h"
+//#include "options.h"
 
 #include "nifmodel.h"
 #include "nvtristripwrapper.h"
@@ -963,8 +963,8 @@ void attachNiNode ( const NifModel * nif, QDomElement parentNode, int idx )
 
 void exportCol( const NifModel * nif, QFileInfo fileInfo )
 {
-	culling = Options::get()->exportCullEnabled();
-	cullRegExp = Options::get()->cullExpression();
+	//culling = Options::get()->exportCullEnabled();
+	//cullRegExp = Options::get()->cullExpression();
 
 	QList<int> roots = nif->getRootLinks();
 	QString question;
