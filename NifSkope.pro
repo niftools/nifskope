@@ -176,8 +176,7 @@ HEADERS += \
 	src/nifskope.h \
 	src/niftypes.h \
 	src/nifvalue.h \
-	src/nvtristripwrapper.h \
-	src/options.h \
+    src/nvtristripwrapper.h \
 	src/qhull.h \
 	src/settings.h \
 	src/spellbook.h \
@@ -244,8 +243,7 @@ SOURCES += \
 	src/niftypes.cpp \
 	src/nifvalue.cpp \
 	src/nifxml.cpp \
-	src/nvtristripwrapper.cpp \
-	src/options.cpp \
+    src/nvtristripwrapper.cpp \
 	src/qhull.cpp \
 	src/settings.cpp \
 	src/spellbook.cpp \
