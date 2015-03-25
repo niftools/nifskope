@@ -422,8 +422,8 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 bool Mesh::isHidden() const
 {
 	return ( Node::isHidden()
-	         || ( /*!Options::drawHidden() && Options::onlyTextured()
-	              &&*/ !properties.get<TexturingProperty>()
+	         || ( !(scene->options & Scene::ShowHidden) /*&& Options::onlyTextured()*/
+	              && !properties.get<TexturingProperty>()
 	              && !properties.get<BSShaderLightingProperty>()
 	         )
 	);

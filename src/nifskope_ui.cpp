@@ -167,7 +167,8 @@ void NifSkope::initActions()
 		DoMultisampling = 0x1000, // Not implemented
 		DoLighting = 0x2000,
 		DoCubeMapping = 0x4000,
-		DisableShaders = 0x8000
+		DisableShaders = 0x8000,
+		ShowHidden = 0x10000
 	*/
 
 	ui->aShowAxes->setData( Scene::ShowAxes );
@@ -176,6 +177,7 @@ void NifSkope::initActions()
 	ui->aShowCollision->setData( Scene::ShowCollision );
 	ui->aShowConstraints->setData( Scene::ShowConstraints );
 	ui->aShowMarkers->setData( Scene::ShowMarkers );
+	ui->aShowHidden->setData( Scene::ShowHidden );
 
 	ui->aTextures->setData( Scene::DoTexturing );
 	ui->aVertexColors->setData( Scene::DoVertexColors );
@@ -196,7 +198,7 @@ void NifSkope::initActions()
 		return ag;
 	};
 
-	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers }, false );
+	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden }, false );
 	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );

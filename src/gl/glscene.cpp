@@ -83,6 +83,8 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 		options |= ShowMarkers;
 	if ( settings.value( "Show Nodes" ).toBool() )
 		options |= ShowNodes;
+	if ( settings.value( "Show Hidden" ).toBool() )
+		options |= ShowHidden;
 
 	settings.endGroup();
 }
