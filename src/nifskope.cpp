@@ -1069,8 +1069,10 @@ void NifSkope::migrateSettings() const
 			auto sanitize = []( QVariant oldVal ) {
 				QStringList sanitized;
 				for ( const QString & archive : oldVal.toStringList() ) {
-					if ( archive == "AUTO" )
+					if ( archive == "AUTO" ) {
 						sanitized.append( FSManager::autodetectArchives() );
+						continue;
+					}
 
 					sanitized.append( QDir::fromNativeSeparators( archive ) );
 				}
