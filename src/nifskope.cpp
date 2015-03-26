@@ -1069,6 +1069,9 @@ void NifSkope::migrateSettings() const
 			auto sanitize = []( QVariant oldVal ) {
 				QStringList sanitized;
 				for ( const QString & archive : oldVal.toStringList() ) {
+					if ( archive == "AUTO" )
+						sanitized.append( FSManager::autodetectArchives() );
+
 					sanitized.append( QDir::fromNativeSeparators( archive ) );
 				}
 
@@ -1076,7 +1079,7 @@ void NifSkope::migrateSettings() const
 			};
 
 			QVariant foldersVal = cfg.value( "Settings/Resources/Folders" );
-			if ( foldersVal.isNull() ) {
+			if ( foldersVal.toStringList().isEmpty() ) {
 				QVariant oldVal = cfg.value( "Render Settings/Texture Folders" );
 				if ( !oldVal.isNull() ) {
 					cfg.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
@@ -1084,13 +1087,16 @@ void NifSkope::migrateSettings() const
 			}
 
 			QVariant archivesVal = cfg.value( "Settings/Resources/Archives" );
-			if ( archivesVal.isNull() ) {
+			if ( archivesVal.toStringList().isEmpty() ) {
 				QVariant oldVal = cfg.value( "FSEngine/Archives" );
 				if ( !oldVal.isNull() ) {
 					cfg.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
 				}
 			}
 
+			// Update archive handler
+			FSManager::get()->initialize();
+			
 			// Remove old keys
 
 			cfg.remove( "FSEngine" );

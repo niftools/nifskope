@@ -28,6 +28,12 @@ SettingsDialog::SettingsDialog( QWidget * parent ) :
 
 	categories->setCurrentRow( 0 );
 
+	btnSave = ui->submit->button( QDialogButtonBox::Save );
+	btnSave->setEnabled( false );
+
+	btnApply = ui->submit->button( QDialogButtonBox::Apply );
+	btnApply->setEnabled( false );
+
 	QSettings settings;
 
 	settingsVersion = settings.value( "Settings/Version" );
@@ -36,12 +42,6 @@ SettingsDialog::SettingsDialog( QWidget * parent ) :
 		save();
 		settings.setValue( "Settings/Version", 1.0 );
 	}
-
-	btnSave = ui->submit->button( QDialogButtonBox::Save );
-	btnSave->setEnabled( false );
-
-	btnApply = ui->submit->button( QDialogButtonBox::Apply );
-	btnApply->setEnabled( false );
 
 	connect( ui->categoryList, &QListWidget::currentItemChanged, this, &SettingsDialog::changePage );
 	connect( ui->submit, &QDialogButtonBox::accepted, this, &SettingsDialog::save );

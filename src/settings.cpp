@@ -35,6 +35,13 @@ SettingsPane::SettingsPane( QWidget * parent ) :
 		connect( dlg, &SettingsDialog::saveSettings, this, &SettingsPane::write );
 		connect( this, &SettingsPane::paneModified, dlg, &SettingsDialog::modified );
 	}
+
+	QSettings settings;
+	QVariant settingsVersion = settings.value( "Settings/Version" );
+	if ( settingsVersion.isNull() ) {
+		// First time install
+		setModified( true );
+	}
 }
 
 SettingsPane::~SettingsPane()

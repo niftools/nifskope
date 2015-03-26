@@ -68,6 +68,17 @@ QList <FSArchiveFile *> FSManager::archiveList()
 FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )
 {
+	initialize();
+}
+
+// see fsmanager.h
+FSManager::~FSManager()
+{
+	qDeleteAll( archives );
+}
+
+void FSManager::initialize()
+{
 	QSettings cfg;
 	QStringList list = cfg.value( "Settings/Resources/Archives", QStringList() ).toStringList();
 
@@ -75,12 +86,6 @@ FSManager::FSManager( QObject * parent )
 		if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
 			archives.insert( an, a );
 	}
-}
-
-// see fsmanager.h
-FSManager::~FSManager()
-{
-	qDeleteAll( archives );
 }
 
 // see fsmanager.h

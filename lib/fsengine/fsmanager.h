@@ -67,7 +67,10 @@ protected:
 	static QStringList autodetectArchives();
 	//! Helper function to build a list of BSAs
 	static QStringList regPathBSAList( QString regKey, QString dataDir );
+
+	void initialize();
 	
+	friend class NifSkope;
 	friend class SettingsResources;
 };
 
