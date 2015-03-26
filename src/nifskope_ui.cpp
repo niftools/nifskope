@@ -345,12 +345,6 @@ void NifSkope::initMenu()
 	// Disable without NIF loaded
 	ui->mRender->setEnabled( false );
 
-#ifndef FSENGINE
-	if ( ui->aResources ) {
-		ui->mOptions->removeAction( ui->aResources );
-	}
-#endif
-
 	// Populate Toolbars menu with all enabled toolbars
 	for ( QObject * o : children() ) {
 		QToolBar * tb = qobject_cast<QToolBar *>(o);
@@ -362,8 +356,6 @@ void NifSkope::initMenu()
 
 	// Insert SpellBook class before Help
 	ui->menubar->insertMenu( ui->menubar->actions().at( 3 ), book );
-
-	//ui->mOptions->insertActions( ui->aResources, Options::actions() );
 
 	// Insert Import/Export menus
 	mExport = ui->menuExport;
@@ -944,8 +936,6 @@ void NifSkope::saveUi() const
 	//settings.setValue( "GLView/Loop Animation", ui->aAnimLoop->isChecked() );
 	//settings.setValue( "GLView/Switch Animation", ui->aAnimSwitch->isChecked() );
 	settings.setValue( "GLView/Perspective", ui->aViewPerspective->isChecked() );
-
-	//Options::get()->save();
 }
 
 

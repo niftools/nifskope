@@ -45,11 +45,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 //! Global BSA file manager
-static FSManager *theFSManager = NULL;
+static FSManager * theFSManager = nullptr;
 // see fsmanager.h
 FSManager* FSManager::get() 
 {
-	if (theFSManager == NULL)
+	if (!theFSManager)
 		theFSManager = new FSManager();
 	return theFSManager;
 }
@@ -112,11 +112,13 @@ QStringList FSManager::autodetectArchives()
 {
 	QStringList list;
 	
+#ifdef Q_OS_WIN32
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Morrowind", "Data Files" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Oblivion", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim", "Data" );
+#endif
 
 	return list;
 }

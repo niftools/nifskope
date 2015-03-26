@@ -73,9 +73,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 #include <QTreeView>
 
-#ifdef FSENGINE
+
 #include <fsengine/fsmanager.h>
-#endif
 
 #ifdef WIN32
 #  define WINDOWS_LEAN_AND_MEAN
@@ -961,12 +960,6 @@ int main( int argc, char * argv[] )
 
 void NifSkope::migrateSettings() const
 {
-	// IMPORTANT:
-	//	Do not make any calls to Options:: until after all migration code.
-	//	Static calls to Options:: still create the options instance and inits
-	//	the various widgets with incorrect values. Once you close the app,
-	//	the settings you migrated get overwritten with the default values.
-
 	// Load current NifSkope settings
 	QSettings cfg;
 	// Load pre-1.2 NifSkope settings

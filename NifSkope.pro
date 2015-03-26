@@ -306,7 +306,6 @@ FORMS += \
 ###############################
 
 fsengine {
-	DEFINES += FSENGINE
 	INCLUDEPATH += lib/fsengine
 	HEADERS += \
 		lib/fsengine/bsa.h \

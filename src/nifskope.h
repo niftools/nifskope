@@ -311,10 +311,6 @@ private:
 
 	QAction * aSanitize;
 
-#ifdef FSENGINE
-	QAction * aResources;
-#endif
-
 	QAction * undoAction;
 	QAction * redoAction;
 

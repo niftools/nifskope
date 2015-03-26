@@ -36,10 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 #include "gltexloaders.h"
 
-#ifdef FSENGINE
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>
-#endif
 
 #include <QDebug>
 #include <QDir>
@@ -235,7 +233,6 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			}
 		}
 
-#ifdef FSENGINE
 		// Search through archives last, and load any requested textures into memory.
 		for ( FSArchiveFile * archive : FSManager::archiveList() ) {
 			if ( archive ) {
@@ -254,7 +251,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 				}
 			}
 		}
-#endif
+
 		if ( !replaceExt )
 			break;
 

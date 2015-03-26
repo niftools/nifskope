@@ -31,8 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
-//#include "options.h"
-
 
 #include "controllers.h"
 #include "glscene.h"
@@ -617,23 +615,6 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 
 		shininess = nif->get<float>( index, "Glossiness" );
 	}
-
-	// special case to force refresh of materials
-	//bool overrideMaterials = Options::overrideMaterials();
-	//
-	//if ( overridden && !overrideMaterials && iBlock.isValid() ) {
-	//	ambient  = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
-	//	diffuse  = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
-	//	specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
-	//	emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
-	//} else if ( overrideMaterials ) {
-	//	ambient  = Color4( Options::overrideAmbient() );
-	//	diffuse  = Color4( Options::overrideDiffuse() );
-	//	specular = Color4( Options::overrideSpecular() );
-	//	emissive = Color4( Options::overrideEmissive() );
-	//}
-
-	//overridden = overrideMaterials;
 }
 
 void MaterialProperty::setController( const NifModel * nif, const QModelIndex & iController )

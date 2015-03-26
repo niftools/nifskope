@@ -55,7 +55,7 @@ public:
 
 protected:
 	//! Constructor
-	FSManager( QObject * parent = NULL );
+	FSManager( QObject * parent = nullptr );
 	//! Destructor
 	~FSManager();
 	
