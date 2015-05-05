@@ -43,6 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
+#include "nifscript.h"
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 #include "widgets/nifview.h"
@@ -832,6 +833,14 @@ QCoreApplication * createApplication( int &argc, char *argv[] )
 //! The main program
 int main( int argc, char * argv[] )
 {
+    //Test if a script was passed to NifSkope
+    if(argc > 1 && QString(argv[1]).endsWith(".nss")){
+        QApplication app(argc, argv);
+        NifScript script;
+        script.show();
+        return app.exec();
+    }
+
 	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
 
 	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {

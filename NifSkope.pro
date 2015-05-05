@@ -205,7 +205,8 @@ HEADERS += \
 	src/ui/about_dialog.h \
 	src/ui/checkablemessagebox.h \
 	src/ui/settingsdialog.h \
-	src/version.h
+	src/version.h \
+    src/nifscript.h
 
 SOURCES += \
 	src/basemodel.cpp \
@@ -288,7 +289,8 @@ SOURCES += \
 	src/ui/about_dialog.cpp \
 	src/ui/checkablemessagebox.cpp \
 	src/ui/settingsdialog.cpp \
-	src/version.cpp
+	src/version.cpp \
+    src/nifscript.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
@@ -298,7 +300,8 @@ FORMS += \
 	src/ui/checkablemessagebox.ui \
 	src/ui/nifskope.ui \
 	src/ui/settingsdialog.ui \
-	src/ui/settingsgeneral.ui
+	src/ui/settingsgeneral.ui \
+    src/ui/nifscript.ui
 
 
 ###############################
