@@ -15,15 +15,19 @@ class NifScript : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit NifScript(QWidget *parent = 0);
+    explicit NifScript();
     ~NifScript();
 private:
     Ui::NifScript *ui;
     void printOutput(QString output);
     void removeWhiteSpaces(QString *string);
-    void chopWhiteSpaces(QString *string);
 
-    NifModel *nif = new NifModel();
+    bool loadCommand(QString path);
+    bool importCommand(QString path);
+    bool saveCommand(QString path);
+
+    NifModel *nif;
+    QString scriptPath;
 
 public slots:
     void okButtonPressed();
