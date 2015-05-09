@@ -1,9 +1,14 @@
 #include "nifscript.h"
 #include "ui_nifscript.h"
+#include "nifmodel.h"
 
 #include <QFile>
 #include <QTextStream>
 #include <QDir>
+#include <QModelIndex>
+
+void importObj( NifModel * nif, const QModelIndex & index, QString fname = QString());
+void import3ds( NifModel * nif, const QModelIndex & index, QString fname = QString());
 
 
 NifScript::NifScript() : QMainWindow(), ui(new Ui::NifScript)
@@ -44,11 +49,23 @@ NifScript::NifScript() : QMainWindow(), ui(new Ui::NifScript)
             removeWhiteSpaces(&line);
             if(!loadCommand(line)) break;
         }
-        //Imports a model: IMPORT <path>
+        //Imports a model: IMPORT <block> <path>
         else if(line.indexOf("IMPORT") == 0) {
             line.remove(0, 6);
             removeWhiteSpaces(&line);
-            if(!importCommand(line)) break;
+
+            int block;
+            bool ok;
+            block = line.mid(0, line.indexOf(' ')).toInt(&ok);
+            if(!ok){
+                printOutput("<font color=\"red\">Invalid block number</font>");
+                break;
+            }
+
+            line = line.mid(block+1);
+            removeWhiteSpaces(&line);
+
+            if(!importCommand(block, line)) break;
         }
         //Saves as .nif: SAVE <path>
         else if(line.indexOf("SAVE") == 0) {
@@ -100,15 +117,20 @@ bool NifScript::loadCommand(QString path)
     return false;
 }
 
-bool NifScript::importCommand(QString path)
+bool NifScript::importCommand(int block, QString path)
 {
-    QFileInfo info(QDir(QFileInfo(scriptPath).absolutePath()).absoluteFilePath(path));
+    QFileInfo info(path);
+    if(!info.isAbsolute())
+        info = QDir(QFileInfo(scriptPath).absolutePath()).absoluteFilePath(path);
+    printOutput(QString::number(block));
     if(info.isFile()){
         if(info.absoluteFilePath().endsWith(".obj", Qt::CaseInsensitive)){
+            importObj(nif, nif->getBlock(block), info.filePath());
             printOutput("Imported file: " + path);
             return true;
         }
         if(info.absoluteFilePath().endsWith(".3ds", Qt::CaseInsensitive)){
+            import3ds(nif, nif->getBlock(block), info.filePath());
             printOutput("Imported file: " + path);
             return true;
         }
