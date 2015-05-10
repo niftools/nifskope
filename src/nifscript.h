@@ -25,12 +25,14 @@ private:
     bool loadCommand(QString path);
     bool importCommand(int block, QString path);
     bool saveCommand(QString path);
+    bool spellCommand(QString spell, int block);
 
     NifModel *nif;
     QString scriptPath;
 
 public slots:
     void okButtonPressed();
+    void executeScript();
 };
 
 #endif // NIFSCRIPT_H
