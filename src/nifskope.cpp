@@ -836,7 +836,6 @@ int main( int argc, char * argv[] )
     //Test if a script was passed to NifSkope
     if(argc > 1 && QString(argv[1]).endsWith(".nss")){
         QApplication app(argc, argv);
-        NifModel::loadXML();
         NifScript script;
         script.show();
         return app.exec();
