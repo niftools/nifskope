@@ -26,7 +26,6 @@ private:
     bool importCommand(int block, QString path);
     bool saveCommand(QString path);
     bool spellCommand(QString spell, int block);
-    bool changeCommand(int block, QString name, QString value);
 
     NifModel *nif;
     QString scriptPath;

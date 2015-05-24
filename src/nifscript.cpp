@@ -12,6 +12,7 @@
 void importObj( NifModel * nif, const QModelIndex & index, QString fname = QString());
 void import3ds( NifModel * nif, const QModelIndex & index, QString fname = QString());
 
+
 NifScript::NifScript() : QMainWindow(), ui(new Ui::NifScript)
 {
     ui->setupUi(this);
@@ -101,85 +102,6 @@ bool NifScript::spellCommand(QString spell, int block)
     return true;
 }
 
-bool NifScript::changeCommand(int block, QString name, QString value)
-{
-    bool isArray = false;
-    int index = 0;
-    if(name.lastIndexOf('[') < name.lastIndexOf(']')){
-        index = name.mid(name.lastIndexOf('[')+1, name.lastIndexOf(']') - name.lastIndexOf('[')-1).toInt(&isArray);
-        if(!isArray){printOutput("<font color=\"red\">Invalid array index</font>"); return false;}
-        name = name.left(name.lastIndexOf('['));
-    }
-
-    QModelIndex property;
-    for(int i = 0; i < nif->rowCount(nif->getBlock(block)); i++){
-        QModelIndex item = nif->index(i, 0, nif->getBlock(block));
-        if(nif->itemName(item) == name){
-            if(isArray){
-                //Go deeper
-                property = nif->index(index, 0, item);
-            } else {
-                property = item;
-            }
-            break;
-        }
-    }
-    NifValue item = nif->getValue(property);
-    switch (item.type()) {
-    case NifValue::tBool:
-        item.set(value == "0" ? false:true);
-        break;
-    case NifValue::tInt:
-        item.setCount(value.toInt());
-        break;
-    case NifValue::tUInt:
-        item.setCount(value.toUInt());
-        break;
-    case NifValue::tShort:
-        item.setCount(value.toShort());
-        break;
-    case NifValue::tFloat:
-        item.setFloat(value.toFloat());
-        break;
-    case NifValue::tStringIndex:{
-        nif->set<QString>( property, value );
-        QVector<QString> stringVector = nif->getArray<QString>( nif->getHeader(), "Strings" );
-        item.set<int>(stringVector.indexOf(value));
-        break;}
-    case NifValue::tFlags:
-        item.setCount(value.toUInt());
-        break;
-    case NifValue::tVector2:{
-        QStringList list = value.split(" ", QString::SkipEmptyParts);
-        item.set<Vector2>(Vector2(list[0].toFloat(), list[1].toFloat()));
-        break;}
-    case NifValue::tVector3:{
-        QStringList list = value.split(" ", QString::SkipEmptyParts);
-        item.set<Vector3>(Vector3(list[0].toFloat(), list[1].toFloat(), list[2].toFloat()));
-        break;}
-    case NifValue::tVector4:{
-        QStringList list = value.split(" ", QString::SkipEmptyParts);
-        item.set<Vector4>(Vector4(list[0].toFloat(), list[1].toFloat(), list[2].toFloat(), list[3].toFloat()));
-        break;}
-    case NifValue::tUpLink:
-    case NifValue::tLink:
-        item.setLink(value.toInt());
-        break;
-    case NifValue::tString:
-    case NifValue::tShortString:
-    case NifValue::tSizedString:
-        item.setFromString(value);
-        break;
-    default:
-        printOutput("<font color=\"red\">Unsupported type</font>");
-        printOutput(QString::number(item.type()));
-        return false;
-        break;
-    }
-    nif->setValue(property, item);
-    return true;
-}
-
 //###################
 //SLOTS
 //###################
@@ -212,10 +134,13 @@ void NifScript::executeScript()
             removeWhiteSpaces(&line);
             //QRegExp fileType(line);
             QDir scriptDir(QDir(QFileInfo(scriptPath).absolutePath()));
-            foreach(QString item, scriptDir.entryList(QStringList(line))){
+            QStringList dirObjects = scriptDir.entryList(QStringList(line));
+            foreach(QString item, dirObjects){
                 item = scriptDir.absoluteFilePath(item);
-                if(QFileInfo(item).isFile())
+                if(QFileInfo(item).isFile()){
                     files.append(item);
+                    printOutput(item);
+                }
             }
             continue;
         }
@@ -235,7 +160,6 @@ void NifScript::executeScript()
         fileCommands.replaceInStrings("$(FILENAME)", QFileInfo(file).fileName());
         fileCommands.replaceInStrings("$(FILEPATH)", QFileInfo(file).filePath());
         fileCommands.replaceInStrings("$(DIRECTORY)", QFileInfo(file).absolutePath());
-        fileCommands.replaceInStrings("$(BASENAME)", QFileInfo(file).baseName());
 
         foreach (QString line, fileCommands) {
             //Loads a .nif: LOAD <path>
@@ -336,32 +260,6 @@ void NifScript::executeScript()
                 if(!spellCommand(line, block)) break;
                 else
                     printOutput("Applied \"" + line + "\" to block " + QString::number(block));
-            }
-            //Changes the value of the property: CHANGE <block> <name> TO <value>
-            else if(line.indexOf("CHANGE") == 0) {
-                line.remove(0, 6);
-                removeWhiteSpaces(&line);
-
-                int block;
-                bool ok;
-                block = line.left(line.indexOf(' ')).toInt(&ok);
-                if(!ok){
-                    printOutput("<font color=\"red\">Invalid block number</font>");
-                    break;
-                }
-                line.remove(0, QString(block).length()+1);
-
-                QString name = line.left(line.indexOf("TO"));
-                line.remove(0, name.length()+2);
-                removeWhiteSpaces(&name);
-                if(name.isEmpty()){ printOutput("<font color=\"red\">Invalid name</font>"); break;}
-
-
-                removeWhiteSpaces(&line);
-                if(line.isEmpty()){ printOutput("<font color=\"red\">Invalid value</font>"); break;}
-                if(!changeCommand(block, name, line)) break;
-                else
-                    printOutput("Changed " + name + " of block " + QString::number(block) + " to " + line);
             }
             //Update progress bar
             ui->progressBar->setValue(ui->progressBar->value()+1);
