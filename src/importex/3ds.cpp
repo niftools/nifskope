@@ -157,7 +157,7 @@ static float GetPercentageFromChunk( Chunk * cnk )
 }
 
 
-void import3ds(NifModel * nif, const QModelIndex & index , QString fname)
+void import3ds( NifModel * nif, const QModelIndex & index )
 {
 	//--Determine how the file will import, and be sure the user wants to continue--//
 
@@ -213,45 +213,43 @@ void import3ds(NifModel * nif, const QModelIndex & index , QString fname)
 		}
 	}
 
-    //--Read the file--//
+	QString question;
 
-    float ObjScale;
-    QVector<objMesh> ObjMeshes;
-    QMap<QString, objMaterial> ObjMaterials;
-    QMap<QString, objKfSequence> ObjKeyframes;
+	if ( iNode.isValid() == true ) {
+		if ( iShape.isValid() == true ) {
+			question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
+		} else {
+			question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
+		}
+	} else {
+		question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
+	}
 
-    QSettings settings;
-    settings.beginGroup( "Import-Export" );
-    settings.beginGroup( "3DS" );
+	int result = QMessageBox::question( 0, tr( "Import 3DS" ), question, QMessageBox::Ok, QMessageBox::Cancel );
 
-    if(fname.isNull()){
+	if ( result == QMessageBox::Cancel ) {
+		return;
+	}
 
-        QString question;
 
-        if ( iNode.isValid() == true ) {
-            if ( iShape.isValid() == true ) {
-                question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
-            } else {
-                question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
-            }
-        } else {
-            question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
-        }
+	//--Read the file--//
 
-        int result = QMessageBox::question( 0, tr( "Import 3DS" ), question, QMessageBox::Ok, QMessageBox::Cancel );
+	float ObjScale;
+	QVector<objMesh> ObjMeshes;
+	QMap<QString, objMaterial> ObjMaterials;
+	QMap<QString, objKfSequence> ObjKeyframes;
 
-        if ( result == QMessageBox::Cancel ) {
-            return;
-        }
+	QSettings settings;
+	settings.beginGroup( "Import-Export" );
+	settings.beginGroup( "3DS" );
 
-        fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .3ds file to import" ), settings.value( tr( "File Name" ) ).toString(), "3DS (*.3ds)" );
+	QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .3ds file to import" ), settings.value( tr( "File Name" ) ).toString(), "3DS (*.3ds)" );
 
-        if ( fname.isEmpty() ) {
-            return;
-        }
-    }
+	if ( fname.isEmpty() ) {
+		return;
+	}
 
-    QFile fobj( fname );
+	QFile fobj( fname );
 
 	if ( !fobj.open( QIODevice::ReadOnly ) ) {
 		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fobj.fileName() );
@@ -746,7 +744,7 @@ void import3ds(NifModel * nif, const QModelIndex & index , QString fname)
 		// set up a controller for animated objects
 	}
 
-    settings.setValue( "File Name", fname );
+	settings.setValue( "File Name", fname );
 
 	settings.endGroup(); // 3DS
 	settings.endGroup(); // Import-Export

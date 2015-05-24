@@ -471,7 +471,7 @@ static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 li
 	nif->setLink( iArray.child( numIndices, 0 ), link );
 }
 
-void importObj(NifModel * nif, const QModelIndex & index , QString fname)
+void importObj( NifModel * nif, const QModelIndex & index )
 {
 	//--Determine how the file will import, and be sure the user wants to continue--//
 
@@ -532,38 +532,36 @@ void importObj(NifModel * nif, const QModelIndex & index , QString fname)
 		}
 	}
 
-    //--Read the file--//
+	QString question;
 
-    QSettings settings;
-    settings.beginGroup( "Import-Export" );
-    settings.beginGroup( "OBJ" );
+	if ( iNode.isValid() == true ) {
+		if ( iShape.isValid() == true ) {
+			question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
+		} else {
+			question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
+		}
+	} else {
+		question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
+	}
 
-    if(fname.isNull()){
-        QString question;
+	int result = QMessageBox::question( 0, tr( "Import OBJ" ), question, QMessageBox::Ok, QMessageBox::Cancel );
 
-        if ( iNode.isValid() == true ) {
-            if ( iShape.isValid() == true ) {
-                question = tr( "NiTriShape selected.  The first imported mesh will replace the selected one." );
-            } else {
-                question = tr( "NiNode selected.  Meshes will be attached to the selected node." );
-            }
-        } else {
-            question = tr( "No NiNode or NiTriShape selected.  Meshes will be imported to the root of the file." );
-        }
+	if ( result == QMessageBox::Cancel ) {
+		return;
+	}
 
-        int result = QMessageBox::question( 0, tr( "Import OBJ" ), question, QMessageBox::Ok, QMessageBox::Cancel );
+	//--Read the file--//
 
-        if ( result == QMessageBox::Cancel ) {
-            return;
-        }
+	QSettings settings;
+	settings.beginGroup( "Import-Export" );
+	settings.beginGroup( "OBJ" );
 
-        QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .OBJ file to import" ), settings.value( "File Name" ).toString(), "OBJ (*.obj)" );
+	QString fname = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Choose a .OBJ file to import" ), settings.value( "File Name" ).toString(), "OBJ (*.obj)" );
 
-        if ( fname.isEmpty() )
-            return;
-    }
+	if ( fname.isEmpty() )
+		return;
 
-    QFile fobj( fname );
+	QFile fobj( fname );
 
 	if ( !fobj.open( QIODevice::ReadOnly ) ) {
 		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fobj.fileName() );
@@ -590,7 +588,7 @@ void importObj(NifModel * nif, const QModelIndex & index , QString fname)
 		QStringList t = line.split( " ", QString::SkipEmptyParts );
 
 		if ( t.value( 0 ) == "mtllib" ) {
-            readMtlLib( fname.left( qMax( fname.lastIndexOf( "/" ), fname.lastIndexOf( "\\" ) ) + 1 ) + t.value( 1 ), omaterials );
+			readMtlLib( fname.left( qMax( fname.lastIndexOf( "/" ), fname.lastIndexOf( "\\" ) ) + 1 ) + t.value( 1 ), omaterials );
 		} else if ( t.value( 0 ) == "usemtl" ) {
 			usemtl = t.value( 1 );
 			//if ( usemtl.contains( "_" ) )
@@ -991,7 +989,7 @@ void importObj(NifModel * nif, const QModelIndex & index , QString fname)
 
 	qDeleteAll( ofaces );
 
-    settings.setValue( "File Name", fname );
+	settings.setValue( "File Name", fname );
 
 	settings.endGroup(); // OBJ
 	settings.endGroup(); // Import-Export

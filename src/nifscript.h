@@ -23,7 +23,7 @@ private:
     void removeWhiteSpaces(QString *string);
 
     bool loadCommand(QString path);
-    bool importCommand(int block, QString path);
+    bool importCommand(QString path);
     bool saveCommand(QString path);
 
     NifModel *nif;

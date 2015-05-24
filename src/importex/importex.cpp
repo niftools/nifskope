@@ -43,8 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void exportObj( const NifModel * nif, const QModelIndex & index );
 void exportCol( const NifModel * nif, QFileInfo );
-void importObj( NifModel * nif, const QModelIndex & index, QString fname = QString() );
-void import3ds( NifModel * nif, const QModelIndex & index, QString fname = QString() );
+void importObj( NifModel * nif, const QModelIndex & index );
+void import3ds( NifModel * nif, const QModelIndex & index );
 
 
 void NifSkope::fillImportExportMenus()
