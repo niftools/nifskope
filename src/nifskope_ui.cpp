@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "nifproxy.h"
 #include "spellbook.h"
+#include "batchprocessor.h"
 #include "widgets/fileselect.h"
 #include "widgets/floatslider.h"
 #include "widgets/floatedit.h"
@@ -1169,7 +1170,12 @@ void NifSkope::on_aWindow_triggered()
 
 void NifSkope::on_aShredder_triggered()
 {
-	TestShredder::create();
+    TestShredder::create();
+}
+
+void NifSkope::on_aBatchProcessor_triggered()
+{
+    BatchProcessor::create();
 }
 
 void NifSkope::on_aHeader_triggered()

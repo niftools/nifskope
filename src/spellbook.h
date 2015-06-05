@@ -127,6 +127,8 @@ public:
 	//! Cast all sanitizing spells
 	static QModelIndex sanitize( NifModel * nif );
 
+    static QList<Spell *> & spells();
+
 public slots:
 	void sltNif( NifModel * nif );
 
@@ -151,7 +153,6 @@ protected:
 	void checkActions( QMenu * menu, const QString & page );
 
 private:
-	static QList<Spell *> & spells();
 	static QList<SpellBook *> & books();
 	static QMultiHash<QString, Spell *> & hash();
 	static QList<Spell *> & instants();

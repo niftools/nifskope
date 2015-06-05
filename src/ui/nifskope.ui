@@ -317,6 +317,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="aLoadXML"/>
     <addaction name="aShredder"/>
     <addaction name="separator"/>
+    <addaction name="aBatchProcessor"/>
+    <addaction name="separator"/>
     <addaction name="aQuit"/>
    </widget>
    <widget class="QMenu" name="mView">
@@ -1770,6 +1772,11 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="text">
     <string>Bounds Debug</string>
+   </property>
+  </action>
+  <action name="aBatchProcessor">
+   <property name="text">
+    <string>Batch processor</string>
    </property>
   </action>
  </widget>

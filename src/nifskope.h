@@ -153,6 +153,9 @@ public slots:
 	//! A slot for starting the XML checker.
 	void on_aShredder_triggered();
 
+    //! A slot for starting the Batch processor checker.
+    void on_aBatchProcessor_triggered();
+
 	//! Reset "block details"
 	void on_aHeader_triggered();
 
