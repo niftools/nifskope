@@ -342,47 +342,58 @@ class spScaleVertices final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Scale Vertices" ); }
 	QString page() const override final { return Spell::tr( "Transform" ); }
+    QList<BatchProperty> batchProperties() const override final
+    {
+        QList<BatchProperty> properties;
+        properties.append(BatchProperty("Block:", 0));
+        properties.append(BatchProperty("X:", static_cast<double>(1.0)));
+        properties.append(BatchProperty("Y:", static_cast<double>(1.0)));
+        properties.append(BatchProperty("Z:", static_cast<double>(1.0)));
+        properties.append(BatchProperty("Scale Normals:", true));
+        return properties;
+    }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		return nif->inherits( index, "NiGeometry" );
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+    QModelIndex castProperties( NifModel * nif, const QModelIndex & index, QList<BatchProperty> properties ) override final
 	{
-		QDialog dlg;
+        QList<QDoubleSpinBox *> scale;
+        QCheckBox * chkNormals;
+        QDialog dlg;
+        if(properties.isEmpty()){
 
-		QGridLayout * grid = new QGridLayout( &dlg );
+            QGridLayout * grid = new QGridLayout( &dlg );
 
-		QList<QDoubleSpinBox *> scale;
+            for ( int a = 0; a < 3; a++ ) {
+                QDoubleSpinBox * spn = new QDoubleSpinBox;
+                scale << spn;
+                spn->setValue( 1.0 );
+                spn->setDecimals( 4 );
+                spn->setRange( -10e+4, 10e+4 );
+                grid->addWidget( new QLabel( (QStringList{ "X", "Y", "Z" }).value( a ) ), a, 0 );
+                grid->addWidget( spn, a, 1 );
+            }
 
-		for ( int a = 0; a < 3; a++ ) {
-			QDoubleSpinBox * spn = new QDoubleSpinBox;
-			scale << spn;
-			spn->setValue( 1.0 );
-			spn->setDecimals( 4 );
-			spn->setRange( -10e+4, 10e+4 );
-			grid->addWidget( new QLabel( (QStringList{ "X", "Y", "Z" }).value( a ) ), a, 0 );
-			grid->addWidget( spn, a, 1 );
-		}
+            QSettings settings;
+            QString key = QString( "%1/%2/%3/Scale Normals" ).arg( "Spells", page(), name() );
 
-		QSettings settings;
-		QString key = QString( "%1/%2/%3/Scale Normals" ).arg( "Spells", page(), name() );
+            chkNormals = new QCheckBox( Spell::tr( "Scale Normals" ) );
 
-		QCheckBox * chkNormals = new QCheckBox( Spell::tr( "Scale Normals" ) );
+            chkNormals->setChecked( settings.value( key, true ).toBool() );
+            grid->addWidget( chkNormals, 3, 1 );
 
-		chkNormals->setChecked( settings.value( key, true ).toBool() );
-		grid->addWidget( chkNormals, 3, 1 );
+            QPushButton * btScale = new QPushButton( Spell::tr( "Scale" ) );
+            grid->addWidget( btScale, 4, 0, 1, 2 );
+            QObject::connect( btScale, &QPushButton::clicked, &dlg, &QDialog::accept );
 
-		QPushButton * btScale = new QPushButton( Spell::tr( "Scale" ) );
-		grid->addWidget( btScale, 4, 0, 1, 2 );
-		QObject::connect( btScale, &QPushButton::clicked, &dlg, &QDialog::accept );
+            if ( dlg.exec() != QDialog::Accepted )
+                return QModelIndex();
 
-		if ( dlg.exec() != QDialog::Accepted )
-			return QModelIndex();
-
-		settings.setValue( key, chkNormals->isChecked() );
-
+            settings.setValue( key, chkNormals->isChecked() );
+        }
 		QModelIndex iData = nif->getBlock( nif->getLink( nif->getBlock( index ), "Data" ), "NiGeometryData" );
 
 		QVector<Vector3> vertices = nif->getArray<Vector3>( iData, "Vertices" );
@@ -391,21 +402,21 @@ public:
 		while ( it.hasNext() ) {
 			Vector3 & v = it.next();
 
-			for ( int a = 0; a < 3; a++ )
-				v[a] *= scale[a]->value();
+                for ( int a = 0; a < 3; a++ )
+                    v[a] *= properties.isEmpty() ? scale[a]->value() : properties[a+1].value.toDouble();
 		}
 
 		nif->setArray<Vector3>( iData, "Vertices", vertices );
 
-		if ( chkNormals->isChecked() ) {
+        if (properties.isEmpty() ? chkNormals->isChecked() : properties[4].value.toBool() ) {
 			QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
 			QMutableVectorIterator<Vector3> it( norms );
 
 			while ( it.hasNext() ) {
 				Vector3 & v = it.next();
 
-				for ( int a = 0; a < 3; a++ )
-					v[a] *= scale[a]->value();
+                for ( int a = 0; a < 3; a++ )
+                    v[a] *= properties.isEmpty() ? scale[a]->value() : properties[a+1].value.toDouble();
 			}
 
 			nif->setArray<Vector3>( iData, "Normals", norms );

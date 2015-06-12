@@ -49,6 +49,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file spellbook.h Spell, SpellBook and Librarian
 
+struct BatchProperty
+{
+    QString name;
+    QVariant value;
+    BatchProperty(QString title_, QVariant value_){
+        name = title_;
+        value = value_;
+    }
+    bool operator==(BatchProperty p){
+        return p.name == name && p.value == value;
+    }
+};
+
 //! Register a Spell using a Librarian
 #define REGISTER_SPELL( SPELL ) static Librarian __ ## SPELL ## __( new SPELL );
 
@@ -75,12 +88,15 @@ public:
 	virtual bool sanity() const { return false; }
 	//! Hotkey sequence
 	virtual QKeySequence hotkey() const { return QKeySequence(); }
+    //! Properties displayed in the batch processor
+    virtual QList<BatchProperty> batchProperties() const;
 
 	//! Determine if/when the spell can be cast
 	virtual bool isApplicable( const NifModel * nif, const QModelIndex & index ) = 0;
 
 	//! Cast (apply) the spell
-	virtual QModelIndex cast( NifModel * nif, const QModelIndex & index ) = 0;
+    virtual QModelIndex cast( NifModel * nif, const QModelIndex & index){return castProperties(nif, index, QList<BatchProperty>());}
+    virtual QModelIndex castProperties( NifModel * nif, const QModelIndex & index, QList<BatchProperty> properties){Q_UNUSED(properties)return cast(nif, index);}
 
 	//! Cast the spell if applicable
 	void castIfApplicable( NifModel * nif, const QModelIndex & index )

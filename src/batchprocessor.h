@@ -27,6 +27,8 @@ public slots:
     void on_addFilesButton_pressed();
     void on_deleteFileButton_pressed();
     void on_runButton_pressed();
+    void on_saveButton_pressed();
+    void on_loadButton_pressed();
 };
 
 #endif // BATCHPROCESSING_H

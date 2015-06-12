@@ -284,3 +284,11 @@ QAction * SpellBook::exec( const QPoint & pos, QAction * act )
 
 	return nullptr;
 }
+
+
+QList<BatchProperty> Spell::batchProperties() const
+{
+     QList<BatchProperty> properties;
+     properties.append(BatchProperty("Block:", 0));
+     return properties;
+}

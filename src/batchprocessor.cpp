@@ -3,6 +3,11 @@
 
 #include <QAction>
 #include <QFileDialog>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QProgressDialog>
+#include <QProgressBar>
 
 BatchProcessor::BatchProcessor(QWidget *parent) :
     QDialog(parent),
@@ -17,7 +22,7 @@ BatchProcessor::BatchProcessor(QWidget *parent) :
             addActionMenu->addAction(spell->name());
         } else {
             bool actionMade = false;
-            foreach(QMenu * menu, addActionMenu->findChildren<QMenu*>()){
+            for(QMenu * menu : addActionMenu->findChildren<QMenu*>()){
                 if(menu->title() == spell->page()){
                     QAction *action = new QAction(spell->name(), menu);
                     action->setProperty("page", spell->page());
@@ -60,28 +65,98 @@ void BatchProcessor::actionTriggered(QAction *action)
     } else {
         actionName = action->text();
     }
-        QMap<QString, QVariant::Type> contentType;
-        contentType.insert("test Value", QVariant::Int);
-        ui->actionView->addItem(actionName, contentType);
+        ui->actionView->addItem(actionName, SpellBook::lookup(actionName)->batchProperties());
 }
 
 void BatchProcessor::on_addFilesButton_pressed()
 {
     QStringList files = QFileDialog::getOpenFileNames(this, tr("Add Files"), QString(), tr("NIF (*.nif)"));
-    ui->fileList->addItems(files);
+    for(QString file : files){
+        bool found = false;
+        for(int index = 0; index < ui->fileList->count(); index++){
+            if(ui->fileList->item(index)->text() == file)
+                found = true;
+        }
+        if(!found)
+            ui->fileList->addItem(file);
+    }
 }
 
 void BatchProcessor::on_deleteFileButton_pressed()
 {
-    QList<QListWidgetItem*> list = ui->fileList->selectedItems();
-    foreach(QListWidgetItem *item, list){
+    for(QListWidgetItem *item : ui->fileList->selectedItems()){
         delete item;
     }
 }
 
 void BatchProcessor::on_runButton_pressed()
 {
-    ui->progressBar->setTextVisible(true);
-    ui->progressBar->setEnabled(true);
-    ui->runButton->setEnabled(false);
+    QProgressDialog progress(this);
+    progress.setModal(true);
+    progress.setLabelText("Applying spells to files");
+    progress.setMinimumDuration(0);
+    progress.setWindowFlags(progress.windowFlags() & ~Qt::WindowCloseButtonHint & ~Qt::WindowContextHelpButtonHint);
+    QProgressBar *bar = new QProgressBar(&progress);
+    bar->setFormat("%v of %m");
+    bar->setRange(0, ui->fileList->count());
+    bar->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    progress.setBar(bar);
+    progress.show();
+
+    for(int fileIndex = 0; fileIndex < ui->fileList->count(); fileIndex++){
+        qApp->processEvents();
+        if(progress.wasCanceled())
+            break;
+        NifModel nifModel;
+        nifModel.loadFromFile(ui->fileList->item(fileIndex)->text());
+
+        for(int actionIndex = 0; actionIndex < ui->actionView->count(); actionIndex++){
+            SpellBook::lookup(ui->actionView->title(actionIndex))->castProperties(&nifModel, nifModel.getBlock(ui->actionView->data(actionIndex)[0].name == "Block:" ? ui->actionView->data(actionIndex)[0].value.toInt() : 0), ui->actionView->data(actionIndex));
+        }
+        progress.setValue(fileIndex+1);
+        nifModel.saveToFile(ui->fileList->item(fileIndex)->text());
+    }
+}
+
+void BatchProcessor::on_saveButton_pressed()
+{
+    QString path = QFileDialog::getSaveFileName(this, "Save", QString(), QString("NifSkope batch files(*.nss)"));
+    if(path.isEmpty())
+        return;
+    QJsonDocument doc;
+    QJsonArray actionArray;
+    for(int index = 0; index < ui->actionView->count(); index++){
+        QJsonObject item;
+        for(BatchProperty property : ui->actionView->data(index)){
+            item[property.name] = QJsonValue::fromVariant(property.value);
+        }
+        item["title"] = ui->actionView->title(index);
+        actionArray.append(item);
+    }
+    doc.setArray(actionArray);
+
+    QFile file(path);
+    file.open(QIODevice::WriteOnly);
+    QTextStream fileStream(&file);
+    fileStream << doc.toJson();
+    file.close();
+}
+
+void BatchProcessor::on_loadButton_pressed()
+{
+    QString path = QFileDialog::getOpenFileName(this, "Load", QString(), QString("NifSkope batch files(*.nss)"));
+    if(path.isEmpty())
+        return;
+    ui->actionView->clear();
+    QFile file(path);
+    file.open(QIODevice::ReadOnly);
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    QJsonArray actionArray = doc.array();
+    for(int index = 0; index < actionArray.count(); index++){
+        QJsonObject item = actionArray[index].toObject();
+        ui->actionView->addItem(item["title"].toString(), SpellBook::lookup(item["title"].toString())->batchProperties());
+        for(BatchProperty property : ui->actionView->data(index)){
+            ui->actionView->setData(index, property.name, item.value(property.name).toVariant());
+        }
+    }
 }

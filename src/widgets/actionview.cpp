@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QIntValidator>
 #include <QCheckBox>
+#include <QSpinBox>
 
 #include <limits>
 
@@ -21,7 +22,7 @@ ActionView::~ActionView()
 {
 }
 
-void ActionView::addItem(QString title, QMap<QString, QVariant::Type> contentType)
+void ActionView::addItem(QString title, QList<BatchProperty> contentType)
 {
     QWidget *itemContainer = new QWidget();//Container needed to get the content later
     QVBoxLayout *layout = new QVBoxLayout();
@@ -56,32 +57,48 @@ void ActionView::addItem(QString title, QMap<QString, QVariant::Type> contentTyp
     if(contentType.count() == 0)
         contentLayout->addRow(tr("No properties available"), new QWidget());
     else
-        for(int i = 0; i < contentType.count(); i++){
-            QString key = contentType.firstKey();
-            QVariant::Type value = contentType.value(key);
-            contentType.remove(key);
-            actionItem.properties.insert(key, QVariant());
+        for(BatchProperty property : contentType){
 
-            switch(value){
+            switch(property.value.type()){
             case QVariant::Int:{
-                QLineEdit *input = new QLineEdit();
-                input->setValidator( new QIntValidator(std::numeric_limits<int>::min(), std::numeric_limits<int>::max()));
-                input->setProperty("name", key);
-                contentLayout->addRow(key, input);
-                connect(input, SIGNAL(textChanged(QString)), this, SLOT(lineEditChanged(QString)));
+                QSpinBox *input = new QSpinBox();
+                input->setRange(0, std::numeric_limits<int>::max());
+                input->setValue(property.value.toInt());
+                input->setProperty("index", actionItem.widgets.count());
+                contentLayout->addRow(property.name, input);
+                actionItem.widgets.append(input);
+                actionItem.properties.append(property);
+                connect(input, SIGNAL(valueChanged(int)), this, SLOT(intSpinBoxChanged(int)));
+            }
+            break;
+            case QVariant::Double:{
+                QDoubleSpinBox *input = new QDoubleSpinBox();
+                input->setRange(-10e+4, 10e+4);
+                input->setProperty("index", actionItem.widgets.count());
+                input->setValue(property.value.toDouble());
+                contentLayout->addRow(property.name, input);
+                actionItem.widgets.append(input);
+                actionItem.properties.append(property);
+                connect(input, SIGNAL(valueChanged(double)), this, SLOT(doubleSpinBoxChanged(double)));
             }
             break;
             case QVariant::String:{
                 QLineEdit *input = new QLineEdit();
-                input->setProperty("name", key);
-                contentLayout->addRow(key, input);
-                connect(input, SIGNAL(textChanged(QString)), this, SLOT(lineEditChanged(QString)));
+                input->setProperty("index", actionItem.widgets.count());
+                input->setText(property.value.toString());
+                contentLayout->addRow(property.name, input);
+                actionItem.widgets.append(input);
+                actionItem.properties.append(property);
+                connect(input, SIGNAL(textEdited(QString)), this, SLOT(lineEditChanged(QString)));
             }
             break;
             case QVariant::Bool:{
                 QCheckBox *input = new QCheckBox();
-                input->setProperty("name", key);
-                contentLayout->addRow(key, input);
+                input->setProperty("index", actionItem.widgets.count());
+                input->setChecked(property.value.toBool());
+                contentLayout->addRow(property.name, input);
+                actionItem.widgets.append(input);
+                actionItem.properties.append(property);
                 connect(input, SIGNAL(clicked(bool)), this, SLOT(checkboxChanged(bool)));
             }
             break;
@@ -95,14 +112,63 @@ void ActionView::addItem(QString title, QMap<QString, QVariant::Type> contentTyp
     content.append(actionItem);
 }
 
-QMap<QString, QVariant> ActionView::data(int index)
+QList<BatchProperty> ActionView::data(int index)
 {
     return content[index].properties;
+}
+
+ActionItem ActionView::item(int index)
+{
+    return content[index];
+}
+
+void ActionView::setData(int index, QString key, QVariant value)
+{
+    BatchProperty *property;
+    QWidget* widget;
+    for(BatchProperty &prop : content[index].properties){
+        if(prop.name == key){
+            property = &prop;
+            widget = content[index].widgets[content[index].properties.indexOf(prop)];
+        }
+    }
+
+    switch(property->value.type()){
+    case QVariant::Int:
+        dynamic_cast<QSpinBox*>(widget)->setValue(value.toInt());
+    break;
+    case QVariant::Double:
+        dynamic_cast<QDoubleSpinBox*>(widget)->setValue(value.toDouble());
+    break;
+    case QVariant::String:
+        dynamic_cast<QLineEdit*>(widget)->setText(value.toString());
+    break;
+    case QVariant::Bool:
+        dynamic_cast<QCheckBox*>(widget)->setChecked(value.toBool());
+    break;
+    default:
+    break;
+    }
+    property->value = value;
 }
 
 int ActionView::count()
 {
     return content.count();
+}
+
+QString ActionView::title(int index)
+{
+    return content[index].title;
+}
+
+void ActionView::clear()
+{
+    content.clear();
+    for(QWidget* widget : contentWidgets){
+        delete widget;
+    }
+    contentWidgets.clear();
 }
 
 void ActionView::hideShowContent()
@@ -130,11 +196,23 @@ void ActionView::deleteItem()
 void ActionView::lineEditChanged(QString text)
 {
     QWidget *item = dynamic_cast<QWidget*>(sender()->parent()->parent());
-    content[contentWidgets.indexOf(item)].properties.insert(sender()->property("name").toString(), text);
+    content[contentWidgets.indexOf(item)].properties[sender()->property("index").toInt()].value = text;
 }
 
 void ActionView::checkboxChanged(bool state)
 {
     QWidget *item = dynamic_cast<QWidget*>(sender()->parent()->parent());
-    content[contentWidgets.indexOf(item)].properties.insert(sender()->property("name").toString(), state);
+    content[contentWidgets.indexOf(item)].properties[sender()->property("index").toInt()].value = state;
+}
+
+void ActionView::intSpinBoxChanged(int value)
+{
+    QWidget *item = dynamic_cast<QWidget*>(sender()->parent()->parent());
+    content[contentWidgets.indexOf(item)].properties[sender()->property("index").toInt()].value = value;
+}
+
+void ActionView::doubleSpinBoxChanged(double value)
+{
+    QWidget *item = dynamic_cast<QWidget*>(sender()->parent()->parent());
+    content[contentWidgets.indexOf(item)].properties[sender()->property("index").toInt()].value = value;
 }
