@@ -195,7 +195,8 @@ private:
 	QStringList validTexs;
 
 	//! Names of texture slots
-	QStringList texnames;
+	static QStringList texnames;
+
 	//! Texture slot currently being operated on
 	int currentTexSlot;
 	//! Read texcoords from the nif

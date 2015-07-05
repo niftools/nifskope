@@ -99,17 +99,17 @@ static GLshort texArray[4][2] = {
 static GLdouble glUnit  = ( 1.0 / BASESIZE );
 static GLdouble glGridD = GRIDSIZE * glUnit;
 
+QStringList UVWidget::texnames = {
+	"Base Texture", "Dark Texture", "Detail Texture",
+	"Gloss Texture", "Glow Texture", "Bump Map Texture",
+	"Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture",
+	"Decal 3 Texture"
+};
+
+
 UVWidget::UVWidget( QWidget * parent )
 	: QGLWidget( QGLFormat( QGL::SampleBuffers ), parent, 0, Qt::Tool | Qt::WindowStaysOnTopHint ), undoStack( new QUndoStack( this ) )
 {
-	// these are not translated since they are pulled from nif.xml
-	texnames = {
-		"Base Texture", "Dark Texture", "Detail Texture",
-		"Gloss Texture", "Glow Texture", "Bump Map Texture",
-		"Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture",
-		"Decal 3 Texture"
-	};
-
 	setWindowTitle( tr( "UV Editor" ) );
 	setFocusPolicy( Qt::StrongFocus );
 

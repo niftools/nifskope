@@ -167,9 +167,11 @@ defineReplace(QtBins) {
 	}
 
 	*-g++ {
+        # Copies icudt*, icuin*, icuuc*, libgcc*-*, libstdc++-*, libwinpthread-*
+        #   Note: As of Qt 5.5, changed `lib*` to `lib*-*` in order to avoid unneeded libs.
 		list += \
 			$$[QT_INSTALL_BINS]/icu*.dll \
-			$$[QT_INSTALL_BINS]/lib*.dll
+            $$[QT_INSTALL_BINS]/lib*-*.dll
 	}
 
 	return($$list)

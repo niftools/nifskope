@@ -433,6 +433,11 @@ win32 {
 	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
 }
 
+win32 {
+    # GL libs for Qt 5.5+
+    LIBS += -lopengl32 -lglu32
+}
+
 unix:!macx {
 	LIBS += -lGLU
 }
