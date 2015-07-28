@@ -21,6 +21,11 @@ public:
 private:
     Ui::BatchProcessor *ui;
     QMenu *addActionMenu;
+    struct OutputInfo{
+        QString text;
+        int type;// Info = 0; Error = 1
+    };
+    QList<OutputInfo> outputLog;
 
 public slots:
     void actionTriggered(QAction *action);
@@ -29,6 +34,7 @@ public slots:
     void on_runButton_pressed();
     void on_saveButton_pressed();
     void on_loadButton_pressed();
+    void updateOutputLog();
 };
 
 #endif // BATCHPROCESSING_H

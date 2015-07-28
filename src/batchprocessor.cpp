@@ -42,6 +42,8 @@ BatchProcessor::BatchProcessor(QWidget *parent) :
 
     ui->addActionButton->setMenu(addActionMenu);
     connect(addActionMenu, SIGNAL(triggered(QAction*)), this, SLOT(actionTriggered(QAction*)));
+    connect(ui->buttonInfo, SIGNAL(clicked(bool)), this, SLOT(updateOutputLog()));
+    connect(ui->buttonErrors, SIGNAL(clicked(bool)), this, SLOT(updateOutputLog()));
 }
 
 BatchProcessor::~BatchProcessor()
@@ -91,6 +93,7 @@ void BatchProcessor::on_deleteFileButton_pressed()
 
 void BatchProcessor::on_runButton_pressed()
 {
+    outputLog.clear();
     QProgressDialog progress(this);
     progress.setModal(true);
     progress.setLabelText("Applying spells to files");
@@ -111,11 +114,17 @@ void BatchProcessor::on_runButton_pressed()
         nifModel.loadFromFile(ui->fileList->item(fileIndex)->text());
 
         for(int actionIndex = 0; actionIndex < ui->actionView->count(); actionIndex++){
-            SpellBook::lookup(ui->actionView->title(actionIndex))->castProperties(&nifModel, nifModel.getBlock(ui->actionView->data(actionIndex)[0].name == "Block:" ? ui->actionView->data(actionIndex)[0].value.toInt() : 0), ui->actionView->data(actionIndex));
+            if(!SpellBook::lookup(ui->actionView->title(actionIndex))->isApplicable(&nifModel, nifModel.getBlock(ui->actionView->data(actionIndex)[0].name == "Block:" ? ui->actionView->data(actionIndex)[0].value.toInt() : 0))){
+                outputLog.append({"Can't apply spell \"" + ui->actionView->title(actionIndex) + "\" to block " + ui->actionView->data(actionIndex)[0].value.toString() + " of .nif: " + ui->fileList->item(fileIndex)->text(), 1});
+            } else {
+                SpellBook::lookup(ui->actionView->title(actionIndex))->castProperties(&nifModel, nifModel.getBlock(ui->actionView->data(actionIndex)[0].name == "Block:" ? ui->actionView->data(actionIndex)[0].value.toInt() : 0), ui->actionView->data(actionIndex));
+                outputLog.append({"Applied spell \"" + ui->actionView->title(actionIndex) + "\" to block " + ui->actionView->data(actionIndex)[0].value.toString() + " of .nif: " + ui->fileList->item(fileIndex)->text(), 0});
+            }
         }
         progress.setValue(fileIndex+1);
         nifModel.saveToFile(ui->fileList->item(fileIndex)->text());
     }
+    updateOutputLog();
 }
 
 void BatchProcessor::on_saveButton_pressed()
@@ -159,4 +168,28 @@ void BatchProcessor::on_loadButton_pressed()
             ui->actionView->setData(index, property.name, item.value(property.name).toVariant());
         }
     }
+}
+
+void BatchProcessor::updateOutputLog()
+{
+    ui->outputList->clear();
+
+    bool info = ui->buttonInfo->isChecked();
+    bool errors = ui->buttonErrors->isChecked();
+    int infoCount = 0;
+    int errorCount = 0;
+
+    for(OutputInfo oi : outputLog){
+        if(oi.type == 0){
+            infoCount++;
+            if(info)
+                ui->outputList->addItem(oi.text);
+        } else if(oi.type == 1){
+            errorCount++;
+            if(errors)
+                ui->outputList->addItem((oi.text));
+        }
+    }
+    ui->buttonInfo->setText("Info (" + QString::number(infoCount) + ")");
+    ui->buttonErrors->setText("Errors (" + QString::number(errorCount) + ")");
 }
