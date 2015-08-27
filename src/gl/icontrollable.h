@@ -49,6 +49,8 @@ class Scene;
 //! Anything capable of having a Controller
 class IControllable : public QObject
 {
+	Q_OBJECT
+
 	friend class ControllerManager;
 
 public:

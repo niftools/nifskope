@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifskope.h"
 #include "version.h"
-#include "options.h"
+#include "settings.h"
 
 #include "ui_nifskope.h"
 #include "ui/about_dialog.h"
@@ -52,10 +52,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "widgets/inspect.h"
 #include "widgets/xmlcheck.h"
 
-#ifdef FSENGINE
-#include <fsengine/fsmanager.h>
-#endif
-
 #include <QAction>
 #include <QApplication>
 #include <QByteArray>
@@ -65,6 +61,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFontDialog>
+#include <QGroupBox>
 #include <QHeaderView>
 #include <QMenu>
 #include <QMenuBar>
@@ -170,14 +167,17 @@ void NifSkope::initActions()
 		DoMultisampling = 0x1000, // Not implemented
 		DoLighting = 0x2000,
 		DoCubeMapping = 0x4000,
-		DisableShaders = 0x8000
+		DisableShaders = 0x8000,
+		ShowHidden = 0x10000
 	*/
 
 	ui->aShowAxes->setData( Scene::ShowAxes );
+	ui->aShowGrid->setData( Scene::ShowGrid );
 	ui->aShowNodes->setData( Scene::ShowNodes );
 	ui->aShowCollision->setData( Scene::ShowCollision );
 	ui->aShowConstraints->setData( Scene::ShowConstraints );
 	ui->aShowMarkers->setData( Scene::ShowMarkers );
+	ui->aShowHidden->setData( Scene::ShowHidden );
 
 	ui->aTextures->setData( Scene::DoTexturing );
 	ui->aVertexColors->setData( Scene::DoVertexColors );
@@ -198,11 +198,21 @@ void NifSkope::initActions()
 		return ag;
 	};
 
-	showActions = agroup( { ui->aShowAxes, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers }, false );
+	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden }, false );
 	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );
 	connect( shadingActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
+
+	// Sync actions to Scene state
+	for ( auto a : showActions->actions() ) {
+		a->setChecked( ogl->scene->options & a->data().toInt() );
+	}
+
+	// Sync actions to Scene state
+	for ( auto a : shadingActions->actions() ) {
+		a->setChecked( ogl->scene->options & a->data().toInt() );
+	}
 
 	// Setup blank QActions for Recent Files menus
 	for ( int i = 0; i < NumRecentFiles; ++i ) {
@@ -233,13 +243,6 @@ void NifSkope::initActions()
 
 	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
 	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
-
-#ifdef FSENGINE
-	auto fsm = FSManager::get();
-	if ( fsm ) {
-		connect( ui->aResources, &QAction::triggered, fsm, &FSManager::selectArchives );
-	}
-#endif
 
 	connect( ui->aPrintView, &QAction::triggered, ogl, &GLView::saveImage );
 
@@ -305,12 +308,6 @@ void NifSkope::initActions()
 
 	// Update Inspector widget with current index
 	connect( tree, &NifTreeView::sigCurrentIndexChanged, inspect, &InspectView::updateSelection );
-
-	
-	// Hide new Settings from Release for the time being
-#ifdef QT_NO_DEBUG
-	ui->aSettings->setVisible( false );
-#endif
 }
 
 void NifSkope::initDockWidgets()
@@ -348,12 +345,6 @@ void NifSkope::initMenu()
 	// Disable without NIF loaded
 	ui->mRender->setEnabled( false );
 
-#ifndef FSENGINE
-	if ( ui->aResources ) {
-		ui->mOptions->removeAction( ui->aResources );
-	}
-#endif
-
 	// Populate Toolbars menu with all enabled toolbars
 	for ( QObject * o : children() ) {
 		QToolBar * tb = qobject_cast<QToolBar *>(o);
@@ -365,8 +356,6 @@ void NifSkope::initMenu()
 
 	// Insert SpellBook class before Help
 	ui->menubar->insertMenu( ui->menubar->actions().at( 3 ), book );
-
-	ui->mOptions->insertActions( ui->aResources, Options::actions() );
 
 	// Insert Import/Export menus
 	mExport = ui->menuExport;
@@ -548,7 +537,7 @@ void NifSkope::initToolBars()
 	tLOD->setEnabled( false );
 
 	connect( lodSlider, &QSlider::valueChanged, ogl->getScene(), &Scene::updateLodLevel );
-	connect( lodSlider, &QSlider::valueChanged, Options::get(), &Options::sigChanged );
+	connect( lodSlider, &QSlider::valueChanged, ogl, &GLView::updateGL );
 	connect( nif, &NifModel::lodSliderChanged, [tLOD]( bool enabled ) { tLOD->setEnabled( enabled ); tLOD->setVisible( enabled ); } );
 }
 
@@ -885,7 +874,7 @@ void NifSkope::onSaveComplete( bool success, QString & fname )
 
 bool NifSkope::saveConfirm()
 {
-	if ( isWindowModified() || !nif->undoStack->isClean() ) {
+	if ( !cfg.suppressSaveConfirm && (isWindowModified() || !nif->undoStack->isClean()) ) {
 		QMessageBox::StandardButton response;
 		response = QMessageBox::question( this,
 			tr( "Save Confirmation" ),
@@ -947,8 +936,6 @@ void NifSkope::saveUi() const
 	//settings.setValue( "GLView/Loop Animation", ui->aAnimLoop->isChecked() );
 	//settings.setValue( "GLView/Switch Animation", ui->aAnimSwitch->isChecked() );
 	settings.setValue( "GLView/Perspective", ui->aViewPerspective->isChecked() );
-
-	Options::get()->save();
 }
 
 
@@ -1053,7 +1040,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 				// Init initial buffer with solid color
 				//	Otherwise becomes random colors on release builds
 				buf = QImage( 10, 10, QImage::Format_ARGB32 );
-				buf.fill( Options::bgColor() );
+				buf.fill( ogl->clearColor() );
 			} else {
 				buf = ogl->grabFrameBuffer();
 			}

@@ -55,13 +55,9 @@ public:
 
 protected:
 	//! Constructor
-	FSManager( QObject * parent = NULL );
+	FSManager( QObject * parent = nullptr );
 	//! Destructor
 	~FSManager();
-
-public slots:
-	//! Launches a FSSelector dialog
-	void selectArchives();
 	
 protected:
 	QMap<QString, FSArchiveHandler *> archives;
@@ -71,38 +67,12 @@ protected:
 	static QStringList autodetectArchives();
 	//! Helper function to build a list of BSAs
 	static QStringList regPathBSAList( QString regKey, QString dataDir );
-	
-	friend class FSSelector;
-};
 
-//! Interface dialog for FSManager
-class FSSelector : public QDialog
-{
-	Q_OBJECT
-public:
-	//! Constructor
-	FSSelector( FSManager * m );
-	//! Destructor
-	~FSSelector();
+	void initialize();
 	
-protected slots:
-	void sltAuto( bool );
-	void sltAdd();
-	void sltDel();
-	void sltDelAll();
-	
-protected:
-	FSManager * manager;
-	
-	class QStringListModel * model;
-	class QListView * view;
-	
-	class QCheckBox * chkAuto;
-	class QPushButton * btAdd;
-	class QPushButton * btDel;
-	class QPushButton * btDelAll;
+	friend class NifSkope;
+	friend class SettingsResources;
 };
-
 
 #endif
 

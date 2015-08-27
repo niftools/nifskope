@@ -261,6 +261,9 @@ public:
 	//! Undo Stack for changes to NifModel
 	QUndoStack * undoStack;
 
+public slots:
+	void updateSettings();
+
 signals:
 	void linksChanged();
 	void lodSliderChanged( bool ) const;
@@ -344,6 +347,14 @@ protected:
 	static QList<quint32> supportedVersions;
 	static QHash<QString, NifBlock *> compounds;
 	static QHash<QString, NifBlock *> blocks;
+
+private:
+	struct Settings
+	{
+		QString startupVersion;
+		int userVersion;
+		int userVersion2;
+	} cfg;
 };
 
 

@@ -710,6 +710,8 @@ public:
 	bool vertexColors;
 	bool vertexAlpha;
 
+	bool hasWeaponBlood;
+
 	struct Falloff
 	{
 		float startAngle = 1.0f;

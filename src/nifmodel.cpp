@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "config.h"
-#include "options.h"
+#include "settings.h"
 
 #include "niftypes.h"
 #include "spellbook.h"
@@ -50,7 +50,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
+	updateSettings();
+
 	clear();
+}
+
+void NifModel::updateSettings()
+{
+	QSettings settings;
+
+	settings.beginGroup( "Settings/NIF/Startup Defaults" );
+
+	cfg.startupVersion = settings.value( "Version", "20.0.0.5" ).toString();
+	cfg.userVersion = settings.value( "User Version", "11" ).toInt();
+	cfg.userVersion2 = settings.value( "User Version 2", "11" ).toInt();
+
+	settings.endGroup();
 }
 
 QString NifModel::version2string( quint32 v )
@@ -164,10 +179,10 @@ void NifModel::clear()
 	root->killChildren();
 	insertType( root, NifData( "NiHeader", "Header" ) );
 	insertType( root, NifData( "NiFooter", "Footer" ) );
-	version = version2number( Options::startupVersion() );
+	version = version2number( cfg.startupVersion );
 
 	if ( !supportedVersions.isEmpty() && !isVersionSupported( version ) ) {
-		Message::warning( nullptr, tr( "Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5" ).arg( Options::startupVersion() ) );
+		Message::warning( nullptr, tr( "Unsupported 'Startup Version' %1 specified, reverting to 20.0.0.5" ).arg( cfg.startupVersion ) );
 		version = 0x14000005;
 	}
 	endResetModel();
@@ -189,10 +204,9 @@ void NifModel::clear()
 
 	set<QString>( getHeaderItem(), "Header String", header_string );
 
-	if ( version == 0x14000005 ) {
-		//Just set this if version is 20.0.0.5 for now.  Probably should be a separate option.
-		set<int>( getHeaderItem(), "User Version", 11 );
-		set<int>( getHeaderItem(), "User Version 2", 11 );
+	if ( version >= 0x14000005 ) {
+		set<int>( getHeaderItem(), "User Version", cfg.userVersion );
+		set<int>( getHeaderItem(), "User Version 2", cfg.userVersion2 );
 	}
 
 	//set<int>( getHeaderItem(), "Unknown Int 3", 11 );

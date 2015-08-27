@@ -43,14 +43,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QStringListModel>
 
-#include <options.h>
 
 //! Global BSA file manager
-static FSManager *theFSManager = NULL;
+static FSManager * theFSManager = nullptr;
 // see fsmanager.h
 FSManager* FSManager::get() 
 {
-	if (theFSManager == NULL)
+	if (!theFSManager)
 		theFSManager = new FSManager();
 	return theFSManager;
 }
@@ -69,26 +68,24 @@ QList <FSArchiveFile *> FSManager::archiveList()
 FSManager::FSManager( QObject * parent )
 	: QObject( parent ), automatic( false )
 {
-	QSettings cfg;
-	QStringList list = cfg.value( "FSEngine/Archives", QStringList() ).toStringList();
-
-	if ( list.size() == 1 && list.first() == "AUTO" )
-	{
-		automatic = true;
-		list = autodetectArchives();
-	}
-	
-	for ( const QString an : list )
-	{
-		if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
-			archives.insert( an, a );
-	}
+	initialize();
 }
 
 // see fsmanager.h
 FSManager::~FSManager()
 {
 	qDeleteAll( archives );
+}
+
+void FSManager::initialize()
+{
+	QSettings cfg;
+	QStringList list = cfg.value( "Settings/Resources/Archives", QStringList() ).toStringList();
+
+	for ( const QString an : list ) {
+		if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
+			archives.insert( an, a );
+	}
 }
 
 // see fsmanager.h
@@ -105,7 +102,7 @@ QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 		QDir fs( dataPath );
 		for ( const QString& fn : fs.entryList( { "*.bsa" }, QDir::Files ) )
 		{
-			list << dataPath + QDir::separator() + fn;
+			list << QDir::fromNativeSeparators(dataPath + QDir::separator() + fn);
 		}
 	}
 	return list;
@@ -122,116 +119,6 @@ QStringList FSManager::autodetectArchives()
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim", "Data" );
 #endif
-	
+
 	return list;
-}
-
-// see fsmanager.h
-void FSManager::selectArchives()
-{
-	FSSelector select( this );
-	select.exec();
-}
-
-// see fsmanager.h
-FSSelector::FSSelector( FSManager * m )
-	: QDialog(), manager( m )
-{
-	model = new QStringListModel( this );
-	model->setStringList( manager->archives.keys() );
-	
-	view = new QListView( this );
-	view->setModel( model );
-	view->setEditTriggers( QListView::NoEditTriggers );
-	
-	chkAuto = new QCheckBox( this );
-	chkAuto->setText( "Automatic Selection" );
-	chkAuto->setChecked( manager->automatic );
-	connect( chkAuto, SIGNAL( toggled( bool ) ), this, SLOT( sltAuto( bool ) ) );
-	
-	btAdd = new QPushButton( "Add", this );
-	btAdd->setDisabled( manager->automatic );
-	connect( btAdd, SIGNAL( clicked() ), this, SLOT( sltAdd() ) );
-	
-	btDel = new QPushButton( "Remove", this );
-	btDel->setDisabled( manager->automatic );
-	connect( btDel, SIGNAL( clicked() ), this, SLOT( sltDel() ) );
-
-	btDelAll = new QPushButton( "Remove All", this );
-	btDelAll->setDisabled( manager->automatic );
-	connect( btDelAll, SIGNAL( clicked() ), this, SLOT( sltDelAll() ) );
-	
-	QGridLayout * grid = new QGridLayout( this );
-	grid->addWidget( chkAuto, 0, 0, 1, 2 );
-	grid->addWidget( view, 1, 0, 1, 3 );
-	grid->addWidget( btAdd, 2, 0, 1, 1 );
-	grid->addWidget( btDel, 2, 1, 1, 1 );
-	grid->addWidget( btDelAll, 2, 2, 1, 1 );
-}
-
-FSSelector::~FSSelector()
-{
-	QSettings cfg;
-	QStringList list( manager->automatic ? QStringList() << "AUTO" : manager->archives.keys() );
-	cfg.setValue( "FSEngine/Archives", list );
-
-	emit Options::get()->sigFlush3D();
-}
-
-void FSSelector::sltAuto( bool x )
-{
-	if ( x )
-	{
-		qDeleteAll( manager->archives );
-		manager->archives.clear();
-		
-		for ( const QString an : manager->autodetectArchives() )
-		{
-			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
-			{
-				manager->archives.insert( an, a );
-			}
-		}
-		
-		model->setStringList( manager->archives.keys() );
-	}
-	
-	manager->automatic = x;
-	
-	btAdd->setDisabled( x );
-	btDel->setDisabled( x );
-	btDelAll->setDisabled( x );
-}
-
-void FSSelector::sltAdd()
-{
-	QStringList list = QFileDialog::getOpenFileNames( this, "Select resource files to add", QString(), "BSA (*.bsa)" );
-	
-	for ( const QString an : list )
-	{
-		if ( ! manager->archives.contains( an ) )
-			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
-				manager->archives.insert( an, a );
-	}
-	
-	model->setStringList( manager->archives.keys() );
-}
-
-void FSSelector::sltDel()
-{
-	QString an = view->currentIndex().data( Qt::DisplayRole ).toString();
-	if ( FSArchiveHandler * a = manager->archives.take( an ) )
-	{
-		delete a;
-	}
-	
-	model->setStringList( manager->archives.keys() );
-}
-
-void FSSelector::sltDelAll()
-{
-	qDeleteAll( manager->archives );
-	manager->archives.clear();
-
-	model->setStringList( QStringList() );
 }

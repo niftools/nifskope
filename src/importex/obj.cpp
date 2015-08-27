@@ -30,8 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "options.h"
-
 #include "nifmodel.h"
 #include "nvtristripwrapper.h"
 #include "gl/gltex.h"
@@ -291,8 +289,8 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 
 void exportObj( const NifModel * nif, const QModelIndex & index )
 {
-	objCulling = Options::get()->exportCullEnabled();
-	objCullRegExp = Options::get()->cullExpression();
+	//objCulling = Options::get()->exportCullEnabled();
+	//objCullRegExp = Options::get()->cullExpression();
 
 	//--Determine how the file will export, and be sure the user wants to continue--//
 	QList<int> roots;

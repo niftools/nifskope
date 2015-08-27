@@ -139,6 +139,8 @@ public slots:
 
 	void enableUi();
 
+	void updateSettings();
+
 	// Automatic slots
 
 	//! Reparse the nif.xml and kfm.xml files.
@@ -309,10 +311,6 @@ private:
 
 	QAction * aSanitize;
 
-#ifdef FSENGINE
-	QAction * aResources;
-#endif
-
 	QAction * undoAction;
 	QAction * redoAction;
 
@@ -338,6 +336,12 @@ private:
 	bool isResizing;
 	QTimer * resizeTimer;
 	QImage buf;
+
+	struct Settings
+	{
+		QLocale locale;
+		bool suppressSaveConfirm;
+	} cfg;
 };
 
 

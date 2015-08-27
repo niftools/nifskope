@@ -121,6 +121,13 @@ public:
 		DbgBounds = 2
 	};
 
+	enum UpAxis
+	{
+		XAxis = 0,
+		YAxis = 1,
+		ZAxis = 2
+	};
+
 	void setNif( NifModel * );
 
 	Scene * getScene();
@@ -145,6 +152,8 @@ public:
 
 	void setDebugMode( DebugMode );
 
+	QColor clearColor() const;
+
 
 	QModelIndex indexAt( const QPoint & p, int cycle = 0 );
 
@@ -167,6 +176,7 @@ public slots:
 	void updateScene();
 	void updateAnimationState( bool checked );
 	void setVisMode( Scene::VisMode, bool checked = true );
+	void updateSettings();
 
 signals:
 	void clicked( const QModelIndex & );
@@ -250,6 +260,16 @@ private:
 
 	QTimer * lightVisTimer;
 	int lightVisTimeout;
+
+	struct Settings
+	{
+		QColor background;
+		float fov = 45.0;
+		float moveSpd = 350;
+		float rotSpd = 45;
+
+		int upAxis;
+	} cfg;
 
 private slots:
 	void advanceGears();

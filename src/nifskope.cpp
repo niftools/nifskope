@@ -32,11 +32,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifskope.h"
 #include "version.h"
-#include "options.h"
+#include "settings.h"
 
 #include "ui_nifskope.h"
 #include "ui/about_dialog.h"
-#include "ui/settingsdialog.h"
 
 #include "glview.h"
 #include "gl/glscene.h"
@@ -74,9 +73,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 #include <QTreeView>
 
-#ifdef FSENGINE
+
 #include <fsengine/fsmanager.h>
-#endif
 
 #ifdef WIN32
 #  define WINDOWS_LEAN_AND_MEAN
@@ -151,6 +149,9 @@ NifSkope::NifSkope()
 
 	// Migrate settings from older versions of NifSkope
 	migrateSettings();
+
+	// Update Settings struct from registry
+	updateSettings();
 
 	// Create models
 	/* ********************** */
@@ -288,13 +289,26 @@ NifSkope::NifSkope()
 	// Connections (that are required to load after all other inits)
 	initConnections();
 
-	connect( Options::get(), &Options::sigLocaleChanged, this, &NifSkope::sltLocaleChanged );
+	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &NifSkope::updateSettings );
+	connect( NifSkope::options(), &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
 }
 
 NifSkope::~NifSkope()
 {
 	delete ui;
 	delete book;
+}
+
+void NifSkope::updateSettings()
+{
+	QSettings settings;
+
+	settings.beginGroup( "Settings" );
+
+	cfg.locale = settings.value( "Locale", "en" ).toLocale();
+	cfg.suppressSaveConfirm = settings.value( "UI/Suppress Save Confirmation", false ).toBool();
+
+	settings.endGroup();
 }
 
 
@@ -798,7 +812,7 @@ static void SetAppLocale( QLocale curLocale )
 
 void NifSkope::sltLocaleChanged()
 {
-	SetAppLocale( Options::get()->translationLocale() );
+	SetAppLocale( cfg.locale );
 
 	QMessageBox mb( "NifSkope",
 	                tr( "NifSkope must be restarted for this setting to take full effect." ),
@@ -879,7 +893,7 @@ int main( int argc, char * argv[] )
 		// Set locale
 		QSettings cfg;
 		cfg.beginGroup( "Settings" );
-		SetAppLocale( cfg.value( "Language", "en" ).toLocale() );
+		SetAppLocale( cfg.value( "Locale", "en" ).toLocale() );
 		cfg.endGroup();
 
 		// Load XML files
@@ -946,12 +960,6 @@ int main( int argc, char * argv[] )
 
 void NifSkope::migrateSettings() const
 {
-	// IMPORTANT:
-	//	Do not make any calls to Options:: until after all migration code.
-	//	Static calls to Options:: still create the options instance and inits
-	//	the various widgets with incorrect values. Once you close the app,
-	//	the settings you migrated get overwritten with the default values.
-
 	// Load current NifSkope settings
 	QSettings cfg;
 	// Load pre-1.2 NifSkope settings
@@ -1016,6 +1024,10 @@ void NifSkope::migrateSettings() const
 	bool migrateFrom1_1 = testMigration( cfg1_1, "1.2.0" );
 	bool migrateFrom1_2 = testMigration( cfg1_2, "2.0" );
 
+	if ( !migrateFrom1_1 && !migrateFrom1_2 ) {
+		prevVer = cfg.value( "Version" ).toString();
+	}
+
 	NifSkopeVersion oldVersion( prevVer );
 	NifSkopeVersion newVersion( curVer );
 
@@ -1041,6 +1053,52 @@ void NifSkope::migrateSettings() const
 
 		if ( prevDisplayVer != curDisplayVer )
 			cfg.setValue( "Display Version", curDisplayVer );
+
+		// Migrate to new Settings
+		if ( oldVersion <= NifSkopeVersion( "2.0.dev1" ) ) {
+			qDebug() << "Migrating to new Settings";
+
+			// Sanitize backslashes
+			auto sanitize = []( QVariant oldVal ) {
+				QStringList sanitized;
+				for ( const QString & archive : oldVal.toStringList() ) {
+					if ( archive == "AUTO" ) {
+						sanitized.append( FSManager::autodetectArchives() );
+						continue;
+					}
+
+					sanitized.append( QDir::fromNativeSeparators( archive ) );
+				}
+
+				return sanitized;
+			};
+
+			QVariant foldersVal = cfg.value( "Settings/Resources/Folders" );
+			if ( foldersVal.toStringList().isEmpty() ) {
+				QVariant oldVal = cfg.value( "Render Settings/Texture Folders" );
+				if ( !oldVal.isNull() ) {
+					cfg.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
+				}
+			}
+
+			QVariant archivesVal = cfg.value( "Settings/Resources/Archives" );
+			if ( archivesVal.toStringList().isEmpty() ) {
+				QVariant oldVal = cfg.value( "FSEngine/Archives" );
+				if ( !oldVal.isNull() ) {
+					cfg.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
+				}
+			}
+
+			// Update archive handler
+			FSManager::get()->initialize();
+			
+			// Remove old keys
+
+			cfg.remove( "FSEngine" );
+			cfg.remove( "Render Settings" );
+			cfg.remove( "Settings/Language" );
+			cfg.remove( "Settings/Startup Version" );
+		}
 	}
 
 	// Check Qt Version

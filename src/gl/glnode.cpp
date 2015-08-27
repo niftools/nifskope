@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glnode.h"
-#include "options.h"
+#include "settings.h"
 
 #include "controllers.h"
 #include "glmarker.h"
@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nvtristripwrapper.h"
 
 #include <QRegularExpression>
+#include <QSettings>
 
 #include <algorithm> // std::stable_sort
 
@@ -55,6 +56,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int Node::SELECTING = 0;
 
+static QColor highlightColor;
+static QColor wireframeColor;
 
 /*
  *  Node list
@@ -191,7 +194,50 @@ Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), 
 {
 	nodeId = 0;
 	flags.bits = 0;
+
+	updateSettings();
+
+	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
 }
+
+
+void Node::updateSettings()
+{
+	QSettings settings;
+	settings.beginGroup( "Settings/Render/Colors/" );
+
+	cfg.background = settings.value( "Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	cfg.highlight = settings.value( "Highlight", QColor( 255, 255, 0 ) ).value<QColor>();
+	cfg.wireframe = settings.value( "Wireframe", QColor( 0, 255, 0 ) ).value<QColor>();
+
+	highlightColor = cfg.highlight;
+	wireframeColor = cfg.wireframe;
+
+	settings.endGroup();
+}
+
+// Old Options API
+//	TODO: Move away from the GL-like naming
+void glHighlightColor()
+{
+	glColor( Color4( highlightColor ) );
+}
+
+void glNormalColor()
+{
+	glColor( Color4( wireframeColor ) );
+}
+
+void Node::glHighlightColor() const
+{
+	glColor( Color4( cfg.highlight ) );
+}
+
+void Node::glNormalColor() const
+{
+	glColor( Color4( cfg.wireframe ) );
+}
+
 
 void Node::clear()
 {
@@ -425,13 +471,13 @@ Node * Node::findChild( const QString & name ) const
 
 bool Node::isHidden() const
 {
-	//if ( Options::drawHidden() )
-	//	return false;
+	if ( scene->options & Scene::ShowHidden )
+		return false;
 
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 
-	return !Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );
+	return false; /*!Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );*/
 }
 
 void Node::transform()
@@ -915,8 +961,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		if ( scene->currentBlock == nif->getBlock( iConstraint ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor();
-			color_a.fromQColor( Options::hlColor() );
-			color_b.setRGB( Options::hlColor().blueF(),  Options::hlColor().redF(), Options::hlColor().greenF() );
+			color_a.fromQColor( highlightColor );
+			color_b.setRGB( highlightColor.blueF(), highlightColor.redF(), highlightColor.greenF() );
 		}
 	}
 

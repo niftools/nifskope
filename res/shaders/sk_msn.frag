@@ -117,7 +117,7 @@ void main( void )
 
 
 	// Emissive
-	vec3 emissive;
+	vec3 emissive = vec3(0.0);
 	if ( hasEmit ) {
 		emissive += glowColor * glowMult;
 	}
@@ -133,7 +133,7 @@ void main( void )
 	spec *= D.rgb;
 
 
-	vec3 backlight;
+	vec3 backlight = vec3(0.0);
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
 		backlight *= NdotNegL;
@@ -141,12 +141,12 @@ void main( void )
 		emissive += backlight * D.rgb;
 	}
 
-	vec4 mask;
+	vec4 mask = vec4(0.0);
 	if ( hasRimlight || hasSoftlight ) {
 		mask = texture2D( LightMask, offset );
 	}
 
-	vec3 rim;
+	vec3 rim = vec3(0.0);
 	if ( hasRimlight ) {
 		rim = mask.rgb * pow(vec3((1.0 - EdotN)), vec3(lightingEffect2));
 		rim *= smoothstep( -0.2, 1.0, dot(-L, E) );
@@ -154,7 +154,7 @@ void main( void )
 		emissive += rim * D.rgb;
 	}
 
-	vec3 soft;
+	vec3 soft = vec3(0.0);
 	if ( hasSoftlight ) {
 		float wrap = (dot(normal, L) + lightingEffect1) / (1.0 + lightingEffect1);
 
@@ -164,14 +164,14 @@ void main( void )
 		emissive += soft * D.rgb;
 	}
 	
-	vec3 detail;
+	vec3 detail = vec3(0.0);
 	if ( hasDetailMask ) {
 		detail = texture2D( DetailMask, offset ).rgb;
 		
 		albedo = overlay( albedo, detail );
 	}
 	
-	vec3 tint;
+	vec3 tint = vec3(0.0);
 	if ( hasTintMask ) {
 		tint = texture2D( TintMask, offset ).rgb;
 		

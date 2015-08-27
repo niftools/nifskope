@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glmesh.h"
 #include "config.h"
-#include "options.h"
+#include "settings.h"
 
 #include "controllers.h"
 #include "glscene.h"
@@ -322,6 +322,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 					bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
+					bsesp->hasWeaponBlood = hasSF2( ShaderFlags::SLSF2_Weapon_Blood );
 
 					auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
 					auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
@@ -422,7 +423,7 @@ void Mesh::setController( const NifModel * nif, const QModelIndex & iController 
 bool Mesh::isHidden() const
 {
 	return ( Node::isHidden()
-	         || ( /*!Options::drawHidden() &&*/ Options::onlyTextured()
+	         || ( !(scene->options & Scene::ShowHidden) /*&& Options::onlyTextured()*/
 	              && !properties.get<TexturingProperty>()
 	              && !properties.get<BSShaderLightingProperty>()
 	         )
@@ -778,7 +779,7 @@ void Mesh::transform()
 
 void Mesh::transformShapes()
 {
-	if ( isHidden() || !Options::drawMeshes() )
+	if ( isHidden() )
 		return;
 
 	Node::transformShapes();
@@ -988,7 +989,7 @@ BoundSphere Mesh::bounds() const
 
 void Mesh::drawShapes( NodeList * secondPass, bool presort )
 {
-	if ( isHidden() || !Options::drawMeshes() )
+	if ( isHidden() )
 		return;
 
 	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
@@ -1136,7 +1137,7 @@ void Mesh::drawSelection() const
 {
 	Node::drawSelection();
 
-	if ( isHidden() || !Options::drawMeshes() )
+	if ( isHidden() )
 		return;
 
 	if ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart

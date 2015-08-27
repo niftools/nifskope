@@ -165,14 +165,14 @@ void main( void )
 
 	// Emissive
 	//	Mixed with outer map
-	vec3 emissive;
+	vec3 emissive = vec3(0.0);
 	if ( hasEmit ) {
 		emissive += glowColor * glowMult;
 	}
 
 	// Backlight
 	// 	Mixed with inner and outer map
-	vec3 backlight;
+	vec3 backlight = vec3(0.0);
 	if ( hasBacklight ) {
 		backlight = texture2D( BacklightMap, offset ).rgb;
 		backlight *= NdotNegL;
@@ -182,12 +182,12 @@ void main( void )
 
 	// TODO: Test rim and soft light mixing with inner/outer layer
 
-	vec4 mask;
+	vec4 mask = vec4(0.0);
 	if ( hasRimlight || hasSoftlight ) {
 		mask = texture2D( LightMask, offset );
 	}
 
-	vec3 rim;
+	vec3 rim = vec3(0.0);
 	if ( hasRimlight ) {
 		rim = mask.rgb * pow(vec3((1.0 - EdotN)), vec3(lightingEffect2));
 		rim *= smoothstep( -0.2, 1.0, dot(-L, E) );
@@ -195,7 +195,7 @@ void main( void )
 		emissive += rim * D.rgb;
 	}
 
-	vec3 soft;
+	vec3 soft = vec3(0.0);
 	if ( hasSoftlight ) {
 		float wrap = (dot(normal, L) + lightingEffect1) / (1.0 + lightingEffect1);
 

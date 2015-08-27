@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifvalue.h"
 #include "config.h"
-//#include "options.h"
 
 #include "nifmodel.h"
 
@@ -992,7 +991,6 @@ void NifIStream::init()
 
 	QSettings cfg;
 	maxLength = cfg.value( "maximum string length", 0x8000 ).toInt();
-	//maxLength = Options::maxStringLength();
 }
 
 bool NifIStream::read( NifValue & val )

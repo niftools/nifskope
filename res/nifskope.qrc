@@ -59,5 +59,7 @@
         <file alias="sun">icon/sun.png</file>
         <file alias="cloud">icon/cloud.png</file>
         <file alias="cubemap">icon/cubemap.png</file>
+        <file alias="hidden">icon/hidden.png</file>
+        <file alias="hiddenDisabled">icon/hidden-disabled.png</file>
     </qresource>
 </RCC>

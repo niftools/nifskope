@@ -176,8 +176,7 @@ HEADERS += \
 	src/nifskope.h \
 	src/niftypes.h \
 	src/nifvalue.h \
-	src/nvtristripwrapper.h \
-	src/options.h \
+    src/nvtristripwrapper.h \
 	src/qhull.h \
 	src/settings.h \
 	src/spellbook.h \
@@ -244,8 +243,7 @@ SOURCES += \
 	src/niftypes.cpp \
 	src/nifvalue.cpp \
 	src/nifxml.cpp \
-	src/nvtristripwrapper.cpp \
-	src/options.cpp \
+    src/nvtristripwrapper.cpp \
 	src/qhull.cpp \
 	src/settings.cpp \
 	src/spellbook.cpp \
@@ -298,7 +296,9 @@ FORMS += \
 	src/ui/checkablemessagebox.ui \
 	src/ui/nifskope.ui \
 	src/ui/settingsdialog.ui \
-	src/ui/settingsgeneral.ui
+    src/ui/settingsgeneral.ui \
+    src/ui/settingsrender.ui \
+    src/ui/settingsresources.ui
 
 
 ###############################
@@ -306,7 +306,6 @@ FORMS += \
 ###############################
 
 fsengine {
-	DEFINES += FSENGINE
 	INCLUDEPATH += lib/fsengine
 	HEADERS += \
 		lib/fsengine/bsa.h \
@@ -432,6 +431,11 @@ win32 {
 
 	#  Extension flags
 	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
+}
+
+win32 {
+    # GL libs for Qt 5.5+
+    LIBS += -lopengl32 -lglu32
 }
 
 unix:!macx {

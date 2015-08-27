@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glscene.h"
-#include "options.h"
+#include "settings.h"
 
 #include "glcontroller.h"
 #include "glmesh.h"
@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QAction>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QSettings>
 
 
 //! \file glscene.cpp %Scene management
@@ -64,6 +65,28 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 	lodLevel = Level2;
 
 	visMode = VisNone;
+
+	// Startup Defaults
+
+	QSettings settings;
+	settings.beginGroup( "Settings/Render/General/Startup Defaults" );
+
+	if ( settings.value( "Show Axes" ).toBool() )
+		options |= ShowAxes;
+	if ( settings.value( "Show Grid" ).toBool() )
+		options |= ShowGrid;
+	if ( settings.value( "Show Collision" ).toBool() )
+		options |= ShowCollision;
+	if ( settings.value( "Show Constraints" ).toBool() )
+		options |= ShowConstraints;
+	if ( settings.value( "Show Markers" ).toBool() )
+		options |= ShowMarkers;
+	if ( settings.value( "Show Nodes" ).toBool() )
+		options |= ShowNodes;
+	if ( settings.value( "Show Hidden" ).toBool() )
+		options |= ShowHidden;
+
+	settings.endGroup();
 }
 
 Scene::~Scene()

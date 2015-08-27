@@ -185,6 +185,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <addaction name="aShowNodes"/>
    <addaction name="aShowConstraints"/>
    <addaction name="aShowMarkers"/>
+   <addaction name="aShowHidden"/>
   </widget>
   <widget class="QToolBar" name="tView">
    <property name="windowTitle">
@@ -373,6 +374,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="aViewPerspective"/>
     <addaction name="aViewWalk"/>
     <addaction name="aViewCenter"/>
+    <addaction name="aShowGrid"/>
     <addaction name="separator"/>
     <addaction name="aViewUser"/>
     <addaction name="aViewUserSave"/>
@@ -412,7 +414,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      <string>Options</string>
     </property>
     <addaction name="aSettings"/>
-    <addaction name="aResources"/>
     <addaction name="aSelectFont"/>
    </widget>
    <addaction name="mFile"/>
@@ -885,11 +886,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>XML Checker</string>
    </property>
   </action>
-  <action name="aResources">
-   <property name="text">
-    <string>Resources</string>
-   </property>
-  </action>
   <action name="aQuit">
    <property name="text">
     <string>Quit</string>
@@ -1071,31 +1067,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="shortcut">
     <string>Ctrl+F9</string>
-   </property>
-  </action>
-  <action name="aFileLoadDummy">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>aFileLoadDummy</string>
-   </property>
-   <property name="visible">
-    <bool>true</bool>
-   </property>
-  </action>
-  <action name="aFileSaveDummy">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>aFileSaveDummy</string>
-   </property>
-   <property name="toolTip">
-    <string>aFileSaveDummy</string>
-   </property>
-   <property name="visible">
-    <bool>true</bool>
    </property>
   </action>
   <action name="aHierarchy">
@@ -1450,7 +1421,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   </action>
   <action name="aSettings">
    <property name="text">
-    <string>Settings</string>
+    <string>Settings...</string>
    </property>
   </action>
   <action name="aOpenMenu">
@@ -1770,6 +1741,33 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="text">
     <string>Bounds Debug</string>
+   </property>
+  </action>
+  <action name="aShowGrid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Grid</string>
+   </property>
+   <property name="shortcut">
+    <string>G</string>
+   </property>
+  </action>
+  <action name="aShowHidden">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/hiddenDisabled</normaloff>
+     <normalon>:/btn/hidden</normalon>:/btn/hiddenDisabled</iconset>
+   </property>
+   <property name="text">
+    <string>Show Hidden</string>
+   </property>
+   <property name="statusTip">
+    <string>Show Hidden</string>
    </property>
   </action>
  </widget>

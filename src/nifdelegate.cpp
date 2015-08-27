@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "options.h"
+#include "settings.h"
 
 #include "glview.h"
 #include "kfmmodel.h"
