@@ -161,7 +161,9 @@ protected slots:
 	void sltChanged();
 
 private:
-	QDoubleSpinBox * r, * g, * b, * a;
+    QLabel * htmlLabel;
+    QLineEdit * htmlColorCode;
+    // QDoubleSpinBox * r, * g, * b, * a;
 	QLabel * al;
 	bool setting;
 };

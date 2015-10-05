@@ -45,6 +45,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTextCursor>
 #include <QTextEdit>
 #include <QToolButton>
+#include <QColor>
+#include <QRgb>
 
 
 //! \file valueedit.cpp Value edit widget implementations
@@ -430,57 +432,33 @@ ColorEdit::ColorEdit( QWidget * parent ) : ValueEdit( parent )
 	QHBoxLayout * lay = new QHBoxLayout;
 	lay->setMargin( 0 );
 	lay->setSpacing( 0 );
-	setLayout( lay );
+    setLayout( lay );
 
-	// Cast QDoubleSpinBox slot
-	auto dsbValueChanged = static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged);
-
-	lay->addWidget( new CenterLabel( "R" ), 1 );
-	lay->addWidget( r = new QDoubleSpinBox, 5 );
-	r->setDecimals( COLOR_DECIMALS );
-	r->setRange( 0, 1 );
-	r->setSingleStep( COLOR_STEP );
-	connect( r, dsbValueChanged, this, &ColorEdit::sltChanged );
-	lay->addWidget( new CenterLabel( "G" ), 1 );
-	lay->addWidget( g = new QDoubleSpinBox, 5 );
-	g->setDecimals( COLOR_DECIMALS );
-	g->setRange( 0, 1 );
-	g->setSingleStep( COLOR_STEP );
-	connect( g, dsbValueChanged, this, &ColorEdit::sltChanged );
-	lay->addWidget( new CenterLabel( "B" ), 1 );
-	lay->addWidget( b = new QDoubleSpinBox, 5 );
-	b->setDecimals( COLOR_DECIMALS );
-	b->setRange( 0, 1 );
-	b->setSingleStep( COLOR_STEP );
-	connect( b, dsbValueChanged, this, &ColorEdit::sltChanged );
-	lay->addWidget( al = new CenterLabel( "A" ), 1 );
-	lay->addWidget( a = new QDoubleSpinBox, 5 );
-	a->setDecimals( COLOR_DECIMALS );
-	a->setRange( 0, 1 );
-	a->setSingleStep( COLOR_STEP );
-	connect( a, dsbValueChanged, this, &ColorEdit::sltChanged );
+    lay->addWidget( htmlLabel = new CenterLabel( "ARGB Color Code" ), 1 );
+    lay->addWidget( htmlColorCode = new QLineEdit, 5 );
+    connect(htmlColorCode, &QLineEdit::textChanged, this, &ColorEdit::sltChanged );
 
 	setting = false;
-	setFocusProxy( r );
+    setFocusProxy( htmlColorCode );
 }
 
 void ColorEdit::setColor4( const Color4 & v )
 {
-	setting = true;
-	r->setValue( v[0] );
-	g->setValue( v[1] );
-	b->setValue( v[2] );
-	a->setValue( v[3] ); a->setVisible( true ); al->setVisible( true );
+    setting = true;
+    htmlLabel->setText( "ARGB Color Code" );
+    QColor tempColor;
+    tempColor.setRgbF( v[0], v[1], v[2], v[3] );
+    htmlColorCode->setText( tempColor.name( QColor::HexArgb ) );
 	setting = false;
 }
 
 void ColorEdit::setColor3( const Color3 & v )
 {
 	setting = true;
-	r->setValue( v[0] );
-	g->setValue( v[1] );
-	b->setValue( v[2] );
-	a->setValue( 1.0 ); a->setHidden( true ); al->setHidden( true );
+    htmlLabel->setText( "RGB Color Code" );
+    QColor tempColor;
+    tempColor.setRgbF( v[0], v[1], v[2] );
+    htmlColorCode->setText( tempColor.name( QColor::HexRgb ) );
 	setting = false;
 }
 
@@ -492,12 +470,14 @@ void ColorEdit::sltChanged()
 
 Color4 ColorEdit::getColor4() const
 {
-	return Color4( r->value(), g->value(), b->value(), a->value() );
+    QColor tempColor( htmlColorCode->text() );
+    return Color4( tempColor.redF(), tempColor.greenF(), tempColor.blueF(), tempColor.alphaF() );
 }
 
 Color3 ColorEdit::getColor3() const
 {
-	return Color3( r->value(), g->value(), b->value() );
+    QColor tempColor( htmlColorCode->text() );
+    return Color3( tempColor.redF(), tempColor.greenF(), tempColor.blueF() );
 }
 
 VectorEdit::VectorEdit( QWidget * parent ) : ValueEdit( parent )
