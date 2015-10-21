@@ -962,6 +962,26 @@ void NifSkope::restoreUi()
 	header->header()->restoreState( settings.value( "UI/Header Header" ).toByteArray() );
 	kfmtree->header()->restoreState( settings.value( "UI/Kfmtree Header" ).toByteArray() );
 
+	auto hideSections = []( NifTreeView * tree, bool hidden ) {
+		tree->header()->setSectionHidden( NifModel::ArgCol, hidden );
+		tree->header()->setSectionHidden( NifModel::Arr1Col, hidden );
+		tree->header()->setSectionHidden( NifModel::Arr2Col, hidden );
+		tree->header()->setSectionHidden( NifModel::CondCol, hidden );
+		tree->header()->setSectionHidden( NifModel::Ver1Col, hidden );
+		tree->header()->setSectionHidden( NifModel::Ver2Col, hidden );
+		tree->header()->setSectionHidden( NifModel::VerCondCol, hidden );
+	};
+
+	// Hide advanced metadata loaded from nif.xml as it's not useful or necessary for editing
+	if ( settings.value( "Settings/Nif/Hide metadata columns", true ).toBool() ) {
+		hideSections( tree, true );
+		hideSections( header, true );
+	} else {
+		// Unhide here, or header()->restoreState() will keep them perpetually hidden
+		hideSections( tree, false );
+		hideSections( header, false );
+	}
+
 	ui->aAnimate->setChecked( settings.value( "GLView/Enable Animations", true ).toBool() );
 	//ui->aAnimPlay->setChecked( settings.value( "GLView/Play Animation", true ).toBool() );
 	//ui->aAnimLoop->setChecked( settings.value( "GLView/Loop Animation", true ).toBool() );
