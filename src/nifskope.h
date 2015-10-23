@@ -37,6 +37,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
+#include <QModelIndex>
+#include <QUndoCommand>
 
 #if QT_NO_DEBUG
 #define NIFSKOPE_IPC_PORT 12583
@@ -141,6 +143,9 @@ public slots:
 
 	void updateSettings();
 
+	//! Select a NIF index
+	void select( const QModelIndex & );
+
 	// Automatic slots
 
 	//! Reparse the nif.xml and kfm.xml files.
@@ -192,9 +197,6 @@ protected slots:
 
 	void onLoadComplete( bool, QString & );
 	void onSaveComplete( bool, QString & );
-
-	//! Select a NIF index
-	void select( const QModelIndex & );
 
 	//! Display a context menu at the specified position
 	void contextMenu( const QPoint & pos );
@@ -342,6 +344,26 @@ private:
 		QLocale locale;
 		bool suppressSaveConfirm;
 	} cfg;
+
+	//! The currently selected index
+	QModelIndex currentIdx;
+
+	QUndoStack * indexStack;
+	//QAction * idxForwardAction;
+	//QAction * idxBackAction;
+};
+
+
+class SelectIndexCommand : public QUndoCommand
+{
+public:
+	SelectIndexCommand( NifSkope *, const QModelIndex &, const QModelIndex & );
+	void redo() override;
+	void undo() override;
+private:
+	QModelIndex curIdx, prevIdx;
+
+	NifSkope * nifskope;
 };
 
 

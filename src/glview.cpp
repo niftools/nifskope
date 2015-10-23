@@ -1704,6 +1704,11 @@ void GLView::mouseMoveEvent( QMouseEvent * event )
 
 void GLView::mousePressEvent( QMouseEvent * event )
 {
+	if ( event->button() == Qt::ForwardButton || event->button() == Qt::BackButton ) {
+		event->ignore();
+		return;
+	}
+
 	lastPos = event->pos();
 
 	if ( (pressPos - event->pos()).manhattanLength() <= 3 )
@@ -1718,6 +1723,11 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 {
 	if ( !(model && (pressPos - event->pos()).manhattanLength() <= 3) )
 		return;
+
+	if ( event->button() == Qt::ForwardButton || event->button() == Qt::BackButton || event->button() == Qt::MiddleButton ) {
+		event->ignore();
+		return;
+	}
 
 	auto mods = event->modifiers();
 

@@ -65,6 +65,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QHeaderView>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMouseEvent>
 #include <QProgressBar>
 #include <QMessageBox>
 #include <QSettings>
@@ -129,6 +130,10 @@ void NifSkope::initActions()
 	redoAction = nif->undoStack->createRedoAction( this, tr( "&Redo" ) );
 	redoAction->setShortcut( QKeySequence::Redo );
 	redoAction->setIcon( QIcon( ":btn/redo" ) );
+
+	// TODO: Back/Forward button in Block List
+	//idxForwardAction = indexStack->createRedoAction( this );
+	//idxBackAction = indexStack->createUndoAction( this );
 
 	ui->tFile->addAction( undoAction );
 	ui->tFile->addAction( redoAction );
@@ -835,6 +840,7 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	// Mark window as unmodified
 	setWindowModified( false );
 	nif->undoStack->clear();
+	indexStack->clear();
 
 	// Hide Progress Bar
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
@@ -1038,6 +1044,29 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	//if ( e->type() == QEvent::Polish ) {
 	//	QTimer::singleShot( 0, this, SLOT( overrideViewFont() ) );
 	//}
+
+	// Global mouse press
+	if ( o->isWindowType() && e->type() == QEvent::MouseButtonPress ) {
+		//qDebug() << "Mouse Press";
+	}
+	// Global mouse release
+	if ( o->isWindowType() && e->type() == QEvent::MouseButtonRelease ) {
+		//qDebug() << "Mouse Release";
+
+		// Back/Forward button support for cycling through indices
+		auto mouseEvent = static_cast<QMouseEvent *>(e);
+		if ( mouseEvent ) {
+			if ( mouseEvent->button() == Qt::ForwardButton ) {
+				mouseEvent->accept();
+				indexStack->redo();
+			}
+
+			if ( mouseEvent->button() == Qt::BackButton ) {
+				mouseEvent->accept();
+				indexStack->undo();
+			}
+		}
+	}
 
 	// Filter GLGraphicsView
 	auto obj = qobject_cast<GLGraphicsView *>(o);

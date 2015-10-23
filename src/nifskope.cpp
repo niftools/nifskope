@@ -142,6 +142,8 @@ NifSkope::NifSkope()
 {
 	// Init UI
 	ui->setupUi( this );
+
+	qApp->installEventFilter( this );
 	
 	// Init Dialogs
 	aboutDialog = new AboutDialog( this );
@@ -162,6 +164,9 @@ NifSkope::NifSkope()
 
 	// Setup QUndoStack
 	nif->undoStack = new QUndoStack( this );
+
+	indexStack = new QUndoStack( this );
+
 	// Setup Window Modified on data change
 	connect( nif, &NifModel::dataChanged, [this]( const QModelIndex &, const QModelIndex & ) {
 		// Only if UI is enabled (prevents asterisk from flashing during save/load)
@@ -345,7 +350,20 @@ void NifSkope::select( const QModelIndex & index )
 	if ( idx.isValid() && idx.model() != nif )
 		return;
 
+	QModelIndex prevIdx = currentIdx;
+	currentIdx = idx;
+
 	selecting = true;
+
+	// Push to index stack only if there is a sender
+	//	Must also come AFTER selecting=true
+	//	Both of these things prevent infinite recursion
+	if ( sender() && !currentIdx.parent().isValid() ) {
+		// Skips index selection in Block Details
+		// NOTE: QUndoStack::push() calls the redo() command which calls NifSkope::select()
+		//	therefore infinite recursion is possible.
+		indexStack->push( new SelectIndexCommand( this, currentIdx, prevIdx ) );
+	}
 
 	// TEST: Cast sender to GLView
 	//auto s = qobject_cast<GLView *>(sender());
@@ -662,6 +680,30 @@ void NifSkope::openURL()
 		return;
 
 	QDesktopServices::openUrl( URL );
+}
+
+
+/*
+ *	SelectIndexCommand
+ *		Manages cycling between previously selected indices like a browser Back/Forward button
+ */
+
+SelectIndexCommand::SelectIndexCommand( NifSkope * wnd, const QModelIndex & cur, const QModelIndex & prev )
+{
+	nifskope = wnd;
+
+	curIdx = cur;
+	prevIdx = prev;
+}
+
+void SelectIndexCommand::redo()
+{
+	nifskope->select( curIdx );
+}
+
+void SelectIndexCommand::undo()
+{
+	nifskope->select( prevIdx );
 }
 
 
