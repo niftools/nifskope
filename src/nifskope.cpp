@@ -51,6 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAction>
 #include <QApplication>
+#include <QBuffer>
 #include <QByteArray>
 #include <QCloseEvent>
 #include <QCommandLineParser>
@@ -66,14 +67,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 #include <QTimer>
 #include <QToolBar>
+#include <QToolButton>
 #include <QTranslator>
 #include <QUdpSocket>
 #include <QUrl>
 
 #include <QListView>
 #include <QTreeView>
+#include <QStandardItemModel>
 
-
+#include <fsengine/bsa.h>
 #include <fsengine/fsmanager.h>
 
 #ifdef WIN32
@@ -210,6 +213,13 @@ NifSkope::NifSkope()
 	// Help Browser
 	refrbrwsr = ui->refrBrowser;
 	refrbrwsr->setNifModel( nif );
+
+	// Archive Browser
+	bsaView = ui->bsaView;
+
+	bsaModel = new BSAModel( this );
+	bsaProxyModel = new BSAProxyModel( this );
+	bsaProxyModel->setSourceModel( bsaModel );
 
 	// Connect models with views
 	/* ********************** */
@@ -496,28 +506,46 @@ void NifSkope::setListMode()
 	}
 }
 
-QString NifSkope::strippedName( const QString & fullFileName ) const
+// 'Recent Files' Helpers
+
+QString strippedName( const QString & fullFileName )
 {
 	return QFileInfo( fullFileName ).fileName();
 }
+
+int updateRecentActions( QAction * acts[], const QStringList & files )
+{
+	int numRecentFiles = std::min( files.size(), (int)NifSkope::NumRecentFiles );
+
+	for ( int i = 0; i < numRecentFiles; ++i ) {
+		QString text = QString( "&%1 %2" ).arg( i + 1 ).arg( strippedName( files[i] ) );
+		acts[i]->setText( text );
+		acts[i]->setData( files[i] );
+		acts[i]->setStatusTip( files[i] );
+		acts[i]->setVisible( true );
+	}
+	for ( int j = numRecentFiles; j < NifSkope::NumRecentFiles; ++j )
+		acts[j]->setVisible( false );
+
+	return numRecentFiles;
+}
+
+void updateRecentFiles( QStringList & files, const QString & file )
+{
+	files.removeAll( file );
+	files.prepend( file );
+	while ( files.size() > NifSkope::NumRecentFiles )
+		files.removeLast();
+}
+// End Helpers
+
 
 void NifSkope::updateRecentFileActions()
 {
 	QSettings settings;
 	QStringList files = settings.value( "File/Recent File List" ).toStringList();
 
-	int numRecentFiles = std::min( files.size(), (int)NumRecentFiles );
-
-	for ( int i = 0; i < numRecentFiles; ++i ) {
-		QString text = tr( "&%1 %2" ).arg( i + 1 ).arg( strippedName( files[i] ) );
-		recentFileActs[i]->setText( text );
-		recentFileActs[i]->setData( files[i] );
-		//recentFileActs[i]->setToolTip( files[i] ); // Doesn't work
-		recentFileActs[i]->setStatusTip( files[i] );
-		recentFileActs[i]->setVisible( true );
-	}
-	for ( int j = numRecentFiles; j < NumRecentFiles; ++j )
-		recentFileActs[j]->setVisible( false );
+	int numRecentFiles = ::updateRecentActions( recentFileActs, files );
 
 	aRecentFilesSeparator->setVisible( numRecentFiles > 0 );
 	ui->mRecentFiles->setEnabled( numRecentFiles > 0 );
@@ -527,8 +555,11 @@ void NifSkope::updateAllRecentFileActions()
 {
 	for ( QWidget * widget : QApplication::topLevelWidgets() ) {
 		NifSkope * win = qobject_cast<NifSkope *>(widget);
-		if ( win )
+		if ( win ) {
 			win->updateRecentFileActions();
+			win->updateRecentArchiveActions();
+			win->updateRecentArchiveFileActions();
+		}
 	}
 }
 
@@ -545,14 +576,43 @@ void NifSkope::setCurrentFile( const QString & filename )
 
 	setWindowFilePath( currentFile );
 
+	// Avoid adding files opened from BSAs to Recent Files
+	QFileInfo file( currentFile );
+	if ( !file.exists() && !file.isAbsolute() ) {
+		setCurrentArchiveFile( filename );
+		return;
+	}
+
 	QSettings settings;
 	QStringList files = settings.value( "File/Recent File List" ).toStringList();
-	files.removeAll( currentFile );
-	files.prepend( currentFile );
-	while ( files.size() > NumRecentFiles )
-		files.removeLast();
+	::updateRecentFiles( files, currentFile );
 
 	settings.setValue( "File/Recent File List", files );
+
+	updateAllRecentFileActions();
+}
+
+void NifSkope::setCurrentArchiveFile( const QString & filepath )
+{
+	QString bsa = filepath.split( "/" ).first();
+	if ( !bsa.endsWith( ".bsa", Qt::CaseInsensitive ) )
+		return;
+
+	// Strip BSA name from beginning of path
+	QString path = filepath;
+	path.replace( bsa + "/", "" );
+
+	QSettings settings;
+	QHash<QString, QVariant> hash = settings.value( "File/Recent Archive Files" ).toHash();
+
+	// Retrieve and update existing Recent Files for BSA
+	QStringList filepaths = hash.value( bsa ).toStringList();
+	::updateRecentFiles( filepaths, path );
+
+	// Replace BSA's Recent Files
+	hash[bsa] = filepaths;
+
+	settings.setValue( "File/Recent Archive Files", hash );
 
 	updateAllRecentFileActions();
 }
@@ -566,6 +626,169 @@ void NifSkope::clearCurrentFile()
 
 	updateAllRecentFileActions();
 }
+
+void NifSkope::setCurrentArchive( BSA * bsa )
+{
+	currentArchive = bsa;
+
+	QString file = currentArchive->path();
+
+	QSettings settings;
+	QStringList files = settings.value( "File/Recent Archive List" ).toStringList();
+	::updateRecentFiles( files, file );
+
+	settings.setValue( "File/Recent Archive List", files );
+
+	updateAllRecentFileActions();
+}
+
+void NifSkope::clearCurrentArchive()
+{
+	QSettings settings;
+	QStringList files = settings.value( "File/Recent Archive List" ).toStringList();
+
+	files.removeAll( currentArchive->path() );
+	settings.setValue( "File/Recent Archive List", files );
+
+	updateAllRecentFileActions();
+}
+
+void NifSkope::updateRecentArchiveActions()
+{
+	QSettings settings;
+	QStringList files = settings.value( "File/Recent Archive List" ).toStringList();
+
+	int numRecentFiles = ::updateRecentActions( recentArchiveActs, files );
+
+	ui->mRecentArchives->setEnabled( numRecentFiles > 0 );
+}
+
+void NifSkope::updateRecentArchiveFileActions()
+{
+	QSettings settings;
+	QHash<QString, QVariant> hash = settings.value( "File/Recent Archive Files" ).toHash();
+
+	if ( !currentArchive )
+		return;
+
+	QString key = currentArchive->name();
+
+	QStringList files = hash.value( key ).toStringList();
+
+	int numRecentFiles = ::updateRecentActions( recentArchiveFileActs, files );
+
+	mRecentArchiveFiles->setEnabled( numRecentFiles > 0 );
+}
+
+void NifSkope::openArchive( const QString & archive )
+{
+	// Clear memory from previously opened archives
+	if ( bsaModel )
+		bsaModel->clear();
+	if ( bsaProxyModel )
+		bsaProxyModel->clear();
+
+	auto bsa = static_cast<BSA *>(FSArchiveHandler::openArchive( archive )->getArchive());
+	if ( bsa ) {
+
+		setCurrentArchive( bsa );
+
+		// Models
+		bsaModel->init();
+
+		// Populate model from BSA
+		bsa->fillModel( bsaModel, "meshes" );
+
+		if ( bsaModel->rowCount() == 0 ) {
+			qCWarning( nsIo ) << "The BSA does not contain any meshes.";
+			clearCurrentArchive();
+			return;
+		}
+
+		// View
+		bsaView->setModel( bsaProxyModel );
+		bsaView->setSortingEnabled( true );
+
+		bsaView->hideColumn( 1 );
+		bsaView->setColumnWidth( 0, 300 );
+		bsaView->setColumnWidth( 2, 50 );
+
+		// Sort proxy after model/view is populated
+		bsaProxyModel->sort( 0, Qt::AscendingOrder );
+		bsaProxyModel->setFiletypes( { ".nif", ".bto", ".btr" } );
+		bsaProxyModel->resetFilter();
+
+		// Set filename label
+		ui->bsaName->setText( currentArchive->name() );
+
+		ui->bsaFilter->setEnabled( true );
+		ui->bsaFilenameOnly->setEnabled( true );
+
+		// Bring tab to front
+		dBrowser->raise();
+
+		// Filter
+
+		QTimer * filterTimer = new QTimer;
+		filterTimer->setSingleShot( true );
+
+		connect( ui->bsaFilter, &QLineEdit::textChanged, [filterTimer]() { filterTimer->start( 300 ); } );
+		connect( filterTimer, &QTimer::timeout, [this]() {
+			auto text = ui->bsaFilter->text();
+
+			bsaProxyModel->setFilterRegExp( QRegExp( text, Qt::CaseInsensitive, QRegExp::Wildcard ) );
+			bsaView->expandAll();
+
+			if ( text.isEmpty() ) {
+				bsaView->collapseAll();
+				bsaProxyModel->resetFilter();
+			}
+				
+		} );
+
+		connect( ui->bsaFilenameOnly, &QCheckBox::toggled, bsaProxyModel, &BSAProxyModel::setFilterByNameOnly );
+
+		connect( bsaView, &QTreeView::doubleClicked, this, &NifSkope::openArchiveFile );
+
+		// Update filter when switching open archives
+		filterTimer->start( 0 );
+	}
+}
+
+void NifSkope::openArchiveFile( const QModelIndex & index )
+{
+	if ( !saveConfirm() )
+		return;
+
+	QString filepath = index.sibling( index.row(), 1 ).data( Qt::EditRole ).toString();
+
+	openArchiveFileString( currentArchive, filepath );
+}
+
+void NifSkope::openArchiveFileString( BSA * bsa, const QString & filepath )
+{
+	if ( bsa->hasFile( filepath ) ) {
+		// Read data from BSA
+		QByteArray data;
+		bsa->fileContents( filepath, data );
+
+		// Format like "BSANAME.BSA/path/to/file.nif"
+		QString path = bsa->name() + "/" + filepath;
+
+		QBuffer buf;
+		buf.setData( data );
+		if ( buf.open( QBuffer::ReadOnly ) ) {
+			setCurrentFile( path );
+
+			emit beginLoading();
+
+			emit completeLoading( nif->load( buf ), path );
+
+			buf.close();
+		}
+	}
+}
+
 
 void NifSkope::openFile( QString & file )
 {
@@ -584,6 +807,21 @@ void NifSkope::openRecentFile()
 	if ( action )
 		loadFile( action->data().toString() );
 }
+
+void NifSkope::openRecentArchive()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if ( action )
+		openArchive( action->data().toString() );
+}
+
+void NifSkope::openRecentArchiveFile()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if ( action )
+		openArchiveFileString( currentArchive, action->data().toString() );
+}
+
 
 void NifSkope::openFiles( QStringList & files )
 {
@@ -641,6 +879,14 @@ void NifSkope::load()
 
 void NifSkope::save()
 {
+	// Assure file path is absolute
+	// If not absolute, it is loaded from a BSA
+	QFileInfo curFile( currentFile );
+	if ( !curFile.isAbsolute() ) {
+		saveAsDlg();
+		return;
+	}
+
 	emit beginSave();
 
 	QString fname = currentFile;

@@ -150,6 +150,7 @@ void NifSkope::initActions()
 	//ui->aSaveAs->setShortcut( QKeySequence::SaveAs ); // Bad idea, goes against previous shortcuts
 	ui->aWindow->setShortcut( QKeySequence::New );
 
+	connect( ui->aBrowseArchive, &QAction::triggered, this, &NifSkope::archiveDlg );
 	connect( ui->aOpen, &QAction::triggered, this, &NifSkope::openDlg );
 	connect( ui->aSave, &QAction::triggered, this, &NifSkope::save );  
 	connect( ui->aSaveAs, &QAction::triggered, this, &NifSkope::saveAsDlg );
@@ -222,10 +223,17 @@ void NifSkope::initActions()
 	// Setup blank QActions for Recent Files menus
 	for ( int i = 0; i < NumRecentFiles; ++i ) {
 		recentFileActs[i] = new QAction( this );
-		recentFileActs[i]->setVisible( false );
-		connect( recentFileActs[i], &QAction::triggered, this, &NifSkope::openRecentFile );
-	}
+		recentArchiveActs[i] = new QAction( this );
+		recentArchiveFileActs[i] = new QAction( this );
 
+		recentFileActs[i]->setVisible( false );
+		recentArchiveActs[i]->setVisible( false );
+		recentArchiveFileActs[i]->setVisible( false );
+
+		connect( recentFileActs[i], &QAction::triggered, this, &NifSkope::openRecentFile );
+		connect( recentArchiveActs[i], &QAction::triggered, this, &NifSkope::openRecentArchive );
+		connect( recentArchiveFileActs[i], &QAction::triggered, this, &NifSkope::openRecentArchiveFile );
+	}
 
 	aList->setChecked( list->model() == nif );
 	aHierarchy->setChecked( list->model() == proxy );
@@ -323,9 +331,12 @@ void NifSkope::initDockWidgets()
 	dHeader = ui->HeaderDock;
 	dInsp = ui->InspectDock;
 	dKfm = ui->KfmDock;
+	dBrowser = ui->BrowserDock;
 
 	// Tabify List and Header
 	tabifyDockWidget( dList, dHeader );
+	tabifyDockWidget( dHeader, dBrowser );
+
 	// Raise List above Header
 	dList->raise();
 
@@ -370,9 +381,15 @@ void NifSkope::initMenu()
 	connect( mExport, &QMenu::triggered, this, &NifSkope::sltImportExport );
 	connect( mImport, &QMenu::triggered, this, &NifSkope::sltImportExport );
 
-	for ( int i = 0; i < NumRecentFiles; ++i )
-		ui->mRecentFiles->addAction( recentFileActs[i] );
+	// BSA Recent Files
+	mRecentArchiveFiles = new QMenu( this );
+	mRecentArchiveFiles->setObjectName( "mRecentArchiveFiles" );
 
+	for ( int i = 0; i < NumRecentFiles; ++i ) {
+		ui->mRecentFiles->addAction( recentFileActs[i] );
+		ui->mRecentArchives->addAction( recentArchiveActs[i] );
+		mRecentArchiveFiles->addAction( recentArchiveFileActs[i] );
+	}
 
 	// Load & Save
 	QMenu * mSave = new QMenu( this );
@@ -385,6 +402,7 @@ void NifSkope::initMenu()
 	mOpen->setObjectName( "mOpen" );
 
 	mOpen->addAction( ui->aOpen );
+	mOpen->addAction( ui->aBrowseArchive );
 
 	aRecentFilesSeparator = mOpen->addSeparator();
 	for ( int i = 0; i < NumRecentFiles; ++i )
@@ -407,6 +425,8 @@ void NifSkope::initMenu()
 	}
 
 	updateRecentFileActions();
+	updateRecentArchiveActions();
+	//updateRecentArchiveFileActions();
 
 	// Lighting Menu
 	// TODO: Split off into own widget
@@ -422,6 +442,25 @@ void NifSkope::initMenu()
 		}
 	}
 
+
+	// BSA Recent Archives
+	auto tRecentArchives = new QToolButton( this );
+	tRecentArchives->setObjectName( "tRecentArchives" );
+	tRecentArchives->setText( "Recent Archives" );
+	tRecentArchives->setStyleSheet( "padding-right: 10px;" );
+	tRecentArchives->setMenu( ui->mRecentArchives );
+	tRecentArchives->setPopupMode( QToolButton::InstantPopup );
+
+	// BSA Recent Files
+	auto tRecentArchiveFiles = new QToolButton( this );
+	tRecentArchiveFiles->setObjectName( "tRecentArchiveFiles" );
+	tRecentArchiveFiles->setText( "Recent Files" );
+	tRecentArchiveFiles->setStyleSheet( "padding-right: 10px;" );
+	tRecentArchiveFiles->setMenu( mRecentArchiveFiles );
+	tRecentArchiveFiles->setPopupMode( QToolButton::InstantPopup );
+
+	ui->bsaTitleBar->layout()->addWidget( tRecentArchives );
+	ui->bsaTitleBar->layout()->addWidget( tRecentArchiveFiles );
 }
 
 
@@ -745,17 +784,27 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 	filepathWidget->setVisible( false );
 
 	// Show Filepath on successful NIF load
-	connect( this, &NifSkope::completeLoading, [this, filepathWidget, labelFilepath]( bool success, QString & fname ) {
+	connect( this, &NifSkope::completeLoading, [this, filepathWidget, labelFilepath, navigateToFilepath]( bool success, QString & fname ) {
 		filepathWidget->setVisible( success );
 		labelFilepath->setText( fname );
-		//ui->statusbar->showMessage( tr("File Loaded Successfully"), 3000 );
+
+		if ( QFileInfo( fname ).exists() ) {
+			navigateToFilepath->show();
+		} else {
+			navigateToFilepath->hide();
+		}
 	} );
 
 	// Change Filepath on successful NIF save
-	connect( this, &NifSkope::completeSave, [this, filepathWidget, labelFilepath]( bool success, QString & fname ) {
+	connect( this, &NifSkope::completeSave, [this, filepathWidget, labelFilepath, navigateToFilepath]( bool success, QString & fname ) {
 		filepathWidget->setVisible( success );
 		labelFilepath->setText( fname );
-		//ui->statusbar->showMessage( tr("File Saved Successfully"), 3000 );
+
+		if ( QFileInfo( fname ).exists() ) {
+			navigateToFilepath->show();
+		} else {
+			navigateToFilepath->hide();
+		}
 	} );
 
 	// Navigate to NIF in Explorer
@@ -771,6 +820,13 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 	return filepathWidget;
 }
 
+
+void NifSkope::archiveDlg()
+{
+	QString file = QFileDialog::getOpenFileName( this, tr( "Open Archive" ), "", "BSA (*.bsa)" );
+	if ( !file.isEmpty() )
+		openArchive( file );
+}
 
 void NifSkope::openDlg()
 {

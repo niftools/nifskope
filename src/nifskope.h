@@ -60,6 +60,9 @@ class NifTreeView;
 class ReferenceBrowser;
 class SettingsDialog;
 class SpellBook;
+class BSA;
+class BSAModel;
+class BSAProxyModel;
 
 class QAction;
 class QActionGroup;
@@ -71,6 +74,7 @@ class QModelIndex;
 class QProgressBar;
 class QStringList;
 class QTimer;
+class QTreeView;
 class QUdpSocket;
 
 
@@ -129,6 +133,8 @@ public:
 	//! A map of all the currently support filetypes to their file extensions.
 	static const QList<QPair<QString, QString>> filetypes;
 
+	enum { NumRecentFiles = 10 };
+
 signals:
 	void beginLoading();
 	void completeLoading( bool, QString & );
@@ -138,6 +144,10 @@ signals:
 public slots:
 	void openFile( QString & );
 	void openFiles( QStringList & );
+
+	void openArchive( const QString & );
+	void openArchiveFile( const QModelIndex & );
+	void openArchiveFileString( BSA *, const QString & );
 
 	void enableUi();
 
@@ -186,6 +196,8 @@ public slots:
 protected slots:
 	void openDlg();
 	void saveAsDlg();
+
+	void archiveDlg();
 
 	void load();
 	void save();
@@ -245,7 +257,13 @@ private:
 	void updateRecentFileActions();
 	void updateAllRecentFileActions();
 
-	QString strippedName( const QString & ) const;
+	void openRecentArchive();
+	void openRecentArchiveFile();
+	void setCurrentArchive( BSA * );
+	void setCurrentArchiveFile( const QString & );
+	void clearCurrentArchive();
+	void updateRecentArchiveActions();
+	void updateRecentArchiveFileActions();
 
 	QMenu * lightingWidget();
 	QWidget * filePathWidget( QWidget * );
@@ -261,6 +279,7 @@ private:
 	SettingsDialog * settingsDlg;
 
 	QString currentFile;
+	BSA * currentArchive = nullptr;
 
 	//! Stores the NIF file in memory.
 	NifModel * nif;
@@ -275,6 +294,8 @@ private:
 	NifTreeView * tree;
 	//! This view shows the file header.
 	NifTreeView * header;
+	//! This view shows the archive browser files.
+	QTreeView * bsaView;
 
 	//! This view shows the KFM file, if any.
 	NifTreeView * kfmtree;
@@ -308,6 +329,7 @@ private:
 	QDockWidget * dKfm;
 	QDockWidget * dRefr;
 	QDockWidget * dInsp;
+	QDockWidget * dBrowser;
 
 	QToolBar * tool;
 
@@ -332,8 +354,9 @@ private:
 
 	QAction * aRecentFilesSeparator;
 
-	enum { NumRecentFiles = 10 };
 	QAction * recentFileActs[NumRecentFiles];
+	QAction * recentArchiveActs[NumRecentFiles];
+	QAction * recentArchiveFileActs[NumRecentFiles];
 
 	bool isResizing;
 	QTimer * resizeTimer;
@@ -351,6 +374,11 @@ private:
 	QUndoStack * indexStack;
 	//QAction * idxForwardAction;
 	//QAction * idxBackAction;
+
+	BSAModel * bsaModel;
+	BSAProxyModel * bsaProxyModel;
+
+	QMenu * mRecentArchiveFiles;
 };
 
 

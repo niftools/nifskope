@@ -35,11 +35,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "fsengine.h"
 
+#include <QStandardItemModel>
+#include <QSortFilterProxyModel>
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
 #include <QMutex>
+
+class BSAModel;
+class BSAProxyModel;
 
 //! \file bsa.h BSA file, BSAIterator
 
@@ -101,7 +107,6 @@ public:
 	//! Returns BSA::status.
 	QString statusText() const { return status; }
 
-protected:
 	//! A file inside a BSA
 	struct BSAFile
 	{
@@ -136,6 +141,11 @@ protected:
 	const BSAFolder * getFolder( QString fn ) const;
 	//! Gets the specified file, or null if not found
 	const BSAFile * getFile( QString fn ) const;
+
+	bool scan( const BSA::BSAFolder *, QStandardItem *, QString );
+	bool fillModel( BSAModel *, const QString & );
+
+protected:
 	
 	//! The %BSA file
 	QFile bsa;
@@ -164,6 +174,43 @@ protected:
 	bool compressToggle;
 	//! Whether Fallout 3 names are prefixed with an extra string
 	bool namePrefix;
+};
+
+
+class BSAModel : public QStandardItemModel
+{
+	Q_OBJECT
+
+public:
+	BSAModel( QObject * parent = nullptr );
+
+	void init();
+
+	Qt::ItemFlags flags( const QModelIndex & index ) const override;
+};
+
+
+class BSAProxyModel : public QSortFilterProxyModel
+{
+	Q_OBJECT
+
+public:
+	BSAProxyModel( QObject * parent = nullptr );
+
+	void setFiletypes( QStringList types );
+
+	void resetFilter();
+
+public slots:
+	void setFilterByNameOnly( bool nameOnly );
+
+protected:
+	bool filterAcceptsRow( int sourceRow, const QModelIndex & sourceParent ) const;
+	bool lessThan( const QModelIndex & left, const QModelIndex & right ) const;
+
+private:
+	QStringList filetypes;
+	bool filterByNameOnly = false;
 };
 
 #endif

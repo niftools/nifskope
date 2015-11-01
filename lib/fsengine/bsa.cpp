@@ -174,7 +174,7 @@ static bool BSAReadSizedString( QFile & bsa, QString & s )
 BSA::BSA( const QString & filename )
 	: FSArchiveFile(), bsa( filename ), bsaInfo( QFileInfo(filename) ), status( "initialized" )
 {
-	bsaPath = bsaInfo.absolutePath() + QDir::separator() + bsaInfo.fileName();
+	bsaPath = bsaInfo.absolutePath() + "/" + bsaInfo.fileName();
 	bsaBase = bsaInfo.absolutePath();
 	bsaName = bsaInfo.fileName();
 }
@@ -511,14 +511,11 @@ const BSA::BSAFile * BSA::getFile( QString fn ) const
 		fileName = fn.right( fn.length() - p - 1 );
 	}
 	
-	// TODO: Multiple matches occur and user has no say which version gets loaded
-	// When it comes to the AUTO feature, should give preference to certain BSAs
-	// or take the newest and or highest quality version.
 	if ( const BSAFolder * folder = getFolder( folderName ) ) {
 		return folder->files.value( fileName );
 	}
 	else {
-		return 0;
+		return nullptr;
 	}
 }
 
@@ -550,4 +547,146 @@ QString BSA::owner( const QString & ) const
 QDateTime BSA::fileTime( const QString & ) const
 {
 	return bsaInfo.created( );
+}
+
+bool BSA::scan( const BSA::BSAFolder * folder, QStandardItem * item, QString path )
+{
+	if ( !folder || folder->children.count() == 0 )
+		return false;
+
+	QHash<QString, BSA::BSAFolder *>::const_iterator i;
+	for ( i = folder->children.begin(); i != folder->children.end(); i++ ) {
+
+		if ( !i.value()->files.count() && !i.value()->children.count() )
+			continue;
+
+		auto folderItem = new QStandardItem( i.key() );
+		auto pathDummy = new QStandardItem( "" );
+		auto sizeDummy = new QStandardItem( "" );
+
+		item->appendRow( { folderItem, pathDummy, sizeDummy } );
+
+		// Recurse through folders
+		if ( i.value()->children.count() ) {
+			QString fullpath = ((path.isEmpty()) ? path : path + "/") + i.key();
+			scan( i.value(), folderItem, fullpath );
+		}
+
+		// List files
+		if ( i.value()->files.count() ) {
+			QHash<QString, BSA::BSAFile *>::const_iterator f;
+			for ( f = i.value()->files.begin(); f != i.value()->files.end(); f++ ) {
+				QString fullpath = path + "/" + i.key() + "/" + f.key();
+
+				int bytes = f.value()->size();
+				QString filesize = (bytes > 1024) ? QString::number( bytes / 1024 ) + "KB" : QString::number( bytes ) + "B";
+
+				auto fileItem = new QStandardItem( f.key() );
+				auto pathItem = new QStandardItem( fullpath );
+				auto sizeItem = new QStandardItem( filesize );
+
+				folderItem->appendRow( { fileItem, pathItem, sizeItem } );
+			}
+		}
+	}
+
+	return true;
+}
+
+bool BSA::fillModel( BSAModel * bsaModel, const QString & folder )
+{
+	return scan( getFolder( folder ), bsaModel->invisibleRootItem(), folder );
+}
+
+
+BSAModel::BSAModel( QObject * parent )
+	: QStandardItemModel( parent )
+{
+
+}
+
+void BSAModel::init()
+{
+	setColumnCount( 3 );
+	setHorizontalHeaderLabels( { "File", "Path", "Size" } );
+}
+
+Qt::ItemFlags BSAModel::flags( const QModelIndex & index ) const
+{
+	return QStandardItemModel::flags( index ) ^ Qt::ItemIsEditable;
+}
+
+
+BSAProxyModel::BSAProxyModel( QObject * parent )
+	: QSortFilterProxyModel( parent )
+{
+
+}
+
+void BSAProxyModel::setFiletypes( QStringList types )
+{
+	filetypes = types;
+}
+
+void BSAProxyModel::setFilterByNameOnly( bool nameOnly )
+{
+	filterByNameOnly = nameOnly;
+
+	setFilterRegExp( filterRegExp() );
+}
+
+void BSAProxyModel::resetFilter()
+{
+	setFilterRegExp( QRegExp( "*", Qt::CaseInsensitive, QRegExp::Wildcard ) );
+}
+
+bool BSAProxyModel::filterAcceptsRow( int sourceRow, const QModelIndex & sourceParent ) const
+{
+	if ( !filterRegExp().isEmpty() ) {
+		
+		QModelIndex sourceIndex0 = sourceModel()->index( sourceRow, 0, sourceParent );
+		QModelIndex sourceIndex1 = sourceModel()->index( sourceRow, 1, sourceParent );
+		if ( sourceIndex0.isValid() ) {
+			// If children match, parent matches
+			int c = sourceModel()->rowCount( sourceIndex0 );
+			for ( int i = 0; i < c; ++i ) {
+				if ( filterAcceptsRow( i, sourceIndex0 ) )
+					return true;
+			}
+
+			QString key0 = sourceModel()->data( sourceIndex0, filterRole() ).toString();
+			QString key1 = sourceModel()->data( sourceIndex1, filterRole() ).toString();
+			
+			bool typeMatch = true;
+			if ( filetypes.count() ) {
+				typeMatch = false;
+				for ( auto f : filetypes ) {
+					typeMatch |= key1.endsWith( f );
+				}
+			}
+
+			bool stringMatch = (filterByNameOnly) ? key0.contains( filterRegExp() ) : key1.contains( filterRegExp() );
+
+			return typeMatch && stringMatch;
+		}
+	}
+
+	return QSortFilterProxyModel::filterAcceptsRow( sourceRow, sourceParent );
+}
+
+bool BSAProxyModel::lessThan( const QModelIndex & left, const QModelIndex & right ) const
+{
+	QString leftString = sourceModel()->data( left ).toString();
+	QString rightString = sourceModel()->data( right ).toString();
+
+	QModelIndex leftChild = left.child( 0, 0 );
+	QModelIndex rightChild = right.child( 0, 0 );
+
+	if ( !leftChild.isValid() && rightChild.isValid() )
+		return false;
+
+	if ( leftChild.isValid() && !rightChild.isValid() )
+		return true;
+
+	return leftString < rightString;
 }
