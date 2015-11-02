@@ -64,7 +64,7 @@ protected:
 	bool automatic;
 	
 	//! Builds a list of global BSAs on Windows platforms
-	static QStringList autodetectArchives();
+	static QStringList autodetectArchives( const QString & folder = "" );
 	//! Helper function to build a list of BSAs
 	static QStringList regPathBSAList( QString regKey, QString dataDir );
 

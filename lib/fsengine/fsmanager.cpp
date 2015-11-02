@@ -108,7 +108,7 @@ QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 	return list;
 }
 
-QStringList FSManager::autodetectArchives()
+QStringList FSManager::autodetectArchives( const QString & folder )
 {
 	QStringList list;
 	
@@ -119,6 +119,26 @@ QStringList FSManager::autodetectArchives()
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim", "Data" );
 #endif
+
+	if ( !folder.isEmpty() ) {
+		QStringList listCopy;
+		// Looking for a specific folder here
+		// Remove the BSAs that do not contain this folder
+		for ( auto f : list ) {
+			auto handler = FSArchiveHandler::openArchive( f );
+			if ( handler ) {
+				auto bsa = static_cast<BSA *>(handler->getArchive());
+				if ( bsa ) {
+					auto rootFolder = bsa->getFolder( "" );
+					if ( rootFolder->children.contains( folder ) ) {
+						listCopy.append( f );
+					}
+				}
+			}
+		}
+
+		list = listCopy;
+	}
 
 	return list;
 }

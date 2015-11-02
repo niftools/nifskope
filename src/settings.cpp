@@ -741,9 +741,15 @@ void SettingsResources::on_btnArchiveUp_clicked()
 
 void SettingsResources::on_btnArchiveAutoDetect_clicked()
 {
-	QStringList autoList = FSManager::autodetectArchives();
+	QStringList autoList = FSManager::autodetectArchives( "textures" );
 
-	QStringList archivesNew = archives->stringList() + autoList;
+	QStringList archivesNew = archives->stringList();
+	for ( auto & archive : autoList ) {
+		if ( !archivesNew.contains( archive, Qt::CaseInsensitive ) ) {
+			archivesNew.append( archive );
+		}
+	}
+
 	archivesNew.removeDuplicates();
 
 	archives->setStringList( archivesNew );
