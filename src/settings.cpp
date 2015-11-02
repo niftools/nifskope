@@ -741,10 +741,10 @@ void SettingsResources::on_btnArchiveUp_clicked()
 
 void SettingsResources::on_btnArchiveAutoDetect_clicked()
 {
-	QStringList autoList = FSManager::autodetectArchives( "textures" );
-
 	QStringList archivesNew = archives->stringList();
-	for ( auto & archive : autoList ) {
+	
+	QStringList autoList = FSManager::autodetectArchives( "textures" );
+	for ( const QString & archive : autoList ) {
 		if ( !archivesNew.contains( archive, Qt::CaseInsensitive ) ) {
 			archivesNew.append( archive );
 		}

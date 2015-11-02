@@ -53,11 +53,17 @@ public:
 	//! Destructor
 	~FSArchiveHandler();
 	
+	template <typename T> T getArchive() const;
 	FSArchiveFile * getArchive() { return archive; }
 
 protected:
 	class FSArchiveFile * archive;
 };
+
+template <typename T> inline T FSArchiveHandler::getArchive() const
+{
+	return static_cast<T>(archive);
+}
 
 
 //! A file system archive

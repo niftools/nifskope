@@ -688,7 +688,13 @@ void NifSkope::openArchive( const QString & archive )
 	if ( bsaProxyModel )
 		bsaProxyModel->clear();
 
-	auto bsa = static_cast<BSA *>(FSArchiveHandler::openArchive( archive )->getArchive());
+	auto handler = FSArchiveHandler::openArchive( archive );
+	if ( !handler ) {
+		qCWarning( nsIo ) << "The BSA could not be opened.";
+		return;
+	}
+
+	auto bsa = handler->getArchive<BSA *>();
 	if ( bsa ) {
 
 		setCurrentArchive( bsa );

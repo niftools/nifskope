@@ -127,7 +127,7 @@ QStringList FSManager::autodetectArchives( const QString & folder )
 		for ( auto f : list ) {
 			auto handler = FSArchiveHandler::openArchive( f );
 			if ( handler ) {
-				auto bsa = static_cast<BSA *>(handler->getArchive());
+				auto bsa = handler->getArchive<BSA *>();
 				if ( bsa ) {
 					auto rootFolder = bsa->getFolder( "" );
 					if ( rootFolder->children.contains( folder ) ) {

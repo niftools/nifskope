@@ -54,7 +54,7 @@ FSArchiveHandler * FSArchiveHandler::openArchive( const QString & fn )
 		qDebug() << "fsengine error:" << fn << ":" << bsa->statusText();
 		delete bsa;
 	}
-	return 0;
+	return nullptr;
 }
 
 // see fsengine.h
