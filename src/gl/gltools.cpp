@@ -870,6 +870,7 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 	if ( iData.isValid() ) {
 		QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
 		QModelIndex iBigTris = nif->getIndex( iData, "Big Tris" );
+		QModelIndex iChunkTrans = nif->getIndex( iData, "Chunk Transforms" );
 
 		QVector<Vector4> verts = nif->getArray<Vector4>( iBigVerts );
 
@@ -896,6 +897,12 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 		QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
 		for ( int r = 0; r < nif->rowCount( iChunks ); r++ ) {
 			Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child( r, 0 ), "Translation" );
+
+			quint32 transformIndex = nif->get<quint32>( iChunks.child( r, 0 ), "Transform Index" );
+			QModelIndex chunkTransform = iChunkTrans.child( transformIndex, 0 );
+			Vector4 chunkTranslation = nif->get<Vector4>( chunkTransform.child( 0, 0 ) );
+			Quat chunkRotation = nif->get<Quat>( chunkTransform.child( 1, 0 ) );
+
 			quint32 numOffsets = nif->get<quint32>( iChunks.child( r, 0 ), "Num Vertices" );
 			quint32 numIndices = nif->get<quint32>( iChunks.child( r, 0 ), "Num Indices" );
 			quint32 numStrips = nif->get<quint32>( iChunks.child( r, 0 ), "Num Strips" );
@@ -913,12 +920,15 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 			}
 
 			for ( int n = 0; n < ((int)numOffsets / 3); n++ ) {
-				vertices[n] = chunkOrigin + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
+				vertices[n] = chunkOrigin + chunkTranslation + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
 				vertices[n] *= havokScale;
 			}
 
 			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
 			glDisable( GL_CULL_FACE );
+
+			Transform trans;
+			trans.rotation.fromQuat( chunkRotation );
 
 			// Stripped tris
 			for ( int s = 0; s < (int)numStrips; s++ ) {
@@ -927,9 +937,9 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 
 					glBegin( GL_TRIANGLES );
 
-					glVertex( vertices[indices[offset + idx]] );
-					glVertex( vertices[indices[offset + idx + 1]] );
-					glVertex( vertices[indices[offset + idx + 2]] );
+					glVertex( trans.rotation * Vector3( vertices[indices[offset + idx]] ) );
+					glVertex( trans.rotation * Vector3( vertices[indices[offset + idx + 1]] ) );
+					glVertex( trans.rotation * Vector3( vertices[indices[offset + idx + 2]] ) );
 
 					glEnd();
 
@@ -943,9 +953,9 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 			for ( int f = 0; f < (int)(numIndices - offset); f += 3 ) {
 				glBegin( GL_TRIANGLES );
 
-				glVertex( vertices[indices[offset + f]] );
-				glVertex( vertices[indices[offset + f + 1]] );
-				glVertex( vertices[indices[offset + f + 2]] );
+				glVertex( trans.rotation * Vector3( vertices[indices[offset + f]] ) );
+				glVertex( trans.rotation * Vector3( vertices[indices[offset + f + 1]] ) );
+				glVertex( trans.rotation * Vector3( vertices[indices[offset + f + 2]] ) );
 
 				glEnd();
 
