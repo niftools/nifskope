@@ -513,9 +513,9 @@ bool NifModel::updateByteArrayItem( NifItem * array, bool fast )
 	}
 
 	if ( NifItem * child = array->child( 0 ) ) {
-		QByteArray * bm = (child->value().type() == NifValue::tBlob) ? get<QByteArray *>( child ) : NULL;
+		QByteArray * bm = (child->value().type() == NifValue::tBlob) ? get<QByteArray *>( child ) : nullptr;
 
-		if ( bm == NULL ) {
+		if ( !bm ) {
 			set<QByteArray>( child, bytes );
 		} else if ( bm->size() == 0 ) {
 			*bm = bytes;
@@ -728,7 +728,7 @@ void NifModel::moveNiBlock( int src, int dst )
 
 void NifModel::updateStrings( NifModel * src, NifModel * tgt, NifItem * item )
 {
-	if ( NULL == item )
+	if ( !item )
 		return;
 
 	NifValue::Type vt = item->value().type();
@@ -1697,7 +1697,7 @@ bool NifModel::load( QIODevice & device )
 	NifIStream stream( this, &device );
 
 	// read header
-	NifItem * header = NULL;
+	NifItem * header = nullptr;
 	header = getHeaderItem();
 
 	// bugfix: force user versions to zero (if the template was version

@@ -677,7 +677,7 @@ template <> inline QByteArray * NifValue::get() const
 	if ( isByteArray() )
 		return static_cast<QByteArray *>( val.data );
 
-	return NULL;
+	return nullptr;
 }
 template <> inline Quat NifValue::get() const
 {
@@ -691,7 +691,7 @@ template <> inline ByteMatrix * NifValue::get() const
 	if ( isByteMatrix() )
 		return static_cast<ByteMatrix *>( val.data );
 
-	return NULL;
+	return nullptr;
 }
 
 //! Set the data from a boolean. Return true if successful.
@@ -773,7 +773,7 @@ template <> inline bool NifValue::set( const Triangle & x )
 template <> inline bool NifValue::set( const QString & x )
 {
 	if ( isString() ) {
-		if ( val.data == NULL ) {
+		if ( !val.data ) {
 			val.data = new QString;
 		}
 
