@@ -148,20 +148,14 @@ public slots:
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
-
 	// Old Options API
 	//	TODO: Move away from the GL-like naming
 	void glHighlightColor() const;
 	void glNormalColor() const;
 
-	bool presorted = false;
-
-	int nodeId;
-	int ref;
-
 	QPointer<Node> parent;
-
 	NodeList children;
+
 	PropertyList properties;
 
 	Transform local;
@@ -174,6 +168,12 @@ protected:
 		QColor highlight;
 		QColor wireframe;
 	} cfg;
+
+
+	bool presorted = false;
+
+	int nodeId;
+	int ref;
 };
 
 template <typename T> inline T * Node::findProperty() const

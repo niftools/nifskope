@@ -189,7 +189,7 @@ void Renderer::ConditionGroup::addCondition( Condition * c )
 }
 
 Renderer::Shader::Shader( const QString & n, GLenum t, QOpenGLFunctions * fn )
-	: name( n ), id( 0 ), status( false ), type( t ), f( fn )
+	: f( fn ), name( n ), id( 0 ), status( false ), type( t )
 {
 	id = f->glCreateShader( type );
 }
@@ -241,7 +241,7 @@ bool Renderer::Shader::load( const QString & filepath )
 
 
 Renderer::Program::Program( const QString & n, QOpenGLFunctions * fn )
-	: name( n ), id( 0 ), status( false ), f( fn )
+	: f( fn ), name( n ), id( 0 )
 {
 	id = f->glCreateProgram();
 }
@@ -944,7 +944,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		// If mesh is alpha tested, override threshold
-		glAlphaFunc( GL_GREATER, 0.1 );
+		glAlphaFunc( GL_GREATER, 0.1f );
 	}
 
 	// setup vertex colors

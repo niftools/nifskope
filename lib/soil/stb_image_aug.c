@@ -63,6 +63,16 @@
              on 'test' only check type, not whether we support this variant
 */
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4018 4100 4244)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
+
 #include "stb_image_aug.h"
 
 #ifndef STBI_NO_HDR
@@ -3679,4 +3689,10 @@ int stbi_write_tga(char const *filename, int x, int y, int comp, void *data)
 //	add in my DDS loading support
 #ifndef STBI_NO_DDS
 #include "stbi_DDS_aug_c.h"
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#else
+#pragma GCC diagnostic pop
 #endif

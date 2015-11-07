@@ -340,7 +340,7 @@ void Matrix4::decompose( Vector3 & trans, Matrix & rot, Vector3 & scale ) const
 
 	Matrix mtx = rot * rotT;
 
-	scale = { sqrt(mtx( 0, 0 )), sqrt(mtx( 1, 1 )), sqrt(mtx( 2, 2 )) };
+	scale = { (float)sqrt(mtx( 0, 0 )), (float)sqrt(mtx( 1, 1 )), (float)sqrt(mtx( 2, 2 )) };
 
 	for ( int i = 0; i < 3; i++ ) {
 		for ( int j = 0; j < 3; j++ )

@@ -863,8 +863,8 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 	// Scale up for Skyrim
 	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
-	QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
-	Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
+	//QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
+	//Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
 
 	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 	if ( iData.isValid() ) {

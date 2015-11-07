@@ -1,3 +1,10 @@
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
+
+
 #include "3ds.h"
 
 #include "nvtristripwrapper.h"
@@ -752,3 +759,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	nif->reset();
 	return;
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

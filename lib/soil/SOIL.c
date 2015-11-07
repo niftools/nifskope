@@ -13,6 +13,15 @@
 	* everybody at gamedev.net
 */
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4018 4100 4244)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #define SOIL_CHECK_FOR_GL_ERRORS 0
 
 #ifdef WIN32
@@ -2022,3 +2031,9 @@ int query_DXT_capability( void )
 	/*	let the user know if we can do DXT or not	*/
 	return has_DXT_capability;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#else
+#pragma GCC diagnostic pop
+#endif

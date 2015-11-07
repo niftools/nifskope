@@ -512,6 +512,8 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 	connect( ui->foldersList->selectionModel(), &QItemSelectionModel::currentChanged,
 		[this]( const QModelIndex & idx, const QModelIndex & last )
 		{
+			Q_UNUSED( last );
+
 			ui->btnFolderUp->setEnabled( idx.row() > 0 );
 			ui->btnFolderDown->setEnabled( idx.row() < folders->rowCount() - 1 );
 		}
@@ -521,6 +523,8 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 	connect( ui->archivesList->selectionModel(), &QItemSelectionModel::currentChanged,
 		[this]( const QModelIndex & idx, const QModelIndex & last )
 		{
+			Q_UNUSED( last );
+
 			ui->btnArchiveUp->setEnabled( idx.row() > 0 );
 			ui->btnArchiveDown->setEnabled( idx.row() < archives->rowCount() - 1 );
 		}

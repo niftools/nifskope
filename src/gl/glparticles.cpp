@@ -134,6 +134,8 @@ BoundSphere Particles::bounds() const
 
 void Particles::drawShapes( NodeList * secondPass, bool presort )
 {
+	Q_UNUSED( presort );
+
 	if ( isHidden() )
 		return;
 

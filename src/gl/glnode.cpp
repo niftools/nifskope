@@ -1467,12 +1467,12 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 
 	int i = 0;
 
-	if ( ref1 == NULL ) {
+	if ( ref1 == 0 ) {
 		float heading = nif->get<float>( iPosition, "Heading" );
 		quint16 type = nif->get<quint16>( iPosition, "Animation Type" );
 		int entry = nif->get<int>( iPosition, "Entry Properties" );
 
-		if ( type == NULL ) return;
+		if ( type == 0 ) return;
 
 		// Sit=1, Sleep=2, Lean=3
 		// Front=1, Behind=2, Right=4, Left=8, Up=16(0x10)

@@ -248,7 +248,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 				bslsp->setClampMode( clampMode );
 
-				float envReflection;
+				float envReflection = 0;
 				if ( isST( ShaderFlags::ST_EnvironmentMap ) ) {
 					envReflection = nif->get<float>( iProp, "Environment Map Scale" );
 				} else if ( isST( ShaderFlags::ST_EyeEnvmap ) ) {

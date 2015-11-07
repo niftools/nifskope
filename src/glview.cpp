@@ -705,6 +705,7 @@ void GLView::resizeGL( int width, int height )
 
 void GLView::resizeEvent( QResizeEvent * e )
 {
+	Q_UNUSED( e );
 	// This function should never be called.
 	// Moved to NifSkope::eventFilter()
 }
@@ -1815,6 +1816,8 @@ void GLGraphicsView::drawForeground( QPainter * painter, const QRectF & rect )
 
 void GLGraphicsView::drawBackground( QPainter * painter, const QRectF & rect )
 {
+	Q_UNUSED( painter ); Q_UNUSED( rect );
+
 	GLView * glWidget = qobject_cast<GLView *>(viewport());
 	if ( glWidget ) {
 		glWidget->updateGL();

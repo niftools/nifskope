@@ -40,15 +40,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Disable compiler warning
 #pragma warning(disable: 4005)
 // Disable Code Analysis warnings
-#pragma warning(disable: 6001)
-#pragma warning(disable: 6011)
-#pragma warning(disable: 6031)
-#pragma warning(disable: 6305)
-#pragma warning(disable: 6387)
-#pragma warning(disable: 28182)
-#pragma warning(disable: 28183)
+#pragma warning(disable: 6001 6011 6031 6305 6387)
+#pragma warning(disable: 28182 28183)
 //	ALL_CODE_ANALYSIS_WARNINGS seems
 //	to no longer work as of msvc2013
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclobbered"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 extern "C"
 {
@@ -74,6 +75,8 @@ extern "C"
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
+#else
+#pragma GCC diagnostic pop
 #endif
 
 #include <algorithm>

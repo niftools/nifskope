@@ -163,7 +163,7 @@ public:
 		QOpenGLFunctions * f;
 		QString name;
 		GLuint id;
-		bool status;
+		bool status = false;
 
 		ConditionGroup conditions;
 		QMap<int, QString> texcoords;

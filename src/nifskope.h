@@ -318,8 +318,8 @@ private:
 	QComboBox * animGroups;
 	QAction * animGroupsAction;
 
-	bool selecting;
-	bool initialShowEvent;
+	bool selecting = false;
+	bool initialShowEvent = true;
 	
 	QProgressBar * progress = nullptr;
 

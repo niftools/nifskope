@@ -6,6 +6,11 @@
     MIT license
 */
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4244)
+#endif
+
 #include "image_helper.h"
 #include <stdlib.h>
 #include <math.h>
@@ -433,3 +438,7 @@ RGBE_to_RGBdivA2
 	}
 	return 1;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

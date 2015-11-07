@@ -141,7 +141,7 @@ QString NifSkope::fileFilters( bool allFiles )
  */
 
 NifSkope::NifSkope()
-	: QMainWindow(), selecting( false ), initialShowEvent( true ), ui( new Ui::MainWindow )
+	: QMainWindow(), ui( new Ui::MainWindow )
 {
 	// Init UI
 	ui->setupUi( this );
@@ -977,6 +977,9 @@ void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const 
 	case QtFatalMsg:
 		fprintf( stderr, "[Fatal] %s\n", qPrintable( str ) );
 		break;
+	case QtInfoMsg:
+		fprintf( stderr, "[Info] %s\n", qPrintable( str ) );
+		break;
 	}
 }
 
@@ -1047,12 +1050,12 @@ void IPCsocket::openNif( const QString & url )
 
 // TODO: This class was not used. QSystemLocale became private in Qt 5.
 // It appears this class was going to handle display of numbers.
-/*//! System locale override
+//! System locale override
 /**
  * Qt does not use the System Locale consistency so this basically forces all floating
  * numbers into C format but leaves all other local specific settings.
- *//*
-class NifSystemLocale : QSystemLocale
+ */
+/*class NifSystemLocale : QSystemLocale
 {
     virtual QVariant query(QueryType type, QVariant in) const
     {

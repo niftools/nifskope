@@ -1720,7 +1720,7 @@ bool NifModel::load( QIODevice & device )
 	//qDebug( "numblocks %i", numblocks );
 
 	emit sigProgress( 0, numblocks );
-	QTime t = QTime::currentTime();
+	//QTime t = QTime::currentTime();
 
 	qint64 curpos = 0;
 	try

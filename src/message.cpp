@@ -162,6 +162,7 @@ void Message::append( QWidget * parent, const QString & str, const QString & err
 
 		// Clear Detailed Text with each confirmation
 		connect( msgBox, &QMessageBox::buttonClicked, [msgBox]( QAbstractButton * button ) { 
+			Q_UNUSED( button );
 			msgBox->setDetailedText( "" );
 		} );
 	}

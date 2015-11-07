@@ -138,7 +138,7 @@ public:
 			return false;
 
 		if ( TheHavokCode.Initialize() ) {
-			QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+			//QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
 			if ( nif->isNiBlock( index, "bhkMoppBvTreeShape" ) ) {
 				return ( nif->checkVersion( 0x14000004, 0x14000005 )

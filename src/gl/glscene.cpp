@@ -160,6 +160,8 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 
 void Scene::updateSceneOptions( bool checked )
 {
+	Q_UNUSED( checked );
+
 	QAction * action = qobject_cast<QAction *>(sender());
 	if ( action ) {
 		options ^= SceneOptions( action->data().toInt() );

@@ -762,7 +762,7 @@ QMenu * NifSkope::lightingWidget()
 QWidget * NifSkope::filePathWidget( QWidget * parent )
 {
 	// Show Filepath of loaded NIF
-	auto filepathWidget = new QWidget( this );
+	auto filepathWidget = new QWidget( parent );
 	filepathWidget->setObjectName( "filepathStatusbarWidget" );
 	auto filepathLayout = new QHBoxLayout( filepathWidget );
 	filepathWidget->setLayout( filepathLayout );
@@ -927,7 +927,7 @@ void NifSkope::onSaveComplete( bool success, QString & fname )
 
 	if ( success ) {
 		// Update if Save As results in filename change
-		setWindowFilePath( currentFile );
+		setWindowFilePath( fname );
 		// Mark window as unmodified
 		nif->undoStack->setClean();
 		setWindowModified( false );
@@ -1275,7 +1275,7 @@ void NifSkope::on_aHeader_triggered()
 
 void NifSkope::on_tRender_actionTriggered( QAction * action )
 {
-
+	Q_UNUSED( action );
 }
 
 void NifSkope::on_aViewTop_triggered( bool checked )
@@ -1306,6 +1306,7 @@ void NifSkope::on_aViewCenter_triggered()
 
 void NifSkope::on_aViewFlip_triggered( bool checked )
 {
+	Q_UNUSED( checked );
 	ogl->flipOrientation();
 }
 

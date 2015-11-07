@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 NifTreeView::NifTreeView( QWidget * parent, Qt::WindowFlags flags ) : QTreeView()
 {
+	Q_UNUSED( flags );
+
 	setParent( parent );
 
 	nif = nullptr;

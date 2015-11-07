@@ -214,7 +214,7 @@ bool NifValue::registerEnumType( const QString & eid, EnumType eTyp )
 
 NifValue::EnumType NifValue::enumType( const QString & eid )
 {
-	return enumMap.value( eid, { EnumType::eNone } ).t;
+	return (enumMap.contains( eid )) ? enumMap[eid].t : EnumType::eNone;
 }
 
 QString NifValue::enumOptionName( const QString & eid, quint32 val )
