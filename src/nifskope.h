@@ -52,6 +52,7 @@ namespace Ui {
 
 class FileSelector;
 class GLView;
+class GLGraphicsView;
 class InspectView;
 class KfmModel;
 class NifModel;
@@ -68,7 +69,6 @@ class QAction;
 class QActionGroup;
 class QComboBox;
 class QGraphicsScene;
-class QGraphicsView;
 class QLocale;
 class QModelIndex;
 class QProgressBar;
@@ -313,7 +313,7 @@ private:
 	GLView * ogl;
 
 	QGraphicsScene * graphicsScene;
-	QGraphicsView * graphicsView;
+	GLGraphicsView * graphicsView;
 
 	QComboBox * animGroups;
 	QAction * animGroupsAction;

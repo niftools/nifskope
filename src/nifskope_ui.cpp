@@ -1126,7 +1126,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 
 	// Filter GLGraphicsView
 	auto obj = qobject_cast<GLGraphicsView *>(o);
-	if ( !obj )
+	if ( !obj || obj != graphicsView )
 		return QMainWindow::eventFilter( o, e );
 
 	// Turn off animation
@@ -1163,7 +1163,7 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	// Paint stored framebuffer over GLGraphicsView while resizing
 	if ( !buf.isNull() && isResizing && e->type() == QEvent::Paint ) {
 		QPainter painter;
-		painter.begin( static_cast<QWidget *>(o) );
+		painter.begin( graphicsView );
 		painter.drawImage( QRect( 0, 0, painter.device()->width(), painter.device()->height() ), buf );
 		painter.end();
 
