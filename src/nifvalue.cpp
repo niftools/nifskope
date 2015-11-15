@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifvalue.h"
 #include "config.h"
 
+#include "half.h"
 #include "nifmodel.h"
 
 #include <QDataStream>
@@ -110,6 +111,7 @@ void NifValue::initialize()
 	typeMap.insert( "string",   NifValue::tString );
 	typeMap.insert( "filepath", NifValue::tFilePath );
 	typeMap.insert( "blob",     NifValue::tBlob );
+	typeMap.insert( "hfloat",   NifValue::tHfloat );
 
 	enumMap.clear();
 }
@@ -540,8 +542,8 @@ bool NifValue::operator==( const NifValue & other ) const
 		return val.i32 == other.val.i32;
 
 	case tFloat:
+	case tHfloat:
 		return val.f32 == other.val.f32;
-
 	case tString:
 	case tSizedString:
 	case tText:
@@ -749,6 +751,9 @@ bool NifValue::setFromString( const QString & s )
 	case tFloat:
 		val.f32 = s.toDouble( &ok );
 		return ok;
+	case tHfloat:
+		val.f32 = s.toDouble( &ok );
+		return ok;
 	case tString:
 	case tSizedString:
 	case tText:
@@ -819,6 +824,8 @@ QString NifValue::toString() const
 		return QString::number( val.i32 );
 	case tFloat:
 		return NumOrMinMax( val.f32, 'f', 4 );
+	case tHfloat:
+		return QString::number( val.f32, 'f', 4 );
 	case tString:
 	case tSizedString:
 	case tText:
@@ -1048,6 +1055,14 @@ bool NifIStream::read( NifValue & val )
 		{
 			*dataStream >> val.val.f32;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
+	case NifValue::tHfloat:
+		{
+			uint16_t half;
+			*dataStream >> half;
+			uint32_t i = half_to_float( half );
+			val.val.f32 = *((float*)&i);
+			return (dataStream->status() == QDataStream::Ok);
 		}
 	case NifValue::tVector3:
 		{
@@ -1387,6 +1402,11 @@ bool NifOStream::write( const NifValue & val )
 
 	case NifValue::tFloat:
 		return device->write( (char *)&val.val.f32, 4 ) == 4;
+	case NifValue::tHfloat:
+		{
+			uint16_t half = half_from_float( *((uint32_t*)&val.val.f32) );
+			return device->write( (char *)&half, 2 ) == 2;
+		}
 	case NifValue::tVector3:
 		return device->write( (char *)static_cast<Vector3 *>( val.val.data )->xyz, 12 ) == 12;
 	case NifValue::tVector4:
@@ -1593,6 +1613,8 @@ int NifSStream::size( const NifValue & val )
 	case NifValue::tUpLink:
 	case NifValue::tFloat:
 		return 4;
+	case NifValue::tHfloat:
+		return 2;
 	case NifValue::tVector3:
 		return 12;
 	case NifValue::tVector4:

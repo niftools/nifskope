@@ -119,7 +119,7 @@ public:
 		tFilePath      = 35, //!< not a string: requires special handling for slash/backslash etc.
 		tByteMatrix    = 36,
 		tBlob          = 37,
-
+		tHfloat        = 38,
 		tNone          = 0xff
 	};
 
@@ -250,7 +250,7 @@ public:
 	//! Check if the type of the data is a flag type (Flags in xml).
 	bool isFlags() const { return typ == tFlags; }
 	//! Check if the type of the data is a float type (Float in xml).
-	bool isFloat() const { return typ == tFloat; }
+	bool isFloat() const { return (typ == tFloat) || (typ == tHfloat); }
 	//! Check if the type of the data is of a link type (Ref or Ptr in xml).
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	//! Check if the type of the data is a 3x3 matrix type (Matrix33 in xml).

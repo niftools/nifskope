@@ -383,6 +383,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 							return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );
 						}
 					case NifValue::tFloat:
+					case NifValue::tHfloat:
 						{
 							float f = item->value().toFloat();
 							quint32 i = item->value().toCount();

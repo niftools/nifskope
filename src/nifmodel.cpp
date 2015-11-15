@@ -1402,6 +1402,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							       .arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 						}
 					case NifValue::tFloat:
+					case NifValue::tHfloat:
 						{
 							return tr( "float: %1\nhex: 0x%2" )
 							       .arg( NumOrMinMax( item->value().toFloat(), 'g', 8 ) )
