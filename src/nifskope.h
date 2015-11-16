@@ -411,6 +411,8 @@ public slots:
 	//! Acts on a command
 	void execCommand( const QString & cmd );
 
+	void openNif( const QUrl & );
+
 	//! Opens a NIF from a URL
 	void openNif( const QString & );
 

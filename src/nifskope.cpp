@@ -165,6 +165,8 @@ NifSkope::NifSkope()
 	proxy = new NifProxyModel( this );
 	proxy->setModel( nif );
 
+	nif->setMessageMode( BaseModel::UserMessage );
+
 	// Setup QUndoStack
 	nif->undoStack = new QUndoStack( this );
 
@@ -1040,6 +1042,14 @@ void IPCsocket::execCommand( const QString & cmd )
 	if ( cmd.startsWith( "NifSkope::open" ) ) {
 		openNif( cmd.right( cmd.length() - 15 ) );
 	}
+}
+
+void IPCsocket::openNif( const QUrl & url )
+{
+	auto file = url.toString();
+	file.remove( 0, 4 );
+
+	openNif( file );
 }
 
 void IPCsocket::openNif( const QString & url )

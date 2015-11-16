@@ -52,6 +52,7 @@ BaseModel::BaseModel( QObject * p ) : QAbstractItemModel( p )
 {
 	root = new NifItem( 0 );
 	parentWindow = qobject_cast<QWidget *>(p);
+	msgMode = TstMessage;
 }
 
 BaseModel::~BaseModel()
@@ -62,6 +63,16 @@ BaseModel::~BaseModel()
 QWidget * BaseModel::getWindow()
 {
 	return parentWindow;
+}
+
+void BaseModel::setMessageMode( MsgMode mode )
+{
+	msgMode = mode;
+}
+
+void BaseModel::testMsg( const QString & m ) const
+{
+	messages.append( TestMessage() << m );
 }
 
 /*

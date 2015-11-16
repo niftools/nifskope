@@ -543,14 +543,23 @@ bool NifModel::updateArrayItem( NifItem * array, bool fast )
 	}
 
 	if ( d1 > 1024 * 1024 * 8 ) {
-		Message::critical( nullptr, tr( "Could not update array item." ),
-			tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 )
-		);
+		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 );
+		if ( msgMode == UserMessage ) {
+			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
+		} else {
+			testMsg( m );
+		}
+
 		return false;
 	} else if ( d1 < 0 ) {
-		Message::critical( nullptr, tr( "Could not update array item." ),
-			tr( "array %1 invalid" ).arg( array->name() )
-		);
+		auto m = tr( "array %1 invalid" ).arg( array->name() );
+		if ( msgMode == UserMessage ) {
+			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
+		} else {
+			testMsg( m );
+		}
+
+
 		return false;
 	}
 
@@ -669,7 +678,12 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 		return createIndex( branch->row(), 0, branch );
 	}
 
-	Message::critical( nullptr, tr( "Could not insert NiBlock." ), tr( "unknown block %1" ).arg( identifier ) );
+	if ( msgMode == UserMessage ) {
+		Message::critical( nullptr, tr( "Could not insert NiBlock." ), tr( "unknown block %1" ).arg( identifier ) );
+	} else {
+		testMsg( tr( "unknown block %1" ) );
+	}
+	
 	return QModelIndex();
 }
 
@@ -789,8 +803,14 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 	if ( getBlockCount() <= 1 )
 		return;
 
+	QString err = tr( "NifModel::reorderBlocks() - invalid argument" );
+
 	if ( order.count() != getBlockCount() ) {
-		Message::critical( nullptr, tr( "NifModel::reorderBlocks() - invalid argument" ) );
+		if ( msgMode == UserMessage ) {
+			Message::critical( nullptr, err );
+		} else {
+			testMsg( err );
+		}
 		return;
 	}
 
@@ -799,7 +819,12 @@ void NifModel::reorderBlocks( const QVector<qint32> & order )
 
 	for ( qint32 n = 0; n < order.count(); n++ ) {
 		if ( blockMap.contains( order[n] ) || order[n] < 0 || order[n] >= getBlockCount() ) {
-			Message::critical( nullptr, tr( "NifModel::reorderBlocks() - invalid argument" ) );
+			if ( msgMode == UserMessage ) {
+				Message::critical( nullptr, err );
+			} else {
+				testMsg( err );
+			}
+			
 			return;
 		}
 
@@ -991,7 +1016,12 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 			insertType( parent, data );
 		}
 	} else {
-		Message::warning( nullptr, tr( "Cannot insert parent." ), tr( "unknown parent %1" ).arg( identifier ) );
+		if ( msgMode == UserMessage ) {
+			Message::warning( nullptr, tr( "Cannot insert parent." ), tr( "unknown parent %1" ).arg( identifier ) );
+		} else {
+			testMsg( tr( "unknown parent %1" ).arg( identifier ) );
+		}
+		
 	}
 }
 
@@ -1650,7 +1680,13 @@ bool NifModel::setHeaderString( const QString & s )
 	        || s.startsWith( "Joymaster HS1 Object Format - (JMI)" )               // howling sword, uses .jmi extension
 	     ) )
 	{
-		Message::critical( nullptr, tr( "Could not open %1 because it is not a supported type." ).arg( fileinfo.fileName() ) );
+		auto m = tr( "Could not open %1 because it is not a supported type." ).arg( fileinfo.fileName() );
+		if ( msgMode == UserMessage ) {
+			Message::critical( nullptr, m );
+		} else {
+			testMsg( m );
+		}
+
 		return false;
 	}
 
@@ -1672,7 +1708,13 @@ bool NifModel::setHeaderString( const QString & s )
 		version = version2number( v );
 
 		if ( !isVersionSupported( version ) ) {
-			Message::critical( nullptr, tr( "Version %1 (%2) is not supported." ).arg( version2string( version ), v ) );
+			auto m = tr( "Version %1 (%2) is not supported." ).arg( version2string( version ), v );
+			if ( msgMode == UserMessage ) {
+				Message::critical( nullptr, m );
+			} else {
+				testMsg( m );
+			}
+			
 			return false;
 		}
 
@@ -1683,7 +1725,12 @@ bool NifModel::setHeaderString( const QString & s )
 		return true;
 	}
 
-	Message::critical( nullptr, tr( "Invalid header string" ) );
+	if ( msgMode == UserMessage ) {
+		Message::critical( nullptr, tr( "Invalid header string" ) );
+	} else {
+		testMsg( tr( "Invalid header string" ) );
+	}
+	
 	return false;
 }
 
@@ -1710,9 +1757,13 @@ bool NifModel::load( QIODevice & device )
 	}
 
 	if ( !header || !load( header, stream, true ) ) {
-		Message::critical( nullptr, tr( "The file could not be read. See Details for more information." ),
-			tr( "failed to load file header (version %1, %2)" ).arg( version, 0, 16 ).arg( version2string( version ) ) 
-		);
+		auto m = tr( "failed to load file header (version %1, %2)" ).arg( version, 0, 16 ).arg( version2string( version ) );
+		if ( msgMode == UserMessage ) {
+			Message::critical( nullptr, tr( "The file could not be read. See Details for more information." ), m );
+		} else {
+			testMsg( m );
+		}
+
 		return false;
 	}
 
@@ -1756,9 +1807,12 @@ bool NifModel::load( QIODevice & device )
 							device.read( (char *)&dummy, 4 );
 
 							if ( dummy != 0 ) {
-								Message::append( tr( "Warnings were generated while reading NIF file." ),
-									tr( "non-zero block separator (%1) preceeding block %2" ).arg( dummy ).arg( blktyp )
-								);
+								auto m = tr( "non-zero block separator (%1) preceeding block %2" ).arg( dummy ).arg( blktyp );
+								if ( msgMode == UserMessage ) {
+									Message::append( tr( "Warnings were generated while reading NIF file." ), m );
+								} else {
+									testMsg( m );
+								}
 							}
 						}
 
@@ -1813,9 +1867,13 @@ bool NifModel::load( QIODevice & device )
 							set<qint32>( newBlock, "Access", dataStreamAccess );
 						}
 					} else {
-						Message::append( tr( "Warnings were generated while reading NIF file." ),
-							tr( "warning: block %1 (%2) not inserted!" ).arg( c ).arg( blktyp )
-						);
+						auto m = tr( "warning: block %1 (%2) not inserted!" ).arg( c ).arg( blktyp );
+						if ( msgMode == UserMessage ) {
+							Message::append( tr( "Warnings were generated while reading NIF file." ), m );
+						} else {
+							testMsg( m );
+						}
+
 						throw tr( "encountered unknown block (%1)" ).arg( blktyp );
 					}
 				}
@@ -1834,14 +1892,19 @@ bool NifModel::load( QIODevice & device )
 					if ( (curpos + size) != pos ) {
 						// unable to seek to location... abort
 						if ( device.seek( curpos + size ) ) {
-							Message::append( tr( "Warnings were generated while reading NIF file." ),
-								tr( "device position incorrect after block number %1 (%2) at 0x%3 ended at 0x%4 (expected 0x%5)" )
-									.arg( c )
-									.arg( blktyp )
-									.arg( QString::number( curpos, 16 ) )
-									.arg( QString::number( pos, 16 ) )
-									.arg( QString::number( curpos + size, 16 )
-							) );
+							auto m = tr( "device position incorrect after block number %1 (%2) at 0x%3 ended at 0x%4 (expected 0x%5)" )
+								.arg( c )
+								.arg( blktyp )
+								.arg( QString::number( curpos, 16 ) )
+								.arg( QString::number( pos, 16 ) )
+								.arg( QString::number( curpos + size, 16 )
+							);
+
+							if ( msgMode == UserMessage ) {
+								Message::append( tr( "Warnings were generated while reading NIF file." ), m );
+							} else {
+								testMsg( m );
+							}
 						}
 						else {
 							throw tr( "failed to reposition device at block number %1 (%2) previous block was %3" ).arg( c ).arg( blktyp ).arg( root->child( c )->name() );
@@ -2042,7 +2105,11 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	NifItem * header = getHeaderItem();
 
 	if ( !header || !load( header, stream, true ) ) {
-		Message::critical( nullptr, tr( "Failed to load file header." ), tr( "Version %1" ).arg( version ) );
+		if ( msgMode == UserMessage ) {
+			Message::critical( nullptr, tr( "Failed to load file header." ), tr( "Version %1" ).arg( version ) );
+		} else {
+			testMsg( tr( "Failed to load file header version %1" ).arg( version ) );
+		}
 		return false;
 	}
 
@@ -2161,9 +2228,12 @@ int NifModel::blockSize( NifItem * parent, NifSStream & stream ) const
 					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte
 					} else {
-						Message::append( tr( "Warnings were generated while reading the blocks." ),
-							tr( "block %1 %2 array size mismatch" ).arg( getBlockNumber( parent ) ).arg( child->name() )
-						);
+						auto m = tr( "block %1 %2 array size mismatch" ).arg( getBlockNumber( parent ) ).arg( child->name() );
+						if ( msgMode == UserMessage ) {
+							Message::append( tr( "Warnings were generated while reading the blocks." ), m );
+						} else {
+							testMsg( m );
+						}
 					}
 				}
 
@@ -2365,9 +2435,13 @@ void NifModel::checkLinks( int block, QStack<int> & parents )
 	parents.push( block );
 	foreach ( const auto child, childLinks.value( block ) ) {
 		if ( parents.contains( child ) ) {
-			Message::append( tr( "Warnings were generated while reading NIF file." ), 
-				tr( "infinite recursive link construct detected %1 -> %2" ).arg( block ).arg( child )
-			);
+			auto m = tr( "infinite recursive link construct detected %1 -> %2" ).arg( block ).arg( child );
+			if ( msgMode == UserMessage ) {
+				Message::append( tr( "Warnings were generated while reading NIF file." ), m );
+			} else {
+				testMsg( m );
+			}
+
 			childLinks[block].removeAll( child );
 		} else {
 			checkLinks( child, parents );

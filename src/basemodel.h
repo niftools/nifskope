@@ -251,6 +251,13 @@ public:
 
 	// end QAbstractItemModel
 
+	enum MsgMode
+	{
+		UserMessage, TstMessage
+	};
+
+	void setMessageMode( MsgMode mode );
+
 signals:
 	//! Messaging signal
 	void sigMessage( const TestMessage & msg ) const;
@@ -316,8 +323,12 @@ protected:
 	//! The file info for the model
 	QFileInfo fileinfo;
 
-	//! A list of messages
+	//! A list of test messages
 	mutable QList<TestMessage> messages;
+	//! Handle a test message
+	void testMsg( const QString & m ) const;
+
+	MsgMode msgMode;
 };
 
 
