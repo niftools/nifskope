@@ -429,6 +429,34 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Vector3 & v );
 };
 
+class HalfVector3 : public Vector3
+{
+public:
+	//! Default constructor
+	HalfVector3()
+	{
+		xyz[0] = xyz[1] = xyz[2] = 0.0;
+	}
+	//! Constructor
+	HalfVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+};
+
+class ByteVector3 : public Vector3
+{
+public:
+	//! Default constructor
+	ByteVector3()
+	{
+		xyz[0] = xyz[1] = xyz[2] = 0.0;
+	}
+	//! Constructor
+	ByteVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+};
+
 //! QDebug stream operator for Vector3
 inline QDebug & operator<<( QDebug dbg, Vector3 v )
 {

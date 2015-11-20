@@ -1454,6 +1454,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						       .arg( item->value().toCount(), 8, 16, QChar( '0' ) );
 					case NifValue::tVector3:
 						return item->value().get<Vector3>().toHtml();
+					case NifValue::tHalfVector3:
+						return item->value().get<HalfVector3>().toHtml();
+					case NifValue::tByteVector3:
+						return item->value().get<ByteVector3>().toHtml();
 					case NifValue::tMatrix:
 						return item->value().get<Matrix>().toHtml();
 					case NifValue::tMatrix4:

@@ -112,6 +112,8 @@ void NifValue::initialize()
 	typeMap.insert( "filepath", NifValue::tFilePath );
 	typeMap.insert( "blob",     NifValue::tBlob );
 	typeMap.insert( "hfloat",   NifValue::tHfloat );
+	typeMap.insert( "halfvector3", NifValue::tHalfVector3 );
+	typeMap.insert( "bytevector3", NifValue::tByteVector3 );
 
 	enumMap.clear();
 }
@@ -337,6 +339,8 @@ void NifValue::clear()
 		delete static_cast<Vector3 *>( val.data );
 		break;
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		delete static_cast<Vector3 *>( val.data );
 		break;
 	case tVector2:
@@ -402,6 +406,8 @@ void NifValue::changeType( Type t )
 		val.i32 = -1;
 		return;
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		val.data = new Vector3();
 		break;
 	case tVector4:
@@ -465,6 +471,8 @@ void NifValue::operator=( const NifValue & other )
 
 	switch ( typ ) {
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		*static_cast<Vector3 *>( val.data ) = *static_cast<Vector3 *>( other.val.data );
 		return;
 	case tVector4:
@@ -596,6 +604,8 @@ bool NifValue::operator==( const NifValue & other ) const
 	}
 
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 	{
 		Vector3 * vec1 = static_cast<Vector3 *>(val.data);
 		Vector3 * vec2 = static_cast<Vector3 *>(other.val.data);
@@ -860,6 +870,8 @@ QString NifValue::toString() const
 			       .arg( NumOrMinMax( (*v)[1], 'f', VECTOR_DECIMALS ) );
 		}
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		{
 			Vector3 * v = static_cast<Vector3 *>( val.data );
 
@@ -1063,6 +1075,45 @@ bool NifIStream::read( NifValue & val )
 			uint32_t i = half_to_float( half );
 			val.val.f32 = *((float*)&i);
 			return (dataStream->status() == QDataStream::Ok);
+		}
+	case NifValue::tByteVector3:
+		{
+			quint8 x, y, z;
+			float xf, yf, zf;
+
+			*dataStream >> x;
+			*dataStream >> y;
+			*dataStream >> z;
+
+			xf = (double(x) / 255.0) * 2.0 - 1.0;
+			yf = (double(y) / 255.0) * 2.0 - 1.0;
+			zf = (double(z) / 255.0) * 2.0 - 1.0;
+	
+			val.val.data = new ByteVector3( xf, yf, zf );
+	
+			return (dataStream->status() == QDataStream::Ok);
+		}
+	case NifValue::tHalfVector3:
+		{
+			uint16_t x, y, z;
+			uint32_t xi, yi, zi;
+			float xf, yf, zf;
+
+			*dataStream >> x;
+			*dataStream >> y;
+			*dataStream >> z;
+			
+			xi = half_to_float( x );
+			yi = half_to_float( y );
+			zi = half_to_float( z );
+			
+			xf = *((float*)&xi);
+			yf = *((float*)&yi);
+			zf = *((float*)&zi);
+	
+			val.val.data = new HalfVector3( xf, yf, zf );
+	
+			return ( dataStream->status() == QDataStream::Ok );
 		}
 	case NifValue::tVector3:
 		{
@@ -1407,6 +1458,32 @@ bool NifOStream::write( const NifValue & val )
 			uint16_t half = half_from_float( *((uint32_t*)&val.val.f32) );
 			return device->write( (char *)&half, 2 ) == 2;
 		}
+	case NifValue::tByteVector3:
+		{
+			Vector3 * vec = static_cast<Vector3 *>(val.val.data);
+			if ( !vec )
+				return false;
+	
+			uint8_t v[3];
+			v[0] = round( ((vec->xyz[0] + 1.0) / 2.0) * 255.0 );
+			v[1] = round( ((vec->xyz[1] + 1.0) / 2.0) * 255.0 );
+			v[2] = round( ((vec->xyz[2] + 1.0) / 2.0) * 255.0 );
+
+			return device->write( (char*)v, 3 ) == 3;
+		}
+	case NifValue::tHalfVector3:
+		{
+			Vector3 * vec = static_cast<Vector3 *>(val.val.data);
+			if ( !vec )
+				return false;
+
+			uint16_t v[3];
+			v[0] = half_from_float( *((uint32_t*)&vec->xyz[0]) );
+			v[1] = half_from_float( *((uint32_t*)&vec->xyz[1]) );
+			v[2] = half_from_float( *((uint32_t*)&vec->xyz[2]) );
+	
+			return device->write( (char*)v, 6 ) == 6;
+		}
 	case NifValue::tVector3:
 		return device->write( (char *)static_cast<Vector3 *>( val.val.data )->xyz, 12 ) == 12;
 	case NifValue::tVector4:
@@ -1615,6 +1692,10 @@ int NifSStream::size( const NifValue & val )
 		return 4;
 	case NifValue::tHfloat:
 		return 2;
+	case NifValue::tByteVector3:
+		return 3;
+	case NifValue::tHalfVector3:
+		return 6;
 	case NifValue::tVector3:
 		return 12;
 	case NifValue::tVector4:

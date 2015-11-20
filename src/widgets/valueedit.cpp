@@ -57,13 +57,14 @@ ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNo
 bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
-	       || t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-	       || t == NifValue::tSizedString || t == NifValue::tLineString || t == NifValue::tChar8String
-	       || t == NifValue::tShortString || t == NifValue::tStringIndex || t == NifValue::tString
-	       || t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
-	       || t == NifValue::tColor3 || t == NifValue::tColor4
-	       || t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
-	       || t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt || t == NifValue::tHfloat;
+		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
+		|| t == NifValue::tSizedString || t == NifValue::tLineString || t == NifValue::tChar8String
+		|| t == NifValue::tShortString || t == NifValue::tStringIndex || t == NifValue::tString
+		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
+		|| t == NifValue::tColor3 || t == NifValue::tColor4
+		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
+		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt
+		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3;
 }
 
 class CenterLabel final : public QLabel
@@ -230,6 +231,20 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = ve;
 		}
 		break;
+	case NifValue::tByteVector3:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector3( v.get<ByteVector3>() );
+			edit = ve;
+		}
+		break;
+	case NifValue::tHalfVector3:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector3( v.get<HalfVector3>() );
+			edit = ve;
+		}
+		break;
 	case NifValue::tVector3:
 		{
 			VectorEdit * ve = new VectorEdit( this );
@@ -354,6 +369,12 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tVector4:
 			val.set<Vector4>( qobject_cast<VectorEdit *>( edit )->getVector4() );
+			break;
+		case NifValue::tByteVector3:
+			val.set<ByteVector3>( *static_cast<ByteVector3 *>(&qobject_cast<VectorEdit *>(edit)->getVector3()) );
+			break;
+		case NifValue::tHalfVector3:
+			val.set<HalfVector3>( *static_cast<HalfVector3 *>(&qobject_cast<VectorEdit *>(edit)->getVector3()) );
 			break;
 		case NifValue::tVector3:
 			val.set<Vector3>( qobject_cast<VectorEdit *>( edit )->getVector3() );
