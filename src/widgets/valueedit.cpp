@@ -379,17 +379,26 @@ NifValue ValueEdit::getValue() const
 			val.set<Vector4>( qobject_cast<VectorEdit *>( edit )->getVector4() );
 			break;
 		case NifValue::tByteVector3:
-			val.set<ByteVector3>( *static_cast<ByteVector3 *>(&qobject_cast<VectorEdit *>(edit)->getVector3()) );
-			break;
+			{
+				auto vec = qobject_cast<VectorEdit *>(edit)->getVector3();
+				val.set<ByteVector3>( *static_cast<ByteVector3 *>(&vec) );
+				break;
+			}
 		case NifValue::tHalfVector3:
-			val.set<HalfVector3>( *static_cast<HalfVector3 *>(&qobject_cast<VectorEdit *>(edit)->getVector3()) );
-			break;
+			{
+				auto vec = qobject_cast<VectorEdit *>(edit)->getVector3();
+				val.set<HalfVector3>( *static_cast<HalfVector3 *>(&vec) );
+				break;
+			}
 		case NifValue::tVector3:
 			val.set<Vector3>( qobject_cast<VectorEdit *>( edit )->getVector3() );
 			break;
 		case NifValue::tHalfVector2:
-			val.set<HalfVector2>( *static_cast<HalfVector2 *>(&qobject_cast<VectorEdit *>(edit)->getVector2()) );
-			break;
+			{
+				auto vec = qobject_cast<VectorEdit *>(edit)->getVector2();
+				val.set<HalfVector2>( *static_cast<HalfVector2 *>(&vec) );
+				break;
+			}
 		case NifValue::tVector2:
 			val.set<Vector2>( qobject_cast<VectorEdit *>( edit )->getVector2() );
 			break;
