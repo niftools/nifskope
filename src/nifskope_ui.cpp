@@ -193,6 +193,10 @@ void NifSkope::initActions()
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
 
+	ui->aTest1Dbg->setData( Scene::Test1 );
+	ui->aTest2Dbg->setData( Scene::Test2 );
+	ui->aTest3Dbg->setData( Scene::Test3 );
+
 	auto agroup = [this]( QVector<QAction *> actions, bool exclusive ) {
 		QActionGroup * ag = new QActionGroup( this );
 		for ( auto a : actions ) {
@@ -209,6 +213,9 @@ void NifSkope::initActions()
 
 	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );
 	connect( shadingActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
+
+	auto testActions = agroup( { ui->aTest1Dbg, ui->aTest2Dbg, ui->aTest3Dbg }, true );
+	connect( testActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	// Sync actions to Scene state
 	for ( auto a : showActions->actions() ) {

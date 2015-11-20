@@ -174,6 +174,23 @@ void Scene::updateSceneOptionsGroup( QAction * action )
 	if ( !action )
 		return;
 
+	// Hack for exclusive test
+	auto opt = SceneOptions( action->data().toInt() );
+	switch ( opt ) {
+	case Test1:
+		options &= ~Test2;
+		options &= ~Test3;
+		break;
+	case Test2:
+		options &= ~Test1;
+		options &= ~Test3;
+		break;
+	case Test3:
+		options &= ~Test1;
+		options &= ~Test2;
+		break;
+	}
+
 	options ^= SceneOptions( action->data().toInt() );
 	emit sceneUpdated();
 }

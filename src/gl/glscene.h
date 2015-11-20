@@ -109,7 +109,10 @@ public:
 		DoLighting = 0x2000,
 		DoCubeMapping = 0x4000,
 		DisableShaders = 0x8000,
-		ShowHidden = 0x10000
+		ShowHidden = 0x10000,
+		Test1 = 0x20000,
+		Test2 = 0x40000,
+		Test3 = 0x80000
 	};
 	Q_DECLARE_FLAGS( SceneOptions, SceneOption );
 

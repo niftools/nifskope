@@ -407,6 +407,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <addaction name="aVisNormals"/>
     <addaction name="aSilhouette"/>
     <addaction name="separator"/>
+    <addaction name="aTest1Dbg"/>
+    <addaction name="aTest2Dbg"/>
+    <addaction name="aTest3Dbg"/>
     <addaction name="aDisableShading"/>
    </widget>
    <widget class="QMenu" name="mHelp">
@@ -1948,6 +1951,33 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="text">
     <string>Archive Browser</string>
+   </property>
+  </action>
+  <action name="aTest1Dbg">
+   <property name="text">
+    <string>Unknown Dot Debug</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+,</string>
+   </property>
+  </action>
+  <action name="aTest2Dbg">
+   <property name="text">
+    <string>Unknown Byte 1 Debug</string>
+   </property>
+   <property name="toolTip">
+    <string>Unknown Byte 1 Debug</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+.</string>
+   </property>
+  </action>
+  <action name="aTest3Dbg">
+   <property name="text">
+    <string>Unknown Byte 2 Debug</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+/</string>
    </property>
   </action>
  </widget>
