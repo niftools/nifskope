@@ -122,6 +122,7 @@ public:
 		tHfloat        = 38,
 		tHalfVector3   = 39,
 		tByteVector3   = 40,
+		tHalfVector2   = 41,
 		tNone          = 0xff
 	};
 
@@ -267,10 +268,12 @@ public:
 	bool isVector4() const { return typ == tVector4; }
 	//! Check if the type of the data is a Vector 3.
 	bool isVector3() const { return typ == tVector3; }
-	//! Check if the type of the data is a Half Vector.
+	//! Check if the type of the data is a Half Vector3.
 	bool isHalfVector3() const { return typ == tHalfVector3; }
-	//! Check if the type of the data is a Byte Vector.
+	//! Check if the type of the data is a Byte Vector3.
 	bool isByteVector3() const { return typ == tByteVector3; }
+	//! Check if the type of the data is a HalfVector2.
+	bool isHalfVector2() const { return typ == tHalfVector2; }
 	//! Check if the type of the data is a Vector 2.
 	bool isVector2() const { return typ == tVector2; }
 	//! Check if the type of the data is a triangle type.
@@ -656,6 +659,10 @@ template <> inline ByteVector3 NifValue::get() const
 {
 	return getType<ByteVector3>( tByteVector3 );
 }
+template <> inline HalfVector2 NifValue::get() const
+{
+	return getType<HalfVector2>( tHalfVector2 );
+}
 template <> inline Vector2 NifValue::get() const
 {
 	return getType<Vector2>( tVector2 );
@@ -773,6 +780,11 @@ template <> inline bool NifValue::set( const ByteVector3 & x )
 {
 	return setType( tByteVector3, x );
 }
+//! Set the data from a HalfVector2. Return true if successful.
+template <> inline bool NifValue::set( const HalfVector2 & x )
+{
+	return setType( tHalfVector2, x );
+}
 //! Set the data from a Vector2. Return true if successful.
 template <> inline bool NifValue::set( const Vector2 & x )
 {
@@ -882,6 +894,11 @@ template <> inline bool NifValue::ask( HalfVector3 * ) const
 template <> inline bool NifValue::ask( ByteVector3 * ) const
 {
 	return type() == tByteVector3;
+}
+//! Check whether the data is a Vector2.
+template <> inline bool NifValue::ask( HalfVector2 * ) const
+{
+	return type() == tHalfVector2;
 }
 //! Check whether the data is a Vector2.
 template <> inline bool NifValue::ask( Vector2 * ) const

@@ -184,6 +184,21 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Vector2 & v );
 };
 
+class HalfVector2 : public Vector2
+{
+public:
+	//! Default constructor
+	HalfVector2()
+	{
+		xy[0] = xy[1] = 0.0;
+	}
+	//! Constructor
+	HalfVector2( float x, float y ) : Vector2( x, y )
+	{
+	}
+};
+
+
 //! QDebug stream operator for Vector2
 inline QDebug & operator<<( QDebug dbg, Vector2 v )
 {

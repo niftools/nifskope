@@ -64,7 +64,8 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tColor3 || t == NifValue::tColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
 		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt
-		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3;
+		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3
+		|| t == NifValue::tHalfVector2;
 }
 
 class CenterLabel final : public QLabel
@@ -252,6 +253,13 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = ve;
 		}
 		break;
+	case NifValue::tHalfVector2:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector2( v.get<HalfVector2>() );
+			edit = ve;
+		}
+		break;
 	case NifValue::tVector2:
 		{
 			VectorEdit * ve = new VectorEdit( this );
@@ -378,6 +386,9 @@ NifValue ValueEdit::getValue() const
 			break;
 		case NifValue::tVector3:
 			val.set<Vector3>( qobject_cast<VectorEdit *>( edit )->getVector3() );
+			break;
+		case NifValue::tHalfVector2:
+			val.set<HalfVector2>( *static_cast<HalfVector2 *>(&qobject_cast<VectorEdit *>(edit)->getVector2()) );
 			break;
 		case NifValue::tVector2:
 			val.set<Vector2>( qobject_cast<VectorEdit *>( edit )->getVector2() );
