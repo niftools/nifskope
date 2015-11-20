@@ -248,6 +248,7 @@ public:
 	bool checkVersion( quint32 since, quint32 until ) const;
 
 	quint32 getUserVersion() const { return get<int>( getHeader(), "User Version" ); }
+	quint32 getUserVersion2() const { return get<int>( getHeader(), "User Version 2" ); }
 
 	QString string( const QModelIndex & index, bool extraInfo = false ) const;
 	QString string( const QModelIndex & index, const QString & name, bool extraInfo = false ) const;
