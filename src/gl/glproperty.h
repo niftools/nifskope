@@ -551,8 +551,8 @@ public:
 	void setClampMode( uint mode );
 
 protected:
-	ShaderFlags::SF1 flags1;
-	ShaderFlags::SF2 flags2;
+	ShaderFlags::SF1 flags1 = ShaderFlags::SLSF1_ZBuffer_Test;
+	ShaderFlags::SF2 flags2 = ShaderFlags::SLSF2_ZBuffer_Write;
 
 	//QVector<QString> textures;
 	QPersistentModelIndex iTextureSet;
@@ -622,25 +622,25 @@ public:
 	Color3 getTintColor();
 	void setTintColor( Color3 );
 
-	bool hasVertexColors;
-	bool hasVertexAlpha;
-	bool hasGlowMap;
-	bool hasEmittance;
-	bool hasSoftlight;
-	bool hasBacklight;
-	bool hasRimlight;
-	bool hasModelSpaceNormals;
-	bool hasSpecularMap;
-	bool hasMultiLayerParallax;
-	bool hasCubeMap;
-	bool hasEnvironmentMap;
-	bool useEnvironmentMask;
-	bool hasHeightMap;
-	bool hasRefraction;
-	bool hasFireRefraction;
-	bool hasDetailMask;
-	bool hasTintMask;
-	bool hasTintColor;
+	bool hasVertexColors = false;
+	bool hasVertexAlpha = false;
+	bool hasGlowMap = false;
+	bool hasEmittance = false;
+	bool hasSoftlight = false;
+	bool hasBacklight = false;
+	bool hasRimlight = false;
+	bool hasModelSpaceNormals = false;
+	bool hasSpecularMap = false;
+	bool hasMultiLayerParallax = false;
+	bool hasCubeMap = false;
+	bool hasEnvironmentMap = false;
+	bool useEnvironmentMask = false;
+	bool hasHeightMap = false;
+	bool hasRefraction = false;
+	bool hasFireRefraction = false;
+	bool hasDetailMask = false;
+	bool hasTintMask = false;
+	bool hasTintColor = false;
 
 	ShaderFlags::ShaderType getShaderType();
 
@@ -653,17 +653,17 @@ protected:
 	Color3 specularColor;
 	Color3 tintColor;
 
-	float alpha;
+	float alpha = 1.0;
 
-	float emissiveMult;
+	float emissiveMult = 1.0;
 
-	float specularGloss;
-	float specularStrength;
+	float specularGloss = 80.0;
+	float specularStrength = 1.0;
 
-	float lightingEffect1;
-	float lightingEffect2;
+	float lightingEffect1 = 1.0;
+	float lightingEffect2 = 1.0;
 
-	float environmentReflection;
+	float environmentReflection = 1.0;
 
 	// Multi-layer properties
 	float innerThickness;
@@ -698,19 +698,19 @@ public:
 	void setEmissive( Color4 color, float mult = 1.0f );
 	void setFalloff( float, float, float, float, float );
 
-	bool doubleSided;
+	bool doubleSided = false;
 
-	bool hasSourceTexture;
-	bool hasGreyscaleMap;
-	bool useFalloff;
+	bool hasSourceTexture = false;
+	bool hasGreyscaleMap = false;
+	bool useFalloff = false;
 
-	bool greyscaleColor;
-	bool greyscaleAlpha;
+	bool greyscaleColor = false;
+	bool greyscaleAlpha = false;
 
-	bool vertexColors;
-	bool vertexAlpha;
+	bool vertexColors = false;
+	bool vertexAlpha = false;
 
-	bool hasWeaponBlood;
+	bool hasWeaponBlood = false;
 
 	struct Falloff
 	{
