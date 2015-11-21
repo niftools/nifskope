@@ -442,7 +442,7 @@ void Renderer::releaseShaders()
 	shaders.clear();
 }
 
-QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
+QString Renderer::setupProgram( Shape * mesh, const QString & hint )
 {
 	PropertyList props;
 	mesh->activeProperties( props );
@@ -485,7 +485,7 @@ void Renderer::stopProgram()
 	resetTextureUnits();
 }
 
-bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & props, const QList<QModelIndex> & iBlocks )
+bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props, const QList<QModelIndex> & iBlocks )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( mesh->index().model() );
 
@@ -979,7 +979,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	return true;
 }
 
-void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
+void Renderer::setupFixedFunction( Shape * mesh, const PropertyList & props )
 {
 	// setup lighting
 

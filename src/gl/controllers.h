@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file controllers.h Controller subclasses
 
-class Mesh;
+class Shape;
 class Node;
 
 //! Controller for `NiControllerManager` blocks
@@ -142,7 +142,7 @@ class MorphController final : public Controller
 	};
 
 public:
-	MorphController( Mesh * mesh, const QModelIndex & index );
+	MorphController( Shape * mesh, const QModelIndex & index );
 	~MorphController();
 
 	void updateTime( float time ) override final;
@@ -150,7 +150,7 @@ public:
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
 protected:
-	QPointer<Mesh> target;
+	QPointer<Shape> target;
 	QVector<MorphKey *>  morph;
 };
 
@@ -159,7 +159,7 @@ protected:
 class UVController final : public Controller
 {
 public:
-	UVController( Mesh * mesh, const QModelIndex & index );
+	UVController( Shape * mesh, const QModelIndex & index );
 
 	~UVController();
 
@@ -168,7 +168,7 @@ public:
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
 protected:
-	QPointer<Mesh> target;
+	QPointer<Shape> target;
 
 	int luv;
 };

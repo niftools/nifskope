@@ -394,7 +394,7 @@ bool VisibilityController::update( const NifModel * nif, const QModelIndex & ind
 
 // `NiGeomMorpherController` blocks
 
-MorphController::MorphController( Mesh * mesh, const QModelIndex & index )
+MorphController::MorphController( Shape * mesh, const QModelIndex & index )
 	: Controller( index ), target( mesh )
 {
 }
@@ -482,7 +482,7 @@ bool MorphController::update( const NifModel * nif, const QModelIndex & index )
 
 // `NiUVController` blocks
 
-UVController::UVController( Mesh * mesh, const QModelIndex & index )
+UVController::UVController( Shape * mesh, const QModelIndex & index )
 	: Controller( index ), target( mesh )
 {
 }

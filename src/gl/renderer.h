@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file renderer.h Renderer, Renderer::ConditionSingle, Renderer::ConditionGroup, Renderer::Shader, Renderer::Program
 
 class Mesh;
+class Shape;
 class PropertyList;
 
 class QOpenGLContext;
@@ -74,7 +75,7 @@ public:
 	QOpenGLFunctions * fn;
 
 	//! Set up shader program
-	QString setupProgram( Mesh *, const QString & hint = QString() );
+	QString setupProgram( Shape *, const QString & hint = QString() );
 	//! Stop shader program
 	void stopProgram();
 
@@ -172,8 +173,8 @@ public:
 	QMap<QString, Shader *> shaders;
 	QMap<QString, Program *> programs;
 
-	bool setupProgram( Program *, Mesh *, const PropertyList &, const QList<QModelIndex> & iBlocks );
-	void setupFixedFunction( Mesh *, const PropertyList & );
+	bool setupProgram( Program *, Shape *, const PropertyList &, const QList<QModelIndex> & iBlocks );
+	void setupFixedFunction( Shape *, const PropertyList & );
 
 	struct Settings
 	{

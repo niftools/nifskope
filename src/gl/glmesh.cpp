@@ -48,11 +48,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glmesh.cpp Scene management for visible meshes such as NiTriShapes.
 
 
-Mesh::Mesh( Scene * s, const QModelIndex & b ) : Node( s, b )
+Shape::Shape( Scene * s, const QModelIndex & b ) : Node( s, b )
 {
-	isDoubleSided = false;
-	bslsp = nullptr;
-	bsesp = nullptr;
+}
+
+Mesh::Mesh( Scene * s, const QModelIndex & b ) : Shape( s, b )
+{
 }
 
 bool Mesh::isBSLODPresent = false;
@@ -86,6 +87,21 @@ void Mesh::clear()
 
 	isBSLODPresent = false;
 	isDoubleSided = false;
+}
+
+void Shape::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	if ( nif->itemName( iController ) == "NiGeomMorpherController" ) {
+		Controller * ctrl = new MorphController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	} else if ( nif->itemName( iController ) == "NiUVController" ) {
+		Controller * ctrl = new UVController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	} else {
+		Node::setController( nif, iController );
+	}
 }
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
@@ -405,20 +421,6 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	updateBounds |= updateData;
 }
 
-void Mesh::setController( const NifModel * nif, const QModelIndex & iController )
-{
-	if ( nif->itemName( iController ) == "NiGeomMorpherController" ) {
-		Controller * ctrl = new MorphController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
-	} else if ( nif->itemName( iController ) == "NiUVController" ) {
-		Controller * ctrl = new UVController( this, iController );
-		ctrl->update( nif, iController );
-		controllers.append( ctrl );
-	} else {
-		Node::setController( nif, iController );
-	}
-}
 
 bool Mesh::isHidden() const
 {

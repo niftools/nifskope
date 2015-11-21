@@ -43,38 +43,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glmesh.h Mesh
 
-//! A mesh
-class Mesh : public Node
+class Shape : public Node
 {
 	friend class MorphController;
 	friend class UVController;
 	friend class Renderer;
 
 public:
-	Mesh( Scene * s, const QModelIndex & b );
-	~Mesh() { clear(); }
-
-	// IControllable
-
-	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & ) override;
-	void transform() override;
-
-	// end IControllable
-
-	// Node
-
-	void transformShapes() override;
-
-	void drawShapes( NodeList * secondPass = nullptr, bool presort = false ) override;
-	void drawSelection() const override;
-
-	BoundSphere bounds() const override;
-
-	bool isHidden() const override;
-	QString textStats() const override;
-
-	// end Node
+	Shape( Scene * s, const QModelIndex & b );
+	~Shape() { clear(); }
 
 protected:
 	//! Sets the Controller
@@ -82,43 +59,15 @@ protected:
 
 	//! Shape data
 	QPersistentModelIndex iData;
-	//! Skin instance
-	QPersistentModelIndex iSkin;
-	//! Skin data
-	QPersistentModelIndex iSkinData;
-	//! Skin partition
-	QPersistentModelIndex iSkinPart;
-	//! Tangent data
-	QPersistentModelIndex iTangentData;
 	//! Does the data need updating?
 	bool updateData;
-	//! Does the skin data need updating?
-	bool updateSkin;
-
-	//! Holds the name of the shader, or "fixed function pipeline" if no shader
-	QString shader;
-	//! Skyrim shader property
-	BSLightingShaderProperty * bslsp;
-	//! Skyrim effect shader property
-	BSEffectShaderProperty * bsesp;
-	//! Is shader set to double sided?
-	bool isDoubleSided;
-	//! Is shader set to animate using vertex alphas?
-	bool isVertexAlphaAnimation;
-	//! Is "Has Vertex Colors" set to Yes
-	bool hasVertexColors;
-
-	bool depthTest = true;
-	bool depthWrite = true;
-	bool drawSecond = false;
-	bool translucent = false;
 
 	//! Vertices
 	QVector<Vector3> verts;
 	//! Normals
 	QVector<Vector3> norms;
 	//! Vertex colors
-	QVector<Color4>  colors;
+	QVector<Color4> colors;
 	//! Tangents
 	QVector<Vector3> tangents;
 	//! Bitangents
@@ -149,14 +98,79 @@ protected:
 	//! Transformed bitangents
 	QVector<Vector3> transBitangents;
 
+	//! Holds the name of the shader, or "fixed function pipeline" if no shader
+	QString shader;
+	//! Skyrim shader property
+	BSLightingShaderProperty * bslsp = nullptr;
+	//! Skyrim effect shader property
+	BSEffectShaderProperty * bsesp = nullptr;
+	//! Is shader set to double sided?
+	bool isDoubleSided;
+	//! Is shader set to animate using vertex alphas?
+	bool isVertexAlphaAnimation;
+	//! Is "Has Vertex Colors" set to Yes
+	bool hasVertexColors;
+
+	bool depthTest = true;
+	bool depthWrite = true;
+	bool drawSecond = false;
+	bool translucent = false;
+
+	mutable BoundSphere boundSphere;
+	mutable bool updateBounds;
+};
+
+//! A mesh
+class Mesh : public Shape
+{
+
+public:
+	Mesh( Scene * s, const QModelIndex & b );
+	~Mesh() { clear(); }
+
+	// IControllable
+
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & ) override;
+	void transform() override;
+
+	// end IControllable
+
+	// Node
+
+	void transformShapes() override;
+
+	void drawShapes( NodeList * secondPass = nullptr, bool presort = false ) override;
+	void drawSelection() const override;
+
+	BoundSphere bounds() const override;
+
+	bool isHidden() const override;
+	QString textStats() const override;
+
+	// end Node
+
+protected:
+	
+
+	//! Skin instance
+	QPersistentModelIndex iSkin;
+	//! Skin data
+	QPersistentModelIndex iSkinData;
+	//! Skin partition
+	QPersistentModelIndex iSkinPart;
+	//! Tangent data
+	QPersistentModelIndex iTangentData;
+
+	//! Does the skin data need updating?
+	bool updateSkin;
+
 	int skeletonRoot;
 	Transform skeletonTrans;
 	QVector<int> bones;
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
 
-	mutable BoundSphere boundSphere;
-	mutable bool updateBounds;
 
 	static bool isBSLODPresent;
 };
