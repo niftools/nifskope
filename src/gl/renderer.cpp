@@ -826,7 +826,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 
 	// BSEffectShaderProperty
-	if ( mesh->bsesp ) {
+	if ( nif->getUserVersion2() < 130 && mesh->bsesp ) {
 
 		clamp = mesh->bsesp->getClampMode();
 		clamp = TexClampMode(clamp ^ TexClampMode::MIRRORED_S_MIRRORED_T);
@@ -893,17 +893,26 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 			return false;
 
 		if ( itx.value() == "tangents" ) {
-			if ( !mesh->transTangents.count() )
+			if ( mesh->transTangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.data() );
+			} else if ( mesh->tangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->tangents.data() );
+			} else {
 				return false;
+			}
 
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.data() );
 		} else if ( itx.value() == "bitangents" ) {
-			if ( !mesh->transBitangents.count() )
+			if ( mesh->transBitangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.data() );
+			} else if ( mesh->bitangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->bitangents.data() );
+			} else {
 				return false;
-
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.data() );
+			}
 		} else if ( texprop ) {
 			int txid = TexturingProperty::getId( itx.value() );
 			if ( txid < 0 )

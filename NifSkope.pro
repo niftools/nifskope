@@ -205,7 +205,8 @@ HEADERS += \
 	src/ui/checkablemessagebox.h \
 	src/ui/settingsdialog.h \
 	src/version.h \
-	lib/half.h
+	lib/half.h \
+    src/gl/bsshape.h
 
 SOURCES += \
 	src/basemodel.cpp \
@@ -288,7 +289,8 @@ SOURCES += \
 	src/ui/checkablemessagebox.cpp \
 	src/ui/settingsdialog.cpp \
 	src/version.cpp \
-	lib/half.cpp
+	lib/half.cpp \
+    src/gl/bsshape.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
@@ -499,7 +501,7 @@ build_pass|!debug_and_release {
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
-	copyFiles( $$XML $$QSS )
+    #copyFiles( $$XML $$QSS )
 	win32:copyFiles( $$DEP )
 
 	# Copy Readmes and rename to TXT

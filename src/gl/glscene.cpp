@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glcontroller.h"
 #include "glmesh.h"
+#include "bsshape.h"
 #include "glnode.h"
 #include "glparticles.h"
 #include "gltex.h"
@@ -250,6 +251,11 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	else if ( nif->inherits( iNode, "NiParticles" ) ) {
 		// ... where did AParticleSystem go?
 		node = new Particles( this, iNode );
+	} else if ( nif->itemName( iNode ) == "BSTriShape" 
+				|| nif->itemName( iNode ) == "BSSubIndexTriShape"
+				|| nif->itemName( iNode ) == "BSMeshLODTriShape"
+	) {
+		node = new BSShape( this, iNode );
 	} else if ( nif->inherits( iNode, "NiAVObject" ) ) {
 		if ( nif->itemName( iNode ) == "BSTreeNode" )
 			node = new Node( this, iNode );
