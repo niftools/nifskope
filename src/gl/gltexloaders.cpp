@@ -66,6 +66,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
+#define GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI 0x8837
+#define FOURCC_ATI2 0x32495441
+
 //! Shift amounts for RGBA conversion
 static const int rgbashift[4] = {
 	0, 8, 16, 24
@@ -581,7 +584,7 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
  * @param null		Flip
  * @return			The total number of mipmaps
  */
-GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
+GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
 {
 /*
 #ifdef WIN32
@@ -609,17 +612,36 @@ GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint3
 		GLubyte * dst = pixels;
 
 		//qDebug() << "flipV = " << flipV;
-		for ( quint32 y = 0; y < h; y++ ) {
-			for ( quint32 x = 0; x < w; x++ ) {
-				*dst++ = src->r;
-				*dst++ = src->g;
-				*dst++ = src->b;
-				*dst++ = src->a;
-				src++;
+		if ( glFormat == GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI ) {
+			for ( quint32 y = 0; y < h; y++ ) {
+				for ( quint32 x = 0; x < w; x++ ) {
+					*dst++ = src->g;
+					*dst++ = src->r;
+					*dst++ = src->b;
+					*dst++ = src->a;
+					src++;
+				}
+			}
+		} else {
+			for ( quint32 y = 0; y < h; y++ ) {
+				for ( quint32 x = 0; x < w; x++ ) {
+					*dst++ = src->r;
+					*dst++ = src->g;
+					*dst++ = src->b;
+					*dst++ = src->a;
+					src++;
+				}
 			}
 		}
 
 		delete img;
+		
+		// Inverse for pixels
+		if ( glFormat == GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI ) {
+			for ( int i = 0; i < w * h * 4; i++ )
+				pixels[i] = ( i % 4 > 0 ) ? 255 - pixels[i] : pixels[i];
+		}
+
 		// load the texture into OpenGL
 		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
 		delete [] pixels;
@@ -706,6 +728,11 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 			glFormat   = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			blockSize  = 16;
 			texformat += " (DXT5)";
+			break;
+		case FOURCC_ATI2:
+			glFormat = GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI;
+			blockSize = 16;
+			texformat += " (ATI2)";
 			break;
 		default:
 			throw QString( "unknown texture compression" );
