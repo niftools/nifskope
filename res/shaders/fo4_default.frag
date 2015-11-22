@@ -92,7 +92,7 @@ void main( void )
     float g = texture2D( SpecularMap, offset ).g;
     vec3 spec = vec3(0.0);
     if ( hasSpecularMap ) {
-        spec = clamp( specColor * s * pow(NdotH, g * 128.0), 0.0, 1.0 );
+        spec = clamp( specColor * s * pow(NdotH, g * 128.0), 0.0, 1.0 ) * specStrength;
         spec *= D.rgb;
     }
 

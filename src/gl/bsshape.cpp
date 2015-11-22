@@ -27,8 +27,6 @@ void BSShape::clear()
 
 void BSShape::update( const NifModel * nif, const QModelIndex & index )
 {
-	clear();
-
 	Node::update( nif, index );
 
 	if ( !iBlock.isValid() || !index.isValid() )
@@ -52,6 +50,18 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	auto tc = nif->rowCount( iTriData );
 
 	Q_ASSERT( (vc == numVerts) && (tc == numTris) );
+
+	// Calling BSShape::clear here is bad
+	verts.clear();
+	norms.clear();
+	tangents.clear();
+	bitangents.clear();
+	triangles.clear();
+	coords.clear();
+	colors.clear();
+	test1.clear();
+	test2.clear();
+	test3.clear();
 
 	// For compatibility with coords QList
 	QVector<Vector2> coordset;
@@ -94,7 +104,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		tangents += t;
 
 		auto b = Vector3::crossproduct( n, t );
-		bitangents += b;
+		bitangents += -Vector3( dot, unk1f, unk2f );
+		//bitangents += b;
 	}
 
 	// Add coords as first set of QList
