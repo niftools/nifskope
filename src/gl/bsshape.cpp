@@ -104,7 +104,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		tangents += t;
 
 		auto b = Vector3::crossproduct( n, t );
-		bitangents += -Vector3( dot, unk1f, unk2f );
+		bitangents += Vector3( dot, unk1f, unk2f );
 		//bitangents += b;
 	}
 
