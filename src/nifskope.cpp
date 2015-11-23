@@ -71,6 +71,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTranslator>
 #include <QUdpSocket>
 #include <QUrl>
+#include <QCryptographicHash>
 
 #include <QListView>
 #include <QTreeView>
@@ -846,6 +847,18 @@ void NifSkope::openFiles( QStringList & files )
 	}
 }
 
+QByteArray fileChecksum( const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm )
+{
+	QFile f( fileName );
+	if ( f.open( QFile::ReadOnly ) ) {
+		QCryptographicHash hash( hashAlgorithm );
+		if ( hash.addData( &f ) ) {
+			return hash.result();
+		}
+	}
+	return QByteArray();
+}
+
 void NifSkope::saveFile( const QString & filename )
 {
 	setCurrentFile( filename );
@@ -882,7 +895,34 @@ void NifSkope::load()
 		f.setFile( kfm->getFolder(), kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
 	}
 
-	emit completeLoading( nif->loadFromFile( fname ), fname );
+	bool loaded = nif->loadFromFile( fname );
+
+	emit completeLoading( loaded, fname );
+
+	if ( loaded ) {
+		QDir::temp().mkdir( "NifSkope" );
+		QString tmpDir = QDir::tempPath() + "/NifSkope";
+		QDir tmp( tmpDir );
+		QString tmpFile = tmpDir + "/" + f.fileName();
+
+		emit beginSave();
+		bool saved = nif->saveToFile( tmpFile );
+		if ( saved ) {
+			auto filehash1 = fileChecksum( fname, QCryptographicHash::Md5 );
+			auto filehash2 = fileChecksum( tmpFile, QCryptographicHash::Md5 );
+		
+			if ( filehash1 == filehash2 ) {
+				tmp.remove( f.fileName() );
+			} else {
+				QString err = "This file will not save correctly. Please do not use or distribute copies of this file modified with this NifSkope version.";
+				Message::critical( this, err, fname );
+#ifdef QT_NO_DEBUG
+				tmp.remove( f.fileName() );
+#endif
+			}
+		}
+		emit completeSave( saved, fname );
+	}
 }
 
 void NifSkope::save()
