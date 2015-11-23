@@ -1218,7 +1218,7 @@ bool NifIStream::read( NifValue & val )
 
 			//string.replace( "\r", "\\r" );
 			//string.replace( "\n", "\\n" );
-			*static_cast<QString *>( val.val.data ) = QString( string );
+			*static_cast<QString *>( val.val.data ) = QString::fromLocal8Bit( string );
 		}
 		return true;
 	case NifValue::tText:
@@ -1558,7 +1558,7 @@ bool NifOStream::write( const NifValue & val )
 		}
 	case NifValue::tShortString:
 		{
-			QByteArray string = static_cast<QString *>( val.val.data )->toLatin1();
+			QByteArray string = static_cast<QString *>( val.val.data )->toLocal8Bit();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
 
