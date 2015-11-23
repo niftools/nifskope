@@ -50,7 +50,7 @@ void import3ds( NifModel * nif, const QModelIndex & index );
 void NifSkope::fillImportExportMenus()
 {
 	mExport->addAction( tr( "Export .OBJ" ) );
-	mExport->addAction( tr( "Export .DAE" ) );
+	//mExport->addAction( tr( "Export .DAE" ) );
 	mImport->addAction( tr( "Import .3DS" ) );
 	mImport->addAction( tr( "Import .OBJ" ) );
 }

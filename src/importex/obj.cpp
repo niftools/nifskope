@@ -59,74 +59,138 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 {
 	// copy vertices
 
-	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-	foreach ( Vector3 v, verts ) {
-		v = t * v;
-		obj << "v " << qSetRealNumberPrecision( 17 ) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
-	}
-
-	// copy texcoords
-
-	QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
-
-	if ( !iUV.isValid() )
-		iUV = nif->getIndex( iData, "UV Sets 2" );
-
-	QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
-	foreach ( Vector2 t, texco ) {
-		obj << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
-	}
-
-	// copy normals
-
-	QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
-	foreach ( Vector3 n, norms ) {
-		n = t.rotation * n;
-		obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
-	}
-
-	// get the triangles
-
-	QVector<Triangle> tris;
-
-	QModelIndex iPoints = nif->getIndex( iData, "Points" );
-
-	if ( iPoints.isValid() ) {
-		QList<QVector<quint16> > strips;
-
-		for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-			strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
-
-		tris = triangulate( strips );
-	} else {
-		tris = nif->getArray<Triangle>( iData, "Triangles" );
-	}
-
-	// write the triangles
-
-	foreach ( Triangle t, tris ) {
-		obj << "f";
-
-		for ( int p = 0; p < 3; p++ ) {
-			obj << " " << ofs[0] + t[p];
-
-			if ( norms.count() )
-				if ( texco.count() )
-					obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
-				else
-					obj << "//" << ofs[2] + t[p];
-
-
-			else if ( texco.count() )
-				obj << "/" << ofs[1] + t[p];
+	if ( nif->getUserVersion2() < 130 ) {
+		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+		foreach( Vector3 v, verts )
+		{
+			v = t * v;
+			obj << "v " << qSetRealNumberPrecision( 17 ) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
 		}
 
-		obj << "\r\n";
-	}
+		// copy texcoords
 
-	ofs[0] += verts.count();
-	ofs[1] += texco.count();
-	ofs[2] += norms.count();
+		QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
+
+		if ( !iUV.isValid() )
+			iUV = nif->getIndex( iData, "UV Sets 2" );
+
+		QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
+		foreach( Vector2 t, texco )
+		{
+			obj << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
+		}
+
+		// copy normals
+
+		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+		foreach( Vector3 n, norms )
+		{
+			n = t.rotation * n;
+			obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+		}
+
+		// get the triangles
+
+		QVector<Triangle> tris;
+
+		QModelIndex iPoints = nif->getIndex( iData, "Points" );
+
+		if ( iPoints.isValid() ) {
+			QList<QVector<quint16> > strips;
+
+			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+
+			tris = triangulate( strips );
+		} else {
+			tris = nif->getArray<Triangle>( iData, "Triangles" );
+		}
+
+		// write the triangles
+
+		foreach( Triangle t, tris )
+		{
+			obj << "f";
+
+			for ( int p = 0; p < 3; p++ ) {
+				obj << " " << ofs[0] + t[p];
+
+				if ( norms.count() )
+					if ( texco.count() )
+						obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
+					else
+						obj << "//" << ofs[2] + t[p];
+
+
+				else if ( texco.count() )
+					obj << "/" << ofs[1] + t[p];
+			}
+
+			obj << "\r\n";
+		}
+
+		ofs[0] += verts.count();
+		ofs[1] += texco.count();
+		ofs[2] += norms.count();
+	} else {
+		auto iVertData = nif->getIndex( iData, "Vertex Data" );
+		if ( !iVertData.isValid() )
+			return;
+
+		QVector<Vector3> verts;
+		QVector<Vector2> coords;
+		QVector<Vector3> norms;
+
+		auto numVerts = nif->get<int>( iData, "Num Vertices" );
+		for ( int i = 0; i < numVerts; i++ ) {
+			auto idx = nif->index( i, 0, iVertData );
+
+			verts += nif->get<HalfVector3>( idx, "Vertex" );
+			coords += nif->get<HalfVector2>( idx, "UV" );
+			norms += nif->get<ByteVector3>( idx, "Normal" );
+		}
+
+		for ( Vector3 & v : verts ) {
+			v = t * v;
+			obj << "v " << qSetRealNumberPrecision( 17 ) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
+		}
+
+		for ( Vector2 & c : coords ) {
+			obj << "vt " << c[0] << " " << 1.0 - c[1] << "\r\n";
+		}
+
+		for ( Vector3 & n : norms ) {
+			n = t.rotation * n;
+			obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+		}
+
+		auto tris = nif->getArray<Triangle>( iData, "Triangles" );
+
+		for ( const Triangle & t : tris ) {
+			obj << "f";
+
+			for ( int p = 0; p < 3; p++ ) {
+				obj << " " << ofs[0] + t[p];
+
+				if ( norms.count() )
+					if ( coords.count() )
+						obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
+					else
+						obj << "//" << ofs[2] + t[p];
+
+
+				else if ( coords.count() )
+					obj << "/" << ofs[1] + t[p];
+			}
+
+			obj << "\r\n";
+		}
+
+		ofs[0] += verts.count();
+		ofs[1] += coords.count();
+		ofs[2] += norms.count();
+	}
+	
 }
 
 static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
@@ -203,7 +267,10 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 
 	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
 
-	writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
+	if ( nif->getUserVersion2() < 130 )
+		writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
+	else
+		writeData( nif, iShape, obj, ofs, t );
 }
 
 static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
@@ -219,6 +286,8 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 		if ( nif->inherits( iChild, "NiNode" ) )
 			writeParent( nif, iChild, obj, mtl, ofs, t );
 		else if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
+			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
+		else if ( nif->isNiBlock( iChild, { "BSTriShape", "BSSubIndexTriShape", "BSMeshLODTriShape" } ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
 		else if ( nif->inherits( iChild, "NiCollisionObject" ) ) {
 			QModelIndex iBody = nif->getBlock( nif->getLink( iChild, "Body" ) );
