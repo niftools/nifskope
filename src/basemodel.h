@@ -251,6 +251,12 @@ public:
 
 	// end QAbstractItemModel
 
+	// Terrible hack for atomic-like operations
+	//	Setting this to false will suspend dataChanged in set<T>
+	//	Doing so is necessary for performance reasons with setting thousands of rows at once
+	//	e.g. Update Tangent Space with BSTriShapes
+	void setEmitChanges( bool e );
+
 	enum MsgMode
 	{
 		UserMessage, TstMessage
@@ -322,6 +328,9 @@ protected:
 	QString filename;
 	//! The file info for the model
 	QFileInfo fileinfo;
+
+	// Whether or not to emit dataChanged() in set<T>
+	bool emitChanges = true;
 
 	//! A list of test messages
 	mutable QList<TestMessage> messages;
@@ -418,7 +427,8 @@ template <typename T> inline T BaseModel::get( const QModelIndex & index ) const
 template <typename T> inline bool BaseModel::set( NifItem * item, const T & d )
 {
 	if ( item->value().set( d ) ) {
-		emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+		if ( emitChanges )
+			emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
 		return true;
 	}
 

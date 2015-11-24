@@ -65,6 +65,11 @@ QWidget * BaseModel::getWindow()
 	return parentWindow;
 }
 
+void BaseModel::setEmitChanges( bool e )
+{
+	emitChanges = e;
+}
+
 void BaseModel::setMessageMode( MsgMode mode )
 {
 	msgMode = mode;
