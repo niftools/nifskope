@@ -617,8 +617,8 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int /*blockSize*/, quint32 /*
 				for ( quint32 x = 0; x < w; x++ ) {
 					*dst++ = src->g;
 					*dst++ = src->r;
-					*dst++ = src->b;
-					*dst++ = src->a;
+					*dst++ = 255 - src->b;
+					*dst++ = 255;
 					src++;
 				}
 			}
@@ -635,12 +635,6 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int /*blockSize*/, quint32 /*
 		}
 
 		delete img;
-		
-		// Inverse for pixels
-		if ( glFormat == GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI ) {
-			for ( int i = 0; i < w * h * 4; i++ )
-				pixels[i] = ( i % 4 > 0 ) ? 255 - pixels[i] : pixels[i];
-		}
 
 		// load the texture into OpenGL
 		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );

@@ -88,11 +88,11 @@ void main( void )
 	}
 
 	// Specular
-    float s = texture2D( SpecularMap, offset ).r * 0.7; // Fudge factor
-    float g = texture2D( SpecularMap, offset ).g;
+    float s = clamp( texture2D( SpecularMap, offset ).r, 0.01, 0.99 );
+    float g = clamp( texture2D( SpecularMap, offset ).g, 0.01, 0.99 );
     vec3 spec = vec3(0.0);
     if ( hasSpecularMap ) {
-        spec = clamp( specColor * s * pow(NdotH, g * 128.0), 0.0, 1.0 ) * specStrength;
+        spec = specColor * s * pow(NdotH, g * 128.0) * specStrength;
         spec *= D.rgb;
     }
 
@@ -135,8 +135,6 @@ void main( void )
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
 	color.a = C.a * baseMap.a;
     
-    //color.rgb = vec3( s * g );
-
 	gl_FragColor = color;
 	gl_FragColor.a *= alpha;
 }
