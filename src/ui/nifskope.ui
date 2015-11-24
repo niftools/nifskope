@@ -1955,29 +1955,35 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   </action>
   <action name="aTest1Dbg">
    <property name="text">
-    <string>Unknown Dot Debug</string>
+    <string>Test 1 Debug</string>
    </property>
    <property name="shortcut">
     <string>Alt+,</string>
    </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="aTest2Dbg">
    <property name="text">
-    <string>Unknown Byte 1 Debug</string>
-   </property>
-   <property name="toolTip">
-    <string>Unknown Byte 1 Debug</string>
+    <string>Test 2 Debug</string>
    </property>
    <property name="shortcut">
     <string>Alt+.</string>
    </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="aTest3Dbg">
    <property name="text">
-    <string>Unknown Byte 2 Debug</string>
+    <string>Test 3 Debug</string>
    </property>
    <property name="shortcut">
     <string>Alt+/</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
    </property>
   </action>
  </widget>

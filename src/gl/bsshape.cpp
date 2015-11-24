@@ -74,38 +74,20 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 		coordset << nif->get<HalfVector2>( idx, "UV" );
 
-		// Test Vis - Unknown Dot
-		auto dot = nif->getValue( nif->getIndex( idx, "Unknown Dot" ) ).toFloat();
-		if ( dot < 0 )
-			test1 += Color4( -dot, 0, 0, 1 );
-		else
-			test1 += Color4( 0, dot, 0, 1 );
+		// Bitangent X
+		auto bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
+		// Bitangent Y/Z
+		auto bitYi = nif->getValue( nif->getIndex( idx, "Bitangent Y" ) ).toCount();
+		auto bitZi = nif->getValue( nif->getIndex( idx, "Bitangent Z" ) ).toCount();
+		auto bitY = (double( bitYi ) / 255.0) * 2.0 - 1.0;
+		auto bitZ = (double( bitZi ) / 255.0) * 2.0 - 1.0;
 
-		// Test Vis - Unknown Byte 1/2
-		auto unk1 = nif->getValue( nif->getIndex( idx, "Unknown Byte 1" ) ).toCount();
-		auto unk2 = nif->getValue( nif->getIndex( idx, "Unknown Byte 2" ) ).toCount();
-		auto unk1f = (double( unk1 ) / 255.0) * 2.0 - 1.0;
-		auto unk2f = (double( unk2 ) / 255.0) * 2.0 - 1.0;
-		if ( unk1f < 0 )
-			test2 += Color4( -unk1f, 0, 0, 1 );
-		else
-			test2 += Color4( 0, unk1f, 0, 1 );
-
-		if ( unk2f < 0 )
-			test3 += Color4( -unk2f, 0, 0, 1 );
-		else
-			test3 += Color4( 0, unk2f, 0, 1 );
-
-		
 		auto n = nif->get<ByteVector3>( idx, "Normal" );
 		norms += n;
 
 		auto t = nif->get<ByteVector3>( idx, "Tangent" );
 		tangents += t;
-
-		auto b = Vector3::crossproduct( n, t );
-		bitangents += Vector3( dot, unk1f, unk2f );
-		//bitangents += b;
+		bitangents += Vector3( bitX, bitY, bitZ );
 	}
 
 	// Add coords as first set of QList
@@ -247,11 +229,11 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 		Color4 * c = nullptr;
 		if ( (scene->options & Scene::Test1) && test1.count() ) {
-			c = test1.data();
+			//c = test1.data();
 		} else if ( (scene->options & Scene::Test2) && test2.count() ) {
-			c = test2.data();
+			//c = test2.data();
 		} else if ( (scene->options & Scene::Test3) && test3.count() ) {
-			c = test3.data();
+			//c = test3.data();
 		} else if ( colors.count() ) {
 			c = colors.data();
 		}
