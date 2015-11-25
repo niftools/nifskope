@@ -1438,6 +1438,13 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Color4 & c );
 };
 
+class ByteColor4 : public Color4
+{
+public:
+	//! Default constructor
+	ByteColor4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
+};
+
 
 inline Color3::Color3( const Color4 & c4 )
 {

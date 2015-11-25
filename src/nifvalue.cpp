@@ -115,6 +115,7 @@ void NifValue::initialize()
 	typeMap.insert( "halfvector3", NifValue::tHalfVector3 );
 	typeMap.insert( "bytevector3", NifValue::tByteVector3 );
 	typeMap.insert( "halfvector2", NifValue::tHalfVector2 );
+	typeMap.insert( "bytecolor4", NifValue::tByteColor4 );
 
 	enumMap.clear();
 }
@@ -381,6 +382,7 @@ void NifValue::clear()
 		delete static_cast<Color3 *>( val.data );
 		break;
 	case tColor4:
+	case tByteColor4:
 		delete static_cast<Color4 *>( val.data );
 		break;
 	case tBlob:
@@ -445,6 +447,7 @@ void NifValue::changeType( Type t )
 		val.data = new Color3();
 		return;
 	case tColor4:
+	case tByteColor4:
 		val.data = new Color4();
 		return;
 	case tByteArray:
@@ -508,6 +511,7 @@ void NifValue::operator=( const NifValue & other )
 		*static_cast<Color3 *>( val.data ) = *static_cast<Color3 *>( other.val.data );
 		return;
 	case tColor4:
+	case tByteColor4:
 		*static_cast<Color4 *>( val.data ) = *static_cast<Color4 *>( other.val.data );
 		return;
 	case tByteArray:
@@ -586,6 +590,7 @@ bool NifValue::operator==( const NifValue & other ) const
 	}
 
 	case tColor4:
+	case tByteColor4:
 	{
 		Color4 * c1 = static_cast<Color4 *>(val.data);
 		Color4 * c2 = static_cast<Color4 *>(other.val.data);
@@ -782,6 +787,7 @@ bool NifValue::setFromString( const QString & s )
 		static_cast<Color3 *>( val.data )->fromQColor( QColor( s ) );
 		return true;
 	case tColor4:
+	case tByteColor4:
 		static_cast<Color4 *>( val.data )->fromQColor( QColor( s ) );
 		return true;
 	case tFileVersion:
@@ -858,6 +864,7 @@ QString NifValue::toString() const
 			       .arg( (int)( col->blue() * 0xff ),  2, 16, QChar( '0' ) );
 		}
 	case tColor4:
+	case tByteColor4:
 		{
 			Color4 * col = static_cast<Color4 *>( val.data );
 			return QString( "#%1%2%3%4" )
@@ -993,7 +1000,7 @@ QColor NifValue::toColor() const
 {
 	if ( type() == tColor3 )
 		return static_cast<Color3 *>( val.data )->toQColor();
-	else if ( type() == tColor4 )
+	else if ( type() == tColor4 || type() == tByteColor4 )
 		return static_cast<Color4 *>( val.data )->toQColor();
 
 	return QColor();
@@ -1181,6 +1188,18 @@ bool NifIStream::read( NifValue & val )
 		}
 	case NifValue::tColor3:
 		return device->read( (char *)static_cast<Color3 *>( val.val.data )->rgb, 12 ) == 12;
+	case NifValue::tByteColor4:
+		{
+			quint8 r, g, b, a;
+			*dataStream >> r;
+			*dataStream >> g;
+			*dataStream >> b;
+			*dataStream >> a;
+
+			val.val.data = new Color4( QColor( r, g, b, a ) );
+
+			return (dataStream->status() == QDataStream::Ok);
+		}
 	case NifValue::tColor4:
 		{
 			Color4 * c = static_cast<Color4 *>( val.val.data );
@@ -1542,6 +1561,21 @@ bool NifOStream::write( const NifValue & val )
 		return device->write( (char *)static_cast<Vector2 *>( val.val.data )->xy, 8 ) == 8;
 	case NifValue::tColor3:
 		return device->write( (char *)static_cast<Color3 *>( val.val.data )->rgb, 12 ) == 12;
+	case NifValue::tByteColor4:
+		{
+			Color4 * color = static_cast<Color4 *>(val.val.data);
+			if ( !color )
+				return false;
+
+			quint8 c[4];
+
+			auto cF = color->rgba;
+			for ( int i = 0; i < 4; i++ ) {
+				c[i] = round( cF[i] * 255.0f );
+			}
+
+			return device->write( (char*)c, 4 ) == 4;
+		}
 	case NifValue::tColor4:
 		return device->write( (char *)static_cast<Color4 *>( val.val.data )->rgba, 16 ) == 16;
 	case NifValue::tSizedString:
@@ -1752,6 +1786,8 @@ int NifSStream::size( const NifValue & val )
 		return 8;
 	case NifValue::tColor3:
 		return 12;
+	case NifValue::tByteColor4:
+		return 4;
 	case NifValue::tColor4:
 		return 16;
 	case NifValue::tSizedString:

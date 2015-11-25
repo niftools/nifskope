@@ -61,7 +61,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tSizedString || t == NifValue::tLineString || t == NifValue::tChar8String
 		|| t == NifValue::tShortString || t == NifValue::tStringIndex || t == NifValue::tString
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
-		|| t == NifValue::tColor3 || t == NifValue::tColor4
+		|| t == NifValue::tColor3 || t == NifValue::tColor4 || t == NifValue::tByteColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
 		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt
 		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3
@@ -211,6 +211,13 @@ void ValueEdit::setValue( const NifValue & v )
 	//	te->setBaseSize( width(), height() * 5);
 	//	edit = te;
 	//}	break;
+	case NifValue::tByteColor4:
+		{
+			ColorEdit * ce = new ColorEdit( this );
+			ce->setColor4( v.get<ByteColor4>() );
+			edit = ce;
+		}
+		break;
 	case NifValue::tColor4:
 		{
 			ColorEdit * ce = new ColorEdit( this );
@@ -369,6 +376,12 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tText:
 			val.setFromString( qobject_cast<QTextEdit *>( edit )->toPlainText() );
 			break;
+		case NifValue::tByteColor4:
+			{
+				auto col = qobject_cast<ColorEdit *>(edit)->getColor4();
+				val.set<ByteColor4>( *static_cast<ByteColor4 *>(&col) );
+				break;
+			}
 		case NifValue::tColor4:
 			val.set<Color4>( qobject_cast<ColorEdit *>( edit )->getColor4() );
 			break;

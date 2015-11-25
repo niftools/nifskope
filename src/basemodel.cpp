@@ -426,6 +426,11 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 							Color3 c = item->value().get<Color3>();
 							return QString( "R %1<br>G %2<br>B %3" ).arg( c[0] ).arg( c[1] ).arg( c[2] );
 						}
+					case NifValue::tByteColor4:
+						{
+							Color4 c = item->value().get<ByteColor4>();
+							return QString( "R %1<br>G %2<br>B %3<br>A %4" ).arg( c[0] ).arg( c[1] ).arg( c[2] ).arg( c[3] );
+						}
 					case NifValue::tColor4:
 						{
 							Color4 c = item->value().get<Color4>();

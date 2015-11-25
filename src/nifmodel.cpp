@@ -1473,6 +1473,15 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 							       .arg( c[1] )
 							       .arg( c[2] );
 						}
+					case NifValue::tByteColor4:
+						{
+							Color4 c = item->value().get<ByteColor4>();
+							return QString( "R %1\nG %2\nB %3\nA %4" )
+								.arg( c[0] )
+								.arg( c[1] )
+								.arg( c[2] )
+								.arg( c[3] );
+						}
 					case NifValue::tColor4:
 						{
 							Color4 c = item->value().get<Color4>();

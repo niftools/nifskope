@@ -26,10 +26,16 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( nif->getValue( index ).type() == NifValue::tColor3 )
+		auto typ = nif->getValue( index ).type();
+		if ( typ == NifValue::tColor3 ) {
 			nif->set<Color3>( index, ColorWheel::choose( nif->get<Color3>( index ) ) );
-		else if ( nif->getValue( index ).type() == NifValue::tColor4 )
+		} else if ( typ == NifValue::tColor4 ) {
 			nif->set<Color4>( index, ColorWheel::choose( nif->get<Color4>( index ) ) );
+		} else if ( typ == NifValue::tByteColor4 ) {
+			auto col = static_cast<ByteColor4 *>(&ColorWheel::choose( nif->get<ByteColor4>( index ) ));
+			nif->set<ByteColor4>( index, *col );
+		}
+			
 
 		return index;
 	}
@@ -55,9 +61,10 @@ public:
 	{
 		QModelIndex colorIdx = (nif->isArray( index )) ? index.child( 0, 0 ) : index;
 
-		if ( nif->getValue( colorIdx ).type() == NifValue::tColor3 )
+		auto typ = nif->getValue( colorIdx ).type();
+		if ( typ == NifValue::tColor3 )
 			nif->setArray<Color3>( index, ColorWheel::choose( nif->get<Color3>( colorIdx ) ) );
-		else if ( nif->getValue( colorIdx ).type() == NifValue::tColor4 )
+		else if ( typ == NifValue::tColor4 )
 			nif->setArray<Color4>( index, ColorWheel::choose( nif->get<Color4>( colorIdx ) ) );
 
 		return index;

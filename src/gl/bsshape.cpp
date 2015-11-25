@@ -88,13 +88,15 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		auto t = nif->get<ByteVector3>( idx, "Tangent" );
 		tangents += t;
 		bitangents += Vector3( bitX, bitY, bitZ );
+
+		auto vcIdx = nif->getIndex( idx, "Vertex Colors" );
+		if ( vcIdx.isValid() ) {
+			colors += nif->get<ByteColor4>( vcIdx );
+		}
 	}
 
 	// Add coords as first set of QList
 	coords.append( coordset );
-
-	// TODO: Temporary vertex colors for now
-	colors.fill( Color4( 1, 1, 1, 1 ), verts.count() );
 
 	triangles = nif->getArray<Triangle>( iTriData );
 	Q_ASSERT( numTris == triangles.count() );
@@ -305,20 +307,20 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		glEnableClientState( GL_NORMAL_ARRAY );
 		glNormalPointer( GL_FLOAT, 0, norms.data() );
 
+		bool doVCs = (bslsp && (bslsp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors))
+			|| (bsesp && (bsesp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+
+
 		Color4 * c = nullptr;
-		if ( (scene->options & Scene::Test1) && test1.count() ) {
-			//c = test1.data();
-		} else if ( (scene->options & Scene::Test2) && test2.count() ) {
-			//c = test2.data();
-		} else if ( (scene->options & Scene::Test3) && test3.count() ) {
-			//c = test3.data();
-		} else if ( colors.count() ) {
+		if ( colors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
 			c = colors.data();
 		}
 
 		if ( c ) {
 			glEnableClientState( GL_COLOR_ARRAY );
 			glColorPointer( 4, GL_FLOAT, 0, c );
+		} else {
+			glColor( Color3( 1.0f, 1.0f, 1.0f ) );
 		}
 	}
 

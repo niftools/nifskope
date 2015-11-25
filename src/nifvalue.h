@@ -123,6 +123,7 @@ public:
 		tHalfVector3   = 39,
 		tByteVector3   = 40,
 		tHalfVector2   = 41,
+		tByteColor4    = 42,
 		tNone          = 0xff
 	};
 
@@ -247,7 +248,7 @@ public:
 	//! Check if the type of the data is not tNone.
 	bool isValid() const { return typ != tNone; }
 	//! Check if the type of the data is a color type (Color3 or Color4 in xml).
-	bool isColor() const { return typ == tColor3 || typ == tColor4; }
+	bool isColor() const { return typ == tColor3 || typ == tColor4 || typ == tByteColor4; }
 	//! Check if the type of the data is a count.
 	bool isCount() const { return (typ >= tBool && typ <= tUInt); }
 	//! Check if the type of the data is a flag type (Flags in xml).
@@ -671,6 +672,10 @@ template <> inline Color3 NifValue::get() const
 {
 	return getType<Color3>( tColor3 );
 }
+template <> inline ByteColor4 NifValue::get() const
+{
+	return getType<ByteColor4>( tByteColor4 );
+}
 template <> inline Color4 NifValue::get() const
 {
 	return getType<Color4>( tColor4 );
@@ -795,6 +800,11 @@ template <> inline bool NifValue::set( const Color3 & x )
 {
 	return setType( tColor3, x );
 }
+//! Set the data from a ByteColor4. Return true if successful.
+template <> inline bool NifValue::set( const ByteColor4 & x )
+{
+	return setType( tByteColor4, x );
+}
 //! Set the data from a Color4. Return true if successful.
 template <> inline bool NifValue::set( const Color4 & x )
 {
@@ -909,6 +919,11 @@ template <> inline bool NifValue::ask( Vector2 * ) const
 template <> inline bool NifValue::ask( Color3 * ) const
 {
 	return type() == tColor3;
+}
+//! Check whether the data is a ByteColor4.
+template <> inline bool NifValue::ask( ByteColor4 * ) const
+{
+	return type() == tByteColor4;
 }
 //! Check whether the data is a Color4.
 template <> inline bool NifValue::ask( Color4 * ) const

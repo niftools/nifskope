@@ -256,7 +256,8 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 	color->setSizeHint( QSize( 140, 140 ) );
 	connect( color, &ColorWheel::sigColor, this, &NifColorEdit::sltApplyData );
 
-	if ( nif->getValue( index ).type() == NifValue::tColor4 ) {
+	auto typ = nif->getValue( index ).type();
+	if ( typ == NifValue::tColor4 || typ == NifValue::tByteColor4 ) {
 		getLayout()->addWidget( alpha = new AlphaSlider() );
 		connect( alpha, &AlphaSlider::valueChanged, this, &NifColorEdit::sltApplyData );
 	} else {
