@@ -84,7 +84,7 @@ public:
 	QOpenGLFunctions * glFuncs;
 
 	float brightness = 1.0;
-	float ambient = 0.5;
+	float ambient = 0.375;
 	float declination = 0;
 	float planarAngle = 0;
 	bool frontalLight = true;

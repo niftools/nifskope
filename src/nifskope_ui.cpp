@@ -681,7 +681,7 @@ QMenu * NifSkope::lightingWidget()
 	auto sldDeclination = sld( chkFrontal, ":/btn/lightVertical", -720, 720, 0 );
 	auto sldPlanarAngle = sld( chkFrontal, ":/btn/lightHorizontal", -720, 720, 0 );
 	auto sldBrightness = sld( chkFrontal, ":/btn/sun", 0, 1440, 720 );
-	auto sldAmbient = sld( chkFrontal, ":/btn/cloud", 0, 1440, 720 );
+	auto sldAmbient = sld( chkFrontal, ":/btn/cloud", 0, 1440, 540 );
 
 	sldDeclination->setDisabled( true );
 	sldPlanarAngle->setDisabled( true );
