@@ -168,6 +168,75 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			bslsp->hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 			bslsp->hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 			bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
+
+			isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+
+			// Mesh alpha override
+			translucent = (bslsp->getAlpha() < 1.0);
+
+			// Draw mesh second
+			drawSecond |= translucent;
+		} else {
+			iProp = nif->getBlock( props[i], "BSEffectShaderProperty" );
+
+			if ( iProp.isValid() ) {
+				if ( !bsesp )
+					bsesp = properties.get<BSEffectShaderProperty>();
+
+				if ( !bsesp )
+					break;
+
+				auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
+					return bsesp->getFlags1() & flag;
+				};
+
+				auto hasSF2 = [this]( ShaderFlags::SF2 flag ) {
+					return bsesp->getFlags2() & flag;
+				};
+
+				auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
+				auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
+
+				bsesp->setFlags1( sf1 );
+				bsesp->setFlags2( sf2 );
+
+				depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+				depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+
+				auto emC = nif->get<Color4>( iProp, "Emissive Color" );
+				auto emM = nif->get<float>( iProp, "Emissive Multiple" );
+				bsesp->setEmissive( emC, emM );
+
+				// For BSESP, let Alpha prop handle things
+				bool hasAlphaProp = findProperty<AlphaProperty>();
+
+				// Mesh alpha override
+				translucent = (bsesp->getAlpha() < 1.0) && !hasAlphaProp;
+
+				// Draw mesh second
+				drawSecond |= translucent;
+
+				bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
+				bsesp->greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
+				bsesp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+
+				bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+				bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+				auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
+				auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
+
+				bsesp->setUvScale( uvScale[0], uvScale[1] );
+				bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
+
+				auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+
+				bsesp->setClampMode( clampMode );
+
+				isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+
+				bsesp->doubleSided = isDoubleSided;
+			}
 		}
 	}
 }
@@ -175,6 +244,9 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 void BSShape::transform()
 {
+	if ( isHidden() )
+		return;
+
 	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
 	if ( !nif || !iBlock.isValid() ) {
 		clear();
@@ -190,11 +262,17 @@ void BSShape::transform()
 
 void BSShape::transformShapes()
 {
+	if ( isHidden() )
+		return;
+
 	Node::transformShapes();
 }
 
 void BSShape::drawShapes( NodeList * secondPass, bool presort )
 {
+	if ( isHidden() )
+		return;
+
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
 		glColor4ubv( (GLubyte *)&s_nodeId );
@@ -402,5 +480,5 @@ BoundSphere BSShape::bounds() const
 
 bool BSShape::isHidden() const
 {
-	return false;
+	return Node::isHidden();
 }

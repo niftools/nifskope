@@ -826,7 +826,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 
 	// BSEffectShaderProperty
-	if ( nif->getUserVersion2() < 130 && mesh->bsesp ) {
+	if ( mesh->bsesp ) {
 
 		clamp = mesh->bsesp->getClampMode();
 		clamp = TexClampMode(clamp ^ TexClampMode::MIRRORED_S_MIRRORED_T);
@@ -861,20 +861,21 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		uni4f( "glowColor", emC.red(), emC.green(), emC.blue(), emC.alpha() );
 		uni1f( "glowMult", mesh->bsesp->getEmissiveMult() );
 
+		if ( nif->getUserVersion2() < 130 ) {
+			// Falloff params
 
-		// Falloff params
+			uni4f( "falloffParams",
+				mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
+				mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
+				);
 
-		uni4f( "falloffParams",
-			mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
-			mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
-		);
+			uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
 
-		uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
-
-		// BSEffectShader textures
-		if ( mesh->bsesp->hasGreyscaleMap ) {
-			if ( !uniSampler( "GreyscaleMap", 1, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
-				return false;
+			// BSEffectShader textures
+			if ( mesh->bsesp->hasGreyscaleMap ) {
+				if ( !uniSampler( "GreyscaleMap", 1, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
+					return false;
+			}
 		}
 	}
 
