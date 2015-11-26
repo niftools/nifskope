@@ -223,6 +223,10 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 		alphaThreshold = nif->get<int>( iBlock, "Threshold" ) / 255.0;
 
 		alphaSort = ( flags & 0x2000 ) == 0;
+
+		// Temporary Weapon Blood fix for FO4
+		if ( nif->getUserVersion2() == 130 )
+			alphaTest |= (flags == 20547);
 	}
 }
 
