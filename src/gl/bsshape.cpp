@@ -455,9 +455,81 @@ void BSShape::drawSelection() const
 		lines( tangents );
 	}
 
+	if ( n == "Triangles" ) {
+		int s = scene->currentIndex.row();
+		if ( s >= 0 ) {
+			qDebug() << s;
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+			glColor4f( 1, 0, 0, 1 );
+
+			Triangle tri = triangles.value( s );
+			glBegin( GL_TRIANGLES );
+			glVertex( verts.value( tri.v1() ) );
+			glVertex( verts.value( tri.v2() ) );
+			glVertex( verts.value( tri.v3() ) );
+			glEnd();
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+		}
+	}
+
+	if ( n == "Segment" || n == "Triangle Count" ) {
+		auto idx = scene->currentIndex;
+		int s;
+		if ( n == "Segment" ) {
+			idx = scene->currentIndex.child( 1, 0 );
+		}
+		s = idx.row();
+
+		auto nif = static_cast<const NifModel *>(idx.model());
+
+		auto off = idx.sibling( s - 1, 2 ).data().toInt() / 3;
+		auto cnt = idx.sibling( s, 2 ).data().toInt();
+
+		auto numRec = idx.sibling( s + 2, 2 ).data().toInt();
+
+		QVector<QColor> cols = { { 255, 0, 0, 128 }, { 0, 255, 0, 128 }, { 0, 0, 255, 128 }, { 255, 255, 0, 128 },
+								{ 0, 255, 255, 128 }, { 255, 0, 255, 128 }, { 255, 255, 255, 128 } 
+		};
+
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+		if ( numRec > 0 ) {
+			auto recs = idx.sibling( s + 3, 0 );
+			for ( int i = 0; i < numRec; i++ ) {
+				auto subrec = recs.child( i, 0 );
+				auto off = subrec.child( 0, 2 ).data().toInt() / 3;
+				auto cnt = subrec.child( 1, 2 ).data().toInt();
+
+				int j = off;
+				for ( j; j < cnt + off; j++ ) {
+					glColor( Color4(cols.value( i % 7 )) );
+					Triangle tri = triangles[j];
+					glBegin( GL_TRIANGLES );
+					glVertex( verts.value( tri.v1() ) );
+					glVertex( verts.value( tri.v2() ) );
+					glVertex( verts.value( tri.v3() ) );
+					glEnd();
+				}
+			}
+		} else {
+			glColor4f( 1, 0, 0, 0.5 );
+
+			int i = off;
+			for ( i; i < cnt + off; i++ ) {
+				Triangle tri = triangles[i];
+				glBegin( GL_TRIANGLES );
+				glVertex( verts.value( tri.v1() ) );
+				glVertex( verts.value( tri.v2() ) );
+				glVertex( verts.value( tri.v3() ) );
+				glEnd();
+			}
+		}
+		return;
+	}
+
 	if ( (scene->currentIndex != iVertData) && !vp ) {
 		glLineWidth( 1.6f );
-
+		glHighlightColor();
 		for ( const Triangle& tri : triangles ) {
 			glBegin( GL_TRIANGLES );
 			glVertex( verts.value( tri.v1() ) );
