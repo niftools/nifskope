@@ -582,25 +582,25 @@ public:
 
 	QString typeId() const override final { return "BSLightingShaderProperty"; }
 
-	Color3 getEmissiveColor();
-	Color3 getSpecularColor();
+	Color3 getEmissiveColor() const;
+	Color3 getSpecularColor() const;
 
-	float getEmissiveMult();
+	float getEmissiveMult() const;
 
-	float getSpecularGloss();
-	float getSpecularStrength();
+	float getSpecularGloss() const;
+	float getSpecularStrength() const;
 
-	float getLightingEffect1();
-	float getLightingEffect2();
+	float getLightingEffect1() const;
+	float getLightingEffect2() const;
 
-	float getInnerThickness();
-	UVScale getInnerTextureScale();
-	float getOuterRefractionStrength();
-	float getOuterReflectionStrength();
+	float getInnerThickness() const;
+	UVScale getInnerTextureScale() const;
+	float getOuterRefractionStrength() const;
+	float getOuterReflectionStrength() const;
 
-	float getEnvironmentReflection();
+	float getEnvironmentReflection() const;
 
-	float getAlpha();
+	float getAlpha() const;
 
 	void setShaderType( unsigned int );
 
@@ -619,7 +619,7 @@ public:
 
 	void setAlpha( float );
 
-	Color3 getTintColor();
+	Color3 getTintColor() const;
 	void setTintColor( Color3 );
 
 	bool hasVertexColors = false;
@@ -690,10 +690,10 @@ public:
 
 	QString typeId() const override final { return "BSEffectShaderProperty"; }
 
-	Color4 getEmissiveColor();
-	float getEmissiveMult();
+	Color4 getEmissiveColor() const;
+	float getEmissiveMult() const;
 
-	float getAlpha();
+	float getAlpha() const;
 
 	void setEmissive( Color4 color, float mult = 1.0f );
 	void setFalloff( float, float, float, float, float );
@@ -761,7 +761,7 @@ public:
 
 	QString typeId() const override final { return "BSWaterShaderProperty"; }
 
-	unsigned int getWaterShaderFlags();
+	unsigned int getWaterShaderFlags() const;
 
 	void setWaterShaderFlags( unsigned int );
 

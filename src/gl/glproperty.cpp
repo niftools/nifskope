@@ -1053,27 +1053,27 @@ void BSLightingShaderProperty::setSpecular( Color3 color, float gloss, float str
 	specularStrength = strength;
 }
 
-Color3 BSLightingShaderProperty::getEmissiveColor()
+Color3 BSLightingShaderProperty::getEmissiveColor() const
 {
 	return emissiveColor;
 }
 
-Color3 BSLightingShaderProperty::getSpecularColor()
+Color3 BSLightingShaderProperty::getSpecularColor() const
 {
 	return specularColor;
 }
 
-float BSLightingShaderProperty::getEmissiveMult()
+float BSLightingShaderProperty::getEmissiveMult() const
 {
 	return emissiveMult;
 }
 
-float BSLightingShaderProperty::getLightingEffect1()
+float BSLightingShaderProperty::getLightingEffect1() const
 {
 	return lightingEffect1;
 }
 
-float BSLightingShaderProperty::getLightingEffect2()
+float BSLightingShaderProperty::getLightingEffect2() const
 {
 	return lightingEffect2;
 }
@@ -1088,32 +1088,32 @@ void BSLightingShaderProperty::setLightingEffect2( float val )
 	lightingEffect2 = val;
 }
 
-float BSLightingShaderProperty::getSpecularGloss()
+float BSLightingShaderProperty::getSpecularGloss() const
 {
 	return specularGloss;
 }
 
-float BSLightingShaderProperty::getSpecularStrength()
+float BSLightingShaderProperty::getSpecularStrength() const
 {
 	return specularStrength;
 }
 
-float BSLightingShaderProperty::getInnerThickness()
+float BSLightingShaderProperty::getInnerThickness() const
 {
 	return innerThickness;
 }
 
-UVScale BSLightingShaderProperty::getInnerTextureScale()
+UVScale BSLightingShaderProperty::getInnerTextureScale() const
 {
 	return innerTextureScale;
 }
 
-float BSLightingShaderProperty::getOuterRefractionStrength()
+float BSLightingShaderProperty::getOuterRefractionStrength() const
 {
 	return outerRefractionStrength;
 }
 
-float BSLightingShaderProperty::getOuterReflectionStrength()
+float BSLightingShaderProperty::getOuterReflectionStrength() const
 {
 	return outerReflectionStrength;
 }
@@ -1139,7 +1139,7 @@ void BSLightingShaderProperty::setOuterReflectionStrength( float strength )
 	outerReflectionStrength = strength;
 }
 
-float BSLightingShaderProperty::getEnvironmentReflection()
+float BSLightingShaderProperty::getEnvironmentReflection() const
 {
 	return environmentReflection;
 }
@@ -1149,7 +1149,7 @@ void BSLightingShaderProperty::setEnvironmentReflection( float strength )
 	environmentReflection = strength;
 }
 
-float BSLightingShaderProperty::getAlpha()
+float BSLightingShaderProperty::getAlpha() const
 {
 	return alpha;
 }
@@ -1159,7 +1159,7 @@ void BSLightingShaderProperty::setAlpha( float opacity )
 	alpha = opacity;
 }
 
-Color3 BSLightingShaderProperty::getTintColor()
+Color3 BSLightingShaderProperty::getTintColor() const
 {
 	return tintColor;
 }
@@ -1192,17 +1192,17 @@ void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
 	emissiveMult = mult;
 }
 
-Color4 BSEffectShaderProperty::getEmissiveColor()
+Color4 BSEffectShaderProperty::getEmissiveColor() const
 {
 	return emissiveColor;
 }
 
-float BSEffectShaderProperty::getEmissiveMult()
+float BSEffectShaderProperty::getEmissiveMult() const
 {
 	return emissiveMult;
 }
 
-float BSEffectShaderProperty::getAlpha()
+float BSEffectShaderProperty::getAlpha() const
 {
 	return emissiveColor.alpha();
 }
@@ -1221,7 +1221,7 @@ void BSEffectShaderProperty::setFalloff( float startA, float stopA, float startO
 	BSWaterShaderProperty
 */
 
-unsigned int BSWaterShaderProperty::getWaterShaderFlags()
+unsigned int BSWaterShaderProperty::getWaterShaderFlags() const
 {
 	return (unsigned int)waterShaderFlags;
 }
