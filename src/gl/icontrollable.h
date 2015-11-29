@@ -73,6 +73,8 @@ public:
 
 	Controller * findController( const QModelIndex & index );
 
+	QString getName() const;
+
 protected:
 	//! Sets the Controller
 	virtual void setController( const NifModel * nif, const QModelIndex & iController ) { Q_UNUSED( nif ); Q_UNUSED( iController ); }

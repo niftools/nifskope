@@ -51,6 +51,11 @@ IControllable::~IControllable()
 	qDeleteAll( controllers );
 }
 
+QString IControllable::getName() const
+{
+	return name;
+}
+
 void IControllable::clear()
 {
 	name = QString();
