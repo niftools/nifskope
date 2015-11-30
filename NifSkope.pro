@@ -258,7 +258,7 @@ SOURCES += \
 	src/spells/havok.cpp \
 	src/spells/headerstring.cpp \
 	src/spells/light.cpp \
-	src/spells/material.cpp \
+	src/spells/materialedit.cpp \
 	src/spells/mesh.cpp \
 	src/spells/misc.cpp \
 	src/spells/moppcode.cpp \
