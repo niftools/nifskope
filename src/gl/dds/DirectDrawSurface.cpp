@@ -86,6 +86,7 @@ static const uint FOURCC_DXT5 = MAKEFOURCC( 'D', 'X', 'T', '5' );
 static const uint FOURCC_RXGB = MAKEFOURCC( 'R', 'X', 'G', 'B' );
 static const uint FOURCC_ATI1 = MAKEFOURCC( 'A', 'T', 'I', '1' );
 static const uint FOURCC_ATI2 = MAKEFOURCC( 'A', 'T', 'I', '2' );
+static const uint FOURCC_BC5U = MAKEFOURCC( 'B', 'C', '5', 'U' );
 
 // 32 bit RGB formats.
 static const uint D3DFMT_R8G8B8 = 20;
@@ -594,7 +595,8 @@ bool DirectDrawSurface::isSupported() const
 		     && header.pf.fourcc != FOURCC_DXT5
 		     && header.pf.fourcc != FOURCC_RXGB
 		     && header.pf.fourcc != FOURCC_ATI1
-		     && header.pf.fourcc != FOURCC_ATI2 )
+		     && header.pf.fourcc != FOURCC_ATI2
+		     && header.pf.fourcc != FOURCC_BC5U )
 		{
 			// Unknown fourcc code.
 			return false;
@@ -831,7 +833,7 @@ void DirectDrawSurface::readBlock( ColorBlock * rgba )
 		BlockATI1 block;
 		mem_read( stream, block );
 		block.decodeBlock( rgba );
-	} else if ( header.pf.fourcc == FOURCC_ATI2 ) {
+	} else if ( header.pf.fourcc == FOURCC_ATI2 || header.pf.fourcc == FOURCC_BC5U ) {
 		BlockATI2 block;
 		mem_read( stream, block );
 		block.decodeBlock( rgba );
@@ -839,7 +841,7 @@ void DirectDrawSurface::readBlock( ColorBlock * rgba )
 
 	// If normal flag set, convert to normal.
 	if ( header.pf.flags & DDPF_NORMAL ) {
-		if ( header.pf.fourcc == FOURCC_ATI2 ) {
+		if ( header.pf.fourcc == FOURCC_ATI2 || header.pf.fourcc == FOURCC_BC5U ) {
 			for ( int i = 0; i < 16; i++ ) {
 				Color32 & c = rgba->color( i );
 				c = buildNormal( c.r, c.g );
@@ -866,6 +868,7 @@ uint DirectDrawSurface::blockSize() const
 	case FOURCC_DXT5:
 	case FOURCC_RXGB:
 	case FOURCC_ATI2:
+	case FOURCC_BC5U:
 		return 16;
 	}
 

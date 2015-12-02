@@ -68,6 +68,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI 0x8837
 #define FOURCC_ATI2 0x32495441
+#define FOURCC_BC5U 0x55354342
 
 //! Shift amounts for RGBA conversion
 static const int rgbashift[4] = {
@@ -724,6 +725,7 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 			texformat += " (DXT5)";
 			break;
 		case FOURCC_ATI2:
+		case FOURCC_BC5U:
 			glFormat = GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI;
 			blockSize = 16;
 			texformat += " (ATI2)";
