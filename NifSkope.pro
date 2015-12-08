@@ -206,7 +206,8 @@ HEADERS += \
 	src/ui/settingsdialog.h \
 	src/version.h \
 	lib/half.h \
-    src/gl/bsshape.h
+	src/gl/bsshape.h \
+	src/material.h
 
 SOURCES += \
 	src/basemodel.cpp \
@@ -290,7 +291,8 @@ SOURCES += \
 	src/ui/settingsdialog.cpp \
 	src/version.cpp \
 	lib/half.cpp \
-    src/gl/bsshape.cpp
+	src/gl/bsshape.cpp \
+	src/material.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
