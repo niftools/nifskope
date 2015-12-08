@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "glscene.h"
 #include "gltex.h"
+#include "material.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -698,6 +699,12 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
 		uni4m( "worldMatrixInverse", mesh->worldTrans().toMatrix4().inverted() );
 
+		uni1i( "greyscaleColor", mesh->bslsp->greyscaleColor );
+		if ( mesh->bslsp->greyscaleColor ) {
+			if ( !uniSampler( "GreyscaleMap", 3, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
+				return false;
+		}
+
 		uni1i( "hasTintColor", mesh->bslsp->hasTintColor );
 		if ( mesh->bslsp->hasTintColor ) {
 			auto tC = mesh->bslsp->getTintColor();
@@ -721,7 +728,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
 		uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
 
-		if ( mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight ) {
+		if ( nif->getUserVersion2() < 130 && (mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight) ) {
 
 			if ( !uniSampler( "LightMask", 2, default_n, clamp ) )
 				return false;
@@ -731,7 +738,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
 
-		if ( mesh->bslsp->hasBacklight ) {
+		if ( nif->getUserVersion2() < 130 && mesh->bslsp->hasBacklight ) {
 
 			if ( !uniSampler( "BacklightMap", 7, default_n, clamp ) )
 				return false;
@@ -767,8 +774,16 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
 
-			if ( !uniSampler( "SpecularMap", 7, default_n, clamp ) )
+			if ( !uniSampler( "SpecularMap", 7, white, clamp ) )
 				return false;
+		}
+
+		if ( nif->getUserVersion2() == 130 ) {
+			uni1i( "doubleSided", mesh->isDoubleSided );
+			uni1f( "paletteScale", mesh->bslsp->paletteScale );
+			uni1f( "fresnelPower", mesh->bslsp->fresnelPower );
+			uni1f( "rimPower", mesh->bslsp->rimPower );
+			uni1f( "backlightPower", mesh->bslsp->backlightPower );
 		}
 
 		// Multi-Layer
@@ -796,7 +811,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
 
-			if ( !uniSampler( "EnvironmentMap", 5, white, clamp ) )
+			if ( mesh->bslsp->useEnvironmentMask && !uniSampler( "EnvironmentMap", 5, white, clamp ) )
 				return false;
 
 			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );

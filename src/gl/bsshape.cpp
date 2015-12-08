@@ -2,6 +2,7 @@
 #include "settings.h"
 
 #include "glscene.h"
+#include "material.h"
 
 
 BSShape::BSShape( Scene * s, const QModelIndex & b ) : Shape( s, b )
@@ -32,7 +33,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;
 
-	if ( iBlock != index )
+	if ( iBlock != index && !nif->inherits( index, "NiProperty" ) )
 		return;
 
 	//updateData |= index == iBlock;
@@ -49,62 +50,63 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	auto vc = nif->rowCount( iVertData );
 	auto tc = nif->rowCount( iTriData );
 
-	Q_ASSERT( (vc == numVerts) && (tc == numTris) );
+	auto dataSize = nif->get<int>( iBlock, "Data Size" );
 
-	// Calling BSShape::clear here is bad
-	verts.clear();
-	norms.clear();
-	tangents.clear();
-	bitangents.clear();
-	triangles.clear();
-	coords.clear();
-	colors.clear();
-	test1.clear();
-	test2.clear();
-	test3.clear();
+	Q_ASSERT( !dataSize || ((vc == numVerts) && (tc == numTris)) );
 
-	// For compatibility with coords QList
-	QVector<Vector2> coordset;
+	if ( iBlock == index ) {
+		// Calling BSShape::clear here is bad
+		verts.clear();
+		norms.clear();
+		tangents.clear();
+		bitangents.clear();
+		triangles.clear();
+		coords.clear();
+		colors.clear();
+		test1.clear();
+		test2.clear();
+		test3.clear();
 
-	for ( int i = 0; i < numVerts; i++ ) {
-		auto idx = nif->index( i, 0, iVertData );
+		// For compatibility with coords QList
+		QVector<Vector2> coordset;
 
-		auto v = nif->get<HalfVector3>( idx, "Vertex" );
-		verts += v;
+		for ( int i = 0; i < numVerts; i++ ) {
+			auto idx = nif->index( i, 0, iVertData );
 
-		coordset << nif->get<HalfVector2>( idx, "UV" );
+			auto v = nif->get<HalfVector3>( idx, "Vertex" );
+			verts += v;
 
-		// Bitangent X
-		auto bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
-		// Bitangent Y/Z
-		auto bitYi = nif->getValue( nif->getIndex( idx, "Bitangent Y" ) ).toCount();
-		auto bitZi = nif->getValue( nif->getIndex( idx, "Bitangent Z" ) ).toCount();
-		auto bitY = (double( bitYi ) / 255.0) * 2.0 - 1.0;
-		auto bitZ = (double( bitZi ) / 255.0) * 2.0 - 1.0;
+			coordset << nif->get<HalfVector2>( idx, "UV" );
 
-		auto n = nif->get<ByteVector3>( idx, "Normal" );
-		norms += n;
+			// Bitangent X
+			auto bitX = nif->getValue( nif->getIndex( idx, "Bitangent X" ) ).toFloat();
+			// Bitangent Y/Z
+			auto bitYi = nif->getValue( nif->getIndex( idx, "Bitangent Y" ) ).toCount();
+			auto bitZi = nif->getValue( nif->getIndex( idx, "Bitangent Z" ) ).toCount();
+			auto bitY = (double( bitYi ) / 255.0) * 2.0 - 1.0;
+			auto bitZ = (double( bitZi ) / 255.0) * 2.0 - 1.0;
 
-		auto t = nif->get<ByteVector3>( idx, "Tangent" );
-		tangents += t;
-		bitangents += Vector3( bitX, bitY, bitZ );
+			auto n = nif->get<ByteVector3>( idx, "Normal" );
+			norms += n;
 
-		auto vcIdx = nif->getIndex( idx, "Vertex Colors" );
-		if ( vcIdx.isValid() ) {
-			colors += nif->get<ByteColor4>( vcIdx );
+			auto t = nif->get<ByteVector3>( idx, "Tangent" );
+			tangents += t;
+			bitangents += Vector3( bitX, bitY, bitZ );
+
+			auto vcIdx = nif->getIndex( idx, "Vertex Colors" );
+			if ( vcIdx.isValid() ) {
+				colors += nif->get<ByteColor4>( vcIdx );
+			}
 		}
+
+		// Add coords as first set of QList
+		coords.append( coordset );
+
+		triangles = nif->getArray<Triangle>( iTriData );
+		Q_ASSERT( !dataSize || numTris == triangles.count() );
 	}
 
-	// Add coords as first set of QList
-	coords.append( coordset );
-
-	triangles = nif->getArray<Triangle>( iTriData );
-	Q_ASSERT( numTris == triangles.count() );
-
 	QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" ) + nif->getLinkArray( iBlock, "BS Properties" );
-
-
-	// TODO: Mostly copied from glmesh, combine them in Shape at some point
 	for ( int i = 0; i < props.count(); i++ ) {
 		QModelIndex iProp = nif->getBlock( props[i], "BSLightingShaderProperty" );
 
@@ -115,6 +117,10 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			
 			if ( !bslsp )
 				break;
+
+			ShaderMaterial * mat = nullptr;
+			if ( bslsp->mat() && bslsp->mat()->isValid() )
+				mat = static_cast<ShaderMaterial *>(bslsp->mat());
 			
 			auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
 				return bslsp->getFlags1() & flag;
@@ -141,37 +147,106 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			bslsp->setFlags1( sf1 );
 			bslsp->setFlags2( sf2 );
 
-			bslsp->setAlpha( nif->get<float>( iProp, "Alpha" ) );
-
-			depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
-			depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
-
-
-			auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
-			auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
-
-			bslsp->setUvScale( uvScale[0], uvScale[1] );
-			bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
-
-			auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
-
-			bslsp->setClampMode( clampMode );
-
-			// Specular
-			if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
-				auto spC = nif->get<Color3>( iProp, "Specular Color" );
-				auto spG = nif->get<float>( iProp, "Glossiness" );
-				auto spS = nif->get<float>( iProp, "Specular Strength" );
-				bslsp->setSpecular( spC, spG, spS );
-			} else {
-				bslsp->setSpecular( Color3( 0, 0, 0 ), 0, 0 );
-			}
-
 			bslsp->hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 			bslsp->hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
-			bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
 
-			isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+			if ( !mat ) {
+				bslsp->setAlpha( nif->get<float>( iProp, "Alpha" ) );
+
+				depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+				depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+
+				auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
+				auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
+
+				bslsp->setUvScale( uvScale[0], uvScale[1] );
+				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
+
+				auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+
+				bslsp->setClampMode( clampMode );
+
+				// Specular
+				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
+					auto spC = nif->get<Color3>( iProp, "Specular Color" );
+					auto spG = nif->get<float>( iProp, "Glossiness" );
+					auto spS = nif->get<float>( iProp, "Specular Strength" );
+					bslsp->setSpecular( spC, spG, spS );
+				} else {
+					bslsp->setSpecular( Color3( 0, 0, 0 ), 0, 0 );
+				}
+
+				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular );
+				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
+				bslsp->hasRimlight = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
+
+				bslsp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+				bslsp->paletteScale = nif->get<float>( iProp, "Grayscale to Palette Scale" );
+
+				bslsp->fresnelPower = nif->get<float>( iProp, "Fresnel Power" );
+
+				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
+				bslsp->hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
+				bslsp->hasCubeMap = (
+					isST( ShaderFlags::ST_EnvironmentMap )
+					|| isST( ShaderFlags::ST_EyeEnvmap )
+					|| isST( ShaderFlags::ST_MultiLayerParallax )
+					)
+					&& bslsp->hasEnvironmentMap
+					&& !textures.value( 4, "" ).isEmpty();
+
+				bslsp->useEnvironmentMask = bslsp->hasEnvironmentMap && !textures.value( 5, "" ).isEmpty();
+
+				float envReflection = 0;
+				if ( isST( ShaderFlags::ST_EnvironmentMap ) ) {
+					envReflection = nif->get<float>( iProp, "Environment Map Scale" );
+				} else if ( isST( ShaderFlags::ST_EyeEnvmap ) ) {
+					envReflection = nif->get<float>( iProp, "Eye Cubemap Scale" );
+				}
+
+				bslsp->setEnvironmentReflection( envReflection );
+
+				isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+			} else {
+				// TODO: This will likely override UV animation
+				bslsp->setUvScale( mat->fUScale, mat->fVScale );
+				bslsp->setUvOffset( mat->fUOffset, mat->fVOffset );
+
+				bool tileU = mat->bTileU;
+				bool tileV = mat->bTileV;
+
+				TexClampMode clampMode;
+				if ( tileU && tileV )
+					clampMode = TexClampMode::WRAP_S_WRAP_T;
+				else if ( tileU )
+					clampMode = TexClampMode::WRAP_S_CLAMP_T;
+				else if ( tileV )
+					clampMode = TexClampMode::CLAMP_S_WRAP_T;
+				else
+					clampMode = TexClampMode::CLAMP_S_CLAMP_T;
+
+				bslsp->setClampMode( clampMode );
+
+				bslsp->fresnelPower = mat->fFresnelPower;
+				bslsp->greyscaleColor = mat->bGrayscaleToPaletteColor;
+				bslsp->paletteScale = mat->fGrayscaleToPaletteScale;
+				bslsp->hasEnvironmentMap = mat->bEnvironmentMapping;
+				bslsp->useEnvironmentMask = bslsp->hasEnvironmentMap && !mat->bGlowmap && !mat->textureList[5].isEmpty();
+				bslsp->hasSpecularMap = mat->bSpecularEnabled && !mat->textureList[2].isEmpty();
+				bslsp->hasCubeMap = mat->bEnvironmentMapping && !mat->textureList[4].isEmpty();
+				bslsp->hasBacklight = mat->bBackLighting;
+				bslsp->hasRimlight = mat->bRimLighting;
+				bslsp->rimPower = mat->fRimPower;
+				bslsp->backlightPower = mat->fBacklightPower;
+
+				depthTest = mat->bZBufferTest;
+				depthWrite = mat->bZBufferWrite;
+				isDoubleSided = mat->bTwoSided;
+
+				bslsp->setSpecular( mat->cSpecularColor, mat->fSmoothness, mat->fSpecularMult );
+				bslsp->setAlpha( mat->fAlpha );
+				bslsp->setEnvironmentReflection( mat->fEnvironmentMappingMaskScale );
+			}
 
 			// Mesh alpha override
 			translucent = (bslsp->getAlpha() < 1.0);
@@ -273,6 +348,10 @@ void BSShape::transformShapes()
 void BSShape::drawShapes( NodeList * secondPass, bool presort )
 {
 	if ( isHidden() )
+		return;
+
+	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
+	if ( !(scene->options & Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -458,7 +537,6 @@ void BSShape::drawSelection() const
 	if ( n == "Triangles" ) {
 		int s = scene->currentIndex.row();
 		if ( s >= 0 ) {
-			qDebug() << s;
 			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 			glColor4f( 1, 0, 0, 1 );
 

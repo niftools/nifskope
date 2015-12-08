@@ -1,4 +1,4 @@
-# default shader
+# environment
 
 checkgroup begin or
 	# Fallout 4 and later
@@ -9,10 +9,10 @@ checkgroup begin or
 	checkgroup end
 checkgroup end
 
-checkgroup begin and
+checkgroup begin or
     check BSLightingShaderProperty
-    check BSLightingShaderProperty/Skyrim Shader Type != 1
-    check BSLightingShaderProperty/Skyrim Shader Type != 16
+    check BSLightingShaderProperty/Skyrim Shader Type == 1
+    check BSLightingShaderProperty/Skyrim Shader Type == 16
     check NiAVObject/Vertex Flag 1 >= 3
     checkgroup begin or
         check BSTriShape
@@ -25,4 +25,4 @@ texcoords 0 base
 texcoords 1 tangents
 texcoords 2 bitangents
 
-shaders fo4_default.vert fo4_default.frag
+shaders fo4_env.vert fo4_env.frag

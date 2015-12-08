@@ -2,10 +2,12 @@
 
 uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
-uniform sampler2D LightMask;
+//uniform sampler2D LightMask;
 uniform sampler2D BacklightMap;
+uniform sampler2D EnvironmentMap;
 uniform sampler2D SpecularMap;
 uniform sampler2D GreyscaleMap;
+uniform samplerCube CubeMap;
 
 uniform vec3 specColor;
 uniform float specStrength;
@@ -19,8 +21,6 @@ uniform float glowMult;
 
 uniform float alpha;
 
-uniform vec3 tintColor;
-
 uniform vec2 uvScale;
 uniform vec2 uvOffset;
 
@@ -28,7 +28,8 @@ uniform bool hasEmit;
 uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
-uniform bool hasTintColor;
+uniform bool hasCubeMap;
+uniform bool hasEnvMask;
 uniform bool hasSpecularMap;
 uniform bool greyscaleColor;
 uniform bool doubleSided;
@@ -37,12 +38,20 @@ uniform float lightingEffect1;
 uniform float rimPower;
 uniform float backlightPower;
 
+uniform float envReflection;
+
+uniform mat4 worldMatrix;
+
 varying vec3 LightDir;
 varying vec3 ViewDir;
 
 varying vec4 A;
 varying vec4 C;
 varying vec4 D;
+
+varying vec3 N;
+varying vec3 t;
+varying vec3 b;
 
 
 float G1V(float NdotV, float k)
@@ -109,6 +118,7 @@ void main( void )
 	
 	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
 	
+	
 	vec3 L = normalize(LightDir);
 	vec3 V = normalize(ViewDir);
 	vec3 R = reflect(-L, normal);
@@ -120,9 +130,14 @@ void main( void )
 	float LdotH = max( dot(L, H), 0.000001 );
 	float NdotNegL = max( dot(normal, -L), 0.000001 );
 
+	vec3 reflected = reflect( V, normal );
+	vec3 reflectedVS = t * reflected.x + b * reflected.y + N * reflected.z;
+	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
+
+
 	vec4 color;
 	vec3 albedo = baseMap.rgb * C.rgb;
-	vec3 diffuse = A.rgb + D.rgb * NdotL;
+	vec3 diffuse = A.rgb + (D.rgb * NdotL);
 	diffuse *= 0.9; // Temp fudge for brightness;
 	if ( greyscaleColor ) {
 		vec4 luG = colorLookup( baseMap.g, C.g * paletteScale );
@@ -138,14 +153,31 @@ void main( void )
 
 	// Specular
 	float specR = texture2D( SpecularMap, offset ).r;
-	float g = 1.0 - (specR * specGlossiness);
+	float g = specR;
+	float ginv = 1.0 - g;
 	float s = texture2D( SpecularMap, offset ).g;
-	float roughness = scale( g, 0.1, 0.9 );
+	float roughness = scale( ginv, 0.1, 0.9 );
 	vec3 spec = vec3(0.0);
-	if ( hasSpecularMap ) {
+    if ( hasSpecularMap ) {
 		spec = specColor * s * LightingFuncGGX_REF( NdotL, NdotV, NdotH, LdotH, roughness, 0.04 ) * specStrength;
 		spec *= D.rgb;
 		spec = clamp( spec, 0.0, 1.0 );
+    }
+	
+	// Environment
+	vec4 cube;
+	if ( hasCubeMap ) {
+		cube = textureCubeLod( CubeMap, reflectedWS, 8.0 - g * 8.0 );
+		cube.rgb *= envReflection * specStrength * sqrt(g);
+		
+		if ( hasEnvMask ) {
+			vec4 env = texture2D( EnvironmentMap, offset );
+			cube.rgb *= env.r;
+		} else {
+			cube.rgb *= s;
+		}
+		
+		albedo += cube.rgb;
 	}
 
 	vec3 backlight = vec3(0.0);
@@ -157,9 +189,9 @@ void main( void )
 	//}
 
 	vec4 mask = vec4(0.0);
-	if ( hasRimlight || hasSoftlight ) {
-		mask = vec4( s );
-	}
+	//if ( hasRimlight || hasSoftlight ) {
+	//	mask = texture2D( LightMask, offset );
+	//}
 
 	vec3 rim = vec3(0.0);
 	if ( hasRimlight ) {
@@ -178,16 +210,12 @@ void main( void )
 	//	
 	//	emissive += soft * D.rgb;
 	//}
-	
-	if ( hasTintColor ) {
-		albedo *= tintColor;
-	}
 
 	color.rgb = albedo * (diffuse + emissive);
 	color.rgb += spec;
 	color.rgb = tonemap( color.rgb ) / tonemap( vec3(1.0) );
 	color.a = C.a * baseMap.a;
-    
+
 	gl_FragColor = color;
 	gl_FragColor.a *= alpha;
 }

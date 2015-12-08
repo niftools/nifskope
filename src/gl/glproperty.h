@@ -47,6 +47,9 @@ typedef int GLint;
 typedef unsigned int GLuint;
 typedef float GLfloat;
 
+
+class Material;
+
 //! Controllable properties attached to nodes and meshes
 class Property : public IControllable
 {
@@ -69,7 +72,7 @@ public:
 
 	enum Type
 	{
-		Alpha, ZBuffer, Material, Texturing, Texture, Specular, Wireframe, VertexColor, Stencil, ShaderLighting
+		Alpha, ZBuffer, MaterialProp, Texturing, Texture, Specular, Wireframe, VertexColor, Stencil, ShaderLighting
 	};
 
 	virtual Type type() const = 0;
@@ -278,7 +281,7 @@ class MaterialProperty final : public Property
 public:
 	MaterialProperty( Scene * scene, const QModelIndex & index ) : Property( scene, index ) {}
 
-	Type type() const override final { return Material; }
+	Type type() const override final { return MaterialProp; }
 	QString typeId() const override final { return "NiMaterialProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block ) override final;
@@ -295,7 +298,7 @@ protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 };
 
-REGISTER_PROPERTY( MaterialProperty, Material )
+REGISTER_PROPERTY( MaterialProperty, MaterialProp )
 
 //! A Property that specifies specularity
 class SpecularProperty final : public Property
@@ -517,7 +520,7 @@ public:
 	Type type() const override final { return ShaderLighting; }
 	QString typeId() const override { return "BSShaderLightingProperty"; }
 
-	void update( const NifModel * nif, const QModelIndex & block ) override final;
+	void update( const NifModel * nif, const QModelIndex & block ) override;
 
 	friend void glProperty( BSShaderLightingProperty * );
 
@@ -550,6 +553,8 @@ public:
 
 	void setClampMode( uint mode );
 
+	Material * mat() const;
+
 protected:
 	ShaderFlags::SF1 flags1 = ShaderFlags::SLSF1_ZBuffer_Test;
 	ShaderFlags::SF2 flags2 = ShaderFlags::SLSF2_ZBuffer_Write;
@@ -557,6 +562,9 @@ protected:
 	//QVector<QString> textures;
 	QPersistentModelIndex iTextureSet;
 	QPersistentModelIndex iSourceTexture;
+	QPersistentModelIndex iWetMaterial;
+
+	Material * material = nullptr;
 
 	UVScale uvScale;
 	UVOffset uvOffset;
@@ -581,6 +589,8 @@ public:
 	}
 
 	QString typeId() const override final { return "BSLightingShaderProperty"; }
+
+	void update( const NifModel * nif, const QModelIndex & block ) override;
 
 	Color3 getEmissiveColor() const;
 	Color3 getSpecularColor() const;
@@ -641,8 +651,14 @@ public:
 	bool hasDetailMask = false;
 	bool hasTintMask = false;
 	bool hasTintColor = false;
+	bool greyscaleColor = false;
 
 	ShaderFlags::ShaderType getShaderType();
+
+	float fresnelPower = 5.0;
+	float paletteScale = 1.0;
+	float rimPower = 2.0;
+	float backlightPower = 0.0;
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
@@ -681,14 +697,11 @@ class BSEffectShaderProperty final : public BSShaderLightingProperty
 public:
 	BSEffectShaderProperty( Scene * scene, const QModelIndex & index ) : BSShaderLightingProperty( scene, index )
 	{
-		hasSourceTexture = true;
-		hasGreyscaleMap = true;
-
-		greyscaleColor = false;
-		greyscaleAlpha = false;
 	}
 
 	QString typeId() const override final { return "BSEffectShaderProperty"; }
+
+	void update( const NifModel * nif, const QModelIndex & block ) override;
 
 	Color4 getEmissiveColor() const;
 	float getEmissiveMult() const;

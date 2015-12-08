@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "controllers.h"
 #include "glscene.h"
+#include "material.h"
 
 #include <QOpenGLContext>
 
@@ -817,6 +818,8 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
 		// handle niobject name="BSEffectShaderProperty...
 		if ( !iTextureSet.isValid() )
 			iSourceTexture = iBlock;
+
+		iWetMaterial = nif->getIndex( iBlock, "Wet Material" );
 	}
 }
 
@@ -915,8 +918,51 @@ bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
 
 QString BSShaderLightingProperty::fileName( int id ) const
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
+	const NifModel * nif;
 
+	// Fallout 4
+	nif = qobject_cast<const NifModel *>(iWetMaterial.model());
+	if ( nif ) {
+		// BSLSP
+		auto m = static_cast<ShaderMaterial *>(material);
+		if ( m && m->isValid() ) {
+			auto tex = m->textures();
+			if ( tex.count() == 9 ) {
+				switch ( id ) {
+				case 0: // Diffuse
+					if ( !tex[0].isEmpty() )
+						return tex[0];
+					break;
+				case 1: // Normal
+					if ( !tex[1].isEmpty() )
+						return tex[1];
+					break;
+				case 2: // Glow
+					if ( m->bGlowmap && !tex[5].isEmpty() )
+						return tex[5];
+					break;
+				case 3: // Greyscale
+					if ( m->bGrayscaleToPaletteColor && !tex[3].isEmpty() )
+						return tex[3];
+					break;
+				case 4: // Cubemap
+					if ( m->bEnvironmentMapping && !tex[4].isEmpty() )
+						return tex[4];
+					break;
+				case 5: // Env Mask
+					if ( m->bEnvironmentMapping && !tex[5].isEmpty() )
+						return tex[5];
+					break;
+				case 7: // Specular
+					if ( m->bSpecularEnabled && !tex[2].isEmpty() )
+						return tex[2];
+					break;
+				}
+			}
+		}
+	}
+
+	nif = qobject_cast<const NifModel *>(iTextureSet.model());
 	if ( nif && iTextureSet.isValid() ) {
 		int nTextures = nif->get<int>( iTextureSet, "Num Textures" );
 		QModelIndex iTextures = nif->getIndex( iTextureSet, "Textures" );
@@ -1013,9 +1059,31 @@ void BSShaderLightingProperty::setClampMode( uint mode )
 	clampMode = TexClampMode( mode );
 }
 
+Material * BSShaderLightingProperty::mat() const
+{
+	return material;
+}
+
 /*
 	BSLightingShaderProperty
 */
+
+void BSLightingShaderProperty::update( const NifModel * nif, const QModelIndex & property )
+{
+	BSShaderLightingProperty::update( nif, property );
+
+	if ( name.endsWith( ".bgsm", Qt::CaseInsensitive ) )
+		material = new ShaderMaterial( name );
+
+	if ( material && !material->isValid() )
+		material = nullptr;
+
+	if ( material && name.isEmpty() ) {
+		delete material;
+		material = nullptr;
+	}
+
+}
 
 void BSLightingShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
@@ -1172,6 +1240,22 @@ void BSLightingShaderProperty::setTintColor( Color3 c )
 /*
 	BSEffectShaderProperty
 */
+
+void BSEffectShaderProperty::update( const NifModel * nif, const QModelIndex & property )
+{
+	BSShaderLightingProperty::update( nif, property );
+
+	if ( name.endsWith( ".bgem", Qt::CaseInsensitive ) )
+		material = new EffectMaterial( name );
+
+	if ( material && !material->isValid() )
+		material = nullptr;
+
+	if ( material && name.isEmpty() ) {
+		delete material;
+		material = nullptr;
+	}
+}
 
 void BSEffectShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
