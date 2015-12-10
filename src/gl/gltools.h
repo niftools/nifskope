@@ -118,6 +118,7 @@ void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd = 8 );
 void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd = 8 );
 void drawCone( Vector3 c, Vector3 n, float a, int sd = 16 );
 void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd = 16 );
+void drawSphereSimple( Vector3 c, float r, int sd = 36 );
 void drawSphere( Vector3 c, float r, int sd = 8 );
 void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
 void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );

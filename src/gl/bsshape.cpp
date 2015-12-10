@@ -432,7 +432,17 @@ void BSShape::drawSelection() const
 	if ( isHidden() )
 		return;
 
-	if ( scene->currentBlock != iBlock )
+	bool extraData = false;
+
+	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
+	if ( !nif )
+		return;
+
+	auto currentBlock = nif->getBlockName( scene->currentBlock );
+	if ( currentBlock == "BSSkin::BoneData" )
+		extraData = true;
+
+	if ( scene->currentBlock != iBlock && !extraData )
 		return;
 
 	auto n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
@@ -475,6 +485,16 @@ void BSShape::drawSelection() const
 
 		glEnd();
 	};
+
+	if ( n == "Bounding Sphere" && currentBlock != "BSSkin::BoneData" ) {
+		Vector3 bvC = nif->get<Vector3>( scene->currentIndex.child( 0, 2 ) );
+		float bvR = nif->get<float>( scene->currentIndex.child( 1, 2 ) );
+
+		if ( bvR > 0.0 ) {
+			glColor4f( 1, 1, 1, 0.33 );
+			drawSphereSimple( bvC, bvR, 72 );
+		}
+	}
 
 	if ( n == "Vertex Data" || n == "Vertex" ) {
 		allv( 5.0 );
@@ -602,6 +622,46 @@ void BSShape::drawSelection() const
 				glEnd();
 			}
 		}
+		glPopMatrix();
+		return;
+	}
+
+	auto boneSphere = [nif]( QModelIndex b ) {
+		auto bSphere = nif->getIndex( b, "Bounding Sphere" );
+		auto bTrans = nif->get<Vector3>( b, "Translation" );
+		auto bRot = nif->get<Matrix>( b, "Rotation" );
+
+		Vector3 bvC = nif->get<Vector3>( bSphere.child( 0, 2 ) );
+		float bvR = nif->get<float>( bSphere.child( 1, 2 ) );
+
+		if ( bvR > 0.0 ) {
+			glColor4f( 1, 1, 1, 0.33 );
+			auto pos = bRot.inverted() * (bvC - bTrans);
+			drawSphereSimple( pos, bvR, 36 );
+		}
+	};
+
+	if ( n == "BSSkin::BoneData" ) {
+		auto bData = scene->currentBlock;
+		auto skin = nif->getParent( bData );
+		auto shape = nif->getParent( skin );
+
+		if ( nif->getBlock( shape ) == iBlock ) {
+			auto bones = nif->getIndex( bData, "Bones" );
+			int ct = nif->rowCount( bones );
+
+			for ( int i = 0; i < ct; i++ ) {
+				auto b = bones.child( i, 0 );
+				boneSphere( b );
+			}
+		}
+		glPopMatrix();
+		return;
+	}
+
+	if ( n == "Bones" && currentBlock == "BSSkin::BoneData" ) {
+		boneSphere( scene->currentIndex );
+		glPopMatrix();
 		return;
 	}
 

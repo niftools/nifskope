@@ -606,6 +606,13 @@ void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float a
 		glEnable( GL_CULL_FACE );
 }
 
+void drawSphereSimple( Vector3 c, float r, int sd )
+{
+	drawCircle( c, Vector3( 0, 0, 1 ), r, sd );
+	drawCircle( c, Vector3( 0, 1, 0 ), r, sd );
+	drawCircle( c, Vector3( 1, 0, 0 ), r, sd );
+}
+
 void drawSphere( Vector3 c, float r, int sd )
 {
 	for ( int j = -sd; j <= sd; j++ ) {
