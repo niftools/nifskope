@@ -17,7 +17,7 @@ contains(QT_VERSION, ^5\\.[0-2]\\..*) {
 CONFIG += c++11
 
 # Dependencies
-CONFIG += nvtristrip qhull soil
+CONFIG += nvtristrip qhull soil zlib
 win32:CONFIG += fsengine
 
 # Debug/Release options
@@ -206,6 +206,7 @@ HEADERS += \
 	src/ui/settingsdialog.h \
 	src/version.h \
 	lib/half.h \
+	lib/dds.h \
 	src/gl/bsshape.h \
 	src/material.h
 
@@ -367,6 +368,39 @@ soil {
         lib/soil/stb_image_aug.c
 }
 
+zlib {
+	INCLUDEPATH += lib/zlib
+
+	HEADERS += \
+		lib/zlib/crc32.h \
+		lib/zlib/deflate.h \
+		lib/zlib/gzguts.h \
+		lib/zlib/inffast.h \
+		lib/zlib/inffixed.h \
+		lib/zlib/inflate.h \
+		lib/zlib/inftrees.h \
+		lib/zlib/trees.h \
+		lib/zlib/zconf.h \
+		lib/zlib/zlib.h \
+		lib/zlib/zutil.h
+
+	SOURCES += \
+		lib/zlib/adler32.c \
+		lib/zlib/compress.c \
+		lib/zlib/crc32.c \
+		lib/zlib/deflate.c \
+		lib/zlib/gzclose.c \
+		lib/zlib/gzlib.c \
+		lib/zlib/gzread.c \
+		lib/zlib/gzwrite.c \
+		lib/zlib/infback.c \
+		lib/zlib/inffast.c \
+		lib/zlib/inflate.c \
+		lib/zlib/inftrees.c \
+		lib/zlib/trees.c \
+		lib/zlib/uncompr.c \
+		lib/zlib/zutil.c
+}
 
 ###############################
 ## COMPILER SCOPES

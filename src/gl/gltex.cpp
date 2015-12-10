@@ -165,7 +165,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 	}
 
 	// Temporary Facegeom support
-	if ( file.startsWith( "actors\\character", Qt::CaseInsensitive ) ) {
+	if ( !file.startsWith( "textures", Qt::CaseInsensitive ) ) {
 		filename.prepend( "textures\\" );
 	}
 
@@ -173,17 +173,15 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		filename.remove( 0, 1 );
 
 	QStringList extensions;
-	extensions << ".tga" << ".dds" << ".bmp" << ".nif" << ".texcache";
-#ifndef Q_OS_WIN
-	extensions << ".TGA" << ".DDS" << ".BMP" << ".NIF" << ".TEXCACHE";
-#endif
+	extensions << ".dds";
 	bool replaceExt = false;
 
 	bool textureAlternatives = settings.value( "Settings/Resources/Alternate Extensions", false ).toBool();
 	if ( textureAlternatives ) {
+		extensions << ".tga" << ".bmp" << ".nif" << ".texcache";
 		for ( const QString ext : QStringList{ extensions } )
 		{
-			if ( filename.endsWith( ext ) ) {
+			if ( filename.endsWith( ext, Qt::CaseInsensitive ) ) {
 				extensions.removeAll( ext );
 				extensions.prepend( ext );
 				filename = filename.left( filename.length() - ext.length() );
@@ -237,10 +235,8 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		for ( FSArchiveFile * archive : FSManager::archiveList() ) {
 			if ( archive ) {
 				filename = QDir::fromNativeSeparators( filename.toLower() );
-
 				if ( archive->hasFile( filename ) ) {
 					QByteArray outData;
-					//qDebug() << "Extracting " << filename;
 					archive->fileContents( filename, outData );
 
 					if ( !outData.isEmpty() ) {

@@ -100,7 +100,7 @@ QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 			dataPath += "/";
 		dataPath += dataDir;
 		QDir fs( dataPath );
-		for ( const QString& fn : fs.entryList( { "*.bsa" }, QDir::Files ) )
+		for ( const QString& fn : fs.entryList( { "*.bsa", "*.ba2" }, QDir::Files ) )
 		{
 			list << QDir::fromNativeSeparators(dataPath + QDir::separator() + fn);
 		}
@@ -118,6 +118,7 @@ QStringList FSManager::autodetectArchives( const QString & folder )
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout3", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\FalloutNV", "Data" );
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim", "Data" );
+	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Fallout4", "Data" );
 #endif
 
 	if ( !folder.isEmpty() ) {

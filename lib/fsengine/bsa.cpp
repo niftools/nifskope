@@ -31,6 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "bsa.h"
+#include "dds.h"
+#include "zlib/zlib.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -39,103 +41,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QFileInfo>
 
-/* Default header data */
-#define MW_BSAHEADER_FILEID  0x00000100 //!< Magic for Morrowind BSA
-#define OB_BSAHEADER_FILEID  0x00415342 //!< Magic for Oblivion BSA, the literal string "BSA\0".
-#define OB_BSAHEADER_VERSION 0x67 //!< Version number of an Oblivion BSA
-#define F3_BSAHEADER_VERSION 0x68 //!< Version number of a Fallout 3 BSA
-
-/* Archive flags */
-#define OB_BSAARCHIVE_PATHNAMES           0x0001 //!< Whether the BSA has names for paths
-#define OB_BSAARCHIVE_FILENAMES           0x0002 //!< Whether the BSA has names for files
-#define OB_BSAARCHIVE_COMPRESSFILES       0x0004 //!< Whether the files are compressed
-#define F3_BSAARCHIVE_PREFIXFULLFILENAMES 0x0100 //!< Whether the name is prefixed to the data?
-
-/* File flags */
-#define OB_BSAFILE_NIF  0x0001 //!< Set when the BSA contains NIF files
-#define OB_BSAFILE_DDS  0x0002 //!< Set when the BSA contains DDS files
-#define OB_BSAFILE_XML  0x0004 //!< Set when the BSA contains XML files
-#define OB_BSAFILE_WAV  0x0008 //!< Set when the BSA contains WAV files
-#define OB_BSAFILE_MP3  0x0010 //!< Set when the BSA contains MP3 files
-#define OB_BSAFILE_TXT  0x0020 //!< Set when the BSA contains TXT files
-#define OB_BSAFILE_HTML 0x0020 //!< Set when the BSA contains HTML files
-#define OB_BSAFILE_BAT  0x0020 //!< Set when the BSA contains BAT files
-#define OB_BSAFILE_SCC  0x0020 //!< Set when the BSA contains SCC files
-#define OB_BSAFILE_SPT  0x0040 //!< Set when the BSA contains SPT files
-#define OB_BSAFILE_TEX  0x0080 //!< Set when the BSA contains TEX files
-#define OB_BSAFILE_FNT  0x0080 //!< Set when the BSA contains FNT files
-#define OB_BSAFILE_CTL  0x0100 //!< Set when the BSA contains CTL files
-
-/* Bitmasks for the size field in the header */
-#define OB_BSAFILE_SIZEMASK 0x3fffffff //!< Bit mask with OBBSAFileInfo::sizeFlags to get the size of the file
-
-/* Record flags */
-#define OB_BSAFILE_FLAG_COMPRESS 0xC0000000 //!< Bit mask with OBBSAFileInfo::sizeFlags to get the compression status
-
-//! \file bsa.cpp OBBSAHeader / \link OBBSAFileInfo FileInfo\endlink / \link OBBSAFolderInfo FolderInfo\endlink; MWBSAHeader, MWBSAFileSizeOffset
-
-//! The header of an Oblivion BSA.
-/*!
- * Follows OB_BSAHEADER_FILEID and OB_BSAHEADER_VERSION.
- */
-struct OBBSAHeader
-{
-	quint32 FolderRecordOffset; //!< Offset of beginning of folder records
-	quint32 ArchiveFlags; //!< Archive flags
-	quint32 FolderCount; //!< Total number of folder records (OBBSAFolderInfo)
-	quint32 FileCount; //!< Total number of file records (OBBSAFileInfo)
-	quint32 FolderNameLength; //!< Total length of folder names
-	quint32 FileNameLength; //!< Total length of file names
-	quint32 FileFlags; //!< File flags
-
-	friend QDebug operator<<( QDebug dbg, const OBBSAHeader & head )
-	{
-		return dbg << "BSAHeader:"
-			<< "\n  folder offset" << head.FolderRecordOffset
-			<< "\n  archive flags" << head.ArchiveFlags
-			<< "\n  folder Count" << head.FolderCount
-			<< "\n  file Count" << head.FileCount
-			<< "\n  folder name length" << head.FolderNameLength
-			<< "\n  file name length" << head.FileNameLength
-			<< "\n  file flags" << head.FileFlags;
-	}
-	
-};
-
-//! Info for a file inside an Oblivion BSA
-struct OBBSAFileInfo
-{
-	quint64 hash; //!< Hash of the filename
-	quint32 sizeFlags; //!< Size of the data, possibly with OB_BSAFILE_FLAG_COMPRESS set
-	quint32 offset; //!< Offset to raw file data
-};
-
-//! Info for a folder inside an Oblivion BSA
-struct OBBSAFolderInfo
-{
-	quint64 hash; //!< Hash of the folder name
-	quint32 fileCount; //!< Number of files in folder
-	quint32 offset; //!< Offset to name of this folder
-};
-
-//! The header of a Morrowind BSA
-struct MWBSAHeader
-{
-	quint32 HashOffset; //!< Offset of hash table minus header size (12)
-	quint32 FileCount; //!< Number of files in the archive
-};
-
-//! The file size and offset of an entry in a Morrowind BSA
-struct MWBSAFileSizeOffset
-{
-	quint32 size; //!< The size of the file
-	quint32 offset; //!< The offset of the file
-};
 
 // see bsa.h
 quint32 BSA::BSAFile::size() const
 {
-	return sizeFlags & OB_BSAFILE_SIZEMASK;
+	if ( sizeFlags > 0 ) {
+		// Skyrim and earlier
+		return sizeFlags & OB_BSAFILE_SIZEMASK;
+	}
+	// TODO: Not correct for texture BA2s
+	return (packedLength == 0) ? unpackedLength : packedLength;
 }
 
 // see bsa.h
@@ -170,11 +85,62 @@ static bool BSAReadSizedString( QFile & bsa, QString & s )
 	}
 }
 
+QByteArray gUncompress( const QByteArray & data, const int size )
+{
+	if ( data.size() <= 4 ) {
+		qWarning( "gUncompress: Input data is truncated" );
+		return QByteArray();
+	}
+
+	QByteArray result;
+
+	int ret;
+	z_stream strm;
+	static const int CHUNK_SIZE = 1024;
+	char out[CHUNK_SIZE];
+
+	/* allocate inflate state */
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = size;
+	strm.next_in = (Bytef*)(data.data());
+
+	ret = inflateInit2( &strm, 15 + 32 ); // gzip decoding
+	Q_ASSERT( ret == Z_OK );
+	if ( ret != Z_OK )
+		return QByteArray();
+
+	// run inflate()
+	do {
+		strm.avail_out = CHUNK_SIZE;
+		strm.next_out = (Bytef*)(out);
+
+		ret = inflate( &strm, Z_NO_FLUSH );
+		Q_ASSERT( ret != Z_STREAM_ERROR );  // state not clobbered
+
+		switch ( ret ) {
+		case Z_NEED_DICT:
+			ret = Z_DATA_ERROR;     // and fall through
+		case Z_DATA_ERROR:
+		case Z_MEM_ERROR:
+			(void)inflateEnd( &strm );
+			return QByteArray();
+		}
+
+		result.append( out, CHUNK_SIZE - strm.avail_out );
+	} while ( strm.avail_out == 0 );
+
+	// clean up and return
+	inflateEnd( &strm );
+	return result;
+}
+
 // see bsa.h
 BSA::BSA( const QString & filename )
 	: FSArchiveFile(), bsa( filename ), bsaInfo( QFileInfo(filename) ), status( "initialized" )
 {
-	bsaPath = bsaInfo.absolutePath() + "/" + bsaInfo.fileName();
+	bsaPath = bsaInfo.absoluteFilePath();
 	bsaBase = bsaInfo.absolutePath();
 	bsaName = bsaInfo.fileName();
 }
@@ -197,15 +163,19 @@ bool BSA::canOpen( const QString & fn )
 			return false;
 		
 		//qDebug() << "Magic:" << QString::number( magic, 16 );
-		if ( magic == OB_BSAHEADER_FILEID )
-		{
+		if ( magic == F4_BSAHEADER_FILEID ) {
 			if ( f.read( (char *) & version, sizeof( version ) ) != 4 )
 				return false;
-			
-			return ( version == OB_BSAHEADER_VERSION || version == F3_BSAHEADER_VERSION );
-		}
-		else
+			return version == F4_BSAHEADER_VERSION;
+		} else if ( magic == OB_BSAHEADER_FILEID ) {
+			if ( f.read( (char *)&version, sizeof( version ) ) != 4 )
+				return false;
+
+			return (version == OB_BSAHEADER_VERSION || version == F3_BSAHEADER_VERSION);
+		} else {
 			return magic == MW_BSAHEADER_FILEID;
+		}
+
 	}
 	
 	return false;
@@ -224,8 +194,83 @@ bool BSA::open()
 		quint32 magic, version;
 		
 		bsa.read( (char*) &magic, sizeof( magic ) );
-		
-		if ( magic == OB_BSAHEADER_FILEID )
+
+		if ( magic == F4_BSAHEADER_FILEID ) {
+			bsa.read( (char*)&version, sizeof( version ) );
+
+			if ( version != F4_BSAHEADER_VERSION )
+				throw QString( "file version" );
+
+			F4BSAHeader header;
+			if ( bsa.read( (char *)&header, sizeof( header ) ) != sizeof( header ) )
+				throw QString( "header size" );
+
+			numFiles = header.numFiles;
+
+			QVector<QString> filepaths;
+			if ( bsa.seek( header.nameTableOffset ) ) {
+				for ( quint32 i = 0; i < header.numFiles; i++ ) {
+					quint8 length;
+					bsa.read( (char*)&length, 2 );
+
+					QByteArray strdata( length, char( 0 ) );
+					bsa.read( strdata.data(), length );
+
+					filepaths.append( QString( strdata ) );
+				}
+			}
+
+			QString h = QString::fromLatin1( header.type, 4 );
+			if ( h == "GNRL" ) {
+				// General BA2 Format
+				if ( bsa.seek( sizeof( header ) + 8 ) ) {
+					for ( quint32 i = 0; i < header.numFiles; i++ ) {
+						F4GeneralInfo finfo;
+						bsa.read( (char*)&finfo, 36 );
+
+						QString fullpath = filepaths[i];
+						fullpath.replace( "\\", "/" );
+
+						QString filename = fullpath.right( fullpath.length() - fullpath.lastIndexOf( "/" ) - 1 );
+						QString folderName = fullpath.left( fullpath.lastIndexOf( "/" ) );
+
+						BSAFolder * folder = insertFolder( folderName );
+
+						insertFile( folder, filename, finfo.packedSize, finfo.unpackedSize, finfo.offset );
+					}
+				}
+			} else if ( h == "DX10" ) {
+				// Texture BA2 Format
+				if ( bsa.seek( sizeof( header ) + 8 ) ) {
+					for ( quint32 i = 0; i < header.numFiles; i++ ) {
+						F4Tex tex;
+						bsa.read( (char*)&tex.header, 24 );
+
+						QVector<F4TexChunk> texChunks;
+						for ( quint32 j = 0; j < tex.header.numChunks; j++ ) {
+							F4TexChunk texChunk;
+							bsa.read( (char*)&texChunk, 24 );
+							texChunks.append( texChunk );
+						}
+
+						tex.chunks = texChunks;
+
+						QString fullpath = filepaths[i];
+						fullpath.replace( "\\", "/" );
+
+						QString filename = fullpath.right( fullpath.length() - fullpath.lastIndexOf( "/" ) - 1 );
+						QString folderName = fullpath.left( fullpath.lastIndexOf( "/" ) );
+
+						BSAFolder * folder = insertFolder( folderName );
+
+						F4TexChunk chunk = tex.chunks[0];
+
+						insertFile( folder, filename, chunk.packedSize, chunk.unpackedSize, chunk.offset, tex );
+					}
+				}
+			}
+		}
+		else if ( magic == OB_BSAHEADER_FILEID )
 		{
 			bsa.read( (char*) &version, sizeof( version ) );
 			
@@ -237,6 +282,8 @@ bool BSA::open()
 			if ( bsa.read( (char *) & header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header size" );
 			
+			numFiles = header.FileCount;
+			
 			//qDebug() << bsaName << header;
 			
 			if ( ( header.ArchiveFlags & OB_BSAARCHIVE_PATHNAMES ) == 0 || ( header.ArchiveFlags & OB_BSAARCHIVE_FILENAMES ) == 0 )
@@ -246,8 +293,6 @@ bool BSA::open()
 			
 			if (version == F3_BSAHEADER_VERSION) {
 				namePrefix = header.ArchiveFlags & F3_BSAARCHIVE_PREFIXFULLFILENAMES;
-			} else {
-				namePrefix = false;
 			}
 			
 			if ( ! bsa.seek( header.FolderRecordOffset + header.FolderNameLength + header.FolderCount * ( 1 + sizeof( OBBSAFolderInfo ) ) + header.FileCount * sizeof( OBBSAFileInfo ) ) )
@@ -286,7 +331,6 @@ bool BSA::open()
 					throw QString( "folder name read" );
 				}
 				
-				// qDebug() << folderName;
 				
 				BSAFolder * folder = insertFolder( folderName );
 				
@@ -318,7 +362,7 @@ bool BSA::open()
 			if ( bsa.read( (char *) & header, sizeof( header ) ) != sizeof( header ) )
 				throw QString( "header" );
 			
-			
+			numFiles = header.FileCount;
 			compressToggle = false;
 			namePrefix = false;
 			
@@ -417,18 +461,173 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 				if (ok) ok = bsa.seek( file->offset + 1 + len );
 			}
 			content.resize( filesz );
-			if ( ok && bsa.read( content.data(), filesz ) == filesz )
-			{
-				if ( file->compressed() ^ compressToggle )
-				{
-					quint8 x = content[0];
-					content[0] = content[3];
-					content[3] = x;
-					x = content[1];
-					content[1] = content[2];
-					content[2] = x;
-					content = qUncompress( content );
+			if ( ok && bsa.read( content.data(), filesz ) == filesz ) {
+				if ( file->sizeFlags > 0 && (file->compressed() ^ compressToggle) ) {
+					// BSA
+#ifndef QT_NO_DEBUG
+					QByteArray tmp( content );
+					char a = tmp[0];
+					char b = tmp[1];
+					tmp[0] = tmp[3];
+					tmp[3] = a;
+					tmp[1] = tmp[2];
+					tmp[2] = b;
+
+					QByteArray tmp2( content );
+					tmp2.remove( 0, 4 );
+
+					Q_ASSERT( qUncompress( tmp ) == gUncompress( tmp2, filesz - 4 ) );
+#endif
+					content.remove( 0, 4 );
+					QByteArray tmp3( content );
+
+					content = gUncompress( tmp3, filesz - 4 );
+
+				} else if ( file->packedLength > 0 && !file->tex.chunks.count() ) {
+					// General BA2
+					QByteArray tmp( content );
+					content.resize( file->unpackedLength );
+
+#ifndef QT_NO_DEBUG
+					QByteArray tmp2( content );
+					int f = file->packedLength;
+					char s[4] = { ((f >> 24) & 0xFF), ((f >> 16) & 0xFF), ((f >> 8) & 0xFF), ((f >> 0) & 0xFF) };
+
+					tmp2.prepend( s, 4 );
+
+					//Q_ASSERT( qUncompress( tmp2 ) == gUncompress( tmp, file->packedLength ) );
+#endif
+
+					content = gUncompress( tmp, file->packedLength );
+				} else if ( file->tex.chunks.count() ) {
+					// Fill DDS Header
+					DDS_HEADER ddsHeader = { 0 };
+					DDS_HEADER_DXT10 dx10Header = {};
+
+					bool dx10 = false;
+
+					ddsHeader.dwSize = sizeof( ddsHeader );
+					ddsHeader.dwHeaderFlags = DDS_HEADER_FLAGS_TEXTURE | DDS_HEADER_FLAGS_LINEARSIZE | DDS_HEADER_FLAGS_MIPMAP;
+					ddsHeader.dwHeight = file->tex.header.height;
+					ddsHeader.dwWidth = file->tex.header.width;
+					ddsHeader.dwMipMapCount = file->tex.header.numMips;
+					ddsHeader.ddspf.dwSize = sizeof( DDS_PIXELFORMAT );
+					ddsHeader.dwSurfaceFlags = DDS_SURFACE_FLAGS_TEXTURE | DDS_SURFACE_FLAGS_MIPMAP;
+
+					if ( file->tex.header.unk16 == 2049 )
+						ddsHeader.dwCubemapFlags = DDS_CUBEMAP_ALLFACES;
+
+					bool supported = true;
+
+					switch ( file->tex.header.format ) {
+					case DXGI_FORMAT_BC1_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', 'T', '1' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height / 2;	// 4bpp
+						break;
+
+					case DXGI_FORMAT_BC2_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', 'T', '3' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+						break;
+
+					case DXGI_FORMAT_BC3_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', 'T', '5' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+						break;
+
+					case DXGI_FORMAT_BC5_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'A', 'T', 'I', '2' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+						break;
+
+					case DXGI_FORMAT_BC7_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+
+						dx10 = true;
+						dx10Header.dxgiFormat = DXGI_FORMAT_BC7_UNORM;
+						break;
+
+					case DXGI_FORMAT_B8G8R8A8_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_RGBA;
+						ddsHeader.ddspf.dwRGBBitCount = 32;
+						ddsHeader.ddspf.dwRBitMask = 0x00FF0000;
+						ddsHeader.ddspf.dwGBitMask = 0x0000FF00;
+						ddsHeader.ddspf.dwBBitMask = 0x000000FF;
+						ddsHeader.ddspf.dwABitMask = 0xFF000000;
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height * 4;	// 32bpp
+						break;
+
+					case DXGI_FORMAT_R8_UNORM:
+						ddsHeader.ddspf.dwFlags = DDS_RGB;
+						ddsHeader.ddspf.dwRGBBitCount = 8;
+						ddsHeader.ddspf.dwRBitMask = 0xFF;
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+						break;
+
+					default:
+						supported = false;
+						break;
+					}
+
+					if ( !supported )
+						return false;
+
+					char dds[sizeof( ddsHeader )];
+					memcpy( dds, &ddsHeader, sizeof( ddsHeader ) );
+
+					int texSize = 0; // = file->unpackedLength;
+					int hdrSize = sizeof( ddsHeader ) + 4;
+
+					content.clear();
+					content.append( QByteArray::fromStdString( "DDS " ) );
+					content.append( QByteArray::fromRawData( dds, sizeof( ddsHeader ) ) );
+					Q_ASSERT( content.size() == hdrSize );
+
+					if ( dx10 ) {
+						dx10Header.resourceDimension = DDS_DIMENSION_TEXTURE2D;
+						dx10Header.miscFlag = 0;
+						dx10Header.arraySize = 1;
+						dx10Header.miscFlags2 = 0;
+
+						char dds2[sizeof( dx10Header )];
+						memcpy( dds2, &dx10Header, sizeof( dx10Header ) );
+						content.append( QByteArray::fromRawData( dds2, sizeof( dx10Header ) ) );
+					}
+
+					// Start at 1st chunk now
+					for ( int i = 0; i < file->tex.chunks.count(); i++ ) {
+						F4TexChunk chunk = file->tex.chunks[i];
+						if ( bsa.seek( chunk.offset ) ) {
+							QByteArray chunkData;
+
+							if ( chunk.packedSize > 0 ) {
+								chunkData.resize( chunk.packedSize );
+								if ( bsa.read( chunkData.data(), chunk.packedSize ) == chunk.packedSize ) {
+									chunkData = gUncompress( chunkData, chunk.packedSize );
+
+									if ( chunkData.size() != chunk.unpackedSize )
+										qCritical() << "Size does not match at " << chunk.offset;
+								}
+							} else if ( !(bsa.read( chunkData.data(), chunk.unpackedSize ) == chunk.unpackedSize) ) {
+								qCritical() << "Size does not match at " << chunk.offset;
+							}
+							texSize += chunk.unpackedSize;
+
+							content.append( chunkData );
+							//Q_ASSERT( content.size() - hdrSize == texSize );
+						} else {
+							qCritical() << "Seek error";
+						}
+					}
+
 				}
+
 				return true;
 			}
 		}
@@ -437,7 +636,7 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 }
 
 // see bsa.h
-QString BSA::absoluteFilePath( const QString & fn ) const
+QString BSA::getAbsoluteFilePath( const QString & fn ) const
 {
 	if ( hasFile(fn) ) {
 		return QFileInfo(this->bsaPath, fn).absoluteFilePath();
@@ -487,6 +686,20 @@ BSA::BSAFile * BSA::insertFile( BSAFolder * folder, QString name, quint32 sizeFl
 	file->offset = offset;
 	
 	folder->files.insert( name, file );
+	return file;
+}
+
+BSA::BSAFile * BSA::insertFile( BSAFolder * folder, QString name, quint32 packed, quint32 unpacked, quint64 offset, F4Tex dds )
+{
+	name = name.toLower();
+
+	BSAFile * file = new BSAFile;
+	file->tex = dds;
+	file->packedLength = packed;
+	file->unpackedLength = unpacked;
+	file->offset = offset;
+	folder->files.insert( name, file );
+
 	return file;
 }
 

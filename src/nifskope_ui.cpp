@@ -830,7 +830,7 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 
 void NifSkope::archiveDlg()
 {
-	QString file = QFileDialog::getOpenFileName( this, tr( "Open Archive" ), "", "BSA (*.bsa)" );
+	QString file = QFileDialog::getOpenFileName( this, tr( "Open Archive" ), "", "Archives (*.bsa *.ba2)" );
 	if ( !file.isEmpty() )
 		openArchive( file );
 }

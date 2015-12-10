@@ -85,7 +85,7 @@ public:
 	virtual bool hasFile( const QString & ) const = 0;
 	virtual qint64 fileSize( const QString & ) const = 0;
 	virtual bool fileContents( const QString &, QByteArray & ) = 0;
-	virtual QString absoluteFilePath( const QString & ) const = 0;
+	virtual QString getAbsoluteFilePath( const QString & ) const = 0;
 
 	virtual uint ownerId( const QString & ) const = 0;
 	virtual QString owner( const QString & ) const = 0;

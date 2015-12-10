@@ -598,7 +598,7 @@ void NifSkope::setCurrentFile( const QString & filename )
 void NifSkope::setCurrentArchiveFile( const QString & filepath )
 {
 	QString bsa = filepath.split( "/" ).first();
-	if ( !bsa.endsWith( ".bsa", Qt::CaseInsensitive ) )
+	if ( !bsa.endsWith( ".bsa", Qt::CaseInsensitive ) && !bsa.endsWith( ".ba2", Qt::CaseInsensitive ) )
 		return;
 
 	// Strip BSA name from beginning of path

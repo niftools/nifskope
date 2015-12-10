@@ -651,10 +651,20 @@ void SettingsResources::on_btnFolderAutoDetect_clicked()
 	// List to hold all games paths that were detected
 	QStringList list;
 
+	QString beth = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\%1";
+
+	// Fallout 4
+	{
+		regFolderPath( list, beth.arg( "Fallout4" ),
+			"Installed Path",
+			"Data",
+			{ "/Textures" },
+			{ ".ba2" }
+		);
+	}
+
 	// Skyrim, Fallout, Oblivion
 	{
-		QString beth = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\%1";
-
 		regFolderPaths( list,
 			{ beth.arg( "Skyrim" ), beth.arg( "FalloutNV" ), beth.arg( "Fallout3" ), beth.arg( "Oblivion" ) },
 			"Installed Path",
@@ -713,7 +723,7 @@ void SettingsResources::on_btnArchiveAdd_clicked()
 		this,
 		"Select one or more archives",
 		"",
-		"BSA (*.bsa)"
+		"Archive (*.bsa *.ba2)"
 	);
 
 	for ( int i = 0; i < files.count(); i++ ) {
