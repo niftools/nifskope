@@ -4,3 +4,6 @@
 [submodule "qhull"]
 	path = lib/qhull
 	url = git@github.com:qhull/qhull.git
+[submodule "lib/zlib"]
+	path = lib/zlib
+	url = git@github.com:madler/zlib.git
