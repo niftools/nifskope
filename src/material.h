@@ -180,6 +180,23 @@ public:
 
 protected:
 	bool readFile() override final;
+
+	quint8 bBloodEnabled;
+	quint8 bEffectLightingEnabled;
+	quint8 bFalloffEnabled;
+	quint8 bFalloffColorEnabled;
+	quint8 bGrayscaleToPaletteAlpha;
+	quint8 bSoftEnabled;
+	float baseR = 0, baseG = 0, baseB = 0;
+	Color3 cBaseColor;
+	float fBaseColorScale;
+	float fFalloffStartAngle;
+	float fFalloffStopAngle;
+	float fFalloffStartOpacity;
+	float fFalloffStopOpacity;
+	float fLightingInfluence;
+	quint8 iEnvmapMinLOD;
+	float fSoftDepth;
 };
 
 

@@ -219,6 +219,18 @@ bool EffectMaterial::readFile()
 			in >> str;
 			textureList << QString( str );
 		}
+
+		in >> bBloodEnabled >> bEffectLightingEnabled;
+		in >> bFalloffEnabled >> bFalloffColorEnabled;
+		in >> bGrayscaleToPaletteAlpha >> bSoftEnabled;
+		in >> baseR >> baseG >> baseB;
+
+		cBaseColor.setRGB( baseR, baseG, baseB );
+
+		in >> fBaseColorScale;
+		in >> fFalloffStartAngle >> fFalloffStopAngle;
+		in >> fFalloffStartOpacity >> fFalloffStopOpacity;
+		in >> fLightingInfluence >> iEnvmapMinLOD >> fSoftDepth;
 	}
 
 	return in.status() == QDataStream::Ok;
