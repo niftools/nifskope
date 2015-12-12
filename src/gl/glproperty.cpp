@@ -971,15 +971,25 @@ QString BSShaderLightingProperty::fileName( int id ) const
 			return nif->get<QString>( iTextures.child( id, 0 ) );
 	} else {
 		// handle niobject name="BSEffectShaderProperty...
-		nif = qobject_cast<const NifModel *>(iSourceTexture.model());
-		if ( id == 0 ) {
-			if ( nif && iSourceTexture.isValid() )
-				return nif->get<QString>( iSourceTexture, "Source Texture" );
-		}
+		auto m = static_cast<EffectMaterial *>(material);
 
-		if ( id == 1 ) {
-			if ( nif && iSourceTexture.isValid() )
+		nif = qobject_cast<const NifModel *>(iSourceTexture.model());
+		if ( !m && nif && iSourceTexture.isValid() ) {
+			switch ( id ) {
+			case 0:
+				return nif->get<QString>( iSourceTexture, "Source Texture" );
+			case 1:
 				return nif->get<QString>( iSourceTexture, "Greyscale Texture" );
+			case 2:
+				return nif->get<QString>( iSourceTexture, "Env Map Texture" );
+			case 3:
+				return nif->get<QString>( iSourceTexture, "Normal Texture" );
+			case 4:
+				return nif->get<QString>( iSourceTexture, "Env Mask Texture" );
+			}
+		} else if ( m->isValid() ) {
+			auto tex = m->textures();
+			return tex[id];
 		}
 	}
 
@@ -1300,6 +1310,25 @@ void BSEffectShaderProperty::setFalloff( float startA, float stopA, float startO
 	falloff.softDepth = soft;
 }
 
+float BSEffectShaderProperty::getEnvironmentReflection() const
+{
+	return environmentReflection;
+}
+
+void BSEffectShaderProperty::setEnvironmentReflection( float strength )
+{
+	environmentReflection = strength;
+}
+
+float BSEffectShaderProperty::getLightingInfluence() const
+{
+	return lightingInfluence;
+}
+
+void BSEffectShaderProperty::setLightingInfluence( float strength )
+{
+	lightingInfluence = strength;
+}
 
 /*
 	BSWaterShaderProperty

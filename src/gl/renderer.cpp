@@ -842,6 +842,8 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 	// BSEffectShaderProperty
 	if ( mesh->bsesp ) {
 
+		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
+
 		clamp = mesh->bsesp->getClampMode();
 		clamp = TexClampMode(clamp ^ TexClampMode::MIRRORED_S_MIRRORED_T);
 
@@ -875,21 +877,52 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		uni4f( "glowColor", emC.red(), emC.green(), emC.blue(), emC.alpha() );
 		uni1f( "glowMult", mesh->bsesp->getEmissiveMult() );
 
-		if ( nif->getUserVersion2() < 130 ) {
-			// Falloff params
+		// Falloff params
 
-			uni4f( "falloffParams",
-				mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
-				mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
-				);
+		uni4f( "falloffParams",
+			mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
+			mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
+		);
 
-			uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
+		uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
 
-			// BSEffectShader textures
-			if ( mesh->bsesp->hasGreyscaleMap ) {
-				if ( !uniSampler( "GreyscaleMap", 1, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
-					return false;
+		// BSEffectShader textures
+		if ( mesh->bsesp->hasGreyscaleMap ) {
+			if ( !uniSampler( "GreyscaleMap", 1, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
+				return false;
+		}
+
+		if ( nif->getUserVersion2() == 130 ) {
+
+			uni1f( "lightingInfluence", mesh->bsesp->getLightingInfluence() );
+
+			uni1i( "hasNormalMap", mesh->bsesp->hasNormalMap );
+
+			if ( mesh->bsesp->hasNormalMap ) {
+				uniSampler( "NormalMap", 3, default_n, clamp );
 			}
+
+			uni1i( "hasCubeMap", mesh->bsesp->hasEnvMap );
+			uni1i( "hasEnvMask", mesh->bsesp->hasEnvMask );
+
+			if ( mesh->bsesp->hasEnvMap ) {
+				uni1f( "envReflection", mesh->bsesp->getEnvironmentReflection() );
+
+				if ( mesh->bsesp->hasEnvMask && !uniSampler( "SpecularMap", 4, white, clamp ) )
+					return false;
+
+				GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
+				if ( uniCubeMap >= 0 ) {
+
+					QString fname = bsprop->fileName( 2 );
+
+					if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bindCube( 2, fname )) )
+						return false;
+
+					fn->glUniform1i( uniCubeMap, texunit++ );
+				}
+			}
+		
 		}
 	}
 

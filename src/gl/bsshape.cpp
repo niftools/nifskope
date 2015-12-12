@@ -276,6 +276,10 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				if ( !bsesp )
 					break;
 
+				EffectMaterial * mat = nullptr;
+				if ( bsesp->mat() && bsesp->mat()->isValid() )
+					mat = static_cast<EffectMaterial *>(bsesp->mat());
+
 				auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
 					return bsesp->getFlags1() & flag;
 				};
@@ -290,12 +294,97 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				bsesp->setFlags1( sf1 );
 				bsesp->setFlags2( sf2 );
 
-				depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
-				depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+				bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+				bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
-				auto emC = nif->get<Color4>( iProp, "Emissive Color" );
-				auto emM = nif->get<float>( iProp, "Emissive Multiple" );
-				bsesp->setEmissive( emC, emM );
+				if ( !mat ) {
+					auto emC = nif->get<Color4>( iProp, "Emissive Color" );
+					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
+					bsesp->setEmissive( emC, emM );
+
+					bsesp->setLightingInfluence( 0.0 ); // ??
+					bsesp->setEnvironmentReflection( nif->get<float>( iProp, "Environment Map Scale" ) );
+
+					bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
+					bsesp->hasGreyscaleMap = !nif->get<QString>( iProp, "Greyscale Texture" ).isEmpty();
+					bsesp->hasEnvMap = !nif->get<QString>( iProp, "Env Map Texture" ).isEmpty();
+					bsesp->hasNormalMap = !nif->get<QString>( iProp, "Normal Texture" ).isEmpty();
+					bsesp->hasEnvMask = !nif->get<QString>( iProp, "Env Mask Texture" ).isEmpty();
+
+					bsesp->greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
+					bsesp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+
+					bsesp->useFalloff = hasSF1( ShaderFlags::SLSF1_Use_Falloff );
+
+					depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+					depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+
+					auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
+					auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
+
+					bsesp->setUvScale( uvScale[0], uvScale[1] );
+					bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
+
+					auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+
+					bsesp->setClampMode( clampMode );
+
+					auto startA = nif->get<float>( iProp, "Falloff Start Angle" );
+					auto stopA = nif->get<float>( iProp, "Falloff Stop Angle" );
+					auto startO = nif->get<float>( iProp, "Falloff Start Opacity" );
+					auto stopO = nif->get<float>( iProp, "Falloff Stop Opacity" );
+					auto soft = nif->get<float>( iProp, "Soft Falloff Depth" );
+
+					bsesp->setFalloff( startA, stopA, startO, stopO, soft );
+
+					isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+				} else {
+					Color4 emC = Color4( mat->cBaseColor, mat->fAlpha );
+					float emM = mat->fBaseColorScale;
+
+					bsesp->setEmissive( emC, emM );
+
+					bsesp->setLightingInfluence( mat->fLightingInfluence );
+					bsesp->setEnvironmentReflection( mat->fEnvironmentMappingMaskScale );
+
+					bsesp->hasSourceTexture = !mat->textureList[0].isEmpty();
+					bsesp->hasGreyscaleMap = !mat->textureList[1].isEmpty();
+					bsesp->hasEnvMap = !mat->textureList[2].isEmpty();
+					bsesp->hasNormalMap = !mat->textureList[3].isEmpty();
+					bsesp->hasEnvMask = !mat->textureList[4].isEmpty();
+
+					bsesp->greyscaleAlpha = mat->bGrayscaleToPaletteAlpha;
+					bsesp->greyscaleColor = mat->bGrayscaleToPaletteColor;
+
+					bsesp->useFalloff = mat->bFalloffEnabled;
+
+					depthTest = mat->bZBufferTest;
+					depthWrite = mat->bZBufferWrite;
+
+					bsesp->setUvScale( mat->fUScale, mat->fVScale );
+					bsesp->setUvOffset( mat->fUOffset, mat->fVOffset );
+
+					bool tileU = mat->bTileU;
+					bool tileV = mat->bTileV;
+
+					TexClampMode clampMode;
+					if ( tileU && tileV )
+						clampMode = TexClampMode::WRAP_S_WRAP_T;
+					else if ( tileU )
+						clampMode = TexClampMode::WRAP_S_CLAMP_T;
+					else if ( tileV )
+						clampMode = TexClampMode::CLAMP_S_WRAP_T;
+					else
+						clampMode = TexClampMode::CLAMP_S_CLAMP_T;
+
+					bsesp->setClampMode( clampMode );
+
+					bsesp->setFalloff( mat->fFalloffStartAngle, mat->fFalloffStopAngle, 
+						mat->fFalloffStartOpacity, mat->fFalloffStopOpacity, mat->fSoftDepth );
+
+					isDoubleSided = mat->bTwoSided;
+				}
+				
 
 				// For BSESP, let Alpha prop handle things
 				bool hasAlphaProp = findProperty<AlphaProperty>();
@@ -305,25 +394,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 				// Draw mesh second
 				drawSecond |= translucent;
-
-				bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
-				bsesp->greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
-				bsesp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
-
-				bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
-				bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
-
-				auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
-				auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
-
-				bsesp->setUvScale( uvScale[0], uvScale[1] );
-				bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
-
-				auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
-
-				bsesp->setClampMode( clampMode );
-
-				isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
 
 				bsesp->doubleSided = isDoubleSided;
 			}

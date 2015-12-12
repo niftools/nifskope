@@ -711,10 +711,19 @@ public:
 	void setEmissive( Color4 color, float mult = 1.0f );
 	void setFalloff( float, float, float, float, float );
 
+	float getEnvironmentReflection() const;
+	void setEnvironmentReflection( float );
+
+	float getLightingInfluence() const;
+	void setLightingInfluence( float );
+
 	bool doubleSided = false;
 
 	bool hasSourceTexture = false;
 	bool hasGreyscaleMap = false;
+	bool hasEnvMap = false;
+	bool hasNormalMap = false;
+	bool hasEnvMask = false;
 	bool useFalloff = false;
 
 	bool greyscaleColor = false;
@@ -744,6 +753,9 @@ protected:
 
 	Color4 emissiveColor;
 	float emissiveMult;
+
+	float lightingInfluence = 0.0;
+	float environmentReflection = 1.0;
 };
 
 REGISTER_PROPERTY( BSEffectShaderProperty, ShaderLighting )
