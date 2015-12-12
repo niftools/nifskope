@@ -718,7 +718,7 @@ void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
 #endif
 		}
 	}
-	emit completeSave( saved, fname );
+	emit completeSave( saved, fInfo.filePath() );
 }
 
 void NifSkope::openArchive( const QString & archive )
@@ -838,7 +838,7 @@ void NifSkope::openArchiveFileString( BSA * bsa, const QString & filepath )
 				hash.addData( data );
 				filehash = hash.result();
 
-				QFileInfo f( filepath );
+				QFileInfo f( path );
 				
 				checkFile( f, filehash );
 			}
