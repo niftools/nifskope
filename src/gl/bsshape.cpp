@@ -176,6 +176,16 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 					bslsp->setSpecular( Color3( 0, 0, 0 ), 0, 0 );
 				}
 
+				// Emissive
+				auto emC = nif->get<Color3>( iProp, "Emissive Color" );
+				auto emM = nif->get<float>( iProp, "Emissive Multiple" );
+				bslsp->setEmissive( emC, emM );
+
+				bslsp->hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
+				if ( bslsp->getShaderType() & ShaderFlags::ST_GlowShader ) {
+					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+				}
+
 				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular );
 				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
 				bslsp->hasRimlight = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
@@ -234,6 +244,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->useEnvironmentMask = bslsp->hasEnvironmentMap && !mat->bGlowmap && !mat->textureList[5].isEmpty();
 				bslsp->hasSpecularMap = mat->bSpecularEnabled && !mat->textureList[2].isEmpty();
 				bslsp->hasCubeMap = mat->bEnvironmentMapping && !mat->textureList[4].isEmpty();
+				bslsp->hasGlowMap = mat->bGlowmap;
+				bslsp->hasEmittance = mat->bEmitEnabled;
 				bslsp->hasBacklight = mat->bBackLighting;
 				bslsp->hasRimlight = mat->bRimLighting;
 				bslsp->rimPower = mat->fRimPower;
@@ -243,6 +255,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				depthWrite = mat->bZBufferWrite;
 				isDoubleSided = mat->bTwoSided;
 
+				bslsp->setEmissive( mat->cEmittanceColor, mat->fEmittanceMult );
 				bslsp->setSpecular( mat->cSpecularColor, mat->fSmoothness, mat->fSpecularMult );
 				bslsp->setAlpha( mat->fAlpha );
 				bslsp->setEnvironmentReflection( mat->fEnvironmentMappingMaskScale );
