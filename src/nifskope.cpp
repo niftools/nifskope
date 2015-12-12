@@ -698,6 +698,7 @@ QByteArray fileChecksum( const QString &fileName, QCryptographicHash::Algorithm 
 void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
 {
 	QString fname = fInfo.fileName();
+	QString fpath = fInfo.filePath();
 	QDir::temp().mkdir( "NifSkope" );
 	QString tmpDir = QDir::tempPath() + "/NifSkope";
 	QDir tmp( tmpDir );
@@ -712,13 +713,13 @@ void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
 			tmp.remove( fname );
 		} else {
 			QString err = "An MD5 hash comparison indicates this file will not be 100% identical upon saving. This could indicate underlying issues with the data in this file.";
-			Message::warning( this, err, fInfo.filePath() );
+			Message::warning( this, err, fpath );
 #ifdef QT_NO_DEBUG
 			tmp.remove( fname );
 #endif
 		}
 	}
-	emit completeSave( saved, fInfo.filePath() );
+	emit completeSave( saved, fpath );
 }
 
 void NifSkope::openArchive( const QString & archive )
