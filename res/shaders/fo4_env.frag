@@ -115,6 +115,7 @@ void main( void )
 
 	vec4 baseMap = texture2D( BaseMap, offset );
 	vec4 normalMap = texture2D( NormalMap, offset );
+	vec4 specMap = texture2D( SpecularMap, offset );
 	
 	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
 	
@@ -138,7 +139,6 @@ void main( void )
 	vec4 color;
 	vec3 albedo = baseMap.rgb * C.rgb;
 	vec3 diffuse = A.rgb + (D.rgb * NdotL);
-	diffuse *= 0.9; // Temp fudge for brightness;
 	if ( greyscaleColor ) {
 		vec4 luG = colorLookup( baseMap.g, C.g * paletteScale );
 
@@ -147,36 +147,31 @@ void main( void )
 	
 	// Emissive
 	vec3 emissive = vec3(0.0);
-	//if ( hasEmit ) {
-	//	emissive += glowColor * glowMult;
-	//}
+	if ( hasEmit ) {
+		emissive += glowColor * glowMult;
+	}
 
 	// Specular
-	float specR = texture2D( SpecularMap, offset ).r;
-	float g = specR;
-	float ginv = 1.0 - g;
-	float s = texture2D( SpecularMap, offset ).g;
-	float roughness = scale( ginv, 0.1, 0.9 );
+	float g = 1.0;
+	float s = 1.0;
+	float roughness = 0.1;
 	vec3 spec = vec3(0.0);
-    if ( hasSpecularMap ) {
+	if ( hasSpecularMap ) {
+		g = specMap.r;
+		s = specMap.g;
+		roughness = scale( 1.0 - ( g * specGlossiness ), 0.1, 0.9 );
 		spec = specColor * s * LightingFuncGGX_REF( NdotL, NdotV, NdotH, LdotH, roughness, 0.04 ) * specStrength;
-		spec *= D.rgb;
+		spec *= D.rgb * 0.9;
 		spec = clamp( spec, 0.0, 1.0 );
-    }
+	}
 	
 	// Environment
-	vec4 cube;
+	vec4 cube = textureCubeLod( CubeMap, reflectedWS, 8.0 - g * 8.0 );
+	vec4 env = texture2D( EnvironmentMap, offset );
 	if ( hasCubeMap ) {
-		cube = textureCubeLod( CubeMap, reflectedWS, 8.0 - g * 8.0 );
-		cube.rgb *= envReflection * specStrength * sqrt(g);
-		
-		if ( hasEnvMask ) {
-			vec4 env = texture2D( EnvironmentMap, offset );
-			cube.rgb *= env.r;
-		} else {
-			cube.rgb *= s;
-		}
-		
+		cube.rgb *= envReflection * specStrength * sqrt(g) * 0.9;
+		cube.rgb *= mix( s, env.r, float(hasEnvMask) );
+    
 		albedo += cube.rgb;
 	}
 
@@ -189,9 +184,9 @@ void main( void )
 	//}
 
 	vec4 mask = vec4(0.0);
-	//if ( hasRimlight || hasSoftlight ) {
-	//	mask = texture2D( LightMask, offset );
-	//}
+	if ( hasRimlight || hasSoftlight ) {
+		mask = vec4( s );
+	}
 
 	vec3 rim = vec3(0.0);
 	if ( hasRimlight ) {

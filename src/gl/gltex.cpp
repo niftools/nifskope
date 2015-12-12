@@ -165,7 +165,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 	}
 
 	// Temporary Facegeom support
-	if ( !file.startsWith( "textures", Qt::CaseInsensitive ) ) {
+	if ( !file.startsWith( "textures", Qt::CaseInsensitive ) && !file.startsWith( "shaders", Qt::CaseInsensitive ) ) {
 		filename.prepend( "textures\\" );
 	}
 

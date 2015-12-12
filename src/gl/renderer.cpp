@@ -772,8 +772,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
 
-		if ( mesh->bslsp->hasSpecularMap && !mesh->bslsp->hasBacklight ) {
-
+		if ( mesh->bslsp->hasSpecularMap && (nif->getUserVersion2() == 130 || !mesh->bslsp->hasBacklight) ) {
 			if ( !uniSampler( "SpecularMap", 7, white, clamp ) )
 				return false;
 		}
