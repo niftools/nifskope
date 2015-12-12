@@ -897,7 +897,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 			uni1f( "lightingInfluence", mesh->bsesp->getLightingInfluence() );
 
-			uni1i( "hasNormalMap", mesh->bsesp->hasNormalMap );
+			uni1i( "hasNormalMap", mesh->bsesp->hasNormalMap && (opts & Scene::DoLighting) );
 
 			if ( mesh->bsesp->hasNormalMap ) {
 				uniSampler( "NormalMap", 3, default_n, clamp );
@@ -906,7 +906,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 			uni1i( "hasCubeMap", mesh->bsesp->hasEnvMap );
 			uni1i( "hasEnvMask", mesh->bsesp->hasEnvMask );
 
-			if ( mesh->bsesp->hasEnvMap ) {
+			if ( mesh->bsesp->hasEnvMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) ) {
 				uni1f( "envReflection", mesh->bsesp->getEnvironmentReflection() );
 
 				if ( mesh->bsesp->hasEnvMask && !uniSampler( "SpecularMap", 4, white, clamp ) )
@@ -922,6 +922,8 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 					fn->glUniform1i( uniCubeMap, texunit++ );
 				}
+			} else {
+				uni1f( "envReflection", 0 );
 			}
 		
 		}
