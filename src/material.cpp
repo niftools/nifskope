@@ -43,6 +43,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Material::Material( QString name )
 {
 	localPath = toLocalPath( name.replace( "\\", "/" ) );
+	if ( localPath.startsWith( "data/", Qt::CaseInsensitive ) ) {
+		localPath.remove( 0, 5 );
+	}
 	absolutePath = find( localPath );
 
 	fileExists = !absolutePath.isEmpty();
