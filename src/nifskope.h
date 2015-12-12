@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
+#include <QFileInfo>
 #include <QModelIndex>
 #include <QUndoCommand>
 
@@ -250,6 +251,7 @@ private:
 
 	void loadFile( const QString & );
 	void saveFile( const QString & );
+	void checkFile( QFileInfo fInfo, QByteArray filehash );
 
 	void openRecentFile();
 	void setCurrentFile( const QString & );
@@ -280,6 +282,8 @@ private:
 
 	QString currentFile;
 	BSA * currentArchive = nullptr;
+
+	QByteArray filehash;
 
 	//! Stores the NIF file in memory.
 	NifModel * nif;

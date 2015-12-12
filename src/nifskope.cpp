@@ -683,6 +683,44 @@ void NifSkope::updateRecentArchiveFileActions()
 	mRecentArchiveFiles->setEnabled( numRecentFiles > 0 );
 }
 
+QByteArray fileChecksum( const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm )
+{
+	QFile f( fileName );
+	if ( f.open( QFile::ReadOnly ) ) {
+		QCryptographicHash hash( hashAlgorithm );
+		if ( hash.addData( &f ) ) {
+			return hash.result();
+		}
+	}
+	return QByteArray();
+}
+
+void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
+{
+	QString fname = fInfo.fileName();
+	QDir::temp().mkdir( "NifSkope" );
+	QString tmpDir = QDir::tempPath() + "/NifSkope";
+	QDir tmp( tmpDir );
+	QString tmpFile = tmpDir + "/" + fInfo.fileName();
+
+	emit beginSave();
+	bool saved = nif->saveToFile( tmpFile );
+	if ( saved ) {
+		auto filehash2 = fileChecksum( tmpFile, QCryptographicHash::Md5 );
+
+		if ( filehash == filehash2 ) {
+			tmp.remove( fname );
+		} else {
+			QString err = "An MD5 hash comparison indicates this file will not be 100% identical upon saving. This could indicate underlying issues with the data in this file.";
+			Message::warning( this, err, fInfo.filePath() );
+#ifdef QT_NO_DEBUG
+			tmp.remove( fname );
+#endif
+		}
+	}
+	emit completeSave( saved, fname );
+}
+
 void NifSkope::openArchive( const QString & archive )
 {
 	// Clear memory from previously opened archives
@@ -791,7 +829,19 @@ void NifSkope::openArchiveFileString( BSA * bsa, const QString & filepath )
 
 			emit beginLoading();
 
-			emit completeLoading( nif->load( buf ), path );
+			bool loaded = nif->load( buf );
+
+			emit completeLoading( loaded, path );
+
+			if ( loaded ) {
+				QCryptographicHash hash( QCryptographicHash::Md5 );
+				hash.addData( data );
+				filehash = hash.result();
+
+				QFileInfo f( filepath );
+				
+				checkFile( f, filehash );
+			}
 
 			buf.close();
 		}
@@ -847,18 +897,6 @@ void NifSkope::openFiles( QStringList & files )
 	}
 }
 
-QByteArray fileChecksum( const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm )
-{
-	QFile f( fileName );
-	if ( f.open( QFile::ReadOnly ) ) {
-		QCryptographicHash hash( hashAlgorithm );
-		if ( hash.addData( &f ) ) {
-			return hash.result();
-		}
-	}
-	return QByteArray();
-}
-
 void NifSkope::saveFile( const QString & filename )
 {
 	setCurrentFile( filename );
@@ -900,28 +938,9 @@ void NifSkope::load()
 	emit completeLoading( loaded, fname );
 
 	if ( loaded ) {
-		QDir::temp().mkdir( "NifSkope" );
-		QString tmpDir = QDir::tempPath() + "/NifSkope";
-		QDir tmp( tmpDir );
-		QString tmpFile = tmpDir + "/" + f.fileName();
+		filehash = fileChecksum( fname, QCryptographicHash::Md5 );
 
-		emit beginSave();
-		bool saved = nif->saveToFile( tmpFile );
-		if ( saved ) {
-			auto filehash1 = fileChecksum( fname, QCryptographicHash::Md5 );
-			auto filehash2 = fileChecksum( tmpFile, QCryptographicHash::Md5 );
-		
-			if ( filehash1 == filehash2 ) {
-				tmp.remove( f.fileName() );
-			} else {
-				QString err = "This file will not save correctly. Please do not use or distribute copies of this file modified with this NifSkope version.";
-				Message::critical( this, err, fname );
-#ifdef QT_NO_DEBUG
-				tmp.remove( f.fileName() );
-#endif
-			}
-		}
-		emit completeSave( saved, fname );
+		checkFile( f, filehash );
 	}
 }
 
