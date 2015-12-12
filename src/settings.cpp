@@ -758,6 +758,8 @@ void SettingsResources::on_btnArchiveAutoDetect_clicked()
 	QStringList archivesNew = archives->stringList();
 	
 	QStringList autoList = FSManager::autodetectArchives( "textures" );
+	// Fallout 4 Materials
+	autoList += FSManager::autodetectArchives( "materials" );
 	for ( const QString & archive : autoList ) {
 		if ( !archivesNew.contains( archive, Qt::CaseInsensitive ) ) {
 			archivesNew.append( archive );

@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 
 #include <QObject>
+#include <QByteArray>
 #include <QDataStream>
 #include <QString>
 
@@ -54,11 +55,10 @@ public:
 	bool isValid() const;
 	QStringList textures() const;
 	QString getPath() const;
-	QString getAbsolutePath() const;
 
 protected:
 	virtual bool readFile();
-	QString find( QString path ) const;
+	QByteArray find( QString path );
 	QString toLocalPath( QString path ) const;
 
 
@@ -66,9 +66,10 @@ protected:
 
 	bool fileExists = false;
 	QString localPath;
-	QString absolutePath;
+	//QString absolutePath;
 
 	QDataStream in;
+	QByteArray data;
 
 	// BGSM & BGEM shared variables
 

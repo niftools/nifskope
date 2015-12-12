@@ -32,6 +32,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "material.h"
 
+#include <fsengine/fsengine.h>
+#include <fsengine/fsmanager.h>
+
+#include <QBuffer>
 #include <QDataStream>
 #include <QDebug>
 #include <QDir>
@@ -46,14 +50,17 @@ Material::Material( QString name )
 	if ( localPath.startsWith( "data/", Qt::CaseInsensitive ) ) {
 		localPath.remove( 0, 5 );
 	}
-	absolutePath = find( localPath );
+	data = find( localPath );
 
-	fileExists = !absolutePath.isEmpty();
+	fileExists = !data.isEmpty();
 }
 
 bool Material::readFile()
 {
-	QFile f( absolutePath );
+	if ( data.isEmpty() )
+		return false;
+
+	QBuffer f( &data );
 	if ( f.open( QIODevice::ReadOnly ) ) {
 		in.setDevice( &f );
 		in.setByteOrder( QDataStream::LittleEndian );
@@ -79,25 +86,47 @@ bool Material::readFile()
 		in >> bRefraction >> bRefractionFalloff >> fRefractionPower;
 		in >> bEnvironmentMapping >> fEnvironmentMappingMaskScale;
 		in >> bGrayscaleToPaletteColor;
+
+		return in.status() == QDataStream::Ok;
 	}
 
-	return in.status() == QDataStream::Ok;
+	return false;
 }
 
-QString Material::find( QString path ) const
+QByteArray Material::find( QString path )
 {
 	QSettings settings;
 	QStringList folders = settings.value( "Settings/Resources/Folders", QStringList() ).toStringList();
 
+	QString filename;
 	QDir dir;
 	for ( QString folder : folders ) {
 		dir.setPath( folder );
 
-		if ( dir.exists( path ) )
-			return QDir::fromNativeSeparators( dir.filePath( path ) );
+		if ( dir.exists( path ) ) {
+			filename = QDir::fromNativeSeparators( dir.filePath( path ) );
+
+			QFile f( filename );
+			if ( f.open( QIODevice::ReadOnly ) )
+				return f.readAll();
+		}
 	}
 
-	return "";
+	for ( FSArchiveFile * archive : FSManager::archiveList() ) {
+		if ( archive ) {
+			filename = QDir::fromNativeSeparators( path.toLower() );
+			if ( archive->hasFile( filename ) ) {
+				QByteArray outData;
+				archive->fileContents( filename, outData );
+
+				if ( !outData.isEmpty() ) {
+					return outData;
+				}
+			}
+		}
+	}
+
+	return QByteArray();
 }
 
 QString Material::toLocalPath( QString path ) const
@@ -116,8 +145,7 @@ QString Material::toLocalPath( QString path ) const
 
 bool Material::isValid() const
 {
-	// TODO: If Material is loaded in memory (BA2) it is also valid
-	return fileExists;
+	return !data.isEmpty();
 }
 
 QStringList Material::textures() const
@@ -130,11 +158,6 @@ QString Material::getPath() const
 	return localPath;
 }
 
-QString Material::getAbsolutePath() const
-{
-	return absolutePath;
-}
-
 
 ShaderMaterial::ShaderMaterial( QString name ) : Material( name )
 {
@@ -144,10 +167,10 @@ ShaderMaterial::ShaderMaterial( QString name ) : Material( name )
 
 bool ShaderMaterial::readFile()
 {
-	if ( !Material::readFile() )
+	if ( data.isEmpty() || !Material::readFile() )
 		return false;
 
-	QFile f( absolutePath );
+	QBuffer f( &data );
 	if ( f.open( QIODevice::ReadOnly ) ) {
 		in.setDevice( &f );
 		in.setByteOrder( QDataStream::LittleEndian );
@@ -193,9 +216,11 @@ bool ShaderMaterial::readFile()
 		in >> fDisplacementTextureBias >> fDisplacementTextureScale;
 		in >> fTessellationPnScale >> fTessellationBaseFactor >> fTessellationFadeDistance;
 		in >> fGrayscaleToPaletteScale >> bSkewSpecularAlpha;
+
+		return in.status() == QDataStream::Ok;
 	}
 
-	return in.status() == QDataStream::Ok;
+	return false;
 }
 
 EffectMaterial::EffectMaterial( QString name ) : Material( name )
@@ -206,10 +231,10 @@ EffectMaterial::EffectMaterial( QString name ) : Material( name )
 
 bool EffectMaterial::readFile()
 {
-	if ( !Material::readFile() )
+	if ( data.isEmpty() || !Material::readFile() )
 		return false;
 
-	QFile f( absolutePath );
+	QBuffer f( &data );
 	if ( f.open( QIODevice::ReadOnly ) ) {
 		in.setDevice( &f );
 		in.setByteOrder( QDataStream::LittleEndian );
@@ -234,7 +259,9 @@ bool EffectMaterial::readFile()
 		in >> fFalloffStartAngle >> fFalloffStopAngle;
 		in >> fFalloffStartOpacity >> fFalloffStopOpacity;
 		in >> fLightingInfluence >> iEnvmapMinLOD >> fSoftDepth;
+
+		return in.status() == QDataStream::Ok;
 	}
 
-	return in.status() == QDataStream::Ok;
+	return false;
 }
