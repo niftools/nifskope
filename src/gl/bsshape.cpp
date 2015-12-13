@@ -455,9 +455,6 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glPushMatrix();
 	glMultMatrix( viewTrans() );
 
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc( GL_LEQUAL );
-
 	// Render polygon fill slightly behind alpha transparency and wireframe
 	glEnable( GL_POLYGON_OFFSET_FILL );
 	glPolygonOffset( 1.0f, 2.0f );
@@ -489,12 +486,14 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 	if ( !Node::SELECTING )
 		shader = scene->renderer->setupProgram( this, shader );
-
-	if ( isDoubleSided )
-		glDisable( GL_CULL_FACE );
+	
+	if ( isDoubleSided ) {
+		glCullFace( GL_FRONT );
+		glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.data() );
+		glCullFace( GL_BACK );
+	}
 
 	glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.data() );
-
 
 	if ( !Node::SELECTING )
 		scene->renderer->stopProgram();

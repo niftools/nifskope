@@ -111,6 +111,9 @@ void main( void )
 	vec4 glowMap = texture2D( GlowMap, offset );
 	
 	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
+	if ( !gl_FrontFacing && doubleSided ) {
+		normal *= -1.0;	
+	}
 	
 	vec3 L = normalize(LightDir);
 	vec3 V = normalize(ViewDir);

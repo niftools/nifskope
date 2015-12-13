@@ -66,6 +66,9 @@ void main( void )
 	if ( hasNormalMap ) {
 		normal = normalize(normalMap.rgb * 2.0 - 1.0);
 	}
+	if ( !gl_FrontFacing && doubleSided ) {
+		normal *= -1.0;	
+	}
 	
 	vec3 L = normalize(LightDir);
 	vec3 V = normalize(ViewDir);

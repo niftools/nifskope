@@ -248,6 +248,7 @@ void AlphaProperty::setThreshold( float threshold )
 void glProperty( AlphaProperty * p )
 {
 	if ( p && p->alphaBlend && (p->scene->options & Scene::DoBlending) ) {
+		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
 	} else {
@@ -255,14 +256,11 @@ void glProperty( AlphaProperty * p )
 	}
 
 	if ( p && p->alphaTest && (p->scene->options & Scene::DoBlending) ) {
-		//glEnable( GL_POLYGON_OFFSET_FILL );
-		//glPolygonOffset( -1.0f, -1.0f );
 		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
 	} else {
 		glDisable( GL_ALPHA_TEST );
-		//glDisable( GL_POLYGON_OFFSET_FILL );
 	}
 }
 
