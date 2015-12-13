@@ -223,7 +223,9 @@ NifSkope::NifSkope()
 
 	bsaModel = new BSAModel( this );
 	bsaProxyModel = new BSAProxyModel( this );
-	bsaProxyModel->setSourceModel( bsaModel );
+
+	// Empty Model for swapping out before model fill
+	emptyModel = new QStandardItemModel( this );
 
 	// Connect models with views
 	/* ********************** */
@@ -726,10 +728,11 @@ void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
 void NifSkope::openArchive( const QString & archive )
 {
 	// Clear memory from previously opened archives
-	if ( bsaModel )
-		bsaModel->clear();
-	if ( bsaProxyModel )
-		bsaProxyModel->clear();
+	bsaModel->clear();
+	bsaProxyModel->clear();
+	bsaProxyModel->setSourceModel( emptyModel );
+	bsaView->setModel( emptyModel );
+	bsaView->setSortingEnabled( false );
 
 	auto handler = FSArchiveHandler::openArchive( archive );
 	if ( !handler ) {
@@ -754,7 +757,8 @@ void NifSkope::openArchive( const QString & archive )
 			return;
 		}
 
-		// View
+		// Set proxy and view only after filling source model
+		bsaProxyModel->setSourceModel( bsaModel );
 		bsaView->setModel( bsaProxyModel );
 		bsaView->setSortingEnabled( true );
 

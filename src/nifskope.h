@@ -65,6 +65,7 @@ class SpellBook;
 class BSA;
 class BSAModel;
 class BSAProxyModel;
+class QStandardItemModel;
 
 class QAction;
 class QActionGroup;
@@ -381,6 +382,7 @@ private:
 
 	BSAModel * bsaModel;
 	BSAProxyModel * bsaProxyModel;
+	QStandardItemModel * emptyModel;
 
 	QMenu * mRecentArchiveFiles;
 };
