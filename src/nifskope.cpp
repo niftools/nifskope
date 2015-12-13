@@ -219,6 +219,7 @@ NifSkope::NifSkope()
 
 	// Archive Browser
 	bsaView = ui->bsaView;
+	connect( bsaView, &QTreeView::doubleClicked, this, &NifSkope::openArchiveFile );
 
 	bsaModel = new BSAModel( this );
 	bsaProxyModel = new BSAProxyModel( this );
@@ -796,8 +797,6 @@ void NifSkope::openArchive( const QString & archive )
 
 		connect( ui->bsaFilenameOnly, &QCheckBox::toggled, bsaProxyModel, &BSAProxyModel::setFilterByNameOnly );
 
-		connect( bsaView, &QTreeView::doubleClicked, this, &NifSkope::openArchiveFile );
-
 		// Update filter when switching open archives
 		filterTimer->start( 0 );
 	}
@@ -805,17 +804,18 @@ void NifSkope::openArchive( const QString & archive )
 
 void NifSkope::openArchiveFile( const QModelIndex & index )
 {
-	if ( !saveConfirm() )
-		return;
-
 	QString filepath = index.sibling( index.row(), 1 ).data( Qt::EditRole ).toString();
 
-	openArchiveFileString( currentArchive, filepath );
+	if ( !filepath.isEmpty() )
+		openArchiveFileString( currentArchive, filepath );
 }
 
 void NifSkope::openArchiveFileString( BSA * bsa, const QString & filepath )
 {
 	if ( bsa->hasFile( filepath ) ) {
+		if ( !saveConfirm() )
+			return;
+
 		// Read data from BSA
 		QByteArray data;
 		bsa->fileContents( filepath, data );
@@ -826,11 +826,12 @@ void NifSkope::openArchiveFileString( BSA * bsa, const QString & filepath )
 		QBuffer buf;
 		buf.setData( data );
 		if ( buf.open( QBuffer::ReadOnly ) ) {
-			setCurrentFile( path );
 
 			emit beginLoading();
 
 			bool loaded = nif->load( buf );
+			if ( loaded )
+				setCurrentFile( path );
 
 			emit completeLoading( loaded, path );
 
