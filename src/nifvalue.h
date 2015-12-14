@@ -650,7 +650,10 @@ template <> inline Vector4 NifValue::get() const
 }
 template <> inline Vector3 NifValue::get() const
 {
-	return getType<Vector3>( tVector3 );
+	if ( typ == tVector3 || typ == tHalfVector3 )
+		return *static_cast<Vector3 *>(val.data);
+
+	return Vector3();
 }
 template <> inline HalfVector3 NifValue::get() const
 {
@@ -666,7 +669,10 @@ template <> inline HalfVector2 NifValue::get() const
 }
 template <> inline Vector2 NifValue::get() const
 {
-	return getType<Vector2>( tVector2 );
+	if ( typ == tVector2 || typ == tHalfVector2 )
+		return *static_cast<Vector2 *>(val.data);
+
+	return Vector2();
 }
 template <> inline Color3 NifValue::get() const
 {
