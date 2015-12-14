@@ -145,7 +145,7 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iVertData );
 
-			verts += nif->get<HalfVector3>( idx, "Vertex" );
+			verts += nif->get<Vector3>( idx, "Vertex" );
 			coords += nif->get<HalfVector2>( idx, "UV" );
 			norms += nif->get<ByteVector3>( idx, "Normal" );
 		}

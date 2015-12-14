@@ -98,7 +98,7 @@ public:
 			for ( int i = 0; i < numVerts; i++ ) {
 				auto idx = nif->index( i, 0, iData );
 
-				verts += nif->get<HalfVector3>( idx, "Vertex" );
+				verts += nif->get<Vector3>( idx, "Vertex" );
 			}
 
 			faceNormals( verts, triangles, norms );
@@ -179,7 +179,7 @@ public:
 			for ( int i = 0; i < numVerts; i++ ) {
 				auto idx = nif->index( i, 0, iData );
 
-				verts += nif->get<HalfVector3>( idx, "Vertex" );
+				verts += nif->get<Vector3>( idx, "Vertex" );
 				norms += nif->get<ByteVector3>( idx, "Normal" );
 			}
 		}
