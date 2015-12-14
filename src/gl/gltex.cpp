@@ -160,12 +160,12 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	// Temporary BTO/BTR file support
 	// TODO: Better implementation
-	if ( file.startsWith( "data\\textures", Qt::CaseInsensitive ) ) {
-		filename.remove(0, 4);
+	if ( filename.startsWith( "data", Qt::CaseInsensitive ) ) {
+		filename.remove(0, 5);
 	}
 
 	// Temporary Facegeom support
-	if ( !file.startsWith( "textures", Qt::CaseInsensitive ) && !file.startsWith( "shaders", Qt::CaseInsensitive ) ) {
+	if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) ) {
 		filename.prepend( "textures\\" );
 	}
 

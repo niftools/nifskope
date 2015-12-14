@@ -1835,7 +1835,7 @@ void GLGraphicsView::dragEnterEvent( QDragEnterEvent * e )
 			if ( url.scheme() == "file" ) {
 				QString fn = url.toLocalFile();
 				QFileInfo finfo( fn );
-				if ( finfo.exists() && NifSkope::fileExtensions().contains( finfo.suffix() ) ) {
+				if ( finfo.exists() && NifSkope::fileExtensions().contains( finfo.suffix(), Qt::CaseInsensitive ) ) {
 					draggedNifs << finfo.absoluteFilePath();
 				}
 			}
