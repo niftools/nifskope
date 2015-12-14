@@ -67,13 +67,20 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		test2.clear();
 		test3.clear();
 
+		auto vf7 = nif->get<quint8>( iBlock, "VF7" );
+
 		// For compatibility with coords QList
 		QVector<Vector2> coordset;
 
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iVertData );
 
-			auto v = nif->get<HalfVector3>( idx, "Vertex" );
+			Vector3 v;
+			if ( (vf7 & 0x40) != 0 ) {
+				v = nif->get<Vector3>( idx, "Vertex" );
+			} else {
+				v = nif->get<HalfVector3>( idx, "Vertex" );
+			}
 			verts += v;
 
 			coordset << nif->get<HalfVector2>( idx, "UV" );
