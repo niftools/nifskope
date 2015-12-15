@@ -82,7 +82,10 @@ protected:
 	float fUScale;
 	float fVScale;
 	float fAlpha;
-	// TODO: Alpha blend mode
+	quint8 bAlphaBlend;
+	quint32 iAlphaSrc;
+	quint32 iAlphaDst;
+	quint8 iAlphaTestRef;
 	quint8 bAlphaTest;
 	quint8 bZBufferWrite;
 	quint8 bZBufferTest;

@@ -79,7 +79,8 @@ bool Material::readFile()
 
 		in >> fUOffset >> fVOffset >> fUScale >> fVScale;
 		in >> fAlpha;
-		in.skipRawData( 10 );
+		in >> bAlphaBlend >> iAlphaSrc >> iAlphaDst;
+		in >> iAlphaTestRef;
 		in >> bAlphaTest >> bZBufferWrite >> bZBufferTest;
 		in >> bScreenSpaceReflections >> bWetnessControl_ScreenSpaceReflections;
 		in >> bDecal >> bTwoSided >> bDecalNoFade >> bNonOccluder;
