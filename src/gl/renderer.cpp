@@ -500,6 +500,13 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 	auto opts = mesh->scene->options;
 	auto vis = mesh->scene->visMode;
+
+	Material * mat = nullptr;
+	if ( mesh->bslsp && mesh->bslsp->mat() )
+		mat = mesh->bslsp->mat();
+	else if ( mesh->bsesp && mesh->bsesp->mat() )
+		mat = mesh->bsesp->mat();
+
 	QString diff;
 
 	if ( (opts & Scene::DoLighting) && (vis & Scene::VisNormalsOnly) )
@@ -999,8 +1006,37 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 	glProperty( props.get<AlphaProperty>() );
 
+	if ( mat && (mesh->scene->options & Scene::DoBlending) ) {
+		static const GLenum blendMap[11] = {
+			GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
+			GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA_SATURATE
+		};
+
+		if ( mat && mat->bAlphaBlend ) {
+			glDisable( GL_POLYGON_OFFSET_FILL );
+			glEnable( GL_BLEND );
+			glBlendFunc( blendMap[mat->iAlphaSrc], blendMap[mat->iAlphaDst] );
+		} else {
+			glDisable( GL_BLEND );
+		}
+
+		if ( mat && mat->bAlphaTest ) {
+			glDisable( GL_POLYGON_OFFSET_FILL );
+			glEnable( GL_ALPHA_TEST );
+			glAlphaFunc( GL_GREATER, float( mat->iAlphaTestRef ) / 255.0 );
+		} else {
+			glDisable( GL_ALPHA_TEST );
+		}
+
+		if ( mat && mat->bDecal ) {
+			glEnable( GL_POLYGON_OFFSET_FILL );
+			glPolygonOffset( -1.0f, -1.0f );
+		}
+	}
+
 	// BSESP/BSLSP do not always need an NiAlphaProperty, and appear to override it at times
-	if ( mesh->translucent ) {
+	if ( !mat && mesh->translucent ) {
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 		// If mesh is alpha tested, override threshold

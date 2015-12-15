@@ -151,6 +151,12 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 			bslsp->hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
 			bslsp->hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+			isVertexAlphaAnimation = hasSF2( ShaderFlags::SLSF2_Tree_Anim );
+
+			if ( isVertexAlphaAnimation ) {
+				for ( int i = 0; i < colors.count(); i++ )
+					colors[i].setRGBA( colors[i].red(), colors[i].green(), colors[i].blue(), 1.0 );
+			}
 
 			if ( !mat ) {
 				bslsp->setAlpha( nif->get<float>( iProp, "Alpha" ) );
@@ -446,8 +452,15 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 	// Draw translucent meshes in second pass
 	AlphaProperty * aprop = findProperty<AlphaProperty>();
+	Material * mat = nullptr;
+	if ( bslsp && bslsp->mat() ) {
+		mat = bslsp->mat();
+	} else if ( bsesp && bsesp->mat() ) {
+		mat = bsesp->mat();
+	}
 
-	drawSecond |= (aprop && aprop->blend());
+	drawSecond |= aprop && aprop->blend();
+	drawSecond |= mat && mat->bDecal;
 
 	if ( secondPass && drawSecond ) {
 		secondPass->add( this );
@@ -458,8 +471,10 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glMultMatrix( viewTrans() );
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
-	glEnable( GL_POLYGON_OFFSET_FILL );
-	glPolygonOffset( 1.0f, 2.0f );
+	if ( !drawSecond ) {
+		glEnable( GL_POLYGON_OFFSET_FILL );
+		glPolygonOffset( 1.0f, 2.0f );
+	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer( 3, GL_FLOAT, 0, verts.data() );
@@ -550,6 +565,9 @@ void BSShape::drawSelection() const
 
 	glLineWidth( 1.5 );
 	glPointSize( 5.0 );
+
+	glEnable( GL_POLYGON_OFFSET_FILL );
+	glPolygonOffset( -1.0f, -2.0f );
 
 	float normalScale = bounds().radius / 20;
 	normalScale /= 2.0f;
@@ -760,6 +778,8 @@ void BSShape::drawSelection() const
 			glEnd();
 		}
 	}
+
+	glDisable( GL_POLYGON_OFFSET_FILL );
 
 	glPopMatrix();
 }
