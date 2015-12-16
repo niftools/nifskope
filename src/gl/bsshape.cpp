@@ -54,7 +54,13 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 	Q_ASSERT( !dataSize || ((vc == numVerts) && (tc == numTris)) );
 
-	if ( iBlock == index ) {
+	auto bsphere = nif->getIndex( iBlock, "Bounding Sphere" );
+	if ( bsphere.isValid() ) {
+		bsphereCenter = nif->get<Vector3>( bsphere, "Center" );
+		bsphereRadius = nif->get<float>( bsphere, "Radius" );
+	}
+
+	if ( iBlock == index && dataSize > 0 ) {
 		// Calling BSShape::clear here is bad
 		verts.clear();
 		norms.clear();
@@ -788,7 +794,11 @@ BoundSphere BSShape::bounds() const
 {
 	if ( updateBounds ) {
 		updateBounds = false;
-		boundSphere = BoundSphere( verts );
+		if ( verts.count() ) {
+			boundSphere = BoundSphere( verts );
+		} else {
+			boundSphere = BoundSphere( bsphereCenter, bsphereRadius );
+		}
 	}
 
 	return worldTrans() * boundSphere;
