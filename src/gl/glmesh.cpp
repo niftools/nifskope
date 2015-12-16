@@ -1137,7 +1137,8 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 
 void Mesh::drawSelection() const
 {
-	Node::drawSelection();
+	if ( scene->options & Scene::ShowNodes )
+		Node::drawSelection();
 
 	if ( isHidden() )
 		return;

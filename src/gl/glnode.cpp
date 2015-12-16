@@ -528,7 +528,7 @@ void Node::transformShapes()
 
 void Node::draw()
 {
-	if ( isHidden() )
+	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -563,10 +563,16 @@ void Node::draw()
 	glVertex( a );
 	glEnd();
 
-	glBegin( GL_LINES );
-	glVertex( a );
-	glVertex( b );
-	glEnd();
+	if ( Node::SELECTING ) {
+		glBegin( GL_LINES );
+		glVertex( a );
+		glVertex( b );
+		glEnd();
+	} else {
+		auto c = cfg.wireframe;
+		glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() / 3.0 );
+		drawDashLine( a, b, 144 );
+	}
 
 	for ( Node * node : children.list() ) {
 		node->draw();
@@ -584,7 +590,7 @@ void Node::drawSelection() const
 	if ( currentBlock == "BSConnectPoint::Parents" )
 		extraData = nif->getBlockNumber( iBlock ) == 0; // Root Node only
 
-	if ( (scene->currentBlock != iBlock || (scene->options & Scene::ShowNodes)) && !extraData )
+	if ( scene->currentBlock != iBlock && !extraData )
 		return;
 
 	auto n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
@@ -681,10 +687,16 @@ void Node::drawSelection() const
 	glVertex( a );
 	glEnd();
 
+	auto c = cfg.highlight;
+	glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() * 0.8 );
 	glBegin( GL_LINES );
 	glVertex( a );
 	glVertex( b );
 	glEnd();
+
+	for ( Node * node : children.list() ) {
+		node->draw();
+	}
 }
 
 void DrawVertexSelection( QVector<Vector3> & verts, int i )

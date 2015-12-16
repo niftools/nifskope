@@ -532,7 +532,8 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 void BSShape::drawSelection() const
 {
-	Node::drawSelection();
+	if ( scene->options & Scene::ShowNodes )
+		Node::drawSelection();
 
 	if ( isHidden() )
 		return;
