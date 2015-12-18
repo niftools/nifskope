@@ -61,5 +61,7 @@
         <file alias="cubemap">icon/cubemap.png</file>
         <file alias="hidden">icon/hidden.png</file>
         <file alias="hiddenDisabled">icon/hidden-disabled.png</file>
+        <file alias="selectObject">icon/select-object.png</file>
+        <file alias="selectVerts">icon/select-verts.png</file>
     </qresource>
 </RCC>

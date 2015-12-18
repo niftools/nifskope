@@ -167,6 +167,9 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="aSelectObject"/>
+   <addaction name="aSelectVertex"/>
+   <addaction name="separator"/>
    <addaction name="aViewTop"/>
    <addaction name="aViewFront"/>
    <addaction name="aViewLeft"/>
@@ -1984,6 +1987,39 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="visible">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="aSelectObject">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/selectObject</normaloff>:/btn/selectObject</iconset>
+   </property>
+   <property name="text">
+    <string>Select Object</string>
+   </property>
+   <property name="toolTip">
+    <string>Select Object</string>
+   </property>
+  </action>
+  <action name="aSelectVertex">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/selectVerts</normaloff>:/btn/selectVerts</iconset>
+   </property>
+   <property name="text">
+    <string>Select Vertex</string>
+   </property>
+   <property name="toolTip">
+    <string>Select Vertex</string>
    </property>
   </action>
  </widget>
