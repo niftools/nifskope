@@ -531,6 +531,9 @@ void Node::draw()
 	if ( isHidden() || iBlock == scene->currentBlock )
 		return;
 
+	if ( !(scene->selMode & Scene::SelObject) )
+		return;
+
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
 		glColor4ubv( (GLubyte *)&s_nodeId );
@@ -583,6 +586,9 @@ void Node::drawSelection() const
 {
 	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
 	if ( !nif )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	bool extraData = false;
@@ -742,6 +748,9 @@ void DrawTriangleIndex( QVector<Vector3> const & verts, Triangle const & tri, in
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene, const float origin_color3fv[3] )
 {
 	if ( !nif || !iShape.isValid() || stack.contains( iShape ) )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	stack.push( iShape );
@@ -1012,6 +1021,9 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
 	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	QList<Transform> tBodies;
@@ -1314,6 +1326,9 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
+	if ( !(scene->selMode & Scene::SelObject) )
+		return;
+
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
 	// Idea: Make them go to their own classes in different cpp files
 	for ( Node * node : children.list() ) {
@@ -1723,6 +1738,9 @@ void Node::drawFurn()
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
 	if ( !( iBlock.isValid() && nif ) )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
