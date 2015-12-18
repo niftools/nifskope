@@ -197,6 +197,9 @@ void NifSkope::initActions()
 	ui->aTest2Dbg->setData( Scene::Test2 );
 	ui->aTest3Dbg->setData( Scene::Test3 );
 
+	ui->aSelectObject->setData( Scene::SelObject );
+	ui->aSelectVertex->setData( Scene::SelVertex );
+
 	auto agroup = [this]( QVector<QAction *> actions, bool exclusive ) {
 		QActionGroup * ag = new QActionGroup( this );
 		for ( auto a : actions ) {
@@ -207,6 +210,9 @@ void NifSkope::initActions()
 
 		return ag;
 	};
+
+	selectActions = agroup( { ui->aSelectObject, ui->aSelectVertex }, true );
+	connect( selectActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSelectMode );
 
 	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden }, false );
 	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );

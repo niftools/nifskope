@@ -130,6 +130,17 @@ public:
 
 	VisMode visMode;
 
+	enum SelModes
+	{
+		SelNone = 0,
+		SelObject = 1,
+		SelVertex = 2
+	};
+
+	Q_DECLARE_FLAGS( SelMode, SelModes );
+
+	SelMode selMode;
+
 	enum LodLevel
 	{
 		Level0 = 0,
@@ -166,6 +177,8 @@ public:
 	QPersistentModelIndex currentBlock;
 	QPersistentModelIndex currentIndex;
 
+	QVector<Shape *> shapes;
+
 	BoundSphere bounds() const;
 
 	float timeMin() const;
@@ -176,6 +189,7 @@ signals:
 public slots:
 	void updateSceneOptions( bool checked );
 	void updateSceneOptionsGroup( QAction * );
+	void updateSelectMode( QAction * );
 	void updateLodLevel( int );
 
 protected:

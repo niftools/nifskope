@@ -67,6 +67,8 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 
 	visMode = VisNone;
 
+	selMode = SelObject;
+
 	// Startup Defaults
 
 	QSettings settings;
@@ -101,6 +103,7 @@ void Scene::clear( bool flushTextures )
 	nodes.clear();
 	properties.clear();
 	roots.clear();
+	shapes.clear();
 
 	animGroups.clear();
 	animTags.clear();
@@ -196,6 +199,15 @@ void Scene::updateSceneOptionsGroup( QAction * action )
 	emit sceneUpdated();
 }
 
+void Scene::updateSelectMode( QAction * action )
+{
+	if ( !action )
+		return;
+
+	selMode = SelMode( action->data().toInt() );
+	emit sceneUpdated();
+}
+
 void Scene::updateLodLevel( int level )
 {
 	lodLevel = LodLevel( level );
@@ -242,6 +254,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 				|| nif->inherits( iNode, "NiTriBasedGeom" ) )
 	{
 		node = new Mesh( this, iNode );
+		shapes += static_cast<Shape *>(node);
 	} else if ( nif->checkVersion( 0x14050000, 0 )
 				&& nif->itemName( iNode ) == "NiMesh" )
 	{
@@ -256,6 +269,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 				|| nif->itemName( iNode ) == "BSMeshLODTriShape"
 	) {
 		node = new BSShape( this, iNode );
+		shapes += static_cast<Shape *>(node);
 	} else if ( nif->inherits( iNode, "NiAVObject" ) ) {
 		if ( nif->itemName( iNode ) == "BSTreeNode" )
 			node = new Node( this, iNode );

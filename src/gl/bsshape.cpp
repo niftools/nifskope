@@ -415,6 +415,18 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	}
 }
 
+QModelIndex BSShape::vertexAt( int idx ) const
+{
+	auto nif = static_cast<const NifModel *>(iBlock.model());
+	if ( !nif )
+		return QModelIndex();
+
+	auto iVertexData = nif->getIndex( iBlock, "Vertex Data" );
+	auto iVertex = iVertexData.child( idx, 0 );
+
+	return nif->getIndex( iVertex, "Vertex" );
+}
+
 
 void BSShape::transform()
 {
@@ -447,13 +459,19 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	if ( isHidden() )
 		return;
 
+	glPointSize( 8.5 );
+
 	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
 	if ( !(scene->options & Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
 		return;
 
 	if ( Node::SELECTING ) {
-		int s_nodeId = ID2COLORKEY( nodeId );
-		glColor4ubv( (GLubyte *)&s_nodeId );
+		if ( scene->selMode & Scene::SelObject ) {
+			int s_nodeId = ID2COLORKEY( nodeId );
+			glColor4ubv( (GLubyte *)&s_nodeId );
+		} else {
+			glColor4f( 0, 0, 0, 1 );
+		}
 	}
 
 	// Draw translucent meshes in second pass
@@ -527,7 +545,39 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 
 	glDisable( GL_POLYGON_OFFSET_FILL );
 
+
+	if ( scene->selMode & Scene::SelVertex ) {
+		drawVerts();
+	}
+
 	glPopMatrix();
+}
+
+void BSShape::drawVerts() const
+{
+	glDisable( GL_LIGHTING );
+	glNormalColor();
+
+	glBegin( GL_POINTS );
+
+	for ( int i = 0; i < numVerts; i++ ) {
+		if ( Node::SELECTING ) {
+			int id = ID2COLORKEY( ( shapeNumber << 16 ) + i );
+			glColor4ubv( (GLubyte *)&id );
+		}
+		glVertex( verts.value( i ) );
+	}
+
+	// Highlight selected vertex
+	if ( !Node::SELECTING && iBlock == scene->currentBlock ) {
+		auto idx = scene->currentIndex;
+		if ( idx.data( Qt::DisplayRole ).toString() == "Vertex" ) {
+			glHighlightColor();
+			glVertex( verts.value( idx.parent().row() ) );
+		}
+	}
+
+	glEnd();
 }
 
 void BSShape::drawSelection() const
@@ -535,7 +585,7 @@ void BSShape::drawSelection() const
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 
-	if ( isHidden() )
+	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
 		return;
 
 	bool extraData = false;

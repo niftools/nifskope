@@ -33,6 +33,12 @@ public:
 	//QString textStats() const override;
 
 	// end Node
+
+	// Shape
+
+	void drawVerts() const override;
+	QModelIndex vertexAt( int ) const override;
+
 protected:
 
 	QPersistentModelIndex iVertData;

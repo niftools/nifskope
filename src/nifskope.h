@@ -343,6 +343,7 @@ private:
 	QAction * undoAction;
 	QAction * redoAction;
 
+	QActionGroup * selectActions;
 	QActionGroup * showActions;
 	QActionGroup * shadingActions;
 

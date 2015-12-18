@@ -50,6 +50,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Shape::Shape( Scene * s, const QModelIndex & b ) : Node( s, b )
 {
+	shapeNumber = s->shapes.count();
 }
 
 Mesh::Mesh( Scene * s, const QModelIndex & b ) : Shape( s, b )
@@ -419,6 +420,18 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	}
 
 	updateBounds |= updateData;
+}
+
+QModelIndex Mesh::vertexAt( int idx ) const
+{
+	auto nif = static_cast<const NifModel *>(iBlock.model());
+	if ( !nif )
+		return QModelIndex();
+
+	auto iVertexData = nif->getIndex( iData, "Vertices" );
+	auto iVertex = iVertexData.child( idx, 0 );
+
+	return iVertex;
 }
 
 
@@ -1001,8 +1014,12 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 	auto nif = static_cast<const NifModel *>(iBlock.model());
 	
 	if ( Node::SELECTING ) {
-		int s_nodeId = ID2COLORKEY( nodeId );
-		glColor4ubv( (GLubyte *)&s_nodeId );
+		if ( scene->selMode & Scene::SelObject ) {
+			int s_nodeId = ID2COLORKEY( nodeId );
+			glColor4ubv( (GLubyte *)&s_nodeId );
+		} else {
+			glColor4f( 0, 0, 0, 1 );
+		}
 	}
 
 	// BSOrderedNode
@@ -1131,8 +1148,40 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 
 	glDisable( GL_POLYGON_OFFSET_FILL );
 
+	glPointSize( 8.5 );
+	if ( scene->selMode & Scene::SelVertex ) {
+		drawVerts();
+	}
+
 	if ( transformRigid )
 		glPopMatrix();
+}
+
+void Mesh::drawVerts() const
+{
+	glDisable( GL_LIGHTING );
+	glNormalColor();
+
+	glBegin( GL_POINTS );
+
+	for ( int i = 0; i < verts.count(); i++ ) {
+		if ( Node::SELECTING ) {
+			int id = ID2COLORKEY( (shapeNumber << 16) + i );
+			glColor4ubv( (GLubyte *)&id );
+		}
+		glVertex( verts.value( i ) );
+	}
+
+	// Highlight selected vertex
+	if ( !Node::SELECTING && iData == scene->currentBlock ) {
+		auto idx = scene->currentIndex;
+		if ( idx.data( Qt::DisplayRole ).toString() == "Vertices" ) {
+			glHighlightColor();
+			glVertex( verts.value( idx.row() ) );
+		}
+	}
+
+	glEnd();
 }
 
 void Mesh::drawSelection() const

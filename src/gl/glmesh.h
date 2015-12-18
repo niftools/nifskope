@@ -53,6 +53,11 @@ public:
 	Shape( Scene * s, const QModelIndex & b );
 	~Shape() { clear(); }
 
+	virtual void drawVerts() const {};
+	virtual QModelIndex vertexAt( int ) const { return QModelIndex(); };
+
+	int shapeNumber;
+
 protected:
 	//! Sets the Controller
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
@@ -149,6 +154,11 @@ public:
 	QString textStats() const override;
 
 	// end Node
+
+	// Shape
+
+	void drawVerts() const override;
+	QModelIndex vertexAt( int ) const override;
 
 protected:
 	

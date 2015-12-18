@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ui_nifskope.h"
 #include "nifskope.h"
 #include "nifmodel.h"
+#include "gl/glmesh.h"
 #include "gl/glscene.h"
 #include "gl/gltex.h"
 #include "widgets/fileselect.h"
@@ -890,7 +891,15 @@ QModelIndex GLView::indexAt( const QPoint & pos, int cycle )
 
 	QModelIndex chooseIndex;
 
-	if ( choose != -1 ) {
+	if ( scene->selMode & Scene::SelVertex ) {
+		// Vertex
+		int block = choose >> 16;
+		int vert = choose - (block << 16);
+
+		auto shape = scene->shapes.value( block );
+		if ( shape )
+			chooseIndex = shape->vertexAt( vert );
+	} else if ( choose != -1 ) {
 		// Block Index
 		chooseIndex = model->getBlock( choose );
 
