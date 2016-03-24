@@ -1164,12 +1164,12 @@ void Mesh::drawVerts() const
 
 	glBegin( GL_POINTS );
 
-	for ( int i = 0; i < verts.count(); i++ ) {
+	for ( int i = 0; i < transVerts.count(); i++ ) {
 		if ( Node::SELECTING ) {
 			int id = ID2COLORKEY( (shapeNumber << 16) + i );
 			glColor4ubv( (GLubyte *)&id );
 		}
-		glVertex( verts.value( i ) );
+		glVertex( transVerts.value( i ) );
 	}
 
 	// Highlight selected vertex
@@ -1177,7 +1177,7 @@ void Mesh::drawVerts() const
 		auto idx = scene->currentIndex;
 		if ( idx.data( Qt::DisplayRole ).toString() == "Vertices" ) {
 			glHighlightColor();
-			glVertex( verts.value( idx.row() ) );
+			glVertex( transVerts.value( idx.row() ) );
 		}
 	}
 

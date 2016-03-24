@@ -1747,6 +1747,7 @@ void GLView::mouseReleaseEvent( QMouseEvent * event )
 		scene->currentIndex = idx.sibling( idx.row(), 0 );
 
 		if ( idx.isValid() ) {
+			emit clicked( QModelIndex() ); // HACK: To get Block Details to update
 			emit clicked( idx );
 		}
 
