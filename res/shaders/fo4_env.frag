@@ -1,4 +1,5 @@
 #version 120
+#extension GL_ARB_shader_texture_lod : require
 
 uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
