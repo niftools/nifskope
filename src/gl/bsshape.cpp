@@ -595,7 +595,7 @@ void BSShape::drawSelection() const
 		return;
 
 	auto currentBlock = nif->getBlockName( scene->currentBlock );
-	if ( currentBlock == "BSSkin::BoneData" )
+	if ( currentBlock == "BSSkin::BoneData" || currentBlock == "BSPackedCombinedSharedGeomDataExtra" )
 		extraData = true;
 
 	if ( scene->currentBlock != iBlock && !extraData )
@@ -632,6 +632,7 @@ void BSShape::drawSelection() const
 	if ( normalScale < 0.1f )
 		normalScale = 0.1f;
 
+	auto pBlock = nif->getBlock( nif->getParent( scene->currentBlock ) );
 	bool vp = scene->currentIndex.parent().data( NifSkopeDisplayRole ).toString() == "Vertex Data";
 
 	// Draw All Verts lambda
@@ -645,7 +646,7 @@ void BSShape::drawSelection() const
 		glEnd();
 	};
 
-	if ( n == "Bounding Sphere" && currentBlock != "BSSkin::BoneData" ) {
+	if ( n == "Bounding Sphere" && !extraData ) {
 		Vector3 bvC = nif->get<Vector3>( scene->currentIndex.child( 0, 2 ) );
 		float bvR = nif->get<float>( scene->currentIndex.child( 1, 2 ) );
 
@@ -653,6 +654,72 @@ void BSShape::drawSelection() const
 			glColor4f( 1, 1, 1, 0.33 );
 			drawSphereSimple( bvC, bvR, 72 );
 		}
+	}
+	
+	if ( currentBlock == "BSPackedCombinedSharedGeomDataExtra" && pBlock == iBlock ) {
+		QVector<QModelIndex> idxs;
+		if ( n == "Bounding Sphere" ) {
+			idxs += scene->currentIndex;
+		} else if ( n == "BSPackedCombinedSharedGeomDataExtra" ) {
+			auto data = nif->getIndex( scene->currentIndex, "Object Data" );
+			int dataCt = nif->rowCount( data );
+
+			for ( int i = 0; i < dataCt; i++ ) {
+				auto d = data.child( i, 0 );
+
+				int numC = nif->get<int>( d, "Num Combined" );
+				auto c = nif->getIndex( d, "Combined" );
+				int cCt = nif->rowCount( c );
+
+				for ( int j = 0; j < cCt; j++ ) {
+					idxs += nif->getIndex( c.child( j, 0 ), "Bounding Sphere" );
+				}
+			}
+		}
+
+		if ( !idxs.count() ) {
+			glPopMatrix();
+			return;
+		}
+
+		Vector3 pTrans = nif->get<Vector3>( pBlock, "Translation" );
+		auto iBSphere = nif->getIndex( pBlock, "Bounding Sphere" );
+		Vector3 pbvC = nif->get<Vector3>( iBSphere.child( 0, 2 ) );
+		float pbvR = nif->get<float>( iBSphere.child( 1, 2 ) );
+
+		if ( pbvR > 0.0 ) {
+			glColor4f( 0, 1, 0, 0.33 );
+			drawSphereSimple( pbvC, pbvR, 72 );
+		}
+
+		glPopMatrix();
+
+		for ( auto idx : idxs ) {
+			Matrix mat = nif->get<Matrix>( idx.parent(), "Rotation" );
+			//auto trans = nif->get<Vector3>( idx.parent(), "Translation" );
+			float scale = nif->get<float>( idx.parent(), "Scale" );
+
+			Vector3 bvC = nif->get<Vector3>( idx, "Center" );
+			float bvR = nif->get<float>( idx, "Radius" );
+
+			Transform t;
+			t.rotation = mat.inverted();
+			t.translation = bvC;
+			t.scale = scale;
+
+			glPushMatrix();
+			glMultMatrix( scene->view * t );
+
+			if ( bvR > 0.0 ) {
+				glColor4f( 1, 1, 1, 0.33 );
+				drawSphereSimple( Vector3( 0, 0, 0 ), bvR, 72 );
+			}
+
+			glPopMatrix();
+		}
+
+		glPushMatrix();
+		glMultMatrix( viewTrans() );
 	}
 
 	if ( n == "Vertex Data" || n == "Vertex" ) {
