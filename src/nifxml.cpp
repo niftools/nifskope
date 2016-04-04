@@ -169,19 +169,14 @@ public:
 			case tagCompound:
 			case tagBlock:
 				{
-					if ( !list.value( "nifskopetype" ).isEmpty() ) {
-						QString alias = list.value( "name" );
-						QString type  = list.value( "nifskopetype" );
+					QString name = list.value( "name" );
 
-						if ( alias != type ) {
-							if ( !NifValue::registerAlias( alias, type ) )
-								err( tr( "failed to register alias %1 for type %2" ).arg( alias, type ) );
-						}
-
-						typId  = alias;
+					if ( NifValue::type( name ) != NifValue::tNone ) {
+						// Internal Type
+						typId  = name;
 						typTxt = QString();
 					} else {
-						QString id = list.value( "name" );
+						QString id = name;
 
 						if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
 							err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
@@ -211,18 +206,12 @@ public:
 				break;
 			case tagBasic:
 				{
-					QString alias = list.value( "name" );
-					QString type  = list.value( "nifskopetype" );
+					QString name = list.value( "name" );
 
-					if ( alias.isEmpty() || type.isEmpty() )
-						err( tr( "basic definition must have a name and a nifskopetype" ) );
+					if ( NifValue::type( name ) == NifValue::tNone )
+						err( tr( "basic definition %1 must have an internal NifSkope type" ).arg( name ) );
 
-					if ( alias != type ) {
-						if ( !NifValue::registerAlias( alias, type ) )
-							err( tr( "failed to register alias %1 for type %2" ).arg( alias, type ) );
-					}
-
-					typId  = alias;
+					typId = name;
 					typTxt = QString();
 				}
 				break;
@@ -284,15 +273,6 @@ public:
 
 						type = nstype;
 					}
-
-					if ( type == "KeyArray" )
-						type = "ns keyarray";
-					else if ( type == "VectorKeyArray" )
-						type = "ns keyvecarray";
-					else if ( type == "TypedVectorKeyArray" )
-						type = "ns keyvecarraytyp";
-					else if ( type == "RotationKeyArray" )
-						type = "ns keyrotarray";
 
 					// now allocate
 					data = NifData(
