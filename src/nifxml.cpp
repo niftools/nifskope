@@ -261,17 +261,10 @@ public:
 			switch ( x ) {
 			case tagAdd:
 				{
-					// ns type optimizers come here
-					// we really shouldn't be doing this
-					// but it will work for now until we find a better solution
 					QString type = list.value( "type" );
-					QString nstype = list.value( "nifskopetype" );
-
-					if ( !nstype.isEmpty() && nstype != type ) {
-						if ( NifValue::type( nstype ) == NifValue::tNone )
-							err( "failed to locate alias " + nstype );
-
-						type = nstype;
+					QString binary = list.value( "binary" );
+					if ( binary == "1" ) {
+						type = "blob";
 					}
 
 					// now allocate
