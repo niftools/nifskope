@@ -229,6 +229,8 @@ public:
 
 	//! Is name a compound type?
 	static bool isCompound( const QString & name );
+	//! Is compound of fixed size/condition? (Array optimization)
+	static bool isFixedCompound( const QString & name );
 	//! Is name an ancestor identifier (<niobject abstract="1">)?
 	static bool isAncestor( const QString & name );
 	//! Is name a NiBlock identifier (<niobject abstract="0"> or <niobject abstract="1">)?
@@ -347,6 +349,7 @@ protected:
 	// XML structures
 	static QList<quint32> supportedVersions;
 	static QHash<QString, NifBlock *> compounds;
+	static QHash<QString, NifBlock *> fixedCompounds;
 	static QHash<QString, NifBlock *> blocks;
 
 private:
@@ -431,6 +434,11 @@ inline bool NifModel::isAncestor( const QString & name )
 inline bool NifModel::isCompound( const QString & name )
 {
 	return compounds.contains( name );
+}
+
+inline bool NifModel::isFixedCompound( const QString & name )
+{
+	return fixedCompounds.contains( name );
 }
 
 inline bool NifModel::isVersionSupported( quint32 v )

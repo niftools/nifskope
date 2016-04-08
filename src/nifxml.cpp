@@ -47,6 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 QReadWriteLock             NifModel::XMLlock;
 QList<quint32>             NifModel::supportedVersions;
 QHash<QString, NifBlock *> NifModel::compounds;
+QHash<QString, NifBlock *> NifModel::fixedCompounds;
 QHash<QString, NifBlock *> NifModel::blocks;
 
 //! Parses nif.xml
@@ -200,6 +201,11 @@ public:
 								if ( !NifModel::blocks.contains( blk->ancestor ) )
 									err( tr( "forward declaration of block id %1" ).arg( blk->ancestor ) );
 							}
+						}
+
+						QString externalCond = list.value( "externalcond" );
+						if ( externalCond == "1" ) {
+							NifModel::fixedCompounds.insert( blk->id, blk );
 						}
 					}
 				}
