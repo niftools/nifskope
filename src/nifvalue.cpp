@@ -81,7 +81,7 @@ void NifValue::initialize()
 	typeMap.insert( "Flags",  NifValue::tFlags );
 	typeMap.insert( "ushort", NifValue::tWord );
 	typeMap.insert( "uint",   NifValue::tUInt );
-	typeMap.insert( "ulittle32", NifValue::tUInt );
+	typeMap.insert( "ulittle32", NifValue::tULittle32 );
 	typeMap.insert( "Ref",    NifValue::tLink );
 	typeMap.insert( "Ptr",    NifValue::tUpLink );
 	typeMap.insert( "float",  NifValue::tFloat );
@@ -552,6 +552,7 @@ bool NifValue::operator==( const NifValue & other ) const
 
 	case tBool:
 	case tUInt:
+	case tULittle32:
 	case tStringIndex:
 	case tFileVersion:
 		return val.u32 == other.val.u32;
@@ -763,6 +764,7 @@ bool NifValue::setFromString( const QString & s )
 		val.i32 = s.toInt( &ok, 0 );
 		return ok;
 	case tUInt:
+	case tULittle32:
 		val.u32 = s.toUInt( &ok, 0 );
 		return ok;
 	case tStringIndex:
@@ -837,6 +839,7 @@ QString NifValue::toString() const
 	case tStringOffset:
 	case tBlockTypeIndex:
 	case tUInt:
+	case tULittle32:
 		return QString::number( val.u32 );
 	case tStringIndex:
 		return QString::number( val.u32 );
@@ -1064,6 +1067,18 @@ bool NifIStream::read( NifValue & val )
 		{
 			*dataStream >> val.val.u32;
 			return ( dataStream->status() == QDataStream::Ok );
+		}
+	case NifValue::tULittle32:
+		{
+			if ( bigEndian )
+				dataStream->setByteOrder( QDataStream::LittleEndian );
+
+			*dataStream >> val.val.u32;
+
+			if ( bigEndian )
+				dataStream->setByteOrder( QDataStream::BigEndian );
+
+			return (dataStream->status() == QDataStream::Ok);
 		}
 	case NifValue::tStringIndex:
 		{
@@ -1469,6 +1484,7 @@ bool NifOStream::write( const NifValue & val )
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
 	case NifValue::tUInt:
+	case NifValue::tULittle32:
 	case NifValue::tStringIndex:
 		return device->write( (char *)&val.val.u32, 4 ) == 4;
 	case NifValue::tFileVersion:
@@ -1759,6 +1775,7 @@ int NifSStream::size( const NifValue & val )
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
 	case NifValue::tUInt:
+	case NifValue::tULittle32:
 	case NifValue::tStringIndex:
 	case NifValue::tFileVersion:
 	case NifValue::tLink:

@@ -394,6 +394,7 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 					case NifValue::tBool:
 					case NifValue::tInt:
 					case NifValue::tUInt:
+					case NifValue::tULittle32:
 						{
 							quint32 i = item->value().toCount();
 							return QString( "dec: %1<br>hex: 0x%2" ).arg( i ).arg( i, 8, 16, QChar( '0' ) );

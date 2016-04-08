@@ -1426,6 +1426,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					case NifValue::tBool:
 					case NifValue::tInt:
 					case NifValue::tUInt:
+					case NifValue::tULittle32:
 						{
 							return tr( "dec: %1\nhex: 0x%2" )
 							       .arg( item->value().toString() )

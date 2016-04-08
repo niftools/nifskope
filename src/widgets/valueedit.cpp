@@ -63,7 +63,7 @@ bool ValueEdit::canEdit( NifValue::Type t )
 		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
 		|| t == NifValue::tColor3 || t == NifValue::tColor4 || t == NifValue::tByteColor4
 		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
-		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt
+		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt || t == NifValue::tULittle32
 		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3
 		|| t == NifValue::tHalfVector2;
 }
@@ -153,6 +153,7 @@ void ValueEdit::setValue( const NifValue & v )
 		}
 		break;
 	case NifValue::tUInt:
+	case NifValue::tULittle32:
 		{
 			QSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame( false );
@@ -346,6 +347,7 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tFlags:
 		case NifValue::tInt:
 		case NifValue::tUInt:
+		case NifValue::tULittle32:
 		case NifValue::tStringIndex:
 			val.setCount( qobject_cast<QSpinBox *>( edit )->value() );
 			break;
