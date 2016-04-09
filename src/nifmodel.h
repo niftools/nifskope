@@ -95,6 +95,11 @@ public:
 	//! Resets the model to its original state in any attached views.
 	void reset();
 
+	//! Evaluate the condition and version expressions for a NifItem
+	bool evalCondition( NifItem * item, bool chkParents = false ) const;
+	//! Invalidate the conditions of the item and its children recursively
+	void invalidateConditions( NifItem * item, bool refresh = true );
+
 	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32, qint32> & map );
 	//! Loads the header from a filename
@@ -296,6 +301,7 @@ protected:
 	// end BaseModel
 
 	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool loadHeader( NifItem * parent, NifIStream & stream, bool fast = true );
 	bool save( NifItem * parent, NifOStream & stream ) const;
 	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
 

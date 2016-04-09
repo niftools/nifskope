@@ -89,10 +89,15 @@ bool BaseModel::isArray( const QModelIndex & index ) const
 	return !itemArr1( index ).isEmpty();
 }
 
+bool BaseModel::isArray( NifItem * item ) const
+{
+	return !item->arr1().isEmpty();
+}
+
 int BaseModel::getArraySize( NifItem * array ) const
 {
 	// shortcut for speed
-	if ( array->arr1().isEmpty() )
+	if ( !isArray( array ) )
 		return 0;
 
 	return evaluateInt( array, array->arr1expr() );
@@ -553,7 +558,15 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 
 	Qt::ItemFlags flags;
 
-	if ( evalCondition( index, true ) )
+	auto item = static_cast<NifItem *>(index.internalPointer());
+
+	bool condExpr;
+	if ( item )
+		condExpr = item->condition();
+	else
+		condExpr = evalCondition( index, true );
+
+	if ( condExpr )
 		flags = (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
 	switch ( index.column() ) {
@@ -561,7 +574,7 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 		return flags;
 	case NameCol:
 	case ValueCol:
-		if ( evalCondition( index, true ) )
+		if ( condExpr )
 			return flags | Qt::ItemIsEditable;
 
 		return flags;
@@ -699,6 +712,9 @@ int BaseModel::evaluateInt( NifItem * item, const Expression & expr ) const
 
 bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 {
+	if ( item->isConditionValid() )
+		return item->condition();
+
 	if ( !evalVersion( item, chkParents ) )
 		return false;
 
@@ -717,7 +733,10 @@ bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 		return true;
 
 	BaseModelEval functor( this, item );
-	return item->condexpr().evaluateBool( functor );
+
+	item->setCondition( item->condexpr().evaluateBool( functor ) );
+
+	return item->condition();
 }
 
 bool BaseModel::evalVersion( const QModelIndex & index, bool chkParents ) const

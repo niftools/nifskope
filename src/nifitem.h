@@ -225,10 +225,13 @@ public:
 	//! Return the row that this item is at.
 	int row() const
 	{
-		if ( parentItem )
-			return parentItem->childItems.indexOf( const_cast<NifItem *>(this) );
+		if ( !parentItem )
+			return 0;
 
-		return 0;
+		if ( rowIdx < 0 )
+			rowIdx = parentItem->childItems.indexOf( const_cast<NifItem *>(this) );
+
+		return rowIdx;
 	}
 
 	/*! Allocate memory to insert child items
@@ -238,6 +241,12 @@ public:
 	void prepareInsert( int e )
 	{
 		childItems.reserve( childItems.count() + e );
+	}
+
+	//! Get child items
+	QVector<NifItem *> children()
+	{
+		return childItems;
 	}
 
 	/*! Insert child data item
@@ -250,10 +259,12 @@ public:
 	{
 		NifItem * item = new NifItem( data, this );
 
-		if ( at < 0 || at > childItems.count() )
+		if ( at < 0 || at > childItems.count() ) {
 			childItems.append( item );
-		else
+		} else {
+			invalidateRowCounts();
 			childItems.insert( at, item );
+		}
 
 		return item;
 	}
@@ -268,10 +279,12 @@ public:
 	{
 		child->parentItem = this;
 
-		if ( at < 0 || at > childItems.count() )
+		if ( at < 0 || at > childItems.count() ) {
 			childItems.append( child );
-		else
+		} else {
+			invalidateRowCounts();
 			childItems.insert( at, child );
+		}
 
 		return child->row();
 	}
@@ -290,6 +303,8 @@ public:
 			item->parentItem = 0;
 		}
 
+		invalidateRowCounts();
+
 		return item;
 	}
 
@@ -300,6 +315,8 @@ public:
 	void removeChild( int row )
 	{
 		NifItem * item = child( row );
+
+		invalidateRowCounts();
 
 		if ( item ) {
 			childItems.remove( row );
@@ -316,7 +333,7 @@ public:
 	{
 		for ( int c = row; c < row + count; c++ ) {
 			NifItem * item = childItems.value( c );
-
+			invalidateRowCounts();
 			if ( item )
 				delete item;
 		}
@@ -367,6 +384,111 @@ public:
 	{
 		qDeleteAll( childItems );
 		childItems.clear();
+	}
+
+	//! Conditions for each child in the array (if fixed)
+	QVector<bool> arrayConditions()
+	{
+		return arrConds;
+	}
+
+	//! Reset array conditions based on size of children
+	void resetArrayConditions()
+	{
+		arrConds.clear();
+		arrConds.resize( childItems.at( 0 )->childCount() );
+		arrConds.fill( false );
+	}
+
+	//! Reset array conditions based on provided size
+	void resetArrayConditions( int size )
+	{
+		arrConds.clear();
+		arrConds.resize( size );
+		arrConds.fill( false );
+	}
+
+	//! Update array condition at specified index
+	void updateArrayCondition( bool cond, int at )
+	{
+		arrConds[at] = cond;
+	}
+
+	//! Cached result of cond expression
+	bool condition()
+	{
+		return conditionStatus == 1;
+	}
+
+	//! Cached result of vercond expression
+	bool versionCondition()
+	{
+		return vercondStatus == 1;
+	}
+
+	//! Has the condition been cached
+	bool isConditionValid()
+	{
+		return conditionStatus != -1;
+	}
+
+	//! Has the version condition been cached
+	bool isVercondValid()
+	{
+		return vercondStatus != -1;
+	}
+
+	//! Cache the cond expression
+	void setCondition( bool status )
+	{
+		conditionStatus = status;
+	}
+
+	//! Cache the vercond expression
+	void setVersionCondition( bool status )
+	{
+		vercondStatus = status;
+	}
+
+	//! Invalidate the cached cond expression
+	void invalidateCondition()
+	{
+		conditionStatus = -1;
+	}
+
+	//! Invalidate the cached vercond expression
+	void invalidateVersionCondition()
+	{
+		vercondStatus = -1;
+	}
+
+	//! Invalidate the cached row index
+	void invalidateRow()
+	{
+		rowIdx = -1;
+	}
+
+	//! Invalidate the cached row index for this item and its children
+	void invalidateRowCounts()
+	{
+		invalidateRow();
+		for ( NifItem * c : childItems ) {
+			c->invalidateRow();
+		}
+	}
+
+	//! Invalidate the cached row index for this item and its children starting at the given index
+	void invalidateRowCounts( int at )
+	{
+		if ( at < childCount() ) {
+			invalidateRow();
+			for ( int i = at; i < childCount(); i++ ) {
+				childItems.value( i )->invalidateRow();
+			}
+		} else {
+			invalidateRowCounts();
+		}
+
 	}
 
 	//! Return the value of the item data (const version)
@@ -471,6 +593,15 @@ private:
 	NifItem * parentItem;
 	//! The child items
 	QVector<NifItem *> childItems;
+
+	//! Item's condition status, -1 is invalid, otherwise 0/1
+	int conditionStatus = -1;
+	//! Item's vercond status, -1 is invalid, otherwise 0/1
+	int vercondStatus = -1;
+	//! Item's row index, -1 is invalid, otherwise 0+
+	mutable int rowIdx = -1;
+	//! If item is array with fixed compounds, the conditions are stored here for reuse
+	QVector<bool> arrConds;
 };
 
 #endif

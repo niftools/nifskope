@@ -149,6 +149,9 @@ quint32 NifModel::version2number( const QString & s )
 
 bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 {
+	if ( item->isVercondValid() )
+		return item->versionCondition();
+
 	if ( item == root )
 		return true;
 
@@ -167,7 +170,11 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 		return true;
 
 	NifModelEval functor( this, getHeaderItem() );
-	return item->verexpr().evaluateBool( functor );
+	bool expr = item->verexpr().evaluateBool( functor );
+
+	item->setVersionCondition( expr );
+
+	return expr;
 }
 
 void NifModel::clear()
@@ -529,7 +536,7 @@ bool NifModel::updateByteArrayItem( NifItem * array, bool fast )
 
 bool NifModel::updateArrayItem( NifItem * array, bool fast )
 {
-	if ( array->arr1().isEmpty() )
+	if ( !isArray( array ) )
 		return false;
 
 	int d1 = getArraySize( array );
@@ -613,9 +620,8 @@ bool NifModel::updateArrays( NifItem * parent, bool fast )
 
 	for ( int row = 0; row < parent->childCount(); row++ ) {
 		NifItem * child = parent->child( row );
-
 		if ( evalCondition( child ) ) {
-			if ( !child->arr1().isEmpty() ) {
+			if ( isArray( child ) ) {
 				if ( !updateArrayItem( child, fast ) )
 					return false;
 
@@ -655,6 +661,7 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at, bool fa
 			beginInsertRows( QModelIndex(), at, at );
 
 		NifItem * branch = insertBranch( root, NifData( identifier, "NiBlock", block->text ), at );
+		branch->setCondition( true );
 
 		if ( !fast )
 			endInsertRows();
@@ -1065,10 +1072,6 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 {
 	if ( !data.arr1().isEmpty() ) {
 		NifItem * array = insertBranch( parent, data, at );
-
-		if ( evalCondition( array ) )
-			updateArrayItem( array, true );
-
 		return;
 	}
 
@@ -1393,7 +1396,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 			switch ( column ) {
 			case NameCol:
 				{
-					if ( item->parent() && !item->parent()->arr1().isEmpty() ) {
+					if ( item->parent() && isArray( item->parent() ) ) {
 						return QString( "array index: %1" ).arg( item->row() );
 					} else {
 						QString tip = QString( "<p><b>%1</b></p><p>%2</p>" )
@@ -1639,6 +1642,9 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		}
 	}
 
+	// Reassess conditions for the entire block
+	invalidateConditions( item->parent(), true );
+
 	// update original index
 	emit dataChanged( index, index );
 
@@ -1761,16 +1767,7 @@ bool NifModel::load( QIODevice & device )
 	// read header
 	NifItem * header = nullptr;
 	header = getHeaderItem();
-
-	// bugfix: force user versions to zero (if the template was version
-	// 20.0.0.5 then they have been set to non-zero, and the read function
-	// will not reset them to zero on older files...)
-	if ( header ) {
-		set<int>( header, "User Version 2", 0 );
-		set<int>( header, "User Version", 0 );
-	}
-
-	if ( !header || !load( header, stream, true ) ) {
+	if ( !header || !loadHeader( header, stream, true ) ) {
 		auto m = tr( "failed to load file header (version %1, %2)" ).arg( version, 0, 16 ).arg( version2string( version ) );
 		if ( msgMode == UserMessage ) {
 			Message::critical( nullptr, tr( "The file could not be read. See Details for more information." ), m );
@@ -1997,7 +1994,12 @@ bool NifModel::load( QIODevice & device )
 	}
 	catch ( QString err )
 	{
-		Message::critical( nullptr, tr( "The NIF file could not be read. See Details for more information." ), err );
+		if ( msgMode == UserMessage ) {
+			Message::critical( nullptr, tr( "The NIF file could not be read. See Details for more information." ), err );
+		} else {
+			testMsg( err );
+		}
+		
 		reset();
 		return false;
 	}
@@ -2118,7 +2120,7 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	// read header
 	NifItem * header = getHeaderItem();
 
-	if ( !header || !load( header, stream, true ) ) {
+	if ( !header || !loadHeader( header, stream, true ) ) {
 		if ( msgMode == UserMessage ) {
 			Message::critical( nullptr, tr( "Failed to load file header." ), tr( "Version %1" ).arg( version ) );
 		} else {
@@ -2237,8 +2239,8 @@ int NifModel::blockSize( NifItem * parent, NifSStream & stream ) const
 		}
 
 		if ( evalCondition( child ) ) {
-			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
+				if ( isArray( child ) && child->childCount() != getArraySize( child ) ) {
 					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte
 					} else {
@@ -2275,7 +2277,7 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 		}
 
 		if ( evalCondition( child ) ) {
-			if ( !child->arr1().isEmpty() ) {
+			if ( isArray( child ) ) {
 				if ( !updateArrayItem( child, fast ) )
 					return false;
 
@@ -2289,16 +2291,24 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 					return false;
 			}
 		}
-
-		// these values are always little-endian
-		if ( (child->name() == "Num Blocks") || (child->name() == "User Version") || (child->name() == "User Version 2") ) {
-			if ( version >= 0x14000004 && get<quint8>( getHeaderItem(), "Endian Type" ) == 0 ) {
-				child->value().setCount( qFromBigEndian( child->value().toCount() ) );
-			}
-		}
 	}
 
 	return true;
+}
+
+bool NifModel::loadHeader( NifItem * header, NifIStream & stream, bool fast )
+{
+	// Load header separately and invalidate conditions before reading
+	//	Compensates for < 20.0.0.5 User Version/User Version 2 program defaults issue
+	if ( !header )
+		return false;
+
+	set<int>( header, "User Version", 0 );
+	set<int>( header, "User Version 2", 0 );
+
+	invalidateConditions( header, false );
+	
+	return load( header, stream, fast );
 }
 
 bool NifModel::save( NifItem * parent, NifOStream & stream ) const
@@ -2315,8 +2325,8 @@ bool NifModel::save( NifItem * parent, NifOStream & stream ) const
 		}
 
 		if ( evalCondition( child ) ) {
-			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
+				if ( isArray( child ) && child->childCount() != getArraySize( child ) ) {
 					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
 						// special byte
 					} else {
@@ -2350,7 +2360,7 @@ bool NifModel::fileOffset( NifItem * parent, NifItem * target, NifSStream & stre
 			return true;
 
 		if ( evalCondition( child ) ) {
-			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
+			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
 				if ( fileOffset( child, target, stream, ofs ) )
 					return true;
 			} else {
@@ -2368,6 +2378,56 @@ NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, in
 	item->value().changeType( NifValue::tNone );
 	return item;
 }
+
+bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
+{
+	if ( item->isConditionValid() )
+		return item->condition();
+	
+	// Store row conditions for certain compound arrays
+	NifItem * parent = item->parent();
+	if ( isFixedCompound( parent->type() ) ) {
+		NifItem * arrRoot = parent->parent();
+		if ( isArray( arrRoot ) ) {
+			// This is a compound in the compound array
+			if ( parent->row() == 0 ) {
+				// This is the first compound in the compound array
+				if ( item->row() == 0 ) {
+					// First row of first compound, initialize condition cache
+					arrRoot->resetArrayConditions();
+				}
+				// Cache condition on array root
+				arrRoot->updateArrayCondition( BaseModel::evalCondition( item ), item->row() );
+			}
+			item->setCondition( arrRoot->arrayConditions().at( item->row() ) );
+			return item->condition();
+		}
+	}
+
+	item->setCondition( BaseModel::evalCondition( item, chkParents ) );
+
+	return item->condition();
+}
+
+void NifModel::invalidateConditions( NifItem * item, bool refresh )
+{
+	for ( NifItem * c : item->children() ) {
+		c->invalidateCondition();
+		c->invalidateVersionCondition();
+		if ( refresh )
+			c->setCondition( BaseModel::evalCondition( c ) );
+
+		if ( (isArray( c ) || c->childCount() > 0) && !c->arg().isEmpty() ) {
+			invalidateConditions( c );
+		}
+	}
+
+	// Reset conditions cached on array root for fixed condition compounds
+	if ( isArray( item ) && isFixedCompound( item->type() ) ) {
+		item->resetArrayConditions();
+	}
+}
+
 
 /*
  *  link functions
@@ -2431,7 +2491,7 @@ void NifModel::updateLinks( int block, NifItem * parent )
 		} else if ( islink ) {
 			int l = child->value().toLink();
 
-			if ( l >= 0 && child->arr1().isEmpty() ) {
+			if ( l >= 0 && !isArray( child ) ) {
 				if ( ischild ) {
 					if ( !childLinks[block].contains( l ) )
 						childLinks[block].append( l );

@@ -136,6 +136,13 @@ public:
 	 */
 	bool isArray( const QModelIndex & iArray ) const;
 
+	/*! Return true if the item is an array.
+	*
+	* @param array The item to check.
+	* @return		true if the index is an array.
+	*/
+	bool isArray( NifItem * item ) const;
+
 	/*! Update the size of an array (append or remove items).
 	 *
 	 * @param array The index of the array whose size to update.
