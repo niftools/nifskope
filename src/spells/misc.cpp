@@ -19,7 +19,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( nif->isArray( index ) && nif->evalCondition( index ) ) {
+		if ( nif->isArray( index ) ) {
 			//Check if array is of fixed size
 			NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 			bool static1 = true;
@@ -151,7 +151,7 @@ REGISTER_SPELL( spFileOffset )
 // definitions for spCollapseArray moved to misc.h
 bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-	if ( nif->isArray( index ) && nif->evalCondition( index ) && index.isValid()
+	if ( nif->isArray( index ) && index.isValid()
 	     && ( nif->getBlockType( index ) == "Ref" || nif->getBlockType( index ) == "Ptr" ) )
 	{
 		// copy from spUpdateArray when that changes

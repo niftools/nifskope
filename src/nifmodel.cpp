@@ -320,7 +320,7 @@ void NifModel::updateHeader()
 
 			// NiMesh hack
 			QString blockName = block->name();
-			qDebug() << "Updating header with " << blockName;
+			//qDebug() << "Updating header with " << blockName;
 
 			if ( blockName == "NiDataStream" ) {
 				blockName = QString( "NiDataStream\x01%1\x01%2" ).arg( block->child( "Usage" )->value().get<int>() ).arg( block->child( "Access" )->value().get<int>() );
@@ -2024,7 +2024,7 @@ bool NifModel::save( QIODevice & device ) const
 	for ( int c = 0; c < rowCount( QModelIndex() ); c++ ) {
 		emit sigProgress( c + 1, rowCount( QModelIndex() ) );
 
-		qDebug() << "saving block " << c << ": " << itemName( index( c, 0 ) );
+		//qDebug() << "saving block " << c << ": " << itemName( index( c, 0 ) );
 
 		if ( itemType( index( c, 0 ) ) == "NiBlock" ) {
 			if ( version > 0x0a000000 ) {

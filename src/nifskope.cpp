@@ -190,17 +190,19 @@ NifSkope::NifSkope()
 	// Block List
 	list = ui->list;
 	list->setModel( proxy );
+	list->setSortingEnabled( false );
 	list->setItemDelegate( nif->createDelegate( book ) );
 	list->installEventFilter( this );
 
 	// Block Details
 	tree = ui->tree;
 	tree->setModel( nif );
+	tree->setSortingEnabled( false );
 	tree->setItemDelegate( nif->createDelegate( book ) );
 	tree->installEventFilter( this );
 	tree->header()->moveSection( 1, 2 );
 
-	// Block Details
+	// Header Details
 	header = ui->header;
 	header->setModel( nif );
 	header->setItemDelegate( nif->createDelegate( book ) );

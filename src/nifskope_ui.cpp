@@ -530,8 +530,8 @@ void NifSkope::initToolBars()
 
 	animSlider->addEditor( animSliderEdit );
 	animSlider->setParent( ui->tAnim );
-	animSlider->setMinimumWidth( 75 );
-	animSlider->setMaximumWidth( 150 );
+	animSlider->setMinimumWidth( 200 );
+	animSlider->setMaximumWidth( 500 );
 	animSlider->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::MinimumExpanding );
 
 	connect( ogl, &GLView::sceneTimeChanged, animSlider, &FloatSlider::set );
