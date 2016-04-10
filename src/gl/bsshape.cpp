@@ -47,12 +47,13 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	numVerts = nif->get<int>( iBlock, "Num Vertices" );
 	numTris = nif->get<int>( iBlock, "Num Triangles" );
 
-	auto vc = nif->rowCount( iVertData );
-	auto tc = nif->rowCount( iTriData );
+	auto vertCount = nif->rowCount( iVertData );
+	auto triCount = nif->rowCount( iTriData );
+
+	numVerts = std::min( numVerts, vertCount );
+	numTris = std::min( numTris, triCount );
 
 	auto dataSize = nif->get<int>( iBlock, "Data Size" );
-
-	Q_ASSERT( !dataSize || ((vc == numVerts) && (tc == numTris)) );
 
 	auto bsphere = nif->getIndex( iBlock, "Bounding Sphere" );
 	if ( bsphere.isValid() ) {
@@ -61,7 +62,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	}
 
 	if ( iBlock == index && dataSize > 0 ) {
-		// Calling BSShape::clear here is bad
 		verts.clear();
 		norms.clear();
 		tangents.clear();
@@ -72,8 +72,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		test1.clear();
 		test2.clear();
 		test3.clear();
-
-		auto vf7 = nif->get<quint8>( iBlock, "VF7" );
 
 		// For compatibility with coords QList
 		QVector<Vector2> coordset;
@@ -111,7 +109,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		coords.append( coordset );
 
 		triangles = nif->getArray<Triangle>( iTriData );
-		Q_ASSERT( !dataSize || numTris == triangles.count() );
+		triangles = triangles.mid( 0, numTris );
 	}
 
 	QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" ) + nif->getLinkArray( iBlock, "BS Properties" );
@@ -588,16 +586,20 @@ void BSShape::drawSelection() const
 	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
 		return;
 
+	// Is the current block extra data
 	bool extraData = false;
 
 	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
 	if ( !nif )
 		return;
 
+	// Set current block and detect if extra data
 	auto currentBlock = nif->getBlockName( scene->currentBlock );
 	if ( currentBlock == "BSSkin::BoneData" || currentBlock == "BSPackedCombinedSharedGeomDataExtra" )
 		extraData = true;
 
+	// Don't do anything if this block is not the current block
+	//	or if there is not extra data
 	if ( scene->currentBlock != iBlock && !extraData )
 		return;
 
@@ -620,8 +622,14 @@ void BSShape::drawSelection() const
 
 	glDisable( GL_CULL_FACE );
 
-	glLineWidth( 1.5 );
-	glPointSize( 5.0 );
+	// TODO: User Settings
+	int lineWidth = 1.5;
+	int pointSize = 5.0;
+
+	glLineWidth( lineWidth );
+	glPointSize( pointSize );
+
+	glNormalColor();
 
 	glEnable( GL_POLYGON_OFFSET_FILL );
 	glPolygonOffset( -1.0f, -2.0f );
@@ -735,7 +743,7 @@ void BSShape::drawSelection() const
 		if ( s >= 0 ) {
 			glPointSize( 10 );
 			glDepthFunc( GL_ALWAYS );
-			glColor4f( 1, 0, 0, 1 );
+			glHighlightColor();
 			glBegin( GL_POINTS );
 			glVertex( verts.value( s ) );
 			glEnd();
@@ -745,7 +753,7 @@ void BSShape::drawSelection() const
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	// Draw Lines lambda
-	auto lines = [this, &normalScale, &allv]( const QVector<Vector3> & v ) {
+	auto lines = [this, &normalScale, &allv, &lineWidth]( const QVector<Vector3> & v ) {
 		allv( 7.0 );
 
 		int s = scene->currentIndex.parent().row();
@@ -762,29 +770,34 @@ void BSShape::drawSelection() const
 
 		if ( s >= 0 ) {
 			glDepthFunc( GL_ALWAYS );
-			glColor4f( 1, 0, 0, 1 );
+			glHighlightColor();
+			glLineWidth( 3.0 );
 			glBegin( GL_LINES );
 			glVertex( verts.value( s ) );
 			glVertex( verts.value( s ) + v.value( s ) * normalScale * 2 );
 			glVertex( verts.value( s ) );
 			glVertex( verts.value( s ) - v.value( s ) * normalScale / 2 );
 			glEnd();
+			glLineWidth( lineWidth );
 		}
 	};
 	
+	// Draw Normals
 	if ( n.contains( "Normal" ) ) {
 		lines( norms );
 	}
 
+	// Draw Tangents
 	if ( n.contains( "Tangent" ) ) {
 		lines( tangents );
 	}
 
+	// Draw Triangles
 	if ( n == "Triangles" ) {
 		int s = scene->currentIndex.row();
 		if ( s >= 0 ) {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-			glColor4f( 1, 0, 0, 1 );
+			glHighlightColor();
 
 			Triangle tri = triangles.value( s );
 			glBegin( GL_TRIANGLES );
@@ -796,10 +809,11 @@ void BSShape::drawSelection() const
 		}
 	}
 
-	if ( n == "Segment" || n == "Triangle Count" ) {
+	// Draw Segments/Subsegments
+	if ( n == "Segment" || n == "Sub Segment" || n == "Num Primitives" ) {
 		auto idx = scene->currentIndex;
 		int s;
-		if ( n == "Segment" ) {
+		if ( n != "Num Primitives" ) {
 			idx = scene->currentIndex.child( 1, 0 );
 		}
 		s = idx.row();
@@ -836,7 +850,7 @@ void BSShape::drawSelection() const
 				}
 			}
 		} else {
-			glColor4f( 1, 0, 0, 0.5 );
+			glColor( Color4(cols.value( scene->currentIndex.row() % 7 )) );
 
 			int i = off;
 			for ( i; i < cnt + off; i++ ) {
@@ -852,6 +866,7 @@ void BSShape::drawSelection() const
 		return;
 	}
 
+	// Bone bounds lambda
 	auto boneSphere = [nif]( QModelIndex b ) {
 		auto bSphere = nif->getIndex( b, "Bounding Sphere" );
 		auto bTrans = nif->get<Vector3>( b, "Translation" );
@@ -867,6 +882,7 @@ void BSShape::drawSelection() const
 		}
 	};
 
+	// Draw all bones' bounding spheres
 	if ( n == "BSSkin::BoneData" ) {
 		auto bData = scene->currentBlock;
 		auto skin = nif->getParent( bData );
@@ -885,15 +901,17 @@ void BSShape::drawSelection() const
 		return;
 	}
 
+	// Draw bone bounding sphere
 	if ( n == "Bones" && currentBlock == "BSSkin::BoneData" ) {
 		boneSphere( scene->currentIndex );
 		glPopMatrix();
 		return;
 	}
 
+	// General wireframe
 	if ( (scene->currentIndex != iVertData) && !vp ) {
 		glLineWidth( 1.6f );
-		glHighlightColor();
+		glNormalColor();
 		for ( const Triangle& tri : triangles ) {
 			glBegin( GL_TRIANGLES );
 			glVertex( verts.value( tri.v1() ) );

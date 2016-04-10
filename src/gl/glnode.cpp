@@ -658,9 +658,9 @@ void Node::drawSelection() const
 			t.scale = normalScale * 16;
 
 			if ( i == sel ) {
-				glColor4f( 1, 0, 0, 1 );
-			} else {
 				glHighlightColor();
+			} else {
+				glNormalColor();
 			}
 
 			glPushMatrix();
