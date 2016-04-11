@@ -2270,6 +2270,7 @@ bool NifModel::load( NifItem * parent, NifIStream & stream, bool fast )
 
 	for ( int row = 0; row < parent->childCount(); row++ ) {
 		NifItem * child = parent->child( row );
+		child->invalidateCondition();
 
 		if ( child->isAbstract() ) {
 			//qDebug() << "Not loading abstract item " << child->name();
