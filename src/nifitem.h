@@ -395,6 +395,9 @@ public:
 	//! Reset array conditions based on size of children
 	void resetArrayConditions()
 	{
+		if ( childItems.isEmpty() )
+			return;
+
 		arrConds.clear();
 		arrConds.resize( childItems.at( 0 )->childCount() );
 		arrConds.fill( false );
