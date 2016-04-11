@@ -154,6 +154,9 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 	if ( file.isEmpty() )
 		return QString();
 
+	if ( QFile( file ).exists() )
+		return file;
+
 	QSettings settings;
 
 	QString filename = QDir::toNativeSeparators( file );
@@ -227,6 +230,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 			if ( dir.exists( filename ) ) {
 				filename = dir.filePath( filename );
+				filename = QDir::toNativeSeparators( filename );
 				return filename;
 			}
 		}
@@ -241,8 +245,8 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 					if ( !outData.isEmpty() ) {
 						data = outData;
-
-						return file;
+						filename = QDir::toNativeSeparators( filename );
+						return filename;
 					}
 				}
 			}
