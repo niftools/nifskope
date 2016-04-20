@@ -2384,6 +2384,12 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 {
 	if ( item->isConditionValid() )
 		return item->condition();
+
+	// Early reject
+	if ( item->cond().isEmpty() && item->vercond().isEmpty() && !item->ver1() && !item->ver2() ) {
+		item->setCondition( true );
+		return item->condition();
+	}
 	
 	// Store row conditions for certain compound arrays
 	NifItem * parent = item->parent();
@@ -2400,7 +2406,10 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 				// Cache condition on array root
 				arrRoot->updateArrayCondition( BaseModel::evalCondition( item ), item->row() );
 			}
-			item->setCondition( arrRoot->arrayConditions().at( item->row() ) );
+			auto arrCond = arrRoot->arrayConditions();
+			auto itemRow = item->row();
+			if ( arrCond.count() > itemRow )
+				item->setCondition( arrCond.at( itemRow ) );
 			return item->condition();
 		}
 	}
@@ -2418,7 +2427,7 @@ void NifModel::invalidateConditions( NifItem * item, bool refresh )
 		if ( refresh )
 			c->setCondition( BaseModel::evalCondition( c ) );
 
-		if ( (isArray( c ) || c->childCount() > 0) && !c->arg().isEmpty() ) {
+		if ( isArray( c ) || c->childCount() > 0 ) {
 			invalidateConditions( c );
 		}
 	}
@@ -2427,6 +2436,13 @@ void NifModel::invalidateConditions( NifItem * item, bool refresh )
 	if ( isArray( item ) && isFixedCompound( item->type() ) ) {
 		item->resetArrayConditions();
 	}
+}
+
+void NifModel::invalidateConditions( const QModelIndex & index, bool refresh )
+{
+	auto item = static_cast<NifItem *>(index.internalPointer());
+	if ( item )
+		invalidateConditions( item, refresh );
 }
 
 

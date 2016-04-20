@@ -297,13 +297,11 @@ public:
 	NifItem * takeChild( int row )
 	{
 		NifItem * item = child( row );
-
+		invalidateRowCounts();
 		if ( item ) {
 			childItems.remove( row );
 			item->parentItem = 0;
 		}
-
-		invalidateRowCounts();
 
 		return item;
 	}
@@ -315,9 +313,7 @@ public:
 	void removeChild( int row )
 	{
 		NifItem * item = child( row );
-
 		invalidateRowCounts();
-
 		if ( item ) {
 			childItems.remove( row );
 			delete item;
@@ -331,9 +327,9 @@ public:
 	 */
 	void removeChildren( int row, int count )
 	{
+		invalidateRowCounts();
 		for ( int c = row; c < row + count; c++ ) {
 			NifItem * item = childItems.value( c );
-			invalidateRowCounts();
 			if ( item )
 				delete item;
 		}
@@ -414,7 +410,8 @@ public:
 	//! Update array condition at specified index
 	void updateArrayCondition( bool cond, int at )
 	{
-		arrConds[at] = cond;
+		if ( arrConds.count() > at )
+			arrConds[at] = cond;
 	}
 
 	//! Cached result of cond expression

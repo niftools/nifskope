@@ -99,6 +99,7 @@ public:
 	bool evalCondition( NifItem * item, bool chkParents = false ) const;
 	//! Invalidate the conditions of the item and its children recursively
 	void invalidateConditions( NifItem * item, bool refresh = true );
+	void invalidateConditions( const QModelIndex & index, bool refresh = true );
 
 	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32, qint32> & map );
