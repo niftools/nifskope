@@ -146,7 +146,7 @@ QString Material::toLocalPath( QString path ) const
 
 bool Material::isValid() const
 {
-	return !data.isEmpty();
+	return readable && !data.isEmpty();
 }
 
 QStringList Material::textures() const
@@ -163,7 +163,7 @@ QString Material::getPath() const
 ShaderMaterial::ShaderMaterial( QString name ) : Material( name )
 {
 	if ( fileExists )
-		readFile();
+		readable = readFile();
 }
 
 bool ShaderMaterial::readFile()
@@ -227,7 +227,7 @@ bool ShaderMaterial::readFile()
 EffectMaterial::EffectMaterial( QString name ) : Material( name )
 {
 	if ( fileExists )
-		readFile();
+		readable = readFile();
 }
 
 bool EffectMaterial::readFile()

@@ -71,6 +71,9 @@ protected:
 	QDataStream in;
 	QByteArray data;
 
+	// Is not JSON format or otherwise unreadable
+	bool readable;
+
 	// BGSM & BGEM shared variables
 
 	quint32 version = 0;
