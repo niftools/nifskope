@@ -53,7 +53,7 @@ public:
 	void setAllExpanded( const QModelIndex & index, bool e );
 
 	//! Accessor for EvalConditions
-	bool evalConditions() const { return EvalConditions; }
+	bool evalConditions() const { return doRowHiding; }
 	//! Is a row hidden?
 	bool isRowHidden( int row, const QModelIndex & parent ) const;
 
@@ -72,10 +72,8 @@ public slots:
 	//! Clear the root index; probably conncted to NifSkope::dList
 	void clearRootIndex();
 
-	//! Sets version evaluation conditions
-	void setEvalConditions( bool );
-	//! Sets real-time version condition evalutation (slow)
-	void setRealTime( bool );
+	//! Sets Hiding of non-applicable rows
+	void setRowHiding( bool );
 
 protected slots:
 	//! Updates version conditions (connect to dataChanged)
@@ -94,10 +92,9 @@ protected:
 
 	QStyleOptionViewItem viewOptions() const override final;
 
-	bool EvalConditions;
-	bool RealTimeEval;
+	bool doRowHiding = true;
 
-	class BaseModel * nif;
+	class BaseModel * nif = nullptr;
 };
 
 

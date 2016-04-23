@@ -258,14 +258,8 @@ void NifSkope::initActions()
 	gListMode->setExclusive( true );
 	connect( gListMode, &QActionGroup::triggered, this, &NifSkope::setListMode );
 
-
-	connect( aCondition, &QAction::toggled, aRCondition, &QAction::setEnabled );
-	connect( aRCondition, &QAction::toggled, tree, &NifTreeView::setRealTime );
-	connect( aRCondition, &QAction::toggled, kfmtree, &NifTreeView::setRealTime );
-
-	// use toggled to enable startup values to take effect
-	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setEvalConditions );
-	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setEvalConditions );
+	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setRowHiding );
+	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setRowHiding );
 
 	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
 	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
@@ -1004,8 +998,7 @@ void NifSkope::saveUi() const
 	settings.setValue( "File/Auto Sanitize", aSanitize->isChecked() );
 
 	settings.setValue( "UI/List Mode", (gListMode->checkedAction() == aList ? "list" : "hierarchy") );
-	settings.setValue( "UI/Hide Mismatched Rows", aCondition->isChecked() );
-	settings.setValue( "UI/Realtime Condition Updating", aRCondition->isChecked() );
+	settings.setValue( "UI/Show Non-applicable Rows", aCondition->isChecked() );
 
 	settings.setValue( "UI/List Header", list->header()->saveState() );
 	settings.setValue( "UI/Tree Header", tree->header()->saveState() );
@@ -1035,8 +1028,7 @@ void NifSkope::restoreUi()
 
 	setListMode();
 
-	aCondition->setChecked( settings.value( "UI/Hide Mismatched Rows", false ).toBool() );
-	aRCondition->setChecked( settings.value( "UI/Realtime Condition Updating", false ).toBool() );
+	aCondition->setChecked( settings.value( "UI/Show Non-applicable Rows", false ).toBool() );
 
 	list->header()->restoreState( settings.value( "UI/List Header" ).toByteArray() );
 	tree->header()->restoreState( settings.value( "UI/Tree Header" ).toByteArray() );
