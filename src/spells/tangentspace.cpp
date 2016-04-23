@@ -262,14 +262,8 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		nif->setArray( iTangents, tan );
 	} else if ( nif->getUserVersion2() == 130 ) {
 
-		// Pause updates between model/view
-		nif->setEmitChanges( false );
 		int numVerts = nif->get<int>( iShape, "Num Vertices" );
 		for ( int i = 0; i < numVerts; i++ ) {
-			// Unpause updates if last
-			if ( i == numVerts - 1 )
-				nif->setEmitChanges( true );
-
 			auto idx = nif->index( i, 0, iData );
 
 			nif->set<Vector3>( idx, "Tangent", tan[i] );

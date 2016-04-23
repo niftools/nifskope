@@ -118,11 +118,19 @@ void SpellBook::cast( NifModel * nif, const QModelIndex & index, Spell * spell )
 	}
 	
 	if ( (response == QDialogButtonBox::Yes) && spell && spell->isApplicable( nif, index ) ) {
-		emit sigIndex( spell->cast( nif, index ) );
+		nif->setState( BaseModel::Processing );
+		auto idx = spell->cast( nif, index );
+		nif->resetState();
 
-		// Assure any Spell cast updates the header
-		nif->invalidateConditions( nif->getHeader(), true );
-		nif->updateHeader();
+		if ( nif->getProcessingResult() ) {
+			// Refresh the header
+			nif->invalidateConditions( nif->getHeader(), true );
+			nif->updateHeader();
+
+			emit nif->dataChanged( idx, idx );
+		}
+
+		emit sigIndex( idx );
 	}
 }
 

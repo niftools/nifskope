@@ -477,7 +477,7 @@ public:
 		QByteArray data;
 		QBuffer buffer( &data );
 
-		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) ) {
+		if ( buffer.open( QIODevice::WriteOnly ) && nif->saveIndex( buffer, index ) ) {
 			QMimeData * mime = new QMimeData;
 			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->itemName( index ), nif->getVersion() ), data );
 			QApplication::clipboard()->setMimeData( mime );
@@ -541,7 +541,7 @@ public:
 
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
 						QModelIndex block = nif->insertNiBlock( blockType( form ), nif->getBlockCount() );
-						nif->load( buffer, block );
+						nif->loadIndex( buffer, block );
 						blockLink( nif, index, block );
 						return block;
 					}
@@ -599,7 +599,7 @@ public:
 					QBuffer buffer( &data );
 
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
-						nif->load( buffer, index );
+						nif->loadIndex( buffer, index );
 						return index;
 					}
 				}
@@ -676,7 +676,7 @@ public:
 			for ( const auto block : blocks ) {
 				ds << nif->itemName( nif->getBlock( block ) );
 
-				if ( !nif->save( buffer, nif->getBlock( block ) ) ) {
+				if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
 					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
 						.arg( block )
 						.arg( nif->itemName( nif->getBlock( block ) ) )
@@ -1162,11 +1162,11 @@ public:
 		QBuffer buffer( &data );
 
 		// Opening in ReadWrite doesn't work - race condition?
-		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) ) {
+		if ( buffer.open( QIODevice::WriteOnly ) && nif->saveIndex( buffer, index ) ) {
 			// from spPasteBlock
 			if ( buffer.open( QIODevice::ReadOnly ) ) {
 				QModelIndex block = nif->insertNiBlock( nif->getBlockName( index ), nif->getBlockCount() );
-				nif->load( buffer, block );
+				nif->loadIndex( buffer, block );
 				blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), block );
 				return block;
 			}
@@ -1242,7 +1242,7 @@ public:
 			for ( const auto block : blocks ) {
 				ds << nif->itemName( nif->getBlock( block ) );
 
-				if ( !nif->save( buffer, nif->getBlock( block ) ) ) {
+				if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
 					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
 						.arg( block )
 						.arg( nif->itemName( nif->getBlock( block ) ) )

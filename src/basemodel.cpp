@@ -80,6 +80,39 @@ void BaseModel::testMsg( const QString & m ) const
 	messages.append( TestMessage() << m );
 }
 
+void BaseModel::beginInsertRows( const QModelIndex & parent, int first, int last )
+{
+	setState( Inserting );
+	QAbstractItemModel::beginInsertRows( parent, first, last );
+}
+
+void BaseModel::endInsertRows()
+{
+	QAbstractItemModel::endInsertRows();
+	restoreState();
+}
+
+void BaseModel::beginRemoveRows( const QModelIndex & parent, int first, int last )
+{
+	setState( Removing );
+	QAbstractItemModel::beginRemoveRows( parent, first, last );
+}
+
+void BaseModel::endRemoveRows()
+{
+	QAbstractItemModel::endRemoveRows();
+	restoreState();
+}
+
+bool BaseModel::getProcessingResult()
+{
+	bool result = changedWhileProcessing;
+
+	changedWhileProcessing = false;
+
+	return result;
+}
+
 /*
  *  array functions
  */
@@ -110,7 +143,7 @@ bool BaseModel::updateArray( const QModelIndex & array )
 	if ( !( array.isValid() && item && array.model() == this ) )
 		return false;
 
-	return updateArrayItem( item, false );
+	return updateArrayItem( item );
 }
 
 bool BaseModel::updateArray( const QModelIndex & parent, const QString & name )
@@ -292,12 +325,12 @@ QModelIndex BaseModel::parent( const QModelIndex & child ) const
 
 	NifItem * childItem = static_cast<NifItem *>( child.internalPointer() );
 
-	if ( !childItem )
+	if ( !childItem || childItem == root )
 		return QModelIndex();
 
 	NifItem * parentItem = childItem->parent();
 
-	if ( parentItem == root || !parentItem )
+	if ( !parentItem || parentItem == root )
 		return QModelIndex();
 
 	return createIndex( parentItem->row(), 0, parentItem );
@@ -506,7 +539,8 @@ bool BaseModel::setData( const QModelIndex & index, const QVariant & value, int 
 		return false;
 	}
 
-	emit dataChanged( index, index );
+	if ( state == Default )
+		emit dataChanged( index, index );
 
 	return true;
 }
@@ -593,14 +627,17 @@ bool BaseModel::loadFromFile( const QString & file )
 	QFile f( file );
 	QFileInfo finfo( f );
 
+	setState( Loading );
+
 	if ( f.exists() && finfo.isFile() && f.open( QIODevice::ReadOnly ) && load( f ) ) {
 		fileinfo = finfo;
 		filename = finfo.baseName();
 		folder = finfo.absolutePath();
-
+		resetState();
 		return true;
 	}
 
+	resetState();
 	return false;
 }
 

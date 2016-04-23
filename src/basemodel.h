@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QAbstractItemModel> // Inherited
 #include <QFileInfo>
 #include <QIODevice>
+#include <QStack>
 #include <QString>
 #include <QVariant>
 #include <QVector>
@@ -201,6 +202,27 @@ public:
 		return QObject::inherits( className );
 	}
 
+	enum ModelState
+	{
+		Default,
+		Loading,
+		Saving,
+		Inserting,
+		Removing,
+		Processing
+	};
+
+	//! Get the model's state
+	ModelState getState() const { return state; }
+	//! Set the model's state
+	void setState( ModelState s ) const { states.push( state ); state = s; }
+	//! Restore the model's state to the previous
+	void restoreState() const { state = states.pop(); }
+	//! Reset the model's state
+	void resetState() const { state = Default; states.clear(); }
+	//! Were there updates while batch processing (also clears the result)
+	bool getProcessingResult();
+
 	//! Get Messages collected
 	QList<TestMessage> getMessages() const { QList<TestMessage> lst = messages; messages.clear(); return lst; }
 
@@ -284,7 +306,7 @@ protected:
 	virtual bool setItemValue( NifItem * item, const NifValue & v ) = 0;
 
 	//! Update an array item
-	virtual bool updateArrayItem( NifItem * array, bool fast ) = 0;
+	virtual bool updateArrayItem( NifItem * array ) = 0;
 
 	//! Convert a version number to a string
 	virtual QString ver2str( quint32 ) const = 0;
@@ -323,6 +345,12 @@ protected:
 	//! Evaluate conditions
 	bool evalCondition( NifItem * item, bool chkParents = false ) const;
 
+	void beginInsertRows( const QModelIndex & parent, int first, int last );
+	void endInsertRows();
+
+	void beginRemoveRows( const QModelIndex & parent, int first, int last );
+	void endRemoveRows();
+
 	//! NifSkope window the model belongs to
 	QWidget * parentWindow;
 
@@ -345,6 +373,13 @@ protected:
 	void testMsg( const QString & m ) const;
 
 	MsgMode msgMode;
+
+	//! The model's state
+	mutable ModelState state = Default;
+	mutable QStack<ModelState> states;
+
+	//! Has any data changed while processing
+	bool changedWhileProcessing = false;
 };
 
 
@@ -434,8 +469,11 @@ template <typename T> inline T BaseModel::get( const QModelIndex & index ) const
 template <typename T> inline bool BaseModel::set( NifItem * item, const T & d )
 {
 	if ( item->value().set( d ) ) {
-		if ( emitChanges )
+		if ( state != Processing )
 			emit dataChanged( createIndex( item->row(), ValueCol, item ), createIndex( item->row(), ValueCol, item ) );
+		else
+			changedWhileProcessing = true;
+
 		return true;
 	}
 

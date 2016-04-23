@@ -124,7 +124,7 @@ static QString parentPrefix( const QString & x )
 	return x;
 }
 
-bool KfmModel::updateArrayItem( NifItem * array, bool fast )
+bool KfmModel::updateArrayItem( NifItem * array )
 {
 	if ( array->arr1().isEmpty() )
 		return false;
@@ -146,26 +146,22 @@ bool KfmModel::updateArrayItem( NifItem * array, bool fast )
 	if ( d1 > rows ) {
 		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
 
-		if ( !fast )
-			beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
+		beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
 
 		array->prepareInsert( d1 - rows );
 
 		for ( int c = rows; c < d1; c++ )
 			insertType( array, data );
 
-		if ( !fast )
-			endInsertRows();
+		endInsertRows();
 	}
 
 	if ( d1 < rows ) {
-		if ( !fast )
-			beginRemoveRows( createIndex( array->row(), 0, array ), d1, rows - 1 );
+		beginRemoveRows( createIndex( array->row(), 0, array ), d1, rows - 1 );
 
 		array->removeChildren( d1, rows - d1 );
 
-		if ( !fast )
-			endRemoveRows();
+		endRemoveRows();
 	}
 
 	return true;
@@ -181,7 +177,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifItem * array = insertBranch( parent, data, at );
 
 		if ( evalCondition( array ) )
-			updateArrayItem( array, true );
+			updateArrayItem( array );
 
 		return;
 	}
@@ -269,7 +265,7 @@ bool KfmModel::load( QIODevice & device )
 
 	NifIStream stream( this, &device );
 
-	if ( !kfmroot || !load( kfmroot, stream, true ) ) {
+	if ( !kfmroot || !load( kfmroot, stream ) ) {
 		Message::critical( nullptr, tr( "The file could not be read. See Details for more information." ),
 			tr( "failed to load kfm file (%1)" ).arg( version2string( version ) )
 		);
@@ -296,7 +292,7 @@ bool KfmModel::save( QIODevice & device ) const
 	return true;
 }
 
-bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
+bool KfmModel::load( NifItem * parent, NifIStream & stream )
 {
 	if ( !parent )
 		return false;
@@ -306,13 +302,13 @@ bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
 
 		if ( evalCondition( child ) ) {
 			if ( !child->arr1().isEmpty() ) {
-				if ( !updateArrayItem( child, fast ) )
+				if ( !updateArrayItem( child ) )
 					return false;
 
-				if ( !load( child, stream, fast ) )
+				if ( !load( child, stream ) )
 					return false;
 			} else if ( child->childCount() > 0 ) {
-				if ( !load( child, stream, fast ) )
+				if ( !load( child, stream ) )
 					return false;
 			} else {
 				if ( !stream.read( child->value() ) )

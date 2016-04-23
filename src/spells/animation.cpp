@@ -125,7 +125,7 @@ public:
 					QPersistentModelIndex iObjPalette = nif->getBlock( nif->getLink( iCtrlManager, "Object Palette" ), "NiDefaultAVObjectPalette" );
 
 					if ( !iObjPalette.isValid() ) {
-						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1, true );
+						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1 );
 						nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ) );
 					}
 
@@ -229,7 +229,7 @@ public:
 
 	static QModelIndex attachController( NifModel * nif, const QPersistentModelIndex & iNode, const QString & ctrltype, bool fast = false )
 	{
-		QModelIndex iCtrl = nif->insertNiBlock( ctrltype, nif->getBlockNumber( iNode ) + 1, fast );
+		QModelIndex iCtrl = nif->insertNiBlock( ctrltype, nif->getBlockNumber( iNode ) + 1 );
 
 		if ( !iCtrl.isValid() )
 			return QModelIndex();

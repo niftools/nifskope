@@ -86,9 +86,9 @@ protected:
 	void insertType( NifItem * parent, const NifData & data, int row = -1 );
 	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	bool updateArrayItem( NifItem * array, bool fast ) override final;
+	bool updateArrayItem( NifItem * array ) override final;
 
-	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool load( NifItem * parent, NifIStream & stream );
 	bool save( NifItem * parent, NifOStream & stream ) const;
 
 	bool setItemValue( NifItem * item, const NifValue & v ) override final;

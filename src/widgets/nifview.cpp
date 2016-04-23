@@ -199,7 +199,17 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 		if ( nif && spell->isApplicable( nif, oldidx ) ) {
 			selectionModel()->setCurrentIndex( QModelIndex(), QItemSelectionModel::Clear | QItemSelectionModel::Rows );
 
+			nif->setState( BaseModel::Processing );
 			QModelIndex newidx = spell->cast( nif, oldidx );
+			nif->resetState();
+
+			if ( nif->getProcessingResult() ) {
+				// Refresh the header
+				nif->invalidateConditions( nif->getHeader(), true );
+				nif->updateHeader();
+
+				emit nif->dataChanged( newidx, newidx );
+			}
 
 			if ( proxy )
 				newidx = proxy->mapFrom( newidx, oldidx );

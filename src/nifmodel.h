@@ -89,9 +89,9 @@ public:
 	// end BaseModel
 
 	//! Load from QIODevice and index
-	bool load( QIODevice & device, const QModelIndex & );
+	bool loadIndex( QIODevice & device, const QModelIndex & );
 	//! Save to QIODevice and index
-	bool save( QIODevice & device, const QModelIndex & ) const;
+	bool saveIndex( QIODevice & device, const QModelIndex & ) const;
 	//! Resets the model to its original state in any attached views.
 	void reset();
 
@@ -100,6 +100,8 @@ public:
 	//! Invalidate the conditions of the item and its children recursively
 	void invalidateConditions( NifItem * item, bool refresh = true );
 	void invalidateConditions( const QModelIndex & index, bool refresh = true );
+	//! Invalidate only the conditions of the items dependent on this item
+	void invalidateDependentConditions( NifItem * item );
 
 	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32, qint32> & map );
@@ -140,7 +142,7 @@ public:
 	bool holdUpdates( bool value );
 
 	//! Insert or append ( row == -1 ) a new NiBlock
-	QModelIndex insertNiBlock( const QString & identifier, int row = -1, bool fast = false );
+	QModelIndex insertNiBlock( const QString & identifier, int row = -1 );
 	//! Remove a block from the list
 	void removeNiBlock( int blocknum );
 	//! Move a block in the list
@@ -195,7 +197,7 @@ public:
 	//! Moves all niblocks from this nif to another nif, returns a map which maps old block numbers to new block numbers
 	QMap<qint32, qint32> moveAllNiBlocks( NifModel * targetnif, bool update = true );
 	//! Convert a block from one type to another
-	void convertNiBlock( const QString & identifier, const QModelIndex & index, bool fast = false );
+	void convertNiBlock( const QString & identifier, const QModelIndex & index );
 
 	void insertType( const QModelIndex & parent, const NifData & data, int atRow );
 
@@ -285,7 +287,7 @@ protected:
 
 	bool setItemValue( NifItem * item, const NifValue & v ) override final;
 
-	bool updateArrayItem( NifItem * array, bool fast ) override final;
+	bool updateArrayItem( NifItem * array ) override final;
 
 	QString ver2str( quint32 v ) const override final { return version2string( v ); }
 	quint32 str2ver( QString s ) const override final { return version2number( s ); }
@@ -301,9 +303,9 @@ protected:
 
 	// end BaseModel
 
-	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
-	bool loadHeader( NifItem * parent, NifIStream & stream, bool fast = true );
-	bool save( NifItem * parent, NifOStream & stream ) const;
+	bool loadItem( NifItem * parent, NifIStream & stream );
+	bool loadHeader( NifItem * parent, NifIStream & stream );
+	bool saveItem( NifItem * parent, NifOStream & stream ) const;
 	bool fileOffset( NifItem * parent, NifItem * target, NifSStream & stream, int & ofs ) const;
 
 	NifItem * getHeaderItem() const;
@@ -317,8 +319,8 @@ protected:
 	void insertType( NifItem * parent, const NifData & data, int row = -1 );
 	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	bool updateByteArrayItem( NifItem * array, bool fast );
-	bool updateArrays( NifItem * parent, bool fast );
+	bool updateByteArrayItem( NifItem * array );
+	bool updateArrays( NifItem * parent );
 
 	void updateLinks( int block = -1 );
 	void updateLinks( int block, NifItem * parent );

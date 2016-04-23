@@ -70,7 +70,7 @@ public:
 					QBuffer data;
 					data.open( QBuffer::WriteOnly );
 					data.write( nif->itemName( iBlock ).toLatin1() );
-					nif->save( data, iBlock );
+					nif->saveIndex( data, iBlock );
 					props.insert( b, data.buffer() );
 				}
 
@@ -155,10 +155,10 @@ public:
 									QModelIndex iSrc2 = nif->insertNiBlock( "NiSourceTexture", nif->getBlockCount() + 1 );
 									QBuffer buffer;
 									buffer.open( QBuffer::WriteOnly );
-									nif->save( buffer, iSrc );
+									nif->saveIndex( buffer, iSrc );
 									buffer.close();
 									buffer.open( QBuffer::ReadOnly );
-									nif->load( buffer, iSrc2 );
+									nif->loadIndex( buffer, iSrc2 );
 									map[ sl ] = nif->getBlockNumber( iSrc2 );
 								}
 							}
@@ -167,7 +167,7 @@ public:
 						QModelIndex iProp2 = nif->insertNiBlock( nif->itemName( iProp ), nif->getBlockCount() + 1 );
 						QBuffer buffer;
 						buffer.open( QBuffer::WriteOnly );
-						nif->save( buffer, iProp );
+						nif->saveIndex( buffer, iProp );
 						buffer.close();
 						buffer.open( QBuffer::ReadOnly );
 						nif->loadAndMapLinks( buffer, iProp2, map );
