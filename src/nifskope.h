@@ -268,6 +268,9 @@ private:
 	void updateRecentArchiveActions();
 	void updateRecentArchiveFileActions();
 
+	//! Disconnect and reconnect the models to the views
+	void swapModels();
+
 	QMenu * lightingWidget();
 	QWidget * filePathWidget( QWidget * );
 
@@ -292,6 +295,10 @@ private:
 	NifProxyModel * proxy;
 	//! Stores the KFM file in memory.
 	KfmModel * kfm;
+
+	NifModel * nifEmpty;
+	NifProxyModel * proxyEmpty;
+	KfmModel * kfmEmpty;
 
 	//! This view shows the block list.
 	NifTreeView * list;

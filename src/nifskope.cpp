@@ -166,6 +166,9 @@ NifSkope::NifSkope()
 	proxy = new NifProxyModel( this );
 	proxy->setModel( nif );
 
+	nifEmpty = new NifModel( this );
+	proxyEmpty = new NifProxyModel( this );
+
 	nif->setMessageMode( BaseModel::UserMessage );
 
 	// Setup QUndoStack
@@ -181,6 +184,7 @@ NifSkope::NifSkope()
 	} );
 
 	kfm = new KfmModel( this );
+	kfmEmpty = new KfmModel( this );
 
 	book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
 
@@ -320,6 +324,23 @@ NifSkope::~NifSkope()
 {
 	delete ui;
 	delete book;
+}
+
+void NifSkope::swapModels()
+{
+	// Swap out the models with empty versions while loading the file
+	// This is so that the views do not update while loading the file
+	if ( tree->model() == nif ) {
+		list->setModel( proxyEmpty );
+		tree->setModel( nifEmpty );
+		header->setModel( nifEmpty );
+		kfmtree->setModel( kfmEmpty );
+	} else {
+		list->setModel( proxy );
+		tree->setModel( nif );
+		header->setModel( nif );
+		kfmtree->setModel( kfm );
+	}
 }
 
 void NifSkope::updateSettings()

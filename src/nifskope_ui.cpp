@@ -857,6 +857,9 @@ void NifSkope::openDlg()
 
 void NifSkope::onLoadBegin()
 {
+	// Disconnect the models from the views
+	swapModels();
+
 	setEnabled( false );
 	ui->tAnim->setEnabled( false );
 
@@ -867,6 +870,9 @@ void NifSkope::onLoadBegin()
 void NifSkope::onLoadComplete( bool success, QString & fname )
 {
 	QApplication::restoreOverrideCursor();
+
+	// Reconnect the models to the views
+	swapModels();
 
 	// Re-enable window
 	setEnabled( true ); // IMPORTANT!
