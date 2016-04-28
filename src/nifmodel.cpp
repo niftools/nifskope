@@ -305,35 +305,35 @@ void NifModel::updateHeader()
 	NifItem * idxBlockTypeIndices = getItem( header, "Block Type Index" );
 	NifItem * idxBlockSize = getItem( header, "Block Size" );
 
+	// Update Block Types, Block Type Index, and Block Size
 	if ( idxBlockTypes && idxBlockTypeIndices ) {
-		QStringList blocktypes;
-		QList<int>  blocktypeindices;
+		QVector<QString> blocktypes;
+		QVector<int> blocktypeindices;
+		QVector<int> blocksizes;
 
 		for ( int r = 1; r < root->childCount() - 1; r++ ) {
 			NifItem * block = root->child( r );
 
-			/*
-			if ( ! blocktypes.contains( block->name() ) )
-			    blocktypes.append( block->name() );
-			blocktypeindices.append( blocktypes.indexOf( block->name() ) );
-			*/
-
 			// NiMesh hack
 			QString blockName = block->name();
-			//qDebug() << "Updating header with " << blockName;
-
 			if ( blockName == "NiDataStream" ) {
 				blockName = QString( "NiDataStream\x01%1\x01%2" ).arg( block->child( "Usage" )->value().get<int>() ).arg( block->child( "Access" )->value().get<int>() );
 				qDebug() << "Changing blockname to " << blockName;
 			}
 
-			if ( !blocktypes.contains( blockName ) )
+			int bTypeIdx = blocktypes.indexOf( blockName );
+			if ( bTypeIdx < 0 ) {
 				blocktypes.append( blockName );
+				bTypeIdx = blocktypes.count() - 1;
+			}
+			
+			blocktypeindices.append( bTypeIdx );
 
-			blocktypeindices.append( blocktypes.indexOf( blockName ) );
-
-			if ( version >= 0x14020000 && idxBlockSize )
+			if ( version >= 0x14020000 && idxBlockSize ) {
 				updateArrays( block );
+				blocksizes.append( blockSize( block ) );
+			}
+
 		}
 
 		set<int>( header, "Num Block Types", blocktypes.count() );
@@ -345,18 +345,12 @@ void NifModel::updateHeader()
 			updateArrayItem( idxBlockSize );
 		}
 
-		for ( int r = 0; r < idxBlockTypes->childCount(); r++ )
-			set<QString>( idxBlockTypes->child( r ), blocktypes.value( r ) );
-
-		for ( int r = 0; r < idxBlockTypeIndices->childCount(); r++ )
-			set<int>( idxBlockTypeIndices->child( r ), blocktypeindices.value( r ) );
-
-		// for version 20.2.0.? and above the block size is stored in the header
-		if ( version >= 0x14020000 && idxBlockSize ) {
-			for ( int r = 0; r < idxBlockSize->childCount(); r++ )
-				set<quint32>( idxBlockSize->child( r ), blockSize( getBlockItem( r ) ) );
-		}
-
+		setState( Processing );
+		idxBlockTypes->setArray<QString>( blocktypes );
+		idxBlockTypeIndices->setArray<int>( blocktypeindices );
+		if ( blocksizes.count() )
+			idxBlockSize->setArray<int>( blocksizes );
+		restoreState();
 
 		// For 20.1 and above strings are saved in the header.  Max String Length must be updated.
 		if ( version >= 0x14010003 ) {
@@ -384,9 +378,6 @@ void NifModel::updateHeader()
 
 NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 {
-	if ( name.startsWith( "HEADER/" ) )
-		return getItem( getHeaderItem(), name.right( name.length() - 7 ) );
-
 	if ( !item || item == root )
 		return nullptr;
 
