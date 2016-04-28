@@ -428,53 +428,12 @@ static QString parentPrefix( const QString & x )
 
 bool NifModel::updateByteArrayItem( NifItem * array )
 {
-	const int ArrayConvertSize = 0; // Currently disabled.  Use nifskopetype="blob" instead
-
 	int calcRows = getArraySize( array );
 	int rows = array->childCount();
 
 	// exit early and let default handling delete all rows
 	if ( calcRows == 0 || !array->arr2().isEmpty() )
 		return false;
-
-	// Transition from large array to smaller array which now requires real rows
-	if ( calcRows < ArrayConvertSize ) {
-		if ( rows == 1 ) {
-			if ( NifItem * child = array->child( 0 ) ) {
-				if ( child->value().type() == NifValue::tBlob ) {
-					QByteArray bm = get<QByteArray>( child );
-
-					// Delete the blob row after grabbing the data
-					beginRemoveRows( createIndex( array->row(), 0, array ), 0, rows - 1 );
-
-					array->removeChildren( 0, rows );
-
-					endRemoveRows();
-
-					// Now insert approprate rows and replace data from byte array to preserve some of the data.
-					if ( calcRows > 0 ) {
-						NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
-
-						beginInsertRows( createIndex( array->row(), 0, array ), 0, calcRows - 1 );
-
-						array->prepareInsert( calcRows );
-
-						for ( int i = 0; i < calcRows; i++ ) {
-							insertType( array, data );
-
-							if ( NifItem * c = array->child( i ) )
-								c->value().set<quint8>( bm[i] );
-						}
-
-						endInsertRows();
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
 
 	// Create dummy row for holding the blob data
 	QByteArray bytes; bytes.resize( calcRows );
@@ -498,7 +457,7 @@ bool NifModel::updateByteArrayItem( NifItem * array )
 
 	// Create the dummy row for holding the byte array
 	if ( rows == 0 ) {
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::tBlob ), parentPrefix( array->arg() ), QString(), QString(), QString(), 0, 0 );
+		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::tBlob ), parentPrefix( array->arg() ), QString(), QString(), QString(), 0, 0, false, true );
 
 		beginInsertRows( createIndex( array->row(), 0, array ), 0, 1 );
 
@@ -509,7 +468,7 @@ bool NifModel::updateByteArrayItem( NifItem * array )
 	}
 
 	if ( NifItem * child = array->child( 0 ) ) {
-		QByteArray * bm = (child->value().type() == NifValue::tBlob) ? get<QByteArray *>( child ) : nullptr;
+		QByteArray * bm = (child->isBinary()) ? get<QByteArray *>( child ) : nullptr;
 
 		if ( !bm ) {
 			set<QByteArray>( child, bytes );
@@ -533,7 +492,7 @@ bool NifModel::updateArrayItem( NifItem * array )
 
 	// Special case for very large arrays that are opaque in nature.
 	//  Typical array handling has very poor performance with these arrays
-	if ( NifValue::type( array->type() ) == NifValue::tBlob ) {
+	if ( array->isBinary() ) {
 		if ( updateByteArrayItem( array ) )
 			return true;
 	}
@@ -2243,7 +2202,7 @@ int NifModel::blockSize( NifItem * parent, NifSStream & stream ) const
 		if ( evalCondition( child ) ) {
 			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
 				if ( isArray( child ) && child->childCount() != getArraySize( child ) ) {
-					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
+					if ( child->isBinary() ) {
 						// special byte
 					} else {
 						auto m = tr( "block %1 %2 array size mismatch" ).arg( getBlockNumber( parent ) ).arg( child->name() );
@@ -2330,7 +2289,7 @@ bool NifModel::saveItem( NifItem * parent, NifOStream & stream ) const
 		if ( evalCondition( child ) ) {
 			if ( isArray( child ) || !child->arr2().isEmpty() || child->childCount() > 0 ) {
 				if ( isArray( child ) && child->childCount() != getArraySize( child ) ) {
-					if ( ( NifValue::type( child->type() ) == NifValue::tBlob ) ) {
+					if ( child->isBinary() ) {
 						// special byte
 					} else {
 						Message::append( tr( "Warnings were generated while reading the blocks." ),
@@ -2378,7 +2337,9 @@ bool NifModel::fileOffset( NifItem * parent, NifItem * target, NifSStream & stre
 NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, int at )
 {
 	NifItem * item = parentItem->insertChild( data, at );
+	bool isBinary = item->isBinary();
 	item->value().changeType( NifValue::tNone );
+	item->value().setBinary( isBinary );
 	return item;
 }
 

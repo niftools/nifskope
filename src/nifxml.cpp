@@ -268,10 +268,6 @@ public:
 			case tagAdd:
 				{
 					QString type = list.value( "type" );
-					QString binary = list.value( "binary" );
-					if ( binary == "1" ) {
-						type = "blob";
-					}
 
 					// now allocate
 					data = NifData(
@@ -285,12 +281,12 @@ public:
 						list.value( "cond" ),
 						NifModel::version2number( list.value( "ver1" ) ),
 						NifModel::version2number( list.value( "ver2" ) ),
-						( list.value( "abstract" ) == "1" )
+						( list.value( "abstract" ) == "1" ),
+						( list.value( "binary" ) == "1" )
 					);
-
-					if ( data.isAbstract() ) {
-						data.value.setAbstract( true );
-					}
+					
+					data.value.setAbstract( data.isAbstract() );
+					data.value.setBinary( data.isBinary() );
 
 					QString defval = list.value( "default" );
 

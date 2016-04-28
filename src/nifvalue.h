@@ -171,6 +171,11 @@ public:
 	//! Set the abstract flag on this value.
 	inline void setAbstract( bool flag ) { abstract = flag; }
 
+	//! Get the abstract flag on this value.
+	inline bool isBinary() { return binary; }
+
+	//! Set the abstract flag on this value.
+	inline void setBinary( bool flag ) { binary = flag; }
 
 	// *** apparently not used ***
 	//template <typename T> static Type typeId();
@@ -366,6 +371,9 @@ protected:
 
 	//! If the value represents an abstract field. Does not seem to be reliably initialised yet.
 	bool abstract;
+
+	//! If the value represents binary data
+	bool binary = false;
 
 	/*! Get the data as an object of type T.
 	 *

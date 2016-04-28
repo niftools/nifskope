@@ -52,8 +52,12 @@ class NifSharedData final : public QSharedData
 {
 	friend class NifData;
 
-	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs )
-		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), isAbstract( abs ) {}
+	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1,
+				   const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs, bool binary )
+		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ),
+		cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), isAbstract( abs ), isBinary( binary )
+	{
+	}
 
 	NifSharedData( const QString & n, const QString & t )
 		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
@@ -94,14 +98,16 @@ class NifSharedData final : public QSharedData
 	Expression verexpr;
 	//! Abstract flag.
 	bool isAbstract;
+	//! Is Binary flag
+	bool isBinary = false;
 };
 
 //! The data and NifValue stored by a NifItem
 class NifData
 {
 public:
-	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2, bool isAbstract = false )
-		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract ) ), value( val ) {}
+	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2, bool isAbstract = false, bool isBinary = false )
+		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract, isBinary ) ), value( val ) {}
 
 	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
 		: d( new NifSharedData( name, type, text ) ) {}
@@ -139,6 +145,8 @@ public:
 	inline const Expression & verexpr() const { return d->verexpr; }
 	//! Get the abstract attribute of the data.
 	inline const bool & isAbstract() const { return d->isAbstract; }
+	//! Get the binary attribute of the data.
+	inline const bool & isBinary() const { return d->isBinary; }
 
 	//! Sets the name of the data.
 	void setName( const QString & name ) { d->name = name; }
@@ -176,6 +184,8 @@ public:
 	}
 	//! Sets the abstract attribute of the data.
 	void setAbstract( bool & isAbstract ) { d->isAbstract = isAbstract; }
+	//! Sets the binary attribute of the data.
+	void setBinary( bool flag ) { d->isBinary = flag; }
 
 protected:
 	//! The internal shared data.
@@ -527,6 +537,8 @@ public:
 	inline const Expression & verexpr() const {   return itemData.verexpr();  }
 	//! Return the abstract attribute of the data
 	inline const bool & isAbstract() const { return itemData.isAbstract(); }
+	//! Return the binary attribute of the data
+	inline const bool & isBinary() const { return itemData.isBinary(); }
 
 	//! Set the name
 	inline void setName( const QString & name ) {   itemData.setName( name );   }
