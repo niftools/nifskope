@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "gl/gltools.h"
 
 #include <QDialog>
 #include <QGridLayout>
@@ -676,3 +677,83 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 }
 
 REGISTER_SPELL( spUpdateCenterRadius )
+
+//! Updates Bounds of BSTriShape
+class spUpdateBounds final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Update Bounds" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif->inherits( index, "BSTriShape" ) && nif->getIndex( index, "Vertex Data" ).isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		auto vertData = nif->getIndex( index, "Vertex Data" );
+
+		// Retrieve the verts
+		QVector<Vector3> verts;
+		for ( int i = 0; i < nif->rowCount( vertData ); i++ ) {
+			verts << nif->get<Vector3>( vertData.child( i, 0 ), "Vertex" );
+		}
+
+		if ( verts.isEmpty() )
+			return index;
+
+		// Creating a bounding sphere from the verts
+		BoundSphere bounds = BoundSphere( verts );
+
+		// Update the bounding sphere
+		auto boundsIdx = nif->getIndex( index, "Bounding Sphere" );
+		nif->set<Vector3>( boundsIdx, "Center", bounds.center );
+		nif->set<float>( boundsIdx, "Radius", bounds.radius );
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spUpdateBounds )
+
+
+class spUpdateAllBounds final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Update All Bounds" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
+	{
+		if ( !nif || idx.isValid() )
+			return false;
+
+		if ( nif->getUserVersion2() == 130 )
+			return true;
+
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QList<QPersistentModelIndex> indices;
+
+		spUpdateBounds updBounds;
+
+		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
+			QModelIndex idx = nif->getBlock( n );
+
+			if ( updBounds.isApplicable( nif, idx ) )
+				indices << idx;
+		}
+
+		for ( const QModelIndex& idx : indices ) {
+			updBounds.castIfApplicable( nif, idx );
+		}
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spUpdateAllBounds )
