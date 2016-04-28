@@ -52,12 +52,12 @@ QHash<QString, QString>               NifValue::aliasMap;
  *  NifValue
  */
 
-NifValue::NifValue( Type t ) : typ( tNone ), abstract( false )
+NifValue::NifValue( Type t )
 {
 	changeType( t );
 }
 
-NifValue::NifValue( const NifValue & other ) : typ( tNone )
+NifValue::NifValue( const NifValue & other )
 {
 	operator=(other);
 }

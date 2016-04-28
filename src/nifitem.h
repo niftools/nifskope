@@ -60,13 +60,13 @@ class NifSharedData final : public QSharedData
 	}
 
 	NifSharedData( const QString & n, const QString & t )
-		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
+		: QSharedData(), name( n ), type( t ) {}
 
 	NifSharedData( const QString & n, const QString & t, const QString & txt )
-		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), text( txt ), isAbstract( false ) {}
+		: QSharedData(), name( n ), type( t ), text( txt ) {}
 
 	NifSharedData()
-		: QSharedData(), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
+		: QSharedData() {}
 
 	//! Name.
 	QString name;
@@ -83,9 +83,9 @@ class NifSharedData final : public QSharedData
 	//! Condition.
 	QString cond;
 	//! Earliest version.
-	quint32 ver1;
+	quint32 ver1 = 0;
 	//! Latest version.
-	quint32 ver2;
+	quint32 ver2 = 0;
 	//! Description text.
 	QString text;
 	//! Condition as an expression.
@@ -97,7 +97,7 @@ class NifSharedData final : public QSharedData
 	//! Version condition as an expression.
 	Expression verexpr;
 	//! Abstract flag.
-	bool isAbstract;
+	bool isAbstract = false;
 	//! Is Binary flag
 	bool isBinary = false;
 };
@@ -183,7 +183,7 @@ public:
 		d->verexpr = Expression( cond );
 	}
 	//! Sets the abstract attribute of the data.
-	void setAbstract( bool & isAbstract ) { d->isAbstract = isAbstract; }
+	void setAbstract( bool flag ) { d->isAbstract = flag; }
 	//! Sets the binary attribute of the data.
 	void setBinary( bool flag ) { d->isBinary = flag; }
 
@@ -206,7 +206,7 @@ struct NifBlock
 	//! Description text.
 	QString text;
 	//! Abstract flag.
-	bool abstract;
+	bool abstract = false;
 	//! Data present.
 	QList<NifData> types;
 };
@@ -602,7 +602,7 @@ private:
 	//! The data held by the item
 	NifData itemData;
 	//! The parent of this item
-	NifItem * parentItem;
+	NifItem * parentItem = nullptr;
 	//! The child items
 	QVector<NifItem *> childItems;
 

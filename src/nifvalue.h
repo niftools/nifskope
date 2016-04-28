@@ -136,7 +136,7 @@ public:
 	};
 
 	//! Constructor - initialize the value to nothing, type tNone.
-	NifValue() { typ = tNone; abstract = false; }
+	NifValue() {}
 	//! Constructor - initialize the value to a default value of the specified type.
 	NifValue( Type t );
 	//! Copy constructor.
@@ -165,7 +165,7 @@ public:
 	 */
 	void changeType( Type );
 
-	//! Get the abstract flag on this value. Does not seem to be reliably initialised yet.
+	//! Get the abstract flag on this value.
 	inline bool isAbstract() { return abstract; }
 
 	//! Set the abstract flag on this value.
@@ -353,7 +353,7 @@ public:
 
 protected:
 	//! The type of this data.
-	Type typ;
+	Type typ = tNone;
 
 	//! The structure containing the data.
 	union Value
@@ -370,7 +370,7 @@ protected:
 	Value val;
 
 	//! If the value represents an abstract field. Does not seem to be reliably initialised yet.
-	bool abstract;
+	bool abstract = false;
 
 	//! If the value represents binary data
 	bool binary = false;
