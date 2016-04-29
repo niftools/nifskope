@@ -106,8 +106,11 @@ class NifSharedData final : public QSharedData
 class NifData
 {
 public:
-	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2, bool isAbstract = false, bool isBinary = false )
-		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract, isBinary ) ), value( val ) {}
+	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg,
+			 const QString & arr1 = QString(), const QString & arr2 = QString(), const QString & cond = QString(),
+			 quint32 ver1 = 0, quint32 ver2 = 0, bool isAbstract = false, bool isBinary = false )
+		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract, isBinary ) ), value( val )
+	{}
 
 	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
 		: d( new NifSharedData( name, type, text ) ) {}

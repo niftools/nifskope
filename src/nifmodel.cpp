@@ -419,36 +419,37 @@ static QString parentPrefix( const QString & x )
 
 bool NifModel::updateByteArrayItem( NifItem * array )
 {
-	int calcRows = getArraySize( array );
-	int rows = array->childCount();
-
-	// exit early and let default handling delete all rows
-	if ( calcRows == 0 || !array->arr2().isEmpty() )
+	// New row count
+	int rows = getArraySize( array );
+	if ( rows == 0 )
 		return false;
 
-	// Create dummy row for holding the blob data
-	QByteArray bytes; bytes.resize( calcRows );
+	// Create byte array for holding blob data
+	QByteArray bytes;
+	bytes.resize( rows );
+
+	// Previous row count
+	int itemRows = array->childCount();
 
 	// Grab data from existing rows if appropriate and then purge
-	if ( rows > 1 ) {
-		for ( int i = 0; i < rows; i++ ) {
+	if ( itemRows > 1 ) {
+		for ( int i = 0; i < itemRows; i++ ) {
 			if ( NifItem * child = array->child( 0 ) ) {
 				bytes[i] = get<quint8>( child );
 			}
 		}
 
-		beginRemoveRows( createIndex( array->row(), 0, array ), 0, rows - 1 );
-
-		array->removeChildren( 0, rows );
-
+		beginRemoveRows( createIndex( array->row(), 0, array ), 0, itemRows - 1 );
+		array->removeChildren( 0, itemRows );
 		endRemoveRows();
 
-		rows = 0;
+		itemRows = 0;
 	}
 
 	// Create the dummy row for holding the byte array
-	if ( rows == 0 ) {
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::tBlob ), parentPrefix( array->arg() ), QString(), QString(), QString(), 0, 0, false, true );
+	if ( itemRows == 0 ) {
+		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::tBlob ), parentPrefix( array->arg() ) );
+		data.setBinary( true );
 
 		beginInsertRows( createIndex( array->row(), 0, array ), 0, 1 );
 
@@ -458,15 +459,15 @@ bool NifModel::updateByteArrayItem( NifItem * array )
 		endInsertRows();
 	}
 
+	// Update the byte array
 	if ( NifItem * child = array->child( 0 ) ) {
 		QByteArray * bm = (child->isBinary()) ? get<QByteArray *>( child ) : nullptr;
-
 		if ( !bm ) {
 			set<QByteArray>( child, bytes );
 		} else if ( bm->size() == 0 ) {
 			*bm = bytes;
 		} else {
-			bm->resize( calcRows );
+			bm->resize( rows );
 		}
 	}
 
@@ -478,18 +479,18 @@ bool NifModel::updateArrayItem( NifItem * array )
 	if ( !isArray( array ) )
 		return false;
 
-	int d1 = getArraySize( array );
+	// New row count
+	int rows = getArraySize( array );
 
-
-	// Special case for very large arrays that are opaque in nature.
-	//  Typical array handling has very poor performance with these arrays
+	// Binary array handling
 	if ( array->isBinary() ) {
 		if ( updateByteArrayItem( array ) )
 			return true;
 	}
 
-	if ( d1 > 1024 * 1024 * 8 ) {
-		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 );
+	// Error handling
+	if ( rows > 1024 * 1024 * 8 ) {
+		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( rows );
 		if ( msgMode == UserMessage ) {
 			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
 		} else {
@@ -497,7 +498,7 @@ bool NifModel::updateArrayItem( NifItem * array )
 		}
 
 		return false;
-	} else if ( d1 < 0 ) {
+	} else if ( rows < 0 ) {
 		auto m = tr( "array %1 invalid" ).arg( array->name() );
 		if ( msgMode == UserMessage ) {
 			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
@@ -505,34 +506,42 @@ bool NifModel::updateArrayItem( NifItem * array )
 			testMsg( m );
 		}
 
-
 		return false;
 	}
 
-	int rows = array->childCount();
+	// Previous row count
+	int itemRows = array->childCount();
 
-	if ( d1 > rows ) {
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
+	// Add item children
+	if ( rows > itemRows ) {
+		NifData data( array->name(),
+					  array->type(),
+					  array->temp(),
+					  NifValue( NifValue::type( array->type() ) ),
+					  parentPrefix( array->arg() ),
+					  parentPrefix( array->arr2() ) // arr1 in children is parent arr2
+		);
 
-		beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
+		beginInsertRows( createIndex( array->row(), 0, array ), itemRows, rows - 1 );
 
-		array->prepareInsert( d1 - rows );
+		array->prepareInsert( rows - itemRows );
 
-		for ( int c = rows; c < d1; c++ )
+		for ( int c = itemRows; c < rows; c++ )
 			insertType( array, data );
 
 		endInsertRows();
 	}
 
-	if ( d1 < rows ) {
-		beginRemoveRows( createIndex( array->row(), 0, array ), d1, rows - 1 );
+	// Remove item children
+	if ( rows < itemRows ) {
+		beginRemoveRows( createIndex( array->row(), 0, array ), rows, itemRows - 1 );
 
-		array->removeChildren( d1, rows - d1 );
+		array->removeChildren( rows, itemRows - rows );
 
 		endRemoveRows();
 	}
 
-	if ( (state != Loading) && (d1 != rows) && (isCompound( array->type() ) || NifValue::isLink( NifValue::type( array->type() ) )) ) {
+	if ( (state != Loading) && (rows != itemRows) && (isCompound( array->type() ) || NifValue::isLink( NifValue::type( array->type() ) )) ) {
 		NifItem * parent = array;
 
 		while ( parent->parent() && parent->parent() != root )
