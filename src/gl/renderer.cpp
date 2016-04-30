@@ -120,7 +120,7 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QLi
 	QString childid;
 
 	if ( blkid.startsWith( "HEADER/" ) )
-		return nif->getIndex( nif->getHeader(), blkid );
+		return nif->getIndex( nif->getHeader(), blkid.remove( "HEADER/" ) );
 
 	int pos = blkid.indexOf( "/" );
 
