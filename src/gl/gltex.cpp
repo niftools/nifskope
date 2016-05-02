@@ -323,6 +323,8 @@ void TexCache::fileChanged( const QString & filepath )
 		Tex * tx = it.value();
 
 		if ( tx && tx->filepath == filepath ) {
+			// Remove from watcher now to prevent multiple signals
+			watcher->removePath( tx->filepath );
 			if ( QFile::exists( tx->filepath ) ) {
 				tx->reload = true;
 				emit sigRefresh();
@@ -358,7 +360,7 @@ int TexCache::bind( const QString & fname )
 	if ( tx->filepath.isEmpty() || tx->reload )
 		tx->filepath = find( tx->filename, nifFolder, outData );
 
-	if ( !outData.isEmpty() ) {
+	if ( !outData.isEmpty() || tx->reload ) {
 		tx->data = outData;
 	}
 
