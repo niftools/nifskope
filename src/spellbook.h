@@ -73,6 +73,8 @@ public:
 	virtual bool instant() const { return false; }
 	//! Whether the spell performs a sanitizing function
 	virtual bool sanity() const { return false; }
+	//! Whether the spell has a high processing cost
+	virtual bool batch() const { return (page() == "Batch") || (page() == "Block"); }
 	//! Hotkey sequence
 	virtual QKeySequence hotkey() const { return QKeySequence(); }
 

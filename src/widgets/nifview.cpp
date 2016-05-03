@@ -185,11 +185,15 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 		if ( nif && spell->isApplicable( nif, oldidx ) ) {
 			selectionModel()->setCurrentIndex( QModelIndex(), QItemSelectionModel::Clear | QItemSelectionModel::Rows );
 
-			nif->setState( BaseModel::Processing );
+			bool noSignals = spell->batch();
+			if ( noSignals )
+				nif->setState( BaseModel::Processing );
+			// Cast the spell and return index
 			QModelIndex newidx = spell->cast( nif, oldidx );
-			nif->resetState();
+			if ( noSignals )
+				nif->resetState();
 
-			if ( nif->getProcessingResult() ) {
+			if ( noSignals && nif->getProcessingResult() ) {
 				// Refresh the header
 				nif->invalidateConditions( nif->getHeader(), true );
 				nif->updateHeader();
