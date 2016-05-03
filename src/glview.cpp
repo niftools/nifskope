@@ -208,6 +208,13 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	timer->start();
 	connect( timer, &QTimer::timeout, this, &GLView::advanceGears );
 
+	// Prevent modelLinked() from firing for every single NifModel::linksChanged
+	//	This is to prevent a recompile/update() call for every deleted block when deleting a branch.
+	compileTimer = new QTimer( this );
+	compileTimer->setInterval( 16 ); // 16ms is just under the 60FPS framerate to prevent flashing
+	compileTimer->setSingleShot( true );
+	connect( compileTimer, &QTimer::timeout, this, &GLView::modelLinked );
+
 	lightVisTimeout = 1500;
 	lightVisTimer = new QTimer( this );
 	lightVisTimer->setSingleShot( true );
@@ -1115,7 +1122,7 @@ void GLView::setNif( NifModel * nif )
 
 	if ( model ) {
 		connect( model, &NifModel::dataChanged, this, &GLView::dataChanged );
-		connect( model, &NifModel::linksChanged, this, &GLView::modelLinked );
+		connect( model, &NifModel::linksChanged, compileTimer, static_cast<void (QTimer::*)()>(&QTimer::start) );
 		connect( model, &NifModel::modelReset, this, &GLView::modelChanged );
 		connect( model, &NifModel::destroyed, this, &GLView::modelDestroyed );
 	}
@@ -1173,12 +1180,17 @@ void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 		scene->update( model, idx );
 		update();
 	} else {
+		// Assure modelLinked() is not also going to be called
+		compileTimer->stop();
 		modelChanged();
 	}
 }
 
 void GLView::modelChanged()
 {
+	if ( doCompile )
+		return;
+
 	doCompile = true;
 	doCenter  = true;
 	update();
@@ -1186,6 +1198,9 @@ void GLView::modelChanged()
 
 void GLView::modelLinked()
 {
+	if ( doCompile )
+		return;
+
 	doCompile = true; //scene->update( model, QModelIndex() );
 	update();
 }

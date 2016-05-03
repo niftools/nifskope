@@ -235,6 +235,9 @@ private:
 	QTime lastTime;
 	QTimer * timer;
 
+	//! Timer to prevent repeated calls from each causing a mesh recompile
+	QTimer * compileTimer = nullptr;
+
 	float Dist;
 	Vector3 Pos;
 	Vector3 Rot;
