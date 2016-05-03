@@ -184,8 +184,16 @@ void NifModel::clear()
 	filename = QString();
 	folder = QString();
 	root->killChildren();
-	insertType( root, NifData( "NiHeader", "Header" ) );
-	insertType( root, NifData( "NiFooter", "Footer" ) );
+
+	NifData headerData = NifData( "NiHeader", "Header" );
+	NifData footerData = NifData( "NiFooter", "Footer" );
+	headerData.setIsCompound( true );
+	headerData.setIsConditionless( true );
+	footerData.setIsCompound( true );
+	footerData.setIsConditionless( true );
+
+	insertType( root, headerData );
+	insertType( root, footerData );
 	version = version2number( cfg.startupVersion );
 
 	if ( !supportedVersions.isEmpty() && !isVersionSupported( version ) ) {
@@ -381,16 +389,18 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 	if ( !item || item == root )
 		return nullptr;
 
-	int slash = name.indexOf( "/" );
+	if ( item->isArray() || item->parent()->isArray() ) {
+		int slash = name.indexOf( "/" );
+		if ( slash > 0 ) {
+			QString left = name.left( slash );
+			QString right = name.right( name.length() - slash - 1 );
 
-	if ( slash > 0 ) {
-		QString left  = name.left( slash );
-		QString right = name.right( name.length() - slash - 1 );
+			// Resolve ../ for arr1, arr2, arg passing
+			if ( left == ".." )
+				return getItem( item->parent(), right );
 
-		if ( left == ".." )
-			return getItem( item->parent(), right );
-
-		return getItem( getItem( item, left ), right );
+			return getItem( getItem( item, left ), right );
+		}
 	}
 
 	for ( int c = 0; c < item->childCount(); c++ ) {
@@ -521,6 +531,11 @@ bool NifModel::updateArrayItem( NifItem * array )
 					  parentPrefix( array->arg() ),
 					  parentPrefix( array->arr2() ) // arr1 in children is parent arr2
 		);
+
+		// Fill data flags
+		data.setIsConditionless( true );
+		data.setIsCompound( array->isCompound() );
+		data.setIsArray( array->isMultiArray() );
 
 		beginInsertRows( createIndex( array->row(), 0, array ), itemRows, rows - 1 );
 
@@ -1018,49 +1033,45 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 {
 	setState( Inserting );
 
-	if ( !data.arr1().isEmpty() ) {
-		NifItem * array = insertBranch( parent, data, at );
-		restoreState();
-		return;
-	}
-
-	NifBlock * compound = compounds.value( data.type() );
-
-	if ( compound ) {
+	if ( data.isArray() ) {
+		NifItem * item = insertBranch( parent, data, at );
+	} else if ( data.isCompound() ) {
+		NifBlock * compound = compounds.value( data.type() );
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
-		for ( const NifData& d : compound->types ) {
+		for ( const NifData & d : compound->types ) {
 			insertType( branch, d );
 		}
+	} else if ( data.isTemplated() ) {
+		QLatin1String tmpl( "TEMPLATE" );
+		QString tmp = parent->temp();
+		NifItem * tItem = parent;
+
+		while ( tmp == tmpl && tItem->parent() ) {
+			tItem = tItem->parent();
+			tmp = tItem->temp();
+		}
+
+		NifData d( data );
+
+		if ( d.type() == tmpl ) {
+			d.value.changeType( NifValue::type( tmp ) );
+			d.setType( tmp );
+			// The templates are now filled
+			d.setTemplated( false );
+		}
+
+		if ( d.temp() == tmpl )
+			d.setTemp( tmp );
+
+		insertType( parent, d, at );
 	} else {
-		if ( data.type() == "TEMPLATE" || data.temp() == "TEMPLATE" ) {
-			QString tmp = parent->temp();
-			NifItem * tItem = parent;
+		NifItem * item = parent->insertChild( data, at );
 
-			while ( tmp == "TEMPLATE" && tItem->parent() ) {
-				tItem = tItem->parent();
-				tmp = tItem->temp();
-			}
-
-			NifData d( data );
-
-			if ( d.type() == "TEMPLATE" ) {
-				d.value.changeType( NifValue::type( tmp ) );
-				d.setType( tmp );
-			}
-
-			if ( d.temp() == "TEMPLATE" )
-				d.setTemp( tmp );
-
-			insertType( parent, d, at );
-		} else {
-			NifItem * item = parent->insertChild( data, at );
-
-			// Kludge for string conversion.
-			//  Ensure that the string type is correct for the nif version
-			if ( item->value().type() == NifValue::tString || item->value().type() == NifValue::tFilePath ) {
-				item->value().changeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
-			}
+		// Kludge for string conversion.
+		//  Ensure that the string type is correct for the nif version
+		if ( item->value().type() == NifValue::tString || item->value().type() == NifValue::tFilePath ) {
+			item->value().changeType( version < 0x14010003 ? NifValue::tSizedString : NifValue::tStringIndex );
 		}
 	}
 
@@ -2337,9 +2348,7 @@ bool NifModel::fileOffset( NifItem * parent, NifItem * target, NifSStream & stre
 NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, int at )
 {
 	NifItem * item = parentItem->insertChild( data, at );
-	bool isBinary = item->isBinary();
 	item->value().changeType( NifValue::tNone );
-	item->value().setBinary( isBinary );
 	return item;
 }
 
@@ -2349,7 +2358,7 @@ bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 		return item->condition();
 
 	// Early reject
-	if ( item->cond().isEmpty() && item->vercond().isEmpty() && !item->ver1() && !item->ver2() ) {
+	if ( item->isConditionless() ) {
 		item->setCondition( true );
 		return item->condition();
 	}

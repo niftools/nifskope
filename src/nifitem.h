@@ -52,10 +52,27 @@ class NifSharedData final : public QSharedData
 {
 	friend class NifData;
 
+public:
+	enum DataFlag
+	{
+		None = 0x0,
+		Abstract = 0x1,
+		Binary = 0x2,
+		Templated = 0x4,
+		Compound = 0x8,
+		Array = 0x10,
+		MultiArray = 0x20,
+		Conditionless = 0x40
+	};
+
+	typedef QFlags<DataFlag> DataFlags;
+
+private:
+
 	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1,
-				   const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs, bool binary )
+				   const QString & a2, const QString & c, quint32 v1, quint32 v2, NifSharedData::DataFlags f )
 		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ),
-		cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), isAbstract( abs ), isBinary( binary )
+		cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), flags( f )
 	{
 	}
 
@@ -96,11 +113,11 @@ class NifSharedData final : public QSharedData
 	QString vercond;
 	//! Version condition as an expression.
 	Expression verexpr;
-	//! Abstract flag.
-	bool isAbstract = false;
-	//! Is Binary flag
-	bool isBinary = false;
+
+	DataFlags flags = None;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( NifSharedData::DataFlags );
 
 //! The data and NifValue stored by a NifItem
 class NifData
@@ -108,8 +125,8 @@ class NifData
 public:
 	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg,
 			 const QString & arr1 = QString(), const QString & arr2 = QString(), const QString & cond = QString(),
-			 quint32 ver1 = 0, quint32 ver2 = 0, bool isAbstract = false, bool isBinary = false )
-		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract, isBinary ) ), value( val )
+			 quint32 ver1 = 0, quint32 ver2 = 0, NifSharedData::DataFlags flag = NifSharedData::None )
+		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, flag ) ), value( val )
 	{}
 
 	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
@@ -147,9 +164,19 @@ public:
 	//! Get the version condition attribute of the data, as an expression.
 	inline const Expression & verexpr() const { return d->verexpr; }
 	//! Get the abstract attribute of the data.
-	inline const bool & isAbstract() const { return d->isAbstract; }
-	//! Get the binary attribute of the data.
-	inline const bool & isBinary() const { return d->isBinary; }
+	inline bool isAbstract() const { return d->flags & NifSharedData::Abstract; }
+	//! Is the data binary. Binary means the data is being treated as one blob.
+	inline bool isBinary() const { return d->flags & NifSharedData::Binary; }
+	//! Is the data templated. Templated means the type is dynamic.
+	inline bool isTemplated() const { return d->flags & NifSharedData::Templated; }
+	//! Is the data a compound. Compound means the data type is a compound block.
+	inline bool isCompound() const { return d->flags & NifSharedData::Compound; }
+	//! Is the data an array. Array means the data on this row repeats.
+	inline bool isArray() const { return d->flags & NifSharedData::Array; }
+	//! Is the data a multi-array. Multi-array means the item's children are also arrays.
+	inline bool isMultiArray() const { return d->flags & NifSharedData::MultiArray; }
+	//! Is the data conditionless. Conditionless means no expression evaluation is necessary.
+	inline bool isConditionless() const { return d->flags & NifSharedData::Conditionless; }
 
 	//! Sets the name of the data.
 	void setName( const QString & name ) { d->name = name; }
@@ -185,10 +212,25 @@ public:
 		d->vercond = cond;
 		d->verexpr = Expression( cond );
 	}
+
+	inline void setFlag( NifSharedData::DataFlags flag, bool val )
+	{
+		(val) ? d->flags |= flag : d->flags &= ~flag;
+	}
 	//! Sets the abstract attribute of the data.
-	void setAbstract( bool flag ) { d->isAbstract = flag; }
-	//! Sets the binary attribute of the data.
-	void setBinary( bool flag ) { d->isBinary = flag; }
+	inline void setAbstract( bool flag ) { setFlag( NifSharedData::Abstract, flag ); }
+	//! Sets the binary data flag. Binary means the data is being treated as one blob.
+	inline void setBinary( bool flag ) { setFlag( NifSharedData::Binary, flag ); }
+	//! Sets the templated data flag. Templated means the type is dynamic.
+	inline void setTemplated( bool flag ) { setFlag( NifSharedData::Templated, flag ); }
+	//! Sets the compound data flag. Compound means the data type is a compound block.
+	inline void setIsCompound( bool flag ) { setFlag( NifSharedData::Compound, flag ); }
+	//! Sets the array data flag. Array means the data on this row repeats.
+	inline void setIsArray( bool flag ) { setFlag( NifSharedData::Array, flag ); }
+	//! Sets the multi-array data flag. Multi-array means the item's children are also arrays.
+	inline void setIsMultiArray( bool flag ) { setFlag( NifSharedData::MultiArray, flag ); }
+	//! Sets the conditionless data flag. Conditionless means no expression evaluation is necessary.
+	inline void setIsConditionless( bool flag ) { setFlag( NifSharedData::Conditionless, flag ); }
 
 protected:
 	//! The internal shared data.
@@ -539,9 +581,19 @@ public:
 	//! Return the version condition attribute of the data, as an expression
 	inline const Expression & verexpr() const {   return itemData.verexpr();  }
 	//! Return the abstract attribute of the data
-	inline const bool & isAbstract() const { return itemData.isAbstract(); }
-	//! Return the binary attribute of the data
-	inline const bool & isBinary() const { return itemData.isBinary(); }
+	inline bool isAbstract() const { return itemData.isAbstract(); }
+	//! Is the item data binary. Binary means the data is being treated as one blob.
+	inline bool isBinary() const { return itemData.isBinary(); }
+	//! Is the item data templated. Templated means the type is dynamic.
+	inline bool isTemplated() const { return itemData.isTemplated(); }
+	//! Is the item data a compound. Compound means the data type is a compound block.
+	inline bool isCompound() const { return itemData.isCompound(); }
+	//! Is the item data an array. Array means the data on this row repeats.
+	inline bool isArray() const { return itemData.isArray(); }
+	//! Is the item data a multi-array. Multi-array means the item's children are also arrays.
+	inline bool isMultiArray() const { return itemData.isMultiArray(); }
+	//! Is the item data conditionless. Conditionless means no expression evaluation is necessary.
+	inline bool isConditionless() const { return itemData.isConditionless(); }
 
 	//! Set the name
 	inline void setName( const QString & name ) {   itemData.setName( name );   }

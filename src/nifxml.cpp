@@ -268,25 +268,41 @@ public:
 			case tagAdd:
 				{
 					QString type = list.value( "type" );
+					QString tmpl = list.value( "template" );
+					QString arr1 = list.value( "arr1" );
+					QString arr2 = list.value( "arr2" );
+					QString cond = list.value( "cond" );
+					QString ver1 = list.value( "ver1" );
+					QString ver2 = list.value( "ver2" );
+					QString abs = list.value( "abstract" );
+					QString bin = list.value( "binary" );
+
+					bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
+					bool isCompound = NifModel::compounds.contains( type );
+					bool isArray = !arr1.isEmpty();
+					bool isMultiArray = !arr2.isEmpty();
 
 					// now allocate
 					data = NifData(
 						list.value( "name" ),
 						type,
-						list.value( "template" ),
+						tmpl,
 						NifValue( NifValue::type( type ) ),
 						list.value( "arg" ),
-						list.value( "arr1" ),
-						list.value( "arr2" ),
-						list.value( "cond" ),
-						NifModel::version2number( list.value( "ver1" ) ),
-						NifModel::version2number( list.value( "ver2" ) ),
-						( list.value( "abstract" ) == "1" ),
-						( list.value( "binary" ) == "1" )
+						arr1,
+						arr2,
+						cond,
+						NifModel::version2number( ver1 ),
+						NifModel::version2number( ver2 )
 					);
-					
-					data.value.setAbstract( data.isAbstract() );
-					data.value.setBinary( data.isBinary() );
+
+					// Set data flags
+					data.setAbstract( abs == "1" );
+					data.setBinary( bin == "1" );
+					data.setTemplated( isTemplated );
+					data.setIsCompound( isCompound );
+					data.setIsArray( isArray );
+					data.setIsMultiArray( isMultiArray );
 
 					QString defval = list.value( "default" );
 
@@ -323,6 +339,10 @@ public:
 					if ( !vercond.isEmpty() ) {
 						data.setVerCond( vercond );
 					}
+
+					// Set conditionless flag on data
+					if ( cond.isEmpty() && vercond.isEmpty() && ver1.isEmpty() && ver2.isEmpty() )
+						data.setIsConditionless( true );
 
 					if ( data.name().isEmpty() || data.type().isEmpty() )
 						err( tr( "add needs at least name and type attributes" ) );

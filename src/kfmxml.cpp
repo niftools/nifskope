@@ -142,9 +142,11 @@ public:
 				    list.value( "arr2" ),
 				    list.value( "cond" ),
 				    KfmModel::version2number( list.value( "ver1" ) ),
-				    KfmModel::version2number( list.value( "ver2" ) ),
-				    ( list.value( "abstract" ) == "1" )
+				    KfmModel::version2number( list.value( "ver2" ) )
 				);
+
+				if ( list.value( "abstract" ) == "1" )
+					data.setAbstract( true );
 
 				if ( data.name().isEmpty() || data.type().isEmpty() )
 					err( tr( "add needs at least name and type attributes" ) );
