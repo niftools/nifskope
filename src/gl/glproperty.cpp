@@ -985,7 +985,7 @@ QString BSShaderLightingProperty::fileName( int id ) const
 			case 4:
 				return nif->get<QString>( iSourceTexture, "Env Mask Texture" );
 			}
-		} else if ( m->isValid() ) {
+		} else if ( m && m->isValid() ) {
 			auto tex = m->textures();
 			return tex[id];
 		}
