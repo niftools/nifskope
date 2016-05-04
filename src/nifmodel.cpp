@@ -2428,9 +2428,13 @@ void NifModel::invalidateDependentConditions( NifItem * item )
 		auto c = p->children().at( i );
 		// String check for Name in cond or arg
 		//	Note: May cause some false positives but this is OK
-		if ( c->cond().contains( name ) || c->arg().contains( name ) ) {
-			invalidateConditions( c, true );
+		if ( c->cond().contains( name ) ) {
+			c->invalidateCondition();
+			c->setCondition( BaseModel::evalCondition( c ) );
 		}
+
+		if ( (c->cond().contains( name ) || c->arg().contains( name )) && c->childCount() > 0 )
+			invalidateConditions( c, true );
 	}
 }
 
