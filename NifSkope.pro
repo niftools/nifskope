@@ -7,10 +7,10 @@ TARGET   = NifSkope
 
 QT += xml opengl network widgets
 
-# Require Qt 5.3 or higher
-contains(QT_VERSION, ^5\\.[0-2]\\..*) {
+# Require Qt 5.5 or higher
+contains(QT_VERSION, ^5\\.[0-4]\\..*) {
 	message("Cannot build NifSkope with Qt version $${QT_VERSION}")
-	error("Minimum required version is Qt 5.3")
+	error("Minimum required version is Qt 5.5")
 }
 
 # C++11 Support
