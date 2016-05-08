@@ -873,12 +873,6 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 	int timeout = 2500;
 	if ( success ) {
-		// Expand BSShaderTextureSet by default
-		auto indices = nif->match( nif->index( 0, 0 ), Qt::DisplayRole, "Textures", -1, Qt::MatchRecursive );
-		for ( auto i : indices ) {
-			tree->expand( i );
-		}
-
 		// Scroll panel back to top
 		tree->scrollTo( nif->index( 0, 0 ) );
 

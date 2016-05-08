@@ -233,6 +233,14 @@ void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex
 		updateConditionRecurse( current );
 	}
 
+	auto mdl = static_cast<NifModel *>( nif );
+	if ( mdl ) {
+		// Auto-Expand Textures
+		if ( mdl->inherits( current, "BSShaderTextureSet" ) ) {
+			expand( current.child( 1, 0 ) );
+		}
+	}
+
 	emit sigCurrentIndexChanged( currentIndex() );
 }
 
