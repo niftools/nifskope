@@ -1252,6 +1252,9 @@ int main( int argc, char * argv[] )
 		a->setApplicationVersion( NIFSKOPE_VERSION );
 		a->setApplicationDisplayName( "NifSkope " + NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true ) );
 
+		// Must set current directory or this causes issues with several features
+		QDir::setCurrent( qApp->applicationDirPath() );
+
 		// Register message handler
 		//qRegisterMetaType<Message>( "Message" );
 		qInstallMessageHandler( myMessageOutput );
