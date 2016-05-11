@@ -173,7 +173,11 @@ void main( void )
 	vec4 env = texture2D( EnvironmentMap, offset );
 	if ( hasCubeMap ) {
 		cube.rgb *= envReflection * specStrength * sqrt(g) * 0.9;
-		cube.rgb *= mix( s, env.r, float(hasEnvMask) );
+		if ( hasEnvMask ) {
+			cube.rgb *= env.r;
+		} else {
+			cube.rgb *= s;
+		}
     
 		albedo += cube.rgb;
 	}
