@@ -18,7 +18,7 @@ checkgroup begin and
         check BSTriShape
         check BSSubIndexTriShape
         check BSMeshLODTriShape
-    checkground end
+    checkgroup end
 checkgroup end
 
 texcoords 0 base
