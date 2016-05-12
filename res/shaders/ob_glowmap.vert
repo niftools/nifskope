@@ -2,6 +2,7 @@
 
 varying vec3 LightDir;
 varying vec3 ViewDir;
+varying vec3 HalfVector;
 
 varying vec4 ColorEA;
 varying vec4 ColorD;
@@ -29,6 +30,7 @@ void main( void )
 	
 	ViewDir = tbnMatrix * -v.xyz;
 	LightDir = tbnMatrix * gl_LightSource[0].position.xyz;
+	HalfVector = tbnMatrix * gl_LightSource[0].halfVector.xyz;
 	
 	ColorEA = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
 	ColorD = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
