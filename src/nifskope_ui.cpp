@@ -146,8 +146,8 @@ void NifSkope::initActions()
 		ogl->update();
 	} );
 
-	//ui->aSave->setShortcut( QKeySequence::Save ); // Bad idea, goes against previous shortcuts
-	//ui->aSaveAs->setShortcut( QKeySequence::SaveAs ); // Bad idea, goes against previous shortcuts
+	ui->aSave->setShortcut( QKeySequence::Save );
+	ui->aSaveAs->setShortcut( { "Ctrl+Alt+S" } );
 	ui->aWindow->setShortcut( QKeySequence::New );
 
 	connect( ui->aBrowseArchive, &QAction::triggered, this, &NifSkope::archiveDlg );

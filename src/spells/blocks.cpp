@@ -466,6 +466,7 @@ class spCopyBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Copy" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_C }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -561,6 +562,7 @@ class spPasteOverBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Paste Over" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_V }; }
 
 	QString acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
 	{
@@ -1149,6 +1151,7 @@ class spDuplicateBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Duplicate" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_D }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -1184,6 +1187,7 @@ class spDuplicateBranch final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Duplicate Branch" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::Key_D }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
