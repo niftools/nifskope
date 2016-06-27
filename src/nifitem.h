@@ -321,6 +321,8 @@ public:
 			childItems.insert( at, item );
 		}
 
+		populateLinksUp( item );
+
 		return item;
 	}
 
@@ -341,7 +343,31 @@ public:
 			childItems.insert( at, child );
 		}
 
+		populateLinksUp( child );
+		
 		return child->row();
+	}
+
+	//! Inform the parent and its ancestors of any links
+	void populateLinksUp( NifItem * item )
+	{
+		if ( item->value().type() == NifValue::tLink || item->value().type() == NifValue::tUpLink ) {
+			// Add this child's row to the item's link vector
+			linkRows << item->row();
+	
+			// Inform the parent that this item's rows have links
+			auto p = parentItem;
+			auto c = this;
+			while ( p ) {
+				// Add this item's row to the parent item
+				if ( !p->linkAncestorRows.contains( c->row() ) )
+					p->linkAncestorRows << c->row();
+	
+				// Recurse up
+				c = p;
+				p = p->parentItem;
+			}
+		}
 	}
 
 	/*! Take child item at row
@@ -435,6 +461,16 @@ public:
 	{
 		qDeleteAll( childItems );
 		childItems.clear();
+	}
+
+	QVector<int> getLinkAncestorRows() const
+	{
+		return linkAncestorRows;
+	}
+	
+	QVector<int> getLinkRows() const
+	{
+		return linkRows;
 	}
 
 	//! Conditions for each child in the array (if fixed)
@@ -660,6 +696,11 @@ private:
 	NifItem * parentItem = nullptr;
 	//! The child items
 	QVector<NifItem *> childItems;
+
+	//! Rows which have links under them at any level
+	QVector<int> linkAncestorRows;
+	//! Rows which are links
+	QVector<int> linkRows;
 
 	//! Item's condition status, -1 is invalid, otherwise 0/1
 	int conditionStatus = -1;

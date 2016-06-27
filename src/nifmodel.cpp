@@ -2500,27 +2500,35 @@ void NifModel::updateLinks( int block, NifItem * parent )
 	if ( !parent )
 		return;
 
-	for ( int r = 0; r < parent->childCount(); r++ ) {
-		NifItem * child = parent->child( r );
-
-		bool ischild;
-		bool islink = itemIsLink( child, &ischild );
-
-		if ( child->childCount() > 0 ) {
-			updateLinks( block, child );
-		} else if ( islink ) {
-			int l = child->value().toLink();
-
-			if ( l >= 0 && !isArray( child ) ) {
-				if ( ischild ) {
-					if ( !childLinks[block].contains( l ) )
-						childLinks[block].append( l );
-				} else {
-					if ( !parentLinks[block].contains( l ) )
-						parentLinks[block].append( l );
-				}
+	auto links = parent->getLinkRows();
+	for ( int l : links ) {
+		NifItem * c = parent->child( l );
+		if ( !c )
+			continue;
+	
+		if ( c->childCount() > 0 ) {
+			updateLinks( block, c );
+			continue;
+		}
+	
+		int i = c->value().toLink();
+		if ( i >= 0 ) {
+			if ( c->value().type() == NifValue::tUpLink ) {
+				if ( !parentLinks[block].contains( i ) )
+					parentLinks[block].append( i );
+			} else {
+				if ( !childLinks[block].contains( i ) )
+					childLinks[block].append( i );
 			}
 		}
+	}
+	
+	auto linkparents = parent->getLinkAncestorRows();
+	for ( int p : linkparents ) {
+		NifItem * c = parent->child( p );
+	
+		if ( c->childCount() > 0 )
+			updateLinks( block, c );
 	}
 }
 
