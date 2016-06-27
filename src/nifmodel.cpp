@@ -2419,6 +2419,9 @@ void NifModel::invalidateConditions( const QModelIndex & index, bool refresh )
 
 void NifModel::invalidateDependentConditions( NifItem * item )
 {
+	if ( !item )
+		return;
+
 	NifItem * p = item->parent();
 	if ( !p || p == root )
 		return;
@@ -2436,6 +2439,13 @@ void NifModel::invalidateDependentConditions( NifItem * item )
 		if ( (c->cond().contains( name ) || c->arg().contains( name )) && c->childCount() > 0 )
 			invalidateConditions( c, true );
 	}
+}
+
+void NifModel::invalidateDependentConditions( const QModelIndex & index )
+{
+	auto item = static_cast<NifItem *>(index.internalPointer());
+	if ( item )
+		invalidateDependentConditions( item );
 }
 
 

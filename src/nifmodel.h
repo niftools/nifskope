@@ -102,6 +102,7 @@ public:
 	void invalidateConditions( const QModelIndex & index, bool refresh = true );
 	//! Invalidate only the conditions of the items dependent on this item
 	void invalidateDependentConditions( NifItem * item );
+	void invalidateDependentConditions( const QModelIndex & index );
 
 	//! Loads a model and maps links
 	bool loadAndMapLinks( QIODevice & device, const QModelIndex &, const QMap<qint32, qint32> & map );
@@ -509,22 +510,34 @@ template <typename T> inline T NifModel::get( const QModelIndex & parent, const 
 
 template <typename T> inline bool NifModel::set( const QModelIndex & index, const T & d )
 {
-	return BaseModel::set<T>( index, d );
+	bool result = BaseModel::set<T>( index, d );
+	if ( result )
+		invalidateDependentConditions( index );
+	return result;
 }
 
 template <typename T> inline bool NifModel::set( NifItem * item, const T & d )
 {
-	return BaseModel::set<T>( item, d );
+	bool result = BaseModel::set<T>( item, d );
+	if ( result )
+		invalidateDependentConditions( item );
+	return result;
 }
 
 template <typename T> inline bool NifModel::set( const QModelIndex & parent, const QString & name, const T & d )
 {
-	return BaseModel::set<T>( parent, name, d );
+	bool result = BaseModel::set<T>( parent, name, d );
+	if ( result )
+		invalidateDependentConditions( getIndex( parent, name ) );
+	return result;
 }
 
 template <typename T> inline bool NifModel::set( NifItem * parent, const QString & name, const T & d )
 {
-	return BaseModel::set<T>( parent, name, d );
+	bool result = BaseModel::set<T>( parent, name, d );
+	if ( result )
+		invalidateDependentConditions( getItem( parent, name ) );
+	return result;
 }
 
 template <> inline QString NifModel::get( const QModelIndex & index ) const
