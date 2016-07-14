@@ -75,32 +75,75 @@ public:
 	CenterLabel() : QLabel() { setAlignment( Qt::AlignCenter ); }
 };
 
-class UIntSpinBox final : public QSpinBox
+
+UnsignedValidator::UnsignedValidator( QObject * parent )
+	: QValidator( parent )
 {
-public:
-	UIntSpinBox( QWidget * parent ) : QSpinBox( parent ) { setRange( INT_MIN, INT_MAX ); }
+}
 
-protected:
-	QString textFromValue( int i ) const override final
-	{
-		return QString::number( (unsigned int)i );
+QValidator::State UnsignedValidator::validate( QString & input, int & pos ) const
+{
+	if ( input.trimmed().isEmpty() || input.trimmed() == QLatin1String( "0x" ) )
+		return Intermediate;
+
+	bool ok;
+	uint val = input.toUInt( &ok, 0 );
+
+	if ( !ok || val > max )
+		return Invalid;
+	else if ( val < min )
+		return Intermediate;
+
+	return Acceptable;
+}
+
+void UnsignedValidator::setRange( uint minimum, uint maximum )
+{
+	min = minimum;
+	max = maximum;
+}
+
+
+UIntSpinBox::UIntSpinBox( QWidget * parent ) : QSpinBox( parent )
+{
+	validator = new UnsignedValidator( this );
+}
+
+QValidator::State UIntSpinBox::validate( QString & text, int & pos ) const
+{
+	return validator->validate( text, pos );
+}
+
+void UIntSpinBox::setValue( uint value )
+{
+	QSpinBox::setValue( toInt( value ) );
+}
+
+QString UIntSpinBox::textFromValue( int value ) const
+{
+	return QString::number( toUInt( value ) );
+}
+
+int UIntSpinBox::valueFromText( const QString & text ) const
+{
+	bool ok;
+	QString txt = text;
+	uint newVal = txt.toUInt( &ok, 0 );
+
+	if ( !ok && !(prefix().isEmpty() && suffix().isEmpty()) ) {
+		newVal = cleanText().toUInt( &ok, 0 );
 	}
 
-	int valueFromText( const QString & text ) const override final
-	{
-		// until we convert to a QLineEdit, this lets us put in numbers between
-		// INT_MAX and 2*INT_MAX by entering them as a signed value
-		return text.toLong();
-	}
-};
+	return toInt( newVal );
+}
+
 
 void ValueEdit::setValue( const NifValue & v )
 {
 	typ = v.type();
 
 	if ( edit ) {
-		// segfaults with Qt 4.5:
-		//delete edit;
+		delete edit;
 		edit = nullptr;
 		resize( this->baseSize() );
 	}
@@ -155,8 +198,9 @@ void ValueEdit::setValue( const NifValue & v )
 	case NifValue::tUInt:
 	case NifValue::tULittle32:
 		{
-			QSpinBox * ie = new UIntSpinBox( this );
+			UIntSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame( false );
+			ie->setRange( INT_MIN, INT_MAX );
 			ie->setValue( v.toCount() );
 			edit = ie;
 		}
