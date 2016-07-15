@@ -68,6 +68,7 @@ public slots:
 	void refresh();
 	void updateTime( float t, float mn, float mx );
 	void update();
+	void copyTransformToMimedata();
 
 private:
 	InspectViewInternal * impl;
