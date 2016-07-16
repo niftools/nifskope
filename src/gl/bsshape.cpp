@@ -831,6 +831,8 @@ void BSShape::drawSelection() const
 
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
+		int maxTris = triangles.count();
+
 		if ( numRec > 0 ) {
 			auto recs = idx.sibling( s + 3, 0 );
 			for ( int i = 0; i < numRec; i++ ) {
@@ -840,6 +842,9 @@ void BSShape::drawSelection() const
 
 				int j = off;
 				for ( j; j < cnt + off; j++ ) {
+					if ( j >= maxTris )
+						continue;
+
 					glColor( Color4(cols.value( i % 7 )) );
 					Triangle tri = triangles[j];
 					glBegin( GL_TRIANGLES );
@@ -854,6 +859,9 @@ void BSShape::drawSelection() const
 
 			int i = off;
 			for ( i; i < cnt + off; i++ ) {
+				if ( i >= maxTris )
+					continue;
+
 				Triangle tri = triangles[i];
 				glBegin( GL_TRIANGLES );
 				glVertex( verts.value( tri.v1() ) );
