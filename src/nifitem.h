@@ -314,6 +314,9 @@ public:
 	{
 		NifItem * item = new NifItem( data, this );
 
+		if ( data.isConditionless() )
+			item->setCondition( true );
+
 		if ( at < 0 || at > childItems.count() ) {
 			childItems.append( item );
 		} else {
