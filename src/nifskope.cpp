@@ -862,15 +862,15 @@ void NifSkope::openArchiveFileString( BSA * bsa, const QString & filepath )
 
 			emit completeLoading( loaded, path );
 
-			if ( loaded ) {
-				QCryptographicHash hash( QCryptographicHash::Md5 );
-				hash.addData( data );
-				filehash = hash.result();
-
-				QFileInfo f( path );
-				
-				checkFile( f, filehash );
-			}
+			//if ( loaded ) {
+			//	QCryptographicHash hash( QCryptographicHash::Md5 );
+			//	hash.addData( data );
+			//	filehash = hash.result();
+			//
+			//	QFileInfo f( path );
+			//	
+			//	checkFile( f, filehash );
+			//}
 
 			buf.close();
 		}
@@ -966,11 +966,11 @@ void NifSkope::load()
 
 	emit completeLoading( loaded, fname );
 
-	if ( loaded ) {
-		filehash = fileChecksum( fname, QCryptographicHash::Md5 );
-
-		checkFile( f, filehash );
-	}
+	//if ( loaded ) {
+	//	filehash = fileChecksum( fname, QCryptographicHash::Md5 );
+	//
+	//	checkFile( f, filehash );
+	//}
 }
 
 void NifSkope::save()
