@@ -1177,11 +1177,10 @@ void GLView::dataChanged( const QModelIndex & idx, const QModelIndex & xdi )
 	}
 
 	if ( ix.isValid() ) {
+		modelChanged();
 		scene->update( model, idx );
 		update();
 	} else {
-		// Assure modelLinked() is not also going to be called
-		compileTimer->stop();
 		modelChanged();
 	}
 }
@@ -1191,8 +1190,11 @@ void GLView::modelChanged()
 	if ( doCompile )
 		return;
 
+	// Assure modelLinked() is not also going to be called
+	compileTimer->stop();
+
 	doCompile = true;
-	doCenter  = true;
+	//doCenter  = true;
 	update();
 }
 

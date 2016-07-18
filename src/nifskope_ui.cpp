@@ -905,6 +905,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	nif->undoStack->clear();
 	indexStack->clear();
 
+	// Center the model on load
+	ogl->center();
+
 	// Hide Progress Bar
 	QTimer::singleShot( timeout, progress, SLOT( hide() ) );
 }
