@@ -299,7 +299,7 @@ public:
 	}
 
 	//! Get child items
-	QVector<NifItem *> children()
+	const QVector<NifItem *> & children()
 	{
 		return childItems;
 	}
@@ -466,18 +466,18 @@ public:
 		childItems.clear();
 	}
 
-	QVector<int> getLinkAncestorRows() const
+	const QVector<int> & getLinkAncestorRows() const
 	{
 		return linkAncestorRows;
 	}
 	
-	QVector<int> getLinkRows() const
+	const QVector<int> & getLinkRows() const
 	{
 		return linkRows;
 	}
 
 	//! Conditions for each child in the array (if fixed)
-	QVector<bool> arrayConditions()
+	const QVector<bool> & arrayConditions()
 	{
 		return arrConds;
 	}

@@ -577,8 +577,7 @@ bool NifModel::updateArrays( NifItem * parent )
 	if ( !parent )
 		return false;
 
-	for ( int row = 0; row < parent->childCount(); row++ ) {
-		NifItem * child = parent->child( row );
+	for ( auto child : parent->children() ) {
 		if ( evalCondition( child ) ) {
 			if ( isArray( child ) ) {
 				if ( !updateArrayItem( child ) )
@@ -716,8 +715,8 @@ void NifModel::updateStrings( NifModel * src, NifModel * tgt, NifItem * item )
 		tgt->assignString( tgt->createIndex( 0, 0, item ), str, false );
 	}
 
-	for ( int i = 0; i < item->childCount(); ++i ) {
-		updateStrings( src, tgt, item->child( i ) );
+	for ( auto child : item->children() ) {
+		updateStrings( src, tgt, child );
 	}
 }
 
@@ -1039,7 +1038,8 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifBlock * compound = compounds.value( data.type() );
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
-		for ( const NifData & d : compound->types ) {
+		const auto & types = compound->types;
+		for ( const NifData & d : types ) {
 			insertType( branch, d );
 		}
 	} else if ( data.isTemplated() ) {
@@ -2126,7 +2126,8 @@ bool NifModel::earlyRejection( const QString & filepath, const QString & blockId
 	if ( blockId.isEmpty() == true || version < 0x0A000100 ) {
 		blk_match = true;
 	} else {
-		for ( const QString& s : nif.getArray<QString>( nif.getHeader(), "Block Types" ) ) {
+		const auto & types = nif.getArray<QString>( nif.getHeader(), "Block Types" );
+		for ( const QString& s : types ) {
 			if ( inherits( s, blockId ) ) {
 				blk_match = true;
 				break;
@@ -2240,9 +2241,9 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 	if ( !parent )
 		return false;
 
-	for ( int row = 0; row < parent->childCount(); row++ ) {
-		NifItem * child = parent->child( row );
-		child->invalidateCondition();
+	for ( auto child : parent->children() ) {
+		if ( !child->isConditionless() )
+			child->invalidateCondition();
 
 		if ( child->isAbstract() ) {
 			//qDebug() << "Not loading abstract item " << child->name();
@@ -2289,9 +2290,7 @@ bool NifModel::saveItem( NifItem * parent, NifOStream & stream ) const
 	if ( !parent )
 		return false;
 
-	for ( int row = 0; row < parent->childCount(); row++ ) {
-		NifItem * child = parent->child( row );
-
+	for ( auto child : parent->children() ) {
 		if ( child->isAbstract() ) {
 			qDebug() << "Not saving abstract item " << child->name();
 			continue;
@@ -2326,9 +2325,7 @@ bool NifModel::fileOffset( NifItem * parent, NifItem * target, NifSStream & stre
 	if ( parent == target )
 		return true;
 
-	for ( int row = 0; row < parent->childCount(); row++ ) {
-		NifItem * child = parent->child( row );
-
+	for ( auto child : parent->children() ) {
 		if ( child == target )
 			return true;
 
@@ -2558,8 +2555,8 @@ void NifModel::adjustLinks( NifItem * parent, int block, int delta )
 		return;
 
 	if ( parent->childCount() > 0 ) {
-		for ( int c = 0; c < parent->childCount(); c++ )
-			adjustLinks( parent->child( c ), block, delta );
+		for ( auto child : parent->children() )
+			adjustLinks( child, block, delta );
 	} else {
 		int l = parent->value().toLink();
 
@@ -2578,8 +2575,8 @@ void NifModel::mapLinks( NifItem * parent, const QMap<qint32, qint32> & map )
 		return;
 
 	if ( parent->childCount() > 0 ) {
-		for ( int c = 0; c < parent->childCount(); c++ )
-			mapLinks( parent->child( c ), map );
+		for ( auto child : parent->children() )
+			mapLinks( child, map );
 	} else {
 		int l = parent->value().toLink();
 
@@ -2621,9 +2618,9 @@ QVector<qint32> NifModel::getLinkArray( const QModelIndex & iArray ) const
 	NifItem * item = static_cast<NifItem *>( iArray.internalPointer() );
 
 	if ( isArray( iArray ) && item && iArray.model() == this ) {
-		for ( int c = 0; c < item->childCount(); c++ ) {
-			if ( itemIsLink( item->child( c ) ) ) {
-				links.append( item->child( c )->value().toLink() );
+		for ( auto child : item->children() ) {
+			if ( itemIsLink( child ) ) {
+				links.append( child->value().toLink() );
 			} else {
 				links.clear();
 				break;
@@ -2965,7 +2962,8 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 				if ( n > 0 ) {
 					beginInsertRows( index, cn, cn + n - 1 );
 					branch->prepareInsert( n );
-					for ( const NifData& data : block->types ) {
+					const auto & types = block->types;
+					for ( const NifData& data : types ) {
 						insertType( branch, data );
 					}
 					endInsertRows();
