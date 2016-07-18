@@ -851,7 +851,7 @@ QString NifValue::toString() const
 	case tUpLink:
 		return QString::number( val.i32 );
 	case tFloat:
-		return NumOrMinMax( val.f32, 'f', 4 );
+		return NumOrMinMax( val.f32, 'f', 6 );
 	case tHfloat:
 		return QString::number( val.f32, 'f', 4 );
 	case tString:

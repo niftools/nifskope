@@ -75,7 +75,7 @@ FloatEdit::FloatEdit( QWidget * parent )
 	val = 0.0f;
 
 	setValidator( validator = new FloatValidator( this ) );
-	validator->setDecimals( 4 );
+	validator->setDecimals( 6 );
 
 	connect( this, &FloatEdit::editingFinished, this, &FloatEdit::edited );
 

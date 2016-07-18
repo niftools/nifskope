@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // if there is demand for it, consider moving these into Options
 //! Number of decimals when editing vector types (Vector2, Vector3, Vector4)
-#define VECTOR_DECIMALS 4
+#define VECTOR_DECIMALS 6
 //! Maximum/minimum range when editing vector types (Vector2, Vector3, Vector4)
 #define VECTOR_RANGE 100000000
 //! Number of decimals when editing Quat rotations in Euler mode
