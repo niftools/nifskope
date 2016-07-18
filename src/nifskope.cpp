@@ -992,8 +992,7 @@ void NifSkope::save()
 	if ( fname.endsWith( ".KFM", Qt::CaseInsensitive ) ) {
 		emit completeSave( kfm->saveToFile( fname ), fname );
 	} else {
-		// TODO: Temporary disabling of Auto Sanitize for FO4
-		if ( aSanitize->isChecked() && nif->getUserVersion2() < 130 ) {
+		if ( aSanitize->isChecked() ) {
 			QModelIndex idx = SpellBook::sanitize( nif );
 			if ( idx.isValid() )
 				select( idx );
