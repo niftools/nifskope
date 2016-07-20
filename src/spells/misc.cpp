@@ -1,5 +1,6 @@
 #include "misc.h"
 
+#include <QFileDialog>
 
 // Brief description is deliberately not autolinked to class Spell
 /*! \file misc.cpp
@@ -147,6 +148,102 @@ public:
 };
 
 REGISTER_SPELL( spFileOffset )
+
+//! Exports the binary data of a binary row to a file
+class spExportBinary final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Export Binary" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		NifItem * item = static_cast<NifItem *>(index.internalPointer());
+
+		return item && (item->value().isByteArray() || (item->isBinary() && item->isArray())) && index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		NifItem * item = static_cast<NifItem *>(index.internalPointer());
+
+		QByteArray data;
+
+		NifItem * dataItem = item;
+		if ( item->isArray() && item->isBinary() ) {
+			dataItem = item->child( 0 );
+		}
+
+		if ( dataItem && dataItem->value().isByteArray() ) {
+			auto bytes = dataItem->value().get<QByteArray *>();
+			data.append( *bytes );
+		}
+
+		// Get parent block name and number
+		int blockNum = nif->getBlockNumber( index );
+		QString suffix = QString( "%1_%2" ).arg( nif->getBlockName( nif->getBlock( blockNum ) ) ).arg( blockNum );
+		QString filestring = QString( "%1-%2" ).arg( nif->getFilename() ).arg( suffix );
+
+		QString filename = QFileDialog::getSaveFileName( qApp->activeWindow(), tr( "Export Binary File" ),
+														 filestring, "*.*" );
+		QFile file( filename );
+		if ( file.open( QIODevice::WriteOnly ) ) {
+			file.write( data );
+			file.close();
+		}
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spExportBinary )
+
+//! Imports the binary data of a file to a binary row
+class spImportBinary final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Import Binary" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		NifItem * item = static_cast<NifItem *>(index.internalPointer());
+
+		return item && (item->value().isByteArray() || (item->isBinary() && item->isArray())) && index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		NifItem * item = static_cast<NifItem *>(index.internalPointer());
+		NifItem * parent = item->parent();
+		auto iParent = index.parent();
+
+		auto idx = index;
+		if ( item->isArray() && item->isBinary() ) {
+			parent = item;
+			iParent = index;
+			idx = index.child( 0, 0 );
+		}
+
+		QString filename = QFileDialog::getOpenFileName( qApp->activeWindow(), tr( "Import Binary File" ), "", "*.*" );
+		QFile file( filename );
+		if ( file.open( QIODevice::ReadOnly ) ) {
+			QByteArray data = file.readAll();
+
+			if ( parent->isArray() && parent->isBinary() ) {
+				// NOTE: This will only work on byte arrays where the array length is not an expression
+				nif->set<int>( iParent.parent(), parent->arr1(), data.count() );
+				nif->updateArray( iParent );
+			}
+			
+			nif->set<QByteArray>( idx, data );
+			
+			file.close();
+		}
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spImportBinary )
 
 // definitions for spCollapseArray moved to misc.h
 bool spCollapseArray::isApplicable( const NifModel * nif, const QModelIndex & index )
