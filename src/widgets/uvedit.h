@@ -198,11 +198,11 @@ private:
 	static QStringList texnames;
 
 	//! Texture slot currently being operated on
-	int currentTexSlot;
+	int currentTexSlot = 0;
 	//! Read texcoords from the nif
 	bool setTexCoords();
 	//! Coordinate set currently in use
-	int currentCoordSet;
+	int currentCoordSet = 0;
 
 	//! Submenu for coordinate set selection
 	QMenu * coordSetSelect;

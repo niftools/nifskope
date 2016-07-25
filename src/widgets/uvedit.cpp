@@ -176,22 +176,6 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aTextureBlend, &QAction::toggled, this, &UVWidget::updateGL );
 	addAction( aTextureBlend );
 
-	coordSetGroup = new QActionGroup( this );
-	connect( coordSetGroup, &QActionGroup::triggered, this, &UVWidget::selectCoordSet );
-
-	coordSetSelect = new QMenu( tr( "Select Coordinate Set" ) );
-	addAction( coordSetSelect->menuAction() );
-	connect( coordSetSelect, &QMenu::aboutToShow, this, &UVWidget::getCoordSets );
-
-	texSlotGroup = new QActionGroup( this );
-	connect( texSlotGroup, &QActionGroup::triggered, this, &UVWidget::selectTexSlot );
-
-	menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
-	addAction( menuTexSelect->menuAction() );
-	connect( menuTexSelect, &QMenu::aboutToShow, this, &UVWidget::getTexSlots );
-
-	currentTexSlot = 0;
-
 	updateSettings();
 
 	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &UVWidget::updateSettings );
@@ -778,6 +762,23 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	nif = nifModel;
 	iShape = nifIndex;
 
+	// Version dependent actions
+	if ( nif->getVersionNumber() != 0x14020007 ) {
+		coordSetGroup = new QActionGroup( this );
+		connect( coordSetGroup, &QActionGroup::triggered, this, &UVWidget::selectCoordSet );
+
+		coordSetSelect = new QMenu( tr( "Select Coordinate Set" ) );
+		addAction( coordSetSelect->menuAction() );
+		connect( coordSetSelect, &QMenu::aboutToShow, this, &UVWidget::getCoordSets );
+
+		texSlotGroup = new QActionGroup( this );
+		connect( texSlotGroup, &QActionGroup::triggered, this, &UVWidget::selectTexSlot );
+
+		menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
+		addAction( menuTexSelect->menuAction() );
+		connect( menuTexSelect, &QMenu::aboutToShow, this, &UVWidget::getTexSlots );
+	}
+
 	if ( nif ) {
 		connect( nif, &NifModel::modelReset, this, &UVWidget::close );
 		connect( nif, &NifModel::destroyed, this, &UVWidget::close );
@@ -788,6 +789,9 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	textures->setNifFolder( nif->getFolder() );
 
 	iShapeData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	if ( nif->getVersionNumber() == 0x14020007 && nif->getUserVersion2() == 130 ) {
+		iShapeData = nif->getIndex( iShape, "Vertex Data" );
+	}
 
 	if ( nif->inherits( iShapeData, "NiTriBasedGeomData" ) ) {
 		iTexCoords = nif->getIndex( iShapeData, "UV Sets" ).child( 0, 0 );
@@ -799,6 +803,17 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		if ( !setTexCoords() ) {
 			return false;
 		}
+	} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
+		int numVerts = nif->get<int>( iShape, "Num Vertices" );
+		for ( int i = 0; i < numVerts; i++ ) {
+			texcoords << nif->get<Vector2>( nif->index( i, 0, iShapeData ), "UV" );
+		}
+
+		// Fake index so that isValid() checks do not fail
+		iTexCoords = iShape;
+
+		if ( !setTexCoords() )
+			return false;
 	}
 
 	for ( const auto l :
@@ -879,7 +894,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 
 bool UVWidget::setTexCoords()
 {
-	texcoords = nif->getArray<Vector2>( iTexCoords );
+	if ( nif->inherits( iShape, "NiTriBasedGeom" ) )
+		texcoords = nif->getArray<Vector2>( iTexCoords );
 
 	QVector<Triangle> tris;
 
@@ -894,6 +910,8 @@ bool UVWidget::setTexCoords()
 		for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
 			tris += triangulate( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 		}
+	} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
+		tris = nif->getArray<Triangle>( iShape, "Triangles" );
 	}
 
 	if ( tris.isEmpty() )
@@ -919,7 +937,21 @@ void UVWidget::updateNif()
 {
 	if ( nif && iTexCoords.isValid() ) {
 		disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
-		nif->setArray<Vector2>( iTexCoords, texcoords );
+		nif->setState( BaseModel::Processing );
+
+		if ( nif->inherits( iShapeData, "NiTriBasedGeomData" ) ) {
+			nif->setArray<Vector2>( iTexCoords, texcoords );
+		} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
+			int numVerts = nif->get<int>( iShape, "Num Vertices" );
+			for ( int i = 0; i < numVerts; i++ ) {
+				auto idx = nif->index( i, 0, iShapeData );
+				nif->set<HalfVector2>( idx, "UV", HalfVector2( texcoords.value( i ) ) );
+			}
+
+			nif->dataChanged( iShape, iShape );
+		}
+		
+		nif->restoreState();
 		connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 	}
 }

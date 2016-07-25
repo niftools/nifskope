@@ -262,10 +262,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" || nif->itemName( index ) == "BSLODTriShape" );
-
-		//QModelIndex iUVs = getUV( nif, index );
-		//return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
+		return nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
