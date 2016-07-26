@@ -196,6 +196,10 @@ public:
 	HalfVector2( float x, float y ) : Vector2( x, y )
 	{
 	}
+
+	HalfVector2( Vector2 v ) : Vector2( v )
+	{
+	}
 };
 
 
@@ -456,6 +460,10 @@ public:
 	HalfVector3( float x, float y, float z ) : Vector3( x, y, z )
 	{
 	}
+
+	HalfVector3( Vector3 v ) : Vector3( v )
+	{
+	}
 };
 
 class ByteVector3 : public Vector3
@@ -468,6 +476,10 @@ public:
 	}
 	//! Constructor
 	ByteVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+
+	ByteVector3( Vector3 v ) : Vector3( v )
 	{
 	}
 };
