@@ -199,13 +199,13 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				}
 
 				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular );
-				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
-				bslsp->hasRimlight = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
 
 				bslsp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
 				bslsp->paletteScale = nif->get<float>( iProp, "Grayscale to Palette Scale" );
 
 				bslsp->fresnelPower = nif->get<float>( iProp, "Fresnel Power" );
+				bslsp->setLightingEffect1( nif->get<float>( iProp, "Subsurface Rolloff" ) );
+				bslsp->backlightPower = nif->get<float>( iProp, "Backlight Power" );
 
 				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
 				bslsp->hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
@@ -260,6 +260,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->hasEmittance = mat->bEmitEnabled;
 				bslsp->hasBacklight = mat->bBackLighting;
 				bslsp->hasRimlight = mat->bRimLighting;
+				bslsp->hasSoftlight = mat->bSubsurfaceLighting;
 				bslsp->rimPower = mat->fRimPower;
 				bslsp->backlightPower = mat->fBacklightPower;
 
@@ -271,6 +272,10 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->setSpecular( mat->cSpecularColor, mat->fSmoothness, mat->fSpecularMult );
 				bslsp->setAlpha( mat->fAlpha );
 				bslsp->setEnvironmentReflection( mat->fEnvironmentMappingMaskScale );
+
+
+				if ( bslsp->hasSoftlight )
+					bslsp->setLightingEffect1( mat->fSubsurfaceLightingRolloff );
 			}
 
 			// Mesh alpha override
@@ -314,7 +319,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
 					bsesp->setEmissive( emC, emM );
 
-					bsesp->setLightingInfluence( 0.0 ); // ??
 					bsesp->setEnvironmentReflection( nif->get<float>( iProp, "Environment Map Scale" ) );
 
 					bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
@@ -337,9 +341,13 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 					bsesp->setUvScale( uvScale[0], uvScale[1] );
 					bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
 
-					auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+					auto clampMode = nif->get<quint8>( iProp, "Texture Clamp Mode" );
 
 					bsesp->setClampMode( clampMode );
+
+					quint8 inf = nif->get<quint8>( iProp, "Lighting Influence" );
+					if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )
+						bsesp->setLightingInfluence( (float)inf / 255.0 );
 
 					auto startA = nif->get<float>( iProp, "Falloff Start Angle" );
 					auto stopA = nif->get<float>( iProp, "Falloff Stop Angle" );
@@ -356,7 +364,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 					bsesp->setEmissive( emC, emM );
 
-					bsesp->setLightingInfluence( mat->fLightingInfluence );
 					bsesp->setEnvironmentReflection( mat->fEnvironmentMappingMaskScale );
 
 					bsesp->hasSourceTexture = !mat->textureList[0].isEmpty();
@@ -390,6 +397,9 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 						clampMode = TexClampMode::CLAMP_S_CLAMP_T;
 
 					bsesp->setClampMode( clampMode );
+
+					if ( mat->bEffectLightingEnabled )
+						bsesp->setLightingInfluence( mat->fLightingInfluence );
 
 					bsesp->setFalloff( mat->fFalloffStartAngle, mat->fFalloffStopAngle, 
 						mat->fFalloffStartOpacity, mat->fFalloffStopOpacity, mat->fSoftDepth );

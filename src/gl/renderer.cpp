@@ -772,7 +772,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		// Assure specular power does not break the shaders
 		auto gloss = mesh->bslsp->getSpecularGloss();
-		uni1f( "specGlossiness", (gloss > 0.0) ? gloss : 1.0 );
+		uni1f( "specGlossiness", gloss );
 		
 		auto spec = mesh->bslsp->getSpecularColor();
 		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
@@ -787,6 +787,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		if ( nif->getUserVersion2() == 130 ) {
 			uni1i( "doubleSided", mesh->isDoubleSided );
 			uni1f( "paletteScale", mesh->bslsp->paletteScale );
+			uni1f( "subsurfaceRolloff", mesh->bslsp->getLightingEffect1() );
 			uni1f( "fresnelPower", mesh->bslsp->fresnelPower );
 			uni1f( "rimPower", mesh->bslsp->rimPower );
 			uni1f( "backlightPower", mesh->bslsp->backlightPower );
@@ -853,7 +854,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
 
 		clamp = mesh->bsesp->getClampMode();
-		clamp = TexClampMode(clamp ^ TexClampMode::MIRRORED_S_MIRRORED_T);
+		clamp = TexClampMode(clamp);
 
 		if ( !uniSampler( "SourceTexture", 0, white, clamp ) )
 			return false;
@@ -906,9 +907,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 			uni1i( "hasNormalMap", mesh->bsesp->hasNormalMap && (opts & Scene::DoLighting) );
 
-			if ( mesh->bsesp->hasNormalMap ) {
-				uniSampler( "NormalMap", 3, default_n, clamp );
-			}
+			uniSampler( "NormalMap", 3, default_n, clamp );
 
 			uni1i( "hasCubeMap", mesh->bsesp->hasEnvMap );
 			uni1i( "hasEnvMask", mesh->bsesp->hasEnvMask );

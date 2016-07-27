@@ -62,10 +62,8 @@ void main( void )
 	vec4 normalMap = texture2D( NormalMap, offset );
 	vec4 specMap = texture2D( SpecularMap, offset );
 	
-	vec3 normal = N;
-	if ( hasNormalMap ) {
-		normal = normalize(normalMap.rgb * 2.0 - 1.0);
-	}
+	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
+		
 	if ( !gl_FrontFacing && doubleSided ) {
 		normal *= -1.0;	
 	}
@@ -85,52 +83,42 @@ void main( void )
 	vec3 reflectedVS = t * reflected.x + b * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 	
+	if ( greyscaleAlpha )
+		baseMap.a = 1.0;
+	
+	vec4 baseColor = glowColor;
+	if ( !greyscaleColor )
+		baseColor.rgb *= glowMult;
+	
 	// Falloff
 	float falloff = 1.0;
 	if ( useFalloff ) {
-		float startO = min(falloffParams.z, 1.0);
-		float stopO = max(falloffParams.w, 0.0);
+		falloff = smoothstep( falloffParams.x, falloffParams.y, abs(dot(normal, V)) );
+		falloff = mix( max(falloffParams.z, 0.0), min(falloffParams.w, 1.0), falloff );
 		
-		// TODO: When X and Y are both 0.0 or both 1.0 the effect is reversed.
-		falloff = smoothstep( falloffParams.y, falloffParams.x, abs(V.b));
-    
-		falloff = mix( max(falloffParams.w, 0.0), min(falloffParams.z, 1.0), falloff );
+		baseMap.a *= falloff;
 	}
 	
-	float alphaMult = glowColor.a * glowColor.a;
+	float alphaMult = baseColor.a * baseColor.a;
 	
 	vec4 color;
-	color.rgb = baseMap.rgb;
-	color.a = baseMap.a;
+	color.rgb = baseMap.rgb * C.rgb * baseColor.rgb;
+	color.a = alphaMult * C.a * baseMap.a;
 	
-	// FO4 Unused?
-	//if ( hasWeaponBlood ) {
-	//	color.rgb = vec3( 1.0, 0.0, 0.0 ) * baseMap.r;
-	//	color.a = baseMap.a * baseMap.g;
-	//}
-	
-	color.rgb *= C.rgb * glowColor.rgb;
-	color.a *= C.a * falloff * alphaMult;
-
 	if ( greyscaleColor ) {
-		// Only Red emissive channel is used
-		float emRGB = glowColor.r;
-
-		vec4 luG = colorLookup( baseMap.g, C.g * falloff * emRGB );
+		vec4 luG = colorLookup( texture2D( SourceTexture, offset ).g, baseColor.r * C.r * falloff );
 
 		color.rgb = luG.rgb;
 	}
 	
 	if ( greyscaleAlpha ) {
-		vec4 luA = colorLookup( baseMap.a, C.a * falloff * alphaMult );
+		vec4 luA = colorLookup( texture2D( SourceTexture, offset ).a, color.a );
 		
 		color.a = luA.a;
 	}
 	
 	vec3 diffuse = A.rgb + (D.rgb * NdotL);
-	color.rgb = mix( color.rgb, color.rgb * diffuse, lightingInfluence );
-	
-	color.rgb *= glowMult;
+	color.rgb = mix( color.rgb, color.rgb * D.rgb, lightingInfluence );
 	
 	// Specular
 	float g = 1.0;
@@ -143,7 +131,8 @@ void main( void )
 	// Environment
 	vec4 cube = textureCube( CubeMap, reflectedWS );
 	if ( hasCubeMap ) {
-		cube.rgb *= envReflection * sqrt(g) * s;
+		cube.rgb *= envReflection * s;
+		cube.rgb = mix( cube.rgb, cube.rgb * D.rgb, lightingInfluence );
 		
 		color.rgb += cube.rgb * falloff;
 	}

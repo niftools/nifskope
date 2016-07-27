@@ -494,7 +494,7 @@ enum TexClampMode : unsigned int
 	CLAMP_S_WRAP_T	= 1,
 	WRAP_S_CLAMP_T	= 2,
 	WRAP_S_WRAP_T 	= 3,
-	MIRRORED_S_MIRRORED_T = 0xFF00
+	MIRRORED_S_MIRRORED_T = 4
 };
 
 
@@ -676,7 +676,7 @@ protected:
 	float specularGloss = 80.0;
 	float specularStrength = 1.0;
 
-	float lightingEffect1 = 1.0;
+	float lightingEffect1 = 0.0;
 	float lightingEffect2 = 1.0;
 
 	float environmentReflection = 1.0;
