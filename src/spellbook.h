@@ -74,7 +74,7 @@ public:
 	//! Whether the spell performs a sanitizing function
 	virtual bool sanity() const { return false; }
 	//! Whether the spell has a high processing cost
-	virtual bool batch() const { return (page() == "Batch") || (page() == "Block"); }
+	virtual bool batch() const { return (page() == "Batch") || (page() == "Block") || (page() == "Mesh"); }
 	//! Hotkey sequence
 	virtual QKeySequence hotkey() const { return QKeySequence(); }
 
