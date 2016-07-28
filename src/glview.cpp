@@ -84,7 +84,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //	Also the QTimer is integer milliseconds 
 //	so 60 will give you 1000/60 = 16, not 16.666
 //	therefore it's really 62.5FPS
-#define FPS 60
+#define FPS 144
 
 #define ZOOM_MIN 1.0
 #define ZOOM_MAX 1000.0
