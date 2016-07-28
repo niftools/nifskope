@@ -55,11 +55,6 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 	setLayout( layout );
 	layouts.push( layout );
 
-	QModelIndex iName = nif->getIndex( iBlock, "Name" );
-
-	if ( iName.isValid() )
-		add( new NifLineEdit( nif, iName ) );
-
 	timer = new QTimer( this );
 	connect( timer, &QTimer::timeout, this, &NifBlockEditor::updateData );
 	timer->setInterval( 0 );
