@@ -1028,8 +1028,7 @@ void NifIStream::init()
 	dataStream->setByteOrder( QDataStream::LittleEndian );
 	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
 
-	QSettings cfg;
-	maxLength = cfg.value( "maximum string length", 0x8000 ).toInt();
+	maxLength = 0x8000;
 }
 
 bool NifIStream::read( NifValue & val )
