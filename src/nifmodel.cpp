@@ -660,7 +660,6 @@ void NifModel::removeNiBlock( int blocknum )
 	beginRemoveRows( QModelIndex(), blocknum + 1, blocknum + 1 );
 	root->removeChild( blocknum + 1 );
 	endRemoveRows();
-	updateHeader();
 	updateLinks();
 	updateFooter();
 	emit linksChanged();

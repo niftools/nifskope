@@ -126,11 +126,11 @@ void SpellBook::cast( NifModel * nif, const QModelIndex & index, Spell * spell )
 		if ( noSignals )
 			nif->resetState();
 
-		if ( noSignals && nif->getProcessingResult() ) {
-			// Refresh the header
-			nif->invalidateConditions( nif->getHeader(), true );
-			nif->updateHeader();
+		// Refresh the header
+		nif->invalidateConditions( nif->getHeader(), true );
+		nif->updateHeader();
 
+		if ( noSignals && nif->getProcessingResult() ) {
 			emit nif->dataChanged( idx, idx );
 		}
 

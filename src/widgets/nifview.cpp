@@ -193,11 +193,11 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 			if ( noSignals )
 				nif->resetState();
 
-			if ( noSignals && nif->getProcessingResult() ) {
-				// Refresh the header
-				nif->invalidateConditions( nif->getHeader(), true );
-				nif->updateHeader();
+			// Refresh the header
+			nif->invalidateConditions( nif->getHeader(), true );
+			nif->updateHeader();
 
+			if ( noSignals && nif->getProcessingResult() ) {
 				emit nif->dataChanged( newidx, newidx );
 			}
 
