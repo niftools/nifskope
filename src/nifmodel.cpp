@@ -2522,8 +2522,7 @@ void NifModel::updateLinks( int block, NifItem * parent )
 	auto linkparents = parent->getLinkAncestorRows();
 	for ( int p : linkparents ) {
 		NifItem * c = parent->child( p );
-	
-		if ( c->childCount() > 0 )
+		if ( c && c->childCount() > 0 )
 			updateLinks( block, c );
 	}
 }
