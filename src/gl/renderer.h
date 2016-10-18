@@ -105,7 +105,7 @@ protected:
 		QString left, right;
 		enum Type
 		{
-			NONE, EQ, NE, LE, GE, LT, GT, AND
+			NONE, EQ, NE, LE, GE, LT, GT, AND, NAND
 		};
 		Type comp;
 		const static QHash<Type, QString> compStrs;
@@ -202,6 +202,8 @@ template <typename T> inline bool Renderer::ConditionSingle::compare( T a, T b )
 		return a > b;
 	case AND:
 		return a & b;
+	case NAND:
+		return !(a & b);
 	default:
 		return true;
 	}

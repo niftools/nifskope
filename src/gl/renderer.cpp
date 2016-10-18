@@ -85,7 +85,8 @@ const QHash<Renderer::ConditionSingle::Type, QString> Renderer::ConditionSingle:
 	{ GE,  " >= " },
 	{ LT,  " < " },
 	{ GT,  " > " },
-	{ AND, " & " }
+	{ AND, " & " },
+	{ NAND, " !& " }
 };
 
 Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : invert( neg )
