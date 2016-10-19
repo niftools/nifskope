@@ -17,7 +17,7 @@ contains(QT_VERSION, ^5\\.[0-4]\\..*) {
 CONFIG += c++11
 
 # Dependencies
-CONFIG += nvtristrip qhull soil zlib
+CONFIG += nvtristrip qhull soil zlib lz4
 win32:CONFIG += fsengine
 
 # Debug/Release options
@@ -400,6 +400,18 @@ zlib {
 		lib/zlib/trees.c \
 		lib/zlib/uncompr.c \
 		lib/zlib/zutil.c
+}
+
+lz4 {
+    DEFINES += LZ4_STATIC XXH_PRIVATE_API
+
+    HEADERS += \
+        lib/lz4frame.h \
+        lib/xxhash.h
+
+    SOURCES += \
+        lib/lz4frame.c \
+        lib/xxhash.c
 }
 
 ###############################
