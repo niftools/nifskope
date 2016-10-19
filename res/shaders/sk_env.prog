@@ -12,7 +12,10 @@ checkgroup begin or
 	# Skyrim
 	checkgroup begin and
 		check BSLightingShaderProperty
-		check NiTriBasedGeomData/Has Normals == 1
+		checkgroup begin or
+			check NiTriBasedGeomData/Has Normals == 1
+			check BSTriShape/VF & 128
+		checkgroup end
 		checkgroup begin or
 			check BSLightingShaderProperty/Skyrim Shader Type == 1
 			check BSLightingShaderProperty/Skyrim Shader Type == 16

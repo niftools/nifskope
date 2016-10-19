@@ -5,6 +5,7 @@ checkgroup begin or
 	checkgroup begin and
 		check HEADER/Version >= 0x14020007
 		check HEADER/User Version >= 11
+		check HEADER/User Version 2 != 130
 	checkgroup end
 
 checkgroup end
