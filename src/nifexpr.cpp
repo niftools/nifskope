@@ -138,6 +138,10 @@ Expression::Operator Expression::operatorFromString( const QString & str )
 		return Expression::e_add;
 	else if ( str == "-" )
 		return Expression::e_sub;
+	else if ( str == "#DIV#" )
+		return Expression::e_div;
+	else if ( str == "#MUL#" )
+		return Expression::e_mul;
 	else if ( str == "&&" )
 		return Expression::e_bool_and;
 	else if ( str == "||" )
@@ -170,7 +174,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	// Check for left group
 	int lstartpos = -1, lendpos = -1, ostartpos = -1, oendpos = -1, rstartpos = -1, rendpos = -1;
 
-	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|\\&\\&|\\|\\||\\&|\\|)" );
+	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|#DIV#|#MUL#|\\&\\&|\\|\\||\\&|\\|)" );
 	QRegularExpression reLParen( "^\\s*\\(.*" );
 
 	QRegularExpressionMatch reLParenMatch = reLParen.match( cond, offset );
@@ -274,6 +278,10 @@ QString Expression::toString() const
 		return QString( "(%1 + %2)" ).arg( l, r );
 	case Expression::e_sub:
 		return QString( "(%1 - %2)" ).arg( l, r );
+	case Expression::e_div:
+		return QString( "(%1 / %2)" ).arg( l, r );
+	case Expression::e_mul:
+		return QString( "(%1 * %2)" ).arg( l, r );
 	case Expression::e_bool_and:
 		return QString( "(%1 && %2)" ).arg( l, r );
 	case Expression::e_bool_or:
