@@ -347,9 +347,13 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 					bsesp->setUvScale( uvScale[0], uvScale[1] );
 					bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
 
-					auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
+					auto clampMode = nif->get<quint8>( iProp, "Texture Clamp Mode" );
 
 					bsesp->setClampMode( clampMode );
+
+					quint8 inf = nif->get<quint8>( iProp, "Lighting Influence" );
+					if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )
+						bsesp->setLightingInfluence( (float)inf / 255.0 );
 
 					auto startA = nif->get<float>( iProp, "Falloff Start Angle" );
 					auto stopA = nif->get<float>( iProp, "Falloff Stop Angle" );
