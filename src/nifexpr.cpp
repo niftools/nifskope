@@ -39,25 +39,27 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file nifexpr.cpp Expression parsing for conditions defined in nif.xml.
 
-static bool matchGroup( const QString & cond, int offset, int & startpos, int & endpos )
+static bool matchGroup( const std::string & cond, int offset, int & startpos, int & endpos )
 {
 	int scandepth = 0;
 	startpos = -1;
 	endpos = -1;
 
 	for ( int scanpos = offset, len = cond.length(); scanpos != len; ++scanpos ) {
-		QChar c = cond[scanpos];
-
-		if ( c == '(' ) {
+		switch ( cond[scanpos] )
+		{
+		case '(':
 			if ( startpos == -1 )
 				startpos = scanpos;
 
 			++scandepth;
-		} else if ( c == ')' ) {
+			break;
+		case ')':
 			if ( --scandepth == 0 ) {
 				endpos = scanpos;
 				return true;
 			}
+			break;
 		}
 	}
 
@@ -155,7 +157,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	int pos;
 
 	if ( cond.isEmpty() ) {
-		this->opcode = Expression::e_nop;
+		opcode = Expression::e_nop;
 		return;
 	}
 
@@ -165,25 +167,29 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	pos = reUnaryMatch.capturedStart();
 	if ( pos != -1 ) {
 		Expression e( reUnaryMatch.captured( 1 ).trimmed() );
-		this->opcode = Expression::e_not;
-		this->rhs = QVariant::fromValue( e );
-
+		opcode = Expression::e_not;
+		rhs = QVariant::fromValue( e );
 		return;
 	}
 
-	// Check for left group
-	int lstartpos = -1, lendpos = -1, ostartpos = -1, oendpos = -1, rstartpos = -1, rendpos = -1;
+	int lstartpos = -1, lendpos = -1, // Left Start/End
+		ostartpos = -1, oendpos = -1, // Operator Start/End
+		rstartpos = -1, rendpos = -1; // Right Start/End
 
 	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|#DIV#|#MUL#|\\&\\&|\\|\\||\\&|\\|)" );
 	QRegularExpression reLParen( "^\\s*\\(.*" );
 
 	QRegularExpressionMatch reLParenMatch = reLParen.match( cond, offset );
+
+	// Check for left group
 	pos = reLParenMatch.capturedStart();
 	if ( pos != -1 ) {
-		matchGroup( cond, pos, lstartpos, lendpos );
+		// Get start/end pos for lparen
+		matchGroup( cond.toStdString(), pos, lstartpos, lendpos );
+		// Find operator in group
 		QRegularExpressionMatch reOpsMatch = reOps.match( cond, lendpos + 1 );
 		pos = reOpsMatch.capturedStart();
-
+		// Move positions inward
 		++lstartpos, --lendpos;
 
 		if ( pos != -1 ) {
@@ -194,6 +200,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 			return;
 		}
 	} else {
+		// Check for expression without parens
 		QRegularExpressionMatch reOpsMatch = reOps.match( cond, offset );
 		pos = reOpsMatch.capturedStart();
 		if ( pos != -1 ) {
@@ -203,22 +210,22 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 			oendpos = ostartpos + reOpsMatch.captured( 0 ).length();
 		} else {
 			static QRegularExpression reInt( "\\A(?:[-+]?[0-9]+)\\z" );
-			static QRegularExpression reUInt( "\\A(?:0[xX][0-9]+)\\z" );
+			static QRegularExpression reUInt( "\\A(?:0[xX][0-9a-fA-F]+)\\z" );
 			static QRegularExpression reFloat( "^[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$" );
 			static QRegularExpression reVersion( "\\A(?:[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)\\z" );
 
 			// termination
-			this->lhs.setValue( cond );
+			lhs.setValue( cond );
 
 			if ( reUInt.match( cond ).hasMatch() ) {
-				this->lhs.convert( QVariant::UInt );
+				lhs.convert( QVariant::UInt );
 			} else if ( reInt.match( cond ).hasMatch() ) {
-				this->lhs.convert( QVariant::Int );
+				lhs.convert( QVariant::Int );
 			} else if ( reVersion.match( cond ).hasMatch() ) {
-				this->lhs.setValue( version2number( cond ) );
+				lhs.setValue( version2number( cond ) );
 			}
 
-			this->opcode = Expression::e_nop;
+			opcode = Expression::e_nop;
 			return;
 		}
 	}
@@ -230,17 +237,17 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	Expression rhsexp( cond.mid( rstartpos, rendpos - rstartpos + 1 ).trimmed() );
 
 	if ( lhsexp.opcode == Expression::e_nop ) {
-		this->lhs = lhsexp.lhs;
+		lhs = lhsexp.lhs;
 	} else {
-		this->lhs = QVariant::fromValue( lhsexp );
+		lhs = QVariant::fromValue( lhsexp );
 	}
 
-	this->opcode = operatorFromString( cond.mid( ostartpos, oendpos - ostartpos ) );
+	opcode = operatorFromString( cond.mid( ostartpos, oendpos - ostartpos ) );
 
 	if ( rhsexp.opcode == Expression::e_nop ) {
-		this->rhs = rhsexp.lhs;
+		rhs = rhsexp.lhs;
 	} else {
-		this->rhs = QVariant::fromValue( rhsexp );
+		rhs = QVariant::fromValue( rhsexp );
 	}
 }
 
