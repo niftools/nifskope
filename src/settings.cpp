@@ -666,7 +666,7 @@ void SettingsResources::on_btnFolderAutoDetect_clicked()
 	// Skyrim, Fallout, Oblivion
 	{
 		regFolderPaths( list,
-			{ beth.arg( "Skyrim" ), beth.arg( "FalloutNV" ), beth.arg( "Fallout3" ), beth.arg( "Oblivion" ) },
+			{ beth.arg( "Skyrim Special Edition" ), beth.arg( "Skyrim" ), beth.arg( "FalloutNV" ), beth.arg( "Fallout3" ), beth.arg( "Oblivion" ) },
 			"Installed Path",
 			"Data",
 			{},        /* No subdirs */
