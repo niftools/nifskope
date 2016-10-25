@@ -1056,7 +1056,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnPart->setValue( 18 );
 
 	ckTStrip = new QCheckBox( "&Stripify Triangles" );
-	ckTStrip->setChecked( true );
+	ckTStrip->setChecked( false );
 	ckTStrip->setToolTip( "Determines whether the triangles in each partition will be arranged into strips or as a list of individual triangles.  Different gaems work best with one or the other." );
 	connect( ckTStrip, &QCheckBox::clicked, this, &SkinPartitionDialog::changed );
 
