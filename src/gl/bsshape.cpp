@@ -40,20 +40,55 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	updateData = true;
 	updateBounds |= updateData;
 
-	iVertData = nif->getIndex( iBlock, "Vertex Data" );
-	iTriData = nif->getIndex( iBlock, "Triangles" );
-	iData = iVertData;
+	bool isDynamic = nif->inherits( iBlock, "BSDynamicTriShape" );
 
-	numVerts = nif->get<int>( iBlock, "Num Vertices" );
-	numTris = nif->get<int>( iBlock, "Num Triangles" );
+	bool isDataOnSkin = false;
+	auto skinID = nif->getLink( nif->getIndex( iBlock, "Skin" ) );
+	auto vertexFlags = nif->get<quint16>( iBlock, "VF" );
+	if ( (vertexFlags & 0x400) && nif->getUserVersion2() == 100 && skinID != -1 )
+		isDataOnSkin = true;
 
-	auto vertCount = nif->rowCount( iVertData );
-	auto triCount = nif->rowCount( iTriData );
+	int vertCount = 0, triCount = 0, dataSize = 0;
+	QModelIndex partBlock;
 
-	numVerts = std::min( numVerts, vertCount );
-	numTris = std::min( numTris, triCount );
+	if ( !isDataOnSkin ) {
+		iVertData = nif->getIndex( iBlock, "Vertex Data" );
+		iTriData = nif->getIndex( iBlock, "Triangles" );
+		iData = iVertData;
+		if ( !iVertData.isValid() || !iTriData.isValid() )
+			return;
 
-	auto dataSize = nif->get<int>( iBlock, "Data Size" );
+		numVerts = nif->get<int>( iBlock, "Num Vertices" );
+		numTris = nif->get<int>( iBlock, "Num Triangles" );
+
+		vertCount = nif->rowCount( iVertData );
+		triCount = nif->rowCount( iTriData );
+
+		numVerts = std::min( numVerts, vertCount );
+		numTris = std::min( numTris, triCount );
+
+		dataSize = nif->get<int>( iBlock, "Data Size" );
+	} else {
+		// For skinned geometry, the vertex data is stored on the NiSkinPartition
+		// The triangles are split up among the partitions
+		auto skinBlock = nif->getBlock( skinID, "NiSkinInstance" );
+		partBlock = nif->getBlock( nif->getLink( skinBlock, "Skin Partition" ), "NiSkinPartition" );
+		if ( !partBlock.isValid() )
+			return;
+
+		iVertData = nif->getIndex( partBlock, "Vertex Data" );
+		iTriData = QModelIndex();
+		iData = iVertData;
+
+		dataSize = nif->get<int>( partBlock, "Data Size" );
+		auto vertexSize = nif->get<int>( partBlock, "Vertex Size" );
+		if ( !iVertData.isValid() || dataSize == 0 || vertexSize == 0 )
+			return;
+
+		numVerts = dataSize / vertexSize;
+		vertCount = nif->rowCount( iVertData );
+	}
+
 
 	auto bsphere = nif->getIndex( iBlock, "Bounding Sphere" );
 	if ( bsphere.isValid() ) {
@@ -79,8 +114,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iVertData );
 
-			Vector3 v = nif->get<Vector3>( idx, "Vertex" );
-			verts += v;
+			if ( !isDynamic )
+				verts << nif->get<Vector3>( idx, "Vertex" );
 
 			coordset << nif->get<HalfVector2>( idx, "UV" );
 
@@ -105,11 +140,23 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			}
 		}
 
+		if ( isDynamic ) {
+			auto dynVerts = nif->getArray<Vector4>( iBlock, "Vertices" );
+			for ( const auto & v : dynVerts )
+				verts << Vector3( v );
+		}
+
 		// Add coords as first set of QList
 		coords.append( coordset );
 
-		triangles = nif->getArray<Triangle>( iTriData );
-		triangles = triangles.mid( 0, numTris );
+		if ( !isDataOnSkin ) {
+			triangles = nif->getArray<Triangle>( iTriData );
+			triangles = triangles.mid( 0, numTris );
+		} else {
+			auto partIdx = nif->getIndex( partBlock, "Partition" );
+			for ( int i = 0; i < nif->rowCount( partIdx ); i++ )
+				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
+		}
 	}
 
 	QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" ) + nif->getLinkArray( iBlock, "BS Properties" );
@@ -145,6 +192,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 			auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
 			auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
+
+			auto stream = nif->getUserVersion2();
 
 			// Get all textures for shader property
 			auto textures = nif->getArray<QString>( bslsp->getTextureSet(), "Textures" );
@@ -203,12 +252,38 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				bslsp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
 				bslsp->paletteScale = nif->get<float>( iProp, "Grayscale to Palette Scale" );
 
-				bslsp->fresnelPower = nif->get<float>( iProp, "Fresnel Power" );
-				bslsp->setLightingEffect1( nif->get<float>( iProp, "Subsurface Rolloff" ) );
-				bslsp->backlightPower = nif->get<float>( iProp, "Backlight Power" );
+				if ( stream == 100 ) {
+					bslsp->setLightingEffect1( nif->get<float>( iProp, "Lighting Effect 1" ) );
+					bslsp->setLightingEffect2( nif->get<float>( iProp, "Lighting Effect 2" ) );
+
+					auto innerThickness = nif->get<float>( iProp, "Parallax Inner Layer Thickness" );
+					auto innerScale = nif->get<Vector2>( iProp, "Parallax Inner Layer Texture Scale" );
+					auto outerRefraction = nif->get<float>( iProp, "Parallax Refraction Scale" );
+					auto outerReflection = nif->get<float>( iProp, "Parallax Envmap Strength" );
+
+					bslsp->setInnerThickness( innerThickness );
+					bslsp->setInnerTextureScale( innerScale[0], innerScale[1] );
+					bslsp->setOuterRefractionStrength( outerRefraction );
+					bslsp->setOuterReflectionStrength( outerReflection );
+
+					bslsp->hasHeightMap = isST( ShaderFlags::ST_Heightmap );
+					bslsp->hasHeightMap |= hasSF1( ShaderFlags::SLSF1_Parallax ) && !textures.value( 3, "" ).isEmpty();
+					bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
+					bslsp->hasRimlight = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
+					bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
+					bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
+					bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
+					bslsp->hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
+				} else {
+					bslsp->fresnelPower = nif->get<float>( iProp, "Fresnel Power" );
+					bslsp->setLightingEffect1( nif->get<float>( iProp, "Subsurface Rolloff" ) );
+					bslsp->backlightPower = nif->get<float>( iProp, "Backlight Power" );
+				}
 
 				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
 				bslsp->hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
+				if ( stream == 100 )
+					bslsp->hasEnvironmentMap |= bslsp->hasMultiLayerParallax;
 				bslsp->hasCubeMap = (
 					isST( ShaderFlags::ST_EnvironmentMap )
 					|| isST( ShaderFlags::ST_EyeEnvmap )

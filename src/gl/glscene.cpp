@@ -264,10 +264,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	else if ( nif->inherits( iNode, "NiParticles" ) ) {
 		// ... where did AParticleSystem go?
 		node = new Particles( this, iNode );
-	} else if ( nif->itemName( iNode ) == "BSTriShape" 
-				|| nif->itemName( iNode ) == "BSSubIndexTriShape"
-				|| nif->itemName( iNode ) == "BSMeshLODTriShape"
-	) {
+	} else if ( nif->inherits( iNode, "BSTriShape" ) ) {
 		node = new BSShape( this, iNode );
 		shapes += static_cast<Shape *>(node);
 	} else if ( nif->inherits( iNode, "NiAVObject" ) ) {
