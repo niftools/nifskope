@@ -81,9 +81,10 @@ public:
 			if ( static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton
 			     && decoRect( option ).contains( static_cast<QMouseEvent *>(event)->pos() ) )
 			{
+				// Spell Icons in Value column
 				Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
-
 				if ( spell && !spell->icon().isNull() ) {
+					// Spell Icon click
 					if ( event->type() == QEvent::MouseButtonRelease ) {
 						NifModel * nif = 0;
 						QModelIndex buddy = index;
@@ -96,6 +97,7 @@ public:
 							buddy = proxy->mapTo( index );
 						}
 
+						// Cast Spell for icon which was clicked
 						if ( nif && spell->isApplicable( nif, buddy ) ) {
 							if ( book )
 								book->cast( nif, buddy, spell );
@@ -117,6 +119,7 @@ public:
 				if ( v.canConvert<NifValue>() ) {
 					NifValue nv = v.value<NifValue>();
 
+					// Yes/No toggle for bool types
 					if ( nv.type() == NifValue::tBool ) {
 						nv.set<int>( !nv.get<int>() );
 						model->setData( index, nv.toVariant(), Qt::EditRole );
@@ -144,8 +147,8 @@ public:
 		QIcon icon;
 
 		if ( !user.isEmpty() ) {
+			// Find the icon for this Spell if one exists
 			Spell * spell = SpellBook::lookup( user );
-
 			if ( spell )
 				icon = spell->icon();
 		}
@@ -163,8 +166,9 @@ public:
 		opt.state |= QStyle::State_Active;
 		QPalette::ColorGroup cg = ( opt.state & QStyle::State_Enabled ) ? QPalette::Normal : QPalette::Disabled;
 
+		// Color the field background if the value type is a color
+		//	Otherwise normal behavior
 		QVariant color = index.data( Qt::BackgroundColorRole );
-
 		if ( color.canConvert<QColor>() )
 			painter->fillRect( option.rect, color.value<QColor>() );
 		else if ( option.state & QStyle::State_Selected )

@@ -166,17 +166,20 @@ static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block
 //! Remove the children from the specified block
 static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
 {
-	QList<QPersistentModelIndex> iChildren;
+	// Build list of child links
+	QVector<QPersistentModelIndex> iChildren;
 	for ( const auto link : nif->getChildLinks( nif->getBlockNumber( iBlock ) ) ) {
 		iChildren.append( nif->getBlock( link ) );
 	}
 
+	// Remove children of child links
 	for ( const QPersistentModelIndex& iChild : iChildren ) {
 		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) ) {
 			removeChildren( nif, iChild );
 		}
 	}
 
+	// Remove children
 	for ( const QPersistentModelIndex& iChild : iChildren ) {
 		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) ) {
 			nif->removeNiBlock( nif->getBlockNumber( iChild ) );

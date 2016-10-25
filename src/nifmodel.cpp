@@ -403,9 +403,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 		}
 	}
 
-	for ( int c = 0; c < item->childCount(); c++ ) {
-		NifItem * child = item->child( c );
-
+	for ( auto child : item->children() ) {
 		if ( child && child->name() == name && evalCondition( child ) )
 			return child;
 	}
@@ -580,10 +578,7 @@ bool NifModel::updateArrays( NifItem * parent )
 	for ( auto child : parent->children() ) {
 		if ( evalCondition( child ) ) {
 			if ( isArray( child ) ) {
-				if ( !updateArrayItem( child ) )
-					return false;
-
-				if ( !updateArrays( child ) )
+				if ( !updateArrayItem( child ) || !updateArrays( child ) )
 					return false;
 			} else if ( child->childCount() > 0 ) {
 				if ( !updateArrays( child ) )
@@ -1035,6 +1030,8 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifItem * item = insertBranch( parent, data, at );
 	} else if ( data.isCompound() ) {
 		NifBlock * compound = compounds.value( data.type() );
+		if ( !compound )
+			return;
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
 		const auto & types = compound->types;
@@ -1897,8 +1894,11 @@ bool NifModel::load( QIODevice & device )
 			}
 
 			// read in the footer
-			if ( !loadItem( getFooterItem(), stream ) )
-				throw tr( "failed to load file footer" );
+			// Disabling the throw because it hinders decoding when the XML is wrong,
+			// and prevents any data whatsoever from loading.
+			loadItem( getFooterItem(), stream );
+			//if ( !loadItem( getFooterItem(), stream ) )
+			//	throw tr( "failed to load file footer" );
 		} else {
 			// versions below 3.3.0.13
 			QMap<qint32, qint32> linkMap;
@@ -2251,10 +2251,7 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 
 		if ( evalCondition( child ) ) {
 			if ( isArray( child ) ) {
-				if ( !updateArrayItem( child ) )
-					return false;
-
-				if ( !loadItem( child, stream ) )
+				if ( !updateArrayItem( child ) || !loadItem( child, stream ) )
 					return false;
 			} else if ( child->childCount() > 0 ) {
 				if ( !loadItem( child, stream ) )
@@ -2465,9 +2462,11 @@ void NifModel::updateLinks( int block )
 		childLinks.clear();
 		parentLinks.clear();
 
+		// Run updateLinks() for each block
 		for ( int c = 0; c < getBlockCount(); c++ )
 			updateLinks( c );
 
+		// Run checkLinks() for each block
 		for ( int c = 0; c < getBlockCount(); c++ ) {
 			QStack<int> stack;
 			checkLinks( c, stack );
