@@ -185,7 +185,10 @@ private:
 	void updateNif();
 
 	NifModel * nif;
-	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex;
+	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex, iPartBlock;
+
+	//! If mesh is skinned, different behavior is required for stream version 100
+	bool isDataOnSkin = false;
 
 	//! Submenu for texture slot selection
 	QMenu * menuTexSelect;

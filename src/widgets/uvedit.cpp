@@ -761,6 +761,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 
 	nif = nifModel;
 	iShape = nifIndex;
+	isDataOnSkin = false;
 
 	// Version dependent actions
 	if ( nif->getVersionNumber() != 0x14020007 ) {
@@ -789,8 +790,22 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	textures->setNifFolder( nif->getFolder() );
 
 	iShapeData = nif->getBlock( nif->getLink( iShape, "Data" ) );
-	if ( nif->getVersionNumber() == 0x14020007 && nif->getUserVersion2() == 130 ) {
+	if ( nif->getVersionNumber() == 0x14020007 && nif->getUserVersion2() >= 100 ) {
 		iShapeData = nif->getIndex( iShape, "Vertex Data" );
+
+		auto vf = nif->get<quint16>( iShape, "VF" );
+		if ( (vf & 0x400) && nif->getUserVersion2() == 100 ) {
+			// Skinned SSE
+			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
+			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
+			iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+			if ( !iPartBlock.isValid() )
+				return false;
+
+			isDataOnSkin = true;
+
+			iShapeData = nif->getIndex( iPartBlock, "Vertex Data" );
+		}
 	}
 
 	if ( nif->inherits( iShapeData, "NiTriBasedGeomData" ) ) {
@@ -804,7 +819,12 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			return false;
 		}
 	} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
-		int numVerts = nif->get<int>( iShape, "Num Vertices" );
+		int numVerts = 0;
+		if ( !isDataOnSkin )
+			numVerts = nif->get<int>( iShape, "Num Vertices" );
+		else
+			numVerts = nif->get<uint>( iPartBlock, "Data Size" ) / nif->get<uint>( iPartBlock, "Vertex Size" );
+
 		for ( int i = 0; i < numVerts; i++ ) {
 			texcoords << nif->get<Vector2>( nif->index( i, 0, iShapeData ), "UV" );
 		}
@@ -911,7 +931,15 @@ bool UVWidget::setTexCoords()
 			tris += triangulate( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 		}
 	} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
-		tris = nif->getArray<Triangle>( iShape, "Triangles" );
+		if ( !isDataOnSkin ) {
+			tris = nif->getArray<Triangle>( iShape, "Triangles" );
+		} else {
+			auto partIdx = nif->getIndex( iPartBlock, "Partition" );
+			for ( int i = 0; i < nif->rowCount( partIdx ); i++ ) {
+				tris << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
+			}
+		}
+		
 	}
 
 	if ( tris.isEmpty() )
@@ -942,10 +970,14 @@ void UVWidget::updateNif()
 		if ( nif->inherits( iShapeData, "NiTriBasedGeomData" ) ) {
 			nif->setArray<Vector2>( iTexCoords, texcoords );
 		} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
-			int numVerts = nif->get<int>( iShape, "Num Vertices" );
+			int numVerts = 0;
+			if ( !isDataOnSkin )
+				numVerts = nif->get<int>( iShape, "Num Vertices" );
+			else
+				numVerts = nif->get<uint>( iPartBlock, "Data Size" ) / nif->get<uint>( iPartBlock, "Vertex Size" );
+
 			for ( int i = 0; i < numVerts; i++ ) {
-				auto idx = nif->index( i, 0, iShapeData );
-				nif->set<HalfVector2>( idx, "UV", HalfVector2( texcoords.value( i ) ) );
+				nif->set<HalfVector2>( nif->index( i, 0, iShapeData ), "UV", HalfVector2( texcoords.value( i ) ) );
 			}
 
 			nif->dataChanged( iShape, iShape );
@@ -1495,6 +1527,7 @@ void UVWidget::getCoordSets()
 {
 	coordSetSelect->clear();
 
+	// TODO: Broken for newer nif.xml where NiGeometryData has been corrected
 	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
 
 	for ( int i = 0; i < numUvSets; i++ ) {
