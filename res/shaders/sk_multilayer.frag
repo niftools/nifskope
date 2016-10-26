@@ -160,7 +160,7 @@ void main( void )
 	}
 
 	// Specular
-	vec3 spec = specColor * specStrength * normalMap.a * pow(NdotH, specGlossiness);
+	vec3 spec = clamp( specColor * specStrength * normalMap.a * pow(NdotH, specGlossiness), 0.0, 1.0 );
 	spec *= D.rgb;
 
 	// Emissive

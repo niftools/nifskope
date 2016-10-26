@@ -129,7 +129,7 @@ void main( void )
 		s = normalMap.a;
 	}
 	
-	vec3 spec = specColor * specStrength * s * pow(NdotH, specGlossiness);
+	vec3 spec = clamp( specColor * specStrength * s * pow(NdotH, specGlossiness), 0.0, 1.0 );
 	spec *= D.rgb;
 
 
