@@ -537,6 +537,9 @@ public:
 
 	QPersistentModelIndex getTextureSet() const;
 
+	bool hasSF1( ShaderFlags::SF1 flag ) { return getFlags1() & flag; };
+	bool hasSF2( ShaderFlags::SF2 flag ) { return getFlags2() & flag; };
+
 	unsigned int getFlags1() const;
 	unsigned int getFlags2() const;
 
@@ -552,6 +555,11 @@ public:
 	TexClampMode getClampMode() const;
 
 	void setClampMode( uint mode );
+
+	bool getDepthTest() { return depthTest; }
+	bool getDepthWrite() { return depthWrite; }
+	bool getIsDoubleSided() { return isDoubleSided; }
+	bool getIsTranslucent() { return isTranslucent; }
 
 	Material * mat() const;
 
@@ -570,6 +578,11 @@ protected:
 	UVOffset uvOffset;
 
 	TexClampMode clampMode;
+
+	bool depthTest = false;
+	bool depthWrite = false;
+	bool isDoubleSided = false;
+	bool isTranslucent = false;
 };
 
 REGISTER_PROPERTY( BSShaderLightingProperty, ShaderLighting )
@@ -591,6 +604,9 @@ public:
 	QString typeId() const override final { return "BSLightingShaderProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block ) override;
+	void updateParams( const NifModel * nif, const QModelIndex & prop );
+
+	bool isST( ShaderFlags::ShaderType st ) { return getShaderType() == st; };
 
 	Color3 getEmissiveColor() const;
 	Color3 getSpecularColor() const;
@@ -679,7 +695,7 @@ protected:
 	float lightingEffect1 = 0.0;
 	float lightingEffect2 = 1.0;
 
-	float environmentReflection = 1.0;
+	float environmentReflection = 0.0;
 
 	// Multi-layer properties
 	float innerThickness;
@@ -702,6 +718,7 @@ public:
 	QString typeId() const override final { return "BSEffectShaderProperty"; }
 
 	void update( const NifModel * nif, const QModelIndex & block ) override;
+	void updateParams( const NifModel * nif, const QModelIndex & prop );
 
 	Color4 getEmissiveColor() const;
 	float getEmissiveMult() const;
@@ -716,8 +733,6 @@ public:
 
 	float getLightingInfluence() const;
 	void setLightingInfluence( float );
-
-	bool doubleSided = false;
 
 	bool hasSourceTexture = false;
 	bool hasGreyscaleMap = false;
@@ -755,7 +770,7 @@ protected:
 	float emissiveMult;
 
 	float lightingInfluence = 0.0;
-	float environmentReflection = 1.0;
+	float environmentReflection = 0.0;
 };
 
 REGISTER_PROPERTY( BSEffectShaderProperty, ShaderLighting )

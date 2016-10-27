@@ -860,7 +860,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		if ( !uniSampler( "SourceTexture", 0, white, clamp ) )
 			return false;
 
-		uni1i( "doubleSided", mesh->bsesp->doubleSided );
+		uni1i( "doubleSided", mesh->bsesp->getIsDoubleSided() );
 
 		auto uvS = mesh->bsesp->getUvScale();
 		uni2f( "uvScale", uvS.x, uvS.y );

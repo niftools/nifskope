@@ -105,6 +105,55 @@ void Shape::setController( const NifModel * nif, const QModelIndex & iController
 	}
 }
 
+void Shape::updateShaderProperties( const NifModel * nif )
+{
+	QVector<qint32> props = nif->getLinkArray( iBlock, "BS Properties" );
+
+	QModelIndex iLSP = nif->getBlock( props[0], "BSLightingShaderProperty" );
+	QModelIndex iESP = nif->getBlock( props[0], "BSEffectShaderProperty" );
+
+	if ( iLSP.isValid() ) {
+		if ( !bslsp )
+			bslsp = properties.get<BSLightingShaderProperty>();
+
+		if ( !bslsp )
+			return;
+
+		bssp = bslsp;
+
+		bslsp->updateParams( nif, iLSP );
+
+		// Mesh alpha override
+		translucent = (bslsp->getAlpha() < 1.0);
+		translucent |= bslsp->hasRefraction;
+
+	} else if ( iESP.isValid() ) {
+		if ( !bsesp )
+			bsesp = properties.get<BSEffectShaderProperty>();
+
+		if ( !bsesp )
+			return;
+
+		bssp = bsesp;
+
+		bsesp->updateParams( nif, iESP );
+
+		// Mesh alpha override
+		translucent = (bsesp->getAlpha() < 1.0) && !findProperty<AlphaProperty>();
+	}
+
+	// Draw mesh second
+	drawSecond |= translucent;
+
+	if ( !bssp )
+		return;
+
+	depthTest = bssp->getFlags1() & ShaderFlags::SLSF1_ZBuffer_Test;
+	depthWrite = bssp->getFlags2() &  ShaderFlags::SLSF2_ZBuffer_Write;
+	isDoubleSided = bssp->getFlags2() & ShaderFlags::SLSF2_Double_Sided;
+	isVertexAlphaAnimation = bssp->getFlags2() & ShaderFlags::SLSF2_Tree_Anim;
+}
+
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
 {
 	Node::update( nif, index );
@@ -129,248 +178,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	isVertexAlphaAnimation = false;
 	isDoubleSided = false;
 
+	// Update shader from this mesh's shader property
 	if ( nif->checkVersion( 0x14020007, 0 ) && nif->inherits( iBlock, "NiTriBasedGeom" ) )
-	{
-		QVector<qint32> props = nif->getLinkArray( iBlock, "Properties" ) + nif->getLinkArray( iBlock, "BS Properties" );
-	
-		for ( int i = 0; i < props.count(); i++ ) {
-			QModelIndex iProp = nif->getBlock( props[i], "BSLightingShaderProperty" );
-	
-			if ( iProp.isValid() ) {
-
-				if ( !bslsp )
-					bslsp = properties.get<BSLightingShaderProperty>();
-
-				if ( !bslsp )
-					break;
-
-				auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
-					return bslsp->getFlags1() & flag;
-				};
-
-				auto hasSF2 = [this]( ShaderFlags::SF2 flag ) {
-					return bslsp->getFlags2() & flag;
-				};
-
-				auto isST = [this]( ShaderFlags::ShaderType st ) {
-					return bslsp->getShaderType() == st;
-				};
-
-
-				auto shaderType = nif->get<unsigned int>( iProp, "Skyrim Shader Type" );
-
-				auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
-				auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
-
-				// Get all textures for shader property
-				auto textures = nif->getArray<QString>( bslsp->getTextureSet(), "Textures" );
-
-				bslsp->setShaderType( shaderType );
-				bslsp->setFlags1( sf1 );
-				bslsp->setFlags2( sf2 );
-
-				bslsp->setAlpha( nif->get<float>( iProp, "Alpha" ) );
-
-				depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
-				depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
-
-				// Mesh alpha override
-				translucent = (bslsp->getAlpha() < 1.0);
-
-				// Draw mesh second
-				drawSecond |= translucent;
-
-				// Specular
-				if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
-					auto spC = nif->get<Color3>( iProp, "Specular Color" );
-					auto spG = nif->get<float>( iProp, "Glossiness" );
-					auto spS = nif->get<float>( iProp, "Specular Strength" );
-					bslsp->setSpecular( spC, spG, spS );
-				} else {
-					bslsp->setSpecular( Color3(0, 0, 0), 0, 0 );
-				}
-
-				// Emissive
-				auto emC = nif->get<Color3>( iProp, "Emissive Color" );
-				auto emM = nif->get<float>( iProp, "Emissive Multiple" );
-				bslsp->setEmissive( emC, emM );
-
-				bslsp->hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
-
-				// Set glow map if shader meets requirements
-				if ( bslsp->getShaderType() & ShaderFlags::ST_GlowShader ) {
-					bslsp->hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
-				}
-
-				bslsp->hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
-				bslsp->hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
-				bslsp->hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
-				bslsp->hasRimlight  = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
-				bslsp->hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
-				bslsp->hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
-				bslsp->hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
-				bslsp->hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
-
-				bslsp->hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
-				bslsp->hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
-				bslsp->hasEnvironmentMap |= bslsp->hasMultiLayerParallax;
-				bslsp->hasCubeMap = (
-						isST( ShaderFlags::ST_EnvironmentMap ) 
-						|| isST( ShaderFlags::ST_EyeEnvmap )
-						|| isST( ShaderFlags::ST_MultiLayerParallax )
-					)
-					&& bslsp->hasEnvironmentMap
-					&& !textures.value( 4, "" ).isEmpty();
-
-				bslsp->useEnvironmentMask = bslsp->hasEnvironmentMap && !textures.value( 5, "" ).isEmpty();
-
-				bslsp->hasHeightMap = isST( ShaderFlags::ST_Heightmap );
-				bslsp->hasHeightMap |= hasSF1( ShaderFlags::SLSF1_Parallax ) && !textures.value( 3, "" ).isEmpty();
-
-				bslsp->hasRefraction = hasSF1( ShaderFlags::SLSF1_Refraction );
-				bslsp->hasFireRefraction = hasSF1( ShaderFlags::SLSF1_Fire_Refraction );
-
-				bslsp->hasTintColor = false;
-				bslsp->hasTintMask = isST( ShaderFlags::ST_FaceTint );
-				bslsp->hasDetailMask = bslsp->hasTintMask;
-
-				QString tint;
-				if ( isST( ShaderFlags::ST_HairTint ) )
-					tint = "Hair Tint Color";
-				else if ( isST( ShaderFlags::ST_SkinTint ) )
-					tint = "Skin Tint Color";
-
-				if ( !tint.isEmpty() ) {
-					bslsp->hasTintColor = true;
-					bslsp->setTintColor( nif->get<Color3>( iProp, tint ) );
-				}
-
-				// Mesh alpha override
-				translucent |= bslsp->hasRefraction;
-
-
-				auto le1 = nif->get<float>( iProp, "Lighting Effect 1" );
-				auto le2 = nif->get<float>( iProp, "Lighting Effect 2" );
-
-				bslsp->setLightingEffect1( le1 );
-				bslsp->setLightingEffect2( le2 );
-
-				auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
-				auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
-
-				bslsp->setUvScale( uvScale[0], uvScale[1] );
-				bslsp->setUvOffset( uvOffset[0], uvOffset[1] );
-
-				auto clampMode = nif->get<uint>( iProp, "Texture Clamp Mode" );
-
-				bslsp->setClampMode( clampMode );
-
-				float envReflection = 0;
-				if ( isST( ShaderFlags::ST_EnvironmentMap ) ) {
-					envReflection = nif->get<float>( iProp, "Environment Map Scale" );
-				} else if ( isST( ShaderFlags::ST_EyeEnvmap ) ) {
-					envReflection = nif->get<float>( iProp, "Eye Cubemap Scale" );
-				}
-
-				bslsp->setEnvironmentReflection( envReflection );
-
-				auto innerThickness = nif->get<float>( iProp, "Parallax Inner Layer Thickness" );
-				auto innerScale = nif->get<Vector2>( iProp, "Parallax Inner Layer Texture Scale" );
-				auto outerRefraction = nif->get<float>( iProp, "Parallax Refraction Scale" );
-				auto outerReflection = nif->get<float>( iProp, "Parallax Envmap Strength" );
-
-				bslsp->setInnerThickness( innerThickness );
-				bslsp->setInnerTextureScale( innerScale[0], innerScale[1] );
-				bslsp->setOuterRefractionStrength( outerRefraction );
-				bslsp->setOuterReflectionStrength( outerReflection );
-				
-				isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
-				
-				isVertexAlphaAnimation = hasSF2( ShaderFlags::SLSF2_Tree_Anim );
-				//break;
-
-			} else {
-				iProp = nif->getBlock( props[i], "BSEffectShaderProperty" );
-	
-				if ( iProp.isValid() ) {
-					if ( !bsesp )
-						bsesp = properties.get<BSEffectShaderProperty>();
-
-					if ( !bsesp )
-						break;
-
-					auto hasSF1 = [this]( ShaderFlags::SF1 flag ) {
-						return bsesp->getFlags1() & flag;
-					};
-
-					auto hasSF2 = [this]( ShaderFlags::SF2 flag ) {
-						return bsesp->getFlags2() & flag;
-					};
-
-					auto sf1 = nif->get<unsigned int>( iProp, "Shader Flags 1" );
-					auto sf2 = nif->get<unsigned int>( iProp, "Shader Flags 2" );
-
-					bsesp->setFlags1( sf1 );
-					bsesp->setFlags2( sf2 );
-
-					depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
-					depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
-
-					auto emC = nif->get<Color4>( iProp, "Emissive Color" );
-					auto emM = nif->get<float>( iProp, "Emissive Multiple" );
-					bsesp->setEmissive( emC, emM );
-
-					// For BSESP, let Alpha prop handle things
-					bool hasAlphaProp = findProperty<AlphaProperty>();
-
-					// Mesh alpha override
-					translucent = (bsesp->getAlpha() < 1.0) && !hasAlphaProp;
-
-					// Draw mesh second
-					drawSecond |= translucent;
-
-					bsesp->hasSourceTexture = !nif->get<QString>( iProp, "Source Texture" ).isEmpty();
-					bsesp->hasGreyscaleMap = !nif->get<QString>( iProp, "Greyscale Texture" ).isEmpty();
-					bsesp->greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
-					bsesp->greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
-
-					bsesp->useFalloff = hasSF1( ShaderFlags::SLSF1_Use_Falloff );
-
-					bsesp->vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
-					bsesp->vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
-
-					bsesp->hasWeaponBlood = hasSF2( ShaderFlags::SLSF2_Weapon_Blood );
-
-					auto uvScale = nif->get<Vector2>( iProp, "UV Scale" );
-					auto uvOffset = nif->get<Vector2>( iProp, "UV Offset" );
-
-					bsesp->setUvScale( uvScale[0], uvScale[1] );
-					bsesp->setUvOffset( uvOffset[0], uvOffset[1] );
-
-					auto clampMode = nif->get<quint8>( iProp, "Texture Clamp Mode" );
-
-					bsesp->setClampMode( clampMode );
-
-					quint8 inf = nif->get<quint8>( iProp, "Lighting Influence" );
-					if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )
-						bsesp->setLightingInfluence( (float)inf / 255.0 );
-
-					auto startA = nif->get<float>( iProp, "Falloff Start Angle" );
-					auto stopA = nif->get<float>( iProp, "Falloff Stop Angle" );
-					auto startO = nif->get<float>( iProp, "Falloff Start Opacity" );
-					auto stopO = nif->get<float>( iProp, "Falloff Stop Opacity" );
-					auto soft = nif->get<float>( iProp, "Soft Falloff Depth" );
-
-					bsesp->setFalloff( startA, stopA, startO, stopO, soft );
-
-					isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
-
-					bsesp->doubleSided = isDoubleSided;
-				}
-			}
-		}
-	}
-
+		updateShaderProperties( nif );
 
 	if ( iBlock == index ) {
 		// NiMesh presents a problem because we are almost guaranteed to have multiple "data" blocks
@@ -1073,9 +883,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		}
 
 		// Do VCs if legacy or if either bslsp or bsesp is set
-		bool doVCs = (!bslsp && !bsesp) 
-			|| (bslsp && (bslsp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors))
-			|| (bsesp && (bsesp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
+		bool doVCs = (!bssp) || (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
 
 		if ( transColors.count()
 			&& ( scene->options & Scene::DoVertexColors )

@@ -1093,6 +1093,156 @@ void BSLightingShaderProperty::update( const NifModel * nif, const QModelIndex &
 
 }
 
+void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelIndex & prop )
+{
+	ShaderMaterial * m = nullptr;
+	if ( mat() && mat()->isValid() )
+		m = static_cast<ShaderMaterial *>(mat());
+
+	auto stream = nif->getUserVersion2();
+	auto textures = nif->getArray<QString>( getTextureSet(), "Textures" );
+
+	setShaderType( nif->get<unsigned int>( prop, "Skyrim Shader Type" ) );
+	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
+	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+
+	hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+	if ( !m ) {
+		alpha = nif->get<float>( prop, "Alpha" );
+
+		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
+		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+
+		setUvScale( uvScale[0], uvScale[1] );
+		setUvOffset( uvOffset[0], uvOffset[1] );
+		setClampMode( nif->get<uint>( prop, "Texture Clamp Mode" ) );
+
+		// Specular
+		if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
+			auto spC = nif->get<Color3>( prop, "Specular Color" );
+			auto spG = nif->get<float>( prop, "Glossiness" );
+			auto spS = nif->get<float>( prop, "Specular Strength" );
+			setSpecular( spC, spG, spS );
+		} else {
+			setSpecular( Color3( 0, 0, 0 ), 0, 0 );
+		}
+
+		// Emissive
+		setEmissive( nif->get<Color3>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
+
+		hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
+		if ( getShaderType() & ShaderFlags::ST_GlowShader )
+			hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+
+		// Version Dependent settings
+		if ( stream < 130 ) {
+			lightingEffect1 = nif->get<float>( prop, "Lighting Effect 1" );
+			lightingEffect2 = nif->get<float>( prop, "Lighting Effect 2" );
+
+			innerThickness = nif->get<float>( prop, "Parallax Inner Layer Thickness" );
+			outerRefractionStrength = nif->get<float>( prop, "Parallax Refraction Scale" );
+			outerReflectionStrength = nif->get<float>( prop, "Parallax Envmap Strength" );
+			auto innerScale = nif->get<Vector2>( prop, "Parallax Inner Layer Texture Scale" );
+			setInnerTextureScale( innerScale[0], innerScale[1] );
+
+			hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
+			hasHeightMap = isST( ShaderFlags::ST_Heightmap ) && hasSF1( ShaderFlags::SLSF1_Parallax ) && !textures.value( 3, "" ).isEmpty();
+			hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
+			hasRimlight = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
+			hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
+			hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
+			hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
+
+			hasRefraction = hasSF1( ShaderFlags::SLSF1_Refraction );
+			hasFireRefraction = hasSF1( ShaderFlags::SLSF1_Fire_Refraction );
+
+			hasTintColor = false;
+			hasTintMask = isST( ShaderFlags::ST_FaceTint );
+			hasDetailMask = hasTintMask;
+
+			QString tint;
+			if ( isST( ShaderFlags::ST_HairTint ) )
+				tint = "Hair Tint Color";
+			else if ( isST( ShaderFlags::ST_SkinTint ) )
+				tint = "Skin Tint Color";
+
+			if ( !tint.isEmpty() ) {
+				hasTintColor = true;
+				setTintColor( nif->get<Color3>( prop, tint ) );
+			}
+		} else {
+			hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular );
+			greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+			paletteScale = nif->get<float>( prop, "Grayscale to Palette Scale" );
+			lightingEffect1 = nif->get<float>( prop, "Subsurface Rolloff" );
+			backlightPower = nif->get<float>( prop, "Backlight Power" );
+			fresnelPower = nif->get<float>( prop, "Fresnel Power" );
+		}
+
+		// Environment Map, Mask and Reflection Scale
+		hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
+		hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
+		if ( stream == 100 )
+			hasEnvironmentMap |= hasMultiLayerParallax;
+
+		hasCubeMap = (
+			isST( ShaderFlags::ST_EnvironmentMap )
+			|| isST( ShaderFlags::ST_EyeEnvmap )
+			|| isST( ShaderFlags::ST_MultiLayerParallax )
+			)
+			&& hasEnvironmentMap
+			&& !textures.value( 4, "" ).isEmpty();
+
+		useEnvironmentMask = hasEnvironmentMap && !textures.value( 5, "" ).isEmpty();
+
+		if ( isST( ShaderFlags::ST_EnvironmentMap ) )
+			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
+		else if ( isST( ShaderFlags::ST_EyeEnvmap ) )
+			environmentReflection = nif->get<float>( prop, "Eye Cubemap Scale" );
+
+	} else {
+		alpha = m->fAlpha;
+
+		setUvScale( m->fUScale, m->fVScale );
+		setUvOffset( m->fUOffset, m->fVOffset );
+		setSpecular( m->cSpecularColor, m->fSmoothness, m->fSpecularMult );
+		setEmissive( m->cEmittanceColor, m->fEmittanceMult );
+
+		if ( m->bTileU && m->bTileV )
+			clampMode = TexClampMode::WRAP_S_WRAP_T;
+		else if ( m->bTileU )
+			clampMode = TexClampMode::WRAP_S_CLAMP_T;
+		else if ( m->bTileV )
+			clampMode = TexClampMode::CLAMP_S_WRAP_T;
+		else
+			clampMode = TexClampMode::CLAMP_S_CLAMP_T;
+
+		fresnelPower = m->fFresnelPower;
+		greyscaleColor = m->bGrayscaleToPaletteColor;
+		paletteScale = m->fGrayscaleToPaletteScale;
+
+		hasSpecularMap = m->bSpecularEnabled && !m->textureList[2].isEmpty();
+		hasGlowMap = m->bGlowmap;
+		hasEmittance = m->bEmitEnabled;
+		hasBacklight = m->bBackLighting;
+		hasRimlight = m->bRimLighting;
+		hasSoftlight = m->bSubsurfaceLighting;
+		rimPower = m->fRimPower;
+		backlightPower = m->fBacklightPower;
+
+
+		hasEnvironmentMap = m->bEnvironmentMapping;
+		hasCubeMap = m->bEnvironmentMapping && !m->textureList[4].isEmpty();
+		useEnvironmentMask = hasEnvironmentMap && !m->bGlowmap && !m->textureList[5].isEmpty();
+		environmentReflection = m->fEnvironmentMappingMaskScale;
+
+		if ( hasSoftlight )
+			setLightingEffect1( m->fSubsurfaceLightingRolloff );
+	}
+}
+
 void BSLightingShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
 	if ( nif->itemName( iController ) == "BSLightingShaderPropertyFloatController" ) {
@@ -1262,6 +1412,102 @@ void BSEffectShaderProperty::update( const NifModel * nif, const QModelIndex & p
 	if ( material && name.isEmpty() ) {
 		delete material;
 		material = nullptr;
+	}
+}
+
+void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelIndex & prop )
+{
+	EffectMaterial * m = nullptr;
+	if ( mat() && mat()->isValid() )
+		m = static_cast<EffectMaterial *>(mat());
+
+	auto stream = nif->getUserVersion2();
+
+	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
+	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+
+	vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+	vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+	if ( !m ) {
+		setEmissive( nif->get<Color4>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
+
+		hasSourceTexture = !nif->get<QString>( prop, "Source Texture" ).isEmpty();
+		hasGreyscaleMap = !nif->get<QString>( prop, "Greyscale Texture" ).isEmpty();
+
+		greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
+		greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+		useFalloff = hasSF1( ShaderFlags::SLSF1_Use_Falloff );
+
+		depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+		depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+		isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+
+		if ( stream < 130 ) {
+			hasWeaponBlood = hasSF2( ShaderFlags::SLSF2_Weapon_Blood );
+		} else {
+			hasEnvMap = !nif->get<QString>( prop, "Env Map Texture" ).isEmpty();
+			hasNormalMap = !nif->get<QString>( prop, "Normal Texture" ).isEmpty();
+			hasEnvMask = !nif->get<QString>( prop, "Env Mask Texture" ).isEmpty();
+
+			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
+		}
+
+		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
+		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+
+		setUvScale( uvScale[0], uvScale[1] );
+		setUvOffset( uvOffset[0], uvOffset[1] );
+		setClampMode( nif->get<quint8>( prop, "Texture Clamp Mode" ) );
+
+		if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )
+			lightingInfluence = (float)nif->get<quint8>( prop, "Lighting Influence" ) / 255.0;
+
+		auto startA = nif->get<float>( prop, "Falloff Start Angle" );
+		auto stopA = nif->get<float>( prop, "Falloff Stop Angle" );
+		auto startO = nif->get<float>( prop, "Falloff Start Opacity" );
+		auto stopO = nif->get<float>( prop, "Falloff Stop Opacity" );
+		auto soft = nif->get<float>( prop, "Soft Falloff Depth" );
+
+		setFalloff( startA, stopA, startO, stopO, soft );
+
+	} else {
+
+		setEmissive( Color4( m->cBaseColor, m->fAlpha ), m->fBaseColorScale );
+
+		hasSourceTexture = !m->textureList[0].isEmpty();
+		hasGreyscaleMap = !m->textureList[1].isEmpty();
+		hasEnvMap = !m->textureList[2].isEmpty();
+		hasNormalMap = !m->textureList[3].isEmpty();
+		hasEnvMask = !m->textureList[4].isEmpty();
+
+		environmentReflection = m->fEnvironmentMappingMaskScale;
+
+		greyscaleAlpha = m->bGrayscaleToPaletteAlpha;
+		greyscaleColor = m->bGrayscaleToPaletteColor;
+		useFalloff = m->bFalloffEnabled;
+
+		depthTest = m->bZBufferTest;
+		depthWrite = m->bZBufferWrite;
+		isDoubleSided = m->bTwoSided;
+
+		setUvScale( m->fUScale, m->fVScale );
+		setUvOffset( m->fUOffset, m->fVOffset );
+
+		if ( m->bTileU && m->bTileV )
+			clampMode = TexClampMode::WRAP_S_WRAP_T;
+		else if ( m->bTileU )
+			clampMode = TexClampMode::WRAP_S_CLAMP_T;
+		else if ( m->bTileV )
+			clampMode = TexClampMode::CLAMP_S_WRAP_T;
+		else
+			clampMode = TexClampMode::CLAMP_S_CLAMP_T;
+
+		if ( m->bEffectLightingEnabled )
+			lightingInfluence = m->fLightingInfluence;
+
+		setFalloff( m->fFalloffStartAngle, m->fFalloffStopAngle,
+						   m->fFalloffStartOpacity, m->fFalloffStopOpacity, m->fSoftDepth );
 	}
 }
 

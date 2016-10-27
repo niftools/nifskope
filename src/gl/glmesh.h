@@ -62,6 +62,8 @@ protected:
 	//! Sets the Controller
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
+	void updateShaderProperties( const NifModel * nif );
+
 	//! Shape data
 	QPersistentModelIndex iData;
 	//! Does the data need updating?
@@ -89,7 +91,7 @@ protected:
 	QVector<quint16> indices;
 
 	//! Is the transform rigid or weighted?
-	bool transformRigid;
+	bool transformRigid = true;
 	//! Transformed vertices
 	QVector<Vector3> transVerts;
 	//! Transformed normals
@@ -105,16 +107,19 @@ protected:
 
 	//! Holds the name of the shader, or "fixed function pipeline" if no shader
 	QString shader;
+
+	//! Shader property
+	BSShaderLightingProperty * bssp = nullptr;
 	//! Skyrim shader property
 	BSLightingShaderProperty * bslsp = nullptr;
 	//! Skyrim effect shader property
 	BSEffectShaderProperty * bsesp = nullptr;
 	//! Is shader set to double sided?
-	bool isDoubleSided;
+	bool isDoubleSided = false;
 	//! Is shader set to animate using vertex alphas?
-	bool isVertexAlphaAnimation;
+	bool isVertexAlphaAnimation = false;
 	//! Is "Has Vertex Colors" set to Yes
-	bool hasVertexColors;
+	bool hasVertexColors = false;
 
 	bool depthTest = true;
 	bool depthWrite = true;

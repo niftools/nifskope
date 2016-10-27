@@ -48,6 +48,8 @@ class Material : public QObject
 	friend class Renderer;
 	friend class BSShape;
 	friend class BSShaderLightingProperty;
+	friend class BSLightingShaderProperty;
+	friend class BSEffectShaderProperty;
 
 public:
 	Material( QString name );
@@ -114,6 +116,7 @@ class ShaderMaterial : public Material
 	friend class Renderer;
 	friend class BSShape;
 	friend class BSShaderLightingProperty;
+	friend class BSLightingShaderProperty;
 
 public:
 	ShaderMaterial( QString name );
@@ -181,6 +184,7 @@ class EffectMaterial : public Material
 	friend class Renderer;
 	friend class BSShape;
 	friend class BSShaderLightingProperty;
+	friend class BSEffectShaderProperty;
 
 public:
 	EffectMaterial( QString name );
