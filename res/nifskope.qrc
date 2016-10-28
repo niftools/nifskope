@@ -63,5 +63,6 @@
         <file alias="hiddenDisabled">icon/hidden-disabled.png</file>
         <file alias="selectObject">icon/select-object.png</file>
         <file alias="selectVerts">icon/select-verts.png</file>
+        <file alias="skinned">icon/skinned.png</file>
     </qresource>
 </RCC>
