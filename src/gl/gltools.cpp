@@ -49,8 +49,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt )
 {
 	trans  = Transform( nif, index );
-	center = nif->get<Vector3>( index, "Center" );
-	radius = nif->get<float>( index, "Radius" );
+	auto sph = BoundSphere( nif, index );
+	center = sph.center;
+	radius = sph.radius;
 	bone = b;
 
 	QModelIndex idxWeights = nif->getIndex( index, "Vertex Weights" );
@@ -67,6 +68,14 @@ BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b
 	}
 
 
+}
+
+void BoneWeights::setTransform( const NifModel * nif, const QModelIndex & index )
+{
+	trans = Transform( nif, index );
+	auto sph = BoundSphere( nif, index );
+	center = sph.center;
+	radius = sph.radius;
 }
 
 
@@ -128,6 +137,17 @@ BoundSphere::BoundSphere( const Vector3 & c, float r )
 BoundSphere::BoundSphere( const BoundSphere & other )
 {
 	operator=( other );
+}
+
+BoundSphere::BoundSphere( const NifModel * nif, const QModelIndex & index )
+{
+	auto idx = index;
+	auto sph = nif->getIndex( idx, "Bounding Sphere" );
+	if ( sph.isValid() )
+		idx = sph;
+
+	center = nif->get<Vector3>( idx, "Center" );
+	radius = nif->get<float>( idx, "Radius" );
 }
 
 BoundSphere::BoundSphere( const QVector<Vector3> & verts )

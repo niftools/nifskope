@@ -1210,8 +1210,10 @@ public:
 			center = ( mn + mx ) / 2;
 			radius = qMax( ( mn - center ).length(), ( mx - center ).length() );
 
-			nif->set<Vector3>( iBoneDataList.child( b, 0 ), "Bounding Sphere Offset", center );
-			nif->set<float>( iBoneDataList.child( b, 0 ), "Bounding Sphere Radius", radius );
+			auto sphIdx = nif->getIndex( iBoneDataList.child( b, 0 ) , "Bounding Sphere" );
+
+			nif->set<Vector3>( sphIdx, "Bounding Sphere Offset", center );
+			nif->set<float>( sphIdx, "Bounding Sphere Radius", radius );
 		}
 
 		return iSkinData;

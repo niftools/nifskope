@@ -184,6 +184,7 @@ void NifSkope::initActions()
 	ui->aShowConstraints->setData( Scene::ShowConstraints );
 	ui->aShowMarkers->setData( Scene::ShowMarkers );
 	ui->aShowHidden->setData( Scene::ShowHidden );
+	ui->aDoSkinning->setData( Scene::DoSkinning );
 
 	ui->aTextures->setData( Scene::DoTexturing );
 	ui->aVertexColors->setData( Scene::DoVertexColors );
@@ -192,10 +193,6 @@ void NifSkope::initActions()
 	ui->aCubeMapping->setData( Scene::DoCubeMapping );
 	ui->aLighting->setData( Scene::DoLighting );
 	ui->aDisableShading->setData( Scene::DisableShaders );
-
-	ui->aTest1Dbg->setData( Scene::Test1 );
-	ui->aTest2Dbg->setData( Scene::Test2 );
-	ui->aTest3Dbg->setData( Scene::Test3 );
 
 	ui->aSelectObject->setData( Scene::SelObject );
 	ui->aSelectVertex->setData( Scene::SelVertex );
@@ -214,7 +211,9 @@ void NifSkope::initActions()
 	selectActions = agroup( { ui->aSelectObject, ui->aSelectVertex }, true );
 	connect( selectActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSelectMode );
 
-	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision, ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden }, false );
+	showActions = agroup( { ui->aShowAxes, ui->aShowGrid, ui->aShowNodes, ui->aShowCollision,
+						  ui->aShowConstraints, ui->aShowMarkers, ui->aShowHidden, ui->aDoSkinning
+	}, false );
 	connect( showActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
 
 	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );

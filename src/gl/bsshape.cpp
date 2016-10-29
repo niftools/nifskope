@@ -14,6 +14,11 @@ void BSShape::clear()
 {
 	Node::clear();
 
+	iSkin = iSkinData = iSkinPart = QModelIndex();
+	bssp = nullptr;
+	bslsp = nullptr;
+	bsesp = nullptr;
+
 	verts.clear();
 	norms.clear();
 	tangents.clear();
@@ -21,9 +26,8 @@ void BSShape::clear()
 	triangles.clear();
 	coords.clear();
 	colors.clear();
-	test1.clear();
-	test2.clear();
-	test3.clear();
+	bones.clear();
+	weights.clear();
 }
 
 void BSShape::update( const NifModel * nif, const QModelIndex & index )
@@ -33,24 +37,42 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;
 
-	if ( iBlock != index && !nif->inherits( index, "NiProperty" ) )
+	if ( iBlock != index && iSkin != index && iSkinData != index && !nif->inherits( index, "NiProperty" ) )
 		return;
 
-	//updateData |= index == iBlock;
-	updateData = true;
-	updateBounds |= updateData;
+	nifVersion = nif->getUserVersion2();
 
+	auto vertexFlags = nif->get<quint16>( iBlock, "VF" );
 	bool isDynamic = nif->inherits( iBlock, "BSDynamicTriShape" );
 
 	bool isDataOnSkin = false;
-	auto skinID = nif->getLink( nif->getIndex( iBlock, "Skin" ) );
-	auto vertexFlags = nif->get<quint16>( iBlock, "VF" );
-	if ( (vertexFlags & 0x400) && nif->getUserVersion2() == 100 && skinID != -1 )
-		isDataOnSkin = true;
+	bool isSkinned = vertexFlags & 0x400;
+	if ( nifVersion == 130 ) {
+		skinInstName = "BSSkin::Instance";
+		skinDataName = "BSSkin::BoneData";
+	} else {
+		skinInstName = "NiSkinInstance";
+		skinDataName = "NiSkinData";
+	}
 
-	int vertCount = 0, triCount = 0, dataSize = 0;
-	QModelIndex partBlock;
+	iSkin = nif->getBlock( nif->getLink( nif->getIndex( iBlock, "Skin" ) ), skinInstName );
+	if ( !iSkin.isValid() )
+		isSkinned = false;
 
+	if ( isSkinned ) {
+		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), skinDataName );
+		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+
+		if ( nifVersion == 100 )
+			isDataOnSkin = true;
+	}
+
+	updateData = true;
+	updateBounds |= updateData;
+	updateSkin = isSkinned;
+	transformRigid = !isSkinned;
+
+	int dataSize = 0;
 	if ( !isDataOnSkin ) {
 		iVertData = nif->getIndex( iBlock, "Vertex Data" );
 		iTriData = nif->getIndex( iBlock, "Triangles" );
@@ -58,35 +80,28 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		if ( !iVertData.isValid() || !iTriData.isValid() )
 			return;
 
-		numVerts = nif->get<int>( iBlock, "Num Vertices" );
-		numTris = nif->get<int>( iBlock, "Num Triangles" );
-
-		vertCount = nif->rowCount( iVertData );
-		triCount = nif->rowCount( iTriData );
-
-		numVerts = std::min( numVerts, vertCount );
-		numTris = std::min( numTris, triCount );
+		numVerts = std::min( nif->get<int>( iBlock, "Num Vertices" ), nif->rowCount( iVertData ) );
+		numTris = std::min( nif->get<int>( iBlock, "Num Triangles" ), nif->rowCount( iTriData ) );
 
 		dataSize = nif->get<int>( iBlock, "Data Size" );
 	} else {
 		// For skinned geometry, the vertex data is stored on the NiSkinPartition
 		// The triangles are split up among the partitions
-		auto skinBlock = nif->getBlock( skinID, "NiSkinInstance" );
-		partBlock = nif->getBlock( nif->getLink( skinBlock, "Skin Partition" ), "NiSkinPartition" );
-		if ( !partBlock.isValid() )
+
+		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+		if ( !iSkinPart.isValid() )
 			return;
 
-		iVertData = nif->getIndex( partBlock, "Vertex Data" );
+		iVertData = nif->getIndex( iSkinPart, "Vertex Data" );
 		iTriData = QModelIndex();
 		iData = iVertData;
 
-		dataSize = nif->get<int>( partBlock, "Data Size" );
-		auto vertexSize = nif->get<int>( partBlock, "Vertex Size" );
+		dataSize = nif->get<int>( iSkinPart, "Data Size" );
+		auto vertexSize = nif->get<int>( iSkinPart, "Vertex Size" );
 		if ( !iVertData.isValid() || dataSize == 0 || vertexSize == 0 )
 			return;
 
 		numVerts = dataSize / vertexSize;
-		vertCount = nif->rowCount( iVertData );
 	}
 
 
@@ -104,9 +119,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		triangles.clear();
 		coords.clear();
 		colors.clear();
-		test1.clear();
-		test2.clear();
-		test3.clear();
 
 		// For compatibility with coords QList
 		QVector<Vector2> coordset;
@@ -127,11 +139,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			auto bitY = (double( bitYi ) / 255.0) * 2.0 - 1.0;
 			auto bitZ = (double( bitZi ) / 255.0) * 2.0 - 1.0;
 
-			auto n = nif->get<ByteVector3>( idx, "Normal" );
-			norms += n;
-
-			auto t = nif->get<ByteVector3>( idx, "Tangent" );
-			tangents += t;
+			norms += nif->get<ByteVector3>( idx, "Normal" );
+			tangents += nif->get<ByteVector3>( idx, "Tangent" );
 			bitangents += Vector3( bitX, bitY, bitZ );
 
 			auto vcIdx = nif->getIndex( idx, "Vertex Colors" );
@@ -153,7 +162,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			triangles = nif->getArray<Triangle>( iTriData );
 			triangles = triangles.mid( 0, numTris );
 		} else {
-			auto partIdx = nif->getIndex( partBlock, "Partition" );
+			auto partIdx = nif->getIndex( iSkinPart, "Partition" );
 			for ( int i = 0; i < nif->rowCount( partIdx ); i++ )
 				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 		}
@@ -177,10 +186,16 @@ QModelIndex BSShape::vertexAt( int idx ) const
 	if ( !nif )
 		return QModelIndex();
 
-	auto iVertexData = nif->getIndex( iBlock, "Vertex Data" );
-	auto iVertex = iVertexData.child( idx, 0 );
+	// Vertices are on NiSkinPartition in version 100
+	auto blk = iBlock;
+	if ( nifVersion < 130 && iSkinPart.isValid() ) {
+		if ( nif->inherits( blk, "BSDynamicTriShape" ) )
+			return nif->getIndex( blk, "Vertices" ).child( idx, 0 );
 
-	return nif->getIndex( iVertex, "Vertex" );
+		blk = iSkinPart;
+	}
+
+	return nif->getIndex( nif->getIndex( blk, "Vertex Data" ).child( idx, 0 ), "Vertex" );
 }
 
 
@@ -193,10 +208,45 @@ void BSShape::transform()
 	if ( !nif || !iBlock.isValid() ) {
 		clear();
 		return;
+	}	
+	
+	if ( updateData ) {
+		updateData = false;
 	}
 
-	if ( updateData ) {
-		
+	if ( updateSkin ) {
+		updateSkin = false;
+		doSkinning = false;
+
+		bones.clear();
+		weights.clear();
+		partitions.clear();
+
+		if ( iSkin.isValid() && iSkinData.isValid() ) {
+			skeletonRoot = nif->getLink( iSkin, "Skeleton Root" );
+			if ( nifVersion < 130 )
+				skeletonTrans = Transform( nif, iSkinData );
+
+			bones = nif->getLinkArray( iSkin, "Bones" );
+			weights.fill( BoneWeights(), bones.count() );
+			for ( int i = 0; i < bones.count(); i++ )
+				weights[i].bone = bones[i];
+
+			for ( int i = 0; i < numVerts; i++ ) {
+				auto idx = nif->index( i, 0, iVertData );
+				auto wts = nif->getArray<float>( idx, "Bone Weights" );
+				auto bns = nif->getArray<quint8>( idx, "Bone Indices" );
+				if ( wts.count() < 4 || bns.count() < 4 )
+					continue;
+
+				for ( int j = 0; j < 4; j++ ) {
+					if ( wts[j] > 0.0 )
+						weights[bns[j]].weights << VertexWeight( i, wts[j] );
+				}
+			}
+
+			doSkinning = weights.count();
+		}
 	}
 
 	Node::transform();
@@ -207,7 +257,65 @@ void BSShape::transformShapes()
 	if ( isHidden() )
 		return;
 
+	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	if ( !nif || !iBlock.isValid() ) {
+		clear();
+		return;
+	}
+
 	Node::transformShapes();
+
+	transformRigid = true;
+
+	if ( doSkinning && scene->options & Scene::DoSkinning ) {
+		transformRigid = false;
+
+		transVerts.resize( verts.count() );
+		transVerts.fill( Vector3() );
+		transNorms.resize( verts.count() );
+		transNorms.fill( Vector3() );
+		transTangents.resize( verts.count() );
+		transTangents.fill( Vector3() );
+		transBitangents.resize( verts.count() );
+		transBitangents.fill( Vector3() );
+
+		auto b = nif->getIndex( iSkinData, "Bone List" );
+		for ( int i = 0; i < weights.count(); i++ )
+			weights[i].setTransform( nif, b.child( i, 0 ) );
+
+		Node * root = findParent( skeletonRoot );
+		for ( const BoneWeights & bw : weights ) {
+			Node * bone = root ? root->findChild( bw.bone ) : nullptr;
+			if ( bone ) {
+				Transform t = scene->view * bone->localTrans( skeletonRoot ) * bw.trans;
+				for ( const VertexWeight & w : bw.weights ) {
+					if ( w.vertex >= verts.count() )
+						continue;
+
+					transVerts[w.vertex] += t * verts[w.vertex] * w.weight;
+					transNorms[w.vertex] += t.rotation * norms[w.vertex] * w.weight;
+					transTangents[w.vertex] += t.rotation * tangents[w.vertex] * w.weight;
+					transBitangents[w.vertex] += t.rotation * bitangents[w.vertex] * w.weight;
+				}
+			}
+		}
+
+		for ( int n = 0; n < verts.count(); n++ ) {
+			transNorms[n].normalize();
+			transTangents[n].normalize();
+			transBitangents[n].normalize();
+		}
+
+		boundSphere = BoundSphere( transVerts );
+		boundSphere.applyInv( viewTrans() );
+		updateBounds = false;
+	} else {
+		transVerts = verts;
+		transNorms = norms;
+		transTangents = tangents;
+		transBitangents = bitangents;
+	}
+
 }
 
 void BSShape::drawShapes( NodeList * secondPass, bool presort )
@@ -242,8 +350,10 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		return;
 	}
 
-	glPushMatrix();
-	glMultMatrix( viewTrans() );
+	if ( transformRigid ) {
+		glPushMatrix();
+		glMultMatrix( viewTrans() );
+	}
 
 	// Render polygon fill slightly behind alpha transparency and wireframe
 	if ( !drawSecond ) {
@@ -252,11 +362,11 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
-	glVertexPointer( 3, GL_FLOAT, 0, verts.data() );
+	glVertexPointer( 3, GL_FLOAT, 0, transVerts.data() );
 
 	if ( !Node::SELECTING ) {
 		glEnableClientState( GL_NORMAL_ARRAY );
-		glNormalPointer( GL_FLOAT, 0, norms.data() );
+		glNormalPointer( GL_FLOAT, 0, transNorms.data() );
 
 		bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
 
@@ -300,7 +410,8 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		drawVerts();
 	}
 
-	glPopMatrix();
+	if ( transformRigid )
+		glPopMatrix();
 }
 
 void BSShape::drawVerts() const
@@ -315,15 +426,28 @@ void BSShape::drawVerts() const
 			int id = ID2COLORKEY( ( shapeNumber << 16 ) + i );
 			glColor4ubv( (GLubyte *)&id );
 		}
-		glVertex( verts.value( i ) );
+		glVertex( transVerts.value( i ) );
 	}
 
+	auto nif = static_cast<const NifModel *>(iBlock.model());
+	if ( !nif )
+		return;
+
+	// Vertices are on NiSkinPartition in version 100
+	bool selected = iBlock == scene->currentBlock;
+	if ( nifVersion < 130 && iSkinPart.isValid() ) {
+		selected |= iSkinPart == scene->currentBlock;
+		selected |= nif->inherits( iBlock, "BSDynamicTriShape" );
+	}
+
+
 	// Highlight selected vertex
-	if ( !Node::SELECTING && iBlock == scene->currentBlock ) {
+	if ( !Node::SELECTING && selected ) {
 		auto idx = scene->currentIndex;
-		if ( idx.data( Qt::DisplayRole ).toString() == "Vertex" ) {
+		auto n = idx.data( Qt::DisplayRole ).toString();
+		if ( n == "Vertex" || n == "Vertices" ) {
 			glHighlightColor();
-			glVertex( verts.value( idx.parent().row() ) );
+			glVertex( transVerts.value( idx.parent().row() ) );
 		}
 	}
 
@@ -338,27 +462,46 @@ void BSShape::drawSelection() const
 	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
 		return;
 
+	auto idx = scene->currentIndex;
+	auto blk = scene->currentBlock;
+
 	// Is the current block extra data
 	bool extraData = false;
 
-	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
+	auto nif = static_cast<const NifModel *>(idx.model());
 	if ( !nif )
 		return;
 
-	// Set current block and detect if extra data
-	auto currentBlock = nif->getBlockName( scene->currentBlock );
-	if ( currentBlock == "BSSkin::BoneData" || currentBlock == "BSPackedCombinedSharedGeomDataExtra" )
+	// Set current block name and detect if extra data
+	auto blockName = nif->getBlockName( blk );
+	if ( blockName == "BSPackedCombinedSharedGeomDataExtra" )
 		extraData = true;
 
 	// Don't do anything if this block is not the current block
 	//	or if there is not extra data
-	if ( scene->currentBlock != iBlock && !extraData )
+	if ( blk != iBlock && blk != iSkin && blk != iSkinData && blk != iSkinPart && !extraData )
 		return;
 
-	auto n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
+	// Name of this index
+	auto n = idx.data( NifSkopeDisplayRole ).toString();
+	// Name of this index's parent
+	auto p = idx.parent().data( NifSkopeDisplayRole ).toString();
+	// Parent index
+	auto pBlock = nif->getBlock( nif->getParent( blk ) );
 
-	glPushMatrix();
-	glMultMatrix( viewTrans() );
+	auto push = [this] ( const Transform & t ) {	
+		if ( transformRigid ) {
+			glPushMatrix();
+			glMultMatrix( t );
+		}
+	};
+
+	auto pop = [this] () {
+		if ( transformRigid )
+			glPopMatrix();
+	};
+
+	push( viewTrans() );
 
 	glDepthFunc( GL_LEQUAL );
 
@@ -392,36 +535,33 @@ void BSShape::drawSelection() const
 	if ( normalScale < 0.1f )
 		normalScale = 0.1f;
 
-	auto pBlock = nif->getBlock( nif->getParent( scene->currentBlock ) );
-	bool vp = scene->currentIndex.parent().data( NifSkopeDisplayRole ).toString() == "Vertex Data";
+	
 
 	// Draw All Verts lambda
 	auto allv = [this]( float size ) {
 		glPointSize( size );
 		glBegin( GL_POINTS );
 
-		for ( int j = 0; j < verts.count(); j++ )
-			glVertex( verts.value( j ) );
+		for ( int j = 0; j < transVerts.count(); j++ )
+			glVertex( transVerts.value( j ) );
 
 		glEnd();
 	};
 
 	if ( n == "Bounding Sphere" && !extraData ) {
-		Vector3 bvC = nif->get<Vector3>( scene->currentIndex.child( 0, 2 ) );
-		float bvR = nif->get<float>( scene->currentIndex.child( 1, 2 ) );
-
-		if ( bvR > 0.0 ) {
+		auto sph = BoundSphere( nif, idx );
+		if ( sph.radius > 0.0 ) {
 			glColor4f( 1, 1, 1, 0.33 );
-			drawSphereSimple( bvC, bvR, 72 );
+			drawSphereSimple( sph.center, sph.radius, 72 );
 		}
 	}
 	
-	if ( currentBlock == "BSPackedCombinedSharedGeomDataExtra" && pBlock == iBlock ) {
+	if ( blockName == "BSPackedCombinedSharedGeomDataExtra" && pBlock == iBlock ) {
 		QVector<QModelIndex> idxs;
 		if ( n == "Bounding Sphere" ) {
-			idxs += scene->currentIndex;
+			idxs += idx;
 		} else if ( n == "BSPackedCombinedSharedGeomDataExtra" ) {
-			auto data = nif->getIndex( scene->currentIndex, "Object Data" );
+			auto data = nif->getIndex( idx, "Object Data" );
 			int dataCt = nif->rowCount( data );
 
 			for ( int i = 0; i < dataCt; i++ ) {
@@ -454,13 +594,13 @@ void BSShape::drawSelection() const
 
 		glPopMatrix();
 
-		for ( auto idx : idxs ) {
-			Matrix mat = nif->get<Matrix>( idx.parent(), "Rotation" );
+		for ( auto i : idxs ) {
+			Matrix mat = nif->get<Matrix>( i.parent(), "Rotation" );
 			//auto trans = nif->get<Vector3>( idx.parent(), "Translation" );
-			float scale = nif->get<float>( idx.parent(), "Scale" );
+			float scale = nif->get<float>( i.parent(), "Scale" );
 
-			Vector3 bvC = nif->get<Vector3>( idx, "Center" );
-			float bvR = nif->get<float>( idx, "Radius" );
+			Vector3 bvC = nif->get<Vector3>( i, "Center" );
+			float bvR = nif->get<float>( i, "Radius" );
 
 			Transform t;
 			t.rotation = mat.inverted();
@@ -482,14 +622,15 @@ void BSShape::drawSelection() const
 		glMultMatrix( viewTrans() );
 	}
 
-	if ( n == "Vertex Data" || n == "Vertex" ) {
+	if ( n == "Vertex Data" || n == "Vertex" || n == "Vertices" ) {
 		allv( 5.0 );
 
 		int s = -1;
-		if ( n == "Vertex Data" && vp ) {
-			s = scene->currentIndex.row();
+		if ( (n == "Vertex Data" && p == "Vertex Data")
+			 || (n == "Vertices" && p == "Vertices") ) {
+			s = idx.row();
 		} else if ( n == "Vertex" ) {
-			s = scene->currentIndex.parent().row();
+			s = idx.parent().row();
 		}
 
 		if ( s >= 0 ) {
@@ -497,7 +638,7 @@ void BSShape::drawSelection() const
 			glDepthFunc( GL_ALWAYS );
 			glHighlightColor();
 			glBegin( GL_POINTS );
-			glVertex( verts.value( s ) );
+			glVertex( transVerts.value( s ) );
 			glEnd();
 		}
 	} 
@@ -511,11 +652,11 @@ void BSShape::drawSelection() const
 		int s = scene->currentIndex.parent().row();
 		glBegin( GL_LINES );
 
-		for ( int j = 0; j < verts.count() && j < v.count(); j++ ) {
-			glVertex( verts.value( j ) );
-			glVertex( verts.value( j ) + v.value( j ) * normalScale * 2 );
-			glVertex( verts.value( j ) );
-			glVertex( verts.value( j ) - v.value( j ) * normalScale / 2 );
+		for ( int j = 0; j < transVerts.count() && j < v.count(); j++ ) {
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) + v.value( j ) * normalScale * 2 );
+			glVertex( transVerts.value( j ) );
+			glVertex( transVerts.value( j ) - v.value( j ) * normalScale / 2 );
 		}
 
 		glEnd();
@@ -525,10 +666,10 @@ void BSShape::drawSelection() const
 			glHighlightColor();
 			glLineWidth( 3.0 );
 			glBegin( GL_LINES );
-			glVertex( verts.value( s ) );
-			glVertex( verts.value( s ) + v.value( s ) * normalScale * 2 );
-			glVertex( verts.value( s ) );
-			glVertex( verts.value( s ) - v.value( s ) * normalScale / 2 );
+			glVertex( transVerts.value( s ) );
+			glVertex( transVerts.value( s ) + v.value( s ) * normalScale * 2 );
+			glVertex( transVerts.value( s ) );
+			glVertex( transVerts.value( s ) - v.value( s ) * normalScale / 2 );
 			glEnd();
 			glLineWidth( lineWidth );
 		}
@@ -536,12 +677,12 @@ void BSShape::drawSelection() const
 	
 	// Draw Normals
 	if ( n.contains( "Normal" ) ) {
-		lines( norms );
+		lines( transNorms );
 	}
 
 	// Draw Tangents
 	if ( n.contains( "Tangent" ) ) {
-		lines( tangents );
+		lines( transTangents );
 	}
 
 	// Draw Triangles
@@ -553,9 +694,9 @@ void BSShape::drawSelection() const
 
 			Triangle tri = triangles.value( s );
 			glBegin( GL_TRIANGLES );
-			glVertex( verts.value( tri.v1() ) );
-			glVertex( verts.value( tri.v2() ) );
-			glVertex( verts.value( tri.v3() ) );
+			glVertex( transVerts.value( tri.v1() ) );
+			glVertex( transVerts.value( tri.v2() ) );
+			glVertex( transVerts.value( tri.v3() ) );
 			glEnd();
 			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		}
@@ -563,19 +704,19 @@ void BSShape::drawSelection() const
 
 	// Draw Segments/Subsegments
 	if ( n == "Segment" || n == "Sub Segment" || n == "Num Primitives" ) {
-		auto idx = scene->currentIndex;
+		auto sidx = idx;
 		int s;
 		if ( n != "Num Primitives" ) {
-			idx = scene->currentIndex.child( 1, 0 );
+			sidx = idx.child( 1, 0 );
 		}
-		s = idx.row();
+		s = sidx.row();
 
-		auto nif = static_cast<const NifModel *>(idx.model());
+		auto nif = static_cast<const NifModel *>(sidx.model());
 
-		auto off = idx.sibling( s - 1, 2 ).data().toInt() / 3;
-		auto cnt = idx.sibling( s, 2 ).data().toInt();
+		auto off = sidx.sibling( s - 1, 2 ).data().toInt() / 3;
+		auto cnt = sidx.sibling( s, 2 ).data().toInt();
 
-		auto numRec = idx.sibling( s + 2, 2 ).data().toInt();
+		auto numRec = sidx.sibling( s + 2, 2 ).data().toInt();
 
 		QVector<QColor> cols = { { 255, 0, 0, 128 }, { 0, 255, 0, 128 }, { 0, 0, 255, 128 }, { 255, 255, 0, 128 },
 								{ 0, 255, 255, 128 }, { 255, 0, 255, 128 }, { 255, 255, 255, 128 } 
@@ -586,7 +727,7 @@ void BSShape::drawSelection() const
 		int maxTris = triangles.count();
 
 		if ( numRec > 0 ) {
-			auto recs = idx.sibling( s + 3, 0 );
+			auto recs = sidx.sibling( s + 3, 0 );
 			for ( int i = 0; i < numRec; i++ ) {
 				auto subrec = recs.child( i, 0 );
 				auto off = subrec.child( 0, 2 ).data().toInt() / 3;
@@ -600,14 +741,14 @@ void BSShape::drawSelection() const
 					glColor( Color4(cols.value( i % 7 )) );
 					Triangle tri = triangles[j];
 					glBegin( GL_TRIANGLES );
-					glVertex( verts.value( tri.v1() ) );
-					glVertex( verts.value( tri.v2() ) );
-					glVertex( verts.value( tri.v3() ) );
+					glVertex( transVerts.value( tri.v1() ) );
+					glVertex( transVerts.value( tri.v2() ) );
+					glVertex( transVerts.value( tri.v3() ) );
 					glEnd();
 				}
 			}
 		} else {
-			glColor( Color4(cols.value( scene->currentIndex.row() % 7 )) );
+			glColor( Color4(cols.value( idx.row() % 7 )) );
 
 			int i = off;
 			for ( i; i < cnt + off; i++ ) {
@@ -616,74 +757,58 @@ void BSShape::drawSelection() const
 
 				Triangle tri = triangles[i];
 				glBegin( GL_TRIANGLES );
-				glVertex( verts.value( tri.v1() ) );
-				glVertex( verts.value( tri.v2() ) );
-				glVertex( verts.value( tri.v3() ) );
+				glVertex( transVerts.value( tri.v1() ) );
+				glVertex( transVerts.value( tri.v2() ) );
+				glVertex( transVerts.value( tri.v3() ) );
 				glEnd();
 			}
 		}
-		glPopMatrix();
+		pop();
 		return;
 	}
 
-	// Bone bounds lambda
-	auto boneSphere = [nif]( QModelIndex b ) {
-		auto bSphere = nif->getIndex( b, "Bounding Sphere" );
-		auto bTrans = nif->get<Vector3>( b, "Translation" );
-		auto bRot = nif->get<Matrix>( b, "Rotation" );
-
-		Vector3 bvC = nif->get<Vector3>( bSphere.child( 0, 2 ) );
-		float bvR = nif->get<float>( bSphere.child( 1, 2 ) );
-
-		if ( bvR > 0.0 ) {
-			glColor4f( 1, 1, 1, 0.33 );
-			auto pos = bRot.inverted() * (bvC - bTrans);
-			drawSphereSimple( pos, bvR, 36 );
-		}
-	};
-
 	// Draw all bones' bounding spheres
-	if ( n == "BSSkin::BoneData" ) {
-		auto bData = scene->currentBlock;
-		auto skin = nif->getParent( bData );
-		auto shape = nif->getParent( skin );
-
-		if ( nif->getBlock( shape ) == iBlock ) {
-			auto bones = nif->getIndex( bData, "Bones" );
+	if ( n == "NiSkinData" || n == "BSSkin::BoneData" ) {
+		// Get shape block
+		if ( nif->getBlock( nif->getParent( nif->getParent( blk ) ) ) == iBlock ) {
+			auto bones = nif->getIndex( blk, "Bone List" );
 			int ct = nif->rowCount( bones );
 
 			for ( int i = 0; i < ct; i++ ) {
 				auto b = bones.child( i, 0 );
-				boneSphere( b );
+				boneSphere( nif, b );
 			}
 		}
-		glPopMatrix();
+		pop();
 		return;
 	}
 
 	// Draw bone bounding sphere
-	if ( n == "Bones" && currentBlock == "BSSkin::BoneData" ) {
-		boneSphere( scene->currentIndex );
-		glPopMatrix();
-		return;
+	if ( n == "Bone List" ) {
+		if ( nif->isArray( idx ) ) {
+			for ( int i = 0; i < nif->rowCount( idx ); i++ )
+				boneSphere( nif, idx.child( i, 0 ) );
+		} else {
+			boneSphere( nif, idx );
+		}
 	}
 
 	// General wireframe
-	if ( (scene->currentIndex != iVertData) && !vp ) {
+	if ( blk == iBlock && idx != iVertData && p != "Vertex Data" && p != "Vertices" ) {
 		glLineWidth( 1.6f );
 		glNormalColor();
 		for ( const Triangle& tri : triangles ) {
 			glBegin( GL_TRIANGLES );
-			glVertex( verts.value( tri.v1() ) );
-			glVertex( verts.value( tri.v2() ) );
-			glVertex( verts.value( tri.v3() ) );
+			glVertex( transVerts.value( tri.v1() ) );
+			glVertex( transVerts.value( tri.v2() ) );
+			glVertex( transVerts.value( tri.v3() ) );
 			glEnd();
 		}
 	}
 
 	glDisable( GL_POLYGON_OFFSET_FILL );
 
-	glPopMatrix();
+	pop();
 }
 
 BoundSphere BSShape::bounds() const

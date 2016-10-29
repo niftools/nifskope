@@ -44,15 +44,14 @@ protected:
 	QPersistentModelIndex iVertData;
 	QPersistentModelIndex iTriData;
 
+	QString skinDataName;
+	QString skinInstName;
+
 	int numVerts;
 	int numTris;
 
 	Vector3 bsphereCenter;
 	float bsphereRadius = 0.0;
-
-	QVector<Color4> test1;
-	QVector<Color4> test2;
-	QVector<Color4> test3;
 };
 
 #endif // BSSHAPE_H

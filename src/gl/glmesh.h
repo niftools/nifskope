@@ -64,10 +64,21 @@ protected:
 
 	void updateShaderProperties( const NifModel * nif );
 
+	void boneSphere( const NifModel * nif, const QModelIndex & index ) const;
+
+	int nifVersion = 0;
+
 	//! Shape data
 	QPersistentModelIndex iData;
 	//! Does the data need updating?
-	bool updateData;
+	bool updateData = false;
+
+	//! Skin instance
+	QPersistentModelIndex iSkin;
+	//! Skin data
+	QPersistentModelIndex iSkinData;
+	//! Skin partition
+	QPersistentModelIndex iSkinPart;
 
 	//! Vertices
 	QVector<Vector3> verts;
@@ -104,6 +115,17 @@ protected:
 	QVector<Vector3> transTangents;
 	//! Transformed bitangents
 	QVector<Vector3> transBitangents;
+
+	//! Does the skin data need updating?
+	bool updateSkin = false;
+	//! Toggle for skinning
+	bool doSkinning = false;
+
+	int skeletonRoot;
+	Transform skeletonTrans;
+	QVector<int> bones;
+	QVector<BoneWeights> weights;
+	QVector<SkinPartition> partitions;
 
 	//! Holds the name of the shader, or "fixed function pipeline" if no shader
 	QString shader;
@@ -166,26 +188,9 @@ public:
 	QModelIndex vertexAt( int ) const override;
 
 protected:
-	
 
-	//! Skin instance
-	QPersistentModelIndex iSkin;
-	//! Skin data
-	QPersistentModelIndex iSkinData;
-	//! Skin partition
-	QPersistentModelIndex iSkinPart;
 	//! Tangent data
 	QPersistentModelIndex iTangentData;
-
-	//! Does the skin data need updating?
-	bool updateSkin;
-
-	int skeletonRoot;
-	Transform skeletonTrans;
-	QVector<int> bones;
-	QVector<BoneWeights> weights;
-	QVector<SkinPartition> partitions;
-
 
 	static bool isBSLODPresent;
 };

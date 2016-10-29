@@ -457,27 +457,6 @@
              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
             </property>
             <layout class="QGridLayout" name="gridLayout">
-             <item row="4" column="0">
-              <widget class="QCheckBox" name="chkShowMarkers">
-               <property name="text">
-                <string>Show Markers</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QCheckBox" name="chkShowConstraints">
-               <property name="text">
-                <string>Show Constraints</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QCheckBox" name="chkShowCollision">
-               <property name="text">
-                <string>Show Collision</string>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="0">
               <widget class="QCheckBox" name="chkShowAxes">
                <property name="text">
@@ -505,10 +484,41 @@
                </property>
               </widget>
              </item>
+             <item row="5" column="0">
+              <widget class="QCheckBox" name="chkShowCollision">
+               <property name="text">
+                <string>Show Collision</string>
+               </property>
+              </widget>
+             </item>
              <item row="7" column="0">
               <widget class="QCheckBox" name="chkShowHidden">
                <property name="text">
                 <string>Show Hidden</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="chkShowConstraints">
+               <property name="text">
+                <string>Show Constraints</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QCheckBox" name="chkShowMarkers">
+               <property name="text">
+                <string>Show Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="0">
+              <widget class="QCheckBox" name="chkDoSkinning">
+               <property name="text">
+                <string>Do Skinning</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>

@@ -46,6 +46,7 @@ class BoundSphere final
 public:
 	BoundSphere();
 	BoundSphere( const BoundSphere & );
+	BoundSphere( const NifModel * nif, const QModelIndex & );
 	BoundSphere( const Vector3 & center, float radius );
 	BoundSphere( const QVector<Vector3> & vertices );
 
@@ -82,6 +83,8 @@ class BoneWeights final
 public:
 	BoneWeights() { bone = 0; }
 	BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt = 0 );
+
+	void setTransform( const NifModel * nif, const QModelIndex & index );
 
 	Transform trans;
 	Vector3 center; float radius;

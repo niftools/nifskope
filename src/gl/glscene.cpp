@@ -74,9 +74,9 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 	QSettings settings;
 	settings.beginGroup( "Settings/Render/General/Startup Defaults" );
 
-	if ( settings.value( "Show Axes" ).toBool() )
+	if ( settings.value( "Show Axes", true ).toBool() )
 		options |= ShowAxes;
-	if ( settings.value( "Show Grid" ).toBool() )
+	if ( settings.value( "Show Grid", true ).toBool() )
 		options |= ShowGrid;
 	if ( settings.value( "Show Collision" ).toBool() )
 		options |= ShowCollision;
@@ -88,6 +88,8 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 		options |= ShowNodes;
 	if ( settings.value( "Show Hidden" ).toBool() )
 		options |= ShowHidden;
+	if ( settings.value( "Do Skinning", true ).toBool() )
+		options |= DoSkinning;
 
 	settings.endGroup();
 }
@@ -177,23 +179,6 @@ void Scene::updateSceneOptionsGroup( QAction * action )
 {
 	if ( !action )
 		return;
-
-	// Hack for exclusive test
-	auto opt = SceneOptions( action->data().toInt() );
-	switch ( opt ) {
-	case Test1:
-		options &= ~Test2;
-		options &= ~Test3;
-		break;
-	case Test2:
-		options &= ~Test1;
-		options &= ~Test3;
-		break;
-	case Test3:
-		options &= ~Test1;
-		options &= ~Test2;
-		break;
-	}
 
 	options ^= SceneOptions( action->data().toInt() );
 	emit sceneUpdated();

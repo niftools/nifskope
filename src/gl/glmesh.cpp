@@ -64,6 +64,7 @@ void Mesh::clear()
 	Node::clear();
 
 	iData = iSkin = iSkinData = iSkinPart = iTangentData = QModelIndex();
+	bssp = nullptr;
 	bslsp = nullptr;
 	bsesp = nullptr;
 
@@ -156,6 +157,26 @@ void Shape::updateShaderProperties( const NifModel * nif )
 	isVertexAlphaAnimation = bssp->getFlags2() & ShaderFlags::SLSF2_Tree_Anim;
 }
 
+void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
+{
+	Node * root = findParent( skeletonRoot );
+	Node * bone = root ? root->findChild( bones.value( index.row() ) ) : 0;
+	if ( !bone )
+		return;
+
+	Transform boneT = Transform( nif, index );
+	Transform t = (scene->options & Scene::DoSkinning) ? viewTrans() : Transform();
+	t = t * skeletonTrans * bone->localTrans( skeletonRoot ) * boneT;
+
+	auto bSphere = BoundSphere( nif, nif->getIndex( index, "Bounding Sphere" ) );
+	if ( bSphere.radius > 0.0 ) {
+		glColor4f( 1, 1, 1, 0.33 );
+		auto pos = boneT.rotation.inverted() * (bSphere.center - boneT.translation);
+		drawSphereSimple( t * pos, bSphere.radius, 36 );
+
+	}
+}
+
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
 {
 	Node::update( nif, index );
@@ -207,11 +228,8 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 		for ( const auto link : nif->getChildLinks( id() ) ) {
 			QModelIndex iChild = nif->getBlock( link );
-
 			if ( !iChild.isValid() )
 				continue;
-
-			QString name = nif->itemName( iChild );
 
 			if ( nif->inherits( iChild, "NiTriShapeData" ) || nif->inherits( iChild, "NiTriStripsData" ) ) {
 				if ( !iData.isValid() ) {
@@ -617,7 +635,7 @@ void Mesh::transformShapes()
 
 	transformRigid = true;
 
-	if ( weights.count() ) {
+	if ( weights.count() && (scene->options & Scene::DoSkinning) ) {
 		transformRigid = false;
 
 		transVerts.resize( verts.count() );
@@ -637,7 +655,7 @@ void Mesh::transformShapes()
 
 				for ( int t = 0; t < boneTrans.count(); t++ ) {
 					Node * bone = root ? root->findChild( bones.value( part.boneMap[t] ) ) : 0;
-					boneTrans[ t ] = viewTrans() * skeletonTrans;
+					boneTrans[ t ] = scene->view;
 
 					if ( bone )
 						boneTrans[ t ] = boneTrans[ t ] * bone->localTrans( skeletonRoot ) * weights.value( part.boneMap[t] ).trans;
@@ -1003,15 +1021,21 @@ void Mesh::drawSelection() const
 	if ( scene->options & Scene::ShowNodes )
 		Node::drawSelection();
 
-	if ( isHidden() )
+	if ( isHidden() || !(scene->selMode & Scene::SelObject) )
 		return;
 
-	if ( scene->currentBlock != iBlock && scene->currentBlock != iData && scene->currentBlock != iSkinPart
-	     && ( !iTangentData.isValid() || scene->currentBlock != iTangentData ) )
+	auto idx = scene->currentIndex;
+	auto blk = scene->currentBlock;
+
+	auto nif = static_cast<const NifModel *>(idx.model());
+	if ( !nif )
+		return;
+
+	if ( blk != iBlock && blk != iData && blk != iSkinPart && blk != iSkinData
+	     && ( !iTangentData.isValid() || blk != iTangentData ) )
 	{
 		return;
 	}
-
 
 	if ( transformRigid ) {
 		glPushMatrix();
@@ -1036,29 +1060,26 @@ void Mesh::drawSelection() const
 	QString n;
 	int i = -1;
 
-	if ( scene->currentBlock == iBlock || scene->currentIndex == iData ) {
+	if ( blk == iBlock || idx == iData ) {
 		n = "Faces";
-	} else if ( scene->currentBlock == iData || scene->currentBlock == iSkinPart ) {
-		n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
+	} else if ( blk == iData || blk == iSkinPart ) {
+		n = idx.data( NifSkopeDisplayRole ).toString();
 
-		QModelIndex iParent = scene->currentIndex.parent();
-
+		QModelIndex iParent = idx.parent();
 		if ( iParent.isValid() && iParent != iData ) {
 			n = iParent.data( NifSkopeDisplayRole ).toString();
-			i = scene->currentIndex.row();
+			i = idx.row();
 		}
-	} else if ( scene->currentBlock == iTangentData ) {
+	} else if ( blk == iTangentData ) {
 		n = "TSpace";
+	} else {
+		n = idx.data( NifSkopeDisplayRole ).toString();
 	}
 
 	glDepthFunc( GL_LEQUAL );
 	glNormalColor();
 
 	glPolygonMode( GL_FRONT_AND_BACK, GL_POINT );
-
-	// TODO: Reenable as an alternative to MSAA when MSAA is not supported
-	//glEnable( GL_POINT_SMOOTH );
-	//glHint( GL_POINT_SMOOTH_HINT, GL_NICEST );
 
 	if ( n == "Vertices" || n == "Normals" || n == "Vertex Colors"
 	     || n == "UV Sets" || n == "Tangents" || n == "Bitangents" )
@@ -1102,12 +1123,12 @@ void Mesh::drawSelection() const
 			glBegin( GL_POINTS );
 			QModelIndex iPoints = points.child( i, 0 );
 
-			if ( nif->isArray( scene->currentIndex ) ) {
+			if ( nif->isArray( idx ) ) {
 				for ( int j = 0; j < nif->rowCount( iPoints ); j++ ) {
 					glVertex( transVerts.value( nif->get<quint16>( iPoints.child( j, 0 ) ) ) );
 				}
 			} else {
-				iPoints = scene->currentIndex.parent();
+				iPoints = idx.parent();
 				glVertex( transVerts.value( nif->get<quint16>( iPoints.child( i, 0 ) ) ) );
 			}
 
@@ -1330,6 +1351,15 @@ void Mesh::drawSelection() const
 					b = c;
 				}
 			}
+		}
+	}
+
+	if ( n == "Bone List" ) {
+		if ( nif->isArray( idx ) ) {
+			for ( int i = 0; i < nif->rowCount( idx ); i++ )
+				boneSphere( nif, idx.child( i, 0 ) );
+		} else {
+			boneSphere( nif, idx );
 		}
 	}
 

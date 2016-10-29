@@ -186,6 +186,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <addaction name="aShowCollision"/>
    <addaction name="aShowAxes"/>
    <addaction name="aShowNodes"/>
+   <addaction name="aDoSkinning"/>
    <addaction name="aShowConstraints"/>
    <addaction name="aShowMarkers"/>
    <addaction name="aShowHidden"/>
@@ -2022,6 +2023,25 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="toolTip">
     <string>Select Vertex</string>
+   </property>
+  </action>
+  <action name="aDoSkinning">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/skinned</normaloff>
+     <normalon>:/btn/skinned</normalon>:/btn/skinned</iconset>
+   </property>
+   <property name="text">
+    <string>Do Skinning</string>
+   </property>
+   <property name="toolTip">
+    <string>Do Skinning</string>
+   </property>
+   <property name="statusTip">
+    <string>Do Skinning</string>
    </property>
   </action>
  </widget>
