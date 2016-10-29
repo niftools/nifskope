@@ -295,6 +295,38 @@ class spTriangulate final : public Spell
 REGISTER_SPELL( spTriangulate )
 
 
+class spTriangulateAll final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Triangulate All Strips" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return !index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QList<QPersistentModelIndex> triStrips;
+
+		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
+			QModelIndex idx = nif->getBlock( l, "NiTriStrips" );
+			if ( idx.isValid() )
+				triStrips << idx;
+		}
+
+		spTriangulate tri;
+		for ( const QModelIndex& idx : triStrips )
+			tri.castIfApplicable( nif, idx );
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spTriangulateAll )
+
+
 class spStichStrips final : public Spell
 {
 public:
