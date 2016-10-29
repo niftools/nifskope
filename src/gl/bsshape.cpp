@@ -283,11 +283,11 @@ void BSShape::transformShapes()
 		for ( int i = 0; i < weights.count(); i++ )
 			weights[i].setTransform( nif, b.child( i, 0 ) );
 
-		Node * root = findParent( skeletonRoot );
+		Node * root = findParent( 0 );
 		for ( const BoneWeights & bw : weights ) {
 			Node * bone = root ? root->findChild( bw.bone ) : nullptr;
 			if ( bone ) {
-				Transform t = scene->view * bone->localTrans( skeletonRoot ) * bw.trans;
+				Transform t = scene->view * bone->localTrans( 0 ) * bw.trans;
 				for ( const VertexWeight & w : bw.weights ) {
 					if ( w.vertex >= verts.count() )
 						continue;

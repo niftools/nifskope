@@ -159,21 +159,20 @@ void Shape::updateShaderProperties( const NifModel * nif )
 
 void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
 {
-	Node * root = findParent( skeletonRoot );
+	Node * root = findParent( 0 );
 	Node * bone = root ? root->findChild( bones.value( index.row() ) ) : 0;
 	if ( !bone )
 		return;
 
 	Transform boneT = Transform( nif, index );
 	Transform t = (scene->options & Scene::DoSkinning) ? viewTrans() : Transform();
-	t = t * skeletonTrans * bone->localTrans( skeletonRoot ) * boneT;
+	t = t * skeletonTrans * bone->localTrans( 0 ) * boneT;
 
 	auto bSphere = BoundSphere( nif, nif->getIndex( index, "Bounding Sphere" ) );
 	if ( bSphere.radius > 0.0 ) {
 		glColor4f( 1, 1, 1, 0.33 );
 		auto pos = boneT.rotation.inverted() * (bSphere.center - boneT.translation);
 		drawSphereSimple( t * pos, bSphere.radius, 36 );
-
 	}
 }
 
