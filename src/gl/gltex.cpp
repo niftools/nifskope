@@ -161,19 +161,19 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	QString filename = QDir::toNativeSeparators( file );
 
-	// Temporary BTO/BTR file support
-	// TODO: Better implementation
-	if ( filename.startsWith( "data", Qt::CaseInsensitive ) ) {
-		filename.remove(0, 5);
-	}
+	if ( !filename.startsWith( "textures" ) ) {
+		QRegularExpression re( "textures[\\\\/]", QRegularExpression::CaseInsensitiveOption );
+		int texIdx = filename.indexOf( re );
+		if ( texIdx > 0 ) {
+			filename.remove( 0, texIdx );
+		} else {
+			while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
+				filename.remove( 0, 1 );
 
-	// Temporary Facegeom support
-	if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) ) {
-		filename.prepend( "textures\\" );
+			if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) )
+				filename.prepend( "textures\\" );
+		}
 	}
-
-	while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
-		filename.remove( 0, 1 );
 
 	QStringList extensions;
 	extensions << ".dds";
