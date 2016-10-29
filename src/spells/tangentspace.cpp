@@ -327,3 +327,35 @@ public:
 
 REGISTER_SPELL( spAllTangentSpaces )
 
+
+class spAddAllTangentSpaces final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Add Tangent Spaces and Update" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
+	{
+		return nif && !idx.isValid() && nif->checkVersion( 0x0A010000, 0 );
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
+			QModelIndex idx = nif->getBlock( l, "NiTriShapeData" );
+			if ( idx.isValid() )
+				nif->set<int>( idx, "Vector Flags", 4097 );
+
+			nif->updateArray( idx, "Tangents" );
+			nif->updateArray( idx, "Bitangents" );
+		}
+
+		spAllTangentSpaces updateAll;
+		updateAll.cast( nif, QModelIndex() );
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spAddAllTangentSpaces )
+
