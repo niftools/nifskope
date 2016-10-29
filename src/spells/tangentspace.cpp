@@ -343,9 +343,10 @@ public:
 	{
 		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
 			QModelIndex idx = nif->getBlock( l, "NiTriShapeData" );
-			if ( idx.isValid() )
-				nif->set<int>( idx, "Vector Flags", 4097 );
+			if ( !idx.isValid() )
+				continue;
 
+			nif->set<int>( idx, "Vector Flags", 4097 );
 			nif->updateArray( idx, "Tangents" );
 			nif->updateArray( idx, "Bitangents" );
 		}
