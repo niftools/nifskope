@@ -494,3 +494,91 @@ public:
 };
 
 REGISTER_SPELL( spCombiTris )
+
+
+void scan( QModelIndex idx, NifModel * nif, QMap<QString, qint32> & usedStrings, bool hasCED )
+{
+	for ( int i = 0; i < nif->rowCount( idx ); i++ ) {
+		auto child = idx.child( i, 2 );
+		if ( nif->rowCount( child ) > 0 ) {
+			scan( child, nif, usedStrings, hasCED );
+			continue;
+		}
+
+		NifValue val;
+		val.setFromVariant( child.data( Qt::EditRole ) );
+		if ( val.type() == NifValue::tStringIndex ) {
+			if ( nif->get<int>( child ) == -1 )
+				continue;
+
+			auto str = nif->get<QString>( child );
+			if ( !usedStrings.contains( str ) )
+				usedStrings.insert( str, usedStrings.size() );
+
+			qint32 value = usedStrings[str];
+			if ( hasCED && value > 0 )
+				value++;
+
+			nif->set<int>( child, value );
+		}
+	}
+}
+
+//! Removes unused strings from the header
+class spRemoveUnusedStrings final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Remove Unused Strings" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif && !index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		auto originalStrings = nif->getArray<QString>( nif->getHeader(), "Strings" );
+
+		// FO4 workaround for apparently unused but necessary BSClothExtraData string
+		int cedIdx = originalStrings.indexOf( "CED" );
+
+		bool hasCED = cedIdx >= 0;
+
+		QMap<QString, qint32> usedStrings;
+		for ( qint32 b = 0; b < nif->getBlockCount(); b++ )
+			scan( nif->getBlock( b ), nif, usedStrings, hasCED );
+
+		QVector<QString> newStrings( usedStrings.size() );
+		for ( auto kv : usedStrings.toStdMap() )
+			newStrings[kv.second] = kv.first;
+
+		int newSize = newStrings.size();
+
+		if ( hasCED ) {
+			newStrings.insert( cedIdx, 1, "CED" );
+			newSize++;
+		}
+
+		nif->set<uint>( nif->getHeader(), "Num Strings", newSize );
+		nif->updateArray( nif->getHeader(), "Strings" );
+		nif->setArray<QString>( nif->getHeader(), "Strings", newStrings );
+		nif->updateHeader();
+
+		// Remove new from original to see what was removed
+		for ( const auto & s : newStrings )
+			originalStrings.removeAll( s );
+
+		QString msg;
+		if ( originalStrings.size() )
+			msg = "Removed:\r\n" + QStringList::fromVector( originalStrings ).join( "\r\n" );
+
+		Message::info( nullptr, Spell::tr( "Strings Removed: %1. New string table has %2 entries." )
+					   .arg( originalStrings.size() ).arg( newSize ), msg
+		);
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spRemoveUnusedStrings )
