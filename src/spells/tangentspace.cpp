@@ -341,18 +341,33 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
+		QVector<QModelIndex> blks;
 		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
-			QModelIndex idx = nif->getBlock( l, "NiTriShapeData" );
+			QModelIndex idx = nif->getBlock( l, "NiTriShape" );
 			if ( !idx.isValid() )
 				continue;
 
-			nif->set<int>( idx, "Vector Flags", 4097 );
-			nif->updateArray( idx, "Tangents" );
-			nif->updateArray( idx, "Bitangents" );
+			// NiTriShapeData
+			auto iData = nif->getBlock( nif->getLink( idx, "Data" ) );
+
+			// Do not do anything without proper UV/Vert/Tri data
+			auto numVerts = nif->get<int>( iData, "Num Vertices" );
+			auto numTris = nif->get<int>( iData, "Num Triangles" );
+			bool hasUVs = nif->get<int>( iData, "Vector Flags" ) & 1;
+			if ( !hasUVs || !numVerts || !numTris )
+				continue;
+
+			nif->set<int>( iData, "Vector Flags", 4097 );
+			nif->updateArray( iData, "Tangents" );
+			nif->updateArray( iData, "Bitangents" );
+
+			// Add NiTriShape for spTangentSpace
+			blks << idx;
 		}
 
-		spAllTangentSpaces updateAll;
-		updateAll.cast( nif, QModelIndex() );
+		spTangentSpace update;
+		for ( auto& b : blks )
+			update.cast( nif, b );
 
 		return QModelIndex();
 	}
