@@ -280,7 +280,7 @@ NifSkope::NifSkope()
 	 */
 
 	// Init Scene and View
-	graphicsScene = new QGraphicsScene;
+	graphicsScene = new QGraphicsScene( this );
 	graphicsView = new GLGraphicsView( this );
 	graphicsView->setScene( graphicsScene );
 	graphicsView->setRenderHint( QPainter::Antialiasing );
@@ -818,8 +818,7 @@ void NifSkope::openArchive( const QString & archive )
 		dBrowser->raise();
 
 		// Filter
-
-		QTimer * filterTimer = new QTimer;
+		auto filterTimer = new QTimer( this );
 		filterTimer->setSingleShot( true );
 
 		connect( ui->bsaFilter, &QLineEdit::textChanged, [filterTimer]() { filterTimer->start( 300 ); } );

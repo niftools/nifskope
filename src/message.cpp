@@ -1,5 +1,6 @@
 #include "message.h"
 
+#include <QApplication>
 #include <QAbstractButton>
 #include <QMap>
 
@@ -42,6 +43,9 @@ void Message::message( QWidget * parent, const QString & str, QMessageBox::Icon 
 //! Static helper for message box with detail text
 void Message::message( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
+	if ( !parent )
+		parent = qApp->activeWindow();
+
 	auto msgBox = new QMessageBox( parent );
 
 	// Keep message box on top if it does not have a parent
@@ -135,6 +139,9 @@ static QMap<QString, QMessageBox *> messageBoxes;
 
 void Message::append( QWidget * parent, const QString & str, const QString & err, QMessageBox::Icon icon )
 {
+	if ( !parent )
+		parent = qApp->activeWindow();
+
 	// Create one box per error string, accumulate messages
 	auto box = messageBoxes[str];
 	if ( box ) {

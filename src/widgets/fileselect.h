@@ -109,7 +109,7 @@ protected slots:
 protected:
 	bool eventFilter( QObject * o, QEvent * e ) override final;
 
-	QAction * completionAction();
+	static QAction * completionAction;
 
 	Modes Mode;
 	States State;

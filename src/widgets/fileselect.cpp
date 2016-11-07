@@ -51,6 +51,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FEEDBACK_TIME 1200
 
 
+QAction * FileSelector::completionAction;
+
 CompletionAction::CompletionAction( QObject * parent ) : QAction( "Completion of Filenames", parent )
 {
 	QSettings cfg;
@@ -102,8 +104,10 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 
 	line->installEventFilter( this );
 
-	connect( completionAction(), &QAction::toggled, this, &FileSelector::setCompletionEnabled );
-	setCompletionEnabled( completionAction()->isChecked() );
+	completionAction = new CompletionAction( this );
+
+	connect( completionAction, &QAction::toggled, this, &FileSelector::setCompletionEnabled );
+	setCompletionEnabled( completionAction->isChecked() );
 
 	timer = new QTimer( this );
 	timer->setSingleShot( true );
@@ -111,11 +115,6 @@ FileSelector::FileSelector( Modes mode, const QString & buttonText, QBoxLayout::
 	connect( timer, &QTimer::timeout, this, &FileSelector::rstState );
 }
 
-QAction * FileSelector::completionAction()
-{
-	static QAction * action = new CompletionAction;
-	return action;
-}
 
 void FileSelector::setCompletionEnabled( bool x )
 {
@@ -272,7 +271,7 @@ bool FileSelector::eventFilter( QObject * o, QEvent * e )
 
 		QMenu * menu = line->createStandardContextMenu();
 		menu->addSeparator();
-		menu->addAction( completionAction() );
+		menu->addAction( completionAction );
 		menu->exec( event->globalPos() );
 		delete menu;
 		return true;
