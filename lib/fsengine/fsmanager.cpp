@@ -54,11 +54,19 @@ FSManager* FSManager::get()
 	return theFSManager;
 }
 
+void FSManager::del()
+{
+	if ( theFSManager ) {
+		delete theFSManager;
+		theFSManager = nullptr;
+	}
+}
+
 // see fsmanager.h
 QList <FSArchiveFile *> FSManager::archiveList()
 {
 	QList<FSArchiveFile *> archives;
-	for ( FSArchiveHandler* an : get()->archives.values() ) {
+	for ( std::shared_ptr<FSArchiveHandler> an : get()->archives.values() ) {
 		archives.append( an->getArchive() );
 	}
 	return archives;
@@ -74,7 +82,7 @@ FSManager::FSManager( QObject * parent )
 // see fsmanager.h
 FSManager::~FSManager()
 {
-	qDeleteAll( archives );
+	archives.clear();
 }
 
 void FSManager::initialize()
@@ -83,7 +91,7 @@ void FSManager::initialize()
 	QStringList list = cfg.value( "Settings/Resources/Archives", QStringList() ).toStringList();
 
 	for ( const QString an : list ) {
-		if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
+		if ( auto a = FSArchiveHandler::openArchive( an ) )
 			archives.insert( an, a );
 	}
 }

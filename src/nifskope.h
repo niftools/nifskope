@@ -64,6 +64,7 @@ class NifTreeView;
 class ReferenceBrowser;
 class SettingsDialog;
 class SpellBook;
+class FSArchiveHandler;
 class BSA;
 class BSAModel;
 class BSAProxyModel;
@@ -313,6 +314,8 @@ private:
 
 	//! Spellbook instance
 	std::shared_ptr<SpellBook> book;
+
+	std::shared_ptr<FSArchiveHandler> archiveHandler;
 
 	static SettingsDialog * options;
 

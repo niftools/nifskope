@@ -754,13 +754,15 @@ void NifSkope::openArchive( const QString & archive )
 	bsaView->setModel( emptyModel );
 	bsaView->setSortingEnabled( false );
 
-	auto handler = FSArchiveHandler::openArchive( archive );
-	if ( !handler ) {
+	archiveHandler.reset();
+
+	archiveHandler = FSArchiveHandler::openArchive( archive );
+	if ( !archiveHandler ) {
 		qCWarning( nsIo ) << "The BSA could not be opened.";
 		return;
 	}
 
-	auto bsa = handler->getArchive<BSA *>();
+	auto bsa = archiveHandler->getArchive<BSA *>();
 	if ( bsa ) {
 
 		setCurrentArchive( bsa );

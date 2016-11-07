@@ -39,13 +39,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QAtomicInt>
 
+#include <memory>
 
 //! Provides a way to register an FSArchiveEngine with the application.
 class FSArchiveHandler
 {
 public:
 	//! Opens a BSA for the specified file
-	static FSArchiveHandler * openArchive( const QString & );
+	static std::shared_ptr<FSArchiveHandler> openArchive( const QString & );
 	
 public:
 	//! Constructor

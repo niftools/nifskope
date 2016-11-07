@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QObject>
 #include <QMap>
 
+#include <memory>
 
 class FSArchiveHandler;
 class FSArchiveFile;
@@ -50,6 +51,10 @@ class FSManager : public QObject
 public:
 	//! Gets the global file system manager
 	static FSManager * get();
+	
+	//! Deletes the manager
+	static void del();
+
 	//! Gets the list of globally registered BSA files
 	static QList<FSArchiveFile *> archiveList();
 
@@ -60,7 +65,7 @@ protected:
 	~FSManager();
 	
 protected:
-	QMap<QString, FSArchiveHandler *> archives;
+	QMap<QString, std::shared_ptr<FSArchiveHandler> > archives;
 	bool automatic;
 	
 	//! Builds a list of global BSAs on Windows platforms

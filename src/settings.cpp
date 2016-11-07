@@ -567,7 +567,7 @@ void SettingsResources::write()
 	archiveMgr->archives.clear();
 	for ( const QString an : archives->stringList() ) {
 		if ( !archiveMgr->archives.contains( an ) )
-			if ( FSArchiveHandler * a = FSArchiveHandler::openArchive( an ) )
+			if ( auto a = FSArchiveHandler::openArchive( an ) )
 				archiveMgr->archives.insert( an, a );
 	}
 
