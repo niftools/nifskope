@@ -49,6 +49,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 
+using QIconPtr = std::shared_ptr<QIcon>;
+
 //! \file spellbook.h Spell, SpellBook and Librarian
 
 //! Register a Spell using a Librarian

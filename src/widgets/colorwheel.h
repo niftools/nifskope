@@ -102,8 +102,6 @@ private:
 	} pressed;
 
 	QSize sHint;
-
-	static QIcon * icon;
 };
 
 class QLabel;

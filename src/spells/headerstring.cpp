@@ -60,7 +60,7 @@ static char const * txt_xpm[] = {
 	"                                "
 };
 
-static QIcon * txt_xpm_icon = nullptr;
+static QIconPtr txt_xpm_icon = nullptr;
 
 //! Edit the index of a header string
 class spEditStringIndex final : public Spell
@@ -71,7 +71,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !txt_xpm_icon )
-			txt_xpm_icon = new QIcon( QPixmap( txt_xpm ) );
+			txt_xpm_icon = QIconPtr( new QIcon(QPixmap( txt_xpm )) );
 
 		return *txt_xpm_icon;
 	}

@@ -65,7 +65,7 @@ static char const * txt_xpm[] = {
 	"                                "
 };
 
-QIcon * txt_xpm_icon = nullptr;
+static QIconPtr txt_xpm_icon = nullptr;
 
 //! Edit a single offset into a string palette.
 class spEditStringOffset final : public Spell
@@ -76,7 +76,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !txt_xpm_icon )
-			txt_xpm_icon = new QIcon( QPixmap( txt_xpm ) );
+			txt_xpm_icon = QIconPtr( new QIcon(QPixmap( txt_xpm )) );
 
 		return *txt_xpm_icon;
 	}

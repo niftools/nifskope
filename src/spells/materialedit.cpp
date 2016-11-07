@@ -89,7 +89,7 @@ static char const * mat42_xpm[] = {
 	"                                                                "
 };
 
-QIcon * mat42_xpm_icon = nullptr;
+static QIconPtr mat42_xpm_icon = nullptr;
 
 //! Edit a material
 class spMaterialEdit final : public Spell
@@ -101,7 +101,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !mat42_xpm_icon )
-			mat42_xpm_icon = new QIcon( QPixmap( mat42_xpm ) );
+			mat42_xpm_icon = QIconPtr( new QIcon(QPixmap( mat42_xpm )) );
 
 		return *mat42_xpm_icon;
 	}

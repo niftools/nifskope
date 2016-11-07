@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "colorwheel.h"
+#include "spellbook.h"
 
 #include "floatslider.h"
 #include "niftypes.h"
@@ -97,7 +98,7 @@ static const char * const hsv42_xpm[] = {
 
 #include <math.h>
 
-QIcon * ColorWheel::icon = nullptr;
+static QIconPtr icon = nullptr;
 
 ColorWheel::ColorWheel( QWidget * parent ) : QWidget( parent )
 {
@@ -124,7 +125,7 @@ ColorWheel::ColorWheel( const QColor & c, QWidget * parent ) : QWidget( parent )
 QIcon ColorWheel::getIcon()
 {
 	if ( !icon )
-		icon = new QIcon( QPixmap( hsv42_xpm ) );
+		icon = QIconPtr( new QIcon(QPixmap( hsv42_xpm )) );
 
 	return *icon;
 }

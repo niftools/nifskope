@@ -126,7 +126,7 @@ static char const * tex42_xpm[] = {
 	"                                                                                "
 };
 
-QIcon * tex42_xpm_icon = nullptr;
+static QIconPtr tex42_xpm_icon = nullptr;
 
 //! Find the reference to shape data from a model and index
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
@@ -163,7 +163,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !tex42_xpm_icon )
-			tex42_xpm_icon = new QIcon( QPixmap( tex42_xpm ) );
+			tex42_xpm_icon = QIconPtr( new QIcon(QPixmap( tex42_xpm )) );
 
 		return *tex42_xpm_icon;
 	}
