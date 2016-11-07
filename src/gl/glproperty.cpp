@@ -152,7 +152,7 @@ void PropertyList::del( Property * p )
 
 	QHash<Property::Type, Property *>::iterator i = properties.find( p->type() );
 
-	while ( i != properties.end() && i.key() == p->type() ) {
+	while ( p && i != properties.end() && i.key() == p->type() ) {
 		if ( i.value() == p ) {
 			i = properties.erase( i );
 

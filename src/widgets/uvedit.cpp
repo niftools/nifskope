@@ -764,7 +764,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	isDataOnSkin = false;
 
 	// Version dependent actions
-	if ( nif->getVersionNumber() != 0x14020007 ) {
+	if ( nif && nif->getVersionNumber() != 0x14020007 ) {
 		coordSetGroup = new QActionGroup( this );
 		connect( coordSetGroup, &QActionGroup::triggered, this, &UVWidget::selectCoordSet );
 
@@ -786,6 +786,9 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 		connect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
 	}
+
+	if ( !nif )
+		return false;
 
 	textures->setNifFolder( nif->getFolder() );
 

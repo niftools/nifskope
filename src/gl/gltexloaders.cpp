@@ -1269,7 +1269,7 @@ bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GL
 			return false;
 	}
 
-	bool success;
+	bool success = false;
 	GLuint result;
 
 	QBuffer f( &data );
