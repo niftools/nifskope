@@ -1240,6 +1240,7 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 		throw QString( "unknown texture format" );
 
 	f.close();
+	data.clear();
 
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
@@ -1299,6 +1300,7 @@ bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GL
 		
 	
 	f.close();
+	data.clear();
 
 	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
 	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
