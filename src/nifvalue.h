@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 #include <QVariant>
 
+#include <memory>
+
 
 //! @file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
 
@@ -423,7 +425,7 @@ private:
 	//! The underlying device that data is being read from.
 	QIODevice * device;
 	//! The data stream that is wrapped around the device (simplifies endian conversion)
-	QDataStream * dataStream;
+	std::unique_ptr<QDataStream> dataStream;
 
 	//! Initialises the stream.
 	void init();

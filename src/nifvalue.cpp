@@ -342,7 +342,7 @@ void NifValue::clear()
 {
 	switch ( typ ) {
 	case tVector4:
-		delete static_cast<Vector3 *>( val.data );
+		delete static_cast<Vector4 *>( val.data );
 		break;
 	case tVector3:
 	case tHalfVector3:
@@ -1024,7 +1024,7 @@ void NifIStream::init()
 	stringAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003);
 	bigEndian = false; // set when tFileVersion is read
 
-	dataStream = new QDataStream( device );
+	dataStream = std::unique_ptr<QDataStream>( new QDataStream( device ) );
 	dataStream->setByteOrder( QDataStream::LittleEndian );
 	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
 
@@ -1120,7 +1120,8 @@ bool NifIStream::read( NifValue & val )
 			yf = (double(y) / 255.0) * 2.0 - 1.0;
 			zf = (double(z) / 255.0) * 2.0 - 1.0;
 	
-			val.val.data = new ByteVector3( xf, yf, zf );
+			Vector3 * v = static_cast<Vector3 *>(val.val.data);
+			v->xyz[0] = xf; v->xyz[1] = yf; v->xyz[2] = zf;
 	
 			return (dataStream->status() == QDataStream::Ok);
 		}
@@ -1142,7 +1143,8 @@ bool NifIStream::read( NifValue & val )
 			yf = *((float*)&yi);
 			zf = *((float*)&zi);
 	
-			val.val.data = new HalfVector3( xf, yf, zf );
+			Vector3 * v = static_cast<Vector3 *>(val.val.data);
+			v->xyz[0] = xf; v->xyz[1] = yf; v->xyz[2] = zf;
 	
 			return ( dataStream->status() == QDataStream::Ok );
 		}
@@ -1161,7 +1163,8 @@ bool NifIStream::read( NifValue & val )
 			xf = *((float*)&xi);
 			yf = *((float*)&yi);
 	
-			val.val.data = new HalfVector2( xf, yf );
+			Vector2 * v = static_cast<Vector2 *>(val.val.data);
+			v->xy[0] = xf; v->xy[1] = yf;
 	
 			return ( dataStream->status() == QDataStream::Ok );
 		}
@@ -1214,7 +1217,8 @@ bool NifIStream::read( NifValue & val )
 			*dataStream >> b;
 			*dataStream >> a;
 
-			val.val.data = new Color4( QColor( r, g, b, a ) );
+			Color4 * c = static_cast<Color4 *>(val.val.data);
+			c->setRGBA( (float)r / 255.0, (float)g / 255.0, (float)b / 255.0, (float)a / 255.0 );
 
 			return (dataStream->status() == QDataStream::Ok);
 		}
