@@ -323,7 +323,6 @@ NifSkope::NifSkope()
 NifSkope::~NifSkope()
 {
 	delete ui;
-	delete book;
 }
 
 void NifSkope::swapModels()
