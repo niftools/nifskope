@@ -367,7 +367,7 @@ Renderer::Renderer( QOpenGLContext * c, QOpenGLFunctions * f )
 {
 	updateSettings();
 
-	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &Renderer::updateSettings );
+	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Renderer::updateSettings );
 }
 
 Renderer::~Renderer()

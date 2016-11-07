@@ -27,7 +27,7 @@ class SettingsPane : public QWidget
 
 public:
 	explicit SettingsPane( QWidget * parent = nullptr );
-	~SettingsPane();
+	virtual ~SettingsPane();
 
 	virtual void read() = 0;
 	virtual void write() = 0;
@@ -63,7 +63,7 @@ public:
 	void setDefault() override final;
 
 private:
-	Ui::SettingsGeneral * ui;
+	std::unique_ptr<Ui::SettingsGeneral> ui;
 };
 
 class SettingsRender : public SettingsPane
@@ -79,7 +79,7 @@ public:
 	void setDefault() override final;
 
 private:
-	Ui::SettingsRender * ui;
+	std::unique_ptr<Ui::SettingsRender> ui;
 };
 
 class SettingsResources : public SettingsPane
@@ -108,7 +108,7 @@ public slots:
 	void on_btnArchiveAutoDetect_clicked();
 
 private:
-	Ui::SettingsResources * ui;
+	std::unique_ptr<Ui::SettingsResources> ui;
 
 	FSManager * archiveMgr;
 

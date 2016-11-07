@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QVariant>
 
+#include <memory>
+
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
@@ -46,7 +48,7 @@ signals:
 	void flush3D();
     
 private:
-    Ui::SettingsDialog * ui;
+	std::unique_ptr<Ui::SettingsDialog> ui;
 
 	QPushButton * btnSave;
 	QPushButton * btnApply;

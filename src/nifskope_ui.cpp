@@ -1348,7 +1348,7 @@ void NifSkope::on_aViewUser_toggled( bool checked )
 
 void NifSkope::on_aSettings_triggered()
 {
-	settingsDlg->show();
-	settingsDlg->raise();
-	settingsDlg->activateWindow();
+	options->show();
+	options->raise();
+	options->activateWindow();
 }

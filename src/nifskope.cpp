@@ -88,6 +88,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file nifskope.cpp The main file for %NifSkope
 
+SettingsDialog * NifSkope::options;
 
 const QList<QPair<QString, QString>> NifSkope::filetypes = {
 	// NIF types
@@ -151,7 +152,7 @@ NifSkope::NifSkope()
 	
 	// Init Dialogs
 	aboutDialog = new AboutDialog( this );
-	settingsDlg = NifSkope::options();
+	options = new SettingsDialog;
 
 	// Migrate settings from older versions of NifSkope
 	migrateSettings();
@@ -316,8 +317,8 @@ NifSkope::NifSkope()
 	// Connections (that are required to load after all other inits)
 	initConnections();
 
-	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &NifSkope::updateSettings );
-	connect( NifSkope::options(), &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
+	connect( options, &SettingsDialog::saveSettings, this, &NifSkope::updateSettings );
+	connect( options, &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
 }
 
 NifSkope::~NifSkope()
@@ -354,12 +355,9 @@ void NifSkope::updateSettings()
 	settings.endGroup();
 }
 
-
-SettingsDialog * NifSkope::options()
+SettingsDialog * NifSkope::getOptions()
 {
-	static SettingsDialog * settings = new SettingsDialog();
-
-	return settings;
+	return options;
 }
 
 

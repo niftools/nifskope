@@ -282,7 +282,7 @@ SettingsGeneral::SettingsGeneral( QWidget * parent ) :
 
 SettingsGeneral::~SettingsGeneral()
 {
-	delete ui;
+
 }
 
 void SettingsGeneral::read()
@@ -389,11 +389,6 @@ SettingsRender::SettingsRender( QWidget * parent ) :
 	alphaSlider( ui->colorHighlight, ui->highlight, ui->layAlphaHigh );
 }
 
-SettingsRender::~SettingsRender()
-{
-	delete ui;
-}
-
 void SettingsRender::read()
 {
 	QSettings settings;
@@ -435,6 +430,10 @@ void SettingsRender::write()
 	settings.endGroup();
 
 	setModified( false );
+}
+
+SettingsRender::~SettingsRender()
+{
 }
 
 void SettingsRender::setDefault()
@@ -484,6 +483,7 @@ bool regFolderPaths( QStringList & gamePaths, const QStringList & regPaths, cons
 	}
 	return result;
 }
+
 /*
  * Resources
  */
@@ -533,7 +533,6 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 
 SettingsResources::~SettingsResources()
 {
-	delete ui;
 }
 
 void SettingsResources::read()

@@ -197,7 +197,7 @@ Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), 
 
 	updateSettings();
 
-	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
+	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
 }
 
 

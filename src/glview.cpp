@@ -213,8 +213,8 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 	lightVisTimer->setSingleShot( true );
 	connect( lightVisTimer, &QTimer::timeout, [this]() { setVisMode( Scene::VisLightPos, false ); update(); } );
 
-	connect( NifSkope::options(), &SettingsDialog::flush3D, textures, &TexCache::flush );
-	connect( NifSkope::options(), &SettingsDialog::update3D, [this]() {
+	connect( NifSkope::getOptions(), &SettingsDialog::flush3D, textures, &TexCache::flush );
+	connect( NifSkope::getOptions(), &SettingsDialog::update3D, [this]() {
 		updateSettings();
 		qglClearColor( cfg.background );
 		update();

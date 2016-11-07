@@ -178,8 +178,8 @@ UVWidget::UVWidget( QWidget * parent )
 
 	updateSettings();
 
-	connect( NifSkope::options(), &SettingsDialog::saveSettings, this, &UVWidget::updateSettings );
-	connect( NifSkope::options(), &SettingsDialog::update3D, this, &UVWidget::updateGL );
+	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &UVWidget::updateSettings );
+	connect( NifSkope::getOptions(), &SettingsDialog::update3D, this, &UVWidget::updateGL );
 }
 
 UVWidget::~UVWidget()

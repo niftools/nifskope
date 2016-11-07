@@ -55,7 +55,6 @@ SettingsDialog::SettingsDialog( QWidget * parent ) :
 
 SettingsDialog::~SettingsDialog()
 {
-    delete ui;
 }
 
 
@@ -93,9 +92,8 @@ void SettingsDialog::cancel()
 
 void SettingsDialog::restoreDefaults()
 {
-	SettingsDialog * tmpDlg = new SettingsDialog;
+	auto tmpDlg = std::unique_ptr<SettingsDialog>( new SettingsDialog );
 	tmpDlg->save();
-	tmpDlg->deleteLater();
 
 	loadSettings();
 }

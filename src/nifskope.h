@@ -118,8 +118,7 @@ public:
 	 */
 	static NifSkope * createWindow( const QString & fname = QString() );
 
-	static SettingsDialog * options();
-
+	static SettingsDialog * getOptions();
 
 	//! List of all supported file extensions
 	static QStringList fileExtensions();
@@ -284,8 +283,6 @@ private:
 	//! "About NifSkope" dialog.
 	QWidget * aboutDialog;
 
-	SettingsDialog * settingsDlg;
-
 	QString currentFile;
 	BSA * currentArchive = nullptr;
 
@@ -316,6 +313,8 @@ private:
 
 	//! Spellbook instance
 	std::shared_ptr<SpellBook> book;
+
+	static SettingsDialog * options;
 
 	//! Help browser
 	ReferenceBrowser * refrbrwsr;
