@@ -152,7 +152,8 @@ NifSkope::NifSkope()
 	
 	// Init Dialogs
 	aboutDialog = new AboutDialog( this );
-	options = new SettingsDialog;
+	if ( !options )
+		options = new SettingsDialog;
 
 	// Migrate settings from older versions of NifSkope
 	migrateSettings();

@@ -223,6 +223,9 @@ GLView::GLView( const QGLFormat & format, QWidget * p, const QGLWidget * shareWi
 
 GLView::~GLView()
 {
+	flush();
+
+	delete textures;
 	delete scene;
 }
 
@@ -1095,6 +1098,12 @@ void GLView::updateViewpoint()
 	default:
 		break;
 	}
+}
+
+void GLView::flush()
+{
+	if ( textures )
+		textures->flush();
 }
 
 

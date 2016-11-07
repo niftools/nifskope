@@ -134,6 +134,8 @@ public:
 	void updateShaders();
 	void updateViewpoint();
 
+	void flush();
+
 	void center();
 	void move( float, float, float );
 	void rotate( float, float, float );
