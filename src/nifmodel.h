@@ -42,6 +42,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QUndoCommand>
 #include <QUndoStack>
 
+#include <memory>
+
+
+using NifBlockPtr = std::shared_ptr<NifBlock>;
 
 //! @file nifmodel.h NifModel, NifModelEval, ChangeValueCommand, ToggleCheckBoxListCommand
 
@@ -358,9 +362,9 @@ protected:
 
 	// XML structures
 	static QList<quint32> supportedVersions;
-	static QHash<QString, NifBlock *> compounds;
-	static QHash<QString, NifBlock *> fixedCompounds;
-	static QHash<QString, NifBlock *> blocks;
+	static QHash<QString, NifBlockPtr> compounds;
+	static QHash<QString, NifBlockPtr> fixedCompounds;
+	static QHash<QString, NifBlockPtr> blocks;
 
 private:
 	struct Settings
@@ -417,7 +421,7 @@ private:
 inline QStringList NifModel::allNiBlocks()
 {
 	QStringList lst;
-	for ( NifBlock * blk : blocks ) {
+	for ( NifBlockPtr blk : blocks ) {
 		if ( !blk->abstract )
 			lst.append( blk->id );
 	}
@@ -431,13 +435,13 @@ inline bool NifModel::isAncestorOrNiBlock( const QString & name ) const
 
 inline bool NifModel::isNiBlock( const QString & name )
 {
-	NifBlock * blk = blocks.value( name );
+	NifBlockPtr blk = blocks.value( name );
 	return blk && !blk->abstract;
 }
 
 inline bool NifModel::isAncestor( const QString & name )
 {
-	NifBlock * blk = blocks.value( name );
+	NifBlockPtr blk = blocks.value( name );
 	return blk && blk->abstract;
 }
 

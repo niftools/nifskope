@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QReadWriteLock KfmModel::XMLlock;
 QList<quint32>                  KfmModel::supportedVersions;
-QHash<QString, NifBlock *>        KfmModel::compounds;
+QHash<QString, NifBlockPtr>        KfmModel::compounds;
 
 class KfmXmlHandler final : public QXmlDefaultHandler
 {
@@ -60,7 +60,7 @@ public:
 	QStringList elements;
 	QString errorStr;
 
-	NifBlock * blk;
+	NifBlockPtr blk;
 
 	int current() const
 	{
@@ -119,7 +119,7 @@ public:
 					err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
 
 				if ( !blk )
-					blk = new NifBlock;
+					blk = NifBlockPtr( new NifBlock );
 
 				blk->id = list.value( "name" );
 				break;
@@ -187,10 +187,9 @@ public:
 						KfmModel::compounds.insert( blk->id, blk ); break;
 					}
 
-					blk = 0;
+					blk = nullptr;
 				} else {
-					delete blk;
-					blk = 0;
+					blk = nullptr;
 					err( tr( "invalid %1 declaration: name is empty" ).arg( elements.value( x ) ) );
 				}
 			}
@@ -215,7 +214,7 @@ public:
 	{
 		// make a rough check of the maps
 		for ( const QString& key : KfmModel::compounds.keys() ) {
-			NifBlock * c = KfmModel::compounds.value( key );
+			NifBlockPtr c = KfmModel::compounds.value( key );
 			for ( const NifData& data : c->types ) {
 				if ( !checkType( data ) )
 					err( tr( "compound type %1 referes to unknown type %2" ).arg( key, data.type() ) );
@@ -274,7 +273,7 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 {
 	QWriteLocker lck( &XMLlock );
 
-	qDeleteAll( compounds );    compounds.clear();
+	compounds.clear();
 	supportedVersions.clear();
 
 	QFile f( filename );
@@ -293,7 +292,7 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 	reader.parse( source );
 
 	if ( !handler.errorString().isEmpty() ) {
-		qDeleteAll( compounds );    compounds.clear();
+		compounds.clear();
 		supportedVersions.clear();
 	}
 

@@ -182,7 +182,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		return;
 	}
 
-	NifBlock * compound = compounds.value( data.type() );
+	NifBlockPtr compound = compounds.value( data.type() );
 
 	if ( compound ) {
 		NifItem * branch = insertBranch( parent, data, at );

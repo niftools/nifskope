@@ -46,9 +46,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QReadWriteLock             NifModel::XMLlock;
 QList<quint32>             NifModel::supportedVersions;
-QHash<QString, NifBlock *> NifModel::compounds;
-QHash<QString, NifBlock *> NifModel::fixedCompounds;
-QHash<QString, NifBlock *> NifModel::blocks;
+QHash<QString, NifBlockPtr> NifModel::compounds;
+QHash<QString, NifBlockPtr> NifModel::fixedCompounds;
+QHash<QString, NifBlockPtr> NifModel::blocks;
 
 //! Parses nif.xml
 class NifXmlHandler final : public QXmlDefaultHandler
@@ -117,7 +117,7 @@ public:
 	QString optTxt;
 
 	//! Block
-	NifBlock * blk;
+	NifBlockPtr blk;
 	//! Data
 	NifData data;
 
@@ -189,7 +189,7 @@ public:
 							err( tr( "multiple declarations of %1" ).arg( id ) );
 
 						if ( !blk )
-							blk = new NifBlock;
+							blk = NifBlockPtr( new NifBlock );
 
 						blk->id = id;
 						blk->abstract = ( list.value( "abstract" ) == "1" );
@@ -412,8 +412,7 @@ public:
 		case tagBlock:
 			if ( blk ) {
 				if ( blk->id.isEmpty() ) {
-					delete blk;
-					blk = 0;
+					blk = nullptr;
 					err( tr( "invalid %1 declaration: name is empty" ).arg( tagid ) );
 				}
 
@@ -517,7 +516,7 @@ public:
 	{
 		// make a rough check of the maps
 		for ( const QString& key : NifModel::compounds.keys() ) {
-			NifBlock * c = NifModel::compounds.value( key );
+			NifBlockPtr c = NifModel::compounds.value( key );
 			for ( NifData data :c->types ) {
 				if ( !checkType( data ) )
 					err( tr( "compound type %1 refers to unknown type %2" ).arg( key, data.type() ) );
@@ -531,7 +530,7 @@ public:
 		}
 
 		for ( const QString& key : NifModel::blocks.keys() ) {
-			NifBlock * blk = NifModel::blocks.value( key );
+			NifBlockPtr blk = NifModel::blocks.value( key );
 
 			if ( !blk->ancestor.isEmpty() && !NifModel::blocks.contains( blk->ancestor ) )
 				err( tr( "niobject %1 inherits unknown ancestor %2" ).arg( key, blk->ancestor ) );
@@ -599,8 +598,8 @@ QString NifModel::parseXmlDescription( const QString & filename )
 {
 	QWriteLocker lck( &XMLlock );
 
-	qDeleteAll( compounds );    compounds.clear();
-	qDeleteAll( blocks );       blocks.clear();
+	compounds.clear();
+	blocks.clear();
 
 	supportedVersions.clear();
 
@@ -622,12 +621,8 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	reader.parse( source );
 
 	if ( !handler.errorString().isEmpty() ) {
-		qDeleteAll( compounds );
 		compounds.clear();
-
-		qDeleteAll( blocks );
 		blocks.clear();
-
 		supportedVersions.clear();
 	}
 

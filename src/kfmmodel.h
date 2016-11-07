@@ -39,6 +39,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QReadWriteLock>
 #include <QStringList>
 
+#include <memory>
+
+using NifBlockPtr = std::shared_ptr<NifBlock>;
 
 //! @file kfmmodel.h KfmModel
 
@@ -108,7 +111,7 @@ protected:
 	// XML structures
 	static QList<quint32> supportedVersions;
 
-	static QHash<QString, NifBlock *> compounds;
+	static QHash<QString, NifBlockPtr> compounds;
 
 	static QString parseXmlDescription( const QString & filename );
 

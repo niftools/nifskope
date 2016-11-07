@@ -596,7 +596,7 @@ bool NifModel::updateArrays( NifItem * parent )
 
 QModelIndex NifModel::insertNiBlock( const QString & identifier, int at )
 {
-	NifBlock * block = blocks.value( identifier );
+	NifBlockPtr block = blocks.value( identifier );
 
 	if ( block ) {
 		if ( at < 0 || at > getBlockCount() )
@@ -963,7 +963,7 @@ void NifModel::insertAncestor( NifItem * parent, const QString & identifier, int
 	setState( Inserting );
 
 	Q_UNUSED( at );
-	NifBlock * ancestor = blocks.value( identifier );
+	NifBlockPtr ancestor = blocks.value( identifier );
 
 	if ( ancestor ) {
 		if ( !ancestor->ancestor.isEmpty() )
@@ -991,7 +991,7 @@ bool NifModel::inherits( const QString & name, const QString & aunty ) const
 	if ( name == aunty )
 		return true;
 
-	NifBlock * type = blocks.value( name );
+	NifBlockPtr type = blocks.value( name );
 
 	if ( type && ( type->ancestor == aunty || inherits( type->ancestor, aunty ) ) )
 		return true;
@@ -1029,7 +1029,7 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 	if ( data.isArray() ) {
 		NifItem * item = insertBranch( parent, data, at );
 	} else if ( data.isCompound() ) {
-		NifBlock * compound = compounds.value( data.type() );
+		NifBlockPtr compound = compounds.value( data.type() );
 		if ( !compound )
 			return;
 		NifItem * branch = insertBranch( parent, data, at );
@@ -1361,7 +1361,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 						              .arg( item->name() )
 						              .arg( QString( item->text() ).replace( "<", "&lt;" ).replace( "\n", "<br/>" ) );
 
-						if ( NifBlock * blk = blocks.value( item->name() ) ) {
+						if ( NifBlockPtr blk = blocks.value( item->name() ) ) {
 							tip += "<p>Ancestors:<ul>";
 
 							while ( blocks.contains( blk->ancestor ) ) {
@@ -2912,8 +2912,8 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 	}
 
 	NifItem * branch = static_cast<NifItem *>( index.internalPointer() );
-	NifBlock * srcBlock = blocks.value( btype );
-	NifBlock * dstBlock = blocks.value( identifier );
+	NifBlockPtr srcBlock = blocks.value( btype );
+	NifBlockPtr dstBlock = blocks.value( identifier );
 
 	if ( srcBlock && dstBlock && branch ) {
 		branch->setName( identifier );
@@ -2921,7 +2921,7 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 		if ( inherits( btype, identifier ) ) {
 			// Remove any level between the two types
 			for ( QString ancestor = btype; !ancestor.isNull() && ancestor != identifier; ) {
-				NifBlock * block = blocks.value( ancestor );
+				NifBlockPtr block = blocks.value( ancestor );
 
 				if ( !block )
 					break;
@@ -2938,7 +2938,7 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 			QStringList types;
 
 			for ( QString ancestor = identifier; !ancestor.isNull() && ancestor != btype; ) {
-				NifBlock * block = blocks.value( ancestor );
+				NifBlockPtr block = blocks.value( ancestor );
 
 				if ( !block )
 					break;
@@ -2948,7 +2948,7 @@ void NifModel::convertNiBlock( const QString & identifier, const QModelIndex & i
 			}
 
 			for ( const QString& ancestor : types ) {
-				NifBlock * block = blocks.value( ancestor );
+				NifBlockPtr block = blocks.value( ancestor );
 
 				if ( !block )
 					break;
