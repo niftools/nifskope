@@ -45,6 +45,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QHash>
 #include <QMutex>
 
+#include <memory>
+
+using namespace std;
+
 
 /* Default header data */
 #define MW_BSAHEADER_FILEID  0x00000100 //!< Magic for Morrowind BSA
@@ -52,6 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define F4_BSAHEADER_FILEID  0x58445442	//!< Magic for Fallout 4 BA2, the literal string "BTDX".
 #define OB_BSAHEADER_VERSION 0x67 //!< Version number of an Oblivion BSA
 #define F3_BSAHEADER_VERSION 0x68 //!< Version number of a Fallout 3 BSA
+#define SSE_BSAHEADER_VERSION 0x69 //!< Version number of a Skyrim SE BSA
 #define F4_BSAHEADER_VERSION 0x01 //!< Version number of a Fallout 4 BA2
 
 /* Archive flags */
@@ -119,12 +124,30 @@ struct OBBSAFileInfo
 	quint32 offset; //!< Offset to raw file data
 };
 
+//! Shared info format for a folder inside a BSA
+struct BSAFolderInfo
+{
+	quint64 hash; //!< Hash of the folder name
+	quint32 fileCount; //!< Number of files in folder
+	quint32 unk;
+	quint64 offset; //!< Offset to name of this folder
+};
+
 //! Info for a folder inside an Oblivion BSA
 struct OBBSAFolderInfo
 {
 	quint64 hash; //!< Hash of the folder name
 	quint32 fileCount; //!< Number of files in folder
 	quint32 offset; //!< Offset to name of this folder
+};
+
+//! Info for a folder inside an Skyrim SE BSA
+struct SEBSAFolderInfo
+{
+	quint64 hash; //!< Hash of the folder name
+	quint32 fileCount; //!< Number of files in folder
+	quint32 unk;
+	quint64 offset; //!< Offset to name of this folder
 };
 
 //! The header of a Morrowind BSA
@@ -288,7 +311,8 @@ public:
 		BSAFolder() : parent( 0 ) {}
 		//! Destructor
 		~BSAFolder() { qDeleteAll( children ); qDeleteAll( files ); }
-		
+
+		QString name;
 		BSAFolder * parent; //!< The parent item
 		QHash<QString, BSAFolder*> children; //!< A map of child folders
 		QHash<QString, BSAFile*> files; //!< A map of files inside the folder
@@ -316,6 +340,8 @@ protected:
 	//! File info for the %BSA
 	QFileInfo bsaInfo;
 
+	quint32 version;
+
 	//! Mutual exclusion handler
 	QMutex bsaMutex;
 	
@@ -327,9 +353,12 @@ protected:
 	QString bsaName;
 	
 	//! Map of folders inside a %BSA
-	QHash<QString, BSAFolder*> folders;
+	QHash<QString, BSAFolder *> folders;
 	//! The root folder
-	BSAFolder root;
+	BSAFolder * root;
+
+	//! Map of files inside a %BSA
+	QHash<QString, BSAFile *> files;
 	
 	//! Error string for exception handling
 	QString status;
