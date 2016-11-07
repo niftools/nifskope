@@ -1103,8 +1103,7 @@ bool NifIStream::read( NifValue & val )
 		{
 			uint16_t half;
 			*dataStream >> half;
-			uint32_t i = half_to_float( half );
-			val.val.f32 = *((float*)&i);
+			val.val.u32 = half_to_float( half );
 			return (dataStream->status() == QDataStream::Ok);
 		}
 	case NifValue::tByteVector3:
@@ -1128,43 +1127,34 @@ bool NifIStream::read( NifValue & val )
 	case NifValue::tHalfVector3:
 		{
 			uint16_t x, y, z;
-			uint32_t xi, yi, zi;
-			float xf, yf, zf;
+			union { float f; uint32_t i; } xu, yu, zu;
 
 			*dataStream >> x;
 			*dataStream >> y;
 			*dataStream >> z;
 			
-			xi = half_to_float( x );
-			yi = half_to_float( y );
-			zi = half_to_float( z );
-			
-			xf = *((float*)&xi);
-			yf = *((float*)&yi);
-			zf = *((float*)&zi);
+			xu.i = half_to_float( x );
+			yu.i = half_to_float( y );
+			zu.i = half_to_float( z );
 	
 			Vector3 * v = static_cast<Vector3 *>(val.val.data);
-			v->xyz[0] = xf; v->xyz[1] = yf; v->xyz[2] = zf;
+			v->xyz[0] = xu.f; v->xyz[1] = yu.f; v->xyz[2] = zu.f;
 	
 			return ( dataStream->status() == QDataStream::Ok );
 		}
 	case NifValue::tHalfVector2:
 		{
 			uint16_t x, y;
-			uint32_t xi, yi;
-			float xf, yf;
+			union { float f; uint32_t i; } xu, yu;
 
 			*dataStream >> x;
 			*dataStream >> y;
 			
-			xi = half_to_float( x );
-			yi = half_to_float( y );
-			
-			xf = *((float*)&xi);
-			yf = *((float*)&yi);
+			xu.i = half_to_float( x );
+			yu.i = half_to_float( y );
 	
 			Vector2 * v = static_cast<Vector2 *>(val.val.data);
-			v->xy[0] = xf; v->xy[1] = yf;
+			v->xy[0] = xu.f; v->xy[1] = yu.f;
 	
 			return ( dataStream->status() == QDataStream::Ok );
 		}
@@ -1522,7 +1512,7 @@ bool NifOStream::write( const NifValue & val )
 		return device->write( (char *)&val.val.f32, 4 ) == 4;
 	case NifValue::tHfloat:
 		{
-			uint16_t half = half_from_float( *((uint32_t*)&val.val.f32) );
+			uint16_t half = half_from_float( val.val.u32 );
 			return device->write( (char *)&half, 2 ) == 2;
 		}
 	case NifValue::tByteVector3:
@@ -1544,10 +1534,16 @@ bool NifOStream::write( const NifValue & val )
 			if ( !vec )
 				return false;
 
+			union { float f; uint32_t i; } xu, yu, zu;
+
+			xu.f = vec->xyz[0];
+			yu.f = vec->xyz[1];
+			zu.f = vec->xyz[2];
+
 			uint16_t v[3];
-			v[0] = half_from_float( *((uint32_t*)&vec->xyz[0]) );
-			v[1] = half_from_float( *((uint32_t*)&vec->xyz[1]) );
-			v[2] = half_from_float( *((uint32_t*)&vec->xyz[2]) );
+			v[0] = half_from_float( xu.i );
+			v[1] = half_from_float( yu.i );
+			v[2] = half_from_float( zu.i );
 	
 			return device->write( (char*)v, 6 ) == 6;
 		}
@@ -1557,9 +1553,14 @@ bool NifOStream::write( const NifValue & val )
 			if ( !vec )
 				return false;
 
+			union { float f; uint32_t i; } xu, yu;
+
+			xu.f = vec->xy[0];
+			yu.f = vec->xy[1];
+
 			uint16_t v[2];
-			v[0] = half_from_float( *((uint32_t*)&vec->xy[0]) );
-			v[1] = half_from_float( *((uint32_t*)&vec->xy[1]) );
+			v[0] = half_from_float( xu.i );
+			v[1] = half_from_float( yu.i );
 	
 			return device->write( (char*)v, 4 ) == 4;
 		}
