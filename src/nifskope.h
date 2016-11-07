@@ -208,6 +208,8 @@ protected slots:
 
 	void reload();
 
+	void exitRequested();
+
 	void onLoadBegin();
 	void onSaveBegin();
 

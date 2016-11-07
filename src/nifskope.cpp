@@ -319,6 +319,20 @@ NifSkope::NifSkope()
 
 	connect( options, &SettingsDialog::saveSettings, this, &NifSkope::updateSettings );
 	connect( options, &SettingsDialog::localeChanged, this, &NifSkope::sltLocaleChanged );
+
+	connect( qApp, &QApplication::lastWindowClosed, this, &NifSkope::exitRequested );
+}
+
+void NifSkope::exitRequested()
+{
+	qApp->removeEventFilter( this );
+	// Must disconnect from this signal as it's set once for each widget for some reason
+	disconnect( qApp, &QApplication::lastWindowClosed, this, &NifSkope::exitRequested );
+
+	FSManager::del();
+
+	if ( options )
+		delete options;
 }
 
 NifSkope::~NifSkope()
