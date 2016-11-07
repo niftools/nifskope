@@ -377,7 +377,7 @@ void NifSkope::initMenu()
 	}
 
 	// Insert SpellBook class before Help
-	ui->menubar->insertMenu( ui->menubar->actions().at( 3 ), book );
+	ui->menubar->insertMenu( ui->menubar->actions().at( 3 ), book.get() );
 
 	// Insert Import/Export menus
 	mExport = ui->menuExport;

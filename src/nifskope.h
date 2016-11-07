@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QModelIndex>
 #include <QUndoCommand>
 
+#include <memory>
+
 #if QT_NO_DEBUG
 #define NIFSKOPE_IPC_PORT 12583
 #else
@@ -313,7 +315,7 @@ private:
 	NifTreeView * kfmtree;
 
 	//! Spellbook instance
-	SpellBook * book;
+	std::shared_ptr<SpellBook> book;
 
 	//! Help browser
 	ReferenceBrowser * refrbrwsr;

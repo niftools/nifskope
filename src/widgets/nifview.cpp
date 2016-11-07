@@ -165,7 +165,7 @@ void NifTreeView::updateConditionRecurse( const QModelIndex & index )
 
 void NifTreeView::keyPressEvent( QKeyEvent * e )
 {
-	Spell * spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
+	SpellPtr spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
 
 	if ( spell ) {
 		NifModel * nif = nullptr;

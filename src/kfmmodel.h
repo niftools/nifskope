@@ -83,7 +83,7 @@ public:
 	QString getVersion() const override final { return version2string( version ); }
 	quint32 getVersionNumber() const override final { return version; }
 
-	static QAbstractItemDelegate * createDelegate();
+	static QAbstractItemDelegate * createDelegate( QObject * parent );
 
 protected:
 	void insertType( NifItem * parent, const NifData & data, int row = -1 );

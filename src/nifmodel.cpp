@@ -1490,7 +1490,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 	case Qt::UserRole:
 		{
 			if ( column == ValueCol ) {
-				Spell * spell = SpellBook::instant( this, index );
+				SpellPtr spell = SpellBook::instant( this, index );
 
 				if ( spell )
 					return spell->page() + "/" + spell->name();

@@ -46,6 +46,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QPersistentModelIndex>
 #include <QString>
 
+#include <memory>
+
 
 //! \file spellbook.h Spell, SpellBook and Librarian
 
@@ -102,6 +104,8 @@ public:
 	static inline QString tr( const char * key, const char * comment = 0 ) { return QCoreApplication::translate( "Spell", key, comment ); }
 };
 
+using SpellPtr = std::shared_ptr<Spell>;
+
 //! Spell menu
 class SpellBook final : public QMenu
 {
@@ -117,14 +121,14 @@ public:
 	QAction * exec( const QPoint & pos, QAction * act = 0 );
 
 	//! Register spell with appropriate books
-	static void registerSpell( Spell * spell );
+	static void registerSpell( SpellPtr spell );
 
 	//! Locate spell by name
-	static Spell * lookup( const QString & id );
+	static SpellPtr lookup( const QString & id );
 	//! Locate spell by hotkey
-	static Spell * lookup( const QKeySequence & hotkey );
+	static SpellPtr lookup( const QKeySequence & hotkey );
 	//! Locate instant spells by datatype
-	static Spell * instant( const NifModel * nif, const QModelIndex & index );
+	static SpellPtr instant( const NifModel * nif, const QModelIndex & index );
 
 	//! Cast all sanitizing spells
 	static QModelIndex sanitize( NifModel * nif );
@@ -134,7 +138,7 @@ public slots:
 
 	void sltIndex( const QModelIndex & index );
 
-	void cast( NifModel * nif, const QModelIndex & index, Spell * spell );
+	void cast( NifModel * nif, const QModelIndex & index, SpellPtr spell );
 
 	void checkActions();
 
@@ -147,17 +151,17 @@ protected slots:
 protected:
 	NifModel * Nif;
 	QPersistentModelIndex Index;
-	QMap<QAction *, Spell *> Map;
+	QMap<QAction *, SpellPtr> Map;
 
-	void newSpellRegistered( Spell * spell );
+	void newSpellRegistered( SpellPtr spell );
 	void checkActions( QMenu * menu, const QString & page );
 
 private:
-	static QList<Spell *> & spells();
+	static QList<SpellPtr> & spells();
 	static QList<SpellBook *> & books();
-	static QMultiHash<QString, Spell *> & hash();
-	static QList<Spell *> & instants();
-	static QList<Spell *> & sanitizers();
+	static QMultiHash<QString, SpellPtr> & hash();
+	static QList<SpellPtr> & instants();
+	static QList<SpellPtr> & sanitizers();
 };
 
 //! SpellBook manager
@@ -172,7 +176,7 @@ public:
 	 */
 	Librarian( Spell * spell )
 	{
-		SpellBook::registerSpell( spell );
+		SpellBook::registerSpell( SpellPtr( spell ) );
 	}
 };
 

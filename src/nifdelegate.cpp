@@ -57,10 +57,10 @@ extern void qt_format_text( const QFont & font, const QRectF & _r,
 
 class NifDelegate final : public QItemDelegate
 {
-	SpellBook * book;
+	SpellBookPtr book;
 
 public:
-	NifDelegate( SpellBook * sb = 0 ) : QItemDelegate(), book( sb )
+	NifDelegate( QObject * p, SpellBookPtr sb = 0 ) : QItemDelegate( p ), book( sb )
 	{
 	}
 
@@ -82,7 +82,7 @@ public:
 			     && decoRect( option ).contains( static_cast<QMouseEvent *>(event)->pos() ) )
 			{
 				// Spell Icons in Value column
-				Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
+				SpellPtr spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
 				if ( spell && !spell->icon().isNull() ) {
 					// Spell Icon click
 					if ( event->type() == QEvent::MouseButtonRelease ) {
@@ -148,7 +148,7 @@ public:
 
 		if ( !user.isEmpty() ) {
 			// Find the icon for this Spell if one exists
-			Spell * spell = SpellBook::lookup( user );
+			SpellPtr spell = SpellBook::lookup( user );
 			if ( spell )
 				icon = spell->icon();
 		}
@@ -350,12 +350,12 @@ public:
 	}
 };
 
-QAbstractItemDelegate * NifModel::createDelegate( SpellBook * book )
+QAbstractItemDelegate * NifModel::createDelegate( QObject * parent, SpellBookPtr book )
 {
-	return new NifDelegate( book );
+	return new NifDelegate( parent, book );
 }
 
-QAbstractItemDelegate * KfmModel::createDelegate()
+QAbstractItemDelegate * KfmModel::createDelegate( QObject * p )
 {
-	return new NifDelegate;
+	return new NifDelegate( p );
 }

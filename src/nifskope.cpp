@@ -186,7 +186,7 @@ NifSkope::NifSkope()
 	kfm = new KfmModel( this );
 	kfmEmpty = new KfmModel( this );
 
-	book = new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) );
+	book = SpellBookPtr( new SpellBook( nif, QModelIndex(), this, SLOT( select( const QModelIndex & ) ) ) );
 
 	// Setup Views
 	/* ********************** */
@@ -195,28 +195,28 @@ NifSkope::NifSkope()
 	list = ui->list;
 	list->setModel( proxy );
 	list->setSortingEnabled( false );
-	list->setItemDelegate( nif->createDelegate( book ) );
+	list->setItemDelegate( nif->createDelegate( this, book ) );
 	list->installEventFilter( this );
 
 	// Block Details
 	tree = ui->tree;
 	tree->setModel( nif );
 	tree->setSortingEnabled( false );
-	tree->setItemDelegate( nif->createDelegate( book ) );
+	tree->setItemDelegate( nif->createDelegate( this, book ) );
 	tree->installEventFilter( this );
 	tree->header()->moveSection( 1, 2 );
 
 	// Header Details
 	header = ui->header;
 	header->setModel( nif );
-	header->setItemDelegate( nif->createDelegate( book ) );
+	header->setItemDelegate( nif->createDelegate( this, book ) );
 	header->installEventFilter( this );
 	header->header()->moveSection( 1, 2 );
 
 	// KFM
 	kfmtree = ui->kfmtree;
 	kfmtree->setModel( kfm );
-	kfmtree->setItemDelegate( kfm->createDelegate() );
+	kfmtree->setItemDelegate( kfm->createDelegate( this ) );
 	kfmtree->installEventFilter( this );
 
 	// Help Browser
