@@ -1,5 +1,5 @@
 #include "spellbook.h"
-#include "options.h"
+#include "settings.h"
 
 #include <QFileDialog>
 
@@ -125,7 +125,7 @@ public:
 					QPersistentModelIndex iObjPalette = nif->getBlock( nif->getLink( iCtrlManager, "Object Palette" ), "NiDefaultAVObjectPalette" );
 
 					if ( !iObjPalette.isValid() ) {
-						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1, true );
+						iObjPalette = nif->insertNiBlock( "NiDefaultAVObjectPalette", nif->getBlockNumber( iCtrlManager ) + 1 );
 						nif->setLink( iCtrlManager, "Object Palette", nif->getBlockNumber( iObjPalette ) );
 					}
 
@@ -162,9 +162,8 @@ public:
 					nif->holdUpdates( false );
 
 				if ( !missingNodes.isEmpty() ) {
-					qWarning() << Spell::tr( "The following controlled nodes were not found in the nif:" );
 					for ( const QString& nn : missingNodes ) {
-						qWarning() << nn;
+						Message::append( Spell::tr( "Errors occurred while attaching .KF" ), nn );
 					}
 				}
 
@@ -172,7 +171,7 @@ public:
 			}
 			catch ( QString e )
 			{
-				qWarning( e.toLatin1().constData() );
+				Message::append( Spell::tr( "Errors occurred while attaching .KF" ), e );
 			}
 		}
 		return index;
@@ -230,7 +229,7 @@ public:
 
 	static QModelIndex attachController( NifModel * nif, const QPersistentModelIndex & iNode, const QString & ctrltype, bool fast = false )
 	{
-		QModelIndex iCtrl = nif->insertNiBlock( ctrltype, nif->getBlockNumber( iNode ) + 1, fast );
+		QModelIndex iCtrl = nif->insertNiBlock( ctrltype, nif->getBlockNumber( iNode ) + 1 );
 
 		if ( !iCtrl.isValid() )
 			return QModelIndex();

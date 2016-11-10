@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,7 @@ public slots:
 	void refresh();
 	void updateTime( float t, float mn, float mx );
 	void update();
+	void copyTransformToMimedata();
 
 private:
 	InspectViewInternal * impl;

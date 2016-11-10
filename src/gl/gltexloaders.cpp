@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 #include "dds/dds_api.h"
 #include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
+#include "SOIL.h"
 
 #include <QBuffer>
 #include <QDebug>
@@ -46,8 +47,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtEndian>
 
 
-/*! \file gltexloaders.cpp
- * \brief Texture loading functions.
+/*! @file gltexloaders.cpp
+ * @brief Texture loading functions.
  *
  * Textures can be loaded from a filename (in any supported format) or raw
  * pixel data. They can also be exported from raw pixel data to TGA or DDS.
@@ -64,6 +65,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * - NIF from NIF (matching versions only, experimental)
  *
  */
+
+#define GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI 0x8837
+#define FOURCC_ATI2 0x32495441
+#define FOURCC_BC5U 0x55354342
 
 //! Shift amounts for RGBA conversion
 static const int rgbashift[4] = {
@@ -112,10 +117,10 @@ bool isPowerOfTwo( unsigned int x )
 	return ( x == 1 );
 }
 
-//! Completes mipmap sequence of the current active OpenGL texture.
-/*!
- * \param m Number of mipmaps that are already in the texture.
- * \return Total number of mipmaps.
+/*! Completes mipmap sequence of the current active OpenGL texture.
+ *
+ * @param m Number of mipmaps that are already in the texture.
+ * @return	Total number of mipmaps.
  */
 int generateMipMaps( int m )
 {
@@ -125,7 +130,7 @@ int generateMipMaps( int m )
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, m - 1, GL_TEXTURE_WIDTH, &w );
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, m - 1, GL_TEXTURE_HEIGHT, &h );
 
-	//qWarning() << m-1 << w << h;
+	//qDebug() << m-1 << w << h;
 
 	quint8 * data = (quint8 *)malloc( w * h * 4 );
 	glGetTexImage( GL_TEXTURE_2D, m - 1, GL_RGBA, GL_UNSIGNED_BYTE, data );
@@ -151,7 +156,7 @@ int generateMipMaps( int m )
 		if ( h == 0 )
 			h = 1;
 
-		//qWarning() << m << w << h;
+		//qDebug() << m << w << h;
 
 		for ( int y = 0; y < h; y++ ) {
 			for ( int x = 0; x < w; x++ ) {
@@ -174,8 +179,8 @@ int generateMipMaps( int m )
 	return m;
 }
 
-//! Converts RLE-encoded data into pixel data.
-/*!
+/*! Converts RLE-encoded data into pixel data.
+ *
  * TGA in particular uses the PackBits format described at
  * http://en.wikipedia.org/wiki/PackBits and in the TGA spec.
  */
@@ -193,7 +198,7 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 
 		if ( rl & 0x80 ) {
 			// if RLE packet
-			quint8 px[8]; // pixel data in this packet (assume bytespp < 8)
+			quint8 px[8] = {}; // pixel data in this packet (assume bytespp < 8)
 
 			for ( int b = 0; b < bytespp; b++ )
 				px[b] = data[o++];
@@ -218,16 +223,16 @@ bool uncompressRLE( QIODevice & f, int w, int h, int bytespp, quint8 * pixel )
 	return true;
 }
 
-//! Convert pixels to RGBA
-/*!
- * \param data Pixels to convert
- * \param w Width of the image
- * \param h Height of the image
- * \param bytespp Number of bytes per pixel
- * \param mask Bitmask for pixel data
- * \param flipV Whether to flip the data vertically
- * \param flipH Whether to flip the data horizontally
- * \param pixl Pixels to output
+/*! Convert pixels to RGBA
+ *
+ * @param data		Pixels to convert
+ * @param w			Width of the image
+ * @param h			Height of the image
+ * @param bytespp	Number of bytes per pixel
+ * @param mask		Bitmask for pixel data
+ * @param flipV		Whether to flip the data vertically
+ * @param flipH		Whether to flip the data horizontally
+ * @param pixl		Pixels to output
  */
 void convertToRGBA( const quint8 * data, int w, int h, int bytespp, const quint32 mask[], bool flipV, bool flipH, quint8 * pixl )
 {
@@ -569,18 +574,18 @@ void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
 	}
 }
 
-//! Load a DXT compressed DDS texture from file
-/*!
- * \param f File to load from
- * \param null Format
- * \param null Block size
- * \param null Width
- * \param null Height
- * \param mipmaps The number of mipmaps to read
- * \param null Flip
- * \return The total number of mipmaps
+/*! Load a DXT compressed DDS texture from file
+ *
+ * @param f			File to load from
+ * @param null		Format
+ * @param null		Block size
+ * @param null		Width
+ * @param null		Height
+ * @param mipmaps	The number of mipmaps to read
+ * @param null		Flip
+ * @return			The total number of mipmaps
  */
-GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
+GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
 {
 /*
 #ifdef WIN32
@@ -607,18 +612,31 @@ GLuint texLoadDXT( QIODevice & f, GLenum /*glFormat*/, int /*blockSize*/, quint3
 		Color32 * src = img->pixels();
 		GLubyte * dst = pixels;
 
-		//qWarning() << "flipV = " << flipV;
-		for ( quint32 y = 0; y < h; y++ ) {
-			for ( quint32 x = 0; x < w; x++ ) {
-				*dst++ = src->r;
-				*dst++ = src->g;
-				*dst++ = src->b;
-				*dst++ = src->a;
-				src++;
+		//qDebug() << "flipV = " << flipV;
+		if ( glFormat == GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI ) {
+			for ( quint32 y = 0; y < h; y++ ) {
+				for ( quint32 x = 0; x < w; x++ ) {
+					*dst++ = src->g;
+					*dst++ = src->r;
+					*dst++ = 255 - src->b;
+					*dst++ = 255;
+					src++;
+				}
+			}
+		} else {
+			for ( quint32 y = 0; y < h; y++ ) {
+				for ( quint32 x = 0; x < w; x++ ) {
+					*dst++ = src->r;
+					*dst++ = src->g;
+					*dst++ = src->b;
+					*dst++ = src->a;
+					src++;
+				}
 			}
 		}
 
 		delete img;
+
 		// load the texture into OpenGL
 		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
 		delete [] pixels;
@@ -706,6 +724,12 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 			blockSize  = 16;
 			texformat += " (DXT5)";
 			break;
+		case FOURCC_ATI2:
+		case FOURCC_BC5U:
+			glFormat = GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI;
+			blockSize = 16;
+			texformat += " (ATI2)";
+			break;
 		default:
 			throw QString( "unknown texture compression" );
 		}
@@ -740,12 +764,12 @@ GLuint texLoadDDS( QIODevice & f, QString & texformat )
 	}
 }
 
-//! Load a DXT compressed texture
-/*!
- * \param hdr Description of the texture
- * \param pixels The pixel data
- * \param size The size of the texture
- * \return The total number of mipmaps
+/*! Load a DXT compressed texture
+ *
+ * @param hdr		Description of the texture
+ * @param pixels	The pixel data
+ * @param size		The size of the texture
+ * @return			The total number of mipmaps
  */
 GLuint texLoadDXT( DDSFormat & hdr, const quint8 * pixels, uint size )
 {
@@ -765,7 +789,7 @@ GLuint texLoadDXT( DDSFormat & hdr, const quint8 * pixels, uint size )
 		Color32 * src = img->pixels();
 		GLubyte * dst = pixels;
 
-		//qWarning() << "flipV = " << flipV;
+		//qDebug() << "flipV = " << flipV;
 		for ( quint32 y = 0; y < h; y++ ) {
 			for ( quint32 x = 0; x < w; x++ ) {
 				*dst++ = src->r;
@@ -835,7 +859,7 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 		quint8 bits  = hdr[7];
 		quint8 bytes = bits / 8;
 
-		//qWarning() << "COLORMAP" << "offset" << offset << "length" << length << "bits" << bits << "depth" << depth;
+		//qDebug() << "COLORMAP" << "offset" << offset << "length" << length << "bits" << bits << "depth" << depth;
 
 		if ( bits != 32 && bits != 24 )
 			throw QString( "image sub format not supported" );
@@ -925,13 +949,13 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 	return 0;
 }
 
-//! Return value as a 32-bit value; possibly replace with <a href="http://doc.trolltech.com/latest/qtendian.html">QtEndian</a> functions?
+//! Return value as a 32-bit value; possibly replace with QtEndian functions?
 quint32 get32( quint8 * x )
 {
 	return *( (quint32 *)x );
 }
 
-//! Return value as a 16-bit value; possibly replace with <a href="http://doc.trolltech.com/latest/qtendian.html">QtEndian</a> functions?
+//! Return value as a 16-bit value; possibly replace with QtEndian functions?
 quint16 get16( quint8 * x )
 {
 	return *( (quint16 *)x );
@@ -982,11 +1006,11 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 
 	throw QString( "unknown image sub format" );
 	/*
-	qWarning( "size %i,%i", width, height );
-	qWarning( "plns %i", get16( &hdr[26] ) );
-	qWarning( "bpp  %i", bpp );
-	qWarning( "cmpr %08x", compression );
-	qWarning( "ofs  %i", offset );
+	qDebug( "size %i,%i", width, height );
+	qDebug( "plns %i", get16( &hdr[26] ) );
+	qDebug( "bpp  %i", bpp );
+	qDebug( "cmpr %08x", compression );
+	qDebug( "ofs  %i", offset );
 	*/
 	return 0;
 }
@@ -1175,12 +1199,12 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 	return mipmaps;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	return texLoad( filepath, format, width, height, mipmaps, *(new QByteArray()) );
 }
-// (public function, documented in gltexloaders.h)
+
 bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data )
 {
 	width = height = mipmaps = 0;
@@ -1216,6 +1240,7 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 		throw QString( "unknown texture format" );
 
 	f.close();
+	data.clear();
 
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
 	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
@@ -1223,7 +1248,67 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	return mipmaps > 0;
 }
 
-// (public function, documented in gltexloaders.h)
+
+bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id )
+{
+	Q_UNUSED( format );
+
+	width = height = mipmaps = 0;
+
+	if ( data.isEmpty() ) {
+		QFile tmpF( filepath );
+
+		if ( !tmpF.open( QIODevice::ReadOnly ) )
+			throw QString( "could not open file" );
+
+		data = tmpF.readAll();
+
+		tmpF.close();
+
+		if ( data.isEmpty() )
+			return false;
+	}
+
+	bool success = false;
+	GLuint result;
+
+	QBuffer f( &data );
+	
+	if ( !f.open( QIODevice::ReadOnly ) )
+		throw QString( "could not open buffer" );
+	
+	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
+
+		result = SOIL_load_OGL_single_cubemap_from_memory(
+			(const unsigned char *)f.data().constData(),
+			f.data().size(),
+			SOIL_DDS_CUBEMAP_FACE_ORDER,
+			SOIL_LOAD_AUTO,
+			id,
+			SOIL_FLAG_MIPMAPS
+		);
+
+		if ( result == id ) {
+			success = true;
+
+			// Just fudge the mipmaps number
+			mipmaps = 6;
+		}
+	} else {
+		throw QString( "unsupported texture format" );
+	}
+		
+	
+	f.close();
+	data.clear();
+
+	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
+	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+
+	return success;
+}
+
+
 bool texCanLoad( const QString & filepath )
 {
 	QFileInfo i( filepath );
@@ -1236,7 +1321,7 @@ bool texCanLoad( const QString & filepath )
 	       );
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
@@ -1244,7 +1329,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 
 	// can't dump palettised textures yet
 	if ( format == 2 ) {
-		qWarning() << "Texture format not supported";
+		qCCritical( nsIo ) << QObject::tr( "Texture format not supported" );
 		return false;
 	}
 
@@ -1277,14 +1362,14 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	QFile f( filename );
 
 	if ( !f.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
 	qint64 writeBytes = f.write( (char *)"DDS ", 4 );
 
 	if ( writeBytes != 4 ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
@@ -1488,7 +1573,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *)header, 124 );
 
 	if ( writeBytes != 124 ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
@@ -1496,14 +1581,14 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( buf.data().constData(), buf.size() );
 
 	if ( writeBytes != buf.size() ) {
-		qWarning() << "texSaveDDS(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveDDS: could not open %1" ).arg( filename );
 		return false;
 	}
 
 	return true;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
 {
 	Q_UNUSED( index );
@@ -1553,7 +1638,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	QFile f( filename );
 
 	if ( !f.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "texSaveTGA(" << filename << ") : could not open file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not open %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1590,7 +1675,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	qint64 writeBytes = f.write( (char *)hdr, 18 );
 
 	if ( writeBytes != 18 ) {
-		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not write to %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1598,7 +1683,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *)data, s );
 
 	if ( writeBytes != s ) {
-		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not write to %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1606,7 +1691,7 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	writeBytes = f.write( (char *)footer, 26 );
 
 	if ( writeBytes != 26 ) {
-		qWarning() << "texSaveTGA(" << filename << ") : failed to write file";
+		qCCritical( nsIo ) << QObject::tr( "texSaveTGA: could not write to %1" ).arg( filename );
 		free( data );
 		return false;
 	}
@@ -1615,12 +1700,12 @@ bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & w
 	return true;
 }
 
-// (public function, documented in gltexloaders.h)
+
 bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 {
 	// Work out the extension and format
 	// If DDS raw, DXT1 or DXT5, copy directly from texture
-	//qWarning() << "texSaveNIF: saving" << filepath << "to" << iData;
+	//qDebug() << "texSaveNIF: saving" << filepath << "to" << iData;
 
 	QFile f( filepath );
 
@@ -1688,13 +1773,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 			// copy channels
 			for ( int i = 0; i < 4; i++ ) {
-#ifndef QT_NO_DEBUG
-				qWarning() << "Channel" << i;
-				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
-				qWarning() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
-				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
-				qWarning() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
-#endif
+				qDebug() << "Channel" << i;
+				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
+				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
 
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ) );
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ) );
@@ -1704,7 +1787,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
 		} else {
-			qWarning() << "NIF versions are incompatible, cannot copy pixel data";
+			qCCritical( nsNif ) << QObject::tr( "NIF versions are incompatible, cannot copy pixel data" );
 			return false;
 		}
 
@@ -1741,16 +1824,16 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		//nif->set<>( iData, "", pix.get<>( iPixData, "" ) );
 		//nif->set<>( iData, "", pix.get<>( iPixData, "" ) );
 	} else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) ) {
-		//qWarning() << "Copying from GL buffer";
+		//qDebug() << "Copying from GL buffer";
 
 		GLuint width, height, mipmaps;
 		QString format;
 
 		// fastest way to get parameters and ensure texture is active
 		if ( texLoad( filepath, format, width, height, mipmaps ) ) {
-			//qWarning() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
+			//qDebug() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
 		} else {
-			qWarning() << "Error importing texture" << filepath;
+			qCCritical( nsIo ) << QObject::tr( "Error importing %1" ).arg( filepath );
 			return false;
 		}
 
@@ -1807,11 +1890,11 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			mipmapData.resize( mipmapSize );
 
 			glGetTexImage( GL_TEXTURE_2D, i, GL_RGBA, GL_UNSIGNED_BYTE, mipmapData.data() );
-			//qWarning() << "Copying mipmap" << i << "," << mipmapSize << "bytes";
+			//qDebug() << "Copying mipmap" << i << "," << mipmapSize << "bytes";
 
 			pixelData.append( mipmapData );
 
-			//qWarning() << "Now have" << pixelData.size() << "bytes of pixel data";
+			//qDebug() << "Now have" << pixelData.size() << "bytes of pixel data";
 
 			// generate next offset, resize
 			mipmapOffset += mipmapWidth * mipmapHeight * 4;
@@ -1832,7 +1915,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		// return true once perfected
 		//return false;
 	} else if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
-		//qWarning() << "Will copy from DDS data";
+		//qDebug() << "Will copy from DDS data";
 		DDSFormat ddsHeader;
 		char tag[4];
 		f.read( &tag[0], 4 );
@@ -1840,29 +1923,27 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		if ( strncmp( tag, "DDS ", 4 ) != 0 || f.read( (char *)&ddsHeader, sizeof(DDSFormat) ) != sizeof( DDSFormat ) )
 			throw QString( "not a DDS file" );
 
-#ifndef QT_NO_DEBUG
-		qWarning() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
-		qWarning() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
-#endif
+		qDebug() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
+		qDebug() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
 
 		if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
 			switch ( ddsHeader.ddsPixelFormat.dwFourCC ) {
 			case FOURCC_DXT1:
-				//qWarning() << "DXT1";
+				//qDebug() << "DXT1";
 				nif->set<uint>( iData, "Pixel Format", 4 );
 				break;
 			case FOURCC_DXT5:
-				//qWarning() << "DXT5";
+				//qDebug() << "DXT5";
 				nif->set<uint>( iData, "Pixel Format", 5 );
 				break;
 			default:
 				// don't know how eg. DXT3 can be stored in NIF
-				qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwFourCC << "FourCC";
+				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddsPixelFormat.dwFourCC ).arg( "FourCC" );
 				return false;
 				break;
 			}
 		} else {
-			//qWarning() << "RAW";
+			//qDebug() << "RAW";
 			// switch on BPP
 			//nif->set<uint>( iData, "Pixel Format", 0 );
 			switch ( ddsHeader.ddsPixelFormat.dwBPP ) {
@@ -1876,19 +1957,17 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				break;
 			default:
 				// theoretically could have a palettised DDS in 8bpp
-				qWarning() << "Unsupported DDS format:" << ddsHeader.ddsPixelFormat.dwBPP << "BPP";
+				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddsPixelFormat.dwBPP ).arg( "BPP" );
 				return false;
 				break;
 			}
 		}
 
-#ifndef QT_NO_DEBUG
-		qWarning() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
-		qWarning() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
-		qWarning() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
-		qWarning() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
-		qWarning() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
-#endif
+		qDebug() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
+		qDebug() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
+		qDebug() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
+		qDebug() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
+		qDebug() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
 
 		// Note that these might not match what's expected; hopefully the loader function is smart
 		if ( nif->checkVersion( 0, 0x0A020000 ) ) {
@@ -1936,13 +2015,13 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				// set RGB mask separately
 				for ( int i = 0; i < 3; i++ ) {
 					if ( ddsHeader.ddsPixelFormat.dwRMask == RGBA_INV_MASK[i] ) {
-						//qWarning() << "red channel" << i;
+						//qDebug() << "red channel" << i;
 						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 0 );
 					} else if ( ddsHeader.ddsPixelFormat.dwGMask == RGBA_INV_MASK[i] ) {
-						//qWarning() << "green channel" << i;
+						//qDebug() << "green channel" << i;
 						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 1 );
 					} else if ( ddsHeader.ddsPixelFormat.dwBMask == RGBA_INV_MASK[i] ) {
-						//qWarning() << "blue channel" << i;
+						//qDebug() << "blue channel" << i;
 						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 2 );
 					}
 				}
@@ -1968,7 +2047,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		}
 
 		// generate mipmap sizes and offsets
-		//qWarning() << "Mipmap count: " << ddsHeader.dwMipMapCount;
+		//qDebug() << "Mipmap count: " << ddsHeader.dwMipMapCount;
 		nif->set<quint32>( iData, "Num Mipmaps", ddsHeader.dwMipMapCount );
 		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
 		nif->updateArray( destMipMaps );
@@ -2010,13 +2089,13 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		nif->updateArray( iFaceData );
 
 		f.seek( 4 + ddsHeader.dwSize );
-		//qWarning() << "Reading from " << f.pos();
+		//qDebug() << "Reading from " << f.pos();
 
 		QByteArray ddsData = f.read( mipmapOffset );
 
-		//qWarning() << "Read " << ddsData.size() << " bytes of" << f.size() << ", now at" << f.pos();
+		//qDebug() << "Read " << ddsData.size() << " bytes of" << f.size() << ", now at" << f.pos();
 		if ( ddsData.size() != mipmapOffset ) {
-			qWarning() << "Unexpected EOF";
+			qCCritical( nsIo ) << QObject::tr( "Unexpected EOF" );
 			return false;
 		}
 
@@ -2026,7 +2105,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		QByteArray result = nif->get<QByteArray>( iFaceData, "Pixel Data" );
 		for ( int i = 0; i < 16; i++ )
 		{
-		    qWarning() << "Comparing byte " << i << ": result " << (quint8)result[i] << ", original " << (quint8)ddsData[i];
+		    qDebug() << "Comparing byte " << i << ": result " << (quint8)result[i] << ", original " << (quint8)ddsData[i];
 		}
 		*/
 

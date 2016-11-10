@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QObject>
 #include <QMap>
 
+#include <memory>
 
 class FSArchiveHandler;
 class FSArchiveFile;
@@ -50,59 +51,33 @@ class FSManager : public QObject
 public:
 	//! Gets the global file system manager
 	static FSManager * get();
+	
+	//! Deletes the manager
+	static void del();
+
 	//! Gets the list of globally registered BSA files
 	static QList<FSArchiveFile *> archiveList();
 
 protected:
 	//! Constructor
-	FSManager( QObject * parent = NULL );
+	FSManager( QObject * parent = nullptr );
 	//! Destructor
 	~FSManager();
-
-public slots:
-	//! Launches a FSSelector dialog
-	void selectArchives();
 	
 protected:
-	QMap<QString, FSArchiveHandler *> archives;
+	QMap<QString, std::shared_ptr<FSArchiveHandler> > archives;
 	bool automatic;
 	
 	//! Builds a list of global BSAs on Windows platforms
-	static QStringList autodetectArchives();
+	static QStringList autodetectArchives( const QString & folder = "" );
 	//! Helper function to build a list of BSAs
 	static QStringList regPathBSAList( QString regKey, QString dataDir );
-	
-	friend class FSSelector;
-};
 
-//! Interface dialog for FSManager
-class FSSelector : public QDialog
-{
-	Q_OBJECT
-public:
-	//! Constructor
-	FSSelector( FSManager * m );
-	//! Destructor
-	~FSSelector();
+	void initialize();
 	
-protected slots:
-	void sltAuto( bool );
-	void sltAdd();
-	void sltDel();
-	void sltDelAll();
-	
-protected:
-	FSManager * manager;
-	
-	class QStringListModel * model;
-	class QListView * view;
-	
-	class QCheckBox * chkAuto;
-	class QPushButton * btAdd;
-	class QPushButton * btDel;
-	class QPushButton * btDelAll;
+	friend class NifSkope;
+	friend class SettingsResources;
 };
-
 
 #endif
 

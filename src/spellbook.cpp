@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,41 +32,44 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "spellbook.h"
 
+#include "ui/checkablemessagebox.h"
+
 #include <QCache>
 #include <QDir>
+#include <QSettings>
+
 
 
 //! \file spellbook.cpp SpellBook implementation
 
-QList<Spell *> & SpellBook::spells()
+QList<SpellPtr> & SpellBook::spells()
 {
-	// construct-on-first-use wrapper
-	static QList<Spell *> * _spells = new QList<Spell *>();
-	return *_spells;
+	static QList<SpellPtr> _spells = QList<SpellPtr>();
+	return _spells;
 }
 
 QList<SpellBook *> & SpellBook::books()
 {
-	static QList<SpellBook *> * _books = new QList<SpellBook *>();
-	return *_books;
+	static QList<SpellBook *> _books = QList<SpellBook *>();
+	return _books;
 }
 
-QMultiHash<QString, Spell *> & SpellBook::hash()
+QMultiHash<QString, SpellPtr> & SpellBook::hash()
 {
-	static QMultiHash<QString, Spell *> * _hash = new QMultiHash<QString, Spell *>();
-	return *_hash;
+	static QMultiHash<QString, SpellPtr> _hash = QMultiHash<QString, SpellPtr>();
+	return _hash;
 }
 
-QList<Spell *> & SpellBook::instants()
+QList<SpellPtr> & SpellBook::instants()
 {
-	static QList<Spell *> * _instants = new QList<Spell *>();
-	return *_instants;
+	static QList<SpellPtr> _instants = QList<SpellPtr>();
+	return _instants;
 }
 
-QList<Spell *> & SpellBook::sanitizers()
+QList<SpellPtr> & SpellBook::sanitizers()
 {
-	static QList<Spell *> * _sanitizers = new QList<Spell *>();
-	return *_sanitizers;
+	static QList<SpellPtr> _sanitizers = QList<SpellPtr>();
+	return _sanitizers;
 }
 
 SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * receiver, const char * member ) : QMenu(), Nif( 0 )
@@ -80,7 +83,7 @@ SpellBook::SpellBook( NifModel * nif, const QModelIndex & index, QObject * recei
 	sltNif( nif );
 
 	// fill in the known spells
-	for ( Spell * spell : spells() ) {
+	for ( SpellPtr spell : spells() ) {
 		newSpellRegistered( spell );
 	}
 
@@ -98,15 +101,46 @@ SpellBook::~SpellBook()
 	books().removeAll( this );
 }
 
-void SpellBook::cast( NifModel * nif, const QModelIndex & index, Spell * spell )
+void SpellBook::cast( NifModel * nif, const QModelIndex & index, SpellPtr spell )
 {
-	if ( spell && spell->isApplicable( nif, index ) )
-		emit sigIndex( spell->cast( nif, index ) );
+	QSettings cfg;
+
+	bool suppressConfirm = cfg.value( "Settings/Suppress Undoable Confirmation", false ).toBool();
+	bool accepted = false;
+
+	QDialogButtonBox::StandardButton response = QDialogButtonBox::Yes;
+
+	if ( !suppressConfirm ) {
+		response = CheckableMessageBox::question( this, "Confirmation", "This action cannot currently be undone. Do you want to continue?", "Do not ask me again", &accepted );
+
+		if ( accepted )
+			cfg.setValue( "Settings/Suppress Undoable Confirmation", true );
+	}
+	
+	if ( (response == QDialogButtonBox::Yes) && spell && spell->isApplicable( nif, index ) ) {
+		bool noSignals = spell->batch();
+		if ( noSignals )
+			nif->setState( BaseModel::Processing );
+		// Cast the spell and return index
+		auto idx = spell->cast( nif, index );
+		if ( noSignals )
+			nif->resetState();
+
+		// Refresh the header
+		nif->invalidateConditions( nif->getHeader(), true );
+		nif->updateHeader();
+
+		if ( noSignals && nif->getProcessingResult() ) {
+			emit nif->dataChanged( idx, idx );
+		}
+
+		emit sigIndex( idx );
+	}
 }
 
 void SpellBook::sltSpellTriggered( QAction * action )
 {
-	Spell * spell = Map.value( action );
+	SpellPtr spell = Map.value( action );
 	cast( Nif, Index, spell );
 }
 
@@ -146,7 +180,7 @@ void SpellBook::checkActions( QMenu * menu, const QString & page )
 			menuEnable |= action->menu()->isEnabled();
 			action->setVisible( action->menu()->isEnabled() );
 		} else {
-			for ( Spell * spell : spells() ) {
+			for ( SpellPtr spell : spells() ) {
 				if ( action->text() == spell->name() && page == spell->page() ) {
 					bool actionEnable = Nif && spell->isApplicable( Nif, Index );
 					action->setVisible( actionEnable );
@@ -159,7 +193,7 @@ void SpellBook::checkActions( QMenu * menu, const QString & page )
 	menu->setEnabled( menuEnable );
 }
 
-void SpellBook::newSpellRegistered( Spell * spell )
+void SpellBook::newSpellRegistered( SpellPtr spell )
 {
 	if ( spell->page().isEmpty() ) {
 		Map.insert( addAction( spell->icon(), spell->name() ), spell );
@@ -173,7 +207,7 @@ void SpellBook::newSpellRegistered( Spell * spell )
 		}
 
 		if ( !menu ) {
-			menu = new QMenu( spell->page() );
+			menu = new QMenu( spell->page(), this );
 			addMenu( menu );
 		}
 
@@ -183,7 +217,7 @@ void SpellBook::newSpellRegistered( Spell * spell )
 	}
 }
 
-void SpellBook::registerSpell( Spell * spell )
+void SpellBook::registerSpell( SpellPtr spell )
 {
 	spells().append( spell );
 	hash().insertMulti( spell->name(), spell );
@@ -199,10 +233,10 @@ void SpellBook::registerSpell( Spell * spell )
 	}
 }
 
-Spell * SpellBook::lookup( const QString & id )
+SpellPtr SpellBook::lookup( const QString & id )
 {
 	if ( id.isEmpty() )
-		return 0;
+		return nullptr;
 
 	QString page;
 	QString name = id;
@@ -213,41 +247,41 @@ Spell * SpellBook::lookup( const QString & id )
 		name = split.value( 1 );
 	}
 
-	for ( Spell * spell : hash().values( name ) ) {
+	for ( SpellPtr spell : hash().values( name ) ) {
 		if ( spell->page() == page )
 			return spell;
 	}
 
-	return 0;
+	return nullptr;
 }
 
-Spell * SpellBook::lookup( const QKeySequence & hotkey )
+SpellPtr SpellBook::lookup( const QKeySequence & hotkey )
 {
 	if ( hotkey.isEmpty() )
-		return 0;
+		return nullptr;
 
-	for ( Spell * spell : spells() ) {
+	for ( SpellPtr spell : spells() ) {
 		if ( spell->hotkey() == hotkey )
 			return spell;
 	}
 
-	return 0;
+	return nullptr;
 }
 
-Spell * SpellBook::instant( const NifModel * nif, const QModelIndex & index )
+SpellPtr SpellBook::instant( const NifModel * nif, const QModelIndex & index )
 {
-	for ( Spell * spell : instants() ) {
+	for ( SpellPtr spell : instants() ) {
 		if ( spell->isApplicable( nif, index ) )
 			return spell;
 	}
-	return 0;
+	return nullptr;
 }
 
 QModelIndex SpellBook::sanitize( NifModel * nif )
 {
 	QPersistentModelIndex ridx;
 
-	for ( Spell * spell : sanitizers() ) {
+	for ( SpellPtr spell : sanitizers() ) {
 		if ( spell->isApplicable( nif, QModelIndex() ) ) {
 			QModelIndex idx = spell->cast( nif, QModelIndex() );
 
@@ -264,5 +298,5 @@ QAction * SpellBook::exec( const QPoint & pos, QAction * act )
 	if ( isEnabled() )
 		return QMenu::exec( pos, act );
 
-	return 0;
+	return nullptr;
 }

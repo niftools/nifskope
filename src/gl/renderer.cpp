@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "renderer.h"
-#include "options.h"
+#include "settings.h"
 
 #include "glmesh.h"
 #include "glproperty.h"
 #include "glscene.h"
 #include "gltex.h"
+#include "material.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -44,30 +45,29 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFile>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QSettings>
 #include <QTextStream>
 
 
+//! @file renderer.cpp Renderer and child classes implementation
+
 bool shader_initialized = false;
-bool shader_ready = false;
+bool shader_ready = true;
 
 bool Renderer::initialize()
 {
 	if ( !shader_initialized ) {
-#ifdef DISABLE_SHADERS
-		shader_ready = false;
-#else
 
 		// check for OpenGL 2.0
 		// (we don't use the extension API but the 2.0 API for shaders)
-		if ( fn->hasOpenGLFeature( QOpenGLFunctions::Shaders ) ) {
+		if ( cfg.useShaders && fn->hasOpenGLFeature( QOpenGLFunctions::Shaders ) ) {
 			shader_ready = true;
+			shader_initialized = true;
 		} else {
 			shader_ready = false;
 		}
 
-#endif
-		//qWarning() << "shader support" << shader_ready;
-		shader_initialized = true;
+		//qDebug() << "shader support" << shader_ready;
 	}
 
 	return shader_ready;
@@ -85,7 +85,8 @@ const QHash<Renderer::ConditionSingle::Type, QString> Renderer::ConditionSingle:
 	{ GE,  " >= " },
 	{ LT,  " < " },
 	{ GT,  " > " },
-	{ AND, " & " }
+	{ AND, " & " },
+	{ NAND, " !& " }
 };
 
 Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : invert( neg )
@@ -120,7 +121,7 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QLi
 	QString childid;
 
 	if ( blkid.startsWith( "HEADER/" ) )
-		return nif->getIndex( nif->getHeader(), blkid );
+		return nif->getIndex( nif->getHeader(), blkid.remove( "HEADER/" ) );
 
 	int pos = blkid.indexOf( "/" );
 
@@ -190,7 +191,7 @@ void Renderer::ConditionGroup::addCondition( Condition * c )
 }
 
 Renderer::Shader::Shader( const QString & n, GLenum t, QOpenGLFunctions * fn )
-	: name( n ), id( 0 ), status( false ), type( t ), f( fn )
+	: f( fn ), name( n ), id( 0 ), status( false ), type( t )
 {
 	id = f->glCreateShader( type );
 }
@@ -233,7 +234,7 @@ bool Renderer::Shader::load( const QString & filepath )
 	catch ( QString err )
 	{
 		status = false;
-		qWarning() << "error loading shader" << name << ":\r\n" << err.toLatin1().data();
+		Message::append( QObject::tr( "There were errors during shader compilation" ), QString( "%1:\r\n\r\n%2" ).arg( name ).arg( err ) );
 		return false;
 	}
 	status = true;
@@ -242,7 +243,7 @@ bool Renderer::Shader::load( const QString & filepath )
 
 
 Renderer::Program::Program( const QString & n, QOpenGLFunctions * fn )
-	: name( n ), id( 0 ), status( false ), f( fn )
+	: f( fn ), name( n ), id( 0 )
 {
 	id = f->glCreateProgram();
 }
@@ -354,7 +355,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 	catch ( QString x )
 	{
 		status = false;
-		qWarning() << "error loading shader program " << name << ":\r\n" << x.toLatin1().data();
+		Message::append( QObject::tr( "There were errors during shader compilation" ), QString( "%1:\r\n\r\n%2" ).arg( name ).arg( x ) );
 		return false;
 	}
 	status = true;
@@ -364,11 +365,30 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 Renderer::Renderer( QOpenGLContext * c, QOpenGLFunctions * f )
 	: cx( c ), fn( f )
 {
+	updateSettings();
+
+	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Renderer::updateSettings );
 }
 
 Renderer::~Renderer()
 {
 	releaseShaders();
+}
+
+
+void Renderer::updateSettings()
+{
+	QSettings settings;
+
+	cfg.useShaders = settings.value( "Settings/Render/General/Use Shaders", true ).toBool();
+
+	bool prevStatus = shader_ready;
+
+	shader_ready = cfg.useShaders && fn->hasOpenGLFeature( QOpenGLFunctions::Shaders );
+	if ( !shader_initialized && shader_ready && !prevStatus ) {
+		updateShaders();
+		shader_initialized = true;
+	}
 }
 
 void Renderer::updateShaders()
@@ -424,12 +444,12 @@ void Renderer::releaseShaders()
 	shaders.clear();
 }
 
-QString Renderer::setupProgram( Mesh * mesh, const QString & hint )
+QString Renderer::setupProgram( Shape * mesh, const QString & hint )
 {
 	PropertyList props;
 	mesh->activeProperties( props );
 
-	if ( !shader_ready || !Options::shaders() ) {
+	if ( !shader_ready || (mesh->scene->options & Scene::DisableShaders) || (mesh->scene->visMode & Scene::VisSilhouette) ) {
 		setupFixedFunction( mesh, props );
 		return QString( "fixed function pipeline" );
 	}
@@ -467,7 +487,7 @@ void Renderer::stopProgram()
 	resetTextureUnits();
 }
 
-bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & props, const QList<QModelIndex> & iBlocks )
+bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props, const QList<QModelIndex> & iBlocks )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( mesh->index().model() );
 
@@ -479,12 +499,37 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	fn->glUseProgram( prog->id );
 
+	auto opts = mesh->scene->options;
+	auto vis = mesh->scene->visMode;
+
+	Material * mat = nullptr;
+	if ( mesh->bslsp && mesh->bslsp->mat() )
+		mat = mesh->bslsp->mat();
+	else if ( mesh->bsesp && mesh->bsesp->mat() )
+		mat = mesh->bsesp->mat();
+
+	QString diff;
+
+	if ( (opts & Scene::DoLighting) && (vis & Scene::VisNormalsOnly) )
+		diff = "shaders/white.dds";
+
 	// texturing
 
 	TexturingProperty * texprop = props.get<TexturingProperty>();
 	BSShaderLightingProperty * bsprop = props.get<BSShaderLightingProperty>();
+	// TODO: BSLSP has been split off from BSShaderLightingProperty so it needs
+	//	to be accessible from here
+
+	TexClampMode clamp = TexClampMode::WRAP_S_WRAP_T;
+
+	if ( mesh->bslsp ) {
+		clamp = mesh->bslsp->getClampMode();
+	}
+
 
 	int texunit = 0;
+
+	//GLint baseWidth, baseHeight;
 
 	GLint uniBaseMap = fn->glGetUniformLocation( prog->id, "BaseMap" );
 
@@ -495,8 +540,11 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		if ( !activateTextureUnit( texunit ) )
 			return false;
 
-		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0 )) )
+		if ( (texprop && !texprop->bind( 0 )) || (bsprop && !bsprop->bind( 0, diff, clamp )) )
 			return false;
+
+		//glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&baseWidth );
+		//glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&baseHeight );
 
 		fn->glUniform1i( uniBaseMap, texunit++ );
 	}
@@ -514,7 +562,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			if ( pos >= 0 )
 				fname = fname.left( pos ) + "_n.dds";
-			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+			else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
 				fname = fname.insert( pos, "_n" );
 
 			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
@@ -522,7 +570,10 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		} else if ( bsprop ) {
 			QString fname = bsprop->fileName( 1 );
 
-			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname )) )
+			if ( !(opts & Scene::DoLighting) )
+				fname = "shaders/default_n.dds";
+
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 1, fname, clamp )) )
 				return false;
 		}
 
@@ -542,7 +593,7 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 			if ( pos >= 0 )
 				fname = fname.left( pos ) + "_g.dds";
-			else if ( ( pos = fname.lastIndexOf( "." ) ) >= 0 )
+			else if ( (pos = fname.lastIndexOf( "." )) >= 0 )
 				fname = fname.insert( pos, "_g" );
 
 			if ( !activateTextureUnit( texunit ) || !texprop->bind( 0, fname ) )
@@ -550,11 +601,345 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 		} else if ( bsprop ) {
 			QString fname = bsprop->fileName( 2 );
 
-			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname )) )
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( 2, fname, clamp )) )
 				return false;
 		}
 
 		fn->glUniform1i( uniGlowMap, texunit++ );
+	}
+
+
+	// Sets a float
+	auto uni1f = [this, prog, mesh]( const char * var, float x ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform1f( uni, x );
+	};
+
+	// Sets a vec2 (two floats)
+	auto uni2f = [this, prog, mesh]( const char * var, float x, float y ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform2f( uni, x, y );
+	};
+
+	// Sets a vec3 (three floats)
+	auto uni3f = [this, prog, mesh]( const char * var, float x, float y, float z ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform3f( uni, x, y, z );
+	};
+
+	// Sets a vec4 (four floats)
+	auto uni4f = [this, prog, mesh]( const char * var, float x, float y, float z, float w ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform4f( uni, x, y, z, w );
+	};
+
+	// Sets an integer or boolean
+	auto uni1i = [this, prog, mesh]( const char * var, int val ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 )
+			fn->glUniform1i( uni, val );
+	};
+
+	// Sets a mat3 (3x3 matrix)
+	auto uni3m = [this, prog, mesh]( const char * var, Matrix val ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 ) {
+			fn->glUniformMatrix3fv( uni, 1, 0, val.data() );
+		}
+	};
+
+	// Sets a mat4 (4x4 matrix)
+	auto uni4m = [this, prog, mesh]( const char * var, Matrix4 val ) {
+		GLint uni = fn->glGetUniformLocation( prog->id, var );
+		if ( uni >= 0 ) {
+			fn->glUniformMatrix4fv( uni, 1, 0, val.data() );
+		}
+	};
+
+	// Sets a sampler2D (texture sampler)
+	auto uniSampler = [this, prog, bsprop, &texunit]( const char * var, int textureSlot, QString alternate, TexClampMode clamp ) {
+		GLint uniSamp = fn->glGetUniformLocation( prog->id, var );
+		if ( uniSamp >= 0 ) {
+
+			QString fname = bsprop->fileName( textureSlot );
+			if ( fname.isEmpty() )
+				fname = alternate;
+
+			if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bind( textureSlot, fname, clamp )) )
+				return false;
+
+			fn->glUniform1i( uniSamp, texunit++ );
+
+			return true;
+		}
+
+		return true;
+	};
+
+	QString white = "shaders/white.dds";
+	QString black = "shaders/black.dds";
+	QString default_n = "shaders/default_n.dds";
+	
+
+	// BSLightingShaderProperty
+	if ( mesh->bslsp ) {
+		uni1f( "lightingEffect1", mesh->bslsp->getLightingEffect1() );
+		uni1f( "lightingEffect2", mesh->bslsp->getLightingEffect2() );
+
+		uni1f( "alpha", mesh->bslsp->getAlpha() );
+
+		auto uvS = mesh->bslsp->getUvScale();
+		uni2f( "uvScale", uvS.x, uvS.y );
+
+		auto uvO = mesh->bslsp->getUvOffset();
+		uni2f( "uvOffset", uvO.x, uvO.y );
+
+		uni4m( "viewMatrix", mesh->viewTrans().toMatrix4() );
+		uni4m( "viewMatrixInverse", mesh->viewTrans().toMatrix4().inverted() );
+
+		uni4m( "localMatrix", mesh->localTrans().toMatrix4() );
+		uni4m( "localMatrixInverse", mesh->localTrans().toMatrix4().inverted() );
+
+		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
+		uni4m( "worldMatrixInverse", mesh->worldTrans().toMatrix4().inverted() );
+
+		uni1i( "greyscaleColor", mesh->bslsp->greyscaleColor );
+		if ( mesh->bslsp->greyscaleColor ) {
+			if ( !uniSampler( "GreyscaleMap", 3, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
+				return false;
+		}
+
+		uni1i( "hasTintColor", mesh->bslsp->hasTintColor );
+		if ( mesh->bslsp->hasTintColor ) {
+			auto tC = mesh->bslsp->getTintColor();
+			uni3f( "tintColor", tC.red(), tC.green(), tC.blue() );
+		}
+
+		uni1i( "hasDetailMask", mesh->bslsp->hasDetailMask );
+		if ( mesh->bslsp->hasDetailMask ) {
+			if ( !uniSampler( "DetailMask", 3, "shaders/blankdetailmap.dds", clamp ) )
+				return false;
+		}
+
+		uni1i( "hasTintMask", mesh->bslsp->hasTintMask );
+		if ( mesh->bslsp->hasTintMask ) {
+			if ( !uniSampler( "TintMask", 6, "shaders/gray.dds", clamp ) )
+				return false;
+		}
+
+		// Rim & Soft params
+
+		uni1i( "hasSoftlight", mesh->bslsp->hasSoftlight );
+		uni1i( "hasRimlight", mesh->bslsp->hasRimlight );
+
+		if ( nif->getUserVersion2() < 130 && (mesh->bslsp->hasSoftlight || mesh->bslsp->hasRimlight) ) {
+
+			if ( !uniSampler( "LightMask", 2, default_n, clamp ) )
+				return false;
+		}
+
+		// Backlight params
+
+		uni1i( "hasBacklight", mesh->bslsp->hasBacklight );
+
+		if ( nif->getUserVersion2() < 130 && mesh->bslsp->hasBacklight ) {
+
+			if ( !uniSampler( "BacklightMap", 7, default_n, clamp ) )
+				return false;
+		}
+
+		// Glow params
+
+		if ( (opts & Scene::DoGlow) && (opts & Scene::DoLighting) && mesh->bslsp->hasEmittance )
+			uni1f( "glowMult", mesh->bslsp->getEmissiveMult() );
+		else
+			uni1f( "glowMult", 0 );
+		
+		uni1i( "hasEmit", mesh->bslsp->hasEmittance );
+		uni1i( "hasGlowMap", mesh->bslsp->hasGlowMap );
+		auto emC = mesh->bslsp->getEmissiveColor();
+		uni3f( "glowColor", emC.red(), emC.green(), emC.blue() );
+
+		// Specular params
+
+		if ( (opts & Scene::DoSpecular) && (opts & Scene::DoLighting) )
+			uni1f( "specStrength", mesh->bslsp->getSpecularStrength() );
+		else
+			uni1f( "specStrength", 0 );
+
+		// Assure specular power does not break the shaders
+		auto gloss = mesh->bslsp->getSpecularGloss();
+		uni1f( "specGlossiness", gloss );
+		
+		auto spec = mesh->bslsp->getSpecularColor();
+		uni3f( "specColor", spec.red(), spec.green(), spec.blue() );
+
+		uni1i( "hasSpecularMap", mesh->bslsp->hasSpecularMap );
+
+		if ( mesh->bslsp->hasSpecularMap && (nif->getUserVersion2() == 130 || !mesh->bslsp->hasBacklight) ) {
+			if ( !uniSampler( "SpecularMap", 7, white, clamp ) )
+				return false;
+		}
+
+		if ( nif->getUserVersion2() == 130 ) {
+			uni1i( "doubleSided", mesh->isDoubleSided );
+			uni1f( "paletteScale", mesh->bslsp->paletteScale );
+			uni1f( "subsurfaceRolloff", mesh->bslsp->getLightingEffect1() );
+			uni1f( "fresnelPower", mesh->bslsp->fresnelPower );
+			uni1f( "rimPower", mesh->bslsp->rimPower );
+			uni1f( "backlightPower", mesh->bslsp->backlightPower );
+		}
+
+		// Multi-Layer
+
+		if ( mesh->bslsp->hasMultiLayerParallax ) {
+
+			auto inS = mesh->bslsp->getInnerTextureScale();
+			uni2f( "innerScale", inS.x, inS.y );
+
+			uni1f( "innerThickness", mesh->bslsp->getInnerThickness() );
+
+			uni1f( "outerRefraction", mesh->bslsp->getOuterRefractionStrength() );
+			uni1f( "outerReflection", mesh->bslsp->getOuterReflectionStrength() );
+
+			if ( !uniSampler( "InnerMap", 6, default_n, clamp ) )
+				return false;
+		}
+
+		// Environment Mapping
+
+		uni1i( "hasCubeMap", mesh->bslsp->hasCubeMap );
+		uni1i( "hasEnvMask", mesh->bslsp->useEnvironmentMask );
+
+		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) ) {
+
+			uni1f( "envReflection", mesh->bslsp->getEnvironmentReflection() );
+
+			// Do not test useEnvironmentMask here, always pass white.dds as fallback
+			if ( !uniSampler( "EnvironmentMap", 5, white, clamp ) )
+				return false;
+
+			GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
+			if ( uniCubeMap >= 0 ) {
+
+				QString fname = bsprop->fileName( 4 );
+
+				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bindCube( 4, fname )) )
+					return false;
+
+				fn->glUniform1i( uniCubeMap, texunit++ );
+			}
+		} else {
+			// In the case that the cube texture has already been bound,
+			//	but SLSF1_Environment_Mapping is not set, assure that it 
+			//	removes reflections.
+			uni1f( "envReflection", 0 );
+		}
+
+		// Parallax
+
+		if ( mesh->bslsp->hasHeightMap ) {
+			if ( !uniSampler( "HeightMap", 3, "shaders/gray.dds", clamp ) )
+				return false;
+		}
+	}
+
+
+	// BSEffectShaderProperty
+	if ( mesh->bsesp ) {
+
+		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
+
+		clamp = mesh->bsesp->getClampMode();
+		clamp = TexClampMode(clamp);
+
+		if ( !uniSampler( "SourceTexture", 0, white, clamp ) )
+			return false;
+
+		uni1i( "doubleSided", mesh->bsesp->getIsDoubleSided() );
+
+		auto uvS = mesh->bsesp->getUvScale();
+		uni2f( "uvScale", uvS.x, uvS.y );
+
+		auto uvO = mesh->bsesp->getUvOffset();
+		uni2f( "uvOffset", uvO.x, uvO.y );
+
+		uni1i( "hasSourceTexture", mesh->bsesp->hasSourceTexture );
+		uni1i( "hasGreyscaleMap", mesh->bsesp->hasGreyscaleMap );
+
+		uni1i( "greyscaleAlpha", mesh->bsesp->greyscaleAlpha );
+		uni1i( "greyscaleColor", mesh->bsesp->greyscaleColor );
+
+
+		uni1i( "useFalloff", mesh->bsesp->useFalloff );
+		uni1i( "vertexAlpha", mesh->bsesp->vertexAlpha );
+		uni1i( "vertexColors", mesh->bsesp->vertexColors );
+
+		uni1i( "hasWeaponBlood", mesh->bsesp->hasWeaponBlood );
+
+		// Glow params
+
+		auto emC = mesh->bsesp->getEmissiveColor();
+		uni4f( "glowColor", emC.red(), emC.green(), emC.blue(), emC.alpha() );
+		uni1f( "glowMult", mesh->bsesp->getEmissiveMult() );
+
+		// Falloff params
+
+		uni4f( "falloffParams",
+			mesh->bsesp->falloff.startAngle, mesh->bsesp->falloff.stopAngle,
+			mesh->bsesp->falloff.startOpacity, mesh->bsesp->falloff.stopOpacity
+		);
+
+		uni1f( "falloffDepth", mesh->bsesp->falloff.softDepth );
+
+		// BSEffectShader textures
+		if ( mesh->bsesp->hasGreyscaleMap ) {
+			if ( !uniSampler( "GreyscaleMap", 1, "", TexClampMode::MIRRORED_S_MIRRORED_T ) )
+				return false;
+		}
+
+		if ( nif->getUserVersion2() == 130 ) {
+
+			uni1f( "lightingInfluence", mesh->bsesp->getLightingInfluence() );
+
+			uni1i( "hasNormalMap", mesh->bsesp->hasNormalMap && (opts & Scene::DoLighting) );
+
+			uniSampler( "NormalMap", 3, default_n, clamp );
+
+			uni1i( "hasCubeMap", mesh->bsesp->hasEnvMap );
+			uni1i( "hasEnvMask", mesh->bsesp->hasEnvMask );
+
+			if ( mesh->bsesp->hasEnvMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) ) {
+				uni1f( "envReflection", mesh->bsesp->getEnvironmentReflection() );
+
+				if ( mesh->bsesp->hasEnvMask && !uniSampler( "SpecularMap", 4, white, clamp ) )
+					return false;
+
+				GLint uniCubeMap = fn->glGetUniformLocation( prog->id, "CubeMap" );
+				if ( uniCubeMap >= 0 ) {
+
+					QString fname = bsprop->fileName( 2 );
+
+					if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bindCube( 2, fname )) )
+						return false;
+
+					fn->glUniform1i( uniCubeMap, texunit++ );
+				}
+			} else {
+				uni1f( "envReflection", 0 );
+			}
+		
+		}
+	}
+
+	// Defaults for uniforms in older meshes
+	if ( !mesh->bsesp && !mesh->bslsp ) {
+		uni2f( "uvScale", 1.0, 1.0 );
+		uni2f( "uvOffset", 0.0, 0.0 );
 	}
 
 	QMapIterator<int, QString> itx( prog->texcoords );
@@ -566,17 +951,26 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 			return false;
 
 		if ( itx.value() == "tangents" ) {
-			if ( !mesh->transTangents.count() )
+			if ( mesh->transTangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.data() );
+			} else if ( mesh->tangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->tangents.data() );
+			} else {
 				return false;
+			}
 
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.data() );
 		} else if ( itx.value() == "bitangents" ) {
-			if ( !mesh->transBitangents.count() )
+			if ( mesh->transBitangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.data() );
+			} else if ( mesh->bitangents.count() ) {
+				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->bitangents.data() );
+			} else {
 				return false;
-
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.data() );
+			}
 		} else if ( texprop ) {
 			int txid = TexturingProperty::getId( itx.value() );
 			if ( txid < 0 )
@@ -612,6 +1006,43 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	glProperty( props.get<AlphaProperty>() );
 
+	if ( mat && (mesh->scene->options & Scene::DoBlending) ) {
+		static const GLenum blendMap[11] = {
+			GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
+			GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA_SATURATE
+		};
+
+		if ( mat && mat->bAlphaBlend ) {
+			glDisable( GL_POLYGON_OFFSET_FILL );
+			glEnable( GL_BLEND );
+			glBlendFunc( blendMap[mat->iAlphaSrc], blendMap[mat->iAlphaDst] );
+		} else {
+			glDisable( GL_BLEND );
+		}
+
+		if ( mat && mat->bAlphaTest ) {
+			glDisable( GL_POLYGON_OFFSET_FILL );
+			glEnable( GL_ALPHA_TEST );
+			glAlphaFunc( GL_GREATER, float( mat->iAlphaTestRef ) / 255.0 );
+		} else {
+			glDisable( GL_ALPHA_TEST );
+		}
+
+		if ( mat && mat->bDecal ) {
+			glEnable( GL_POLYGON_OFFSET_FILL );
+			glPolygonOffset( -1.0f, -1.0f );
+		}
+	}
+
+	// BSESP/BSLSP do not always need an NiAlphaProperty, and appear to override it at times
+	if ( !mat && mesh->translucent ) {
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		// If mesh is alpha tested, override threshold
+		glAlphaFunc( GL_GREATER, 0.1f );
+	}
+
 	// setup vertex colors
 
 	//glProperty( props.get< VertexColorProperty >(), glIsEnabled( GL_COLOR_ARRAY ) );
@@ -625,6 +1056,14 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 
 	glProperty( props.get<ZBufferProperty>() );
 
+	if ( !mesh->depthTest ) {
+		glDisable( GL_DEPTH_TEST );
+	}
+
+	if ( !mesh->depthWrite || mesh->translucent ) {
+		glDepthMask( GL_FALSE );
+	}
+
 	// setup stencil
 
 	glProperty( props.get<StencilProperty>() );
@@ -636,11 +1075,17 @@ bool Renderer::setupProgram( Program * prog, Mesh * mesh, const PropertyList & p
 	return true;
 }
 
-void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
+void Renderer::setupFixedFunction( Shape * mesh, const PropertyList & props )
 {
 	// setup lighting
 
 	glEnable( GL_LIGHTING );
+
+	// Disable specular because it washes out vertex colors
+	//	at perpendicular viewing angles
+	float color[4] = { 0, 0, 0, 0 };
+	glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, color );
 
 	// setup blending
 
@@ -661,6 +1106,14 @@ void Renderer::setupFixedFunction( Mesh * mesh, const PropertyList & props )
 	// setup z buffer
 
 	glProperty( props.get<ZBufferProperty>() );
+
+	if ( !mesh->depthTest ) {
+		glDisable( GL_DEPTH_TEST );
+	}
+
+	if ( !mesh->depthWrite ) {
+		glDepthMask( GL_FALSE );
+	}
 
 	// setup stencil
 

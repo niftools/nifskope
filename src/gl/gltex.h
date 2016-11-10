@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
+//! @file gltex.h TexCache etc. header
+
 class GroupBox;
 
 class QAction;
@@ -50,10 +52,8 @@ class QOpenGLContext;
 
 typedef unsigned int GLuint;
 
-//! \file gltex.h TexCache etc. header
-
-//! A class for handling OpenGL textures.
-/*!
+/*! A class for handling OpenGL textures.
+ *
  * This class stores information on all loaded textures, and watches the texture files.
  */
 class TexCache final : public QObject
@@ -87,6 +87,9 @@ class TexCache final : public QObject
 		//! Load the texture
 		void load();
 
+		//! Load the texture
+		void loadCube();
+
 		//! Save the texture as a file
 		bool saveAsFile( const QModelIndex & index, QString & savepath );
 		//! Save the texture as pixel data
@@ -94,15 +97,16 @@ class TexCache final : public QObject
 	};
 
 public:
-	//! Constructor
 	TexCache( QObject * parent = nullptr );
-	//! Destructor
 	~TexCache();
 
 	//! Bind a texture from filename
 	int bind( const QString & fname );
 	//! Bind a texture from pixel data
 	int bind( const QModelIndex & iSource );
+
+	//! Bind a texture from filename
+	int bindCube( const QString & fname );
 
 	//! Debug function for getting info about a texture
 	QString info( const QModelIndex & iSource );
@@ -126,8 +130,8 @@ signals:
 public slots:
 	void flush();
 
-	//! Set the folder to read textures from
-	/*!
+	/*! Set the folder to read textures from
+	 *
 	 * If this is not set, relative paths won't resolve. The standard usage
 	 * is to give NifModel::getFolder() as the argument.
 	 */
@@ -149,6 +153,8 @@ float get_max_anisotropy();
 void initializeTextureUnits( const QOpenGLContext * );
 
 bool activateTextureUnit( int x );
-void resetTextureUnits();
+// TODO: The default of 8 is arbitrary because >8 causes GL paint errors
+//	This is a problem only if a mesh uses all 9 texture slots
+void resetTextureUnits( int numTex = 8 );
 
 #endif

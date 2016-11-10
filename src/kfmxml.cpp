@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "message.h"
 #include "kfmmodel.h"
 
 #include <QtXml> // QXmlDefaultHandler Inherited
@@ -41,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QReadWriteLock KfmModel::XMLlock;
 QList<quint32>                  KfmModel::supportedVersions;
-QHash<QString, NifBlock *>        KfmModel::compounds;
+QHash<QString, NifBlockPtr>        KfmModel::compounds;
 
 class KfmXmlHandler final : public QXmlDefaultHandler
 {
@@ -59,7 +60,7 @@ public:
 	QStringList elements;
 	QString errorStr;
 
-	NifBlock * blk;
+	NifBlockPtr blk;
 
 	int current() const
 	{
@@ -118,7 +119,7 @@ public:
 					err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
 
 				if ( !blk )
-					blk = new NifBlock;
+					blk = NifBlockPtr( new NifBlock );
 
 				blk->id = list.value( "name" );
 				break;
@@ -141,9 +142,11 @@ public:
 				    list.value( "arr2" ),
 				    list.value( "cond" ),
 				    KfmModel::version2number( list.value( "ver1" ) ),
-				    KfmModel::version2number( list.value( "ver2" ) ),
-				    ( list.value( "abstract" ) == "1" )
+				    KfmModel::version2number( list.value( "ver2" ) )
 				);
+
+				if ( list.value( "abstract" ) == "1" )
+					data.setAbstract( true );
 
 				if ( data.name().isEmpty() || data.type().isEmpty() )
 					err( tr( "add needs at least name and type attributes" ) );
@@ -184,10 +187,9 @@ public:
 						KfmModel::compounds.insert( blk->id, blk ); break;
 					}
 
-					blk = 0;
+					blk = nullptr;
 				} else {
-					delete blk;
-					blk = 0;
+					blk = nullptr;
 					err( tr( "invalid %1 declaration: name is empty" ).arg( elements.value( x ) ) );
 				}
 			}
@@ -212,7 +214,7 @@ public:
 	{
 		// make a rough check of the maps
 		for ( const QString& key : KfmModel::compounds.keys() ) {
-			NifBlock * c = KfmModel::compounds.value( key );
+			NifBlockPtr c = KfmModel::compounds.value( key );
 			for ( const NifData& data : c->types ) {
 				if ( !checkType( data ) )
 					err( tr( "compound type %1 referes to unknown type %2" ).arg( key, data.type() ) );
@@ -236,7 +238,7 @@ public:
 		if ( errorStr.isEmpty() )
 			errorStr = tr( "Syntax error" );
 
-		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
+		errorStr.prepend( tr( "%1 XML parse error (line %2): " ).arg( "KFM" ).arg( exception.lineNumber() ) );
 		return false;
 	}
 };
@@ -260,7 +262,7 @@ bool KfmModel::loadXML()
 	QString result = KfmModel::parseXmlDescription( fname );
 
 	if ( !result.isEmpty() ) {
-		QMessageBox::critical( 0, "NifSkope", result );
+		Message::append( tr( "<b>Error loading XML</b><br/>You will need to reinstall the XML and restart the application." ), result, QMessageBox::Critical );
 		return false;
 	}
 
@@ -271,13 +273,16 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 {
 	QWriteLocker lck( &XMLlock );
 
-	qDeleteAll( compounds );    compounds.clear();
+	compounds.clear();
 	supportedVersions.clear();
 
 	QFile f( filename );
 
+	if ( !f.exists() )
+		return tr( "kfm.xml could not be found. Please install it and restart the application." );
+
 	if ( !f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return tr( "error: couldn't open xml description file: %1" ).arg( filename );
+		return tr( "Couldn't open KFM XML description file: %1" ).arg( filename );
 
 	KfmXmlHandler handler;
 	QXmlSimpleReader reader;
@@ -287,7 +292,7 @@ QString KfmModel::parseXmlDescription( const QString & filename )
 	reader.parse( source );
 
 	if ( !handler.errorString().isEmpty() ) {
-		qDeleteAll( compounds );    compounds.clear();
+		compounds.clear();
 		supportedVersions.clear();
 	}
 

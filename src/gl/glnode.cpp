@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glnode.h"
-#include "options.h"
+#include "settings.h"
 
-#include "glcontroller.h" // Inherited
+#include "controllers.h"
 #include "glmarker.h"
 #include "glscene.h"
 
@@ -42,8 +42,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nvtristripwrapper.h"
 
 #include <QRegularExpression>
+#include <QSettings>
 
 #include <algorithm> // std::stable_sort
+
+
+//! @file glnode.cpp Scene management for visible NiNodes and their children.
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
@@ -52,377 +56,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int Node::SELECTING = 0;
 
-class TransformController final : public Controller
-{
-public:
-	TransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		time = ctrlTime( time );
-
-		if ( interpolator ) {
-			interpolator->updateTransform( target->local, time );
-		}
-	}
-
-	void setInterpolator( const QModelIndex & iBlock ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-		if ( nif && iBlock.isValid() ) {
-			if ( interpolator ) {
-				delete interpolator;
-				interpolator = 0;
-			}
-
-			if ( nif->isNiBlock( iBlock, "NiBSplineCompTransformInterpolator" ) ) {
-				iInterpolator = iBlock;
-				interpolator  = new BSplineTransformInterpolator( this );
-			} else if ( nif->isNiBlock( iBlock, "NiTransformInterpolator" ) ) {
-				iInterpolator = iBlock;
-				interpolator  = new TransformInterpolator( this );
-			}
-
-			if ( interpolator ) {
-				interpolator->update( nif, iInterpolator );
-			}
-		}
-	}
-
-protected:
-	QPointer<Node> target;
-	QPointer<TransformInterpolator> interpolator;
-};
-
-class MultiTargetTransformController final : public Controller
-{
-	typedef QPair<QPointer<Node>, QPointer<TransformInterpolator> > TransformTarget;
-
-public:
-	MultiTargetTransformController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		time = ctrlTime( time );
-
-		for ( const TransformTarget& tt : extraTargets ) {
-			if ( tt.first && tt.second ) {
-				tt.second->updateTransform( tt.first->local, time );
-			}
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			if ( target ) {
-				Scene * scene = target->scene;
-				extraTargets.clear();
-
-				QVector<qint32> lTargets = nif->getLinkArray( index, "Extra Targets" );
-				for ( const auto l : lTargets ) {
-					Node * node = scene->getNode( nif, nif->getBlock( l ) );
-
-					if ( node ) {
-						extraTargets.append( TransformTarget( node, 0 ) );
-					}
-				}
-			}
-
-			return true;
-		}
-
-		for ( const TransformTarget& tt : extraTargets ) {
-			// TODO: update the interpolators
-		}
-
-		return false;
-	}
-
-	bool setInterpolator( Node * node, const QModelIndex & iInterpolator )
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iInterpolator.model() );
-
-		if ( !nif || !iInterpolator.isValid() )
-			return false;
-
-		QMutableListIterator<TransformTarget> it( extraTargets );
-
-		while ( it.hasNext() ) {
-			it.next();
-
-			if ( it.value().first == node ) {
-				if ( it.value().second ) {
-					delete it.value().second;
-					it.value().second = 0;
-				}
-
-				if ( nif->isNiBlock( iInterpolator, "NiBSplineCompTransformInterpolator" ) ) {
-					it.value().second = new BSplineTransformInterpolator( this );
-				} else if ( nif->isNiBlock( iInterpolator, "NiTransformInterpolator" ) ) {
-					it.value().second = new TransformInterpolator( this );
-				}
-
-				if ( it.value().second ) {
-					it.value().second->update( nif, iInterpolator );
-				}
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<Node> target;
-	QList<TransformTarget> extraTargets;
-};
-
-class ControllerManager final : public Controller
-{
-public:
-	ControllerManager( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node )
-	{
-	}
-
-	void update( float ) override final {}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			if ( target ) {
-				Scene * scene = target->scene;
-				QVector<qint32> lSequences = nif->getLinkArray( index, "Controller Sequences" );
-				for ( const auto l : lSequences ) {
-					QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
-
-					if ( iSeq.isValid() ) {
-						QString name = nif->get<QString>( iSeq, "Name" );
-
-						if ( !scene->animGroups.contains( name ) ) {
-							scene->animGroups.append( name );
-
-							QMap<QString, float> tags = scene->animTags[ name ];
-
-							QModelIndex iKeys = nif->getBlock( nif->getLink( iSeq, "Text Keys" ), "NiTextKeyExtraData" );
-							QModelIndex iTags = nif->getIndex( iKeys, "Text Keys" );
-
-							for ( int r = 0; r < nif->rowCount( iTags ); r++ ) {
-								tags.insert( nif->get<QString>( iTags.child( r, 0 ), "Value" ), nif->get<float>( iTags.child( r, 0 ), "Time" ) );
-							}
-
-							scene->animTags[ name ] = tags;
-						}
-					}
-				}
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-	void setSequence( const QString & seqname ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
-
-		if ( target && iBlock.isValid() && nif ) {
-			MultiTargetTransformController * multiTargetTransformer = 0;
-			for ( Controller * c : target->controllers ) {
-				if ( c->typeId() == "NiMultiTargetTransformController" ) {
-					multiTargetTransformer = static_cast<MultiTargetTransformController *>( c );
-					break;
-				}
-			}
-
-			QVector<qint32> lSequences = nif->getLinkArray( iBlock, "Controller Sequences" );
-			for ( const auto l : lSequences ) {
-				QModelIndex iSeq = nif->getBlock( l, "NiControllerSequence" );
-
-				if ( iSeq.isValid() && nif->get<QString>( iSeq, "Name" ) == seqname ) {
-					start = nif->get<float>( iSeq, "Start Time" );
-					stop  = nif->get<float>( iSeq, "Stop Time" );
-					phase = nif->get<float>( iSeq, "Phase" );
-					frequency = nif->get<float>( iSeq, "Frequency" );
-
-					QModelIndex iCtrlBlcks = nif->getIndex( iSeq, "Controlled Blocks" );
-
-					for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ ) {
-						QModelIndex iCB = iCtrlBlcks.child( r, 0 );
-
-						QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
-
-						QString nodename = nif->get<QString>( iCB, "Node Name" );
-
-						if ( nodename.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Node Name Offset" );
-							nodename = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
-
-						QString proptype = nif->get<QString>( iCB, "Property Type" );
-
-						if ( proptype.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Property Type Offset" );
-							proptype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
-
-						QString ctrltype = nif->get<QString>( iCB, "Controller Type" );
-
-						if ( ctrltype.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Controller Type Offset" );
-							ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
-
-						QString var1 = nif->get<QString>( iCB, "Variable 1" );
-
-						if ( var1.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
-							var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
-
-						QString var2 = nif->get<QString>( iCB, "Variable 2" );
-
-						if ( var2.isEmpty() ) {
-							QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
-							var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
-						}
-
-						Node * node = target->findChild( nodename );
-
-						if ( !node )
-							continue;
-
-						if ( ctrltype == "NiTransformController" && multiTargetTransformer ) {
-							if ( multiTargetTransformer->setInterpolator( node, iInterpolator ) ) {
-								multiTargetTransformer->start = start;
-								multiTargetTransformer->stop  = stop;
-								multiTargetTransformer->phase = phase;
-								multiTargetTransformer->frequency = frequency;
-								continue;
-							}
-						}
-
-						Controller * ctrl = node->findController( proptype, ctrltype, var1, var2 );
-
-						if ( ctrl ) {
-							ctrl->start = start;
-							ctrl->stop  = stop;
-							ctrl->phase = phase;
-							ctrl->frequency = frequency;
-
-							ctrl->setInterpolator( iInterpolator );
-						}
-					}
-				}
-			}
-		}
-	}
-
-protected:
-	QPointer<Node> target;
-};
-
-class KeyframeController final : public Controller
-{
-public:
-	KeyframeController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), lTrans( 0 ), lRotate( 0 ), lScale( 0 )
-	{
-	}
-
-	void update( float time )
-	{
-		if ( !( active && target ) )
-			return;
-
-		time = ctrlTime( time );
-
-		interpolate( target->local.rotation, iRotations, time, lRotate );
-		interpolate( target->local.translation, iTranslations, time, lTrans );
-		interpolate( target->local.scale, iScales, time, lScale );
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			iTranslations = nif->getIndex( iData, "Translations" );
-			iRotations = nif->getIndex( iData, "Rotations" );
-
-			if ( !iRotations.isValid() )
-				iRotations = iData;
-
-			iScales = nif->getIndex( iData, "Scales" );
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<Node> target;
-
-	QPersistentModelIndex iTranslations, iRotations, iScales;
-
-	int lTrans, lRotate, lScale;
-};
-
-class VisibilityController final : public Controller
-{
-public:
-	VisibilityController( Node * node, const QModelIndex & index )
-		: Controller( index ), target( node ), visLast( 0 )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		time = ctrlTime( time );
-
-		bool isVisible;
-
-		if ( interpolate( isVisible, iData, time, visLast ) ) {
-			target->flags.node.hidden = !isVisible;
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			// iData already points to the NiVisData
-			// note that nif.xml needs to have "Keys" not "Vis Keys" for interpolate() to work
-			//iKeys = nif->getIndex( iData, "Data" );
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<Node> target;
-
-	//QPersistentModelIndex iKeys;
-
-	int visLast;
-};
+static QColor highlightColor;
+static QColor wireframeColor;
 
 /*
  *  Node list
@@ -485,7 +120,7 @@ Node * NodeList::get( const QModelIndex & index ) const
 		if ( n->index().isValid() && n->index() == index )
 			return n;
 	}
-	return 0;
+	return nullptr;
 }
 
 void NodeList::validate()
@@ -502,16 +137,39 @@ void NodeList::validate()
 
 bool compareNodes( const Node * node1, const Node * node2 )
 {
-	// opaque meshes first (sorted from front to rear)
-	// then alpha enabled meshes (sorted from rear to front)
+	bool p1 = node1->isPresorted();
+	bool p2 = node2->isPresorted();
+
+	// Presort meshes
+	if ( p1 && p2 ) {
+		return node1->id() < node2->id();
+	}
+
+	return p2;
+}
+
+bool compareNodesAlpha( const Node * node1, const Node * node2 )
+{
+	// Presorted meshes override other sorting
+	// Alpha enabled meshes on top (sorted from rear to front)
+
+	bool p1 = node1->isPresorted();
+	bool p2 = node2->isPresorted();
+
+	// Presort meshes
+	if ( p1 && p2 ) {
+		return node1->id() < node2->id();
+	}
+
 	bool a1 = node1->findProperty<AlphaProperty>();
 	bool a2 = node2->findProperty<AlphaProperty>();
 
+	float d1 = node1->viewDepth();
+	float d2 = node2->viewDepth();
+
+	// Alpha sort meshes
 	if ( a1 == a2 ) {
-		if ( a1 ) {
-			return ( node1->center()[2] < node2->center()[2] );
-		}
-		return ( node1->center()[2] > node2->center()[2] );
+		return (d1 < d2);
 	}
 
 	return a2;
@@ -522,21 +180,68 @@ void NodeList::sort()
 	std::stable_sort( nodes.begin(), nodes.end(), compareNodes );
 }
 
+void NodeList::alphaSort()
+{
+	std::stable_sort( nodes.begin(), nodes.end(), compareNodesAlpha );
+}
 
 /*
  *	Node
  */
 
 
-Node::Node( Scene * s, const QModelIndex & index ) : Controllable( s, index ), parent( 0 ), ref( 0 )
+Node::Node( Scene * s, const QModelIndex & index ) : IControllable( s, index ), parent( 0 ), ref( 0 )
 {
 	nodeId = 0;
 	flags.bits = 0;
+
+	updateSettings();
+
+	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &Node::updateSettings );
 }
+
+
+void Node::updateSettings()
+{
+	QSettings settings;
+	settings.beginGroup( "Settings/Render/Colors/" );
+
+	cfg.background = settings.value( "Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	cfg.highlight = settings.value( "Highlight", QColor( 255, 255, 0 ) ).value<QColor>();
+	cfg.wireframe = settings.value( "Wireframe", QColor( 0, 255, 0 ) ).value<QColor>();
+
+	highlightColor = cfg.highlight;
+	wireframeColor = cfg.wireframe;
+
+	settings.endGroup();
+}
+
+// Old Options API
+//	TODO: Move away from the GL-like naming
+void glHighlightColor()
+{
+	glColor( Color4( highlightColor ) );
+}
+
+void glNormalColor()
+{
+	glColor( Color4( wireframeColor ) );
+}
+
+void Node::glHighlightColor() const
+{
+	glColor( Color4( cfg.highlight ) );
+}
+
+void Node::glNormalColor() const
+{
+	glColor( Color4( cfg.wireframe ) );
+}
+
 
 void Node::clear()
 {
-	Controllable::clear();
+	IControllable::clear();
 
 	nodeId = 0;
 	flags.bits = 0;
@@ -554,15 +259,31 @@ Controller * Node::findController( const QString & proptype, const QString & ctr
 				return prp->findController( ctrltype, var1, var2 );
 			}
 		}
-		return 0;
+		return nullptr;
 	}
 
-	return Controllable::findController( ctrltype, var1, var2 );
+	return IControllable::findController( ctrltype, var1, var2 );
+}
+
+Controller * Node::findController( const QString & proptype, const QModelIndex & index )
+{
+	Controller * c = nullptr;
+
+	for ( Property * prp : properties.list() ) {
+		if ( prp->typeId() == proptype ) {
+			if ( c )
+				break;
+
+			c = prp->findController( index );
+		}
+	}
+
+	return c;
 }
 
 void Node::update( const NifModel * nif, const QModelIndex & index )
 {
-	Controllable::update( nif, index );
+	IControllable::update( nif, index );
 
 	if ( !iBlock.isValid() ) {
 		clear();
@@ -686,7 +407,7 @@ const Transform & Node::worldTrans() const
 	return scene->worldTrans[ nodeId ];
 }
 
-Transform Node::localTransFrom( int root ) const
+Transform Node::localTrans( int root ) const
 {
 	Transform trans;
 	const Node * node = this;
@@ -699,9 +420,14 @@ Transform Node::localTransFrom( int root ) const
 	return trans;
 }
 
-Vector3 Node::center() const
+const Vector3 Node::center() const
 {
 	return worldTrans().translation;
+}
+
+float Node::viewDepth() const
+{
+	return viewTrans().translation[2];
 }
 
 Node * Node::findParent( int id ) const
@@ -726,7 +452,7 @@ Node * Node::findChild( int id ) const
 				return child;
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
 Node * Node::findChild( const QString & name ) const
@@ -740,23 +466,23 @@ Node * Node::findChild( const QString & name ) const
 		if ( n )
 			return n;
 	}
-	return 0;
+	return nullptr;
 }
 
 bool Node::isHidden() const
 {
-	if ( Options::drawHidden() )
+	if ( scene->options & Scene::ShowHidden )
 		return false;
 
 	if ( flags.node.hidden || ( parent && parent->isHidden() ) )
 		return true;
 
-	return !Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );
+	return false; /*!Options::cullExpression().pattern().isEmpty() && name.contains( Options::cullExpression() );*/
 }
 
 void Node::transform()
 {
-	Controllable::transform();
+	IControllable::transform();
 
 	// if there's a rigid body attached, then calculate and cache the body's transform
 	// (need this later in the drawing stage for the constraints)
@@ -764,7 +490,7 @@ void Node::transform()
 
 	if ( iBlock.isValid() && nif ) {
 		// Scale up for Skyrim
-		float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
+		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
 
@@ -802,7 +528,10 @@ void Node::transformShapes()
 
 void Node::draw()
 {
-	if ( isHidden() )
+	if ( isHidden() || iBlock == scene->currentBlock )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	if ( Node::SELECTING ) {
@@ -837,10 +566,16 @@ void Node::draw()
 	glVertex( a );
 	glEnd();
 
-	glBegin( GL_LINES );
-	glVertex( a );
-	glVertex( b );
-	glEnd();
+	if ( Node::SELECTING ) {
+		glBegin( GL_LINES );
+		glVertex( a );
+		glVertex( b );
+		glEnd();
+	} else {
+		auto c = cfg.wireframe;
+		glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() / 3.0 );
+		drawDashLine( a, b, 144 );
+	}
 
 	for ( Node * node : children.list() ) {
 		node->draw();
@@ -849,8 +584,22 @@ void Node::draw()
 
 void Node::drawSelection() const
 {
-	if ( scene->currentBlock != iBlock || !Options::drawNodes() )
+	auto nif = static_cast<const NifModel *>(scene->currentIndex.model());
+	if ( !nif )
 		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
+		return;
+
+	bool extraData = false;
+	auto currentBlock = nif->getBlockName( scene->currentBlock );
+	if ( currentBlock == "BSConnectPoint::Parents" )
+		extraData = nif->getBlockNumber( iBlock ) == 0; // Root Node only
+
+	if ( scene->currentBlock != iBlock && !extraData )
+		return;
+
+	auto n = scene->currentIndex.data( NifSkopeDisplayRole ).toString();
 
 	if ( Node::SELECTING ) {
 		int s_nodeId = ID2COLORKEY( nodeId );
@@ -874,6 +623,66 @@ void Node::drawSelection() const
 
 	glPointSize( 8.5 );
 
+	glPushMatrix();
+	glMultMatrix( viewTrans() );
+
+	float sceneRadius = scene->bounds().radius;
+	float normalScale = (sceneRadius > 150.0) ? 1.0 : sceneRadius / 150.0;
+
+	if ( currentBlock == "BSConnectPoint::Parents" ) {
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+		auto cp = nif->getIndex( scene->currentBlock, "Connect Points" );
+		bool isChild = scene->currentIndex.parent().data( NifSkopeDisplayRole ).toString() == "Connect Points";
+
+		int sel = -1;
+		if ( n == "Connect Points" && !nif->isArray( scene->currentIndex ) ) {
+			sel = scene->currentIndex.row();
+		} else if ( isChild ) {
+			sel = scene->currentIndex.parent().row();
+		}
+
+		int ct = nif->rowCount( cp );
+		for ( int i = 0; i < ct; i++ ) {
+			auto p = cp.child( i, 0 );
+
+			auto trans = nif->get<Vector3>( p, "Translation" );
+			auto rot = nif->get<Quat>( p, "Rotation" );
+			//auto scale = nif->get<float>( p, "Scale" );
+
+			Transform t;
+			Matrix m;
+			m.fromQuat( rot );
+			t.rotation = m;
+			t.translation = trans;
+			t.scale = normalScale * 16;
+
+			if ( i == sel ) {
+				glHighlightColor();
+			} else {
+				glNormalColor();
+			}
+
+			glPushMatrix();
+			glMultMatrix( t );
+
+			auto pos = Vector3( 0, 0, 0 );
+
+			drawDashLine( pos, Vector3( 0, 1, 0 ), 15 );
+			drawDashLine( pos, Vector3( 1, 0, 0 ), 15 );
+			drawDashLine( pos, Vector3( 0, 0, 1 ), 15 );
+			drawCircle( pos, Vector3( 0, 1, 0 ), 1, 64 );
+
+			glPopMatrix();
+		}
+
+	}
+
+	glPopMatrix();
+
+	if ( extraData )
+		return;
+
 	Vector3 a = viewTrans().translation;
 	Vector3 b = a;
 
@@ -884,10 +693,16 @@ void Node::drawSelection() const
 	glVertex( a );
 	glEnd();
 
+	auto c = cfg.highlight;
+	glColor4f( c.redF(), c.greenF(), c.blueF(), c.alphaF() * 0.8 );
 	glBegin( GL_LINES );
 	glVertex( a );
 	glVertex( b );
 	glEnd();
+
+	for ( Node * node : children.list() ) {
+		node->draw();
+	}
 }
 
 void DrawVertexSelection( QVector<Vector3> & verts, int i )
@@ -935,12 +750,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	if ( !nif || !iShape.isValid() || stack.contains( iShape ) )
 		return;
 
+	if ( !(scene->selMode & Scene::SelObject) )
+		return;
+
 	stack.push( iShape );
 
 	// Scale up for Skyrim
-	float havokScale = ( nif->getUserVersion() >= 12 ) ? 10.0f : 1.0f;
+	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
-	//qWarning() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
+	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 
 	QString name = nif->itemName( iShape );
 
@@ -1022,45 +840,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
+		drawNiTSS( nif, iShape );
 
-		for ( int r = 0; r < nif->rowCount( iStrips ); r++ ) {
-			QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
-
-			if ( iStripData.isValid() ) {
-				QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
-
-				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-				glDisable( GL_CULL_FACE );
-				glBegin( GL_TRIANGLES );
-
-				QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
-
-				for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
-					// draw the strips like they appear in the tescs
-					// (use the unstich strips spell to avoid the spider web effect)
-					QVector<quint16> strip = nif->getArray<quint16>( iPoints.child( r, 0 ) );
-
-					if ( strip.count() >= 3 ) {
-						quint16 a = strip[0];
-						quint16 b = strip[1];
-
-						for ( int x = 2; x < strip.size(); x++ ) {
-							quint16 c = strip[x];
-							glVertex( verts.value( a ) );
-							glVertex( verts.value( b ) );
-							glVertex( verts.value( c ) );
-							a = b;
-							b = c;
-						}
-					}
-				}
-
-				glEnd();
-				glEnable( GL_CULL_FACE );
-				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-			}
-		}
+		//if ( Options::getHavokState() == HAVOK_SOLID ) {
+		//	QColor c = Options::hlColor();
+		//	c.setAlphaF( 0.3 );
+		//	glColor( Color4( c ) );
+		//
+		//	drawNiTSS( nif, iShape, true );
+		//}
 
 		glPopMatrix();
 	} else if ( name == "bhkConvexVerticesShape" ) {
@@ -1069,7 +857,16 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		drawConvexHull( nif->getArray<Vector4>( iShape, "Vertices" ), nif->getArray<Vector4>( iShape, "Normals" ), havokScale );
+		drawConvexHull( nif, iShape, havokScale );
+
+		//if ( Options::getHavokState() == HAVOK_SOLID ) {
+		//	QColor c = Options::hlColor();
+		//	c.setAlphaF( 0.3 );
+		//	glColor( Color4( c ) );
+		//
+		//	drawConvexHull( nif, iShape, havokScale, true );
+		//}
+
 	} else if ( name == "bhkMoppBvTreeShape" ) {
 		if ( !Node::SELECTING ) {
 			if ( scene->currentBlock == nif->getBlock( nif->getLink( iShape, "Shape" ) ) ) {
@@ -1188,7 +985,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 								DrawTriangleSelection( verts, tri );
 								DrawTriangleIndex( verts, tri, t );
 							} else {
-								qWarning() << "triangle with multiple materials?" << t;
+								qDebug() << "triangle with multiple materials?" << t;
 							}
 						}
 					}
@@ -1205,95 +1002,15 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 			glColor4ubv( (GLubyte *)&s_nodeId );
 		}
 
-		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
-		Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
+		drawCMS( nif, iShape );
 
-		QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
-
-		if ( iData.isValid() ) {
-			QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
-			QModelIndex iBigTris  = nif->getIndex( iData, "Big Tris" );
-
-			QVector<Vector4> verts = nif->getArray<Vector4>( iBigVerts );
-
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-			glDisable( GL_CULL_FACE );
-
-			for ( int r = 0; r < nif->rowCount( iBigTris ); r++ ) {
-				quint16 a = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 1" );
-				quint16 b = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 2" );
-				quint16 c = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 3" );
-
-				glBegin( GL_TRIANGLES );
-
-				glVertex( verts[a] * havokScale );
-				glVertex( verts[b] * havokScale );
-				glVertex( verts[c] * havokScale );
-
-				glEnd();
-			}
-
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-			glEnable( GL_CULL_FACE );
-
-			QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
-
-			for ( int r = 0; r < nif->rowCount( iChunks ); r++ ) {
-				Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child( r, 0 ), "Translation" );
-				quint32 numOffsets  = nif->get<quint32>( iChunks.child( r, 0 ), "Num Vertices" );
-				quint32 numIndices  = nif->get<quint32>( iChunks.child( r, 0 ), "Num Indices" );
-				quint32 numStrips = nif->get<quint32>( iChunks.child( r, 0 ), "Num Strips" );
-				QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child( r, 0 ), "Vertices" );
-				QVector<quint16> indices = nif->getArray<quint16>( iChunks.child( r, 0 ), "Indices" );
-				QVector<quint16> strips  = nif->getArray<quint16>( iChunks.child( r, 0 ), "Strips" );
-
-				QVector<Vector4> vertices( numOffsets / 3 );
-
-				int numStripVerts = 0;
-				int offset = 0;
-
-				for ( int v = 0; v < (int)numStrips; v++ ) {
-					numStripVerts += strips[v];
-				}
-
-				for ( int n = 0; n < ( (int)numOffsets / 3 ); n++ ) {
-					vertices[n]  = chunkOrigin + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
-					vertices[n] *= havokScale;
-				}
-
-				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-				glDisable( GL_CULL_FACE );
-
-				// Stripped tris
-				for ( int s = 0; s < (int)numStrips; s++ ) {
-					for ( int idx = 0; idx < strips[s] - 2; idx++ ) {
-						glBegin( GL_TRIANGLES );
-
-						glVertex( vertices[indices[offset + idx]] );
-						glVertex( vertices[indices[offset + idx + 1]] );
-						glVertex( vertices[indices[offset + idx + 2]] );
-
-						glEnd();
-					}
-
-					offset += strips[s];
-				}
-
-				// Non-stripped tris
-				for ( int f = 0; f < (int)(numIndices - offset); f += 3 ) {
-					glBegin( GL_TRIANGLES );
-
-					glVertex( vertices[indices[offset + f]] );
-					glVertex( vertices[indices[offset + f + 1]] );
-					glVertex( vertices[indices[offset + f + 2]] );
-
-					glEnd();
-				}
-
-				glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-				glEnable( GL_CULL_FACE );
-			}
-		}
+		//if ( Options::getHavokState() == HAVOK_SOLID ) {
+		//	QColor c = Options::hlColor();
+		//	c.setAlphaF( 0.3 );
+		//	glColor( Color4( c ) );
+		//
+		//	drawCMS( nif, iShape, true );
+		//}
 
 		glPopMatrix();
 	}
@@ -1303,7 +1020,10 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, const Scene * scene )
 {
-	if ( !( nif && iConstraint.isValid() && scene && Options::drawConstraints() ) )
+	if ( !( nif && iConstraint.isValid() && scene && (scene->options & Scene::ShowConstraints) ) )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	QList<Transform> tBodies;
@@ -1336,8 +1056,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		if ( scene->currentBlock == nif->getBlock( iConstraint ) ) {
 			// fix: add selected visual to havok meshes
 			glHighlightColor();
-			color_a.fromQColor( Options::hlColor() );
-			color_b.setRGB( Options::hlColor().blueF(),  Options::hlColor().redF(), Options::hlColor().greenF() );
+			color_a.fromQColor( highlightColor );
+			color_b.setRGB( highlightColor.blueF(), highlightColor.redF(), highlightColor.greenF() );
 		}
 	}
 
@@ -1606,6 +1326,9 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 void Node::drawHavok()
 {
+	if ( !(scene->selMode & Scene::SelObject) )
+		return;
+
 	// TODO: Why are all these here - "drawNodes", "drawFurn", "drawHavok"?
 	// Idea: Make them go to their own classes in different cpp files
 	for ( Node * node : children.list() ) {
@@ -1749,7 +1472,7 @@ void Node::drawHavok()
 	glMultMatrix( scene->bhkBodyTrans.value( nif->getBlockNumber( iBody ) ) );
 
 
-	//qWarning() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
+	//qDebug() << "draw obj" << nif->getBlockNumber( iObject ) << nif->itemName( iObject );
 
 	if ( !Node::SELECTING ) {
 		glEnable( GL_DEPTH_TEST );
@@ -1803,10 +1526,13 @@ void Node::drawHavok()
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glDepthFunc( GL_ALWAYS );
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 0.2f );
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 2.0f );
 		glDepthFunc( GL_LEQUAL );
 	} else {
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 0.2f );
+		// Scale up for Skyrim
+		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
+
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 2.0f );
 	}
 
 	glPopMatrix();
@@ -1827,75 +1553,180 @@ void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 	quint8 ref1 = nif->get<quint8>( iPosition, "Position Ref 1" );
 	quint8 ref2 = nif->get<quint8>( iPosition, "Position Ref 2" );
 
-	if ( ref1 != ref2 ) {
-		qDebug() << "Position Ref 1 and 2 are not equal!";
-		return;
+	const GLMarker * mark[5];
+	Vector3 flip[5];
+	Vector3 pos( 1, 1, 1 );
+	Vector3 neg( -1, 1, 1 );
+
+	float xOffset = 0.0f;
+	float zOffset = 0.0f;
+	float yOffset = 0.0f;
+	float roll;
+
+	int i = 0;
+
+	if ( ref1 == 0 ) {
+		float heading = nif->get<float>( iPosition, "Heading" );
+		quint16 type = nif->get<quint16>( iPosition, "Animation Type" );
+		int entry = nif->get<int>( iPosition, "Entry Properties" );
+
+		if ( type == 0 ) return;
+
+		// Sit=1, Sleep=2, Lean=3
+		// Front=1, Behind=2, Right=4, Left=8, Up=16(0x10)
+
+		switch ( type ) {
+		case 1:
+			// Sit Type
+
+			zOffset = -34.00f;
+
+			if ( entry & 0x1 ) {
+				// Chair Front
+				flip[i] = pos;
+				mark[i] = &ChairFront;
+				i++;
+			}
+			if ( entry & 0x2 ) {
+				// Chair Behind
+				flip[i] = pos;
+				mark[i] = &ChairBehind;
+				i++;
+			}
+			if ( entry & 0x4 ) {
+				// Chair Right
+				flip[i] = neg;
+				mark[i] = &ChairLeft;
+				i++;
+			}
+			if ( entry & 0x8 ) {
+				// Chair Left
+				flip[i] = pos;
+				mark[i] = &ChairLeft;
+				i++;
+			}
+			break;
+		case 2:
+			// Sleep Type
+
+			zOffset = -34.00f;
+
+			if ( entry & 0x1 ) {
+				// Bed Front
+				//flip[i] = pos;
+				//mark[i] = &FurnitureMarker03;
+				//i++;
+			}
+			if ( entry & 0x2 ) {
+				// Bed Behind
+				//flip[i] = pos;
+				//mark[i] = &FurnitureMarker04;
+				//i++;
+			}
+			if ( entry & 0x4 ) {
+				// Bed Right
+				flip[i] = neg;
+				mark[i] = &BedLeft;
+				i++;
+			}
+			if ( entry & 0x8 ) {
+				// Bed Left
+				flip[i] = pos;
+				mark[i] = &BedLeft;
+				i++;
+			}
+			if ( entry & 0x10 ) {
+				// Bed Up????
+				// This is sometimes used as a real bed position
+				// Other times it is a dummy
+				flip[i] = neg;
+				mark[i] = &BedLeft;
+				i++;
+			}
+			break;
+		case 3:
+			break;
+		default:
+			break;
+		}
+
+		roll = heading;
+	} else {
+		if ( ref1 != ref2 ) {
+			qDebug() << "Position Ref 1 and 2 are not equal";
+			return;
+		}
+
+		switch ( ref1 ) {
+		case 1:
+			mark[0] = &FurnitureMarker01; // Single Bed
+			break;
+
+		case 2:
+			flip[0] = neg;
+			mark[0] = &FurnitureMarker01;
+			break;
+
+		case 3:
+			mark[0] = &FurnitureMarker03; // Ground Bed?
+			break;
+
+		case 4:
+			mark[0] = &FurnitureMarker04; // Ground Bed? Behind
+			break;
+
+		case 11:
+			mark[0] = &FurnitureMarker11; // Chair Left
+			break;
+
+		case 12:
+			flip[0] = neg;
+			mark[0] = &FurnitureMarker11;
+			break;
+
+		case 13:
+			mark[0] = &FurnitureMarker13; // Chair Behind
+			break;
+
+		case 14:
+			mark[0] = &FurnitureMarker14; // Chair Front
+			break;
+
+		default:
+			qDebug() << "Unknown furniture marker " << ref1;
+			return;
+		}
+
+		i = 1;
+
+		// TODO: FIX: This makes no sense
+		roll = float( orient ) / 6284.0 * 2.0 * (-M_PI);
 	}
-
-	Vector3 flip( 1, 1, 1 );
-	const GLMarker * mark;
-
-	switch ( ref1 ) {
-	case 1:
-		mark = &FurnitureMarker01;
-		break;
-
-	case 2:
-		flip[0] = -1;
-		mark = &FurnitureMarker01;
-		break;
-
-	case 3:
-		mark = &FurnitureMarker03;
-		break;
-
-	case 4:
-		mark = &FurnitureMarker04;
-		break;
-
-	case 11:
-		mark = &FurnitureMarker11;
-		break;
-
-	case 12:
-		flip[0] = -1;
-		mark = &FurnitureMarker11;
-		break;
-
-	case 13:
-		mark = &FurnitureMarker13;
-		break;
-
-	case 14:
-		mark = &FurnitureMarker14;
-		break;
-
-	default:
-		qDebug() << "Unknown furniture marker " << ref1 << "!";
-		return;
-	}
-
-	float roll = float(orient) / 6284.0 * 2.0 * (-M_PI);
 
 	if ( Node::SELECTING ) {
-		// TODO: not tested! need nif files what contain that
 		GLint id = ( nif->getBlockNumber( iPosition ) & 0xffff ) | ( ( iPosition.row() & 0xffff ) << 16 );
 		int s_nodeId = ID2COLORKEY( id );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 	}
 
-	glPushMatrix();
+	for ( int n = 0; n < i; n++ ) {
+		glPushMatrix();
 
-	Transform t;
-	t.rotation.fromEuler( 0, 0, roll );
-	t.translation = offs;
-	glMultMatrix( t );
+		Transform t;
+		t.rotation.fromEuler( 0, 0, roll );
+		t.translation = offs;
+		t.translation[0] += xOffset;
+		t.translation[1] += yOffset;
+		t.translation[2] += zOffset;
 
-	glScale( flip );
+		glMultMatrix( t );
 
-	drawMarker( mark );
+		glScale( flip[n] );
 
-	glPopMatrix();
+		drawMarker( mark[n] );
+
+		glPopMatrix();
+	}
 }
 
 void Node::drawFurn()
@@ -1907,6 +1738,9 @@ void Node::drawFurn()
 	const NifModel * nif = static_cast<const NifModel *>( iBlock.model() );
 
 	if ( !( iBlock.isValid() && nif ) )
+		return;
+
+	if ( !(scene->selMode & Scene::SelObject) )
 		return;
 
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
@@ -1962,13 +1796,23 @@ void Node::drawFurn()
 	glPopMatrix();
 }
 
-void Node::drawShapes( NodeList * draw2nd )
+void Node::drawShapes( NodeList * secondPass, bool presort )
 {
 	if ( isHidden() )
 		return;
 
+	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	
+	// BSOrderedNode support
+	//	Only set if true (|=) so that it propagates to all children
+	presort |= nif->getBlock( iBlock, "BSOrderedNode" ).isValid();
+
+	presorted = presort;
+	if ( presorted )
+		children.sort();
+
 	for ( Node * node : children.list() ) {
-		node->drawShapes( draw2nd );
+		node->drawShapes( secondPass, presort );
 	}
 }
 
@@ -1995,8 +1839,10 @@ BoundSphere Node::bounds() const
 {
 	BoundSphere boundsphere;
 
+	auto opts = scene->options;
+
 	// the node itself
-	if ( Options::drawNodes() || Options::drawHavok() ) {
+	if ( (opts & Scene::ShowNodes) || (opts & Scene::ShowCollision) ) {
 		boundsphere |= BoundSphere( worldTrans().translation, 0 );
 	}
 

@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltools.h"
 #include "renderer.h"
 
+#include <QObject>
 #include <QHash>
 #include <QMap>
 #include <QPersistentModelIndex>
@@ -48,13 +49,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 
 
+//! @file glscene.h Scene
+
 class QOpenGLContext;
 class QOpenGLFunctions;
 
-class Scene final
+class Scene final : public QObject
 {
+	Q_OBJECT
 public:
-	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions );
+	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions, QObject * parent = nullptr );
 	~Scene();
 
 	void updateShaders() { renderer->updateShaders(); }
@@ -81,9 +85,70 @@ public:
 	int bindTexture( const QString & fname );
 	int bindTexture( const QModelIndex & index );
 
+	int bindTextureCube( const QString & fname );
+
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
 
+	enum SceneOption
+	{
+		None = 0x0,
+		ShowAxes = 0x1,
+		ShowGrid = 0x2,
+		ShowNodes = 0x4,
+		ShowCollision = 0x8,
+		ShowConstraints = 0x10,
+		ShowMarkers = 0x20,
+		DoDoubleSided = 0x40,
+		DoVertexColors = 0x80,
+		DoSpecular = 0x100,
+		DoGlow = 0x200,
+		DoTexturing = 0x400,
+		DoBlending = 0x800,
+		DoMultisampling = 0x1000,
+		DoLighting = 0x2000,
+		DoCubeMapping = 0x4000,
+		DisableShaders = 0x8000,
+		ShowHidden = 0x10000,
+		DoSkinning = 0x20000
+	};
+	Q_DECLARE_FLAGS( SceneOptions, SceneOption );
+
+	SceneOptions options;
+
+	enum VisModes
+	{
+		VisNone = 0x0,
+		VisLightPos = 0x1,
+		VisNormalsOnly = 0x2,
+		VisSilhouette = 0x4
+	};
+
+	Q_DECLARE_FLAGS( VisMode, VisModes );
+
+	VisMode visMode;
+
+	enum SelModes
+	{
+		SelNone = 0,
+		SelObject = 1,
+		SelVertex = 2
+	};
+
+	Q_DECLARE_FLAGS( SelMode, SelModes );
+
+	SelMode selMode;
+
+	enum LodLevel
+	{
+		Level0 = 0,
+		Level1 = 1,
+		Level2 = 2
+	};
+
+	LodLevel lodLevel;
+
+	
 	Renderer * renderer;
 
 	NodeList nodes;
@@ -110,10 +175,20 @@ public:
 	QPersistentModelIndex currentBlock;
 	QPersistentModelIndex currentIndex;
 
+	QVector<Shape *> shapes;
+
 	BoundSphere bounds() const;
 
 	float timeMin() const;
 	float timeMax() const;
+signals:
+	void sceneUpdated();
+
+public slots:
+	void updateSceneOptions( bool checked );
+	void updateSceneOptionsGroup( QAction * );
+	void updateSelectMode( QAction * );
+	void updateLodLevel( int );
 
 protected:
 	mutable bool sceneBoundsValid, timeBoundsValid;
@@ -122,5 +197,9 @@ protected:
 
 	void updateTimeBounds() const;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::SceneOptions )
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( Scene::VisMode )
 
 #endif

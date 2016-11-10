@@ -207,11 +207,11 @@ void TestShredder::run()
 	QStringList extensions;
 
 	if ( chkNif->isChecked() )
-		extensions << "NIF (*.nif)" << "NIFCache (*.nifcache)" << "TEXCache (*.texcache)" << "PCPatch (*.pcpatch)";
+		extensions << "*.nif" << "*.nifcache" << "*.texcache" << "*.pcpatch";
 	if ( chkKf->isChecked() )
-		extensions << "Keyframe (*.kf)" << "Keyframe Animation (*.kfa)";
+		extensions << "*.kf" << "*.kfa";
 	if ( chkKfm->isChecked() )
-		extensions << "Keyframe Motion (*.kfm)";
+		extensions << "*.kfm";
 
 	queue.init( directory->text(), extensions, recursive->isChecked() );
 
@@ -372,9 +372,7 @@ TestThread::~TestThread()
 void TestThread::run()
 {
 	NifModel nif;
-	nif.setMessageMode( BaseModel::CollectMessages );
 	KfmModel kfm;
-	kfm.setMessageMode( BaseModel::CollectMessages );
 
 	QString filepath = queue->dequeue();
 
@@ -399,7 +397,7 @@ void TestThread::run()
 				bool loaded = model->loadFromFile( filepath );
 
 				QString result = QString( "<a href=\"nif:%1\">%1</a> (%2)" ).arg( filepath, model->getVersion() );
-				QList<Message> messages = model->getMessages();
+				QList<TestMessage> messages = model->getMessages();
 
 				bool blk_match = false;
 
@@ -418,7 +416,7 @@ void TestThread::run()
 
 				// Don't show anything if block match is on but the requested type wasn't found & we're in block match mode
 				if ( blockMatch.isEmpty() == true || blk_match == true ) {
-					for ( const Message& msg : messages ) {
+					for ( const TestMessage& msg : messages ) {
 						if ( msg.type() != QtDebugMsg ) {
 							result += "<br>" + msg;
 							rep |= true;
@@ -452,9 +450,9 @@ static QString linkId( const NifModel * nif, QModelIndex idx )
 	return id;
 }
 
-QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex & iParent, bool kf )
+QList<TestMessage> TestThread::checkLinks( const NifModel * nif, const QModelIndex & iParent, bool kf )
 {
-	QList<Message> messages;
+	QList<TestMessage> messages;
 
 	for ( int r = 0; r < nif->rowCount( iParent ); r++ ) {
 		QModelIndex idx = iParent.child( r, 0 );
@@ -468,7 +466,7 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 				// if ( ! child && ! kf )
 				//	messages.append( Message() << tr("unassigned parent link") << linkId( nif, idx ) );
 			} else if ( l >= nif->getBlockCount() ) {
-				messages.append( Message() << tr( "invalid link" ) << linkId( nif, idx ) );
+				messages.append( TestMessage() << tr( "invalid link" ) << linkId( nif, idx ) );
 			} else {
 				QString tmplt = nif->itemTmplt( idx );
 
@@ -476,7 +474,7 @@ QList<Message> TestThread::checkLinks( const NifModel * nif, const QModelIndex &
 					QModelIndex iBlock = nif->getBlock( l );
 
 					if ( !nif->inherits( iBlock, tmplt ) )
-						messages.append( Message() << tr( "link" ) << linkId( nif, idx ) << tr( "points to wrong block type" ) << nif->itemName( iBlock ) );
+						messages.append( TestMessage() << tr( "link" ) << linkId( nif, idx ) << tr( "points to wrong block type" ) << nif->itemName( iBlock ) );
 				}
 			}
 		}

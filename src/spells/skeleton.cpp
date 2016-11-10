@@ -220,7 +220,7 @@ public:
 		if ( name.startsWith( "Bip01" ) ) {
 			Transform local( nif, index );
 			stream << name << local << tparent * local;
-			qWarning() << name;
+			qDebug() << name;
 			for ( const auto link : nif->getChildLinks( nif->getBlockNumber( index ) ) ) {
 				QModelIndex iChild = nif->getBlock( link, "NiNode" );
 
@@ -265,7 +265,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & iShape ) override final
 	{
-		if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( iShape, "NiTriStrips" ) ) {
+		if ( nif->isNiBlock( iShape, { "NiTriShape", "NiTriStrips" } ) ) {
 			QModelIndex iSkinInst = nif->getBlock( nif->getLink( iShape, "Skin Instance" ), "NiSkinInstance" );
 
 			if ( iSkinInst.isValid() ) {
@@ -421,7 +421,10 @@ public:
 					}
 				}
 
-				qWarning() << QString( Spell::tr( "reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" ) ).arg( c ).arg( maxBonesPerVertex ).arg( maxBones );
+				qCWarning( nsSpell ) << Spell::tr( "Reduced %1 vertices to %2 bone influences (maximum number of bones per vertex was %3)" )
+					.arg( c )
+					.arg( maxBonesPerVertex )
+					.arg( maxBones );
 			}
 
 			maxBones = maxBonesPerVertex;
@@ -635,7 +638,7 @@ public:
 			}
 
 			if ( cnt > 0 )
-				qWarning() << QString( Spell::tr( "removed %1 bone influences" ) ).arg( cnt );
+				qCWarning( nsSpell ) << Spell::tr( "Removed %1 bone influences" ).arg( cnt );
 
 			// split the triangles into partitions
 
@@ -750,7 +753,7 @@ public:
 				parts.append( part );
 			}
 
-			//qWarning() << parts.count() << "small partitions";
+			//qDebug() << parts.count() << "small partitions";
 
 			// merge partitions
 
@@ -773,7 +776,7 @@ public:
 				}
 			}
 
-			//qWarning() << parts.count() << "partitions";
+			//qDebug() << parts.count() << "partitions";
 
 			// create the NiSkinPartition if it doesn't exist yet
 
@@ -796,7 +799,7 @@ public:
 
 				// why is QList.count() signed? cast to squash warning
 				if ( nparts != (quint32)parts.count() ) {
-					qWarning() << "BSDismemberSkinInstance partition count does not match Skin Partition count.  Adjusting to fit.";
+					qCWarning( nsSpell ) << "BSDismemberSkinInstance partition count does not match Skin Partition count.  Adjusting to fit.";
 					nif->set<uint>( iSkinInst, "Num Partitions", parts.count() );
 					nif->updateArray( iSkinInst, "Partitions" );
 				}
@@ -1030,7 +1033,7 @@ public:
 			Partitioner.cast( nif, idx, mbpp, mbpv, make_strips );
 		}
 
-		qWarning() << QString( Spell::tr( "did %1 partitions" ) ).arg( indices.count() );
+		qCWarning( nsSpell ) << Spell::tr( "did %1 partitions" ).arg( indices.count() );
 
 		return QModelIndex();
 	}
@@ -1053,7 +1056,7 @@ SkinPartitionDialog::SkinPartitionDialog( int ) : QDialog()
 	spnPart->setValue( 18 );
 
 	ckTStrip = new QCheckBox( "&Stripify Triangles" );
-	ckTStrip->setChecked( true );
+	ckTStrip->setChecked( false );
 	ckTStrip->setToolTip( "Determines whether the triangles in each partition will be arranged into strips or as a list of individual triangles.  Different gaems work best with one or the other." );
 	connect( ckTStrip, &QCheckBox::clicked, this, &SkinPartitionDialog::changed );
 
@@ -1207,8 +1210,10 @@ public:
 			center = ( mn + mx ) / 2;
 			radius = qMax( ( mn - center ).length(), ( mx - center ).length() );
 
-			nif->set<Vector3>( iBoneDataList.child( b, 0 ), "Bounding Sphere Offset", center );
-			nif->set<float>( iBoneDataList.child( b, 0 ), "Bounding Sphere Radius", radius );
+			auto sphIdx = nif->getIndex( iBoneDataList.child( b, 0 ) , "Bounding Sphere" );
+
+			nif->set<Vector3>( sphIdx, "Bounding Sphere Offset", center );
+			nif->set<float>( sphIdx, "Bounding Sphere Radius", radius );
 		}
 
 		return iSkinData;
@@ -1308,7 +1313,7 @@ public:
 
 			nif->set<QString>( iChild, "Name", childName );
 
-			//qWarning() << "Checking child: " << iChild;
+			//qDebug() << "Checking child: " << iChild;
 			if ( iChild.isValid() ) {
 				if ( nif->itemName( iChild ) == "NiNode" ) {
 					// repeat
@@ -1327,7 +1332,7 @@ public:
 
 	void doShapes( NifModel * nif, const QModelIndex & index )
 	{
-		//qWarning() << "Entering doShapes";
+		//qDebug() << "Entering doShapes";
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 		QModelIndex iSkinInstance = nif->getBlock( nif->getLink( index, "Skin Instance" ), "NiSkinInstance" );
 

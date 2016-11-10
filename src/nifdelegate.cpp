@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "options.h"
+#include "settings.h"
 
+#include "glview.h"
 #include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxy.h"
@@ -47,6 +48,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QListView>
 
 
+//! @file nifdelegate.cpp NifDelegate
+
 extern void qt_format_text( const QFont & font, const QRectF & _r,
                             int tf, const QString & str, QRectF * brect,
                             int tabstops, int * tabarray, int tabarraylen,
@@ -54,10 +57,10 @@ extern void qt_format_text( const QFont & font, const QRectF & _r,
 
 class NifDelegate final : public QItemDelegate
 {
-	SpellBook * book;
+	SpellBookPtr book;
 
 public:
-	NifDelegate( SpellBook * sb = 0 ) : QItemDelegate(), book( sb )
+	NifDelegate( QObject * p, SpellBookPtr sb = 0 ) : QItemDelegate( p ), book( sb )
 	{
 	}
 
@@ -66,6 +69,11 @@ public:
 		Q_ASSERT( event );
 		Q_ASSERT( model );
 
+		// Ignore indices which are not editable
+		//	since this QItemDelegate bypasses the flags.
+		if ( !(model->flags( index ) & Qt::ItemIsEditable) )
+			return false;
+
 		switch ( event->type() ) {
 		case QEvent::MouseButtonPress:
 		case QEvent::MouseButtonRelease:
@@ -73,9 +81,10 @@ public:
 			if ( static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton
 			     && decoRect( option ).contains( static_cast<QMouseEvent *>(event)->pos() ) )
 			{
-				Spell * spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
-
+				// Spell Icons in Value column
+				SpellPtr spell = SpellBook::lookup( model->data( index, Qt::UserRole ).toString() );
 				if ( spell && !spell->icon().isNull() ) {
+					// Spell Icon click
 					if ( event->type() == QEvent::MouseButtonRelease ) {
 						NifModel * nif = 0;
 						QModelIndex buddy = index;
@@ -88,6 +97,7 @@ public:
 							buddy = proxy->mapTo( index );
 						}
 
+						// Cast Spell for icon which was clicked
 						if ( nif && spell->isApplicable( nif, buddy ) ) {
 							if ( book )
 								book->cast( nif, buddy, spell );
@@ -109,6 +119,7 @@ public:
 				if ( v.canConvert<NifValue>() ) {
 					NifValue nv = v.value<NifValue>();
 
+					// Yes/No toggle for bool types
 					if ( nv.type() == NifValue::tBool ) {
 						nv.set<int>( !nv.get<int>() );
 						model->setData( index, nv.toVariant(), Qt::EditRole );
@@ -136,8 +147,8 @@ public:
 		QIcon icon;
 
 		if ( !user.isEmpty() ) {
-			Spell * spell = SpellBook::lookup( user );
-
+			// Find the icon for this Spell if one exists
+			SpellPtr spell = SpellBook::lookup( user );
 			if ( spell )
 				icon = spell->icon();
 		}
@@ -155,8 +166,9 @@ public:
 		opt.state |= QStyle::State_Active;
 		QPalette::ColorGroup cg = ( opt.state & QStyle::State_Enabled ) ? QPalette::Normal : QPalette::Disabled;
 
+		// Color the field background if the value type is a color
+		//	Otherwise normal behavior
 		QVariant color = index.data( Qt::BackgroundColorRole );
-
 		if ( color.canConvert<QColor>() )
 			painter->fillRect( option.rect, color.value<QColor>() );
 		else if ( option.state & QStyle::State_Selected )
@@ -189,7 +201,7 @@ public:
 	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const override final
 	{
 		if ( !index.isValid() )
-			return 0;
+			return nullptr;
 
 		QVariant v  = index.data( Qt::EditRole );
 		QWidget * w = 0;
@@ -278,6 +290,18 @@ public:
 
 		if ( vedit ) {
 			v.setValue( vedit->getValue() );
+
+			// Value is unchanged, do not push to Undo Stack or call setData()
+			if ( v == index.data( Qt::EditRole ) )
+				return;
+
+			if ( model->inherits( "NifModel" ) ) {
+				auto valueType = model->sibling( index.row(), 0, index ).data().toString();
+
+				auto nif = static_cast<NifModel *>(model);
+				nif->undoStack->push( new ChangeValueCommand( index, v, vedit->getValue().toString(), valueType, nif ) );
+			}
+
 			model->setData( index, v, Qt::EditRole );
 		} else if ( cedit ) {
 			QString t  = index.sibling( index.row(), NifModel::TypeCol ).data( NifSkopeDisplayRole ).toString();
@@ -292,6 +316,18 @@ public:
 				NifValue nv = v.value<NifValue>();
 				nv.setCount( x );
 				v.setValue( nv );
+
+				// Value is unchanged, do not push to Undo Stack or call setData()
+				if ( v == index.data( Qt::EditRole ) )
+					return;
+
+				if ( model->inherits( "NifModel" ) ) {
+					auto valueType = model->sibling( index.row(), 0, index ).data().toString();
+
+					auto nif = static_cast<NifModel *>(model);
+					nif->undoStack->push( new ToggleCheckBoxListCommand( index, v, valueType, nif ) );
+				}
+
 				model->setData( index, v, Qt::EditRole );
 			}
 		} else if ( ledit ) {
@@ -314,12 +350,12 @@ public:
 	}
 };
 
-QAbstractItemDelegate * NifModel::createDelegate( SpellBook * book )
+QAbstractItemDelegate * NifModel::createDelegate( QObject * parent, SpellBookPtr book )
 {
-	return new NifDelegate( book );
+	return new NifDelegate( parent, book );
 }
 
-QAbstractItemDelegate * KfmModel::createDelegate()
+QAbstractItemDelegate * KfmModel::createDelegate( QObject * p )
 {
-	return new NifDelegate;
+	return new NifDelegate( p );
 }

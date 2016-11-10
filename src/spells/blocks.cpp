@@ -166,17 +166,20 @@ static void populateBlocks( QList<qint32> & blocks, NifModel * nif, qint32 block
 //! Remove the children from the specified block
 static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock )
 {
-	QList<QPersistentModelIndex> iChildren;
+	// Build list of child links
+	QVector<QPersistentModelIndex> iChildren;
 	for ( const auto link : nif->getChildLinks( nif->getBlockNumber( iBlock ) ) ) {
 		iChildren.append( nif->getBlock( link ) );
 	}
 
+	// Remove children of child links
 	for ( const QPersistentModelIndex& iChild : iChildren ) {
 		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) ) {
 			removeChildren( nif, iChild );
 		}
 	}
 
+	// Remove children
 	for ( const QPersistentModelIndex& iChild : iChildren ) {
 		if ( iChild.isValid() && nif->getBlockNumber( iBlock ) == nif->getParent( nif->getBlockNumber( iChild ) ) ) {
 			nif->removeNiBlock( nif->getBlockNumber( iChild ) );
@@ -293,7 +296,7 @@ public:
 			if ( !addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) ) ) {
 				// try Skyrim
 				if ( !addLink( nif, iParent, "BS Properties", nif->getBlockNumber( iProperty ) ) ) {
-					qWarning() << "failed to attach property block; perhaps the array is full?";
+					qCWarning( nsSpell ) << Spell::tr( "failed to attach property block; perhaps the array is full?" );
 				}
 			}
 
@@ -466,6 +469,7 @@ class spCopyBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Copy" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_C }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -477,7 +481,7 @@ public:
 		QByteArray data;
 		QBuffer buffer( &data );
 
-		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) ) {
+		if ( buffer.open( QIODevice::WriteOnly ) && nif->saveIndex( buffer, index ) ) {
 			QMimeData * mime = new QMimeData;
 			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->itemName( index ), nif->getVersion() ), data );
 			QApplication::clipboard()->setMimeData( mime );
@@ -541,7 +545,7 @@ public:
 
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
 						QModelIndex block = nif->insertNiBlock( blockType( form ), nif->getBlockCount() );
-						nif->load( buffer, block );
+						nif->loadIndex( buffer, block );
 						blockLink( nif, index, block );
 						return block;
 					}
@@ -561,6 +565,7 @@ class spPasteOverBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Paste Over" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_V }; }
 
 	QString acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
 	{
@@ -599,7 +604,7 @@ public:
 					QBuffer buffer( &data );
 
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
-						nif->load( buffer, index );
+						nif->loadIndex( buffer, index );
 						return index;
 					}
 				}
@@ -653,7 +658,7 @@ public:
 						}
 					}
 
-					QMessageBox::information( 0, Spell::tr( "Copy Branch" ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
 						.arg( link )
 						.arg( nif->itemName( nif->getBlock( link ) ) )
 						.arg( block )
@@ -676,8 +681,8 @@ public:
 			for ( const auto block : blocks ) {
 				ds << nif->itemName( nif->getBlock( block ) );
 
-				if ( !nif->save( buffer, nif->getBlock( block ) ) ) {
-					QMessageBox::information( 0, Spell::tr( "Copy Branch" ), Spell::tr( "failed to save block %1 %2." )
+				if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
 						.arg( block )
 						.arg( nif->itemName( nif->getBlock( block ) ) )
 					);
@@ -780,7 +785,7 @@ public:
 							if ( block >= 0 ) {
 								blockMap.insert( ipm.key(), block );
 							} else {
-								QMessageBox::information( 0, Spell::tr( "Paste Branch" ), Spell::tr( "failed to map parent link %1" )
+								Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
 									.arg( ipm.value() )
 								);
 								return index;
@@ -1059,7 +1064,7 @@ public:
 	{
 		// construct list of block numbers of all blocks in this branch of index
 		QList<quint32> branch = getBranch( nif, nif->getBlockNumber( index ) );
-		//qWarning() << branch; // DEBUG
+		//qDebug() << branch;
 		// remove non-branch blocks
 		int n = 0; // tracks the current block number in the new system (after some blocks have been removed already)
 		int m = 0; // tracks the block number in the old system i.e.  as they are numbered in the branch list
@@ -1149,6 +1154,7 @@ class spDuplicateBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Duplicate" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_D }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -1162,11 +1168,11 @@ public:
 		QBuffer buffer( &data );
 
 		// Opening in ReadWrite doesn't work - race condition?
-		if ( buffer.open( QIODevice::WriteOnly ) && nif->save( buffer, index ) ) {
+		if ( buffer.open( QIODevice::WriteOnly ) && nif->saveIndex( buffer, index ) ) {
 			// from spPasteBlock
 			if ( buffer.open( QIODevice::ReadOnly ) ) {
 				QModelIndex block = nif->insertNiBlock( nif->getBlockName( index ), nif->getBlockCount() );
-				nif->load( buffer, block );
+				nif->loadIndex( buffer, block );
 				blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), block );
 				return block;
 			}
@@ -1184,6 +1190,7 @@ class spDuplicateBranch final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Duplicate Branch" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::Key_D }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -1219,7 +1226,7 @@ public:
 						}
 					}
 
-					QMessageBox::information( 0, Spell::tr( "Duplicate Branch" ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
 						.arg( link )
 						.arg( nif->itemName( nif->getBlock( link ) ) )
 						.arg( block )
@@ -1242,8 +1249,8 @@ public:
 			for ( const auto block : blocks ) {
 				ds << nif->itemName( nif->getBlock( block ) );
 
-				if ( !nif->save( buffer, nif->getBlock( block ) ) ) {
-					QMessageBox::information( 0, Spell::tr( "Duplicate Branch" ), Spell::tr( "failed to save block %1 %2." )
+				if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
 						.arg( block )
 						.arg( nif->itemName( nif->getBlock( block ) ) )
 					);
@@ -1280,7 +1287,7 @@ public:
 				if ( block >= 0 ) {
 					blockMap.insert( ipm.key(), block );
 				} else {
-					QMessageBox::information( 0, Spell::tr( "Duplicate Branch" ), Spell::tr( "failed to map parent link %1" )
+					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
 						.arg( ipm.value() )
 					);
 					return index;

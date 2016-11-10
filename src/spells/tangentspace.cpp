@@ -7,6 +7,12 @@ bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & ind
 {
 	QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
+	if ( nif->isNiBlock( index, "BSTriShape" ) || nif->isNiBlock( index, "BSSubIndexTriShape" ) 
+		|| nif->isNiBlock( index, "BSMeshLODTriShape" ) ) {
+		// TODO: Check vertex flags to verify mesh has normals and space for tangents/bitangents
+		return true;
+	}
+
 	if ( !( nif->isNiBlock( index, "NiTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
 	     && !( nif->isNiBlock( index, "BSLODTriShape" ) && nif->isNiBlock( iData, "NiTriShapeData" ) )
 	     && !( nif->isNiBlock( index, "NiTriStrips" ) && nif->isNiBlock( iData, "NiTriStripsData" ) ) )
@@ -36,21 +42,44 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 {
 	QPersistentModelIndex iShape = iBlock;
 
-	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	QModelIndex iData;
+	if ( nif->getUserVersion2() < 130 )
+		iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	else
+		iData = nif->getIndex( iShape, "Vertex Data" );
 
-	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-	QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+	QVector<Vector3> verts;
+	QVector<Vector3> norms;
+	QVector<Vector2> texco;
+
+	if ( nif->getUserVersion2() < 130 ) {
+		verts = nif->getArray<Vector3>( iData, "Vertices" );
+		norms = nif->getArray<Vector3>( iData, "Normals" );
+	} else {
+		int numVerts = nif->get<int>( iShape, "Num Vertices" );
+
+		for ( int i = 0; i < numVerts; i++ ) {
+			auto idx = nif->index( i, 0, iData );
+			verts += nif->get<Vector3>( idx, "Vertex" );
+			norms += nif->get<ByteVector3>( idx, "Normal" );;
+			texco += nif->get<HalfVector2>( idx, "UV" );
+		}
+	}
 
 	QVector<Color4> vxcol = nif->getArray<Color4>( iData, "Vertex Colors" );
 	int numUVSets = nif->get<int>( iData, "Num UV Sets" );
 	int tspaceFlags = nif->get<int>( iData, "TSpace Flag" );
-	QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 
-	if ( !iTexCo.isValid() )
-		iTexCo = nif->getIndex( iData, "UV Sets 2" );
+	if ( nif->getUserVersion2() < 130 ) {
+		QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 
-	iTexCo = iTexCo.child( 0, 0 );
-	QVector<Vector2> texco = nif->getArray<Vector2>( iTexCo );
+		if ( !iTexCo.isValid() )
+			iTexCo = nif->getIndex( iData, "UV Sets 2" );
+
+		iTexCo = iTexCo.child( 0, 0 );
+		texco = nif->getArray<Vector2>( iTexCo );
+	}
+
 
 	QVector<Triangle> triangles;
 	QModelIndex iPoints = nif->getIndex( iData, "Points" );
@@ -62,12 +91,21 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 			strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 
 		triangles = triangulate( strips );
-	} else {
+	} else if ( nif->getUserVersion2() < 130 ) {
 		triangles = nif->getArray<Triangle>( iData, "Triangles" );
+	} else if ( nif->getUserVersion2() == 130 ) {
+		triangles = nif->getArray<Triangle>( iShape, "Triangles" );
 	}
 
 	if ( verts.isEmpty() || norms.count() != verts.count() || texco.count() != verts.count() || triangles.isEmpty() ) {
-		qWarning() << Spell::tr( "need vertices, normals, texture coordinates and faces to calculate tangents and bitangents" );
+		Message::append( tr( "Update Tangent Spaces failed on one or more blocks." ),
+			tr( "Block %1: Insufficient information to calculate tangents and bitangents. V: %2, N: %3, Tex: %4, Tris: %5" )
+			.arg( nif->getBlockNumber( iBlock ) )
+			.arg( verts.count() )
+			.arg( norms.count() )
+			.arg( texco.count() )
+			.arg( triangles.count() )
+		);
 		return iBlock;
 	}
 
@@ -108,7 +146,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		if ( fabs( r ) <= 10e-10 )
 		{
 		    //if ( skptricnt++ < 3 )
-		    //	qWarning() << t;
+		    //	qDebug() << t;
 		    continue;
 		}
 
@@ -142,7 +180,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		}
 	}
 
-	//qWarning() << "skipped triangles" << skptricnt;
+	//qDebug() << "skipped triangles" << skptricnt;
 
 	//int cnt = 0;
 
@@ -159,7 +197,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 			t[0] = n[1]; t[1] = n[2]; t[2] = n[0];
 			b = Vector3::crossproduct( n, t );
 			//if ( cnt++ < 3 )
-			//	qWarning() << i;
+			//	qDebug() << i;
 		} else {
 			t.normalize();
 			t = ( t - n * Vector3::dotproduct( n, t ) );
@@ -177,7 +215,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		//qDebug() << "";
 	}
 
-	//qWarning() << "unassigned vertices" << cnt;
+	//qDebug() << "unassigned vertices" << cnt;
 
 	bool isOblivion = false;
 
@@ -210,7 +248,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		}
 
 		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *)tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *)bin.data(), bin.count() * sizeof( Vector3 ) ) );
-	} else {
+	} else if ( nif->getUserVersion2() < 130 ) {
 		if ( tspaceFlags == 0 )
 			tspaceFlags = 0x10;
 
@@ -222,6 +260,21 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		nif->updateArray( iTangents );
 		nif->setArray( iBinorms, bin );
 		nif->setArray( iTangents, tan );
+	} else if ( nif->getUserVersion2() == 130 ) {
+
+		int numVerts = nif->get<int>( iShape, "Num Vertices" );
+		for ( int i = 0; i < numVerts; i++ ) {
+			auto idx = nif->index( i, 0, iData );
+
+			nif->set<Vector3>( idx, "Tangent", tan[i] );
+			nif->set<float>( idx, "Bitangent X", bin[i][0] );
+
+			auto bitYi = round( ((bin[i][1] + 1.0) / 2.0) * 255.0 );
+			auto bitZi = round( ((bin[i][2] + 1.0) / 2.0) * 255.0 );
+			
+			nif->set<quint8>( idx, "Bitangent Y", bitYi );
+			nif->set<quint8>( idx, "Bitangent Z", bitZi );
+		}
 	}
 
 	return iShape;
@@ -273,4 +326,52 @@ public:
 };
 
 REGISTER_SPELL( spAllTangentSpaces )
+
+
+class spAddAllTangentSpaces final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Add Tangent Spaces and Update" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
+	{
+		return nif && !idx.isValid() && nif->checkVersion( 0x0A010000, 0 );
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QVector<QModelIndex> blks;
+		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
+			QModelIndex idx = nif->getBlock( l, "NiTriShape" );
+			if ( !idx.isValid() )
+				continue;
+
+			// NiTriShapeData
+			auto iData = nif->getBlock( nif->getLink( idx, "Data" ) );
+
+			// Do not do anything without proper UV/Vert/Tri data
+			auto numVerts = nif->get<int>( iData, "Num Vertices" );
+			auto numTris = nif->get<int>( iData, "Num Triangles" );
+			bool hasUVs = nif->get<int>( iData, "Vector Flags" ) & 1;
+			if ( !hasUVs || !numVerts || !numTris )
+				continue;
+
+			nif->set<int>( iData, "Vector Flags", 4097 );
+			nif->updateArray( iData, "Tangents" );
+			nif->updateArray( iData, "Bitangents" );
+
+			// Add NiTriShape for spTangentSpace
+			blks << idx;
+		}
+
+		spTangentSpace update;
+		for ( auto& b : blks )
+			update.cast( nif, b );
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spAddAllTangentSpaces )
 

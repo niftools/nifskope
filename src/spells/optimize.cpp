@@ -70,7 +70,7 @@ public:
 					QBuffer data;
 					data.open( QBuffer::WriteOnly );
 					data.write( nif->itemName( iBlock ).toLatin1() );
-					nif->save( data, iBlock );
+					nif->saveIndex( data, iBlock );
 					props.insert( b, data.buffer() );
 				}
 
@@ -108,7 +108,7 @@ public:
 			}
 		} while ( !map.isEmpty() );
 
-		QMessageBox::information( 0, "NifSkope", QString( "removed %1 properties" ).arg( numRemoved ) );
+		Message::info( nullptr, Spell::tr( "Removed %1 properties" ).arg( numRemoved ) );
 		return QModelIndex();
 	}
 };
@@ -155,10 +155,10 @@ public:
 									QModelIndex iSrc2 = nif->insertNiBlock( "NiSourceTexture", nif->getBlockCount() + 1 );
 									QBuffer buffer;
 									buffer.open( QBuffer::WriteOnly );
-									nif->save( buffer, iSrc );
+									nif->saveIndex( buffer, iSrc );
 									buffer.close();
 									buffer.open( QBuffer::ReadOnly );
-									nif->load( buffer, iSrc2 );
+									nif->loadIndex( buffer, iSrc2 );
 									map[ sl ] = nif->getBlockNumber( iSrc2 );
 								}
 							}
@@ -167,7 +167,7 @@ public:
 						QModelIndex iProp2 = nif->insertNiBlock( nif->itemName( iProp ), nif->getBlockCount() + 1 );
 						QBuffer buffer;
 						buffer.open( QBuffer::WriteOnly );
-						nif->save( buffer, iProp );
+						nif->saveIndex( buffer, iProp );
 						buffer.close();
 						buffer.open( QBuffer::ReadOnly );
 						nif->loadAndMapLinks( buffer, iProp2, map );
@@ -244,7 +244,7 @@ public:
 		} while ( removed );
 
 		if ( cnt > 0 )
-			QMessageBox::information( 0, "NifSkope", QString( Spell::tr( "removed %1 nodes" ) ).arg( cnt ) );
+			Message::info( nullptr, Spell::tr( "Removed %1 nodes" ).arg( cnt ) );
 
 		return QModelIndex();
 	}
@@ -284,7 +284,7 @@ public:
 			if ( nif->getParent( lChild ) == nif->getBlockNumber( iParent ) ) {
 				QModelIndex iChild = nif->getBlock( lChild );
 
-				if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
+				if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
 					lTris << lChild;
 			}
 		}
@@ -368,7 +368,11 @@ public:
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
 
-			qWarning() << "Attached " << nif->itemName( iBlock ) << " prevents " << nif->get<QString>( iTriA, "Name" ) << " and " << nif->get<QString>( iTriB, "Name" ) << " from matching.";
+			qCWarning( nsSpell ) << Spell::tr( "Attached %1 prevents %2 and %3 from matching." )
+				.arg( nif->itemName( iBlock ) )
+				.arg( nif->get<QString>( iTriA, "Name" ) )
+				.arg( nif->get<QString>( iTriB, "Name" ) );
+
 			return false;
 		}
 
@@ -385,7 +389,11 @@ public:
 			if ( nif->isNiBlock( iBlock, "NiBinaryExtraData" ) && nif->get<QString>( iBlock, "Name" ) == "Tangent space (binormal & tangent vectors)" )
 				continue;
 
-			qWarning() << "Attached " << nif->itemName( iBlock ) << " prevents " << nif->get<QString>( iTriA, "Name" ) << " and " << nif->get<QString>( iTriB, "Name" ) << " from matching.";
+			qCWarning( nsSpell ) << Spell::tr( "Attached %1 prevents %2 and %3 from matching." )
+				.arg( nif->itemName( iBlock ) )
+				.arg( nif->get<QString>( iTriA, "Name" ) )
+				.arg( nif->get<QString>( iTriB, "Name" ) );
+			
 			return false;
 		}
 
@@ -486,3 +494,91 @@ public:
 };
 
 REGISTER_SPELL( spCombiTris )
+
+
+void scan( QModelIndex idx, NifModel * nif, QMap<QString, qint32> & usedStrings, bool hasCED )
+{
+	for ( int i = 0; i < nif->rowCount( idx ); i++ ) {
+		auto child = idx.child( i, 2 );
+		if ( nif->rowCount( child ) > 0 ) {
+			scan( child, nif, usedStrings, hasCED );
+			continue;
+		}
+
+		NifValue val;
+		val.setFromVariant( child.data( Qt::EditRole ) );
+		if ( val.type() == NifValue::tStringIndex ) {
+			if ( nif->get<int>( child ) == -1 )
+				continue;
+
+			auto str = nif->get<QString>( child );
+			if ( !usedStrings.contains( str ) )
+				usedStrings.insert( str, usedStrings.size() );
+
+			qint32 value = usedStrings[str];
+			if ( hasCED && value > 0 )
+				value++;
+
+			nif->set<int>( child, value );
+		}
+	}
+}
+
+//! Removes unused strings from the header
+class spRemoveUnusedStrings final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Remove Unused Strings" ); }
+	QString page() const override final { return Spell::tr( "Optimize" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif && !index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		auto originalStrings = nif->getArray<QString>( nif->getHeader(), "Strings" );
+
+		// FO4 workaround for apparently unused but necessary BSClothExtraData string
+		int cedIdx = originalStrings.indexOf( "CED" );
+
+		bool hasCED = cedIdx >= 0;
+
+		QMap<QString, qint32> usedStrings;
+		for ( qint32 b = 0; b < nif->getBlockCount(); b++ )
+			scan( nif->getBlock( b ), nif, usedStrings, hasCED );
+
+		QVector<QString> newStrings( usedStrings.size() );
+		for ( auto kv : usedStrings.toStdMap() )
+			newStrings[kv.second] = kv.first;
+
+		int newSize = newStrings.size();
+
+		if ( hasCED ) {
+			newStrings.insert( cedIdx, 1, "CED" );
+			newSize++;
+		}
+
+		nif->set<uint>( nif->getHeader(), "Num Strings", newSize );
+		nif->updateArray( nif->getHeader(), "Strings" );
+		nif->setArray<QString>( nif->getHeader(), "Strings", newStrings );
+		nif->updateHeader();
+
+		// Remove new from original to see what was removed
+		for ( const auto & s : newStrings )
+			originalStrings.removeAll( s );
+
+		QString msg;
+		if ( originalStrings.size() )
+			msg = "Removed:\r\n" + QStringList::fromVector( originalStrings ).join( "\r\n" );
+
+		Message::info( nullptr, Spell::tr( "Strings Removed: %1. New string table has %2 entries." )
+					   .arg( originalStrings.size() ).arg( newSize ), msg
+		);
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spRemoveUnusedStrings )

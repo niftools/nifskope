@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifcheckboxlist.h"
-#include "options.h"
+#include "settings.h"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -193,6 +193,7 @@ NifCheckBoxList::~NifCheckBoxList()
 
 void NifCheckBoxList::sltDataChanged( const QModelIndex &, const QModelIndex & )
 {
+	emit dataChanged();
 	updateText();
 }
 

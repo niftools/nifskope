@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
-
-#include "options.h"
 
 #include "nifmodel.h"
 #include "nvtristripwrapper.h"
@@ -61,74 +59,138 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 {
 	// copy vertices
 
-	QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-	foreach ( Vector3 v, verts ) {
-		v = t * v;
-		obj << "v " << qSetRealNumberPrecision( 17 ) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
-	}
-
-	// copy texcoords
-
-	QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
-
-	if ( !iUV.isValid() )
-		iUV = nif->getIndex( iData, "UV Sets 2" );
-
-	QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
-	foreach ( Vector2 t, texco ) {
-		obj << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
-	}
-
-	// copy normals
-
-	QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
-	foreach ( Vector3 n, norms ) {
-		n = t.rotation * n;
-		obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
-	}
-
-	// get the triangles
-
-	QVector<Triangle> tris;
-
-	QModelIndex iPoints = nif->getIndex( iData, "Points" );
-
-	if ( iPoints.isValid() ) {
-		QList<QVector<quint16> > strips;
-
-		for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-			strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
-
-		tris = triangulate( strips );
-	} else {
-		tris = nif->getArray<Triangle>( iData, "Triangles" );
-	}
-
-	// write the triangles
-
-	foreach ( Triangle t, tris ) {
-		obj << "f";
-
-		for ( int p = 0; p < 3; p++ ) {
-			obj << " " << ofs[0] + t[p];
-
-			if ( norms.count() )
-				if ( texco.count() )
-					obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
-				else
-					obj << "//" << ofs[2] + t[p];
-
-
-			else if ( texco.count() )
-				obj << "/" << ofs[1] + t[p];
+	if ( nif->getUserVersion2() < 130 ) {
+		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+		foreach( Vector3 v, verts )
+		{
+			v = t * v;
+			obj << "v " << qSetRealNumberPrecision( 17 ) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
 		}
 
-		obj << "\r\n";
-	}
+		// copy texcoords
 
-	ofs[0] += verts.count();
-	ofs[1] += texco.count();
-	ofs[2] += norms.count();
+		QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
+
+		if ( !iUV.isValid() )
+			iUV = nif->getIndex( iData, "UV Sets 2" );
+
+		QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
+		foreach( Vector2 t, texco )
+		{
+			obj << "vt " << t[0] << " " << 1.0 - t[1] << "\r\n";
+		}
+
+		// copy normals
+
+		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+		foreach( Vector3 n, norms )
+		{
+			n = t.rotation * n;
+			obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+		}
+
+		// get the triangles
+
+		QVector<Triangle> tris;
+
+		QModelIndex iPoints = nif->getIndex( iData, "Points" );
+
+		if ( iPoints.isValid() ) {
+			QList<QVector<quint16> > strips;
+
+			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+
+			tris = triangulate( strips );
+		} else {
+			tris = nif->getArray<Triangle>( iData, "Triangles" );
+		}
+
+		// write the triangles
+
+		foreach( Triangle t, tris )
+		{
+			obj << "f";
+
+			for ( int p = 0; p < 3; p++ ) {
+				obj << " " << ofs[0] + t[p];
+
+				if ( norms.count() )
+					if ( texco.count() )
+						obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
+					else
+						obj << "//" << ofs[2] + t[p];
+
+
+				else if ( texco.count() )
+					obj << "/" << ofs[1] + t[p];
+			}
+
+			obj << "\r\n";
+		}
+
+		ofs[0] += verts.count();
+		ofs[1] += texco.count();
+		ofs[2] += norms.count();
+	} else {
+		auto iVertData = nif->getIndex( iData, "Vertex Data" );
+		if ( !iVertData.isValid() )
+			return;
+
+		QVector<Vector3> verts;
+		QVector<Vector2> coords;
+		QVector<Vector3> norms;
+
+		auto numVerts = nif->get<int>( iData, "Num Vertices" );
+		for ( int i = 0; i < numVerts; i++ ) {
+			auto idx = nif->index( i, 0, iVertData );
+
+			verts += nif->get<Vector3>( idx, "Vertex" );
+			coords += nif->get<HalfVector2>( idx, "UV" );
+			norms += nif->get<ByteVector3>( idx, "Normal" );
+		}
+
+		for ( Vector3 & v : verts ) {
+			v = t * v;
+			obj << "v " << qSetRealNumberPrecision( 17 ) << v[0] << " " << v[1] << " " << v[2] << "\r\n";
+		}
+
+		for ( Vector2 & c : coords ) {
+			obj << "vt " << c[0] << " " << 1.0 - c[1] << "\r\n";
+		}
+
+		for ( Vector3 & n : norms ) {
+			n = t.rotation * n;
+			obj << "vn " << n[0] << " " << n[1] << " " << n[2] << "\r\n";
+		}
+
+		auto tris = nif->getArray<Triangle>( iData, "Triangles" );
+
+		for ( const Triangle & t : tris ) {
+			obj << "f";
+
+			for ( int p = 0; p < 3; p++ ) {
+				obj << " " << ofs[0] + t[p];
+
+				if ( norms.count() )
+					if ( coords.count() )
+						obj << "/" << ofs[1] + t[p] << "/" << ofs[2] + t[p];
+					else
+						obj << "//" << ofs[2] + t[p];
+
+
+				else if ( coords.count() )
+					obj << "/" << ofs[1] + t[p];
+			}
+
+			obj << "\r\n";
+		}
+
+		ofs[0] += verts.count();
+		ofs[1] += coords.count();
+		ofs[2] += norms.count();
+	}
+	
 }
 
 static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
@@ -173,16 +235,9 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 					"obj format does not support skinning. This mesh will be "
 					"exported statically in its bind pose, without skin weights." )
 			);
-		} else if ( nif->isNiBlock( iProp, "BSShaderNoLightingProperty" )
-		            || nif->isNiBlock( iProp, "SkyShaderProperty" )
-		            || nif->isNiBlock( iProp, "TileShaderProperty" )
-		)
-		{
+		} else if ( nif->isNiBlock( iProp, { "BSShaderNoLightingProperty", "SkyShaderProperty", "TileShaderProperty" } ) ) {
 			map_Kd = TexCache::find( nif->get<QString>( iProp, "File Name" ), nif->getFolder() );
-		} else if ( nif->isNiBlock( iProp, "BSShaderPPLightingProperty" )
-		            || nif->isNiBlock( iProp, "Lighting30ShaderProperty" )
-		)
-		{
+		} else if ( nif->isNiBlock( iProp, { "BSShaderPPLightingProperty", "Lighting30ShaderProperty" } ) ) {
 			QModelIndex iArray = nif->getIndex( nif->getBlock( nif->getLink( iProp, "Texture Set" ) ), "Textures" );
 			map_Kd = TexCache::find( nif->get<QString>( iArray.child( 0, 0 ) ), nif->getFolder() );
 		}
@@ -212,7 +267,10 @@ static void writeShape( const NifModel * nif, const QModelIndex & iShape, QTextS
 
 	obj << "\r\n# " << name << "\r\n\r\ng " << name << "\r\n" << "usemtl " << matn << "\r\n\r\n";
 
-	writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
+	if ( nif->getUserVersion2() < 130 )
+		writeData( nif, nif->getBlock( nif->getLink( iShape, "Data" ) ), obj, ofs, t );
+	else
+		writeData( nif, iShape, obj, ofs, t );
 }
 
 static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextStream & obj, QTextStream & mtl, int ofs[], Transform t )
@@ -227,7 +285,9 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 
 		if ( nif->inherits( iChild, "NiNode" ) )
 			writeParent( nif, iChild, obj, mtl, ofs, t );
-		else if ( nif->isNiBlock( iChild, "NiTriShape" ) || nif->isNiBlock( iChild, "NiTriStrips" ) )
+		else if ( nif->isNiBlock( iChild, { "NiTriShape", "NiTriStrips" } ) )
+			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
+		else if ( nif->isNiBlock( iChild, { "BSTriShape", "BSSubIndexTriShape", "BSMeshLODTriShape" } ) )
 			writeShape( nif, iChild, obj, mtl, ofs, t * Transform( nif, iChild ) );
 		else if ( nif->inherits( iChild, "NiCollisionObject" ) ) {
 			QModelIndex iBody = nif->getBlock( nif->getLink( iChild, "Body" ) );
@@ -298,8 +358,8 @@ static void writeParent( const NifModel * nif, const QModelIndex & iNode, QTextS
 
 void exportObj( const NifModel * nif, const QModelIndex & index )
 {
-	objCulling = Options::get()->exportCullEnabled();
-	objCullRegExp = Options::get()->cullExpression();
+	//objCulling = Options::get()->exportCullEnabled();
+	//objCullRegExp = Options::get()->cullExpression();
 
 	//--Determine how the file will export, and be sure the user wants to continue--//
 	QList<int> roots;
@@ -345,14 +405,14 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 	QFile fobj( fname + ".obj" );
 
 	if ( !fobj.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "could not open " << fobj.fileName() << " for write access";
+		qCCritical( nsIo ) << tr( "Failed to write %1" ).arg( fobj.fileName() );
 		return;
 	}
 
 	QFile fmtl( fname + ".mtl" );
 
 	if ( !fmtl.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "could not open " << fmtl.fileName() << " for write access";
+		qCCritical( nsIo ) << tr( "Failed to write %1" ).arg( fmtl.fileName() );
 		return;
 	}
 
@@ -377,7 +437,7 @@ void exportObj( const NifModel * nif, const QModelIndex & index )
 
 		if ( nif->inherits( iBlock, "NiNode" ) )
 			writeParent( nif, iBlock, sobj, smtl, ofs, Transform() );
-		else if ( nif->isNiBlock( iBlock, "NiTriShape" ) || nif->isNiBlock( iBlock, "NiTriStrips" ) )
+		else if ( nif->isNiBlock( iBlock, { "NiTriShape", "NiTriStrips" } ) )
 			writeShape( nif, iBlock, sobj, smtl, ofs, Transform() );
 	}
 
@@ -425,7 +485,7 @@ static void readMtlLib( const QString & fname, QMap<QString, ObjMaterial> & omat
 	QFile file( fname );
 
 	if ( !file.open( QIODevice::ReadOnly ) ) {
-		qWarning() << "failed to open" << fname;
+		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fname );
 		return;
 	}
 
@@ -571,7 +631,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 	QFile fobj( fname );
 
 	if ( !fobj.open( QIODevice::ReadOnly ) ) {
-		qWarning() << tr( "could not open " ) << fobj.fileName() << tr( " for read access" );
+		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fobj.fileName() );
 		return;
 	}
 
@@ -615,7 +675,7 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			onorms.append( Vector3( t.value( 1 ).toDouble(), t.value( 2 ).toDouble(), t.value( 3 ).toDouble() ) );
 		} else if ( t.value( 0 ) == "f" ) {
 			if ( t.count() > 5 ) {
-				qWarning() << "please triangulate your mesh before import";
+				qCCritical( nsNif ) << tr( "Please triangulate your mesh before import." );
 				return;
 			}
 
@@ -686,8 +746,10 @@ void importObj( NifModel * nif, const QModelIndex & index )
 				addLink( nif, iNode, "Children", nif->getBlockNumber( iShape ) );
 			}
 
-			if ( !omaterials.contains( it.key() ) )
-				qWarning() << "material" << it.key() << "not found in mtllib";
+			if ( !omaterials.contains( it.key() ) ) {
+				Message::append( tr( "Warnings were generated during OBJ import." ),
+					tr( "Material '%1' not found in mtllib." ).arg( it.key() ) );
+			}
 
 			ObjMaterial mtl = omaterials.value( it.key() );
 

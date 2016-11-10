@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "colorwheel.h"
+#include "spellbook.h"
 
 #include "floatslider.h"
 #include "niftypes.h"
@@ -40,6 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QIcon>
 #include <QLabel>
 #include <QLayout>
+#include <QLineEdit>
 #include <QPainter>
 #include <QPixmap>
 #include <QPushButton>
@@ -96,7 +98,7 @@ static const char * const hsv42_xpm[] = {
 
 #include <math.h>
 
-QIcon * ColorWheel::icon = nullptr;
+static QIconPtr icon = nullptr;
 
 ColorWheel::ColorWheel( QWidget * parent ) : QWidget( parent )
 {
@@ -123,7 +125,7 @@ ColorWheel::ColorWheel( const QColor & c, QWidget * parent ) : QWidget( parent )
 QIcon ColorWheel::getIcon()
 {
 	if ( !icon )
-		icon = new QIcon( QPixmap( hsv42_xpm ) );
+		icon = QIconPtr( new QIcon(QPixmap( hsv42_xpm )) );
 
 	return *icon;
 }
@@ -167,6 +169,8 @@ void ColorWheel::setAlpha( const bool & b )
 void ColorWheel::setAlphaValue( const float & f )
 {
 	A = f;
+
+	setColor( QColor::fromHsvF( H, S, V, A ) );
 }
 
 QSize ColorWheel::sizeHint() const
@@ -174,7 +178,7 @@ QSize ColorWheel::sizeHint() const
 	if ( sHint.isValid() )
 		return sHint;
 
-	return { 250, 250 };
+	return { 200, 200 };
 }
 
 void ColorWheel::setSizeHint( const QSize & s )
@@ -207,6 +211,8 @@ void ColorWheel::paintEvent( QPaintEvent * e )
 
 	QPainter p( this );
 	p.translate( width() / 2, height() / 2 );
+	p.setRenderHint( QPainter::Antialiasing );
+	p.setRenderHint( QPainter::HighQualityAntialiasing );
 
 	p.setPen( Qt::NoPen );
 
@@ -476,4 +482,116 @@ void ColorWheel::chooseHex()
 		setColor( temp );
 		emit sigColorEdited( temp );
 	}
+}
+
+ColorLineEdit::ColorLineEdit( QWidget * parent ) : QWidget( parent )
+{
+	QHBoxLayout * layout = new QHBoxLayout( this );
+
+	setLayout( layout );
+
+	title = new QLabel( this );
+	title->setText( "Color" );
+	title->setSizePolicy( QSizePolicy( QSizePolicy::Maximum, QSizePolicy::MinimumExpanding ) );
+
+	lblColor = new QLabel( this );
+
+	color = new QLineEdit( this );
+	color->setText( "#FFFFFF" );
+	color->setMaxLength( 7 );
+	color->setAlignment( Qt::AlignCenter );
+	color->setMaximumWidth( 60 );
+
+	alpha = new QDoubleSpinBox( this );
+	alpha->setDecimals( 4 );
+	alpha->setMinimum( 0.0 );
+	alpha->setMaximum( 1.0 );
+	alpha->setSingleStep( 0.01 );
+	alpha->setVisible( false );
+	alpha->setHidden( true );
+
+	layout->setAlignment( Qt::AlignLeft );
+	layout->addWidget( title );
+	layout->addWidget( lblColor );
+	layout->addWidget( color );
+	layout->addWidget( alpha );
+}
+
+QColor ColorLineEdit::getColor() const
+{
+	QColor c = QColor( color->text() );
+	if ( hasAlpha )
+		c.setAlphaF( alpha->value() );
+
+	return c;
+}
+
+void ColorLineEdit::setWheel( ColorWheel * cw, const QString & str )
+{
+	wheel = cw;
+
+	if ( !str.isEmpty() )
+		setTitle( str );
+
+	connect( wheel, &ColorWheel::sigColor, this, &ColorLineEdit::setColor );
+	connect( wheel, &ColorWheel::sigColor, [this]() {
+		lblColor->setStyleSheet( "background-color: " + wheel->getColor().name( QColor::HexArgb ) + ";" );
+	} );
+
+	connect( color, &QLineEdit::cursorPositionChanged, [this]() {
+		if ( color->cursorPosition() == 0 ) {
+			color->setCursorPosition( 1 );
+		}
+	} );
+
+	connect( color, &QLineEdit::textEdited, [this]() {
+		QString colorTxt = color->text();
+
+		// Prevent "#" deletion
+		if ( !color->text().startsWith( "#" ) ) {
+			color->setText( "#" + color->text() );
+		}
+
+		QColor c = QColor( colorTxt );
+		if ( hasAlpha )
+			c.setAlphaF( alpha->value() );
+
+		if ( (color->text().length() % 2 == 0) || !QColor::isValidColor( colorTxt ) )
+			return;
+
+		QColor wc = wheel->getColor();
+		if ( c.toRgb() != wc.toRgb() )
+			wheel->setColor( c );
+	} );
+}
+
+void ColorLineEdit::setTitle( const QString & str )
+{
+	title->setText( str );
+}
+
+void ColorLineEdit::setColor( const QColor & c )
+{
+	color->setText( c.name( QColor::HexRgb ) );
+
+	if ( hasAlpha )
+		alpha->setValue( c.alphaF() );
+
+	QColor wc = wheel->getColor();
+	
+	// Sync color wheel
+	//	Do NOT compare entire QColor, will create
+	//	infinite loop between their ::setColor()
+	if ( hasAlpha && c.alphaF() != wc.alphaF() )
+		wheel->setColor( c );
+
+	if ( c.red() != wc.red() || c.green() != wc.green() || c.blue() != wc.blue() )
+		wheel->setColor( c );
+}
+
+void ColorLineEdit::setAlpha( float a )
+{
+	hasAlpha = true;
+
+	alpha->setValue( a );
 }

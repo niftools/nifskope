@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,75 +41,77 @@ class QString;
 
 typedef unsigned int GLuint;
 
-//! \file gltexloaders.h Texture loading functions header
+//! @file gltexloaders.h Texture loading functions header
 
-//! A function for loading textures.
-/*!
+/*! A function for loading textures.
+ *
  * Loads a texture pointed to by filepath.
  * Returns true on success, and throws a QString otherwise.
  * The parameters format, width, height and mipmaps will be filled with information about
  * the loaded texture.
  *
- * \param filepath The full path to the texture that must be loaded.
- * \param format Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
- * \param width Contains the texture width on successful load.
- * \param height Contains the texture height on successful load.
- * \param mipmaps Contains the number of mipmaps on successful load.
- * \return true if the load was successful, false otherwise.
+ * @param filepath	The full path to the texture that must be loaded.
+ * @param format	Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
+ * @param width		Contains the texture width on successful load.
+ * @param height	Contains the texture height on successful load.
+ * @param mipmaps	Contains the number of mipmaps on successful load.
+ * @return			True if the load was successful, false otherwise.
  */
 extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
 extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data );
 
-//! A function for loading textures.
-/*!
-* Loads a texture pointed to by model index.
-* Returns true on success, and throws a QString otherwise.
-* The parameters format, width, height and mipmaps will be filled with information about
-* the loaded texture.
-*
-* \param iData Reference to pixel data block
-* \param format Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
-* \param width Contains the texture width on successful load.
-* \param height Contains the texture height on successful load.
-* \param mipmaps Contains the number of mipmaps on successful load.
-* \return true if the load was successful, false otherwise.
-*/
+extern bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id );
+
+/*! A function for loading textures.
+ *
+ * Loads a texture pointed to by model index.
+ * Returns true on success, and throws a QString otherwise.
+ * The parameters format, width, height and mipmaps will be filled with information about
+ * the loaded texture.
+ *
+ * @param iData		Reference to pixel data block
+ * @param format	Contain the format, for instance "DDS (DXT3)" or "TGA", on successful load.
+ * @param width		Contains the texture width on successful load.
+ * @param height	Contains the texture height on successful load.
+ * @param mipmaps	Contains the number of mipmaps on successful load.
+ * @return			True if the load was successful, false otherwise.
+ */
 extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
 
-//! A function which checks whether the given file can be loaded.
-/*!
+/*! A function which checks whether the given file can be loaded.
+ *
  * The function checks whether the file exists, is readable, and whether its extension
  * is that of a supported file format (dds, tga, or bmp).
  *
- * \param filepath The full path to the texture that must be checked.
+ * @param filepath The full path to the texture that must be checked.
  */
 extern bool texCanLoad( const QString & filepath );
 
-//! Save pixel data to a DDS file
-/*!
- * \param index Reference to pixel data
- * \param filepath The filepath to write
- * \param width The width of the texture
- * \param height The height of the texture
- * \param mipmaps The number of mipmaps present
- * \return true if the save was successful, false otherwise
+/*! Save pixel data to a DDS file
+ *
+ * @param index		Reference to pixel data
+ * @param filepath	The filepath to write
+ * @param width		The width of the texture
+ * @param height	The height of the texture
+ * @param mipmaps	The number of mipmaps present
+ * @return			True if the save was successful, false otherwise
  */
 bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps );
 
-//! Save pixel data to a TGA file
-/*!
- * \param index Reference to pixel data
- * \param filepath The filepath to write
- * \param width The width of the texture
- * \param height The height of the texture
- * \return true if the save was successful, false otherwise
+/*! Save pixel data to a TGA file
+ *
+ * @param index		Reference to pixel data
+ * @param filepath	The filepath to write
+ * @param width		The width of the texture
+ * @param height	The height of the texture
+ * @return			True if the save was successful, false otherwise
  */
 bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height );
 
-//! Save a file to pixel data
-/*!
- * \param filepath The source texture to convert
- * \param iData The pixel data to write
+/*! Save a file to pixel data
+ *
+ * @param filepath	The source texture to convert
+ * @param iData		The pixel data to write
  */
 bool texSaveNIF( class NifModel * nif, const QString & filepath, QModelIndex & iData );
 

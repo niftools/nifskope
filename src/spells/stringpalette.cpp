@@ -65,7 +65,7 @@ static char const * txt_xpm[] = {
 	"                                "
 };
 
-QIcon * txt_xpm_icon = nullptr;
+static QIconPtr txt_xpm_icon = nullptr;
 
 //! Edit a single offset into a string palette.
 class spEditStringOffset final : public Spell
@@ -76,7 +76,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !txt_xpm_icon )
-			txt_xpm_icon = new QIcon( QPixmap( txt_xpm ) );
+			txt_xpm_icon = QIconPtr( new QIcon(QPixmap( txt_xpm )) );
 
 		return *txt_xpm_icon;
 	}
@@ -305,15 +305,13 @@ public:
 		// a single palette could be share by multiple NiSequences
 
 		QPersistentModelIndex iPalette = nif->getBlock( nif->getLink( index, "String Palette" ) );
-#ifndef QT_NO_DEBUG
-		qWarning() << "This block uses " << iPalette;
-#endif
+		qDebug() << "This block uses " << iPalette;
 
 		if ( !iPalette.isValid() ) {
 			iPalette = nif->getBlock( nif->getLink( index.parent(), "String Palette" ) );
 
 			if ( !iPalette.isValid() ) {
-				qWarning() << Spell::tr( "Cannot find string palette" );
+				qCWarning( nsSpell ) << Spell::tr( "Cannot find string palette" );
 				return QModelIndex();
 			}
 		}
@@ -348,7 +346,7 @@ public:
 		// get replaced entries
 		QStringList newEntries = sprd->getStringList();
 
-		//qWarning() << newEntries;
+		//qDebug() << newEntries;
 
 		// rebuild palette
 		bytes.clear();
@@ -381,9 +379,7 @@ public:
 			}
 		}
 
-#ifndef QT_NO_DEBUG
-		qWarning() << "Found sequences " << sequenceList;
-#endif
+		qDebug() << "Found sequences " << sequenceList;
 
 		// find their string palettes
 		QList<QPersistentModelIndex> sequenceUpdateList;
@@ -393,9 +389,9 @@ public:
 			QPersistentModelIndex temp = sequenceListIterator.next();
 			QPersistentModelIndex tempPalette = nif->getBlock( nif->getLink( temp, "String Palette" ) );
 
-			//qWarning() << "Sequence " << temp << " uses " << tempPalette;
+			//qDebug() << "Sequence " << temp << " uses " << tempPalette;
 			if ( iPalette == tempPalette ) {
-				//qWarning() << "Identical to this sequence palette!";
+				//qDebug() << "Identical to this sequence palette!";
 				sequenceUpdateList.append( temp );
 			}
 		}
@@ -406,7 +402,7 @@ public:
 
 		while ( sequenceUpdateIterator.hasNext() ) {
 			QPersistentModelIndex nextBlock = sequenceUpdateIterator.next();
-			//qWarning() << "Need to update " << nextBlock;
+			//qDebug() << "Need to update " << nextBlock;
 
 			QPersistentModelIndex blocks = nif->getIndex( nextBlock, "Controlled Blocks" );
 
@@ -418,13 +414,12 @@ public:
 						// we shouldn't ever exceed the limit of an int, even though the type
 						// is properly a uint
 						int oldValue = nif->get<int>( thisBlock.child( j, 0 ) );
-#ifndef QT_NO_DEBUG
-						qWarning() << "Index " << thisBlock.child( j, 0 )
+						qDebug() << "Index " << thisBlock.child( j, 0 )
 						           << " is a string offset with name "
 						           << nif->itemName( thisBlock.child( j, 0 ) )
 						           << " and value "
 						           << nif->get<int>( thisBlock.child( j, 0 ) );
-#endif
+
 
 						if ( oldValue != -1 ) {
 							int newValue = offsetMap.value( oldValue );
@@ -439,8 +434,7 @@ public:
 		// update the palette itself
 		nif->set<QByteArray>( iPalette, "Palette", bytes );
 
-		QMessageBox::information( 0, "NifSkope",
-			Spell::tr( "Updated %1 offsets in %2 sequences" ).arg( numRefsUpdated ).arg( sequenceUpdateList.size() ) );
+		Message::info( nullptr, Spell::tr( "Updated %1 offsets in %2 sequences" ).arg( numRefsUpdated ).arg( sequenceUpdateList.size() ) );
 
 		return index;
 	}

@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kfmmodel.h"
 
+
+//! @file kfmmodel.cpp KfmModel
 
 KfmModel::KfmModel( QObject * parent ) : BaseModel( parent )
 {
@@ -101,11 +103,10 @@ void KfmModel::clear()
 	insertType( root, NifData( "Kfm", "Kfm" ) );
 	kfmroot = root->child( 0 );
 	version = 0x0200000b;
+	endResetModel();
 
 	if ( kfmroot )
 		set<QString>( kfmroot, "Header String", ";Gamebryo KFM File Version 2.0.0.0b" );
-
-	endResetModel();
 }
 
 /*
@@ -123,7 +124,7 @@ static QString parentPrefix( const QString & x )
 	return x;
 }
 
-bool KfmModel::updateArrayItem( NifItem * array, bool fast )
+bool KfmModel::updateArrayItem( NifItem * array )
 {
 	if ( array->arr1().isEmpty() )
 		return false;
@@ -131,7 +132,12 @@ bool KfmModel::updateArrayItem( NifItem * array, bool fast )
 	int d1 = getArraySize( array );
 
 	if ( d1 > 1024 * 1024 * 8 ) {
-		msg( Message() << "array" << array->name() << "much too large" );
+		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( d1 );
+		if ( msgMode == UserMessage ) {
+			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
+		} else {
+			testMsg( m );
+		}
 		return false;
 	}
 
@@ -140,26 +146,22 @@ bool KfmModel::updateArrayItem( NifItem * array, bool fast )
 	if ( d1 > rows ) {
 		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
 
-		if ( !fast )
-			beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
+		beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
 
 		array->prepareInsert( d1 - rows );
 
 		for ( int c = rows; c < d1; c++ )
 			insertType( array, data );
 
-		if ( !fast )
-			endInsertRows();
+		endInsertRows();
 	}
 
 	if ( d1 < rows ) {
-		if ( !fast )
-			beginRemoveRows( createIndex( array->row(), 0, array ), d1, rows - 1 );
+		beginRemoveRows( createIndex( array->row(), 0, array ), d1, rows - 1 );
 
 		array->removeChildren( d1, rows - d1 );
 
-		if ( !fast )
-			endRemoveRows();
+		endRemoveRows();
 	}
 
 	return true;
@@ -175,12 +177,12 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 		NifItem * array = insertBranch( parent, data, at );
 
 		if ( evalCondition( array ) )
-			updateArrayItem( array, true );
+			updateArrayItem( array );
 
 		return;
 	}
 
-	NifBlock * compound = compounds.value( data.type() );
+	NifBlockPtr compound = compounds.value( data.type() );
 
 	if ( compound ) {
 		NifItem * branch = insertBranch( parent, data, at );
@@ -243,18 +245,17 @@ bool KfmModel::setItemValue( NifItem * item, const NifValue & val )
 
 bool KfmModel::setHeaderString( const QString & s )
 {
-	//msg( DbgMsg() << s << s.right( s.length() - 27 ) );
 	if ( s.startsWith( ";Gamebryo KFM File Version " ) ) {
 		version = version2number( s.right( s.length() - 27 ) );
 
 		if ( isVersionSupported( version ) ) {
 			return true;
 		} else {
-			msg( Message() << tr( "version" ) << version2string( version ) << tr( "not supported yet" ) );
+			Message::critical( nullptr, tr( "Version %1 is not supported." ).arg( version2string( version ) ) );
 			return false;
 		}
 	}
-	msg( Message() << tr( "this is not a KFM" ) );
+	Message::critical( nullptr, tr( "Could not open %1 because it is not a supported type." ).arg( fileinfo.fileName() ) );
 	return false;
 }
 
@@ -264,8 +265,10 @@ bool KfmModel::load( QIODevice & device )
 
 	NifIStream stream( this, &device );
 
-	if ( !kfmroot || !load( kfmroot, stream, true ) ) {
-		msg( Message() << tr( "failed to load kfm file (%1)" ).arg( version ) );
+	if ( !kfmroot || !load( kfmroot, stream ) ) {
+		Message::critical( nullptr, tr( "The file could not be read. See Details for more information." ),
+			tr( "failed to load kfm file (%1)" ).arg( version2string( version ) )
+		);
 		return false;
 	}
 
@@ -282,14 +285,14 @@ bool KfmModel::save( QIODevice & device ) const
 	NifOStream stream( this, &device );
 
 	if ( !kfmroot || save( kfmroot, stream ) ) {
-		msg( Message() << tr( "failed to write kfm file" ) );
+		Message::critical( nullptr, tr( "Failed to write KFM file." ) );
 		return false;
 	}
 
 	return true;
 }
 
-bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
+bool KfmModel::load( NifItem * parent, NifIStream & stream )
 {
 	if ( !parent )
 		return false;
@@ -299,13 +302,13 @@ bool KfmModel::load( NifItem * parent, NifIStream & stream, bool fast )
 
 		if ( evalCondition( child ) ) {
 			if ( !child->arr1().isEmpty() ) {
-				if ( !updateArrayItem( child, fast ) )
+				if ( !updateArrayItem( child ) )
 					return false;
 
-				if ( !load( child, stream, fast ) )
+				if ( !load( child, stream ) )
 					return false;
 			} else if ( child->childCount() > 0 ) {
-				if ( !load( child, stream, fast ) )
+				if ( !load( child, stream ) )
 					return false;
 			} else {
 				if ( !stream.read( child->value() ) )
@@ -327,8 +330,11 @@ bool KfmModel::save( NifItem * parent, NifOStream & stream ) const
 
 		if ( evalCondition( child ) ) {
 			if ( !child->arr1().isEmpty() || !child->arr2().isEmpty() || child->childCount() > 0 ) {
-				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) )
-					msg( Message() << child->name() << tr( "array size mismatch" ) );
+				if ( !child->arr1().isEmpty() && child->childCount() != getArraySize( child ) ) {
+					Message::append( tr( "Warnings were generated while reading the blocks." ),
+						tr( "%1 array size mismatch" ).arg( child->name() )
+					);
+				}
 
 				if ( !save( child, stream ) )
 					return false;

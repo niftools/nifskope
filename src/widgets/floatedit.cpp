@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ FloatEdit::FloatEdit( QWidget * parent )
 	val = 0.0f;
 
 	setValidator( validator = new FloatValidator( this ) );
-	validator->setDecimals( 4 );
+	validator->setDecimals( 6 );
 
 	connect( this, &FloatEdit::editingFinished, this, &FloatEdit::edited );
 

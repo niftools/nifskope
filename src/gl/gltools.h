@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 
 
-//! \file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
+//! @file gltools.h BoundSphere, VertexWeight, BoneWeights, SkinPartition
 
 //! A bounding sphere for an object, typically a Mesh
 class BoundSphere final
@@ -46,6 +46,7 @@ class BoundSphere final
 public:
 	BoundSphere();
 	BoundSphere( const BoundSphere & );
+	BoundSphere( const NifModel * nif, const QModelIndex & );
 	BoundSphere( const Vector3 & center, float radius );
 	BoundSphere( const QVector<Vector3> & vertices );
 
@@ -83,6 +84,8 @@ public:
 	BoneWeights() { bone = 0; }
 	BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt = 0 );
 
+	void setTransform( const NifModel * nif, const QModelIndex & index );
+
 	Transform trans;
 	Vector3 center; float radius;
 	Vector3 tcenter;
@@ -107,17 +110,24 @@ public:
 	QList<QVector<quint16> > tristrips;
 };
 
+QVector<int> sortAxes( QVector<float> axesDots );
+
 void drawAxes( Vector3 c, float axis );
+void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder = {2, 1, 0} );
+void drawGrid( int s, int line, int sub );
 void drawBox( Vector3 a, Vector3 b );
 void drawCircle( Vector3 c, Vector3 n, float r, int sd = 16 );
 void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd = 8 );
 void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd = 8 );
 void drawCone( Vector3 c, Vector3 n, float a, int sd = 16 );
 void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd = 16 );
+void drawSphereSimple( Vector3 c, float r, int sd = 36 );
 void drawSphere( Vector3 c, float r, int sd = 8 );
 void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
 void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );
-void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals, float scale = 1.0f );
+void drawConvexHull( const NifModel * nif, const QModelIndex & iShape, float scale, bool solid = false );
+void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid = false );
+void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid = false );
 void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd = 16, bool solid = false );
 void drawRail( const Vector3 & a, const Vector3 & b );
 

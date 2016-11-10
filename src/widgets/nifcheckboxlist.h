@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -133,6 +133,9 @@ class NifCheckBoxList : public CheckBoxList
 public:
 	NifCheckBoxList( QWidget * widget = nullptr );
 	virtual ~NifCheckBoxList();
+
+signals:
+	void dataChanged();
 
 protected:
 	void updateText() override final;

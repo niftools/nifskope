@@ -167,9 +167,10 @@ defineReplace(QtBins) {
 	}
 
 	*-g++ {
+        # Copies libgcc*-*, libstdc++-*, libwinpthread-*
+        #   Note: As of Qt 5.5, changed `lib*` to `lib*-*` in order to avoid unneeded libs.
 		list += \
-			$$[QT_INSTALL_BINS]/icu*.dll \
-			$$[QT_INSTALL_BINS]/lib*.dll
+            $$[QT_INSTALL_BINS]/lib*-*.dll
 	}
 
 	return($$list)
@@ -199,7 +200,8 @@ defineTest(copyFiles) {
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
-	QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+	unix:QMAKE_POST_LINK += $$QMAKE_MKDIR_CMD $${ddir} $$nt
+	else:QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
 
 	for(FILE, files) {
 		fileabs = $${PWD}$${QMAKE_DIR_SEP}$${FILE}
@@ -239,7 +241,8 @@ defineTest(copyDirs) {
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
-	QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+	unix:QMAKE_POST_LINK += $$QMAKE_MKDIR_CMD $${ddir} $$nt
+	else:QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
 
 	for(DIR, dirs) {
 		dirabs = $${PWD}$${QMAKE_DIR_SEP}$${DIR}

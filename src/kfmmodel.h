@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QReadWriteLock>
 #include <QStringList>
 
+#include <memory>
+
+using NifBlockPtr = std::shared_ptr<NifBlock>;
+
+//! @file kfmmodel.h KfmModel
 
 class KfmModel final : public BaseModel
 {
@@ -78,15 +83,15 @@ public:
 	QString getVersion() const override final { return version2string( version ); }
 	quint32 getVersionNumber() const override final { return version; }
 
-	static QAbstractItemDelegate * createDelegate();
+	static QAbstractItemDelegate * createDelegate( QObject * parent );
 
 protected:
 	void insertType( NifItem * parent, const NifData & data, int row = -1 );
 	NifItem * insertBranch( NifItem * parent, const NifData & data, int row = -1 );
 
-	bool updateArrayItem( NifItem * array, bool fast ) override final;
+	bool updateArrayItem( NifItem * array ) override final;
 
-	bool load( NifItem * parent, NifIStream & stream, bool fast = true );
+	bool load( NifItem * parent, NifIStream & stream );
 	bool save( NifItem * parent, NifOStream & stream ) const;
 
 	bool setItemValue( NifItem * item, const NifValue & v ) override final;
@@ -106,7 +111,7 @@ protected:
 	// XML structures
 	static QList<quint32> supportedVersions;
 
-	static QHash<QString, NifBlock *> compounds;
+	static QHash<QString, NifBlockPtr> compounds;
 
 	static QString parseXmlDescription( const QString & filename );
 

@@ -1,0 +1,9 @@
+code {
+	background-color: #f3f3f3;
+	border: 1px solid #eeeeee;
+	font-size: 90%;
+	padding: 2px 5px 2px 5px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}

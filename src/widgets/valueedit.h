@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QTextEdit> // Inherited
 #include <QWidget>   // Inherited
+#include <QSpinBox>  // Inherited
+#include <QValidator> // Inherited
+
+#include <cstring>
 
 
 //! \file valueedit.h ValueEdit and other widgets
@@ -244,6 +248,67 @@ public slots:
 protected:
 	void resizeEvent( QResizeEvent * e ) override final;
 	void keyPressEvent( QKeyEvent * e ) override final;
+};
+
+
+class UnsignedValidator : public QValidator
+{
+    Q_OBJECT
+
+public:
+    UnsignedValidator( QObject * parent );
+	~UnsignedValidator() {}
+
+    QValidator::State validate( QString &, int & ) const;
+
+    void setRange( uint min, uint max );
+
+	uint minimum() const { return min; }
+	uint maximum() const { return max; }
+
+private:
+	uint min = 0, max = 0xffffffff;
+};
+
+
+class UIntSpinBox final : public QSpinBox
+{
+	Q_OBJECT
+
+public:
+	UIntSpinBox( QWidget * parent );
+
+	~UIntSpinBox()
+	{
+		delete validator;
+	}
+
+	QValidator::State validate( QString & text, int & pos ) const override;
+
+public slots:
+	void setValue( uint value );
+
+protected:
+	QString textFromValue( int value ) const;
+
+	int valueFromText( const QString & text ) const;
+
+	uint toUInt( int i ) const
+	{
+		uint ui;
+		std::memcpy( &ui, &i, sizeof( ui ) );
+		return ui;
+	}
+
+	int toInt( uint ui ) const
+	{
+		int i;
+		std::memcpy( &i, &ui, sizeof( i ) );
+		return i;
+	}
+
+private:
+	UnsignedValidator * validator;
 };
 
 #endif

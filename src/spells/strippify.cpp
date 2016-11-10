@@ -58,7 +58,7 @@ class spStrippify final : public Spell
 				skip++;
 		}
 
-		//qWarning() << "num triangles" << triangles.count() << "skipped" << skip;
+		//qDebug() << "num triangles" << triangles.count() << "skipped" << skip;
 
 
 		QList<QVector<quint16> > strips = stripify( triangles );
@@ -87,6 +87,7 @@ class spStrippify final : public Spell
 
 			copyValue<int>( nif, iStripData, iData, "Has UV" );
 			copyValue<int>( nif, iStripData, iData, "Num UV Sets" );
+			copyValue<int>( nif, iStripData, iData, "Vector Flags" );
 			copyValue<int>( nif, iStripData, iData, "BS Num UV Sets" );
 			copyValue<int>( nif, iStripData, iData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iStripData, "UV Sets" );
@@ -243,6 +244,7 @@ class spTriangulate final : public Spell
 			copyValue<int>( nif, iTriData, iStripData, "Has UV" );
 			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets" );
 			copyValue<int>( nif, iTriData, iStripData, "BS Num UV Sets" );
+			copyValue<int>( nif, iTriData, iStripData, "Vector Flags" );
 			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iTriData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iStripData, "UV Sets" );
@@ -291,6 +293,38 @@ class spTriangulate final : public Spell
 };
 
 REGISTER_SPELL( spTriangulate )
+
+
+class spTriangulateAll final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Triangulate All Strips" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return !index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QList<QPersistentModelIndex> triStrips;
+
+		for ( int l = 0; l < nif->getBlockCount(); l++ ) {
+			QModelIndex idx = nif->getBlock( l, "NiTriStrips" );
+			if ( idx.isValid() )
+				triStrips << idx;
+		}
+
+		spTriangulate tri;
+		for ( const QModelIndex& idx : triStrips )
+			tri.castIfApplicable( nif, idx );
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spTriangulateAll )
 
 
 class spStichStrips final : public Spell

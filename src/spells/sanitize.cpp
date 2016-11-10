@@ -171,7 +171,9 @@ class spSanitizeBlockOrder final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Reorder Blocks" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	// Prevent this from running during auto-sanitize for the time being
+	//	Can really only cause issues with rendering and textureset overrides via the CK
+	bool sanity() const { return false; }
 
 	bool isApplicable( const NifModel *, const QModelIndex & index ) override final
 	{
@@ -246,7 +248,7 @@ public:
 
 		// check whether all blocks have been added
 		if ( nif->getBlockCount() != newblocks.size() ) {
-			qWarning() << "failed to sanitize blocks order, corrupt nif tree?";
+			qCCritical( nsSpell ) << Spell::tr( "failed to sanitize blocks order, corrupt nif tree?" );
 			return QModelIndex();
 		}
 
@@ -255,8 +257,7 @@ public:
 
 		for ( qint32 n = 0; n < newblocks.size(); n++ ) {
 			order[newblocks[n]] = n;
-			// DEBUG
-			//qWarning() << n << newblocks[n];
+			//qDebug() << n << newblocks[n];
 		}
 
 		// reorder the blocks
@@ -308,12 +309,12 @@ public:
 					/*
 					if ( ! child )
 					{
-					    qWarning() << "unassigned parent link";
+					    qDebug() << "unassigned parent link";
 					    return idx;
 					}
 					*/
 				} else if ( l >= nif->getBlockCount() ) {
-					qWarning() << "invalid link";
+					qCCritical( nsSpell ) << Spell::tr( "Invalid link '%1'." ).arg( QString::number(l) );
 					return idx;
 				} else {
 					QString tmplt = nif->itemTmplt( idx );
@@ -322,7 +323,7 @@ public:
 						QModelIndex iBlock = nif->getBlock( l );
 
 						if ( !nif->inherits( iBlock, tmplt ) ) {
-							qWarning() << "link points to wrong block type";
+							qCCritical( nsSpell ) << Spell::tr( "Link '%1' points to wrong block type." ).arg( QString::number(l) );
 							return idx;
 						}
 					}
@@ -343,3 +344,167 @@ public:
 
 REGISTER_SPELL( spSanityCheckLinks )
 
+//! Fixes invalid block names
+class spFixInvalidNames final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Fix Invalid Block Names" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
+	bool sanity() const { return true; }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif && nif->getIndex( nif->getHeader(), "Num Strings" ).isValid() && !index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QVector<QString> stringsToAdd;
+		QVector<QString> shapeNames;
+		QMap<QModelIndex, QString> modifiedBlocks;
+
+		auto iHeader = nif->getHeader();
+		auto numStrings = nif->get<int>( iHeader, "Num Strings" );
+		auto strings = nif->getArray<QString>( iHeader, "Strings" );
+
+		// Provides a string index for the desired string
+		auto rename = [&strings, &stringsToAdd, numStrings] ( int & newIdx, const QString & str ) {
+			newIdx = strings.indexOf( str );
+			if ( newIdx < 0 ) {
+				bool inNew = stringsToAdd.contains( str );
+				newIdx = (inNew) ? stringsToAdd.indexOf( str ) : stringsToAdd.count();
+				newIdx += numStrings;
+
+				if ( !inNew )
+					stringsToAdd << str;
+			}
+		};
+
+		// Provides a block name using a base string and the block number,
+		//	incrementing the number if necessary to avoid duplicate names
+		auto autoRename = [&strings, &stringsToAdd, numStrings] ( int & newIdx, const QString & parentName, int blockNum ) {
+			QString newName;
+			int j = 0;
+			do {
+				newName = QString( "%1:%2" ).arg( parentName ).arg( blockNum + j );
+				j++;
+			} while ( strings.contains( newName ) || stringsToAdd.contains( newName ) );
+
+			newIdx = numStrings + stringsToAdd.count();
+			stringsToAdd << newName;
+		};
+
+		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+			QModelIndex iBlock = nif->getBlock( i );
+			if ( !(nif->inherits( iBlock, "NiObjectNET" ) || nif->inherits( iBlock, "NiExtraData" )) )
+				continue;
+
+			auto nameIdx = nif->get<int>( iBlock, "Name" );
+			auto nameString = nif->get<QString>( iBlock, "Name" );
+
+			QModelIndex iBlockParent = nif->getBlock( nif->getParent( i ) );
+			auto parentNameString = nif->get<QString>( iBlockParent, "Name" );
+			if ( !iBlockParent.isValid() ) {
+				parentNameString = nif->getFilename();
+			}
+
+			int newIdx = -1;
+
+			bool isOutOfBounds = nameIdx >= numStrings;
+			bool isProp = nif->isNiBlock( iBlock, 
+										{ "BSLightingShaderProperty", "BSEffectShaderProperty", "NiAlphaProperty" } );
+			bool isNiAV = nif->inherits( iBlock, "NiAVObject" );
+
+			// Fix 'BSX' strings
+			if ( nif->isNiBlock( iBlock, "BSXFlags" ) ) {
+				if ( nameString == "BSX" )
+					continue;
+				rename( newIdx, "BSX" );
+			} else if ( nameString == "BSX" ) {
+				if ( isProp )
+					rename( newIdx,"" );
+				else
+					autoRename( newIdx, parentNameString, i );
+			}
+
+			// Fix duplicate shape names
+			if ( isNiAV && !isOutOfBounds ) {
+				if ( shapeNames.contains( nameString ) )
+					autoRename( newIdx, parentNameString, i );
+
+				shapeNames << nameString;
+			}
+
+			// Fix "Wet Material" field
+			if ( isProp && nif->getIndex( iBlock, "Wet Material" ).isValid() ) {
+				auto wetIdx = nif->get<int>( iBlock, "Wet Material" );
+				auto wetString = nif->get<QString>( iBlock, "Wet Material" );
+
+				int newWetIdx = -1;
+
+				bool invalidString = !wetString.isEmpty() && !wetString.endsWith( ".bgsm", Qt::CaseInsensitive );
+				if ( wetIdx >= numStrings || invalidString ) {
+					rename( newWetIdx, "" );
+				}
+
+				if ( newWetIdx > -1 ) {
+					nif->set<int>( iBlock, "Wet Material", newWetIdx );
+					modifiedBlocks.insert( nif->getIndex( iBlock, "Wet Material" ), "Wet Material" );
+				}
+			}
+
+			// Fix "Name" field
+			if ( isOutOfBounds ) {
+				// Fix out of bounds string indices
+				// Rename scene objects, or blank out property names
+				if ( !isProp )
+					autoRename( newIdx, parentNameString, i );
+				else
+					rename( newIdx, "" );
+			} else if ( isProp ) {
+				if ( nameString.isEmpty() )
+					continue;
+
+				// Fix invalid property names
+				if ( nif->isNiBlock( iBlock, "NiAlphaProperty" ) ) {
+					rename( newIdx, "" );
+				} else {
+					auto ci = Qt::CaseInsensitive;
+					if ( !(nameString.endsWith( ".bgsm", ci ) || nameString.endsWith( ".bgem", ci )) ) {
+						rename( newIdx, "" );
+					}
+				}
+			}
+
+			if ( newIdx > -1 ) {
+				nif->set<int>( iBlock, "Name", newIdx );
+				modifiedBlocks.insert( nif->getIndex( iBlock, "Name" ), "Name" );
+			}
+		}
+
+		if ( modifiedBlocks.count() < 1 )
+			return QModelIndex();
+
+		// Append new strings to header strings
+		strings << stringsToAdd;
+
+		// Update header
+		nif->set<int>( iHeader, "Num Strings", strings.count() );
+		nif->updateArray( iHeader, "Strings" );
+		nif->setArray<QString>( iHeader, "Strings", strings );
+		
+		nif->updateHeader();
+
+		for ( const auto & b : modifiedBlocks.toStdMap() ) {
+			auto blockName = b.first.parent().data( Qt::DisplayRole ).toString();
+
+			Message::append( Spell::tr( "One or more blocks have had their Name sanitized." ), 
+							 QString( "%1 (%2) = '%3'" ).arg( blockName ).arg( b.second ).arg( nif->get<QString>( b.first ) )
+			);
+		}
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spFixInvalidNames )

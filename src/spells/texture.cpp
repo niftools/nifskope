@@ -126,15 +126,15 @@ static char const * tex42_xpm[] = {
 	"                                                                                "
 };
 
-QIcon * tex42_xpm_icon = nullptr;
+static QIconPtr tex42_xpm_icon = nullptr;
 
 //! Find the reference to shape data from a model and index
 QModelIndex getData( const NifModel * nif, const QModelIndex & index )
 {
-	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
+	if ( nif->isNiBlock( index, { "NiTriShape", "NiTriStrips", "BSLODTriShape" } ) )
 		return nif->getBlock( nif->getLink( index, "Data" ) );
 	
-	if ( nif->isNiBlock( index, "NiTriShapeData" ) || nif->isNiBlock( index, "NiTriStripsData" ) )
+	if ( nif->isNiBlock( index, { "NiTriShapeData", "NiTriStripsData" } ) )
 		return index;
 
 	return QModelIndex();
@@ -163,7 +163,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !tex42_xpm_icon )
-			tex42_xpm_icon = new QIcon( QPixmap( tex42_xpm ) );
+			tex42_xpm_icon = QIconPtr( new QIcon(QPixmap( tex42_xpm )) );
 
 		return *tex42_xpm_icon;
 	}
@@ -172,7 +172,7 @@ public:
 	{
 		QModelIndex iBlock = nif->getBlock( idx );
 
-		if ( ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+		if ( nif->isNiBlock( iBlock, { "NiSourceTexture", "NiImage" } )
 		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 			return true;
 		else if ( nif->isNiBlock( iBlock, "BSShaderNoLightingProperty" ) && nif->itemName( idx ) == "File Name" )
@@ -193,7 +193,7 @@ public:
 		QModelIndex iFile;
 		bool setExternal = false;
 
-		if ( ( nif->isNiBlock( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "NiImage" ) )
+		if ( nif->isNiBlock( iBlock, { "NiSourceTexture", "NiImage" } )
 		     && ( iBlock == idx.sibling( idx.row(), 0 ) || nif->itemName( idx ) == "File Name" ) )
 		{
 			iFile = nif->getIndex( iBlock, "File Name" );
@@ -262,10 +262,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "NiTriStrips" || nif->itemName( index ) == "BSLODTriShape" );
-
-		//QModelIndex iUVs = getUV( nif, index );
-		//return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
+		return nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -832,7 +829,7 @@ public:
 			tex->bind( index );
 		}
 
-		qWarning() << tex->info( index );
+		qDebug() << tex->info( index );
 		return QModelIndex();
 	}
 };
@@ -950,14 +947,14 @@ public:
 		tex->setNifFolder( nif->getFolder() );
 
 		if ( tex->bind( index ) ) {
-			//qWarning() << "spEmbedTexture: Embedding texture " << index;
+			//qDebug() << "spEmbedTexture: Embedding texture " << index;
 
 			int blockNum = nif->getBlockNumber( index );
 			nif->insertNiBlock( "NiPixelData", blockNum + 1 );
 			QPersistentModelIndex iSourceTexture = nif->getBlock( blockNum, "NiSourceTexture" );
 			QModelIndex iPixelData = nif->getBlock( blockNum + 1, "NiPixelData" );
 
-			//qWarning() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
+			//qDebug() << "spEmbedTexture: Block number" << blockNum << "holds source" << iSourceTexture << "Pixel data will be stored in" << iPixelData;
 
 			// finish writing this function
 			if ( tex->importFile( nif, iSourceTexture, iPixelData ) ) {
@@ -973,7 +970,7 @@ public:
 					nif->set<QString>( index, "Name", tempFileName );
 				}
 			} else {
-				qWarning() << "Could not save texture";
+				qCWarning( nsSpell ) << tr( "Could not save texture." );
 				// delete block?
 				/*
 				nif->removeNiBlock( blockNum+1 );
@@ -1100,7 +1097,7 @@ void TexFlipDialog::listFromNif()
 	QModelIndex sources = nif->getIndex( baseIndex, "Sources" );
 
 	if ( nif->rowCount( sources ) != numSources ) {
-		qWarning() << "Number of sources does not match!";
+		qCWarning( nsSpell ) << tr( "'Num Sources' does not match!" );
 		return;
 	}
 
@@ -1148,13 +1145,15 @@ public:
 		// TODO: use a map here to delete missing textures and preserve existing properties
 
 		QModelIndex sources = nif->getIndex( flipController, "Sources" );
+		int size = flipNames.size();
 
-		if ( nif->get<int>( flipController, "Num Sources" ) > flipNames.size() ) {
+		if ( nif->get<int>( flipController, "Num Sources" ) > size ) {
 			// delete blocks
-			qWarning() << "Found" << flipNames.size() << "textures, have" << nif->get<int>( flipController, "Num Sources" );
-
-			for ( int i = flipNames.size(); i < nif->get<int>( flipController, "Num Sources" ); i++ ) {
-				qWarning() << "Deleting" << nif->getLink( sources.child( i, 0 ) );
+			int num = nif->get<int>( flipController, "Num Sources" );
+			for ( int i = size; i < num; i++ ) {
+				Message::append( tr( "Found %1 textures, have %2" ).arg( size ).arg( num ),
+					tr( "Deleting %1" ).arg( nif->getLink( sources.child( i, 0 ) ) ), QMessageBox::Information
+				);
 				nif->removeNiBlock( nif->getLink( sources.child( i, 0 ) ) );
 			}
 		}

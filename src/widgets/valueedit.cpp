@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -57,13 +57,15 @@ ValueEdit::ValueEdit( QWidget * parent ) : QWidget( parent ), typ( NifValue::tNo
 bool ValueEdit::canEdit( NifValue::Type t )
 {
 	return t == NifValue::tByte || t == NifValue::tWord || t == NifValue::tInt || t == NifValue::tFlags
-	       || t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
-	       || t == NifValue::tSizedString || t == NifValue::tLineString || t == NifValue::tChar8String
-	       || t == NifValue::tShortString || t == NifValue::tStringIndex || t == NifValue::tString
-	       || t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
-	       || t == NifValue::tColor3 || t == NifValue::tColor4
-	       || t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
-	       || t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt;
+		|| t == NifValue::tLink || t == NifValue::tUpLink || t == NifValue::tFloat || t == NifValue::tText
+		|| t == NifValue::tSizedString || t == NifValue::tLineString || t == NifValue::tChar8String
+		|| t == NifValue::tShortString || t == NifValue::tStringIndex || t == NifValue::tString
+		|| t == NifValue::tVector4 || t == NifValue::tVector3 || t == NifValue::tVector2
+		|| t == NifValue::tColor3 || t == NifValue::tColor4 || t == NifValue::tByteColor4
+		|| t == NifValue::tMatrix || t == NifValue::tQuat || t == NifValue::tQuatXYZW
+		|| t == NifValue::tTriangle || t == NifValue::tShort || t == NifValue::tUInt || t == NifValue::tULittle32
+		|| t == NifValue::tHfloat || t == NifValue::tHalfVector3 || t == NifValue::tByteVector3
+		|| t == NifValue::tHalfVector2;
 }
 
 class CenterLabel final : public QLabel
@@ -73,32 +75,75 @@ public:
 	CenterLabel() : QLabel() { setAlignment( Qt::AlignCenter ); }
 };
 
-class UIntSpinBox final : public QSpinBox
+
+UnsignedValidator::UnsignedValidator( QObject * parent )
+	: QValidator( parent )
 {
-public:
-	UIntSpinBox( QWidget * parent ) : QSpinBox( parent ) { setRange( INT_MIN, INT_MAX ); }
+}
 
-protected:
-	QString textFromValue( int i ) const override final
-	{
-		return QString::number( (unsigned int)i );
+QValidator::State UnsignedValidator::validate( QString & input, int & pos ) const
+{
+	if ( input.trimmed().isEmpty() || input.trimmed() == QLatin1String( "0x" ) )
+		return Intermediate;
+
+	bool ok;
+	uint val = input.toUInt( &ok, 0 );
+
+	if ( !ok || val > max )
+		return Invalid;
+	else if ( val < min )
+		return Intermediate;
+
+	return Acceptable;
+}
+
+void UnsignedValidator::setRange( uint minimum, uint maximum )
+{
+	min = minimum;
+	max = maximum;
+}
+
+
+UIntSpinBox::UIntSpinBox( QWidget * parent ) : QSpinBox( parent )
+{
+	validator = new UnsignedValidator( this );
+}
+
+QValidator::State UIntSpinBox::validate( QString & text, int & pos ) const
+{
+	return validator->validate( text, pos );
+}
+
+void UIntSpinBox::setValue( uint value )
+{
+	QSpinBox::setValue( toInt( value ) );
+}
+
+QString UIntSpinBox::textFromValue( int value ) const
+{
+	return QString::number( toUInt( value ) );
+}
+
+int UIntSpinBox::valueFromText( const QString & text ) const
+{
+	bool ok;
+	QString txt = text;
+	uint newVal = txt.toUInt( &ok, 0 );
+
+	if ( !ok && !(prefix().isEmpty() && suffix().isEmpty()) ) {
+		newVal = cleanText().toUInt( &ok, 0 );
 	}
 
-	int valueFromText( const QString & text ) const override final
-	{
-		// until we convert to a QLineEdit, this lets us put in numbers between
-		// INT_MAX and 2*INT_MAX by entering them as a signed value
-		return text.toLong();
-	}
-};
+	return toInt( newVal );
+}
+
 
 void ValueEdit::setValue( const NifValue & v )
 {
 	typ = v.type();
 
 	if ( edit ) {
-		// segfaults with Qt 4.5:
-		//delete edit;
+		delete edit;
 		edit = nullptr;
 		resize( this->baseSize() );
 	}
@@ -151,9 +196,11 @@ void ValueEdit::setValue( const NifValue & v )
 		}
 		break;
 	case NifValue::tUInt:
+	case NifValue::tULittle32:
 		{
-			QSpinBox * ie = new UIntSpinBox( this );
+			UIntSpinBox * ie = new UIntSpinBox( this );
 			ie->setFrame( false );
+			ie->setRange( INT_MIN, INT_MAX );
 			ie->setValue( v.toCount() );
 			edit = ie;
 		}
@@ -172,6 +219,7 @@ void ValueEdit::setValue( const NifValue & v )
 		}
 		break;
 	case NifValue::tFloat:
+	case NifValue::tHfloat:
 		{
 			FloatEdit * fe = new FloatEdit( this );
 			/*
@@ -208,6 +256,13 @@ void ValueEdit::setValue( const NifValue & v )
 	//	te->setBaseSize( width(), height() * 5);
 	//	edit = te;
 	//}	break;
+	case NifValue::tByteColor4:
+		{
+			ColorEdit * ce = new ColorEdit( this );
+			ce->setColor4( v.get<ByteColor4>() );
+			edit = ce;
+		}
+		break;
 	case NifValue::tColor4:
 		{
 			ColorEdit * ce = new ColorEdit( this );
@@ -229,10 +284,31 @@ void ValueEdit::setValue( const NifValue & v )
 			edit = ve;
 		}
 		break;
+	case NifValue::tByteVector3:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector3( v.get<ByteVector3>() );
+			edit = ve;
+		}
+		break;
+	case NifValue::tHalfVector3:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector3( v.get<HalfVector3>() );
+			edit = ve;
+		}
+		break;
 	case NifValue::tVector3:
 		{
 			VectorEdit * ve = new VectorEdit( this );
 			ve->setVector3( v.get<Vector3>() );
+			edit = ve;
+		}
+		break;
+	case NifValue::tHalfVector2:
+		{
+			VectorEdit * ve = new VectorEdit( this );
+			ve->setVector2( v.get<HalfVector2>() );
 			edit = ve;
 		}
 		break;
@@ -315,6 +391,7 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tFlags:
 		case NifValue::tInt:
 		case NifValue::tUInt:
+		case NifValue::tULittle32:
 		case NifValue::tStringIndex:
 			val.setCount( qobject_cast<QSpinBox *>( edit )->value() );
 			break;
@@ -333,17 +410,24 @@ NifValue ValueEdit::getValue() const
 			}
 			break;
 		case NifValue::tFloat:
+		case NifValue::tHfloat:
 			val.setFloat( qobject_cast<FloatEdit *>( edit )->value() );
 			break;
 		case NifValue::tLineString:
 		case NifValue::tShortString:
 		case NifValue::tChar8String:
-			val.fromString( qobject_cast<QLineEdit *>( edit )->text() );
+			val.setFromString( qobject_cast<QLineEdit *>( edit )->text() );
 			break;
 		case NifValue::tSizedString:
 		case NifValue::tText:
-			val.fromString( qobject_cast<QTextEdit *>( edit )->toPlainText() );
+			val.setFromString( qobject_cast<QTextEdit *>( edit )->toPlainText() );
 			break;
+		case NifValue::tByteColor4:
+			{
+				auto col = qobject_cast<ColorEdit *>(edit)->getColor4();
+				val.set<ByteColor4>( *static_cast<ByteColor4 *>(&col) );
+				break;
+			}
 		case NifValue::tColor4:
 			val.set<Color4>( qobject_cast<ColorEdit *>( edit )->getColor4() );
 			break;
@@ -353,9 +437,27 @@ NifValue ValueEdit::getValue() const
 		case NifValue::tVector4:
 			val.set<Vector4>( qobject_cast<VectorEdit *>( edit )->getVector4() );
 			break;
+		case NifValue::tByteVector3:
+			{
+				auto vec = qobject_cast<VectorEdit *>(edit)->getVector3();
+				val.set<ByteVector3>( *static_cast<ByteVector3 *>(&vec) );
+				break;
+			}
+		case NifValue::tHalfVector3:
+			{
+				auto vec = qobject_cast<VectorEdit *>(edit)->getVector3();
+				val.set<HalfVector3>( *static_cast<HalfVector3 *>(&vec) );
+				break;
+			}
 		case NifValue::tVector3:
 			val.set<Vector3>( qobject_cast<VectorEdit *>( edit )->getVector3() );
 			break;
+		case NifValue::tHalfVector2:
+			{
+				auto vec = qobject_cast<VectorEdit *>(edit)->getVector2();
+				val.set<HalfVector2>( *static_cast<HalfVector2 *>(&vec) );
+				break;
+			}
 		case NifValue::tVector2:
 			val.set<Vector2>( qobject_cast<VectorEdit *>( edit )->getVector2() );
 			break;

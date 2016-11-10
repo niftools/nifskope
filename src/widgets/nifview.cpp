@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,16 +38,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QKeyEvent>
 
-NifTreeView::NifTreeView() : QTreeView()
+NifTreeView::NifTreeView( QWidget * parent, Qt::WindowFlags flags ) : QTreeView()
 {
-	nif = nullptr;
-	EvalConditions = false;
-	RealTimeEval = false;
+	Q_UNUSED( flags );
 
-	setUniformRowHeights( true );
-	setAlternatingRowColors( true );
-	setContextMenuPolicy( Qt::CustomContextMenu );
-	setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
+	setParent( parent );
 
 	connect( this, &NifTreeView::expanded, this, &NifTreeView::scrollExpand );
 }
@@ -65,8 +60,9 @@ void NifTreeView::setModel( QAbstractItemModel * model )
 
 	QTreeView::setModel( model );
 
-	if ( nif && EvalConditions && RealTimeEval )
+	if ( nif && doRowHiding ) {
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
+	}
 }
 
 void NifTreeView::setRootIndex( const QModelIndex & index )
@@ -84,16 +80,16 @@ void NifTreeView::clearRootIndex()
 	setRootIndex( QModelIndex() );
 }
 
-void NifTreeView::setEvalConditions( bool c )
+void NifTreeView::setRowHiding( bool show )
 {
-	if ( EvalConditions == c )
+	if ( doRowHiding != show )
 		return;
 
-	EvalConditions = c;
+	doRowHiding = !show;
 
-	if ( nif && EvalConditions && RealTimeEval ) {
+	if ( nif && doRowHiding ) {
 		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	} else {
+	} else if ( nif ) {
 		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
 	}
 
@@ -102,26 +98,14 @@ void NifTreeView::setEvalConditions( bool c )
 	doItemsLayout();
 }
 
-void NifTreeView::setRealTime( bool c )
-{
-	if ( RealTimeEval == c )
-		return;
-
-	RealTimeEval = c;
-
-	if ( nif && EvalConditions && RealTimeEval ) {
-		connect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	} else {
-		disconnect( nif, &BaseModel::dataChanged, this, &NifTreeView::updateConditions );
-	}
-
-	updateConditionRecurse( rootIndex() );
-	doItemsLayout();
-}
 
 bool NifTreeView::isRowHidden( int r, const QModelIndex & index ) const
 {
-	return ( EvalConditions && index.isValid() && nif && index.model() == nif && !nif->evalCondition( index.child( r, 0 ) ) );
+	NifItem * item = static_cast<NifItem *>(index.internalPointer());
+	if ( !item || !doRowHiding )
+		return false;
+
+	return !item->condition();
 }
 
 void NifTreeView::setAllExpanded( const QModelIndex & index, bool e )
@@ -154,6 +138,9 @@ void NifTreeView::drawBranches( QPainter * painter, const QRect & rect, const QM
 
 void NifTreeView::updateConditions( const QModelIndex & topLeft, const QModelIndex & bottomRight )
 {
+	if ( nif->getState() != BaseModel::Default )
+		return;
+
 	Q_UNUSED( bottomRight );
 	updateConditionRecurse( topLeft.parent() );
 	doItemsLayout();
@@ -161,26 +148,24 @@ void NifTreeView::updateConditions( const QModelIndex & topLeft, const QModelInd
 
 void NifTreeView::updateConditionRecurse( const QModelIndex & index )
 {
-	/*
-	if ( model()->rowCount( index ) == 0 )
-	{
-	    setRowHidden( index.row(), index.parent(), (EvalConditions && ! nif->evalVersion( index, true ) ) );
-	}
-	*/
-	//else
-	//{
+	if ( nif->getState() != BaseModel::Default )
+		return;
+
+	NifItem * item = static_cast<NifItem *>(index.internalPointer());
+	if ( !item )
+		return;
+
 	for ( int r = 0; r < model()->rowCount( index ); r++ ) {
 		QModelIndex child = model()->index( r, 0, index );
 		updateConditionRecurse( child );
 	}
 
-	setRowHidden( index.row(), index.parent(), ( EvalConditions && !nif->evalVersion( index, false ) ) );
-	//}
+	setRowHidden( index.row(), index.parent(), doRowHiding && !item->condition() );
 }
 
 void NifTreeView::keyPressEvent( QKeyEvent * e )
 {
-	Spell * spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
+	SpellPtr spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
 
 	if ( spell ) {
 		NifModel * nif = nullptr;
@@ -200,7 +185,21 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 		if ( nif && spell->isApplicable( nif, oldidx ) ) {
 			selectionModel()->setCurrentIndex( QModelIndex(), QItemSelectionModel::Clear | QItemSelectionModel::Rows );
 
+			bool noSignals = spell->batch();
+			if ( noSignals )
+				nif->setState( BaseModel::Processing );
+			// Cast the spell and return index
 			QModelIndex newidx = spell->cast( nif, oldidx );
+			if ( noSignals )
+				nif->resetState();
+
+			// Refresh the header
+			nif->invalidateConditions( nif->getHeader(), true );
+			nif->updateHeader();
+
+			if ( noSignals && nif->getProcessingResult() ) {
+				emit nif->dataChanged( newidx, newidx );
+			}
 
 			if ( proxy )
 				newidx = proxy->mapFrom( newidx, oldidx );
@@ -230,8 +229,16 @@ void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex
 {
 	QTreeView::currentChanged( current, last );
 
-	if ( nif && EvalConditions ) {
-		updateConditionRecurse( rootIndex() );
+	if ( nif && doRowHiding ) {
+		updateConditionRecurse( current );
+	}
+
+	auto mdl = static_cast<NifModel *>( nif );
+	if ( mdl ) {
+		// Auto-Expand Textures
+		if ( mdl->inherits( current, "BSShaderTextureSet" ) ) {
+			expand( current.child( 1, 0 ) );
+		}
 	}
 
 	emit sigCurrentIndexChanged( currentIndex() );

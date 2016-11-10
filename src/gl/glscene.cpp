@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,21 +31,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glscene.h"
-#include "options.h"
+#include "settings.h"
 
 #include "glcontroller.h"
 #include "glmesh.h"
+#include "bsshape.h"
 #include "glnode.h"
 #include "glparticles.h"
 #include "gltex.h"
 
+#include <QAction>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QSettings>
 
 
-//! \file glscene.cpp Scene management
+//! \file glscene.cpp %Scene management
 
-Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions )
+Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions, QObject * parent ) :
+	QObject( parent )
 {
 	renderer = new Renderer( context, functions );
 
@@ -56,6 +60,38 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 	sceneBoundsValid = timeBoundsValid = false;
 
 	textures = texcache;
+
+	options = ( DoLighting | DoTexturing | DoMultisampling | DoBlending | DoVertexColors | DoSpecular | DoGlow | DoCubeMapping );
+
+	lodLevel = Level2;
+
+	visMode = VisNone;
+
+	selMode = SelObject;
+
+	// Startup Defaults
+
+	QSettings settings;
+	settings.beginGroup( "Settings/Render/General/Startup Defaults" );
+
+	if ( settings.value( "Show Axes", true ).toBool() )
+		options |= ShowAxes;
+	if ( settings.value( "Show Grid", true ).toBool() )
+		options |= ShowGrid;
+	if ( settings.value( "Show Collision" ).toBool() )
+		options |= ShowCollision;
+	if ( settings.value( "Show Constraints" ).toBool() )
+		options |= ShowConstraints;
+	if ( settings.value( "Show Markers" ).toBool() )
+		options |= ShowMarkers;
+	if ( settings.value( "Show Nodes" ).toBool() )
+		options |= ShowNodes;
+	if ( settings.value( "Show Hidden" ).toBool() )
+		options |= ShowHidden;
+	if ( settings.value( "Do Skinning", true ).toBool() )
+		options |= DoSkinning;
+
+	settings.endGroup();
 }
 
 Scene::~Scene()
@@ -69,6 +105,7 @@ void Scene::clear( bool flushTextures )
 	nodes.clear();
 	properties.clear();
 	roots.clear();
+	shapes.clear();
 
 	animGroups.clear();
 	animTags.clear();
@@ -127,6 +164,40 @@ void Scene::update( const NifModel * nif, const QModelIndex & index )
 	timeBoundsValid = false;
 }
 
+void Scene::updateSceneOptions( bool checked )
+{
+	Q_UNUSED( checked );
+
+	QAction * action = qobject_cast<QAction *>(sender());
+	if ( action ) {
+		options ^= SceneOptions( action->data().toInt() );
+		emit sceneUpdated();
+	}
+}
+
+void Scene::updateSceneOptionsGroup( QAction * action )
+{
+	if ( !action )
+		return;
+
+	options ^= SceneOptions( action->data().toInt() );
+	emit sceneUpdated();
+}
+
+void Scene::updateSelectMode( QAction * action )
+{
+	if ( !action )
+		return;
+
+	selMode = SelMode( action->data().toInt() );
+	emit sceneUpdated();
+}
+
+void Scene::updateLodLevel( int level )
+{
+	lodLevel = LodLevel( level );
+}
+
 void Scene::make( NifModel * nif, bool flushTextures )
 {
 	clear( flushTextures );
@@ -168,6 +239,7 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 				|| nif->inherits( iNode, "NiTriBasedGeom" ) )
 	{
 		node = new Mesh( this, iNode );
+		shapes += static_cast<Shape *>(node);
 	} else if ( nif->checkVersion( 0x14050000, 0 )
 				&& nif->itemName( iNode ) == "NiMesh" )
 	{
@@ -177,6 +249,9 @@ Node * Scene::getNode( const NifModel * nif, const QModelIndex & iNode )
 	else if ( nif->inherits( iNode, "NiParticles" ) ) {
 		// ... where did AParticleSystem go?
 		node = new Particles( this, iNode );
+	} else if ( nif->inherits( iNode, "BSTriShape" ) ) {
+		node = new BSShape( this, iNode );
+		shapes += static_cast<Shape *>(node);
 	} else if ( nif->inherits( iNode, "NiAVObject" ) ) {
 		if ( nif->itemName( iNode ) == "BSTreeNode" )
 			node = new Node( this, iNode );
@@ -247,11 +322,11 @@ void Scene::draw()
 {
 	drawShapes();
 
-	if ( Options::drawNodes() )
+	if ( options & ShowNodes )
 		drawNodes();
-	if ( Options::drawHavok() )
+	if ( options & ShowCollision )
 		drawHavok();
-	if ( Options::drawFurn() )
+	if ( options & ShowMarkers )
 		drawFurn();
 
 	drawSelection();
@@ -259,19 +334,19 @@ void Scene::draw()
 
 void Scene::drawShapes()
 {
-	if ( Options::blending() ) {
-		NodeList draw2nd;
+	if ( options & DoBlending ) {
+		NodeList secondPass;
 
 		for ( Node * node : roots.list() ) {
-			node->drawShapes( &draw2nd );
+			node->drawShapes( &secondPass );
 		}
 
-		if ( draw2nd.list().count() > 0 )
+		if ( secondPass.list().count() > 0 )
 			drawSelection(); // for transparency pass
 
-		draw2nd.sort();
+		secondPass.alphaSort();
 
-		for ( Node * node : draw2nd.list() ) {
+		for ( Node * node : secondPass.list() ) {
 			node->drawShapes();
 		}
 	} else {
@@ -381,7 +456,7 @@ QString Scene::textStats()
 
 int Scene::bindTexture( const QString & fname )
 {
-	if ( !Options::texturing() || fname.isEmpty() )
+	if ( !(options & DoTexturing) || fname.isEmpty() )
 		return 0;
 
 	return textures->bind( fname );
@@ -389,10 +464,17 @@ int Scene::bindTexture( const QString & fname )
 
 int Scene::bindTexture( const QModelIndex & iSource )
 {
-	if ( !Options::texturing() || !iSource.isValid() )
+	if ( !(options & DoTexturing) || !iSource.isValid() )
 		return 0;
 
 	return textures->bind( iSource );
 }
 
+int Scene::bindTextureCube( const QString & fname )
+{
+	if ( !(options & DoTexturing) || fname.isEmpty() )
+		return 0;
+
+	return textures->bindCube( fname );
+}
 

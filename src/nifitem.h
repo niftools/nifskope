@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,33 +42,48 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 
 
-//! \file nifitem.h NifItem, NifBlock, NifData, NifSharedData
+//! @file nifitem.h NifItem, NifBlock, NifData, NifSharedData
 
-//! Shared data for NifData.
-/**
- * See QSharedDataPointer for details on data sharing in Qt;
- * <a href="http://doc.trolltech.org/latest/shared.html">shared classes</a>
- * give pointer efficiency to classes.
+/*! Shared data for NifData.
+ *
+ * @see QSharedDataPointer
  */
 class NifSharedData final : public QSharedData
 {
 	friend class NifData;
 
-	//! Constructor.
-	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1, const QString & a2, const QString & c, quint32 v1, quint32 v2, bool abs )
-		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ), cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), isAbstract( abs ) {}
+public:
+	enum DataFlag
+	{
+		None = 0x0,
+		Abstract = 0x1,
+		Binary = 0x2,
+		Templated = 0x4,
+		Compound = 0x8,
+		Array = 0x10,
+		MultiArray = 0x20,
+		Conditionless = 0x40
+	};
 
-	//! Constructor.
+	typedef QFlags<DataFlag> DataFlags;
+
+private:
+
+	NifSharedData( const QString & n, const QString & t, const QString & tt, const QString & a, const QString & a1,
+				   const QString & a2, const QString & c, quint32 v1, quint32 v2, NifSharedData::DataFlags f )
+		: QSharedData(), name( n ), type( t ), temp( tt ), arg( a ), arr1( a1 ), arr2( a2 ),
+		cond( c ), ver1( v1 ), ver2( v2 ), condexpr( c ), arr1expr( a1 ), flags( f )
+	{
+	}
+
 	NifSharedData( const QString & n, const QString & t )
-		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
+		: QSharedData(), name( n ), type( t ) {}
 
-	//! Constructor.
 	NifSharedData( const QString & n, const QString & t, const QString & txt )
-		: QSharedData(), name( n ), type( t ), ver1( 0 ), ver2( 0 ), text( txt ), isAbstract( false ) {}
+		: QSharedData(), name( n ), type( t ), text( txt ) {}
 
-	//! Constructor.
 	NifSharedData()
-		: QSharedData(), ver1( 0 ), ver2( 0 ), isAbstract( false ) {}
+		: QSharedData() {}
 
 	//! Name.
 	QString name;
@@ -85,9 +100,9 @@ class NifSharedData final : public QSharedData
 	//! Condition.
 	QString cond;
 	//! Earliest version.
-	quint32 ver1;
+	quint32 ver1 = 0;
 	//! Latest version.
-	quint32 ver2;
+	quint32 ver2 = 0;
 	//! Description text.
 	QString text;
 	//! Condition as an expression.
@@ -98,23 +113,25 @@ class NifSharedData final : public QSharedData
 	QString vercond;
 	//! Version condition as an expression.
 	Expression verexpr;
-	//! Abstract flag.
-	bool isAbstract;
+
+	DataFlags flags = None;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( NifSharedData::DataFlags );
 
 //! The data and NifValue stored by a NifItem
 class NifData
 {
 public:
-	//! Constructor.
-	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg, const QString & arr1, const QString & arr2, const QString & cond, quint32 ver1, quint32 ver2, bool isAbstract = false )
-		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, isAbstract ) ), value( val ) {}
+	NifData( const QString & name, const QString & type, const QString & temp, const NifValue & val, const QString & arg,
+			 const QString & arr1 = QString(), const QString & arr2 = QString(), const QString & cond = QString(),
+			 quint32 ver1 = 0, quint32 ver2 = 0, NifSharedData::DataFlags flag = NifSharedData::None )
+		: d( new NifSharedData( name, type, temp, arg, arr1, arr2, cond, ver1, ver2, flag ) ), value( val )
+	{}
 
-	//! Constructor.
 	NifData( const QString & name, const QString & type = QString(), const QString & text = QString() )
 		: d( new NifSharedData( name, type, text ) ) {}
 
-	//! Constructor.
 	NifData()
 		: d( new NifSharedData() ) {}
 
@@ -147,7 +164,19 @@ public:
 	//! Get the version condition attribute of the data, as an expression.
 	inline const Expression & verexpr() const { return d->verexpr; }
 	//! Get the abstract attribute of the data.
-	inline const bool & isAbstract() const { return d->isAbstract; }
+	inline bool isAbstract() const { return d->flags & NifSharedData::Abstract; }
+	//! Is the data binary. Binary means the data is being treated as one blob.
+	inline bool isBinary() const { return d->flags & NifSharedData::Binary; }
+	//! Is the data templated. Templated means the type is dynamic.
+	inline bool isTemplated() const { return d->flags & NifSharedData::Templated; }
+	//! Is the data a compound. Compound means the data type is a compound block.
+	inline bool isCompound() const { return d->flags & NifSharedData::Compound; }
+	//! Is the data an array. Array means the data on this row repeats.
+	inline bool isArray() const { return d->flags & NifSharedData::Array; }
+	//! Is the data a multi-array. Multi-array means the item's children are also arrays.
+	inline bool isMultiArray() const { return d->flags & NifSharedData::MultiArray; }
+	//! Is the data conditionless. Conditionless means no expression evaluation is necessary.
+	inline bool isConditionless() const { return d->flags & NifSharedData::Conditionless; }
 
 	//! Sets the name of the data.
 	void setName( const QString & name ) { d->name = name; }
@@ -183,8 +212,25 @@ public:
 		d->vercond = cond;
 		d->verexpr = Expression( cond );
 	}
+
+	inline void setFlag( NifSharedData::DataFlags flag, bool val )
+	{
+		(val) ? d->flags |= flag : d->flags &= ~flag;
+	}
 	//! Sets the abstract attribute of the data.
-	void setAbstract( bool & isAbstract ) { d->isAbstract = isAbstract; }
+	inline void setAbstract( bool flag ) { setFlag( NifSharedData::Abstract, flag ); }
+	//! Sets the binary data flag. Binary means the data is being treated as one blob.
+	inline void setBinary( bool flag ) { setFlag( NifSharedData::Binary, flag ); }
+	//! Sets the templated data flag. Templated means the type is dynamic.
+	inline void setTemplated( bool flag ) { setFlag( NifSharedData::Templated, flag ); }
+	//! Sets the compound data flag. Compound means the data type is a compound block.
+	inline void setIsCompound( bool flag ) { setFlag( NifSharedData::Compound, flag ); }
+	//! Sets the array data flag. Array means the data on this row repeats.
+	inline void setIsArray( bool flag ) { setFlag( NifSharedData::Array, flag ); }
+	//! Sets the multi-array data flag. Multi-array means the item's children are also arrays.
+	inline void setIsMultiArray( bool flag ) { setFlag( NifSharedData::MultiArray, flag ); }
+	//! Sets the conditionless data flag. Conditionless means no expression evaluation is necessary.
+	inline void setIsConditionless( bool flag ) { setFlag( NifSharedData::Conditionless, flag ); }
 
 protected:
 	//! The internal shared data.
@@ -205,7 +251,7 @@ struct NifBlock
 	//! Description text.
 	QString text;
 	//! Abstract flag.
-	bool abstract;
+	bool abstract = false;
 	//! Data present.
 	QList<NifData> types;
 };
@@ -214,15 +260,12 @@ struct NifBlock
 class NifItem
 {
 public:
-	//! Constructor.
 	NifItem( NifItem * parent )
 		: parentItem( parent ) {}
 
-	//! Constructor.
 	NifItem( const NifData & data, NifItem * parent )
 		: itemData( data ), parentItem( parent ) {}
 
-	//! Destructor.
 	~NifItem()
 	{
 		qDeleteAll( childItems );
@@ -237,66 +280,108 @@ public:
 	//! Return the row that this item is at.
 	int row() const
 	{
-		if ( parentItem )
-			return parentItem->childItems.indexOf( const_cast<NifItem *>(this) );
+		if ( !parentItem )
+			return 0;
 
-		return 0;
+		if ( rowIdx < 0 )
+			rowIdx = parentItem->childItems.indexOf( const_cast<NifItem *>(this) );
+
+		return rowIdx;
 	}
 
-	//! Allocate memory to insert child items
-	/*!
-	 * \param e The number of items to be inserted
+	/*! Allocate memory to insert child items
+	 *
+	 * @param e The number of items to be inserted
 	 */
 	void prepareInsert( int e )
 	{
 		childItems.reserve( childItems.count() + e );
 	}
 
-	//! Insert child data item
-	/*!
-	 * \param data The data to insert
-	 * \param at The position to insert at; append if not specified
-	 * \return An item containing the inserted data
+	//! Get child items
+	const QVector<NifItem *> & children()
+	{
+		return childItems;
+	}
+
+	/*! Insert child data item
+	 *
+	 * @param data	The data to insert
+	 * @param at	The position to insert at; append if not specified
+	 * @return		An item containing the inserted data
 	 */
 	NifItem * insertChild( const NifData & data, int at = -1 )
 	{
 		NifItem * item = new NifItem( data, this );
 
-		if ( at < 0 || at > childItems.count() )
+		if ( data.isConditionless() )
+			item->setCondition( true );
+
+		if ( at < 0 || at > childItems.count() ) {
 			childItems.append( item );
-		else
+		} else {
+			invalidateRowCounts();
 			childItems.insert( at, item );
+		}
+
+		populateLinksUp( item );
 
 		return item;
 	}
 
-	//! Insert child item
-	/*!
-	 * \param child The data to insert
-	 * \param at The position to insert at; append if not specified
-	 * \return The row the child was inserted at
+	/*! Insert child item
+	 *
+	 * @param child The data to insert
+	 * @param at	The position to insert at; append if not specified
+	 * @return		The row the child was inserted at
 	 */
 	int insertChild( NifItem * child, int at = -1 )
 	{
 		child->parentItem = this;
 
-		if ( at < 0 || at > childItems.count() )
+		if ( at < 0 || at > childItems.count() ) {
 			childItems.append( child );
-		else
+		} else {
+			invalidateRowCounts();
 			childItems.insert( at, child );
+		}
 
+		populateLinksUp( child );
+		
 		return child->row();
 	}
 
-	//! Take child item at row
-	/*!
-	 * \param row The row to take the item from
-	 * \return The child item that was removed
+	//! Inform the parent and its ancestors of any links
+	void populateLinksUp( NifItem * item )
+	{
+		if ( item->value().type() == NifValue::tLink || item->value().type() == NifValue::tUpLink ) {
+			// Add this child's row to the item's link vector
+			linkRows << item->row();
+	
+			// Inform the parent that this item's rows have links
+			auto p = parentItem;
+			auto c = this;
+			while ( p ) {
+				// Add this item's row to the parent item
+				if ( !p->linkAncestorRows.contains( c->row() ) )
+					p->linkAncestorRows << c->row();
+	
+				// Recurse up
+				c = p;
+				p = p->parentItem;
+			}
+		}
+	}
+
+	/*! Take child item at row
+	 *
+	 * @param row	The row to take the item from
+	 * @return		The child item that was removed
 	 */
 	NifItem * takeChild( int row )
 	{
 		NifItem * item = child( row );
-
+		invalidateRowCounts();
 		if ( item ) {
 			childItems.remove( row );
 			item->parentItem = 0;
@@ -305,30 +390,30 @@ public:
 		return item;
 	}
 
-	//! Remove child item at row
-	/*!
-	 * \param row The row to remove the item from
+	/*! Remove child item at row
+	 *
+	 * @param row The row to remove the item from
 	 */
 	void removeChild( int row )
 	{
 		NifItem * item = child( row );
-
+		invalidateRowCounts();
 		if ( item ) {
 			childItems.remove( row );
 			delete item;
 		}
 	}
 
-	//! Remove several child items
-	/*!
-	 * \param row The row to start from
-	 * \param count The number of rows to delete
+	/*! Remove several child items
+	 *
+	 * @param row	The row to start from
+	 * @param count The number of rows to delete
 	 */
 	void removeChildren( int row, int count )
 	{
+		invalidateRowCounts();
 		for ( int c = row; c < row + count; c++ ) {
 			NifItem * item = childItems.value( c );
-
 			if ( item )
 				delete item;
 		}
@@ -355,7 +440,7 @@ public:
 			if ( child->name() == name )
 				return child;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	//! Return the child item with the specified name
@@ -365,7 +450,7 @@ public:
 			if ( child->name() == name )
 				return child;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	//! Return a count of the number of child items
@@ -379,6 +464,125 @@ public:
 	{
 		qDeleteAll( childItems );
 		childItems.clear();
+	}
+
+	const QVector<int> & getLinkAncestorRows() const
+	{
+		return linkAncestorRows;
+	}
+	
+	const QVector<int> & getLinkRows() const
+	{
+		return linkRows;
+	}
+
+	//! Conditions for each child in the array (if fixed)
+	const QVector<bool> & arrayConditions()
+	{
+		return arrConds;
+	}
+
+	//! Reset array conditions based on size of children
+	void resetArrayConditions()
+	{
+		if ( childItems.isEmpty() )
+			return;
+
+		arrConds.clear();
+		arrConds.resize( childItems.at( 0 )->childCount() );
+		arrConds.fill( false );
+	}
+
+	//! Reset array conditions based on provided size
+	void resetArrayConditions( int size )
+	{
+		arrConds.clear();
+		arrConds.resize( size );
+		arrConds.fill( false );
+	}
+
+	//! Update array condition at specified index
+	void updateArrayCondition( bool cond, int at )
+	{
+		if ( arrConds.count() > at )
+			arrConds[at] = cond;
+	}
+
+	//! Cached result of cond expression
+	bool condition()
+	{
+		return conditionStatus == 1;
+	}
+
+	//! Cached result of vercond expression
+	bool versionCondition()
+	{
+		return vercondStatus == 1;
+	}
+
+	//! Has the condition been cached
+	bool isConditionValid()
+	{
+		return conditionStatus != -1;
+	}
+
+	//! Has the version condition been cached
+	bool isVercondValid()
+	{
+		return vercondStatus != -1;
+	}
+
+	//! Cache the cond expression
+	void setCondition( bool status )
+	{
+		conditionStatus = status;
+	}
+
+	//! Cache the vercond expression
+	void setVersionCondition( bool status )
+	{
+		vercondStatus = status;
+	}
+
+	//! Invalidate the cached cond expression
+	void invalidateCondition()
+	{
+		conditionStatus = -1;
+	}
+
+	//! Invalidate the cached vercond expression
+	void invalidateVersionCondition()
+	{
+		vercondStatus = -1;
+	}
+
+	//! Invalidate the cached row index
+	void invalidateRow()
+	{
+		rowIdx = -1;
+	}
+
+	//! Invalidate the cached row index for this item and its children
+	void invalidateRowCounts()
+	{
+		invalidateRow();
+		for ( NifItem * c : childItems ) {
+			c->invalidateRow();
+		}
+	}
+
+	//! Invalidate the cached row index for this item and its children starting at the given index
+	void invalidateRowCounts( int at )
+	{
+		if ( at < childCount() ) {
+			invalidateRow();
+			for ( int i = at; i < childCount(); i++ ) {
+				childItems.value( i )->invalidateRow();
+			}
+		} else {
+			invalidateRowCounts();
+		}
+
 	}
 
 	//! Return the value of the item data (const version)
@@ -416,7 +620,19 @@ public:
 	//! Return the version condition attribute of the data, as an expression
 	inline const Expression & verexpr() const {   return itemData.verexpr();  }
 	//! Return the abstract attribute of the data
-	inline const bool & isAbstract() const { return itemData.isAbstract(); }
+	inline bool isAbstract() const { return itemData.isAbstract(); }
+	//! Is the item data binary. Binary means the data is being treated as one blob.
+	inline bool isBinary() const { return itemData.isBinary(); }
+	//! Is the item data templated. Templated means the type is dynamic.
+	inline bool isTemplated() const { return itemData.isTemplated(); }
+	//! Is the item data a compound. Compound means the data type is a compound block.
+	inline bool isCompound() const { return itemData.isCompound(); }
+	//! Is the item data an array. Array means the data on this row repeats.
+	inline bool isArray() const { return itemData.isArray(); }
+	//! Is the item data a multi-array. Multi-array means the item's children are also arrays.
+	inline bool isMultiArray() const { return itemData.isMultiArray(); }
+	//! Is the item data conditionless. Conditionless means no expression evaluation is necessary.
+	inline bool isConditionless() const { return itemData.isConditionless(); }
 
 	//! Set the name
 	inline void setName( const QString & name ) {   itemData.setName( name );   }
@@ -468,13 +684,35 @@ public:
 		}
 	}
 
+	//! Set the child items from a single value
+	template <typename T> void setArray( const T & val )
+	{
+		for ( NifItem * child : childItems ) {
+			child->itemData.value.set<T>( val );
+		}
+	}
+
 private:
 	//! The data held by the item
 	NifData itemData;
 	//! The parent of this item
-	NifItem * parentItem;
+	NifItem * parentItem = nullptr;
 	//! The child items
 	QVector<NifItem *> childItems;
+
+	//! Rows which have links under them at any level
+	QVector<int> linkAncestorRows;
+	//! Rows which are links
+	QVector<int> linkRows;
+
+	//! Item's condition status, -1 is invalid, otherwise 0/1
+	int conditionStatus = -1;
+	//! Item's vercond status, -1 is invalid, otherwise 0/1
+	int vercondStatus = -1;
+	//! Item's row index, -1 is invalid, otherwise 0+
+	mutable int rowIdx = -1;
+	//! If item is array with fixed compounds, the conditions are stored here for reuse
+	QVector<bool> arrConds;
 };
 
 #endif

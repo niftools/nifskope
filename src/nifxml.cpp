@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "message.h"
 #include "nifmodel.h"
 #include "niftypes.h"
 
@@ -45,8 +46,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 QReadWriteLock             NifModel::XMLlock;
 QList<quint32>             NifModel::supportedVersions;
-QHash<QString, NifBlock *> NifModel::compounds;
-QHash<QString, NifBlock *> NifModel::blocks;
+QHash<QString, NifBlockPtr> NifModel::compounds;
+QHash<QString, NifBlockPtr> NifModel::fixedCompounds;
+QHash<QString, NifBlockPtr> NifModel::blocks;
 
 //! Parses nif.xml
 class NifXmlHandler final : public QXmlDefaultHandler
@@ -115,7 +117,7 @@ public:
 	QString optTxt;
 
 	//! Block
-	NifBlock * blk;
+	NifBlockPtr blk;
 	//! Data
 	NifData data;
 
@@ -168,19 +170,14 @@ public:
 			case tagCompound:
 			case tagBlock:
 				{
-					if ( !list.value( "nifskopetype" ).isEmpty() ) {
-						QString alias = list.value( "name" );
-						QString type  = list.value( "nifskopetype" );
+					QString name = list.value( "name" );
 
-						if ( alias != type ) {
-							if ( !NifValue::registerAlias( alias, type ) )
-								err( tr( "failed to register alias %1 for type %2" ).arg( alias, type ) );
-						}
-
-						typId  = alias;
+					if ( NifValue::type( name ) != NifValue::tNone ) {
+						// Internal Type
+						typId  = name;
 						typTxt = QString();
 					} else {
-						QString id = list.value( "name" );
+						QString id = name;
 
 						if ( x == tagCompound && NifValue::isValid( NifValue::type( id ) ) )
 							err( tr( "compound %1 is already registered as internal type" ).arg( list.value( "name" ) ) );
@@ -192,7 +189,7 @@ public:
 							err( tr( "multiple declarations of %1" ).arg( id ) );
 
 						if ( !blk )
-							blk = new NifBlock;
+							blk = NifBlockPtr( new NifBlock );
 
 						blk->id = id;
 						blk->abstract = ( list.value( "abstract" ) == "1" );
@@ -205,23 +202,22 @@ public:
 									err( tr( "forward declaration of block id %1" ).arg( blk->ancestor ) );
 							}
 						}
+
+						QString externalCond = list.value( "externalcond" );
+						if ( externalCond == "1" ) {
+							NifModel::fixedCompounds.insert( blk->id, blk );
+						}
 					}
 				}
 				break;
 			case tagBasic:
 				{
-					QString alias = list.value( "name" );
-					QString type  = list.value( "nifskopetype" );
+					QString name = list.value( "name" );
 
-					if ( alias.isEmpty() || type.isEmpty() )
-						err( tr( "basic definition must have a name and a nifskopetype" ) );
+					if ( NifValue::type( name ) == NifValue::tNone )
+						err( tr( "basic definition %1 must have an internal NifSkope type" ).arg( name ) );
 
-					if ( alias != type ) {
-						if ( !NifValue::registerAlias( alias, type ) )
-							err( tr( "failed to register alias %1 for type %2" ).arg( alias, type ) );
-					}
-
-					typId  = alias;
+					typId = name;
 					typTxt = QString();
 				}
 				break;
@@ -271,46 +267,42 @@ public:
 			switch ( x ) {
 			case tagAdd:
 				{
-					// ns type optimizers come here
-					// we really shouldn't be doing this
-					// but it will work for now until we find a better solution
 					QString type = list.value( "type" );
-					QString nstype = list.value( "nifskopetype" );
+					QString tmpl = list.value( "template" );
+					QString arr1 = list.value( "arr1" );
+					QString arr2 = list.value( "arr2" );
+					QString cond = list.value( "cond" );
+					QString ver1 = list.value( "ver1" );
+					QString ver2 = list.value( "ver2" );
+					QString abs = list.value( "abstract" );
+					QString bin = list.value( "binary" );
 
-					if ( !nstype.isEmpty() && nstype != type ) {
-						if ( NifValue::type( nstype ) == NifValue::tNone )
-							err( "failed to locate alias " + nstype );
-
-						type = nstype;
-					}
-
-					if ( type == "KeyArray" )
-						type = "ns keyarray";
-					else if ( type == "VectorKeyArray" )
-						type = "ns keyvecarray";
-					else if ( type == "TypedVectorKeyArray" )
-						type = "ns keyvecarraytyp";
-					else if ( type == "RotationKeyArray" )
-						type = "ns keyrotarray";
+					bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
+					bool isCompound = NifModel::compounds.contains( type );
+					bool isArray = !arr1.isEmpty();
+					bool isMultiArray = !arr2.isEmpty();
 
 					// now allocate
 					data = NifData(
 						list.value( "name" ),
 						type,
-						list.value( "template" ),
+						tmpl,
 						NifValue( NifValue::type( type ) ),
 						list.value( "arg" ),
-						list.value( "arr1" ),
-						list.value( "arr2" ),
-						list.value( "cond" ),
-						NifModel::version2number( list.value( "ver1" ) ),
-						NifModel::version2number( list.value( "ver2" ) ),
-						( list.value( "abstract" ) == "1" )
+						arr1,
+						arr2,
+						cond,
+						NifModel::version2number( ver1 ),
+						NifModel::version2number( ver2 )
 					);
 
-					if ( data.isAbstract() ) {
-						data.value.setAbstract( true );
-					}
+					// Set data flags
+					data.setAbstract( abs == "1" );
+					data.setBinary( bin == "1" );
+					data.setTemplated( isTemplated );
+					data.setIsCompound( isCompound );
+					data.setIsArray( isArray );
+					data.setIsMultiArray( isMultiArray );
 
 					QString defval = list.value( "default" );
 
@@ -321,7 +313,7 @@ public:
 						if ( ok ) {
 							data.value.setCount( enumVal );
 						} else {
-							data.value.fromString( defval );
+							data.value.setFromString( defval );
 						}
 					}
 
@@ -347,6 +339,10 @@ public:
 					if ( !vercond.isEmpty() ) {
 						data.setVerCond( vercond );
 					}
+
+					// Set conditionless flag on data
+					if ( cond.isEmpty() && vercond.isEmpty() && ver1.isEmpty() && ver2.isEmpty() )
+						data.setIsConditionless( true );
 
 					if ( data.name().isEmpty() || data.type().isEmpty() )
 						err( tr( "add needs at least name and type attributes" ) );
@@ -416,8 +412,7 @@ public:
 		case tagBlock:
 			if ( blk ) {
 				if ( blk->id.isEmpty() ) {
-					delete blk;
-					blk = 0;
+					blk = nullptr;
 					err( tr( "invalid %1 declaration: name is empty" ).arg( tagid ) );
 				}
 
@@ -521,7 +516,7 @@ public:
 	{
 		// make a rough check of the maps
 		for ( const QString& key : NifModel::compounds.keys() ) {
-			NifBlock * c = NifModel::compounds.value( key );
+			NifBlockPtr c = NifModel::compounds.value( key );
 			for ( NifData data :c->types ) {
 				if ( !checkType( data ) )
 					err( tr( "compound type %1 refers to unknown type %2" ).arg( key, data.type() ) );
@@ -535,7 +530,7 @@ public:
 		}
 
 		for ( const QString& key : NifModel::blocks.keys() ) {
-			NifBlock * blk = NifModel::blocks.value( key );
+			NifBlockPtr blk = NifModel::blocks.value( key );
 
 			if ( !blk->ancestor.isEmpty() && !NifModel::blocks.contains( blk->ancestor ) )
 				err( tr( "niobject %1 inherits unknown ancestor %2" ).arg( key, blk->ancestor ) );
@@ -566,7 +561,7 @@ public:
 		if ( errorStr.isEmpty() )
 			errorStr = "Syntax error";
 
-		errorStr.prepend( tr( "XML parse error (line %1):<br>" ).arg( exception.lineNumber() ) );
+		errorStr.prepend( tr( "%1 XML parse error (line %2): " ).arg( "NIF" ).arg( exception.lineNumber() ) );
 		return false;
 	}
 };
@@ -591,7 +586,7 @@ bool NifModel::loadXML()
 	QString result = NifModel::parseXmlDescription( fname );
 
 	if ( !result.isEmpty() ) {
-		QMessageBox::critical( 0, "NifSkope", result );
+		Message::append( tr( "<b>Error loading XML</b><br/>You will need to reinstall the XML and restart the application." ), result, QMessageBox::Critical );
 		return false;
 	}
 
@@ -603,8 +598,8 @@ QString NifModel::parseXmlDescription( const QString & filename )
 {
 	QWriteLocker lck( &XMLlock );
 
-	qDeleteAll( compounds );    compounds.clear();
-	qDeleteAll( blocks );       blocks.clear();
+	compounds.clear();
+	blocks.clear();
 
 	supportedVersions.clear();
 
@@ -612,8 +607,11 @@ QString NifModel::parseXmlDescription( const QString & filename )
 
 	QFile f( filename );
 
+	if ( !f.exists() )
+		return tr( "nif.xml could not be found. Please install it and restart the application." );
+
 	if ( !f.open( QIODevice::ReadOnly | QIODevice::Text ) )
-		return tr( "error: couldn't open xml description file: " ) + filename;
+		return tr( "Couldn't open NIF XML description file: %1" ).arg( filename );
 
 	NifXmlHandler handler;
 	QXmlSimpleReader reader;
@@ -623,12 +621,8 @@ QString NifModel::parseXmlDescription( const QString & filename )
 	reader.parse( source );
 
 	if ( !handler.errorString().isEmpty() ) {
-		qDeleteAll( compounds );
 		compounds.clear();
-
-		qDeleteAll( blocks );
 		blocks.clear();
-
 		supportedVersions.clear();
 	}
 

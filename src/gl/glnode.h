@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,13 +33,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLNODE_H
 #define GLNODE_H
 
-#include "glcontrolable.h" // Inherited
+#include "icontrollable.h" // Inherited
 #include "glproperty.h"
 
 #include <QList>
 #include <QPersistentModelIndex>
 #include <QPointer>
 
+
+//! @file glnode.h Node, NodeList
 
 class Node;
 
@@ -64,13 +66,22 @@ public:
 	const QList<Node *> & list() const { return nodes; }
 
 	void sort();
+	void alphaSort();
 
 protected:
 	QList<Node *> nodes;
 };
 
-class Node : public Controllable
+class Node : public IControllable
 {
+	friend class ControllerManager;
+	friend class KeyframeController;
+	friend class MultiTargetTransformController;
+	friend class TransformController;
+	friend class VisibilityController;
+	friend class NodeList;
+	friend class LODNode;
+
 	typedef union
 	{
 		quint16 bits;
@@ -84,70 +95,85 @@ class Node : public Controllable
 public:
 	Node( Scene * scene, const QModelIndex & block );
 
-	// Inherited from Controllable
+	static int SELECTING;
+
+	int id() const { return nodeId; }
+
+	// IControllable
+
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
 
+	// end IControllable
+
 	virtual void transformShapes();
 
 	virtual void draw();
-	virtual void drawShapes( NodeList * draw2nd = nullptr );
+	virtual void drawShapes( NodeList * secondPass = nullptr, bool presort = false );
 	virtual void drawHavok();
 	virtual void drawFurn();
 	virtual void drawSelection() const;
 
+	virtual float viewDepth() const;
+	virtual class BoundSphere bounds() const;
+	virtual const Vector3 center() const;
 	virtual const Transform & viewTrans() const;
 	virtual const Transform & worldTrans() const;
 	virtual const Transform & localTrans() const { return local; }
-	virtual Transform localTransFrom( int parentNode ) const;
-	virtual Vector3 center() const;
+	virtual Transform localTrans( int parentNode ) const;
 
 	virtual bool isHidden() const;
+	virtual QString textStats() const;
+
 	bool isVisible() const { return !isHidden(); }
-
-	int id() const { return nodeId; }
-
-	Node * findParent( int id ) const;
+	bool isPresorted() const { return presorted; }
+	
 	Node * findChild( int id ) const;
 	Node * findChild( const QString & name ) const;
+
+	Node * findParent( int id ) const;
 	Node * parentNode() const { return parent; }
 	void makeParent( Node * parent );
-
-	virtual class BoundSphere bounds() const;
 
 	template <typename T> T * findProperty() const;
 	void activeProperties( PropertyList & list ) const;
 
 	Controller * findController( const QString & proptype, const QString & ctrltype, const QString & var1, const QString & var2 );
 
-	virtual QString textStats() const;
+	Controller * findController( const QString & proptype, const QModelIndex & index );
 
-	static int SELECTING;
+public slots:
+	void updateSettings();
 
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+	// Old Options API
+	//	TODO: Move away from the GL-like naming
+	void glHighlightColor() const;
+	void glNormalColor() const;
 
 	QPointer<Node> parent;
-
-	int ref;
-
 	NodeList children;
-	PropertyList properties;
 
-	int nodeId;
+	PropertyList properties;
 
 	Transform local;
 
 	NodeFlags flags;
 
-	friend class KeyframeController;
-	friend class TransformController;
-	friend class ControllerManager;
-	friend class MultiTargetTransformController;
-	friend class VisibilityController;
-	friend class NodeList;
-	friend class LODNode;
+	struct Settings
+	{
+		QColor background;
+		QColor highlight;
+		QColor wireframe;
+	} cfg;
+
+
+	bool presorted = false;
+
+	int nodeId;
+	int ref;
 };
 
 template <typename T> inline T * Node::findProperty() const
@@ -160,7 +186,7 @@ template <typename T> inline T * Node::findProperty() const
 	if ( parent )
 		return parent->findProperty<T>();
 
-	return 0;
+	return nullptr;
 }
 
 //! A Node with levels of detail
@@ -169,10 +195,13 @@ class LODNode : public Node
 public:
 	LODNode( Scene * scene, const QModelIndex & block );
 
-	// Inherited from Node, Controllable
+	// IControllable
+
 	void clear() override;
 	void update( const NifModel * nif, const QModelIndex & block ) override;
 	void transform() override;
+
+	// end IControllable
 
 protected:
 	QList<QPair<float, float> > ranges;
@@ -187,9 +216,8 @@ class BillboardNode : public Node
 public:
 	BillboardNode( Scene * scene, const QModelIndex & block );
 
-	virtual const Transform & viewTrans() const;
+	const Transform & viewTrans() const override;
 };
 
+
 #endif
-
-

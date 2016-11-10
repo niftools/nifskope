@@ -9,30 +9,37 @@ AboutDialog::AboutDialog( QWidget * parent )
 #else
 	this->setWindowTitle( tr( "About NifSkope %1" ).arg( NIFSKOPE_VERSION ) );
 #endif
-	QString text = tr(
-		"<p>NifSkope is a tool for analyzing and editing NetImmerse/Gamebryo '.nif' files.</p>"
-		"<p>NifSkope is based on NifTool's XML file format specification. "
-		"For more information visit our site at <a href='http://niftools.sourceforge.net'>http://niftools.sourceforge.net</a></p>"
-		"<p>NifSkope is free software available under a BSD license. "
-		"The source is available via <a href='http://niftools.git.sourceforge.net/git/gitweb.cgi?p=niftools/nifskope'>git</a> "
-		"(<a href='git://niftools.git.sourceforge.net/gitroot/niftools/nifskope'>clone</a>) on <a href='http://sourceforge.net'>SourceForge</a>. "
-		"Instructions on compiling NifSkope are available on the <a href='http://niftools.sourceforge.net/wiki/NifSkope/Compile'>NifTools wiki</a>.</p>"
-		"<p>The most recent version of NifSkope can always be downloaded from the <a href='https://sourceforge.net/projects/niftools/files/nifskope/'>"
-		"NifTools SourceForge Project page</a>.</p>"
-// only the windows build uses havok
-// (Q_OS_WIN32 is also defined on win64)
-#ifdef Q_OS_WIN32
-		"<center><img src=':/img/havok_logo' /></center>"
-		"<p>NifSkope uses Havok(R) for the generation of mopp code. "
-		"(C)Copyright 1999-2008 Havok.com Inc. (and its Licensors). "
-		"All Rights Reserved. "
-		"See <a href='http://www.havok.com'>www.havok.com</a> for details.</p>"
-#endif
-		"<center><img src=':/img/qhull_logo' /></center>"
-		"<p>NifSkope uses Qhull for the generation of convex hulls. "
-		"Copyright(c) 1993-2010  C.B. Barber and The Geometry Center. "
-		"Qhull is free software and may be obtained from <a href='http://www.qhull.org'>www.qhull.org</a>. "
-		"See Qhull_COPYING.txt for details."
-	               );
+	QString text = tr( R"rhtml(
+	<p>NifSkope is a tool for opening and editing the NetImmerse file format (NIF).</p>
+
+	<p>NifSkope is free software available under a BSD license.
+	The source is available via <a href='https://github.com/niftools/nifskope'>GitHub</a></p>
+
+	<p>For more information visit <a href='http://niftools.sourceforge.net/forum'>our forum</a>.<br>
+	To receive support for NifSkope please use the
+	<a href='http://niftools.sourceforge.net/forum/viewforum.php?f=24'>NifSkope Help subforum</a>.</p>
+
+	<p>The most recent stable version of NifSkope can be downloaded from the <a href='https://github.com/niftools/nifskope/releases'>
+	official GitHub release page</a>.</p>
+	
+	<p>A detailed changelog and the latest developmental builds of NifSkope 
+	<a href='https://github.com/jonwd7/nifskope/releases'>can be found here</a>.</p>
+	
+	<p>For the decompression of BSA (Version 105) files, NifSkope uses <a href='https://github.com/lz4/lz4'>LZ4</a>:<br>
+	LZ4 Library<br>
+	Copyright (c) 2011-2015, Yann Collet<br>
+	All rights reserved.</p>
+	
+	<p>For the generation of mopp code on Windows builds, NifSkope uses <a href='http://www.havok.com'>Havok(R)</a>:<br>
+	Copyright (c) 1999-2008 Havok.com Inc. (and its Licensors).<br>
+	All Rights Reserved.</p>
+	
+	<p>For the generation of convex hulls, NifSkope uses <a href='http://www.qhull.org'>Qhull</a>:<br>
+	Copyright (c) 1993-2015  C.B. Barber and The Geometry Center.<br>
+	Qhull is free software and may be obtained via http from www.qhull.org or <a href='https://github.com/qhull/qhull'>GitHub</a>.
+	See Qhull_COPYING.txt for details.</p>
+	
+	)rhtml" );
+
 	ui.text->setText( text );
 }

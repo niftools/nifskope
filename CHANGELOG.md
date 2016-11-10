@@ -1,5 +1,10 @@
  == CHANGELOG ==
 
+**NOTE: This changelog is not maintained for prerelease versions**
+
+You may view the changes since 1.1.3 here: https://github.com/jonwd7/nifskope/releases
+
+
 This is version 1.1.3 of NifSkope.
 
 changes since 1.1.2:

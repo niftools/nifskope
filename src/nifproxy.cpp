@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,7 @@ public:
 			if ( item->block() == link )
 				return item;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	int rowLink( int link )
@@ -176,7 +176,7 @@ public:
 				return x;
 		}
 
-		return 0;
+		return nullptr;
 	}
 
 	void findAllItems( int b, QList<NifProxyItem *> & list )
@@ -262,7 +262,9 @@ void NifProxyModel::updateRoot( bool fast )
 
 	//qDebug() << "proxy update top level";
 
-	for ( NifProxyItem * item : root->childItems ) {
+	// Make a copy to iterate over
+	auto items = root->childItems;
+	for ( NifProxyItem * item : items ) {
 		if ( !nif->getRootLinks().contains( item->block() ) ) {
 			int at = root->rowLink( item->block() );
 
@@ -330,7 +332,9 @@ void NifProxyModel::updateItem( NifProxyItem * item, bool fast )
 		if ( !parents.contains( child->block() ) ) {
 			updateItem( child, fast );
 		} else {
-			qWarning() << tr( "infinite recursing link construct detected" ) << item->block() << "->" << child->block();
+			Message::append( tr( "Warnings were generated while reading NIF file." ),
+				tr( "infinite recursive link construct detected %1 -> %2" ).arg( item->block() ).arg( child->block() )
+			);
 		}
 	}
 	for ( const auto l : nif->getParentLinks( item->block() ) ) {

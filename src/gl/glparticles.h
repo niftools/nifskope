@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVector>
 
 
+//! @file glparticles.h Particles
+
 class Particles : public Node
 {
+	friend class ParticleController;
+
 public:
 	Particles( Scene * s, const QModelIndex & b ) : Node( s, b ) {}
 
@@ -50,7 +54,7 @@ public:
 
 	void transformShapes() override;
 
-	void drawShapes( NodeList * draw2nd = nullptr ) override;
+	void drawShapes( NodeList * secondPass = nullptr, bool presort = false ) override;
 
 	BoundSphere bounds() const override;
 
@@ -67,8 +71,7 @@ protected:
 
 	int active;
 	float size;
-
-	friend class ParticleController;
 };
+
 
 #endif

@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "gl/gltools.h"
 
 #include <QDialog>
 #include <QGridLayout>
@@ -21,7 +22,7 @@ static QModelIndex getShape( const NifModel * nif, const QModelIndex & index )
 	if ( nif->isNiBlock( iShape, "NiTriBasedGeomData" ) )
 		iShape = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
 
-	if ( nif->isNiBlock( iShape, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+	if ( nif->isNiBlock( iShape, { "NiTriShape", "BSLODTriShape", "NiTriStrips" } ) )
 		if ( nif->getBlock( nif->getLink( iShape, "Data" ), "NiTriBasedGeomData" ).isValid() )
 			return iShape;
 
@@ -39,7 +40,7 @@ static QModelIndex getTriShapeData( const NifModel * nif, const QModelIndex & in
 {
 	QModelIndex iData = nif->getBlock( index );
 
-	if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) )
+	if ( nif->isNiBlock( index, { "NiTriShape", "BSLODTriShape" } ) )
 		iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
 	if ( nif->isNiBlock( iData, "NiTriShapeData" ) )
@@ -67,7 +68,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 
 		if ( !verts.count() ) {
-			throw QString( Spell::tr( "no vertices?" ) );
+			throw QString( Spell::tr( "No vertices" ) );
 		}
 
 		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
@@ -79,7 +80,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 			texco << nif->getArray<Vector2>( iUVSets.child( r, 0 ) );
 
 			if ( texco.last().count() != verts.count() )
-				throw QString( "uv array size differs" );
+				throw QString( Spell::tr( "UV array size differs" ) );
 		}
 
 		int numVerts = verts.count();
@@ -88,7 +89,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 		     || ( norms.count() && norms.count() != numVerts )
 		     || ( colors.count() && colors.count() != numVerts ) )
 		{
-			throw QString( "vertex array size differs" );
+			throw QString( Spell::tr( "Vertex array size differs" ) );
 		}
 
 		// detect unused vertices
@@ -114,7 +115,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 
 		// remove them
 
-		qWarning() << "removing" << verts.count() - used.count() << "vertices";
+		Message::info( nullptr, Spell::tr( "Removed %1 vertices" ).arg( verts.count() - used.count() ) );
 
 		if ( verts.count() == used.count() )
 			return;
@@ -226,12 +227,12 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 
 		if ( iSkinPart.isValid() ) {
 			nif->removeNiBlock( nif->getBlockNumber( iSkinPart ) );
-			qWarning() << "the skin partition was removed, please add it again with the skin partition spell";
+			Message::warning( nullptr, Spell::tr( "The skin partition was removed, please regenerate it with the skin partition spell" ) );
 		}
 	}
 	catch ( QString e )
 	{
-		qWarning() << e.toLatin1().data();
+		Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 	}
 }
 
@@ -441,7 +442,7 @@ public:
 		}
 
 		if ( cnt > 0 ) {
-			qWarning() << QString( Spell::tr( "%1 triangles removed" ) ).arg( cnt );
+			Message::info( nullptr, Spell::tr( "Removed %1 triangles" ).arg( cnt ) );
 			nif->set<int>( iData, "Num Triangles", tris.count() );
 			nif->set<int>( iData, "Num Triangle Points", tris.count() * 3 );
 			nif->updateArray( iData, "Triangles" );
@@ -478,7 +479,7 @@ public:
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 
 			if ( !verts.count() )
-				throw QString( "no vertices?" );
+				throw QString( Spell::tr( "No vertices" ) );
 
 			QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
 			QVector<Color4> colors = nif->getArray<Color4>( iData, "Vertex Colors" );
@@ -489,7 +490,7 @@ public:
 				texco << nif->getArray<Vector2>( iUVSets.child( r, 0 ) );
 
 				if ( texco.last().count() != verts.count() )
-					throw QString( Spell::tr( "uv array size differs" ) );
+					throw QString( Spell::tr( "UV array size differs" ) );
 			}
 
 			int numVerts = verts.count();
@@ -498,7 +499,7 @@ public:
 			     || ( norms.count() && norms.count() != numVerts )
 			     || ( colors.count() && colors.count() != numVerts ) )
 			{
-				throw QString( Spell::tr( "vertex array size differs" ) );
+				throw QString( Spell::tr( "Vertex array size differs" ) );
 			}
 
 			// detect the dublicates
@@ -532,7 +533,7 @@ public:
 				}
 			}
 
-			//qWarning() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
+			//qDebug() << QString( Spell::tr("detected % duplicates") ).arg( map.count() );
 
 			// adjust the faces
 
@@ -573,7 +574,7 @@ public:
 		}
 		catch ( QString e )
 		{
-			qWarning() << e.toLatin1().data();
+			Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 		}
 
 		return index;
@@ -676,3 +677,83 @@ QModelIndex spUpdateCenterRadius::cast( NifModel * nif, const QModelIndex & inde
 }
 
 REGISTER_SPELL( spUpdateCenterRadius )
+
+//! Updates Bounds of BSTriShape
+class spUpdateBounds final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Update Bounds" ); }
+	QString page() const override final { return Spell::tr( "Mesh" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif->inherits( index, "BSTriShape" ) && nif->getIndex( index, "Vertex Data" ).isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		auto vertData = nif->getIndex( index, "Vertex Data" );
+
+		// Retrieve the verts
+		QVector<Vector3> verts;
+		for ( int i = 0; i < nif->rowCount( vertData ); i++ ) {
+			verts << nif->get<Vector3>( vertData.child( i, 0 ), "Vertex" );
+		}
+
+		if ( verts.isEmpty() )
+			return index;
+
+		// Creating a bounding sphere from the verts
+		BoundSphere bounds = BoundSphere( verts );
+
+		// Update the bounding sphere
+		auto boundsIdx = nif->getIndex( index, "Bounding Sphere" );
+		nif->set<Vector3>( boundsIdx, "Center", bounds.center );
+		nif->set<float>( boundsIdx, "Radius", bounds.radius );
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spUpdateBounds )
+
+
+class spUpdateAllBounds final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Update All Bounds" ); }
+	QString page() const override final { return Spell::tr( "Batch" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
+	{
+		if ( !nif || idx.isValid() )
+			return false;
+
+		if ( nif->getUserVersion2() == 130 )
+			return true;
+
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QList<QPersistentModelIndex> indices;
+
+		spUpdateBounds updBounds;
+
+		for ( int n = 0; n < nif->getBlockCount(); n++ ) {
+			QModelIndex idx = nif->getBlock( n );
+
+			if ( updBounds.isApplicable( nif, idx ) )
+				indices << idx;
+		}
+
+		for ( const QModelIndex& idx : indices ) {
+			updBounds.castIfApplicable( nif, idx );
+		}
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spUpdateAllBounds )

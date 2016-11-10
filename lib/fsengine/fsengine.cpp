@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,22 +39,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMutex>
 #include <QStringList>
 
+
 //! \file fsengine.cpp File system engine implementations
 
 // see fsengine.h
-FSArchiveHandler * FSArchiveHandler::openArchive( const QString & fn )
+std::shared_ptr<FSArchiveHandler> FSArchiveHandler::openArchive( const QString & fn )
 {
 	if ( BSA::canOpen( fn ) )
 	{
 		BSA * bsa = new BSA( fn );
 		if ( bsa->open() ) {
 			//qDebug() << "BSA Open: " << fn;
-			return new FSArchiveHandler( bsa );
+			return std::shared_ptr<FSArchiveHandler>( new FSArchiveHandler( bsa ) );
 		}
 		qDebug() << "fsengine error:" << fn << ":" << bsa->statusText();
 		delete bsa;
 	}
-	return 0;
+	return nullptr;
 }
 
 // see fsengine.h

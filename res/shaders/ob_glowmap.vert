@@ -1,3 +1,4 @@
+#version 120
 
 varying vec3 LightDir;
 varying vec3 ViewDir;
@@ -6,27 +7,30 @@ varying vec3 HalfVector;
 varying vec4 ColorEA;
 varying vec4 ColorD;
 
-vec3 normal;
-vec3 tangent;
-vec3 binormal;
-
-vec3 tspace( vec3 v )
-{
-	return vec3( dot( v, binormal ), dot( v, tangent ), dot( v, normal ) );
-}
+varying vec3 N;
+varying vec3 t;
+varying vec3 b;
+varying vec3 v;
 
 void main( void )
 {
 	gl_Position = ftransform();
 	gl_TexCoord[0] = gl_MultiTexCoord0;
 	
-	normal = gl_NormalMatrix * gl_Normal;
-	tangent = gl_NormalMatrix * gl_MultiTexCoord1.xyz;
-	binormal = gl_NormalMatrix * gl_MultiTexCoord2.xyz;
+	N = normalize(gl_NormalMatrix * gl_Normal);
+	t = normalize(gl_NormalMatrix * gl_MultiTexCoord1.xyz);
+	b = normalize(gl_NormalMatrix * gl_MultiTexCoord2.xyz);
 	
-	ViewDir = tspace( ( gl_ModelViewMatrix * gl_Vertex ).xyz );
-	LightDir = tspace( gl_LightSource[0].position.xyz ); // light 0 is directional
-	HalfVector = tspace( gl_LightSource[0].halfVector.xyz );
+	// NOTE: b<->t 
+	mat3 tbnMatrix = mat3(b.x, t.x, N.x,
+                          b.y, t.y, N.y,
+                          b.z, t.z, N.z);
+						  
+	v = vec3(gl_ModelViewMatrix * gl_Vertex);
+	
+	ViewDir = tbnMatrix * -v.xyz;
+	LightDir = tbnMatrix * gl_LightSource[0].position.xyz;
+	HalfVector = tbnMatrix * gl_LightSource[0].halfVector.xyz;
 	
 	ColorEA = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
 	ColorD = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;

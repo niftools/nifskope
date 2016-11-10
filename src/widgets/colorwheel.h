@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,8 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COLORWHEEL_H
 #define COLORWHEEL_H
 
-#include <QSpinBox> // Inherited
-#include <QWidget>  // Inherited
+#include <QWidget>   // Inherited
+#include <QSpinBox>  // Inherited
+
 #include <QColor>
 #include <QRegularExpression>
 #include <QSlider>
@@ -101,8 +102,38 @@ private:
 	} pressed;
 
 	QSize sHint;
+};
 
-	static QIcon * icon;
+class QLabel;
+class QLineEdit;
+class QDoubleSpinBox;
+class QPushButton;
+
+class ColorLineEdit final : public QWidget
+{
+	Q_OBJECT
+
+public:
+	ColorLineEdit( QWidget * parent = nullptr );
+
+	QColor getColor() const;
+
+	void setWheel( ColorWheel *, const QString & = "" );
+	void setTitle( const QString & );
+	void setColor( const QColor & );
+
+public slots:
+	void setAlpha( float );
+
+private:
+	ColorWheel * wheel;
+	QLabel * title;
+	QLabel * lblColor;
+	QLineEdit * color;
+	QDoubleSpinBox * alpha;
+	QPushButton * btn;
+
+	bool hasAlpha = false;
 };
 
 class ColorSpinBox final : public QSpinBox

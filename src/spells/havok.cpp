@@ -48,11 +48,7 @@ public:
 		if ( !iData.isValid() )
 			return index;
 
-		float havokScale = 1.0f;
-
-		if ( nif->getUserVersion() >= 12 ) {
-			havokScale = 10.0f;
-		}
+		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 		havokScale *= havokConst;
 
@@ -61,6 +57,13 @@ public:
 
 		/* get the verts of our mesh */
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+		QVector<Vector3> vertsTrans;
+
+		// Offset by translation of NiTriShape
+		Vector3 trans = nif->get<Vector3>( index, "Translation" );
+		for ( auto v : verts ) {
+			vertsTrans.append( v + trans );
+		}
 
 		// to store results
 		QVector<Vector4> hullVerts, hullNorms;
@@ -79,6 +82,15 @@ public:
 		precSpin->setSingleStep( 0.01 );
 		precSpin->setValue( 0.25 );
 		vbox->addWidget( precSpin );
+
+		vbox->addWidget( new QLabel( Spell::tr( "Collision Radius" ) ) );
+
+		QDoubleSpinBox * spnRadius = new QDoubleSpinBox;
+		spnRadius->setRange( 0, 0.5 );
+		spnRadius->setDecimals( 4 );
+		spnRadius->setSingleStep( 0.001 );
+		spnRadius->setValue( 0.05 );
+		vbox->addWidget( spnRadius );
 
 		QHBoxLayout * hbox = new QHBoxLayout;
 		vbox->addLayout( hbox );
@@ -99,7 +111,7 @@ public:
 		}
 
 		/* make a convex hull from it */
-		compute_convex_hull( verts, hullVerts, hullNorms, (float)precSpin->value() );
+		compute_convex_hull( vertsTrans, hullVerts, hullNorms, (float)precSpin->value() );
 
 		// sort and remove duplicate vertices
 		QList<Vector4> sortedVerts;
@@ -150,7 +162,7 @@ public:
 
 		// radius is always 0.1?
 		// TODO: Figure out if radius is not arbitrarily set in vanilla NIFs
-		nif->set<float>( iCVS, "Radius", 0.1f );
+		nif->set<float>( iCVS, "Radius", spnRadius->value() );
 
 		// for arrow detection: [0, 0, -0, 0, 0, -0]
 		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 2, 0 ), -0.0 );
@@ -189,7 +201,7 @@ public:
 			nif->removeNiBlock( nif->getBlockNumber( shape ) );
 		}
 
-		QMessageBox::information( 0, "NifSkope", Spell::tr( "Created hull with %1 vertices, %2 normals" ).arg( convex_verts.count() ).arg( convex_norms.count() ) );
+		Message::info( nullptr, Spell::tr( "Created hull with %1 vertices, %2 normals" ).arg( convex_verts.count() ).arg( convex_norms.count() ) );
 
 		// returning iCVS here can crash NifSkope if a child array is selected
 		return index;
@@ -207,12 +219,10 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif && (
-		    nif->isNiBlock( nif->getBlock( index ), "bhkMalleableConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkRagdollConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkLimitedHingeConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkHingeConstraint" )
-		    || nif->isNiBlock( nif->getBlock( index ), "bhkPrismaticConstraint" ) );
+		return nif && 
+			nif->isNiBlock( nif->getBlock( index ),
+				{ "bhkMalleableConstraint", "bhkRagdollConstraint", "bhkLimitedHingeConstraint", "bhkHingeConstraint", "bhkPrismaticConstraint" }
+			);
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -234,7 +244,7 @@ public:
 		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
-			qWarning() << "coudn't find the bodies for this constraint";
+			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint." ) );
 			return index;
 		}
 
@@ -243,53 +253,46 @@ public:
 
 		if ( name == "bhkLimitedHingeConstraint" ) {
 			iConstraint = nif->getIndex( iConstraint, "Limited Hinge" );
-
-			if ( !iConstraint.isValid() )
-				return index;
-		}
-
-		if ( name == "bhkRagdollConstraint" ) {
+		} else if ( name == "bhkRagdollConstraint" ) {
 			iConstraint = nif->getIndex( iConstraint, "Ragdoll" );
-
-			if ( !iConstraint.isValid() )
-				return index;
-		}
-
-		if ( name == "bhkHingeConstraint" ) {
+		} else if ( name == "bhkHingeConstraint" ) {
 			iConstraint = nif->getIndex( iConstraint, "Hinge" );
-
-			if ( !iConstraint.isValid() )
-				return index;
 		}
+
+		if ( !iConstraint.isValid() )
+			return index;
 
 		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * havokConst;
 		pivot = transA * pivot;
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
 		nif->set<Vector4>( iConstraint, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
 
+		// TODO: bhkHingeConstraint
+		QString axleA, axleB, twistA, twistB;
 		if ( name == "bhkLimitedHingeConstraint" ) {
-			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Axle A" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Axle B", { axle[0], axle[1], axle[2], 0 } );
-
-			axle = Vector3( nif->get<Vector4>( iConstraint, "Perp2 Axle In A2" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Perp2 Axle In B2", { axle[0], axle[1], axle[2], 0 } );
+			axleA = "Axle A";
+			axleB = "Axle B";
+			twistA = "Perp2 Axle In A2";
+			twistB = "Perp2 Axle In B2";
+		} else if ( name == "bhkRagdollConstraint" ) {
+			axleA = "Plane A";
+			axleB = "Plane B";
+			twistA = "Twist A";
+			twistB = "Twist B";
 		}
 
-		if ( name == "bhkRagdollConstraint" ) {
-			Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, "Plane A" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Plane B", { axle[0], axle[1], axle[2], 0 } );
+		if ( axleA.isEmpty() || axleB.isEmpty() || twistA.isEmpty() || twistB.isEmpty() )
+			return index;
 
-			axle = Vector3( nif->get<Vector4>( iConstraint, "Twist A" ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraint, "Twist B", { axle[0], axle[1], axle[2], 0 } );
-		}
+		Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, axleA ) );
+		axle = transA.rotation * axle;
+		axle = transB.rotation.inverted() * axle;
+		nif->set<Vector4>( iConstraint, axleB, { axle[0], axle[1], axle[2], 0 } );
+
+		axle = Vector3( nif->get<Vector4>( iConstraint, twistA ) );
+		axle = transA.rotation * axle;
+		axle = transB.rotation.inverted() * axle;
+		nif->set<Vector4>( iConstraint, twistB, { axle[0], axle[1], axle[2], 0 } );
 
 		return index;
 	}
@@ -338,7 +341,7 @@ public:
 		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
-			qWarning() << "coudn't find the bodies for this constraint";
+			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint" ) );
 			return idx;
 		}
 
@@ -417,7 +420,7 @@ public:
 		}
 
 		if ( vertices.isEmpty() || triangles.isEmpty() ) {
-			qWarning() << Spell::tr( "no mesh data was found" );
+			Message::warning( nullptr, Spell::tr( "No mesh data was found." ) );
 			return iShape;
 		}
 

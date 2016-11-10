@@ -3,4 +3,7 @@
 	url = git://github.com/niftools/nifdocsys.git
 [submodule "qhull"]
 	path = lib/qhull
-	url = git://gitorious.org/qhull/qhull.git
+	url = git@github.com:qhull/qhull.git
+[submodule "lib/zlib"]
+	path = lib/zlib
+	url = git@github.com:madler/zlib.git

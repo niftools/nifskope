@@ -27,11 +27,14 @@ public:
 	{
 		QModelIndex iData = nif->getBlock( index );
 
-		if ( nif->isNiBlock( index, "NiTriShape" ) || nif->isNiBlock( index, "BSLODTriShape" ) || nif->isNiBlock( index, "NiTriStrips" ) )
+		if ( nif->isNiBlock( index, { "NiTriShape", "BSLODTriShape", "NiTriStrips" } ) )
 			iData = nif->getBlock( nif->getLink( index, "Data" ) );
 
-		if ( nif->isNiBlock( iData, "NiTriShapeData" ) || nif->isNiBlock( iData, "NiTriStripsData" ) )
+		if ( nif->isNiBlock( iData, { "NiTriShapeData", "NiTriStripsData" } ) )
 			return iData;
+
+		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape" } ) )
+			return nif->getIndex( index, "Vertex Data" );
 
 		return QModelIndex();
 	}
@@ -45,41 +48,73 @@ public:
 	{
 		QModelIndex iData = getShapeData( nif, index );
 
-		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-		QVector<Triangle> triangles;
-		QModelIndex iPoints = nif->getIndex( iData, "Points" );
+		auto faceNormals = []( const QVector<Vector3> & verts, const QVector<Triangle> & triangles, QVector<Vector3> & norms ) {
+			for ( const Triangle & tri : triangles ) {
+				Vector3 a = verts[tri[0]];
+				Vector3 b = verts[tri[1]];
+				Vector3 c = verts[tri[2]];
 
-		if ( iPoints.isValid() ) {
-			QList<QVector<quint16> > strips;
+				Vector3 fn = Vector3::crossproduct( b - a, c - a );
+				norms[tri[0]] += fn;
+				norms[tri[1]] += fn;
+				norms[tri[2]] += fn;
+			}
 
-			for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
-				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+			for ( int n = 0; n < norms.count(); n++ ) {
+				norms[n].normalize();
+			}
+		};
 
-			triangles = triangulate( strips );
+		if ( nif->getUserVersion2() < 130 ) {
+			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
+			QVector<Triangle> triangles;
+			QModelIndex iPoints = nif->getIndex( iData, "Points" );
+
+			if ( iPoints.isValid() ) {
+				QList<QVector<quint16> > strips;
+
+				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
+					strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
+
+				triangles = triangulate( strips );
+			} else {
+				triangles = nif->getArray<Triangle>( iData, "Triangles" );
+			}
+
+
+			QVector<Vector3> norms( verts.count() );
+			
+			faceNormals( verts, triangles, norms );
+
+			nif->set<int>( iData, "Has Normals", 1 );
+			nif->updateArray( iData, "Normals" );
+			nif->setArray<Vector3>( iData, "Normals", norms );
 		} else {
-			triangles = nif->getArray<Triangle>( iData, "Triangles" );
+			int numVerts = nif->get<int>( index, "Num Vertices" );
+			QVector<Vector3> verts;
+			QVector<Vector3> norms( numVerts );
+			QVector<Triangle> triangles = nif->getArray<Triangle>( index, "Triangles" );
+
+			for ( int i = 0; i < numVerts; i++ ) {
+				auto idx = nif->index( i, 0, iData );
+
+				verts += nif->get<Vector3>( idx, "Vertex" );
+			}
+
+			faceNormals( verts, triangles, norms );
+
+			// Pause updates between model/view
+			nif->setEmitChanges( false );
+			for ( int i = 0; i < numVerts; i++ ) {
+				// Unpause updates if last
+				if ( i == numVerts - 1 )
+					nif->setEmitChanges( true );
+
+				auto idx = nif->index( i, 0, iData );
+
+				nif->set<ByteVector3>( idx, "Normal", *static_cast<ByteVector3 *>(&norms[i]) );
+			}
 		}
-
-
-		QVector<Vector3> norms( verts.count() );
-		for ( const Triangle& tri : triangles ) {
-			Vector3 a = verts[ tri[0] ];
-			Vector3 b = verts[ tri[1] ];
-			Vector3 c = verts[ tri[2] ];
-
-			Vector3 fn = Vector3::crossproduct( b - a, c - a );
-			norms[ tri[0] ] += fn;
-			norms[ tri[1] ] += fn;
-			norms[ tri[2] ] += fn;
-		}
-
-		for ( int n = 0; n < norms.count(); n++ ) {
-			norms[ n ].normalize();
-		}
-
-		nif->set<int>( iData, "Has Normals", 1 );
-		nif->updateArray( iData, "Normals" );
-		nif->setArray<Vector3>( iData, "Normals", norms );
 
 		return index;
 	}
@@ -133,8 +168,21 @@ public:
 	{
 		QModelIndex iData = spFaceNormals::getShapeData( nif, index );
 
-		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
-		QVector<Vector3> norms = nif->getArray<Vector3>( iData, "Normals" );
+		QVector<Vector3> verts;
+		QVector<Vector3> norms;
+
+		if ( nif->getUserVersion2() < 130 ) {
+			verts = nif->getArray<Vector3>( iData, "Vertices" );
+			norms = nif->getArray<Vector3>( iData, "Normals" );
+		} else {
+			int numVerts = nif->get<int>( index, "Num Vertices" );
+			for ( int i = 0; i < numVerts; i++ ) {
+				auto idx = nif->index( i, 0, iData );
+
+				verts += nif->get<Vector3>( idx, "Vertex" );
+				norms += nif->get<ByteVector3>( idx, "Normal" );
+			}
+		}
 
 		if ( verts.isEmpty() || verts.count() != norms.count() )
 			return index;
@@ -203,7 +251,23 @@ public:
 		for ( int i = 0; i < verts.count(); i++ )
 			snorms[i].normalize();
 
-		nif->setArray<Vector3>( iData, "Normals", snorms );
+		if ( nif->getUserVersion2() < 130 ) {
+			nif->setArray<Vector3>( iData, "Normals", snorms );
+		} else {
+			int numVerts = nif->get<int>( index, "Num Vertices" );
+			// Pause updates between model/view
+			nif->setEmitChanges( false );
+			for ( int i = 0; i < numVerts; i++ ) {
+				// Unpause updates if last
+				if ( i == numVerts - 1 )
+					nif->setEmitChanges( true );
+
+				auto idx = nif->index( i, 0, iData );
+
+				nif->set<ByteVector3>( idx, "Normal", *static_cast<ByteVector3 *>(&snorms[i]) );
+			}
+		}
+		
 
 		return index;
 	}

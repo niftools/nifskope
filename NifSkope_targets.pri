@@ -4,6 +4,38 @@
 # Note: dir or file in build dir cannot be named the same as the target
 # e.g. "docs" target will fail if a "docs" folder is in OUT_PWD
 
+win32:EXE = ".exe"
+else:EXE = ""
+
+###############################
+## lupdate / lrelease
+###############################
+
+QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate$${EXE}
+exists($$QMAKE_LUPDATE) {
+	# Make target for Updating .ts
+	updatets.target = updatets
+	updatets.commands += cd $${_PRO_FILE_PWD_} $$nt
+	updatets.commands += $$[QT_INSTALL_BINS]/lupdate $${_PRO_FILE_} $$nt
+	updatets.CONFIG += no_check_exist no_link no_clean
+
+	QMAKE_EXTRA_TARGETS += updatets
+} else {
+	message("lupdate could not be found, ignoring make target")
+}
+
+QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease$${EXE}
+exists($$QMAKE_LRELEASE) {
+	# Build Step for Releasing .ts->.qm
+	updateqm.input = TRANSLATIONS
+	updateqm.output = $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm)
+	updateqm.commands = $$[QT_INSTALL_BINS]/lrelease ${QMAKE_FILE_IN} -qm $$syspath($${DESTDIR}/lang/${QMAKE_FILE_BASE}.qm) $$nt
+	updateqm.CONFIG += no_check_exist no_link no_clean target_predeps
+
+	QMAKE_EXTRA_COMPILERS += updateqm
+} else {
+	message("lrelease could not be found, ignoring build step")
+}
 
 ###############################
 ## Docsys
@@ -25,11 +57,7 @@ docs.target = docs
 # Vars
 docsys = $$syspath($${PWD}/build/docsys)
 indoc = doc$${QMAKE_DIR_SEP}
-out = $$syspath($${OUT_PWD})
-
-# Find out if release or debug because DESTDIR is blank
-exists($$out/debug/NifSkope.exe):outdoc = $$syspath($${out}/debug/doc)
-exists($$out/release/NifSkope.exe):outdoc = $$syspath($${out}/release/doc)
+outdoc = $$syspath($${DESTDIR}/doc)
 
 # COMMANDS
 
@@ -76,7 +104,7 @@ doxyfile = $$syspath($${OUT_PWD}/Doxyfile)
 doxyfilein = $$syspath($${PWD}/build/doxygen/Doxyfile.in)
 
 # Paths
-qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator.exe)
+qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator$${EXE})
 dot = $$syspath(C:/Program Files (x86)/Graphviz2.37/bin) # TODO
 _7z = $$get7z()
 

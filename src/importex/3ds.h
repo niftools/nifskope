@@ -267,6 +267,7 @@ public:
 	}
 
 private:
+	QFile * f;
 	ChunkHeader h;
 	ChunkPos p;
 	ChunkDataFlag df;
@@ -274,7 +275,6 @@ private:
 	ChunkDataLength dl;
 	ChunkDataCount dc;
 
-	QFile * f;
 	QMap<ChunkType, Chunk *> c;
 
 	void subproc()

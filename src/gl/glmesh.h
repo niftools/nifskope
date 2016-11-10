@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,103 +41,159 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
-//! \file glmesh.h Mesh class
+//! @file glmesh.h Mesh
 
-//! A mesh
-class Mesh : public Node
+class Shape : public Node
 {
+	friend class MorphController;
+	friend class UVController;
+	friend class Renderer;
+
 public:
-	Mesh( Scene * s, const QModelIndex & b ) : Node( s, b ) { double_sided = false; double_sided_es = false; }
-	~Mesh() { clear(); }
+	Shape( Scene * s, const QModelIndex & b );
+	~Shape() { clear(); }
 
-	void clear() override;
-	void update( const NifModel * nif, const QModelIndex & ) override;
-	void transform() override;
+	virtual void drawVerts() const {};
+	virtual QModelIndex vertexAt( int ) const { return QModelIndex(); };
 
-	void transformShapes() override;
-
-	void drawShapes( NodeList * draw2nd = nullptr ) override;
-	void drawSelection() const override;
-
-	bool isHidden() const override;
-
-	//! The bounds of the mesh?
-	BoundSphere bounds() const override;
-
-	QString textStats() const override;
+	int shapeNumber;
 
 protected:
+	//! Sets the Controller
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
+
+	void updateShaderProperties( const NifModel * nif );
+
+	void boneSphere( const NifModel * nif, const QModelIndex & index ) const;
+
+	int nifVersion = 0;
 
 	//! Shape data
 	QPersistentModelIndex iData;
+	//! Does the data need updating?
+	bool updateData = false;
+
 	//! Skin instance
 	QPersistentModelIndex iSkin;
 	//! Skin data
 	QPersistentModelIndex iSkinData;
 	//! Skin partition
 	QPersistentModelIndex iSkinPart;
-	//! Tangent data
-	QPersistentModelIndex iTangentData;
-	//! Unsure - does the data need updating?
-	bool upData;
-	//! Unsure - does teh skin data need updating?
-	bool upSkin;
 
 	//! Vertices
 	QVector<Vector3> verts;
 	//! Normals
 	QVector<Vector3> norms;
 	//! Vertex colors
-	QVector<Color4>  colors;
+	QVector<Color4> colors;
 	//! Tangents
 	QVector<Vector3> tangents;
 	//! Bitangents
 	QVector<Vector3> bitangents;
-
 	//! UV coordinate sets
-	QList<QVector<Vector2> > coords;
-
-	//! Transformed vertices
-	QVector<Vector3> transVerts;
-	//! Transformed normals
-	QVector<Vector3> transNorms;
-	//! Transformed colors (alpha-blended)
-	QVector<Color4> transColors;
-	//! Transformed tangents
-	QVector<Vector3> transTangents;
-	//! Transformed bitangents
-	QVector<Vector3> transBitangents;
-
-	int skelRoot;
-	Transform skelTrans;
-	QVector<int> bones;
-	QVector<BoneWeights> weights;
-	QVector<SkinPartition> partitions;
-
+	QList<QVector<Vector2>> coords;
 	//! Triangles
 	QVector<Triangle> triangles;
 	//! Strip points
-	QList<QVector<quint16> > tristrips;
+	QList<QVector<quint16>> tristrips;
 	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
 	//! Triangle indices
 	QVector<quint16> indices;
 
-	bool transformRigid;
+	//! Is the transform rigid or weighted?
+	bool transformRigid = true;
+	//! Transformed vertices
+	QVector<Vector3> transVerts;
+	//! Transformed normals
+	QVector<Vector3> transNorms;
+	//! Transformed colors (alpha blended)
+	QVector<Color4> transColors;
+	//! Transformed colors (alpha removed)
+	QVector<Color4> transColorsNoAlpha;
+	//! Transformed tangents
+	QVector<Vector3> transTangents;
+	//! Transformed bitangents
+	QVector<Vector3> transBitangents;
 
-	mutable BoundSphere bndSphere;
-	mutable bool upBounds;
+	//! Does the skin data need updating?
+	bool updateSkin = false;
+	//! Toggle for skinning
+	bool doSkinning = false;
 
+	int skeletonRoot;
+	Transform skeletonTrans;
+	QVector<int> bones;
+	QVector<BoneWeights> weights;
+	QVector<SkinPartition> partitions;
+
+	//! Holds the name of the shader, or "fixed function pipeline" if no shader
 	QString shader;
 
-	friend class MorphController;
-	friend class UVController;
-	friend class Renderer;
+	//! Shader property
+	BSShaderLightingProperty * bssp = nullptr;
+	//! Skyrim shader property
+	BSLightingShaderProperty * bslsp = nullptr;
+	//! Skyrim effect shader property
+	BSEffectShaderProperty * bsesp = nullptr;
+	//! Is shader set to double sided?
+	bool isDoubleSided = false;
+	//! Is shader set to animate using vertex alphas?
+	bool isVertexAlphaAnimation = false;
+	//! Is "Has Vertex Colors" set to Yes
+	bool hasVertexColors = false;
+
+	bool depthTest = true;
+	bool depthWrite = true;
+	bool drawSecond = false;
+	bool translucent = false;
+
+	mutable BoundSphere boundSphere;
+	mutable bool updateBounds;
+};
+
+//! A mesh
+class Mesh : public Shape
+{
+
+public:
+	Mesh( Scene * s, const QModelIndex & b );
+	~Mesh() { clear(); }
+
+	// IControllable
+
+	void clear() override;
+	void update( const NifModel * nif, const QModelIndex & ) override;
+	void transform() override;
+
+	// end IControllable
+
+	// Node
+
+	void transformShapes() override;
+
+	void drawShapes( NodeList * secondPass = nullptr, bool presort = false ) override;
+	void drawSelection() const override;
+
+	BoundSphere bounds() const override;
+
+	bool isHidden() const override;
+	QString textStats() const override;
+
+	// end Node
+
+	// Shape
+
+	void drawVerts() const override;
+	QModelIndex vertexAt( int ) const override;
+
+protected:
+
+	//! Tangent data
+	QPersistentModelIndex iTangentData;
 
 	static bool isBSLODPresent;
-	bool double_sided;
-	bool double_sided_es;
 };
+
 
 #endif

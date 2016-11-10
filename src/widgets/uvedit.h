@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -99,9 +99,7 @@ protected:
 	void mouseMoveEvent( QMouseEvent * e ) override final;
 	void wheelEvent( QWheelEvent * e ) override final;
 
-// should this be public slots?
-
-protected slots:
+public slots:
 	//! Does the selection contain this vertex?
 	bool isSelected( int index );
 	//! Select a vertex
@@ -122,6 +120,8 @@ protected slots:
 	void scaleSelection();
 	//! Rotate the selection
 	void rotateSelection();
+
+	void updateSettings();
 
 protected slots:
 	void nifDataChanged( const QModelIndex & );
@@ -185,7 +185,10 @@ private:
 	void updateNif();
 
 	NifModel * nif;
-	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex;
+	QPersistentModelIndex iShape, iShapeData, iTexCoords, iTex, iPartBlock;
+
+	//! If mesh is skinned, different behavior is required for stream version 100
+	bool isDataOnSkin = false;
 
 	//! Submenu for texture slot selection
 	QMenu * menuTexSelect;
@@ -195,13 +198,14 @@ private:
 	QStringList validTexs;
 
 	//! Names of texture slots
-	QStringList texnames;
+	static QStringList texnames;
+
 	//! Texture slot currently being operated on
-	int currentTexSlot;
+	int currentTexSlot = 0;
 	//! Read texcoords from the nif
 	bool setTexCoords();
 	//! Coordinate set currently in use
-	int currentCoordSet;
+	int currentCoordSet = 0;
 
 	//! Submenu for coordinate set selection
 	QMenu * coordSetSelect;
@@ -226,6 +230,13 @@ private:
 	friend class UVWRotateCommand;
 
 	QAction * aTextureBlend;
+
+	struct Settings
+	{
+		QColor background;
+		QColor highlight;
+		QColor wireframe;
+	} cfg;
 };
 
 //! Dialog for getting scaling factors

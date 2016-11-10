@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2014, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,13 +39,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringList>
 
 
-/**
- * \file	version.h
- * \brief	Encapsulation of application version strings.
- * \author	jonwd7
- * \date	2014-06-06
+/*!
+ * @file	version.h NifSkopeVersion
+ * @author	jonwd7
+ * @date	2014-06-06
  * 
- * \see Github: https://github.com/niftools/nifskope/issues/61
+ * @see Github: https://github.com/niftools/nifskope/issues/61
  */ 
 
 
@@ -57,10 +56,8 @@ class QDebug;
 #define NIFSKOPE_VERSION_HEX NifSkopeVersion::hexVersion( NIFSKOPE_VERSION )
 
 
-/**
- * \class NifSkopeVersion
- * \brief Encapsulates application version strings into comparable objects.
- *	Also provides static convenience functions for raw strings.
+/*! Encapsulates application version strings into comparable objects and provides static convenience
+ * functions for raw strings.
  *
  * For comparison purposes, such as for migrating QSettings between versions,
  * or removing deprecated QSettings.
@@ -87,7 +84,7 @@ public:
 	//! Instance version of NifSkopeVersion::hexVersion()
 	int hex() const;
 
-	/** \brief Compare two strings beyond MAJ.MIN.REV granularity
+	/*! Compare two strings beyond MAJ.MIN.REV granularity
 	 * 
 	 * Max of 7 parts:
 	 *	0 = Major
@@ -98,11 +95,11 @@ public:
 	 *	5 = Dev Code (dev, post)
 	 *	6 = Dev Version
 	 * 
-	 * \param	parts	Number of parts
-	 * \return	void
+	 * @param	parts	Number of parts
+	 * @return	void
 	 *
-	 * \note This sets NifSkopeVersion::numParts (static) for *all* NifSkopeVersion objects.
-	 * \code
+	 * @note This sets NifSkopeVersion::numParts (static) for *all* NifSkopeVersion objects.
+	 * @code
 	 *		// Default numParts = 3
 	 *		NifSkopeVersion a( "1.2.0" );
 	 *		NifSkopeVersion b( "1.2.0a1" );
@@ -112,71 +109,71 @@ public:
 	 *		NifSkopeVersion::setNumParts( 5 );
 	 *		
 	 *		qDebug() << (a > b); // True
-	 * \endcode
+	 * @endcode
 	 */
 	static void setNumParts( int num );
 
-	/** \brief Integer representation of version string
+	/*! Integer representation of version string
 	 *	represented in hex e.g. `"1.2.1" -> 0x010201 -> 66049`
 	 */
 	static int hexVersion( const QString );
 	static int hexVersion( const QList<int> );
 
-	/** \brief Compare two strings beyond MAJ.MIN.REV granularity
+	/*! Compare two strings beyond MAJ.MIN.REV granularity
 	 *
-	 * \param[in]	ver1				Version 1
-	 * \param[in]	ver2				Version 2
-	 * \param		parts				Number of parts to compare
-	 * \return		`{-1, 0, 1}` meaning: `{ver1 < ver2, ver1 == ver2, ver1 > ver2}`
+	 * @param[in]	ver1				Version 1
+	 * @param[in]	ver2				Version 2
+	 * @param		parts				Number of parts to compare
+	 * @return		`{-1, 0, 1}` meaning: `{ver1 < ver2, ver1 == ver2, ver1 > ver2}`
 	 */
 	static int compare( const QString & ver1, const QString & ver2, int parts );
 	static int compare( const QString & ver1, const QString & ver2 );
 
-	/** \brief Compare two strings beyond MAJ.MIN.REV granularity
-	*
-	* \param[in]	ver1				Version 1
-	* \param[in]	ver2				Version 2
-	* \param		parts				Number of parts to compare
-	* \return		True if `ver1 > ver2`
-	*/
+	/*! Compare two strings beyond MAJ.MIN.REV granularity
+	 *
+	 * @param[in]	ver1				Version 1
+	 * @param[in]	ver2				Version 2
+	 * @param		parts				Number of parts to compare
+	 * @return		True if `ver1 > ver2`
+	 */
 	static bool compareGreater( const QString & ver1, const QString & ver2, int parts );
 	static bool compareGreater( const QString & ver1, const QString & ver2 );
 
-	/** \brief Compare two strings beyond MAJ.MIN.REV granularity
-	*
-	* \param[in]	ver1				Version 1
-	* \param[in]	ver2				Version 2
-	* \param		parts				Number of parts to compare
-	* \return		True if `ver1 < ver2`
-	*/
+	/*! Compare two strings beyond MAJ.MIN.REV granularity
+	 *
+	 * @param[in]	ver1				Version 1
+	 * @param[in]	ver2				Version 2
+	 * @param		parts				Number of parts to compare
+	 * @return		True if `ver1 < ver2`
+	 */
 	static bool compareLess( const QString & ver1, const QString & ver2, int parts );
 	static bool compareLess( const QString & ver1, const QString & ver2 );
 
-	/** \brief Version string for display
+	/*! Version string for display
 	 *
-	 * \param[in]	ver					Version string
-	 * \param		showStage (false)	Whether to show release stage e.g. "1.2.0 Alpha 1"
-	 * \param		showDev (false)		Whether to show dev release e.g. "1.2.0 Alpha 1 Dev 1"
-	 * \return		Display string for `ver`, optionally formatted with stage/dev information
+	 * @param[in]	ver					Version string
+	 * @param		showStage (false)	Whether to show release stage e.g. "1.2.0 Alpha 1"
+	 * @param		showDev (false)		Whether to show dev release e.g. "1.2.0 Alpha 1 Dev 1"
+	 * @return		Display string for `ver`, optionally formatted with stage/dev information
 	 */
 	static QString rawToDisplay( const QString & ver, bool showStage = false, bool showDev = false );
 
-	/** \brief Version string for MAJ.MIN format
+	/*! Version string for MAJ.MIN format
 	 *
-	 * \param[in]	ver			Version string
-	 * \return		`ver` formatted to MAJ.MIN format, e.g. 1.2
+	 * @param[in]	ver			Version string
+	 * @return		`ver` formatted to MAJ.MIN format, e.g. 1.2
 	 */
 	static QString rawToMajMin( const QString & ver );
 
-	/** \brief Version parts for any version string
+	/*! Version parts for any version string
 	 *
-	 * \param[in]	ver			Version string
-	 * \param		parts (7)	Number of parts to return
-	 * \return		Version parts of length `parts`
+	 * @param[in]	ver			Version string
+	 * @param		parts (7)	Number of parts to return
+	 * @return		Version parts of length `parts`
 	 */
 	static QList<int> versionParts( const QString & ver, int parts = 7 );
 
-	/** \brief Pass by reference a QStringList for the version parts.
+	/*! Pass by reference a QStringList for the version parts.
 	 *
 	 *	Some examples of version strings:
 	 *
@@ -194,10 +191,10 @@ public:
 	 *		"1.3.0a",
 	 *		"1.4.0rc"
 	 *
-	 * \param[in]	ver			Version string
-	 * \param[out]	verNums		Version string encoded as a list of integers
-	 * \param		parts (3)	Number of parts to return
-	 * \return		True if valid string, false if invalid string
+	 * @param[in]	ver			Version string
+	 * @param[out]	verNums		Version string encoded as a list of integers
+	 * @param		parts (3)	Number of parts to return
+	 * @return		True if valid string, false if invalid string
 	 */
 	static bool formatVersion( const QString & ver, QList<int> & verNums, int parts = 3 );
 
@@ -224,11 +221,10 @@ protected:
 	static int numParts;
 };
 
-/** \brief QDebug operator for NifSkopeVersion
+/*! QDebug operator for NifSkopeVersion
  *
  *	Prints rawVersion, displayVersion, parts()
  *		e.g. "1.2.0a1.dev19" "1.2.0 Alpha 1" (1, 2, 0, 1, 1, 0, 19)
- *	
  */
 QDebug operator<<(QDebug dbg, const NifSkopeVersion & ver);
 
@@ -249,12 +245,7 @@ static const QHash<QString, QString> migrateTo1_2 = {
 		{ "Render Settings/Draw Collision Geometry", "Render Settings/Draw Collision Geometry" }, { "Render Settings/Draw Constraints", "Render Settings/Draw Constraints" },
 		{ "Render Settings/Draw Furniture Markers", "Render Settings/Draw Furniture Markers" }, { "Render Settings/Draw Nodes", "Render Settings/Draw Nodes" },
 		{ "Render Settings/Enable Shaders", "Render Settings/Enable Shaders" }, { "Render Settings/Foreground", "Render Settings/Foreground" },
-		{ "Render Settings/Handle Length", "Render Settings/Handle Length" }, { "Render Settings/Highlight", "Render Settings/Highlight" },
-		{ "Render Settings/Light0/Ambient", "Render Settings/Light0/Ambient" }, { "Render Settings/Light0/Declination", "Render Settings/Light0/Declination" },
-		{ "Render Settings/Light0/Diffuse", "Render Settings/Light0/Diffuse" }, { "Render Settings/Light0/Frontal", "Render Settings/Light0/Frontal" },
-		{ "Render Settings/Light0/Planar Angle", "Render Settings/Light0/Planar Angle" }, { "Render Settings/Light0/Specular", "Render Settings/Light0/Specular" },
-		{ "Render Settings/MatOver/Ambient", "Render Settings/MatOver/Ambient" }, { "Render Settings/MatOver/Diffuse", "Render Settings/MatOver/Diffuse" },
-		{ "Render Settings/MatOver/Emmissive", "Render Settings/MatOver/Emissive" }, { "Render Settings/MatOver/Specular", "Render Settings/MatOver/Specular" },
+		{ "Render Settings/Highlight", "Render Settings/Highlight" },
 		{ "Render Settings/Show Hidden Objects", "Render Settings/Show Hidden Objects" }, { "Render Settings/Show Stats", "Render Settings/Show Stats" },
 		{ "Render Settings/Texture Alternatives", "Render Settings/Texture Alternatives" }, { "Render Settings/Texture Folders", "Render Settings/Texture Folders" },
 		{ "Render Settings/Texturing", "Render Settings/Texturing" }, { "Render Settings/Up Axis", "Render Settings/Up Axis" },
@@ -273,6 +264,24 @@ static const QHash<QString, QString> migrateTo1_2 = {
 		{ "spells/Texture/Export Template/Wire Color", "Spells/Texture/Export Template/Wire Color" },
 		{ "spells/Texture/Export Template/Wrap Mode", "Spells/Texture/Export Template/Wrap Mode" },
 		{ "version", "Version" }
+};
+
+static const QHash<QString, QString> migrateTo2_0 = {
+		{ "Export Settings/Export Culling", "Export Settings/Export Culling" },
+		{ "File/Recent File List", "File/Recent File List" },
+		{ "File/Auto Sanitize", "File/Auto Sanitize" },
+		{ "File/Last Load", "File/Last Load" }, { "File/Last Save", "File/Last Save" },
+		{ "FSEngine/Archives", "FSEngine/Archives" },
+		{ "Render Settings/Anti Aliasing", "Render Settings/Anti Aliasing" },
+		{ "Render Settings/Texturing", "Render Settings/Texturing" }, 
+		{ "Render Settings/Enable Shaders", "Render Settings/Enable Shaders" },
+		{ "Render Settings/Background", "Render Settings/Background" },
+		{ "Render Settings/Foreground", "Render Settings/Foreground" },
+		{ "Render Settings/Highlight", "Render Settings/Highlight" },
+		{ "Render Settings/Texture Alternatives", "Render Settings/Texture Alternatives" },
+		{ "Render Settings/Texture Folders", "Render Settings/Texture Folders" },
+		{ "Render Settings/Up Axis", "Render Settings/Up Axis" },
+		{ "Settings/Language", "Settings/Language" }, { "Settings/Startup Version", "Settings/Startup Version" },
 };
 
 

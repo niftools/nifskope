@@ -39,6 +39,7 @@ NifSkope.exe
 # VC Project
 *.cd
 *.filters
+*.psess
 *.sln
 *.sln.docstates
 *.suo
@@ -46,16 +47,23 @@ NifSkope.exe
 *.vcxproj.user
 *.vcproj
 *.vcproj.user
+*.vsp
 *.vspscc
 *.vssscc
+*.vspx
+
 
 # VC Cache
+.vs/
 ipch/
 *.aps
 *.cachefile
 *.ncb
+*.opendb
 *.opensdf
 *.sdf
+*.VC.db
+*.VC.VC.opendb
 
 # VC Debug
 vc100.pdb

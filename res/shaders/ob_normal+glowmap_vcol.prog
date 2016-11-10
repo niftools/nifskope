@@ -14,12 +14,6 @@ checkgroup begin or
 checkgroup end
 
 checkgroup begin or
-	# Skyrim
-	checkgroup begin and
-		check BSLightingShaderProperty/Skyrim Shader Type == 2
-		check NiTriBasedGeomData/Has Vertex Colors == 1
-	checkgroup end
-
 	checkgroup begin
 		check NiTriBasedGeomData/Has Vertex Colors == 0
 		check NiVertexColorProperty/Vertex Mode == 1

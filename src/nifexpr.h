@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,12 +39,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 
 
+//! @file nifexpr.h Expression
+
 class Expression final
 {
 	enum Operator
 	{
 		e_nop, e_not_eq, e_eq, e_gte, e_lte, e_gt, e_lt, e_bit_and, e_bit_or,
-		e_add, e_sub, e_bool_and, e_bool_or, e_not,
+		e_add, e_sub, e_div, e_mul, e_bool_and, e_bool_or, e_not,
 	};
 	QVariant lhs;
 	QVariant rhs;
@@ -101,6 +103,10 @@ public:
 			return QVariant::fromValue( l.toUInt() + r.toUInt() );
 		case Expression::e_sub:
 			return QVariant::fromValue( l.toUInt() - r.toUInt() );
+		case Expression::e_div:
+			return QVariant::fromValue( l.toUInt() / r.toUInt() );
+		case Expression::e_mul:
+			return QVariant::fromValue( l.toUInt() * r.toUInt() );
 		case Expression::e_bool_and:
 			return QVariant::fromValue( l.toBool() && r.toBool() );
 		case Expression::e_bool_or:

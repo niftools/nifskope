@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -54,11 +54,6 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 	QVBoxLayout * layout = new QVBoxLayout();
 	setLayout( layout );
 	layouts.push( layout );
-
-	QModelIndex iName = nif->getIndex( iBlock, "Name" );
-
-	if ( iName.isValid() )
-		add( new NifLineEdit( nif, iName ) );
 
 	timer = new QTimer( this );
 	connect( timer, &QTimer::timeout, this, &NifBlockEditor::updateData );
@@ -183,7 +178,7 @@ QLayout * NifEditBox::getLayout()
 	return lay;
 }
 
-void NifEditBox::applyData()
+void NifEditBox::sltApplyData()
 {
 	if ( nif && index.isValid() ) {
 		applyData( nif );
@@ -196,8 +191,7 @@ NifFloatSlider::NifFloatSlider( NifModel * nif, const QModelIndex & index, float
 {
 	getLayout()->addWidget( slider = new FloatSlider( Qt::Horizontal, true, false ) );
 	slider->setRange( min, max );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( slider, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
+	connect( slider, &FloatSlider::valueChanged, this, &NifFloatSlider::sltApplyData );
 }
 
 void NifFloatSlider::updateData( NifModel * nif )
@@ -216,8 +210,10 @@ NifFloatEdit::NifFloatEdit( NifModel * nif, const QModelIndex & index, float min
 	getLayout()->addWidget( spinbox = new QDoubleSpinBox() );
 	spinbox->setRange( min, max );
 	spinbox->setDecimals( 4 );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( spinbox, SIGNAL( valueChanged( double ) ), this, SLOT( applyData() ) );
+	// Cast QDoubleSpinBox slot
+	auto dsbValueChanged = static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged);
+
+	connect( spinbox, dsbValueChanged, this, &NifFloatEdit::sltApplyData );
 }
 
 void NifFloatEdit::updateData( NifModel * nif )
@@ -234,8 +230,7 @@ NifLineEdit::NifLineEdit( NifModel * nif, const QModelIndex & index )
 	: NifEditBox( nif, index )
 {
 	getLayout()->addWidget( line = new QLineEdit() );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( line, SIGNAL( textEdited( const QString & ) ), this, SLOT( applyData() ) );
+	connect( line, &QLineEdit::textEdited, this, &NifLineEdit::sltApplyData );
 }
 
 void NifLineEdit::updateData( NifModel * nif )
@@ -254,13 +249,12 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 {
 	getLayout()->addWidget( color = new ColorWheel() );
 	color->setSizeHint( QSize( 140, 140 ) );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( color, SIGNAL( sigColor( const QColor & ) ), this, SLOT( applyData() ) );
+	connect( color, &ColorWheel::sigColor, this, &NifColorEdit::sltApplyData );
 
-	if ( nif->getValue( index ).type() == NifValue::tColor4 ) {
+	auto typ = nif->getValue( index ).type();
+	if ( typ == NifValue::tColor4 || typ == NifValue::tByteColor4 ) {
 		getLayout()->addWidget( alpha = new AlphaSlider() );
-		// TODO: Can't seem to figure out correct cast for new signal syntax
-		connect( alpha, SIGNAL( valueChanged( float ) ), this, SLOT( applyData() ) );
+		connect( alpha, &AlphaSlider::valueChanged, this, &NifColorEdit::sltApplyData );
 	} else {
 		alpha = nullptr;
 	}
@@ -294,8 +288,7 @@ NifVectorEdit::NifVectorEdit( NifModel * nif, const QModelIndex & index )
 	: NifEditBox( nif, index )
 {
 	getLayout()->addWidget( vector = new VectorEdit() );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( vector, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	connect( vector, &VectorEdit::sigEdited, this, &NifVectorEdit::sltApplyData );
 }
 
 void NifVectorEdit::updateData( NifModel * nif )
@@ -322,8 +315,7 @@ NifRotationEdit::NifRotationEdit( NifModel * nif, const QModelIndex & index )
 	: NifEditBox( nif, index )
 {
 	getLayout()->addWidget( rotation = new RotationEdit() );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	connect( rotation, &RotationEdit::sigEdited, this, &NifRotationEdit::sltApplyData );
 }
 
 void NifRotationEdit::updateData( NifModel * nif )
@@ -357,24 +349,21 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 	group->setTitle( tr( "Translation" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( translation = new VectorEdit() );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( translation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	connect( translation, &VectorEdit::sigEdited, this, &NifMatrix4Edit::sltApplyData );
 
 	group = new QGroupBox;
 	vbox->addWidget( group );
 	group->setTitle( tr( "Rotation" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( rotation = new RotationEdit() );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( rotation, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	connect( rotation, &RotationEdit::sigEdited, this, &NifMatrix4Edit::sltApplyData );
 
 	group = new QGroupBox;
 	vbox->addWidget( group );
 	group->setTitle( tr( "Scale" ) );
 	group->setLayout( new QHBoxLayout );
 	group->layout()->addWidget( scale = new VectorEdit() );
-	// TODO: Can't seem to figure out correct cast for new signal syntax
-	connect( scale, SIGNAL( sigEdited() ), this, SLOT( applyData() ) );
+	connect( scale, &VectorEdit::sigEdited, this, &NifMatrix4Edit::sltApplyData );
 }
 
 void NifMatrix4Edit::updateData( NifModel * nif )

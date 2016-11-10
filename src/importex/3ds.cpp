@@ -1,3 +1,10 @@
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
+
+
 #include "3ds.h"
 
 #include "nvtristripwrapper.h"
@@ -252,28 +259,28 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	QFile fobj( fname );
 
 	if ( !fobj.open( QIODevice::ReadOnly ) ) {
-		qWarning() << tr( "Could not open %1 for read access" ).arg( fobj.fileName() );
+		qCCritical( nsIo ) << tr( "Failed to read %1" ).arg( fobj.fileName() );
 		return;
 	}
 
 	Chunk * FileChunk = Chunk::LoadFile( &fobj );
 
 	if ( !FileChunk ) {
-		qWarning() << tr( "Could not get 3ds data" );
+		qCCritical( nsIo ) << tr( "Could not get 3ds data" );
 		return;
 	}
 
 	Chunk * Model = FileChunk->getChild( M3DMAGIC );
 
 	if ( !Model ) {
-		qWarning() << tr( "Could not get 3ds model" );
+		qCCritical( nsIo ) << tr( "Could not get 3ds model" );
 		return;
 	}
 
 	Chunk * ModelData = Model->getChild( MDATA );
 
 	if ( !ModelData ) {
-		qWarning() << tr( "Could not get 3ds model data" );
+		qCCritical( nsIo ) << tr( "Could not get 3ds model data" );
 		return;
 	}
 
@@ -590,7 +597,8 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 
 		for ( int i = 0; i < mesh->matfaces.size(); i++ ) {
 			if ( !ObjMaterials.contains( mesh->matfaces[i].matName ) ) {
-				qWarning() << tr( "Material '%1' not found in list!" ).arg( mesh->matfaces[i].matName );
+				Message::append( tr( "Warnings were generated during 3ds import." ),
+					tr( "Material '%1' not found in list." ).arg( mesh->matfaces[i].matName ) );
 			}
 
 			objMaterial * mat = &ObjMaterials[mesh->matfaces[i].matName];
@@ -751,3 +759,7 @@ void import3ds( NifModel * nif, const QModelIndex & index )
 	nif->reset();
 	return;
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

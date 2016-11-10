@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltools.h"
 
+#include <stack>
+#include <map>
+#include <algorithm>
+#include <functional>
+
+#include <QMap>
+#include <QStack>
+#include <QVector>
+
 #include "nifmodel.h"
 
 
@@ -40,8 +49,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt )
 {
 	trans  = Transform( nif, index );
-	center = nif->get<Vector3>( index, "Center" );
-	radius = nif->get<float>( index, "Radius" );
+	auto sph = BoundSphere( nif, index );
+	center = sph.center;
+	radius = sph.radius;
 	bone = b;
 
 	QModelIndex idxWeights = nif->getIndex( index, "Vertex Weights" );
@@ -58,6 +68,14 @@ BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b
 	}
 
 
+}
+
+void BoneWeights::setTransform( const NifModel * nif, const QModelIndex & index )
+{
+	trans = Transform( nif, index );
+	auto sph = BoundSphere( nif, index );
+	center = sph.center;
+	radius = sph.radius;
 }
 
 
@@ -119,6 +137,17 @@ BoundSphere::BoundSphere( const Vector3 & c, float r )
 BoundSphere::BoundSphere( const BoundSphere & other )
 {
 	operator=( other );
+}
+
+BoundSphere::BoundSphere( const NifModel * nif, const QModelIndex & index )
+{
+	auto idx = index;
+	auto sph = nif->getIndex( idx, "Bounding Sphere" );
+	if ( sph.isValid() )
+		idx = sph;
+
+	center = nif->get<Vector3>( idx, "Center" );
+	radius = nif->get<float>( idx, "Radius" );
 }
 
 BoundSphere::BoundSphere( const QVector<Vector3> & verts )
@@ -251,6 +280,94 @@ void drawAxes( Vector3 c, float axis )
 	glPopMatrix();
 }
 
+QVector<int> sortAxes( QVector<float> axesDots )
+{
+	QVector<float> dotsSorted = axesDots;
+	std::stable_sort( dotsSorted.begin(), dotsSorted.end() );
+
+	// Retrieve position of X, Y, Z axes in sorted list
+	auto x = axesDots.indexOf( dotsSorted[0] );
+	auto y = axesDots.indexOf( dotsSorted[1] );
+	auto z = axesDots.indexOf( dotsSorted[2] );
+
+	// When z == 1.0, x and y both == 0
+	if ( axesDots[2] == 1.0 ) {
+		x = 0;
+		y = 1;
+	}
+
+	return{ x, y, z };
+}
+
+void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder )
+{
+	glPushMatrix();
+	glTranslate( c );
+	GLfloat arrow = axis / 36.0;
+
+	glDisable( GL_LIGHTING );
+	glDepthFunc( GL_ALWAYS );
+	glLineWidth( 2.0f );
+	glBegin( GL_LINES );
+
+	// Render the X axis
+	std::function<void()> xAxis = [axis, arrow]() {
+		glColor3f( 1.0, 0.0, 0.0 );
+		glVertex3f( 0, 0, 0 );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, +arrow, +arrow );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, -arrow, +arrow );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, +arrow, -arrow );
+		glVertex3f( +axis, 0, 0 );
+		glVertex3f( +axis - 3 * arrow, -arrow, -arrow );
+	};
+
+	// Render the Y axis
+	std::function<void()> yAxis = [axis, arrow]() {
+		glColor3f( 0.0, 1.0, 0.0 );
+		glVertex3f( 0, 0, 0 );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( +arrow, +axis - 3 * arrow, +arrow );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( -arrow, +axis - 3 * arrow, +arrow );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( +arrow, +axis - 3 * arrow, -arrow );
+		glVertex3f( 0, +axis, 0 );
+		glVertex3f( -arrow, +axis - 3 * arrow, -arrow );
+	};
+
+	// Render the Z axis
+	std::function<void()> zAxis = [axis, arrow]() {
+		glColor3f( 0.0, 0.0, 1.0 );
+		glVertex3f( 0, 0, 0 );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( +arrow, +arrow, +axis - 3 * arrow );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( -arrow, +arrow, +axis - 3 * arrow );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( +arrow, -arrow, +axis - 3 * arrow );
+		glVertex3f( 0, 0, +axis );
+		glVertex3f( -arrow, -arrow, +axis - 3 * arrow );
+	};
+
+	// List of the lambdas
+	QVector<std::function<void()>> axes = { xAxis, yAxis, zAxis };
+
+	// Render the axes in the given order
+	//	e.g. {2, 1, 0} = zAxis(); yAxis(); xAxis();
+	for ( auto i : axesOrder ) {
+		axes[i]();
+	}
+
+	glEnd();
+	glPopMatrix();
+}
+
 void drawBox( Vector3 a, Vector3 b )
 {
 	glBegin( GL_LINE_STRIP );
@@ -277,6 +394,35 @@ void drawBox( Vector3 a, Vector3 b )
 	glVertex3f( a[0], a[1], b[2] );
 	glVertex3f( b[0], a[1], b[2] );
 	glEnd();
+}
+
+void drawGrid( int s /* grid size */, int line /* line spacing */, int sub /* # subdivisions */ )
+{
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	glLineWidth( 1.0f );
+	glColor4f( 1.0f, 1.0f, 1.0f, 0.2f );
+
+	glBegin( GL_LINES );
+	for ( int i = -s; i <= s; i += line ) {
+		glVertex3f( i, -s, 0.0f );
+		glVertex3f( i, s, 0.0f );
+		glVertex3f( -s, i, 0.0f );
+		glVertex3f( s, i, 0.0f );
+	}
+	glEnd();
+
+	glColor4f( 1.0f, 1.0f, 1.0f, 0.1f );
+	glLineWidth( 0.25f );
+	glBegin( GL_LINES );
+	for ( int i = -s; i <= s; i += line/sub ) {
+		glVertex3f( i, -s, 0.0f );
+		glVertex3f( i, s, 0.0f );
+		glVertex3f( -s, i, 0.0f );
+		glVertex3f( s, i, 0.0f );
+	}
+	glEnd();
+	glDisable( GL_BLEND );
 }
 
 void drawCircle( Vector3 c, Vector3 n, float r, int sd )
@@ -480,6 +626,13 @@ void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float a
 		glEnable( GL_CULL_FACE );
 }
 
+void drawSphereSimple( Vector3 c, float r, int sd )
+{
+	drawCircle( c, Vector3( 0, 0, 1 ), r, sd );
+	drawCircle( c, Vector3( 0, 1, 0 ), r, sd );
+	drawCircle( c, Vector3( 1, 0, 0 ), r, sd );
+}
+
 void drawSphere( Vector3 c, float r, int sd )
 {
 	for ( int j = -sd; j <= sd; j++ ) {
@@ -588,30 +741,258 @@ void drawDashLine( Vector3 a, Vector3 b, int sd )
 	glEnd();
 }
 
-void drawConvexHull( QVector<Vector4> vertices, QVector<Vector4> normals, float scale )
+//! Find the dot product of two vectors
+static float dotproduct( const Vector3 & v1, const Vector3 & v2 )
 {
-	glBegin( GL_LINES );
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+//! Find the cross product of two vectors
+static Vector3 crossproduct( const Vector3 & a, const Vector3 & b )
+{
+	return Vector3( a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0] );
+}
 
-	for ( int i = 1; i < vertices.count(); i++ ) {
-		for ( int j = 0; j < i; j++ ) {
-			glVertex( vertices[i] * scale );
-			glVertex( vertices[j] * scale );
+//! Generate triangles for convex hull
+static QVector<Vector3> generateTris( const NifModel * nif, const QModelIndex & iShape, float scale )
+{
+	QVector<Vector4> vertices = nif->getArray<Vector4>( iShape, "Vertices" );
+	//QVector<Vector4> normals = nif->getArray<Vector4>( iShape, "Normals" );
+
+	if ( vertices.isEmpty() )
+		return QVector<Vector3>();
+
+	Vector3 A, B, C, N, V;
+	float D;
+	int L, prev, eps;
+	bool good;
+
+	L = vertices.count();
+	QVector<Vector3> P( L );
+	QVector<Vector3> tris;
+
+	// Convert Vector4 to Vector3
+	for ( int v = 0; v < L; v++ ) {
+		P[v] = Vector3( vertices[v] );
+	}
+
+	for ( int i = 0; i < L - 2; i++ ) {
+		A = P[i];
+
+		for ( int j = i + 1; j < L - 1; j++ ) {
+			B = P[j];
+
+			for ( int k = j + 1; k < L; k++ ) {
+				C = P[k];
+
+				prev = 0;
+				good = true;
+
+				N = crossproduct( (B - A), (C - A) );
+
+				for ( int p = 0; p < L; p++ ) {
+					V = P[p];
+
+					if ( (V == A) || (V == B) || (V == C) ) continue;
+
+					D = dotproduct( (V - A), N );
+
+					if ( D == 0 ) continue;
+
+					eps = (D > 0) ? 1 : -1;
+
+					if ( eps + prev == 0 ) {
+						good = false;
+						continue;
+					}
+
+					prev = eps;
+				}
+
+				if ( good ) {
+					// Append ABC
+					tris << (A*scale) << (B*scale) << (C*scale);
+				}
+			}
 		}
 	}
 
-	/*
-	Vector3 c;
-	foreach ( Vector4 v, vertices )
-	    c += Vector3( v );
-	if ( vertices.count() )
-	    c /= vertices.count();
-	foreach ( Vector4 n, normals )
-	{
-	    glVertex( c + Vector3( n ) * ( n[3] ) );
-	    glVertex( c + Vector3( n ) * ( - 1 + n[3] ) );
+	return tris;
+}
+
+void drawConvexHull( const NifModel * nif, const QModelIndex & iShape, float scale, bool solid )
+{
+	static QMap<QModelIndex, QVector<Vector3>> shapes;
+	QVector<Vector3> shape;
+
+	shape = shapes[iShape];
+
+	if ( shape.empty() ) {
+		shape = generateTris( nif, iShape, scale );
+		shapes[iShape] = shape;
 	}
-	*/
+
+	glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+	glDisable( GL_CULL_FACE );
+	glBegin( GL_TRIANGLES );
+
+	for ( int i = 0; i < shape.count(); i += 3 ) {
+		// DRAW ABC
+		glVertex( shape[i] );
+		glVertex( shape[i+1] );
+		glVertex( shape[i+2] );
+	}
+
 	glEnd();
+	glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+	glEnable( GL_CULL_FACE );
+}
+
+void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid )
+{
+	QModelIndex iStrips = nif->getIndex( iShape, "Strips Data" );
+	for ( int r = 0; r < nif->rowCount( iStrips ); r++ ) {
+		QModelIndex iStripData = nif->getBlock( nif->getLink( iStrips.child( r, 0 ) ), "NiTriStripsData" );
+		if ( iStripData.isValid() ) {
+			QVector<Vector3> verts = nif->getArray<Vector3>( iStripData, "Vertices" );
+
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+			glDisable( GL_CULL_FACE );
+			glBegin( GL_TRIANGLES );
+
+			QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
+			for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {	// draw the strips like they appear in the tescs
+				// (use the unstich strips spell to avoid the spider web effect)
+				QVector<quint16> strip = nif->getArray<quint16>( iPoints.child( r, 0 ) );
+				if ( strip.count() >= 3 ) {
+					quint16 a = strip[0];
+					quint16 b = strip[1];
+
+					for ( int x = 2; x < strip.size(); x++ ) {
+						quint16 c = strip[x];
+						glVertex( verts.value( a ) );
+						glVertex( verts.value( b ) );
+						glVertex( verts.value( c ) );
+						a = b;
+						b = c;
+					}
+				}
+			}
+
+			glEnd();
+			glEnable( GL_CULL_FACE );
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+		}
+	}
+}
+
+void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
+{
+	// Scale up for Skyrim
+	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
+
+	//QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
+	//Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
+
+	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	if ( iData.isValid() ) {
+		QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
+		QModelIndex iBigTris = nif->getIndex( iData, "Big Tris" );
+		QModelIndex iChunkTrans = nif->getIndex( iData, "Chunk Transforms" );
+
+		QVector<Vector4> verts = nif->getArray<Vector4>( iBigVerts );
+
+		glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+		glDisable( GL_CULL_FACE );
+
+		for ( int r = 0; r < nif->rowCount( iBigTris ); r++ ) {
+			quint16 a = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 1" );
+			quint16 b = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 2" );
+			quint16 c = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 3" );
+
+			glBegin( GL_TRIANGLES );
+
+			glVertex( verts[a] * havokScale );
+			glVertex( verts[b] * havokScale );
+			glVertex( verts[c] * havokScale );
+
+			glEnd();
+		}
+
+		glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+		glEnable( GL_CULL_FACE );
+
+		QModelIndex iChunks = nif->getIndex( iData, "Chunks" );
+		for ( int r = 0; r < nif->rowCount( iChunks ); r++ ) {
+			Vector4 chunkOrigin = nif->get<Vector4>( iChunks.child( r, 0 ), "Translation" );
+
+			quint32 transformIndex = nif->get<quint32>( iChunks.child( r, 0 ), "Transform Index" );
+			QModelIndex chunkTransform = iChunkTrans.child( transformIndex, 0 );
+			Vector4 chunkTranslation = nif->get<Vector4>( chunkTransform.child( 0, 0 ) );
+			Quat chunkRotation = nif->get<Quat>( chunkTransform.child( 1, 0 ) );
+
+			quint32 numOffsets = nif->get<quint32>( iChunks.child( r, 0 ), "Num Vertices" );
+			quint32 numIndices = nif->get<quint32>( iChunks.child( r, 0 ), "Num Indices" );
+			quint32 numStrips = nif->get<quint32>( iChunks.child( r, 0 ), "Num Strips" );
+			QVector<quint16> offsets = nif->getArray<quint16>( iChunks.child( r, 0 ), "Vertices" );
+			QVector<quint16> indices = nif->getArray<quint16>( iChunks.child( r, 0 ), "Indices" );
+			QVector<quint16> strips = nif->getArray<quint16>( iChunks.child( r, 0 ), "Strips" );
+
+			QVector<Vector4> vertices( numOffsets / 3 );
+
+			int numStripVerts = 0;
+			int offset = 0;
+
+			for ( int v = 0; v < (int)numStrips; v++ ) {
+				numStripVerts += strips[v];
+			}
+
+			for ( int n = 0; n < ((int)numOffsets / 3); n++ ) {
+				vertices[n] = chunkOrigin + chunkTranslation + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
+				vertices[n] *= havokScale;
+			}
+
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );
+			glDisable( GL_CULL_FACE );
+
+			Transform trans;
+			trans.rotation.fromQuat( chunkRotation );
+
+			// Stripped tris
+			for ( int s = 0; s < (int)numStrips; s++ ) {
+
+				for ( int idx = 0; idx < strips[s] - 2; idx++ ) {
+
+					glBegin( GL_TRIANGLES );
+
+					glVertex( trans.rotation * Vector3( vertices[indices[offset + idx]] ) );
+					glVertex( trans.rotation * Vector3( vertices[indices[offset + idx + 1]] ) );
+					glVertex( trans.rotation * Vector3( vertices[indices[offset + idx + 2]] ) );
+
+					glEnd();
+
+				}
+
+				offset += strips[s];
+
+			}
+
+			// Non-stripped tris
+			for ( int f = 0; f < (int)(numIndices - offset); f += 3 ) {
+				glBegin( GL_TRIANGLES );
+
+				glVertex( trans.rotation * Vector3( vertices[indices[offset + f]] ) );
+				glVertex( trans.rotation * Vector3( vertices[indices[offset + f + 1]] ) );
+				glVertex( trans.rotation * Vector3( vertices[indices[offset + f + 2]] ) );
+
+				glEnd();
+
+			}
+
+			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_LINE : GL_FILL );
+			glEnable( GL_CULL_FACE );
+
+		}
+	}
 }
 
 // Renders text using the font initialized in the primary view class

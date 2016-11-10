@@ -283,7 +283,7 @@ public:
 
 REGISTER_SPELL( spPasteTransformation )
 
-QIcon * transform_xpm_icon = 0;
+static QIconPtr transform_xpm_icon = nullptr;
 
 class spEditTransformation final : public Spell
 {
@@ -294,7 +294,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !transform_xpm_icon )
-			transform_xpm_icon = new QIcon( QPixmap( transform_xpm ) );
+			transform_xpm_icon = QIconPtr( new QIcon(QPixmap( transform_xpm )) );
 
 		return *transform_xpm_icon;
 	}

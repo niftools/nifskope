@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,15 +31,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
-#include "options.h"
 
-#include "glcontroller.h" // Inherited
+#include "controllers.h"
 #include "glscene.h"
+#include "material.h"
 
 #include <QOpenGLContext>
 
 
-//! \file glproperty.cpp Property, subclasses and controllers
+//! @file glproperty.cpp Encapsulation of NiProperty blocks defined in nif.xml
 
 //! Helper function that checks texture sets
 bool checkSet( int s, const QList<QVector<Vector2> > & texcoords )
@@ -70,11 +70,13 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 	} else if ( nif->isNiBlock( index, "NiStencilProperty" ) ) {
 		property = new StencilProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSLightingShaderProperty" ) ) {
-		property = new BSShaderLightingProperty( scene, index );
+		property = new BSLightingShaderProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSEffectShaderProperty" ) ) {
-		property = new BSShaderLightingProperty( scene, index );
+		property = new BSEffectShaderProperty( scene, index );
+	} else if ( nif->isNiBlock( index, "BSWaterShaderProperty" ) ) {
+		property = new BSWaterShaderProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderNoLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
@@ -83,9 +85,9 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 		NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 
 		if ( item )
-			qWarning() << "Unknown property: " << item->name();
+			qCWarning( nsNif ) << tr( "Unknown property: %1" ).arg( item->name() );
 		else
-			qWarning() << "Unknown property: I can't determine its name";
+			qCWarning( nsNif ) << tr( "Unknown property: I can't determine its name" );
 	}
 
 	if ( property )
@@ -150,7 +152,7 @@ void PropertyList::del( Property * p )
 
 	QHash<Property::Type, Property *>::iterator i = properties.find( p->type() );
 
-	while ( i != properties.end() && i.key() == p->type() ) {
+	while ( p && i != properties.end() && i.key() == p->type() ) {
 		if ( i.value() == p ) {
 			i = properties.erase( i );
 
@@ -222,27 +224,43 @@ void AlphaProperty::update( const NifModel * nif, const QModelIndex & block )
 		alphaThreshold = nif->get<int>( iBlock, "Threshold" ) / 255.0;
 
 		alphaSort = ( flags & 0x2000 ) == 0;
+
+		// Temporary Weapon Blood fix for FO4
+		if ( nif->getUserVersion2() == 130 )
+			alphaTest |= (flags == 20547);
 	}
+}
+
+void AlphaProperty::setController( const NifModel * nif, const QModelIndex & controller )
+{
+	if ( nif->itemName( controller ) == "BSNiAlphaPropertyTestRefController" ) {
+		Controller * ctrl = new AlphaController( this, controller );
+		ctrl->update( nif, controller );
+		controllers.append( ctrl );
+	}
+}
+
+void AlphaProperty::setThreshold( float threshold )
+{
+	alphaThreshold = threshold;
 }
 
 void glProperty( AlphaProperty * p )
 {
-	if ( p && p->alphaBlend && Options::blending() ) {
+	if ( p && p->alphaBlend && (p->scene->options & Scene::DoBlending) ) {
+		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_BLEND );
 		glBlendFunc( p->alphaSrc, p->alphaDst );
 	} else {
 		glDisable( GL_BLEND );
 	}
 
-	if ( p && p->alphaTest && Options::blending() ) {
-		//glEnable( GL_POLYGON_OFFSET_FILL );
-		//glPolygonOffset( -1.0f, -1.0f );
+	if ( p && p->alphaTest && (p->scene->options & Scene::DoBlending) ) {
 		glDisable( GL_POLYGON_OFFSET_FILL );
 		glEnable( GL_ALPHA_TEST );
 		glAlphaFunc( p->alphaFunc, p->alphaThreshold );
 	} else {
 		glDisable( GL_ALPHA_TEST );
-		//glDisable( GL_POLYGON_OFFSET_FILL );
 	}
 }
 
@@ -466,134 +484,6 @@ int TexturingProperty::coordSet( int id ) const
 	return -1;
 }
 
-//! Controller for source textures in a TexturingProperty
-class TexFlipController final : public Controller
-{
-public:
-	TexFlipController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 )
-	{
-	}
-
-	TexFlipController( TextureProperty * prop, const QModelIndex & index )
-		: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		const NifModel * nif = static_cast<const NifModel *>( iSources.model() );
-
-		if ( !( (target || oldTarget) && active && iSources.isValid() && nif ) )
-			return;
-
-		float r = 0;
-
-		if ( iData.isValid() )
-			interpolate( r, iData, "Data", ctrlTime( time ), flipLast );
-		else if ( flipDelta > 0 )
-			r = ctrlTime( time ) / flipDelta;
-
-		// TexturingProperty
-		if ( target ) {
-			target->textures[flipSlot & 7 ].iSource = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiSourceTexture" );
-		} else if ( oldTarget ) {
-			oldTarget->iImage = nif->getBlock( nif->getLink( iSources.child( (int)r, 0 ) ), "NiImage" );
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			flipDelta = nif->get<float>( iBlock, "Delta" );
-			flipSlot  = nif->get<int>( iBlock, "Texture Slot" );
-
-			if ( nif->checkVersion( 0x04000000, 0 ) ) {
-				iSources = nif->getIndex( iBlock, "Sources" );
-			} else {
-				iSources = nif->getIndex( iBlock, "Images" );
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<TexturingProperty> target;
-	QPointer<TextureProperty> oldTarget;
-
-	float flipDelta;
-	int flipSlot;
-
-	int flipLast;
-
-	QPersistentModelIndex iSources;
-};
-
-//! Controller for transformations in a TexturingProperty
-class TexTransController final : public Controller
-{
-public:
-	TexTransController( TexturingProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		if ( !( target && active ) )
-			return;
-
-		TexturingProperty::TexDesc * tex = &target->textures[ texSlot & 7 ];
-
-		float val;
-
-		if ( interpolate( val, iData, "Data", ctrlTime( time ), lX ) ) {
-			// If desired, we could force display even if texture transform was disabled:
-			// tex->hasTransform = true;
-			// however "Has Texture Transform" doesn't exist until 10.1.0.0, and neither does
-			// NiTextureTransformController - so we won't bother
-			switch ( texOP ) {
-			case 0:
-				tex->translation[0] = val;
-				break;
-			case 1:
-				tex->translation[1] = val;
-				break;
-			case 2:
-				tex->rotation = val;
-				break;
-			case 3:
-				tex->tiling[0] = val;
-				break;
-			case 4:
-				tex->tiling[1] = val;
-				break;
-			}
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			texSlot = nif->get<int>( iBlock, "Texture Slot" );
-			texOP = nif->get<int>( iBlock, "Operation" );
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<TexturingProperty> target;
-
-	int texSlot;
-	int texOP;
-
-	int lX;
-};
 
 //! Set the appropriate Controller
 void TexturingProperty::setController( const NifModel * nif, const QModelIndex & iController )
@@ -629,7 +519,7 @@ int TexturingProperty::getId( const QString & texname )
 
 void glProperty( TexturingProperty * p )
 {
-	if ( p && Options::texturing() && p->bind( 0 ) ) {
+	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -699,7 +589,7 @@ void TextureProperty::setController( const NifModel * nif, const QModelIndex & i
 
 void glProperty( TextureProperty * p )
 {
-	if ( p && Options::texturing() && p->bind() ) {
+	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind() ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -728,119 +618,7 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 
 		shininess = nif->get<float>( index, "Glossiness" );
 	}
-
-	// special case to force refresh of materials
-	bool overrideMaterials = Options::overrideMaterials();
-
-	if ( overridden && !overrideMaterials && iBlock.isValid() ) {
-		ambient  = Color4( nif->get<Color3>( iBlock, "Ambient Color" ) );
-		diffuse  = Color4( nif->get<Color3>( iBlock, "Diffuse Color" ) );
-		specular = Color4( nif->get<Color3>( iBlock, "Specular Color" ) );
-		emissive = Color4( nif->get<Color3>( iBlock, "Emissive Color" ) );
-	} else if ( overrideMaterials ) {
-		ambient  = Color4( Options::overrideAmbient() );
-		diffuse  = Color4( Options::overrideDiffuse() );
-		specular = Color4( Options::overrideSpecular() );
-		emissive = Color4( Options::overrideEmissive() );
-	}
-
-	overridden = overrideMaterials;
 }
-
-//! Controller for alpha values in a MaterialProperty
-class AlphaController final : public Controller
-{
-public:
-	AlphaController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lAlpha( 0 )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		interpolate( target->alpha, iData, "Data", ctrlTime( time ), lAlpha );
-
-		if ( target->alpha < 0 )
-			target->alpha = 0;
-
-		if ( target->alpha > 1 )
-			target->alpha = 1;
-	}
-
-protected:
-	QPointer<MaterialProperty> target;
-
-	int lAlpha;
-};
-
-//! Controller for color values in a MaterialProperty
-class MaterialColorController final : public Controller
-{
-public:
-	MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
-		: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
-	{
-	}
-
-	void update( float time ) override final
-	{
-		if ( !( active && target ) )
-			return;
-
-		Vector3 v3;
-		interpolate( v3, iData, "Data", ctrlTime( time ), lColor );
-
-		Color4 color( Color3( v3 ), 1.0 );
-
-		switch ( tColor ) {
-		case tAmbient:
-			target->ambient = color;
-			break;
-		case tDiffuse:
-			target->diffuse = color;
-			break;
-		case tSpecular:
-			target->specular = color;
-			break;
-		case tSelfIllum:
-			target->emissive = color;
-			break;
-		}
-	}
-
-	bool update( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( Controller::update( nif, index ) ) {
-			if ( nif->checkVersion( 0x0A010000, 0 ) ) {
-				tColor = nif->get<int>( iBlock, "Target Color" );
-			} else {
-				tColor = ( ( nif->get<int>( iBlock, "Flags" ) >> 4 ) & 7 );
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-protected:
-	QPointer<MaterialProperty> target; //!< The MaterialProperty being controlled
-
-	int lColor;                        //!< Last interpolation time
-	int tColor;                        //!< The color slot being controlled
-
-	//! Color slots that can be controlled
-	enum
-	{
-		tAmbient   = 0,
-		tDiffuse   = 1,
-		tSpecular  = 2,
-		tSelfIllum = 3
-	};
-};
 
 void MaterialProperty::setController( const NifModel * nif, const QModelIndex & iController )
 {
@@ -854,6 +632,7 @@ void MaterialProperty::setController( const NifModel * nif, const QModelIndex & 
 		controllers.append( ctrl );
 	}
 }
+
 
 void glProperty( MaterialProperty * p, SpecularProperty * s )
 {
@@ -1037,17 +816,19 @@ void BSShaderLightingProperty::update( const NifModel * nif, const QModelIndex &
 		// handle niobject name="BSEffectShaderProperty...
 		if ( !iTextureSet.isValid() )
 			iSourceTexture = iBlock;
+
+		iWetMaterial = nif->getIndex( iBlock, "Wet Material" );
 	}
 }
 
 void glProperty( BSShaderLightingProperty * p )
 {
-	if ( p && Options::texturing() && p->bind( 0 ) ) {
+	if ( p && (p->scene->options & Scene::DoTexturing) && p->bind( 0 ) ) {
 		glEnable( GL_TEXTURE_2D );
 	}
 }
 
-bool BSShaderLightingProperty::bind( int id, const QString & fname )
+bool BSShaderLightingProperty::bind( int id, const QString & fname, TexClampMode mode )
 {
 	GLuint mipmaps = 0;
 
@@ -1059,8 +840,32 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname )
 	if ( mipmaps == 0 )
 		return false;
 
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+
+	switch ( mode )
+	{
+	case TexClampMode::CLAMP_S_CLAMP_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+		break;
+	case TexClampMode::CLAMP_S_WRAP_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+		break;
+	case TexClampMode::WRAP_S_CLAMP_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+		break;
+	case TexClampMode::MIRRORED_S_MIRRORED_T:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT );
+		break;
+	case TexClampMode::WRAP_S_WRAP_T:
+	default:
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+		break;
+	}
+
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
@@ -1083,10 +888,79 @@ bool BSShaderLightingProperty::bind( int id, const QList<QVector<Vector2> > & te
 	return false;
 }
 
+bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
+{
+	Q_UNUSED( id );
+
+	GLuint result = 0;
+
+	if ( !fname.isEmpty() )
+		result = scene->bindTextureCube( fname );
+
+	if ( result == 0 )
+		return false;
+
+	glEnable( GL_TEXTURE_CUBE_MAP_SEAMLESS );
+
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+	glMatrixMode( GL_TEXTURE );
+	glLoadIdentity();
+	glMatrixMode( GL_MODELVIEW );
+
+	return true;
+}
+
 QString BSShaderLightingProperty::fileName( int id ) const
 {
-	const NifModel * nif = qobject_cast<const NifModel *>( iTextureSet.model() );
+	const NifModel * nif;
 
+	// Fallout 4
+	nif = qobject_cast<const NifModel *>(iWetMaterial.model());
+	if ( nif ) {
+		// BSLSP
+		auto m = static_cast<ShaderMaterial *>(material);
+		if ( m && m->isValid() ) {
+			auto tex = m->textures();
+			if ( tex.count() == 9 ) {
+				switch ( id ) {
+				case 0: // Diffuse
+					if ( !tex[0].isEmpty() )
+						return tex[0];
+					break;
+				case 1: // Normal
+					if ( !tex[1].isEmpty() )
+						return tex[1];
+					break;
+				case 2: // Glow
+					if ( m->bGlowmap && !tex[5].isEmpty() )
+						return tex[5];
+					break;
+				case 3: // Greyscale
+					if ( m->bGrayscaleToPaletteColor && !tex[3].isEmpty() )
+						return tex[3];
+					break;
+				case 4: // Cubemap
+					if ( m->bEnvironmentMapping && !tex[4].isEmpty() )
+						return tex[4];
+					break;
+				case 5: // Env Mask
+					if ( m->bEnvironmentMapping && !tex[5].isEmpty() )
+						return tex[5];
+					break;
+				case 7: // Specular
+					if ( m->bSpecularEnabled && !tex[2].isEmpty() )
+						return tex[2];
+					break;
+				}
+			}
+		}
+	}
+
+	nif = qobject_cast<const NifModel *>(iTextureSet.model());
 	if ( nif && iTextureSet.isValid() ) {
 		int nTextures = nif->get<int>( iTextureSet, "Num Textures" );
 		QModelIndex iTextures = nif->getIndex( iTextureSet, "Textures" );
@@ -1095,10 +969,26 @@ QString BSShaderLightingProperty::fileName( int id ) const
 			return nif->get<QString>( iTextures.child( id, 0 ) );
 	} else {
 		// handle niobject name="BSEffectShaderProperty...
-		nif = qobject_cast<const NifModel *>( iSourceTexture.model() );
+		auto m = static_cast<EffectMaterial *>(material);
 
-		if ( nif && iSourceTexture.isValid() )
-			return nif->get<QString>( iSourceTexture, "Source Texture" );
+		nif = qobject_cast<const NifModel *>(iSourceTexture.model());
+		if ( !m && nif && iSourceTexture.isValid() ) {
+			switch ( id ) {
+			case 0:
+				return nif->get<QString>( iSourceTexture, "Source Texture" );
+			case 1:
+				return nif->get<QString>( iSourceTexture, "Greyscale Texture" );
+			case 2:
+				return nif->get<QString>( iSourceTexture, "Env Map Texture" );
+			case 3:
+				return nif->get<QString>( iSourceTexture, "Normal Texture" );
+			case 4:
+				return nif->get<QString>( iSourceTexture, "Env Mask Texture" );
+			}
+		} else if ( m && m->isValid() ) {
+			auto tex = m->textures();
+			return tex[id];
+		}
 	}
 
 	return QString();
@@ -1118,5 +1008,583 @@ int BSShaderLightingProperty::getId( const QString & id )
 	};
 
 	return hash.value( id, -1 );
+}
+
+QPersistentModelIndex BSShaderLightingProperty::getTextureSet() const
+{
+	return iTextureSet;
+}
+
+unsigned int BSShaderLightingProperty::getFlags1() const
+{
+	return (unsigned int)flags1;
+}
+
+unsigned int BSShaderLightingProperty::getFlags2() const
+{
+	return (unsigned int)flags2;
+}
+
+void BSShaderLightingProperty::setFlags1( unsigned int val )
+{
+	flags1 = ShaderFlags::SF1( val );
+}
+
+void BSShaderLightingProperty::setFlags2( unsigned int val )
+{
+	flags2 = ShaderFlags::SF2( val );
+}
+
+UVScale BSShaderLightingProperty::getUvScale() const
+{
+	return uvScale;
+}
+
+UVOffset BSShaderLightingProperty::getUvOffset() const
+{
+	return uvOffset;
+}
+
+void BSShaderLightingProperty::setUvScale( float x, float y )
+{
+	uvScale.x = x;
+	uvScale.y = y;
+}
+
+void BSShaderLightingProperty::setUvOffset( float x, float y )
+{
+	uvOffset.x = x;
+	uvOffset.y = y;
+}
+
+TexClampMode BSShaderLightingProperty::getClampMode() const
+{
+	return clampMode;
+}
+
+void BSShaderLightingProperty::setClampMode( uint mode )
+{
+	clampMode = TexClampMode( mode );
+}
+
+Material * BSShaderLightingProperty::mat() const
+{
+	return material;
+}
+
+/*
+	BSLightingShaderProperty
+*/
+
+void BSLightingShaderProperty::update( const NifModel * nif, const QModelIndex & property )
+{
+	BSShaderLightingProperty::update( nif, property );
+
+	if ( name.endsWith( ".bgsm", Qt::CaseInsensitive ) )
+		material = new ShaderMaterial( name );
+
+	if ( material && !material->isValid() )
+		material = nullptr;
+
+	if ( material && name.isEmpty() ) {
+		delete material;
+		material = nullptr;
+	}
+
+}
+
+void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelIndex & prop )
+{
+	ShaderMaterial * m = nullptr;
+	if ( mat() && mat()->isValid() )
+		m = static_cast<ShaderMaterial *>(mat());
+
+	auto stream = nif->getUserVersion2();
+	auto textures = nif->getArray<QString>( getTextureSet(), "Textures" );
+
+	setShaderType( nif->get<unsigned int>( prop, "Skyrim Shader Type" ) );
+	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
+	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+
+	hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+	if ( !m ) {
+		alpha = nif->get<float>( prop, "Alpha" );
+
+		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
+		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+
+		setUvScale( uvScale[0], uvScale[1] );
+		setUvOffset( uvOffset[0], uvOffset[1] );
+		setClampMode( nif->get<uint>( prop, "Texture Clamp Mode" ) );
+
+		// Specular
+		if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
+			auto spC = nif->get<Color3>( prop, "Specular Color" );
+			auto spG = nif->get<float>( prop, "Glossiness" );
+			auto spS = nif->get<float>( prop, "Specular Strength" );
+			setSpecular( spC, spG, spS );
+		} else {
+			setSpecular( Color3( 0, 0, 0 ), 0, 0 );
+		}
+
+		// Emissive
+		setEmissive( nif->get<Color3>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
+
+		hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
+		if ( getShaderType() & ShaderFlags::ST_GlowShader )
+			hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+
+		// Version Dependent settings
+		if ( stream < 130 ) {
+			lightingEffect1 = nif->get<float>( prop, "Lighting Effect 1" );
+			lightingEffect2 = nif->get<float>( prop, "Lighting Effect 2" );
+
+			innerThickness = nif->get<float>( prop, "Parallax Inner Layer Thickness" );
+			outerRefractionStrength = nif->get<float>( prop, "Parallax Refraction Scale" );
+			outerReflectionStrength = nif->get<float>( prop, "Parallax Envmap Strength" );
+			auto innerScale = nif->get<Vector2>( prop, "Parallax Inner Layer Texture Scale" );
+			setInnerTextureScale( innerScale[0], innerScale[1] );
+
+			hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular ) && !textures.value( 7, "" ).isEmpty();
+			hasHeightMap = isST( ShaderFlags::ST_Heightmap ) && hasSF1( ShaderFlags::SLSF1_Parallax ) && !textures.value( 3, "" ).isEmpty();
+			hasBacklight = hasSF2( ShaderFlags::SLSF2_Back_Lighting );
+			hasRimlight = hasSF2( ShaderFlags::SLSF2_Rim_Lighting );
+			hasSoftlight = hasSF2( ShaderFlags::SLSF2_Soft_Lighting );
+			hasModelSpaceNormals = hasSF1( ShaderFlags::SLSF1_Model_Space_Normals );
+			hasMultiLayerParallax = hasSF2( ShaderFlags::SLSF2_Multi_Layer_Parallax );
+
+			hasRefraction = hasSF1( ShaderFlags::SLSF1_Refraction );
+			hasFireRefraction = hasSF1( ShaderFlags::SLSF1_Fire_Refraction );
+
+			hasTintColor = false;
+			hasTintMask = isST( ShaderFlags::ST_FaceTint );
+			hasDetailMask = hasTintMask;
+
+			QString tint;
+			if ( isST( ShaderFlags::ST_HairTint ) )
+				tint = "Hair Tint Color";
+			else if ( isST( ShaderFlags::ST_SkinTint ) )
+				tint = "Skin Tint Color";
+
+			if ( !tint.isEmpty() ) {
+				hasTintColor = true;
+				setTintColor( nif->get<Color3>( prop, tint ) );
+			}
+		} else {
+			hasSpecularMap = hasSF1( ShaderFlags::SLSF1_Specular );
+			greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+			paletteScale = nif->get<float>( prop, "Grayscale to Palette Scale" );
+			lightingEffect1 = nif->get<float>( prop, "Subsurface Rolloff" );
+			backlightPower = nif->get<float>( prop, "Backlight Power" );
+			fresnelPower = nif->get<float>( prop, "Fresnel Power" );
+		}
+
+		// Environment Map, Mask and Reflection Scale
+		hasEnvironmentMap = isST( ShaderFlags::ST_EnvironmentMap ) && hasSF1( ShaderFlags::SLSF1_Environment_Mapping );
+		hasEnvironmentMap |= isST( ShaderFlags::ST_EyeEnvmap ) && hasSF1( ShaderFlags::SLSF1_Eye_Environment_Mapping );
+		if ( stream == 100 )
+			hasEnvironmentMap |= hasMultiLayerParallax;
+
+		hasCubeMap = (
+			isST( ShaderFlags::ST_EnvironmentMap )
+			|| isST( ShaderFlags::ST_EyeEnvmap )
+			|| isST( ShaderFlags::ST_MultiLayerParallax )
+			)
+			&& hasEnvironmentMap
+			&& !textures.value( 4, "" ).isEmpty();
+
+		useEnvironmentMask = hasEnvironmentMap && !textures.value( 5, "" ).isEmpty();
+
+		if ( isST( ShaderFlags::ST_EnvironmentMap ) )
+			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
+		else if ( isST( ShaderFlags::ST_EyeEnvmap ) )
+			environmentReflection = nif->get<float>( prop, "Eye Cubemap Scale" );
+
+	} else {
+		alpha = m->fAlpha;
+
+		setUvScale( m->fUScale, m->fVScale );
+		setUvOffset( m->fUOffset, m->fVOffset );
+		setSpecular( m->cSpecularColor, m->fSmoothness, m->fSpecularMult );
+		setEmissive( m->cEmittanceColor, m->fEmittanceMult );
+
+		if ( m->bTileU && m->bTileV )
+			clampMode = TexClampMode::WRAP_S_WRAP_T;
+		else if ( m->bTileU )
+			clampMode = TexClampMode::WRAP_S_CLAMP_T;
+		else if ( m->bTileV )
+			clampMode = TexClampMode::CLAMP_S_WRAP_T;
+		else
+			clampMode = TexClampMode::CLAMP_S_CLAMP_T;
+
+		fresnelPower = m->fFresnelPower;
+		greyscaleColor = m->bGrayscaleToPaletteColor;
+		paletteScale = m->fGrayscaleToPaletteScale;
+
+		hasSpecularMap = m->bSpecularEnabled && !m->textureList[2].isEmpty();
+		hasGlowMap = m->bGlowmap;
+		hasEmittance = m->bEmitEnabled;
+		hasBacklight = m->bBackLighting;
+		hasRimlight = m->bRimLighting;
+		hasSoftlight = m->bSubsurfaceLighting;
+		rimPower = m->fRimPower;
+		backlightPower = m->fBacklightPower;
+
+
+		hasEnvironmentMap = m->bEnvironmentMapping;
+		hasCubeMap = m->bEnvironmentMapping && !m->textureList[4].isEmpty();
+		useEnvironmentMask = hasEnvironmentMap && !m->bGlowmap && !m->textureList[5].isEmpty();
+		environmentReflection = m->fEnvironmentMappingMaskScale;
+
+		if ( hasSoftlight )
+			setLightingEffect1( m->fSubsurfaceLightingRolloff );
+	}
+}
+
+void BSLightingShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	if ( nif->itemName( iController ) == "BSLightingShaderPropertyFloatController" ) {
+		Controller * ctrl = new LightingFloatController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	} else if ( nif->itemName( iController ) == "BSLightingShaderPropertyColorController" ) {
+		Controller * ctrl = new LightingColorController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+}
+
+void BSLightingShaderProperty::setShaderType( unsigned int t )
+{
+	shaderType = ShaderFlags::ShaderType( t );
+}
+
+ShaderFlags::ShaderType BSLightingShaderProperty::getShaderType()
+{
+	return shaderType;
+}
+
+void BSLightingShaderProperty::setEmissive( Color3 color, float mult )
+{
+	emissiveColor = color;
+	emissiveMult = mult;
+}
+
+void BSLightingShaderProperty::setSpecular( Color3 color, float gloss, float strength )
+{
+	specularColor = color;
+	specularGloss = gloss;
+	specularStrength = strength;
+}
+
+Color3 BSLightingShaderProperty::getEmissiveColor() const
+{
+	return emissiveColor;
+}
+
+Color3 BSLightingShaderProperty::getSpecularColor() const
+{
+	return specularColor;
+}
+
+float BSLightingShaderProperty::getEmissiveMult() const
+{
+	return emissiveMult;
+}
+
+float BSLightingShaderProperty::getLightingEffect1() const
+{
+	return lightingEffect1;
+}
+
+float BSLightingShaderProperty::getLightingEffect2() const
+{
+	return lightingEffect2;
+}
+
+void BSLightingShaderProperty::setLightingEffect1( float val )
+{
+	lightingEffect1 = val;
+}
+
+void BSLightingShaderProperty::setLightingEffect2( float val )
+{
+	lightingEffect2 = val;
+}
+
+float BSLightingShaderProperty::getSpecularGloss() const
+{
+	return specularGloss;
+}
+
+float BSLightingShaderProperty::getSpecularStrength() const
+{
+	return specularStrength;
+}
+
+float BSLightingShaderProperty::getInnerThickness() const
+{
+	return innerThickness;
+}
+
+UVScale BSLightingShaderProperty::getInnerTextureScale() const
+{
+	return innerTextureScale;
+}
+
+float BSLightingShaderProperty::getOuterRefractionStrength() const
+{
+	return outerRefractionStrength;
+}
+
+float BSLightingShaderProperty::getOuterReflectionStrength() const
+{
+	return outerReflectionStrength;
+}
+
+void BSLightingShaderProperty::setInnerThickness( float thickness )
+{
+	innerThickness = thickness;
+}
+
+void BSLightingShaderProperty::setInnerTextureScale( float x, float y )
+{
+	innerTextureScale.x = x;
+	innerTextureScale.y = y;
+}
+
+void BSLightingShaderProperty::setOuterRefractionStrength( float strength )
+{
+	outerRefractionStrength = strength;
+}
+
+void BSLightingShaderProperty::setOuterReflectionStrength( float strength )
+{
+	outerReflectionStrength = strength;
+}
+
+float BSLightingShaderProperty::getEnvironmentReflection() const
+{
+	return environmentReflection;
+}
+
+void BSLightingShaderProperty::setEnvironmentReflection( float strength )
+{
+	environmentReflection = strength;
+}
+
+float BSLightingShaderProperty::getAlpha() const
+{
+	return alpha;
+}
+
+void BSLightingShaderProperty::setAlpha( float opacity )
+{
+	alpha = opacity;
+}
+
+Color3 BSLightingShaderProperty::getTintColor() const
+{
+	return tintColor;
+}
+
+void BSLightingShaderProperty::setTintColor( Color3 c )
+{
+	tintColor = c;
+}
+
+/*
+	BSEffectShaderProperty
+*/
+
+void BSEffectShaderProperty::update( const NifModel * nif, const QModelIndex & property )
+{
+	BSShaderLightingProperty::update( nif, property );
+
+	if ( name.endsWith( ".bgem", Qt::CaseInsensitive ) )
+		material = new EffectMaterial( name );
+
+	if ( material && !material->isValid() )
+		material = nullptr;
+
+	if ( material && name.isEmpty() ) {
+		delete material;
+		material = nullptr;
+	}
+}
+
+void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelIndex & prop )
+{
+	EffectMaterial * m = nullptr;
+	if ( mat() && mat()->isValid() )
+		m = static_cast<EffectMaterial *>(mat());
+
+	auto stream = nif->getUserVersion2();
+
+	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
+	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
+
+	vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+	vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+
+	if ( !m ) {
+		setEmissive( nif->get<Color4>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
+
+		hasSourceTexture = !nif->get<QString>( prop, "Source Texture" ).isEmpty();
+		hasGreyscaleMap = !nif->get<QString>( prop, "Greyscale Texture" ).isEmpty();
+
+		greyscaleAlpha = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteAlpha );
+		greyscaleColor = hasSF1( ShaderFlags::SLSF1_Greyscale_To_PaletteColor );
+		useFalloff = hasSF1( ShaderFlags::SLSF1_Use_Falloff );
+
+		depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+		depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+		isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+
+		if ( stream < 130 ) {
+			hasWeaponBlood = hasSF2( ShaderFlags::SLSF2_Weapon_Blood );
+		} else {
+			hasEnvMap = !nif->get<QString>( prop, "Env Map Texture" ).isEmpty();
+			hasNormalMap = !nif->get<QString>( prop, "Normal Texture" ).isEmpty();
+			hasEnvMask = !nif->get<QString>( prop, "Env Mask Texture" ).isEmpty();
+
+			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
+		}
+
+		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
+		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+
+		setUvScale( uvScale[0], uvScale[1] );
+		setUvOffset( uvOffset[0], uvOffset[1] );
+		setClampMode( nif->get<quint8>( prop, "Texture Clamp Mode" ) );
+
+		if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )
+			lightingInfluence = (float)nif->get<quint8>( prop, "Lighting Influence" ) / 255.0;
+
+		auto startA = nif->get<float>( prop, "Falloff Start Angle" );
+		auto stopA = nif->get<float>( prop, "Falloff Stop Angle" );
+		auto startO = nif->get<float>( prop, "Falloff Start Opacity" );
+		auto stopO = nif->get<float>( prop, "Falloff Stop Opacity" );
+		auto soft = nif->get<float>( prop, "Soft Falloff Depth" );
+
+		setFalloff( startA, stopA, startO, stopO, soft );
+
+	} else {
+
+		setEmissive( Color4( m->cBaseColor, m->fAlpha ), m->fBaseColorScale );
+
+		hasSourceTexture = !m->textureList[0].isEmpty();
+		hasGreyscaleMap = !m->textureList[1].isEmpty();
+		hasEnvMap = !m->textureList[2].isEmpty();
+		hasNormalMap = !m->textureList[3].isEmpty();
+		hasEnvMask = !m->textureList[4].isEmpty();
+
+		environmentReflection = m->fEnvironmentMappingMaskScale;
+
+		greyscaleAlpha = m->bGrayscaleToPaletteAlpha;
+		greyscaleColor = m->bGrayscaleToPaletteColor;
+		useFalloff = m->bFalloffEnabled;
+
+		depthTest = m->bZBufferTest;
+		depthWrite = m->bZBufferWrite;
+		isDoubleSided = m->bTwoSided;
+
+		setUvScale( m->fUScale, m->fVScale );
+		setUvOffset( m->fUOffset, m->fVOffset );
+
+		if ( m->bTileU && m->bTileV )
+			clampMode = TexClampMode::WRAP_S_WRAP_T;
+		else if ( m->bTileU )
+			clampMode = TexClampMode::WRAP_S_CLAMP_T;
+		else if ( m->bTileV )
+			clampMode = TexClampMode::CLAMP_S_WRAP_T;
+		else
+			clampMode = TexClampMode::CLAMP_S_CLAMP_T;
+
+		if ( m->bEffectLightingEnabled )
+			lightingInfluence = m->fLightingInfluence;
+
+		setFalloff( m->fFalloffStartAngle, m->fFalloffStopAngle,
+						   m->fFalloffStartOpacity, m->fFalloffStopOpacity, m->fSoftDepth );
+	}
+}
+
+void BSEffectShaderProperty::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	if ( nif->itemName( iController ) == "BSEffectShaderPropertyFloatController" ) {
+		Controller * ctrl = new EffectFloatController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	} else if ( nif->itemName( iController ) == "BSEffectShaderPropertyColorController" ) {
+		Controller * ctrl = new EffectColorController( this, iController );
+		ctrl->update( nif, iController );
+		controllers.append( ctrl );
+	}
+}
+
+void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
+{
+	emissiveColor = color;
+	emissiveMult = mult;
+}
+
+Color4 BSEffectShaderProperty::getEmissiveColor() const
+{
+	return emissiveColor;
+}
+
+float BSEffectShaderProperty::getEmissiveMult() const
+{
+	return emissiveMult;
+}
+
+float BSEffectShaderProperty::getAlpha() const
+{
+	return emissiveColor.alpha();
+}
+
+void BSEffectShaderProperty::setFalloff( float startA, float stopA, float startO, float stopO, float soft )
+{
+	falloff.startAngle = startA;
+	falloff.stopAngle = stopA;
+	falloff.startOpacity = startO;
+	falloff.stopOpacity = stopO;
+	falloff.softDepth = soft;
+}
+
+float BSEffectShaderProperty::getEnvironmentReflection() const
+{
+	return environmentReflection;
+}
+
+void BSEffectShaderProperty::setEnvironmentReflection( float strength )
+{
+	environmentReflection = strength;
+}
+
+float BSEffectShaderProperty::getLightingInfluence() const
+{
+	return lightingInfluence;
+}
+
+void BSEffectShaderProperty::setLightingInfluence( float strength )
+{
+	lightingInfluence = strength;
+}
+
+/*
+	BSWaterShaderProperty
+*/
+
+unsigned int BSWaterShaderProperty::getWaterShaderFlags() const
+{
+	return (unsigned int)waterShaderFlags;
+}
+
+void BSWaterShaderProperty::setWaterShaderFlags( unsigned int val )
+{
+	waterShaderFlags = WaterShaderFlags::SF1( val );
 }
 

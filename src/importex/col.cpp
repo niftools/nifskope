@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "config.h"
-#include "options.h"
 
 #include "nifmodel.h"
 #include "nvtristripwrapper.h"
@@ -963,8 +962,8 @@ void attachNiNode ( const NifModel * nif, QDomElement parentNode, int idx )
 
 void exportCol( const NifModel * nif, QFileInfo fileInfo )
 {
-	culling = Options::get()->exportCullEnabled();
-	cullRegExp = Options::get()->cullExpression();
+	//culling = Options::get()->exportCullEnabled();
+	//cullRegExp = Options::get()->cullExpression();
 
 	QList<int> roots = nif->getRootLinks();
 	QString question;
@@ -983,7 +982,7 @@ void exportCol( const NifModel * nif, QFileInfo fileInfo )
 	QFile fobj( fname + ".dae" );
 
 	if ( !fobj.open( QIODevice::WriteOnly ) ) {
-		qWarning() << "could not open " << fobj.fileName() << " for write access";
+		qCCritical( nsIo ) << tr( "Failed to write %1" ).arg( fobj.fileName() );
 		return;
 	}
 

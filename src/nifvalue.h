@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,15 +41,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 #include <QVariant>
 
+#include <memory>
 
-class QDataStream;
-class QIODevice;
 
-//! \file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
+//! @file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
 
 // if there is demand for it, consider moving these into Options
 //! Number of decimals when editing vector types (Vector2, Vector3, Vector4)
-#define VECTOR_DECIMALS 4
+#define VECTOR_DECIMALS 6
 //! Maximum/minimum range when editing vector types (Vector2, Vector3, Vector4)
 #define VECTOR_RANGE 100000000
 //! Number of decimals when editing Quat rotations in Euler mode
@@ -61,17 +60,22 @@ class QIODevice;
 //! Increment when editing color types (Color3, Color4)
 #define COLOR_STEP 0.01
 
-//! A generic class used for storing a value of any type.
-/*!
+
+/*! A generic class used for storing a value of any type.
+ *
  * The NifValue::Type enum lists all supported types.
  */
 class NifValue
 {
 	Q_DECLARE_TR_FUNCTIONS( NifValue )
 
+	friend class NifIStream;
+	friend class NifOStream;
+	friend class NifSStream;
+
 public:
-	//! List of all types implemented internally by NifSkope.
-	/*!
+	/*! List of all types implemented internally by NifSkope.
+	 *
 	 * To add a new type, add a new enumerant to Type, and update NifValue::initialize()
 	 * to reflect the name of the type as used in the xml.
 	 */
@@ -87,13 +91,14 @@ public:
 		tBlockTypeIndex = 6,
 		tInt            = 7,
 		tShort          = 8,
-		tUInt           = 9,
+		tULittle32      = 9,
+		tUInt           = 10,
 		//
-		tLink   = 10,
-		tUpLink = 11,
-		tFloat  = 12,
+		tLink   = 11,
+		tUpLink = 12,
+		tFloat  = 13,
 		// all string types should come between tSizedString and tChar8String
-		tSizedString   = 13,
+		tSizedString   = 14,
 		tText          = 15,
 		tShortString   = 16,
 		tHeaderString  = 18,
@@ -117,7 +122,11 @@ public:
 		tFilePath      = 35, //!< not a string: requires special handling for slash/backslash etc.
 		tByteMatrix    = 36,
 		tBlob          = 37,
-
+		tHfloat        = 38,
+		tHalfVector3   = 39,
+		tByteVector3   = 40,
+		tHalfVector2   = 41,
+		tByteColor4    = 42,
 		tNone          = 0xff
 	};
 
@@ -128,27 +137,59 @@ public:
 		eFlags,   //!< bitflag enum
 	};
 
+	//! Constructor - initialize the value to nothing, type tNone.
+	NifValue() {}
+	//! Constructor - initialize the value to a default value of the specified type.
+	NifValue( Type t );
+	//! Copy constructor.
+	NifValue( const NifValue & other );
+	//! Destructor.
+	~NifValue();
+
+
+	//! Assignment. Performs a deep copy of the data.
+	void operator=(const NifValue & other);
+	//! Custom comparator for QVariant::operator==()
+	bool operator==(const NifValue & other) const;
+	//! Necessary for QMetaType::registerComparators(), but unused
+	bool operator<(const NifValue &) const;
+
+	//! Clear the data, setting its type to tNone.
+	void clear();
+
+	//! Get the type.
+	Type type() const { return typ; }
+
+	/*! Change the type of data stored.
+	 *
+	 * Clears existing data, changes its type, and then reinitializes the data to its default.
+	 * Note that if Type is the same as originally, then the data is not cleared.
+	 */
+	void changeType( Type );
+
 	// *** apparently not used ***
 	//template <typename T> static Type typeId();
 
-	//! Initialize the class data
-	/*!
+	/*! Initialize the class data
+	 *
 	 * Sets typeMap. Clears typeTxt and enumMap (which will be filled later during xml parsing).
 	 */
 	static void initialize();
 
-	//! Get the Type corresponding to a string typId, as stored in the typeMap.
-	/*!
-	 * \param typId The type string (as used in the xml).
-	 * \return The Type corresponding to the string, or tNone if the type is not found.
+	/*! Get the Type corresponding to a string typId, as stored in the typeMap.
+	 *
+	 * @param typId The type string (as used in the xml).
+	 * @return The Type corresponding to the string, or tNone if the type is not found.
 	 */
 	static Type type( const QString & typId );
+
 	//! Get a html formatted description of the type.
 	static QString typeDescription( const QString & typId );
 	//! Update the typeTxt map with the type description. Newline characters are replaced by html line break tags.
 	static void setTypeDescription( const QString & typId, const QString & txt );
-	//! Register an alias for a type.
-	/*!
+
+	/*! Register an alias for a type.
+	 *
 	 * This is done by updating the typeMap and maps the alias string to the type
 	 * corresponding to the internal string.
 	 */
@@ -163,26 +204,30 @@ public:
 
 	//! Register an enum type.
 	static bool registerEnumType( const QString & eid, EnumType eTyp );
-	//! Register an option for an enum type.
-	/*!
-	 * \param eid The name of the enum type.
-	 * \param oid The name of the option of that type to add.
-	 * \param oval The value of that option.
-	 * \param otxt The documentation string for the option.
-	 * \return true if successful, false if the option value was already registered.
+
+	/*! Register an option for an enum type.
+	 *
+	 * @param eid	The name of the enum type.
+	 * @param oid	The name of the option of that type to add.
+	 * @param oval	The value of that option.
+	 * @param otxt	The documentation string for the option.
+	 * @return		True if successful, false if the option value was already registered.
 	 */
 	static bool registerEnumOption( const QString & eid, const QString & oid, quint32 oval, const QString & otxt );
+
 	//! Get the name of an option from its value.
 	static QString enumOptionName( const QString & eid, quint32 oval );
 	//! Get the documentation string of an option from its value.
 	static QString enumOptionText( const QString & eid, quint32 oval );
-	//! Get an option from an option string.
-	/*!
-	 * \param eid The name of the enum type.
-	 * \param oid The name of the option.
-	 * \param ok Is set to true if successful, is set to false if the option string was not found.
+
+	/*! Get an option from an option string.
+	 * 
+	 * @param eid	The name of the enum type.
+	 * @param oid	The name of the option.
+	 * @param ok	Is set to true if successful, is set to false if the option string was not found.
 	 */
 	static quint32 enumOptionValue( const QString & eid, const QString & oid, bool * ok = 0 );
+
 	//! Get list of all options that have been registered for the given enum type.
 	static QStringList enumOptions( const QString & eid );
 	//! Get type of enum for given enum type
@@ -190,35 +235,6 @@ public:
 	//! Get list of all options that have been registered for the given enum type.
 	static const EnumOptions & enumOptionData( const QString & eid );
 
-	//! Constructor - initialize the value to nothing, type tNone.
-	NifValue() { typ = tNone; abstract = false; }
-	//! Constructor - initialize the value to a default value of the specified type.
-	NifValue( Type t );
-	//! Copy constructor.
-	NifValue( const NifValue & other );
-	//! Destructor.
-	~NifValue();
-
-	//! Clear the data, setting its type to tNone.
-	void clear();
-	//! Change the type of data stored.
-	/*!
-	 * Clears existing data, changes its type, and then reinitializes the data to its default.
-	 * Note that if Type is the same as originally, then the data is not cleared.
-	 */
-	void changeType( Type );
-
-	//! Get the abstract flag on this value. Does not seem to be reliably initialised yet.
-	inline bool isAbstract() { return abstract; }
-
-	//! Set the abstract flag on this value.
-	inline void setAbstract( bool flag ) { abstract = flag; }
-
-	//! Assignment. Performs a deep copy of the data.
-	void operator=( const NifValue & other );
-
-	//! Get the type.
-	Type type() const { return typ; }
 
 	//! Check if the type is not tNone.
 	static bool isValid( Type t ) { return t != tNone; }
@@ -228,13 +244,13 @@ public:
 	//! Check if the type of the data is not tNone.
 	bool isValid() const { return typ != tNone; }
 	//! Check if the type of the data is a color type (Color3 or Color4 in xml).
-	bool isColor() const { return typ == tColor3 || typ == tColor4; }
+	bool isColor() const { return typ == tColor3 || typ == tColor4 || typ == tByteColor4; }
 	//! Check if the type of the data is a count.
 	bool isCount() const { return (typ >= tBool && typ <= tUInt); }
 	//! Check if the type of the data is a flag type (Flags in xml).
 	bool isFlags() const { return typ == tFlags; }
 	//! Check if the type of the data is a float type (Float in xml).
-	bool isFloat() const { return typ == tFloat; }
+	bool isFloat() const { return (typ == tFloat) || (typ == tHfloat); }
 	//! Check if the type of the data is of a link type (Ref or Ptr in xml).
 	bool isLink() const { return typ == tLink || typ == tUpLink; }
 	//! Check if the type of the data is a 3x3 matrix type (Matrix33 in xml).
@@ -249,6 +265,12 @@ public:
 	bool isVector4() const { return typ == tVector4; }
 	//! Check if the type of the data is a Vector 3.
 	bool isVector3() const { return typ == tVector3; }
+	//! Check if the type of the data is a Half Vector3.
+	bool isHalfVector3() const { return typ == tHalfVector3; }
+	//! Check if the type of the data is a Byte Vector3.
+	bool isByteVector3() const { return typ == tByteVector3; }
+	//! Check if the type of the data is a HalfVector2.
+	bool isHalfVector2() const { return typ == tHalfVector2; }
 	//! Check if the type of the data is a Vector 2.
 	bool isVector2() const { return typ == tVector2; }
 	//! Check if the type of the data is a triangle type.
@@ -276,41 +298,41 @@ public:
 	//! See the documentation of QVariant for details.
 	QVariant toVariant() const;
 
-	//! Set this value to a count.
-	/**
-	 * \return True if applicable, false otherwise
+	/*! Set this value to a count.
+	 *
+	 * @return True if applicable, false otherwise
 	 */
 	bool setCount( quint32 );
 
-	//! Set this value to a float.
-	/**
-	 * \return True if applicable, false otherwise
+	/*! Set this value to a float.
+	 *
+	 * @return True if applicable, false otherwise
 	 */
 	bool setFloat( float );
 
-	//! Set this value to a link.
-	/**
-	 * \return True if applicable, false otherwise
+	/*! Set this value to a link.
+	 *
+	 * @return True if applicable, false otherwise
 	 */
 	bool setLink( int );
 
-	//! Set this value to a file version.
-	/**
-	 * \return True if applicable, false otherwise
+	/*! Set this value to a file version.
+	 *
+	 * @return True if applicable, false otherwise
 	 */
 	bool setFileVersion( quint32 );
 
-	//! Set this value from a string.
-	/**
-	 * \return True if applicable, false otherwise
+	/*! Set this value from a string.
+	 *
+	 * @return True if applicable, false otherwise
 	 */
-	bool fromString( const QString & );
+	bool setFromString( const QString & );
 
-	//! Set this value from a QVariant.
-	/**
-	 * \return True if applicable, false otherwise
+	/*! Set this value from a QVariant.
+	 *
+	 * @return True if applicable, false otherwise
 	 */
-	bool fromVariant( const QVariant & );
+	bool setFromVariant( const QVariant & );
 
 	//! Check whether the data is of type T.
 	template <typename T> bool ask( T * t = 0 ) const;
@@ -321,7 +343,7 @@ public:
 
 protected:
 	//! The type of this data.
-	Type typ;
+	Type typ = tNone;
 
 	//! The structure containing the data.
 	union Value
@@ -337,17 +359,15 @@ protected:
 	//! The data value.
 	Value val;
 
-	//! If the value represents an abstract field. Does not seem to be reliably initialised yet.
-	bool abstract;
-
-	//! Get the data as an object of type T.
-	/*!
+	/*! Get the data as an object of type T.
+	 *
 	 * If the type t is not equal to the actual type of the data, then return T(). Serves
 	 * as a helper function for get, intended for internal use only.
 	 */
 	template <typename T> T getType( Type t ) const;
-	//! Set the data from an object of type T.
-	/*!
+
+	/*! Set the data from an object of type T.
+	 *
 	 * If the type t is not equal to the actual type of the data, then return false, else
 	 * return true. Helper function for set, intended for internal use only.
 	 */
@@ -356,27 +376,129 @@ protected:
 	//! A dictionary yielding the Type from a type string.
 	static QHash<QString, Type> typeMap;
 
-	//! A dictionary yielding the enumeration dictionary from a string.
-	/*!
+	/*! A dictionary yielding the enumeration dictionary from a string.
+	 *
 	 * Enums are stored as mappings from quint32 to pairs of strings, where
 	 * the first string in the pair is the enumerant string, and the second
 	 * is the enumerant documentation string. For example,
 	 * enumMap["AlphaFormat"][1] = QPair<"ALPHA_BINARY", "Texture is either fully transparent or fully opaque.">
 	 */
 	static QHash<QString, EnumOptions>  enumMap;
+
 	//! A dictionary yielding the documentation string of a type string.
 	static QHash<QString, QString>  typeTxt;
-	//! A dictionary yielding the underlying type string from an alias string.
-	/*!
+
+	/*! A dictionary yielding the underlying type string from an alias string.
+	 *
 	 * Enums are stored as an underlying type (not always uint) which is normally not visible.
 	 * This dictionary allows that type to be exposed, eg. for NifValue::typeDescription().
 	 */
 	static QHash<QString, QString> aliasMap;
-
-	friend class NifIStream;
-	friend class NifOStream;
-	friend class NifSStream;
 };
+
+Q_DECLARE_METATYPE( NifValue )
+
+
+class BaseModel;
+class NifItem;
+
+class QDataStream;
+class QIODevice;
+
+//! An input stream that reads a file into a model.
+class NifIStream final
+{
+	Q_DECLARE_TR_FUNCTIONS( NifIStream )
+
+public:
+	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d )
+	{
+		init();
+	}
+
+	//! Reads a NifValue from the underlying device. Returns true if successful.
+	bool read( NifValue & );
+
+private:
+	//! The model that data is being read into.
+	BaseModel * model;
+	//! The underlying device that data is being read from.
+	QIODevice * device;
+	//! The data stream that is wrapped around the device (simplifies endian conversion)
+	std::unique_ptr<QDataStream> dataStream;
+
+	//! Initialises the stream.
+	void init();
+
+	//! Whether a boolean is 32-bit.
+	bool bool32bit;
+	//! Whether link adjustment is required.
+	bool linkAdjust;
+	//! Whether string adjustment is required.
+	bool stringAdjust;
+	//! Whether the model is big-endian
+	bool bigEndian;
+
+	//! The maximum length of a string that can be read.
+	int maxLength;
+};
+
+
+//! An output stream that writes a model to a file.
+class NifOStream final
+{
+	Q_DECLARE_TR_FUNCTIONS( NifOStream )
+
+public:
+	NifOStream( const BaseModel * n, QIODevice * d ) : model( n ), device( d ) { init(); }
+
+	//! Writes a NifValue to the underlying device. Returns true if successful.
+	bool write( const NifValue & );
+
+private:
+	//! The model that data is being read from.
+	const BaseModel * model;
+	//! The underlying device that data is being written to.
+	QIODevice * device;
+
+	//! Initialises the stream.
+	void init();
+
+	//! Whether a boolean is 32-bit.
+	bool bool32bit;
+	//! Whether link adjustment is required.
+	bool linkAdjust;
+	//! Whether string adjustment is required.
+	bool stringAdjust;
+	//! Whether the model is big-endian
+	bool bigEndian;
+};
+
+
+//! A stream that determines the size of values in a model.
+class NifSStream final
+{
+public:
+	NifSStream( const BaseModel * n ) : model( n ) { init(); }
+
+	//! Determine the size of a given NifValue.
+	int size( const NifValue & );
+
+private:
+	//! The model that values are being sized for.
+	const BaseModel * model;
+
+	//! Initialises the stream.
+	void init();
+
+	//! Whether booleans are 32-bit or not.
+	bool bool32bit;
+	//! Whether string adjustment is required.
+	bool stringAdjust;
+};
+
+
+// Inlines
 
 // documented above; should this really be inlined?
 // GCC only allows type punning via union (http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Optimize-Options.html#index-fstrict_002daliasing-550)
@@ -388,7 +510,7 @@ inline quint32 NifValue::toCount() const
 
 	return 0;
 }
-// documented above
+
 inline float NifValue::toFloat() const
 {
 	if ( isFloat() )
@@ -396,7 +518,7 @@ inline float NifValue::toFloat() const
 
 	return 0.0;
 }
-// documented above
+
 inline qint32 NifValue::toLink() const
 {
 	if ( isLink() )
@@ -404,7 +526,7 @@ inline qint32 NifValue::toLink() const
 
 	return -1;
 }
-// documented above
+
 inline quint32 NifValue::toFileVersion() const
 {
 	if ( isFileVersion() )
@@ -413,7 +535,6 @@ inline quint32 NifValue::toFileVersion() const
 	return 0;
 }
 
-// documented above
 inline bool NifValue::setCount( quint32 c )
 {
 	if ( isCount() ) {
@@ -422,7 +543,7 @@ inline bool NifValue::setCount( quint32 c )
 
 	return false;
 }
-// documented above
+
 inline bool NifValue::setFloat( float f )
 {
 	if ( isFloat() ) {
@@ -431,7 +552,7 @@ inline bool NifValue::setFloat( float f )
 
 	return false;
 }
-// documented above
+
 inline bool NifValue::setLink( int l )
 {
 	if ( isLink() ) {
@@ -440,7 +561,7 @@ inline bool NifValue::setLink( int l )
 
 	return false;
 }
-// documented above
+
 inline bool NifValue::setFileVersion( quint32 v )
 {
 	if ( isFileVersion() ) {
@@ -449,6 +570,9 @@ inline bool NifValue::setFileVersion( quint32 v )
 
 	return false;
 }
+
+
+// Templates
 
 template <typename T> inline T NifValue::getType( Type t ) const
 {
@@ -519,15 +643,37 @@ template <> inline Vector4 NifValue::get() const
 }
 template <> inline Vector3 NifValue::get() const
 {
-	return getType<Vector3>( tVector3 );
+	if ( typ == tVector3 || typ == tHalfVector3 )
+		return *static_cast<Vector3 *>(val.data);
+
+	return Vector3();
+}
+template <> inline HalfVector3 NifValue::get() const
+{
+	return getType<HalfVector3>( tHalfVector3 );
+}
+template <> inline ByteVector3 NifValue::get() const
+{
+	return getType<ByteVector3>( tByteVector3 );
+}
+template <> inline HalfVector2 NifValue::get() const
+{
+	return getType<HalfVector2>( tHalfVector2 );
 }
 template <> inline Vector2 NifValue::get() const
 {
-	return getType<Vector2>( tVector2 );
+	if ( typ == tVector2 || typ == tHalfVector2 )
+		return *static_cast<Vector2 *>(val.data);
+
+	return Vector2();
 }
 template <> inline Color3 NifValue::get() const
 {
 	return getType<Color3>( tColor3 );
+}
+template <> inline ByteColor4 NifValue::get() const
+{
+	return getType<ByteColor4>( tByteColor4 );
 }
 template <> inline Color4 NifValue::get() const
 {
@@ -556,7 +702,7 @@ template <> inline QByteArray * NifValue::get() const
 	if ( isByteArray() )
 		return static_cast<QByteArray *>( val.data );
 
-	return NULL;
+	return nullptr;
 }
 template <> inline Quat NifValue::get() const
 {
@@ -570,7 +716,7 @@ template <> inline ByteMatrix * NifValue::get() const
 	if ( isByteMatrix() )
 		return static_cast<ByteMatrix *>( val.data );
 
-	return NULL;
+	return nullptr;
 }
 
 //! Set the data from a boolean. Return true if successful.
@@ -628,6 +774,21 @@ template <> inline bool NifValue::set( const Vector3 & x )
 {
 	return setType( tVector3, x );
 }
+//! Set the data from a HalfVector3. Return true if successful.
+template <> inline bool NifValue::set( const HalfVector3 & x )
+{
+	return setType( tHalfVector3, x );
+}
+//! Set the data from a ByteVector3. Return true if successful.
+template <> inline bool NifValue::set( const ByteVector3 & x )
+{
+	return setType( tByteVector3, x );
+}
+//! Set the data from a HalfVector2. Return true if successful.
+template <> inline bool NifValue::set( const HalfVector2 & x )
+{
+	return setType( tHalfVector2, x );
+}
 //! Set the data from a Vector2. Return true if successful.
 template <> inline bool NifValue::set( const Vector2 & x )
 {
@@ -637,6 +798,11 @@ template <> inline bool NifValue::set( const Vector2 & x )
 template <> inline bool NifValue::set( const Color3 & x )
 {
 	return setType( tColor3, x );
+}
+//! Set the data from a ByteColor4. Return true if successful.
+template <> inline bool NifValue::set( const ByteColor4 & x )
+{
+	return setType( tByteColor4, x );
 }
 //! Set the data from a Color4. Return true if successful.
 template <> inline bool NifValue::set( const Color4 & x )
@@ -648,13 +814,11 @@ template <> inline bool NifValue::set( const Triangle & x )
 {
 	return setType( tTriangle, x );
 }
-
-// should this really be inlined?
 //! Set the data from a string. Return true if successful.
 template <> inline bool NifValue::set( const QString & x )
 {
 	if ( isString() ) {
-		if ( val.data == NULL ) {
+		if ( !val.data ) {
 			val.data = new QString;
 		}
 
@@ -664,8 +828,6 @@ template <> inline bool NifValue::set( const QString & x )
 
 	return false;
 }
-
-// should this really be inlined?
 //! Set the data from a byte array. Return true if successful.
 template <> inline bool NifValue::set( const QByteArray & x )
 {
@@ -676,8 +838,6 @@ template <> inline bool NifValue::set( const QByteArray & x )
 
 	return false;
 }
-
-// should this really be inlined?
 //! Set the data from a quaternion. Return true if successful.
 template <> inline bool NifValue::set( const Quat & x )
 {
@@ -734,6 +894,21 @@ template <> inline bool NifValue::ask( Vector3 * ) const
 {
 	return type() == tVector3;
 }
+//! Check whether the data is a HalfVector3.
+template <> inline bool NifValue::ask( HalfVector3 * ) const
+{
+	return type() == tHalfVector3;
+}
+//! Check whether the data is a ByteVector3.
+template <> inline bool NifValue::ask( ByteVector3 * ) const
+{
+	return type() == tByteVector3;
+}
+//! Check whether the data is a Vector2.
+template <> inline bool NifValue::ask( HalfVector2 * ) const
+{
+	return type() == tHalfVector2;
+}
 //! Check whether the data is a Vector2.
 template <> inline bool NifValue::ask( Vector2 * ) const
 {
@@ -743,6 +918,11 @@ template <> inline bool NifValue::ask( Vector2 * ) const
 template <> inline bool NifValue::ask( Color3 * ) const
 {
 	return type() == tColor3;
+}
+//! Check whether the data is a ByteColor4.
+template <> inline bool NifValue::ask( ByteColor4 * ) const
+{
+	return type() == tByteColor4;
 }
 //! Check whether the data is a Color4.
 template <> inline bool NifValue::ask( Color4 * ) const
@@ -764,104 +944,5 @@ template <> inline bool NifValue::ask( QByteArray * ) const
 {
 	return isByteArray();
 }
-
-class BaseModel;
-class NifItem;
-
-//! An input stream that reads a file into a model.
-class NifIStream final
-{
-	Q_DECLARE_TR_FUNCTIONS( NifIStream )
-
-public:
-	//! Constructor.
-	NifIStream( BaseModel * m, QIODevice * d ) : model( m ), device( d )
-	{
-		init();
-	}
-
-	//! Reads a NifValue from the underlying device. Returns true if successful.
-	bool read( NifValue & );
-
-private:
-	//! The model that data is being read into.
-	BaseModel * model;
-	//! The underlying device that data is being read from.
-	QIODevice * device;
-	//! The data stream that is wrapped around the device (simplifies endian conversion)
-	QDataStream * dataStream;
-
-	//! Initialises the stream.
-	void init();
-
-	//! Whether a boolean is 32-bit.
-	bool bool32bit;
-	//! Whether link adjustment is required.
-	bool linkAdjust;
-	//! Whether string adjustment is required.
-	bool stringAdjust;
-	//! Whether the model is big-endian
-	bool bigEndian;
-
-	//! The maximum length of a string that can be read.
-	int maxLength;
-};
-
-//! An output stream that writes a model to a file.
-class NifOStream final
-{
-	Q_DECLARE_TR_FUNCTIONS( NifOStream )
-
-public:
-	//! Constructor.
-	NifOStream( const BaseModel * n, QIODevice * d ) : model( n ), device( d ) { init(); }
-
-	//! Writes a NifValue to the underlying device. Returns true if successful.
-	bool write( const NifValue & );
-
-private:
-	//! The model that data is being read from.
-	const BaseModel * model;
-	//! The underlying device that data is being written to.
-	QIODevice * device;
-
-	//! Initialises the stream.
-	void init();
-
-	//! Whether a boolean is 32-bit.
-	bool bool32bit;
-	//! Whether link adjustment is required.
-	bool linkAdjust;
-	//! Whether string adjustment is required.
-	bool stringAdjust;
-	//! Whether the model is big-endian
-	bool bigEndian;
-};
-
-//! A stream that determines the size of values in a model.
-class NifSStream final
-{
-public:
-	//! Constructor.
-	NifSStream( const BaseModel * n ) : model( n ) { init(); }
-
-	//! Determine the size of a given NifValue.
-	int size( const NifValue & );
-
-private:
-	//! The model that values are being sized for.
-	const BaseModel * model;
-
-	//! Initialises the stream.
-	void init();
-
-	//! Whether booleans are 32-bit or not.
-	bool bool32bit;
-	//! Whether string adjustment is required.
-	bool stringAdjust;
-};
-
-
-Q_DECLARE_METATYPE( NifValue )
 
 #endif

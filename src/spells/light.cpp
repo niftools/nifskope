@@ -49,7 +49,7 @@ static char const * light42_xpm[] = {
 	"          ....          "
 };
 
-QIcon * light42_xpm_icon = nullptr;
+static QIconPtr light42_xpm_icon = nullptr;
 
 //! Edit the parameters of a light object
 class spLightEdit final : public Spell
@@ -61,7 +61,7 @@ public:
 	QIcon icon() const
 	{
 		if ( !light42_xpm_icon )
-			light42_xpm_icon = new QIcon( QPixmap( light42_xpm ) );
+			light42_xpm_icon = QIconPtr( new QIcon(QPixmap( light42_xpm )) );
 
 		return *light42_xpm_icon;
 	}

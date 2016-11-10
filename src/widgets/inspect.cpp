@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,12 +36,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/glscene.h"
 #include "gl/glnode.h"
 
+#include <QApplication>
+#include <QBuffer>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QDialog>
 #include <QGroupBox>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
+#include <QMimeData>
 #include <QPushButton>
 #include <QTextEdit>
 
@@ -53,6 +57,10 @@ class InspectViewInternal
 {
 public:
 	~InspectViewInternal();
+
+	Transform transform;
+	QPushButton * btnCopyTransform;
+
 	bool needUpdate;
 	float time;
 	QLabel * nameLabel;
@@ -176,6 +184,10 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f )
 	impl->localCheck->setCheckState( Qt::Unchecked );
 	impl->localCheck->setText( tr( "Show Local Transform" ) );
 
+	impl->btnCopyTransform = new QPushButton( this );
+	impl->btnCopyTransform->setText( tr( "Copy Transform to Clipboard" ) );
+	impl->btnCopyTransform->setFocus();
+
 	impl->posGroup = new QGroupBox( this );
 	impl->posGroup->setTitle( tr( "Position:" ) );
 	impl->posXLabel = new QLabel( this );
@@ -291,6 +303,7 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f )
 	grid->addWidget( impl->timeLabel,   2, 0 );
 	grid->addWidget( impl->timeText,    2, 1 );
 	grid->addWidget( impl->localCheck,  3, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
+	grid->addWidget( impl->btnCopyTransform,  3, 1, 1, 2, Qt::AlignRight | Qt::AlignAbsolute );
 	grid->addWidget( impl->posGroup,    4, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
 	grid->addWidget( impl->invertCheck, 5, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
 	//grid->addWidget( impl->rotGroup,    6, 0, 1, 2, Qt::AlignLeft | Qt::AlignAbsolute );
@@ -304,6 +317,7 @@ InspectView::InspectView( QWidget * parent, Qt::WindowFlags f )
 	connect( impl->localCheck, &QCheckBox::stateChanged, this, &InspectView::update );
 	connect( impl->invertCheck, &QCheckBox::stateChanged, this, &InspectView::update );
 	connect( impl->refreshBtn, &QPushButton::clicked, this, &InspectView::update );
+	connect( impl->btnCopyTransform, &QPushButton::clicked, this, &InspectView::copyTransformToMimedata );
 }
 
 InspectView::~InspectView()
@@ -377,6 +391,8 @@ void InspectView::update()
 	Transform tm = ( impl->localCheck->isChecked() ) ? node->localTrans() : node->worldTrans();
 	Matrix mat = tm.rotation;
 
+	impl->transform = tm;
+
 	if ( impl->invertCheck->isChecked() )
 		mat = mat.inverted();
 
@@ -442,4 +458,18 @@ void InspectView::setVisible( bool visible )
 {
 	impl->needUpdate = visible;
 	QDialog::setVisible( visible );
+}
+
+void InspectView::copyTransformToMimedata()
+{
+	QByteArray data;
+	QBuffer buffer( &data );
+	if ( buffer.open( QIODevice::WriteOnly ) ) {
+		QDataStream ds( &buffer );
+		ds << impl->transform;
+
+		QMimeData * mime = new QMimeData;
+		mime->setData( QString( "nifskope/transform" ), data );
+		QApplication::clipboard()->setMimeData( mime );
+	}
 }

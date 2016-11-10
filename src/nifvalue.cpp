@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,8 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifvalue.h"
 #include "config.h"
-//#include "options.h"
 
+#include "half.h"
 #include "nifmodel.h"
 
 #include <QDataStream>
@@ -41,16 +41,31 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 
 
-//! \file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
-
-/*
- *  NifValue
- */
+//! @file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
 
 QHash<QString, NifValue::Type>        NifValue::typeMap;
 QHash<QString, QString>               NifValue::typeTxt;
 QHash<QString, NifValue::EnumOptions> NifValue::enumMap;
 QHash<QString, QString>               NifValue::aliasMap;
+
+/*
+ *  NifValue
+ */
+
+NifValue::NifValue( Type t )
+{
+	changeType( t );
+}
+
+NifValue::NifValue( const NifValue & other )
+{
+	operator=(other);
+}
+
+NifValue::~NifValue()
+{
+	clear();
+}
 
 void NifValue::initialize()
 {
@@ -59,43 +74,52 @@ void NifValue::initialize()
 
 	typeMap.insert( "bool",   NifValue::tBool );
 	typeMap.insert( "byte",   NifValue::tByte );
+	typeMap.insert( "char",   NifValue::tByte );
 	typeMap.insert( "word",   NifValue::tWord );
 	typeMap.insert( "short",  NifValue::tShort );
 	typeMap.insert( "int",    NifValue::tInt );
-	typeMap.insert( "flags",  NifValue::tFlags );
+	typeMap.insert( "Flags",  NifValue::tFlags );
 	typeMap.insert( "ushort", NifValue::tWord );
 	typeMap.insert( "uint",   NifValue::tUInt );
-	typeMap.insert( "link",   NifValue::tLink );
-	typeMap.insert( "uplink", NifValue::tUpLink );
+	typeMap.insert( "ulittle32", NifValue::tULittle32 );
+	typeMap.insert( "Ref",    NifValue::tLink );
+	typeMap.insert( "Ptr",    NifValue::tUpLink );
 	typeMap.insert( "float",  NifValue::tFloat );
-	typeMap.insert( "sizedstring", NifValue::tSizedString );
-	typeMap.insert( "text",        NifValue::tText );
-	typeMap.insert( "shortstring", NifValue::tShortString );
-	typeMap.insert( "color3",      NifValue::tColor3 );
-	typeMap.insert( "color4",      NifValue::tColor4 );
-	typeMap.insert( "vector4",     NifValue::tVector4 );
-	typeMap.insert( "vector3",     NifValue::tVector3 );
-	typeMap.insert( "quat",        NifValue::tQuat );
-	typeMap.insert( "quaternion",  NifValue::tQuat );
-	typeMap.insert( "quaternion_wxyz", NifValue::tQuat );
-	typeMap.insert( "quaternion_xyzw", NifValue::tQuatXYZW );
-	typeMap.insert( "matrix33",       NifValue::tMatrix );
-	typeMap.insert( "matrix44",       NifValue::tMatrix4 );
-	typeMap.insert( "vector2",        NifValue::tVector2 );
-	typeMap.insert( "triangle",       NifValue::tTriangle );
-	typeMap.insert( "bytearray",      NifValue::tByteArray );
-	typeMap.insert( "bytematrix",     NifValue::tByteMatrix );
-	typeMap.insert( "fileversion",    NifValue::tFileVersion );
-	typeMap.insert( "headerstring",   NifValue::tHeaderString );
-	typeMap.insert( "linestring",     NifValue::tLineString );
-	typeMap.insert( "stringpalette",  NifValue::tStringPalette );
-	typeMap.insert( "stringoffset",   NifValue::tStringOffset );
-	typeMap.insert( "stringindex",    NifValue::tStringIndex );
-	typeMap.insert( "blocktypeindex", NifValue::tBlockTypeIndex );
+	typeMap.insert( "SizedString", NifValue::tSizedString );
+	typeMap.insert( "Text",        NifValue::tText );
+	typeMap.insert( "ShortString", NifValue::tShortString );
+	typeMap.insert( "Color3",      NifValue::tColor3 );
+	typeMap.insert( "Color4",      NifValue::tColor4 );
+	typeMap.insert( "Vector4",     NifValue::tVector4 );
+	typeMap.insert( "Vector3",     NifValue::tVector3 );
+	typeMap.insert( "TBC",         NifValue::tVector3 );
+	typeMap.insert( "Quaternion",  NifValue::tQuat );
+	typeMap.insert( "QuaternionWXYZ", NifValue::tQuat );
+	typeMap.insert( "QuaternionXYZW", NifValue::tQuatXYZW );
+	typeMap.insert( "Matrix33",       NifValue::tMatrix );
+	typeMap.insert( "Matrix44",       NifValue::tMatrix4 );
+	typeMap.insert( "Vector2",        NifValue::tVector2 );
+	typeMap.insert( "TexCoord",       NifValue::tVector2 );
+	typeMap.insert( "Triangle",       NifValue::tTriangle );
+	typeMap.insert( "ByteArray",      NifValue::tByteArray );
+	typeMap.insert( "ByteMatrix",     NifValue::tByteMatrix );
+	typeMap.insert( "FileVersion",    NifValue::tFileVersion );
+	typeMap.insert( "HeaderString",   NifValue::tHeaderString );
+	typeMap.insert( "LineString",     NifValue::tLineString );
+	typeMap.insert( "StringPalette",  NifValue::tStringPalette );
+	typeMap.insert( "StringOffset",   NifValue::tStringOffset );
+	typeMap.insert( "StringIndex",    NifValue::tStringIndex );
+	typeMap.insert( "BlockTypeIndex", NifValue::tBlockTypeIndex );
 	typeMap.insert( "char8string",    NifValue::tChar8String );
 	typeMap.insert( "string",   NifValue::tString );
-	typeMap.insert( "filepath", NifValue::tFilePath );
+	typeMap.insert( "FilePath", NifValue::tFilePath );
 	typeMap.insert( "blob",     NifValue::tBlob );
+	typeMap.insert( "hfloat",   NifValue::tHfloat );
+	typeMap.insert( "HalfVector3", NifValue::tHalfVector3 );
+	typeMap.insert( "ByteVector3", NifValue::tByteVector3 );
+	typeMap.insert( "HalfVector2", NifValue::tHalfVector2 );
+	typeMap.insert( "HalfTexCoord", NifValue::tHalfVector2 );
+	typeMap.insert( "ByteColor4", NifValue::tByteColor4 );
 
 	enumMap.clear();
 }
@@ -200,7 +224,7 @@ bool NifValue::registerEnumType( const QString & eid, EnumType eTyp )
 
 NifValue::EnumType NifValue::enumType( const QString & eid )
 {
-	return enumMap.value( eid, { EnumType::eNone } ).t;
+	return (enumMap.contains( eid )) ? enumMap[eid].t : EnumType::eNone;
 }
 
 QString NifValue::enumOptionName( const QString & eid, quint32 val )
@@ -314,31 +338,19 @@ const NifValue::EnumOptions & NifValue::enumOptionData( const QString & eid )
 	return enumMap[eid];
 }
 
-NifValue::NifValue( Type t ) : typ( tNone ), abstract( false )
-{
-	changeType( t );
-}
-
-NifValue::NifValue( const NifValue & other ) : typ( tNone )
-{
-	operator=( other );
-}
-
-NifValue::~NifValue()
-{
-	clear();
-}
-
 void NifValue::clear()
 {
 	switch ( typ ) {
 	case tVector4:
-		delete static_cast<Vector3 *>( val.data );
+		delete static_cast<Vector4 *>( val.data );
 		break;
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		delete static_cast<Vector3 *>( val.data );
 		break;
 	case tVector2:
+	case tHalfVector2:
 		delete static_cast<Vector2 *>( val.data );
 		break;
 	case tMatrix:
@@ -374,6 +386,7 @@ void NifValue::clear()
 		delete static_cast<Color3 *>( val.data );
 		break;
 	case tColor4:
+	case tByteColor4:
 		delete static_cast<Color4 *>( val.data );
 		break;
 	case tBlob:
@@ -401,6 +414,8 @@ void NifValue::changeType( Type t )
 		val.i32 = -1;
 		return;
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		val.data = new Vector3();
 		break;
 	case tVector4:
@@ -417,6 +432,7 @@ void NifValue::changeType( Type t )
 		val.data = new Quat();
 		return;
 	case tVector2:
+	case tHalfVector2:
 		val.data = new Vector2();
 		return;
 	case tTriangle:
@@ -435,6 +451,7 @@ void NifValue::changeType( Type t )
 		val.data = new Color3();
 		return;
 	case tColor4:
+	case tByteColor4:
 		val.data = new Color4();
 		return;
 	case tByteArray:
@@ -464,6 +481,8 @@ void NifValue::operator=( const NifValue & other )
 
 	switch ( typ ) {
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		*static_cast<Vector3 *>( val.data ) = *static_cast<Vector3 *>( other.val.data );
 		return;
 	case tVector4:
@@ -480,6 +499,7 @@ void NifValue::operator=( const NifValue & other )
 		*static_cast<Quat *>( val.data ) = *static_cast<Quat *>( other.val.data );
 		return;
 	case tVector2:
+	case tHalfVector2:
 		*static_cast<Vector2 *>( val.data ) = *static_cast<Vector2 *>( other.val.data );
 		return;
 	case tString:
@@ -495,6 +515,7 @@ void NifValue::operator=( const NifValue & other )
 		*static_cast<Color3 *>( val.data ) = *static_cast<Color3 *>( other.val.data );
 		return;
 	case tColor4:
+	case tByteColor4:
 		*static_cast<Color4 *>( val.data ) = *static_cast<Color4 *>( other.val.data );
 		return;
 	case tByteArray:
@@ -516,6 +537,183 @@ void NifValue::operator=( const NifValue & other )
 	}
 }
 
+bool NifValue::operator==( const NifValue & other ) const
+{
+	switch ( typ ) {
+	case tByte:
+		return val.u08 == other.val.u08;
+
+	case tWord:
+	case tFlags:
+	case tStringOffset:
+	case tBlockTypeIndex:
+	case tShort:
+		return val.u16 == other.val.u16;
+
+	case tBool:
+	case tUInt:
+	case tULittle32:
+	case tStringIndex:
+	case tFileVersion:
+		return val.u32 == other.val.u32;
+
+	case tInt:
+	case tLink:
+	case tUpLink:
+		return val.i32 == other.val.i32;
+
+	case tFloat:
+	case tHfloat:
+		return val.f32 == other.val.f32;
+	case tString:
+	case tSizedString:
+	case tText:
+	case tShortString:
+	case tHeaderString:
+	case tLineString:
+	case tChar8String:
+	case tFilePath:
+	{
+		QString * s1 = static_cast<QString *>(val.data);
+		QString * s2 = static_cast<QString *>(other.val.data);
+
+		if ( !s1 || !s2 )
+			return false;
+
+		return *s1 == *s2;
+	}
+
+	case tColor3:
+	{
+		Color3 * c1 = static_cast<Color3 *>(val.data);
+		Color3 * c2 = static_cast<Color3 *>(other.val.data);
+
+		if ( !c1 || !c2 )
+			return false;
+
+		return c1->toQColor() == c2->toQColor();
+	}
+
+	case tColor4:
+	case tByteColor4:
+	{
+		Color4 * c1 = static_cast<Color4 *>(val.data);
+		Color4 * c2 = static_cast<Color4 *>(other.val.data);
+
+		if ( !c1 || !c2 )
+			return false;
+
+		return c1->toQColor() == c2->toQColor();
+	}
+
+	case tVector2:
+	case tHalfVector2:
+	{
+		Vector2 * vec1 = static_cast<Vector2 *>(val.data);
+		Vector2 * vec2 = static_cast<Vector2 *>(other.val.data);
+
+		if ( !vec1 || !vec2 )
+			return false;
+
+		return *vec1 == *vec2;
+	}
+
+	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
+	{
+		Vector3 * vec1 = static_cast<Vector3 *>(val.data);
+		Vector3 * vec2 = static_cast<Vector3 *>(other.val.data);
+
+		if ( !vec1 || !vec2 )
+			return false;
+
+		return *vec1 == *vec2;
+	}
+
+	case tVector4:
+	{
+		Vector4 * vec1 = static_cast<Vector4 *>(val.data);
+		Vector4 * vec2 = static_cast<Vector4 *>(other.val.data);
+
+		if ( !vec1 || !vec2 )
+			return false;
+
+		return *vec1 == *vec2;
+	}
+
+	case tQuat:
+	case tQuatXYZW:
+	{
+		Quat * quat1 = static_cast<Quat *>(val.data);
+		Quat * quat2 = static_cast<Quat *>(other.val.data);
+
+		if ( !quat1 || !quat2 )
+			return false;
+
+		return *quat1 == *quat2;
+	}
+
+	case tTriangle:
+	{
+		Triangle * tri1 = static_cast<Triangle *>(val.data);
+		Triangle * tri2 = static_cast<Triangle *>(other.val.data);
+
+		if ( !tri1 || !tri2 )
+			return false;
+
+		return *tri1 == *tri2;
+	}
+
+	case tByteArray:
+	case tByteMatrix:
+	case tStringPalette:
+	case tBlob:
+	{
+		QByteArray * a1 = static_cast<QByteArray *>(val.data);
+		QByteArray * a2 = static_cast<QByteArray *>(other.val.data);
+
+		if ( a1->isNull() || a2->isNull() )
+			return false;
+
+		return *a1 == *a2;
+	}
+
+	case tMatrix:
+	{
+		Matrix * m1 = static_cast<Matrix *>(val.data);
+		Matrix * m2 = static_cast<Matrix *>(other.val.data);
+
+		if ( !m1 || !m2 )
+			return false;
+
+		return *m1 == *m2;
+	}
+	case tMatrix4:
+	{
+		Matrix4 * m1 = static_cast<Matrix4 *>(val.data);
+		Matrix4 * m2 = static_cast<Matrix4 *>(other.val.data);
+
+		if ( !m1 || !m2 )
+			return false;
+
+		return *m1 == *m2;
+	}
+	case tNone:
+	default:
+		return false;
+	}
+
+	return false;
+}
+
+bool NifValue::operator<( const NifValue & other ) const
+{
+	Q_UNUSED( other );
+	return false;
+}
+
+
 QVariant NifValue::toVariant() const
 {
 	QVariant v;
@@ -523,7 +721,7 @@ QVariant NifValue::toVariant() const
 	return v;
 }
 
-bool NifValue::fromVariant( const QVariant & var )
+bool NifValue::setFromVariant( const QVariant & var )
 {
 	if ( var.canConvert<NifValue>() ) {
 		operator=( var.value<NifValue>() );
@@ -535,7 +733,7 @@ bool NifValue::fromVariant( const QVariant & var )
 	return false;
 }
 
-bool NifValue::fromString( const QString & s )
+bool NifValue::setFromString( const QString & s )
 {
 	bool ok;
 
@@ -566,6 +764,7 @@ bool NifValue::fromString( const QString & s )
 		val.i32 = s.toInt( &ok, 0 );
 		return ok;
 	case tUInt:
+	case tULittle32:
 		val.u32 = s.toUInt( &ok, 0 );
 		return ok;
 	case tStringIndex:
@@ -576,6 +775,9 @@ bool NifValue::fromString( const QString & s )
 		val.i32 = s.toInt( &ok );
 		return ok;
 	case tFloat:
+		val.f32 = s.toDouble( &ok );
+		return ok;
+	case tHfloat:
 		val.f32 = s.toDouble( &ok );
 		return ok;
 	case tString:
@@ -591,6 +793,7 @@ bool NifValue::fromString( const QString & s )
 		static_cast<Color3 *>( val.data )->fromQColor( QColor( s ) );
 		return true;
 	case tColor4:
+	case tByteColor4:
 		static_cast<Color4 *>( val.data )->fromQColor( QColor( s ) );
 		return true;
 	case tFileVersion:
@@ -636,6 +839,7 @@ QString NifValue::toString() const
 	case tStringOffset:
 	case tBlockTypeIndex:
 	case tUInt:
+	case tULittle32:
 		return QString::number( val.u32 );
 	case tStringIndex:
 		return QString::number( val.u32 );
@@ -647,7 +851,9 @@ QString NifValue::toString() const
 	case tUpLink:
 		return QString::number( val.i32 );
 	case tFloat:
-		return NumOrMinMax( val.f32, 'f', 4 );
+		return NumOrMinMax( val.f32, 'f', 6 );
+	case tHfloat:
+		return QString::number( val.f32, 'f', 4 );
 	case tString:
 	case tSizedString:
 	case tText:
@@ -665,6 +871,7 @@ QString NifValue::toString() const
 			       .arg( (int)( col->blue() * 0xff ),  2, 16, QChar( '0' ) );
 		}
 	case tColor4:
+	case tByteColor4:
 		{
 			Color4 * col = static_cast<Color4 *>( val.data );
 			return QString( "#%1%2%3%4" )
@@ -674,6 +881,7 @@ QString NifValue::toString() const
 			       .arg( (int)( col->alpha() * 0xff ), 2, 16, QChar( '0' ) );
 		}
 	case tVector2:
+	case tHalfVector2:
 		{
 			Vector2 * v = static_cast<Vector2 *>( val.data );
 
@@ -682,6 +890,8 @@ QString NifValue::toString() const
 			       .arg( NumOrMinMax( (*v)[1], 'f', VECTOR_DECIMALS ) );
 		}
 	case tVector3:
+	case tHalfVector3:
+	case tByteVector3:
 		{
 			Vector3 * v = static_cast<Vector3 *>( val.data );
 
@@ -797,17 +1007,28 @@ QColor NifValue::toColor() const
 {
 	if ( type() == tColor3 )
 		return static_cast<Color3 *>( val.data )->toQColor();
-	else if ( type() == tColor4 )
+	else if ( type() == tColor4 || type() == tByteColor4 )
 		return static_cast<Color4 *>( val.data )->toQColor();
 
 	return QColor();
 }
 
-void NifOStream::init()
+/*
+ *  NifIStream
+ */
+
+void NifIStream::init()
 {
-	bool32bit    = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust   = ( model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D );
-	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
+	bool32bit = (model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002);
+	linkAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D);
+	stringAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003);
+	bigEndian = false; // set when tFileVersion is read
+
+	dataStream = std::unique_ptr<QDataStream>( new QDataStream( device ) );
+	dataStream->setByteOrder( QDataStream::LittleEndian );
+	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
+
+	maxLength = 0x8000;
 }
 
 bool NifIStream::read( NifValue & val )
@@ -846,6 +1067,18 @@ bool NifIStream::read( NifValue & val )
 			*dataStream >> val.val.u32;
 			return ( dataStream->status() == QDataStream::Ok );
 		}
+	case NifValue::tULittle32:
+		{
+			if ( bigEndian )
+				dataStream->setByteOrder( QDataStream::LittleEndian );
+
+			*dataStream >> val.val.u32;
+
+			if ( bigEndian )
+				dataStream->setByteOrder( QDataStream::BigEndian );
+
+			return (dataStream->status() == QDataStream::Ok);
+		}
 	case NifValue::tStringIndex:
 		{
 			*dataStream >> val.val.u32;
@@ -864,6 +1097,65 @@ bool NifIStream::read( NifValue & val )
 	case NifValue::tFloat:
 		{
 			*dataStream >> val.val.f32;
+			return ( dataStream->status() == QDataStream::Ok );
+		}
+	case NifValue::tHfloat:
+		{
+			uint16_t half;
+			*dataStream >> half;
+			val.val.u32 = half_to_float( half );
+			return (dataStream->status() == QDataStream::Ok);
+		}
+	case NifValue::tByteVector3:
+		{
+			quint8 x, y, z;
+			float xf, yf, zf;
+
+			*dataStream >> x;
+			*dataStream >> y;
+			*dataStream >> z;
+
+			xf = (double(x) / 255.0) * 2.0 - 1.0;
+			yf = (double(y) / 255.0) * 2.0 - 1.0;
+			zf = (double(z) / 255.0) * 2.0 - 1.0;
+	
+			Vector3 * v = static_cast<Vector3 *>(val.val.data);
+			v->xyz[0] = xf; v->xyz[1] = yf; v->xyz[2] = zf;
+	
+			return (dataStream->status() == QDataStream::Ok);
+		}
+	case NifValue::tHalfVector3:
+		{
+			uint16_t x, y, z;
+			union { float f; uint32_t i; } xu, yu, zu;
+
+			*dataStream >> x;
+			*dataStream >> y;
+			*dataStream >> z;
+			
+			xu.i = half_to_float( x );
+			yu.i = half_to_float( y );
+			zu.i = half_to_float( z );
+	
+			Vector3 * v = static_cast<Vector3 *>(val.val.data);
+			v->xyz[0] = xu.f; v->xyz[1] = yu.f; v->xyz[2] = zu.f;
+	
+			return ( dataStream->status() == QDataStream::Ok );
+		}
+	case NifValue::tHalfVector2:
+		{
+			uint16_t x, y;
+			union { float f; uint32_t i; } xu, yu;
+
+			*dataStream >> x;
+			*dataStream >> y;
+			
+			xu.i = half_to_float( x );
+			yu.i = half_to_float( y );
+	
+			Vector2 * v = static_cast<Vector2 *>(val.val.data);
+			v->xy[0] = xu.f; v->xy[1] = yu.f;
+	
 			return ( dataStream->status() == QDataStream::Ok );
 		}
 	case NifValue::tVector3:
@@ -907,6 +1199,19 @@ bool NifIStream::read( NifValue & val )
 		}
 	case NifValue::tColor3:
 		return device->read( (char *)static_cast<Color3 *>( val.val.data )->rgb, 12 ) == 12;
+	case NifValue::tByteColor4:
+		{
+			quint8 r, g, b, a;
+			*dataStream >> r;
+			*dataStream >> g;
+			*dataStream >> b;
+			*dataStream >> a;
+
+			Color4 * c = static_cast<Color4 *>(val.val.data);
+			c->setRGBA( (float)r / 255.0, (float)g / 255.0, (float)b / 255.0, (float)a / 255.0 );
+
+			return (dataStream->status() == QDataStream::Ok);
+		}
 	case NifValue::tColor4:
 		{
 			Color4 * c = static_cast<Color4 *>( val.val.data );
@@ -944,7 +1249,7 @@ bool NifIStream::read( NifValue & val )
 
 			//string.replace( "\r", "\\r" );
 			//string.replace( "\n", "\\n" );
-			*static_cast<QString *>( val.val.data ) = QString( string );
+			*static_cast<QString *>( val.val.data ) = QString::fromLocal8Bit( string );
 		}
 		return true;
 	case NifValue::tText:
@@ -1140,20 +1445,16 @@ bool NifIStream::read( NifValue & val )
 	return false;
 }
 
-void NifIStream::init()
+
+/*
+ *  NifOStream
+ */
+
+void NifOStream::init()
 {
-	bool32bit    = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
-	linkAdjust   = ( model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D );
-	stringAdjust = ( model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003 );
-	bigEndian    = false; // set when tFileVersion is read
-
-	dataStream = new QDataStream( device );
-	dataStream->setByteOrder( QDataStream::LittleEndian );
-	dataStream->setFloatingPointPrecision( QDataStream::SinglePrecision );
-
-	QSettings cfg;
-	maxLength = cfg.value( "maximum string length", 0x8000 ).toInt();
-	//maxLength = Options::maxStringLength();
+	bool32bit = (model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002);
+	linkAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() <  0x0303000D);
+	stringAdjust = (model->inherits( "NifModel" ) && model->getVersionNumber() >= 0x14010003);
 }
 
 bool NifOStream::write( const NifValue & val )
@@ -1176,6 +1477,7 @@ bool NifOStream::write( const NifValue & val )
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
 	case NifValue::tUInt:
+	case NifValue::tULittle32:
 	case NifValue::tStringIndex:
 		return device->write( (char *)&val.val.u32, 4 ) == 4;
 	case NifValue::tFileVersion:
@@ -1208,6 +1510,60 @@ bool NifOStream::write( const NifValue & val )
 
 	case NifValue::tFloat:
 		return device->write( (char *)&val.val.f32, 4 ) == 4;
+	case NifValue::tHfloat:
+		{
+			uint16_t half = half_from_float( val.val.u32 );
+			return device->write( (char *)&half, 2 ) == 2;
+		}
+	case NifValue::tByteVector3:
+		{
+			Vector3 * vec = static_cast<Vector3 *>(val.val.data);
+			if ( !vec )
+				return false;
+	
+			uint8_t v[3];
+			v[0] = round( ((vec->xyz[0] + 1.0) / 2.0) * 255.0 );
+			v[1] = round( ((vec->xyz[1] + 1.0) / 2.0) * 255.0 );
+			v[2] = round( ((vec->xyz[2] + 1.0) / 2.0) * 255.0 );
+
+			return device->write( (char*)v, 3 ) == 3;
+		}
+	case NifValue::tHalfVector3:
+		{
+			Vector3 * vec = static_cast<Vector3 *>(val.val.data);
+			if ( !vec )
+				return false;
+
+			union { float f; uint32_t i; } xu, yu, zu;
+
+			xu.f = vec->xyz[0];
+			yu.f = vec->xyz[1];
+			zu.f = vec->xyz[2];
+
+			uint16_t v[3];
+			v[0] = half_from_float( xu.i );
+			v[1] = half_from_float( yu.i );
+			v[2] = half_from_float( zu.i );
+	
+			return device->write( (char*)v, 6 ) == 6;
+		}
+	case NifValue::tHalfVector2:
+		{
+			Vector2 * vec = static_cast<Vector2 *>(val.val.data);
+			if ( !vec )
+				return false;
+
+			union { float f; uint32_t i; } xu, yu;
+
+			xu.f = vec->xy[0];
+			yu.f = vec->xy[1];
+
+			uint16_t v[2];
+			v[0] = half_from_float( xu.i );
+			v[1] = half_from_float( yu.i );
+	
+			return device->write( (char*)v, 4 ) == 4;
+		}
 	case NifValue::tVector3:
 		return device->write( (char *)static_cast<Vector3 *>( val.val.data )->xyz, 12 ) == 12;
 	case NifValue::tVector4:
@@ -1229,6 +1585,21 @@ bool NifOStream::write( const NifValue & val )
 		return device->write( (char *)static_cast<Vector2 *>( val.val.data )->xy, 8 ) == 8;
 	case NifValue::tColor3:
 		return device->write( (char *)static_cast<Color3 *>( val.val.data )->rgb, 12 ) == 12;
+	case NifValue::tByteColor4:
+		{
+			Color4 * color = static_cast<Color4 *>(val.val.data);
+			if ( !color )
+				return false;
+
+			quint8 c[4];
+
+			auto cF = color->rgba;
+			for ( int i = 0; i < 4; i++ ) {
+				c[i] = round( cF[i] * 255.0f );
+			}
+
+			return device->write( (char*)c, 4 ) == 4;
+		}
 	case NifValue::tColor4:
 		return device->write( (char *)static_cast<Color4 *>( val.val.data )->rgba, 16 ) == 16;
 	case NifValue::tSizedString:
@@ -1245,7 +1616,7 @@ bool NifOStream::write( const NifValue & val )
 		}
 	case NifValue::tShortString:
 		{
-			QByteArray string = static_cast<QString *>( val.val.data )->toLatin1();
+			QByteArray string = static_cast<QString *>( val.val.data )->toLocal8Bit();
 			string.replace( "\\r", "\r" );
 			string.replace( "\\n", "\n" );
 
@@ -1377,6 +1748,11 @@ bool NifOStream::write( const NifValue & val )
 	return false;
 }
 
+
+/*
+ *  NifSStream
+ */
+
 void NifSStream::init()
 {
 	bool32bit = ( model->inherits( "NifModel" ) && model->getVersionNumber() <= 0x04000002 );
@@ -1403,11 +1779,20 @@ int NifSStream::size( const NifValue & val )
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
 	case NifValue::tUInt:
+	case NifValue::tULittle32:
 	case NifValue::tStringIndex:
 	case NifValue::tFileVersion:
 	case NifValue::tLink:
 	case NifValue::tUpLink:
 	case NifValue::tFloat:
+		return 4;
+	case NifValue::tHfloat:
+		return 2;
+	case NifValue::tByteVector3:
+		return 3;
+	case NifValue::tHalfVector3:
+		return 6;
+	case NifValue::tHalfVector2:
 		return 4;
 	case NifValue::tVector3:
 		return 12;
@@ -1426,6 +1811,8 @@ int NifSStream::size( const NifValue & val )
 		return 8;
 	case NifValue::tColor3:
 		return 12;
+	case NifValue::tByteColor4:
+		return 4;
 	case NifValue::tColor4:
 		return 16;
 	case NifValue::tSizedString:

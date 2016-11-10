@@ -63,7 +63,7 @@ signals:
 protected:
 	void run() override final;
 
-	QList<Message> checkLinks( const class NifModel * nif, const class QModelIndex & iParent, bool kf );
+	QList<TestMessage> checkLinks( const class NifModel * nif, const class QModelIndex & iParent, bool kf );
 
 	FileQueue * queue;
 

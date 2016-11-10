@@ -7,22 +7,29 @@ TARGET   = NifSkope
 
 QT += xml opengl network widgets
 
+# Require Qt 5.5 or higher
+contains(QT_VERSION, ^5\\.[0-4]\\..*) {
+	message("Cannot build NifSkope with Qt version $${QT_VERSION}")
+	error("Minimum required version is Qt 5.5")
+}
+
 # C++11 Support
 CONFIG += c++11
 
 # Dependencies
-CONFIG += fsengine nvtristrip qhull
+CONFIG += nvtristrip qhull soil zlib lz4
+win32:CONFIG += fsengine
 
 # Debug/Release options
 CONFIG(debug, debug|release) {
 	# Debug Options
+	BUILD = debug
 	CONFIG += console
 } else {
 	# Release Options
+	BUILD = release
 	CONFIG -= console
-	DEFINES += QT_NO_DEBUG_OUPUT
-	# TODO: Clean up qWarnings first before using
-	#DEFINES += QT_NO_WARNING_OUTPUT
+	DEFINES += QT_NO_DEBUG_OUTPUT
 }
 # TODO: Get rid of this define
 #	uncomment this if you want the text stats gl option
@@ -38,7 +45,7 @@ TRANSLATIONS += \
 DEFINES += \
 	QT_NO_CAST_FROM_BYTEARRAY \ # QByteArray deprecations
 	QT_NO_URL_CAST_FROM_STRING \ # QUrl deprecations
-	QT_DISABLE_DEPRECATED_BEFORE=0x050200 #\ # Disable all functions deprecated as of 5.2
+	QT_DISABLE_DEPRECATED_BEFORE=0x050300 #\ # Disable all functions deprecated as of 5.3
 
 	# Useful for tracking down strings not using
 	#	QObject::tr() for translations.
@@ -46,37 +53,35 @@ DEFINES += \
 	# QT_NO_CAST_TO_ASCII
 
 
+VISUALSTUDIO = false
+*msvc* {
+	######################################
+	## Detect Visual Studio vs Qt Creator
+	######################################
+	#	Qt Creator = shadow build
+	#	Visual Studio = no shadow build
+
+	# Strips PWD (source) from OUT_PWD (build) to test if they are on the same path
+	#	- contains() does not work
+	#	- equals( PWD, $${OUT_PWD} ) is not sufficient
+	REP = $$replace(OUT_PWD, $${PWD}, "")
+
+	# Test if Build dir is outside Source dir
+	#	if REP == OUT_PWD, not Visual Studio
+	!equals( REP, $${OUT_PWD} ):VISUALSTUDIO = true
+	unset(REP)
+
+	# Set OUT_PWD to ./bin so that qmake doesn't clutter PWD
+	#	Unfortunately w/ VS qmake still creates empty debug/release folders in PWD.
+	#	They are never used but get auto-generated because of CONFIG += debug_and_release
+	$$VISUALSTUDIO:OUT_PWD = $${_PRO_FILE_PWD_}/bin
+}
+
 ###############################
-## Test for Shadow Build
-###############################
-#	Qt Creator = shadow build
-#	Visual Studio = no shadow build
-
-SHADOWBUILD = true
-
-# Strips PWD (source) from OUT_PWD (build) to test if they are on the same path
-#	- contains() does not work
-#	- equals( PWD, $${OUT_PWD} ) is not sufficient
-REP = $$replace(OUT_PWD, $${PWD}, "")
-
-# Build dir is inside Source dir
-!equals( REP, $${OUT_PWD} ):SHADOWBUILD = false
-
-# Set OUT_PWD to ./bin so that qmake doesn't clutter PWD
-!$$SHADOWBUILD:OUT_PWD = $${_PRO_FILE_PWD_}/bin
-# Unfortunately w/ VS qmake still creates empty debug/release folders in PWD.
-# They are never used but get auto-generated anyway.
-# This setting does not help either:
-#	!$$SHADOWBUILD:DESTDIR = $${OUT_PWD}
-unset(REP)
-
-
-###############################
-## INCLUDES
+## FUNCTIONS
 ###############################
 
 include(NifSkope_functions.pri)
-include(NifSkope_targets.pri)
 
 
 ###############################
@@ -103,20 +108,17 @@ DEFINES += NIFSKOPE_VERSION=\\\"$${VER}\\\"
 
 # build_pass is necessary
 # Otherwise it will create empty .moc, .ui, etc. dirs on the drive root
-build_pass {
-	Debug:   bld = debug
-	Release: bld = release
-
-	equals( SHADOWBUILD, true ) {
+build_pass|!debug_and_release {
+	win32:equals( VISUALSTUDIO, true ) {
+		# Visual Studio
+		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${BUILD}
+		# INTERMEDIATE FILES
+		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${BUILD}
+	} else {
 		# Qt Creator
-		DESTDIR = $${OUT_PWD}/$${bld}
+		DESTDIR = $${OUT_PWD}/$${BUILD}
 		# INTERMEDIATE FILES
 		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/
-	} else {
-		# Visual Studio
-		DESTDIR = $${_PRO_FILE_PWD_}/bin/$${bld}
-		# INTERMEDIATE FILES
-		INTERMEDIATE = $${DESTDIR}/../GeneratedFiles/$${bld}
 	}
 
 	UI_DIR = $${INTERMEDIATE}/.ui
@@ -124,6 +126,12 @@ build_pass {
 	RCC_DIR = $${INTERMEDIATE}/.qrc
 	OBJECTS_DIR = $${INTERMEDIATE}/.obj
 }
+
+###############################
+## TARGETS
+###############################
+
+include(NifSkope_targets.pri)
 
 
 ###############################
@@ -142,7 +150,7 @@ HEADERS += \
 	src/gl/dds/Image.h \
 	src/gl/dds/PixelFormat.h \
 	src/gl/dds/Stream.h \
-	src/gl/glcontrolable.h \
+	src/gl/controllers.h \
 	src/gl/glcontroller.h \
 	src/gl/glmarker.h \
 	src/gl/glmesh.h \
@@ -153,11 +161,11 @@ HEADERS += \
 	src/gl/gltex.h \
 	src/gl/gltexloaders.h \
 	src/gl/gltools.h \
+	src/gl/icontrollable.h \
 	src/gl/marker/constraints.h \
 	src/gl/marker/furniture.h \
 	src/gl/renderer.h \
 	src/glview.h \
-	src/hacking.h \
 	src/importex/3ds.h \
 	src/kfmmodel.h \
 	src/message.h \
@@ -168,9 +176,9 @@ HEADERS += \
 	src/nifskope.h \
 	src/niftypes.h \
 	src/nifvalue.h \
-	src/nvtristripwrapper.h \
-	src/options.h \
+    src/nvtristripwrapper.h \
 	src/qhull.h \
+	src/settings.h \
 	src/spellbook.h \
 	src/spells/blocks.h \
 	src/spells/mesh.h \
@@ -181,7 +189,6 @@ HEADERS += \
 	src/spells/texture.h \
 	src/spells/transform.h \
 	src/widgets/colorwheel.h \
-	src/widgets/copyfnam.h \
 	src/widgets/fileselect.h \
 	src/widgets/floatedit.h \
 	src/widgets/floatslider.h \
@@ -195,7 +202,13 @@ HEADERS += \
 	src/widgets/valueedit.h \
 	src/widgets/xmlcheck.h \
 	src/ui/about_dialog.h \
-	src/version.h
+	src/ui/checkablemessagebox.h \
+	src/ui/settingsdialog.h \
+	src/version.h \
+	lib/half.h \
+	lib/dds.h \
+	src/gl/bsshape.h \
+	src/material.h
 
 SOURCES += \
 	src/basemodel.cpp \
@@ -205,6 +218,7 @@ SOURCES += \
 	src/gl/dds/DirectDrawSurface.cpp \
 	src/gl/dds/Image.cpp \
 	src/gl/dds/Stream.cpp \
+	src/gl/controllers.cpp \
 	src/gl/glcontroller.cpp \
 	src/gl/glmarker.cpp \
 	src/gl/glmesh.cpp \
@@ -229,12 +243,13 @@ SOURCES += \
 	src/nifmodel.cpp \
 	src/nifproxy.cpp \
 	src/nifskope.cpp \
+	src/nifskope_ui.cpp \
 	src/niftypes.cpp \
 	src/nifvalue.cpp \
 	src/nifxml.cpp \
-	src/nvtristripwrapper.cpp \
-	src/options.cpp \
+    src/nvtristripwrapper.cpp \
 	src/qhull.cpp \
+	src/settings.cpp \
 	src/spellbook.cpp \
 	src/spells/animation.cpp \
 	src/spells/blocks.cpp \
@@ -245,7 +260,7 @@ SOURCES += \
 	src/spells/havok.cpp \
 	src/spells/headerstring.cpp \
 	src/spells/light.cpp \
-	src/spells/material.cpp \
+	src/spells/materialedit.cpp \
 	src/spells/mesh.cpp \
 	src/spells/misc.cpp \
 	src/spells/moppcode.cpp \
@@ -260,7 +275,6 @@ SOURCES += \
 	src/spells/texture.cpp \
 	src/spells/transform.cpp \
 	src/widgets/colorwheel.cpp \
-	src/widgets/copyfnam.cpp \
 	src/widgets/fileselect.cpp \
 	src/widgets/floatedit.cpp \
 	src/widgets/floatslider.cpp \
@@ -274,13 +288,24 @@ SOURCES += \
 	src/widgets/valueedit.cpp \
 	src/widgets/xmlcheck.cpp \
 	src/ui/about_dialog.cpp \
-	src/version.cpp
+	src/ui/checkablemessagebox.cpp \
+	src/ui/settingsdialog.cpp \
+	src/version.cpp \
+	lib/half.cpp \
+	src/gl/bsshape.cpp \
+	src/material.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
 
 FORMS += \
-	src/ui/about_dialog.ui
+	src/ui/about_dialog.ui \
+	src/ui/checkablemessagebox.ui \
+	src/ui/nifskope.ui \
+	src/ui/settingsdialog.ui \
+    src/ui/settingsgeneral.ui \
+    src/ui/settingsrender.ui \
+    src/ui/settingsresources.ui
 
 
 ###############################
@@ -288,7 +313,6 @@ FORMS += \
 ###############################
 
 fsengine {
-	DEFINES += FSENGINE
 	INCLUDEPATH += lib/fsengine
 	HEADERS += \
 		lib/fsengine/bsa.h \
@@ -328,6 +352,67 @@ qhull {
 		lib/qhull/src/libqhull/user.h
 }
 
+soil {
+    INCLUDEPATH += lib/soil
+    HEADERS += \
+        lib/soil/image_DXT.h \
+        lib/soil/image_helper.h \
+        lib/soil/SOIL.h \
+        lib/soil/stb_image_aug.h \
+        lib/soil/stbi_DDS_aug.h \
+        lib/soil/stbi_DDS_aug_c.h
+    SOURCES += \
+        lib/soil/image_DXT.c \
+        lib/soil/image_helper.c \
+        lib/soil/SOIL.c \
+        lib/soil/stb_image_aug.c
+}
+
+zlib {
+	INCLUDEPATH += lib/zlib
+
+	HEADERS += \
+		lib/zlib/crc32.h \
+		lib/zlib/deflate.h \
+		lib/zlib/gzguts.h \
+		lib/zlib/inffast.h \
+		lib/zlib/inffixed.h \
+		lib/zlib/inflate.h \
+		lib/zlib/inftrees.h \
+		lib/zlib/trees.h \
+		lib/zlib/zconf.h \
+		lib/zlib/zlib.h \
+		lib/zlib/zutil.h
+
+	SOURCES += \
+		lib/zlib/adler32.c \
+		lib/zlib/compress.c \
+		lib/zlib/crc32.c \
+		lib/zlib/deflate.c \
+		lib/zlib/gzclose.c \
+		lib/zlib/gzlib.c \
+		lib/zlib/gzread.c \
+		lib/zlib/gzwrite.c \
+		lib/zlib/infback.c \
+		lib/zlib/inffast.c \
+		lib/zlib/inflate.c \
+		lib/zlib/inftrees.c \
+		lib/zlib/trees.c \
+		lib/zlib/uncompr.c \
+		lib/zlib/zutil.c
+}
+
+lz4 {
+    DEFINES += LZ4_STATIC XXH_PRIVATE_API
+
+    HEADERS += \
+        lib/lz4frame.h \
+        lib/xxhash.h
+
+    SOURCES += \
+        lib/lz4frame.c \
+        lib/xxhash.c
+}
 
 ###############################
 ## COMPILER SCOPES
@@ -344,32 +429,31 @@ win32 {
 
 # MSVC
 #  Both Visual Studio and Qt Creator
-#  Recommended: msvc2012 or higher
-#              (msvc2010 not tested)
-*msvc201* {
+#  Required: msvc2013 or higher
+*msvc* {
+
+	# Grab _MSC_VER from the mkspecs that Qt was compiled with
+	#	e.g. VS2013 = 1800, VS2012 = 1700, VS2010 = 1600
+	_MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
+	_MSC_VER = $$split(_MSC_VER, =)
+	_MSC_VER = $$member(_MSC_VER, 1)
+
+	# Reject unsupported MSVC versions
+	!isEmpty(_MSC_VER):lessThan(_MSC_VER, 1800) {
+		error("NifSkope only supports MSVC 2013 or later. If this is too prohibitive you may use Qt Creator with MinGW.")
+	}
+
 	# So VCProj Filters do not flatten headers/source
 	CONFIG -= flat
 
 	# COMPILER FLAGS
 
 	#  Optimization flags
-	QMAKE_CXXFLAGS_RELEASE *= -O2
+	QMAKE_CXXFLAGS_RELEASE *= -O2 -arch:SSE2 # SSE2 is the default, but make it explicit
 	#  Multithreaded compiling for Visual Studio
 	QMAKE_CXXFLAGS += -MP
-	
-	# LINKER FLAGS
 
-	#  Manifest Embed
-	#    msvc2012 only (when /MANIFEST:embed was introduced)
-	*msvc2012:$$SHADOWBUILD {
-		# Qt Creator only
-		#	It gives occasional mt.exe errors post-link, so replicate /MANIFEST:embed like VS
-		#	Check status of bug: https://bugreports.qt-project.org/browse/QTBUG-37363
-		#	                     https://codereview.qt-project.org/#change,80782
-		#	... So that this may removed later.
-		CONFIG -= embed_manifest_exe
-		QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTUAC
-	}
+	# LINKER FLAGS
 
 	#  Relocate .lib and .exp files to keep release dir clean
 	QMAKE_LFLAGS += /IMPLIB:$$syspath($${INTERMEDIATE}/NifSkope.lib)
@@ -382,12 +466,6 @@ win32 {
 	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
 }
 
-# MSVC < 2010
-*msvc200* {
-	# Throw up a warning
-	message( WARNING: Project file does not support MSVC 2008 or lower )
-}
-
 
 # MinGW, GCC
 #  Recommended: GCC 4.8.1+
@@ -396,9 +474,20 @@ win32 {
 	# COMPILER FLAGS
 
 	#  Optimization flags
-	QMAKE_CXXFLAGS_RELEASE *= -O3
+	QMAKE_CXXFLAGS_DEBUG -= -O0 -g
+	QMAKE_CXXFLAGS_DEBUG *= -Og -g3
+	QMAKE_CXXFLAGS_RELEASE *= -O3 -mfpmath=sse
+
 	# C++11 Support
 	QMAKE_CXXFLAGS_RELEASE *= -std=c++11
+
+	#  Extension flags
+	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
+}
+
+win32 {
+    # GL libs for Qt 5.5+
+    LIBS += -lopengl32 -lglu32
 }
 
 unix:!macx {
@@ -411,7 +500,7 @@ macx {
 
 
 # Pre/Post Link in build_pass only
-build_pass {
+build_pass|!debug_and_release {
 
 ###############################
 ## QMAKE_PRE_LINK
@@ -431,7 +520,7 @@ build_pass {
 ## QMAKE_POST_LINK
 ###############################
 
-	DEP += \
+	win32:DEP += \
 		dep/NifMopp.dll
 
 	XML += \
@@ -444,8 +533,8 @@ build_pass {
 	QHULLTXT += \
 		lib/qhull/COPYING.txt
 
-	LANG += \
-		res/lang
+	#LANG += \
+	#	res/lang
 
 	SHADERS += \
 		res/shaders
@@ -459,8 +548,9 @@ build_pass {
 
 
 	copyDirs( $$SHADERS, shaders )
-	copyDirs( $$LANG, lang )
-	copyFiles( $$XML $$DEP $$QSS )
+	#copyDirs( $$LANG, lang )
+    #copyFiles( $$XML $$QSS )
+	win32:copyFiles( $$DEP )
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
@@ -477,8 +567,10 @@ build_pass {
 			$$[QT_INSTALL_PLUGINS]/platforms/qwindows$${DLLEXT}
 		
 		imageformats += \
+			$$[QT_INSTALL_PLUGINS]/imageformats/qdds$${DLLEXT} \
 			$$[QT_INSTALL_PLUGINS]/imageformats/qjpeg$${DLLEXT} \
-			$$[QT_INSTALL_PLUGINS]/imageformats/qtga$${DLLEXT}
+			$$[QT_INSTALL_PLUGINS]/imageformats/qtga$${DLLEXT} \
+			$$[QT_INSTALL_PLUGINS]/imageformats/qwebp$${DLLEXT}
 
 		copyFiles( $$platforms, platforms, true )
 		copyFiles( $$imageformats, imageformats, true )
@@ -489,7 +581,7 @@ build_pass {
 
 # Build Messages
 # (Add `buildMessages` to CONFIG to use)
-buildMessages:build_pass {
+buildMessages:build_pass|buildMessages:!debug_and_release {
 	CONFIG(debug, debug|release) {
 		message("Debug Mode")
 	} CONFIG(release, release|debug) {
@@ -503,8 +595,8 @@ buildMessages:build_pass {
 	message(build ________ $$OUT_PWD)
 	message(Qt binaries __ $$[QT_INSTALL_BINS])
 
-	build_pass:equals( SHADOWBUILD, true ) {
-		message(Shadow build __ Yes)
+	build_pass:equals( VISUALSTUDIO, true ) {
+		message(Visual Studio __ Yes)
 	}
 
 	#message($$CONFIG)

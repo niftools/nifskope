@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "uvedit.h"
-#include "options.h"
+#include "settings.h"
 
 #include "nifmodel.h"
 #include "niftypes.h"
@@ -77,7 +77,7 @@ UVWidget * UVWidget::createEditor( NifModel * nif, const QModelIndex & idx )
 	uvw->setAttribute( Qt::WA_DeleteOnClose );
 
 	if ( !uvw->setNifData( nif, idx ) ) {
-		qWarning() << tr( "Could not load texture data for UV editor." );
+		qCWarning( nsSpell ) << tr( "Could not load texture data for UV editor." );
 		delete uvw;
 		return nullptr;
 	}
@@ -99,17 +99,17 @@ static GLshort texArray[4][2] = {
 static GLdouble glUnit  = ( 1.0 / BASESIZE );
 static GLdouble glGridD = GRIDSIZE * glUnit;
 
+QStringList UVWidget::texnames = {
+	"Base Texture", "Dark Texture", "Detail Texture",
+	"Gloss Texture", "Glow Texture", "Bump Map Texture",
+	"Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture",
+	"Decal 3 Texture"
+};
+
+
 UVWidget::UVWidget( QWidget * parent )
 	: QGLWidget( QGLFormat( QGL::SampleBuffers ), parent, 0, Qt::Tool | Qt::WindowStaysOnTopHint ), undoStack( new QUndoStack( this ) )
 {
-	// these are not translated since they are pulled from nif.xml
-	texnames = {
-		"Base Texture", "Dark Texture", "Detail Texture",
-		"Gloss Texture", "Glow Texture", "Bump Map Texture",
-		"Decal 0 Texture", "Decal 1 Texture", "Decal 2 Texture",
-		"Decal 3 Texture"
-	};
-
 	setWindowTitle( tr( "UV Editor" ) );
 	setFocusPolicy( Qt::StrongFocus );
 
@@ -176,29 +176,28 @@ UVWidget::UVWidget( QWidget * parent )
 	connect( aTextureBlend, &QAction::toggled, this, &UVWidget::updateGL );
 	addAction( aTextureBlend );
 
-	coordSetGroup = new QActionGroup( this );
-	connect( coordSetGroup, &QActionGroup::triggered, this, &UVWidget::selectCoordSet );
+	updateSettings();
 
-	coordSetSelect = new QMenu( tr( "Select Coordinate Set" ) );
-	addAction( coordSetSelect->menuAction() );
-	connect( coordSetSelect, &QMenu::aboutToShow, this, &UVWidget::getCoordSets );
-
-	texSlotGroup = new QActionGroup( this );
-	connect( texSlotGroup, &QActionGroup::triggered, this, &UVWidget::selectTexSlot );
-
-	menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
-	addAction( menuTexSelect->menuAction() );
-	connect( menuTexSelect, &QMenu::aboutToShow, this, &UVWidget::getTexSlots );
-
-	currentTexSlot = 0;
-
-	connect( Options::get(), &Options::sigChanged, this, &UVWidget::updateGL );
+	connect( NifSkope::getOptions(), &SettingsDialog::saveSettings, this, &UVWidget::updateSettings );
+	connect( NifSkope::getOptions(), &SettingsDialog::update3D, this, &UVWidget::updateGL );
 }
 
 UVWidget::~UVWidget()
 {
 	delete textures;
 	nif = nullptr;
+}
+
+void UVWidget::updateSettings()
+{
+	QSettings settings;
+	settings.beginGroup( "Settings/Render/Colors/" );
+
+	cfg.background = settings.value( "Background" ).value<QColor>();
+	cfg.highlight = settings.value( "Highlight" ).value<QColor>();
+	cfg.wireframe = settings.value( "Wireframe" ).value<QColor>();
+
+	settings.endGroup();
 }
 
 void UVWidget::initializeGL()
@@ -219,7 +218,7 @@ void UVWidget::initializeGL()
 	glEnable( GL_MULTISAMPLE );
 	glDisable( GL_LIGHTING );
 
-	qglClearColor( Options::bgColor() );
+	qglClearColor( cfg.background );
 
 	if ( !texfile.isEmpty() )
 		bindTexture( texfile );
@@ -259,7 +258,7 @@ void UVWidget::paintGL()
 	glPushMatrix();
 	glLoadIdentity();
 
-	qglClearColor( Options::bgColor() );
+	qglClearColor( cfg.background );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	glDisable( GL_DEPTH_TEST );
@@ -376,7 +375,7 @@ void UVWidget::paintGL()
 
 	if ( !selectRect.isNull() ) {
 		glLoadIdentity();
-		glHighlightColor();
+		glColor( Color4( cfg.highlight ) );
 		glBegin( GL_LINE_LOOP );
 		glVertex( mapToContents( selectRect.topLeft() ) );
 		glVertex( mapToContents( selectRect.topRight() ) );
@@ -387,7 +386,7 @@ void UVWidget::paintGL()
 
 	if ( !selectPoly.isEmpty() ) {
 		glLoadIdentity();
-		glHighlightColor();
+		glColor( Color4( cfg.highlight ) );
 		glBegin( GL_LINE_LOOP );
 		for ( const QPoint& p : selectPoly ) {
 			glVertex( mapToContents( p ) );
@@ -414,9 +413,9 @@ void UVWidget::drawTexCoords()
 	glScalef( 1.0f, 1.0f, 1.0f );
 	glTranslatef( -0.5f, -0.5f, 0.0f );
 
-	Color4 nlColor( Options::nlColor() );
+	Color4 nlColor( cfg.wireframe );
 	nlColor.setAlpha( 0.5f );
-	Color4 hlColor( Options::hlColor() );
+	Color4 hlColor( cfg.highlight );
 	hlColor.setAlpha( 0.5f );
 
 	glLineWidth( 1.0f );
@@ -762,6 +761,24 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 
 	nif = nifModel;
 	iShape = nifIndex;
+	isDataOnSkin = false;
+
+	// Version dependent actions
+	if ( nif && nif->getVersionNumber() != 0x14020007 ) {
+		coordSetGroup = new QActionGroup( this );
+		connect( coordSetGroup, &QActionGroup::triggered, this, &UVWidget::selectCoordSet );
+
+		coordSetSelect = new QMenu( tr( "Select Coordinate Set" ) );
+		addAction( coordSetSelect->menuAction() );
+		connect( coordSetSelect, &QMenu::aboutToShow, this, &UVWidget::getCoordSets );
+
+		texSlotGroup = new QActionGroup( this );
+		connect( texSlotGroup, &QActionGroup::triggered, this, &UVWidget::selectTexSlot );
+
+		menuTexSelect = new QMenu( tr( "Select Texture Slot" ) );
+		addAction( menuTexSelect->menuAction() );
+		connect( menuTexSelect, &QMenu::aboutToShow, this, &UVWidget::getTexSlots );
+	}
 
 	if ( nif ) {
 		connect( nif, &NifModel::modelReset, this, &UVWidget::close );
@@ -770,9 +787,29 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		connect( nif, &NifModel::rowsRemoved, this, &UVWidget::nifDataChanged );
 	}
 
+	if ( !nif )
+		return false;
+
 	textures->setNifFolder( nif->getFolder() );
 
 	iShapeData = nif->getBlock( nif->getLink( iShape, "Data" ) );
+	if ( nif->getVersionNumber() == 0x14020007 && nif->getUserVersion2() >= 100 ) {
+		iShapeData = nif->getIndex( iShape, "Vertex Data" );
+
+		auto vf = nif->get<quint16>( iShape, "VF" );
+		if ( (vf & 0x400) && nif->getUserVersion2() == 100 ) {
+			// Skinned SSE
+			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
+			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
+			iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+			if ( !iPartBlock.isValid() )
+				return false;
+
+			isDataOnSkin = true;
+
+			iShapeData = nif->getIndex( iPartBlock, "Vertex Data" );
+		}
+	}
 
 	if ( nif->inherits( iShapeData, "NiTriBasedGeomData" ) ) {
 		iTexCoords = nif->getIndex( iShapeData, "UV Sets" ).child( 0, 0 );
@@ -784,6 +821,22 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		if ( !setTexCoords() ) {
 			return false;
 		}
+	} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
+		int numVerts = 0;
+		if ( !isDataOnSkin )
+			numVerts = nif->get<int>( iShape, "Num Vertices" );
+		else
+			numVerts = nif->get<uint>( iPartBlock, "Data Size" ) / nif->get<uint>( iPartBlock, "Vertex Size" );
+
+		for ( int i = 0; i < numVerts; i++ ) {
+			texcoords << nif->get<Vector2>( nif->index( i, 0, iShapeData ), "UV" );
+		}
+
+		// Fake index so that isValid() checks do not fail
+		iTexCoords = iShape;
+
+		if ( !setTexCoords() )
+			return false;
 	}
 
 	for ( const auto l :
@@ -864,7 +917,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 
 bool UVWidget::setTexCoords()
 {
-	texcoords = nif->getArray<Vector2>( iTexCoords );
+	if ( nif->inherits( iShape, "NiTriBasedGeom" ) )
+		texcoords = nif->getArray<Vector2>( iTexCoords );
 
 	QVector<Triangle> tris;
 
@@ -879,6 +933,16 @@ bool UVWidget::setTexCoords()
 		for ( int r = 0; r < nif->rowCount( iPoints ); r++ ) {
 			tris += triangulate( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 		}
+	} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
+		if ( !isDataOnSkin ) {
+			tris = nif->getArray<Triangle>( iShape, "Triangles" );
+		} else {
+			auto partIdx = nif->getIndex( iPartBlock, "Partition" );
+			for ( int i = 0; i < nif->rowCount( partIdx ); i++ ) {
+				tris << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
+			}
+		}
+		
 	}
 
 	if ( tris.isEmpty() )
@@ -904,7 +968,25 @@ void UVWidget::updateNif()
 {
 	if ( nif && iTexCoords.isValid() ) {
 		disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
-		nif->setArray<Vector2>( iTexCoords, texcoords );
+		nif->setState( BaseModel::Processing );
+
+		if ( nif->inherits( iShapeData, "NiTriBasedGeomData" ) ) {
+			nif->setArray<Vector2>( iTexCoords, texcoords );
+		} else if ( nif->inherits( iShape, "BSTriShape" ) ) {
+			int numVerts = 0;
+			if ( !isDataOnSkin )
+				numVerts = nif->get<int>( iShape, "Num Vertices" );
+			else
+				numVerts = nif->get<uint>( iPartBlock, "Data Size" ) / nif->get<uint>( iPartBlock, "Vertex Size" );
+
+			for ( int i = 0; i < numVerts; i++ ) {
+				nif->set<HalfVector2>( nif->index( i, 0, iShapeData ), "UV", HalfVector2( texcoords.value( i ) ) );
+			}
+
+			nif->dataChanged( iShape, iShape );
+		}
+		
+		nif->restoreState();
 		connect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 	}
 }
@@ -1448,6 +1530,7 @@ void UVWidget::getCoordSets()
 {
 	coordSetSelect->clear();
 
+	// TODO: Broken for newer nif.xml where NiGeometryData has been corrected
 	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
 
 	for ( int i = 0; i < numUvSets; i++ ) {

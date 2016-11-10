@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2014, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "QDebug"
 
 
-//! \file version.cpp
-
+//! @file version.cpp %NifSkope version number management
 
 // Number of version parts (Default = 3)
 int NifSkopeVersion::numParts = 3;

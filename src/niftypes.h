@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QApplication>
 #include <QColor>
+#include <QDataStream>
 #include <QDebug>
 
 #include <cfloat>
@@ -51,7 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-//! \file niftypes.h Type definitions and functions
+//! @file niftypes.h Matrix, Matrix4, Triangle, Vector2, Vector3, Vector4, Color3, Color4, Quat
 
 class NifModel;
 class QDataStream;
@@ -183,11 +184,26 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Vector2 & v );
 };
 
-//! An attempt at providing a QDebug stream operator for Vector2
-/**
- * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
- * for how this is supposed to work.
- */
+class HalfVector2 : public Vector2
+{
+public:
+	//! Default constructor
+	HalfVector2()
+	{
+		xy[0] = xy[1] = 0.0;
+	}
+	//! Constructor
+	HalfVector2( float x, float y ) : Vector2( x, y )
+	{
+	}
+
+	HalfVector2( Vector2 v ) : Vector2( v )
+	{
+	}
+};
+
+
+//! QDebug stream operator for Vector2
 inline QDebug & operator<<( QDebug dbg, Vector2 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ")";
@@ -226,10 +242,10 @@ public:
 		xyz[1] = v2[1];
 		xyz[2] = z;
 	}
-	//! Constructor from a Vector4
-	/*!
+
+	/*! Constructor from a Vector4
+	 *
 	 * Construct a Vector3 from a Vector4 by truncating.
-	 * Doxygen can't document this due to a circular dependency?
 	 */
 	explicit Vector3( const class Vector4 & );
 
@@ -271,6 +287,15 @@ public:
 		Vector3 w( *this );
 		return w += v;
 	}
+
+	Vector3 & operator+( float s )
+	{
+		xyz[0] += s;
+		xyz[1] += s;
+		xyz[2] += s;
+		return *this;
+	}
+
 	//! Minus operator
 	Vector3 operator-( Vector3 v ) const
 	{
@@ -423,11 +448,43 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Vector3 & v );
 };
 
-//! An attempt at providing a QDebug stream operator for Vector3
-/**
- * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
- * for how this is supposed to work.
- */
+class HalfVector3 : public Vector3
+{
+public:
+	//! Default constructor
+	HalfVector3()
+	{
+		xyz[0] = xyz[1] = xyz[2] = 0.0;
+	}
+	//! Constructor
+	HalfVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+
+	HalfVector3( Vector3 v ) : Vector3( v )
+	{
+	}
+};
+
+class ByteVector3 : public Vector3
+{
+public:
+	//! Default constructor
+	ByteVector3()
+	{
+		xyz[0] = xyz[1] = xyz[2] = 0.0;
+	}
+	//! Constructor
+	ByteVector3( float x, float y, float z ) : Vector3( x, y, z )
+	{
+	}
+
+	ByteVector3( Vector3 v ) : Vector3( v )
+	{
+	}
+};
+
+//! QDebug stream operator for Vector3
 inline QDebug & operator<<( QDebug dbg, Vector3 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
@@ -647,11 +704,7 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Vector4 & v );
 };
 
-//! An attempt at providing a QDebug stream operator for Vector2
-/**
- * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
- * for how this is supposed to work.
- */
+//! QDebug stream operator for Vector2
 inline QDebug & operator<<( QDebug dbg, Vector4 v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ")";
@@ -665,7 +718,6 @@ inline QDataStream & operator>>( QDataStream & ds, Vector4 & v )
 	return ds;
 }
 
-// This doesn't seem to document properly in Doxygen.
 inline Vector3::Vector3( const Vector4 & v4 )
 {
 	xyz[0] = v4[0];
@@ -755,6 +807,12 @@ public:
 		Quat r( *this );
 		return ( r += q );
 	}
+	//! Equality operator
+	bool operator==( const Quat & other ) const
+	{
+		return (wxyz[0] == other.wxyz[0]) && (wxyz[1] == other.wxyz[1]) && (wxyz[2] == other.wxyz[2]) && (wxyz[3] == other.wxyz[3]);
+	}
+
 	//! Find the dot product of two quaternions
 	static float dotproduct( const Quat & q1, const Quat & q2 )
 	{
@@ -844,6 +902,17 @@ public:
 		Q_ASSERT( c < 3 && d < 3 );
 		return m[c][d];
 	}
+	//! Equality operator
+	bool operator==( const Matrix & other ) const
+	{
+		for ( int i = 0; i < 3; i++ ) {
+			for ( int j = 0; j < 3; j++ ) {
+				if ( m[i][j] != other.m[i][j] )
+					return false;
+			}
+		}
+		return true;
+	}
 
 	//! Find the inverted form
 	Matrix inverted() const;
@@ -867,6 +936,12 @@ public:
 
 	//! Format as HTML
 	QString toHtml() const;
+
+	//! Format as raw text
+	QString toRaw() const;
+
+	//! %Data accessor
+	const float * data() const { return (float *)m; }
 
 protected:
 	float m[3][3];
@@ -922,6 +997,17 @@ public:
 		Q_ASSERT( c < 4 && d < 4 );
 		return m[c][d];
 	}
+	//! Equality operator
+	bool operator==( const Matrix4 & other ) const
+	{
+		for ( int i = 0; i < 4; i++ ) {
+			for ( int j = 0; j < 4; j++ ) {
+				if ( m[i][j] != other.m[i][j] )
+					return false;
+			}
+		}
+		return true;
+	}
 
 	// Not implemented; use decompose() instead
 	/*
@@ -935,7 +1021,7 @@ public:
 	//! Compose from translation, rotation and scale
 	void compose( const Vector3 & trans, const Matrix & rot, const Vector3 & scale );
 
-	//Matrix44 inverted() const;
+	Matrix4 inverted() const;
 
 	//! Format as HTML
 	QString toHtml() const;
@@ -955,12 +1041,10 @@ protected:
 class Transform
 {
 public:
-	//! Constructor
-	/*!
-	 * Creates a transform from a NIF index.
+	/*! Creates a transform from a NIF index.
 	 *
-	 * \param nif The model
-	 * \param transform The index to create the transform from
+	 * @param	nif		 	The model.
+	 * @param	transform	The index to create the transform from.
 	 */
 	Transform( const NifModel * nif, const QModelIndex & transform );
 	//! Default constructor
@@ -1034,8 +1118,8 @@ public:
 	//! Gets the third vertex
 	inline quint16 v3() const { return v[2]; }
 
-	//! Flips the triangle face
-	/*!
+	/*! Flips the triangle face
+	 *
 	 * Triangles are usually drawn anticlockwise(?); by changing the order of
 	 * the vertices the triangle is flipped.
 	 */
@@ -1051,6 +1135,12 @@ public:
 		return t;
 	}
 
+	//! Equality operator
+	bool operator==( const Triangle & other ) const
+	{
+		return (v[0] == other.v[0]) && (v[1] == other.v[1]) && (v[2] == other.v[2]);
+	}
+
 protected:
 	quint16 v[3];
 	friend class NifIStream;
@@ -1059,11 +1149,7 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Triangle & t );
 };
 
-//! An attempt at providing a QDebug stream operator for Triangle
-/**
- * See <a href="http://doc.trolltech.com/latest/debug.html">Qt Debugging</a>
- * for how this is supposed to work.
- */
+//! QDebug stream operator for Triangle
 inline QDebug & operator<<( QDebug dbg, Triangle t )
 {
 	dbg.nospace() << "(" << t[0] << "," << t[1] << "," << t[2] << ")";
@@ -1101,10 +1187,10 @@ public:
 	explicit Color3( const QColor & c ) { fromQColor( c ); }
 	//! Constructor
 	explicit Color3( const Vector3 & v ) { fromVector3( v ); }
-	//! Constructor
-	/*!
-	 * Construct a Color3 from a Color4 by truncating.
-	 * Doxygen can't document this due to a circular dependency?
+
+	/*! Construct a Color3 from a Color4 by truncating.
+	 *
+	 * @param	c4	The Color4.
 	 */
 	explicit Color3( const class Color4 & c4 );
 
@@ -1155,6 +1241,15 @@ public:
 	{
 		Color3 c( *this );
 		return ( c += o );
+	}
+
+	Color3 operator+( float x ) const
+	{
+		Color3 c( *this );
+		c.rgb[0] += x;
+		c.rgb[1] += x;
+		c.rgb[2] += x;
+		return c;
 	}
 
 	//! Minus operator
@@ -1276,6 +1371,16 @@ public:
 		return ( c += o );
 	}
 
+	Color4 operator+(float x) const
+	{
+		Color4 c( *this );
+		c.rgba[0] += x;
+		c.rgba[1] += x;
+		c.rgba[2] += x;
+		c.rgba[3] += x;
+		return c;
+	}
+
 	//! Minus operator
 	Color4 operator-( const Color4 & o ) const
 	{
@@ -1345,12 +1450,31 @@ protected:
 	friend QDataStream & operator>>( QDataStream & ds, Color4 & c );
 };
 
-// This refuses to document properly in doxygen.
+class ByteColor4 : public Color4
+{
+public:
+	//! Default constructor
+	ByteColor4() { rgba[0] = rgba[1] = rgba[2] = rgba[3] = 1.0; }
+};
+
+
 inline Color3::Color3( const Color4 & c4 )
 {
 	rgb[0] = c4[0];
 	rgb[1] = c4[1];
 	rgb[2] = c4[2];
+}
+
+inline QDebug & operator<<( QDebug dbg, Color3 c )
+{
+	dbg.nospace() << "(" << c[0] << ", " << c[1] << ", " << c[2] << ")";
+	return dbg.space();
+}
+
+inline QDebug & operator<<( QDebug dbg, Color4 c )
+{
+	dbg.nospace() << "(" << c[0] << ", " << c[1] << ", " << c[2] << ", " << c[3] << ")";
+	return dbg.space();
 }
 
 //! A stream operator for reading in a Color4
@@ -1360,8 +1484,8 @@ inline QDataStream & operator>>( QDataStream & ds, Color4 & c )
 	return ds;
 }
 
-//! A fixed length vector of type T.
-/*!
+/*! A fixed length vector of type T.
+ *
  * %Data is allocated into a vector portion and the data section.
  * The vector simply points to appropriate places in the data section.
  * @param   T   Type of Vector
@@ -1374,8 +1498,8 @@ public:
 	FixedMatrix() : v_( nullptr ), len0( 0 ), len1( 0 )
 	{}
 
-	//! Size Constructor
-	/*!
+	/*! Size Constructor
+	 *
 	 * Allocate the requested number of elements.
 	 */
 	FixedMatrix( int length1, int length2 )
@@ -1450,8 +1574,8 @@ public:
 		return v_[ calcindex( index1, index2 ) ];
 	}
 
-	//! Calculates row? of element
-	/*!
+	/*! Calculates row? of element
+	 *
 	 *  @param[in]  index1  i value of element
 	 *  @param[in]  index2  j value of element
 	 *  @return             position of element?
@@ -1475,20 +1599,20 @@ public:
 	//! Start of the array portion of the vector
 	T * data() const { return v_; }
 
-	//! Assign a string to vector at specified index.
-	/*!
-	 *  @param[in]  index1  Index (i) in array to assign
-	 *  @param[in]  index2  Index (j) in array to assign
-	 *  @param[in]   value  Value to copy into string
+	/*! Assign a string to vector at specified index.
+	 *
+	 * @param [in]	index1	Index (i) in array to assign.
+	 * @param [in]	index2	Index (j) in array to assign.
+	 * @param [in]	value 	Value to copy into string.
 	 */
 	void assign( int index1, int index2, T value )
 	{
 		element( index1, index2 ) = value;
 	}
 
-	//! Swap contents with another FixedMatrix
-	/*!
-	 *  @param[in,out]  other   Other vector to swap with
+	/*! Swap contents with another FixedMatrix.
+	 *
+	 * @param [in,out]	other	Other vector to swap with.
 	 */
 	void swap( FixedMatrix & other )
 	{
@@ -1503,7 +1627,6 @@ private:
 	int len1; //!< Length in second dimension
 };
 
-//!
 typedef FixedMatrix<char> ByteMatrix;
 
 #endif

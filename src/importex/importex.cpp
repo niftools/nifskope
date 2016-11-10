@@ -2,7 +2,7 @@
 
 BSD License
 
-Copyright (c) 2005-2012, NIF File Format Library and Tools
+Copyright (c) 2005-2015, NIF File Format Library and Tools
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,7 @@ void import3ds( NifModel * nif, const QModelIndex & index );
 void NifSkope::fillImportExportMenus()
 {
 	mExport->addAction( tr( "Export .OBJ" ) );
-	mExport->addAction( tr( "Export .DAE" ) );
+	//mExport->addAction( tr( "Export .DAE" ) );
 	mImport->addAction( tr( "Import .3DS" ) );
 	mImport->addAction( tr( "Import .OBJ" ) );
 }
@@ -82,5 +82,5 @@ void NifSkope::sltImportExport( QAction * a )
 	else if ( a->text() == tr( "Import .3DS" ) )
 		import3ds( nif, index );
 	else if ( a->text() == tr( "Export .DAE" ) )
-		exportCol( nif, this->getLoadFileName() );
+		exportCol( nif, currentFile );
 }

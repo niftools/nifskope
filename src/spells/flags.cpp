@@ -39,6 +39,7 @@ public:
 		VertexColor,
 		ZBuffer,
 		BSX,
+		NiAVObject,
 		None
 	};
 
@@ -86,11 +87,11 @@ public:
 				}
 
 				return Controller;
-			} else if ( name == "NiNode" ) {
+			} else if ( name == "NiNode" && nif->getVersionNumber() != 0x14020007 ) {
 				return Node;
 			} else if ( name == "bhkRigidBody" || name == "bhkRigidBodyT" ) {
 				return RigidBody;
-			} else if ( name == "NiTriShape" || name == "NiTriStrips" ) {
+			} else if ( (name == "NiTriShape" || name == "NiTriStrips") && nif->getVersionNumber() != 0x14020007 ) {
 				return Shape;
 			} else if ( name == "NiStencilProperty" ) {
 				return Stencil;
@@ -102,6 +103,8 @@ public:
 				return ZBuffer;
 			} else if ( name == "BSXFlags" ) {
 				return BSX;
+			} else if ( nif->inherits( index.parent(), "NiAVObject" ) && nif->getVersionNumber() == 0x14020007 ) {
+				return NiAVObject;
 			}
 		}
 
@@ -153,6 +156,9 @@ public:
 			break;
 		case BSX:
 			bsxFlags( nif, iFlags );
+			break;
+		case NiAVObject:
+			niavFlags( nif, iFlags );
 			break;
 		default:
 			break;
@@ -460,12 +466,20 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout( &dlg );
 
 		QStringList flagNames{
-			Spell::tr( "Enable Havok" ),          // 1
-			Spell::tr( "Enable Collision" ),      // 2
-			Spell::tr( "Is Skeleton Nif (?)" ),   // 4
-			Spell::tr( "Enable Animation" ),      // 8
-			Spell::tr( "FlameNodes Present" ),    // 16
-			Spell::tr( "EditorMarkers Present" )  // 32
+			Spell::tr( "Animated" ),            // 1
+			Spell::tr( "Havok" ),               // 2
+			Spell::tr( "Ragdoll" ),             // 4
+			Spell::tr( "Complex" ),             // 8
+			Spell::tr( "Addon" ),               // 16
+			Spell::tr( "Editor Marker" ),       // 32
+			Spell::tr( "Dynamic" ),             // 64
+			Spell::tr( "Articulated" ),         // 128
+			Spell::tr( "Needs Transform Updates" ),  // 256
+			Spell::tr( "External Emit" ),            // 512
+			//Spell::tr( "Magic Shader Particles" ), // 1024
+			//Spell::tr( "Lights" ),                 // 2048
+			//Spell::tr( "Breakable" ),              // 4096
+			//Spell::tr( "Searched Breakable (Runtime Only?)" ) // 8192
 		};
 
 		QList<QCheckBox *> chkBoxes;
@@ -482,6 +496,71 @@ public:
 			x = 0;
 			for ( QCheckBox * chk : chkBoxes ) {
 				flags = ( flags & ( ~( 1 << x ) ) ) | ( chk->isChecked() ? 1 << x : 0 );
+				x++;
+			}
+			nif->set<int>( index, flags );
+		}
+	}
+
+	//! Set NiAVObject flags
+	void niavFlags( NifModel * nif, const QModelIndex & index )
+	{
+		quint32 flags = nif->get<int>( index );
+
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout( &dlg );
+
+		QStringList flagNames{
+			Spell::tr( "Hidden" ),                          // 1
+			Spell::tr( "Selective Update" ),                // 2
+			Spell::tr( "Selective Update Transforms" ),     // 4
+			Spell::tr( "Selective Update Controller" ),     // 8
+			Spell::tr( "Selective Update Rigid" ),          // 16
+			Spell::tr( "Display (UI?) Object" ),            // 32
+			Spell::tr( "Disable Sorting" ),                 // 64
+			Spell::tr( "Sel. Upd. Transforms Override" ),   // 128
+			Spell::tr( "" ),                                // 256
+			Spell::tr( "Save External Geom Data" ),         // 512
+			Spell::tr( "No Decals" ),                       // 1024
+			Spell::tr( "Always Draw" ),                     // 2048
+			Spell::tr( "Mesh LOD" ),                        // 4096
+			Spell::tr( "Fixed Bound" ),                     // 8192
+			Spell::tr( "Top Fade Node" ),                   // 16384
+			Spell::tr( "Ignore Fade" ),                     // 32768
+			Spell::tr( "No Anim Sync (X)" ),                // 65536
+			Spell::tr( "No Anim Sync (Y)" ),                // 1 << 17
+			Spell::tr( "No Anim Sync (Z)" ),                // 1 << 18
+			Spell::tr( "No Anim Sync (S)" ),                // 1 << 19
+			Spell::tr( "No Dismember" ),                    // 1 << 20
+			Spell::tr( "No Dismember Validity" ),           // 1 << 21
+			Spell::tr( "Render Use" ),                      // 1 << 22
+			Spell::tr( "Materials Applied" ),               // 1 << 23
+			Spell::tr( "High Detail" ),                     // 1 << 24
+			Spell::tr( "Force Update" ),                    // 1 << 25
+			Spell::tr( "Pre-Processed Node" ),              // 1 << 26
+			Spell::tr( "Bit 27" ),                          // 1 << 27
+			Spell::tr( "Bit 28" ),                          // 1 << 28
+			Spell::tr( "Bit 29" ),                          // 1 << 29
+			Spell::tr( "Bit 30" ),                          // 1 << 30
+			Spell::tr( "Bit 31" ),                          // 1 << 31
+
+		};
+
+		QList<QCheckBox *> chkBoxes;
+		int x = 0;
+		for ( const QString& flagName : flagNames ) {
+			chkBoxes << dlgCheck( vbox, QString( "%1: %2 (%3)" ).arg( Spell::tr( "Bit %1" ).arg( x ) )
+								  .arg( flagName ).arg( (uint)(1 << x) ) );
+			chkBoxes.last()->setChecked( flags & (1 << x) );
+			x++;
+		}
+
+		dlgButtons( &dlg, vbox );
+
+		if ( dlg.exec() == QDialog::Accepted ) {
+			x = 0;
+			for ( QCheckBox * chk : chkBoxes ) {
+				flags = (flags & (~(1 << x))) | (chk->isChecked() ? 1 << x : 0);
 				x++;
 			}
 			nif->set<int>( index, flags );
