@@ -1,19 +1,29 @@
 //--------------------------------------------------------------------------------------
 // dds.h
 //
-// This header defines constants and structures that are useful when parsing 
+// This header defines constants and structures that are useful when parsing
 // DDS files.  DDS files were originally designed to use several structures
 // and constants that are native to DirectDraw and are defined in ddraw.h,
-// such as DDSURFACEDESC2 and DDSCAPS2.  This file defines similar 
-// (compatible) constants and structures so that one can use DDS files 
+// such as DDSURFACEDESC2 and DDSCAPS2.  This file defines similar
+// (compatible) constants and structures so that one can use DDS files
 // without needing to include ddraw.h.
 //--------------------------------------------------------------------------------------
 
 #ifndef _DDS_H_
 #define _DDS_H_
 
-#include <windows.h>
 #include <dxgiformat.h>
+
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+typedef unsigned long DWORD;
+
+#ifndef MAKEFOURCC
+    #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
+                ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |   \
+                ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
+#endif //defined(MAKEFOURCC)
+
 
 #pragma pack(push,1)
 
@@ -71,7 +81,7 @@ const DDS_PIXELFORMAT DDSPF_R5G6B5 =
 const DDS_PIXELFORMAT DDSPF_DX10 =
     { sizeof(DDS_PIXELFORMAT), DDS_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 };
 
-#define DDS_HEADER_FLAGS_TEXTURE        0x00001007  // DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT 
+#define DDS_HEADER_FLAGS_TEXTURE        0x00001007  // DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT
 #define DDS_HEADER_FLAGS_MIPMAP         0x00020000  // DDSD_MIPMAPCOUNT
 #define DDS_HEADER_FLAGS_VOLUME         0x00800000  // DDSD_DEPTH
 #define DDS_HEADER_FLAGS_PITCH          0x00000008  // DDSD_PITCH
@@ -138,7 +148,7 @@ typedef struct
     DWORD dwReserved2[3];
 } DDS_HEADER;
 
-typedef struct 
+typedef struct
 {
     DXGI_FORMAT dxgiFormat;
     DDS_RESOURCE_DIMENSION resourceDimension;
