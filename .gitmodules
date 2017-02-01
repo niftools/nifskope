@@ -1,7 +1,6 @@
 [submodule "docsys"]
 	path = build/docsys
 	url = https://github.com/niftools/nifdocsys.git
-	branch = develop
 [submodule "qhull"]
 	path = lib/qhull
 	url = https://github.com/qhull/qhull.git
