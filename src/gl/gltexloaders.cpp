@@ -1898,8 +1898,8 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 			// generate next offset, resize
 			mipmapOffset += mipmapWidth * mipmapHeight * 4;
-			mipmapWidth   = fmax( 1, mipmapWidth / 2 );
-			mipmapHeight  = fmax( 1, mipmapHeight / 2 );
+			mipmapWidth   = std::max( 1, mipmapWidth / 2 );
+			mipmapHeight  = std::max( 1, mipmapHeight / 2 );
 		}
 
 		// set total pixel size
@@ -2065,9 +2065,9 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 			if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
 				if ( ddsHeader.ddsPixelFormat.dwFourCC == FOURCC_DXT1 ) {
-					mipmapOffset += fmax( 8, ( mipmapWidth * mipmapHeight / 2 ) );
+					mipmapOffset += std::max( 8, ( mipmapWidth * mipmapHeight / 2 ) );
 				} else if ( ddsHeader.ddsPixelFormat.dwFourCC == FOURCC_DXT5 ) {
-					mipmapOffset += fmax( 16, ( mipmapWidth * mipmapHeight ) );
+					mipmapOffset += std::max( 16, ( mipmapWidth * mipmapHeight ) );
 				}
 			} else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
 				mipmapOffset += ( mipmapWidth * mipmapHeight * 3 );
@@ -2075,8 +2075,8 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				mipmapOffset += ( mipmapWidth * mipmapHeight * 4 );
 			}
 
-			mipmapWidth  = fmax( 1, mipmapWidth / 2 );
-			mipmapHeight = fmax( 1, mipmapHeight / 2 );
+			mipmapWidth  = std::max( 1, mipmapWidth / 2 );
+			mipmapHeight = std::max( 1, mipmapHeight / 2 );
 		}
 
 		nif->set<quint32>( iData, "Num Pixels", mipmapOffset );

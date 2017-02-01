@@ -79,8 +79,8 @@ ColorBlock::ColorBlock( const Image * img, uint x, uint y )
 
 void ColorBlock::init( const Image * img, uint x, uint y )
 {
-	const uint bw = fmin( img->width() - x, 4U );
-	const uint bh = fmin( img->height() - y, 4U );
+	const uint bw = std::min( img->width() - x, 4U );
+	const uint bh = std::min( img->height() - y, 4U );
 
 	static int remainder[] = {
 		0, 0, 0, 0,

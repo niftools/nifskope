@@ -33,8 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_COMMON_H
 #define _DDS_COMMON_H
 
+#include <algorithm>
+
 #ifndef clamp
-#define clamp( x, a, b ) fmin( fmax( (x), (a) ), (b) )
+#define clamp( x, a, b ) std::min( std::max( (x), (a) ), (b) )
 #endif
 
 template <typename T>
