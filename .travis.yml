@@ -6,12 +6,14 @@ language: cpp
 addons:
   apt:
     sources:
+      - sourceline: 'ppa:beineri/opt-qt551-trusty'
       - ubuntu-toolchain-r-test
     packages: [
       # static analysis
       clang-3.6,
       # qt5 requirement
-      qt5-qmake, qt5-default, qtbase5-dev
+      #qt5-qmake, qt5-default, qtbase5-dev
+      qt-latest
     ]
     
 
@@ -32,7 +34,8 @@ matrix:
       python: nightly
 
 before_install:
-  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then sudo apt purge qt4-qmake libqt4-dev; fi
+  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
+#  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then sudo apt purge qt4-qmake libqt4-dev; fi
 
 script:
   - qmake --version
