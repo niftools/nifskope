@@ -6,10 +6,14 @@ language: cpp
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
-    - debian-sid
-    packages:
-    - qt5-qmake
+      - ubuntu-toolchain-r-test
+    packages: [
+      # static analysis
+      clang-3.6,
+      # qt5 requirement
+      qt5-qmake, qt5-default, qtbase5-dev
+    ]
+    
 
 matrix:
   fast_finish: true
