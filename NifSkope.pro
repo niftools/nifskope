@@ -17,8 +17,7 @@ contains(QT_VERSION, ^5\\.[0-4]\\..*) {
 CONFIG += c++11
 
 # Dependencies
-CONFIG += nvtristrip qhull soil zlib lz4
-win32:CONFIG += fsengine
+CONFIG += nvtristrip qhull soil zlib lz4 fsengine
 
 # Debug/Release options
 CONFIG(debug, debug|release) {
