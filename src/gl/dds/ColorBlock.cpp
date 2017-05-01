@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ColorBlock.h"
 
 #include "Common.h"
-
+#include <math.h>
 
 // Get approximate luminance.
 inline static uint colorLuminance( Color32 c )
@@ -79,8 +79,8 @@ ColorBlock::ColorBlock( const Image * img, uint x, uint y )
 
 void ColorBlock::init( const Image * img, uint x, uint y )
 {
-	const uint bw = min( img->width() - x, 4U );
-	const uint bh = min( img->height() - y, 4U );
+	const uint bw = std::min( img->width() - x, 4U );
+	const uint bh = std::min( img->height() - y, 4U );
 
 	static int remainder[] = {
 		0, 0, 0, 0,

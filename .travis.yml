@@ -1,0 +1,37 @@
+dist: trusty
+sudo: required
+language: cpp
+os:
+  - linux
+  - osx
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:beineri/opt-qt551-trusty'
+    packages: [
+      # static analysis
+      clang-3.6,
+      # qt5 requirement
+      qt55-meta-minimal
+    ]
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      env:
+        ANALYZE="scan-build-3.6 --use-cc clang-3.6 --use-c++ clang++-3.6 "
+      compiler: clang
+  allow_failures:
+    - env: ANALYZE="scan-build-3.6 --use-cc clang-3.6 --use-c++ clang++-3.6 "
+
+before_install:
+  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
+  - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then brew update; brew install qt@5.5; export PATH="/usr/local/opt/qt@5.5/bin:$PATH"; fi
+
+script:
+  - qmake --version
+  - qmake -makefile NifSkope.pro
+  - ${ANALYZE}make -j4
+
+notifications:
+    email: false

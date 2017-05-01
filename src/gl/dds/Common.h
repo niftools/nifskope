@@ -33,14 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DDS_COMMON_H
 #define _DDS_COMMON_H
 
-#ifndef min
-#define min( a, b ) ( (a) <= (b) ? (a) : (b) )
-#endif
-#ifndef max
-#define max( a, b ) ( (a) >= (b) ? (a) : (b) )
-#endif
+#include <algorithm>
+
 #ifndef clamp
-#define clamp( x, a, b ) min( max( (x), (a) ), (b) )
+#define clamp( x, a, b ) std::min( std::max( (x), (a) ), (b) )
 #endif
 
 template <typename T>
