@@ -1659,6 +1659,7 @@ void GLView::keyPressEvent( QKeyEvent * event )
 	//case Qt::Key_F:
 	case Qt::Key_Q:
 	case Qt::Key_E:
+	case Qt::Key_Space:
 		kbd[event->key()] = true;
 		break;
 	case Qt::Key_Escape:
@@ -1692,6 +1693,7 @@ void GLView::keyReleaseEvent( QKeyEvent * event )
 	//case Qt::Key_F:
 	case Qt::Key_Q:
 	case Qt::Key_E:
+	case Qt::Key_Space:
 		kbd[event->key()] = false;
 		break;
 	default:
@@ -1715,9 +1717,9 @@ void GLView::mouseMoveEvent( QMouseEvent * event )
 	int dx = event->x() - lastPos.x();
 	int dy = event->y() - lastPos.y();
 
-	if ( event->buttons() & Qt::LeftButton ) {
+	if ( event->buttons() & Qt::LeftButton && !kbd[Qt::Key_Space] ) {
 		mouseRot += Vector3( dy * .5, 0, dx * .5 );
-	} else if ( event->buttons() & Qt::MidButton ) {
+	} else if ( (event->buttons() & Qt::MidButton) || (event->buttons() & Qt::LeftButton && kbd[Qt::Key_Space]) ) {
 		float d = axis / (qMax( width(), height() ) + 1);
 		mouseMov += Vector3( dx * d, -dy * d, 0 );
 	} else if ( event->buttons() & Qt::RightButton ) {
