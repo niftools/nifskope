@@ -663,7 +663,7 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 	if ( !item || item == root )
 		return nullptr;
 
-	int slash = name.indexOf( "/" );
+	int slash = name.indexOf( "\\" );
 
 	if ( slash > 0 ) {
 		QString left  = name.left( slash );

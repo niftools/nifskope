@@ -140,9 +140,9 @@ Expression::Operator Expression::operatorFromString( const QString & str )
 		return Expression::e_add;
 	else if ( str == "-" )
 		return Expression::e_sub;
-	else if ( str == "#DIV#" )
+	else if ( str == "/" )
 		return Expression::e_div;
-	else if ( str == "#MUL#" )
+	else if ( str == "*" )
 		return Expression::e_mul;
 	else if ( str == "&&" )
 		return Expression::e_bool_and;
@@ -176,7 +176,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 		ostartpos = -1, oendpos = -1, // Operator Start/End
 		rstartpos = -1, rendpos = -1; // Right Start/End
 
-	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|#DIV#|#MUL#|\\&\\&|\\|\\||\\&|\\|)" );
+	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|/|\\*|\\&\\&|\\|\\||\\&|\\|)" );
 	QRegularExpression reLParen( "^\\s*\\(.*" );
 
 	QRegularExpressionMatch reLParenMatch = reLParen.match( cond, offset );
