@@ -678,6 +678,29 @@ void Node::drawSelection() const
 
 	}
 
+	if ( currentBlock.endsWith( "Node" ) && scene->options & Scene::ShowNodes && scene->options & Scene::ShowAxes ) {
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+		Transform t;
+		Matrix m;
+		m.fromQuat( nif->get<Quat>( scene->currentIndex, "Rotation" ) );
+		t.rotation = m;
+
+		glPushMatrix();
+		glMultMatrix( t );
+
+		auto pos = Vector3( 0, 0, 0 );
+
+		glColor( { 0, 1, 0 } );
+		drawDashLine( pos, Vector3( 0, 1, 0 ), 15 );
+		glColor( { 1, 0, 0 } );
+		drawDashLine( pos, Vector3( 1, 0, 0 ), 15 );
+		glColor( { 0, 0, 1 } );
+		drawDashLine( pos, Vector3( 0, 0, 1 ), 15 );
+
+		glPopMatrix();
+	}
+
 	glPopMatrix();
 
 	if ( extraData )
