@@ -747,7 +747,11 @@ void DrawTriangleIndex( QVector<Vector3> const & verts, Triangle const & tri, in
 
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene, const float origin_color3fv[3] )
 {
-	if ( !nif || !iShape.isValid() || stack.contains( iShape ) )
+	QString name = nif->itemName( iShape );
+
+	bool extraData = (name == "hkPackedNiTriStripsData");
+
+	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
 	if ( !(scene->selMode & Scene::SelObject) )
@@ -759,8 +763,6 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
 	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
-
-	QString name = nif->itemName( iShape );
 
 	if ( name == "bhkListShape" ) {
 		QModelIndex iShapes = nif->getIndex( iShape, "Sub Shapes" );
@@ -880,7 +882,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		}
 
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
-	} else if ( name == "bhkPackedNiTriStripsShape" ) {
+	} else if ( name == "bhkPackedNiTriStripsShape" || name == "hkPackedNiTriStripsData" ) {
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -939,6 +941,38 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						glVertex( triCentre );
 						glVertex( triCentre + nif->get<Vector3>( scene->currentIndex ) );
 						glEnd();
+					}
+				} else if ( n == "Sub Shapes" ) {
+					int start_vertex = 0;
+					int end_vertex = 0;
+					int num_vertices = nif->get<int>( scene->currentIndex, "Num Vertices" );
+
+					int ct = nif->rowCount( iTris );
+					int totalVerts = 0;
+					if ( num_vertices > 0 ) {
+						QModelIndex iParent = scene->currentIndex.parent();
+						int rowCount = nif->rowCount( iParent );
+						for ( int j = 0; j < i; j++ ) {
+							totalVerts += nif->get<int>( iParent.child( j, 0 ), "Num Vertices" );
+						}
+
+						end_vertex += totalVerts + num_vertices;
+						start_vertex += totalVerts;
+
+						ct = (end_vertex - start_vertex) / 3;
+					}
+
+					for ( int t = 0; t < nif->rowCount( iTris ); t++ ) {
+						Triangle tri = nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" );
+
+						if ( (start_vertex <= tri[0]) && (tri[0] < end_vertex) ) {
+							if ( (start_vertex <= tri[1]) && (tri[1] < end_vertex) && (start_vertex <= tri[2]) && (tri[2] < end_vertex) ) {
+								DrawTriangleSelection( verts, tri );
+								DrawTriangleIndex( verts, tri, t );
+							} else {
+								qDebug() << "triangle with multiple materials?" << t;
+							}
+						}
 					}
 				}
 			}
