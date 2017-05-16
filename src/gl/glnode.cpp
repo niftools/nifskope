@@ -764,7 +764,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 
-	if ( name == "bhkListShape" ) {
+	if ( name.endsWith( "ListShape" ) ) {
 		QModelIndex iShapes = nif->getIndex( iShape, "Sub Shapes" );
 
 		if ( iShapes.isValid() ) {
