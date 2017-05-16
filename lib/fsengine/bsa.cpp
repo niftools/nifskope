@@ -64,27 +64,17 @@ bool BSA::BSAFile::compressed() const
 //! Reads a foldername sized string (length + null-terminated string) from the BSA
 static bool BSAReadSizedString( QFile & bsa, QString & s )
 {
-	//qDebug() << "BSA is at" << bsa.pos();
 	quint8 len;
-	if ( bsa.read( (char *) & len, 1 ) != 1 )
-	{
-		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
+	if ( bsa.read( (char *)&len, 1 ) != 1 )
 		return false;
-	}
-	//qDebug() << "folder string length is" << len;
 	
 	QByteArray b( len, char(0) );
-	if ( bsa.read( b.data(), len ) == len )
-	{
+	if ( bsa.read( b.data(), len ) == len ) {
 		s = QString::fromLatin1( b );
-		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
 		return true;
 	}
-	else
-	{
-		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
-		return false;
-	}
+
+	return false;
 }
 
 QByteArray gUncompress( const QByteArray & data, const int size )
