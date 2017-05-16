@@ -34,6 +34,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFTREEVIEW_H
 
 #include <QTreeView> // Inherited
+#include <nifvalue.h>
+
+#include <memory>
 
 
 //! Widget for showing a nif file as tree, list, or block details.
@@ -95,7 +98,29 @@ protected:
 	bool doRowHiding = true;
 
 	class BaseModel * nif = nullptr;
+
+	//! Row Copy
+	void copy();
+	//! Row Paste
+	void paste();
+	void pasteTo( QModelIndex idx );
+
 };
 
+
+//! A global clipboard for NifTreeView to store a NifValue for all windows
+class NifValueClipboard
+{
+
+public:
+	NifValue getValue() { return value; }
+	void setValue( NifValue val ) { value = val; }
+
+private:
+	NifValue value = NifValue();
+};
+
+// The global NifTreeView clipboard pointer
+static auto valueClipboard = std::make_unique<NifValueClipboard>();
 
 #endif

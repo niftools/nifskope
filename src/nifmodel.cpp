@@ -3061,6 +3061,22 @@ ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
 		setText( QApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
 }
 
+ChangeValueCommand::ChangeValueCommand( const QModelIndex & index, const NifValue & oldVal, 
+										const NifValue & newVal, const QString & valueType, NifModel * model )
+	: QUndoCommand(), nif( model ), idx( index )
+{
+	oldValue = oldVal.toVariant();
+	newValue = newVal.toVariant();
+
+	auto oldTxt = oldVal.toString();
+	auto newTxt = newVal.toString();
+
+	if ( !newTxt.isEmpty() )
+		setText( QApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
+	else
+		setText( QApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
+}
+
 void ChangeValueCommand::redo()
 {
 	//qDebug() << "Redoing";

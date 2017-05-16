@@ -395,7 +395,10 @@ private:
 class ChangeValueCommand : public QUndoCommand
 {
 public:
-	ChangeValueCommand( const QModelIndex & index, const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model );
+	ChangeValueCommand( const QModelIndex & index, const QVariant & value, 
+						const QString & valueString, const QString & valueType, NifModel * model );
+	ChangeValueCommand( const QModelIndex & index, const NifValue & oldValue,
+						const NifValue & newValue, const QString & valueType, NifModel * model );
 	void redo() override;
 	void undo() override;
 private:

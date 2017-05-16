@@ -207,6 +207,10 @@ NifSkope::NifSkope()
 	tree->setItemDelegate( nif->createDelegate( this, book ) );
 	tree->installEventFilter( this );
 	tree->header()->moveSection( 1, 2 );
+	// Allow multi-row paste
+	//	Note: this has some side effects such as vertex selection 
+	//	in viewport being wrong if you attempt to select many rows.
+	tree->setSelectionMode( QAbstractItemView::ExtendedSelection );
 
 	// Header Details
 	header = ui->header;
