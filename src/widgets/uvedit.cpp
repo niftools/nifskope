@@ -655,7 +655,15 @@ void UVWidget::mouseMoveEvent( QMouseEvent * e )
 		} else if ( !selectPoly.isEmpty() ) {
 			selectPoly << e->pos();
 		} else {
-			moveSelection( glUnit * zoom * dPos.x(), glUnit * zoom * dPos.y() );
+			auto dPosX = glUnit * zoom * dPos.x();
+			auto dPosY = glUnit * zoom * dPos.y();
+
+			if ( kbd[Qt::Key_X] )
+				dPosY = 0.0;
+			if ( kbd[Qt::Key_Y] )
+				dPosX = 0.0;
+
+			moveSelection( dPosX, dPosY );
 		}
 		break;
 
@@ -745,6 +753,32 @@ void UVWidget::wheelEvent( QWheelEvent * e )
 	}
 
 	updateGL();
+}
+
+void UVWidget::keyPressEvent( QKeyEvent * e )
+{
+	switch ( e->key() ) {
+	case Qt::Key_X:
+	case Qt::Key_Y:
+		kbd[e->key()] = true;
+		break;
+	default:
+		e->ignore();
+		break;
+	}
+}
+
+void UVWidget::keyReleaseEvent( QKeyEvent * e )
+{
+	switch ( e->key() ) {
+	case Qt::Key_X:
+	case Qt::Key_Y:
+		kbd[e->key()] = false;
+		break;
+	default:
+		e->ignore();
+		break;
+	}
 }
 
 bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )

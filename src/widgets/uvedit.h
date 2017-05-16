@@ -99,6 +99,9 @@ protected:
 	void mouseMoveEvent( QMouseEvent * e ) override final;
 	void wheelEvent( QWheelEvent * e ) override final;
 
+	void keyPressEvent( QKeyEvent * ) override final;
+	void keyReleaseEvent( QKeyEvent * ) override final;
+
 public slots:
 	//! Does the selection contain this vertex?
 	bool isSelected( int index );
@@ -219,6 +222,7 @@ private:
 	QPointF pos;
 
 	QPoint mousePos;
+	QHash<int, bool> kbd;
 
 	GLdouble zoom;
 
