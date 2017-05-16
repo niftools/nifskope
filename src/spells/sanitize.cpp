@@ -1,6 +1,8 @@
 #include "spellbook.h"
 #include "misc.h"
 
+#include <QInputDialog>
+
 #include <algorithm> // std::stable_sort
 
 
@@ -508,3 +510,77 @@ public:
 };
 
 REGISTER_SPELL( spFixInvalidNames )
+
+//! Fills blank "Controller Type" refs in NiControllerSequence
+class spFillBlankControllerTypes final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Fill Blank NiControllerSequence Types" ); }
+	QString page() const override final { return Spell::tr( "Sanitize" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif && nif->getIndex( nif->getHeader(), "Num Strings" ).isValid() && !index.isValid();
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+	{
+		QVector<QString> stringsToAdd;
+		QVector<QString> modifiedNames;
+
+		auto iHeader = nif->getHeader();
+		auto numStrings = nif->get<int>( iHeader, "Num Strings" );
+		auto strings = nif->getArray<QString>( iHeader, "Strings" );
+
+		bool ok = true;
+		QString str = QInputDialog::getText( 0, Spell::tr( "Fill Blank NiControllerSequence Types" ),
+											   Spell::tr( "Choose the default Controller Type" ), 
+											   QLineEdit::Normal, "NiTransformController", &ok );
+
+		if ( !ok )
+			return QModelIndex();
+
+		auto stringIdx = strings.indexOf( str );
+		if ( stringIdx == -1 ) {
+			// Append new strings to header strings
+			strings << str;
+			stringIdx = numStrings;
+		}
+
+		for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+			QModelIndex iBlock = nif->getBlock( i );
+			if ( !(nif->inherits( iBlock, "NiControllerSequence" )) )
+				continue;
+
+			auto controlledBlocks = nif->getIndex( iBlock, "Controlled Blocks" );
+			auto numBlocks = nif->rowCount( controlledBlocks );
+
+			for ( int i = 0; i < numBlocks; i++ ) {
+				auto ctrlrType =  nif->getIndex( controlledBlocks.child( i, 0 ), "Controller Type" );
+				auto nodeName = nif->getIndex( controlledBlocks.child( i, 0 ), "Node Name" );
+
+				auto ctrlrTypeIdx = nif->get<int>( ctrlrType );
+				if ( ctrlrTypeIdx == -1 ) {
+					nif->set<int>( ctrlrType, stringIdx );
+					modifiedNames << nif->get<QString>( nodeName );
+				}
+			}
+		}
+
+		// Update header
+		nif->set<int>( iHeader, "Num Strings", strings.count() );
+		nif->updateArray( iHeader, "Strings" );
+		nif->setArray<QString>( iHeader, "Strings", strings );
+
+		nif->updateHeader();
+
+		for ( const QString& s : modifiedNames ) {
+			Message::append( Spell::tr( "One or more NiControllerSequence rows have been sanitized" ),
+							 QString( "%1" ).arg( s ) );
+		}
+
+		return QModelIndex();
+	}
+};
+
+REGISTER_SPELL( spFillBlankControllerTypes )
