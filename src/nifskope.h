@@ -53,6 +53,11 @@ namespace Ui {
 	class MainWindow;
 }
 
+namespace nstypes
+{
+	QString operator"" _uip( const char * str, size_t sz );
+}
+
 class FileSelector;
 class GLView;
 class GLGraphicsView;

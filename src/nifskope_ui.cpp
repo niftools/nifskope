@@ -77,6 +77,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QProcess>
 #include <QStyleFactory>
 
+QString nstypes::operator""_uip( const char * str, size_t )
+{
+	QString u;
+
+#ifndef QT_NO_DEBUG
+	u = "UI/Debug/";
+#else
+	u = "UI/";
+#endif
+
+	return u + QString( str );
+}
+
+using namespace nstypes;
+
 
 //! @file nifskope_ui.cpp UI logic for %NifSkope's main window.
 
@@ -988,18 +1003,18 @@ void NifSkope::saveUi() const
 {
 	QSettings settings;
 	// TODO: saveState takes a version number which can be incremented between releases if necessary
-	settings.setValue( "UI/Window State", saveState( 0x073 ) );
-	settings.setValue( "UI/Window Geometry", saveGeometry() );
+	settings.setValue( "Window State"_uip, saveState( 0x073 ) );
+	settings.setValue( "Window Geometry"_uip, saveGeometry() );
 
 	settings.setValue( "File/Auto Sanitize", aSanitize->isChecked() );
 
-	settings.setValue( "UI/List Mode", (gListMode->checkedAction() == aList ? "list" : "hierarchy") );
-	settings.setValue( "UI/Show Non-applicable Rows", aCondition->isChecked() );
+	settings.setValue( "List Mode"_uip, (gListMode->checkedAction() == aList ? "list" : "hierarchy") );
+	settings.setValue( "Show Non-applicable Rows"_uip, aCondition->isChecked() );
 
-	settings.setValue( "UI/List Header", list->header()->saveState() );
-	settings.setValue( "UI/Tree Header", tree->header()->saveState() );
-	settings.setValue( "UI/Header Header", header->header()->saveState() );
-	settings.setValue( "UI/Kfmtree Header", kfmtree->header()->saveState() );
+	settings.setValue( "List Header"_uip, list->header()->saveState() );
+	settings.setValue( "Tree Header"_uip, tree->header()->saveState() );
+	settings.setValue( "Header Header"_uip, header->header()->saveState() );
+	settings.setValue( "Kfmtree Header"_uip, kfmtree->header()->saveState() );
 
 	settings.setValue( "GLView/Enable Animations", ui->aAnimate->isChecked() );
 	//settings.setValue( "GLView/Play Animation", ui->aAnimPlay->isChecked() );
@@ -1012,24 +1027,24 @@ void NifSkope::saveUi() const
 void NifSkope::restoreUi()
 {
 	QSettings settings;
-	restoreGeometry( settings.value( "UI/Window Geometry" ).toByteArray() );
-	restoreState( settings.value( "UI/Window State" ).toByteArray(), 0x073 );
+	restoreGeometry( settings.value( "Window Geometry"_uip ).toByteArray() );
+	restoreState( settings.value( "Window State"_uip ).toByteArray(), 0x073 );
 
 	aSanitize->setChecked( settings.value( "File/Auto Sanitize", true ).toBool() );
 
-	if ( settings.value( "UI/List Mode", "hierarchy" ).toString() == "list" )
+	if ( settings.value( "List Mode"_uip, "hierarchy" ).toString() == "list" )
 		aList->setChecked( true );
 	else
 		aHierarchy->setChecked( true );
 
 	setListMode();
 
-	aCondition->setChecked( settings.value( "UI/Show Non-applicable Rows", false ).toBool() );
+	aCondition->setChecked( settings.value( "Show Non-applicable Rows"_uip, false ).toBool() );
 
-	list->header()->restoreState( settings.value( "UI/List Header" ).toByteArray() );
-	tree->header()->restoreState( settings.value( "UI/Tree Header" ).toByteArray() );
-	header->header()->restoreState( settings.value( "UI/Header Header" ).toByteArray() );
-	kfmtree->header()->restoreState( settings.value( "UI/Kfmtree Header" ).toByteArray() );
+	list->header()->restoreState( settings.value( "List Header"_uip ).toByteArray() );
+	tree->header()->restoreState( settings.value( "Tree Header"_uip ).toByteArray() );
+	header->header()->restoreState( settings.value( "Header Header"_uip ).toByteArray() );
+	kfmtree->header()->restoreState( settings.value( "Kfmtree Header"_uip ).toByteArray() );
 
 	auto hideSections = []( NifTreeView * tree, bool hidden ) {
 		tree->header()->setSectionHidden( NifModel::ArgCol, hidden );
