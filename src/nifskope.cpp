@@ -332,8 +332,10 @@ void NifSkope::exitRequested()
 
 	FSManager::del();
 
-	if ( options )
+	if ( options ) {
 		delete options;
+		options = nullptr;
+	}
 }
 
 NifSkope::~NifSkope()
