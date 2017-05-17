@@ -1518,6 +1518,7 @@ void NifSkope::migrateSettings() const
 		}
 	}
 
+#ifdef QT_NO_DEBUG
 	// Check Qt Version
 	if ( curQtVer != prevQtVer ) {
 		// Check all keys and delete all QByteArrays
@@ -1534,4 +1535,5 @@ void NifSkope::migrateSettings() const
 
 		cfg.setValue( "Qt Version", curQtVer );
 	}
+#endif
 }
