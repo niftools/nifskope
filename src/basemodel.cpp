@@ -605,8 +605,8 @@ Qt::ItemFlags BaseModel::flags( const QModelIndex & index ) const
 
 	switch ( index.column() ) {
 	case TypeCol:
-		return flags;
 	case NameCol:
+		return flags;
 	case ValueCol:
 		if ( condExpr )
 			return flags | Qt::ItemIsEditable;
