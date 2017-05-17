@@ -1,17 +1,14 @@
-﻿=================
- NifSkope 2.0.dev6
-=================
+﻿### NifSkope 2.0.dev6
 
 NifSkope is a tool for opening and editing the NetImmerse file format (NIF). NIF is used by video games such as Morrowind, Oblivion, Skyrim, Fallout 3, Fallout: New Vegas, Civilization IV, and more. 
 
-Download
------------------
+#### Download
 
 You can download the latest official release from [Sourceforge](https://sourceforge.net/projects/niftools/files/nifskope/).
 
 
-Discussion & Help
------------------
+#### Discussion & Help
+
 
 Visit our forum at [NifTools.org](http://niftools.sourceforge.net/forum). To receive support for NifSkope please use the [NifSkope Help subforum](http://niftools.sourceforge.net/forum/viewforum.php?f=24).
 
@@ -20,8 +17,7 @@ Visit our forum at [NifTools.org](http://niftools.sourceforge.net/forum). To rec
 Anyone can [report issues at GitHub](https://github.com/niftools/nifskope/issues) or in the [Bug Reports subforum](http://niftools.sourceforge.net/forum/viewforum.php?f=24) at NifTools.org.
 
 
-Contribute
------------------
+#### Contribute
 
 You can fork the latest source from [GitHub](https://github.com/niftools/nifskope). See [Fork A Repo](https://help.github.com/articles/fork-a-repo) on how to send your contributions upstream. To grab all submodules, make sure to use `--recursive` like so:
 
@@ -35,8 +31,7 @@ For information about development:
 - Refer to our [GitHub wiki](https://github.com/niftools/nifskope/wiki#wiki-development) for information on compilation.  
 
 
-Miscellaneous
------------------
+#### Miscellaneous
 
 Refer to these other documents in your installation folder or at the links provided:
 
