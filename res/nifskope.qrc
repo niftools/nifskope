@@ -4,8 +4,6 @@
         <file>skel.dat</file>
     </qresource>
     <qresource prefix="/img">
-        <file alias="ArrowLeft.png">icon/arrow_left.png</file>
-        <file alias="ArrowRight.png">icon/arrow_right.png</file>
         <file alias="update">icon/img_update.png</file>
         <file alias="link">icon/img_link.png</file>
         <file alias="flag">icon/img_flag.png</file>
@@ -17,8 +15,6 @@
         <file alias="sizeGrip">icon/sizegrip.png</file>
     </qresource>
     <qresource prefix="/btn">
-        <file alias="loop">icon/button_loop.png</file>
-        <file alias="switch">icon/button_switch.png</file>
         <file alias="viewWalk">icon/button_view_walk.png</file>
         <file alias="cubeTop16">icon/cube-top-16.png</file>
         <file alias="cubeFront16">icon/cube-front-16.png</file>
