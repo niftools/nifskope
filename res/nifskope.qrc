@@ -7,8 +7,8 @@
         <file alias="update">icon/img_update.png</file>
         <file alias="link">icon/img_link.png</file>
         <file alias="flag">icon/img_flag.png</file>
-        <file alias="havok_logo">icon/havok_logo.png</file>
-        <file alias="qhull_logo">icon/qhull_cone.gif</file>
+        <file alias="havok_logo">img/havok_logo.png</file>
+        <file alias="qhull_logo">img/qhull_cone.gif</file>
         <file>icon/handle.png</file>
         <file alias="collapse">icon/collapse.png</file>
         <file alias="expand">icon/expand.png</file>
@@ -26,8 +26,6 @@
         <file alias="showCollision">icon/collision-ball.png</file>
         <file alias="showNodes">icon/node.png</file>
         <file alias="showConstraints">icon/constraint.png</file>
-        <file alias="saveView">icon/save-view.png</file>
-        <file alias="loadView">icon/load-view.png</file>
         <file alias="userViewActive">icon/view-active.png</file>
         <file alias="screenshot">icon/screenshot.png</file>
         <file alias="save">icon/save.png</file>
