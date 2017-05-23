@@ -1034,9 +1034,16 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 			return;
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
-		const auto & types = compound->types;
-		for ( const NifData & d : types ) {
+		for ( const NifData & d : compound->types ) {
 			insertType( branch, d );
+		}
+	} else if ( data.isMixin() ) {
+		NifBlockPtr compound = compounds.value( data.type() );
+		if ( !compound )
+			return;
+		parent->prepareInsert( compound->types.count() );
+		for ( const NifData & d : compound->types ) {
+			insertType( parent, d );
 		}
 	} else if ( data.isTemplated() ) {
 		QLatin1String tmpl( "TEMPLATE" );

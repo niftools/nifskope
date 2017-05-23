@@ -276,11 +276,39 @@ public:
 					QString ver2 = list.value( "ver2" );
 					QString abs = list.value( "abstract" );
 					QString bin = list.value( "binary" );
+					QString vercond = list.value( "vercond" );
+					QString userver = list.value( "userver" );
+					QString userver2 = list.value( "userver2" );
 
 					bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
 					bool isCompound = NifModel::compounds.contains( type );
 					bool isArray = !arr1.isEmpty();
 					bool isMultiArray = !arr2.isEmpty();
+
+					// Override some compounds as mixins (compounds without nesting)
+					//	This flattens the hierarchy as if the mixin's <add> rows belong to the mixin's parent
+					//	This only takes place on a per-row basis and reverts to nesting when in an array.
+					bool isMixin = false;
+					if ( isCompound ) {
+						static const QVector<QString> mixinTypes {
+							"HavokColFilter",
+							"HavokMaterial",
+							"RagdollDescriptor",
+							"LimitedHingeDescriptor",
+							"HingeDescriptor",
+							"BallAndSocketDescriptor",
+							"PrismaticDescriptor",
+							"SubConstraint"
+						};
+
+						isMixin = mixinTypes.contains( type );
+						// The <add> must not use any attributes other than name/type
+						isMixin = isMixin && !isTemplated && !isArray;
+						isMixin = isMixin && cond.isEmpty() && ver1.isEmpty() && ver2.isEmpty()
+							&& vercond.isEmpty() && userver.isEmpty() && userver2.isEmpty();
+
+						isCompound = !isMixin;
+					}
 
 					// now allocate
 					data = NifData(
@@ -303,6 +331,7 @@ public:
 					data.setIsCompound( isCompound );
 					data.setIsArray( isArray );
 					data.setIsMultiArray( isMultiArray );
+					data.setIsMixin( isMixin );
 
 					QString defval = list.value( "default" );
 
@@ -317,17 +346,12 @@ public:
 						}
 					}
 
-					QString vercond = list.value( "vercond" );
-					QString userver = list.value( "userver" );
-
 					if ( !userver.isEmpty() ) {
 						if ( !vercond.isEmpty() )
 							vercond += " && ";
 
 						vercond += QString( "(User Version == %1)" ).arg( userver );
 					}
-
-					QString userver2 = list.value( "userver2" );
 
 					if ( !userver2.isEmpty() ) {
 						if ( !vercond.isEmpty() )

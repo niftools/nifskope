@@ -62,7 +62,8 @@ public:
 		Compound = 0x8,
 		Array = 0x10,
 		MultiArray = 0x20,
-		Conditionless = 0x40
+		Conditionless = 0x40,
+		Mixin = 0x80
 	};
 
 	typedef QFlags<DataFlag> DataFlags;
@@ -177,6 +178,8 @@ public:
 	inline bool isMultiArray() const { return d->flags & NifSharedData::MultiArray; }
 	//! Is the data conditionless. Conditionless means no expression evaluation is necessary.
 	inline bool isConditionless() const { return d->flags & NifSharedData::Conditionless; }
+	//! Is the data a mixin. Mixin is a specialized compound which creates no nesting.
+	inline bool isMixin() const { return d->flags & NifSharedData::Mixin; }
 
 	//! Sets the name of the data.
 	void setName( const QString & name ) { d->name = name; }
@@ -231,6 +234,8 @@ public:
 	inline void setIsMultiArray( bool flag ) { setFlag( NifSharedData::MultiArray, flag ); }
 	//! Sets the conditionless data flag. Conditionless means no expression evaluation is necessary.
 	inline void setIsConditionless( bool flag ) { setFlag( NifSharedData::Conditionless, flag ); }
+	//! Sets the mixin data flag. Mixin is a specialized compound which creates no nesting.
+	inline void setIsMixin( bool flag ) { setFlag( NifSharedData::Mixin, flag ); }
 
 protected:
 	//! The internal shared data.
