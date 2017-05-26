@@ -749,28 +749,33 @@ int BaseModel::evaluateInt( NifItem * item, const Expression & expr ) const
 
 bool BaseModel::evalCondition( NifItem * item, bool chkParents ) const
 {
+	if ( !evalVersion( item, chkParents ) ) {
+		// Version is global and cond is not so set false and abort
+		item->setCondition( false );
+		return false;
+	}
+
 	if ( item->isConditionValid() )
 		return item->condition();
 
-	if ( !evalVersion( item, chkParents ) )
-		return false;
-
-	if ( item == root )
+	item->setCondition( item == root );
+	if ( item->condition() )
 		return true;
 
-	if ( chkParents && item->parent() )
-		if ( !evalCondition( item->parent(), true ) )
+	if ( chkParents && item->parent() ) {
+		// Set false if parent is false and reject early
+		item->setCondition( evalCondition( item->parent(), true ) );
+		if ( !item->condition() )
 			return false;
+	}
 
-
-
-	QString cond = item->cond();
-
-	if ( cond.isEmpty() )
+	// Early reject for cond
+	item->setCondition( item->cond().isEmpty() );
+	if ( item->condition() )
 		return true;
 
+	// If there is a cond, evaluate it
 	BaseModelEval functor( this, item );
-
 	item->setCondition( item->condexpr().evaluateBool( functor ) );
 
 	return item->condition();

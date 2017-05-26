@@ -152,29 +152,32 @@ bool NifModel::evalVersion( NifItem * item, bool chkParents ) const
 	if ( item->isVercondValid() )
 		return item->versionCondition();
 
-	if ( item == root )
+	item->setVersionCondition( item == root );
+	if ( item->versionCondition() )
 		return true;
 
 	if ( chkParents && item->parent() ) {
-		if ( !evalVersion( item->parent(), true ) )
+		// Set false if parent is false and early reject
+		item->setVersionCondition( evalVersion( item->parent(), true ) );
+		if ( !item->versionCondition() )
 			return false;
 	}
 
-
-	if ( !item->evalVersion( version ) )
+	// Early reject for ver1/ver2
+	item->setVersionCondition( item->evalVersion( version ) );
+	if ( !item->versionCondition() )
 		return false;
 
-	QString vercond = item->vercond();
-
-	if ( vercond.isEmpty() )
+	// Early reject for vercond
+	item->setVersionCondition( item->vercond().isEmpty() );
+	if ( item->versionCondition() )
 		return true;
 
+	// If there is a vercond, evaluate it
 	NifModelEval functor( this, getHeaderItem() );
-	bool expr = item->verexpr().evaluateBool( functor );
+	item->setVersionCondition( item->verexpr().evaluateBool( functor ) );
 
-	item->setVersionCondition( expr );
-
-	return expr;
+	return item->versionCondition();
 }
 
 void NifModel::clear()
@@ -2353,6 +2356,12 @@ NifItem * NifModel::insertBranch( NifItem * parentItem, const NifData & data, in
 
 bool NifModel::evalCondition( NifItem * item, bool chkParents ) const
 {
+	if ( !evalVersion( item, chkParents ) ) {
+		// Version is global and cond is not so set false and abort
+		item->setCondition( false );
+		return false;
+	}
+
 	if ( item->isConditionValid() )
 		return item->condition();
 
