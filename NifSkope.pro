@@ -567,7 +567,6 @@ build_pass|!debug_and_release {
 			$$[QT_INSTALL_PLUGINS]/platforms/qwindows$${DLLEXT}
 		
 		imageformats += \
-			$$[QT_INSTALL_PLUGINS]/imageformats/qdds$${DLLEXT} \
 			$$[QT_INSTALL_PLUGINS]/imageformats/qjpeg$${DLLEXT} \
 			$$[QT_INSTALL_PLUGINS]/imageformats/qtga$${DLLEXT} \
 			$$[QT_INSTALL_PLUGINS]/imageformats/qwebp$${DLLEXT}

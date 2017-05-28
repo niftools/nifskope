@@ -61,7 +61,7 @@ outdoc = $$syspath($${DESTDIR}/doc)
 
 # COMMANDS
 
-docs.commands += $${QMAKE_CHK_DIR_EXISTS} $${outdoc} $${QMAKE_MKDIR} $${outdoc} $$nt
+docs.commands += $$sprintf($$QMAKE_MKDIR_CMD, $${outdoc}) $$nt
 docs.commands += cd $${docsys} $$nt # cd ./build/docsys
 docs.commands += python nifxml_doc.py $$nt # invoke python
 # Move *.html files out of ./build/docsys/doc
