@@ -7,14 +7,14 @@ TARGET   = NifSkope
 
 QT += xml opengl network widgets
 
-# Require Qt 5.5 or higher
-contains(QT_VERSION, ^5\\.[0-4]\\..*) {
+# Require Qt 5.7 or higher
+contains(QT_VERSION, ^5\\.[0-6]\\..*) {
 	message("Cannot build NifSkope with Qt version $${QT_VERSION}")
-	error("Minimum required version is Qt 5.5")
+	error("Minimum required version is Qt 5.7")
 }
 
-# C++11 Support
-CONFIG += c++11
+# C++11/14 Support
+CONFIG += c++14
 
 # Dependencies
 CONFIG += nvtristrip qhull soil zlib lz4 fsengine
@@ -433,14 +433,14 @@ win32 {
 *msvc* {
 
 	# Grab _MSC_VER from the mkspecs that Qt was compiled with
-	#	e.g. VS2013 = 1800, VS2012 = 1700, VS2010 = 1600
+	#	e.g. VS2015 = 1900, VS2017 = 1910
 	_MSC_VER = $$find(QMAKE_COMPILER_DEFINES, "_MSC_VER")
 	_MSC_VER = $$split(_MSC_VER, =)
 	_MSC_VER = $$member(_MSC_VER, 1)
 
 	# Reject unsupported MSVC versions
-	!isEmpty(_MSC_VER):lessThan(_MSC_VER, 1800) {
-		error("NifSkope only supports MSVC 2013 or later. If this is too prohibitive you may use Qt Creator with MinGW.")
+	!isEmpty(_MSC_VER):lessThan(_MSC_VER, 1900) {
+		error("NifSkope only supports MSVC 2015 or later. If this is too prohibitive you may use Qt Creator with MinGW.")
 	}
 
 	# So VCProj Filters do not flatten headers/source
@@ -449,7 +449,7 @@ win32 {
 	# COMPILER FLAGS
 
 	#  Optimization flags
-	QMAKE_CXXFLAGS_RELEASE *= -O2 -arch:SSE2 # SSE2 is the default, but make it explicit
+	QMAKE_CXXFLAGS_RELEASE *= -O2
 	#  Multithreaded compiling for Visual Studio
 	QMAKE_CXXFLAGS += -MP
 
@@ -479,7 +479,7 @@ win32 {
 	QMAKE_CXXFLAGS_RELEASE *= -O3 -mfpmath=sse
 
 	# C++11 Support
-	QMAKE_CXXFLAGS_RELEASE *= -std=c++11
+	QMAKE_CXXFLAGS_RELEASE *= -std=c++14
 
 	#  Extension flags
 	QMAKE_CXXFLAGS_RELEASE *= -msse2 -msse
