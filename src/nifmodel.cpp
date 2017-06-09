@@ -1717,8 +1717,7 @@ bool NifModel::setHeaderString( const QString & s )
 bool NifModel::load( QIODevice & device )
 {
 	QSettings cfg;
-	bool ignoreSize = false;
-	ignoreSize = cfg.value( "Ignore Block Size", false ).toBool();
+	bool ignoreSize = cfg.value( "Ignore Block Size", true ).toBool();
 
 	clear();
 
