@@ -298,7 +298,8 @@ public:
 							"HingeDescriptor",
 							"BallAndSocketDescriptor",
 							"PrismaticDescriptor",
-							"SubConstraint"
+							"MalleableDescriptor",
+							"ConstraintData"
 						};
 
 						isMixin = mixinTypes.contains( type );
