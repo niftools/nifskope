@@ -15,8 +15,7 @@ QMAKE_LUPDATE = $$[QT_INSTALL_BINS]/lupdate$${EXE}
 exists($$QMAKE_LUPDATE) {
 	# Make target for Updating .ts
 	updatets.target = updatets
-	updatets.commands += cd $${_PRO_FILE_PWD_} $$nt
-	updatets.commands += $$[QT_INSTALL_BINS]/lupdate $${_PRO_FILE_} $$nt
+	updatets.commands += cd $${_PRO_FILE_PWD_} && $$[QT_INSTALL_BINS]/lupdate $${_PRO_FILE_} $$nt
 	updatets.CONFIG += no_check_exist no_link no_clean
 
 	QMAKE_EXTRA_TARGETS += updatets
@@ -62,15 +61,15 @@ outdoc = $$syspath($${DESTDIR}/doc)
 # COMMANDS
 
 docs.commands += $$sprintf($$QMAKE_MKDIR_CMD, $${outdoc}) $$nt
-docs.commands += cd $${docsys} $$nt # cd ./build/docsys
-docs.commands += python nifxml_doc.py $$nt # invoke python
+docs.commands += cd $${docsys} # cd ./build/docsys
+docs.commands += && python nifxml_doc.py # invoke python
 # Move *.html files out of ./build/docsys/doc
-win32:docs.commands += move /Y $${indoc}*.html $${outdoc} $$nt
-else:docs.commands += mv -f $${indoc}*.html $${outdoc} $$nt
+win32:docs.commands += && move /Y $${indoc}*.html $${outdoc}
+else:docs.commands += && mv -f $${indoc}*.html $${outdoc}
 # Copy CSS and ICO
-docs.commands += $${QMAKE_COPY} $${indoc}*.* $${outdoc} $$nt
+docs.commands += && $${QMAKE_COPY} $${indoc}*.* $${outdoc}
 # Clean up .pyc files so submodule doesn't become "dirty"
-docs.commands += $${QMAKE_DEL_FILE} *.pyc $$nt
+docs.commands += && $${QMAKE_DEL_FILE} *.pyc $$nt
 
 docs.CONFIG += recursive
 
@@ -104,28 +103,29 @@ doxyfile = $$syspath($${OUT_PWD}/Doxyfile)
 doxyfilein = $$syspath($${PWD}/build/doxygen/Doxyfile.in)
 
 # Paths
-qhgen = $$syspath($$[QT_INSTALL_BINS]/qhelpgenerator$${EXE})
-dot = $$syspath(C:/Program Files (x86)/Graphviz2.37/bin) # TODO
+qhgen = $$[QT_INSTALL_BINS]/qhelpgenerator$${EXE}
+win32:dot = C:/Program Files (x86)/Graphviz2.38/bin
+unix:dot = $$system(which dot 2>/dev/null)
 _7z = $$get7z()
 
 # Doxyfile.in Replacements
 
-INPUT = $$re_escape($$syspath($${PWD}/src))
-OUTPUT = $$re_escape($$syspath($${OUT_PWD}/apidocs))
-ROOT = $$re_escape($$syspath($${PWD}))
+INPUT = $$re_escape($${PWD}/src)
+OUTPUT = $$re_escape($${OUT_PWD}/apidocs)
+ROOT = $$re_escape($${PWD})
 
 GENERATE_QHP = NO
 exists($$qhgen):GENERATE_QHP = YES
 
 HAVE_DOT = NO
-DOT_PATH = ""
+DOT_PATH = " " # Using space because sed on Windows errors on s%@DOT_PATH@%%g for some reason
 exists($$dot) {
 	HAVE_DOT = YES
 	DOT_PATH = $$re_escape($${dot})
 }
 
-TAGS = $$syspath($${PWD}/build/doxygen/tags)
-BINS = $$re_escape($$syspath($$[QT_INSTALL_BINS]))
+TAGS = $${PWD}/build/doxygen/tags
+BINS = $$re_escape($$[QT_INSTALL_BINS])
 
 # Find `sed` command
 SED = $$getSed()
@@ -135,19 +135,19 @@ SED = $$getSed()
 
 !isEmpty(_7z) {
     win32:doxygen.commands += $${_7z} x $${TAGS}$${QMAKE_DIR_SEP}tags.zip \"-o$${TAGS}\" -aoa $$nt
-    unix:doxygen.commands += $${_7z} $${TAGS}$${QMAKE_DIR_SEP}tags.zip -o -d $${TAGS} $$nt
+    unix:doxygen.commands += $${_7z} -o $${TAGS}$${QMAKE_DIR_SEP}tags.zip -d $${TAGS} $$nt
 }
 
-doxygen.commands += $${SED} -e \"s/@VERSION@/$$getVersion()/g;\
-                                 s/@REVISION@/$$getRevision()/g;\
-                                 s/@OUTPUT@/$${OUTPUT}/g;\
-                                 s/@INPUT@/$${INPUT}/g;\
-                                 s/@PWD@/$${ROOT}/g;\
-                                 s/@QT_VER@/$$QtHex()/g;\
-                                 s/@GENERATE_QHP@/$${GENERATE_QHP}/g;\
-                                 s/@HAVE_DOT@/$${HAVE_DOT}/g;\
-                                 s/@DOT_PATH@/$${DOT_PATH}/g;\
-                                 s/@QT_INSTALL_BINS@/$${BINS}/g\" \
+doxygen.commands += $${SED} -e \"s%@VERSION@%$$getVersion()%g;\
+                                 s%@REVISION@%$$getRevision()%g;\
+                                 s%@OUTPUT@%$${OUTPUT}%g;\
+                                 s%@INPUT@%$${INPUT}%g;\
+                                 s%@PWD@%$${ROOT}%g;\
+                                 s%@QT_VER@%$$QtHex()%g;\
+                                 s%@GENERATE_QHP@%$${GENERATE_QHP}%g;\
+                                 s%@HAVE_DOT@%$${HAVE_DOT}%g;\
+                                 s%@DOT_PATH@%$${DOT_PATH}%g;\
+                                 s%@QT_INSTALL_BINS@%$${BINS}%g\" \
                     $${doxyfilein} > $${doxyfile} $$nt
 
 # Run Doxygen
