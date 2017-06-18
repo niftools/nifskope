@@ -823,7 +823,7 @@ void RotationEdit::setQuat( const Quat & q )
 	setting = true;
 
 	if ( mode == mAuto ) {
-		mode = mAxis;
+		mode = mEuler;
 		setupMode();
 	}
 
