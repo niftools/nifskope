@@ -1229,7 +1229,7 @@ void NifSkope::contextMenu( const QPoint & pos )
 
 	SpellBook contextBook( nif, idx, this, SLOT( select( const QModelIndex & ) ) );
 
-	if ( !idx.isValid() || nif->flags( idx ) & Qt::ItemIsEditable )
+	if ( !idx.isValid() || nif->flags( idx ) & (Qt::ItemIsEnabled | Qt::ItemIsSelectable) )
 		contextBook.exec( p );
 }
 
