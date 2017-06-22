@@ -152,13 +152,13 @@ private:
 	//! A UV face
 	struct face
 	{
-		int index;
+		int index = -1;
 
-		int tc[3];
+		int tc[3] = {0};
 
 		bool contains( int v ) { return ( tc[0] == v || tc[1] == v || tc[2] == v ); }
 
-		face() : index( -1 ) {}
+		face() {}
 		face( int idx, int tc1, int tc2, int tc3 ) : index( idx ) { tc[0] = tc1; tc[1] = tc2; tc[2] = tc3; }
 	};
 

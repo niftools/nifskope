@@ -648,7 +648,7 @@ Transform operator*( const Transform & t1, const Transform & t2 )
 
 bool Transform::canConstruct( const NifModel * nif, const QModelIndex & parent )
 {
-	QModelIndex skinTransform = nif->getIndex( parent, "Skin Transform" );
+	QModelIndex skinTransform = (nif) ? nif->getIndex( parent, "Skin Transform" ) : QModelIndex();
 	return nif && (
 	    (
 	        parent.isValid() && nif->getIndex( parent, "Rotation" ).isValid()

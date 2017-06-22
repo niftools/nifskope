@@ -298,7 +298,7 @@ void TestShredder::closeEvent( QCloseEvent * e )
 
 QQueue<QString> FileQueue::make( const QString & dname, const QStringList & extensions, bool recursive )
 {
-	QQueue<QString> queue;
+	QQueue<QString> paths;
 
 	QDir dir( dname );
 
@@ -306,25 +306,25 @@ QQueue<QString> FileQueue::make( const QString & dname, const QStringList & exte
 		dir.setFilter( QDir::Dirs );
 		for ( const QString& d : dir.entryList() ) {
 			if ( d != "." && d != ".." )
-				queue += make( dir.filePath( d ), extensions, true );
+				paths += make( dir.filePath( d ), extensions, true );
 		}
 	}
 
 	dir.setFilter( QDir::Files );
 	dir.setNameFilters( extensions );
 	for ( const QString& f : dir.entryList() ) {
-		queue.enqueue( dir.filePath( f ) );
+		paths.enqueue( dir.filePath( f ) );
 	}
 
-	return queue;
+	return paths;
 }
 
 void FileQueue::init( const QString & dname, const QStringList & extensions, bool recursive )
 {
-	QQueue<QString> queue = make( dname, extensions, recursive );
+	QQueue<QString> paths = make( dname, extensions, recursive );
 
 	mutex.lock();
-	this->queue = queue;
+	this->queue = paths;
 	mutex.unlock();
 }
 

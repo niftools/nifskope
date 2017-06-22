@@ -278,7 +278,7 @@ public:
 	static QAbstractItemDelegate * createDelegate( QObject * parent, SpellBookPtr book );
 
 	//! Undo Stack for changes to NifModel
-	QUndoStack * undoStack;
+	QUndoStack * undoStack = nullptr;
 
 public slots:
 	void updateSettings();

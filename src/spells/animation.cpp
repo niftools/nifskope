@@ -169,7 +169,7 @@ public:
 
 				//return iRoot;
 			}
-			catch ( QString e )
+			catch ( QString & e )
 			{
 				Message::append( Spell::tr( "Errors occurred while attaching .KF" ), e );
 			}

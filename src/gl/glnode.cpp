@@ -455,13 +455,13 @@ Node * Node::findChild( int id ) const
 	return nullptr;
 }
 
-Node * Node::findChild( const QString & name ) const
+Node * Node::findChild( const QString & str ) const
 {
-	if ( this->name == name )
+	if ( this->name == str )
 		return const_cast<Node *>( this );
 
 	for ( Node * child : children.list() ) {
-		Node * n = child->findChild( name );
+		Node * n = child->findChild( str );
 
 		if ( n )
 			return n;
@@ -770,7 +770,7 @@ void DrawTriangleIndex( QVector<Vector3> const & verts, Triangle const & tri, in
 
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene, const float origin_color3fv[3] )
 {
-	QString name = nif->itemName( iShape );
+	QString name = (nif) ? nif->itemName( iShape ) : "";
 
 	bool extraData = (name == "hkPackedNiTriStripsData");
 

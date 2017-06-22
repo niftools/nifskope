@@ -230,7 +230,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 			Message::warning( nullptr, Spell::tr( "The skin partition was removed, please regenerate it with the skin partition spell" ) );
 		}
 	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 	}
@@ -572,7 +572,7 @@ public:
 
 			removeWasteVertices( nif, iData, iShape );
 		}
-		catch ( QString e )
+		catch ( QString & e )
 		{
 			Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 		}

@@ -49,18 +49,16 @@ class KfmXmlHandler final : public QXmlDefaultHandler
 	Q_DECLARE_TR_FUNCTIONS( KfmXmlHandler )
 
 public:
-	KfmXmlHandler() : depth( 0 ),
-		elements( { "niftoolsxml", "version", "compound", "add" } ),
-		blk( 0 )
+	KfmXmlHandler()
 	{
 	}
 
-	int depth;
-	int stack[10];
-	QStringList elements;
+	int depth = 0;
+	int stack[10] = {0};
+	QStringList elements = { "niftoolsxml", "version", "compound", "add" };
 	QString errorStr;
 
-	NifBlockPtr blk;
+	NifBlockPtr blk = nullptr;
 
 	int current() const
 	{

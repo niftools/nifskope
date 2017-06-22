@@ -273,6 +273,8 @@ auto splitMime = []( QString format ) {
 	if ( split.value( 0 ) == "nifskope"
 		 && (split.value( 1 ) == "niblock" || split.value( 1 ) == "nibranch") )
 		return !split.value( 2 ).isEmpty();
+
+	return false;
 };
 
 void NifTreeView::keyPressEvent( QKeyEvent * e )

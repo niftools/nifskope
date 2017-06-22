@@ -118,7 +118,7 @@ ColorWheel::ColorWheel( const QColor & c, QWidget * parent ) : QWidget( parent )
 	if ( S > 1.0 || S < 0.0 )
 		S = 1.0;
 
-	if ( V > 1.0 || S < 0.0 )
+	if ( V > 1.0 || V < 0.0 )
 		V = 1.0;
 }
 
@@ -148,7 +148,7 @@ void ColorWheel::setColor( const QColor & c )
 	if ( S > 1.0 || S < 0.0 )
 		S = 1.0;
 
-	if ( V > 1.0 || S < 0.0 )
+	if ( V > 1.0 || V < 0.0 )
 		V = 1.0;
 
 	H = h;
@@ -199,8 +199,8 @@ int ColorWheel::heightForWidth( int width ) const
 	return width;
 }
 
-#ifndef pi
-#define pi 3.1416
+#ifndef M_PI
+#define M_PI 3.1415926535897932385
 #endif
 
 void ColorWheel::paintEvent( QPaintEvent * e )
@@ -229,12 +229,12 @@ void ColorWheel::paintEvent( QPaintEvent * e )
 	p.setBrush( palette().color( QPalette::Background ) );
 	p.drawEllipse( QRectF( -c, -c, c * 2, c * 2 ) );
 
-	double x = ( H - 0.5 ) * 2 * pi;
+	double x = ( H - 0.5 ) * 2 * M_PI;
 
 	QPointF points[3];
 	points[0] = QPointF( sin( x ) * c, cos( x ) * c );
-	points[1] = QPointF( sin( x + 2 * pi / 3 ) * c, cos( x + 2 * pi / 3 ) * c );
-	points[2] = QPointF( sin( x + 4 * pi / 3 ) * c, cos( x + 4 * pi / 3 ) * c );
+	points[1] = QPointF( sin( x + 2 * M_PI / 3 ) * c, cos( x + 2 * M_PI / 3 ) * c );
+	points[2] = QPointF( sin( x + 4 * M_PI / 3 ) * c, cos( x + 4 * M_PI / 3 ) * c );
 
 	QColor colors[3][2];
 	colors[0][0] = QColor::fromHsvF( H, 1.0, 1.0, 1.0 );
@@ -288,7 +288,7 @@ void ColorWheel::mousePressEvent( QMouseEvent * e )
 	double dy = abs( e->y() - height() / 2 );
 	double d  = sqrt( dx * dx + dy * dy );
 
-	double s = qMin( width(), height() ) / 2;
+	double s = qMin( width(), height() ) / 2.0;
 	double c = s - s / 5;
 
 	if ( d > s )
@@ -356,7 +356,7 @@ void ColorWheel::setColor( int x, int y )
 		QMatrix m;
 		m.rotate( (H ) * 360.0 + 120 );
 		QPointF p( m.map( mp ) );
-		double c = qMin( width(), height() ) / 2;
+		double c = qMin( width(), height() ) / 2.0;
 		c -= c / 5;
 		V  = ( p.y() + c ) / ( c + c / 2 );
 
@@ -364,7 +364,7 @@ void ColorWheel::setColor( int x, int y )
 		if ( V > 1.0 ) V = 1.0;
 
 		if ( V > 0 ) {
-			double h = V * ( c + c / 2 ) / ( 2.0 * sin( 60.0 / 180.0 * pi ) );
+			double h = V * ( c + c / 2 ) / ( 2.0 * sin( 60.0 / 180.0 * M_PI ) );
 			S = ( p.x() + h ) / ( h * 2 );
 
 			if ( S < 0.0 ) S = 0.0;

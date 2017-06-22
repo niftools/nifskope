@@ -104,7 +104,7 @@ public:
 	//! Load from file.
 	bool loadFromFile( const QString & filename );
 	//! Save to file.
-	bool saveToFile( const QString & filename ) const;
+	bool saveToFile( const QString & str ) const;
 
 	/*! If the model was loaded from a file then getFolder returns the folder.
 	 *

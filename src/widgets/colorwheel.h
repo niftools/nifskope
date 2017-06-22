@@ -92,14 +92,14 @@ protected:
 	void setColor( int x, int y );
 
 private:
-	double H, S, V, A;
+	double H = 0, S = 0, V = 0, A = 0;
 
-	bool isAlpha;
+	bool isAlpha = false;
 
 	enum
 	{
 		Nope, Circle, Triangle
-	} pressed;
+	} pressed = Nope;
 
 	QSize sHint;
 };

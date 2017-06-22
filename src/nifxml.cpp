@@ -82,7 +82,6 @@ public:
 	//! Constructor
 	NifXmlHandler()
 	{
-		depth = 0;
 		tags.insert( "niftoolsxml", tagFile );
 		tags.insert( "version", tagVersion );
 		tags.insert( "compound", tagCompound );
@@ -92,13 +91,12 @@ public:
 		tags.insert( "enum", tagEnum );
 		tags.insert( "option", tagOption );
 		tags.insert( "bitflags", tagBitFlag );
-		blk = 0;
 	}
 
 	//! Current position on stack
-	int depth;
+	int depth = 0;
 	//! Tag stack
-	Tag stack[10];
+	Tag stack[10] = {};
 	//! Hashmap of tags
 	QHash<QString, Tag> tags;
 	//! Error string
@@ -117,7 +115,7 @@ public:
 	QString optTxt;
 
 	//! Block
-	NifBlockPtr blk;
+	NifBlockPtr blk = nullptr;
 	//! Data
 	NifData data;
 
@@ -517,22 +515,22 @@ public:
 	}
 
 	//! Checks that the type of the data is valid
-	bool checkType( const NifData & data )
+	bool checkType( const NifData & d )
 	{
-		return ( NifModel::compounds.contains( data.type() )
-		        || NifValue::type( data.type() ) != NifValue::tNone
-		        || data.type() == "TEMPLATE"
+		return ( NifModel::compounds.contains( d.type() )
+		        || NifValue::type( d.type() ) != NifValue::tNone
+		        || d.type() == "TEMPLATE"
 		);
 	}
 
 	//! Checks that a template type is valid
-	bool checkTemp( const NifData & data )
+	bool checkTemp( const NifData & d )
 	{
-		return ( data.temp().isEmpty()
-		        || NifValue::type( data.temp() ) != NifValue::tNone
-		        || data.temp() == "TEMPLATE"
-		        || NifModel::blocks.contains( data.temp() )
-		        || NifModel::compounds.contains( data.temp() )
+		return ( d.temp().isEmpty()
+		        || NifValue::type( d.temp() ) != NifValue::tNone
+		        || d.temp() == "TEMPLATE"
+		        || NifModel::blocks.contains( d.temp() )
+		        || NifModel::compounds.contains( d.temp() )
 		);
 	}
 
@@ -555,15 +553,15 @@ public:
 		}
 
 		for ( const QString& key : NifModel::blocks.keys() ) {
-			NifBlockPtr blk = NifModel::blocks.value( key );
+			NifBlockPtr b = NifModel::blocks.value( key );
 
-			if ( !blk->ancestor.isEmpty() && !NifModel::blocks.contains( blk->ancestor ) )
-				err( tr( "niobject %1 inherits unknown ancestor %2" ).arg( key, blk->ancestor ) );
+			if ( !b->ancestor.isEmpty() && !NifModel::blocks.contains( b->ancestor ) )
+				err( tr( "niobject %1 inherits unknown ancestor %2" ).arg( key, b->ancestor ) );
 
-			if ( blk->ancestor == key )
+			if ( b->ancestor == key )
 				err( tr( "niobject %1 inherits itself" ).arg( key ) );
 
-			for ( const NifData& data : blk->types ) {
+			for ( const NifData& data : b->types ) {
 				if ( !checkType( data ) )
 					err( tr( "niobject %1 refers to unknown type %2" ).arg( key, data.type() ) );
 

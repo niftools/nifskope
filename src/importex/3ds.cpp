@@ -76,25 +76,24 @@ struct objMesh
 struct objKeyframe
 {
 	Vector3 pos;
-	float rotAngle;
+	float rotAngle = 0;
 	Vector3 rotAxis;
-	float scale;
+	float scale = 0;
 
 	objKeyframe()
-		: pos( 0.0f, 0.0f, 0.0f ), rotAngle( 0 ), rotAxis( 0.0f, 0.0f, 0.0f ), scale( 0.0f )
 	{
 	}
 };
 
 struct objKfSequence
 {
-	short objectId;
+	short objectId = 0;
 	QString objectName;
-	long startTime, endTime, curTime;
+	long startTime = 0, endTime = 0, curTime = 0;
 	Vector3 pivot;
 	QMap<short, objKeyframe> frames;
 
-	objKfSequence() : pivot( 0.0f, 0.0f, 0.0f )
+	objKfSequence()
 	{
 	}
 };

@@ -486,8 +486,6 @@ void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAng
 	Vector3 x = Vector3::crossproduct( z, y );
 
 	x = x * sin( coneAngle );
-	y = y;
-	z = z;
 
 	glBegin( GL_TRIANGLE_FAN );
 	glVertex( pivot );

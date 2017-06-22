@@ -191,9 +191,9 @@ void FileSelector::replaceText( const QString & x )
 	line->setCompleter( completer );
 }
 
-void FileSelector::setFilter( const QStringList & fltr )
+void FileSelector::setFilter( const QStringList & f )
 {
-	this->fltr = fltr;
+	fltr = f;
 
 	if ( dirmdl )
 		dirmdl->setNameFilters( fltr );

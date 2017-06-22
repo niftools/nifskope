@@ -81,15 +81,16 @@ public:
 class BoneWeights final
 {
 public:
-	BoneWeights() { bone = 0; }
+	BoneWeights() {}
 	BoneWeights( const NifModel * nif, const QModelIndex & index, int b, int vcnt = 0 );
 
 	void setTransform( const NifModel * nif, const QModelIndex & index );
 
 	Transform trans;
-	Vector3 center; float radius;
+	Vector3 center;
+	float radius = 0;
 	Vector3 tcenter;
-	int bone;
+	int bone = 0;
 	QVector<VertexWeight> weights;
 };
 

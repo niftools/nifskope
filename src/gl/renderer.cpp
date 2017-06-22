@@ -231,7 +231,7 @@ bool Renderer::Shader::load( const QString & filepath )
 			throw errlog;
 		}
 	}
-	catch ( QString err )
+	catch ( QString & err )
 	{
 		status = false;
 		Message::append( QObject::tr( "There were errors during shader compilation" ), QString( "%1:\r\n\r\n%2" ).arg( name ).arg( err ) );
@@ -317,18 +317,18 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 				QStringList list = line.split( " " );
 				bool ok;
 				int unit = list.value( 0 ).toInt( &ok );
-				QString id = list.value( 1 ).toLower();
+				QString idStr = list.value( 1 ).toLower();
 
-				if ( !ok || id.isEmpty() )
+				if ( !ok || idStr.isEmpty() )
 					throw QString( "malformed texcoord tag" );
 
-				if ( id != "tangents" && id != "bitangents" && TexturingProperty::getId( id ) < 0 )
-					throw QString( "texcoord tag referres to unknown texture id '%1'" ).arg( id );
+				if ( idStr != "tangents" && idStr != "bitangents" && TexturingProperty::getId( idStr ) < 0 )
+					throw QString( "texcoord tag referres to unknown texture id '%1'" ).arg( idStr );
 
 				if ( texcoords.contains( unit ) )
 					throw QString( "texture unit %1 is assigned twiced" ).arg( unit );
 
-				texcoords.insert( unit, id );
+				texcoords.insert( unit, idStr );
 			}
 		}
 
@@ -352,7 +352,7 @@ bool Renderer::Program::load( const QString & filepath, Renderer * renderer )
 			}
 		}
 	}
-	catch ( QString x )
+	catch ( QString & x )
 	{
 		status = false;
 		Message::append( QObject::tr( "There were errors during shader compilation" ), QString( "%1:\r\n\r\n%2" ).arg( name ).arg( x ) );
@@ -855,7 +855,6 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		uni4m( "worldMatrix", mesh->worldTrans().toMatrix4() );
 
 		clamp = mesh->bsesp->getClampMode();
-		clamp = TexClampMode(clamp);
 
 		if ( !uniSampler( "SourceTexture", 0, white, clamp ) )
 			return false;

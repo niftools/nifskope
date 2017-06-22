@@ -701,7 +701,7 @@ public:
 
 		dlgButtons( &dlg, vbox );
 
-		if ( dlg.exec() && QDialog::Accepted ) {
+		if ( dlg.exec() == QDialog::Accepted ) {
 			if ( nif->checkVersion( 0, 0x14000005 ) ) {
 				nif->set<bool>( nif->getBlock( index ), "Stencil Enabled", chkEnable->isChecked() );
 				nif->set<int>( nif->getBlock( index ), "Fail Action", cmbFail->currentIndex() );
@@ -764,7 +764,7 @@ public:
 
 		dlgButtons( &dlg, vbox );
 
-		if ( dlg.exec() && QDialog::Accepted ) {
+		if ( dlg.exec() == QDialog::Accepted ) {
 			if ( nif->checkVersion( 0, 0x14000005 ) ) {
 				nif->set<int>( nif->getBlock( index ), "Lighting Mode", cmbLight->currentIndex() );
 				nif->set<int>( nif->getBlock( index ), "Vertex Mode", cmbVert->currentIndex() );

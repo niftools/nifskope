@@ -186,26 +186,26 @@ void NifEditBox::sltApplyData()
 }
 
 
-NifFloatSlider::NifFloatSlider( NifModel * nif, const QModelIndex & index, float min, float max )
-	: NifEditBox( nif, index )
+NifFloatSlider::NifFloatSlider( NifModel * n, const QModelIndex & index, float min, float max )
+	: NifEditBox( n, index )
 {
 	getLayout()->addWidget( slider = new FloatSlider( Qt::Horizontal, true, false ) );
 	slider->setRange( min, max );
 	connect( slider, &FloatSlider::valueChanged, this, &NifFloatSlider::sltApplyData );
 }
 
-void NifFloatSlider::updateData( NifModel * nif )
+void NifFloatSlider::updateData( NifModel * n )
 {
-	slider->setValue( nif->get<float>( index ) );
+	slider->setValue( n->get<float>( index ) );
 }
 
-void NifFloatSlider::applyData( NifModel * nif )
+void NifFloatSlider::applyData( NifModel * n )
 {
-	nif->set<float>( index, slider->value() );
+	n->set<float>( index, slider->value() );
 }
 
-NifFloatEdit::NifFloatEdit( NifModel * nif, const QModelIndex & index, float min, float max )
-	: NifEditBox( nif, index )
+NifFloatEdit::NifFloatEdit( NifModel * n, const QModelIndex & index, float min, float max )
+	: NifEditBox( n, index )
 {
 	getLayout()->addWidget( spinbox = new QDoubleSpinBox() );
 	spinbox->setRange( min, max );
@@ -216,42 +216,42 @@ NifFloatEdit::NifFloatEdit( NifModel * nif, const QModelIndex & index, float min
 	connect( spinbox, dsbValueChanged, this, &NifFloatEdit::sltApplyData );
 }
 
-void NifFloatEdit::updateData( NifModel * nif )
+void NifFloatEdit::updateData( NifModel * n )
 {
-	spinbox->setValue( nif->get<float>( index ) );
+	spinbox->setValue( n->get<float>( index ) );
 }
 
-void NifFloatEdit::applyData( NifModel * nif )
+void NifFloatEdit::applyData( NifModel * n )
 {
-	nif->set<float>( index, spinbox->value() );
+	n->set<float>( index, spinbox->value() );
 }
 
-NifLineEdit::NifLineEdit( NifModel * nif, const QModelIndex & index )
-	: NifEditBox( nif, index )
+NifLineEdit::NifLineEdit( NifModel * n, const QModelIndex & index )
+	: NifEditBox( n, index )
 {
 	getLayout()->addWidget( line = new QLineEdit() );
 	connect( line, &QLineEdit::textEdited, this, &NifLineEdit::sltApplyData );
 }
 
-void NifLineEdit::updateData( NifModel * nif )
+void NifLineEdit::updateData( NifModel * n )
 {
-	line->setText( nif->get<QString>( index ) );
+	line->setText( n->get<QString>( index ) );
 }
 
-void NifLineEdit::applyData( NifModel * nif )
+void NifLineEdit::applyData( NifModel * n )
 {
-	nif->set<QString>( index, line->text() );
+	n->set<QString>( index, line->text() );
 }
 
 
-NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
-	: NifEditBox( nif, index )
+NifColorEdit::NifColorEdit( NifModel * n, const QModelIndex & index )
+	: NifEditBox( n, index )
 {
 	getLayout()->addWidget( color = new ColorWheel() );
 	color->setSizeHint( QSize( 140, 140 ) );
 	connect( color, &ColorWheel::sigColor, this, &NifColorEdit::sltApplyData );
 
-	auto typ = nif->getValue( index ).type();
+	auto typ = n->getValue( index ).type();
 	if ( typ == NifValue::tColor4 || typ == NifValue::tByteColor4 ) {
 		getLayout()->addWidget( alpha = new AlphaSlider() );
 		connect( alpha, &AlphaSlider::valueChanged, this, &NifColorEdit::sltApplyData );
@@ -260,40 +260,40 @@ NifColorEdit::NifColorEdit( NifModel * nif, const QModelIndex & index )
 	}
 }
 
-void NifColorEdit::updateData( NifModel * nif )
+void NifColorEdit::updateData( NifModel * n )
 {
 	if ( alpha ) {
-		color->setColor( nif->get<Color4>( index ).toQColor() );
-		alpha->setValue( nif->get<Color4>( index )[3] );
+		color->setColor( n->get<Color4>( index ).toQColor() );
+		alpha->setValue( n->get<Color4>( index )[3] );
 	} else {
-		color->setColor( nif->get<Color3>( index ).toQColor() );
+		color->setColor( n->get<Color3>( index ).toQColor() );
 	}
 }
 
-void NifColorEdit::applyData( NifModel * nif )
+void NifColorEdit::applyData( NifModel * n )
 {
 	if ( alpha ) {
 		Color4 c4;
 		c4.fromQColor( color->getColor() );
 		c4[3] = alpha->value();
-		nif->set<Color4>( index, c4 );
+		n->set<Color4>( index, c4 );
 	} else {
 		Color3 c3;
 		c3.fromQColor( color->getColor() );
-		nif->set<Color3>( index, c3 );
+		n->set<Color3>( index, c3 );
 	}
 }
 
-NifVectorEdit::NifVectorEdit( NifModel * nif, const QModelIndex & index )
-	: NifEditBox( nif, index )
+NifVectorEdit::NifVectorEdit( NifModel * n, const QModelIndex & index )
+	: NifEditBox( n, index )
 {
 	getLayout()->addWidget( vector = new VectorEdit() );
 	connect( vector, &VectorEdit::sigEdited, this, &NifVectorEdit::sltApplyData );
 }
 
-void NifVectorEdit::updateData( NifModel * nif )
+void NifVectorEdit::updateData( NifModel * n )
 {
-	NifValue val = nif->getValue( index );
+	NifValue val = n->getValue( index );
 
 	if ( val.type() == NifValue::tVector3 )
 		vector->setVector3( val.get<Vector3>() );
@@ -301,26 +301,26 @@ void NifVectorEdit::updateData( NifModel * nif )
 		vector->setVector2( val.get<Vector2>() );
 }
 
-void NifVectorEdit::applyData( NifModel * nif )
+void NifVectorEdit::applyData( NifModel * n )
 {
-	NifValue::Type type = nif->getValue( index ).type();
+	NifValue::Type type = n->getValue( index ).type();
 
 	if ( type == NifValue::tVector3 )
-		nif->set<Vector3>( index, vector->getVector3() );
+		n->set<Vector3>( index, vector->getVector3() );
 	else if ( type == NifValue::tVector2 )
-		nif->set<Vector2>( index, vector->getVector2() );
+		n->set<Vector2>( index, vector->getVector2() );
 }
 
-NifRotationEdit::NifRotationEdit( NifModel * nif, const QModelIndex & index )
-	: NifEditBox( nif, index )
+NifRotationEdit::NifRotationEdit( NifModel * n, const QModelIndex & index )
+	: NifEditBox( n, index )
 {
 	getLayout()->addWidget( rotation = new RotationEdit() );
 	connect( rotation, &RotationEdit::sigEdited, this, &NifRotationEdit::sltApplyData );
 }
 
-void NifRotationEdit::updateData( NifModel * nif )
+void NifRotationEdit::updateData( NifModel * n )
 {
-	NifValue val = nif->getValue( index );
+	NifValue val = n->getValue( index );
 
 	if ( val.type() == NifValue::tMatrix )
 		rotation->setMatrix( val.get<Matrix>() );
@@ -328,18 +328,18 @@ void NifRotationEdit::updateData( NifModel * nif )
 		rotation->setQuat( val.get<Quat>() );
 }
 
-void NifRotationEdit::applyData( NifModel * nif )
+void NifRotationEdit::applyData( NifModel * n )
 {
-	NifValue::Type type = nif->getValue( index ).type();
+	NifValue::Type type = n->getValue( index ).type();
 
 	if ( type == NifValue::tMatrix )
-		nif->set<Matrix>( index, rotation->getMatrix() );
+		n->set<Matrix>( index, rotation->getMatrix() );
 	else if ( type == NifValue::tQuat || type == NifValue::tQuatXYZW )
-		nif->set<Quat>( index, rotation->getQuat() );
+		n->set<Quat>( index, rotation->getQuat() );
 }
 
-NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
-	: NifEditBox( nif, index ), setting( false )
+NifMatrix4Edit::NifMatrix4Edit( NifModel * n, const QModelIndex & index )
+	: NifEditBox( n, index )
 {
 	QBoxLayout * vbox = new QVBoxLayout;
 	setLayout( vbox );
@@ -366,12 +366,12 @@ NifMatrix4Edit::NifMatrix4Edit( NifModel * nif, const QModelIndex & index )
 	connect( scale, &VectorEdit::sigEdited, this, &NifMatrix4Edit::sltApplyData );
 }
 
-void NifMatrix4Edit::updateData( NifModel * nif )
+void NifMatrix4Edit::updateData( NifModel * n )
 {
 	if ( setting )
 		return;
 
-	Matrix4 mtx = nif->get<Matrix4>( index );
+	Matrix4 mtx = n->get<Matrix4>( index );
 
 	Vector3 t, s;
 	Matrix r;
@@ -383,12 +383,12 @@ void NifMatrix4Edit::updateData( NifModel * nif )
 	scale->setVector3( s );
 }
 
-void NifMatrix4Edit::applyData( NifModel * nif )
+void NifMatrix4Edit::applyData( NifModel * n )
 {
 	setting = true;
 	Matrix4 mtx;
 	mtx.compose( translation->getVector3(), rotation->getMatrix(), scale->getVector3() );
-	nif->set<Matrix4>( index, mtx );
+	n->set<Matrix4>( index, mtx );
 	setting = false;
 }
 

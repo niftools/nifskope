@@ -739,7 +739,7 @@ QByteArray fileChecksum( const QString &fileName, QCryptographicHash::Algorithm 
 	return QByteArray();
 }
 
-void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
+void NifSkope::checkFile( QFileInfo fInfo, QByteArray hash )
 {
 	QString fname = fInfo.fileName();
 	QString fpath = fInfo.filePath();
@@ -753,7 +753,7 @@ void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
 	if ( saved ) {
 		auto filehash2 = fileChecksum( tmpFile, QCryptographicHash::Md5 );
 
-		if ( filehash == filehash2 ) {
+		if ( hash == filehash2 ) {
 			tmp.remove( fname );
 		} else {
 			QString err = "An MD5 hash comparison indicates this file will not be 100% identical upon saving. This could indicate underlying issues with the data in this file.";
@@ -1378,7 +1378,7 @@ int main( int argc, char * argv[] )
 void NifSkope::migrateSettings() const
 {
 	// Load current NifSkope settings
-	QSettings cfg;
+	QSettings settings;
 	// Load pre-1.2 NifSkope settings
 	QSettings cfg1_1( "NifTools", "NifSkope" );
 	// Load NifSkope 1.2 settings
@@ -1390,21 +1390,21 @@ void NifSkope::migrateSettings() const
 	QString curDisplayVer = NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true );
 
 	// New Install, no need to migrate anything
-	if ( !cfg.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
+	if ( !settings.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
 		// QSettings constructor creates an empty folder, so clear it.
 		cfg1_1.clear();
 
 		// Set version values
-		cfg.setValue( "Version", curVer );
-		cfg.setValue( "Qt Version", curQtVer );
-		cfg.setValue( "Display Version", curDisplayVer );
+		settings.setValue( "Version", curVer );
+		settings.setValue( "Qt Version", curQtVer );
+		settings.setValue( "Display Version", curDisplayVer );
 
 		return;
 	}
 
 	QString prevVer = curVer;
-	QString prevQtVer = cfg.value( "Qt Version" ).toString();
-	QString prevDisplayVer = cfg.value( "Display Version" ).toString();
+	QString prevQtVer = settings.value( "Qt Version" ).toString();
+	QString prevDisplayVer = settings.value( "Display Version" ).toString();
 
 	// Set full granularity for version comparisons
 	NifSkopeVersion::setNumParts( 7 );
@@ -1442,7 +1442,7 @@ void NifSkope::migrateSettings() const
 	bool migrateFrom1_2 = testMigration( cfg1_2, "2.0" );
 
 	if ( !migrateFrom1_1 && !migrateFrom1_2 ) {
-		prevVer = cfg.value( "Version" ).toString();
+		prevVer = settings.value( "Version" ).toString();
 	}
 
 	NifSkopeVersion oldVersion( prevVer );
@@ -1462,14 +1462,14 @@ void NifSkope::migrateSettings() const
 		// Migrate from 1.2.x to 2.0
 		if ( migrateFrom1_2 ) {
 			qDebug() << "Migrating from 1.2 to 2.0";
-			migrate( cfg1_2, cfg, migrateTo2_0 );
+			migrate( cfg1_2, settings, migrateTo2_0 );
 		}
 
 		// Set new Version
-		cfg.setValue( "Version", curVer );
+		settings.setValue( "Version", curVer );
 
 		if ( prevDisplayVer != curDisplayVer )
-			cfg.setValue( "Display Version", curDisplayVer );
+			settings.setValue( "Display Version", curDisplayVer );
 
 		// Migrate to new Settings
 		if ( oldVersion <= NifSkopeVersion( "2.0.dev1" ) ) {
@@ -1490,19 +1490,19 @@ void NifSkope::migrateSettings() const
 				return sanitized;
 			};
 
-			QVariant foldersVal = cfg.value( "Settings/Resources/Folders" );
+			QVariant foldersVal = settings.value( "Settings/Resources/Folders" );
 			if ( foldersVal.toStringList().isEmpty() ) {
-				QVariant oldVal = cfg.value( "Render Settings/Texture Folders" );
+				QVariant oldVal = settings.value( "Render Settings/Texture Folders" );
 				if ( !oldVal.isNull() ) {
-					cfg.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
+					settings.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
 				}
 			}
 
-			QVariant archivesVal = cfg.value( "Settings/Resources/Archives" );
+			QVariant archivesVal = settings.value( "Settings/Resources/Archives" );
 			if ( archivesVal.toStringList().isEmpty() ) {
-				QVariant oldVal = cfg.value( "FSEngine/Archives" );
+				QVariant oldVal = settings.value( "FSEngine/Archives" );
 				if ( !oldVal.isNull() ) {
-					cfg.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
+					settings.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
 				}
 			}
 
@@ -1511,10 +1511,10 @@ void NifSkope::migrateSettings() const
 			
 			// Remove old keys
 
-			cfg.remove( "FSEngine" );
-			cfg.remove( "Render Settings" );
-			cfg.remove( "Settings/Language" );
-			cfg.remove( "Settings/Startup Version" );
+			settings.remove( "FSEngine" );
+			settings.remove( "Render Settings" );
+			settings.remove( "Settings/Language" );
+			settings.remove( "Settings/Startup Version" );
 		}
 	}
 
@@ -1523,17 +1523,17 @@ void NifSkope::migrateSettings() const
 	if ( curQtVer != prevQtVer ) {
 		// Check all keys and delete all QByteArrays
 		// to prevent portability problems between Qt versions
-		QStringList keys = cfg.allKeys();
+		QStringList keys = settings.allKeys();
 
 		for ( const auto& key : keys ) {
-			if ( cfg.value( key ).type() == QVariant::ByteArray ) {
+			if ( settings.value( key ).type() == QVariant::ByteArray ) {
 				qDebug() << "Removing Qt version-specific settings" << key
 					<< "while migrating settings from previous version";
-				cfg.remove( key );
+				settings.remove( key );
 			}
 		}
 
-		cfg.setValue( "Qt Version", curQtVer );
+		settings.setValue( "Qt Version", curQtVer );
 	}
 #endif
 }

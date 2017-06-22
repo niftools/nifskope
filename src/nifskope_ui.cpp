@@ -585,9 +585,9 @@ void NifSkope::initToolBars()
 	// LOD Toolbar
 	QToolBar * tLOD = ui->tLOD;
 
-	QSettings cfg;
-	int lodLevel = cfg.value( "GLView/LOD Level", 2 ).toInt();
-	cfg.setValue( "GLView/LOD Level", lodLevel );
+	QSettings settings;
+	int lodLevel = settings.value( "GLView/LOD Level", 2 ).toInt();
+	settings.setValue( "GLView/LOD Level", lodLevel );
 
 	QSlider * lodSlider = new QSlider( Qt::Horizontal );
 	lodSlider->setFocusPolicy( Qt::StrongFocus );
@@ -1163,13 +1163,13 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 			ogl->getScene()->animate = false;
 			ogl->updateGL();
 
-			if ( buf.isNull() ) {
+			if ( viewBuffer.isNull() ) {
 				// Init initial buffer with solid color
 				//	Otherwise becomes random colors on release builds
-				buf = QImage( 10, 10, QImage::Format_ARGB32 );
-				buf.fill( ogl->clearColor() );
+				viewBuffer = QImage( 10, 10, QImage::Format_ARGB32 );
+				viewBuffer.fill( ogl->clearColor() );
 			} else {
-				buf = ogl->grabFrameBuffer();
+				viewBuffer = ogl->grabFrameBuffer();
 			}
 
 			ogl->setUpdatesEnabled( false );
@@ -1183,10 +1183,10 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 	}
 
 	// Paint stored framebuffer over GLGraphicsView while resizing
-	if ( !buf.isNull() && isResizing && e->type() == QEvent::Paint ) {
+	if ( !viewBuffer.isNull() && isResizing && e->type() == QEvent::Paint ) {
 		QPainter painter;
 		painter.begin( graphicsView );
-		painter.drawImage( QRect( 0, 0, painter.device()->width(), painter.device()->height() ), buf );
+		painter.drawImage( QRect( 0, 0, painter.device()->width(), painter.device()->height() ), viewBuffer );
 		painter.end();
 
 		return true;

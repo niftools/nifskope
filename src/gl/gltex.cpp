@@ -399,7 +399,7 @@ int TexCache::bind( const QModelIndex & iSource )
 						embedTextures.insert( iData, tx );
 						texLoad( iData, tx->format, tx->width, tx->height, tx->mipmaps );
 					}
-					catch ( QString e ) {
+					catch ( QString & e ) {
 						tx->status = e;
 					}
 				}
@@ -564,7 +564,7 @@ void TexCache::Tex::load()
 	{
 		texLoad( filepath, format, width, height, mipmaps, data );
 	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		status = e;
 	}
@@ -585,7 +585,7 @@ void TexCache::Tex::loadCube()
 	{
 		texLoadCube( filepath, format, width, height, mipmaps, data, id );
 	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		status = e;
 	}

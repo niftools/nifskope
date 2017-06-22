@@ -195,7 +195,7 @@ protected:
 	class RotationEdit * rotation;
 	class VectorEdit * scale;
 
-	bool setting;
+	bool setting = false;
 };
 
 #endif

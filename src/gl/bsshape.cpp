@@ -518,8 +518,8 @@ void BSShape::drawSelection() const
 	glDisable( GL_CULL_FACE );
 
 	// TODO: User Settings
-	int lineWidth = 1.5;
-	int pointSize = 5.0;
+	GLfloat lineWidth = 1.5;
+	GLfloat pointSize = 5.0;
 
 	glLineWidth( lineWidth );
 	glPointSize( pointSize );
@@ -711,8 +711,6 @@ void BSShape::drawSelection() const
 		}
 		s = sidx.row();
 
-		auto nif = static_cast<const NifModel *>(sidx.model());
-
 		auto off = sidx.sibling( s - 1, 2 ).data().toInt() / 3;
 		auto cnt = sidx.sibling( s, 2 ).data().toInt();
 
@@ -771,11 +769,11 @@ void BSShape::drawSelection() const
 	if ( n == "NiSkinData" || n == "BSSkin::BoneData" ) {
 		// Get shape block
 		if ( nif->getBlock( nif->getParent( nif->getParent( blk ) ) ) == iBlock ) {
-			auto bones = nif->getIndex( blk, "Bone List" );
-			int ct = nif->rowCount( bones );
+			auto iBones = nif->getIndex( blk, "Bone List" );
+			int ct = nif->rowCount( iBones );
 
 			for ( int i = 0; i < ct; i++ ) {
-				auto b = bones.child( i, 0 );
+				auto b = iBones.child( i, 0 );
 				boneSphere( nif, b );
 			}
 		}

@@ -995,13 +995,13 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 	// Since when can a BMP contain DXT compressed textures?
 	case FOURCC_DXT5:
 		texformat += " (DXT5)";
-		return texLoadDXT( f, compression, width, height, 1, true );
+		return texLoadDXT( f, compression, 16, width, height, 1, true );
 	case FOURCC_DXT3:
 		texformat += " (DXT3)";
-		return texLoadDXT( f, compression, width, height, 1, true );
+		return texLoadDXT( f, compression, 16, width, height, 1, true );
 	case FOURCC_DXT1:
 		texformat += " (DXT1)";
-		return texLoadDXT( f, compression, width, height, 1, true );
+		return texLoadDXT( f, compression, 8, width, height, 1, true );
 	}
 
 	throw QString( "unknown image sub format" );
@@ -1249,7 +1249,8 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 }
 
 
-bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id )
+bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height,
+				  GLuint & mipmaps, QByteArray & data, GLuint id )
 {
 	Q_UNUSED( format );
 
@@ -1322,7 +1323,7 @@ bool texCanLoad( const QString & filepath )
 }
 
 
-bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
+bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height, const GLuint & mipmaps )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
 	quint32 format = nif->get<quint32>( index, "Pixel Format" );
@@ -1589,7 +1590,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 }
 
 
-bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height )
 {
 	Q_UNUSED( index );
 	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );

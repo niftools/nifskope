@@ -96,7 +96,7 @@ extern bool texCanLoad( const QString & filepath );
  * @param mipmaps	The number of mipmaps present
  * @return			True if the save was successful, false otherwise
  */
-bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps );
+bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height, const GLuint & mipmaps );
 
 /*! Save pixel data to a TGA file
  *
@@ -106,7 +106,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
  * @param height	The height of the texture
  * @return			True if the save was successful, false otherwise
  */
-bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height );
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height );
 
 /*! Save a file to pixel data
  *

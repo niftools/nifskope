@@ -193,7 +193,7 @@ public slots:
 protected:
 	mutable bool sceneBoundsValid, timeBoundsValid;
 	mutable BoundSphere bndSphere;
-	mutable float tMin, tMax;
+	mutable float tMin = 0, tMax = 0;
 
 	void updateTimeBounds() const;
 };

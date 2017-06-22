@@ -57,9 +57,9 @@ class Property : public IControllable
 
 protected:
 	//! Protected constructor; see IControllable()
-	Property( Scene * scene, const QModelIndex & index ) : IControllable( scene, index ), ref( 0 ) {}
+	Property( Scene * scene, const QModelIndex & index ) : IControllable( scene, index ) {}
 
-	int ref;
+	int ref = 0;
 
 public:
 	/*! Creates a Property based on the specified index of the specified model
@@ -160,9 +160,9 @@ public:
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 
-	bool alphaBlend, alphaTest, alphaSort;
-	GLenum alphaSrc, alphaDst, alphaFunc;
-	GLfloat alphaThreshold;
+	bool alphaBlend = false, alphaTest = false, alphaSort = false;
+	GLenum alphaSrc = 0, alphaDst = 0, alphaFunc = 0;
+	GLfloat alphaThreshold = 0;
 };
 
 REGISTER_PROPERTY( AlphaProperty, Alpha )
@@ -184,9 +184,9 @@ public:
 	friend void glProperty( ZBufferProperty * );
 
 protected:
-	bool depthTest;
-	bool depthMask;
-	GLenum depthFunc;
+	bool depthTest = false;
+	bool depthMask = false;
+	GLenum depthFunc = 0;
 };
 
 REGISTER_PROPERTY( ZBufferProperty, ZBuffer )
@@ -204,15 +204,15 @@ class TexturingProperty final : public Property
 	struct TexDesc
 	{
 		QPersistentModelIndex iSource;
-		GLenum filter;
-		GLint wrapS, wrapT;
-		int coordset;
+		GLenum filter = 0;
+		GLint wrapS = 0, wrapT = 0;
+		int coordset = 0;
 
-		bool hasTransform;
+		bool hasTransform = false;
 
 		Vector2 translation;
 		Vector2 tiling;
-		float rotation;
+		float rotation = 0;
 		Vector2 center;
 	};
 
@@ -292,8 +292,8 @@ public:
 
 protected:
 	Color4 ambient, diffuse, specular, emissive;
-	GLfloat shininess, alpha;
-	bool overridden;
+	GLfloat shininess = 0, alpha = 0;
+	bool overridden = false;
 
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 };
@@ -314,7 +314,7 @@ public:
 	friend void glProperty( class MaterialProperty *, class SpecularProperty * );
 
 protected:
-	bool spec;
+	bool spec = false;
 };
 
 REGISTER_PROPERTY( SpecularProperty, Specular )
@@ -333,7 +333,7 @@ public:
 	friend void glProperty( WireframeProperty * );
 
 protected:
-	bool wire;
+	bool wire = false;
 };
 
 REGISTER_PROPERTY( WireframeProperty, Wireframe )
@@ -352,8 +352,8 @@ public:
 	friend void glProperty( VertexColorProperty *, bool vertexcolors );
 
 protected:
-	int lightmode;
-	int vertexmode;
+	int lightmode = 0;
+	int vertexmode = 0;
 };
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
@@ -372,18 +372,17 @@ public:
 	friend void glProperty( StencilProperty * );
 
 protected:
-	bool stencil;
+	bool stencil = false;
 
-	GLenum func;
-	GLint ref;
-	GLuint mask;
+	GLenum func = 0;
+	GLuint mask = 0;
 
-	GLenum failop;
-	GLenum zfailop;
-	GLenum zpassop;
+	GLenum failop = 0;
+	GLenum zfailop = 0;
+	GLenum zpassop = 0;
 
-	bool cullEnable;
-	GLenum cullMode;
+	bool cullEnable = false;
+	GLenum cullMode = 0;
 };
 
 REGISTER_PROPERTY( StencilProperty, Stencil )
@@ -577,7 +576,7 @@ protected:
 	UVScale uvScale;
 	UVOffset uvOffset;
 
-	TexClampMode clampMode;
+	TexClampMode clampMode = CLAMP_S_CLAMP_T;
 
 	bool depthTest = false;
 	bool depthWrite = false;
@@ -679,7 +678,7 @@ public:
 protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 
-	ShaderFlags::ShaderType shaderType;
+	ShaderFlags::ShaderType shaderType = ShaderFlags::ST_Default;
 
 	Color3 emissiveColor;
 	Color3 specularColor;
@@ -698,10 +697,10 @@ protected:
 	float environmentReflection = 0.0;
 
 	// Multi-layer properties
-	float innerThickness;
+	float innerThickness = 1.0;
 	UVScale innerTextureScale;
-	float outerRefractionStrength;
-	float outerReflectionStrength;
+	float outerRefractionStrength = 0.0;
+	float outerReflectionStrength = 1.0;
 };
 
 REGISTER_PROPERTY( BSLightingShaderProperty, ShaderLighting )
@@ -767,7 +766,7 @@ protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override final;
 
 	Color4 emissiveColor;
-	float emissiveMult;
+	float emissiveMult = 1.0;
 
 	float lightingInfluence = 0.0;
 	float environmentReflection = 0.0;
@@ -806,7 +805,7 @@ public:
 	void setWaterShaderFlags( unsigned int );
 
 protected:
-	WaterShaderFlags::SF1 waterShaderFlags;
+	WaterShaderFlags::SF1 waterShaderFlags = WaterShaderFlags::SF1(0);
 };
 
 REGISTER_PROPERTY( BSWaterShaderProperty, ShaderLighting )

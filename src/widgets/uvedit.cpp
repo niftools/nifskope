@@ -923,10 +923,10 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 						// Assume that a FO3 mesh never has embedded textures...
 						//texsource = iTexSource;
 						//return true;
-						QModelIndex textures = nif->getIndex( iTexSource, "Textures" );
+						QModelIndex iTextures = nif->getIndex( iTexSource, "Textures" );
 
-						if ( textures.isValid() ) {
-							texfile = TexCache::find( nif->get<QString>( textures.child( 0, 0 ) ), nif->getFolder() );
+						if ( iTextures.isValid() ) {
+							texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder() );
 							return true;
 						}
 					}
@@ -1089,26 +1089,26 @@ protected:
 
 void UVWidget::select( int index, bool yes )
 {
-	QList<int> selection = this->selection;
+	QList<int> sel = this->selection;
 
 	if ( yes ) {
-		if ( !selection.contains( index ) )
-			selection.append( index );
+		if ( !sel.contains( index ) )
+			sel.append( index );
 	} else {
-		selection.removeAll( index );
+		sel.removeAll( index );
 	}
 
-	undoStack->push( new UVWSelectCommand( this, selection ) );
+	undoStack->push( new UVWSelectCommand( this, sel ) );
 }
 
 void UVWidget::select( const QRegion & r, bool add )
 {
-	QList<int> selection( add ? this->selection : QList<int>() );
+	QList<int> sel( add ? this->selection : QList<int>() );
 	for ( const auto s : indices( r ) ) {
-		if ( !selection.contains( s ) )
-			selection.append( s );
+		if ( !sel.contains( s ) )
+			sel.append( s );
 	}
-	undoStack->push( new UVWSelectCommand( this, selection ) );
+	undoStack->push( new UVWSelectCommand( this, sel ) );
 }
 
 void UVWidget::selectNone()
@@ -1118,40 +1118,40 @@ void UVWidget::selectNone()
 
 void UVWidget::selectAll()
 {
-	QList<int> selection;
+	QList<int> sel;
 
 	for ( int s = 0; s < texcoords.count(); s++ )
-		selection << s;
+		sel << s;
 
-	undoStack->push( new UVWSelectCommand( this, selection ) );
+	undoStack->push( new UVWSelectCommand( this, sel ) );
 }
 
 void UVWidget::selectFaces()
 {
-	QList<int> selection = this->selection;
-	for ( const auto s : QList<int>( selection ) ) {
+	QList<int> sel = this->selection;
+	for ( const auto s : QList<int>( sel ) ) {
 		for ( const auto f : texcoords2faces.values( s ) ) {
 			for ( int i = 0; i < 3; i++ ) {
-				if ( !selection.contains( faces[f].tc[i] ) )
-					selection.append( faces[f].tc[i] );
+				if ( !sel.contains( faces[f].tc[i] ) )
+					sel.append( faces[f].tc[i] );
 			}
 		}
 	}
-	undoStack->push( new UVWSelectCommand( this, selection ) );
+	undoStack->push( new UVWSelectCommand( this, sel ) );
 }
 
 void UVWidget::selectConnected()
 {
-	QList<int> selection = this->selection;
+	QList<int> sel = this->selection;
 	bool more = true;
 
 	while ( more ) {
 		more = false;
-		for ( const auto s : QList<int>( selection ) ) {
+		for ( const auto s : QList<int>( sel ) ) {
 			for ( const auto f :texcoords2faces.values( s ) ) {
 				for ( int i = 0; i < 3; i++ ) {
-					if ( !selection.contains( faces[f].tc[i] ) ) {
-						selection.append( faces[f].tc[i] );
+					if ( !sel.contains( faces[f].tc[i] ) ) {
+						sel.append( faces[f].tc[i] );
 						more = true;
 					}
 				}
@@ -1159,7 +1159,7 @@ void UVWidget::selectConnected()
 		}
 	}
 
-	undoStack->push( new UVWSelectCommand( this, selection ) );
+	undoStack->push( new UVWSelectCommand( this, sel ) );
 }
 
 class UVWMoveCommand final : public QUndoCommand

@@ -806,11 +806,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 							iTexSource = nif->insertNiBlock( "NiSourceTexture" );
 					}
 
-					if ( !cBSShaderPPLightingProperty ) // no need of NiTexturingProperty when BSShaderPPLightingProperty is present
-						nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
-
 					if ( !cBSShaderPPLightingProperty ) {
 						// no need of NiTexturingProperty when BSShaderPPLightingProperty is present
+						nif->setLink( iBaseMap, "Source", nif->getBlockNumber( iTexSource ) );
 						nif->set<int>( iTexSource, "Pixel Layout", nif->getVersion() == "20.0.0.5" ? 6 : 5 );
 						nif->set<int>( iTexSource, "Use Mipmaps", 2 );
 						nif->set<int>( iTexSource, "Alpha Format", 3 );

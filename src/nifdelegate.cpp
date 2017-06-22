@@ -138,8 +138,7 @@ public:
 
 	virtual void paint( QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index ) const override final
 	{
-		int namerole = NifSkopeDisplayRole;
-		namerole = (index.isValid() && index.column() == 0) ? Qt::DisplayRole : NifSkopeDisplayRole;
+		int namerole = (index.isValid() && index.column() == 0) ? Qt::DisplayRole : NifSkopeDisplayRole;
 
 		QString text = index.data( namerole ).toString();
 		QString deco = index.data( Qt::DecorationRole ).toString();

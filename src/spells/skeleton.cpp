@@ -969,7 +969,7 @@ public:
 
 			return iShape;
 		}
-		catch ( QString err )
+		catch ( QString & err )
 		{
 			if ( !err.isEmpty() )
 				QMessageBox::warning( 0, "NifSkope", err );

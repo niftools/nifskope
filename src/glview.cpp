@@ -238,7 +238,7 @@ void GLView::updateSettings()
 	cfg.fov = settings.value( "General/Camera/Field Of View" ).toFloat();
 	cfg.moveSpd = settings.value( "General/Camera/Movement Speed" ).toFloat();
 	cfg.rotSpd = settings.value( "General/Camera/Rotation Speed" ).toFloat();
-	cfg.upAxis = settings.value( "General/Up Axis", 2 ).toInt();
+	cfg.upAxis = UpAxis(settings.value( "General/Up Axis", ZAxis ).toInt());
 
 	settings.endGroup();
 }
@@ -447,7 +447,6 @@ void GLView::paintGL()
 		ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
 	}
 
-	Transform viewTrans;
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
 	viewTrans.rotation = viewTrans.rotation * ap;
 	viewTrans.translation = viewTrans.rotation * Pos;
@@ -1240,30 +1239,30 @@ void GLView::setSceneSequence( const QString & seqname )
 // TODO: Multiple user views, ala Recent Files
 void GLView::saveUserView()
 {
-	QSettings cfg;
-	cfg.beginGroup( "GLView" );
-	cfg.beginGroup( "User View" );
-	cfg.setValue( "RotX", Rot[0] );
-	cfg.setValue( "RotY", Rot[1] );
-	cfg.setValue( "RotZ", Rot[2] );
-	cfg.setValue( "PosX", Pos[0] );
-	cfg.setValue( "PosY", Pos[1] );
-	cfg.setValue( "PosZ", Pos[2] );
-	cfg.setValue( "Dist", Dist );
-	cfg.endGroup();
-	cfg.endGroup();
+	QSettings settings;
+	settings.beginGroup( "GLView" );
+	settings.beginGroup( "User View" );
+	settings.setValue( "RotX", Rot[0] );
+	settings.setValue( "RotY", Rot[1] );
+	settings.setValue( "RotZ", Rot[2] );
+	settings.setValue( "PosX", Pos[0] );
+	settings.setValue( "PosY", Pos[1] );
+	settings.setValue( "PosZ", Pos[2] );
+	settings.setValue( "Dist", Dist );
+	settings.endGroup();
+	settings.endGroup();
 }
 
 void GLView::loadUserView()
 {
-	QSettings cfg;
-	cfg.beginGroup( "GLView" );
-	cfg.beginGroup( "User View" );
-	setRotation( cfg.value( "RotX" ).toDouble(), cfg.value( "RotY" ).toDouble(), cfg.value( "RotZ" ).toDouble() );
-	setPosition( cfg.value( "PosX" ).toDouble(), cfg.value( "PosY" ).toDouble(), cfg.value( "PosZ" ).toDouble() );
-	setDistance( cfg.value( "Dist" ).toDouble() );
-	cfg.endGroup();
-	cfg.endGroup();
+	QSettings settings;
+	settings.beginGroup( "GLView" );
+	settings.beginGroup( "User View" );
+	setRotation( settings.value( "RotX" ).toDouble(), settings.value( "RotY" ).toDouble(), settings.value( "RotZ" ).toDouble() );
+	setPosition( settings.value( "PosX" ).toDouble(), settings.value( "PosY" ).toDouble(), settings.value( "PosZ" ).toDouble() );
+	setDistance( settings.value( "Dist" ).toDouble() );
+	settings.endGroup();
+	settings.endGroup();
 }
 
 void GLView::advanceGears()
@@ -1393,9 +1392,9 @@ void GLView::saveImage()
 	lay->addWidget( niffileDir, 1, 1, 1, 1 );
 
 	// Save JPEG Quality
-	QSettings cfg;
-	int jpegQuality = cfg.value( "JPEG/Quality", 90 ).toInt();
-	cfg.setValue( "JPEG/Quality", jpegQuality );
+	QSettings settings;
+	int jpegQuality = settings.value( "JPEG/Quality", 90 ).toInt();
+	settings.setValue( "JPEG/Quality", jpegQuality );
 
 	QHBoxLayout * pixBox = new QHBoxLayout;
 	pixBox->setAlignment( Qt::AlignRight );
@@ -1482,8 +1481,8 @@ void GLView::saveImage()
 	connect( btnOk, &QPushButton::clicked, [&]() 
 		{
 			// Save JPEG Quality
-			QSettings cfg;
-			cfg.setValue( "JPEG/Quality", pixQuality->value() );
+			QSettings settings;
+			settings.setValue( "JPEG/Quality", pixQuality->value() );
 
 			// TODO: Set up creation of screenshots directory in Options
 			if ( nifskopeDir->isChecked() ) {

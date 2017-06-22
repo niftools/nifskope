@@ -1112,11 +1112,11 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 	if ( !m ) {
 		alpha = nif->get<float>( prop, "Alpha" );
 
-		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
-		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+		auto scale = nif->get<Vector2>( prop, "UV Scale" );
+		auto offset = nif->get<Vector2>( prop, "UV Offset" );
 
-		setUvScale( uvScale[0], uvScale[1] );
-		setUvOffset( uvOffset[0], uvOffset[1] );
+		setUvScale( scale[0], scale[1] );
+		setUvOffset( offset[0], offset[1] );
 		setClampMode( nif->get<uint>( prop, "Texture Clamp Mode" ) );
 
 		// Specular
@@ -1453,11 +1453,11 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
 		}
 
-		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
-		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+		auto scale = nif->get<Vector2>( prop, "UV Scale" );
+		auto offset = nif->get<Vector2>( prop, "UV Offset" );
 
-		setUvScale( uvScale[0], uvScale[1] );
-		setUvOffset( uvOffset[0], uvOffset[1] );
+		setUvScale( scale[0], scale[1] );
+		setUvOffset( offset[0], offset[1] );
 		setClampMode( nif->get<quint8>( prop, "Texture Clamp Mode" ) );
 
 		if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )

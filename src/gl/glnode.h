@@ -130,7 +130,7 @@ public:
 	bool isPresorted() const { return presorted; }
 	
 	Node * findChild( int id ) const;
-	Node * findChild( const QString & name ) const;
+	Node * findChild( const QString & str ) const;
 
 	Node * findParent( int id ) const;
 	Node * parentNode() const { return parent; }

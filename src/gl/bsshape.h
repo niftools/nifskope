@@ -47,8 +47,8 @@ protected:
 	QString skinDataName;
 	QString skinInstName;
 
-	int numVerts;
-	int numTris;
+	int numVerts = 0;
+	int numTris = 0;
 
 	Vector3 bsphereCenter;
 	float bsphereRadius = 0.0;

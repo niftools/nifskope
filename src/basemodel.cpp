@@ -641,9 +641,9 @@ bool BaseModel::loadFromFile( const QString & file )
 	return false;
 }
 
-bool BaseModel::saveToFile( const QString & filename ) const
+bool BaseModel::saveToFile( const QString & str ) const
 {
-	QFile f( filename );
+	QFile f( str );
 	return f.open( QIODevice::WriteOnly ) && save( f );
 }
 

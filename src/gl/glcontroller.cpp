@@ -735,8 +735,7 @@ bool TransformInterpolator::updateTransform( Transform & tm, float time )
 }
 
 
-BSplineTransformInterpolator::BSplineTransformInterpolator( Controller * owner ) : TransformInterpolator( owner ),
-	lTransOff( USHRT_MAX ), lRotateOff( USHRT_MAX ), lScaleOff( USHRT_MAX ), nCtrl( 0 ), degree( 3 )
+BSplineTransformInterpolator::BSplineTransformInterpolator( Controller * owner ) : TransformInterpolator( owner )
 {
 }
 

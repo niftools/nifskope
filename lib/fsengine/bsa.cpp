@@ -418,7 +418,7 @@ bool BSA::open()
 		else
 			throw QString( "file magic" );
 	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		status = e;
 		return false;

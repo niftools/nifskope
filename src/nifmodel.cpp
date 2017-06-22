@@ -1726,8 +1726,8 @@ bool NifModel::setHeaderString( const QString & s )
 
 bool NifModel::load( QIODevice & device )
 {
-	QSettings cfg;
-	bool ignoreSize = cfg.value( "Ignore Block Size", true ).toBool();
+	QSettings settings;
+	bool ignoreSize = settings.value( "Ignore Block Size", true ).toBool();
 
 	clear();
 
@@ -1737,8 +1737,7 @@ bool NifModel::load( QIODevice & device )
 		setState( Loading );
 
 	// read header
-	NifItem * header = nullptr;
-	header = getHeaderItem();
+	NifItem * header = getHeaderItem();
 	if ( !header || !loadHeader( header, stream ) ) {
 		auto m = tr( "failed to load file header (version %1, %2)" ).arg( version, 0, 16 ).arg( version2string( version ) );
 		if ( msgMode == UserMessage ) {
@@ -1861,7 +1860,7 @@ bool NifModel::load( QIODevice & device )
 						throw tr( "encountered unknown block (%1)" ).arg( blktyp );
 					}
 				}
-				catch ( QString err )
+				catch ( QString & err )
 				{
 					// version 20.3.0.3 can mostly recover from some failures because it store block sizes
 					// XXX FIXME: if isNiBlock returned false, block numbering will be screwed up!!
@@ -1956,7 +1955,7 @@ bool NifModel::load( QIODevice & device )
 					}
 				}
 			}
-			catch ( QString err ) {
+			catch ( QString & err ) {
 				//If this is an old file we should still map the links, even if it failed
 				mapLinks( linkMap );
 
@@ -1968,7 +1967,7 @@ bool NifModel::load( QIODevice & device )
 			mapLinks( linkMap );
 		}
 	}
-	catch ( QString err )
+	catch ( QString & err )
 	{
 		if ( msgMode == UserMessage ) {
 			Message::critical( nullptr, tr( "The NIF file could not be read. See Details for more information." ), err );
@@ -2112,7 +2111,7 @@ bool NifModel::loadHeaderOnly( const QString & fname )
 	return true;
 }
 
-bool NifModel::earlyRejection( const QString & filepath, const QString & blockId, quint32 version )
+bool NifModel::earlyRejection( const QString & filepath, const QString & blockId, quint32 v )
 {
 	NifModel nif;
 
@@ -2123,15 +2122,15 @@ bool NifModel::earlyRejection( const QString & filepath, const QString & blockId
 
 	bool ver_match = false;
 
-	if ( version == 0 ) {
+	if ( v == 0 ) {
 		ver_match = true;
-	} else if ( version != 0 && nif.getVersionNumber() == version ) {
+	} else if ( v != 0 && nif.getVersionNumber() == v ) {
 		ver_match = true;
 	}
 
 	bool blk_match = false;
 
-	if ( blockId.isEmpty() == true || version < 0x0A000100 ) {
+	if ( blockId.isEmpty() == true || v < 0x0A000100 ) {
 		blk_match = true;
 	} else {
 		const auto & types = nif.getArray<QString>( nif.getHeader(), "Block Types" );

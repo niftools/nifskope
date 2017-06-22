@@ -384,7 +384,7 @@ private:
 
 	bool isResizing;
 	QTimer * resizeTimer;
-	QImage buf;
+	QImage viewBuffer;
 
 	struct Settings
 	{

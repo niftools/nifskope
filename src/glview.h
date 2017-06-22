@@ -270,7 +270,7 @@ private:
 		float moveSpd = 350;
 		float rotSpd = 45;
 
-		int upAxis;
+		UpAxis upAxis = ZAxis;
 	} cfg;
 
 private slots:

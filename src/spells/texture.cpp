@@ -985,9 +985,9 @@ public:
 
 REGISTER_SPELL( spEmbedTexture )
 
-TexFlipDialog::TexFlipDialog( NifModel * nif, QModelIndex & index, QWidget * parent ) : QDialog( parent )
+TexFlipDialog::TexFlipDialog( NifModel * n, QModelIndex & index, QWidget * parent ) : QDialog( parent )
 {
-	this->nif = nif;
+	nif = n;
 	baseIndex = index;
 
 	grid = new QGridLayout;

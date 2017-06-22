@@ -357,7 +357,7 @@ protected:
 	};
 
 	//! The data value.
-	Value val;
+	Value val = {0};
 
 	/*! Get the data as an object of type T.
 	 *
@@ -431,16 +431,16 @@ private:
 	void init();
 
 	//! Whether a boolean is 32-bit.
-	bool bool32bit;
+	bool bool32bit = false;
 	//! Whether link adjustment is required.
-	bool linkAdjust;
+	bool linkAdjust = false;
 	//! Whether string adjustment is required.
-	bool stringAdjust;
+	bool stringAdjust = false;
 	//! Whether the model is big-endian
-	bool bigEndian;
+	bool bigEndian = false;
 
 	//! The maximum length of a string that can be read.
-	int maxLength;
+	int maxLength = 0x8000;
 };
 
 
@@ -465,13 +465,13 @@ private:
 	void init();
 
 	//! Whether a boolean is 32-bit.
-	bool bool32bit;
+	bool bool32bit = false;
 	//! Whether link adjustment is required.
-	bool linkAdjust;
+	bool linkAdjust = false;
 	//! Whether string adjustment is required.
-	bool stringAdjust;
+	bool stringAdjust = false;
 	//! Whether the model is big-endian
-	bool bigEndian;
+	bool bigEndian = false;
 };
 
 

@@ -172,5 +172,5 @@ bool FloatEdit::isMin() const
 
 bool FloatEdit::isMax() const
 {
-	return ( text() == tr( "<float_min>" ) );
+	return ( text() == tr( "<float_max>" ) );
 }

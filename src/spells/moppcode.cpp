@@ -250,7 +250,7 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
 	{
-		if ( nif->getUserVersion() != 10 && nif->getUserVersion() != 11 )
+		if ( nif && nif->getUserVersion() != 10 && nif->getUserVersion() != 11 )
 			return false;
 
 		if ( TheHavokCode.Initialize() ) {

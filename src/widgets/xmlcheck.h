@@ -53,8 +53,8 @@ public:
 	~TestThread();
 
 	QString blockMatch;
-	quint32 verMatch;
-	bool reportAll;
+	quint32 verMatch = 0;
+	bool reportAll = false;
 
 signals:
 	void sigStart( const QString & file );

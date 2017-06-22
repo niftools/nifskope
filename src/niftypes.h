@@ -1495,7 +1495,7 @@ class FixedMatrix
 {
 public:
 	//! Default Constructor:  Allocates empty vector
-	FixedMatrix() : v_( nullptr ), len0( 0 ), len1( 0 )
+	FixedMatrix()
 	{}
 
 	/*! Size Constructor
@@ -1622,9 +1622,9 @@ public:
 	}
 
 private:
-	T * v_;   //!< Vector data
-	int len0; //!< Length in first dimension
-	int len1; //!< Length in second dimension
+	T * v_ = nullptr;   //!< Vector data
+	int len0 = 0; //!< Length in first dimension
+	int len1 = 0; //!< Length in second dimension
 };
 
 typedef FixedMatrix<char> ByteMatrix;

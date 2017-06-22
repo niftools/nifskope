@@ -121,7 +121,7 @@ protected:
 	//! Toggle for skinning
 	bool doSkinning = false;
 
-	int skeletonRoot;
+	int skeletonRoot = 0;
 	Transform skeletonTrans;
 	QVector<int> bones;
 	QVector<BoneWeights> weights;
@@ -149,7 +149,7 @@ protected:
 	bool translucent = false;
 
 	mutable BoundSphere boundSphere;
-	mutable bool updateBounds;
+	mutable bool updateBounds = false;
 };
 
 //! A mesh
