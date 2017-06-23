@@ -167,6 +167,7 @@ HEADERS += \
 	src/gl/icontrollable.h \
 	src/gl/renderer.h \
 	src/io/material.h \
+	src/io/nifstream.h \
 	src/lib/importex/3ds.h \
 	src/lib/nvtristripwrapper.h \
 	src/lib/qhull.h \
@@ -233,6 +234,7 @@ SOURCES += \
 	src/gl/gltools.cpp \
 	src/gl/renderer.cpp \
 	src/io/material.cpp \
+	src/io/nifstream.cpp \
 	src/lib/importex/3ds.cpp \
 	src/lib/importex/importex.cpp \
 	src/lib/importex/obj.cpp \

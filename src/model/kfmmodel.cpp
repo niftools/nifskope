@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "kfmmodel.h"
+#include "nifstream.h"
 
 
 //! @file kfmmodel.cpp KfmModel
