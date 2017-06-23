@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
-#include "nifproxy.h"
+#include "nifproxymodel.h"
 #include "nifskope.h"
 #include "widgets/nifview.h"
 

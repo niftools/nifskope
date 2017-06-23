@@ -174,7 +174,7 @@ HEADERS += \
 	src/model/basemodel.h \
 	src/model/kfmmodel.h \
 	src/model/nifmodel.h \
-	src/model/nifproxy.h \
+	src/model/nifproxymodel.h \
 	src/model/undocommands.h \
 	src/spells/blocks.h \
 	src/spells/mesh.h \
@@ -244,7 +244,7 @@ SOURCES += \
 	src/model/kfmmodel.cpp \
 	src/model/nifdelegate.cpp \
 	src/model/nifmodel.cpp \
-	src/model/nifproxy.cpp \
+	src/model/nifproxymodel.cpp \
 	src/model/undocommands.cpp \
 	src/spells/animation.cpp \
 	src/spells/blocks.cpp \

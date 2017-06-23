@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifview.h"
 
 #include "basemodel.h"
-#include "nifproxy.h"
+#include "nifproxymodel.h"
 #include "spellbook.h"
 #include "undocommands.h"
 

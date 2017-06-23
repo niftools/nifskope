@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/glscene.h"
 #include "kfmmodel.h"
 #include "nifmodel.h"
-#include "nifproxy.h"
+#include "nifproxymodel.h"
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 #include "widgets/floatslider.h"

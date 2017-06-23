@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/glscene.h"
 #include "kfmmodel.h"
 #include "nifmodel.h"
-#include "nifproxy.h"
+#include "nifproxymodel.h"
 #include "spellbook.h"
 #include "widgets/fileselect.h"
 #include "widgets/nifview.h"
@@ -544,7 +544,7 @@ void NifSkope::setListMode()
 			list->setRootIsDecorated( true );
 			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
 			list->setCurrentIndex( pidx );
-			// proxy model has only two columns (see columnCount in nifproxy.h)
+			// proxy model has only two columns (see columnCount in nifproxymodel.h)
 			list->setColumnHidden( 0, false );
 			list->setColumnHidden( 1, false );
 			head->resizeSection( 0, s0 );
