@@ -144,7 +144,7 @@ public:
 	void setCenter();
 	void setDistance( float );
 	void setPosition( float, float, float );
-	void setPosition( Vector3 );
+	void setPosition( const Vector3 & );
 	void setProjection( bool );
 	void setRotation( float, float, float );
 	void setZoom( float );

@@ -1266,13 +1266,13 @@ ShaderFlags::ShaderType BSLightingShaderProperty::getShaderType()
 	return shaderType;
 }
 
-void BSLightingShaderProperty::setEmissive( Color3 color, float mult )
+void BSLightingShaderProperty::setEmissive( const Color3 & color, float mult )
 {
 	emissiveColor = color;
 	emissiveMult = mult;
 }
 
-void BSLightingShaderProperty::setSpecular( Color3 color, float gloss, float strength )
+void BSLightingShaderProperty::setSpecular( const Color3 & color, float gloss, float strength )
 {
 	specularColor = color;
 	specularGloss = gloss;
@@ -1390,7 +1390,7 @@ Color3 BSLightingShaderProperty::getTintColor() const
 	return tintColor;
 }
 
-void BSLightingShaderProperty::setTintColor( Color3 c )
+void BSLightingShaderProperty::setTintColor( const Color3 & c )
 {
 	tintColor = c;
 }
@@ -1524,7 +1524,7 @@ void BSEffectShaderProperty::setController( const NifModel * nif, const QModelIn
 	}
 }
 
-void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
+void BSEffectShaderProperty::setEmissive( const Color4 & color, float mult )
 {
 	emissiveColor = color;
 	emissiveMult = mult;

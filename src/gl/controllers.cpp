@@ -337,20 +337,21 @@ bool MultiTargetTransformController::setInterpolator( Node * node, const QModelI
 	while ( it.hasNext() ) {
 		it.next();
 
-		if ( it.value().first == node ) {
-			if ( it.value().second ) {
-				delete it.value().second;
-				it.value().second = 0;
+		auto val = it.value();
+		if ( val.first == node ) {
+			if ( val.second ) {
+				delete val.second;
+				val.second = 0;
 			}
 
 			if ( nif->isNiBlock( idx, "NiBSplineCompTransformInterpolator" ) ) {
-				it.value().second = new BSplineTransformInterpolator( this );
+				val.second = new BSplineTransformInterpolator( this );
 			} else if ( nif->isNiBlock( idx, "NiTransformInterpolator" ) ) {
-				it.value().second = new TransformInterpolator( this );
+				val.second = new TransformInterpolator( this );
 			}
 
-			if ( it.value().second ) {
-				it.value().second->update( nif, idx );
+			if ( val.second ) {
+				val.second->update( nif, idx );
 			}
 
 			return true;

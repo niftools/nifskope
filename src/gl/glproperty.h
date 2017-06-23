@@ -629,8 +629,8 @@ public:
 
 	void setShaderType( unsigned int );
 
-	void setEmissive( Color3 color, float mult = 1.0f );
-	void setSpecular( Color3 color, float glossiness = 80.0f, float strength = 1.0f );
+	void setEmissive( const Color3 & color, float mult = 1.0f );
+	void setSpecular( const Color3 & color, float glossiness = 80.0f, float strength = 1.0f );
 
 	void setLightingEffect1( float );
 	void setLightingEffect2( float );
@@ -645,7 +645,7 @@ public:
 	void setAlpha( float );
 
 	Color3 getTintColor() const;
-	void setTintColor( Color3 );
+	void setTintColor( const Color3 & );
 
 	bool hasVertexColors = false;
 	bool hasVertexAlpha = false;
@@ -724,7 +724,7 @@ public:
 
 	float getAlpha() const;
 
-	void setEmissive( Color4 color, float mult = 1.0f );
+	void setEmissive( const Color4 & color, float mult = 1.0f );
 	void setFalloff( float, float, float, float, float );
 
 	float getEnvironmentReflection() const;

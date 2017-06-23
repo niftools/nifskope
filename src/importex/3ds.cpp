@@ -98,7 +98,7 @@ struct objKfSequence
 	}
 };
 
-static void addLink( NifModel * nif, QModelIndex iBlock, QString name, qint32 link )
+static void addLink( NifModel * nif, const QModelIndex & iBlock, const QString & name, qint32 link )
 {
 	QModelIndex iArray = nif->getIndex( iBlock, name );
 	QModelIndex iSize  = nif->getIndex( iBlock, QString( "Num %1" ).arg( name ) );

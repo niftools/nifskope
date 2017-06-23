@@ -417,8 +417,6 @@ QVariant BaseModel::data( const QModelIndex & index, int role ) const
 		}
 	case Qt::ToolTipRole:
 		{
-			QString tip;
-
 			switch ( column ) {
 			case ValueCol:
 				{

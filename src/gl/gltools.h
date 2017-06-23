@@ -113,23 +113,23 @@ public:
 
 QVector<int> sortAxes( QVector<float> axesDots );
 
-void drawAxes( Vector3 c, float axis );
-void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder = {2, 1, 0} );
+void drawAxes( const Vector3 & c, float axis );
+void drawAxesOverlay( const Vector3 & c, float axis, QVector<int> axesOrder = {2, 1, 0} );
 void drawGrid( int s, int line, int sub );
-void drawBox( Vector3 a, Vector3 b );
-void drawCircle( Vector3 c, Vector3 n, float r, int sd = 16 );
-void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd = 8 );
-void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd = 8 );
-void drawCone( Vector3 c, Vector3 n, float a, int sd = 16 );
-void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd = 16 );
-void drawSphereSimple( Vector3 c, float r, int sd = 36 );
-void drawSphere( Vector3 c, float r, int sd = 8 );
-void drawCapsule( Vector3 a, Vector3 b, float r, int sd = 5 );
-void drawDashLine( Vector3 a, Vector3 b, int sd = 15 );
+void drawBox( const Vector3 & a, const Vector3 & b );
+void drawCircle( const Vector3 & c, const Vector3 & n, float r, int sd = 16 );
+void drawArc( const Vector3 & c, const Vector3 & x, const Vector3 & y, float an, float ax, int sd = 8 );
+void drawSolidArc( const Vector3 & c, const Vector3 & n, const Vector3 & x, const Vector3 & y, float an, float ax, float r, int sd = 8 );
+void drawCone( const Vector3 & c, Vector3 n, float a, int sd = 16 );
+void drawRagdollCone( const Vector3 & pivot, const Vector3 & twist, const Vector3 & plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd = 16 );
+void drawSphereSimple( const Vector3 & c, float r, int sd = 36 );
+void drawSphere( const Vector3 & c, float r, int sd = 8 );
+void drawCapsule( const Vector3 & a, const Vector3 & b, float r, int sd = 5 );
+void drawDashLine( const Vector3 & a, const Vector3 & b, int sd = 15 );
 void drawConvexHull( const NifModel * nif, const QModelIndex & iShape, float scale, bool solid = false );
 void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid = false );
 void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid = false );
-void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd = 16, bool solid = false );
+void drawSpring( const Vector3 & a, const Vector3 & b, float stiffness, int sd = 16, bool solid = false );
 void drawRail( const Vector3 & a, const Vector3 & b );
 
 inline void glTranslate( const Vector3 & v )

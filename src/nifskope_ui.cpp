@@ -909,7 +909,7 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 		clearCurrentFile();
 
 		// Reset
-		currentFile = "";
+		currentFile.clear();
 		setWindowFilePath( "" );
 		progress->reset();
 	}

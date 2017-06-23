@@ -29,7 +29,7 @@
  * @param array The name of the link array
  * @param link A reference to the block to insert into the link array
  */
-static bool addLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+static bool addLink( NifModel * nif, const QModelIndex & iParent, const QString & array, int link )
 {
 	QModelIndex iSize  = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
 	QModelIndex iArray = nif->getIndex( iParent, array );
@@ -68,7 +68,7 @@ static bool addLink( NifModel * nif, QModelIndex iParent, QString array, int lin
  * @param array The name of the link array
  * @param link A reference to the block to remove from the link array
  */
-static void delLink( NifModel * nif, QModelIndex iParent, QString array, int link )
+static void delLink( NifModel * nif, const QModelIndex & iParent, QString array, int link )
 {
 	QModelIndex iSize   = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
 	QModelIndex iArray  = nif->getIndex( iParent, array );
@@ -909,7 +909,7 @@ public:
 		return iNode;
 	}
 
-	void doNode( NifModel * nif, const QModelIndex & iNode, const QModelIndex & iParent, Transform tp )
+	void doNode( NifModel * nif, const QModelIndex & iNode, const QModelIndex & iParent, const Transform & tp )
 	{
 		if ( !nif->inherits( iNode, "NiNode" ) )
 			return;

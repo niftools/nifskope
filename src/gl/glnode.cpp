@@ -1604,7 +1604,6 @@ void Node::drawHavok()
 
 void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 {
-	QString name = nif->itemName( iPosition );
 	Vector3 offs = nif->get<Vector3>( iPosition, "Offset" );
 	quint16 orient = nif->get<quint16>( iPosition, "Orientation" );
 	quint8 ref1 = nif->get<quint8>( iPosition, "Position Ref 1" );

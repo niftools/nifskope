@@ -114,9 +114,9 @@ QString NifSkope::fileFilter( const QString & ext )
 	QString filter;
 
 	for ( int i = 0; i < filetypes.size(); i++ ) {
-		if ( filetypes.at( i ).second == ext ) {
-			filter = QString( "%1 (*.%2)" ).arg( filetypes.at( i ).first ).arg( filetypes.at( i ).second );
-		}
+		auto ft = filetypes.at(i);
+		if ( ft.second == ext )
+			filter = QString( "%1 (*.%2)" ).arg( ft.first ).arg( ft.second );
 	}
 
 	return filter;
@@ -1424,7 +1424,7 @@ void NifSkope::migrateSettings() const
 
 	// Migrate lambda
 	//	Using a QHash of registry keys (stored in version.h), migrates from one version to another.
-	auto migrate = []( QSettings & migrateFrom, QSettings & migrateTo, const QHash<QString, QString> migration ) {
+	auto migrate = []( QSettings & migrateFrom, QSettings & migrateTo, const QHash<QString, QString> & migration ) {
 		QHash<QString, QString>::const_iterator i;
 		for ( i = migration.begin(); i != migration.end(); ++i ) {
 			QVariant val = migrateFrom.value( i.key() );

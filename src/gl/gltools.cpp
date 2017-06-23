@@ -237,7 +237,7 @@ BoundSphere operator*( const Transform & t, const BoundSphere & sphere )
  * draw primitives
  */
 
-void drawAxes( Vector3 c, float axis )
+void drawAxes( const Vector3 & c, float axis )
 {
 	glPushMatrix();
 	glTranslate( c );
@@ -299,7 +299,7 @@ QVector<int> sortAxes( QVector<float> axesDots )
 	return{ x, y, z };
 }
 
-void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder )
+void drawAxesOverlay( const Vector3 & c, float axis, QVector<int> axesOrder )
 {
 	glPushMatrix();
 	glTranslate( c );
@@ -368,7 +368,7 @@ void drawAxesOverlay( Vector3 c, float axis, QVector<int> axesOrder )
 	glPopMatrix();
 }
 
-void drawBox( Vector3 a, Vector3 b )
+void drawBox( const Vector3 & a, const Vector3 & b )
 {
 	glBegin( GL_LINE_STRIP );
 	glVertex3f( a[0], a[1], a[2] );
@@ -425,14 +425,14 @@ void drawGrid( int s /* grid size */, int line /* line spacing */, int sub /* # 
 	glDisable( GL_BLEND );
 }
 
-void drawCircle( Vector3 c, Vector3 n, float r, int sd )
+void drawCircle( const Vector3 & c, const Vector3 & n, float r, int sd )
 {
 	Vector3 x = Vector3::crossproduct( n, Vector3( n[1], n[2], n[0] ) );
 	Vector3 y = Vector3::crossproduct( n, x );
 	drawArc( c, x * r, y * r, -PI, +PI, sd );
 }
 
-void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd )
+void drawArc( const Vector3 & c, const Vector3 & x, const Vector3 & y, float an, float ax, int sd )
 {
 	glBegin( GL_LINE_STRIP );
 
@@ -445,7 +445,7 @@ void drawArc( Vector3 c, Vector3 x, Vector3 y, float an, float ax, int sd )
 	glEnd();
 }
 
-void drawCone( Vector3 c, Vector3 n, float a, int sd )
+void drawCone( const Vector3 & c, Vector3 n, float a, int sd )
 {
 	Vector3 x = Vector3::crossproduct( n, Vector3( n[1], n[2], n[0] ) );
 	Vector3 y = Vector3::crossproduct( n, x );
@@ -479,7 +479,7 @@ void drawCone( Vector3 c, Vector3 n, float a, int sd )
 	glEnd();
 }
 
-void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd )
+void drawRagdollCone( const Vector3 & pivot, const Vector3 & twist, const Vector3 & plane, float coneAngle, float minPlaneAngle, float maxPlaneAngle, int sd )
 {
 	Vector3 z = twist;
 	Vector3 y = plane;
@@ -516,7 +516,7 @@ void drawRagdollCone( Vector3 pivot, Vector3 twist, Vector3 plane, float coneAng
 	glEnd();
 }
 
-void drawSpring( Vector3 a, Vector3 b, float stiffness, int sd, bool solid )
+void drawSpring( const Vector3 & a, const Vector3 & b, float stiffness, int sd, bool solid )
 {
 	// draw a spring with stiffness turns
 	bool cull = glIsEnabled( GL_CULL_FACE );
@@ -605,7 +605,7 @@ void drawRail( const Vector3 & a, const Vector3 & b )
 	glEnd();
 }
 
-void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float ax, float r, int sd )
+void drawSolidArc( const Vector3 & c, const Vector3 & n, const Vector3 & x, const Vector3 & y, float an, float ax, float r, int sd )
 {
 	bool cull = glIsEnabled( GL_CULL_FACE );
 	glDisable( GL_CULL_FACE );
@@ -624,14 +624,14 @@ void drawSolidArc( Vector3 c, Vector3 n, Vector3 x, Vector3 y, float an, float a
 		glEnable( GL_CULL_FACE );
 }
 
-void drawSphereSimple( Vector3 c, float r, int sd )
+void drawSphereSimple( const Vector3 & c, float r, int sd )
 {
 	drawCircle( c, Vector3( 0, 0, 1 ), r, sd );
 	drawCircle( c, Vector3( 0, 1, 0 ), r, sd );
 	drawCircle( c, Vector3( 1, 0, 0 ), r, sd );
 }
 
-void drawSphere( Vector3 c, float r, int sd )
+void drawSphere( const Vector3 & c, float r, int sd )
 {
 	for ( int j = -sd; j <= sd; j++ ) {
 		float f = PI * float(j) / float(sd);
@@ -673,7 +673,7 @@ void drawSphere( Vector3 c, float r, int sd )
 	}
 }
 
-void drawCapsule( Vector3 a, Vector3 b, float r, int sd )
+void drawCapsule( const Vector3 & a, const Vector3 & b, float r, int sd )
 {
 	Vector3 d = b - a;
 
@@ -727,7 +727,7 @@ void drawCapsule( Vector3 a, Vector3 b, float r, int sd )
 	}
 }
 
-void drawDashLine( Vector3 a, Vector3 b, int sd )
+void drawDashLine( const Vector3 & a, const Vector3 & b, int sd )
 {
 	Vector3 d = ( b - a ) / float(sd);
 	glBegin( GL_LINES );

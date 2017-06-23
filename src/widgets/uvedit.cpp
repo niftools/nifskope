@@ -936,7 +936,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 					if ( iTexProp.isValid() ) {
 						QString texture = nif->get<QString>( iTexProp, "Source Texture" );
 
-						if ( texture != "" ) {
+						if ( !texture.isEmpty() ) {
 							texfile = TexCache::find( texture, nif->getFolder() );
 							return true;
 						}

@@ -68,9 +68,6 @@ void Particles::update( const NifModel * nif, const QModelIndex & index )
 			if ( !iChild.isValid() )
 				continue;
 
-			QString name = nif->itemName( iChild );
-
-			//if ( name == "NiParticlesData" || name == "NiRotatingParticlesData" || name == "NiAutoNormalParticlesData" )
 			if ( nif->inherits( iChild, "NiParticlesData" ) ) {
 				iData  = iChild;
 				upData = true;

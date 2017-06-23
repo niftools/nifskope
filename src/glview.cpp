@@ -988,7 +988,7 @@ void GLView::setPosition( float x, float y, float z )
 	update();
 }
 
-void GLView::setPosition( Vector3 v )
+void GLView::setPosition( const Vector3 & v )
 {
 	Pos = v;
 	update();
@@ -1567,8 +1567,9 @@ void GLView::saveImage()
 
 void GLView::dragEnterEvent( QDragEnterEvent * e )
 {
-	if ( e->mimeData()->hasUrls() && e->mimeData()->urls().count() == 1 ) {
-		QUrl url = e->mimeData()->urls().first();
+	auto md = e->mimeData();
+	if ( md && md->hasUrls() && md->urls().count() == 1 ) {
+		QUrl url = md->urls().first();
 
 		if ( url.scheme() == "file" ) {
 			QString fn = url.toLocalFile();

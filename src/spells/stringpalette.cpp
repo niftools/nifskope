@@ -160,7 +160,7 @@ public:
 	}
 
 	//! Gets a particular string from a string palette
-	static QString getString( const QMap<QString, int> strings, int ofs )
+	static QString getString( const QMap<QString, int> & strings, int ofs )
 	{
 		if ( ofs >= 0 ) {
 			QMapIterator<QString, int> it( strings );

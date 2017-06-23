@@ -282,7 +282,7 @@ public:
 		return *this;
 	}
 	//! Add operator
-	Vector3 operator+( Vector3 v ) const
+	Vector3 operator+( const Vector3 & v ) const
 	{
 		Vector3 w( *this );
 		return w += v;
@@ -297,7 +297,7 @@ public:
 	}
 
 	//! Minus operator
-	Vector3 operator-( Vector3 v ) const
+	Vector3 operator-( const Vector3 & v ) const
 	{
 		Vector3 w( *this );
 		return w -= v;
@@ -485,7 +485,7 @@ public:
 };
 
 //! QDebug stream operator for Vector3
-inline QDebug & operator<<( QDebug dbg, Vector3 v )
+inline QDebug & operator<<( QDebug dbg, const Vector3 & v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
 	return dbg.space();
@@ -562,13 +562,13 @@ public:
 		return *this;
 	}
 	//! Add operator
-	Vector4 operator+( Vector4 v ) const
+	Vector4 operator+( const Vector4 & v ) const
 	{
 		Vector4 w( *this );
 		return w += v;
 	}
 	//! Minus operator
-	Vector4 operator-( Vector4 v ) const
+	Vector4 operator-( const Vector4 & v ) const
 	{
 		Vector4 w( *this );
 		return w -= v;
@@ -705,7 +705,7 @@ protected:
 };
 
 //! QDebug stream operator for Vector2
-inline QDebug & operator<<( QDebug dbg, Vector4 v )
+inline QDebug & operator<<( QDebug dbg, const Vector4 & v )
 {
 	dbg.nospace() << "(" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ")";
 	return dbg.space();
@@ -1150,7 +1150,7 @@ protected:
 };
 
 //! QDebug stream operator for Triangle
-inline QDebug & operator<<( QDebug dbg, Triangle t )
+inline QDebug & operator<<( QDebug dbg, const Triangle & t )
 {
 	dbg.nospace() << "(" << t[0] << "," << t[1] << "," << t[2] << ")";
 	return dbg.space();
@@ -1465,13 +1465,13 @@ inline Color3::Color3( const Color4 & c4 )
 	rgb[2] = c4[2];
 }
 
-inline QDebug & operator<<( QDebug dbg, Color3 c )
+inline QDebug & operator<<( QDebug dbg, const Color3 & c )
 {
 	dbg.nospace() << "(" << c[0] << ", " << c[1] << ", " << c[2] << ")";
 	return dbg.space();
 }
 
-inline QDebug & operator<<( QDebug dbg, Color4 c )
+inline QDebug & operator<<( QDebug dbg, const Color4 & c )
 {
 	dbg.nospace() << "(" << c[0] << ", " << c[1] << ", " << c[2] << ", " << c[3] << ")";
 	return dbg.space();

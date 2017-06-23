@@ -114,7 +114,7 @@ class NifValueClipboard
 
 public:
 	NifValue getValue() { return value; }
-	void setValue( NifValue val ) { value = val; }
+	void setValue( const NifValue & val ) { value = val; }
 
 private:
 	NifValue value = NifValue();

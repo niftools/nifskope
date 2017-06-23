@@ -839,7 +839,7 @@ QString NifModel::getBlockName( const QModelIndex & idx ) const
 		return block->name();
 	}
 
-	return QString( "" );
+	return {};
 }
 
 QString NifModel::getBlockType( const QModelIndex & idx ) const
@@ -850,7 +850,7 @@ QString NifModel::getBlockType( const QModelIndex & idx ) const
 		return block->type();
 	}
 
-	return QString( "" );
+	return {};
 }
 
 int NifModel::getBlockNumber( const QModelIndex & idx ) const
@@ -1205,15 +1205,14 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 				break;
 			case ValueCol:
 				{
-					QString type = item->type();
 					const NifValue & value = item->value();
 
 					if ( value.type() == NifValue::tString || value.type() == NifValue::tFilePath ) {
 						return QString( this->string( index ) ).replace( "\n", " " ).replace( "\r", " " );
 					}
-					else if ( item->value().type() == NifValue::tStringOffset )
+					else if ( value.type() == NifValue::tStringOffset )
 					{
-						int ofs = item->value().get<int>();
+						int ofs = value.get<int>();
 						if ( ofs < 0 || ofs == 0x0000FFFF )
 							return QString( "<empty>" );
 
@@ -1231,9 +1230,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 						return tr( "<palette not found>" );
 					}
-					else if ( item->value().type() == NifValue::tStringIndex )
+					else if ( value.type() == NifValue::tStringIndex )
 					{
-						int idx = item->value().get<int>();
+						int idx = value.get<int>();
 						if ( idx == -1 )
 							return QString();
 
@@ -1246,10 +1245,10 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 						return QString( "%2 [%1]" ).arg( idx ).arg( string );
 					}
-					else if ( item->value().type() == NifValue::tBlockTypeIndex )
+					else if ( value.type() == NifValue::tBlockTypeIndex )
 					{
 
-						int idx = item->value().get<int>();
+						int idx = value.get<int>();
 						int offset = idx & 0x7FFF;
 						NifItem * blocktypes = getItemX( item, "Block Types" );
 						NifItem * blocktyp = ( blocktypes ? blocktypes->child( offset ) : 0 );
@@ -1259,9 +1258,9 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 						return QString( "%2 [%1]" ).arg( idx ).arg( blocktyp->value().get<QString>() );
 					}
-					else if ( item->value().isLink() )
+					else if ( value.isLink() )
 					{
-						int lnk = item->value().toLink();
+						int lnk = value.toLink();
 
 						if ( lnk >= 0 ) {
 							QModelIndex block = getBlock( lnk );
@@ -1279,17 +1278,17 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 						return tr( "None" );
 					}
-					else if ( item->value().isCount() )
+					else if ( value.isCount() )
 					{
-						QString optId = NifValue::enumOptionName( item->type(), item->value().toCount() );
+						QString optId = NifValue::enumOptionName( item->type(), value.toCount() );
 
 						if ( optId.isEmpty() )
-							return item->value().toString();
+							return value.toString();
 
 						return QString( "%1" ).arg( optId );
 					}
 
-					return item->value().toString().replace( "\n", " " ).replace( "\r", " " );
+					return value.toString().replace( "\n", " " ).replace( "\r", " " );
 				}
 				break;
 			case ArgCol:
@@ -1359,8 +1358,6 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 		}
 	case Qt::ToolTipRole:
 		{
-			QString tip;
-
 			switch ( column ) {
 			case NameCol:
 				{
@@ -1550,7 +1547,6 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 		break;
 	case NifModel::ValueCol:
 		{
-			QString type = item->type();
 			NifValue & val = item->value();
 
 			if ( val.type() == NifValue::tString || val.type() == NifValue::tFilePath ) {

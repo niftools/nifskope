@@ -760,10 +760,12 @@ bool BSA::scan( const BSA::BSAFolder * folder, QStandardItem * item, QString pat
 	if ( !folder || folder->children.count() == 0 )
 		return false;
 
+	auto children = folder->children;
 	QHash<QString, BSAFolder *>::const_iterator i;
-	for ( i = folder->children.begin(); i != folder->children.end(); i++ ) {
-
-		if ( !i.value()->files.count() && !i.value()->children.count() )
+	for ( i = children.begin(); i != children.end(); ++i ) {
+		auto f = i.value()->files;
+		auto c = i.value()->children;
+		if ( !f.count() && !c.count() )
 			continue;
 
 		auto folderItem = new QStandardItem( i.key() );
@@ -773,21 +775,21 @@ bool BSA::scan( const BSA::BSAFolder * folder, QStandardItem * item, QString pat
 		item->appendRow( { folderItem, pathDummy, sizeDummy } );
 
 		// Recurse through folders
-		if ( i.value()->children.count() ) {
+		if ( c.count() ) {
 			QString fullpath = ((path.isEmpty()) ? path : path % "/") % i.key();
 			scan( i.value(), folderItem, fullpath );
 		}
 
 		// List files
-		if ( i.value()->files.count() ) {
-			QHash<QString, BSAFile *>::const_iterator f;
-			for ( f = i.value()->files.begin(); f != i.value()->files.end(); f++ ) {
-				QString fullpath = path % "/" % i.key() % "/" % f.key();
+		if ( f.count() ) {
+			QHash<QString, BSAFile *>::const_iterator it;
+			for ( it = f.begin(); it != f.end(); ++it ) {
+				QString fullpath = path % "/" % i.key() % "/" % it.key();
 
-				int bytes = f.value()->size();
+				int bytes = it.value()->size();
 				QString filesize = (bytes > 1024) ? QString::number( bytes / 1024 ) + "KB" : QString::number( bytes ) + "B";
 
-				auto fileItem = new QStandardItem( f.key() );
+				auto fileItem = new QStandardItem( it.key() );
 				auto pathItem = new QStandardItem( fullpath );
 				auto sizeItem = new QStandardItem( filesize );
 

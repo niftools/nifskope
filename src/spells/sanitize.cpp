@@ -34,7 +34,7 @@ public:
 	 * For spReorderLinks this will determine a sort of geometry before nodes
 	 * in the children links array.
 	 */
-	static bool compareChildLinks( QPair<qint32, bool> a, QPair<qint32, bool> b )
+	static bool compareChildLinks( const QPair<qint32, bool> & a, const QPair<qint32, bool> & b )
 	{
 		return a.second != b.second ? a.second : a.first < b.first;
 	}
@@ -529,7 +529,6 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
 	{
-		QVector<QString> stringsToAdd;
 		QVector<QString> modifiedNames;
 
 		auto iHeader = nif->getHeader();
