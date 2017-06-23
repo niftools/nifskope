@@ -392,35 +392,6 @@ private:
 };
 
 
-class ChangeValueCommand : public QUndoCommand
-{
-public:
-	ChangeValueCommand( const QModelIndex & index, const QVariant & value, 
-						const QString & valueString, const QString & valueType, NifModel * model );
-	ChangeValueCommand( const QModelIndex & index, const NifValue & oldValue,
-						const NifValue & newValue, const QString & valueType, NifModel * model );
-	void redo() override;
-	void undo() override;
-private:
-	NifModel * nif;
-	QVariant newValue, oldValue;
-	QModelIndex idx;
-};
-
-
-class ToggleCheckBoxListCommand : public QUndoCommand
-{
-public:
-	ToggleCheckBoxListCommand( const QModelIndex & index, const QVariant & value, const QString & valueType, NifModel * model );
-	void redo() override;
-	void undo() override;
-private:
-	NifModel * nif;
-	QVariant newValue, oldValue;
-	QModelIndex idx;
-};
-
-
 // Inlines
 
 

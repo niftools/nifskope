@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basemodel.h"
 #include "nifproxy.h"
 #include "spellbook.h"
+#include "undocommands.h"
 
 #include <QApplication>
 #include <QMimeData>
