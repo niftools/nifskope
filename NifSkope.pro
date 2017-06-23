@@ -291,6 +291,7 @@ SOURCES += \
 	src/xml/nifexpr.cpp \
 	src/xml/nifxml.cpp \
 	src/glview.cpp \
+	src/main.cpp \
 	src/message.cpp \
 	src/nifskope.cpp \
 	src/nifskope_ui.cpp \

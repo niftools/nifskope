@@ -139,6 +139,11 @@ public:
 	 */
 	static QString fileFilters( bool allFiles = true );
 
+	//! Sets application locale and loads translation files
+	static void SetAppLocale( QLocale curLocale );
+	//! Application-wide debug and warning message handler
+	static void MessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str );
+
 	//! A map of all the currently support filetypes to their file extensions.
 	static const QList<QPair<QString, QString>> filetypes;
 

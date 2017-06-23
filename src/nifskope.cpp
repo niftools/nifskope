@@ -54,22 +54,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QBuffer>
 #include <QByteArray>
 #include <QCloseEvent>
-#include <QCommandLineParser>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QLocale>
-#include <QLocalSocket>
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QSettings>
 #include <QTimer>
-#include <QToolBar>
-#include <QToolButton>
 #include <QTranslator>
-#include <QUdpSocket>
 #include <QUrl>
 #include <QCryptographicHash>
 
@@ -1069,7 +1063,7 @@ void SelectIndexCommand::undo()
 
 
 //! Application-wide debug and warning message handler
-void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str )
+void NifSkope::MessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str )
 {
 	switch ( type ) {
 	case QtDebugMsg:
@@ -1093,105 +1087,10 @@ void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const 
 }
 
 
-/*
- *  IPC socket
- */
-
-IPCsocket * IPCsocket::create( int port )
-{
-	QUdpSocket * udp = new QUdpSocket();
-
-	if ( udp->bind( QHostAddress( QHostAddress::LocalHost ), port, QUdpSocket::DontShareAddress ) ) {
-		IPCsocket * ipc = new IPCsocket( udp );
-		QDesktopServices::setUrlHandler( "nif", ipc, "openNif" );
-		return ipc;
-	}
-
-	return nullptr;
-}
-
-void IPCsocket::sendCommand( const QString & cmd, int port )
-{
-	QUdpSocket udp;
-	udp.writeDatagram( (const char *)cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), port );
-}
-
-IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
-{
-	QObject::connect( socket, &QUdpSocket::readyRead, this, &IPCsocket::processDatagram );
-}
-
-IPCsocket::~IPCsocket()
-{
-	delete socket;
-}
-
-void IPCsocket::processDatagram()
-{
-	while ( socket->hasPendingDatagrams() ) {
-		QByteArray data;
-		data.resize( socket->pendingDatagramSize() );
-		QHostAddress host;
-		quint16 port = 0;
-
-		socket->readDatagram( data.data(), data.size(), &host, &port );
-
-		if ( host == QHostAddress( QHostAddress::LocalHost ) && ( data.size() % sizeof( QChar ) ) == 0 ) {
-			QString cmd;
-			cmd.setUnicode( (QChar *)data.data(), data.size() / sizeof( QChar ) );
-			execCommand( cmd );
-		}
-	}
-}
-
-void IPCsocket::execCommand( const QString & cmd )
-{
-	if ( cmd.startsWith( "NifSkope::open" ) ) {
-		openNif( cmd.right( cmd.length() - 15 ) );
-	}
-}
-
-void IPCsocket::openNif( const QUrl & url )
-{
-	auto file = url.toString();
-	file.remove( 0, 4 );
-
-	openNif( file );
-}
-
-void IPCsocket::openNif( const QString & url )
-{
-	NifSkope::createWindow( url );
-}
-
-
-// TODO: This class was not used. QSystemLocale became private in Qt 5.
-// It appears this class was going to handle display of numbers.
-//! System locale override
-/**
- * Qt does not use the System Locale consistency so this basically forces all floating
- * numbers into C format but leaves all other local specific settings.
- */
-/*class NifSystemLocale : QSystemLocale
-{
-    virtual QVariant query(QueryType type, QVariant in) const
-    {
-        switch (type)
-        {
-        case DecimalPoint:
-            return QVariant( QLocale::c().decimalPoint() );
-        case GroupSeparator:
-            return QVariant( QLocale::c().groupSeparator() );
-        default:
-            return QVariant();
-        }
-    }
-};*/
-
 static QTranslator * mTranslator = nullptr;
 
 //! Sets application locale and loads translation files
-static void SetAppLocale( QLocale curLocale )
+void NifSkope::SetAppLocale( QLocale curLocale )
 {
 	QDir directory( QApplication::applicationDirPath() );
 
@@ -1238,140 +1137,6 @@ void NifSkope::sltLocaleChanged()
 
 	// TODO: Retranslate dynamically
 	//ui->retranslateUi( this );
-}
-
-QCoreApplication * createApplication( int &argc, char *argv[] )
-{
-	// Iterate over args
-	for ( int i = 1; i < argc; ++i ) {
-		// -no-gui: start as core app without all the GUI overhead
-		if ( !qstrcmp( argv[i], "-no-gui" ) ) {
-			return new QCoreApplication( argc, argv );
-		}
-	}
-	return new QApplication( argc, argv );
-}
-
-
-/*
- *  main
- */
-
-//! The main program
-int main( int argc, char * argv[] )
-{
-	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
-
-	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {
-
-		a->setOrganizationName( "NifTools" );
-		a->setOrganizationDomain( "niftools.org" );
-		a->setApplicationName( "NifSkope " + NifSkopeVersion::rawToMajMin( NIFSKOPE_VERSION ) );
-		a->setApplicationVersion( NIFSKOPE_VERSION );
-		a->setApplicationDisplayName( "NifSkope " + NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true ) );
-
-		// Must set current directory or this causes issues with several features
-		QDir::setCurrent( qApp->applicationDirPath() );
-
-		// Register message handler
-		//qRegisterMetaType<Message>( "Message" );
-		qInstallMessageHandler( myMessageOutput );
-
-		// Register types
-		qRegisterMetaType<NifValue>( "NifValue" );
-		QMetaType::registerComparators<NifValue>();
-
-		// Find stylesheet
-		QDir qssDir( QApplication::applicationDirPath() );
-		QStringList qssList( QStringList()
-			<< "style.qss"
-#ifdef Q_OS_LINUX
-			<< "/usr/share/nifskope/style.qss"
-#endif
-		);
-		QString qssName;
-		for ( const QString& str : qssList ) {
-			if ( qssDir.exists( str ) ) {
-				qssName = qssDir.filePath( str );
-				break;
-			}
-		}
-
-		// Load stylesheet
-		if ( !qssName.isEmpty() ) {
-			QFile style( qssName );
-
-			if ( style.open( QFile::ReadOnly ) ) {
-				a->setStyleSheet( style.readAll() );
-				style.close();
-			}
-		}
-
-		// Set locale
-		QSettings cfg;
-		cfg.beginGroup( "Settings" );
-		SetAppLocale( cfg.value( "Locale", "en" ).toLocale() );
-		cfg.endGroup();
-
-		// Load XML files
-		NifModel::loadXML();
-		KfmModel::loadXML();
-
-		int port = NIFSKOPE_IPC_PORT;
-
-		QStack<QString> fnames;
-
-		// Command Line setup
-		QCommandLineParser parser;
-		parser.addHelpOption();
-		parser.addVersionOption();
-
-		// Add port option
-		QCommandLineOption portOption( {"p", "port"}, "Port NifSkope listens on", "port" );
-		parser.addOption( portOption );
-
-		// Process options
-		parser.process( *a );
-
-		// Override port value
-		if ( parser.isSet( portOption ) )
-			port = parser.value( portOption ).toInt();
-
-		// Files were passed to NifSkope
-		for ( const QString & arg : parser.positionalArguments() ) {
-			QString fname = QDir::current().filePath( arg );
-
-			if ( QFileInfo( fname ).exists() ) {
-				fnames.push( fname );
-			}
-		}
-
-		// No files were passed to NifSkope, push empty string
-		if ( fnames.isEmpty() ) {
-			fnames.push( QString() );
-		}
-		
-		if ( IPCsocket * ipc = IPCsocket::create( port ) ) {
-			//qDebug() << "IPCSocket exec";
-			ipc->execCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
-
-			while ( !fnames.isEmpty() ) {
-				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
-			}
-
-			return a->exec();
-		} else {
-			//qDebug() << "IPCSocket send";
-			while ( !fnames.isEmpty() ) {
-				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
-			}
-			return 0;
-		}
-	} else {
-		// Future command line batch tools here
-	}
-
-	return 0;
 }
 
 
