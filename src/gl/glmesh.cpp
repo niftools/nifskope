@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glmesh.h"
 #include "config.h"
-#include "settings.h"
 
 #include "controllers.h"
 #include "glscene.h"

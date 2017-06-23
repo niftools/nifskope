@@ -1,5 +1,4 @@
 #include "bsshape.h"
-#include "settings.h"
 
 #include "glscene.h"
 #include "material.h"

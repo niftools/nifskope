@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glview.h"
 #include "config.h"
-#include "settings.h"
+#include "ui/settingsdialog.h"
 
 #include "ui_nifskope.h"
 #include "nifskope.h"

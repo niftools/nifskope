@@ -31,7 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glnode.h"
-#include "settings.h"
+
+#include "nifskope.h"
+#include "ui/settingsdialog.h"
 
 #include "controllers.h"
 #include "glmarker.h"

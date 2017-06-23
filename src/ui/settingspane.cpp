@@ -1,4 +1,4 @@
-#include "settings.h"
+#include "settingspane.h"
 
 #include "widgets/colorwheel.h"
 #include "widgets/floatslider.h"

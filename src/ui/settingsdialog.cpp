@@ -1,7 +1,7 @@
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 
-#include "settings.h"
+#include "settingspane.h"
 
 #include <QDebug>
 #include <QListWidget>

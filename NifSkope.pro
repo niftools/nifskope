@@ -200,11 +200,11 @@ HEADERS += \
 	src/ui/about_dialog.h \
 	src/ui/checkablemessagebox.h \
 	src/ui/settingsdialog.h \
+	src/ui/settingspane.h \
 	src/xml/nifexpr.h \
 	src/glview.h \
 	src/message.h \
 	src/nifskope.h \
-	src/settings.h \
 	src/spellbook.h \
 	src/version.h \
 	lib/dds.h \
@@ -285,6 +285,7 @@ SOURCES += \
 	src/ui/about_dialog.cpp \
 	src/ui/checkablemessagebox.cpp \
 	src/ui/settingsdialog.cpp \
+	src/ui/settingspane.cpp \
 	src/xml/kfmxml.cpp \
 	src/xml/nifexpr.cpp \
 	src/xml/nifxml.cpp \
@@ -292,7 +293,6 @@ SOURCES += \
 	src/message.cpp \
 	src/nifskope.cpp \
 	src/nifskope_ui.cpp \
-	src/settings.cpp \
 	src/spellbook.cpp \
 	src/version.cpp \
 	lib/half.cpp

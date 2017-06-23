@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "config.h"
-#include "settings.h"
 
 #include "niftypes.h"
 #include "spellbook.h"

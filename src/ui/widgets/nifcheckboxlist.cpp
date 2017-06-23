@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifcheckboxlist.h"
-#include "settings.h"
 
 #include <QAbstractItemView>
 #include <QAction>

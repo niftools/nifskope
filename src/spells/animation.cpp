@@ -1,5 +1,4 @@
 #include "spellbook.h"
-#include "settings.h"
 
 #include <QFileDialog>
 

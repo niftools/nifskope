@@ -31,13 +31,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "uvedit.h"
-#include "settings.h"
 
 #include "nifmodel.h"
+#include "nifskope.h"
 #include "niftypes.h"
 #include "nvtristripwrapper.h"
 #include "gl/gltex.h"
 #include "gl/gltools.h"
+#include "ui/settingsdialog.h"
 
 #include <QUndoStack> // QUndoCommand Inherited
 #include <QActionGroup>
@@ -51,6 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QPushButton>
+#include <QSettings>
 
 // TODO: Determine the necessity of this
 // Appears to be used solely for gluErrorString
