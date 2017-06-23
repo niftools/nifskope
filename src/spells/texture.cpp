@@ -1,5 +1,4 @@
 #include "texture.h"
-#include "config.h"
 
 #include "blocks.h"
 #include "nvtristripwrapper.h"

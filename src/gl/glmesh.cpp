@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glmesh.h"
-#include "config.h"
 
 #include "controllers.h"
 #include "glscene.h"

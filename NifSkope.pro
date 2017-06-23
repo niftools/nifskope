@@ -138,7 +138,6 @@ include(NifSkope_targets.pri)
 INCLUDEPATH += src lib src/lib src/data src/io src/model src/ui src/xml
 
 HEADERS += \
-	src/config.h \
 	src/data/nifitem.h \
 	src/data/niftypes.h \
 	src/data/nifvalue.h \

@@ -1,5 +1,4 @@
 #include "blocks.h"
-#include "config.h"
 
 #include <QApplication>
 #include <QBuffer>

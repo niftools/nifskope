@@ -1,5 +1,4 @@
 #include "xmlcheck.h"
-#include "config.h"
 
 #include "kfmmodel.h"
 #include "nifmodel.h"
