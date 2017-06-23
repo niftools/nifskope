@@ -34,8 +34,6 @@ CONFIG(debug, debug|release) {
 #	uncomment this if you want the text stats gl option
 #	DEFINES += USE_GL_QPAINTER
 
-INCLUDEPATH += src lib
-
 TRANSLATIONS += \
 	res/lang/NifSkope_de.ts \
 	res/lang/NifSkope_fr.ts
@@ -137,9 +135,13 @@ include(NifSkope_targets.pri)
 ## PROJECT SCOPES
 ###############################
 
+INCLUDEPATH += src lib src/lib src/data src/io src/model src/ui src/xml
+
 HEADERS += \
-	src/basemodel.h \
 	src/config.h \
+	src/data/nifitem.h \
+	src/data/niftypes.h \
+	src/data/nifvalue.h \
 	src/gl/dds/BlockDXT.h \
 	src/gl/dds/Color.h \
 	src/gl/dds/ColorBlock.h \
@@ -149,6 +151,9 @@ HEADERS += \
 	src/gl/dds/Image.h \
 	src/gl/dds/PixelFormat.h \
 	src/gl/dds/Stream.h \
+	src/gl/marker/constraints.h \
+	src/gl/marker/furniture.h \
+	src/gl/bsshape.h \
 	src/gl/controllers.h \
 	src/gl/glcontroller.h \
 	src/gl/glmarker.h \
@@ -161,24 +166,15 @@ HEADERS += \
 	src/gl/gltexloaders.h \
 	src/gl/gltools.h \
 	src/gl/icontrollable.h \
-	src/gl/marker/constraints.h \
-	src/gl/marker/furniture.h \
 	src/gl/renderer.h \
-	src/glview.h \
-	src/importex/3ds.h \
-	src/kfmmodel.h \
-	src/message.h \
-	src/nifexpr.h \
-	src/nifitem.h \
-	src/nifmodel.h \
-	src/nifproxy.h \
-	src/nifskope.h \
-	src/niftypes.h \
-	src/nifvalue.h \
-    src/nvtristripwrapper.h \
-	src/qhull.h \
-	src/settings.h \
-	src/spellbook.h \
+	src/io/material.h \
+	src/lib/importex/3ds.h \
+	src/lib/nvtristripwrapper.h \
+	src/lib/qhull.h \
+	src/model/basemodel.h \
+	src/model/kfmmodel.h \
+	src/model/nifmodel.h \
+	src/model/nifproxy.h \
 	src/spells/blocks.h \
 	src/spells/mesh.h \
 	src/spells/misc.h \
@@ -187,37 +183,43 @@ HEADERS += \
 	src/spells/tangentspace.h \
 	src/spells/texture.h \
 	src/spells/transform.h \
-	src/widgets/colorwheel.h \
-	src/widgets/fileselect.h \
-	src/widgets/floatedit.h \
-	src/widgets/floatslider.h \
-	src/widgets/groupbox.h \
-	src/widgets/inspect.h \
-	src/widgets/nifcheckboxlist.h \
-	src/widgets/nifeditors.h \
-	src/widgets/nifview.h \
-	src/widgets/refrbrowser.h \
-	src/widgets/uvedit.h \
-	src/widgets/valueedit.h \
-	src/widgets/xmlcheck.h \
+	src/ui/widgets/colorwheel.h \
+	src/ui/widgets/fileselect.h \
+	src/ui/widgets/floatedit.h \
+	src/ui/widgets/floatslider.h \
+	src/ui/widgets/groupbox.h \
+	src/ui/widgets/inspect.h \
+	src/ui/widgets/nifcheckboxlist.h \
+	src/ui/widgets/nifeditors.h \
+	src/ui/widgets/nifview.h \
+	src/ui/widgets/refrbrowser.h \
+	src/ui/widgets/uvedit.h \
+	src/ui/widgets/valueedit.h \
+	src/ui/widgets/xmlcheck.h \
 	src/ui/about_dialog.h \
 	src/ui/checkablemessagebox.h \
 	src/ui/settingsdialog.h \
+	src/xml/nifexpr.h \
+	src/glview.h \
+	src/message.h \
+	src/nifskope.h \
+	src/settings.h \
+	src/spellbook.h \
 	src/version.h \
-	lib/half.h \
 	lib/dds.h \
 	lib/dxgiformat.h \
-	src/gl/bsshape.h \
-	src/material.h
+	lib/half.h
 
 SOURCES += \
-	src/basemodel.cpp \
+	src/data/niftypes.cpp \
+	src/data/nifvalue.cpp \
 	src/gl/dds/BlockDXT.cpp \
 	src/gl/dds/ColorBlock.cpp \
 	src/gl/dds/dds_api.cpp \
 	src/gl/dds/DirectDrawSurface.cpp \
 	src/gl/dds/Image.cpp \
 	src/gl/dds/Stream.cpp \
+	src/gl/bsshape.cpp \
 	src/gl/controllers.cpp \
 	src/gl/glcontroller.cpp \
 	src/gl/glmarker.cpp \
@@ -230,27 +232,18 @@ SOURCES += \
 	src/gl/gltexloaders.cpp \
 	src/gl/gltools.cpp \
 	src/gl/renderer.cpp \
-	src/glview.cpp \
-	src/importex/3ds.cpp \
-	src/importex/importex.cpp \
-	src/importex/obj.cpp \
-	src/importex/col.cpp \
-	src/kfmmodel.cpp \
-	src/kfmxml.cpp \
-	src/message.cpp \
-	src/nifdelegate.cpp \
-	src/nifexpr.cpp \
-	src/nifmodel.cpp \
-	src/nifproxy.cpp \
-	src/nifskope.cpp \
-	src/nifskope_ui.cpp \
-	src/niftypes.cpp \
-	src/nifvalue.cpp \
-	src/nifxml.cpp \
-    src/nvtristripwrapper.cpp \
-	src/qhull.cpp \
-	src/settings.cpp \
-	src/spellbook.cpp \
+	src/io/material.cpp \
+	src/lib/importex/3ds.cpp \
+	src/lib/importex/importex.cpp \
+	src/lib/importex/obj.cpp \
+	src/lib/importex/col.cpp \
+	src/lib/nvtristripwrapper.cpp \
+	src/lib/qhull.cpp \
+	src/model/basemodel.cpp \
+	src/model/kfmmodel.cpp \
+	src/model/nifdelegate.cpp \
+	src/model/nifmodel.cpp \
+	src/model/nifproxy.cpp \
 	src/spells/animation.cpp \
 	src/spells/blocks.cpp \
 	src/spells/bounds.cpp \
@@ -274,26 +267,33 @@ SOURCES += \
 	src/spells/tangentspace.cpp \
 	src/spells/texture.cpp \
 	src/spells/transform.cpp \
-	src/widgets/colorwheel.cpp \
-	src/widgets/fileselect.cpp \
-	src/widgets/floatedit.cpp \
-	src/widgets/floatslider.cpp \
-	src/widgets/groupbox.cpp \
-	src/widgets/inspect.cpp \
-	src/widgets/nifcheckboxlist.cpp \
-	src/widgets/nifeditors.cpp \
-	src/widgets/nifview.cpp \
-	src/widgets/refrbrowser.cpp \
-	src/widgets/uvedit.cpp \
-	src/widgets/valueedit.cpp \
-	src/widgets/xmlcheck.cpp \
+	src/ui/widgets/colorwheel.cpp \
+	src/ui/widgets/fileselect.cpp \
+	src/ui/widgets/floatedit.cpp \
+	src/ui/widgets/floatslider.cpp \
+	src/ui/widgets/groupbox.cpp \
+	src/ui/widgets/inspect.cpp \
+	src/ui/widgets/nifcheckboxlist.cpp \
+	src/ui/widgets/nifeditors.cpp \
+	src/ui/widgets/nifview.cpp \
+	src/ui/widgets/refrbrowser.cpp \
+	src/ui/widgets/uvedit.cpp \
+	src/ui/widgets/valueedit.cpp \
+	src/ui/widgets/xmlcheck.cpp \
 	src/ui/about_dialog.cpp \
 	src/ui/checkablemessagebox.cpp \
 	src/ui/settingsdialog.cpp \
+	src/xml/kfmxml.cpp \
+	src/xml/nifexpr.cpp \
+	src/xml/nifxml.cpp \
+	src/glview.cpp \
+	src/message.cpp \
+	src/nifskope.cpp \
+	src/nifskope_ui.cpp \
+	src/settings.cpp \
+	src/spellbook.cpp \
 	src/version.cpp \
-	lib/half.cpp \
-	src/gl/bsshape.cpp \
-	src/material.cpp
+	lib/half.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
@@ -303,9 +303,9 @@ FORMS += \
 	src/ui/checkablemessagebox.ui \
 	src/ui/nifskope.ui \
 	src/ui/settingsdialog.ui \
-    src/ui/settingsgeneral.ui \
-    src/ui/settingsrender.ui \
-    src/ui/settingsresources.ui
+	src/ui/settingsgeneral.ui \
+	src/ui/settingsrender.ui \
+	src/ui/settingsresources.ui
 
 
 ###############################
