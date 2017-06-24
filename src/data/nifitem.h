@@ -107,13 +107,13 @@ private:
 	//! Description text.
 	QString text;
 	//! Condition as an expression.
-	Expression condexpr;
+	NifExpr condexpr;
 	//! First array length as an expression.
-	Expression arr1expr;
+	NifExpr arr1expr;
 	//! Version condition.
 	QString vercond;
 	//! Version condition as an expression.
-	Expression verexpr;
+	NifExpr verexpr;
 
 	DataFlags flags = None;
 };
@@ -157,13 +157,13 @@ public:
 	//! Get the text description of the data.
 	inline const QString & text() const { return d->text; }
 	//! Get the condition attribute of the data, as an expression.
-	inline const Expression & condexpr() const { return d->condexpr; }
+	inline const NifExpr & condexpr() const { return d->condexpr; }
 	//! Get the first array length of the data, as an expression.
-	inline const Expression & arr1expr() const { return d->arr1expr; }
+	inline const NifExpr & arr1expr() const { return d->arr1expr; }
 	//! Get the version condition attribute of the data.
 	inline const QString & vercond() const { return d->vercond; }
 	//! Get the version condition attribute of the data, as an expression.
-	inline const Expression & verexpr() const { return d->verexpr; }
+	inline const NifExpr & verexpr() const { return d->verexpr; }
 	//! Get the abstract attribute of the data.
 	inline bool isAbstract() const { return d->flags & NifSharedData::Abstract; }
 	//! Is the data binary. Binary means the data is being treated as one blob.
@@ -193,7 +193,7 @@ public:
 	void setArr1( const QString & arr1 )
 	{
 		d->arr1 = arr1;
-		d->arr1expr = Expression( arr1 );
+		d->arr1expr = NifExpr( arr1 );
 	}
 	//! Sets the second array length of the data.
 	void setArr2( const QString & arr2 ) { d->arr2 = arr2; }
@@ -201,7 +201,7 @@ public:
 	void setCond( const QString & cond )
 	{
 		d->cond = cond;
-		d->condexpr = Expression( cond );
+		d->condexpr = NifExpr( cond );
 	}
 	//! Sets the earliest version of the data.
 	void setVer1( quint32 ver1 ) { d->ver1 = ver1; }
@@ -213,7 +213,7 @@ public:
 	void setVerCond( const QString & cond )
 	{
 		d->vercond = cond;
-		d->verexpr = Expression( cond );
+		d->verexpr = NifExpr( cond );
 	}
 
 	inline void setFlag( NifSharedData::DataFlags flag, bool val )
@@ -617,13 +617,13 @@ public:
 	inline QString text() const {   return itemData.text(); }
 
 	//! Return the condition attribute of the data, as an expression
-	inline const Expression & condexpr() const {   return itemData.condexpr(); }
+	inline const NifExpr & condexpr() const {   return itemData.condexpr(); }
 	//! Return the arr1 attribute of the data, as an expression
-	inline const Expression & arr1expr() const {   return itemData.arr1expr(); }
+	inline const NifExpr & arr1expr() const {   return itemData.arr1expr(); }
 	//! Return the version condition attribute of the data
 	inline QString vercond() const {   return itemData.vercond();  }
 	//! Return the version condition attribute of the data, as an expression
-	inline const Expression & verexpr() const {   return itemData.verexpr();  }
+	inline const NifExpr & verexpr() const {   return itemData.verexpr();  }
 	//! Return the abstract attribute of the data
 	inline bool isAbstract() const { return itemData.isAbstract(); }
 	//! Is the item data binary. Binary means the data is being treated as one blob.

@@ -39,9 +39,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 
 
-//! @file nifexpr.h Expression
+//! @file nifexpr.h NifExpr
 
-class Expression final
+class NifExpr final
 {
 	enum Operator
 	{
@@ -53,20 +53,20 @@ class Expression final
 	Operator opcode;
 
 public:
-	explicit Expression()
+	explicit NifExpr()
 	{
-		opcode = Expression::e_nop;
+		opcode = NifExpr::e_nop;
 	}
 
-	Expression( const QString & cond, int startpos, int endpos )
+	NifExpr( const QString & cond, int startpos, int endpos )
 	{
-		opcode = Expression::e_nop;
+		opcode = NifExpr::e_nop;
 		partition( cond.mid( startpos, endpos - startpos + 1 ) );
 	}
 
-	Expression( const QString & cond )
+	NifExpr( const QString & cond )
 	{
-		opcode = Expression::e_nop;
+		opcode = NifExpr::e_nop;
 		partition( cond );
 	}
 
@@ -81,37 +81,37 @@ public:
 		NormalizeVariants( l, r );
 
 		switch ( opcode ) {
-		case Expression::e_not:
+		case NifExpr::e_not:
 			return QVariant::fromValue( !r.toBool() );
-		case Expression::e_not_eq:
+		case NifExpr::e_not_eq:
 			return QVariant::fromValue( l != r );
-		case Expression::e_eq:
+		case NifExpr::e_eq:
 			return QVariant::fromValue( l == r );
-		case Expression::e_gte:
+		case NifExpr::e_gte:
 			return QVariant::fromValue( l.toUInt() >= r.toUInt() );
-		case Expression::e_lte:
+		case NifExpr::e_lte:
 			return QVariant::fromValue( l.toUInt() <= r.toUInt() );
-		case Expression::e_gt:
+		case NifExpr::e_gt:
 			return QVariant::fromValue( l.toUInt() > r.toUInt() );
-		case Expression::e_lt:
+		case NifExpr::e_lt:
 			return QVariant::fromValue( l.toUInt() < r.toUInt() );
-		case Expression::e_bit_and:
+		case NifExpr::e_bit_and:
 			return QVariant::fromValue( l.toUInt() & r.toUInt() );
-		case Expression::e_bit_or:
+		case NifExpr::e_bit_or:
 			return QVariant::fromValue( l.toUInt() | r.toUInt() );
-		case Expression::e_add:
+		case NifExpr::e_add:
 			return QVariant::fromValue( l.toUInt() + r.toUInt() );
-		case Expression::e_sub:
+		case NifExpr::e_sub:
 			return QVariant::fromValue( l.toUInt() - r.toUInt() );
-		case Expression::e_div:
+		case NifExpr::e_div:
 			return QVariant::fromValue( l.toUInt() / r.toUInt() );
-		case Expression::e_mul:
+		case NifExpr::e_mul:
 			return QVariant::fromValue( l.toUInt() * r.toUInt() );
-		case Expression::e_bool_and:
+		case NifExpr::e_bool_and:
 			return QVariant::fromValue( l.toBool() && r.toBool() );
-		case Expression::e_bool_or:
+		case NifExpr::e_bool_or:
 			return QVariant::fromValue( l.toBool() || r.toBool() );
-		case Expression::e_nop:
+		case NifExpr::e_nop:
 			return l;
 		}
 
@@ -139,14 +139,14 @@ private:
 	QVariant convertValue( const QVariant & v, const F & convert ) const
 	{
 		if ( v.type() == QVariant::UserType ) {
-			if ( v.canConvert<Expression>() )
-				return v.value<Expression>().evaluateValue( convert );
+			if ( v.canConvert<NifExpr>() )
+				return v.value<NifExpr>().evaluateValue( convert );
 		}
 
 		return convert( v );
 	}
 };
 
-Q_DECLARE_METATYPE( Expression )
+Q_DECLARE_METATYPE( NifExpr )
 
 #endif

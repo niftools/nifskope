@@ -116,48 +116,48 @@ static quint32 version2number( const QString & s )
 	return ( i == 0xffffffff ? 0 : i );
 }
 
-Expression::Operator Expression::operatorFromString( const QString & str )
+NifExpr::Operator NifExpr::operatorFromString( const QString & str )
 {
 	if ( str == "!" )
-		return Expression::e_not;
+		return NifExpr::e_not;
 	else if ( str == "!=" )
-		return Expression::e_not_eq;
+		return NifExpr::e_not_eq;
 	else if ( str == "==" )
-		return Expression::e_eq;
+		return NifExpr::e_eq;
 	else if ( str == ">=" )
-		return Expression::e_gte;
+		return NifExpr::e_gte;
 	else if ( str == "<=" )
-		return Expression::e_lte;
+		return NifExpr::e_lte;
 	else if ( str == ">" )
-		return Expression::e_gt;
+		return NifExpr::e_gt;
 	else if ( str == "<" )
-		return Expression::e_lt;
+		return NifExpr::e_lt;
 	else if ( str == "&" )
-		return Expression::e_bit_and;
+		return NifExpr::e_bit_and;
 	else if ( str == "|" )
-		return Expression::e_bit_or;
+		return NifExpr::e_bit_or;
 	else if ( str == "+" )
-		return Expression::e_add;
+		return NifExpr::e_add;
 	else if ( str == "-" )
-		return Expression::e_sub;
+		return NifExpr::e_sub;
 	else if ( str == "/" )
-		return Expression::e_div;
+		return NifExpr::e_div;
 	else if ( str == "*" )
-		return Expression::e_mul;
+		return NifExpr::e_mul;
 	else if ( str == "&&" )
-		return Expression::e_bool_and;
+		return NifExpr::e_bool_and;
 	else if ( str == "||" )
-		return Expression::e_bool_or;
+		return NifExpr::e_bool_or;
 
-	return Expression::e_nop;
+	return NifExpr::e_nop;
 }
 
-void Expression::partition( const QString & cond, int offset /*= 0*/ )
+void NifExpr::partition( const QString & cond, int offset /*= 0*/ )
 {
 	int pos;
 
 	if ( cond.isEmpty() ) {
-		opcode = Expression::e_nop;
+		opcode = NifExpr::e_nop;
 		return;
 	}
 
@@ -166,8 +166,8 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	QRegularExpressionMatch reUnaryMatch = reUnary.match( cond, offset );
 	pos = reUnaryMatch.capturedStart();
 	if ( pos != -1 ) {
-		Expression e( reUnaryMatch.captured( 1 ).trimmed() );
-		opcode = Expression::e_not;
+		NifExpr e( reUnaryMatch.captured( 1 ).trimmed() );
+		opcode = NifExpr::e_not;
 		rhs = QVariant::fromValue( e );
 		return;
 	}
@@ -225,7 +225,7 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 				lhs.setValue( version2number( cond ) );
 			}
 
-			opcode = Expression::e_nop;
+			opcode = NifExpr::e_nop;
 			return;
 		}
 	}
@@ -233,10 +233,10 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 	rstartpos = oendpos + 1;
 	rendpos = cond.size() - 1;
 
-	Expression lhsexp( cond.mid( lstartpos, lendpos - lstartpos + 1 ).trimmed() );
-	Expression rhsexp( cond.mid( rstartpos, rendpos - rstartpos + 1 ).trimmed() );
+	NifExpr lhsexp( cond.mid( lstartpos, lendpos - lstartpos + 1 ).trimmed() );
+	NifExpr rhsexp( cond.mid( rstartpos, rendpos - rstartpos + 1 ).trimmed() );
 
-	if ( lhsexp.opcode == Expression::e_nop ) {
+	if ( lhsexp.opcode == NifExpr::e_nop ) {
 		lhs = lhsexp.lhs;
 	} else {
 		lhs = QVariant::fromValue( lhsexp );
@@ -244,63 +244,63 @@ void Expression::partition( const QString & cond, int offset /*= 0*/ )
 
 	opcode = operatorFromString( cond.mid( ostartpos, oendpos - ostartpos ) );
 
-	if ( rhsexp.opcode == Expression::e_nop ) {
+	if ( rhsexp.opcode == NifExpr::e_nop ) {
 		rhs = rhsexp.lhs;
 	} else {
 		rhs = QVariant::fromValue( rhsexp );
 	}
 }
 
-QString Expression::toString() const
+QString NifExpr::toString() const
 {
 	QString l = lhs.toString();
 	QString r = rhs.toString();
 
-	if ( lhs.type() == QVariant::UserType && lhs.canConvert<Expression>() )
-		l = lhs.value<Expression>().toString();
+	if ( lhs.type() == QVariant::UserType && lhs.canConvert<NifExpr>() )
+		l = lhs.value<NifExpr>().toString();
 
-	if ( rhs.type() == QVariant::UserType && rhs.canConvert<Expression>() )
-		r = rhs.value<Expression>().toString();
+	if ( rhs.type() == QVariant::UserType && rhs.canConvert<NifExpr>() )
+		r = rhs.value<NifExpr>().toString();
 
 	switch ( opcode ) {
-	case Expression::e_not:
+	case NifExpr::e_not:
 		return QString( "!%1" ).arg( r );
-	case Expression::e_not_eq:
+	case NifExpr::e_not_eq:
 		return QString( "(%1 != %2)" ).arg( l, r );
-	case Expression::e_eq:
+	case NifExpr::e_eq:
 		return QString( "(%1 == %2)" ).arg( l, r );
-	case Expression::e_gte:
+	case NifExpr::e_gte:
 		return QString( "(%1 >= %2)" ).arg( l, r );
-	case Expression::e_lte:
+	case NifExpr::e_lte:
 		return QString( "(%1 <= %2)" ).arg( l, r );
-	case Expression::e_gt:
+	case NifExpr::e_gt:
 		return QString( "(%1 > %2)" ).arg( l, r );
-	case Expression::e_lt:
+	case NifExpr::e_lt:
 		return QString( "(%1 < %2)" ).arg( l, r );
-	case Expression::e_bit_and:
+	case NifExpr::e_bit_and:
 		return QString( "(%1 & %2)" ).arg( l, r );
-	case Expression::e_bit_or:
+	case NifExpr::e_bit_or:
 		return QString( "(%1 | %2)" ).arg( l, r );
-	case Expression::e_add:
+	case NifExpr::e_add:
 		return QString( "(%1 + %2)" ).arg( l, r );
-	case Expression::e_sub:
+	case NifExpr::e_sub:
 		return QString( "(%1 - %2)" ).arg( l, r );
-	case Expression::e_div:
+	case NifExpr::e_div:
 		return QString( "(%1 / %2)" ).arg( l, r );
-	case Expression::e_mul:
+	case NifExpr::e_mul:
 		return QString( "(%1 * %2)" ).arg( l, r );
-	case Expression::e_bool_and:
+	case NifExpr::e_bool_and:
 		return QString( "(%1 && %2)" ).arg( l, r );
-	case Expression::e_bool_or:
+	case NifExpr::e_bool_or:
 		return QString( "(%1 || %2)" ).arg( l, r );
-	case Expression::e_nop:
+	case NifExpr::e_nop:
 		return QString( "%1" ).arg( l );
 	}
 
 	return QString();
 }
 
-void Expression::NormalizeVariants( QVariant & l, QVariant & r ) const
+void NifExpr::NormalizeVariants( QVariant & l, QVariant & r ) const
 {
 	if ( l.isValid() && r.isValid() ) {
 		if ( l.type() != r.type() ) {

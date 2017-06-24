@@ -735,7 +735,7 @@ QModelIndex BaseModel::getIndex( const QModelIndex & parent, const QString & nam
  *  conditions and version
  */
 
-int BaseModel::evaluateInt( NifItem * item, const Expression & expr ) const
+int BaseModel::evaluateInt( NifItem * item, const NifExpr & expr ) const
 {
 	if ( !item || item == root )
 		return -1;

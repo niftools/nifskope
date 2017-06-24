@@ -334,7 +334,7 @@ protected:
 	//! Get the size of an array
 	int getArraySize( NifItem * array ) const;
 	//! Evaluate a string for an array
-	int evaluateInt( NifItem * item, const Expression & expr ) const;
+	int evaluateInt( NifItem * item, const NifExpr & expr ) const;
 
 	//! Get an item by name
 	NifItem * getItemX( NifItem * item, const QString & name ) const;
