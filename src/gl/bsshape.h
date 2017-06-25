@@ -2,8 +2,10 @@
 #define BSSHAPE_H
 
 #include "glmesh.h"
-#include "glnode.h"
 #include "gltools.h"
+
+
+class NodeList;
 
 class BSShape : public Shape
 {

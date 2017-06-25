@@ -34,7 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 #include "nifskope.h"
-#include "niftypes.h"
 #include "nvtristripwrapper.h"
 #include "gl/gltex.h"
 #include "gl/gltools.h"

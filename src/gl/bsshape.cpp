@@ -1,6 +1,8 @@
 #include "bsshape.h"
 
+#include "renderer.h"
 #include "glscene.h"
+#include "glnode.h"
 #include "material.h"
 
 

@@ -41,8 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 #include <QFile>
 #include <QSettings>
-#include <QTime>
-#include <QtEndian>
 
 
 //! @file nifmodel.cpp The NIF data model.

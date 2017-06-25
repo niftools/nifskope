@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "refrbrowser.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QFileInfo>
 
 #include "nifmodel.h"

@@ -32,14 +32,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifcheckboxlist.h"
 
+#include <QApplication>
 #include <QAbstractItemView>
 #include <QAction>
+#include <QCheckBox>
 #include <QContextMenuEvent>
 #include <QDebug>
 #include <QLineEdit>
 #include <QRegularExpression>
 #include <QStylePainter>
 #include <QValidator>
+#include <QWidget>
 
 
 CheckBoxList::CheckBoxList( QWidget * widget )

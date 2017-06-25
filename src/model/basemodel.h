@@ -35,7 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "message.h"
 #include "nifitem.h"
-#include "niftypes.h"
 
 #include <QAbstractItemModel> // Inherited
 #include <QFileInfo>

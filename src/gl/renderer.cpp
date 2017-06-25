@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "renderer.h"
 
 #include "nifskope.h"
+#include "nifmodel.h"
+
 #include "ui/settingsdialog.h"
 
 #include "glmesh.h"
@@ -41,7 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gltex.h"
 #include "material.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -400,7 +402,7 @@ void Renderer::updateShaders()
 
 	releaseShaders();
 
-	QDir dir( QApplication::applicationDirPath() );
+	QDir dir( QCoreApplication::applicationDirPath() );
 
 	if ( dir.exists( "shaders" ) )
 		dir.cd( "shaders" );

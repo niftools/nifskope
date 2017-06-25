@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UVEDIT_H
 #define UVEDIT_H
 
+#include "niftypes.h"
+
 #include <QGLWidget> // Inherited
 #include <QDialog>   // Inherited
 #include <QModelIndex>
@@ -43,7 +45,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class NifModel;
 class TexCache;
-class Vector2;
 
 class QActionGroup;
 class QCheckBox;

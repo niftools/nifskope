@@ -1,7 +1,6 @@
 #ifndef SPELL_DEBUG_H
 #define SPELL_DEBUG_H
 
-#include "message.h"
 
 #include <QThread> // Inherited
 #include <QWidget> // Inherited
@@ -12,16 +11,14 @@
 
 
 class QCheckBox;
-class QGroupBox;
-class QHBoxLayout;
 class QLabel;
 class QLineEdit;
 class QProgressBar;
 class QPushButton;
 class QSpinBox;
 class QTextBrowser;
-class QVBoxLayout;
 
+class TestMessage;
 class FileSelector;
 
 class FileQueue final

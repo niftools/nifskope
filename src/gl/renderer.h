@@ -33,12 +33,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
-#include "nifmodel.h"
+#include <QCoreApplication>
+#include <QMap>
+#include <QString>
 
 
 //! @file renderer.h Renderer, Renderer::ConditionSingle, Renderer::ConditionGroup, Renderer::Shader, Renderer::Program
 
-class Mesh;
+class NifModel;
 class Shape;
 class PropertyList;
 

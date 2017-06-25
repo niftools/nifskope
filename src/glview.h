@@ -33,10 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLVIEW
 #define GLVIEW
 
-#include "nifmodel.h"
 #include "gl/glscene.h"
-#include "widgets/floatedit.h"
-#include "widgets/floatslider.h"
 
 #include <QGLWidget> // Inherited
 #include <QGraphicsView>
@@ -49,18 +46,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glview.h GLView, GLGraphicsView
 
 class NifSkope;
+class NifModel;
 class GLGraphicsView;
-class Scene;
 
-class QAction;
-class QActionGroup;
-class QComboBox;
 class QGLFormat;
-class QMenu;
 class QOpenGLContext;
 class QOpenGLFunctions;
-class QSettings;
-class QToolBar;
 class QTimer;
 
 

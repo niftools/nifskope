@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "qhull.h"
 
+#include "niftypes.h"
+
 #include <QDebug>
 #include <QByteArray>
 

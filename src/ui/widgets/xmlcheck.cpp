@@ -1,11 +1,11 @@
 #include "xmlcheck.h"
+#include "message.h"
 
 #include "kfmmodel.h"
 #include "nifmodel.h"
 #include "fileselect.h"
 
 #include <QAction>
-#include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QDir>

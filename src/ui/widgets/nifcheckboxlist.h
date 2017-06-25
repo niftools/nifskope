@@ -33,18 +33,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFCHECKBOXLIST_H
 #define NIFCHECKBOXLIST_H
 
-#include "nifmodel.h"
-#include "nifvalue.h"
-
 #include <QComboBox>     // Inherited
 #include <QItemDelegate> // Inherited
 #include <QLineEdit>     // Inherited
 #include <QValidator>    // Inherited
-#include <QApplication>
-#include <QCheckBox>
 #include <QPointer>
-#include <QStandardItem>
-#include <QWidget>
+
+class QWidget;
 
 
 // Original Implementation by:  da-crystal

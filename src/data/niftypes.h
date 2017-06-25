@@ -33,10 +33,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFTYPES_H
 #define NIFTYPES_H
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QColor>
 #include <QDataStream>
 #include <QDebug>
+#include <QString>
 
 #include <cfloat>
 #include <cmath>
@@ -55,7 +56,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file niftypes.h Matrix, Matrix4, Triangle, Vector2, Vector3, Vector4, Color3, Color4, Quat
 
 class NifModel;
-class QDataStream;
 class QModelIndex;
 
 //! Format a float with out of range values

@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kfmmodel.h"
 
 #include <QtXml> // QXmlDefaultHandler Inherited
-#include <QApplication>
+#include <QCoreApplication>
 #include <QMessageBox>
 
 #define err( X ) { errorStr = X; return false; }
@@ -243,7 +243,7 @@ public:
 
 bool KfmModel::loadXML()
 {
-	QDir dir( QApplication::applicationDirPath() );
+	QDir dir( QCoreApplication::applicationDirPath() );
 	QString fname;
 	QStringList xmlList( QStringList()
 	                     << "kfm.xml"

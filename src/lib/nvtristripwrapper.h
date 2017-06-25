@@ -1,11 +1,11 @@
 #ifndef NVTRISTRIP_WRAPPER_H
 #define NVTRISTRIP_WRAPPER_H
 
-#include "niftypes.h"
-
 #include <QList>
 #include <QVector>
 
+
+class Triangle;
 
 QList<QVector<quint16> > stripify( QVector<Triangle> triangles, bool stitch = true );
 QVector<Triangle> triangulate( QVector<quint16> strips );

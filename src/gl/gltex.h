@@ -33,8 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEX_H
 #define GLTEX_H
 
-#include "niftypes.h"
-
 #include <QObject> // Inherited
 #include <QByteArray>
 #include <QHash>
@@ -44,9 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file gltex.h TexCache etc. header
 
-class GroupBox;
-
-class QAction;
+class NifModel;
 class QFileSystemWatcher;
 class QOpenGLContext;
 

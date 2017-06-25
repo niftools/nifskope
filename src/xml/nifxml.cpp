@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "niftypes.h"
 
 #include <QtXml> // QXmlDefaultHandler Inherited
-#include <QApplication>
+#include <QCoreApplication>
 #include <QMessageBox>
 
 
@@ -592,7 +592,7 @@ public:
 // documented in nifmodel.h
 bool NifModel::loadXML()
 {
-	QDir        dir( QApplication::applicationDirPath() );
+	QDir        dir( QCoreApplication::applicationDirPath() );
 	QString     fname;
 	QStringList xmlList( QStringList()
 	                     << "nif.xml"

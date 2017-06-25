@@ -32,10 +32,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glscene.h"
 
+#include "nifmodel.h"
+#include "renderer.h"
+#include "gltex.h"
 #include "glcontroller.h"
 #include "glmesh.h"
 #include "bsshape.h"
-#include "glnode.h"
 #include "glparticles.h"
 #include "gltex.h"
 
@@ -96,6 +98,11 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 Scene::~Scene()
 {
 	delete renderer;
+}
+
+void Scene::updateShaders()
+{
+	renderer->updateShaders();
 }
 
 void Scene::clear( bool flushTextures )

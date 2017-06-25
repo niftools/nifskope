@@ -48,7 +48,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class QAction;
 class QDoubleSpinBox;
 class QLabel;
-class QSpinBox;
 
 //! An editing widget for a NifValue
 class ValueEdit : public QWidget

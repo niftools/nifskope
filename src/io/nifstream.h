@@ -33,18 +33,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFSTREAM_H
 #define NIFSTREAM_H
 
-#include "nifvalue.h"
-
-#include <QApplication>
+#include <QCoreApplication>
 
 #include <memory>
 
 
 //! @file nifstream.h NifIStream, NifOStream, NifSStream
 
+class NifValue;
 class BaseModel;
-class NifItem;
-
 class QDataStream;
 class QIODevice;
 

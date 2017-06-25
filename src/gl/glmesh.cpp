@@ -33,9 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glmesh.h"
 #include "nifstream.h"
 
+#include "renderer.h"
 #include "controllers.h"
 #include "glscene.h"
-#include "gltools.h"
 
 #include <QBuffer>
 #include <QDebug>

@@ -39,8 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! \file floatslider.h FloatSlider, FloatSliderEditBox, AlphaSlider
 
-class FloatEdit;
-
 //! Frame used by FloatSlider
 class FloatSliderEditBox final : public QFrame
 {

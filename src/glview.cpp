@@ -36,12 +36,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ui_nifskope.h"
 #include "nifskope.h"
 #include "nifmodel.h"
+#include "gl/renderer.h"
 #include "gl/glmesh.h"
-#include "gl/glscene.h"
 #include "gl/gltex.h"
 #include "widgets/fileselect.h"
-#include "widgets/floatedit.h"
-#include "widgets/floatslider.h"
 
 #include <QActionGroup>
 #include <QCheckBox>

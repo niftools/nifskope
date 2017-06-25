@@ -39,13 +39,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QReadWriteLock>
 #include <QStack>
 #include <QStringList>
-#include <QUndoCommand>
-#include <QUndoStack>
 
 #include <memory>
 
 
 class SpellBook;
+class QUndoStack;
 
 using NifBlockPtr = std::shared_ptr<NifBlock>;
 using SpellBookPtr = std::shared_ptr<SpellBook>;

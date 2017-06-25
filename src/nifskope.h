@@ -33,11 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFSKOPE_H
 #define NIFSKOPE_H
 
-#include "message.h"
-
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
 #include <QFileInfo>
+#include <QLocale>
 #include <QModelIndex>
 #include <QUndoCommand>
 
@@ -58,7 +57,6 @@ namespace nstypes
 	QString operator"" _uip( const char * str, size_t sz );
 }
 
-class FileSelector;
 class GLView;
 class GLGraphicsView;
 class InspectView;
@@ -74,13 +72,10 @@ class BSA;
 class BSAModel;
 class BSAProxyModel;
 class QStandardItemModel;
-
 class QAction;
 class QActionGroup;
 class QComboBox;
 class QGraphicsScene;
-class QLocale;
-class QModelIndex;
 class QProgressBar;
 class QStringList;
 class QTimer;

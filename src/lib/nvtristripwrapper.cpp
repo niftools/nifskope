@@ -1,4 +1,5 @@
 #include "nvtristripwrapper.h"
+#include "niftypes.h"
 
 #include <NvTriStrip.h>
 

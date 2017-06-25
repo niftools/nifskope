@@ -33,13 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSCENE_H
 #define GLSCENE_H
 
-#include "nifmodel.h"
-
 #include "glnode.h"
 #include "glproperty.h"
-#include "gltex.h"
 #include "gltools.h"
-#include "renderer.h"
 
 #include <QObject>
 #include <QHash>
@@ -51,6 +47,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glscene.h Scene
 
+class NifModel;
+class Renderer;
+class TexCache;
+class Shape;
 class QOpenGLContext;
 class QOpenGLFunctions;
 
@@ -61,7 +61,7 @@ public:
 	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions, QObject * parent = nullptr );
 	~Scene();
 
-	void updateShaders() { renderer->updateShaders(); }
+	void updateShaders();
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );

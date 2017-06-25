@@ -1,18 +1,16 @@
 #ifndef SETTINGSPANE_H
 #define SETTINGSPANE_H
 
-#include "ui/settingsdialog.h"
-#include "nifskope.h"
-
 #include <QWidget>
 #include <QSettings>
+
+#include <memory>
 
 
 //! @file settingspane.h SettingsPane, SettingsGeneral, SettingsRender, SettingsResources
 
 class FSManager;
-
-class QListWidgetItem;
+class SettingsDialog;
 class QStringListModel;
 
 namespace Ui {

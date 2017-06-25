@@ -11,7 +11,7 @@
 #include "spellbook.h"
 #include "gl/gltex.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
@@ -19,7 +19,7 @@
 #include <QSettings>
 #include <QString>
 
-#define tr( x ) QApplication::tr( "3dsImport", x )
+#define tr( x ) QCoreApplication::tr( "3dsImport", x )
 
 
 struct objPoint

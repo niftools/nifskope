@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "controllers.h"
 #include "glscene.h"
+#include "gltex.h"
 #include "material.h"
 
 #include <QOpenGLContext>

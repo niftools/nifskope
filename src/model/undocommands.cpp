@@ -31,8 +31,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "undocommands.h"
-
 #include "nifmodel.h"
+#include "nifvalue.h"
+
+#include <QCoreApplication>
 
 
 //! @file undocommands.cpp ChangeValueCommand, ToggleCheckBoxListCommand
@@ -52,9 +54,9 @@ ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
 	auto newTxt = valueString;
 
 	if ( !newTxt.isEmpty() )
-		setText( QApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
+		setText( QCoreApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
 	else
-		setText( QApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
+		setText( QCoreApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
 }
 
 ChangeValueCommand::ChangeValueCommand( const QModelIndex & index, const NifValue & oldVal, 
@@ -68,9 +70,9 @@ ChangeValueCommand::ChangeValueCommand( const QModelIndex & index, const NifValu
 	auto newTxt = newVal.toString();
 
 	if ( !newTxt.isEmpty() )
-		setText( QApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
+		setText( QCoreApplication::translate( "ChangeValueCommand", "Set %1 to %2" ).arg( valueType ).arg( newTxt ) );
 	else
-		setText( QApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
+		setText( QCoreApplication::translate( "ChangeValueCommand", "Modify %1" ).arg( valueType ) );
 }
 
 void ChangeValueCommand::redo()
@@ -103,7 +105,7 @@ ToggleCheckBoxListCommand::ToggleCheckBoxListCommand( const QModelIndex & index,
 
 	auto oldTxt = index.data( Qt::DisplayRole ).toString();
 
-	setText( QApplication::translate( "ToggleCheckBoxListCommand", "Modify %1" ).arg( valueType ) );
+	setText( QCoreApplication::translate( "ToggleCheckBoxListCommand", "Modify %1" ).arg( valueType ) );
 }
 
 void ToggleCheckBoxListCommand::redo()
