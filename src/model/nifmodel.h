@@ -50,7 +50,7 @@ class SpellBook;
 using NifBlockPtr = std::shared_ptr<NifBlock>;
 using SpellBookPtr = std::shared_ptr<SpellBook>;
 
-//! @file nifmodel.h NifModel, NifModelEval, ChangeValueCommand, ToggleCheckBoxListCommand
+//! @file nifmodel.h NifModel, NifModelEval
 
 //! The main data model for the NIF file.
 class NifModel final : public BaseModel

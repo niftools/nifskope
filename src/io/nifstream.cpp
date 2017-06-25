@@ -38,6 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QIODevice>
 
 
+//! @file nifstream.cpp NIF file I/O
+
 /*
 *  NifIStream
 */

@@ -38,6 +38,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDebug>
 
 
+//! @file nifproxymodel.cpp NifProxyItem
+
 class NifProxyItem
 {
 public:

@@ -42,7 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 
 
-//! @file nifvalue.h NifValue, NifIStream, NifOStream, NifSStream
+//! @file nifvalue.h NifValue
 
 // if there is demand for it, consider moving these into Options
 //! Number of decimals when editing vector types (Vector2, Vector3, Vector4)

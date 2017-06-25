@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 
+//! @file material.h Material, ShaderMaterial, EffectMaterial
+
 class Material : public QObject
 {
 	Q_OBJECT

@@ -39,6 +39,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifvalue.h"
 
+
+//! @file undocommands.h ChangeValueCommand, ToggleCheckBoxListCommand
+
 class NifModel;
 
 class ChangeValueCommand : public QUndoCommand

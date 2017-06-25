@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QRegularExpression>
 
 
-//! @file nifvalue.cpp NifValue, NifIStream, NifOStream, NifSStream
+//! @file nifvalue.cpp NifValue
 
 QHash<QString, NifValue::Type>        NifValue::typeMap;
 QHash<QString, QString>               NifValue::typeTxt;

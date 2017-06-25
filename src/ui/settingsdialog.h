@@ -6,6 +6,9 @@
 
 #include <memory>
 
+
+//! @file settingsdialog.h SettingsDialog
+
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;

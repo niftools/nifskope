@@ -41,6 +41,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QDir>
 #include <QSettings>
 
+
+//! @file material.cpp BGSM/BGEM file I/O
+
 #define BGSM 0x4D534742
 #define BGEM 0x4D454742
 

@@ -8,7 +8,7 @@
 #include <QSettings>
 
 
-#define NifSkopeDisplayRole (Qt::UserRole + 42)
+//! @file settingspane.h SettingsPane, SettingsGeneral, SettingsRender, SettingsResources
 
 class FSManager;
 

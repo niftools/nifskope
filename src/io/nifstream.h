@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 
+//! @file nifstream.h NifIStream, NifOStream, NifSStream
+
 class BaseModel;
 class NifItem;
 

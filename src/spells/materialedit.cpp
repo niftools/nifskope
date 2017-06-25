@@ -4,7 +4,7 @@
 
 
 // Brief description is deliberately not autolinked to class Spell
-/*! \file material.cpp
+/*! \file materialedit.cpp
  * \brief Material editing spells (spMaterialEdit)
  *
  * All classes here inherit from the Spell class.

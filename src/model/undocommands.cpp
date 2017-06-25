@@ -35,6 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "nifmodel.h"
 
 
+//! @file undocommands.cpp ChangeValueCommand, ToggleCheckBoxListCommand
+
 /*
  *  ChangeValueCommand
  */
