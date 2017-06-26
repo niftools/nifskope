@@ -31,6 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
+#include "message.h"
+#include "nifmodel.h"
 
 #include "controllers.h"
 #include "glscene.h"

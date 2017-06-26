@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "uvedit.h"
 
 #include "nifmodel.h"
+#include "message.h"
 #include "nifskope.h"
 #include "nvtristripwrapper.h"
 #include "gl/gltex.h"

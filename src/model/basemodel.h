@@ -33,7 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BaseModel_H
 #define BaseModel_H
 
-#include "message.h"
 #include "nifitem.h"
 
 #include <QAbstractItemModel> // Inherited
@@ -49,6 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file basemodel.h BaseModel, BaseModelEval
 
+class TestMessage;
 class QAbstractItemDelegate;
 
 /*! Base class for NIF and KFM models, which store files in memory.
@@ -225,7 +225,7 @@ public:
 	bool getProcessingResult();
 
 	//! Get Messages collected
-	QList<TestMessage> getMessages() const { QList<TestMessage> lst = messages; messages.clear(); return lst; }
+	QList<TestMessage> getMessages() const;
 
 	//! Column names
 	enum

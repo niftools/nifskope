@@ -43,6 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glmesh.h Mesh
 
+class NifModel;
+
 class Shape : public Node
 {
 	friend class MorphController;

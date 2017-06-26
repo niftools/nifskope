@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glnode.h"
 
 #include "nifskope.h"
+#include "nifmodel.h"
 #include "ui/settingsdialog.h"
 
 #include "controllers.h"

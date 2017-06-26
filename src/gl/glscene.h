@@ -37,6 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glproperty.h"
 #include "gltools.h"
 
+#include <QFlags>
 #include <QObject>
 #include <QHash>
 #include <QMap>
@@ -51,6 +52,7 @@ class NifModel;
 class Renderer;
 class TexCache;
 class Shape;
+class QAction;
 class QOpenGLContext;
 class QOpenGLFunctions;
 

@@ -4,6 +4,7 @@
 #include "glscene.h"
 #include "glnode.h"
 #include "material.h"
+#include "nifmodel.h"
 
 
 BSShape::BSShape( Scene * s, const QModelIndex & b ) : Shape( s, b )

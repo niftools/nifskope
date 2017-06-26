@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifskope.h"
 #include "nifmodel.h"
+#include "message.h"
 
 #include "ui/settingsdialog.h"
 

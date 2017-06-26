@@ -31,8 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glcontroller.h"
-
 #include "glscene.h"
+#include "nifmodel.h"
 
 
 //! @file glcontroller.cpp Controllable management, Interpolation management
@@ -53,6 +53,11 @@ IControllable::~IControllable()
 QString IControllable::getName() const
 {
 	return name;
+}
+
+void IControllable::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	Q_UNUSED( nif ); Q_UNUSED( iController );
 }
 
 void IControllable::clear()

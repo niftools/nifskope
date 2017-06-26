@@ -30,7 +30,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "glview.h"
 #include "kfmmodel.h"
 #include "nifmodel.h"
 #include "nifproxymodel.h"

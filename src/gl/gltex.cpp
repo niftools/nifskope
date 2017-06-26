@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glscene.h"
 #include "gltexloaders.h"
 #include "nifmodel.h"
+#include "message.h"
 
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>

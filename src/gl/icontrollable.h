@@ -33,8 +33,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ICONTROLLABLE_H
 #define ICONTROLLABLE_H
 
-#include "nifmodel.h"
-
 #include <QObject> // Inherited
 #include <QList>
 #include <QPersistentModelIndex>
@@ -45,6 +43,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Controller;
 class Scene;
+class NifModel;
 
 //! Anything capable of having a Controller
 class IControllable : public QObject
@@ -77,7 +76,7 @@ public:
 
 protected:
 	//! Sets the Controller
-	virtual void setController( const NifModel * nif, const QModelIndex & iController ) { Q_UNUSED( nif ); Q_UNUSED( iController ); }
+	virtual void setController( const NifModel * nif, const QModelIndex & iController );
 
 	Scene * scene;
 

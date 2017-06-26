@@ -34,6 +34,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CONTROLLERS_H
 
 #include "glcontroller.h" // Inherited
+#include "niftypes.h"
+
+#include <QPointer>
 
 
 //! @file controllers.h Controller subclasses

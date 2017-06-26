@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glnode.h Node, NodeList
 
 class Node;
+class NifModel;
 
 class NodeList final
 {

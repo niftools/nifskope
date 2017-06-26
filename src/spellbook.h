@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SPELLBOOK_H
 
 #include "nifmodel.h"
+#include "message.h"
 
 #include <QMenu> // Inherited
 #include <QApplication>

@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "basemodel.h"
+#include "message.h"
 
 #include <QByteArray>
 #include <QColor>
@@ -108,6 +109,13 @@ bool BaseModel::getProcessingResult()
 	changedWhileProcessing = false;
 
 	return result;
+}
+
+QList<TestMessage> BaseModel::getMessages() const
+{
+	QList<TestMessage> lst = messages;
+	messages.clear();
+	return lst;
 }
 
 /*

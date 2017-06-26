@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glmesh.h"
 #include "nifstream.h"
+#include "message.h"
+#include "nifmodel.h"
 
 #include "renderer.h"
 #include "controllers.h"

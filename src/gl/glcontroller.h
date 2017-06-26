@@ -33,14 +33,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLCONTROLLER_H
 #define GLCONTROLLER_H
 
-#include "nifmodel.h"
-
 #include <QObject> // Inherited
 #include <QPersistentModelIndex>
 #include <QString>
 
 
 //! @file glcontroller.h Controller, Interpolator, TransformInterpolator, BSplineTransformInterpolator
+
+class NifModel;
+class Transform;
 
 //! Something which can be attached to anything Controllable
 class Controller

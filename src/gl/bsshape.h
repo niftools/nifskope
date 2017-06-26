@@ -5,6 +5,7 @@
 #include "gltools.h"
 
 
+class NifModel;
 class NodeList;
 
 class BSShape : public Shape

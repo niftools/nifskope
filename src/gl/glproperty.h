@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLPROPERTY_H
 
 #include "icontrollable.h" // Inherited
+#include "niftypes.h"
 
 #include <QHash>
 #include <QPersistentModelIndex>
@@ -49,6 +50,7 @@ typedef float GLfloat;
 
 
 class Material;
+class NifModel;
 
 //! Controllable properties attached to nodes and meshes
 class Property : public IControllable
