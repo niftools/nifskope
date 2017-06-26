@@ -242,6 +242,9 @@ void BSShape::transform()
 					continue;
 
 				for ( int j = 0; j < 4; j++ ) {
+					if ( bns[j] >= weights.count() )
+						continue;
+
 					if ( wts[j] > 0.0 )
 						weights[bns[j]].weights << VertexWeight( i, wts[j] );
 				}
