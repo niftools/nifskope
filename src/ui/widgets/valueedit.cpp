@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "valueedit.h"
 
-#include "floatedit.h"
+#include "ui/widgets/floatedit.h"
 
 #include <QLabel>   // Inherited
 #include <QSpinBox> // Inherited

@@ -32,10 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifexpr.h"
 
-#include <QDebug>
-
-//#include "basemodel.h"
-
 
 //! @file nifexpr.cpp Expression parsing for conditions defined in nif.xml.
 

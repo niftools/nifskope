@@ -1,10 +1,10 @@
 #include "bsshape.h"
 
-#include "renderer.h"
-#include "glscene.h"
-#include "glnode.h"
-#include "material.h"
-#include "nifmodel.h"
+#include "gl/glnode.h"
+#include "gl/glscene.h"
+#include "gl/renderer.h"
+#include "io/material.h"
+#include "model/nifmodel.h"
 
 
 BSShape::BSShape( Scene * s, const QModelIndex & b ) : Shape( s, b )

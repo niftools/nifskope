@@ -30,22 +30,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include <QApplication>
-#include <QDir>
-#include <QStack>
-#include <QSettings>
-#include <QLocale>
-#include <QCommandLineParser>
+#include "nifskope.h"
+#include "version.h"
+#include "data/nifvalue.h"
+#include "model/nifmodel.h"
+#include "model/kfmmodel.h"
 
+#include <QApplication>
+#include <QCommandLineParser>
 #include <QDesktopServices>
+#include <QDir>
+#include <QSettings>
+#include <QStack>
 #include <QUdpSocket>
 #include <QUrl>
-
-#include "nifskope.h"
-#include "nifvalue.h"
-#include "nifmodel.h"
-#include "kfmmodel.h"
-#include "version.h"
 
 
 QCoreApplication * createApplication( int &argc, char *argv[] )

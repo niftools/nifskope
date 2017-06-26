@@ -1,5 +1,5 @@
 #include "spellbook.h"
-#include "misc.h"
+#include "spells/misc.h"
 
 #include <QInputDialog>
 

@@ -32,8 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifproxymodel.h"
 
-#include "nifmodel.h"
 #include "message.h"
+#include "model/nifmodel.h"
 
 #include <QVector>
 #include <QDebug>

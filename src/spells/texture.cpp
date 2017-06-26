@@ -1,12 +1,13 @@
 #include "texture.h"
 
-#include "blocks.h"
-#include "nvtristripwrapper.h"
 #include "spellbook.h"
 #include "gl/gltex.h"
-#include "widgets/fileselect.h"
-#include "widgets/nifeditors.h"
-#include "widgets/uvedit.h"
+#include "spells/blocks.h"
+#include "ui/widgets/fileselect.h"
+#include "ui/widgets/nifeditors.h"
+#include "ui/widgets/uvedit.h"
+
+#include "lib/nvtristripwrapper.h"
 
 #include <QButtonGroup>
 #include <QCheckBox>

@@ -31,10 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "gltex.h"
-#include "glscene.h"
-#include "gltexloaders.h"
-#include "nifmodel.h"
+
 #include "message.h"
+#include "gl/glscene.h"
+#include "gl/gltexloaders.h"
+#include "model/nifmodel.h"
 
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>

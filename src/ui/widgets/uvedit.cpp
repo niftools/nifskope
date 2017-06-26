@@ -32,13 +32,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "uvedit.h"
 
-#include "nifmodel.h"
 #include "message.h"
 #include "nifskope.h"
-#include "nvtristripwrapper.h"
 #include "gl/gltex.h"
 #include "gl/gltools.h"
+#include "model/nifmodel.h"
 #include "ui/settingsdialog.h"
+
+#include "lib/nvtristripwrapper.h"
 
 #include <QUndoStack> // QUndoCommand Inherited
 #include <QActionGroup>

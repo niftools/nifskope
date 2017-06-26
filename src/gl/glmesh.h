@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLMESH_H
 #define GLMESH_H
 
-#include "glnode.h" // Inherited
-#include "gltools.h"
+#include "gl/glnode.h" // Inherited
+#include "gl/gltools.h"
 
 #include <QPersistentModelIndex>
 #include <QVector>

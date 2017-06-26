@@ -135,7 +135,7 @@ include(NifSkope_targets.pri)
 ## PROJECT SCOPES
 ###############################
 
-INCLUDEPATH += src lib src/lib src/data src/io src/model src/ui src/xml
+INCLUDEPATH += src lib
 
 HEADERS += \
 	src/data/nifitem.h \

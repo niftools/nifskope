@@ -2049,12 +2049,12 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   <customwidget>
    <class>NifTreeView</class>
    <extends>QTreeView</extends>
-   <header>widgets/nifview.h</header>
+   <header>ui/widgets/nifview.h</header>
   </customwidget>
   <customwidget>
    <class>ReferenceBrowser</class>
    <extends>QTextBrowser</extends>
-   <header>widgets/refrbrowser.h</header>
+   <header>ui/widgets/refrbrowser.h</header>
   </customwidget>
  </customwidgets>
  <resources>

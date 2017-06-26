@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include "niftypes.h"
+#include "data/niftypes.h"
 
 #include <QObject>
 #include <QByteArray>

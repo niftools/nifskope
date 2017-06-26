@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UVEDIT_H
 #define UVEDIT_H
 
-#include "niftypes.h"
+#include "data/niftypes.h"
 
 #include <QGLWidget> // Inherited
 #include <QDialog>   // Inherited

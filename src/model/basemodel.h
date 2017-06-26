@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BaseModel_H
 #define BaseModel_H
 
-#include "nifitem.h"
+#include "data/nifitem.h"
 
 #include <QAbstractItemModel> // Inherited
 #include <QFileInfo>

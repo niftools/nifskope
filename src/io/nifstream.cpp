@@ -31,9 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifstream.h"
-#include "nifvalue.h"
-#include "nifmodel.h"
-#include "half.h"
+
+#include "data/nifvalue.h"
+#include "model/nifmodel.h"
+
+#include "lib/half.h"
 
 #include <QDataStream>
 #include <QIODevice>

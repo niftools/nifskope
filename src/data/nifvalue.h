@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFVALUE_H
 #define NIFVALUE_H
 
-#include "niftypes.h"
+#include "data/niftypes.h"
 
 #include <QByteArray>
 #include <QHash>

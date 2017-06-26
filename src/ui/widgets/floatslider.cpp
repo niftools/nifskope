@@ -32,6 +32,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "floatslider.h"
 
+#include "ui/widgets/floatedit.h"
+
 #include <QApplication>
 #include <QFont>
 #include <QMouseEvent>
@@ -40,9 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStyleOption>
 #include <QVBoxLayout>
 
-#include "floatedit.h"
-
 #include <climits>
+
 
 //! \file floatslider.cpp FloatSlider et. al. implementation
 

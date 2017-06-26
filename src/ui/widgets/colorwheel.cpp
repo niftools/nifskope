@@ -31,10 +31,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "colorwheel.h"
-#include "spellbook.h"
 
-#include "floatslider.h"
-#include "niftypes.h"
+#include "spellbook.h"
+#include "data/niftypes.h"
+#include "ui/widgets/floatslider.h"
 
 #include <QContextMenuEvent>
 #include <QDialog>

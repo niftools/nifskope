@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NIFTREEVIEW_H
 
 #include <QTreeView> // Inherited
-#include <nifvalue.h>
+#include <data/nifvalue.h>
 
 #include <memory>
 

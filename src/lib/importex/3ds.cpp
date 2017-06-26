@@ -7,9 +7,10 @@
 
 #include "3ds.h"
 
-#include "nvtristripwrapper.h"
 #include "spellbook.h"
 #include "gl/gltex.h"
+
+#include "lib/nvtristripwrapper.h"
 
 #include <QCoreApplication>
 #include <QDebug>

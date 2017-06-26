@@ -1,12 +1,11 @@
 #include "settingspane.h"
-
-#include "widgets/colorwheel.h"
-#include "widgets/floatslider.h"
-#include "ui/settingsdialog.h"
-
 #include "ui_settingsgeneral.h"
 #include "ui_settingsrender.h"
 #include "ui_settingsresources.h"
+
+#include "ui/widgets/colorwheel.h"
+#include "ui/widgets/floatslider.h"
+#include "ui/settingsdialog.h"
 
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>

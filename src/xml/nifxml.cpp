@@ -31,8 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "message.h"
-#include "nifmodel.h"
-#include "niftypes.h"
+#include "data/niftypes.h"
+#include "model/nifmodel.h"
 
 #include <QtXml> // QXmlDefaultHandler Inherited
 #include <QCoreApplication>

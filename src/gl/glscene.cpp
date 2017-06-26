@@ -32,14 +32,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glscene.h"
 
-#include "nifmodel.h"
-#include "renderer.h"
-#include "gltex.h"
-#include "glcontroller.h"
-#include "glmesh.h"
-#include "bsshape.h"
-#include "glparticles.h"
-#include "gltex.h"
+#include "gl/renderer.h"
+#include "gl/gltex.h"
+#include "gl/glcontroller.h"
+#include "gl/glmesh.h"
+#include "gl/bsshape.h"
+#include "gl/glparticles.h"
+#include "gl/gltex.h"
+#include "model/nifmodel.h"
 
 #include <QAction>
 #include <QOpenGLContext>

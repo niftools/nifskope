@@ -1,9 +1,9 @@
 #include "spellbook.h"
 
-#include "blocks.h"
-#include "mesh.h"
-#include "tangentspace.h"
-#include "transform.h"
+#include "spells/blocks.h"
+#include "spells/mesh.h"
+#include "spells/tangentspace.h"
+#include "spells/transform.h"
 
 #include <QBuffer>
 #include <QMessageBox>

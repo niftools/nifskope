@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLNODE_H
 #define GLNODE_H
 
-#include "icontrollable.h" // Inherited
-#include "glproperty.h"
+#include "gl/icontrollable.h" // Inherited
+#include "gl/glproperty.h"
 
 #include <QList>
 #include <QPersistentModelIndex>

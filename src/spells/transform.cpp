@@ -1,6 +1,6 @@
 #include "transform.h"
 
-#include "widgets/nifeditors.h"
+#include "ui/widgets/nifeditors.h"
 
 #include <QApplication>
 #include <QBuffer>

@@ -31,13 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "controllers.h"
-#include "nifmodel.h"
 
-#include "glmesh.h"
-#include "glnode.h"
-#include "glparticles.h"
-#include "glproperty.h"
-#include "glscene.h"
+#include "gl/glmesh.h"
+#include "gl/glnode.h"
+#include "gl/glparticles.h"
+#include "gl/glproperty.h"
+#include "gl/glscene.h"
+#include "model/nifmodel.h"
 
 
 // `NiControllerManager` blocks

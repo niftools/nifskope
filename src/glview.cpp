@@ -31,18 +31,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glview.h"
-#include "message.h"
-#include "ui/settingsdialog.h"
 
-#include "ui_nifskope.h"
+#include "message.h"
 #include "nifskope.h"
-#include "nifmodel.h"
 #include "gl/renderer.h"
 #include "gl/glmesh.h"
 #include "gl/gltex.h"
-#include "widgets/fileselect.h"
+#include "model/nifmodel.h"
+#include "ui/settingsdialog.h"
+#include "ui/widgets/fileselect.h"
 
+#include <QApplication>
 #include <QActionGroup>
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDebug>

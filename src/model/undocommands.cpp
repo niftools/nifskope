@@ -31,8 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "undocommands.h"
-#include "nifmodel.h"
-#include "nifvalue.h"
+
+#include "data/nifvalue.h"
+#include "model/nifmodel.h"
 
 #include <QCoreApplication>
 

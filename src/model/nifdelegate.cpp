@@ -30,13 +30,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "kfmmodel.h"
-#include "nifmodel.h"
-#include "nifproxymodel.h"
 #include "spellbook.h"
-#include "undocommands.h"
-#include "widgets/valueedit.h"
-#include "widgets/nifcheckboxlist.h"
+#include "model/kfmmodel.h"
+#include "model/nifmodel.h"
+#include "model/nifproxymodel.h"
+#include "model/undocommands.h"
+#include "ui/widgets/valueedit.h"
+#include "ui/widgets/nifcheckboxlist.h"
 
 #include <QItemDelegate> // Inherited
 #include <QComboBox>

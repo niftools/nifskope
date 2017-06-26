@@ -32,10 +32,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifview.h"
 
-#include "basemodel.h"
-#include "nifproxymodel.h"
 #include "spellbook.h"
-#include "undocommands.h"
+#include "model/basemodel.h"
+#include "model/nifproxymodel.h"
+#include "model/undocommands.h"
 
 #include <QApplication>
 #include <QMimeData>

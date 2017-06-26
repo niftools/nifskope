@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "niftypes.h"
 
-#include "nifmodel.h"
+#include "model/nifmodel.h"
 
 #include <QStringList>
 

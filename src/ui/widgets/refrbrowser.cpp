@@ -32,10 +32,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "refrbrowser.h"
 
+#include "model/nifmodel.h"
+
 #include <QCoreApplication>
 #include <QFileInfo>
 
-#include "nifmodel.h"
 
 ReferenceBrowser::ReferenceBrowser( QWidget * parent )
 	: QTextBrowser( parent )

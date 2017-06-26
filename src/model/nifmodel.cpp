@@ -31,11 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifmodel.h"
-#include "nifstream.h"
 
-#include "niftypes.h"
-#include "spellbook.h"
 #include "message.h"
+#include "spellbook.h"
+#include "data/niftypes.h"
+#include "io/nifstream.h"
 
 #include <QByteArray>
 #include <QColor>

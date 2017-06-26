@@ -1,9 +1,9 @@
 #include "xmlcheck.h"
-#include "message.h"
 
-#include "kfmmodel.h"
-#include "nifmodel.h"
-#include "fileselect.h"
+#include "message.h"
+#include "model/kfmmodel.h"
+#include "model/nifmodel.h"
+#include "ui/widgets/fileselect.h"
 
 #include <QAction>
 #include <QCheckBox>

@@ -33,16 +33,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glnode.h"
 
 #include "nifskope.h"
-#include "nifmodel.h"
+#include "gl/controllers.h"
+#include "gl/glmarker.h"
+#include "gl/glscene.h"
+#include "gl/marker/furniture.h"
+#include "gl/marker/constraints.h"
+#include "model/nifmodel.h"
 #include "ui/settingsdialog.h"
 
-#include "controllers.h"
-#include "glmarker.h"
-#include "glscene.h"
-
-#include "marker/furniture.h"
-#include "marker/constraints.h"
-#include "nvtristripwrapper.h"
+#include "lib/nvtristripwrapper.h"
 
 #include <QRegularExpression>
 #include <QSettings>

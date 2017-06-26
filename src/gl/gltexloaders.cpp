@@ -32,11 +32,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltexloaders.h"
 
-#include "nifmodel.h"
 #include "message.h"
-#include "dds/dds_api.h"
-#include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
-#include "SOIL.h"
+#include "model/nifmodel.h"
+#include "gl/dds/dds_api.h"
+#include "gl/dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
+
+#include <lib/soil/SOIL.h>
 
 #include <QBuffer>
 #include <QDebug>

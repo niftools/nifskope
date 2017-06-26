@@ -34,7 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GLPROPERTY_H
 
 #include "icontrollable.h" // Inherited
-#include "niftypes.h"
+#include "data/niftypes.h"
 
 #include <QHash>
 #include <QPersistentModelIndex>

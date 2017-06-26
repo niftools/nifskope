@@ -31,13 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glproperty.h"
-#include "message.h"
-#include "nifmodel.h"
 
-#include "controllers.h"
-#include "glscene.h"
-#include "gltex.h"
-#include "material.h"
+#include "message.h"
+#include "gl/controllers.h"
+#include "gl/glscene.h"
+#include "gl/gltex.h"
+#include "io/material.h"
+#include "model/nifmodel.h"
 
 #include <QOpenGLContext>
 

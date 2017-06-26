@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CONTROLLERS_H
 #define CONTROLLERS_H
 
-#include "glcontroller.h" // Inherited
-#include "niftypes.h"
+#include "gl/glcontroller.h" // Inherited
+#include "data/niftypes.h"
 
 #include <QPointer>
 

@@ -31,24 +31,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifskope.h"
-#include "version.h"
-#include "message.h"
-
 #include "ui_nifskope.h"
-#include "ui/about_dialog.h"
-#include "ui/settingsdialog.h"
 
 #include "glview.h"
-#include "gl/glscene.h"
-#include "kfmmodel.h"
-#include "nifmodel.h"
-#include "nifproxymodel.h"
+#include "message.h"
 #include "spellbook.h"
-#include "widgets/fileselect.h"
-#include "widgets/nifview.h"
-#include "widgets/refrbrowser.h"
-#include "widgets/inspect.h"
-
+#include "version.h"
+#include "gl/glscene.h"
+#include "model/kfmmodel.h"
+#include "model/nifmodel.h"
+#include "model/nifproxymodel.h"
+#include "ui/widgets/fileselect.h"
+#include "ui/widgets/nifview.h"
+#include "ui/widgets/refrbrowser.h"
+#include "ui/widgets/inspect.h"
+#include "ui/about_dialog.h"
+#include "ui/settingsdialog.h"
 
 #include <QAction>
 #include <QApplication>

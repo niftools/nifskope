@@ -32,16 +32,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltools.h"
 
-#include <stack>
-#include <map>
-#include <algorithm>
-#include <functional>
+#include "model/nifmodel.h"
 
 #include <QMap>
 #include <QStack>
 #include <QVector>
 
-#include "nifmodel.h"
+#include <stack>
+#include <map>
+#include <algorithm>
+#include <functional>
 
 
 //! \file gltools.cpp GL helper functions

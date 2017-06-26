@@ -31,7 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "message.h"
-#include "kfmmodel.h"
+#include "model/kfmmodel.h"
 
 #include <QtXml> // QXmlDefaultHandler Inherited
 #include <QCoreApplication>

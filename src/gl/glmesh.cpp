@@ -31,13 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glmesh.h"
-#include "nifstream.h"
-#include "message.h"
-#include "nifmodel.h"
 
-#include "renderer.h"
-#include "controllers.h"
-#include "glscene.h"
+#include "message.h"
+#include "gl/controllers.h"
+#include "gl/glscene.h"
+#include "gl/renderer.h"
+#include "io/nifstream.h"
+#include "model/nifmodel.h"
 
 #include <QBuffer>
 #include <QDebug>

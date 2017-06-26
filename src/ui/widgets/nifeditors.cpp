@@ -32,10 +32,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifeditors.h"
 
-#include "nifmodel.h"
-#include "colorwheel.h"
-#include "floatslider.h"
-#include "valueedit.h"
+#include "model/nifmodel.h"
+#include "ui/widgets/colorwheel.h"
+#include "ui/widgets/floatslider.h"
+#include "ui/widgets/valueedit.h"
 
 #include <QDoubleSpinBox>
 #include <QLayout>

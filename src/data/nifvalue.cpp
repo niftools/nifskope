@@ -31,7 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifvalue.h"
-#include "nifmodel.h"
+
+#include "model/nifmodel.h"
 
 #include <QRegularExpression>
 

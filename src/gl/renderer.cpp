@@ -32,17 +32,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "renderer.h"
 
-#include "nifskope.h"
-#include "nifmodel.h"
 #include "message.h"
-
+#include "nifskope.h"
+#include "gl/glmesh.h"
+#include "gl/glproperty.h"
+#include "gl/glscene.h"
+#include "gl/gltex.h"
+#include "io/material.h"
+#include "model/nifmodel.h"
 #include "ui/settingsdialog.h"
-
-#include "glmesh.h"
-#include "glproperty.h"
-#include "glscene.h"
-#include "gltex.h"
-#include "material.h"
 
 #include <QCoreApplication>
 #include <QDebug>

@@ -31,8 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glcontroller.h"
-#include "glscene.h"
-#include "nifmodel.h"
+
+#include "gl/glscene.h"
+#include "model/nifmodel.h"
 
 
 //! @file glcontroller.cpp Controllable management, Interpolation management

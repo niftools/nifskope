@@ -30,10 +30,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
-#include "nifmodel.h"
 #include "message.h"
-#include "nvtristripwrapper.h"
 #include "gl/gltex.h"
+#include "model/nifmodel.h"
+
+#include "lib/nvtristripwrapper.h"
 
 #include <QApplication>
 #include <QDebug>

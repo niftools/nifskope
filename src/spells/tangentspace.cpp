@@ -1,6 +1,6 @@
 #include "tangentspace.h"
 
-#include "nvtristripwrapper.h"
+#include "lib/nvtristripwrapper.h"
 
 
 bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & index )
