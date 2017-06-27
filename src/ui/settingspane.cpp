@@ -444,7 +444,7 @@ void SettingsRender::setDefault()
 bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QString & regValue, const QString & gameFolder,
                      QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
 {
-	QSettings reg( regPath, QSettings::NativeFormat );
+	QSettings reg( regPath, QSettings::Registry32Format );
 	QDir dir( reg.value( regValue ).toString() );
 
 	if ( dir.exists() && dir.cd( gameFolder ) ) {

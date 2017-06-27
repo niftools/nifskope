@@ -100,7 +100,7 @@ void FSManager::initialize()
 QStringList FSManager::regPathBSAList( QString regKey, QString dataDir )
 {
 	QStringList list;
-	QSettings reg( regKey, QSettings::NativeFormat );
+	QSettings reg( regKey, QSettings::Registry32Format );
 	QString dataPath = reg.value( "Installed Path" ).toString();
 	if ( ! dataPath.isEmpty() )
 	{
