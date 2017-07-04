@@ -15,9 +15,9 @@ AboutDialog::AboutDialog( QWidget * parent )
 	<p>NifSkope is free software available under a BSD license.
 	The source is available via <a href='https://github.com/niftools/nifskope'>GitHub</a></p>
 
-	<p>For more information visit <a href='http://niftools.sourceforge.net/forum'>our forum</a>.<br>
+	<p>For more information visit <a href='https://forum.niftools.org'>our forum</a>.<br>
 	To receive support for NifSkope please use the
-	<a href='http://niftools.sourceforge.net/forum/viewforum.php?f=24'>NifSkope Help subforum</a>.</p>
+	<a href='https://forum.niftools.org/24-nifskope/'>NifSkope Help subforum</a>.</p>
 
 	<p>The most recent stable version of NifSkope can be downloaded from the <a href='https://github.com/niftools/nifskope/releases'>
 	official GitHub release page</a>.</p>

@@ -1360,15 +1360,18 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>NifSkope Documentation &amp;&amp; &amp;Tutorials</string>
    </property>
    <property name="toolTip">
-    <string>http://niftools.sourceforge.net/wiki/index.php/NifSkope</string>
+    <string>http://www.niftools.org/documentation</string>
    </property>
   </action>
   <action name="aHelpForum">
    <property name="text">
-    <string>NifSkope Help &amp;&amp; Bug Report &amp;Forum</string>
+    <string>NifSkope Support &amp;Forum</string>
+   </property>
+   <property name="iconText">
+    <string>NifSkope Support Forum</string>
    </property>
    <property name="toolTip">
-    <string>http://niftools.sourceforge.net/forum/viewforum.php?f=24</string>
+    <string>https://forum.niftools.org/24-nifskope/</string>
    </property>
   </action>
   <action name="aNifToolsWebsite">
@@ -1376,7 +1379,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>NifTools &amp;Wiki</string>
    </property>
    <property name="toolTip">
-    <string>http://niftools.sourceforge.net</string>
+    <string>http://www.niftools.org/documentation</string>
    </property>
   </action>
   <action name="aNifToolsDownloads">
@@ -1384,7 +1387,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>NifTools &amp;Downloads</string>
    </property>
    <property name="toolTip">
-    <string>http://sourceforge.net/project/showfiles.php?group_id=149157</string>
+    <string>http://www.niftools.org/projects</string>
    </property>
   </action>
   <action name="aAboutNifSkope">
