@@ -795,7 +795,7 @@ QWidget * NifSkope::filePathWidget( QWidget * parent )
 	// Navigate to Filepath
 	auto navigateToFilepath = new QPushButton( "", filepathWidget );
 	navigateToFilepath->setFlat( true );
-	navigateToFilepath->setIcon( QIcon( ":btn/loadDark" ) );
+	navigateToFilepath->setIcon( QIcon( ":btn/load" ) );
 	navigateToFilepath->setIconSize( QSize( 16, 16 ) );
 	navigateToFilepath->setStatusTip( tr( "Show in Explorer" ) );
 

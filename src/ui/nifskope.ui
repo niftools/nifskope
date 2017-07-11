@@ -534,7 +534,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/expand</normaloff>:/img/expand</iconset>
+            <normaloff>:/btn/expand</normaloff>:/btn/expand</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -563,7 +563,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/collapse</normaloff>:/img/collapse</iconset>
+            <normaloff>:/btn/collapse</normaloff>:/btn/collapse</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -680,7 +680,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/expand</normaloff>:/img/expand</iconset>
+            <normaloff>:/btn/expand</normaloff>:/btn/expand</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -709,7 +709,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/collapse</normaloff>:/img/collapse</iconset>
+            <normaloff>:/btn/collapse</normaloff>:/btn/collapse</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -1156,8 +1156,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/loadView2</normaloff>
-     <normalon>:/btn/userViewActive</normalon>:/btn/loadView2</iconset>
+     <normaloff>:/btn/loadView</normaloff>
+     <normalon>:/btn/userViewActive</normalon>:/btn/loadView</iconset>
    </property>
    <property name="text">
     <string>Load View</string>
@@ -1236,7 +1236,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   <action name="aViewUserSave">
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/saveView2</normaloff>:/btn/saveView2</iconset>
+     <normaloff>:/btn/saveView</normaloff>:/btn/saveView</iconset>
    </property>
    <property name="text">
     <string>Save View</string>
@@ -1688,9 +1688,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
-     <normalon>:/btn/textures</normalon>
-    </iconset>
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/textures</normaloff>:/btn/textures</iconset>
    </property>
    <property name="text">
     <string>Textures</string>
