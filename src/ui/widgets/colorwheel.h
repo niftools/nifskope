@@ -122,6 +122,9 @@ public:
 	void setTitle( const QString & );
 	void setColor( const QColor & );
 
+signals:
+	void textEdited( const QString & );
+
 public slots:
 	void setAlpha( float );
 

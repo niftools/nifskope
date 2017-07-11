@@ -562,6 +562,8 @@ void ColorLineEdit::setWheel( ColorWheel * cw, const QString & str )
 		QColor wc = wheel->getColor();
 		if ( c.toRgb() != wc.toRgb() )
 			wheel->setColor( c );
+
+		emit textEdited( colorTxt );
 	} );
 }
 

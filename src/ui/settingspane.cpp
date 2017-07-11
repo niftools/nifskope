@@ -361,6 +361,7 @@ SettingsRender::SettingsRender( QWidget * parent ) :
 		w->setColor( color );
 
 		connect( w, &ColorWheel::sigColorEdited, this, &SettingsPane::modifyPane );
+		connect( e, &ColorLineEdit::textEdited, this, &SettingsPane::modifyPane );
 	};
 
 	color( "Background", ui->colorBackground, ui->background, QColor( 0, 0, 0 ) );
