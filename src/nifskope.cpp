@@ -144,7 +144,7 @@ NifSkope::NifSkope()
 	qApp->installEventFilter( this );
 	
 	// Init Dialogs
-	aboutDialog = new AboutDialog( this );
+	
 	if ( !options )
 		options = new SettingsDialog;
 
@@ -192,6 +192,7 @@ NifSkope::NifSkope()
 	list->setSortingEnabled( false );
 	list->setItemDelegate( nif->createDelegate( this, book ) );
 	list->installEventFilter( this );
+	list->header()->resizeSection( NifModel::NameCol, 250 );
 
 	// Block Details
 	tree = ui->tree;
@@ -200,6 +201,8 @@ NifSkope::NifSkope()
 	tree->setItemDelegate( nif->createDelegate( this, book ) );
 	tree->installEventFilter( this );
 	tree->header()->moveSection( 1, 2 );
+	tree->header()->resizeSection( NifModel::NameCol, 140 );
+	tree->header()->resizeSection( NifModel::ValueCol, 250 );
 	// Allow multi-row paste
 	//	Note: this has some side effects such as vertex selection 
 	//	in viewport being wrong if you attempt to select many rows.

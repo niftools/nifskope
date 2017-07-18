@@ -190,6 +190,7 @@ HEADERS += \
 	src/ui/widgets/floatslider.h \
 	src/ui/widgets/groupbox.h \
 	src/ui/widgets/inspect.h \
+	src/ui/widgets/lightingwidget.h \
 	src/ui/widgets/nifcheckboxlist.h \
 	src/ui/widgets/nifeditors.h \
 	src/ui/widgets/nifview.h \
@@ -276,6 +277,7 @@ SOURCES += \
 	src/ui/widgets/floatslider.cpp \
 	src/ui/widgets/groupbox.cpp \
 	src/ui/widgets/inspect.cpp \
+	src/ui/widgets/lightingwidget.cpp \
 	src/ui/widgets/nifcheckboxlist.cpp \
 	src/ui/widgets/nifeditors.cpp \
 	src/ui/widgets/nifview.cpp \
@@ -309,7 +311,8 @@ FORMS += \
 	src/ui/settingsdialog.ui \
 	src/ui/settingsgeneral.ui \
 	src/ui/settingsrender.ui \
-	src/ui/settingsresources.ui
+	src/ui/settingsresources.ui \
+	src/ui/widgets/lightingwidget.ui
 
 
 ###############################

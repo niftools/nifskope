@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QFileInfo>
 #include <QLocale>
 #include <QModelIndex>
+#include <QSet>
 #include <QUndoCommand>
 
 #include <memory>
@@ -81,6 +82,13 @@ class QStringList;
 class QTimer;
 class QTreeView;
 class QUdpSocket;
+
+namespace nstheme
+{
+	enum WindowColor { Base, BaseAlt, Text, Highlight, HighlightText, BrightText };
+	enum WindowTheme { ThemeDark, ThemeLight, ThemeWindows, ThemeWindowsXP };
+	enum ToolbarSize { ToolbarSmall, ToolbarLarge };
+}
 
 
 //! @file nifskope.h NifSkope, IPCsocket
@@ -144,6 +152,11 @@ public:
 
 	enum { NumRecentFiles = 10 };
 
+	static QColor defaultsDark[6];
+	static QColor defaultsLight[6];
+
+	static void reloadTheme();
+
 signals:
 	void beginLoading();
 	void completeLoading( bool, QString & );
@@ -200,6 +213,8 @@ public slots:
 	void on_aViewUserSave_triggered( bool );
 
 	void on_aSettings_triggered();
+
+	void on_mTheme_triggered( QAction * action );
 
 
 protected slots:
@@ -285,11 +300,23 @@ private:
 
 	void setViewFont( const QFont & );
 
+	//! Load the theme
+	void loadTheme();
+	//! Sync the theme actions in the UI
+	void setThemeActions();
+	//! Set the toolbar size
+	void setToolbarSize();
+	//! Set the theme
+	void setTheme( nstheme::WindowTheme theme );
+
 	//! Migrate settings from older versions of NifSkope.
 	void migrateSettings() const;
 
-	//! "About NifSkope" dialog.
-	QWidget * aboutDialog;
+	//! All QActions in the UI
+	QSet<QAction *> allActions;
+
+	nstheme::WindowTheme theme = nstheme::ThemeDark;
+	nstheme::ToolbarSize toolbarSize = nstheme::ToolbarLarge;
 
 	QString currentFile;
 	BSA * currentArchive = nullptr;

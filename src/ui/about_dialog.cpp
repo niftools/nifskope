@@ -4,6 +4,9 @@ AboutDialog::AboutDialog( QWidget * parent )
 	: QDialog( parent )
 {
 	ui.setupUi( this );
+
+	setAttribute( Qt::WA_DeleteOnClose );
+
 #ifdef NIFSKOPE_REVISION
 	this->setWindowTitle( tr( "About NifSkope %1 (revision %2)" ).arg( NIFSKOPE_VERSION, NIFSKOPE_REVISION ) );
 #else

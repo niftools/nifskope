@@ -78,8 +78,7 @@ void FloatSliderEditBox::show( const QPoint & pos )
 	move( pos );
 	QWidget::show();
 	setFocus( Qt::PopupFocusReason );
-	// Leave as old signal syntax for now. Casting is too ugly here.
-	connect( QApplication::instance(), SIGNAL(focusChanged( QWidget *, QWidget * )), this, SLOT(focusChanged( QWidget *, QWidget * )) );
+	connect( qApp, &QApplication::focusChanged, this, &FloatSliderEditBox::focusChanged );
 }
 
 void FloatSliderEditBox::hide()
@@ -87,8 +86,8 @@ void FloatSliderEditBox::hide()
 	if ( !isVisible() ) {
 		return;
 	}
-	// Leave as old signal syntax for now. Casting is too ugly here.
-	disconnect( QApplication::instance(), SIGNAL(focusChanged( QWidget *, QWidget * )), this, SLOT(focusChanged( QWidget *, QWidget * )) );
+
+	disconnect( qApp, &QApplication::focusChanged, this, &FloatSliderEditBox::focusChanged );
 
 	QWidget::hide();
 }
@@ -357,9 +356,10 @@ QSize FloatSlider::sizeHint() const
 	int h = 84;
 
 	if ( ori == Qt::Horizontal ) {
-		int x = h;
-		h = w;
-		w = x;
+		// Minimum size for clipping issues in Fusion theme
+		int x = std::max( w, 24 );
+		w = h;
+		h = x;
 	}
 
 	return QSize( w, h );

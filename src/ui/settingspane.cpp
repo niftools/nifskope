@@ -7,6 +7,8 @@
 #include "ui/widgets/floatslider.h"
 #include "ui/settingsdialog.h"
 
+#include "nifskope.h"
+
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>
 
@@ -23,6 +25,8 @@
 #include <QSettings>
 #include <QStringListModel>
 #include <QTimer>
+
+using namespace nstheme;
 
 
 SettingsPane::SettingsPane( QWidget * parent ) :
@@ -277,6 +281,23 @@ SettingsGeneral::SettingsGeneral( QWidget * parent ) :
 			}
 		}
 	}
+
+	auto color = [this]( const QString & str, ColorWheel * w, ColorLineEdit * e, const QColor & color ) {
+		e->setWheel( w, str );
+		w->setColor( color );
+
+		connect( w, &ColorWheel::sigColorEdited, this, &SettingsPane::modifyPane );
+		connect( e, &ColorLineEdit::textEdited, this, &SettingsPane::modifyPane );
+	};
+
+	auto colors = NifSkope::defaultsDark;
+
+	color( "Base", ui->colorBaseColor, ui->baseColor, colors[Base] );
+	color( "Base Alt", ui->colorBaseColorAlt, ui->baseColorAlt, colors[BaseAlt] );
+	color( "Text", ui->colorText, ui->text, colors[Text] );
+	color( "Base Highlight", ui->colorHighlight, ui->highlight, colors[Highlight] );
+	color( "Text Highlight", ui->colorHighlightText, ui->highlightText, colors[HighlightText] );
+	color( "Bright Text", ui->colorBrightText, ui->brightText, colors[BrightText] );
 }
 
 SettingsGeneral::~SettingsGeneral()
@@ -336,6 +357,8 @@ void SettingsGeneral::write()
 		emit dlg->localeChanged();
 	}
 
+	NifSkope::reloadTheme();
+
 	setModified( false );
 }
 
@@ -364,7 +387,7 @@ SettingsRender::SettingsRender( QWidget * parent ) :
 		connect( e, &ColorLineEdit::textEdited, this, &SettingsPane::modifyPane );
 	};
 
-	color( "Background", ui->colorBackground, ui->background, QColor( 0, 0, 0 ) );
+	color( "Background", ui->colorBackground, ui->background, QColor( 46, 46, 46 ) );
 	color( "Wireframe", ui->colorWireframe, ui->wireframe, QColor( 0, 255, 0 ) );
 	color( "Highlight", ui->colorHighlight, ui->highlight, QColor( 255, 255, 0 ) );
 

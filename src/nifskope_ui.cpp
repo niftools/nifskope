@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ui/widgets/fileselect.h"
 #include "ui/widgets/floatslider.h"
 #include "ui/widgets/floatedit.h"
+#include "ui/widgets/lightingwidget.h"
 #include "ui/widgets/nifview.h"
 #include "ui/widgets/refrbrowser.h"
 #include "ui/widgets/inspect.h"
@@ -75,6 +76,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QProcess>
 #include <QStyleFactory>
+#include <QRegularExpression>
 
 QString nstypes::operator""_uip( const char * str, size_t )
 {
@@ -90,6 +92,27 @@ QString nstypes::operator""_uip( const char * str, size_t )
 }
 
 using namespace nstypes;
+using namespace nstheme;
+
+
+QColor NifSkope::defaultsDark[6] = {
+	QColor( 60, 60, 60 ),    /// nstheme::Base
+	QColor( 50, 50, 50 ),    /// nstheme::BaseAlt
+	Qt::white,               /// nstheme::Text
+	QColor( 204, 204, 204 ), /// nstheme::Highlight
+	Qt::black,               /// nstheme::HighlightText
+	QColor( 255, 66, 58 )    /// nstheme::BrightText
+};
+
+QColor NifSkope::defaultsLight[6] = {
+	QColor( 245, 245, 245 ), /// nstheme::Base
+	QColor( 255, 255, 255 ), /// nstheme::BaseAlt
+	Qt::black,               /// nstheme::Text
+	QColor( 42, 130, 218 ),  /// nstheme::Highlight
+	Qt::white,               /// nstheme::HighlightText
+	Qt::red                  /// nstheme::BrightText
+};
+
 
 
 //! @file nifskope_ui.cpp UI logic for %NifSkope's main window.
@@ -99,27 +122,9 @@ NifSkope * NifSkope::createWindow( const QString & fname )
 	NifSkope * skope = new NifSkope;
 	skope->setAttribute( Qt::WA_DeleteOnClose );
 	skope->restoreUi();
+	skope->loadTheme();
 	skope->show();
 	skope->raise();
-
-	// Example Dark style
-	//QApplication::setStyle( QStyleFactory::create( "Fusion" ) );
-	//QPalette darkPalette;
-	//darkPalette.setColor( QPalette::Window, QColor( 53, 53, 53 ) );
-	//darkPalette.setColor( QPalette::WindowText, Qt::white );
-	//darkPalette.setColor( QPalette::Base, QColor( 25, 25, 25 ) );
-	//darkPalette.setColor( QPalette::AlternateBase, QColor( 53, 53, 53 ) );
-	//darkPalette.setColor( QPalette::ToolTipBase, Qt::white );
-	//darkPalette.setColor( QPalette::ToolTipText, Qt::white );
-	//darkPalette.setColor( QPalette::Text, Qt::white );
-	//darkPalette.setColor( QPalette::Button, QColor( 53, 53, 53 ) );
-	//darkPalette.setColor( QPalette::ButtonText, Qt::white );
-	//darkPalette.setColor( QPalette::BrightText, Qt::red );
-	//darkPalette.setColor( QPalette::Link, QColor( 42, 130, 218 ) );
-	//darkPalette.setColor( QPalette::Highlight, QColor( 42, 130, 218 ) );
-	//darkPalette.setColor( QPalette::HighlightedText, Qt::black );
-	//qApp->setPalette( darkPalette );
-	//qApp->setStyleSheet( "QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }" );
 
 	if ( !fname.isEmpty() ) {
 		skope->loadFile( fname );
@@ -137,13 +142,25 @@ void NifSkope::initActions()
 	aRCondition = ui->aRCondition;
 	aSelectFont = ui->aSelectFont;
 
+	// Build all actions list
+	allActions = QSet<QAction *>::fromList( 
+		ui->tFile->actions() 
+		<< ui->mRender->actions()
+		<< ui->tRender->actions()
+		<< ui->tAnim->actions()
+	);
+
 	// Undo/Redo
 	undoAction = nif->undoStack->createUndoAction( this, tr( "&Undo" ) );
 	undoAction->setShortcut( QKeySequence::Undo );
+	undoAction->setObjectName( "aUndo" );
 	undoAction->setIcon( QIcon( ":btn/undo" ) );
+	allActions << undoAction;
 	redoAction = nif->undoStack->createRedoAction( this, tr( "&Redo" ) );
 	redoAction->setShortcut( QKeySequence::Redo );
+	redoAction->setObjectName( "aRedo" );
 	redoAction->setIcon( QIcon( ":btn/redo" ) );
+	allActions << redoAction;
 
 	// TODO: Back/Forward button in Block List
 	//idxForwardAction = indexStack->createRedoAction( this );
@@ -274,7 +291,10 @@ void NifSkope::initActions()
 	connect( aCondition, &QAction::toggled, tree, &NifTreeView::setRowHiding );
 	connect( aCondition, &QAction::toggled, kfmtree, &NifTreeView::setRowHiding );
 
-	connect( ui->aAboutNifSkope, &QAction::triggered, aboutDialog, &AboutDialog::show );
+	connect( ui->aAboutNifSkope, &QAction::triggered, []() {
+		auto aboutDialog = new AboutDialog();
+		aboutDialog->show();
+	} );
 	connect( ui->aAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt );
 
 	connect( ui->aPrintView, &QAction::triggered, ogl, &GLView::saveImage );
@@ -428,19 +448,18 @@ void NifSkope::initMenu()
 	for ( int i = 0; i < NumRecentFiles; ++i )
 		mOpen->addAction( recentFileActs[i] );
 
+	auto setFlyout = []( QToolButton * btn, QMenu * m ) {
+		btn->setObjectName( "btnFlyoutMenu" );
+		btn->setMenu( m );
+		btn->setPopupMode( QToolButton::InstantPopup );
+	};
+
 	// Append Menu to tFile actions
 	for ( auto child : ui->tFile->findChildren<QToolButton *>() ) {
-
 		if ( child->defaultAction() == ui->aSaveMenu ) {
-			child->setMenu( mSave );
-			child->setPopupMode( QToolButton::InstantPopup );
-			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
-		}
-
-		if ( child->defaultAction() == ui->aOpenMenu ) {
-			child->setMenu( mOpen );
-			child->setPopupMode( QToolButton::InstantPopup );
-			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
+			setFlyout( child, mSave );
+		} else if ( child->defaultAction() == ui->aOpenMenu ) {
+			setFlyout( child, mOpen );
 		}
 	}
 
@@ -449,38 +468,45 @@ void NifSkope::initMenu()
 	//updateRecentArchiveFileActions();
 
 	// Lighting Menu
-	// TODO: Split off into own widget
 	auto mLight = lightingWidget();
 
-	// Append Menu to tFile actions
+	// Append Menu to tRender actions
 	for ( auto child : ui->tRender->findChildren<QToolButton *>() ) {
 
 		if ( child->defaultAction() == ui->aLightMenu ) {
-			child->setMenu( mLight );
-			child->setPopupMode( QToolButton::InstantPopup );
-			child->setStyleSheet( "padding-left: 2px; padding-right: 10px;" );
+			setFlyout( child, mLight );
+		} else {
+			child->setObjectName( "btnRender" );
 		}
 	}
 
 
 	// BSA Recent Archives
 	auto tRecentArchives = new QToolButton( this );
-	tRecentArchives->setObjectName( "tRecentArchives" );
 	tRecentArchives->setText( "Recent Archives" );
-	tRecentArchives->setStyleSheet( "padding-right: 10px;" );
-	tRecentArchives->setMenu( ui->mRecentArchives );
-	tRecentArchives->setPopupMode( QToolButton::InstantPopup );
+	setFlyout( tRecentArchives, ui->mRecentArchives );
 
 	// BSA Recent Files
 	auto tRecentArchiveFiles = new QToolButton( this );
-	tRecentArchiveFiles->setObjectName( "tRecentArchiveFiles" );
 	tRecentArchiveFiles->setText( "Recent Files" );
-	tRecentArchiveFiles->setStyleSheet( "padding-right: 10px;" );
-	tRecentArchiveFiles->setMenu( mRecentArchiveFiles );
-	tRecentArchiveFiles->setPopupMode( QToolButton::InstantPopup );
+	setFlyout( tRecentArchiveFiles, mRecentArchiveFiles );
 
 	ui->bsaTitleBar->layout()->addWidget( tRecentArchives );
 	ui->bsaTitleBar->layout()->addWidget( tRecentArchiveFiles );
+
+
+	// Theme Menu
+
+	QActionGroup * grpTheme = new QActionGroup( this );
+
+	// Fill the action data with the integer correlating to 
+	// their position in WindowTheme and add to the action group.
+	int i = 0;
+	auto themes = ui->mTheme->actions();
+	for ( auto a : themes ) {
+		a->setData( i++ );
+		grpTheme->addAction( a );
+	}
 }
 
 
@@ -621,159 +647,17 @@ QMenu * NifSkope::lightingWidget()
 {
 	QMenu * mLight = new QMenu( this );
 	mLight->setObjectName( "mLight" );
-
-	mLight->setStyleSheet(
-		R"qss(#mLight { background: #f5f5f5; padding: 8px; border: 1px solid #CCC; })qss"
-	);
-
-	auto onOffWidget = new QWidget;
-	onOffWidget->setContentsMargins( 0, 0, 0, 0 );
-	auto onOffLayout = new QHBoxLayout;
-	onOffLayout->setContentsMargins( 0, 0, 0, 0 );
-	onOffWidget->setLayout( onOffLayout );
-
-	auto chkLighting = new QToolButton( mLight );
-	chkLighting->setObjectName( "chkLighting" );
-	chkLighting->setCheckable( true );
-	chkLighting->setChecked( true );
-	chkLighting->setDefaultAction( ui->aLighting );
-	chkLighting->setIconSize( QSize( 18, 18 ) );
-	chkLighting->setToolButtonStyle( Qt::ToolButtonTextBesideIcon );
-	//chkLighting->setText( "    " + ui->aLighting->text() ); // Resets during toggle
-	//chkLighting->setStatusTip( ui->aLighting->statusTip() ); Doesn't work
-	chkLighting->setStyleSheet( R"qss( 
-		#chkLighting { padding: 5px; } 
-	)qss" );
-
-	auto lightingOptionsWidget = new QWidgetAction( mLight );
-
-	auto optionsWidget = new QWidget;
-	optionsWidget->setContentsMargins( 0, 0, 0, 0 );
-	auto optionsLayout = new QHBoxLayout;
-	optionsLayout->setContentsMargins( 0, 0, 0, 0 );
-	optionsWidget->setLayout( optionsLayout );
-
-
-	auto chkFrontal = new QToolButton( mLight );
-	chkFrontal->setObjectName( "chkFrontal" );
-	chkFrontal->setCheckable( true );
-	chkFrontal->setChecked( true );
-	chkFrontal->setDefaultAction( ui->aFrontalLight );
-	//chkFrontal->setIconSize( QSize( 16, 16 ) );
-	//chkFrontal->setToolButtonStyle( Qt::ToolButtonTextBesideIcon );
-	//chkFrontal->setStatusTip( ui->aFrontalLight->statusTip() ); Doesn't work
-	chkFrontal->setStyleSheet( R"qss( #chkFrontal { padding: 5px; } )qss" );
-
-	onOffLayout->addWidget( chkLighting );
-	onOffLayout->addWidget( chkFrontal );
-
-	// Slider lambda
-	auto sld = [this]( QWidget * parent, const QString & img, int min, int max, int val ) {
-
-		auto slider = new QSlider( Qt::Horizontal, parent );
-		slider->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Maximum );
-		slider->setRange( min, max );
-		slider->setSingleStep( max / 4 );
-		slider->setTickInterval( max / 2 );
-		slider->setTickPosition( QSlider::TicksBelow );
-		slider->setValue( val );
-		slider->setStyleSheet( "background: transparent url(" + img + ");" + R"qss(
-				background-repeat: no-repeat;
-				background-position: left;
-				background-origin: margin;
-				background-clip: margin;
-				margin-left: 20px;
-			)qss" 
-		);
-
-		return slider;
-	};
-
-	// Lighting position, uses -720 to 720 and GLView divides it by 4
-	//	because QSlider uses integers and we'd like less choppy motion
-	auto sldDeclination = sld( chkFrontal, ":/btn/lightVertical", -720, 720, 0 );
-	auto sldPlanarAngle = sld( chkFrontal, ":/btn/lightHorizontal", -720, 720, 0 );
-	auto sldBrightness = sld( chkFrontal, ":/btn/sun", 0, 1440, 720 );
-	auto sldAmbient = sld( chkFrontal, ":/btn/cloud", 0, 1440, 540 );
-
-	sldDeclination->setDisabled( true );
-	sldPlanarAngle->setDisabled( true );
-
-	// Button lambda
-	auto btn = [this]( QAction * act, const QString & name, QMenu * menu ) {
 	
-		auto button = new QToolButton( menu );
-		button->setObjectName( name );
-		button->setCheckable( true );
-		button->setChecked( true );
-		button->setDefaultAction( act );
-		button->setIconSize( QSize( 16, 16 ) );
-		//button->setStatusTip( ui->aTextures->statusTip() ); Doesn't work
-		button->setStyleSheet( R"qss( padding: 3px 2px 2px 3px; )qss" );
 
-		return button;
-	};
-
-	auto chkTextures = btn( ui->aTextures, "chkTextures", mLight );
-	auto chkVertexColors = btn( ui->aVertexColors, "chkVertexColors", mLight );
-	auto chkNormalsOnly = btn( ui->aVisNormals, "chkNormalsOnly", mLight );
-
-	optionsLayout->addWidget( chkTextures );
-	optionsLayout->addWidget( chkVertexColors );
-	optionsLayout->addWidget( chkNormalsOnly );
-
-	lightingOptionsWidget->setDefaultWidget( optionsWidget );
-
-	auto lightingGroup = new QGroupBox( mLight );
-	lightingGroup->setObjectName( "lightingGroup" );
-	lightingGroup->setContentsMargins( 0, 0, 0, 0 );
-	lightingGroup->setStyleSheet( R"qss( #lightingGroup { padding: 0; border: none; } )qss" );
-	//lightingGroup->setDisabled( true );
-
-	auto lightingGroupVbox = new QVBoxLayout;
-	lightingGroupVbox->setContentsMargins( 0, 0, 0, 0 );
-	lightingGroupVbox->setSpacing( 0 );
-	lightingGroup->setLayout( lightingGroupVbox );
-
-	lightingGroupVbox->addWidget( sldBrightness );
-	lightingGroupVbox->addWidget( sldAmbient );
-	lightingGroupVbox->addWidget( sldDeclination );
-	lightingGroupVbox->addWidget( sldPlanarAngle );
-
-	// Disable lighting sliders when Frontal
-	connect( chkFrontal, &QToolButton::toggled, sldDeclination, &QSlider::setDisabled );
-	connect( chkFrontal, &QToolButton::toggled, sldPlanarAngle, &QSlider::setDisabled );
-
-	// Disable Frontal checkbox (and sliders) when no lighting
-	connect( chkLighting, &QToolButton::toggled, chkFrontal, &QToolButton::setEnabled );
-	connect( chkLighting, &QToolButton::toggled, ui->aVisNormals, &QAction::setEnabled );
-	connect( chkLighting, &QToolButton::toggled, [sldDeclination, sldPlanarAngle, chkFrontal]( bool checked ) {
-		if ( !chkFrontal->isChecked() ) {
-			// Don't enable the sliders if Frontal is checked
-			sldDeclination->setEnabled( checked );
-			sldDeclination->setEnabled( checked );
-		}
-	} );
-
-	// Inform ogl of changes
-	//connect( chkLighting, &QCheckBox::toggled, ogl, &GLView::lightingToggled );
-	connect( sldBrightness, &QSlider::valueChanged, ogl, &GLView::setBrightness );
-	connect( sldAmbient, &QSlider::valueChanged, ogl, &GLView::setAmbient );
-	connect( sldDeclination, &QSlider::valueChanged, ogl, &GLView::setDeclination );
-	connect( sldPlanarAngle, &QSlider::valueChanged, ogl, &GLView::setPlanarAngle );
-	connect( chkFrontal, &QToolButton::toggled, ogl, &GLView::setFrontalLight );
+	auto lightingWidget = new LightingWidget( ogl, mLight );
+	lightingWidget->setActions( {ui->aLighting, ui->aTextures, ui->aVertexColors,
+								ui->aSpecular, ui->aCubeMapping, ui->aGlow,
+								ui->aVisNormals, ui->aSilhouette} );
+	auto aLightingWidget = new QWidgetAction( mLight );
+	aLightingWidget->setDefaultWidget( lightingWidget );
 
 
-	// Set up QWidgetActions so they can be added to a QMenu
-	auto lightingWidget = new QWidgetAction( mLight );
-	lightingWidget->setDefaultWidget( onOffWidget );
-
-	auto lightingAngleWidget = new QWidgetAction( mLight );
-	lightingAngleWidget->setDefaultWidget( lightingGroup );
-
-	mLight->addAction( lightingWidget );
-	mLight->addAction( lightingAngleWidget );
-	mLight->addAction( lightingOptionsWidget );
+	mLight->addAction( aLightingWidget );
 
 	return mLight;
 }
@@ -1005,6 +889,8 @@ void NifSkope::saveUi() const
 	settings.setValue( "Window State"_uip, saveState( 0x073 ) );
 	settings.setValue( "Window Geometry"_uip, saveGeometry() );
 
+	settings.setValue( "Theme", theme );
+
 	settings.setValue( "File/Auto Sanitize", aSanitize->isChecked() );
 
 	settings.setValue( "List Mode"_uip, (gListMode->checkedAction() == aList ? "list" : "hierarchy") );
@@ -1096,6 +982,198 @@ void NifSkope::setViewFont( const QFont & font )
 	kfmtree->setFont( font );
 	kfmtree->setIconSize( QSize( metrics.width( "000" ), metrics.lineSpacing() ) );
 	ogl->setFont( font );
+}
+
+void NifSkope::reloadTheme()
+{
+	for ( QWidget * widget : QApplication::topLevelWidgets() ) {
+		NifSkope * win = qobject_cast<NifSkope *>(widget);
+		if ( win ) {
+			win->loadTheme();
+		}
+	}
+}
+
+void NifSkope::loadTheme()
+{
+	QSettings settings;
+	theme = WindowTheme( settings.value( "Theme", ThemeDark ).toInt() );
+	ui->mTheme->actions()[theme]->setChecked( true );
+
+	toolbarSize = ToolbarSize( settings.value( "Settings/Theme/Large Icons", ToolbarLarge ).toBool() );
+
+	//setThemeActions();
+	setToolbarSize();
+
+	switch ( theme )
+	{
+	case ThemeWindowsXP:
+		QApplication::setStyle( QStyleFactory::create( "WindowsXP" ) );
+		qApp->setStyleSheet("");
+		qApp->setPalette( style()->standardPalette() );
+		return;
+	case ThemeWindows:
+		QApplication::setStyle( QStyleFactory::create( "WindowsVista" ) );
+		qApp->setStyleSheet("");
+		qApp->setPalette( style()->standardPalette() );
+		return;
+	case ThemeDark:
+	case ThemeLight:
+	default:
+		QApplication::setStyle( QStyleFactory::create( "Fusion" ) );
+	}
+
+	QPalette pal;
+	auto baseC = settings.value( "Settings/Theme/Base Color", defaultsDark[Base] ).value<QColor>();
+	auto baseCAlt = settings.value( "Settings/Theme/Base Color Alt", defaultsDark[BaseAlt] ).value<QColor>();
+	auto baseCTxt = settings.value( "Settings/Theme/Text", defaultsDark[Text] ).value<QColor>();
+	auto baseCHighlight = settings.value( "Settings/Theme/Highlight", defaultsDark[Highlight] ).value<QColor>();
+	auto baseCTxtHighlight = settings.value( "Settings/Theme/Highlight Text", defaultsDark[HighlightText] ).value<QColor>();
+	auto baseCBrightTxt = settings.value( "Settings/Theme/Bright Text", defaultsDark[BrightText] ).value<QColor>();
+
+	// Fill the standard palette
+	pal.setColor( QPalette::Window, baseC );
+	pal.setColor( QPalette::WindowText, baseCTxt );
+	pal.setColor( QPalette::Base, baseC );
+	pal.setColor( QPalette::AlternateBase, baseCAlt );
+	pal.setColor( QPalette::ToolTipBase, baseC );
+	pal.setColor( QPalette::ToolTipText, baseCTxt );
+	pal.setColor( QPalette::Text, baseCTxt );
+	pal.setColor( QPalette::Button, baseC );
+	pal.setColor( QPalette::ButtonText, baseCTxt );
+	pal.setColor( QPalette::BrightText, baseCBrightTxt );
+	pal.setColor( QPalette::Link, baseCBrightTxt );
+	pal.setColor( QPalette::Highlight, baseCHighlight );
+	pal.setColor( QPalette::HighlightedText, baseCTxtHighlight );
+
+	// Mute the disabled palette
+	auto baseCDark = baseC.darker( 150 );
+	auto baseCAltDark = baseCAlt.darker( 150 );
+	auto baseCHighlightDark = QColor( 128, 128, 128 );
+	auto baseCTxtDark = Qt::darkGray;
+	auto baseCTxtHighlightDark = Qt::darkGray;
+	auto baseCBrightTxtDark = Qt::darkGray;
+
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::Window, baseC ); // Leave base color the same
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::WindowText, baseCTxtDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::Base, baseCDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::AlternateBase, baseCAltDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::ToolTipBase, baseCDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::ToolTipText, baseCTxtDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::Text, baseCTxtDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::Button, baseCDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::ButtonText, baseCTxtDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::BrightText, baseCBrightTxtDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::Link, baseCBrightTxtDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::Highlight, baseCHighlightDark );
+	pal.setColor( QPalette::ColorGroup::Disabled, QPalette::HighlightedText, baseCTxtHighlightDark );
+
+	// Set Palette and Stylesheet
+	
+	QDir qssDir( QApplication::applicationDirPath() );
+	QStringList qssList( QStringList()
+						 << "style.qss"
+#ifdef Q_OS_LINUX
+						 << "/usr/share/nifskope/style.qss"
+#endif
+	);
+	QString qssName;
+	for ( const QString& str : qssList ) {
+		if ( qssDir.exists( str ) ) {
+			qssName = qssDir.filePath( str );
+			break;
+		}
+	}
+
+	// Load stylesheet
+	QString styleData;
+	if ( !qssName.isEmpty() ) {
+		QFile style( qssName );
+		if ( style.open( QFile::ReadOnly ) ) {
+			styleData = style.readAll();
+			style.close();
+		}
+	}
+
+	// Remove comments first
+	QRegularExpression cssComment( R"regex(\/\*[^*]*\*+([^/*][^*]*\*+)*\/)regex" );
+	styleData.replace( cssComment, "" );
+
+	// Theme name for icon path customization
+	styleData.replace( "${theme}", (theme == ThemeDark) ? "dark" : "light" );
+
+	// Highlight colors in an "R, G, B" string to combine with opacity in rgba()
+	auto rgb = QString("%1, %2, %3").arg(baseCHighlight.red())
+									.arg(baseCHighlight.green())
+									.arg(baseCHighlight.blue());
+	styleData.replace( "${rgb}", rgb );
+
+	qApp->setPalette( pal );
+	qApp->setStyleSheet( styleData );
+}
+
+void NifSkope::setThemeActions()
+{
+	// Map of QAction object names to QRC alias
+	QMap<QString, QString> names = {
+		//{"aTextures", "textures"}
+	};
+
+	QString themeString = (theme == ThemeDark) ? "dark" : "light";
+	for ( auto a : allActions ) {
+		auto obj = a->objectName();
+		if ( names.contains( obj ) ) {
+			a->setIcon( QIcon( QString(":btn/%1/%2").arg(themeString).arg(names[obj]) ) );
+		}
+	}
+}
+
+void NifSkope::setToolbarSize()
+{
+	QSize size = {18, 18};
+	if ( toolbarSize == ToolbarLarge )
+		size = {36, 36};
+
+	for ( QObject * o : children() ) {
+		auto tb = qobject_cast<QToolBar *>(o);
+		if ( tb )
+			tb->setIconSize(size);
+	}
+}
+
+void NifSkope::setTheme( nstheme::WindowTheme t )
+{
+	theme = t;
+
+	QSettings settings;
+	settings.setValue( "Theme", theme );
+
+	QColor * defaults = nullptr;
+	QString iconPrefix;
+
+	// If Dark reset to dark colors and icons
+	// If Light reset to light colors and icons
+	switch ( t ) {
+	case ThemeDark:
+		defaults = defaultsDark;
+		break;
+	case ThemeLight:
+		defaults = defaultsLight;
+		break;
+	default:
+		break;
+	}
+
+	if ( defaults ) {
+		settings.setValue( "Settings/Theme/Base Color", defaults[Base] );
+		settings.setValue( "Settings/Theme/Base Color Alt", defaults[BaseAlt] );
+		settings.setValue( "Settings/Theme/Text", defaults[Text] );
+		settings.setValue( "Settings/Theme/Highlight", defaults[Highlight] );
+		settings.setValue( "Settings/Theme/Highlight Text", defaults[HighlightText] );
+		settings.setValue( "Settings/Theme/Bright Text", defaults[BrightText] );
+	}
+
+	loadTheme();
 }
 
 void NifSkope::resizeDone()
@@ -1365,4 +1443,11 @@ void NifSkope::on_aSettings_triggered()
 	options->show();
 	options->raise();
 	options->activateWindow();
+}
+
+void NifSkope::on_mTheme_triggered( QAction * action )
+{
+	auto newTheme = WindowTheme( action->data().toInt() );
+
+	setTheme( newTheme );
 }

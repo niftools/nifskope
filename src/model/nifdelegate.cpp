@@ -191,8 +191,11 @@ public:
 	QSize sizeHint( const QStyleOptionViewItem & option, const QModelIndex & index ) const override final
 	{
 		QString text = index.data( NifSkopeDisplayRole ).toString();
-		QRect textRect( 0, 0, option.fontMetrics.width( text ), option.fontMetrics.lineSpacing() * (text.count( QLatin1Char( '\n' ) ) + 1) );
-		return textRect.size();
+		auto height = option.fontMetrics.lineSpacing() * (text.count( QLatin1Char( '\n' ) ) + 1);
+		// Increase height by 25%
+		height *= 1.25;
+
+		return {option.fontMetrics.width( text ), height};
 	}
 
 	QWidget * createEditor( QWidget * parent, const QStyleOptionViewItem &, const QModelIndex & index ) const override final

@@ -87,32 +87,6 @@ int main( int argc, char * argv[] )
 		qRegisterMetaType<NifValue>( "NifValue" );
 		QMetaType::registerComparators<NifValue>();
 
-		// Find stylesheet
-		QDir qssDir( QApplication::applicationDirPath() );
-		QStringList qssList( QStringList()
-			<< "style.qss"
-#ifdef Q_OS_LINUX
-			<< "/usr/share/nifskope/style.qss"
-#endif
-		);
-		QString qssName;
-		for ( const QString& str : qssList ) {
-			if ( qssDir.exists( str ) ) {
-				qssName = qssDir.filePath( str );
-				break;
-			}
-		}
-
-		// Load stylesheet
-		if ( !qssName.isEmpty() ) {
-			QFile style( qssName );
-
-			if ( style.open( QFile::ReadOnly ) ) {
-				a->setStyleSheet( style.readAll() );
-				style.close();
-			}
-		}
-
 		// Set locale
 		QSettings cfg( QString( "%1/nifskope.ini" ).arg( QCoreApplication::applicationDirPath() ), QSettings::IniFormat );
 		cfg.beginGroup( "Settings" );
