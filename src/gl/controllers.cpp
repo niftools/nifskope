@@ -337,7 +337,7 @@ bool MultiTargetTransformController::setInterpolator( Node * node, const QModelI
 	while ( it.hasNext() ) {
 		it.next();
 
-		auto val = it.value();
+		auto& val = it.value();
 		if ( val.first == node ) {
 			if ( val.second ) {
 				delete val.second;

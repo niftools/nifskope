@@ -760,7 +760,7 @@ bool BSA::scan( const BSA::BSAFolder * folder, QStandardItem * item, QString pat
 	if ( !folder || folder->children.count() == 0 )
 		return false;
 
-	auto children = folder->children;
+	auto& children = folder->children;
 	QHash<QString, BSAFolder *>::const_iterator i;
 	for ( i = children.begin(); i != children.end(); ++i ) {
 		auto f = i.value()->files;

@@ -107,7 +107,7 @@ QString NifSkope::fileFilter( const QString & ext )
 	QString filter;
 
 	for ( int i = 0; i < filetypes.size(); i++ ) {
-		auto ft = filetypes.at(i);
+		auto& ft = filetypes.at(i);
 		if ( ft.second == ext )
 			filter = QString( "%1 (*.%2)" ).arg( ft.first ).arg( ft.second );
 	}
