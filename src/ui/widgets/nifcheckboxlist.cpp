@@ -59,6 +59,12 @@ CheckBoxList::CheckBoxList( QWidget * widget )
 
 	// it just cool to have it as default ;)
 	view()->setAlternatingRowColors( true );
+
+	// Turn off Auto Scroll to prevent crash
+	view()->setAutoScroll( false );
+	view()->setHorizontalScrollMode( QAbstractItemView::ScrollMode::ScrollPerItem );
+	view()->setVerticalScrollMode( QAbstractItemView::ScrollMode::ScrollPerItem );
+	view()->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOn );
 }
 
 
@@ -139,6 +145,9 @@ void CheckBoxListDelegate::setEditorData( QWidget * editor, const QModelIndex & 
 {
 	//set editor data
 	QCheckBox * myEditor = static_cast<QCheckBox *>(editor);
+	if ( !myEditor || !index.isValid() )
+		return;
+
 	myEditor->setText( index.data( Qt::DisplayRole ).toString() );
 	myEditor->setChecked( index.data( Qt::UserRole ).toBool() );
 }
@@ -147,6 +156,9 @@ void CheckBoxListDelegate::setModelData( QWidget * editor, QAbstractItemModel * 
 {
 	//get the value from the editor (CheckBox)
 	QCheckBox * myEditor = static_cast<QCheckBox *>(editor);
+	if ( !myEditor || !model || !index.isValid() )
+		return;
+
 	bool value = myEditor->isChecked();
 
 	//set model data
@@ -156,9 +168,12 @@ void CheckBoxListDelegate::setModelData( QWidget * editor, QAbstractItemModel * 
 	model->setItemData( index, data );
 }
 
-void CheckBoxListDelegate::updateEditorGeometry( QWidget * editor, const QStyleOptionViewItem & option, const QModelIndex & index ) const
+void CheckBoxListDelegate::updateEditorGeometry( QWidget * editor, const QStyleOptionViewItem & option,
+												 const QModelIndex & index ) const
 {
-	Q_UNUSED( index );
+	if ( !editor || !index.isValid() )
+		return;
+
 	editor->setGeometry( option.rect );
 }
 
