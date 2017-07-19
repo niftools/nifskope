@@ -405,7 +405,7 @@ public:
 			auto nameString = nif->get<QString>( iBlock, "Name" );
 
 			// Ignore Editor Markers and AddOnNodes
-			if ( nameString.startsWith( "EditorMarker" ) || nif->inherits( iBlock, "BSValueNode" ) )
+			if ( nameString.contains( "EditorMarker" ) || nif->inherits( iBlock, "BSValueNode" ) )
 				continue;
 
 			QModelIndex iBlockParent = nif->getBlock( nif->getParent( i ) );

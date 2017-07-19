@@ -331,7 +331,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	glPointSize( 8.5 );
 
 	// TODO: Only run this if BSXFlags has "EditorMarkers present" flag
-	if ( !(scene->options & Scene::ShowMarkers) && name.startsWith( "EditorMarker" ) )
+	if ( !(scene->options & Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
 		return;
 
 	if ( Node::SELECTING ) {
