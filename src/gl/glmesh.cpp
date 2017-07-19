@@ -152,9 +152,9 @@ void Shape::updateShaderProperties( const NifModel * nif )
 	if ( !bssp )
 		return;
 
-	depthTest = bssp->getFlags1() & ShaderFlags::SLSF1_ZBuffer_Test;
-	depthWrite = bssp->getFlags2() &  ShaderFlags::SLSF2_ZBuffer_Write;
-	isDoubleSided = bssp->getFlags2() & ShaderFlags::SLSF2_Double_Sided;
+	depthTest = bssp->getDepthTest();
+	depthWrite = bssp->getDepthWrite();
+	isDoubleSided = bssp->getIsDoubleSided();
 	isVertexAlphaAnimation = bssp->getFlags2() & ShaderFlags::SLSF2_Tree_Anim;
 }
 

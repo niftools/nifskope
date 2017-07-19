@@ -789,7 +789,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 
 		if ( nif->getUserVersion2() == 130 ) {
-			uni1i( "doubleSided", mesh->isDoubleSided );
+			uni1i( "doubleSided", mesh->bslsp->getIsDoubleSided() );
 			uni1f( "paletteScale", mesh->bslsp->paletteScale );
 			uni1f( "subsurfaceRolloff", mesh->bslsp->getLightingEffect1() );
 			uni1f( "fresnelPower", mesh->bslsp->fresnelPower );

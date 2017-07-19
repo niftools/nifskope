@@ -1113,6 +1113,10 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
 	if ( !m ) {
+		isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+		depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+		depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+
 		alpha = nif->get<float>( prop, "Alpha" );
 
 		auto scale = nif->get<Vector2>( prop, "UV Scale" );
@@ -1234,7 +1238,9 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		hasSoftlight = m->bSubsurfaceLighting;
 		rimPower = m->fRimPower;
 		backlightPower = m->fBacklightPower;
-
+		isDoubleSided = m->bTwoSided;
+		depthTest = m->bZBufferTest;
+		depthWrite = m->bZBufferWrite;
 
 		hasEnvironmentMap = m->bEnvironmentMapping;
 		hasCubeMap = m->bEnvironmentMapping && !m->textureList[4].isEmpty();
