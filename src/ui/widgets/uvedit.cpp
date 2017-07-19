@@ -949,7 +949,7 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 		}
 	}
 
-	return false;
+	return true;
 }
 
 bool UVWidget::setTexCoords()
