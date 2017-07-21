@@ -51,6 +51,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestMessage;
 class QAbstractItemDelegate;
 
+class NifIStream;
+class NifOStream;
+class NifSStream;
+
 /*! Base class for NIF and KFM models, which store files in memory.
  *
  * This class serves as an abstract base class for NifModel and KfmModel
