@@ -468,6 +468,7 @@ void SettingsRender::setDefault()
 bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QString & regValue, const QString & gameFolder,
                      QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
 {
+#ifdef Q_OS_WIN32
 	QSettings reg( regPath, QSettings::Registry32Format );
 	QDir dir( reg.value( regValue ).toString() );
 
@@ -494,6 +495,7 @@ bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QStr
 		}
 		return true;
 	}
+#endif
 	return false;
 }
 
@@ -670,6 +672,7 @@ void SettingsResources::on_btnFolderUp_clicked()
 
 void SettingsResources::on_btnFolderAutoDetect_clicked()
 {
+#ifdef Q_OS_WIN32
 	// List to hold all games paths that were detected
 	QStringList list;
 
@@ -736,6 +739,7 @@ void SettingsResources::on_btnFolderAutoDetect_clicked()
 	ui->foldersList->setCurrentIndex( folders->index( 0, 0, QModelIndex() ) );
 
 	modifyPane();
+#endif
 }
 
 
