@@ -7,7 +7,7 @@ os:
 addons:
   apt:
     sources:
-      - sourceline: 'ppa:beineri/opt-qt57-trusty'
+      - sourceline: 'ppa:beineri/opt-qt571-trusty'
     packages: [
       # static analysis
       clang-3.6,
