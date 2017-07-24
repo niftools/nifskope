@@ -26,12 +26,15 @@ defineReplace(getSed) {
 
 		GNUWIN32 = $${PROG}/GnuWin32/bin
 		CYGWIN = C:/cygwin/bin
+		CYGWIN64 = C:/cygwin64/bin
 		SEDPATH = /sed.exe
 
 		exists($${GNUWIN32}$${SEDPATH}) {
 			sedbin = \"$${GNUWIN32}$${SEDPATH}\"
 		} else:exists($${CYGWIN}$${SEDPATH}) {
 			sedbin = \"$${CYGWIN}$${SEDPATH}\"
+		} else:exists($${CYGWIN64}$${SEDPATH}) {
+			sedbin = \"$${CYGWIN64}$${SEDPATH}\"
 		} else {
 			#message(Neither GnuWin32 or Cygwin were found)
 			sedbin = $$system(where sed 2> NUL)
