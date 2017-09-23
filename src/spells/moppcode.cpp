@@ -222,16 +222,12 @@ public:
 			nif->set<float>( iCodeScale, scale );
 
 			QModelIndex iCodeSize = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data Size" );
-			QModelIndex iCode = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data" );
+			QModelIndex iCode = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data" ).child( 0, 0 );
 
 			if ( iCodeSize.isValid() && iCode.isValid() ) {
 				nif->set<int>( iCodeSize, moppcode.size() );
 				nif->updateArray( iCode );
-
-				//nif->set<QByteArray>( iCode, moppcode );
-				for ( int i = 0; i < moppcode.size(); ++i ) {
-					nif->set<quint8>( iCode.child( i, 0 ), moppcode[i] );
-				}
+				nif->set<QByteArray>( iCode, moppcode );
 			}
 		}
 
