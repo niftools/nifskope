@@ -208,7 +208,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	if ( iBlock == index ) {
 		// NiMesh presents a problem because we are almost guaranteed to have multiple "data" blocks
 		// for eg. vertices, indices, normals, texture data etc.
-#ifndef QT_NO_DEBUG
+//#ifndef QT_NO_DEBUG
 
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
 			qDebug() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
@@ -224,7 +224,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 			return;
 		}
 
-#endif
+//#endif
 
 		for ( const auto link : nif->getChildLinks( id() ) ) {
 			QModelIndex iChild = nif->getBlock( link );
@@ -298,7 +298,7 @@ void Mesh::transform()
 
 		// update for NiMesh
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
-#ifndef QT_NO_DEBUG
+//#ifndef QT_NO_DEBUG
 			// do stuff
 			qDebug() << "Entering NiMesh decoding...";
 			// mesh primitive type
@@ -430,10 +430,14 @@ void Mesh::transform()
 						if ( NifValue::enumOptionName( "ComponentFormat", (typeList[k] + 1 ) ) == "F_FLOAT32_3" ) {
 							Vector3 tempVect3( values[0].toFloat(), values[1].toFloat(), values[2].toFloat() );
 
-							if ( compType == "POSITION" ) {
+							if ( compType == "POSITION" || compType == "POSITION_BP" ) {
 								verts.append( tempVect3 );
-							} else if ( compType == "NORMAL" ) {
+							} else if ( compType == "NORMAL" || compType == "NORMAL_BP" ) {
 								norms.append( tempVect3 );
+							} else if ( compType == "TANGENT" || compType == "TANGENT_BP" ) {
+								tangents.append( tempVect3 );
+							} else if ( compType == "BINORMAL" || compType == "BINORMAL_BP" ) {
+								bitangents.append( tempVect3 );
 							}
 						} else if ( compType == "INDEX" ) {
 							indices.append( values[0].toCount() );
@@ -459,7 +463,7 @@ void Mesh::transform()
 				}
 			}
 
-#endif
+//#endif
 		} else {
 
 			verts  = nif->getArray<Vector3>( iData, "Vertices" );
