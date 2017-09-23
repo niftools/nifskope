@@ -85,12 +85,14 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( index.isValid() ) {
+#ifndef QT_NO_DEBUG
 		NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 
 		if ( item )
 			qCWarning( nsNif ) << tr( "Unknown property: %1" ).arg( item->name() );
 		else
 			qCWarning( nsNif ) << tr( "Unknown property: I can't determine its name" );
+#endif
 	}
 
 	if ( property )
