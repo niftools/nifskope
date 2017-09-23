@@ -289,7 +289,7 @@ public:
 					bool isMixin = false;
 					if ( isCompound ) {
 						static const QVector<QString> mixinTypes {
-							"HavokColFilter",
+							"HavokFilter",
 							"HavokMaterial",
 							"RagdollDescriptor",
 							"LimitedHingeDescriptor",

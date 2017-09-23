@@ -387,9 +387,9 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 
 				if ( textures[t].hasTransform ) {
 					textures[t].translation = nif->get<Vector2>( iTex, "Translation" );
-					textures[t].tiling = nif->get<Vector2>( iTex, "Tiling" );
-					textures[t].rotation = nif->get<float>( iTex, "W Rotation" );
-					textures[t].center = nif->get<Vector2>( iTex, "Center Offset" );
+					textures[t].tiling = nif->get<Vector2>( iTex, "Scale" );
+					textures[t].rotation = nif->get<float>( iTex, "Rotation" );
+					textures[t].center = nif->get<Vector2>( iTex, "Center" );
 				} else {
 					// we don't really need to set these since they won't be applied in bind() unless hasTransform is set
 					textures[t].translation = Vector2();

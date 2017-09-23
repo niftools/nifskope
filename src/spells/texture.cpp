@@ -308,7 +308,7 @@ QModelIndex addTexture( NifModel * nif, const QModelIndex & index, const QString
 	nif->set<int>( iSrcTex, "Use Mipmaps", 2 );
 	nif->set<int>( iSrcTex, "Alpha Format", 3 );
 	nif->set<int>( iSrcTex, "Unknown Byte", 1 );
-	nif->set<int>( iSrcTex, "Unknown Byte 2", 1 );
+	nif->set<int>( iSrcTex, "Is Static", 1 );
 	nif->set<int>( iSrcTex, "Use External", 1 );
 
 	spChooseTexture * chooser = new spChooseTexture();
@@ -855,7 +855,7 @@ public:
 			if ( iData.isValid() ) {
 				return true;
 			}
-		} else if ( nif->inherits( iBlock, "ATextureRenderData" ) ) {
+		} else if ( nif->inherits( iBlock, "NiPixelFormat" ) ) {
 			int thisBlockNumber = nif->getBlockNumber( index );
 			QModelIndex iParent = nif->getBlock( nif->getParent( thisBlockNumber ) );
 
@@ -895,7 +895,7 @@ public:
 			}
 
 			return index;
-		} else if ( nif->inherits( iBlock, "ATextureRenderData" ) ) {
+		} else if ( nif->inherits( iBlock, "NiPixelFormat" ) ) {
 			TexCache * tex = new TexCache();
 			tex->setNifFolder( nif->getFolder() );
 			QString file = nif->getFolder();

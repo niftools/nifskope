@@ -136,17 +136,17 @@ void ControllerManager::setSequence( const QString & seqname )
 						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 					}
 
-					QString var1 = nif->get<QString>( iCB, "Variable 1" );
+					QString var1 = nif->get<QString>( iCB, "Controller ID" );
 
 					if ( var1.isEmpty() ) {
-						QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
+						QModelIndex idx = nif->getIndex( iCB, "Controller ID Offset" );
 						var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 					}
 
-					QString var2 = nif->get<QString>( iCB, "Variable 2" );
+					QString var2 = nif->get<QString>( iCB, "Interpolator ID" );
 
 					if ( var2.isEmpty() ) {
-						QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
+						QModelIndex idx = nif->getIndex( iCB, "Interpolator ID Offset" );
 						var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 					}
 

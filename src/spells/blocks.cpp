@@ -377,8 +377,9 @@ public:
 			addLink( nif, iParent, "Effects", nif->getBlockNumber( iLight ) );
 
 			if ( nif->checkVersion( 0, 0x04000002 ) ) {
-				nif->set<int>( iLight, "Num Affected Node List Pointers", 1 );
-				nif->updateArray( iLight, "Affected Node List Pointers" );
+				nif->set<int>( iLight, "Num Affected Nodes", 1 );
+				nif->updateArray( iLight, "Affected Nodes" );
+				nif->updateArray( iLight, "Affected Node Pointers" );
 			}
 
 			if ( act->text() == "NiTextureEffect" ) {

@@ -92,6 +92,7 @@ void NifValue::initialize()
 	typeMap.insert( "Quaternion",  NifValue::tQuat );
 	typeMap.insert( "QuaternionWXYZ", NifValue::tQuat );
 	typeMap.insert( "QuaternionXYZW", NifValue::tQuatXYZW );
+	typeMap.insert( "hkQuaternion",   NifValue::tQuatXYZW );
 	typeMap.insert( "Matrix33",       NifValue::tMatrix );
 	typeMap.insert( "Matrix44",       NifValue::tMatrix4 );
 	typeMap.insert( "Vector2",        NifValue::tVector2 );

@@ -754,24 +754,26 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
 		iBasis  = nif->getBlock( nif->getLink( index, "Basis Data" ) );
 
 		if ( iSpline.isValid() )
-			iControl = nif->getIndex( iSpline, "Short Control Points" );
+			iControl = nif->getIndex( iSpline, "Compact Control Points" );
 
 		if ( iBasis.isValid() )
 			nCtrl = nif->get<uint>( iBasis, "Num Control Points" );
 
-		lTrans  = nif->getIndex( index, "Translation" );
-		lRotate = nif->getIndex( index, "Rotation" );
-		lScale  = nif->getIndex( index, "Scale" );
+		auto trans = nif->getIndex( index, "Transform" );
 
-		lTransOff   = nif->get<uint>( index, "Translation Offset" );
-		lRotateOff  = nif->get<uint>( index, "Rotation Offset" );
-		lScaleOff   = nif->get<uint>( index, "Scale Offset" );
-		lTransMult  = nif->get<float>( index, "Translation Multiplier" );
-		lRotateMult = nif->get<float>( index, "Rotation Multiplier" );
-		lScaleMult  = nif->get<float>( index, "Scale Multiplier" );
-		lTransBias  = nif->get<float>( index, "Translation Bias" );
-		lRotateBias = nif->get<float>( index, "Rotation Bias" );
-		lScaleBias  = nif->get<float>( index, "Scale Bias" );
+		lTrans  = nif->getIndex( trans, "Translation" );
+		lRotate = nif->getIndex( trans, "Rotation" );
+		lScale  = nif->getIndex( trans, "Scale" );
+
+		lTransOff   = nif->get<uint>( index, "Translation Handle" );
+		lRotateOff  = nif->get<uint>( index, "Rotation Handle" );
+		lScaleOff   = nif->get<uint>( index, "Scale Handle" );
+		lTransMult  = nif->get<float>( index, "Translation Offset" );
+		lRotateMult = nif->get<float>( index, "Rotation Offset" );
+		lScaleMult  = nif->get<float>( index, "Scale Offset" );
+		lTransBias  = nif->get<float>( index, "Translation Half Range" );
+		lRotateBias = nif->get<float>( index, "Rotation Half Range" );
+		lScaleBias  = nif->get<float>( index, "Scale Half Range" );
 
 		return true;
 	}

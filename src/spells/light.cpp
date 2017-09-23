@@ -94,7 +94,8 @@ public:
 		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Quadratic Attenuation" ) ) );
 		le->popLayout();
 		le->pushLayout( new QHBoxLayout(), "Spot Light Parameters" );
-		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Cutoff Angle" ), 0, 90 ) );
+		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Outer Spot Angle" ), 0, 90 ) );
+		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Inner Spot Angle" ), 0, 90 ) );
 		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Exponent" ), 0, 128 ) );
 		le->popLayout();
 		le->show();

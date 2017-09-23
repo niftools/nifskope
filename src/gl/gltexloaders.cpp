@@ -1045,14 +1045,10 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 
 		if ( iPixelData.isValid() ) {
-			QModelIndex iFaceData = iPixelData.child( 0, 0 );
-
-			if ( iFaceData.isValid() ) {
-				if ( QByteArray * pdata = nif->get<QByteArray *>( iFaceData.child( 0, 0 ) ) ) {
-					buf.setData( *pdata );
-					buf.open( QIODevice::ReadOnly );
-					buf.seek( 0 );
-				}
+			if ( QByteArray * pdata = nif->get<QByteArray *>( iPixelData.child(0, 0) ) ) {
+				buf.setData( *pdata );
+				buf.open( QIODevice::ReadOnly );
+				buf.seek( 0 );
 			}
 		}
 
@@ -1155,13 +1151,13 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT1;
 			ok = ( 0 != texLoadDXT( hdr, (const unsigned char *)buf.data().data(), buf.size() ) );
 			break;
-		case 5: //PX_FMT_DXT5
-			texformat += " (DXT5)";
-			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT5;
+		case 5: //PX_FMT_DXT3
+			texformat += " (DXT3)";
+			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT3;
 			ok = ( 0 != texLoadDXT( hdr, (const unsigned char *)buf.data().data(), buf.size() ) );
 			break;
-		case 6: //PX_FMT_DXT5_ALT
-			texformat += " (DXT5ALT)";
+		case 6: //PX_FMT_DXT5
+			texformat += " (DXT5)";
 			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT5;
 			ok = ( 0 != texLoadDXT( hdr, (const unsigned char *)buf.data().data(), buf.size() ) );
 			break;
@@ -1189,7 +1185,7 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 	QPersistentModelIndex iRoot;
 
 	for ( const auto l : pix.getRootLinks() ) {
-		QModelIndex iData = pix.getBlock( l, "ATextureRenderData" );
+		QModelIndex iData = pix.getBlock( l, "NiPixelFormat" );
 
 		if ( !iData.isValid() || iData == QModelIndex() )
 			throw QString( "this is not a normal .nif file; there should be only pixel data as root blocks" );
@@ -1343,14 +1339,10 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLui
 	QModelIndex iPixelData = nif->getIndex( index, "Pixel Data" );
 
 	if ( iPixelData.isValid() ) {
-		QModelIndex iFaceData = iPixelData.child( 0, 0 );
-
-		if ( iFaceData.isValid() ) {
-			if ( QByteArray * pdata = nif->get<QByteArray *>( iFaceData.child( 0, 0 ) ) ) {
-				buf.setData( *pdata );
-				buf.open( QIODevice::ReadOnly );
-				buf.seek( 0 );
-			}
+		if ( QByteArray * pdata = nif->get<QByteArray *>( iPixelData.child( 0, 0 ) ) ) {
+			buf.setData( *pdata );
+			buf.open( QIODevice::ReadOnly );
+			buf.seek( 0 );
 		}
 	}
 
@@ -1476,6 +1468,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLui
 		fourcc = FOURCC_DXT1;
 		break;
 	case 5:
+		fourcc = FOURCC_DXT3;
 	case 6:
 		fourcc = FOURCC_DXT5;
 		break;
@@ -1737,38 +1730,27 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<quint32>( iData, "Green Mask", pix.get<quint32>( iPixData, "Green Mask" ) );
 			nif->set<quint32>( iData, "Blue Mask", pix.get<quint32>( iPixData, "Blue Mask" ) );
 			nif->set<quint32>( iData, "Alpha Mask", pix.get<quint32>( iPixData, "Alpha Mask" ) );
-			nif->set<quint8>( iData, "Bits Per Pixel", pix.get<quint8>( iPixData, "Bits Per Pixel" ) );
+			nif->set<quint32>( iData, "Bits Per Pixel", pix.get<quint32>( iPixData, "Bits Per Pixel" ) );
 
-			QModelIndex unknownSrc;
-			QModelIndex unknownDest;
+			QModelIndex fastCompareSrc = pix.getIndex( iPixData, "Old Fast Compare" );
+			QModelIndex fastCompareDest = nif->getIndex( iData, "Old Fast Compare" );
 
-			// 2 sets of unknown bytes
-			unknownSrc  = pix.getIndex( iPixData, "Unknown 3 Bytes" );
-			unknownDest = nif->getIndex( iData, "Unknown 3 Bytes" );
-
-			for ( int i = 0; i < pix.rowCount( unknownSrc ); i++ ) {
-				nif->set<quint8>( unknownDest.child( i, 0 ), pix.get<quint8>( unknownSrc.child( i, 0 ) ) );
-			}
-
-			unknownSrc  = pix.getIndex( iPixData, "Unknown 8 Bytes" );
-			unknownDest = nif->getIndex( iData, "Unknown 8 Bytes" );
-
-			for ( int i = 0; i < pix.rowCount( unknownSrc ); i++ ) {
-				nif->set<quint8>( unknownDest.child( i, 0 ), pix.get<quint8>( unknownSrc.child( i, 0 ) ) );
+			for ( int i = 0; i < pix.rowCount( fastCompareSrc ); i++ ) {
+				nif->set<quint8>( fastCompareDest.child( i, 0 ), pix.get<quint8>( fastCompareSrc.child( i, 0 ) ) );
 			}
 
 			if ( nif->checkVersion( 0x0A010000, 0x0A020000 ) && pix.checkVersion( 0x0A010000, 0x0A020000 ) ) {
-				nif->set<quint32>( iData, "Unknown Int", pix.get<quint32>( iPixData, "Unknown Int" ) );
+				nif->set<quint32>( iData, "Tiling", pix.get<quint32>( iPixData, "Tiling" ) );
 			}
 		} else if ( nif->checkVersion( 0x14000004, 0 ) && pix.checkVersion( 0x14000004, 0 ) ) {
-			nif->set<quint8>( iData, "Bits Per Pixel", pix.get<quint8>( iPixData, "Bits Per Pixel" ) );
-			nif->set<int>( iData, "Unknown Int 2", pix.get<int>( iPixData, "Unknown Int 2" ) );
-			nif->set<quint32>( iData, "Unknown Int 3", pix.get<quint32>( iPixData, "Unknown Int 3" ) );
-			nif->set<quint16>( iData, "Flags", pix.get<quint16>( iPixData, "Flags" ) );
-			nif->set<quint32>( iData, "Unknown Int 4", pix.get<quint32>( iPixData, "Unknown Int 4" ) );
+			nif->set<quint32>( iData, "Bits Per Pixel", pix.get<quint32>( iPixData, "Bits Per Pixel" ) );
+			nif->set<int>( iData, "Renderer Hint", pix.get<int>( iPixData, "Renderer Hint" ) );
+			nif->set<quint32>( iData, "Extra Data", pix.get<quint32>( iPixData, "Extra Data" ) );
+			nif->set<quint8>( iData, "Flags", pix.get<quint8>( iPixData, "Flags" ) );
+			nif->set<quint32>( iData, "Tiling", pix.get<quint32>( iPixData, "Tiling" ) );
 
 			if ( nif->checkVersion( 0x14030006, 0 ) && pix.checkVersion( 0x14030006, 0 ) ) {
-				nif->set<quint8>( iData, "Unknown Byte 1", pix.get<quint8>( iPixData, "Unknown Byte 1" ) );
+				nif->set<quint8>( iData, "sRGB Space", pix.get<quint8>( iPixData, "sRGB Space" ) );
 			}
 
 			QModelIndex srcChannels  = pix.getIndex( iPixData, "Channels" );
@@ -1780,12 +1762,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
 				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
 				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
-				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Signed" );
 
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ) );
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ) );
 				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" ) );
-				nif->set<quint8>( destChannels.child( i, 0 ), "Unknown Byte 1", pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" ) );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Signed", pix.get<quint8>( srcChannels.child( i, 0 ), "Signed" ) );
 			}
 
 			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
@@ -1851,22 +1833,22 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<quint32>( iData, "Blue Mask", RGBA_INV_MASK[2] );
 			nif->set<quint32>( iData, "Alpha Mask", RGBA_INV_MASK[3] );
 
-			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
+			QModelIndex oldFastCompare = nif->getIndex( iData, "Old Fast Compare" );
 
 			for ( int i = 0; i < 8; i++ ) {
-				nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes32[i] );
+				nif->set<quint8>( oldFastCompare.child( i, 0 ), unk8bytes32[i] );
 			}
 		} else if ( nif->checkVersion( 0x14000004, 0 ) ) {
 			// set stuff
-			nif->set<qint32>( iData, "Unknown Int 2", -1 ); // probably a link to something
+			nif->set<qint32>( iData, "Extra Data", -1 );
 			nif->set<quint8>( iData, "Flags", 1 );
 			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
 
 			for ( int i = 0; i < 4; i++ ) {
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", i );       // red, green, blue, alpha
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
-				nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
-				nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Signed", 0 );
 			}
 		}
 
@@ -1910,10 +1892,8 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 		nif->updateArray( iPixelData );
-		QModelIndex iFaceData = iPixelData.child( 0, 0 );
-		nif->updateArray( iFaceData );
 
-		nif->set<QByteArray>( iFaceData, "Pixel Data", pixelData );
+		nif->set<QByteArray>( iPixelData, "Pixel Data", pixelData );
 
 		// return true once perfected
 		//return false;
@@ -1980,18 +1960,18 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<uint>( iData, "Blue Mask", ddsHeader.ddsPixelFormat.dwBMask );
 			nif->set<uint>( iData, "Alpha Mask", ddsHeader.ddsPixelFormat.dwAMask );
 
-			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
+			QModelIndex oldFastCompare = nif->getIndex( iData, "Old Fast Compare" );
 
 			for ( int i = 0; i < 8; i++ ) {
 				if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
-					nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes24[i] );
+					nif->set<quint8>( oldFastCompare.child( i, 0 ), unk8bytes24[i] );
 				} else if ( ddsHeader.ddsPixelFormat.dwBPP == 32 ) {
-					nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes32[i] );
+					nif->set<quint8>( oldFastCompare.child( i, 0 ), unk8bytes32[i] );
 				}
 			}
 		} else if ( nif->checkVersion( 0x14000004, 0 ) ) {
 			// set stuff
-			nif->set<qint32>( iData, "Unknown Int 2", -1 ); // probably a link to something
+			nif->set<qint32>( iData, "Extra Data", -1 );
 			nif->set<quint8>( iData, "Flags", 1 );
 			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
 
@@ -2010,7 +1990,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 					}
 
 					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 0 );
-					nif->set<quint8>( destChannels.child( i, 0 ), "Unknown Byte 1", 1 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Signed", 1 );
 				}
 			} else {
 				nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
@@ -2031,20 +2011,20 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 				for ( int i = 0; i < 3; i++ ) {
 					nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
-					nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
-					nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Signed", 0 );
 				}
 
 				if ( ddsHeader.ddsPixelFormat.dwBPP == 32 ) {
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 3 );       // alpha
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 0 ); // fixed
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Bits Per Channel", 8 );
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Unknown Byte 1", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Bits Per Channel", 8 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Signed", 0 );
 				} else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 19 );      // empty
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 5 ); // empty
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Bits Per Channel", 0 );
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Unknown Byte 1", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Bits Per Channel", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Signed", 0 );
 				}
 			}
 		}
@@ -2088,8 +2068,6 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 		nif->updateArray( iPixelData );
-		QModelIndex iFaceData = iPixelData.child( 0, 0 );
-		nif->updateArray( iFaceData );
 
 		f.seek( 4 + ddsHeader.dwSize );
 		//qDebug() << "Reading from " << f.pos();
@@ -2102,7 +2080,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			return false;
 		}
 
-		nif->set<QByteArray>( iFaceData, "Pixel Data", ddsData );
+		nif->set<QByteArray>( iPixelData, "Pixel Data", ddsData );
 
 		/*
 		QByteArray result = nif->get<QByteArray>( iFaceData, "Pixel Data" );

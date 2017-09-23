@@ -60,10 +60,7 @@ public:
 					if ( !iSeq.isValid() )
 						throw QString( Spell::tr( "this is not a normal .kf file; there should be only NiControllerSequences as root blocks" ) );
 
-					QString rootName = kf.get<QString>( iSeq, "Target Name" );
-
-					if ( rootName.isEmpty() )
-						rootName = kf.get<QString>( iSeq, "Text Keys Name" ); // 10.0.1.0
+					QString rootName = kf.get<QString>( iSeq, "Accum Root Name" );
 
 					QModelIndex ir = findRootTarget( nif, rootName );
 
