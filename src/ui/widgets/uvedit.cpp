@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "message.h"
 #include "nifskope.h"
+#include "io/material.h"
 #include "gl/gltex.h"
 #include "gl/gltools.h"
 #include "model/nifmodel.h"
@@ -920,19 +921,32 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 					iTexProp = nif->getBlock( l, "BSLightingShaderProperty" );
 
 				if ( iTexProp.isValid() ) {
-					QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );
+                    // FO4 BGSM
+                    // Check it first because FO4 BSLightingShaderProperty
+                    // usually also has "Texture Set" node
+                    // with textures not blank sometimes.
+                    QString name = nif->get<QString>( iTexProp, "Name" );
+                    if ( name.endsWith( ".bgsm", Qt::CaseInsensitive ) ) {
+                        QScopedPointer<Material> mat( new ShaderMaterial(name) );
+                        if ( mat && mat->isValid() ) {
+                            texfile = TexCache::find( mat->textures()[0], nif->getFolder() );
+                            return true;
+                        }
+                    } else {
+						QModelIndex iTexSource = nif->getBlock( nif->getLink( iTexProp, "Texture Set" ) );
 
-					if ( iTexSource.isValid() ) {
-						// Assume that a FO3 mesh never has embedded textures...
-						//texsource = iTexSource;
-						//return true;
-						QModelIndex iTextures = nif->getIndex( iTexSource, "Textures" );
+						if ( iTexSource.isValid() ) {
+							// Assume that a FO3 mesh never has embedded textures...
+							//texsource = iTexSource;
+							//return true;
+							QModelIndex iTextures = nif->getIndex( iTexSource, "Textures" );
 
-						if ( iTextures.isValid() ) {
-							texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder() );
-							return true;
+							if ( iTextures.isValid() ) {
+								texfile = TexCache::find( nif->get<QString>( iTextures.child( 0, 0 ) ), nif->getFolder() );
+								return true;
+							}
 						}
-					}
+                    }
 				} else {
 					iTexProp = nif->getBlock( l, "BSEffectShaderProperty" );
 
