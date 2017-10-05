@@ -162,20 +162,6 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 
 	QString filename = QDir::toNativeSeparators( file );
 
-	if ( !filename.startsWith( "textures" ) ) {
-		QRegularExpression re( "textures[\\\\/]", QRegularExpression::CaseInsensitiveOption );
-		int texIdx = filename.indexOf( re );
-		if ( texIdx > 0 ) {
-			filename.remove( 0, texIdx );
-		} else {
-			while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
-				filename.remove( 0, 1 );
-
-			if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) )
-				filename.prepend( "textures\\" );
-		}
-	}
-
 	QStringList extensions;
 	extensions << ".dds";
 	bool replaceExt = false;
@@ -251,6 +237,23 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 					}
 				}
 			}
+		}
+
+		// For Skyrim and FO4 which occasionally leave the textures off
+		if ( !filename.startsWith( "textures" ) ) {
+			QRegularExpression re( "textures[\\\\/]", QRegularExpression::CaseInsensitiveOption );
+			int texIdx = filename.indexOf( re );
+			if ( texIdx > 0 ) {
+				filename.remove( 0, texIdx );
+			} else {
+				while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
+					filename.remove( 0, 1 );
+
+				if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) )
+					filename.prepend( "textures\\" );
+			}
+
+			return find( filename, nifdir, data );
 		}
 
 		if ( !replaceExt )
