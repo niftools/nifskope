@@ -1917,6 +1917,15 @@ BoundSphere Node::bounds() const
 		boundsphere |= BoundSphere( trans, rad.length() );
 	}
 
+	if ( nif->getBlockType( iBlock ) == "NiMesh" ) {
+		auto iBound = nif->getIndex( iBlock, "Bound" );
+		if ( iBound.isValid() ) {
+			auto center = nif->get<Vector3>( iBound, "Center" );
+			auto radius = nif->get<float>( iBound, "Radius" );
+			boundsphere |= BoundSphere( center, radius );
+		}
+	}
+
 	// BSBound collision bounding box
 	QModelIndex iExtraDataList = nif->getIndex( iBlock, "Extra Data List" );
 
