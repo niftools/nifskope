@@ -262,7 +262,10 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		return nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" );
+		auto iUVs = getUV( nif, index );
+		auto iTriData = nif->getIndex( index, "Num Triangles" );
+		return (iUVs.isValid() || iTriData.isValid())
+			&& (nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" ));
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -525,14 +528,16 @@ class spTextureTemplate final : public Spell
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iUVs = getUV( nif, index );
-		return iUVs.isValid() && nif->rowCount( iUVs ) >= 1;
+		auto iTriData = nif->getIndex( index, "Num Triangles" );
+		bool bstri = nif->getUserVersion2() >= 100 && nif->inherits( index, "BSTriShape" ) && iTriData.isValid();
+		return (iUVs.isValid() && nif->rowCount( iUVs ) >= 1) || bstri;
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iUVs = getUV( nif, index );
 
-		if ( nif->rowCount( iUVs ) <= 0 )
+		if ( nif->rowCount( iUVs ) <= 0 && nif->getUserVersion2() < 100 )
 			return index;
 
 		// fire up a dialog to set the user parameters
@@ -617,8 +622,39 @@ class spTextureTemplate final : public Spell
 		// get the selected coord set
 		QModelIndex iSet = iUVs.child( set->currentIndex(), 0 );
 
-		QVector<Vector2> uv = nif->getArray<Vector2>( iSet );
+		QVector<Vector2> uv;
 		QVector<Triangle> tri;
+
+		if ( nif->getUserVersion2() >= 100 ) {
+			QModelIndex iVertData;
+			auto vf = nif->get<quint16>( index, "VF" );
+			if ( (vf & 0x400) && nif->getUserVersion2() == 100 ) {
+				// Skinned SSE
+				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
+				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
+				auto iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+				if ( !iPartBlock.isValid() )
+					return index;
+
+				iVertData = nif->getIndex( iPartBlock, "Vertex Data" );
+
+				// Get triangles from all partitions
+				auto numParts = nif->get<int>( iPartBlock, "Num Skin Partition Blocks" );
+				auto iParts = nif->getIndex( iPartBlock, "Partition" );
+				for ( int i = 0; i < numParts; i++ )
+					tri << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
+
+			} else {
+				iVertData = nif->getIndex( index, "Vertex Data" );
+				tri = nif->getArray<Triangle>( index, "Triangles" );
+			}
+
+			for ( int i = 0; i < nif->rowCount( iVertData ); i++ )
+				uv << nif->get<Vector2>( nif->index( i, 0, iVertData ), "UV" );
+
+		} else {
+			uv = nif->getArray<Vector2>( iSet );
+		}
 
 		// get the triangles
 		QModelIndex iData = getData( nif, index );
@@ -631,7 +667,7 @@ class spTextureTemplate final : public Spell
 				strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 
 			tri = triangulate( strips );
-		} else {
+		} else if ( nif->getUserVersion2() < 100 ) {
 			tri = nif->getArray<Triangle>( nif->getIndex( getData( nif, index ), "Triangles" ) );
 		}
 
