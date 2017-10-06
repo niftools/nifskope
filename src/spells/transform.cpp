@@ -93,15 +93,17 @@ static char const * transform_xpm[] = {
 
 bool spApplyTransformation::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-	return nif->itemType( index ) == "NiBlock" && ( nif->inherits( nif->itemName( index ), "NiNode" )
-	                                                || nif->itemName( index ) == "NiTriShape"
-	                                                || nif->itemName( index ) == "BSLODTriShape"
-	                                                || nif->itemName( index ) == "NiTriStrips" );
+	return nif->itemType( index ) == "NiBlock" &&
+		( nif->inherits( nif->itemName( index ), "NiNode" )
+	      || nif->inherits( nif->itemName( index ), "NiTriBasedGeom" )
+		  || nif->inherits( nif->itemName( index ), "BSTriShape" ));
 }
 
 QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & index )
 {
-	if ( ( nif->getLink( index, "Controller" ) != -1 || nif->getLink( index, "Skin Instance" ) != -1 ) )
+	if ( nif->getLink( index, "Controller" ) != -1
+		 || nif->getLink( index, "Skin Instance" ) != -1
+		 || nif->getLink( index, "Skin" ) != -1 )
 		if ( QMessageBox::question( 0, Spell::tr( "Apply Transformation" ),
 			Spell::tr( "On animated and or skinned nodes Apply Transformation most likely won't work the way you expected it." ),
 			Spell::tr( "Try anyway" ),
@@ -131,7 +133,7 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 			tp = Transform();
 			tp.writeBack( nif, index );
 		}
-	} else {
+	} else if ( nif->inherits( nif->itemName( index ), "NiTriBasedGeom" ) ) {
 		QModelIndex iData;
 
 		if ( nif->itemName( index ) == "NiTriShape" || nif->itemName( index ) == "BSLODTriShape" )
@@ -151,15 +153,22 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 
 				nif->setArray<Vector3>( iVertices, a );
 
-				QModelIndex iNormals = nif->getIndex( iData, "Normals" );
+				auto transformBTN = [nif, iData, &t]( QString str )
+				{
+					QModelIndex idx = nif->getIndex( iData, str );
+					if ( idx.isValid() ) {
+						auto a = nif->getArray<Vector3>( idx );
+						for ( int n = 0; n < a.size(); n++ )
+							a[n] = t.rotation * a[n];
 
-				if ( iNormals.isValid() ) {
-					a = nif->getArray<Vector3>( iNormals );
+						nif->setArray<Vector3>( idx, a );
+					}
+				};
 
-					for ( int n = 0; n < nif->rowCount( iNormals ); n++ )
-						a[n] = t.rotation * a[n];
-
-					nif->setArray<Vector3>( iNormals, a );
+				if ( !(t.rotation == Matrix()) ) {
+					transformBTN( "Normals" );
+					transformBTN( "Tangents" );
+					transformBTN( "Bitangents" );
 				}
 			}
 
@@ -176,6 +185,57 @@ QModelIndex spApplyTransformation::cast( NifModel * nif, const QModelIndex & ind
 			t = Transform();
 			t.writeBack( nif, index );
 		}
+	} else if ( nif->inherits( nif->itemName( index ), "BSTriShape" ) ) {
+		// Should not be used on skinned anyway so do not bother with SSE skinned geometry support
+		QModelIndex iVertData = nif->getIndex( index, "Vertex Data" );
+		if ( !iVertData.isValid() )
+			return index;
+
+		Transform t( nif, index );
+
+		// Update Bounding Sphere
+		auto iBound = nif->getIndex( index, "Bounding Sphere" );
+		QModelIndex iCenter = nif->getIndex( iBound, "Center" );
+		if ( iCenter.isValid() )
+			nif->set<Vector3>( iCenter, t * nif->get<Vector3>( iCenter ) );
+		
+		QModelIndex iRadius = nif->getIndex( iBound, "Radius" );
+		if ( iRadius.isValid() )
+			nif->set<float>( iRadius, t.scale * nif->get<float>( iRadius ) );
+
+		nif->setState( BaseModel::Processing );
+		for ( int i = 0; i < nif->rowCount( iVertData ); i++ ) {
+			auto iVert = iVertData.child( i, 0 );
+
+			auto vertex = t * nif->get<Vector3>( iVert, "Vertex" );
+			if ( !nif->set<HalfVector3>( iVert, "Vertex", vertex ) )
+				nif->set<Vector3>( iVert, "Vertex", vertex );
+
+			// Transform BTN if applicable
+			if ( !(t.rotation == Matrix()) ) {
+				auto normal = nif->get<ByteVector3>( iVert, "Normal" );
+				nif->set<ByteVector3>( iVert, "Normal", t.rotation * normal );
+
+				auto tangent = nif->get<ByteVector3>( iVert, "Tangent" );
+				nif->set<ByteVector3>( iVert, "Tangent", t.rotation * tangent );
+
+				// Unpack, Transform, Pack Bitangent
+				auto bitX = nif->getValue( nif->getIndex( iVert, "Bitangent X" ) ).toFloat();
+				auto bitYi = nif->getValue( nif->getIndex( iVert, "Bitangent Y" ) ).toCount();
+				auto bitZi = nif->getValue( nif->getIndex( iVert, "Bitangent Z" ) ).toCount();
+
+				auto bit = t.rotation * Vector3( bitX, (bitYi / 255.0) * 2.0 - 1.0, (bitZi / 255.0) * 2.0 - 1.0 );
+
+				nif->set<float>( iVert, "Bitangent X", bit[0] );
+				nif->set<quint8>( iVert, "Bitangent Y", round( ((bit[1] + 1.0) / 2.0) * 255.0 ) );
+				nif->set<quint8>( iVert, "Bitangent Z", round( ((bit[2] + 1.0) / 2.0) * 255.0 ) );
+			}
+		}
+
+		nif->resetState();
+
+		t = Transform();
+		t.writeBack( nif, index );
 	}
 
 	return index;
