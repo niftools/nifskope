@@ -80,7 +80,7 @@ void main( void )
 	float NdotNegL = max( dot(normal, -L), 0.000001 );
 
 	vec3 reflected = reflect( V, normal );
-	vec3 reflectedVS = t * reflected.x + b * reflected.y + N * reflected.z;
+	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 	
 	if ( greyscaleAlpha )

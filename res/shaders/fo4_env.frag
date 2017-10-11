@@ -232,7 +232,7 @@ void main( void )
 	float NdotNegL = max( dot(normal, -L), FLT_EPSILON );
 
 	vec3 reflected = reflect( V, normal );
-	vec3 reflectedVS = t * reflected.x + b * reflected.y + N * reflected.z;
+	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 
 
@@ -259,8 +259,8 @@ void main( void )
 	float specMask = 1.0;
 	vec3 spec = vec3(0.0);
 	if ( hasSpecularMap ) {
-		g = specMap.r;
-		s = specMap.g;
+		g = specMap.g;
+		s = specMap.r;
 		smoothness = g * specGlossiness;
 		roughness = 1.0 - smoothness;
 		float fSpecularPower = exp2( smoothness * 10 + 1 );

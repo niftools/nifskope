@@ -254,8 +254,8 @@ void main( void )
 	float specMask = 1.0;
 	vec3 spec = vec3(0.0);
 	if ( hasSpecularMap ) {
-		g = specMap.r;
-		s = specMap.g;
+		g = specMap.g;
+		s = specMap.r;
 		smoothness = g * specGlossiness;
 		roughness = 1.0 - smoothness;
 		float fSpecularPower = exp2( smoothness * 10 + 1 );

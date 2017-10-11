@@ -37,7 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gl/dds/dds_api.h"
 #include "gl/dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
 
-#include <lib/soil/SOIL.h>
+#include <lib/SOIL2/SOIL2.h>
 
 #include <QBuffer>
 #include <QDebug>
@@ -618,8 +618,8 @@ GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int /*blockSize*/, quint32 /*
 		if ( glFormat == GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI ) {
 			for ( quint32 y = 0; y < h; y++ ) {
 				for ( quint32 x = 0; x < w; x++ ) {
-					*dst++ = src->g;
 					*dst++ = src->r;
+					*dst++ = src->g;
 					*dst++ = 255 - src->b;
 					*dst++ = 255;
 					src++;

@@ -17,7 +17,7 @@ contains(QT_VERSION, ^5\\.[0-6]\\..*) {
 CONFIG += c++14
 
 # Dependencies
-CONFIG += nvtristrip qhull soil zlib lz4 fsengine
+CONFIG += nvtristrip qhull soil2 zlib lz4 fsengine
 
 # Debug/Release options
 CONFIG(debug, debug|release) {
@@ -359,20 +359,31 @@ qhull {
 		lib/qhull/src/libqhull/user.h
 }
 
-soil {
-    INCLUDEPATH += lib/soil
+soil2 {
+    INCLUDEPATH += lib/SOIL2
     HEADERS += \
-        lib/soil/image_DXT.h \
-        lib/soil/image_helper.h \
-        lib/soil/SOIL.h \
-        lib/soil/stb_image_aug.h \
-        lib/soil/stbi_DDS_aug.h \
-        lib/soil/stbi_DDS_aug_c.h
+        lib/SOIL2/etc1_utils.h \
+        lib/SOIL2/image_DXT.h \
+        lib/SOIL2/image_helper.h \
+        lib/SOIL2/jo_jpeg.h \
+        lib/SOIL2/pkm_helper.h \
+        lib/SOIL2/pvr_helper.h \
+        lib/SOIL2/SOIL2.h \
+        lib/SOIL2/stb_image.h \
+        lib/SOIL2/stb_image_write.h \
+        lib/SOIL2/stbi_DDS.h \
+        lib/SOIL2/stbi_DDS_c.h \
+        lib/SOIL2/stbi_ext.h \
+        lib/SOIL2/stbi_ext_c.h \
+        lib/SOIL2/stbi_pkm.h \
+        lib/SOIL2/stbi_pkm_c.h \
+        lib/SOIL2/stbi_pvr.h \
+        lib/SOIL2/stbi_pvr_c.h
     SOURCES += \
-        lib/soil/image_DXT.c \
-        lib/soil/image_helper.c \
-        lib/soil/SOIL.c \
-        lib/soil/stb_image_aug.c
+        lib/SOIL2/etc1_utils.c \
+        lib/SOIL2/image_DXT.c \
+        lib/SOIL2/image_helper.c \
+        lib/SOIL2/SOIL2.c
 }
 
 zlib {
