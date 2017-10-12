@@ -17,7 +17,7 @@ contains(QT_VERSION, ^5\\.[0-6]\\..*) {
 CONFIG += c++14
 
 # Dependencies
-CONFIG += nvtristrip qhull soil2 zlib lz4 fsengine
+CONFIG += nvtristrip qhull soil2 zlib lz4 fsengine gli
 
 # Debug/Release options
 CONFIG(debug, debug|release) {
@@ -384,6 +384,14 @@ soil2 {
         lib/SOIL2/image_DXT.c \
         lib/SOIL2/image_helper.c \
         lib/SOIL2/SOIL2.c
+}
+
+gli {
+    INCLUDEPATH += lib/gli/gli lib/gli/external
+    HEADERS += $$files($$PWD/lib/gli/gli/*.hpp, true)
+    HEADERS += $$files($$PWD/lib/gli/gli/*.inl, true)
+    HEADERS += $$files($$PWD/lib/gli/external/glm/*.hpp, true)
+    HEADERS += $$files($$PWD/lib/gli/external/glm/*.inl, true)
 }
 
 zlib {
