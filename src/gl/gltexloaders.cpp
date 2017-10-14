@@ -1133,11 +1133,11 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 
 					if ( nmap > 0 && iPaletteArray.isValid() ) {
 						for ( uint i = 0; i < nmap; ++i ) {
-							QModelIndex iRGBElem = iPaletteArray.child( i, 0 );
-							quint8 r = nif->get<quint8>( iRGBElem, "r" );
-							quint8 g = nif->get<quint8>( iRGBElem, "g" );
-							quint8 b = nif->get<quint8>( iRGBElem, "b" );
-							quint8 a = nif->get<quint8>( iRGBElem, "a" );
+							auto color = nif->get<ByteColor4>( iPaletteArray.child( i, 0 ) ).toQColor();
+							quint8 r = color.red();
+							quint8 g = color.green();
+							quint8 b = color.blue();
+							quint8 a = color.alpha();
 							map[i] = ( (quint32)( ( r | ( (quint16)g << 8 ) ) | ( ( (quint32)b ) << 16 ) | ( ( (quint32)a ) << 24 ) ) );
 						}
 					}
