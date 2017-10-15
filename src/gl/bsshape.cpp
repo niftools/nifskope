@@ -44,11 +44,12 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 	nifVersion = nif->getUserVersion2();
 
-	auto vertexFlags = nif->get<quint16>( iBlock, "VF" );
+	auto vertexFlags = nif->get<BSVertexDesc>( iBlock, "Vertex Desc" );
+
 	bool isDynamic = nif->inherits( iBlock, "BSDynamicTriShape" );
 
 	bool isDataOnSkin = false;
-	bool isSkinned = vertexFlags & 0x400;
+	bool isSkinned = vertexFlags & VertexFlags::VF_SKINNED;
 	if ( nifVersion == 130 ) {
 		skinInstName = "BSSkin::Instance";
 		skinDataName = "BSSkin::BoneData";

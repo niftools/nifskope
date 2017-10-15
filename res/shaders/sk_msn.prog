@@ -14,7 +14,7 @@ checkgroup begin or
 		check BSLightingShaderProperty
 		checkgroup begin or
 			check NiTriBasedGeomData/Has Normals == 0
-			check BSTriShape/VF !& 128
+			check not BSTriShape/Vertex Desc & 8
 		checkgroup end
 	checkgroup end
 checkgroup end

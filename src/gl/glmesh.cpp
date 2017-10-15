@@ -109,12 +109,12 @@ void Shape::setController( const NifModel * nif, const QModelIndex & iController
 
 void Shape::updateShaderProperties( const NifModel * nif )
 {
-	QVector<qint32> props = nif->getLinkArray( iBlock, "BS Properties" );
-	if ( !props.count() )
+	auto prop = nif->getLink( iBlock, "Shader Property" );
+	if ( prop == -1 )
 		return;
 
-	QModelIndex iLSP = nif->getBlock( props[0], "BSLightingShaderProperty" );
-	QModelIndex iESP = nif->getBlock( props[0], "BSEffectShaderProperty" );
+	QModelIndex iLSP = nif->getBlock( prop, "BSLightingShaderProperty" );
+	QModelIndex iESP = nif->getBlock( prop, "BSEffectShaderProperty" );
 
 	if ( iLSP.isValid() ) {
 		if ( !bslsp )

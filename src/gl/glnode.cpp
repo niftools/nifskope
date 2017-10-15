@@ -306,10 +306,12 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 				newProps.add( p );
 		}
 
-		for ( const auto l : nif->getLinkArray( iBlock, "BS Properties" ) ) {
-			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
-				newProps.add( p );
-		}
+		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Shader Property" ) ) ) )
+			newProps.add( p );
+
+		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Alpha Property" ) ) ) )
+			newProps.add( p );
+
 		properties = newProps;
 
 		children.clear();
@@ -1138,6 +1140,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 	if ( name == "bhkLimitedHingeConstraint" ) {
 		QModelIndex iHinge = nif->getIndex( iConstraint, "Limited Hinge" );
+		if ( !iHinge.isValid() )
+			iHinge = iConstraint;
 
 		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
@@ -1192,6 +1196,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glEnd();
 	} else if ( name == "bhkHingeConstraint" ) {
 		QModelIndex iHinge = nif->getIndex( iConstraint, "Hinge" );
+		if ( !iHinge.isValid() )
+			iHinge = iConstraint;
 
 		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
@@ -1260,6 +1266,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		drawSpring( pivotA, pivotB, length );
 	} else if ( name == "bhkRagdollConstraint" ) {
 		QModelIndex iRagdoll = nif->getIndex( iConstraint, "Ragdoll" );
+		if ( !iRagdoll.isValid() )
+			iRagdoll = iConstraint;
 
 		const Vector3 pivotA( nif->get<Vector4>( iRagdoll, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iRagdoll, "Pivot B" ) );
@@ -1316,8 +1324,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) );
 
-		const Vector3 planeNormal( nif->get<Vector4>( iConstraint, "Plane" ) );
-		const Vector3 slidingAxis( nif->get<Vector4>( iConstraint, "Sliding Axis" ) );
+		const Vector3 planeNormal( nif->get<Vector4>( iConstraint, "Plane A" ) );
+		const Vector3 slidingAxis( nif->get<Vector4>( iConstraint, "Sliding A" ) );
 
 		const float minDistance = nif->get<float>( iConstraint, "Min Distance" );
 		const float maxDistance = nif->get<float>( iConstraint, "Max Distance" );

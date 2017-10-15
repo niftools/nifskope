@@ -164,6 +164,8 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIn
 		return compare( val.toFloat(), (float)right.toDouble() ) ^ invert;
 	else if ( val.isFileVersion() )
 		return compare( val.toFileVersion(), right.toUInt( nullptr, 0 ) ) ^ invert;
+	else if ( val.type() == NifValue::tBSVertexDesc )
+		return compare( (uint)val.get<BSVertexDesc>().GetFlags(), right.toUInt( nullptr, 0 ) ) ^ invert;
 
 	return false;
 }

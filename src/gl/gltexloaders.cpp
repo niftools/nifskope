@@ -1762,12 +1762,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
 				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
 				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
-				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Signed" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Is Signed" );
 
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ) );
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ) );
 				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" ) );
-				nif->set<quint8>( destChannels.child( i, 0 ), "Signed", pix.get<quint8>( srcChannels.child( i, 0 ), "Signed" ) );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", pix.get<quint8>( srcChannels.child( i, 0 ), "Is Signed" ) );
 			}
 
 			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
@@ -1848,7 +1848,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", i );       // red, green, blue, alpha
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
 				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
-				nif->set<quint8>( destChannels.child( i, 0 ), "Signed", 0 );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", 0 );
 			}
 		}
 
@@ -1990,7 +1990,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 					}
 
 					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 0 );
-					nif->set<quint8>( destChannels.child( i, 0 ), "Signed", 1 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", 1 );
 				}
 			} else {
 				nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
@@ -2012,19 +2012,19 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				for ( int i = 0; i < 3; i++ ) {
 					nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
 					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
-					nif->set<quint8>( destChannels.child( i, 0 ), "Signed", 0 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", 0 );
 				}
 
 				if ( ddsHeader.ddsPixelFormat.dwBPP == 32 ) {
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 3 );       // alpha
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 0 ); // fixed
 					nif->set<quint8>( destChannels.child( 3, 0 ), "Bits Per Channel", 8 );
-					nif->set<quint8>( destChannels.child( 3, 0 ), "Signed", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Is Signed", 0 );
 				} else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 19 );      // empty
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 5 ); // empty
 					nif->set<quint8>( destChannels.child( 3, 0 ), "Bits Per Channel", 0 );
-					nif->set<quint8>( destChannels.child( 3, 0 ), "Signed", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Is Signed", 0 );
 				}
 			}
 		}

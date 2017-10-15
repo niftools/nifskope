@@ -15,7 +15,7 @@ checkgroup begin and
         check BSLightingShaderProperty/Skyrim Shader Type == 1
         check BSLightingShaderProperty/Skyrim Shader Type == 16
     checkgroup end
-    check NiAVObject/Vertex Size >= 3
+    #check NiAVObject/Vertex Size >= 3
     checkgroup begin or
         check BSTriShape
         check BSSubIndexTriShape

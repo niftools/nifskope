@@ -20,7 +20,7 @@ checkgroup begin or
 		#check NiTriBasedGeomData/Has Vertex Colors == 1
 		checkgroup begin or
 			check NiTriBasedGeomData/Has Normals == 1
-			check BSTriShape/VF & 128
+			check BSTriShape/Vertex Desc & 8
 		checkgroup end
 	checkgroup end
 checkgroup end

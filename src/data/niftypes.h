@@ -1629,4 +1629,253 @@ private:
 
 typedef FixedMatrix<char> ByteMatrix;
 
+
+// BS Vertex Desc
+
+enum VertexAttribute : uchar
+{
+	VA_POSITION = 0x0,
+	VA_TEXCOORD0 = 0x1,
+	VA_TEXCOORD1 = 0x2,
+	VA_NORMAL = 0x3,
+	VA_BINORMAL = 0x4,
+	VA_COLOR = 0x5,
+	VA_SKINNING = 0x6,
+	VA_LANDDATA = 0x7,
+	VA_EYEDATA = 0x8,
+	VA_COUNT = 9
+};
+
+enum VertexFlags : ushort
+{
+	VF_VERTEX = 1 << VA_POSITION,
+	VF_UV = 1 << VA_TEXCOORD0,
+	VF_UV_2 = 1 << VA_TEXCOORD1,
+	VF_NORMAL = 1 << VA_NORMAL,
+	VF_TANGENT = 1 << VA_BINORMAL,
+	VF_COLORS = 1 << VA_COLOR,
+	VF_SKINNED = 1 << VA_SKINNING,
+	VF_LANDDATA = 1 << VA_LANDDATA,
+	VF_EYEDATA = 1 << VA_EYEDATA,
+	VF_FULLPREC = 0x400
+};
+
+const uint64_t DESC_MASK_VERT = 0xFFFFFFFFFFFFFFF0;
+const uint64_t DESC_MASK_UVS = 0xFFFFFFFFFFFFFF0F;
+const uint64_t DESC_MASK_NBT = 0xFFFFFFFFFFFFF0FF;
+const uint64_t DESC_MASK_SKCOL = 0xFFFFFFFFFFFF0FFF;
+const uint64_t DESC_MASK_DATA = 0xFFFFFFFFFFF0FFFF;
+const uint64_t DESC_MASK_OFFSET = 0xFFFFFF0000000000;
+const uint64_t DESC_MASK_FLAGS = ~(DESC_MASK_OFFSET);
+
+class BSVertexDesc
+{
+
+public:
+	BSVertexDesc()
+	{
+	}
+
+	// Sets a specific flag
+	void SetFlag( VertexFlags flag )
+	{
+		desc |= ((uint64_t)flag << 44);
+	}
+
+	// Removes a specific flag
+	void RemoveFlag( VertexFlags flag )
+	{
+		desc &= ~((uint64_t)flag << 44);
+	}
+
+	// Checks for a specific flag
+	bool HasFlag( VertexFlags flag ) const
+	{
+		return ((desc >> 44) & flag) != 0;
+	}
+
+	// Sets a specific attribute in the flags
+	void SetFlag( VertexAttribute flag )
+	{
+		desc |= (1ull << (uint64_t)flag << 44);
+	}
+
+	// Removes a specific attribute in the flags
+	void RemoveFlag( VertexAttribute flag )
+	{
+		desc &= ~(1ull << (uint64_t)flag << 44);
+	}
+
+	// Checks for a specific attribute in the flags
+	bool HasFlag( VertexAttribute flag ) const
+	{
+		return ((desc >> 44) & (1ull << (uint64_t)flag)) != 0;
+	}
+
+	// Sets the vertex size, from bytes
+	void SetSize( uint size )
+	{
+		desc &= DESC_MASK_VERT;
+		desc |= (uint64_t)size >> 2;
+	}
+
+	// Gets the vertex size in bytes
+	uint GetVertexSize() const
+	{
+		return (desc & 0xF) * 4;
+	}
+
+	// Sets the dynamic vertex size
+	void MakeDynamic()
+	{
+		desc &= DESC_MASK_UVS;
+		desc |= 0x40;
+	}
+
+	// Return offset to a specific vertex attribute in the description
+	uint GetAttributeOffset( VertexAttribute attr ) const
+	{
+		return (desc >> (4 * (uchar)attr + 2)) & 0x3C;
+	}
+
+	// Set offset to a specific vertex attribute in the description
+	void SetAttributeOffset( VertexAttribute attr, uint offset )
+	{
+		if ( attr != VA_POSITION ) {
+			desc = ((uint64_t)offset << (4 * (uchar)attr + 2)) | desc & ~(15 << (4 * (uchar)attr + 4));
+		}
+	}
+
+	// Reset the offsets based on the current vertex flags
+	void ResetAttributeOffsets( uint stream )
+	{
+		uint64_t vertexSize = 0;
+
+		VertexFlags vf = GetFlags();
+		ClearAttributeOffsets();
+
+		uint attributeSizes[VA_COUNT] = {};
+		if ( vf & VF_VERTEX ) {
+			if ( vf & VF_FULLPREC || stream == 100 )
+				attributeSizes[VA_POSITION] = 4;
+			else
+				attributeSizes[VA_POSITION] = 2;
+		}
+
+		if ( vf & VF_UV )
+			attributeSizes[VA_TEXCOORD0] = 1;
+
+		if ( vf & VF_UV_2 )
+			attributeSizes[VA_TEXCOORD1] = 1;
+
+		if ( vf & VF_NORMAL ) {
+			attributeSizes[VA_NORMAL] = 1;
+
+			if ( vf & VF_TANGENT )
+				attributeSizes[VA_BINORMAL] = 1;
+		}
+
+		if ( vf & VF_COLORS )
+			attributeSizes[VA_COLOR] = 1;
+
+		if ( vf & VF_SKINNED )
+			attributeSizes[VA_SKINNING] = 3;
+
+		if ( vf & VF_EYEDATA )
+			attributeSizes[VA_EYEDATA] = 1;
+
+		for ( int va = 0; va < VA_COUNT; va++ ) {
+			if ( attributeSizes[va] != 0 ) {
+				SetAttributeOffset( VertexAttribute(va), vertexSize );
+				vertexSize += attributeSizes[va] * 4;
+			}
+		}
+
+		SetSize( vertexSize );
+
+		// SetFlags must be called again because SetAttributeOffset
+		// appears to clear part of the byte ahead of it
+		SetFlags( vf );
+	}
+
+	void ClearAttributeOffsets()
+	{
+		desc &= DESC_MASK_OFFSET;
+	}
+
+	VertexFlags GetFlags() const
+	{
+		return VertexFlags( (desc & DESC_MASK_OFFSET) >> 44 );
+	}
+
+	void SetFlags( VertexFlags flags )
+	{
+		desc |= ((uint64_t)flags << 44) | (desc & DESC_MASK_FLAGS);
+	}
+
+	bool operator==( const BSVertexDesc & v ) const
+	{
+		return desc == v.desc;
+	}
+
+	friend int operator&( const BSVertexDesc& lhs, const int& rhs )
+	{
+		return ((lhs.desc & DESC_MASK_OFFSET) >> 44) & rhs;
+	}
+
+	friend int operator&( const int& lhs, const BSVertexDesc& rhs )
+	{
+		return ((rhs.desc & DESC_MASK_OFFSET) >> 44) & lhs;
+	}
+
+	QString toString() const
+	{
+		QStringList opts;
+
+		if ( GetFlags() & VF_VERTEX )
+			opts << "Vertex";
+		if ( GetFlags() & VF_UV )
+			opts << "UVs";
+		if ( GetFlags() & VF_UV_2 )
+			opts << "UVs 2";
+		if ( GetFlags() & VF_NORMAL )
+			opts << "Normals";
+		if ( GetFlags() & VF_TANGENT )
+			opts << "Tangents";
+		if ( GetFlags() & VF_COLORS )
+			opts << "Colors";
+		if ( GetFlags() & VF_SKINNED )
+			opts << "Skinned";
+		if ( GetFlags() & VF_EYEDATA )
+			opts << "Eye Data";
+		if ( GetFlags() & VF_FULLPREC )
+			opts << "Full Prec";
+
+		return opts.join( " | " );
+	}
+
+	friend class NifIStream;
+	friend class NifOStream;
+
+	friend QDataStream & operator<<( QDataStream & ds, BSVertexDesc & d );
+	friend QDataStream & operator>>( QDataStream & ds, BSVertexDesc & d );
+
+private:
+	quint64 desc = 0;
+
+};
+
+
+inline QDataStream & operator<<( QDataStream & ds, BSVertexDesc & d )
+{
+	ds << d.desc;
+	return ds;
+}
+
+inline QDataStream & operator>>( QDataStream & ds, BSVertexDesc & d )
+{
+	ds >> d.desc;
+	return ds;
+}
+
 #endif

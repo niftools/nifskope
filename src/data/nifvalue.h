@@ -125,6 +125,7 @@ public:
 		tByteVector3   = 40,
 		tHalfVector2   = 41,
 		tByteColor4    = 42,
+		tBSVertexDesc  = 43,
 		tNone          = 0xff
 	};
 
@@ -618,6 +619,10 @@ template <> inline ByteMatrix * NifValue::get() const
 
 	return nullptr;
 }
+template <> inline BSVertexDesc NifValue::get() const
+{
+	return getType<BSVertexDesc>( tBSVertexDesc );
+}
 
 //! Set the data from a boolean. Return true if successful.
 template <> inline bool NifValue::set( const bool & b )
@@ -748,6 +753,12 @@ template <> inline bool NifValue::set( const Quat & x )
 
 	return false;
 }
+//! Set the data from a BSVertexDesc. Return true if successful.
+template <> inline bool NifValue::set( const BSVertexDesc & x )
+{
+	return setType( tBSVertexDesc, x );
+}
+
 
 //! Check whether the data is a boolean.
 template <> inline bool NifValue::ask( bool * ) const

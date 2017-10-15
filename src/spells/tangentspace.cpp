@@ -46,8 +46,8 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	if ( nif->getUserVersion2() < 100 ) {
 		iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 	} else {
-		auto vf = nif->get<quint16>( iShape, "VF" );
-		if ( (vf & 0x400) && nif->getUserVersion2() == 100 ) {
+		auto vf = nif->get<BSVertexDesc>( iShape, "Vertex Desc" );
+		if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
 			// Skinned SSE
 			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
 			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );

@@ -17,10 +17,10 @@
  */
 
 //! Edit flags
-class spEditFlags final : public Spell
+class spEditFlags : public Spell
 {
 public:
-	QString name() const override final { return Spell::tr( "Flags" ); }
+	QString name() const override { return Spell::tr( "Flags" ); }
 	bool instant() const { return true; }
 	QIcon icon() const { return QIcon( ":/img/flag" ); }
 
@@ -111,12 +111,12 @@ public:
 		return None;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override
 	{
 		return queryType( nif, getFlagIndex( nif, index ) ) != None;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override
 	{
 		QModelIndex iFlags = getFlagIndex( nif, index );
 
@@ -874,7 +874,7 @@ public:
 	 * \param chk A checkbox that enables or disables this checkbox
 	 * \return A pointer to the checkbox
 	 */
-	QCheckBox * dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = nullptr )
+	QCheckBox * spEditFlags::dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = nullptr )
 	{
 		QCheckBox * box = new QCheckBox( name );
 		vbox->addWidget( box );
@@ -895,7 +895,7 @@ public:
 	 * \param chk A checkbox that enables or disables this combobox
 	 * \return A pointer to the combobox
 	 */
-	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = nullptr )
+	QComboBox * spEditFlags::dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = nullptr )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QComboBox * cmb = new QComboBox;
@@ -919,7 +919,7 @@ public:
 	 * \param chk A checkbox that enables or disables this spinbox
 	 * \return A pointer to the spinbox
 	 */
-	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = nullptr )
+	QSpinBox * spEditFlags::dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = nullptr )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QSpinBox * spn = new QSpinBox;
@@ -939,7 +939,7 @@ public:
 	 * \param dlg The dialog to add buttons to
 	 * \param vbox Vertical box layout used by the dialog
 	 */
-	void dlgButtons( QDialog * dlg, QVBoxLayout * vbox )
+	void spEditFlags::dlgButtons( QDialog * dlg, QVBoxLayout * vbox )
 	{
 		QHBoxLayout * hbox = new QHBoxLayout;
 		vbox->addLayout( hbox );
@@ -955,3 +955,89 @@ public:
 };
 
 REGISTER_SPELL( spEditFlags )
+
+
+class spEditVertexDesc final : public spEditFlags
+{
+public:
+	QString name() const override final { return Spell::tr( "Vertex Flags" ); }
+	bool instant() const { return true; }
+	QIcon icon() const { return QIcon( ":/img/flag" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif->inherits( index.parent(), "BSTriShape" ) && nif->itemName( index ) == "Vertex Desc";
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		auto desc = nif->get<BSVertexDesc>( index );
+		uint stream = nif->getUserVersion2();
+		bool dynamic = nif->inherits( index.parent(), "BSDynamicTriShape" );
+
+		ushort flags = desc.GetFlags();
+		QStringList flagNames {
+			Spell::tr( "Vertex" ),	  // VA_POSITION = 0x0,
+			Spell::tr( "UVs" ),		  // VA_TEXCOORD0 = 0x1,
+			Spell::tr( "UVs 2" ),	  // VA_TEXCOORD1 = 0x2,
+			Spell::tr( "Normals" ),	  // VA_NORMAL = 0x3,
+			Spell::tr( "Tangents" ),  // VA_BINORMAL = 0x4,
+			Spell::tr( "Colors" ),	  // VA_COLOR = 0x5,
+			Spell::tr( "Skinned" ),	  // VA_SKINNING = 0x6,
+			Spell::tr( "Land Data" ), // VA_LANDDATA = 0x7,
+			Spell::tr( "Eye Data" ),  // VA_EYEDATA = 0x8,
+			Spell::tr( "" ),          
+			Spell::tr( "Full Precision" ) // 1 << 10
+		};
+
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+
+		QList<QCheckBox *> chkBoxes;
+		int x = 0;
+		for ( const QString& flagName : flagNames ) {
+			chkBoxes << dlgCheck( vbox, flagName );
+			chkBoxes.last()->setChecked( desc.HasFlag( VertexAttribute(x) ) );
+			// Hide unused attributes
+			if ( x == 2 || x == 7 || x == 9 )
+				chkBoxes.last()->setHidden( true );
+			x++;
+		}
+
+		dlgButtons( &dlg, vbox );
+
+		if ( dlg.exec() == QDialog::Accepted ) {
+			x = 0;
+			for ( QCheckBox * chk : chkBoxes ) {
+				if ( chk->isChecked() )
+					desc.SetFlag( VertexAttribute(x) );
+				else
+					desc.RemoveFlag( VertexAttribute(x) );
+				x++;
+			}
+
+			// Make sure sizes and offsets in rest of vertexDesc are updated from flags
+			desc.ResetAttributeOffsets( stream );
+			if ( dynamic )
+				desc.MakeDynamic();
+
+			if ( nif->set<BSVertexDesc>( index, desc ) ) {
+				auto iDataSize = nif->getIndex( index.parent(), "Data Size" );
+				auto numVerts = nif->get<uint>( index.parent(), "Num Vertices" );
+				auto numTris = nif->get<uint>( index.parent(), "Num Triangles" );
+
+				if ( iDataSize.isValid() )
+					nif->set<uint>( iDataSize, desc.GetVertexSize() * numVerts + 6 * numTris );
+
+				nif->updateArray( index.parent(), "Vertex Data" );
+			}
+
+		}
+
+		return index;
+	}
+
+};
+
+REGISTER_SPELL( spEditVertexDesc )

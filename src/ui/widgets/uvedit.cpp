@@ -833,8 +833,8 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 	if ( nif->getVersionNumber() == 0x14020007 && nif->getUserVersion2() >= 100 ) {
 		iShapeData = nif->getIndex( iShape, "Vertex Data" );
 
-		auto vf = nif->get<quint16>( iShape, "VF" );
-		if ( (vf & 0x400) && nif->getUserVersion2() == 100 ) {
+		auto vf = nif->get<BSVertexDesc>( iShape, "Vertex Desc" );
+		if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
 			// Skinned SSE
 			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
 			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
@@ -876,9 +876,9 @@ bool UVWidget::setNifData( NifModel * nifModel, const QModelIndex & nifIndex )
 			return false;
 	}
 
-	for ( const auto l :
-		nif->getLinkArray( iShape, "Properties" )
-		+ nif->getLinkArray( iShape, "BS Properties" ) )
+	auto props = nif->getLinkArray( iShape, "Properties" );
+	props << nif->getLink( iShape, "Shader Property" );
+	for ( const auto l : props )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 
@@ -1508,9 +1508,10 @@ void UVWidget::getTexSlots()
 {
 	menuTexSelect->clear();
 	validTexs.clear();
-	for ( const auto l :
-		nif->getLinkArray( iShape, "Properties" )
-		+ nif->getLinkArray( iShape, "BS Properties" ) )
+
+	auto props = nif->getLinkArray( iShape, "Properties" );
+	props << nif->getLink( iShape, "Shader Property" );
+	for ( const auto l : props )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 
@@ -1538,9 +1539,10 @@ void UVWidget::selectTexSlot()
 {
 	QString selected = texSlotGroup->checkedAction()->text();
 	currentTexSlot = texnames.indexOf( selected );
-	for ( const auto l :
-		nif->getLinkArray( iShape, "Properties" )
-		+ nif->getLinkArray( iShape, "BS Properties" ) )
+
+	auto props = nif->getLinkArray( iShape, "Properties" );
+	props << nif->getLink( iShape, "Shader Property" );
+	for ( const auto l : props )
 	{
 		QModelIndex iTexProp = nif->getBlock( l, "NiTexturingProperty" );
 

@@ -668,7 +668,6 @@ NifItem * BaseModel::getItem( NifItem * item, const QString & name ) const
 		return nullptr;
 
 	int slash = name.indexOf( "\\" );
-
 	if ( slash > 0 ) {
 		QString left  = name.left( slash );
 		QString right = name.right( name.length() - slash - 1 );
@@ -850,6 +849,9 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 				if ( i2 && i2->value().isCount() )
 					return QVariant( i2->value().toCount() );
 			} else {
+				if ( sibling->value().type() == NifValue::tBSVertexDesc )
+					return QVariant( sibling->value().get<BSVertexDesc>().GetFlags() << 4 );
+
 				qDebug() << ("can't convert " + left + " to a count");
 			}
 		}

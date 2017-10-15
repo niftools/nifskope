@@ -34,8 +34,8 @@ public:
 			return iData;
 
 		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape" } ) ) {
-			auto vf = nif->get<quint16>( index, "VF" );
-			if ( (vf & 0x400) && nif->getUserVersion2() == 100 ) {
+			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
+			if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
 				// Skinned SSE
 				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
 				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
@@ -103,8 +103,8 @@ public:
 		} else {
 			QVector<Triangle> triangles;
 			int numVerts;
-			auto vf = nif->get<quint16>( index, "VF" );
-			if ( !((vf & 0x400) && nif->getUserVersion2() == 100) ) {
+			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
 				numVerts = nif->get<int>( index, "Num Vertices" );
 				triangles = nif->getArray<Triangle>( index, "Triangles" );
 			} else {
@@ -200,8 +200,8 @@ public:
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 			norms = nif->getArray<Vector3>( iData, "Normals" );
 		} else {
-			auto vf = nif->get<quint16>( index, "VF" );
-			if ( !((vf & 0x400) && nif->getUserVersion2() == 100) ) {
+			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
 				numVerts = nif->get<int>( index, "Num Vertices" );
 			} else {
 				// Skinned SSE

@@ -458,7 +458,11 @@ bool NifIStream::read( NifValue & val )
 				return true;
 			}
 		}
-
+	case NifValue::tBSVertexDesc:
+		{
+			*dataStream >> *static_cast<BSVertexDesc *>(val.val.data);
+			return (dataStream->status() == QDataStream::Ok);
+		}
 	case NifValue::tBlob:
 		{
 			if ( val.val.data ) {
@@ -762,6 +766,14 @@ bool NifOStream::write( const NifValue & val )
 				return device->write( string.constData(), string.size() ) == string.size();
 			}
 		}
+	case NifValue::tBSVertexDesc:
+		{
+			auto d = static_cast<BSVertexDesc *>(val.val.data);
+			if ( !d )
+				return false;
+
+			return device->write( (char*)&d->desc, 8 ) == 8;
+		}
 	case NifValue::tBlob:
 
 		if ( val.val.data ) {
@@ -770,7 +782,6 @@ bool NifOStream::write( const NifValue & val )
 		}
 
 		return true;
-
 	case NifValue::tNone:
 		return true;
 	}
@@ -838,6 +849,7 @@ int NifSStream::size( const NifValue & val )
 	case NifValue::tMatrix4:
 		return 64;
 	case NifValue::tVector2:
+	case NifValue::tBSVertexDesc:
 		return 8;
 	case NifValue::tColor3:
 		return 12;

@@ -117,6 +117,7 @@ void NifValue::initialize()
 	typeMap.insert( "HalfVector2", NifValue::tHalfVector2 );
 	typeMap.insert( "HalfTexCoord", NifValue::tHalfVector2 );
 	typeMap.insert( "ByteColor4", NifValue::tByteColor4 );
+	typeMap.insert( "BSVertexDesc", NifValue::tBSVertexDesc );
 
 	enumMap.clear();
 }
@@ -386,6 +387,9 @@ void NifValue::clear()
 	case tByteColor4:
 		delete static_cast<Color4 *>( val.data );
 		break;
+	case tBSVertexDesc:
+		delete static_cast<BSVertexDesc *>(val.data);
+		break;
 	case tBlob:
 		delete static_cast<QByteArray *>( val.data );
 		break;
@@ -462,6 +466,9 @@ void NifValue::changeType( Type t )
 	case tStringIndex:
 		val.u32 = 0xffffffff;
 		return;
+	case tBSVertexDesc:
+		val.data = new BSVertexDesc();
+		return;
 	case tBlob:
 		val.data = new QByteArray();
 		return;
@@ -527,6 +534,9 @@ void NifValue::operator=( const NifValue & other )
 		return;
 	case tBlob:
 		*static_cast<QByteArray *>( val.data ) = *static_cast<QByteArray *>( other.val.data );
+		return;
+	case tBSVertexDesc:
+		*static_cast<BSVertexDesc *>(val.data) = *static_cast<BSVertexDesc *>(other.val.data);
 		return;
 	default:
 		val = other.val;
@@ -695,6 +705,16 @@ bool NifValue::operator==( const NifValue & other ) const
 			return false;
 
 		return *m1 == *m2;
+	}
+	case tBSVertexDesc:
+	{
+		auto d1 = static_cast<BSVertexDesc *>(val.data);
+		auto d2 = static_cast<BSVertexDesc *>(other.val.data);
+
+		if ( !d1 || !d2 )
+			return false;
+
+		return *d1 == *d2;
 	}
 	case tNone:
 	default:
@@ -989,6 +1009,8 @@ QString NifValue::toString() const
 		{
 			return *static_cast<QString *>( val.data );
 		}
+	case tBSVertexDesc:
+		return static_cast<BSVertexDesc *>(val.data)->toString();
 	case tBlob:
 		{
 			QByteArray * array = static_cast<QByteArray *>( val.data );

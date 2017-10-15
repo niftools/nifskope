@@ -97,13 +97,8 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 			addLink( nif, index, "Effects", nif->getBlockNumber( iBlock ) );
 		}
 	} else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiProperty" ) ) {
-		// Skyrim note: this will fail if "Properties" is not enabled
-		if ( !addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) ) ) {
-			// "Properties" was not enabled: try Skyrim style "BS Properties"
-			if ( nif->inherits( index, "NiGeometry" ) ) {
-				addLink( nif, index, "BS Properties", nif->getBlockNumber( iBlock ) );
-			}
-		}
+		// Absent in Bethesda 20.2.0.7 stream version > 34
+		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
 	}
 	/*
 	*	Temporary workaround for non-NiProperty properties
