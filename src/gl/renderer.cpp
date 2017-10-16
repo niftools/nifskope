@@ -413,8 +413,6 @@ void Renderer::updateShaders()
 		dir.cd( "/usr/share/nifskope/shaders" );
 #endif
 
-// linux does not want to load the shaders so disable them for now
-#ifdef WIN32
 	dir.setNameFilters( { "*.vert" } );
 	for ( const QString& name : dir.entryList() ) {
 		Shader * shader = new Shader( name, GL_VERTEX_SHADER, fn );
@@ -435,7 +433,6 @@ void Renderer::updateShaders()
 		program->load( dir.filePath( name ), this );
 		programs.insert( name, program );
 	}
-#endif
 }
 
 void Renderer::releaseShaders()
