@@ -874,7 +874,7 @@ public:
 	 * \param chk A checkbox that enables or disables this checkbox
 	 * \return A pointer to the checkbox
 	 */
-	QCheckBox * spEditFlags::dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = nullptr )
+	QCheckBox * dlgCheck( QVBoxLayout * vbox, const QString & name, QCheckBox * chk = nullptr )
 	{
 		QCheckBox * box = new QCheckBox( name );
 		vbox->addWidget( box );
@@ -895,7 +895,7 @@ public:
 	 * \param chk A checkbox that enables or disables this combobox
 	 * \return A pointer to the combobox
 	 */
-	QComboBox * spEditFlags::dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = nullptr )
+	QComboBox * dlgCombo( QVBoxLayout * vbox, const QString & name, QStringList items, QCheckBox * chk = nullptr )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QComboBox * cmb = new QComboBox;
@@ -919,7 +919,7 @@ public:
 	 * \param chk A checkbox that enables or disables this spinbox
 	 * \return A pointer to the spinbox
 	 */
-	QSpinBox * spEditFlags::dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = nullptr )
+	QSpinBox * dlgSpin( QVBoxLayout * vbox, const QString & name, int min, int max, QCheckBox * chk = nullptr )
 	{
 		vbox->addWidget( new QLabel( name ) );
 		QSpinBox * spn = new QSpinBox;
@@ -939,7 +939,7 @@ public:
 	 * \param dlg The dialog to add buttons to
 	 * \param vbox Vertical box layout used by the dialog
 	 */
-	void spEditFlags::dlgButtons( QDialog * dlg, QVBoxLayout * vbox )
+	void dlgButtons( QDialog * dlg, QVBoxLayout * vbox )
 	{
 		QHBoxLayout * hbox = new QHBoxLayout;
 		vbox->addLayout( hbox );
