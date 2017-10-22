@@ -63,9 +63,17 @@ NifBlockEditor::NifBlockEditor( NifModel * n, const QModelIndex & i, bool fireAn
 	if ( fireAndForget ) {
 		setAttribute( Qt::WA_DeleteOnClose );
 
+		QHBoxLayout * btnlayout = new QHBoxLayout();
+
 		QPushButton * btAccept = new QPushButton( tr( "Accept" ) );
 		connect( btAccept, &QPushButton::clicked, this, &NifBlockEditor::close );
-		layout->addWidget( btAccept );
+		btnlayout->addWidget( btAccept );
+
+		QPushButton * btReject = new QPushButton( tr( "Reject" ) );
+		connect( btReject, &QPushButton::clicked, this, &NifBlockEditor::reset );
+		btnlayout->addWidget( btReject );
+
+		layout->addLayout( btnlayout );
 	}
 
 	setWindowFlags( Qt::Tool | Qt::WindowStaysOnTopHint );
@@ -79,6 +87,8 @@ void NifBlockEditor::add( NifEditBox * box )
 		layouts.top()->insertWidget( layouts.top()->count() - 1, box );
 	else
 		layouts.top()->addWidget( box );
+
+	connect( this, &NifBlockEditor::reset, box, &NifEditBox::sltReset );
 }
 
 void NifBlockEditor::pushLayout( QBoxLayout * lay, const QString & name )
@@ -164,6 +174,8 @@ NifEditBox::NifEditBox( NifModel * n, const QModelIndex & i )
 	: QGroupBox(), nif( n ), index( i )
 {
 	setTitle( nif->itemName( index ) );
+
+	originalValue = n->getValue( i );
 }
 
 QLayout * NifEditBox::getLayout()
@@ -176,6 +188,12 @@ QLayout * NifEditBox::getLayout()
 	}
 
 	return lay;
+}
+
+void NifEditBox::sltReset()
+{
+	if ( nif && index.isValid() )
+		nif->setValue( index, originalValue );
 }
 
 void NifEditBox::sltApplyData()

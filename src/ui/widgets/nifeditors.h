@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFEDITORS_H
 #define NIFEDITORS_H
 
+#include "data/nifvalue.h"
+
 #include <QGroupBox> // Inherited
 #include <QWidget>   // Inherited
 #include <QBoxLayout>
@@ -55,6 +57,9 @@ public:
 
 	QModelIndex getIndex() const { return index; }
 
+public slots:
+	void sltReset();
+
 protected slots:
 	void sltApplyData();
 
@@ -63,6 +68,8 @@ protected:
 
 	QPointer<NifModel> nif;
 	QPersistentModelIndex index;
+
+	NifValue originalValue;
 };
 
 class NifBlockEditor final : public QWidget
@@ -78,6 +85,9 @@ public:
 	void popLayout();
 
 	NifModel * getNif() { return nif; }
+
+signals:
+	void reset();
 
 protected slots:
 	void nifDataChanged( const QModelIndex &, const QModelIndex & );
