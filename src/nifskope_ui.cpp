@@ -762,6 +762,17 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 {
 	QApplication::restoreOverrideCursor();
 
+	if ( nif && nif->getVersionNumber() >= 0x14050000 ) {
+		mExport->setDisabled( true );
+		mImport->setDisabled( true );
+	} else {
+		mExport->setDisabled( false );
+		if ( nif->getUserVersion2() >= 100 )
+			mImport->setDisabled( true );
+		else
+			mImport->setDisabled( false );
+	}
+
 	// Reconnect the models to the views
 	swapModels();
 

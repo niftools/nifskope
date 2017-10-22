@@ -51,7 +51,7 @@ void NifSkope::fillImportExportMenus()
 {
 	mExport->addAction( tr( "Export .OBJ" ) );
 	//mExport->addAction( tr( "Export .DAE" ) );
-	mImport->addAction( tr( "Import .3DS" ) );
+	//mImport->addAction( tr( "Import .3DS" ) );
 	mImport->addAction( tr( "Import .OBJ" ) );
 }
 
@@ -75,12 +75,25 @@ void NifSkope::sltImportExport( QAction * a )
 		}
 	}
 
+	if ( nif && nif->getVersionNumber() >= 0x14050000 ) {
+		mExport->setDisabled( true );
+		mImport->setDisabled( true );
+		return;
+	} else {
+		if ( nif->getUserVersion2() >= 100 )
+			mImport->setDisabled( true );
+		else
+			mImport->setDisabled( false );
+		
+		mExport->setDisabled( false );
+	}
+
 	if ( a->text() == tr( "Export .OBJ" ) )
 		exportObj( nif, index );
 	else if ( a->text() == tr( "Import .OBJ" ) )
 		importObj( nif, index );
-	else if ( a->text() == tr( "Import .3DS" ) )
-		import3ds( nif, index );
-	else if ( a->text() == tr( "Export .DAE" ) )
-		exportCol( nif, currentFile );
+	//else if ( a->text() == tr( "Import .3DS" ) )
+	//	import3ds( nif, index );
+	//else if ( a->text() == tr( "Export .DAE" ) )
+	//	exportCol( nif, currentFile );
 }
