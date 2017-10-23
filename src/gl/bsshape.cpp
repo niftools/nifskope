@@ -712,15 +712,6 @@ void BSShape::drawSelection() const
 	if ( n == "Segment" || n == "Sub Segment" || n == "Num Primitives" ) {
 		auto sidx = idx;
 		int s;
-		if ( n != "Num Primitives" ) {
-			sidx = idx.child( 1, 0 );
-		}
-		s = sidx.row();
-
-		auto off = sidx.sibling( s - 1, 2 ).data().toInt() / 3;
-		auto cnt = sidx.sibling( s, 2 ).data().toInt();
-
-		auto numRec = sidx.sibling( s + 2, 2 ).data().toInt();
 
 		QVector<QColor> cols = { { 255, 0, 0, 128 }, { 0, 255, 0, 128 }, { 0, 0, 255, 128 }, { 255, 255, 0, 128 },
 								{ 0, 255, 255, 128 }, { 255, 0, 255, 128 }, { 255, 255, 255, 128 } 
@@ -728,21 +719,58 @@ void BSShape::drawSelection() const
 
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
+		auto type = idx.sibling( idx.row(), 1 ).data( Qt::DisplayRole ).toString();
+
+		bool isSegmentArray = (n == "Segment" && type == "BSGeometrySegmentData" && nif->isArray( idx ));
+		bool isSegmentItem = (n == "Segment" && type == "BSGeometrySegmentData" && !nif->isArray( idx ));
+		bool isSubSegArray = (n == "Sub Segment" && nif->isArray( idx ));
+
+		int off = 0;
+		int cnt = 0;
+		int numRec = 0;
+
+		int o = 0;
+		if ( isSegmentItem || isSegmentArray ) {
+			o = 3; // Offset 3 rows for < 130 BSGeometrySegmentData
+		} else if ( isSubSegArray ) {
+			o = -3; // Look 3 rows above for Sub Seg Array info
+		}
+
 		int maxTris = triangles.count();
 
-		if ( numRec > 0 ) {
+		int loopNum = 1;
+		if ( isSegmentArray )
+			loopNum = nif->rowCount( idx );
+
+		for ( int l = 0; l < loopNum; l++ ) {
+
+			if ( n != "Num Primitives" && !isSubSegArray && !isSegmentArray ) {
+				sidx = idx.child( 1, 0 );
+			} else if ( isSegmentArray ) {
+				sidx = idx.child( l, 0 ).child( 1, 0 );
+			}
+			s = sidx.row() + o;
+
+			off = sidx.sibling( s - 1, 2 ).data().toInt() / 3;
+			cnt = sidx.sibling( s, 2 ).data().toInt();
+			numRec = sidx.sibling( s + 2, 2 ).data().toInt();
+
 			auto recs = sidx.sibling( s + 3, 0 );
 			for ( int i = 0; i < numRec; i++ ) {
 				auto subrec = recs.child( i, 0 );
-				auto off = subrec.child( 0, 2 ).data().toInt() / 3;
-				auto cnt = subrec.child( 1, 2 ).data().toInt();
+				int o = 0;
+				if ( subrec.data( Qt::DisplayRole ).toString() != "Sub Segment" )
+					o = 3; // Offset 3 rows for < 130 BSGeometrySegmentData
 
-				int j = off;
-				for ( j; j < cnt + off; j++ ) {
+				auto suboff = subrec.child( o, 2 ).data().toInt() / 3;
+				auto subcnt = subrec.child( o + 1, 2 ).data().toInt();
+
+				int j = suboff;
+				for ( j; j < subcnt + suboff; j++ ) {
 					if ( j >= maxTris )
 						continue;
 
-					glColor( Color4(cols.value( i % 7 )) );
+					glColor( Color4( cols.value( i % 7 ) ) );
 					Triangle tri = triangles[j];
 					glBegin( GL_TRIANGLES );
 					glVertex( transVerts.value( tri.v1() ) );
@@ -751,22 +779,26 @@ void BSShape::drawSelection() const
 					glEnd();
 				}
 			}
-		} else {
-			glColor( Color4(cols.value( idx.row() % 7 )) );
 
-			int i = off;
-			for ( i; i < cnt + off; i++ ) {
-				if ( i >= maxTris )
-					continue;
-
-				Triangle tri = triangles[i];
-				glBegin( GL_TRIANGLES );
-				glVertex( transVerts.value( tri.v1() ) );
-				glVertex( transVerts.value( tri.v2() ) );
-				glVertex( transVerts.value( tri.v3() ) );
-				glEnd();
+			// Sub-segmentless Segments
+			if ( numRec == 0 && cnt > 0 ) {
+				glColor( Color4( cols.value( (idx.row() + l) % 7 ) ) );
+			
+				int i = off;
+				for ( i; i < cnt + off; i++ ) {
+					if ( i >= maxTris )
+						continue;
+			
+					Triangle tri = triangles[i];
+					glBegin( GL_TRIANGLES );
+					glVertex( transVerts.value( tri.v1() ) );
+					glVertex( transVerts.value( tri.v2() ) );
+					glVertex( transVerts.value( tri.v3() ) );
+					glEnd();
+				}
 			}
 		}
+
 		pop();
 		return;
 	}
