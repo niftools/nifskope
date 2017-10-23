@@ -12,10 +12,14 @@ checkgroup begin or
 	# Skyrim
 	checkgroup begin and
 		check BSLightingShaderProperty
-		checkgroup begin or
-			check NiTriBasedGeomData/Has Normals == 0
-			check not BSTriShape/Vertex Desc & 8
-		checkgroup end
+		check NiTriBasedGeomData
+		check NiTriBasedGeomData/Has Normals == 0
+	checkgroup end
+	# SSE
+	checkgroup begin and
+		check BSLightingShaderProperty
+		check BSTriShape
+		check not BSTriShape/Vertex Desc & 8
 	checkgroup end
 checkgroup end
 
