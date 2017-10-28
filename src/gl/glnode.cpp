@@ -1130,11 +1130,15 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 	QString name = nif->itemName( iConstraint );
 
-	if ( name == "bhkMalleableConstraint" ) {
+	if ( name == "bhkMalleableConstraint" || name == "bhkBreakableConstraint" ) {
 		if ( nif->getIndex( iConstraint, "Ragdoll" ).isValid() ) {
 			name = "bhkRagdollConstraint";
 		} else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() ) {
 			name = "bhkLimitedHingeConstraint";
+		} else if ( nif->getIndex( iConstraint, "Hinge" ).isValid() ) {
+			name = "bhkHingeConstraint";
+		} else if ( nif->getIndex( iConstraint, "Stiff Spring" ).isValid() ) {
+			name = "bhkStiffSpringConstraint";
 		}
 	}
 
@@ -1256,9 +1260,13 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
 		drawSolidArc( pivotB, axleB / 7, axleB2, axleB1, minAngle, maxAngle, 1.01f, 16 );
 	} else if ( name == "bhkStiffSpringConstraint" ) {
-		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) );
-		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot B" ) );
-		const float length = nif->get<float>( iConstraint, "Length" );
+		QModelIndex iSpring = nif->getIndex( iConstraint, "Stiff Spring" );
+		if ( !iSpring.isValid() )
+			iSpring = iConstraint;
+
+		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iSpring, "Pivot A" ) );
+		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iSpring, "Pivot B" ) );
+		const float length = nif->get<float>( iSpring, "Length" );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );

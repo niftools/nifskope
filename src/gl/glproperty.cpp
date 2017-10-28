@@ -1132,6 +1132,9 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
 			auto spC = nif->get<Color3>( prop, "Specular Color" );
 			auto spG = nif->get<float>( prop, "Glossiness" );
+			// FO4
+			if ( spG == 0.0 )
+				spG = nif->get<float>( prop, "Smoothness" );
 			auto spS = nif->get<float>( prop, "Specular Strength" );
 			setSpecular( spC, spG, spS );
 		} else {

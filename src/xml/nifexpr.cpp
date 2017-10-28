@@ -214,6 +214,8 @@ void NifExpr::partition( const QString & cond, int offset /*= 0*/ )
 			lhs.setValue( cond );
 
 			if ( reUInt.match( cond ).hasMatch() ) {
+				bool ok = false;
+				lhs.setValue( cond.toUInt( &ok, 16 ) );
 				lhs.convert( QVariant::UInt );
 			} else if ( reInt.match( cond ).hasMatch() ) {
 				lhs.convert( QVariant::Int );

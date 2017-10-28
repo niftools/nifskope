@@ -97,16 +97,14 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 			addLink( nif, index, "Effects", nif->getBlockNumber( iBlock ) );
 		}
 	} else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiProperty" ) ) {
-		// Absent in Bethesda 20.2.0.7 stream version > 34
-		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
-	}
-	/*
-	*	Temporary workaround for non-NiProperty properties
-	*/
-	else if ( nif->getBlockName( iBlock ) == "BSLightingShaderProperty" ) {
-		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
-	} else if ( nif->inherits( iBlock, "BSShaderProperty" ) ) {
-		addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) );
+		if ( !addLink( nif, index, "Properties", nif->getBlockNumber( iBlock ) ) ) {
+			// Absent in Bethesda 20.2.0.7 stream version > 34
+			if ( nif->inherits( nif->getBlockName( iBlock ), "BSShaderProperty" ) ) {
+				nif->setLink( index, "Shader Property", nif->getBlockNumber( iBlock ) );
+			} else if ( nif->getBlockName( iBlock ) == "NiAlphaProperty" ) {
+				nif->setLink( index, "Alpha Property", nif->getBlockNumber( iBlock ) );
+			}
+		}
 	} else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiExtraData" ) ) {
 		addLink( nif, index, "Extra Data List", nif->getBlockNumber( iBlock ) );
 	} else if ( nif->inherits( index, "NiObjectNET" ) && nif->inherits( iBlock, "NiTimeController" ) ) {
@@ -264,8 +262,8 @@ public:
 		if ( nif->getUserVersion() < 12 )
 			return nif->inherits( index, "NiAVObject" ); // Not Skyrim
 
-		// Skyrim
-		return nif->inherits( index, "NiGeometry" );
+		// Skyrim and later
+		return nif->inherits( index, "NiGeometry" ) || nif->inherits( index, "BSTriShape" );
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
@@ -274,6 +272,12 @@ public:
 		QStringList ids = nif->allNiBlocks();
 		ids.sort();
 		for ( const QString& id : ids ) {
+			if ( (nif->inherits( index, "NiGeometry" ) || nif->inherits( index, "BSTriShape" ))
+				 && nif->getUserVersion2() > 34 ) {
+				if ( !(id == "BSLightingShaderProperty" || id == "BSEffectShaderProperty" || id == "NiAlphaProperty") )
+					continue;
+			}
+
 			if ( nif->inherits( id, "NiProperty" ) )
 				menu.addAction( id );
 		}
@@ -288,9 +292,16 @@ public:
 			QModelIndex iProperty = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 
 			if ( !addLink( nif, iParent, "Properties", nif->getBlockNumber( iProperty ) ) ) {
-				// try Skyrim
-				if ( !addLink( nif, iParent, "BS Properties", nif->getBlockNumber( iProperty ) ) ) {
-					qCWarning( nsSpell ) << Spell::tr( "failed to attach property block; perhaps the array is full?" );
+				// Skyrim and later
+				auto name = nif->getBlockName( iProperty );
+				if ( name == "BSLightingShaderProperty" || name == "BSEffectShaderProperty" ) {
+					if ( !nif->setLink( iParent, "Shader Property", nif->getBlockNumber( iProperty ) ) ) {
+						qCWarning( nsSpell ) << Spell::tr( "Failed to attach property." );
+					}
+				} else if ( name == "NiAlphaProperty" ) {
+					if ( !nif->setLink( iParent, "Alpha Property", nif->getBlockNumber( iProperty ) ) ) {
+						qCWarning( nsSpell ) << Spell::tr( "Failed to attach property." );
+					}
 				}
 			}
 

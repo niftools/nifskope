@@ -768,12 +768,12 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
 		lTransOff   = nif->get<uint>( index, "Translation Handle" );
 		lRotateOff  = nif->get<uint>( index, "Rotation Handle" );
 		lScaleOff   = nif->get<uint>( index, "Scale Handle" );
-		lTransMult  = nif->get<float>( index, "Translation Offset" );
-		lRotateMult = nif->get<float>( index, "Rotation Offset" );
-		lScaleMult  = nif->get<float>( index, "Scale Offset" );
-		lTransBias  = nif->get<float>( index, "Translation Half Range" );
-		lRotateBias = nif->get<float>( index, "Rotation Half Range" );
-		lScaleBias  = nif->get<float>( index, "Scale Half Range" );
+		lTransMult  = nif->get<float>( index, "Translation Half Range" );
+		lRotateMult = nif->get<float>( index, "Rotation Half Range" );
+		lScaleMult  = nif->get<float>( index, "Scale Half Range" );
+		lTransBias  = nif->get<float>( index, "Translation Offset" );
+		lRotateBias = nif->get<float>( index, "Rotation Offset" );
+		lScaleBias  = nif->get<float>( index, "Scale Offset" );
 
 		return true;
 	}

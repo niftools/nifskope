@@ -834,7 +834,7 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 		const NifItem * sibling = model->getItem( i->parent(), left );
 
 		if ( sibling ) {
-			if ( sibling->value().isCount() ) {
+			if ( sibling->value().isCount() || sibling->value().isFloat() ) {
 				return QVariant( sibling->value().toCount() );
 			} else if ( sibling->value().isFileVersion() ) {
 				return QVariant( sibling->value().toFileVersion() );
