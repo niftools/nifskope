@@ -86,12 +86,29 @@ quint32 KfmModel::version2number( const QString & s )
 
 bool KfmModel::evalVersion( NifItem * item, bool chkParents ) const
 {
-	if ( item == root )
+	if ( item->isVercondValid() )
+		return item->versionCondition();
+
+	item->setVersionCondition( item == root );
+	if ( item->versionCondition() )
 		return true;
 
-	if ( chkParents && item->parent() )
-		if ( !evalVersion( item->parent(), true ) )
+	if ( chkParents && item->parent() ) {
+		// Set false if parent is false and early reject
+		item->setVersionCondition( evalVersion( item->parent(), true ) );
+		if ( !item->versionCondition() )
 			return false;
+	}
+
+	// Early reject for ver1/ver2
+	item->setVersionCondition( item->evalVersion( version ) );
+	if ( !item->versionCondition() )
+		return false;
+
+	// Early reject for vercond
+	item->setVersionCondition( item->vercond().isEmpty() );
+	if ( item->versionCondition() )
+		return true;
 
 	return item->evalVersion( version );
 }
@@ -103,8 +120,12 @@ void KfmModel::clear()
 	filename = QString();
 	folder = QString();
 	root->killChildren();
-	insertType( root, NifData( "Kfm", "Kfm" ) );
+	auto rootData = NifData( "Kfm", "Kfm" );
+	rootData.setIsCompound( true );
+	rootData.setIsConditionless( true );
+	insertType( root, rootData );
 	kfmroot = root->child( 0 );
+	kfmroot->setCondition( true );
 	version = 0x0200000b;
 	endResetModel();
 
@@ -129,7 +150,7 @@ static QString parentPrefix( const QString & x )
 
 bool KfmModel::updateArrayItem( NifItem * array )
 {
-	if ( array->arr1().isEmpty() )
+	if ( !array->isArray() )
 		return false;
 
 	int d1 = getArraySize( array );
@@ -147,7 +168,17 @@ bool KfmModel::updateArrayItem( NifItem * array )
 	int rows = array->childCount();
 
 	if ( d1 > rows ) {
-		NifData data( array->name(), array->type(), array->temp(), NifValue( NifValue::type( array->type() ) ), parentPrefix( array->arg() ), parentPrefix( array->arr2() ), QString(), QString(), 0, 0 );
+		NifData data( array->name(),
+					  array->type(),
+					  array->temp(),
+					  NifValue( NifValue::type( array->type() ) ),
+					  parentPrefix( array->arg() ),
+					  parentPrefix( array->arr2() ) );
+		
+		// Fill data flags
+		data.setIsConditionless( true );
+		data.setIsCompound( array->isCompound() );
+		data.setIsArray( array->isMultiArray() );
 
 		beginInsertRows( createIndex( array->row(), 0, array ), rows, d1 - 1 );
 
@@ -176,18 +207,15 @@ bool KfmModel::updateArrayItem( NifItem * array )
 
 void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 {
-	if ( !data.arr1().isEmpty() ) {
+	if ( data.isArray() ) {
 		NifItem * array = insertBranch( parent, data, at );
 
 		if ( evalCondition( array ) )
 			updateArrayItem( array );
 
-		return;
-	}
+	} else if ( data.isCompound() ) {
 
-	NifBlockPtr compound = compounds.value( data.type() );
-
-	if ( compound ) {
+		NifBlockPtr compound = compounds.value( data.type() );
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
 
@@ -204,7 +232,7 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 				}
 			}
 
-			foreach ( NifData d, compound->types ) {
+			for ( NifData & d : compound->types ) {
 				if ( d.type() == "TEMPLATE" ) {
 					d.setType( tmp );
 					d.value.changeType( NifValue::type( tmp ) );
@@ -287,7 +315,7 @@ bool KfmModel::save( QIODevice & device ) const
 {
 	NifOStream stream( this, &device );
 
-	if ( !kfmroot || save( kfmroot, stream ) ) {
+	if ( !kfmroot || !save( kfmroot, stream ) ) {
 		Message::critical( nullptr, tr( "Failed to write KFM file." ) );
 		return false;
 	}
@@ -303,8 +331,11 @@ bool KfmModel::load( NifItem * parent, NifIStream & stream )
 	for ( int row = 0; row < parent->childCount(); row++ ) {
 		NifItem * child = parent->child( row );
 
+		if ( !child->isConditionless() )
+			child->invalidateCondition();
+
 		if ( evalCondition( child ) ) {
-			if ( !child->arr1().isEmpty() ) {
+			if ( child->isArray() ) {
 				if ( !updateArrayItem( child ) )
 					return false;
 

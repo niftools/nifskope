@@ -975,6 +975,8 @@ void NifSkope::load()
 		emit completeLoading( kfm->loadFromFile( fname ), fname );
 
 		f.setFile( kfm->getFolder(), kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
+
+		return;
 	}
 
 	bool loaded = nif->loadFromFile( fname );

@@ -130,21 +130,38 @@ public:
 		case 2:
 
 			if ( x == 3 ) {
+				QString type = list.value( "type" );
+				QString tmpl = list.value( "template" );
+				QString arr1 = list.value( "arr1" );
+				QString arr2 = list.value( "arr2" );
+				QString cond = list.value( "cond" );
+				QString ver1 = list.value( "ver1" );
+				QString ver2 = list.value( "ver2" );
+				QString abs = list.value( "abstract" );
+
 				NifData data(
 				    list.value( "name" ),
-				    list.value( "type" ),
-				    list.value( "template" ),
-				    NifValue( NifValue::type( list.value( "type" ) ) ),
+					type,
+					tmpl,
+				    NifValue( NifValue::type( type ) ),
 				    list.value( "arg" ),
-				    list.value( "arr1" ),
-				    list.value( "arr2" ),
-				    list.value( "cond" ),
-				    KfmModel::version2number( list.value( "ver1" ) ),
-				    KfmModel::version2number( list.value( "ver2" ) )
+					arr1,
+					arr2,
+					cond,
+				    KfmModel::version2number( ver1 ),
+				    KfmModel::version2number( ver2 )
 				);
 
-				if ( list.value( "abstract" ) == "1" )
-					data.setAbstract( true );
+				bool isTemplated = (type == "TEMPLATE" || tmpl == "TEMPLATE");
+				bool isCompound = KfmModel::compounds.contains( type );
+				bool isArray = !arr1.isEmpty();
+				bool isMultiArray = !arr2.isEmpty();
+
+				data.setAbstract( abs == "1" );
+				data.setTemplated( isTemplated );
+				data.setIsCompound( isCompound );
+				data.setIsArray( isArray );
+				data.setIsMultiArray( isMultiArray );
 
 				if ( data.name().isEmpty() || data.type().isEmpty() )
 					err( tr( "add needs at least name and type attributes" ) );
