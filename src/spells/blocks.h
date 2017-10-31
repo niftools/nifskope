@@ -11,6 +11,18 @@
  * All classes here inherit from the Spell class.
  */
 
+class spDuplicateBranch final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Duplicate Branch" ); }
+	QString page() const override final { return Spell::tr( "Block" ); }
+	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::Key_D }; }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final;
+};
+
 //! Remove a branch (a block and its descendents)
 class spRemoveBranch final : public Spell
 {

@@ -1191,138 +1191,131 @@ public:
 REGISTER_SPELL( spDuplicateBlock )
 
 //! Duplicate a branch in place
-class spDuplicateBranch final : public Spell
-{
-public:
-	QString name() const override final { return Spell::tr( "Duplicate Branch" ); }
-	QString page() const override final { return Spell::tr( "Block" ); }
-	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::Key_D }; }
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+bool spDuplicateBranch::isApplicable( const NifModel * nif, const QModelIndex & index )
+{
+	return nif->isNiBlock( index );
+}
+
+QModelIndex spDuplicateBranch::cast( NifModel * nif, const QModelIndex & index )
+{
+	// from spCopyBranch
+	QList<qint32> blocks;
+	populateBlocks( blocks, nif, nif->getBlockNumber( index ) );
+
+	QMap<qint32, qint32> blockMap;
+
+	for ( int b = 0; b < blocks.count(); b++ )
+		blockMap.insert( blocks[b], b );
+
+	QMap<qint32, QString> parentMap;
+	for ( const auto block : blocks )
 	{
-		return nif->isNiBlock( index );
+		for ( const auto link : nif->getParentLinks( block ) ) {
+			if ( !blocks.contains( link ) && !parentMap.contains( link ) ) {
+				QString failMessage = Spell::tr( "parent link invalid" );
+				QModelIndex iParent = nif->getBlock( link );
+
+				if ( iParent.isValid() ) {
+					failMessage = Spell::tr( "parent unnamed" );
+					QString name = nif->get<QString>( iParent, "Name" );
+
+					if ( !name.isEmpty() ) {
+						parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
+						continue;
+					}
+				}
+
+				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+					.arg( link )
+					.arg( nif->itemName( nif->getBlock( link ) ) )
+					.arg( block )
+					.arg( nif->itemName( nif->getBlock( block ) ) )
+					.arg( failMessage )
+				);
+				return index;
+			}
+		}
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
-	{
-		// from spCopyBranch
-		QList<qint32> blocks;
-		populateBlocks( blocks, nif, nif->getBlockNumber( index ) );
+	QByteArray data;
+	QBuffer buffer( &data );
+
+	if ( buffer.open( QIODevice::WriteOnly ) ) {
+		QDataStream ds( &buffer );
+		ds << blocks.count();
+		ds << blockMap;
+		ds << parentMap;
+		for ( const auto block : blocks ) {
+			ds << nif->itemName( nif->getBlock( block ) );
+
+			if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
+				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
+					.arg( block )
+					.arg( nif->itemName( nif->getBlock( block ) ) )
+				);
+				return index;
+			}
+		}
+	}
+
+	// from spPasteBranch
+	if ( buffer.open( QIODevice::ReadOnly ) ) {
+		QDataStream ds( &buffer );
+
+		int count;
+		ds >> count;
 
 		QMap<qint32, qint32> blockMap;
+		ds >> blockMap;
+		QMutableMapIterator<qint32, qint32> ibm( blockMap );
 
-		for ( int b = 0; b < blocks.count(); b++ )
-			blockMap.insert( blocks[b], b );
+		while ( ibm.hasNext() ) {
+			ibm.next();
+			ibm.value() += nif->getBlockCount();
+		}
 
 		QMap<qint32, QString> parentMap;
-		for ( const auto block : blocks )
-		{
-			for ( const auto link : nif->getParentLinks( block ) ) {
-				if ( !blocks.contains( link ) && !parentMap.contains( link ) ) {
-					QString failMessage = Spell::tr( "parent link invalid" );
-					QModelIndex iParent = nif->getBlock( link );
+		ds >> parentMap;
 
-					if ( iParent.isValid() ) {
-						failMessage = Spell::tr( "parent unnamed" );
-						QString name = nif->get<QString>( iParent, "Name" );
+		QMapIterator<qint32, QString> ipm( parentMap );
 
-						if ( !name.isEmpty() ) {
-							parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
-							continue;
-						}
-					}
+		while ( ipm.hasNext() ) {
+			ipm.next();
+			qint32 block = getBlockByName( nif, ipm.value() );
 
-					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
-						.arg( link )
-						.arg( nif->itemName( nif->getBlock( link ) ) )
-						.arg( block )
-						.arg( nif->itemName( nif->getBlock( block ) ) )
-						.arg( failMessage )
-					);
-					return index;
-				}
+			if ( block >= 0 ) {
+				blockMap.insert( ipm.key(), block );
+			} else {
+				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
+					.arg( ipm.value() )
+				);
+				return index;
 			}
 		}
 
-		QByteArray data;
-		QBuffer buffer( &data );
+		QModelIndex iRoot;
 
-		if ( buffer.open( QIODevice::WriteOnly ) ) {
-			QDataStream ds( &buffer );
-			ds << blocks.count();
-			ds << blockMap;
-			ds << parentMap;
-			for ( const auto block : blocks ) {
-				ds << nif->itemName( nif->getBlock( block ) );
+		for ( int c = 0; c < count; c++ ) {
+			QString type;
+			ds >> type;
 
-				if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
-					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
-						.arg( block )
-						.arg( nif->itemName( nif->getBlock( block ) ) )
-					);
-					return index;
-				}
-			}
+			QModelIndex block = nif->insertNiBlock( type, -1 );
+
+			if ( !nif->loadAndMapLinks( buffer, block, blockMap ) )
+				return index;
+
+			if ( c == 0 )
+				iRoot = block;
 		}
 
-		// from spPasteBranch
-		if ( buffer.open( QIODevice::ReadOnly ) ) {
-			QDataStream ds( &buffer );
+		blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), iRoot );
 
-			int count;
-			ds >> count;
-
-			QMap<qint32, qint32> blockMap;
-			ds >> blockMap;
-			QMutableMapIterator<qint32, qint32> ibm( blockMap );
-
-			while ( ibm.hasNext() ) {
-				ibm.next();
-				ibm.value() += nif->getBlockCount();
-			}
-
-			QMap<qint32, QString> parentMap;
-			ds >> parentMap;
-
-			QMapIterator<qint32, QString> ipm( parentMap );
-
-			while ( ipm.hasNext() ) {
-				ipm.next();
-				qint32 block = getBlockByName( nif, ipm.value() );
-
-				if ( block >= 0 ) {
-					blockMap.insert( ipm.key(), block );
-				} else {
-					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
-						.arg( ipm.value() )
-					);
-					return index;
-				}
-			}
-
-			QModelIndex iRoot;
-
-			for ( int c = 0; c < count; c++ ) {
-				QString type;
-				ds >> type;
-
-				QModelIndex block = nif->insertNiBlock( type, -1 );
-
-				if ( !nif->loadAndMapLinks( buffer, block, blockMap ) )
-					return index;
-
-				if ( c == 0 )
-					iRoot = block;
-			}
-
-			blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), iRoot );
-
-			return iRoot;
-		}
-
-		return QModelIndex();
+		return iRoot;
 	}
-};
+
+	return QModelIndex();
+}
 
 REGISTER_SPELL( spDuplicateBranch )
 

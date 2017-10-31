@@ -102,7 +102,7 @@ typedef std::list  <NvFaceInfo*>     NvFaceInfoList;
 typedef std::list  <NvFaceInfoVec*>  NvStripList;
 typedef std::vector<NvEdgeInfo*>     NvEdgeInfoVec;
 
-typedef std::vector<short> WordVec;
+typedef std::vector<unsigned short> WordVec;
 typedef std::vector<int> IntVec;
 typedef std::vector<MyVertex> MyVertexVec;
 typedef std::vector<MyFace> MyFaceVec;
