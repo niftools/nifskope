@@ -1,4 +1,5 @@
 #include "spellbook.h"
+#include "sanitize.h"
 #include "spells/misc.h"
 
 #include <QInputDialog>
@@ -168,106 +169,97 @@ public:
 REGISTER_SPELL( spAdjustTextureSources )
 
 //! Reorders blocks
-class spSanitizeBlockOrder final : public Spell
+
+bool spSanitizeBlockOrder::isApplicable( const NifModel *, const QModelIndex & index )
 {
-public:
-	QString name() const override final { return Spell::tr( "Reorder Blocks" ); }
-	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	// Prevent this from running during auto-sanitize for the time being
-	//	Can really only cause issues with rendering and textureset overrides via the CK
-	bool sanity() const { return false; }
+	// all files
+	return !index.isValid();
+}
 
-	bool isApplicable( const NifModel *, const QModelIndex & index ) override final
-	{
-		// all files
-		return !index.isValid();
-	}
+// check whether the block is of a type that comes before the parent or not
+bool spSanitizeBlockOrder::childBeforeParent( NifModel * nif, qint32 block )
+{
+	// get index to the block
+	QModelIndex iBlock( nif->getBlock( block ) );
+	// check its type
+	return (
+		nif->inherits( iBlock, "bhkRefObject" )
+		&& !nif->inherits( iBlock, "bhkConstraint" )
+	);
+}
 
-	// check whether the block is of a type that comes before the parent or not
-	bool childBeforeParent( NifModel * nif, qint32 block )
-	{
-		// get index to the block
-		QModelIndex iBlock( nif->getBlock( block ) );
-		// check its type
-		return (
-		    nif->inherits( iBlock, "bhkRefObject" )
-		    && !nif->inherits( iBlock, "bhkConstraint" )
-		);
-	}
+// build the nif tree at node block; the block itself and its children are recursively added to
+// the newblocks list
+void spSanitizeBlockOrder::addTree( NifModel * nif, qint32 block, QList<qint32> & newblocks )
+{
+	// is the block already added?
+	if ( newblocks.contains( block ) )
+		return;
 
-	// build the nif tree at node block; the block itself and its children are recursively added to
-	// the newblocks list
-	void addTree( NifModel * nif, qint32 block, QList<qint32> & newblocks )
-	{
-		// is the block already added?
-		if ( newblocks.contains( block ) )
-			return;
+	// special case: add bhkConstraint entities before bhkConstraint
+	// (these are actually links, not refs)
+	QModelIndex iBlock( nif->getBlock( block ) );
 
-		// special case: add bhkConstraint entities before bhkConstraint
-		// (these are actually links, not refs)
-		QModelIndex iBlock( nif->getBlock( block ) );
-
-		if ( nif->inherits( iBlock, "bhkConstraint" ) ) {
-			for ( const auto entity : nif->getLinkArray( iBlock, "Entities" ) ) {
-				addTree( nif, entity, newblocks );
-			}
-		}
-
-
-		// add all children of block that should be before block
-		for ( const auto child : nif->getChildLinks( block ) ) {
-			if ( childBeforeParent( nif, child ) )
-				addTree( nif, child, newblocks ); // now add this child and all of its children
-		}
-
-		// add the block
-		newblocks.append( block );
-		// add all children of block that should be after block
-		for ( const auto child : nif->getChildLinks( block ) ) {
-			if ( !childBeforeParent( nif, child ) )
-				addTree( nif, child, newblocks ); // now add this child and all of its children
+	if ( nif->inherits( iBlock, "bhkConstraint" ) ) {
+		for ( const auto entity : nif->getLinkArray( iBlock, "Entities" ) ) {
+			addTree( nif, entity, newblocks );
 		}
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & ) override final
+
+	// add all children of block that should be before block
+	for ( const auto child : nif->getChildLinks( block ) ) {
+		if ( childBeforeParent( nif, child ) )
+			addTree( nif, child, newblocks ); // now add this child and all of its children
+	}
+
+	// add the block
+	newblocks.append( block );
+	// add all children of block that should be after block
+	for ( const auto child : nif->getChildLinks( block ) ) {
+		if ( !childBeforeParent( nif, child ) )
+			addTree( nif, child, newblocks ); // now add this child and all of its children
+	}
+}
+
+QModelIndex spSanitizeBlockOrder::cast( NifModel * nif, const QModelIndex & )
+{
+	// list of root blocks
+	QList<qint32> rootblocks = nif->getRootLinks();
+
+	// list of blocks that have been added
+	// newblocks[0] is the block number of the block that must be
+	// assigned number 0
+	// newblocks[1] is the block number of the block that must be
+	// assigned number 1
+	// etc.
+	QList<qint32> newblocks;
+
+	// add blocks recursively
+	for ( const auto rootblock : rootblocks )
 	{
-		// list of root blocks
-		QList<qint32> rootblocks = nif->getRootLinks();
+		addTree( nif, rootblock, newblocks );
+	}
 
-		// list of blocks that have been added
-		// newblocks[0] is the block number of the block that must be
-		// assigned number 0
-		// newblocks[1] is the block number of the block that must be
-		// assigned number 1
-		// etc.
-		QList<qint32> newblocks;
-
-		// add blocks recursively
-		for ( const auto rootblock : rootblocks )
-		{
-			addTree( nif, rootblock, newblocks );
-		}
-
-		// check whether all blocks have been added
-		if ( nif->getBlockCount() != newblocks.size() ) {
-			qCCritical( nsSpell ) << Spell::tr( "failed to sanitize blocks order, corrupt nif tree?" );
-			return QModelIndex();
-		}
-
-		// invert mapping
-		QVector<qint32> order( nif->getBlockCount() );
-
-		for ( qint32 n = 0; n < newblocks.size(); n++ ) {
-			order[newblocks[n]] = n;
-			//qDebug() << n << newblocks[n];
-		}
-
-		// reorder the blocks
-		nif->reorderBlocks( order );
-
+	// check whether all blocks have been added
+	if ( nif->getBlockCount() != newblocks.size() ) {
+		qCCritical( nsSpell ) << Spell::tr( "failed to sanitize blocks order, corrupt nif tree?" );
 		return QModelIndex();
 	}
-};
+
+	// invert mapping
+	QVector<qint32> order( nif->getBlockCount() );
+
+	for ( qint32 n = 0; n < newblocks.size(); n++ ) {
+		order[newblocks[n]] = n;
+		//qDebug() << n << newblocks[n];
+	}
+
+	// reorder the blocks
+	nif->reorderBlocks( order );
+
+	return QModelIndex();
+}
 
 REGISTER_SPELL( spSanitizeBlockOrder )
 

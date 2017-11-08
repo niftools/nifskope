@@ -28,7 +28,7 @@
  * @param array The name of the link array
  * @param link A reference to the block to insert into the link array
  */
-static bool addLink( NifModel * nif, const QModelIndex & iParent, const QString & array, int link )
+bool addLink( NifModel * nif, const QModelIndex & iParent, const QString & array, int link )
 {
 	QModelIndex iSize  = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
 	QModelIndex iArray = nif->getIndex( iParent, array );
@@ -67,7 +67,7 @@ static bool addLink( NifModel * nif, const QModelIndex & iParent, const QString 
  * @param array The name of the link array
  * @param link A reference to the block to remove from the link array
  */
-static void delLink( NifModel * nif, const QModelIndex & iParent, QString array, int link )
+void delLink( NifModel * nif, const QModelIndex & iParent, QString array, int link )
 {
 	QModelIndex iSize   = nif->getIndex( iParent, QString( "Num %1" ).arg( array ) );
 	QModelIndex iArray  = nif->getIndex( iParent, array );
@@ -81,9 +81,13 @@ static void delLink( NifModel * nif, const QModelIndex & iParent, QString array,
 	}
 }
 
-// documented in blocks.h
-// XXX at the moment, we don't care if this fails or not...
-// XXX probably should return a bool?
+
+//! Link one block to another
+/*!
+* @param nif The model
+* @param index The block to link to (becomes parent)
+* @param iBlock The block to link (becomes child)
+*/
 void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & iBlock )
 {
 	if ( nif->isLink( index ) && nif->inherits( iBlock, nif->itemTmplt( index ) ) ) {
@@ -624,206 +628,193 @@ public:
 REGISTER_SPELL( spPasteOverBlock )
 
 //! Copy a branch (a block and its descendents) to the clipboard
-class spCopyBranch final : public Spell
+
+bool spCopyBranch::isApplicable( const NifModel * nif, const QModelIndex & index )
 {
-public:
-	QString name() const override final { return Spell::tr( "Copy Branch" ); }
-	QString page() const override final { return Spell::tr( "Block" ); }
-	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Copy ); }
+	return nif->isNiBlock( index );
+}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+QModelIndex spCopyBranch::cast( NifModel * nif, const QModelIndex & index )
+{
+	QList<qint32> blocks;
+	populateBlocks( blocks, nif, nif->getBlockNumber( index ) );
+
+	QMap<qint32, qint32> blockMap;
+
+	for ( int b = 0; b < blocks.count(); b++ )
+		blockMap.insert( blocks[b], b );
+
+	QMap<qint32, QString> parentMap;
+	for ( const auto block : blocks )
 	{
-		return nif->isNiBlock( index );
-	}
+		for ( const auto link : nif->getParentLinks( block ) ) {
+			if ( !blocks.contains( link ) && !parentMap.contains( link ) ) {
+				QString failMessage = Spell::tr( "parent link invalid" );
+				QModelIndex iParent = nif->getBlock( link );
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
-	{
-		QList<qint32> blocks;
-		populateBlocks( blocks, nif, nif->getBlockNumber( index ) );
+				if ( iParent.isValid() ) {
+					failMessage = Spell::tr( "parent unnamed" );
+					QString name = nif->get<QString>( iParent, "Name" );
 
-		QMap<qint32, qint32> blockMap;
-
-		for ( int b = 0; b < blocks.count(); b++ )
-			blockMap.insert( blocks[b], b );
-
-		QMap<qint32, QString> parentMap;
-		for ( const auto block : blocks )
-		{
-			for ( const auto link : nif->getParentLinks( block ) ) {
-				if ( !blocks.contains( link ) && !parentMap.contains( link ) ) {
-					QString failMessage = Spell::tr( "parent link invalid" );
-					QModelIndex iParent = nif->getBlock( link );
-
-					if ( iParent.isValid() ) {
-						failMessage = Spell::tr( "parent unnamed" );
-						QString name = nif->get<QString>( iParent, "Name" );
-
-						if ( !name.isEmpty() ) {
-							parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
-							continue;
-						}
+					if ( !name.isEmpty() ) {
+						parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
+						continue;
 					}
-
-					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
-						.arg( link )
-						.arg( nif->itemName( nif->getBlock( link ) ) )
-						.arg( block )
-						.arg( nif->itemName( nif->getBlock( block ) ) )
-						.arg( failMessage )
-					);
-					return index;
 				}
+
+				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+					.arg( link )
+					.arg( nif->itemName( nif->getBlock( link ) ) )
+					.arg( block )
+					.arg( nif->itemName( nif->getBlock( block ) ) )
+					.arg( failMessage )
+				);
+				return index;
 			}
 		}
-
-		QByteArray data;
-		QBuffer buffer( &data );
-
-		if ( buffer.open( QIODevice::WriteOnly ) ) {
-			QDataStream ds( &buffer );
-			ds << blocks.count();
-			ds << blockMap;
-			ds << parentMap;
-			for ( const auto block : blocks ) {
-				ds << nif->itemName( nif->getBlock( block ) );
-
-				if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
-					Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
-						.arg( block )
-						.arg( nif->itemName( nif->getBlock( block ) ) )
-					);
-					return index;
-				}
-			}
-			QMimeData * mime = new QMimeData;
-			mime->setData( QString( "nifskope/nibranch/%1" ).arg( nif->getVersion() ), data );
-			QApplication::clipboard()->setMimeData( mime );
-		}
-
-		return index;
 	}
-};
+
+	QByteArray data;
+	QBuffer buffer( &data );
+
+	if ( buffer.open( QIODevice::WriteOnly ) ) {
+		QDataStream ds( &buffer );
+		ds << blocks.count();
+		ds << blockMap;
+		ds << parentMap;
+		for ( const auto block : blocks ) {
+			ds << nif->itemName( nif->getBlock( block ) );
+
+			if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
+				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
+					.arg( block )
+					.arg( nif->itemName( nif->getBlock( block ) ) )
+				);
+				return index;
+			}
+		}
+		QMimeData * mime = new QMimeData;
+		mime->setData( QString( "nifskope/nibranch/%1" ).arg( nif->getVersion() ), data );
+		QApplication::clipboard()->setMimeData( mime );
+	}
+
+	return index;
+}
+
 
 REGISTER_SPELL( spCopyBranch )
 
 //! Paste a branch from the clipboard
-class spPasteBranch final : public Spell
+
+QString spPasteBranch::acceptFormat( const QString & format, const NifModel * nif )
 {
-public:
-	QString name() const override final { return Spell::tr( "Paste Branch" ); }
-	QString page() const override final { return Spell::tr( "Block" ); }
-	// Doesn't work unless the menu entry is unique
-	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Paste ); }
+	Q_UNUSED( nif );
+	QStringList split = format.split( "/" );
 
-	QString acceptFormat( const QString & format, const NifModel * nif )
-	{
-		Q_UNUSED( nif );
-		QStringList split = format.split( "/" );
+	if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
+		return split.value( 2 );
 
-		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
-			return split.value( 2 );
+	return QString();
+}
 
-		return QString();
-	}
-
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
-	{
-		if ( index.isValid() && !nif->isNiBlock( index ) && !nif->isLink( index ) )
-			return false;
-
-		const QMimeData * mime = QApplication::clipboard()->mimeData();
-
-		if ( index.isValid() && mime ) {
-			for ( const QString& form : mime->formats() ) {
-				if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
-					return true;
-			}
-		}
-
+bool spPasteBranch::isApplicable( const NifModel * nif, const QModelIndex & index )
+{
+	if ( index.isValid() && !nif->isNiBlock( index ) && !nif->isLink( index ) )
 		return false;
+
+	const QMimeData * mime = QApplication::clipboard()->mimeData();
+
+	if ( index.isValid() && mime ) {
+		for ( const QString& form : mime->formats() ) {
+			if ( nif->isVersionSupported( nif->version2number( acceptFormat( form, nif ) ) ) )
+				return true;
+		}
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
-	{
-		const QMimeData * mime = QApplication::clipboard()->mimeData();
+	return false;
+}
 
-		if ( mime ) {
-			for ( const QString& form : mime->formats() ) {
-				QString v = acceptFormat( form, nif );
+QModelIndex spPasteBranch::cast( NifModel * nif, const QModelIndex & index )
+{
+	const QMimeData * mime = QApplication::clipboard()->mimeData();
 
-				if ( !v.isEmpty()
-				    && ( v == nif->getVersion()
-					    || QMessageBox::question( 0, Spell::tr( "Paste Branch" ),
-					           Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
-					               .arg( nif->getVersion() ).arg( v ), Spell::tr( "Continue" ),
-					           Spell::tr( "Cancel" )
-						    ) == 0 
-				       )
-				   )
-				{
-					QByteArray data = mime->data( form );
-					QBuffer buffer( &data );
+	if ( mime ) {
+		for ( const QString& form : mime->formats() ) {
+			QString v = acceptFormat( form, nif );
 
-					if ( buffer.open( QIODevice::ReadOnly ) ) {
-						QDataStream ds( &buffer );
+			if ( !v.isEmpty()
+				&& ( v == nif->getVersion()
+					|| QMessageBox::question( 0, Spell::tr( "Paste Branch" ),
+					        Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
+					            .arg( nif->getVersion() ).arg( v ), Spell::tr( "Continue" ),
+					        Spell::tr( "Cancel" )
+						) == 0 
+				    )
+				)
+			{
+				QByteArray data = mime->data( form );
+				QBuffer buffer( &data );
 
-						int count;
-						ds >> count;
+				if ( buffer.open( QIODevice::ReadOnly ) ) {
+					QDataStream ds( &buffer );
 
-						QMap<qint32, qint32> blockMap;
-						ds >> blockMap;
-						QMutableMapIterator<qint32, qint32> ibm( blockMap );
+					int count;
+					ds >> count;
 
-						while ( ibm.hasNext() ) {
-							ibm.next();
-							ibm.value() += nif->getBlockCount();
-						}
+					QMap<qint32, qint32> blockMap;
+					ds >> blockMap;
+					QMutableMapIterator<qint32, qint32> ibm( blockMap );
 
-						QMap<qint32, QString> parentMap;
-						ds >> parentMap;
-
-						QMapIterator<qint32, QString> ipm( parentMap );
-
-						while ( ipm.hasNext() ) {
-							ipm.next();
-							qint32 block = getBlockByName( nif, ipm.value() );
-
-							if ( block >= 0 ) {
-								blockMap.insert( ipm.key(), block );
-							} else {
-								Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
-									.arg( ipm.value() )
-								);
-								return index;
-							}
-						}
-
-						QModelIndex iRoot;
-
-						for ( int c = 0; c < count; c++ ) {
-							QString type;
-							ds >> type;
-
-							QModelIndex block = nif->insertNiBlock( type, -1 );
-
-							if ( !nif->loadAndMapLinks( buffer, block, blockMap ) )
-								return index;
-
-							if ( c == 0 )
-								iRoot = block;
-						}
-
-						blockLink( nif, index, iRoot );
-
-						return iRoot;
+					while ( ibm.hasNext() ) {
+						ibm.next();
+						ibm.value() += nif->getBlockCount();
 					}
+
+					QMap<qint32, QString> parentMap;
+					ds >> parentMap;
+
+					QMapIterator<qint32, QString> ipm( parentMap );
+
+					while ( ipm.hasNext() ) {
+						ipm.next();
+						qint32 block = getBlockByName( nif, ipm.value() );
+
+						if ( block >= 0 ) {
+							blockMap.insert( ipm.key(), block );
+						} else {
+							Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
+								.arg( ipm.value() )
+							);
+							return index;
+						}
+					}
+
+					QModelIndex iRoot;
+
+					for ( int c = 0; c < count; c++ ) {
+						QString type;
+						ds >> type;
+
+						QModelIndex block = nif->insertNiBlock( type, -1 );
+
+						if ( !nif->loadAndMapLinks( buffer, block, blockMap ) )
+							return index;
+
+						if ( c == 0 )
+							iRoot = block;
+					}
+
+					blockLink( nif, index, iRoot );
+
+					return iRoot;
 				}
 			}
 		}
-
-		return QModelIndex();
 	}
-};
+
+	return QModelIndex();
+}
+
 
 REGISTER_SPELL( spPasteBranch )
 

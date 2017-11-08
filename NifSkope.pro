@@ -179,6 +179,7 @@ HEADERS += \
 	src/spells/blocks.h \
 	src/spells/mesh.h \
 	src/spells/misc.h \
+	src/spells/sanitize.h \
 	src/spells/skeleton.h \
 	src/spells/stringpalette.h \
 	src/spells/tangentspace.h \
