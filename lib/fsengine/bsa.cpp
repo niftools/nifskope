@@ -558,15 +558,6 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
 						break;
 
-					case DXGI_FORMAT_BC7_UNORM:
-						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
-						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
-						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
-
-						dx10 = true;
-						dx10Header.dxgiFormat = DXGI_FORMAT_BC7_UNORM;
-						break;
-
 					case DXGI_FORMAT_B8G8R8A8_UNORM:
 						ddsHeader.ddspf.dwFlags = DDS_RGBA;
 						ddsHeader.ddspf.dwRGBBitCount = 32;
@@ -582,6 +573,19 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 						ddsHeader.ddspf.dwRGBBitCount = 8;
 						ddsHeader.ddspf.dwRBitMask = 0xFF;
 						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+						break;
+
+					case DXGI_FORMAT_BC7_UNORM:
+					case DXGI_FORMAT_BC1_UNORM_SRGB:
+					case DXGI_FORMAT_BC2_UNORM_SRGB:
+					case DXGI_FORMAT_BC3_UNORM_SRGB:
+					case DXGI_FORMAT_BC7_UNORM_SRGB:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;
+
+						dx10 = true;
+						dx10Header.dxgiFormat = DXGI_FORMAT( file->tex.header.format );
 						break;
 
 					default:
