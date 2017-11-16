@@ -7,6 +7,8 @@
 #include <set>
 #include <string.h> // memset
 #include <stdio.h> // printf
+#include <climits>
+
 #include "NvTriStripObjects.h"
 #include "VertexCache.h"
 
