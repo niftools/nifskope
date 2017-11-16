@@ -132,8 +132,13 @@ QStringList FSManager::autodetectArchives( const QString & folder )
 	list << regPathBSAList( "HKEY_LOCAL_MACHINE\\SOFTWARE\\Bethesda Softworks\\Skyrim Special Edition", "Data" );
 #endif
 
+	return filterArchives( list, folder );
+}
+
+QStringList FSManager::filterArchives( const QStringList & list, const QString & folder )
+{
+	QStringList listCopy;
 	if ( !folder.isEmpty() ) {
-		QStringList listCopy;
 		// Looking for a specific folder here
 		// Remove the BSAs that do not contain this folder
 		for ( auto f : list ) {
@@ -142,15 +147,15 @@ QStringList FSManager::autodetectArchives( const QString & folder )
 				auto bsa = handler->getArchive<BSA *>();
 				if ( bsa ) {
 					auto rootFolder = bsa->getFolder( "" );
-					if ( rootFolder->children.contains( folder ) ) {
+					if ( rootFolder->children.contains( folder.toLower() ) ) {
 						listCopy.append( f );
 					}
 				}
 			}
 		}
-
-		list = listCopy;
+	} else {
+		listCopy = list;
 	}
 
-	return list;
+	return listCopy;
 }

@@ -178,7 +178,11 @@ Game Paths</string>
            <number>0</number>
           </property>
           <item>
-           <widget class="QListView" name="archivesList"/>
+           <widget class="QListView" name="archivesList">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+           </widget>
           </item>
           <item alignment="Qt::AlignTop">
            <widget class="QFrame" name="frame_4">

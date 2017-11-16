@@ -533,6 +533,9 @@ SettingsResources::SettingsResources( QWidget * parent ) :
 	ui->btnFolderAutoDetect->setHidden( true );
 #endif
 
+	connect( ui->foldersList, &QListView::doubleClicked, this, &SettingsPane::modifyPane );
+	connect( ui->chkAlternateExt, &QCheckBox::clicked, this, &SettingsPane::modifyPane );
+
 	// Move Up / Move Down Behavior
 	connect( ui->foldersList->selectionModel(), &QItemSelectionModel::currentChanged,
 		[this]( const QModelIndex & idx, const QModelIndex & last )
@@ -752,9 +755,15 @@ void SettingsResources::on_btnArchiveAdd_clicked()
 		"Archive (*.bsa *.ba2)"
 	);
 
-	for ( int i = 0; i < files.count(); i++ ) {
+	QStringList filtered;
+
+	filtered += FSManager::filterArchives( files, "textures" );
+	filtered += FSManager::filterArchives( files, "materials" );
+	filtered.removeDuplicates();
+
+	for ( int i = 0; i < filtered.count(); i++ ) {
 		archives->insertRow( i );
-		archives->setData( archives->index( i, 0 ), files.at( i ) );
+		archives->setData( archives->index( i, 0 ), filtered.at( i ) );
 	}
 
 	ui->archivesList->setCurrentIndex( archives->index( 0, 0 ) );
