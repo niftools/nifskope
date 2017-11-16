@@ -421,11 +421,17 @@ QColor ColorWheel::choose( const QColor & c, bool alphaEnable, QWidget * parent 
 
 Color3 ColorWheel::choose( const Color3 & c, QWidget * parent )
 {
+	if ( c.red() > 1.0 || c.green() > 1.0 || c.blue() > 1.0 )
+		return c;
+
 	return Color3( choose( c.toQColor(), false, parent ) );
 }
 
 Color4 ColorWheel::choose( const Color4 & c, QWidget * parent )
 {
+	if ( c.red() > 1.0 || c.green() > 1.0 || c.blue() > 1.0 || c.alpha() > 1.0 )
+		return c;
+
 	return Color4( choose( c.toQColor(), true, parent ) );
 }
 

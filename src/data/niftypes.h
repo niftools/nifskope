@@ -1259,6 +1259,12 @@ public:
 		return ( c -= o );
 	}
 
+	//! Equality operator
+	bool operator==( const Color3 & c ) const
+	{
+		return rgb[0] == c.rgb[0] && rgb[1] == c.rgb[1] && rgb[2] == c.rgb[2];
+	}
+
 	//! Get the red component
 	float red() const { return rgb[0]; }
 	//! Get the green component

@@ -598,7 +598,7 @@ bool NifValue::operator==( const NifValue & other ) const
 		if ( !c1 || !c2 )
 			return false;
 
-		return c1->toQColor() == c2->toQColor();
+		return *c1 == *c2;
 	}
 
 	case tColor4:
@@ -610,7 +610,7 @@ bool NifValue::operator==( const NifValue & other ) const
 		if ( !c1 || !c2 )
 			return false;
 
-		return c1->toQColor() == c2->toQColor();
+		return *c1 == *c2;
 	}
 
 	case tVector2:
@@ -882,20 +882,35 @@ QString NifValue::toString() const
 	case tColor3:
 		{
 			Color3 * col = static_cast<Color3 *>( val.data );
+			float r = col->red(), g = col->green(), b = col->blue();
+
+			// HDR Colors
+			if ( r > 1.0 || g > 1.0 || b > 1.0 )
+				return QString( "R %1 G %2 B %3" ).arg( r, 0, 'f', 3 ).arg( g, 0, 'f', 3 ).arg( b, 0, 'f', 3 );
+
 			return QString( "#%1%2%3" )
-			       .arg( (int)( col->red() * 0xff ),   2, 16, QChar( '0' ) )
-			       .arg( (int)( col->green() * 0xff ), 2, 16, QChar( '0' ) )
-			       .arg( (int)( col->blue() * 0xff ),  2, 16, QChar( '0' ) );
+			       .arg( (int)( r * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( g * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( b * 0xff ), 2, 16, QChar( '0' ) );
 		}
 	case tColor4:
 	case tByteColor4:
 		{
 			Color4 * col = static_cast<Color4 *>( val.data );
+			float r = col->red(), g = col->green(), b = col->blue(), a = col->alpha();
+
+			// HDR Colors
+			if ( r > 1.0 || g > 1.0 || b > 1.0 || a > 1.0 )
+				return QString( "R %1 G %2 B %3 A %4" ).arg( r, 0, 'f', 3 )
+						.arg( g, 0, 'f', 3 )
+						.arg( b, 0, 'f', 3 )
+						.arg( a, 0, 'f', 3 );
+
 			return QString( "#%1%2%3%4" )
-			       .arg( (int)( col->red() * 0xff ),   2, 16, QChar( '0' ) )
-			       .arg( (int)( col->green() * 0xff ), 2, 16, QChar( '0' ) )
-			       .arg( (int)( col->blue() * 0xff ),  2, 16, QChar( '0' ) )
-			       .arg( (int)( col->alpha() * 0xff ), 2, 16, QChar( '0' ) );
+			       .arg( (int)( r * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( g * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( b * 0xff ), 2, 16, QChar( '0' ) )
+			       .arg( (int)( a * 0xff ), 2, 16, QChar( '0' ) );
 		}
 	case tVector2:
 	case tHalfVector2:
