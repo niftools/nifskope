@@ -357,6 +357,9 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx ) override final
 	{
 		QModelIndex iConstraint = nif->getBlock( idx );
+		QModelIndex iSpring = nif->getIndex( iConstraint, "Stiff Spring" );
+		if ( !iSpring.isValid() )
+			iSpring = iConstraint;
 
 		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
 		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
@@ -369,14 +372,14 @@ public:
 		Transform transA = spConstraintHelper::bodyTrans( nif, iBodyA );
 		Transform transB = spConstraintHelper::bodyTrans( nif, iBodyB );
 
-		Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) * 7 );
-		Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) * 7 );
+		Vector3 pivotA( nif->get<Vector4>( iSpring, "Pivot A" ) * 7 );
+		Vector3 pivotB( nif->get<Vector4>( iSpring, "Pivot B" ) * 7 );
 
 		float length = ( transA * pivotA - transB * pivotB ).length() / 7;
 
-		nif->set<float>( iConstraint, "Length", length );
+		nif->set<float>( iSpring, "Length", length );
 
-		return nif->getIndex( iConstraint, "Length" );
+		return nif->getIndex( iSpring, "Length" );
 	}
 };
 
