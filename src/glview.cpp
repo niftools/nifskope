@@ -447,8 +447,8 @@ void GLView::paintGL()
 	}
 
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
-	viewTrans.rotation = viewTrans.rotation * ap;
 	viewTrans.translation = viewTrans.rotation * Pos;
+	viewTrans.rotation = viewTrans.rotation * ap;
 
 	if ( view != ViewWalk )
 		viewTrans.translation[2] -= Dist * 2;

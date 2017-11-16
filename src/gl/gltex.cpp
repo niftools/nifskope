@@ -240,7 +240,7 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 		}
 
 		// For Skyrim and FO4 which occasionally leave the textures off
-		if ( !filename.startsWith( "textures" ) ) {
+		if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) ) {
 			QRegularExpression re( "textures[\\\\/]", QRegularExpression::CaseInsensitiveOption );
 			int texIdx = filename.indexOf( re );
 			if ( texIdx > 0 ) {
