@@ -230,6 +230,7 @@ void NifTreeView::pasteTo( QModelIndex idx )
 
 void NifTreeView::paste()
 {
+	ChangeValueCommand::createTransaction();
 	QModelIndexList idx = selectionModel()->selectedIndexes();
 	for ( const auto i : idx ) {
 		pasteTo( i );

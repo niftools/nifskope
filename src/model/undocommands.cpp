@@ -40,16 +40,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file undocommands.cpp ChangeValueCommand, ToggleCheckBoxListCommand
 
+size_t ChangeValueCommand::lastID = 0;
+
 /*
  *  ChangeValueCommand
  */
 
 ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
 	const QVariant & value, const QString & valueString, const QString & valueType, NifModel * model )
-	: QUndoCommand(), nif( model ), idx( index )
+	: QUndoCommand(), nif( model )
 {
-	oldValue = index.data( Qt::EditRole );
-	newValue = value;
+	idxs << index;
+	oldValues << index.data( Qt::EditRole );
+	newValues << value;
+
+	localID = lastID;
 
 	auto oldTxt = index.data( Qt::DisplayRole ).toString();
 	auto newTxt = valueString;
@@ -62,10 +67,13 @@ ChangeValueCommand::ChangeValueCommand( const QModelIndex & index,
 
 ChangeValueCommand::ChangeValueCommand( const QModelIndex & index, const NifValue & oldVal, 
 										const NifValue & newVal, const QString & valueType, NifModel * model )
-	: QUndoCommand(), nif( model ), idx( index )
+	: QUndoCommand(), nif( model )
 {
-	oldValue = oldVal.toVariant();
-	newValue = newVal.toVariant();
+	idxs << index;
+	oldValues << oldVal.toVariant();
+	newValues << newVal.toVariant();
+
+	localID = lastID;
 
 	auto oldTxt = oldVal.toString();
 	auto newTxt = newVal.toString();
@@ -79,7 +87,19 @@ ChangeValueCommand::ChangeValueCommand( const QModelIndex & index, const NifValu
 void ChangeValueCommand::redo()
 {
 	//qDebug() << "Redoing";
-	nif->setData( idx, newValue, Qt::EditRole );
+	Q_ASSERT( idxs.size() == newValues.size() && newValues.size() == oldValues.size() );
+
+	if ( idxs.size() > 1 )
+		nif->setState( BaseModel::Processing );
+
+	int i = 0;
+	for ( auto idx : idxs )
+		nif->setData( idx, newValues.at(i++), Qt::EditRole );
+
+	if ( idxs.size() > 1 ) {
+		nif->restoreState();
+		nif->dataChanged( idxs.first(), idxs.last() );
+	}
 
 	//qDebug() << nif->data( idx ).toString();
 }
@@ -87,9 +107,44 @@ void ChangeValueCommand::redo()
 void ChangeValueCommand::undo()
 {
 	//qDebug() << "Undoing";
-	nif->setData( idx, oldValue, Qt::EditRole );
+
+	if ( idxs.size() > 1 )
+		nif->setState( BaseModel::Processing );
+
+	int i = 0;
+	for ( auto idx : idxs )
+		nif->setData( idx, oldValues.at(i++), Qt::EditRole );
+
+	if ( idxs.size() > 1 ) {
+		nif->restoreState();
+		nif->dataChanged( idxs.first(), idxs.last() );
+	}
 
 	//qDebug() << nif->data( idx ).toString();
+}
+
+int ChangeValueCommand::id() const
+{
+	return localID;
+}
+
+bool ChangeValueCommand::mergeWith( const QUndoCommand * other )
+{
+	const auto cv = static_cast<const ChangeValueCommand*>(other);
+
+	if ( localID != cv->localID )
+		return false;
+
+	idxs << cv->idxs;
+	newValues << cv->newValues;
+	oldValues << cv->oldValues;
+
+	return true;
+}
+
+void ChangeValueCommand::createTransaction()
+{
+	lastID++;
 }
 
 

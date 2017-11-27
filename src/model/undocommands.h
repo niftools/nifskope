@@ -52,10 +52,26 @@ public:
 						const NifValue & newValue, const QString & valueType, NifModel * model );
 	void redo() override;
 	void undo() override;
+
+	//! The command ID
+	int id() const override;
+
+	//! Handle merging of commands in the same transaction
+	bool mergeWith( const QUndoCommand * command ) override;
+
+	//! Increments the lastID
+	static void createTransaction();
+
 private:
 	NifModel * nif;
-	QVariant newValue, oldValue;
-	QModelIndex idx;
+	QVector<QVariant> newValues, oldValues;
+	QVector<QModelIndex> idxs;
+
+	//! The command ID for this undo command
+	size_t localID;
+
+	//! The current command ID for any new undo commands
+	static size_t lastID;
 };
 
 

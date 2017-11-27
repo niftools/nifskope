@@ -298,6 +298,7 @@ public:
 			if ( model->inherits( "NifModel" ) ) {
 				auto valueType = model->sibling( index.row(), 0, index ).data().toString();
 
+				ChangeValueCommand::createTransaction();
 				auto nif = static_cast<NifModel *>(model);
 				nif->undoStack->push( new ChangeValueCommand( index, v, vedit->getValue().toString(), valueType, nif ) );
 			}
