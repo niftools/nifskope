@@ -93,8 +93,10 @@ void ChangeValueCommand::redo()
 		nif->setState( BaseModel::Processing );
 
 	int i = 0;
-	for ( auto idx : idxs )
-		nif->setData( idx, newValues.at(i++), Qt::EditRole );
+	for ( auto idx : idxs ) {
+		if ( idx.isValid() )
+			nif->setData( idx, newValues.at( i++ ), Qt::EditRole );
+	}
 
 	if ( idxs.size() > 1 ) {
 		nif->restoreState();
@@ -112,8 +114,10 @@ void ChangeValueCommand::undo()
 		nif->setState( BaseModel::Processing );
 
 	int i = 0;
-	for ( auto idx : idxs )
-		nif->setData( idx, oldValues.at(i++), Qt::EditRole );
+	for ( auto idx : idxs ) {
+		if ( idx.isValid() )
+			nif->setData( idx, oldValues.at( i++ ), Qt::EditRole );
+	}
 
 	if ( idxs.size() > 1 ) {
 		nif->restoreState();
@@ -167,7 +171,8 @@ ToggleCheckBoxListCommand::ToggleCheckBoxListCommand( const QModelIndex & index,
 void ToggleCheckBoxListCommand::redo()
 {
 	//qDebug() << "Redoing";
-	nif->setData( idx, newValue, Qt::EditRole );
+	if ( idx.isValid() )
+		nif->setData( idx, newValue, Qt::EditRole );
 
 	//qDebug() << nif->data( idx ).toString();
 }
@@ -175,7 +180,8 @@ void ToggleCheckBoxListCommand::redo()
 void ToggleCheckBoxListCommand::undo()
 {
 	//qDebug() << "Undoing";
-	nif->setData( idx, oldValue, Qt::EditRole );
+	if ( idx.isValid() )
+		nif->setData( idx, oldValue, Qt::EditRole );
 
 	//qDebug() << nif->data( idx ).toString();
 }

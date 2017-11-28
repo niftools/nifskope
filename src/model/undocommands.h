@@ -65,7 +65,7 @@ public:
 private:
 	NifModel * nif;
 	QVector<QVariant> newValues, oldValues;
-	QVector<QModelIndex> idxs;
+	QVector<QPersistentModelIndex> idxs;
 
 	//! The command ID for this undo command
 	size_t localID;
@@ -84,7 +84,7 @@ public:
 private:
 	NifModel * nif;
 	QVariant newValue, oldValue;
-	QModelIndex idx;
+	QPersistentModelIndex idx;
 };
 
 
