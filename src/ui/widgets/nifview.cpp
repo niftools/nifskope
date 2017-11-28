@@ -385,19 +385,42 @@ void NifTreeView::currentChanged( const QModelIndex & current, const QModelIndex
 		updateConditionRecurse( current );
 	}
 
+	autoExpanded = false;
 	auto mdl = static_cast<NifModel *>( nif );
-	if ( mdl ) {
-		// Auto-Expand Textures
-		if ( mdl->inherits( current, "BSShaderTextureSet" ) ) {
-			expand( current.child( 1, 0 ) );
+	if ( mdl && mdl->isNiBlock( current ) ) {
+		auto cnt = mdl->rowCount( current );
+		const int ARRAY_LIMIT = 100;
+		if ( mdl->inherits( current, "NiTransformInterpolator" ) 
+			 || mdl->inherits( current, "NiBSplineTransformInterpolator" ) ) {
+			// Auto-Expand NiQuatTransform
+			autoExpand( current.child( 0, 0 ) );
+		} else if ( mdl->inherits( current, "NiNode" ) ) {
+			// Auto-Expand Children array
+			auto iChildren = mdl->getIndex( current, "Children" );
+			if ( mdl->rowCount( iChildren ) < ARRAY_LIMIT )
+				autoExpand( iChildren );
+		} else if ( mdl->inherits( current, "NiSkinPartition" ) ) {
+			// Auto-Expand skin partitions array
+			autoExpand( current.child( 1, 0 ) );
+		} else if ( mdl->getValue( current.child( cnt - 1, 0 ) ).type() == NifValue::tNone
+					&& mdl->rowCount( current.child( cnt - 1, 0 ) ) < ARRAY_LIMIT ) {
+			// Auto-Expand final arrays/compounds
+			autoExpand( current.child( cnt - 1, 0 ) );
 		}
 	}
 
 	emit sigCurrentIndexChanged( currentIndex() );
 }
 
+void NifTreeView::autoExpand( const QModelIndex & index )
+{
+	autoExpanded = true;
+	expand( index );
+}
+
 void NifTreeView::scrollExpand( const QModelIndex & index )
 {
 	// this is a compromise between scrolling to the top, and scrolling the last child to the bottom
-	scrollTo( index, PositionAtCenter );
+	if ( !autoExpanded )
+		scrollTo( index, PositionAtCenter );
 }

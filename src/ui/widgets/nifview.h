@@ -95,7 +95,10 @@ protected:
 
 	QStyleOptionViewItem viewOptions() const override final;
 
+	void autoExpand( const QModelIndex & index );
+
 	bool doRowHiding = true;
+	bool autoExpanded = false;
 
 	class BaseModel * nif = nullptr;
 
