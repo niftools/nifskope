@@ -262,6 +262,10 @@ void NifTreeView::updateConditionRecurse( const QModelIndex & index )
 	if ( !item )
 		return;
 
+	// Skip flat array items
+	if ( item->parent() && item->parent()->isArray() && !item->childCount() )
+		return;
+
 	for ( int r = 0; r < model()->rowCount( index ); r++ ) {
 		QModelIndex child = model()->index( r, 0, index );
 		updateConditionRecurse( child );
