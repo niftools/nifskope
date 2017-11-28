@@ -352,6 +352,7 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 		QModelIndexList valueColumns = valueIndexList( selectedRows );
 		auto firstRow = selectedRows.at( 0 );
 		auto firstValue = valueColumns.at( 0 );
+		auto firstRowType = nif->getValue( firstRow ).type();
 
 		if ( e->matches( QKeySequence::Copy ) ) {
 			copy();
@@ -368,6 +369,39 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 				paste();
 			}
 			return;
+		} else if ( valueColumns.size() == 1
+					&& firstRow.parent().isValid() && nif->isArray( firstRow.parent() )
+					&& (firstRowType == NifValue::tUpLink || firstRowType == NifValue::tLink) ) {
+			// Link Array Sorting
+			auto parent = firstRow.parent();
+			auto row = firstRow.row();
+			enum {
+				MOVE_UP = -1,
+				MOVE_NONE = 0,
+				MOVE_DOWN = 1
+			} moveDir = MOVE_NONE;
+
+			if ( e->key() == Qt::Key_Down && e->modifiers() == Qt::CTRL && row < nif->rowCount( parent ) - 1 )
+				moveDir = MOVE_DOWN;
+			else if ( e->key() == Qt::Key_Up && e->modifiers() == Qt::CTRL && row > 0 )
+				moveDir = MOVE_UP;
+
+			if ( moveDir ) {
+				// Swap the rows
+				row = row + moveDir;
+				QModelIndex newValue = firstRow.sibling( row, NifModel::ValueCol );
+				QVariant v = nif->data( firstValue, Qt::EditRole );
+				nif->setData( firstValue, nif->data( newValue, Qt::EditRole ) );
+				nif->setData( newValue, v );
+
+				// Change the selected row
+				selectionModel()->select( parent.child( row, 0 ), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows );
+
+				// Add row swap to undo
+				ChangeValueCommand::createTransaction();
+				nif->undoStack->push( new ChangeValueCommand( firstValue, nif->getValue( newValue ), nif->getValue( firstValue ), "Link", nif ) );
+				nif->undoStack->push( new ChangeValueCommand( newValue, nif->getValue( firstValue ), nif->getValue( newValue ), "Link", nif ) );
+			}
 		}
 	}
 
