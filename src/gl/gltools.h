@@ -113,7 +113,7 @@ public:
 
 QVector<int> sortAxes( QVector<float> axesDots );
 
-void drawAxes( const Vector3 & c, float axis );
+void drawAxes( const Vector3 & c, float axis, bool color = true );
 void drawAxesOverlay( const Vector3 & c, float axis, QVector<int> axesOrder = {2, 1, 0} );
 void drawGrid( int s, int line, int sub );
 void drawBox( const Vector3 & a, const Vector3 & b );

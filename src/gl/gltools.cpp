@@ -237,13 +237,14 @@ BoundSphere operator*( const Transform & t, const BoundSphere & sphere )
  * draw primitives
  */
 
-void drawAxes( const Vector3 & c, float axis )
+void drawAxes( const Vector3 & c, float axis, bool color )
 {
 	glPushMatrix();
 	glTranslate( c );
 	GLfloat arrow = axis / 36.0;
 	glBegin( GL_LINES );
-	glColor3f( 1.0, 0.0, 0.0 );
+	if ( color )
+		glColor3f( 1.0, 0.0, 0.0 );
 	glVertex3f( -axis, 0, 0 );
 	glVertex3f( +axis, 0, 0 );
 	glVertex3f( +axis, 0, 0 );
@@ -254,7 +255,8 @@ void drawAxes( const Vector3 & c, float axis )
 	glVertex3f( +axis - 3 * arrow, +arrow, -arrow );
 	glVertex3f( +axis, 0, 0 );
 	glVertex3f( +axis - 3 * arrow, -arrow, -arrow );
-	glColor3f( 0.0, 1.0, 0.0 );
+	if ( color )
+		glColor3f( 0.0, 1.0, 0.0 );
 	glVertex3f( 0, -axis, 0 );
 	glVertex3f( 0, +axis, 0 );
 	glVertex3f( 0, +axis, 0 );
@@ -265,7 +267,8 @@ void drawAxes( const Vector3 & c, float axis )
 	glVertex3f( +arrow, +axis - 3 * arrow, -arrow );
 	glVertex3f( 0, +axis, 0 );
 	glVertex3f( -arrow, +axis - 3 * arrow, -arrow );
-	glColor3f( 0.0, 0.0, 1.0 );
+	if ( color )
+		glColor3f( 0.0, 0.0, 1.0 );
 	glVertex3f( 0, 0, -axis );
 	glVertex3f( 0, 0, +axis );
 	glVertex3f( 0, 0, +axis );

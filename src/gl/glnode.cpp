@@ -1597,17 +1597,18 @@ void Node::drawHavok()
 
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
-	if ( Node::SELECTING ) {
+
+	// Scale up for Skyrim
+	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
+
+	if ( Node::SELECTING && scene->options & Scene::ShowAxes ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glDepthFunc( GL_ALWAYS );
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 2.0f );
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 1.0f, false );
 		glDepthFunc( GL_LEQUAL );
-	} else {
-		// Scale up for Skyrim
-		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
-
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 2.0f );
+	} else if ( scene->options & Scene::ShowAxes ) {
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 1.0f );
 	}
 
 	glPopMatrix();
