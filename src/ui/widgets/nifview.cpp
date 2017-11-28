@@ -42,6 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QClipboard>
 #include <QKeyEvent>
 
+#include <vector>
+
 NifTreeView::NifTreeView( QWidget * parent, Qt::WindowFlags flags ) : QTreeView()
 {
 	Q_UNUSED( flags );
@@ -138,34 +140,44 @@ void NifTreeView::copy()
 {
 	QModelIndex idx = selectionModel()->selectedIndexes().first();
 	auto item = static_cast<NifItem *>(idx.internalPointer());
-	if ( item )
+	if ( !item )
+		return;
+
+	if ( !item->isArray() && !item->isCompound() ) {
 		valueClipboard->setValue( item->value() );
+	} else {
+		std::vector<NifValue> v;
+		v.reserve( item->childCount() );
+		for ( const auto i : item->children() )
+			v.push_back( i->value() );
+
+		valueClipboard->setValues( v );
+	}
 }
 
-void NifTreeView::pasteTo( QModelIndex idx )
-{
-	NifItem * item = static_cast<NifItem *>(idx.internalPointer());
+void NifTreeView::pasteTo( QModelIndex iDest, const NifValue & srcValue )
+{	
 	// Only run once per row for the correct column
-	if ( idx.column() != NifModel::ValueCol )
+	if ( iDest.column() != NifModel::ValueCol )
 		return;
 
-	auto valueType = model()->sibling( idx.row(), 0, idx ).data().toString();
+	NifItem * item = static_cast<NifItem *>(iDest.internalPointer());
 
-	auto copyVal = valueClipboard->getValue();
+	auto valueType = model()->sibling( iDest.row(), 0, iDest ).data().toString();
 
-	NifValue dest = item->value();
-	if ( dest.type() != copyVal.type() )
+	NifValue destValue = item->value();
+	if ( destValue.type() != srcValue.type() )
 		return;
 
-	switch ( item->value().type() ) {
+	switch ( destValue.type() ) {
 	case NifValue::tByte:
-		nif->set<quint8>( idx, copyVal.get<quint8>() );
+		nif->set<quint8>( iDest, srcValue.get<quint8>() );
 		break;
 	case NifValue::tWord:
 	case NifValue::tShort:
 	case NifValue::tFlags:
 	case NifValue::tBlockTypeIndex:
-		nif->set<quint16>( idx, copyVal.get<quint16>() );
+		nif->set<quint16>( iDest, srcValue.get<quint16>() );
 		break;
 	case NifValue::tStringOffset:
 	case NifValue::tInt:
@@ -174,40 +186,40 @@ void NifTreeView::pasteTo( QModelIndex idx )
 	case NifValue::tStringIndex:
 	case NifValue::tUpLink:
 	case NifValue::tLink:
-		nif->set<quint32>( idx, copyVal.get<quint32>() );
+		nif->set<quint32>( iDest, srcValue.get<quint32>() );
 		break;
 	case NifValue::tVector2:
 	case NifValue::tHalfVector2:
-		nif->set<Vector2>( idx, copyVal.get<Vector2>() );
+		nif->set<Vector2>( iDest, srcValue.get<Vector2>() );
 		break;
 	case NifValue::tVector3:
 	case NifValue::tByteVector3:
 	case NifValue::tHalfVector3:
-		nif->set<Vector3>( idx, copyVal.get<Vector3>() );
+		nif->set<Vector3>( iDest, srcValue.get<Vector3>() );
 		break;
 	case NifValue::tVector4:
-		nif->set<Vector4>( idx, copyVal.get<Vector4>() );
+		nif->set<Vector4>( iDest, srcValue.get<Vector4>() );
 		break;
 	case NifValue::tFloat:
 	case NifValue::tHfloat:
-		nif->set<float>( idx, copyVal.get<float>() );
+		nif->set<float>( iDest, srcValue.get<float>() );
 		break;
 	case NifValue::tColor3:
-		nif->set<Color3>( idx, copyVal.get<Color3>() );
+		nif->set<Color3>( iDest, srcValue.get<Color3>() );
 		break;
 	case NifValue::tColor4:
 	case NifValue::tByteColor4:
-		nif->set<Color4>( idx, copyVal.get<Color4>() );
+		nif->set<Color4>( iDest, srcValue.get<Color4>() );
 		break;
 	case NifValue::tQuat:
 	case NifValue::tQuatXYZW:
-		nif->set<Quat>( idx, copyVal.get<Quat>() );
+		nif->set<Quat>( iDest, srcValue.get<Quat>() );
 		break;
 	case NifValue::tMatrix:
-		nif->set<Matrix>( idx, copyVal.get<Matrix>() );
+		nif->set<Matrix>( iDest, srcValue.get<Matrix>() );
 		break;
 	case NifValue::tMatrix4:
-		nif->set<Matrix4>( idx, copyVal.get<Matrix4>() );
+		nif->set<Matrix4>( iDest, srcValue.get<Matrix4>() );
 		break;
 	case NifValue::tString:
 	case NifValue::tSizedString:
@@ -216,7 +228,7 @@ void NifTreeView::pasteTo( QModelIndex idx )
 	case NifValue::tHeaderString:
 	case NifValue::tLineString:
 	case NifValue::tChar8String:
-		nif->set<QString>( idx, copyVal.get<QString>() );
+		nif->set<QString>( iDest, srcValue.get<QString>() );
 		break;
 	default:
 		// Return and do not push to Undo Stack
@@ -225,16 +237,39 @@ void NifTreeView::pasteTo( QModelIndex idx )
 
 	auto n = static_cast<NifModel*>(nif);
 	if ( n )
-		n->undoStack->push( new ChangeValueCommand( idx, dest, valueClipboard->getValue(), valueType, n ) );
+		n->undoStack->push( new ChangeValueCommand( iDest, destValue, srcValue, valueType, n ) );
 }
 
 void NifTreeView::paste()
 {
 	ChangeValueCommand::createTransaction();
-	QModelIndexList idx = selectionModel()->selectedIndexes();
-	for ( const auto i : idx ) {
-		pasteTo( i );
+	for ( const auto i : valueIndexList( selectionModel()->selectedIndexes() ) )
+		pasteTo( i, valueClipboard->getValue() );
+}
+
+void NifTreeView::pasteArray()
+{
+	QModelIndexList selected = selectionModel()->selectedIndexes();
+	QModelIndexList values = valueIndexList( selected );
+
+	Q_ASSERT( selected.size() == 10 );
+	Q_ASSERT( values.size() == 1 );
+
+	auto root = values.at( 0 );
+	auto cnt = nif->rowCount( root );
+
+	ChangeValueCommand::createTransaction();
+	nif->setState( BaseModel::Processing );
+	for ( int i = 0; i < cnt && i < valueClipboard->getValues().size(); i++ ) {
+		auto iDest = root.child( i, NifModel::ValueCol );
+		auto srcValue = valueClipboard->getValues().at( iDest.row() );
+
+		pasteTo( iDest, srcValue );
 	}
+	nif->restoreState();
+
+	if ( cnt > 0 )
+		emit nif->dataChanged( root.child( 0, NifModel::ValueCol ), root.child( cnt - 1, NifModel::ValueCol ) );
 }
 
 void NifTreeView::drawBranches( QPainter * painter, const QRect & rect, const QModelIndex & index ) const
@@ -283,10 +318,22 @@ auto splitMime = []( QString format ) {
 	return false;
 };
 
+QModelIndexList NifTreeView::valueIndexList( const QModelIndexList & rows ) const
+{
+	QModelIndexList values;
+	for ( int i = NifModel::ValueCol; i < rows.count(); i += NifModel::NumColumns )
+		values << rows[i];
+
+	return values;
+}
+
 void NifTreeView::keyPressEvent( QKeyEvent * e )
 {
-	auto details = model()->inherits( "NifModel" );
-	if ( details ) {
+	NifModel * nif = nullptr;
+	NifProxyModel * proxy = nullptr;
+
+	nif = static_cast<NifModel *>(model());
+	if ( model()->inherits( "NifModel" ) && nif ) {
 		// Determine if a block or branch has been copied
 		bool hasBlockCopied = false;
 		if ( e->matches( QKeySequence::Copy ) || e->matches( QKeySequence::Paste ) ) {
@@ -301,14 +348,25 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 			}
 		}
 
+		QModelIndexList selectedRows = selectionModel()->selectedIndexes();
+		QModelIndexList valueColumns = valueIndexList( selectedRows );
+		auto firstRow = selectedRows.at( 0 );
+		auto firstValue = valueColumns.at( 0 );
+
 		if ( e->matches( QKeySequence::Copy ) ) {
 			copy();
 			// Clear the clipboard in case it holds a block to prevent conflicting behavior
 			QApplication::clipboard()->clear();
 			return;
-		} else if ( e->matches( QKeySequence::Paste ) && valueClipboard->getValue().isValid() && !hasBlockCopied ) {
+		} else if ( e->matches( QKeySequence::Paste )
+					&& (valueClipboard->getValue().isValid() || valueClipboard->getValues().size() > 0)
+					&& !hasBlockCopied ) {
 			// Do row paste if there is no block/branch copied and the NifValue is valid
-			paste();
+			if ( valueColumns.size() == 1 && nif->rowCount( firstRow ) > 0 ) {
+				pasteArray();
+			} else if ( valueClipboard->getValue().isValid() ) {
+				paste();
+			}
 			return;
 		}
 	}
@@ -316,14 +374,11 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 	SpellPtr spell = SpellBook::lookup( QKeySequence( e->modifiers() + e->key() ) );
 
 	if ( spell ) {
-		NifModel * nif = nullptr;
-		NifProxyModel * proxy = nullptr;
-
 		QPersistentModelIndex oldidx;
 
 		// Clear this on any spell cast to prevent it overriding other paste behavior like block -> link row
 		// TODO: Value clipboard does not get cleared when using the context menu. 
-		valueClipboard->getValue().clear();
+		valueClipboard->clear();
 
 		if ( model()->inherits( "NifModel" ) ) {
 			nif = static_cast<NifModel *>( model() );

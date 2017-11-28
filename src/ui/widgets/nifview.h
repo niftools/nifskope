@@ -106,8 +106,13 @@ protected:
 	void copy();
 	//! Row Paste
 	void paste();
-	void pasteTo( QModelIndex idx );
+	void pasteTo( QModelIndex idx, const NifValue & srcValue );
 
+	//! Array/Compound Paste
+	void pasteArray();
+
+	//! Get a list of only the value column fields from lists of rows
+	QModelIndexList valueIndexList( const QModelIndexList & rows ) const;
 };
 
 
@@ -119,8 +124,19 @@ public:
 	NifValue getValue() { return value; }
 	void setValue( const NifValue & val ) { value = val; }
 
+	const std::vector<NifValue>& getValues() const { return values; }
+	void setValues( const std::vector<NifValue>& vals ) { values = vals; }
+
+	void clear()
+	{
+		value.clear();
+	}
+
 private:
+	//! The value stored from a single row copy
 	NifValue value = NifValue();
+	//! The values stored from a single array copy
+	std::vector<NifValue> values;
 };
 
 // The global NifTreeView clipboard pointer
