@@ -257,6 +257,12 @@ defineTest(copyDirs) {
 
 		dirabs = $$syspath($${dirabs})
 
+		# Fix copy for subdir on unix, also assure clean subdirs (no extra files)
+		!isEmpty(subdir) {
+			win32:QMAKE_POST_LINK += rd /s /q $${ddir} $$nt
+			unix:QMAKE_POST_LINK += rm -rf $${ddir} $$nt
+		}
+
 		QMAKE_POST_LINK += $$QMAKE_COPY_DIR $${dirabs} $${ddir} $$nt
 	}
 
