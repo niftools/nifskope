@@ -562,6 +562,9 @@ public:
 	bool getIsDoubleSided() { return isDoubleSided; }
 	bool getIsTranslucent() { return isTranslucent; }
 
+	bool hasVertexColors = false;
+	bool hasVertexAlpha = false;
+
 	Material * mat() const;
 
 protected:
@@ -649,8 +652,6 @@ public:
 	Color3 getTintColor() const;
 	void setTintColor( const Color3 & );
 
-	bool hasVertexColors = false;
-	bool hasVertexAlpha = false;
 	bool hasGlowMap = false;
 	bool hasEmittance = false;
 	bool hasSoftlight = false;
@@ -741,12 +742,10 @@ public:
 	bool hasNormalMap = false;
 	bool hasEnvMask = false;
 	bool useFalloff = false;
+	bool hasRGBFalloff = false;
 
 	bool greyscaleColor = false;
 	bool greyscaleAlpha = false;
-
-	bool vertexColors = false;
-	bool vertexAlpha = false;
 
 	bool hasWeaponBlood = false;
 

@@ -877,9 +877,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 
 		uni1i( "useFalloff", mesh->bsesp->useFalloff );
-		uni1i( "vertexAlpha", mesh->bsesp->vertexAlpha );
-		uni1i( "vertexColors", mesh->bsesp->vertexColors );
-
+		uni1i( "hasRGBFalloff", mesh->bsesp->hasRGBFalloff );
 		uni1i( "hasWeaponBlood", mesh->bsesp->hasWeaponBlood );
 
 		// Glow params

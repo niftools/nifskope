@@ -375,7 +375,9 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		glNormalPointer( GL_FLOAT, 0, transNorms.data() );
 
 		bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
-
+		// Always do vertex colors for FO4 BSESP
+		if ( nifVersion == 130 && bsesp && colors.count() )
+			doVCs = true;
 
 		Color4 * c = nullptr;
 		if ( colors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {

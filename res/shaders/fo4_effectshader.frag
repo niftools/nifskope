@@ -18,8 +18,7 @@ uniform bool greyscaleAlpha;
 uniform bool greyscaleColor;
 
 uniform bool useFalloff;
-uniform bool vertexColors;
-uniform bool vertexAlpha;
+uniform bool hasRGBFalloff;
 
 uniform bool hasWeaponBlood;
 
@@ -93,11 +92,15 @@ void main( void )
 	
 	// Falloff
 	float falloff = 1.0;
-	if ( useFalloff ) {
+	if ( useFalloff || hasRGBFalloff ) {
 		falloff = smoothstep( falloffParams.x, falloffParams.y, abs(dot(normal, V)) );
 		falloff = mix( max(falloffParams.z, 0.0), min(falloffParams.w, 1.0), falloff );
 		
-		baseMap.a *= falloff;
+		if ( useFalloff )
+			baseMap.a *= falloff;
+		
+		if ( hasRGBFalloff )
+			baseMap.rgb *= falloff;
 	}
 	
 	float alphaMult = baseColor.a * baseColor.a;

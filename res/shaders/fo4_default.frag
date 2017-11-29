@@ -251,15 +251,13 @@ void main( void )
 	// Specular
 	float g = 1.0;
 	float s = 1.0;
-	float smoothness = 1.0;
-	float roughness = 0.0;
+	float smoothness = clamp( specGlossiness, 0.0, 1.0 );
 	float specMask = 1.0;
 	vec3 spec = vec3(0.0);
 	if ( hasSpecularMap ) {
 		g = specMap.g;
 		s = specMap.r;
-		smoothness = g * specGlossiness;
-		roughness = 1.0 - smoothness;
+		smoothness = g * smoothness;
 		float fSpecularPower = exp2( smoothness * 10 + 1 );
 		specMask = s * specStrength;
 		
@@ -282,7 +280,7 @@ void main( void )
 	}
 	
 	// Diffuse
-	float diff = OrenNayarFull( L, V, normal, roughness, NdotL );
+	float diff = OrenNayarFull( L, V, normal, 1.0 - smoothness, NdotL );
 	diffuse = vec3(diff);
 	
 	vec3 soft = vec3(0.0);

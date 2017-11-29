@@ -1440,8 +1440,8 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
 	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
 
-	vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
-	vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+	hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
 	if ( !m ) {
 		setEmissive( nif->get<Color4>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
@@ -1465,6 +1465,9 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 			hasEnvMask = !nif->get<QString>( prop, "Env Mask Texture" ).isEmpty();
 
 			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
+
+			// Receive Shadows -> RGB Falloff for FO4
+			hasRGBFalloff = hasSF1( ShaderFlags::SF1( 1 << 8 ) );
 		}
 
 		auto scale = nif->get<Vector2>( prop, "UV Scale" );
@@ -1500,6 +1503,7 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 		greyscaleAlpha = m->bGrayscaleToPaletteAlpha;
 		greyscaleColor = m->bGrayscaleToPaletteColor;
 		useFalloff = m->bFalloffEnabled;
+		hasRGBFalloff = m->bFalloffColorEnabled;
 
 		depthTest = m->bZBufferTest;
 		depthWrite = m->bZBufferWrite;
