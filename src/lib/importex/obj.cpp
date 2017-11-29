@@ -495,6 +495,7 @@ struct ObjMaterial
 	Color3 Ka, Kd, Ks;
 	float d, Ns;
 	QString map_Kd;
+	QString map_Kn;
 
 	ObjMaterial() : d( 1.0 ), Ns( 31.0 )
 	{
@@ -542,6 +543,12 @@ static void readMtlLib( const QString & fname, QMap<QString, ObjMaterial> & omat
 
 			for ( int i = 2; i < t.size(); i++ )
 				mtl.map_Kd += " " + t.value( i );
+		} else if ( t.value( 0 ) == "map_Kn" ) {
+			// handle spaces in filenames
+			mtl.map_Kn = t.value( 1 );
+
+			for ( int i = 2; i < t.size(); i++ )
+				mtl.map_Kn += " " + t.value( i );
 		}
 	}
 
@@ -774,8 +781,9 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 			ObjMaterial mtl = omaterials.value( it.key() );
 
+			QModelIndex shaderProp;
 			// add material property, for non-Skyrim versions
-			if ( nif->getUserVersion() < 12 ) {
+			if ( nif->getUserVersion2() <= 34 ) {
 				bool newiMaterial = false;
 
 				if ( iMaterial.isValid() == false || first_tri_shape == false ) {
@@ -798,11 +806,29 @@ void importObj( NifModel * nif, const QModelIndex & index )
 
 				if ( newiMaterial ) // don't add property that is already there
 					addLink( nif, iShape, "Properties", nif->getBlockNumber( iMaterial ) );
+			} else {
+				shaderProp = nif->insertNiBlock( "BSLightingShaderProperty" );
+				nif->set<float>( shaderProp, "Glossiness", mtl.Ns );
+				nif->set<Color3>( shaderProp, "Specular Color", mtl.Ks );
+				nif->setLink( iShape, "Shader Property", nif->getBlockNumber( shaderProp ) );
 			}
 
 			if ( !mtl.map_Kd.isEmpty() ) {
-				if ( nif->getUserVersion() >= 12 ) {
-					// Skyrim, nothing here yet
+				if ( nif->getUserVersion2() > 34 && shaderProp.isValid() ) {
+					auto textureSet = nif->insertNiBlock( "BSShaderTextureSet" );
+					nif->setLink( shaderProp, "Texture Set", nif->getBlockNumber( textureSet ) );
+
+					if ( nif->getUserVersion2() == 130 )
+						nif->set<uint>( textureSet, "Num Textures", 10 );
+					else
+						nif->set<uint>( textureSet, "Num Textures", 9 );
+
+					auto iTextures = nif->getIndex( textureSet, "Textures" );
+					nif->updateArray( iTextures );
+
+					QVector<QString> texturePaths { mtl.map_Kd, mtl.map_Kn };
+					nif->setArray<QString>( iTextures, texturePaths );
+					nif->updateArray( iTextures );
 				} else if ( nif->getVersionNumber() >= 0x0303000D ) {
 					//Newer versions use NiTexturingProperty and NiSourceTexture
 					if ( iTexProp.isValid() == false || first_tri_shape == false || nif->itemType( iTexProp ) != "NiTexturingProperty" ) {
@@ -907,6 +933,12 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->set<int>( iData, "Num UV Sets", 1 );
 			nif->set<int>( iData, "Vector Flags", 4097 );
 			nif->set<int>( iData, "BS Vector Flags", 4097 );
+
+			if ( nif->getUserVersion2() > 34 ) {
+				nif->set<int>( iData, "Has Vertex Colors", 1 );
+				nif->updateArray( iData, "Vertex Colors" );
+			}
+
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 
 			if ( !iTexCo.isValid() )
