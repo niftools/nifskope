@@ -30,6 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***** END LICENCE BLOCK *****/
 
+#include "gli.hpp"
+
 #include "gltexloaders.h"
 
 #include "message.h"
@@ -1197,13 +1199,276 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 	return mipmaps;
 }
 
+bool extInitialized = false;
+bool extSupported = true;
+bool extStorageSupported = true;
 
-bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
+// OpenGL 4.2
+PFNGLTEXSTORAGE2DPROC glTexStorage2D = nullptr;
+#ifdef _WIN32
+PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D = nullptr;
+// Fallback
+PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = nullptr;
+#endif
+
+//! Create texture with glTexStorage2D using GLI
+GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id )
 {
-	return texLoad( filepath, format, width, height, mipmaps, *(new QByteArray()) );
+	if ( !extStorageSupported )
+		return 0;
+
+	gli::gl glProfile( gli::gl::PROFILE_GL33 );
+	gli::gl::format const format = glProfile.translate( texture.format(), texture.swizzles() );
+	target = glProfile.translate( texture.target() );
+
+	if ( !id )
+		glGenTextures( 1, &id );
+	glBindTexture( target, id );
+	glTexParameteri( target, GL_TEXTURE_BASE_LEVEL, 0 );
+	glTexParameteri( target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(texture.levels() - 1) );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_R, format.Swizzles[0] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_G, format.Swizzles[1] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_B, format.Swizzles[2] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_A, format.Swizzles[3] );
+
+	glm::tvec3<GLsizei> const textureExtent( texture.extent() );
+
+	switch ( texture.target() ) {
+	case gli::TARGET_2D:
+	case gli::TARGET_CUBE:
+		glTexStorage2D( target, static_cast<GLint>(texture.levels()), format.Internal,
+						textureExtent.x, textureExtent.y
+		);
+		break;
+	default:
+		return 0;
+	}
+
+	for ( size_t layer = 0; layer < texture.layers(); ++layer )
+	for ( size_t face = 0; face < texture.faces(); ++face )
+	for ( size_t level = 0; level < texture.levels(); ++level ) {
+		GLsizei const layerGL = static_cast<GLsizei>(layer);
+		glm::tvec3<GLsizei> textureLevelExtent( texture.extent( level ) );
+		switch ( texture.target() ) {
+		case gli::TARGET_2D:
+		case gli::TARGET_CUBE:
+			if ( gli::is_compressed( texture.format() ) )
+				glCompressedTexSubImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face)
+					: target,
+					static_cast<GLint>(level),
+					0, 0,
+					textureLevelExtent.x, textureLevelExtent.y,
+					format.Internal, static_cast<GLsizei>(texture.size( level )),
+					texture.data( layer, face, level ) );
+			else
+				glTexSubImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face)
+					: target,
+					static_cast<GLint>(level),
+					0, 0,
+					textureLevelExtent.x, textureLevelExtent.y,
+					format.External, format.Type,
+					texture.data( layer, face, level ) );
+			break;
+		default:
+			return 0;
+		}
+	}
+
+	return id;
 }
 
-bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data )
+//! Fallback for systems that do not have glTexStorage2D
+GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLuint& id )
+{
+	if ( texture.empty() )
+		return 0;
+
+	gli::gl GL( gli::gl::PROFILE_GL33 );
+	gli::gl::format const fmt = GL.translate( texture.format(), texture.swizzles() );
+	target = GL.translate( texture.target() );
+
+	if ( !id )
+		glGenTextures( 1, &id );
+	glBindTexture( target, id );
+	// Base and max level are not supported by OpenGL ES 2.0
+	glTexParameteri( target, GL_TEXTURE_BASE_LEVEL, 0 );
+	glTexParameteri( target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(texture.levels() - 1) );
+	// Texture swizzle is not supported by OpenGL ES 2.0 and OpenGL 3.2
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_R, fmt.Swizzles[0] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_G, fmt.Swizzles[1] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_B, fmt.Swizzles[2] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_A, fmt.Swizzles[3] );
+
+	for ( std::size_t layer = 0; layer < texture.layers(); ++layer )
+	for ( std::size_t face = 0; face < texture.faces(); ++face )
+	for ( std::size_t level = 0; level < texture.levels(); ++level ) {
+		GLsizei const layerGL = static_cast<GLsizei>(layer);
+		glm::tvec3<GLsizei> extent( texture.extent( level ) );
+		switch ( texture.target() ) {
+		case gli::TARGET_2D:
+		case gli::TARGET_CUBE:
+			if ( gli::is_compressed( texture.format() ) )
+				glCompressedTexImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face) 
+					: target,
+					static_cast<GLint>(level),
+					fmt.Internal,
+					extent.x, extent.y,
+					0,
+					static_cast<GLsizei>(texture.size( level )),
+					texture.data( layer, face, level ) );
+			else
+				glTexImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face)
+					: target,
+					static_cast<GLint>(level),
+					fmt.Internal,
+					extent.x, extent.y,
+					0,
+					fmt.External, fmt.Type,
+					texture.data( layer, face, level ) );
+			break;
+		default:
+			return 0;
+		}
+	}
+	return id;
+}
+
+//! Rewrite of gli::load_dds to not crash on invalid textures
+gli::texture load_if_valid( const char * data, int size )
+{
+	using namespace gli;
+
+	if ( strncmp( data, gli::detail::FOURCC_DDS, 4 ) != 0 || size < sizeof( gli::detail::dds_header ) )
+		return texture();
+
+	std::size_t Offset = sizeof( gli::detail::FOURCC_DDS );
+
+	gli::detail::dds_header const & Header( *reinterpret_cast<gli::detail::dds_header const *>(data + Offset) );
+	Offset += sizeof( gli::detail::dds_header );
+
+	gli::detail::dds_header10 Header10;
+	if ( (Header.Format.flags & DDPF_FOURCC) && (Header.Format.fourCC == dx::D3DFMT_DX10 || Header.Format.fourCC == dx::D3DFMT_GLI1) ) {
+		std::memcpy( &Header10, data + Offset, sizeof( Header10 ) );
+		Offset += sizeof( gli::detail::dds_header10 );
+	}
+
+	dx DX;
+
+	gli::format Format( static_cast<gli::format>(gli::FORMAT_INVALID) );
+	if ( (Header.Format.flags & (dx::DDPF_RGB | dx::DDPF_ALPHAPIXELS | dx::DDPF_ALPHA | dx::DDPF_YUV | dx::DDPF_LUMINANCE)) && Format == static_cast<format>(gli::FORMAT_INVALID) && Header.Format.bpp != 0 ) {
+		switch ( Header.Format.bpp ) {
+		default:
+			break;
+		case 8:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG4_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RG4_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_L8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_L8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_A8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_A8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_R8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG3B2_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RG3B2_UNORM_PACK8;
+				break;
+			}
+		case 16:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGBA4_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_RGBA4_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGRA4_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_BGRA4_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R5G6B5_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_R5G6B5_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_B5G6R5_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_B5G6R5_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGB5A1_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_RGB5A1_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGR5A1_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_BGR5A1_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_LA8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_LA8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RG8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_L16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_L16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_A16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_A16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_R16_UNORM_PACK16;
+				break;
+			}
+		case 24:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGB8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RGB8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGR8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_BGR8_UNORM_PACK8;
+				break;
+			}
+		case 32:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGR8_UNORM_PACK32 ).Mask ) ) )
+					Format = FORMAT_BGR8_UNORM_PACK32;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGRA8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_BGRA8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGBA8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RGBA8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGB10A2_UNORM_PACK32 ).Mask ) ) )
+					Format = FORMAT_RGB10A2_UNORM_PACK32;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_LA16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_LA16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_RG16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R32_SFLOAT_PACK32 ).Mask ) ) )
+					Format = FORMAT_R32_SFLOAT_PACK32;
+				break;
+			}
+		}
+	} else if ( (Header.Format.flags & DDPF_FOURCC) && (Header.Format.fourCC != dx::D3DFMT_DX10) && (Header.Format.fourCC != dx::D3DFMT_GLI1) && (Format == static_cast<format>(gli::FORMAT_INVALID)) ) {
+		dx::d3dfmt const FourCC = gli::detail::remap_four_cc( Header.Format.fourCC );
+		Format = DX.find( FourCC );
+	} else if ( Header.Format.fourCC == dx::D3DFMT_DX10 || Header.Format.fourCC == dx::D3DFMT_GLI1 )
+		Format = DX.find( Header.Format.fourCC, Header10.Format );
+
+	if ( Format == static_cast<format>(gli::FORMAT_INVALID) )
+		return texture();
+
+	size_t const MipMapCount = (Header.Flags & DDSD_MIPMAPCOUNT) ? Header.MipMapLevels : 1;
+	size_t FaceCount = 1;
+	if ( Header.CubemapFlags & gli::detail::DDSCAPS2_CUBEMAP )
+		FaceCount = int( glm::bitCount( Header.CubemapFlags & gli::detail::DDSCAPS2_CUBEMAP_ALLFACES ) );
+
+	size_t DepthCount = 1;
+	if ( Header.CubemapFlags & gli::detail::DDSCAPS2_VOLUME )
+		DepthCount = Header.Depth;
+
+	texture Texture(
+		get_target( Header, Header10 ), Format,
+		texture::extent_type( Header.Width, Header.Height, DepthCount ),
+		std::max<texture::size_type>( Header10.ArraySize, 1 ), FaceCount, MipMapCount );
+
+	std::size_t const SourceSize = Offset + Texture.size();
+	if ( SourceSize != size )
+		return texture();
+
+	std::memcpy( Texture.data(), data + Offset, Texture.size() );
+
+	return Texture;
+}
+
+
+bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id)
+{
+	return texLoad( filepath, format, target, width, height, mipmaps, *(new QByteArray()), id );
+}
+
+bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id )
 {
 	width = height = mipmaps = 0;
 
@@ -1222,12 +1487,59 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	}
 
 	QBuffer f( &data );
-
-	if ( !f.open( QIODevice::ReadOnly ) )
+	if ( !f.open( QIODevice::ReadWrite ) )
 		throw QString( "could not open buffer" );
 
-	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
-		mipmaps = texLoadDDS( f, format );
+	bool isSupported = true;
+	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
+
+		if ( !extInitialized ) {
+			glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)SOIL_GL_GetProcAddress( "glTexStorage2D" );
+#ifdef _WIN32
+			glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)SOIL_GL_GetProcAddress( "glCompressedTexSubImage2D" );
+#endif
+			if ( !glTexStorage2D || !glCompressedTexSubImage2D )
+				extStorageSupported = false;
+
+			extInitialized = true;
+		}
+
+		GLuint result = 0;
+		gli::texture texture;
+		if ( extStorageSupported ) {
+			texture = load_if_valid( data.constData(), data.size() );
+			if ( !texture.empty() )
+				result = GLI_create_texture( texture, target, id );
+		} else {
+#ifdef _WIN32
+			glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)SOIL_GL_GetProcAddress( "glCompressedTexImage2D" );
+#endif
+			if ( !glCompressedTexImage2D ) {
+				// Legacy DDS loader
+				//mipmaps = texLoadDDS( f, format );
+			} else {
+				texture = load_if_valid( data.constData(), data.size() );
+				if ( !texture.empty() )
+					result = GLI_create_texture_fallback( texture, target, id );
+			}
+		}
+
+		if ( result ) {
+			id = result;
+			mipmaps = (GLuint)texture.levels();
+		} else {
+			isSupported = false;
+			QString file = filepath;
+			file.replace( '/', "\\" );
+			Message::append( "One or more textures failed to load.",
+							 QString( "'%1' is corrupt or unsupported." ).arg( file )
+			);
+		}
+
+		if ( !texture.empty() )
+			texture.clear();
+
+	}
 	else if ( filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
 		mipmaps = texLoadTGA( f, format );
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
@@ -1235,89 +1547,39 @@ bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint
 	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) || filepath.endsWith( ".texcache", Qt::CaseInsensitive ) )
 		mipmaps = texLoadNIF( f, format );
 	else
-		throw QString( "unknown texture format" );
-
+		isSupported = false;
+	
 	f.close();
 	data.clear();
 
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+	if ( isSupported ) {
+		GLenum t = target;
+		if ( target == GL_TEXTURE_CUBE_MAP )
+			t = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+
+		glGetTexLevelParameteriv( t, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
+		glGetTexLevelParameteriv( t, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+	} else {
+		throw QString( "unknown texture format" );
+	}
 
 	return mipmaps > 0;
 }
 
-
-bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height,
-				  GLuint & mipmaps, QByteArray & data, GLuint id )
+bool texIsSupported( const QString & filepath )
 {
-	Q_UNUSED( format );
-
-	width = height = mipmaps = 0;
-
-	if ( data.isEmpty() ) {
-		QFile tmpF( filepath );
-
-		if ( !tmpF.open( QIODevice::ReadOnly ) )
-			throw QString( "could not open file" );
-
-		data = tmpF.readAll();
-
-		tmpF.close();
-
-		if ( data.isEmpty() )
-			return false;
-	}
-
-	bool success = false;
-	GLuint result;
-
-	QBuffer f( &data );
-	
-	if ( !f.open( QIODevice::ReadOnly ) )
-		throw QString( "could not open buffer" );
-	
-	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
-
-		result = SOIL_load_OGL_single_cubemap_from_memory(
-			(const unsigned char *)f.data().constData(),
-			f.data().size(),
-			SOIL_DDS_CUBEMAP_FACE_ORDER,
-			SOIL_LOAD_AUTO,
-			id,
-			SOIL_FLAG_MIPMAPS
-		);
-
-		if ( result == id ) {
-			success = true;
-
-			// Just fudge the mipmaps number
-			mipmaps = 6;
-		}
-	} else {
-		throw QString( "unsupported texture format" );
-	}
-		
-	
-	f.close();
-	data.clear();
-
-	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
-	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
-
-	return success;
+	return (filepath.endsWith( ".dds", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".tga", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".bmp", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".nif", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".texcache", Qt::CaseInsensitive )
+	);
 }
-
 
 bool texCanLoad( const QString & filepath )
 {
 	QFileInfo i( filepath );
-	return i.exists() && i.isReadable()
-	       && (  filepath.endsWith( ".dds", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".tga", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".bmp", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".nif", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".texcache", Qt::CaseInsensitive )
-	       );
+	return i.exists() && i.isReadable() && texIsSupported( filepath );
 }
 
 
@@ -1811,11 +2073,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	} else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) ) {
 		//qDebug() << "Copying from GL buffer";
 
-		GLuint width, height, mipmaps;
+		GLuint width, height, mipmaps, id;
+		GLuint target = 0x0DE1;
 		QString format;
 
 		// fastest way to get parameters and ensure texture is active
-		if ( texLoad( filepath, format, width, height, mipmaps ) ) {
+		if ( texLoad( filepath, format, target, width, height, mipmaps, id ) ) {
 			//qDebug() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
 		} else {
 			qCCritical( nsIo ) << QObject::tr( "Error importing %1" ).arg( filepath );

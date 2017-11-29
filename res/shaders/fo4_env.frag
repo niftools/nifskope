@@ -215,6 +215,8 @@ void main( void )
 	vec4 specMap = texture2D( SpecularMap, offset );
 	
 	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
+	// Calculate missing blue channel
+	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
 	if ( !gl_FrontFacing && doubleSided ) {
 		normal *= -1.0;	
 	}

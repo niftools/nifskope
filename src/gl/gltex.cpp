@@ -40,6 +40,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>
 
+#include <lib/SOIL2/SOIL2.h>
+
 #include <QDebug>
 #include <QDir>
 #include <QFileSystemWatcher>
@@ -54,8 +56,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file gltex.cpp TexCache management
 
 #ifdef WIN32
-PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
-PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB;
+PFNGLACTIVETEXTUREARBPROC glActiveTextureARB = nullptr;
+PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB = nullptr;
 #endif
 
 //! Number of texture units
@@ -91,8 +93,11 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		//qDebug() << "maximum anisotropy" << max_anisotropy;
 	}
 #ifdef WIN32
-	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTextureARB" );
-	glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTextureARB" );
+	if ( !glActiveTextureARB )
+		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)SOIL_GL_GetProcAddress( "glActiveTextureARB" );
+
+	if ( !glClientActiveTextureARB )
+		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)SOIL_GL_GetProcAddress( "glClientActiveTextureARB" );
 #endif
 }
 
@@ -317,6 +322,11 @@ bool TexCache::canLoad( const QString & filePath )
 	return texCanLoad( filePath );
 }
 
+bool TexCache::isSupported( const QString & filePath )
+{
+	return texIsSupported( filePath );
+}
+
 void TexCache::fileChanged( const QString & filepath )
 {
 	QMutableHashIterator<QString, Tex *> it( textures );
@@ -347,7 +357,6 @@ void TexCache::fileChanged( const QString & filepath )
 int TexCache::bind( const QString & fname )
 {
 	Tex * tx = textures.value( fname );
-
 	if ( !tx ) {
 		tx = new Tex;
 		tx->filename = fname;
@@ -357,7 +366,13 @@ int TexCache::bind( const QString & fname )
 		tx->reload  = false;
 
 		textures.insert( tx->filename, tx );
+
+		if ( !isSupported( fname ) )
+			tx->id = 0xFFFFFFFF;
 	}
+
+	if ( tx->id == 0xFFFFFFFF )
+		return 0;
 
 	QByteArray outData;
 
@@ -369,14 +384,18 @@ int TexCache::bind( const QString & fname )
 	}
 
 	if ( !tx->id || tx->reload ) {
-		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() && ( !watcher->files().contains( tx->filepath ) ) )
+		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable()
+			 && ( !watcher->files().contains( tx->filepath ) ) )
 			watcher->addPath( tx->filepath );
 
 		tx->load();
 	}
 
-	glBindTexture( GL_TEXTURE_2D, tx->id );
-	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
+	if ( !tx->target )
+		tx->target = GL_TEXTURE_2D;
+
+	glBindTexture( tx->target, tx->id );
+	glTexParameterf( tx->target, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
 
 	return tx->mipmaps;
 }
@@ -419,43 +438,6 @@ int TexCache::bind( const QModelIndex & iSource )
 	}
 
 	return 0;
-}
-
-int TexCache::bindCube( const QString & fname )
-{
-	Tex * tx = textures.value( fname );
-
-	if ( !tx ) {
-		tx = new Tex;
-		tx->filename = fname;
-		tx->id = 0;
-		tx->data = QByteArray();
-		tx->mipmaps = 0;
-		tx->reload = false;
-
-		textures.insert( tx->filename, tx );
-	}
-
-	QByteArray outData;
-
-	if ( tx->filepath.isEmpty() || tx->reload )
-		tx->filepath = find( tx->filename, nifFolder, outData );
-
-	if ( !outData.isEmpty() ) {
-		tx->data = outData;
-	}
-
-	if ( !tx->id || tx->reload ) {
-		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() && (!watcher->files().contains( tx->filepath )) )
-			watcher->addPath( tx->filepath );
-
-		tx->loadCube();
-	}
-
-	glBindTexture( GL_TEXTURE_CUBE_MAP, tx->id );
-	glTexParameterf( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
-
-	return tx->mipmaps;
 }
 
 void TexCache::flush()
@@ -562,32 +544,12 @@ void TexCache::Tex::load()
 	reload = false;
 	status = QString();
 
-	glBindTexture( GL_TEXTURE_2D, id );
+	if ( target )
+		glBindTexture( target, id );
 
 	try
 	{
-		texLoad( filepath, format, width, height, mipmaps, data );
-	}
-	catch ( QString & e )
-	{
-		status = e;
-	}
-}
-
-void TexCache::Tex::loadCube()
-{
-	if ( !id )
-		glGenTextures( 1, &id );
-
-	width = height = mipmaps = 0;
-	reload = false;
-	status = QString();
-
-	glBindTexture( GL_TEXTURE_CUBE_MAP, id );
-
-	try
-	{
-		texLoadCube( filepath, format, width, height, mipmaps, data, id );
+		texLoad( filepath, format, target, width, height, mipmaps, data, id );
 	}
 	catch ( QString & e )
 	{

@@ -40,6 +40,7 @@ class QModelIndex;
 class QString;
 
 typedef unsigned int GLuint;
+typedef unsigned int GLenum;
 
 //! @file gltexloaders.h Texture loading functions header
 
@@ -57,10 +58,8 @@ typedef unsigned int GLuint;
  * @param mipmaps	Contains the number of mipmaps on successful load.
  * @return			True if the load was successful, false otherwise.
  */
-extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
-extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data );
-
-extern bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id );
+extern bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id );
+extern bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id );
 
 /*! A function for loading textures.
  *
@@ -86,6 +85,15 @@ extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width
  * @param filepath The full path to the texture that must be checked.
  */
 extern bool texCanLoad( const QString & filepath );
+
+/*! A function which checks whether the given file is supported.
+*
+* The function checks whether its extension
+* is that of a supported file format (dds, tga, or bmp).
+*
+* @param filepath The full path to the texture that must be checked.
+*/
+extern bool texIsSupported( const QString & filepath );
 
 /*! Save pixel data to a DDS file
  *

@@ -900,7 +900,7 @@ bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
 	GLuint result = 0;
 
 	if ( !fname.isEmpty() )
-		result = scene->bindTextureCube( fname );
+		result = scene->bindTexture( fname );
 
 	if ( result == 0 )
 		return false;

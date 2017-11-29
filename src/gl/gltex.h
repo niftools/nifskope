@@ -47,6 +47,7 @@ class QFileSystemWatcher;
 class QOpenGLContext;
 
 typedef unsigned int GLuint;
+typedef unsigned int GLenum;
 
 /*! A class for handling OpenGL textures.
  *
@@ -66,15 +67,17 @@ class TexCache final : public QObject
 		//! The texture data (if not in the filesystem)
 		QByteArray data;
 		//! ID for use with GL texture functions
-		GLuint id;
+		GLuint id = 0;
+		//! The format target
+		GLenum target = 0; // = 0x0DE1; // GL_TEXTURE_2D
 		//! Width of the texture
-		GLuint width;
+		GLuint width = 0;
 		//! Height of the texture
-		GLuint height;
+		GLuint height = 0;
 		//! Number of mipmaps present
-		GLuint mipmaps;
+		GLuint mipmaps = 0;
 		//! Determine whether the texture needs reloading
-		bool reload;
+		bool reload = false;
 		//! Format of the texture
 		QString format;
 		//! Status messages
@@ -82,9 +85,6 @@ class TexCache final : public QObject
 
 		//! Load the texture
 		void load();
-
-		//! Load the texture
-		void loadCube();
 
 		//! Save the texture as a file
 		bool saveAsFile( const QModelIndex & index, QString & savepath );
@@ -101,9 +101,6 @@ public:
 	//! Bind a texture from pixel data
 	int bind( const QModelIndex & iSource );
 
-	//! Bind a texture from filename
-	int bindCube( const QString & fname );
-
 	//! Debug function for getting info about a texture
 	QString info( const QModelIndex & iSource );
 
@@ -119,6 +116,8 @@ public:
 	static QString stripPath( const QString & file, const QString & nifFolder );
 	//! Checks whether the given file can be loaded
 	static bool canLoad( const QString & file );
+	//! Checks whether the extension is supported
+	static bool isSupported( const QString & file );
 
 signals:
 	void sigRefresh();

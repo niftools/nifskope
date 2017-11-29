@@ -87,8 +87,6 @@ public:
 	int bindTexture( const QString & fname );
 	int bindTexture( const QModelIndex & index );
 
-	int bindTextureCube( const QString & fname );
-
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
 
