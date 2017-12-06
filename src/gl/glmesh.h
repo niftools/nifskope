@@ -97,7 +97,7 @@ protected:
 	//! Triangles
 	QVector<Triangle> triangles;
 	//! Strip points
-	QList<QVector<quint16>> tristrips;
+	QVector<QVector<quint16>> tristrips;
 	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
 	//! Triangle indices

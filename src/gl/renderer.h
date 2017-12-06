@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QCoreApplication>
 #include <QMap>
+#include <QVector>
 #include <QString>
 
 
@@ -92,7 +93,7 @@ public:
 		Condition() {}
 		virtual ~Condition() {}
 
-		virtual bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const = 0;
+		virtual bool eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const = 0;
 	};
 
 	//! Condition class for single conditions
@@ -101,7 +102,7 @@ public:
 public:
 		ConditionSingle( const QString & line, bool neg = false );
 
-		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const override final;
+		bool eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const override final;
 
 protected:
 		QString left, right;
@@ -114,7 +115,7 @@ protected:
 
 		bool invert;
 
-		QModelIndex getIndex( const NifModel * nif, const QList<QModelIndex> & iBlock, QString name ) const;
+		QModelIndex getIndex( const NifModel * nif, const QVector<QModelIndex> & iBlock, QString name ) const;
 		template <typename T> bool compare( T a, T b ) const;
 	};
 
@@ -125,14 +126,14 @@ public:
 		ConditionGroup( bool o = false ) { _or = o; }
 		~ConditionGroup() { qDeleteAll( conditions ); }
 
-		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const override final;
+		bool eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const override final;
 
 		void addCondition( Condition * c );
 
 		bool isOrGroup() const { return _or; }
 
 protected:
-		QList<Condition *> conditions;
+		QVector<Condition *> conditions;
 		bool _or;
 	};
 
@@ -175,7 +176,7 @@ public:
 	QMap<QString, Shader *> shaders;
 	QMap<QString, Program *> programs;
 
-	bool setupProgram( Program *, Shape *, const PropertyList &, const QList<QModelIndex> & iBlocks );
+	bool setupProgram( Program *, Shape *, const PropertyList &, const QVector<QModelIndex> & iBlocks, bool eval = true );
 	void setupFixedFunction( Shape *, const PropertyList & );
 
 	struct Settings

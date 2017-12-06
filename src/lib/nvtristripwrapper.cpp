@@ -4,14 +4,14 @@
 #include <NvTriStrip.h>
 
 
-QList<QVector<quint16> > stripify( QVector<Triangle> triangles, bool stitch )
+QVector<QVector<quint16> > stripify( QVector<Triangle> triangles, bool stitch )
 {
 	if ( triangles.count() <= 0 )
-		return QList<QVector<quint16> >();
+		return QVector<QVector<quint16> >();
 
 	unsigned short * data = (unsigned short *)malloc( triangles.count() * 3 * sizeof( unsigned short ) );
 	if ( !data )
-		return QList<QVector<quint16> >();
+		return QVector<QVector<quint16> >();
 
 	for ( int t = 0; t < triangles.count(); t++ ) {
 		data[ t * 3 + 0 ] = triangles[t][0];
@@ -27,7 +27,7 @@ QList<QVector<quint16> > stripify( QVector<Triangle> triangles, bool stitch )
 	GenerateStrips( data, triangles.count() * 3, &groups, &numGroups );
 	free( data );
 
-	QList<QVector<quint16> > strips;
+	QVector<QVector<quint16> > strips;
 
 	if ( !groups )
 		return strips;
@@ -73,7 +73,7 @@ QVector<Triangle> triangulate( QVector<quint16> strip )
 	return tris;
 }
 
-QVector<Triangle> triangulate( QList<QVector<quint16> > strips )
+QVector<Triangle> triangulate( QVector<QVector<quint16> > strips )
 {
 	QVector<Triangle> tris;
 	for ( const QVector<quint16>& strip : strips ) {

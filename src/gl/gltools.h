@@ -108,7 +108,7 @@ public:
 	QVector<QPair<int, float> > weights;
 
 	QVector<Triangle> triangles;
-	QList<QVector<quint16> > tristrips;
+	QVector<QVector<quint16> > tristrips;
 };
 
 QVector<int> sortAxes( QVector<float> axesDots );

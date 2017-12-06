@@ -65,7 +65,7 @@ class spStrippify final : public Spell
 		//qDebug() << "num triangles" << triangles.count() << "skipped" << skip;
 
 
-		QList<QVector<quint16> > strips = stripify( triangles, true );
+		QVector<QVector<quint16> > strips = stripify( triangles, true );
 
 		if ( strips.count() <= 0 )
 			return idx;
@@ -264,7 +264,7 @@ class spTriangulate final : public Spell
 		if ( !iStripData.isValid() )
 			return idx;
 
-		QList<QVector<quint16> > strips;
+		QVector<QVector<quint16> > strips;
 
 		QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
 

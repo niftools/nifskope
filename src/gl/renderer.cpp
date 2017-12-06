@@ -119,7 +119,7 @@ Renderer::ConditionSingle::ConditionSingle( const QString & line, bool neg ) : i
 	}
 }
 
-QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QList<QModelIndex> & iBlocks, QString blkid ) const
+QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QVector<QModelIndex> & iBlocks, QString blkid ) const
 {
 	QString childid;
 
@@ -144,7 +144,7 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QLi
 	return QModelIndex();
 }
 
-bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const
+bool Renderer::ConditionSingle::eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const
 {
 	QModelIndex iLeft = getIndex( nif, iBlocks, left );
 
@@ -170,7 +170,7 @@ bool Renderer::ConditionSingle::eval( const NifModel * nif, const QList<QModelIn
 	return false;
 }
 
-bool Renderer::ConditionGroup::eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const
+bool Renderer::ConditionGroup::eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const
 {
 	if ( conditions.isEmpty() )
 		return true;
@@ -456,7 +456,7 @@ QString Renderer::setupProgram( Shape * mesh, const QString & hint )
 		return QString( "fixed function pipeline" );
 	}
 
-	QList<QModelIndex> iBlocks;
+	QVector<QModelIndex> iBlocks;
 	iBlocks << mesh->index();
 	iBlocks << mesh->iData;
 	for ( Property * p : props.list() ) {
@@ -489,14 +489,15 @@ void Renderer::stopProgram()
 	resetTextureUnits();
 }
 
-bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props, const QList<QModelIndex> & iBlocks )
+bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props,
+							 const QVector<QModelIndex> & iBlocks, bool eval )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( mesh->index().model() );
 
 	if ( !mesh->index().isValid() || !nif )
 		return false;
 
-	if ( !prog->conditions.eval( nif, iBlocks ) )
+	if ( eval && !prog->conditions.eval( nif, iBlocks ) )
 		return false;
 
 	fn->glUseProgram( prog->id );

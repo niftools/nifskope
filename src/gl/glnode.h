@@ -64,13 +64,13 @@ public:
 
 	NodeList & operator=( const NodeList & other );
 
-	const QList<Node *> & list() const { return nodes; }
+	const QVector<Node *> & list() const { return nodes; }
 
 	void sort();
 	void alphaSort();
 
 protected:
-	QList<Node *> nodes;
+	QVector<Node *> nodes;
 };
 
 class Node : public IControllable
