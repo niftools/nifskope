@@ -49,6 +49,7 @@ QList<quint32>             NifModel::supportedVersions;
 QHash<QString, NifBlockPtr> NifModel::compounds;
 QHash<QString, NifBlockPtr> NifModel::fixedCompounds;
 QHash<QString, NifBlockPtr> NifModel::blocks;
+QMap<quint32, NifBlockPtr> NifModel::blockHashes;
 
 //! Parses nif.xml
 class NifXmlHandler final : public QXmlDefaultHandler
@@ -445,6 +446,7 @@ public:
 					break;
 				case tagBlock:
 					NifModel::blocks.insert( blk->id, blk );
+					NifModel::blockHashes.insert( DJB1Hash(blk->id.toStdString().c_str()), blk );
 					break;
 				default:
 					break;

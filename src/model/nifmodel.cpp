@@ -315,9 +315,13 @@ void NifModel::updateHeader()
 	NifItem * idxBlockTypes = getItem( header, "Block Types" );
 	NifItem * idxBlockTypeIndices = getItem( header, "Block Type Index" );
 	NifItem * idxBlockSize = getItem( header, "Block Size" );
+	// 20.3.1.2 Custom Version
+	NifItem * idxBlockTypeHashes = nullptr;
+	if ( version == 0x14030102 )
+		idxBlockTypeHashes = getItem( header, "Block Type Hashes" );
 
 	// Update Block Types, Block Type Index, and Block Size
-	if ( idxBlockTypes && idxBlockTypeIndices ) {
+	if ( (idxBlockTypes || idxBlockTypeHashes) && idxBlockTypeIndices ) {
 		QVector<QString> blocktypes;
 		QVector<int> blocktypeindices;
 		QVector<int> blocksizes;
@@ -349,7 +353,8 @@ void NifModel::updateHeader()
 
 		set<int>( header, "Num Block Types", blocktypes.count() );
 
-		updateArrayItem( idxBlockTypes );
+		if ( idxBlockTypes )
+			updateArrayItem( idxBlockTypes );
 		updateArrayItem( idxBlockTypeIndices );
 
 		if ( version >= 0x14020000 && idxBlockSize ) {
@@ -357,10 +362,21 @@ void NifModel::updateHeader()
 		}
 
 		setState( Processing );
-		idxBlockTypes->setArray<QString>( blocktypes );
 		idxBlockTypeIndices->setArray<int>( blocktypeindices );
+		if ( idxBlockTypes )
+			idxBlockTypes->setArray<QString>( blocktypes );
 		if ( blocksizes.count() )
 			idxBlockSize->setArray<int>( blocksizes );
+		// 20.3.1.2 Custom Version
+		if ( idxBlockTypeHashes ) {
+			QVector<quint32> blocktypehashes;
+			for ( const auto & t : blocktypes )
+				blocktypehashes << DJB1Hash( t.toStdString().c_str() );
+
+			updateArrayItem( idxBlockTypeHashes );
+			idxBlockTypeHashes->setArray<quint32>( blocktypehashes );
+		}
+
 		restoreState();
 
 		// For 20.1 and above strings are saved in the header.  Max String Length must be updated.
@@ -1778,6 +1794,19 @@ bool NifModel::load( QIODevice & device )
 						//	the upper bit or the blocktypeindex seems to be related to PhysX
 						int blktypidx = get<int>( index( c, 0, getIndex( createIndex( header->row(), 0, header ), "Block Type Index" ) ) );
 						blktyp = get<QString>( index( blktypidx & 0x7FFF, 0, getIndex( createIndex( header->row(), 0, header ), "Block Types" ) ) );
+						
+						// 20.3.1.2 Custom Version
+						if ( version == 0x14030102 ) {
+							auto hash = get<quint32>(
+								index( blktypidx & 0x7FFF, 0, getIndex( createIndex( header->row(), 0, header ),
+																	   "Block Type Hashes" ) )
+							);
+
+							if ( blockHashes.contains( hash ) )
+								blktyp = blockHashes[hash]->id;
+							else
+								throw tr( "Block Hash not found." );
+						}
 
 						// note: some 10.0.1.0 version nifs from Oblivion in certain distributions seem to be missing
 						//		 these four bytes on the havok blocks

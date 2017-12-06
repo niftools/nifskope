@@ -43,8 +43,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVariant>
 #include <QVector>
 
+#include <climits>
+
 #define NifSkopeDisplayRole (Qt::UserRole + 42)
 
+
+// Used for Block Name hashing
+unsigned DJB1Hash( const char * key, unsigned tableSize = UINT_MAX );
 
 //! @file basemodel.h BaseModel, BaseModelEval
 

@@ -367,6 +367,7 @@ protected:
 	static QHash<QString, NifBlockPtr> compounds;
 	static QHash<QString, NifBlockPtr> fixedCompounds;
 	static QHash<QString, NifBlockPtr> blocks;
+	static QMap<quint32, NifBlockPtr> blockHashes;
 
 private:
 	struct Settings

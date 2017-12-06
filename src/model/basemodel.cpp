@@ -874,3 +874,14 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 
 	return v;
 }
+
+unsigned DJB1Hash( const char * key, unsigned tableSize )
+{
+	unsigned hash = 0;
+	while ( *key ) {
+		hash *= 33;
+		hash += *key;
+		key++;
+	}
+	return hash % tableSize;
+}
