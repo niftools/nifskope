@@ -33,14 +33,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
-#include <QByteArray>
+#include "gli.hpp"
 
-
+class QByteArray;
 class QModelIndex;
 class QString;
 
 typedef unsigned int GLuint;
 typedef unsigned int GLenum;
+
+extern GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id );
+extern GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLuint& id );
+extern gli::texture load_if_valid( const char * data, int size );
 
 //! @file gltexloaders.h Texture loading functions header
 
@@ -75,7 +79,7 @@ extern bool texLoad( const QString & filepath, QString & format, GLenum & target
  * @param mipmaps	Contains the number of mipmaps on successful load.
  * @return			True if the load was successful, false otherwise.
  */
-extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
+extern bool texLoad( const QModelIndex & iData, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id );
 
 /*! A function which checks whether the given file can be loaded.
  *

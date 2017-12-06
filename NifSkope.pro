@@ -141,15 +141,6 @@ HEADERS += \
 	src/data/nifitem.h \
 	src/data/niftypes.h \
 	src/data/nifvalue.h \
-	src/gl/dds/BlockDXT.h \
-	src/gl/dds/Color.h \
-	src/gl/dds/ColorBlock.h \
-	src/gl/dds/Common.h \
-	src/gl/dds/dds_api.h \
-	src/gl/dds/DirectDrawSurface.h \
-	src/gl/dds/Image.h \
-	src/gl/dds/PixelFormat.h \
-	src/gl/dds/Stream.h \
 	src/gl/marker/constraints.h \
 	src/gl/marker/furniture.h \
 	src/gl/bsshape.h \
@@ -216,12 +207,6 @@ HEADERS += \
 SOURCES += \
 	src/data/niftypes.cpp \
 	src/data/nifvalue.cpp \
-	src/gl/dds/BlockDXT.cpp \
-	src/gl/dds/ColorBlock.cpp \
-	src/gl/dds/dds_api.cpp \
-	src/gl/dds/DirectDrawSurface.cpp \
-	src/gl/dds/Image.cpp \
-	src/gl/dds/Stream.cpp \
 	src/gl/bsshape.cpp \
 	src/gl/controllers.cpp \
 	src/gl/glcontroller.cpp \

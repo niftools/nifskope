@@ -419,7 +419,7 @@ int TexCache::bind( const QModelIndex & iSource )
 						glGenTextures( 1, &tx->id );
 						glBindTexture( GL_TEXTURE_2D, tx->id );
 						embedTextures.insert( iData, tx );
-						texLoad( iData, tx->format, tx->width, tx->height, tx->mipmaps );
+						texLoad( iData, tx->format, tx->target, tx->width, tx->height, tx->mipmaps, tx->id );
 					}
 					catch ( QString & e ) {
 						tx->status = e;
@@ -558,7 +558,7 @@ void TexCache::Tex::load()
 
 bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 {
-	texLoad( index, format, width, height, mipmaps );
+	texLoad( index, format, target, width, height, mipmaps, id );
 
 	if ( savepath.toLower().endsWith( ".tga" ) ) {
 		return texSaveTGA( index, savepath, width, height );
