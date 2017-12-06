@@ -55,19 +55,12 @@ BoneWeights::BoneWeights( const NifModel * nif, const QModelIndex & index, int b
 	bone = b;
 
 	QModelIndex idxWeights = nif->getIndex( index, "Vertex Weights" );
-
-	if ( idxWeights.isValid() ) {
+	if ( vcnt && idxWeights.isValid() ) {
 		for ( int c = 0; c < nif->rowCount( idxWeights ); c++ ) {
 			QModelIndex idx = idxWeights.child( c, 0 );
 			weights.append( VertexWeight( nif->get<int>( idx, "Index" ), nif->get<float>( idx, "Weight" ) ) );
 		}
-	} else {
-		// create artificial ones, TODO: should they weight nothing* instead?
-		for ( int c = 0; c < vcnt; c++ )
-			weights.append( VertexWeight( c, 1.0f ) );
 	}
-
-
 }
 
 void BoneWeights::setTransform( const NifModel * nif, const QModelIndex & index )
@@ -116,6 +109,30 @@ SkinPartition::SkinPartition( const NifModel * nif, const QModelIndex & index )
 	}
 
 	triangles = nif->getArray<Triangle>( index, "Triangles" );
+}
+
+QVector<Triangle> SkinPartition::getRemappedTriangles() const
+{
+	QVector<Triangle> tris;
+
+	for ( const auto& t : triangles )
+		tris << Triangle( vertexMap[t.v1()], vertexMap[t.v2()], vertexMap[t.v3()] );
+
+	return tris;
+}
+
+QVector<QVector<quint16>> SkinPartition::getRemappedTristrips() const
+{
+	QVector<QVector<quint16>> tris;
+
+	for ( const auto& t : tristrips ) {
+		QVector<quint16> points;
+		for ( const auto& p : t )
+			points << vertexMap[p];
+		tris << points;
+	}
+
+	return tris;
 }
 
 /*

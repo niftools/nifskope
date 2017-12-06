@@ -74,6 +74,8 @@ protected:
 	QPersistentModelIndex iData;
 	//! Does the data need updating?
 	bool updateData = false;
+	//! Was Skinning enabled last update?
+	bool doSkinning = false;
 
 	//! Skin instance
 	QPersistentModelIndex iSkin;
@@ -121,7 +123,7 @@ protected:
 	//! Does the skin data need updating?
 	bool updateSkin = false;
 	//! Toggle for skinning
-	bool doSkinning = false;
+	bool isSkinned = false;
 
 	int skeletonRoot = 0;
 	Transform skeletonTrans;

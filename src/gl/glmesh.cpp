@@ -181,7 +181,14 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 {
 	Node::update( nif, index );
 
-	if ( !iBlock.isValid() || !index.isValid() )
+	// Was Skinning toggled?
+	// If so, switch between partition triangles and data triangles
+	bool doSkinningCurr = (scene->options & Scene::DoSkinning);
+	updateSkin |= (doSkinning != doSkinningCurr) && nif->checkVersion( 0, 0x14040000 );
+	updateData |= updateSkin;
+	doSkinning = doSkinningCurr;
+
+	if ( !iBlock.isValid() || !index.isValid() && !updateSkin )
 		return;
 
 	if ( !isBSLODPresent ) {
@@ -197,6 +204,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	updateSkin |= ( iSkin == index );
 	updateSkin |= ( iSkinData == index );
 	updateSkin |= ( iSkinPart == index );
+	updateSkin |= ( updateData && isSkinned && doSkinning );
 
 	if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
 		updateSkin = false;
@@ -642,10 +650,15 @@ void Mesh::transform()
 
 	if ( updateSkin ) {
 		updateSkin = false;
+		isSkinned = false;
 		weights.clear();
 		partitions.clear();
 
 		iSkinData = nif->getBlock( nif->getLink( iSkin, "Data" ), "NiSkinData" );
+		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
+		if ( !iSkinPart.isValid() )
+			// nif versions < 10.2.0.0 have skin partition linked in the skin data block
+			iSkinPart = nif->getBlock( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
 
 		skeletonRoot  = nif->getLink( iSkin, "Skeleton Root" );
 		skeletonTrans = Transform( nif, iSkinData );
@@ -653,28 +666,41 @@ void Mesh::transform()
 		bones = nif->getLinkArray( iSkin, "Bones" );
 
 		QModelIndex idxBones = nif->getIndex( iSkinData, "Bone List" );
-		unsigned char hvw = nif->get<unsigned char>( iSkinData, "Has Vertex Weights" );
-		int vcnt = hvw ? 0 : verts.count();
-
-		if ( idxBones.isValid() /*&& hvw*/ ) {
+		if ( idxBones.isValid() ) {
+			bool hvw = nif->get<unsigned char>( iSkinData, "Has Vertex Weights" );
+			// Ignore weights listed in NiSkinData if NiSkinPartition exists
+			hvw = hvw && !iSkinPart.isValid();
+			int vcnt = hvw ? 0 : verts.count();
 			for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ ) {
 				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ], vcnt ) );
 			}
 		}
 
-		iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ), "NiSkinPartition" );
-
-		if ( !iSkinPart.isValid() )
-			// nif versions < 10.2.0.0 have skin partition linked in the skin data block
-			iSkinPart = nif->getBlock( nif->getLink( iSkinData, "Skin Partition" ), "NiSkinPartition" );
-
-		if ( iSkinPart.isValid() ) {
+		if ( iSkinPart.isValid() && doSkinning ) {
 			QModelIndex idx = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
 
+			uint numTris = 0;
+			uint numStrips = 0;
 			for ( int i = 0; i < nif->rowCount( idx ) && idx.isValid(); i++ ) {
 				partitions.append( SkinPartition( nif, idx.child( i, 0 ) ) );
+				numTris += partitions[i].triangles.size();
+				numStrips += partitions[i].tristrips.size();
+			}
+
+			triangles.clear();
+			tristrips.clear();
+
+			triangles.reserve( numTris );
+			tristrips.reserve( numStrips );
+
+			for ( const SkinPartition& part : partitions ) {
+				triangles << part.getRemappedTriangles();
+				tristrips << part.getRemappedTristrips();
 			}
 		}
+
+		isSkinned = weights.count() || partitions.count();
+
 	}
 
 	Node::transform();
@@ -689,22 +715,24 @@ void Mesh::transformShapes()
 
 	transformRigid = true;
 
-	if ( weights.count() && (scene->options & Scene::DoSkinning) ) {
+	if ( isSkinned && doSkinning ) {
 		transformRigid = false;
 
-		transVerts.resize( verts.count() );
+		int vcnt = verts.count();
+
+		transVerts.resize( vcnt );
 		transVerts.fill( Vector3() );
-		transNorms.resize( norms.count() );
+		transNorms.resize( vcnt );
 		transNorms.fill( Vector3() );
-		transTangents.resize( tangents.count() );
+		transTangents.resize( vcnt );
 		transTangents.fill( Vector3() );
-		transBitangents.resize( bitangents.count() );
+		transBitangents.resize( vcnt );
 		transBitangents.fill( Vector3() );
 
 		Node * root = findParent( skeletonRoot );
 
 		if ( partitions.count() ) {
-			foreach ( const SkinPartition part, partitions ) {
+			for ( const SkinPartition& part : partitions ) {
 				QVector<Transform> boneTrans( part.boneMap.count() );
 
 				for ( int t = 0; t < boneTrans.count(); t++ ) {
@@ -719,33 +747,27 @@ void Mesh::transformShapes()
 
 				for ( int v = 0; v < part.vertexMap.count(); v++ ) {
 					int vindex = part.vertexMap[ v ];
-
-					if ( vindex < 0 || vindex > transVerts.count() )
+					if ( vindex < 0 || vindex >= vcnt )
 						break;
 
 					if ( transVerts[vindex] == Vector3() ) {
 						for ( int w = 0; w < part.numWeightsPerVertex; w++ ) {
 							QPair<int, float> weight = part.weights[ v * part.numWeightsPerVertex + w ];
+
+
 							Transform trans = boneTrans.value( weight.first );
 
-							if ( verts.count() > vindex )
-								transVerts[vindex] += trans * verts[ vindex ] * weight.second;
-
-							if ( norms.count() > vindex )
-								transNorms[vindex] += trans.rotation * norms[ vindex ] * weight.second;
-
-							if ( tangents.count() > vindex )
-								transTangents[vindex] += trans.rotation * tangents[ vindex ] * weight.second;
-
-							if ( bitangents.count() > vindex )
-								transBitangents[vindex] += trans.rotation * bitangents[ vindex ] * weight.second;
+							transVerts[vindex] += trans * verts[ vindex ] * weight.second;
+							transNorms[vindex] += trans.rotation * norms[ vindex ] * weight.second;
+							transTangents[vindex] += trans.rotation * tangents[ vindex ] * weight.second;
+							transBitangents[vindex] += trans.rotation * bitangents[ vindex ] * weight.second;
 						}
 					}
 				}
 			}
 		} else {
 			int x = 0;
-			foreach ( const BoneWeights bw, weights ) {
+			for ( const BoneWeights& bw : weights ) {
 				Transform trans = viewTrans() * skeletonTrans;
 				Node * bone = root ? root->findChild( bw.bone ) : 0;
 
@@ -759,17 +781,14 @@ void Mesh::transformShapes()
 
 				Matrix natrix = trans.rotation;
 				for ( const VertexWeight& vw : bw.weights ) {
-					if ( transVerts.count() > vw.vertex )
-						transVerts[ vw.vertex ] += trans * verts[ vw.vertex ] * vw.weight;
+					int vindex = vw.vertex;
+					if ( vindex < 0 || vindex >= vcnt )
+						break;
 
-					if ( transNorms.count() > vw.vertex )
-						transNorms[ vw.vertex ] += natrix * norms[ vw.vertex ] * vw.weight;
-
-					if ( transTangents.count() > vw.vertex )
-						transTangents[ vw.vertex ] += natrix * tangents[ vw.vertex ] * vw.weight;
-
-					if ( transBitangents.count() > vw.vertex )
-						transBitangents[ vw.vertex ] += natrix * bitangents[ vw.vertex ] * vw.weight;
+					transVerts[vindex] += trans * verts[vindex] * vw.weight;
+					transNorms[vindex] += natrix * norms[vindex] * vw.weight;
+					transTangents[vindex] += natrix * tangents[vindex] * vw.weight;
+					transBitangents[vindex] += natrix * bitangents[vindex] * vw.weight;
 				}
 			}
 		}

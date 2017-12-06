@@ -101,6 +101,9 @@ public:
 	SkinPartition() { numWeightsPerVertex = 0; }
 	SkinPartition( const NifModel * nif, const QModelIndex & index );
 
+	QVector<Triangle> getRemappedTriangles() const;
+	QVector<QVector<quint16>> getRemappedTristrips() const;
+
 	QVector<int> boneMap;
 	QVector<int> vertexMap;
 

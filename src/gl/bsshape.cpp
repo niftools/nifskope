@@ -219,7 +219,7 @@ void BSShape::transform()
 
 	if ( updateSkin ) {
 		updateSkin = false;
-		doSkinning = false;
+		isSkinned = false;
 
 		bones.clear();
 		weights.clear();
@@ -251,7 +251,11 @@ void BSShape::transform()
 				}
 			}
 
-			doSkinning = weights.count();
+			auto b = nif->getIndex( iSkinData, "Bone List" );
+			for ( int i = 0; i < weights.count(); i++ )
+				weights[i].setTransform( nif, b.child( i, 0 ) );
+
+			isSkinned = weights.count();
 		}
 	}
 
@@ -273,21 +277,20 @@ void BSShape::transformShapes()
 
 	transformRigid = true;
 
-	if ( doSkinning && scene->options & Scene::DoSkinning ) {
+	if ( isSkinned && scene->options & Scene::DoSkinning ) {
 		transformRigid = false;
 
-		transVerts.resize( verts.count() );
+		int vcnt = verts.count();
+
+		transVerts.resize( vcnt );
 		transVerts.fill( Vector3() );
-		transNorms.resize( verts.count() );
+		transNorms.resize( vcnt );
 		transNorms.fill( Vector3() );
-		transTangents.resize( verts.count() );
+		transTangents.resize( vcnt );
 		transTangents.fill( Vector3() );
-		transBitangents.resize( verts.count() );
+		transBitangents.resize( vcnt );
 		transBitangents.fill( Vector3() );
 
-		auto b = nif->getIndex( iSkinData, "Bone List" );
-		for ( int i = 0; i < weights.count(); i++ )
-			weights[i].setTransform( nif, b.child( i, 0 ) );
 
 		Node * root = findParent( 0 );
 		for ( const BoneWeights & bw : weights ) {
@@ -295,7 +298,7 @@ void BSShape::transformShapes()
 			if ( bone ) {
 				Transform t = scene->view * bone->localTrans( 0 ) * bw.trans;
 				for ( const VertexWeight & w : bw.weights ) {
-					if ( w.vertex >= verts.count() )
+					if ( w.vertex >= vcnt )
 						continue;
 
 					transVerts[w.vertex] += t * verts[w.vertex] * w.weight;
@@ -306,7 +309,7 @@ void BSShape::transformShapes()
 			}
 		}
 
-		for ( int n = 0; n < verts.count(); n++ ) {
+		for ( int n = 0; n < vcnt; n++ ) {
 			transNorms[n].normalize();
 			transTangents[n].normalize();
 			transBitangents[n].normalize();
