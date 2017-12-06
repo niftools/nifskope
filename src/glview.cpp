@@ -138,7 +138,7 @@ GLView * GLView::create( NifSkope * window )
 	fmt.setSwapInterval( 1 );
 	fmt.setDoubleBuffer( true );
 
-	fmt.setSamples( pow( 2, aa ) );
+	fmt.setSamples( std::pow( aa, 2 ) );
 
 	fmt.setDirectRendering( true );
 	fmt.setRgba( true );
@@ -560,9 +560,6 @@ void GLView::paintGL()
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_diff );
 		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
-
-		// Necessary?
-		glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
 	} else {
 		float amb = 0.5f;
 		if ( scene->options & Scene::DisableShaders ) {

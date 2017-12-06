@@ -291,6 +291,7 @@ void Mesh::transform()
 	}
 
 	if ( updateData ) {
+		nifVersion = nif->getUserVersion2();
 		updateData = false;
 
 

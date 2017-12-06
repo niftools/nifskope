@@ -143,8 +143,6 @@ protected:
 	QString nifFolder;
 };
 
-float get_max_anisotropy();
-
 void initializeTextureUnits( const QOpenGLContext * );
 
 bool activateTextureUnit( int x );

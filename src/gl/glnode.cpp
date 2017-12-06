@@ -496,12 +496,8 @@ void Node::transform()
 		// Scale up for Skyrim
 		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
-		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
-
-		if ( !iObject.isValid() )
-			iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-
-		if ( iObject.isValid() ) {
+		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+		if ( nif->getUserVersion2() > 0 && iObject.isValid() ) {
 			QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
 
 			if ( iBody.isValid() ) {
@@ -952,12 +948,12 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						glDepthFunc( GL_ALWAYS );
 						glHighlightColor();
 
-						for ( int t = 0; t < nif->rowCount( iTris ); t++ )
-							DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
+						//for ( int t = 0; t < nif->rowCount( iTris ); t++ )
+						//	DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
 					} else if ( nif->isCompound( nif->getBlockType( scene->currentIndex ) ) ) {
 						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
 						DrawTriangleSelection( verts, tri );
-						DrawTriangleIndex( verts, tri, i );
+						//DrawTriangleIndex( verts, tri, i );
 					} else if ( nif->getBlockName( scene->currentIndex ) == "Normal" ) {
 						Triangle tri = nif->get<Triangle>( scene->currentIndex.parent(), "Triangle" );
 						Vector3 triCentre = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
@@ -995,7 +991,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						if ( (start_vertex <= tri[0]) && (tri[0] < end_vertex) ) {
 							if ( (start_vertex <= tri[1]) && (tri[1] < end_vertex) && (start_vertex <= tri[2]) && (tri[2] < end_vertex) ) {
 								DrawTriangleSelection( verts, tri );
-								DrawTriangleIndex( verts, tri, t );
+								//DrawTriangleIndex( verts, tri, t );
 							} else {
 								qDebug() << "triangle with multiple materials?" << t;
 							}
@@ -1044,7 +1040,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						if ( (start_vertex <= tri[0]) && (tri[0] < end_vertex) ) {
 							if ( (start_vertex <= tri[1]) && (tri[1] < end_vertex) && (start_vertex <= tri[2]) && (tri[2] < end_vertex) ) {
 								DrawTriangleSelection( verts, tri );
-								DrawTriangleIndex( verts, tri, t );
+								//DrawTriangleIndex( verts, tri, t );
 							} else {
 								qDebug() << "triangle with multiple materials?" << t;
 							}
@@ -1447,6 +1443,10 @@ void Node::drawHavok()
 		glPopMatrix();
 	}
 
+	// Only Bethesda support after this
+	if ( nif->getUserVersion2() == 0 )
+		return;
+
 	// Draw BSMultiBound
 	auto iBSMultiBound = nif->getBlock( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
 	if ( iBSMultiBound.isValid() ) {
@@ -1532,11 +1532,7 @@ void Node::drawHavok()
 		}
 	}
 
-	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
-
-	if ( !iObject.isValid() )
-		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-
+	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
 	if ( !iObject.isValid() )
 		return;
 
