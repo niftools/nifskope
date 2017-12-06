@@ -198,6 +198,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	updateSkin |= ( iSkinData == index );
 	updateSkin |= ( iSkinPart == index );
 
+	if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) )
+		updateSkin = false;
+
 	isVertexAlphaAnimation = false;
 	isDoubleSided = false;
 
@@ -206,14 +209,10 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 		updateShaderProperties( nif );
 
 	if ( iBlock == index ) {
-		// NiMesh presents a problem because we are almost guaranteed to have multiple "data" blocks
-		// for eg. vertices, indices, normals, texture data etc.
-//#ifndef QT_NO_DEBUG
 
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
 			qDebug() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
 			iData = nif->getIndex( iBlock, "Datas" );
-
 			if ( iData.isValid() ) {
 				qDebug() << "Got " << nif->rowCount( iData ) << " rows of data";
 				updateData = true;
@@ -223,8 +222,6 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 			return;
 		}
-
-//#endif
 
 		for ( const auto link : nif->getChildLinks( id() ) ) {
 			QModelIndex iChild = nif->getBlock( link );
@@ -296,15 +293,22 @@ void Mesh::transform()
 	if ( updateData ) {
 		updateData = false;
 
-		// update for NiMesh
-		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
-//#ifndef QT_NO_DEBUG
-			// do stuff
-			qDebug() << "Entering NiMesh decoding...";
-			// mesh primitive type
-			QString meshPrimitiveType = NifValue::enumOptionName( "MeshPrimitiveType", nif->get<uint>( iData, "Primitive Type" ) );
-			qDebug() << "Mesh uses" << meshPrimitiveType;
 
+		// NiMesh Rendering
+		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
+			verts.clear();
+			norms.clear();
+			tangents.clear();
+			bitangents.clear();
+			coords.clear();
+			colors.clear();
+			indices.clear();
+			weights.clear();
+			triangles.clear();
+
+			QString abortMsg = "NiMesh rendering encountered unsupported types. Rendering may be broken.";
+
+			auto meshPrimitiveType = nif->get<uint>( iBlock, "Primitive Type" );
 			for ( int i = 0; i < nif->rowCount( iData ); i++ ) {
 				// each data reference is to a single data stream
 				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
@@ -319,17 +323,17 @@ void Mesh::transform()
 				}
 
 				// each stream can have multiple components, and each has a starting index
-				QMap<uint, QString> componentIndexMap;
+				QMap<uint, QPair<NiMesh::Semantic, uint>> componentIndexMap;
 				int numComponents = nif->get<int>( iData.child( i, 0 ), "Num Components" );
 				qDebug() << "Components: " << numComponents;
 				// semantics determine the usage
 				QPersistentModelIndex componentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
 
-				for ( int j = 0; j < numComponents; j++ ) {
-					QString name = nif->get<QString>( componentSemantics.child( j, 0 ), "Name" );
+				for ( uint j = 0; j < numComponents; j++ ) {
+					auto name = NiMesh::semanticStrings.value(nif->get<QString>( componentSemantics.child( j, 0 ), "Name" ));
 					uint index = nif->get<uint>( componentSemantics.child( j, 0 ), "Index" );
 					qDebug() << "Component" << name << "at position" << index << "of component" << j << "in stream" << stream;
-					componentIndexMap.insert( j, QString( "%1 %2" ).arg( name ).arg( index ) );
+					componentIndexMap.insert( j, {name, index} );
 				}
 
 				// now the data stream itself...
@@ -337,133 +341,178 @@ void Mesh::transform()
 				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( dataStream, "Data" ).child( 0, 0 ) );
 				QBuffer streamBuffer( &streamData );
 				streamBuffer.open( QIODevice::ReadOnly );
-				// probably won't use this
-				QDataStream streamReader( &streamData, QIODevice::ReadOnly );
-				// we should probably check the header here, but we expect things to be little endian
-				streamReader.setByteOrder( QDataStream::LittleEndian );
+
 				// each region exists within the data stream at the specified index
 				quint32 numRegions = nif->get<quint32>( dataStream, "Num Regions" );
 				QPersistentModelIndex regions = nif->getIndex( dataStream, "Regions" );
 				quint32 totalIndices = 0;
 
-				if ( regions.isValid() ) {
-					qDebug() << numRegions << " regions in this stream";
-
-					for ( quint32 j = 0; j < numRegions; j++ ) {
-						qDebug() << "Start index: " << nif->get<quint32>( regions.child( j, 0 ), "Start Index" );
-						qDebug() << "Num indices: " << nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
+				if ( regions.isValid() )
+					for ( quint32 j = 0; j < numRegions; j++ )
 						totalIndices += nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
-					}
 
-					qDebug() << totalIndices << "total indices in" << numRegions << "regions";
-				}
+
+				// stream components are interleaved, so we need to know their type before we read them
+				QVector<uint> typeList;
 
 				uint numStreamComponents = nif->get<uint>( dataStream, "Num Components" );
-				qDebug() << "Stream has" << numStreamComponents << "components";
-				QPersistentModelIndex streamComponents = nif->getIndex( dataStream, "Component Formats" );
-				// stream components are interleaved, so we need to know their type before we read them
-				QList<uint> typeList;
-
 				for ( uint j = 0; j < numStreamComponents; j++ ) {
-					uint compFormat  = nif->get<uint>( streamComponents.child( j, 0 ) );
-					QString compName = NifValue::enumOptionName( "ComponentFormat", compFormat );
-					qDebug() << "Component format is" << compName;
-					qDebug() << "Stored as a" << compName.split( "_" )[1];
-					typeList.append( compFormat - 1 );
+					auto format = nif->get<uint>( nif->getIndex( dataStream, "Component Formats" ).child( j, 0 ) );
+					typeList.append( format );
 
-					// this can probably wait until we're reading the stream values
-					QString compNameIndex = componentIndexMap.value( j );
-					QString compType = compNameIndex.split( " " )[0];
-					uint startIndex  = compNameIndex.split( " " )[1].toUInt();
-					qDebug() << "Component" << j << "contains" << compType << "starting at index" << startIndex;
+					auto component = componentIndexMap.value( j );
+					auto compType = component.first;
+					auto startIndex  = component.second;
 
-					// try and sort out texcoords here...
-					if ( compType == "TEXCOORD" ) {
-						QVector<Vector2> tempCoords;
-						coords.append( tempCoords );
-						qDebug() << "Assigning coordinate set" << startIndex;
-					}
+					// Create UV stubs for multi-coord systems
+					if ( compType == NiMesh::E_TEXCOORD )
+						coords.append( QVector<Vector2>() );
 				}
 
-				// for each component
-				// get the length
-				// get the underlying type (will probably need OpenEXR to deal with float16 types)
-				// read that type in, k times, where k is the length of the vector
-				// start index will not be 0 if eg. multiple UV maps, but hopefully we don't have multiple components
+				verts.reserve( totalIndices );
+				norms.reserve( totalIndices );
+				tangents.reserve( totalIndices );
+				bitangents.reserve( totalIndices );
+				colors.reserve( totalIndices );
+				indices.reserve( totalIndices );
+				weights.reserve( totalIndices );
+				for ( auto & c : coords )
+					c.reserve( totalIndices );
 
+				auto tempMdl = std::make_unique<NifModel>( this );
+
+				NifIStream tempInput( tempMdl.get(), &streamBuffer );
+				NifValue tempValue;
+
+				bool abort = false;
 				for ( uint j = 0; j < totalIndices; j++ ) {
 					for ( uint k = 0; k < numStreamComponents; k++ ) {
-						int typeLength = ( ( typeList[k] & 0x000F0000 ) >> 0x10 );
-						int typeSize = ( ( typeList[k] & 0x00000F00 ) >> 0x08 );
-						qDebug() << "Reading" << typeLength << "values" << typeSize << "bytes";
+						auto typeK = typeList[k];
+						int typeLength = ( (typeK & 0x000F0000) >> 0x10 );
+						int typeSize = ( (typeK & 0x00000F00) >> 0x08 );
 
-						NifIStream tempInput( new NifModel, &streamBuffer );
-						QList<NifValue> values;
-						NifValue tempValue;
-
-						// if we had the right types, we could read in Vector etc. and not have the mess below
-						switch ( ( typeList[k] & 0x00000FF0 ) >> 0x04 ) {
+						switch ( (typeK & 0x00000FF0) >> 0x04 ) {
 						case 0x10:
 							tempValue.changeType( NifValue::tByte );
 							break;
+						case 0x13:
+							if ( typeK == NiMesh::F_NORMUINT8_4_BGRA )
+								tempValue.changeType( NifValue::tByteColor4 );
+							typeLength = 1;
+							break;
 						case 0x21:
 							tempValue.changeType( NifValue::tShort );
+							break;
+						case 0x23:
+							if ( typeLength == 3 )
+								tempValue.changeType( NifValue::tHalfVector3 );
+							else if ( typeLength == 2 )
+								tempValue.changeType( NifValue::tHalfVector2 );
+							else if ( typeLength == 1 )
+								tempValue.changeType( NifValue::tHfloat );
+
+							typeLength = 1;
+
 							break;
 						case 0x42:
 							tempValue.changeType( NifValue::tInt );
 							break;
 						case 0x43:
-							tempValue.changeType( NifValue::tFloat );
+							if ( typeLength == 3 )
+								tempValue.changeType( NifValue::tVector3 );
+							else if ( typeLength == 2 )
+								tempValue.changeType( NifValue::tVector2 );
+							else if ( typeLength == 4 )
+								tempValue.changeType( NifValue::tVector4 );
+							else if ( typeLength == 1 )
+								tempValue.changeType( NifValue::tFloat );
+
+							typeLength = 1;
+
 							break;
 						}
 
 						for ( int l = 0; l < typeLength; l++ ) {
 							tempInput.read( tempValue );
-							values.append( tempValue );
 							qDebug() << tempValue.toString();
 						}
 
-						QString compType = componentIndexMap.value( k ).split( " " )[0];
-						qDebug() << "Will store this value in" << compType;
-
-						// the mess begins...
-						if ( NifValue::enumOptionName( "ComponentFormat", (typeList[k] + 1 ) ) == "F_FLOAT32_3" ) {
-							Vector3 tempVect3( values[0].toFloat(), values[1].toFloat(), values[2].toFloat() );
-
-							if ( compType == "POSITION" || compType == "POSITION_BP" ) {
-								verts.append( tempVect3 );
-							} else if ( compType == "NORMAL" || compType == "NORMAL_BP" ) {
-								norms.append( tempVect3 );
-							} else if ( compType == "TANGENT" || compType == "TANGENT_BP" ) {
-								tangents.append( tempVect3 );
-							} else if ( compType == "BINORMAL" || compType == "BINORMAL_BP" ) {
-								bitangents.append( tempVect3 );
+						auto compType = componentIndexMap.value( k ).first;
+						switch ( typeK )
+						{
+						case NiMesh::F_FLOAT32_3:
+						case NiMesh::F_FLOAT16_3:
+							switch ( compType ) {
+							case NiMesh::E_POSITION:
+							case NiMesh::E_POSITION_BP:
+								verts.append( tempValue.get<Vector3>() );
+								break;
+							case NiMesh::E_NORMAL:
+							case NiMesh::E_NORMAL_BP:
+								norms.append( tempValue.get<Vector3>() );
+								break;
+							case NiMesh::E_TANGENT:
+							case NiMesh::E_TANGENT_BP:
+								tangents.append( tempValue.get<Vector3>() );
+								break;
+							case NiMesh::E_BINORMAL:
+							case NiMesh::E_BINORMAL_BP:
+								bitangents.append( tempValue.get<Vector3>() );
+								break;
 							}
-						} else if ( compType == "INDEX" ) {
-							indices.append( values[0].toCount() );
-						} else if ( compType == "TEXCOORD" ) {
-							Vector2 tempVect2( values[0].toFloat(), values[1].toFloat() );
-							quint32 coordSet = componentIndexMap.value( k ).split( " " )[1].toUInt();
-							qDebug() << "Need to append" << tempVect2 << "to texcoords" << coordSet;
-							QVector<Vector2> currentSet = coords[coordSet];
-							currentSet.append( tempVect2 );
-							coords[coordSet] = currentSet;
+							break;
+						case NiMesh::F_UINT16_1:
+							if ( compType == NiMesh::E_INDEX )
+								indices.append( tempValue.get<quint16>() );
+							break;
+						case NiMesh::F_FLOAT32_2:
+						case NiMesh::F_FLOAT16_2:
+							if ( compType == NiMesh::E_TEXCOORD ) {
+								quint32 coordSet = componentIndexMap.value( k ).second;
+								coords[coordSet].append( tempValue.get<Vector2>() );
+							}
+							break;
+						case NiMesh::F_NORMUINT8_4_BGRA:
+							if ( compType == NiMesh::E_COLOR )
+								colors.append( tempValue.get<ByteColor4>() );
+							break;
+						default:
+							Message::append( abortMsg, QString( "[%1] Unsupported Component: %2" ).arg( stream )
+											 .arg( NifValue::enumOptionName( "ComponentFormat", typeK ) ),
+											 QMessageBox::Critical );
+							abort = true;
+							break;
 						}
+
+						if ( abort == true )
+							break;
 					}
 				}
 
-				// build triangles, strips etc.
-				if ( meshPrimitiveType == "MESH_PRIMITIVE_TRIANGLES" ) {
-					for ( int k = 0; k < indices.size(); ) {
-						Triangle tempTri( indices[k], indices[k + 1], indices[k + 2] );
-						qDebug() << "Inserting triangle" << tempTri;
-						triangles.append( tempTri );
-						k = k + 3;
-					}
+				// Clear is extremely expensive. Must be outside of loop
+				tempMdl->clear();
+
+				// Make geometry
+				triangles.reserve( indices.size() / 3 );
+				switch ( meshPrimitiveType )
+				{
+				case NiMesh::PRIMITIVE_TRIANGLES:
+					for ( int k = 0; k < indices.size(); k += 3 )
+						triangles.append( { indices[k], indices[k + 1], indices[k + 2] } );
+					break;
+				case NiMesh::PRIMITIVE_TRISTRIPS:
+				case NiMesh::PRIMITIVE_LINES:
+				case NiMesh::PRIMITIVE_LINESTRIPS:
+				case NiMesh::PRIMITIVE_QUADS:
+				case NiMesh::PRIMITIVE_POINTS:
+					Message::append( abortMsg,
+									 QString( "[%1] Unsupported Primitive: %2" )
+									 .arg( nif->getBlockNumber( iBlock ) )
+									 .arg( NifValue::enumOptionName( "MeshPrimitiveType", meshPrimitiveType ) ),
+									 QMessageBox::Critical );
+					break;
 				}
 			}
-
-//#endif
 		} else {
 
 			verts  = nif->getArray<Vector3>( iData, "Vertices" );

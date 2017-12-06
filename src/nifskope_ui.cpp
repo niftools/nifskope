@@ -751,6 +751,8 @@ void NifSkope::onLoadBegin()
 	// Disconnect the models from the views
 	swapModels();
 
+	ogl->setUpdatesEnabled( false );
+	ogl->setEnabled( false );
 	setEnabled( false );
 	ui->tAnim->setEnabled( false );
 
@@ -777,6 +779,8 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 	swapModels();
 
 	// Re-enable window
+	ogl->setUpdatesEnabled( true );
+	ogl->setEnabled( true );
 	setEnabled( true ); // IMPORTANT!
 
 	int timeout = 2500;

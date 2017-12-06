@@ -1884,4 +1884,180 @@ inline QDataStream & operator>>( QDataStream & ds, BSVertexDesc & d )
 	return ds;
 }
 
+
+namespace NiMesh {
+
+typedef enum {
+	PRIMITIVE_TRIANGLES = 0,
+	PRIMITIVE_TRISTRIPS,
+	PRIMITIVE_LINES,
+	PRIMITIVE_LINESTRIPS,
+	PRIMITIVE_QUADS,
+	PRIMITIVE_POINTS
+} PrimitiveType;
+
+typedef enum {
+    F_UNKNOWN             = 0x00000000,
+    F_INT8_1              = 0x00010101,
+    F_INT8_2              = 0x00020102,
+    F_INT8_3              = 0x00030103,
+    F_INT8_4              = 0x00040104,
+    F_UINT8_1             = 0x00010105,
+    F_UINT8_2             = 0x00020106,
+    F_UINT8_3             = 0x00030107,
+    F_UINT8_4             = 0x00040108,
+    F_NORMINT8_1          = 0x00010109,
+    F_NORMINT8_2          = 0x0002010A,
+    F_NORMINT8_3          = 0x0003010B,
+    F_NORMINT8_4          = 0x0004010C,
+    F_NORMUINT8_1         = 0x0001010D,
+    F_NORMUINT8_2         = 0x0002010E,
+    F_NORMUINT8_3         = 0x0003010F,
+    F_NORMUINT8_4         = 0x00040110,
+    F_INT16_1             = 0x00010211,
+    F_INT16_2             = 0x00020212,
+    F_INT16_3             = 0x00030213,
+    F_INT16_4             = 0x00040214,
+    F_UINT16_1            = 0x00010215,
+    F_UINT16_2            = 0x00020216,
+    F_UINT16_3            = 0x00030217,
+    F_UINT16_4            = 0x00040218,
+    F_NORMINT16_1         = 0x00010219,
+    F_NORMINT16_2         = 0x0002021A,
+    F_NORMINT16_3         = 0x0003021B,
+    F_NORMINT16_4         = 0x0004021C,
+    F_NORMUINT16_1        = 0x0001021D,
+    F_NORMUINT16_2        = 0x0002021E,
+    F_NORMUINT16_3        = 0x0003021F,
+    F_NORMUINT16_4        = 0x00040220,
+    F_INT32_1             = 0x00010421,
+    F_INT32_2             = 0x00020422,
+    F_INT32_3             = 0x00030423,
+    F_INT32_4             = 0x00040424,
+    F_UINT32_1            = 0x00010425,
+    F_UINT32_2            = 0x00020426,
+    F_UINT32_3            = 0x00030427,
+    F_UINT32_4            = 0x00040428,
+    F_NORMINT32_1         = 0x00010429,
+    F_NORMINT32_2         = 0x0002042A,
+    F_NORMINT32_3         = 0x0003042B,
+    F_NORMINT32_4         = 0x0004042C,
+    F_NORMUINT32_1        = 0x0001042D,
+    F_NORMUINT32_2        = 0x0002042E,
+    F_NORMUINT32_3        = 0x0003042F,
+    F_NORMUINT32_4        = 0x00040430,
+    F_FLOAT16_1           = 0x00010231,
+    F_FLOAT16_2           = 0x00020232,
+    F_FLOAT16_3           = 0x00030233,
+    F_FLOAT16_4           = 0x00040234,
+    F_FLOAT32_1           = 0x00010435,
+    F_FLOAT32_2           = 0x00020436,
+    F_FLOAT32_3           = 0x00030437,
+    F_FLOAT32_4           = 0x00040438,
+    F_UINT_10_10_10_L1    = 0x00010439,
+    F_NORMINT_10_10_10_L1 = 0x0001043A,
+    F_NORMINT_11_11_10    = 0x0001043B,
+    F_NORMUINT8_4_BGRA    = 0x0004013C,
+    F_NORMINT_10_10_10_2  = 0x0001043D,
+    F_UINT_10_10_10_2     = 0x0001043E,
+    F_TYPE_COUNT = 63,
+    F_MAX_COMP_SIZE = 16
+} DataStreamFormat;
+
+typedef enum
+{
+	// Invalid
+	E_Invalid = 0,
+
+	// Vertex Semantics
+	E_POSITION = 1,
+	E_NORMAL = 2,
+	E_BINORMAL = 3,
+	E_TANGENT = 4,
+	E_TEXCOORD = 5,
+	E_BLENDWEIGHT = 6,
+	E_BLENDINDICES = 7,
+	E_COLOR = 8,
+	E_PSIZE = 9,
+	E_TESSFACTOR = 10,
+	E_DEPTH = 11,
+	E_FOG = 12,
+	E_POSITIONT = 13,
+	E_SAMPLE = 14,
+	E_DATASTREAM = 15,
+	E_INDEX = 16,
+
+	// Skinning Semantics
+	E_BONEMATRICES = 17,
+	E_BONE_PALETTE = 18,
+	E_UNUSED0 = 19,
+	E_POSITION_BP = 20,
+	E_NORMAL_BP = 21,
+	E_BINORMAL_BP = 22,
+	E_TANGENT_BP = 23,
+
+	// Morph Weights Semantic
+	E_MORPHWEIGHTS = 24,
+
+	// Normal sharing semantics for use in runtime normal calculation
+	E_NORMALSHAREINDEX = 25,
+	E_NORMALSHAREGROUP = 26,
+
+	// Instancing Semantics
+	E_TRANSFORMS = 27,
+	E_INSTANCETRANSFORMS = 28,
+
+	// Display List Semantics
+	E_DISPLAYLIST = 29
+} Semantic;
+
+#define SEM(string) {#string, E_##string},
+
+const QMap<QString, Semantic> semanticStrings = {
+	// Vertex semantics
+	SEM( POSITION )
+	SEM( NORMAL )
+	SEM( BINORMAL )
+	SEM( TANGENT )
+	SEM( TEXCOORD )
+	SEM( BLENDWEIGHT )
+	SEM( BLENDINDICES )
+	SEM( COLOR )
+	SEM( PSIZE )
+	SEM( TESSFACTOR )
+	SEM( DEPTH )
+	SEM( FOG )
+	SEM( POSITIONT )
+	SEM( SAMPLE )
+	SEM( DATASTREAM )
+	SEM( INDEX )
+
+	// Skinning semantics
+	SEM( BONEMATRICES )
+	SEM( BONE_PALETTE )
+	SEM( UNUSED0 )
+	SEM( POSITION_BP )
+	SEM( NORMAL_BP )
+	SEM( BINORMAL_BP )
+	SEM( TANGENT_BP )
+
+	// Morph weights semantics
+	SEM( MORPHWEIGHTS )
+
+	// Normal sharing semantics, for use in runtime normal calculation
+	SEM( NORMALSHAREINDEX )
+	SEM( NORMALSHAREGROUP )
+
+	// Instancing Semantics
+	SEM( TRANSFORMS )
+	SEM( INSTANCETRANSFORMS )
+
+	// Display list semantics
+	SEM( DISPLAYLIST )
+};
+#undef SEM
+#undef UN
+
+};
+
 #endif
