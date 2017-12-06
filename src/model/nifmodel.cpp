@@ -46,6 +46,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file nifmodel.cpp The NIF data model.
 
+const QString loadFail = NifModel::tr( "The NIF file could not be read. See Details for more information." );
+
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
 	updateSettings();
@@ -499,18 +501,19 @@ bool NifModel::updateArrayItem( NifItem * array )
 
 	// Error handling
 	if ( rows > 1024 * 1024 * 8 ) {
-		auto m = tr( "array %1 much too large. %2 bytes requested" ).arg( array->name() ).arg( rows );
+		auto m = tr( "[%1] Array %2 much too large. %3 bytes requested" ).arg( getBlockNumber( array ) )
+			.arg( array->name() ).arg( rows );
 		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
+			Message::append( nullptr, loadFail, m, QMessageBox::Critical );
 		} else {
 			testMsg( m );
 		}
 
 		return false;
 	} else if ( rows < 0 ) {
-		auto m = tr( "array %1 invalid" ).arg( array->name() );
+		auto m = tr( "[%1] Array %2 invalid" ).arg( getBlockNumber( array ) ).arg( array->name() );
 		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, tr( "Could not update array item." ), m, QMessageBox::Critical );
+			Message::append( nullptr, loadFail, m, QMessageBox::Critical );
 		} else {
 			testMsg( m );
 		}
@@ -1801,7 +1804,7 @@ bool NifModel::load( QIODevice & device )
 						device.read( (char *)&len, 4 );
 
 						if ( len < 2 || len > 80 )
-							throw tr( "next block does not start with a NiString" );
+							throw tr( "next block (%1) does not start with a NiString" ).arg( c );
 
 						blktyp = device.read( len );
 					}
@@ -1916,7 +1919,7 @@ bool NifModel::load( QIODevice & device )
 					device.read( (char *)&len, 4 );
 
 					if ( len < 0 || len > 80 )
-						throw tr( "next block does not start with a NiString" );
+						throw tr( "next block (%1) does not start with a NiString" ).arg( c );
 
 					QString blktyp = device.read( len );
 
@@ -1926,7 +1929,7 @@ bool NifModel::load( QIODevice & device )
 						device.read( (char *)&len, 4 );
 
 						if ( len < 0 || len > 80 )
-							throw tr( "next block does not start with a NiString" );
+							throw tr( "next block (%1) does not start with a NiString" ).arg( c );
 
 						blktyp = device.read( len );
 					}
@@ -1964,7 +1967,7 @@ bool NifModel::load( QIODevice & device )
 	catch ( QString & err )
 	{
 		if ( msgMode == UserMessage ) {
-			Message::critical( nullptr, tr( "The NIF file could not be read. See Details for more information." ), err );
+			Message::append( nullptr, loadFail, err, QMessageBox::Critical );
 		} else {
 			testMsg( err );
 		}
