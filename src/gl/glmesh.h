@@ -95,7 +95,7 @@ protected:
 	//! Bitangents
 	QVector<Vector3> bitangents;
 	//! UV coordinate sets
-	QList<QVector<Vector2>> coords;
+	QVector<QVector<Vector2>> coords;
 	//! Triangles
 	QVector<Triangle> triangles;
 	//! Strip points

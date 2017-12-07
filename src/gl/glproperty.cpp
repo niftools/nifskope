@@ -45,7 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glproperty.cpp Encapsulation of NiProperty blocks defined in nif.xml
 
 //! Helper function that checks texture sets
-bool checkSet( int s, const QList<QVector<Vector2> > & texcoords )
+bool checkSet( int s, const QVector<QVector<Vector2> > & texcoords )
 {
 	return s >= 0 && s < texcoords.count() && texcoords[s].count();
 }
@@ -463,7 +463,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 	return false;
 }
 
-bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
+bool TexturingProperty::bind( int id, const QVector<QVector<Vector2> > & texcoords )
 {
 	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) ) {
 		glEnable( GL_TEXTURE_2D );
@@ -476,7 +476,7 @@ bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords
 	}
 }
 
-bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords, int stage )
+bool TexturingProperty::bind( int id, const QVector<QVector<Vector2> > & texcoords, int stage )
 {
 	return ( activateTextureUnit( stage ) && bind( id, texcoords ) );
 }
@@ -574,7 +574,7 @@ bool TextureProperty::bind()
 	return false;
 }
 
-bool TextureProperty::bind( const QList<QVector<Vector2> > & texcoords )
+bool TextureProperty::bind( const QVector<QVector<Vector2> > & texcoords )
 {
 	if ( checkSet( 0, texcoords ) && bind() ) {
 		glEnable( GL_TEXTURE_2D );
@@ -896,7 +896,7 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname, TexClampMode
 	return true;
 }
 
-bool BSShaderLightingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
+bool BSShaderLightingProperty::bind( int id, const QVector<QVector<Vector2> > & texcoords )
 {
 	if ( checkSet( 0, texcoords ) && bind( id ) ) {
 		glEnable( GL_TEXTURE_2D );

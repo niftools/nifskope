@@ -231,8 +231,8 @@ public:
 
 	bool bind( int id, const QString & fname = QString() );
 
-	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
-	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
+	bool bind( int id, const QVector<QVector<Vector2> > & texcoords );
+	bool bind( int id, const QVector<QVector<Vector2> > & texcoords, int stage );
 
 	QString fileName( int id ) const;
 	int coordSet( int id ) const;
@@ -263,7 +263,7 @@ public:
 	friend void glProperty( TextureProperty * );
 
 	bool bind();
-	bool bind( const QList<QVector<Vector2> > & texcoords );
+	bool bind( const QVector<QVector<Vector2> > & texcoords );
 
 	QString fileName() const;
 
@@ -527,8 +527,8 @@ public:
 	friend void glProperty( BSShaderLightingProperty * );
 
 	bool bind( int id, const QString & fname = QString(), TexClampMode mode = TexClampMode::WRAP_S_WRAP_T );
-	bool bind( int id, const QList<QVector<Vector2> > & texcoords );
-	bool bind( int id, const QList<QVector<Vector2> > & texcoords, int stage );
+	bool bind( int id, const QVector<QVector<Vector2> > & texcoords );
+	bool bind( int id, const QVector<QVector<Vector2> > & texcoords, int stage );
 
 	bool bindCube( int id, const QString & fname = QString() );
 
