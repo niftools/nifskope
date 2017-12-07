@@ -430,10 +430,13 @@ int texLoadPal( QIODevice & f, int width, int height, int num_mipmaps, int bpp, 
 #define TGA_GREY_RLE     11
 
 //! Load a TGA texture.
-GLuint texLoadTGA( QIODevice & f, QString & texformat, GLuint & width, GLuint & height )
+GLuint texLoadTGA( QIODevice & f, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & id )
 {
 	// see http://en.wikipedia.org/wiki/Truevision_TGA for a lot of this
 	texformat = "TGA";
+	target = GL_TEXTURE_2D;
+
+	glBindTexture( target, id );
 
 	// read in tga header
 	quint8 hdr[18];
@@ -568,7 +571,7 @@ quint16 get16( quint8 * x )
 }
 
 //! Load a BMP texture.
-GLuint texLoadBMP( QIODevice & f, QString & texformat, GLuint & width, GLuint & height )
+GLuint texLoadBMP( QIODevice & f, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & id )
 {
 	// read in bmp header
 	quint8 hdr[54];
@@ -578,6 +581,9 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat, GLuint & width, GLuint & 
 		throw QString( "not a BMP file" );
 
 	texformat = "BMP";
+	target = GL_TEXTURE_2D;
+
+	glBindTexture( target, id );
 
 	width  = get32( &hdr[18] );
 	height = get32( &hdr[22] );
@@ -822,9 +828,12 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLenum & target, G
 }
 
 //! Load NiPixelData or NiPersistentSrcTextureRendererData from a NifModel
-GLuint texLoadNIF( QIODevice & f, QString & texformat, GLuint & width, GLuint & height, GLuint & id )
+GLuint texLoadNIF( QIODevice & f, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & id )
 {
 	GLuint mipmaps = 0;
+	target = GL_TEXTURE_2D;
+
+	glBindTexture( target, id );
 
 	NifModel pix;
 
@@ -839,7 +848,6 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat, GLuint & width, GLuint & 
 		if ( !iData.isValid() || iData == QModelIndex() )
 			throw QString( "this is not a normal .nif file; there should be only pixel data as root blocks" );
 
-		GLenum target = 0;
 		texLoad( iData, texformat, target, width, height, mipmaps, id );
 	}
 
@@ -1131,11 +1139,11 @@ bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuin
 	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
 		mipmaps = texLoadDDS( filepath, format, target, width, height, mipmaps, data, id );
 	else if ( filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
-		mipmaps = texLoadTGA( f, format, width, height );
+		mipmaps = texLoadTGA( f, format, target, width, height, id );
 	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
-		mipmaps = texLoadBMP( f, format, width, height );
+		mipmaps = texLoadBMP( f, format, target, width, height, id );
 	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) || filepath.endsWith( ".texcache", Qt::CaseInsensitive ) )
-		mipmaps = texLoadNIF( f, format, width, height, id );
+		mipmaps = texLoadNIF( f, format, target, width, height, id );
 	else
 		isSupported = false;
 	

@@ -393,12 +393,12 @@ int TexCache::bind( const QString & fname )
 			watcher->addPath( tx->filepath );
 
 		tx->load();
+	} else {
+		if ( !tx->target )
+			tx->target = GL_TEXTURE_2D;
+
+		glBindTexture( tx->target, tx->id );
 	}
-
-	if ( !tx->target )
-		tx->target = GL_TEXTURE_2D;
-
-	glBindTexture( tx->target, tx->id );
 
 	return tx->mipmaps;
 }
@@ -428,9 +428,9 @@ int TexCache::bind( const QModelIndex & iSource )
 					catch ( QString & e ) {
 						tx->status = e;
 					}
+				} else {
+					glBindTexture( GL_TEXTURE_2D, tx->id );
 				}
-
-				glBindTexture( GL_TEXTURE_2D, tx->id );
 
 				return tx->mipmaps;
 			}
