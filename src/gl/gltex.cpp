@@ -64,12 +64,17 @@ PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB = nullptr;
 GLint num_texture_units = 0;
 
 //! Maximum anisotropy
-static float max_anisotropy = 1.0f;
+float max_anisotropy = 1.0f;
 void set_max_anisotropy()
 {
 	static QSettings settings;
 	max_anisotropy = std::min( std::pow( settings.value( "Settings/Render/General/Anisotropic Filtering", 4.0 ).toFloat(), 2.0f ),
 								max_anisotropy );
+}
+
+float get_max_anisotropy()
+{
+	return max_anisotropy;
 }
 
 void initializeTextureUnits( const QOpenGLContext * context )
@@ -394,7 +399,6 @@ int TexCache::bind( const QString & fname )
 		tx->target = GL_TEXTURE_2D;
 
 	glBindTexture( tx->target, tx->id );
-	glTexParameterf( tx->target, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
 
 	return tx->mipmaps;
 }
@@ -427,7 +431,6 @@ int TexCache::bind( const QModelIndex & iSource )
 				}
 
 				glBindTexture( GL_TEXTURE_2D, tx->id );
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy );
 
 				return tx->mipmaps;
 			}

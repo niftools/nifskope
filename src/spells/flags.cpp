@@ -836,6 +836,9 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 
+		QSpinBox * spnUVIndex = dlgSpin( vbox, Spell::tr( "UV Index" ), 0, 0xFF );
+		spnUVIndex->setValue( flags & 0x00FF );
+
 		QStringList clampModes{
 			Spell::tr( "Clamp Both" ),
 			Spell::tr( "Clamp S Wrap T" ),
@@ -863,6 +866,7 @@ public:
 		if ( dlg.exec() == QDialog::Accepted ) {
 			flags = ( flags & 0x0FFF ) | ( cmbClamp->currentIndex() << 0x0C );
 			flags = ( flags & 0xF0FF ) | ( cmbFilter->currentIndex() << 0x08 );
+			flags = ( flags & 0xFF00 ) | spnUVIndex->value();
 			nif->set<int>( index, flags );
 		}
 	}

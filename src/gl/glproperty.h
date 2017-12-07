@@ -209,6 +209,7 @@ class TexturingProperty final : public Property
 		GLenum filter = 0;
 		GLint wrapS = 0, wrapT = 0;
 		int coordset = 0;
+		float maxAniso = 1.0;
 
 		bool hasTransform = false;
 

@@ -150,4 +150,6 @@ bool activateTextureUnit( int x );
 //	This is a problem only if a mesh uses all 9 texture slots
 void resetTextureUnits( int numTex = 8 );
 
+float get_max_anisotropy();
+
 #endif

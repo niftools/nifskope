@@ -332,13 +332,27 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
 				int filterMode = 0, clampMode = 0;
 
-				if ( nif->checkVersion( 0, 0x14000005 ) ) {
+				if ( nif->checkVersion( 0, 0x14010002 ) ) {
 					filterMode = nif->get<int>( iTex, "Filter Mode" );
 					clampMode  = nif->get<int>( iTex, "Clamp Mode" );
 				} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
-					filterMode = ( ( nif->get<ushort>( iTex, "Flags" ) & 0x0F00 ) >> 0x08 );
-					clampMode  = ( ( nif->get<ushort>( iTex, "Flags" ) & 0xF000 ) >> 0x0C );
+					auto flags = nif->get<ushort>( iTex, "Flags" );
+					filterMode = ((flags & 0x0F00) >> 0x08);
+					clampMode  = ((flags & 0xF000) >> 0x0C);
+					textures[t].coordset = (flags & 0x00FF);
 				}
+
+				float af = 1.0;
+				float max_af = get_max_anisotropy();
+				// Let User Settings decide for trilinear
+				if ( filterMode == GL_LINEAR_MIPMAP_LINEAR )
+					af = max_af;
+
+				// Override with value in NIF for 20.5+
+				if ( nif->checkVersion( 0x14050004, 0 ) )
+					af = std::min( max_af, (float)nif->get<ushort>( iTex, "Max Anisotropy" ) );
+
+				textures[t].maxAniso = std::max( 1.0f, std::min( af, max_af ) );
 
 				// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
 				// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
@@ -419,6 +433,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 		if ( mipmaps == 0 )
 			return false;
 
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, textures[id].maxAniso );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? textures[id].filter : GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
@@ -871,6 +886,7 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname, TexClampMode
 		break;
 	}
 
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
