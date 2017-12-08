@@ -712,13 +712,19 @@ void VertexColorProperty::update( const NifModel * nif, const QModelIndex & bloc
 	Property::update( nif, block );
 
 	if ( iBlock.isValid() && iBlock == block ) {
-		vertexmode = nif->get<int>( iBlock, "Vertex Mode" );
-		// 0 : source ignore
-		// 1 : source emissive
-		// 2 : source ambient + diffuse
-		lightmode = nif->get<int>( iBlock, "Lighting Mode" );
-		// 0 : emissive
-		// 1 : emissive + ambient + diffuse
+		if ( nif->checkVersion( 0, 0x14010001 ) ) {
+			vertexmode = nif->get<int>( iBlock, "Vertex Mode" );
+			// 0 : source ignore
+			// 1 : source emissive
+			// 2 : source ambient + diffuse
+			lightmode = nif->get<int>( iBlock, "Lighting Mode" );
+			// 0 : emissive
+			// 1 : emissive + ambient + diffuse
+		} else {
+			auto flags = nif->get<quint16>( iBlock, "Flags" );
+			vertexmode = (flags & 0x0030) >> 4;
+			lightmode = (flags & 0x0008) >> 3;
+		}
 	}
 }
 

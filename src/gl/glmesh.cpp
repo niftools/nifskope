@@ -404,6 +404,11 @@ void Mesh::transform()
 						case 0x10:
 							tempValue.changeType( NifValue::tByte );
 							break;
+						case 0x11:
+							if ( typeK == NiMesh::F_NORMUINT8_4 )
+								tempValue.changeType( NifValue::tByteColor4 );
+							typeLength = 1;
+							break;
 						case 0x13:
 							if ( typeK == NiMesh::F_NORMUINT8_4_BGRA )
 								tempValue.changeType( NifValue::tByteColor4 );
@@ -481,9 +486,16 @@ void Mesh::transform()
 								coords[coordSet].append( tempValue.get<Vector2>() );
 							}
 							break;
-						case NiMesh::F_NORMUINT8_4_BGRA:
+						case NiMesh::F_NORMUINT8_4:
 							if ( compType == NiMesh::E_COLOR )
 								colors.append( tempValue.get<ByteColor4>() );
+							break;
+						case NiMesh::F_NORMUINT8_4_BGRA:
+							if ( compType == NiMesh::E_COLOR ) {
+								// Swizzle BGRA -> RGBA
+								auto c = tempValue.get<ByteColor4>().data();
+								colors.append( {c[2], c[1], c[0], c[3]} );
+							}
 							break;
 						default:
 							Message::append( abortMsg, QString( "[%1] Unsupported Component: %2" ).arg( stream )
