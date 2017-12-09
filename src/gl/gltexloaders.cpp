@@ -48,6 +48,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 #include <QtEndian>
 
+#ifdef __APPLE__
+#include <gl3.h>
+#include <gl3ext.h>
+#endif
+
 
 /*! @file gltexloaders.cpp
  * @brief Texture loading functions.
@@ -72,12 +77,14 @@ bool extInitialized = false;
 bool extSupported = true;
 bool extStorageSupported = true;
 
+
+#ifndef __APPLE__
 // OpenGL 4.2
 PFNGLTEXSTORAGE2DPROC glTexStorage2D = nullptr;
 #ifdef _WIN32
 PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D = nullptr;
-// Fallback
 PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = nullptr;
+#endif
 #endif
 
 #define FOURCC_DXT1 MAKEFOURCC( 'D', 'X', 'T', '1' )
@@ -620,9 +627,11 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat, GLenum & target, GLuint &
 GLuint texLoadDDS( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id )
 {
 	if ( !extInitialized ) {
+#ifndef __APPLE__
 		glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)SOIL_GL_GetProcAddress( "glTexStorage2D" );
 #ifdef _WIN32
 		glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)SOIL_GL_GetProcAddress( "glCompressedTexSubImage2D" );
+#endif
 #endif
 		if ( !glTexStorage2D || !glCompressedTexSubImage2D )
 			extStorageSupported = false;
