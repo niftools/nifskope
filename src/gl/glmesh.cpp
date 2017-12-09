@@ -731,6 +731,9 @@ void Mesh::transformShapes()
 		transformRigid = false;
 
 		int vcnt = verts.count();
+		int ncnt = norms.count();
+		int tcnt = tangents.count();
+		int bcnt = bitangents.count();
 
 		transVerts.resize( vcnt );
 		transVerts.fill( Vector3() );
@@ -769,10 +772,14 @@ void Mesh::transformShapes()
 
 							Transform trans = boneTrans.value( weight.first );
 
-							transVerts[vindex] += trans * verts[ vindex ] * weight.second;
-							transNorms[vindex] += trans.rotation * norms[ vindex ] * weight.second;
-							transTangents[vindex] += trans.rotation * tangents[ vindex ] * weight.second;
-							transBitangents[vindex] += trans.rotation * bitangents[ vindex ] * weight.second;
+							if ( vcnt > vindex )
+								transVerts[vindex] += trans * verts[vindex] * weight.second;
+							if ( ncnt > vindex )
+								transNorms[vindex] += trans.rotation * norms[vindex] * weight.second;
+							if ( tcnt > vindex )
+								transTangents[vindex] += trans.rotation * tangents[vindex] * weight.second;
+							if ( bcnt > vindex )
+								transBitangents[vindex] += trans.rotation * bitangents[vindex] * weight.second;
 						}
 					}
 				}
@@ -791,16 +798,19 @@ void Mesh::transformShapes()
 				else
 					x++;
 
-				Matrix natrix = trans.rotation;
 				for ( const VertexWeight& vw : bw.weights ) {
 					int vindex = vw.vertex;
 					if ( vindex < 0 || vindex >= vcnt )
 						break;
 
-					transVerts[vindex] += trans * verts[vindex] * vw.weight;
-					transNorms[vindex] += natrix * norms[vindex] * vw.weight;
-					transTangents[vindex] += natrix * tangents[vindex] * vw.weight;
-					transBitangents[vindex] += natrix * bitangents[vindex] * vw.weight;
+					if ( vcnt > vindex )
+						transVerts[vindex] += trans * verts[vindex] * vw.weight;
+					if ( ncnt > vindex )
+						transNorms[vindex] += trans.rotation * norms[vindex] * vw.weight;
+					if ( tcnt > vindex )
+						transTangents[vindex] += trans.rotation * tangents[vindex] * vw.weight;
+					if ( bcnt > vindex )
+						transBitangents[vindex] += trans.rotation * bitangents[vindex] * vw.weight;
 				}
 			}
 		}
