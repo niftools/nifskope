@@ -36,7 +36,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "model/nifmodel.h"
 
 #include "dds.h"
-#include <lib/SOIL2/SOIL2.h>
 
 #include <QBuffer>
 #include <QByteArray>
@@ -626,34 +625,16 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat, GLenum & target, GLuint &
 
 GLuint texLoadDDS( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id )
 {
-	if ( !extInitialized ) {
-#ifndef __APPLE__
-		glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)SOIL_GL_GetProcAddress( "glTexStorage2D" );
-#ifdef _WIN32
-		glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)SOIL_GL_GetProcAddress( "glCompressedTexSubImage2D" );
-#endif
-#endif
-		if ( !glTexStorage2D || !glCompressedTexSubImage2D )
-			extStorageSupported = false;
-
-		extInitialized = true;
-	}
-
 	GLuint result = 0;
 	gli::texture texture;
 	if ( extStorageSupported ) {
 		texture = load_if_valid( data.constData(), data.size() );
 		if ( !texture.empty() )
 			result = GLI_create_texture( texture, target, id );
-	} else {
-#ifdef _WIN32
-		glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)SOIL_GL_GetProcAddress( "glCompressedTexImage2D" );
-#endif
-		if ( glCompressedTexImage2D ) {
-			texture = load_if_valid( data.constData(), data.size() );
-			if ( !texture.empty() )
-				result = GLI_create_texture_fallback( texture, target, id );
-		}
+	} else if ( glCompressedTexImage2D ) {
+		texture = load_if_valid( data.constData(), data.size() );
+		if ( !texture.empty() )
+			result = GLI_create_texture_fallback( texture, target, id );
 	}
 
 	if ( result ) {
@@ -863,6 +844,23 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat, GLenum & target, GLuint &
 	return mipmaps;
 }
 
+//! Initialize the GL functions necessary for texture loading
+void initializeTextureLoaders( const QOpenGLContext * context )
+{
+	if ( !extInitialized ) {
+#ifndef __APPLE__
+		glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)context->getProcAddress( "glTexStorage2D" );
+#ifdef _WIN32
+		glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)context->getProcAddress( "glCompressedTexSubImage2D" );
+		glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)context->getProcAddress( "glCompressedTexImage2D" );
+#endif
+#endif
+		if ( !glTexStorage2D || !glCompressedTexSubImage2D )
+			extStorageSupported = false;
+
+		extInitialized = true;
+	}
+}
 
 //! Create texture with glTexStorage2D using GLI
 GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id )

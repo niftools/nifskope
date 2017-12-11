@@ -40,8 +40,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>
 
-#include <lib/SOIL2/SOIL2.h>
-
 #include <QDebug>
 #include <QDir>
 #include <QFileSystemWatcher>
@@ -96,13 +94,16 @@ void initializeTextureUnits( const QOpenGLContext * context )
 		set_max_anisotropy();
 		//qDebug() << "maximum anisotropy" << max_anisotropy;
 	}
+
 #ifdef WIN32
 	if ( !glActiveTextureARB )
-		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)SOIL_GL_GetProcAddress( "glActiveTextureARB" );
+		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)context->getProcAddress( "glActiveTextureARB" );
 
 	if ( !glClientActiveTextureARB )
-		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)SOIL_GL_GetProcAddress( "glClientActiveTextureARB" );
+		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)context->getProcAddress( "glClientActiveTextureARB" );
 #endif
+
+	initializeTextureLoaders( context );
 }
 
 bool activateTextureUnit( int stage )

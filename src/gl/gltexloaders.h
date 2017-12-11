@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gli.hpp"
 
+class QOpenGLContext;
 class QByteArray;
 class QModelIndex;
 class QString;
@@ -42,8 +43,13 @@ class QString;
 typedef unsigned int GLuint;
 typedef unsigned int GLenum;
 
+//! Initialize the GL functions necessary for texture loading
+extern void initializeTextureLoaders( const QOpenGLContext * context );
+//! Create texture with glTexStorage2D using GLI
 extern GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id );
+//! Fallback for systems that do not have glTexStorage2D
 extern GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLuint& id );
+//! Rewrite of gli::load_dds to not crash on invalid textures
 extern gli::texture load_if_valid( const char * data, int size );
 
 //! @file gltexloaders.h Texture loading functions header

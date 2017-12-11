@@ -17,7 +17,7 @@ contains(QT_VERSION, ^5\\.[0-6]\\..*) {
 CONFIG += c++14
 
 # Dependencies
-CONFIG += nvtristrip qhull soil2 zlib lz4 fsengine gli
+CONFIG += nvtristrip qhull zlib lz4 fsengine gli
 
 # Debug/Release options
 CONFIG(debug, debug|release) {
@@ -343,33 +343,6 @@ qhull {
 		lib/qhull/src/libqhull/random.h \
 		lib/qhull/src/libqhull/stat.h \
 		lib/qhull/src/libqhull/user.h
-}
-
-soil2 {
-    INCLUDEPATH += lib/SOIL2
-    HEADERS += \
-        lib/SOIL2/etc1_utils.h \
-        lib/SOIL2/image_DXT.h \
-        lib/SOIL2/image_helper.h \
-        lib/SOIL2/jo_jpeg.h \
-        lib/SOIL2/pkm_helper.h \
-        lib/SOIL2/pvr_helper.h \
-        lib/SOIL2/SOIL2.h \
-        lib/SOIL2/stb_image.h \
-        lib/SOIL2/stb_image_write.h \
-        lib/SOIL2/stbi_DDS.h \
-        lib/SOIL2/stbi_DDS_c.h \
-        lib/SOIL2/stbi_ext.h \
-        lib/SOIL2/stbi_ext_c.h \
-        lib/SOIL2/stbi_pkm.h \
-        lib/SOIL2/stbi_pkm_c.h \
-        lib/SOIL2/stbi_pvr.h \
-        lib/SOIL2/stbi_pvr_c.h
-    SOURCES += \
-        lib/SOIL2/etc1_utils.c \
-        lib/SOIL2/image_DXT.c \
-        lib/SOIL2/image_helper.c \
-        lib/SOIL2/SOIL2.c
 }
 
 gli {
