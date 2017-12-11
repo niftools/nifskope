@@ -194,7 +194,7 @@ public:
 		QVector<Vector3> verts;
 		QVector<Vector3> norms;
 
-		int numVerts;
+		int numVerts = 0;
 
 		if ( nif->getUserVersion2() < 100 ) {
 			verts = nif->getArray<Vector3>( iData, "Vertices" );

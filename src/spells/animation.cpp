@@ -374,7 +374,7 @@ public:
 	}
 
 	
-	QModelIndex cast( NifModel * nif, const QModelIndex & index )
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		auto iHeader = nif->getHeader();
 		auto numStrings = nif->get<int>( iHeader, "Num Strings" );

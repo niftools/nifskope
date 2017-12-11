@@ -259,7 +259,8 @@ defineTest(copyDirs) {
 
 		# Fix copy for subdir on unix, also assure clean subdirs (no extra files)
 		!isEmpty(subdir) {
-			win32:QMAKE_POST_LINK += rd /s /q $${ddir} $$nt
+			win32:*msvc*:QMAKE_POST_LINK += rd /s /q $${ddir} $$nt
+			else:!unix:QMAKE_POST_LINK += rm -rf $${ddir} $$nt
 			unix:QMAKE_POST_LINK += rm -rf $${ddir} $$nt
 		}
 

@@ -349,8 +349,8 @@ class spEditTransformation final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Edit" ); }
 	QString page() const override final { return Spell::tr( "Transform" ); }
-	bool instant() const { return true; }
-	QIcon icon() const
+	bool instant() const override final { return true; }
+	QIcon icon() const override final
 	{
 		if ( !transform_xpm_icon )
 			transform_xpm_icon = QIconPtr( new QIcon(QPixmap( transform_xpm )) );

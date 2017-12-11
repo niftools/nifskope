@@ -71,7 +71,7 @@ signals:
 
 public slots:
 	//! Sets the root index
-	void setRootIndex( const QModelIndex & index );
+	void setRootIndex( const QModelIndex & index ) override final;
 	//! Clear the root index; probably conncted to NifSkope::dList
 	void clearRootIndex();
 
@@ -84,7 +84,7 @@ protected slots:
 	//! Recursively updates version conditions
 	void updateConditionRecurse( const QModelIndex & index );
 	//! Called when the current index changes
-	void currentChanged( const QModelIndex & current, const QModelIndex & previous );
+	void currentChanged( const QModelIndex & current, const QModelIndex & previous ) override final;
 
 	//! Scroll to index; connected to expanded()
 	void scrollExpand( const QModelIndex & index );

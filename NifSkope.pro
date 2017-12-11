@@ -330,23 +330,15 @@ nvtristrip {
 }
 
 qhull {
-	INCLUDEPATH += lib/qhull/src
-	HEADERS += \
-		lib/qhull/src/libqhull/geom.h \
-		lib/qhull/src/libqhull/io.h \
-		lib/qhull/src/libqhull/libqhull.h \
-		lib/qhull/src/libqhull/mem.h \
-		lib/qhull/src/libqhull/merge.h \
-		lib/qhull/src/libqhull/poly.h \
-		lib/qhull/src/libqhull/qhull_a.h \
-		lib/qhull/src/libqhull/qset.h \
-		lib/qhull/src/libqhull/random.h \
-		lib/qhull/src/libqhull/stat.h \
-		lib/qhull/src/libqhull/user.h
+    !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/qhull/src
+    !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/qhull/src
+    else:INCLUDEPATH += lib/qhull/src
+    HEADERS += $$files($$PWD/lib/qhull/src/libqhull/*.h, false)
 }
 
 gli {
-    INCLUDEPATH += lib/gli/gli lib/gli/external
+    !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/gli/gli -isystem ../nifskope/lib/gli/external
+    else:INCLUDEPATH += lib/gli/gli lib/gli/external
     HEADERS += $$files($$PWD/lib/gli/gli/*.hpp, true)
     HEADERS += $$files($$PWD/lib/gli/gli/*.inl, true)
     HEADERS += $$files($$PWD/lib/gli/external/glm/*.hpp, true)
@@ -354,37 +346,11 @@ gli {
 }
 
 zlib {
-	INCLUDEPATH += lib/zlib
-
-	HEADERS += \
-		lib/zlib/crc32.h \
-		lib/zlib/deflate.h \
-		lib/zlib/gzguts.h \
-		lib/zlib/inffast.h \
-		lib/zlib/inffixed.h \
-		lib/zlib/inflate.h \
-		lib/zlib/inftrees.h \
-		lib/zlib/trees.h \
-		lib/zlib/zconf.h \
-		lib/zlib/zlib.h \
-		lib/zlib/zutil.h
-
-	SOURCES += \
-		lib/zlib/adler32.c \
-		lib/zlib/compress.c \
-		lib/zlib/crc32.c \
-		lib/zlib/deflate.c \
-		lib/zlib/gzclose.c \
-		lib/zlib/gzlib.c \
-		lib/zlib/gzread.c \
-		lib/zlib/gzwrite.c \
-		lib/zlib/infback.c \
-		lib/zlib/inffast.c \
-		lib/zlib/inflate.c \
-		lib/zlib/inftrees.c \
-		lib/zlib/trees.c \
-		lib/zlib/uncompr.c \
-		lib/zlib/zutil.c
+    !*msvc*:QMAKE_CFLAGS += -isystem ../nifskope/lib/zlib
+    !*msvc*:QMAKE_CXXFLAGS += -isystem ../nifskope/lib/zlib
+    else:INCLUDEPATH += lib/zlib
+    HEADERS += $$files($$PWD/lib/zlib/*.h, false)
+    SOURCES += $$files($$PWD/lib/zlib/*.c, false)
 }
 
 lz4 {
@@ -438,6 +404,11 @@ win32 {
 	#  Multithreaded compiling for Visual Studio
 	QMAKE_CXXFLAGS += -MP
 
+	# Standards conformance to match GCC and clang
+	!isEmpty(_MSC_VER):greaterThan(_MSC_VER, 1900) {
+		QMAKE_CXXFLAGS += /permissive- /std:c++latest
+	}
+
 	# LINKER FLAGS
 
 	#  Relocate .lib and .exp files to keep release dir clean
@@ -445,10 +416,6 @@ win32 {
 
 	#  PDB location
 	QMAKE_LFLAGS_DEBUG += /PDB:$$syspath($${INTERMEDIATE}/nifskope.pdb)
-
-	#  Clean up .embed.manifest from release dir
-	#	Fallback for `Manifest Embed` above
-	QMAKE_POST_LINK += $$QMAKE_DEL_FILE $$syspath($${DESTDIR}/*.manifest) $$nt
 }
 
 

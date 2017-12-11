@@ -1748,7 +1748,7 @@ public:
 	void SetAttributeOffset( VertexAttribute attr, uint offset )
 	{
 		if ( attr != VA_POSITION ) {
-			desc = ((uint64_t)offset << (4 * (uchar)attr + 2)) | desc & ~(15 << (4 * (uchar)attr + 4));
+			desc = ((uint64_t)offset << (4 * (uchar)attr + 2)) | (desc & ~(15 << (4 * (uchar)attr + 4)));
 		}
 	}
 

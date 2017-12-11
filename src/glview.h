@@ -285,7 +285,7 @@ public:
 	~GLGraphicsView();
 
 protected slots:
-	virtual void setupViewport( QWidget * viewport );
+	void setupViewport( QWidget * viewport ) override;
 
 protected:
 	bool eventFilter( QObject * o, QEvent * e ) override final;

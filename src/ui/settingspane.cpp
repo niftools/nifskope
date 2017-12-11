@@ -464,11 +464,10 @@ void SettingsRender::setDefault()
 	read();
 }
 
-
+#ifdef Q_OS_WIN32
 bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QString & regValue, const QString & gameFolder,
                      QStringList gameSubDirs = QStringList(), QStringList gameArchiveFilters = QStringList() )
 {
-#ifdef Q_OS_WIN32
 	QSettings reg( regPath, QSettings::Registry32Format );
 	QDir dir( reg.value( regValue ).toString() );
 
@@ -495,7 +494,6 @@ bool regFolderPath( QStringList & gamePaths, const QString & regPath, const QStr
 		}
 		return true;
 	}
-#endif
 	return false;
 }
 
@@ -508,6 +506,7 @@ bool regFolderPaths( QStringList & gamePaths, const QStringList & regPaths, cons
 	}
 	return result;
 }
+#endif
 
 /*
  * Resources

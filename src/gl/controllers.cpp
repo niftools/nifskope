@@ -156,7 +156,7 @@ void ControllerManager::setSequence( const QString & seqname )
 						continue;
 
 					if ( ctrltype == "NiTransformController" && multiTargetTransformer ) {
-						if ( multiTargetTransformer->setInterpolator( node, iInterp ) ) {
+						if ( multiTargetTransformer->setInterpolatorNode( node, iInterp ) ) {
 							multiTargetTransformer->start = start;
 							multiTargetTransformer->stop = stop;
 							multiTargetTransformer->phase = phase;
@@ -325,7 +325,7 @@ bool MultiTargetTransformController::update( const NifModel * nif, const QModelI
 	return false;
 }
 
-bool MultiTargetTransformController::setInterpolator( Node * node, const QModelIndex & idx )
+bool MultiTargetTransformController::setInterpolatorNode( Node * node, const QModelIndex & idx )
 {
 	const NifModel * nif = static_cast<const NifModel *>(idx.model());
 

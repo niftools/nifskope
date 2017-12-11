@@ -22,7 +22,7 @@ class spReorderLinks final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Reorder Link Arrays" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	bool sanity() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -85,7 +85,7 @@ class spSanitizeLinkArrays final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Collapse Link Arrays" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	bool sanity() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -133,7 +133,7 @@ class spAdjustTextureSources final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Adjust Texture Sources" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	bool sanity() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -269,7 +269,7 @@ class spSanityCheckLinks final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Check Links" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	bool sanity() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -344,7 +344,7 @@ class spFixInvalidNames final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Fix Invalid Block Names" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	bool sanity() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{

@@ -159,8 +159,8 @@ class spChooseTexture final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Choose" ); }
 	QString page() const override final { return Spell::tr( "Texture" ); }
-	bool instant() const { return true; }
-	QIcon icon() const
+	bool instant() const override final { return true; }
+	QIcon icon() const override final
 	{
 		if ( !tex42_xpm_icon )
 			tex42_xpm_icon = QIconPtr( new QIcon(QPixmap( tex42_xpm )) );

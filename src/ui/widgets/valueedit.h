@@ -288,9 +288,9 @@ public slots:
 	void setValue( uint value );
 
 protected:
-	QString textFromValue( int value ) const;
+	QString textFromValue( int value ) const override;
 
-	int valueFromText( const QString & text ) const;
+	int valueFromText( const QString & text ) const override;
 
 	uint toUInt( int i ) const
 	{

@@ -770,8 +770,7 @@ void BSShape::drawSelection() const
 				auto suboff = subrec.child( o, 2 ).data().toInt() / 3;
 				auto subcnt = subrec.child( o + 1, 2 ).data().toInt();
 
-				int j = suboff;
-				for ( j; j < subcnt + suboff; j++ ) {
+				for ( int j = suboff; j < subcnt + suboff; j++ ) {
 					if ( j >= maxTris )
 						continue;
 
@@ -788,9 +787,8 @@ void BSShape::drawSelection() const
 			// Sub-segmentless Segments
 			if ( numRec == 0 && cnt > 0 ) {
 				glColor( Color4( cols.value( (idx.row() + l) % 7 ) ) );
-			
-				int i = off;
-				for ( i; i < cnt + off; i++ ) {
+
+				for ( int i = off; i < cnt + off; i++ ) {
 					if ( i >= maxTris )
 						continue;
 			

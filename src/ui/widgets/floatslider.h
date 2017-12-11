@@ -83,9 +83,9 @@ public:
 	void addEditor( QWidget * );
 
 	//! The recommended size of the widget; reimplemented from QWidget
-	QSize sizeHint() const;
+	QSize sizeHint() const override;
 	//! The recommended minimum size of the widget; reimplemented from QWidget
-	QSize minimumSizeHint() const;
+	QSize minimumSizeHint() const override;
 
 signals:
 	void valueChanged( float );

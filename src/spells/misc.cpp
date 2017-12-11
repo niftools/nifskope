@@ -15,8 +15,8 @@ class spUpdateArray final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Update" ); }
 	QString page() const override final { return Spell::tr( "Array" ); }
-	QIcon icon() const { return QIcon( ":/img/update" ); }
-	bool instant() const { return true; }
+	QIcon icon() const override final { return QIcon( ":/img/update" ); }
+	bool instant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -104,8 +104,8 @@ class spFollowLink final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "Follow Link" ); }
-	bool instant() const { return true; }
-	QIcon icon() const { return QIcon( ":/img/link" ); }
+	bool instant() const override final { return true; }
+	QIcon icon() const override final { return QIcon( ":/img/link" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{

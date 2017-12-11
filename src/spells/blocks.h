@@ -17,7 +17,7 @@ class spCopyBranch final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Copy Branch" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
-	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Copy ); }
+	QKeySequence hotkey() const override final { return QKeySequence( QKeySequence::Copy ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final;
@@ -30,7 +30,7 @@ public:
 	QString name() const override final { return Spell::tr( "Paste Branch" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
 	// Doesn't work unless the menu entry is unique
-	QKeySequence hotkey() const { return QKeySequence( QKeySequence::Paste ); }
+	QKeySequence hotkey() const override final { return QKeySequence( QKeySequence::Paste ); }
 
 	QString acceptFormat( const QString & format, const NifModel * nif );
 
@@ -44,7 +44,7 @@ class spDuplicateBranch final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Duplicate Branch" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
-	QKeySequence hotkey() const { return{ Qt::CTRL + Qt::Key_D }; }
+	QKeySequence hotkey() const override final { return{ Qt::CTRL + Qt::Key_D }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final;
 

@@ -21,8 +21,8 @@ class spEditFlags : public Spell
 {
 public:
 	QString name() const override { return Spell::tr( "Flags" ); }
-	bool instant() const { return true; }
-	QIcon icon() const { return QIcon( ":/img/flag" ); }
+	bool instant() const override { return true; }
+	QIcon icon() const override { return QIcon( ":/img/flag" ); }
 
 	//! Node / Property types on which flags are applicable
 	enum FlagType
@@ -965,8 +965,8 @@ class spEditVertexDesc final : public spEditFlags
 {
 public:
 	QString name() const override final { return Spell::tr( "Vertex Flags" ); }
-	bool instant() const { return true; }
-	QIcon icon() const { return QIcon( ":/img/flag" ); }
+	bool instant() const override final { return true; }
+	QIcon icon() const override final { return QIcon( ":/img/flag" ); }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -979,7 +979,6 @@ public:
 		uint stream = nif->getUserVersion2();
 		bool dynamic = nif->inherits( index.parent(), "BSDynamicTriShape" );
 
-		ushort flags = desc.GetFlags();
 		QStringList flagNames {
 			Spell::tr( "Vertex" ),	  // VA_POSITION = 0x0,
 			Spell::tr( "UVs" ),		  // VA_TEXCOORD0 = 0x1,

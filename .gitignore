@@ -31,6 +31,7 @@ ui_*.h
 
 # Qt Creator
 NifSkope.pro.user
+.qmake.stash
 
 # Binaries
 NifSkope

@@ -108,7 +108,7 @@ public:
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
-	bool setInterpolator( Node * node, const QModelIndex & idx );
+	bool setInterpolatorNode( Node * node, const QModelIndex & idx );
 
 protected:
 	QPointer<Node> target;

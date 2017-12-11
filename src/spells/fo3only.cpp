@@ -14,7 +14,7 @@ class spFO3FixShapeDataName final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Fix Geometry Data Names" ); }
 	QString page() const override final { return Spell::tr( "Sanitize" ); }
-	bool sanity() const { return true; }
+	bool sanity() const override final { return true; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Valid if nothing or NiGeometryData-based node is selected

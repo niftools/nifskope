@@ -188,7 +188,7 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	updateData |= updateSkin;
 	doSkinning = doSkinningCurr;
 
-	if ( !iBlock.isValid() || !index.isValid() && !updateSkin )
+	if ( (!iBlock.isValid() || !index.isValid()) && !updateSkin )
 		return;
 
 	if ( !isBSLODPresent ) {
@@ -472,6 +472,8 @@ void Mesh::transform()
 							case NiMesh::E_BINORMAL:
 							case NiMesh::E_BINORMAL_BP:
 								bitangents.append( tempValue.get<Vector3>() );
+								break;
+							default:
 								break;
 							}
 							break;

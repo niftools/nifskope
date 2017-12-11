@@ -898,7 +898,6 @@ GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id )
 	for ( size_t layer = 0; layer < texture.layers(); ++layer )
 	for ( size_t face = 0; face < texture.faces(); ++face )
 	for ( size_t level = 0; level < texture.levels(); ++level ) {
-		GLsizei const layerGL = static_cast<GLsizei>(layer);
 		glm::tvec3<GLsizei> textureLevelExtent( texture.extent( level ) );
 		switch ( texture.target() ) {
 		case gli::TARGET_2D:
@@ -955,7 +954,6 @@ GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLui
 	for ( std::size_t layer = 0; layer < texture.layers(); ++layer )
 	for ( std::size_t face = 0; face < texture.faces(); ++face )
 	for ( std::size_t level = 0; level < texture.levels(); ++level ) {
-		GLsizei const layerGL = static_cast<GLsizei>(layer);
 		glm::tvec3<GLsizei> extent( texture.extent( level ) );
 		switch ( texture.target() ) {
 		case gli::TARGET_2D:
@@ -989,7 +987,7 @@ GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLui
 }
 
 //! Rewrite of gli::load_dds to not crash on invalid textures
-gli::texture load_if_valid( const char * data, int size )
+gli::texture load_if_valid( const char * data, unsigned int size )
 {
 	using namespace gli;
 	using namespace gli::detail;

@@ -33,7 +33,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
-#include "gli.hpp"
+#ifdef _MSC_VER
+#pragma warning(push, 0)
+#endif
+
+#include <gli.hpp>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 class QOpenGLContext;
 class QByteArray;
@@ -50,7 +58,7 @@ extern GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint&
 //! Fallback for systems that do not have glTexStorage2D
 extern GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLuint& id );
 //! Rewrite of gli::load_dds to not crash on invalid textures
-extern gli::texture load_if_valid( const char * data, int size );
+extern gli::texture load_if_valid( const char * data, unsigned int size );
 
 //! @file gltexloaders.h Texture loading functions header
 
