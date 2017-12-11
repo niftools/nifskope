@@ -44,9 +44,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QSettings>
 
 
-//! @file nifmodel.cpp The NIF data model.
 
-const QString loadFail = NifModel::tr( "The NIF file could not be read. See Details for more information." );
+//! @file nifmodel.cpp The NIF data model.
 
 NifModel::NifModel( QObject * parent ) : BaseModel( parent )
 {
@@ -520,7 +519,7 @@ bool NifModel::updateArrayItem( NifItem * array )
 		auto m = tr( "[%1] Array %2 much too large. %3 bytes requested" ).arg( getBlockNumber( array ) )
 			.arg( array->name() ).arg( rows );
 		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, loadFail, m, QMessageBox::Critical );
+			Message::append( nullptr, tr( readFail ), m, QMessageBox::Critical );
 		} else {
 			testMsg( m );
 		}
@@ -529,7 +528,7 @@ bool NifModel::updateArrayItem( NifItem * array )
 	} else if ( rows < 0 ) {
 		auto m = tr( "[%1] Array %2 invalid" ).arg( getBlockNumber( array ) ).arg( array->name() );
 		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, loadFail, m, QMessageBox::Critical );
+			Message::append( nullptr, tr( readFail ), m, QMessageBox::Critical );
 		} else {
 			testMsg( m );
 		}
@@ -1996,7 +1995,7 @@ bool NifModel::load( QIODevice & device )
 	catch ( QString & err )
 	{
 		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, loadFail, err, QMessageBox::Critical );
+			Message::append( nullptr, tr( readFail ), err, QMessageBox::Critical );
 		} else {
 			testMsg( err );
 		}

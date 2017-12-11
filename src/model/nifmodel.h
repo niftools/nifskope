@@ -51,6 +51,14 @@ using SpellBookPtr = std::shared_ptr<SpellBook>;
 
 //! @file nifmodel.h NifModel, NifModelEval
 
+
+//! Primary string for read failure
+const char * const readFail = QT_TR_NOOP( "The NIF file could not be read. See Details for more information." );
+
+//! Secondary string for read failure
+const char * const readFailFinal = QT_TR_NOOP( "Failed to load %1" );
+
+
 //! The main data model for the NIF file.
 class NifModel final : public BaseModel
 {

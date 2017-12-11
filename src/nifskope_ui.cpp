@@ -798,8 +798,8 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 	} else {
 		// File failed to load
-		Message::append( this, tr( "The NIF file could not be read. See Details for more information." ), 
-						 tr( "Failed to load %1" ).arg( fname ), QMessageBox::Critical );
+		Message::append( this, NifModel::tr( readFail ), 
+						 NifModel::tr( readFailFinal ).arg( fname ), QMessageBox::Critical );
 
 		nif->clear();
 		kfm->clear();
