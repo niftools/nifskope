@@ -124,8 +124,9 @@ void KfmModel::clear()
 	rootData.setIsCompound( true );
 	rootData.setIsConditionless( true );
 	insertType( root, rootData );
-	kfmroot = root->child( 0 );
-	kfmroot->setCondition( true );
+	kfmroot = (root->childCount()) ? root->child( 0 ) : nullptr;
+	if ( kfmroot )
+		kfmroot->setCondition( true );
 	version = 0x0200000b;
 	endResetModel();
 
@@ -214,8 +215,9 @@ void KfmModel::insertType( NifItem * parent, const NifData & data, int at )
 			updateArrayItem( array );
 
 	} else if ( data.isCompound() ) {
-
 		NifBlockPtr compound = compounds.value( data.type() );
+		if ( !compound )
+			return;
 		NifItem * branch = insertBranch( parent, data, at );
 		branch->prepareInsert( compound->types.count() );
 
