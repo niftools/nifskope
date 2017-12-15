@@ -125,6 +125,8 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 			nif->setLink( index, "Next Controller", nif->getBlockNumber( iBlock ) );
 			nif->setLink( iBlock, "Target", nif->getLink( index, "Target" ) );
 		}
+	} else if ( nif->inherits( index, "NiAVObject" ) && nif->inherits( iBlock, "NiCollisionObject" ) ) {
+		nif->setLink( index, "Collision Object", nif->getBlockNumber( iBlock ) );
 	}
 }
 
