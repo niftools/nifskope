@@ -203,7 +203,7 @@ public:
 						}
 
 						QString externalCond = list.value( "externalcond" );
-						if ( externalCond == "1" ) {
+						if ( externalCond == "1" || blk->id.startsWith( "BSVertexData" ) ) {
 							NifModel::fixedCompounds.insert( blk->id, blk );
 						}
 					}
@@ -268,6 +268,7 @@ public:
 				{
 					QString type = list.value( "type" );
 					QString tmpl = list.value( "template" );
+					QString arg  = list.value( "arg" );
 					QString arr1 = list.value( "arr1" );
 					QString arr2 = list.value( "arr2" );
 					QString cond = list.value( "cond" );
@@ -310,13 +311,18 @@ public:
 						isCompound = !isMixin;
 					}
 
+					// Special casing for BSVertexDesc as an ARG
+					// since we have internalized the type
+					if ( arg == "Vertex Desc\\Vertex Attributes" )
+						arg = "Vertex Desc";
+
 					// now allocate
 					data = NifData(
 						list.value( "name" ),
 						type,
 						tmpl,
 						NifValue( NifValue::type( type ) ),
-						list.value( "arg" ),
+						arg,
 						arr1,
 						arr2,
 						cond,
