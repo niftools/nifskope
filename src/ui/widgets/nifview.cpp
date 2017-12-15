@@ -350,6 +350,9 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 
 		QModelIndexList selectedRows = selectionModel()->selectedIndexes();
 		QModelIndexList valueColumns = valueIndexList( selectedRows );
+		if ( !(selectedRows.size() && valueColumns.size()) )
+			return;
+
 		auto firstRow = selectedRows.at( 0 );
 		auto firstValue = valueColumns.at( 0 );
 		auto firstRowType = nif->getValue( firstRow ).type();
