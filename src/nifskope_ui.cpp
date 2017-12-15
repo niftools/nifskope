@@ -1270,8 +1270,9 @@ bool NifSkope::eventFilter( QObject * o, QEvent * e )
 			ogl->setDisabled( true );
 
 			isResizing = true;
-			resizeTimer->start( 300 );
 		}
+
+		resizeTimer->start( 300 );
 
 		return true;
 	}

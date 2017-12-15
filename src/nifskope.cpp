@@ -290,10 +290,11 @@ NifSkope::NifSkope()
 	graphicsView->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
 	//graphicsView->setOptimizationFlags( QGraphicsView::DontSavePainterState | QGraphicsView::DontAdjustForAntialiasing );
 
-	// Set central widget and viewport
-	setCentralWidget( graphicsView );
 	graphicsView->setViewport( ogl );
 	graphicsView->setViewportUpdateMode( QGraphicsView::FullViewportUpdate );
+
+	// Set central widget and viewport
+	setCentralWidget( graphicsView );
 	
 	setContextMenuPolicy( Qt::NoContextMenu );
 
