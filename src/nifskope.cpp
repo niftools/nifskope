@@ -201,7 +201,7 @@ NifSkope::NifSkope()
 	tree->setItemDelegate( nif->createDelegate( this, book ) );
 	tree->installEventFilter( this );
 	tree->header()->moveSection( 1, 2 );
-	tree->header()->resizeSection( NifModel::NameCol, 140 );
+	tree->header()->resizeSection( NifModel::NameCol, 135 );
 	tree->header()->resizeSection( NifModel::ValueCol, 250 );
 	// Allow multi-row paste
 	//	Note: this has some side effects such as vertex selection 
@@ -214,6 +214,8 @@ NifSkope::NifSkope()
 	header->setItemDelegate( nif->createDelegate( this, book ) );
 	header->installEventFilter( this );
 	header->header()->moveSection( 1, 2 );
+	header->header()->resizeSection( NifModel::NameCol, 135 );
+	header->header()->resizeSection( NifModel::ValueCol, 250 );
 
 	// KFM
 	kfmtree = ui->kfmtree;

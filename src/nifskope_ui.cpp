@@ -626,6 +626,7 @@ void NifSkope::initToolBars()
 
 	tLOD->addWidget( lodSlider );
 	tLOD->setEnabled( false );
+	tLOD->setVisible( false );
 
 	connect( lodSlider, &QSlider::valueChanged, ogl->getScene(), &Scene::updateLodLevel );
 	connect( lodSlider, &QSlider::valueChanged, ogl, &GLView::updateGL );
@@ -778,6 +779,8 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 
 	// Reconnect the models to the views
 	swapModels();
+	// Set List vs Tree
+	setListMode();
 
 	// Re-enable window
 	ogl->setUpdatesEnabled( true );
@@ -792,6 +795,9 @@ void NifSkope::onLoadComplete( bool success, QString & fname )
 		select( nif->getHeader() );
 
 		header->setRootIndex( nif->getHeader() );
+		// Refresh the header rows
+		header->updateConditions( nif->getHeader().child( 0, 0 ), nif->getHeader().child( 20, 0 ) );
+
 		ogl->setOrientation( GLView::ViewFront );
 
 		enableUi();

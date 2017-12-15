@@ -165,7 +165,6 @@ protected:
 
 	struct Settings
 	{
-		QColor background;
 		QColor highlight;
 		QColor wireframe;
 	} cfg;

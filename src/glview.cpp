@@ -233,7 +233,7 @@ void GLView::updateSettings()
 	QSettings settings;
 	settings.beginGroup( "Settings/Render" );
 
-	cfg.background = settings.value( "Colors/Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	cfg.background = settings.value( "Colors/Background", QColor( 46, 46, 46 ) ).value<QColor>();
 	cfg.fov = settings.value( "General/Camera/Field Of View" ).toFloat();
 	cfg.moveSpd = settings.value( "General/Camera/Movement Speed" ).toFloat();
 	cfg.rotSpd = settings.value( "General/Camera/Rotation Speed" ).toFloat();

@@ -207,8 +207,7 @@ void Node::updateSettings()
 {
 	QSettings settings;
 	settings.beginGroup( "Settings/Render/Colors/" );
-
-	cfg.background = settings.value( "Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	// TODO: Remove the registry read for every new Node
 	cfg.highlight = settings.value( "Highlight", QColor( 255, 255, 0 ) ).value<QColor>();
 	cfg.wireframe = settings.value( "Wireframe", QColor( 0, 255, 0 ) ).value<QColor>();
 

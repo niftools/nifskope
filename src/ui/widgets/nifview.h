@@ -78,9 +78,9 @@ public slots:
 	//! Sets Hiding of non-applicable rows
 	void setRowHiding( bool );
 
-protected slots:
 	//! Updates version conditions (connect to dataChanged)
 	void updateConditions( const QModelIndex & topLeft, const QModelIndex & bottomRight );
+protected slots:
 	//! Recursively updates version conditions
 	void updateConditionRecurse( const QModelIndex & index );
 	//! Called when the current index changes
