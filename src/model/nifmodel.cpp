@@ -436,7 +436,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 		return nullptr;
 
 	if ( item->isArray() || item->parent()->isArray() ) {
-		int slash = name.indexOf( "\\" );
+		int slash = name.indexOf( QLatin1String("\\") );
 		if ( slash > 0 ) {
 			QString left = name.left( slash );
 			QString right = name.right( name.length() - slash - 1 );

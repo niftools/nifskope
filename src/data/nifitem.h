@@ -325,7 +325,8 @@ public:
 		if ( at < 0 || at > childItems.count() ) {
 			childItems.append( item );
 		} else {
-			invalidateRowCounts();
+			if ( at < childItems.size() - 1 )
+				invalidateRowCounts();
 			childItems.insert( at, item );
 		}
 
@@ -471,12 +472,12 @@ public:
 		childItems.clear();
 	}
 
-	const QVector<int> & getLinkAncestorRows() const
+	const QVector<ushort> & getLinkAncestorRows() const
 	{
 		return linkAncestorRows;
 	}
 	
-	const QVector<int> & getLinkRows() const
+	const QVector<ushort> & getLinkRows() const
 	{
 		return linkRows;
 	}
@@ -706,18 +707,18 @@ private:
 	QVector<NifItem *> childItems;
 
 	//! Rows which have links under them at any level
-	QVector<int> linkAncestorRows;
+	QVector<ushort> linkAncestorRows;
 	//! Rows which are links
-	QVector<int> linkRows;
-
-	//! Item's condition status, -1 is invalid, otherwise 0/1
-	int conditionStatus = -1;
-	//! Item's vercond status, -1 is invalid, otherwise 0/1
-	int vercondStatus = -1;
-	//! Item's row index, -1 is invalid, otherwise 0+
-	mutable int rowIdx = -1;
+	QVector<ushort> linkRows;
 	//! If item is array with fixed compounds, the conditions are stored here for reuse
 	QVector<bool> arrConds;
+
+	//! Item's row index, -1 is invalid, otherwise 0+
+	mutable int rowIdx = -1;
+	//! Item's condition status, -1 is invalid, otherwise 0/1
+	char conditionStatus = -1;
+	//! Item's vercond status, -1 is invalid, otherwise 0/1
+	char vercondStatus = -1;
 };
 
 #endif
