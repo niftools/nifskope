@@ -110,7 +110,7 @@ void SpellBook::cast( NifModel * nif, const QModelIndex & index, SpellPtr spell 
 
 	QDialogButtonBox::StandardButton response = QDialogButtonBox::Yes;
 
-	if ( !suppressConfirm ) {
+	if ( !suppressConfirm && spell->page() != "Array" ) {
 		response = CheckableMessageBox::question( this, "Confirmation", "This action cannot currently be undone. Do you want to continue?", "Do not ask me again", &accepted );
 
 		if ( accepted )

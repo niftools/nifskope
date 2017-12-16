@@ -1,4 +1,5 @@
 #include "misc.h"
+#include "model/undocommands.h"
 
 #include <QFileDialog>
 
@@ -50,7 +51,7 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		nif->updateArray( index );
+		nif->undoStack->push( new ArrayUpdateCommand( index, nif ) );
 		return index;
 	}
 };

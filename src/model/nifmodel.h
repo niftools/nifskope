@@ -67,6 +67,7 @@ class NifModel final : public BaseModel
 	friend class NifXmlHandler;
 	friend class NifModelEval;
 	friend class NifOStream;
+	friend class ArrayUpdateCommand;
 
 public:
 	NifModel( QObject * parent = 0 );

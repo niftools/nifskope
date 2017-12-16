@@ -185,3 +185,26 @@ void ToggleCheckBoxListCommand::undo()
 
 	//qDebug() << nif->data( idx ).toString();
 }
+
+ArrayUpdateCommand::ArrayUpdateCommand( const QModelIndex & index, NifModel * model )
+	: QUndoCommand(), nif( model ), idx( index )
+{
+	setText( QCoreApplication::translate( "ArrayUpdateCommand", "Update Array" ) );
+}
+
+void ArrayUpdateCommand::redo()
+{
+	if ( idx.isValid() ) {
+		oldSize = nif->rowCount( idx );
+		nif->updateArray( idx );
+		newSize = nif->rowCount( idx );
+	}
+}
+
+void ArrayUpdateCommand::undo()
+{
+	if ( idx.isValid() ) {
+		// TODO: Actually attempt to set the array size back
+		nif->updateArray( idx );
+	}
+}

@@ -88,4 +88,16 @@ private:
 };
 
 
+class ArrayUpdateCommand : public QUndoCommand
+{
+public:
+	ArrayUpdateCommand( const QModelIndex & index, NifModel * model );
+	void redo() override;
+	void undo() override;
+private:
+	NifModel * nif;
+	uint newSize, oldSize;
+	QPersistentModelIndex idx;
+};
+
 #endif // UNDOCOMMANDS_H
