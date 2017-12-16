@@ -485,7 +485,7 @@ void BSShape::drawSelection() const
 
 	// Set current block name and detect if extra data
 	auto blockName = nif->getBlockName( blk );
-	if ( blockName == "BSPackedCombinedSharedGeomDataExtra" )
+	if ( blockName.startsWith( "BSPackedCombined" ) )
 		extraData = true;
 
 	// Don't do anything if this block is not the current block
@@ -567,11 +567,11 @@ void BSShape::drawSelection() const
 		}
 	}
 	
-	if ( blockName == "BSPackedCombinedSharedGeomDataExtra" && pBlock == iBlock ) {
+	if ( blockName.startsWith( "BSPackedCombined" ) && pBlock == iBlock ) {
 		QVector<QModelIndex> idxs;
 		if ( n == "Bounding Sphere" ) {
 			idxs += idx;
-		} else if ( n == "BSPackedCombinedSharedGeomDataExtra" ) {
+		} else if ( n.startsWith( "BSPackedCombined" ) ) {
 			auto data = nif->getIndex( idx, "Object Data" );
 			int dataCt = nif->rowCount( data );
 
@@ -593,7 +593,7 @@ void BSShape::drawSelection() const
 			return;
 		}
 
-		Vector3 pTrans = nif->get<Vector3>( pBlock, "Translation" );
+		Vector3 pTrans = nif->get<Vector3>( pBlock.child( 1, 0 ), "Translation" );
 		auto iBSphere = nif->getIndex( pBlock, "Bounding Sphere" );
 		Vector3 pbvC = nif->get<Vector3>( iBSphere.child( 0, 2 ) );
 		float pbvR = nif->get<float>( iBSphere.child( 1, 2 ) );
@@ -606,9 +606,11 @@ void BSShape::drawSelection() const
 		glPopMatrix();
 
 		for ( auto i : idxs ) {
-			Matrix mat = nif->get<Matrix>( i.parent(), "Rotation" );
-			//auto trans = nif->get<Vector3>( idx.parent(), "Translation" );
-			float scale = nif->get<float>( i.parent(), "Scale" );
+			// Transform compound
+			auto iTrans = i.parent().child( 1, 0 );
+			Matrix mat = nif->get<Matrix>( iTrans, "Rotation" );
+			//auto trans = nif->get<Vector3>( iTrans, "Translation" );
+			float scale = nif->get<float>( iTrans, "Scale" );
 
 			Vector3 bvC = nif->get<Vector3>( i, "Center" );
 			float bvR = nif->get<float>( i, "Radius" );
