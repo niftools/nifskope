@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "model/nifmodel.h"
 
 #include <QRegularExpression>
+#include <QSettings>
 
 
 //! @file nifvalue.cpp NifValue
@@ -43,6 +44,9 @@ QHash<QString, NifValue::Type>        NifValue::typeMap;
 QHash<QString, QString>               NifValue::typeTxt;
 QHash<QString, NifValue::EnumOptions> NifValue::enumMap;
 QHash<QString, QString>               NifValue::aliasMap;
+
+
+static int OPT_PER_LINE = -1;
 
 /*
  *  NifValue
@@ -233,23 +237,34 @@ QString NifValue::enumOptionName( const QString & eid, quint32 val )
 		if ( eo.t == NifValue::eFlags ) {
 			QString text;
 			quint32 val2 = 0;
-			QMapIterator<quint32, QPair<QString, QString> > it( eo.o );
 
-			while ( it.hasNext() ) {
-				it.next();
+			if ( OPT_PER_LINE == -1 ) {
+				QSettings settings;
+				OPT_PER_LINE = settings.value( "Settings/UI/Options Per Line" ).toInt();
+			}
 
+			int opt = 0;
+			auto it = eo.o.constBegin();
+			while ( it != eo.o.constEnd() ) {
 				if ( val & ( 1 << it.key() ) ) {
-					val2 |= ( 1 << it.key() );
+					val2 |= ( 1 << it.key() ); 
 
 					if ( !text.isEmpty() )
 						text += " | ";
 
+					if ( it != eo.o.constEnd() && opt != 0 && opt % OPT_PER_LINE == 0 )
+						text += "\n";
+
 					text += it.value().first;
+
+					opt++;
 				}
+
+				it++;
 			}
 
+			// Append any leftover value not covered by enums
 			val2 = (val & ~val2);
-
 			if ( val2 ) {
 				if ( !text.isEmpty() )
 					text += " | ";
@@ -763,6 +778,9 @@ bool NifValue::setFromString( const QString & s )
 		} else if ( s == "no" || s == "false" ) {
 			val.u32 = 0;
 			return true;
+		} else if ( s == "undefined" ) {
+			val.u32 = 2;
+			return true;
 		}
 
 	case tByte:
@@ -849,7 +867,7 @@ QString NifValue::toString() const
 {
 	switch ( typ ) {
 	case tBool:
-		return ( val.u32 ? "yes" : "no" );
+		return ( (val.u32 == 2) ? "undefined" : (val.u32 ? "yes" : "no") );
 	case tByte:
 	case tWord:
 	case tFlags:
