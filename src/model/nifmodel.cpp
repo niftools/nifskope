@@ -1046,6 +1046,16 @@ bool NifModel::inherits( const QString & name, const QString & aunty ) const
 	return false;
 }
 
+bool NifModel::inherits( const QString & name, const QStringList & ancestors ) const
+{
+	for ( const auto & a : ancestors ) {
+		if ( inherits( name, a ) )
+			return true;
+	}
+
+	return false;
+}
+
 bool NifModel::inherits( const QModelIndex & idx, const QString & aunty ) const
 {
 	int x = getBlockNumber( idx );

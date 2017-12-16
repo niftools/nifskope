@@ -21,6 +21,140 @@
  * spRemoveBranch is declared in \link spells/blocks.h \endlink so that it is accessible to spCombiTris.
  */
 
+// Since nifxml doesn't track any of this data...
+
+//! The valid controller types for each block
+QMultiMap<QString, QString> ctlrMapping = {
+	{ "NiObjectNET", "NiExtraDataController" },
+	{ "NiAVObject", "NiControllerManager" },
+	{ "NiAVObject", "NiVisController" },
+	{ "NiAVObject", "NiTransformController" },
+	{ "NiAVObject", "NiMultiTargetTransformController" },
+	{ "NiParticles", "NiPSysModifierCtlr" },
+	{ "NiParticles", "NiPSysUpdateCtlr" },
+	{ "NiParticles", "NiPSysResetOnLoopCtlr" },
+	{ "NiGeometry", "NiGeomMorpherController" },
+	{ "NiLight", "NiLightColorController" },
+	{ "NiLight", "NiLightDimmerController" },
+	{ "NiMaterialProperty", "NiAlphaController" },
+	{ "NiMaterialProperty", "NiMaterialColorController" },
+	{ "NiTexturingProperty", "NiFlipController" },
+	{ "NiTexturingProperty", "NiTextureTransformController" },
+	// New Particles
+	{ "NiPSParticleSystem", "NiPSEmitterCtlr" },
+	{ "NiPSParticleSystem", "NiPSForceCtlr" },
+	{ "NiPSParticleSystem", "NiPSResetOnLoopCtlr" },
+	// New Geometry
+	{ "NiMesh", "NiMorphWeightsController" },
+};
+
+//! The valid controller types for each block, Bethesda-only
+QMultiMap<QString, QString> ctlrMappingBS = {
+	// OB+
+	{ "NiAVObject", "BSProceduralLightningController" },
+	{ "NiAlphaProperty", "BSNiAlphaPropertyTestRefController" },
+	{ "NiCamera", "BSFrustumFOVController" },
+	{ "NiNode", "bhkBlendController" },
+	{ "NiNode", "NiBSBoneLODController" },
+	// FO3
+	{ "BSShaderPPLightingProperty", "BSRefractionFirePeriodController" },
+	{ "BSShaderPPLightingProperty", "BSRefractionStrengthController" },
+	{ "NiMaterialProperty", "BSMaterialEmittanceMultController" },
+	// SK+
+	{ "NiNode", "BSLagBoneController" },
+	{ "BSEffectShaderProperty", "BSEffectShaderPropertyColorController" },
+	{ "BSEffectShaderProperty", "BSEffectShaderPropertyFloatController" },
+	{ "BSLightingShaderProperty", "BSLightingShaderPropertyColorController" },
+	{ "BSLightingShaderProperty", "BSLightingShaderPropertyFloatController" },
+	// FO4
+	{ "NiLight", "NiLightRadiusController" }, 
+};
+
+//! Blocks that are never used beyond 10.1.0.0
+QStringList legacyOnlyBlocks = {
+	"NiBone",
+	"NiImage",
+	"NiRawImageData",
+	"NiParticleModifier",
+	"NiParticleSystemController",
+	"NiTriShapeSkinController",
+	"NiEnvMappedTriShape",
+	"NiEnvMappedTriShapeData",
+	"NiTextureProperty",
+	"NiMultiTextureProperty",
+	"NiTransparentProperty",
+	// Morrowind
+	"AvoidNode",
+	"RootCollisionNode",
+	"NiBSAnimationNode",
+	"NiBSParticleNode"
+};
+
+//! Blocks that store data for NiTimeControllers
+QStringList animationData = {
+	"NiPosData",
+	"NiRotData",
+	"NiBoolData",
+	"NiFloatData",
+	"NiColorData",
+	"NiTransformData",
+	"NiKeyframeData",
+	"NiMorphData",
+	"NiUVData",
+	"NiVisData",
+	"NiBSplineData",
+	"NiBSplineBasisData",
+	"NiDefaultAVObjectPalette"
+};
+
+//! The interpolators that return true for NiInterpolator::IsBoolValueSupported()
+QStringList boolValue = {
+	"NiBoolInterpolator",
+	"NiBlendBoolInterpolator"
+};
+//! The interpolators that return true for NiInterpolator::IsFloatValueSupported()
+QStringList floatValue = { 
+	"NiFloatInterpolator",
+	"NiBlendFloatInterpolator",
+	"NiBSplineFloatInterpolator"
+};
+//! The interpolators that return true for NiInterpolator::IsPoint3ValueSupported()
+QStringList point3Value = { 
+	"NiPoint3Interpolator",
+	"NiBlendPoint3Interpolator",
+	"NiBSplinePoint3Interpolator"
+};
+//! The interpolators that return true for NiInterpolator::IsTransformValueSupported()
+QStringList transformValue = {
+	"NiTransformInterpolator",
+	"NiBlendTransformInterpolator",
+	"NiBlendAccumTransformInterpolator",
+	"NiBSplineTransformInterpolator",
+	"NiPathInterpolator",
+	"NiLookAtInterpolator"
+};
+
+//! The kind of interpolator values supported on each controller
+QMultiMap<QString, QStringList> interpMapping = 
+{
+	{ "NiBoolInterpController", boolValue },
+	{ "NiFloatInterpController", floatValue },
+	{ "NiPoint3InterpController", point3Value },
+	{ "NiFloatExtraDataController", floatValue },
+	{ "NiFloatsExtraDataController", floatValue },
+	{ "NiFloatsExtraDataPoint3Controller", point3Value },
+	{ "NiTransformController", transformValue },
+	{ "NiMultiTargetTransformController", transformValue },
+	{ "NiPSysEmitterCtlr", floatValue },      // Interpolator
+	{ "NiPSysEmitterCtlr", boolValue },       // Visibility Interpolator
+	{ "NiPSysModifierBoolCtlr", boolValue },
+	{ "NiPSEmitterFloatCtlr", floatValue },
+	{ "NiPSForceFloatCtlr", floatValue },
+	{ "NiPSForceBoolCtlr", boolValue },
+	{ "NiMorphWeightsController", floatValue },
+	{ "NiGeomMorpherController", floatValue },
+};
+
 //! Add a link to the specified block to a link array
 /*!
  * @param nif The model
@@ -185,6 +319,153 @@ static void removeChildren( NifModel * nif, const QPersistentModelIndex & iBlock
 	}
 }
 
+//! Set values in blocks that cannot be handled in nif.xml such as inherited values
+void blockDefaults( NifModel * nif, const QString & type, const QModelIndex & index )
+{
+	// Set Bethesda NiExtraData names to their required strings
+	static QMap<QString, QString> nameMap = {
+		{"BSBehaviorGraphExtraData", "BGED"},
+		{"BSBoneLODExtraData", "BSBoneLOD"},
+		{"BSBound", "BBX"},
+		{"BSClothExtraData", "CED"},
+		{"BSConnectPoint::Children", "CPT"},
+		{"BSConnectPoint::Parents", "CPA"},
+		{"BSDecalPlacementVectorExtraData", "DVPG"},
+		{"BSDistantObjectLargeRefExtraData", "DOLRED"},
+		{"BSEyeCenterExtraData", "ECED"},
+		{"BSFurnitureMarker", "FRN"},
+		{"BSFurnitureMarkerNode", "FRN"},
+		{"BSInvMarker", "INV"},
+		{"BSPositionData", "BSPosData"},
+		{"BSWArray", "BSW"},
+		{"BSXFlags", "BSX"},
+	};
+
+	auto iterName = nameMap.find( type );
+	if ( iterName != nameMap.end() )
+		nif->set<QString>( nif->getIndex( index, "Name" ), iterName.value() );
+}
+
+//! Filters a list of blocks based on version (since nif.xml lacks this data)
+void blockFilter( NifModel * nif, std::list<QString>& blocks, const QString & type = {} )
+{
+	blocks.erase( std::remove_if( blocks.begin(), blocks.end(),
+		[nif, type] ( const QString& s ) { return !nif->inherits( s, type )
+			// Obsolete/Undecoded
+			|| s.startsWith( "NiClod" ) || s.startsWith( "NiArk" ) || s.startsWith( "NiBez" )
+			|| s.startsWith( "Ni3ds" ) || s.startsWith( "NiBinaryVox" )
+			// Legacy
+			|| ( ( (nif->inherits( s, "NiParticles" ) && !nif->inherits( s, "NiParticleSystem" ))
+				   || (nif->inherits( s, "NiParticlesData" ) && !s.startsWith( "NiP" )) // NiRotating, NiAutoNormal, etc.
+				   || nif->inherits( s, legacyOnlyBlocks ) )
+				 && nif->getVersionNumber() > 0x0a010000 )
+			// Bethesda
+			|| ( (s.startsWith( "bhk" ) || s.startsWith( "hk" ) || s.startsWith( "BS" )
+				 || s.endsWith( "ShaderProperty" )) && nif->getUserVersion2() == 0 )
+			// Introduced in 20.2.0.8
+			|| (( s.startsWith( "NiPhysX" ) && nif->getVersionNumber() < 0x14020008 ))
+			// Introduced in 20.5
+			|| ( ((s.startsWith( "NiPS" ) && !s.contains( "PSys" )) || s.startsWith( "NiMesh" )
+				   || s.contains( "Evaluator" )
+				   ) && nif->getVersionNumber() < 0x14050000 )
+			// Deprecated in 20.5
+			|| ( (s.startsWith( "NiParticle" ) || s.contains( "PSys" ) || s.startsWith( "NiTri" )
+				   || s.contains( "Interpolator" )
+				   ) && nif->getVersionNumber() >= 0x14050000 );
+		} ),
+		blocks.end()
+	);
+}
+
+//! Creates a menu structure for a list of blocks
+QMap<QString, QMenu *> blockMenu( NifModel * nif, const std::list<QString> & blocks, bool categorize = false, bool filter = false )
+{
+	QMap<QString, QMenu *> map;
+	auto ids = blocks;
+	ids.sort();
+	if ( filter )
+		blockFilter( nif, ids );
+
+	bool firstCat = false;
+	for ( const QString& id : ids ) {
+		QString alph( "Other" );
+		QString beth = (nif->getUserVersion2() == 0) ? alph : "Bethesda";
+		QString hk = (nif->getUserVersion2() == 0) ? alph : "Havok";
+
+		bool alphabetized = false;
+		// Group Old Particles
+		if ( id.contains( "PSys" ) )
+			alph = QString( "Ni&P(Sys)..." );
+		// Group New Particles
+		else if ( id.startsWith( "NiPS" ) )
+			alph = QString( "Ni&P(S)..." );
+		// Group Havok
+		else if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
+			alph = hk;
+		// Group PhysX
+		else if ( id.startsWith( "NiPhysX" ) )
+			alph = "PhysX";
+		// Group Bethesda
+		else if ( id.startsWith( "BS" ) || id.endsWith( "ShaderProperty" ) )
+			alph = beth;
+		// Group Custom
+		else if ( !id.startsWith( "Ni" )
+				  || (id.startsWith( "NiBS" ) && !id.startsWith( "NiBSp" )) // Bethesda but not NiBSpline
+				  || id.startsWith( "NiDeferred" ) )
+			alph = "Other";
+		// Alphabetize Everything else Ni
+		else if ( id.startsWith( "Ni" ) ) {
+			alph = QString( "Ni&" ) + id.mid( 2, 1 ) + "...";
+			alphabetized = true;
+		}
+
+
+		// Categories
+		QString cat;
+		if ( !alphabetized )
+			cat = ""; // Already grouped well above
+		else if ( nif->inherits( id, "NiInterpolator" ) || nif->inherits( id, "NiEvaluator" )
+				  || nif->inherits( id, "NiTimeController" )
+				  || id.contains( "Sequence" )
+				  || animationData.contains( id ) )
+			cat = "NiAnimation...";
+		else if ( nif->inherits( id, "NiNode" ) )
+			cat = "NiNode...";
+		else if ( nif->inherits( id, "NiGeometry" ) || nif->inherits( id, "NiGeometryData" )
+				  || id.contains( "Skin" ) )
+			cat = "NiGeometry...";
+		else if ( nif->inherits( id, "NiAVObject" ) )
+			cat = "NiAVObject...";
+		else if ( nif->inherits( id, "NiExtraData" ) )
+			cat = "NiExtraData...";
+		else if ( nif->inherits( id, "NiProperty" ) )
+			cat = "NiProperty...";
+		else if ( nif->inherits( id, "NiObject" ) )
+			cat = "NiObject...";
+
+		if ( !map.contains( alph ) )
+			map[alph] = new QMenu( alph );
+
+		map[alph]->addAction( id );
+
+		if ( categorize && !cat.isEmpty() ) {
+			if ( !firstCat ) {
+				// Use NiAAA to place it alphabetically between NiZBu and NiA[a-z]
+				// which will split the alphabetization and categorization.
+				map["NiAAA"] = new QMenu( "" );
+				firstCat = true;
+			}
+
+			if ( !map.contains( cat ) )
+				map[cat] = new QMenu( cat );
+
+			map[cat]->addAction( id );
+		}
+	}
+
+	return map;
+}
+
 //! Insert an unattached block
 class spInsertBlock final : public Spell
 {
@@ -200,34 +481,15 @@ public:
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
-		QStringList ids = nif->allNiBlocks();
-		ids.sort();
-
-		QMap<QString, QMenu *> map;
-		for ( const QString& id : ids ) {
-			QString x( "Other" );
-
-			if ( id.startsWith( "Ni" ) )
-				x = QString( "Ni&" ) + id.mid( 2, 1 ) + "...";
-
-			if ( id.startsWith( "bhk" ) || id.startsWith( "hk" ) )
-				x = "Havok";
-
-			if ( id.startsWith( "BS" ) || id == "AvoidNode" || id == "RootCollisionNode" )
-				x = "Bethesda";
-
-			if ( id.startsWith( "Fx" ) )
-				x = "Firaxis";
-
-			if ( !map.contains( x ) )
-				map[ x ] = new QMenu( x );
-
-			map[ x ]->addAction( id );
-		}
-
 		QMenu menu;
-		for ( QMenu * m : map ) {
-			menu.addMenu( m );
+		menu.addSection( tr( "Alphabetical" ) );
+		for ( QMenu * m : blockMenu( nif, NifModel::allNiBlocks().toStdList(), true, true ) ) {
+			if ( m->title().isEmpty() )
+				menu.addSection( tr( "Categories" ) );
+			else if ( m->actions().size() == 1 )
+				menu.addAction( m->actions().at( 0 ) );
+			else
+				menu.addMenu( m );
 		}
 
 		QAction * act = menu.exec( QCursor::pos() );
@@ -237,11 +499,7 @@ public:
 			QModelIndex newindex = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 
 			// Set values that can't be handled by defaults in nif.xml
-			if ( act->text() == "BSXFlags" ) {
-				nif->set<QString>( nif->getIndex( newindex, "Name" ), "BSX" );
-			} else if ( act->text() == "BSBound" ) {
-				nif->set<QString>( nif->getIndex( newindex, "Name" ), "BBX" );
-			}
+			blockDefaults( nif, act->text(), newindex );
 
 			// return index to new block
 			return newindex;
@@ -357,6 +615,128 @@ public:
 
 REGISTER_SPELL( spAttachNode )
 
+
+//! Attach a new block to an empty Ref link
+class spAddNewRef final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Attach" ); }
+	bool instant() const { return true; }
+	QIcon icon() const { return QIcon( ":img/add" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		auto val = nif->getValue( index );
+		if ( val.type() == NifValue::tLink )
+			return nif->isLink( index ) && nif->getLink( index ) == -1;
+		return false;
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		NifItem * item = static_cast<NifItem *>(index.internalPointer());
+		auto type = item->temp();
+
+		std::list<QString> allIds = nif->allNiBlocks().toStdList();
+		blockFilter( nif, allIds, type );
+
+		auto iBlock = nif->getBlock( index );
+
+		std::list<QString> ids;
+		auto ctlrFilter = [nif, &ids, &allIds, &iBlock] ( QMultiMap<QString, QString> m ) {
+			auto i = m.begin();
+			while ( i != m.end() ) {
+				if ( nif->inherits( nif->getBlockName( iBlock ), i.key() ) )
+					for ( const auto & id : allIds )
+						if ( nif->inherits( id, i.value() ) )
+							ids.push_back( id );
+				++i;
+			}
+		};
+
+		auto interpFilter = [nif, &ids, &allIds, &iBlock]( QMultiMap<QString, QStringList> m ) {
+			auto i = m.begin();
+			while ( i != m.end() ) {
+				if ( nif->inherits( nif->getBlockName( iBlock ), i.key() ) )
+					for ( const auto & id : allIds )
+						for ( const auto & s : i.value() )
+							if ( nif->inherits( id, s ) )
+								ids.push_back( id );
+				++i;
+			}
+		};
+
+		if ( nif->inherits( type, "NiTimeController" ) ) {
+			// Show only applicable types for controller links for the given block
+			if ( nif->inherits( iBlock, "NiTimeController" ) && item->name() == "Next Controller" )
+				iBlock = nif->getBlock( nif->getLink( index.parent(), "Target" ) );
+
+			if ( nif->getVersionNumber() > 0x14050000 ) {
+				ctlrMapping.insertMulti( "NiNode", "NiSkinningLODController" );
+			}
+			// Block-to-Controller Mapping
+			ctlrFilter( ctlrMapping );
+			// Bethesda Controllers
+			if ( nif->getUserVersion2() > 0 )
+				ctlrFilter( ctlrMappingBS );
+
+		} else if ( nif->inherits( iBlock, "NiTimeController" ) 
+					&& nif->inherits( type, "NiInterpolator" ) ) {
+			// Show only applicable types for interpolator links for the given block
+			interpFilter( interpMapping );
+		} else {
+			ids = allIds;
+		}
+		
+		ids.sort();
+		ids.unique();
+
+		QMenu menu;
+		if ( ids.size() < 8 ) {
+			for ( const QString& id : ids )
+				menu.addAction( id );
+		} else {
+			for ( QMenu * m : blockMenu( nif, ids ) ) {
+				if ( m->actions().size() == 1 )
+					menu.addAction( m->actions().at(0) );
+				else
+					menu.addMenu( m );
+			}
+		}
+
+		QAction * act;
+		if ( ids.size() == 1 )
+			act = menu.actions().at(0);
+		else
+			act = menu.exec( QCursor::pos() );
+
+		if ( act ) {
+			// insert block
+			QModelIndex newindex = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
+
+			if ( !nif->setLink( index, nif->getBlockNumber( newindex ) ) ) {
+				qCWarning( nsSpell ) << tr( "Failed to attach link." );
+			}
+
+			if ( nif->inherits( nif->getBlockName( newindex ), "NiTimeController" ) ) {
+				auto blk = nif->getBlockNumber( iBlock );
+				nif->setLink( newindex, "Target", blk );
+			}
+
+			// Set values that can't be handled by defaults in nif.xml
+			blockDefaults( nif, act->text(), newindex );
+
+			// return index to new block
+			return newindex;
+		}
+
+		return index;
+	}
+};
+
+REGISTER_SPELL( spAddNewRef )
+
+
 //! Attach a dynamic effect (4/5 are lights) to a block
 class spAttachLight final : public Spell
 {
@@ -437,12 +817,8 @@ public:
 			QPersistentModelIndex iParent = index;
 			QModelIndex iExtra = nif->insertNiBlock( act->text(), nif->getBlockNumber( index ) + 1 );
 
-			// fixup
-			if ( act->text() == "BSXFlags" ) {
-				nif->set<QString>( nif->getIndex( iExtra, "Name" ), "BSX" );
-			} else if ( act->text() == "BSBound" ) {
-				nif->set<QString>( nif->getIndex( iExtra, "Name" ), "BBX" );
-			}
+			// Set values that can't be handled by defaults in nif.xml
+			blockDefaults( nif,  act->text(), iExtra );
 
 			addLink( nif, iParent, "Extra Data List", nif->getBlockNumber( iExtra ) );
 			return iExtra;

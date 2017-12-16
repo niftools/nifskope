@@ -266,6 +266,8 @@ public:
 	bool isAncestorOrNiBlock( const QString & name ) const override final;
 	//! Returns true if name inherits ancestor.
 	bool inherits( const QString & name, const QString & ancestor ) const override final;
+	//! Returns true if name inherits any ancestors in list.
+	bool inherits( const QString & name, const QStringList & ancestors ) const;
 	// returns true if the block containing index inherits ancestor
 	bool inherits( const QModelIndex & index, const QString & ancestor ) const;
 
