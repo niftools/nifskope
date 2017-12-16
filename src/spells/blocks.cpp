@@ -21,6 +21,17 @@
  * spRemoveBranch is declared in \link spells/blocks.h \endlink so that it is accessible to spCombiTris.
  */
 
+const char * B_ERR = QT_TR_NOOP( "%1 failed with errors." );
+
+ // Use Unicode symbols for separators
+ // to lessen chance of splitting incorrectly.
+ // (Previous separators were `|` and `/`)
+const char * NAME_SEP = "˃"; // This is Unicode U+02C3
+const char * MIME_SEP = "˂"; // This is Unicode U+02C2
+const char * STR_BR = "nifskope˂nibranch˂%1";
+const char * STR_BL = "nifskope˂niblock˂%1˂%2";
+
+
 // Since nifxml doesn't track any of this data...
 
 //! The valid controller types for each block
@@ -155,6 +166,185 @@ QMultiMap<QString, QStringList> interpMapping =
 	{ "NiGeomMorpherController", floatValue },
 };
 
+//! The string names which can appear in the block root
+QStringList rootStringList =
+{
+	"Name",
+	"Modifier Name",   // NiPSysModifierCtlr
+	"File Name",       // NiSourceTexture
+	"String Data",     // NiStringExtraData
+	"Extra Data Name", // NiExtraDataController
+	"Accum Root Name", // NiSequence
+	"Look At Name",    // NiLookAtInterpolator
+	"Driven Name",     // NiLookAtEvaluator
+	"Emitter Name",    // NiPSEmitterCtlr
+	"Force Name",      // NiPSForceCtlr
+	"Mesh Name",       // NiPhysXMeshDesc
+	"Shape Name",      // NiPhysXShapeDesc
+	"Actor Name",      // NiPhysXActorDesc
+	"Joint Name",      // NiPhysXJointDesc
+	"Wet Material",    // BSLightingShaderProperty FO4+
+	"Behaviour Graph File", // BSBehaviorGraphExtraData
+};
+
+//! Get strings array
+QStringList getStringsArray( NifModel * nif, const QModelIndex & parent,
+							 const QString & arr, const QString & name = {} )
+{
+	QStringList strings;
+	auto iArr = nif->getIndex( parent, arr );
+	if ( !iArr.isValid() )
+		return {};
+
+	if ( name.isEmpty() ) {
+		for ( int i = 0; i < nif->rowCount( iArr ); i++ )
+			strings << nif->string( iArr.child( i, 0 ) );
+	} else {
+		for ( int i = 0; i < nif->rowCount( iArr ); i++ )
+			strings << nif->string( iArr.child( i, 0 ), name, false );
+	}
+
+	return strings;
+}
+//! Set strings array
+void setStringsArray( NifModel * nif, const QModelIndex & parent, QStringList & strings,
+					  const QString & arr, const QString & name = {} )
+{
+	auto iArr = nif->getIndex( parent, arr );
+	if ( !iArr.isValid() )
+		return;
+
+	if ( name.isEmpty() ) {
+		for ( int i = 0; i < nif->rowCount( iArr ); i++ )
+			nif->set<QString>( iArr.child( i, 0 ), strings.takeFirst() );
+	} else {
+		for ( int i = 0; i < nif->rowCount( iArr ); i++ )
+			nif->set<QString>( iArr.child( i, 0 ), name, strings.takeFirst() );
+	}
+}
+//! Get "Name" et al. for NiObjectNET, NiExtraData, NiPSysModifier, etc.
+QStringList getNiObjectRootStrings( NifModel * nif, const QModelIndex & iBlock )
+{
+	QStringList strings;
+	for ( int i = 0; i < nif->rowCount( iBlock ); i++ ) {
+		auto iString = iBlock.child( i, 0 );
+		if ( rootStringList.contains( nif->itemName( iString ) ) )
+			strings << nif->string( iString );
+	}
+
+	return strings;
+}
+//! Set "Name" et al. for NiObjectNET, NiExtraData, NiPSysModifier, etc.
+void setNiObjectRootStrings( NifModel * nif, const QModelIndex & iBlock, QStringList & strings )
+{
+	for ( int i = 0; i < nif->rowCount( iBlock ); i++ ) {
+		auto iString = iBlock.child( i, 0 );
+		if ( rootStringList.contains( nif->itemName( iString ) ) )
+			nif->set<QString>( iString, strings.takeFirst() );
+	}
+}
+//! Get strings for NiMesh
+QStringList getStringsNiMesh( NifModel * nif, const QModelIndex & iBlock )
+{
+	// "Datastreams/Component Semantics/Name" * "Num Datastreams"
+	QStringList strings;
+	auto iData = nif->getIndex( iBlock, "Datastreams" );
+	if ( !iData.isValid() )
+		return {};
+
+	for ( int i = 0; i < nif->rowCount( iData ); i++ )
+		strings << getStringsArray( nif, iData.child( i, 0 ), "Component Semantics", "Name" );
+
+	return strings;
+}
+//! Set strings for NiMesh
+void setStringsNiMesh( NifModel * nif, const QModelIndex & iBlock, QStringList & strings )
+{
+	auto iData = nif->getIndex( iBlock, "Datastreams" );
+	if ( !iData.isValid() )
+		return;
+
+	for ( int i = 0; i < nif->rowCount( iData ); i++ )
+		setStringsArray( nif, iData.child( i, 0 ), strings, "Component Semantics", "Name" );
+}
+//! Get strings for NiSequence
+QStringList getStringsNiSequence( NifModel * nif, const QModelIndex & iBlock )
+{
+	QStringList strings;
+	auto iControlledBlocks = nif->getIndex( iBlock, "Controlled Blocks" );
+	if ( !iControlledBlocks.isValid() )
+		return {};
+
+	for ( int i = 0; i < nif->rowCount( iControlledBlocks ); i++ ) {
+		auto iChild = iControlledBlocks.child( i, 0 );
+		strings << nif->string( iChild, "Target Name", false )
+				<< nif->string( iChild, "Node Name", false )
+				<< nif->string( iChild, "Property Type", false )
+				<< nif->string( iChild, "Controller Type", false )
+				<< nif->string( iChild, "Controller ID", false )
+				<< nif->string( iChild, "Interpolator ID", false );
+	}
+
+	return strings;
+}
+//! Set strings for NiSequence
+void setStringsNiSequence( NifModel * nif, const QModelIndex & iBlock, QStringList & strings )
+{
+	auto iControlledBlocks = nif->getIndex( iBlock, "Controlled Blocks" );
+	if ( !iControlledBlocks.isValid() )
+		return;
+
+	for ( int i = 0; i < nif->rowCount( iControlledBlocks ); i++ ) {
+		auto iChild = iControlledBlocks.child( i, 0 );
+		nif->set<QString>( iChild, "Target Name", strings.takeFirst() );
+		nif->set<QString>( iChild, "Node Name", strings.takeFirst() );
+		nif->set<QString>( iChild, "Property Type", strings.takeFirst() );
+		nif->set<QString>( iChild, "Controller Type", strings.takeFirst() );
+		nif->set<QString>( iChild, "Controller ID", strings.takeFirst() );
+		nif->set<QString>( iChild, "Interpolator ID", strings.takeFirst() );
+	}
+}
+
+//! Builds string list for datastream
+QStringList serializeStrings( NifModel * nif, const QModelIndex & iBlock, const QString & type )
+{
+	auto strings = getNiObjectRootStrings( nif, iBlock );
+	if ( nif->inherits( type, "NiSequence" ) )
+		strings << getStringsNiSequence( nif, iBlock );
+	else if ( type == "NiTextKeyExtraData" )
+		strings << getStringsArray( nif, iBlock, "Text Keys", "Value" );
+	else if ( type == "NiMesh" )
+		strings << getStringsNiMesh( nif, iBlock );
+	else if ( type == "NiStringsExtraData" )
+		strings << getStringsArray( nif, iBlock, "Data" );
+	else if ( type == "NiMorphWeightsController" )
+		strings << getStringsArray( nif, iBlock, "Target Names" );
+	
+	if ( type == "NiMesh" || nif->inherits( type, "NiGeometry" ) )
+		strings << getStringsArray( nif, nif->getIndex( iBlock, "Material Data" ), "Material Name" );;
+
+	return strings;
+}
+
+//! Consumes string list from datastream
+void deserializeStrings( NifModel * nif, const QModelIndex & iBlock, const QString & type, QStringList & strings )
+{
+	setNiObjectRootStrings( nif, iBlock, strings );
+	if ( nif->inherits( type, "NiSequence" ) )
+		setStringsNiSequence( nif, iBlock, strings );
+	else if ( type == "NiTextKeyExtraData" )
+		setStringsArray( nif, iBlock, strings, "Text Keys", "Value" );
+	else if ( type == "NiMesh" )
+		setStringsNiMesh( nif, iBlock, strings );
+	else if ( type == "NiStringsExtraData" )
+		setStringsArray( nif, iBlock, strings, "Data" );
+	else if ( type == "NiMorphWeightsController" )
+		setStringsArray( nif, iBlock, strings, "Target Names" );
+
+	if ( type == "NiMesh" || nif->inherits( type, "NiGeometry" ) )
+		setStringsArray( nif, nif->getIndex( iBlock, "Material Data" ), strings, "Material Name" );
+}
+
 //! Add a link to the specified block to a link array
 /*!
  * @param nif The model
@@ -267,7 +457,7 @@ void blockLink( NifModel * nif, const QModelIndex & index, const QModelIndex & i
 //! Helper function for branch paste
 static qint32 getBlockByName( NifModel * nif, const QString & tn )
 {
-	QStringList ls = tn.split( "|" );
+	QStringList ls = tn.split( NAME_SEP );
 	QString type = ls.value( 0 );
 	QString name = ls.value( 1 );
 
@@ -868,10 +1058,19 @@ public:
 	{
 		QByteArray data;
 		QBuffer buffer( &data );
+		if ( !buffer.open( QIODevice::WriteOnly ) )
+			return {};
 
-		if ( buffer.open( QIODevice::WriteOnly ) && nif->saveIndex( buffer, index ) ) {
+		QDataStream ds( &buffer );
+
+		auto bType = nif->createRTTIName( index );
+
+		if ( nif->checkVersion( 0x14010001, 0 ) )
+			ds << serializeStrings( nif, index, bType );
+
+		if ( nif->saveIndex( buffer, index ) ) {
 			QMimeData * mime = new QMimeData;
-			mime->setData( QString( "nifskope/niblock/%1/%2" ).arg( nif->itemName( index ), nif->getVersion() ), data );
+			mime->setData( QString( STR_BL ).arg( nif->getVersion(), bType ), data );
 			QApplication::clipboard()->setMimeData( mime );
 		}
 
@@ -888,20 +1087,19 @@ public:
 	QString name() const override final { return Spell::tr( "Paste" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
 
-	QString acceptFormat( const QString & format, const NifModel * nif )
+	QPair<QString, QString> acceptFormat( const QString & format, const NifModel * nif )
 	{
-		Q_UNUSED( nif );
-		QStringList split = format.split( "/" );
+		QStringList split = format.split( MIME_SEP );
 
-		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock" && nif->isNiBlock( split.value( 2 ) ) )
-			return split.value( 3 );
+		NiMesh::DataStreamMetadata metadata = {};
+		auto bType = nif->extractRTTIArgs( split.value( MIME_IDX_TYPE ), metadata );
+		if ( !NifModel::isNiBlock( bType ) )
+			return {};
 
-		return QString();
-	}
+		if ( split.value( MIME_IDX_APP ) == "nifskope" && split.value( MIME_IDX_STREAM ) == "niblock" )
+			return {split.value( MIME_IDX_VER ), bType};
 
-	QString blockType( const QString & format )
-	{
-		return format.split( "/" ).value( 2 );
+		return {};
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
@@ -911,7 +1109,7 @@ public:
 
 		if ( mime ) {
 			for ( const QString& form : mime->formats() ) {
-				if ( !acceptFormat( form, nif ).isEmpty() )
+				if ( !acceptFormat( form, nif ).first.isEmpty() )
 					return true;
 			}
 		}
@@ -925,16 +1123,45 @@ public:
 
 		if ( mime ) {
 			for ( const QString& form : mime->formats() ) {
-				QString version = acceptFormat( form, nif );
+				auto result = acceptFormat( form, nif );
+				auto version = result.first;
 
-				if ( !version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, Spell::tr( "Paste Block" ), Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), Spell::tr( "Continue" ), Spell::tr( "Cancel" ) ) == 0 ) ) {
+				NiMesh::DataStreamMetadata metadata = {};
+				auto bType = nif->extractRTTIArgs( result.second, metadata );
+
+				if ( !version.isEmpty()
+					 && (version == nif->getVersion() || QMessageBox::question( nullptr,
+							tr( "Paste Block" ),
+							tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
+								.arg( nif->getVersion() )
+								.arg( version ),
+							tr( "Continue" ),
+							tr( "Cancel" ) ) == 0)
+				) {
 					QByteArray data = mime->data( form );
 					QBuffer buffer( &data );
 
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
-						QModelIndex block = nif->insertNiBlock( blockType( form ), nif->getBlockCount() );
+						QDataStream ds( &buffer );
+						QStringList strings;
+						ds >> strings;
+
+						QModelIndex block = nif->insertNiBlock( bType, nif->getBlockCount() );
 						nif->loadIndex( buffer, block );
 						blockLink( nif, index, block );
+
+						// Post-Load corrections
+
+						// NiDataStream RTTI arg values
+						if ( nif->checkVersion( 0x14050000, 0 ) && bType == QLatin1String( "NiDataStream" ) ) {
+							nif->set<quint32>( block, "Usage", metadata.usage );
+							nif->set<quint32>( block, "Access", metadata.access );
+						}
+
+						// Set strings
+						if ( nif->checkVersion( 0x14010001, 0 ) )
+							deserializeStrings( nif, block, bType, strings );
+
 						return block;
 					}
 				}
@@ -955,14 +1182,20 @@ public:
 	QString page() const override final { return Spell::tr( "Block" ); }
 	QKeySequence hotkey() const override final { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_V }; }
 
-	QString acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & block )
+	QPair<QString, QString> acceptFormat( const QString & format, const NifModel * nif, const QModelIndex & iBlock )
 	{
-		QStringList split = format.split( "/" );
+		QStringList split = format.split( MIME_SEP );
 
-		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "niblock" && nif->isNiBlock( block, split.value( 2 ) ) )
-			return split.value( 3 );
+		NiMesh::DataStreamMetadata metadata = {};
+		auto bType = nif->extractRTTIArgs( split.value( MIME_IDX_TYPE ), metadata );
+		if ( !nif->isNiBlock( iBlock, bType ) )
+			return {};
 
-		return QString();
+		if ( split.value( MIME_IDX_APP ) == "nifskope"
+			 && split.value( MIME_IDX_STREAM ) == "niblock" )
+			return {split.value( MIME_IDX_VER ), bType};
+
+		return {};
 	}
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
@@ -971,7 +1204,7 @@ public:
 
 		if ( mime ) {
 			for ( const QString& form : mime->formats() ) {
-				if ( !acceptFormat( form, nif, index ).isEmpty() )
+				if ( !acceptFormat( form, nif, index ).first.isEmpty() )
 					return true;
 			}
 		}
@@ -985,14 +1218,41 @@ public:
 
 		if ( mime ) {
 			for ( const QString& form : mime->formats() ) {
-				QString version = acceptFormat( form, nif, index );
+				auto result = acceptFormat( form, nif, index );
+				auto version = result.first;
 
-				if ( !version.isEmpty() && ( version == nif->getVersion() || QMessageBox::question( 0, Spell::tr( "Paste Over" ), Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." ).arg( nif->getVersion() ).arg( version ), Spell::tr( "Continue" ), Spell::tr( "Cancel" ) ) == 0 ) ) {
+				NiMesh::DataStreamMetadata metadata = {};
+				auto bType = nif->extractRTTIArgs( result.second, metadata );
+
+				if ( !version.isEmpty()
+					 && (version == nif->getVersion() || QMessageBox::question( nullptr,
+							tr( "Paste Over" ),
+							tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
+								.arg( nif->getVersion() )
+							    .arg( version ),
+							tr( "Continue" ),
+							tr( "Cancel" ) ) == 0) )
+				{
 					QByteArray data = mime->data( form );
 					QBuffer buffer( &data );
-
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
+						QDataStream ds( &buffer );
+
+						QStringList strings;
+						ds >> strings;
+
 						nif->loadIndex( buffer, index );
+
+						// NiDataStream RTTI arg values
+						if ( nif->checkVersion( 0x14050000, 0 ) && bType == QLatin1String( "NiDataStream" ) ) {
+							nif->set<quint32>( index, "Usage", metadata.usage );
+							nif->set<quint32>( index, "Access", metadata.access );
+						}
+
+						// Set strings
+						if ( nif->checkVersion( 0x14010001, 0 ) )
+							deserializeStrings( nif, index, bType, strings );
+
 						return index;
 					}
 				}
@@ -1035,17 +1295,19 @@ QModelIndex spCopyBranch::cast( NifModel * nif, const QModelIndex & index )
 					QString name = nif->get<QString>( iParent, "Name" );
 
 					if ( !name.isEmpty() ) {
-						parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
+						parentMap.insert( link, nif->itemName( iParent ) + NAME_SEP + name );
 						continue;
 					}
 				}
 
-				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
-					.arg( link )
-					.arg( nif->itemName( nif->getBlock( link ) ) )
-					.arg( block )
-					.arg( nif->itemName( nif->getBlock( block ) ) )
-					.arg( failMessage )
+				Message::append( tr( B_ERR ).arg( name() ),
+								 tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+									.arg( link )
+									.arg( nif->itemName( nif->getBlock( link ) ) )
+									.arg( block )
+									.arg( nif->itemName( nif->getBlock( block ) ) )
+									.arg( failMessage ),
+								 QMessageBox::Critical
 				);
 				return index;
 			}
@@ -1060,19 +1322,27 @@ QModelIndex spCopyBranch::cast( NifModel * nif, const QModelIndex & index )
 		ds << blocks.count();
 		ds << blockMap;
 		ds << parentMap;
-		for ( const auto block : blocks ) {
-			ds << nif->itemName( nif->getBlock( block ) );
 
-			if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
-				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
-					.arg( block )
-					.arg( nif->itemName( nif->getBlock( block ) ) )
+		for ( const auto block : blocks ) {
+			auto iBlock = nif->getBlock( block );
+			auto bType = nif->createRTTIName( iBlock );
+
+			ds << bType;
+
+			if ( nif->checkVersion( 0x14010001, 0 ) )
+				ds << serializeStrings( nif, iBlock, bType );
+
+			if ( !nif->saveIndex( buffer, iBlock ) ) {
+				Message::append( tr( B_ERR ).arg( name() ),
+								 tr( "failed to save block %1 %2." ).arg( block ).arg( bType ),
+								 QMessageBox::Critical
 				);
 				return index;
 			}
 		}
+
 		QMimeData * mime = new QMimeData;
-		mime->setData( QString( "nifskope/nibranch/%1" ).arg( nif->getVersion() ), data );
+		mime->setData( QString( STR_BR ).arg( nif->getVersion() ), data );
 		QApplication::clipboard()->setMimeData( mime );
 	}
 
@@ -1087,10 +1357,10 @@ REGISTER_SPELL( spCopyBranch )
 QString spPasteBranch::acceptFormat( const QString & format, const NifModel * nif )
 {
 	Q_UNUSED( nif );
-	QStringList split = format.split( "/" );
+	QStringList split = format.split( MIME_SEP );
 
-	if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
-		return split.value( 2 );
+	if ( split.value( MIME_IDX_APP ) == "nifskope" && split.value( MIME_IDX_STREAM ) == "nibranch" )
+		return split.value( MIME_IDX_VER );
 
 	return QString();
 }
@@ -1122,10 +1392,10 @@ QModelIndex spPasteBranch::cast( NifModel * nif, const QModelIndex & index )
 
 			if ( !v.isEmpty()
 				&& ( v == nif->getVersion()
-					|| QMessageBox::question( 0, Spell::tr( "Paste Branch" ),
-					        Spell::tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
-					            .arg( nif->getVersion() ).arg( v ), Spell::tr( "Continue" ),
-					        Spell::tr( "Cancel" )
+					|| QMessageBox::question( 0, tr( "Paste Branch" ),
+					        tr( "Nif versions differ!<br><br>Current File Version: %1<br>Clipboard Data Version: %2<br><br>The results will be unpredictable..." )
+					            .arg( nif->getVersion() ).arg( v ), tr( "Continue" ),
+					        tr( "Cancel" )
 						) == 0 
 				    )
 				)
@@ -1143,9 +1413,10 @@ QModelIndex spPasteBranch::cast( NifModel * nif, const QModelIndex & index )
 					ds >> blockMap;
 					QMutableMapIterator<qint32, qint32> ibm( blockMap );
 
+					auto origBlockCount = nif->getBlockCount();
 					while ( ibm.hasNext() ) {
 						ibm.next();
-						ibm.value() += nif->getBlockCount();
+						ibm.value() += origBlockCount;
 					}
 
 					QMap<qint32, QString> parentMap;
@@ -1157,11 +1428,15 @@ QModelIndex spPasteBranch::cast( NifModel * nif, const QModelIndex & index )
 						ipm.next();
 						qint32 block = getBlockByName( nif, ipm.value() );
 
-						if ( block >= 0 ) {
+						if ( ipm.key() == 0 ) {
+							// Ignore Root
+							blockMap.insert( ipm.key(), 0 );
+						} else if ( block > 0 ) {
 							blockMap.insert( ipm.key(), block );
 						} else {
-							Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
-								.arg( ipm.value() )
+							Message::append( tr( B_ERR ).arg( name() ),
+											 tr( "failed to map parent link %1" ).arg( ipm.value() ),
+											 QMessageBox::Critical
 							);
 							return index;
 						}
@@ -1169,18 +1444,35 @@ QModelIndex spPasteBranch::cast( NifModel * nif, const QModelIndex & index )
 
 					QModelIndex iRoot;
 
+					nif->holdUpdates( true );
 					for ( int c = 0; c < count; c++ ) {
-						QString type;
-						ds >> type;
+						QString bType;
+						QStringList strings;
+						ds >> bType;
+						ds >> strings;
 
-						QModelIndex block = nif->insertNiBlock( type, -1 );
+						NiMesh::DataStreamMetadata metadata = {};
+						bType = nif->extractRTTIArgs( bType, metadata );
 
+						QModelIndex block = nif->insertNiBlock( bType, -1 );
 						if ( !nif->loadAndMapLinks( buffer, block, blockMap ) )
 							return index;
+
+						// NiDataStream RTTI arg values
+						if ( nif->checkVersion( 0x14050000, 0 ) && bType == QLatin1String( "NiDataStream" ) ) {
+							nif->set<quint32>( block, "Usage", metadata.usage );
+							nif->set<quint32>( block, "Access", metadata.access );
+						}
+
+						// Set strings
+						if ( nif->checkVersion( 0x14010001, 0 ) )
+							deserializeStrings( nif, block, bType, strings );
+
 
 						if ( c == 0 )
 							iRoot = block;
 					}
+					nif->holdUpdates( false );
 
 					blockLink( nif, index, iRoot );
 
@@ -1212,7 +1504,7 @@ public:
 	QString acceptFormat( const QString & format, const NifModel * nif )
 	{
 		Q_UNUSED( nif );
-		QStringList split = format.split( "/" );
+		QStringList split = format.split( MIME_SEP );
 
 		if ( split.value( 0 ) == "nifskope" && split.value( 1 ) == "nibranch" )
 			return split.value( 2 );
@@ -1590,17 +1882,19 @@ QModelIndex spDuplicateBranch::cast( NifModel * nif, const QModelIndex & index )
 					QString name = nif->get<QString>( iParent, "Name" );
 
 					if ( !name.isEmpty() ) {
-						parentMap.insert( link, nif->itemName( iParent ) + "|" + name );
+						parentMap.insert( link, nif->itemName( iParent ) + NAME_SEP + name );
 						continue;
 					}
 				}
 
-				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
-					.arg( link )
-					.arg( nif->itemName( nif->getBlock( link ) ) )
-					.arg( block )
-					.arg( nif->itemName( nif->getBlock( block ) ) )
-					.arg( failMessage )
+				Message::append( tr( B_ERR ).arg( name() ),
+								 tr( "failed to map parent link %1 %2 for block %3 %4; %5." )
+									.arg( link )
+									.arg( nif->itemName( nif->getBlock( link ) ) )
+									.arg( block )
+									.arg( nif->itemName( nif->getBlock( block ) ) )
+									.arg( failMessage ),
+								 QMessageBox::Critical
 				);
 				return index;
 			}
@@ -1619,9 +1913,10 @@ QModelIndex spDuplicateBranch::cast( NifModel * nif, const QModelIndex & index )
 			ds << nif->itemName( nif->getBlock( block ) );
 
 			if ( !nif->saveIndex( buffer, nif->getBlock( block ) ) ) {
-				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to save block %1 %2." )
-					.arg( block )
-					.arg( nif->itemName( nif->getBlock( block ) ) )
+				Message::append( tr( B_ERR ).arg( name() ),
+								 tr( "failed to save block %1 %2." ).arg( block )
+									.arg( nif->itemName( nif->getBlock( block ) ) ),
+								 QMessageBox::Critical
 				);
 				return index;
 			}
@@ -1656,15 +1951,16 @@ QModelIndex spDuplicateBranch::cast( NifModel * nif, const QModelIndex & index )
 			if ( block >= 0 ) {
 				blockMap.insert( ipm.key(), block );
 			} else {
-				Message::critical( nullptr, Spell::tr( "%1 failed with errors." ).arg( name() ), Spell::tr( "failed to map parent link %1" )
-					.arg( ipm.value() )
+				Message::append( tr( B_ERR ).arg( name() ),
+								 tr( "failed to map parent link %1" ).arg( ipm.value() ),
+								 QMessageBox::Critical
 				);
 				return index;
 			}
 		}
 
 		QModelIndex iRoot;
-
+		nif->holdUpdates( true );
 		for ( int c = 0; c < count; c++ ) {
 			QString type;
 			ds >> type;
@@ -1677,7 +1973,7 @@ QModelIndex spDuplicateBranch::cast( NifModel * nif, const QModelIndex & index )
 			if ( c == 0 )
 				iRoot = block;
 		}
-
+		nif->holdUpdates( false );
 		blockLink( nif, nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) ), iRoot );
 
 		return iRoot;

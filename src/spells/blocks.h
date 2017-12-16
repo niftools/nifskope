@@ -11,6 +11,17 @@
  * All classes here inherit from the Spell class.
  */
 
+typedef enum {
+	// "nifskope"
+	MIME_IDX_APP = 0,
+	// "nibranch" or "niblock"
+	MIME_IDX_STREAM,
+	// "version"
+	MIME_IDX_VER,
+	// "type"
+	MIME_IDX_TYPE
+} CopyPasteMimeTypes;
+
 //! Copy a branch (a block and its descendents) to the clipboard
 class spCopyBranch final : public Spell
 {
