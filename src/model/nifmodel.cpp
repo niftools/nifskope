@@ -1171,6 +1171,8 @@ bool NifModel::setItemValue( NifItem * item, const NifValue & val )
 QVariant NifModel::data( const QModelIndex & idx, int role ) const
 {
 	QModelIndex index = buddy( idx );
+	if ( index != idx )
+		return data( index, role );
 
 	NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 
@@ -1183,48 +1185,6 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 
 	if ( role == NifSkopeDisplayRole )
 		role = Qt::DisplayRole;
-
-	if ( column == ValueCol && item->parent() == root && item->type() == "NiBlock" ) {
-		QModelIndex buddy;
-
-		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" ) {
-			buddy = getIndex( index, "File Name" );
-		} else if ( item->name() == "NiStringExtraData" ) {
-			buddy = getIndex( index, "String Data" );
-		//else if ( item->name() == "NiTransformInterpolator" && role == Qt::DisplayRole)
-		//	return QString(tr("TODO: find out who is referring me"));
-		} else {
-			buddy = getIndex( index, "Name" );
-		}
-
-		if ( buddy.isValid() )
-			buddy = buddy.sibling( buddy.row(), index.column() );
-
-		if ( buddy.isValid() )
-			return data( buddy, role );
-	} else if ( column == ValueCol && item->parent() != root && item->type() == "ControllerLink" && role == Qt::DisplayRole ) {
-		QModelIndex buddy;
-
-		if ( item->name() == "Controlled Blocks" ) {
-			if ( version >= 0x14010003 ) {
-				buddy = getIndex( index, "Node Name" );
-
-				if ( buddy.isValid() )
-					buddy = buddy.sibling( buddy.row(), index.column() );
-
-				if ( buddy.isValid() )
-					return data( buddy, role );
-			} else if ( version <= 0x14000005 ) {
-				buddy = getIndex( index, "Node Name Offset" );
-
-				if ( buddy.isValid() )
-					buddy = buddy.sibling( buddy.row(), index.column() );
-
-				if ( buddy.isValid() )
-					return data( buddy, role );
-			}
-		}
-	}
 
 	switch ( role ) {
 	case Qt::DisplayRole:
@@ -1570,23 +1530,10 @@ bool NifModel::setData( const QModelIndex & index, const QVariant & value, int r
 	if ( !( index.isValid() && role == Qt::EditRole && index.model() == this && item ) )
 		return false;
 
-	// buddy lookup
-	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" ) {
-		QModelIndex buddy;
-
-		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" )
-			buddy = getIndex( index, "File Name" );
-		else if ( item->name() == "NiStringExtraData" )
-			buddy = getIndex( index, "String Data" );
-		else
-			buddy = getIndex( index, "Name" );
-
-		if ( buddy.isValid() )
-			buddy = buddy.sibling( buddy.row(), index.column() );
-
-		if ( buddy.isValid() )
-			return setData( buddy, value, role );
-	}
+	// Set Buddy
+	QModelIndex idx = buddy( index );
+	if ( index != idx )
+		return setData( idx, value, role );
 
 	switch ( index.column() ) {
 	case NifModel::NameCol:
@@ -1705,6 +1652,47 @@ bool NifModel::removeRows( int row, int count, const QModelIndex & parent )
 	}
 
 	return false;
+}
+
+QModelIndex NifModel::buddy( const QModelIndex & index ) const
+{
+	NifItem * item = static_cast<NifItem *>(index.internalPointer());
+	if ( !item )
+		return QModelIndex();
+
+	QModelIndex buddy;
+	if ( index.column() == ValueCol && item->parent() == root && item->type() == "NiBlock" ) {
+
+		if ( item->name() == "NiSourceTexture" || item->name() == "NiImage" ) {
+			buddy = getIndex( index, "File Name" );
+		} else if ( item->name() == "NiStringExtraData" ) {
+			buddy = getIndex( index, "String Data" );
+		} else {
+			buddy = getIndex( index, "Name" );
+		}
+
+		if ( buddy.isValid() )
+			buddy = buddy.sibling( buddy.row(), ValueCol );
+
+		if ( buddy.isValid() )
+			return buddy;
+	} else if ( index.column() == ValueCol && item->parent() != root ) {
+
+		if ( item->type() == "ControlledBlock" && item->name() == "Controlled Blocks" ) {
+			if ( version >= 0x14010003 ) {
+				buddy = getIndex( index, "Node Name" );
+			} else if ( version <= 0x14000005 ) {
+				buddy = getIndex( index, "Node Name Offset" );
+			}
+
+			if ( buddy.isValid() )
+				buddy = buddy.sibling( buddy.row(), ValueCol );
+
+			return buddy;
+		}
+	}
+
+	return index;
 }
 
 

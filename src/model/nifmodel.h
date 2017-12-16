@@ -84,6 +84,8 @@ public:
 	bool setData( const QModelIndex & index, const QVariant & value, int role = Qt::EditRole ) override final;
 	bool removeRows( int row, int count, const QModelIndex & parent ) override final;
 
+	QModelIndex buddy( const QModelIndex & index ) const override;
+
 	// end QAbstractItemModel
 
 	// BaseModel
