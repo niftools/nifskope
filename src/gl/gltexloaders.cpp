@@ -1104,7 +1104,7 @@ gli::texture load_if_valid( const char * data, unsigned int size )
 		std::max<texture::size_type>( Header10.ArraySize, 1 ), FaceCount, MipMapCount );
 
 	std::size_t const SourceSize = Offset + Texture.size();
-	if ( SourceSize != size )
+	if ( SourceSize > size )
 		return texture();
 
 	std::memcpy( Texture.data(), data + Offset, Texture.size() );
