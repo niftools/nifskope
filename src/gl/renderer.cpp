@@ -955,10 +955,10 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		if ( itx.value() == "tangents" ) {
 			if ( mesh->transTangents.count() ) {
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.data() );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transTangents.constData() );
 			} else if ( mesh->tangents.count() ) {
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->tangents.data() );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->tangents.constData() );
 			} else {
 				return false;
 			}
@@ -966,10 +966,10 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		} else if ( itx.value() == "bitangents" ) {
 			if ( mesh->transBitangents.count() ) {
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.data() );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->transBitangents.constData() );
 			} else if ( mesh->bitangents.count() ) {
 				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->bitangents.data() );
+				glTexCoordPointer( 3, GL_FLOAT, 0, mesh->bitangents.constData() );
 			} else {
 				return false;
 			}
@@ -984,7 +984,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 				return false;
 
 			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
+			glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].constData() );
 		} else if ( bsprop ) {
 			int txid = BSShaderLightingProperty::getId( itx.value() );
 			if ( txid < 0 )
@@ -996,7 +996,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 				return false;
 
 			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].data() );
+			glTexCoordPointer( 2, GL_FLOAT, 0, mesh->coords[set].constData() );
 		}
 	}
 
@@ -1133,6 +1133,9 @@ void Renderer::setupFixedFunction( Shape * mesh, const PropertyList & props )
 		glDisable( GL_NORMALIZE );
 
 	// setup texturing
+
+	if ( !(mesh->scene->options & Scene::DoTexturing) )
+		return;
 
 	if ( TexturingProperty * texprop = props.get<TexturingProperty>() ) {
 		// standard multi texturing property

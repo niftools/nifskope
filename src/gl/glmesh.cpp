@@ -86,7 +86,6 @@ void Mesh::clear()
 	transVerts.clear();
 	transNorms.clear();
 	transColors.clear();
-	transColorsNoAlpha.clear();
 	transTangents.clear();
 	transBitangents.clear();
 
@@ -349,7 +348,7 @@ void Mesh::transform()
 
 					// Create UV stubs for multi-coord systems
 					if ( sem == NiMesh::E_TEXCOORD )
-						coords.append( QVector<Vector2>() );
+						coords.append( TexCoords() );
 
 					// Assure Index datastream is first and Usage is correct
 					bool invalidIndex = false;
@@ -677,7 +676,7 @@ void Mesh::transform()
 
 			if ( uvcoord.isValid() ) {
 				for ( int r = 0; r < nif->rowCount( uvcoord ); r++ ) {
-					QVector<Vector2> tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
+					TexCoords tc = nif->getArray<Vector2>( uvcoord.child( r, 0 ) );
 
 					if ( tc.count() < verts.count() )
 						tc.clear();
@@ -942,53 +941,7 @@ void Mesh::transformShapes()
 		transBitangents = bitangents;
 	}
 
-	/*
-	//Commented this out because this appears from my tests to be an
-	//incorrect understanding of the flag we previously called "sort."
-	//Tests have shown that none of the games or official scene viewers
-	//ever sort triangles, regarless of the path.  The triangles are always
-	//drawn in the order they exist in the triangle array.
-
-	AlphaProperty * alphaprop = findProperty<AlphaProperty>();
-
-	if ( alphaprop && alphaprop->sort() )
-	{
-
-
-
-	    QVector< QPair< int, float > > triOrder( triangles.count() );
-	    if ( transformRigid )
-	    {
-	        Transform vt = viewTrans();
-	        Vector3 ref = vt.rotation.inverted() * ( Vector3() - vt.translation ) / vt.scale;
-	        int t = 0;
-	        foreach ( Triangle tri, triangles )
-	        {
-	            triOrder[t] = QPair<int, float>( t, 0 - ( ref - verts.value( tri.v1() ) ).squaredLength() - ( ref - verts.value( tri.v2() ) ).squaredLength() - ( ref - verts.value( tri.v1() ) ).squaredLength() );
-	            t++;
-	        }
-	    }
-	    else
-	    {
-	        int t = 0;
-	        foreach ( Triangle tri, triangles )
-	        {
-	            QPair< int, float > tp;
-	            tp.first = t;
-	            tp.second = transVerts.value( tri.v1() )[2] + transVerts.value( tri.v2() )[2] + transVerts.value( tri.v3() )[2];
-	            triOrder[t++] = tp;
-	        }
-	    }
-	    qSort( triOrder.begin(), triOrder.end(), compareTriangles );
-	    sortedTriangles.resize( triangles.count() );
-	    for ( int t = 0; t < triangles.count(); t++ )
-	        sortedTriangles[t] = triangles[ triOrder[t].first ];
-	}
-	else
-	{
-	*/
 	sortedTriangles = triangles;
-	//}
 
 	MaterialProperty * matprop = findProperty<MaterialProperty>();
 	if ( matprop && matprop->alphaValue() != 1.0 ) {
@@ -999,34 +952,13 @@ void Mesh::transformShapes()
 			transColors[c] = colors[c].blend( a );
 	} else {
 		transColors = colors;
-	}
-
-	//if ( !bslsp )
-	//	bslsp = properties.get<BSLightingShaderProperty>();
-
-	if ( bslsp ) {
-		transColorsNoAlpha.resize( colors.count() );
-		if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
-			for ( int c = 0; c < colors.count(); c++ )
-				transColorsNoAlpha[c] = Color4( transColors[c].red(), transColors[c].green(), transColors[c].blue(), 1.0f );
-		} else {
-			transColorsNoAlpha.clear();
+		if ( bslsp ) {
+			if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
+				for ( int c = 0; c < colors.count(); c++ )
+					transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
+			}
 		}
 	}
-
-	//if ( !bsesp )
-	//	bsesp = properties.get<BSEffectShaderProperty>();
-
-	//if ( bsesp ) {
-	//	transColorsNoAlpha.resize( colors.count() );
-	//	if ( !(bsesp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
-	//		//qDebug() << "No VA" << name;
-	//		for ( int c = 0; c < colors.count(); c++ )
-	//			transColorsNoAlpha[c] = Color4( transColors[c].red(), transColors[c].green(), transColors[c].blue(), 1.0f );
-	//	} else {
-	//		transColorsNoAlpha.clear();
-	//	}
-	//}
 }
 
 BoundSphere Mesh::bounds() const
@@ -1097,12 +1029,12 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 	glPolygonOffset( 1.0f, 2.0f );
 
 	glEnableClientState( GL_VERTEX_ARRAY );
-	glVertexPointer( 3, GL_FLOAT, 0, transVerts.data() );
+	glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
 
 	if ( !Node::SELECTING ) {
 		if ( transNorms.count() ) {
 			glEnableClientState( GL_NORMAL_ARRAY );
-			glNormalPointer( GL_FLOAT, 0, transNorms.data() );
+			glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
 		}
 
 		// Do VCs if legacy or if either bslsp or bsesp is set
@@ -1113,7 +1045,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 			&& doVCs )
 		{
 			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_FLOAT, 0, (transColorsNoAlpha.count()) ? transColorsNoAlpha.data() : transColors.data() );
+			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
 		} else {
 			if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
 				// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
@@ -1138,7 +1070,7 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 
 		// render the triangles
 		if ( sortedTriangles.count() )
-			glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.data() );
+			glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.constData() );
 
 	} else {
 		auto lod0 = nif->get<uint>( bsLOD, "Level 0 Size" );
@@ -1154,21 +1086,21 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		switch ( scene->lodLevel ) {
 		case Scene::Level2:
 			if ( lod2tris.count() )
-				glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.data() );
+				glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
 		case Scene::Level1:
 			if ( lod1tris.count() )
-				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.data() );
+				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
 		case Scene::Level0:
 		default:
 			if ( lod0tris.count() )
-				glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.data() );
+				glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );
 			break;
 		}
 	}
 
 	// render the tristrips
-	for ( int s = 0; s < tristrips.count(); s++ )
-		glDrawElements( GL_TRIANGLE_STRIP, tristrips[s].count(), GL_UNSIGNED_SHORT, tristrips[s].data() );
+	for ( auto & s : tristrips )
+		glDrawElements( GL_TRIANGLE_STRIP, s.count(), GL_UNSIGNED_SHORT, s.constData() );
 
 	if ( isDoubleSided ) {
 		glEnable( GL_CULL_FACE );
@@ -1469,7 +1401,7 @@ void Mesh::drawSelection() const
 	if ( n == "Faces" || n == "Strips" || n == "Strip Lengths" ) {
 		glLineWidth( 1.5f );
 
-		for ( const QVector<quint16>& strip : tristrips ) {
+		for ( const TriStrip& strip : tristrips ) {
 			quint16 a = strip.value( 0 );
 			quint16 b = strip.value( 1 );
 
@@ -1491,7 +1423,7 @@ void Mesh::drawSelection() const
 		}
 
 		if ( i >= 0 && !tristrips.isEmpty() ) {
-			QVector<quint16> strip = tristrips[i];
+			TriStrip strip = tristrips[i];
 
 			quint16 a = strip.value( 0 );
 			quint16 b = strip.value( 1 );
@@ -1534,7 +1466,7 @@ void Mesh::drawSelection() const
 				glVertex( transVerts.value( vmap.value( tri.v1() ) ) );
 				glEnd();
 			}
-			for ( const QVector<quint16>& strip : partitions[c].tristrips ) {
+			for ( const TriStrip& strip : partitions[c].tristrips ) {
 				quint16 a = vmap.value( strip.value( 0 ) );
 				quint16 b = vmap.value( strip.value( 1 ) );
 

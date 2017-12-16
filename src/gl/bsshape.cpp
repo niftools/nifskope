@@ -123,8 +123,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		coords.clear();
 		colors.clear();
 
-		// For compatibility with coords QList
-		QVector<Vector2> coordset;
+		// For compatibility with coords list
+		TexCoords coordset;
 
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iVertData );
@@ -371,20 +371,20 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
-	glVertexPointer( 3, GL_FLOAT, 0, transVerts.data() );
+	glVertexPointer( 3, GL_FLOAT, 0, transVerts.constData() );
 
 	if ( !Node::SELECTING ) {
 		glEnableClientState( GL_NORMAL_ARRAY );
-		glNormalPointer( GL_FLOAT, 0, transNorms.data() );
+		glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
 
 		bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
 		// Always do vertex colors for FO4 BSESP
 		if ( nifVersion == 130 && bsesp && colors.count() )
 			doVCs = true;
 
-		Color4 * c = nullptr;
+		const Color4 * c = nullptr;
 		if ( colors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
-			c = colors.data();
+			c = colors.constData();
 		}
 
 		if ( c ) {
@@ -401,11 +401,11 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	
 	if ( isDoubleSided ) {
 		glCullFace( GL_FRONT );
-		glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.data() );
+		glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
 		glCullFace( GL_BACK );
 	}
 
-	glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.data() );
+	glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
 
 	if ( !Node::SELECTING )
 		scene->renderer->stopProgram();
@@ -480,7 +480,7 @@ void BSShape::drawSelection() const
 	bool extraData = false;
 
 	auto nif = static_cast<const NifModel *>(idx.model());
-	if ( !nif )
+	if ( !nif || !blk.isValid() )
 		return;
 
 	// Set current block name and detect if extra data

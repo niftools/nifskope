@@ -1884,6 +1884,21 @@ inline QDataStream & operator>>( QDataStream & ds, BSVertexDesc & d )
 	return ds;
 }
 
+// Qt container optimizations
+
+Q_DECLARE_TYPEINFO( Vector2,     Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Vector3,     Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( HalfVector3, Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( ByteVector3, Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Vector4,     Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Color3,      Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Color4,      Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( ByteColor4,  Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Triangle,    Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Quat,        Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Matrix,      Q_MOVABLE_TYPE );
+Q_DECLARE_TYPEINFO( Transform,   Q_MOVABLE_TYPE );
+
 
 namespace NiMesh {
 

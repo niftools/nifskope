@@ -43,6 +43,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glmesh.h Mesh
 
+using TriStrip = QVector<quint16>;
+Q_DECLARE_TYPEINFO( TriStrip, Q_MOVABLE_TYPE );
+using TexCoords = QVector<Vector2>;
+Q_DECLARE_TYPEINFO( TexCoords, Q_MOVABLE_TYPE );
+
 class NifModel;
 
 class Shape : public Node
@@ -95,11 +100,11 @@ protected:
 	//! Bitangents
 	QVector<Vector3> bitangents;
 	//! UV coordinate sets
-	QVector<QVector<Vector2>> coords;
+	QVector<TexCoords> coords;
 	//! Triangles
 	QVector<Triangle> triangles;
 	//! Strip points
-	QVector<QVector<quint16>> tristrips;
+	QVector<TriStrip> tristrips;
 	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
 	//! Triangle indices
@@ -113,8 +118,6 @@ protected:
 	QVector<Vector3> transNorms;
 	//! Transformed colors (alpha blended)
 	QVector<Color4> transColors;
-	//! Transformed colors (alpha removed)
-	QVector<Color4> transColorsNoAlpha;
 	//! Transformed tangents
 	QVector<Vector3> transTangents;
 	//! Transformed bitangents
