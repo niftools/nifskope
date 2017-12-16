@@ -60,7 +60,6 @@ Mesh::Mesh( Scene * s, const QModelIndex & b ) : Shape( s, b )
 {
 }
 
-bool Mesh::isBSLODPresent = false;
 
 void Mesh::clear()
 {
@@ -89,7 +88,7 @@ void Mesh::clear()
 	transTangents.clear();
 	transBitangents.clear();
 
-	isBSLODPresent = false;
+	isLOD = false;
 	isDoubleSided = false;
 }
 
@@ -192,14 +191,9 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 	if ( (!iBlock.isValid() || !index.isValid()) && !updateSkin )
 		return;
 
-	if ( !isBSLODPresent ) {
-
-		if ( nif->isNiBlock( iBlock, "BSLODTriShape" ) ) {
-			isBSLODPresent = true;
-		}
-
-		emit nif->lodSliderChanged( isBSLODPresent );
-	}
+	isLOD = nif->isNiBlock( iBlock, "BSLODTriShape" );
+	if ( isLOD )
+		emit nif->lodSliderChanged( true );
 
 	updateData |= ( iData == index ) || ( iTangentData == index );
 	updateSkin |= ( iSkin == index );
@@ -1065,17 +1059,15 @@ void Mesh::drawShapes( NodeList * secondPass, bool presort )
 		glDisable( GL_CULL_FACE );
 	}
 
-	auto bsLOD = nif->getBlock( iBlock, "BSLODTriShape" );
-	if ( !bsLOD.isValid() ) {
-
+	if ( !isLOD ) {
 		// render the triangles
 		if ( sortedTriangles.count() )
 			glDrawElements( GL_TRIANGLES, sortedTriangles.count() * 3, GL_UNSIGNED_SHORT, sortedTriangles.constData() );
 
-	} else {
-		auto lod0 = nif->get<uint>( bsLOD, "Level 0 Size" );
-		auto lod1 = nif->get<uint>( bsLOD, "Level 1 Size" );
-		auto lod2 = nif->get<uint>( bsLOD, "Level 2 Size" );
+	} else if ( sortedTriangles.count() ) {
+		auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
+		auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );
+		auto lod2 = nif->get<uint>( iBlock, "LOD2 Size" );
 
 		auto lod0tris = sortedTriangles.mid( 0, lod0 );
 		auto lod1tris = sortedTriangles.mid( lod0, lod1 );

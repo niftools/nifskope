@@ -44,6 +44,10 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 
 	nifVersion = nif->getUserVersion2();
 
+	isLOD = nif->isNiBlock( iBlock, "BSMeshLODTriShape" );
+	if ( isLOD )
+		emit nif->lodSliderChanged( true );
+
 	auto vertexFlags = nif->get<BSVertexDesc>( iBlock, "Vertex Desc" );
 
 	bool isDynamic = nif->inherits( iBlock, "BSDynamicTriShape" );
@@ -338,6 +342,8 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	if ( !(scene->options & Scene::ShowMarkers) && name.contains( "EditorMarker" ) )
 		return;
 
+	auto nif = static_cast<const NifModel *>(iBlock.model());
+
 	if ( Node::SELECTING ) {
 		if ( scene->selMode & Scene::SelObject ) {
 			int s_nodeId = ID2COLORKEY( nodeId );
@@ -405,7 +411,33 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		glCullFace( GL_BACK );
 	}
 
+	if ( !isLOD ) {
 	glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
+	} else if ( triangles.count() ) {
+		auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
+		auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );
+		auto lod2 = nif->get<uint>( iBlock, "LOD2 Size" );
+
+		auto lod0tris = triangles.mid( 0, lod0 );
+		auto lod1tris = triangles.mid( lod0, lod1 );
+		auto lod2tris = triangles.mid( lod0 + lod1, lod2 );
+
+		// If Level2, render all
+		// If Level1, also render Level0
+		switch ( scene->lodLevel ) {
+		case Scene::Level2:
+			if ( lod2tris.count() )
+				glDrawElements( GL_TRIANGLES, lod2tris.count() * 3, GL_UNSIGNED_SHORT, lod2tris.constData() );
+		case Scene::Level1:
+			if ( lod1tris.count() )
+				glDrawElements( GL_TRIANGLES, lod1tris.count() * 3, GL_UNSIGNED_SHORT, lod1tris.constData() );
+		case Scene::Level0:
+		default:
+			if ( lod0tris.count() )
+				glDrawElements( GL_TRIANGLES, lod0tris.count() * 3, GL_UNSIGNED_SHORT, lod0tris.constData() );
+			break;
+		}
+	}
 
 	if ( !Node::SELECTING )
 		scene->renderer->stopProgram();

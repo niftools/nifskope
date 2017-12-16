@@ -157,6 +157,8 @@ protected:
 
 	mutable BoundSphere boundSphere;
 	mutable bool updateBounds = false;
+
+	bool isLOD = false;
 };
 
 //! A mesh
@@ -198,8 +200,6 @@ protected:
 
 	//! Tangent data
 	QPersistentModelIndex iTangentData;
-
-	static bool isBSLODPresent;
 };
 
 

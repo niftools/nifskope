@@ -117,32 +117,6 @@
    <addaction name="aAnimLoop"/>
    <addaction name="aAnimSwitch"/>
   </widget>
-  <widget class="QToolBar" name="tView">
-   <property name="windowTitle">
-    <string>View</string>
-   </property>
-   <property name="allowedAreas">
-    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
-   </property>
-   <property name="iconSize">
-    <size>
-     <width>36</width>
-     <height>36</height>
-    </size>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="aToggleBlockList"/>
-   <addaction name="aToggleBlockDetails"/>
-   <addaction name="aToggleHeader"/>
-   <addaction name="aToggleInspect"/>
-   <addaction name="aToggleKfm"/>
-   <addaction name="aToggleHelp"/>
-  </widget>
   <widget class="QToolBar" name="tLOD">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -181,6 +155,32 @@
     <bool>false</bool>
    </attribute>
    <addaction name="aLODDummy"/>
+  </widget>
+  <widget class="QToolBar" name="tView">
+   <property name="windowTitle">
+    <string>View</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>36</width>
+     <height>36</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="aToggleBlockList"/>
+   <addaction name="aToggleBlockDetails"/>
+   <addaction name="aToggleHeader"/>
+   <addaction name="aToggleInspect"/>
+   <addaction name="aToggleKfm"/>
+   <addaction name="aToggleHelp"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

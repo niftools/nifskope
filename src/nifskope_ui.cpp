@@ -758,6 +758,9 @@ void NifSkope::onLoadBegin()
 	setEnabled( false );
 	ui->tAnim->setEnabled( false );
 
+	ui->tLOD->setEnabled( false );
+	ui->tLOD->setVisible( false );
+
 	progress->setVisible( true );
 	progress->reset();
 }
