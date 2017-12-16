@@ -936,6 +936,7 @@ void Mesh::transformShapes()
 		transNorms = norms;
 		transTangents = tangents;
 		transBitangents = bitangents;
+		transColors = colors;
 	}
 
 	sortedTriangles = triangles;

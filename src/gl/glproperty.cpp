@@ -1185,8 +1185,8 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		setEmissive( nif->get<Color3>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
 
 		hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
-		if ( getShaderType() & ShaderFlags::ST_GlowShader )
-			hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+		hasGlowMap = getShaderType() & ShaderFlags::ST_GlowShader && hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+
 
 		// Version Dependent settings
 		if ( stream < 130 ) {
