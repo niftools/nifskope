@@ -1897,6 +1897,30 @@ typedef enum {
 } PrimitiveType;
 
 typedef enum {
+	CPU_READ = 0x01,
+	CPU_WRITE_STATIC = 0x02,
+	CPU_WRITE_MUTABLE = 0x04,
+	CPU_WRITE_VOLATILE = 0x08,
+	GPU_READ = 0x10,
+	GPU_WRITE = 0x20,
+	CPU_WRITE_STATIC_INITIALIZED = 0x40
+} DataStreamAccess;
+
+typedef enum {
+	USAGE_VERTEX_INDEX,
+	USAGE_VERTEX,
+	USAGE_SHADERCONSTANT,
+	USAGE_USER,
+	USAGE_DISPLAYLIST
+} DataStreamUsage;
+
+struct DataStreamMetadata
+{
+	DataStreamUsage usage;
+	DataStreamAccess access;
+};
+
+typedef enum {
     F_UNKNOWN             = 0x00000000,
     F_INT8_1              = 0x00010101,
     F_INT8_2              = 0x00020102,
@@ -2010,6 +2034,19 @@ typedef enum
 	// Display List Semantics
 	E_DISPLAYLIST = 29
 } Semantic;
+
+typedef enum {
+	HAS_NONE = 0,
+	HAS_POSITION = 1 << E_POSITION,
+	HAS_NORMAL = 1 << E_NORMAL,
+	HAS_BINORMAL = 1 << E_BINORMAL,
+	HAS_TANGENT = 1 << E_TANGENT,
+	HAS_TEXCOORD = 1 << E_TEXCOORD,
+	HAS_BLENDWEIGHT = 1 << E_BLENDWEIGHT,
+	HAS_BLENDINDICES = 1 << E_BLENDINDICES,
+	HAS_COLOR = 1 << E_COLOR,
+	HAS_INDEX = 1 << E_INDEX
+} SemanticFlags;
 
 #define SEM(string) {#string, E_##string},
 

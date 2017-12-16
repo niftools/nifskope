@@ -288,6 +288,40 @@ void NifModel::updateFooter()
  *  header functions
  */
 
+QString NifModel::extractRTTIArgs( const QString & RTTIName, NiMesh::DataStreamMetadata & metadata ) const
+{
+	QStringList nameAndArgs = RTTIName.split( "\x01" );
+	Q_ASSERT( nameAndArgs.size() >= 1 );
+
+	if ( nameAndArgs[0] == QLatin1String( "NiDataStream" ) ) {
+		Q_ASSERT( nameAndArgs.size() == 3 );
+		metadata.usage = NiMesh::DataStreamUsage( nameAndArgs[1].toInt() );
+		metadata.access = NiMesh::DataStreamAccess( nameAndArgs[2].toInt() );
+	}
+
+	return nameAndArgs[0];
+}
+
+QString NifModel::createRTTIName( const QModelIndex & iBlock ) const
+{
+	return createRTTIName( static_cast<NifItem *>(iBlock.internalPointer()) );
+}
+
+QString NifModel::createRTTIName( const NifItem * block ) const
+{
+	if ( !block )
+		return {};
+
+	QString blockName = block->name();
+	if ( blockName == QLatin1String( "NiDataStream" ) ) {
+		blockName = QString( "NiDataStream\x01%1\x01%2" )
+			.arg( block->child( "Usage" )->value().get<quint32>() )
+			.arg( block->child( "Access" )->value().get<quint32>() );
+	}
+
+	return blockName;
+}
+
 QModelIndex NifModel::getHeader() const
 {
 	QModelIndex header = index( 0, 0 );
@@ -327,13 +361,7 @@ void NifModel::updateHeader()
 
 		for ( int r = 1; r < root->childCount() - 1; r++ ) {
 			NifItem * block = root->child( r );
-
-			// NiMesh hack
-			QString blockName = block->name();
-			if ( blockName == "NiDataStream" ) {
-				blockName = QString( "NiDataStream\x01%1\x01%2" ).arg( block->child( "Usage" )->value().get<int>() ).arg( block->child( "Access" )->value().get<int>() );
-				qDebug() << "Changing blockname to " << blockName;
-			}
+			QString blockName = createRTTIName( block );
 
 			int bTypeIdx = blocktypes.indexOf( blockName );
 			if ( bTypeIdx < 0 ) {
@@ -1838,27 +1866,10 @@ bool NifModel::load( QIODevice & device )
 					}
 
 					// Hack for NiMesh data streams
-					qint32 dataStreamUsage  = -1;
-					qint32 dataStreamAccess = -1;
+					NiMesh::DataStreamMetadata metadata = {};
 
-					if ( blktyp.startsWith( "NiDataStream\x01" ) ) {
-						QStringList splitStream = blktyp.split( "\x01" );
-						blktyp = splitStream[0];
-						bool ok;
-						dataStreamUsage = splitStream[1].toInt( &ok );
-
-						if ( !ok ) {
-							throw tr( "Unknown NiDataStream" );
-						}
-
-						dataStreamAccess = splitStream[2].toInt( &ok );
-
-						if ( !ok ) {
-							throw tr( "Unknown NiDataStream" );
-						}
-
-						qDebug() << "Loaded NiDataStream with usage " << dataStreamUsage << " access " << dataStreamAccess;
-					}
+					if ( blktyp.startsWith( "NiDataStream\x01" ) )
+						blktyp = extractRTTIArgs( blktyp, metadata );
 
 					if ( isNiBlock( blktyp ) ) {
 						//qDebug() << "loading block" << c << ":" << blktyp );
@@ -1871,8 +1882,8 @@ bool NifModel::load( QIODevice & device )
 
 						// NiMesh hack
 						if ( blktyp == "NiDataStream" ) {
-							set<qint32>( newBlock, "Usage", dataStreamUsage );
-							set<qint32>( newBlock, "Access", dataStreamAccess );
+							set<quint32>( newBlock, "Usage", metadata.usage );
+							set<quint32>( newBlock, "Access", metadata.access );
 						}
 					} else {
 						auto m = tr( "warning: block %1 (%2) not inserted!" ).arg( c ).arg( blktyp );

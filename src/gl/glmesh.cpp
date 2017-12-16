@@ -48,6 +48,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glmesh.cpp Scene management for visible meshes such as NiTriShapes.
 
+const char * NIMESH_ABORT = QT_TR_NOOP( "NiMesh rendering encountered unsupported types. Rendering may be broken." );
+
 
 Shape::Shape( Scene * s, const QModelIndex & b ) : Node( s, b )
 {
@@ -220,10 +222,11 @@ void Mesh::update( const NifModel * nif, const QModelIndex & index )
 
 		if ( nif->checkVersion( 0x14050000, 0 ) && nif->inherits( iBlock, "NiMesh" ) ) {
 			qDebug() << nif->get<ushort>( iBlock, "Num Submeshes" ) << " submeshes";
-			iData = nif->getIndex( iBlock, "Datas" );
+			iData = nif->getIndex( iBlock, "Datastreams" );
 			if ( iData.isValid() ) {
 				qDebug() << "Got " << nif->rowCount( iData ) << " rows of data";
 				updateData = true;
+				updateBounds = true;
 			} else {
 				qDebug() << "Did not find data in NiMesh ???";
 			}
@@ -315,88 +318,153 @@ void Mesh::transform()
 			weights.clear();
 			triangles.clear();
 
-			QString abortMsg = "NiMesh rendering encountered unsupported types. Rendering may be broken.";
+			
 
-			auto meshPrimitiveType = nif->get<uint>( iBlock, "Primitive Type" );
+			// All the semantics used by this mesh
+			NiMesh::SemanticFlags semFlags = NiMesh::HAS_NONE;
+			// Loop over the data once for initial setup and validation
+			// and build the semantic-index maps for each datastream's components
+			using CompSemIdxMap = QVector<QPair<NiMesh::Semantic, uint>>;
+			QVector<CompSemIdxMap> compSemanticIndexMaps;
 			for ( int i = 0; i < nif->rowCount( iData ); i++ ) {
-				// each data reference is to a single data stream
-				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
-				qDebug() << "Data stream: " << stream;
-				// can have multiple submeshes, unsure of exact meaning
-				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
-				qDebug() << "Submeshes: " << numSubmeshes;
-				QPersistentModelIndex submeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
+				auto stream = nif->getLink( iData.child( i, 0 ), "Stream" );
+				auto iDataStream = nif->getBlock( stream );
 
-				for ( int j = 0; j < numSubmeshes; j++ ) {
-					qDebug() << "Submesh" << j << "maps to region" << nif->get<ushort>( submeshMap.child( j, 0 ) );
-				}
+				auto usage = NiMesh::DataStreamUsage( nif->get<uint>( iDataStream, "Usage" ) );
+				auto access = nif->get<uint>( iDataStream, "Access" );
 
-				// each stream can have multiple components, and each has a starting index
-				QMap<uint, QPair<NiMesh::Semantic, uint>> componentIndexMap;
-				int numComponents = nif->get<int>( iData.child( i, 0 ), "Num Components" );
-				qDebug() << "Components: " << numComponents;
-				// semantics determine the usage
-				QPersistentModelIndex componentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
+				// Invalid Usage and Access, abort
+				if ( usage == access && access == 0 )
+					return;
 
+				// For each datastream, store the semantic and the index (used for E_TEXCOORD)
+				auto iComponentSemantics = nif->getIndex( iData.child( i, 0 ), "Component Semantics" );
+				uint numComponents = nif->get<uint>( iData.child( i, 0 ), "Num Components" );
+				CompSemIdxMap compSemanticIndexMap;
 				for ( uint j = 0; j < numComponents; j++ ) {
-					auto name = NiMesh::semanticStrings.value(nif->get<QString>( componentSemantics.child( j, 0 ), "Name" ));
-					uint index = nif->get<uint>( componentSemantics.child( j, 0 ), "Index" );
-					qDebug() << "Component" << name << "at position" << index << "of component" << j << "in stream" << stream;
-					componentIndexMap.insert( j, {name, index} );
-				}
-
-				// now the data stream itself...
-				QPersistentModelIndex dataStream = nif->getBlock( stream );
-				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( dataStream, "Data" ).child( 0, 0 ) );
-				QBuffer streamBuffer( &streamData );
-				streamBuffer.open( QIODevice::ReadOnly );
-
-				// each region exists within the data stream at the specified index
-				quint32 numRegions = nif->get<quint32>( dataStream, "Num Regions" );
-				QPersistentModelIndex regions = nif->getIndex( dataStream, "Regions" );
-				quint32 totalIndices = 0;
-
-				if ( regions.isValid() )
-					for ( quint32 j = 0; j < numRegions; j++ )
-						totalIndices += nif->get<quint32>( regions.child( j, 0 ), "Num Indices" );
-
-
-				// stream components are interleaved, so we need to know their type before we read them
-				QVector<uint> typeList;
-
-				uint numStreamComponents = nif->get<uint>( dataStream, "Num Components" );
-				for ( uint j = 0; j < numStreamComponents; j++ ) {
-					auto format = nif->get<uint>( nif->getIndex( dataStream, "Component Formats" ).child( j, 0 ) );
-					typeList.append( format );
-
-					auto component = componentIndexMap.value( j );
-					auto compType = component.first;
-					auto startIndex  = component.second;
+					auto name = nif->get<QString>( iComponentSemantics.child( j, 0 ), "Name" );
+					auto sem = NiMesh::semanticStrings.value( name );
+					uint idx = nif->get<uint>( iComponentSemantics.child( j, 0 ), "Index" );
+					compSemanticIndexMap.insert( j, {sem, idx} );
 
 					// Create UV stubs for multi-coord systems
-					if ( compType == NiMesh::E_TEXCOORD )
+					if ( sem == NiMesh::E_TEXCOORD )
 						coords.append( QVector<Vector2>() );
+
+					// Assure Index datastream is first and Usage is correct
+					bool invalidIndex = false;
+					if ( (sem == NiMesh::E_INDEX && (i != 0 || usage != NiMesh::USAGE_VERTEX_INDEX))
+						 || (usage == NiMesh::USAGE_VERTEX_INDEX && (i != 0 || sem != NiMesh::E_INDEX)) )
+						invalidIndex = true;
+
+					if ( invalidIndex ) {
+						Message::append( tr( NIMESH_ABORT ),
+										 tr( "[%1] NifSkope requires 'INDEX' datastream be first, with Usage type 'USAGE_VERTEX_INDEX'." )
+										 .arg( stream ),
+										 QMessageBox::Warning );
+						return;
+					}
+
+					semFlags = NiMesh::SemanticFlags(semFlags | (1 << sem));
 				}
 
-				verts.reserve( totalIndices );
-				norms.reserve( totalIndices );
-				tangents.reserve( totalIndices );
-				bitangents.reserve( totalIndices );
-				colors.reserve( totalIndices );
-				indices.reserve( totalIndices );
-				weights.reserve( totalIndices );
-				for ( auto & c : coords )
-					c.reserve( totalIndices );
+				compSemanticIndexMaps << compSemanticIndexMap;
+			}
+
+			// This NiMesh does not have vertices, abort
+			if ( !(semFlags & NiMesh::HAS_POSITION) )
+				return;
+
+			// The number of triangle indices across the submeshes for this NiMesh
+			quint32 totalIndices = 0;
+			// The highest triangle index value in this NiMesh
+			quint32 maxIndex = 0;
+			// The Nth component after ignoring DataStreamUsage > 1
+			int compIdx = 0;
+			for ( int i = 0; i < nif->rowCount( iData ); i++ ) {
+				// TODO: For now, submeshes are not actually used and the regions are 
+				// filled in order for each data stream.
+				// Submeshes may be required if total index values exceed USHRT_MAX
+				QMap<ushort, ushort> submeshMap;
+				ushort numSubmeshes = nif->get<ushort>( iData.child( i, 0 ), "Num Submeshes" );
+				auto iSubmeshMap = nif->getIndex( iData.child( i, 0 ), "Submesh To Region Map" );
+				for ( ushort j = 0; j < numSubmeshes; j++ )
+					submeshMap.insert( j, nif->get<ushort>( iSubmeshMap.child( j, 0 ) ) );
+
+				// Get the datastream
+				quint32 stream = nif->getLink( iData.child( i, 0 ), "Stream" );
+				auto iDataStream = nif->getBlock( stream );
+
+				auto usage = NiMesh::DataStreamUsage(nif->get<uint>( iDataStream, "Usage" ));
+				// Only process USAGE_VERTEX and USAGE_VERTEX_INDEX
+				if ( usage > NiMesh::USAGE_VERTEX )
+					continue;
+
+				// Datastream can be split into multiple regions
+				// Each region has a Start Index which is added as an offset to the index read from the stream
+				QVector<QPair<quint32, quint32>> regions;
+				quint32 numRegions = nif->get<quint32>( iDataStream, "Num Regions" );
+				quint32 numIndices = 0;
+				auto iRegions = nif->getIndex( iDataStream, "Regions" );
+				if ( iRegions.isValid() ) {
+					for ( quint32 j = 0; j < numRegions; j++ ) {
+						regions.append( { nif->get<quint32>( iRegions.child( j, 0 ), "Start Index" ),
+										nif->get<quint32>( iRegions.child( j, 0 ), "Num Indices" ) }
+						);
+
+						numIndices += regions[j].second;
+					}
+				}
+
+				if ( usage == NiMesh::USAGE_VERTEX_INDEX ) {
+					totalIndices = numIndices;
+					// RESERVE not RESIZE
+					indices.reserve( totalIndices );
+				} else if ( compIdx == 1 ) {
+					// Indices should be built already
+					if ( indices.size() != totalIndices )
+						return;
+
+					quint32 maxSize = maxIndex + 1;
+					// RESIZE
+					verts.resize( maxSize );
+					norms.resize( maxSize );
+					tangents.resize( maxSize );
+					bitangents.resize( maxSize );
+					colors.resize( maxSize );
+					weights.resize( maxSize );
+					if ( coords.size() == 0 )
+						coords.resize( 1 );
+
+					for ( auto & c : coords )
+						c.resize( maxSize );
+				}
+
+				// Get the format of each component
+				QVector<NiMesh::DataStreamFormat> datastreamFormats;
+				uint numStreamComponents = nif->get<uint>( iDataStream, "Num Components" );
+				for ( uint j = 0; j < numStreamComponents; j++ ) {
+					auto format = nif->get<uint>( nif->getIndex( iDataStream, "Component Formats" ).child( j, 0 ) );
+					datastreamFormats.append( NiMesh::DataStreamFormat(format) );
+				}
+
+				Q_ASSERT( compSemanticIndexMaps[i].size() == numStreamComponents );
 
 				auto tempMdl = std::make_unique<NifModel>( this );
+
+				QByteArray streamData = nif->get<QByteArray>( nif->getIndex( iDataStream, "Data" ).child( 0, 0 ) );
+				QBuffer streamBuffer( &streamData );
+				streamBuffer.open( QIODevice::ReadOnly );
 
 				NifIStream tempInput( tempMdl.get(), &streamBuffer );
 				NifValue tempValue;
 
 				bool abort = false;
-				for ( uint j = 0; j < totalIndices; j++ ) {
+				for ( const auto & r : regions ) for ( uint j = 0; j < r.second; j++ ) {
+					auto off = r.first;
+					Q_ASSERT( totalIndices >= off + j );
 					for ( uint k = 0; k < numStreamComponents; k++ ) {
-						auto typeK = typeList[k];
+						auto typeK = datastreamFormats[k];
 						int typeLength = ( (typeK & 0x000F0000) >> 0x10 );
 						int typeSize = ( (typeK & 0x00000F00) >> 0x08 );
 
@@ -448,61 +516,83 @@ void Mesh::transform()
 
 						for ( int l = 0; l < typeLength; l++ ) {
 							tempInput.read( tempValue );
-							qDebug() << tempValue.toString();
 						}
 
-						auto compType = componentIndexMap.value( k ).first;
+						auto compType = compSemanticIndexMaps[i].value( k ).first;
 						switch ( typeK )
 						{
 						case NiMesh::F_FLOAT32_3:
 						case NiMesh::F_FLOAT16_3:
+							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
 							switch ( compType ) {
 							case NiMesh::E_POSITION:
 							case NiMesh::E_POSITION_BP:
-								verts.append( tempValue.get<Vector3>() );
+								verts[j + off] = tempValue.get<Vector3>();
 								break;
 							case NiMesh::E_NORMAL:
 							case NiMesh::E_NORMAL_BP:
-								norms.append( tempValue.get<Vector3>() );
+								norms[j + off] = tempValue.get<Vector3>();
 								break;
 							case NiMesh::E_TANGENT:
 							case NiMesh::E_TANGENT_BP:
-								tangents.append( tempValue.get<Vector3>() );
+								tangents[j + off] = tempValue.get<Vector3>();
 								break;
 							case NiMesh::E_BINORMAL:
 							case NiMesh::E_BINORMAL_BP:
-								bitangents.append( tempValue.get<Vector3>() );
+								bitangents[j + off] = tempValue.get<Vector3>();
 								break;
 							default:
 								break;
 							}
 							break;
 						case NiMesh::F_UINT16_1:
-							if ( compType == NiMesh::E_INDEX )
-								indices.append( tempValue.get<quint16>() );
+							if ( compType == NiMesh::E_INDEX ) {
+								Q_ASSERT( usage == NiMesh::USAGE_VERTEX_INDEX );
+								// TODO: The total index value across all submeshes
+								// is likely allowed to exceed USHRT_MAX.
+								// For now limit the index.
+								quint32 ind = tempValue.get<quint16>() + off;
+								if ( ind > 0xFFFF )
+									qDebug() << QString( "[%1] %2" ).arg( stream ).arg( ind );
+
+								ind = std::min( ind, (quint32)0xFFFF );
+
+								// Store the highest index
+								if ( ind > maxIndex )
+									maxIndex = ind;
+
+								indices.append( (quint16)ind );
+							}
 							break;
 						case NiMesh::F_FLOAT32_2:
 						case NiMesh::F_FLOAT16_2:
+							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
 							if ( compType == NiMesh::E_TEXCOORD ) {
-								quint32 coordSet = componentIndexMap.value( k ).second;
-								coords[coordSet].append( tempValue.get<Vector2>() );
+								quint32 coordSet = compSemanticIndexMaps[i].value( k ).second;
+								Q_ASSERT( coords.size() > coordSet );
+								coords[coordSet][j + off] = tempValue.get<Vector2>();
 							}
 							break;
+						case NiMesh::F_UINT8_4:
+							// BLENDINDICES, do nothing for now
+							break;
 						case NiMesh::F_NORMUINT8_4:
+							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
 							if ( compType == NiMesh::E_COLOR )
-								colors.append( tempValue.get<ByteColor4>() );
+								colors[j + off] = tempValue.get<ByteColor4>();
 							break;
 						case NiMesh::F_NORMUINT8_4_BGRA:
+							Q_ASSERT( usage == NiMesh::USAGE_VERTEX );
 							if ( compType == NiMesh::E_COLOR ) {
 								// Swizzle BGRA -> RGBA
 								auto c = tempValue.get<ByteColor4>().data();
-								colors.append( {c[2], c[1], c[0], c[3]} );
+								colors[j + off] = {c[2], c[1], c[0], c[3]};
 							}
 							break;
 						default:
-							Message::append( abortMsg, QString( "[%1] Unsupported Component: %2" ).arg( stream )
+							Message::append( tr( NIMESH_ABORT ), tr( "[%1] Unsupported Component: %2" ).arg( stream )
 											 .arg( NifValue::enumOptionName( "ComponentFormat", typeK ) ),
-											 QMessageBox::Critical );
+											 QMessageBox::Warning );
 							abort = true;
 							break;
 						}
@@ -515,26 +605,42 @@ void Mesh::transform()
 				// Clear is extremely expensive. Must be outside of loop
 				tempMdl->clear();
 
-				// Make geometry
-				triangles.reserve( indices.size() / 3 );
-				switch ( meshPrimitiveType )
-				{
-				case NiMesh::PRIMITIVE_TRIANGLES:
-					for ( int k = 0; k < indices.size(); k += 3 )
-						triangles.append( { indices[k], indices[k + 1], indices[k + 2] } );
-					break;
-				case NiMesh::PRIMITIVE_TRISTRIPS:
-				case NiMesh::PRIMITIVE_LINES:
-				case NiMesh::PRIMITIVE_LINESTRIPS:
-				case NiMesh::PRIMITIVE_QUADS:
-				case NiMesh::PRIMITIVE_POINTS:
-					Message::append( abortMsg,
-									 QString( "[%1] Unsupported Primitive: %2" )
-									 .arg( nif->getBlockNumber( iBlock ) )
-									 .arg( NifValue::enumOptionName( "MeshPrimitiveType", meshPrimitiveType ) ),
-									 QMessageBox::Critical );
-					break;
-				}
+				compIdx++;
+			}
+
+			// Clear unused vertex attributes
+			//	Note: Do not clear normals as this breaks fixed function for some reason
+			if ( !(semFlags & NiMesh::HAS_BINORMAL) )
+				bitangents.clear();
+			if ( !(semFlags & NiMesh::HAS_TANGENT) )
+				tangents.clear();
+			if ( !(semFlags & NiMesh::HAS_COLOR) )
+				colors.clear();
+			if ( !(semFlags & NiMesh::HAS_BLENDINDICES) || !(semFlags & NiMesh::HAS_BLENDWEIGHT) )
+				weights.clear();
+
+			Q_ASSERT( verts.size() == maxIndex + 1 );
+			Q_ASSERT( indices.size() == totalIndices );
+
+			// Make geometry
+			triangles.resize( indices.size() / 3 );
+			auto meshPrimitiveType = nif->get<uint>( iBlock, "Primitive Type" );
+			switch ( meshPrimitiveType ) {
+			case NiMesh::PRIMITIVE_TRIANGLES:
+				for ( int k = 0, t = 0; k < indices.size(); k += 3, t++ )
+					triangles[t] = { indices[k], indices[k + 1], indices[k + 2] };
+				break;
+			case NiMesh::PRIMITIVE_TRISTRIPS:
+			case NiMesh::PRIMITIVE_LINES:
+			case NiMesh::PRIMITIVE_LINESTRIPS:
+			case NiMesh::PRIMITIVE_QUADS:
+			case NiMesh::PRIMITIVE_POINTS:
+				Message::append( tr( NIMESH_ABORT ), tr( "[%1] Unsupported Primitive: %2" )
+									.arg( nif->getBlockNumber( iBlock ) )
+									.arg( NifValue::enumOptionName( "MeshPrimitiveType", meshPrimitiveType ) ),
+								 QMessageBox::Warning
+				);
+				break;
 			}
 		} else {
 

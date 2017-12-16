@@ -147,6 +147,12 @@ public:
 	QModelIndex getHeader() const;
 	//! Updates the header infos ( num blocks etc. )
 	void updateHeader();
+	//! Extracts the 0x01 separated args from NiDataStream. NiDataStream is the only known block to use RTTI args.
+	QString extractRTTIArgs( const QString & RTTIName, NiMesh::DataStreamMetadata & metadata ) const;
+	//! Creates the 0x01 separated args for NiDataStream. NiDataStream is the only known block to use RTTI args.
+	QString createRTTIName( const QModelIndex & iBlock ) const;
+	//! Creates the 0x01 separated args for NiDataStream. NiDataStream is the only known block to use RTTI args.
+	QString createRTTIName( const NifItem * block ) const;
 
 	//! Returns the model index of the NiFooter
 	QModelIndex getFooter() const;
