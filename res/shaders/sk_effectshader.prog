@@ -1,26 +1,16 @@
 # normal mapping, vertex colors -> emissive
 
-checkgroup begin or
-	# Fallout 3 and later
-	checkgroup begin and
-		check HEADER/Version >= 0x14020007
-		check HEADER/User Version >= 11
-		check HEADER/User Version 2 != 130
-	checkgroup end
-
-checkgroup end
-
-checkgroup begin or
+checkgroup begin and
 	# Skyrim
-	checkgroup begin and
-		#check not NiAlphaProperty
-		check BSEffectShaderProperty
-	checkgroup end
-
+	check HEADER/User Version 2 >= 83
+	check HEADER/User Version 2 <= 100
+	check BSEffectShaderProperty
 checkgroup end
 
 texcoords 0 base
 texcoords 1 tangents
 texcoords 2 bitangents
+texcoords 3 indices
+texcoords 4 weights
 
 shaders sk_effectshader.vert sk_effectshader.frag

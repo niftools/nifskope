@@ -116,6 +116,9 @@ void Shape::updateShaderProperties( const NifModel * nif )
 	QModelIndex iLSP = nif->getBlock( prop, "BSLightingShaderProperty" );
 	QModelIndex iESP = nif->getBlock( prop, "BSEffectShaderProperty" );
 
+	// Reset stored shader so it can reassess conditions
+	shader = "";
+
 	if ( iLSP.isValid() ) {
 		if ( !bslsp )
 			bslsp = properties.get<BSLightingShaderProperty>();

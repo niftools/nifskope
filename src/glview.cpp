@@ -554,7 +554,7 @@ void GLView::paintGL()
 		
 
 		glShadeModel( GL_SMOOTH );
-		glEnable( GL_LIGHTING );
+		//glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
@@ -571,7 +571,7 @@ void GLView::paintGL()
 		
 
 		glShadeModel( GL_SMOOTH );
-		glEnable( GL_LIGHTING );
+		//glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
@@ -583,7 +583,7 @@ void GLView::paintGL()
 		GLfloat mat_amb[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 		glShadeModel( GL_FLAT );
-		glEnable( GL_LIGHTING );
+		//glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, mat_diff );
 		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_diff );

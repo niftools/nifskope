@@ -1,22 +1,14 @@
 # multi-layer parallax
 
-checkgroup begin or
-	# Fallout 3 and later
-	checkgroup begin and
-		check HEADER/Version >= 0x14020007
-		check HEADER/User Version >= 11
-	checkgroup end
-checkgroup end
-
-checkgroup begin or
+checkgroup begin and
 	# Skyrim
-	checkgroup begin and
-		check BSLightingShaderProperty
-		check BSLightingShaderProperty/Skyrim Shader Type == 11
-		checkgroup begin or
-			check NiTriBasedGeomData/Has Normals == 1
-			check BSTriShape/Vertex Desc & 8
-		checkgroup end
+	check HEADER/User Version 2 >= 83
+	check HEADER/User Version 2 <= 100
+	check BSLightingShaderProperty
+	check BSLightingShaderProperty/Skyrim Shader Type == 11
+	checkgroup begin or
+		check NiTriBasedGeomData/Has Normals == 1
+		check BSTriShape/Vertex Desc & 8
 	checkgroup end
 checkgroup end
 
@@ -24,4 +16,4 @@ texcoords 0 base
 texcoords 1 tangents
 texcoords 2 bitangents
 
-shaders sk_multilayer.vert sk_multilayer.frag
+shaders sk_default.vert sk_multilayer.frag

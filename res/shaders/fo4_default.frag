@@ -1,4 +1,5 @@
 #version 130
+#extension GL_ARB_shader_texture_lod : require
 
 uniform sampler2D BaseMap;
 uniform sampler2D NormalMap;
@@ -6,6 +7,8 @@ uniform sampler2D GlowMap;
 uniform sampler2D BacklightMap;
 uniform sampler2D SpecularMap;
 uniform sampler2D GreyscaleMap;
+uniform sampler2D EnvironmentMap;
+uniform samplerCube CubeMap;
 
 uniform vec3 specColor;
 uniform float specStrength;
@@ -30,6 +33,8 @@ uniform bool hasSoftlight;
 uniform bool hasBacklight;
 uniform bool hasRimlight;
 uniform bool hasTintColor;
+uniform bool hasCubeMap;
+uniform bool hasEnvMask;
 uniform bool hasSpecularMap;
 uniform bool greyscaleColor;
 uniform bool doubleSided;
@@ -37,6 +42,8 @@ uniform bool doubleSided;
 uniform float subsurfaceRolloff;
 uniform float rimPower;
 uniform float backlightPower;
+
+uniform float envReflection;
 
 uniform mat4 worldMatrix;
 
@@ -229,6 +236,10 @@ void main( void )
 	float VdotH = max( dot(V, H), FLT_EPSILON );
 	float NdotNegL = max( dot(normal, -L), FLT_EPSILON );
 
+	vec3 reflected = reflect( V, normal );
+	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
+	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
+
 	vec4 color;
 	vec3 albedo = baseMap.rgb * C.rgb;
 	vec3 diffuse = A.rgb + D.rgb * NdotL0;
@@ -262,6 +273,20 @@ void main( void )
 		specMask = s * specStrength;
 		
 		spec = TorranceSparrow( NdotL0, NdotH, NdotV, VdotH, vec3(specMask), fSpecularPower, 0.2 ) * NdotL0 * D.rgb * specColor;
+	}
+
+	// Environment
+	vec4 cube = textureLod( CubeMap, reflectedWS, 8.0 - smoothness * 8.0 );
+	vec4 env = texture2D( EnvironmentMap, offset );
+	if ( hasCubeMap ) {
+		cube.rgb *= envReflection * specStrength;
+		if ( hasEnvMask ) {
+			cube.rgb *= env.r;
+		} else {
+			cube.rgb *= s;
+		}
+		
+		spec += cube.rgb * diffuse;
 	}
 
 	vec3 backlight = vec3(0.0);

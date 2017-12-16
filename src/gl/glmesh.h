@@ -134,8 +134,8 @@ protected:
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
 
-	//! Holds the name of the shader, or "fixed function pipeline" if no shader
-	QString shader;
+	//! Holds the name of the shader, or "" if no shader
+	QString shader = "";
 
 	//! Shader property
 	BSShaderLightingProperty * bssp = nullptr;

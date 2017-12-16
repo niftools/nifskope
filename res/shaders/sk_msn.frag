@@ -36,7 +36,6 @@ uniform float lightingEffect1;
 uniform float lightingEffect2;
 
 uniform mat4 viewMatrix;
-uniform mat4 viewMatrixInverse;
 
 varying vec3 v;
 

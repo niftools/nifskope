@@ -1,6 +1,6 @@
 #version 130
 
-uniform sampler2D SourceTexture;
+uniform sampler2D BaseMap;
 uniform sampler2D GreyscaleMap;
 uniform samplerCube CubeMap;
 uniform sampler2D NormalMap;
@@ -57,7 +57,7 @@ void main( void )
 {
 	vec2 offset = gl_TexCoord[0].st * uvScale + uvOffset;
 	
-	vec4 baseMap = texture2D( SourceTexture, offset );
+	vec4 baseMap = texture2D( BaseMap, offset );
 	vec4 normalMap = texture2D( NormalMap, offset );
 	vec4 specMap = texture2D( SpecularMap, offset );
 	
@@ -110,13 +110,13 @@ void main( void )
 	color.a = alphaMult * C.a * baseMap.a;
 	
 	if ( greyscaleColor ) {
-		vec4 luG = colorLookup( texture2D( SourceTexture, offset ).g, baseColor.r * C.r * falloff );
+		vec4 luG = colorLookup( texture2D( BaseMap, offset ).g, baseColor.r * C.r * falloff );
 
 		color.rgb = luG.rgb;
 	}
 	
 	if ( greyscaleAlpha ) {
-		vec4 luA = colorLookup( texture2D( SourceTexture, offset ).a, color.a );
+		vec4 luA = colorLookup( texture2D( BaseMap, offset ).a, color.a );
 		
 		color.a = luA.a;
 	}

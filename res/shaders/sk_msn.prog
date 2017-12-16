@@ -1,10 +1,10 @@
 # model space normal mapping
 
 checkgroup begin or
-	# Fallout 3 and later
 	checkgroup begin and
-		check HEADER/Version >= 0x14020007
-		check HEADER/User Version >= 11
+		# Skyrim
+		check HEADER/User Version 2 >= 83
+		check HEADER/User Version 2 <= 100
 	checkgroup end
 checkgroup end
 
@@ -24,7 +24,5 @@ checkgroup begin or
 checkgroup end
 
 texcoords 0 base
-#texcoords 1 tangents
-#texcoords 2 bitangents
 
 shaders sk_msn.vert sk_msn.frag
