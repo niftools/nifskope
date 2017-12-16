@@ -361,6 +361,42 @@ protected:
 
 REGISTER_PROPERTY( VertexColorProperty, VertexColor )
 
+namespace Stencil
+{
+	enum TestFunc
+	{
+		TEST_NEVER,
+		TEST_LESS,
+		TEST_EQUAL,
+		TEST_LESSEQUAL,
+		TEST_GREATER,
+		TEST_NOTEQUAL,
+		TEST_GREATEREQUAL,
+		TEST_ALWAYS,
+		TEST_MAX
+	};
+
+	enum Action
+	{
+		ACTION_KEEP,
+		ACTION_ZERO,
+		ACTION_REPLACE,
+		ACTION_INCREMENT,
+		ACTION_DECREMENT,
+		ACTION_INVERT,
+		ACTION_MAX
+	};
+
+	enum DrawMode
+	{
+		DRAW_CCW_OR_BOTH,
+		DRAW_CCW,
+		DRAW_CW,
+		DRAW_BOTH,
+		DRAW_MAX
+	};
+}
+
 //! A Property that specifies stencil testing
 class StencilProperty final : public Property
 {
@@ -375,10 +411,26 @@ public:
 	friend void glProperty( StencilProperty * );
 
 protected:
+	enum
+	{
+		ENABLE_MASK = 0x0001,
+		FAIL_MASK = 0x000E,
+		FAIL_POS = 1,
+		ZFAIL_MASK = 0x0070,
+		ZFAIL_POS = 4,
+		ZPASS_MASK = 0x0380,
+		ZPASS_POS = 7,
+		DRAW_MASK = 0x0C00,
+		DRAW_POS = 10,
+		TEST_MASK = 0x7000,
+		TEST_POS = 12
+	};
+
 	bool stencil = false;
 
 	GLenum func = 0;
-	GLuint mask = 0;
+	GLuint ref = 0;
+	GLuint mask = 0xffffffff;
 
 	GLenum failop = 0;
 	GLenum zfailop = 0;

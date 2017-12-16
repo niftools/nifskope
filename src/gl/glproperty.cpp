@@ -636,7 +636,8 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
 		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
 
-		shininess = nif->get<float>( index, "Glossiness" );
+		// OpenGL needs shininess clamped otherwise it generates GL_INVALID_VALUE
+		shininess = std::min( std::max( nif->get<float>( index, "Glossiness" ), 0.0f ), 128.0f );
 	}
 }
 
@@ -770,46 +771,54 @@ void glProperty( VertexColorProperty * p, bool vertexcolors )
 
 void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 {
+	using namespace Stencil;
 	Property::update( nif, block );
 
 	if ( iBlock.isValid() && iBlock == block ) {
-		//static const GLenum functions[8] = { GL_NEVER, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_ALWAYS };
-		//static const GLenum operations[8] = { GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT, GL_KEEP, GL_KEEP };
+		static const GLenum funcMap[8] = {
+			GL_NEVER, GL_GEQUAL, GL_NOTEQUAL, GL_GREATER, GL_LEQUAL, GL_EQUAL, GL_LESS, GL_ALWAYS
+		};
 
-		// ! glFrontFace( GL_CCW )
+		static const GLenum opMap[6] = {
+			GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT
+		};
+
+		int drawMode = 0;
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
-			switch ( nif->get<int>( iBlock, "Draw Mode" ) ) {
-			case 2:
-				cullEnable = true;
-				cullMode = GL_FRONT;
-				break;
-			case 3:
-				cullEnable = false;
-				cullMode = GL_BACK;
-				break;
-			case 1:
-			default:
-				cullEnable = true;
-				cullMode = GL_BACK;
-				break;
-			}
+			drawMode = nif->get<int>( iBlock, "Draw Mode" );
+			func = funcMap[std::max(nif->get<quint32>( iBlock, "Stencil Function" ), (quint32)TEST_MAX - 1 )];
+			failop = opMap[std::max( nif->get<quint32>( iBlock, "Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zfailop = opMap[std::max( nif->get<quint32>( iBlock, "Z Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zpassop = opMap[std::max( nif->get<quint32>( iBlock, "Pass Action" ), (quint32)ACTION_MAX - 1 )];
+			stencil = (nif->get<quint8>( iBlock, "Stencil Enabled" ) & ENABLE_MASK);
 		} else {
-			switch ( ( nif->get<int>( iBlock, "Flags" ) >> 10 ) & 3 ) {
-			case 2:
-				cullEnable = true;
-				cullMode = GL_FRONT;
-				break;
-			case 3:
-				cullEnable = false;
-				cullMode = GL_BACK;
-				break;
-			case 1:
-			default:
-				cullEnable = true;
-				cullMode = GL_BACK;
-				break;
-			}
+			auto flags = nif->get<int>( iBlock, "Flags" );
+			drawMode = (flags & DRAW_MASK) >> DRAW_POS;
+			func = funcMap[(flags & TEST_MASK) >> TEST_POS];
+			failop = opMap[(flags & FAIL_MASK) >> FAIL_POS];
+			zfailop = opMap[(flags & ZFAIL_MASK) >> ZFAIL_POS];
+			zpassop = opMap[(flags & ZPASS_MASK) >> ZPASS_POS];
+			stencil = (flags & ENABLE_MASK);
 		}
+
+		switch ( drawMode ) {
+		case DRAW_CW:
+			cullEnable = true;
+			cullMode = GL_FRONT;
+			break;
+		case DRAW_BOTH:
+			cullEnable = false;
+			cullMode = GL_BACK;
+			break;
+		case DRAW_CCW:
+		default:
+			cullEnable = true;
+			cullMode = GL_BACK;
+			break;
+		}
+
+		ref = nif->get<quint32>( iBlock, "Stencil Ref" );
+		mask = nif->get<quint32>( iBlock, "Stencil Mask" );
 	}
 }
 
@@ -822,9 +831,18 @@ void glProperty( StencilProperty * p )
 			glDisable( GL_CULL_FACE );
 
 		glCullFace( p->cullMode );
+
+		if ( p->stencil ) {
+			glEnable( GL_STENCIL_TEST );
+			glStencilFunc( p->func, p->ref, p->mask );
+			glStencilOp( p->failop, p->zfailop, p->zpassop );
+		} else {
+			glDisable( GL_STENCIL_TEST );
+		}
 	} else {
 		glEnable( GL_CULL_FACE );
 		glCullFace( GL_BACK );
+		glDisable( GL_STENCIL_TEST );
 	}
 }
 
