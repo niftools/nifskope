@@ -18,11 +18,11 @@ AboutDialog::AboutDialog( QWidget * parent )
 	<p>NifSkope is free software available under a BSD license.
 	The source is available via <a href='https://github.com/niftools/nifskope'>GitHub</a></p>
 
-	<p>For more information visit <a href='https://forum.niftools.org'>our forum</a>.<br>
-	To receive support for NifSkope please use the
+	<p>For more information visit the <a href='https://discord.gg/ZFjdN4x'>NifTools Discord</a> or <a href='https://forum.niftools.org'>NifTools forum</a>.<br>
+	To receive support for NifSkope please use the Discord or the 
 	<a href='https://forum.niftools.org/24-nifskope/'>NifSkope Help subforum</a>.</p>
 
-	<p>The most recent stable version of NifSkope can be downloaded from the <a href='https://github.com/niftools/nifskope/releases'>
+	<p>The most recent version of NifSkope can be downloaded from the <a href='https://github.com/niftools/nifskope/releases'>
 	official GitHub release page</a>.</p>
 	
 	<p>A detailed changelog and the latest developmental builds of NifSkope 
@@ -37,10 +37,51 @@ AboutDialog::AboutDialog( QWidget * parent )
 	Copyright (c) 1999-2008 Havok.com Inc. (and its Licensors).<br>
 	All Rights Reserved.</p>
 	
+	<p>NifSkope uses <a href='http://gli.g-truc.net/'>OpenGL Image (GLI)</a>:<br>
+	MIT License<br>
+	Copyright (c) 2010 - 2016 G-Truc Creation</p>
+
 	<p>For the generation of convex hulls, NifSkope uses <a href='http://www.qhull.org'>Qhull</a>:<br>
-	Copyright (c) 1993-2015  C.B. Barber and The Geometry Center.<br>
-	Qhull is free software and may be obtained via http from www.qhull.org or <a href='https://github.com/qhull/qhull'>GitHub</a>.
-	See Qhull_COPYING.txt for details.</p>
+	Copyright (c) 1993-2015  C.B. Barber and The Geometry Center.<br><center>
+						Qhull, Copyright (c) 1993-2015<br><br>
+                    
+								C.B. Barber<br>
+							   Arlington, MA <br><br>
+                          
+								   and<br><br>
+
+		   The National Science and Technology Research Center for<br>
+			Computation and Visualization of Geometric Structures<br>
+							(The Geometry Center)<br>
+						   University of Minnesota<br><br>
+
+						   email: qhull@qhull.org<br><br>
+
+	This software includes Qhull from C.B. Barber and The Geometry Center.<br>
+	Qhull is copyrighted as noted above.  Qhull is free software and may <br>
+	be obtained via http from www.qhull.org.  It may be freely copied, modified, <br>
+	and redistributed under the following conditions:<br><br>
+
+	1. All copyright notices must remain intact in all files.<br><br>
+
+	2. A copy of this text file must be distributed along with any copies <br>
+	   of Qhull that you redistribute; this includes copies that you have <br>
+	   modified, or copies of programs or other software products that <br>
+	   include Qhull.<br><br>
+
+	3. If you modify Qhull, you must include a notice giving the<br>
+	   name of the person performing the modification, the date of<br>
+	   modification, and the reason for such modification.<br><br>
+
+	4. When distributing modified versions of Qhull, or other software <br>
+	   products that include Qhull, you must provide notice that the original <br>
+	   source code may be obtained as noted above.<br><br>
+
+	5. There is no warranty or other guarantee of fitness for Qhull, it is <br>
+	   provided solely "as is".  Bug reports or fixes may be sent to <br>
+	   qhull_bug@qhull.org; the authors may or may not act on them as <br>
+	   they desire.<br></center>
+	</p>
 	
 	)rhtml" );
 

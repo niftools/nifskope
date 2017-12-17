@@ -327,6 +327,7 @@
     </property>
     <addaction name="aToggleHelp"/>
     <addaction name="separator"/>
+    <addaction name="aDiscord"/>
     <addaction name="aHelpWebsite"/>
     <addaction name="aHelpForum"/>
     <addaction name="separator"/>
@@ -1373,7 +1374,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   </action>
   <action name="aNifToolsDownloads">
    <property name="text">
-    <string>NifTools &amp;Downloads</string>
+    <string>NifTools &amp;Projects</string>
    </property>
    <property name="toolTip">
     <string>http://www.niftools.org/projects</string>
@@ -2067,6 +2068,17 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>2.0 Light</string>
    </property>
   </action>
+  <action name="aDiscord">
+   <property name="text">
+    <string>NifTools &amp;Discord</string>
+   </property>
+   <property name="iconText">
+    <string>NifSkope Support Forum</string>
+   </property>
+   <property name="toolTip">
+    <string>https://discord.gg/ZFjdN4x</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2609,6 +2621,22 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <hint type="destinationlabel">
      <x>-1</x>
      <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aDiscord</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>openURL()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>639</x>
+     <y>399</y>
     </hint>
    </hints>
   </connection>

@@ -482,9 +482,6 @@ build_pass|!debug_and_release {
 	QSS += \
 		res/style.qss
 
-	QHULLTXT += \
-		lib/qhull/COPYING.txt
-
 	#LANG += \
 	#	res/lang
 
@@ -506,9 +503,6 @@ build_pass|!debug_and_release {
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
-
-	# Copy Qhull COPYING.TXT and rename
-	copyFiles( $$QHULLTXT,,, Qhull_COPYING.txt )
 
 	win32:!static {
 		# Copy DLLs to build dir
