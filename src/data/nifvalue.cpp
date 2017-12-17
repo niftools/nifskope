@@ -240,7 +240,7 @@ QString NifValue::enumOptionName( const QString & eid, quint32 val )
 
 			if ( OPT_PER_LINE == -1 ) {
 				QSettings settings;
-				OPT_PER_LINE = settings.value( "Settings/UI/Options Per Line" ).toInt();
+				OPT_PER_LINE = settings.value( "Settings/UI/Options Per Line", 3 ).toInt();
 			}
 
 			int opt = 0;
