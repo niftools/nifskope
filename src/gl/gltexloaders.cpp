@@ -1172,6 +1172,15 @@ bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuin
 		throw QString( "unknown texture format" );
 	}
 
+	// Power of Two check
+	if ( (width & (width - 1)) || (height & (height - 1)) ) {
+		QString file = filepath;
+		file.replace( '/', "\\" );
+		Message::append( "One or more texture dimensions are not a power of two.",
+						 QString( "'%1' is %2 x %3." ).arg( file ).arg( width ).arg( height )
+		);
+	}
+
 	return isSupported;
 }
 
