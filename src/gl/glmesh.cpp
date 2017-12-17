@@ -107,6 +107,19 @@ void Shape::setController( const NifModel * nif, const QModelIndex & iController
 	}
 }
 
+
+void Shape::update( const NifModel * nif, const QModelIndex & index )
+{
+	Node::update( nif, index );
+
+	// If shaders are reenabled, reset
+	if ( !(scene->options & Scene::DisableShaders) && shader.isNull() 
+		 && nif->checkVersion( 0x14020007, 0x14020007 ) )
+	{
+		updateShaderProperties( nif );
+	}
+}
+
 void Shape::updateShaderProperties( const NifModel * nif )
 {
 	auto prop = nif->getLink( iBlock, "Shader Property" );
@@ -182,7 +195,7 @@ void Shape::boneSphere( const NifModel * nif, const QModelIndex & index ) const
 
 void Mesh::update( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Shape::update( nif, index );
 
 	// Was Skinning toggled?
 	// If so, switch between partition triangles and data triangles

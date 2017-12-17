@@ -34,7 +34,7 @@ void BSShape::clear()
 
 void BSShape::update( const NifModel * nif, const QModelIndex & index )
 {
-	Node::update( nif, index );
+	Shape::update( nif, index );
 
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;

@@ -250,6 +250,7 @@ void NifSkope::initActions()
 
 	shadingActions = agroup( { ui->aTextures, ui->aVertexColors, ui->aSpecular, ui->aGlow, ui->aCubeMapping, ui->aLighting, ui->aDisableShading }, false );
 	connect( shadingActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );
+	connect( shadingActions, &QActionGroup::triggered, ogl, &GLView::updateScene );
 
 	auto testActions = agroup( { ui->aTest1Dbg, ui->aTest2Dbg, ui->aTest3Dbg }, true );
 	connect( testActions, &QActionGroup::triggered, ogl->getScene(), &Scene::updateSceneOptionsGroup );

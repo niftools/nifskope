@@ -60,6 +60,8 @@ public:
 	Shape( Scene * s, const QModelIndex & b );
 	~Shape() { clear(); }
 
+	void update( const NifModel * nif, const QModelIndex & ) override;
+
 	virtual void drawVerts() const {};
 	virtual QModelIndex vertexAt( int ) const { return QModelIndex(); };
 
