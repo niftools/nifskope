@@ -62,15 +62,15 @@ protected:
 	void setController( const NifModel * nif, const QModelIndex & controller ) override;
 
 	QPersistentModelIndex iData;
-	bool upData;
+	bool upData = false;
 
 	QVector<Vector3> verts;
 	QVector<Color4> colors;
 	QVector<float> sizes;
 	QVector<Vector3> transVerts;
 
-	int active;
-	float size;
+	int active = 0;
+	float size = 0;
 };
 
 

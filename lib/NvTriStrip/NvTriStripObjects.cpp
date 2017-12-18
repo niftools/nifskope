@@ -7,6 +7,8 @@
 #include <set>
 #include <string.h> // memset
 #include <stdio.h> // printf
+#include <climits>
+
 #include "NvTriStripObjects.h"
 #include "VertexCache.h"
 
@@ -971,10 +973,16 @@ void NvStripifier::CreateStrips(const NvStripInfoVec& allStrips, IntVec& stripIn
 	int nStripCount = allStrips.size();
 	assert(nStripCount > 0);
 
+	// Split into two strip lengths > USHRT_MAX
+	bool split = false;
+
 	//we infer the cw/ccw ordering depending on the number of indices
 	//this is screwed up by the fact that we insert -1s to denote changing strips
 	//this is to account for that
 	int accountForNegatives = 0;
+
+	if ( bStitchStrips || bRestart )
+		numSeparateStrips = 1;
 
 	for (int i = 0; i < nStripCount; i++)
 	{
@@ -1072,6 +1080,17 @@ void NvStripifier::CreateStrips(const NvStripInfoVec& allStrips, IntVec& stripIn
 			}
 		}
 
+		if ( i < nStripCount - 1 ) {
+			// Prevent points per strip of over 65535
+			NvStripInfo * stripNext = allStrips[i + 1];
+			if ( stripNext && !split && (stripIndices.size() + stripNext->m_faces.size() * 4) >= USHRT_MAX ) {
+				stripIndices.push_back( -1 );
+				accountForNegatives++;
+				numSeparateStrips++;
+				split = true;
+			}
+		}
+
 		// Double tap between strips.
 		if (bStitchStrips && !bRestart) 
 		{
@@ -1095,9 +1114,6 @@ void NvStripifier::CreateStrips(const NvStripInfoVec& allStrips, IntVec& stripIn
 		tLastFace.m_v1 = tLastFace.m_v2;
 		tLastFace.m_v2 = tLastFace.m_v2;
 	}
-	
-	if(bStitchStrips || bRestart)
-		numSeparateStrips = 1;
 }
 
 

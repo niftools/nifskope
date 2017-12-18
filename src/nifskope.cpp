@@ -31,45 +31,38 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "nifskope.h"
-#include "version.h"
-#include "settings.h"
-
 #include "ui_nifskope.h"
-#include "ui/about_dialog.h"
 
 #include "glview.h"
-#include "gl/glscene.h"
-#include "kfmmodel.h"
-#include "nifmodel.h"
-#include "nifproxy.h"
+#include "message.h"
 #include "spellbook.h"
-#include "widgets/fileselect.h"
-#include "widgets/nifview.h"
-#include "widgets/refrbrowser.h"
-#include "widgets/inspect.h"
-
+#include "version.h"
+#include "gl/glscene.h"
+#include "model/kfmmodel.h"
+#include "model/nifmodel.h"
+#include "model/nifproxymodel.h"
+#include "ui/widgets/fileselect.h"
+#include "ui/widgets/nifview.h"
+#include "ui/widgets/refrbrowser.h"
+#include "ui/widgets/inspect.h"
+#include "ui/about_dialog.h"
+#include "ui/settingsdialog.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QBuffer>
 #include <QByteArray>
 #include <QCloseEvent>
-#include <QCommandLineParser>
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QLocale>
-#include <QLocalSocket>
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QSettings>
 #include <QTimer>
-#include <QToolBar>
-#include <QToolButton>
 #include <QTranslator>
-#include <QUdpSocket>
 #include <QUrl>
 #include <QCryptographicHash>
 
@@ -114,9 +107,9 @@ QString NifSkope::fileFilter( const QString & ext )
 	QString filter;
 
 	for ( int i = 0; i < filetypes.size(); i++ ) {
-		if ( filetypes.at( i ).second == ext ) {
-			filter = QString( "%1 (*.%2)" ).arg( filetypes.at( i ).first ).arg( filetypes.at( i ).second );
-		}
+		auto& ft = filetypes.at(i);
+		if ( ft.second == ext )
+			filter = QString( "%1 (*.%2)" ).arg( ft.first ).arg( ft.second );
 	}
 
 	return filter;
@@ -151,7 +144,7 @@ NifSkope::NifSkope()
 	qApp->installEventFilter( this );
 	
 	// Init Dialogs
-	aboutDialog = new AboutDialog( this );
+	
 	if ( !options )
 		options = new SettingsDialog;
 
@@ -199,6 +192,7 @@ NifSkope::NifSkope()
 	list->setSortingEnabled( false );
 	list->setItemDelegate( nif->createDelegate( this, book ) );
 	list->installEventFilter( this );
+	list->header()->resizeSection( NifModel::NameCol, 250 );
 
 	// Block Details
 	tree = ui->tree;
@@ -207,6 +201,12 @@ NifSkope::NifSkope()
 	tree->setItemDelegate( nif->createDelegate( this, book ) );
 	tree->installEventFilter( this );
 	tree->header()->moveSection( 1, 2 );
+	tree->header()->resizeSection( NifModel::NameCol, 135 );
+	tree->header()->resizeSection( NifModel::ValueCol, 250 );
+	// Allow multi-row paste
+	//	Note: this has some side effects such as vertex selection 
+	//	in viewport being wrong if you attempt to select many rows.
+	tree->setSelectionMode( QAbstractItemView::ExtendedSelection );
 
 	// Header Details
 	header = ui->header;
@@ -214,6 +214,8 @@ NifSkope::NifSkope()
 	header->setItemDelegate( nif->createDelegate( this, book ) );
 	header->installEventFilter( this );
 	header->header()->moveSection( 1, 2 );
+	header->header()->resizeSection( NifModel::NameCol, 135 );
+	header->header()->resizeSection( NifModel::ValueCol, 250 );
 
 	// KFM
 	kfmtree = ui->kfmtree;
@@ -290,10 +292,11 @@ NifSkope::NifSkope()
 	graphicsView->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
 	//graphicsView->setOptimizationFlags( QGraphicsView::DontSavePainterState | QGraphicsView::DontAdjustForAntialiasing );
 
-	// Set central widget and viewport
-	setCentralWidget( graphicsView );
 	graphicsView->setViewport( ogl );
 	graphicsView->setViewportUpdateMode( QGraphicsView::FullViewportUpdate );
+
+	// Set central widget and viewport
+	setCentralWidget( graphicsView );
 	
 	setContextMenuPolicy( Qt::NoContextMenu );
 
@@ -332,8 +335,10 @@ void NifSkope::exitRequested()
 
 	FSManager::del();
 
-	if ( options )
+	if ( options ) {
 		delete options;
+		options = nullptr;
+	}
 }
 
 NifSkope::~NifSkope()
@@ -538,7 +543,7 @@ void NifSkope::setListMode()
 			list->setRootIsDecorated( true );
 			QModelIndex pidx = proxy->mapFrom( idx, QModelIndex() );
 			list->setCurrentIndex( pidx );
-			// proxy model has only two columns (see columnCount in nifproxy.h)
+			// proxy model has only two columns (see columnCount in nifproxymodel.h)
 			list->setColumnHidden( 0, false );
 			list->setColumnHidden( 1, false );
 			head->resizeSection( 0, s0 );
@@ -733,7 +738,7 @@ QByteArray fileChecksum( const QString &fileName, QCryptographicHash::Algorithm 
 	return QByteArray();
 }
 
-void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
+void NifSkope::checkFile( QFileInfo fInfo, QByteArray hash )
 {
 	QString fname = fInfo.fileName();
 	QString fpath = fInfo.filePath();
@@ -747,7 +752,7 @@ void NifSkope::checkFile( QFileInfo fInfo, QByteArray filehash )
 	if ( saved ) {
 		auto filehash2 = fileChecksum( tmpFile, QCryptographicHash::Md5 );
 
-		if ( filehash == filehash2 ) {
+		if ( hash == filehash2 ) {
 			tmp.remove( fname );
 		} else {
 			QString err = "An MD5 hash comparison indicates this file will not be 100% identical upon saving. This could indicate underlying issues with the data in this file.";
@@ -973,6 +978,8 @@ void NifSkope::load()
 		emit completeLoading( kfm->loadFromFile( fname ), fname );
 
 		f.setFile( kfm->getFolder(), kfm->get<QString>( kfm->getKFMroot(), "NIF File Name" ) );
+
+		return;
 	}
 
 	bool loaded = nif->loadFromFile( fname );
@@ -1063,7 +1070,7 @@ void SelectIndexCommand::undo()
 
 
 //! Application-wide debug and warning message handler
-void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str )
+void NifSkope::MessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str )
 {
 	switch ( type ) {
 	case QtDebugMsg:
@@ -1087,105 +1094,10 @@ void myMessageOutput( QtMsgType type, const QMessageLogContext & context, const 
 }
 
 
-/*
- *  IPC socket
- */
-
-IPCsocket * IPCsocket::create( int port )
-{
-	QUdpSocket * udp = new QUdpSocket();
-
-	if ( udp->bind( QHostAddress( QHostAddress::LocalHost ), port, QUdpSocket::DontShareAddress ) ) {
-		IPCsocket * ipc = new IPCsocket( udp );
-		QDesktopServices::setUrlHandler( "nif", ipc, "openNif" );
-		return ipc;
-	}
-
-	return nullptr;
-}
-
-void IPCsocket::sendCommand( const QString & cmd, int port )
-{
-	QUdpSocket udp;
-	udp.writeDatagram( (const char *)cmd.data(), cmd.length() * sizeof( QChar ), QHostAddress( QHostAddress::LocalHost ), port );
-}
-
-IPCsocket::IPCsocket( QUdpSocket * s ) : QObject(), socket( s )
-{
-	QObject::connect( socket, &QUdpSocket::readyRead, this, &IPCsocket::processDatagram );
-}
-
-IPCsocket::~IPCsocket()
-{
-	delete socket;
-}
-
-void IPCsocket::processDatagram()
-{
-	while ( socket->hasPendingDatagrams() ) {
-		QByteArray data;
-		data.resize( socket->pendingDatagramSize() );
-		QHostAddress host;
-		quint16 port = 0;
-
-		socket->readDatagram( data.data(), data.size(), &host, &port );
-
-		if ( host == QHostAddress( QHostAddress::LocalHost ) && ( data.size() % sizeof( QChar ) ) == 0 ) {
-			QString cmd;
-			cmd.setUnicode( (QChar *)data.data(), data.size() / sizeof( QChar ) );
-			execCommand( cmd );
-		}
-	}
-}
-
-void IPCsocket::execCommand( const QString & cmd )
-{
-	if ( cmd.startsWith( "NifSkope::open" ) ) {
-		openNif( cmd.right( cmd.length() - 15 ) );
-	}
-}
-
-void IPCsocket::openNif( const QUrl & url )
-{
-	auto file = url.toString();
-	file.remove( 0, 4 );
-
-	openNif( file );
-}
-
-void IPCsocket::openNif( const QString & url )
-{
-	NifSkope::createWindow( url );
-}
-
-
-// TODO: This class was not used. QSystemLocale became private in Qt 5.
-// It appears this class was going to handle display of numbers.
-//! System locale override
-/**
- * Qt does not use the System Locale consistency so this basically forces all floating
- * numbers into C format but leaves all other local specific settings.
- */
-/*class NifSystemLocale : QSystemLocale
-{
-    virtual QVariant query(QueryType type, QVariant in) const
-    {
-        switch (type)
-        {
-        case DecimalPoint:
-            return QVariant( QLocale::c().decimalPoint() );
-        case GroupSeparator:
-            return QVariant( QLocale::c().groupSeparator() );
-        default:
-            return QVariant();
-        }
-    }
-};*/
-
 static QTranslator * mTranslator = nullptr;
 
 //! Sets application locale and loads translation files
-static void SetAppLocale( QLocale curLocale )
+void NifSkope::SetAppLocale( QLocale curLocale )
 {
 	QDir directory( QApplication::applicationDirPath() );
 
@@ -1234,145 +1146,11 @@ void NifSkope::sltLocaleChanged()
 	//ui->retranslateUi( this );
 }
 
-QCoreApplication * createApplication( int &argc, char *argv[] )
-{
-	// Iterate over args
-	for ( int i = 1; i < argc; ++i ) {
-		// -no-gui: start as core app without all the GUI overhead
-		if ( !qstrcmp( argv[i], "-no-gui" ) ) {
-			return new QCoreApplication( argc, argv );
-		}
-	}
-	return new QApplication( argc, argv );
-}
-
-
-/*
- *  main
- */
-
-//! The main program
-int main( int argc, char * argv[] )
-{
-	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
-
-	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {
-
-		a->setOrganizationName( "NifTools" );
-		a->setOrganizationDomain( "niftools.org" );
-		a->setApplicationName( "NifSkope " + NifSkopeVersion::rawToMajMin( NIFSKOPE_VERSION ) );
-		a->setApplicationVersion( NIFSKOPE_VERSION );
-		a->setApplicationDisplayName( "NifSkope " + NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true ) );
-
-		// Must set current directory or this causes issues with several features
-		QDir::setCurrent( qApp->applicationDirPath() );
-
-		// Register message handler
-		//qRegisterMetaType<Message>( "Message" );
-		qInstallMessageHandler( myMessageOutput );
-
-		// Register types
-		qRegisterMetaType<NifValue>( "NifValue" );
-		QMetaType::registerComparators<NifValue>();
-
-		// Find stylesheet
-		QDir qssDir( QApplication::applicationDirPath() );
-		QStringList qssList( QStringList()
-			<< "style.qss"
-#ifdef Q_OS_LINUX
-			<< "/usr/share/nifskope/style.qss"
-#endif
-		);
-		QString qssName;
-		for ( const QString& str : qssList ) {
-			if ( qssDir.exists( str ) ) {
-				qssName = qssDir.filePath( str );
-				break;
-			}
-		}
-
-		// Load stylesheet
-		if ( !qssName.isEmpty() ) {
-			QFile style( qssName );
-
-			if ( style.open( QFile::ReadOnly ) ) {
-				a->setStyleSheet( style.readAll() );
-				style.close();
-			}
-		}
-
-		// Set locale
-		QSettings cfg;
-		cfg.beginGroup( "Settings" );
-		SetAppLocale( cfg.value( "Locale", "en" ).toLocale() );
-		cfg.endGroup();
-
-		// Load XML files
-		NifModel::loadXML();
-		KfmModel::loadXML();
-
-		int port = NIFSKOPE_IPC_PORT;
-
-		QStack<QString> fnames;
-
-		// Command Line setup
-		QCommandLineParser parser;
-		parser.addHelpOption();
-		parser.addVersionOption();
-
-		// Add port option
-		QCommandLineOption portOption( {"p", "port"}, "Port NifSkope listens on", "port" );
-		parser.addOption( portOption );
-
-		// Process options
-		parser.process( *a );
-
-		// Override port value
-		if ( parser.isSet( portOption ) )
-			port = parser.value( portOption ).toInt();
-
-		// Files were passed to NifSkope
-		for ( const QString & arg : parser.positionalArguments() ) {
-			QString fname = QDir::current().filePath( arg );
-
-			if ( QFileInfo( fname ).exists() ) {
-				fnames.push( fname );
-			}
-		}
-
-		// No files were passed to NifSkope, push empty string
-		if ( fnames.isEmpty() ) {
-			fnames.push( QString() );
-		}
-		
-		if ( IPCsocket * ipc = IPCsocket::create( port ) ) {
-			//qDebug() << "IPCSocket exec";
-			ipc->execCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ) );
-
-			while ( !fnames.isEmpty() ) {
-				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
-			}
-
-			return a->exec();
-		} else {
-			//qDebug() << "IPCSocket send";
-			while ( !fnames.isEmpty() ) {
-				IPCsocket::sendCommand( QString( "NifSkope::open %1" ).arg( fnames.pop() ), port );
-			}
-			return 0;
-		}
-	} else {
-		// Future command line batch tools here
-	}
-
-	return 0;
-}
-
 
 void NifSkope::migrateSettings() const
 {
 	// Load current NifSkope settings
-	QSettings cfg;
+	QSettings settings;
 	// Load pre-1.2 NifSkope settings
 	QSettings cfg1_1( "NifTools", "NifSkope" );
 	// Load NifSkope 1.2 settings
@@ -1384,21 +1162,21 @@ void NifSkope::migrateSettings() const
 	QString curDisplayVer = NifSkopeVersion::rawToDisplay( NIFSKOPE_VERSION, true );
 
 	// New Install, no need to migrate anything
-	if ( !cfg.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
+	if ( !settings.value( "Version" ).isValid() && !cfg1_1.value( "version" ).isValid() ) {
 		// QSettings constructor creates an empty folder, so clear it.
 		cfg1_1.clear();
 
 		// Set version values
-		cfg.setValue( "Version", curVer );
-		cfg.setValue( "Qt Version", curQtVer );
-		cfg.setValue( "Display Version", curDisplayVer );
+		settings.setValue( "Version", curVer );
+		settings.setValue( "Qt Version", curQtVer );
+		settings.setValue( "Display Version", curDisplayVer );
 
 		return;
 	}
 
 	QString prevVer = curVer;
-	QString prevQtVer = cfg.value( "Qt Version" ).toString();
-	QString prevDisplayVer = cfg.value( "Display Version" ).toString();
+	QString prevQtVer = settings.value( "Qt Version" ).toString();
+	QString prevDisplayVer = settings.value( "Display Version" ).toString();
 
 	// Set full granularity for version comparisons
 	NifSkopeVersion::setNumParts( 7 );
@@ -1418,7 +1196,7 @@ void NifSkope::migrateSettings() const
 
 	// Migrate lambda
 	//	Using a QHash of registry keys (stored in version.h), migrates from one version to another.
-	auto migrate = []( QSettings & migrateFrom, QSettings & migrateTo, const QHash<QString, QString> migration ) {
+	auto migrate = []( QSettings & migrateFrom, QSettings & migrateTo, const QHash<QString, QString> & migration ) {
 		QHash<QString, QString>::const_iterator i;
 		for ( i = migration.begin(); i != migration.end(); ++i ) {
 			QVariant val = migrateFrom.value( i.key() );
@@ -1436,7 +1214,7 @@ void NifSkope::migrateSettings() const
 	bool migrateFrom1_2 = testMigration( cfg1_2, "2.0" );
 
 	if ( !migrateFrom1_1 && !migrateFrom1_2 ) {
-		prevVer = cfg.value( "Version" ).toString();
+		prevVer = settings.value( "Version" ).toString();
 	}
 
 	NifSkopeVersion oldVersion( prevVer );
@@ -1456,14 +1234,14 @@ void NifSkope::migrateSettings() const
 		// Migrate from 1.2.x to 2.0
 		if ( migrateFrom1_2 ) {
 			qDebug() << "Migrating from 1.2 to 2.0";
-			migrate( cfg1_2, cfg, migrateTo2_0 );
+			migrate( cfg1_2, settings, migrateTo2_0 );
 		}
 
 		// Set new Version
-		cfg.setValue( "Version", curVer );
+		settings.setValue( "Version", curVer );
 
 		if ( prevDisplayVer != curDisplayVer )
-			cfg.setValue( "Display Version", curDisplayVer );
+			settings.setValue( "Display Version", curDisplayVer );
 
 		// Migrate to new Settings
 		if ( oldVersion <= NifSkopeVersion( "2.0.dev1" ) ) {
@@ -1484,19 +1262,19 @@ void NifSkope::migrateSettings() const
 				return sanitized;
 			};
 
-			QVariant foldersVal = cfg.value( "Settings/Resources/Folders" );
+			QVariant foldersVal = settings.value( "Settings/Resources/Folders" );
 			if ( foldersVal.toStringList().isEmpty() ) {
-				QVariant oldVal = cfg.value( "Render Settings/Texture Folders" );
+				QVariant oldVal = settings.value( "Render Settings/Texture Folders" );
 				if ( !oldVal.isNull() ) {
-					cfg.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
+					settings.setValue( "Settings/Resources/Folders", sanitize( oldVal ) );
 				}
 			}
 
-			QVariant archivesVal = cfg.value( "Settings/Resources/Archives" );
+			QVariant archivesVal = settings.value( "Settings/Resources/Archives" );
 			if ( archivesVal.toStringList().isEmpty() ) {
-				QVariant oldVal = cfg.value( "FSEngine/Archives" );
+				QVariant oldVal = settings.value( "FSEngine/Archives" );
 				if ( !oldVal.isNull() ) {
-					cfg.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
+					settings.setValue( "Settings/Resources/Archives", sanitize( oldVal ) );
 				}
 			}
 
@@ -1505,27 +1283,29 @@ void NifSkope::migrateSettings() const
 			
 			// Remove old keys
 
-			cfg.remove( "FSEngine" );
-			cfg.remove( "Render Settings" );
-			cfg.remove( "Settings/Language" );
-			cfg.remove( "Settings/Startup Version" );
+			settings.remove( "FSEngine" );
+			settings.remove( "Render Settings" );
+			settings.remove( "Settings/Language" );
+			settings.remove( "Settings/Startup Version" );
 		}
 	}
 
+#ifdef QT_NO_DEBUG
 	// Check Qt Version
 	if ( curQtVer != prevQtVer ) {
 		// Check all keys and delete all QByteArrays
 		// to prevent portability problems between Qt versions
-		QStringList keys = cfg.allKeys();
+		QStringList keys = settings.allKeys();
 
 		for ( const auto& key : keys ) {
-			if ( cfg.value( key ).type() == QVariant::ByteArray ) {
+			if ( settings.value( key ).type() == QVariant::ByteArray ) {
 				qDebug() << "Removing Qt version-specific settings" << key
 					<< "while migrating settings from previous version";
-				cfg.remove( key );
+				settings.remove( key );
 			}
 		}
 
-		cfg.setValue( "Qt Version", curQtVer );
+		settings.setValue( "Qt Version", curQtVer );
 	}
+#endif
 }

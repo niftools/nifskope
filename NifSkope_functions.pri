@@ -26,15 +26,22 @@ defineReplace(getSed) {
 
 		GNUWIN32 = $${PROG}/GnuWin32/bin
 		CYGWIN = C:/cygwin/bin
+		CYGWIN64 = C:/cygwin64/bin
 		SEDPATH = /sed.exe
 
 		exists($${GNUWIN32}$${SEDPATH}) {
-			sedbin = \"$${GNUWIN32}$${SEDPATH}\"
+			sedbin = $${GNUWIN32}$${SEDPATH}
 		} else:exists($${CYGWIN}$${SEDPATH}) {
-			sedbin = \"$${CYGWIN}$${SEDPATH}\"
+			sedbin = $${CYGWIN}$${SEDPATH}
+		} else:exists($${CYGWIN64}$${SEDPATH}) {
+			sedbin = $${CYGWIN64}$${SEDPATH}
 		} else {
 			#message(Neither GnuWin32 or Cygwin were found)
 			sedbin = $$system(where sed 2> NUL)
+		}
+		
+		!isEmpty(sedbin) {
+			sedbin = \"$${sedbin}\"
 		}
 	}
 
@@ -200,8 +207,7 @@ defineTest(copyFiles) {
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
-	unix:QMAKE_POST_LINK += $$QMAKE_MKDIR_CMD $${ddir} $$nt
-	else:QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+	QMAKE_POST_LINK += $$sprintf($$QMAKE_MKDIR_CMD, $${ddir}) $$nt
 
 	for(FILE, files) {
 		fileabs = $${PWD}$${QMAKE_DIR_SEP}$${FILE}
@@ -241,8 +247,7 @@ defineTest(copyDirs) {
 	}
 
 	ddir = $$syspath($${DESTDIR}$${QMAKE_DIR_SEP}$${subdir})
-	unix:QMAKE_POST_LINK += $$QMAKE_MKDIR_CMD $${ddir} $$nt
-	else:QMAKE_POST_LINK += $$QMAKE_CHK_DIR_EXISTS $${ddir} $$QMAKE_MKDIR $${ddir} $$nt
+	QMAKE_POST_LINK += $$sprintf($$QMAKE_MKDIR_CMD, $${ddir}) $$nt
 
 	for(DIR, dirs) {
 		dirabs = $${PWD}$${QMAKE_DIR_SEP}$${DIR}
@@ -251,6 +256,13 @@ defineTest(copyDirs) {
 		}
 
 		dirabs = $$syspath($${dirabs})
+
+		# Fix copy for subdir on unix, also assure clean subdirs (no extra files)
+		!isEmpty(subdir) {
+			win32:*msvc*:QMAKE_POST_LINK += rd /s /q $${ddir} $$nt
+			else:!unix:QMAKE_POST_LINK += rm -rf $${ddir} $$nt
+			unix:QMAKE_POST_LINK += rm -rf $${ddir} $$nt
+		}
 
 		QMAKE_POST_LINK += $$QMAKE_COPY_DIR $${dirabs} $${ddir} $$nt
 	}

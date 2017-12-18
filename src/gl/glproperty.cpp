@@ -32,9 +32,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glproperty.h"
 
-#include "controllers.h"
-#include "glscene.h"
-#include "material.h"
+#include "message.h"
+#include "gl/controllers.h"
+#include "gl/glscene.h"
+#include "gl/gltex.h"
+#include "io/material.h"
+#include "model/nifmodel.h"
 
 #include <QOpenGLContext>
 
@@ -42,7 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glproperty.cpp Encapsulation of NiProperty blocks defined in nif.xml
 
 //! Helper function that checks texture sets
-bool checkSet( int s, const QList<QVector<Vector2> > & texcoords )
+bool checkSet( int s, const QVector<QVector<Vector2> > & texcoords )
 {
 	return s >= 0 && s < texcoords.count() && texcoords[s].count();
 }
@@ -82,12 +85,14 @@ Property * Property::create( Scene * scene, const NifModel * nif, const QModelIn
 	} else if ( nif->isNiBlock( index, "BSShaderPPLightingProperty" ) ) {
 		property = new BSShaderLightingProperty( scene, index );
 	} else if ( index.isValid() ) {
+#ifndef QT_NO_DEBUG
 		NifItem * item = static_cast<NifItem *>( index.internalPointer() );
 
 		if ( item )
 			qCWarning( nsNif ) << tr( "Unknown property: %1" ).arg( item->name() );
 		else
 			qCWarning( nsNif ) << tr( "Unknown property: I can't determine its name" );
+#endif
 	}
 
 	if ( property )
@@ -327,13 +332,27 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 				textures[t].coordset = nif->get<int>( iTex, "UV Set" );
 				int filterMode = 0, clampMode = 0;
 
-				if ( nif->checkVersion( 0, 0x14000005 ) ) {
+				if ( nif->checkVersion( 0, 0x14010002 ) ) {
 					filterMode = nif->get<int>( iTex, "Filter Mode" );
 					clampMode  = nif->get<int>( iTex, "Clamp Mode" );
 				} else if ( nif->checkVersion( 0x14010003, 0 ) ) {
-					filterMode = ( ( nif->get<ushort>( iTex, "Flags" ) & 0x0F00 ) >> 0x08 );
-					clampMode  = ( ( nif->get<ushort>( iTex, "Flags" ) & 0xF000 ) >> 0x0C );
+					auto flags = nif->get<ushort>( iTex, "Flags" );
+					filterMode = ((flags & 0x0F00) >> 0x08);
+					clampMode  = ((flags & 0xF000) >> 0x0C);
+					textures[t].coordset = (flags & 0x00FF);
 				}
+
+				float af = 1.0;
+				float max_af = get_max_anisotropy();
+				// Let User Settings decide for trilinear
+				if ( filterMode == GL_LINEAR_MIPMAP_LINEAR )
+					af = max_af;
+
+				// Override with value in NIF for 20.5+
+				if ( nif->checkVersion( 0x14050004, 0 ) )
+					af = std::min( max_af, (float)nif->get<ushort>( iTex, "Max Anisotropy" ) );
+
+				textures[t].maxAniso = std::max( 1.0f, std::min( af, max_af ) );
 
 				// See OpenGL docs on glTexParameter and GL_TEXTURE_MIN_FILTER option
 				// See also http://gregs-blog.com/2008/01/17/opengl-texture-filter-parameters-explained/
@@ -384,9 +403,9 @@ void TexturingProperty::update( const NifModel * nif, const QModelIndex & proper
 
 				if ( textures[t].hasTransform ) {
 					textures[t].translation = nif->get<Vector2>( iTex, "Translation" );
-					textures[t].tiling = nif->get<Vector2>( iTex, "Tiling" );
-					textures[t].rotation = nif->get<float>( iTex, "W Rotation" );
-					textures[t].center = nif->get<Vector2>( iTex, "Center Offset" );
+					textures[t].tiling = nif->get<Vector2>( iTex, "Scale" );
+					textures[t].rotation = nif->get<float>( iTex, "Rotation" );
+					textures[t].center = nif->get<Vector2>( iTex, "Center" );
 				} else {
 					// we don't really need to set these since they won't be applied in bind() unless hasTransform is set
 					textures[t].translation = Vector2();
@@ -414,6 +433,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 		if ( mipmaps == 0 )
 			return false;
 
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, textures[id].maxAniso );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? textures[id].filter : GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textures[id].wrapS );
@@ -443,7 +463,7 @@ bool TexturingProperty::bind( int id, const QString & fname )
 	return false;
 }
 
-bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
+bool TexturingProperty::bind( int id, const QVector<QVector<Vector2> > & texcoords )
 {
 	if ( checkSet( textures[id].coordset, texcoords ) && bind( id ) ) {
 		glEnable( GL_TEXTURE_2D );
@@ -456,7 +476,7 @@ bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords
 	}
 }
 
-bool TexturingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords, int stage )
+bool TexturingProperty::bind( int id, const QVector<QVector<Vector2> > & texcoords, int stage )
 {
 	return ( activateTextureUnit( stage ) && bind( id, texcoords ) );
 }
@@ -554,7 +574,7 @@ bool TextureProperty::bind()
 	return false;
 }
 
-bool TextureProperty::bind( const QList<QVector<Vector2> > & texcoords )
+bool TextureProperty::bind( const QVector<QVector<Vector2> > & texcoords )
 {
 	if ( checkSet( 0, texcoords ) && bind() ) {
 		glEnable( GL_TEXTURE_2D );
@@ -616,7 +636,8 @@ void MaterialProperty::update( const NifModel * nif, const QModelIndex & index )
 		specular = Color4( nif->get<Color3>( index, "Specular Color" ) );
 		emissive = Color4( nif->get<Color3>( index, "Emissive Color" ) );
 
-		shininess = nif->get<float>( index, "Glossiness" );
+		// OpenGL needs shininess clamped otherwise it generates GL_INVALID_VALUE
+		shininess = std::min( std::max( nif->get<float>( index, "Glossiness" ), 0.0f ), 128.0f );
 	}
 }
 
@@ -692,13 +713,19 @@ void VertexColorProperty::update( const NifModel * nif, const QModelIndex & bloc
 	Property::update( nif, block );
 
 	if ( iBlock.isValid() && iBlock == block ) {
-		vertexmode = nif->get<int>( iBlock, "Vertex Mode" );
-		// 0 : source ignore
-		// 1 : source emissive
-		// 2 : source ambient + diffuse
-		lightmode = nif->get<int>( iBlock, "Lighting Mode" );
-		// 0 : emissive
-		// 1 : emissive + ambient + diffuse
+		if ( nif->checkVersion( 0, 0x14010001 ) ) {
+			vertexmode = nif->get<int>( iBlock, "Vertex Mode" );
+			// 0 : source ignore
+			// 1 : source emissive
+			// 2 : source ambient + diffuse
+			lightmode = nif->get<int>( iBlock, "Lighting Mode" );
+			// 0 : emissive
+			// 1 : emissive + ambient + diffuse
+		} else {
+			auto flags = nif->get<quint16>( iBlock, "Flags" );
+			vertexmode = (flags & 0x0030) >> 4;
+			lightmode = (flags & 0x0008) >> 3;
+		}
 	}
 }
 
@@ -744,46 +771,54 @@ void glProperty( VertexColorProperty * p, bool vertexcolors )
 
 void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 {
+	using namespace Stencil;
 	Property::update( nif, block );
 
 	if ( iBlock.isValid() && iBlock == block ) {
-		//static const GLenum functions[8] = { GL_NEVER, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_ALWAYS };
-		//static const GLenum operations[8] = { GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT, GL_KEEP, GL_KEEP };
+		static const GLenum funcMap[8] = {
+			GL_NEVER, GL_GEQUAL, GL_NOTEQUAL, GL_GREATER, GL_LEQUAL, GL_EQUAL, GL_LESS, GL_ALWAYS
+		};
 
-		// ! glFrontFace( GL_CCW )
+		static const GLenum opMap[6] = {
+			GL_KEEP, GL_ZERO, GL_REPLACE, GL_INCR, GL_DECR, GL_INVERT
+		};
+
+		int drawMode = 0;
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
-			switch ( nif->get<int>( iBlock, "Draw Mode" ) ) {
-			case 2:
-				cullEnable = true;
-				cullMode = GL_FRONT;
-				break;
-			case 3:
-				cullEnable = false;
-				cullMode = GL_BACK;
-				break;
-			case 1:
-			default:
-				cullEnable = true;
-				cullMode = GL_BACK;
-				break;
-			}
+			drawMode = nif->get<int>( iBlock, "Draw Mode" );
+			func = funcMap[std::max(nif->get<quint32>( iBlock, "Stencil Function" ), (quint32)TEST_MAX - 1 )];
+			failop = opMap[std::max( nif->get<quint32>( iBlock, "Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zfailop = opMap[std::max( nif->get<quint32>( iBlock, "Z Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zpassop = opMap[std::max( nif->get<quint32>( iBlock, "Pass Action" ), (quint32)ACTION_MAX - 1 )];
+			stencil = (nif->get<quint8>( iBlock, "Stencil Enabled" ) & ENABLE_MASK);
 		} else {
-			switch ( ( nif->get<int>( iBlock, "Flags" ) >> 10 ) & 3 ) {
-			case 2:
-				cullEnable = true;
-				cullMode = GL_FRONT;
-				break;
-			case 3:
-				cullEnable = false;
-				cullMode = GL_BACK;
-				break;
-			case 1:
-			default:
-				cullEnable = true;
-				cullMode = GL_BACK;
-				break;
-			}
+			auto flags = nif->get<int>( iBlock, "Flags" );
+			drawMode = (flags & DRAW_MASK) >> DRAW_POS;
+			func = funcMap[(flags & TEST_MASK) >> TEST_POS];
+			failop = opMap[(flags & FAIL_MASK) >> FAIL_POS];
+			zfailop = opMap[(flags & ZFAIL_MASK) >> ZFAIL_POS];
+			zpassop = opMap[(flags & ZPASS_MASK) >> ZPASS_POS];
+			stencil = (flags & ENABLE_MASK);
 		}
+
+		switch ( drawMode ) {
+		case DRAW_CW:
+			cullEnable = true;
+			cullMode = GL_FRONT;
+			break;
+		case DRAW_BOTH:
+			cullEnable = false;
+			cullMode = GL_BACK;
+			break;
+		case DRAW_CCW:
+		default:
+			cullEnable = true;
+			cullMode = GL_BACK;
+			break;
+		}
+
+		ref = nif->get<quint32>( iBlock, "Stencil Ref" );
+		mask = nif->get<quint32>( iBlock, "Stencil Mask" );
 	}
 }
 
@@ -796,9 +831,18 @@ void glProperty( StencilProperty * p )
 			glDisable( GL_CULL_FACE );
 
 		glCullFace( p->cullMode );
+
+		if ( p->stencil ) {
+			glEnable( GL_STENCIL_TEST );
+			glStencilFunc( p->func, p->ref, p->mask );
+			glStencilOp( p->failop, p->zfailop, p->zpassop );
+		} else {
+			glDisable( GL_STENCIL_TEST );
+		}
 	} else {
 		glEnable( GL_CULL_FACE );
 		glCullFace( GL_BACK );
+		glDisable( GL_STENCIL_TEST );
 	}
 }
 
@@ -866,6 +910,7 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname, TexClampMode
 		break;
 	}
 
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mipmaps > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
 	glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
@@ -875,7 +920,7 @@ bool BSShaderLightingProperty::bind( int id, const QString & fname, TexClampMode
 	return true;
 }
 
-bool BSShaderLightingProperty::bind( int id, const QList<QVector<Vector2> > & texcoords )
+bool BSShaderLightingProperty::bind( int id, const QVector<QVector<Vector2> > & texcoords )
 {
 	if ( checkSet( 0, texcoords ) && bind( id ) ) {
 		glEnable( GL_TEXTURE_2D );
@@ -895,7 +940,7 @@ bool BSShaderLightingProperty::bindCube( int id, const QString & fname )
 	GLuint result = 0;
 
 	if ( !fname.isEmpty() )
-		result = scene->bindTextureCube( fname );
+		result = scene->bindTexture( fname );
 
 	if ( result == 0 )
 		return false;
@@ -1110,19 +1155,26 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
 	if ( !m ) {
+		isDoubleSided = hasSF2( ShaderFlags::SLSF2_Double_Sided );
+		depthTest = hasSF1( ShaderFlags::SLSF1_ZBuffer_Test );
+		depthWrite = hasSF2( ShaderFlags::SLSF2_ZBuffer_Write );
+
 		alpha = nif->get<float>( prop, "Alpha" );
 
-		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
-		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+		auto scale = nif->get<Vector2>( prop, "UV Scale" );
+		auto offset = nif->get<Vector2>( prop, "UV Offset" );
 
-		setUvScale( uvScale[0], uvScale[1] );
-		setUvOffset( uvOffset[0], uvOffset[1] );
+		setUvScale( scale[0], scale[1] );
+		setUvOffset( offset[0], offset[1] );
 		setClampMode( nif->get<uint>( prop, "Texture Clamp Mode" ) );
 
 		// Specular
 		if ( hasSF1( ShaderFlags::SLSF1_Specular ) ) {
 			auto spC = nif->get<Color3>( prop, "Specular Color" );
 			auto spG = nif->get<float>( prop, "Glossiness" );
+			// FO4
+			if ( spG == 0.0 )
+				spG = nif->get<float>( prop, "Smoothness" );
 			auto spS = nif->get<float>( prop, "Specular Strength" );
 			setSpecular( spC, spG, spS );
 		} else {
@@ -1133,8 +1185,8 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		setEmissive( nif->get<Color3>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
 
 		hasEmittance = hasSF1( ShaderFlags::SLSF1_Own_Emit );
-		if ( getShaderType() & ShaderFlags::ST_GlowShader )
-			hasGlowMap = hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+		hasGlowMap = getShaderType() & ShaderFlags::ST_GlowShader && hasSF2( ShaderFlags::SLSF2_Glow_Map ) && !textures.value( 2, "" ).isEmpty();
+
 
 		// Version Dependent settings
 		if ( stream < 130 ) {
@@ -1231,7 +1283,9 @@ void BSLightingShaderProperty::updateParams( const NifModel * nif, const QModelI
 		hasSoftlight = m->bSubsurfaceLighting;
 		rimPower = m->fRimPower;
 		backlightPower = m->fBacklightPower;
-
+		isDoubleSided = m->bTwoSided;
+		depthTest = m->bZBufferTest;
+		depthWrite = m->bZBufferWrite;
 
 		hasEnvironmentMap = m->bEnvironmentMapping;
 		hasCubeMap = m->bEnvironmentMapping && !m->textureList[4].isEmpty();
@@ -1266,13 +1320,13 @@ ShaderFlags::ShaderType BSLightingShaderProperty::getShaderType()
 	return shaderType;
 }
 
-void BSLightingShaderProperty::setEmissive( Color3 color, float mult )
+void BSLightingShaderProperty::setEmissive( const Color3 & color, float mult )
 {
 	emissiveColor = color;
 	emissiveMult = mult;
 }
 
-void BSLightingShaderProperty::setSpecular( Color3 color, float gloss, float strength )
+void BSLightingShaderProperty::setSpecular( const Color3 & color, float gloss, float strength )
 {
 	specularColor = color;
 	specularGloss = gloss;
@@ -1390,7 +1444,7 @@ Color3 BSLightingShaderProperty::getTintColor() const
 	return tintColor;
 }
 
-void BSLightingShaderProperty::setTintColor( Color3 c )
+void BSLightingShaderProperty::setTintColor( const Color3 & c )
 {
 	tintColor = c;
 }
@@ -1426,8 +1480,8 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 	setFlags1( nif->get<unsigned int>( prop, "Shader Flags 1" ) );
 	setFlags2( nif->get<unsigned int>( prop, "Shader Flags 2" ) );
 
-	vertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
-	vertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
+	hasVertexAlpha = hasSF1( ShaderFlags::SLSF1_Vertex_Alpha );
+	hasVertexColors = hasSF2( ShaderFlags::SLSF2_Vertex_Colors );
 
 	if ( !m ) {
 		setEmissive( nif->get<Color4>( prop, "Emissive Color" ), nif->get<float>( prop, "Emissive Multiple" ) );
@@ -1451,13 +1505,16 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 			hasEnvMask = !nif->get<QString>( prop, "Env Mask Texture" ).isEmpty();
 
 			environmentReflection = nif->get<float>( prop, "Environment Map Scale" );
+
+			// Receive Shadows -> RGB Falloff for FO4
+			hasRGBFalloff = hasSF1( ShaderFlags::SF1( 1 << 8 ) );
 		}
 
-		auto uvScale = nif->get<Vector2>( prop, "UV Scale" );
-		auto uvOffset = nif->get<Vector2>( prop, "UV Offset" );
+		auto scale = nif->get<Vector2>( prop, "UV Scale" );
+		auto offset = nif->get<Vector2>( prop, "UV Offset" );
 
-		setUvScale( uvScale[0], uvScale[1] );
-		setUvOffset( uvOffset[0], uvOffset[1] );
+		setUvScale( scale[0], scale[1] );
+		setUvOffset( offset[0], offset[1] );
 		setClampMode( nif->get<quint8>( prop, "Texture Clamp Mode" ) );
 
 		if ( hasSF2( ShaderFlags::SLSF2_Effect_Lighting ) )
@@ -1486,6 +1543,7 @@ void BSEffectShaderProperty::updateParams( const NifModel * nif, const QModelInd
 		greyscaleAlpha = m->bGrayscaleToPaletteAlpha;
 		greyscaleColor = m->bGrayscaleToPaletteColor;
 		useFalloff = m->bFalloffEnabled;
+		hasRGBFalloff = m->bFalloffColorEnabled;
 
 		depthTest = m->bZBufferTest;
 		depthWrite = m->bZBufferWrite;
@@ -1524,7 +1582,7 @@ void BSEffectShaderProperty::setController( const NifModel * nif, const QModelIn
 	}
 }
 
-void BSEffectShaderProperty::setEmissive( Color4 color, float mult )
+void BSEffectShaderProperty::setEmissive( const Color4 & color, float mult )
 {
 	emissiveColor = color;
 	emissiveMult = mult;

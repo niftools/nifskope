@@ -31,13 +31,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "controllers.h"
-#include "settings.h"
 
-#include "glmesh.h"
-#include "glnode.h"
-#include "glparticles.h"
-#include "glproperty.h"
-#include "glscene.h"
+#include "gl/glmesh.h"
+#include "gl/glnode.h"
+#include "gl/glparticles.h"
+#include "gl/glproperty.h"
+#include "gl/glscene.h"
+#include "model/nifmodel.h"
 
 
 // `NiControllerManager` blocks
@@ -111,7 +111,7 @@ void ControllerManager::setSequence( const QString & seqname )
 				for ( int r = 0; r < nif->rowCount( iCtrlBlcks ); r++ ) {
 					QModelIndex iCB = iCtrlBlcks.child( r, 0 );
 
-					QModelIndex iInterpolator = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
+					QModelIndex iInterp = nif->getBlock( nif->getLink( iCB, "Interpolator" ), "NiInterpolator" );
 
 					QModelIndex iController = nif->getBlock( nif->getLink( iCB, "Controller" ), "NiTimeController" );
 
@@ -136,17 +136,17 @@ void ControllerManager::setSequence( const QString & seqname )
 						ctrltype = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 					}
 
-					QString var1 = nif->get<QString>( iCB, "Variable 1" );
+					QString var1 = nif->get<QString>( iCB, "Controller ID" );
 
 					if ( var1.isEmpty() ) {
-						QModelIndex idx = nif->getIndex( iCB, "Variable 1 Offset" );
+						QModelIndex idx = nif->getIndex( iCB, "Controller ID Offset" );
 						var1 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 					}
 
-					QString var2 = nif->get<QString>( iCB, "Variable 2" );
+					QString var2 = nif->get<QString>( iCB, "Interpolator ID" );
 
 					if ( var2.isEmpty() ) {
-						QModelIndex idx = nif->getIndex( iCB, "Variable 2 Offset" );
+						QModelIndex idx = nif->getIndex( iCB, "Interpolator ID Offset" );
 						var2 = idx.sibling( idx.row(), NifModel::ValueCol ).data( NifSkopeDisplayRole ).toString();
 					}
 
@@ -156,7 +156,7 @@ void ControllerManager::setSequence( const QString & seqname )
 						continue;
 
 					if ( ctrltype == "NiTransformController" && multiTargetTransformer ) {
-						if ( multiTargetTransformer->setInterpolator( node, iInterpolator ) ) {
+						if ( multiTargetTransformer->setInterpolatorNode( node, iInterp ) ) {
 							multiTargetTransformer->start = start;
 							multiTargetTransformer->stop = stop;
 							multiTargetTransformer->phase = phase;
@@ -175,7 +175,7 @@ void ControllerManager::setSequence( const QString & seqname )
 
 						auto ctrl = node->findController( proptype, iController );
 						if ( ctrl ) {
-							ctrl->setInterpolator( iInterpolator );
+							ctrl->setInterpolator( iInterp );
 						}
 						continue;
 					}
@@ -188,7 +188,7 @@ void ControllerManager::setSequence( const QString & seqname )
 						ctrl->phase = phase;
 						ctrl->frequency = frequency;
 
-						ctrl->setInterpolator( iInterpolator );
+						ctrl->setInterpolator( iInterp );
 					}
 				}
 			}
@@ -252,21 +252,21 @@ void TransformController::updateTime( float time )
 	}
 }
 
-void TransformController::setInterpolator( const QModelIndex & iBlock )
+void TransformController::setInterpolator( const QModelIndex & idx )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iBlock.model());
+	const NifModel * nif = static_cast<const NifModel *>(idx.model());
 
-	if ( nif && iBlock.isValid() ) {
+	if ( nif && idx.isValid() ) {
 		if ( interpolator ) {
 			delete interpolator;
 			interpolator = 0;
 		}
 
-		if ( nif->isNiBlock( iBlock, "NiBSplineCompTransformInterpolator" ) ) {
-			iInterpolator = iBlock;
+		if ( nif->isNiBlock( idx, "NiBSplineCompTransformInterpolator" ) ) {
+			iInterpolator = idx;
 			interpolator = new BSplineTransformInterpolator( this );
-		} else if ( nif->isNiBlock( iBlock, "NiTransformInterpolator" ) ) {
-			iInterpolator = iBlock;
+		} else if ( nif->isNiBlock( idx, "NiTransformInterpolator" ) ) {
+			iInterpolator = idx;
 			interpolator = new TransformInterpolator( this );
 		}
 
@@ -325,11 +325,11 @@ bool MultiTargetTransformController::update( const NifModel * nif, const QModelI
 	return false;
 }
 
-bool MultiTargetTransformController::setInterpolator( Node * node, const QModelIndex & iInterpolator )
+bool MultiTargetTransformController::setInterpolatorNode( Node * node, const QModelIndex & idx )
 {
-	const NifModel * nif = static_cast<const NifModel *>(iInterpolator.model());
+	const NifModel * nif = static_cast<const NifModel *>(idx.model());
 
-	if ( !nif || !iInterpolator.isValid() )
+	if ( !nif || !idx.isValid() )
 		return false;
 
 	QMutableListIterator<TransformTarget> it( extraTargets );
@@ -337,20 +337,21 @@ bool MultiTargetTransformController::setInterpolator( Node * node, const QModelI
 	while ( it.hasNext() ) {
 		it.next();
 
-		if ( it.value().first == node ) {
-			if ( it.value().second ) {
-				delete it.value().second;
-				it.value().second = 0;
+		auto& val = it.value();
+		if ( val.first == node ) {
+			if ( val.second ) {
+				delete val.second;
+				val.second = 0;
 			}
 
-			if ( nif->isNiBlock( iInterpolator, "NiBSplineCompTransformInterpolator" ) ) {
-				it.value().second = new BSplineTransformInterpolator( this );
-			} else if ( nif->isNiBlock( iInterpolator, "NiTransformInterpolator" ) ) {
-				it.value().second = new TransformInterpolator( this );
+			if ( nif->isNiBlock( idx, "NiBSplineCompTransformInterpolator" ) ) {
+				val.second = new BSplineTransformInterpolator( this );
+			} else if ( nif->isNiBlock( idx, "NiTransformInterpolator" ) ) {
+				val.second = new TransformInterpolator( this );
 			}
 
-			if ( it.value().second ) {
-				it.value().second->update( nif, iInterpolator );
+			if ( val.second ) {
+				val.second->update( nif, idx );
 			}
 
 			return true;
@@ -590,12 +591,12 @@ bool ParticleController::update( const NifModel * nif, const QModelIndex & index
 
 		if ( iParticles.isValid() ) {
 			emitMax = nif->get<int>( iBlock, "Num Particles" );
-			int active = nif->get<int>( iBlock, "Num Valid" );
+			int numValid = nif->get<int>( iBlock, "Num Valid" );
 
 			//iParticles = nif->getIndex( iParticles, "Particles" );
 			//if ( iParticles.isValid() )
 			//{
-			for ( int p = 0; p < active && p < nif->rowCount( iParticles ); p++ ) {
+			for ( int p = 0; p < numValid && p < nif->rowCount( iParticles ); p++ ) {
 				Particle particle;
 				particle.velocity = nif->get<Vector3>( iParticles.child( p, 0 ), "Velocity" );
 				particle.lifetime = nif->get<float>( iParticles.child( p, 0 ), "Lifetime" );
@@ -754,15 +755,15 @@ void ParticleController::moveParticle( Particle & p, float deltaTime )
 	p.position += p.velocity * deltaTime;
 }
 
-void ParticleController::sizeParticle( Particle & p, float & size )
+void ParticleController::sizeParticle( Particle & p, float & sz )
 {
-	size = 1.0;
+	sz = 1.0;
 
 	if ( grow > 0 && p.lifetime < grow )
-		size *= p.lifetime / grow;
+		sz *= p.lifetime / grow;
 
 	if ( fade > 0 && p.lifespan - p.lifetime < fade )
-		size *= (p.lifespan - p.lifetime) / fade;
+		sz *= (p.lifespan - p.lifetime) / fade;
 }
 
 void ParticleController::colorParticle( Particle & p, Color4 & color )
@@ -777,14 +778,14 @@ void ParticleController::colorParticle( Particle & p, Color4 & color )
 // `BSNiAlphaPropertyTestRefController`
 
 AlphaController::AlphaController( AlphaProperty * prop, const QModelIndex & index )
-	: Controller( index ), alphaProp( prop ), lAlpha( 0 )
+	: Controller( index ), alphaProp( prop )
 {
 }
 
 // `NiAlphaController`
 
 AlphaController::AlphaController( MaterialProperty * prop, const QModelIndex & index )
-	: Controller( index ), materialProp( prop ), lAlpha( 0 )
+	: Controller( index ), materialProp( prop )
 {
 }
 
@@ -813,7 +814,7 @@ void AlphaController::updateTime( float time )
 // `NiMaterialColorController`
 
 MaterialColorController::MaterialColorController( MaterialProperty * prop, const QModelIndex & index )
-	: Controller( index ), target( prop ), lColor( 0 ), tColor( tAmbient )
+	: Controller( index ), target( prop )
 {
 }
 
@@ -862,12 +863,12 @@ bool MaterialColorController::update( const NifModel * nif, const QModelIndex & 
 // `NiFlipController`
 
 TexFlipController::TexFlipController( TexturingProperty * prop, const QModelIndex & index )
-	: Controller( index ), target( prop ), flipDelta( 0 ), flipSlot( 0 )
+	: Controller( index ), target( prop )
 {
 }
 
 TexFlipController::TexFlipController( TextureProperty * prop, const QModelIndex & index )
-	: Controller( index ), oldTarget( prop ), flipDelta( 0 ), flipSlot( 0 )
+	: Controller( index ), oldTarget( prop )
 {
 }
 
@@ -915,7 +916,7 @@ bool TexFlipController::update( const NifModel * nif, const QModelIndex & index 
 // `NiTextureTransformController`
 
 TexTransController::TexTransController( TexturingProperty * prop, const QModelIndex & index )
-	: Controller( index ), target( prop ), texSlot( 0 ), texOP( 0 )
+	: Controller( index ), target( prop )
 {
 }
 

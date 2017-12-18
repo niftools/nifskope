@@ -33,12 +33,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef NIFSKOPE_H
 #define NIFSKOPE_H
 
-#include "message.h"
-
 #include <QMainWindow>     // Inherited
 #include <QObject>         // Inherited
 #include <QFileInfo>
+#include <QLocale>
 #include <QModelIndex>
+#include <QSet>
 #include <QUndoCommand>
 
 #include <memory>
@@ -53,7 +53,11 @@ namespace Ui {
 	class MainWindow;
 }
 
-class FileSelector;
+namespace nstypes
+{
+	QString operator"" _uip( const char * str, size_t sz );
+}
+
 class GLView;
 class GLGraphicsView;
 class InspectView;
@@ -69,18 +73,22 @@ class BSA;
 class BSAModel;
 class BSAProxyModel;
 class QStandardItemModel;
-
 class QAction;
 class QActionGroup;
 class QComboBox;
 class QGraphicsScene;
-class QLocale;
-class QModelIndex;
 class QProgressBar;
 class QStringList;
 class QTimer;
 class QTreeView;
 class QUdpSocket;
+
+namespace nstheme
+{
+	enum WindowColor { Base, BaseAlt, Text, Highlight, HighlightText, BrightText };
+	enum WindowTheme { ThemeDark, ThemeLight, ThemeWindows, ThemeWindowsXP };
+	enum ToolbarSize { ToolbarSmall, ToolbarLarge };
+}
 
 
 //! @file nifskope.h NifSkope, IPCsocket
@@ -134,10 +142,20 @@ public:
 	 */
 	static QString fileFilters( bool allFiles = true );
 
+	//! Sets application locale and loads translation files
+	static void SetAppLocale( QLocale curLocale );
+	//! Application-wide debug and warning message handler
+	static void MessageOutput( QtMsgType type, const QMessageLogContext & context, const QString & str );
+
 	//! A map of all the currently support filetypes to their file extensions.
 	static const QList<QPair<QString, QString>> filetypes;
 
 	enum { NumRecentFiles = 10 };
+
+	static QColor defaultsDark[6];
+	static QColor defaultsLight[6];
+
+	static void reloadTheme();
 
 signals:
 	void beginLoading();
@@ -195,6 +213,8 @@ public slots:
 	void on_aViewUserSave_triggered( bool );
 
 	void on_aSettings_triggered();
+
+	void on_mTheme_triggered( QAction * action );
 
 
 protected slots:
@@ -280,11 +300,23 @@ private:
 
 	void setViewFont( const QFont & );
 
+	//! Load the theme
+	void loadTheme();
+	//! Sync the theme actions in the UI
+	void setThemeActions();
+	//! Set the toolbar size
+	void setToolbarSize();
+	//! Set the theme
+	void setTheme( nstheme::WindowTheme theme );
+
 	//! Migrate settings from older versions of NifSkope.
 	void migrateSettings() const;
 
-	//! "About NifSkope" dialog.
-	QWidget * aboutDialog;
+	//! All QActions in the UI
+	QSet<QAction *> allActions;
+
+	nstheme::WindowTheme theme = nstheme::ThemeDark;
+	nstheme::ToolbarSize toolbarSize = nstheme::ToolbarLarge;
 
 	QString currentFile;
 	BSA * currentArchive = nullptr;
@@ -379,7 +411,7 @@ private:
 
 	bool isResizing;
 	QTimer * resizeTimer;
-	QImage buf;
+	QImage viewBuffer;
 
 	struct Settings
 	{

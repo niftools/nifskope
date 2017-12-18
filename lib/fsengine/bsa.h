@@ -301,7 +301,7 @@ public:
 		//! Whether the file is compressed inside the BSA
 		bool compressed() const;
 
-		F4Tex tex;
+		F4Tex tex = {};
 	};
 	
 	//! A folder inside a BSA
@@ -340,7 +340,7 @@ protected:
 	//! File info for the %BSA
 	QFileInfo bsaInfo;
 
-	quint32 version;
+	quint32 version = 0;
 
 	//! Mutual exclusion handler
 	QMutex bsaMutex;

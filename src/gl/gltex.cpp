@@ -31,10 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "gltex.h"
-#include "settings.h"
 
-#include "glscene.h"
-#include "gltexloaders.h"
+#include "message.h"
+#include "gl/glscene.h"
+#include "gl/gltexloaders.h"
+#include "model/nifmodel.h"
 
 #include <fsengine/fsengine.h>
 #include <fsengine/fsmanager.h>
@@ -53,22 +54,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file gltex.cpp TexCache management
 
 #ifdef WIN32
-PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
-PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB;
+PFNGLACTIVETEXTUREARBPROC glActiveTextureARB = nullptr;
+PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB = nullptr;
 #endif
 
 //! Number of texture units
 GLint num_texture_units = 0;
+
 //! Maximum anisotropy
 float max_anisotropy = 1.0f;
+void set_max_anisotropy()
+{
+	static QSettings settings;
+	max_anisotropy = std::min( std::pow( settings.value( "Settings/Render/General/Anisotropic Filtering", 4.0 ).toFloat(), 2.0f ),
+								max_anisotropy );
+}
 
-//! Accessor function for glProperty etc.
 float get_max_anisotropy()
 {
-	QSettings settings;
-	float af = settings.value( "Settings/Render/General/Anisotropic Filtering", 4.0 ).toFloat();
-
-	return std::min( float(pow( 2.0f, af )), max_anisotropy );
+	return max_anisotropy;
 }
 
 void initializeTextureUnits( const QOpenGLContext * context )
@@ -87,12 +91,19 @@ void initializeTextureUnits( const QOpenGLContext * context )
 
 	if ( context->hasExtension( "GL_EXT_texture_filter_anisotropic" ) ) {
 		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy );
+		set_max_anisotropy();
 		//qDebug() << "maximum anisotropy" << max_anisotropy;
 	}
+
 #ifdef WIN32
-	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)QOpenGLContext::currentContext()->getProcAddress( "glActiveTextureARB" );
-	glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)QOpenGLContext::currentContext()->getProcAddress( "glClientActiveTextureARB" );
+	if ( !glActiveTextureARB )
+		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)context->getProcAddress( "glActiveTextureARB" );
+
+	if ( !glClientActiveTextureARB )
+		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC)context->getProcAddress( "glClientActiveTextureARB" );
 #endif
+
+	initializeTextureLoaders( context );
 }
 
 bool activateTextureUnit( int stage )
@@ -160,20 +171,6 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 	QSettings settings;
 
 	QString filename = QDir::toNativeSeparators( file );
-
-	if ( !filename.startsWith( "textures" ) ) {
-		QRegularExpression re( "textures[\\\\/]", QRegularExpression::CaseInsensitiveOption );
-		int texIdx = filename.indexOf( re );
-		if ( texIdx > 0 ) {
-			filename.remove( 0, texIdx );
-		} else {
-			while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
-				filename.remove( 0, 1 );
-
-			if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) )
-				filename.prepend( "textures\\" );
-		}
-	}
 
 	QStringList extensions;
 	extensions << ".dds";
@@ -252,6 +249,23 @@ QString TexCache::find( const QString & file, const QString & nifdir, QByteArray
 			}
 		}
 
+		// For Skyrim and FO4 which occasionally leave the textures off
+		if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) ) {
+			QRegularExpression re( "textures[\\\\/]", QRegularExpression::CaseInsensitiveOption );
+			int texIdx = filename.indexOf( re );
+			if ( texIdx > 0 ) {
+				filename.remove( 0, texIdx );
+			} else {
+				while ( filename.startsWith( "/" ) || filename.startsWith( "\\" ) )
+					filename.remove( 0, 1 );
+
+				if ( !filename.startsWith( "textures", Qt::CaseInsensitive ) && !filename.startsWith( "shaders", Qt::CaseInsensitive ) )
+					filename.prepend( "textures\\" );
+			}
+
+			return find( filename, nifdir, data );
+		}
+
 		if ( !replaceExt )
 			break;
 
@@ -313,6 +327,11 @@ bool TexCache::canLoad( const QString & filePath )
 	return texCanLoad( filePath );
 }
 
+bool TexCache::isSupported( const QString & filePath )
+{
+	return texIsSupported( filePath );
+}
+
 void TexCache::fileChanged( const QString & filepath )
 {
 	QMutableHashIterator<QString, Tex *> it( textures );
@@ -343,7 +362,6 @@ void TexCache::fileChanged( const QString & filepath )
 int TexCache::bind( const QString & fname )
 {
 	Tex * tx = textures.value( fname );
-
 	if ( !tx ) {
 		tx = new Tex;
 		tx->filename = fname;
@@ -353,7 +371,13 @@ int TexCache::bind( const QString & fname )
 		tx->reload  = false;
 
 		textures.insert( tx->filename, tx );
+
+		if ( !isSupported( fname ) )
+			tx->id = 0xFFFFFFFF;
 	}
+
+	if ( tx->id == 0xFFFFFFFF )
+		return 0;
 
 	QByteArray outData;
 
@@ -365,14 +389,17 @@ int TexCache::bind( const QString & fname )
 	}
 
 	if ( !tx->id || tx->reload ) {
-		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() && ( !watcher->files().contains( tx->filepath ) ) )
+		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable()
+			 && ( !watcher->files().contains( tx->filepath ) ) )
 			watcher->addPath( tx->filepath );
 
 		tx->load();
-	}
+	} else {
+		if ( !tx->target )
+			tx->target = GL_TEXTURE_2D;
 
-	glBindTexture( GL_TEXTURE_2D, tx->id );
-	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
+		glBindTexture( tx->target, tx->id );
+	}
 
 	return tx->mipmaps;
 }
@@ -397,15 +424,14 @@ int TexCache::bind( const QModelIndex & iSource )
 						glGenTextures( 1, &tx->id );
 						glBindTexture( GL_TEXTURE_2D, tx->id );
 						embedTextures.insert( iData, tx );
-						texLoad( iData, tx->format, tx->width, tx->height, tx->mipmaps );
+						texLoad( iData, tx->format, tx->target, tx->width, tx->height, tx->mipmaps, tx->id );
 					}
-					catch ( QString e ) {
+					catch ( QString & e ) {
 						tx->status = e;
 					}
+				} else {
+					glBindTexture( GL_TEXTURE_2D, tx->id );
 				}
-
-				glBindTexture( GL_TEXTURE_2D, tx->id );
-				glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
 
 				return tx->mipmaps;
 			}
@@ -415,43 +441,6 @@ int TexCache::bind( const QModelIndex & iSource )
 	}
 
 	return 0;
-}
-
-int TexCache::bindCube( const QString & fname )
-{
-	Tex * tx = textures.value( fname );
-
-	if ( !tx ) {
-		tx = new Tex;
-		tx->filename = fname;
-		tx->id = 0;
-		tx->data = QByteArray();
-		tx->mipmaps = 0;
-		tx->reload = false;
-
-		textures.insert( tx->filename, tx );
-	}
-
-	QByteArray outData;
-
-	if ( tx->filepath.isEmpty() || tx->reload )
-		tx->filepath = find( tx->filename, nifFolder, outData );
-
-	if ( !outData.isEmpty() ) {
-		tx->data = outData;
-	}
-
-	if ( !tx->id || tx->reload ) {
-		if ( QFile::exists( tx->filepath ) && QFileInfo( tx->filepath ).isWritable() && (!watcher->files().contains( tx->filepath )) )
-			watcher->addPath( tx->filepath );
-
-		tx->loadCube();
-	}
-
-	glBindTexture( GL_TEXTURE_CUBE_MAP, tx->id );
-	glTexParameterf( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY_EXT, get_max_anisotropy() );
-
-	return tx->mipmaps;
 }
 
 void TexCache::flush()
@@ -558,34 +547,14 @@ void TexCache::Tex::load()
 	reload = false;
 	status = QString();
 
-	glBindTexture( GL_TEXTURE_2D, id );
+	if ( target )
+		glBindTexture( target, id );
 
 	try
 	{
-		texLoad( filepath, format, width, height, mipmaps, data );
+		texLoad( filepath, format, target, width, height, mipmaps, data, id );
 	}
-	catch ( QString e )
-	{
-		status = e;
-	}
-}
-
-void TexCache::Tex::loadCube()
-{
-	if ( !id )
-		glGenTextures( 1, &id );
-
-	width = height = mipmaps = 0;
-	reload = false;
-	status = QString();
-
-	glBindTexture( GL_TEXTURE_CUBE_MAP, id );
-
-	try
-	{
-		texLoadCube( filepath, format, width, height, mipmaps, data, id );
-	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		status = e;
 	}
@@ -593,7 +562,7 @@ void TexCache::Tex::loadCube()
 
 bool TexCache::Tex::saveAsFile( const QModelIndex & index, QString & savepath )
 {
-	texLoad( index, format, width, height, mipmaps );
+	texLoad( index, format, target, width, height, mipmaps, id );
 
 	if ( savepath.toLower().endsWith( ".tga" ) ) {
 		return texSaveTGA( index, savepath, width, height );

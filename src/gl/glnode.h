@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLNODE_H
 #define GLNODE_H
 
-#include "icontrollable.h" // Inherited
-#include "glproperty.h"
+#include "gl/icontrollable.h" // Inherited
+#include "gl/glproperty.h"
 
 #include <QList>
 #include <QPersistentModelIndex>
@@ -44,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glnode.h Node, NodeList
 
 class Node;
+class NifModel;
 
 class NodeList final
 {
@@ -63,13 +64,13 @@ public:
 
 	NodeList & operator=( const NodeList & other );
 
-	const QList<Node *> & list() const { return nodes; }
+	const QVector<Node *> & list() const { return nodes; }
 
 	void sort();
 	void alphaSort();
 
 protected:
-	QList<Node *> nodes;
+	QVector<Node *> nodes;
 };
 
 class Node : public IControllable
@@ -130,7 +131,7 @@ public:
 	bool isPresorted() const { return presorted; }
 	
 	Node * findChild( int id ) const;
-	Node * findChild( const QString & name ) const;
+	Node * findChild( const QString & str ) const;
 
 	Node * findParent( int id ) const;
 	Node * parentNode() const { return parent; }
@@ -164,7 +165,6 @@ protected:
 
 	struct Settings
 	{
-		QColor background;
 		QColor highlight;
 		QColor wireframe;
 	} cfg;

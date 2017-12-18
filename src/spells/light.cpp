@@ -1,6 +1,6 @@
 #include "spellbook.h"
 
-#include "widgets/nifeditors.h"
+#include "ui/widgets/nifeditors.h"
 
 
 // Brief description is deliberately not autolinked to class Spell
@@ -57,8 +57,8 @@ class spLightEdit final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Light" ); }
 	QString page() const override final { return Spell::tr( "" ); }
-	bool instant() const { return true; }
-	QIcon icon() const
+	bool instant() const override final { return true; }
+	QIcon icon() const override final
 	{
 		if ( !light42_xpm_icon )
 			light42_xpm_icon = QIconPtr( new QIcon(QPixmap( light42_xpm )) );
@@ -94,7 +94,8 @@ public:
 		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Quadratic Attenuation" ) ) );
 		le->popLayout();
 		le->pushLayout( new QHBoxLayout(), "Spot Light Parameters" );
-		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Cutoff Angle" ), 0, 90 ) );
+		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Outer Spot Angle" ), 0, 90 ) );
+		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Inner Spot Angle" ), 0, 90 ) );
 		le->add( new NifFloatEdit( nif, nif->getIndex( iLight, "Exponent" ), 0, 128 ) );
 		le->popLayout();
 		le->show();

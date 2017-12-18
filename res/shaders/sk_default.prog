@@ -1,32 +1,25 @@
 # default shader
 
-checkgroup begin or
-	# Fallout 3 and later
-	checkgroup begin and
-		check HEADER/Version >= 0x14020007
-		check HEADER/User Version >= 11
-	checkgroup end
-checkgroup end
-
-checkgroup begin or
+checkgroup begin and
 	# Skyrim
-	checkgroup begin and
-		check BSLightingShaderProperty
-		check BSLightingShaderProperty/Skyrim Shader Type != 1
-		check BSLightingShaderProperty/Skyrim Shader Type != 2
-		check BSLightingShaderProperty/Skyrim Shader Type != 3
-		check BSLightingShaderProperty/Skyrim Shader Type != 11
-		check BSLightingShaderProperty/Skyrim Shader Type != 16
-		#check NiTriBasedGeomData/Has Vertex Colors == 1
-		checkgroup begin or
-			check NiTriBasedGeomData/Has Normals == 1
-			check BSTriShape/VF & 128
-		checkgroup end
+	check HEADER/User Version 2 >= 83
+	check HEADER/User Version 2 <= 100
+	check BSLightingShaderProperty
+	#check BSLightingShaderProperty/Skyrim Shader Type != 1
+	#check BSLightingShaderProperty/Skyrim Shader Type != 2
+	#check BSLightingShaderProperty/Skyrim Shader Type != 3
+	#check BSLightingShaderProperty/Skyrim Shader Type != 11
+	#check BSLightingShaderProperty/Skyrim Shader Type != 16
+	checkgroup begin or
+		check NiTriBasedGeomData/Has Normals == 1
+		check BSTriShape/Vertex Desc & 8
 	checkgroup end
 checkgroup end
 
 texcoords 0 base
 texcoords 1 tangents
 texcoords 2 bitangents
+texcoords 3 indices
+texcoords 4 weights
 
 shaders sk_default.vert sk_default.frag

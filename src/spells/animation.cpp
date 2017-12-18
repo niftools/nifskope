@@ -1,5 +1,4 @@
 #include "spellbook.h"
-#include "settings.h"
 
 #include <QFileDialog>
 
@@ -61,10 +60,7 @@ public:
 					if ( !iSeq.isValid() )
 						throw QString( Spell::tr( "this is not a normal .kf file; there should be only NiControllerSequences as root blocks" ) );
 
-					QString rootName = kf.get<QString>( iSeq, "Target Name" );
-
-					if ( rootName.isEmpty() )
-						rootName = kf.get<QString>( iSeq, "Text Keys Name" ); // 10.0.1.0
+					QString rootName = kf.get<QString>( iSeq, "Accum Root Name" );
 
 					QModelIndex ir = findRootTarget( nif, rootName );
 
@@ -169,7 +165,7 @@ public:
 
 				//return iRoot;
 			}
-			catch ( QString e )
+			catch ( QString & e )
 			{
 				Message::append( Spell::tr( "Errors occurred while attaching .KF" ), e );
 			}
@@ -364,3 +360,69 @@ public:
 
 //REGISTER_SPELL( spConvertQuatsToEulers )
 
+
+class spFixAVObjectPalette final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Fix Invalid AV Object Refs" ); }
+	QString page() const override final { return Spell::tr( "Animation" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		QModelIndex iBlock = nif->getBlock( index, "NiDefaultAVObjectPalette" );
+		return iBlock.isValid();
+	}
+
+	
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		auto iHeader = nif->getHeader();
+		auto numStrings = nif->get<int>( iHeader, "Num Strings" );
+		auto strings = nif->getArray<QString>( iHeader, "Strings" );
+
+		auto numBlocks = nif->get<int>( iHeader, "Num Blocks" );
+
+		int fixed = 0;
+		int invalid = 0;
+
+		auto objs = nif->getIndex( index, "Objs" );
+		auto numObjs = nif->rowCount( objs );
+		for ( int i = 0; i < numObjs; i++ ) {
+			auto c = objs.child( i, 0 );
+			auto iAV = nif->getIndex( c, "AV Object" );
+
+
+			auto av = nif->getLink( iAV );
+			if ( av == -1 ) {
+				invalid++;
+
+				auto name = nif->get<QString>( c, "Name" );
+				auto stringIndex = strings.indexOf( name );
+				if ( stringIndex >= 0 ) {
+					for ( int j = 0; j < numBlocks; j++ ) {
+						auto iBlock = nif->getBlock( j );
+
+						if ( nif->inherits( iBlock, "NiAVObject" ) ) {
+							auto blockName = nif->get<QString>( nif->getBlock( j ), "Name" );
+							if ( name == blockName ) {
+								nif->setLink( iAV, j );
+								fixed++;
+								invalid--;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if ( fixed > 0 ) {
+			Message::info( nullptr, Spell::tr( "Fixed %1 AV Object Refs, %2 invalid Refs remain." )
+						   .arg( fixed ).arg( invalid ) );
+		}
+
+		return {};
+	}
+};
+
+REGISTER_SPELL( spFixAVObjectPalette )

@@ -230,7 +230,7 @@ static void removeWasteVertices( NifModel * nif, const QModelIndex & iData, cons
 			Message::warning( nullptr, Spell::tr( "The skin partition was removed, please regenerate it with the skin partition spell" ) );
 		}
 	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 	}
@@ -572,7 +572,7 @@ public:
 
 			removeWasteVertices( nif, iData, iShape );
 		}
-		catch ( QString e )
+		catch ( QString & e )
 		{
 			Message::warning( nullptr, Spell::tr( "There were errors during the operation" ), e );
 		}
@@ -757,3 +757,34 @@ public:
 };
 
 REGISTER_SPELL( spUpdateAllBounds )
+
+
+//! Update Triangles on Data from Skin
+bool spUpdateTrianglesFromSkin::isApplicable( const NifModel * nif, const QModelIndex & index )
+{
+	return nif->isNiBlock( index, "NiTriShape" ) && nif->getLink( index, "Skin Instance" ) != -1;
+}
+
+QModelIndex spUpdateTrianglesFromSkin::cast( NifModel * nif, const QModelIndex & index )
+{
+	auto iData = nif->getBlock( nif->getLink( index, "Data" ) );
+	auto iSkin = nif->getBlock( nif->getLink( index, "Skin Instance" ) );
+	auto iSkinPart = nif->getBlock( nif->getLink( iSkin, "Skin Partition" ) );
+	if ( !iSkinPart.isValid() || !iData.isValid() )
+		return QModelIndex();
+
+	QVector<Triangle> tris;
+	auto iParts = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+	for ( int i = 0; i < nif->rowCount( iParts ) && iParts.isValid(); i++ )
+		tris << SkinPartition( nif, iParts.child( i, 0 ) ).getRemappedTriangles();
+
+	nif->set<bool>( iData, "Has Triangles", true );
+	nif->set<ushort>( iData, "Num Triangles", tris.size() );
+	nif->set<uint>( iData, "Num Triangle Points", tris.size() * 3 );
+	nif->updateArray( iData, "Triangles" );
+	nif->setArray( iData, "Triangles", tris );
+
+	return index;
+}
+
+REGISTER_SPELL( spUpdateTrianglesFromSkin )

@@ -1,6 +1,6 @@
 #version 130
 
-uniform sampler2D SourceTexture;
+uniform sampler2D BaseMap;
 uniform sampler2D GreyscaleMap;
 uniform samplerCube CubeMap;
 uniform sampler2D NormalMap;
@@ -18,8 +18,7 @@ uniform bool greyscaleAlpha;
 uniform bool greyscaleColor;
 
 uniform bool useFalloff;
-uniform bool vertexColors;
-uniform bool vertexAlpha;
+uniform bool hasRGBFalloff;
 
 uniform bool hasWeaponBlood;
 
@@ -58,12 +57,13 @@ void main( void )
 {
 	vec2 offset = gl_TexCoord[0].st * uvScale + uvOffset;
 	
-	vec4 baseMap = texture2D( SourceTexture, offset );
+	vec4 baseMap = texture2D( BaseMap, offset );
 	vec4 normalMap = texture2D( NormalMap, offset );
 	vec4 specMap = texture2D( SpecularMap, offset );
 	
 	vec3 normal = normalize(normalMap.rgb * 2.0 - 1.0);
-		
+	// Calculate missing blue channel
+	normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
 	if ( !gl_FrontFacing && doubleSided ) {
 		normal *= -1.0;	
 	}
@@ -80,7 +80,7 @@ void main( void )
 	float NdotNegL = max( dot(normal, -L), 0.000001 );
 
 	vec3 reflected = reflect( V, normal );
-	vec3 reflectedVS = t * reflected.x + b * reflected.y + N * reflected.z;
+	vec3 reflectedVS = b * reflected.x + t * reflected.y + N * reflected.z;
 	vec3 reflectedWS = vec3( worldMatrix * (gl_ModelViewMatrixInverse * vec4( reflectedVS, 0.0 )) );
 	
 	if ( greyscaleAlpha )
@@ -92,11 +92,15 @@ void main( void )
 	
 	// Falloff
 	float falloff = 1.0;
-	if ( useFalloff ) {
+	if ( useFalloff || hasRGBFalloff ) {
 		falloff = smoothstep( falloffParams.x, falloffParams.y, abs(dot(normal, V)) );
 		falloff = mix( max(falloffParams.z, 0.0), min(falloffParams.w, 1.0), falloff );
 		
-		baseMap.a *= falloff;
+		if ( useFalloff )
+			baseMap.a *= falloff;
+		
+		if ( hasRGBFalloff )
+			baseMap.rgb *= falloff;
 	}
 	
 	float alphaMult = baseColor.a * baseColor.a;
@@ -106,13 +110,13 @@ void main( void )
 	color.a = alphaMult * C.a * baseMap.a;
 	
 	if ( greyscaleColor ) {
-		vec4 luG = colorLookup( texture2D( SourceTexture, offset ).g, baseColor.r * C.r * falloff );
+		vec4 luG = colorLookup( texture2D( BaseMap, offset ).g, baseColor.r * C.r * falloff );
 
 		color.rgb = luG.rgb;
 	}
 	
 	if ( greyscaleAlpha ) {
-		vec4 luA = colorLookup( texture2D( SourceTexture, offset ).a, color.a );
+		vec4 luA = colorLookup( texture2D( BaseMap, offset ).a, color.a );
 		
 		color.a = luA.a;
 	}

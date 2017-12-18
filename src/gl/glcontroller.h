@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLCONTROLLER_H
 #define GLCONTROLLER_H
 
-#include "nifmodel.h"
+#include "model/nifmodel.h"
 
 #include <QObject> // Inherited
 #include <QPersistentModelIndex>
@@ -41,6 +41,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 //! @file glcontroller.h Controller, Interpolator, TransformInterpolator, BSplineTransformInterpolator
+
+class Transform;
 
 //! Something which can be attached to anything Controllable
 class Controller
@@ -51,18 +53,18 @@ public:
 	Controller( const QModelIndex & index );
 	virtual ~Controller() {}
 
-	float start;
-	float stop;
-	float phase;
-	float frequency;
+	float start = 0;
+	float stop = 0;
+	float phase = 0;
+	float frequency = 0;
 
 	//! Extrapolation type
 	enum Extrapolation
 	{
 		Cyclic = 0, Reverse = 1, Constant = 2
-	} extrapolation;
+	} extrapolation = Cyclic;
 
-	bool active;
+	bool active = false;
 
 	//! Find the model index of the controller
 	QModelIndex index() const { return iBlock; }
@@ -168,14 +170,14 @@ public:
 	bool updateTransform( Transform & tm, float time ) override;
 
 protected:
-	float start, stop;
+	float start = 0, stop = 0;
 	QPersistentModelIndex iControl, iSpline, iBasis;
 	QPersistentModelIndex lTrans, lRotate, lScale;
-	uint lTransOff, lRotateOff, lScaleOff;
-	float lTransMult, lRotateMult, lScaleMult;
-	float lTransBias, lRotateBias, lScaleBias;
-	uint nCtrl;
-	int degree;
+	uint lTransOff = USHRT_MAX, lRotateOff = USHRT_MAX, lScaleOff = USHRT_MAX;
+	float lTransMult = 0, lRotateMult = 0, lScaleMult = 0;
+	float lTransBias = 0, lRotateBias = 0, lScaleBias = 0;
+	uint nCtrl = 0;
+	int degree = 3;
 };
 
 

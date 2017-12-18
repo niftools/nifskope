@@ -1,10 +1,10 @@
 #include "spellbook.h"
 
-#include "widgets/nifeditors.h"
+#include "ui/widgets/nifeditors.h"
 
 
 // Brief description is deliberately not autolinked to class Spell
-/*! \file material.cpp
+/*! \file materialedit.cpp
  * \brief Material editing spells (spMaterialEdit)
  *
  * All classes here inherit from the Spell class.
@@ -97,8 +97,8 @@ class spMaterialEdit final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Material" ); }
 	QString page() const override final { return Spell::tr( "" ); }
-	bool instant() const { return true; }
-	QIcon icon() const
+	bool instant() const override final { return true; }
+	QIcon icon() const override final
 	{
 		if ( !mat42_xpm_icon )
 			mat42_xpm_icon = QIconPtr( new QIcon(QPixmap( mat42_xpm )) );

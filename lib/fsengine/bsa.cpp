@@ -64,27 +64,17 @@ bool BSA::BSAFile::compressed() const
 //! Reads a foldername sized string (length + null-terminated string) from the BSA
 static bool BSAReadSizedString( QFile & bsa, QString & s )
 {
-	//qDebug() << "BSA is at" << bsa.pos();
 	quint8 len;
-	if ( bsa.read( (char *) & len, 1 ) != 1 )
-	{
-		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
+	if ( bsa.read( (char *)&len, 1 ) != 1 )
 		return false;
-	}
-	//qDebug() << "folder string length is" << len;
 	
 	QByteArray b( len, char(0) );
-	if ( bsa.read( b.data(), len ) == len )
-	{
+	if ( bsa.read( b.data(), len ) == len ) {
 		s = QString::fromLatin1( b );
-		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
 		return true;
 	}
-	else
-	{
-		//qDebug() << "bailout on" << __FILE__ << "line" << __LINE__;
-		return false;
-	}
+
+	return false;
 }
 
 QByteArray gUncompress( const QByteArray & data, const int size )
@@ -428,7 +418,7 @@ bool BSA::open()
 		else
 			throw QString( "file magic" );
 	}
-	catch ( QString e )
+	catch ( QString & e )
 	{
 		status = e;
 		return false;
@@ -568,15 +558,6 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
 						break;
 
-					case DXGI_FORMAT_BC7_UNORM:
-						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
-						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
-						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
-
-						dx10 = true;
-						dx10Header.dxgiFormat = DXGI_FORMAT_BC7_UNORM;
-						break;
-
 					case DXGI_FORMAT_B8G8R8A8_UNORM:
 						ddsHeader.ddspf.dwFlags = DDS_RGBA;
 						ddsHeader.ddspf.dwRGBBitCount = 32;
@@ -592,6 +573,19 @@ bool BSA::fileContents( const QString & fn, QByteArray & content )
 						ddsHeader.ddspf.dwRGBBitCount = 8;
 						ddsHeader.ddspf.dwRBitMask = 0xFF;
 						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;	// 8bpp
+						break;
+
+					case DXGI_FORMAT_BC7_UNORM:
+					case DXGI_FORMAT_BC1_UNORM_SRGB:
+					case DXGI_FORMAT_BC2_UNORM_SRGB:
+					case DXGI_FORMAT_BC3_UNORM_SRGB:
+					case DXGI_FORMAT_BC7_UNORM_SRGB:
+						ddsHeader.ddspf.dwFlags = DDS_FOURCC;
+						ddsHeader.ddspf.dwFourCC = MAKEFOURCC( 'D', 'X', '1', '0' );
+						ddsHeader.dwPitchOrLinearSize = file->tex.header.width * file->tex.header.height;
+
+						dx10 = true;
+						dx10Header.dxgiFormat = DXGI_FORMAT( file->tex.header.format );
 						break;
 
 					default:
@@ -770,10 +764,12 @@ bool BSA::scan( const BSA::BSAFolder * folder, QStandardItem * item, QString pat
 	if ( !folder || folder->children.count() == 0 )
 		return false;
 
+	auto& children = folder->children;
 	QHash<QString, BSAFolder *>::const_iterator i;
-	for ( i = folder->children.begin(); i != folder->children.end(); i++ ) {
-
-		if ( !i.value()->files.count() && !i.value()->children.count() )
+	for ( i = children.begin(); i != children.end(); ++i ) {
+		auto f = i.value()->files;
+		auto c = i.value()->children;
+		if ( !f.count() && !c.count() )
 			continue;
 
 		auto folderItem = new QStandardItem( i.key() );
@@ -783,21 +779,21 @@ bool BSA::scan( const BSA::BSAFolder * folder, QStandardItem * item, QString pat
 		item->appendRow( { folderItem, pathDummy, sizeDummy } );
 
 		// Recurse through folders
-		if ( i.value()->children.count() ) {
+		if ( c.count() ) {
 			QString fullpath = ((path.isEmpty()) ? path : path % "/") % i.key();
 			scan( i.value(), folderItem, fullpath );
 		}
 
 		// List files
-		if ( i.value()->files.count() ) {
-			QHash<QString, BSAFile *>::const_iterator f;
-			for ( f = i.value()->files.begin(); f != i.value()->files.end(); f++ ) {
-				QString fullpath = path % "/" % i.key() % "/" % f.key();
+		if ( f.count() ) {
+			QHash<QString, BSAFile *>::const_iterator it;
+			for ( it = f.begin(); it != f.end(); ++it ) {
+				QString fullpath = path % "/" % i.key() % "/" % it.key();
 
-				int bytes = f.value()->size();
+				int bytes = it.value()->size();
 				QString filesize = (bytes > 1024) ? QString::number( bytes / 1024 ) + "KB" : QString::number( bytes ) + "B";
 
-				auto fileItem = new QStandardItem( f.key() );
+				auto fileItem = new QStandardItem( it.key() );
 				auto pathItem = new QStandardItem( fullpath );
 				auto sizeItem = new QStandardItem( filesize );
 

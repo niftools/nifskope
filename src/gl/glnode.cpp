@@ -31,15 +31,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glnode.h"
-#include "settings.h"
 
-#include "controllers.h"
-#include "glmarker.h"
-#include "glscene.h"
+#include "nifskope.h"
+#include "gl/controllers.h"
+#include "gl/glmarker.h"
+#include "gl/glscene.h"
+#include "gl/marker/furniture.h"
+#include "gl/marker/constraints.h"
+#include "model/nifmodel.h"
+#include "ui/settingsdialog.h"
 
-#include "marker/furniture.h"
-#include "marker/constraints.h"
-#include "nvtristripwrapper.h"
+#include "lib/nvtristripwrapper.h"
 
 #include <QRegularExpression>
 #include <QSettings>
@@ -205,8 +207,7 @@ void Node::updateSettings()
 {
 	QSettings settings;
 	settings.beginGroup( "Settings/Render/Colors/" );
-
-	cfg.background = settings.value( "Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	// TODO: Remove the registry read for every new Node
 	cfg.highlight = settings.value( "Highlight", QColor( 255, 255, 0 ) ).value<QColor>();
 	cfg.wireframe = settings.value( "Wireframe", QColor( 0, 255, 0 ) ).value<QColor>();
 
@@ -304,10 +305,12 @@ void Node::update( const NifModel * nif, const QModelIndex & index )
 				newProps.add( p );
 		}
 
-		for ( const auto l : nif->getLinkArray( iBlock, "BS Properties" ) ) {
-			if ( Property * p = scene->getProperty( nif, nif->getBlock( l ) ) )
-				newProps.add( p );
-		}
+		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Shader Property" ) ) ) )
+			newProps.add( p );
+
+		if ( Property * p = scene->getProperty( nif, nif->getBlock( nif->getLink( iBlock, "Alpha Property" ) ) ) )
+			newProps.add( p );
+
 		properties = newProps;
 
 		children.clear();
@@ -455,13 +458,13 @@ Node * Node::findChild( int id ) const
 	return nullptr;
 }
 
-Node * Node::findChild( const QString & name ) const
+Node * Node::findChild( const QString & str ) const
 {
-	if ( this->name == name )
+	if ( this->name == str )
 		return const_cast<Node *>( this );
 
 	for ( Node * child : children.list() ) {
-		Node * n = child->findChild( name );
+		Node * n = child->findChild( str );
 
 		if ( n )
 			return n;
@@ -492,12 +495,8 @@ void Node::transform()
 		// Scale up for Skyrim
 		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
 
-		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
-
-		if ( !iObject.isValid() )
-			iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-
-		if ( iObject.isValid() ) {
+		QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
+		if ( nif->getUserVersion2() > 0 && iObject.isValid() ) {
 			QModelIndex iBody = nif->getBlock( nif->getLink( iObject, "Body" ) );
 
 			if ( iBody.isValid() ) {
@@ -678,6 +677,29 @@ void Node::drawSelection() const
 
 	}
 
+	if ( currentBlock.endsWith( "Node" ) && scene->options & Scene::ShowNodes && scene->options & Scene::ShowAxes ) {
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+		Transform t;
+		Matrix m;
+		m.fromQuat( nif->get<Quat>( scene->currentIndex, "Rotation" ) );
+		t.rotation = m;
+
+		glPushMatrix();
+		glMultMatrix( t );
+
+		auto pos = Vector3( 0, 0, 0 );
+
+		glColor( { 0, 1, 0 } );
+		drawDashLine( pos, Vector3( 0, 1, 0 ), 15 );
+		glColor( { 1, 0, 0 } );
+		drawDashLine( pos, Vector3( 1, 0, 0 ), 15 );
+		glColor( { 0, 0, 1 } );
+		drawDashLine( pos, Vector3( 0, 0, 1 ), 15 );
+
+		glPopMatrix();
+	}
+
 	glPopMatrix();
 
 	if ( extraData )
@@ -747,7 +769,11 @@ void DrawTriangleIndex( QVector<Vector3> const & verts, Triangle const & tri, in
 
 void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QModelIndex> & stack, const Scene * scene, const float origin_color3fv[3] )
 {
-	if ( !nif || !iShape.isValid() || stack.contains( iShape ) )
+	QString name = (nif) ? nif->itemName( iShape ) : "";
+
+	bool extraData = (name == "hkPackedNiTriStripsData");
+
+	if ( (!nif || !iShape.isValid() || stack.contains( iShape )) && !extraData )
 		return;
 
 	if ( !(scene->selMode & Scene::SelObject) )
@@ -760,9 +786,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 
 	//qDebug() << "draw shape" << nif->getBlockNumber( iShape ) << nif->itemName( iShape );
 
-	QString name = nif->itemName( iShape );
-
-	if ( name == "bhkListShape" ) {
+	if ( name.endsWith( "ListShape" ) ) {
 		QModelIndex iShapes = nif->getIndex( iShape, "Sub Shapes" );
 
 		if ( iShapes.isValid() ) {
@@ -880,7 +904,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 		}
 
 		drawHvkShape( nif, nif->getBlock( nif->getLink( iShape, "Shape" ) ), stack, scene, origin_color3fv );
-	} else if ( name == "bhkPackedNiTriStripsShape" ) {
+	} else if ( name == "bhkPackedNiTriStripsShape" || name == "hkPackedNiTriStripsData" ) {
 		if ( Node::SELECTING ) {
 			int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iShape ) );
 			glColor4ubv( (GLubyte *)&s_nodeId );
@@ -923,12 +947,12 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						glDepthFunc( GL_ALWAYS );
 						glHighlightColor();
 
-						for ( int t = 0; t < nif->rowCount( iTris ); t++ )
-							DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
+						//for ( int t = 0; t < nif->rowCount( iTris ); t++ )
+						//	DrawTriangleIndex( verts, nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" ), t );
 					} else if ( nif->isCompound( nif->getBlockType( scene->currentIndex ) ) ) {
 						Triangle tri = nif->get<Triangle>( iTris.child( i, 0 ), "Triangle" );
 						DrawTriangleSelection( verts, tri );
-						DrawTriangleIndex( verts, tri, i );
+						//DrawTriangleIndex( verts, tri, i );
 					} else if ( nif->getBlockName( scene->currentIndex ) == "Normal" ) {
 						Triangle tri = nif->get<Triangle>( scene->currentIndex.parent(), "Triangle" );
 						Vector3 triCentre = ( verts.value( tri.v1() ) + verts.value( tri.v2() ) + verts.value( tri.v3() ) ) /  3.0;
@@ -939,6 +963,38 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						glVertex( triCentre );
 						glVertex( triCentre + nif->get<Vector3>( scene->currentIndex ) );
 						glEnd();
+					}
+				} else if ( n == "Sub Shapes" ) {
+					int start_vertex = 0;
+					int end_vertex = 0;
+					int num_vertices = nif->get<int>( scene->currentIndex, "Num Vertices" );
+
+					int ct = nif->rowCount( iTris );
+					int totalVerts = 0;
+					if ( num_vertices > 0 ) {
+						QModelIndex iParent = scene->currentIndex.parent();
+						int rowCount = nif->rowCount( iParent );
+						for ( int j = 0; j < i; j++ ) {
+							totalVerts += nif->get<int>( iParent.child( j, 0 ), "Num Vertices" );
+						}
+
+						end_vertex += totalVerts + num_vertices;
+						start_vertex += totalVerts;
+
+						ct = (end_vertex - start_vertex) / 3;
+					}
+
+					for ( int t = 0; t < nif->rowCount( iTris ); t++ ) {
+						Triangle tri = nif->get<Triangle>( iTris.child( t, 0 ), "Triangle" );
+
+						if ( (start_vertex <= tri[0]) && (tri[0] < end_vertex) ) {
+							if ( (start_vertex <= tri[1]) && (tri[1] < end_vertex) && (start_vertex <= tri[2]) && (tri[2] < end_vertex) ) {
+								DrawTriangleSelection( verts, tri );
+								//DrawTriangleIndex( verts, tri, t );
+							} else {
+								qDebug() << "triangle with multiple materials?" << t;
+							}
+						}
 					}
 				}
 			}
@@ -983,7 +1039,7 @@ void drawHvkShape( const NifModel * nif, const QModelIndex & iShape, QStack<QMod
 						if ( (start_vertex <= tri[0]) && (tri[0] < end_vertex) ) {
 							if ( (start_vertex <= tri[1]) && (tri[1] < end_vertex) && (start_vertex <= tri[2]) && (tri[2] < end_vertex) ) {
 								DrawTriangleSelection( verts, tri );
-								DrawTriangleIndex( verts, tri, t );
+								//DrawTriangleIndex( verts, tri, t );
 							} else {
 								qDebug() << "triangle with multiple materials?" << t;
 							}
@@ -1069,16 +1125,22 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 
 	QString name = nif->itemName( iConstraint );
 
-	if ( name == "bhkMalleableConstraint" ) {
+	if ( name == "bhkMalleableConstraint" || name == "bhkBreakableConstraint" ) {
 		if ( nif->getIndex( iConstraint, "Ragdoll" ).isValid() ) {
 			name = "bhkRagdollConstraint";
 		} else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() ) {
 			name = "bhkLimitedHingeConstraint";
+		} else if ( nif->getIndex( iConstraint, "Hinge" ).isValid() ) {
+			name = "bhkHingeConstraint";
+		} else if ( nif->getIndex( iConstraint, "Stiff Spring" ).isValid() ) {
+			name = "bhkStiffSpringConstraint";
 		}
 	}
 
 	if ( name == "bhkLimitedHingeConstraint" ) {
 		QModelIndex iHinge = nif->getIndex( iConstraint, "Limited Hinge" );
+		if ( !iHinge.isValid() )
+			iHinge = iConstraint;
 
 		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
@@ -1133,6 +1195,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glEnd();
 	} else if ( name == "bhkHingeConstraint" ) {
 		QModelIndex iHinge = nif->getIndex( iConstraint, "Hinge" );
+		if ( !iHinge.isValid() )
+			iHinge = iConstraint;
 
 		const Vector3 pivotA( nif->get<Vector4>( iHinge, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iHinge, "Pivot B" ) );
@@ -1191,9 +1255,13 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		glBegin( GL_LINES ); glVertex( pivotB ); glVertex( pivotB + axleB ); glEnd();
 		drawSolidArc( pivotB, axleB / 7, axleB2, axleB1, minAngle, maxAngle, 1.01f, 16 );
 	} else if ( name == "bhkStiffSpringConstraint" ) {
-		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) );
-		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iConstraint, "Pivot B" ) );
-		const float length = nif->get<float>( iConstraint, "Length" );
+		QModelIndex iSpring = nif->getIndex( iConstraint, "Stiff Spring" );
+		if ( !iSpring.isValid() )
+			iSpring = iConstraint;
+
+		const Vector3 pivotA = tBodies.value( 0 ) * Vector3( nif->get<Vector4>( iSpring, "Pivot A" ) );
+		const Vector3 pivotB = tBodies.value( 1 ) * Vector3( nif->get<Vector4>( iSpring, "Pivot B" ) );
+		const float length = nif->get<float>( iSpring, "Length" );
 
 		if ( !Node::SELECTING )
 			glColor( color_b );
@@ -1201,6 +1269,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		drawSpring( pivotA, pivotB, length );
 	} else if ( name == "bhkRagdollConstraint" ) {
 		QModelIndex iRagdoll = nif->getIndex( iConstraint, "Ragdoll" );
+		if ( !iRagdoll.isValid() )
+			iRagdoll = iConstraint;
 
 		const Vector3 pivotA( nif->get<Vector4>( iRagdoll, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iRagdoll, "Pivot B" ) );
@@ -1257,8 +1327,8 @@ void drawHvkConstraint( const NifModel * nif, const QModelIndex & iConstraint, c
 		const Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) );
 		const Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) );
 
-		const Vector3 planeNormal( nif->get<Vector4>( iConstraint, "Plane" ) );
-		const Vector3 slidingAxis( nif->get<Vector4>( iConstraint, "Sliding Axis" ) );
+		const Vector3 planeNormal( nif->get<Vector4>( iConstraint, "Plane A" ) );
+		const Vector3 slidingAxis( nif->get<Vector4>( iConstraint, "Sliding A" ) );
 
 		const float minDistance = nif->get<float>( iConstraint, "Min Distance" );
 		const float maxDistance = nif->get<float>( iConstraint, "Max Distance" );
@@ -1372,6 +1442,10 @@ void Node::drawHavok()
 		glPopMatrix();
 	}
 
+	// Only Bethesda support after this
+	if ( nif->getUserVersion2() == 0 )
+		return;
+
 	// Draw BSMultiBound
 	auto iBSMultiBound = nif->getBlock( nif->getLink( iBlock, "Multi Bound" ), "BSMultiBound" );
 	if ( iBSMultiBound.isValid() ) {
@@ -1457,11 +1531,7 @@ void Node::drawHavok()
 		}
 	}
 
-	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Data" ) );
-
-	if ( !iObject.isValid() )
-		iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
-
+	QModelIndex iObject = nif->getBlock( nif->getLink( iBlock, "Collision Object" ) );
 	if ( !iObject.isValid() )
 		return;
 
@@ -1522,17 +1592,18 @@ void Node::drawHavok()
 
 	drawHvkShape( nif, nif->getBlock( nif->getLink( iBody, "Shape" ) ), shapeStack, scene, colors[ color_index ] );
 
-	if ( Node::SELECTING ) {
+
+	// Scale up for Skyrim
+	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
+
+	if ( Node::SELECTING && scene->options & Scene::ShowAxes ) {
 		int s_nodeId = ID2COLORKEY( nif->getBlockNumber( iBody ) );
 		glColor4ubv( (GLubyte *)&s_nodeId );
 		glDepthFunc( GL_ALWAYS );
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ), 2.0f );
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 1.0f, false );
 		glDepthFunc( GL_LEQUAL );
-	} else {
-		// Scale up for Skyrim
-		float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
-
-		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 2.0f );
+	} else if ( scene->options & Scene::ShowAxes ) {
+		drawAxes( Vector3( nif->get<Vector4>( iBody, "Center" ) ) * havokScale, 1.0f );
 	}
 
 	glPopMatrix();
@@ -1547,7 +1618,6 @@ void Node::drawHavok()
 
 void drawFurnitureMarker( const NifModel * nif, const QModelIndex & iPosition )
 {
-	QString name = nif->itemName( iPosition );
 	Vector3 offs = nif->get<Vector3>( iPosition, "Offset" );
 	quint16 orient = nif->get<quint16>( iPosition, "Orientation" );
 	quint8 ref1 = nif->get<quint8>( iPosition, "Position Ref 1" );
@@ -1857,6 +1927,15 @@ BoundSphere Node::bounds() const
 		Vector3 trans = nif->get<Vector3>( iBox, "Translation" );
 		Vector3 rad = nif->get<Vector3>( iBox, "Radius" );
 		boundsphere |= BoundSphere( trans, rad.length() );
+	}
+
+	if ( nif->getBlockType( iBlock ) == "NiMesh" ) {
+		auto iBound = nif->getIndex( iBlock, "Bound" );
+		if ( iBound.isValid() ) {
+			auto center = nif->get<Vector3>( iBound, "Center" );
+			auto radius = nif->get<float>( iBound, "Radius" );
+			boundsphere |= BoundSphere( center, radius );
+		}
 	}
 
 	// BSBound collision bounding box

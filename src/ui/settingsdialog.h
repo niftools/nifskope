@@ -6,6 +6,9 @@
 
 #include <memory>
 
+
+//! @file settingsdialog.h SettingsDialog
+
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
@@ -52,6 +55,7 @@ private:
 
 	QPushButton * btnSave;
 	QPushButton * btnApply;
+	QPushButton * btnCancel;
 
 	bool eventFilter( QObject *, QEvent * ) override final;
 	void showEvent( QShowEvent * ) override final;

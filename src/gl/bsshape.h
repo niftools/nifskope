@@ -1,9 +1,12 @@
 #ifndef BSSHAPE_H
 #define BSSHAPE_H
 
-#include "glmesh.h"
-#include "glnode.h"
-#include "gltools.h"
+#include "gl/glmesh.h"
+#include "gl/gltools.h"
+
+
+class NifModel;
+class NodeList;
 
 class BSShape : public Shape
 {
@@ -47,8 +50,8 @@ protected:
 	QString skinDataName;
 	QString skinInstName;
 
-	int numVerts;
-	int numTris;
+	int numVerts = 0;
+	int numTris = 0;
 
 	Vector3 bsphereCenter;
 	float bsphereRadius = 0.0;

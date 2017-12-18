@@ -33,14 +33,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSCENE_H
 #define GLSCENE_H
 
-#include "nifmodel.h"
-
 #include "glnode.h"
 #include "glproperty.h"
-#include "gltex.h"
 #include "gltools.h"
-#include "renderer.h"
 
+#include <QFlags>
 #include <QObject>
 #include <QHash>
 #include <QMap>
@@ -51,6 +48,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @file glscene.h Scene
 
+class NifModel;
+class Renderer;
+class TexCache;
+class Shape;
+class QAction;
 class QOpenGLContext;
 class QOpenGLFunctions;
 
@@ -61,7 +63,7 @@ public:
 	Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * functions, QObject * parent = nullptr );
 	~Scene();
 
-	void updateShaders() { renderer->updateShaders(); }
+	void updateShaders();
 
 	void clear( bool flushTextures = true );
 	void make( NifModel * nif, bool flushTextures = false );
@@ -84,8 +86,6 @@ public:
 
 	int bindTexture( const QString & fname );
 	int bindTexture( const QModelIndex & index );
-
-	int bindTextureCube( const QString & fname );
 
 	Node * getNode( const NifModel * nif, const QModelIndex & iNode );
 	Property * getProperty( const NifModel * nif, const QModelIndex & iProperty );
@@ -193,7 +193,7 @@ public slots:
 protected:
 	mutable bool sceneBoundsValid, timeBoundsValid;
 	mutable BoundSphere bndSphere;
-	mutable float tMin, tMax;
+	mutable float tMin = 0, tMax = 0;
 
 	void updateTimeBounds() const;
 };

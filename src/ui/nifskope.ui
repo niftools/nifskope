@@ -7,110 +7,10 @@
     <x>0</x>
     <y>0</y>
     <width>1280</width>
-    <height>960</height>
+    <height>800</height>
    </rect>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QStatusBar" name="statusbar">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>24</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>16777215</width>
-     <height>24</height>
-    </size>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="autoFillBackground">
-    <bool>false</bool>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">#statusbar {
-padding: 0 0 0 0;
-margin: 0 0 0 0;
-border: 0px solid transparent;
-/*background: transparent;
-color: #0099ff;
-background: #0099ff;
-color: white;*/
-color: white;
-background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(67, 67, 67, 255), stop:0.039823 rgba(85, 85, 85, 255), stop:0.103245 rgba(102, 102, 102, 255), stop:0.171091 rgba(106, 106, 106, 255));
-}
-
-#statusbar QProgressBar {
-margin: 0px;
-padding: 0px;
-border: 0px solid transparent;
-text-align: center;
-color: white;
-font: 12px normal &quot;Segoe UI&quot;;
-background: transparent;
-}
-
-QProgressBar::chunk {
-background-color: #05B8CC;
-width: 20px;
-}
-
-QProgressBar::text {
-padding-bottom: 2px;
-margin-top: -2px;
-}
-
-#statusbar QSizeGrip {
-background: url(&quot;:/img/sizeGrip&quot;) no-repeat;
-width: 10px; height: 10px;
-}
-
-#statusbar::text {
-padding: 0 0 10px 0;
-margin: -3px 0 0 0;
-
-}
-
-#statusbar::item {
-border: 0px solid transparent;
-}
-#statusbar #filepathStatusbarWidget QLabel {
-/*color: #333333;*/
-color: white;
-padding: 0 0 1px 0;
-margin: -1px 0 0 0;
-font: 12px normal &quot;Segoe UI&quot;;
-}
-
-#statusbar QPushButton {
-padding: 0px; border: none; margin: 0px;
-}
-
-#statusbar #filepathStatusbarWidget QPushButton:pressed {
-margin-top: 1px; margin-left: 1px;
-background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0.139963 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 0));
-}
-
-#statusbar #filepathStatusbarWidget QPushButton:hover {
-background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0.139963 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 0));
-}</string>
-   </property>
-  </widget>
+  <widget class="QWidget" name="centralwidget" />
   <widget class="QToolBar" name="tFile">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -132,8 +32,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="iconSize">
     <size>
-     <width>18</width>
-     <height>18</height>
+     <width>36</width>
+     <height>36</height>
     </size>
    </property>
    <property name="floatable">
@@ -157,8 +57,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="iconSize">
     <size>
-     <width>18</width>
-     <height>18</height>
+     <width>36</width>
+     <height>36</height>
     </size>
    </property>
    <attribute name="toolBarArea">
@@ -191,26 +91,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <addaction name="aShowMarkers"/>
    <addaction name="aShowHidden"/>
   </widget>
-  <widget class="QToolBar" name="tView">
-   <property name="windowTitle">
-    <string>View</string>
-   </property>
-   <property name="allowedAreas">
-    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="aToggleBlockList"/>
-   <addaction name="aToggleBlockDetails"/>
-   <addaction name="aToggleHeader"/>
-   <addaction name="aToggleInspect"/>
-   <addaction name="aToggleKfm"/>
-   <addaction name="aToggleHelp"/>
-  </widget>
   <widget class="QToolBar" name="tAnim">
    <property name="enabled">
     <bool>false</bool>
@@ -223,8 +103,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="iconSize">
     <size>
-     <width>18</width>
-     <height>18</height>
+     <width>36</width>
+     <height>36</height>
     </size>
    </property>
    <attribute name="toolBarArea">
@@ -276,6 +156,32 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </attribute>
    <addaction name="aLODDummy"/>
   </widget>
+  <widget class="QToolBar" name="tView">
+   <property name="windowTitle">
+    <string>View</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomToolBarArea|Qt::TopToolBarArea</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>36</width>
+     <height>36</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="aToggleBlockList"/>
+   <addaction name="aToggleBlockDetails"/>
+   <addaction name="aToggleHeader"/>
+   <addaction name="aToggleInspect"/>
+   <addaction name="aToggleKfm"/>
+   <addaction name="aToggleHelp"/>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -291,7 +197,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     </property>
     <widget class="QMenu" name="menuImport">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="title">
       <string>Import</string>
@@ -421,6 +327,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     </property>
     <addaction name="aToggleHelp"/>
     <addaction name="separator"/>
+    <addaction name="aDiscord"/>
     <addaction name="aHelpWebsite"/>
     <addaction name="aHelpForum"/>
     <addaction name="separator"/>
@@ -434,7 +341,18 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <property name="title">
      <string>Options</string>
     </property>
+    <widget class="QMenu" name="mTheme">
+     <property name="title">
+      <string>Theme</string>
+     </property>
+     <addaction name="aTheme_2_0_Dark"/>
+     <addaction name="aTheme_2_0_Light"/>
+     <addaction name="aThemeWindows"/>
+     <addaction name="aThemeWindowsXP"/>
+    </widget>
     <addaction name="aSettings"/>
+    <addaction name="separator"/>
+    <addaction name="mTheme"/>
     <addaction name="aSelectFont"/>
    </widget>
    <addaction name="mFile"/>
@@ -442,6 +360,93 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    <addaction name="mRender"/>
    <addaction name="mOptions"/>
    <addaction name="mHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>24</height>
+    </size>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#statusbar {
+padding: 0 0 0 0;
+margin: 0 0 0 0;
+border: 0px solid transparent;
+color: white;
+background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(33, 33, 33, 128), stop:0.039823 rgba(42, 42, 42, 128), stop:0.103245 rgba(50, 50, 50, 128), stop:0.171091 rgba(53, 53, 53, 128));
+}
+
+#statusbar QProgressBar {
+margin: 0px;
+padding: 0px;
+border: 0px solid transparent;
+text-align: center;
+color: white;
+font: 12px normal &quot;Segoe UI&quot;;
+background: transparent;
+}
+
+QProgressBar::chunk {
+background-color: #05B8CC;
+width: 20px;
+}
+
+QProgressBar::text {
+padding-bottom: 2px;
+margin-top: -2px;
+}
+
+#statusbar QSizeGrip {
+background: url(&quot;:/img/sizeGrip&quot;) no-repeat;
+width: 10px; height: 10px;
+}
+
+#statusbar::text {
+padding: 0 0 10px 0;
+margin: -3px 0 0 0;
+
+}
+
+#statusbar::item {
+border: 0px solid transparent;
+}
+#statusbar #filepathStatusbarWidget QLabel {
+/*color: #333333;*/
+color: white;
+padding: 0 0 1px 0;
+margin: -1px 0 0 0;
+font: 12px normal &quot;Segoe UI&quot;;
+}
+
+#statusbar QPushButton {
+padding: 0px; border: none; margin: 0px;
+}
+
+#statusbar #filepathStatusbarWidget QPushButton:pressed {
+margin-top: 1px; margin-left: 1px;
+background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0.139963 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 0));
+}
+
+#statusbar #filepathStatusbarWidget QPushButton:hover {
+background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0.139963 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 0));
+}</string>
+   </property>
   </widget>
   <widget class="QDockWidget" name="InspectDock">
    <property name="enabled">
@@ -500,10 +505,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         </sizepolicy>
        </property>
        <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
+        <enum>QFrame::NoFrame</enum>
        </property>
        <layout class="QHBoxLayout" name="listButtonFrameLayout">
         <property name="leftMargin">
@@ -534,7 +536,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/expand</normaloff>:/img/expand</iconset>
+            <normaloff>:/btn/expand</normaloff>:/btn/expand</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -563,7 +565,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/collapse</normaloff>:/img/collapse</iconset>
+            <normaloff>:/btn/collapse</normaloff>:/btn/collapse</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -680,7 +682,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/expand</normaloff>:/img/expand</iconset>
+            <normaloff>:/btn/expand</normaloff>:/btn/expand</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -709,7 +711,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
           </property>
           <property name="icon">
            <iconset resource="../../res/nifskope.qrc">
-            <normaloff>:/img/collapse</normaloff>:/img/collapse</iconset>
+            <normaloff>:/btn/collapse</normaloff>:/btn/collapse</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -740,7 +742,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
         <bool>true</bool>
        </property>
        <property name="uniformRowHeights">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -911,12 +913,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      </property>
      <item>
       <widget class="QFrame" name="bsaTitleBar">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <property name="spacing">
          <number>6</number>
@@ -967,12 +963,6 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      </item>
      <item>
       <widget class="QFrame" name="frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <property name="spacing">
          <number>3</number>
@@ -1156,8 +1146,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
    </property>
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/loadView2</normaloff>
-     <normalon>:/btn/userViewActive</normalon>:/btn/loadView2</iconset>
+     <normaloff>:/btn/loadView</normaloff>
+     <normalon>:/btn/userViewActive</normalon>:/btn/loadView</iconset>
    </property>
    <property name="text">
     <string>Load View</string>
@@ -1236,7 +1226,7 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
   <action name="aViewUserSave">
    <property name="icon">
     <iconset resource="../../res/nifskope.qrc">
-     <normaloff>:/btn/saveView2</normaloff>:/btn/saveView2</iconset>
+     <normaloff>:/btn/saveView</normaloff>:/btn/saveView</iconset>
    </property>
    <property name="text">
     <string>Save View</string>
@@ -1360,15 +1350,18 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>NifSkope Documentation &amp;&amp; &amp;Tutorials</string>
    </property>
    <property name="toolTip">
-    <string>http://niftools.sourceforge.net/wiki/index.php/NifSkope</string>
+    <string>http://www.niftools.org/documentation</string>
    </property>
   </action>
   <action name="aHelpForum">
    <property name="text">
-    <string>NifSkope Help &amp;&amp; Bug Report &amp;Forum</string>
+    <string>NifSkope Support &amp;Forum</string>
+   </property>
+   <property name="iconText">
+    <string>NifSkope Support Forum</string>
    </property>
    <property name="toolTip">
-    <string>http://niftools.sourceforge.net/forum/viewforum.php?f=24</string>
+    <string>https://forum.niftools.org/24-nifskope/</string>
    </property>
   </action>
   <action name="aNifToolsWebsite">
@@ -1376,15 +1369,15 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>NifTools &amp;Wiki</string>
    </property>
    <property name="toolTip">
-    <string>http://niftools.sourceforge.net</string>
+    <string>http://www.niftools.org/documentation</string>
    </property>
   </action>
   <action name="aNifToolsDownloads">
    <property name="text">
-    <string>NifTools &amp;Downloads</string>
+    <string>NifTools &amp;Projects</string>
    </property>
    <property name="toolTip">
-    <string>http://sourceforge.net/project/showfiles.php?group_id=149157</string>
+    <string>http://www.niftools.org/projects</string>
    </property>
   </action>
   <action name="aAboutNifSkope">
@@ -1685,9 +1678,8 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
-     <normalon>:/btn/textures</normalon>
-    </iconset>
+    <iconset resource="../../res/nifskope.qrc">
+     <normaloff>:/btn/textures</normaloff>:/btn/textures</iconset>
    </property>
    <property name="text">
     <string>Textures</string>
@@ -1740,10 +1732,10 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
      <normalon>:/btn/bulb</normalon>:/btn/bulbOff</iconset>
    </property>
    <property name="text">
-    <string>Lighting</string>
+    <string>  Do Lighting</string>
    </property>
    <property name="toolTip">
-    <string>Lighting</string>
+    <string>Do Lighting</string>
    </property>
    <property name="statusTip">
     <string>Turn Lighting On/Off</string>
@@ -2044,17 +2036,60 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <string>Do Skinning</string>
    </property>
   </action>
+  <action name="aTheme_2_0_Dark">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>2.0 Dark</string>
+   </property>
+  </action>
+  <action name="aThemeWindows">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Windows</string>
+   </property>
+  </action>
+  <action name="aThemeWindowsXP">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Windows XP</string>
+   </property>
+  </action>
+  <action name="aTheme_2_0_Light">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>2.0 Light</string>
+   </property>
+  </action>
+  <action name="aDiscord">
+   <property name="text">
+    <string>NifTools &amp;Discord</string>
+   </property>
+   <property name="iconText">
+    <string>NifSkope Support Forum</string>
+   </property>
+   <property name="toolTip">
+    <string>https://discord.gg/ZFjdN4x</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>NifTreeView</class>
    <extends>QTreeView</extends>
-   <header>widgets/nifview.h</header>
+   <header>ui/widgets/nifview.h</header>
   </customwidget>
   <customwidget>
    <class>ReferenceBrowser</class>
    <extends>QTextBrowser</extends>
-   <header>widgets/refrbrowser.h</header>
+   <header>ui/widgets/refrbrowser.h</header>
   </customwidget>
  </customwidgets>
  <resources>
@@ -2586,6 +2621,22 @@ background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0
     <hint type="destinationlabel">
      <x>-1</x>
      <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aDiscord</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>openURL()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>639</x>
+     <y>399</y>
     </hint>
    </hints>
   </connection>

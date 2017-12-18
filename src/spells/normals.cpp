@@ -1,6 +1,6 @@
 #include "spellbook.h"
 
-#include "nvtristripwrapper.h"
+#include "lib/nvtristripwrapper.h"
 
 #include <QDialog>
 #include <QDoubleSpinBox>
@@ -33,8 +33,19 @@ public:
 		if ( nif->isNiBlock( iData, { "NiTriShapeData", "NiTriStripsData" } ) )
 			return iData;
 
-		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape" } ) )
+		if ( nif->isNiBlock( index, { "BSTriShape", "BSMeshLODTriShape", "BSSubIndexTriShape" } ) ) {
+			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
+			if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+				// Skinned SSE
+				auto skinID = nif->getLink( nif->getIndex( index, "Skin" ) );
+				auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
+				auto iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+				if ( iPartBlock.isValid() )
+					return nif->getIndex( iPartBlock, "Vertex Data" );
+			}
+
 			return nif->getIndex( index, "Vertex Data" );
+		}
 
 		return QModelIndex();
 	}
@@ -65,13 +76,13 @@ public:
 			}
 		};
 
-		if ( nif->getUserVersion2() < 130 ) {
+		if ( nif->getUserVersion2() < 100 ) {
 			QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 			QVector<Triangle> triangles;
 			QModelIndex iPoints = nif->getIndex( iData, "Points" );
 
 			if ( iPoints.isValid() ) {
-				QList<QVector<quint16> > strips;
+				QVector<QVector<quint16> > strips;
 
 				for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
 					strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
@@ -90,10 +101,27 @@ public:
 			nif->updateArray( iData, "Normals" );
 			nif->setArray<Vector3>( iData, "Normals", norms );
 		} else {
-			int numVerts = nif->get<int>( index, "Num Vertices" );
+			QVector<Triangle> triangles;
+			int numVerts;
+			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
+				numVerts = nif->get<int>( index, "Num Vertices" );
+				triangles = nif->getArray<Triangle>( index, "Triangles" );
+			} else {
+				// Skinned SSE
+				auto iPart = iData.parent();
+				numVerts = nif->get<uint>( iPart, "Data Size" ) / nif->get<uint>( iPart, "Vertex Size" );
+
+				// Get triangles from all partitions
+				auto numParts = nif->get<int>( iPart, "Num Skin Partition Blocks" );
+				auto iParts = nif->getIndex( iPart, "Partition" );
+				for ( int i = 0; i < numParts; i++ )
+					triangles << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
+			}
+
 			QVector<Vector3> verts;
+			verts.reserve( numVerts );
 			QVector<Vector3> norms( numVerts );
-			QVector<Triangle> triangles = nif->getArray<Triangle>( index, "Triangles" );
 
 			for ( int i = 0; i < numVerts; i++ ) {
 				auto idx = nif->index( i, 0, iData );
@@ -104,16 +132,11 @@ public:
 			faceNormals( verts, triangles, norms );
 
 			// Pause updates between model/view
-			nif->setEmitChanges( false );
+			nif->setState( BaseModel::Processing );
 			for ( int i = 0; i < numVerts; i++ ) {
-				// Unpause updates if last
-				if ( i == numVerts - 1 )
-					nif->setEmitChanges( true );
-
-				auto idx = nif->index( i, 0, iData );
-
-				nif->set<ByteVector3>( idx, "Normal", *static_cast<ByteVector3 *>(&norms[i]) );
+				nif->set<ByteVector3>( nif->index( i, 0, iData ), "Normal", norms[i] );
 			}
+			nif->resetState();
 		}
 
 		return index;
@@ -171,11 +194,25 @@ public:
 		QVector<Vector3> verts;
 		QVector<Vector3> norms;
 
-		if ( nif->getUserVersion2() < 130 ) {
+		int numVerts = 0;
+
+		if ( nif->getUserVersion2() < 100 ) {
 			verts = nif->getArray<Vector3>( iData, "Vertices" );
 			norms = nif->getArray<Vector3>( iData, "Normals" );
 		} else {
-			int numVerts = nif->get<int>( index, "Num Vertices" );
+			auto vf = nif->get<BSVertexDesc>( index, "Vertex Desc" );
+			if ( !((vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100) ) {
+				numVerts = nif->get<int>( index, "Num Vertices" );
+			} else {
+				// Skinned SSE
+				// "Num Vertices" does not exist in the partition
+				auto iPart = iData.parent();
+				numVerts = nif->get<uint>( iPart, "Data Size" ) / nif->get<uint>( iPart, "Vertex Size" );
+			}
+
+			verts.reserve( numVerts );
+			norms.reserve( numVerts );
+
 			for ( int i = 0; i < numVerts; i++ ) {
 				auto idx = nif->index( i, 0, iData );
 
@@ -251,21 +288,14 @@ public:
 		for ( int i = 0; i < verts.count(); i++ )
 			snorms[i].normalize();
 
-		if ( nif->getUserVersion2() < 130 ) {
+		if ( nif->getUserVersion2() < 100 ) {
 			nif->setArray<Vector3>( iData, "Normals", snorms );
 		} else {
-			int numVerts = nif->get<int>( index, "Num Vertices" );
 			// Pause updates between model/view
-			nif->setEmitChanges( false );
-			for ( int i = 0; i < numVerts; i++ ) {
-				// Unpause updates if last
-				if ( i == numVerts - 1 )
-					nif->setEmitChanges( true );
-
-				auto idx = nif->index( i, 0, iData );
-
-				nif->set<ByteVector3>( idx, "Normal", *static_cast<ByteVector3 *>(&snorms[i]) );
-			}
+			nif->setState( BaseModel::Processing );
+			for ( int i = 0; i < numVerts; i++ )
+				nif->set<ByteVector3>( nif->index( i, 0, iData ), "Normal", snorms[i] );
+			nif->resetState();
 		}
 		
 

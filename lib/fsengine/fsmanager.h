@@ -58,6 +58,9 @@ public:
 	//! Gets the list of globally registered BSA files
 	static QList<FSArchiveFile *> archiveList();
 
+	//! Filters a list of BSAs from a provided list
+	static QStringList filterArchives( const QStringList & list, const QString & folder = "" );
+
 protected:
 	//! Constructor
 	FSManager( QObject * parent = nullptr );

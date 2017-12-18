@@ -1,8 +1,9 @@
 #include "skeleton.h"
-#include "spellbook.h"
 
-#include "nvtristripwrapper.h"
+#include "spellbook.h"
 #include "gl/gltools.h"
+
+#include "lib/nvtristripwrapper.h"
 
 #include <QCheckBox>
 #include <QFile>
@@ -437,7 +438,7 @@ public:
 				triangles = nif->getArray<Triangle>( iData, "Triangles" ).toList();
 			} else if ( iShapeType == "NiTriStrips" ) {
 				// triangulate first (code copied from strippify.cpp)
-				QList<QVector<quint16> > strips;
+				QVector<QVector<quint16> > strips;
 				QModelIndex iPoints = nif->getIndex( iData, "Points" );
 
 				for ( int s = 0; s < nif->rowCount( iPoints ); s++ ) {
@@ -498,7 +499,7 @@ public:
 						partTriangles = nif->getArray<Triangle>( iPart, "Triangles" );
 					} else if ( numStrips != 0 ) {
 						// triangulate first (code copied from strippify.cpp)
-						QList<QVector<quint16> > strips;
+						QVector<QVector<quint16> > strips;
 						QModelIndex iPoints = nif->getIndex( iPart, "Strips" );
 
 						for ( int s = 0; s < nif->rowCount( iPoints ); s++ ) {
@@ -854,7 +855,7 @@ public:
 				}
 
 				// stripify the triangles
-				QList<QVector<quint16> > strips;
+				QVector<QVector<quint16> > strips;
 				int numTriangles = 0;
 
 				if ( make_strips == true ) {
@@ -969,7 +970,7 @@ public:
 
 			return iShape;
 		}
-		catch ( QString err )
+		catch ( QString & err )
 		{
 			if ( !err.isEmpty() )
 				QMessageBox::warning( 0, "NifSkope", err );

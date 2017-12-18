@@ -31,9 +31,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glcontroller.h"
-#include "settings.h"
 
-#include "glscene.h"
+#include "gl/glscene.h"
+#include "model/nifmodel.h"
 
 
 //! @file glcontroller.cpp Controllable management, Interpolation management
@@ -54,6 +54,11 @@ IControllable::~IControllable()
 QString IControllable::getName() const
 {
 	return name;
+}
+
+void IControllable::setController( const NifModel * nif, const QModelIndex & iController )
+{
+	Q_UNUSED( nif ); Q_UNUSED( iController );
 }
 
 void IControllable::clear()
@@ -735,8 +740,7 @@ bool TransformInterpolator::updateTransform( Transform & tm, float time )
 }
 
 
-BSplineTransformInterpolator::BSplineTransformInterpolator( Controller * owner ) : TransformInterpolator( owner ),
-	lTransOff( USHRT_MAX ), lRotateOff( USHRT_MAX ), lScaleOff( USHRT_MAX ), nCtrl( 0 ), degree( 3 )
+BSplineTransformInterpolator::BSplineTransformInterpolator( Controller * owner ) : TransformInterpolator( owner )
 {
 }
 
@@ -750,24 +754,26 @@ bool BSplineTransformInterpolator::update( const NifModel * nif, const QModelInd
 		iBasis  = nif->getBlock( nif->getLink( index, "Basis Data" ) );
 
 		if ( iSpline.isValid() )
-			iControl = nif->getIndex( iSpline, "Short Control Points" );
+			iControl = nif->getIndex( iSpline, "Compact Control Points" );
 
 		if ( iBasis.isValid() )
 			nCtrl = nif->get<uint>( iBasis, "Num Control Points" );
 
-		lTrans  = nif->getIndex( index, "Translation" );
-		lRotate = nif->getIndex( index, "Rotation" );
-		lScale  = nif->getIndex( index, "Scale" );
+		auto trans = nif->getIndex( index, "Transform" );
 
-		lTransOff   = nif->get<uint>( index, "Translation Offset" );
-		lRotateOff  = nif->get<uint>( index, "Rotation Offset" );
-		lScaleOff   = nif->get<uint>( index, "Scale Offset" );
-		lTransMult  = nif->get<float>( index, "Translation Multiplier" );
-		lRotateMult = nif->get<float>( index, "Rotation Multiplier" );
-		lScaleMult  = nif->get<float>( index, "Scale Multiplier" );
-		lTransBias  = nif->get<float>( index, "Translation Bias" );
-		lRotateBias = nif->get<float>( index, "Rotation Bias" );
-		lScaleBias  = nif->get<float>( index, "Scale Bias" );
+		lTrans  = nif->getIndex( trans, "Translation" );
+		lRotate = nif->getIndex( trans, "Rotation" );
+		lScale  = nif->getIndex( trans, "Scale" );
+
+		lTransOff   = nif->get<uint>( index, "Translation Handle" );
+		lRotateOff  = nif->get<uint>( index, "Rotation Handle" );
+		lScaleOff   = nif->get<uint>( index, "Scale Handle" );
+		lTransMult  = nif->get<float>( index, "Translation Half Range" );
+		lRotateMult = nif->get<float>( index, "Rotation Half Range" );
+		lScaleMult  = nif->get<float>( index, "Scale Half Range" );
+		lTransBias  = nif->get<float>( index, "Translation Offset" );
+		lRotateBias = nif->get<float>( index, "Rotation Offset" );
+		lScaleBias  = nif->get<float>( index, "Scale Offset" );
 
 		return true;
 	}

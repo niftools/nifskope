@@ -32,12 +32,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gltexloaders.h"
 
-#include "nifmodel.h"
-#include "dds/dds_api.h"
-#include "dds/DirectDrawSurface.h" // unused? check if upstream has cleaner or documented API yet
-#include "SOIL.h"
+#include "message.h"
+#include "model/nifmodel.h"
+
+#include "dds.h"
 
 #include <QBuffer>
+#include <QByteArray>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -45,6 +46,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QOpenGLContext>
 #include <QString>
 #include <QtEndian>
+
+#ifdef __APPLE__
+#include <gl3.h>
+#include <gl3ext.h>
+#endif
 
 
 /*! @file gltexloaders.cpp
@@ -66,9 +72,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
-#define GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI 0x8837
-#define FOURCC_ATI2 0x32495441
-#define FOURCC_BC5U 0x55354342
+bool extInitialized = false;
+bool extSupported = true;
+bool extStorageSupported = true;
+
+
+#ifndef __APPLE__
+// OpenGL 4.2
+PFNGLTEXSTORAGE2DPROC glTexStorage2D = nullptr;
+#ifdef _WIN32
+PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D = nullptr;
+PFNGLCOMPRESSEDTEXIMAGE2DPROC glCompressedTexImage2D = nullptr;
+#endif
+#endif
+
+#define FOURCC_DXT1 MAKEFOURCC( 'D', 'X', 'T', '1' )
+#define FOURCC_DXT3 MAKEFOURCC( 'D', 'X', 'T', '3' )
+#define FOURCC_DXT5 MAKEFOURCC( 'D', 'X', 'T', '5' )
 
 //! Shift amounts for RGBA conversion
 static const int rgbashift[4] = {
@@ -403,414 +423,6 @@ int texLoadPal( QIODevice & f, int width, int height, int num_mipmaps, int bpp, 
 	return m;
 }
 
-// thanks nvidia for providing the source code to flip dxt images
-
-typedef struct
-{
-	unsigned short col0, col1;
-	unsigned char row[4];
-} DXTColorBlock_t;
-
-typedef struct
-{
-	unsigned short row[4];
-} DXT3AlphaBlock_t;
-
-typedef struct
-{
-	unsigned char alpha0, alpha1;
-	unsigned char row[6];
-} DXT5AlphaBlock_t;
-
-void SwapMem( void * byte1, void * byte2, int size )
-{
-	unsigned char * tmp = (unsigned char *)malloc( sizeof(unsigned char) * size );
-	if ( !tmp )
-		return;
-
-	memcpy( tmp, byte1, size );
-	memcpy( byte1, byte2, size );
-	memcpy( byte2, tmp, size );
-	free( tmp );
-}
-
-inline void SwapChar( unsigned char * x, unsigned char * y )
-{
-	unsigned char z = *x;
-	*x = *y;
-	*y = z;
-}
-
-inline void SwapShort( unsigned short * x, unsigned short * y )
-{
-	unsigned short z = *x;
-	*x = *y;
-	*y = z;
-}
-
-void flipDXT1Blocks( DXTColorBlock_t * Block, int NumBlocks )
-{
-	int i;
-	DXTColorBlock_t * ColorBlock = Block;
-
-	for ( i = 0; i < NumBlocks; i++ ) {
-		SwapChar( &ColorBlock->row[0], &ColorBlock->row[3] );
-		SwapChar( &ColorBlock->row[1], &ColorBlock->row[2] );
-		ColorBlock++;
-	}
-}
-
-void flipDXT3Blocks( DXTColorBlock_t * Block, int NumBlocks )
-{
-	int i;
-	DXTColorBlock_t * ColorBlock = Block;
-	DXT3AlphaBlock_t * AlphaBlock;
-
-	for ( i = 0; i < NumBlocks; i++ ) {
-		AlphaBlock = (DXT3AlphaBlock_t *)ColorBlock;
-		SwapShort( &AlphaBlock->row[0], &AlphaBlock->row[3] );
-		SwapShort( &AlphaBlock->row[1], &AlphaBlock->row[2] );
-		ColorBlock++;
-		SwapChar( &ColorBlock->row[0], &ColorBlock->row[3] );
-		SwapChar( &ColorBlock->row[1], &ColorBlock->row[2] );
-		ColorBlock++;
-	}
-}
-
-void flipDXT5Alpha( DXT5AlphaBlock_t * Block )
-{
-	unsigned long * Bits, Bits0 = 0, Bits1 = 0;
-
-	memcpy( &Bits0, &Block->row[0], sizeof(unsigned char) * 3 );
-	memcpy( &Bits1, &Block->row[3], sizeof(unsigned char) * 3 );
-
-	Bits   = ( (unsigned long *)&(Block->row[0]) );
-	*Bits &= 0xff000000;
-	*Bits |= (unsigned char)(Bits1 >> 12) & 0x00000007;
-	*Bits |= (unsigned char)( (Bits1 >> 15) & 0x00000007 ) << 3;
-	*Bits |= (unsigned char)( (Bits1 >> 18) & 0x00000007 ) << 6;
-	*Bits |= (unsigned char)( (Bits1 >> 21) & 0x00000007 ) << 9;
-	*Bits |= (unsigned char)(Bits1 & 0x00000007) << 12;
-	*Bits |= (unsigned char)( (Bits1 >> 3) & 0x00000007 ) << 15;
-	*Bits |= (unsigned char)( (Bits1 >> 6) & 0x00000007 ) << 18;
-	*Bits |= (unsigned char)( (Bits1 >> 9) & 0x00000007 ) << 21;
-
-	Bits   = ( (unsigned long *)&(Block->row[3]) );
-	*Bits &= 0xff000000;
-	*Bits |= (unsigned char)(Bits0 >> 12) & 0x00000007;
-	*Bits |= (unsigned char)( (Bits0 >> 15) & 0x00000007 ) << 3;
-	*Bits |= (unsigned char)( (Bits0 >> 18) & 0x00000007 ) << 6;
-	*Bits |= (unsigned char)( (Bits0 >> 21) & 0x00000007 ) << 9;
-	*Bits |= (unsigned char)(Bits0 & 0x00000007) << 12;
-	*Bits |= (unsigned char)( (Bits0 >> 3) & 0x00000007 ) << 15;
-	*Bits |= (unsigned char)( (Bits0 >> 6) & 0x00000007 ) << 18;
-	*Bits |= (unsigned char)( (Bits0 >> 9) & 0x00000007 ) << 21;
-}
-
-void flipDXT5Blocks( DXTColorBlock_t * Block, int NumBlocks )
-{
-	DXTColorBlock_t * ColorBlock = Block;
-	DXT5AlphaBlock_t * AlphaBlock;
-	int i;
-
-	for ( i = 0; i < NumBlocks; i++ ) {
-		AlphaBlock = (DXT5AlphaBlock_t *)ColorBlock;
-
-		flipDXT5Alpha( AlphaBlock );
-		ColorBlock++;
-
-		SwapChar( &ColorBlock->row[0], &ColorBlock->row[3] );
-		SwapChar( &ColorBlock->row[1], &ColorBlock->row[2] );
-		ColorBlock++;
-	}
-}
-
-//! Flip DXT blocks vertically (not used in software decompression)
-void flipDXT( GLenum glFormat, int width, int height, unsigned char * image )
-{
-	int linesize, j;
-
-	DXTColorBlock_t * top;
-	DXTColorBlock_t * bottom;
-	int xblocks = width / 4;
-	int yblocks = height / 4;
-
-	switch ( glFormat ) {
-	case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-		linesize = xblocks * 8;
-
-		for ( j = 0; j < (yblocks >> 1); j++ ) {
-			top = (DXTColorBlock_t *)(image + j * linesize);
-			bottom = (DXTColorBlock_t *)( image + ( ( (yblocks - j) - 1 ) * linesize ) );
-			flipDXT1Blocks( top, xblocks );
-			flipDXT1Blocks( bottom, xblocks );
-			SwapMem( bottom, top, linesize );
-		}
-		break;
-	case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-		linesize = xblocks * 16;
-
-		for ( j = 0; j < (yblocks >> 1); j++ ) {
-			top = (DXTColorBlock_t *)(image + j * linesize);
-			bottom = (DXTColorBlock_t *)( image + ( ( (yblocks - j) - 1 ) * linesize ) );
-			flipDXT3Blocks( top, xblocks );
-			flipDXT3Blocks( bottom, xblocks );
-			SwapMem( bottom, top, linesize );
-		}
-		break;
-	case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-		linesize = xblocks * 16;
-
-		for ( j = 0; j < (yblocks >> 1); j++ ) {
-			top = (DXTColorBlock_t *)(image + j * linesize);
-			bottom = (DXTColorBlock_t *)( image + ( ( (yblocks - j) - 1 ) * linesize ) );
-			flipDXT5Blocks( top, xblocks );
-			flipDXT5Blocks( bottom, xblocks );
-			SwapMem( bottom, top, linesize );
-		}
-		break;
-	default:
-		return;
-	}
-}
-
-/*! Load a DXT compressed DDS texture from file
- *
- * @param f			File to load from
- * @param null		Format
- * @param null		Block size
- * @param null		Width
- * @param null		Height
- * @param mipmaps	The number of mipmaps to read
- * @param null		Flip
- * @return			The total number of mipmaps
- */
-GLuint texLoadDXT( QIODevice & f, GLenum glFormat, int /*blockSize*/, quint32 /*width*/, quint32 /*height*/, quint32 mipmaps, bool /*flipV*/ = false )
-{
-/*
-#ifdef WIN32
-    if ( !_glCompressedTexImage2D )
-    {
-#endif
-*/
-	// load the pixels
-	f.seek( 0 );
-	QByteArray bytes = f.readAll();
-	GLuint m = 0;
-
-	while ( m < mipmaps ) {
-		// load face 0, mipmap m
-		Image * img = load_dds( (unsigned char *)bytes.data(), bytes.size(), 0, m );
-
-		if ( !img )
-			return (0);
-
-		// convert texture to OpenGL RGBA format
-		unsigned int w = img->width();
-		unsigned int h = img->height();
-		GLubyte * pixels = new GLubyte[w * h * 4];
-		Color32 * src = img->pixels();
-		GLubyte * dst = pixels;
-
-		//qDebug() << "flipV = " << flipV;
-		if ( glFormat == GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI ) {
-			for ( quint32 y = 0; y < h; y++ ) {
-				for ( quint32 x = 0; x < w; x++ ) {
-					*dst++ = src->g;
-					*dst++ = src->r;
-					*dst++ = 255 - src->b;
-					*dst++ = 255;
-					src++;
-				}
-			}
-		} else {
-			for ( quint32 y = 0; y < h; y++ ) {
-				for ( quint32 x = 0; x < w; x++ ) {
-					*dst++ = src->r;
-					*dst++ = src->g;
-					*dst++ = src->b;
-					*dst++ = src->a;
-					src++;
-				}
-			}
-		}
-
-		delete img;
-
-		// load the texture into OpenGL
-		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
-		delete [] pixels;
-	}
-
-	m = generateMipMaps( m );
-	return m;
-/*
-#ifdef WIN32
-    }
-    GLubyte * pixels = (GLubyte *) malloc( ( ( width + 3 ) / 4 ) * ( ( height + 3 ) / 4 ) * blockSize );
-    unsigned int w = width, h = height, s;
-    unsigned int m = 0;
-
-    while ( m < mipmaps )
-    {
-        w = width >> m;
-        h = height >> m;
-
-        if ( w == 0 ) w = 1;
-        if ( h == 0 ) h = 1;
-
-        s = ((w+3)/4) * ((h+3)/4) * blockSize;
-
-        if ( f.read( (char *) pixels, s ) != s )
-        {
-            free( pixels );
-            throw QString ( "unexpected EOF" );
-        }
-
-        if ( flipV )
-            flipDXT( glFormat, w, h, pixels );
-
-        _glCompressedTexImage2D( GL_TEXTURE_2D, m++, glFormat, w, h, 0, s, pixels );
-
-        if ( w == 1 && h == 1 )
-            break;
-    }
-
-    if ( w > 1 || h > 1 )
-        return 1;
-    else
-        return m;
-#endif
-*/
-}
-
-//! Load a (possibly compressed) dds texture.
-GLuint texLoadDDS( QIODevice & f, QString & texformat )
-{
-	char tag[4];
-	f.read( &tag[0], 4 );
-	DDSFormat ddsHeader;
-
-	if ( strncmp( tag, "DDS ", 4 ) != 0 || f.read( (char *)&ddsHeader, sizeof(DDSFormat) ) != sizeof( DDSFormat ) )
-		throw QString( "not a DDS file" );
-
-	texformat = "DDS";
-
-	if ( !( ddsHeader.dwFlags & DDSD_MIPMAPCOUNT ) )
-		ddsHeader.dwMipMapCount = 1;
-
-	if ( !( isPowerOfTwo( ddsHeader.dwWidth ) && isPowerOfTwo( ddsHeader.dwHeight ) ) )
-		throw QString( "image dimensions must be power of two" );
-
-	f.seek( ddsHeader.dwSize + 4 );
-
-	if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
-		int blockSize = 8;
-		GLenum glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-
-		switch ( ddsHeader.ddsPixelFormat.dwFourCC ) {
-		case FOURCC_DXT1:
-			glFormat   = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-			blockSize  = 8;
-			texformat += " (DXT1)";
-			break;
-		case FOURCC_DXT3:
-			glFormat   = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			blockSize  = 16;
-			texformat += " (DXT3)";
-			break;
-		case FOURCC_DXT5:
-			glFormat   = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-			blockSize  = 16;
-			texformat += " (DXT5)";
-			break;
-		case FOURCC_ATI2:
-		case FOURCC_BC5U:
-			glFormat = GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI;
-			blockSize = 16;
-			texformat += " (ATI2)";
-			break;
-		default:
-			throw QString( "unknown texture compression" );
-		}
-
-		return texLoadDXT( f, glFormat, blockSize, ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount );
-	} else if ( ddsHeader.ddsPixelFormat.dwFlags & 0x20 ) {
-		// DDPF_PALETTEINDEXED8
-		texformat += " (PAL)";
-
-		// Palette format: 256 RGBA quads (1024 bytes), starting after header
-
-		quint32 colormap[256];
-
-		if ( f.read( (char *)colormap, 4 * 256 ) != 4 * 256 )
-			throw QString( "unexpected EOF" );
-
-		return texLoadPal( f, ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.dwMipMapCount,
-			ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
-			(const quint32 *)colormap, false, false, false );
-	} else {
-		texformat += " (RAW)";
-
-		if ( ddsHeader.ddsPixelFormat.dwRMask != 0 && ddsHeader.ddsPixelFormat.dwGMask == 0 && ddsHeader.ddsPixelFormat.dwBMask == 0 ) {
-			// fixup greyscale
-			ddsHeader.ddsPixelFormat.dwGMask = ddsHeader.ddsPixelFormat.dwRMask;
-			ddsHeader.ddsPixelFormat.dwBMask = ddsHeader.ddsPixelFormat.dwRMask;
-		}
-
-		return texLoadRaw( f, ddsHeader.dwWidth, ddsHeader.dwHeight,
-			ddsHeader.dwMipMapCount, ddsHeader.ddsPixelFormat.dwBPP, ddsHeader.ddsPixelFormat.dwBPP / 8,
-			&ddsHeader.ddsPixelFormat.dwRMask );
-	}
-}
-
-/*! Load a DXT compressed texture
- *
- * @param hdr		Description of the texture
- * @param pixels	The pixel data
- * @param size		The size of the texture
- * @return			The total number of mipmaps
- */
-GLuint texLoadDXT( DDSFormat & hdr, const quint8 * pixels, uint size )
-{
-	int m = 0;
-
-	while ( m < (int)hdr.dwMipMapCount ) {
-		// load face 0, mipmap m
-		Image * img = load_dds( pixels, (int)size, 0, m, &hdr );
-
-		if ( !img )
-			return (0);
-
-		// convert texture to OpenGL RGBA format
-		unsigned int w = img->width();
-		unsigned int h = img->height();
-		GLubyte * pixels = new GLubyte[w * h * 4];
-		Color32 * src = img->pixels();
-		GLubyte * dst = pixels;
-
-		//qDebug() << "flipV = " << flipV;
-		for ( quint32 y = 0; y < h; y++ ) {
-			for ( quint32 x = 0; x < w; x++ ) {
-				*dst++ = src->r;
-				*dst++ = src->g;
-				*dst++ = src->b;
-				*dst++ = src->a;
-				src++;
-			}
-		}
-
-		delete img;
-		// load the texture into OpenGL
-		glTexImage2D( GL_TEXTURE_2D, m++, 4, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
-		delete [] pixels;
-	}
-
-	m = generateMipMaps( m );
-	return m;
-}
-
-
 
 // TGA constants
 // Note that TGA_X_RLE = TGA_X + 8
@@ -824,10 +436,13 @@ GLuint texLoadDXT( DDSFormat & hdr, const quint8 * pixels, uint size )
 #define TGA_GREY_RLE     11
 
 //! Load a TGA texture.
-GLuint texLoadTGA( QIODevice & f, QString & texformat )
+GLuint texLoadTGA( QIODevice & f, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & id )
 {
 	// see http://en.wikipedia.org/wiki/Truevision_TGA for a lot of this
 	texformat = "TGA";
+	target = GL_TEXTURE_2D;
+
+	glBindTexture( target, id );
 
 	// read in tga header
 	quint8 hdr[18];
@@ -844,8 +459,8 @@ GLuint texLoadTGA( QIODevice & f, QString & texformat )
 	//quint8 alphaDepth  = hdr[17] & 15;
 	bool flipV = !( hdr[17] & 32 );
 	bool flipH = hdr[17] & 16;
-	quint16 width  = hdr[12] + 256 * hdr[13];
-	quint16 height = hdr[14] + 256 * hdr[15];
+	width  = hdr[12] + 256 * hdr[13];
+	height = hdr[14] + 256 * hdr[15];
 
 	if ( !( isPowerOfTwo( width ) && isPowerOfTwo( height ) ) )
 		throw QString( "image dimensions must be power of two" );
@@ -962,7 +577,7 @@ quint16 get16( quint8 * x )
 }
 
 //! Load a BMP texture.
-GLuint texLoadBMP( QIODevice & f, QString & texformat )
+GLuint texLoadBMP( QIODevice & f, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & id )
 {
 	// read in bmp header
 	quint8 hdr[54];
@@ -972,9 +587,12 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 		throw QString( "not a BMP file" );
 
 	texformat = "BMP";
+	target = GL_TEXTURE_2D;
 
-	unsigned int width  = get32( &hdr[18] );
-	unsigned int height = get32( &hdr[22] );
+	glBindTexture( target, id );
+
+	width  = get32( &hdr[18] );
+	height = get32( &hdr[22] );
 	unsigned int bpp = get16( &hdr[28] );
 	unsigned int compression = get32( &hdr[30] );
 	unsigned int offset = get32( &hdr[10] );
@@ -992,16 +610,6 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 		}
 
 		break;
-	// Since when can a BMP contain DXT compressed textures?
-	case FOURCC_DXT5:
-		texformat += " (DXT5)";
-		return texLoadDXT( f, compression, width, height, 1, true );
-	case FOURCC_DXT3:
-		texformat += " (DXT3)";
-		return texLoadDXT( f, compression, width, height, 1, true );
-	case FOURCC_DXT1:
-		texformat += " (DXT1)";
-		return texLoadDXT( f, compression, width, height, 1, true );
 	}
 
 	throw QString( "unknown image sub format" );
@@ -1015,8 +623,40 @@ GLuint texLoadBMP( QIODevice & f, QString & texformat )
 	return 0;
 }
 
+GLuint texLoadDDS( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id )
+{
+	GLuint result = 0;
+	gli::texture texture;
+	if ( extStorageSupported ) {
+		texture = load_if_valid( data.constData(), data.size() );
+		if ( !texture.empty() )
+			result = GLI_create_texture( texture, target, id );
+	} else if ( glCompressedTexImage2D ) {
+		texture = load_if_valid( data.constData(), data.size() );
+		if ( !texture.empty() )
+			result = GLI_create_texture_fallback( texture, target, id );
+	}
+
+	if ( result ) {
+		id = result;
+		mipmaps = (GLuint)texture.levels();
+	} else {
+		mipmaps = 0;
+		QString file = filepath;
+		file.replace( '/', "\\" );
+		Message::append( "One or more textures failed to load.",
+						 QString( "'%1' is corrupt or unsupported." ).arg( file )
+		);
+	}
+
+	if ( !texture.empty() )
+		texture.clear();
+
+	return mipmaps;
+}
+
 // (public function, documented in gltexloaders.h)
-bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GLuint & height, GLuint & mipmaps )
+bool texLoad( const QModelIndex & iData, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id )
 {
 	bool ok = false;
 	const NifModel * nif = qobject_cast<const NifModel *>( iData.model() );
@@ -1043,14 +683,10 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 
 		if ( iPixelData.isValid() ) {
-			QModelIndex iFaceData = iPixelData.child( 0, 0 );
-
-			if ( iFaceData.isValid() ) {
-				if ( QByteArray * pdata = nif->get<QByteArray *>( iFaceData.child( 0, 0 ) ) ) {
-					buf.setData( *pdata );
-					buf.open( QIODevice::ReadOnly );
-					buf.seek( 0 );
-				}
+			if ( QByteArray * pdata = nif->get<QByteArray *>( iPixelData.child(0, 0) ) ) {
+				buf.setData( *pdata );
+				buf.open( QIODevice::ReadOnly );
+				buf.seek( 0 );
 			}
 		}
 
@@ -1094,21 +730,19 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 			}
 		}
 
-		DDSFormat hdr;
-		hdr.dwSize   = 0;
-		hdr.dwFlags  = DDPF_FOURCC;
+		DDS_HEADER hdr = {};
+		hdr.dwSize = sizeof( hdr );
+		hdr.dwHeaderFlags = DDS_HEADER_FLAGS_TEXTURE | DDS_HEADER_FLAGS_LINEARSIZE | DDS_HEADER_FLAGS_MIPMAP;
 		hdr.dwHeight = height;
-		hdr.dwWidth  = width;
-		hdr.dwLinearSize  = 0;
+		hdr.dwWidth = width;
 		hdr.dwMipMapCount = mipmaps;
-		hdr.ddsPixelFormat.dwSize   = 0;
-		hdr.ddsPixelFormat.dwFlags  = DDPF_FOURCC;
-		hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT1;
-		hdr.ddsPixelFormat.dwBPP = bpp;
-		hdr.ddsPixelFormat.dwRMask = mask[0];
-		hdr.ddsPixelFormat.dwGMask = mask[1];
-		hdr.ddsPixelFormat.dwBMask = mask[2];
-		hdr.ddsPixelFormat.dwAMask = mask[3];
+		hdr.ddspf.dwFlags = DDS_FOURCC;
+		hdr.ddspf.dwSize = sizeof( DDS_PIXELFORMAT );
+		hdr.ddspf.dwRBitMask = mask[0];
+		hdr.ddspf.dwGBitMask = mask[1];
+		hdr.ddspf.dwBBitMask = mask[2];
+		hdr.ddspf.dwRBitMask = mask[3];
+		hdr.dwSurfaceFlags = DDS_SURFACE_FLAGS_TEXTURE | DDS_SURFACE_FLAGS_MIPMAP;
 
 		texformat = "NIF";
 
@@ -1135,11 +769,11 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 
 					if ( nmap > 0 && iPaletteArray.isValid() ) {
 						for ( uint i = 0; i < nmap; ++i ) {
-							QModelIndex iRGBElem = iPaletteArray.child( i, 0 );
-							quint8 r = nif->get<quint8>( iRGBElem, "r" );
-							quint8 g = nif->get<quint8>( iRGBElem, "g" );
-							quint8 b = nif->get<quint8>( iRGBElem, "b" );
-							quint8 a = nif->get<quint8>( iRGBElem, "a" );
+							auto color = nif->get<ByteColor4>( iPaletteArray.child( i, 0 ) ).toQColor();
+							quint8 r = color.red();
+							quint8 g = color.green();
+							quint8 b = color.blue();
+							quint8 a = color.alpha();
 							map[i] = ( (quint32)( ( r | ( (quint16)g << 8 ) ) | ( ( (quint32)b ) << 16 ) | ( ( (quint32)a ) << 24 ) ) );
 						}
 					}
@@ -1150,24 +784,33 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 			break;
 		case 4: //PX_FMT_DXT1
 			texformat += " (DXT1)";
-			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT1;
-			ok = ( 0 != texLoadDXT( hdr, (const unsigned char *)buf.data().data(), buf.size() ) );
+			hdr.ddspf.dwFourCC = FOURCC_DXT1;
+			hdr.dwPitchOrLinearSize = width * height / 2;
 			break;
-		case 5: //PX_FMT_DXT5
+		case 5: //PX_FMT_DXT3
+			texformat += " (DXT3)";
+			hdr.ddspf.dwFourCC = FOURCC_DXT3;
+			hdr.dwPitchOrLinearSize = width * height;
+			break;
+		case 6: //PX_FMT_DXT5
 			texformat += " (DXT5)";
-			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT5;
-			ok = ( 0 != texLoadDXT( hdr, (const unsigned char *)buf.data().data(), buf.size() ) );
-			break;
-		case 6: //PX_FMT_DXT5_ALT
-			texformat += " (DXT5ALT)";
-			hdr.ddsPixelFormat.dwFourCC = FOURCC_DXT5;
-			ok = ( 0 != texLoadDXT( hdr, (const unsigned char *)buf.data().data(), buf.size() ) );
+			hdr.ddspf.dwFourCC = FOURCC_DXT5;
+			hdr.dwPitchOrLinearSize = width * height;
 			break;
 		}
 
-		if ( ok ) {
-			glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
-			glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+		if ( format >= 4 && format <= 6 ) {
+			// Create and prepend DDS header
+			char dds[sizeof(hdr)];
+			memcpy( dds, &hdr, sizeof(hdr) );
+
+			buf.buffer().prepend( QByteArray::fromRawData( dds, sizeof( hdr ) ) );
+			buf.buffer().prepend( QByteArray::fromStdString( "DDS " ) );
+
+			mipmaps = texLoadDDS( QString( "[%1] NiPixelData" ).arg( nif->getBlockNumber( iData ) ), 
+								  texformat, target, width, height, mipmaps, buf.buffer(), id );
+
+			ok = (mipmaps > 0);
 		}
 	}
 
@@ -1175,9 +818,12 @@ bool texLoad( const QModelIndex & iData, QString & texformat, GLuint & width, GL
 }
 
 //! Load NiPixelData or NiPersistentSrcTextureRendererData from a NifModel
-GLuint texLoadNIF( QIODevice & f, QString & texformat )
+GLuint texLoadNIF( QIODevice & f, QString & texformat, GLenum & target, GLuint & width, GLuint & height, GLuint & id )
 {
 	GLuint mipmaps = 0;
+	target = GL_TEXTURE_2D;
+
+	glBindTexture( target, id );
 
 	NifModel pix;
 
@@ -1187,142 +833,375 @@ GLuint texLoadNIF( QIODevice & f, QString & texformat )
 	QPersistentModelIndex iRoot;
 
 	for ( const auto l : pix.getRootLinks() ) {
-		QModelIndex iData = pix.getBlock( l, "ATextureRenderData" );
+		QModelIndex iData = pix.getBlock( l, "NiPixelFormat" );
 
 		if ( !iData.isValid() || iData == QModelIndex() )
 			throw QString( "this is not a normal .nif file; there should be only pixel data as root blocks" );
 
-		GLuint width, height;
-		texLoad( iData, texformat, width, height, mipmaps );
+		texLoad( iData, texformat, target, width, height, mipmaps, id );
 	}
 
 	return mipmaps;
 }
 
-
-bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps )
+//! Initialize the GL functions necessary for texture loading
+void initializeTextureLoaders( const QOpenGLContext * context )
 {
-	return texLoad( filepath, format, width, height, mipmaps, *(new QByteArray()) );
+	if ( !extInitialized ) {
+#ifndef __APPLE__
+		glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)context->getProcAddress( "glTexStorage2D" );
+#ifdef _WIN32
+		glCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)context->getProcAddress( "glCompressedTexSubImage2D" );
+		glCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)context->getProcAddress( "glCompressedTexImage2D" );
+#endif
+#endif
+		if ( !glTexStorage2D || !glCompressedTexSubImage2D )
+			extStorageSupported = false;
+
+		extInitialized = true;
+	}
 }
 
-bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data )
+//! Create texture with glTexStorage2D using GLI
+GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id )
 {
-	width = height = mipmaps = 0;
+	if ( !extStorageSupported )
+		return 0;
 
-	if ( data.isEmpty() ) {
-		QFile tmpF( filepath );
+	gli::gl glProfile( gli::gl::PROFILE_GL33 );
+	gli::gl::format const format = glProfile.translate( texture.format(), texture.swizzles() );
+	target = glProfile.translate( texture.target() );
 
-		if ( !tmpF.open( QIODevice::ReadOnly ) )
-			throw QString( "could not open file" );
+	if ( !id )
+		glGenTextures( 1, &id );
+	glBindTexture( target, id );
+	glTexParameteri( target, GL_TEXTURE_BASE_LEVEL, 0 );
+	glTexParameteri( target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(texture.levels() - 1) );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_R, format.Swizzles[0] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_G, format.Swizzles[1] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_B, format.Swizzles[2] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_A, format.Swizzles[3] );
 
-		data = tmpF.readAll();
+	glm::tvec3<GLsizei> const textureExtent( texture.extent() );
 
-		tmpF.close();
-
-		if ( data.isEmpty() )
-			return false;
-	}
-
-	QBuffer f( &data );
-
-	if ( !f.open( QIODevice::ReadOnly ) )
-		throw QString( "could not open buffer" );
-
-	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
-		mipmaps = texLoadDDS( f, format );
-	else if ( filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
-		mipmaps = texLoadTGA( f, format );
-	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
-		mipmaps = texLoadBMP( f, format );
-	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) || filepath.endsWith( ".texcache", Qt::CaseInsensitive ) )
-		mipmaps = texLoadNIF( f, format );
-	else
-		throw QString( "unknown texture format" );
-
-	f.close();
-	data.clear();
-
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
-	glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
-
-	return mipmaps > 0;
-}
-
-
-bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id )
-{
-	Q_UNUSED( format );
-
-	width = height = mipmaps = 0;
-
-	if ( data.isEmpty() ) {
-		QFile tmpF( filepath );
-
-		if ( !tmpF.open( QIODevice::ReadOnly ) )
-			throw QString( "could not open file" );
-
-		data = tmpF.readAll();
-
-		tmpF.close();
-
-		if ( data.isEmpty() )
-			return false;
-	}
-
-	bool success = false;
-	GLuint result;
-
-	QBuffer f( &data );
-	
-	if ( !f.open( QIODevice::ReadOnly ) )
-		throw QString( "could not open buffer" );
-	
-	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
-
-		result = SOIL_load_OGL_single_cubemap_from_memory(
-			(const unsigned char *)f.data().constData(),
-			f.data().size(),
-			SOIL_DDS_CUBEMAP_FACE_ORDER,
-			SOIL_LOAD_AUTO,
-			id,
-			SOIL_FLAG_MIPMAPS
+	switch ( texture.target() ) {
+	case gli::TARGET_2D:
+	case gli::TARGET_CUBE:
+		glTexStorage2D( target, static_cast<GLint>(texture.levels()), format.Internal,
+						textureExtent.x, textureExtent.y
 		);
-
-		if ( result == id ) {
-			success = true;
-
-			// Just fudge the mipmaps number
-			mipmaps = 6;
-		}
-	} else {
-		throw QString( "unsupported texture format" );
+		break;
+	default:
+		return 0;
 	}
-		
+
+	for ( size_t layer = 0; layer < texture.layers(); ++layer )
+	for ( size_t face = 0; face < texture.faces(); ++face )
+	for ( size_t level = 0; level < texture.levels(); ++level ) {
+		glm::tvec3<GLsizei> textureLevelExtent( texture.extent( level ) );
+		switch ( texture.target() ) {
+		case gli::TARGET_2D:
+		case gli::TARGET_CUBE:
+			if ( gli::is_compressed( texture.format() ) )
+				glCompressedTexSubImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face)
+					: target,
+					static_cast<GLint>(level),
+					0, 0,
+					textureLevelExtent.x, textureLevelExtent.y,
+					format.Internal, static_cast<GLsizei>(texture.size( level )),
+					texture.data( layer, face, level ) );
+			else
+				glTexSubImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face)
+					: target,
+					static_cast<GLint>(level),
+					0, 0,
+					textureLevelExtent.x, textureLevelExtent.y,
+					format.External, format.Type,
+					texture.data( layer, face, level ) );
+			break;
+		default:
+			return 0;
+		}
+	}
+
+	return id;
+}
+
+//! Fallback for systems that do not have glTexStorage2D
+GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLuint& id )
+{
+	if ( texture.empty() )
+		return 0;
+
+	gli::gl GL( gli::gl::PROFILE_GL33 );
+	gli::gl::format const fmt = GL.translate( texture.format(), texture.swizzles() );
+	target = GL.translate( texture.target() );
+
+	if ( !id )
+		glGenTextures( 1, &id );
+	glBindTexture( target, id );
+	// Base and max level are not supported by OpenGL ES 2.0
+	glTexParameteri( target, GL_TEXTURE_BASE_LEVEL, 0 );
+	glTexParameteri( target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(texture.levels() - 1) );
+	// Texture swizzle is not supported by OpenGL ES 2.0 and OpenGL 3.2
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_R, fmt.Swizzles[0] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_G, fmt.Swizzles[1] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_B, fmt.Swizzles[2] );
+	glTexParameteri( target, GL_TEXTURE_SWIZZLE_A, fmt.Swizzles[3] );
+
+	for ( std::size_t layer = 0; layer < texture.layers(); ++layer )
+	for ( std::size_t face = 0; face < texture.faces(); ++face )
+	for ( std::size_t level = 0; level < texture.levels(); ++level ) {
+		glm::tvec3<GLsizei> extent( texture.extent( level ) );
+		switch ( texture.target() ) {
+		case gli::TARGET_2D:
+		case gli::TARGET_CUBE:
+			if ( gli::is_compressed( texture.format() ) )
+				glCompressedTexImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face) 
+					: target,
+					static_cast<GLint>(level),
+					fmt.Internal,
+					extent.x, extent.y,
+					0,
+					static_cast<GLsizei>(texture.size( level )),
+					texture.data( layer, face, level ) );
+			else
+				glTexImage2D(
+					gli::is_target_cube( texture.target() ) ? static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face)
+					: target,
+					static_cast<GLint>(level),
+					fmt.Internal,
+					extent.x, extent.y,
+					0,
+					fmt.External, fmt.Type,
+					texture.data( layer, face, level ) );
+			break;
+		default:
+			return 0;
+		}
+	}
+	return id;
+}
+
+//! Rewrite of gli::load_dds to not crash on invalid textures
+gli::texture load_if_valid( const char * data, unsigned int size )
+{
+	using namespace gli;
+	using namespace gli::detail;
+
+	if ( strncmp( data, FOURCC_DDS, 4 ) != 0 || size < sizeof( dds_header ) )
+		return texture();
+
+	std::size_t Offset = sizeof( FOURCC_DDS );
+
+	dds_header const & Header( *reinterpret_cast<dds_header const *>(data + Offset) );
+	Offset += sizeof( dds_header );
+
+	dds_header10 Header10;
+	if ( (Header.Format.flags & dx::DDPF_FOURCC) && (Header.Format.fourCC == dx::D3DFMT_DX10 || Header.Format.fourCC == dx::D3DFMT_GLI1) ) {
+		std::memcpy( &Header10, data + Offset, sizeof( Header10 ) );
+		Offset += sizeof( dds_header10 );
+	}
+
+	dx DX;
+
+	format Format( static_cast<format>(FORMAT_INVALID) );
+	if ( (Header.Format.flags & (dx::DDPF_RGB | dx::DDPF_ALPHAPIXELS | dx::DDPF_ALPHA | dx::DDPF_YUV | dx::DDPF_LUMINANCE)) && Format == static_cast<format>(gli::FORMAT_INVALID) && Header.Format.bpp != 0 ) {
+		switch ( Header.Format.bpp ) {
+		default:
+			break;
+		case 8:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG4_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RG4_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_L8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_L8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_A8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_A8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_R8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG3B2_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RG3B2_UNORM_PACK8;
+				break;
+			}
+		case 16:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGBA4_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_RGBA4_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGRA4_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_BGRA4_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R5G6B5_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_R5G6B5_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_B5G6R5_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_B5G6R5_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGB5A1_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_RGB5A1_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGR5A1_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_BGR5A1_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_LA8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_LA8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RG8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_L16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_L16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_A16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_A16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_R16_UNORM_PACK16;
+				break;
+			}
+		case 24:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGB8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RGB8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGR8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_BGR8_UNORM_PACK8;
+				break;
+			}
+		case 32:
+			{
+				if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGR8_UNORM_PACK32 ).Mask ) ) )
+					Format = FORMAT_BGR8_UNORM_PACK32;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_BGRA8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_BGRA8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGBA8_UNORM_PACK8 ).Mask ) ) )
+					Format = FORMAT_RGBA8_UNORM_PACK8;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RGB10A2_UNORM_PACK32 ).Mask ) ) )
+					Format = FORMAT_RGB10A2_UNORM_PACK32;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_LA16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_LA16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_RG16_UNORM_PACK16 ).Mask ) ) )
+					Format = FORMAT_RG16_UNORM_PACK16;
+				else if ( glm::all( glm::equal( Header.Format.Mask, DX.translate( FORMAT_R32_SFLOAT_PACK32 ).Mask ) ) )
+					Format = FORMAT_R32_SFLOAT_PACK32;
+				break;
+			}
+		}
+	} else if ( (Header.Format.flags & dx::DDPF_FOURCC) && (Header.Format.fourCC != dx::D3DFMT_DX10) && (Header.Format.fourCC != dx::D3DFMT_GLI1) && (Format == static_cast<format>(gli::FORMAT_INVALID)) ) {
+		dx::d3dfmt const FourCC = remap_four_cc( Header.Format.fourCC );
+		Format = DX.find( FourCC );
+	} else if ( Header.Format.fourCC == dx::D3DFMT_DX10 || Header.Format.fourCC == dx::D3DFMT_GLI1 )
+		Format = DX.find( Header.Format.fourCC, Header10.Format );
+
+	if ( Format == static_cast<format>(FORMAT_INVALID) )
+		return texture();
+
+	size_t const MipMapCount = (Header.Flags & DDSD_MIPMAPCOUNT) ? Header.MipMapLevels : 1;
+	size_t FaceCount = 1;
+	if ( Header.CubemapFlags & DDSCAPS2_CUBEMAP )
+		FaceCount = int( glm::bitCount( Header.CubemapFlags & DDSCAPS2_CUBEMAP_ALLFACES ) );
+
+	size_t DepthCount = 1;
+	if ( Header.CubemapFlags & DDSCAPS2_VOLUME )
+		DepthCount = Header.Depth;
+
+	texture Texture(
+		get_target( Header, Header10 ), Format,
+		texture::extent_type( Header.Width, Header.Height, DepthCount ),
+		std::max<texture::size_type>( Header10.ArraySize, 1 ), FaceCount, MipMapCount );
+
+	std::size_t const SourceSize = Offset + Texture.size();
+	if ( SourceSize > size )
+		return texture();
+
+	std::memcpy( Texture.data(), data + Offset, Texture.size() );
+
+	return Texture;
+}
+
+
+bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id)
+{
+	return texLoad( filepath, format, target, width, height, mipmaps, *(new QByteArray()), id );
+}
+
+bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id )
+{
+	width = height = mipmaps = 0;
+
+	if ( data.isEmpty() ) {
+		QFile tmpF( filepath );
+
+		if ( !tmpF.open( QIODevice::ReadOnly ) )
+			throw QString( "could not open file" );
+
+		data = tmpF.readAll();
+
+		tmpF.close();
+
+		if ( data.isEmpty() )
+			return false;
+	}
+
+	QBuffer f( &data );
+	if ( !f.open( QIODevice::ReadWrite ) )
+		throw QString( "could not open buffer" );
+
+	bool isSupported = true;
+	if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) )
+		mipmaps = texLoadDDS( filepath, format, target, width, height, mipmaps, data, id );
+	else if ( filepath.endsWith( ".tga", Qt::CaseInsensitive ) )
+		mipmaps = texLoadTGA( f, format, target, width, height, id );
+	else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) )
+		mipmaps = texLoadBMP( f, format, target, width, height, id );
+	else if ( filepath.endsWith( ".nif", Qt::CaseInsensitive ) || filepath.endsWith( ".texcache", Qt::CaseInsensitive ) )
+		mipmaps = texLoadNIF( f, format, target, width, height, id );
+	else
+		isSupported = false;
 	
 	f.close();
 	data.clear();
 
-	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
-	glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+	if ( mipmaps == 0 )
+		isSupported = false;
 
-	return success;
+	if ( !target )
+		target = GL_TEXTURE_2D;
+
+	if ( isSupported ) {
+		GLenum t = target;
+		if ( target == GL_TEXTURE_CUBE_MAP )
+			t = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+
+		glGetTexLevelParameteriv( t, 0, GL_TEXTURE_WIDTH, (GLint *)&width );
+		glGetTexLevelParameteriv( t, 0, GL_TEXTURE_HEIGHT, (GLint *)&height );
+	} else {
+		throw QString( "unknown texture format" );
+	}
+
+	// Power of Two check
+	if ( (width & (width - 1)) || (height & (height - 1)) ) {
+		QString file = filepath;
+		file.replace( '/', "\\" );
+		Message::append( "One or more texture dimensions are not a power of two.",
+						 QString( "'%1' is %2 x %3." ).arg( file ).arg( width ).arg( height )
+		);
+	}
+
+	return isSupported;
 }
 
+bool texIsSupported( const QString & filepath )
+{
+	return (filepath.endsWith( ".dds", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".tga", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".bmp", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".nif", Qt::CaseInsensitive )
+			 || filepath.endsWith( ".texcache", Qt::CaseInsensitive )
+	);
+}
 
 bool texCanLoad( const QString & filepath )
 {
 	QFileInfo i( filepath );
-	return i.exists() && i.isReadable()
-	       && (  filepath.endsWith( ".dds", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".tga", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".bmp", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".nif", Qt::CaseInsensitive )
-	             || filepath.endsWith( ".texcache", Qt::CaseInsensitive )
-	       );
+	return i.exists() && i.isReadable() && texIsSupported( filepath );
 }
 
 
-bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps )
+bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height, const GLuint & mipmaps )
 {
 	const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
 	quint32 format = nif->get<quint32>( index, "Pixel Format" );
@@ -1340,14 +1219,10 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 	QModelIndex iPixelData = nif->getIndex( index, "Pixel Data" );
 
 	if ( iPixelData.isValid() ) {
-		QModelIndex iFaceData = iPixelData.child( 0, 0 );
-
-		if ( iFaceData.isValid() ) {
-			if ( QByteArray * pdata = nif->get<QByteArray *>( iFaceData.child( 0, 0 ) ) ) {
-				buf.setData( *pdata );
-				buf.open( QIODevice::ReadOnly );
-				buf.seek( 0 );
-			}
+		if ( QByteArray * pdata = nif->get<QByteArray *>( iPixelData.child( 0, 0 ) ) ) {
+			buf.setData( *pdata );
+			buf.open( QIODevice::ReadOnly );
+			buf.seek( 0 );
 		}
 	}
 
@@ -1473,10 +1348,12 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 		fourcc = FOURCC_DXT1;
 		break;
 	case 5:
+		fourcc = FOURCC_DXT3;
+		break;
 	case 6:
 		fourcc = FOURCC_DXT5;
 		break;
-	default:     // again, how did we get here?
+	default:
 		fourcc = 0;
 		break;
 	}
@@ -1589,7 +1466,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
 }
 
 
-bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height )
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height )
 {
 	Q_UNUSED( index );
 	//const NifModel * nif = qobject_cast<const NifModel *>( index.model() );
@@ -1734,38 +1611,27 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<quint32>( iData, "Green Mask", pix.get<quint32>( iPixData, "Green Mask" ) );
 			nif->set<quint32>( iData, "Blue Mask", pix.get<quint32>( iPixData, "Blue Mask" ) );
 			nif->set<quint32>( iData, "Alpha Mask", pix.get<quint32>( iPixData, "Alpha Mask" ) );
-			nif->set<quint8>( iData, "Bits Per Pixel", pix.get<quint8>( iPixData, "Bits Per Pixel" ) );
+			nif->set<quint32>( iData, "Bits Per Pixel", pix.get<quint32>( iPixData, "Bits Per Pixel" ) );
 
-			QModelIndex unknownSrc;
-			QModelIndex unknownDest;
+			QModelIndex fastCompareSrc = pix.getIndex( iPixData, "Old Fast Compare" );
+			QModelIndex fastCompareDest = nif->getIndex( iData, "Old Fast Compare" );
 
-			// 2 sets of unknown bytes
-			unknownSrc  = pix.getIndex( iPixData, "Unknown 3 Bytes" );
-			unknownDest = nif->getIndex( iData, "Unknown 3 Bytes" );
-
-			for ( int i = 0; i < pix.rowCount( unknownSrc ); i++ ) {
-				nif->set<quint8>( unknownDest.child( i, 0 ), pix.get<quint8>( unknownSrc.child( i, 0 ) ) );
-			}
-
-			unknownSrc  = pix.getIndex( iPixData, "Unknown 8 Bytes" );
-			unknownDest = nif->getIndex( iData, "Unknown 8 Bytes" );
-
-			for ( int i = 0; i < pix.rowCount( unknownSrc ); i++ ) {
-				nif->set<quint8>( unknownDest.child( i, 0 ), pix.get<quint8>( unknownSrc.child( i, 0 ) ) );
+			for ( int i = 0; i < pix.rowCount( fastCompareSrc ); i++ ) {
+				nif->set<quint8>( fastCompareDest.child( i, 0 ), pix.get<quint8>( fastCompareSrc.child( i, 0 ) ) );
 			}
 
 			if ( nif->checkVersion( 0x0A010000, 0x0A020000 ) && pix.checkVersion( 0x0A010000, 0x0A020000 ) ) {
-				nif->set<quint32>( iData, "Unknown Int", pix.get<quint32>( iPixData, "Unknown Int" ) );
+				nif->set<quint32>( iData, "Tiling", pix.get<quint32>( iPixData, "Tiling" ) );
 			}
 		} else if ( nif->checkVersion( 0x14000004, 0 ) && pix.checkVersion( 0x14000004, 0 ) ) {
-			nif->set<quint8>( iData, "Bits Per Pixel", pix.get<quint8>( iPixData, "Bits Per Pixel" ) );
-			nif->set<int>( iData, "Unknown Int 2", pix.get<int>( iPixData, "Unknown Int 2" ) );
-			nif->set<quint32>( iData, "Unknown Int 3", pix.get<quint32>( iPixData, "Unknown Int 3" ) );
-			nif->set<quint16>( iData, "Flags", pix.get<quint16>( iPixData, "Flags" ) );
-			nif->set<quint32>( iData, "Unknown Int 4", pix.get<quint32>( iPixData, "Unknown Int 4" ) );
+			nif->set<quint32>( iData, "Bits Per Pixel", pix.get<quint32>( iPixData, "Bits Per Pixel" ) );
+			nif->set<int>( iData, "Renderer Hint", pix.get<int>( iPixData, "Renderer Hint" ) );
+			nif->set<quint32>( iData, "Extra Data", pix.get<quint32>( iPixData, "Extra Data" ) );
+			nif->set<quint8>( iData, "Flags", pix.get<quint8>( iPixData, "Flags" ) );
+			nif->set<quint32>( iData, "Tiling", pix.get<quint32>( iPixData, "Tiling" ) );
 
 			if ( nif->checkVersion( 0x14030006, 0 ) && pix.checkVersion( 0x14030006, 0 ) ) {
-				nif->set<quint8>( iData, "Unknown Byte 1", pix.get<quint8>( iPixData, "Unknown Byte 1" ) );
+				nif->set<quint8>( iData, "sRGB Space", pix.get<quint8>( iPixData, "sRGB Space" ) );
 			}
 
 			QModelIndex srcChannels  = pix.getIndex( iPixData, "Channels" );
@@ -1777,12 +1643,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Type" );
 				qDebug() << pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" );
 				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" );
-				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" );
+				qDebug() << pix.get<quint8>( srcChannels.child( i, 0 ), "Is Signed" );
 
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", pix.get<quint32>( srcChannels.child( i, 0 ), "Type" ) );
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", pix.get<quint32>( srcChannels.child( i, 0 ), "Convention" ) );
 				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", pix.get<quint8>( srcChannels.child( i, 0 ), "Bits Per Channel" ) );
-				nif->set<quint8>( destChannels.child( i, 0 ), "Unknown Byte 1", pix.get<quint8>( srcChannels.child( i, 0 ), "Unknown Byte 1" ) );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", pix.get<quint8>( srcChannels.child( i, 0 ), "Is Signed" ) );
 			}
 
 			nif->set<quint32>( iData, "Num Faces", pix.get<quint32>( iPixData, "Num Faces" ) );
@@ -1826,11 +1692,12 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 	} else if ( filepath.endsWith( ".bmp", Qt::CaseInsensitive ) || filepath.endsWith( ".tga", Qt::CaseInsensitive ) ) {
 		//qDebug() << "Copying from GL buffer";
 
-		GLuint width, height, mipmaps;
+		GLuint width, height, mipmaps, id;
+		GLuint target = GL_TEXTURE_2D;
 		QString format;
 
 		// fastest way to get parameters and ensure texture is active
-		if ( texLoad( filepath, format, width, height, mipmaps ) ) {
+		if ( texLoad( filepath, format, target, width, height, mipmaps, id ) ) {
 			//qDebug() << "Width" << width << "height" << height << "mipmaps" << mipmaps << "format" << format;
 		} else {
 			qCCritical( nsIo ) << QObject::tr( "Error importing %1" ).arg( filepath );
@@ -1848,22 +1715,22 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<quint32>( iData, "Blue Mask", RGBA_INV_MASK[2] );
 			nif->set<quint32>( iData, "Alpha Mask", RGBA_INV_MASK[3] );
 
-			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
+			QModelIndex oldFastCompare = nif->getIndex( iData, "Old Fast Compare" );
 
 			for ( int i = 0; i < 8; i++ ) {
-				nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes32[i] );
+				nif->set<quint8>( oldFastCompare.child( i, 0 ), unk8bytes32[i] );
 			}
 		} else if ( nif->checkVersion( 0x14000004, 0 ) ) {
 			// set stuff
-			nif->set<qint32>( iData, "Unknown Int 2", -1 ); // probably a link to something
+			nif->set<qint32>( iData, "Extra Data", -1 );
 			nif->set<quint8>( iData, "Flags", 1 );
 			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
 
 			for ( int i = 0; i < 4; i++ ) {
 				nif->set<quint32>( destChannels.child( i, 0 ), "Type", i );       // red, green, blue, alpha
 				nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
-				nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
-				nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
+				nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", 0 );
 			}
 		}
 
@@ -1907,46 +1774,45 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 		nif->updateArray( iPixelData );
-		QModelIndex iFaceData = iPixelData.child( 0, 0 );
-		nif->updateArray( iFaceData );
 
-		nif->set<QByteArray>( iFaceData, "Pixel Data", pixelData );
+		nif->set<QByteArray>( iPixelData, "Pixel Data", pixelData );
 
 		// return true once perfected
 		//return false;
 	} else if ( filepath.endsWith( ".dds", Qt::CaseInsensitive ) ) {
 		//qDebug() << "Will copy from DDS data";
-		DDSFormat ddsHeader;
+		DDS_HEADER ddsHeader;
 		char tag[4];
 		f.read( &tag[0], 4 );
 
-		if ( strncmp( tag, "DDS ", 4 ) != 0 || f.read( (char *)&ddsHeader, sizeof(DDSFormat) ) != sizeof( DDSFormat ) )
+		if ( strncmp( tag, "DDS ", 4 ) != 0 || f.read( (char *)&ddsHeader, sizeof(DDS_HEADER) ) != sizeof(DDS_HEADER) )
 			throw QString( "not a DDS file" );
 
-		qDebug() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
-		qDebug() << "FourCC:" << ddsHeader.ddsPixelFormat.dwFourCC;
+		qDebug() << "Size: " << ddsHeader.dwSize << "Flags" << ddsHeader.dwHeaderFlags << "Height" << ddsHeader.dwHeight << "Width" << ddsHeader.dwWidth;
+		qDebug() << "FourCC:" << ddsHeader.ddspf.dwFourCC;
 
-		if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
-			switch ( ddsHeader.ddsPixelFormat.dwFourCC ) {
+		if ( ddsHeader.ddspf.dwFlags & DDS_FOURCC ) {
+			switch ( ddsHeader.ddspf.dwFourCC ) {
 			case FOURCC_DXT1:
 				//qDebug() << "DXT1";
 				nif->set<uint>( iData, "Pixel Format", 4 );
 				break;
-			case FOURCC_DXT5:
-				//qDebug() << "DXT5";
+			case FOURCC_DXT3:
+				//qDebug() << "DXT3";
 				nif->set<uint>( iData, "Pixel Format", 5 );
 				break;
+			case FOURCC_DXT5:
+				//qDebug() << "DXT5";
+				nif->set<uint>( iData, "Pixel Format", 6 );
+				break;
 			default:
-				// don't know how eg. DXT3 can be stored in NIF
-				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddsPixelFormat.dwFourCC ).arg( "FourCC" );
+				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddspf.dwFourCC ).arg( "FourCC" );
 				return false;
 				break;
 			}
 		} else {
 			//qDebug() << "RAW";
-			// switch on BPP
-			//nif->set<uint>( iData, "Pixel Format", 0 );
-			switch ( ddsHeader.ddsPixelFormat.dwBPP ) {
+			switch ( ddsHeader.ddspf.dwRGBBitCount ) {
 			case 24:
 				// RGB
 				nif->set<uint>( iData, "Pixel Format", 0 );
@@ -1957,43 +1823,43 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 				break;
 			default:
 				// theoretically could have a palettised DDS in 8bpp
-				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddsPixelFormat.dwBPP ).arg( "BPP" );
+				qCCritical( nsIo ) << QObject::tr( "Unsupported DDS format: %1 %2" ).arg( ddsHeader.ddspf.dwRGBBitCount ).arg( "BPP" );
 				return false;
 				break;
 			}
 		}
 
-		qDebug() << "BPP:" << ddsHeader.ddsPixelFormat.dwBPP;
-		qDebug() << "RMask:" << ddsHeader.ddsPixelFormat.dwRMask;
-		qDebug() << "GMask:" << ddsHeader.ddsPixelFormat.dwGMask;
-		qDebug() << "BMask:" << ddsHeader.ddsPixelFormat.dwBMask;
-		qDebug() << "AMask:" << ddsHeader.ddsPixelFormat.dwAMask;
+		qDebug() << "BPP:" << ddsHeader.ddspf.dwRGBBitCount;
+		qDebug() << "RMask:" << ddsHeader.ddspf.dwRBitMask;
+		qDebug() << "GMask:" << ddsHeader.ddspf.dwGBitMask;
+		qDebug() << "BMask:" << ddsHeader.ddspf.dwBBitMask;
+		qDebug() << "AMask:" << ddsHeader.ddspf.dwABitMask;
 
 		// Note that these might not match what's expected; hopefully the loader function is smart
 		if ( nif->checkVersion( 0, 0x0A020000 ) ) {
-			nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
-			nif->set<uint>( iData, "Red Mask", ddsHeader.ddsPixelFormat.dwRMask );
-			nif->set<uint>( iData, "Green Mask", ddsHeader.ddsPixelFormat.dwGMask );
-			nif->set<uint>( iData, "Blue Mask", ddsHeader.ddsPixelFormat.dwBMask );
-			nif->set<uint>( iData, "Alpha Mask", ddsHeader.ddsPixelFormat.dwAMask );
+			nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddspf.dwRGBBitCount );
+			nif->set<uint>( iData, "Red Mask", ddsHeader.ddspf.dwRBitMask );
+			nif->set<uint>( iData, "Green Mask", ddsHeader.ddspf.dwGBitMask );
+			nif->set<uint>( iData, "Blue Mask", ddsHeader.ddspf.dwBBitMask );
+			nif->set<uint>( iData, "Alpha Mask", ddsHeader.ddspf.dwABitMask );
 
-			QModelIndex unknownEightBytes = nif->getIndex( iData, "Unknown 8 Bytes" );
+			QModelIndex oldFastCompare = nif->getIndex( iData, "Old Fast Compare" );
 
 			for ( int i = 0; i < 8; i++ ) {
-				if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
-					nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes24[i] );
-				} else if ( ddsHeader.ddsPixelFormat.dwBPP == 32 ) {
-					nif->set<quint8>( unknownEightBytes.child( i, 0 ), unk8bytes32[i] );
+				if ( ddsHeader.ddspf.dwRGBBitCount == 24 ) {
+					nif->set<quint8>( oldFastCompare.child( i, 0 ), unk8bytes24[i] );
+				} else if ( ddsHeader.ddspf.dwRGBBitCount == 32 ) {
+					nif->set<quint8>( oldFastCompare.child( i, 0 ), unk8bytes32[i] );
 				}
 			}
 		} else if ( nif->checkVersion( 0x14000004, 0 ) ) {
 			// set stuff
-			nif->set<qint32>( iData, "Unknown Int 2", -1 ); // probably a link to something
+			nif->set<qint32>( iData, "Extra Data", -1 );
 			nif->set<quint8>( iData, "Flags", 1 );
 			QModelIndex destChannels = nif->getIndex( iData, "Channels" );
 
 			// DXT1, DXT5
-			if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
+			if ( ddsHeader.ddspf.dwFlags & DDS_FOURCC ) {
 				// compressed
 				nif->set<uint>( iData, "Bits Per Pixel", 0 );
 
@@ -2007,20 +1873,20 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 					}
 
 					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 0 );
-					nif->set<quint8>( destChannels.child( i, 0 ), "Unknown Byte 1", 1 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", 1 );
 				}
 			} else {
-				nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddsPixelFormat.dwBPP );
+				nif->set<uint>( iData, "Bits Per Pixel", ddsHeader.ddspf.dwRGBBitCount );
 
 				// set RGB mask separately
 				for ( int i = 0; i < 3; i++ ) {
-					if ( ddsHeader.ddsPixelFormat.dwRMask == RGBA_INV_MASK[i] ) {
+					if ( ddsHeader.ddspf.dwRBitMask == RGBA_INV_MASK[i] ) {
 						//qDebug() << "red channel" << i;
 						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 0 );
-					} else if ( ddsHeader.ddsPixelFormat.dwGMask == RGBA_INV_MASK[i] ) {
+					} else if ( ddsHeader.ddspf.dwGBitMask == RGBA_INV_MASK[i] ) {
 						//qDebug() << "green channel" << i;
 						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 1 );
-					} else if ( ddsHeader.ddsPixelFormat.dwBMask == RGBA_INV_MASK[i] ) {
+					} else if ( ddsHeader.ddspf.dwBBitMask == RGBA_INV_MASK[i] ) {
 						//qDebug() << "blue channel" << i;
 						nif->set<quint32>( destChannels.child( i, 0 ), "Type", 2 );
 					}
@@ -2028,20 +1894,20 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 				for ( int i = 0; i < 3; i++ ) {
 					nif->set<quint32>( destChannels.child( i, 0 ), "Convention", 0 ); // fixed
-					nif->set<quint32>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
-					nif->set<quint32>( destChannels.child( i, 0 ), "Unknown Byte 1", 0 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Bits Per Channel", 8 );
+					nif->set<quint8>( destChannels.child( i, 0 ), "Is Signed", 0 );
 				}
 
-				if ( ddsHeader.ddsPixelFormat.dwBPP == 32 ) {
+				if ( ddsHeader.ddspf.dwRGBBitCount == 32 ) {
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 3 );       // alpha
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 0 ); // fixed
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Bits Per Channel", 8 );
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Unknown Byte 1", 0 );
-				} else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Bits Per Channel", 8 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Is Signed", 0 );
+				} else if ( ddsHeader.ddspf.dwRGBBitCount == 24 ) {
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Type", 19 );      // empty
 					nif->set<quint32>( destChannels.child( 3, 0 ), "Convention", 5 ); // empty
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Bits Per Channel", 0 );
-					nif->set<quint32>( destChannels.child( 3, 0 ), "Unknown Byte 1", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Bits Per Channel", 0 );
+					nif->set<quint8>( destChannels.child( 3, 0 ), "Is Signed", 0 );
 				}
 			}
 		}
@@ -2052,7 +1918,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 		QModelIndex destMipMaps = nif->getIndex( iData, "Mipmaps" );
 		nif->updateArray( destMipMaps );
 
-		nif->set<quint32>( iData, "Bytes Per Pixel", ddsHeader.ddsPixelFormat.dwBPP / 8 );
+		nif->set<quint32>( iData, "Bytes Per Pixel", ddsHeader.ddspf.dwRGBBitCount / 8 );
 
 		int mipmapWidth  = ddsHeader.dwWidth;
 		int mipmapHeight = ddsHeader.dwHeight;
@@ -2063,15 +1929,15 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			nif->set<quint32>( destMipMaps.child( i, 0 ), "Height", mipmapHeight );
 			nif->set<quint32>( destMipMaps.child( i, 0 ), "Offset", mipmapOffset );
 
-			if ( ddsHeader.ddsPixelFormat.dwFlags & DDPF_FOURCC ) {
-				if ( ddsHeader.ddsPixelFormat.dwFourCC == FOURCC_DXT1 ) {
+			if ( ddsHeader.ddspf.dwFlags & DDS_FOURCC ) {
+				if ( ddsHeader.ddspf.dwFourCC == FOURCC_DXT1 ) {
 					mipmapOffset += std::max( 8, ( mipmapWidth * mipmapHeight / 2 ) );
-				} else if ( ddsHeader.ddsPixelFormat.dwFourCC == FOURCC_DXT5 ) {
+				} else if ( ddsHeader.ddspf.dwFourCC == FOURCC_DXT5 ) {
 					mipmapOffset += std::max( 16, ( mipmapWidth * mipmapHeight ) );
 				}
-			} else if ( ddsHeader.ddsPixelFormat.dwBPP == 24 ) {
+			} else if ( ddsHeader.ddspf.dwRGBBitCount == 24 ) {
 				mipmapOffset += ( mipmapWidth * mipmapHeight * 3 );
-			} else if ( ddsHeader.ddsPixelFormat.dwBPP == 32 ) {
+			} else if ( ddsHeader.ddspf.dwRGBBitCount == 32 ) {
 				mipmapOffset += ( mipmapWidth * mipmapHeight * 4 );
 			}
 
@@ -2085,8 +1951,6 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 
 		QModelIndex iPixelData = nif->getIndex( iData, "Pixel Data" );
 		nif->updateArray( iPixelData );
-		QModelIndex iFaceData = iPixelData.child( 0, 0 );
-		nif->updateArray( iFaceData );
 
 		f.seek( 4 + ddsHeader.dwSize );
 		//qDebug() << "Reading from " << f.pos();
@@ -2099,7 +1963,7 @@ bool texSaveNIF( NifModel * nif, const QString & filepath, QModelIndex & iData )
 			return false;
 		}
 
-		nif->set<QByteArray>( iFaceData, "Pixel Data", ddsData );
+		nif->set<QByteArray>( iPixelData, "Pixel Data", ddsData );
 
 		/*
 		QByteArray result = nif->get<QByteArray>( iFaceData, "Pixel Data" );

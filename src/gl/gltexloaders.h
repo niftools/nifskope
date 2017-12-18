@@ -33,13 +33,32 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTEXLOADERS_H
 #define GLTEXLOADERS_H
 
-#include <QByteArray>
+#ifdef _MSC_VER
+#pragma warning(push, 0)
+#endif
 
+#include <gli.hpp>
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+class QOpenGLContext;
+class QByteArray;
 class QModelIndex;
 class QString;
 
 typedef unsigned int GLuint;
+typedef unsigned int GLenum;
+
+//! Initialize the GL functions necessary for texture loading
+extern void initializeTextureLoaders( const QOpenGLContext * context );
+//! Create texture with glTexStorage2D using GLI
+extern GLuint GLI_create_texture( gli::texture& texture, GLenum& target, GLuint& id );
+//! Fallback for systems that do not have glTexStorage2D
+extern GLuint GLI_create_texture_fallback( gli::texture& texture, GLenum & target, GLuint& id );
+//! Rewrite of gli::load_dds to not crash on invalid textures
+extern gli::texture load_if_valid( const char * data, unsigned int size );
 
 //! @file gltexloaders.h Texture loading functions header
 
@@ -57,10 +76,8 @@ typedef unsigned int GLuint;
  * @param mipmaps	Contains the number of mipmaps on successful load.
  * @return			True if the load was successful, false otherwise.
  */
-extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
-extern bool texLoad( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data );
-
-extern bool texLoadCube( const QString & filepath, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint id );
+extern bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id );
+extern bool texLoad( const QString & filepath, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, QByteArray & data, GLuint & id );
 
 /*! A function for loading textures.
  *
@@ -76,7 +93,7 @@ extern bool texLoadCube( const QString & filepath, QString & format, GLuint & wi
  * @param mipmaps	Contains the number of mipmaps on successful load.
  * @return			True if the load was successful, false otherwise.
  */
-extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width, GLuint & height, GLuint & mipmaps );
+extern bool texLoad( const QModelIndex & iData, QString & format, GLenum & target, GLuint & width, GLuint & height, GLuint & mipmaps, GLuint & id );
 
 /*! A function which checks whether the given file can be loaded.
  *
@@ -87,6 +104,15 @@ extern bool texLoad( const QModelIndex & iData, QString & format, GLuint & width
  */
 extern bool texCanLoad( const QString & filepath );
 
+/*! A function which checks whether the given file is supported.
+*
+* The function checks whether its extension
+* is that of a supported file format (dds, tga, or bmp).
+*
+* @param filepath The full path to the texture that must be checked.
+*/
+extern bool texIsSupported( const QString & filepath );
+
 /*! Save pixel data to a DDS file
  *
  * @param index		Reference to pixel data
@@ -96,7 +122,7 @@ extern bool texCanLoad( const QString & filepath );
  * @param mipmaps	The number of mipmaps present
  * @return			True if the save was successful, false otherwise
  */
-bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height, GLuint & mipmaps );
+bool texSaveDDS( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height, const GLuint & mipmaps );
 
 /*! Save pixel data to a TGA file
  *
@@ -106,7 +132,7 @@ bool texSaveDDS( const QModelIndex & index, const QString & filepath, GLuint & w
  * @param height	The height of the texture
  * @return			True if the save was successful, false otherwise
  */
-bool texSaveTGA( const QModelIndex & index, const QString & filepath, GLuint & width, GLuint & height );
+bool texSaveTGA( const QModelIndex & index, const QString & filepath, const GLuint & width, const GLuint & height );
 
 /*! Save a file to pixel data
  *

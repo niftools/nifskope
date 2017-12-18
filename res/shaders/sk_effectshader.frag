@@ -1,6 +1,6 @@
 #version 120
 
-uniform sampler2D SourceTexture;
+uniform sampler2D BaseMap;
 uniform sampler2D GreyscaleMap;
 
 uniform bool doubleSided;
@@ -40,7 +40,7 @@ vec4 colorLookup( float x, float y ) {
 
 void main( void )
 {
-	vec4 baseMap = texture2D( SourceTexture, gl_TexCoord[0].st * uvScale + uvOffset );
+	vec4 baseMap = texture2D( BaseMap, gl_TexCoord[0].st * uvScale + uvOffset );
 	
 	vec4 color;
 

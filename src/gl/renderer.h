@@ -33,12 +33,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
-#include "nifmodel.h"
+#include <data/niftypes.h>
+
+#include <QCoreApplication>
+#include <QMap>
+#include <QVector>
+#include <QString>
+
+#include <array>
+#include <string>
 
 
 //! @file renderer.h Renderer, Renderer::ConditionSingle, Renderer::ConditionGroup, Renderer::Shader, Renderer::Program
 
-class Mesh;
+class NifModel;
 class Shape;
 class PropertyList;
 
@@ -75,9 +83,79 @@ public:
 	QOpenGLFunctions * fn;
 
 	//! Set up shader program
-	QString setupProgram( Shape *, const QString & hint = QString() );
+	QString setupProgram( Shape *, const QString & hint = {} );
 	//! Stop shader program
 	void stopProgram();
+
+	typedef enum
+	{
+		// Samplers
+		SAMP_BASE = 0,
+		SAMP_NORMAL,
+		SAMP_SPECULAR,
+		SAMP_CUBE,
+		SAMP_ENV_MASK,
+		SAMP_GLOW,
+		SAMP_HEIGHT,
+		SAMP_GRAYSCALE,
+		SAMP_DETAIL,
+		SAMP_TINT,
+		SAMP_LIGHT,
+		SAMP_BACKLIGHT,
+		SAMP_INNER,
+		// Uniforms
+		ALPHA,
+		DOUBLE_SIDE,
+		ENV_REFLECTION,
+		FALL_DEPTH,
+		FALL_PARAMS,
+		G2P_ALPHA,
+		G2P_COLOR,
+		G2P_SCALE,
+		GLOW_COLOR,
+		GLOW_MULT,
+		HAS_EMIT,
+		HAS_MAP_BACK,
+		HAS_MAP_BASE,
+		HAS_MAP_CUBE,
+		HAS_MAP_DETAIL,
+		HAS_MAP_G2P,
+		HAS_MAP_GLOW,
+		HAS_MAP_HEIGHT,
+		HAS_MAP_NORMAL,
+		HAS_MAP_SPEC,
+		HAS_MAP_TINT,
+		HAS_MASK_ENV,
+		HAS_RGBFALL,
+		HAS_RIM,
+		HAS_SOFT,
+		HAS_TINT_COLOR,
+		HAS_WEAP_BLOOD,
+		INNER_SCALE,
+		INNER_THICK,
+		LIGHT_EFF1,
+		LIGHT_EFF2,
+		LIGHT_INF,
+		MAT_VIEW,
+		MAT_WORLD,
+		OUTER_REFL,
+		OUTER_REFR,
+		POW_BACK,
+		POW_FRESNEL,
+		POW_RIM,
+		SPEC_COLOR,
+		SPEC_GLOSS,
+		SPEC_SCALE,
+		SS_ROLLOFF,
+		TINT_COLOR,
+		USE_FALLOFF,
+		UV_OFFSET,
+		UV_SCALE,
+		GPU_SKINNED,
+		GPU_BONES,
+
+		NUM_UNIFORM_TYPES
+	} UniformType;
 
 public slots:
 	void updateSettings();
@@ -90,7 +168,7 @@ public:
 		Condition() {}
 		virtual ~Condition() {}
 
-		virtual bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const = 0;
+		virtual bool eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const = 0;
 	};
 
 	//! Condition class for single conditions
@@ -99,7 +177,7 @@ public:
 public:
 		ConditionSingle( const QString & line, bool neg = false );
 
-		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const override final;
+		bool eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const override final;
 
 protected:
 		QString left, right;
@@ -112,7 +190,7 @@ protected:
 
 		bool invert;
 
-		QModelIndex getIndex( const NifModel * nif, const QList<QModelIndex> & iBlock, QString name ) const;
+		QModelIndex getIndex( const NifModel * nif, const QVector<QModelIndex> & iBlock, QString name ) const;
 		template <typename T> bool compare( T a, T b ) const;
 	};
 
@@ -123,14 +201,14 @@ public:
 		ConditionGroup( bool o = false ) { _or = o; }
 		~ConditionGroup() { qDeleteAll( conditions ); }
 
-		bool eval( const NifModel * nif, const QList<QModelIndex> & iBlocks ) const override final;
+		bool eval( const NifModel * nif, const QVector<QModelIndex> & iBlocks ) const override final;
 
 		void addCondition( Condition * c );
 
 		bool isOrGroup() const { return _or; }
 
 protected:
-		QList<Condition *> conditions;
+		QVector<Condition *> conditions;
 		bool _or;
 	};
 
@@ -161,19 +239,117 @@ public:
 
 		bool load( const QString & filepath, Renderer * );
 
+		typedef enum
+		{
+			CT_BASE = 0,
+			CT_DARK,
+			CT_DETAIL,
+			CT_GLOSS,
+			CT_GLOW,
+			CT_BUMP,
+			CT_DECAL0,
+			CT_DECAL1,
+			CT_DECAL2,
+			CT_DECAL3,
+			CT_TANGENT,
+			CT_BITANGENT,
+			CT_BONE,
+			CT_WEIGHT
+
+		} CoordType;
+
 		QOpenGLFunctions * f;
 		QString name;
 		GLuint id;
 		bool status = false;
 
 		ConditionGroup conditions;
-		QMap<int, QString> texcoords;
+		QMap<int, CoordType> texcoords;
+
+		std::array<std::string, NUM_UNIFORM_TYPES> uniforms = { {
+			"BaseMap",
+			"NormalMap",
+			"SpecularMap",
+			"CubeMap",
+			"EnvironmentMap",
+			"GlowMap",
+			"HeightMap",
+			"GreyscaleMap",
+			"DetailMask",
+			"TintMask",
+			"LightMask",
+			"BacklightMap",
+			"InnerMap",
+			"alpha",
+			"doubleSided",
+			"envReflection",
+			"falloffDepth",
+			"falloffParams",
+			"greyscaleAlpha",
+			"greyscaleColor",
+			"paletteScale",
+			"glowColor",
+			"glowMult",
+			"hasEmit",
+			"hasBacklight",
+			"hasSourceTexture",
+			"hasCubeMap",
+			"hasDetailMask",
+			"hasGreyscaleMap",
+			"hasGlowMap",
+			"hasHeightMap",
+			"hasNormalMap",
+			"hasSpecularMap",
+			"hasTintMask",
+			"hasEnvMask",
+			"hasRGBFalloff",
+			"hasRimlight",
+			"hasSoftlight",
+			"hasTintColor",
+			"hasWeaponBlood",
+			"innerScale",
+			"innerThickness",
+			"lightingEffect1",
+			"lightingEffect2",
+			"lightingInfluence",
+			"viewMatrix",
+			"worldMatrix",
+			"outerReflection",
+			"outerRefraction",
+			"backlightPower",
+			"fresnelPower",
+			"rimPower",
+			"specColor",
+			"specGlossiness",
+			"specStrength",
+			"subsurfaceRolloff",
+			"tintColor",
+			"useFalloff",
+			"uvOffset",
+			"uvScale",
+			"isGPUSkinned",
+			"boneTransforms"
+		} };
+
+		int uniformLocations[NUM_UNIFORM_TYPES];
+
+		void setUniformLocations();
+
+		void uni1f( UniformType var, float x );
+		void uni2f( UniformType var, float x, float y );
+		void uni3f( UniformType var, float x, float y, float z );
+		void uni4f( UniformType var, float x, float y, float z, float w );
+		void uni1i( UniformType var, int val );
+		void uni3m( UniformType var, const Matrix & val );
+		void uni4m( UniformType var, const Matrix4 & val );
+		bool uniSampler( class BSShaderLightingProperty * bsprop, UniformType var, int textureSlot,
+						 int & texunit, const QString & alternate, uint clamp );
 	};
 
 	QMap<QString, Shader *> shaders;
 	QMap<QString, Program *> programs;
 
-	bool setupProgram( Program *, Shape *, const PropertyList &, const QList<QModelIndex> & iBlocks );
+	bool setupProgram( Program *, Shape *, const PropertyList &, const QVector<QModelIndex> & iBlocks, bool eval = true );
 	void setupFixedFunction( Shape *, const PropertyList & );
 
 	struct Settings

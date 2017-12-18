@@ -7,3 +7,6 @@
 [submodule "lib/zlib"]
 	path = lib/zlib
 	url = https://github.com/madler/zlib.git
+[submodule "lib/gli"]
+	path = lib/gli
+	url = https://github.com/g-truc/gli.git

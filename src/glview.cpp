@@ -31,20 +31,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glview.h"
-#include "config.h"
-#include "settings.h"
 
-#include "ui_nifskope.h"
+#include "message.h"
 #include "nifskope.h"
-#include "nifmodel.h"
+#include "gl/renderer.h"
 #include "gl/glmesh.h"
-#include "gl/glscene.h"
 #include "gl/gltex.h"
-#include "widgets/fileselect.h"
-#include "widgets/floatedit.h"
-#include "widgets/floatslider.h"
+#include "model/nifmodel.h"
+#include "ui/settingsdialog.h"
+#include "ui/widgets/fileselect.h"
 
+#include <QApplication>
 #include <QActionGroup>
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDebug>
@@ -139,7 +138,7 @@ GLView * GLView::create( NifSkope * window )
 	fmt.setSwapInterval( 1 );
 	fmt.setDoubleBuffer( true );
 
-	fmt.setSamples( pow( 2, aa ) );
+	fmt.setSamples( std::pow( aa, 2 ) );
 
 	fmt.setDirectRendering( true );
 	fmt.setRgba( true );
@@ -234,11 +233,11 @@ void GLView::updateSettings()
 	QSettings settings;
 	settings.beginGroup( "Settings/Render" );
 
-	cfg.background = settings.value( "Colors/Background", QColor( 0, 0, 0 ) ).value<QColor>();
+	cfg.background = settings.value( "Colors/Background", QColor( 46, 46, 46 ) ).value<QColor>();
 	cfg.fov = settings.value( "General/Camera/Field Of View" ).toFloat();
 	cfg.moveSpd = settings.value( "General/Camera/Movement Speed" ).toFloat();
 	cfg.rotSpd = settings.value( "General/Camera/Rotation Speed" ).toFloat();
-	cfg.upAxis = settings.value( "General/Up Axis", 2 ).toInt();
+	cfg.upAxis = UpAxis(settings.value( "General/Up Axis", ZAxis ).toInt());
 
 	settings.endGroup();
 }
@@ -447,10 +446,9 @@ void GLView::paintGL()
 		ap( 2, 0 ) = 1; ap( 2, 1 ) = 0; ap( 2, 2 ) = 0;
 	}
 
-	Transform viewTrans;
 	viewTrans.rotation.fromEuler( Rot[0] / 180.0 * PI, Rot[1] / 180.0 * PI, Rot[2] / 180.0 * PI );
-	viewTrans.rotation = viewTrans.rotation * ap;
 	viewTrans.translation = viewTrans.rotation * Pos;
+	viewTrans.rotation = viewTrans.rotation * ap;
 
 	if ( view != ViewWalk )
 		viewTrans.translation[2] -= Dist * 2;
@@ -556,15 +554,12 @@ void GLView::paintGL()
 		
 
 		glShadeModel( GL_SMOOTH );
-		glEnable( GL_LIGHTING );
+		//glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
 		glLightfv( GL_LIGHT0, GL_SPECULAR, mat_diff );
 		glLightfv( GL_LIGHT0, GL_POSITION, lightDir.data() );
-
-		// Necessary?
-		glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
 	} else {
 		float amb = 0.5f;
 		if ( scene->options & Scene::DisableShaders ) {
@@ -576,7 +571,7 @@ void GLView::paintGL()
 		
 
 		glShadeModel( GL_SMOOTH );
-		glEnable( GL_LIGHTING );
+		//glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightfv( GL_LIGHT0, GL_AMBIENT, mat_amb );
 		glLightfv( GL_LIGHT0, GL_DIFFUSE, mat_diff );
@@ -588,7 +583,7 @@ void GLView::paintGL()
 		GLfloat mat_amb[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 		glShadeModel( GL_FLAT );
-		glEnable( GL_LIGHTING );
+		//glEnable( GL_LIGHTING );
 		glEnable( GL_LIGHT0 );
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, mat_diff );
 		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_diff );
@@ -989,7 +984,7 @@ void GLView::setPosition( float x, float y, float z )
 	update();
 }
 
-void GLView::setPosition( Vector3 v )
+void GLView::setPosition( const Vector3 & v )
 {
 	Pos = v;
 	update();
@@ -1240,30 +1235,30 @@ void GLView::setSceneSequence( const QString & seqname )
 // TODO: Multiple user views, ala Recent Files
 void GLView::saveUserView()
 {
-	QSettings cfg;
-	cfg.beginGroup( "GLView" );
-	cfg.beginGroup( "User View" );
-	cfg.setValue( "RotX", Rot[0] );
-	cfg.setValue( "RotY", Rot[1] );
-	cfg.setValue( "RotZ", Rot[2] );
-	cfg.setValue( "PosX", Pos[0] );
-	cfg.setValue( "PosY", Pos[1] );
-	cfg.setValue( "PosZ", Pos[2] );
-	cfg.setValue( "Dist", Dist );
-	cfg.endGroup();
-	cfg.endGroup();
+	QSettings settings;
+	settings.beginGroup( "GLView" );
+	settings.beginGroup( "User View" );
+	settings.setValue( "RotX", Rot[0] );
+	settings.setValue( "RotY", Rot[1] );
+	settings.setValue( "RotZ", Rot[2] );
+	settings.setValue( "PosX", Pos[0] );
+	settings.setValue( "PosY", Pos[1] );
+	settings.setValue( "PosZ", Pos[2] );
+	settings.setValue( "Dist", Dist );
+	settings.endGroup();
+	settings.endGroup();
 }
 
 void GLView::loadUserView()
 {
-	QSettings cfg;
-	cfg.beginGroup( "GLView" );
-	cfg.beginGroup( "User View" );
-	setRotation( cfg.value( "RotX" ).toDouble(), cfg.value( "RotY" ).toDouble(), cfg.value( "RotZ" ).toDouble() );
-	setPosition( cfg.value( "PosX" ).toDouble(), cfg.value( "PosY" ).toDouble(), cfg.value( "PosZ" ).toDouble() );
-	setDistance( cfg.value( "Dist" ).toDouble() );
-	cfg.endGroup();
-	cfg.endGroup();
+	QSettings settings;
+	settings.beginGroup( "GLView" );
+	settings.beginGroup( "User View" );
+	setRotation( settings.value( "RotX" ).toDouble(), settings.value( "RotY" ).toDouble(), settings.value( "RotZ" ).toDouble() );
+	setPosition( settings.value( "PosX" ).toDouble(), settings.value( "PosY" ).toDouble(), settings.value( "PosZ" ).toDouble() );
+	setDistance( settings.value( "Dist" ).toDouble() );
+	settings.endGroup();
+	settings.endGroup();
 }
 
 void GLView::advanceGears()
@@ -1393,9 +1388,9 @@ void GLView::saveImage()
 	lay->addWidget( niffileDir, 1, 1, 1, 1 );
 
 	// Save JPEG Quality
-	QSettings cfg;
-	int jpegQuality = cfg.value( "JPEG/Quality", 90 ).toInt();
-	cfg.setValue( "JPEG/Quality", jpegQuality );
+	QSettings settings;
+	int jpegQuality = settings.value( "JPEG/Quality", 90 ).toInt();
+	settings.setValue( "JPEG/Quality", jpegQuality );
 
 	QHBoxLayout * pixBox = new QHBoxLayout;
 	pixBox->setAlignment( Qt::AlignRight );
@@ -1482,8 +1477,8 @@ void GLView::saveImage()
 	connect( btnOk, &QPushButton::clicked, [&]() 
 		{
 			// Save JPEG Quality
-			QSettings cfg;
-			cfg.setValue( "JPEG/Quality", pixQuality->value() );
+			QSettings settings;
+			settings.setValue( "JPEG/Quality", pixQuality->value() );
 
 			// TODO: Set up creation of screenshots directory in Options
 			if ( nifskopeDir->isChecked() ) {
@@ -1568,8 +1563,9 @@ void GLView::saveImage()
 
 void GLView::dragEnterEvent( QDragEnterEvent * e )
 {
-	if ( e->mimeData()->hasUrls() && e->mimeData()->urls().count() == 1 ) {
-		QUrl url = e->mimeData()->urls().first();
+	auto md = e->mimeData();
+	if ( md && md->hasUrls() && md->urls().count() == 1 ) {
+		QUrl url = md->urls().first();
 
 		if ( url.scheme() == "file" ) {
 			QString fn = url.toLocalFile();
@@ -1659,6 +1655,7 @@ void GLView::keyPressEvent( QKeyEvent * event )
 	//case Qt::Key_F:
 	case Qt::Key_Q:
 	case Qt::Key_E:
+	case Qt::Key_Space:
 		kbd[event->key()] = true;
 		break;
 	case Qt::Key_Escape:
@@ -1692,6 +1689,7 @@ void GLView::keyReleaseEvent( QKeyEvent * event )
 	//case Qt::Key_F:
 	case Qt::Key_Q:
 	case Qt::Key_E:
+	case Qt::Key_Space:
 		kbd[event->key()] = false;
 		break;
 	default:
@@ -1715,9 +1713,9 @@ void GLView::mouseMoveEvent( QMouseEvent * event )
 	int dx = event->x() - lastPos.x();
 	int dy = event->y() - lastPos.y();
 
-	if ( event->buttons() & Qt::LeftButton ) {
+	if ( event->buttons() & Qt::LeftButton && !kbd[Qt::Key_Space] ) {
 		mouseRot += Vector3( dy * .5, 0, dx * .5 );
-	} else if ( event->buttons() & Qt::MidButton ) {
+	} else if ( (event->buttons() & Qt::MidButton) || (event->buttons() & Qt::LeftButton && kbd[Qt::Key_Space]) ) {
 		float d = axis / (qMax( width(), height() ) + 1);
 		mouseMov += Vector3( dx * d, -dy * d, 0 );
 	} else if ( event->buttons() & Qt::RightButton ) {

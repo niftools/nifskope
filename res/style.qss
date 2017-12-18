@@ -1,63 +1,62 @@
-/*
-    Stylish tooltips
+/* Variables:
+    Qt Colors:
+    palette(base)
+    palette(alternate-base)
+    palette(text)
+    palette(highlight)
+    palette(highlighted-text)
+    palette(bright-text)
+
+    Template Variables:
+    ${theme} = Theme name ("dark", "light") for icon path customization
+    ${rgb} = Highlight colors in an "R, G, B" string to combine with opacity in rgba()
 */
 
-QToolTip
-{
-    opacity: 223;
-    color: steelblue;
-    border: 1px solid steelblue;
-    border-radius: 5px;
-    padding: 4px;
-    background: ghostwhite;
-	font-size: 10px;
+
+/* Remove light border for dark theme */
+QToolBar { border: 1px solid transparent; }
+
+/* Fix tooltip display */
+QToolTip { color: #ffffff; background-color: #555; border: 1px solid transparent; }
+
+/* Fix display of Settings category list */
+QListWidget#categoryList { padding: 10px; }
+QListWidget#categoryList::item { height: 20px; padding: 10px; }
+QListWidget#categoryList::item::text { padding-left: 10px; }
+
+/* Fix display of close/undock for dark themes */
+QDockWidget {
+    titlebar-close-icon: url(:/wnd/close);
+    titlebar-normal-icon: url(:/wnd/undock);
 }
 
-/*
-    Make the disabled rows of the table views more distinguishable
-*/
+/* Toolbar Buttons */
 
-QTreeView
-{
-    background: white;
-    alternate-background-color: #F1F5FA;
-    selection-background-color: #3D80DF;
-    selection-color: white;
-    color: black;
+/* Flyout menus need padding for down arrow */
+#btnFlyoutMenu { padding-left: 2px; padding-right: 10px; }
+
+/* Fix toolbar button spacing */
+#tRender QToolButton#btnRender:enabled,
+#tAnim QToolButton:enabled,
+#mLight QAbstractButton {
+    padding: 1px 1px;
+    margin: 0px 0px 0px 1px;
+    border-radius: 2px;
+    border: 1px solid transparent;
 }
 
-QTreeView:disabled
-{
-    background: #C0C0C0;
-    alternate-background-color: #C0C0C0;
-    color: #7D7D7D;
+/* Selected toolbar buttons */
+#tRender QToolButton#btnRender:enabled:checked,
+#tAnim QToolButton:enabled:checked,
+#mLight QAbstractButton:enabled:checked {
+    border: 1px solid rgba(0, 0, 0, 32);
+    background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.66, fx:0.5, fy:0.5, stop:0 rgba(255, 255, 255, 0), stop:0.5 rgba(${rgb}, 32), stop:1 rgba(${rgb}, 128));
 }
 
-
-/*
-    Give the fileselectors a green tint on success and a red one on error
-*/
-
-FileSelector[state="0"] > QLineEdit
-{
-    background-color: auto;
-}
-
-FileSelector[state="1"] > QLineEdit
-{
-    background-color: #cfc;
-}
-
-FileSelector[state="2"] > QLineEdit
-{
-    background-color: #fcc;
-}
-
-
-/*
-    Add a border to the FloatSliderEditBoxes
-*/
-FloatSliderEditBox
-{
-    border: 1px solid black;
+/* Hovered toolbar buttons */
+#tRender QToolButton#btnRender:enabled:hover,
+#tAnim QToolButton:enabled:hover,
+#mLight QAbstractButton:enabled:hover {
+    border: 1px solid rgba(${rgb}, 255); 
+    background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.66, fx:0.5, fy:0.5, stop:0 rgba(255, 255, 255, 0), stop:0.33 rgba(${rgb}, 64), stop:1 rgba(${rgb}, 128));
 }

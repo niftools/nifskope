@@ -31,14 +31,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***** END LICENCE BLOCK *****/
 
 #include "glscene.h"
-#include "settings.h"
 
-#include "glcontroller.h"
-#include "glmesh.h"
-#include "bsshape.h"
-#include "glnode.h"
-#include "glparticles.h"
-#include "gltex.h"
+#include "gl/renderer.h"
+#include "gl/gltex.h"
+#include "gl/glcontroller.h"
+#include "gl/glmesh.h"
+#include "gl/bsshape.h"
+#include "gl/glparticles.h"
+#include "gl/gltex.h"
+#include "model/nifmodel.h"
 
 #include <QAction>
 #include <QOpenGLContext>
@@ -97,6 +98,11 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 Scene::~Scene()
 {
 	delete renderer;
+}
+
+void Scene::updateShaders()
+{
+	renderer->updateShaders();
 }
 
 void Scene::clear( bool flushTextures )
@@ -468,13 +474,5 @@ int Scene::bindTexture( const QModelIndex & iSource )
 		return 0;
 
 	return textures->bind( iSource );
-}
-
-int Scene::bindTextureCube( const QString & fname )
-{
-	if ( !(options & DoTexturing) || fname.isEmpty() )
-		return 0;
-
-	return textures->bindCube( fname );
 }
 

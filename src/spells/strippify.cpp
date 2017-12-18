@@ -1,6 +1,10 @@
 #include "spellbook.h"
 
-#include "nvtristripwrapper.h"
+#include "blocks.h"
+
+#include "lib/nvtristripwrapper.h"
+
+#include <climits>
 
 
 // TODO: Move these to blocks.h / misc.h / wherever
@@ -61,13 +65,26 @@ class spStrippify final : public Spell
 		//qDebug() << "num triangles" << triangles.count() << "skipped" << skip;
 
 
-		QList<QVector<quint16> > strips = stripify( triangles );
+		QVector<QVector<quint16> > strips = stripify( triangles, true );
 
 		if ( strips.count() <= 0 )
 			return idx;
 
-		nif->insertNiBlock( "NiTriStripsData", nif->getBlockNumber( idx ) + 1 );
-		QModelIndex iStripData = nif->getBlock( nif->getBlockNumber( idx ) + 1, "NiTriStripsData" );
+		uint numTriangles = 0;
+		for ( const QVector<quint16>& strip : strips ) {
+			numTriangles += strip.count() - 2;
+		}
+
+		if ( numTriangles > USHRT_MAX * 2 ) {
+			Message::append( tr( "Strippify failed on one or more blocks." ),
+				tr( "Block %1: Too many triangles (%2) to strippify this shape." )
+				.arg( nif->getBlockNumber( idx ) )
+				.arg( numTriangles )
+			);
+			return idx;
+		}
+
+		QModelIndex iStripData = nif->insertNiBlock( "NiTriStripsData", nif->getBlockNumber( idx ) + 1 );
 
 		if ( iStripData.isValid() ) {
 			copyValue<int>( nif, iStripData, iData, "Num Vertices" );
@@ -88,7 +105,7 @@ class spStrippify final : public Spell
 			copyValue<int>( nif, iStripData, iData, "Has UV" );
 			copyValue<int>( nif, iStripData, iData, "Num UV Sets" );
 			copyValue<int>( nif, iStripData, iData, "Vector Flags" );
-			copyValue<int>( nif, iStripData, iData, "BS Num UV Sets" );
+			copyValue<int>( nif, iStripData, iData, "BS Vector Flags" );
 			copyValue<int>( nif, iStripData, iData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iStripData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iData, "UV Sets" );
@@ -125,21 +142,65 @@ class spStrippify final : public Spell
 				nif->updateArray( iLengths );
 				nif->updateArray( iPoints );
 				int x = 0;
-				int z = 0;
 				for ( const QVector<quint16>& strip : strips ) {
 					nif->set<int>( iLengths.child( x, 0 ), strip.count() );
 					QModelIndex iStrip = iPoints.child( x, 0 );
 					nif->updateArray( iStrip );
 					nif->setArray<quint16>( iStrip, strip );
 					x++;
-					z += strip.count() - 2;
 				}
-				nif->set<int>( iStripData, "Num Triangles", z );
+				nif->set<int>( iStripData, "Num Triangles", numTriangles );
 
 				nif->setData( idx.sibling( idx.row(), NifModel::NameCol ), "NiTriStrips" );
 				int lnk = nif->getLink( idx, "Data" );
 				nif->setLink( idx, "Data", nif->getBlockNumber( iStripData ) );
 				nif->removeNiBlock( lnk );
+			}
+		}
+
+		// Move the triangles over 65535 into their own shape by
+		// splitting the two strips between two NiTriStrips
+		if ( numTriangles > USHRT_MAX ) {
+			spDuplicateBranch dupe;
+
+			// Copy the entire NiTriStrips branch
+			auto iStrip2 = dupe.cast( nif, idx );
+			auto iStrip2Data = nif->getBlock( nif->getLink( iStrip2, "Data" ), "NiTriStripsData" );
+			if ( !iStrip2Data.isValid() || strips.count() != 2 )
+				return QModelIndex();
+
+			// Update Original Shape
+			nif->set<int>( iStripData, "Num Strips", 1 );
+			nif->set<int>( iStripData, "Has Points", 1 );
+
+			QModelIndex iLengths = nif->getIndex( iStripData, "Strip Lengths" );
+			QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
+
+			auto stripsA = strips.at(0);
+			if ( iLengths.isValid() && iPoints.isValid() ) {
+				nif->updateArray( iLengths );
+				nif->set<quint16>( iLengths.child( 0, 0 ), stripsA.count() );
+				nif->updateArray( iPoints );
+				nif->updateArray( iPoints.child( 0, 0 ) );
+				nif->setArray<quint16>( iPoints.child( 0, 0 ), stripsA );
+				nif->set<quint16>( iStripData, "Num Triangles", stripsA.count() - 2 );
+			}
+			
+			// Update New Shape
+			nif->set<int>( iStrip2Data, "Num Strips", 1 );
+			nif->set<int>( iStrip2Data, "Has Points", 1 );
+
+			iLengths = nif->getIndex( iStrip2Data, "Strip Lengths" );
+			iPoints = nif->getIndex( iStrip2Data, "Points" );
+
+			auto stripsB = strips.at(1);
+			if ( iLengths.isValid() && iPoints.isValid() ) {
+				nif->updateArray( iLengths );
+				nif->set<quint16>( iLengths.child( 0, 0 ), stripsB.count() );
+				nif->updateArray( iPoints );
+				nif->updateArray( iPoints.child( 0, 0 ) );
+				nif->setArray<quint16>( iPoints.child( 0, 0 ), stripsB );
+				nif->set<quint16>( iStrip2Data, "Num Triangles", stripsB.count() - 2 );
 			}
 		}
 
@@ -203,7 +264,7 @@ class spTriangulate final : public Spell
 		if ( !iStripData.isValid() )
 			return idx;
 
-		QList<QVector<quint16> > strips;
+		QVector<QVector<quint16> > strips;
 
 		QModelIndex iPoints = nif->getIndex( iStripData, "Points" );
 
@@ -243,8 +304,8 @@ class spTriangulate final : public Spell
 
 			copyValue<int>( nif, iTriData, iStripData, "Has UV" );
 			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets" );
-			copyValue<int>( nif, iTriData, iStripData, "BS Num UV Sets" );
 			copyValue<int>( nif, iTriData, iStripData, "Vector Flags" );
+			copyValue<int>( nif, iTriData, iStripData, "BS Vector Flags" );
 			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iTriData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iStripData, "UV Sets" );

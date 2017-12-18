@@ -68,14 +68,14 @@ class spEditStringIndex final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Edit String Index" ); }
 	QString page() const override final { return Spell::tr( "" ); }
-	QIcon icon() const
+	QIcon icon() const override final
 	{
 		if ( !txt_xpm_icon )
 			txt_xpm_icon = QIconPtr( new QIcon(QPixmap( txt_xpm )) );
 
 		return *txt_xpm_icon;
 	}
-	bool instant() const { return true; }
+	bool instant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{

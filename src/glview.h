@@ -33,10 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLVIEW
 #define GLVIEW
 
-#include "nifmodel.h"
 #include "gl/glscene.h"
-#include "widgets/floatedit.h"
-#include "widgets/floatslider.h"
 
 #include <QGLWidget> // Inherited
 #include <QGraphicsView>
@@ -49,18 +46,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //! @file glview.h GLView, GLGraphicsView
 
 class NifSkope;
+class NifModel;
 class GLGraphicsView;
-class Scene;
 
-class QAction;
-class QActionGroup;
-class QComboBox;
 class QGLFormat;
-class QMenu;
 class QOpenGLContext;
 class QOpenGLFunctions;
-class QSettings;
-class QToolBar;
 class QTimer;
 
 
@@ -144,7 +135,7 @@ public:
 	void setCenter();
 	void setDistance( float );
 	void setPosition( float, float, float );
-	void setPosition( Vector3 );
+	void setPosition( const Vector3 & );
 	void setProjection( bool );
 	void setRotation( float, float, float );
 	void setZoom( float );
@@ -270,7 +261,7 @@ private:
 		float moveSpd = 350;
 		float rotSpd = 45;
 
-		int upAxis;
+		UpAxis upAxis = ZAxis;
 	} cfg;
 
 private slots:
@@ -294,7 +285,7 @@ public:
 	~GLGraphicsView();
 
 protected slots:
-	virtual void setupViewport( QWidget * viewport );
+	void setupViewport( QWidget * viewport ) override;
 
 protected:
 	bool eventFilter( QObject * o, QEvent * e ) override final;

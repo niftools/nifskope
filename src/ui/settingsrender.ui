@@ -615,15 +615,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ColorWheel</class>
+   <class>ColorLineEdit</class>
    <extends>QWidget</extends>
-   <header>widgets/colorwheel.h</header>
+   <header>ui/widgets/colorwheel.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ColorLineEdit</class>
+   <class>ColorWheel</class>
    <extends>QWidget</extends>
-   <header>widgets/colorwheel.h</header>
+   <header>ui/widgets/colorwheel.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

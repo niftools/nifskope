@@ -17,12 +17,12 @@
  */
 
 //! Edit flags
-class spEditFlags final : public Spell
+class spEditFlags : public Spell
 {
 public:
-	QString name() const override final { return Spell::tr( "Flags" ); }
-	bool instant() const { return true; }
-	QIcon icon() const { return QIcon( ":/img/flag" ); }
+	QString name() const override { return Spell::tr( "Flags" ); }
+	bool instant() const override { return true; }
+	QIcon icon() const override { return QIcon( ":/img/flag" ); }
 
 	//! Node / Property types on which flags are applicable
 	enum FlagType
@@ -111,12 +111,12 @@ public:
 		return None;
 	}
 
-	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override
 	{
 		return queryType( nif, getFlagIndex( nif, index ) ) != None;
 	}
 
-	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override
 	{
 		QModelIndex iFlags = getFlagIndex( nif, index );
 
@@ -701,7 +701,7 @@ public:
 
 		dlgButtons( &dlg, vbox );
 
-		if ( dlg.exec() && QDialog::Accepted ) {
+		if ( dlg.exec() == QDialog::Accepted ) {
 			if ( nif->checkVersion( 0, 0x14000005 ) ) {
 				nif->set<bool>( nif->getBlock( index ), "Stencil Enabled", chkEnable->isChecked() );
 				nif->set<int>( nif->getBlock( index ), "Fail Action", cmbFail->currentIndex() );
@@ -764,7 +764,7 @@ public:
 
 		dlgButtons( &dlg, vbox );
 
-		if ( dlg.exec() && QDialog::Accepted ) {
+		if ( dlg.exec() == QDialog::Accepted ) {
 			if ( nif->checkVersion( 0, 0x14000005 ) ) {
 				nif->set<int>( nif->getBlock( index ), "Lighting Mode", cmbLight->currentIndex() );
 				nif->set<int>( nif->getBlock( index ), "Vertex Mode", cmbVert->currentIndex() );
@@ -836,6 +836,9 @@ public:
 		QVBoxLayout * vbox = new QVBoxLayout;
 		dlg.setLayout( vbox );
 
+		QSpinBox * spnUVIndex = dlgSpin( vbox, Spell::tr( "UV Index" ), 0, 0xFF );
+		spnUVIndex->setValue( flags & 0x00FF );
+
 		QStringList clampModes{
 			Spell::tr( "Clamp Both" ),
 			Spell::tr( "Clamp S Wrap T" ),
@@ -863,6 +866,7 @@ public:
 		if ( dlg.exec() == QDialog::Accepted ) {
 			flags = ( flags & 0x0FFF ) | ( cmbClamp->currentIndex() << 0x0C );
 			flags = ( flags & 0xF0FF ) | ( cmbFilter->currentIndex() << 0x08 );
+			flags = ( flags & 0xFF00 ) | spnUVIndex->value();
 			nif->set<int>( index, flags );
 		}
 	}
@@ -955,3 +959,88 @@ public:
 };
 
 REGISTER_SPELL( spEditFlags )
+
+
+class spEditVertexDesc final : public spEditFlags
+{
+public:
+	QString name() const override final { return Spell::tr( "Vertex Flags" ); }
+	bool instant() const override final { return true; }
+	QIcon icon() const override final { return QIcon( ":/img/flag" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
+	{
+		return nif->inherits( index.parent(), "BSTriShape" ) && nif->itemName( index ) == "Vertex Desc";
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
+	{
+		auto desc = nif->get<BSVertexDesc>( index );
+		uint stream = nif->getUserVersion2();
+		bool dynamic = nif->inherits( index.parent(), "BSDynamicTriShape" );
+
+		QStringList flagNames {
+			Spell::tr( "Vertex" ),	  // VA_POSITION = 0x0,
+			Spell::tr( "UVs" ),		  // VA_TEXCOORD0 = 0x1,
+			Spell::tr( "UVs 2" ),	  // VA_TEXCOORD1 = 0x2,
+			Spell::tr( "Normals" ),	  // VA_NORMAL = 0x3,
+			Spell::tr( "Tangents" ),  // VA_BINORMAL = 0x4,
+			Spell::tr( "Colors" ),	  // VA_COLOR = 0x5,
+			Spell::tr( "Skinned" ),	  // VA_SKINNING = 0x6,
+			Spell::tr( "Land Data" ), // VA_LANDDATA = 0x7,
+			Spell::tr( "Eye Data" ),  // VA_EYEDATA = 0x8,
+			Spell::tr( "" ),          
+			Spell::tr( "Full Precision" ) // 1 << 10
+		};
+
+		QDialog dlg;
+		QVBoxLayout * vbox = new QVBoxLayout;
+		dlg.setLayout( vbox );
+
+		QList<QCheckBox *> chkBoxes;
+		int x = 0;
+		for ( const QString& flagName : flagNames ) {
+			chkBoxes << dlgCheck( vbox, flagName );
+			chkBoxes.last()->setChecked( desc.HasFlag( VertexAttribute(x) ) );
+			// Hide unused attributes
+			if ( x == 2 || x == 7 || x == 9 )
+				chkBoxes.last()->setHidden( true );
+			x++;
+		}
+
+		dlgButtons( &dlg, vbox );
+
+		if ( dlg.exec() == QDialog::Accepted ) {
+			x = 0;
+			for ( QCheckBox * chk : chkBoxes ) {
+				if ( chk->isChecked() )
+					desc.SetFlag( VertexAttribute(x) );
+				else
+					desc.RemoveFlag( VertexAttribute(x) );
+				x++;
+			}
+
+			// Make sure sizes and offsets in rest of vertexDesc are updated from flags
+			desc.ResetAttributeOffsets( stream );
+			if ( dynamic )
+				desc.MakeDynamic();
+
+			if ( nif->set<BSVertexDesc>( index, desc ) ) {
+				auto iDataSize = nif->getIndex( index.parent(), "Data Size" );
+				auto numVerts = nif->get<uint>( index.parent(), "Num Vertices" );
+				auto numTris = nif->get<uint>( index.parent(), "Num Triangles" );
+
+				if ( iDataSize.isValid() )
+					nif->set<uint>( iDataSize, desc.GetVertexSize() * numVerts + 6 * numTris );
+
+				nif->updateArray( index.parent(), "Vertex Data" );
+			}
+
+		}
+
+		return index;
+	}
+
+};
+
+REGISTER_SPELL( spEditVertexDesc )

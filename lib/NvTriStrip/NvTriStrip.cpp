@@ -2,6 +2,7 @@
 #include "NvTriStripObjects.h"
 #include "NvTriStrip.h"
 #include <string.h> // memset
+#include <climits>
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //private data
@@ -290,7 +291,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 		stripifier.CreateStrips(tempStrips, stripIndices, bStitchStrips, numSeparateStrips, bRestart, restartVal);
 
 		//if we're stitching strips together, we better get back only one strip from CreateStrips()
-		assert( (bStitchStrips && (numSeparateStrips == 1)) || !bStitchStrips);
+		assert( (bStitchStrips && (numSeparateStrips == 1)) || !bStitchStrips || stripIndices.size() > USHRT_MAX );
 		
 		//convert to output format
 		*numGroups = numSeparateStrips; //for the strips
@@ -306,7 +307,7 @@ bool GenerateStrips(const unsigned short* in_indices, const unsigned int in_numI
 		{
 			int stripLength = 0;
 
-			if(!bStitchStrips)
+			if(!bStitchStrips || stripIndices.size() > USHRT_MAX)
 			{
 				//if we've got multiple strips, we need to figure out the correct length
 				size_t i;

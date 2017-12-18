@@ -1,6 +1,6 @@
 #include "tangentspace.h"
 
-#include "nvtristripwrapper.h"
+#include "lib/nvtristripwrapper.h"
 
 
 bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & index )
@@ -41,22 +41,42 @@ bool spTangentSpace::isApplicable( const NifModel * nif, const QModelIndex & ind
 QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 {
 	QPersistentModelIndex iShape = iBlock;
-
 	QModelIndex iData;
-	if ( nif->getUserVersion2() < 130 )
+	QModelIndex iPartBlock;
+	if ( nif->getUserVersion2() < 100 ) {
 		iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
-	else
-		iData = nif->getIndex( iShape, "Vertex Data" );
+	} else {
+		auto vf = nif->get<BSVertexDesc>( iShape, "Vertex Desc" );
+		if ( (vf & VertexFlags::VF_SKINNED) && nif->getUserVersion2() == 100 ) {
+			// Skinned SSE
+			auto skinID = nif->getLink( nif->getIndex( iShape, "Skin" ) );
+			auto partID = nif->getLink( nif->getBlock( skinID, "NiSkinInstance" ), "Skin Partition" );
+			iPartBlock = nif->getBlock( partID, "NiSkinPartition" );
+			if ( iPartBlock.isValid() )
+				iData = nif->getIndex( iPartBlock, "Vertex Data" );
+		} else {
+			iData = nif->getIndex( iShape, "Vertex Data" );
+		}
+	}
 
 	QVector<Vector3> verts;
 	QVector<Vector3> norms;
 	QVector<Vector2> texco;
 
-	if ( nif->getUserVersion2() < 130 ) {
+	if ( nif->getUserVersion2() < 100 ) {
 		verts = nif->getArray<Vector3>( iData, "Vertices" );
 		norms = nif->getArray<Vector3>( iData, "Normals" );
 	} else {
-		int numVerts = nif->get<int>( iShape, "Num Vertices" );
+		int numVerts;
+		// "Num Vertices" does not exist in the partition
+		if ( iPartBlock.isValid() )
+			numVerts = nif->get<uint>( iPartBlock, "Data Size" ) / nif->get<uint>( iPartBlock, "Vertex Size" );
+		else
+			numVerts = nif->get<int>( iShape, "Num Vertices" );
+
+		verts.reserve( numVerts );
+		norms.reserve( numVerts );
+		texco.reserve( numVerts );
 
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iData );
@@ -70,7 +90,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	int numUVSets = nif->get<int>( iData, "Num UV Sets" );
 	int tspaceFlags = nif->get<int>( iData, "TSpace Flag" );
 
-	if ( nif->getUserVersion2() < 130 ) {
+	if ( nif->getUserVersion2() < 100 ) {
 		QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
 
 		if ( !iTexCo.isValid() )
@@ -85,16 +105,24 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 	QModelIndex iPoints = nif->getIndex( iData, "Points" );
 
 	if ( iPoints.isValid() ) {
-		QList<QVector<quint16> > strips;
+		QVector<QVector<quint16> > strips;
 
 		for ( int r = 0; r < nif->rowCount( iPoints ); r++ )
 			strips.append( nif->getArray<quint16>( iPoints.child( r, 0 ) ) );
 
 		triangles = triangulate( strips );
-	} else if ( nif->getUserVersion2() < 130 ) {
+	} else if ( nif->getUserVersion2() < 100 ) {
 		triangles = nif->getArray<Triangle>( iData, "Triangles" );
-	} else if ( nif->getUserVersion2() == 130 ) {
-		triangles = nif->getArray<Triangle>( iShape, "Triangles" );
+	} else if ( nif->getUserVersion2() >= 100 ) {
+		if ( iPartBlock.isValid() ) {
+			// Get triangles from all partitions
+			auto numParts = nif->get<int>( iPartBlock, "Num Skin Partition Blocks" );
+			auto iParts = nif->getIndex( iPartBlock, "Partition" );
+			for ( int i = 0; i < numParts; i++ )
+				triangles << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
+		} else {
+			triangles = nif->getArray<Triangle>( iShape, "Triangles" );
+		}
 	}
 
 	if ( verts.isEmpty() || norms.count() != verts.count() || texco.count() != verts.count() || triangles.isEmpty() ) {
@@ -248,7 +276,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		}
 
 		nif->set<QByteArray>( iTSpace, "Binary Data", QByteArray( (const char *)tan.data(), tan.count() * sizeof( Vector3 ) ) + QByteArray( (const char *)bin.data(), bin.count() * sizeof( Vector3 ) ) );
-	} else if ( nif->getUserVersion2() < 130 ) {
+	} else if ( nif->getUserVersion2() < 100 ) {
 		if ( tspaceFlags == 0 )
 			tspaceFlags = 0x10;
 
@@ -260,13 +288,19 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 		nif->updateArray( iTangents );
 		nif->setArray( iBinorms, bin );
 		nif->setArray( iTangents, tan );
-	} else if ( nif->getUserVersion2() == 130 ) {
+	} else if ( nif->getUserVersion2() >= 100 ) {
+		int numVerts;
+		// "Num Vertices" does not exist in the partition
+		if ( iPartBlock.isValid() )
+			numVerts = nif->get<uint>( iPartBlock, "Data Size" ) / nif->get<uint>( iPartBlock, "Vertex Size" );
+		else
+			numVerts = nif->get<int>( iShape, "Num Vertices" );
 
-		int numVerts = nif->get<int>( iShape, "Num Vertices" );
+		nif->setState( BaseModel::Processing );
 		for ( int i = 0; i < numVerts; i++ ) {
 			auto idx = nif->index( i, 0, iData );
 
-			nif->set<Vector3>( idx, "Tangent", tan[i] );
+			nif->set<ByteVector3>( idx, "Tangent", tan[i] );
 			nif->set<float>( idx, "Bitangent X", bin[i][0] );
 
 			auto bitYi = round( ((bin[i][1] + 1.0) / 2.0) * 255.0 );
@@ -275,6 +309,7 @@ QModelIndex spTangentSpace::cast( NifModel * nif, const QModelIndex & iBlock )
 			nif->set<quint8>( idx, "Bitangent Y", bitYi );
 			nif->set<quint8>( idx, "Bitangent Z", bitZi );
 		}
+		nif->restoreState();
 	}
 
 	return iShape;

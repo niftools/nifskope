@@ -1,8 +1,9 @@
 #include "spellbook.h"
 
-#include "blocks.h"
-#include "nvtristripwrapper.h"
-#include "qhull.h"
+#include "spells/blocks.h"
+
+#include "lib/nvtristripwrapper.h"
+#include "lib/qhull.h"
 
 #include <QDialog>
 #include <QDoubleSpinBox>
@@ -221,7 +222,12 @@ public:
 	{
 		return nif && 
 			nif->isNiBlock( nif->getBlock( index ),
-				{ "bhkMalleableConstraint", "bhkRagdollConstraint", "bhkLimitedHingeConstraint", "bhkHingeConstraint", "bhkPrismaticConstraint" }
+				{ "bhkMalleableConstraint",
+				  "bhkBreakableConstraint",
+				  "bhkRagdollConstraint",
+				  "bhkLimitedHingeConstraint",
+				  "bhkHingeConstraint",
+				  "bhkPrismaticConstraint" }
 			);
 	}
 
@@ -230,7 +236,7 @@ public:
 		QModelIndex iConstraint = nif->getBlock( index );
 		QString name = nif->itemName( iConstraint );
 
-		if ( name == "bhkMalleableConstraint" ) {
+		if ( name == "bhkMalleableConstraint" || name == "bhkBreakableConstraint" ) {
 			if ( nif->getIndex( iConstraint, "Ragdoll" ).isValid() ) {
 				name = "bhkRagdollConstraint";
 			} else if ( nif->getIndex( iConstraint, "Limited Hinge" ).isValid() ) {
@@ -251,29 +257,37 @@ public:
 		Transform transA = bodyTrans( nif, iBodyA );
 		Transform transB = bodyTrans( nif, iBodyB );
 
+		QModelIndex iConstraintData;
 		if ( name == "bhkLimitedHingeConstraint" ) {
-			iConstraint = nif->getIndex( iConstraint, "Limited Hinge" );
+			iConstraintData = nif->getIndex( iConstraint, "Limited Hinge" );
+			if ( !iConstraintData.isValid() )
+				iConstraintData = iConstraint;
 		} else if ( name == "bhkRagdollConstraint" ) {
-			iConstraint = nif->getIndex( iConstraint, "Ragdoll" );
+			iConstraintData = nif->getIndex( iConstraint, "Ragdoll" );
+			if ( !iConstraintData.isValid() )
+				iConstraintData = iConstraint;
 		} else if ( name == "bhkHingeConstraint" ) {
-			iConstraint = nif->getIndex( iConstraint, "Hinge" );
+			iConstraintData = nif->getIndex( iConstraint, "Hinge" );
+			if ( !iConstraintData.isValid() )
+				iConstraintData = iConstraint;
 		}
 
-		if ( !iConstraint.isValid() )
+		if ( !iConstraintData.isValid() )
 			return index;
 
-		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraint, "Pivot A" ) ) * havokConst;
+		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraintData, "Pivot A" ) ) * havokConst;
 		pivot = transA * pivot;
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
-		nif->set<Vector4>( iConstraint, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
+		nif->set<Vector4>( iConstraintData, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
 
-		// TODO: bhkHingeConstraint
-		QString axleA, axleB, twistA, twistB;
-		if ( name == "bhkLimitedHingeConstraint" ) {
+		QString axleA, axleB, twistA, twistB, twistA2, twistB2;
+		if ( name.endsWith( "HingeConstraint" ) ) {
 			axleA = "Axle A";
 			axleB = "Axle B";
-			twistA = "Perp2 Axle In A2";
-			twistB = "Perp2 Axle In B2";
+			twistA = "Perp2 Axle In A1";
+			twistB = "Perp2 Axle In B1";
+			twistA2 = "Perp2 Axle In A2";
+			twistB2 = "Perp2 Axle In B2";
 		} else if ( name == "bhkRagdollConstraint" ) {
 			axleA = "Plane A";
 			axleB = "Plane B";
@@ -284,15 +298,22 @@ public:
 		if ( axleA.isEmpty() || axleB.isEmpty() || twistA.isEmpty() || twistB.isEmpty() )
 			return index;
 
-		Vector3 axle = Vector3( nif->get<Vector4>( iConstraint, axleA ) );
+		Vector3 axle = Vector3( nif->get<Vector4>( iConstraintData, axleA ) );
 		axle = transA.rotation * axle;
 		axle = transB.rotation.inverted() * axle;
-		nif->set<Vector4>( iConstraint, axleB, { axle[0], axle[1], axle[2], 0 } );
+		nif->set<Vector4>( iConstraintData, axleB, { axle[0], axle[1], axle[2], 0 } );
 
-		axle = Vector3( nif->get<Vector4>( iConstraint, twistA ) );
+		axle = Vector3( nif->get<Vector4>( iConstraintData, twistA ) );
 		axle = transA.rotation * axle;
 		axle = transB.rotation.inverted() * axle;
-		nif->set<Vector4>( iConstraint, twistB, { axle[0], axle[1], axle[2], 0 } );
+		nif->set<Vector4>( iConstraintData, twistB, { axle[0], axle[1], axle[2], 0 } );
+
+		if ( !twistA2.isEmpty() && !twistB2.isEmpty() ) {
+			axle = Vector3( nif->get<Vector4>( iConstraintData, twistA2 ) );
+			axle = transA.rotation * axle;
+			axle = transB.rotation.inverted() * axle;
+			nif->set<Vector4>( iConstraintData, twistB2, { axle[0], axle[1], axle[2], 0 } );
+		}
 
 		return index;
 	}
@@ -336,6 +357,9 @@ public:
 	QModelIndex cast( NifModel * nif, const QModelIndex & idx ) override final
 	{
 		QModelIndex iConstraint = nif->getBlock( idx );
+		QModelIndex iSpring = nif->getIndex( iConstraint, "Stiff Spring" );
+		if ( !iSpring.isValid() )
+			iSpring = iConstraint;
 
 		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
 		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
@@ -348,14 +372,14 @@ public:
 		Transform transA = spConstraintHelper::bodyTrans( nif, iBodyA );
 		Transform transB = spConstraintHelper::bodyTrans( nif, iBodyB );
 
-		Vector3 pivotA( nif->get<Vector4>( iConstraint, "Pivot A" ) * 7 );
-		Vector3 pivotB( nif->get<Vector4>( iConstraint, "Pivot B" ) * 7 );
+		Vector3 pivotA( nif->get<Vector4>( iSpring, "Pivot A" ) * 7 );
+		Vector3 pivotB( nif->get<Vector4>( iSpring, "Pivot B" ) * 7 );
 
 		float length = ( transA * pivotA - transB * pivotB ).length() / 7;
 
-		nif->set<float>( iConstraint, "Length", length );
+		nif->set<float>( iSpring, "Length", length );
 
-		return nif->getIndex( iConstraint, "Length" );
+		return nif->getIndex( iSpring, "Length" );
 	}
 };
 

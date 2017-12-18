@@ -16,12 +16,6 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QFrame" name="frame">
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
        <number>6</number>
@@ -45,12 +39,6 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <property name="leftMargin">
@@ -78,16 +66,6 @@
              <family>Segoe UI Light</family>
              <pointsize>14</pointsize>
             </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QListWidget { outline: none; }
-QListWidget::item { height: 20px; padding: 10px; color: #555555; border: 1px solid transparent;  }
-QListWidget::item::text { padding-left: 10px; background: transparent;  border: 1px solid transparent;  }
-QListWidget::item::text:focus { border: 1px solid transparent;  }
-QListWidget::item:focus { border: 1px solid transparent; color: black;  }
-
-QListWidget::item:hover { background: rgba(0, 153, 255, 32); border: 1px solid transparent; }
-QListWidget::item:selected { background: rgba(0, 153, 255, 128); border: 1px solid transparent;   }</string>
            </property>
            <property name="frameShape">
             <enum>QFrame::NoFrame</enum>
@@ -132,12 +110,6 @@ QListWidget::item:selected { background: rgba(0, 153, 255, 128); border: 1px sol
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <property name="leftMargin">

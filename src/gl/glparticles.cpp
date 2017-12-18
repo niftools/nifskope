@@ -32,9 +32,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "glparticles.h"
 
-
-#include "controllers.h"
-#include "glscene.h"
+#include "gl/controllers.h"
+#include "gl/glscene.h"
+#include "model/nifmodel.h"
 
 #include <math.h>
 
@@ -68,9 +68,6 @@ void Particles::update( const NifModel * nif, const QModelIndex & index )
 			if ( !iChild.isValid() )
 				continue;
 
-			QString name = nif->itemName( iChild );
-
-			//if ( name == "NiParticlesData" || name == "NiRotatingParticlesData" || name == "NiAutoNormalParticlesData" )
 			if ( nif->inherits( iChild, "NiParticlesData" ) ) {
 				iData  = iChild;
 				upData = true;

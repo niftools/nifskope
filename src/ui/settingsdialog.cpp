@@ -1,13 +1,15 @@
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 
-#include "settings.h"
+#include "ui/settingspane.h"
 
 #include <QDebug>
 #include <QListWidget>
 #include <QSettings>
 #include <QStatusBar>
 
+
+//! @file settingsdialog.cpp SettingsDialog
 
 SettingsDialog::SettingsDialog( QWidget * parent ) :
     QDialog( parent ),
@@ -33,6 +35,10 @@ SettingsDialog::SettingsDialog( QWidget * parent ) :
 
 	btnApply = ui->submit->button( QDialogButtonBox::Apply );
 	btnApply->setEnabled( false );
+
+	btnCancel = ui->submit->button( QDialogButtonBox::Cancel );
+	btnCancel->setEnabled( true );
+	btnCancel->setText( tr("Close") );
 
 	QSettings settings;
 
@@ -72,6 +78,7 @@ void SettingsDialog::apply()
 
 	btnSave->setEnabled( false );
 	btnApply->setEnabled( false );
+	btnCancel->setText( tr("Close") );
 }
 
 void SettingsDialog::save()
@@ -88,6 +95,7 @@ void SettingsDialog::cancel()
 
 	btnSave->setEnabled( false );
 	btnApply->setEnabled( false );
+	btnCancel->setText( tr("Close") );
 }
 
 void SettingsDialog::restoreDefaults()
@@ -102,6 +110,7 @@ void SettingsDialog::modified()
 {
 	btnSave->setEnabled( true );
 	btnApply->setEnabled( true );
+	btnCancel->setText( tr("Cancel") );
 }
 
 void SettingsDialog::changePage( QListWidgetItem * current, QListWidgetItem * previous )

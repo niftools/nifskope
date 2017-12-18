@@ -33,8 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLMESH_H
 #define GLMESH_H
 
-#include "glnode.h" // Inherited
-#include "gltools.h"
+#include "gl/glnode.h" // Inherited
+#include "gl/gltools.h"
 
 #include <QPersistentModelIndex>
 #include <QVector>
@@ -42,6 +42,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 //! @file glmesh.h Mesh
+
+using TriStrip = QVector<quint16>;
+Q_DECLARE_TYPEINFO( TriStrip, Q_MOVABLE_TYPE );
+using TexCoords = QVector<Vector2>;
+Q_DECLARE_TYPEINFO( TexCoords, Q_MOVABLE_TYPE );
+
+class NifModel;
 
 class Shape : public Node
 {
@@ -52,6 +59,8 @@ class Shape : public Node
 public:
 	Shape( Scene * s, const QModelIndex & b );
 	~Shape() { clear(); }
+
+	void update( const NifModel * nif, const QModelIndex & ) override;
 
 	virtual void drawVerts() const {};
 	virtual QModelIndex vertexAt( int ) const { return QModelIndex(); };
@@ -72,6 +81,8 @@ protected:
 	QPersistentModelIndex iData;
 	//! Does the data need updating?
 	bool updateData = false;
+	//! Was Skinning enabled last update?
+	bool doSkinning = false;
 
 	//! Skin instance
 	QPersistentModelIndex iSkin;
@@ -91,11 +102,11 @@ protected:
 	//! Bitangents
 	QVector<Vector3> bitangents;
 	//! UV coordinate sets
-	QList<QVector<Vector2>> coords;
+	QVector<TexCoords> coords;
 	//! Triangles
 	QVector<Triangle> triangles;
 	//! Strip points
-	QList<QVector<quint16>> tristrips;
+	QVector<TriStrip> tristrips;
 	//! Sorted triangles
 	QVector<Triangle> sortedTriangles;
 	//! Triangle indices
@@ -109,8 +120,6 @@ protected:
 	QVector<Vector3> transNorms;
 	//! Transformed colors (alpha blended)
 	QVector<Color4> transColors;
-	//! Transformed colors (alpha removed)
-	QVector<Color4> transColorsNoAlpha;
 	//! Transformed tangents
 	QVector<Vector3> transTangents;
 	//! Transformed bitangents
@@ -119,16 +128,16 @@ protected:
 	//! Does the skin data need updating?
 	bool updateSkin = false;
 	//! Toggle for skinning
-	bool doSkinning = false;
+	bool isSkinned = false;
 
-	int skeletonRoot;
+	int skeletonRoot = 0;
 	Transform skeletonTrans;
 	QVector<int> bones;
 	QVector<BoneWeights> weights;
 	QVector<SkinPartition> partitions;
 
-	//! Holds the name of the shader, or "fixed function pipeline" if no shader
-	QString shader;
+	//! Holds the name of the shader, or "" if no shader
+	QString shader = "";
 
 	//! Shader property
 	BSShaderLightingProperty * bssp = nullptr;
@@ -149,7 +158,9 @@ protected:
 	bool translucent = false;
 
 	mutable BoundSphere boundSphere;
-	mutable bool updateBounds;
+	mutable bool updateBounds = false;
+
+	bool isLOD = false;
 };
 
 //! A mesh
@@ -191,8 +202,6 @@ protected:
 
 	//! Tangent data
 	QPersistentModelIndex iTangentData;
-
-	static bool isBSLODPresent;
 };
 
 

@@ -1,9 +1,9 @@
 #include "spellbook.h"
 
-#include "blocks.h"
-#include "mesh.h"
-#include "tangentspace.h"
-#include "transform.h"
+#include "spells/blocks.h"
+#include "spells/mesh.h"
+#include "spells/tangentspace.h"
+#include "spells/transform.h"
 
 #include <QBuffer>
 #include <QMessageBox>
@@ -337,7 +337,7 @@ public:
 	}
 
 	//! Determine if two shapes are identical
-	bool matches( const NifModel * nif, QModelIndex iTriA, QModelIndex iTriB )
+	bool matches( const NifModel * nif, const QModelIndex & iTriA, const QModelIndex & iTriB )
 	{
 		if ( iTriA == iTriB
 			 || nif->itemName( iTriA ) != nif->itemName( iTriB )
@@ -404,7 +404,7 @@ public:
 	}
 
 	//! Determines if two sets of shape data are identical
-	bool dataMatches( const NifModel * nif, QModelIndex iDataA, QModelIndex iDataB )
+	bool dataMatches( const NifModel * nif, const QModelIndex & iDataA, const QModelIndex & iDataB )
 	{
 		if ( iDataA == iDataB )
 			return true;
@@ -423,7 +423,7 @@ public:
 	}
 
 	//! Combines meshes a and b ( a += b )
-	void combine( NifModel * nif, QModelIndex iTriA, QModelIndex iTriB )
+	void combine( NifModel * nif, const QModelIndex & iTriA, const QModelIndex & iTriB )
 	{
 		nif->set<quint32>( iTriB, "Flags", nif->get<quint32>( iTriB, "Flags" ) | 1 );
 
@@ -496,7 +496,7 @@ public:
 REGISTER_SPELL( spCombiTris )
 
 
-void scan( QModelIndex idx, NifModel * nif, QMap<QString, qint32> & usedStrings, bool hasCED )
+void scan( const QModelIndex & idx, NifModel * nif, QMap<QString, qint32> & usedStrings, bool hasCED )
 {
 	for ( int i = 0; i < nif->rowCount( idx ); i++ ) {
 		auto child = idx.child( i, 2 );

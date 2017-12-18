@@ -33,7 +33,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CONTROLLERS_H
 #define CONTROLLERS_H
 
-#include "glcontroller.h" // Inherited
+#include "gl/glcontroller.h" // Inherited
+#include "data/niftypes.h"
+
+#include <QPointer>
 
 
 //! @file controllers.h Controller subclasses
@@ -85,7 +88,7 @@ public:
 
 	void updateTime( float time ) override final;
 
-	void setInterpolator( const QModelIndex & iBlock ) override final;
+	void setInterpolator( const QModelIndex & idx ) override final;
 
 protected:
 	QPointer<Node> target;
@@ -105,7 +108,7 @@ public:
 
 	bool update( const NifModel * nif, const QModelIndex & index ) override final;
 
-	bool setInterpolator( Node * node, const QModelIndex & iInterpolator );
+	bool setInterpolatorNode( Node * node, const QModelIndex & idx );
 
 protected:
 	QPointer<Node> target;
@@ -170,7 +173,7 @@ public:
 protected:
 	QPointer<Shape> target;
 
-	int luv;
+	int luv = 0;
 };
 
 
@@ -184,13 +187,13 @@ class ParticleController final : public Controller
 		Vector3 position;
 		Vector3 velocity;
 		Vector3 unknown;
-		float lifetime;
-		float lifespan;
-		float lasttime;
-		short y;
-		short vertex;
+		float lifetime = 0;
+		float lifespan = 0;
+		float lasttime = 0;
+		short y = 0;
+		short vertex = 0;
 
-		Particle() : lifetime( 0 ), lifespan( 0 )
+		Particle()
 		{
 		}
 	};
@@ -206,21 +209,21 @@ class ParticleController final : public Controller
 
 	QPointer<Particles> target;
 
-	float emitStart, emitStop, emitRate, emitLast, emitAccu, emitMax;
+	float emitStart = 0, emitStop = 0, emitRate = 0, emitLast = 0, emitAccu = 0, emitMax = 0;
 	QPointer<Node> emitNode;
 	Vector3 emitRadius;
 
-	float spd, spdRnd;
-	float ttl, ttlRnd;
+	float spd = 0, spdRnd = 0;
+	float ttl = 0, ttlRnd = 0;
 
-	float inc, incRnd;
-	float dec, decRnd;
+	float inc = 0, incRnd = 0;
+	float dec = 0, decRnd = 0;
 
-	float size;
-	float grow;
-	float fade;
+	float size = 0;
+	float grow = 0;
+	float fade = 0;
 
-	float localtime;
+	float localtime = 0;
 
 	QList<QPersistentModelIndex> iExtras;
 	QPersistentModelIndex iColorKeys;
@@ -263,7 +266,7 @@ protected:
 	QPointer<MaterialProperty> materialProp;
 	QPointer<AlphaProperty> alphaProp;
 
-	int lAlpha;
+	int lAlpha = 0;
 };
 
 
@@ -280,8 +283,8 @@ public:
 protected:
 	QPointer<MaterialProperty> target; //!< The MaterialProperty being controlled
 
-	int lColor;                        //!< Last interpolation time
-	int tColor;                        //!< The color slot being controlled
+	int lColor = 0;                        //!< Last interpolation time
+	int tColor = tAmbient;                 //!< The color slot being controlled
 
 	//! Color slots that can be controlled
 	enum
@@ -310,10 +313,10 @@ protected:
 	QPointer<TexturingProperty> target;
 	QPointer<TextureProperty> oldTarget;
 
-	float flipDelta;
-	int flipSlot;
+	float flipDelta = 0;
+	int flipSlot = 0;
 
-	int flipLast;
+	int flipLast = 0;
 
 	QPersistentModelIndex iSources;
 };
@@ -332,10 +335,10 @@ public:
 protected:
 	QPointer<TexturingProperty> target;
 
-	int texSlot;
-	int texOP;
+	int texSlot = 0;
+	int texOP = 0;
 
-	int lX;
+	int lX = 0;
 };
 
 namespace EffectFloat
@@ -369,7 +372,7 @@ public:
 protected:
 	QPointer<BSEffectShaderProperty> target;
 
-	EffectFloat::Variable variable;
+	EffectFloat::Variable variable = EffectFloat::Emissive_Multiple;
 };
 
 
@@ -386,7 +389,7 @@ public:
 protected:
 	QPointer<BSEffectShaderProperty> target;
 
-	int variable;
+	int variable = 0;
 };
 
 namespace LightingFloat
@@ -420,7 +423,7 @@ public:
 protected:
 	QPointer<BSLightingShaderProperty> target;
 
-	LightingFloat::Variable variable;
+	LightingFloat::Variable variable = LightingFloat::Refraction_Strength;
 };
 
 
@@ -437,7 +440,7 @@ public:
 protected:
 	QPointer<BSLightingShaderProperty> target;
 
-	int variable;
+	int variable = 0;
 };
 
 
