@@ -381,7 +381,7 @@ void Mesh::transform()
 			}
 
 			// This NiMesh does not have vertices, abort
-			if ( !(semFlags & NiMesh::HAS_POSITION) )
+			if ( !(semFlags & NiMesh::HAS_POSITION || semFlags & NiMesh::HAS_POSITION_BP) )
 				return;
 
 			// The number of triangle indices across the submeshes for this NiMesh
