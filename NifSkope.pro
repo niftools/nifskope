@@ -34,9 +34,9 @@ CONFIG(debug, debug|release) {
 #	uncomment this if you want the text stats gl option
 #	DEFINES += USE_GL_QPAINTER
 
-TRANSLATIONS += \
-	res/lang/NifSkope_de.ts \
-	res/lang/NifSkope_fr.ts
+#TRANSLATIONS += \
+#	res/lang/NifSkope_de.ts \
+#	res/lang/NifSkope_fr.ts
 
 # Require explicit
 DEFINES += \
@@ -472,8 +472,11 @@ build_pass|!debug_and_release {
 ## QMAKE_POST_LINK
 ###############################
 
-	win32:DEP += \
+win32:contains(QT_ARCH, i386) {
+	DEP += \
 		dep/NifMopp.dll
+	copyFiles( $$DEP )
+}
 
 	XML += \
 		build/docsys/nifxml/nif.xml \
@@ -490,16 +493,12 @@ build_pass|!debug_and_release {
 
 	READMES += \
 		CHANGELOG.md \
-		CONTRIBUTORS.md \
 		LICENSE.md \
-		README.md \
-		TROUBLESHOOTING.md
-
+		README.md
 
 	copyDirs( $$SHADERS, shaders )
 	#copyDirs( $$LANG, lang )
-    #copyFiles( $$XML $$QSS )
-	win32:copyFiles( $$DEP )
+	copyFiles( $$XML $$QSS )
 
 	# Copy Readmes and rename to TXT
 	copyFiles( $$READMES,,,, md:txt )
