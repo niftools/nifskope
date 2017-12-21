@@ -1144,7 +1144,8 @@ public:
 					if ( buffer.open( QIODevice::ReadOnly ) ) {
 						QDataStream ds( &buffer );
 						QStringList strings;
-						ds >> strings;
+						if ( nif->checkVersion( 0x14010001, 0 ) )
+							ds >> strings;
 
 						QModelIndex block = nif->insertNiBlock( bType, nif->getBlockCount() );
 						nif->loadIndex( buffer, block );
@@ -1239,7 +1240,8 @@ public:
 						QDataStream ds( &buffer );
 
 						QStringList strings;
-						ds >> strings;
+						if ( nif->checkVersion( 0x14010001, 0 ) )
+							ds >> strings;
 
 						nif->loadIndex( buffer, index );
 
@@ -1449,7 +1451,8 @@ QModelIndex spPasteBranch::cast( NifModel * nif, const QModelIndex & index )
 						QString bType;
 						QStringList strings;
 						ds >> bType;
-						ds >> strings;
+						if ( nif->checkVersion( 0x14010001, 0 ) )
+							ds >> strings;
 
 						NiMesh::DataStreamMetadata metadata = {};
 						bType = nif->extractRTTIArgs( bType, metadata );
