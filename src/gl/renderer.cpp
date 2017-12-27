@@ -572,6 +572,7 @@ static QString white = "shaders/white.dds";
 static QString black = "shaders/black.dds";
 static QString gray = "shaders/gray.dds";
 static QString default_n = "shaders/default_n.dds";
+static QString cube = "shaders/cubemap.dds";
 
 bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & props,
 							 const QVector<QModelIndex> & iBlocks, bool eval )
@@ -808,31 +809,28 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 
 		prog->uni1i( HAS_MAP_CUBE, mesh->bslsp->hasCubeMap );
 		prog->uni1i( HAS_MASK_ENV, mesh->bslsp->useEnvironmentMask );
+		
+		// Always bind cube regardless of shader settings
+		GLint uniCubeMap = prog->uniformLocations[SAMP_CUBE];
+		if ( uniCubeMap >= 0 ) {
+			QString fname = bsprop->fileName( 4 );
+			if ( fname.isEmpty() )
+				fname = cube;
 
-		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) ) {
-
-			prog->uni1f( ENV_REFLECTION, mesh->bslsp->getEnvironmentReflection() );
-
-			// Do not test useEnvironmentMask here, always pass white.dds as fallback
-			if ( !prog->uniSampler( bsprop, SAMP_ENV_MASK, 5, texunit, white, clamp ) )
+			if ( !activateTextureUnit( texunit ) || !bsprop->bindCube( 4, fname ) )
 				return false;
 
-			GLint uniCubeMap = prog->uniformLocations[SAMP_CUBE];
-			if ( uniCubeMap >= 0 ) {
-
-				QString fname = bsprop->fileName( 4 );
-
-				if ( !fname.isEmpty() && (!activateTextureUnit( texunit ) || !bsprop->bindCube( 4, fname )) )
-					return false;
-
-				fn->glUniform1i( uniCubeMap, texunit++ );
-			}
-		} else {
-			// In the case that the cube texture has already been bound,
-			//	but SLSF1_Environment_Mapping is not set, assure that it 
-			//	removes reflections.
-			prog->uni1f( ENV_REFLECTION, 0 );
+			fn->glUniform1i( uniCubeMap, texunit++ );
 		}
+		// Always bind mask regardless of shader settings
+		if ( !prog->uniSampler( bsprop, SAMP_ENV_MASK, 5, texunit, white, clamp ) )
+			return false;
+
+		if ( mesh->bslsp->hasCubeMap && mesh->bslsp->hasEnvironmentMap 
+			 && (opts & Scene::DoCubeMapping) && (opts & Scene::DoLighting) )
+			prog->uni1f( ENV_REFLECTION, mesh->bslsp->getEnvironmentReflection() );
+		else
+			prog->uni1f( ENV_REFLECTION, 0 );
 
 		// Parallax
 		if ( mesh->bslsp->hasHeightMap ) {
