@@ -4,17 +4,17 @@ NifSkope is a tool for opening and editing the NetImmerse file format (NIF). NIF
 
 ### Download
 
-You can download the latest official release from [Sourceforge](https://sourceforge.net/projects/niftools/files/nifskope/).
+You can download the latest official release from [GitHub](https://github.com/niftools/nifskope/releases). More frequent development builds are posted in the [NifTools Discord](https://discord.gg/ZFjdN4x), pinned to #software.
 
 
 ### Discussion & Help
 
-
-Visit our forum at [NifTools.org](http://niftools.sourceforge.net/forum). To receive support for NifSkope please use the [NifSkope Help subforum](http://niftools.sourceforge.net/forum/viewforum.php?f=24).
+- Visit the [NifTools Discord](https://discord.gg/ZFjdN4x). To receive support use the #software channel.
+- Visit the [NifTools.org](https://forum.niftools.org/) forum. To receive support for NifSkope please use the [Support subforum](https://forum.niftools.org/24-nifskope/).
 
 ### Issues
 
-Anyone can [report issues at GitHub](https://github.com/niftools/nifskope/issues) or in the [Bug Reports subforum](http://niftools.sourceforge.net/forum/viewforum.php?f=24) at NifTools.org.
+Anyone can [report issues at GitHub](https://github.com/niftools/nifskope/issues) or in the NifTools.org [Support subforum](https://forum.niftools.org/24-nifskope/).
 
 
 ### Contribute
@@ -27,7 +27,8 @@ git clone --recursive git://github.com/<YOUR_USERNAME>/nifskope.git
 
 For information about development:
 
-- Visit the [NifSkope development subforum](http://niftools.sourceforge.net/forum/viewforum.php?f=4) at NifTools.org.
+- Visit our [Discord #dev channel](https://discord.gg/zvWZrrJ).
+- Visit the NifTools.org [development subforum](https://forum.niftools.org/6-nifskope-development/).
 - Refer to our [GitHub wiki](https://github.com/niftools/nifskope/wiki#wiki-development) for information on compilation.  
 
 
