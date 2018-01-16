@@ -457,10 +457,10 @@
              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
             </property>
             <layout class="QGridLayout" name="gridLayout">
-             <item row="0" column="0">
-              <widget class="QCheckBox" name="chkShowAxes">
+             <item row="2" column="0">
+              <widget class="QCheckBox" name="chkShowGrid">
                <property name="text">
-                <string>Show Axes</string>
+                <string>Show Grid</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -474,34 +474,23 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
-              <widget class="QCheckBox" name="chkShowGrid">
+             <item row="0" column="0">
+              <widget class="QCheckBox" name="chkShowAxes">
                <property name="text">
-                <string>Show Grid</string>
+                <string>Show Axes</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
-              <widget class="QCheckBox" name="chkShowCollision">
+             <item row="9" column="0">
+              <widget class="QCheckBox" name="chkDoSkinning">
                <property name="text">
-                <string>Show Collision</string>
+                <string>Do Skinning</string>
                </property>
-              </widget>
-             </item>
-             <item row="7" column="0">
-              <widget class="QCheckBox" name="chkShowHidden">
-               <property name="text">
-                <string>Show Hidden</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QCheckBox" name="chkShowConstraints">
-               <property name="text">
-                <string>Show Constraints</string>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -512,10 +501,31 @@
                </property>
               </widget>
              </item>
-             <item row="8" column="0">
-              <widget class="QCheckBox" name="chkDoSkinning">
+             <item row="5" column="0">
+              <widget class="QCheckBox" name="chkShowCollision">
                <property name="text">
-                <string>Do Skinning</string>
+                <string>Show Collision</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="chkShowConstraints">
+               <property name="text">
+                <string>Show Constraints</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QCheckBox" name="chkShowHidden">
+               <property name="text">
+                <string>Show Hidden</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="0">
+              <widget class="QCheckBox" name="chkDoErrorColor">
+               <property name="text">
+                <string>Do Error Color</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
