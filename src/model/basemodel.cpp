@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QByteArray>
 #include <QColor>
+#include <QBuffer>
 #include <QFile>
 #include <QFileInfo>
 #include <QTime>
@@ -648,7 +649,12 @@ bool BaseModel::loadFromFile( const QString & file )
 bool BaseModel::saveToFile( const QString & str ) const
 {
 	QFile f( str );
-	return f.open( QIODevice::WriteOnly ) && save( f );
+	QBuffer buf;
+	bool success = false;
+	if ( buf.open( QIODevice::WriteOnly ) && save( buf ) )
+		success = f.open( QIODevice::WriteOnly ) && f.write( buf.data() ) > 0;
+
+	return success;
 }
 
 void BaseModel::refreshFileInfo( const QString & f )
