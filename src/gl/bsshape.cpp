@@ -39,7 +39,15 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;
 
-	if ( iBlock != index && iSkin != index && iSkinData != index && !nif->inherits( index, "NiProperty" ) )
+	bool extraData = nif->inherits( index, "NiProperty" ) || nif->inherits( index, "BSShaderTextureSet" );
+
+	if ( iBlock != index && iSkin != index && iSkinData != index && !extraData )
+		return;
+
+	// Update shaders from this mesh's shader property
+	updateShaderProperties( nif );
+
+	if ( extraData )
 		return;
 
 	nifVersion = nif->getUserVersion2();
@@ -176,9 +184,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 		}
 	}
-
-	// Update shaders from this mesh's shader property
-	updateShaderProperties( nif );
 
 	if ( bssp )
 		isVertexAlphaAnimation = bssp->hasSF2( ShaderFlags::SLSF2_Tree_Anim );
