@@ -426,6 +426,12 @@ void NifTreeView::keyPressEvent( QKeyEvent * e )
 			oldidx = proxy->mapTo( currentIndex() );
 		}
 
+		// Cast non-modifying spells
+		if ( spell->constant() && spell->isApplicable( nif, oldidx ) ) {
+			spell->cast( nif, oldidx );
+			return;
+		}
+
 		if ( nif && spell->isApplicable( nif, oldidx ) ) {
 			selectionModel()->setCurrentIndex( QModelIndex(), QItemSelectionModel::Clear | QItemSelectionModel::Rows );
 

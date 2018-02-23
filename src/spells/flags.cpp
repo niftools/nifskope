@@ -21,6 +21,7 @@ class spEditFlags : public Spell
 {
 public:
 	QString name() const override { return Spell::tr( "Flags" ); }
+	bool constant() const override { return true; }
 	bool instant() const override { return true; }
 	QIcon icon() const override { return QIcon( ":/img/flag" ); }
 

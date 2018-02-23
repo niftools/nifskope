@@ -1047,6 +1047,7 @@ class spCopyBlock final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Copy" ); }
 	QString page() const override final { return Spell::tr( "Block" ); }
+	bool constant() const override final { return true; }
 	QKeySequence hotkey() const override final { return{ Qt::CTRL + Qt::SHIFT + Qt::Key_C }; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final

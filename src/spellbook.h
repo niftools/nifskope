@@ -73,6 +73,8 @@ public:
 	virtual QString hint() const { return QString(); }
 	//! Icon displayed in block view
 	virtual QIcon icon() const { return QIcon(); }
+	//! Whether the spell does not modify the file
+	virtual bool constant() const { return false; }
 	//! Whether the spell shows up in block list instead of a context menu
 	virtual bool instant() const { return false; }
 	//! Whether the spell performs a sanitizing function

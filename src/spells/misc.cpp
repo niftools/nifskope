@@ -105,6 +105,7 @@ class spFollowLink final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "Follow Link" ); }
+	bool constant() const override final { return true; }
 	bool instant() const override final { return true; }
 	QIcon icon() const override final { return QIcon( ":/img/link" ); }
 
@@ -131,6 +132,7 @@ class spFileOffset final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "File Offset" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
@@ -155,6 +157,7 @@ class spExportBinary final : public Spell
 {
 public:
 	QString name() const override final { return Spell::tr( "Export Binary" ); }
+	bool constant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{

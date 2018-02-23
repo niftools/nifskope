@@ -75,6 +75,7 @@ public:
 
 		return *txt_xpm_icon;
 	}
+	bool constant() const override final { return true; }
 	bool instant() const override final { return true; }
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
@@ -139,7 +140,8 @@ public:
 		if ( dlg.exec() != QDialog::Accepted )
 			return index;
 
-		nif->set<QString>( index, le->text() );
+		if ( le->text() != string )
+			nif->set<QString>( index, le->text() );
 
 		return index;
 	}

@@ -73,6 +73,7 @@ class spEditStringOffset final : public Spell
 public:
 	QString name() const override final { return Spell::tr( "Edit String Offset" ); }
 	QString page() const override final { return Spell::tr( "" ); }
+	bool constant() const override final { return true; }
 	QIcon icon() const override final
 	{
 		if ( !txt_xpm_icon )
