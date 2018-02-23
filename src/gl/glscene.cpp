@@ -91,6 +91,8 @@ Scene::Scene( TexCache * texcache, QOpenGLContext * context, QOpenGLFunctions * 
 		options |= ShowHidden;
 	if ( settings.value( "Do Skinning", true ).toBool() )
 		options |= DoSkinning;
+	if ( settings.value( "Do Error Color", true ).toBool() )
+		options |= DoErrorColor;
 
 	settings.endGroup();
 }

@@ -745,7 +745,7 @@ void Mesh::transform()
 				}
 
 				triangles.clear();
-			} else {
+			} else if ( iSkinPart.isValid() && doSkinning ) {
 				triangles.clear();
 				tristrips.clear();
 			}
@@ -799,7 +799,7 @@ void Mesh::transform()
 			bool hvw = nif->get<unsigned char>( iSkinData, "Has Vertex Weights" );
 			// Ignore weights listed in NiSkinData if NiSkinPartition exists
 			hvw = hvw && !iSkinPart.isValid();
-			int vcnt = hvw ? 0 : verts.count();
+			int vcnt = hvw ? verts.count() : 0;
 			for ( int b = 0; b < nif->rowCount( idxBones ) && b < bones.count(); b++ ) {
 				weights.append( BoneWeights( nif, idxBones.child( b, 0 ), bones[ b ], vcnt ) );
 			}

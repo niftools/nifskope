@@ -39,7 +39,15 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	if ( !iBlock.isValid() || !index.isValid() )
 		return;
 
-	if ( iBlock != index && iSkin != index && iSkinData != index && !nif->inherits( index, "NiProperty" ) )
+	bool extraData = nif->inherits( index, "NiProperty" ) || nif->inherits( index, "BSShaderTextureSet" );
+
+	if ( iBlock != index && iSkin != index && iSkinData != index && !extraData )
+		return;
+
+	// Update shaders from this mesh's shader property
+	updateShaderProperties( nif );
+
+	if ( extraData )
 		return;
 
 	nifVersion = nif->getUserVersion2();
@@ -49,6 +57,8 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 		emit nif->lodSliderChanged( true );
 
 	auto vertexFlags = nif->get<BSVertexDesc>( iBlock, "Vertex Desc" );
+
+	hasVertexColors = vertexFlags.HasFlag( VertexAttribute::VA_COLOR );
 
 	bool isDynamic = nif->inherits( iBlock, "BSDynamicTriShape" );
 
@@ -174,9 +184,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 		}
 	}
-
-	// Update shaders from this mesh's shader property
-	updateShaderProperties( nif );
 
 	if ( bssp )
 		isVertexAlphaAnimation = bssp->hasSF2( ShaderFlags::SLSF2_Tree_Anim );
@@ -329,6 +336,13 @@ void BSShape::transformShapes()
 		transBitangents = bitangents;
 	}
 
+	transColors = colors;
+	if ( bslsp ) {
+		if ( !(bslsp->getFlags1() & ShaderFlags::SLSF1_Vertex_Alpha) ) {
+			for ( int c = 0; c < colors.count(); c++ )
+				transColors[c] = Color4( colors[c].red(), colors[c].green(), colors[c].blue(), 1.0f );
+		}
+	}
 }
 
 void BSShape::drawShapes( NodeList * secondPass, bool presort )
@@ -384,18 +398,17 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 		glNormalPointer( GL_FLOAT, 0, transNorms.constData() );
 
 		bool doVCs = (bssp && (bssp->getFlags2() & ShaderFlags::SLSF2_Vertex_Colors));
-		// Always do vertex colors for FO4 BSESP
-		if ( nifVersion == 130 && bsesp && colors.count() )
+		// Always do vertex colors for FO4 if colors present
+		if ( nifVersion == 130 && hasVertexColors && colors.count() )
 			doVCs = true;
 
-		const Color4 * c = nullptr;
-		if ( colors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
-			c = colors.constData();
-		}
-
-		if ( c ) {
+		if ( transColors.count() && (scene->options & Scene::DoVertexColors) && doVCs ) {
 			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_FLOAT, 0, c );
+			glColorPointer( 4, GL_FLOAT, 0, transColors.constData() );
+		} else if ( !hasVertexColors && (bslsp && bslsp->hasVertexColors) ) {
+			// Correctly blacken the mesh if SLSF2_Vertex_Colors is still on
+			//	yet "Has Vertex Colors" is not.
+			glColor( Color3( 0.0f, 0.0f, 0.0f ) );
 		} else {
 			glColor( Color3( 1.0f, 1.0f, 1.0f ) );
 		}
@@ -412,7 +425,7 @@ void BSShape::drawShapes( NodeList * secondPass, bool presort )
 	}
 
 	if ( !isLOD ) {
-	glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
+		glDrawElements( GL_TRIANGLES, triangles.count() * 3, GL_UNSIGNED_SHORT, triangles.constData() );
 	} else if ( triangles.count() ) {
 		auto lod0 = nif->get<uint>( iBlock, "LOD0 Size" );
 		auto lod1 = nif->get<uint>( iBlock, "LOD1 Size" );

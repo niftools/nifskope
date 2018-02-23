@@ -339,8 +339,8 @@ void NifSkope::initActions()
 #endif
 
 	connect( ui->aSilhouette, &QAction::triggered, [this]( bool checked ) {
-		//ui->aDisableShading->setChecked( checked );
 		ogl->setVisMode( Scene::VisSilhouette, checked );
+		ogl->updateScene();
 	} );
 
 	connect( ui->aVisNormals, &QAction::triggered, [this]( bool checked ) {

@@ -343,7 +343,8 @@ public:
 		void uni3m( UniformType var, const Matrix & val );
 		void uni4m( UniformType var, const Matrix4 & val );
 		bool uniSampler( class BSShaderLightingProperty * bsprop, UniformType var, int textureSlot,
-						 int & texunit, const QString & alternate, uint clamp );
+						 int & texunit, const QString & alternate, uint clamp, const QString & forced = {} );
+		bool uniSamplerBlank( UniformType var, int & texunit );
 	};
 
 	QMap<QString, Shader *> shaders;
