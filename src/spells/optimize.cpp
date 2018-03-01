@@ -61,12 +61,12 @@ public:
 						nif->set<QString>( iBlock, "Name", "Default" );
 				}
 
-				if ( nif->inherits( iBlock, "BSShaderProperty" ) || nif->isNiBlock( iBlock, "BSShaderTextureSet" ) ) {
+				if ( nif->inherits( iBlock, "BSShaderProperty" ) ) {
 					// these need to be unique
 					continue;
 				}
 
-				if ( nif->inherits( iBlock, "NiProperty" ) || nif->inherits( iBlock, "NiSourceTexture" ) ) {
+				if ( nif->inherits( iBlock, "NiProperty" ) || nif->inherits( iBlock, "NiSourceTexture" ) || nif->isNiBlock( iBlock, "BSShaderTextureSet" ) ) {
 					QBuffer data;
 					data.open( QBuffer::WriteOnly );
 					data.write( nif->itemName( iBlock ).toLatin1() );
