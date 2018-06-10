@@ -6,6 +6,7 @@ checkgroup begin and
     check BSLightingShaderProperty
     #check BSLightingShaderProperty/Skyrim Shader Type != 1
     #check BSLightingShaderProperty/Skyrim Shader Type != 16
+    check BSLightingShaderProperty/Skyrim Shader Type != 18
     checkgroup begin or
         check BSTriShape
         check BSSubIndexTriShape
