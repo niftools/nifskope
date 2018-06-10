@@ -35,16 +35,22 @@ public:
 
 	bool isApplicable( const NifModel * nif, const QModelIndex & index ) override final
 	{
-		if ( !nif->inherits( index, "NiTriBasedGeom" ) || !nif->checkVersion( 0x0A000100, 0 ) )
+		if ( !(nif->inherits( index, "NiTriBasedGeom" ) || nif->inherits( index, "BSTriShape" ))
+			 || !nif->getUserVersion2() )
 			return false;
 
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
-		return iData.isValid();
+		if ( !iData.isValid() && nif->getIndex( index, "Vertex Data" ).isValid() )
+			iData = index;
+
+		return iData.isValid() && nif->get<int>( iData, "Num Vertices" ) > 0;
 	}
 
 	QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final
 	{
 		QModelIndex iData = nif->getBlock( nif->getLink( index, "Data" ) );
+		if ( !iData.isValid() )
+			iData = nif->getIndex( index, "Vertex Data" );
 
 		if ( !iData.isValid() )
 			return index;
@@ -60,10 +66,26 @@ public:
 		QVector<Vector3> verts = nif->getArray<Vector3>( iData, "Vertices" );
 		QVector<Vector3> vertsTrans;
 
+		if ( nif->getUserVersion2() < 100 ) {
+			verts = nif->getArray<Vector3>( iData, "Vertices" );
+		} else {
+			int numVerts = nif->get<int>( index, "Num Vertices" );
+			verts.reserve( numVerts );
+			for ( int i = 0; i < numVerts; i++ )
+				verts += nif->get<Vector3>( nif->index( i, 0, iData ), "Vertex" );
+		}
+
 		// Offset by translation of NiTriShape
 		Vector3 trans = nif->get<Vector3>( index, "Translation" );
+		Matrix rot = nif->get<Matrix>( index, "Rotation" );
+		float scale = nif->get<float>( index, "Scale" );
+		Transform transform;
+		transform.translation = trans;
+		transform.rotation = rot;
+		transform.scale = scale;
+
 		for ( auto v : verts ) {
-			vertsTrans.append( v + trans );
+			vertsTrans.append( transform * v );
 		}
 
 		// to store results
@@ -165,10 +187,6 @@ public:
 		// TODO: Figure out if radius is not arbitrarily set in vanilla NIFs
 		nif->set<float>( iCVS, "Radius", spnRadius->value() );
 
-		// for arrow detection: [0, 0, -0, 0, 0, -0]
-		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 2, 0 ), -0.0 );
-		nif->set<float>( nif->getIndex( iCVS, "Unknown 6 Floats" ).child( 5, 0 ), -0.0 );
-
 		QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( index ) ) );
 		QModelIndex collisionLink = nif->getIndex( iParent, "Collision Object" );
 		QModelIndex collisionObject = nif->getBlock( nif->getLink( collisionLink ) );
@@ -191,21 +209,58 @@ public:
 			nif->setLink( rigidBodyLink, nif->getBlockNumber( rigidBody ) );
 		}
 
-		QModelIndex shapeLink = nif->getIndex( rigidBody, "Shape" );
-		QModelIndex shape = nif->getBlock( nif->getLink( shapeLink ) );
+		QPersistentModelIndex shapeLink = nif->getIndex( rigidBody, "Shape" );
+		QPersistentModelIndex shape = nif->getBlock( nif->getLink( shapeLink ) );
 
-		// set link and delete old one
-		nif->setLink( shapeLink, nif->getBlockNumber( iCVS ) );
-
+		QVector<qint32> shapeLinks;
+		bool replace = true;
 		if ( shape.isValid() ) {
-			// cheaper than calling spRemoveBranch
-			nif->removeNiBlock( nif->getBlockNumber( shape ) );
+			shapeLinks = { nif->getBlockNumber( shape ) };
+
+			QString questionTitle = tr( "Create List Shape" );
+			QString questionBody = tr( "This collision object already has a shape. Combine into a list shape? 'No' will replace the shape." );
+
+			bool isListShape = false;
+			if ( nif->inherits( shape, "bhkListShape" ) ) {
+				isListShape = true;
+				questionTitle = tr( "Add to List Shape" );
+				questionBody = tr( "This collision object already has a list shape. Add to list shape? 'No' will replace the list shape." );
+				shapeLinks = nif->getLinkArray( shape, "Sub Shapes" );
+			}
+
+			int response = QMessageBox::question( nullptr, questionTitle, questionBody,	QMessageBox::Yes, QMessageBox::No );
+			if ( response == QMessageBox::Yes ) {
+				QModelIndex iListShape = shape;
+				if ( !isListShape ) {
+					iListShape = nif->insertNiBlock( "bhkListShape" );
+					nif->setLink( shapeLink, nif->getBlockNumber( iListShape ) );
+				}
+
+				shapeLinks << nif->getBlockNumber( iCVS );
+				nif->set<uint>( iListShape, "Num Sub Shapes", shapeLinks.size() );
+				nif->updateArray( iListShape, "Sub Shapes" );
+				nif->setLinkArray( iListShape, "Sub Shapes", shapeLinks );
+				nif->set<uint>( iListShape, "Num Unknown Ints", shapeLinks.size() );
+				nif->updateArray( iListShape, "Unknown Ints" );
+				replace = false;
+			}
+		} 
+		
+		if ( replace ) {
+			// Replace link
+			nif->setLink( shapeLink, nif->getBlockNumber( iCVS ) );
+			// Remove all old shapes
+			spRemoveBranch rm;
+			rm.castIfApplicable( nif, shape );
 		}
 
-		Message::info( nullptr, Spell::tr( "Created hull with %1 vertices, %2 normals" ).arg( convex_verts.count() ).arg( convex_norms.count() ) );
+		Message::info( nullptr,
+					   Spell::tr( "Created hull with %1 vertices, %2 normals" )
+						.arg( convex_verts.count() )
+						.arg( convex_norms.count() ) 
+		);
 
-		// returning iCVS here can crash NifSkope if a child array is selected
-		return index;
+		return (iCVS.isValid()) ? iCVS : rigidBody;
 	}
 };
 
@@ -280,39 +335,39 @@ public:
 		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
 		nif->set<Vector4>( iConstraintData, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
 
-		QString axleA, axleB, twistA, twistB, twistA2, twistB2;
+		QString axisA, axisB, twistA, twistB, twistA2, twistB2;
 		if ( name.endsWith( "HingeConstraint" ) ) {
-			axleA = "Axle A";
-			axleB = "Axle B";
-			twistA = "Perp2 Axle In A1";
-			twistB = "Perp2 Axle In B1";
-			twistA2 = "Perp2 Axle In A2";
-			twistB2 = "Perp2 Axle In B2";
+			axisA = "Axis A";
+			axisB = "Axis B";
+			twistA = "Perp Axis In A1";
+			twistB = "Perp Axis In B1";
+			twistA2 = "Perp Axis In A2";
+			twistB2 = "Perp Axis In B2";
 		} else if ( name == "bhkRagdollConstraint" ) {
-			axleA = "Plane A";
-			axleB = "Plane B";
+			axisA = "Plane A";
+			axisB = "Plane B";
 			twistA = "Twist A";
 			twistB = "Twist B";
 		}
 
-		if ( axleA.isEmpty() || axleB.isEmpty() || twistA.isEmpty() || twistB.isEmpty() )
+		if ( axisA.isEmpty() || axisB.isEmpty() || twistA.isEmpty() || twistB.isEmpty() )
 			return index;
 
-		Vector3 axle = Vector3( nif->get<Vector4>( iConstraintData, axleA ) );
-		axle = transA.rotation * axle;
-		axle = transB.rotation.inverted() * axle;
-		nif->set<Vector4>( iConstraintData, axleB, { axle[0], axle[1], axle[2], 0 } );
+		Vector3 axis = Vector3( nif->get<Vector4>( iConstraintData, axisA ) );
+		axis = transA.rotation * axis;
+		axis = transB.rotation.inverted() * axis;
+		nif->set<Vector4>( iConstraintData, axisB, { axis[0], axis[1], axis[2], 0 } );
 
-		axle = Vector3( nif->get<Vector4>( iConstraintData, twistA ) );
-		axle = transA.rotation * axle;
-		axle = transB.rotation.inverted() * axle;
-		nif->set<Vector4>( iConstraintData, twistB, { axle[0], axle[1], axle[2], 0 } );
+		axis = Vector3( nif->get<Vector4>( iConstraintData, twistA ) );
+		axis = transA.rotation * axis;
+		axis = transB.rotation.inverted() * axis;
+		nif->set<Vector4>( iConstraintData, twistB, { axis[0], axis[1], axis[2], 0 } );
 
 		if ( !twistA2.isEmpty() && !twistB2.isEmpty() ) {
-			axle = Vector3( nif->get<Vector4>( iConstraintData, twistA2 ) );
-			axle = transA.rotation * axle;
-			axle = transB.rotation.inverted() * axle;
-			nif->set<Vector4>( iConstraintData, twistB2, { axle[0], axle[1], axle[2], 0 } );
+			axis = Vector3( nif->get<Vector4>( iConstraintData, twistA2 ) );
+			axis = transA.rotation * axis;
+			axis = transB.rotation.inverted() * axis;
+			nif->set<Vector4>( iConstraintData, twistB2, { axis[0], axis[1], axis[2], 0 } );
 		}
 
 		return index;
