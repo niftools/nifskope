@@ -493,3 +493,78 @@ public:
 
 REGISTER_SPELL( spPackHavokStrips )
 
+//! Converts bhkListShape to bhkConvexListShape for FO3
+class spConvertListShape final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Convert to bhkConvexListShape" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
+	{
+		return nif->isNiBlock( idx, "bhkListShape" );
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
+	{
+		QPersistentModelIndex iShape( iBlock );
+		QPersistentModelIndex iRigidBody = nif->getBlock( nif->getParent( iShape ) );
+		if ( !iRigidBody.isValid() )
+			return {};
+
+		auto iCLS = nif->insertNiBlock( "bhkConvexListShape" );
+
+		nif->set<uint>( iCLS, "Num Sub Shapes", nif->get<uint>( iShape, "Num Sub Shapes" ) );
+		nif->set<uint>( iCLS, "Material", nif->get<uint>( iShape, "Material" ) );
+		nif->updateArray( iCLS, "Sub Shapes" );
+
+		nif->setLinkArray( iCLS, "Sub Shapes", nif->getLinkArray( iShape, "Sub Shapes" ) );
+		nif->setLinkArray( iShape, "Sub Shapes", {} );
+		nif->removeNiBlock( nif->getBlockNumber( iShape ) );
+
+		nif->setLink( iRigidBody, "Shape", nif->getBlockNumber( iCLS ) );
+
+		return iCLS;
+	}
+};
+
+REGISTER_SPELL( spConvertListShape )
+
+//! Converts bhkConvexListShape to bhkListShape for FNV
+class spConvertConvexListShape final : public Spell
+{
+public:
+	QString name() const override final { return Spell::tr( "Convert to bhkListShape" ); }
+	QString page() const override final { return Spell::tr( "Havok" ); }
+
+	bool isApplicable( const NifModel * nif, const QModelIndex & idx ) override final
+	{
+		return nif->isNiBlock( idx, "bhkConvexListShape" );
+	}
+
+	QModelIndex cast( NifModel * nif, const QModelIndex & iBlock ) override final
+	{
+		QPersistentModelIndex iShape( iBlock );
+		QPersistentModelIndex iRigidBody = nif->getBlock( nif->getParent( iShape ) );
+		if ( !iRigidBody.isValid() )
+			return {};
+
+		auto iLS = nif->insertNiBlock( "bhkListShape" );
+
+		nif->set<uint>( iLS, "Num Sub Shapes", nif->get<uint>( iShape, "Num Sub Shapes" ) );
+		nif->set<uint>( iLS, "Num Unknown Ints", nif->get<uint>( iShape, "Num Sub Shapes" ) );
+		nif->set<uint>( iLS, "Material", nif->get<uint>( iShape, "Material" ) );
+		nif->updateArray( iLS, "Sub Shapes" );
+		nif->updateArray( iLS, "Unknown Ints" );
+
+		nif->setLinkArray( iLS, "Sub Shapes", nif->getLinkArray( iShape, "Sub Shapes" ) );
+		nif->setLinkArray( iShape, "Sub Shapes", {} );
+		nif->removeNiBlock( nif->getBlockNumber( iShape ) );
+
+		nif->setLink( iRigidBody, "Shape", nif->getBlockNumber( iLS ) );
+
+		return iLS;
+	}
+};
+
+REGISTER_SPELL( spConvertConvexListShape )
