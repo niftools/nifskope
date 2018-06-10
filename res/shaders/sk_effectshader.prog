@@ -2,8 +2,8 @@
 
 checkgroup begin and
 	# Skyrim
-	check HEADER/User Version 2 >= 83
-	check HEADER/User Version 2 <= 100
+	check HEADER/BS Header/BS Version >= 83
+	check HEADER/BS Header/BS Version <= 100
 	check BSEffectShaderProperty
 checkgroup end
 

@@ -123,8 +123,14 @@ QModelIndex Renderer::ConditionSingle::getIndex( const NifModel * nif, const QVe
 {
 	QString childid;
 
-	if ( blkid.startsWith( "HEADER/" ) )
-		return nif->getIndex( nif->getHeader(), blkid.remove( "HEADER/" ) );
+	if ( blkid.startsWith( "HEADER/" ) ) {
+		auto blk = blkid.remove( "HEADER/" );
+		if ( blk.contains("/") ) {
+			auto blks = blk.split( "/" );
+			return nif->getIndex( nif->getIndex( nif->getHeader(), blks.at(0) ), blks.at(1) );
+		}
+		return nif->getIndex( nif->getHeader(), blk );
+	}
 
 	int pos = blkid.indexOf( "/" );
 

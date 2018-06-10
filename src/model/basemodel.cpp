@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "basemodel.h"
 
+#include "xml/xmlconfig.h"
 #include "message.h"
 
 #include <QByteArray>
@@ -828,7 +829,7 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 		const NifItem * i = item;
 
 		// resolve "ARG"
-		while ( left == "ARG" ) {
+		while ( left == XMLARG ) {
 			if ( !i->parent() )
 				return false;
 

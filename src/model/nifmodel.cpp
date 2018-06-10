@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "nifmodel.h"
 
+#include "xml/xmlconfig.h"
 #include "message.h"
 #include "spellbook.h"
 #include "data/niftypes.h"
@@ -435,7 +436,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 	if ( !item || item == root )
 		return nullptr;
 
-	if ( item->isArray() || item->parent()->isArray() ) {
+	//if ( item->isArray() || item->parent()->isArray() ) {
 		int slash = name.indexOf( QLatin1String("\\") );
 		if ( slash > 0 ) {
 			QString left = name.left( slash );
@@ -447,7 +448,7 @@ NifItem * NifModel::getItem( NifItem * item, const QString & name ) const
 
 			return getItem( getItem( item, left ), right );
 		}
-	}
+	//}
 
 	for ( auto child : item->children() ) {
 		if ( child && child->name() == name && evalCondition( child ) )
@@ -1103,25 +1104,24 @@ void NifModel::insertType( NifItem * parent, const NifData & data, int at )
 			insertType( parent, d );
 		}
 	} else if ( data.isTemplated() ) {
-		QLatin1String tmpl( "TEMPLATE" );
 		QString tmp = parent->temp();
 		NifItem * tItem = parent;
 
-		while ( tmp == tmpl && tItem->parent() ) {
+		while ( tmp == XMLTMPL && tItem->parent() ) {
 			tItem = tItem->parent();
 			tmp = tItem->temp();
 		}
 
 		NifData d( data );
 
-		if ( d.type() == tmpl ) {
+		if ( d.type() == XMLTMPL ) {
 			d.value.changeType( NifValue::type( tmp ) );
 			d.setType( tmp );
 			// The templates are now filled
 			d.setTemplated( false );
 		}
 
-		if ( d.temp() == tmpl )
+		if ( d.temp() == XMLTMPL )
 			d.setTemp( tmp );
 
 		insertType( parent, d, at );
@@ -1208,7 +1208,7 @@ QVariant NifModel::data( const QModelIndex & idx, int role ) const
 					if ( !item->temp().isEmpty() ) {
 						NifItem * i = item;
 
-						while ( i && i->temp() == "TEMPLATE" )
+						while ( i && i->temp() == XMLTMPL )
 							i = i->parent();
 
 						return QString( "%1<%2>" ).arg( item->type(), i ? i->temp() : QString() );
@@ -2316,7 +2316,7 @@ bool NifModel::loadHeader( NifItem * header, NifIStream & stream )
 		return false;
 
 	set<int>( header, "User Version", 0 );
-	set<int>( header, "User Version 2", 0 );
+	set<int>( getItem(header, "BS Header"), "BS Version", 0 );
 
 	invalidateConditions( header, false );
 	

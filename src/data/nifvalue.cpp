@@ -82,6 +82,8 @@ void NifValue::initialize()
 	typeMap.insert( "ushort", NifValue::tWord );
 	typeMap.insert( "uint",   NifValue::tUInt );
 	typeMap.insert( "ulittle32", NifValue::tULittle32 );
+	typeMap.insert( "int64",  NifValue::tInt64 );
+	typeMap.insert( "uint64", NifValue::tUInt64 );
 	typeMap.insert( "Ref",    NifValue::tLink );
 	typeMap.insert( "Ptr",    NifValue::tUpLink );
 	typeMap.insert( "float",  NifValue::tFloat );

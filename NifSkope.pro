@@ -195,6 +195,7 @@ HEADERS += \
 	src/ui/settingsdialog.h \
 	src/ui/settingspane.h \
 	src/xml/nifexpr.h \
+	src/xml/xmlconfig.h \
 	src/glview.h \
 	src/message.h \
 	src/nifskope.h \
