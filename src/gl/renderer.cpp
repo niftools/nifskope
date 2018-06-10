@@ -649,7 +649,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 	}
 
-	if ( bsprop && mesh->bslsp ) {
+	if ( bsprop && !mesh->bsesp ) {
 		QString forced;
 		if ( !(opts & Scene::DoLighting) )
 			forced = default_n;
@@ -679,7 +679,7 @@ bool Renderer::setupProgram( Program * prog, Shape * mesh, const PropertyList & 
 		}
 	}
 
-	if ( bsprop && mesh->bslsp ) {
+	if ( bsprop && !mesh->bsesp ) {
 		prog->uniSampler( bsprop, SAMP_GLOW, 2, texunit, black, clamp );
 	} else if ( !bsprop ) {
 		GLint uniGlowMap = prog->uniformLocations[SAMP_GLOW];
