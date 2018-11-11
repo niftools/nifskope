@@ -974,7 +974,7 @@ bool UVWidget::setTexCoords()
 		if ( !isDataOnSkin ) {
 			tris = nif->getArray<Triangle>( iShape, "Triangles" );
 		} else {
-			auto partIdx = nif->getIndex( iPartBlock, "Partition" );
+			auto partIdx = nif->getIndex( iPartBlock, "Partitions" );
 			for ( int i = 0; i < nif->rowCount( partIdx ); i++ ) {
 				tris << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 			}
@@ -1569,8 +1569,8 @@ void UVWidget::getCoordSets()
 {
 	coordSetSelect->clear();
 
-	// TODO: Broken for newer nif.xml where NiGeometryData has been corrected
-	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
+	quint8 numUvSets = (nif->get<quint16>( iShapeData, "Data Flags" ) & 0x3F)
+					 | (nif->get<quint16>( iShapeData, "BS Data Flags" ) & 0x1);
 
 	for ( int i = 0; i < numUvSets; i++ ) {
 		QAction * temp;
@@ -1620,8 +1620,12 @@ void UVWidget::duplicateCoordSet()
 	// this signal close the UVWidget
 	disconnect( nif, &NifModel::dataChanged, this, &UVWidget::nifDataChanged );
 	// expand the UV Sets array and duplicate the current coordinates
-	quint8 numUvSets = nif->get<quint8>( iShapeData, "Num UV Sets" );
-	nif->set<quint8>( iShapeData, "Num UV Sets", numUvSets + 1 );
+	auto dataFlags = nif->get<quint16>( iShapeData, "Data Flags" );
+	quint8 numUvSets = nif->get<quint16>( iShapeData, "Data Flags" ) & 0x3F;
+	numUvSets += 1;
+	dataFlags = dataFlags | ((dataFlags & 0x3F) | numUvSets);
+
+	nif->set<quint8>( iShapeData, "Data Flags", numUvSets );
 	QModelIndex uvSets = nif->getIndex( iShapeData, "UV Sets" );
 	nif->updateArray( uvSets );
 	nif->setArray<Vector2>( uvSets.child( numUvSets, 0 ), nif->getArray<Vector2>( uvSets.child( currentCoordSet, 0 ) ) );

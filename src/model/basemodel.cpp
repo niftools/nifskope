@@ -828,14 +828,24 @@ QVariant BaseModelEval::operator()(const QVariant & v) const
 		QString left = v.toString();
 		const NifItem * i = item;
 
-		// resolve "ARG"
+		// Resolve "ARG"
+		bool argexpr = false;
 		while ( left == XMLARG ) {
 			if ( !i->parent() )
 				return false;
 
 			i = i->parent();
 			left = i->arg();
+			argexpr = !i->argexpr().noop();
 		}
+		// ARG is an expression
+		if ( argexpr )
+			return i->argexpr().evaluateUInt64( BaseModelEval( model, i ) );
+
+		bool numeric;
+		int val = left.toInt( &numeric, 10 );
+		if ( numeric )
+			return QVariant( val );
 
 		// resolve reference to sibling
 		const NifItem * sibling = model->getItem( i->parent(), left );

@@ -181,8 +181,9 @@ public:
 			t.writeBack( nif, iBone );
 		}
 
-		Vector3 center = nif->get<Vector3>( iShapeData, "Center" );
-		nif->set<Vector3>( iShapeData, "Center", tparent * center );
+		auto bound = BoundSphere( nif, iShapeData ).apply( tparent );
+		bound.update( nif, iShapeData );
+
 		return true;
 	}
 };
@@ -478,8 +479,8 @@ public:
 				defaultPart = qMin( nparts - 1, defaultPart );
 
 				// enumerate existing partitions and select faces into same partition
-				quint32 nskinparts = nif->get<int>( iSkinPart, "Num Skin Partition Blocks" );
-				iPartData = nif->getIndex( iSkinPart, "Skin Partition Blocks" );
+				quint32 nskinparts = nif->get<int>( iSkinPart, "Num Partitions" );
+				iPartData = nif->getIndex( iSkinPart, "Partitions" );
 
 				for ( quint32 i = 0; i < nskinparts; ++i ) {
 					QModelIndex iPart = iPartData.child( i, 0 );
@@ -789,8 +790,8 @@ public:
 
 			// start writing NiSkinPartition
 
-			nif->set<int>( iSkinPart, "Num Skin Partition Blocks", parts.count() );
-			nif->updateArray( iSkinPart, "Skin Partition Blocks" );
+			nif->set<int>( iSkinPart, "Num Partitions", parts.count() );
+			nif->updateArray( iSkinPart, "Partitions" );
 
 			QModelIndex iBSSkinInstPartData;
 
@@ -809,7 +810,7 @@ public:
 			QList<int> prevPartBones;
 
 			for ( int p = 0; p < parts.count(); p++ ) {
-				QModelIndex iPart = nif->getIndex( iSkinPart, "Skin Partition Blocks" ).child( p, 0 );
+				QModelIndex iPart = nif->getIndex( iSkinPart, "Partitions" ).child( p, 0 );
 
 				QList<int> bones = parts[p].bones;
 				std::sort( bones.begin(), bones.end() /*, std::less<int>()*/ );
@@ -1213,8 +1214,8 @@ public:
 
 			auto sphIdx = nif->getIndex( iBoneDataList.child( b, 0 ) , "Bounding Sphere" );
 
-			nif->set<Vector3>( sphIdx, "Bounding Sphere Offset", center );
-			nif->set<float>( sphIdx, "Bounding Sphere Radius", radius );
+			nif->set<Vector3>( sphIdx, "Center", center );
+			nif->set<float>( sphIdx, "Radius", radius );
 		}
 
 		return iSkinData;

@@ -642,8 +642,8 @@ class spTextureTemplate final : public Spell
 				iVertData = nif->getIndex( iPartBlock, "Vertex Data" );
 
 				// Get triangles from all partitions
-				auto numParts = nif->get<int>( iPartBlock, "Num Skin Partition Blocks" );
-				auto iParts = nif->getIndex( iPartBlock, "Partition" );
+				auto numParts = nif->get<int>( iPartBlock, "Num Partitions" );
+				auto iParts = nif->getIndex( iPartBlock, "Partitions" );
 				for ( int i = 0; i < numParts; i++ )
 					tri << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
 

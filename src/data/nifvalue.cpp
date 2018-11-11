@@ -89,7 +89,7 @@ void NifValue::initialize()
 	typeMap.insert( "float",  NifValue::tFloat );
 	typeMap.insert( "SizedString", NifValue::tSizedString );
 	typeMap.insert( "Text",        NifValue::tText );
-	typeMap.insert( "ShortString", NifValue::tShortString );
+	typeMap.insert( "ExportString", NifValue::tShortString );
 	typeMap.insert( "Color3",      NifValue::tColor3 );
 	typeMap.insert( "Color4",      NifValue::tColor4 );
 	typeMap.insert( "Vector4",     NifValue::tVector4 );
@@ -111,7 +111,7 @@ void NifValue::initialize()
 	typeMap.insert( "LineString",     NifValue::tLineString );
 	typeMap.insert( "StringPalette",  NifValue::tStringPalette );
 	typeMap.insert( "StringOffset",   NifValue::tStringOffset );
-	typeMap.insert( "StringIndex",    NifValue::tStringIndex );
+	typeMap.insert( "NiFixedString",  NifValue::tStringIndex );
 	typeMap.insert( "BlockTypeIndex", NifValue::tBlockTypeIndex );
 	typeMap.insert( "char8string",    NifValue::tChar8String );
 	typeMap.insert( "string",   NifValue::tString );
@@ -123,7 +123,7 @@ void NifValue::initialize()
 	typeMap.insert( "HalfVector2", NifValue::tHalfVector2 );
 	typeMap.insert( "HalfTexCoord", NifValue::tHalfVector2 );
 	typeMap.insert( "ByteColor4", NifValue::tByteColor4 );
-	typeMap.insert( "BSVertexDesc", NifValue::tBSVertexDesc );
+	//typeMap.insert( "BSVertexDesc", NifValue::tBSVertexDesc );
 
 	enumMap.clear();
 }
@@ -415,7 +415,7 @@ void NifValue::clear()
 	}
 
 	typ = tNone;
-	val.u32 = 0;
+	val.u64 = 0;
 }
 
 void NifValue::changeType( Type t )
@@ -490,7 +490,7 @@ void NifValue::changeType( Type t )
 		val.data = new QByteArray();
 		return;
 	default:
-		val.u32 = 0;
+		val.u64 = 0;
 		return;
 	}
 }
@@ -585,6 +585,11 @@ bool NifValue::operator==( const NifValue & other ) const
 	case tLink:
 	case tUpLink:
 		return val.i32 == other.val.i32;
+
+	case tInt64:
+		return val.i64 == other.val.i64;
+	case tUInt64:
+		return val.u64 == other.val.u64;
 
 	case tFloat:
 	case tHfloat:
@@ -773,6 +778,7 @@ bool NifValue::setFromString( const QString & s )
 
 	switch ( typ ) {
 	case tBool:
+		val.u64 = 0;
 
 		if ( s == "yes" || s == "true" ) {
 			val.u32 = 1;
@@ -786,7 +792,7 @@ bool NifValue::setFromString( const QString & s )
 		}
 
 	case tByte:
-		val.u32 = 0;
+		val.u64 = 0;
 		val.u08 = s.toUInt( &ok, 0 );
 		return ok;
 	case tWord:
@@ -794,7 +800,7 @@ bool NifValue::setFromString( const QString & s )
 	case tStringOffset:
 	case tBlockTypeIndex:
 	case tShort:
-		val.u32 = 0;
+		val.u64 = 0;
 		val.u16 = s.toShort( &ok, 0 );
 		return ok;
 	case tInt:
@@ -802,19 +808,30 @@ bool NifValue::setFromString( const QString & s )
 		return ok;
 	case tUInt:
 	case tULittle32:
+		val.u64 = 0;
 		val.u32 = s.toUInt( &ok, 0 );
 		return ok;
+	case tInt64:
+		val.i64 = s.toLongLong( &ok, 0 );
+		return ok;
+	case tUInt64:
+		val.u64 = s.toULongLong( &ok, 0 );
+		return ok;
 	case tStringIndex:
+		val.u64 = 0;
 		val.u32 = s.toUInt( &ok );
 		return ok;
 	case tLink:
 	case tUpLink:
+		val.u64 = 0;
 		val.i32 = s.toInt( &ok );
 		return ok;
 	case tFloat:
+		val.u64 = 0;
 		val.f32 = s.toDouble( &ok );
 		return ok;
 	case tHfloat:
+		val.u64 = 0;
 		val.f32 = s.toDouble( &ok );
 		return ok;
 	case tString:
@@ -834,6 +851,7 @@ bool NifValue::setFromString( const QString & s )
 		static_cast<Color4 *>( val.data )->fromQColor( QColor( s ) );
 		return true;
 	case tFileVersion:
+		val.u64 = 0;
 		val.u32 = NifModel::version2number( s );
 		return val.u32 != 0;
 	case tVector2:
@@ -880,6 +898,10 @@ QString NifValue::toString() const
 		return QString::number( val.u32 );
 	case tStringIndex:
 		return QString::number( val.u32 );
+	case tInt64:
+		return QString::number( val.i64 );
+	case tUInt64:
+		return QString::number( val.u64 );
 	case tShort:
 		return QString::number( (short)val.u16 );
 	case tInt:
@@ -888,7 +910,9 @@ QString NifValue::toString() const
 	case tUpLink:
 		return QString::number( val.i32 );
 	case tFloat:
-		return NumOrMinMax( val.f32, 'f', 6 );
+		if ( val.f32 == 0.0 )
+			return QString("0.0");
+		return NumOrMinMax( val.f32, 'G', 6 );
 	case tHfloat:
 		return QString::number( val.f32, 'f', 4 );
 	case tString:

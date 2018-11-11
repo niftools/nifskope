@@ -73,10 +73,6 @@ static void writeData( const NifModel * nif, const QModelIndex & iData, QTextStr
 		// copy texcoords
 
 		QModelIndex iUV = nif->getIndex( iData, "UV Sets" );
-
-		if ( !iUV.isValid() )
-			iUV = nif->getIndex( iData, "UV Sets 2" );
-
 		QVector<Vector2> texco = nif->getArray<Vector2>( iUV.child( 0, 0 ) );
 		foreach( Vector2 t, texco )
 		{
@@ -931,8 +927,8 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			nif->setArray<Vector3>( iData, "Normals", norms );
 			nif->set<int>( iData, "Has UV", 1 );
 			nif->set<int>( iData, "Num UV Sets", 1 );
-			nif->set<int>( iData, "Vector Flags", 4097 );
-			nif->set<int>( iData, "BS Vector Flags", 4097 );
+			nif->set<int>( iData, "Data Flags", 4097 );
+			nif->set<int>( iData, "BS Data Flags", 4097 );
 
 			if ( nif->getUserVersion2() > 34 ) {
 				nif->set<int>( iData, "Has Vertex Colors", 1 );
@@ -940,10 +936,6 @@ void importObj( NifModel * nif, const QModelIndex & index )
 			}
 
 			QModelIndex iTexCo = nif->getIndex( iData, "UV Sets" );
-
-			if ( !iTexCo.isValid() )
-				iTexCo = nif->getIndex( iData, "UV Sets 2" );
-
 			nif->updateArray( iTexCo );
 			nif->updateArray( iTexCo.child( 0, 0 ) );
 			nif->setArray<Vector2>( iTexCo.child( 0, 0 ), texco );

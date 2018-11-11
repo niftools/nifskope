@@ -144,6 +144,10 @@ NifExpr::Operator NifExpr::operatorFromString( const QString & str )
 		return NifExpr::e_bool_and;
 	else if ( str == "||" )
 		return NifExpr::e_bool_or;
+	else if ( str == "<<" )
+		return NifExpr::e_lsh;
+	else if ( str == ">>" )
+		return NifExpr::e_rsh;
 
 	return NifExpr::e_nop;
 }
@@ -172,7 +176,7 @@ void NifExpr::partition( const QString & cond, int offset /*= 0*/ )
 		ostartpos = -1, oendpos = -1, // Operator Start/End
 		rstartpos = -1, rendpos = -1; // Right Start/End
 
-	QRegularExpression reOps( "(!=|==|>=|<=|>|<|\\+|-|/|\\*|\\&\\&|\\|\\||\\&|\\|)" );
+	QRegularExpression reOps( "(!=|==|>=|<=|>>|<<|>|<|\\+|-|/|\\*|\\&\\&|\\|\\||\\&|\\|)" );
 	QRegularExpression reLParen( "^\\s*\\(.*" );
 
 	QRegularExpressionMatch reLParenMatch = reLParen.match( cond, offset );
@@ -291,6 +295,10 @@ QString NifExpr::toString() const
 		return QString( "(%1 && %2)" ).arg( l, r );
 	case NifExpr::e_bool_or:
 		return QString( "(%1 || %2)" ).arg( l, r );
+	case NifExpr::e_lsh:
+		return QString( "(%1 << %2)" ).arg( l, r );
+	case NifExpr::e_rsh:
+		return QString( "(%1 >> %2)" ).arg( l, r );
 	case NifExpr::e_nop:
 		return QString( "%1" ).arg( l );
 	}

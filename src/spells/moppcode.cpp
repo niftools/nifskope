@@ -215,14 +215,12 @@ public:
 		if ( moppcode.size() == 0 ) {
 			Message::critical( nullptr, Spell::tr( "Failed to generate MOPP code" ) );
 		} else {
-			QModelIndex iCodeOrigin = nif->getIndex( ibhkMoppBvTreeShape, "Origin" );
-			nif->set<Vector3>( iCodeOrigin, origin );
+			auto iMoppCode = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Code" );
 
-			QModelIndex iCodeScale = nif->getIndex( ibhkMoppBvTreeShape, "Scale" );
-			nif->set<float>( iCodeScale, scale );
+			nif->set<Vector4>( nif->getIndex( iMoppCode, "Offset" ), Vector4(origin, scale) );
 
-			QModelIndex iCodeSize = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data Size" );
-			QModelIndex iCode = nif->getIndex( ibhkMoppBvTreeShape, "MOPP Data" ).child( 0, 0 );
+			QModelIndex iCodeSize = nif->getIndex( iMoppCode, "Data Size" );
+			QModelIndex iCode = nif->getIndex( iMoppCode, "Data" ).child( 0, 0 );
 
 			if ( iCodeSize.isValid() && iCode.isValid() ) {
 				nif->set<int>( iCodeSize, moppcode.size() );

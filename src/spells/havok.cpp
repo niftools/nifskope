@@ -1,5 +1,6 @@
 #include "spellbook.h"
 
+#include "gl/gltools.h"
 #include "spells/blocks.h"
 
 #include "lib/nvtristripwrapper.h"
@@ -301,16 +302,16 @@ public:
 			}
 		}
 
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity A" ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity B" ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
 			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint." ) );
 			return index;
 		}
 
-		Transform transA = bodyTrans( nif, iBodyA );
-		Transform transB = bodyTrans( nif, iBodyB );
+		Transform transA = bhkBodyTrans( nif, iBodyA );
+		Transform transB = bhkBodyTrans( nif, iBodyB );
 
 		QModelIndex iConstraintData;
 		if ( name == "bhkLimitedHingeConstraint" ) {
@@ -330,9 +331,9 @@ public:
 		if ( !iConstraintData.isValid() )
 			return index;
 
-		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraintData, "Pivot A" ) ) * havokConst;
+		Vector3 pivot = Vector3( nif->get<Vector4>( iConstraintData, "Pivot A" ) );
 		pivot = transA * pivot;
-		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale / havokConst;
+		pivot = transB.rotation.inverted() * ( pivot - transB.translation ) / transB.scale;
 		nif->set<Vector4>( iConstraintData, "Pivot B", { pivot[0], pivot[1], pivot[2], 0 } );
 
 		QString axisA, axisB, twistA, twistB, twistA2, twistB2;
@@ -372,27 +373,6 @@ public:
 
 		return index;
 	}
-
-	static Transform bodyTrans( const NifModel * nif, const QModelIndex & index )
-	{
-		Transform t;
-
-		if ( nif->isNiBlock( index, "bhkRigidBodyT" ) ) {
-			t.translation = Vector3( nif->get<Vector4>( index, "Translation" ) * 7 );
-			t.rotation.fromQuat( nif->get<Quat>( index, "Rotation" ) );
-		}
-
-		qint32 l = nif->getBlockNumber( index );
-
-		while ( ( l = nif->getParent( l ) ) >= 0 ) {
-			QModelIndex iAV = nif->getBlock( l, "NiAVObject" );
-
-			if ( iAV.isValid() )
-				t = Transform( nif, iAV ) * t;
-		}
-
-		return t;
-	}
 };
 
 REGISTER_SPELL( spConstraintHelper )
@@ -416,21 +396,21 @@ public:
 		if ( !iSpring.isValid() )
 			iSpring = iConstraint;
 
-		QModelIndex iBodyA = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 0, 0 ) ), "bhkRigidBody" );
-		QModelIndex iBodyB = nif->getBlock( nif->getLink( nif->getIndex( iConstraint, "Entities" ).child( 1, 0 ) ), "bhkRigidBody" );
+		QModelIndex iBodyA = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity A" ) ), "bhkRigidBody" );
+		QModelIndex iBodyB = nif->getBlock( nif->getLink( bhkGetEntity( nif, iConstraint, "Entity B" ) ), "bhkRigidBody" );
 
 		if ( !iBodyA.isValid() || !iBodyB.isValid() ) {
 			Message::warning( nullptr, Spell::tr( "Couldn't find the bodies for this constraint" ) );
 			return idx;
 		}
 
-		Transform transA = spConstraintHelper::bodyTrans( nif, iBodyA );
-		Transform transB = spConstraintHelper::bodyTrans( nif, iBodyB );
+		Transform transA = bhkBodyTrans( nif, iBodyA );
+		Transform transB = bhkBodyTrans( nif, iBodyB );
 
-		Vector3 pivotA( nif->get<Vector4>( iSpring, "Pivot A" ) * 7 );
-		Vector3 pivotB( nif->get<Vector4>( iSpring, "Pivot B" ) * 7 );
+		Vector3 pivotA( nif->get<Vector4>( iSpring, "Pivot A" ) );
+		Vector3 pivotB( nif->get<Vector4>( iSpring, "Pivot B" ) );
 
-		float length = ( transA * pivotA - transB * pivotB ).length() / 7;
+		float length = ( transA * pivotA - transB * pivotB ).length();
 
 		nif->set<float>( iSpring, "Length", length );
 

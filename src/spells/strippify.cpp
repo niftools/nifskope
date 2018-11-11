@@ -1,6 +1,7 @@
 #include "spellbook.h"
 
 #include "blocks.h"
+#include "gl/gltools.h"
 
 #include "lib/nvtristripwrapper.h"
 
@@ -95,7 +96,8 @@ class spStrippify final : public Spell
 			copyValue<int>( nif, iStripData, iData, "Has Normals" );
 			copyArray<Vector3>( nif, iStripData, iData, "Normals" );
 
-			copyValue<int>( nif, iStripData, iData, "TSpace Flag" );
+			copyValue<int>( nif, iStripData, iData, "Data Flags" );
+			copyValue<int>( nif, iStripData, iData, "BS Data Flags" );
 			copyArray<Vector3>( nif, iStripData, iData, "Bitangents" );
 			copyArray<Vector3>( nif, iStripData, iData, "Tangents" );
 
@@ -103,10 +105,6 @@ class spStrippify final : public Spell
 			copyArray<Color4>( nif, iStripData, iData, "Vertex Colors" );
 
 			copyValue<int>( nif, iStripData, iData, "Has UV" );
-			copyValue<int>( nif, iStripData, iData, "Num UV Sets" );
-			copyValue<int>( nif, iStripData, iData, "Vector Flags" );
-			copyValue<int>( nif, iStripData, iData, "BS Vector Flags" );
-			copyValue<int>( nif, iStripData, iData, "Num UV Sets 2" );
 			QModelIndex iDstUV = nif->getIndex( iStripData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iData, "UV Sets" );
 
@@ -118,19 +116,8 @@ class spStrippify final : public Spell
 				}
 			}
 
-			iDstUV = nif->getIndex( iStripData, "UV Sets 2" );
-			iSrcUV = nif->getIndex( iData, "UV Sets 2" );
-
-			if ( iDstUV.isValid() && iSrcUV.isValid() ) {
-				nif->updateArray( iDstUV );
-
-				for ( int r = 0; r < nif->rowCount( iDstUV ); r++ ) {
-					copyArray<Vector2>( nif, iDstUV.child( r, 0 ), iSrcUV.child( r, 0 ) );
-				}
-			}
-
-			copyValue<Vector3>( nif, iStripData, iData, "Center" );
-			copyValue<float>( nif, iStripData, iData, "Radius" );
+			auto bound = BoundSphere( nif, iStripData );
+			bound.update( nif, iData );
 
 			nif->set<int>( iStripData, "Num Strips", strips.count() );
 			nif->set<int>( iStripData, "Has Points", 1 );
@@ -303,10 +290,8 @@ class spTriangulate final : public Spell
 			copyArray<Color4>( nif, iTriData, iStripData, "Vertex Colors" );
 
 			copyValue<int>( nif, iTriData, iStripData, "Has UV" );
-			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets" );
-			copyValue<int>( nif, iTriData, iStripData, "Vector Flags" );
-			copyValue<int>( nif, iTriData, iStripData, "BS Vector Flags" );
-			copyValue<int>( nif, iTriData, iStripData, "Num UV Sets 2" );
+			copyValue<int>( nif, iTriData, iStripData, "Data Flags" );
+			copyValue<int>( nif, iTriData, iStripData, "BS Data Flags" );
 			QModelIndex iDstUV = nif->getIndex( iTriData, "UV Sets" );
 			QModelIndex iSrcUV = nif->getIndex( iStripData, "UV Sets" );
 
@@ -318,19 +303,8 @@ class spTriangulate final : public Spell
 				}
 			}
 
-			iDstUV = nif->getIndex( iTriData, "UV Sets 2" );
-			iSrcUV = nif->getIndex( iStripData, "UV Sets 2" );
-
-			if ( iDstUV.isValid() && iSrcUV.isValid() ) {
-				nif->updateArray( iDstUV );
-
-				for ( int r = 0; r < nif->rowCount( iDstUV ); r++ ) {
-					copyArray<Vector2>( nif, iDstUV.child( r, 0 ), iSrcUV.child( r, 0 ) );
-				}
-			}
-
-			copyValue<Vector3>( nif, iTriData, iStripData, "Center" );
-			copyValue<float>( nif, iTriData, iStripData, "Radius" );
+			auto bound = BoundSphere( nif, iTriData );
+			bound.update( nif, iStripData );
 
 			nif->set<int>( iTriData, "Num Triangles", triangles.count() );
 			nif->set<int>( iTriData, "Num Triangle Points", triangles.count() * 3 );

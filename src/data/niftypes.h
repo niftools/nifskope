@@ -1682,6 +1682,16 @@ public:
 	{
 	}
 
+	BSVertexDesc( quint64 val )
+	{
+		desc = val;
+	}
+
+	quint64 Value() const
+	{
+		return desc;
+	}
+
 	// Sets a specific flag
 	void SetFlag( VertexFlags flag )
 	{

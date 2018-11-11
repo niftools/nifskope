@@ -113,8 +113,8 @@ public:
 				numVerts = nif->get<uint>( iPart, "Data Size" ) / nif->get<uint>( iPart, "Vertex Size" );
 
 				// Get triangles from all partitions
-				auto numParts = nif->get<int>( iPart, "Num Skin Partition Blocks" );
-				auto iParts = nif->getIndex( iPart, "Partition" );
+				auto numParts = nif->get<int>( iPart, "Num Partitions" );
+				auto iParts = nif->getIndex( iPart, "Partitions" );
 				for ( int i = 0; i < numParts; i++ )
 					triangles << nif->getArray<Triangle>( iParts.child( i, 0 ), "Triangles" );
 			}

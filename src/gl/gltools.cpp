@@ -190,6 +190,22 @@ BoundSphere::BoundSphere( const QVector<Vector3> & verts )
 	}
 }
 
+void BoundSphere::update( NifModel * nif, const QModelIndex & index )
+{
+	auto idx = index;
+	auto sph = nif->getIndex( idx, "Bounding Sphere" );
+	if ( sph.isValid() )
+		idx = sph;
+
+	nif->set<Vector3>( idx, "Center", center );
+	nif->set<float>( idx, "Radius", radius );
+}
+
+void BoundSphere::setBounds( NifModel * nif, const QModelIndex & index, const Vector3 & center, float radius )
+{
+	BoundSphere( center, radius ).update( nif, index );
+}
+
 BoundSphere & BoundSphere::operator=( const BoundSphere & o )
 {
 	center = o.center;
@@ -300,7 +316,72 @@ void drawAxes( const Vector3 & c, float axis, bool color )
 	glPopMatrix();
 }
 
-QVector<int> sortAxes( QVector<float> axesDots )
+const float hkScale660 = 1.0 / 1.42875 * 10.0;
+const float hkScale2010 = 1.0 / 1.42875 * 100.0;
+
+float bhkScale( const NifModel * nif )
+{
+	return (nif->getUserVersion2() < 47) ? hkScale660 : hkScale2010;
+}
+
+float bhkInvScale( const NifModel * nif )
+{
+	return (nif->getUserVersion2() < 47) ? 1.0 / hkScale660 : 1.0 / hkScale2010;
+}
+
+float bhkScaleMult( const NifModel * nif )
+{
+	return (nif->getUserVersion2() < 47) ? 1.0 : 10.0;
+}
+
+Transform bhkBodyTrans( const NifModel * nif, const QModelIndex & index )
+{
+	Transform t;
+
+	if ( nif->isNiBlock( index, "bhkRigidBodyT" ) ) {
+		t.translation = Vector3( nif->get<Vector4>( index, "Translation" ) * bhkScale( nif ) );
+		t.rotation.fromQuat( nif->get<Quat>( index, "Rotation" ) );
+	}
+
+	t.scale = bhkScale( nif );
+
+	qint32 l = nif->getBlockNumber( index );
+
+	while ( (l = nif->getParent( l )) >= 0 ) {
+		QModelIndex iAV = nif->getBlock( l, "NiAVObject" );
+
+		if ( iAV.isValid() )
+			t = Transform( nif, iAV ) * t;
+	}
+
+	return t;
+}
+
+QModelIndex bhkGetEntity( const NifModel * nif, const QModelIndex & index, const QString & name )
+ {
+	 auto iEntity = nif->getIndex( index, name );
+	 if ( !iEntity.isValid() ) {
+		 iEntity = nif->getIndex( nif->getIndex( index, "Constraint Info" ), name );
+		 if ( !iEntity.isValid() )
+			 return {};
+	 }
+
+	 return iEntity; 
+ }
+
+QModelIndex bhkGetRBInfo( const NifModel * nif, const QModelIndex & index, const QString & name )
+{
+	auto iInfo = nif->getIndex( index, name );
+	if ( !iInfo.isValid() ) {
+		iInfo = nif->getIndex( nif->getIndex( index, "Rigid Body Info" ), name );
+		if ( !iInfo.isValid() )
+			return {};
+	}
+
+	return iInfo;
+}
+
+ QVector<int> sortAxes( QVector<float> axesDots )
 {
 	QVector<float> dotsSorted = axesDots;
 	std::stable_sort( dotsSorted.begin(), dotsSorted.end() );
@@ -905,12 +986,6 @@ void drawNiTSS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 
 void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 {
-	// Scale up for Skyrim
-	float havokScale = (nif->checkVersion( 0x14020007, 0x14020007 ) && nif->getUserVersion() >= 12) ? 10.0f : 1.0f;
-
-	//QModelIndex iParent = nif->getBlock( nif->getParent( nif->getBlockNumber( iShape ) ) );
-	//Vector4 origin = Vector4( nif->get<Vector3>( iParent, "Origin" ), 0 );
-
 	QModelIndex iData = nif->getBlock( nif->getLink( iShape, "Data" ) );
 	if ( iData.isValid() ) {
 		QModelIndex iBigVerts = nif->getIndex( iData, "Big Verts" );
@@ -923,15 +998,13 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 		glDisable( GL_CULL_FACE );
 
 		for ( int r = 0; r < nif->rowCount( iBigTris ); r++ ) {
-			quint16 a = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 1" );
-			quint16 b = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 2" );
-			quint16 c = nif->get<quint16>( iBigTris.child( r, 0 ), "Triangle 3" );
+			Triangle tri = nif->get<Triangle>( iBigTris.child( r, 0 ), "Triangle" );
 
 			glBegin( GL_TRIANGLES );
 
-			glVertex( verts[a] * havokScale );
-			glVertex( verts[b] * havokScale );
-			glVertex( verts[c] * havokScale );
+			glVertex( verts[tri.v1()] );
+			glVertex( verts[tri.v2()] );
+			glVertex( verts[tri.v3()] );
 
 			glEnd();
 		}
@@ -966,7 +1039,6 @@ void drawCMS( const NifModel * nif, const QModelIndex & iShape, bool solid )
 
 			for ( int n = 0; n < ((int)numOffsets / 3); n++ ) {
 				vertices[n] = chunkOrigin + chunkTranslation + Vector4( offsets[3 * n], offsets[3 * n + 1], offsets[3 * n + 2], 0 ) / 1000.0f;
-				vertices[n] *= havokScale;
 			}
 
 			glPolygonMode( GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE );

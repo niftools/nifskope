@@ -89,6 +89,9 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 	updateSkin = isSkinned;
 	transformRigid = !isSkinned;
 
+	if ( updateBounds )
+		dataBound = BoundSphere( nif, iBlock );
+
 	int dataSize = 0;
 	if ( !isDataOnSkin ) {
 		iVertData = nif->getIndex( iBlock, "Vertex Data" );
@@ -119,13 +122,6 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			return;
 
 		numVerts = dataSize / vertexSize;
-	}
-
-
-	auto bsphere = nif->getIndex( iBlock, "Bounding Sphere" );
-	if ( bsphere.isValid() ) {
-		bsphereCenter = nif->get<Vector3>( bsphere, "Center" );
-		bsphereRadius = nif->get<float>( bsphere, "Radius" );
 	}
 
 	if ( iBlock == index && dataSize > 0 ) {
@@ -179,7 +175,7 @@ void BSShape::update( const NifModel * nif, const QModelIndex & index )
 			triangles = nif->getArray<Triangle>( iTriData );
 			triangles = triangles.mid( 0, numTris );
 		} else {
-			auto partIdx = nif->getIndex( iSkinPart, "Partition" );
+			auto partIdx = nif->getIndex( iSkinPart, "Partitions" );
 			for ( int i = 0; i < nif->rowCount( partIdx ); i++ )
 				triangles << nif->getArray<Triangle>( nif->index( i, 0, partIdx ), "Triangles" );
 		}
@@ -904,7 +900,7 @@ BoundSphere BSShape::bounds() const
 		if ( verts.count() ) {
 			boundSphere = BoundSphere( verts );
 		} else {
-			boundSphere = BoundSphere( bsphereCenter, bsphereRadius );
+			boundSphere = dataBound;
 		}
 	}
 

@@ -73,6 +73,7 @@ public:
 		tagCompound,
 		tagBlock,
 		tagAdd,
+		tagAddDefault,
 		tagBasic,
 		tagEnum,
 		tagOption,
@@ -80,7 +81,8 @@ public:
 		tagBitfield,
 		tagMember,
 		tagToken,
-		tagTokenTag
+		tagTokenTag,
+		tagModule
 	};
 
 	//! i18n wrapper for various strings
@@ -96,9 +98,11 @@ public:
 	{
 		tags.insert( "niftoolsxml", tagFile );
 		tags.insert( "version", tagVersion );
+		tags.insert( "module", tagModule );
 		tags.insert( "compound", tagCompound );
 		tags.insert( "niobject", tagBlock );
 		tags.insert( "add", tagAdd );
+		tags.insert( "default", tagAddDefault );
 		tags.insert( "basic", tagBasic );
 		tags.insert( "enum", tagEnum );
 		tags.insert( "option", tagOption );
@@ -227,7 +231,7 @@ public:
 							blk = NifBlockPtr( new NifBlock );
 
 						blk->id = id;
-						blk->abstract = ( list.value( "abstract" ) == "1" );
+						blk->abstract = (list.value( "abstract" ) == "1" || list.value( "abstract" ) == "true");
 
 						if ( x == tagBlock ) {
 							blk->ancestor = list.value( "inherit" );
@@ -301,6 +305,8 @@ public:
 					attrlist = list.value( "attrs" );
 				}
 				break;
+			case tagModule:
+				break;
 			default:
 				err( tr( "expected basic, enum, compound, niobject or version got %1 instead" ).arg( tagid ) );
 			}
@@ -358,13 +364,14 @@ public:
 						static const QVector<QString> mixinTypes {
 							"HavokFilter",
 							"HavokMaterial",
-							"RagdollDescriptor",
-							"LimitedHingeDescriptor",
-							"HingeDescriptor",
-							"BallAndSocketDescriptor",
-							"PrismaticDescriptor",
-							"MalleableDescriptor",
-							"ConstraintData"
+							"bhkRagdollConstraintCInfo",
+							"bhkLimitedHingeConstraintCInfo",
+							"bhkHingeConstraintCInfo",
+							"bhkBallAndSocketConstraintCInfo",
+							"bhkPrismaticConstraintCInfo",
+							"bhkMalleableConstraintCInfo",
+							"bhkConstraintData",
+							"bhkConstraintCInfo"
 						};
 
 						isMixin = mixinTypes.contains( type );
@@ -431,6 +438,15 @@ public:
 				err( tr( "only add tags allowed in block declaration" ) );
 			}
 
+			break;
+		case tagAdd:
+			// Member child tags
+			push( x );
+			switch ( x ) {
+			case tagAddDefault:
+				// Subclass defaults
+				break;
+			}
 			break;
 		case tagEnum:
 		case tagBitFlag:

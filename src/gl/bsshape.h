@@ -53,8 +53,7 @@ protected:
 	int numVerts = 0;
 	int numTris = 0;
 
-	Vector3 bsphereCenter;
-	float bsphereRadius = 0.0;
+	BoundSphere dataBound;
 };
 
 #endif // BSSHAPE_H

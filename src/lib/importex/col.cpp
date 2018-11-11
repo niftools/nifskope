@@ -766,7 +766,7 @@ void attachNiShape ( const NifModel * nif, QDomElement parentNode, int idx )
 			}
 
 			// UV maps
-			int uvCount = (nif->get<int>( iProp, "Num UV Sets" ) & 63) | (nif->get<int>( iProp, "BS Num UV Sets" ) & 1);
+			int uvCount = (nif->get<int>( iProp, "Data Flags" ) & 63) | (nif->get<int>( iProp, "BS Data Flags" ) & 1);
 			QModelIndex iUV = nif->getIndex( iProp, "UV Sets" );
 
 			for ( int row = 0; row < uvCount; row++ ) {
