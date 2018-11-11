@@ -786,10 +786,10 @@ void StencilProperty::update( const NifModel * nif, const QModelIndex & block )
 		int drawMode = 0;
 		if ( nif->checkVersion( 0, 0x14000005 ) ) {
 			drawMode = nif->get<int>( iBlock, "Draw Mode" );
-			func = funcMap[std::max(nif->get<quint32>( iBlock, "Stencil Function" ), (quint32)TEST_MAX - 1 )];
-			failop = opMap[std::max( nif->get<quint32>( iBlock, "Fail Action" ), (quint32)ACTION_MAX - 1 )];
-			zfailop = opMap[std::max( nif->get<quint32>( iBlock, "Z Fail Action" ), (quint32)ACTION_MAX - 1 )];
-			zpassop = opMap[std::max( nif->get<quint32>( iBlock, "Pass Action" ), (quint32)ACTION_MAX - 1 )];
+			func = funcMap[std::min(nif->get<quint32>( iBlock, "Stencil Function" ), (quint32)TEST_MAX - 1 )];
+			failop = opMap[std::min( nif->get<quint32>( iBlock, "Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zfailop = opMap[std::min( nif->get<quint32>( iBlock, "Z Fail Action" ), (quint32)ACTION_MAX - 1 )];
+			zpassop = opMap[std::min( nif->get<quint32>( iBlock, "Pass Action" ), (quint32)ACTION_MAX - 1 )];
 			stencil = (nif->get<quint8>( iBlock, "Stencil Enabled" ) & ENABLE_MASK);
 		} else {
 			auto flags = nif->get<int>( iBlock, "Flags" );
