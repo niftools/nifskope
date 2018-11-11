@@ -69,7 +69,7 @@ int main( int argc, char * argv[] )
 	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
 
 	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {
-
+		QApplication::setAttribute( Qt::AA_UseDesktopOpenGL );
 		a->setOrganizationName( "NifTools" );
 		a->setOrganizationDomain( "niftools.org" );
 		a->setApplicationName( "NifSkope " + NifSkopeVersion::rawToMajMin( NIFSKOPE_VERSION ) );
