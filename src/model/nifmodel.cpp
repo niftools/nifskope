@@ -670,8 +670,14 @@ QModelIndex NifModel::insertNiBlock( const QString & identifier, int at )
 
 		branch->prepareInsert( block->types.count() );
 
-		for ( const NifData& data : block->types ) {
-			insertType( branch, data );
+		if ( getUserVersion2() == 155 && identifier.startsWith( "BSLighting" ) ) {
+			for ( const NifData& data : block->types ) {
+				insertType( branch, data );
+			}
+		} else {
+			for ( const NifData& data : block->types ) {
+				insertType( branch, data );
+			}
 		}
 
 		if ( state != Loading ) {
@@ -2004,7 +2010,7 @@ bool NifModel::load( QIODevice & device )
 	catch ( QString & err )
 	{
 		if ( msgMode == UserMessage ) {
-			Message::append( nullptr, tr( readFail ), err, QMessageBox::Critical );
+			Message::append( nullptr, tr( readFail ), QString( "Pos %1: " ).arg( device.pos() ) + err, QMessageBox::Critical );
 		} else {
 			testMsg( err );
 		}
@@ -2282,6 +2288,14 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 	if ( !parent )
 		return false;
 
+	bool stopRead = false;
+	if ( getUserVersion2() == 155 && parent->parent() == root ) {
+		if ( parent->name() == "BSLightingShaderProperty" || parent->name() == "BSEffectShaderProperty" )
+			stopRead = true;
+	}
+
+	QString name;
+
 	for ( auto child : parent->children() ) {
 		if ( !child->isConditionless() )
 			child->invalidateCondition();
@@ -2303,6 +2317,18 @@ bool NifModel::loadItem( NifItem * parent, NifIStream & stream )
 					return false;
 			}
 		}
+
+		if ( stopRead && child->name() == "Name" ) {
+			auto idx = child->value().get<int>();
+			if ( idx != -1 ) {
+				NifItem * header = getHeaderItem();
+				QModelIndex stringIndex = createIndex( header->row(), 0, header );
+				name = get<QString>( this->index( idx, 0, getIndex( stringIndex, "Strings" ) ) );
+			}
+		}
+
+		if ( stopRead && child->name() == "Controller" && !name.isEmpty() )
+			break;
 	}
 
 	return true;
@@ -2315,12 +2341,16 @@ bool NifModel::loadHeader( NifItem * header, NifIStream & stream )
 	if ( !header )
 		return false;
 
+	// Load Version String to set NifModel state
+	NifValue verstr = NifValue(NifValue::tHeaderString);
+	stream.read(verstr);
+	// Reset Stream Device
+	stream.reset();
+
 	set<int>( header, "User Version", 0 );
 	set<int>( getItem(header, "BS Header"), "BS Version", 0 );
-
-	invalidateConditions( header, false );
-	
-	return loadItem( header, stream );
+	invalidateConditions(header, true);
+	return loadItem(header, stream);
 }
 
 bool NifModel::saveItem( NifItem * parent, NifOStream & stream ) const
@@ -2910,12 +2940,12 @@ bool NifModel::assignString( NifItem * item, const QString & string, bool replac
 		}
 
 		QVector<QString> stringVector = getArray<QString>( iArray );
-		idx = stringVector.indexOf( string );
+		auto newidx = stringVector.indexOf( string );
 
 		// Already exists.  Just update the Index
-		if ( idx >= 0 && idx < stringVector.size() ) {
+		if ( newidx >= 0 && newidx < stringVector.size() ) {
 			v.changeType( NifValue::tStringIndex );
-			return set<int>( pItem, idx );
+			return set<int>( pItem, newidx );
 		}
 
 		// Append string to end of list

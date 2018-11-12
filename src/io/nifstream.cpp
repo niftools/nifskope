@@ -486,6 +486,11 @@ bool NifIStream::read( NifValue & val )
 	return false;
 }
 
+void NifIStream::reset()
+{
+	dataStream->device()->reset();
+}
+
 
 /*
 *  NifOStream

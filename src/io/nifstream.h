@@ -60,6 +60,8 @@ public:
 	//! Reads a NifValue from the underlying device. Returns true if successful.
 	bool read( NifValue & );
 
+	void reset();
+
 private:
 	//! The model that data is being read into.
 	BaseModel * model;
