@@ -58,7 +58,7 @@ Material::Material( QString name )
 	fileExists = !data.isEmpty();
 }
 
-bool Material::readFile()
+bool Material::openFile()
 {
 	if ( data.isEmpty() )
 		return false;
@@ -75,26 +75,38 @@ bool Material::readFile()
 		if ( magic != BGSM && magic != BGEM )
 			return false;
 
-		in >> version >> tileFlags;
-
-		bTileU = (tileFlags & 0x2) != 0;
-		bTileV = (tileFlags & 0x1) != 0;
-
-		in >> fUOffset >> fVOffset >> fUScale >> fVScale;
-		in >> fAlpha;
-		in >> bAlphaBlend >> iAlphaSrc >> iAlphaDst;
-		in >> iAlphaTestRef;
-		in >> bAlphaTest >> bZBufferWrite >> bZBufferTest;
-		in >> bScreenSpaceReflections >> bWetnessControl_ScreenSpaceReflections;
-		in >> bDecal >> bTwoSided >> bDecalNoFade >> bNonOccluder;
-		in >> bRefraction >> bRefractionFalloff >> fRefractionPower;
-		in >> bEnvironmentMapping >> fEnvironmentMappingMaskScale;
-		in >> bGrayscaleToPaletteColor;
-
-		return in.status() == QDataStream::Ok;
+		return readFile();
 	}
 
 	return false;
+}
+
+bool Material::readFile()
+{
+	in >> version;
+
+	in >> tileFlags;
+	bTileU = (tileFlags & 0x2) != 0;
+	bTileV = (tileFlags & 0x1) != 0;
+
+	in >> fUOffset >> fVOffset >> fUScale >> fVScale;
+	in >> fAlpha;
+	in >> bAlphaBlend >> iAlphaSrc >> iAlphaDst;
+	in >> iAlphaTestRef;
+	in >> bAlphaTest >> bZBufferWrite >> bZBufferTest;
+	in >> bScreenSpaceReflections >> bWetnessControl_ScreenSpaceReflections;
+	in >> bDecal >> bTwoSided >> bDecalNoFade >> bNonOccluder;
+	in >> bRefraction >> bRefractionFalloff >> fRefractionPower;
+	in >> bEnvironmentMapping;
+	if ( version < 10 )
+		in >> fEnvironmentMappingMaskScale;
+
+	in >> bGrayscaleToPaletteColor;
+
+	if ( version >= 6 )
+		in >> ucMaskWrites;
+
+	return in.status() == QDataStream::Ok;
 }
 
 QByteArray Material::find( QString path )
@@ -166,106 +178,140 @@ QString Material::getPath() const
 ShaderMaterial::ShaderMaterial( QString name ) : Material( name )
 {
 	if ( fileExists )
-		readable = readFile();
+		readable = openFile();
 }
 
 bool ShaderMaterial::readFile()
 {
-	if ( data.isEmpty() || !Material::readFile() )
-		return false;
+	Material::readFile();
 
-	QBuffer f( &data );
-	if ( f.open( QIODevice::ReadOnly ) ) {
-		in.setDevice( &f );
-		in.setByteOrder( QDataStream::LittleEndian );
-		in.setFloatingPointPrecision( QDataStream::SinglePrecision );
-
-		in.skipRawData( 63 );
-
-		for ( int i = 0; i < 9; i++ ) {
-			char * str;
-			in >> str;
-			textureList << QString( str );
-		}
-
-		in >> bEnableEditorAlphaRef >> bRimLighting;
-		in >> fRimPower >> fBacklightPower;
-		in >> bSubsurfaceLighting >> fSubsurfaceLightingRolloff;
-		in >> bSpecularEnabled;
-		in >> specR >> specG >> specB;
-		cSpecularColor.setRGB( specR, specG, specB );
-		in >> fSpecularMult >> fSmoothness >> fFresnelPower;
-		in >> fWetnessControl_SpecScale >> fWetnessControl_SpecPowerScale >> fWetnessControl_SpecMinvar;
-		in >> fWetnessControl_EnvMapScale >> fWetnessControl_FresnelPower >> fWetnessControl_Metalness;
-
-		char * rootMaterialStr;
-		in >> rootMaterialStr;
-		sRootMaterialPath = QString( rootMaterialStr );
-
-		in >> bAnisoLighting >> bEmitEnabled;
-
-		if ( bEmitEnabled )
-			in >> emitR >> emitG >> emitB;
-		cEmittanceColor.setRGB( emitR, emitG, emitB );
-
-		in >> fEmittanceMult >> bModelSpaceNormals;
-		in >> bExternalEmittance >> bBackLighting;
-		in >> bReceiveShadows >> bHideSecret >> bCastShadows;
-		in >> bDissolveFade >> bAssumeShadowmask >> bGlowmap;
-		in >> bEnvironmentMappingWindow >> bEnvironmentMappingEye;
-		in >> bHair >> hairR >> hairG >> hairB;
-		cHairTintColor.setRGB( hairR, hairG, hairB );
-
-		in >> bTree >> bFacegen >> bSkinTint >> bTessellate;
-		in >> fDisplacementTextureBias >> fDisplacementTextureScale;
-		in >> fTessellationPnScale >> fTessellationBaseFactor >> fTessellationFadeDistance;
-		in >> fGrayscaleToPaletteScale >> bSkewSpecularAlpha;
-
-		return in.status() == QDataStream::Ok;
+	size_t numTex = (version >= 17) ? 10 : 9;
+	for ( int i = 0; i < numTex; i++ ) {
+		char * str;
+		in >> str;
+		textureList << QString( str );
 	}
 
-	return false;
+	in >> bEnableEditorAlphaRef;
+	if ( version >= 8 ) {
+		in >> bTranslucency >> bTranslucencyThickObject >> bTranslucencyMixAlbedoWithSubsurfaceCol;
+		in >> subR >> subG >> subB;
+		cTranslucencySubsurfaceColor.setRGB( subR, subG, subB );
+		in >> fTranslucencyTransmissiveScale >> fTranslucencyTurbulence;
+	}
+	else
+		in >> bRimLighting >> fRimPower >> fBacklightPower >> bSubsurfaceLighting >> fSubsurfaceLightingRolloff;
+
+	in >> bSpecularEnabled;
+	in >> specR >> specG >> specB;
+	cSpecularColor.setRGB( specR, specG, specB );
+	in >> fSpecularMult >> fSmoothness;
+	in >> fFresnelPower;
+	in >> fWetnessControl_SpecScale >> fWetnessControl_SpecPowerScale >> fWetnessControl_SpecMinvar;
+	if ( version < 10 )
+		in >> fWetnessControl_EnvMapScale;
+
+	in >> fWetnessControl_FresnelPower >> fWetnessControl_Metalness;
+
+	if ( version > 2 )
+		in >> bPBR;
+
+	if ( version >= 9 )
+		in >> bCustomPorosity >> fPorosityValue;
+
+	char * rootMaterialStr;
+	in >> rootMaterialStr;
+	sRootMaterialPath = QString( rootMaterialStr );
+
+	in >> bAnisoLighting >> bEmitEnabled;
+
+	if ( bEmitEnabled )
+		in >> emitR >> emitG >> emitB;
+	cEmittanceColor.setRGB( emitR, emitG, emitB );
+
+	in >> fEmittanceMult >> bModelSpaceNormals;
+	in >> bExternalEmittance;
+	if ( version >= 12 )
+		in >> fLumEmittance;
+	if ( version >= 13 )
+		in >> bUseAdaptativeEmissive >> fAdaptativeEmissive_ExposureOffset >> fAdaptativeEmissive_FinalExposureMin >> fAdaptativeEmissive_FinalExposureMax;
+
+	if ( version < 8 )
+		in >> bBackLighting;
+	in >> bReceiveShadows >> bHideSecret >> bCastShadows;
+	in >> bDissolveFade >> bAssumeShadowmask >> bGlowmap;
+
+	if ( version < 7 )
+		in >> bEnvironmentMappingWindow >> bEnvironmentMappingEye;
+	in >> bHair >> hairR >> hairG >> hairB;
+	cHairTintColor.setRGB( hairR, hairG, hairB );
+
+	in >> bTree >> bFacegen >> bSkinTint >> bTessellate;
+	if ( version == 1 )
+		in >> fDisplacementTextureBias >> fDisplacementTextureScale >>
+		fTessellationPnScale >> fTessellationBaseFactor >> fTessellationFadeDistance;
+	in >> fGrayscaleToPaletteScale >> bSkewSpecularAlpha;
+
+	if ( version >= 3 ) {
+		in >> bTerrain;
+		if ( bTerrain ) {
+			if ( version == 3 )
+				in.skipRawData(4);
+			in >> fTerrainThresholdFalloff >> fTerrainTilingDistance >> fTerrainRotationAngle;
+		}
+	}
+
+	return in.status() == QDataStream::Ok;
 }
 
 EffectMaterial::EffectMaterial( QString name ) : Material( name )
 {
 	if ( fileExists )
-		readable = readFile();
+		readable = openFile();
 }
 
 bool EffectMaterial::readFile()
 {
-	if ( data.isEmpty() || !Material::readFile() )
-		return false;
+	Material::readFile();
 
-	QBuffer f( &data );
-	if ( f.open( QIODevice::ReadOnly ) ) {
-		in.setDevice( &f );
-		in.setByteOrder( QDataStream::LittleEndian );
-		in.setFloatingPointPrecision( QDataStream::SinglePrecision );
-
-		in.skipRawData( 63 );
-
-		for ( int i = 0; i < 5; i++ ) {
-			char * str;
-			in >> str;
-			textureList << QString( str );
-		}
-
-		in >> bBloodEnabled >> bEffectLightingEnabled;
-		in >> bFalloffEnabled >> bFalloffColorEnabled;
-		in >> bGrayscaleToPaletteAlpha >> bSoftEnabled;
-		in >> baseR >> baseG >> baseB;
-
-		cBaseColor.setRGB( baseR, baseG, baseB );
-
-		in >> fBaseColorScale;
-		in >> fFalloffStartAngle >> fFalloffStopAngle;
-		in >> fFalloffStartOpacity >> fFalloffStopOpacity;
-		in >> fLightingInfluence >> iEnvmapMinLOD >> fSoftDepth;
-
-		return in.status() == QDataStream::Ok;
+	size_t numTex = (version >= 10) ? 8 : 5;
+	for ( int i = 0; i < numTex; i++ ) {
+		char * str;
+		in >> str;
+		textureList << QString( str );
 	}
 
-	return false;
+	if ( version >= 10 ) {
+		in >> bEnvironmentMapping;
+		in >> fEnvironmentMappingMaskScale;
+	}
+
+	in >> bBloodEnabled >> bEffectLightingEnabled;
+	in >> bFalloffEnabled >> bFalloffColorEnabled;
+	in >> bGrayscaleToPaletteAlpha >> bSoftEnabled;
+	in >> baseR >> baseG >> baseB;
+
+	cBaseColor.setRGB( baseR, baseG, baseB );
+
+	in >> fBaseColorScale;
+	in >> fFalloffStartAngle >> fFalloffStopAngle;
+	in >> fFalloffStartOpacity >> fFalloffStopOpacity;
+	in >> fLightingInfluence >> iEnvmapMinLOD >> fSoftDepth;
+
+	if ( version >= 11 ) {
+		in >> emitR >> emitG >> emitB;
+		cEmittanceColor.setRGB( emitR, emitG, emitB );
+		
+		if ( version >= 15 ) {
+			in >> fAdaptativeEmissive_ExposureOffset >> fAdaptativeEmissive_FinalExposureMin >> fAdaptativeEmissive_FinalExposureMax;
+
+			if ( version >= 16 )
+				in >> bGlowmap;
+
+			if ( version >= 20 )
+				in >> bEffectPbrSpecular;
+		}
+	}
+
+	return in.status() == QDataStream::Ok;
 }
