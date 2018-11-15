@@ -724,7 +724,7 @@ public:
 		if ( !nif || idx.isValid() )
 			return false;
 
-		if ( nif->getUserVersion2() == 130 )
+		if ( nif->getUserVersion2() >= 130 )
 			return true;
 
 		return false;

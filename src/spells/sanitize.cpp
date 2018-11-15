@@ -433,10 +433,10 @@ public:
 				shapeNames << nameString;
 			}
 
-			// Fix "Wet Material" field
-			if ( isProp && nif->getIndex( iBlock, "Wet Material" ).isValid() ) {
-				auto wetIdx = nif->get<int>( iBlock, "Wet Material" );
-				auto wetString = nif->get<QString>( iBlock, "Wet Material" );
+			// Fix "Root Material" field
+			if ( isProp && nif->getIndex( iBlock, "Root Material" ).isValid() ) {
+				auto wetIdx = nif->get<int>( iBlock, "Root Material" );
+				auto wetString = nif->get<QString>( iBlock, "Root Material" );
 
 				int newWetIdx = -1;
 
@@ -446,8 +446,8 @@ public:
 				}
 
 				if ( newWetIdx > -1 ) {
-					nif->set<int>( iBlock, "Wet Material", newWetIdx );
-					modifiedBlocks.insert( nif->getIndex( iBlock, "Wet Material" ), "Wet Material" );
+					nif->set<int>( iBlock, "Root Material", newWetIdx );
+					modifiedBlocks.insert( nif->getIndex( iBlock, "Root Material" ), "Root Material" );
 				}
 			}
 

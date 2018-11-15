@@ -1,0 +1,20 @@
+# default shader
+
+checkgroup begin and
+	# Fallout 76
+    check HEADER/BS Header/BS Version == 155
+    check BSLightingShaderProperty
+    checkgroup begin or
+        check BSTriShape
+        check BSSubIndexTriShape
+        check BSMeshLODTriShape
+    checkgroup end
+checkgroup end
+
+texcoords 0 base
+texcoords 1 tangents
+texcoords 2 bitangents
+texcoords 3 indices
+texcoords 4 weights
+
+shaders f76_default.vert f76_default.frag

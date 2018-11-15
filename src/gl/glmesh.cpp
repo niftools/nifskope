@@ -118,6 +118,12 @@ void Shape::update( const NifModel * nif, const QModelIndex & index )
 	{
 		updateShaderProperties( nif );
 	}
+
+	if ( bssp && nifVersion == 155 ) {
+		depthTest = bssp->getDepthTest();
+		depthWrite = bssp->getDepthWrite();
+		isDoubleSided = bssp->getIsDoubleSided();
+	}
 }
 
 void Shape::updateShaderProperties( const NifModel * nif )

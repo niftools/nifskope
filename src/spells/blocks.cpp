@@ -184,7 +184,7 @@ QStringList rootStringList =
 	"Shape Name",      // NiPhysXShapeDesc
 	"Actor Name",      // NiPhysXActorDesc
 	"Joint Name",      // NiPhysXJointDesc
-	"Wet Material",    // BSLightingShaderProperty FO4+
+	"Root Material",    // BSLightingShaderProperty FO4+
 	"Behaviour Graph File", // BSBehaviorGraphExtraData
 };
 
