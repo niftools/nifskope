@@ -176,6 +176,7 @@ HEADERS += \
 	src/spells/tangentspace.h \
 	src/spells/texture.h \
 	src/spells/transform.h \
+        src/spells/convert.h \
 	src/ui/widgets/colorwheel.h \
 	src/ui/widgets/fileselect.h \
 	src/ui/widgets/floatedit.h \
@@ -202,7 +203,8 @@ HEADERS += \
 	src/version.h \
 	lib/dds.h \
 	lib/dxgiformat.h \
-	lib/half.h
+        lib/half.h \
+    src/spells/stripify.h
 
 SOURCES += \
 	src/data/niftypes.cpp \
@@ -257,6 +259,7 @@ SOURCES += \
 	src/spells/tangentspace.cpp \
 	src/spells/texture.cpp \
 	src/spells/transform.cpp \
+        src/spells/convert.cpp \
 	src/ui/widgets/colorwheel.cpp \
 	src/ui/widgets/fileselect.cpp \
 	src/ui/widgets/floatedit.cpp \
@@ -285,7 +288,7 @@ SOURCES += \
 	src/nifskope_ui.cpp \
 	src/spellbook.cpp \
 	src/version.cpp \
-	lib/half.cpp
+        lib/half.cpp
 
 RESOURCES += \
 	res/nifskope.qrc
