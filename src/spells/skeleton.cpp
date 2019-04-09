@@ -1468,9 +1468,13 @@ bool spToFO42::isApplicable( const NifModel * nif, const QModelIndex & index ) {
 }
 
 QModelIndex spToFO42::cast(NifModel * nif, const QModelIndex & index) {
+//    Converter();
+
     // Init new nif
     NifModel * newNif = new NifModel();
     newNif->loadFromFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\template.nif");
+
+    Converter c = Converter(nif, newNif, uint(nif->getBlockCount()));
 
 //        nif->removeNiBlock(0);
 //        nif->setValue()
@@ -1481,176 +1485,16 @@ QModelIndex spToFO42::cast(NifModel * nif, const QModelIndex & index) {
          QModelIndex iNode = nif->getBlock( b );
 
          if (nif->getBlockName(iNode) == "BSFadeNode") {
-
-//             if ( iNode.isValid() ) {
-             newNif->insertNiBlock( "NiNode" );
-         } else if (nif->getBlockName(iNode) == "NiTriStripsData") {
-             QModelIndex triShape = newNif->insertNiBlock( "BSTriShape" );
-
-             // TODO: Vertex Colors
-             // TODO: Consistency flags
-
-             QModelIndex boundingSphere = newNif->getIndex(triShape, "Bounding Sphere");
-             newNif->set<Vector3>(boundingSphere, "Center", nif->get<Vector3>( iNode, "Center"));
-             newNif->set<float>(boundingSphere, "Radius", nif->get<float>( iNode, "Radius"));
-
-             auto vf = nif->get<int>(iNode, "BS Vector Flags");
-             auto newVf = newNif->get<BSVertexDesc>( triShape, "Vertex Desc" );
-
-             if (vf & 1) {
-                newVf.SetFlag(VertexFlags::VF_UV);
-             }
-
-             if (vf & 4096) {
-                newVf.SetFlag(VertexFlags::VF_TANGENT);
-             }
-
-             if (nif->get<bool>( iNode, "Has Vertices")) {
-                 newVf.SetFlag(VertexFlags::VF_VERTEX);
-             }
-
-             if (nif->get<bool>( iNode, "Has Normals")) {
-                 newVf.SetFlag(VertexFlags::VF_NORMAL);
-             }
-
-             if (nif->get<bool>( iNode, "Has Vertex Colors")) {
-                 newVf.SetFlag(VertexFlags::VF_COLORS);
-             }
-
-             spUnstichStrips().cast(nif, iNode);
-
-
-             newVf.ResetAttributeOffsets(newNif->getUserVersion2());
-
-             newNif->set<BSVertexDesc>(triShape, "Vertex Desc", newVf);
-
-             QModelIndex points = nif->getIndex(iNode, "Points");
-             uint numTriangles = 0;
-             QVector<Triangle> arr = QVector<Triangle>();
-             for (int i = 0; i < nif->rowCount(points); i++) {
-                QVector<ushort> point = nif->getArray<ushort>(points.child(i, 0));
-                for (int j = 0; j < point.count() - 2; j++) {
-                    if (point[j + 1] == point[j + 2] || point[j] == point[j + 1] || point[j] == point[j + 2]) {
-                        continue;
-                    }
-
-                    if (j & 1) {
-                        arr.append(Triangle(point[j + 1], point[j], point[j + 2]));
-                    } else {
-                        arr.append(Triangle(point[j], point[j + 1], point[j + 2]));
-                    }
-                    numTriangles++;
-                }
-             }
-
-             uint numVertices = nif->get<uint>( iNode, "Num Vertices");
-//             uint numTriangles = nif->get<uint>( iNode, "Num Triangles");
-
-//             numTriangles = 0;
-             newNif->set<uint>(triShape, "Num Vertices", numVertices);
-             newNif->set<uint>(triShape, "Num Triangles", numTriangles);
-             newNif->set<uint>(triShape, "Data Size", newVf.GetVertexSize() * numVertices + numTriangles * 6);
-             newNif->updateArray( newNif->getIndex( triShape, "Vertex Data" ) );
-             newNif->updateArray( newNif->getIndex( triShape, "Triangles" ) );
-
-             QModelIndex data = newNif->getIndex(triShape, "Vertex Data");
-             QModelIndex triangles = newNif->getIndex(triShape, "Triangles");
-
-             newNif->setArray<Triangle>(triangles, arr);
-//             printf("%d Rows\n", newNif->rowCount(data));
-//             for (int i = 0; i < 39; i++) {
-//                 printf(newNif->getBlockName(triShape.child(i, 0)).toUtf8().constData());
-//                printf("%d\n", newNif->rowCount(triShape.child(i, 0)));
-//             }
-
-//             printf(newNif->getBlockName(triangles.child(0, 0)).toUtf8().constData());
-             printf("%d\n", newNif->rowCount(triangles));
-             printf("%d\n", newNif->rowCount(data));
-             printf("\n");
-
-
-             // 0  Vertex
-             // 1  Bitangent X
-             // 2  Unknown Short
-             // 3  Vertex
-             // 4  Bitangent X // Occurs twice??
-             // 5  Unknown Int
-             // 6  UV
-             // 7  Normal
-             // 8  Bitangent Y
-             // 9  Tangent
-             // 10 Bitangent Z
-             // 11 Vertex Colors
-             // 12 Bone Weights
-             // 13 Bone Indices
-             // 14 Eye Data
-
-             QVector<Vector3> verts = nif->getArray<Vector3>( iNode, "Vertices" );
-             QVector<Vector3> norms = nif->getArray<Vector3>( iNode, "Normals" );
-             QVector<Vector3> tangents = nif->getArray<Vector3>( iNode, "Tangents" );
-             QVector<Vector3> bitangents = nif->getArray<Vector3>( iNode, "Bitangents" );
-
-             // TODO: Fix for multiple arrays
-             QVector<Vector2> uvSets = nif->getArray<Vector2>( nif->getIndex( iNode, "UV Sets"), "UV Sets");
-//             QVector<ushort> points = nif->getArray<ushort>( nif->getIndex( iNode, "Points"), "Points" );
-//             QVector<QModelIndex> points = nif->getArray<QModelIndex>(triShape, "Points");
-
-             printf("UV Sets: %d\n", uvSets.count());
-
-             printf("Tangents: %d\n", tangents.count());
-//             printf("Points: %d\n", points.count());
-             printf("Points: %d\n", nif->rowCount(points));
-//             printf("Tangent Y 0: %f\n", byte(bitangents[0][1]));
-//             printf("Tangent Z 0: %f\n", bitangents[0][2]);
-
-             QVector<HalfVector3> newVerts = QVector<HalfVector3>(verts.count());
-
-             // Create vertex data
-             for ( int i = 0; i < verts.count(); i++ ) {
-                 newNif->set<HalfVector3>( data.child( i, 0 ).child(0,0), HalfVector3(verts[i]));
-                 verts.count() == norms.count()    && newNif->set<ByteVector3>( data.child( i, 0 ).child(7,0), ByteVector3(norms[i]));
-                 verts.count() == tangents.count() && newNif->set<ByteVector3>( data.child( i, 0 ).child(9,0), ByteVector3(tangents[i]));
-                 verts.count() == uvSets.count()   && newNif->set<HalfVector2>( data.child( i, 0 ).child(6,0), HalfVector2(uvSets[i]));
-                 if (verts.count() == bitangents.count()) {
-                     newNif->set<float>( data.child( i, 0 ).child(1,0),  bitangents[i][0]);
-
-                     // TODO: Set Bitangent Y and Z
-//                     newNif->set<byte>( data.child( i, 0 ).child(8,0), byte(bitangents[i][1]));
-//                     newNif->set<byte>( data.child( i, 0 ).child(10,0), byte(bitangents[i][2]));
-                 }
-
-//                 if (verts.count() + 2 == points.count()) {
-//                 }
-             }
-
-//             spStitchStrips::cast(nif);
-
-//             // Create triangles
-//             if (newNif->rowCount(triangles) + 2 == points.count()) {
-//                 for (int i = 0; i < newNif->rowCount(triangles); i++) {
-//                     if (points[i + 1] == points[i + 2] || points[i] == points[i + 1] || points[i] == points[i + 2]) {
-//                         continue;
-//                     }
-
-//                     newNif->set<Triangle>( triangles.child( i, 0 ), Triangle(points[i], points[i + 1], points[i + 2]));
-//                 }
-//             }
-
-
-//                 newNif->setArray<HalfVector3>(triShape, newVerts);
-
-//                 newNif->setArray<HalfVector3>(triShape,)
-
-//                 copyValue<int>( newNif, nif, triShape, iNode, "Num Triangles" );
-//                 newNif.set<int>( triShape, "Num Vertices", nif->get<int>( iNode, "Num Vertices"));
-//                 nif->set<int>( triShape, "Num Vertices", nif->get<int>( iNode, "Num Vertices"));
+            c.bsFadeNode(iNode);
          }
-
      }
 
+     c.unhandledBlocks();
 
-//        newNif.insertNiBlock( "NiNode" );
-//        newNif.insertNiBlock( "BSTriShape" );
+//    QStringList sl = QStringList();
+//    sl.removeDuplicates();
+//    nif->
+//    sl.contains()
 
     newNif->saveToFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\test.nif");
 
