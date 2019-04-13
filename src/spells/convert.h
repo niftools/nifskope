@@ -32,9 +32,12 @@ public:
 
 class Converter
 {
-    NifModel * nif;
-    NifModel * newNif;
+    NifModel * nifSrc;
+    NifModel * nifDst;
     bool * handledBlocks;
+
+    QString textureRootSrc = "textures\\";
+    QString textureRootDst = "textures\\new_vegas\\";
 
 
 
@@ -43,9 +46,9 @@ public:
 //    {
 //        //
 //    };
-    Converter(NifModel * nif1, NifModel * nif2, uint blockCount) {
-        nif = nif1;
-        newNif = nif2;
+    Converter(NifModel * newNifSrc, NifModel * newNifDst, uint blockCount) {
+        nifSrc = newNifSrc;
+        nifDst = newNifDst;
         handledBlocks = new bool[blockCount];
     }
 
@@ -78,27 +81,27 @@ public:
     //! Set strings array
     void setStringsArray( const QModelIndex & parentDst, const QModelIndex & parentSrc, const QString & arr, const QString & name = {} )
     {
-        auto iArr = nif->getIndex( parentSrc, arr );
-        auto iArrDst = newNif->getIndex( parentDst, arr );
+        auto iArr = nifSrc->getIndex( parentSrc, arr );
+        auto iArrDst = nifDst->getIndex( parentDst, arr );
 
         if ( name.isEmpty() ) {
-            for ( int i = 0; i < nif->rowCount( iArr ); i++ ) {
-                newNif->set<QString>( iArrDst.child( i, 0 ), nif->string( iArr.child( i, 0 ) ) );
+            for ( int i = 0; i < nifSrc->rowCount( iArr ); i++ ) {
+                nifDst->set<QString>( iArrDst.child( i, 0 ), nifSrc->string( iArr.child( i, 0 ) ) );
             }
         } else {
-            for ( int i = 0; i < nif->rowCount( iArr ); i++ )
-                newNif->set<QString>( iArrDst.child( i, 0 ), name, nif->string( iArr.child( i, 0 ), name, false ) );
+            for ( int i = 0; i < nifSrc->rowCount( iArr ); i++ )
+                nifDst->set<QString>( iArrDst.child( i, 0 ), name, nifSrc->string( iArr.child( i, 0 ), name, false ) );
         }
     }
 
     //! Set "Name" et al. for NiObjectNET, NiExtraData, NiPSysModifier, etc.
     void setNiObjectRootStrings( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc)
     {
-        for ( int i = 0; i < newNif->rowCount( iBlockDst ); i++ ) {
+        for ( int i = 0; i < nifDst->rowCount( iBlockDst ); i++ ) {
             auto iStringSrc = iBlockSrc.child( i, 0 );
             auto iStringDst = iBlockDst.child( i, 0 );
-            if ( rootStringList.contains( nif->itemName( iStringSrc ) ) ) {
-                newNif->set<QString>( iStringDst,  nif->string( iStringSrc ) );
+            if ( rootStringList.contains( nifSrc->itemName( iStringSrc ) ) ) {
+                nifDst->set<QString>( iStringDst,  nifSrc->string( iStringSrc ) );
             }
         }
     }
@@ -107,17 +110,17 @@ public:
     void setStringsNiMesh( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc )
     {
         QStringList strings;
-        auto iDataSrc = nif->getIndex( iBlockSrc, "Datastreams" );
-        auto iDataDst = newNif->getIndex( iBlockDst, "Datastreams" );
-        for ( int i = 0; i < nif->rowCount( iDataSrc ); i++ )
+        auto iDataSrc = nifSrc->getIndex( iBlockSrc, "Datastreams" );
+        auto iDataDst = nifDst->getIndex( iBlockDst, "Datastreams" );
+        for ( int i = 0; i < nifSrc->rowCount( iDataSrc ); i++ )
             setStringsArray( iDataDst.child( i, 0 ), iDataSrc.child( i, 0 ), "Component Semantics", "Name" );
     }
 
     void  setStringsNiSequence( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc ) {
-        auto iControlledBlocksSrc = nif->getIndex( iBlockSrc, "Controlled Blocks" );
-        auto iControlledBlocksDst = newNif->getIndex( iBlockDst, "Controlled Blocks" );
+        auto iControlledBlocksSrc = nifSrc->getIndex( iBlockSrc, "Controlled Blocks" );
+        auto iControlledBlocksDst = nifDst->getIndex( iBlockDst, "Controlled Blocks" );
 
-        for ( int i = 0; i < newNif->rowCount( iControlledBlocksDst ); i++ ) {
+        for ( int i = 0; i < nifDst->rowCount( iControlledBlocksDst ); i++ ) {
             auto iChildDst = iControlledBlocksDst.child( i, 0 );
             auto iChildSrc = iControlledBlocksSrc.child( i, 0 );
 
@@ -153,33 +156,33 @@ public:
         if ( !buffer.open( QIODevice::ReadWrite ) )
             return {};
 
-        auto bType = nif->createRTTIName( iSrc );
+        auto bType = nifSrc->createRTTIName( iSrc );
 
-        const QString& form = QString( STR_BL ).arg( nif->getVersion(), bType );
+        const QString& form = QString( STR_BL ).arg( nifSrc->getVersion(), bType );
 
-        if ( nif->saveIndex( buffer, iSrc ) ) {
-            auto result = acceptFormat( form, newNif );
+        if ( nifSrc->saveIndex( buffer, iSrc ) ) {
+            auto result = acceptFormat( form, nifDst );
             auto version = result.first;
 
             if ( buffer.open( QIODevice::ReadWrite ) ) {
-                QModelIndex block = newNif->insertNiBlock( bType, newNif->getBlockCount() );
-                newNif->loadIndex( buffer, block );
-                blockLink( newNif, iDst, block );
+                QModelIndex block = nifDst->insertNiBlock( bType, nifDst->getBlockCount() );
+                nifDst->loadIndex( buffer, block );
+                blockLink( nifDst, iDst, block );
 
                 // Post-Load corrections
 
                 // NiDataStream RTTI arg values
-                if ( newNif->checkVersion( 0x14050000, 0 ) && bType == QLatin1String( "NiDataStream" ) ) {
+                if ( nifDst->checkVersion( 0x14050000, 0 ) && bType == QLatin1String( "NiDataStream" ) ) {
                     NiMesh::DataStreamMetadata metadata = {};
-                    newNif->extractRTTIArgs( result.second, metadata );
-                    newNif->set<quint32>( block, "Usage", metadata.usage );
-                    newNif->set<quint32>( block, "Access", metadata.access );
+                    nifDst->extractRTTIArgs( result.second, metadata );
+                    nifDst->set<quint32>( block, "Usage", metadata.usage );
+                    nifDst->set<quint32>( block, "Access", metadata.access );
                 }
 
                 // Set strings
-                if ( newNif->checkVersion( 0x14010001, 0 ) ) {
+                if ( nifDst->checkVersion( 0x14010001, 0 ) ) {
                     setNiObjectRootStrings( block, iSrc );
-                    if ( nif->inherits( bType, "NiSequence" ) ) {
+                    if ( nifSrc->inherits( bType, "NiSequence" ) ) {
                         setStringsNiSequence( block, iSrc );
                     } else if ( bType == "NiTextKeyExtraData" ) {
                         setStringsArray( block, iSrc, "Text Keys", "Value" );
@@ -191,8 +194,8 @@ public:
                         setStringsArray( block, iSrc, "Target Names" );
                     }
 
-                    if ( bType == "NiMesh" || newNif->inherits( bType, "NiGeometry" ) )
-                        setStringsArray( newNif->getIndex( block, "Material Data" ), nif->getIndex( iSrc, "Material Data" ), "Material Name" );
+                    if ( bType == "NiMesh" || nifDst->inherits( bType, "NiGeometry" ) )
+                        setStringsArray( nifDst->getIndex( block, "Material Data" ), nifSrc->getIndex( iSrc, "Material Data" ), "Material Name" );
                 }
 
                 return block;
@@ -203,19 +206,145 @@ public:
     }
 
     template <typename T> void copyValue( const QModelIndex & iDst, const QModelIndex & iSrc, const QString & name ) {
-        newNif->set<T>( iDst, name, nif->get<T>( iSrc, name ) );
+        nifDst->set<T>( iDst, name, nifSrc->get<T>( iSrc, name ) );
     }
 
     template <typename T> void copyValue( const QModelIndex & iDst, const QModelIndex & iSrc ) {
-        newNif->set<T>( iDst, nif->get<T>( iSrc ) );
+        nifDst->set<T>( iDst, nifSrc->get<T>( iSrc ) );
     }
 
-    QModelIndex insertNiBlock(const QString & name) { return newNif->insertNiBlock(name); }
+    class Copy
+    {
+        QModelIndex iDst;
+        QModelIndex iSrc;
+        NifModel * nifDst;
+        NifModel * nifSrc;
+    public:
+        Copy(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc) {
+            iDst = newIDst;
+            iSrc = newISrc;
+            nifDst = newNifDst;
+            nifSrc = newNifSrc;
+        }
+
+        template<typename TDst, typename TSrc> void copyValue() {
+            nifDst->set<TDst>( iDst, nifSrc->get<TSrc>( iSrc ) );
+        }
+
+        template<typename TDst, typename TSrc> void copyValue(const QString & nameDst, const QString & nameSrc) {
+            nifDst->set<TDst>( iDst, nameDst, nifSrc->get<TSrc>( iSrc, nameSrc ) );
+        }
+
+        template<typename TDst, typename TSrc> void copyValue(const QString & name) {
+            copyValue<TDst, TSrc>(name, name);
+        }
+
+        template<typename T> void copyValue() {
+            copyValue<T, T>();
+        }
+
+        template<typename T> void copyValue(const QString & nameDst, const QString & nameSrc) {
+            copyValue<T, T>(nameDst, nameSrc);
+        }
+
+        template<typename T> void copyValue(const QString & name) {
+            copyValue<T, T>(name, name);
+        }
+    };
+
+    QModelIndex insertNiBlock(const QString & name) { return nifDst->insertNiBlock(name); }
+
+    void bhkRigidBody(QModelIndex iDst, QModelIndex iSrc) {
+        Copy * c = new Copy(iDst, iSrc, nifDst, nifSrc);
+
+        nifDst->set<float>(iDst, "Time Factor", 1.0);
+        c->copyValue<float>("Friction");
+        nifDst->set<float>(iDst, "Rolling Friction Multiplier", 0.0);
+        c->copyValue<float>("Restitution");
+        c->copyValue<float>("Max Linear Velocity");
+        c->copyValue<float>("Max Angular Velocity");
+        c->copyValue<float>("Penetration Depth");
+        c->copyValue<int>("Motion System");
+        // Deactivator Type
+        c->copyValue<int>("Solver Deactivation");
+        c->copyValue<int>("Quality Type");
+        c->copyValue<float>("Num Constraints");
+        // Constraints
+        // Body Flags
+    }
+
+    void scaleVector4(QModelIndex iVector4, float scale) {
+        Vector4 v = nifDst->get<Vector4>(iVector4);
+        v *= scale;
+        nifDst->set<Vector4>(iVector4, v);
+    }
+
+    // bhkConvexVerticesShape
+    void collapseScale(QModelIndex iNode, float scale) {
+        QModelIndex iVertices = nifDst->getIndex(iNode, "Vertices");
+        for (int i = 0; i < nifDst->rowCount(iVertices); i++) {
+            QModelIndex iVertex = iVertices.child(i, 0);
+            scaleVector4(iVertex, scale);
+        }
+
+        // Don't have to scale normals right?
+    }
+
+    void collapseScaleRigidBody(QModelIndex iNode, float scale) {
+        scaleVector4(nifDst->getIndex(iNode, "Translation"), scale);
+        scaleVector4(nifDst->getIndex(iNode, "Center"), scale);
+    }
+
+    void collisionObject( QModelIndex parent, QModelIndex iNode ) {
+        QModelIndex iRigidBodySrc = nifSrc->getBlock(nifSrc->getLink(iNode, "Body"));
+
+        QModelIndex shape = copyBlock(QModelIndex(), nifSrc->getBlock(nifSrc->getLink(iRigidBodySrc, "Shape")));
+        // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
+        QModelIndex iRigidBodyDst = copyBlock(QModelIndex(), iRigidBodySrc);
+        QModelIndex colNode = insertNiBlock("bhkCollisionObject");
+
+        // Collision Object
+        copyValue<ushort>(colNode, iNode, "Flags");
+        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
+        nifDst->setLink(colNode, "Body", nifDst->getBlockNumber(iRigidBodyDst));
+
+        // TODO: Skyrim layers
+        bhkRigidBody(iRigidBodyDst, iRigidBodySrc);
+        handledBlocks[nifSrc->getBlockNumber(iRigidBodySrc)] = false;
+
+        // Shape
+        // NOTE: Radius not rendered? Seems to be at 10 times always
+        nifDst->setLink(iRigidBodyDst, "Shape", nifDst->getBlockNumber(shape));
+        handledBlocks[nifSrc->getLink(iRigidBodySrc, "Shape")] = false;
+        // TODO: Material
+
+        // Scale the collision object.
+        // NOTE: scaleNode currently breaks collision for the object.
+        bool bScaleNode = false;
+        QModelIndex scaleNode;
+        if (bScaleNode) {
+            scaleNode = insertNiBlock("NiNode");
+            uint numChildren = nifDst->get<uint>(parent, "Num Children");
+            nifDst->set<uint>(parent, "Num Children", numChildren + 1);
+            nifDst->updateArray(parent, "Children");
+            nifDst->setLink(nifDst->getIndex(parent, "Children").child(int(numChildren), 0), nifDst->getBlockNumber(scaleNode));
+            nifDst->set<float>(scaleNode, "Scale", nifDst->get<float>(shape, "Radius"));
+
+            parent = scaleNode;
+        } else {
+            collapseScale(shape, nifDst->get<float>(shape, "Radius"));
+            collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(shape, "Radius"));
+        }
+
+        // Link to parent
+        nifDst->setLink(parent, "Collision Object", nifDst->getBlockNumber(colNode));
+        nifDst->setLink(colNode, "Target", nifDst->getBlockNumber(parent));
+    }
 
     void bsFadeNode( QModelIndex iNode ) {
         printf("BSFadeNode...\n");
 
-        handledBlocks[nif->getBlockNumber(iNode)] = false;
+        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
 
         QModelIndex linkNode;
 
@@ -224,18 +353,18 @@ public:
         copyValue<QString>(fadeNode, iNode, "Name");
 //        copyValue<uint>(fadeNode, iNode, "Num Extra Data List");
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
-        QVector<qint32> links = nif->getLinkArray(iNode, "Extra Data List");
+        QVector<qint32> links = nifSrc->getLinkArray(iNode, "Extra Data List");
         for (int link:links) {
-            linkNode = nif->getBlock(link);
+            linkNode = nifSrc->getBlock(link);
 
-            if (nif->getBlockName(linkNode) == "BSXFlags") {
+            if (nifSrc->getBlockName(linkNode) == "BSXFlags") {
                 copyBlock(fadeNode, linkNode);
-                handledBlocks[nif->getBlockNumber(linkNode)] = false;
+                handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
             }
 
-            if (nif->getBlockName(linkNode) == "NiStringExtraData") {
+            if (nifSrc->getBlockName(linkNode) == "NiStringExtraData") {
                 copyBlock(fadeNode, linkNode);
-                handledBlocks[nif->getBlockNumber(linkNode)] = false;
+                handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
             }
         }
 
@@ -244,42 +373,35 @@ public:
         copyValue<Vector3>(fadeNode, iNode, "Translation");
         copyValue<Matrix>(fadeNode, iNode, "Rotation");
         copyValue<float>(fadeNode, iNode, "Scale");
+        copyValue<uint>(fadeNode, iNode, "Num Children");
 
         // Collision object
-        linkNode = nif->getBlock( nif->getLink(iNode, "Collision Object") );
+        // TODO: Collision object tree must be numbered in reverse e.g:
+        // 8 bhkCollsionObject
+        // 7 bhkRigidBody
+        // 6 bhkConvexVerticesShape
+        // Ideally change insertion order to accomplish
+        //
+        // bhkRigidBody causes all other issues.
+        // MO_SYS_SPHERE_STABILIZED works
+        // MO_SYS_BOX_STABILIZED works???
+        //
+        // Scale collision with NiNode
+        linkNode = nifSrc->getBlock( nifSrc->getLink(iNode, "Collision Object") );
         if (linkNode.isValid()) {
-            if (nif->getBlockName(linkNode) == "bhkCollisionObject") {
-                QModelIndex colNode = insertNiBlock("bhkCollisionObject");
-                newNif->setLink(fadeNode, "Collision Object", newNif->getBlockNumber(colNode));
-                copyValue<ushort>(colNode, linkNode, "Flags");
-                newNif->setLink(colNode, "Target", newNif->getBlockNumber(fadeNode));
-                handledBlocks[nif->getBlockNumber(linkNode)] = false;
-
-//                QModelIndex rigidBody = insertNiBlock("bhkRigidBody");
-                QModelIndex rigidBodySrc = nif->getBlock(nif->getLink(linkNode, "Body"));
-                QModelIndex rigidBody = copyBlock(fadeNode.parent(), rigidBodySrc);
-                // TODO: Skyrim layers
-                newNif->setLink(colNode, "Body", newNif->getBlockNumber(rigidBody));
-                handledBlocks[nif->getBlockNumber(rigidBodySrc)] = false;
-
-                // NOTE: Radius not rendered? Seems to be at 10 times always
-                QModelIndex shape = copyBlock(rigidBody, nif->getBlock(nif->getLink(rigidBodySrc, "Shape")));
-                newNif->setLink(rigidBody, "Shape", newNif->getBlockNumber(shape));
-                handledBlocks[nif->getLink(rigidBodySrc, "Shape")] = false;
-                // TODO: Material
+            if (nifSrc->getBlockName(linkNode) == "bhkCollisionObject") {
+                collisionObject(fadeNode, linkNode);
             }
         }
 
-        copyValue<uint>(fadeNode, iNode, "Num Children");
-
-        newNif->updateArray(fadeNode, "Children");
-        links = nif->getLinkArray(iNode, "Children");
+        nifDst->updateArray(fadeNode, "Children");
+        links = nifSrc->getLinkArray(iNode, "Children");
         for (int i = 0; i < links.count(); i++) {
-            linkNode = nif->getBlock(links[i]);
+            linkNode = nifSrc->getBlock(links[i]);
 
-            if (nif->getBlockName(linkNode) == "NiTriStrips") {
+            if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
                 QModelIndex triShape = niTriStrips(linkNode);
-                newNif->setLink(newNif->getIndex(fadeNode, "Children").child(i, 0), newNif->getBlockNumber(triShape));
+                nifDst->setLink(nifDst->getIndex(fadeNode, "Children").child(i, 0), nifDst->getBlockNumber(triShape));
             }
         }
         // TODO: Children
@@ -292,49 +414,49 @@ public:
     QModelIndex niTriStrips( QModelIndex iNode) {
         printf("NiTriStrips...\n");
 
-        handledBlocks[nif->getBlockNumber(iNode)] = false;
+        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
 
-        const QModelIndex triShape = newNif->insertNiBlock( "BSTriShape" );
-        QModelIndex shaderProperty = newNif->insertNiBlock( "BSLightingShaderProperty" );
+        const QModelIndex triShape = nifDst->insertNiBlock( "BSTriShape" );
+        QModelIndex shaderProperty = nifDst->insertNiBlock( "BSLightingShaderProperty" );
 
-        newNif->setLink( triShape, "Shader Property", newNif->getBlockNumber( shaderProperty ) );
+        nifDst->setLink( triShape, "Shader Property", nifDst->getBlockNumber( shaderProperty ) );
 
         copyValue<Vector3>(triShape, iNode, "Translation");
         copyValue<Matrix>(triShape, iNode, "Rotation");
         copyValue<uint>(triShape, iNode, "Flags");
         copyValue<float>(triShape, iNode, "Scale");
 
-        QList<int> links = nif->getChildLinks(nif->getBlockNumber(iNode));
+        QList<int> links = nifSrc->getChildLinks(nifSrc->getBlockNumber(iNode));
         for (int i = 0; i < links.count(); i++) {
-            iNode = nif->getBlock(links[i]);
-            if (nif->getBlockName(iNode) == "NiTriStripsData") {
+            iNode = nifSrc->getBlock(links[i]);
+            if (nifSrc->getBlockName(iNode) == "NiTriStripsData") {
                 niTriStripsData(iNode, triShape);
-                handledBlocks[nif->getBlockNumber(iNode)] = false;
-            } else if (nif->getBlockName(iNode) == "NiAlphaProperty") {
+                handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
+            } else if (nifSrc->getBlockName(iNode) == "NiAlphaProperty") {
                 copyBlock(triShape, iNode);
-                handledBlocks[nif->getBlockNumber(iNode)] = false;
-            } else if (nif->getBlockName(iNode) == "BSShaderPPLightingProperty") {
-                printf("Link: %d\n", nif->getLink(iNode, "Texture Set"));
-                QModelIndex textureSet = copyBlock(shaderProperty, nif->getBlock(nif->getLink(iNode, "Texture Set")));
-                handledBlocks[nif->getLink(iNode, "Texture Set")] = false;
+                handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
+            } else if (nifSrc->getBlockName(iNode) == "BSShaderPPLightingProperty") {
+                printf("Link: %d\n", nifSrc->getLink(iNode, "Texture Set"));
+                QModelIndex textureSet = copyBlock(shaderProperty, nifSrc->getBlock(nifSrc->getLink(iNode, "Texture Set")));
+                handledBlocks[nifSrc->getLink(iNode, "Texture Set")] = false;
 
-                newNif->set<int>(textureSet, "Num Textures", 10);
-                newNif->updateArray(newNif->getIndex(textureSet, "Textures"));
+                nifDst->set<int>(textureSet, "Num Textures", 10);
+                nifDst->updateArray(nifDst->getIndex(textureSet, "Textures"));
                 // TODO: Texture Names
-                newNif->setLink(shaderProperty, "Texture Set", newNif->getBlockNumber(textureSet));
+                nifDst->setLink(shaderProperty, "Texture Set", nifDst->getBlockNumber(textureSet));
                 copyValue<uint>(shaderProperty, iNode, "Texture Clamp Mode");
                 copyValue<float>(shaderProperty, iNode, "Refraction Strength");
                 // TODO: Parallax
                 // TODO: BSShaderFlags
                 // TODO: BSShaderFlags2
-                handledBlocks[nif->getBlockNumber(iNode)] = false;
-            } else if (nif->getBlockName(iNode) == "NiMaterialProperty") {
+                handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
+            } else if (nifSrc->getBlockName(iNode) == "NiMaterialProperty") {
                 // TODO: Glossiness
                 copyValue<float>(shaderProperty, iNode, "Alpha");
                 copyValue<Color3>(shaderProperty, iNode, "Specular Color");
                 copyValue<Color3>(shaderProperty, iNode, "Emissive Color");
-                newNif->set<float>(shaderProperty, "Emissive Multiple", nif->get<float>(iNode, "Emissive Mult"));
-                handledBlocks[nif->getBlockNumber(iNode)] = false;
+                nifDst->set<float>(shaderProperty, "Emissive Multiple", nifSrc->get<float>(iNode, "Emissive Mult"));
+                handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
             }
         }
 
@@ -344,17 +466,17 @@ public:
     void niTriStripsData( QModelIndex iNode, QModelIndex triShape ) {
         printf("NiTriStripsData...\n");
 
-        handledBlocks[nif->getBlockNumber(iNode)] = false;
+        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
 
          // TODO: Vertex Colors
          // TODO: Consistency flags
 
-         QModelIndex boundingSphere = newNif->getIndex(triShape, "Bounding Sphere");
-         newNif->set<Vector3>(boundingSphere, "Center", nif->get<Vector3>( iNode, "Center"));
-         newNif->set<float>(boundingSphere, "Radius", nif->get<float>( iNode, "Radius"));
+         QModelIndex boundingSphere = nifDst->getIndex(triShape, "Bounding Sphere");
+         nifDst->set<Vector3>(boundingSphere, "Center", nifSrc->get<Vector3>( iNode, "Center"));
+         nifDst->set<float>(boundingSphere, "Radius", nifSrc->get<float>( iNode, "Radius"));
 
-         auto vf = nif->get<int>(iNode, "BS Vector Flags");
-         auto newVf = newNif->get<BSVertexDesc>( triShape, "Vertex Desc" );
+         auto vf = nifSrc->get<int>(iNode, "BS Vector Flags");
+         auto newVf = nifDst->get<BSVertexDesc>( triShape, "Vertex Desc" );
 
          if (vf & 1) {
             newVf.SetFlag(VertexFlags::VF_UV);
@@ -364,27 +486,27 @@ public:
             newVf.SetFlag(VertexFlags::VF_TANGENT);
          }
 
-         if (nif->get<bool>( iNode, "Has Vertices")) {
+         if (nifSrc->get<bool>( iNode, "Has Vertices")) {
              newVf.SetFlag(VertexFlags::VF_VERTEX);
          }
 
-         if (nif->get<bool>( iNode, "Has Normals")) {
+         if (nifSrc->get<bool>( iNode, "Has Normals")) {
              newVf.SetFlag(VertexFlags::VF_NORMAL);
          }
 
-         if (nif->get<bool>( iNode, "Has Vertex Colors")) {
+         if (nifSrc->get<bool>( iNode, "Has Vertex Colors")) {
              newVf.SetFlag(VertexFlags::VF_COLORS);
          }
 
-         newVf.ResetAttributeOffsets(newNif->getUserVersion2());
+         newVf.ResetAttributeOffsets(nifDst->getUserVersion2());
 
-         newNif->set<BSVertexDesc>(triShape, "Vertex Desc", newVf);
+         nifDst->set<BSVertexDesc>(triShape, "Vertex Desc", newVf);
 
-         QModelIndex points = nif->getIndex(iNode, "Points");
+         QModelIndex points = nifSrc->getIndex(iNode, "Points");
          uint numTriangles = 0;
          QVector<Triangle> arr = QVector<Triangle>();
-         for (int i = 0; i < nif->rowCount(points); i++) {
-            QVector<ushort> point = nif->getArray<ushort>(points.child(i, 0));
+         for (int i = 0; i < nifSrc->rowCount(points); i++) {
+            QVector<ushort> point = nifSrc->getArray<ushort>(points.child(i, 0));
             for (int j = 0; j < point.count() - 2; j++) {
                 if (point[j + 1] == point[j + 2] || point[j] == point[j + 1] || point[j] == point[j + 2]) {
                     continue;
@@ -399,18 +521,18 @@ public:
             }
          }
 
-         uint numVertices = nif->get<uint>( iNode, "Num Vertices");
+         uint numVertices = nifSrc->get<uint>( iNode, "Num Vertices");
 
-         newNif->set<uint>(triShape, "Num Vertices", numVertices);
-         newNif->set<uint>(triShape, "Num Triangles", numTriangles);
-         newNif->set<uint>(triShape, "Data Size", newVf.GetVertexSize() * numVertices + numTriangles * 6);
-         newNif->updateArray( newNif->getIndex( triShape, "Vertex Data" ) );
-         newNif->updateArray( newNif->getIndex( triShape, "Triangles" ) );
+         nifDst->set<uint>(triShape, "Num Vertices", numVertices);
+         nifDst->set<uint>(triShape, "Num Triangles", numTriangles);
+         nifDst->set<uint>(triShape, "Data Size", newVf.GetVertexSize() * numVertices + numTriangles * 6);
+         nifDst->updateArray( nifDst->getIndex( triShape, "Vertex Data" ) );
+         nifDst->updateArray( nifDst->getIndex( triShape, "Triangles" ) );
 
-         QModelIndex data = newNif->getIndex(triShape, "Vertex Data");
-         QModelIndex triangles = newNif->getIndex(triShape, "Triangles");
+         QModelIndex data = nifDst->getIndex(triShape, "Vertex Data");
+         QModelIndex triangles = nifDst->getIndex(triShape, "Triangles");
 
-         newNif->setArray<Triangle>(triangles, arr);
+         nifDst->setArray<Triangle>(triangles, arr);
 
 
          // 0  Vertex
@@ -429,13 +551,13 @@ public:
          // 13 Bone Indices
          // 14 Eye Data
 
-         QVector<Vector3> verts = nif->getArray<Vector3>( iNode, "Vertices" );
-         QVector<Vector3> norms = nif->getArray<Vector3>( iNode, "Normals" );
-         QVector<Vector3> tangents = nif->getArray<Vector3>( iNode, "Tangents" );
-         QVector<Vector3> bitangents = nif->getArray<Vector3>( iNode, "Bitangents" );
+         QVector<Vector3> verts = nifSrc->getArray<Vector3>( iNode, "Vertices" );
+         QVector<Vector3> norms = nifSrc->getArray<Vector3>( iNode, "Normals" );
+         QVector<Vector3> tangents = nifSrc->getArray<Vector3>( iNode, "Tangents" );
+         QVector<Vector3> bitangents = nifSrc->getArray<Vector3>( iNode, "Bitangents" );
 
          // TODO: Fix for multiple arrays
-         QVector<Vector2> uvSets = nif->getArray<Vector2>( nif->getIndex( iNode, "UV Sets"), "UV Sets");
+         QVector<Vector2> uvSets = nifSrc->getArray<Vector2>( nifSrc->getIndex( iNode, "UV Sets"), "UV Sets");
     //             QVector<ushort> points = nif->getArray<ushort>( nif->getIndex( iNode, "Points"), "Points" );
     //             QVector<QModelIndex> points = nif->getArray<QModelIndex>(triShape, "Points");
 
@@ -443,12 +565,12 @@ public:
 
          // Create vertex data
          for ( int i = 0; i < verts.count(); i++ ) {
-             newNif->set<HalfVector3>( data.child( i, 0 ).child(0,0), HalfVector3(verts[i]));
-             verts.count() == norms.count()    && newNif->set<ByteVector3>( data.child( i, 0 ).child(7,0), ByteVector3(norms[i]));
-             verts.count() == tangents.count() && newNif->set<ByteVector3>( data.child( i, 0 ).child(9,0), ByteVector3(tangents[i]));
-             verts.count() == uvSets.count()   && newNif->set<HalfVector2>( data.child( i, 0 ).child(6,0), HalfVector2(uvSets[i]));
+             nifDst->set<HalfVector3>( data.child( i, 0 ).child(0,0), HalfVector3(verts[i]));
+             verts.count() == norms.count()    && nifDst->set<ByteVector3>( data.child( i, 0 ).child(7,0), ByteVector3(norms[i]));
+             verts.count() == tangents.count() && nifDst->set<ByteVector3>( data.child( i, 0 ).child(9,0), ByteVector3(tangents[i]));
+             verts.count() == uvSets.count()   && nifDst->set<HalfVector2>( data.child( i, 0 ).child(6,0), HalfVector2(uvSets[i]));
              if (verts.count() == bitangents.count()) {
-                 newNif->set<float>( data.child( i, 0 ).child(1,0),  bitangents[i][0]);
+                 nifDst->set<float>( data.child( i, 0 ).child(1,0),  bitangents[i][0]);
 
                  // TODO: Set Bitangent Y and Z
              }
@@ -457,9 +579,9 @@ public:
 
     void unhandledBlocks() {
         printf("Unhandled blocks:\n");
-        for ( int i = 0; i < nif->getBlockCount(); i++ ) {
+        for ( int i = 0; i < nifSrc->getBlockCount(); i++ ) {
             if (handledBlocks[i]) {
-                printf("%d:\t%s\n", i, nif->getBlockName(nif->getBlock( i )).toUtf8().constData());
+                printf("%d:\t%s\n", i, nifSrc->getBlockName(nifSrc->getBlock( i )).toUtf8().constData());
             }
         }
     }
