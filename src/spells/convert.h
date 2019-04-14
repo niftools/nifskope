@@ -411,6 +411,21 @@ public:
 
     }
 
+    /**
+     * Insert prefix after 'textures\'.
+     * @brief bsShaderTextureSet
+     * @param iDst
+     */
+    void bsShaderTextureSet(QModelIndex iDst) {
+        QModelIndex iTextures = nifDst->getIndex(iDst, "Textures");
+        for (int i = 0; i < nifDst->get<int>(iDst, "Num Textures"); i++) {
+            QString str = nifDst->string(iTextures.child(i, 0));
+            if (str.length() > 0) {
+                nifDst->set<QString>(iTextures.child(i, 0), str.insert(int(strlen("textures\\")), "new_vegas\\"));
+            }
+        }
+    }
+
     QModelIndex niTriStrips( QModelIndex iNode) {
         printf("NiTriStrips...\n");
 
@@ -438,6 +453,9 @@ public:
             } else if (nifSrc->getBlockName(iNode) == "BSShaderPPLightingProperty") {
                 printf("Link: %d\n", nifSrc->getLink(iNode, "Texture Set"));
                 QModelIndex textureSet = copyBlock(shaderProperty, nifSrc->getBlock(nifSrc->getLink(iNode, "Texture Set")));
+//                QModelIndex iTextures = nifDst->getIndex(textureSet, "Textures");
+                bsShaderTextureSet(textureSet);
+
                 handledBlocks[nifSrc->getLink(iNode, "Texture Set")] = false;
 
                 nifDst->set<int>(textureSet, "Num Textures", 10);
