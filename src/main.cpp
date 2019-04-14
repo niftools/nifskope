@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "data/nifvalue.h"
 #include "model/nifmodel.h"
 #include "model/kfmmodel.h"
+#include "spells/convert.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -66,7 +67,7 @@ QCoreApplication * createApplication( int &argc, char *argv[] )
 //! The main program
 int main( int argc, char * argv[] )
 {
-	QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
+    QScopedPointer<QCoreApplication> app( createApplication( argc, argv ) );
 
 	if ( auto a = qobject_cast<QApplication *>(app.data()) ) {
 
@@ -110,12 +111,23 @@ int main( int argc, char * argv[] )
 		QCommandLineOption portOption( {"p", "port"}, "Port NifSkope listens on", "port" );
 		parser.addOption( portOption );
 
+        // Add convert option
+        QCommandLineOption convertOption( {"c", "convert"}, "Convert to Fallout 4", "fname", "");
+        parser.addOption( convertOption );
+
 		// Process options
 		parser.process( *a );
 
 		// Override port value
 		if ( parser.isSet( portOption ) )
 			port = parser.value( portOption ).toInt();
+
+        // Convert to Fallout 4
+        if ( parser.isSet( convertOption ) ) {
+            convertNif(parser.value(convertOption));
+
+            return 0;
+        }
 
 		// Files were passed to NifSkope
 		for ( const QString & arg : parser.positionalArguments() ) {
@@ -129,7 +141,7 @@ int main( int argc, char * argv[] )
 		// No files were passed to NifSkope, push empty string
 		if ( fnames.isEmpty() ) {
 			fnames.push( QString() );
-		}
+        }
 
 		if ( IPCsocket * ipc = IPCsocket::create( port ) ) {
 			//qDebug() << "IPCSocket exec";

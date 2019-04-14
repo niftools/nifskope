@@ -1,5 +1,5 @@
 #include "skeleton.h"
-#include "convert.h"
+//#include "convert.h"
 #include "stripify.h"
 
 #include "spellbook.h"
@@ -1463,45 +1463,13 @@ public:
 REGISTER_SPELL( spMirrorSkeleton )
 
 
-bool spToFO42::isApplicable( const NifModel * nif, const QModelIndex & index ) {
-    return nif && !index.isValid();
-}
+//bool spToFO42::isApplicable( const NifModel * nif, const QModelIndex & index ) {
+//    return nif && !index.isValid();
+//}
 
-QModelIndex spToFO42::cast(NifModel * nif, const QModelIndex & index) {
-//    Converter();
+//QModelIndex spToFO42::cast(NifModel * nif, const QModelIndex & index) {
+//    return convertNif(nif);
+//}
 
-    // Init new nif
-    NifModel * newNif = new NifModel();
-    newNif->loadFromFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\template.nif");
-
-    Converter c = Converter(nif, newNif, uint(nif->getBlockCount()));
-
-//        nif->removeNiBlock(0);
-//        nif->setValue()
-
-//        nif->loadFromFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\Data\\Meshes\\new_vegas\\ammo\\9mmammo.nif");
-     for ( int b = 0; b < nif->getBlockCount(); b++ ) {
-//             QModelIndex iNode = nif->getBlock( b, "BSFadeNode" );
-         QModelIndex iNode = nif->getBlock( b );
-
-         if (nif->getBlockName(iNode) == "BSFadeNode") {
-            c.bsFadeNode(iNode);
-         }
-     }
-
-     c.unhandledBlocks();
-
-//    QStringList sl = QStringList();
-//    sl.removeDuplicates();
-//    nif->
-//    sl.contains()
-
-    newNif->saveToFile("D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\test.nif");
-
-    newNif->clear();
-
-    return QModelIndex();
-}
-
-REGISTER_SPELL( spToFO42 )
+//REGISTER_SPELL( spToFO42 )
 
