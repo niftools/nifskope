@@ -269,7 +269,7 @@ public:
 //                nifDst->setLink(iDst, name, lDst);
                 nifDst->setLink(iDst, lDst);
             } else {
-                qDebug() << "Link not found";
+                qDebug() << "Link" << lSrc << "not found";
                 nifDst->setLink(iDst, -1);
             }
         }
@@ -277,7 +277,9 @@ public:
 
     void reLink(QModelIndex iDst, QModelIndex iSrc) {
         int lSrc = nifSrc->getLink(iSrc);
-        linkList.append({lSrc, iDst, iSrc});
+        if (lSrc != -1) {
+            linkList.append({lSrc, iDst, iSrc});
+        }
     }
 
     void reLink(QModelIndex iDst, QModelIndex iSrc, const QString & name) {
@@ -494,13 +496,10 @@ public:
     }
 
     QModelIndex bsFadeNode( QModelIndex iNode ) {
-        printf("BSFadeNode...\n");
-
-        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
-
         QModelIndex linkNode;
-
         QModelIndex fadeNode = insertNiBlock("BSFadeNode");
+
+        setHandled(fadeNode, iNode);
 
 //        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
         indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
@@ -571,19 +570,28 @@ public:
         return fadeNode;
     }
 
+    QString updateTexturePath(QString fname) {
+        return fname.insert(int(strlen("textures\\")), "new_vegas\\");
+    }
+
     /**
      * Insert prefix after 'textures\'.
      * @brief bsShaderTextureSet
      * @param iDst
      */
-    void bsShaderTextureSet(QModelIndex iDst) {
+    void bsShaderTextureSet(QModelIndex iDst, QModelIndex iSrc) {
         QModelIndex iTextures = nifDst->getIndex(iDst, "Textures");
         for (int i = 0; i < nifDst->get<int>(iDst, "Num Textures"); i++) {
             QString str = nifDst->string(iTextures.child(i, 0));
             if (str.length() > 0) {
-                nifDst->set<QString>(iTextures.child(i, 0), str.insert(int(strlen("textures\\")), "new_vegas\\"));
+                nifDst->set<QString>(iTextures.child(i, 0), updateTexturePath(str));
             }
         }
+
+        nifDst->set<int>(iDst, "Num Textures", 10);
+        nifDst->updateArray(nifDst->getIndex(iDst, "Textures"));
+
+        setHandled(iDst, iSrc);
     }
 
     uint getFlagsBSShaderFlags1(QModelIndex iNiTriStripsData, QModelIndex iBSShaderPPLightingProperty) {
@@ -622,42 +630,54 @@ public:
         return flags;
     }
 
-    void bSShaderPPLightingProperty(QModelIndex iDst, QModelIndex iSrc) {
+    void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc) {
         Copy c = Copy(iDst, iSrc, nifDst, nifSrc);
 
-        printf("Link: %d\n", nifSrc->getLink(iSrc, "Texture Set"));
-        QModelIndex textureSet = copyBlock(iDst, nifSrc->getBlock(nifSrc->getLink(iSrc, "Texture Set")));
-//                QModelIndex iTextures = nifDst->getIndex(textureSet, "Textures");
-        bsShaderTextureSet(textureSet);
-
-        handledBlocks[nifSrc->getLink(iSrc, "Texture Set")] = false;
-
-        nifDst->set<int>(textureSet, "Num Textures", 10);
-        nifDst->updateArray(nifDst->getIndex(textureSet, "Textures"));
         // TODO: Texture Names
-        nifDst->setLink(iDst, "Texture Set", nifDst->getBlockNumber(textureSet));
-        copyValue<uint>(iDst, iSrc, "Texture Clamp Mode");
-        copyValue<float>(iDst, iSrc, "Refraction Strength");
 
+        copyValue<uint>(iDst, iSrc, "Texture Clamp Mode");
 
 //                c.copyValue<uint>("Shader Flags 1", "Shader Flags");
         c.copyValue<uint>("Shader Flags 2");
-
 //                copyValue<uint>()
-
-        // TODO: Parallax
         // TODO: BSShaderFlags
-
         // TODO: BSShaderFlags2
-        handledBlocks[nifSrc->getBlockNumber(iSrc)] = false;
+
+        if (nifSrc->getBlockName(iSrc) == "BSShaderPPLightingProperty") {
+            QModelIndex iTextureSetSrc = nifSrc->getBlock(nifSrc->getLink(iSrc, "Texture Set"));
+            QModelIndex iTextureSet = copyBlock(iDst, iTextureSetSrc);
+
+            bsShaderTextureSet(iTextureSet, iTextureSetSrc);
+            nifDst->setLink(iDst, "Texture Set", nifDst->getBlockNumber(iTextureSet));
+            copyValue<float>(iDst, iSrc, "Refraction Strength");
+            // TODO: Parallax
+        } else {
+            QString fileNameSrc = nifSrc->string(iSrc, QString("File Name"));
+
+            if (fileNameSrc.length() > 0) {
+                QModelIndex iTextureSetDst = nifDst->insertNiBlock("BSShaderTextureSet");
+
+                nifDst->set<int>(iTextureSetDst, "Num Textures", 10);
+                nifDst->updateArray(nifDst->getIndex(iTextureSetDst, "Textures"));
+                nifDst->set<QString>(nifDst->getIndex(iTextureSetDst, "Textures").child(0, 0), updateTexturePath(fileNameSrc));
+                nifDst->setLink(iDst, "Texture Set", nifDst->getBlockNumber(iTextureSetDst));
+            }
+
+            // TODO: Falloff
+        }
+
+        setHandled(iDst, iSrc);
     }
 
     QModelIndex niTriStrips( QModelIndex iNode) {
-        printf("NiTriStrips...\n");
-
-        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
-
         const QModelIndex triShape = nifDst->insertNiBlock( "BSTriShape" );
+        setHandled(triShape, iNode);
+
+        copyValue<QString>(triShape, iNode, "Name");
+        if (nifDst->string(triShape, QString("Name")).length() == 0) {
+            qDebug() << "Important Warning: triShape has no name!";
+        }
+
         QModelIndex shaderProperty = nifDst->insertNiBlock( "BSLightingShaderProperty" );
 
         nifDst->setLink( triShape, "Shader Property", nifDst->getBlockNumber( shaderProperty ) );
@@ -668,23 +688,27 @@ public:
         copyValue<float>(triShape, iNode, "Scale");
 
         QModelIndex iNiTriStripsData;
-        QModelIndex iBSShaderPPLightingProperty;
+        QModelIndex iBSShaderLightingProperty;
 
         QList<int> links = nifSrc->getChildLinks(nifSrc->getBlockNumber(iNode));
         for (int i = 0; i < links.count(); i++) {
             QModelIndex linkNode = nifSrc->getBlock(links[i]);
-            if (nifSrc->getBlockName(linkNode) == "NiTriStripsData") {
+            QString type = nifSrc->getBlockName(linkNode);
+
+            if (type == "NiTriStripsData") {
                 niTriStripsData(linkNode, triShape);
                 handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
 
                 iNiTriStripsData = linkNode;
-            } else if (nifSrc->getBlockName(linkNode) == "NiAlphaProperty") {
-                copyBlock(triShape, linkNode);
-                handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
-            } else if (nifSrc->getBlockName(linkNode) == "BSShaderPPLightingProperty") {
-                bSShaderPPLightingProperty(shaderProperty, linkNode);
-                iBSShaderPPLightingProperty = linkNode;
-            } else if (nifSrc->getBlockName(linkNode) == "NiMaterialProperty") {
+            } else if (type == "NiAlphaProperty") {
+                QModelIndex iNiAlphaProperty = copyBlock(triShape, linkNode);
+
+                // Disable the enable blending flag which turns at least effects\ambient\fxvulturesnv.nif invisible.
+                nifDst->set<int>(iNiAlphaProperty, "Flags", nifDst->get<int>(iNiAlphaProperty, "Flags") & ~1);
+            } else if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
+                bSShaderLightingProperty(shaderProperty, linkNode);
+                iBSShaderLightingProperty = linkNode;
+            } else if (type == "NiMaterialProperty") {
                 // TODO: Glossiness
                 copyValue<float>(shaderProperty, linkNode, "Alpha");
                 copyValue<Color3>(shaderProperty, linkNode, "Specular Color");
@@ -697,14 +721,12 @@ public:
         // Multinode dependant values
 
         // Shader Flags
-        nifDst->set<uint>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(iNiTriStripsData, iBSShaderPPLightingProperty));
+        nifDst->set<uint>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(iNiTriStripsData, iBSShaderLightingProperty));
 
         return triShape;
     }
 
     void niTriStripsData( QModelIndex iNode, QModelIndex triShape ) {
-        printf("NiTriStripsData...\n");
-
         handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
 
          // TODO: Vertex Colors
