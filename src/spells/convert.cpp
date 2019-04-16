@@ -22,8 +22,8 @@ class Converter
 
     QString textureRootSrc = "textures\\";
     QString textureRootDst = "textures\\new_vegas\\";
-
-
+    std::map<int, int> indexMap = std::map<int, int>();
+    QVector<std::tuple<int, QModelIndex, QModelIndex>> linkList = QVector<std::tuple<int, QModelIndex, QModelIndex>>();
 
 public:
     Converter(NifModel * newNifSrc, NifModel * newNifDst, uint blockCount) {
@@ -178,6 +178,8 @@ public:
                         setStringsArray( nifDst->getIndex( block, "Material Data" ), nifSrc->getIndex( iSrc, "Material Data" ), "Material Name" );
                 }
 
+                setHandled(block, iSrc);
+
                 return block;
             }
         }
@@ -232,8 +234,178 @@ public:
         }
     };
 
+    void setHandled(QModelIndex iDst, QModelIndex iSrc) {
+        handledBlocks[nifSrc->getBlockNumber(iSrc)] = false;
+        indexMap[nifSrc->getBlockNumber(iSrc)] = nifDst->getBlockNumber(iDst);
+    }
+
+    std::tuple<QModelIndex, QModelIndex> copyLink(QModelIndex iDst, QModelIndex iSrc, const QString & name) {
+        int lSrc = nifSrc->getLink(iSrc, name);
+        if (lSrc != -1) {
+            QModelIndex iLinkSrc = nifSrc->getBlock(lSrc);
+            QModelIndex iLinkDst = copyBlock(QModelIndex(), iLinkSrc);
+            nifDst->setLink(iDst, name, nifDst->getBlockNumber(iLinkDst));
+
+            setHandled(iLinkDst, iLinkSrc);
+
+            return {iLinkDst, iLinkSrc};
+        }
+
+        return {QModelIndex(), QModelIndex()};
+    }
+
+    void reLinkExec() {
+        qDebug() << "Relinking...";
+
+        QModelIndex iDst;
+        QModelIndex iSrc;
+        int lSrc;
+
+        for (int i = 0; i < linkList.count(); i++) {
+            std::tie(lSrc, iDst, iSrc) = linkList[i];
+
+            if (indexMap.count(lSrc) > 0) {
+                int lDst = indexMap[lSrc];
+//                nifDst->setLink(iDst, name, lDst);
+                nifDst->setLink(iDst, lDst);
+            } else {
+                qDebug() << "Link not found";
+                nifDst->setLink(iDst, -1);
+            }
+        }
+    }
+
+    void reLink(QModelIndex iDst, QModelIndex iSrc) {
+        int lSrc = nifSrc->getLink(iSrc);
+        linkList.append({lSrc, iDst, iSrc});
+    }
+
+    void reLink(QModelIndex iDst, QModelIndex iSrc, const QString & name) {
+        reLink(nifDst->getIndex(iDst, name), nifSrc->getIndex(iSrc, name));
+    }
+
+    void reLinkArray(QModelIndex iArrayDst, QModelIndex iArraySrc, const QString arrayName = "", const QString & name = "") {
+        if (arrayName.length() != 0) {
+            iArrayDst = nifDst->getIndex(iArrayDst, arrayName);
+            iArraySrc = nifSrc->getIndex(iArraySrc, arrayName);
+        }
+
+        for (int i = 0; i < nifSrc->rowCount(iArrayDst); i++) {
+            QModelIndex iLinkDst = iArrayDst.child(i, 0);
+            QModelIndex iLinkSrc = iArraySrc.child(i, 0);
+
+            if (name.length() == 0) {
+                reLink(iLinkDst, iLinkSrc);
+            } else {
+                reLink(iLinkDst, iLinkSrc, name);
+            }
+        }
+    }
+
+    void niAVDefaultObjectPalette(QModelIndex iDst, QModelIndex iSrc) {
+        reLink(iDst, iSrc, "Scene");
+        reLinkArray(iDst, iSrc, "Objs", "AV Object");
+    }
+
+    void niInterpolator(QModelIndex iDst, QModelIndex iSrc) {
+        QModelIndex iInterpolatorDst;
+        QModelIndex iInterpolatorSrc;
+        std::tie(iInterpolatorDst, iInterpolatorSrc) = copyLink(iDst, iSrc, "Interpolator");
+        if (iInterpolatorSrc.isValid()) {
+            copyLink(iInterpolatorDst, iInterpolatorSrc, "Data");
+        }
+    }
+
+    void niControllerSequence(QModelIndex iDst, QModelIndex iSrc) {
+        // Controlled Blocks
+        QModelIndex iControlledBlocksDst = nifDst->getIndex(iDst, "Controlled Blocks");
+        QModelIndex iControlledBlocksSrc = nifSrc->getIndex(iSrc, "Controlled Blocks");
+        if (iControlledBlocksSrc.isValid()) {
+            for (int i = 0; i < nifDst->rowCount(iControlledBlocksDst); i++) {
+                QModelIndex iBlockDst = iControlledBlocksDst.child(i, 0);
+                QModelIndex iBlockSrc = iControlledBlocksSrc.child(i, 0);
+
+                // Interpolator
+                niInterpolator(iBlockDst, iBlockSrc);
+
+                // Controller
+                niControllerCopy(iBlockDst, iBlockSrc);
+            }
+        }
+
+        // Text keys
+        copyLink(iDst, iSrc, "Text Keys");
+
+        // Manager
+        reLink(iDst, iSrc, "Manager");
+
+        // TODO: Anim Note Arrays
+    }
+
+    void niControllerSequences(QModelIndex iDst, QModelIndex iSrc) {
+        for (int i = 0; i < nifDst->rowCount(iDst); i++) {
+            QModelIndex iSeqSrc = nifSrc->getBlock(nifSrc->getLink(iSrc.child(i, 0)));
+            QModelIndex iSeqDst = copyBlock(QModelIndex(), iSeqSrc);
+
+            niControllerSequence(iSeqDst, iSeqSrc);
+
+            nifDst->setLink(iDst.child(i, 0), nifDst->getBlockNumber(iSeqDst));
+        }
+    }
+
+    void niControllerCopy(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Controller") {
+        int numController = nifSrc->getLink(iSrc, name);
+        if (numController != -1) {
+            QModelIndex iControllerSrc = nifSrc->getBlock(numController);
+            QModelIndex iControllerDst = copyBlock(QModelIndex(), nifSrc->getBlock(numController));
+            nifDst->setLink(iDst, name, nifDst->getBlockNumber(iControllerDst));
+            niController(iControllerDst, iControllerSrc);
+        }
+    }
+
+    void niController(QModelIndex iDst, QModelIndex iSrc) {
+        setHandled(iDst, iSrc);
+
+        // Target
+        int numTargetSrc = nifSrc->getLink(iSrc, "Target");
+        if (numTargetSrc != -1) {
+            nifDst->setLink(iDst, "Target", indexMap[numTargetSrc]);
+        }
+
+        // Next Controller
+        QModelIndex iNextControllerDst;
+        QModelIndex iNextControllerSrc;
+        std::tie(iNextControllerDst, iNextControllerSrc) = copyLink(iDst, iSrc, "Next Controller");
+        if (iNextControllerSrc.isValid()) {
+            niController(iNextControllerDst, iNextControllerSrc);
+        }
+
+        // Interpolator
+        niInterpolator(iDst, iSrc);
+
+        // Object Palette
+        QModelIndex iObjectPaletteDst;
+        QModelIndex iObjectPaletteSrc;
+        std::tie(iObjectPaletteDst, iObjectPaletteSrc) = copyLink(iDst, iSrc, "Object Palette");
+        if (iObjectPaletteSrc.isValid()) {
+            niAVDefaultObjectPalette(iObjectPaletteDst, iObjectPaletteSrc);
+        }
+
+        // Extra Targets
+        if (nifSrc->getIndex(iSrc, "Extra Targets").isValid()) {
+            reLinkArray(iDst, iSrc, "Extra Targets");
+        }
+
+        // Controller Sequences
+        QModelIndex iControllerSequencesSrc = nifSrc->getIndex(iSrc, "Controller Sequences");
+        if (iControllerSequencesSrc.isValid()) {
+            niControllerSequences(nifDst->getIndex(iDst, "Controller Sequences"), iControllerSequencesSrc);
+        }
+    }
+
     QModelIndex insertNiBlock(const QString & name) { return nifDst->insertNiBlock(name); }
 
+    // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
     void bhkRigidBody(QModelIndex iDst, QModelIndex iSrc) {
         Copy * c = new Copy(iDst, iSrc, nifDst, nifSrc);
 
@@ -321,7 +493,7 @@ public:
         nifDst->setLink(colNode, "Target", nifDst->getBlockNumber(parent));
     }
 
-    void bsFadeNode( QModelIndex iNode ) {
+    QModelIndex bsFadeNode( QModelIndex iNode ) {
         printf("BSFadeNode...\n");
 
         handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
@@ -330,6 +502,9 @@ public:
 
         QModelIndex fadeNode = insertNiBlock("BSFadeNode");
 
+//        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
+        indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
+
         copyValue<QString>(fadeNode, iNode, "Name");
 //        copyValue<uint>(fadeNode, iNode, "Num Extra Data List");
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
@@ -337,18 +512,19 @@ public:
         for (int link:links) {
             linkNode = nifSrc->getBlock(link);
 
-            if (nifSrc->getBlockName(linkNode) == "BSXFlags") {
+            QString type = nifSrc->getBlockName(linkNode);
+            if (type == "BSXFlags") {
                 copyBlock(fadeNode, linkNode);
                 handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
-            }
-
-            if (nifSrc->getBlockName(linkNode) == "NiStringExtraData") {
+            } else if (type == "NiStringExtraData") {
                 copyBlock(fadeNode, linkNode);
                 handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
             }
         }
 
-        // TODO: Controller
+        niControllerCopy(fadeNode, iNode);
+
+
         copyValue<uint>(fadeNode, iNode, "Flags");
         copyValue<Vector3>(fadeNode, iNode, "Translation");
         copyValue<Matrix>(fadeNode, iNode, "Rotation");
@@ -379,16 +555,20 @@ public:
         for (int i = 0; i < links.count(); i++) {
             linkNode = nifSrc->getBlock(links[i]);
 
+            QString type = nifSrc->getBlockName(linkNode);
             if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
                 QModelIndex triShape = niTriStrips(linkNode);
                 nifDst->setLink(nifDst->getIndex(fadeNode, "Children").child(i, 0), nifDst->getBlockNumber(triShape));
+            } else if (type == "BSFadeNode" || type == "NiNode") {
+                QModelIndex iFadeNodeChild = bsFadeNode(linkNode);
+                nifDst->setLink(nifDst->getIndex(fadeNode, "Children").child(i, 0), nifDst->getBlockNumber(iFadeNodeChild));
             }
         }
-        // TODO: Children
 
         // TODO: Num Effects
         // TODO: Effects
 
+        return fadeNode;
     }
 
     /**
@@ -663,13 +843,24 @@ void convert(QString fname) {
 
     Converter c = Converter(&nif, &newNif, uint(nif.getBlockCount()));
 
-    for ( int b = 0; b < nif.getBlockCount(); b++ ) {
-        QModelIndex iNode = nif.getBlock( b );
+//    qDebug() << nif.getParentLinks(0).length();
+//    qDebug() << nif.getLinkArray(QModelIndex()).length();
+//    qDebug() << nif.getLinkArray(nif.getHeader()).length();
+//    qDebug() << nif.getBlock(0).parent().isValid();
 
-        if (nif.getBlockName(iNode) == "BSFadeNode") {
-           c.bsFadeNode(iNode);
-        }
+    QString type = nif.getBlockName(nif.getBlock(0));
+    if (type == "BSFadeNode" || type == "NiNode") {
+       c.bsFadeNode(nif.getBlock(0));
     }
+
+    c.reLinkExec();
+
+//    for ( int b = 0; b < nif.getBlockCount(); b++ ) {
+//        QModelIndex iNode = nif.getBlock( b );
+//        QString type = nif.getBlockName(iNode);
+
+
+//    }
 
     c.unhandledBlocks();
 
