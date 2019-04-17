@@ -16,7 +16,7 @@
 //    QModelIndex cast( NifModel * nif, const QModelIndex & index ) override final;
 //};
 
-QModelIndex convertNif(QString fname);
+void convertNif(QString fname);
 
 
 #endif // SPELL_CONVERT_H
