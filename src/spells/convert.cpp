@@ -1043,10 +1043,7 @@ public:
 
                 iNiTriStripsData = linkNode;
             } else if (type == "NiAlphaProperty") {
-                QModelIndex iNiAlphaProperty = copyBlock(triShape, linkNode);
-
-                // Disable the enable blending flag which turns at least effects\ambient\fxvulturesnv.nif invisible.
-                nifDst->set<int>(iNiAlphaProperty, "Flags", nifDst->get<int>(iNiAlphaProperty, "Flags") & ~1);
+                copyBlock(triShape, linkNode);
             } else if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
                 bSShaderLightingProperty(shaderProperty, linkNode);
                 iBSShaderLightingProperty = linkNode;
@@ -1164,6 +1161,8 @@ public:
          QVector<Vector3> norms = nifSrc->getArray<Vector3>( iNode, "Normals" );
          QVector<Vector3> tangents = nifSrc->getArray<Vector3>( iNode, "Tangents" );
          QVector<Vector3> bitangents = nifSrc->getArray<Vector3>( iNode, "Bitangents" );
+         QVector<Color4> vertexColors = nifSrc->getArray<Color4>( iNode, "Vertex Colors" );
+
 
          // TODO: Process for no tangents
 
@@ -1177,9 +1176,15 @@ public:
          // Create vertex data
          for ( int i = 0; i < verts.count(); i++ ) {
              nifDst->set<HalfVector3>( data.child( i, 0 ).child(0,0), HalfVector3(verts[i]));
-             verts.count() == norms.count()    && nifDst->set<ByteVector3>( data.child( i, 0 ).child(7,0), ByteVector3(norms[i]));
-             verts.count() == tangents.count() && nifDst->set<ByteVector3>( data.child( i, 0 ).child(9,0), ByteVector3(tangents[i]));
-             verts.count() == uvSets.count()   && nifDst->set<HalfVector2>( data.child( i, 0 ).child(6,0), HalfVector2(uvSets[i]));
+             verts.count() == norms.count()        && nifDst->set<ByteVector3>( data.child( i, 0 ).child(7,0), ByteVector3(norms[i]));
+             verts.count() == tangents.count()     && nifDst->set<ByteVector3>( data.child( i, 0 ).child(9,0), ByteVector3(tangents[i]));
+             verts.count() == uvSets.count()       && nifDst->set<HalfVector2>( data.child( i, 0 ).child(6,0), HalfVector2(uvSets[i]));
+             if (verts.count() == vertexColors.count()) {
+                 ByteColor4 color;
+                 color.fromQColor(vertexColors[i].toQColor());
+                 nifDst->set<ByteColor4>( data.child( i, 0 ).child(11,0), color);
+             }
+
              if (verts.count() == bitangents.count()) {
                  nifDst->set<float>( data.child( i, 0 ).child(1,0),  bitangents[i][0]);
 
