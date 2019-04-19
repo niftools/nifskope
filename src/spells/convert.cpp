@@ -14,6 +14,228 @@
 
 #include <algorithm> // std::stable_sort
 
+#include <time.h>
+
+#define FIND_UNUSED true
+
+#define UNUSED 0
+#define HANDLED 1
+#define IGNORED 2
+
+class Copier
+{
+    QModelIndex iDst;
+    QModelIndex iSrc;
+    NifModel * nifDst;
+    NifModel * nifSrc;
+    std::map<QModelIndex, int> * usedValues;
+public:
+    Copier(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc, std::map<QModelIndex, int> * newUsedValues) {
+        iDst = newIDst;
+        iSrc = newISrc;
+
+        if (!iDst.isValid()) {
+            qDebug() << "Invalid Destination";
+        }
+
+        if (!iSrc.isValid()) {
+            qDebug() << "Invalid Source";
+        }
+
+        nifDst = newNifDst;
+        nifSrc = newNifSrc;
+
+        usedValues = newUsedValues;
+    }
+
+    Copier(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc) :
+        Copier(newIDst, newISrc, newNifDst, newNifSrc, nullptr) {}
+
+    void printUnused() {
+        for (std::map<QModelIndex, int>::iterator it= usedValues->begin(); it!=usedValues->end(); ++it) {
+            if (it->second == UNUSED) {
+                qDebug() << "Unused:" << nifSrc->getBlockName(it->first) << "from" << nifSrc->getBlockName(iSrc);
+            }
+        }
+    }
+
+    bool ignore(const QModelIndex iSource) {
+        if (!iSource.isValid()) {
+            qDebug() << "Invalid";
+
+            return false;
+        }
+
+        if (FIND_UNUSED && usedValues) {
+            if (usedValues->count(iSource) != 0) {
+                usedValues->at(iSource) = IGNORED;
+            } else {
+                qDebug() << "Key not found";
+            }
+        }
+
+        return true;
+    }
+
+    void ignore(QModelIndex iSource, const QString & name) {
+        if (!ignore(nifSrc->getIndex(iSource, name))) {
+            qDebug() << name << "Invalid";
+        }
+    }
+
+    void ignore(const QString & name) {
+        ignore(iSrc, name);
+    }
+
+
+    template<typename T> T getVal(NifModel * nif, const QModelIndex iSource) {
+        if (!iSource.isValid()) {
+            qDebug() << "Invalid QModelIndex";
+        }
+
+        NifValue val = nif->getValue(iSource);
+
+        if (!val.isValid()) {
+            qDebug() << "Invalid value";
+        }
+
+        if (!val.ask<T>()) {
+            qDebug() << "Invalid type";
+        }
+
+        if (FIND_UNUSED && usedValues) {
+            if (nif == nifSrc) {
+                usedValues->at(iSource) = HANDLED;
+            }
+        }
+
+        return val.get<T>();
+    }
+
+    template<typename T> T getVal(NifModel * nif, const QModelIndex iSource, const QString & name) {
+        return getVal<T>(nif, nif->getIndex(iSource, name));
+    }
+
+    template<typename T> T getSrc(const QModelIndex iSource) {
+        return getVal<T>(nifSrc, iSource);
+    }
+
+    template<typename T> T getDst(const QModelIndex iSource) {
+        return getVal<T>(nifDst, iSource);
+    }
+
+    template<typename T> T getSrc(const QString & name) {
+        return getVal<T>(nifSrc, iSrc, name);
+    }
+
+    template<typename T> T getDst(const QString & name) {
+        return getVal<T>(nifDst, iDst, name);
+    }
+
+    template<typename T> T getSrc(const QModelIndex iSource, const QString & name) {
+        return getVal<T>(nifSrc, iSource, name);
+    }
+
+    template<typename T> T getDst(const QModelIndex iSource, const QString & name) {
+        return getVal<T>(nifDst, iSource, name);
+    }
+
+    bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
+        NifValue val = nifSrc->getValue(iSource);
+
+        if (!val.isValid()) {
+            qDebug() << "Invalid Value";
+
+            return false;
+        }
+
+        if (!nifDst->setValue(iTarget, val)) {
+            qDebug() << "Failed to set value";
+
+            return false;
+        }
+
+        if (FIND_UNUSED && usedValues) {
+            usedValues->at(iSource) = HANDLED;
+        }
+
+        return true;
+    }
+
+    bool copyValue(const QString & nameDst, const QString & nameSrc) {
+        QModelIndex iDstNew = nifDst->getIndex(iDst, nameDst);
+        QModelIndex iSrcNew = nifSrc->getIndex(iSrc, nameSrc);
+
+        if (!iDstNew.isValid()) {
+            qDebug() << "Dst: Invalid value name" << nameDst << "in block type" << nifDst->getBlockName(iDst);
+
+            return false;
+        }
+
+        if (!iSrcNew.isValid()) {
+            qDebug() << "Src: Invalid value name" << nameSrc << "in block type" << nifSrc->getBlockName(iSrc);
+
+            return false;
+        }
+
+        return copyValue(iDst, iSrc);
+    }
+
+    bool copyValue(const QString & name) {
+        return copyValue(name, name);
+    }
+
+
+    template<typename TDst, typename TSrc> bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
+        if (!nifDst->set<TDst>( iTarget, nifSrc->get<TSrc>( iSource ) )) {
+            qDebug() << "Failed to set value";
+
+            return false;
+        }
+
+        if (FIND_UNUSED && usedValues) {
+            usedValues->at(iSource) = HANDLED;
+        }
+
+        return true;
+    }
+
+    template<typename TDst, typename TSrc> bool copyValue() {
+        return copyValue<TDst, TSrc>(iDst, iSrc);
+    }
+
+    template<typename TDst, typename TSrc> bool copyValue(const QString & nameDst, const QString & nameSrc) {
+        QModelIndex iDstNew = nifDst->getIndex(iDst, nameDst);
+        QModelIndex iSrcNew = nifSrc->getIndex(iSrc, nameSrc);
+
+        if (!iDstNew.isValid()) {
+            qDebug() << "Dst: Invalid value name" << nameDst << "in block type" << nifDst->getBlockName(iDst);
+        }
+
+        if (!iSrcNew.isValid()) {
+            qDebug() << "Src: Invalid value name" << nameSrc << "in block type" << nifSrc->getBlockName(iSrc);
+        }
+
+        return copyValue<TDst, TSrc>(iDstNew, iSrcNew);
+    }
+
+    template<typename TDst, typename TSrc> bool copyValue(const QString & name) {
+        return copyValue<TDst, TSrc>(name, name);
+    }
+
+    template<typename T> bool copyValue() {
+        return copyValue<T, T>();
+    }
+
+    template<typename T> bool copyValue(const QString & nameDst, const QString & nameSrc) {
+        return copyValue<T, T>(nameDst, nameSrc);
+    }
+
+    template<typename T> bool copyValue(const QString & name) {
+        return copyValue<T, T>(name, name);
+    }
+};
+
 
 class Converter
 {
@@ -199,69 +421,6 @@ public:
         nifDst->set<T>( iDst, nifSrc->get<T>( iSrc ) );
     }
 
-    class Copy
-    {
-        QModelIndex iDst;
-        QModelIndex iSrc;
-        NifModel * nifDst;
-        NifModel * nifSrc;
-    public:
-        Copy(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc) {
-            iDst = newIDst;
-            iSrc = newISrc;
-
-            if (!iDst.isValid()) {
-                qDebug() << "Invalid Destination";
-            }
-
-            if (!iSrc.isValid()) {
-                qDebug() << "Invalid Source";
-            }
-
-            nifDst = newNifDst;
-            nifSrc = newNifSrc;
-        }
-
-        template<typename TDst, typename TSrc> void copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
-            nifDst->set<TDst>( iTarget, nifSrc->get<TSrc>( iSource ) );
-        }
-
-        template<typename TDst, typename TSrc> void copyValue() {
-            copyValue<TDst, TSrc>(iDst, iSrc);
-        }
-
-        template<typename TDst, typename TSrc> void copyValue(const QString & nameDst, const QString & nameSrc) {
-            QModelIndex iDstNew = nifDst->getIndex(iDst, nameDst);
-            QModelIndex iSrcNew = nifSrc->getIndex(iSrc, nameSrc);
-
-            if (!iDstNew.isValid()) {
-                qDebug() << "Dst: Invalid value name" << nameDst << "in block type" << nifDst->getBlockName(iDst);
-            }
-
-            if (!iSrcNew.isValid()) {
-                qDebug() << "Src: Invalid value name" << nameSrc << "in block type" << nifSrc->getBlockName(iSrc);
-            }
-
-            copyValue<TDst, TSrc>(iDstNew, iSrcNew);
-        }
-
-        template<typename TDst, typename TSrc> void copyValue(const QString & name) {
-            copyValue<TDst, TSrc>(name, name);
-        }
-
-        template<typename T> void copyValue() {
-            copyValue<T, T>();
-        }
-
-        template<typename T> void copyValue(const QString & nameDst, const QString & nameSrc) {
-            copyValue<T, T>(nameDst, nameSrc);
-        }
-
-        template<typename T> void copyValue(const QString & name) {
-            copyValue<T, T>(name, name);
-        }
-    };
-
     bool setHandled(const QModelIndex iDst,  const QModelIndex iSrc) {
         if (handledBlocks[nifSrc->getBlockNumber(iSrc)] == false) {
             return false;
@@ -274,7 +433,7 @@ public:
     }
 
     void niPSysData(const QModelIndex iDst, const QModelIndex iSrc) {
-        Copy c = Copy(iDst, iSrc, nifDst, nifSrc);
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         c.copyValue<int>("Group ID");
         c.copyValue<ushort>("BS Max Vertices");
@@ -389,6 +548,38 @@ public:
                 reLink(iLinkDst, iLinkSrc);
             } else {
                 reLink(iLinkDst, iLinkSrc, name);
+            }
+        }
+    }
+
+    void checkValueUse(const QModelIndex iSrc, std::map<QModelIndex, int> & usedValues) {
+        if (!FIND_UNUSED) {
+            return;
+        }
+
+
+        for (int r = 0; r < nifSrc->rowCount(iSrc); r++) {
+            QModelIndex iLink = iSrc.child(r, 0);
+
+            // TODO: Change this to more efficient method
+            if (!nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink)).isValid()) {
+                continue;
+            }
+
+            if (iLink != nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink))) {
+                continue;
+            }
+//            if (r > 0 && nifSrc->getBlockName(iLink) == nifSrc->getBlockName(iSrc.child(r - 1, 0))) {
+//                continue;
+//            }
+
+            if (nifSrc->rowCount(iLink) > 0) {
+                checkValueUse(iLink, usedValues);
+            } else {
+                NifValue v = nifSrc->getValue(iLink);
+                if (v.isValid()) {
+                    usedValues[iLink] = UNUSED;
+                }
             }
         }
     }
@@ -539,7 +730,7 @@ public:
         }
 
         if (!bExactCopy) {
-            Copy c = Copy(iControllerDst, iControllerSrc, nifDst, nifSrc);
+            Copier c = Copier(iControllerDst, iControllerSrc, nifDst, nifSrc);
 
             c.copyValue<int>("Flags");
             c.copyValue<float>("Frequency");
@@ -632,7 +823,7 @@ public:
 
     // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
     void bhkRigidBody(QModelIndex iDst, QModelIndex iSrc) {
-        Copy * c = new Copy(iDst, iSrc, nifDst, nifSrc);
+        Copier * c = new Copier(iDst, iSrc, nifDst, nifSrc);
 
         nifDst->set<float>(iDst, "Time Factor", 1.0);
         c->copyValue<float>("Friction");
@@ -721,40 +912,66 @@ public:
     void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc) {
         setHandled(iDst, iSrc);
 
+        std::map<QModelIndex, int> usedValues = std::map<QModelIndex, int>();
+        checkValueUse(iSrc, usedValues);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc, & usedValues);
+
+        niControllerCopy(iDst, iSrc, "Controller", nifDst->getBlockNumber(iDst));
+        usedValues[nifSrc->getIndex(iSrc, "Controller")] = HANDLED;
+
+        c.ignore("Name");
+        c.ignore("Num Extra Data List");
+        c.ignore("Flags");
+        c.ignore("Texture Count");
+        c.ignore("Num Shader Textures");
+
         QString type = nifDst->getBlockName(iDst);
         if (type == "BSEffectShaderProperty") {
-            // TODO: Extra Data
-            // TODO: Controller
-            niControllerCopy(iDst, iSrc, "Controller", nifDst->getBlockNumber(iDst));
+            QString textures[] = {
+                "Base",
+                "Dark",
+                "Detail",
+                "Gloss",
+                "Glow",
+                "Bump Map",
+                "Normal",
+                "Parallax",
+                "Decal 0",
+            };
 
-            // TODO: Base Texture
-            if (nifSrc->get<bool>(iSrc, "Has Base Texture")) {
-                QModelIndex iBaseTextureSrc = nifSrc->getIndex(iSrc, "Base Texture");
-                QModelIndex iNiSourceTexture = nifSrc->getBlock(nifSrc->getLink(iBaseTextureSrc, "Source"));
-                Copy c = Copy(iDst, iNiSourceTexture, nifDst, nifSrc);
+            for (QString s : textures) {
+                c.ignore("Has " + s + " Texture");
+                if (c.getSrc<bool>("Has " + s + " Texture")) {
+                    QModelIndex iTextureSrc = nifSrc->getIndex(iSrc, s + " Texture");
 
-                setHandled(iDst, iNiSourceTexture);
+                    c.ignore(iTextureSrc, "Flags");
 
-                QString path = nifSrc->string(iNiSourceTexture, QString("File Name"));
-                nifDst->set<QString>(iDst, "Source Texture", updateTexturePath(path));
+                    if (c.getSrc<bool>(iTextureSrc, "Has Texture Transform")) {
+                        c.ignore(iTextureSrc, "Translation");
+                        c.ignore(iTextureSrc, "Scale");
+                        c.ignore(iTextureSrc, "Rotation");
+                        c.ignore(iTextureSrc, "Transform Method");
+                        c.ignore(iTextureSrc, "Center");
+                    }
+
+                    if (s == "Base") {
+                        QModelIndex iNiSourceTexture = nifSrc->getBlock(nifSrc->getLink(iTextureSrc, "Source"));
+                        usedValues[nifSrc->getIndex(iTextureSrc, "Source")] = HANDLED;
+                        setHandled(iDst, iNiSourceTexture);
+                        QString path = nifSrc->string(iNiSourceTexture, QString("File Name"));
+                        nifDst->set<QString>(iDst, "Source Texture", updateTexturePath(path));
+                    }
+                }
             }
-
-            // TODO: Dark Texture
-            // TODO: Detail Texture
-            // TODO: Gloss Texture
-            // TODO: Glow Texture
-            // TODO: Bump Map Texture
-            // TODO: Normal Texture
-            // TODO: Parallax Texture
-            // TODO: Decal 0 Texture
-            // TODO: Shader Textures
         } else if (type == "BSLightingShaderProperty") {
-            niControllerCopy(iDst, iSrc, "Controller", nifDst->getBlockNumber(iDst));
         }
+
+        c.printUnused();
     }
 
     void niMaterialProperty(QModelIndex iDst, QModelIndex iSrc) {
-        Copy c = Copy(iDst, iSrc, nifDst, nifSrc);
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         // TODO: Extra Data
         niControllerCopy(iDst, iSrc);
@@ -770,7 +987,7 @@ public:
     void niParticleSystem(QModelIndex iDst, QModelIndex iSrc) {
         setHandled(iDst, iSrc);
 
-        Copy c = Copy(iDst, iSrc, nifDst, nifSrc);
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
         c.copyValue<QString>("Name");
         // TODO: Extra data
         niControllerCopy(iDst, iSrc);
@@ -958,7 +1175,7 @@ public:
     }
 
     void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc) {
-        Copy c = Copy(iDst, iSrc, nifDst, nifSrc);
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         // TODO: Texture Names
 
@@ -1204,6 +1421,8 @@ public:
 };
 
 void convert(const QString & fname, const QString & root = "") {
+    clock_t tStart = clock();
+
     qDebug() << "Processing: " + fname;
 
     // Load
@@ -1245,6 +1464,8 @@ void convert(const QString & fname, const QString & root = "") {
     if (!newNif.saveToFile(fnameDst)) {
         fprintf(stderr, "Failed to save nif\n");
     }
+
+    printf("Time taken: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
 }
 
 void convertNif(QString fname) {
