@@ -28,9 +28,9 @@ class Copier
     QModelIndex iSrc;
     NifModel * nifDst;
     NifModel * nifSrc;
-    std::map<QModelIndex, int> * usedValues;
+    std::map<QModelIndex, int> usedValues;
 public:
-    Copier(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc, std::map<QModelIndex, int> * newUsedValues) {
+    Copier(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc) {
         iDst = newIDst;
         iSrc = newISrc;
 
@@ -45,14 +45,47 @@ public:
         nifDst = newNifDst;
         nifSrc = newNifSrc;
 
-        usedValues = newUsedValues;
+        usedValues = std::map<QModelIndex, int>();
+
+        if (FIND_UNUSED) {
+            checkValueUse(iSrc, usedValues);
+        }
     }
 
-    Copier(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc) :
-        Copier(newIDst, newISrc, newNifDst, newNifSrc, nullptr) {}
+    void checkValueUse(const QModelIndex iSrc, std::map<QModelIndex, int> & usedValues) {
+        if (!FIND_UNUSED) {
+            return;
+        }
+
+
+        for (int r = 0; r < nifSrc->rowCount(iSrc); r++) {
+            QModelIndex iLink = iSrc.child(r, 0);
+
+            // TODO: Change this to more efficient method
+            if (!nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink)).isValid()) {
+                continue;
+            }
+
+            if (iLink != nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink))) {
+                continue;
+            }
+//            if (r > 0 && nifSrc->getBlockName(iLink) == nifSrc->getBlockName(iSrc.child(r - 1, 0))) {
+//                continue;
+//            }
+
+            if (nifSrc->rowCount(iLink) > 0) {
+                checkValueUse(iLink, usedValues);
+            } else {
+                NifValue v = nifSrc->getValue(iLink);
+                if (v.isValid()) {
+                    usedValues[iLink] = UNUSED;
+                }
+            }
+        }
+    }
 
     void printUnused() {
-        for (std::map<QModelIndex, int>::iterator it= usedValues->begin(); it!=usedValues->end(); ++it) {
+        for (std::map<QModelIndex, int>::iterator it= usedValues.begin(); it!=usedValues.end(); ++it) {
             if (it->second == UNUSED) {
                 qDebug() << "Unused:" << nifSrc->getBlockName(it->first) << "from" << nifSrc->getBlockName(iSrc);
             }
@@ -66,9 +99,9 @@ public:
             return false;
         }
 
-        if (FIND_UNUSED && usedValues) {
-            if (usedValues->count(iSource) != 0) {
-                usedValues->at(iSource) = IGNORED;
+        if (FIND_UNUSED) {
+            if (usedValues.count(iSource) != 0) {
+                usedValues[iSource] = IGNORED;
             } else {
                 qDebug() << "Key not found";
             }
@@ -103,9 +136,9 @@ public:
             qDebug() << "Invalid type";
         }
 
-        if (FIND_UNUSED && usedValues) {
+        if (FIND_UNUSED) {
             if (nif == nifSrc) {
-                usedValues->at(iSource) = HANDLED;
+                usedValues[iSource] = HANDLED;
             }
         }
 
@@ -150,13 +183,13 @@ public:
         }
 
         if (!nifDst->setValue(iTarget, val)) {
-            qDebug() << "Failed to set value";
+            qDebug() << "Failed to set value on" << nifDst->getBlockName(iTarget);
 
             return false;
         }
 
-        if (FIND_UNUSED && usedValues) {
-            usedValues->at(iSource) = HANDLED;
+        if (FIND_UNUSED) {
+            usedValues[iSource] = HANDLED;
         }
 
         return true;
@@ -178,7 +211,7 @@ public:
             return false;
         }
 
-        return copyValue(iDst, iSrc);
+        return copyValue(iDstNew, iSrcNew);
     }
 
     bool copyValue(const QString & name) {
@@ -188,13 +221,13 @@ public:
 
     template<typename TDst, typename TSrc> bool copyValue(const QModelIndex iTarget, const QModelIndex iSource) {
         if (!nifDst->set<TDst>( iTarget, nifSrc->get<TSrc>( iSource ) )) {
-            qDebug() << "Failed to set value";
+            qDebug() << "Failed to set value on" << nifDst->getBlockName(iTarget);
 
             return false;
         }
 
-        if (FIND_UNUSED && usedValues) {
-            usedValues->at(iSource) = HANDLED;
+        if (FIND_UNUSED) {
+            usedValues[iSource] = HANDLED;
         }
 
         return true;
@@ -323,19 +356,23 @@ public:
     }
 
     void  setStringsNiSequence( const QModelIndex & iBlockDst, const QModelIndex & iBlockSrc ) {
-        auto iControlledBlocksSrc = nifSrc->getIndex( iBlockSrc, "Controlled Blocks" );
-        auto iControlledBlocksDst = nifDst->getIndex( iBlockDst, "Controlled Blocks" );
+        QModelIndex iControlledBlocksSrc = nifSrc->getIndex( iBlockSrc, "Controlled Blocks" );
+        QModelIndex iControlledBlocksDst = nifDst->getIndex( iBlockDst, "Controlled Blocks" );
 
         for ( int i = 0; i < nifDst->rowCount( iControlledBlocksDst ); i++ ) {
-            auto iChildDst = iControlledBlocksDst.child( i, 0 );
-            auto iChildSrc = iControlledBlocksSrc.child( i, 0 );
+            QModelIndex iChildDst = iControlledBlocksDst.child( i, 0 );
+            QModelIndex iChildSrc = iControlledBlocksSrc.child( i, 0 );
 
-            copyValue<QString>(iChildDst, iChildSrc, "Target Name");
-            copyValue<QString>(iChildDst, iChildSrc, "Node Name");
-            copyValue<QString>(iChildDst, iChildSrc, "Property Type");
-            copyValue<QString>(iChildDst, iChildSrc, "Controller Type");
-            copyValue<QString>(iChildDst, iChildSrc, "Controller ID");
-            copyValue<QString>(iChildDst, iChildSrc, "Interpolator ID");
+            Copier c = Copier(iChildDst, iChildSrc, nifDst, nifSrc);
+
+            c.copyValue("Target Name");
+            c.copyValue("Node Name");
+            c.copyValue("Property Type");
+            c.copyValue("Controller Type");
+            c.copyValue("Controller ID");
+            c.copyValue("Interpolator ID");
+
+            c.printUnused();
         }
     }
 
@@ -450,7 +487,7 @@ public:
         // TODO: UV Sets
         c.copyValue<ushort>("Consistency Flags");
         c.copyValue<int>("Group ID");
-        // TODO: Additional Data
+        c.ignore("Additional Data");
         c.copyValue<bool>("Has Radii");
         c.copyValue<ushort>("Num Active");
         c.copyValue<bool>("Has Sizes");
@@ -461,6 +498,8 @@ public:
         c.copyValue<int>("Num Subtexture Offsets");
         // TODO: Subtexture Offsets
         c.copyValue<bool>("Has Rotation Speeds");
+
+        c.printUnused();
     }
 
     std::tuple<QModelIndex, QModelIndex> copyLink(QModelIndex iDst, QModelIndex iSrc, const QString & name = "") {
@@ -548,38 +587,6 @@ public:
                 reLink(iLinkDst, iLinkSrc);
             } else {
                 reLink(iLinkDst, iLinkSrc, name);
-            }
-        }
-    }
-
-    void checkValueUse(const QModelIndex iSrc, std::map<QModelIndex, int> & usedValues) {
-        if (!FIND_UNUSED) {
-            return;
-        }
-
-
-        for (int r = 0; r < nifSrc->rowCount(iSrc); r++) {
-            QModelIndex iLink = iSrc.child(r, 0);
-
-            // TODO: Change this to more efficient method
-            if (!nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink)).isValid()) {
-                continue;
-            }
-
-            if (iLink != nifSrc->getIndex(iSrc, nifSrc->getBlockName(iLink))) {
-                continue;
-            }
-//            if (r > 0 && nifSrc->getBlockName(iLink) == nifSrc->getBlockName(iSrc.child(r - 1, 0))) {
-//                continue;
-//            }
-
-            if (nifSrc->rowCount(iLink) > 0) {
-                checkValueUse(iLink, usedValues);
-            } else {
-                NifValue v = nifSrc->getValue(iLink);
-                if (v.isValid()) {
-                    usedValues[iLink] = UNUSED;
-                }
             }
         }
     }
@@ -737,6 +744,21 @@ public:
             c.copyValue<float>("Phase");
             c.copyValue<float>("Start Time");
             c.copyValue<float>("Stop Time");
+
+            c.ignore("Next Controller");
+            c.ignore("Target");
+            c.ignore("Interpolator");
+
+            QString blockName = nifSrc->getBlockName(iControllerSrc);
+            if (blockName == "NiTextureTransformController") {
+                c.ignore("Texture Slot");
+                c.ignore("Shader Map");
+                c.ignore("Operation");
+            } else if (blockName == "NiMaterialColorController") {
+                c.ignore("Target Color");
+            }
+
+            c.printUnused();
         } else {
             iControllerDst = copyBlock(QModelIndex(), nifSrc->getBlock(numController));
         }
@@ -823,20 +845,20 @@ public:
 
     // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
     void bhkRigidBody(QModelIndex iDst, QModelIndex iSrc) {
-        Copier * c = new Copier(iDst, iSrc, nifDst, nifSrc);
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         nifDst->set<float>(iDst, "Time Factor", 1.0);
-        c->copyValue<float>("Friction");
+        c.copyValue<float>("Friction");
         nifDst->set<float>(iDst, "Rolling Friction Multiplier", 0.0);
-        c->copyValue<float>("Restitution");
-        c->copyValue<float>("Max Linear Velocity");
-        c->copyValue<float>("Max Angular Velocity");
-        c->copyValue<float>("Penetration Depth");
-        c->copyValue<int>("Motion System");
+        c.copyValue<float>("Restitution");
+        c.copyValue<float>("Max Linear Velocity");
+        c.copyValue<float>("Max Angular Velocity");
+        c.copyValue<float>("Penetration Depth");
+        c.copyValue<int>("Motion System");
         // Deactivator Type
-        c->copyValue<int>("Solver Deactivation");
-        c->copyValue<int>("Quality Type");
-        c->copyValue<float>("Num Constraints");
+        c.copyValue<int>("Solver Deactivation");
+        c.copyValue<int>("Quality Type");
+        c.copyValue("Num Constraints");
         // Constraints
         // Body Flags
     }
@@ -871,8 +893,10 @@ public:
         QModelIndex iRigidBodyDst = copyBlock(QModelIndex(), iRigidBodySrc);
         QModelIndex colNode = insertNiBlock("bhkCollisionObject");
 
+        Copier c = Copier(colNode, iNode, nifDst, nifSrc);
+
         // Collision Object
-        copyValue<ushort>(colNode, iNode, "Flags");
+        c.copyValue("Flags");
         handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
         nifDst->setLink(colNode, "Body", nifDst->getBlockNumber(iRigidBodyDst));
 
@@ -912,13 +936,10 @@ public:
     void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc) {
         setHandled(iDst, iSrc);
 
-        std::map<QModelIndex, int> usedValues = std::map<QModelIndex, int>();
-        checkValueUse(iSrc, usedValues);
-
-        Copier c = Copier(iDst, iSrc, nifDst, nifSrc, & usedValues);
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         niControllerCopy(iDst, iSrc, "Controller", nifDst->getBlockNumber(iDst));
-        usedValues[nifSrc->getIndex(iSrc, "Controller")] = HANDLED;
+        c.ignore("Controller");
 
         c.ignore("Name");
         c.ignore("Num Extra Data List");
@@ -957,7 +978,7 @@ public:
 
                     if (s == "Base") {
                         QModelIndex iNiSourceTexture = nifSrc->getBlock(nifSrc->getLink(iTextureSrc, "Source"));
-                        usedValues[nifSrc->getIndex(iTextureSrc, "Source")] = HANDLED;
+                        c.ignore(iTextureSrc, "Source");
                         setHandled(iDst, iNiSourceTexture);
                         QString path = nifSrc->string(iNiSourceTexture, QString("File Name"));
                         nifDst->set<QString>(iDst, "Source Texture", updateTexturePath(path));
@@ -973,15 +994,19 @@ public:
     void niMaterialProperty(QModelIndex iDst, QModelIndex iSrc) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        // TODO: Extra Data
+        c.ignore("Name");
+        c.ignore("Num Extra Data List");
         niControllerCopy(iDst, iSrc);
-        // TODO: Specular Color
-        nifDst->set<Color4>(iDst, "Emissive Color", Color4(nifSrc->get<Color3>(iSrc, "Emissive Color")));
-        // TODO: Glossiness
-        // TODO: Alpha
+        c.ignore("Controller");
+        c.ignore("Specular Color");
+//        nifDst->set<Color4>(iDst, "Emissive Color", Color4(c.getSrc<Color3>("Emissive Color")));
+        c.ignore("Glossiness");
+        c.ignore("Alpha");
         c.copyValue<float>("Emissive Multiple", "Emissive Mult");
 
         setHandled(iDst, iSrc);
+
+        c.printUnused();
     }
 
     void niParticleSystem(QModelIndex iDst, QModelIndex iSrc) {
@@ -989,21 +1014,30 @@ public:
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
         c.copyValue<QString>("Name");
+        c.ignore("Num Extra Data List");
         // TODO: Extra data
         niControllerCopy(iDst, iSrc);
+        c.ignore("Controller");
+
         c.copyValue<int>("Flags");
         c.copyValue<Vector3>("Translation");
         c.copyValue<Matrix>("Rotation");
         c.copyValue<float>("Scale");
         // TODO: Properties
+
+        c.ignore("Num Properties");
         QModelIndex iPropertiesSrc = nifSrc->getIndex(iSrc, "Properties");
         if (nifSrc->rowCount(iPropertiesSrc) > 0) {
+            c.ignore(iPropertiesSrc.child(0, 0));
+
             QModelIndex iShaderProperty = nifDst->insertNiBlock("BSEffectShaderProperty");
 
             nifDst->setLink(iDst, "Shader Property", nifDst->getBlockNumber(iShaderProperty));
 
             for (int i = 0; i < nifSrc->rowCount(iPropertiesSrc); i++) {
                 QModelIndex iPropertySrc = nifSrc->getBlock(nifSrc->getLink(iPropertiesSrc.child(i, 0)));
+
+
                 QString type = nifSrc->getBlockName(iPropertySrc);
 
                 if (type == "BSShaderNoLightingProperty") {
@@ -1017,20 +1051,36 @@ public:
         }
 
         collisionObjectCopy(iDst, iSrc);
+        c.ignore("Collision Object");
+
         copyLink(iDst, iSrc, "Data");
-        // TODO: Skin Instance
-        // TODO: Material Data
+        c.ignore("Data");
+
+        c.ignore("Skin Instance");
+        QModelIndex iMaterialDataSrc = nifSrc->getIndex(iSrc, "Material Data");
+        if (iMaterialDataSrc.isValid()) {
+            c.ignore(iMaterialDataSrc, "Num Materials");
+            c.ignore(iMaterialDataSrc, "Active Material");
+            c.ignore(iMaterialDataSrc, "Material Needs Update");
+        }
+
         c.copyValue<int>("World Space");
         c.copyValue<uint>("Num Modifiers");
         // TODO: Modifiers
-
         QModelIndex iModifiersDst = nifDst->getIndex(iDst, "Modifiers");
         QModelIndex iModifiersSrc = nifSrc->getIndex(iSrc, "Modifiers");
         nifDst->updateArray(iModifiersDst);
+
+        if (nifSrc->rowCount(iModifiersSrc) > 0) {
+            c.ignore(iModifiersSrc.child(0, 0));
+        }
+
         for (int i = 0; i < nifSrc->rowCount(iModifiersSrc); i++) {
             QModelIndex iModifierDst  = std::get<0>(copyLink(iModifiersDst.child(i, 0), iModifiersSrc.child(i, 0)));
             reLinkRec(iModifierDst);
         }
+
+        c.printUnused();
     }
 
     QModelIndex bsFadeNode( QModelIndex iNode ) {
@@ -1042,7 +1092,8 @@ public:
 //        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
         indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
 
-        copyValue<QString>(fadeNode, iNode, "Name");
+        Copier c = Copier(fadeNode, iNode, nifDst, nifSrc);
+        c.copyValue("Name");
 //        copyValue<uint>(fadeNode, iNode, "Num Extra Data List");
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
         QVector<qint32> links = nifSrc->getLinkArray(iNode, "Extra Data List");
@@ -1061,12 +1112,11 @@ public:
 
         niControllerCopy(fadeNode, iNode);
 
-
-        copyValue<uint>(fadeNode, iNode, "Flags");
-        copyValue<Vector3>(fadeNode, iNode, "Translation");
-        copyValue<Matrix>(fadeNode, iNode, "Rotation");
-        copyValue<float>(fadeNode, iNode, "Scale");
-        copyValue<uint>(fadeNode, iNode, "Num Children");
+        c.copyValue("Flags");
+        c.copyValue("Translation");
+        c.copyValue("Rotation");
+        c.copyValue("Scale");
+        c.copyValue("Num Children");
 
         // Collision object
         // TODO: Collision object tree must be numbered in reverse e.g:
@@ -1138,31 +1188,31 @@ public:
         setHandled(iDst, iSrc);
     }
 
-    uint getFlagsBSShaderFlags1(QModelIndex iNiTriStripsData, QModelIndex iBSShaderPPLightingProperty) {
+    int getFlagsBSShaderFlags1(QModelIndex iDst, QModelIndex iNiTriStripsData, QModelIndex iBSShaderPPLightingProperty) {
         if (!iBSShaderPPLightingProperty.isValid()) {
             return 0;
         }
 
-        uint mask = ~(
-                uint(1 << 2 ) +
-                uint(1 << 4 ) +
-                uint(1 << 5 ) +
-                uint(1 << 6 ) +
-                uint(1 << 7 ) +
-                uint(1 << 8 ) +
-                uint(1 << 9 ) +
-                uint(1 << 10) + // Maybe?
-                uint(1 << 11) +
-                uint(1 << 12) +
-                uint(1 << 14) +
-                uint(1 << 19) +
-                uint(1 << 21) +
-                uint(1 << 22) +
-                uint(1 << 23) +
-                uint(1 << 25) +
-                uint(1 << 28) +
-                uint(1 << 30));
-        uint flags = nifSrc->get<uint>(iBSShaderPPLightingProperty, "Shader Flags") & mask;
+        int mask = ~(
+                (1 << 2 ) +
+                (1 << 4 ) +
+                (1 << 5 ) +
+                (1 << 6 ) +
+                (1 << 7 ) +
+                (1 << 8 ) +
+                (1 << 9 ) +
+                (1 << 10) + // Maybe?
+                (1 << 11) +
+                (1 << 12) +
+                (1 << 14) +
+                (1 << 19) +
+                (1 << 21) +
+                (1 << 22) +
+                (1 << 23) +
+                (1 << 25) +
+                (1 << 28) +
+                (1 << 30));
+        int flags = nifSrc->get<int>(iBSShaderPPLightingProperty, "Shader Flags") & mask;
 
         if (iNiTriStripsData.isValid()) {
             // Set Model_Space_Normals in case there are no tangents
@@ -1171,33 +1221,47 @@ public:
             }
         }
 
+        // Add the currently set flags
+        flags = flags | nifDst->get<int>(iDst, "Shader Flags 1");
+
         return flags;
     }
 
     void bSShaderLightingProperty(QModelIndex iDst, QModelIndex iSrc) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        // TODO: Texture Names
+        c.ignore("Name");
+        c.ignore("Num Extra Data List");
+        c.ignore("Controller");
+        c.ignore("Flags");
+        c.ignore("Shader Type");
+        c.ignore("Shader Flags");
+        c.ignore("Environment Map Scale");
+        c.ignore("Texture Clamp Mode");
 
-        copyValue<uint>(iDst, iSrc, "Texture Clamp Mode");
+//        c.copyValue("Texture Clamp Mode");
+        nifDst->set<int>(iDst, "Texture Clamp Mode", 3);
 
-//                c.copyValue<uint>("Shader Flags 1", "Shader Flags");
-        c.copyValue<uint>("Shader Flags 2");
-//                copyValue<uint>()
-        // TODO: BSShaderFlags
-        // TODO: BSShaderFlags2
+        c.copyValue("Shader Flags 2");
 
-        if (nifDst->getBlockName(iDst) != "BSEffectShaderProperty") {
+        QString blockName = nifDst->getBlockName(iDst);
+
+        if (blockName == "BSLightingShaderProperty") {
             if (nifSrc->getBlockName(iSrc) == "BSShaderPPLightingProperty") {
                 QModelIndex iTextureSetSrc = nifSrc->getBlock(nifSrc->getLink(iSrc, "Texture Set"));
                 QModelIndex iTextureSet = copyBlock(iDst, iTextureSetSrc);
+                c.ignore("Texture Set");
 
                 bsShaderTextureSet(iTextureSet, iTextureSetSrc);
                 nifDst->setLink(iDst, "Texture Set", nifDst->getBlockNumber(iTextureSet));
-                copyValue<float>(iDst, iSrc, "Refraction Strength");
-                // TODO: Parallax
+                c.copyValue("Refraction Strength");
+
+                c.ignore("Refraction Fire Period");
+                c.ignore("Parallax Max Passes");
+                c.ignore("Parallax Scale");
             } else {
-                QString fileNameSrc = nifSrc->string(iSrc, QString("File Name"));
+//                QString fileNameSrc = nifSrc->string(iSrc, QString("File Name"));
+                QString fileNameSrc = c.getSrc<QString>("File Name");
 
                 if (fileNameSrc.length() > 0) {
                     QModelIndex iTextureSetDst = nifDst->insertNiBlock("BSShaderTextureSet");
@@ -1207,12 +1271,21 @@ public:
                     nifDst->set<QString>(nifDst->getIndex(iTextureSetDst, "Textures").child(0, 0), updateTexturePath(fileNameSrc));
                     nifDst->setLink(iDst, "Texture Set", nifDst->getBlockNumber(iTextureSetDst));
                 }
-
-                // TODO: Falloff
             }
+        } else if (blockName == "BSEffectShaderProperty") {
+            c.ignore("File Name");
+            c.copyValue("Falloff Start Angle");
+            c.copyValue("Falloff Stop Angle");
+            c.copyValue("Falloff Start Opacity");
+            c.copyValue("Falloff Stop Opacity");
+
+            // Set Use_Falloff flag
+            nifDst->set<int>(iDst, "Shader Flags 1", c.getDst<int>("Shader Flags 1") | (1 << 6));
         }
 
         setHandled(iDst, iSrc);
+
+        c.printUnused();
     }
 
     QModelIndex getShaderProperty(QModelIndex iSrc) {
@@ -1231,7 +1304,9 @@ public:
         const QModelIndex triShape = nifDst->insertNiBlock( "BSTriShape" );
         setHandled(triShape, iNode);
 
-        copyValue<QString>(triShape, iNode, "Name");
+        Copier c = Copier(triShape, iNode, nifDst, nifSrc);
+
+        c.copyValue<QString>("Name");
         if (nifDst->string(triShape, QString("Name")).length() == 0) {
             qDebug() << "Important Warning: triShape has no name!";
         }
@@ -1241,10 +1316,10 @@ public:
 
         nifDst->setLink( triShape, "Shader Property", nifDst->getBlockNumber( shaderProperty ) );
 
-        copyValue<Vector3>(triShape, iNode, "Translation");
-        copyValue<Matrix>(triShape, iNode, "Rotation");
-        copyValue<uint>(triShape, iNode, "Flags");
-        copyValue<float>(triShape, iNode, "Scale");
+        c.copyValue("Translation");
+        c.copyValue("Rotation");
+        c.copyValue("Flags");
+        c.copyValue("Scale");
 
         QModelIndex iNiTriStripsData;
         QModelIndex iBSShaderLightingProperty;
@@ -1265,15 +1340,7 @@ public:
                 bSShaderLightingProperty(shaderProperty, linkNode);
                 iBSShaderLightingProperty = linkNode;
             } else if (type == "NiMaterialProperty") {
-                // TODO: Name
-                // TODO: Extra Data
-                niControllerCopy(shaderProperty, linkNode);
-                copyValue<Color3>(shaderProperty, linkNode, "Specular Color");
-                copyValue<Color3>(shaderProperty, linkNode, "Emissive Color");
-                // TODO: Glossiness
-                copyValue<float>(shaderProperty, linkNode, "Alpha");
-                nifDst->set<float>(shaderProperty, "Emissive Multiple", nifSrc->get<float>(linkNode, "Emissive Mult"));
-                setHandled(shaderProperty, linkNode);
+                niMaterialProperty(shaderProperty, linkNode);
             } else if (type == "NiTexturingProperty") {
                 // Needs to be copied
                 niTexturingProperty(shaderProperty, linkNode);
@@ -1283,7 +1350,7 @@ public:
         // Multinode dependant values
 
         // Shader Flags
-        nifDst->set<uint>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(iNiTriStripsData, iBSShaderLightingProperty));
+        nifDst->set<int>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(shaderProperty, iNiTriStripsData, iBSShaderLightingProperty));
 
         return triShape;
     }
