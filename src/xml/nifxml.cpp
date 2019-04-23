@@ -101,7 +101,7 @@ public:
 		tags.insert( "module", tagModule );
 		tags.insert( "compound", tagCompound );
 		tags.insert( "niobject", tagBlock );
-		tags.insert( "add", tagAdd );
+		tags.insert( "field", tagAdd );
 		tags.insert( "default", tagAddDefault );
 		tags.insert( "basic", tagBasic );
 		tags.insert( "enum", tagEnum );
@@ -132,6 +132,8 @@ public:
 	QString optId;
 	//! Current enumeration value
 	QString optVal;
+	//! Current enumeration bit
+	QString optBit;
 	//! Current enumeration text
 	QString optTxt;
 
@@ -318,7 +320,7 @@ public:
 		case tagCompound:
 
 			if ( x != tagAdd )
-				err( tr( "only add tags allowed in compound type declaration" ) );
+				err( tr( "only field tags allowed in compound type declaration" ) );
 
 		case tagBlock:
 			push( x );
@@ -329,11 +331,11 @@ public:
 					QString type = list.value( "type" );
 					QString tmpl = list.value( "template" );
 					QString arg  = get( "arg" );
-					QString arr1 = get( "arr1" );
-					QString arr2 = get( "arr2" );
+					QString arr1 = get( "length" );
+					QString arr2 = get( "width" );
 					QString cond = get( "cond" );
-					QString ver1 = list.value( "ver1" );
-					QString ver2 = list.value( "ver2" );
+					QString ver1 = list.value( "since" );
+					QString ver2 = list.value( "until" );
 					QString abs = list.value( "abstract" );
 					QString bin = list.value( "binary" );
 					QString vercond = get( "vercond" );
@@ -431,11 +433,11 @@ public:
 						data.setIsConditionless( true );
 
 					if ( data.name().isEmpty() || data.type().isEmpty() )
-						err( tr( "add needs at least name and type attributes" ) );
+						err( tr( "field needs at least name and type attributes" ) );
 				}
 				break;
 			default:
-				err( tr( "only add tags allowed in block declaration" ) );
+				err( tr( "only field tags allowed in block declaration" ) );
 			}
 
 			break;
@@ -456,6 +458,10 @@ public:
 			case tagOption:
 				optId  = list.value( "name" );
 				optVal = list.value( "value" );
+				optBit = list.value( "bit" );
+				if ( !optBit.isEmpty() )
+					optVal = optBit;
+
 				optTxt = QString();
 
 				if ( optId.isEmpty() || optVal.isEmpty() )
