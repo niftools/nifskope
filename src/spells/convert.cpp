@@ -52,6 +52,10 @@ public:
         }
     }
 
+    ~Copier() {
+        printUnused();
+    }
+
     void checkValueUse(const QModelIndex iSrc, std::map<QModelIndex, int> & usedValues) {
         if (!FIND_UNUSED) {
             return;
@@ -267,6 +271,8 @@ public:
     template<typename T> bool copyValue(const QString & name) {
         return copyValue<T, T>(name, name);
     }
+
+    void setIDst(const QModelIndex &value);
 };
 
 
@@ -284,11 +290,195 @@ class Converter
     std::map<int, int> indexMap = std::map<int, int>();
     QVector<std::tuple<int, QModelIndex>> linkList = QVector<std::tuple<int, QModelIndex>>();
 
+    QMap<QString, QString> matMap = QMap<QString, QString>();
+
 public:
     Converter(NifModel * newNifSrc, NifModel * newNifDst, uint blockCount) {
         nifSrc = newNifSrc;
         nifDst = newNifDst;
         handledBlocks = new bool[blockCount];
+
+        loadMatMap();
+    }
+
+    void loadMatMap() {
+        matMap.insert("FO_HAV_MAT_STONE",                                "FO4_HAV_MAT_STONE");
+        matMap.insert("FO_HAV_MAT_CLOTH",                                "FO4_HAV_MAT_CLOTH");
+        matMap.insert("FO_HAV_MAT_DIRT",                                 "FO4_HAV_MAT_DIRT");
+        matMap.insert("FO_HAV_MAT_GLASS",                                "FO4_HAV_MAT_GLASS");
+        matMap.insert("FO_HAV_MAT_GRASS",                                "FO4_HAV_MAT_GRASS");
+        matMap.insert("FO_HAV_MAT_METAL",                                "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_ORGANIC",                              "FO4_HAV_MAT_ORGANIC");
+        matMap.insert("FO_HAV_MAT_SKIN",                                 "FO4_HAV_MAT_SKIN");
+        matMap.insert("FO_HAV_MAT_WATER",                                "FO4_HAV_MAT_WATER");
+        matMap.insert("FO_HAV_MAT_WOOD",                                 "FO4_HAV_MAT_WOOD");
+        matMap.insert("FO_HAV_MAT_HEAVY_STONE",                          "FO4_HAV_MAT_STONE_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_METAL",                          "FO4_HAV_MAT_METAL_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_WOOD",                           "FO4_HAV_MAT_WOOD_HEAVY");
+        matMap.insert("FO_HAV_MAT_CHAIN",                                "FO4_HAV_MAT_CHAIN");
+        matMap.insert("FO_HAV_MAT_BOTTLECAP",                            "FO4_HAV_MAT_COIN");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_ELEVATOR",                             "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_HOLLOW_METAL",                         "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_SHEET_METAL",                          "FO4_HAV_MAT_METAL_LIGHT");
+        matMap.insert("FO_HAV_MAT_SAND",                                 "FO4_HAV_MAT_SAND");
+        matMap.insert("FO_HAV_MAT_BROKEN_CONCRETE",                      "FO4_HAV_MAT_CONCRETE");
+        matMap.insert("FO_HAV_MAT_VEHICLE_BODY",                         "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_SOLID",                   "FO4_HAV_MAT_METAL_SOLID");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_HOLLOW",                  "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_BARREL",                               "FO4_HAV_MAT_METAL_BARREL");
+        matMap.insert("FO_HAV_MAT_BOTTLE",                               "FO4_HAV_MAT_BOTTLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SODA_CAN",                             "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_PISTOL",                               "FO4_HAV_MAT_WEAPON_PISTOL");
+        matMap.insert("FO_HAV_MAT_RIFLE",                                "FO4_HAV_MAT_WEAPON_RIFLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SHOPPING_CART",                        "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_LUNCHBOX",                             "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_BABY_RATTLE",                          "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_RUBBER_BALL",                          "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_STONE_PLATFORM",                       "FO4_HAV_MAT_STONE");
+        matMap.insert("FO_HAV_MAT_CLOTH_PLATFORM",                       "FO4_HAV_MAT_CLOTH");
+        matMap.insert("FO_HAV_MAT_DIRT_PLATFORM",                        "FO4_HAV_MAT_DIRT");
+        matMap.insert("FO_HAV_MAT_GLASS_PLATFORM",                       "FO4_HAV_MAT_GLASS");
+        matMap.insert("FO_HAV_MAT_GRASS_PLATFORM",                       "FO4_HAV_MAT_GRASS");
+        matMap.insert("FO_HAV_MAT_METAL_PLATFORM",                       "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_ORGANIC_PLATFORM",                     "FO4_HAV_MAT_ORGANIC");
+        matMap.insert("FO_HAV_MAT_SKIN_PLATFORM",                        "FO4_HAV_MAT_SKIN");
+        matMap.insert("FO_HAV_MAT_WATER_PLATFORM",                       "FO4_HAV_MAT_WATER");
+        matMap.insert("FO_HAV_MAT_WOOD_PLATFORM",                        "FO4_HAV_MAT_WOOD");
+        matMap.insert("FO_HAV_MAT_HEAVY_STONE_PLATFORM",                 "FO4_HAV_MAT_STONE_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_METAL_PLATFORM",                 "FO4_HAV_MAT_METAL_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_WOOD_PLATFORM",                  "FO4_HAV_MAT_WOOD_HEAVY");
+        matMap.insert("FO_HAV_MAT_CHAIN_PLATFORM",                       "FO4_HAV_MAT_CHAIN");
+        matMap.insert("FO_HAV_MAT_BOTTLECAP_PLATFORM",                   "FO4_HAV_MAT_COIN");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_ELEVATOR_PLATFORM",                    "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_HOLLOW_METAL_PLATFORM",                "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_SHEET_METAL_PLATFORM",                 "FO4_HAV_MAT_METAL_LIGHT");
+        matMap.insert("FO_HAV_MAT_SAND_PLATFORM",                        "FO4_HAV_MAT_SAND");
+        matMap.insert("FO_HAV_MAT_BROKEN_CONCRETE_PLATFORM",             "FO4_HAV_MAT_CONCRETE");
+        matMap.insert("FO_HAV_MAT_VEHICLE_BODY_PLATFORM",                "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_SOLID_PLATFORM",          "FO4_HAV_MAT_METAL_SOLID");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_HOLLOW_PLATFORM",         "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_BARREL_PLATFORM",                      "FO4_HAV_MAT_METAL_BARREL");
+        matMap.insert("FO_HAV_MAT_BOTTLE_PLATFORM",                      "FO4_HAV_MAT_BOTTLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SODA_CAN_PLATFORM",                    "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_PISTOL_PLATFORM",                      "FO4_HAV_MAT_WEAPON_PISTOL");
+        matMap.insert("FO_HAV_MAT_RIFLE_PLATFORM",                       "FO4_HAV_MAT_WEAPON_RIFLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SHOPPING_CART_PLATFORM",               "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_LUNCHBOX_PLATFORM",                    "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_BABY_RATTLE_PLATFORM",                 "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_RUBBER_BALL_PLATFORM",                 "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_STONE_STAIRS",                         "FO4_HAV_MAT_STONE_STAIRS");
+        matMap.insert("FO_HAV_MAT_CLOTH_STAIRS",                         "FO4_HAV_MAT_CLOTH");
+        matMap.insert("FO_HAV_MAT_DIRT_STAIRS",                          "FO4_HAV_MAT_DIRT_STAIRS");
+        matMap.insert("FO_HAV_MAT_GLASS_STAIRS",                         "FO4_HAV_MAT_GLASS_STAIRS");
+        matMap.insert("FO_HAV_MAT_GRASS_STAIRS",                         "FO4_HAV_MAT_GRASS_STAIRS");
+        matMap.insert("FO_HAV_MAT_METAL_STAIRS",                         "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_ORGANIC_STAIRS",                       "FO4_HAV_MAT_ORGANIC");
+        matMap.insert("FO_HAV_MAT_SKIN_STAIRS",                          "FO4_HAV_MAT_SKIN");
+        matMap.insert("FO_HAV_MAT_WATER_STAIRS",                         "FO4_HAV_MAT_WATER");
+        matMap.insert("FO_HAV_MAT_WOOD_STAIRS",                          "FO4_HAV_MAT_WOOD_STAIRS");
+        matMap.insert("FO_HAV_MAT_HEAVY_STONE_STAIRS",                   "FO4_HAV_MAT_STONE_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_METAL_STAIRS",                   "FO4_HAV_MAT_METAL_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_WOOD_STAIRS",                    "FO4_HAV_MAT_WOOD_HEAVY");
+        matMap.insert("FO_HAV_MAT_CHAIN_STAIRS",                         "FO4_HAV_MAT_CHAIN");
+        matMap.insert("FO_HAV_MAT_BOTTLECAP_STAIRS",                     "FO4_HAV_MAT_COIN");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_ELEVATOR_STAIRS",                      "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_HOLLOW_METAL_STAIRS",                  "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_SHEET_METAL_STAIRS",                   "FO4_HAV_MAT_METAL_LIGHT");
+        matMap.insert("FO_HAV_MAT_SAND_STAIRS",                          "FO4_HAV_MAT_SAND");
+        matMap.insert("FO_HAV_MAT_BROKEN_CONCRETE_STAIRS",               "FO4_HAV_MAT_CONCRETE");
+        matMap.insert("FO_HAV_MAT_VEHICLE_BODY_STAIRS",                  "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_SOLID_STAIRS",            "FO4_HAV_MAT_METAL_SOLID");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_HOLLOW_STAIRS",           "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_BARREL_STAIRS",                        "FO4_HAV_MAT_METAL_BARREL");
+        matMap.insert("FO_HAV_MAT_BOTTLE_STAIRS",                        "FO4_HAV_MAT_BOTTLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SODA_CAN_STAIRS",                      "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_PISTOL_STAIRS",                        "FO4_HAV_MAT_WEAPON_PISTOL");
+        matMap.insert("FO_HAV_MAT_RIFLE_STAIRS",                         "FO4_HAV_MAT_WEAPON_RIFLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SHOPPING_CART_STAIRS",                 "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_LUNCHBOX_STAIRS",                      "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_BABY_RATTLE_STAIRS",                   "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_RUBBER_BALL_STAIRS",                   "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_STONE_STAIRS_PLATFORM",                "FO4_HAV_MAT_STONE_STAIRS");
+        matMap.insert("FO_HAV_MAT_CLOTH_STAIRS_PLATFORM",                "FO4_HAV_MAT_CLOTH");
+        matMap.insert("FO_HAV_MAT_DIRT_STAIRS_PLATFORM",                 "FO4_HAV_MAT_DIRT_STAIRS");
+        matMap.insert("FO_HAV_MAT_GLASS_STAIRS_PLATFORM",                "FO4_HAV_MAT_GLASS_STAIRS");
+        matMap.insert("FO_HAV_MAT_GRASS_STAIRS_PLATFORM",                "FO4_HAV_MAT_GRASS_STAIRS");
+        matMap.insert("FO_HAV_MAT_METAL_STAIRS_PLATFORM",                "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_ORGANIC_STAIRS_PLATFORM",              "FO4_HAV_MAT_ORGANIC");
+        matMap.insert("FO_HAV_MAT_SKIN_STAIRS_PLATFORM",                 "FO4_HAV_MAT_SKIN");
+        matMap.insert("FO_HAV_MAT_WATER_STAIRS_PLATFORM",                "FO4_HAV_MAT_WATER");
+        matMap.insert("FO_HAV_MAT_WOOD_STAIRS_PLATFORM",                 "FO4_HAV_MAT_WOOD_STAIRS");
+        matMap.insert("FO_HAV_MAT_HEAVY_STONE_STAIRS_PLATFORM",          "FO4_HAV_MAT_STONE_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_METAL_STAIRS_PLATFORM",          "FO4_HAV_MAT_METAL_HEAVY");
+        matMap.insert("FO_HAV_MAT_HEAVY_WOOD_STAIRS_PLATFORM",           "FO4_HAV_MAT_WOOD_STAIRS");
+        matMap.insert("FO_HAV_MAT_CHAIN_STAIRS_PLATFORM",                "FO4_HAV_MAT_CHAIN");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_BOTTLECAP_STAIRS_PLATFORM",            "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_ELEVATOR_STAIRS_PLATFORM",             "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_HOLLOW_METAL_STAIRS_PLATFORM",         "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_SHEET_METAL_STAIRS_PLATFORM",          "FO4_HAV_MAT_METAL_LIGHT");
+        matMap.insert("FO_HAV_MAT_SAND_STAIRS_PLATFORM",                 "FO4_HAV_MAT_SAND");
+        matMap.insert("FO_HAV_MAT_BROKEN_CONCRETE_STAIRS_PLATFORM",      "FO4_HAV_MAT_CONCRETE");
+        matMap.insert("FO_HAV_MAT_VEHICLE_BODY_STAIRS_PLATFORM",         "FO4_HAV_MAT_METAL");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_SOLID_STAIRS_PLATFORM",   "FO4_HAV_MAT_METAL_SOLID");
+        matMap.insert("FO_HAV_MAT_VEHICLE_PART_HOLLOW_STAIRS_PLATFORM",  "FO4_HAV_MAT_METAL_HOLLOW");
+        matMap.insert("FO_HAV_MAT_BARREL_STAIRS_PLATFORM",               "FO4_HAV_MAT_METAL_BARREL");
+        matMap.insert("FO_HAV_MAT_BOTTLE_STAIRS_PLATFORM",               "FO4_HAV_MAT_BOTTLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SODA_CAN_STAIRS_PLATFORM",             "FO4_HAV_MAT_GENERIC");
+        matMap.insert("FO_HAV_MAT_PISTOL_STAIRS_PLATFORM",               "FO4_HAV_MAT_WEAPON_PISTOL");
+        matMap.insert("FO_HAV_MAT_RIFLE_STAIRS_PLATFORM",                "FO4_HAV_MAT_WEAPON_RIFLE");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_SHOPPING_CART_STAIRS_PLATFORM",        "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_LUNCHBOX_STAIRS_PLATFORM",             "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_BABY_RATTLE_STAIRS_PLATFORM",          "FO4_HAV_MAT_GENERIC");
+        // Unknown
+        matMap.insert("FO_HAV_MAT_RUBBER_BALL_STAIRS_PLATFORM",          "FO4_HAV_MAT_GENERIC");
+
+        bool ok = false;
+
+        std::map<QString, QString>::iterator it;
+
+        // Verify map
+
+        for (QString key : matMap.keys()) {
+            NifValue::enumOptionValue("Fallout3HavokMaterial", key, &ok);
+            if (!ok) {
+                qCritical() << "Enum option \"" << key << "\" not found";
+
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        for (QString val : matMap.values()) {
+            NifValue::enumOptionValue("Fallout4HavokMaterial", val, &ok);
+            if (!ok) {
+                qCritical() << "Enum option \"" << val << "\" not found";
+
+                exit(EXIT_FAILURE);
+            }
+        }
     }
 
     // From blocks.cpp
@@ -843,6 +1033,14 @@ public:
 
     QModelIndex insertNiBlock(const QString & name) { return nifDst->insertNiBlock(name); }
 
+    QModelIndex getIndexSrc(QModelIndex parent, const QString & name) {
+        return nifSrc->getIndex(parent, name);
+    }
+
+    QModelIndex getIndexDst(QModelIndex parent, const QString & name) {
+        return nifDst->getIndex(parent, name);
+    }
+
     // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
     void bhkRigidBody(QModelIndex iDst, QModelIndex iSrc) {
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
@@ -861,6 +1059,59 @@ public:
         c.copyValue("Num Constraints");
         // Constraints
         // Body Flags
+
+        c.ignore("Shape");
+        c.ignore("Layer");
+        c.ignore("Flags and Part Number");
+        c.ignore("Group");
+        c.ignore("Broad Phase Type");
+        c.ignore("Collision Response");
+        c.ignore("Collision Response 2");
+        c.ignore("Process Contact Callback Delay");
+        c.ignore("Process Contact Callback Delay 2");
+        c.ignore("Translation");
+        c.ignore("Rotation");
+        c.ignore("Linear Velocity");
+        c.ignore("Angular Velocity");
+        c.ignore("Center");
+        c.ignore("Mass");
+        c.ignore("Linear Damping");
+        c.ignore("Angular Damping");
+        c.ignore("Deactivator Type");
+        c.ignore("Body Flags");
+
+        c.ignore("Unused Byte 1");
+        c.ignore("Unused Byte 2");
+        c.ignore("Unknown Int 1");
+        c.ignore("Unknown Int 2");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused Bytes"), "Unused Bytes");
+        c.ignore(nifSrc->getIndex(iSrc, "Unknown Bytes 1"), "Unknown Bytes 1");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused 2"), "Unused 2");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused"), "Unused");
+
+        QModelIndex iHavokFilterCopySrc = nifSrc->getIndex(iSrc, "Havok Filter Copy");
+        c.ignore(iHavokFilterCopySrc, "Layer");
+        c.ignore(iHavokFilterCopySrc, "Flags and Part Number");
+        c.ignore(iHavokFilterCopySrc, "Group");
+
+        QModelIndex iCInfoPropertySrc = nifSrc->getIndex(iSrc, "Cinfo Property");
+        c.ignore(iCInfoPropertySrc, "Data");
+        c.ignore(iCInfoPropertySrc, "Size");
+        c.ignore(iCInfoPropertySrc, "Capacity and Flags");
+
+        QModelIndex iInertiaTensorSrc = nifSrc->getIndex(iSrc, "Inertia Tensor");
+        c.ignore(iInertiaTensorSrc, "m11");
+        c.ignore(iInertiaTensorSrc, "m12");
+        c.ignore(iInertiaTensorSrc, "m13");
+        c.ignore(iInertiaTensorSrc, "m14");
+        c.ignore(iInertiaTensorSrc, "m21");
+        c.ignore(iInertiaTensorSrc, "m22");
+        c.ignore(iInertiaTensorSrc, "m23");
+        c.ignore(iInertiaTensorSrc, "m24");
+        c.ignore(iInertiaTensorSrc, "m31");
+        c.ignore(iInertiaTensorSrc, "m32");
+        c.ignore(iInertiaTensorSrc, "m33");
+        c.ignore(iInertiaTensorSrc, "m34");
     }
 
     void scaleVector4(QModelIndex iVector4, float scale) {
@@ -885,10 +1136,317 @@ public:
         scaleVector4(nifDst->getIndex(iNode, "Center"), scale);
     }
 
+    /**
+     * @brief bhkPackedNiTriStripsShapeAlt
+     * @param iDst bhkCompressedMeshShape
+     * @param iSrc
+     * @param row
+     * @return
+     */
+    QModelIndex bhkPackedNiTriStripsShapeAlt(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+        QModelIndex iDst = nifDst->insertNiBlock("bhkCompressedMeshShape", row);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue("User Data");
+        c.copyValue("Radius");
+        c.copyValue("Scale");
+        c.copyValue("Radius Copy");
+        c.copyValue("Scale Copy");
+
+        c.ignore("Unused 1");
+        c.ignore("Unused 2");
+        c.ignore("Data");
+
+        int lDataSrc = nifSrc->getLink(iSrc, "Data");
+        if (lDataSrc == -1) {
+            return iDst;
+        }
+
+        QModelIndex iDataDst = bhkPackedNiTriStripsShapeDataAlt(nifSrc->getBlock(lDataSrc), iRigidBodyDst, row);
+        nifDst->setLink(iDst, "Data", nifDst->getBlockNumber(iDataDst));
+
+        return iDst;
+    }
+
+    QModelIndex bhkPackedNiTriStripsShapeDataAlt(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+        QModelIndex iDst = nifDst->insertNiBlock("bhkCompressedMeshShapeData", row);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue("Num Big Verts", "Num Vertices");
+        nifDst->updateArray(iDst, "Big Verts");
+        QModelIndex iBigVertsDst = getIndexDst(iDst, "Big Verts");
+        QModelIndex iVerticesSrc = getIndexSrc(iSrc, "Vertices");
+
+        // Scale
+        float scale = 7.0;
+
+        nifDst->set<Vector4>(iRigidBodyDst, "Translation", nifDst->get<Vector4>(iRigidBodyDst, "Translation") / scale);
+
+        for (int i = 0; i < nifDst->rowCount(iBigVertsDst); i++) {
+            nifDst->set<Vector4>(iBigVertsDst.child(i, 0), Vector4(nifSrc->get<Vector3>(iVerticesSrc.child(i, 0))) * 0.1f);
+        }
+
+        c.copyValue("Num Big Tris", "Num Triangles");
+
+        QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
+        QModelIndex iTrianglesSrc;
+        QModelIndex iBigTrisArrayDst = getIndexDst(iDst, "Big Tris");
+        QModelIndex iBigTrisDst;
+
+        nifDst->updateArray(iBigTrisArrayDst);
+
+        for (int i = 0; i < nifDst->rowCount(iBigTrisArrayDst); i++) {
+            iTrianglesSrc = iTrianglesArraySrc.child(i, 0);
+            iBigTrisDst = iBigTrisArrayDst.child(i, 0);
+
+            nifDst->updateArray(iBigTrisDst);
+
+            Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+
+            nifDst->set<ushort>(iBigTrisDst, "Triangle 1", triangle.v1());
+            nifDst->set<ushort>(iBigTrisDst, "Triangle 2", triangle.v2());
+            nifDst->set<ushort>(iBigTrisDst, "Triangle 3", triangle.v3());
+            nifDst->set<ushort>(iBigTrisDst, "Welding Info", nifSrc->get<ushort>(iTrianglesSrc, "Welding Info"));
+        }
+
+        c.copyValue<uint, ushort>("Num Chunks", "Num Sub Shapes");
+        c.copyValue<uint, ushort>("Num Materials", "Num Sub Shapes");
+        nifDst->updateArray(iDst, "Chunks");
+        nifDst->updateArray(iDst, "Chunk Materials");
+
+        QModelIndex iChunkMaterialsArrayDst = getIndexDst(iDst, "Chunk Materials");
+        QModelIndex iChunkMaterialsDst;
+        QModelIndex iChunksArrayDst = getIndexDst(iDst, "Chunks");
+        QModelIndex iChunksDst;
+        QModelIndex iSubShapesArraySrc = getIndexSrc(iSrc, "Sub Shapes");
+        QModelIndex iSubShapesSrc;
+
+        ushort vertIndex = 0;
+
+        for (int i = 0; i < nifDst->rowCount(iChunksArrayDst); i++) {
+            iChunkMaterialsDst = iChunkMaterialsArrayDst.child(i, 0);
+            iChunksDst = iChunksArrayDst.child(i, 0);
+            iSubShapesSrc = iSubShapesArraySrc.child(i, 0);
+
+            // Chunk Material
+            nifDst->set<uint>(iChunkMaterialsDst, "Material", nifSrc->get<uint>(iSubShapesSrc, "Material"));
+            nifDst->set<int>(iChunkMaterialsDst, "Layer", nifSrc->get<int>(iSubShapesSrc, "Layer"));
+            nifDst->set<int>(iChunkMaterialsDst, "Flags and Part Number", nifSrc->get<int>(iSubShapesSrc, "Flags and Part Number"));
+            nifDst->set<ushort>(iChunkMaterialsDst, "Group", nifSrc->get<ushort>(iSubShapesSrc, "Group"));
+
+            // Chunk
+            nifDst->set<int>(iChunksDst, "Material Index", i);
+            nifDst->set<uint>(iChunksDst, "Num Vertices", nifSrc->get<uint>(iSubShapesSrc, "Num Vertices"));
+            nifDst->updateArray(iChunksDst, "Vertices");
+
+            QModelIndex iChunkVerticesDst = getIndexDst(iChunksDst, "Vertices");
+            for (ushort j = 0; j < nifDst->rowCount(iChunkVerticesDst); j++) {
+                nifDst->set<ushort>(iChunkVerticesDst.child(j, 0), vertIndex++);
+            }
+        }
+
+        c.ignore("Unknown Byte 1");
+
+        return iDst;
+    }
+
+    QModelIndex bhkPackedNiTriStripsShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+        QModelIndex iDst = nifDst->insertNiBlock("bhkNiTriStripsShape", row);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue("Radius");
+        c.copyValue("Scale");
+
+        c.ignore("User Data");
+        c.ignore("Radius Copy");
+        c.ignore("Scale Copy");
+        c.ignore("Unused 1");
+        c.ignore("Unused 2");
+        c.ignore("Data");
+
+        int lDataSrc = nifSrc->getLink(iSrc, "Data");
+        if (lDataSrc == -1) {
+            return iDst;
+        }
+
+        bhkPackedNiTriStripsShapeData(nifSrc->getBlock(lDataSrc), iRigidBodyDst, iDst, row);
+//        nifDst->setLink(
+//                    nifDst->getIndex(iDst, "Strips Data").child(0, 0),
+//                    nifDst->getBlockNumber(bhkPackedNiTriStripsShapeData(nifSrc->getBlock(lDataSrc), iRigidBodyDst, iDst, row)));
+
+        return iDst;
+    }
+
+    QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex iBhkNiTriStripsShapeDst, int row) {
+        Copier c = Copier(QModelIndex(), iSrc, nifDst, nifSrc);
+
+        QModelIndex iSubShapesArraySrc = getIndexSrc(iSrc, "Sub Shapes");
+        c.ignore(getIndexSrc(iSubShapesArraySrc.child(0, 0), "Layer"));
+        c.ignore(getIndexSrc(iSubShapesArraySrc.child(0, 0), "Flags and Part Number"));
+        c.ignore(getIndexSrc(iSubShapesArraySrc.child(0, 0), "Group"));
+        c.ignore(getIndexSrc(iSubShapesArraySrc.child(0, 0), "Num Vertices"));
+        c.ignore(getIndexSrc(iSubShapesArraySrc.child(0, 0), "Material"));
+
+        ushort numSubShapes = nifSrc->get<ushort>(iSrc, "Num Sub Shapes");
+        nifDst->set<ushort>(iBhkNiTriStripsShapeDst, "Num Strips Data", numSubShapes);
+        nifDst->updateArray(iBhkNiTriStripsShapeDst, "Strips Data");
+        nifDst->set<ushort>(iBhkNiTriStripsShapeDst, "Num Data Layers", numSubShapes);
+        nifDst->updateArray(iBhkNiTriStripsShapeDst, "Data Layers");
+
+        QModelIndex iDataLayersArrayDst = getIndexDst(iBhkNiTriStripsShapeDst, "Data Layers");
+
+        // Scale up (from glnode.cpp)
+        float scale = 7.0;
+
+        nifDst->set<Vector4>(iRigidBodyDst, "Translation", nifDst->get<Vector4>(iRigidBodyDst, "Translation") / scale);
+
+        int vertIndex = 0;
+        int triIndex = 0;
+
+        for (int k = 0; k < numSubShapes; k++) {
+            QModelIndex iSubShapeSrc = iSubShapesArraySrc.child(k, 0);
+            QModelIndex iDst = nifDst->insertNiBlock("NiTriStripsData", row);
+
+            c.setIDst(iDst);
+
+            // Vertices
+
+            ushort numVertices = ushort(nifSrc->get<uint>(iSubShapeSrc, "Num Vertices"));
+            nifDst->set<ushort>(iDst, "Num Vertices", numVertices);
+            nifDst->set<bool>(iDst, "Has Vertices", true);
+            nifDst->updateArray(iDst, "Vertices");
+
+            QModelIndex iVerticesDst = getIndexDst(iDst, "Vertices");
+            QModelIndex iVerticesSrc = getIndexSrc(iSrc, "Vertices");
+
+            // Scale and set vertices
+            for (int i = 0; i < numVertices; i++) {
+                nifDst->set<Vector3>(iVerticesDst.child(i, 0), nifSrc->get<Vector3>(iVerticesSrc.child(i + vertIndex, 0)) * scale);
+            }
+
+            // Triangles
+
+            QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
+            QModelIndex iTrianglesSrc;
+            int numTriangles = 0;
+
+            if (k == numSubShapes - 1) {
+                numTriangles = nifSrc->rowCount(iTrianglesArraySrc) - triIndex;
+            } else for (ushort i = 0; i < nifSrc->rowCount(iTrianglesArraySrc); i++) {
+                iTrianglesSrc = iTrianglesArraySrc.child(i, 0);
+                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+                if (triangle.v1() > vertIndex + numVertices - 1 || triangle.v2() > vertIndex + numVertices - 1 || triangle.v3() > vertIndex + numVertices - 1) {
+                    numTriangles = i - triIndex;
+                    break;
+                }
+            }
+
+            nifDst->set<ushort>(iDst, "Num Triangles", ushort(numTriangles));
+            nifDst->set<ushort>(iDst, "Num Strips", ushort(numTriangles));
+            nifDst->updateArray(iDst, "Strip Lengths");
+
+            QModelIndex iStripLengthsDst = getIndexDst(iDst, "Strip Lengths");
+            for (int i = 0; i < nifDst->rowCount(iStripLengthsDst); i++) {
+                nifDst->set<ushort>(iStripLengthsDst.child(i, 0), 3);
+            }
+
+            nifDst->set<bool>(iDst, "Has Points", true);
+            nifDst->updateArray(iDst, "Points");
+
+
+            QModelIndex iPointsArrayDst = getIndexDst(iDst, "Points");
+            QModelIndex iPointsDst;
+
+            for (int i = 0; i < nifDst->rowCount(iPointsArrayDst); i++) {
+                iTrianglesSrc = iTrianglesArraySrc.child(triIndex + i, 0);
+                iPointsDst = iPointsArrayDst.child(i, 0);
+
+                nifDst->updateArray(iPointsDst);
+
+                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+
+                if (       vertIndex > triangle.v1() ||
+                           vertIndex > triangle.v2() ||
+                           vertIndex > triangle.v3()) {
+                    qDebug() << __FILE__ << __LINE__ << "Vertex index too low";
+                } else if (triangle.v1() >= vertIndex + numVertices ||
+                           triangle.v2() >= vertIndex + numVertices ||
+                           triangle.v3() >= vertIndex + numVertices) {
+                    qDebug() << __FILE__ << __LINE__ << "Vertex index too high";
+                }
+
+                nifDst->set<ushort>(iPointsDst.child(0, 0), ushort(triangle.v1() - vertIndex));
+                nifDst->set<ushort>(iPointsDst.child(1, 0), ushort(triangle.v2() - vertIndex));
+                nifDst->set<ushort>(iPointsDst.child(2, 0), ushort(triangle.v3() - vertIndex));
+            }
+
+            vertIndex += numVertices;
+            triIndex += numTriangles;
+
+            nifDst->setLink(getIndexDst(iBhkNiTriStripsShapeDst, "Strips Data").child(k, 0), row);
+            QModelIndex iDataLayerDst = iDataLayersArrayDst.child(k, 0);
+            nifDst->set<int>(iDataLayerDst, "Layer", nifSrc->get<int>(iSubShapeSrc, "Layer"));
+            nifDst->set<int>(iDataLayerDst, "Flags and Part Number", nifSrc->get<int>(iSubShapeSrc, "Flags and Part Number"));
+            nifDst->set<ushort>(iDataLayerDst, "Group", nifSrc->get<ushort>(iSubShapeSrc, "Group"));
+
+            nifDst->set<uint>(iDst, "Material CRC", convertMaterial(getIndexSrc(iSubShapeSrc, "Material")));
+        }
+
+        QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
+        c.ignore(getIndexSrc(iTrianglesArraySrc.child(0, 0), "Triangle"));
+        c.ignore(getIndexSrc(iTrianglesArraySrc.child(0, 0), "Welding Info"));
+        c.ignore("Unknown Byte 1");
+        c.ignore("Num Sub Shapes");
+        c.ignore(getIndexSrc(iSrc, "Vertices").child(0, 0));
+
+        return QModelIndex();
+    }
+
+    uint convertMaterial(QModelIndex iSrc) {
+        NifValue material = nifSrc->getValue(iSrc);
+        QString nameSrc = material.enumOptionName("Fallout3HavokMaterial", nifSrc->get<uint>(iSrc));
+        bool ok = false;
+
+        quint32 val = NifValue::enumOptionValue("Fallout4HavokMaterial", matMap[nameSrc], &ok);
+
+        if (!ok) {
+            throw "Enum option not found";
+        }
+
+        return val;
+    }
+
+    void bhkMoppBvTreeShape(QModelIndex iDst, QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+        nifDst->set<int>(iDst, "Build Type", 1);
+
+        int lShapeSrc = nifSrc->getLink(iSrc, "Shape");
+        if (lShapeSrc == -1) {
+            return;
+        }
+
+        QModelIndex iShapeSrc = nifSrc->getBlock(lShapeSrc);
+        QModelIndex iShapeDst;
+
+        if (nifSrc->getBlockName(iShapeSrc) == "bhkPackedNiTriStripsShape") {
+//            iShapeDst = copyBlock(QModelIndex(), iShapeSrc);
+            // TODO: Use bkhNiTriStripsShape and bhkNiTriStripsData
+            // TODO: Set block order
+//            iShapeDst = bhkPackedNiTriStripsShape(iShapeSrc, iRigidBodyDst, row);
+            iShapeDst = bhkPackedNiTriStripsShape(iShapeSrc, iRigidBodyDst, row);
+            nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
+        }
+    }
+
     void collisionObject( QModelIndex parent, QModelIndex iNode ) {
         QModelIndex iRigidBodySrc = nifSrc->getBlock(nifSrc->getLink(iNode, "Body"));
 
-        QModelIndex shape = copyBlock(QModelIndex(), nifSrc->getBlock(nifSrc->getLink(iRigidBodySrc, "Shape")));
+        QModelIndex iShapeSrc = nifSrc->getBlock(nifSrc->getLink(iRigidBodySrc, "Shape"));
+        QModelIndex iShapeDst = copyBlock(QModelIndex(), iShapeSrc);
+        int rShapeDst = nifDst->getBlockNumber(iShapeDst);
+
         // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
         QModelIndex iRigidBodyDst = copyBlock(QModelIndex(), iRigidBodySrc);
         QModelIndex colNode = insertNiBlock("bhkCollisionObject");
@@ -897,6 +1455,10 @@ public:
 
         // Collision Object
         c.copyValue("Flags");
+
+        c.ignore("Target");
+        c.ignore("Body");
+
         handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
         nifDst->setLink(colNode, "Body", nifDst->getBlockNumber(iRigidBodyDst));
 
@@ -906,7 +1468,7 @@ public:
 
         // Shape
         // NOTE: Radius not rendered? Seems to be at 10 times always
-        nifDst->setLink(iRigidBodyDst, "Shape", nifDst->getBlockNumber(shape));
+        nifDst->setLink(iRigidBodyDst, "Shape", nifDst->getBlockNumber(iShapeDst));
         handledBlocks[nifSrc->getLink(iRigidBodySrc, "Shape")] = false;
         // TODO: Material
 
@@ -920,12 +1482,17 @@ public:
             nifDst->set<uint>(parent, "Num Children", numChildren + 1);
             nifDst->updateArray(parent, "Children");
             nifDst->setLink(nifDst->getIndex(parent, "Children").child(int(numChildren), 0), nifDst->getBlockNumber(scaleNode));
-            nifDst->set<float>(scaleNode, "Scale", nifDst->get<float>(shape, "Radius"));
+            nifDst->set<float>(scaleNode, "Scale", nifDst->get<float>(iShapeDst, "Radius"));
 
             parent = scaleNode;
         } else {
-            collapseScale(shape, nifDst->get<float>(shape, "Radius"));
-            collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(shape, "Radius"));
+            qDebug() << nifDst->getBlockName(iShapeDst);
+            if (nifDst->getBlockName(iShapeDst) == "bhkMoppBvTreeShape") {
+                bhkMoppBvTreeShape(iShapeDst, iShapeSrc, iRigidBodyDst, rShapeDst);
+            } else {
+                collapseScale(iShapeDst, nifDst->get<float>(iShapeDst, "Radius"));
+                collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(iShapeDst, "Radius"));
+            }
         }
 
         // Link to parent
@@ -999,6 +1566,7 @@ public:
         niControllerCopy(iDst, iSrc);
         c.ignore("Controller");
         c.ignore("Specular Color");
+        c.ignore("Emissive Color");
 //        nifDst->set<Color4>(iDst, "Emissive Color", Color4(c.getSrc<Color3>("Emissive Color")));
         c.ignore("Glossiness");
         c.ignore("Alpha");
@@ -1083,16 +1651,46 @@ public:
         c.printUnused();
     }
 
+//    QModelIndex niBillBoardNode(QModelIndex iDst, QModelIndex iSrc) {
+////        Copier c = Copier(fadeNode)
+//    }
+
     QModelIndex bsFadeNode( QModelIndex iNode ) {
         QModelIndex linkNode;
-        QModelIndex fadeNode = insertNiBlock("BSFadeNode");
+        QModelIndex fadeNode;
+        const QString blockType = nifSrc->getBlockName(iNode);
 
-        setHandled(fadeNode, iNode);
 
-//        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
-        indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
+        if (blockType == "NiBillBoardNode") {
+            fadeNode = insertNiBlock("NiBillBoardNode");
+        } else {
+            fadeNode = insertNiBlock("BSFadeNode");
+        }
 
         Copier c = Copier(fadeNode, iNode, nifDst, nifSrc);
+
+        if (blockType == "NiBillBoardNode") {
+            c.copyValue("Billboard Mode");
+        }
+
+        c.ignore("Num Extra Data List");
+        c.ignore("Controller");
+        c.ignore("Num Properties");
+        c.ignore("Collision Object");
+        c.ignore("Num Effects");
+
+        if (nifSrc->rowCount(getIndexSrc(iNode, "Extra Data List")) > 0) {
+            c.ignore(getIndexSrc(iNode, "Extra Data List").child(0, 0));
+        }
+
+        if (nifSrc->rowCount(getIndexSrc(iNode, "Children")) > 0) {
+            c.ignore(getIndexSrc(iNode, "Children").child(0, 0));
+        }
+
+
+        setHandled(fadeNode, iNode);
+//        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
+        indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
         c.copyValue("Name");
 //        copyValue<uint>(fadeNode, iNode, "Num Extra Data List");
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
@@ -1155,6 +1753,8 @@ public:
                 niParticleSystem(iNiParticleSystemDst, linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
 //                copyBlock(QModelIndex(), linkNode);
+            } else if (type == "NiBillBoardNode") {
+                bsFadeNode(linkNode);
             }
         }
 
@@ -1300,11 +1900,11 @@ public:
         return nifDst->insertNiBlock( "BSLightingShaderProperty" );
     }
 
-    QModelIndex niTriStrips( QModelIndex iNode) {
+    QModelIndex niTriStrips( QModelIndex iSrc) {
         const QModelIndex triShape = nifDst->insertNiBlock( "BSTriShape" );
-        setHandled(triShape, iNode);
+        setHandled(triShape, iSrc);
 
-        Copier c = Copier(triShape, iNode, nifDst, nifSrc);
+        Copier c = Copier(triShape, iSrc, nifDst, nifSrc);
 
         c.copyValue<QString>("Name");
         if (nifDst->string(triShape, QString("Name")).length() == 0) {
@@ -1312,7 +1912,7 @@ public:
         }
 
 //        QModelIndex shaderProperty = nifDst->insertNiBlock( "BSLightingShaderProperty" );
-        QModelIndex shaderProperty = getShaderProperty(iNode);
+        QModelIndex shaderProperty = getShaderProperty(iSrc);
 
         nifDst->setLink( triShape, "Shader Property", nifDst->getBlockNumber( shaderProperty ) );
 
@@ -1321,10 +1921,30 @@ public:
         c.copyValue("Flags");
         c.copyValue("Scale");
 
+        c.ignore("Controller");
+        c.ignore("Num Properties");
+        c.ignore("Collision Object");
+        c.ignore("Data");
+        c.ignore("Skin Instance");
+        c.ignore("Num Extra Data List");
+
+        QModelIndex iMaterialDataSrc = getIndexSrc(iSrc, "Material Data");
+        c.ignore(iMaterialDataSrc, "Num Materials");
+        c.ignore(iMaterialDataSrc, "Active Material");
+        c.ignore(iMaterialDataSrc, "Material Needs Update");
+
+        if (nifSrc->rowCount(getIndexSrc(iSrc, "Properties")) > 0) {
+            c.ignore(getIndexSrc(iSrc, "Properties").child(0, 0));
+        }
+
+        if (nifSrc->rowCount(getIndexSrc(iSrc, "Extra Data List")) > 0) {
+            c.ignore(getIndexSrc(iSrc, "Extra Data List").child(0, 0));
+        }
+
         QModelIndex iNiTriStripsData;
         QModelIndex iBSShaderLightingProperty;
 
-        QList<int> links = nifSrc->getChildLinks(nifSrc->getBlockNumber(iNode));
+        QList<int> links = nifSrc->getChildLinks(nifSrc->getBlockNumber(iSrc));
         for (int i = 0; i < links.count(); i++) {
             QModelIndex linkNode = nifSrc->getBlock(links[i]);
             QString type = nifSrc->getBlockName(linkNode);
@@ -1525,7 +2145,8 @@ void convert(const QString & fname, const QString & root = "") {
         fnameDst = QFileInfo(fnameDst).fileName();
     }
 
-    fnameDst = "D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\" + fnameDst;
+//    fnameDst = "D:\\Games\\Fallout New Vegas\\FNVFo4 Converted\\test\\" + fnameDst;
+    fnameDst = "E:\\SteamLibrary\\steamapps\\common\\Fallout 4\\Data\\Meshes\\test\\" + fnameDst;
     qDebug() << "Destination: " + fnameDst;
 
     if (!newNif.saveToFile(fnameDst)) {
@@ -1552,4 +2173,9 @@ void convertNif(QString fname) {
     }
 
     qDebug() << "Path not found";
+}
+
+void Copier::setIDst(const QModelIndex &value)
+{
+iDst = value;
 }
