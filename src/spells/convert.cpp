@@ -291,6 +291,7 @@ class Converter
     QVector<std::tuple<int, QModelIndex>> linkList = QVector<std::tuple<int, QModelIndex>>();
 
     QMap<QString, QString> matMap = QMap<QString, QString>();
+    QMap<QString, QString> layerMap = QMap<QString, QString>();
 
 public:
     Converter(NifModel * newNifSrc, NifModel * newNifDst, uint blockCount) {
@@ -299,6 +300,7 @@ public:
         handledBlocks = new bool[blockCount];
 
         loadMatMap();
+        loadLayerMap();
     }
 
     void loadMatMap() {
@@ -458,8 +460,6 @@ public:
 
         bool ok = false;
 
-        std::map<QString, QString>::iterator it;
-
         // Verify map
 
         for (QString key : matMap.keys()) {
@@ -473,6 +473,90 @@ public:
 
         for (QString val : matMap.values()) {
             NifValue::enumOptionValue("Fallout4HavokMaterial", val, &ok);
+            if (!ok) {
+                qCritical() << "Enum option \"" << val << "\" not found";
+
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    void loadLayerMap() {
+        layerMap.insert("FOL_UNIDENTIFIED",           "FO4L_UNIDENTIFIED");
+        layerMap.insert("FOL_STATIC",                 "FO4L_STATIC");
+        layerMap.insert("FOL_ANIM_STATIC",            "FO4L_ANIMSTATIC");
+        layerMap.insert("FOL_TRANSPARENT",            "FO4L_TRANSPARENT");
+        layerMap.insert("FOL_CLUTTER",                "FO4L_CLUTTER");
+        layerMap.insert("FOL_WEAPON",                 "FO4L_WEAPON");
+        layerMap.insert("FOL_PROJECTILE",             "FO4L_PROJECTILE");
+        layerMap.insert("FOL_SPELL",                  "FO4L_SPELL");
+        layerMap.insert("FOL_BIPED",                  "FO4L_BIPED");
+        layerMap.insert("FOL_TREES",                  "FO4L_TREE");
+        layerMap.insert("FOL_PROPS",                  "FO4L_PROP");
+        layerMap.insert("FOL_WATER",                  "FO4L_WATER");
+        layerMap.insert("FOL_TRIGGER",                "FO4L_TRIGGER");
+        layerMap.insert("FOL_TERRAIN",                "FO4L_TERRAIN");
+        layerMap.insert("FOL_TRAP",                   "FO4L_TRAP");
+        layerMap.insert("FOL_NONCOLLIDABLE",          "FO4L_NONCOLLIDABLE");
+        layerMap.insert("FOL_CLOUD_TRAP",             "FO4L_CLOUD_TRAP");
+        layerMap.insert("FOL_GROUND",                 "FO4L_GROUND");
+        layerMap.insert("FOL_PORTAL",                 "FO4L_PORTAL");
+        layerMap.insert("FOL_DEBRIS_SMALL",           "FO4L_DEBRIS_SMALL");
+        layerMap.insert("FOL_DEBRIS_LARGE",           "FO4L_DEBRIS_LARGE");
+        layerMap.insert("FOL_ACOUSTIC_SPACE",         "FO4L_ACOUSTIC_SPACE");
+        layerMap.insert("FOL_ACTORZONE",              "FO4L_ACTORZONE");
+        layerMap.insert("FOL_PROJECTILEZONE",         "FO4L_PROJECTILEZONE");
+        layerMap.insert("FOL_GASTRAP",                "FO4L_GASTRAP");
+        layerMap.insert("FOL_SHELLCASING",            "FO4L_SHELLCASING");
+        layerMap.insert("FOL_TRANSPARENT_SMALL",      "FO4L_TRANSPARENT_SMALL");
+        layerMap.insert("FOL_INVISIBLE_WALL",         "FO4L_INVISIBLE_WALL");
+        layerMap.insert("FOL_TRANSPARENT_SMALL_ANIM", "FO4L_TRANSPARENT_SMALL_ANIM");
+        // Unknown
+        layerMap.insert("FOL_DEADBIP",                "FO4L_UNIDENTIFIED");
+        layerMap.insert("FOL_CHARCONTROLLER",         "FO4L_CHARACTER_CONTROLLER");
+        // Unknown
+        layerMap.insert("FOL_AVOIDBOX",               "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_COLLISIONBOX",           "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_CAMERASPHERE",           "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_DOORDETECTION",          "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_CAMERAPICK",             "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_ITEMPICK",               "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_LINEOFSIGHT",            "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_PATHPICK",               "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_CUSTOMPICK1",            "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_CUSTOMPICK2",            "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_SPELLEXPLOSION",         "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_DROPPINGPICK",           "FO4L_UNIDENTIFIED");
+        // Unknown
+        layerMap.insert("FOL_NULL",                   "FO4L_UNIDENTIFIED");
+        // Unknown
+
+        bool ok = false;
+
+        // Verify map
+
+        for (QString key : layerMap.keys()) {
+            NifValue::enumOptionValue("Fallout3Layer", key, &ok);
+            if (!ok) {
+                qCritical() << "Enum option \"" << key << "\" not found";
+
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        for (QString val : layerMap.values()) {
+            NifValue::enumOptionValue("Fallout4Layer", val, &ok);
             if (!ok) {
                 qCritical() << "Enum option \"" << val << "\" not found";
 
