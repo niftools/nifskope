@@ -30,10 +30,7 @@ class Copier
     NifModel * nifSrc;
     std::map<QModelIndex, int> usedValues;
 public:
-    Copier(QModelIndex newIDst, QModelIndex newISrc, NifModel * newNifDst, NifModel * newNifSrc) {
-        iDst = newIDst;
-        iSrc = newISrc;
-
+    Copier(QModelIndex iDst, QModelIndex iSrc, NifModel * nifDst, NifModel * nifSrc) : iDst(iDst), iSrc(iSrc), nifDst(nifDst), nifSrc(nifSrc) {
         if (!iDst.isValid() && iDst != QModelIndex()) {
             qDebug() << __FILE__ << __LINE__ << "Invalid Destination. Source:" << nifSrc->getBlockName(iSrc);
         }
@@ -41,9 +38,6 @@ public:
         if (!iSrc.isValid() && iSrc != QModelIndex()) {
             qDebug() << __FILE__ << __LINE__ << "Invalid Source. Destination:" << nifDst->getBlockName(iDst);
         }
-
-        nifDst = newNifDst;
-        nifSrc = newNifSrc;
 
         usedValues = std::map<QModelIndex, int>();
 
@@ -275,17 +269,17 @@ public:
     void setIDst(const QModelIndex &value);
 };
 
-class enumMap : public QMap<QString, QString>
+class EnumMap : public QMap<QString, QString>
 {
     const QString enumTypeSrc;
     const QString enumTypeDst;
 public:
-    enumMap(QString enumTypeSrc, QString enumTypeDst) : enumTypeSrc(enumTypeSrc), enumTypeDst(enumTypeDst) {}
+    EnumMap(QString enumTypeSrc, QString enumTypeDst) : enumTypeSrc(enumTypeSrc), enumTypeDst(enumTypeDst) {}
 
     void check() {
         bool ok;
 
-        for (QString key : this->keys()) {
+        for (QString key : keys()) {
             NifValue::enumOptionValue(enumTypeSrc, key, &ok);
             if (!ok) {
                 qCritical() << "Enum option \"" << key << "\" not found in" << enumTypeSrc;
@@ -294,7 +288,7 @@ public:
             }
         }
 
-        for (QString val : this->values()) {
+        for (QString val : values()) {
             NifValue::enumOptionValue(enumTypeDst, val, &ok);
             if (!ok) {
                 qCritical() << "Enum option \"" << val << "\" not found in" << enumTypeDst;
@@ -319,13 +313,11 @@ class Converter
     std::map<int, int> indexMap = std::map<int, int>();
     QVector<std::tuple<int, QModelIndex>> linkList = QVector<std::tuple<int, QModelIndex>>();
 
-    enumMap matMap = enumMap("Fallout3HavokMaterial", "Fallout4HavokMaterial");
-    enumMap layerMap = enumMap("Fallout3Layer", "Fallout4Layer");
+    EnumMap matMap = EnumMap("Fallout3HavokMaterial", "Fallout4HavokMaterial");
+    EnumMap layerMap = EnumMap("Fallout3Layer", "Fallout4Layer");
 
 public:
-    Converter(NifModel * newNifSrc, NifModel * newNifDst, uint blockCount) {
-        nifSrc = newNifSrc;
-        nifDst = newNifDst;
+    Converter(NifModel * nifSrc, NifModel * nifDst, uint blockCount) : nifSrc(nifSrc), nifDst(nifDst) {
         handledBlocks = new bool[blockCount];
 
         loadMatMap();
@@ -1484,7 +1476,7 @@ public:
         return QModelIndex();
     }
 
-    uint convertEnum(QModelIndex iSrc, QString typeSrc, QString typeDst, enumMap map) {
+    uint convertEnum(QModelIndex iSrc, QString typeSrc, QString typeDst, EnumMap map) {
         NifValue material = nifSrc->getValue(iSrc);
         QString nameSrc = material.enumOptionName(typeSrc, nifSrc->get<uint>(iSrc));
         bool ok = false;
