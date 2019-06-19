@@ -273,8 +273,9 @@ class EnumMap : public QMap<QString, QString>
 {
     const QString enumTypeSrc;
     const QString enumTypeDst;
+    const NifModel * nifSrc;
 public:
-    EnumMap(QString enumTypeSrc, QString enumTypeDst) : enumTypeSrc(enumTypeSrc), enumTypeDst(enumTypeDst) {}
+    EnumMap(QString enumTypeSrc, QString enumTypeDst, NifModel * nifSrc) : enumTypeSrc(enumTypeSrc), enumTypeDst(enumTypeDst), nifSrc(nifSrc) {}
 
     void check() {
         bool ok;
@@ -297,6 +298,29 @@ public:
             }
         }
     }
+
+    uint convert(NifValue option) {
+        if (!option.isValid()) {
+            qDebug() << __FILE__ << __LINE__ << "Invalid NifValue";
+
+            return 0;
+        }
+
+        QString nameSrc = option.enumOptionName(enumTypeSrc, option.get<uint>());
+        bool ok = false;
+
+        quint32 val = NifValue::enumOptionValue(enumTypeDst, this->operator[](nameSrc), &ok);
+
+        if (!ok) {
+            qDebug() << __FILE__ << __LINE__ << "Enum option \"" + this->operator[](nameSrc) + "\" not found";
+        }
+
+        return val;
+    }
+
+    uint convert(QModelIndex iSrc) {
+        return convert(nifSrc->getValue(iSrc));
+    }
 };
 
 class Converter
@@ -313,8 +337,8 @@ class Converter
     std::map<int, int> indexMap = std::map<int, int>();
     QVector<std::tuple<int, QModelIndex>> linkList = QVector<std::tuple<int, QModelIndex>>();
 
-    EnumMap matMap = EnumMap("Fallout3HavokMaterial", "Fallout4HavokMaterial");
-    EnumMap layerMap = EnumMap("Fallout3Layer", "Fallout4Layer");
+    EnumMap matMap = EnumMap("Fallout3HavokMaterial", "Fallout4HavokMaterial", nifSrc);
+    EnumMap layerMap = EnumMap("Fallout3Layer", "Fallout4Layer", nifSrc);
 
 public:
     Converter(NifModel * nifSrc, NifModel * nifDst, uint blockCount) : nifSrc(nifSrc), nifDst(nifDst) {
@@ -1456,11 +1480,11 @@ public:
 
             // Data Layer
             QModelIndex iDataLayerDst = iDataLayersArrayDst.child(k, 0);
-            nifDst->set<uint>(iDataLayerDst, "Layer", convertLayer(nifSrc->getIndex(iSubShapeSrc, "Layer")));
+            nifDst->set<uint>(iDataLayerDst, "Layer", layerMap.convert(nifSrc->getIndex(iSubShapeSrc, "Layer")));
             nifDst->set<int>(iDataLayerDst, "Flags and Part Number", nifSrc->get<int>(iSubShapeSrc, "Flags and Part Number"));
             nifDst->set<ushort>(iDataLayerDst, "Group", nifSrc->get<ushort>(iSubShapeSrc, "Group"));
 
-            nifDst->set<uint>(iDst, "Material CRC", convertMaterial(getIndexSrc(iSubShapeSrc, "Material")));
+            nifDst->set<uint>(iDst, "Material CRC", matMap.convert(getIndexSrc(iSubShapeSrc, "Material")));
 
 
             setHandled(iDst, iSrc);
@@ -1471,31 +1495,11 @@ public:
         c.ignore(getIndexSrc(iTrianglesArraySrc.child(0, 0), "Welding Info"));
         c.ignore("Unknown Byte 1");
         c.ignore("Num Sub Shapes");
+        c.ignore("Num Triangles");
+        c.ignore("Num Vertices");
         c.ignore(getIndexSrc(iSrc, "Vertices").child(0, 0));
 
         return QModelIndex();
-    }
-
-    uint convertEnum(QModelIndex iSrc, QString typeSrc, QString typeDst, EnumMap map) {
-        NifValue material = nifSrc->getValue(iSrc);
-        QString nameSrc = material.enumOptionName(typeSrc, nifSrc->get<uint>(iSrc));
-        bool ok = false;
-
-        quint32 val = NifValue::enumOptionValue(typeDst, map[nameSrc], &ok);
-
-        if (!ok) {
-            qDebug() << __FILE__ << __LINE__ << "Enum option \"" + map[nameSrc] + "\" not found";
-        }
-
-        return val;
-    }
-
-    uint convertMaterial(QModelIndex iSrc) {
-        return convertEnum(iSrc, "Fallout3HavokMaterial", "Fallout4HavokMaterial", matMap);
-    }
-
-    uint convertLayer(QModelIndex iSrc) {
-        return convertEnum(iSrc, "Fallout3Layer", "Fallout4Layer", layerMap);
     }
 
     void bhkMoppBvTreeShape(QModelIndex iDst, QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
