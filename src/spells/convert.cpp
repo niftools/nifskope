@@ -266,6 +266,40 @@ public:
         return copyValue<T, T>(name, name);
     }
 
+    // Copy 1D value arrays
+    bool array(const QModelIndex iDst, const QModelIndex iSrc) {
+        int rows = nifSrc->rowCount(iSrc);
+
+        // Make sure the target array is initialized.
+        nifDst->updateArray(iDst);
+
+        if (rows != nifDst->rowCount(iDst)) {
+            arrayError("Mismatched arrays.");
+
+            return false;
+        }
+
+        for (int i = 0; i < rows; i++) {
+            if (!copyValue(iDst.child(i, 0), iSrc.child(i, 0))) {
+                arrayError("Failed to copy value.");
+            }
+        }
+
+        return true;
+    }
+
+    bool array(const QString & nameDst, const QString & nameSrc) {
+        return array(nifDst->getIndex(iDst, nameDst), nifSrc->getIndex(iSrc, nameSrc));
+    }
+
+    bool array(const QString & name) {
+        return array(name, name);
+    }
+
+    void arrayError(const QString msg = "") {
+        qDebug() << "Array Copy error:" << msg << "Source:" << nifSrc->getBlockName(iSrc) << "Destination:" << nifDst->getBlockName(iDst);
+    }
+
     void setIDst(const QModelIndex &value);
 };
 
@@ -643,12 +677,20 @@ public:
 
             Copier c = Copier(iChildDst, iChildSrc, nifDst, nifSrc);
 
-            c.copyValue("Target Name");
+            if (nifSrc->getIndex(iChildSrc, "Target Name").isValid()) {
+                c.copyValue("Target Name");
+            }
+
             c.copyValue("Node Name");
             c.copyValue("Property Type");
             c.copyValue("Controller Type");
             c.copyValue("Controller ID");
             c.copyValue("Interpolator ID");
+
+            // Handled in niControllerSequence()
+            c.ignore("Interpolator");
+            c.ignore("Controller");
+            c.ignore("Priority");
 
             c.printUnused();
         }
@@ -774,7 +816,7 @@ public:
         c.copyValue<bool>("Has Rotation Axes");
         c.copyValue<bool>("Has Texture Indices");
         c.copyValue<int>("Num Subtexture Offsets");
-        // TODO: Subtexture Offsets
+        c.array("Subtexture Offsets");
         c.copyValue<bool>("Has Rotation Speeds");
 
         c.printUnused();
@@ -896,7 +938,9 @@ public:
         }
     }
 
-    void niControllerSequence(QModelIndex iDst, QModelIndex iSrc) {
+    QModelIndex niControllerSequence(QModelIndex iSrc) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
+
         // Controlled Blocks
         QModelIndex iControlledBlocksDst = nifDst->getIndex(iDst, "Controlled Blocks");
         QModelIndex iControlledBlocksSrc = nifSrc->getIndex(iSrc, "Controlled Blocks");
@@ -905,11 +949,24 @@ public:
                 QModelIndex iBlockDst = iControlledBlocksDst.child(i, 0);
                 QModelIndex iBlockSrc = iControlledBlocksSrc.child(i, 0);
 
+                Copier c = Copier(iBlockDst, iBlockSrc, nifDst, nifSrc);
+
                 // Interpolator
                 niInterpolator(iBlockDst, iBlockSrc);
+                c.ignore("Interpolator");
 
                 // Controller
                 niControllerCopy(iBlockDst, iBlockSrc);
+                c.ignore("Controller");
+
+                c.copyValue("Priority");
+
+                // Handled in copyBlock().
+                c.ignore("Node Name");
+                c.ignore("Property Type");
+                c.ignore("Controller Type");
+                c.ignore("Controller ID");
+                c.ignore("Interpolator ID");
             }
         }
 
@@ -920,14 +977,20 @@ public:
         reLink(iDst, iSrc, "Manager");
 
         // TODO: Anim Note Arrays
+
+        return iDst;
     }
 
+    /**
+     * @brief niControllerSequences
+     * Handle controller sequences from NiControllerManager blocks.
+     * @param iDst
+     * @param iSrc
+     */
     void niControllerSequences(QModelIndex iDst, QModelIndex iSrc) {
         for (int i = 0; i < nifDst->rowCount(iDst); i++) {
             QModelIndex iSeqSrc = nifSrc->getBlock(nifSrc->getLink(iSrc.child(i, 0)));
-            QModelIndex iSeqDst = copyBlock(QModelIndex(), iSeqSrc);
-
-            niControllerSequence(iSeqDst, iSeqSrc);
+            QModelIndex iSeqDst = niControllerSequence(iSeqSrc);
 
             nifDst->setLink(iDst.child(i, 0), nifDst->getBlockNumber(iSeqDst));
         }
@@ -942,9 +1005,14 @@ public:
                 dstType == "BSLightingShaderPropertyColorController" ||
                 dstType == "BSLightingShaderPropertyFloatController") {
             return {nifDst->insertNiBlock("BSLightingShaderProperty" + name + "Controller"), "Lighting"};
+        } else if (dstType == "Controlled Blocks") {
+            // In NiControllerSequence blocks.
+
+            // TODO: Confirm
+            return {nifDst->insertNiBlock("BSEffectShaderProperty" + name + "Controller"), "Effect"};
         }
 
-        qDebug() << "Unknown shader property:" << dstType;
+        qCritical() << "Unknown shader property:" << dstType;
 
         return {QModelIndex(), ""};
     }
@@ -1569,7 +1637,6 @@ public:
 
             parent = scaleNode;
         } else {
-            qDebug() << nifDst->getBlockName(iShapeDst);
             if (nifDst->getBlockName(iShapeDst) == "bhkMoppBvTreeShape") {
                 bhkMoppBvTreeShape(iShapeDst, iShapeSrc, iRigidBodyDst, rShapeDst);
             } else {
@@ -2047,6 +2114,9 @@ public:
             } else if (type == "NiTexturingProperty") {
                 // Needs to be copied
                 niTexturingProperty(shaderProperty, linkNode);
+            } else if (type == "NiStencilProperty") {
+                // TODO: NiStencilProperty
+                setHandled(QModelIndex(), linkNode);
             }
         }
 
