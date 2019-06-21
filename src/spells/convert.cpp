@@ -1,3 +1,10 @@
+/*
+ * TODO:
+ * Check on every block whether it has already been handled and whether a new block is required.
+ * Copy full QString in Copier. Now it only copies the string index.
+ * Fix collision. Causes glitching in CK.
+ */
+
 #include "stripify.h"
 #include "blocks.h"
 
@@ -678,14 +685,14 @@ public:
             Copier c = Copier(iChildDst, iChildSrc, nifDst, nifSrc);
 
             if (nifSrc->getIndex(iChildSrc, "Target Name").isValid()) {
-                c.copyValue("Target Name");
+                c.copyValue<QString>("Target Name");
             }
 
-            c.copyValue("Node Name");
-            c.copyValue("Property Type");
-            c.copyValue("Controller Type");
-            c.copyValue("Controller ID");
-            c.copyValue("Interpolator ID");
+            c.copyValue<QString>("Node Name");
+            c.copyValue<QString>("Property Type");
+            c.copyValue<QString>("Controller Type");
+            c.copyValue<QString>("Controller ID");
+            c.copyValue<QString>("Interpolator ID");
 
             // Handled in niControllerSequence()
             c.ignore("Interpolator");
@@ -776,6 +783,26 @@ public:
 
     template <typename T> void copyValue( const QModelIndex & iDst, const QModelIndex & iSrc ) {
         nifDst->set<T>( iDst, nifSrc->get<T>( iSrc ) );
+    }
+
+    QModelIndex getHandled(const QModelIndex iSrc) {
+        return getHandled(nifSrc->getBlockNumber(iSrc));
+    }
+
+    QModelIndex getHandled(const int blockNumber) {
+        if (isHandled(blockNumber)) {
+            return nifDst->getBlock(indexMap[blockNumber]);
+        }
+
+        return QModelIndex();
+    }
+
+    bool isHandled(const int blockNumber) {
+        return !handledBlocks[blockNumber];
+    }
+
+    bool isHandled(const QModelIndex iSrc) {
+        return isHandled(nifSrc->getBlockNumber(iSrc));
     }
 
     bool setHandled(const QModelIndex iDst,  const QModelIndex iSrc) {
@@ -956,7 +983,7 @@ public:
                 c.ignore("Interpolator");
 
                 // Controller
-                niControllerCopy(iBlockDst, iBlockSrc);
+                reLink(iBlockDst, iBlockSrc, "Controller");
                 c.ignore("Controller");
 
                 c.copyValue("Priority");
@@ -1017,7 +1044,7 @@ public:
         return {QModelIndex(), ""};
     }
 
-    QModelIndex niControllerCopy(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Controller", const int target = -1) {
+    QModelIndex niControllerCopy(QModelIndex iDst, QModelIndex iSrc, QString name = "Controller", const int target = -1) {
         bool bExactCopy = false;
 
         int numController = nifSrc->getLink(iSrc, name);
@@ -1025,13 +1052,19 @@ public:
             return QModelIndex();
         }
 
+        if (isHandled(numController)) {
+            return getHandled(numController);
+        }
+
         QModelIndex iControllerSrc = nifSrc->getBlock(numController);
         QModelIndex iControllerDst;
 
         QString controllerType = nifSrc->getBlockName(iControllerSrc);
+
         QString dstType = nifDst->getBlockName(iDst);
         QString shaderType;
 
+        // Convert controller type specific values.
         if (controllerType == "NiMaterialColorController") {
             std::tie(iControllerDst, shaderType) = getControllerType(dstType, "Float");
 
@@ -1106,36 +1139,110 @@ public:
 
             c.printUnused();
         } else {
-            iControllerDst = copyBlock(QModelIndex(), nifSrc->getBlock(numController));
-        }
+            // Check if this controller is meant to be copied exactly.
+            if (!QList<QString>({
+                                "NiMultiTargetTransformController",
+                                "NiControllerManager",
+                                "NiTransformController",
+                                "NiPSysModifierActiveCtlr",
+                                "NiPSysEmitterCtlr",
+                                "NiPSysUpdateCtlr",
+                                "NiPSysEmitterInitialRadiusCtlr",
+                                "NiVisController",
 
-        QModelIndex iNextController = iDst;
-
-        iNextController = nifDst->getIndex(iDst, name);
-        int lNextController = nifDst->getLink(iNextController);
-
-        QModelIndex iNextControllerBlock;
-
-        while (lNextController != -1) {
-            iNextControllerBlock = nifDst->getBlock(lNextController);
-
-            // TODO: Find another way
-            if (iNextControllerBlock.isValid()) {
-                iNextController = nifDst->getIndex(iNextControllerBlock, "Next Controller");
-                lNextController = nifDst->getLink(iNextController);
-            } else {
-                lNextController = -1;
+                    }).contains(nifSrc->getBlockName(nifSrc->getBlock(numController)))) {
+                qDebug() << __FUNCTION__ << "Controller not found in exact copy list:" << nifSrc->getBlockName(nifSrc->getBlock(numController));
             }
+
+            iControllerDst = copyBlock(QModelIndex(), nifSrc->getBlock(numController));
+
+            // Unset link pointing to old nif.
+            nifDst->setLink(iControllerDst, "Next Controller", -1);
         }
 
-        nifDst->setLink(iNextController, nifDst->getBlockNumber(iControllerDst));
+        setHandled(iControllerDst, iControllerSrc);
 
+        // Target
+        if (target == -1) {
+            reLink(iControllerDst, iControllerSrc, "Target");
+        } else {
+            nifDst->setLink(iControllerDst, "Target", target);
+        }
 
-//            nifDst->setLink(iNextController, name, nifDst->getBlockNumber(iControllerDst));
+        // Interpolator
+        niInterpolator(iControllerDst, iControllerSrc);
 
-        niController(iControllerDst, iControllerSrc, target);
+        // Visibility Interpolator
+        niInterpolator(iControllerDst, iControllerSrc, "Visibility Interpolator");
 
-        return iControllerDst;
+        // Object Palette
+        QModelIndex iObjectPaletteDst;
+        QModelIndex iObjectPaletteSrc;
+        std::tie(iObjectPaletteDst, iObjectPaletteSrc) = copyLink(iControllerDst, iControllerSrc, "Object Palette");
+        if (iObjectPaletteSrc.isValid()) {
+            niAVDefaultObjectPalette(iObjectPaletteDst, iObjectPaletteSrc);
+        }
+
+        // Extra Targets
+        if (nifSrc->getIndex(iControllerSrc, "Extra Targets").isValid()) {
+            reLinkArray(iControllerDst, iControllerSrc, "Extra Targets");
+        }
+
+        // Controller Sequences
+        QModelIndex iControllerSequencesSrc = nifSrc->getIndex(iControllerSrc, "Controller Sequences");
+        if (iControllerSequencesSrc.isValid()) {
+            niControllerSequences(nifDst->getIndex(iControllerDst, "Controller Sequences"), iControllerSequencesSrc);
+        }
+
+        // Set next controller in parent
+
+        QModelIndex iNextControllerLink = nifDst->getIndex(iDst, name);
+
+        // Next Controller
+        niControllerCopy(iControllerDst, iControllerSrc, "Next Controller");
+
+        // If there is already a controller linked, find a spot for the new controller.
+
+        // The current next controller link.
+        int lNextController = nifDst->getLink(iNextControllerLink);
+
+        QModelIndex iNextControllerRoot;
+        if (lNextController != -1) {
+            iNextControllerRoot = nifDst->getBlock(lNextController);
+        } else {
+            iNextControllerRoot = iControllerDst;
+        }
+
+        QList<int> linkList;
+
+        // Follow the controller chain until an empty spot is found.
+        while (lNextController != -1) {
+            qDebug() << "Searching...";
+            qDebug() << "lNextController" << lNextController;
+            if (linkList.contains(lNextController)) {
+                qDebug() << __LINE__ << "Infinite Recursive link";
+
+                exit(1);
+            }
+            linkList.append(lNextController);
+
+            // Get next controller block.
+            QModelIndex iNextControllerBlock = nifDst->getBlock(lNextController);
+
+            // Get next controller link.
+            iNextControllerLink = nifDst->getIndex(iNextControllerBlock, "Next Controller");
+            lNextController = nifDst->getLink(iNextControllerLink);
+        }
+
+//        qDebug() << "Link:" << nifDst->getBlockNumber(iControllerDst);
+
+        // Set the controller link to the newly created controller.
+        if (!nifDst->setLink(iNextControllerLink, nifDst->getBlockNumber(iControllerDst))) {
+            qDebug() << "Set link failed";
+        }
+
+        // Return the currently linked controller or the newly created one.
+        return iNextControllerRoot;
     }
 
     void collisionObjectCopy(QModelIndex iDst, QModelIndex iSrc, const QString & name = "Collision Object") {
@@ -1145,45 +1252,6 @@ public:
             if (nifSrc->getBlockName(iCollisionSrc) == "bhkCollisionObject") {
                 collisionObject(iDst, iCollisionSrc);
             }
-        }
-    }
-
-    void niController(QModelIndex iDst, QModelIndex iSrc, const int target = -1) {
-        setHandled(iDst, iSrc);
-
-        // Target
-        if (target == -1) {
-            reLink(iDst, iSrc, "Target");
-        } else {
-            nifDst->setLink(iDst, "Target", target);
-        }
-
-        // Next Controller
-        niControllerCopy(iDst, iSrc, "Next Controller");
-
-        // Interpolator
-        niInterpolator(iDst, iSrc);
-
-        // Visibility Interpolator
-        niInterpolator(iDst, iSrc, "Visibility Interpolator");
-
-        // Object Palette
-        QModelIndex iObjectPaletteDst;
-        QModelIndex iObjectPaletteSrc;
-        std::tie(iObjectPaletteDst, iObjectPaletteSrc) = copyLink(iDst, iSrc, "Object Palette");
-        if (iObjectPaletteSrc.isValid()) {
-            niAVDefaultObjectPalette(iObjectPaletteDst, iObjectPaletteSrc);
-        }
-
-        // Extra Targets
-        if (nifSrc->getIndex(iSrc, "Extra Targets").isValid()) {
-            reLinkArray(iDst, iSrc, "Extra Targets");
-        }
-
-        // Controller Sequences
-        QModelIndex iControllerSequencesSrc = nifSrc->getIndex(iSrc, "Controller Sequences");
-        if (iControllerSequencesSrc.isValid()) {
-            niControllerSequences(nifDst->getIndex(iDst, "Controller Sequences"), iControllerSequencesSrc);
         }
     }
 
@@ -1650,6 +1718,20 @@ public:
         nifDst->setLink(colNode, "Target", nifDst->getBlockNumber(parent));
     }
 
+    bool setLink(QModelIndex iDst, const QString & name, QModelIndex iTarget) {
+//        qDebug() << "Setting link to" << nifDst->getBlockNumber(iTarget) << nifDst->getBlockName(iTarget);
+
+        if (nifDst->getLink(iDst, name) != -1 && nifDst->getLink(iDst, name) != nifDst->getBlockNumber(iTarget)) {
+            qDebug() << "Link already set to"
+                     << nifDst->getLink(iDst, name)
+                     << "in" << nifDst->getBlockName(iDst)
+                     << ". Setting to"
+                     << nifDst->getBlockNumber(iTarget);
+        }
+
+        return nifDst->setLink(iDst, name, nifDst->getBlockNumber(iTarget));
+    }
+
     void niTexturingProperty(QModelIndex iDst, QModelIndex iSrc) {
         setHandled(iDst, iSrc);
 
@@ -1749,23 +1831,11 @@ public:
             c.ignore(iPropertiesSrc.child(0, 0));
 
             QModelIndex iShaderProperty = nifDst->insertNiBlock("BSEffectShaderProperty");
+            QModelIndex iLightingProperty;
 
             nifDst->setLink(iDst, "Shader Property", nifDst->getBlockNumber(iShaderProperty));
 
-            for (int i = 0; i < nifSrc->rowCount(iPropertiesSrc); i++) {
-                QModelIndex iPropertySrc = nifSrc->getBlock(nifSrc->getLink(iPropertiesSrc.child(i, 0)));
-
-
-                QString type = nifSrc->getBlockName(iPropertySrc);
-
-                if (type == "BSShaderNoLightingProperty") {
-                    bSShaderLightingProperty(iShaderProperty, iPropertySrc);
-                } else if (type == "NiTexturingProperty") {
-                    niTexturingProperty(iShaderProperty, iPropertySrc);
-                } else if (type == "NiMaterialProperty") {
-                    niMaterialProperty(iShaderProperty, iPropertySrc);
-                }
-            }
+            properties(iPropertiesSrc, iShaderProperty, iDst, iLightingProperty);
         }
 
         collisionObjectCopy(iDst, iSrc);
@@ -1805,7 +1875,7 @@ public:
 ////        Copier c = Copier(fadeNode)
 //    }
 
-    QModelIndex bsFadeNode( QModelIndex iNode ) {
+    QModelIndex bsFadeNode( QModelIndex iNode, const QString & nodeType = "BSFadeNode" ) {
         QModelIndex linkNode;
         QModelIndex fadeNode;
         const QString blockType = nifSrc->getBlockName(iNode);
@@ -1814,14 +1884,10 @@ public:
         if (blockType == "NiBillBoardNode") {
             fadeNode = insertNiBlock("NiBillBoardNode");
         } else {
-            fadeNode = insertNiBlock("BSFadeNode");
+            fadeNode = insertNiBlock(nodeType);
         }
 
         Copier c = Copier(fadeNode, iNode, nifDst, nifSrc);
-
-        if (blockType == "NiBillBoardNode") {
-            c.copyValue("Billboard Mode");
-        }
 
         c.ignore("Num Extra Data List");
         c.ignore("Controller");
@@ -1841,7 +1907,11 @@ public:
         setHandled(fadeNode, iNode);
 //        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
         indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
-        c.copyValue("Name");
+
+        // Copy full string, not index.
+        c.ignore("Name");
+        nifDst->set<QString>(fadeNode, "Name", nifSrc->get<QString>(iNode, "Name"));
+
 //        copyValue<uint>(fadeNode, iNode, "Num Extra Data List");
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
         QVector<qint32> links = nifSrc->getLinkArray(iNode, "Extra Data List");
@@ -1895,21 +1965,33 @@ public:
             if (nifSrc->getBlockName(linkNode) == "NiTriStrips") {
                 QModelIndex triShape = niTriStrips(linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(triShape));
-            } else if (type == "BSFadeNode" || type == "NiNode") {
-                QModelIndex iFadeNodeChild = bsFadeNode(linkNode);
+            } else if (type == "BSFadeNode" || type == "NiNode" || type == "BSOrderedNode" || type == "NiBillboardNode") {
+                // TODO: BSOrderedNode
+                // TODO: NiBillBoardNode
+                // TODO: Check NiNode instead of BSFadeNode
+                QModelIndex iFadeNodeChild = bsFadeNode(linkNode, type);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iFadeNodeChild));
             } else if (type == "NiParticleSystem") {
                 QModelIndex iNiParticleSystemDst = nifDst->insertNiBlock("NiParticleSystem");
                 niParticleSystem(iNiParticleSystemDst, linkNode);
                 nifDst->setLink(iChildDst, nifDst->getBlockNumber(iNiParticleSystemDst));
 //                copyBlock(QModelIndex(), linkNode);
-            } else if (type == "NiBillBoardNode") {
-                bsFadeNode(linkNode);
+            } else {
+                qDebug() << __FUNCTION__ << "Unknown child type:" << type;
             }
         }
 
         // TODO: Num Effects
         // TODO: Effects
+
+        if (nodeType == "BSOrderedNode") {
+            c.copyValue("Alpha Sort Bound");
+            c.copyValue("Static Bound");
+        }
+
+        if (nodeType == "NiBillboardNode") {
+            c.copyValue("Billboard Mode");
+        }
 
         return fadeNode;
     }
@@ -2050,6 +2132,38 @@ public:
         return nifDst->insertNiBlock( "BSLightingShaderProperty" );
     }
 
+    void properties(QModelIndex iSrc, QModelIndex shaderProperty, QModelIndex triShape, QModelIndex & iBSShaderLightingProperty) {
+        for (int i = 0; i < nifSrc->rowCount(iSrc); i++) {
+//            QModelIndex linkNode = iSrc.child(i, 0);
+            QModelIndex linkNode = nifSrc->getBlock(nifSrc->getLink(iSrc.child(i, 0)));
+            QString type = nifSrc->getBlockName(linkNode);
+
+            if (type == "NiAlphaProperty") {
+                int lAlphaProperty = nifDst->getBlockNumber(copyBlock(QModelIndex(), linkNode));
+
+                if (triShape.isValid()) {
+                    nifDst->setLink(triShape, "Alpha Property", lAlphaProperty);
+                } else {
+                    qDebug() << "HERE";
+                    nifDst->setLink(shaderProperty, "Alpha Property", lAlphaProperty);
+                }
+            } else if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
+                bSShaderLightingProperty(shaderProperty, linkNode);
+                iBSShaderLightingProperty = linkNode;
+            } else if (type == "NiMaterialProperty") {
+                niMaterialProperty(shaderProperty, linkNode);
+            } else if (type == "NiTexturingProperty") {
+                // Needs to be copied
+                niTexturingProperty(shaderProperty, linkNode);
+            } else if (type == "NiStencilProperty") {
+                // TODO: NiStencilProperty
+                setHandled(QModelIndex(), linkNode);
+            } else {
+                qDebug() << __FUNCTION__ << "Unknown Property:" << nifSrc->getBlockName(linkNode);
+            }
+        }
+    }
+
     QModelIndex niTriStrips( QModelIndex iSrc) {
         const QModelIndex triShape = nifDst->insertNiBlock( "BSTriShape" );
         setHandled(triShape, iSrc);
@@ -2064,7 +2178,11 @@ public:
 //        QModelIndex shaderProperty = nifDst->insertNiBlock( "BSLightingShaderProperty" );
         QModelIndex shaderProperty = getShaderProperty(iSrc);
 
-        nifDst->setLink( triShape, "Shader Property", nifDst->getBlockNumber( shaderProperty ) );
+        QModelIndex iBSShaderLightingPropertySrc;
+        QModelIndex iPropertiesSrc = nifSrc->getIndex(iSrc, "Properties");
+        properties(iPropertiesSrc, shaderProperty, triShape, iBSShaderLightingPropertySrc);
+
+        setLink( triShape, "Shader Property", shaderProperty);
 
         c.copyValue("Translation");
         c.copyValue("Rotation");
@@ -2092,8 +2210,8 @@ public:
         }
 
         QModelIndex iNiTriStripsData;
-        QModelIndex iBSShaderLightingProperty;
 
+        // TODO: Go per item
         QList<int> links = nifSrc->getChildLinks(nifSrc->getBlockNumber(iSrc));
         for (int i = 0; i < links.count(); i++) {
             QModelIndex linkNode = nifSrc->getBlock(links[i]);
@@ -2104,26 +2222,15 @@ public:
                 handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
 
                 iNiTriStripsData = linkNode;
-            } else if (type == "NiAlphaProperty") {
-                copyBlock(triShape, linkNode);
-            } else if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
-                bSShaderLightingProperty(shaderProperty, linkNode);
-                iBSShaderLightingProperty = linkNode;
-            } else if (type == "NiMaterialProperty") {
-                niMaterialProperty(shaderProperty, linkNode);
-            } else if (type == "NiTexturingProperty") {
-                // Needs to be copied
-                niTexturingProperty(shaderProperty, linkNode);
-            } else if (type == "NiStencilProperty") {
-                // TODO: NiStencilProperty
-                setHandled(QModelIndex(), linkNode);
             }
         }
+
+//        properties(nifSrc->getIndex(iSrc, "Properties"));
 
         // Multinode dependant values
 
         // Shader Flags
-        nifDst->set<int>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(shaderProperty, iNiTriStripsData, iBSShaderLightingProperty));
+        nifDst->set<int>(shaderProperty, "Shader Flags 1", getFlagsBSShaderFlags1(shaderProperty, iNiTriStripsData, iBSShaderLightingPropertySrc));
 
         return triShape;
     }
