@@ -1277,6 +1277,7 @@ public:
         c.copyValue<float>("Max Angular Velocity");
         c.copyValue<float>("Penetration Depth");
         c.copyValue<int>("Motion System");
+
         // Deactivator Type
         c.copyValue<int>("Solver Deactivation");
         c.copyValue<int>("Quality Type");
@@ -1298,7 +1299,16 @@ public:
         c.ignore("Linear Velocity");
         c.ignore("Angular Velocity");
         c.ignore("Center");
-        c.ignore("Mass");
+
+        if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
+            // Mass of 0 causes glitching in ck.
+            nifDst->set<float>(iDst, "Mass", 1.0f);
+
+            c.ignore("Mass");
+        } else {
+            c.copyValue("Mass");
+        }
+
         c.ignore("Linear Damping");
         c.ignore("Angular Damping");
         c.ignore("Deactivator Type");
@@ -1393,52 +1403,124 @@ public:
         return iDst;
     }
 
+    void setMax(float & val, float comparison) {
+        if (val < comparison) {
+            val = comparison;
+        }
+    }
+
+    void setMin(float & val, float comparison) {
+        if (val > comparison) {
+            val = comparison;
+        }
+    }
+
+    // TODO:
+    // Fix collision between chunks.
+    // Handle scaling and out of bounds.
+    // Chunk transforms.
     QModelIndex bhkPackedNiTriStripsShapeDataAlt(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
         QModelIndex iDst = nifDst->insertNiBlock("bhkCompressedMeshShapeData", row);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
-        c.copyValue("Num Big Verts", "Num Vertices");
-        nifDst->updateArray(iDst, "Big Verts");
-        QModelIndex iBigVertsDst = getIndexDst(iDst, "Big Verts");
+        nifDst->set<uint>(iDst, "Bits Per Index", 17);
+        nifDst->set<uint>(iDst, "Bits Per W Index", 18);
+        nifDst->set<uint>(iDst, "Mask W Index", 262143);
+        nifDst->set<uint>(iDst, "Mask Index", 131071);
+        nifDst->set<float>(iDst, "Error", 0.001f);
+
         QModelIndex iVerticesSrc = getIndexSrc(iSrc, "Vertices");
 
-        // Scale
-        float scale = 7.0;
+        // Min/Max vertex positions
 
-        nifDst->set<Vector4>(iRigidBodyDst, "Translation", nifDst->get<Vector4>(iRigidBodyDst, "Translation") / scale);
+        float
+                xMin = 0,
+                xMax = 0,
+                yMin = 0,
+                yMax = 0,
+                zMin = 0,
+                zMax = 0;
 
-        for (int i = 0; i < nifDst->rowCount(iBigVertsDst); i++) {
-            nifDst->set<Vector4>(iBigVertsDst.child(i, 0), Vector4(nifSrc->get<Vector3>(iVerticesSrc.child(i, 0))) * 0.1f);
+        // Find mininums and maximums.
+        for (int i = 0; i < nifSrc->rowCount(iVerticesSrc); i++) {
+            Vector3 v = nifSrc->get<Vector3>(iVerticesSrc.child(i, 0));
+
+            setMin(xMin, v[0]);
+            setMin(yMin, v[1]);
+            setMin(zMin, v[2]);
+
+            setMax(xMax, v[0]);
+            setMax(yMax, v[1]);
+            setMax(zMax, v[2]);
         }
 
-        c.copyValue("Num Big Tris", "Num Triangles");
+        qDebug() << "Mins:" << xMin << yMin << zMin;
+        qDebug() << "Maxs:" << xMax << yMax << zMax;
 
-        QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
-        QModelIndex iTrianglesSrc;
-        QModelIndex iBigTrisArrayDst = getIndexDst(iDst, "Big Tris");
-        QModelIndex iBigTrisDst;
+        Vector4 minVector = Vector4(xMin, yMin, zMin, 0);
 
-        nifDst->updateArray(iBigTrisArrayDst);
+        // TODO: Chunks and big tris are not related.
+        bool bChunks = true;
+        if (bChunks) {
+            // Chunks scaling
+            nifDst->set<Vector4>(iRigidBodyDst, "Translation", (nifDst->get<Vector4>(iRigidBodyDst, "Translation") + minVector) / 10.0f);
+        } else {
+            // Scale
+            float scale = 7.0;
 
-        for (int i = 0; i < nifDst->rowCount(iBigTrisArrayDst); i++) {
-            iTrianglesSrc = iTrianglesArraySrc.child(i, 0);
-            iBigTrisDst = iBigTrisArrayDst.child(i, 0);
+            // Big Verts
 
-            nifDst->updateArray(iBigTrisDst);
+            // Create vertices array.
+            c.copyValue("Num Big Verts", "Num Vertices");
+            nifDst->updateArray(iDst, "Big Verts");
+            QModelIndex iBigVertsDst = getIndexDst(iDst, "Big Verts");
 
-            Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+            // Set vertices.
+            for (int i = 0; i < nifDst->rowCount(iBigVertsDst); i++) {
+                Vector3 v = nifSrc->get<Vector3>(iVerticesSrc.child(i, 0));
 
-            nifDst->set<ushort>(iBigTrisDst, "Triangle 1", triangle.v1());
-            nifDst->set<ushort>(iBigTrisDst, "Triangle 2", triangle.v2());
-            nifDst->set<ushort>(iBigTrisDst, "Triangle 3", triangle.v3());
-            nifDst->set<ushort>(iBigTrisDst, "Welding Info", nifSrc->get<ushort>(iTrianglesSrc, "Welding Info"));
+                nifDst->set<Vector4>(iBigVertsDst.child(i, 0), Vector4(v) * 0.1f);
+            }
+
+            // Big Verts scaling
+            nifDst->set<Vector4>(iRigidBodyDst, "Translation", nifDst->get<Vector4>(iRigidBodyDst, "Translation") / scale);
+
+            // Big Tris.
+
+            c.copyValue("Num Big Tris", "Num Triangles");
+
+            // Create Big Tris array.
+            QModelIndex iBigTrisArrayDst = getIndexDst(iDst, "Big Tris");
+            QModelIndex iBigTrisDst;
+            nifDst->updateArray(iBigTrisArrayDst);
+
+            QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
+            QModelIndex iTrianglesSrc;
+
+
+            // Set Triangles.
+            for (int i = 0; i < nifDst->rowCount(iBigTrisArrayDst); i++) {
+                iTrianglesSrc = iTrianglesArraySrc.child(i, 0);
+                iBigTrisDst = iBigTrisArrayDst.child(i, 0);
+
+                nifDst->updateArray(iBigTrisDst);
+
+                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+
+                nifDst->set<ushort>(iBigTrisDst, "Triangle 1", triangle.v1());
+                nifDst->set<ushort>(iBigTrisDst, "Triangle 2", triangle.v2());
+                nifDst->set<ushort>(iBigTrisDst, "Triangle 3", triangle.v3());
+                nifDst->set<ushort>(iBigTrisDst, "Welding Info", nifSrc->get<ushort>(iTrianglesSrc, "Welding Info"));
+            }
         }
 
         c.copyValue<uint, ushort>("Num Chunks", "Num Sub Shapes");
         c.copyValue<uint, ushort>("Num Materials", "Num Sub Shapes");
+        c.copyValue<uint, ushort>("Num Transforms", "Num Sub Shapes");
         nifDst->updateArray(iDst, "Chunks");
         nifDst->updateArray(iDst, "Chunk Materials");
+        nifDst->updateArray(iDst, "Chunk Transforms");
 
         QModelIndex iChunkMaterialsArrayDst = getIndexDst(iDst, "Chunk Materials");
         QModelIndex iChunkMaterialsDst;
@@ -1455,20 +1537,113 @@ public:
             iSubShapesSrc = iSubShapesArraySrc.child(i, 0);
 
             // Chunk Material
-            nifDst->set<uint>(iChunkMaterialsDst, "Material", nifSrc->get<uint>(iSubShapesSrc, "Material"));
-            nifDst->set<int>(iChunkMaterialsDst, "Layer", nifSrc->get<int>(iSubShapesSrc, "Layer"));
+            nifDst->set<uint>(iChunkMaterialsDst, "Material", matMap.convert(nifSrc->getIndex(iSubShapesSrc, "Material")));
+            nifDst->set<uint>(iChunkMaterialsDst, "Layer", layerMap.convert(nifSrc->getIndex(iSubShapesSrc, "Layer")));
             nifDst->set<int>(iChunkMaterialsDst, "Flags and Part Number", nifSrc->get<int>(iSubShapesSrc, "Flags and Part Number"));
             nifDst->set<ushort>(iChunkMaterialsDst, "Group", nifSrc->get<ushort>(iSubShapesSrc, "Group"));
 
             // Chunk
             nifDst->set<int>(iChunksDst, "Material Index", i);
+            nifDst->set<int>(iChunksDst, "Transform Index", i);
             nifDst->set<uint>(iChunksDst, "Num Vertices", nifSrc->get<uint>(iSubShapesSrc, "Num Vertices"));
+            nifDst->updateArray(iChunksDst, "Vertices");
+            nifDst->set<ushort>(iChunksDst, "Reference", 65535);
+        }
+
+        vertIndex = 0;
+        int triIndex = 0;
+        int numSubShapes = nifDst->rowCount(iChunksArrayDst);
+
+        for (int k = 0; k < numSubShapes; k++) {
+            QModelIndex iSubShapeSrc = iSubShapesArraySrc.child(k, 0);
+
+            iChunkMaterialsDst = iChunkMaterialsArrayDst.child(k, 0);
+            iChunksDst = iChunksArrayDst.child(k, 0);
+            iSubShapesSrc = iSubShapesArraySrc.child(k, 0);
+
+            // Vertices
+
+            ushort numVertices = ushort(nifSrc->get<uint>(iSubShapeSrc, "Num Vertices"));
+
+            nifDst->set<ushort>(iChunksDst, "Num Vertices", numVertices * 3);
             nifDst->updateArray(iChunksDst, "Vertices");
 
             QModelIndex iChunkVerticesDst = getIndexDst(iChunksDst, "Vertices");
-            for (ushort j = 0; j < nifDst->rowCount(iChunkVerticesDst); j++) {
-                nifDst->set<ushort>(iChunkVerticesDst.child(j, 0), vertIndex++);
+
+            qDebug() << "Vertices...";
+
+            for (int j = 0; j < numVertices; j++) {
+                Vector3 v = nifSrc->get<Vector3>(iVerticesSrc.child(j + vertIndex, 0));
+
+                qDebug() << v;
+
+                nifDst->set<ushort>(iChunkVerticesDst.child(j * 3 + 0, 0), ushort((v[0] - xMin) * 100.0f));
+                nifDst->set<ushort>(iChunkVerticesDst.child(j * 3 + 1, 0), ushort((v[1] - yMin) * 100.0f));
+                nifDst->set<ushort>(iChunkVerticesDst.child(j * 3 + 2, 0), ushort((v[2] - zMin) * 100.0f));
             }
+
+            // Triangles
+
+            QModelIndex iTrianglesArraySrc = getIndexSrc(iSrc, "Triangles");
+            QModelIndex iTrianglesSrc;
+            int numTriangles = 0;
+
+            if (k == numSubShapes - 1) {
+                numTriangles = nifSrc->rowCount(iTrianglesArraySrc) - triIndex;
+            } else for (ushort i = 0; i < nifSrc->rowCount(iTrianglesArraySrc); i++) {
+                iTrianglesSrc = iTrianglesArraySrc.child(i, 0);
+                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+                if (triangle.v1() > vertIndex + numVertices - 1 || triangle.v2() > vertIndex + numVertices - 1 || triangle.v3() > vertIndex + numVertices - 1) {
+                    numTriangles = i - triIndex;
+                    break;
+                }
+            }
+
+            // Create double sided triangles
+            nifDst->set<uint>(iChunksDst, "Num Indices", uint(numTriangles) * 6);
+            nifDst->set<uint>(iChunksDst, "Num Strips", uint(numTriangles) * 2);
+            nifDst->set<uint>(iChunksDst, "Num Welding Info", uint(numTriangles) * 2);
+            nifDst->updateArray(iChunksDst, "Strips");
+            nifDst->updateArray(iChunksDst, "Welding Info");
+
+            QModelIndex iStripLengthsDst = getIndexDst(iChunksDst, "Strips");
+            for (int i = 0; i < nifDst->rowCount(iStripLengthsDst); i++) {
+                nifDst->set<ushort>(iStripLengthsDst.child(i, 0), 3);
+            }
+
+            QModelIndex iIndicesDst = nifDst->getIndex(iChunksDst, "Indices");
+            nifDst->updateArray(iIndicesDst);
+            QModelIndex iWeldingInfoDst = nifDst->getIndex(iChunksDst, "Welding Info");
+
+            for (int i = 0; i < numTriangles; i++) {
+                iTrianglesSrc = iTrianglesArraySrc.child(triIndex + i, 0);
+
+                Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
+
+                if (       vertIndex > triangle.v1() ||
+                           vertIndex > triangle.v2() ||
+                           vertIndex > triangle.v3()) {
+                    qDebug() << __FILE__ << __LINE__ << "Vertex index too low";
+                } else if (triangle.v1() >= vertIndex + numVertices ||
+                           triangle.v2() >= vertIndex + numVertices ||
+                           triangle.v3() >= vertIndex + numVertices) {
+                    qDebug() << __FILE__ << __LINE__ << "Vertex index too high";
+                }
+
+                nifDst->set<ushort>(iIndicesDst.child(i * 6 + 0, 0), ushort(triangle.v1() - vertIndex));
+                nifDst->set<ushort>(iIndicesDst.child(i * 6 + 1, 0), ushort(triangle.v2() - vertIndex));
+                nifDst->set<ushort>(iIndicesDst.child(i * 6 + 2, 0), ushort(triangle.v3() - vertIndex));
+
+                nifDst->set<ushort>(iIndicesDst.child(i * 6 + 3, 0), ushort(triangle.v3() - vertIndex));
+                nifDst->set<ushort>(iIndicesDst.child(i * 6 + 4, 0), ushort(triangle.v2() - vertIndex));
+                nifDst->set<ushort>(iIndicesDst.child(i * 6 + 5, 0), ushort(triangle.v1() - vertIndex));
+
+                nifDst->set<ushort>(iWeldingInfoDst.child(i * 2 + 0, 0), nifSrc->get<ushort>(iTrianglesSrc, "Welding Info"));
+                nifDst->set<ushort>(iWeldingInfoDst.child(i * 2 + 1, 0), nifSrc->get<ushort>(iTrianglesSrc, "Welding Info"));
+            }
+
+            vertIndex += numVertices;
+            triIndex += numTriangles;
         }
 
         c.ignore("Unknown Byte 1");
@@ -1504,6 +1679,10 @@ public:
         setHandled(iDst, iSrc);
 
         return iDst;
+    }
+
+    void bhkPackedNiTriStripsShapeDataTriangles() {
+        //
     }
 
     QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex iBhkNiTriStripsShapeDst, int row) {
@@ -1570,8 +1749,9 @@ public:
                 }
             }
 
-            nifDst->set<ushort>(iDst, "Num Triangles", ushort(numTriangles));
-            nifDst->set<ushort>(iDst, "Num Strips", ushort(numTriangles));
+            // Create Double sided triangles.
+            nifDst->set<ushort>(iDst, "Num Triangles", ushort(numTriangles * 2));
+            nifDst->set<ushort>(iDst, "Num Strips", ushort(numTriangles * 2));
             nifDst->updateArray(iDst, "Strip Lengths");
 
             QModelIndex iStripLengthsDst = getIndexDst(iDst, "Strip Lengths");
@@ -1584,13 +1764,16 @@ public:
 
 
             QModelIndex iPointsArrayDst = getIndexDst(iDst, "Points");
-            QModelIndex iPointsDst;
 
-            for (int i = 0; i < nifDst->rowCount(iPointsArrayDst); i++) {
+            bhkPackedNiTriStripsShapeDataTriangles();
+
+            for (int i = 0; i < numTriangles; i++) {
                 iTrianglesSrc = iTrianglesArraySrc.child(triIndex + i, 0);
-                iPointsDst = iPointsArrayDst.child(i, 0);
+                QModelIndex iPointsDst1 = iPointsArrayDst.child(i * 2 + 0, 0);
+                QModelIndex iPointsDst2 = iPointsArrayDst.child(i * 2 + 1, 0);
 
-                nifDst->updateArray(iPointsDst);
+                nifDst->updateArray(iPointsDst1);
+                nifDst->updateArray(iPointsDst2);
 
                 Triangle triangle = nifSrc->get<Triangle>(iTrianglesSrc, "Triangle");
 
@@ -1604,9 +1787,13 @@ public:
                     qDebug() << __FILE__ << __LINE__ << "Vertex index too high";
                 }
 
-                nifDst->set<ushort>(iPointsDst.child(0, 0), ushort(triangle.v1() - vertIndex));
-                nifDst->set<ushort>(iPointsDst.child(1, 0), ushort(triangle.v2() - vertIndex));
-                nifDst->set<ushort>(iPointsDst.child(2, 0), ushort(triangle.v3() - vertIndex));
+                nifDst->set<ushort>(iPointsDst1.child(0, 0), ushort(triangle.v1() - vertIndex));
+                nifDst->set<ushort>(iPointsDst1.child(1, 0), ushort(triangle.v2() - vertIndex));
+                nifDst->set<ushort>(iPointsDst1.child(2, 0), ushort(triangle.v3() - vertIndex));
+
+                nifDst->set<ushort>(iPointsDst2.child(0, 0), ushort(triangle.v3() - vertIndex));
+                nifDst->set<ushort>(iPointsDst2.child(1, 0), ushort(triangle.v2() - vertIndex));
+                nifDst->set<ushort>(iPointsDst2.child(2, 0), ushort(triangle.v1() - vertIndex));
             }
 
             vertIndex += numVertices;
@@ -1653,7 +1840,6 @@ public:
 //            iShapeDst = copyBlock(QModelIndex(), iShapeSrc);
             // TODO: Use bkhNiTriStripsShape and bhkNiTriStripsData
             // TODO: Set block order
-//            iShapeDst = bhkPackedNiTriStripsShape(iShapeSrc, iRigidBodyDst, row);
             iShapeDst = bhkPackedNiTriStripsShape(iShapeSrc, iRigidBodyDst, row);
             nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
         }
