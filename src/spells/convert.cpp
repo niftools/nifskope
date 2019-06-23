@@ -381,6 +381,8 @@ class Converter
     EnumMap matMap = EnumMap("Fallout3HavokMaterial", "Fallout4HavokMaterial", nifSrc);
     EnumMap layerMap = EnumMap("Fallout3Layer", "Fallout4Layer", nifSrc);
 
+    QList<QModelIndex> niControllerSequenceList;
+
 public:
     Converter(NifModel * nifSrc, NifModel * nifDst, uint blockCount) : nifSrc(nifSrc), nifDst(nifDst) {
         handledBlocks = new bool[blockCount];
@@ -968,6 +970,8 @@ public:
     QModelIndex niControllerSequence(QModelIndex iSrc) {
         QModelIndex iDst = copyBlock(QModelIndex(), iSrc);
 
+        niControllerSequenceList.append(iDst);
+
         // Controlled Blocks
         QModelIndex iControlledBlocksDst = nifDst->getIndex(iDst, "Controlled Blocks");
         QModelIndex iControlledBlocksSrc = nifSrc->getIndex(iSrc, "Controlled Blocks");
@@ -1020,6 +1024,34 @@ public:
             QModelIndex iSeqDst = niControllerSequence(iSeqSrc);
 
             nifDst->setLink(iDst.child(i, 0), nifDst->getBlockNumber(iSeqDst));
+        }
+    }
+
+    void niControllerSequencesFinalize() {
+        for (QModelIndex iDst : niControllerSequenceList) {
+            // Controlled Blocks
+            QModelIndex iControlledBlocksDst = nifDst->getIndex(iDst, "Controlled Blocks");
+            if (iControlledBlocksDst.isValid()) {
+                for (int i = 0; i < nifDst->rowCount(iControlledBlocksDst); i++) {
+                    QModelIndex iBlockDst = iControlledBlocksDst.child(i, 0);
+                    QModelIndex iControllerDst = nifDst->getBlock(nifDst->getLink(iBlockDst, "Controller"));
+                    QModelIndex iPropertyDst = nifDst->getBlock(nifDst->getLink(iControllerDst, "Target"));
+
+                    if (nifDst->get<QString>(iBlockDst, "Controller Type") != "") {
+                        QString controllerType = nifDst->getBlockName(iControllerDst);
+
+                        if (controllerType == "NiMultiTargetTransformController") {
+                            controllerType = "NiTransformController";
+                        }
+
+                        nifDst->set<QString>(iBlockDst, "Controller Type", controllerType);
+                    }
+
+                    if (nifDst->get<QString>(iBlockDst, "Property Type") != "") {
+                        nifDst->set<QString>(iBlockDst, "Property Type", nifDst->getBlockName(iPropertyDst));
+                    }
+                }
+            }
         }
     }
 
@@ -2580,6 +2612,7 @@ void convert(const QString & fname, const QString & root = "") {
     }
 
     c.reLinkExec();
+    c.niControllerSequencesFinalize();
     c.unhandledBlocks();
 
     // Save
