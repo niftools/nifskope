@@ -109,6 +109,8 @@ public:
                 usedValues[iSource] = IGNORED;
             } else {
                 qDebug() << "Key not found";
+
+                return false;
             }
         }
 
@@ -308,6 +310,7 @@ public:
     }
 
     void setIDst(const QModelIndex &value);
+    void setISrc(const QModelIndex &value);
 };
 
 class EnumMap : public QMap<QString, QString>
@@ -383,6 +386,7 @@ class Converter
 
     QList<QModelIndex> niControllerSequenceList;
 
+    bool conversionResult = true;
 public:
     Converter(NifModel * nifSrc, NifModel * nifDst, uint blockCount) : nifSrc(nifSrc), nifDst(nifDst) {
         handledBlocks = new bool[blockCount];
@@ -722,7 +726,7 @@ public:
     }
 
     // Based on spCopyBlock from blocks.cpp
-    QModelIndex copyBlock(const QModelIndex & iDst, const QModelIndex & iSrc) {
+    QModelIndex copyBlock(const QModelIndex & iDst, const QModelIndex & iSrc, int row = -1) {
         QByteArray data;
         QBuffer buffer( &data );
         if ( !buffer.open( QIODevice::ReadWrite ) )
@@ -737,7 +741,7 @@ public:
             auto version = result.first;
 
             if ( buffer.open( QIODevice::ReadWrite ) ) {
-                QModelIndex block = nifDst->insertNiBlock( bType, nifDst->getBlockCount() );
+                QModelIndex block = nifDst->insertNiBlock( bType, row );
                 nifDst->loadIndex( buffer, block );
                 blockLink( nifDst, iDst, block );
 
@@ -876,10 +880,14 @@ public:
             if (name.length() > 0) {
                 if (!nifDst->setLink(iDst, name, nifDst->getBlockNumber(iLinkDst))) {
                     qDebug() << "Failed to set link";
+
+                    conversionResult = false;
                 }
             } else {
                 if (!nifDst->setLink(iDst, nifDst->getBlockNumber(iLinkDst))) {
                     qDebug() << "Failed to set link for" << nifDst->getBlockName(iLinkDst);
+
+                    conversionResult = false;
                 }
             }
 
@@ -892,8 +900,6 @@ public:
     }
 
     void reLinkExec() {
-        qDebug() << "Relinking...";
-
         QModelIndex iDst;
         int lSrc;
 
@@ -905,8 +911,10 @@ public:
 
                 nifDst->setLink(iDst, lDst);
             } else {
-                qDebug() << "Link" << lSrc << "not found";
+                qDebug() << "Relinking: Link" << lSrc << "not found";
                 nifDst->setLink(iDst, -1);
+
+                conversionResult = false;
             }
         }
     }
@@ -1181,9 +1189,26 @@ public:
                                 "NiPSysUpdateCtlr",
                                 "NiPSysEmitterInitialRadiusCtlr",
                                 "NiVisController",
+                                "NiPSysGravityStrengthCtlr",
+                                "NiPSysInitialRotAngleCtlr",
+                                "NiPSysInitialRotSpeedVarCtlr",
+                                "NiPSysInitialRotSpeedCtlr",
+                                "NiPSysEmitterLifeSpanCtlr",
+                                "NiPSysEmitterPlanarAngleVarCtlr",
+                                "NiPSysEmitterPlanarAngleCtlr",
+                                "NiPSysEmitterDeclinationVarCtlr",
+                                "NiPSysEmitterDeclinationCtlr",
+                                "NiPSysEmitterSpeedCtlr",
 
                     }).contains(nifSrc->getBlockName(nifSrc->getBlock(numController)))) {
                 qDebug() << __FUNCTION__ << "Controller not found in exact copy list:" << nifSrc->getBlockName(nifSrc->getBlock(numController));
+
+                conversionResult = false;
+
+                // TODO: Might have use bones?
+                if (nifSrc->getBlockName(nifSrc->getBlock(numController)) == "NiGeomMorpherController") {
+                    return QModelIndex();
+                }
             }
 
             iControllerDst = copyBlock(QModelIndex(), nifSrc->getBlock(numController));
@@ -1656,10 +1681,14 @@ public:
                            vertIndex > triangle.v2() ||
                            vertIndex > triangle.v3()) {
                     qDebug() << __FILE__ << __LINE__ << "Vertex index too low";
+
+                    conversionResult = false;
                 } else if (triangle.v1() >= vertIndex + numVertices ||
                            triangle.v2() >= vertIndex + numVertices ||
                            triangle.v3() >= vertIndex + numVertices) {
                     qDebug() << __FILE__ << __LINE__ << "Vertex index too high";
+
+                    conversionResult = false;
                 }
 
                 nifDst->set<ushort>(iIndicesDst.child(i * 6 + 0, 0), ushort(triangle.v1() - vertIndex));
@@ -1923,17 +1952,69 @@ public:
 
             parent = scaleNode;
         } else {
-            if (nifDst->getBlockName(iShapeDst) == "bhkMoppBvTreeShape") {
+            QString shapeType = nifDst->getBlockName(iShapeDst);
+
+            if (shapeType == "bhkMoppBvTreeShape") {
                 bhkMoppBvTreeShape(iShapeDst, iShapeSrc, iRigidBodyDst, rShapeDst);
-            } else {
-                collapseScale(iShapeDst, nifDst->get<float>(iShapeDst, "Radius"));
+            } else if (shapeType == "bhkConvexVerticesShape") {
+                bhkConvexVerticesShape(iShapeDst, iShapeSrc);
+
                 collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(iShapeDst, "Radius"));
+            } else if (shapeType == "bhkListShape") {
+                bhkListShape(iShapeDst, iShapeSrc, iRigidBodyDst);
+            } else {
+                qDebug() << "Unknown RigidBody shape:" << shapeType;
             }
         }
 
         // Link to parent
         nifDst->setLink(parent, "Collision Object", nifDst->getBlockNumber(colNode));
         nifDst->setLink(colNode, "Target", nifDst->getBlockNumber(parent));
+    }
+
+    void bhkConvexVerticesShape(QModelIndex iDst, QModelIndex iSrc) {
+        collapseScale(iDst, nifDst->get<float>(iDst, "Radius"));
+
+        nifDst->set<uint>(iDst, matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+    }
+
+    QModelIndex getBlockSrc(QModelIndex iLink) {
+        return nifSrc->getBlock(nifSrc->getLink(iLink));
+    }
+
+    QModelIndex getBlockSrc(QModelIndex iSrc, const QString & name) {
+        return getBlockSrc(getIndexSrc(iSrc, name));
+    }
+
+    void bhkListShape(QModelIndex iDst, QModelIndex iSrc, QModelIndex iRigidBodyDst) {
+        QModelIndex iSubShapesArrayDst = nifDst->getIndex(iDst, "Sub Shapes");
+        QModelIndex iSubShapesArraySrc = nifSrc->getIndex(iSrc, "Sub Shapes");
+
+        bool bRadiusSet = false;
+        float radius = 1.0f;
+
+        for (int i = 0; i < nifDst->get<int>(iDst, "Num Sub Shapes"); i++) {
+            QModelIndex iShapeSrc = getBlockSrc(iSubShapesArraySrc.child(i, 0));
+
+            QModelIndex iShapeDst = copyBlock(QModelIndex(), iShapeSrc, nifDst->getBlockNumber(iDst));
+
+            bhkConvexVerticesShape(iShapeDst, iShapeSrc);
+
+            float newRadius = nifDst->get<float>(iShapeDst, "Radius");
+            if (!bRadiusSet) {
+                radius = newRadius;
+
+                bRadiusSet = true;
+            } else if (radius < newRadius || radius > newRadius) {
+                qDebug() << __FUNCTION__ << "Different radii, cannot scale parent";
+
+                conversionResult = false;
+            }
+
+            nifDst->setLink(iSubShapesArrayDst.child(i, 0), nifDst->getBlockNumber(iShapeDst));
+        }
+
+        collapseScaleRigidBody(iRigidBodyDst, radius);
     }
 
     bool setLink(QModelIndex iDst, const QString & name, QModelIndex iTarget) {
@@ -2093,6 +2174,74 @@ public:
 ////        Copier c = Copier(fadeNode)
 //    }
 
+    QModelIndex bsFurnitureMarker(QModelIndex iSrc) {
+        QModelIndex iDst = nifDst->insertNiBlock("BSFurnitureMarkerNode");
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        c.copyValue<QString>("Name");
+        c.copyValue("Num Positions");
+
+        QModelIndex iPositionsArrayDst = nifDst->getIndex(iDst, "Positions");
+        QModelIndex iPositionsArraySrc = nifSrc->getIndex(iSrc, "Positions");
+
+        nifDst->updateArray(iPositionsArrayDst);
+
+        for (int i = 0; i < nifSrc->rowCount(iPositionsArraySrc); i++) {
+            QModelIndex iPositionDst = iPositionsArrayDst.child(i, 0);
+            QModelIndex iPositionSrc = iPositionsArraySrc.child(i, 0);
+
+            c.setIDst(iPositionDst);
+            c.setISrc(iPositionSrc);
+
+            c.copyValue("Offset");
+
+            // TODO:
+            if (i == 0) {
+                c.ignore("Orientation");
+                c.ignore("Position Ref 1");
+                c.ignore("Position Ref 2");
+            }
+        }
+
+        setHandled(iDst, iSrc);
+
+        return iDst;
+    }
+
+    void extraDataList(QModelIndex iDst, QModelIndex iSrc) {
+        QVector<qint32> links = nifSrc->getLinkArray(iSrc, "Extra Data List");
+
+        for (int link:links) {
+            QModelIndex linkNode = nifSrc->getBlock(link);
+
+            QString type = nifSrc->getBlockName(linkNode);
+            if (type == "BSXFlags") {
+                copyBlock(iDst, linkNode);
+            } else if (type == "NiStringExtraData") {
+                copyBlock(iDst, linkNode);
+            } else if (type == "BSFurnitureMarker") {
+                blockLink(nifDst, iDst, bsFurnitureMarker(linkNode));
+            } else if (type == "NiTextKeyExtraData") {
+                copyBlock(iDst, linkNode);
+            } else {
+                qDebug() << "Unknown block:" << type;
+
+                conversionResult = false;
+            }
+        }
+    }
+
+    void extraDataList(QModelIndex iDst, QModelIndex iSrc, Copier & c) {
+        c.ignore("Num Extra Data List");
+
+        if (nifSrc->get<int>(iSrc, "Num Extra Data List") > 0) {
+            c.ignore(getIndexSrc(iSrc, "Extra Data List").child(0, 0));
+        }
+
+        extraDataList(iDst, iSrc);
+    }
+
     QModelIndex bsFadeNode( QModelIndex iNode, const QString & nodeType = "BSFadeNode" ) {
         QModelIndex linkNode;
         QModelIndex fadeNode;
@@ -2113,10 +2262,6 @@ public:
         c.ignore("Collision Object");
         c.ignore("Num Effects");
 
-        if (nifSrc->rowCount(getIndexSrc(iNode, "Extra Data List")) > 0) {
-            c.ignore(getIndexSrc(iNode, "Extra Data List").child(0, 0));
-        }
-
         if (nifSrc->rowCount(getIndexSrc(iNode, "Children")) > 0) {
             c.ignore(getIndexSrc(iNode, "Children").child(0, 0));
         }
@@ -2132,19 +2277,7 @@ public:
 
 //        copyValue<uint>(fadeNode, iNode, "Num Extra Data List");
 //        newNif->updateArray(newNif->getIndex(fadeNode, "Extra Data List"));
-        QVector<qint32> links = nifSrc->getLinkArray(iNode, "Extra Data List");
-        for (int link:links) {
-            linkNode = nifSrc->getBlock(link);
-
-            QString type = nifSrc->getBlockName(linkNode);
-            if (type == "BSXFlags") {
-                copyBlock(fadeNode, linkNode);
-                handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
-            } else if (type == "NiStringExtraData") {
-                copyBlock(fadeNode, linkNode);
-                handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
-            }
-        }
+        extraDataList(fadeNode, iNode, c);
 
         niControllerCopy(fadeNode, iNode);
 
@@ -2174,7 +2307,7 @@ public:
         }
 
         nifDst->updateArray(fadeNode, "Children");
-        links = nifSrc->getLinkArray(iNode, "Children");
+        QVector<qint32> links = nifSrc->getLinkArray(iNode, "Children");
         for (int i = 0; i < links.count(); i++) {
             linkNode = nifSrc->getBlock(links[i]);
             QModelIndex iChildDst = nifDst->getIndex(fadeNode, "Children").child(i, 0);
@@ -2196,6 +2329,8 @@ public:
 //                copyBlock(QModelIndex(), linkNode);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown child type:" << type;
+
+                conversionResult = false;
             }
         }
 
@@ -2344,10 +2479,12 @@ public:
             QModelIndex linkNode = nifSrc->getBlock(links[i]);
             if (nifSrc->getBlockName(linkNode) == "BSShaderNoLightingProperty") {
                 return nifDst->insertNiBlock("BSEffectShaderProperty");
+            } else if (nifSrc->getBlockName(linkNode) == "BSShaderPPLightingProperty") {
+                return nifDst->insertNiBlock( "BSLightingShaderProperty" );
             }
         }
 
-        return nifDst->insertNiBlock( "BSLightingShaderProperty" );
+        return nifDst->insertNiBlock( "BSEffectShaderProperty" );
     }
 
     void properties(QModelIndex iSrc, QModelIndex shaderProperty, QModelIndex triShape, QModelIndex & iBSShaderLightingProperty) {
@@ -2362,7 +2499,6 @@ public:
                 if (triShape.isValid()) {
                     nifDst->setLink(triShape, "Alpha Property", lAlphaProperty);
                 } else {
-                    qDebug() << "HERE";
                     nifDst->setLink(shaderProperty, "Alpha Property", lAlphaProperty);
                 }
             } else if (type == "BSShaderPPLightingProperty" || type == "BSShaderNoLightingProperty") {
@@ -2408,6 +2544,8 @@ public:
         c.copyValue("Scale");
 
         c.ignore("Controller");
+        niControllerCopy(triShape, iSrc);
+
         c.ignore("Num Properties");
         c.ignore("Collision Object");
         c.ignore("Data");
@@ -2423,9 +2561,7 @@ public:
             c.ignore(getIndexSrc(iSrc, "Properties").child(0, 0));
         }
 
-        if (nifSrc->rowCount(getIndexSrc(iSrc, "Extra Data List")) > 0) {
-            c.ignore(getIndexSrc(iSrc, "Extra Data List").child(0, 0));
-        }
+        extraDataList(triShape, iSrc, c);
 
         QModelIndex iNiTriStripsData;
 
@@ -2576,16 +2712,19 @@ public:
      }
 
     void unhandledBlocks() {
-        printf("Unhandled blocks:\n");
         for ( int i = 0; i < nifSrc->getBlockCount(); i++ ) {
             if (handledBlocks[i]) {
-                printf("%d:\t%s\n", i, nifSrc->getBlockName(nifSrc->getBlock( i )).toUtf8().constData());
+                printf("Unhandled block: %d:\t%s\n", i, nifSrc->getBlockName(nifSrc->getBlock( i )).toUtf8().constData());
+
+                conversionResult = false;
             }
         }
     }
+
+    bool getConversionResult() const;
 };
 
-void convert(const QString & fname, const QString & root = "") {
+bool convert(const QString & fname, const QString & root = "") {
     clock_t tStart = clock();
 
     qDebug() << "Processing: " + fname;
@@ -2633,18 +2772,34 @@ void convert(const QString & fname, const QString & root = "") {
     }
 
     printf("Time taken: %.2fs\n", double(clock() - tStart)/CLOCKS_PER_SEC);
+
+    return c.getConversionResult();
 }
 
-void convertNif(QString fname) {
-    if (fname.length() > 0) {
-        if (QFileInfo(fname).isFile()) {
-            convert(fname);
+void convertNif(QString path) {
+    QList<QString> failedList;
+
+    if (path.length() > 0) {
+        if (QFileInfo(path).isFile()) {
+            convert(path);
 
             return;
-        } else if (QDir(fname).exists()) {
-            QDirIterator it(fname, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
+        } else if (QDir(path).exists()) {
+            QDirIterator it(path, QStringList() << "*.nif", QDir::Files, QDirIterator::Subdirectories);
             while (it.hasNext()) {
-                convert(it.next(), fname);
+                QString fname = it.next();
+
+                if (!convert(fname, path)) {
+                    failedList.append(fname);
+                }
+            }
+
+            if (failedList.count() > 0) {
+                qDebug() << "Failed to convert:";
+
+                for (QString s : failedList) {
+                    qDebug() << s;
+                }
             }
 
             return;
@@ -2654,7 +2809,17 @@ void convertNif(QString fname) {
     qDebug() << "Path not found";
 }
 
+void Copier::setISrc(const QModelIndex &value)
+{
+iSrc = value;
+}
+
 void Copier::setIDst(const QModelIndex &value)
 {
 iDst = value;
+}
+
+bool Converter::getConversionResult() const
+{
+return conversionResult;
 }
