@@ -1322,89 +1322,6 @@ public:
         return nifDst->getIndex(parent, name);
     }
 
-    // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
-    void bhkRigidBody(QModelIndex iDst, QModelIndex iSrc) {
-        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
-
-        nifDst->set<float>(iDst, "Time Factor", 1.0);
-        c.copyValue<float>("Friction");
-        nifDst->set<float>(iDst, "Rolling Friction Multiplier", 0.0);
-        c.copyValue<float>("Restitution");
-        c.copyValue<float>("Max Linear Velocity");
-        c.copyValue<float>("Max Angular Velocity");
-        c.copyValue<float>("Penetration Depth");
-        c.copyValue<int>("Motion System");
-
-        // Deactivator Type
-        c.copyValue<int>("Solver Deactivation");
-        c.copyValue<int>("Quality Type");
-        c.copyValue("Num Constraints");
-        // Constraints
-        // Body Flags
-
-        c.ignore("Shape");
-        c.ignore("Layer");
-        c.ignore("Flags and Part Number");
-        c.ignore("Group");
-        c.ignore("Broad Phase Type");
-        c.ignore("Collision Response");
-        c.ignore("Collision Response 2");
-        c.ignore("Process Contact Callback Delay");
-        c.ignore("Process Contact Callback Delay 2");
-        c.ignore("Translation");
-        c.ignore("Rotation");
-        c.ignore("Linear Velocity");
-        c.ignore("Angular Velocity");
-        c.ignore("Center");
-
-        if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
-            // Mass of 0 causes glitching in ck.
-            nifDst->set<float>(iDst, "Mass", 1.0f);
-
-            c.ignore("Mass");
-        } else {
-            c.copyValue("Mass");
-        }
-
-        c.ignore("Linear Damping");
-        c.ignore("Angular Damping");
-        c.ignore("Deactivator Type");
-        c.ignore("Body Flags");
-
-        c.ignore("Unused Byte 1");
-        c.ignore("Unused Byte 2");
-        c.ignore("Unknown Int 1");
-        c.ignore("Unknown Int 2");
-        c.ignore(nifSrc->getIndex(iSrc, "Unused Bytes"), "Unused Bytes");
-        c.ignore(nifSrc->getIndex(iSrc, "Unknown Bytes 1"), "Unknown Bytes 1");
-        c.ignore(nifSrc->getIndex(iSrc, "Unused 2"), "Unused 2");
-        c.ignore(nifSrc->getIndex(iSrc, "Unused"), "Unused");
-
-        QModelIndex iHavokFilterCopySrc = nifSrc->getIndex(iSrc, "Havok Filter Copy");
-        c.ignore(iHavokFilterCopySrc, "Layer");
-        c.ignore(iHavokFilterCopySrc, "Flags and Part Number");
-        c.ignore(iHavokFilterCopySrc, "Group");
-
-        QModelIndex iCInfoPropertySrc = nifSrc->getIndex(iSrc, "Cinfo Property");
-        c.ignore(iCInfoPropertySrc, "Data");
-        c.ignore(iCInfoPropertySrc, "Size");
-        c.ignore(iCInfoPropertySrc, "Capacity and Flags");
-
-        QModelIndex iInertiaTensorSrc = nifSrc->getIndex(iSrc, "Inertia Tensor");
-        c.ignore(iInertiaTensorSrc, "m11");
-        c.ignore(iInertiaTensorSrc, "m12");
-        c.ignore(iInertiaTensorSrc, "m13");
-        c.ignore(iInertiaTensorSrc, "m14");
-        c.ignore(iInertiaTensorSrc, "m21");
-        c.ignore(iInertiaTensorSrc, "m22");
-        c.ignore(iInertiaTensorSrc, "m23");
-        c.ignore(iInertiaTensorSrc, "m24");
-        c.ignore(iInertiaTensorSrc, "m31");
-        c.ignore(iInertiaTensorSrc, "m32");
-        c.ignore(iInertiaTensorSrc, "m33");
-        c.ignore(iInertiaTensorSrc, "m34");
-    }
-
     void scaleVector4(QModelIndex iVector4, float scale) {
         Vector4 v = nifDst->get<Vector4>(iVector4);
         v *= scale;
@@ -1886,38 +1803,69 @@ public:
         return QModelIndex();
     }
 
-    void bhkMoppBvTreeShape(QModelIndex iDst, QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+    QModelIndex bhkMoppBvTreeShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex & parent, int row) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
         nifDst->set<int>(iDst, "Build Type", 1);
 
         int lShapeSrc = nifSrc->getLink(iSrc, "Shape");
         if (lShapeSrc == -1) {
-            return;
+            return QModelIndex();
         }
 
         QModelIndex iShapeSrc = nifSrc->getBlock(lShapeSrc);
-        QModelIndex iShapeDst;
+        // TODO: Use bkhNiTriStripsShape and bhkNiTriStripsData
+        // TODO: Set block order
+        QModelIndex iShapeDst = bhkShape(iShapeSrc, iRigidBodyDst, parent, row);
 
-        if (nifSrc->getBlockName(iShapeSrc) == "bhkPackedNiTriStripsShape") {
-//            iShapeDst = copyBlock(QModelIndex(), iShapeSrc);
-            // TODO: Use bkhNiTriStripsShape and bhkNiTriStripsData
-            // TODO: Set block order
-            iShapeDst = bhkPackedNiTriStripsShape(iShapeSrc, iRigidBodyDst, row);
-            nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
-        }
+        nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
+
+        return iDst;
     }
 
-    void collisionObject( QModelIndex parent, QModelIndex iNode ) {
-        QModelIndex iRigidBodySrc = nifSrc->getBlock(nifSrc->getLink(iNode, "Body"));
+    QModelIndex bhkShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex & parent, int row) {
+        // Scale the collision object.
+        // NOTE: scaleNode currently breaks collision for the object.
+        bool bScaleNode = false;
+        QModelIndex scaleNode;
+        if (bScaleNode) {
+            QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
 
-        QModelIndex iShapeSrc = nifSrc->getBlock(nifSrc->getLink(iRigidBodySrc, "Shape"));
-        QModelIndex iShapeDst = copyBlock(QModelIndex(), iShapeSrc);
-        int rShapeDst = nifDst->getBlockNumber(iShapeDst);
+            scaleNode = insertNiBlock("NiNode");
+            uint numChildren = nifDst->get<uint>(parent, "Num Children");
+            nifDst->set<uint>(parent, "Num Children", numChildren + 1);
+            nifDst->updateArray(parent, "Children");
+            nifDst->setLink(nifDst->getIndex(parent, "Children").child(int(numChildren), 0), nifDst->getBlockNumber(scaleNode));
+            nifDst->set<float>(scaleNode, "Scale", nifDst->get<float>(iDst, "Radius"));
 
-        // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
-        QModelIndex iRigidBodyDst = copyBlock(QModelIndex(), iRigidBodySrc);
-        QModelIndex colNode = insertNiBlock("bhkCollisionObject");
+            parent = scaleNode;
 
-        Copier c = Copier(colNode, iNode, nifDst, nifSrc);
+            return iDst;
+        } else {
+            QString shapeType = nifSrc->getBlockName(iSrc);
+
+            if (shapeType == "bhkMoppBvTreeShape") {
+                return bhkMoppBvTreeShape(iSrc, iRigidBodyDst, parent, row);
+            } else if (shapeType == "bhkConvexVerticesShape") {
+                return bhkConvexVerticesShape(iSrc, iRigidBodyDst, row);
+            } else if (shapeType == "bhkListShape") {
+                return bhkListShape(iSrc, iRigidBodyDst, parent, row);
+            } else if (shapeType == "bhkPackedNiTriStripsShape") {
+                return bhkPackedNiTriStripsShape(iSrc, iRigidBodyDst, row);
+            } else {
+                qDebug() << __FUNCTION__ << "Unknown collision shape:" << shapeType;
+
+                conversionResult = false;
+            }
+        }
+
+        return QModelIndex();
+    }
+
+    void collisionObject( QModelIndex parent, QModelIndex iSrc ) {
+        QModelIndex iDst = insertNiBlock("bhkCollisionObject");
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         // Collision Object
         c.copyValue("Flags");
@@ -1925,57 +1873,125 @@ public:
         c.ignore("Target");
         c.ignore("Body");
 
-        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
-        nifDst->setLink(colNode, "Body", nifDst->getBlockNumber(iRigidBodyDst));
+        QModelIndex iRigidBodySrc = nifSrc->getBlock(nifSrc->getLink(iSrc, "Body"));
+        QModelIndex iRigidBodyDst = bhkRigidBody(iRigidBodySrc, parent, nifDst->getBlockNumber(iDst));
+        nifDst->setLink(iDst, "Body", nifDst->getBlockNumber(iRigidBodyDst));
 
-        // TODO: Skyrim layers
-        bhkRigidBody(iRigidBodyDst, iRigidBodySrc);
-        handledBlocks[nifSrc->getBlockNumber(iRigidBodySrc)] = false;
+        // Link to parent
+        nifDst->setLink(parent, "Collision Object", nifDst->getBlockNumber(iDst));
+        nifDst->setLink(iDst, "Target", nifDst->getBlockNumber(parent));
+
+        setHandled(iDst, iSrc);
+    }
+
+    // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
+    // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
+    // TODO: Merge shape functions.
+    // TODO: Skyrim layers
+    QModelIndex bhkRigidBody(QModelIndex iSrc, QModelIndex & parent, int row) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
+        Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
+
+        QModelIndex iShapeSrc = nifSrc->getBlock(nifSrc->getLink(iSrc, "Shape"));
+        QModelIndex iShapeDst = bhkShape(iShapeSrc, iDst, parent, nifDst->getBlockNumber(iDst));
 
         // Shape
         // NOTE: Radius not rendered? Seems to be at 10 times always
-        nifDst->setLink(iRigidBodyDst, "Shape", nifDst->getBlockNumber(iShapeDst));
-        handledBlocks[nifSrc->getLink(iRigidBodySrc, "Shape")] = false;
+        nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
         // TODO: Material
 
-        // Scale the collision object.
-        // NOTE: scaleNode currently breaks collision for the object.
-        bool bScaleNode = false;
-        QModelIndex scaleNode;
-        if (bScaleNode) {
-            scaleNode = insertNiBlock("NiNode");
-            uint numChildren = nifDst->get<uint>(parent, "Num Children");
-            nifDst->set<uint>(parent, "Num Children", numChildren + 1);
-            nifDst->updateArray(parent, "Children");
-            nifDst->setLink(nifDst->getIndex(parent, "Children").child(int(numChildren), 0), nifDst->getBlockNumber(scaleNode));
-            nifDst->set<float>(scaleNode, "Scale", nifDst->get<float>(iShapeDst, "Radius"));
+        nifDst->set<float>(iDst, "Time Factor", 1.0);
+        c.copyValue<float>("Friction");
+        nifDst->set<float>(iDst, "Rolling Friction Multiplier", 0.0);
+        c.copyValue<float>("Restitution");
+        c.copyValue<float>("Max Linear Velocity");
+        c.copyValue<float>("Max Angular Velocity");
+        c.copyValue<float>("Penetration Depth");
+        c.copyValue<int>("Motion System");
 
-            parent = scaleNode;
+        // Deactivator Type
+        c.copyValue<int>("Solver Deactivation");
+        c.copyValue<int>("Quality Type");
+        c.copyValue("Num Constraints");
+        // Constraints
+        // Body Flags
+
+        c.ignore("Shape");
+        c.ignore("Layer");
+        c.ignore("Flags and Part Number");
+        c.ignore("Group");
+        c.ignore("Broad Phase Type");
+        c.ignore("Collision Response");
+        c.ignore("Collision Response 2");
+        c.ignore("Process Contact Callback Delay");
+        c.ignore("Process Contact Callback Delay 2");
+        c.ignore("Translation");
+        c.ignore("Rotation");
+        c.ignore("Linear Velocity");
+        c.ignore("Angular Velocity");
+        c.ignore("Center");
+
+        if (nifSrc->get<float>(iSrc, "Mass") == 0.0f) {
+            // Mass of 0 causes glitching in ck.
+            nifDst->set<float>(iDst, "Mass", 1.0f);
+
+            c.ignore("Mass");
         } else {
-            QString shapeType = nifDst->getBlockName(iShapeDst);
-
-            if (shapeType == "bhkMoppBvTreeShape") {
-                bhkMoppBvTreeShape(iShapeDst, iShapeSrc, iRigidBodyDst, rShapeDst);
-            } else if (shapeType == "bhkConvexVerticesShape") {
-                bhkConvexVerticesShape(iShapeDst, iShapeSrc);
-
-                collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(iShapeDst, "Radius"));
-            } else if (shapeType == "bhkListShape") {
-                bhkListShape(iShapeDst, iShapeSrc, iRigidBodyDst);
-            } else {
-                qDebug() << "Unknown RigidBody shape:" << shapeType;
-            }
+            c.copyValue("Mass");
         }
 
-        // Link to parent
-        nifDst->setLink(parent, "Collision Object", nifDst->getBlockNumber(colNode));
-        nifDst->setLink(colNode, "Target", nifDst->getBlockNumber(parent));
+        c.ignore("Linear Damping");
+        c.ignore("Angular Damping");
+        c.ignore("Deactivator Type");
+        c.ignore("Body Flags");
+
+        c.ignore("Unused Byte 1");
+        c.ignore("Unused Byte 2");
+        c.ignore("Unknown Int 1");
+        c.ignore("Unknown Int 2");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused Bytes"), "Unused Bytes");
+        c.ignore(nifSrc->getIndex(iSrc, "Unknown Bytes 1"), "Unknown Bytes 1");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused 2"), "Unused 2");
+        c.ignore(nifSrc->getIndex(iSrc, "Unused"), "Unused");
+
+        QModelIndex iHavokFilterCopySrc = nifSrc->getIndex(iSrc, "Havok Filter Copy");
+        c.ignore(iHavokFilterCopySrc, "Layer");
+        c.ignore(iHavokFilterCopySrc, "Flags and Part Number");
+        c.ignore(iHavokFilterCopySrc, "Group");
+
+        QModelIndex iCInfoPropertySrc = nifSrc->getIndex(iSrc, "Cinfo Property");
+        c.ignore(iCInfoPropertySrc, "Data");
+        c.ignore(iCInfoPropertySrc, "Size");
+        c.ignore(iCInfoPropertySrc, "Capacity and Flags");
+
+        QModelIndex iInertiaTensorSrc = nifSrc->getIndex(iSrc, "Inertia Tensor");
+        c.ignore(iInertiaTensorSrc, "m11");
+        c.ignore(iInertiaTensorSrc, "m12");
+        c.ignore(iInertiaTensorSrc, "m13");
+        c.ignore(iInertiaTensorSrc, "m14");
+        c.ignore(iInertiaTensorSrc, "m21");
+        c.ignore(iInertiaTensorSrc, "m22");
+        c.ignore(iInertiaTensorSrc, "m23");
+        c.ignore(iInertiaTensorSrc, "m24");
+        c.ignore(iInertiaTensorSrc, "m31");
+        c.ignore(iInertiaTensorSrc, "m32");
+        c.ignore(iInertiaTensorSrc, "m33");
+        c.ignore(iInertiaTensorSrc, "m34");
+
+        return iDst;
     }
 
-    void bhkConvexVerticesShape(QModelIndex iDst, QModelIndex iSrc) {
+    QModelIndex bhkConvexVerticesShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
         collapseScale(iDst, nifDst->get<float>(iDst, "Radius"));
 
         nifDst->set<uint>(iDst, matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+
+        collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(iDst, "Radius"));
+
+        return iDst;
     }
 
     QModelIndex getBlockSrc(QModelIndex iLink) {
@@ -1986,7 +2002,9 @@ public:
         return getBlockSrc(getIndexSrc(iSrc, name));
     }
 
-    void bhkListShape(QModelIndex iDst, QModelIndex iSrc, QModelIndex iRigidBodyDst) {
+    QModelIndex bhkListShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex & parent, int row) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
         QModelIndex iSubShapesArrayDst = nifDst->getIndex(iDst, "Sub Shapes");
         QModelIndex iSubShapesArraySrc = nifSrc->getIndex(iSrc, "Sub Shapes");
 
@@ -1995,26 +2013,33 @@ public:
 
         for (int i = 0; i < nifDst->get<int>(iDst, "Num Sub Shapes"); i++) {
             QModelIndex iShapeSrc = getBlockSrc(iSubShapesArraySrc.child(i, 0));
+            QModelIndex iShapeDst = bhkShape(iShapeSrc, iRigidBodyDst, parent, row);
 
-            QModelIndex iShapeDst = copyBlock(QModelIndex(), iShapeSrc, nifDst->getBlockNumber(iDst));
+            QModelIndex iRadius = nifDst->getIndex(iShapeDst, "Radius");
 
-            bhkConvexVerticesShape(iShapeDst, iShapeSrc);
-
-            float newRadius = nifDst->get<float>(iShapeDst, "Radius");
-            if (!bRadiusSet) {
-                radius = newRadius;
-
-                bRadiusSet = true;
-            } else if (radius < newRadius || radius > newRadius) {
-                qDebug() << __FUNCTION__ << "Different radii, cannot scale parent";
+            if (!iRadius.isValid()) {
+                qDebug() << __FUNCTION__ << "Radius not found";
 
                 conversionResult = false;
+            } else {
+                float newRadius = nifDst->get<float>(iShapeDst, "Radius");
+                if (!bRadiusSet) {
+                    radius = newRadius;
+
+                    bRadiusSet = true;
+                } else if (radius < newRadius || radius > newRadius) {
+                    qDebug() << __FUNCTION__ << "Different radii, cannot scale parent";
+
+                    conversionResult = false;
+                }
             }
 
             nifDst->setLink(iSubShapesArrayDst.child(i, 0), nifDst->getBlockNumber(iShapeDst));
         }
 
         collapseScaleRigidBody(iRigidBodyDst, radius);
+
+        return iDst;
     }
 
     bool setLink(QModelIndex iDst, const QString & name, QModelIndex iTarget) {
