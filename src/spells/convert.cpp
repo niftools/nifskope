@@ -1296,6 +1296,8 @@ public:
         // Set the controller link to the newly created controller.
         if (!nifDst->setLink(iNextControllerLink, nifDst->getBlockNumber(iControllerDst))) {
             qDebug() << "Set link failed";
+
+            conversionResult = false;
         }
 
         // Return the currently linked controller or the newly created one.
@@ -1340,8 +1342,10 @@ public:
     }
 
     void collapseScaleRigidBody(QModelIndex iNode, float scale) {
-        scaleVector4(nifDst->getIndex(iNode, "Translation"), scale);
-        scaleVector4(nifDst->getIndex(iNode, "Center"), scale);
+        if (scale != 1.0f) {
+            scaleVector4(nifDst->getIndex(iNode, "Translation"), scale);
+            scaleVector4(nifDst->getIndex(iNode, "Center"), scale);
+        }
     }
 
     /**
@@ -1629,7 +1633,9 @@ public:
         return iDst;
     }
 
-    QModelIndex bhkPackedNiTriStripsShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+    QModelIndex bhkPackedNiTriStripsShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius) {
+        bhkUpdateScale(bScaleSet, radius, nifSrc->get<float>(iSrc, "Radius"));
+
         QModelIndex iDst = nifDst->insertNiBlock("bhkNiTriStripsShape", row);
 
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
@@ -1649,7 +1655,7 @@ public:
             return iDst;
         }
 
-        bhkPackedNiTriStripsShapeData(nifSrc->getBlock(lDataSrc), iRigidBodyDst, iDst, row);
+        bhkPackedNiTriStripsShapeData(nifSrc->getBlock(lDataSrc), iDst, row);
 //        nifDst->setLink(
 //                    nifDst->getIndex(iDst, "Strips Data").child(0, 0),
 //                    nifDst->getBlockNumber(bhkPackedNiTriStripsShapeData(nifSrc->getBlock(lDataSrc), iRigidBodyDst, iDst, row)));
@@ -1663,7 +1669,7 @@ public:
         //
     }
 
-    QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex iBhkNiTriStripsShapeDst, int row) {
+    QModelIndex bhkPackedNiTriStripsShapeData(QModelIndex iSrc, QModelIndex iBhkNiTriStripsShapeDst, int row) {
         Copier c = Copier(QModelIndex(), iSrc, nifDst, nifSrc);
 
         QModelIndex iSubShapesArraySrc = getIndexSrc(iSrc, "Sub Shapes");
@@ -1683,8 +1689,6 @@ public:
 
         // Scale up (from glnode.cpp)
         float scale = 7.0;
-
-        nifDst->set<Vector4>(iRigidBodyDst, "Translation", nifDst->get<Vector4>(iRigidBodyDst, "Translation") / scale);
 
         int vertIndex = 0;
         int triIndex = 0;
@@ -1759,10 +1763,14 @@ public:
                            vertIndex > triangle.v2() ||
                            vertIndex > triangle.v3()) {
                     qDebug() << __FILE__ << __LINE__ << "Vertex index too low";
+
+                    conversionResult = false;
                 } else if (triangle.v1() >= vertIndex + numVertices ||
                            triangle.v2() >= vertIndex + numVertices ||
                            triangle.v3() >= vertIndex + numVertices) {
                     qDebug() << __FILE__ << __LINE__ << "Vertex index too high";
+
+                    conversionResult = false;
                 }
 
                 nifDst->set<ushort>(iPointsDst1.child(0, 0), ushort(triangle.v1() - vertIndex));
@@ -1803,7 +1811,7 @@ public:
         return QModelIndex();
     }
 
-    QModelIndex bhkMoppBvTreeShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex & parent, int row) {
+    QModelIndex bhkMoppBvTreeShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius) {
         QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
 
         nifDst->set<int>(iDst, "Build Type", 1);
@@ -1816,14 +1824,14 @@ public:
         QModelIndex iShapeSrc = nifSrc->getBlock(lShapeSrc);
         // TODO: Use bkhNiTriStripsShape and bhkNiTriStripsData
         // TODO: Set block order
-        QModelIndex iShapeDst = bhkShape(iShapeSrc, iRigidBodyDst, parent, row);
+        QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, row, bScaleSet, radius);
 
         nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
 
         return iDst;
     }
 
-    QModelIndex bhkShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex & parent, int row) {
+    QModelIndex bhkShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius) {
         // Scale the collision object.
         // NOTE: scaleNode currently breaks collision for the object.
         bool bScaleNode = false;
@@ -1845,13 +1853,19 @@ public:
             QString shapeType = nifSrc->getBlockName(iSrc);
 
             if (shapeType == "bhkMoppBvTreeShape") {
-                return bhkMoppBvTreeShape(iSrc, iRigidBodyDst, parent, row);
+                return bhkMoppBvTreeShape(iSrc, parent, row, bScaleSet, radius);
             } else if (shapeType == "bhkConvexVerticesShape") {
-                return bhkConvexVerticesShape(iSrc, iRigidBodyDst, row);
+                return bhkConvexVerticesShape(iSrc, row, bScaleSet, radius);
             } else if (shapeType == "bhkListShape") {
-                return bhkListShape(iSrc, iRigidBodyDst, parent, row);
+                return bhkListShape(iSrc, parent, row, bScaleSet, radius);
             } else if (shapeType == "bhkPackedNiTriStripsShape") {
-                return bhkPackedNiTriStripsShape(iSrc, iRigidBodyDst, row);
+                return bhkPackedNiTriStripsShape(iSrc, row, bScaleSet, radius);
+            } else if (shapeType == "bhkConvexTransformShape") {
+                return  bhkConvexTransformShape(iSrc, parent, row, bScaleSet, radius);
+            } else if (shapeType == "bhkTransformShape") {
+                return  bhkTransformShape(iSrc, parent, row, bScaleSet, radius);
+            } else if (shapeType == "bhkBoxShape") {
+                return  bhkBoxShape(iSrc, row, bScaleSet, radius);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown collision shape:" << shapeType;
 
@@ -1860,6 +1874,108 @@ public:
         }
 
         return QModelIndex();
+    }
+
+    QModelIndex bhkConvexTransformShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
+        nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+
+        bhkUpdateScale(bScaleSet, radius, nifSrc->get<float>(iSrc, "Radius"));
+
+        Matrix4 scaleMatrix = Matrix4();
+
+        scaleMatrix.compose(Vector3(), Matrix(), Vector3(radius, radius, radius));
+        nifDst->set<Matrix4>(iDst, "Transform", nifSrc->get<Matrix4>(iSrc, "Transform") * scaleMatrix);
+
+        QModelIndex iShapeSrc = getBlockSrc(iSrc, "Shape");
+        QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, nifDst->getBlockNumber(iDst), bScaleSet, radius);
+
+        nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
+
+        return iDst;
+    }
+
+    QModelIndex bhkTransformShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
+        nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+
+        QModelIndex iShapeSrc = getBlockSrc(iSrc, "Shape");
+        QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, nifDst->getBlockNumber(iDst), bScaleSet, radius);
+
+        Matrix4 m = nifSrc->get<Matrix4>(iSrc, "Transform");
+
+        // Translation seems to always be scaled by 10 in source
+        m(3, 0) = m(3, 0) * 0.1f;
+        m(3, 1) = m(3, 1) * 0.1f;
+        m(3, 2) = m(3, 2) * 0.1f;
+
+        QString blockType = nifSrc->getBlockName(iShapeSrc);
+
+        if (blockType == "bhkMoppBvTreeShape") {
+            blockType = nifSrc->getBlockName(nifSrc->getBlock(nifSrc->getLink(iShapeSrc, "Shape")));
+        }
+
+        if (blockType == "bhkPackedNiTriStripsShape") {
+            m(0, 0) = m(0, 0) * 7.0f;
+            m(1, 1) = m(1, 1) * 7.0f;
+            m(2, 2) = m(2, 2) * 7.0f;
+        } else {
+            qDebug() << __FUNCTION__ << __LINE__ << "Unknown block:" << blockType;
+
+            conversionResult = false;
+        }
+
+        nifDst->set<Matrix4>(iDst, "Transform",  m);
+
+        nifDst->setLink(iDst, "Shape", nifDst->getBlockNumber(iShapeDst));
+
+        return iDst;
+    }
+
+
+
+    /**
+     * @brief bhkUpdateScale
+     * @param bScaleSet
+     * @param radius
+     * @param newRadius
+     * @return True if newly set, else false
+     */
+    bool bhkUpdateScale(bool & bScaleSet, float & radius, const float newRadius) {
+        if (newRadius == 0.0f) {
+            qDebug() << "Radius of 0";
+
+            conversionResult = false;
+
+            return  false;
+        }
+
+        if (!bScaleSet) {
+            radius = newRadius;
+            bScaleSet = true;
+
+            return true;
+        } else if (radius - newRadius != 0.0f) {
+            qDebug() << __FUNCTION__ << "Different radii:" << radius << "and" << newRadius << ", cannot scale rigidBody";
+
+            conversionResult = false;
+        }
+
+        return false;
+    }
+
+    QModelIndex bhkBoxShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius) {
+        QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
+
+        nifDst->set<uint>(iDst, "Material", matMap.convert(nifSrc->getIndex(iSrc, "Material")));
+
+        if (bhkUpdateScale(bScaleSet, radius, nifSrc->get<float>(iSrc, "Radius"))) {
+            nifDst->set<Vector3>(iDst, "Dimensions", nifSrc->get<Vector3>(iSrc, "Dimensions") * radius);
+        }
+
+        return iDst;
     }
 
     void collisionObject( QModelIndex parent, QModelIndex iSrc ) {
@@ -1885,7 +2001,7 @@ public:
     }
 
     // NOTE: Copy of rigidBody is only correct up to and including Angular Damping
-    // NOTE: Props collision not rendered correctly in nifSkope but should work in-game.
+    // NOTE: Some props have weird collision e.g: 9mmammo.nif.
     // TODO: Merge shape functions.
     // TODO: Skyrim layers
     QModelIndex bhkRigidBody(QModelIndex iSrc, QModelIndex & parent, int row) {
@@ -1894,7 +2010,15 @@ public:
         Copier c = Copier(iDst, iSrc, nifDst, nifSrc);
 
         QModelIndex iShapeSrc = nifSrc->getBlock(nifSrc->getLink(iSrc, "Shape"));
-        QModelIndex iShapeDst = bhkShape(iShapeSrc, iDst, parent, nifDst->getBlockNumber(iDst));
+
+        float radius = 1.0f;
+        bool bScaleSet = false;
+        QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, nifDst->getBlockNumber(iDst), bScaleSet, radius);
+
+        // TODO: Always 0.1?
+        if (bScaleSet) {
+            collapseScaleRigidBody(iDst, radius);
+        }
 
         // Shape
         // NOTE: Radius not rendered? Seems to be at 10 times always
@@ -1911,7 +2035,13 @@ public:
         c.copyValue<int>("Motion System");
 
         // Deactivator Type
-        c.copyValue<int>("Solver Deactivation");
+        if (nifSrc->get<int>(iSrc, "Solver Deactivation") > 1) {
+            nifDst->set<bool>(iDst, "Enable Deactivation", true);
+            c.copyValue<int>("Solver Deactivation");
+        } else {
+            c.ignore("Solver Deactivation");
+        }
+
         c.copyValue<int>("Quality Type");
         c.copyValue("Num Constraints");
         // Constraints
@@ -1982,14 +2112,17 @@ public:
         return iDst;
     }
 
-    QModelIndex bhkConvexVerticesShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, int row) {
+    QModelIndex bhkConvexVerticesShape(QModelIndex iSrc, int row, bool & bScaleSet, float & radius) {
         QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
 
-        collapseScale(iDst, nifDst->get<float>(iDst, "Radius"));
+        bhkUpdateScale(bScaleSet, radius, nifDst->get<float>(iDst, "Radius"));
+
+        // NOTE: Radius seems to mean scale in FNV context.
+        nifDst->set<float>(iDst, "Radius", 0.0f);
+
+        collapseScale(iDst, radius);
 
         nifDst->set<uint>(iDst, matMap.convert(nifSrc->getIndex(iSrc, "Material")));
-
-        collapseScaleRigidBody(iRigidBodyDst, nifDst->get<float>(iDst, "Radius"));
 
         return iDst;
     }
@@ -2002,42 +2135,18 @@ public:
         return getBlockSrc(getIndexSrc(iSrc, name));
     }
 
-    QModelIndex bhkListShape(QModelIndex iSrc, QModelIndex iRigidBodyDst, QModelIndex & parent, int row) {
+    QModelIndex bhkListShape(QModelIndex iSrc, QModelIndex & parent, int row, bool & bScaleSet, float & radius) {
         QModelIndex iDst = copyBlock(QModelIndex(), iSrc, row);
 
         QModelIndex iSubShapesArrayDst = nifDst->getIndex(iDst, "Sub Shapes");
         QModelIndex iSubShapesArraySrc = nifSrc->getIndex(iSrc, "Sub Shapes");
 
-        bool bRadiusSet = false;
-        float radius = 1.0f;
-
         for (int i = 0; i < nifDst->get<int>(iDst, "Num Sub Shapes"); i++) {
             QModelIndex iShapeSrc = getBlockSrc(iSubShapesArraySrc.child(i, 0));
-            QModelIndex iShapeDst = bhkShape(iShapeSrc, iRigidBodyDst, parent, row);
-
-            QModelIndex iRadius = nifDst->getIndex(iShapeDst, "Radius");
-
-            if (!iRadius.isValid()) {
-                qDebug() << __FUNCTION__ << "Radius not found";
-
-                conversionResult = false;
-            } else {
-                float newRadius = nifDst->get<float>(iShapeDst, "Radius");
-                if (!bRadiusSet) {
-                    radius = newRadius;
-
-                    bRadiusSet = true;
-                } else if (radius < newRadius || radius > newRadius) {
-                    qDebug() << __FUNCTION__ << "Different radii, cannot scale parent";
-
-                    conversionResult = false;
-                }
-            }
+            QModelIndex iShapeDst = bhkShape(iShapeSrc, parent, row, bScaleSet, radius);
 
             nifDst->setLink(iSubShapesArrayDst.child(i, 0), nifDst->getBlockNumber(iShapeDst));
         }
-
-        collapseScaleRigidBody(iRigidBodyDst, radius);
 
         return iDst;
     }
@@ -2051,6 +2160,8 @@ public:
                      << "in" << nifDst->getBlockName(iDst)
                      << ". Setting to"
                      << nifDst->getBlockNumber(iTarget);
+
+            conversionResult = false;
         }
 
         return nifDst->setLink(iDst, name, nifDst->getBlockNumber(iTarget));
@@ -2539,6 +2650,8 @@ public:
                 setHandled(QModelIndex(), linkNode);
             } else {
                 qDebug() << __FUNCTION__ << "Unknown Property:" << nifSrc->getBlockName(linkNode);
+
+                conversionResult = false;
             }
         }
     }
@@ -2551,7 +2664,9 @@ public:
 
         c.copyValue<QString>("Name");
         if (nifDst->string(triShape, QString("Name")).length() == 0) {
-            qDebug() << "Important Warning: triShape has no name!";
+            qDebug() << "triShape has no name!";
+
+            conversionResult = false;
         }
 
 //        QModelIndex shaderProperty = nifDst->insertNiBlock( "BSLightingShaderProperty" );
