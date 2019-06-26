@@ -29,6 +29,25 @@
 #define HANDLED 1
 #define IGNORED 2
 
+class Progress
+{
+    uint numBlocksSrc;
+    uint numBlocksProcessed;
+    uint maxBlocks = 100;
+public:
+    Progress(uint numBlocksSrc) : numBlocksSrc(numBlocksSrc) {
+        numBlocksProcessed = 0;
+    }
+
+    void operator++(int) {
+        numBlocksProcessed++;
+
+        if (numBlocksProcessed % maxBlocks == 0) {
+            printf("%d\tof %d\tblocks processed\n", numBlocksProcessed, numBlocksSrc);
+        }
+    }
+};
+
 class Copier
 {
     QModelIndex iDst;
@@ -387,8 +406,10 @@ class Converter
     QList<QModelIndex> niControllerSequenceList;
 
     bool conversionResult = true;
+
+    Progress progress;
 public:
-    Converter(NifModel * nifSrc, NifModel * nifDst, uint blockCount) : nifSrc(nifSrc), nifDst(nifDst) {
+    Converter(NifModel * nifSrc, NifModel * nifDst, uint blockCount) : nifSrc(nifSrc), nifDst(nifDst), progress(Progress(uint(nifSrc->getBlockCount()))) {
         handledBlocks = new bool[blockCount];
 
         loadMatMap();
@@ -818,6 +839,7 @@ public:
 
         handledBlocks[nifSrc->getBlockNumber(iSrc)] = false;
         indexMap[nifSrc->getBlockNumber(iSrc)] = nifDst->getBlockNumber(iDst);
+        progress++;
 
         return true;
     }
@@ -2404,8 +2426,6 @@ public:
 
 
         setHandled(fadeNode, iNode);
-//        indexMap.insert(nifSrc->getBlockNumber(iNode), nifDst->getBlockNumber(fadeNode));
-        indexMap[nifSrc->getBlockNumber(iNode)] = nifDst->getBlockNumber(fadeNode);
 
         // Copy full string, not index.
         c.ignore("Name");
@@ -2713,7 +2733,6 @@ public:
 
             if (type == "NiTriStripsData") {
                 niTriStripsData(linkNode, triShape);
-                handledBlocks[nifSrc->getBlockNumber(linkNode)] = false;
 
                 iNiTriStripsData = linkNode;
             }
@@ -2730,7 +2749,7 @@ public:
     }
 
     void niTriStripsData( QModelIndex iNode, QModelIndex triShape ) {
-        handledBlocks[nifSrc->getBlockNumber(iNode)] = false;
+        setHandled(triShape, iNode);
 
          // TODO: Vertex Colors
          // TODO: Consistency flags
